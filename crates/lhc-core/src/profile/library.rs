@@ -515,6 +515,7 @@ mod tests {
                             game_mode: None,
                             layouts: vec!["us".into()],
                             apps: vec!["*kate".into()],
+                            excluded_apps: vec![],
                         },
                     },
                 ];

@@ -6,10 +6,10 @@
 //! field; unknown fields, wrong types and unknown values are errors, the
 //! same as in layout files (see [`super::layout_file`]).
 
-use super::layout_file::{OnOff, SCHEMA_VERSION, check_version};
+use super::layout_file::{SCHEMA_VERSION, WhenDoc, check_version, read_error};
 use super::model::{
     AppSettings, Appearance, AutoRule, GameModeControl, GameModeProcessMatcher, GameModeSettings,
-    LayoutConditionSet, LayoutMode, LocalePreference, PasteShortcut, TapDecision, TextMode,
+    LayoutMode, LocalePreference, PasteShortcut, TapDecision, TextMode,
 };
 use serde::{Deserialize, Serialize};
 
@@ -22,7 +22,7 @@ pub fn parse(text: &str) -> Result<AppSettings, String> {
         serde_json::from_str(text).map_err(|error| format!("config.json: {error}"))?;
     check_version(&value, "config.json")?;
     let doc: ConfigDoc =
-        serde_json::from_str(text).map_err(|error| format!("config.json: {error}"))?;
+        serde_json::from_str(text).map_err(|error| read_error("config.json", &error))?;
     let settings = from_doc(doc)?;
     validate(&settings)?;
     Ok(settings)
@@ -54,12 +54,8 @@ struct SettingsDoc {
     layout_osd: bool,
     layer_hint: bool,
     locale: LocalePreference,
-    /// Device the mapper grabs; a stable path such as
-    /// `/dev/input/by-id/…` on Linux.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    keyboard_device: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    mouse_device: Option<String>,
+    #[serde(skip_serializing_if = "DevicesDoc::is_empty")]
+    devices: DevicesDoc,
     timing: TimingDoc,
     layout_mode: LayoutMode,
     /// Layout used in manual mode.
@@ -76,6 +72,39 @@ struct SettingsDoc {
 impl Default for SettingsDoc {
     fn default() -> Self {
         to_doc(&AppSettings::default()).settings
+    }
+}
+
+/// Devices the mapper grabs, as stable paths such as `/dev/input/by-id/…`
+/// on Linux. Lists leave room for several devices; this version grabs at
+/// most one of each kind.
+#[derive(Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields, default)]
+struct DevicesDoc {
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    keyboards: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    mice: Vec<String>,
+}
+
+impl DevicesDoc {
+    fn is_empty(&self) -> bool {
+        self.keyboards.is_empty() && self.mice.is_empty()
+    }
+
+    /// The single device of `list`, checked.
+    fn single(list: Vec<String>, what: &str) -> Result<Option<String>, String> {
+        if list.len() > 1 {
+            return Err(format!(
+                "settings.devices.{what}: this version supports at most one device"
+            ));
+        }
+        match list.into_iter().next() {
+            Some(path) if path.trim().is_empty() => Err(format!(
+                "settings.devices.{what}: device path must not be empty"
+            )),
+            path => Ok(path),
+        }
     }
 }
 
@@ -106,31 +135,20 @@ impl Default for TimingDoc {
 struct AutoRuleDoc {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     id: Option<String>,
-    /// `null` turns the mapper off.
-    #[serde(default)]
+    /// Required; an explicit `null` turns the mapper off, so a forgotten
+    /// field is an error rather than a silent "off".
+    #[serde(deserialize_with = "nullable")]
     layout_id: Option<String>,
     #[serde(default = "yes", skip_serializing_if = "is_true")]
     enabled: bool,
     /// Empty conditions always match.
-    #[serde(default, skip_serializing_if = "AutoWhenDoc::is_empty")]
-    when: AutoWhenDoc,
+    #[serde(default, skip_serializing_if = "WhenDoc::is_empty")]
+    when: WhenDoc,
 }
 
-#[derive(Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct AutoWhenDoc {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    game_mode: Option<OnOff>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    keyboard_layouts: Vec<String>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    windows: Vec<String>,
-}
-
-impl AutoWhenDoc {
-    fn is_empty(&self) -> bool {
-        self.game_mode.is_none() && self.keyboard_layouts.is_empty() && self.windows.is_empty()
-    }
+/// A required field that may be `null`.
+fn nullable<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<String>, D::Error> {
+    Option::<String>::deserialize(deserializer)
 }
 
 #[derive(Serialize, Deserialize)]
@@ -209,7 +227,7 @@ struct StateDoc {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     layout_order: Vec<String>,
     /// Auto / On / Off choice of the game-mode switch.
-    game_mode: GameModeControl,
+    game_mode_switch: GameModeControl,
 }
 
 fn yes() -> bool {
@@ -226,6 +244,14 @@ fn is_false(value: &bool) -> bool {
 
 fn non_empty(value: Option<String>) -> Option<String> {
     value.filter(|value| !value.trim().is_empty())
+}
+
+/// A layout reference: a layout id or `null`, never an empty string.
+fn layout_ref(value: Option<String>, what: &str) -> Result<Option<String>, String> {
+    match value {
+        Some(id) if id.trim().is_empty() => Err(format!("{what}: layout id must not be empty")),
+        value => Ok(value),
+    }
 }
 
 pub fn validate(settings: &AppSettings) -> Result<(), String> {
@@ -271,6 +297,17 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
     } = doc;
     let timing = settings.timing;
     let detectors = settings.game_mode.detectors;
+    let keyboard_device = DevicesDoc::single(settings.devices.keyboards, "keyboards")?;
+    let mouse_device = DevicesDoc::single(settings.devices.mice, "mice")?;
+    let mut auto_rules = Vec::new();
+    for (index, rule) in settings.auto_rules.into_iter().enumerate() {
+        auto_rules.push(AutoRule {
+            id: rule.id.unwrap_or_default(),
+            layout_id: layout_ref(rule.layout_id, &format!("settings.autoRules[{index}]"))?,
+            enabled: rule.enabled,
+            conditions: rule.when.into_set()?,
+        });
+    }
     Ok(AppSettings {
         launch_on_startup: settings.launch_on_startup,
         start_mapper_on_launch: settings.start_mapper_on_launch,
@@ -288,28 +325,17 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
         default_macro_step_pause_ms: timing.macro_step_pause_ms,
         default_macro_modifier_delay_ms: timing.macro_modifier_delay_ms,
         macro_timeout_ms: timing.macro_timeout_ms,
-        input_device_path: Some(settings.keyboard_device.unwrap_or_default()),
-        input_mouse_device_path: non_empty(settings.mouse_device),
+        input_device_path: Some(keyboard_device.unwrap_or_default()),
+        input_mouse_device_path: mouse_device,
         current_layout_id: non_empty(state.edited_layout_id),
         layout_mode: settings.layout_mode,
         manual_active_layout_id: non_empty(settings.active_layout_id),
         layout_order: state.layout_order,
-        auto_rules: settings
-            .auto_rules
-            .into_iter()
-            .enumerate()
-            .map(|(index, rule)| AutoRule {
-                id: non_empty(rule.id).unwrap_or_else(|| format!("rule-{index}")),
-                layout_id: non_empty(rule.layout_id),
-                enabled: rule.enabled,
-                conditions: LayoutConditionSet {
-                    game_mode: rule.when.game_mode.map(|mode| mode.as_str().to_owned()),
-                    layouts: rule.when.keyboard_layouts,
-                    apps: rule.when.windows,
-                },
-            })
-            .collect(),
-        auto_default_layout_id: non_empty(settings.auto_default_layout_id),
+        auto_rules,
+        auto_default_layout_id: layout_ref(
+            settings.auto_default_layout_id,
+            "settings.autoDefaultLayoutId",
+        )?,
         commands_enabled: settings.commands_enabled,
         game_mode: GameModeSettings {
             use_gamemoded: detectors.gamemoded,
@@ -325,15 +351,14 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
                 .game_mode
                 .processes
                 .into_iter()
-                .enumerate()
-                .map(|(index, process)| GameModeProcessMatcher {
-                    id: non_empty(process.id).unwrap_or_else(|| format!("process-{index}")),
+                .map(|process| GameModeProcessMatcher {
+                    id: process.id.unwrap_or_default(),
                     name: process.name.trim().into(),
                     only_active_window: process.only_active_window,
                     is_blacklist: process.exclude,
                 })
                 .collect(),
-            control: state.game_mode,
+            control: state.game_mode_switch,
         },
         linux_wayland_text_mode: settings.linux.text_mode,
         linux_paste_shortcut: settings.linux.paste_shortcut,
@@ -363,8 +388,12 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
             layout_osd: settings.layout_osd,
             layer_hint: settings.layer_hint,
             locale: settings.locale,
-            keyboard_device: filled(&settings.input_device_path),
-            mouse_device: filled(&settings.input_mouse_device_path),
+            devices: DevicesDoc {
+                keyboards: filled(&settings.input_device_path).into_iter().collect(),
+                mice: filled(&settings.input_mouse_device_path)
+                    .into_iter()
+                    .collect(),
+            },
             timing: TimingDoc {
                 hold_ms: settings.default_hold_timeout_ms,
                 long_hold_ms: settings.default_long_hold_timeout_ms,
@@ -387,11 +416,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
                     id: Some(rule.id.clone()).filter(|id| !id.is_empty()),
                     layout_id: filled(&rule.layout_id),
                     enabled: rule.enabled,
-                    when: AutoWhenDoc {
-                        game_mode: OnOff::parse(rule.conditions.game_mode.as_deref()),
-                        keyboard_layouts: rule.conditions.layouts.clone(),
-                        windows: rule.conditions.apps.clone(),
-                    },
+                    when: WhenDoc::from_set(&rule.conditions),
                 })
                 .collect(),
             auto_default_layout_id: filled(&settings.auto_default_layout_id),
@@ -429,7 +454,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
         state: StateDoc {
             edited_layout_id: filled(&settings.current_layout_id),
             layout_order: settings.layout_order.clone(),
-            game_mode: game_mode.control,
+            game_mode_switch: game_mode.control,
         },
     }
 }
@@ -447,7 +472,7 @@ mod tests {
     fn ids_are_unique_and_generated_without_collisions() {
         for field in ["autoRules", "processes"] {
             let items = if field == "autoRules" {
-                serde_json::json!([{"id":"x"},{"id":"x"}])
+                serde_json::json!([{"id":"x","layoutId":null},{"id":"x","layoutId":null}])
             } else {
                 serde_json::json!([{"id":"x","name":"a"},{"id":"x","name":"b"}])
             };
@@ -463,7 +488,7 @@ mod tests {
             );
         }
         let settings = parse(&config(serde_json::json!({
-            "autoRules":[{}, {"id":"rule-1"}],
+            "autoRules":[{"layoutId":null}, {"id":"rule-1","layoutId":null}],
             "gameMode":{"processes":[{"name":"a"},{"id":"process-1","name":"b"}]}
         })))
         .unwrap();
@@ -532,6 +557,14 @@ mod tests {
             json!({"gameMode": {"detectors": {"origin": true}}}),
             json!({"gameMode": {"processes": [{"name": "steam", "isBlacklist": true}]}}),
             json!({"autoRules": [{"layoutId": "user:A", "apps": ["kate"]}]}),
+            json!({"autoRules": [{"when": {"gameMode": "on"}}]}),
+            json!({"autoRules": [{"layoutId": ""}]}),
+            json!({"autoDefaultLayoutId": " "}),
+            json!({"autoRules": [{"id": "a b", "layoutId": null}]}),
+            json!({"keyboardDevice": "/dev/input/event1"}),
+            json!({"devices": {"keyboards": ["/dev/a", "/dev/b"]}}),
+            json!({"devices": {"mice": [""]}}),
+            json!({"devices": {"tablets": []}}),
         ] {
             assert!(
                 parse(&config(settings.clone())).is_err(),
@@ -539,7 +572,8 @@ mod tests {
             );
         }
         assert!(parse(r#"{"schemaVersion": 1, "extra": true}"#).is_err());
-        assert!(parse(r#"{"schemaVersion": 1, "state": {"gameMode": "maybe"}}"#).is_err());
+        assert!(parse(r#"{"schemaVersion": 1, "state": {"gameModeSwitch": "maybe"}}"#).is_err());
+        assert!(parse(r#"{"schemaVersion": 1, "state": {"gameMode": "on"}}"#).is_err());
     }
 
     #[test]
@@ -561,10 +595,11 @@ mod tests {
                 id: "a".into(),
                 layout_id: None,
                 enabled: false,
-                conditions: LayoutConditionSet {
+                conditions: super::super::model::LayoutConditionSet {
                     game_mode: Some("on".into()),
                     layouts: vec!["us".into()],
                     apps: vec!["blender".into()],
+                    excluded_apps: vec!["title:Preferences".into()],
                 },
             }],
             auto_default_layout_id: Some("user:Main".into()),
@@ -593,7 +628,16 @@ mod tests {
         assert_eq!(raw["settings"]["linux"]["pasteShortcut"], "ctrl-shift-v");
         assert_eq!(raw["settings"]["gameMode"]["processes"][0]["exclude"], true);
         assert_eq!(raw["state"]["editedLayoutId"], "user:Main");
-        assert_eq!(raw["state"]["gameMode"], "on");
+        assert_eq!(raw["state"]["gameModeSwitch"], "on");
+        assert_eq!(
+            raw["settings"]["autoRules"][0]["when"]["excludeWindows"],
+            json!(["title:Preferences"])
+        );
+        assert_eq!(raw["settings"]["autoRules"][0]["layoutId"], Value::Null);
+        assert_eq!(
+            raw["settings"]["devices"],
+            json!({"keyboards": ["/dev/input/by-id/kbd"], "mice": ["/dev/input/by-id/mouse"]})
+        );
         assert_eq!(raw["settings"]["activeLayoutId"], "user:Other");
     }
 

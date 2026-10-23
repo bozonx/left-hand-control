@@ -289,7 +289,7 @@
   ],
   "quickActionPages": [
     {
-      "id": "qap_system",
+      "id": "system",
       "name": "System",
       "cells": {
         "KeyQ": {
@@ -357,7 +357,7 @@
   ],
   "emojiPages": [
     {
-      "id": "emoji_text",
+      "id": "text",
       "name": "Texts and lists",
       "cells": {
         "KeyQ": "🤦",
@@ -378,7 +378,7 @@
       }
     },
     {
-      "id": "emoji_chat",
+      "id": "chat",
       "name": "Chat",
       "cells": {
         "KeyQ": "👆",

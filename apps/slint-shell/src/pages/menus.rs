@@ -41,7 +41,7 @@ fn key_label(key: &str) -> SharedString {
 fn normalize(layout: &mut LayoutPreset) {
     if layout.emoji_pages.is_empty() {
         layout.emoji_pages.push(EmojiPage {
-            id: ids::generate("emoji_"),
+            id: ids::generate("emoji-"),
             name: String::new(),
             cells: Default::default(),
         });
@@ -49,7 +49,7 @@ fn normalize(layout: &mut LayoutPreset) {
     if layout.quick_action_pages.is_empty() {
         layout
             .quick_action_pages
-            .push(QuickActionPage::new(ids::generate("page_"), String::new()));
+            .push(QuickActionPage::new(ids::generate("page-"), String::new()));
     }
 }
 
@@ -356,14 +356,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         c(false, &|e, layout| {
             let index = if e.get_kind() == MenuKind::Emoji {
                 layout.emoji_pages.push(EmojiPage {
-                    id: ids::generate("emoji_"),
+                    id: ids::generate("emoji-"),
                     name: name.to_string(),
                     cells: Default::default(),
                 });
                 layout.emoji_pages.len() - 1
             } else {
                 layout.quick_action_pages.push(QuickActionPage::new(
-                    ids::generate("page_"),
+                    ids::generate("page-"),
                     name.to_string(),
                 ));
                 layout.quick_action_pages.len() - 1

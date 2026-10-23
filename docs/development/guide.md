@@ -486,7 +486,7 @@ USB-клавиатура) и сравнивает полученный текс�
 | --- | --- |
 | `boot`, `upload`, `plasma-session`, `install` | Загрузка, автологин в Plasma Wayland, установка штатным менеджером или `install-linux.sh` |
 | `installed-files` | `.desktop` (и `desktop-file-validate`), metainfo, иконки hicolor; для пакетов — udev-правило и запись в `/dev/uinput` для сессии через `uaccess` |
-| `keyboard-probe` | Какой узел `/dev/input` получает клавиши QEMU `usb-kbd`; он становится `settings.keyboardDevice` |
+| `keyboard-probe` | Какой узел `/dev/input` получает клавиши QEMU `usb-kbd`; он становится `settings.devices.keyboards` |
 | `test-config` | Тестовый профиль (`E2E_LAYOUT` в `linux-guest.py`), команды разрешены, раскладки `us,ru`, два рабочих стола, автозапуск |
 | `previous-release`, `upgrade-from-previous` | Только с `--previous`: обновление с сохранением конфига |
 | `start-without-input`, `tray-item`, `no-mapper-without-input` | Без группы `input` приложение стартует, регистрирует элемент трея (`StatusNotifierWatcher`, Id `lhc-slint-shell`), а mapper не создаёт виртуальную клавиатуру |

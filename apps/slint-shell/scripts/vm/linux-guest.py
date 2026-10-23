@@ -322,7 +322,7 @@ def cmd_write_config(args):
     (environment / '90-lhc-e2e.conf').write_text(f'LHC_POPUPS={args.popup_mode}\nRUST_LOG=info\n')
     settings = {
         "linux": {"textMode": args.text_backend},
-        "keyboardDevice": args.device,
+        "devices": {"keyboards": [args.device]},
         "layoutMode": "manual",
         "activeLayoutId": "user:E2E",
         "startMapperOnLaunch": True,
@@ -333,7 +333,7 @@ def cmd_write_config(args):
             "processes": [{"name": FAKE_GAME, "onlyActiveWindow": False}],
         },
     }
-    state = {"editedLayoutId": "user:E2E", "gameMode": "off"}
+    state = {"editedLayoutId": "user:E2E", "gameModeSwitch": "off"}
     (CONFIG_DIR / "config.json").write_text(
         json.dumps({"schemaVersion": 1, "settings": settings, "state": state}, indent=2),
         encoding="utf-8")

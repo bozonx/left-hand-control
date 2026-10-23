@@ -12,12 +12,18 @@ fn dragging_uses_actual_card_heights() {
 
 #[test]
 fn conditions_round_trip() {
-    let set = condition(GameCondition::On, "us, ru", "");
+    let set = condition(GameCondition::On, "us, ru", "", "kate");
     assert_eq!(set.layouts, ["us", "ru"]);
+    assert_eq!(set.excluded_apps, ["kate"]);
     assert_eq!(
         condition_fields(Some(set.clone())),
-        (GameCondition::On, "us, ru".into(), String::new())
+        (
+            GameCondition::On,
+            "us, ru".into(),
+            String::new(),
+            "kate".into()
+        )
     );
     assert_eq!(summary(&set), (GameCondition::On, "us, ru".into()));
-    assert!(condition(GameCondition::Any, " ", "").is_empty());
+    assert!(condition(GameCondition::Any, " ", "", " ").is_empty());
 }

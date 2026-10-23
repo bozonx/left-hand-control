@@ -257,7 +257,7 @@ fn new_id(draft: &[Entry]) -> String {
 
 fn step(action: impl Into<String>) -> MacroStep {
     MacroStep {
-        id: ids::generate("step_"),
+        id: ids::generate("step-"),
         action: action.into(),
     }
 }

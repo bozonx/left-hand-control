@@ -427,7 +427,7 @@ fn unique_rule_id(rules: &[LayerRule]) -> String {
     (1..)
         .map(|n| format!("slint-rule-{n}"))
         .find(|id| rules.iter().all(|rule| rule.id != *id))
-        .unwrap_or_else(|| ids::generate("rule_"))
+        .unwrap_or_else(|| ids::generate("rule-"))
 }
 
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
@@ -533,7 +533,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             }
         };
         let index = selected(&ui, &doc);
-        let id = ids::generate("l_");
+        let id = ids::generate("layer-");
         let result = change(&ui, &doc, true, |layout| {
             layout.layers.push(Layer {
                 id: id.clone(),

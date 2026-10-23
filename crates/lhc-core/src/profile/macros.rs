@@ -55,13 +55,7 @@ pub(crate) fn validate_step(config: &AppConfig, raw: &str) -> Result<(), ConfigE
 }
 
 pub(crate) fn validate_loaded(config: &AppConfig, item: &Macro) -> Result<(), ConfigError> {
-    if item.id.is_empty()
-        || item.id.len() > 64
-        || !item
-            .id
-            .bytes()
-            .all(|c| c.is_ascii_alphanumeric() || c == b'_' || c == b'-')
-    {
+    if !super::ids::valid(&item.id) {
         return Err(ConfigError::Macro(MacroIssue::InvalidId));
     }
     if config.macros.iter().filter(|m| m.id == item.id).count() > 1 {

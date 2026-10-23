@@ -39,6 +39,15 @@ pub fn matches_condition_set(set: &LayoutConditionSet, ctx: &AutoSwitchContext) 
             _ => return false,
         }
     }
+    // Fail closed like rule conditions: an unknown window counts as excluded.
+    if !set.excluded_apps.is_empty()
+        && ctx
+            .window
+            .as_ref()
+            .is_none_or(|window| app_match::any_matches_window(&set.excluded_apps, window))
+    {
+        return false;
+    }
     set.apps.is_empty()
         || ctx
             .window
@@ -108,7 +117,14 @@ pub fn covers(outer: &LayoutConditionSet, inner: &LayoutConditionSet) -> bool {
                 .apps
                 .iter()
                 .all(|app| outer.apps.iter().any(|outer| app_match::covers(outer, app))));
-    game && layouts && apps
+    // Every exclusion of `outer` must also be excluded by `inner`.
+    let excluded = outer.excluded_apps.iter().all(|pattern| {
+        inner
+            .excluded_apps
+            .iter()
+            .any(|inner| app_match::covers(inner, pattern))
+    });
+    game && layouts && apps && excluded
 }
 
 /// Index of the first enabled rule before `index` that always matches
@@ -142,7 +158,13 @@ mod tests {
             game_mode: game_mode.map(str::to_owned),
             layouts: layouts.iter().map(|s| s.to_string()).collect(),
             apps: apps.iter().map(|s| s.to_string()).collect(),
+            excluded_apps: Vec::new(),
         }
+    }
+
+    fn except(mut set: LayoutConditionSet, excluded: &[&str]) -> LayoutConditionSet {
+        set.excluded_apps = excluded.iter().map(|s| s.to_string()).collect();
+        set
     }
 
     fn ctx(layout: Option<&str>, game: bool, app_id: &str) -> AutoSwitchContext {
@@ -182,6 +204,14 @@ mod tests {
             &set(None, &[], &["fire"]),
             &ctx(None, false, "Firefox")
         ));
+        let browsers = except(set(None, &[], &[]), &["firefox"]);
+        assert!(!matches_condition_set(
+            &browsers,
+            &ctx(None, false, "Firefox")
+        ));
+        assert!(matches_condition_set(&browsers, &ctx(None, false, "Kate")));
+        let unknown_window = AutoSwitchContext::default();
+        assert!(!matches_condition_set(&browsers, &unknown_window));
         // Undetectable game mode is reported as off.
         assert!(matches_condition_set(
             &set(Some("off"), &[], &[]),
@@ -289,6 +319,13 @@ mod tests {
         // A disabled catch-all shadows nothing.
         assert_eq!(shadowed_by(&rules, 5), None);
         assert!(!covers(&set(None, &["ru"], &[]), &set(None, &[], &[])));
+        let all = set(None, &[], &[]);
+        assert!(!covers(&except(all.clone(), &["kate"]), &all));
+        assert!(covers(
+            &except(all.clone(), &["kate"]),
+            &except(all.clone(), &["kate*"])
+        ));
+        assert!(covers(&all, &except(all.clone(), &["kate"])));
     }
 
     #[test]

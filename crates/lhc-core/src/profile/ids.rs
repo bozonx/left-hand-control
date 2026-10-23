@@ -18,13 +18,27 @@ pub fn generate(prefix: &str) -> String {
     out
 }
 
+/// Longest id accepted in configuration files.
+pub const MAX_LEN: usize = 64;
+
+/// Whether `id` is 1–[`MAX_LEN`] ASCII letters, digits, `_` or `-`. Every id
+/// follows this grammar, so ids read the same inside action strings
+/// (`macro:<id>`, `cmd:<id>`) and need no quoting anywhere.
+pub fn valid(id: &str) -> bool {
+    !id.is_empty()
+        && id.len() <= MAX_LEN
+        && id
+            .bytes()
+            .all(|c| c.is_ascii_alphanumeric() || c == b'_' || c == b'-')
+}
+
 /// Validate identity within one collection. Different entity kinds may share ids.
 pub(crate) fn unique<'a>(ids: impl IntoIterator<Item = &'a str>, path: &str) -> Result<(), String> {
     let mut seen = std::collections::HashSet::new();
     for (index, id) in ids.into_iter().enumerate() {
-        if id.trim().is_empty() || id.trim() != id {
+        if !valid(id) {
             return Err(format!(
-                "{path}[{index}].id: expected a non-empty id without surrounding whitespace"
+                "{path}[{index}].id: \"{id}\" must be 1-{MAX_LEN} ASCII letters, digits, '_' or '-'"
             ));
         }
         if !seen.insert(id) {
@@ -95,5 +109,24 @@ mod tests {
         let b = super::generate("r_");
         assert!(a.starts_with("r_") && a.len() == 10);
         assert_ne!(a, b);
+    }
+
+    #[test]
+    fn id_grammar() {
+        for id in ["a", "copy-line_2", &"x".repeat(super::MAX_LEN)] {
+            assert!(super::valid(id), "{id}");
+        }
+        for id in [
+            "",
+            " a",
+            "a b",
+            "a.b",
+            "a:b",
+            "ид",
+            &"x".repeat(super::MAX_LEN + 1),
+        ] {
+            assert!(!super::valid(id), "{id}");
+        }
+        assert!(super::unique(["a b"], "layers").is_err());
     }
 }

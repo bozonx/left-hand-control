@@ -300,6 +300,12 @@ pub fn analyze(config: &AppConfig) -> Vec<RuleIssue> {
                 format!("settings.autoRules[{index}].when.windows"),
             );
         }
+        if rule.conditions.excluded_apps.iter().any(invalid_pattern) {
+            add(
+                RuleIssueCode::InvalidCondition,
+                format!("settings.autoRules[{index}].when.excludeWindows"),
+            );
+        }
     }
     issues
 }

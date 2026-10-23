@@ -108,13 +108,7 @@ impl ConfigDocument {
 /// First problem of `commands[index]`, checked against the commands before it.
 pub fn command_issue(commands: &[Command], index: usize) -> Option<MenuIssue> {
     let command = commands.get(index)?;
-    if command.id.is_empty()
-        || command.id.len() > 64
-        || !command
-            .id
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
-    {
+    if !super::ids::valid(&command.id) {
         return Some(MenuIssue::CommandId);
     }
     if commands[..index].iter().any(|c| c.id == command.id) {

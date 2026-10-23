@@ -1027,7 +1027,7 @@ mod tests {
                 &LayoutConditionSet {
                     game_mode: Some(if active { "on" } else { "off" }.into()),
                     layouts: vec![],
-                    apps: vec![],
+                    ..LayoutConditionSet::default()
                 },
                 &AutoSwitchContext {
                     game_mode_active: status.active,
@@ -1094,7 +1094,7 @@ mod tests {
     #[test]
     fn parses_settings_like_the_settings_page() {
         let settings = parse_game_mode_settings(
-            r#"{"schemaVersion":1,"settings":{"gameMode":{"detectors":{"fullscreen":true},"processes":[{"name":"steam"}]}},"state":{"gameMode":"on"}}"#,
+            r#"{"schemaVersion":1,"settings":{"gameMode":{"detectors":{"fullscreen":true},"processes":[{"name":"steam"}]}},"state":{"gameModeSwitch":"on"}}"#,
         )
         .unwrap();
         // Missing fields take the page's defaults.

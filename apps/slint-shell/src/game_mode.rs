@@ -164,8 +164,8 @@ mod tests {
         assert_eq!(gamemode::status().control, gamemode::GameModeControl::On);
         let mut raw: serde_json::Value =
             serde_json::from_str(&paths.load_config().unwrap()).unwrap();
-        assert_eq!(raw["state"]["gameMode"], "on");
-        raw["state"]["gameMode"] = "off".into();
+        assert_eq!(raw["state"]["gameModeSwitch"], "on");
+        raw["state"]["gameModeSwitch"] = "off".into();
         paths.save_config(&raw.to_string()).unwrap();
         // Application saves overwrite manual changes using the current document.
         apply(GameMode::Auto, Some(&document)).unwrap();

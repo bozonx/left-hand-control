@@ -8,7 +8,7 @@
 
 use super::model::{
     Command, EmojiPage, HoldBehavior, LEFT_HAND_HOTKEYS, Layer, LayerKeymap, LayerRule,
-    LayoutPreset, Macro, MacroStep, QuickAction, QuickActionPage, TapDecision,
+    LayoutConditionSet, LayoutPreset, Macro, MacroStep, QuickAction, QuickActionPage, TapDecision,
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::{BTreeMap, BTreeSet};
@@ -25,7 +25,7 @@ pub fn parse(text: &str) -> Result<Option<LayoutPreset>, String> {
         serde_json::from_str(text).map_err(|error| format!("parse layout: {error}"))?;
     check_version(&value, "layout")?;
     let doc: LayoutDoc =
-        serde_json::from_str(text).map_err(|error| format!("parse layout: {error}"))?;
+        serde_json::from_str(text).map_err(|error| read_error("parse layout", &error))?;
     let layout = from_doc(doc)?;
     super::timing::validate_layout(&layout)?;
     Ok(Some(layout))
@@ -47,6 +47,17 @@ pub(crate) fn check_version(value: &serde_json::Value, what: &str) -> Result<(),
             )),
             _ => Err(format!("{what}: unsupported schema version {version}")),
         },
+    }
+}
+
+/// A strict-read error. Version 1 may gain optional fields, which an older
+/// build reports as unknown, so such errors point at the likely cause.
+pub(crate) fn read_error(what: &str, error: &serde_json::Error) -> String {
+    let text = error.to_string();
+    if text.starts_with("unknown field") || text.starts_with("unknown variant") {
+        format!("{what}: {text} (the file may come from a newer version of the application)")
+    } else {
+        format!("{what}: {text}")
     }
 }
 
@@ -122,10 +133,11 @@ struct RuleDoc {
     tap_decision: Option<TapDecision>,
 }
 
-/// Conditions of a rule; every present condition must hold.
+/// Conditions of a layout rule or an auto-mode rule; every present
+/// condition must hold. Both places share this one object.
 #[derive(Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct WhenDoc {
+pub(crate) struct WhenDoc {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     game_mode: Option<OnOff>,
     /// Short ids of the system keyboard layout, e.g. `us`.
@@ -139,11 +151,43 @@ struct WhenDoc {
 }
 
 impl WhenDoc {
-    fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.game_mode.is_none()
             && self.keyboard_layouts.is_empty()
             && self.windows.is_empty()
             && self.exclude_windows.is_empty()
+    }
+
+    fn check(&self) -> Result<(), String> {
+        non_empty_items(&self.keyboard_layouts, "keyboard layout")?;
+        non_empty_items(&self.windows, "window pattern")?;
+        non_empty_items(&self.exclude_windows, "window pattern")
+    }
+
+    pub(crate) fn into_set(self) -> Result<LayoutConditionSet, String> {
+        self.check()?;
+        Ok(LayoutConditionSet {
+            game_mode: self.game_mode.map(|mode| mode.as_str().to_owned()),
+            layouts: self.keyboard_layouts,
+            apps: self.windows,
+            excluded_apps: self.exclude_windows,
+        })
+    }
+
+    pub(crate) fn from_set(set: &LayoutConditionSet) -> Self {
+        let list = |items: &[String]| -> Vec<String> {
+            items
+                .iter()
+                .filter(|item| !item.trim().is_empty())
+                .cloned()
+                .collect()
+        };
+        Self {
+            game_mode: OnOff::parse(set.game_mode.as_deref()),
+            keyboard_layouts: list(&set.layouts),
+            windows: list(&set.apps),
+            exclude_windows: list(&set.excluded_apps),
+        }
     }
 }
 
@@ -307,6 +351,14 @@ fn check_cells<'a>(mut keys: impl Iterator<Item = &'a String>, menu: &str) -> Re
     })
 }
 
+/// A rule trigger in its canonical spelling: sided key codes, so `Ctrl`
+/// is stored as `ControlLeft`. An invalid trigger is kept for diagnostics.
+fn canonical_trigger(key: &str) -> String {
+    super::key_catalog::trigger_keys(key)
+        .map(|keys| keys.join("+"))
+        .unwrap_or_else(|| key.to_owned())
+}
+
 fn non_empty_items(items: &[String], what: &str) -> Result<(), String> {
     items.iter().try_for_each(|item| non_empty(item, what))
 }
@@ -337,14 +389,11 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
             }
         }};
     }
-    complete!(doc.rules, "r_auto", "rules");
-    complete!(doc.quick_action_pages, "qap_auto", "quickActionPages");
-    complete!(doc.emoji_pages, "emoji_auto", "emojiPages");
-    let counter = std::cell::Cell::new(0u32);
-    let next_id = |prefix: &str| {
-        counter.set(counter.get() + 1);
-        format!("{prefix}auto{}", counter.get())
-    };
+    complete!(doc.rules, "rule-", "rules");
+    complete!(doc.quick_action_pages, "page-", "quickActionPages");
+    complete!(doc.emoji_pages, "emoji-", "emojiPages");
+    // Step ids live only in memory, for the editor.
+    let mut step_counter = 0u32;
 
     let mut layers = Vec::new();
     let mut layer_keymaps = BTreeMap::new();
@@ -395,10 +444,7 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
                 rule.key
             ));
         }
-        let when = rule.when;
-        non_empty_items(&when.keyboard_layouts, "keyboard layout")?;
-        non_empty_items(&when.windows, "window pattern")?;
-        non_empty_items(&when.exclude_windows, "window pattern")?;
+        let when = rule.when.into_set()?;
         let tap_action = three_state(rule.tap, &what("tap"))?;
         let (double_tap_action, double_tap_timeout_ms) = match rule.double_tap {
             Some(double) => {
@@ -419,17 +465,14 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
             non_empty(layer, &what("hold layer"))?;
         }
         rules.push(LayerRule {
-            id: rule
-                .id
-                .filter(|id| !id.is_empty())
-                .unwrap_or_else(|| next_id("r_")),
+            id: rule.id.unwrap_or_default(),
             enabled: (!rule.enabled).then_some(false),
-            condition_game_mode: when.game_mode.map(|mode| mode.as_str().to_owned()),
-            condition_layouts: (!when.keyboard_layouts.is_empty()).then_some(when.keyboard_layouts),
-            condition_apps_whitelist: (!when.windows.is_empty()).then_some(when.windows),
-            condition_apps_blacklist: (!when.exclude_windows.is_empty())
-                .then_some(when.exclude_windows),
-            key: rule.key.clone(),
+            condition_game_mode: when.game_mode,
+            condition_layouts: (!when.layouts.is_empty()).then_some(when.layouts),
+            condition_apps_whitelist: (!when.apps.is_empty()).then_some(when.apps),
+            condition_apps_blacklist: (!when.excluded_apps.is_empty())
+                .then_some(when.excluded_apps),
+            key: canonical_trigger(&rule.key),
             layer_id: hold.layer.unwrap_or_default(),
             tap_action,
             hold_behavior: None,
@@ -449,8 +492,9 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
         let mut steps = Vec::new();
         for action in item.steps {
             non_empty(&action, &format!("step of macro {}", item.id))?;
+            step_counter += 1;
             steps.push(MacroStep {
-                id: next_id("s_"),
+                id: format!("step-{step_counter}"),
                 action,
             });
         }
@@ -495,10 +539,7 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
             cells.insert(key, item);
         }
         quick_action_pages.push(QuickActionPage {
-            id: page
-                .id
-                .filter(|id| !id.is_empty())
-                .unwrap_or_else(|| next_id("qap_")),
+            id: page.id.unwrap_or_default(),
             name: page.name.unwrap_or_default(),
             cells,
         });
@@ -514,10 +555,7 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
             non_empty(text, &format!("emoji {key}"))?;
         }
         emoji_pages.push(EmojiPage {
-            id: page
-                .id
-                .filter(|id| !id.is_empty())
-                .unwrap_or_else(|| next_id("emoji_")),
+            id: page.id.unwrap_or_default(),
             name: page.name.unwrap_or_default(),
             cells: page.cells,
         });
@@ -791,18 +829,20 @@ mod tests {
 
     #[test]
     fn generated_ids_reserve_explicit_ids_including_later_entries() {
-        let text = r#"{"schemaVersion":1,"rules":[{"key":"KeyA"},{"id":"r_auto1","key":"KeyB"}],
-            "quickActionPages":[{}, {"id":"qap_auto1"}],"emojiPages":[{}, {"id":"emoji_auto1"}]}"#;
+        let text = r#"{"schemaVersion":1,"rules":[{"key":"KeyA"},{"id":"rule-1","key":"KeyB"}],
+            "quickActionPages":[{}, {"id":"page-1"}],"emojiPages":[{}, {"id":"emoji-1"}]}"#;
         let layout = parse(text).unwrap().unwrap();
         super::super::ids::validate_layout(&layout).unwrap();
-        assert_eq!(layout.rules[0].id, "r_auto2");
+        assert_eq!(layout.rules[0].id, "rule-2");
+        assert_eq!(layout.quick_action_pages[0].id, "page-2");
+        assert_eq!(layout.emoji_pages[0].id, "emoji-2");
         assert_eq!(parse(&serialize(&layout)).unwrap().unwrap(), layout);
         assert_eq!(parse(text).unwrap().unwrap(), layout);
     }
 
     #[test]
     fn explicit_invalid_ids_are_not_replaced() {
-        for id in ["", " ", " x", "x "] {
+        for id in ["", " ", " x", "x ", "a b", "a.b"] {
             let text =
                 serde_json::json!({"schemaVersion":1,"rules":[{"id":id,"key":"KeyA"}]}).to_string();
             assert!(parse(&text).is_err(), "{id:?}");
@@ -897,6 +937,20 @@ mod tests {
         ] {
             assert!(parse(&layout(body.clone())).is_err(), "accepted {body}");
         }
+        let error = parse(&layout(json!({"extra": true}))).unwrap_err();
+        assert!(error.contains("newer version"), "{error}");
+    }
+
+    #[test]
+    fn rule_triggers_are_stored_canonically() {
+        let preset = parsed(json!({"rules": [
+            {"key": "Ctrl + KeyA"}, {"key": "Shift+ControlRight"}, {"key": "NoSuchKey"},
+        ]}));
+        let keys: Vec<_> = preset.rules.iter().map(|rule| rule.key.as_str()).collect();
+        assert_eq!(
+            keys,
+            ["ControlLeft+KeyA", "ShiftLeft+ControlRight", "NoSuchKey"]
+        );
     }
 
     #[test]

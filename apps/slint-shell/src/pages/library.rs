@@ -67,11 +67,12 @@ fn summary(set: &LayoutConditionSet) -> (GameCondition, String) {
     (game_condition(set.game_mode.as_deref()), list)
 }
 
-fn condition(game: GameCondition, layouts: &str, apps: &str) -> LayoutConditionSet {
+fn condition(game: GameCondition, layouts: &str, apps: &str, excluded: &str) -> LayoutConditionSet {
     LayoutConditionSet {
         game_mode: game_condition_value(game),
         layouts: parse_list(layouts),
         apps: parse_list(apps),
+        excluded_apps: parse_list(excluded),
     }
 }
 
@@ -194,6 +195,7 @@ fn refresh_auto(ui: &SettingsWindow, document: &Document) {
                 AutoRuleView {
                     game,
                     list: list.into(),
+                    excluded: rule.conditions.excluded_apps.join(", ").into(),
                     target,
                     missing,
                     enabled: rule.enabled,
@@ -407,15 +409,17 @@ fn select(ui: &SettingsWindow, document: &Document, state: &Shared, index: i32) 
     Ok(())
 }
 
-fn condition_fields(set: Option<LayoutConditionSet>) -> (GameCondition, String, String) {
+/// Dialog fields: game condition, languages, applications, exclusions.
+fn condition_fields(set: Option<LayoutConditionSet>) -> (GameCondition, String, String, String) {
     set.map(|set| {
         (
             game_condition(set.game_mode.as_deref()),
             super::condition_list(&set.layouts),
             super::condition_list(&set.apps),
+            super::condition_list(&set.excluded_apps),
         )
     })
-    .unwrap_or((GameCondition::Any, String::new(), String::new()))
+    .unwrap_or_default()
 }
 
 /// Selected file must still be what we read when it was selected.
@@ -690,7 +694,7 @@ fn load_rule(ui: &SettingsWindow, document: &Document, index: i32, target: i32) 
     let rule = usize::try_from(index)
         .ok()
         .and_then(|index| document.read().settings().auto_rules.get(index).cloned());
-    let (game, layouts, apps) = condition_fields(rule.map(|rule| rule.conditions));
+    let (game, layouts, apps, excluded) = condition_fields(rule.map(|rule| rule.conditions));
     library.set_rule_index(if rule_exists(document, index) {
         index
     } else {
@@ -700,6 +704,7 @@ fn load_rule(ui: &SettingsWindow, document: &Document, index: i32, target: i32) 
     library.set_rule_game(game);
     library.set_rule_layouts(layouts.into());
     library.set_rule_apps(apps.into());
+    library.set_rule_excluded(excluded.into());
     library.set_status(Msg::None.to_ui());
     library.set_dialog(LibraryDialog::Rule);
 }
@@ -715,6 +720,7 @@ fn save_rule(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result
         library.get_rule_game(),
         &library.get_rule_layouts(),
         &library.get_rule_apps(),
+        &library.get_rule_excluded(),
     );
     let index = usize::try_from(library.get_rule_index()).ok();
     let message = edit_auto(ui, document, state, |settings| {

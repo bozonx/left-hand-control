@@ -12,8 +12,9 @@ export struct LayoutSummary { rules: int, layers: int, emoji-pages: int, action-
 
 /// One automatic-mode rule. `target` indexes `names`; -1 means no layout.
 /// `shadowed-by` is the earlier rule that always matches first, or -1;
-/// `unknown-languages` lists languages the system does not have.
-export struct AutoRuleView { game: GameCondition, list: string, target: int, missing: bool, enabled: bool, shadowed-by: int, unknown-languages: string }
+/// `unknown-languages` lists languages the system does not have;
+/// `excluded` lists the window patterns that block the rule.
+export struct AutoRuleView { game: GameCondition, list: string, excluded: string, target: int, missing: bool, enabled: bool, shadowed-by: int, unknown-languages: string }
 
 /// The layout library and the working copy being edited.
 export global LayoutLibrary {
@@ -43,6 +44,7 @@ export global LayoutLibrary {
     in-out property <GameCondition> rule-game;
     in-out property <string> rule-layouts;
     in-out property <string> rule-apps;
+    in-out property <string> rule-excluded;
     in-out property <LibraryDialog> dialog: LibraryDialog.none;
     in-out property <string> create-name;
     in-out property <string> create-description;
@@ -397,6 +399,12 @@ component AutoRuleRow inherits Rectangle {
                 }
             }
             Text { text: LayoutLibrary.rule-text(root.rule.game, root.rule.list); color: Theme.muted; wrap: word-wrap; }
+            if root.rule.excluded != "": HorizontalLayout { spacing: 4px; alignment: start;
+                VerticalLayout { alignment: center;
+                    Image { width: 14px; height: 14px; source: @image-url("icons/ban.svg"); colorize: Theme.error; }
+                }
+                Text { text: root.rule.excluded; color: Theme.muted; wrap: word-wrap; }
+            }
             if root.rule.enabled && root.rule.shadowed-by >= 0: Text {
                 text: @tr("Never applies: rule {} always matches first.", root.rule.shadowed-by + 1);
                 color: Theme.warning; font-size: 12px; wrap: word-wrap;
@@ -689,7 +697,7 @@ export component LibraryDialogOverlay inherits Rectangle {
                     VerticalLayout { spacing: 12px;
                         Text { text: @tr("Use layout"); color: Theme.text; font-weight: 600; }
                         TargetPicker { target: LayoutLibrary.rule-target; picked(index) => { LayoutLibrary.rule-target = index; } }
-                        ConditionsForm { heading: @tr("When"); game <=> LayoutLibrary.rule-game; languages <=> LayoutLibrary.rule-layouts; applications <=> LayoutLibrary.rule-apps; }
+                        ConditionsForm { heading: @tr("When"); game <=> LayoutLibrary.rule-game; languages <=> LayoutLibrary.rule-layouts; applications <=> LayoutLibrary.rule-apps; show-exclusions: true; excluded <=> LayoutLibrary.rule-excluded; }
                         Text { text: @tr("All filled conditions must match. A rule without conditions always matches."); color: Theme.muted; wrap: word-wrap; }
                     }
                 }

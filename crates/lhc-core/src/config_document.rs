@@ -272,7 +272,7 @@ impl ConfigDocument {
 
     pub fn create_layer(&mut self, name: &str, description: &str) -> Result<String, ConfigError> {
         let name = self.layer_name(name, None)?;
-        let id = crate::profile::ids::generate("l_");
+        let id = crate::profile::ids::generate("layer-");
         self.update_layout(|layout| {
             layout.layers.push(Layer {
                 id: id.clone(),
@@ -315,7 +315,7 @@ impl ConfigDocument {
         if !self.layout.layers.iter().any(|layer| layer.id == source_id) {
             return Err(ConfigError::Invalid("unknown layer".into()));
         }
-        let id = crate::profile::ids::generate("l_");
+        let id = crate::profile::ids::generate("layer-");
         self.update_layout(|layout| {
             let keymap = layout
                 .layer_keymaps
@@ -642,7 +642,12 @@ impl ConfigDocument {
             .auto_rules
             .iter()
             .filter(|_| self.settings.layout_mode == LayoutMode::Auto)
-            .flat_map(|rule| &rule.conditions.apps);
+            .flat_map(|rule| {
+                rule.conditions
+                    .apps
+                    .iter()
+                    .chain(&rule.conditions.excluded_apps)
+            });
         let uses_titles = app_match::uses_title(rule_patterns.chain(auto_patterns));
         let json = config.to_json();
         validate_for_mapper(&json)?;
@@ -785,7 +790,7 @@ mod tests {
     #[test]
     fn reads_settings_and_layout_from_their_own_files() {
         let (_dir, document) = document(
-            json!({"settings": {"keyboardDevice": "/dev/input/by-id/kbd", "appearance": "dark"}}),
+            json!({"settings": {"devices": {"keyboards": ["/dev/input/by-id/kbd"]}, "appearance": "dark"}}),
             LAYOUT,
         );
         assert_eq!(document.input_device(), Some("/dev/input/by-id/kbd"));
@@ -838,8 +843,8 @@ mod tests {
                 .unwrap();
         assert_eq!(saved["schemaVersion"], 1);
         assert_eq!(
-            saved["settings"]["keyboardDevice"],
-            "/dev/input/by-id/other"
+            saved["settings"]["devices"]["keyboards"],
+            json!(["/dev/input/by-id/other"])
         );
         assert_eq!(saved["settings"]["locale"], "en-US");
         assert!(saved.get("rules").is_none());

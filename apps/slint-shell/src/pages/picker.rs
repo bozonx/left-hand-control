@@ -506,7 +506,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let id = value
             .strip_prefix("cmd:")
             .map(str::to_owned)
-            .unwrap_or_else(|| lhc_core::profile::ids::generate("cmd_"));
+            .unwrap_or_else(|| lhc_core::profile::ids::generate("cmd-"));
         // Keep the script of the other operating systems.
         let mut command = doc
             .read()

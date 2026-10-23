@@ -33,14 +33,14 @@ fn startup_and_watcher_restart_follow_persisted_control() {
         directory.path().join("settings"),
         directory.path().join("data"),
     );
-    paths.save_config(r#"{"schemaVersion":1,"settings":{"gameMode":{"detectors":{"gamemoded":false,"steam":false,"lutris":false,"heroic":false,"umu":false,"gamescope":false,"appCategory":false}}},"state":{"gameMode":"on"}}"#).unwrap();
+    paths.save_config(r#"{"schemaVersion":1,"settings":{"gameMode":{"detectors":{"gamemoded":false,"steam":false,"lutris":false,"heroic":false,"umu":false,"gamescope":false,"appCategory":false}}},"state":{"gameModeSwitch":"on"}}"#).unwrap();
     gamemode::start_watcher(Some(paths.clone()));
     let _watcher = Watcher;
     wait_for(|| gamemode::status().control == GameModeControl::On);
     assert!(gamemode::status().active);
     let mut document = ConfigDocument::load(paths.clone()).unwrap();
     let mut raw: serde_json::Value = serde_json::from_str(&paths.load_config().unwrap()).unwrap();
-    raw["state"]["gameMode"] = "off".into();
+    raw["state"]["gameModeSwitch"] = "off".into();
     paths.save_config(&raw.to_string()).unwrap();
     assert_eq!(document.settings().game_mode.control, GameModeControl::On);
     document = ConfigDocument::load(paths.clone()).unwrap();

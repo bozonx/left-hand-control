@@ -236,7 +236,7 @@ impl QuickActionPage {
     }
 
     pub fn default_page() -> Self {
-        Self::new("quick_default".into(), String::new())
+        Self::new("page-default".into(), String::new())
     }
 }
 
@@ -254,7 +254,7 @@ pub struct EmojiPage {
 impl EmojiPage {
     pub fn default_page() -> Self {
         Self {
-            id: "emoji_default".into(),
+            id: "emoji-default".into(),
             name: String::new(),
             cells: BTreeMap::new(),
         }
@@ -368,11 +368,17 @@ pub struct LayoutConditionSet {
     /// Window patterns, see [`super::app_match`].
     #[serde(rename = "windows", skip_serializing_if = "Vec::is_empty")]
     pub apps: Vec<String>,
+    /// Window patterns that block the match.
+    #[serde(rename = "excludeWindows", skip_serializing_if = "Vec::is_empty")]
+    pub excluded_apps: Vec<String>,
 }
 
 impl LayoutConditionSet {
     pub fn is_empty(&self) -> bool {
-        self.game_mode.is_none() && self.layouts.is_empty() && self.apps.is_empty()
+        self.game_mode.is_none()
+            && self.layouts.is_empty()
+            && self.apps.is_empty()
+            && self.excluded_apps.is_empty()
     }
 }
 
