@@ -222,7 +222,7 @@ export component PickerOverlay inherits Rectangle {
                 if ActionPicker.behavior == 2 && ActionPicker.value-category != PickerCategory.commands: HorizontalBox { vertical-stretch: 0;
                     Text { text: ActionPicker.key-only ? @tr("Trigger key:") : @tr("Action:"); color: Theme.muted; vertical-alignment: center; }
                     if ActionPicker.value != "": CategoryIcon { category: ActionPicker.value-category; }
-                    TextField { text <=> ActionPicker.value; enabled: !ActionPicker.capturing; edited => { ActionPicker.touched = true; ActionPicker.refresh(); } }
+                    TextField { accessible-label: ActionPicker.key-only ? @tr("Trigger key:") : @tr("Action:"); text <=> ActionPicker.value; enabled: !ActionPicker.capturing; edited => { ActionPicker.touched = true; ActionPicker.refresh(); } }
                     Button { text: ActionPicker.capturing ? @tr("Stop") : @tr("Capture"); clicked => { ActionPicker.begin-capture(); focus.focus(); } }
                     InfoTip { text: ActionPicker.key-only ? @tr("You can enter a key combination using + between keys. Some keys depend on keyboard hardware and may be ignored by the system.") : @tr("You can assign a key combination using + between keys. Availability of special keys depends on the keyboard and desktop environment."); }
                 }

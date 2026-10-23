@@ -890,7 +890,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
 }
 
-/// Keyboard capture for the picker; returns `true` when `event` was used.
+/// Keyboard capture for the picker; returns `true` to withhold the event from Slint.
 pub fn capture(ui: &SettingsWindow, event: &slint::winit_030::winit::event::WindowEvent) -> bool {
     use slint::winit_030::winit::event::WindowEvent;
     let picker = ui.global::<ActionPicker>();
@@ -928,7 +928,9 @@ pub fn capture(ui: &SettingsWindow, event: &slint::winit_030::winit::event::Wind
         picker.set_capturing(false);
         picker.invoke_refresh();
     }
-    true
+    // Slint tracks modifiers from key events, not ModifiersChanged. Swallowing
+    // a release here can leave Ctrl/Shift stuck when capture ends and block typing.
+    lhc_core::profile::key_catalog::modifier_key(&key).is_none()
 }
 
 /// Config key code of a physical key. Keys winit cannot name on Linux

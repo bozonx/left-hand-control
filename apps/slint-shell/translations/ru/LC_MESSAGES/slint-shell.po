@@ -2674,3 +2674,67 @@ msgstr "Глобальные комбинации клавиш, зарегист
 
 msgid "The list is read from the KDE global shortcut service (kglobalaccel): KWin, Plasma and applications register their actions there. The chosen action is invoked as is, as if its shortcut were pressed, even when no keys are assigned to it. Which actions exist and how they behave depends on the Plasma version and installed applications, so Left Hand Control does not guarantee them. Common window and desktop actions that also work on other platforms are in System actions."
 msgstr "Список читается из службы глобальных комбинаций клавиш KDE (kglobalaccel): там свои действия регистрируют KWin, Plasma и приложения. Выбранное действие вызывается как есть, будто нажата его комбинация, даже если клавиши ему не назначены. Набор действий и их поведение зависят от версии Plasma и установленных приложений, поэтому Left Hand Control не гарантирует их работу. Распространённые действия с окнами и рабочим столом, которые работают и на других платформах, находятся в разделе «Системные действия»."
+
+
+msgid "Hold key or combination"
+msgstr "Удерживать клавишу или сочетание"
+
+msgid "The key or combination stays pressed until you release the trigger. Choose modifiers plus one main key, for example Ctrl+KeyC."
+msgstr "Клавиша или сочетание остаётся зажатым до отпускания триггера. Выберите модификаторы и одну основную клавишу, например Ctrl+KeyC."
+
+msgid "Not used when holding performs a long-hold action."
+msgstr "Не используется, если назначено действие длительного удержания."
+
+msgid "Other key or combination…"
+msgstr "Другая клавиша или сочетание…"
+
+msgid "When to hold the selected combination"
+msgstr "Когда удерживать выбранное сочетание"
+
+msgid "Used when holding activates a layer together with a selected key or combination."
+msgstr "Используется, когда удержание активирует слой вместе с выбранной клавишей или сочетанием."
+
+msgid "Hold detection when another key is pressed"
+msgstr "Распознавание удержания при нажатии другой клавиши"
+
+msgid "Used for single-key triggers without a long-hold action."
+msgstr "Используется для триггеров из одной клавиши без действия длительного удержания."
+
+msgid "Long-hold threshold, ms"
+msgstr "Порог длительного удержания, мс"
+
+msgid "Used when a long-hold action is selected."
+msgstr "Используется, если назначено действие длительного удержания."
+
+msgid "Double-tap interval, ms"
+msgstr "Интервал двойного нажатия, мс"
+
+msgid "Double-tap actions are available only for single-key triggers."
+msgstr "Двойное нажатие доступно только для триггеров из одной клавиши."
+
+msgid "Applies when a double-tap action is assigned."
+msgstr "Применяется, если назначено действие двойного нажатия."
+
+msgid "Delete trigger"
+msgstr "Удалить триггер"
+
+msgid "Delete trigger?"
+msgstr "Удалить триггер?"
+
+msgid "The trigger and all its assigned actions will be removed from the current layout."
+msgstr "Триггер и все назначенные ему действия будут удалены из текущей раскладки."
+
+msgid "Reset {} to default"
+msgstr "Сбросить «{}» к значению по умолчанию"
+
+msgid "Holding activates layer: {}"
+msgstr "Удержание активирует слой: {}"
+
+msgid "Holding performs a long-hold action."
+msgstr "Назначено действие длительного удержания."
+
+msgid "Holding keeps a key or combination pressed."
+msgstr "Удержание зажимает клавишу или сочетание."
+
+msgid "Layer keys for “Except” or “Only with”:"
+msgstr "Клавиши слоя для условий «Кроме» или «Только с»:"

@@ -32,6 +32,8 @@ fn accessible_position(
     use i_slint_core::{
         accessibility::AccessibleStringProperty, item_tree::ItemRc, window::WindowInner,
     };
+    // Resolve pending layout before locating controls during page transitions.
+    let _ = ui.window().take_snapshot().unwrap();
     let mut pending = vec![ItemRc::new_root(
         WindowInner::from_pub(ui.window()).component(),
     )];
@@ -790,9 +792,53 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 assert_eq!(duration(), 2600, "duration after wheel");
                 wheel(-60.0);
                 assert_eq!(duration(), 2500);
-                println!("Interactions passed: settings, numeric wheel, rules, long-hold actions, chord triggers, extra-key sorting, persistence, validation, navigation and game mode");
+                ui.invoke_navigate(Page::Rules, MenuKind::Emoji);
+                ui.global::<RulesEditor>().invoke_open_dialog(1, RuleDialog::Advanced);
+                ui.global::<RulesEditor>().invoke_open_dialog(1, RuleDialog::Hold);
+                ui.global::<ActionPicker>().invoke_select_behavior(2);
+                ui.global::<ActionPicker>().set_value("Ctrl".into());
+            }
+            29 => {
+                let position = accessible_position(&ui, i_slint_core::items::AccessibleRole::TextInput, "Action:", false);
+                for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
+                for text in [slint::platform::Key::End.into(), slint::platform::Key::Shift.into(), "+".into()] {
+                    ui.window().dispatch_event(slint::platform::WindowEvent::KeyPressed { text });
+                }
+                ui.window().dispatch_event(slint::platform::WindowEvent::KeyReleased { text: slint::platform::Key::Shift.into() });
+                assert_eq!(ui.global::<ActionPicker>().get_value(), "Ctrl+", "typing + preserves an incomplete combination");
+                for text in ["K", "e", "y", "C"] {
+                    ui.window().dispatch_event(slint::platform::WindowEvent::KeyPressed { text: text.into() });
+                }
+                assert_eq!(ui.global::<ActionPicker>().get_value(), "Ctrl+KeyC");
+                assert!(ui.global::<ActionPicker>().get_valid());
+                snapshot(&ui, "rules-held-combination");
+                ui.global::<ActionPicker>().invoke_apply();
+                assert_eq!(ui.global::<RulesEditor>().get_hold(), "Ctrl+KeyC");
+                ui.global::<RulesEditor>().set_hold_timeout("333".into());
+                ui.global::<RulesEditor>().set_double_timeout("444".into());
+            }
+            30 => {
+                let position = accessible_position(&ui, i_slint_core::items::AccessibleRole::Button, "Reset Hold threshold, ms to default", false);
+                for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
+                let rules = ui.global::<RulesEditor>();
+                assert_eq!(rules.get_hold_timeout(), "");
+                assert_eq!(rules.get_double_timeout(), "444");
+                assert_eq!(rules.get_hold(), "Ctrl+KeyC");
+                rules.invoke_apply_advanced();
+                assert_eq!(document.read().layout().rules[1].hold_timeout_ms, None);
+                assert_eq!(document.read().layout().rules[1].double_tap_timeout_ms, Some(444));
+                rules.invoke_open_dialog(1, RuleDialog::Advanced);
+                slint_shell::select_ui_language("ru").unwrap();
+                ui.global::<Theme>().set_eink(false);
+                ui.global::<Theme>().set_dark(true);
+                slint_shell::ui::apply_theme(&ui.global::<Theme>());
+            }
+            31 => {
+                snapshot(&ui, "rules-advanced-dark-ru");
+                println!("Interactions passed: settings, numeric wheel, rules, typed held combination, independent reset, long-hold actions, chord triggers, extra-key sorting, persistence, validation, navigation and game mode");
                 slint::quit_event_loop().unwrap();
             }
+
             _ => {}
         }
         step.set(n + 1);

@@ -779,17 +779,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
 
     let weak = ui.as_weak();
-    editor.on_reset_advanced(move || {
+    editor.on_reset_release(move || {
         let Some(ui) = weak.upgrade() else { return };
         let editor = ui.global::<RulesEditor>();
-        editor.set_hold(Default::default());
-        editor.set_swallow_hold(false);
         editor.set_release_mode(HoldRelease::Always);
         set_release_keys(&editor, &[]);
-        editor.set_hold_detection(HoldDetection::Inherit);
-        editor.set_hold_timeout(Default::default());
-        editor.set_long_hold_timeout(Default::default());
-        editor.set_double_timeout(Default::default());
     });
 
     let weak = ui.as_weak();

@@ -726,3 +726,55 @@ export component Alert inherits Rectangle {
         VerticalLayout { alignment: start; @children }
     }
 }
+
+component FieldResetSlot inherits Rectangle {
+    in property <bool> modified;
+    in property <bool> enabled: true;
+    in property <string> tooltip;
+    callback reset();
+    width: 28px; height: 28px;
+    if root.modified: IconButton {
+        enabled: root.enabled;
+        icon: @image-url("icons/rotate-ccw.svg");
+        tooltip: root.tooltip;
+        clicked => { root.reset(); }
+    }
+}
+
+/// Form field with an independent reset and an explanation when unused.
+export component ResettableField inherits VerticalLayout {
+    in property <string> label;
+    in property <string> info;
+    in property <bool> modified;
+    in property <bool> active: true;
+    /// Compact numeric settings place the reset beside the input.
+    in property <bool> inline-reset;
+    in property <string> inactive-reason;
+    in property <string> reset-tooltip: @tr("Reset {} to default", root.label);
+    callback reset();
+    spacing: root.inline-reset ? 8px : 6px;
+    alignment: start;
+    vertical-stretch: 0;
+    HorizontalLayout { spacing: 6px;
+        FormLabel { text: root.label; info: root.info; }
+        if !root.inline-reset: Rectangle { horizontal-stretch: 1; }
+        if !root.inline-reset: FieldResetSlot {
+            modified: root.modified; enabled: root.active; tooltip: root.reset-tooltip;
+            reset => { root.reset(); }
+        }
+    }
+    HorizontalLayout { spacing: 6px; alignment: start;
+        VerticalLayout {
+            horizontal-stretch: root.inline-reset ? 0 : 1;
+            spacing: 6px; alignment: start;
+            @children
+        }
+        if root.inline-reset: FieldResetSlot {
+            modified: root.modified; enabled: root.active; tooltip: root.reset-tooltip;
+            reset => { root.reset(); }
+        }
+    }
+    if !root.active && root.inactive-reason != "": Text {
+        text: root.inactive-reason; color: Theme.muted; font-size: 12px; wrap: word-wrap;
+    }
+}

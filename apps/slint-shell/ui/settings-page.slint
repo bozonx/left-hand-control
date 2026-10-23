@@ -1,4 +1,4 @@
-import { TextField } from "controls.slint";
+import { ResettableField, TextField } from "controls.slint";
 import { NotificationCenter } from "notifications.slint";
 import { PageContent, ScrollView } from "scroll.slint";
 import { AppState } from "app-state.slint";
@@ -174,24 +174,20 @@ component TimingField inherits VerticalLayout {
     in property <float> step: 10;
     in-out property <string> value;
     callback edited();
-    /// The value was set back to `standard`.
     callback reset();
     width: 176px;
     horizontal-stretch: 0;
     vertical-stretch: 0;
-    spacing: 8px;
-    alignment: start;
-    FormLabel { text: root.label; info: root.info; }
-    HorizontalLayout { spacing: 6px; alignment: start;
-        NumericInput { field-width: 100px; label: root.label; minimum: root.minimum; maximum: root.maximum; step: root.step; text <=> root.value; edited => { root.edited(); } }
-        Text { text: @tr("ms"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
-        // The slot keeps its width so fields do not shift when the button appears.
-        Rectangle { width: 28px;
-            if root.value != root.standard: IconButton {
-                icon: @image-url("icons/rotate-ccw.svg");
-                tooltip: @tr("Reset to {} ms", root.standard);
-                clicked => { root.value = root.standard; root.reset(); }
-            }
+    ResettableField {
+        inline-reset: true;
+        label: root.label;
+        info: root.info;
+        modified: root.value != root.standard;
+        reset-tooltip: @tr("Reset to {} ms", root.standard);
+        reset => { root.value = root.standard; root.reset(); }
+        HorizontalLayout { spacing: 6px; alignment: start;
+            NumericInput { field-width: 100px; label: root.label; minimum: root.minimum; maximum: root.maximum; step: root.step; text <=> root.value; edited => { root.edited(); } }
+            Text { text: @tr("ms"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
         }
     }
 }
