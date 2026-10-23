@@ -120,7 +120,7 @@ def main():
 
     def tray_recovery():
         def wait_for(description, predicate):
-            deadline = time.monotonic() + 20
+            deadline = time.monotonic() + 30
             while not predicate():
                 if time.monotonic() >= deadline:
                     raise StepFailed(f"timed out waiting for {description}")

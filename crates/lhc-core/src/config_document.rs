@@ -163,7 +163,7 @@ impl ConfigDocument {
         let mut updated = self.settings.clone();
         edit(&mut updated);
         let text = settings::serialize(&updated);
-        let autostart_changed = cfg!(target_os = "linux")
+        let autostart_changed = crate::autostart::SUPPORTED
             && updated.launch_on_startup != self.settings.launch_on_startup;
         if autostart_changed {
             crate::autostart::set_enabled(&self.paths, updated.launch_on_startup)
@@ -181,6 +181,31 @@ impl ConfigDocument {
         crate::gamemode::set_settings(&updated.game_mode);
         self.settings = updated;
         Ok(())
+    }
+
+    /// Align launch on startup with the system at application start: the
+    /// user may have removed or disabled it in the desktop or Windows
+    /// settings. An active registration is refreshed so it points to this
+    /// executable after a move or upgrade; a missing or disabled one is left
+    /// untouched. Returns whether the setting changed.
+    pub fn sync_autostart(&mut self) -> Result<bool, ConfigError> {
+        if !crate::autostart::SUPPORTED {
+            return Ok(false);
+        }
+        let registered = crate::autostart::is_enabled(&self.paths).map_err(ConfigError::Io)?;
+        if registered {
+            crate::autostart::set_enabled(&self.paths, true).map_err(ConfigError::Io)?;
+        }
+        if registered == self.settings.launch_on_startup {
+            return Ok(false);
+        }
+        let mut updated = self.settings.clone();
+        updated.launch_on_startup = registered;
+        self.paths
+            .save_config(&settings::serialize(&updated))
+            .map_err(ConfigError::Io)?;
+        self.settings = updated;
+        Ok(true)
     }
 
     pub fn base_tap_action(&self, key: &str) -> Option<&str> {
@@ -657,6 +682,34 @@ mod tests {
             config.layer_keymaps["nav"].keys["KeyH"].as_deref(),
             Some("ArrowLeft")
         );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn launch_on_startup_follows_the_system_registration() {
+        let (dir, mut document) = document(json!({}), LAYOUT);
+        let entry = dir
+            .path()
+            .join("autostart/dev.bozonx.left-hand-control.desktop");
+        document
+            .update_settings(|settings| settings.launch_on_startup = true)
+            .unwrap();
+        assert!(entry.exists());
+        assert!(!document.sync_autostart().unwrap());
+
+        // Disabled in the desktop's autostart settings: the setting follows.
+        fs::write(&entry, "[Desktop Entry]\nExec=old\nHidden=true\n").unwrap();
+        assert!(document.sync_autostart().unwrap());
+        assert!(!document.settings().launch_on_startup);
+        assert!(entry.exists(), "a disabled entry stays for the desktop");
+        let saved = fs::read_to_string(document.paths.config_path()).unwrap();
+        assert!(saved.contains("\"launchOnStartup\": false"));
+
+        // Added outside the application: adopted and pointed at this binary.
+        fs::write(&entry, "[Desktop Entry]\nExec=old\n").unwrap();
+        assert!(document.sync_autostart().unwrap());
+        assert!(document.settings().launch_on_startup);
+        assert!(!fs::read_to_string(&entry).unwrap().contains("Exec=old"));
     }
 
     #[test]

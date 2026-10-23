@@ -18,9 +18,12 @@ Settings; Windows interception applies to the interactive session.
 To update, quit from the tray (or run `left-hand-control.exe quit`), extract the
 new ZIP into a new folder and start its executable. Keep the old folder until
 you verify the update. To uninstall, quit and delete the extracted folder.
-User configuration is retained. Disable any manually configured startup shortcut
-before moving or deleting the executable. This distribution installs no service
-and does not automatically enable startup.
+User configuration is retained. Settings → "Launch on startup" registers the
+running executable under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`;
+each launch points the entry at the current executable, so start the new folder's
+executable once after an update. Disabling startup in Task Manager is respected
+and turns the setting off. Turn the setting off before deleting the folder.
+This distribution installs no service and does not enable startup by itself.
 
 Verify the ZIP with PowerShell `Get-FileHash -Algorithm SHA256 <archive.zip>` and
 compare it with `WINDOWS-SHA256SUMS` from the same release. The executable is not

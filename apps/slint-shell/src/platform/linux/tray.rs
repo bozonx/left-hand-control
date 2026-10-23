@@ -7,7 +7,14 @@ use ksni::{
     menu::{RadioGroup, RadioItem, StandardItem, SubMenu},
 };
 use lhc_core::gamemode::GameModeStatus;
-use std::time::Instant;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::{Duration, Instant};
+
+/// How long a missing tray host may take to appear before settings open
+/// instead. At login the application can start before the host (GNOME
+/// AppIndicators, a restarting Plasma shell).
+const HOST_GRACE: Duration = Duration::from_secs(10);
 
 pub struct Tray {
     enabled: bool,
@@ -15,6 +22,7 @@ pub struct Tray {
     /// Index of the Auto/On/Off choice and the effective state.
     game: (usize, bool),
     dispatch: Dispatch,
+    online: Arc<AtomicBool>,
 }
 
 pub struct Handle(ksni::blocking::Handle<Tray>);
@@ -81,18 +89,26 @@ impl Tray {
 impl ksni::Tray for Tray {
     fn watcher_offline(&self, reason: ksni::OfflineReason) -> bool {
         log::warn!("tray watcher unavailable, waiting for recovery: {reason:?}");
-        // Keep settings reachable even when the desktop never supplies a tray host.
-        (self.dispatch)(
-            Command::Show(Window::Settings),
-            Source::Tray,
-            Instant::now(),
-            None,
-        );
+        // Keep settings reachable when the desktop does not supply a tray host.
+        self.online.store(false, Ordering::SeqCst);
+        let (online, dispatch) = (self.online.clone(), self.dispatch.clone());
+        std::thread::spawn(move || {
+            std::thread::sleep(HOST_GRACE);
+            if !online.load(Ordering::SeqCst) {
+                dispatch(
+                    Command::Show(Window::Settings),
+                    Source::Tray,
+                    Instant::now(),
+                    None,
+                );
+            }
+        });
         true
     }
 
     fn watcher_online(&self) {
         log::info!("tray watcher online; registering the tray again");
+        self.online.store(true, Ordering::SeqCst);
     }
 
     fn id(&self) -> String {
@@ -154,6 +170,7 @@ pub fn start(dispatch: Dispatch) -> Result<Handle, ksni::Error> {
         english: false,
         game: (0, false),
         dispatch,
+        online: Arc::new(AtomicBool::new(true)),
     }
     // GNOME AppIndicators may appear after the application during autostart.
     .assume_sni_available(true)

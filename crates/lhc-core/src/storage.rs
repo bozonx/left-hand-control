@@ -23,7 +23,7 @@ impl StoragePaths {
     /// [`APP_ID`].
     pub fn resolve() -> Result<Self, String> {
         let override_dir = std::env::var_os("LHC_DEV_DIR").map(PathBuf::from);
-        if cfg!(debug_assertions) || override_dir.is_some() {
+        if isolated() {
             let base = dev_base_dir(override_dir)?;
             return Ok(Self::dev(&base, std::env::consts::OS));
         }
@@ -223,6 +223,12 @@ fn unique_tmp_path(path: &Path) -> PathBuf {
         .unwrap_or_default();
     name.push(format!(".{}.{n}.tmp", std::process::id()));
     path.with_file_name(name)
+}
+
+/// Whether storage and OS registrations stay in the development directory
+/// instead of the user's real session (see [`StoragePaths::resolve`]).
+pub(crate) fn isolated() -> bool {
+    cfg!(debug_assertions) || std::env::var_os("LHC_DEV_DIR").is_some()
 }
 
 /// Home-relative config and data directories per OS, matching `dirs`.

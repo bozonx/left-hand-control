@@ -57,7 +57,6 @@ pub(crate) struct App {
     pending_action: RefCell<Option<(Popup, String, Instant)>>,
     supervisor: RefCell<worker::Supervisor>,
     preferences: Cell<Preferences>,
-    last_autostart: Cell<Option<bool>>,
     worker_watch: slint::Timer,
     last_mapper_status: RefCell<Option<(bool, Option<String>)>>,
     /// When the running mapper started.
@@ -121,6 +120,9 @@ impl App {
 
     fn install_document(self: &Rc<Self>, document: Rc<Document>) {
         *self.document.borrow_mut() = Some(document.clone());
+        if let Err(error) = document.edit(View::Shell, |config| config.sync_autostart()) {
+            self.set_error(Msg::from(&error));
+        }
         pages::bind_document(&self.settings, &document);
         let weak = Rc::downgrade(self);
         document.subscribe(View::Shell, move |_| {
@@ -316,13 +318,6 @@ impl App {
         self.settings
             .global::<AppState>()
             .set_keyboard_selected(document.read().input_device().is_some());
-        let launch_on_startup = document.read().settings().launch_on_startup;
-        if lhc_core::autostart::SUPPORTED && self.last_autostart.get() != Some(launch_on_startup) {
-            match lhc_core::autostart::set_enabled(document.read().paths(), launch_on_startup) {
-                Ok(()) => self.last_autostart.set(Some(launch_on_startup)),
-                Err(error) => self.set_error(Msg::Error(error)),
-            }
-        }
         self.invalidate_menus();
         self.apply_preferences();
         self.announce_layout();
@@ -481,7 +476,6 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         pending_action: RefCell::default(),
         supervisor: RefCell::new(worker::Supervisor::new(use_spell, layer_shell)),
         preferences: Cell::new(Preferences::default()),
-        last_autostart: Cell::new(None),
         worker_watch: slint::Timer::default(),
         last_mapper_status: RefCell::new(None),
         mapper_since: Cell::new(None),
