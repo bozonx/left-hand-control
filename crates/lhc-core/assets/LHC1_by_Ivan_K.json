@@ -189,7 +189,7 @@
         "KeyQ": "Ctrl+Alt+Shift+KeyQ",
         "KeyW": "Ctrl+KeyA",
         "KeyE": "Ctrl+Alt+Shift+KeyS",
-        "KeyR": "Ctrl+Alt+Shift+KeyR",
+        "KeyR": "Ctrl+Alt+Shift+KeyW",
         "KeyT": "sys:windowKeepAbove",
         "KeyY": "sys:windowClose",
         "KeyU": "sys:windowMaximize",
