@@ -2736,8 +2736,5 @@ msgstr "Назначено действие длительного удержа�
 msgid "Holding keeps a key or combination pressed."
 msgstr "Удержание зажимает клавишу или сочетание."
 
-msgid "Layer keys for “Except” or “Only with”:"
-msgstr "Клавиши слоя для условий «Кроме» или «Только с»:"
-
 msgid "Paths"
 msgstr "Пути"

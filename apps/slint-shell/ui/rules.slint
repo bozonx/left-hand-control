@@ -446,7 +446,8 @@ export component RuleDialogOverlay inherits FocusScope {
                                 }
                             }
                         }
-                        release-form := ResettableField {
+                        // Shown only for “Other key or combination”; the hold mode only toggles whether it applies.
+                        if RulesEditor.hold != "": release-form := ResettableField {
                             label: @tr("When to hold the selected combination");
                             info: @tr("Right away: the key is pressed as soon as the hold starts.\nExcept: the key is released while the listed layer keys are pressed. For example, Alt is held, but W and E work without Alt.\nOnly with: the key is pressed only together with the listed layer keys. For example, Alt is pressed only for Tab (Alt+Tab), so a lone Alt does not open application menus.");
                             active: RulesEditor.hold-mode == 1 && RulesEditor.hold != "" && !RulesEditor.swallow-hold;
@@ -458,13 +459,9 @@ export component RuleDialogOverlay inherits FocusScope {
                                 selected-index: RulesEditor.release-mode == HoldRelease.except ? 1 : RulesEditor.release-mode == HoldRelease.only-with ? 2 : 0;
                                 selected(index) => { RulesEditor.release-mode = index == 1 ? HoldRelease.except : index == 2 ? HoldRelease.only-with : HoldRelease.always; }
                             }
-                            Text {
-                                text: @tr("Layer keys for “Except” or “Only with”:");
-                                color: Theme.muted; font-size: 12px; wrap: word-wrap;
-                            }
-                            HorizontalLayout { spacing: 6px; alignment: start;
-                                for key[index] in RulesEditor.release-key-items: KeyChip { enabled: release-form.active && RulesEditor.release-mode != HoldRelease.always; text: key; removed => { RulesEditor.remove-release-key(index); } }
-                                Button { enabled: release-form.active && RulesEditor.release-mode != HoldRelease.always; text: @tr("+ Add key"); clicked => { RulesEditor.open-dialog(RulesEditor.selected, RuleDialog.release-key); } }
+                            if RulesEditor.release-mode != HoldRelease.always: HorizontalLayout { spacing: 6px; alignment: start;
+                                for key[index] in RulesEditor.release-key-items: KeyChip { enabled: release-form.active; text: key; removed => { RulesEditor.remove-release-key(index); } }
+                                Button { enabled: release-form.active; text: @tr("+ Add key"); clicked => { RulesEditor.open-dialog(RulesEditor.selected, RuleDialog.release-key); } }
                             }
                         }
                         detection-form := ResettableField {
