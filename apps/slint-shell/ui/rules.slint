@@ -80,8 +80,6 @@ export global RulesEditor {
     callback filter-layers(string);
     callback apply-conditions();
     callback apply-advanced();
-    /// Reset the related release conditions together.
-    callback reset-release();
     callback remove-release-key(int);
     callback create-layer(string);
     /// Why `name` cannot be used for a new layer.
@@ -431,8 +429,7 @@ export component RuleDialogOverlay inherits FocusScope {
                             info: @tr("The key or combination stays pressed until you release the trigger. Choose modifiers plus one main key, for example Ctrl+KeyC.");
                             active: RulesEditor.hold-mode != 2;
                             inactive-reason: @tr("Not used when holding performs a long-hold action.");
-                            modified: RulesEditor.hold != "" || RulesEditor.swallow-hold;
-                            reset => { RulesEditor.hold = ""; RulesEditor.swallow-hold = false; }
+                            resettable: false;
                             ButtonGroup {
                                 enabled: held-form.active;
                                 labels: RulesEditor.hold-mode == 0
@@ -454,8 +451,7 @@ export component RuleDialogOverlay inherits FocusScope {
                             info: @tr("Right away: the key is pressed as soon as the hold starts.\nExcept: the key is released while the listed layer keys are pressed. For example, Alt is held, but W and E work without Alt.\nOnly with: the key is pressed only together with the listed layer keys. For example, Alt is pressed only for Tab (Alt+Tab), so a lone Alt does not open application menus.");
                             active: RulesEditor.hold-mode == 1 && RulesEditor.hold != "" && !RulesEditor.swallow-hold;
                             inactive-reason: @tr("Used when holding activates a layer together with a selected key or combination.");
-                            modified: RulesEditor.release-mode != HoldRelease.always || RulesEditor.release-keys != "";
-                            reset => { RulesEditor.reset-release(); }
+                            resettable: false;
                             ButtonGroup {
                                 enabled: release-form.active;
                                 labels: [@tr("Right away"), @tr("Except…"), @tr("Only with…")];
@@ -476,8 +472,7 @@ export component RuleDialogOverlay inherits FocusScope {
                             info: @tr("Overrides the default hold detection for this rule. Use release detection for typing keys and press detection for dedicated layer or modifier keys. This does not change chord detection.");
                             active: !RulesEditor.is-chord && RulesEditor.hold-mode != 2;
                             inactive-reason: @tr("Used for single-key triggers without a long-hold action.");
-                            modified: RulesEditor.hold-detection != HoldDetection.inherit;
-                            reset => { RulesEditor.hold-detection = HoldDetection.inherit; }
+                            resettable: false;
                             ComboBox { enabled: detection-form.active; height: 32px; model: [@tr("Default from Settings: {}", RulesEditor.default-hold-detection == HoldDetection.press ? @tr("as soon as another key is pressed") : @tr("after another key is released")), @tr("After another key is released (better for typing)"), @tr("As soon as another key is pressed")]; current-index: RulesEditor.hold-detection == HoldDetection.release ? 1 : RulesEditor.hold-detection == HoldDetection.press ? 2 : 0; selected(value) => { RulesEditor.hold-detection = self.current-index == 1 ? HoldDetection.release : self.current-index == 2 ? HoldDetection.press : HoldDetection.inherit; } }
                         }
                         hold-form := ResettableField {

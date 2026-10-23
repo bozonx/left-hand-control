@@ -749,6 +749,8 @@ export component ResettableField inherits VerticalLayout {
     in property <bool> active: true;
     /// Place the reset beside the input by default.
     in property <bool> inline-reset: true;
+    /// Choice fields show the default as one of their options, so only free inputs get a reset.
+    in property <bool> resettable: true;
     in property <string> inactive-reason;
     in property <string> reset-tooltip: @tr("Reset {} to default", root.label);
     callback reset();
@@ -758,7 +760,7 @@ export component ResettableField inherits VerticalLayout {
     HorizontalLayout { spacing: 6px;
         FormLabel { text: root.label; info: root.info + (root.inactive-reason != "" ? "\n\n" + root.inactive-reason : ""); }
         if !root.inline-reset: Rectangle { horizontal-stretch: 1; }
-        if !root.inline-reset: FieldResetSlot {
+        if root.resettable && !root.inline-reset: FieldResetSlot {
             modified: root.modified; enabled: root.active; tooltip: root.reset-tooltip;
             reset => { root.reset(); }
         }
@@ -769,7 +771,7 @@ export component ResettableField inherits VerticalLayout {
             spacing: 6px; alignment: start;
             @children
         }
-        if root.inline-reset: FieldResetSlot {
+        if root.resettable && root.inline-reset: FieldResetSlot {
             modified: root.modified; enabled: root.active; tooltip: root.reset-tooltip;
             reset => { root.reset(); }
         }

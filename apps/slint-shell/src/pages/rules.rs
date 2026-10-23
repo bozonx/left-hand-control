@@ -779,14 +779,6 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
 
     let weak = ui.as_weak();
-    editor.on_reset_release(move || {
-        let Some(ui) = weak.upgrade() else { return };
-        let editor = ui.global::<RulesEditor>();
-        editor.set_release_mode(HoldRelease::Always);
-        set_release_keys(&editor, &[]);
-    });
-
-    let weak = ui.as_weak();
     editor.on_remove_release_key(move |index| {
         let Some(ui) = weak.upgrade() else { return };
         let editor = ui.global::<RulesEditor>();
