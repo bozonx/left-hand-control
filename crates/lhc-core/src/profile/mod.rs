@@ -5,6 +5,7 @@
 pub mod actions;
 pub mod app_match;
 pub mod auto_switch;
+pub mod bundled;
 pub mod diagnostics;
 pub mod ids;
 pub mod layout_file;

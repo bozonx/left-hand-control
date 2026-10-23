@@ -46,7 +46,10 @@ export global LayoutLibrary {
     in-out property <LibraryDialog> dialog: LibraryDialog.none;
     in-out property <string> create-name;
     in-out property <string> create-description;
+    /// Layouts shipped with the application, offered as templates.
+    in property <[string]> bundled-names;
     in-out property <LayoutSource> create-source: LayoutSource.empty;
+    /// Index of the source in `names` (copy) or `bundled-names` (bundled).
     in-out property <int> create-copy-index: 0;
     in-out property <LayoutSource> pending-create-source: LayoutSource.empty;
     in-out property <int> pending-create-copy-index: 0;
@@ -103,7 +106,9 @@ export global LayoutLibrary {
     callback add-game-rule();
 
     pure function create-base(source: LayoutSource) -> string {
-        if source == LayoutSource.author { return @tr("LHC by Ivan K"); }
+        if source == LayoutSource.bundled && self.create-copy-index < self.bundled-names.length {
+            return self.bundled-names[self.create-copy-index];
+        }
         if source == LayoutSource.copy && self.create-copy-index < self.names.length {
             return @tr("{} (copy)", self.names[self.create-copy-index]);
         }
@@ -529,7 +534,7 @@ export component LibraryPage inherits VerticalBox {
             spacing: 8px;
             Text { text: @tr("Add layout: "); color: Theme.text; vertical-alignment: center; }
             Button { text: @tr("Blank"); primary: false; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } }
-            Button { text: @tr("LHC Ivan K layout"); icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.author, 0); } }
+            for name[index] in LayoutLibrary.bundled-names: Button { text: name; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.bundled, index); } }
         }
     }
     HorizontalLayout {
@@ -543,10 +548,10 @@ export component LibraryPage inherits VerticalBox {
                 VerticalLayout {
                     alignment: center; spacing: 12px;
                     Text { text: @tr("No layouts yet"); color: Theme.text; font-size: 20px; font-weight: 600; horizontal-alignment: center; }
-                    Text { text: @tr("Start from the author's Ivan K layout or from an empty one."); color: Theme.muted; horizontal-alignment: center; wrap: word-wrap; }
+                    Text { text: @tr("Start from a ready-made layout or from an empty one."); color: Theme.muted; horizontal-alignment: center; wrap: word-wrap; }
                     HorizontalLayout { alignment: center; spacing: 8px;
                         Button { text: @tr("Create empty"); clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } }
-                        Button { text: @tr("LHC Ivan K layout"); icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.author, 0); } }
+                        for name[index] in LayoutLibrary.bundled-names: Button { text: name; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.bundled, index); } }
                     }
                 }
             }

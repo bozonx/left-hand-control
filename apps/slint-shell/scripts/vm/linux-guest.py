@@ -34,7 +34,7 @@ FAKE_GAME = "lhc-fake-game"
 # Every rule maps a physical key to a result the host can read back from the
 # receiver window. Keys not listed here (c, h, j, k, o, q, s...) pass through.
 E2E_LAYOUT = f'''{{
-  "version": 1,
+  "schemaVersion": 1,
   "description": "VM e2e",
   "layers": [
     {{
@@ -335,7 +335,7 @@ def cmd_write_config(args):
     }
     state = {"editedLayoutId": "user:E2E", "gameMode": "off"}
     (CONFIG_DIR / "config.json").write_text(
-        json.dumps({"version": 1, "settings": settings, "state": state}, indent=2),
+        json.dumps({"schemaVersion": 1, "settings": settings, "state": state}, indent=2),
         encoding="utf-8")
     if "GNOME" in user_environment().get("XDG_CURRENT_DESKTOP", "").upper():
         env = dict(os.environ, **user_environment())

@@ -247,7 +247,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             settings.manual_active_layout_id = Some("user:missing".into());
         })
     })?;
-    library.invoke_create("Ivan K".into(), "".into(), LayoutSource::Author, 0);
+    library.invoke_create("Ivan K".into(), "".into(), LayoutSource::Bundled, 0);
     assert_eq!(ui.get_page(), Page::Rules);
     assert_eq!(
         ui.global::<RulesEditor>().get_rows().row_count(),

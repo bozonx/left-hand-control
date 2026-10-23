@@ -552,17 +552,11 @@ msgstr "Редактировать"
 msgid "New layout"
 msgstr "Новая раскладка"
 
-msgid "Ivan K layout"
-msgstr "Раскладка Ivan K"
-
 msgid "A layout with this name already exists."
 msgstr "Раскладка с таким именем уже есть."
 
 msgid "Add a description…"
 msgstr "Добавить описание…"
-
-msgid "Based on Ivan K layout"
-msgstr "На основе раскладки Айвана Кея"
 
 msgid "Create"
 msgstr "Создать"
@@ -594,8 +588,8 @@ msgstr "Переименовать…"
 msgid "Save and continue"
 msgstr "Сохранить и продолжить"
 
-msgid "Start from the author's Ivan K layout or from an empty one."
-msgstr "Начните с авторской раскладки Ivan K или с пустой."
+msgid "Start from a ready-made layout or from an empty one."
+msgstr "Начните с готовой раскладки или с пустой."
 
 msgid "The layout you are editing has not been saved to the library. Its changes will be lost."
 msgstr "Редактируемая раскладка не сохранена в библиотеку. Изменения будут потеряны."
@@ -1970,9 +1964,6 @@ msgstr "Триггеры"
 msgid "Disable animations"
 msgstr "Выключить анимацию"
 
-msgid "LHC Ivan K layout"
-msgstr "Раскладка LHC Айвана Кея"
-
 msgid "Add layout: "
 msgstr "Добавить раскладку: "
 
@@ -2187,9 +2178,6 @@ msgstr "Включается, пока активно приложение, у �
 
 msgid "Auto — according to settings"
 msgstr "Авто — согласно настройкам"
-
-msgid "LHC by Ivan K"
-msgstr "LHC Айвана Кея"
 
 msgid "Blank"
 msgstr "Пустая"

@@ -64,7 +64,7 @@ Releases are built by `.github/workflows/release.yml` from a `v<version>` tag; s
 ## Repository map
 
 ```
-crates/lhc-core/assets/       # bundled default layout
+crates/lhc-core/assets/       # bundled layouts (<name>.json, templates for new library layouts)
 crates/lhc-core/src/          # UI-independent domain + platform code (no UI framework)
 ├── profile/                  # config model: settings, layouts, actions, macros, menus, auto-switch
 ├── config_document.rs        # editable config.json: validation and saving

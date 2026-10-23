@@ -1,7 +1,9 @@
 use crate::{
     config_document::{ConfigDocument, ConfigError},
     profile::{
-        auto_switch, layout_file,
+        auto_switch,
+        bundled::BundledLayout,
+        layout_file,
         model::{LayoutPreset, user_layout_id},
         names::{NameIssue, NameKind},
     },
@@ -11,8 +13,8 @@ use crate::{
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LibrarySource<'a> {
     Empty,
-    /// The bundled author's layout.
-    IvanK,
+    /// A bundled layout.
+    Bundled(&'static BundledLayout),
     /// An existing library layout, by name.
     Copy(&'a str),
 }
@@ -42,11 +44,7 @@ impl ConfigDocument {
         let description = description.trim();
         let mut preset = match source {
             LibrarySource::Empty => LayoutPreset::default(),
-            LibrarySource::IvanK => {
-                layout_file::parse(include_str!("../../assets/ivank-layout.json"))
-                    .map_err(ConfigError::Parse)?
-                    .ok_or_else(|| ConfigError::Invalid("Bundled layout is empty".into()))?
-            }
+            LibrarySource::Bundled(bundled) => bundled.layout().map_err(ConfigError::Parse)?,
             LibrarySource::Copy(from) => {
                 let text = self
                     .paths()
@@ -247,6 +245,7 @@ mod tests {
     use crate::{
         profile::{
             auto_switch::AutoSwitchContext,
+            bundled::BUNDLED,
             model::{AutoRule, LayoutConditionSet, LayoutMode},
         },
         storage::StoragePaths,
@@ -259,13 +258,13 @@ mod tests {
         paths
             .save_user_layout(
                 "Test",
-                r#"{"version": 1, "commands": [{"id": "hello", "unix": "printf hello"}]}"#,
+                r#"{"schemaVersion": 1, "commands": [{"id": "hello", "unix": "printf hello"}]}"#,
                 true,
             )
             .unwrap();
         paths
             .save_config(
-                r#"{"version":1,"settings":{"commandsEnabled":true},"state":{"editedLayoutId":"user:Test"}}"#,
+                r#"{"schemaVersion":1,"settings":{"commandsEnabled":true},"state":{"editedLayoutId":"user:Test"}}"#,
             )
             .unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
@@ -285,7 +284,7 @@ mod tests {
         let document = ConfigDocument::load(paths.clone()).unwrap();
         assert_eq!(document.unique_library_name(" New ").unwrap(), "New");
         let ivan = document
-            .create_library_layout("Ivan", "", LibrarySource::IvanK)
+            .create_library_layout("Ivan", "", LibrarySource::Bundled(&BUNDLED[0]))
             .unwrap();
         assert!(!document.load_layout("user:Ivan").unwrap().rules.is_empty());
         assert_eq!(document.unique_library_name("Ivan").unwrap(), "Ivan (2)");
@@ -333,7 +332,7 @@ mod tests {
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         for name in ["A", "B", "C", "D"] {
             paths
-                .save_user_layout(name, r#"{"version": 1}"#, false)
+                .save_user_layout(name, r#"{"schemaVersion": 1}"#, false)
                 .unwrap();
         }
         document.move_library_layout("user:A", 3).unwrap();
@@ -374,7 +373,11 @@ mod tests {
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         for name in ["A", "B"] {
             paths
-                .save_user_layout(name, r#"{"version": 1, "description": "original"}"#, false)
+                .save_user_layout(
+                    name,
+                    r#"{"schemaVersion": 1, "description": "original"}"#,
+                    false,
+                )
                 .unwrap();
         }
         document
@@ -450,7 +453,7 @@ mod tests {
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         for name in ["A", "B", "C"] {
             paths
-                .save_user_layout(name, r#"{"version": 1}"#, false)
+                .save_user_layout(name, r#"{"schemaVersion": 1}"#, false)
                 .unwrap();
         }
         document
@@ -487,7 +490,7 @@ mod tests {
         paths
             .save_user_layout(
                 "Editor",
-                r#"{"version": 1, "rules": [{"key": "KeyA", "tap": "KeyB"}]}"#,
+                r#"{"schemaVersion": 1, "rules": [{"key": "KeyA", "tap": "KeyB"}]}"#,
                 false,
             )
             .unwrap();
@@ -548,10 +551,10 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
-        let original = r#"{"version": 1, "description": "original"}"#;
+        let original = r#"{"schemaVersion": 1, "description": "original"}"#;
         paths.save_user_layout("A", original, false).unwrap();
         paths
-            .save_config(r#"{"version":1,"settings":{"appearance":"light"}}"#)
+            .save_config(r#"{"schemaVersion":1,"settings":{"appearance":"light"}}"#)
             .unwrap();
         document
             .edit_library_metadata("A", "B", "changed", original)

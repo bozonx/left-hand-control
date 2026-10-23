@@ -1,4 +1,4 @@
-//! `config.json`: `{ "version": 1, "settings": { … }, "state": { … } }`.
+//! `config.json`: `{ "schemaVersion": 1, "settings": { … }, "state": { … } }`.
 //!
 //! `settings` holds the user's choices, `state` what the application
 //! remembers between runs (the layout open in the editor, library order,
@@ -6,7 +6,7 @@
 //! field; unknown fields, wrong types and unknown values are errors, the
 //! same as in layout files (see [`super::layout_file`]).
 
-use super::layout_file::{FORMAT_VERSION, OnOff, check_version};
+use super::layout_file::{OnOff, SCHEMA_VERSION, check_version};
 use super::model::{
     AppSettings, Appearance, AutoRule, GameModeControl, GameModeProcessMatcher, GameModeSettings,
     LayoutConditionSet, LayoutMode, LocalePreference, PasteShortcut, TapDecision, TextMode,
@@ -31,9 +31,9 @@ pub fn serialize(settings: &AppSettings) -> String {
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ConfigDoc {
-    version: u64,
+    schema_version: u64,
     #[serde(default)]
     settings: SettingsDoc,
     #[serde(default)]
@@ -314,7 +314,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
     let game_mode = &settings.game_mode;
     let filled = |value: &Option<String>| value.clone().filter(|value| !value.is_empty());
     ConfigDoc {
-        version: FORMAT_VERSION,
+        schema_version: SCHEMA_VERSION,
         settings: SettingsDoc {
             launch_on_startup: settings.launch_on_startup,
             start_mapper_on_launch: settings.start_mapper_on_launch,
@@ -401,13 +401,16 @@ mod tests {
     use serde_json::{Value, json};
 
     fn config(settings: Value) -> String {
-        json!({"version": 1, "settings": settings}).to_string()
+        json!({"schemaVersion": 1, "settings": settings}).to_string()
     }
 
     #[test]
     fn missing_settings_use_defaults() {
         assert_eq!(parse("").unwrap(), AppSettings::default());
-        assert_eq!(parse(r#"{"version": 1}"#).unwrap(), AppSettings::default());
+        assert_eq!(
+            parse(r#"{"schemaVersion": 1}"#).unwrap(),
+            AppSettings::default()
+        );
         assert_eq!(parse(&config(json!({}))).unwrap(), AppSettings::default());
     }
 
@@ -416,9 +419,13 @@ mod tests {
         assert!(
             parse(r#"{"settings": {}}"#)
                 .unwrap_err()
-                .contains("version")
+                .contains("schemaVersion")
         );
-        assert!(parse(r#"{"version": 2}"#).unwrap_err().contains("newer"));
+        assert!(
+            parse(r#"{"schemaVersion": 2}"#)
+                .unwrap_err()
+                .contains("newer")
+        );
         assert!(parse(r#"[]"#).is_err());
     }
 
@@ -440,8 +447,8 @@ mod tests {
                 "accepted {settings}"
             );
         }
-        assert!(parse(r#"{"version": 1, "extra": true}"#).is_err());
-        assert!(parse(r#"{"version": 1, "state": {"gameMode": "maybe"}}"#).is_err());
+        assert!(parse(r#"{"schemaVersion": 1, "extra": true}"#).is_err());
+        assert!(parse(r#"{"schemaVersion": 1, "state": {"gameMode": "maybe"}}"#).is_err());
     }
 
     #[test]
@@ -490,7 +497,7 @@ mod tests {
         let text = serialize(&settings);
         assert_eq!(parse(&text).unwrap(), settings);
         let raw: Value = serde_json::from_str(&text).unwrap();
-        assert_eq!(raw["version"], 1);
+        assert_eq!(raw["schemaVersion"], 1);
         assert_eq!(raw["settings"]["timing"]["holdMs"], 180);
         assert_eq!(raw["settings"]["linux"]["pasteShortcut"], "ctrl-shift-v");
         assert_eq!(raw["settings"]["gameMode"]["processes"][0]["exclude"], true);
@@ -531,7 +538,7 @@ mod tests {
     #[test]
     fn manual_activation_is_independent_of_the_edited_layout() {
         let settings =
-            parse(r#"{"version": 1, "state": {"editedLayoutId": "user:Main"}}"#).unwrap();
+            parse(r#"{"schemaVersion": 1, "state": {"editedLayoutId": "user:Main"}}"#).unwrap();
         assert_eq!(settings.current_layout_id.as_deref(), Some("user:Main"));
         assert_eq!(settings.manual_active_layout_id, None);
     }

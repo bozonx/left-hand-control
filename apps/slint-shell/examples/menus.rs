@@ -133,7 +133,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     e.invoke_open(MenuKind::Quick);
     assert_eq!(e.get_cells().row_count(), 15);
     assert_eq!(e.get_value().as_str(), reference.as_str());
-    paths.save_config(r#"{"version":1}"#)?;
+    paths.save_config(r#"{"schemaVersion":1}"#)?;
     e.set_name("Updated".into());
     e.invoke_set_name();
     settle();

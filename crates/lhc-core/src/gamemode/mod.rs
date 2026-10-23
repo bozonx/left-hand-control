@@ -1094,7 +1094,7 @@ mod tests {
     #[test]
     fn parses_settings_like_the_settings_page() {
         let settings = parse_game_mode_settings(
-            r#"{"version":1,"settings":{"gameMode":{"detectors":{"fullscreen":true},"processes":[{"name":"steam"}]}},"state":{"gameMode":"on"}}"#,
+            r#"{"schemaVersion":1,"settings":{"gameMode":{"detectors":{"fullscreen":true},"processes":[{"name":"steam"}]}},"state":{"gameMode":"on"}}"#,
         )
         .unwrap();
         // Missing fields take the page's defaults.
@@ -1103,10 +1103,11 @@ mod tests {
         assert_eq!(settings.process_matchers.len(), 1);
         assert!(settings.process_matchers[0].only_active_window);
         assert_eq!(settings.control, GameModeControl::On);
-        let settings = parse_game_mode_settings(r#"{"version":1}"#).unwrap();
+        let settings = parse_game_mode_settings(r#"{"schemaVersion":1}"#).unwrap();
         assert_eq!(settings.use_gamemoded, cfg!(target_os = "linux"));
         assert!(
-            parse_game_mode_settings(r#"{"version":1,"settings":{"gameMode":{"x":1}}}"#).is_none()
+            parse_game_mode_settings(r#"{"schemaVersion":1,"settings":{"gameMode":{"x":1}}}"#)
+                .is_none()
         );
     }
 }

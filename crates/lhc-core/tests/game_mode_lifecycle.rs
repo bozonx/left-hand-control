@@ -33,7 +33,7 @@ fn startup_and_watcher_restart_follow_persisted_control() {
         directory.path().join("settings"),
         directory.path().join("data"),
     );
-    paths.save_config(r#"{"version":1,"settings":{"gameMode":{"detectors":{"gamemoded":false,"steam":false,"lutris":false,"heroic":false,"umu":false,"gamescope":false,"appCategory":false}}},"state":{"gameMode":"on"}}"#).unwrap();
+    paths.save_config(r#"{"schemaVersion":1,"settings":{"gameMode":{"detectors":{"gamemoded":false,"steam":false,"lutris":false,"heroic":false,"umu":false,"gamescope":false,"appCategory":false}}},"state":{"gameMode":"on"}}"#).unwrap();
     gamemode::start_watcher(Some(paths.clone()));
     let _watcher = Watcher;
     wait_for(|| gamemode::status().control == GameModeControl::On);

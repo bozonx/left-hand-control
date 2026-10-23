@@ -17,6 +17,7 @@ use lhc_core::{
     config_document::{ConfigDocument, ConfigError},
     profile::{
         auto_switch::{self, AutoSwitchContext},
+        bundled::BUNDLED,
         ids, layout_file,
         library::LibrarySource,
         model::{
@@ -510,7 +511,12 @@ fn create(
         .ok()
         .and_then(|index| slint::Model::row_data(&library.get_names(), index));
     let source = match source {
-        LayoutSource::Author => LibrarySource::IvanK,
+        LayoutSource::Bundled => LibrarySource::Bundled(
+            usize::try_from(copy_index)
+                .ok()
+                .and_then(|index| BUNDLED.get(index))
+                .ok_or(Msg::LibrarySelect)?,
+        ),
         LayoutSource::Copy => LibrarySource::Copy(copy_from.as_deref().ok_or(Msg::LibrarySelect)?),
         LayoutSource::Empty => LibrarySource::Empty,
     };
@@ -835,6 +841,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let state: Shared = Rc::default();
     reset_context(ui, document, &mut state.borrow_mut());
     let library = ui.global::<LayoutLibrary>();
+    library.set_bundled_names(super::strings(BUNDLED.iter().map(|bundled| bundled.name)));
 
     let rows = Rc::new(RefCell::new(Vec::new()));
     let positions = rows.clone();

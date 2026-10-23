@@ -1,6 +1,6 @@
 //! Saved layout JSON files in the user library.
 //!
-//! The format is versioned (`"version": 1`) and read strictly: unknown
+//! The format is versioned (`"schemaVersion": 1`) and read strictly: unknown
 //! fields, wrong types and unknown enum values are errors, so a file is
 //! never silently rewritten with parts of it dropped. Semantic checks
 //! (unknown macros, invalid key names in actions) are left to the
@@ -13,8 +13,8 @@ use super::model::{
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeMap;
 
-/// Version of the layout file format this build reads and writes.
-pub const FORMAT_VERSION: u64 = 1;
+/// Schema version of the layout and config files this build reads and writes.
+pub const SCHEMA_VERSION: u64 = 1;
 
 /// Parse a layout file. Returns `Ok(None)` for an empty document.
 pub fn parse(text: &str) -> Result<Option<LayoutPreset>, String> {
@@ -29,21 +29,21 @@ pub fn parse(text: &str) -> Result<Option<LayoutPreset>, String> {
     from_doc(doc).map(Some)
 }
 
-/// Check the `version` field of a parsed document before reading the rest,
+/// Check the `schemaVersion` field of a parsed document before reading the rest,
 /// so a file from a newer build is reported as such rather than as a list
 /// of unknown fields.
 pub(crate) fn check_version(value: &serde_json::Value, what: &str) -> Result<(), String> {
     let object = value
         .as_object()
         .ok_or_else(|| format!("{what} must be a JSON object"))?;
-    match object.get("version") {
-        None => Err(format!("{what}: missing \"version\" field")),
+    match object.get("schemaVersion") {
+        None => Err(format!("{what}: missing \"schemaVersion\" field")),
         Some(version) => match version.as_u64() {
-            Some(FORMAT_VERSION) => Ok(()),
-            Some(newer) if newer > FORMAT_VERSION => Err(format!(
-                "{what}: format version {newer} is newer than this application supports ({FORMAT_VERSION})"
+            Some(SCHEMA_VERSION) => Ok(()),
+            Some(newer) if newer > SCHEMA_VERSION => Err(format!(
+                "{what}: schema version {newer} is newer than this application supports ({SCHEMA_VERSION})"
             )),
-            _ => Err(format!("{what}: unsupported format version {version}")),
+            _ => Err(format!("{what}: unsupported schema version {version}")),
         },
     }
 }
@@ -55,7 +55,7 @@ pub fn serialize(preset: &LayoutPreset) -> String {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct LayoutDoc {
-    version: u64,
+    schema_version: u64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     description: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -702,7 +702,7 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
         matches!(pages, [page] if page.name.is_none() && page.cells.is_empty())
     }
     LayoutDoc {
-        version: FORMAT_VERSION,
+        schema_version: SCHEMA_VERSION,
         description: preset.description.clone().filter(|d| !d.trim().is_empty()),
         layers,
         rules,
@@ -728,7 +728,7 @@ mod tests {
 
     fn layout(body: Value) -> String {
         let mut body = body;
-        body["version"] = json!(1);
+        body["schemaVersion"] = json!(1);
         body.to_string()
     }
 
@@ -742,16 +742,21 @@ mod tests {
 
     #[test]
     fn version_is_required_and_checked() {
-        assert!(parse(r#"{"rules": []}"#).unwrap_err().contains("version"));
         assert!(
-            parse(r#"{"version": 2, "rules": []}"#)
+            parse(r#"{"rules": []}"#)
+                .unwrap_err()
+                .contains("schemaVersion")
+        );
+        assert!(parse(r#"{"version": 1}"#).is_err());
+        assert!(
+            parse(r#"{"schemaVersion": 2, "rules": []}"#)
                 .unwrap_err()
                 .contains("newer")
         );
-        assert!(parse(r#"{"version": "1"}"#).is_err());
-        assert!(parse(r#"{"version": 1}"#).unwrap().is_some());
+        assert!(parse(r#"{"schemaVersion": "1"}"#).is_err());
+        assert!(parse(r#"{"schemaVersion": 1}"#).unwrap().is_some());
         assert_eq!(
-            serde_json::from_str::<Value>(&serialize(&LayoutPreset::default())).unwrap()["version"],
+            serde_json::from_str::<Value>(&serialize(&LayoutPreset::default())).unwrap()["schemaVersion"],
             1
         );
     }
@@ -922,7 +927,7 @@ mod tests {
             preset.quick_action_pages,
             vec![QuickActionPage::default_page()]
         );
-        assert_eq!(serialize(&preset), "{\n  \"version\": 1\n}");
+        assert_eq!(serialize(&preset), "{\n  \"schemaVersion\": 1\n}");
         assert_eq!(parsed(json!({"emojiPages": []})), preset);
     }
 
@@ -940,13 +945,5 @@ mod tests {
         assert!(parse(r#""just text""#).is_err());
         assert!(parse("{\"layers\": [").is_err());
         assert!(parse("layers: []\nrules: []\n").is_err());
-    }
-
-    #[test]
-    fn bundled_layout_is_current() {
-        let text = include_str!("../../assets/ivank-layout.json");
-        let preset = parse(text).unwrap().unwrap();
-        assert!(!preset.rules.is_empty());
-        assert_eq!(round_trip(&preset), preset);
     }
 }
