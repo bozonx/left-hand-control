@@ -69,6 +69,11 @@ fn build() {
         .with_bundled_translations("translations")
         .with_default_translation_context(slint_build::DefaultTranslationContext::None);
     slint_build::compile_with_config("ui/app.slint", config).unwrap();
+    // Live Preview generates an interpreter wrapper without the bundled
+    // translation tables; the compiler switches on the same variable.
+    if std::env::var("SLINT_LIVE_PREVIEW").is_ok() {
+        return;
+    }
     let generated_ui = std::fs::read_to_string(output.join("app.rs")).unwrap();
     i18n_checks::validate_bundled(&generated_ui)
         .unwrap_or_else(|error| panic!("i18n bundled parity: {error}"));
