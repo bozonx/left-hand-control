@@ -1,5 +1,11 @@
 msgid ""
 msgstr ""
+"Project-Id-Version: Left Hand Control\n"
+"PO-Revision-Date: 2026-10-23 00:00+0000\n"
+"Last-Translator: Left Hand Control contributors\n"
+"Language-Team: Russian\n"
+"MIME-Version: 1.0\n"
+"Content-Transfer-Encoding: 8bit\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Language: ru\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
@@ -119,7 +125,7 @@ msgid "Spell worker: restart limit exceeded (3 per minute)"
 msgstr "Spell worker: превышен лимит перезапусков (3 за минуту)"
 
 msgid "Spell worker: {}"
-msgstr "Spell worker: {}"
+msgstr "Процесс Spell: {}"
 
 msgid "Stop capture"
 msgstr "Остановить захват"
@@ -654,12 +660,6 @@ msgstr "Поиск клавиш и действий"
 msgid "Search keys"
 msgstr "Поиск клавиш"
 
-msgid "Double-tap action"
-msgstr "Действие двойного нажатия"
-
-msgid "Tap action"
-msgstr "Действие нажатия"
-
 msgid "Hold action"
 msgstr "Действие удержания"
 
@@ -1187,40 +1187,40 @@ msgstr "Очистка возвращает обычное поведение к
 
 msgctxt "Game mode control"
 msgid "Auto"
-msgstr "Auto"
+msgstr "Авто"
 
 msgctxt "Game mode control"
 msgid "On"
-msgstr "On"
+msgstr "Вкл"
 
 msgctxt "Game mode control"
 msgid "Off"
-msgstr "Off"
+msgstr "Выкл"
 
 msgid "Auto: no detection sources enabled"
-msgstr "Auto: источники автоопределения выключены"
+msgstr "Авто: источники автоопределения выключены"
 
 msgid "Auto: detection unavailable"
-msgstr "Auto: автоопределение недоступно"
+msgstr "Авто: автоопределение недоступно"
 
 msgid "Auto: game mode inactive"
-msgstr "Auto: игровой режим неактивен"
+msgstr "Авто: игровой режим неактивен"
 
 msgid "Auto: GameMode daemon active"
-msgstr "Auto: служба GameMode активна"
+msgstr "Авто: служба GameMode активна"
 
 msgid "Auto: matched {}"
-msgstr "Auto: совпадение с {}"
+msgstr "Авто: совпадение с {}"
 
 msgid "Auto: fullscreen window active"
-msgstr "Auto: активно полноэкранное окно"
+msgstr "Авто: активно полноэкранное окно"
 
 msgid "Auto: excluded by {}"
-msgstr "Auto: исключён правилом {}"
+msgstr "Авто: исключён правилом {}"
 
 
 msgid "Fullscreen detection is not supported in this session. Use process rules or On/Off."
-msgstr "Определение полноэкранного окна не поддерживается в этой сессии. Используйте правила процессов или On/Off."
+msgstr "Определение полноэкранного окна не поддерживается в этой сессии. Используйте правила процессов или Вкл/Выкл."
 
 msgid "Fullscreen detection tools are missing or could not query the session."
 msgstr "Инструменты определения полноэкранного окна отсутствуют или не смогли получить данные сессии."
@@ -1230,9 +1230,6 @@ msgstr "Запущенные процессы: "
 
 msgid "Active window: "
 msgstr "Активное окно: "
-
-msgid "Hold action"
-msgstr "Действие при удержании"
 
 msgid "Create a layer to assign its keys."
 msgstr "Создайте слой, чтобы назначить его клавиши."
@@ -1785,13 +1782,13 @@ msgstr[1] "В {n} правилах"
 msgstr[2] "В {n} правилах"
 
 msgid "Auto — detect games"
-msgstr "Auto — определять игры"
+msgstr "Авто — определять игры"
 
 msgid "On — always"
-msgstr "On — всегда"
+msgstr "Вкл — всегда"
 
 msgid "Off — never"
-msgstr "Off — никогда"
+msgstr "Выкл — никогда"
 
 msgid "Automatic layout rules apply only when the layout is chosen automatically (Layouts page)."
 msgstr "Авто-правила раскладок работают, только когда раскладка выбирается автоматически (страница «Раскладки»)."
@@ -1806,7 +1803,7 @@ msgid "Game mode is on (set manually)"
 msgstr "Игровой режим включён (вручную)"
 
 msgid "Game mode turns on rules and automatic layout rules that have a game-mode condition. Automatic layout rules apply only when the layout is chosen automatically (Layouts page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Never a game” takes priority over automatic detection and “Always a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
-msgstr "Игровой режим включает правила и авто-правила раскладок с условием игрового режима. Авто-правила раскладок работают, только когда раскладка выбирается автоматически (страница «Раскладки»). Auto использует источники автоопределения и свои правила ниже; On и Off задают состояние вручную. «Никогда не игра» важнее автоопределения и «Всегда игра». Режим также можно переключать в верхней панели, меню трея или клавишей с действием игрового режима."
+msgstr "Игровой режим включает правила и авто-правила раскладок с условием игрового режима. Авто-правила раскладок работают, только когда раскладка выбирается автоматически (страница «Раскладки»). Авто использует источники автоопределения и свои правила ниже; Вкл и Выкл задают состояние вручную. «Никогда не игра» важнее автоопределения и «Всегда игра». Режим также можно переключать в верхней панели, меню трея или клавишей с действием игрового режима."
 
 msgid "Game mode: always off"
 msgstr "Игровой режим: всегда выключен"
@@ -1830,7 +1827,7 @@ msgid "Nothing uses game mode yet: no rule or automatic layout rule has a game-m
 msgstr "Игровой режим пока ни на что не влияет: ни у одного правила или авто-правила раскладки нет условия «игровой режим»."
 
 msgid "On and Off are remembered after restart. Auto keeps detecting in the background."
-msgstr "On и Off сохраняются после перезапуска. В режиме Auto определение работает в фоне."
+msgstr "Вкл и Выкл сохраняются после перезапуска. В режиме Авто определение работает в фоне."
 
 msgid "Rules of the current layout with a game-mode condition: {}. Automatic layout rules with a game-mode condition: {}."
 msgstr "Правил текущей раскладки с условием игрового режима: {}. Авто-правил раскладок с условием игрового режима: {}."
@@ -2135,7 +2132,7 @@ msgid "Changing a device restarts the mapper."
 msgstr "При смене устройства маппер перезапустится."
 
 msgid "Auto: known game {}"
-msgstr "Auto: известная игра {}"
+msgstr "Авто: известная игра {}"
 
 msgid "Ignored in fullscreen"
 msgstr "Не считаются играми в полноэкранном режиме"
@@ -2499,7 +2496,7 @@ msgid "Longest pause between two taps. Empty uses the default from Settings: {} 
 msgstr "Максимальная пауза между двумя нажатиями. Пустое поле — значение по умолчанию из настроек: {} мс."
 
 msgid "Auto: {} is not counted as a game (built-in list)"
-msgstr "Auto: {} не считается игрой (встроенный список)"
+msgstr "Авто: {} не считается игрой (встроенный список)"
 
 msgid "These sources can take another application for a game, so each skips a built-in list of applications."
 msgstr "Эти источники могут принять за игру другое приложение, поэтому каждый пропускает встроенный список приложений."
@@ -2729,3 +2726,162 @@ msgstr "Держать модификаторы до отпускания сло
 
 msgid "For a combination such as Alt+Tab: Alt stays pressed while you press the key again and is released together with the layer key, so the window switcher stays open."
 msgstr "Для сочетаний вроде Alt+Tab: Alt остаётся нажатым при повторных нажатиях клавиши и отпускается вместе с клавишей слоя, поэтому переключатель окон не закрывается."
+
+msgid "Cannot list input devices. Check device access and see the application log."
+msgstr "Не удалось получить список устройств ввода. Проверьте доступ к устройствам и журнал приложения."
+
+msgid "Configuration is unavailable. Check the configuration files and see the application log."
+msgstr "Конфигурация недоступна. Проверьте файлы конфигурации и журнал приложения."
+
+msgid "Popup menus are unavailable. Try opening the menu again."
+msgstr "Всплывающие меню недоступны. Попробуйте открыть меню снова."
+
+msgid "Popup menu failed. Try opening the menu again."
+msgstr "Ошибка всплывающего меню. Попробуйте открыть меню снова."
+
+msgid "The text was not typed: the typing method is unavailable. Restart the mapper to try again."
+msgstr "Текст не введён: способ ввода недоступен. Перезапустите маппер и попробуйте снова."
+
+msgid "The text was not typed: safe clipboard access failed. See the application log."
+msgstr "Текст не введён: ошибка безопасного доступа к буферу обмена. Подробности в журнале приложения."
+
+msgid "The text was not typed: the input tool failed. See the application log."
+msgstr "Текст не введён: ошибка инструмента ввода. Подробности в журнале приложения."
+
+msgid "Changes applied, but the mapper was not updated. Restart the mapper."
+msgstr "Изменения применены, но маппер не обновлён. Перезапустите маппер."
+
+msgid "The operation failed. See the application log."
+msgstr "Не удалось выполнить операцию. Подробности в журнале приложения."
+
+msgid "The action failed. See the application log."
+msgstr "Не удалось выполнить действие. Подробности в журнале приложения."
+
+msgid "Cannot start the mapper. Check the keyboard and device access. See the application log."
+msgstr "Не удалось запустить маппер. Проверьте клавиатуру и доступ к устройствам. Подробности в журнале приложения."
+
+msgid "Mapper is running, but an error occurred. See the application log."
+msgstr "Маппер работает, но возникла ошибка. Подробности в журнале приложения."
+
+msgid "Mapper stopped because of an error. See the application log."
+msgstr "Маппер остановлен из-за ошибки. Подробности в журнале приложения."
+
+msgid "Cannot read or save the configuration. Check file access and see the application log."
+msgstr "Не удалось прочитать или сохранить конфигурацию. Проверьте доступ к файлам и журнал приложения."
+
+msgid "Cannot parse the configuration file. See the application log."
+msgstr "Не удалось разобрать файл конфигурации. Подробности в журнале приложения."
+
+msgid "The configuration contains invalid values. See the application log."
+msgstr "Конфигурация содержит недопустимые значения. Подробности в журнале приложения."
+
+msgid "The action has invalid syntax."
+msgstr "Недопустимый формат действия."
+
+msgid "Pauses can only be used in macro steps."
+msgstr "Паузы можно использовать только в шагах макроса."
+
+msgid "The selected macro no longer exists."
+msgstr "Выбранный макрос больше не существует."
+
+msgid "The selected command no longer exists."
+msgstr "Выбранная команда больше не существует."
+
+msgid "Unknown system action."
+msgstr "Неизвестное системное действие."
+
+msgid "Unknown application action."
+msgstr "Неизвестное действие приложения."
+
+msgid "Layout: {}"
+msgstr "Раскладка: {}"
+
+msgid "Select All"
+msgstr "Выделить всё"
+
+msgid "Move line down"
+msgstr "Переместить строку вниз"
+
+msgid "Down + End"
+msgstr "Вниз + End"
+
+msgid "Up + End"
+msgstr "Вверх + End"
+
+msgid "Up 5 times"
+msgstr "Вверх 5 раз"
+
+msgid "Duplicate line"
+msgstr "Дублировать строку"
+
+msgid "Right + Space"
+msgstr "Вправо + пробел"
+
+msgid "Empty line below"
+msgstr "Пустая строка ниже"
+
+msgid "Cut word right from center"
+msgstr "Вырезать слово справа от курсора"
+
+msgid "Copy word right from center"
+msgstr "Копировать слово справа от курсора"
+
+msgid "Paste at line above"
+msgstr "Вставить строкой выше"
+
+msgid "Replace word with buffer"
+msgstr "Заменить слово из буфера обмена"
+
+msgid "Down + Home"
+msgstr "Вниз + Home"
+
+msgid "Up + Home"
+msgstr "Вверх + Home"
+
+msgid "Down 5 times"
+msgstr "Вниз 5 раз"
+
+msgid "Paste at line bottom"
+msgstr "Вставить в конце строки"
+
+msgid "Cut to start"
+msgstr "Вырезать до начала строки"
+
+msgid "Cut to end"
+msgstr "Вырезать до конца строки"
+
+msgid "Cut line content"
+msgstr "Вырезать содержимое строки"
+
+msgid "Cut and remove line"
+msgstr "Вырезать и удалить строку"
+
+msgid "Select 5 lines up"
+msgstr "Выделить 5 строк вверх"
+
+msgid "Copy to start"
+msgstr "Копировать до начала строки"
+
+msgid "Copy to end"
+msgstr "Копировать до конца строки"
+
+msgid "Copy line"
+msgstr "Копировать строку"
+
+msgid "Select whole line"
+msgstr "Выделить всю строку"
+
+msgid "Select word right from center"
+msgstr "Выделить слово справа от курсора"
+
+msgid "Replace to start with buffer"
+msgstr "Заменить до начала строки из буфера обмена"
+
+msgid "Replace to end with buffer"
+msgstr "Заменить до конца строки из буфера обмена"
+
+msgid "Replace line with buffer"
+msgstr "Заменить строку из буфера обмена"
+
+msgid "Select 5 lines down"
+msgstr "Выделить 5 строк вниз"

@@ -18,7 +18,7 @@ fn policy(message: &Message, backend: bool) -> Option<(ToastKind, Duration)> {
         "copied" => (ToastKind::Success, 2),
         "layout-created" | "layout-saved" | "layout-deleted" | "layout-activated"
         | "layout-discarded" | "command-completed" => (ToastKind::Success, 3),
-        "mapper-running" | "mapper-stopped" if message.arg.is_empty() => (ToastKind::Success, 3),
+        "mapper-running" | "mapper-stopped" => (ToastKind::Success, 3),
         "rule-duplicate-trigger"
         | "rule-shadowed-trigger"
         | "rule-missing-trigger"
@@ -38,8 +38,12 @@ fn policy(message: &Message, backend: bool) -> Option<(ToastKind, Duration)> {
         | "worker-restart-limit"
         | "worker-not-started"
         | "worker-error"
-        | "mapper-running"
-        | "mapper-stopped" => (ToastKind::Error, 10),
+        | "mapper-failed"
+        | "mapper-running-error"
+        | "mapper-stopped-error"
+        | "config-io"
+        | "config-parse"
+        | "config-invalid" => (ToastKind::Error, 10),
         _ if backend => (ToastKind::Error, 10),
         _ => return None,
     };
@@ -219,6 +223,27 @@ pub(crate) fn bind(ui: &SettingsWindow) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn localized_diagnostic_ids_remain_error_notifications() {
+        for message in [
+            Msg::ConfigIo,
+            Msg::ConfigParse,
+            Msg::ConfigInvalid,
+            Msg::MapperFailed("details".into()),
+            Msg::MapperRunning(Some("details".into())),
+            Msg::MapperStopped(Some("details".into())),
+        ] {
+            assert_eq!(
+                policy(&message.to_ui(), false),
+                Some((ToastKind::Error, Duration::from_secs(10)))
+            );
+        }
+        assert_eq!(
+            policy(&Msg::MapperRunning(None).to_ui(), false),
+            Some((ToastKind::Success, Duration::from_secs(3)))
+        );
+    }
 
     #[test]
     fn errors_outlive_success_and_hover_pauses_the_stack() {

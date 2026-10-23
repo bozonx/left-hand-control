@@ -25,7 +25,7 @@ export global Locale {
         if m.id == "capability-available" { return @tr("Available"); }
         if m.id == "capability-unavailable" { return @tr("Unavailable"); }
         if m.id == "capability-unsupported" { return @tr("Not implemented"); }
-        if m.id == "input-discovery-failed" { return @tr("Cannot list input devices: {}", m.arg); }
+        if m.id == "input-discovery-failed" { return @tr("Cannot list input devices. Check device access and see the application log."); }
         if m.id == "mapper-unsupported" { return @tr("Keyboard interception is not implemented on this operating system."); }
         if m.id == "input-access-no-devices" { return @tr("No input devices were found in /dev/input."); }
         if m.id == "input-access-keyboard-missing" { return @tr("The selected keyboard is not connected. Connect it or pick another one below."); }
@@ -43,6 +43,35 @@ export global Locale {
         if m.id == "game-mode-window-skipped" { return @tr("Auto: {} is not counted as a game (built-in list)", m.arg); }
         if m.id == "game-mode-manual-on" { return @tr("Game mode is on (set manually)"); }
         if m.id == "game-mode-manual-off" { return @tr("Game mode is off (set manually)"); }
+        if m.id == "builtin-macro" && m.arg == "moveLineDown" { return @tr("Move line down"); }
+        if m.id == "builtin-macro" && m.arg == "downEnd" { return @tr("Down + End"); }
+        if m.id == "builtin-macro" && m.arg == "upEnd" { return @tr("Up + End"); }
+        if m.id == "builtin-macro" && m.arg == "up5Times" { return @tr("Up 5 times"); }
+        if m.id == "builtin-macro" && m.arg == "duplicateLine" { return @tr("Duplicate line"); }
+        if m.id == "builtin-macro" && m.arg == "rightSpace" { return @tr("Right + Space"); }
+        if m.id == "builtin-macro" && m.arg == "emptyLineBelow" { return @tr("Empty line below"); }
+        if m.id == "builtin-macro" && m.arg == "cutWordRightCenter" { return @tr("Cut word right from center"); }
+        if m.id == "builtin-macro" && m.arg == "copyWordAfterCenter" { return @tr("Copy word right from center"); }
+        if m.id == "builtin-macro" && m.arg == "pasteAtLineAbove" { return @tr("Paste at line above"); }
+        if m.id == "builtin-macro" && m.arg == "replaceWordWidthBuffer" { return @tr("Replace word with buffer"); }
+        if m.id == "builtin-macro" && m.arg == "downHome" { return @tr("Down + Home"); }
+        if m.id == "builtin-macro" && m.arg == "upHome" { return @tr("Up + Home"); }
+        if m.id == "builtin-macro" && m.arg == "down5Times" { return @tr("Down 5 times"); }
+        if m.id == "builtin-macro" && m.arg == "pasteAtLineBottom" { return @tr("Paste at line bottom"); }
+        if m.id == "builtin-macro" && m.arg == "cutToStart" { return @tr("Cut to start"); }
+        if m.id == "builtin-macro" && m.arg == "cutToEnd" { return @tr("Cut to end"); }
+        if m.id == "builtin-macro" && m.arg == "cutLineContent" { return @tr("Cut line content"); }
+        if m.id == "builtin-macro" && m.arg == "cutAndRemoveLine" { return @tr("Cut and remove line"); }
+        if m.id == "builtin-macro" && m.arg == "select5LinesUp" { return @tr("Select 5 lines up"); }
+        if m.id == "builtin-macro" && m.arg == "copyToStart" { return @tr("Copy to start"); }
+        if m.id == "builtin-macro" && m.arg == "copyToEnd" { return @tr("Copy to end"); }
+        if m.id == "builtin-macro" && m.arg == "copyLine" { return @tr("Copy line"); }
+        if m.id == "builtin-macro" && m.arg == "selectWholeLine" { return @tr("Select whole line"); }
+        if m.id == "builtin-macro" && m.arg == "selectWordRightCenter" { return @tr("Select word right from center"); }
+        if m.id == "builtin-macro" && m.arg == "replaceToStartWithBuffer" { return @tr("Replace to start with buffer"); }
+        if m.id == "builtin-macro" && m.arg == "replaceToEndWithBuffer" { return @tr("Replace to end with buffer"); }
+        if m.id == "builtin-macro" && m.arg == "replaceLineWidthBuffer" { return @tr("Replace line with buffer"); }
+        if m.id == "builtin-macro" && m.arg == "select5LinesDown" { return @tr("Select 5 lines down"); }
         if m.id == "picker-action" && m.arg == "showQuickMenu" { return @tr("Show Quick Action Menu page {}", m.count); }
         if m.id == "picker-action" && m.arg == "showEmojiMenu" { return @tr("Show Emoji & Symbols menu page {}", m.count); }
         if m.id == "picker-action" && m.arg == "showQuickMenuLast" { return @tr("Show Quick Action Menu on the last used page"); }
@@ -69,22 +98,22 @@ export global Locale {
         if m.id == "library-select" { return @tr("Select a layout"); }
         if m.id == "library-changed" { return @tr("Layout changed on disk; select it again"); }
         if m.id == "" { return ""; }
-        if m.id == "mapper-running" { return m.arg == "" ? @tr("Mapper is running") : @tr("Mapper is running: {}", m.arg); }
-        if m.id == "mapper-stopped" { return m.arg == "" ? @tr("Mapper is stopped") : @tr("Mapper is stopped: {}", m.arg); }
+        if m.id == "mapper-running" { return @tr("Mapper is running"); }
+        if m.id == "mapper-stopped" { return @tr("Mapper is stopped"); }
         if m.id == "mapper-starting" { return @tr("Mapper is starting…"); }
         if m.id == "config-loaded" { return @tr("Configuration loaded: {n} rule" | "Configuration loaded: {n} rules" % m.count); }
         if m.id == "config-saved" { return @tr("Configuration saved: {n} rule" | "Configuration saved: {n} rules" % m.count); }
-        if m.id == "config-unavailable" { return @tr("Configuration unavailable: {}", m.arg); }
+        if m.id == "config-unavailable" { return @tr("Configuration is unavailable. Check the configuration files and see the application log."); }
         if m.id == "config-edit-conflict" { return @tr("The configuration changed since editing started; repeat the change"); }
         if m.id == "config-conditional" { return @tr("Key {} only has conditional or layer rules; edit it in the full editor", m.arg); }
         if m.id == "device-saved" { return @tr("Device saved: {}", m.arg); }
         if m.id == "load-config-first" { return @tr("Load a valid configuration before starting the mapper"); }
         if m.id == "select-input-device" { return @tr("Select a keyboard device in the settings"); }
-        if m.id == "worker-unavailable" { return @tr("Popup menus are unavailable: {}", m.arg); }
+        if m.id == "worker-unavailable" { return @tr("Popup menus are unavailable. Try opening the menu again."); }
         if m.id == "worker-restarting" { return @tr("Popup menus are restarting. Try again shortly."); }
         if m.id == "worker-restart-limit" { return @tr("Popup menus could not recover. Restart the application."); }
         if m.id == "worker-not-started" { return @tr("Popup menus are not running. Try opening the menu again."); }
-        if m.id == "worker-error" { return @tr("Popup menu error: {}", m.arg); }
+        if m.id == "worker-error" { return @tr("Popup menu failed. Try opening the menu again."); }
         if m.id == "action-saved" { return @tr("Action saved"); }
         if m.id == "settings-saved" { return @tr("Settings saved"); }
         if m.id == "macro-invalid-id" { return @tr("Macro ID must contain 1–64 letters, digits, underscores or hyphens"); }
@@ -129,9 +158,9 @@ export global Locale {
         if m.id == "copy-name" { return @tr("{} (copy)", m.arg); }
         if m.id == "text-missing-characters" { return @tr("The text was not typed: the keyboard layout lacks some of its characters, such as emoji. Choose a typing method with the clipboard."); }
         if m.id == "text-layout-unknown" { return @tr("The text was not typed: the active keyboard layout is unknown."); }
-        if m.id == "text-backend-unavailable" { return @tr("The text was not typed: the typing method is unavailable ({}). Restart the mapper to try again.", m.arg); }
-        if m.id == "text-clipboard-failed" { return @tr("The text was not typed: safe clipboard access failed ({}).", m.arg); }
-        if m.id == "text-tool-failed" { return @tr("The text was not typed: {}", m.arg); }
+        if m.id == "text-backend-unavailable" { return @tr("The text was not typed: the typing method is unavailable. Restart the mapper to try again."); }
+        if m.id == "text-clipboard-failed" { return @tr("The text was not typed: safe clipboard access failed. See the application log."); }
+        if m.id == "text-tool-failed" { return @tr("The text was not typed: the input tool failed. See the application log."); }
         if m.id == "mapper-required" { return @tr("Start the mapper to run actions from the menus"); }
         if m.id == "layer-name-required" { return @tr("Enter a layer name"); }
         if m.id == "layer-name-taken" { return @tr("A layer with this name already exists."); }
@@ -149,12 +178,26 @@ export global Locale {
         if m.id == "long-hold-invalid" { return @tr("Enter a long hold from 100 to 60000 ms."); }
         if m.id == "settings-timing-invalid" { return @tr("A timing value is outside the range shown in Settings."); }
         if m.id == "timeout-invalid" { return @tr("Enter a timeout from 50 to 1000 milliseconds"); }
-        if m.id == "saved-mapper-not-updated" { return @tr("Changes applied, but the mapper was not updated: {}", m.arg); }
+        if m.id == "saved-mapper-not-updated" { return @tr("Changes applied, but the mapper was not updated. Restart the mapper."); }
         if m.id == "text-empty" { return @tr("Enter non-empty text"); }
         if m.id == "delay-range" { return @tr("Delay: an integer from 1 to 10000 ms"); }
         if m.id == "system-action-required" { return @tr("Select a system action"); }
         if m.id == "unknown-kind" { return @tr("Unknown action type"); }
-        // "error" and unknown ids: untranslated detail from the core.
-        return m.arg;
+        if m.id == "error" { return @tr("The operation failed. See the application log."); }
+        if m.id == "action-failed" { return @tr("The action failed. See the application log."); }
+        if m.id == "mapper-failed" { return @tr("Cannot start the mapper. Check the keyboard and device access. See the application log."); }
+        if m.id == "mapper-running-error" { return @tr("Mapper is running, but an error occurred. See the application log."); }
+        if m.id == "mapper-stopped-error" { return @tr("Mapper stopped because of an error. See the application log."); }
+        if m.id == "config-io" { return @tr("Cannot read or save the configuration. Check file access and see the application log."); }
+        if m.id == "config-parse" { return @tr("Cannot parse the configuration file. See the application log."); }
+        if m.id == "config-invalid" { return @tr("The configuration contains invalid values. See the application log."); }
+        if m.id == "action-invalid-syntax" { return @tr("The action has invalid syntax."); }
+        if m.id == "action-pause-outside-macro" { return @tr("Pauses can only be used in macro steps."); }
+        if m.id == "action-unknown-macro" { return @tr("The selected macro no longer exists."); }
+        if m.id == "action-unknown-command" { return @tr("The selected command no longer exists."); }
+        if m.id == "action-unknown-system" { return @tr("Unknown system action."); }
+        if m.id == "action-unknown-app" { return @tr("Unknown application action."); }
+        // Message ids are checked against Rust at build time.
+        return "";
     }
 }

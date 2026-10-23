@@ -67,10 +67,10 @@ impl Handle {
     fn set_game_title(&self) {
         let title = i18n::tray_game_title(language(self.english.get()), self.game_active.get());
         self.game.set_text(&title);
-        if let Err(error) = self
-            .icon
-            .set_tooltip(Some(format!("Left Hand Control\n{title}")))
-        {
+        if let Err(error) = self.icon.set_tooltip(Some(format!(
+            "{}\n{title}",
+            i18n::application_name(language(self.english.get()))
+        ))) {
             log::warn!("tray tooltip: {error}");
         }
     }
@@ -110,7 +110,7 @@ pub fn start(dispatch: Dispatch) -> Result<Handle, Box<dyn std::error::Error>> {
         }
     }));
     let icon = TrayIconBuilder::new()
-        .with_tooltip("Left Hand Control")
+        .with_tooltip(i18n::application_name(Language::Russian))
         .with_icon(icon(false)?)
         .with_menu(Box::new(menu))
         .build()?;

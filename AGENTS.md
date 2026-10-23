@@ -136,7 +136,7 @@ docs/                         # development/, design/, testing/; README.md index
 **Slint UI**
 - Each settings page is one Slint global bound by one module in `src/pages/`. Shared widgets are exported by `controls.slint` (base widgets in `controls-base.slint`, inline editors in `controls-inline.slint`), colours and metrics in `theme.slint` (system, light, dark and E-ink themes must all work).
 - All user-visible text goes through `@tr(...)`. Rust never formats UI text: it sends an `i18n::Msg` (`Message { id, arg, count }`) and `Locale.text()` in `ui/i18n.slint` translates it.
-- Adding a message means updating `src/i18n.rs`, `ui/i18n.slint` and the Russian PO file together. The test `every_slint_string_has_a_russian_translation` enforces coverage; Russian plural forms must be filled.
+- Adding a message means updating `src/i18n.rs`, `ui/i18n.slint` and the Russian PO file together. The build checks catalog completeness, contexts, plural forms, placeholders and Rust message handlers. Text outside Slint is registered in `build-support/rust_messages.rs`; its translations are generated from the PO file without runtime fallbacks. Technical error details stay in logs.
 - Changing a property or callback used from Rust requires a rebuild; Live Preview only reloads pure `.slint` changes.
 
 **Vendored crates**

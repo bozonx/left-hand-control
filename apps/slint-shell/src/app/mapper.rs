@@ -347,9 +347,14 @@ impl App {
     }
 
     fn set_mapper_error(&self, error: String) {
-        self.settings
-            .global::<AppState>()
-            .set_mapper_error(error.into());
+        self.settings.global::<AppState>().set_mapper_error(
+            if error.is_empty() {
+                Msg::None
+            } else {
+                Msg::MapperFailed(error)
+            }
+            .to_ui(),
+        );
     }
 
     /// Start the mapper; a failed start is tried again `retries` times.

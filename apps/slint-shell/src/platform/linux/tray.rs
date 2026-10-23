@@ -115,7 +115,7 @@ impl ksni::Tray for Tray {
         "lhc-slint-shell".into()
     }
     fn title(&self) -> String {
-        "Left Hand Control".into()
+        i18n::application_name(self.language())
     }
     fn icon_pixmap(&self) -> Vec<ksni::Icon> {
         let (rgba, width, height) = super::super::icon::rgba(self.enabled);
@@ -134,7 +134,7 @@ impl ksni::Tray for Tray {
     }
     fn tool_tip(&self) -> ksni::ToolTip {
         ksni::ToolTip {
-            title: "Left Hand Control".into(),
+            title: i18n::application_name(self.language()),
             description: i18n::tray_game_title(self.language(), self.game.1),
             ..Default::default()
         }

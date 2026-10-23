@@ -141,3 +141,7 @@ mod animation_tests {
         animations::set_animations_enabled(true);
     }
 }
+
+#[cfg(test)]
+#[path = "../build-support/i18n.rs"]
+mod i18n_checks;

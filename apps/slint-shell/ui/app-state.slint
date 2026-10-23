@@ -9,7 +9,7 @@ export global AppState {
     /// A keyboard device is chosen, so the mapper can start.
     in property <bool> keyboard-selected;
     /// Why the mapper failed to start or stopped; empty when it is fine.
-    in property <string> mapper-error;
+    in property <Message> mapper-error;
     /// Whole minutes the mapper has been running; -1 when stopped.
     in property <int> mapper-uptime: -1;
     /// After the mapper stopped by itself: whole minutes it ran and

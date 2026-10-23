@@ -11,6 +11,40 @@ fn message(id: &str, arg: &str) -> Message {
     }
 }
 
+fn last_dismiss_position(ui: &SettingsWindow) -> slint::LogicalPosition {
+    use i_slint_core::{
+        accessibility::AccessibleStringProperty, item_tree::ItemRc, items::AccessibleRole,
+        window::WindowInner,
+    };
+    // Toast height depends on the translation and font metrics.
+    let _ = ui.window().take_snapshot().unwrap();
+    let mut pending = vec![ItemRc::new_root(
+        WindowInner::from_pub(ui.window()).component(),
+    )];
+    let mut positions = Vec::new();
+    while let Some(item) = pending.pop() {
+        if item.is_visible()
+            && item.accessible_role() == AccessibleRole::Button
+            && item
+                .accessible_string_property(AccessibleStringProperty::Label)
+                .as_deref()
+                == Some("Закрыть уведомление")
+        {
+            let center = item.map_to_window(item.geometry().center());
+            positions.push(slint::LogicalPosition::new(center.x, center.y));
+        }
+        let mut child = item.first_child();
+        while let Some(next) = child {
+            child = next.next_sibling();
+            pending.push(next);
+        }
+    }
+    positions
+        .into_iter()
+        .max_by(|a, b| a.y.total_cmp(&b.y))
+        .expect("visible notification dismiss button")
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir()?;
     let document = Document::load(StoragePaths::new(
@@ -43,14 +77,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let weak = ui.as_weak();
     slint::Timer::single_shot(Duration::from_millis(500), move || {
         let ui = weak.unwrap();
-        let size = ui.window().size();
-        let scale = ui.window().scale_factor();
         ui.window()
             .dispatch_event(slint::platform::WindowEvent::PointerMoved {
-                position: slint::LogicalPosition::new(
-                    size.width as f32 / scale - 300.0,
-                    size.height as f32 / scale - 260.0,
-                ),
+                position: last_dismiss_position(&ui),
             });
         if let Some(dir) = std::env::var_os("LHC_EDITOR_SNAPSHOTS") {
             let pixels = ui.window().take_snapshot().unwrap();
@@ -69,14 +98,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let weak = ui.as_weak();
     slint::Timer::single_shot(Duration::from_millis(1500), move || {
         let ui = weak.unwrap();
-        let size = ui.window().size();
-        let scale = ui.window().scale_factor();
         ui.window()
             .dispatch_event(slint::platform::WindowEvent::PointerMoved {
-                position: slint::LogicalPosition::new(
-                    size.width as f32 / scale - 46.0,
-                    size.height as f32 / scale - 260.0,
-                ),
+                position: last_dismiss_position(&ui),
             });
     });
     let weak = ui.as_weak();
@@ -92,12 +116,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ids,
             ["copied", "layout-saved", "config-edit-conflict", "error"]
         );
-        let size = ui.window().size();
-        let scale = ui.window().scale_factor();
-        let position = slint::LogicalPosition::new(
-            size.width as f32 / scale - 46.0,
-            size.height as f32 / scale - 66.0,
-        );
+        let position = last_dismiss_position(&ui);
         for event in [
             slint::platform::WindowEvent::PointerMoved { position },
             slint::platform::WindowEvent::PointerPressed {

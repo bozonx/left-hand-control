@@ -273,7 +273,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             .iter()
             .map(|item| BuiltinMacroRow {
                 id: item.id.into(),
-                name: item.name.into(),
+                name: Msg::BuiltinMacro(item.id.into()).to_ui(),
                 steps: item.steps.join("  ›  ").into(),
             })
             .collect::<Vec<_>>(),
@@ -357,7 +357,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         });
     });
     let s = structural.clone();
-    editor.on_clone_builtin(move |index, suffix| {
+    editor.on_clone_builtin(move |index, name| {
         let Some(builtin) = usize::try_from(index)
             .ok()
             .and_then(|i| BUILTIN_MACROS.get(i))
@@ -370,7 +370,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 0,
                 Entry::new(Macro {
                     id,
-                    name: format!("{} {suffix}", builtin.name),
+                    name: name.to_string(),
                     steps: builtin.steps.iter().map(|a| step(*a)).collect(),
                     step_pause_ms: None,
                     modifier_delay_ms: None,

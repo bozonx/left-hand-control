@@ -87,6 +87,11 @@ pub fn valid_pause(ms: &str) -> bool {
 pub(crate) fn action_label(ui: &SettingsWindow, name: ActionName) -> Option<String> {
     match name {
         ActionName::Verbatim(name) if !name.is_empty() => Some(name),
+        ActionName::BuiltinMacro { id } => Some(
+            ui.global::<Locale>()
+                .invoke_text(Msg::BuiltinMacro(id.into()).to_ui())
+                .to_string(),
+        ),
         ActionName::System { id, n } | ActionName::App { id, n } => Some(
             ui.global::<Locale>()
                 .invoke_text(Msg::PickerAction(id.into(), n).to_ui())

@@ -239,7 +239,7 @@ component DeviceField inherits HorizontalLayout {
 component MapperStatusCard inherits Rectangle {
     private property <bool> running: AppState.mapper-running;
     private property <bool> busy: AppState.mapper-busy;
-    private property <bool> failed: !root.running && !root.busy && AppState.mapper-error != "";
+    private property <bool> failed: !root.running && !root.busy && AppState.mapper-error.id != "";
     private property <bool> ready: AppState.mapper-supported && SettingsEditor.keyboard-device-path != "";
     /// The mapper had been running and stopped by itself.
     private property <bool> crashed: root.failed && AppState.mapper-ran >= 0;
@@ -272,7 +272,7 @@ component MapperStatusCard inherits Rectangle {
                 text: root.busy ? ""
                     : !AppState.mapper-supported ? Locale.text({ id: "mapper-unsupported" })
                     : root.running ? @tr("Running for {}", root.duration(Math.max(AppState.mapper-uptime, 0)))
-                    : root.failed ? AppState.mapper-error
+                    : root.failed ? Locale.text(AppState.mapper-error)
                     : root.ready ? @tr("Keys work as usual. Start the mapper to apply your layouts.")
                     : @tr("Select a keyboard below to start the mapper.");
                 color: root.failed ? Theme.text : Theme.muted; font-size: 12px; wrap: word-wrap;

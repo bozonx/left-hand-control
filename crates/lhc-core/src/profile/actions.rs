@@ -80,7 +80,9 @@ pub enum ActionName {
     System { id: &'static str, n: u32 },
     /// Built-in app action (`showQuickMenu`, `activateLayout`, …).
     App { id: &'static str, n: u32 },
-    /// Name chosen by the user or an untranslated built-in name.
+    /// Built-in macro; its id is translated by the shell.
+    BuiltinMacro { id: &'static str },
+    /// Name chosen by the user.
     Verbatim(String),
 }
 
@@ -249,7 +251,7 @@ pub fn catalog(config: &AppConfig) -> Vec<CatalogEntry> {
             .filter(|builtin| !config.macros.iter().any(|user| user.id == builtin.id))
             .map(|builtin| CatalogEntry {
                 action: Action::Macro(builtin.id.into()),
-                name: ActionName::Verbatim(builtin.name.into()),
+                name: ActionName::BuiltinMacro { id: builtin.id },
             }),
     );
     out.extend(config.commands.iter().map(|command| CatalogEntry {
@@ -461,6 +463,34 @@ mod tests {
         assert_eq!(app_action_name("activateLayout6"), None);
         assert!(app_action_name("showQuickMenuLast").is_some());
         assert!(app_action_name("showSettings").is_some());
+    }
+
+    #[test]
+    fn builtin_macro_labels_are_typed_and_user_names_stay_verbatim() {
+        let mut config =
+            AppConfig::from_parts(AppSettings::default(), LayoutPreset::initial(), None);
+        config.macros.push(super::super::model::Macro {
+            id: "custom".into(),
+            name: "Copy line".into(),
+            steps: vec![],
+            step_pause_ms: None,
+            modifier_delay_ms: None,
+        });
+        let entries = catalog(&config);
+        for builtin in BUILTIN_MACROS {
+            assert!(
+                entries
+                    .iter()
+                    .any(|entry| entry.action == Action::Macro(builtin.id.into())
+                        && entry.name == ActionName::BuiltinMacro { id: builtin.id })
+            );
+        }
+        assert!(
+            entries
+                .iter()
+                .any(|entry| entry.action == Action::Macro("custom".into())
+                    && entry.name == ActionName::Verbatim("Copy line".into()))
+        );
     }
 
     #[test]

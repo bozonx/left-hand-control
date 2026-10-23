@@ -4,9 +4,9 @@
 //! translated by `Locale.text()` in `ui/i18n.slint` through `@tr`, so they
 //! follow language switches without Rust re-sending them.
 //!
-//! Text shown outside Slint (tray menu) or built from data (action catalog
-//! names) is translated with [`tr`] from the same PO catalog that Slint
-//! bundles, so every translation lives in `translations/`.
+//! Text shown outside Slint uses a typed catalog generated at build time
+//! from the same PO file. Missing translations fail the build; runtime
+//! lookup never substitutes English text for Russian.
 
 use crate::ui::Message;
 use lhc_core::config_document::ConfigError;
@@ -15,8 +15,6 @@ use lhc_core::profile::actions::ActionIssue;
 use lhc_core::profile::diagnostics::{RuleIssue, RuleIssueCode};
 use lhc_core::profile::model::LocalePreference;
 use lhc_core::profile::names::{NameIssue, NameKind};
-use std::collections::HashMap;
-use std::sync::{Arc, OnceLock};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum Language {
@@ -64,27 +62,12 @@ impl Language {
     }
 }
 
-const RUSSIAN_PO: &str = include_str!("../translations/ru/LC_MESSAGES/slint-shell.po");
-const RUSSIAN_MO: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/ru.mo"));
-
 pub fn select_ui_language(code: &str) -> Result<(), String> {
     let language =
         Language::from_code(code).ok_or_else(|| format!("unknown UI language: {code}"))?;
-    static RUSSIAN: OnceLock<Result<Arc<tr::MoTranslator>, String>> = OnceLock::new();
-    let translator: Option<Box<dyn i_slint_core::translations::Translator>> =
-        if language == Language::Russian {
-            let russian = RUSSIAN
-                .get_or_init(|| {
-                    tr::MoTranslator::from_vec_u8(RUSSIAN_MO.to_vec())
-                        .map(Arc::new)
-                        .map_err(|error| error.to_string())
-                })
-                .as_ref()
-                .map_err(Clone::clone)?;
-            Some(Box::new(russian.clone()))
-        } else {
-            None
-        };
+    let translator: Option<Box<dyn i_slint_core::translations::Translator>> = (language
+        == Language::Russian)
+        .then(|| Box::new(CatalogTranslator) as Box<dyn i_slint_core::translations::Translator>);
     i_slint_core::context::with_global_context(
         || Err("initialize a Slint window before selecting the UI language".into()),
         |context| context.set_external_translator(translator),
@@ -96,92 +79,64 @@ pub fn select_ui_language(code: &str) -> Result<(), String> {
     }
 }
 
-/// Translate an English source string. `{n}` is replaced with `n`.
-pub fn tr(language: Language, source: &str, n: Option<u32>) -> String {
-    static RUSSIAN: OnceLock<HashMap<String, String>> = OnceLock::new();
-    let text = match language {
-        Language::English => source,
-        Language::Russian => RUSSIAN
-            .get_or_init(|| parse_po(RUSSIAN_PO))
-            .get(source)
-            .map_or(source, String::as_str),
-    };
-    match n {
-        Some(n) => text.replace("{n}", &n.to_string()),
-        None => text.to_owned(),
+type CatalogEntry = (
+    &'static str,
+    &'static str,
+    Option<&'static str>,
+    &'static [&'static str],
+);
+
+include!(concat!(env!("OUT_DIR"), "/rust_translations.rs"));
+
+/// Lookups use the checked PO data directly. The MO parser in rspolib 0.1.2
+/// reverses context and source, so it cannot preserve contextual translations.
+struct CatalogTranslator;
+
+impl CatalogTranslator {
+    fn entry(context: Option<&str>, source: &str) -> Option<&'static CatalogEntry> {
+        let key = (context.unwrap_or_default(), source);
+        TRANSLATIONS
+            .binary_search_by_key(&key, |entry| (entry.0, entry.1))
+            .ok()
+            .map(|index| &TRANSLATIONS[index])
     }
 }
 
-/// Singular `msgid` → `msgstr` pairs of a PO file.
-fn parse_po(text: &str) -> HashMap<String, String> {
-    let mut out = HashMap::new();
-    let mut id: Option<String> = None;
-    let mut current: Option<(bool, String)> = None;
-    let mut contextual = false;
-    let mut finish =
-        |current: &mut Option<(bool, String)>, id: &mut Option<String>| match current.take() {
-            Some((false, value)) => *id = Some(value),
-            Some((true, value)) => {
-                if let Some(id) = id.take()
-                    && !id.is_empty()
-                    && !value.is_empty()
-                {
-                    out.insert(id, value);
-                }
-            }
-            None => {}
-        };
-    for line in text.lines().map(str::trim) {
-        if line.starts_with("msgctxt ") {
-            finish(&mut current, &mut id);
-            contextual = true;
-            continue;
+impl tr::Translator for CatalogTranslator {
+    fn translate<'a>(
+        &'a self,
+        source: &'a str,
+        context: Option<&'a str>,
+    ) -> std::borrow::Cow<'a, str> {
+        if let Some(entry) = Self::entry(context, source)
+            && entry.2.is_none()
+        {
+            return entry.3[0].into();
         }
-        if line.is_empty() {
-            contextual = false;
-        }
-        if contextual {
-            continue;
-        }
-        if let Some(rest) = line.strip_prefix("msgid ") {
-            finish(&mut current, &mut id);
-            current = Some((false, unquote(rest)));
-        } else if let Some(rest) = line.strip_prefix("msgstr ") {
-            finish(&mut current, &mut id);
-            current = Some((true, unquote(rest)));
-        } else if line.starts_with('"') {
-            if let Some((_, value)) = &mut current {
-                value.push_str(&unquote(line));
-            }
-        } else {
-            finish(&mut current, &mut id);
-            if !line.starts_with("msgstr[") {
-                id = None;
-            }
-        }
+        log::error!("missing singular translation: {context:?} {source:?}");
+        "".into()
     }
-    finish(&mut current, &mut id);
-    out
-}
 
-fn unquote(value: &str) -> String {
-    let inner = value.trim().strip_prefix('"').unwrap_or(value);
-    let inner = inner.strip_suffix('"').unwrap_or(inner);
-    let mut out = String::new();
-    let mut chars = inner.chars();
-    while let Some(c) = chars.next() {
-        if c != '\\' {
-            out.push(c);
-            continue;
+    fn ntranslate<'a>(
+        &'a self,
+        n: u64,
+        singular: &'a str,
+        plural: &'a str,
+        context: Option<&'a str>,
+    ) -> std::borrow::Cow<'a, str> {
+        if let Some(entry) = Self::entry(context, singular)
+            && entry.2 == Some(plural)
+        {
+            let form = match (n % 10, n % 100) {
+                (1, hundred) if hundred != 11 => 0,
+                (2..=4, hundred) if !(12..=14).contains(&hundred) => 1,
+                _ => 2,
+            };
+            return entry.3[form].into();
         }
-        match chars.next() {
-            Some('n') => out.push('\n'),
-            Some('t') => out.push('\t'),
-            Some(other) => out.push(other),
-            None => {}
-        }
+        log::error!("missing plural translation: {context:?} {singular:?} {plural:?}");
+        "".into()
     }
-    out
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -203,6 +158,10 @@ pub enum Msg {
     ConfigSaved(usize),
     ConfigUnavailable(String),
     ConfigEditConflict,
+    ConfigIo,
+    ConfigParse,
+    ConfigInvalid,
+    MapperFailed(String),
     DeviceSaved(String),
     LoadConfigFirst,
     SelectInputDevice,
@@ -274,13 +233,14 @@ pub enum Msg {
     DelayRange,
     SystemActionRequired,
     PickerAction(String, u32),
+    BuiltinMacro(String),
     UnknownKind,
     InvalidAction(ActionIssue),
     Rule(RuleIssue),
     ActionFailed(String),
     /// A `text:` action was not typed.
     TextInputFailed(lhc_core::events::TextInputFailure),
-    /// Untranslated detail from the core or the OS.
+    /// An operation failed; technical details are logged, never displayed.
     Error(String),
 }
 
@@ -301,24 +261,40 @@ impl Msg {
             Self::LayoutActivated(name) => ("layout-activated", name.clone(), 0),
             Self::LayoutSlotEmpty(n) => ("layout-slot-empty", empty(), *n as usize),
             Self::LayoutDiscarded(name) => ("layout-discarded", name.clone(), 0),
-            Self::MapperRunning(error) => ("mapper-running", error.clone().unwrap_or_default(), 0),
-            Self::MapperStopped(error) => ("mapper-stopped", error.clone().unwrap_or_default(), 0),
+            Self::MapperRunning(error) => {
+                if let Some(error) = error {
+                    diagnostic("mapper-running-error", error)
+                } else {
+                    ("mapper-running", empty(), 0)
+                }
+            }
+            Self::MapperStopped(error) => {
+                if let Some(error) = error {
+                    diagnostic("mapper-stopped-error", error)
+                } else {
+                    ("mapper-stopped", empty(), 0)
+                }
+            }
             Self::MapperStarting => ("mapper-starting", empty(), 0),
             Self::ConfigLoaded(rules) => ("config-loaded", empty(), *rules),
             Self::ConfigSaved(rules) => ("config-saved", empty(), *rules),
-            Self::ConfigUnavailable(error) => ("config-unavailable", error.clone(), 0),
+            Self::ConfigUnavailable(error) => diagnostic("config-unavailable", error),
+            Self::ConfigIo => ("config-io", empty(), 0),
+            Self::ConfigParse => ("config-parse", empty(), 0),
+            Self::ConfigInvalid => ("config-invalid", empty(), 0),
+            Self::MapperFailed(error) => diagnostic("mapper-failed", error),
             Self::ConfigEditConflict => ("config-edit-conflict", empty(), 0),
             Self::DeviceSaved(path) => ("device-saved", path.clone(), 0),
             Self::LoadConfigFirst => ("load-config-first", empty(), 0),
             Self::SelectInputDevice => ("select-input-device", empty(), 0),
-            Self::InputDiscoveryFailed(error) => ("input-discovery-failed", error.clone(), 0),
+            Self::InputDiscoveryFailed(error) => diagnostic("input-discovery-failed", error),
             Self::MapperUnsupported => ("mapper-unsupported", empty(), 0),
-            Self::WorkerUnavailable(error) => ("worker-unavailable", error.clone(), 0),
+            Self::WorkerUnavailable(error) => diagnostic("worker-unavailable", error),
             Self::WorkerRestarting => ("worker-restarting", empty(), 0),
             Self::WorkerRestartLimit => ("worker-restart-limit", empty(), 0),
             Self::WorkerNotStarted => ("worker-not-started", empty(), 0),
-            Self::WorkerError(error) => ("worker-error", error.clone(), 0),
-            Self::SavedMapperNotUpdated(error) => ("saved-mapper-not-updated", error.clone(), 0),
+            Self::WorkerError(error) => diagnostic("worker-error", error),
+            Self::SavedMapperNotUpdated(error) => diagnostic("saved-mapper-not-updated", error),
             Self::ActionSaved => ("action-saved", empty(), 0),
             Self::LibrarySaved => ("library-saved", empty(), 0),
             Self::LibrarySelect => ("library-select", empty(), 0),
@@ -415,6 +391,7 @@ impl Msg {
             Self::TimeoutInvalid => ("timeout-invalid", empty(), 0),
             Self::TextEmpty => ("text-empty", empty(), 0),
             Self::DelayRange => ("delay-range", empty(), 0),
+            Self::BuiltinMacro(id) => ("builtin-macro", id.clone(), 0),
             Self::PickerAction(id, n) => ("picker-action", id.clone(), *n as usize),
             Self::SystemActionRequired => ("system-action-required", empty(), 0),
             Self::UnknownKind => ("unknown-kind", empty(), 0),
@@ -453,20 +430,18 @@ impl Msg {
                 issue.trigger.clone().unwrap_or_default(),
                 0,
             ),
-            Self::ActionFailed(error) => ("action-failed", error.clone(), 0),
+            Self::ActionFailed(error) => diagnostic("action-failed", error),
             Self::TextInputFailed(failure) => {
                 use lhc_core::events::TextInputFailure as F;
                 match failure {
                     F::MissingCharacters => ("text-missing-characters", empty(), 0),
                     F::LayoutUnknown => ("text-layout-unknown", empty(), 0),
-                    F::BackendUnavailable(detail) => {
-                        ("text-backend-unavailable", detail.clone(), 0)
-                    }
-                    F::Clipboard(detail) => ("text-clipboard-failed", detail.clone(), 0),
-                    F::Tool(detail) => ("text-tool-failed", detail.clone(), 0),
+                    F::BackendUnavailable(detail) => diagnostic("text-backend-unavailable", detail),
+                    F::Clipboard(detail) => diagnostic("text-clipboard-failed", detail),
+                    F::Tool(detail) => diagnostic("text-tool-failed", detail),
                 }
             }
-            Self::Error(error) => ("error", error.clone(), 0),
+            Self::Error(error) => diagnostic("error", error),
         };
         Message {
             id: id.into(),
@@ -474,6 +449,11 @@ impl Msg {
             count: i32::try_from(count).unwrap_or(i32::MAX),
         }
     }
+}
+
+fn diagnostic(id: &'static str, detail: &str) -> (&'static str, String, usize) {
+    log::error!("{id}: {detail}");
+    (id, String::new(), 0)
 }
 
 impl From<&ConfigError> for Msg {
@@ -485,7 +465,19 @@ impl From<&ConfigError> for Msg {
             ConfigError::Name(kind, issue) => Self::Name(*kind, *issue),
             ConfigError::InvalidAction(issue) => Self::InvalidAction(*issue),
             ConfigError::Rules(issues) if !issues.is_empty() => Self::Rule(issues[0].clone()),
-            other => Self::Error(other.to_string()),
+            ConfigError::Io(detail) => {
+                log::error!("configuration I/O: {detail}");
+                Self::ConfigIo
+            }
+            ConfigError::Parse(detail) => {
+                log::error!("configuration parsing: {detail}");
+                Self::ConfigParse
+            }
+            ConfigError::Invalid(detail) => {
+                log::error!("configuration validation: {detail}");
+                Self::ConfigInvalid
+            }
+            ConfigError::Rules(_) => Self::ConfigInvalid,
         }
     }
 }
@@ -508,13 +500,14 @@ impl TrayItem {
     ];
 
     pub fn label(self, language: Language) -> String {
-        let source = match self {
-            Self::Settings => "Settings",
-            Self::Quick => "Quick actions",
-            Self::ToggleMapper => "Mapper on / off",
-            Self::Quit => "Quit",
-        };
-        tr(language, source, None)
+        match self {
+            Self::Settings => RustText::Settings,
+            Self::Quick => RustText::Quick,
+            Self::ToggleMapper => RustText::ToggleMapper,
+            Self::Quit => RustText::Quit,
+        }
+        .text(language)
+        .to_owned()
     }
 
     pub fn command(self) -> crate::command::Command {
@@ -528,6 +521,11 @@ impl TrayItem {
     }
 }
 
+/// Application title shown by native tray APIs.
+pub fn application_name(language: Language) -> String {
+    RustText::ApplicationName.text(language).to_owned()
+}
+
 /// Game-mode choices of the tray submenu, in display order.
 pub const TRAY_GAME_MODES: [crate::command::GameMode; 3] = [
     crate::command::GameMode::Auto,
@@ -537,33 +535,32 @@ pub const TRAY_GAME_MODES: [crate::command::GameMode; 3] = [
 
 /// Title of the tray game-mode submenu: the effective state.
 pub fn tray_game_title(language: Language, active: bool) -> String {
-    tr(
-        language,
-        if active {
-            "Game mode: on"
-        } else {
-            "Game mode: off"
-        },
-        None,
-    )
+    if active {
+        RustText::GameOn
+    } else {
+        RustText::GameOff
+    }
+    .text(language)
+    .to_owned()
 }
 
 /// Label of one tray game-mode choice.
 pub fn tray_game_choice(language: Language, mode: crate::command::GameMode) -> String {
     use crate::command::GameMode;
-    let source = match mode {
-        GameMode::Auto => "Auto — detect games",
-        GameMode::On => "On — always",
-        GameMode::Off | GameMode::Toggle => "Off — never",
-    };
-    tr(language, source, None)
+    match mode {
+        GameMode::Auto => RustText::GameAuto,
+        GameMode::On => RustText::GameAlways,
+        GameMode::Off | GameMode::Toggle => RustText::GameNever,
+    }
+    .text(language)
+    .to_owned()
 }
 
 /// On-screen text announcing the active layout; `None` is no layout.
 pub fn layout_osd(language: Language, name: Option<&str>) -> String {
     match name {
-        Some(name) => format!("{}: {name}", tr(language, "Layout", None)),
-        None => tr(language, "No layout", None),
+        Some(name) => RustText::Layout.text(language).replace("{}", name),
+        None => RustText::NoLayout.text(language).to_owned(),
     }
 }
 
@@ -585,7 +582,7 @@ mod tests {
     fn runtime_catalog_translates_ui_and_russian_plural_forms() {
         use tr::Translator;
 
-        let translator = tr::MoTranslator::from_vec_u8(RUSSIAN_MO.to_vec()).unwrap();
+        let translator = CatalogTranslator;
         assert_eq!(translator.translate("Settings", None), "Настройки");
         for (count, suffix) in [
             (1, "правило"),
@@ -607,41 +604,45 @@ mod tests {
     }
 
     #[test]
-    fn po_catalog_translates_rust_side_text() {
-        assert_eq!(TrayItem::Quit.label(Language::Russian), "Выход");
-        assert_eq!(TrayItem::Quit.label(Language::English), "Quit");
-        assert_eq!(
-            tr(Language::Russian, "Switch to desktop {n}", Some(3)),
-            "Переключиться на рабочий стол 3"
-        );
-        assert_eq!(
-            layout_osd(Language::Russian, Some("Main")),
-            "Раскладка: Main"
-        );
-        assert_eq!(layout_osd(Language::Russian, None), "Без раскладки");
-        assert_eq!(
-            tr(Language::Russian, "not in the catalog", None),
-            "not in the catalog"
-        );
+    fn runtime_catalog_contains_every_translation() {
+        use tr::Translator;
+        let translator = CatalogTranslator;
+        for &(context, source, plural, translated) in TRANSLATIONS {
+            let context = (!context.is_empty()).then_some(context);
+            if let Some(plural) = plural {
+                for (count, form) in [(0, 2), (1, 0), (2, 1), (5, 2), (11, 2), (21, 0)] {
+                    assert_eq!(
+                        translator.ntranslate(count, source, plural, context),
+                        translated[form],
+                        "{source} ({count})"
+                    );
+                }
+            } else {
+                assert_eq!(
+                    translator.translate(source, context),
+                    translated[0],
+                    "{source}"
+                );
+            }
+        }
     }
 
     #[test]
-    fn po_parser_handles_continuations_and_escapes() {
-        let po = "msgid \"\"\nmsgstr \"header\"\n\nmsgid \"a \\\"b\\\"\"\nmsgstr \"\"\n\"x\"\n\"y\"\n\nmsgid \"one\"\nmsgid_plural \"many\"\nmsgstr[0] \"одна\"\n";
-        let map = parse_po(po);
-        assert_eq!(map.get("a \"b\"").map(String::as_str), Some("xy"));
-        assert!(!map.contains_key(""));
-        assert!(!map.contains_key("one"));
+    fn contextual_translations_and_missing_keys_never_use_source_fallbacks() {
+        use tr::Translator;
+        let translator = CatalogTranslator;
+        assert_eq!(
+            translator.translate("Auto", Some("Game mode control")),
+            "Авто"
+        );
+        assert_eq!(translator.translate("On", Some("Game mode control")), "Вкл");
+        assert_eq!(translator.translate("not in the catalog", None), "");
+        assert_eq!(translator.translate("Auto", Some("unknown context")), "");
+        assert_eq!(translator.ntranslate(2, "unknown", "unknowns", None), "");
     }
 
     #[test]
-    fn contextual_game_mode_labels_do_not_replace_other_translations() {
-        let po = "msgid \"On\"\nmsgstr \"Вкл\"\n\nmsgctxt \"Game mode control\"\nmsgid \"On\"\nmsgstr \"On\"\n";
-        assert_eq!(parse_po(po).get("On").map(String::as_str), Some("Вкл"));
-    }
-
-    #[test]
-    fn auto_language_follows_the_environment_only_for_auto() {
+    fn explicit_language_preferences_and_codes_are_exact() {
         assert_eq!(
             Language::resolve(LocalePreference::Russian),
             Language::Russian
@@ -650,65 +651,40 @@ mod tests {
             Language::resolve(LocalePreference::English),
             Language::English
         );
-    }
-
-    /// Source strings of `@tr("…")` in the Slint files (plural forms count
-    /// by their singular).
-    fn slint_strings() -> Vec<String> {
-        let mut out = Vec::new();
-        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("ui");
-        for entry in std::fs::read_dir(dir).unwrap() {
-            let path = entry.unwrap().path();
-            if path.extension().is_none_or(|ext| ext != "slint") {
-                continue;
-            }
-            let text = std::fs::read_to_string(&path).unwrap();
-            for (index, _) in text.match_indices("@tr(\"") {
-                let mut rest = &text[index + 5..];
-                if let Some(quote) = rest.find('"')
-                    && let Some(source) = rest[quote..].strip_prefix("\" => \"")
-                {
-                    rest = source;
-                }
-                let mut value = String::new();
-                let mut chars = rest.chars();
-                while let Some(c) = chars.next() {
-                    match c {
-                        '"' => break,
-                        '\\' => {
-                            if let Some(next) = chars.next() {
-                                value.push(if next == 'n' { '\n' } else { next });
-                            }
-                        }
-                        c => value.push(c),
-                    }
-                }
-                out.push(value);
-            }
+        for language in [Language::Russian, Language::English] {
+            assert_eq!(Language::from_code(language.code()), Some(language));
         }
-        out
+        assert_eq!(Language::from_code("de"), None);
     }
 
     #[test]
-    fn every_slint_string_has_a_russian_translation() {
-        let catalog = parse_po(RUSSIAN_PO);
-        // Plural entries are not in the parsed catalog; look for their msgid.
-        let declared = |source: &str| {
-            let escaped = source
-                .replace('\\', "\\\\")
-                .replace('"', "\\\"")
-                .replace('\n', "\\n");
-            RUSSIAN_PO.contains(&format!("msgid \"{escaped}\""))
-        };
-        let mut missing: Vec<String> = slint_strings()
-            .into_iter()
-            .filter(|source| !catalog.contains_key(source) && !declared(source))
-            .collect();
-        missing.sort();
-        missing.dedup();
-        assert!(
-            missing.is_empty(),
-            "missing in slint-shell.po: {missing:#?}"
+    fn rust_text_uses_the_catalog_in_both_languages() {
+        assert_eq!(TrayItem::Quit.label(Language::Russian), "Выход");
+        assert_eq!(TrayItem::Quit.label(Language::English), "Quit");
+        assert_eq!(
+            layout_osd(Language::Russian, Some("Main")),
+            "Раскладка: Main"
+        );
+        assert_eq!(layout_osd(Language::English, Some("Main")), "Layout: Main");
+        assert_eq!(layout_osd(Language::Russian, None), "Без раскладки");
+    }
+
+    #[test]
+    fn technical_errors_are_never_exposed_as_ui_arguments() {
+        for message in [
+            Msg::Error("untranslated error".into()),
+            Msg::ActionFailed("untranslated error".into()),
+            Msg::MapperFailed("untranslated error".into()),
+            Msg::MapperStopped(Some("untranslated error".into())),
+            Msg::TextInputFailed(lhc_core::events::TextInputFailure::Tool(
+                "untranslated error".into(),
+            )),
+        ] {
+            assert!(message.to_ui().arg.is_empty());
+        }
+        assert_eq!(
+            Msg::from(&ConfigError::Parse("details".into())),
+            Msg::ConfigParse
         );
     }
 }

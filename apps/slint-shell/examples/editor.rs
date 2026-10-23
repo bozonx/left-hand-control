@@ -44,6 +44,75 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             locale.invoke_text(loaded(21)),
             "Конфигурация загружена: 21 правило"
         );
+        for id in [
+            "action-invalid-syntax",
+            "action-pause-outside-macro",
+            "action-unknown-macro",
+            "action-unknown-command",
+            "action-unknown-system",
+            "action-unknown-app",
+            "action-failed",
+            "error",
+            "mapper-failed",
+            "config-io",
+            "config-parse",
+            "config-invalid",
+        ] {
+            let message = Message {
+                id: id.into(),
+                arg: "untranslated technical detail".into(),
+                count: 0,
+            };
+            let russian = locale.invoke_text(message.clone());
+            assert!(!russian.is_empty(), "missing Russian message: {id}");
+            assert!(!russian.contains("untranslated technical detail"));
+            slint_shell::select_ui_language("en")?;
+            let english = locale.invoke_text(message);
+            assert!(!english.is_empty(), "missing English message: {id}");
+            assert_ne!(russian, english, "untranslated message: {id}");
+            slint_shell::select_ui_language("ru")?;
+        }
+        let action_messages: Vec<_> =
+            lhc_core::profile::actions::catalog(&document.read().config())
+                .into_iter()
+                .filter_map(|entry| {
+                    use lhc_core::profile::actions::ActionName;
+                    let (id, arg, count) = match entry.name {
+                        ActionName::BuiltinMacro { id } => ("builtin-macro", id, 0),
+                        ActionName::System { id, n } | ActionName::App { id, n } => {
+                            ("picker-action", id, n)
+                        }
+                        ActionName::Verbatim(_) => return None,
+                    };
+                    Some(Message {
+                        id: id.into(),
+                        arg: arg.into(),
+                        count: i32::try_from(count).unwrap(),
+                    })
+                })
+                .collect();
+        let russian: Vec<_> = action_messages
+            .iter()
+            .map(|message| locale.invoke_text(message.clone()))
+            .collect();
+        slint_shell::select_ui_language("en")?;
+        for (message, russian) in action_messages.into_iter().zip(russian) {
+            let english = locale.invoke_text(message.clone());
+            assert!(
+                !russian.is_empty() && !english.is_empty(),
+                "missing catalog label: {message:?}"
+            );
+            assert_ne!(russian, english, "untranslated catalog label: {message:?}");
+        }
+        slint_shell::select_ui_language("ru")?;
+        assert_eq!(
+            locale.invoke_text(Message {
+                id: "unknown-id".into(),
+                arg: "untranslated technical detail".into(),
+                count: 0
+            }),
+            ""
+        );
         slint_shell::select_ui_language("en")?;
 
         // Editing a key opens the picker; applying saves the tap action.

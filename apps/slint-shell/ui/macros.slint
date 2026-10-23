@@ -11,7 +11,7 @@ import { Button } from "std-widgets.slint";
 
 export struct MacroStepRow { action: string, pause: bool, pause-ms: string, category: PickerCategory }
 export struct MacroRow { id: string, name: string, step-pause: string, modifier-delay: string, usage: [string], error: Message, steps: [MacroStepRow] }
-export struct BuiltinMacroRow { id: string, name: string, steps: string }
+export struct BuiltinMacroRow { id: string, name: Message, steps: string }
 export global MacroEditor {
     in property <[MacroRow]> macros;
     in property <[BuiltinMacroRow]> builtin-macros;
@@ -294,7 +294,7 @@ component BuiltinMacroLine inherits TouchArea {
                 Text { text: root.item.id; color: Theme.text; font-family: "monospace"; font-size: 12px; vertical-alignment: center; overflow: elide; }
                 VerticalLayout { alignment: center; IconButton { size: 24px; icon: @image-url("icons/copy.svg"); label: @tr("Copy ID"); clicked => { root.copy(root.item.id); } } }
             }
-            Text { width: 200px; text: root.item.name; color: Theme.text; vertical-alignment: center; wrap: word-wrap; }
+            Text { width: 200px; text: Locale.text(root.item.name); color: Theme.text; vertical-alignment: center; wrap: word-wrap; }
             Text {
                 horizontal-stretch: 1;
                 min-width: 0px;
@@ -314,7 +314,7 @@ component BuiltinMacroLine inherits TouchArea {
                     text: @tr("Create based on");
                     icon: @image-url("icons/copy-plus.svg");
                     colorize-icon: true;
-                    clicked => { MacroEditor.clone-builtin(root.index, @tr("(copy)")); }
+                    clicked => { MacroEditor.clone-builtin(root.index, Locale.text({ id: "copy-name", arg: Locale.text(root.item.name) })); }
                 }
             }
         }

@@ -8,7 +8,7 @@ export global NotificationCenter {
     in property <[ToastItem]> items;
     in-out property <bool> initialized;
     public pure function is-problem(id: string) -> bool {
-        return id == "error" || id == "action-failed" || id == "saved-mapper-not-updated" || id == "config-unavailable" || id == "library-changed" || id == "config-edit-conflict";
+        return id == "config-io" || id == "config-parse" || id == "config-invalid" || id == "mapper-failed" || id == "mapper-running-error" || id == "mapper-stopped-error" || id == "error" || id == "action-failed" || id == "saved-mapper-not-updated" || id == "config-unavailable" || id == "library-changed" || id == "config-edit-conflict";
     }
     public pure function is-warning(id: string) -> bool {
         return id == "saved-mapper-not-updated" || id == "library-changed" || id == "config-edit-conflict" || id == "worker-restarting" || id == "commands-disabled" || id == "action-unavailable" || id == "save-layout-first" || id == "select-input-device";
