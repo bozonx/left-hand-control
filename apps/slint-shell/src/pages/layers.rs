@@ -65,7 +65,7 @@ fn assignment(
         Some(Some(action)) => {
             let kind = action_kind(action);
             let label = match actions::Action::parse(Some(action)) {
-                actions::Action::Text(text) => text,
+                actions::Action::Text(text) => super::one_line(&text),
                 actions::Action::KdeShortcut(id) => {
                     names.get(action).cloned().unwrap_or_else(|| {
                         actions::kde_shortcut_parts(&id)

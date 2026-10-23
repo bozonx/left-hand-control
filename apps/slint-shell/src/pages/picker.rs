@@ -702,7 +702,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
         picker.set_command_notice(command_notice(&picker).to_ui());
         picker.set_value_category(category_for_value(&value));
-        picker.set_text_content(value.strip_prefix("text:").unwrap_or_default().into());
+        let text = value.strip_prefix("text:").unwrap_or_default();
+        picker.set_text_content(text.into());
+        picker.set_text_preview(super::one_line(text).into());
+        picker.set_text_lines(if text.contains('\n') {
+            text.split('\n').count() as i32
+        } else {
+            0
+        });
         picker.set_pause_content(value.strip_prefix("pause:").unwrap_or_default().into());
         let query = picker.get_query().to_lowercase();
         let mut category = picker.get_category();

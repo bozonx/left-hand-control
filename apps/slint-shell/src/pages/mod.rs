@@ -105,6 +105,14 @@ pub(crate) fn name_error<T>(result: Result<T, ConfigError>) -> Message {
         .to_ui()
 }
 
+/// `text` on one line for labels and previews: line breaks become ⏎ and
+/// tabs spaces, so a multi-line `text:` action does not grow its row.
+pub(crate) fn one_line(text: &str) -> String {
+    text.replace("\r\n", "\n")
+        .replace('\n', " ⏎ ")
+        .replace('\t', " ")
+}
+
 /// Icon of an action on key caps.
 pub(crate) fn action_kind(action: &str) -> ActionKind {
     match Action::parse(Some(action)) {

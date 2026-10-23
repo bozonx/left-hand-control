@@ -150,13 +150,13 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
         .iter()
         .map(|rule| RuleRow {
             key: rule.key.clone().into(),
-            tap: rule.tap_action.clone().unwrap_or_default().into(),
+            tap: super::one_line(rule.tap_action.as_deref().unwrap_or_default()).into(),
             hold: rule.hold_action.clone().unwrap_or_default().into(),
-            long_hold: rule.long_hold_action.clone().into(),
+            long_hold: super::one_line(&rule.long_hold_action).into(),
             long_hold_timeout: timeout_text(rule.long_hold_timeout_ms).into(),
             hold_mode: hold_mode(rule),
             is_chord: rule.key.contains('+'),
-            double_tap: rule.double_tap_action.clone().into(),
+            double_tap: super::one_line(&rule.double_tap_action).into(),
             layer: layer_name(layout, &rule.layer_id).into(),
             has_conditions: has_conditions(rule),
             game: game_condition(rule.condition_game_mode.as_deref()),

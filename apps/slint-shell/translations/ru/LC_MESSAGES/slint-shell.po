@@ -681,6 +681,12 @@ msgstr "Действие:"
 msgid "Trigger key:"
 msgstr "Клавиша-триггер:"
 
+msgid "{n} line"
+msgid_plural "{n} lines"
+msgstr[0] "{n} строка"
+msgstr[1] "{n} строки"
+msgstr[2] "{n} строк"
+
 msgid "Modifiers"
 msgstr "Модификаторы"
 
