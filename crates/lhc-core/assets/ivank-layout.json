@@ -1,4 +1,5 @@
 {
+  "version": 1,
   "layers": [
     {
       "id": "navigation",
@@ -220,53 +221,72 @@
   "rules": [
     {
       "key": "Tab",
-      "layer": "select"
+      "hold": {
+        "layer": "select"
+      }
     },
     {
       "key": "CapsLock",
       "tap": "Ctrl+KeyV",
-      "layer": "navigation",
-      "holdMs": 180
+      "hold": {
+        "layer": "navigation",
+        "timeoutMs": 180
+      }
     },
     {
       "key": "ShiftLeft",
       "tap": "Ctrl+KeyC",
-      "dtap": "Ctrl+KeyX"
+      "doubleTap": {
+        "action": "Ctrl+KeyX"
+      }
     },
     {
       "key": "ControlLeft",
-      "hold": "AltLeft",
-      "tap": "app:showQuickMenu1"
+      "tap": "app:showQuickMenu1",
+      "hold": {
+        "keys": "AltLeft"
+      }
     },
     {
       "key": "MetaLeft",
       "tap": "Escape",
-      "hold": "ControlLeft"
+      "hold": {
+        "keys": "ControlLeft"
+      }
     },
     {
       "key": "AltLeft",
       "tap": "Enter",
-      "layer": "desktop",
-      "hold": "AltLeft",
-      "holdFor": "Tab"
+      "hold": {
+        "layer": "desktop",
+        "keys": "AltLeft",
+        "keysOnlyFor": [
+          "Tab"
+        ]
+      }
     },
     {
       "key": "AltRight",
       "tap": "text:,",
-      "dtap": "text:.",
-      "layer": "symbols"
+      "doubleTap": {
+        "action": "text:."
+      },
+      "hold": {
+        "layer": "symbols"
+      }
     },
     {
       "key": "ControlRight",
       "tap": "text:.",
-      "layer": "f-keys"
+      "hold": {
+        "layer": "f-keys"
+      }
     },
     {
       "key": "ShiftRight",
       "tap": "text:-"
     }
   ],
-  "macros": [],
   "quickActionPages": [
     {
       "id": "qap_system",

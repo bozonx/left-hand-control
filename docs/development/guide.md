@@ -473,7 +473,7 @@ USB-клавиатура) и сравнивает полученный текс�
 | --- | --- |
 | `boot`, `upload`, `plasma-session`, `install` | Загрузка, автологин в Plasma Wayland, установка штатным менеджером или `install-linux.sh` |
 | `installed-files` | `.desktop` (и `desktop-file-validate`), metainfo, иконки hicolor; для пакетов — udev-правило и запись в `/dev/uinput` для сессии через `uaccess` |
-| `keyboard-probe` | Какой узел `/dev/input` получает клавиши QEMU `usb-kbd`; он становится `inputDevicePath` |
+| `keyboard-probe` | Какой узел `/dev/input` получает клавиши QEMU `usb-kbd`; он становится `settings.keyboardDevice` |
 | `test-config` | Тестовый профиль (`E2E_LAYOUT` в `linux-guest.py`), команды разрешены, раскладки `us,ru`, два рабочих стола, автозапуск |
 | `previous-release`, `upgrade-from-previous` | Только с `--previous`: обновление с сохранением конфига |
 | `start-without-input`, `tray-item`, `no-mapper-without-input` | Без группы `input` приложение стартует, регистрирует элемент трея (`StatusNotifierWatcher`, Id `lhc-slint-shell`), а mapper не создаёт виртуальную клавиатуру |
@@ -489,7 +489,7 @@ USB-клавиатура) и сравнивает полученный текс�
 | `russian-layout` | В раскладке ru физические клавиши дают кириллицу (`a`→KeyB→`и`, `c`→`с`), `text:` вводится без искажений |
 | `popups`, `emoji-ipc`, `quick-menu-rule` | IPC show/hide; эмодзи из `show emoji` + `Q` и быстрое действие из `app:showQuickMenu1` + `Q` вставляются в окно, бывшее активным до попапа |
 | `emoji-hotkey` | Ctrl+Alt+F11 открывает Emoji, `Q` вставляет эмодзи, консоль не переключается на VT11 |
-| `game-mode` | Правило с `gameMode`: Off, On (`game on`), Auto без игры и с процессом из `processMatchers` |
+| `game-mode` | Правило с `when.gameMode`: Off, On (`game on`), Auto без игры и с процессом из `gameMode.processes` |
 | `screen-lock` | Пароль `qbXc` набирается только через mapper (`q a d c`) и разблокирует экран; набранное на экране блокировки не попадает в окно за ним |
 | `suspend-resume` | S3 и пробуждение через QMP, после этого mapper и `text:` работают |
 | `cli`, `second-instance` | Повторный запуск передаёт управление работающему экземпляру; `hide`, `ping`, `--version`, `--help`; второй экземпляр со своим `LHC_SOCKET` не захватывает клавиатуру (блокировка mapper) |

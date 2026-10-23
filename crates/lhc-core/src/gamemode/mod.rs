@@ -745,11 +745,9 @@ fn load_game_mode_settings(storage: Option<&StoragePaths>) -> (GameModeSettings,
     (settings, 0)
 }
 
-/// The same lenient parsing the settings page uses.
+/// Game-mode settings of `config.json`; `None` when the file is invalid.
 fn parse_game_mode_settings(raw: &str) -> Option<GameModeSettings> {
-    let value: serde_json::Value = serde_json::from_str(raw).ok()?;
-    crate::profile::settings::validate(value.get("settings")).ok()?;
-    Some(crate::profile::settings::from_value(value.get("settings")).game_mode)
+    Some(crate::profile::settings::parse(raw).ok()?.game_mode)
 }
 
 #[cfg(test)]
@@ -1096,15 +1094,19 @@ mod tests {
     #[test]
     fn parses_settings_like_the_settings_page() {
         let settings = parse_game_mode_settings(
-            r#"{"settings":{"gameMode":{"useFullscreen":true,"processMatchers":[{"name":"steam"},3]}}}"#,
+            r#"{"version":1,"settings":{"gameMode":{"detectors":{"fullscreen":true},"processes":[{"name":"steam"}]}},"state":{"gameMode":"on"}}"#,
         )
         .unwrap();
-        // Missing fields take the page's defaults, a bad entry is skipped.
+        // Missing fields take the page's defaults.
         assert_eq!(settings.use_gamemoded, cfg!(target_os = "linux"));
         assert!(settings.use_fullscreen);
         assert_eq!(settings.process_matchers.len(), 1);
         assert!(settings.process_matchers[0].only_active_window);
-        let settings = parse_game_mode_settings(r#"{"settings":{}}"#).unwrap();
+        assert_eq!(settings.control, GameModeControl::On);
+        let settings = parse_game_mode_settings(r#"{"version":1}"#).unwrap();
         assert_eq!(settings.use_gamemoded, cfg!(target_os = "linux"));
+        assert!(
+            parse_game_mode_settings(r#"{"version":1,"settings":{"gameMode":{"x":1}}}"#).is_none()
+        );
     }
 }

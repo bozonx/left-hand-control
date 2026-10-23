@@ -1,7 +1,40 @@
 use super::VIRTUAL_DEVICE_NAME;
 use crate::mapper::{InputDevice, KeyboardDevice};
 use evdev::{Device, KeyCode};
-use std::path::PathBuf;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+
+/// udev symlinks to event devices, preferred in this order. Their names
+/// survive reboots and replugging, unlike `eventN`.
+const STABLE_DIRS: [&str; 2] = ["/dev/input/by-id", "/dev/input/by-path"];
+
+/// Stable symlink for each `/dev/input/eventN` that has one.
+fn stable_paths() -> HashMap<PathBuf, PathBuf> {
+    let mut out = HashMap::new();
+    for dir in STABLE_DIRS {
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            continue;
+        };
+        let mut links: Vec<PathBuf> = entries.flatten().map(|entry| entry.path()).collect();
+        links.sort();
+        for link in links {
+            if let Ok(target) = std::fs::canonicalize(&link) {
+                out.entry(target).or_insert(link);
+            }
+        }
+    }
+    out
+}
+
+/// Path to store for `event`: its stable symlink when udev provides one.
+fn stable_path(event: &Path, stable: &HashMap<PathBuf, PathBuf>) -> String {
+    std::fs::canonicalize(event)
+        .ok()
+        .and_then(|target| stable.get(&target))
+        .map_or(event, PathBuf::as_path)
+        .to_string_lossy()
+        .into_owned()
+}
 
 pub fn list_input_devices() -> Result<Vec<InputDevice>, String> {
     let mut out = Vec::new();
@@ -22,6 +55,7 @@ pub fn list_input_devices() -> Result<Vec<InputDevice>, String> {
         paths.len()
     );
 
+    let stable = stable_paths();
     let mut first_error = None;
     for path in paths {
         let dev = match Device::open(&path) {
@@ -46,7 +80,7 @@ pub fn list_input_devices() -> Result<Vec<InputDevice>, String> {
             continue;
         }
         out.push(InputDevice {
-            path: path.to_string_lossy().to_string(),
+            path: stable_path(&path, &stable),
             name,
             is_keyboard,
             is_mouse,

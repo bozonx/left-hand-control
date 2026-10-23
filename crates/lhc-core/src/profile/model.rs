@@ -236,6 +236,10 @@ impl QuickActionPage {
             cells: BTreeMap::new(),
         }
     }
+
+    pub fn default_page() -> Self {
+        Self::new("quick_default".into(), String::new())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -285,9 +289,31 @@ impl LayoutPreset {
     /// Preset of a new installation, as `createDefaultConfig()` builds it.
     pub fn initial() -> Self {
         Self {
-            quick_action_pages: vec![QuickActionPage::new("quick_default".into(), String::new())],
+            quick_action_pages: vec![QuickActionPage::default_page()],
             emoji_pages: vec![EmojiPage::default_page()],
             ..Self::default()
+        }
+    }
+
+    /// Call `fix` with every action string of the preset: rule actions,
+    /// layer keys, macro steps and quick-action cells.
+    pub fn for_each_action_mut(&mut self, mut fix: impl FnMut(&mut String)) {
+        for rule in &mut self.rules {
+            rule.tap_action.iter_mut().for_each(&mut fix);
+            rule.hold_action.iter_mut().for_each(&mut fix);
+            fix(&mut rule.long_hold_action);
+            fix(&mut rule.double_tap_action);
+        }
+        for map in self.layer_keymaps.values_mut() {
+            map.keys.values_mut().flatten().for_each(&mut fix);
+        }
+        for item in &mut self.macros {
+            item.steps.iter_mut().for_each(|step| fix(&mut step.action));
+        }
+        for page in &mut self.quick_action_pages {
+            page.cells
+                .values_mut()
+                .for_each(|item| fix(&mut item.action));
         }
     }
 
@@ -411,7 +437,7 @@ pub enum GameModeControl {
 }
 
 /// Theme preference; `System` follows the desktop.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Appearance {
     #[default]
@@ -433,7 +459,7 @@ impl Appearance {
 }
 
 /// UI language preference; `Auto` follows the OS language.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LocalePreference {
     #[default]
     #[serde(rename = "auto")]
@@ -529,7 +555,7 @@ impl PasteShortcut {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LayoutMode {
     #[default]

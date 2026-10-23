@@ -380,15 +380,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     e.on_remove_page(move || {
         c(false, &|e, layout| {
             let p = e.get_selected_page().max(0) as usize;
-            match e.get_kind() {
-                MenuKind::Emoji if p < layout.emoji_pages.len() => {
-                    layout.emoji_pages.remove(p);
-                }
-                MenuKind::Quick if p < layout.quick_action_pages.len() => {
-                    layout.quick_action_pages.remove(p);
-                }
-                _ => {}
-            }
+            lhc_core::profile::menus::remove_page(layout, e.get_kind() == MenuKind::Emoji, p);
             e.set_selected_page(p.saturating_sub(1) as i32);
             e.set_selected_cell(if e.get_kind() == MenuKind::Quick {
                 -1
@@ -405,13 +397,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             if p < 0 || n < 0 || n as usize >= page_count(e.get_kind(), layout) {
                 return;
             }
-            let (p, n) = (p as usize, n as usize);
-            if e.get_kind() == MenuKind::Emoji {
-                layout.emoji_pages.swap(p, n);
-            } else {
-                layout.quick_action_pages.swap(p, n);
-            }
-            e.set_selected_page(n as i32);
+            lhc_core::profile::menus::reorder_page(
+                layout,
+                e.get_kind() == MenuKind::Emoji,
+                p as usize,
+                n as usize,
+            );
+            e.set_selected_page(n);
         });
     });
     let c = change.clone();

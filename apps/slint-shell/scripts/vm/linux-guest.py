@@ -34,6 +34,7 @@ FAKE_GAME = "lhc-fake-game"
 # Every rule maps a physical key to a result the host can read back from the
 # receiver window. Keys not listed here (c, h, j, k, o, q, s...) pass through.
 E2E_LAYOUT = f'''{{
+  "version": 1,
   "description": "VM e2e",
   "layers": [
     {{
@@ -58,8 +59,10 @@ E2E_LAYOUT = f'''{{
     }},
     {{
       "key": "KeyF",
-      "layer": "nav",
-      "tap": "KeyG"
+      "tap": "KeyG",
+      "hold": {{
+        "layer": "nav"
+      }}
     }},
     {{
       "key": "KeyY",
@@ -79,12 +82,16 @@ E2E_LAYOUT = f'''{{
     }},
     {{
       "key": "KeyG",
-      "gameMode": "on",
+      "when": {{
+        "gameMode": "on"
+      }},
       "tap": "KeyH"
     }},
     {{
       "key": "KeyG",
-      "gameMode": "off",
+      "when": {{
+        "gameMode": "off"
+      }},
       "tap": "KeyJ"
     }},
     {{
@@ -118,7 +125,7 @@ E2E_LAYOUT = f'''{{
   "commands": [
     {{
       "id": "touch",
-      "linux": "touch lhc-e2e/cmd-ran"
+      "unix": "touch lhc-e2e/cmd-ran"
     }}
   ],
   "emojiPages": [
@@ -314,22 +321,22 @@ def cmd_write_config(args):
     environment.mkdir(parents=True, exist_ok=True)
     (environment / '90-lhc-e2e.conf').write_text(f'LHC_POPUPS={args.popup_mode}\nRUST_LOG=info\n')
     settings = {
-        "linuxWaylandTextMode": args.text_backend,
-        "inputDevicePath": args.device,
+        "linux": {"textMode": args.text_backend},
+        "keyboardDevice": args.device,
         "layoutMode": "manual",
-        "currentLayoutId": "user:E2E",
-        "manualActiveLayoutId": "user:E2E",
+        "activeLayoutId": "user:E2E",
         "startMapperOnLaunch": True,
         "launchOnStartup": True,
         "locale": "en-US",
         "commandsEnabled": True,
         "gameMode": {
-            "control": "off",
-            "processMatchers": [{"name": FAKE_GAME, "onlyActiveWindow": False}],
+            "processes": [{"name": FAKE_GAME, "onlyActiveWindow": False}],
         },
     }
+    state = {"editedLayoutId": "user:E2E", "gameMode": "off"}
     (CONFIG_DIR / "config.json").write_text(
-        json.dumps({"version": 1, "settings": settings}, indent=2), encoding="utf-8")
+        json.dumps({"version": 1, "settings": settings, "state": state}, indent=2),
+        encoding="utf-8")
     if "GNOME" in user_environment().get("XDG_CURRENT_DESKTOP", "").upper():
         env = dict(os.environ, **user_environment())
         for schema, key, value in (

@@ -15,8 +15,8 @@ try {
     $profileRoot = Join-Path $env:LHC_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.left-hand-control'
     New-Item -ItemType Directory -Force -Path (Join-Path $profileRoot 'layouts') | Out-Null
     $encoding = [Text.UTF8Encoding]::new($false)
-    [IO.File]::WriteAllText((Join-Path $profileRoot 'config.json'), '{"settings":{"currentLayoutId":"user:Popup acceptance","manualActiveLayoutId":"user:Popup acceptance","inputDevicePath":"windows:keyboard","startMapperOnLaunch":false,"gameMode":{"control":"off"}}}', $encoding)
-    $layout = '{"name":"Popup acceptance","rules":[{"id":"guard-probe","key":"KeyF","tap":"ControlLeft","hold":"ControlLeft"}],"emojiPages":[{"id":"emoji","name":"Unicode","cells":{"KeyQ":"\u2615","KeyW":"\ud83d\ude00","KeyE":"\ud83d\udc69\u200d\ud83d\udcbb"}}],"quickActionPages":[{"id":"quick","name":"Text","cells":{"KeyQ":{"name":"Mixed text","action":"text:\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435 02 \ud83d\ude00"}}}]}'
+    [IO.File]::WriteAllText((Join-Path $profileRoot 'config.json'), '{"version":1,"settings":{"activeLayoutId":"user:Popup acceptance","keyboardDevice":"windows:keyboard","startMapperOnLaunch":false},"state":{"editedLayoutId":"user:Popup acceptance","gameMode":"off"}}', $encoding)
+    $layout = '{"version":1,"rules":[{"id":"guard-probe","key":"KeyF","tap":"ControlLeft","hold":{"keys":"ControlLeft"}}],"emojiPages":[{"id":"emoji","name":"Unicode","cells":{"KeyQ":"\u2615","KeyW":"\ud83d\ude00","KeyE":"\ud83d\udc69\u200d\ud83d\udcbb"}}],"quickActionPages":[{"id":"quick","name":"Text","cells":{"KeyQ":{"name":"Mixed text","action":"text:\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435 02 \ud83d\ude00"}}}]}'
     [IO.File]::WriteAllText((Join-Path $profileRoot 'layouts\Popup acceptance.json'), $layout, $encoding)
     $exe = Join-Path $root "target\$BuildProfile\left-hand-control.exe"
     $process = Start-Process $exe -WorkingDirectory $root -PassThru -WindowStyle Hidden `

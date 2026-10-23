@@ -154,28 +154,11 @@ fn rename_references(layout: &mut LayoutPreset, renames: &[(String, String)]) {
     if renames.is_empty() {
         return;
     }
-    let fix = |action: &mut String| {
+    layout.for_each_action_mut(|action| {
         if let Some((_, new)) = renames.iter().find(|(old, _)| action.trim() == old) {
             *action = new.clone();
         }
-    };
-    for rule in &mut layout.rules {
-        rule.tap_action.iter_mut().for_each(fix);
-        rule.hold_action.iter_mut().for_each(fix);
-        fix(&mut rule.long_hold_action);
-        fix(&mut rule.double_tap_action);
-    }
-    for map in layout.layer_keymaps.values_mut() {
-        map.keys.values_mut().flatten().for_each(fix);
-    }
-    for item in &mut layout.macros {
-        item.steps.iter_mut().for_each(|s| fix(&mut s.action));
-    }
-    for page in &mut layout.quick_action_pages {
-        page.cells
-            .values_mut()
-            .for_each(|item| fix(&mut item.action));
-    }
+    });
 }
 
 impl ConfigDocument {
@@ -262,12 +245,12 @@ mod tests {
         paths
             .save_user_layout(
                 "Test",
-                r#"{"rules": [{"key": "KeyA", "tap": "macro:outer"}]}"#,
+                r#"{"version": 1, "rules": [{"key": "KeyA", "tap": "macro:outer"}]}"#,
                 true,
             )
             .unwrap();
         paths
-            .save_config(r#"{"settings":{"currentLayoutId":"user:Test"}}"#)
+            .save_config(r#"{"version":1,"state":{"editedLayoutId":"user:Test"}}"#)
             .unwrap();
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         let rules = document.layout().rules.clone();
@@ -331,7 +314,7 @@ mod tests {
             super::super::layout_file::serialize(document.layout()),
             super::super::layout_file::serialize(&before)
         );
-        paths.save_config("{}").unwrap();
+        paths.save_config(r#"{"version":1}"#).unwrap();
         document.save_macro(None, item("new", &[])).unwrap();
     }
 

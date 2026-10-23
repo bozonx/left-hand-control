@@ -780,7 +780,7 @@ mod tests {
     #[test]
     fn additional_key_suppression_is_preserved() {
         let layout = lhc_core::profile::layout_file::parse(
-            r#"{"layers": [{"id": "extra", "keys": {"BracketRight": null, "Backslash": null, "F4": "F4"}}]}"#
+            r#"{"version": 1, "layers": [{"id": "extra", "keys": {"BracketRight": null, "Backslash": null, "F4": "F4"}}]}"#
         ).unwrap().unwrap();
         let entries = extra_entries(&layout.layer_keymaps["extra"]);
         assert_eq!(entries.len(), 3);

@@ -57,7 +57,10 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
         if !r.layer_id.is_empty() && !layer_ids.contains(r.layer_id.as_str()) {
             errors.push(format!("{where_key}: unknown layer \"{}\"", r.layer_id));
         }
-        for (name, list) in [("isolate", &r.isolate), ("holdFor", &r.hold_for)] {
+        for (name, list) in [
+            ("hold keysExceptFor", &r.isolate),
+            ("hold keysOnlyFor", &r.hold_for),
+        ] {
             for code in crate::profile::key_catalog::unknown_keys(list) {
                 errors.push(format!("{where_key} {name}: unknown key \"{code}\""));
             }
@@ -496,8 +499,8 @@ mod tests {
         );
 
         let err = validate_config(&cfg).expect_err("validation should fail");
-        assert!(err.contains("isolate: unknown key \"KeyQQ\""));
-        assert!(err.contains("holdFor: unknown key \"KeyTab\""));
+        assert!(err.contains("keysExceptFor: unknown key \"KeyQQ\""));
+        assert!(err.contains("keysOnlyFor: unknown key \"KeyTab\""));
         assert!(err.contains("Keymap \"nav\" holdFor: unknown key \"Super\""));
         assert!(!err.contains("\"KeyA\""));
     }

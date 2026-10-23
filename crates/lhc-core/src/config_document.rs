@@ -4,8 +4,8 @@
 //! stays in memory. Saved layouts live in the user
 //! library (`layouts/<name>.json`, id `user:<name>`).
 //!
-//! Settings keep the raw JSON next to the typed view, so edits change only
-//! the fields they own and settings a shell does not know survive a save.
+//! Both formats are described in [`crate::profile::settings`] and
+//! [`crate::profile::layout_file`].
 
 use crate::profile::actions::{self, Action, ActionIssue};
 use crate::profile::auto_switch::{self, AutoSwitchContext};
@@ -17,7 +17,6 @@ use crate::profile::model::{
 use crate::profile::names::{self, NameIssue, NameKind};
 use crate::profile::{app_match, key_catalog, layout_file, settings};
 use crate::storage::StoragePaths;
-use serde_json::{Value, json};
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -85,7 +84,6 @@ pub struct RuntimeConfig {
 
 pub struct ConfigDocument {
     paths: StoragePaths,
-    settings_raw: Value,
     settings: AppSettings,
     layout: LayoutPreset,
 }
@@ -94,8 +92,7 @@ impl ConfigDocument {
     pub fn load(paths: StoragePaths) -> Result<Self, ConfigError> {
         paths.ensure().map_err(ConfigError::Io)?;
         let settings_text = paths.load_config().map_err(ConfigError::Io)?;
-        let settings_raw = parse_settings(&settings_text)?;
-        let settings = settings::from_value(settings_raw.get("settings"));
+        let settings = settings::parse(&settings_text).map_err(ConfigError::Parse)?;
         let layout = match settings.current_layout_id.as_deref() {
             Some(id) => {
                 let name = crate::profile::model::user_layout_name(id)
@@ -107,7 +104,6 @@ impl ConfigDocument {
         crate::gamemode::set_settings(&settings.game_mode);
         Ok(Self {
             settings,
-            settings_raw,
             layout,
             paths,
         })
@@ -149,15 +145,15 @@ impl ConfigDocument {
     }
 
     pub fn set_input_device(&mut self, path: &str) -> Result<(), ConfigError> {
-        self.set_setting("inputDevicePath", json!(path))
+        self.update_settings(|settings| settings.input_device_path = Some(path.to_owned()))
     }
 
     pub fn set_appearance(&mut self, appearance: Appearance) -> Result<(), ConfigError> {
-        self.set_setting("appearance", json!(appearance.as_str()))
+        self.update_settings(|settings| settings.appearance = appearance)
     }
 
     pub fn set_locale(&mut self, locale: LocalePreference) -> Result<(), ConfigError> {
-        self.set_setting("locale", json!(locale.as_str()))
+        self.update_settings(|settings| settings.locale = locale)
     }
 
     pub fn update_settings(
@@ -166,32 +162,7 @@ impl ConfigDocument {
     ) -> Result<(), ConfigError> {
         let mut updated = self.settings.clone();
         edit(&mut updated);
-        let values = serde_json::to_value(&updated)
-            .map_err(|error| ConfigError::Parse(error.to_string()))?;
-        let mut candidate = self.settings_raw.clone();
-        let object = candidate
-            .as_object_mut()
-            .ok_or_else(|| ConfigError::Invalid("config.json must contain an object".into()))?;
-        object.entry("version").or_insert(json!(1));
-        let settings = object
-            .entry("settings")
-            .or_insert_with(|| json!({}))
-            .as_object_mut()
-            .ok_or_else(|| ConfigError::Invalid("settings must be an object".into()))?;
-        let previous = serde_json::to_value(&self.settings)
-            .map_err(|error| ConfigError::Parse(error.to_string()))?;
-        for name in previous
-            .as_object()
-            .into_iter()
-            .flat_map(|values| values.keys())
-        {
-            settings.remove(name);
-        }
-        for (name, value) in values.as_object().into_iter().flatten() {
-            settings.insert(name.clone(), value.clone());
-        }
-        let text = serde_json::to_string_pretty(&candidate)
-            .map_err(|error| ConfigError::Parse(error.to_string()))?;
+        let text = settings::serialize(&updated);
         let autostart_changed = cfg!(target_os = "linux")
             && updated.launch_on_startup != self.settings.launch_on_startup;
         if autostart_changed {
@@ -209,7 +180,6 @@ impl ConfigDocument {
         }
         crate::gamemode::set_settings(&updated.game_mode);
         self.settings = updated;
-        self.settings_raw = candidate;
         Ok(())
     }
 
@@ -618,46 +588,10 @@ impl ConfigDocument {
             None => Ok(LayoutPreset::default()),
         }
     }
-
-    fn set_setting(&mut self, name: &str, value: Value) -> Result<(), ConfigError> {
-        let mut candidate = self.settings_raw.clone();
-        let object = candidate
-            .as_object_mut()
-            .ok_or_else(|| ConfigError::Invalid("config.json must contain an object".into()))?;
-        object.entry("version").or_insert(json!(1));
-        object
-            .entry("settings")
-            .or_insert_with(|| json!({}))
-            .as_object_mut()
-            .ok_or_else(|| ConfigError::Invalid("settings must be an object".into()))?
-            .insert(name.into(), value);
-        let text = serde_json::to_string_pretty(&candidate)
-            .map_err(|error| ConfigError::Parse(error.to_string()))?;
-        self.paths.save_config(&text).map_err(ConfigError::Io)?;
-        self.settings = settings::from_value(candidate.get("settings"));
-        crate::gamemode::set_settings(&self.settings.game_mode);
-        self.settings_raw = candidate;
-        Ok(())
-    }
 }
 
 fn optional_text(value: &str) -> Option<String> {
     (!value.trim().is_empty()).then(|| value.trim().to_owned())
-}
-
-fn parse_settings(text: &str) -> Result<Value, ConfigError> {
-    if text.trim().is_empty() {
-        return Ok(json!({ "version": 1, "settings": {} }));
-    }
-    let value: Value = serde_json::from_str(text)
-        .map_err(|error| ConfigError::Parse(format!("config.json: {error}")))?;
-    if !value.is_object() {
-        return Err(ConfigError::Parse(
-            "config.json must contain an object".into(),
-        ));
-    }
-    settings::validate(value.get("settings")).map_err(ConfigError::Parse)?;
-    Ok(value)
 }
 
 fn parse_layout(text: &str) -> Result<LayoutPreset, ConfigError> {
@@ -680,21 +614,24 @@ fn validate_for_mapper(json: &str) -> Result<(), ConfigError> {
 mod tests {
     use super::*;
     use crate::profile::diagnostics::RuleIssueCode;
+    use serde_json::{Value, json};
     use std::fs;
 
-    const LAYOUT: &str = r#"{"layers": [{"id": "nav", "name": "Navigation", "keys": {"KeyH": "ArrowLeft"}}], "rules": [{"key": "CapsLock", "layer": "nav", "tap": "Escape"}]}"#;
+    const LAYOUT: &str = r#"{"version": 1, "layers": [{"id": "nav", "name": "Navigation", "keys": {"KeyH": "ArrowLeft"}}], "rules": [{"key": "CapsLock", "hold": {"layer": "nav"}, "tap": "Escape"}]}"#;
 
+    /// A document whose edited and active layout is `layout`, saved as
+    /// `Test` unless `state.editedLayoutId` names another one.
     fn document(mut settings: Value, layout: &str) -> (tempfile::TempDir, ConfigDocument) {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
-        if settings["settings"]["currentLayoutId"].is_null() {
-            settings["settings"]["currentLayoutId"] = json!("user:Test");
+        settings["version"] = json!(1);
+        if settings["state"]["editedLayoutId"].is_null() {
+            settings["state"]["editedLayoutId"] = json!("user:Test");
         }
-        if settings["settings"]["manualActiveLayoutId"].is_null() {
-            settings["settings"]["manualActiveLayoutId"] =
-                settings["settings"]["currentLayoutId"].clone();
+        if settings["settings"]["activeLayoutId"].is_null() {
+            settings["settings"]["activeLayoutId"] = settings["state"]["editedLayoutId"].clone();
         }
-        let name = settings["settings"]["currentLayoutId"]
+        let name = settings["state"]["editedLayoutId"]
             .as_str()
             .unwrap()
             .strip_prefix("user:")
@@ -709,10 +646,10 @@ mod tests {
     #[test]
     fn reads_settings_and_layout_from_their_own_files() {
         let (_dir, document) = document(
-            json!({"version": 1, "settings": {"inputDevicePath": "/dev/input/event3", "appearance": "dark"}}),
+            json!({"settings": {"keyboardDevice": "/dev/input/by-id/kbd", "appearance": "dark"}}),
             LAYOUT,
         );
-        assert_eq!(document.input_device(), Some("/dev/input/event3"));
+        assert_eq!(document.input_device(), Some("/dev/input/by-id/kbd"));
         assert_eq!(document.settings().appearance, Appearance::Dark);
         assert_eq!(document.layout().rules.len(), 1);
         let config = document.config();
@@ -723,21 +660,20 @@ mod tests {
     }
 
     #[test]
-    fn settings_edit_preserves_unknown_fields_and_leaves_layout_alone() {
-        let (_dir, mut document) = document(
-            json!({"version": 1, "settings": {"futureOption": 7}, "extra": true}),
-            LAYOUT,
-        );
+    fn settings_edit_leaves_layout_alone() {
+        let (_dir, mut document) = document(json!({}), LAYOUT);
         let layout_before =
             fs::read_to_string(document.paths.layouts_dir().join("Test.json")).unwrap();
-        document.set_input_device("/dev/input/event7").unwrap();
+        document.set_input_device("/dev/input/by-id/other").unwrap();
         document.set_locale(LocalePreference::English).unwrap();
         let saved: Value =
             serde_json::from_str(&fs::read_to_string(document.paths.config_path()).unwrap())
                 .unwrap();
-        assert_eq!(saved["settings"]["futureOption"], 7);
-        assert_eq!(saved["extra"], true);
-        assert_eq!(saved["settings"]["inputDevicePath"], "/dev/input/event7");
+        assert_eq!(saved["version"], 1);
+        assert_eq!(
+            saved["settings"]["keyboardDevice"],
+            "/dev/input/by-id/other"
+        );
         assert_eq!(saved["settings"]["locale"], "en-US");
         assert!(saved.get("rules").is_none());
         assert_eq!(
@@ -747,16 +683,15 @@ mod tests {
     }
 
     #[test]
-    fn unsupported_settings_are_rejected_without_rewriting_the_file() {
-        for raw in [
-            json!({"layoutConditions": {}}),
-            json!({"commandTrust": {}}),
-            json!({"commandTimeoutSecs": 10}),
-            json!({"autoRules": [{"apps": ["kate"], "windows": ["kate"]}]}),
+    fn invalid_settings_are_rejected_without_rewriting_the_file() {
+        for text in [
+            json!({"version": 1, "settings": {"futureOption": 7}}).to_string(),
+            json!({"version": 1, "settings": {"appearance": "blue"}}).to_string(),
+            json!({"version": 2, "settings": {}}).to_string(),
+            json!({"settings": {}}).to_string(),
         ] {
             let dir = tempfile::tempdir().unwrap();
             let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
-            let text = json!({"version": 1, "settings": raw}).to_string();
             paths.save_config(&text).unwrap();
             assert!(matches!(
                 ConfigDocument::load(paths.clone()),
@@ -769,16 +704,15 @@ mod tests {
     #[test]
     fn commands_require_explicit_permission_on_load() {
         let (_dir, mut document) = document(
-            json!({"version": 1, "settings": {}}),
-            r#"{"commands": [{"id": "hello", "linux": "printf hello"}]}"#,
+            json!({}),
+            r#"{"version": 1, "commands": [{"id": "hello", "unix": "printf hello"}]}"#,
         );
         assert!(!document.settings().commands_enabled);
         document
             .paths
             .save_config(
-                &json!({"version": 1, "settings": {
-                    "currentLayoutId": "user:Test", "appearance": "dark"
-                }})
+                &json!({"version": 1, "settings": {"appearance": "dark"},
+                    "state": {"editedLayoutId": "user:Test"}})
                 .to_string(),
             )
             .unwrap();
@@ -787,11 +721,8 @@ mod tests {
     }
 
     #[test]
-    fn settings_batch_keeps_unknown_fields_and_overwrites_external_changes() {
-        let (_dir, mut document) = document(
-            json!({"version": 1, "settings": {"futureOption": 7}}),
-            LAYOUT,
-        );
+    fn settings_batch_overwrites_external_changes() {
+        let (_dir, mut document) = document(json!({}), LAYOUT);
         document
             .update_settings(|settings| {
                 settings.default_hold_timeout_ms = 350;
@@ -801,22 +732,27 @@ mod tests {
         let saved: Value =
             serde_json::from_str(&fs::read_to_string(document.paths.config_path()).unwrap())
                 .unwrap();
-        assert_eq!(saved["settings"]["futureOption"], 7);
-        assert_eq!(saved["settings"]["defaultHoldTimeoutMs"], 350);
-        assert_eq!(saved["settings"]["gameMode"]["useFullscreen"], true);
-        fs::write(document.paths.config_path(), r#"{}"#).unwrap();
+        assert_eq!(saved["settings"]["timing"]["holdMs"], 350);
+        assert_eq!(
+            saved["settings"]["gameMode"]["detectors"]["fullscreen"],
+            true
+        );
+        fs::write(document.paths.config_path(), r#"{"version": 1}"#).unwrap();
         document
             .update_settings(|settings| settings.default_hold_timeout_ms = 400)
             .unwrap();
         assert_eq!(document.settings().default_hold_timeout_ms, 400);
         let saved: Value = serde_json::from_str(&document.paths.load_config().unwrap()).unwrap();
-        assert_eq!(saved["settings"]["futureOption"], 7);
-        assert_eq!(saved["settings"]["defaultHoldTimeoutMs"], 400);
+        assert_eq!(saved["settings"]["timing"]["holdMs"], 400);
+        assert_eq!(
+            saved["settings"]["gameMode"]["detectors"]["fullscreen"],
+            true
+        );
     }
 
     #[test]
     fn base_tap_edit_preserves_other_rules_and_rejects_complex_rules() {
-        let (_dir, mut document) = document(json!({"settings": {}}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), LAYOUT);
         document.set_base_tap_action("KeyA", "Ctrl+KeyC").unwrap();
         assert_eq!(document.base_tap_action("KeyA"), Some("Ctrl+KeyC"));
         assert_eq!(document.layout().rules.len(), 2);
@@ -831,7 +767,7 @@ mod tests {
 
     #[test]
     fn additional_key_order_survives_saved_layout_reload() {
-        let (_dir, mut document) = document(json!({"version": 1, "settings": {}}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), LAYOUT);
         for key in ["F13", "F14", "F15"] {
             document
                 .set_layer_key("nav", key, KeyAssignment::Swallow)
@@ -868,7 +804,7 @@ mod tests {
 
     #[test]
     fn extra_keys_are_validated_and_keep_their_position() {
-        let (_dir, mut document) = document(json!({"version": 1, "settings": {}}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), LAYOUT);
         for key in ["F13", "F14"] {
             document
                 .set_extra_key("nav", None, key, KeyAssignment::Swallow)
@@ -919,7 +855,7 @@ mod tests {
 
     #[test]
     fn swapping_layer_keys_exchanges_actions_and_suppression() {
-        let (_dir, mut document) = document(json!({"version": 1, "settings": {}}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), LAYOUT);
         document
             .set_layer_key("nav", "KeyJ", KeyAssignment::Swallow)
             .unwrap();
@@ -943,7 +879,7 @@ mod tests {
 
     #[test]
     fn layer_keys_remain_in_memory_until_explicitly_saved() {
-        let (_dir, mut document) = document(json!({"version": 1, "settings": {}}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), LAYOUT);
         document
             .set_layer_key("nav", "KeyJ", KeyAssignment::Action("ArrowDown".into()))
             .unwrap();
@@ -995,7 +931,9 @@ mod tests {
         let (_dir, mut document) = document(json!({"settings": {"appearance": "dark"}}), LAYOUT);
         document
             .paths
-            .save_config(r#"{"settings":{"currentLayoutId":"user:Test","appearance":"light"}}"#)
+            .save_config(
+                r#"{"version":1,"settings":{"appearance":"light"},"state":{"editedLayoutId":"user:Test"}}"#,
+            )
             .unwrap();
         document
             .set_layer_key("nav", "KeyJ", KeyAssignment::Swallow)
@@ -1011,7 +949,7 @@ mod tests {
 
     #[test]
     fn session_edits_do_not_touch_disk() {
-        let (_dir, mut document) = document(json!({"settings": {}}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), LAYOUT);
         let paths = document.paths().clone();
         let saved = paths.load_user_layout("Test").unwrap();
         document.set_base_tap_action("KeyA", "Enter").unwrap();
@@ -1038,13 +976,17 @@ mod tests {
     #[test]
     fn runtime_config_reports_whether_titles_are_needed() {
         let (_dir, mut document) = document(
-            json!({"version": 1, "settings": {"currentLayoutId": "user:Main", "manualActiveLayoutId": "user:Other"}}),
+            json!({"settings": {"activeLayoutId": "user:Other"}, "state": {"editedLayoutId": "user:Main"}}),
             LAYOUT,
         );
         let save = |document: &ConfigDocument, rules: &str| {
             document
                 .paths
-                .save_user_layout("Other", &format!("{{\"rules\":{rules}}}"), true)
+                .save_user_layout(
+                    "Other",
+                    &format!("{{\"version\":1,\"rules\":{rules}}}"),
+                    true,
+                )
                 .unwrap();
         };
         let uses_titles = |document: &ConfigDocument| {
@@ -1055,18 +997,18 @@ mod tests {
         };
         save(
             &document,
-            r#"[{"key": "KeyA", "tap": "KeyB", "windows": ["kate"]}]"#,
+            r#"[{"key": "KeyA", "tap": "KeyB", "when": {"windows": ["kate"]}}]"#,
         );
         assert!(!uses_titles(&document));
         save(
             &document,
-            r#"[{"key": "KeyA", "tap": "KeyB", "excludeWindows": ["title:Secret"]}]"#,
+            r#"[{"key": "KeyA", "tap": "KeyB", "when": {"excludeWindows": ["title:Secret"]}}]"#,
         );
         assert!(uses_titles(&document));
         // Disabled rules never run, so they need no titles.
         save(
             &document,
-            r#"[{"key": "KeyA", "enabled": false, "tap": "KeyB", "windows": ["title:x"]}]"#,
+            r#"[{"key": "KeyA", "enabled": false, "tap": "KeyB", "when": {"windows": ["title:x"]}}]"#,
         );
         assert!(!uses_titles(&document));
         // Auto rules count only in auto mode.
@@ -1093,12 +1035,12 @@ mod tests {
     #[test]
     fn runtime_config_uses_the_active_library_layout() {
         let (_dir, mut document) = document(
-            json!({"version": 1, "settings": {"currentLayoutId": "user:Main", "manualActiveLayoutId": "user:Other"}}),
+            json!({"settings": {"activeLayoutId": "user:Other"}, "state": {"editedLayoutId": "user:Main"}}),
             LAYOUT,
         );
         document
             .paths
-            .save_user_layout("Other", r#"{"rules": [{"key": "KeyA", "tap": "KeyB"}, {"key": "KeyC", "enabled": false, "tap": "KeyD"}]}"#, true)
+            .save_user_layout("Other", r#"{"version": 1, "rules": [{"key": "KeyA", "tap": "KeyB"}, {"key": "KeyC", "enabled": false, "tap": "KeyD"}]}"#, true)
             .unwrap();
         let runtime = document
             .runtime_config(&AutoSwitchContext::default())
@@ -1110,7 +1052,7 @@ mod tests {
         assert_eq!(value["settings"]["currentLayoutId"], "user:Other");
 
         document
-            .set_setting("manualActiveLayoutId", json!("user:Main"))
+            .update_settings(|settings| settings.manual_active_layout_id = Some("user:Main".into()))
             .unwrap();
         let runtime = document
             .runtime_config(&AutoSwitchContext::default())
@@ -1123,10 +1065,7 @@ mod tests {
 
     #[test]
     fn auto_mode_without_a_match_is_passthrough() {
-        let (_dir, document) = document(
-            json!({"version": 1, "settings": {"layoutMode": "auto"}}),
-            LAYOUT,
-        );
+        let (_dir, document) = document(json!({"settings": {"layoutMode": "auto"}}), LAYOUT);
         let runtime = document
             .runtime_config(&AutoSwitchContext::default())
             .unwrap();
@@ -1139,10 +1078,7 @@ mod tests {
     fn bundled_layout_runs_in_the_mapper() {
         let path =
             std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/ivank-layout.json");
-        let (_dir, document) = document(
-            json!({"version": 1, "settings": {}}),
-            &fs::read_to_string(path).unwrap(),
-        );
+        let (_dir, document) = document(json!({}), &fs::read_to_string(path).unwrap());
         assert!(document.layout().layers.len() > 1);
         let runtime = document
             .runtime_config(&AutoSwitchContext::default())
@@ -1165,8 +1101,8 @@ mod tests {
     #[test]
     fn blocking_rule_issues_refuse_runtime_config() {
         let (_dir, document) = document(
-            json!({"version": 1, "settings": {}}),
-            r#"{"rules": [{"key": "UnknownKey", "tap": "KeyB"}]}"#,
+            json!({}),
+            r#"{"version": 1, "rules": [{"key": "UnknownKey", "tap": "KeyB"}]}"#,
         );
         match document.runtime_config(&AutoSwitchContext::default()) {
             Err(ConfigError::Rules(issues)) => {
@@ -1183,8 +1119,8 @@ mod tests {
     #[test]
     fn repeated_triggers_keep_both_rules_in_runtime_order() {
         let (_dir, document) = document(
-            json!({"version": 1, "settings": {}}),
-            r#"{"rules": [{"key": "KeyA", "tap": "KeyB"}, {"key": "KeyA", "tap": "KeyC"}]}"#,
+            json!({}),
+            r#"{"version": 1, "rules": [{"key": "KeyA", "tap": "KeyB"}, {"key": "KeyA", "tap": "KeyC"}]}"#,
         );
         let runtime = document
             .runtime_config(&AutoSwitchContext::default())
@@ -1197,7 +1133,7 @@ mod tests {
 
     #[test]
     fn layer_lifecycle_preserves_keymaps_and_detaches_rules() {
-        let (_dir, mut document) = document(json!({"settings": {}}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), LAYOUT);
         document
             .set_layer_key("nav", "F13", KeyAssignment::Action("Escape".into()))
             .unwrap();
