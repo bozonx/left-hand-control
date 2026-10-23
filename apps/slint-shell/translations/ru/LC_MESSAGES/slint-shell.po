@@ -210,8 +210,8 @@ msgstr "Сохранить настройки"
 msgid "Settings saved"
 msgstr "Настройки сохранены"
 
-msgid "Enter a non-negative integer for each timeout"
-msgstr "Введите неотрицательное целое число для каждой задержки"
+msgid "Enter a timeout from 50 to 1000 milliseconds"
+msgstr "Введите таймаут от 50 до 1000 миллисекунд"
 
 msgid "Rules"
 msgstr "Правила"
@@ -423,8 +423,8 @@ msgstr "ID макроса уже используется"
 msgid "Macro delays must be between 0 and 2000 ms"
 msgstr "Задержки макроса должны быть от 0 до 2000 мс"
 
-msgid "Pause must be between 0 and 10000 ms"
-msgstr "Пауза должна быть от 0 до 10000 мс"
+msgid "Pause must be between 1 and 10000 ms"
+msgstr "Пауза должна быть от 1 до 10000 мс"
 
 msgid "Unknown key or shortcut in macro step"
 msgstr "Неизвестная клавиша или сочетание в шаге макроса"
@@ -2726,3 +2726,33 @@ msgstr "Удержание зажимает клавишу или сочетан
 
 msgid "Paths"
 msgstr "Пути"
+
+msgid "Unknown layer key at \"{}\"."
+msgstr "Неизвестная клавиша слоя: \"{}\"."
+
+msgid "Invalid layer action at \"{}\"."
+msgstr "Некорректное действие слоя: \"{}\"."
+
+msgid "Invalid macro at \"{}\"."
+msgstr "Некорректный макрос: \"{}\"."
+
+msgid "Invalid menu action at \"{}\"."
+msgstr "Некорректное действие меню: \"{}\"."
+
+msgid "Invalid timing at \"{}\"."
+msgstr "Некорректный тайминг: \"{}\"."
+
+msgid "Invalid window condition at \"{}\"."
+msgstr "Некорректное условие окна: \"{}\"."
+
+msgid "Unsupported rule combination at \"{}\"."
+msgstr "Неподдерживаемое сочетание параметров правила: \"{}\"."
+
+msgid "Invalid macro step at \"{}\"."
+msgstr "Некорректный шаг макроса: \"{}\"."
+
+msgid "Macro call cycle at \"{}\"."
+msgstr "Циклический вызов макроса: \"{}\"."
+
+msgid "A timing value is outside the range shown in Settings."
+msgstr "Значение тайминга выходит за диапазон, указанный в настройках."

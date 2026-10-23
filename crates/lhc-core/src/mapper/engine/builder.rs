@@ -430,7 +430,7 @@ impl Engine {
             let long_hold_timeout = Duration::from_millis(
                 r.long_hold_timeout_ms
                     .unwrap_or(cfg.settings.default_long_hold_timeout_ms)
-                    .clamp(1, 86_400_000),
+                    .clamp(1, crate::profile::timing::LONG_HOLD.max),
             );
             let hold_timeout = r
                 .hold_timeout_ms
@@ -539,9 +539,10 @@ impl Engine {
             active_macro: None,
             macro_queue: VecDeque::new(),
             // Hand-edited configs may hold 0 or a value that overflows `Instant`.
-            macro_timeout: Duration::from_millis(
-                cfg.settings.macro_timeout_ms.clamp(1_000, 600_000),
-            ),
+            macro_timeout: Duration::from_millis(cfg.settings.macro_timeout_ms.clamp(
+                crate::profile::timing::MACRO_TIMEOUT.min,
+                crate::profile::timing::MACRO_TIMEOUT.max,
+            )),
             text_pending: false,
             layer_presses: 0,
             layer_hold_id: 0,

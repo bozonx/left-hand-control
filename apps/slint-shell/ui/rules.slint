@@ -506,6 +506,7 @@ export component RuleDialogOverlay inherits FocusScope {
                 if RulesEditor.dialog == RuleDialog.remove: Text { text: @tr("The trigger and all its assigned actions will be removed from the current layout."); color: Theme.muted; }
                 if RulesEditor.dialog == RuleDialog.hold-timeout || RulesEditor.dialog == RuleDialog.double-timeout: NumericInput {
                     text <=> RulesEditor.dialog-value;
+                    minimum: 50; maximum: 1000;
                     placeholder-text: RulesEditor.dialog == RuleDialog.hold-timeout ? RulesEditor.default-hold-timeout : RulesEditor.default-double-timeout;
                     label: RulesEditor.dialog == RuleDialog.hold-timeout ? @tr("Hold threshold, ms") : @tr("Double-tap window, ms");
                     accepted => { RulesEditor.choose(RulesEditor.dialog-value); }

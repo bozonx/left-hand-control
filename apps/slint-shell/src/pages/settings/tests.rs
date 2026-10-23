@@ -136,7 +136,10 @@ fn invalid_numbers_are_rejected() {
     let base = Form::from_settings(&settings);
     let mut form = base.clone();
     form.macro_pause = "-5".into();
-    assert_eq!(form.apply(&base, &mut settings), Err(Msg::TimeoutInvalid));
+    assert_eq!(
+        form.apply(&base, &mut settings),
+        Err(Msg::SettingsTimingInvalid)
+    );
 }
 
 #[test]
@@ -155,4 +158,26 @@ fn empty_device_paths_are_none() {
         Some("/dev/input/event3")
     );
     assert_eq!(settings.input_mouse_device_path, None);
+}
+
+#[test]
+fn out_of_range_timings_do_not_modify_settings() {
+    let mut settings = AppSettings::default();
+    let original = settings.clone();
+    let base = Form::from_settings(&settings);
+    for (field, value) in [(0, "0"), (1, "1001"), (2, "2001"), (3, "501"), (4, "999")] {
+        let mut form = base.clone();
+        match field {
+            0 => form.hold = value.into(),
+            1 => form.double_tap = value.into(),
+            2 => form.macro_pause = value.into(),
+            3 => form.combo = value.into(),
+            _ => form.macro_timeout = value.into(),
+        }
+        assert_eq!(
+            form.apply(&base, &mut settings),
+            Err(Msg::SettingsTimingInvalid)
+        );
+        assert_eq!(settings, original);
+    }
 }

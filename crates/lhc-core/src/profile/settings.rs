@@ -23,7 +23,9 @@ pub fn parse(text: &str) -> Result<AppSettings, String> {
     check_version(&value, "config.json")?;
     let doc: ConfigDoc =
         serde_json::from_str(text).map_err(|error| format!("config.json: {error}"))?;
-    Ok(from_doc(doc))
+    let settings = from_doc(doc)?;
+    validate(&settings)?;
+    Ok(settings)
 }
 
 pub fn serialize(settings: &AppSettings) -> String {
@@ -226,13 +228,50 @@ fn non_empty(value: Option<String>) -> Option<String> {
     value.filter(|value| !value.trim().is_empty())
 }
 
-fn from_doc(doc: ConfigDoc) -> AppSettings {
+pub fn validate(settings: &AppSettings) -> Result<(), String> {
+    super::ids::unique(
+        settings.auto_rules.iter().map(|item| item.id.as_str()),
+        "settings.autoRules",
+    )?;
+    super::ids::unique(
+        settings
+            .game_mode
+            .process_matchers
+            .iter()
+            .map(|item| item.id.as_str()),
+        "settings.gameMode.processes",
+    )?;
+    super::timing::validate_settings(settings)
+}
+
+fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
+    let mut ids: Vec<_> = doc
+        .settings
+        .auto_rules
+        .iter_mut()
+        .map(|item| item.id.take())
+        .collect();
+    super::ids::complete(&mut ids, "rule-", "settings.autoRules")?;
+    for (item, id) in doc.settings.auto_rules.iter_mut().zip(ids) {
+        item.id = id;
+    }
+    let mut ids: Vec<_> = doc
+        .settings
+        .game_mode
+        .processes
+        .iter_mut()
+        .map(|item| item.id.take())
+        .collect();
+    super::ids::complete(&mut ids, "process-", "settings.gameMode.processes")?;
+    for (item, id) in doc.settings.game_mode.processes.iter_mut().zip(ids) {
+        item.id = id;
+    }
     let ConfigDoc {
         settings, state, ..
     } = doc;
     let timing = settings.timing;
     let detectors = settings.game_mode.detectors;
-    AppSettings {
+    Ok(AppSettings {
         launch_on_startup: settings.launch_on_startup,
         start_mapper_on_launch: settings.start_mapper_on_launch,
         appearance: settings.appearance,
@@ -300,7 +339,7 @@ fn from_doc(doc: ConfigDoc) -> AppSettings {
         linux_paste_shortcut: settings.linux.paste_shortcut,
         linux_ydotool_path: settings.linux.ydotool_path,
         linux_xdotool_path: settings.linux.xdotool_path,
-    }
+    })
 }
 
 fn tap_decision_name(decision: TapDecision) -> &'static str {
@@ -402,6 +441,58 @@ mod tests {
 
     fn config(settings: Value) -> String {
         json!({"schemaVersion": 1, "settings": settings}).to_string()
+    }
+
+    #[test]
+    fn ids_are_unique_and_generated_without_collisions() {
+        for field in ["autoRules", "processes"] {
+            let items = if field == "autoRules" {
+                serde_json::json!([{"id":"x"},{"id":"x"}])
+            } else {
+                serde_json::json!([{"id":"x","name":"a"},{"id":"x","name":"b"}])
+            };
+            let settings = if field == "autoRules" {
+                serde_json::json!({field:items})
+            } else {
+                serde_json::json!({"gameMode":{field:items}})
+            };
+            assert!(
+                parse(&config(settings))
+                    .unwrap_err()
+                    .contains("duplicate id")
+            );
+        }
+        let settings = parse(&config(serde_json::json!({
+            "autoRules":[{}, {"id":"rule-1"}],
+            "gameMode":{"processes":[{"name":"a"},{"id":"process-1","name":"b"}]}
+        })))
+        .unwrap();
+        assert_eq!(settings.auto_rules[0].id, "rule-2");
+        assert_eq!(settings.game_mode.process_matchers[0].id, "process-2");
+        assert_eq!(parse(&serialize(&settings)).unwrap(), settings);
+    }
+
+    #[test]
+    fn settings_timing_boundaries_are_enforced() {
+        use super::super::timing::*;
+        for (field, range) in [
+            ("holdMs", TAP_HOLD),
+            ("doubleTapMs", TAP_HOLD),
+            ("longHoldMs", LONG_HOLD),
+            ("comboMs", COMBO),
+            ("macroStepPauseMs", MACRO_DELAY),
+            ("macroModifierDelayMs", MACRO_DELAY),
+            ("macroTimeoutMs", MACRO_TIMEOUT),
+        ] {
+            for value in [0, range.min, range.max, range.max + 1, u64::MAX] {
+                let text = config(serde_json::json!({"timing":{field:value}}));
+                assert_eq!(
+                    parse(&text).is_ok(),
+                    range.contains(value),
+                    "{field}: {value}"
+                );
+            }
+        }
     }
 
     #[test]
@@ -523,7 +614,7 @@ mod tests {
         assert_eq!(settings.game_mode.use_steam, base.game_mode.use_steam);
         let process = &settings.game_mode.process_matchers[0];
         assert_eq!(process.name, "steam");
-        assert_eq!(process.id, "process-0");
+        assert_eq!(process.id, "process-1");
         assert!(process.only_active_window);
         assert!(!process.is_blacklist);
     }
@@ -544,7 +635,7 @@ mod tests {
     }
 
     #[test]
-    fn auto_rules_without_ids_get_positional_ids() {
+    fn auto_rules_without_ids_get_deterministic_ids() {
         let settings = parse(&config(json!({
             "autoRules": [
                 {"id": "a", "layoutId": "user:A", "when": {"windows": ["blender"]}},

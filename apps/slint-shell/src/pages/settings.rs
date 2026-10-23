@@ -53,7 +53,7 @@ struct Form {
 }
 
 fn parse_ms(value: &str) -> Result<u64, Msg> {
-    value.trim().parse().map_err(|_| Msg::TimeoutInvalid)
+    value.trim().parse().map_err(|_| Msg::SettingsTimingInvalid)
 }
 
 fn path(value: &str) -> Option<String> {
@@ -192,6 +192,19 @@ impl Form {
             parse_ms(&self.combo)?,
             parse_ms(&self.macro_timeout)?,
         ];
+        use lhc_core::profile::timing;
+        for (value, range) in numbers.iter().zip([
+            timing::TAP_HOLD,
+            timing::TAP_HOLD,
+            timing::MACRO_DELAY,
+            timing::MACRO_DELAY,
+            timing::COMBO,
+            timing::MACRO_TIMEOUT,
+        ]) {
+            if !range.contains(*value) {
+                return Err(Msg::SettingsTimingInvalid);
+            }
+        }
         macro_rules! changed {
             ($field:ident => $apply:expr) => {
                 if self.$field != base.$field {

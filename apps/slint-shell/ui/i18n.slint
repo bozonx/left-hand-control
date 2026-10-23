@@ -90,7 +90,7 @@ export global Locale {
         if m.id == "macro-invalid-id" { return @tr("Macro ID must contain 1–64 letters, digits, underscores or hyphens"); }
         if m.id == "macro-duplicate-id" { return @tr("Macro ID is already in use"); }
         if m.id == "macro-delay-range" { return @tr("Macro delays must be between 0 and 2000 ms"); }
-        if m.id == "macro-pause-range" { return @tr("Pause must be between 0 and 10000 ms"); }
+        if m.id == "macro-pause-range" { return @tr("Pause must be between 1 and 10000 ms"); }
         if m.id == "macro-unknown-key" { return @tr("Unknown key or shortcut in macro step"); }
         if m.id == "macro-cycle" { return @tr("Macro references cannot form a cycle"); }
         if m.id == "menu-emoji-cell" { return @tr("Emoji cells accept at most 100 characters."); }
@@ -107,6 +107,15 @@ export global Locale {
         if m.id == "save-layout-first" { return @tr("Save layout changes before opening another layout."); }
         if m.id == "commands-disabled" { return @tr("Commands are disabled in Settings."); }
         if m.id == "layer-saved" { return @tr("Layer saved"); }
+        if m.id == "config-invalid-layer-key" { return @tr("Unknown layer key at \"{}\".", m.arg); }
+        if m.id == "config-invalid-layer-action" { return @tr("Invalid layer action at \"{}\".", m.arg); }
+        if m.id == "config-invalid-macro-step" { return @tr("Invalid macro step at \"{}\".", m.arg); }
+        if m.id == "config-macro-cycle" { return @tr("Macro call cycle at \"{}\".", m.arg); }
+        if m.id == "config-invalid-macro" { return @tr("Invalid macro at \"{}\".", m.arg); }
+        if m.id == "config-invalid-menu-action" { return @tr("Invalid menu action at \"{}\".", m.arg); }
+        if m.id == "config-invalid-timing" { return @tr("Invalid timing at \"{}\".", m.arg); }
+        if m.id == "config-invalid-condition" { return @tr("Invalid window condition at \"{}\".", m.arg); }
+        if m.id == "config-invalid-hold" { return @tr("Unsupported rule combination at \"{}\".", m.arg); }
         if m.id == "rule-missing-trigger" { return @tr("Rule without a trigger is saved as a draft and will be ignored."); }
         if m.id == "rule-invalid-trigger" { return @tr("Trigger \"{}\" cannot be used for a rule.", m.arg); }
         if m.id == "rule-duplicate-trigger" { return @tr("Rules for trigger \"{}\" may overlap; the first matching rule wins.", m.arg); }
@@ -139,7 +148,8 @@ export global Locale {
         if m.id == "picker-layer-only" { return @tr("Activate layer only"); }
         if m.id == "key-code-required" { return @tr("Enter a key code"); }
         if m.id == "long-hold-invalid" { return @tr("Enter a long hold from 100 to 60000 ms."); }
-        if m.id == "timeout-invalid" { return @tr("Enter a non-negative integer for each timeout"); }
+        if m.id == "settings-timing-invalid" { return @tr("A timing value is outside the range shown in Settings."); }
+        if m.id == "timeout-invalid" { return @tr("Enter a timeout from 50 to 1000 milliseconds"); }
         if m.id == "saved-mapper-not-updated" { return @tr("Changes applied, but the mapper was not updated: {}", m.arg); }
         if m.id == "text-empty" { return @tr("Enter non-empty text"); }
         if m.id == "delay-range" { return @tr("Delay: an integer from 1 to 10000 ms"); }

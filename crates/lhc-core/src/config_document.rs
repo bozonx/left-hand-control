@@ -162,6 +162,7 @@ impl ConfigDocument {
     ) -> Result<(), ConfigError> {
         let mut updated = self.settings.clone();
         edit(&mut updated);
+        settings::validate(&updated).map_err(ConfigError::Invalid)?;
         let text = settings::serialize(&updated);
         let autostart_changed = crate::autostart::SUPPORTED
             && updated.launch_on_startup != self.settings.launch_on_startup;
@@ -511,6 +512,8 @@ impl ConfigDocument {
     ) -> Result<(), ConfigError> {
         let mut candidate = self.layout.clone();
         edit(&mut candidate);
+        crate::profile::ids::validate_layout(&candidate).map_err(ConfigError::Invalid)?;
+        crate::profile::timing::validate_layout(&candidate).map_err(ConfigError::Invalid)?;
 
         self.layout = candidate;
         Ok(())
@@ -565,7 +568,7 @@ impl ConfigDocument {
             self.layout_for_activation(layout_id.as_deref())?,
             layout_id.as_deref(),
         );
-        let blocking: Vec<RuleIssue> = diagnostics::analyze_rules(&config)
+        let blocking: Vec<RuleIssue> = diagnostics::analyze(&config)
             .into_iter()
             .filter(|issue| issue.code.is_error())
             .collect();
@@ -666,6 +669,65 @@ mod tests {
             .unwrap();
         paths.save_user_layout(name, layout, true).unwrap();
         (dir, ConfigDocument::load(paths).unwrap())
+    }
+
+    #[test]
+    fn invalid_identity_and_timing_edits_are_atomic() {
+        let (_dir, mut document) = document(json!({}), LAYOUT);
+        let original = document.config();
+        let original_file = document.paths().load_config().unwrap();
+        assert!(
+            document
+                .update_settings(|settings| settings.default_hold_timeout_ms = 0)
+                .is_err()
+        );
+        assert_eq!(document.config(), original);
+        assert_eq!(document.paths().load_config().unwrap(), original_file);
+        assert!(
+            document
+                .update_layout(|layout| layout.rules.push(layout.rules[0].clone()))
+                .is_err()
+        );
+        assert_eq!(document.config(), original);
+        assert!(
+            document
+                .update_layout(|layout| layout.rules[0].hold_timeout_ms = Some(u64::MAX))
+                .is_err()
+        );
+        assert_eq!(document.config(), original);
+        assert!(
+            document
+                .update_settings(|settings| {
+                    let item = crate::profile::model::AutoRule {
+                        id: "duplicate".into(),
+                        layout_id: None,
+                        enabled: true,
+                        conditions: Default::default(),
+                    };
+                    settings.auto_rules = vec![item.clone(), item];
+                })
+                .is_err()
+        );
+        assert_eq!(document.config(), original);
+        assert_eq!(document.paths().load_config().unwrap(), original_file);
+    }
+
+    #[test]
+    fn non_rule_errors_block_runtime_without_rewriting_the_layout() {
+        for content in [
+            r#"{"schemaVersion":1,"layers":[{"id":"nav","keys":{"KeyA":"macro:missing"}}]}"#,
+            r#"{"schemaVersion":1,"macros":[{"id":"m","steps":["macro:m"]}]}"#,
+            r#"{"schemaVersion":1,"quickActionPages":[{"cells":{"KeyQ":"cmd:missing"}}]}"#,
+        ] {
+            let (_dir, document) =
+                document(json!({"settings":{"activeLayoutId":"user:Test"}}), content);
+            let before = document.paths().load_user_layout("Test").unwrap();
+            assert!(matches!(
+                document.runtime_config(&AutoSwitchContext::default()),
+                Err(ConfigError::Rules(_))
+            ));
+            assert_eq!(document.paths().load_user_layout("Test").unwrap(), before);
+        }
     }
 
     #[test]

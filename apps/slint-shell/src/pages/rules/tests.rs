@@ -111,3 +111,14 @@ fn rule_ids_are_unique() {
     let rules = vec![LayerRule::new("slint-rule-1".into(), "")];
     assert_eq!(unique_rule_id(&rules), "slint-rule-2");
 }
+
+#[test]
+fn tap_hold_timeouts_share_the_file_contract() {
+    assert_eq!(parse_timeout(""), Ok(None));
+    for value in [50, 1000] {
+        assert_eq!(parse_timeout(&value.to_string()), Ok(Some(value)));
+    }
+    for value in ["0", "49", "1001", "18446744073709551615", "1.5"] {
+        assert_eq!(parse_timeout(value), Err(Msg::TimeoutInvalid));
+    }
+}

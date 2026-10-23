@@ -26,7 +26,9 @@ pub fn parse(text: &str) -> Result<Option<LayoutPreset>, String> {
     check_version(&value, "layout")?;
     let doc: LayoutDoc =
         serde_json::from_str(text).map_err(|error| format!("parse layout: {error}"))?;
-    from_doc(doc).map(Some)
+    let layout = from_doc(doc)?;
+    super::timing::validate_layout(&layout)?;
+    Ok(Some(layout))
 }
 
 /// Check the `schemaVersion` field of a parsed document before reading the rest,
@@ -328,7 +330,22 @@ fn three_state(value: Option<Option<String>>, what: &str) -> Result<Option<Strin
     }
 }
 
-fn from_doc(doc: LayoutDoc) -> Result<LayoutPreset, String> {
+fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
+    super::ids::unique(doc.layers.iter().map(|item| item.id.as_str()), "layers")?;
+    super::ids::unique(doc.macros.iter().map(|item| item.id.as_str()), "macros")?;
+    super::ids::unique(doc.commands.iter().map(|item| item.id.as_str()), "commands")?;
+    macro_rules! complete {
+        ($items:expr, $prefix:expr, $path:expr) => {{
+            let mut ids: Vec<_> = $items.iter_mut().map(|item| item.id.take()).collect();
+            super::ids::complete(&mut ids, $prefix, $path)?;
+            for (item, id) in $items.iter_mut().zip(ids) {
+                item.id = id;
+            }
+        }};
+    }
+    complete!(doc.rules, "r_auto", "rules");
+    complete!(doc.quick_action_pages, "qap_auto", "quickActionPages");
+    complete!(doc.emoji_pages, "emoji_auto", "emojiPages");
     let counter = std::cell::Cell::new(0u32);
     let next_id = |prefix: &str| {
         counter.set(counter.get() + 1);
@@ -738,6 +755,87 @@ mod tests {
 
     fn round_trip(preset: &LayoutPreset) -> LayoutPreset {
         parse(&serialize(preset)).unwrap().unwrap()
+    }
+
+    #[test]
+    fn duplicate_ids_are_rejected_before_conversion() {
+        for field in [
+            "layers",
+            "rules",
+            "macros",
+            "commands",
+            "quickActionPages",
+            "emojiPages",
+        ] {
+            let item = if field == "rules" {
+                serde_json::json!({"id": "same", "key": "KeyA"})
+            } else {
+                serde_json::json!({"id": "same"})
+            };
+            let text =
+                serde_json::json!({"schemaVersion": 1, field: [item.clone(), item]}).to_string();
+            let error = parse(&text).unwrap_err();
+            assert!(error.contains("duplicate id"), "{field}: {error}");
+        }
+    }
+
+    #[test]
+    fn generated_ids_reserve_explicit_ids_including_later_entries() {
+        let text = r#"{"schemaVersion":1,"rules":[{"key":"KeyA"},{"id":"r_auto1","key":"KeyB"}],
+            "quickActionPages":[{}, {"id":"qap_auto1"}],"emojiPages":[{}, {"id":"emoji_auto1"}]}"#;
+        let layout = parse(text).unwrap().unwrap();
+        super::super::ids::validate_layout(&layout).unwrap();
+        assert_eq!(layout.rules[0].id, "r_auto2");
+        assert_eq!(parse(&serialize(&layout)).unwrap().unwrap(), layout);
+        assert_eq!(parse(text).unwrap().unwrap(), layout);
+    }
+
+    #[test]
+    fn explicit_invalid_ids_are_not_replaced() {
+        for id in ["", " ", " x", "x "] {
+            let text =
+                serde_json::json!({"schemaVersion":1,"rules":[{"id":id,"key":"KeyA"}]}).to_string();
+            assert!(parse(&text).is_err(), "{id:?}");
+        }
+    }
+
+    #[test]
+    fn rule_and_macro_timing_boundaries() {
+        for (field, range) in [
+            ("hold", super::super::timing::TAP_HOLD),
+            ("doubleTap", super::super::timing::TAP_HOLD),
+            ("longHold", super::super::timing::LONG_HOLD),
+        ] {
+            for value in [
+                0,
+                range.min - 1,
+                range.min,
+                range.max,
+                range.max + 1,
+                u64::MAX,
+            ] {
+                let timed = if field == "hold" {
+                    serde_json::json!({"timeoutMs":value})
+                } else {
+                    serde_json::json!({"action":"KeyB", "timeoutMs":value})
+                };
+                let text =
+                    serde_json::json!({"schemaVersion":1,"rules":[{"key":"KeyA",field:timed}]})
+                        .to_string();
+                assert_eq!(
+                    parse(&text).is_ok(),
+                    range.contains(value),
+                    "{field}: {value}"
+                );
+            }
+        }
+        for field in ["stepPauseMs", "modifierDelayMs"] {
+            for value in [0, 2000, 2001, u64::MAX] {
+                let text = serde_json::json!({"schemaVersion":1,"macros":[{"id":"m",field:value}]})
+                    .to_string();
+                assert_eq!(parse(&text).is_ok(), value <= 2000);
+            }
+        }
     }
 
     #[test]

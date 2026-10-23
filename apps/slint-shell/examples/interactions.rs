@@ -149,7 +149,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!ui.global::<LayoutLibrary>().get_editor_open());
     settings.set_hold_timeout("not a number".into());
     settings.invoke_save();
-    assert_eq!(settings.get_message().id, "timeout-invalid");
+    assert_eq!(settings.get_message().id, "settings-timing-invalid");
     settings.set_hold_timeout("310".into());
     settings.set_double_tap_timeout("270".into());
     settings.set_combo_timeout("80".into());
@@ -740,7 +740,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y: 900.0 });
                 ui.global::<SettingsEditor>().set_tab(SettingsTab::General); assert_eq!(document.read().settings().default_hold_timeout_ms, 321); ui.global::<SettingsEditor>().set_appearance_index(3); ui.global::<SettingsEditor>().invoke_save(); assert_eq!(ConfigDocument::load(paths.clone()).unwrap().settings().appearance, lhc_core::profile::model::Appearance::EInk); ui.global::<Theme>().set_eink(true); ui.global::<Theme>().set_dark(false); slint_shell::ui::apply_theme(&ui.global::<Theme>()); }
             19 => { snapshot(&ui, "settings-eink"); ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: slint::LogicalPosition::new(500.0, 450.0), delta_x: 0.0, delta_y: -450.0 }); }
-            20 => { snapshot(&ui, "settings-behavior-eink"); ui.global::<SettingsEditor>().set_message(Message { id: "timeout-invalid".into(), arg: "".into(), count: 0 }); }
+            20 => { snapshot(&ui, "settings-behavior-eink"); ui.global::<SettingsEditor>().set_message(Message { id: "settings-timing-invalid".into(), arg: "".into(), count: 0 }); }
             21 => {
                 snapshot(&ui, "settings-validation");
                 ui.global::<SettingsEditor>().set_message(Message::default());

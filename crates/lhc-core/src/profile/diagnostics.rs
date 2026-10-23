@@ -15,6 +15,15 @@ pub enum RuleIssueCode {
     InvalidHoldAction,
     InvalidDoubleTapAction,
     UnknownListedKey,
+    InvalidLayerKey,
+    InvalidLayerAction,
+    InvalidMacro,
+    InvalidMacroStep,
+    MacroCycle,
+    InvalidMenuAction,
+    InvalidTiming,
+    InvalidCondition,
+    InvalidRuleConfiguration,
 }
 
 impl RuleIssueCode {
@@ -38,6 +47,17 @@ impl std::fmt::Display for RuleIssue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let trigger = self.trigger.as_deref().unwrap_or("");
         match self.code {
+            RuleIssueCode::InvalidLayerKey => write!(f, "Unknown layer key at {trigger}."),
+            RuleIssueCode::InvalidLayerAction => write!(f, "Invalid layer action at {trigger}."),
+            RuleIssueCode::InvalidMacroStep => write!(f, "Invalid macro step at {trigger}."),
+            RuleIssueCode::MacroCycle => write!(f, "Macro call cycle at {trigger}."),
+            RuleIssueCode::InvalidMacro => write!(f, "Invalid macro at {trigger}."),
+            RuleIssueCode::InvalidMenuAction => write!(f, "Invalid menu action at {trigger}."),
+            RuleIssueCode::InvalidTiming => write!(f, "Invalid timing at {trigger}."),
+            RuleIssueCode::InvalidCondition => write!(f, "Invalid window condition at {trigger}."),
+            RuleIssueCode::InvalidRuleConfiguration => {
+                write!(f, "Unsupported rule combination at {trigger}.")
+            }
             RuleIssueCode::MissingTrigger => {
                 write!(
                     f,
@@ -160,6 +180,155 @@ pub fn analyze_rules(config: &AppConfig) -> Vec<RuleIssue> {
     issues
 }
 
+/// Check the complete active configuration, including actions outside rules.
+/// `trigger` carries the document path for issues outside a rule.
+pub fn analyze(config: &AppConfig) -> Vec<RuleIssue> {
+    let mut issues = analyze_rules(config);
+    let mut add = |code, path: String| {
+        issues.push(RuleIssue {
+            code,
+            rule_id: String::new(),
+            trigger: Some(path),
+        })
+    };
+    if super::timing::validate_settings(&config.settings).is_err() {
+        add(RuleIssueCode::InvalidTiming, "settings.timing".into());
+    }
+    let invalid_pattern = |pattern: &String| super::app_match::AppMatcher::parse(pattern).is_none();
+    for (index, rule) in config
+        .rules
+        .iter()
+        .enumerate()
+        .filter(|(_, rule)| rule.is_enabled() && rule.has_trigger())
+    {
+        for (field, value, range) in [
+            (
+                "hold.timeoutMs",
+                rule.hold_timeout_ms,
+                super::timing::TAP_HOLD,
+            ),
+            (
+                "doubleTap.timeoutMs",
+                rule.double_tap_timeout_ms,
+                super::timing::TAP_HOLD,
+            ),
+            (
+                "longHold.timeoutMs",
+                rule.long_hold_timeout_ms,
+                super::timing::LONG_HOLD,
+            ),
+        ] {
+            if value.is_some_and(|value| !range.contains(value)) {
+                add(
+                    RuleIssueCode::InvalidTiming,
+                    format!("rules[{index}].{field}"),
+                );
+            }
+        }
+        if list(&rule.condition_apps_whitelist)
+            .iter()
+            .chain(list(&rule.condition_apps_blacklist))
+            .any(invalid_pattern)
+        {
+            add(
+                RuleIssueCode::InvalidCondition,
+                format!("rules[{index}].when"),
+            );
+        }
+        let only = rule.hold_for.as_deref().unwrap_or_default();
+        let except = rule.isolate.as_deref().unwrap_or_default();
+        if (!only.is_empty() || !except.is_empty()) && rule.layer_id.is_empty()
+            || only
+                .split(',')
+                .map(str::trim)
+                .filter(|key| !key.is_empty())
+                .any(|key| except.split(',').any(|other| other.trim() == key))
+        {
+            add(
+                RuleIssueCode::InvalidRuleConfiguration,
+                format!("rules[{index}].hold"),
+            );
+        }
+        if rule.key.contains('+') && !rule.double_tap_action.is_empty() {
+            add(
+                RuleIssueCode::InvalidRuleConfiguration,
+                format!("rules[{index}].doubleTap"),
+            );
+        }
+    }
+    for (layer, map) in &config.layer_keymaps {
+        for (key, action) in &map.keys {
+            let path = format!("layers[{layer}].keys[{key}]");
+            if !super::key_catalog::valid_key(key) {
+                add(RuleIssueCode::InvalidLayerKey, path.clone());
+            }
+            if actions::validate(&Action::parse(action.as_deref()), config).is_some() {
+                add(RuleIssueCode::InvalidLayerAction, path);
+            }
+        }
+        for key in &map.extra_key_order {
+            if !super::key_catalog::valid_key(key) {
+                add(
+                    RuleIssueCode::InvalidLayerKey,
+                    format!("layers[{layer}].extraKeyOrder[{key}]"),
+                );
+            }
+        }
+    }
+    for item in &config.macros {
+        for (index, step) in item.steps.iter().enumerate() {
+            if super::macros::validate_step(config, &step.action).is_err() {
+                add(
+                    RuleIssueCode::InvalidMacroStep,
+                    format!("macros[{}].steps[{index}]", item.id),
+                );
+            }
+        }
+        match super::macros::validate_loaded(config, item) {
+            Err(crate::config_document::ConfigError::Macro(super::macros::MacroIssue::Cycle)) => {
+                add(RuleIssueCode::MacroCycle, format!("macros[{}]", item.id))
+            }
+            Err(crate::config_document::ConfigError::Macro(
+                super::macros::MacroIssue::InvalidId | super::macros::MacroIssue::DuplicateId,
+            )) => add(
+                RuleIssueCode::InvalidMacro,
+                format!("macros[{}].id", item.id),
+            ),
+            Err(crate::config_document::ConfigError::Macro(
+                super::macros::MacroIssue::DelayRange,
+            )) => add(RuleIssueCode::InvalidTiming, format!("macros[{}]", item.id)),
+            _ => {}
+        }
+    }
+    for page in &config.quick_action_pages {
+        for (key, cell) in &page.cells {
+            if !super::model::LEFT_HAND_HOTKEYS.contains(&key.as_str())
+                || actions::validate(&Action::parse(Some(&cell.action)), config).is_some()
+            {
+                add(
+                    RuleIssueCode::InvalidMenuAction,
+                    format!("quickActionPages[{}].cells[{key}]", page.id),
+                );
+            }
+        }
+    }
+    for (index, rule) in config
+        .settings
+        .auto_rules
+        .iter()
+        .enumerate()
+        .filter(|(_, rule)| rule.enabled)
+    {
+        if rule.conditions.apps.iter().any(invalid_pattern) {
+            add(
+                RuleIssueCode::InvalidCondition,
+                format!("settings.autoRules[{index}].when.windows"),
+            );
+        }
+    }
+    issues
+}
+
 fn list(value: &Option<Vec<String>>) -> &[String] {
     value.as_deref().unwrap_or_default()
 }
@@ -253,6 +422,103 @@ mod tests {
 
     fn rule(id: &str, key: &str) -> LayerRule {
         LayerRule::new(id.into(), key)
+    }
+
+    #[test]
+    fn incomplete_rule_drafts_do_not_block_runtime() {
+        let mut draft = rule("draft", "");
+        draft.hold_for = Some("Tab".into());
+        draft.condition_apps_whitelist = Some(vec!["title:".into()]);
+        let issues = analyze(&config(vec![draft]));
+        assert_eq!(issues.len(), 1);
+        assert_eq!(issues[0].code, RuleIssueCode::MissingTrigger);
+        assert!(!issues[0].code.is_error());
+    }
+
+    #[test]
+    fn invalid_conditions_and_ignored_rule_combinations_are_visible() {
+        let layout = super::super::layout_file::parse(
+            r#"{"schemaVersion":1,"rules":[
+            {"id":"bad-condition","key":"KeyA","when":{"windows":["title:"]}},
+            {"id":"bad-filter","key":"KeyB","hold":{"keysOnlyFor":["Tab"]}},
+            {"id":"bad-double","key":"KeyC+KeyD","doubleTap":{"action":"KeyE"}}
+        ]}"#,
+        )
+        .unwrap()
+        .unwrap();
+        let issues = analyze(&AppConfig::from_parts(AppSettings::default(), layout, None));
+        assert_eq!(
+            issues
+                .iter()
+                .filter(|issue| issue.code == RuleIssueCode::InvalidCondition)
+                .count(),
+            1
+        );
+        assert_eq!(
+            issues
+                .iter()
+                .filter(|issue| issue.code == RuleIssueCode::InvalidRuleConfiguration)
+                .count(),
+            2
+        );
+    }
+
+    #[test]
+    fn complete_diagnostics_cover_non_rule_actions_and_cycles() {
+        let layout = super::super::layout_file::parse(
+            r#"{"schemaVersion":1,
+            "layers":[{"id":"nav","keys":{"NoSuchKey":"KeyA","KeyA":"macro:missing"}}],
+            "macros":[{"id":"a","steps":["macro:b"]},{"id":"b","steps":["macro:a"]}],
+            "quickActionPages":[{"id":"q","cells":{"KeyQ":"cmd:missing"}}]}"#,
+        )
+        .unwrap()
+        .unwrap();
+        let config = AppConfig::from_parts(AppSettings::default(), layout, None);
+        let issues = analyze(&config);
+        for code in [
+            RuleIssueCode::InvalidLayerKey,
+            RuleIssueCode::InvalidLayerAction,
+            RuleIssueCode::MacroCycle,
+            RuleIssueCode::InvalidMenuAction,
+        ] {
+            assert!(issues.iter().any(|issue| issue.code == code), "{issues:?}");
+        }
+        assert!(
+            issues
+                .iter()
+                .all(|issue| issue.code.is_error() && issue.trigger.is_some())
+        );
+    }
+
+    #[test]
+    fn unknown_macro_keys_pauses_and_references_are_diagnosed() {
+        for step in [
+            "NotAKey",
+            "macro:missing",
+            "cmd:missing",
+            "pause:0",
+            "pause:10001",
+            "pause:18446744073709551615",
+        ] {
+            let text = serde_json::json!({"schemaVersion":1,"macros":[{"id":"m","steps":[step]}]})
+                .to_string();
+            let layout = super::super::layout_file::parse(&text).unwrap().unwrap();
+            let config = AppConfig::from_parts(AppSettings::default(), layout, None);
+            assert!(
+                analyze(&config)
+                    .iter()
+                    .any(|issue| issue.code == RuleIssueCode::InvalidMacroStep),
+                "{step}"
+            );
+        }
+        for step in ["pause:1", "pause:10000"] {
+            let text = serde_json::json!({"schemaVersion":1,"macros":[{"id":"m","steps":[step]}]})
+                .to_string();
+            let layout = super::super::layout_file::parse(&text).unwrap().unwrap();
+            assert!(
+                analyze(&AppConfig::from_parts(AppSettings::default(), layout, None)).is_empty()
+            );
+        }
     }
 
     #[test]

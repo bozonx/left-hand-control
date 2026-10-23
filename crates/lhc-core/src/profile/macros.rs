@@ -19,6 +19,42 @@ pub enum MacroIssue {
 }
 
 pub fn validate(config: &AppConfig, item: &Macro) -> Result<(), ConfigError> {
+    if BUILTIN_MACROS.iter().any(|m| m.id == item.id) {
+        return Err(ConfigError::Macro(MacroIssue::DuplicateId));
+    }
+    validate_loaded(config, item)
+}
+
+pub(crate) fn validate_step(config: &AppConfig, raw: &str) -> Result<(), ConfigError> {
+    let raw = raw.trim();
+    if raw.is_empty() {
+        return Ok(());
+    }
+    let action = Action::parse(Some(raw));
+    if let Action::Pause(ms) = &action {
+        return if !ms.is_empty()
+            && ms.bytes().all(|c| c.is_ascii_digit())
+            && ms
+                .parse::<u64>()
+                .is_ok_and(|v| super::timing::PAUSE.contains(v))
+        {
+            Ok(())
+        } else {
+            Err(ConfigError::Macro(MacroIssue::PauseRange))
+        };
+    }
+    if let Action::Keys(keys) = &action
+        && !actions::valid_held_key(keys)
+    {
+        return Err(ConfigError::Macro(MacroIssue::UnknownKey));
+    }
+    if let Some(issue) = actions::validate(&action, config) {
+        return Err(ConfigError::InvalidAction(issue));
+    }
+    Ok(())
+}
+
+pub(crate) fn validate_loaded(config: &AppConfig, item: &Macro) -> Result<(), ConfigError> {
     if item.id.is_empty()
         || item.id.len() > 64
         || !item
@@ -28,40 +64,20 @@ pub fn validate(config: &AppConfig, item: &Macro) -> Result<(), ConfigError> {
     {
         return Err(ConfigError::Macro(MacroIssue::InvalidId));
     }
-    if config.macros.iter().filter(|m| m.id == item.id).count() > 1
-        || BUILTIN_MACROS.iter().any(|m| m.id == item.id)
-    {
+    if config.macros.iter().filter(|m| m.id == item.id).count() > 1 {
         return Err(ConfigError::Macro(MacroIssue::DuplicateId));
     }
-    if item.step_pause_ms.is_some_and(|v| v > 2000)
-        || item.modifier_delay_ms.is_some_and(|v| v > 2000)
+    if item
+        .step_pause_ms
+        .is_some_and(|v| !super::timing::MACRO_DELAY.contains(v))
+        || item
+            .modifier_delay_ms
+            .is_some_and(|v| !super::timing::MACRO_DELAY.contains(v))
     {
         return Err(ConfigError::Macro(MacroIssue::DelayRange));
     }
     for step in &item.steps {
-        let raw = step.action.trim();
-        if raw.is_empty() {
-            continue;
-        }
-        let action = Action::parse(Some(raw));
-        match action {
-            Action::Pause(ref ms)
-                if !ms.is_empty()
-                    && ms.bytes().all(|c| c.is_ascii_digit())
-                    && ms.parse::<u64>().is_ok_and(|v| v <= 10000) => {}
-            Action::Pause(_) => return Err(ConfigError::Macro(MacroIssue::PauseRange)),
-            _ => {
-                if let Some(issue) = actions::validate(&action, config) {
-                    return Err(ConfigError::InvalidAction(issue));
-                }
-                #[cfg(target_os = "linux")]
-                if matches!(action, Action::Keys(_))
-                    && crate::mapper::action::parse_action(raw).is_none()
-                {
-                    return Err(ConfigError::Macro(MacroIssue::UnknownKey));
-                }
-            }
-        }
+        validate_step(config, &step.action)?;
     }
     fn reaches(
         config: &AppConfig,

@@ -54,13 +54,18 @@ fn timeout_text(value: Option<u64>) -> String {
     value.map(|v| v.to_string()).unwrap_or_default()
 }
 
-/// Empty means "use the default"; anything else must be a non-negative integer.
+/// Empty inherits the setting; otherwise use the shared tap/hold range.
 fn parse_timeout(value: &str) -> Result<Option<u64>, Msg> {
     let value = value.trim();
     if value.is_empty() {
         return Ok(None);
     }
-    value.parse().map(Some).map_err(|_| Msg::TimeoutInvalid)
+    value
+        .parse::<u64>()
+        .ok()
+        .filter(|value| lhc_core::profile::timing::TAP_HOLD.contains(*value))
+        .map(Some)
+        .ok_or(Msg::TimeoutInvalid)
 }
 
 /// Long-hold duration in milliseconds, as entered in a rule or in Settings.
@@ -69,7 +74,7 @@ pub(super) fn parse_long_hold(value: &str) -> Result<u64, Msg> {
         .trim()
         .parse()
         .ok()
-        .filter(|ms| (100..=60_000).contains(ms))
+        .filter(|ms| lhc_core::profile::timing::LONG_HOLD.contains(*ms))
         .ok_or(Msg::LongHoldInvalid)
 }
 
@@ -269,7 +274,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
 
 /// Status after a saved change: mapper problems first, then rule warnings.
 fn report<T>(ui: &SettingsWindow, document: &Document, saved: &Saved<T>, ok: Msg) -> Msg {
-    let issue = diagnostics::analyze_rules(&document.read().config())
+    let issue = diagnostics::analyze(&document.read().config())
         .into_iter()
         .max_by_key(|issue| issue.code.is_error());
     let message = match (&saved.runtime, issue) {
@@ -733,13 +738,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 return;
             }
         };
-        // An unchanged value is kept even if it lies outside the range the editor offers.
-        let long_hold = editor.get_long_hold_timeout();
-        let long_hold_timeout = if long_hold == editor.get_original_long_hold_timeout() {
-            parse_timeout(&long_hold)
-        } else {
-            optional_long_hold(&long_hold)
-        };
+        let long_hold_timeout = optional_long_hold(&editor.get_long_hold_timeout());
         let long_hold_timeout = match long_hold_timeout {
             Ok(value) => value,
             Err(error) => {
