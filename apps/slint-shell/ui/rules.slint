@@ -426,11 +426,6 @@ export component RuleDialogOverlay inherits FocusScope {
                 if RulesEditor.dialog == RuleDialog.advanced: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
                     preferred-height: advanced-form.preferred-height;
                     advanced-form := VerticalLayout { spacing: 14px; alignment: start;
-                        Text {
-                            text: RulesEditor.hold-mode == 1 ? @tr("Holding activates layer: {}", RulesEditor.layer)
-                                : RulesEditor.hold-mode == 2 ? @tr("Holding performs a long-hold action.") : @tr("Holding keeps a key or combination pressed.");
-                            color: Theme.muted; font-size: 12px; wrap: word-wrap;
-                        }
                         held-form := ResettableField {
                             label: @tr("Hold key or combination");
                             info: @tr("The key or combination stays pressed until you release the trigger. Choose modifiers plus one main key, for example Ctrl+KeyC.");
@@ -505,13 +500,13 @@ export component RuleDialogOverlay inherits FocusScope {
                         }
                         double-form := ResettableField {
                             label: @tr("Double-tap interval, ms");
-                            info: @tr("Longest pause between two taps. Empty uses the default from Settings: {} ms.", RulesEditor.default-double-timeout);
+                            info: @tr("Longest pause between two taps. Empty uses the default from Settings: {} ms.", RulesEditor.default-double-timeout)
+                                + "\n\n" + @tr("Applies when a double-tap action is assigned.");
                             active: !RulesEditor.is-chord;
                             inactive-reason: @tr("Double-tap actions are available only for single-key triggers.");
                             modified: RulesEditor.double-timeout != "";
                             reset => { RulesEditor.double-timeout = ""; }
                             HorizontalLayout { alignment: start; NumericInput { enabled: double-form.active; text <=> RulesEditor.double-timeout; placeholder-text: RulesEditor.default-double-timeout; label: double-form.label; minimum: 50; maximum: 1000; } }
-                            if !RulesEditor.is-chord && RulesEditor.double-tap == "": Text { text: @tr("Applies when a double-tap action is assigned."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
                         }
                     }
                 }

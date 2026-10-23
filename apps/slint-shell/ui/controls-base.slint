@@ -741,14 +741,14 @@ component FieldResetSlot inherits Rectangle {
     }
 }
 
-/// Form field with an independent reset and an explanation when unused.
+/// Form field with an independent reset and contextual help.
 export component ResettableField inherits VerticalLayout {
     in property <string> label;
     in property <string> info;
     in property <bool> modified;
     in property <bool> active: true;
-    /// Compact numeric settings place the reset beside the input.
-    in property <bool> inline-reset;
+    /// Place the reset beside the input by default.
+    in property <bool> inline-reset: true;
     in property <string> inactive-reason;
     in property <string> reset-tooltip: @tr("Reset {} to default", root.label);
     callback reset();
@@ -756,7 +756,7 @@ export component ResettableField inherits VerticalLayout {
     alignment: start;
     vertical-stretch: 0;
     HorizontalLayout { spacing: 6px;
-        FormLabel { text: root.label; info: root.info; }
+        FormLabel { text: root.label; info: root.info + (root.inactive-reason != "" ? "\n\n" + root.inactive-reason : ""); }
         if !root.inline-reset: Rectangle { horizontal-stretch: 1; }
         if !root.inline-reset: FieldResetSlot {
             modified: root.modified; enabled: root.active; tooltip: root.reset-tooltip;
@@ -773,8 +773,5 @@ export component ResettableField inherits VerticalLayout {
             modified: root.modified; enabled: root.active; tooltip: root.reset-tooltip;
             reset => { root.reset(); }
         }
-    }
-    if !root.active && root.inactive-reason != "": Text {
-        text: root.inactive-reason; color: Theme.muted; font-size: 12px; wrap: word-wrap;
     }
 }
