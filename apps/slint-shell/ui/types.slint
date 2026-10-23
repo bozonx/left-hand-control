@@ -20,10 +20,10 @@ export enum ActionKind { none, keys, macro, command, system, app, text }
 export enum RuleDialog { none, key, layer, tap, hold, long-hold, double-tap, conditions, hold-timeout, double-timeout, advanced, remove, release-key }
 
 /// When a rule's held key is pressed while its layer is active.
-export enum HoldRelease { always, except, only-with }
+export enum HoldRelease { always, except }
 
 /// Rule property changed in place (without a dialog).
-export enum RuleField { enabled, hold-mode, swallow-tap, swallow-hold, isolate, hold-for }
+export enum RuleField { enabled, hold-mode, swallow-tap, swallow-hold, isolate }
 
 /// What key caps on the layers page show: the US-layout label or the internal key code.
 export enum LabelMode { label, code }

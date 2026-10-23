@@ -149,10 +149,10 @@ pub fn analyze_rules(config: &AppConfig) -> Vec<RuleIssue> {
                 Some(trigger),
             ));
         }
-        if [&rule.isolate, &rule.hold_for]
-            .into_iter()
-            .flatten()
-            .any(|list| super::key_catalog::unknown_keys(list).next().is_some())
+        if rule
+            .isolate
+            .as_deref()
+            .is_some_and(|list| super::key_catalog::unknown_keys(list).next().is_some())
         {
             issues.push(issue(RuleIssueCode::UnknownListedKey, rule, Some(trigger)));
         }
@@ -235,14 +235,7 @@ pub fn analyze(config: &AppConfig) -> Vec<RuleIssue> {
                 format!("rules[{index}].when"),
             );
         }
-        let only = rule.hold_for.as_deref().unwrap_or_default();
-        let except = rule.isolate.as_deref().unwrap_or_default();
-        if (!only.is_empty() || !except.is_empty()) && rule.layer_id.is_empty()
-            || only
-                .split(',')
-                .map(str::trim)
-                .filter(|key| !key.is_empty())
-                .any(|key| except.split(',').any(|other| other.trim() == key))
+        if rule.isolate.as_deref().is_some_and(|keys| !keys.is_empty()) && rule.layer_id.is_empty()
         {
             add(
                 RuleIssueCode::InvalidRuleConfiguration,
@@ -427,7 +420,7 @@ mod tests {
     #[test]
     fn incomplete_rule_drafts_do_not_block_runtime() {
         let mut draft = rule("draft", "");
-        draft.hold_for = Some("Tab".into());
+        draft.isolate = Some("Tab".into());
         draft.condition_apps_whitelist = Some(vec!["title:".into()]);
         let issues = analyze(&config(vec![draft]));
         assert_eq!(issues.len(), 1);
@@ -440,7 +433,7 @@ mod tests {
         let layout = super::super::layout_file::parse(
             r#"{"schemaVersion":1,"rules":[
             {"id":"bad-condition","key":"KeyA","when":{"windows":["title:"]}},
-            {"id":"bad-filter","key":"KeyB","hold":{"keysOnlyFor":["Tab"]}},
+            {"id":"bad-filter","key":"KeyB","hold":{"keysExceptFor":["Tab"]}},
             {"id":"bad-double","key":"KeyC+KeyD","doubleTap":{"action":"KeyE"}}
         ]}"#,
         )

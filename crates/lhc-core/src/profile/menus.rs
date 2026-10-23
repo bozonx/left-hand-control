@@ -410,6 +410,7 @@ mod tests {
                     LayerKeymap {
                         extra_key_order: Vec::new(),
                         keys: [("KeyW".into(), Some("cmd:ls".into()))].into(),
+                        ..Default::default()
                     },
                 )]
                 .into(),

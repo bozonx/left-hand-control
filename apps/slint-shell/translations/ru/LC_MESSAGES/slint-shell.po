@@ -2368,8 +2368,8 @@ msgstr "Другая клавиша…"
 msgid "When to press"
 msgstr "Когда нажимать"
 
-msgid "Right away: the key is pressed as soon as the hold starts.\nExcept: the key is released while the listed layer keys are pressed. For example, Alt is held, but W and E work without Alt.\nOnly with: the key is pressed only together with the listed layer keys. For example, Alt is pressed only for Tab (Alt+Tab), so a lone Alt does not open application menus."
-msgstr "Сразу: клавиша нажимается в начале удержания.\nКроме: клавиша отпускается, пока нажаты указанные клавиши слоя. Например, Alt зажат, но W и E срабатывают без Alt.\nТолько с: клавиша нажимается только вместе с указанными клавишами слоя. Например, Alt нажимается только для Tab (Alt+Tab), и одиночный Alt не открывает меню в приложениях."
+msgid "Right away: the key is pressed as soon as the hold starts.\nExcept: the key is released while the listed layer keys are pressed. For example, Alt is held, but W and E work without Alt.\nTo press a modifier only together with a layer key, such as Alt for Alt+Tab, assign the combination to that layer key and keep its modifiers held until the layer is released."
+msgstr "Сразу: клавиша нажимается в начале удержания.\nКроме: клавиша отпускается, пока нажаты указанные клавиши слоя. Например, Alt зажат, но W и E срабатывают без Alt.\nЧтобы модификатор нажимался только вместе с клавишей слоя, например Alt для Alt+Tab, назначьте этой клавише слоя сочетание и включите удержание его модификаторов до отпускания слоя."
 
 msgid "Right away"
 msgstr "Сразу"
@@ -2377,23 +2377,14 @@ msgstr "Сразу"
 msgid "Except…"
 msgstr "Кроме…"
 
-msgid "Only with…"
-msgstr "Только с…"
-
 msgid "Release the key while these layer keys are pressed:"
 msgstr "Отпускать клавишу, пока нажаты эти клавиши слоя:"
-
-msgid "Press the key only together with these layer keys:"
-msgstr "Нажимать клавишу только вместе с этими клавишами слоя:"
 
 msgid "Holds {}"
 msgstr "Зажимает {}"
 
 msgid "Holds nothing"
 msgstr "Ничего не зажимает"
-
-msgid "Only with {}"
-msgstr "Только с {}"
 
 msgid "Released for {}"
 msgstr "Отпускается для {}"
@@ -2756,3 +2747,9 @@ msgstr "Циклический вызов макроса: \"{}\"."
 
 msgid "A timing value is outside the range shown in Settings."
 msgstr "Значение тайминга выходит за диапазон, указанный в настройках."
+
+msgid "Keep modifiers held until the layer is released"
+msgstr "Держать модификаторы до отпускания слоя"
+
+msgid "For a combination such as Alt+Tab: Alt stays pressed while you press the key again and is released together with the layer key, so the window switcher stays open."
+msgstr "Для сочетаний вроде Alt+Tab: Alt остаётся нажатым при повторных нажатиях клавиши и отпускается вместе с клавишей слоя, поэтому переключатель окон не закрывается."

@@ -137,17 +137,6 @@ impl Engine {
     }
 
     pub(super) fn commit_hold_with(&mut self, rule: &RuleEntry, key: KeyCode, out: &mut Vec<Out>) {
-        // A lazy hold defers its keystroke: the modifier is materialised later,
-        // on the first whitelisted key press inside the layer (see `on_press`),
-        // so it never reaches the app as a lone tap.
-        let lazy_hold_ks = match &rule.hold {
-            HoldMode::Keystroke(ks)
-                if rule.layer_id.is_some() && !rule.whitelist_keys.is_empty() =>
-            {
-                Some(ks.clone())
-            }
-            _ => None,
-        };
         if let Some(id) = &rule.layer_id {
             self.push_layer(id.clone());
             self.layer_triggers
@@ -156,8 +145,7 @@ impl Engine {
                 .push(LayerTrigger {
                     key,
                     isolate_keys: rule.isolate_keys.clone(),
-                    whitelist: rule.whitelist_keys.clone(),
-                    hold_ks: lazy_hold_ks.clone(),
+                    held_mods: Vec::new(),
                 });
         }
         match &rule.hold {
@@ -169,10 +157,7 @@ impl Engine {
                 // Nothing — physical key is eaten.
             }
             HoldMode::Keystroke(ks) => {
-                // Eager hold emits now; a lazy hold waits for a whitelist key.
-                if lazy_hold_ks.is_none() {
-                    self.emit_stroke_press(key, ks.clone(), out);
-                }
+                self.emit_stroke_press(key, ks.clone(), out);
             }
         }
     }
@@ -180,15 +165,20 @@ impl Engine {
     /// Undo whatever `commit_hold_with` did for this rule key.
     pub(super) fn release_hold_with(&mut self, rule: &RuleEntry, key: KeyCode, out: &mut Vec<Out>) {
         if let Some(id) = &rule.layer_id {
+            let mut held_mods = Vec::new();
             if let Some(triggers) = self.layer_triggers.get_mut(id) {
                 if let Some(pos) = triggers.iter().rposition(|trigger| trigger.key == key) {
-                    triggers.remove(pos);
+                    held_mods = triggers.remove(pos).held_mods;
                 }
                 if triggers.is_empty() {
                     self.layer_triggers.remove(id);
                 }
             }
             self.pop_layer(id);
+            let mods = self.take_releasable_mods(&held_mods);
+            if !mods.is_empty() {
+                out.push(Out::ReleaseMods(mods));
+            }
         }
         match &rule.hold {
             HoldMode::Native | HoldMode::Keystroke(_) => {

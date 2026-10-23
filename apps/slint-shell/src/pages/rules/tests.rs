@@ -102,8 +102,6 @@ fn hold_release_prefers_the_only_with_list() {
         hold_release(&rule),
         (HoldRelease::Except, "KeyW, KeyE".into())
     );
-    rule.hold_for = Some("Tab".into());
-    assert_eq!(hold_release(&rule), (HoldRelease::OnlyWith, "Tab".into()));
 }
 
 #[test]

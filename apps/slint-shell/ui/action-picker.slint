@@ -4,7 +4,7 @@ import { Locale, Message } from "i18n.slint";
 import { Theme } from "theme.slint";
 import { InfoTip } from "controls.slint";
 import { PickerCategory, PickerTarget, ShortcutDesktop } from "types.slint";
-import { Button, VerticalBox, HorizontalBox, TextEdit } from "std-widgets.slint";
+import { Button, CheckBox, VerticalBox, HorizontalBox, TextEdit } from "std-widgets.slint";
 export struct PickerItem { value: string, label: string, category: PickerCategory, notice: Message }
 /// Picker category in sidebar order with the number of its catalog items.
 export struct PickerCategoryCount { category: PickerCategory, count: int }
@@ -36,6 +36,8 @@ export component CategoryIcon inherits VerticalLayout {
 export global ActionPicker {
     in-out property <bool> opened;
     in-out property <bool> layer-action;
+    /// A layer key's keystroke keeps its modifiers pressed until the layer is released.
+    in-out property <bool> hold-modifiers;
     in-out property <bool> rule-action;
     in-out property <bool> ignore-key;
     in property <bool> allow-default;
@@ -225,6 +227,10 @@ export component PickerOverlay inherits Rectangle {
                     TextField { accessible-label: ActionPicker.key-only ? @tr("Trigger key:") : @tr("Action:"); text <=> ActionPicker.value; enabled: !ActionPicker.capturing; edited => { ActionPicker.touched = true; ActionPicker.refresh(); } }
                     Button { text: ActionPicker.capturing ? @tr("Stop") : @tr("Capture"); clicked => { ActionPicker.begin-capture(); focus.focus(); } }
                     InfoTip { text: ActionPicker.key-only ? @tr("You can enter a key combination using + between keys. Some keys depend on keyboard hardware and may be ignored by the system.") : @tr("You can assign a key combination using + between keys. Availability of special keys depends on the keyboard and desktop environment."); }
+                }
+                if ActionPicker.layer-action && ActionPicker.behavior == 2 && !ActionPicker.key-only: HorizontalBox { padding: 0px; spacing: 6px; vertical-stretch: 0; alignment: start;
+                    CheckBox { text: @tr("Keep modifiers held until the layer is released"); checked <=> ActionPicker.hold-modifiers; }
+                    InfoTip { text: @tr("For a combination such as Alt+Tab: Alt stays pressed while you press the key again and is released together with the layer key, so the window switcher stays open."); }
                 }
                 if ActionPicker.behavior == 2 && ActionPicker.value-category == PickerCategory.commands && !ActionPicker.commands-enabled: Text { text: ActionPicker.command-name != "" ? ActionPicker.command-name : ActionPicker.command-script; color: Theme.text; wrap: word-wrap; }
                 if ActionPicker.capturing: Text { text: ActionPicker.trigger-chords ? @tr("Press one key or hold a combination, then release a key to capture it.") : ActionPicker.key-only ? @tr("Press a key (including modifiers or Escape).") : @tr("Press a key or shortcut. Release a modifier to select it alone."); color: Theme.accent; wrap: word-wrap; }

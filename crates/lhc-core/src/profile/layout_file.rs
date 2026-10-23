@@ -11,7 +11,7 @@ use super::model::{
     LayoutPreset, Macro, MacroStep, QuickAction, QuickActionPage, TapDecision,
 };
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// Schema version of the layout and config files this build reads and writes.
 pub const SCHEMA_VERSION: u64 = 1;
@@ -89,6 +89,10 @@ struct LayerDoc {
     /// transparent.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     keys: BTreeMap<String, Option<String>>,
+    /// Keys of `keys` whose keystroke modifiers stay pressed until the
+    /// layer is released.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    hold_modifiers: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -189,9 +193,6 @@ struct HoldDoc {
         skip_serializing_if = "Option::is_none"
     )]
     keys: Option<Option<String>>,
-    /// Emit `keys` only once one of these keys is pressed in the layer.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    keys_only_for: Vec<String>,
     /// Release `keys` while one of these keys is pressed in the layer.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     keys_except_for: Vec<String>,
@@ -203,7 +204,6 @@ impl HoldDoc {
     fn is_empty(&self) -> bool {
         self.layer.is_none()
             && self.keys.is_none()
-            && self.keys_only_for.is_empty()
             && self.keys_except_for.is_empty()
             && self.timeout_ms.is_none()
     }
@@ -361,6 +361,21 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
                 non_empty(action, &format!("action of {code} in layer {}", layer.id))?;
             }
         }
+        let mut hold_modifiers = BTreeSet::new();
+        for code in layer.hold_modifiers {
+            if !matches!(layer.keys.get(&code), Some(Some(_))) {
+                return Err(format!(
+                    "holdModifiers of layer {}: {code} has no action in the layer",
+                    layer.id
+                ));
+            }
+            if !hold_modifiers.insert(code.clone()) {
+                return Err(format!(
+                    "holdModifiers of layer {}: duplicate key {code}",
+                    layer.id
+                ));
+            }
+        }
         layers.push(Layer {
             name: layer.name.unwrap_or_else(|| layer.id.clone()),
             description: layer.description.filter(|d| !d.is_empty()),
@@ -371,6 +386,7 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
             LayerKeymap {
                 keys: layer.keys,
                 extra_key_order: layer.extra_key_order,
+                hold_modifiers,
             },
         );
     }
@@ -408,7 +424,6 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
         if let Some(layer) = &hold.layer {
             non_empty(layer, &what("hold layer"))?;
         }
-        non_empty_items(&hold.keys_only_for, "key")?;
         non_empty_items(&hold.keys_except_for, "key")?;
         let key_list = |keys: Vec<String>| (!keys.is_empty()).then(|| keys.join(", "));
         rules.push(LayerRule {
@@ -430,7 +445,6 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
             long_hold_timeout_ms,
             hold_action: three_state(hold.keys, &what("hold keys"))?,
             isolate: key_list(hold.keys_except_for),
-            hold_for: key_list(hold.keys_only_for),
             double_tap_action,
             hold_timeout_ms: hold.timeout_ms,
             tap_decision: rule.tap_decision,
@@ -586,6 +600,21 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
                             .collect()
                     })
                     .unwrap_or_default(),
+                // Only keys that still carry an action, so the file loads again.
+                hold_modifiers: keymap
+                    .map(|keymap| {
+                        keymap
+                            .hold_modifiers
+                            .iter()
+                            .filter(|code| {
+                                keymap.keys.get(*code).is_some_and(|action| {
+                                    action.as_ref().is_some_and(|a| !a.trim().is_empty())
+                                })
+                            })
+                            .cloned()
+                            .collect()
+                    })
+                    .unwrap_or_default(),
             }
         })
         .collect();
@@ -610,7 +639,6 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
                         .then(|| text(&rule.layer_id))
                         .flatten(),
                     keys: three_state(&rule.hold_action),
-                    keys_only_for: key_list(&rule.hold_for),
                     keys_except_for: key_list(&rule.isolate),
                     timeout_ms: rule.hold_timeout_ms,
                 }
@@ -873,6 +901,10 @@ mod tests {
             json!({"rules": [{"key": ""}]}),
             json!({"rules": [{"key": "KeyA", "hold": {"layer": "x"}, "longHold": {"action": "KeyB"}}]}),
             json!({"layers": [{"id": "nav", "keys": {"KeyA": ""}}]}),
+            json!({"rules": [{"key": "KeyA", "hold": {"layer": "x", "keys": "AltLeft", "keysOnlyFor": ["Tab"]}}]}),
+            json!({"layers": [{"id": "nav", "holdModifiers": ["Tab"]}]}),
+            json!({"layers": [{"id": "nav", "keys": {"Tab": null}, "holdModifiers": ["Tab"]}]}),
+            json!({"layers": [{"id": "nav", "keys": {"Tab": "Alt+Tab"}, "holdModifiers": ["Tab", "Tab"]}]}),
             json!({"macros": [{"id": "m", "steps": [{"action": "KeyA"}]}]}),
             json!({"macros": [{"id": "m", "steps": [" "]}]}),
             json!({"commands": [{"id": "c", "linux": "ls"}]}),
@@ -888,7 +920,7 @@ mod tests {
     fn rule_fields_map_to_the_model() {
         let preset = parsed(json!({"rules": [
             {"id": "r1", "key": "CapsLock", "tap": "Escape",
-             "hold": {"layer": "nav", "keys": "AltLeft", "keysOnlyFor": ["Tab"], "keysExceptFor": ["KeyA", "KeyB"], "timeoutMs": 180},
+             "hold": {"layer": "nav", "keys": "AltLeft", "keysExceptFor": ["KeyA", "KeyB"], "timeoutMs": 180},
              "doubleTap": {"action": "Enter", "timeoutMs": 150},
              "tapDecision": "holdOnOtherKeyPress"},
             {"id": "r2", "key": "Space", "enabled": false, "tap": null, "hold": {"keys": null},
@@ -900,7 +932,6 @@ mod tests {
         assert_eq!(caps.layer_id, "nav");
         assert_eq!(caps.tap_action.as_deref(), Some("Escape"));
         assert_eq!(caps.hold_action.as_deref(), Some("AltLeft"));
-        assert_eq!(caps.hold_for.as_deref(), Some("Tab"));
         assert_eq!(caps.isolate.as_deref(), Some("KeyA, KeyB"));
         assert_eq!(caps.hold_timeout_ms, Some(180));
         assert_eq!(caps.double_tap_action, "Enter");
@@ -958,7 +989,8 @@ mod tests {
             "layers": [
                 {"id": "nav", "name": "Navigation", "description": "Arrows",
                  "extraKeyOrder": ["F15", "F13"],
-                 "keys": {"KeyH": "ArrowLeft", "KeyQ": null}},
+                 "keys": {"KeyH": "ArrowLeft", "KeyQ": null, "Tab": "Alt+Tab"},
+                 "holdModifiers": ["Tab"]},
                 {"id": "sym"}
             ],
             "macros": [{"id": "copyLine", "name": "Copy line", "stepPauseMs": 10,
@@ -977,6 +1009,7 @@ mod tests {
         assert_eq!(nav.keys["KeyH"].as_deref(), Some("ArrowLeft"));
         assert_eq!(nav.keys["KeyQ"], None);
         assert_eq!(nav.extra_key_order, ["F15", "F13"]);
+        assert_eq!(nav.hold_modifiers, BTreeSet::from(["Tab".to_owned()]));
         assert_eq!(preset.macros[0].steps.len(), 3);
         assert_eq!(preset.commands[0].linux, "playerctl play-pause");
         assert_eq!(preset.commands[0].windows, "Start-Process x");
@@ -1012,9 +1045,20 @@ mod tests {
             step_pause_ms: None,
             modifier_delay_ms: None,
         });
+        // A key that lost its action keeps no holdModifiers entry.
+        preset.layers.push(Layer {
+            id: "nav".into(),
+            name: "nav".into(),
+            description: None,
+        });
+        let keymap = preset.layer_keymap_mut("nav");
+        keymap.keys.insert("KeyQ".into(), None);
+        keymap.hold_modifiers.insert("KeyQ".into());
+        keymap.hold_modifiers.insert("Tab".into());
         let again = round_trip(&preset);
         assert!(again.rules.is_empty());
         assert!(again.macros[0].steps.is_empty());
+        assert!(again.layer_keymaps["nav"].hold_modifiers.is_empty());
     }
 
     #[test]

@@ -353,6 +353,7 @@ impl ConfigDocument {
             let map = layout.layer_keymap_mut(id);
             map.keys.clear();
             map.extra_key_order.clear();
+            map.hold_modifiers.clear();
         })
     }
 
@@ -414,9 +415,11 @@ impl ConfigDocument {
                 KeyAssignment::Transparent => {
                     keys.remove(key);
                     map.extra_key_order.retain(|code| code != key);
+                    map.hold_modifiers.remove(key);
                 }
                 KeyAssignment::Swallow => {
                     keys.insert(key.into(), None);
+                    map.hold_modifiers.remove(key);
                 }
                 KeyAssignment::Action(action) => {
                     keys.insert(key.into(), Some(action));
@@ -457,18 +460,59 @@ impl ConfigDocument {
                         *code = key.to_owned();
                     }
                 }
+                if map.hold_modifiers.remove(previous) {
+                    map.hold_modifiers.insert(key.to_owned());
+                }
             }
             match assignment {
                 KeyAssignment::Transparent => {
                     map.keys.remove(key);
                     map.extra_key_order.retain(|code| code != key);
+                    map.hold_modifiers.remove(key);
                 }
                 KeyAssignment::Swallow => {
                     map.keys.insert(key.into(), None);
+                    map.hold_modifiers.remove(key);
                 }
                 KeyAssignment::Action(action) => {
                     map.keys.insert(key.into(), Some(action));
                 }
+            }
+        })
+    }
+
+    /// Whether `key` of `layer_id` keeps its modifiers pressed until the
+    /// layer is released.
+    pub fn layer_key_holds_modifiers(&self, layer_id: &str, key: &str) -> bool {
+        self.layout
+            .layer_keymaps
+            .get(layer_id)
+            .is_some_and(|keymap| keymap.hold_modifiers.contains(key))
+    }
+
+    /// Keep the modifiers of `key`'s keystroke pressed until the layer is
+    /// released. Only a key with an action can hold its modifiers.
+    pub fn set_layer_key_holds_modifiers(
+        &mut self,
+        layer_id: &str,
+        key: &str,
+        hold: bool,
+    ) -> Result<(), ConfigError> {
+        self.require_layer(layer_id)?;
+        if hold && !matches!(self.layer_key(layer_id, key), KeyAssignment::Action(_)) {
+            return Err(ConfigError::Invalid(
+                "only a key with an action can hold its modifiers".into(),
+            ));
+        }
+        if self.layer_key_holds_modifiers(layer_id, key) == hold {
+            return Ok(());
+        }
+        self.update_layout(|layout| {
+            let held = &mut layout.layer_keymap_mut(layer_id).hold_modifiers;
+            if hold {
+                held.insert(key.to_owned());
+            } else {
+                held.remove(key);
             }
         })
     }
@@ -493,14 +537,22 @@ impl ConfigDocument {
             return Ok(());
         }
         self.update_layout(|layout| {
-            let keys = &mut layout.layer_keymap_mut(layer_id).keys;
-            let first = keys.remove(a);
-            let second = keys.remove(b);
+            let map = layout.layer_keymap_mut(layer_id);
+            let first = map.keys.remove(a);
+            let second = map.keys.remove(b);
             if let Some(value) = first {
-                keys.insert(b.into(), value);
+                map.keys.insert(b.into(), value);
             }
             if let Some(value) = second {
-                keys.insert(a.into(), value);
+                map.keys.insert(a.into(), value);
+            }
+            let held_a = map.hold_modifiers.remove(a);
+            let held_b = map.hold_modifiers.remove(b);
+            if held_a {
+                map.hold_modifiers.insert(b.into());
+            }
+            if held_b {
+                map.hold_modifiers.insert(a.into());
             }
         })
     }
@@ -990,6 +1042,48 @@ mod tests {
             KeyAssignment::Action("ArrowLeft".into())
         );
         assert!(document.swap_layer_keys("missing", "KeyH", "KeyJ").is_err());
+    }
+
+    #[test]
+    fn held_modifiers_follow_their_key_and_need_an_action() {
+        let (_dir, mut document) = document(json!({}), LAYOUT);
+        let holds = |document: &ConfigDocument, key| document.layer_key_holds_modifiers("nav", key);
+        assert!(
+            document
+                .set_layer_key_holds_modifiers("nav", "KeyJ", true)
+                .is_err()
+        );
+        document
+            .set_layer_key_holds_modifiers("nav", "KeyH", true)
+            .unwrap();
+        document.swap_layer_keys("nav", "KeyH", "KeyJ").unwrap();
+        assert!(!holds(&document, "KeyH") && holds(&document, "KeyJ"));
+        document
+            .set_layer_key("nav", "KeyJ", KeyAssignment::Action("Alt+Tab".into()))
+            .unwrap();
+        assert!(holds(&document, "KeyJ"));
+        document
+            .set_layer_key("nav", "KeyJ", KeyAssignment::Swallow)
+            .unwrap();
+        assert!(!holds(&document, "KeyJ"));
+
+        document
+            .set_extra_key("nav", None, "F13", KeyAssignment::Action("Alt+Tab".into()))
+            .unwrap();
+        document
+            .set_layer_key_holds_modifiers("nav", "F13", true)
+            .unwrap();
+        document
+            .set_extra_key(
+                "nav",
+                Some("F13"),
+                "F14",
+                KeyAssignment::Action("Alt+Tab".into()),
+            )
+            .unwrap();
+        assert!(!holds(&document, "F13") && holds(&document, "F14"));
+        document.clear_layer_keys("nav").unwrap();
+        assert!(!holds(&document, "F14"));
     }
 
     #[test]

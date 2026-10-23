@@ -81,6 +81,9 @@ pub struct Engine {
     commands: HashMap<String, SysCommand>,
     /// layer_id -> (physical_key -> resolved action)
     layer_maps: HashMap<String, HashMap<KeyCode, ActionDef>>,
+    /// layer_id -> keys whose keystroke modifiers stay pressed until the
+    /// layer's trigger is released.
+    layer_hold_mods: HashMap<String, HashSet<KeyCode>>,
     default_hold: Duration,
     default_mod_delay: Duration,
 
@@ -172,6 +175,7 @@ impl Engine {
         self.macros = next.macros;
         self.commands = next.commands;
         self.layer_maps = next.layer_maps;
+        self.layer_hold_mods = next.layer_hold_mods;
         self.default_hold = next.default_hold;
         self.default_mod_delay = next.default_mod_delay;
         self.combo_term = next.combo_term;
@@ -721,26 +725,6 @@ impl Engine {
             let mapped = self.lookup_mapping(key);
             match mapped {
                 Some((layer_id, def)) => {
-                    // Lazy hold: the first whitelisted key press inside the
-                    // layer materialises the deferred modifier (e.g. Alt for
-                    // the task switcher appears only with Tab, never alone).
-                    let materialize = self
-                        .layer_triggers
-                        .get(&layer_id)
-                        .and_then(|v| v.last())
-                        .filter(|t| t.hold_ks.is_some() && t.whitelist.contains(&key))
-                        .map(|t| (t.key, t.hold_ks.clone().unwrap()));
-                    if let Some((owner, ks)) = materialize {
-                        self.emit_stroke_press(owner, ks, out);
-                        if let Some(t) = self
-                            .layer_triggers
-                            .get_mut(&layer_id)
-                            .and_then(|v| v.last_mut())
-                        {
-                            t.hold_ks = None;
-                        }
-                    }
-
                     if let Some(trigger) = self.layer_triggers.get(&layer_id).and_then(|v| v.last())
                         && trigger.isolate_keys.contains(&key)
                         && let Some(ks) = self.emitted.get(&trigger.key).cloned()
@@ -769,6 +753,15 @@ impl Engine {
                     }
 
                     match def {
+                        ActionDef::Stroke(ks)
+                            if !ks.mods.is_empty()
+                                && self
+                                    .layer_hold_mods
+                                    .get(&layer_id)
+                                    .is_some_and(|keys| keys.contains(&key)) =>
+                        {
+                            self.press_holding_mods(&layer_id, key, ks, out);
+                        }
                         ActionDef::Stroke(ks) => {
                             self.emit_stroke_press(key, ks, out);
                         }
@@ -905,6 +898,51 @@ impl Engine {
             mod_delay: self.default_mod_delay,
         });
         self.emitted.insert(physical, ks);
+    }
+
+    /// Press `ks` for a hold-modifiers layer key. Its modifiers stay down
+    /// until the layer's trigger is released; only the main key follows the
+    /// physical key. Modifiers left by an earlier such key and not used by
+    /// this one are released, so Alt+Shift+Tab followed by Alt+Tab keeps Alt
+    /// but drops Shift.
+    fn press_holding_mods(
+        &mut self,
+        layer_id: &str,
+        physical: KeyCode,
+        ks: Keystroke,
+        out: &mut Vec<Out>,
+    ) {
+        let Some(trigger) = self
+            .layer_triggers
+            .get_mut(layer_id)
+            .and_then(|triggers| triggers.last_mut())
+        else {
+            self.emit_stroke_press(physical, ks, out);
+            return;
+        };
+        let previous = std::mem::replace(&mut trigger.held_mods, ks.mods.clone());
+        for m in ks.mods.iter().filter(|m| !previous.contains(m)) {
+            *self.mod_refs.entry(*m).or_insert(0) += 1;
+        }
+        let dropped: Vec<KeyCode> = previous
+            .into_iter()
+            .filter(|m| !ks.mods.contains(m))
+            .collect();
+        let released = self.take_releasable_mods(&dropped);
+        if !released.is_empty() {
+            out.push(Out::ReleaseMods(released));
+        }
+        out.push(Out::ChordPress {
+            ks: ks.clone(),
+            mod_delay: self.default_mod_delay,
+        });
+        self.emitted.insert(
+            physical,
+            Keystroke {
+                mods: Vec::new(),
+                key: ks.key,
+            },
+        );
     }
 
     fn release_emitted(&mut self, physical: KeyCode, out: &mut Vec<Out>) {

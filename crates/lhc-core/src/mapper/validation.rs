@@ -57,13 +57,10 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
         if !r.layer_id.is_empty() && !layer_ids.contains(r.layer_id.as_str()) {
             errors.push(format!("{where_key}: unknown layer \"{}\"", r.layer_id));
         }
-        for (name, list) in [
-            ("hold keysExceptFor", &r.isolate),
-            ("hold keysOnlyFor", &r.hold_for),
-        ] {
-            for code in crate::profile::key_catalog::unknown_keys(list) {
-                errors.push(format!("{where_key} {name}: unknown key \"{code}\""));
-            }
+        for code in crate::profile::key_catalog::unknown_keys(&r.isolate) {
+            errors.push(format!(
+                "{where_key} hold keysExceptFor: unknown key \"{code}\""
+            ));
         }
         validate_action_spec(
             &r.tap_action,
@@ -102,12 +99,14 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
     }
 
     for (layer_id, km) in &cfg.layer_keymaps {
-        for (name, list) in [("isolate", &km.isolate), ("holdFor", &km.hold_for)] {
-            for code in list.iter().filter(|code| code_to_key(code).is_none()) {
-                errors.push(format!(
-                    "Keymap \"{layer_id}\" {name}: unknown key \"{code}\""
-                ));
-            }
+        for code in km
+            .hold_modifiers
+            .iter()
+            .filter(|code| code_to_key(code).is_none())
+        {
+            errors.push(format!(
+                "Keymap \"{layer_id}\" holdModifiers: unknown key \"{code}\""
+            ));
         }
         for (code, action) in &km.keys {
             if code_to_key(code).is_none() {
@@ -455,7 +454,6 @@ mod tests {
             long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
-            hold_for: String::new(),
             hold_timeout_ms: None,
             tap_decision: None,
             double_tap_action: String::new(),
@@ -483,7 +481,6 @@ mod tests {
             long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: "KeyA, KeyQQ".into(),
-            hold_for: "KeyTab".into(),
             hold_timeout_ms: None,
             tap_decision: None,
             double_tap_action: String::new(),
@@ -493,15 +490,13 @@ mod tests {
             "nav".into(),
             LayerKeymap {
                 keys: HashMap::new(),
-                isolate: vec!["Tab".into()],
-                hold_for: vec!["Super".into()],
+                hold_modifiers: vec!["Super".into()],
             },
         );
 
         let err = validate_config(&cfg).expect_err("validation should fail");
         assert!(err.contains("keysExceptFor: unknown key \"KeyQQ\""));
-        assert!(err.contains("keysOnlyFor: unknown key \"KeyTab\""));
-        assert!(err.contains("Keymap \"nav\" holdFor: unknown key \"Super\""));
+        assert!(err.contains("Keymap \"nav\" holdModifiers: unknown key \"Super\""));
         assert!(!err.contains("\"KeyA\""));
     }
 
@@ -625,7 +620,6 @@ mod tests {
             long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
-            hold_for: String::new(),
             hold_timeout_ms: None,
             tap_decision: None,
             double_tap_action: String::new(),
@@ -677,7 +671,6 @@ mod tests {
             long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
-            hold_for: String::new(),
             hold_timeout_ms: None,
             tap_decision: None,
             double_tap_action: String::new(),
@@ -704,7 +697,6 @@ mod tests {
             long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
-            hold_for: String::new(),
             hold_timeout_ms: None,
             tap_decision: None,
             double_tap_action: String::new(),
@@ -795,7 +787,6 @@ mod tests {
             long_hold_timeout_ms: None,
             hold_action: ActionSpec::Action("macro:copyLine".into()),
             isolate: String::new(),
-            hold_for: String::new(),
             hold_timeout_ms: None,
             tap_decision: None,
             double_tap_action: String::new(),

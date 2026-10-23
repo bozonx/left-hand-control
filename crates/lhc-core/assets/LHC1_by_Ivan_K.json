@@ -167,9 +167,13 @@
     },
     {
       "id": "desktop",
+      "holdModifiers": [
+        "Tab",
+        "CapsLock"
+      ],
       "keys": {
-        "Tab": "Tab",
-        "CapsLock": "kde:kwin/Walk Through Windows Alternative",
+        "Tab": "Alt+Tab",
+        "CapsLock": "Alt+Shift+Tab",
         "Backspace": "sys:screenOff",
         "ShiftLeft": "sys:switchLayout4",
         "Digit1": "Meta+Digit1",
@@ -258,11 +262,7 @@
       "key": "AltLeft",
       "tap": "Enter",
       "hold": {
-        "layer": "desktop",
-        "keys": "AltLeft",
-        "keysOnlyFor": [
-          "Tab"
-        ]
+        "layer": "desktop"
       }
     },
     {

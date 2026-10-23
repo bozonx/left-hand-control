@@ -102,13 +102,11 @@ fn hold_detection(rule: &LayerRule) -> HoldDetection {
     }
 }
 
-/// When the held key is pressed and the layer keys it applies to; a rule
-/// with both lists set shows the stricter `only-with` list.
+/// When the held key is pressed and the layer keys it applies to.
 fn hold_release(rule: &LayerRule) -> (HoldRelease, String) {
-    match (&rule.hold_for, &rule.isolate) {
-        (Some(keys), _) => (HoldRelease::OnlyWith, keys.clone()),
-        (None, Some(keys)) => (HoldRelease::Except, keys.clone()),
-        (None, None) => (HoldRelease::Always, String::new()),
+    match &rule.isolate {
+        Some(keys) => (HoldRelease::Except, keys.clone()),
+        None => (HoldRelease::Always, String::new()),
     }
 }
 
@@ -202,13 +200,10 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
             })
             .into(),
             isolate: rule.isolate.clone().unwrap_or_default().into(),
-            hold_for: rule.hold_for.clone().unwrap_or_default().into(),
             enabled: rule.is_enabled(),
             swallow_tap: rule.tap_action.is_none(),
             swallow_hold: rule.hold_action.is_none(),
-            advanced: rule.isolate.is_some()
-                || rule.hold_for.is_some()
-                || rule.tap_decision.is_some(),
+            advanced: rule.isolate.is_some() || rule.tap_decision.is_some(),
             key_category: super::picker::category_for_value(&rule.key),
             tap_category: super::picker::category_for_value(
                 rule.tap_action.as_deref().unwrap_or_default(),
@@ -367,12 +362,10 @@ fn set_hold_behavior(rule: &mut LayerRule, behavior: HoldBehavior) {
     if behavior == HoldBehavior::None {
         rule.hold_action = Some(String::new());
         rule.isolate = None;
-        rule.hold_for = None;
     }
     if behavior == HoldBehavior::Action {
         rule.hold_action = Some(String::new());
         rule.isolate = None;
-        rule.hold_for = None;
     }
 }
 
@@ -393,7 +386,6 @@ fn set_field(rule: &mut LayerRule, field: RuleField, value: &str, current: &str)
         RuleField::SwallowTap => rule.tap_action = (!on).then(|| current.to_owned()),
         RuleField::SwallowHold => rule.hold_action = (!on).then(|| current.to_owned()),
         RuleField::Isolate => rule.isolate = optional(value),
-        RuleField::HoldFor => rule.hold_for = optional(value),
     }
 }
 
@@ -751,10 +743,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let keys = optional(&editor.get_release_keys()).filter(|_| {
             editor.get_hold_mode() == 1 && held.as_deref().is_some_and(|key| !key.is_empty())
         });
-        let (isolate, hold_for) = match editor.get_release_mode() {
-            HoldRelease::Always => (None, None),
-            HoldRelease::Except => (keys, None),
-            HoldRelease::OnlyWith => (None, keys),
+        let isolate = match editor.get_release_mode() {
+            HoldRelease::Always => None,
+            HoldRelease::Except => keys,
         };
         if change_rule(&ui, &doc, index, true, |rule| {
             rule.long_hold_timeout_ms = long_hold_timeout;
@@ -769,7 +760,6 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 rule.hold_action = held;
             }
             rule.isolate = isolate;
-            rule.hold_for = hold_for;
         })
         .is_ok()
         {

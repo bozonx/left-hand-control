@@ -381,6 +381,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                     }),
         );
         let standalone_layer = picker.get_layer_action();
+        picker.set_hold_modifiers(
+            standalone_layer && layers::holds_modifiers(&ui, &doc, target, index),
+        );
         // An extra row exists only while it has an assignment, so it is
         // removed with its delete button rather than by inheriting.
         let extra_action = target == PickerTarget::ExtraAction;
@@ -855,6 +858,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                         index,
                         &value,
                         picker.get_ignore_key() && value.is_empty(),
+                        picker.get_hold_modifiers(),
                     ) {
                         picker.set_error(error.to_ui());
                     }
@@ -870,6 +874,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                     &value,
                     target == PickerTarget::ExtraKey,
                     picker.get_ignore_key() && value.is_empty(),
+                    picker.get_hold_modifiers(),
                 ) {
                     Ok(next) => next_step = next,
                     Err(error) => picker.set_error(error.to_ui()),

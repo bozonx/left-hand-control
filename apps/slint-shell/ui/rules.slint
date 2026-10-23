@@ -10,7 +10,7 @@ import { Locale, Message } from "i18n.slint";
 import { RuleDialog, RuleField, GameCondition, PickerCategory, HoldRelease, HoldDetection } from "types.slint";
 import { Button, VerticalBox, HorizontalBox, CheckBox, ComboBox } from "std-widgets.slint";
 
-export struct RuleRow { key: string, is-chord: bool, tap: string, hold: string, long-hold: string, long-hold-timeout: string, hold-mode: int, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, hold-detection: HoldDetection, double-timeout: string, isolate: string, hold-for: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool, key-category: PickerCategory, tap-category: PickerCategory, hold-category: PickerCategory, double-category: PickerCategory, long-hold-category: PickerCategory }
+export struct RuleRow { key: string, is-chord: bool, tap: string, hold: string, long-hold: string, long-hold-timeout: string, hold-mode: int, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, hold-detection: HoldDetection, double-timeout: string, isolate: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool, key-category: PickerCategory, tap-category: PickerCategory, hold-category: PickerCategory, double-category: PickerCategory, long-hold-category: PickerCategory }
 export struct RuleLayerChoice { id: string, label: string }
 
 /// Rules of the layout being edited.
@@ -306,8 +306,7 @@ export component RulesPage inherits VerticalBox {
             : rule.hold-mode == 0 && rule.swallow-hold ? @tr("Holds nothing") : "";
     }
     pure function release-text(rule: RuleRow) -> string {
-        return rule.hold-for != "" ? @tr("Only with {}", rule.hold-for)
-            : rule.isolate != "" ? @tr("Released for {}", rule.isolate) : "";
+        return rule.isolate != "" ? @tr("Released for {}", rule.isolate) : "";
     }
     pure function join(first: string, second: string) -> string {
         return first == "" ? second : second == "" ? first : first + " · " + second;
@@ -449,15 +448,15 @@ export component RuleDialogOverlay inherits FocusScope {
                         // Shown only for “Other key or combination”; the hold mode only toggles whether it applies.
                         if RulesEditor.hold != "": release-form := ResettableField {
                             label: @tr("When to hold the selected combination");
-                            info: @tr("Right away: the key is pressed as soon as the hold starts.\nExcept: the key is released while the listed layer keys are pressed. For example, Alt is held, but W and E work without Alt.\nOnly with: the key is pressed only together with the listed layer keys. For example, Alt is pressed only for Tab (Alt+Tab), so a lone Alt does not open application menus.");
+                            info: @tr("Right away: the key is pressed as soon as the hold starts.\nExcept: the key is released while the listed layer keys are pressed. For example, Alt is held, but W and E work without Alt.\nTo press a modifier only together with a layer key, such as Alt for Alt+Tab, assign the combination to that layer key and keep its modifiers held until the layer is released.");
                             active: RulesEditor.hold-mode == 1 && RulesEditor.hold != "" && !RulesEditor.swallow-hold;
                             inactive-reason: @tr("Used when holding activates a layer together with a selected key or combination.");
                             resettable: false;
                             ButtonGroup {
                                 enabled: release-form.active;
-                                labels: [@tr("Right away"), @tr("Except…"), @tr("Only with…")];
-                                selected-index: RulesEditor.release-mode == HoldRelease.except ? 1 : RulesEditor.release-mode == HoldRelease.only-with ? 2 : 0;
-                                selected(index) => { RulesEditor.release-mode = index == 1 ? HoldRelease.except : index == 2 ? HoldRelease.only-with : HoldRelease.always; }
+                                labels: [@tr("Right away"), @tr("Except…")];
+                                selected-index: RulesEditor.release-mode == HoldRelease.except ? 1 : 0;
+                                selected(index) => { RulesEditor.release-mode = index == 1 ? HoldRelease.except : HoldRelease.always; }
                             }
                             if RulesEditor.release-mode != HoldRelease.always: HorizontalLayout { spacing: 6px; alignment: start;
                                 for key[index] in RulesEditor.release-key-items: KeyChip { enabled: release-form.active; text: key; removed => { RulesEditor.remove-release-key(index); } }

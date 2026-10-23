@@ -48,12 +48,6 @@ pub(super) struct RuleEntry {
     pub(super) layer_id: Option<String>,
     pub(super) hold: HoldMode,
     pub(super) isolate_keys: Vec<KeyCode>,
-    /// Lazy-hold whitelist: the `hold` keystroke is *not* materialised to the
-    /// app on layer entry. Instead it is emitted the first time one of these
-    /// keys is pressed inside the layer, and held until the layer ends. Lets a
-    /// held modifier (e.g. Alt for the task switcher) reach the app only
-    /// together with its wanted key (Tab), never as a lone tap.
-    pub(super) whitelist_keys: Vec<KeyCode>,
     pub(super) long_hold: Option<ActionDef>,
     pub(super) long_hold_timeout: Duration,
     pub(super) double_tap: Option<ActionDef>,
@@ -69,12 +63,9 @@ pub(super) struct RuleEntry {
 pub(super) struct LayerTrigger {
     pub(super) key: KeyCode,
     pub(super) isolate_keys: Vec<KeyCode>,
-    /// Keys that materialise the deferred lazy hold (see
-    /// [`RuleEntry::whitelist_keys`]). Empty for a normal (eager) hold.
-    pub(super) whitelist: Vec<KeyCode>,
-    /// The deferred hold keystroke, present only while a lazy hold is pending
-    /// and not yet materialised. `None` once emitted or for eager holds.
-    pub(super) hold_ks: Option<Keystroke>,
+    /// Modifiers a hold-modifiers layer key left pressed; released together
+    /// with this trigger (e.g. Alt of Alt+Tab while the switcher is open).
+    pub(super) held_mods: Vec<KeyCode>,
 }
 
 #[derive(Clone)]

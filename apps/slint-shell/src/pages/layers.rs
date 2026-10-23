@@ -651,12 +651,32 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
 }
 
+/// Whether the layer key `index` of picker `target` keeps its modifiers
+/// held until the layer is released.
+pub(super) fn holds_modifiers(
+    ui: &SettingsWindow,
+    document: &Document,
+    target: PickerTarget,
+    index: i32,
+) -> bool {
+    let Some(id) = selected_id(ui, document) else {
+        return false;
+    };
+    let key = match target {
+        PickerTarget::LayerAction => keyboard::layer_key(index).map(str::to_owned),
+        PickerTarget::ExtraAction => extra_at(document, &id, index).map(|(key, _)| key),
+        _ => None,
+    };
+    key.is_some_and(|key| document.read().layer_key_holds_modifiers(&id, &key))
+}
+
 pub(super) fn assign(
     ui: &SettingsWindow,
     document: &Document,
     index: i32,
     value: &str,
     ignore: bool,
+    hold_modifiers: bool,
 ) -> Result<(), Msg> {
     let id = selected_id(ui, document).ok_or(Msg::None)?;
     let key = keyboard::layer_key(index).ok_or(Msg::None)?;
@@ -667,8 +687,13 @@ pub(super) fn assign(
     } else {
         KeyAssignment::Action(value.to_owned())
     };
+    let action = matches!(assignment, KeyAssignment::Action(_));
     change(ui, document, |config| {
-        config.set_layer_key(&id, key, assignment)
+        config.set_layer_key(&id, key, assignment)?;
+        if action {
+            config.set_layer_key_holds_modifiers(&id, key, hold_modifiers)?;
+        }
+        Ok(())
     })
 }
 
@@ -682,6 +707,7 @@ pub(super) fn assign_extra(
     value: &str,
     key_only: bool,
     ignore: bool,
+    hold_modifiers: bool,
 ) -> Result<bool, Msg> {
     let id = selected_id(ui, document).ok_or(Msg::None)?;
     let existing = extra_at(document, &id, index);
@@ -727,8 +753,10 @@ pub(super) fn assign_extra(
         None if index < 0 => (None, editor.get_dialog_key().to_string()),
         None => return Err(Msg::KeyCodeRequired),
     };
+    let holds = matches!(action, KeyAssignment::Action(_)) && hold_modifiers;
     change(ui, document, |config| {
-        config.set_extra_key(&id, previous.as_deref(), &key, action)
+        config.set_extra_key(&id, previous.as_deref(), &key, action)?;
+        config.set_layer_key_holds_modifiers(&id, &key, holds)
     })?;
     Ok(false)
 }

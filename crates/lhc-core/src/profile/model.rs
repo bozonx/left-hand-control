@@ -5,7 +5,7 @@
 //! JSON layouts) are handled by [`super::settings`] and [`super::layout_file`].
 
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// How the mapper resolves tap vs hold when another key is pressed while a
 /// tap/hold rule key is still held and undecided.
@@ -85,8 +85,6 @@ pub struct LayerRule {
     pub hold_action: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub isolate: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub hold_for: Option<String>,
     pub double_tap_action: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub hold_timeout_ms: Option<u64>,
@@ -125,7 +123,6 @@ impl LayerRule {
             long_hold_timeout_ms: None,
             hold_action: Some(String::new()),
             isolate: None,
-            hold_for: None,
             double_tap_action: String::new(),
             hold_timeout_ms: None,
             tap_decision: None,
@@ -151,6 +148,10 @@ pub struct LayerKeymap {
     /// Key code → action; `None` swallows the key inside the layer. A
     /// missing entry is transparent.
     pub keys: BTreeMap<String, Option<String>>,
+    /// Keys whose keystroke modifiers stay pressed until the layer is
+    /// released (an Alt+Tab key keeps Alt down for the window switcher).
+    #[serde(skip_serializing_if = "BTreeSet::is_empty")]
+    pub hold_modifiers: BTreeSet<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

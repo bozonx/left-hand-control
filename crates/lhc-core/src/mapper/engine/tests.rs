@@ -642,7 +642,6 @@ fn sel_layer_q_emits_ctrl_key_z() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -693,7 +692,6 @@ fn active_layer_bypasses_rule_for_same_key() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -713,7 +711,6 @@ fn active_layer_bypasses_rule_for_same_key() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -764,7 +761,6 @@ fn unmapped_key_in_active_layer_passthroughs() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -827,7 +823,6 @@ fn explicit_null_in_layer_keymap_swallows_key() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -877,7 +872,6 @@ fn hold_can_activate_layer_and_modifier_together() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Action("AltLeft".into()),
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -916,9 +910,9 @@ fn hold_can_activate_layer_and_modifier_together() {
     ));
 }
 
-/// Builds a `win` layer whose trigger uses a lazy hold: Alt is only
-/// materialised for `Tab`. Every other layer key must run without Alt.
-fn lazy_alt_win_cfg() -> AppConfig {
+/// A `win` layer held by AltLeft (tap = Enter) whose Tab and CapsLock keep
+/// their modifiers until the layer ends, plus an ordinary KeyC.
+fn switcher_cfg() -> AppConfig {
     let mut cfg = empty_cfg();
     cfg.rules.push(Rule {
         enabled: true,
@@ -932,114 +926,155 @@ fn lazy_alt_win_cfg() -> AppConfig {
         hold_behavior: None,
         long_hold_action: String::new(),
         long_hold_timeout_ms: None,
-        hold_action: ActionSpec::Action("AltLeft".into()),
+        hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: "Tab".into(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
         double_tap_timeout_ms: None,
     });
-    let mut win = LayerKeymap {
-        keys: HashMap::new(),
-        ..Default::default()
-    };
-    win.keys.insert("Tab".into(), Some("Tab".into()));
-    // A non-whitelisted key that emits a visible stroke.
-    win.keys.insert("KeyC".into(), Some("Escape".into()));
+    let mut win = LayerKeymap::default();
+    win.keys.insert("Tab".into(), Some("Alt+Tab".into()));
+    win.keys
+        .insert("CapsLock".into(), Some("Alt+Shift+Tab".into()));
+    win.keys.insert("KeyC".into(), Some("Alt+KeyC".into()));
+    win.hold_modifiers = vec!["Tab".into(), "CapsLock".into()];
     cfg.layer_keymaps.insert("win".into(), win);
     cfg.settings.tap_decision = TapDecision::HoldOnOtherKeyPress;
     cfg
 }
 
-#[test]
-fn lazy_hold_does_not_materialize_alt_for_non_whitelist_key() {
-    // Pressing a non-whitelisted layer key (KeyC) must never leak Alt to
-    // the app — no lone Alt tap, so GTK/Firefox never opens its menu bar.
-    let mut engine = Engine::new(&lazy_alt_win_cfg());
-    let mut out = Vec::new();
+/// Feed `events` (key, down) 10 ms apart and return the output.
+fn run(engine: &mut Engine, events: &[(KeyCode, bool)]) -> Vec<Out> {
     let now = Instant::now();
+    let mut out = Vec::new();
+    for (i, (key, down)) in events.iter().enumerate() {
+        engine.handle(
+            *key,
+            *down,
+            now + Duration::from_millis(10 * i as u64),
+            &mut out,
+        );
+    }
+    out
+}
 
-    engine.handle(KeyCode::KEY_LEFTALT, true, now, &mut out);
-    engine.handle(
-        KeyCode::KEY_C,
-        true,
-        now + Duration::from_millis(10),
-        &mut out,
-    );
-    engine.handle(
-        KeyCode::KEY_C,
-        false,
-        now + Duration::from_millis(20),
-        &mut out,
-    );
-    engine.handle(
-        KeyCode::KEY_LEFTALT,
-        false,
-        now + Duration::from_millis(30),
-        &mut out,
-    );
-
-    let touches_alt = out.iter().any(|o| match o {
-        Out::KeyRaw { key, .. } => *key == KeyCode::KEY_LEFTALT,
-        Out::ChordPress { ks, .. } => {
-            ks.key == KeyCode::KEY_LEFTALT || ks.mods.contains(&KeyCode::KEY_LEFTALT)
+/// Virtual key transitions of `out`, in order, as (key, down).
+fn transitions(out: &[Out]) -> Vec<(KeyCode, bool)> {
+    let mut keys = Vec::new();
+    for o in out {
+        match o {
+            Out::KeyRaw { key, down } => keys.push((*key, *down)),
+            Out::ChordPress { ks, .. } => {
+                keys.extend(ks.mods.iter().map(|m| (*m, true)));
+                keys.push((ks.key, true));
+            }
+            Out::ChordRelease { key, mods, .. } => {
+                keys.push((*key, false));
+                keys.extend(mods.iter().rev().map(|m| (*m, false)));
+            }
+            Out::ReleaseMods(mods) => keys.extend(mods.iter().map(|m| (*m, false))),
+            _ => {}
         }
-        Out::ChordRelease { key, mods, .. } => {
-            *key == KeyCode::KEY_LEFTALT || mods.contains(&KeyCode::KEY_LEFTALT)
-        }
-        _ => false,
-    });
-    assert!(!touches_alt, "Alt must never reach the app");
+    }
+    keys
 }
 
 #[test]
-fn lazy_hold_materializes_alt_for_whitelist_key() {
-    // Tab is whitelisted → Alt materialises just in time (Alt+Tab) and is
-    // released when the layer ends.
-    let mut engine = Engine::new(&lazy_alt_win_cfg());
-    let mut out = Vec::new();
-    let now = Instant::now();
-
-    engine.handle(KeyCode::KEY_LEFTALT, true, now, &mut out);
-    engine.handle(
-        KeyCode::KEY_TAB,
-        true,
-        now + Duration::from_millis(10),
-        &mut out,
+fn hold_modifiers_keep_alt_down_across_tab_presses() {
+    const ALT: KeyCode = KeyCode::KEY_LEFTALT;
+    const TAB: KeyCode = KeyCode::KEY_TAB;
+    let mut engine = Engine::new(&switcher_cfg());
+    let out = run(
+        &mut engine,
+        &[
+            (ALT, true),
+            (TAB, true),
+            (TAB, false),
+            (TAB, true),
+            (TAB, false),
+            (ALT, false),
+        ],
     );
-
-    assert!(matches!(
-        out.as_slice(),
+    assert_eq!(
+        transitions(&out),
         [
-            Out::ChordPress { ks: alt, .. },
-            Out::ChordPress { ks: tab, .. },
-        ] if alt.mods.is_empty()
-            && alt.key == KeyCode::KEY_LEFTALT
-            && tab.mods.is_empty()
-            && tab.key == KeyCode::KEY_TAB
-    ));
-
-    out.clear();
-    engine.handle(
-        KeyCode::KEY_TAB,
-        false,
-        now + Duration::from_millis(20),
-        &mut out,
+            (ALT, true),
+            (TAB, true),
+            (TAB, false),
+            (ALT, true),
+            (TAB, true),
+            (TAB, false),
+            (ALT, false),
+        ]
     );
-    engine.handle(
-        KeyCode::KEY_LEFTALT,
-        false,
-        now + Duration::from_millis(30),
-        &mut out,
-    );
+}
 
-    // Alt is released exactly once when the layer ends.
-    let alt_releases = out
-        .iter()
-        .filter(|o| matches!(o, Out::KeyRaw { key, down: false } if *key == KeyCode::KEY_LEFTALT))
-        .count();
-    assert_eq!(alt_releases, 1, "Alt must be released once");
+#[test]
+fn hold_modifiers_switch_direction_without_releasing_alt() {
+    const CAPS: KeyCode = KeyCode::KEY_CAPSLOCK;
+    const ALT: KeyCode = KeyCode::KEY_LEFTALT;
+    const SHIFT: KeyCode = KeyCode::KEY_LEFTSHIFT;
+    const TAB: KeyCode = KeyCode::KEY_TAB;
+    let mut engine = Engine::new(&switcher_cfg());
+    let out = run(
+        &mut engine,
+        &[
+            (ALT, true),
+            (CAPS, true),
+            (CAPS, false),
+            (TAB, true),
+            (TAB, false),
+            (ALT, false),
+        ],
+    );
+    assert_eq!(
+        transitions(&out),
+        [
+            (ALT, true),
+            (SHIFT, true),
+            (TAB, true),
+            (TAB, false),
+            (SHIFT, false),
+            (ALT, true),
+            (TAB, true),
+            (TAB, false),
+            (ALT, false),
+        ]
+    );
+}
+
+#[test]
+fn ordinary_layer_keys_release_their_modifiers_with_the_key() {
+    const KEY_C: KeyCode = KeyCode::KEY_C;
+    const ALT: KeyCode = KeyCode::KEY_LEFTALT;
+    let mut engine = Engine::new(&switcher_cfg());
+    let out = run(
+        &mut engine,
+        &[(ALT, true), (KEY_C, true), (KEY_C, false), (ALT, false)],
+    );
+    assert_eq!(
+        transitions(&out),
+        [(ALT, true), (KEY_C, true), (KEY_C, false), (ALT, false)]
+    );
+}
+
+#[test]
+fn held_modifiers_outlive_a_main_key_still_down_at_layer_end() {
+    const ALT: KeyCode = KeyCode::KEY_LEFTALT;
+    const TAB: KeyCode = KeyCode::KEY_TAB;
+    let mut engine = Engine::new(&switcher_cfg());
+    let out = run(
+        &mut engine,
+        &[(ALT, true), (TAB, true), (ALT, false), (TAB, false)],
+    );
+    assert_eq!(
+        transitions(&out),
+        [(ALT, true), (TAB, true), (ALT, false), (TAB, false)]
+    );
+    let mut out = Vec::new();
+    engine.shutdown(&mut out);
+    assert!(transitions(&out).is_empty());
 }
 
 #[test]
@@ -1059,7 +1094,6 @@ fn layer_only_rule_is_not_treated_as_passthrough() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: "KeyW".into(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -1105,7 +1139,6 @@ fn rule_with_apps(whitelist: Option<Vec<String>>, blacklist: Option<Vec<String>>
         layer_id: None,
         hold: HoldMode::Swallow,
         isolate_keys: Vec::new(),
-        whitelist_keys: Vec::new(),
         long_hold: None,
         long_hold_timeout: Duration::from_secs(1),
         double_tap: None,
@@ -1192,7 +1225,6 @@ fn undetected_game_mode_counts_as_off() {
         layer_id: None,
         hold: HoldMode::Swallow,
         isolate_keys: Vec::new(),
-        whitelist_keys: Vec::new(),
         long_hold: None,
         long_hold_timeout: Duration::from_secs(1),
         double_tap: None,
@@ -1228,7 +1260,6 @@ fn game_mode_condition_passes_when_cached_state_matches() {
         layer_id: None,
         hold: HoldMode::Swallow,
         isolate_keys: Vec::new(),
-        whitelist_keys: Vec::new(),
         long_hold: None,
         long_hold_timeout: Duration::from_secs(1),
         double_tap: None,
@@ -1264,7 +1295,6 @@ fn duplicate_key_rules_use_first_matching_condition() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -1284,7 +1314,6 @@ fn duplicate_key_rules_use_first_matching_condition() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -1644,7 +1673,6 @@ fn mouse_button_commits_pending_hold() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Action("ControlLeft".into()),
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -1712,7 +1740,6 @@ fn extra_mouse_button_commits_pending_keystroke_hold() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Action("ControlLeft".into()),
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -1779,7 +1806,6 @@ fn mouse_button_commits_layer_trigger_enabling_layer_mapping() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Swallow,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -1852,7 +1878,6 @@ fn extra_mouse_button_can_be_rule_trigger() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -1893,7 +1918,6 @@ fn primary_mouse_button_can_be_layer_mapping() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -1953,7 +1977,6 @@ fn explicit_null_mouse_key_in_layer_keymap_swallows_key() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -2005,7 +2028,6 @@ fn isolate_suppresses_and_restores_layer_trigger_modifier() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Action("AltLeft".into()),
         isolate: "KeyW".into(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -2079,7 +2101,6 @@ fn tap_on_release_fires_tap_action() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: Some(200),
         tap_decision: None,
         double_tap_action: String::new(),
@@ -2121,7 +2142,6 @@ fn hold_timeout_commits_hold_via_tick() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Action("ControlLeft".into()),
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: Some(50),
         tap_decision: None,
         double_tap_action: String::new(),
@@ -2158,7 +2178,6 @@ fn double_tap_fires_double_tap_action() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: "KeyB".into(),
@@ -2218,7 +2237,6 @@ fn double_tap_window_expired_fires_tap() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: "KeyB".into(),
@@ -2261,7 +2279,6 @@ fn double_tap_flush_on_other_key_press() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: "KeyB".into(),
@@ -2319,7 +2336,6 @@ fn double_tap_late_second_press_is_tap_not_double_tap() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: "KeyB".into(),
@@ -2437,7 +2453,6 @@ fn shutdown_releases_all_emitted_keys_and_mods() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -2494,7 +2509,6 @@ fn layer_missing_key_is_transparent() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -2546,7 +2560,6 @@ fn mod_refs_shared_by_two_keys() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -2643,7 +2656,6 @@ fn commit_waiting_decisions_on_other_key_press() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Action("ControlLeft".into()),
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: Some(200),
         tap_decision: None,
         double_tap_action: String::new(),
@@ -2690,7 +2702,6 @@ fn tap_hold_rule(key: &str, tap: ActionSpec, hold: ActionSpec) -> Rule {
         long_hold_timeout_ms: None,
         hold_action: hold,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: Some(200),
         tap_decision: None,
         double_tap_action: String::new(),
@@ -3061,7 +3072,6 @@ fn builder_skips_unknown_rule_key() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -3089,7 +3099,6 @@ fn builder_skips_primary_mouse_buttons_as_triggers() {
             long_hold_timeout_ms: None,
             hold_action: ActionSpec::Native,
             isolate: String::new(),
-            hold_for: String::new(),
             hold_timeout_ms: None,
             tap_decision: None,
             double_tap_action: String::new(),
@@ -3119,7 +3128,6 @@ fn builder_unknown_tap_action_falls_back_to_swallow() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Swallow,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -3157,7 +3165,6 @@ fn builder_resolves_builtin_macro() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -3417,7 +3424,6 @@ fn chord_release_keeps_mod_held_as_main_key() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Native,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -3497,7 +3503,6 @@ fn overlapping_isolate_keys_restore_only_after_last_release() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Action("AltLeft".into()),
         isolate: "KeyW,KeyE".into(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),
@@ -3584,7 +3589,6 @@ fn empty_macro_does_not_crash() {
         long_hold_timeout_ms: None,
         hold_action: ActionSpec::Swallow,
         isolate: String::new(),
-        hold_for: String::new(),
         hold_timeout_ms: None,
         tap_decision: None,
         double_tap_action: String::new(),

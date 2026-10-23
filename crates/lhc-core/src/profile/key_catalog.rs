@@ -331,7 +331,7 @@ pub fn modifier_key(token: &str) -> Option<&'static str> {
     })
 }
 
-/// Entries of a comma-separated key list (`isolate`, `holdFor`) that are
+/// Entries of a comma-separated key list (`isolate`) that are
 /// not catalog key codes.
 pub fn unknown_keys(list: &str) -> impl Iterator<Item = &str> {
     list.split(',')

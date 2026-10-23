@@ -440,28 +440,7 @@ impl Engine {
                 .double_tap_timeout_ms
                 .map(|ms| Duration::from_millis(ms.max(1)))
                 .unwrap_or(default_double_tap);
-            let mut isolate_keys = parse_key_list(&r.isolate);
-            if isolate_keys.is_empty()
-                && let Some(layer_id) = &layer_id
-                && let Some(km) = cfg.layer_keymaps.get(layer_id)
-            {
-                isolate_keys = km
-                    .isolate
-                    .iter()
-                    .filter_map(|code| code_to_key(code))
-                    .collect();
-            }
-            let mut whitelist_keys = parse_key_list(&r.hold_for);
-            if whitelist_keys.is_empty()
-                && let Some(layer_id) = &layer_id
-                && let Some(km) = cfg.layer_keymaps.get(layer_id)
-            {
-                whitelist_keys = km
-                    .hold_for
-                    .iter()
-                    .filter_map(|code| code_to_key(code))
-                    .collect();
-            }
+            let isolate_keys = parse_key_list(&r.isolate);
 
             let entry = RuleEntry {
                 tap_decision: r.tap_decision.unwrap_or(cfg.settings.tap_decision),
@@ -472,7 +451,6 @@ impl Engine {
                 layer_id,
                 hold,
                 isolate_keys,
-                whitelist_keys,
                 double_tap,
                 hold_timeout: if behavior == HoldBehavior::Action {
                     long_hold_timeout
@@ -493,7 +471,16 @@ impl Engine {
         }
 
         let mut layer_maps: HashMap<String, HashMap<KeyCode, ActionDef>> = HashMap::new();
+        let mut layer_hold_mods: HashMap<String, HashSet<KeyCode>> = HashMap::new();
         for (layer_id, km) in &cfg.layer_keymaps {
+            let hold_mods: HashSet<KeyCode> = km
+                .hold_modifiers
+                .iter()
+                .filter_map(|code| code_to_key(code))
+                .collect();
+            if !hold_mods.is_empty() {
+                layer_hold_mods.insert(layer_id.clone(), hold_mods);
+            }
             let mut m = HashMap::new();
             for (code, action) in &km.keys {
                 let Some(key) = code_to_key(code) else {
@@ -524,6 +511,7 @@ impl Engine {
             macros,
             commands,
             layer_maps,
+            layer_hold_mods,
             default_hold,
             default_mod_delay,
             decision_buffer: Vec::new(),
