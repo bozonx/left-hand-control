@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Check tag, CHANGELOG.md and metainfo
         run: python3 apps/slint-shell/scripts/release-metadata.py "$GITHUB_REF_NAME"
@@ -57,7 +57,7 @@ jobs:
             libfreetype-dev libpam0g-dev libwayland-dev libxkbcommon-dev lintian
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -89,7 +89,7 @@ jobs:
     if: ${{ !failure() && !cancelled() }}
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
@@ -140,7 +140,7 @@ jobs:
           - { image: 'archlinux:latest', package: '*.tar.gz' }
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - uses: actions/download-artifact@v4
         with:
@@ -156,7 +156,7 @@ jobs:
     if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v4
         with:
           name: linux-x86_64
@@ -181,7 +181,7 @@ jobs:
       attestations: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - uses: actions/download-artifact@v4
         with:
