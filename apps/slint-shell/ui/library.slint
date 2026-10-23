@@ -500,12 +500,33 @@ component AutoRulesPanel inherits Rectangle {
     }
 }
 
+/// One numbered step of the first-run setup card; a done step shows a check.
+component SetupStep inherits HorizontalLayout {
+    in property <int> number;
+    in property <string> title;
+    in property <bool> done;
+    spacing: 12px;
+    VerticalLayout { alignment: center;
+        Rectangle {
+            width: 28px; height: 28px; border-radius: 14px;
+            background: root.done ? Theme.success.transparentize(0.8) : Theme.selected;
+            accessible-role: none;
+            if root.done: Image { width: 16px; source: @image-url("icons/check.svg"); colorize: Theme.success; }
+            if !root.done: Text { text: root.number; color: Theme.accent; font-weight: 600; horizontal-alignment: center; vertical-alignment: center; }
+        }
+    }
+    Text { text: root.title; color: root.done ? Theme.muted : Theme.text; font-size: 15px; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; min-width: 160px; }
+    @children
+}
+
 export component LibraryPage inherits VerticalBox {
     padding: 0px;
     spacing: 12px;
     private property <int> drag-from: -1;
     private property <int> drag-over: -1;
-    if !AppState.keyboard-selected: Rectangle {
+    // The first-run card covers the missing keyboard itself; the warning is for an
+    // existing setup that lost its device.
+    if !AppState.keyboard-selected && LayoutLibrary.names.length > 0: Rectangle {
         vertical-stretch: 0;
         background: Theme.warning.transparentize(0.88);
         border-radius: 8px;
@@ -517,7 +538,7 @@ export component LibraryPage inherits VerticalBox {
             VerticalLayout { alignment: center; Button { text: @tr("Choose a keyboard"); clicked => { AppState.open-keyboard-settings(); } } }
         }
     }
-    HorizontalLayout {
+    if LayoutLibrary.names.length > 0: HorizontalLayout {
         vertical-stretch: 0;
         spacing: 32px;
         HorizontalLayout {
@@ -554,12 +575,28 @@ export component LibraryPage inherits VerticalBox {
             if LayoutLibrary.names.length == 0: Rectangle {
                 vertical-stretch: 1;
                 VerticalLayout {
-                    alignment: center; spacing: 12px;
-                    Text { text: @tr("No layouts yet"); color: Theme.text; font-size: 20px; font-weight: 600; horizontal-alignment: center; }
-                    Text { text: @tr("Start from a ready-made layout or from an empty one."); color: Theme.muted; horizontal-alignment: center; wrap: word-wrap; }
-                    HorizontalLayout { alignment: center; spacing: 8px;
-                        Button { text: @tr("Create empty"); clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } }
-                        for name[index] in LayoutLibrary.bundled-names: Button { text: name; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.bundled, index); } }
+                    alignment: center;
+                    HorizontalLayout { alignment: center;
+                        Rectangle {
+                            max-width: 560px; horizontal-stretch: 1;
+                            background: Theme.card; border-radius: 8px; border-width: 1px; border-color: Theme.divider;
+                            VerticalLayout { padding: 24px; spacing: 18px;
+                                Text { text: @tr("Getting started"); color: Theme.text; font-size: 20px; font-weight: 600; }
+                                SetupStep {
+                                    number: 1; done: AppState.keyboard-selected;
+                                    title: AppState.keyboard-selected ? @tr("Keyboard selected") : @tr("Choose the keyboard to remap");
+                                    VerticalLayout { alignment: center; Button { text: AppState.keyboard-selected ? @tr("Change") : @tr("Choose a keyboard"); primary: !AppState.keyboard-selected; clicked => { AppState.open-keyboard-settings(); } } }
+                                }
+                                SetupStep {
+                                    number: 2; title: @tr("Add a layout");
+                                    HorizontalLayout { spacing: 8px; alignment: end;
+                                        for name[index] in LayoutLibrary.bundled-names: VerticalLayout { alignment: center; Button { text: name; primary: AppState.keyboard-selected; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.bundled, index); } } }
+                                        VerticalLayout { alignment: center; Button { text: @tr("Blank"); icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } } }
+                                    }
+                                }
+                                SetupStep { number: 3; title: @tr("Press Start at the top to apply it"); }
+                            }
+                        }
                     }
                 }
             }

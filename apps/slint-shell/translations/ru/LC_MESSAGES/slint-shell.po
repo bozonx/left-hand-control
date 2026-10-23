@@ -151,9 +151,6 @@ msgstr "Раскладки"
 msgid "New layout name"
 msgstr "Имя новой раскладки"
 
-msgid "Create empty"
-msgstr "Создать пустую"
-
 msgid "Mapper"
 msgstr "Маппер"
 
@@ -582,9 +579,6 @@ msgstr "Сделать активной"
 msgid "Single: the layout you make active works everywhere."
 msgstr "Одиночный: везде работает раскладка, которую вы сделали активной."
 
-msgid "No layouts yet"
-msgstr "Раскладок пока нет"
-
 msgid "Not used in automatic mode"
 msgstr "Не участвует в автоматическом режиме"
 
@@ -593,9 +587,6 @@ msgstr "Переименовать…"
 
 msgid "Save and continue"
 msgstr "Сохранить и продолжить"
-
-msgid "Start from a ready-made layout or from an empty one."
-msgstr "Начните с готовой раскладки или с пустой."
 
 msgid "The layout you are editing has not been saved to the library. Its changes will be lost."
 msgstr "Редактируемая раскладка не сохранена в библиотеку. Изменения будут потеряны."
@@ -1130,6 +1121,24 @@ msgstr "Клавиатура не выбрана, поэтому маппер н
 
 msgid "Choose a keyboard"
 msgstr "Выбрать клавиатуру"
+
+msgid "Getting started"
+msgstr "Начало работы"
+
+msgid "Keyboard selected"
+msgstr "Клавиатура выбрана"
+
+msgid "Choose the keyboard to remap"
+msgstr "Выберите клавиатуру для переназначения"
+
+msgid "Change"
+msgstr "Изменить"
+
+msgid "Add a layout"
+msgstr "Добавьте раскладку"
+
+msgid "Press Start at the top to apply it"
+msgstr "Нажмите «Запустить» вверху, чтобы применить её"
 
 msgid "No active layout"
 msgstr "Нет активной раскладки"
