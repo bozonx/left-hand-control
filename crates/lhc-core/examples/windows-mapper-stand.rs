@@ -133,6 +133,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         thread::sleep(Duration::from_millis(100));
         let response = json!({
             "id": last_id, "ok": result.is_ok(), "error": result.err(),
+            "guard_pid": lhc_core::mapper::windows::input_guard_pid(),
             "status": runtime::status(), "events": event_rx.try_iter().collect::<Vec<_>>(),
         });
         fs::write(

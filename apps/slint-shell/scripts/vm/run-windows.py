@@ -5,7 +5,8 @@ session through the scheduled task LHC-E2E and collect the result.
 
 The default smoke suite covers debug UI scenarios, IPC, popups and shutdown.
 --suite full runs native tests, a release build and lifecycle/resource checks.
-Both suites exercise the mapper through QEMU hardware keys and a native receiver.
+--suite release builds release binaries and checks input/popups without native tests.
+These suites exercise the mapper through QEMU hardware keys and a native receiver.
 
 Usage: run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows [--show] [--keep]
 See docs/development/guide.md, "E2E в виртуальных машинах".
@@ -27,6 +28,20 @@ from windows_popups import check_popups
 from vmlib import REPO, Report, StepFailed, Vm, commit, environment_ok, result_path, wait_for
 
 WORK = r"D:\lhc-e2e"
+
+
+def synchronize_clock(ps):
+    """Correct disposable-guest RTC skew before writing sources or building."""
+    query = "[DateTimeOffset]::UtcNow.ToUnixTimeSeconds()"
+    skew = int(ps(query, timeout=30).strip()) - time.time()
+    if abs(skew) > 30:
+        timestamp = int(time.time())
+        ps("$ErrorActionPreference = 'Stop'; "
+           f"Set-Date -Date ([DateTimeOffset]::FromUnixTimeSeconds({timestamp}).LocalDateTime) | Out-Null",
+           timeout=30)
+    if abs(int(ps(query, timeout=30).strip()) - time.time()) > 30:
+        raise StepFailed("Guest UTC clock is not synchronized; refusing to poison the Cargo cache")
+    return f"guest UTC verified; initial skew {skew:+.0f}s"
 
 
 class GuestCompletion:
@@ -175,10 +190,11 @@ def signal_input_result(ps, report, passed):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--vm", required=True, help="VM directory with vm.json")
-    parser.add_argument("--suite", choices=("smoke", "full", "mapper"), default="smoke",
-                        help="smoke (default), full native/release acceptance, or mapper-only diagnostics")
+    parser.add_argument("--suite", choices=("smoke", "full", "release", "mapper"), default="smoke",
+                        help="smoke (default), full native/release checks, release input/popups, or mapper diagnostics")
     parser.add_argument("--memory", type=int, help="guest RAM in MiB; overrides vm.json for this run only")
     parser.add_argument("--mapper-from", help="mapper-only diagnostics: begin at this named scenario")
+    parser.add_argument("--mapper-only", help="mapper-only diagnostics: run just this named scenario")
     parser.add_argument("--extended", action="store_true", help="also check lock/unlock, S3, sustained mapper load and whole-tree termination")
     parser.add_argument("--stress-seconds", type=int, default=180, help="extended mapper load duration")
     parser.add_argument("--show", action="store_true", help="show the VM display")
@@ -188,6 +204,8 @@ def main():
     args = parser.parse_args()
     if args.mapper_from and args.suite != "mapper":
         parser.error("--mapper-from requires --suite mapper")
+    if args.mapper_only and (args.suite != "mapper" or args.mapper_from):
+        parser.error("--mapper-only requires --suite mapper and excludes --mapper-from")
     if args.stress_seconds < 1:
         parser.error("--stress-seconds must be positive")
     environment_ok()
@@ -210,6 +228,7 @@ def main():
     def boot():
         vm.start(show=args.show)
         vm.wait_ssh(timeout=900)
+        print(synchronize_clock(ps), flush=True)
         # The cache disk survives even when a failed run could not export logs.
         if vm.copy_from("D:/lhc-e2e/out", vm.logs / "previous-guest"):
             print("Recovered previous guest logs from the cache disk.", flush=True)
@@ -233,7 +252,7 @@ def main():
         count, digest = source_archive(archive)
         ps(f"$ErrorActionPreference = 'Stop'; New-Item -ItemType Directory -Force -Path {WORK}\\src, {WORK}\\out | Out-Null")
         vm.copy_to(archive, "D:/lhc-e2e/src.tar.gz")
-        # Preserve timestamps only when content is identical. Restamping the
+        # Preserve sane timestamps only when content is identical. Restamping the
         # whole tree rebuilds vendored Slint; keeping host timestamps can make
         # Cargo miss edits that predate the guest's cached build.
         synced = ps(f"""
@@ -249,6 +268,7 @@ foreach ($file in Get-ChildItem $stage -Recurse -File) {{
     $relative = $file.FullName.Substring($stage.Length + 1)
     $destination = Join-Path $source $relative
     if ((Test-Path -LiteralPath $destination -PathType Leaf) -and
+        (Get-Item -LiteralPath $destination).LastWriteTimeUtc -le [DateTime]::UtcNow.AddSeconds(30) -and
         (Get-FileHash -LiteralPath $file.FullName).Hash -eq (Get-FileHash -LiteralPath $destination).Hash) {{ continue }}
     New-Item -ItemType Directory -Force -Path (Split-Path $destination) | Out-Null
     Copy-Item -LiteralPath $file.FullName -Destination $destination -Force
@@ -349,7 +369,7 @@ Remove-Item $stage -Recurse -Force
                     report.step("hardware-keyboard", keyboard_baseline, fatal=True)
                     if args.suite != "mapper":
                         check_popups(vm, ps, report)
-                    WindowsMapper(vm, ps, report).run(start_at=args.mapper_from, extended=args.extended, stress_seconds=args.stress_seconds)
+                    WindowsMapper(vm, ps, report).run(start_at=args.mapper_from, extended=args.extended, stress_seconds=args.stress_seconds, only=args.mapper_only)
                     passed = True
                 finally:
                     signal_input_result(ps, report, passed)
@@ -397,9 +417,11 @@ Remove-Item $stage -Recurse -Force
         f"Commit: {commit()}",
         f"VM: {vm.name} ({vm.base})",
         f"Suite: {args.suite}",
-        f"Mapper build: {'release' if args.suite == 'full' else 'debug'}",
-        f"Popup shell build: {'none' if args.suite == 'mapper' else 'release' if args.suite == 'full' else 'debug'}",
+        f"Mapper build: {'release' if args.suite in ('full', 'release') else 'debug'}",
+        f"Popup shell build: {'none' if args.suite == 'mapper' else 'release' if args.suite in ('full', 'release') else 'debug'}",
+        f"Native tests/clippy/package lifecycle: {'included' if args.suite == 'full' else 'not included in this suite'}",
         f"Mapper from: {args.mapper_from or 'beginning'}",
+        f"Mapper only: {args.mapper_only or 'all'}",
         f"Extended: {args.extended}; stress seconds: {args.stress_seconds}",
         f"Memory: {vm.get('memory', 6144)} MiB",
         f"Logs: {vm.logs}",

@@ -127,16 +127,13 @@ pub(super) fn shortcut(mods: &[KeyCode], main: KeyCode) -> Result<(), String> {
 }
 
 /// Type `text` as Unicode characters, independent of the keyboard layout.
-/// `valid` is checked before each character so a focus change stops input.
-pub fn type_unicode(text: &str, valid: impl Fn() -> bool) -> Result<(), String> {
+/// `valid` is checked before each UTF-16 unit so a focus change stops input.
+pub fn type_unicode(text: &str, mut valid: impl FnMut() -> bool) -> Result<(), String> {
     if text.contains('\0') {
         return Err("NUL cannot be typed into native text fields".into());
     }
     let text = text.replace("\r\n", "\n");
     for ch in text.chars() {
-        if !valid() {
-            return Err("text input cancelled: the focused window changed".into());
-        }
         let mut units = [0; 2];
         let inputs: Vec<INPUT> = match ch {
             '\n' | '\r' | '\t' => {
@@ -157,11 +154,18 @@ pub fn type_unicode(text: &str, valid: impl Fn() -> bool) -> Result<(), String> 
                 })
                 .collect(),
         };
-        if let Err(error) = send(&inputs) {
-            // Release any accepted key-down before reporting partial injection.
-            let releases: Vec<INPUT> = inputs.into_iter().skip(1).step_by(2).collect();
-            let _ = send(&releases);
-            return Err(error);
+        for pair in inputs.as_chunks::<2>().0 {
+            if !valid() {
+                return Err("text input cancelled: the focused window changed".into());
+            }
+            if let Err(error) = send(pair) {
+                // Release any accepted key-down before reporting partial injection.
+                let _ = send(&pair[1..]);
+                return Err(error);
+            }
+            // WinUI translates VK_PACKET asynchronously from keyboard state.
+            // Each UTF-16 unit must be consumed before the next replaces it.
+            std::thread::sleep(std::time::Duration::from_millis(30));
         }
     }
     Ok(())

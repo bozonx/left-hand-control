@@ -1,0 +1,121 @@
+Windows fixes and acceptance — 2026-10-22–23 (America/Argentina/Buenos_Aires)
+Source: e8a73bc + working-tree fixes. No release published.
+
+Product changes
+- Independent input guard, started through a short-lived launcher. The owner
+  waits for the actual guard PID and launcher exit before injecting input.
+  taskkill /T of the owner no longer destroys its recovery process.
+- Unicode SendInput down/up pairs are paced by 30 ms per UTF-16 unit. This
+  includes surrogate halves: lower delays reproduced corruption in real Notepad.
+  Progress renews the text-job idle deadline; long progressing text is no longer
+  cancelled merely for exceeding 15 seconds. Focus/generation cancellation stays.
+- Scope limits: approximately 33 UTF-16 units/second; killing BOTH owner and
+  independent guard cannot guarantee recovery. Other application/IME fixtures,
+  physical hardware, long soak and hosted release artifacts remain separate gates.
+
+Automation/stand fixes
+- WTS session lock state; recheck before entering disposable-VM credentials.
+- Three real S3/wakeup cycles, unchanged boot time and exact mapper output after
+  EACH wake, without restarting mapper or replugging the keyboard.
+- Owner-tree crash requires Ctrl held before kill and released after kill BEFORE
+  physical/corrective input. Real Notepad uses UI Automation, exact small Unicode
+  and >15-second text; failure artifacts preserve expected/actual/events/screen.
+- Guest UTC verified/corrected before source upload. Identical future-dated source
+  is recopied, avoiding Cargo cache poisoning from the supplied +7-hour RTC skew.
+- --suite release checks release input/popups without claiming native tests;
+  --mapper-only is explicitly a partial diagnostic with named SKIPs.
+- Packager and e2e build the same app+stand target set, preventing dev-dependency
+  feature-union recompilation. Only the application is included in the ZIP.
+
+Host validation — PASS
+cargo fmt -p lhc-core -p slint-shell --check
+cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+cargo test --locked --workspace --features slint-shell/spell
+cargo check --locked -p slint-shell --all-targets
+  Log: /tmp/lhc-windows-fix-host-checks-final.log
+python3 -m unittest discover -s apps/slint-shell/scripts/vm -p 'test_*.py'
+  27 PASS after final runner changes (repeated at final documentation review).
+PowerShell Parser::ParseFile: windows-guest.ps1 and generated source-sync script
+  PASS on native Windows. Python syntax compilation and git diff --check PASS.
+
+Native Windows validation — completed commands PASS, not a whole full-suite PASS
+cargo test --locked -p lhc-core -p slint-shell --all-targets
+  399 tests PASS across 21 groups (317 core, 77 shell, examples/IPC etc.).
+cargo clippy --locked -p lhc-core -p slint-shell --all-targets --no-deps -- -D warnings
+  PASS, 8m51s, zero warnings.
+cargo test --release --locked -p lhc-core -p slint-shell --test storage_override
+  2 PASS. Total native tests: 401 PASS / 0 FAIL / 0 ignored.
+  Logs: /mnt/disk2/vm/lhc-windows-s3/runs/20261022-182148/logs/guest/full.log
+  The containing full controller was interrupted during redundant subsequent
+  release compilation; its report remains FAILED/interrupted, not relabelled.
+  Source archive SHA256:
+  eb863818e50dd9de8d1e563a52c4c44d0170c162e12daad7f5c72723baa1a0f8
+
+Native build/package/lifecycle continuation — 4 PASS / 0 FAIL
+QEMU_MODULE_DIR=/mnt/disk2/vm/lhc-windows-s3/modules/usr/lib/qemu python3 -u /mnt/disk2/vm/lhc-release-20261022-windows-fixes/continue-native.py --vm /mnt/disk2/vm/lhc-windows-s3 --archive /mnt/disk2/vm/lhc-windows-s3/runs/20261022-182148/src.tar.gz --output /mnt/disk2/vm/lhc-release-20261022-windows-fixes
+  Run 20261022-230049. 766 product source/assets match archive AND host;
+  subsequent changes are test/build tooling and documentation.
+  cargo build --release --locked -p lhc-core -p slint-shell --bin left-hand-control --example windows-mapper-stand
+  package-windows.ps1, check-windows-package.ps1 -Desktop and native lifecycle
+  >=100 cycles + >=180 seconds PASS. CSV reaches 270 cycles, WorkingSet
+  40230912..68980736 bytes, handles 301..314. Packager Cargo cache reuse 1.36s.
+  Native continuation result and CSV retained in artifact directory below.
+
+New portable package
+/mnt/disk2/vm/lhc-release-20261022-windows-fixes/packages/left-hand-control-0.3.0-windows-x86_64.zip
+ZIP SHA256: 252c3706ab20a5fa02c1376d8e7fe1f8b00c5dbe9300301a4bd1451494ecd801
+EXE SHA256: 31a1b2cb00da9dd4c21f3cfc7de49af36c594494df3e4d3da1f507ee1521d7de
+Manifest hash, ZIP CRC, x64 PE and exact four entries (EXE, LICENSE, README,
+features) PASS through current artifact checker. Linux/vendor archives from
+before these source fixes are not claimed to be a newly accepted release bundle.
+
+Clean Windows package — 2 PASS / 0 FAIL
+python3 -u apps/slint-shell/scripts/vm/run-windows-package.py --vm /mnt/disk2/vm/lhc-windows-clean-package --package /mnt/disk2/vm/lhc-release-20261022-windows-fixes/packages/left-hand-control-0.3.0-windows-x86_64.zip --runtime-installer /mnt/disk2/vm/left-hand-control-windows/vc_redist.x64.exe
+  Baseline BEFORE toolchain, no cache disk; actual signed Microsoft VC runtime.
+  >=500 rendered popup cycles AND >=180 seconds, CLI/lifecycle/resource bounds,
+  hidden/visible quit, disabled hotkeys, unsupported Spell and removal PASS.
+  Resource CSV: clean-package-stress-resources.csv (50 samples through cycle 500).
+  Report: 2026-10-22-vm-windows11-clean-package.txt
+  Logs: /mnt/disk2/vm/lhc-windows-clean-package/runs/20261022-231723/logs/guest.log
+
+S3 environment
+- Original Windows VM/base/config untouched. Private stand uses QEMU 11.1.1,
+  virtio-vga and Microsoft-signed VirtIO GPU DOD 100.103.104.30200.
+- BasicDisplay does not expose S3; powercfg /a now does. Hibernation disabled in
+  disposable stand. Existing Secure Boot state False was not changed; signature
+  enforcement was not weakened. Exact matching QEMU module extracted privately,
+  package signature verified (David Runge), no host package installed.
+- Targeted 4 GiB debug mapper: three real cycles PASS, run 20261022-173321.
+  Earlier 6 GiB repeat hung after second wake. The 2026-10-23 repeat below
+  passed all three cycles; the old hang's root cause is not established.
+  This does not prove long-term stability or release acceptance at every RAM size.
+
+Release runtime acceptance
+QEMU_MODULE_DIR=/mnt/disk2/vm/lhc-windows-s3/modules/usr/lib/qemu python3 -u apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/lhc-windows-s3 --suite release --extended --stress-seconds 180 --memory 4096 --timeout 120
+  Run 20261022-231723; source archive SHA256:
+  483be8abdf231759bee179c48c3bfd9fb3b4c076762841378c9d9c63eb311640
+  Guest release EXE hash equals the packaged EXE above.
+  COMPLETE: 33 PASS / 0 FAIL; physical hardware explicitly SKIP.
+  Report: 2026-10-22-vm-windows11-s3-7.txt
+  Includes five exact popup/focus scenarios, real shell forced-termination Ctrl,
+  all 15 base mapper scenarios, lock/unlock, 3 S3 cycles, >=180s stress (6 cycles),
+  US/RU expanded corpus, real Notepad with >15s text, UAC/UIPI and owner-tree kill.
+  Stress private memory 1683456..1904640 bytes, handles 133 across six samples.
+  This suite excludes native tests/clippy/package lifecycle, proven separately.
+
+
+6 GiB targeted S3 repeat — selected scenario PASS (debug, other scenarios SKIP)
+QEMU_MODULE_DIR=/mnt/disk2/vm/lhc-windows-s3/modules/usr/lib/qemu python3 -u apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/lhc-windows-s3 --suite mapper --extended --mapper-only mapper-suspend-resume --memory 6144 --timeout 120
+  Run 20261022-235622, completed 2026-10-23. Three real S3/wakeup cycles,
+  unchanged boot time and exact remap after EACH wake without mapper restart.
+  Source archive SHA256:
+  866daf6c1c96ee162c21de939fbf6f41c0d677ed9b1148c1752a8d20faf2e16f
+  Controller COMPLETE: 6 PASS / 0 FAIL; other mapper scenarios explicitly SKIP.
+  Report: 2026-10-23-vm-windows11-s3.txt
+  Logs: /mnt/disk2/vm/lhc-windows-s3/runs/20261022-235622/logs
+
+Evidence archive
+/mnt/disk2/vm/lhc-release-20261022-windows-fixes/
+  fixes-preliminary-history.txt preserves chronological failed/interrupted probes,
+  direct Notepad delay experiments, cache repair and provenance details.
+  Earlier failures are diagnostic evidence, never counted as accepted full runs.

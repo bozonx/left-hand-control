@@ -36,7 +36,7 @@ try {
     Add-Line ''
 
     $suite = (Get-Content 'D:\lhc-e2e\suite.txt' -Raw).Trim()
-    if ($suite -notin @('smoke', 'full', 'mapper')) { throw "Unknown suite: $suite" }
+    if ($suite -notin @('smoke', 'full', 'release', 'mapper')) { throw "Unknown suite: $suite" }
     $script = 'check-windows-smoke.ps1'
     Add-Line "Suite: $suite"
 
@@ -46,22 +46,24 @@ try {
         $step = 'core-driver-build'
         & cargo build --locked --manifest-path (Join-Path $root 'crates\lhc-core\Cargo.toml') `
             --example windows-mapper-stand *>&1 | Out-File -FilePath $log -Encoding utf8
-    } else {
+    } elseif ($suite -ne 'release') {
         $step = 'shell-smoke'
         & powershell -NoProfile -ExecutionPolicy Bypass -File `
             (Join-Path $root "apps\slint-shell\scripts\$script") *>&1 |
             Out-File -FilePath $log -Encoding utf8
     }
-    $code = $LASTEXITCODE
+    $code = if ($suite -eq 'release') { 0 } else { $LASTEXITCODE }
     $ErrorActionPreference = 'Stop'
-    if ($code -eq 0) {
+    if ($suite -eq 'release') {
+        Add-Line '- debug smoke/native tests/clippy/package lifecycle: not included in release input suite'
+    } elseif ($code -eq 0) {
         Add-Line "- ${step}: passed"
     } else {
         Add-Line "- ${step}: FAILED (exit $code, see automated.log)"
     }
 
     if ($code -eq 0) {
-        if ($suite -eq 'full') {
+        if ($suite -in @('full', 'release')) {
             $ErrorActionPreference = 'Continue'
             & cargo build --release --locked --manifest-path (Join-Path $root 'Cargo.toml') `
                 -p lhc-core -p slint-shell --bin left-hand-control --example windows-mapper-stand *>&1 |
@@ -72,7 +74,7 @@ try {
             Add-Line '- release-mapper-driver-build: passed'
             Add-Line '- release-shell-build: passed'
         }
-        $driverProfile = if ($suite -eq 'full') { 'release' } else { 'debug' }
+        $driverProfile = if ($suite -in @('full', 'release')) { 'release' } else { 'debug' }
         $receiverScript = Join-Path $root 'apps\slint-shell\scripts\windows-receiver.ps1'
         $receiver = Start-Process powershell -PassThru -ArgumentList @(
             '-NoProfile', '-STA', '-ExecutionPolicy', 'Bypass', '-File', $receiverScript,

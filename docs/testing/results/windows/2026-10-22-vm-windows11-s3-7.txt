@@ -1,0 +1,60 @@
+Date: 2026-10-22 23:56:01 -0300
+Commit: e8a73bc (with uncommitted changes)
+VM: windows11-s3 (/mnt/disk2/vm/lhc-windows-s3/runs/20261022-101307/run.qcow2)
+Suite: release
+Mapper build: release
+Popup shell build: release
+Native tests/clippy/package lifecycle: not included in this suite
+Mapper from: beginning
+Mapper only: all
+Extended: True; stress seconds: 180
+Memory: 4096 MiB
+Logs: /mnt/disk2/vm/lhc-windows-s3/runs/20261022-231723/logs
+
+Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: release
+- debug smoke/native tests/clippy/package lifecycle: not included in release input suite
+- release-mapper-driver-build: passed
+- release-shell-build: passed
+- hardware-keyboard and mapper scenarios: passed (see named host steps)
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 894 files; source archive /mnt/disk2/vm/lhc-windows-s3/runs/20261022-231723/src.tar.gz; SHA256 483be8abdf231759bee179c48c3bfd9fb3b4c076762841378c9d9c63eb311640; Source sync: 7 updated, 53 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- popup-bmp-focus: passed — physical hotkey and cell key; exact Unicode once; focus restored; modifiers released
+- popup-surrogate-focus: passed — physical hotkey and cell key; exact Unicode once; focus restored; modifiers released
+- popup-zwj-focus: passed — physical hotkey and cell key; exact Unicode once; focus restored; modifiers released
+- popup-mixed-text-focus: passed — physical hotkey and cell key; exact Unicode once; focus restored; modifiers released
+- popup-reopen-focus: passed — physical hotkey and cell key; exact Unicode once; focus restored; modifiers released
+- shell-mapper-crash-held: passed — real application forced termination; guard releases Ctrl before physical release; native input works
+- mapper-passthrough: passed
+- mapper-remap-swallow-recursion: passed — A->B, B->C: injected B is not remapped; S swallowed; D passes through
+- mapper-modifiers-extended: passed — left/right Shift, Ctrl and Alt distinguished; Shift+X, Ctrl+Home, Shift+End
+- mapper-repeat: passed
+- mapper-tap-hold-layer: passed
+- mapper-chord-double-tap: passed
+- mapper-live-config-held: passed
+- mapper-macro-live-config-cancel: passed — ordered steps and >=500ms pause; live config cancels remaining macro
+- mapper-unicode-us-ru: passed
+- mapper-focus-cancel: passed — receiver changes foreground mid-text; worker reports cancellation and does not resume
+- mapper-stop-held-restart: passed — stop releases virtual Ctrl before physical release; native input and restart work
+- mapper-replug: passed
+- mapper-lock-unavailable: passed — second process rejected by session mutex; unsupported system action reports notice
+- mapper-crash-held: passed — forced owner termination releases Ctrl/Shift/Alt/Win before physical release; native input and mapper restart work
+- mapper-guard-failure: passed — guard death stops mapper, fallback releases Ctrl, native input and restart work
+- mapper-lock-unlock: passed — real LockWorkStation, QMP credential input, mapper still remaps after unlock
+- mapper-suspend-resume: passed — 3 QMP-confirmed S3/wakeup cycles; unchanged boot time; exact remap after each resume
+- mapper-stress: passed — 6 exact Unicode/remap/stop/start cycles over at least 180s; memory/handles bounded
+- mapper-unicode-corpus: passed — US/RU: punctuation, accents, skin tone, ZWJ, NFC/NFD and multiline (WinForms CRLF)
+- mapper-notepad-unicode: passed — QMP mapped input into real Notepad; exact Cyrillic/emoji/ZWJ/combining text and >15s paced text without expiry
+- mapper-elevated-uipi: passed — real UAC/elevated target; synthetic marker blocked; ordinary mapper input recovers
+- mapper-process-tree-crash: passed — owner tree suspended then terminated with taskkill /T; independent guard releases Ctrl before corrective input
+- mapper-physical-hardware: skipped — VM input does not accept physical Windows hardware
+- windows-release: passed
+
+Passed: 33, failed: 0

@@ -1,14 +1,20 @@
-//! A stdin pipe outlives its owner: EOF lets a separate process release held input.
+//! An orphaned guard survives owner-tree termination; stdin EOF releases held input.
 
 use super::super::input_guard::{Key, finish, read_snapshots, write_snapshot};
 use super::{MapperLock, input};
 use std::collections::BTreeSet;
 use std::io::{Read, Write};
+use std::os::windows::io::{AsRawHandle, FromRawHandle, OwnedHandle};
 use std::os::windows::process::CommandExt;
-use std::process::{Child, ChildStdin, Command, Stdio};
+use std::process::{ChildStdin, Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, mpsc};
 use std::time::{Duration, Instant};
+use windows::Win32::Foundation::{HANDLE, WAIT_OBJECT_0, WAIT_TIMEOUT};
+use windows::Win32::System::Threading::{
+    GetExitCodeProcess, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_SYNCHRONIZE,
+    PROCESS_TERMINATE, TerminateProcess, WaitForSingleObject,
+};
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     INPUT, INPUT_KEYBOARD, KEYBD_EVENT_FLAGS, KEYEVENTF_KEYUP, SendInput,
 };
@@ -21,13 +27,27 @@ static GUARD: Mutex<Option<Guard>> = Mutex::new(None);
 /// Returns true in the internal guard child after cleanup; the caller should exit.
 /// Calling it in the owner enables crash recovery for subsequent mapper sessions.
 pub fn dispatch() -> Result<bool, String> {
-    if std::env::var_os(ROLE).is_none() {
+    let role = std::env::var_os(ROLE);
+    if role.as_deref() == Some(std::ffi::OsStr::new("launch")) {
+        Command::new(std::env::current_exe().map_err(|e| e.to_string())?)
+            .env(ROLE, "1")
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::null())
+            .creation_flags(0x0800_0000)
+            .spawn()
+            .map_err(|e| format!("launch independent input guard: {e}"))?;
+        return Ok(true);
+    }
+    if role.is_none() {
         ENABLED.store(true, Ordering::SeqCst);
         return Ok(false);
     }
     let _lock = MapperLock::join_existing()?;
+    let mut ready = b"LHC!".to_vec();
+    ready.extend(std::process::id().to_le_bytes());
     std::io::stdout()
-        .write_all(b"LHC!")
+        .write_all(&ready)
         .map_err(|e| e.to_string())?;
     std::io::stdout().flush().map_err(|e| e.to_string())?;
     let mut held = BTreeSet::new();
@@ -62,8 +82,37 @@ fn release(held: &BTreeSet<Key>) -> bool {
     unsafe { SendInput(&events, std::mem::size_of::<INPUT>() as i32) as usize == events.len() }
 }
 
+struct GuardProcess {
+    handle: OwnedHandle,
+    pid: u32,
+}
+
+impl GuardProcess {
+    fn handle(&self) -> HANDLE {
+        HANDLE(self.handle.as_raw_handle())
+    }
+
+    fn try_wait(&self) -> Result<Option<bool>, String> {
+        match unsafe { WaitForSingleObject(self.handle(), 0) } {
+            WAIT_TIMEOUT => Ok(None),
+            WAIT_OBJECT_0 => {
+                let mut code = 0;
+                unsafe { GetExitCodeProcess(self.handle(), &mut code) }
+                    .map_err(|e| e.to_string())?;
+                Ok(Some(code == 0))
+            }
+            _ => Err(std::io::Error::last_os_error().to_string()),
+        }
+    }
+
+    fn kill(&self) {
+        let _ = unsafe { TerminateProcess(self.handle(), 1) };
+        let _ = unsafe { WaitForSingleObject(self.handle(), 2000) };
+    }
+}
+
 struct Guard {
-    child: Child,
+    child: GuardProcess,
     writer: Option<ChildStdin>,
     held: BTreeSet<Key>,
     failed: bool,
@@ -71,23 +120,16 @@ struct Guard {
 
 impl Guard {
     fn spawn() -> Result<Self, String> {
-        let child = Command::new(std::env::current_exe().map_err(|e| e.to_string())?)
-            .env(ROLE, "1")
+        let mut launcher = Command::new(std::env::current_exe().map_err(|e| e.to_string())?)
+            .env(ROLE, "launch")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
             .creation_flags(0x0800_0000) // CREATE_NO_WINDOW
             .spawn()
-            .map_err(|e| format!("start input guard: {e}"))?;
-        let mut guard = Self {
-            child,
-            writer: None,
-            held: BTreeSet::new(),
-            failed: false,
-        };
-        guard.writer = guard.child.stdin.take();
-        let mut stdout = guard
-            .child
+            .map_err(|e| format!("start input guard launcher: {e}"))?;
+        let writer = launcher.stdin.take();
+        let mut stdout = launcher
             .stdout
             .take()
             .ok_or("input guard stdout unavailable")?;
@@ -95,13 +137,13 @@ impl Guard {
         std::thread::Builder::new()
             .name("lhc-guard-ready".into())
             .spawn(move || {
-                let mut ready = [0; 4];
+                let mut ready = [0; 8];
                 let result = stdout
                     .read_exact(&mut ready)
                     .map_err(|e| e.to_string())
                     .and_then(|()| {
-                        if ready == *b"LHC!" {
-                            Ok(())
+                        if ready[..4] == *b"LHC!" {
+                            Ok(u32::from_le_bytes([ready[4], ready[5], ready[6], ready[7]]))
                         } else {
                             Err("invalid input guard handshake".into())
                         }
@@ -109,9 +151,32 @@ impl Guard {
                 let _ = tx.send(result);
             })
             .map_err(|e| format!("start input guard handshake: {e}"))?;
-        rx.recv_timeout(Duration::from_secs(5))
+        let pid = rx
+            .recv_timeout(Duration::from_secs(5))
             .map_err(|e| format!("input guard readiness: {e}"))??;
-        Ok(guard)
+        let handle = unsafe {
+            OpenProcess(
+                PROCESS_SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_TERMINATE,
+                false,
+                pid,
+            )
+        }
+        .map_err(|e| format!("open independent input guard: {e}"))?;
+        let child = GuardProcess {
+            handle: unsafe { OwnedHandle::from_raw_handle(handle.0) },
+            pid,
+        };
+        // No live ancestry through the launcher may remain when injection starts.
+        if !launcher.wait().map_err(|e| e.to_string())?.success() {
+            child.kill();
+            return Err("input guard launcher failed".into());
+        }
+        Ok(Self {
+            child,
+            writer,
+            held: BTreeSet::new(),
+            failed: false,
+        })
     }
 
     fn publish(&mut self) -> Result<(), String> {
@@ -162,7 +227,7 @@ impl Drop for Guard {
         let deadline = Instant::now() + Duration::from_secs(2);
         loop {
             match self.child.try_wait() {
-                Ok(Some(status)) if status.success() && !self.failed => return,
+                Ok(Some(true)) if !self.failed => return,
                 Ok(None) if Instant::now() < deadline => {
                     std::thread::sleep(Duration::from_millis(10))
                 }
@@ -173,8 +238,7 @@ impl Drop for Guard {
         if !release(&self.held) {
             log::error!("input guard fallback could not release keys");
         }
-        let _ = self.child.kill();
-        let _ = self.child.wait();
+        self.child.kill();
     }
 }
 
@@ -239,4 +303,13 @@ pub(super) fn send(
         guard.after(events)?;
     }
     Ok(())
+}
+
+/// PID of the independent input guard, for lifecycle diagnostics.
+pub fn pid() -> Option<u32> {
+    GUARD
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .as_ref()
+        .map(|guard| guard.child.pid)
 }

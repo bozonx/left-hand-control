@@ -24,8 +24,32 @@ package_spec = importlib.util.spec_from_file_location('clean_package_runner', Pa
 package_runner = importlib.util.module_from_spec(package_spec)
 package_spec.loader.exec_module(package_runner)
 
+windows_spec = importlib.util.spec_from_file_location('windows_runner', Path(__file__).with_name('run-windows.py'))
+windows_runner = importlib.util.module_from_spec(windows_spec)
+windows_spec.loader.exec_module(windows_runner)
+
 
 class AutomationGates(unittest.TestCase):
+    def test_guest_clock_does_not_change_an_already_synchronized_clock(self):
+        from unittest.mock import patch
+        ps = Mock(return_value='1000')
+        with patch.object(windows_runner.time, 'time', return_value=1001):
+            windows_runner.synchronize_clock(ps)
+        self.assertEqual(ps.call_count, 2)
+        self.assertTrue(all('Set-Date' not in call.args[0] for call in ps.call_args_list))
+
+    def test_guest_clock_corrects_skew_and_rejects_failed_correction(self):
+        from unittest.mock import patch
+        for final, fails in (('1000', False), ('26200', True)):
+            ps = Mock(side_effect=['26200', '', final])
+            with patch.object(windows_runner.time, 'time', return_value=1000):
+                if fails:
+                    with self.assertRaisesRegex(StepFailed, 'not synchronized'):
+                        windows_runner.synchronize_clock(ps)
+                else:
+                    windows_runner.synchronize_clock(ps)
+            self.assertIn('FromUnixTimeSeconds(1000)', ps.call_args_list[1].args[0])
+
     def test_clean_guest_callback_rejects_unauthorized_and_false_completion(self):
         callback = package_runner.Callback()
         url = callback.url.replace('10.0.2.2', '127.0.0.1')
@@ -47,9 +71,23 @@ class AutomationGates(unittest.TestCase):
 
     def test_unlock_does_not_type_credentials_into_an_already_unlocked_desktop(self):
         vm = Mock()
-        probe = WindowsMapper(vm, Mock(return_value="False"), Mock())
+        probe = WindowsMapper(vm, Mock(), Mock())
+        probe.receiver = Mock(return_value={"locked": False})
+        probe.ps = Mock()
         probe.unlock()
+        probe.ps.assert_not_called()
         vm.qmp.tap.assert_not_called()
+        vm.qmp.type_ascii.assert_not_called()
+
+    def test_unlock_stops_before_credentials_when_space_already_unlocked_session(self):
+        vm = Mock()
+        probe = WindowsMapper(vm, Mock(), Mock())
+        probe.receiver = Mock(side_effect=[{"locked": True}, {"locked": True}, {"locked": False}])
+        probe.ps = Mock(return_value="test-password")
+        from unittest.mock import patch
+        with patch('windows_mapper.time.sleep'):
+            probe.unlock()
+        vm.qmp.tap.assert_called_once_with("spc")
         vm.qmp.type_ascii.assert_not_called()
 
     def test_unavailable_s3_never_falls_back_to_hibernation(self):

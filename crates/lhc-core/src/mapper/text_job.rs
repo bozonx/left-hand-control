@@ -81,6 +81,15 @@ impl TextRequest {
         Ok(())
     }
 
+    #[cfg(target_os = "windows")]
+    pub(super) fn check_progress(&mut self) -> Result<(), TextInputFailure> {
+        self.check()?;
+        // Native Unicode delivery is paced for WinUI. Bound inactivity and queue
+        // age, while allowing a long text that keeps reaching the same target.
+        self.deadline = Instant::now() + MAX_AGE;
+        Ok(())
+    }
+
     pub(super) fn wait_for_target(&self) -> Result<(), TextInputFailure> {
         let deadline = Instant::now() + Duration::from_millis(500);
         loop {

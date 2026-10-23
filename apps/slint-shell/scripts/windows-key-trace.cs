@@ -16,6 +16,29 @@ public static class LhcKeyTrace
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool LockWorkStation();
 
+    [DllImport("wtsapi32.dll", SetLastError = true)]
+    private static extern bool WTSQuerySessionInformationW(IntPtr server, int session, int infoClass, out IntPtr buffer, out int bytes);
+    [DllImport("wtsapi32.dll")]
+    private static extern void WTSFreeMemory(IntPtr buffer);
+
+    public static bool IsSessionLocked()
+    {
+        IntPtr buffer;
+        int bytes;
+        int session = System.Diagnostics.Process.GetCurrentProcess().SessionId;
+        if (!WTSQuerySessionInformationW(IntPtr.Zero, session, 25, out buffer, out bytes))
+            throw new Win32Exception(Marshal.GetLastWin32Error());
+        try {
+            // WTSINFOEXW Level 1: native union aligned at 8, SessionFlags at 16.
+            if (bytes < 20 || Marshal.ReadInt32(buffer) != 1)
+                throw new InvalidOperationException("Unexpected WTS session information");
+            int flags = Marshal.ReadInt32(buffer, 16);
+            if (flags != 0 && flags != 1)
+                throw new InvalidOperationException("Unknown WTS lock state");
+            return flags == 0;
+        } finally { WTSFreeMemory(buffer); }
+    }
+
     [DllImport("ntdll.dll")]
     private static extern int NtSuspendProcess(IntPtr process);
 

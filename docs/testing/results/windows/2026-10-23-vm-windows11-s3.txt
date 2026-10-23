@@ -1,0 +1,52 @@
+Date: 2026-10-23 00:06:10 -0300
+Commit: e8a73bc (with uncommitted changes)
+VM: windows11-s3 (/mnt/disk2/vm/lhc-windows-s3/runs/20261022-101307/run.qcow2)
+Suite: mapper
+Mapper build: debug
+Popup shell build: none
+Native tests/clippy/package lifecycle: not included in this suite
+Mapper from: beginning
+Mapper only: mapper-suspend-resume
+Extended: True; stress seconds: 180
+Memory: 6144 MiB
+Logs: /mnt/disk2/vm/lhc-windows-s3/runs/20261022-235622/logs
+
+Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: mapper
+- core-driver-build: passed
+- hardware-keyboard and mapper scenarios: passed (see named host steps)
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 896 files; source archive /mnt/disk2/vm/lhc-windows-s3/runs/20261022-235622/src.tar.gz; SHA256 866daf6c1c96ee162c21de939fbf6f41c0d677ed9b1148c1752a8d20faf2e16f; Source sync: 6 updated, 0 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- mapper-passthrough: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-remap-swallow-recursion: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-modifiers-extended: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-repeat: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-tap-hold-layer: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-chord-double-tap: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-live-config-held: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-macro-live-config-cancel: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-unicode-us-ru: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-focus-cancel: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-stop-held-restart: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-replug: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-lock-unavailable: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-crash-held: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-guard-failure: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-lock-unlock: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-suspend-resume: passed — 3 QMP-confirmed S3/wakeup cycles; unchanged boot time; exact remap after each resume
+- mapper-stress: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-unicode-corpus: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-notepad-unicode: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-elevated-uipi: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-process-tree-crash: skipped — diagnostic run selects mapper-suspend-resume
+- mapper-physical-hardware: skipped — VM input does not accept physical Windows hardware
+- windows-mapper: passed
+
+Passed: 6, failed: 0

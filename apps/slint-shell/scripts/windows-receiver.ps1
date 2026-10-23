@@ -194,10 +194,16 @@ $timer.Add_Tick({
             'freeze-crash-tree' {
                 $directory = Split-Path $Output
                 $owner = [int](Get-Content (Join-Path $directory 'mapper\crash\ready') -Raw)
-                $guards = @(Get-CimInstance Win32_Process | Where-Object { $_.ParentProcessId -eq $owner -and $_.Name -eq 'windows-mapper-stand.exe' })
-                if ($guards.Count -ne 1) { throw 'Expected one child guard' }
-                if ([LhcKeyTrace]::SuspendProcess($owner) -ne 0) { throw 'Cannot suspend crash owner' }
-                if ([LhcKeyTrace]::SuspendProcess([int]$guards[0].ProcessId) -ne 0) { throw 'Cannot suspend child guard' }
+                $tree = @($owner)
+                $processes = @(Get-CimInstance Win32_Process)
+                do {
+                    $children = @($processes | Where-Object { $_.ParentProcessId -in $tree -and $_.ProcessId -notin $tree } | ForEach-Object { [int]$_.ProcessId })
+                    $tree += $children
+                } while ($children.Count)
+                if (-not $command.guard_pid -or [int]$command.guard_pid -in $tree) { throw 'Input guard must survive outside the live owner tree' }
+                foreach ($pidToFreeze in $tree) {
+                    if ([LhcKeyTrace]::SuspendProcess($pidToFreeze) -ne 0) { throw "Cannot suspend owner tree PID $pidToFreeze" }
+                }
             }
             'notepad' {
                 $before = @(Get-Process notepad -ErrorAction SilentlyContinue | ForEach-Object Id)
@@ -219,6 +225,7 @@ $timer.Add_Tick({
                 Start-Process powershell -Verb RunAs -ArgumentList @('-NoProfile', '-STA', '-ExecutionPolicy', 'Bypass', '-File', $script:receiverScript, '-Output', $elevatedOutput)
             }
             'close' { $script:closePending = $true }
+            'session-state' { }
             'lock' {
                 if (-not [LhcKeyTrace]::LockWorkStation()) { throw 'LockWorkStation failed' }
             }
@@ -242,6 +249,7 @@ $timer.Add_Tick({
         }
         Write-ReceiverState 'command'
         $response = @{ id = $command.id; ok = $true }
+        if ($command.op -eq 'session-state') { $response.locked = [LhcKeyTrace]::IsSessionLocked() }
     } catch { $response = @{ id = $command.id; ok = $false; error = "$_" } }
     $json = $response | ConvertTo-Json -Compress
     [IO.File]::WriteAllText((Join-Path $Output 'response.json'), $json, [Text.UTF8Encoding]::new($false))

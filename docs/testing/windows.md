@@ -37,13 +37,17 @@ python3 apps/slint-shell/scripts/vm/run-windows.py --vm /path/to/windows11 --sui
 | Набор | Что выполняется | Что он не заменяет |
 | --- | --- | --- |
 | `smoke` (по умолчанию) | Debug UI/CLI/IPC, пять popup-сценариев, crash реальной оболочки и mapper-сценарии | Release и полный native/lifecycle набор |
-| `full` | Smoke-подготовка, release shell/mapper, все функциональные сценарии, native tests/clippy, release storage и lifecycle | Ручную приёмку и физическую Windows-машину |
+| `full` | Smoke-подготовка, release shell/mapper, базовые функциональные сценарии (расширенные с `--extended`), native tests/clippy, release storage и lifecycle | Ручную приёмку и физическую Windows-машину |
+| `release` | Актуальная Cargo release-сборка, hardware input, popup, crash оболочки и mapper-сценарии; с `--extended` также S3/Notepad/UIPI/нагрузка/дерево | Native tests/clippy, debug UI smoke и lifecycle пакета; нужны отдельные отчёты |
 | `mapper` | Только core driver и mapper-сценарии с аппаратными клавишами QEMU | UI/popup приложения и release-проверку |
 
 `--mapper-from mapper-crash-held` допустим только с `--suite mapper` и пропускает
 предыдущие сценарии. Это диагностический запуск. `--show` показывает экран,
 `--keep` сохраняет overlay. Две VM с одним портом или диском кэша одновременно
-не запускать. Холодная Slint-сборка требует времени и памяти; 12 GiB — память VM,
+не запускать. До записи исходников runner сверяет UTC с хостом и исправляет рассинхронизацию
+одноразового гостя больше 30 секунд. Будущие timestamps в старом Cargo-кэше
+требуют штатной очистки затронутых пакетов и пересборки, а не изменения timestamps.
+Холодная Slint-сборка требует времени и памяти; 12 GiB — память VM,
 на хосте дополнительно нужен запас для его ОС и приложений.
 
 ### Нативный запуск внутри подготовленной Windows
@@ -76,9 +80,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File apps/slint-shell/scripts/che
 `check-windows-automated.ps1` теперь собирает portable ZIP через
 `package-windows.ps1`, проверяет его SHA256 и состав и запускает lifecycle из
 распакованной копии через `check-windows-package.ps1 -Desktop`. Дочернее приложение
-работает из каталога распакованного пакета, а не исходников. Финальный ZIP отдельно
-прошёл этот lifecycle в свежем overlay без подключённого диска с исходниками
-и Cargo-кэшем (см. журнал команд). В `full` VM архив
+работает из каталога распакованного пакета. Новый ZIP с исправлениями Unicode/guard
+прошёл [500 циклов и ≥180 секунд в чистой Windows](results/windows/2026-10-22-vm-windows11-clean-package.txt)
+без toolchain и Cargo-кэша; SHA256 приведён в отчёте. В `full` VM архив
 копируется в `logs/guest/packages` вместе с результатом; его SHA256 выводится в
 `full.log`. Исторические прогоны до этого изменения не подтверждают этот новый шаг.
 Проверка CLI ZIP без GUI выполняется release workflow на Windows runner.
@@ -90,11 +94,19 @@ Lock/unlock, suspend/resume, elevated/UIPI, whole-tree crash и нагрузка
 его PASS. Чистая ОС проверяется `run-windows-package.py` через ISO без toolchain.
 Физические клавиатуры, Bluetooth/media/mouse keys и особенности драйверов
 остаются отдельной ручной проверкой.
-Гибель владельца и отдельная гибель guard проверены; одновременное уничтожение
-всего дерева теперь имеет отдельный автоматический сценарий с воспроизводимым
-FAIL (Ctrl не отпускается). Точный Unicode в Notepad также пока FAIL.
-S3 заблокирован графическим драйвером текущего Windows-стенда.
-Подробности — в [отчёте автоматизации](results/windows/2026-10-22-automation-checks.txt). WinForms не заменяет браузеры, IDE и
+Гибель владельца и отдельная гибель guard проверены; уничтожение живого
+дерева владельца прошло release-прогон после выноса guard в независимый процесс.
+Notepad прошёл точный Unicode и длинный ввод >15 s. Отдельный S3-стенд с подписанным
+VirtIO GPU DOD при 4 GiB прошёл 3 пробуждения с release mapper. Целевой debug-повтор
+[при 6 GiB](results/windows/2026-10-23-vm-windows11-s3.txt) также прошёл 3 цикла
+2026-10-23; прежнее зависание не повторилось, но
+его причина не установлена. Это не полный release-прогон при 6 GiB.
+[Расширенный release-прогон](results/windows/2026-10-22-vm-windows11-s3-7.txt)
+после исправлений: 33 PASS / 0 FAIL, включая перечисленные сценарии при 4 GiB.
+Нативные тесты (401 PASS), clippy и новый ZIP проверены отдельными запусками;
+общий full-контроллер был прерван и не считается полным PASS.
+Подробности исправлений — в [актуальном отчёте](results/windows/2026-10-22-fixes.txt);
+общая матрица — в [автоматической приёмке](automation-acceptance.md). WinForms не заменяет браузеры, IDE и
 терминалы. Не приняты все масштабы DPI, экраны, вид/меню трея и версии Windows;
 Windows 10 и Windows ARM не входят в эту VM-матрицу.
 
@@ -632,3 +644,23 @@ The next development stages and future mapper acceptance cases are tracked in
 чек-лист. Для portable upgrade предусмотрен `check-windows-upgrade.ps1`;
 одинаковые версии отклоняются. Новые результаты имеют отдельные отчёты и не
 расширяют задним числом объём исторического прогона 2026-10-21.
+
+### S3 и целевые регрессии
+
+Для S3 нужен Windows-драйвер дисплея, который предоставляет эту возможность:
+BasicDisplay в исходном base её блокировал. Отдельный подготовленный стенд
+использует VirtIO GPU DOD 100.103.104.30200, 4 GiB RAM и отключённую гибернацию.
+Подпись драйвера, параметры и наблюдения — в
+[отчёте исправлений](results/windows/2026-10-22-fixes.txt).
+Если GPU-модуль QEMU взят из отдельного каталога, запускать с соответствующим
+`QEMU_MODULE_DIR`; версия модуля должна совпадать с QEMU.
+
+```sh
+python3 apps/slint-shell/scripts/vm/run-windows.py --vm /path/to/s3-vm --suite mapper --extended --mapper-only mapper-suspend-resume --memory 4096
+python3 apps/slint-shell/scripts/vm/run-windows.py --vm /path/to/s3-vm --suite mapper --extended --mapper-only mapper-notepad-unicode --memory 4096
+```
+
+`--mapper-only` выполняет один сценарий и явно пропускает остальные; применяется
+только к `--suite mapper`, отдельно от `--mapper-from`. Такой PASS не заменяет full.
+Lock state читается через WTS из интерактивной сессии. После wake стенд повторяет
+разблокировку с повторной проверкой состояния перед вводом credentials.

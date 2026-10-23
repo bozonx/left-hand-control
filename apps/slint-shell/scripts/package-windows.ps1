@@ -21,7 +21,8 @@ try {
     $version = ($metadata.packages | Where-Object name -eq 'slint-shell').version
     $hostInfo = & rustc -vV
     if ($LASTEXITCODE -ne 0 -or $hostInfo -notcontains 'host: x86_64-pc-windows-msvc') { throw 'Windows x64 MSVC host required' }
-    Invoke-Cargo -Arguments @('build', '--release', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--bin', 'left-hand-control')
+    # Match the e2e build's dev-dependency feature union to reuse its tested binary.
+    Invoke-Cargo -Arguments @('build', '--release', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--bin', 'left-hand-control', '--example', 'windows-mapper-stand')
     $binary = Join-Path $metadata.target_directory 'release\left-hand-control.exe'
     $out = Join-Path $metadata.target_directory 'release-artifacts-windows'
     New-Item -ItemType Directory -Force $out | Out-Null

@@ -14,7 +14,7 @@ mod hook;
 mod input;
 pub mod system;
 
-pub use guard::dispatch as dispatch_input_guard;
+pub use guard::{dispatch as dispatch_input_guard, pid as input_guard_pid};
 pub use input::type_unicode;
 
 use super::config::AppConfig;
@@ -499,9 +499,9 @@ fn text_tx() -> &'static mpsc::SyncSender<(String, TextRequest)> {
         if let Err(error) = thread::Builder::new()
             .name("lhc-text".into())
             .spawn(move || {
-                for (text, request) in rx {
+                for (text, mut request) in rx {
                     let result = request.wait_for_target().and_then(|()| {
-                        input::type_unicode(&text, || request.check().is_ok())
+                        input::type_unicode(&text, || request.check_progress().is_ok())
                             .map_err(TextInputFailure::BackendUnavailable)
                     });
                     request.complete(result.is_err());

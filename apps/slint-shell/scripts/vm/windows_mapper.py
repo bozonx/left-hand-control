@@ -372,11 +372,10 @@ class WindowsMapper:
         self.press("f")
         time.sleep(0.4)
         wait_for("virtual Ctrl held", 10, lambda: (17, True) in self.transitions(since))
-        self.run_guest(f"$owner = [int](Get-Content {WORK}\\mapper\\ready -Raw); "
-                "$guards = @(Get-CimInstance Win32_Process | Where-Object { "
-                "$_.ParentProcessId -eq $owner -and $_.Name -eq 'windows-mapper-stand.exe' }); "
-                "if ($guards.Count -ne 1) { throw 'Expected exactly one owned input guard' }; "
-                "Stop-Process -Id $guards[0].ProcessId -Force", timeout=30)
+        guard = self.mapper("status").get("guard_pid")
+        if not guard:
+            raise StepFailed("No input guard PID in diagnostic status")
+        self.run_guest(f"Stop-Process -Id {int(guard)} -Force", timeout=30)
         wait_for("mapper stops after guard death", 10,
                  lambda: not self.command("mapper", "status")["status"]["running"])
         wait_for("fallback releases Ctrl before physical release", 10,
@@ -411,26 +410,29 @@ class WindowsMapper:
 
     def unlock(self):
         def locked():
-            return "True" in self.ps("[bool](Get-Process LogonUI -ErrorAction SilentlyContinue)", timeout=15)
+            return self.receiver("session-state")["locked"]
         if not locked():
             return
         password = self.ps(r"(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon').DefaultPassword", timeout=30).rstrip("\r\n")
-        self.vm.qmp.tap("spc")
-        time.sleep(1)
-        if not locked():
-            return
-        if password:
+        for _ in range(8):
+            if not locked():
+                return
+            self.vm.qmp.tap("spc")
+            time.sleep(2)
+            if not locked():
+                return
             self.vm.qmp.tap("ctrl-a", "backspace")
-            self.vm.qmp.type_ascii(password)
-        self.vm.qmp.tap("ret")
-        wait_for("unlocked Windows desktop", 45, lambda: not locked())
+            if password:
+                self.vm.qmp.type_ascii(password)
+            self.vm.qmp.tap("ret")
+            time.sleep(2)
+        wait_for("unlocked Windows desktop", 15, lambda: not locked())
 
     def lock_unlock(self):
         self.config({"rules": [{"key": "KeyA", "tapAction": "KeyB"}]})
         self.reset()
         self.receiver("lock")
-        wait_for("Windows lock screen", 30, lambda: "True" in self.ps(
-            "[bool](Get-Process LogonUI -ErrorAction SilentlyContinue)", timeout=15))
+        wait_for("Windows lock screen", 30, lambda: self.receiver("session-state")["locked"])
         self.vm.qmp.tap("a")
         self.unlock()
         if self.state()["text"]:
@@ -448,22 +450,24 @@ class WindowsMapper:
         available = capabilities.split("The following sleep states are not available", 1)[0]
         if "Standby (S3)" not in available:
             raise StepFailed("Prepared Windows VM does not expose S3; see power-capabilities.txt")
-        self.command("receiver", "suspend", wait_response=False)
-        wait_for("Windows S3", 60, lambda: self.vm.qmp.status() == "suspended")
-        time.sleep(3)
-        self.vm.qmp.execute("system_wakeup")
-        self.vm.wait_ssh(timeout=120)
-        after = self.ps("(Get-CimInstance Win32_OperatingSystem).LastBootUpTime.ToFileTimeUtc()", timeout=30).strip()
-        if before != after:
-            raise StepFailed("Windows rebooted instead of resuming")
-        if "True" in self.ps("[bool](Get-Process LogonUI -ErrorAction SilentlyContinue)", timeout=30):
-            self.unlock()
-        if self.state()["text"]:
-            raise StepFailed("Lock-screen input leaked into the background receiver")
-        self.reset()
-        self.vm.qmp.tap("a")
-        self.text("b")
-        return "QMP confirmed S3 and wakeup; unchanged boot time; remap works after resume"
+        for _ in range(3):
+            self.reset()
+            self.command("receiver", "suspend", wait_response=False)
+            wait_for("Windows S3", 60, lambda: self.vm.qmp.status() == "suspended")
+            time.sleep(3)
+            self.vm.qmp.execute("system_wakeup")
+            self.vm.wait_ssh(timeout=120)
+            after = self.ps("(Get-CimInstance Win32_OperatingSystem).LastBootUpTime.ToFileTimeUtc()", timeout=30).strip()
+            if before != after:
+                raise StepFailed("Windows rebooted instead of resuming")
+            if self.receiver("session-state")["locked"]:
+                self.unlock()
+            if self.state()["text"]:
+                raise StepFailed("Lock-screen input leaked into the background receiver")
+            self.reset()
+            self.vm.qmp.tap("a")
+            self.text("b")
+        return "3 QMP-confirmed S3/wakeup cycles; unchanged boot time; exact remap after each resume"
 
     def stress(self, seconds):
         deadline = time.monotonic() + seconds
@@ -501,10 +505,13 @@ class WindowsMapper:
         try:
             self.press("f")
             wait_for("crash probe holds Ctrl", 10, lambda: (17, True) in self.transitions(since))
-            self.receiver("freeze-crash-tree")
+            self.receiver("freeze-crash-tree", guard_pid=result["guard_pid"])
+            before_kill = len(self.events())
+            if (17, False) in self.transitions(since) or 162 not in self.state()["modifiers_down"]:
+                raise StepFailed("Ctrl was released before owner-tree termination")
             self.run_guest(f"$owner = [int](Get-Content {WORK}\\mapper\\crash\\ready -Raw); "
                            "& taskkill /PID $owner /T /F; if ($LASTEXITCODE) { throw 'taskkill failed' }", timeout=30)
-            wait_for("whole tree releases Ctrl", 10, lambda: (17, False) in self.transitions(since))
+            wait_for("whole tree releases Ctrl", 10, lambda: (17, False) in self.transitions(before_kill))
             if self.state()["modifiers_down"]:
                 raise StepFailed("Whole process-tree termination left a modifier held")
         finally:
@@ -512,7 +519,7 @@ class WindowsMapper:
             # Recovery follows the assertion; never count corrective key input as a pass.
             self.vm.qmp.tap("ctrl")
             self.mapper("start", config={})
-        return "owner and child guard suspended then terminated with taskkill /T; Ctrl released before corrective input"
+        return "owner tree suspended then terminated with taskkill /T; independent guard releases Ctrl before corrective input"
 
     def unicode_corpus(self):
         try:
@@ -544,12 +551,14 @@ class WindowsMapper:
             wait_for("owned interactive Notepad", 45, lambda: state().get("pid"))
             self.vm.qmp.click(0.5, 0.5)
             wait_for("Notepad foreground", 10, lambda: state().get("active"))
-            self.vm.qmp.tap("ctrl-a")
-            # Allow the real editor to finish selection before the mapped input.
-            time.sleep(1)
-            self.vm.qmp.tap("y")
-            wait_for("exact Unicode in real Notepad", 30,
-                     lambda: state().get("text", "").rstrip("\r\n") == corpus)
+            for corpus in (corpus, "é" * 520 + " 👩‍💻 é"):
+                self.config({"rules": [{"key": "KeyY", "tapAction": "text:" + corpus}]})
+                self.vm.qmp.tap("ctrl-a")
+                # Allow the real editor to finish selection before the mapped input.
+                time.sleep(1)
+                self.vm.qmp.tap("y")
+                wait_for("exact Unicode in real Notepad", 60,
+                         lambda: state().get("text", "").rstrip("\r\n") == corpus)
         except StepFailed:
             (self.vm.logs / "notepad-failure.json").write_text(json.dumps(
                 {"expected": corpus, "actual": state(), "mapper": self.mapper("status")},
@@ -559,7 +568,7 @@ class WindowsMapper:
         finally:
             self.receiver("notepad-close")
             self.reset()
-        return "QMP mapped input into real Notepad; interactive UI Automation reads exact Cyrillic/emoji/ZWJ/combining text"
+        return "QMP mapped input into real Notepad; exact Cyrillic/emoji/ZWJ/combining text and >15s paced text without expiry"
 
     def elevated_uipi(self):
         marker = "LHC-UIPI-MUST-NOT-ARRIVE"
@@ -602,7 +611,7 @@ class WindowsMapper:
                 pass
         return "real UAC/elevated target; synthetic marker blocked; ordinary mapper input recovers"
 
-    def run(self, start_at=None, extended=False, stress_seconds=180):
+    def run(self, start_at=None, extended=False, stress_seconds=180, only=None):
         wait_for("mapper stand", 30, lambda: "True" in self.ps(f"Test-Path {WORK}\\mapper\\ready", timeout=30))
         completed = False
         try:
@@ -634,9 +643,14 @@ class WindowsMapper:
                 ("mapper-elevated-uipi", self.elevated_uipi),
                 ("mapper-process-tree-crash", self.process_tree_crash),
             )
+            if only and only not in dict(scenarios + (extended_scenarios if extended else ())):
+                raise StepFailed(f"Unknown mapper scenario: {only}")
             if start_at and start_at not in dict(scenarios + (extended_scenarios if extended else ())):
                 raise StepFailed(f"Unknown mapper scenario: {start_at}")
             for name, scenario in scenarios:
+                if only and name != only:
+                    self.report.skip(name, f"diagnostic run selects {only}")
+                    continue
                 if start_at and name != start_at:
                     self.report.skip(name, f"diagnostic run starts at {start_at}")
                     continue
@@ -645,6 +659,9 @@ class WindowsMapper:
                 self.vm.qmp.screendump(self.vm.logs / f"{name}.png")
             if extended:
                 for name, scenario in extended_scenarios:
+                    if only and name != only:
+                        self.report.skip(name, f"diagnostic run selects {only}")
+                        continue
                     if start_at and name != start_at:
                         self.report.skip(name, f"diagnostic run starts at {start_at}")
                         continue
