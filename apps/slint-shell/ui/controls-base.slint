@@ -86,8 +86,8 @@ export component SelectField inherits ComboBox {
 }
 
 /// Single-line text field for form values. Unlike the standard `LineEdit`
-/// it has no clear button, so a stray click cannot erase a value; search
-/// fields use `SearchField`. Children are placed after the text.
+/// its clear button is opt-in; search fields use `SearchField`.
+/// Children are placed after the text.
 export component TextField inherits Rectangle {
     in-out property <string> text <=> input.text;
     in property <string> placeholder-text;
@@ -97,6 +97,7 @@ export component TextField inherits Rectangle {
     in property <length> font-size <=> input.font-size;
     in property <int> font-weight <=> input.font-weight;
     in property <bool> invalid: false;
+    in property <bool> clearable;
     /// Shown before the text when set.
     in property <image> icon;
     out property <bool> has-focus: input.has-focus;
@@ -124,7 +125,7 @@ export component TextField inherits Rectangle {
     accessible-action-set-value(value) => { root.text = value; root.edited(value); }
     HorizontalLayout {
         padding-left: root.icon.width > 0 ? 8px : 10px;
-        padding-right: 10px;
+        padding-right: root.clearable ? 34px : 10px;
         spacing: 6px;
         if root.icon.width > 0: Image {
             width: 16px;
@@ -185,6 +186,21 @@ export component TextField inherits Rectangle {
             }
         }
         @children
+    }
+    if root.clearable && root.text != "": clear-button := TouchArea {
+        width: 28px; height: 28px;
+        mouse-cursor: pointer;
+        accessible-role: button;
+        accessible-label: @tr("Clear");
+        accessible-action-default => { root.clear(); }
+        x: parent.width - self.width - 3px;
+        y: (parent.height - self.height) / 2;
+        clicked => { root.clear(); }
+        Rectangle {
+            width: 100%; height: 100%; border-radius: 4px;
+            background: clear-button.has-hover ? Theme.hover : transparent;
+            Image { x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; width: 14px; height: 14px; source: @image-url("icons/x.svg"); colorize: Theme.muted; }
+        }
     }
 }
 

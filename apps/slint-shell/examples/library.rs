@@ -23,6 +23,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!library.get_create_name().is_empty());
     library.invoke_create("A".into(), "".into(), LayoutSource::Empty, 0);
     assert_eq!(library.get_dialog(), LibraryDialog::None);
+    let summary = library.get_summaries().row_data(0).unwrap();
+    assert_eq!(summary.emoji_pages, 0);
+    assert_eq!(summary.action_pages, 0);
+    assert!(
+        document
+            .read()
+            .load_layout("user:A")
+            .unwrap()
+            .emoji_pages
+            .iter()
+            .all(|page| page.cells.is_empty())
+    );
     let error = |name: &str, except: &str| library.invoke_name_error(name.into(), except.into()).id;
     assert_eq!(error("a", ""), "layout-name-taken");
     assert_eq!(error("a", "A"), "");

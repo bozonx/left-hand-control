@@ -108,8 +108,24 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State) -> Resul
                 LayoutSummary {
                     rules: preset.rules.len() as i32,
                     layers: preset.layers.len() as i32,
-                    emoji_pages: preset.emoji_pages.len() as i32,
-                    action_pages: preset.quick_action_pages.len() as i32,
+                    emoji_pages: if preset
+                        .emoji_pages
+                        .iter()
+                        .any(|page| page.cells.values().any(|value| !value.is_empty()))
+                    {
+                        preset.emoji_pages.len() as i32
+                    } else {
+                        0
+                    },
+                    action_pages: if preset
+                        .quick_action_pages
+                        .iter()
+                        .any(|page| page.cells.values().any(|cell| !cell.action.is_empty()))
+                    {
+                        preset.quick_action_pages.len() as i32
+                    } else {
+                        0
+                    },
                     macros: preset.macros.len() as i32,
                     commands: preset.used_commands() as i32,
                 }

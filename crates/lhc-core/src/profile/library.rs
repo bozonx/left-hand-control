@@ -313,7 +313,15 @@ mod tests {
         document
             .create_library_layout("Empty", "", LibrarySource::Empty)
             .unwrap();
-        assert!(document.load_layout("user:Empty").unwrap().rules.is_empty());
+        let empty = document.load_layout("user:Empty").unwrap();
+        assert!(empty.rules.is_empty());
+        assert!(empty.emoji_pages.iter().all(|page| page.cells.is_empty()));
+        assert!(
+            empty
+                .quick_action_pages
+                .iter()
+                .all(|page| page.cells.is_empty())
+        );
     }
 
     #[test]

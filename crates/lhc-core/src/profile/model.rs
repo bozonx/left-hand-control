@@ -26,11 +26,6 @@ pub const LEFT_HAND_HOTKEYS: [&str; 15] = [
     "KeyC", "KeyV", "KeyB",
 ];
 
-/// First emoji of the standard catalog, used for the default emoji page.
-pub const STANDARD_EMOJIS: [&str; 15] = [
-    "😀", "😃", "😄", "😁", "😆", "😂", "🤣", "🙂", "🙃", "😉", "😊", "😍", "😘", "😎", "🤔",
-];
-
 /// Prefix of ids of layouts stored in the user library.
 pub const USER_LAYOUT_PREFIX: &str = "user:";
 
@@ -259,11 +254,7 @@ impl EmojiPage {
         Self {
             id: "emoji_default".into(),
             name: String::new(),
-            cells: LEFT_HAND_HOTKEYS
-                .iter()
-                .zip(STANDARD_EMOJIS)
-                .map(|(key, emoji)| ((*key).into(), emoji.into()))
-                .collect(),
+            cells: BTreeMap::new(),
         }
     }
 }

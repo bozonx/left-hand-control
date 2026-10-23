@@ -292,7 +292,7 @@ export component PickerOverlay inherits Rectangle {
                             Text { text: @tr("Pause in milliseconds (1–10000)"); color: Theme.muted; }
                             NumericInput { text: ActionPicker.pause-content; minimum: 1; maximum: 10000; label: @tr("Pause (ms)"); edited(value) => { ActionPicker.touched = true; ActionPicker.value = "pause:" + value; ActionPicker.refresh(); } }
                         }
-                        if ActionPicker.query != "" || ActionPicker.is-listed(ActionPicker.category): catalog-list := ScrollView { viewport-width: self.visible-width; viewport-y <=> ActionPicker.list-scroll;
+                        if (ActionPicker.query != "" || ActionPicker.is-listed(ActionPicker.category)) && ActionPicker.items.length > 0: catalog-list := ScrollView { viewport-width: self.visible-width; viewport-y <=> ActionPicker.list-scroll;
                             VerticalLayout { spacing: 0px;
                                 for row in ceil(ActionPicker.items.length * 1.0 / catalog.columns): HorizontalBox { padding: 0px; padding-bottom: 6px; spacing: 6px;
                                     for col in catalog.columns: PickerCell {
@@ -303,7 +303,10 @@ export component PickerOverlay inherits Rectangle {
                                 }
                             }
                         }
-                        if (ActionPicker.query != "" || ActionPicker.is-listed(ActionPicker.category)) && ActionPicker.items.length == 0: Text { text: @tr("No matching items"); color: Theme.muted; }
+                        if (ActionPicker.query != "" || ActionPicker.is-listed(ActionPicker.category)) && ActionPicker.items.length == 0: Rectangle {
+                            vertical-stretch: 1;
+                            Text { x: 12px; y: 12px; width: parent.width - 24px; text: @tr("No matching items"); color: Theme.muted; horizontal-alignment: center; }
+                        }
                     }
                 }
                 HorizontalBox { padding: 0px; vertical-stretch: 0; spacing: 8px;

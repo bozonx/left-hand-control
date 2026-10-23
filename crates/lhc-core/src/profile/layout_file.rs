@@ -835,8 +835,17 @@ mod tests {
     }
 
     #[test]
-    fn missing_emoji_pages_get_the_default_page() {
+    fn explicitly_empty_emoji_pages_stay_empty() {
+        let preset = parse(r#"{"emojiPages": []}"#).unwrap().unwrap();
+        assert!(preset.emoji_pages.iter().all(|page| page.cells.is_empty()));
+        let again = parse(&serialize(&preset)).unwrap().unwrap();
+        assert_eq!(again.emoji_pages, preset.emoji_pages);
+    }
+
+    #[test]
+    fn missing_emoji_pages_get_an_empty_page() {
         let preset = parse(r#"{"layers": []}"#).unwrap().unwrap();
         assert_eq!(preset.emoji_pages, vec![EmojiPage::default_page()]);
+        assert!(preset.emoji_pages[0].cells.is_empty());
     }
 }

@@ -484,16 +484,14 @@ impl From<&ConfigError> for Msg {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TrayItem {
     Settings,
-    Emoji,
     Quick,
     ToggleMapper,
     Quit,
 }
 
 impl TrayItem {
-    pub const ALL: [TrayItem; 5] = [
+    pub const ALL: [TrayItem; 4] = [
         TrayItem::Settings,
-        TrayItem::Emoji,
         TrayItem::Quick,
         TrayItem::ToggleMapper,
         TrayItem::Quit,
@@ -502,7 +500,6 @@ impl TrayItem {
     pub fn label(self, language: Language) -> String {
         let source = match self {
             Self::Settings => "Settings",
-            Self::Emoji => "Emoji",
             Self::Quick => "Quick actions",
             Self::ToggleMapper => "Mapper on / off",
             Self::Quit => "Quit",
@@ -514,7 +511,6 @@ impl TrayItem {
         use crate::command::{Command, Window};
         match self {
             Self::Settings => Command::Show(Window::Settings),
-            Self::Emoji => Command::Show(Window::EMOJI),
             Self::Quick => Command::Show(Window::QUICK),
             Self::ToggleMapper => Command::ToggleMapper,
             Self::Quit => Command::Quit,
