@@ -59,7 +59,7 @@ apps/slint-shell/scripts/vm/run-linux.py --vm <dir> --package <file>  # L4: pack
 apps/slint-shell/scripts/vm/run-windows.py --vm <dir>                  # L4: Windows shell acceptance in a disposable VM
 ```
 
-Releases are built by `.github/workflows/release.yml` from a `v<version>` tag; see `docs/development/guide.md` (section 5).
+Releases: `cargo release <minor|patch>` previews and `--execute` bumps the version, dates the `CHANGELOG.md` section and metainfo entry, commits, tags `v<version>` and pushes; the tag makes `.github/workflows/release.yml` build a draft release. See `docs/development/guide.md` (section 5).
 
 ## Repository map
 
@@ -159,8 +159,9 @@ for the capability matrix and backend extension instructions.
 2. `cargo check --locked -p slint-shell --all-targets` passes (non-Spell build).
 3. For UI changes: `editor -- --smoke` and `interactions` pass in a graphical session, and the relevant page example if one exists.
 4. For new user-visible strings: Russian translation added and the translation test passes.
-5. Core public API changes must compile with the Slint shell; workspace checks cover both crates.
-6. For platform-dependent behaviour: state which environment you verified (e.g. KDE Wayland) and what remains untested.
+5. For user-visible behaviour changes: an entry under `## [Unreleased]` in `CHANGELOG.md` (never a version or date; cargo-release adds them).
+6. Core public API changes must compile with the Slint shell; workspace checks cover both crates.
+7. For platform-dependent behaviour: state which environment you verified (e.g. KDE Wayland) and what remains untested.
 
 Report the exact commands you ran and their results. If something could not be run (no graphical session, no `/dev/uinput` access), say so.
 
@@ -174,6 +175,7 @@ Report the exact commands you ran and their results. If something could not be r
 **Ask first**
 - Adding a dependency or bumping Slint / `spell-framework` / `i-slint-core`.
 - Changing the on-disk config or layout format, the IPC wire format or the CLI commands.
+- Running `cargo release --execute` or pushing `v*` tags (starts a public release).
 - Modifying the historical archive under `_old/`.
 
 **Never**

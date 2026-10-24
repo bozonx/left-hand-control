@@ -662,6 +662,16 @@ apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-
 
 ## 5. Выпуск
 
+Выпуск наполовину автоматический:
+
+- **по ходу работы** — каждое заметное пользователю изменение записывается в
+  `## [Unreleased]` в `CHANGELOG.md` тем же коммитом, что и само изменение;
+- **руками** — локальные e2e (L3, L4) и одна команда `cargo release <minor|patch> --execute`:
+  она ставит версию, дату в CHANGELOG и metainfo, коммит и тег `vX.Y.Z` и пушит их;
+- **автоматически** — тег запускает `release.yml`: CI, сборка, проверки пакетов и
+  черновик релиза на GitHub с заметками из CHANGELOG;
+- **руками** — проверить черновик и нажать Publish.
+
 ### Каналы
 
 Flathub и Snap не подходят: из песочницы нельзя поставить udev-правило и дать
@@ -750,8 +760,9 @@ docker run --rm -v "$PWD":/src -w /src fedora:latest \
 
 ### Workflow релиза
 
-`.github/workflows/release.yml` запускается по тегу `v<версия>`; ручной запуск
-собирает и проверяет артефакты без создания релиза.
+`.github/workflows/release.yml` запускается по тегу `v<версия>` (его ставит
+cargo-release, см. чек-лист); ручной запуск (`gh workflow run release.yml` или
+«Run workflow» в Actions) собирает и проверяет артефакты без создания релиза.
 
 1. **verify** — вызывает `ci.yml`: fmt, clippy, тесты, сборка без Spell, L1 (если на
    раннере есть `uinput`).
@@ -766,12 +777,32 @@ docker run --rm -v "$PWD":/src -w /src fedora:latest \
 Права: по умолчанию `contents: read`; `contents: write`, `id-token: write` и
 `attestations: write` только у job публикации.
 
-### Чек-лист выпуска
+### CHANGELOG
 
-Изменения пишутся в `## [Unreleased]` в `CHANGELOG.md` по ходу работы, вместе с
-коммитами. Версию, дату и тег ставит [cargo-release](https://github.com/crate-ci/cargo-release)
-(`cargo install cargo-release --locked`), настройка — `release.toml` и
-`[package.metadata.release]` в `apps/slint-shell/Cargo.toml`.
+Формат — [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Записи
+добавляются по ходу работы в `## [Unreleased]` в подразделы `### Added`,
+`### Changed`, `### Fixed`, `### Removed`, на английском, с точки зрения
+пользователя. Внутренние рефакторинги, тесты и CI не записываются. Версию и дату
+вручную не ставят: на релизе cargo-release переименовывает `Unreleased` в
+`## [X.Y.Z] - YYYY-MM-DD`, и эта секция становится текстом релиза на GitHub.
+
+### cargo-release
+
+[cargo-release](https://github.com/crate-ci/cargo-release) ставится один раз:
+`cargo install cargo-release --locked`. Настройка:
+
+- `release.toml` — общая версия workspace, один коммит `Release X.Y.Z`, без
+  публикации на crates.io, только с ветки `main`;
+- `[package.metadata.release]` в `apps/slint-shell/Cargo.toml` — тег `vX.Y.Z`,
+  замены в `CHANGELOG.md` и metainfo и проверка `release-metadata.py` перед коммитом;
+- `vendor/spell-framework` исключён (`release = false`).
+
+Без `--execute` команда ничего не меняет и только показывает diff. Без уровня
+(`cargo release --execute`) выпускается текущая версия из `Cargo.toml` без повышения. Тег
+ставится на чистом дереве; дата берётся по UTC. Версию в `Cargo.toml`, секцию
+CHANGELOG и `<release>` в metainfo руками не правят.
+
+### Чек-лист выпуска
 
 1. Прогнать L3 (`e2e-local.sh`) на текущем `main`.
 2. Собрать артефакты (`release-linux.sh` в `ubuntu:22.04`) и прогнать L4: Linux VM
@@ -787,6 +818,12 @@ docker run --rm -v "$PWD":/src -w /src fedora:latest \
 5. Скачать артефакты черновика, проверить `sha256sum -c SHA256SUMS`, при желании
    прогнать `run-linux.py` на скачанном пакете.
 6. Опубликовать релиз; затем COPR и другие подключённые каналы.
+
+Если `release.yml` упал после пуша тега, исправление идёт обычным коммитом, а
+релиз — следующей версией (`cargo release patch --execute`). Переставлять уже
+опубликованный тег нельзя; тег без опубликованного релиза можно удалить
+(`git push --delete origin vX.Y.Z && git tag -d vX.Y.Z`, черновик удалить в
+GitHub) и поставить заново на исправленный коммит: `git tag vX.Y.Z && git push origin vX.Y.Z`.
 
 ### Открытые задачи
 
