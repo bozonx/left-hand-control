@@ -61,6 +61,7 @@ pub struct Handle {
     wake_tx: OwnedFd,
     join: Option<thread::JoinHandle<()>>,
     error: Arc<Mutex<Option<String>>>,
+    waiting: Arc<AtomicBool>,
 }
 
 impl Handle {
@@ -89,6 +90,10 @@ impl Handle {
             .as_ref()
             .map(|j| !j.is_finished())
             .unwrap_or(false)
+    }
+
+    pub fn waiting_for_device(&self) -> bool {
+        self.waiting.load(Ordering::SeqCst)
     }
 
     pub fn last_error(&self) -> Option<String> {
@@ -171,6 +176,8 @@ pub fn spawn(
     }
 
     let error: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
+    let waiting = Arc::new(AtomicBool::new(false));
+    let waiting_thread = waiting.clone();
     let stop_thread = stop.clone();
     let err_thread = error.clone();
     let (ready_tx, ready_rx) = mpsc::channel::<Result<(), String>>();
@@ -190,6 +197,7 @@ pub fn spawn(
                     ready_tx,
                     control_rx,
                     wake_rx,
+                    waiting_thread,
                 )
             }));
             if stop_thread.load(Ordering::SeqCst) {
@@ -257,6 +265,7 @@ pub fn spawn(
         wake_tx,
         join: Some(join),
         error,
+        waiting,
     })
 }
 
@@ -302,6 +311,7 @@ fn lock_mapper_file(path: &std::path::Path) -> Result<std::fs::File, String> {
     Ok(file)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run(
     device_path: String,
     mouse_path: Option<String>,
@@ -310,6 +320,7 @@ fn run(
     ready_tx: mpsc::Sender<Result<(), String>>,
     control_rx: mpsc::Receiver<MapperControl>,
     wake_rx: OwnedFd,
+    waiting: Arc<AtomicBool>,
 ) -> Result<(), String> {
     if stop.load(Ordering::SeqCst) {
         return Err("mapper start cancelled".into());
@@ -320,9 +331,15 @@ fn run(
         &stop,
         &device_path,
         || Device::open(&device_path).map_err(|error| error.to_string()),
-        DeviceIdentity::of,
         |device| {
-            run_device(
+            let mut identity = DeviceIdentity::of(device);
+            if stable_device_path(&device_path) {
+                identity.physical = None;
+            }
+            identity
+        },
+        |device| {
+            let result = run_device(
                 device,
                 &device_path,
                 mouse_path.as_deref(),
@@ -330,10 +347,15 @@ fn run(
                 stop.clone(),
                 &ready_tx,
                 &control_rx,
+                &waiting,
                 wake_rx
                     .try_clone()
                     .map_err(|e| format!("clone wake pipe: {e}"))?,
-            )
+            );
+            if matches!(&result, Err(error) if error == DEVICE_DISCONNECTED) {
+                set_waiting(&waiting, true);
+            }
+            result
         },
         || thread::sleep(RECONNECT_RETRY),
     )
@@ -395,7 +417,24 @@ struct DeviceIdentity {
     unique: Option<String>,
 }
 
+fn set_waiting(waiting: &AtomicBool, value: bool) {
+    if waiting.swap(value, Ordering::SeqCst) != value {
+        crate::events::bus().emit(crate::events::CoreEvent::MapperDeviceChanged);
+    }
+}
+
+fn stable_device_path(path: &str) -> bool {
+    std::path::Path::new(path).parent() == Some(std::path::Path::new("/dev/input/by-id"))
+}
+
 impl DeviceIdentity {
+    fn matches(&self, current: &Self, path: &str) -> bool {
+        self.id == current.id
+            && self.name == current.name
+            && self.unique == current.unique
+            && (self.physical == current.physical || stable_device_path(path))
+    }
+
     fn of(device: &Device) -> Self {
         Self {
             id: device.input_id(),
@@ -415,15 +454,17 @@ fn run_device(
     stop: Arc<AtomicBool>,
     ready_tx: &mpsc::Sender<Result<(), String>>,
     control_rx: &mpsc::Receiver<MapperControl>,
+    waiting: &AtomicBool,
     wake_rx: OwnedFd,
 ) -> Result<(), String> {
     validate_keyboard_capabilities(device.supported_events(), device.supported_keys())?;
     let keyboard = std::fs::metadata(device_path).map_err(|e| format!("stat keyboard: {e}"))?;
-    if let Some(mouse_path) = mouse_path {
-        let mouse = std::fs::metadata(mouse_path).map_err(|e| format!("stat mouse: {e}"))?;
-        if keyboard.rdev() == mouse.rdev() && keyboard.ino() == mouse.ino() {
-            return Err("Keyboard and mouse must use different input devices".into());
-        }
+    if let Some(mouse_path) = mouse_path
+        && let Ok(mouse) = std::fs::metadata(mouse_path)
+        && keyboard.rdev() == mouse.rdev()
+        && keyboard.ino() == mouse.ino()
+    {
+        return Err("Keyboard and mouse must use different input devices".into());
     }
     device
         .grab()
@@ -432,8 +473,9 @@ fn run_device(
     let _grabbed = GrabbedKeyboard::register(keyboard.rdev());
 
     let mut devices = vec![device];
-    if let Some(mp) = mouse_path {
-        let mouse = Device::open(mp).map_err(|e| format!("open mouse {mp}: {e}"))?;
+    if let Some(mp) = mouse_path
+        && let Ok(mouse) = Device::open(mp)
+    {
         // Mouse is opened without grab: only KEY events are read to interact
         // with modifier tap-hold decisions. REL/ABS (movement) stays
         // untouched so the cursor continues to work.
@@ -473,8 +515,9 @@ fn run_device(
         .build()
         .map_err(|e| format!("uinput build: {e}"))?;
 
-    let driver = MultiDeviceLoopDriver::new(devices, Some(wake_rx))?;
+    let driver = MultiDeviceLoopDriver::new(devices, mouse_path, Some(wake_rx))?;
     super::text_job::start();
+    set_waiting(waiting, false);
     let _ = ready_tx.send(Ok(()));
     run_loop(driver, virt, cfg, stop, control_rx)
 }
@@ -557,6 +600,21 @@ fn run_loop<D: LoopDriver>(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn stable_identity_allows_port_change_but_not_another_device() {
+        let identity = |physical: &str, unique: &str| super::DeviceIdentity {
+            id: evdev::InputId::new(evdev::BusType::BUS_USB, 1, 2, 1),
+            name: Some("keyboard".into()),
+            physical: Some(physical.into()),
+            unique: Some(unique.into()),
+        };
+        let original = identity("port-1", "serial-1");
+        let moved = identity("port-2", "serial-1");
+        assert!(original.matches(&moved, "/dev/input/by-id/keyboard"));
+        assert!(!original.matches(&moved, "/dev/input/event3"));
+        assert!(!original.matches(&identity("port-2", "serial-2"), "/dev/input/by-id/keyboard"));
+    }
+
     #[test]
     fn pointer_interfaces_are_rejected_before_grabbing() {
         let mut events = evdev::AttributeSet::new();

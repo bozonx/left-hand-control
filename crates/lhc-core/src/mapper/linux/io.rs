@@ -137,7 +137,10 @@ fn run_side_effect_worker(rx: mpsc::Receiver<SideEffectJob>) {
 }
 
 pub(super) struct MultiDeviceLoopDriver {
-    devices: Vec<Device>,
+    devices: Vec<Option<Device>>,
+    mouse_path: Option<String>,
+    mouse_identity: Option<super::DeviceIdentity>,
+    next_mouse_retry: Instant,
     hotkeys: PopupHotkeys,
     /// `LHC_HOTKEYS=off` disables the popup hotkeys; read once per start
     /// rather than on every key event.
@@ -150,39 +153,98 @@ pub(super) struct MultiDeviceLoopDriver {
     wake_rx: Option<std::os::fd::OwnedFd>,
 }
 
+fn device_rdev(device: &Device) -> Option<u64> {
+    let mut stat = std::mem::MaybeUninit::<libc::stat>::uninit();
+    // SAFETY: the device owns a valid fd and stat points to writable storage.
+    if unsafe { libc::fstat(device.as_raw_fd(), stat.as_mut_ptr()) } != 0 {
+        return None;
+    }
+    Some(unsafe { stat.assume_init() }.st_rdev)
+}
+
 impl MultiDeviceLoopDriver {
     pub(super) fn new(
         devices: Vec<Device>,
+        mouse_path: Option<&str>,
         wake_rx: Option<std::os::fd::OwnedFd>,
     ) -> Result<Self, String> {
-        for device in &devices {
-            let fd = device.as_raw_fd();
-            // All sources must use one clock; wall-clock adjustments must not
-            // change tap/hold duration or reorder keyboard and mouse events.
-            // SAFETY: the device owns this fd; the ioctl reads a valid clock id.
-            unsafe { set_event_clock(fd, &libc::CLOCK_MONOTONIC) }
-                .map_err(|e| format!("set input event clock: {e}"))?;
-            // SAFETY: `fd` is a valid raw file descriptor obtained from an
-            // `evdev::Device` that is still alive; `fcntl` only queries and
-            // modifies the open-file description flags, never the device itself.
-            unsafe {
-                let flags = libc::fcntl(fd, libc::F_GETFL);
-                if flags < 0 {
-                    return Err("fcntl F_GETFL failed".into());
-                }
-                if libc::fcntl(fd, libc::F_SETFL, flags | libc::O_NONBLOCK) < 0 {
-                    return Err("fcntl F_SETFL O_NONBLOCK failed".into());
-                }
-            }
+        let mut devices = devices;
+        Self::prepare_device(&devices[0])?;
+        if devices
+            .get(1)
+            .is_some_and(|mouse| Self::prepare_device(mouse).is_err())
+        {
+            devices.truncate(1);
         }
         Ok(Self {
-            devices,
+            mouse_identity: devices.get(1).map(super::DeviceIdentity::of),
+            devices: {
+                let mut slots: Vec<_> = devices.into_iter().map(Some).collect();
+                slots.resize_with(2, || None);
+                slots
+            },
+            mouse_path: mouse_path.map(str::to_owned),
+            next_mouse_retry: Instant::now() + Duration::from_secs(1),
             hotkeys: PopupHotkeys::default(),
             hotkeys_enabled: std::env::var("LHC_HOTKEYS").as_deref() != Ok("off"),
             wake_rx,
             keys: DeviceKeys::default(),
             last_event: Instant::now(),
         })
+    }
+
+    fn prepare_device(device: &Device) -> Result<(), String> {
+        let fd = device.as_raw_fd();
+        // All sources must use one clock; wall-clock adjustments must not
+        // change tap/hold duration or reorder keyboard and mouse events.
+        // SAFETY: the device owns this fd; the ioctl reads a valid clock id.
+        unsafe { set_event_clock(fd, &libc::CLOCK_MONOTONIC) }
+            .map_err(|e| format!("set input event clock: {e}"))?;
+        // SAFETY: `fd` is a valid raw file descriptor obtained from an
+        // `evdev::Device` that is still alive; `fcntl` only queries and
+        // modifies the open-file description flags, never the device itself.
+        unsafe {
+            let flags = libc::fcntl(fd, libc::F_GETFL);
+            if flags < 0 {
+                return Err("fcntl F_GETFL failed".into());
+            }
+            if libc::fcntl(fd, libc::F_SETFL, flags | libc::O_NONBLOCK) < 0 {
+                return Err("fcntl F_SETFL O_NONBLOCK failed".into());
+            }
+        }
+        Ok(())
+    }
+
+    fn reconnect_mouse(&mut self) {
+        if self.devices[1].is_some() || Instant::now() < self.next_mouse_retry {
+            return;
+        }
+        self.next_mouse_retry = Instant::now() + Duration::from_secs(1);
+        let Some(path) = self.mouse_path.as_deref() else {
+            return;
+        };
+        let Ok(mouse) = Device::open(path) else {
+            return;
+        };
+        let identity = super::DeviceIdentity::of(&mouse);
+        if self
+            .mouse_identity
+            .as_ref()
+            .is_some_and(|expected| !expected.matches(&identity, path))
+        {
+            return;
+        }
+        let Some(rdev) = device_rdev(&mouse) else {
+            return;
+        };
+        if super::is_grabbed_keyboard(rdev) {
+            return;
+        }
+        if Self::prepare_device(&mouse).is_err() {
+            return;
+        };
+        self.devices[1] = Some(mouse);
+        self.mouse_identity = Some(identity);
     }
 
     fn drain_wake_pipe(&self) {
@@ -220,6 +282,7 @@ impl LoopDriver for MultiDeviceLoopDriver {
 
     fn wait(&mut self, timeout: Duration) -> Result<bool, String> {
         use nix::poll::{PollFd, PollFlags, PollTimeout, poll};
+        self.reconnect_mouse();
 
         // Round *up* to whole milliseconds. `poll` takes millisecond
         // granularity; truncating a sub-millisecond remainder to 0 makes
@@ -230,11 +293,13 @@ impl LoopDriver for MultiDeviceLoopDriver {
         let mut pfds: Vec<PollFd> = self
             .devices
             .iter()
+            .flatten()
             .map(|d| {
                 let borrowed = unsafe { BorrowedFd::borrow_raw(d.as_raw_fd()) };
                 PollFd::new(borrowed, PollFlags::POLLIN)
             })
             .collect();
+        let device_count = pfds.len();
         if let Some(wake) = self.wake_rx.as_ref() {
             let borrowed = unsafe { BorrowedFd::borrow_raw(wake.as_raw_fd()) };
             pfds.push(PollFd::new(borrowed, PollFlags::POLLIN));
@@ -247,7 +312,7 @@ impl LoopDriver for MultiDeviceLoopDriver {
                 // checking POLLIN alone makes poll() return instantly
                 // forever without ever reading, i.e. a silent busy-loop.
                 let ready_flags = PollFlags::POLLIN | PollFlags::POLLERR | PollFlags::POLLHUP;
-                let device_ready = pfds[..self.devices.len()].iter().any(|p| {
+                let device_ready = pfds[..device_count].iter().any(|p| {
                     p.revents()
                         .map(|r| r.intersects(ready_flags))
                         .unwrap_or(false)
@@ -273,7 +338,11 @@ impl LoopDriver for MultiDeviceLoopDriver {
 
     fn fetch_timed_key_events(&mut self) -> Result<Vec<(KeyCode, bool, Instant)>, String> {
         let mut events = Vec::new();
-        for (source, device) in self.devices.iter_mut().enumerate() {
+        for (source, slot) in self.devices.iter_mut().enumerate() {
+            let Some(device) = slot.as_mut() else {
+                continue;
+            };
+            let mut disconnected = false;
             match device.fetch_events() {
                 Ok(iter) => {
                     for ev in iter {
@@ -289,9 +358,18 @@ impl LoopDriver for MultiDeviceLoopDriver {
                 }
                 Err(e) if e.raw_os_error() == Some(libc::EAGAIN) => {}
                 Err(e) if e.raw_os_error() == Some(libc::ENODEV) => {
-                    return Err(super::DEVICE_DISCONNECTED.into());
+                    if source == 0 {
+                        return Err(super::DEVICE_DISCONNECTED.into());
+                    }
+                    disconnected = true;
+                    self.keys
+                        .release_source(source, &mut events, event_clock_now()?);
+                    self.next_mouse_retry = Instant::now() + Duration::from_secs(1);
                 }
                 Err(e) => return Err(format!("fetch_events: {e}")),
+            };
+            if disconnected {
+                *slot = None;
             }
         }
         Ok(self.keys.merge(
@@ -347,6 +425,25 @@ struct DeviceKeys {
 }
 
 impl DeviceKeys {
+    fn release_source(
+        &self,
+        source: usize,
+        events: &mut Vec<(SystemTime, usize, KeyCode, bool)>,
+        at: SystemTime,
+    ) {
+        let mut keys: HashSet<_> = self
+            .held
+            .iter()
+            .filter_map(|&(owner, key)| (owner == source).then_some(key))
+            .collect();
+        keys.extend(
+            events
+                .iter()
+                .filter_map(|&(_, owner, key, down)| (owner == source && down).then_some(key)),
+        );
+        events.extend(keys.into_iter().map(|key| (at, source, key, false)));
+    }
+
     fn merge(
         &mut self,
         events: &mut [(SystemTime, usize, KeyCode, bool)],
@@ -583,6 +680,31 @@ mod tests {
     use super::*;
 
     #[test]
+    fn disconnect_releases_only_mouse_ownership_and_pending_presses() {
+        let mut keys = DeviceKeys::default();
+        assert!(keys.transition(0, KeyCode::KEY_A, true));
+        assert!(!keys.transition(1, KeyCode::KEY_A, true));
+        assert!(keys.transition(1, KeyCode::BTN_LEFT, true));
+        let now = Instant::now();
+        let wall = SystemTime::now();
+        let mut last = now;
+        let mut events = vec![(wall, 1, KeyCode::BTN_RIGHT, true)];
+        keys.release_source(1, &mut events, wall);
+        let out = keys.merge(&mut events, wall, now, &mut last);
+        assert!(
+            out.iter()
+                .any(|&(key, down, _)| key == KeyCode::BTN_LEFT && !down)
+        );
+        assert!(
+            !out.iter()
+                .any(|&(key, down, _)| key == KeyCode::KEY_A && !down)
+        );
+        assert!(!keys.held.iter().any(|&(owner, _)| owner == 1));
+        assert!(keys.held.contains(&(0, KeyCode::KEY_A)));
+        assert!(keys.transition(0, KeyCode::KEY_A, false));
+    }
+
+    #[test]
     #[ignore = "requires /dev/uinput and access to synthetic /dev/input devices"]
     fn synthetic_devices_use_monotonic_timestamps_and_preserve_cross_device_order() {
         fn synthetic() -> (VirtualDevice, Device) {
@@ -619,7 +741,8 @@ mod tests {
         }
         let (mut first, first_input) = synthetic();
         let (mut second, second_input) = synthetic();
-        let mut driver = MultiDeviceLoopDriver::new(vec![first_input, second_input], None).unwrap();
+        let mut driver =
+            MultiDeviceLoopDriver::new(vec![first_input, second_input], None, None).unwrap();
         second.emit(&[*KeyEvent::new(KeyCode::KEY_B, 1)]).unwrap();
         thread::sleep(Duration::from_millis(2));
         first.emit(&[*KeyEvent::new(KeyCode::KEY_A, 1)]).unwrap();
@@ -644,6 +767,58 @@ mod tests {
         for pair in events.windows(2) {
             assert!(pair[1].2 > pair[0].2);
         }
+        second.emit(&[*KeyEvent::new(KeyCode::KEY_B, 1)]).unwrap();
+        assert!(driver.wait(Duration::from_secs(1)).unwrap());
+        driver.fetch_timed_key_events().unwrap();
+        drop(second);
+        assert!(driver.wait(Duration::from_secs(1)).unwrap());
+        let released = driver.fetch_timed_key_events().unwrap();
+        assert!(
+            released
+                .iter()
+                .any(|&(key, down, _)| key == KeyCode::KEY_B && !down)
+        );
+        assert!(driver.devices[1].is_none());
+        let (mut replacement, replacement_input) = synthetic();
+        let replacement_path = replacement
+            .enumerate_dev_nodes_blocking()
+            .unwrap()
+            .next()
+            .unwrap()
+            .unwrap();
+        drop(replacement_input);
+        let temp = tempfile::tempdir().unwrap();
+        let mouse_path = temp.path().join("mouse");
+        std::os::unix::fs::symlink(replacement_path, &mouse_path).unwrap();
+        driver.mouse_path = Some(mouse_path.to_str().unwrap().into());
+        driver.next_mouse_retry = Instant::now();
+        driver.wait(Duration::ZERO).unwrap();
+        driver.devices[1]
+            .as_mut()
+            .expect("mouse reconnected without keyboard input")
+            .grab()
+            .unwrap();
+        replacement
+            .emit(&[*KeyEvent::new(KeyCode::KEY_B, 1)])
+            .unwrap();
+        assert!(driver.wait(Duration::from_secs(1)).unwrap());
+        assert!(
+            driver
+                .fetch_timed_key_events()
+                .unwrap()
+                .iter()
+                .any(|&(key, down, _)| key == KeyCode::KEY_B && down)
+        );
+
+        first.emit(&[*KeyEvent::new(KeyCode::KEY_A, 1)]).unwrap();
+        assert!(driver.wait(Duration::from_secs(1)).unwrap());
+        assert!(
+            driver
+                .fetch_timed_key_events()
+                .unwrap()
+                .iter()
+                .any(|&(key, down, _)| key == KeyCode::KEY_A && down)
+        );
     }
 
     #[test]

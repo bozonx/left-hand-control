@@ -2921,3 +2921,6 @@ msgstr "Открывается действиями app:showQuickMenu1...5. В �
 
 msgid "In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number."
 msgstr "Во всплывающем окне кликните по ячейке или нажмите её клавишу: ячейки повторяют ряды клавиатуры Q–T, A–G и Z–B. Tab переключает страницы, цифры открывают страницу по номеру."
+
+msgid "Waiting for keyboard"
+msgstr "Ожидание клавиатуры"

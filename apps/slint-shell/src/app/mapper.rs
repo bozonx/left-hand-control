@@ -24,6 +24,7 @@ const UPTIME_TICK: Duration = Duration::from_secs(20);
 /// Forward core events to the UI thread. Subscribed once at startup.
 pub(super) fn forward_core_events() {
     lhc_core::events::bus().subscribe(|event| match event {
+        CoreEvent::MapperDeviceChanged => post(|app| app.refresh_mapper_status()),
         CoreEvent::MapperStopped(error) => {
             let error = error.clone();
             post(move |app| {
@@ -233,7 +234,11 @@ impl App {
             .global::<AppState>()
             .set_mapper_running(status.running);
         self.track_uptime(status.running, status.last_error.is_some());
-        let current = (status.running, status.last_error.clone());
+        let current = (
+            status.running,
+            status.waiting_for_device,
+            status.last_error.clone(),
+        );
         if self.last_mapper_status.borrow().as_ref() == Some(&current) {
             return;
         }
@@ -243,7 +248,9 @@ impl App {
         {
             self.set_mapper_error(error.clone());
         }
-        let message = if status.running {
+        let message = if status.waiting_for_device {
+            Msg::MapperWaiting
+        } else if status.running {
             Msg::MapperRunning(status.last_error)
         } else {
             Msg::MapperStopped(status.last_error)

@@ -397,11 +397,17 @@ fn mapper_e2e_unplugged_keyboard_waits_until_explicit_stop() {
     let keyboard = Keyboard::new();
     let _mapper = Mapper::start(&keyboard, json!({}));
     assert!(runtime::status().running);
+    assert!(!runtime::status().waiting_for_device);
     drop(keyboard);
-    thread::sleep(Duration::from_millis(300));
+    wait_until(
+        "waiting for keyboard status",
+        Duration::from_secs(2),
+        || runtime::status().waiting_for_device.then_some(()),
+    );
     assert!(runtime::status().running);
     runtime::stop().unwrap();
     assert!(!runtime::status().running);
+    assert!(!runtime::status().waiting_for_device);
 }
 
 #[test]
@@ -462,6 +468,7 @@ fn mapper_e2e_replug_recovers_latest_config_and_releases_held_keys() {
     mapper.output = Some(output);
     replacement.tap(KeyCode::KEY_A);
     assert_eq!(mapper.keys(), [down(KeyCode::KEY_B), up(KeyCode::KEY_B)]);
+    assert!(!runtime::status().waiting_for_device);
     drop(replacement);
     thread::sleep(Duration::from_millis(200));
     let before = Instant::now();

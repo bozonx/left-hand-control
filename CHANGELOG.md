@@ -13,6 +13,9 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Unplugging the optional mouse no longer stops keyboard mapping; the mouse reconnects independently with balanced button releases.
+- Keyboards selected through `/dev/input/by-id` reconnect after changing USB ports, and the shell shows when the mapper is waiting for its keyboard.
+
 - A layer key bound to an empty macro or to an action that does nothing on this system no longer types the physical key.
 - Keys bound to a command that cannot run (commands disabled, no script for this OS) now show the "action unavailable" notice instead of silently doing nothing; an `app:` step that cannot run makes its macro unavailable like a `sys:` step.
 - While a popup is opening, releases of keys pressed before it pass through, so the popup no longer opens with a modifier still held.

@@ -58,7 +58,7 @@ pub(crate) struct App {
     supervisor: RefCell<worker::Supervisor>,
     preferences: Cell<Preferences>,
     worker_watch: slint::Timer,
-    last_mapper_status: RefCell<Option<(bool, Option<String>)>>,
+    last_mapper_status: RefCell<Option<(bool, bool, Option<String>)>>,
     /// When the running mapper started.
     mapper_since: Cell<Option<Instant>>,
     /// How long the mapper ran before it stopped unexpectedly, and when.

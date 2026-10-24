@@ -14,6 +14,7 @@ use std::sync::{
 #[derive(Debug, Clone, Serialize, Default)]
 pub struct MapperStatus {
     pub running: bool,
+    pub waiting_for_device: bool,
     pub device_path: Option<String>,
     pub mouse_device_path: Option<String>,
     pub last_error: Option<String>,
@@ -30,6 +31,9 @@ trait BackendHandle: Send {
     fn update_config(&self, cfg: config::AppConfig) -> Result<(), String>;
     fn execute_action(&self, action: String) -> Result<(), String>;
     fn popup_focused(&self) -> Result<(), String>;
+    fn waiting_for_device(&self) -> bool {
+        false
+    }
     fn last_error(&self) -> Option<String>;
     fn reap_if_finished(&mut self) -> bool;
 }
@@ -65,6 +69,7 @@ impl<B> MapperRuntime<B> {
             handle: None,
             status: MapperStatus {
                 running: false,
+                waiting_for_device: false,
                 device_path: None,
                 mouse_device_path: None,
                 last_error: None,
@@ -127,6 +132,7 @@ impl<B: MapperBackend> MapperRuntime<B> {
         self.handle = Some(handle);
         self.status = MapperStatus {
             running: true,
+            waiting_for_device: false,
             device_path: Some(device_path.to_string()),
             mouse_device_path: mouse_path.map(|s| s.to_string()),
             last_error: None,
@@ -218,12 +224,19 @@ impl<B: MapperBackend> MapperRuntime<B> {
                 self.config_json = None;
             }
         }
+        self.status.waiting_for_device = self
+            .handle
+            .as_ref()
+            .is_some_and(|handle| handle.waiting_for_device());
         self.status.clone()
     }
 }
 
 #[cfg(target_os = "linux")]
 impl BackendHandle for linux::Handle {
+    fn waiting_for_device(&self) -> bool {
+        self.waiting_for_device()
+    }
     fn stop(self: Box<Self>) {
         (*self).stop();
     }

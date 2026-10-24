@@ -151,6 +151,7 @@ pub enum Msg {
     /// `activateLayoutN` found no N-th layout in the library.
     LayoutSlotEmpty(u32),
     LayoutDiscarded(String),
+    MapperWaiting,
     MapperRunning(Option<String>),
     MapperStopped(Option<String>),
     MapperStarting,
@@ -261,6 +262,7 @@ impl Msg {
             Self::LayoutActivated(name) => ("layout-activated", name.clone(), 0),
             Self::LayoutSlotEmpty(n) => ("layout-slot-empty", empty(), *n as usize),
             Self::LayoutDiscarded(name) => ("layout-discarded", name.clone(), 0),
+            Self::MapperWaiting => ("mapper-waiting", empty(), 0),
             Self::MapperRunning(error) => {
                 if let Some(error) = error {
                     diagnostic("mapper-running-error", error)
