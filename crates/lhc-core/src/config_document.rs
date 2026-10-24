@@ -86,19 +86,30 @@ pub struct ConfigDocument {
     paths: StoragePaths,
     settings: AppSettings,
     layout: LayoutPreset,
+    /// Why the layout last opened for editing could not be read at load.
+    layout_load_error: Option<ConfigError>,
 }
 
 impl ConfigDocument {
     pub fn load(paths: StoragePaths) -> Result<Self, ConfigError> {
         paths.ensure().map_err(ConfigError::Io)?;
         let settings_text = paths.load_config().map_err(ConfigError::Io)?;
-        let settings = settings::parse(&settings_text).map_err(ConfigError::Parse)?;
+        let mut settings = settings::parse(&settings_text).map_err(ConfigError::Parse)?;
+        let mut layout_load_error = None;
         let layout = match settings.current_layout_id.as_deref() {
-            Some(id) => {
-                let name = crate::profile::model::user_layout_name(id)
-                    .ok_or_else(|| ConfigError::Invalid(format!("unknown layout id \"{id}\"")))?;
-                parse_layout(&paths.load_user_layout(name).map_err(ConfigError::Io)?)?
-            }
+            Some(id) => match load_current_layout(&paths, id) {
+                Ok(layout) => layout,
+                Err(error) => {
+                    // A deleted or damaged library file must not take the
+                    // global settings down with it. The editor starts from
+                    // a fresh layout that is not linked to the broken file,
+                    // so saving it never overwrites that file.
+                    log::warn!("layout {id} cannot be opened for editing: {error}");
+                    settings.current_layout_id = None;
+                    layout_load_error = Some(error);
+                    LayoutPreset::initial()
+                }
+            },
             None => LayoutPreset::initial(),
         };
         crate::gamemode::set_settings(&settings.game_mode);
@@ -106,7 +117,14 @@ impl ConfigDocument {
             settings,
             layout,
             paths,
+            layout_load_error,
         })
+    }
+
+    /// Why the layout that was open for editing could not be read when the
+    /// configuration loaded; the editor then started from a fresh layout.
+    pub fn layout_load_error(&self) -> Option<&ConfigError> {
+        self.layout_load_error.as_ref()
     }
 
     pub fn paths(&self) -> &StoragePaths {
@@ -291,17 +309,12 @@ impl ConfigDocument {
         description: &str,
     ) -> Result<(), ConfigError> {
         let name = self.layer_name(name, Some(id))?;
-        if !self.layout.layers.iter().any(|layer| layer.id == id) {
-            return Err(ConfigError::Invalid("unknown layer".into()));
-        }
+        self.require_layer(id)?;
         self.update_layout(|layout| {
-            let layer = layout
-                .layers
-                .iter_mut()
-                .find(|layer| layer.id == id)
-                .unwrap();
-            layer.name = name;
-            layer.description = optional_text(description);
+            if let Some(layer) = layout.layers.iter_mut().find(|layer| layer.id == id) {
+                layer.name = name;
+                layer.description = optional_text(description);
+            }
         })
     }
 
@@ -675,6 +688,12 @@ impl ConfigDocument {
     }
 }
 
+fn load_current_layout(paths: &StoragePaths, id: &str) -> Result<LayoutPreset, ConfigError> {
+    let name = crate::profile::model::user_layout_name(id)
+        .ok_or_else(|| ConfigError::Invalid(format!("unknown layout id \"{id}\"")))?;
+    parse_layout(&paths.load_user_layout(name).map_err(ConfigError::Io)?)
+}
+
 fn optional_text(value: &str) -> Option<String> {
     (!value.trim().is_empty()).then(|| value.trim().to_owned())
 }
@@ -689,7 +708,7 @@ fn parse_layout(text: &str) -> Result<LayoutPreset, ConfigError> {
 fn validate_for_mapper(json: &str) -> Result<(), ConfigError> {
     let config: crate::mapper::config::AppConfig =
         serde_json::from_str(json).map_err(|error| ConfigError::Invalid(error.to_string()))?;
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
     crate::mapper::validation::validate_config(&config).map_err(ConfigError::Invalid)?;
     let _ = config;
     Ok(())
@@ -726,6 +745,47 @@ mod tests {
             .unwrap();
         paths.save_user_layout(name, layout, true).unwrap();
         (dir, ConfigDocument::load(paths).unwrap())
+    }
+
+    #[test]
+    fn a_missing_or_damaged_edited_layout_keeps_the_settings_usable() {
+        for damage in ["delete", "corrupt"] {
+            let dir = tempfile::tempdir().unwrap();
+            let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+            paths
+                .save_config(
+                    &serde_json::to_string(&json!({
+                        "schemaVersion": 1,
+                        "state": {"editedLayoutId": "user:Test"},
+                        "settings": {"activeLayoutId": "user:Test", "appearance": "dark"}
+                    }))
+                    .unwrap(),
+                )
+                .unwrap();
+            paths.save_user_layout("Test", LAYOUT, true).unwrap();
+            match damage {
+                "delete" => paths.delete_user_layout("Test").unwrap(),
+                _ => fs::write(paths.layout_path("Test").unwrap(), "{ not json").unwrap(),
+            }
+
+            let mut document = ConfigDocument::load(paths.clone()).unwrap();
+            assert!(document.layout_load_error().is_some(), "{damage}");
+            assert_eq!(document.settings().appearance, Appearance::Dark);
+            assert_eq!(document.settings().current_layout_id, None);
+            // Saving settings and the fresh layout never touches the broken file.
+            document
+                .update_settings(|settings| settings.default_hold_timeout_ms = 300)
+                .unwrap();
+            if damage == "corrupt" {
+                assert_eq!(
+                    fs::read_to_string(paths.layout_path("Test").unwrap()).unwrap(),
+                    "{ not json"
+                );
+            }
+            let reloaded = ConfigDocument::load(paths).unwrap();
+            assert!(reloaded.layout_load_error().is_none());
+            assert_eq!(reloaded.settings().default_hold_timeout_ms, 300);
+        }
     }
 
     #[test]

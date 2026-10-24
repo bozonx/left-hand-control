@@ -14,6 +14,11 @@ use std::time::{Duration, Instant};
 /// `EV_SYN` frame is treated as zero-duration by some apps and dropped.
 const KEY_TAP_GAP: Duration = Duration::from_millis(1);
 
+/// Longest modifier delay a keystroke outside a macro may wait for. Such
+/// keystrokes are emitted synchronously, so the delay blocks all input;
+/// macros pace their own steps without blocking and use the full setting.
+const MAX_BLOCKING_MOD_DELAY: Duration = Duration::from_millis(50);
+
 /// Longest time output stays held after an action opened a popup when the
 /// shell never reports that the popup took the keyboard focus.
 const POPUP_HOLD_MAX: Duration = Duration::from_millis(1000);
@@ -104,16 +109,25 @@ impl OutputHold {
         }
         // A release that arrives while nothing is held belongs to no popup.
         self.released = false;
-        if self.until.is_some() {
-            self.held.append(buf);
-            return;
-        }
-        if let Some(index) = buf
+        let rest = if self.until.is_some() {
+            std::mem::take(buf)
+        } else if let Some(index) = buf
             .iter()
             .position(|out| matches!(out, Out::RunSystem(action) if action.opens_popup()))
         {
-            self.held = buf.split_off(index + 1);
             self.until = Some(now + POPUP_HOLD_MAX);
+            buf.split_off(index + 1)
+        } else {
+            return;
+        };
+        for out in rest {
+            // As for text: releases of keys pressed before the popup pass,
+            // so the popup does not open with a modifier still down.
+            if is_release(&out) && !releases_held_press(&self.held, &out) {
+                buf.push(out);
+            } else {
+                self.held.push(out);
+            }
         }
     }
 
@@ -266,6 +280,7 @@ fn emit_stroke_tap<S: EventSink, E: SideEffects>(
     ks: &Keystroke,
     mod_delay: Duration,
 ) -> Result<(), String> {
+    let mod_delay = mod_delay.min(MAX_BLOCKING_MOD_DELAY);
     if !ks.mods.is_empty() {
         let mut ev = Vec::with_capacity(ks.mods.len());
         for m in &ks.mods {
@@ -299,6 +314,7 @@ fn emit_chord_press<S: EventSink, E: SideEffects>(
     ks: &Keystroke,
     mod_delay: Duration,
 ) -> Result<(), String> {
+    let mod_delay = mod_delay.min(MAX_BLOCKING_MOD_DELAY);
     if !ks.mods.is_empty() {
         let mut ev = Vec::with_capacity(ks.mods.len());
         for m in &ks.mods {
@@ -319,6 +335,7 @@ fn emit_chord_release<S: EventSink, E: SideEffects>(
     mods: &[KeyCode],
     mod_delay: Duration,
 ) -> Result<(), String> {
+    let mod_delay = mod_delay.min(MAX_BLOCKING_MOD_DELAY);
     let up = [(key, false)];
     sink.emit(&up)?;
 
@@ -755,6 +772,90 @@ mod tests {
     }
 
     #[test]
+    fn popup_hold_lets_releases_of_earlier_presses_through() {
+        let key = |key, down| Out::KeyRaw { key, down };
+        let start = Instant::now();
+        let mut hold = OutputHold::default();
+        let popup = Out::RunSystem(SysAction::AppEvent("show_quick_menu_1".into()));
+        let mut buf = vec![
+            popup,
+            key(KeyCode::KEY_B, true),
+            key(KeyCode::KEY_LEFTCTRL, false),
+            Out::ReleaseMods(vec![KeyCode::KEY_LEFTALT]),
+        ];
+        hold.gate(&mut buf, start, false);
+        assert!(matches!(
+            buf.as_slice(),
+            [
+                Out::RunSystem(_),
+                Out::KeyRaw {
+                    key: KeyCode::KEY_LEFTCTRL,
+                    down: false
+                },
+                Out::ReleaseMods(_)
+            ]
+        ));
+        // A release of a press that is itself held stays behind it.
+        let mut buf = vec![
+            key(KeyCode::KEY_B, false),
+            key(KeyCode::KEY_LEFTSHIFT, false),
+        ];
+        hold.gate(&mut buf, start, false);
+        assert!(matches!(
+            buf.as_slice(),
+            [Out::KeyRaw {
+                key: KeyCode::KEY_LEFTSHIFT,
+                down: false
+            }]
+        ));
+        hold.release();
+        let mut buf = Vec::new();
+        hold.gate(&mut buf, start, false);
+        assert_eq!(
+            transitions_of(&buf),
+            [(KeyCode::KEY_B, true), (KeyCode::KEY_B, false)]
+        );
+    }
+
+    fn transitions_of(buf: &[Out]) -> Vec<(KeyCode, bool)> {
+        buf.iter()
+            .filter_map(|out| match out {
+                Out::KeyRaw { key, down } => Some((*key, *down)),
+                _ => None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn modifier_delay_outside_macros_never_blocks_input_for_long() {
+        let mut sink = FakeSink::default();
+        let mut effects = FakeEffects::default();
+        let ks = Keystroke {
+            mods: vec![KeyCode::KEY_LEFTCTRL],
+            key: KeyCode::KEY_C,
+        };
+        let long = Duration::from_millis(2000);
+        let mut buf = vec![
+            Out::Stroke {
+                ks: ks.clone(),
+                mod_delay: long,
+            },
+            Out::ChordPress {
+                ks,
+                mod_delay: long,
+            },
+            Out::ChordRelease {
+                key: KeyCode::KEY_C,
+                mods: vec![KeyCode::KEY_LEFTCTRL],
+                mod_delay: long,
+            },
+        ];
+        flush_out_with(&mut sink, &mut effects, &mut buf).expect("flush");
+        assert!(!effects.sleeps.is_empty());
+        assert!(effects.sleeps.iter().all(|d| *d <= MAX_BLOCKING_MOD_DELAY));
+    }
+
+    #[test]
     fn output_after_text_waits_until_it_is_typed() {
         let start = Instant::now();
         let key = |key, down| Out::KeyRaw { key, down };
@@ -981,6 +1082,10 @@ mod tests {
         let mut out = vec![
             Out::RunSystem(SysAction::AppEvent("show_quick_menu_1".into())),
             Out::KeyRaw {
+                key: KeyCode::KEY_B,
+                down: true,
+            },
+            Out::KeyRaw {
                 key: KeyCode::KEY_LEFTCTRL,
                 down: false,
             },
@@ -990,6 +1095,17 @@ mod tests {
         ];
         let now = Instant::now();
         hold.gate(&mut out, now, false);
+        // The release of an earlier press is not held for the popup.
+        assert!(matches!(
+            out.as_slice(),
+            [
+                Out::RunSystem(_),
+                Out::KeyRaw {
+                    key: KeyCode::KEY_LEFTCTRL,
+                    down: false
+                }
+            ]
+        ));
         out.clear();
         out.push(command());
         hold.cancel_actions(&mut out);
@@ -998,8 +1114,8 @@ mod tests {
         assert!(matches!(
             out.as_slice(),
             [Out::KeyRaw {
-                key: KeyCode::KEY_LEFTCTRL,
-                down: false
+                key: KeyCode::KEY_B,
+                down: true
             }]
         ));
     }

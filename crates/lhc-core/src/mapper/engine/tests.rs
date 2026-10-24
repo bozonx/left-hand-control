@@ -4426,3 +4426,99 @@ fn left_and_right_modifier_taps_remain_distinct() {
         );
     }
 }
+
+#[test]
+fn layer_key_bound_to_an_empty_macro_swallows_the_key() {
+    let cfg: AppConfig = serde_json::from_value(serde_json::json!({
+        "macros": [{"id": "empty", "steps": []}],
+        "rules": [{"key": "Space", "layerId": "nav", "tapAction": "Space"}],
+        "layerKeymaps": {"nav": {"keys": {"KeyQ": "macro:empty", "KeyW": ""}}}
+    }))
+    .unwrap();
+    crate::mapper::validation::validate_config(&cfg).unwrap();
+    let mut engine = Engine::new(&cfg);
+    let now = Instant::now();
+    let mut out = Vec::new();
+    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.tick(now + Duration::from_millis(300), &mut out);
+    out.clear();
+    let t = now + Duration::from_millis(310);
+    engine.handle(KeyCode::KEY_Q, true, t, &mut out);
+    engine.handle(KeyCode::KEY_Q, false, t, &mut out);
+    // Like a tap bound to the same macro: the key does nothing.
+    assert!(raw_keys(&out).is_empty());
+    // An empty entry still leaves the key to the base layout.
+    engine.handle(KeyCode::KEY_W, true, t, &mut out);
+    assert_eq!(raw_keys(&out), [(KeyCode::KEY_W, true)]);
+}
+
+#[test]
+fn bindings_to_commands_that_cannot_run_report_instead_of_doing_nothing() {
+    let seen = std::sync::Arc::new(std::sync::Mutex::new(0usize));
+    let record = seen.clone();
+    crate::events::bus().subscribe(move |event| {
+        if matches!(event, crate::events::CoreEvent::ActionUnavailable(action)
+            if action == "cmd:disabledHere" || action == "cmd:")
+        {
+            *record.lock().unwrap() += 1;
+        }
+    });
+    let cfg: AppConfig = serde_json::from_value(serde_json::json!({
+        "settings": {"commandsEnabled": false},
+        "commands": [{"id": "disabledHere", "linux": "true", "windows": "dir"}],
+        "rules": [{"key": "KeyQ", "tapAction": "cmd:disabledHere"}]
+    }))
+    .unwrap();
+    let mut engine = Engine::new(&cfg);
+    let now = Instant::now();
+    let mut out = Vec::new();
+    engine.handle(KeyCode::KEY_Q, true, now, &mut out);
+    engine.handle(KeyCode::KEY_Q, false, now, &mut out);
+    engine.execute_remote("cmd:disabledHere", &mut out);
+    assert!(out.is_empty());
+    assert_eq!(*seen.lock().unwrap(), 2);
+
+    // A tap still waiting for its decision when commands are switched off
+    // reports at release instead of silently doing nothing.
+    let enabled: AppConfig = serde_json::from_value(serde_json::json!({
+        "settings": {"commandsEnabled": true},
+        "commands": [{"id": "disabledHere", "linux": "true", "windows": "dir"}],
+        "rules": [{"key": "KeyQ", "tapAction": "cmd:disabledHere"}]
+    }))
+    .unwrap();
+    let mut engine = Engine::new(&enabled);
+    engine.handle(KeyCode::KEY_Q, true, now, &mut out);
+    engine.reconfigure(&cfg, &mut out);
+    engine.handle(KeyCode::KEY_Q, false, now, &mut out);
+    assert!(out.is_empty());
+    assert_eq!(*seen.lock().unwrap(), 3);
+}
+
+#[test]
+fn remote_and_bound_actions_resolve_the_same_way() {
+    let cfg: AppConfig = serde_json::from_value(serde_json::json!({
+        "macros": [{"id": "m", "steps": [{"action": "KeyA"}]}],
+        "rules": [{"key": "KeyQ", "tapAction": "  text: hi "}]
+    }))
+    .unwrap();
+    let mut engine = Engine::new(&cfg);
+    let now = Instant::now();
+    let mut out = Vec::new();
+    engine.handle(KeyCode::KEY_Q, true, now, &mut out);
+    engine.handle(KeyCode::KEY_Q, false, now, &mut out);
+    engine.execute_remote("  text: hi ", &mut out);
+    let texts: Vec<_> = out
+        .iter()
+        .filter_map(|item| match item {
+            Out::Literal(text) => Some(text.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(texts, [" hi ", " hi "]);
+    out.clear();
+    // Things that do nothing outside a macro stay silent everywhere.
+    for action in ["", "pause:100", "macro:missing", "NoSuchKey"] {
+        engine.execute_remote(action, &mut out);
+    }
+    assert!(out.is_empty());
+}

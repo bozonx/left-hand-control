@@ -139,6 +139,9 @@ fn run_side_effect_worker(rx: mpsc::Receiver<SideEffectJob>) {
 pub(super) struct MultiDeviceLoopDriver {
     devices: Vec<Device>,
     hotkeys: PopupHotkeys,
+    /// `LHC_HOTKEYS=off` disables the popup hotkeys; read once per start
+    /// rather than on every key event.
+    hotkeys_enabled: bool,
     keys: DeviceKeys,
     last_event: Instant,
     /// Read end of the control wake pipe. The `Handle` writes a byte after
@@ -175,6 +178,7 @@ impl MultiDeviceLoopDriver {
         Ok(Self {
             devices,
             hotkeys: PopupHotkeys::default(),
+            hotkeys_enabled: std::env::var("LHC_HOTKEYS").as_deref() != Ok("off"),
             wake_rx,
             keys: DeviceKeys::default(),
             last_event: Instant::now(),
@@ -206,8 +210,7 @@ impl LoopDriver for MultiDeviceLoopDriver {
         self.hotkeys.event(
             key,
             down,
-            std::env::var("LHC_HOTKEYS").as_deref() != Ok("off")
-                && !crate::runtime_state::game_mode_active(),
+            self.hotkeys_enabled && !crate::runtime_state::game_mode_active(),
         )
     }
 

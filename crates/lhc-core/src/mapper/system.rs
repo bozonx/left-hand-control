@@ -98,16 +98,8 @@ pub fn resolve(name: &str) -> Option<SysAction> {
 /// validation stays portable: a config created on KDE is not rejected on
 /// another desktop or OS; `resolve()` decides what runs there.
 pub fn is_known(name: &str) -> bool {
-    let name = name.trim();
-    let numbered = |prefix: &str, max: u32| {
-        name.strip_prefix(prefix)
-            .and_then(|rest| rest.parse::<u32>().ok())
-            .is_some_and(|n| (1..=max).contains(&n))
-    };
-    numbered("switchDesktop", 20)
-        || numbered("windowToDesktop", 20)
-        || numbered("switchLayout", 10)
-        || crate::profile::actions::PLAIN_SYSTEM_ACTIONS.contains(&name)
+    // One catalog for the mapper, the editor and the action picker.
+    crate::profile::actions::system_action_name(name.trim()).is_some()
 }
 
 pub fn resolve_app(name: &str) -> Option<SysAction> {
@@ -167,6 +159,9 @@ fn kde_shortcut(id: &str) -> Option<SysAction> {
 #[cfg(target_os = "linux")]
 fn resolve_for_desktop(name: &str, desktop: &crate::platform::linux::Desktop) -> Option<SysAction> {
     let name = name.trim();
+    if !is_known(name) {
+        return None;
+    }
 
     use crate::platform::linux::Desktop;
     match desktop {
@@ -309,7 +304,15 @@ mod tests {
         ] {
             assert!(!is_known(id), "{id}");
         }
-        assert!(is_known("switchDesktop20") && is_known("screenOff"));
+        assert!(is_known("switchDesktop10") && is_known("screenOff"));
+        // The same numbered range as the action picker.
+        assert!(!is_known("switchDesktop11") && !is_known("windowToDesktop11"));
+        for entry in crate::profile::actions::system_actions() {
+            let crate::profile::actions::Action::System(id) = entry.action else {
+                panic!("system catalog holds only sys: actions");
+            };
+            assert!(is_known(&id), "{id}");
+        }
         assert!(matches!(
             resolve_app("showSettings"),
             Some(SysAction::AppEvent(_))

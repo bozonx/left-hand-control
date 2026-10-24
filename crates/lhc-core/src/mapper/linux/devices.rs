@@ -10,8 +10,14 @@ const STABLE_DIRS: [&str; 2] = ["/dev/input/by-id", "/dev/input/by-path"];
 
 /// Stable symlink for each `/dev/input/eventN` that has one.
 fn stable_paths() -> HashMap<PathBuf, PathBuf> {
+    stable_paths_in(STABLE_DIRS.map(Path::new))
+}
+
+/// Stable symlinks found in `dirs`; an earlier directory wins, and within
+/// one directory the first name in sort order.
+fn stable_paths_in<'a>(dirs: impl IntoIterator<Item = &'a Path>) -> HashMap<PathBuf, PathBuf> {
     let mut out = HashMap::new();
-    for dir in STABLE_DIRS {
+    for dir in dirs {
         let Ok(entries) = std::fs::read_dir(dir) else {
             continue;
         };
@@ -142,4 +148,55 @@ fn is_mouse(dev: &Device) -> bool {
     // We also skip devices that already pass the keyboard heuristic
     // (mixed interfaces cannot safely be grabbed by the keyboard backend).
     keys.contains(KeyCode::BTN_LEFT) && keys.contains(KeyCode::BTN_RIGHT) && !is_keyboard(dev)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{stable_path, stable_paths_in};
+    use std::os::unix::fs::symlink;
+
+    #[test]
+    fn devices_are_stored_by_their_most_stable_name() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path();
+        let (by_id, by_path) = (root.join("by-id"), root.join("by-path"));
+        std::fs::create_dir(&by_id).unwrap();
+        std::fs::create_dir(&by_path).unwrap();
+        for event in ["event3", "event4", "event5"] {
+            std::fs::write(root.join(event), "").unwrap();
+        }
+        symlink("../event3", by_id.join("usb-Kbd-if01-event-kbd")).unwrap();
+        symlink("../event3", by_id.join("usb-Kbd-event-kbd")).unwrap();
+        symlink(
+            "../event3",
+            by_path.join("pci-0000:00:14.0-usb-0:3:1.0-event-kbd"),
+        )
+        .unwrap();
+        symlink(
+            "../event4",
+            by_path.join("platform-i8042-serio-0-event-kbd"),
+        )
+        .unwrap();
+        let stable = stable_paths_in([by_id.as_path(), by_path.as_path()]);
+
+        // by-id survives moving the keyboard to another port; ties go to
+        // the first name, so the choice is the same on every listing.
+        assert_eq!(
+            stable_path(&root.join("event3"), &stable),
+            by_id.join("usb-Kbd-event-kbd").to_string_lossy()
+        );
+        assert_eq!(
+            stable_path(&root.join("event4"), &stable),
+            by_path
+                .join("platform-i8042-serio-0-event-kbd")
+                .to_string_lossy()
+        );
+        // Without a udev link the event node itself is stored.
+        assert_eq!(
+            stable_path(&root.join("event5"), &stable),
+            root.join("event5").to_string_lossy()
+        );
+        // Missing directories are skipped.
+        assert!(stable_paths_in([root.join("absent").as_path()]).is_empty());
+    }
 }

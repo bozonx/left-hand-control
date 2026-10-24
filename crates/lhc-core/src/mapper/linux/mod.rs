@@ -316,42 +316,69 @@ fn run(
     }
     let _mapper_lock = acquire_mapper_lock()?;
     let mut cfg = cfg;
-    let mut identity = None;
+    reconnect_loop(
+        &stop,
+        &device_path,
+        || Device::open(&device_path).map_err(|error| error.to_string()),
+        DeviceIdentity::of,
+        |device| {
+            run_device(
+                device,
+                &device_path,
+                mouse_path.as_deref(),
+                &mut cfg,
+                stop.clone(),
+                &ready_tx,
+                &control_rx,
+                wake_rx
+                    .try_clone()
+                    .map_err(|e| format!("clone wake pipe: {e}"))?,
+            )
+        },
+        || thread::sleep(RECONNECT_RETRY),
+    )
+}
+
+/// How long to wait before looking for a disconnected keyboard again.
+const RECONNECT_RETRY: Duration = Duration::from_millis(100);
+
+/// Run the device until it fails. After a disconnect, wait for a device
+/// with the same identity at the same path and run it again; any other
+/// failure ends the loop.
+fn reconnect_loop<D, I: PartialEq>(
+    stop: &AtomicBool,
+    device_path: &str,
+    mut open: impl FnMut() -> Result<D, String>,
+    identity: impl Fn(&D) -> I,
+    mut run_device: impl FnMut(D) -> Result<(), String>,
+    mut wait: impl FnMut(),
+) -> Result<(), String> {
+    let mut expected = None;
     let mut reconnecting = false;
     loop {
         if stop.load(Ordering::SeqCst) {
             return Ok(());
         }
-        let device = match Device::open(&device_path) {
+        let device = match open() {
             Ok(device) => device,
             Err(_) if reconnecting => {
-                thread::sleep(Duration::from_millis(100));
+                wait();
                 continue;
             }
             Err(error) => return Err(format!("open {device_path}: {error}")),
         };
-        let current = DeviceIdentity::of(&device);
-        if let Some(expected) = &identity {
-            if expected != &current {
-                // Event numbers can be reused by an unrelated keyboard.
-                thread::sleep(Duration::from_millis(100));
+        let current = identity(&device);
+        match &expected {
+            // Event numbers can be reused by an unrelated keyboard.
+            Some(expected) if expected != &current => {
+                drop(device);
+                wait();
                 continue;
             }
-        } else {
-            identity = Some(current);
+            Some(_) => {}
+            None => expected = Some(current),
         }
-        let result = run_device(
-            device,
-            &device_path,
-            mouse_path.as_deref(),
-            &mut cfg,
-            stop.clone(),
-            &ready_tx,
-            &control_rx,
-            wake_rx
-                .try_clone()
-                .map_err(|e| format!("clone wake pipe: {e}"))?,
-        );
+        let result = run_device(device);
         if !matches!(&result, Err(error) if error == DEVICE_DISCONNECTED) {
             return result;
         }
@@ -543,6 +570,93 @@ mod tests {
             pointer.insert(axis);
             assert!(super::validate_keyboard_capabilities(&pointer, None).is_err());
         }
+    }
+
+    /// Scripted device opens for [`super::reconnect_loop`]: each entry is
+    /// the identity of the device found, or `None` when the path is absent.
+    fn reconnect(
+        opens: &[Option<u32>],
+        runs: &[Result<(), &str>],
+    ) -> (Result<(), String>, Vec<u32>, usize) {
+        let stop = std::sync::atomic::AtomicBool::new(false);
+        let mut opens = opens.iter().copied();
+        let mut runs = runs.iter().cloned();
+        let mut ran = Vec::new();
+        let mut waits = 0;
+        let result = super::reconnect_loop(
+            &stop,
+            "/dev/input/by-id/kbd",
+            || {
+                opens
+                    .next()
+                    .flatten()
+                    .ok_or_else(|| "No such device".to_string())
+            },
+            |device: &u32| *device,
+            |device| {
+                ran.push(device);
+                runs.next().expect("scripted run").map_err(str::to_owned)
+            },
+            || waits += 1,
+        );
+        (result, ran, waits)
+    }
+
+    #[test]
+    fn a_missing_keyboard_fails_the_start() {
+        let (result, ran, _) = reconnect(&[None], &[]);
+        assert_eq!(
+            result.unwrap_err(),
+            "open /dev/input/by-id/kbd: No such device"
+        );
+        assert!(ran.is_empty());
+    }
+
+    #[test]
+    fn a_disconnected_keyboard_is_awaited_and_resumed() {
+        let disconnected = Err(super::DEVICE_DISCONNECTED);
+        let (result, ran, waits) =
+            reconnect(&[Some(7), None, None, Some(7)], &[disconnected, Ok(())]);
+        assert_eq!(result, Ok(()));
+        assert_eq!(ran, [7, 7]);
+        assert_eq!(waits, 2);
+    }
+
+    #[test]
+    fn another_keyboard_on_the_same_path_is_not_grabbed() {
+        let disconnected = Err(super::DEVICE_DISCONNECTED);
+        let (result, ran, waits) = reconnect(&[Some(7), Some(9), Some(7)], &[disconnected, Ok(())]);
+        assert_eq!(result, Ok(()));
+        assert_eq!(ran, [7, 7], "the other keyboard never runs");
+        assert_eq!(waits, 1);
+    }
+
+    #[test]
+    fn errors_other_than_a_disconnect_stop_the_mapper() {
+        let (result, ran, waits) = reconnect(&[Some(7)], &[Err("uinput emit: broken")]);
+        assert_eq!(result.unwrap_err(), "uinput emit: broken");
+        assert_eq!((ran.len(), waits), (1, 0));
+    }
+
+    #[test]
+    fn stop_ends_the_wait_for_a_keyboard() {
+        let stop = std::sync::atomic::AtomicBool::new(false);
+        let mut first = true;
+        let result = super::reconnect_loop(
+            &stop,
+            "kbd",
+            || {
+                if std::mem::take(&mut first) {
+                    Ok(1u32)
+                } else {
+                    Err("gone".to_string())
+                }
+            },
+            |device| *device,
+            |_| Err(super::DEVICE_DISCONNECTED.to_string()),
+            || stop.store(true, std::sync::atomic::Ordering::SeqCst),
+        );
+        assert_eq!(result, Ok(()));
     }
 
     #[test]

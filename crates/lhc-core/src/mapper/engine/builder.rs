@@ -1,11 +1,12 @@
 use super::Engine;
 use super::model::{ActionDef, HoldMode, MacroDef, RuleEntry, TapMode};
-use crate::mapper::action::{MacroStepItem, explicit_pause, explicit_text, parse_action};
+use crate::mapper::action::{MacroStepItem, parse_action, pause_duration};
 use crate::mapper::builtin_macros::BUILTIN_MACROS;
 use crate::mapper::config::{ActionSpec, AppConfig};
 use crate::mapper::key_code::KeyCode;
 use crate::mapper::keys::code_to_key;
 use crate::mapper::system::{self, SysCommand};
+use crate::profile::actions::Action;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::time::Duration;
 
@@ -77,95 +78,69 @@ impl Engine {
                     continue;
                 }
                 *remaining -= 1;
-                if let Some(rest) = raw.strip_prefix("sys:") {
-                    match system::resolve(rest.trim()) {
-                        Some(cmd) => steps.push(MacroStepItem::System(cmd)),
-                        None => steps.push(MacroStepItem::Unavailable(raw.trim().into())),
-                    }
-                    continue;
-                }
-                if let Some(rest) = raw.strip_prefix("kde:") {
-                    match system::resolve_kde_shortcut(rest) {
-                        Some(cmd) => steps.push(MacroStepItem::System(cmd)),
-                        None => steps.push(MacroStepItem::Unavailable(raw.trim().into())),
-                    }
-                    continue;
-                }
-                if let Some(rest) = raw.strip_prefix("app:") {
-                    match system::resolve_app(rest.trim()) {
-                        Some(cmd) => steps.push(MacroStepItem::System(cmd)),
-                        None => log::debug!(
-                            "[mapper] macro {} step: app action {:?} not available",
-                            id,
-                            rest.trim()
-                        ),
-                    }
-                    continue;
-                }
-                if let Some(rest) = raw.strip_prefix("macro:") {
-                    let nested_id = rest.trim();
-                    let mut found = false;
-                    if let Some(sys_m) = BUILTIN_MACROS.iter().find(|s| s.id == nested_id) {
-                        let sys_steps: Vec<&str> = sys_m.steps.to_vec();
-                        let nested_steps = resolve_macro_steps(
-                            nested_id,
-                            sys_steps,
-                            raw_user_macros,
-                            commands,
-                            foreign_commands,
-                            depth + 1,
-                            remaining,
-                        );
-                        steps.extend(nested_steps);
-                        found = true;
-                    } else if let Some(user_m) = raw_user_macros.get(nested_id) {
-                        let nested_steps = resolve_macro_steps(
-                            nested_id,
-                            user_m.steps.iter().map(|s| s.action.as_str()).collect(),
-                            raw_user_macros,
-                            commands,
-                            foreign_commands,
-                            depth + 1,
-                            remaining,
-                        );
-                        steps.extend(nested_steps);
-                        found = true;
-                    }
-                    if !found {
-                        log::debug!(
-                            "[mapper] macro {}: unknown nested macro ref {:?}",
-                            id,
-                            nested_id
-                        );
-                    }
-                    continue;
-                }
-                if let Some(rest) = raw.strip_prefix("cmd:") {
-                    let cmd_id = rest.trim();
-                    match commands.get(cmd_id) {
-                        Some(cmd) => steps.push(MacroStepItem::Command(cmd.clone())),
-                        None if foreign_commands.contains(cmd_id) => {
-                            steps.push(MacroStepItem::Unavailable(raw.trim().into()))
+                let unavailable = || MacroStepItem::Unavailable(raw.trim().into());
+                match Action::parse(Some(raw)) {
+                    Action::Native | Action::Swallow => {}
+                    Action::System(name) => steps.push(
+                        system::resolve(&name).map_or_else(unavailable, MacroStepItem::System),
+                    ),
+                    Action::KdeShortcut(shortcut) => steps.push(
+                        system::resolve_kde_shortcut(&shortcut)
+                            .map_or_else(unavailable, MacroStepItem::System),
+                    ),
+                    // Like `sys:`: a step that cannot run here makes the
+                    // whole macro unavailable instead of silently shorter.
+                    Action::App(name) => steps.push(
+                        system::resolve_app(&name).map_or_else(unavailable, MacroStepItem::System),
+                    ),
+                    Action::Macro(nested_id) => {
+                        let nested_raw: Option<Vec<&str>> = BUILTIN_MACROS
+                            .iter()
+                            .find(|s| s.id == nested_id)
+                            .map(|sys_m| sys_m.steps.to_vec())
+                            .or_else(|| {
+                                raw_user_macros.get(nested_id.as_str()).map(|user_m| {
+                                    user_m.steps.iter().map(|s| s.action.as_str()).collect()
+                                })
+                            });
+                        match nested_raw {
+                            Some(nested_raw) => steps.extend(resolve_macro_steps(
+                                &nested_id,
+                                nested_raw,
+                                raw_user_macros,
+                                commands,
+                                foreign_commands,
+                                depth + 1,
+                                remaining,
+                            )),
+                            None => log::debug!(
+                                "[mapper] macro {}: unknown nested macro ref {:?}",
+                                id,
+                                nested_id
+                            ),
                         }
+                    }
+                    Action::Command(cmd_id) => match commands.get(&cmd_id) {
+                        Some(cmd) => steps.push(MacroStepItem::Command(cmd.clone())),
+                        None if foreign_commands.contains(&cmd_id) => steps.push(unavailable()),
+                        // Disabled commands are skipped; the other steps still run.
                         None => log::debug!(
-                            "[mapper] macro {} step: unknown command ref {:?}",
+                            "[mapper] macro {} step: command {:?} disabled or unknown — skipped",
                             id,
                             cmd_id
                         ),
-                    }
-                    continue;
-                }
-                if let Some(text) = explicit_text(raw) {
-                    steps.push(MacroStepItem::Literal(text));
-                    continue;
-                }
-                if let Some(duration) = explicit_pause(raw) {
-                    steps.push(MacroStepItem::Pause(duration));
-                    continue;
-                }
-                match parse_action(raw) {
-                    Some(ks) => steps.push(MacroStepItem::Stroke(ks)),
-                    None => log::debug!("[mapper] macro {} step: unknown keystroke {:?}", id, raw),
+                    },
+                    Action::Text(text) => steps.push(MacroStepItem::Literal(text)),
+                    Action::Pause(ms) => match pause_duration(&ms) {
+                        Some(duration) => steps.push(MacroStepItem::Pause(duration)),
+                        None => log::debug!("[mapper] macro {} step: invalid pause {:?}", id, raw),
+                    },
+                    Action::Keys(keys) => match parse_action(&keys) {
+                        Some(ks) => steps.push(MacroStepItem::Stroke(ks)),
+                        None => {
+                            log::debug!("[mapper] macro {} step: unknown keystroke {:?}", id, raw)
+                        }
+                    },
                 }
             }
             steps
@@ -234,77 +209,8 @@ impl Engine {
             );
         }
 
-        let resolve = |action: &str, where_: &str| -> Option<ActionDef> {
-            let trimmed = action.trim();
-            if trimmed.is_empty() {
-                return None;
-            }
-            if let Some(rest) = trimmed.strip_prefix("macro:") {
-                let id = rest.trim();
-                if let Some(md) = macros.get(id) {
-                    return Some(ActionDef::Macro(md.clone()));
-                }
-                log::debug!("[mapper] unknown macro ref {:?} ({})", trimmed, where_);
-                return None;
-            }
-            if let Some(rest) = trimmed.strip_prefix("cmd:") {
-                let id = rest.trim();
-                if let Some(cmd) = commands.get(id) {
-                    return Some(ActionDef::Command(cmd.clone()));
-                }
-                if foreign_commands.contains(id) {
-                    return Some(ActionDef::Unavailable(trimmed.into()));
-                }
-                return Some(ActionDef::Swallow);
-            }
-            if let Some(rest) = trimmed.strip_prefix("sys:") {
-                let name = rest.trim();
-                match system::resolve(name) {
-                    Some(cmd) => return Some(ActionDef::System(cmd)),
-                    None => {
-                        log::debug!(
-                            "[mapper] system fn {:?} not available on this OS/DE ({})",
-                            name,
-                            where_
-                        );
-                        return Some(ActionDef::Unavailable(trimmed.into()));
-                    }
-                }
-            }
-            if let Some(rest) = trimmed.strip_prefix("kde:") {
-                match system::resolve_kde_shortcut(rest) {
-                    Some(cmd) => return Some(ActionDef::System(cmd)),
-                    None => {
-                        log::debug!(
-                            "[mapper] KDE shortcut {:?} not available ({})",
-                            rest.trim(),
-                            where_
-                        );
-                        return Some(ActionDef::Unavailable(trimmed.into()));
-                    }
-                }
-            }
-            if let Some(rest) = trimmed.strip_prefix("app:") {
-                let name = rest.trim();
-                match system::resolve_app(name) {
-                    Some(cmd) => return Some(ActionDef::System(cmd)),
-                    None => {
-                        log::debug!("[mapper] app action {:?} not available ({})", name, where_);
-                        return None;
-                    }
-                }
-            }
-            if let Some(text) = explicit_text(action) {
-                return Some(ActionDef::Literal(text));
-            }
-            match parse_action(trimmed) {
-                Some(ks) => Some(ActionDef::Stroke(ks)),
-                None => {
-                    log::debug!("[mapper] unknown action {:?} ({})", trimmed, where_);
-                    None
-                }
-            }
-        };
+        let resolve =
+            |action: &str, where_: &str| resolve_action(action, &macros, &commands, where_);
 
         let mut rules = HashMap::new();
         let mut chord_rules = Vec::new();
@@ -471,12 +377,15 @@ impl Engine {
                     log::debug!("[mapper] unknown key code in keymap {layer_id}: {code}");
                     continue;
                 };
-                let Some(def) = action
-                    .as_deref()
-                    .map(|s| resolve(s, &format!("keymap {layer_id}.{code}")))
-                    .unwrap_or(Some(ActionDef::Swallow))
-                else {
-                    continue;
+                let def = match action.as_deref() {
+                    None => ActionDef::Swallow,
+                    // An empty entry leaves the key to the base layout.
+                    Some(s) if s.trim().is_empty() => continue,
+                    // An entry that does nothing here (an empty macro, a key
+                    // this OS lacks) still covers the key, as a tap action
+                    // does: typing the physical key instead would surprise.
+                    Some(s) => resolve(s, &format!("keymap {layer_id}.{code}"))
+                        .unwrap_or(ActionDef::Swallow),
                 };
                 m.insert(key, def);
             }
@@ -518,6 +427,71 @@ impl Engine {
             layer_presses: 0,
             layer_hold_id: 0,
             layer_used: false,
+        }
+    }
+}
+
+/// What an action bound outside a macro does on this system. `None` means
+/// it does nothing (empty, `pause:`, an unknown key or an empty macro); an
+/// action that exists but cannot run here becomes
+/// [`ActionDef::Unavailable`], so firing it reports why nothing happened.
+pub(super) fn resolve_action(
+    action: &str,
+    macros: &HashMap<String, MacroDef>,
+    commands: &HashMap<String, SysCommand>,
+    where_: &str,
+) -> Option<ActionDef> {
+    let unavailable = || Some(ActionDef::Unavailable(action.trim().into()));
+    match Action::parse(Some(action)) {
+        Action::Native | Action::Swallow => None,
+        Action::Macro(id) => {
+            let found = macros.get(&id).cloned().map(ActionDef::Macro);
+            if found.is_none() {
+                log::debug!("[mapper] macro {id:?} unknown or empty ({where_})");
+            }
+            found
+        }
+        Action::Command(id) => match commands.get(&id) {
+            Some(cmd) => Some(ActionDef::Command(cmd.clone())),
+            None => {
+                log::debug!(
+                    "[mapper] command {id:?} disabled, without a script for this OS or unknown ({where_})"
+                );
+                unavailable()
+            }
+        },
+        Action::System(name) => match system::resolve(&name) {
+            Some(cmd) => Some(ActionDef::System(cmd)),
+            None => {
+                log::debug!("[mapper] system fn {name:?} not available on this OS/DE ({where_})");
+                unavailable()
+            }
+        },
+        Action::KdeShortcut(shortcut) => match system::resolve_kde_shortcut(&shortcut) {
+            Some(cmd) => Some(ActionDef::System(cmd)),
+            None => {
+                log::debug!("[mapper] KDE shortcut {shortcut:?} not available ({where_})");
+                unavailable()
+            }
+        },
+        Action::App(name) => match system::resolve_app(&name) {
+            Some(cmd) => Some(ActionDef::System(cmd)),
+            None => {
+                log::debug!("[mapper] app action {name:?} not available ({where_})");
+                unavailable()
+            }
+        },
+        Action::Text(text) => Some(ActionDef::Literal(text)),
+        Action::Pause(_) => {
+            log::debug!("[mapper] pause is only allowed in macros ({where_})");
+            None
+        }
+        Action::Keys(keys) => {
+            let stroke = parse_action(&keys).map(ActionDef::Stroke);
+            if stroke.is_none() {
+                log::debug!("[mapper] unknown action {keys:?} ({where_})");
+            }
+            stroke
         }
     }
 }

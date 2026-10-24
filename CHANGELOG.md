@@ -6,6 +6,20 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ## [Unreleased]
 
+### Changed
+
+- Keystrokes outside macros wait at most 50 ms between modifiers and key, so a long macro modifier delay no longer freezes the keyboard; macros still use the full setting.
+- The mapper accepts the same numbered system actions as the action picker (1–10), and `pause:` steps follow the macro editor's 1–10000 ms range.
+
+### Fixed
+
+- A layer key bound to an empty macro or to an action that does nothing on this system no longer types the physical key.
+- Keys bound to a command that cannot run (commands disabled, no script for this OS) now show the "action unavailable" notice instead of silently doing nothing; an `app:` step that cannot run makes its macro unavailable like a `sys:` step.
+- While a popup is opening, releases of keys pressed before it pass through, so the popup no longer opens with a modifier still held.
+- The action picker on Windows no longer marks commands and system actions as unavailable, and marks commands without a script for the current OS.
+- A deleted or damaged layout file that was open for editing no longer makes the whole configuration unavailable; the editor starts from a fresh layout and the file is left untouched.
+- Renaming a library layout by changing only letter case works on Windows and macOS.
+
 ## [0.4.0] - 2026-10-24
 
 ### Added
@@ -23,26 +37,3 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Linux popup hotkeys on the grabbed keyboard are consumed before uinput output, preventing Ctrl+Alt+F11/F12 from switching virtual consoles while the mapper runs.
 - Linux mapper reconnects the selected keyboard after ENODEV, preserves the latest configuration and refuses a different device reusing the selected path.
 - KWin scripts are scoped to each application's D-Bus connection, so a second instance cannot replace or unload the running instance's focus watcher.
-
-## [0.3.0] - 2026-10-17
-
-### Changed
-
-- The executable is named `left-hand-control` (the Cargo package stays `slint-shell`); on Linux its windows use the app id `dev.bozonx.left-hand-control`.
-- Slint is the only active desktop shell, backed by the UI-independent `lhc-core` crate.
-- The Cargo workspace, CI and developer documentation cover the Rust application.
-- Bundled layouts, layout parser fixtures and the application icon live with their owning crates.
-- Retired application sources and historical comparison reports are archived outside the active build.
-- Removed configuration and layout migrations and the unused raw-JSON game-mode API.
-- Retired condition fields are rejected; manual activation and command permissions use explicit settings.
-- System actions (`sys:`) are reduced to `switchDesktopN`, `switchLayoutN` and the new `windowToDesktopN`; the other KDE-only actions are removed in favour of standard keys, chords or `kde:` shortcuts (see `docs/design/removed-system-actions.md`).
-- Environment variables use the `LHC_` prefix (`LHC_POPUPS`, `LHC_SOCKET`, `LHC_HOTKEYS`, …) instead of `SLINT_SHELL_`.
-- Launching the application again (for example from the application menu) opens the settings window of the running instance instead of failing.
-
-### Added
-
-- Linux packaging metadata: application icon in all hicolor sizes and SVG, desktop entry, AppStream metainfo, a udev rule giving the active session and the `input` group access to `/dev/uinput`, and `uinput` autoload. `install-linux.sh permissions` / `remove-permissions` install and remove them explicitly.
-- Layer hint (Settings → General, off by default): while a layer is held, its keys appear in a layer-shell overlay above all windows that takes neither the keyboard focus nor the pointer; never shown in game mode.
-- `kde:<component>/<shortcut>` action and a "KDE shortcuts" picker category listing every global shortcut of the running KDE session.
-- `--version` and `--help` command-line options.
-- Linux release artifacts built by a tag-triggered workflow: `.tar.gz`, `.deb`, `.rpm`, vendored crate sources and `SHA256SUMS` with build provenance attestations.

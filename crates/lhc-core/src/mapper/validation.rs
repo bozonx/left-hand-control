@@ -1,6 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
-use super::action::{explicit_pause, explicit_text, parse_action};
+use super::action::{explicit_pause, parse_action};
 use super::builtin_macros::BUILTIN_MACROS;
 use super::config::{ActionSpec, AppConfig};
 use super::keys::code_to_key;
@@ -268,7 +268,7 @@ fn validate_macro_step(
     if action.is_empty() {
         return;
     }
-    if action.starts_with("pause:") {
+    if matches!(Action::parse(Some(action)), Action::Pause(_)) {
         if explicit_pause(action).is_none() {
             errors.push(format!("{where_}: invalid pause step \"{action}\""));
         }
@@ -307,52 +307,43 @@ fn validate_action(
         }
         return;
     }
-    if let Some(id) = action.strip_prefix("macro:") {
-        let id = id.trim();
-        if !user_macro_ids.contains(id) && !builtin_macro_ids.contains(id) {
-            errors.push(format!("{where_}: unknown macro \"{id}\""));
+    match Action::parse(Some(action)) {
+        Action::Native | Action::Swallow | Action::Text(_) => {}
+        Action::Macro(id) => {
+            if !user_macro_ids.contains(&id) && !builtin_macro_ids.contains(id.as_str()) {
+                errors.push(format!("{where_}: unknown macro \"{id}\""));
+            }
         }
-        return;
-    }
-    if let Some(id) = action.strip_prefix("cmd:") {
-        let id = id.trim();
-        if !command_ids.contains(id) {
-            errors.push(format!("{where_}: unknown command \"{id}\""));
+        Action::Command(id) => {
+            if !command_ids.contains(&id) {
+                errors.push(format!("{where_}: unknown command \"{id}\""));
+            }
         }
-        return;
-    }
-    if let Some(id) = action.strip_prefix("sys:") {
-        let id = id.trim();
-        if !system::is_known(id) {
-            errors.push(format!("{where_}: unknown system action \"{id}\""));
+        Action::System(id) => {
+            if !system::is_known(&id) {
+                errors.push(format!("{where_}: unknown system action \"{id}\""));
+            }
         }
-        return;
-    }
-    if let Some(id) = action.strip_prefix("app:") {
-        let id = id.trim();
-        if !system::is_known_app(id) {
-            errors.push(format!("{where_}: unknown app action \"{id}\""));
+        Action::App(id) => {
+            if !system::is_known_app(&id) {
+                errors.push(format!("{where_}: unknown app action \"{id}\""));
+            }
         }
-        return;
-    }
-    if let Some(id) = action.strip_prefix("kde:") {
-        let id = id.trim();
-        if crate::profile::actions::kde_shortcut_parts(id).is_none() {
-            errors.push(format!(
-                "{where_}: invalid KDE shortcut \"{id}\", expected component/shortcut"
-            ));
+        Action::KdeShortcut(id) => {
+            if crate::profile::actions::kde_shortcut_parts(&id).is_none() {
+                errors.push(format!(
+                    "{where_}: invalid KDE shortcut \"{id}\", expected component/shortcut"
+                ));
+            }
         }
-        return;
-    }
-    if explicit_text(action).is_some() {
-        return;
-    }
-    if action.starts_with("pause:") {
-        errors.push(format!("{where_}: pause is only allowed inside macros"));
-        return;
-    }
-    if parse_action(action).is_none() {
-        errors.push(format!("{where_}: unknown action \"{action}\""));
+        Action::Pause(_) => {
+            errors.push(format!("{where_}: pause is only allowed inside macros"));
+        }
+        Action::Keys(keys) => {
+            if parse_action(&keys).is_none() {
+                errors.push(format!("{where_}: unknown action \"{action}\""));
+            }
+        }
     }
 }
 
@@ -364,8 +355,7 @@ fn validate_macro_cycles(cfg: &AppConfig, errors: &mut Vec<String>) {
             sys.id.to_string(),
             sys.steps
                 .iter()
-                .filter_map(|step| step.trim().strip_prefix("macro:"))
-                .map(|id| id.trim().to_string())
+                .filter_map(|step| macro_ref(step))
                 .collect(),
         );
     }
@@ -375,8 +365,7 @@ fn validate_macro_cycles(cfg: &AppConfig, errors: &mut Vec<String>) {
             m.id.trim().to_string(),
             m.steps
                 .iter()
-                .filter_map(|step| step.action.trim().strip_prefix("macro:"))
-                .map(|id| id.trim().to_string())
+                .filter_map(|step| macro_ref(&step.action))
                 .collect(),
         );
     }
@@ -395,6 +384,13 @@ fn validate_macro_cycles(cfg: &AppConfig, errors: &mut Vec<String>) {
                 break;
             }
         }
+    }
+}
+
+fn macro_ref(step: &str) -> Option<String> {
+    match Action::parse(Some(step)) {
+        Action::Macro(id) => Some(id),
+        _ => None,
     }
 }
 
@@ -429,6 +425,32 @@ mod tests {
             macros: Vec::new(),
             commands: Vec::new(),
             settings: Settings::default(),
+        }
+    }
+
+    #[test]
+    fn mapper_and_editor_accept_the_same_actions() {
+        let check = |tap: &str, step: &str| {
+            let cfg: AppConfig = serde_json::from_value(serde_json::json!({
+                "macros": [{"id": "m", "steps": [{"action": step}]}],
+                "rules": [{"key": "KeyQ", "tapAction": tap}]
+            }))
+            .unwrap();
+            validate_config(&cfg)
+        };
+        assert!(check("  text:hi", "pause:1").is_ok());
+        assert!(
+            check("sys:switchDesktop10", "macro:m2").is_err(),
+            "unknown macro"
+        );
+        for (tap, step) in [
+            ("sys:switchDesktop11", "KeyA"),
+            ("sys:windowToDesktop20", "KeyA"),
+            ("KeyA", "pause:0"),
+            ("KeyA", "pause:+5"),
+            ("pause:10", "KeyA"),
+        ] {
+            assert!(check(tap, step).is_err(), "{tap} / {step}");
         }
     }
 

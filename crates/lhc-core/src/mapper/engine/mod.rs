@@ -144,7 +144,7 @@ impl Engine {
         if !cfg.settings.commands_enabled {
             fn revoke(action: &mut ActionDef) {
                 match action {
-                    ActionDef::Command(_) => *action = ActionDef::Swallow,
+                    ActionDef::Command(_) => *action = ActionDef::Unavailable("cmd:".into()),
                     ActionDef::Macro(m) => m.steps.retain(|step| {
                         !matches!(step, crate::mapper::action::MacroStepItem::Command(_))
                     }),
@@ -1149,47 +1149,13 @@ impl Engine {
     }
 
     pub fn execute_remote(&mut self, action: &str, out: &mut Vec<Out>) {
-        let trimmed = action.trim();
-        if trimmed.is_empty() {
-            return;
-        }
-        let resolved = if let Some(rest) = trimmed.strip_prefix("macro:") {
-            self.macros.get(rest.trim()).cloned().map(ActionDef::Macro)
-        } else if let Some(rest) = trimmed.strip_prefix("cmd:") {
-            self.commands
-                .get(rest.trim())
-                .cloned()
-                .map(ActionDef::Command)
-                .or(Some(ActionDef::Swallow))
-        } else if let Some(text) = super::action::explicit_text(action) {
-            Some(ActionDef::Literal(text))
-        } else {
-            super::action::parse_action(trimmed).map(ActionDef::Stroke)
-        };
-        if let Some(def) = resolved {
-            self.fire_action(Some(&def), self.default_mod_delay, Instant::now(), out);
-            return;
-        }
-        let mut available = false;
-        if let Some(rest) = action.trim().strip_prefix("sys:") {
-            if let Some(sys) = super::system::resolve(rest) {
-                out.push(Out::RunSystem(sys));
-                available = true;
-            }
-        } else if let Some(rest) = action.trim().strip_prefix("app:") {
-            if let Some(app) = super::system::resolve_app(rest) {
-                out.push(Out::RunSystem(app));
-                available = true;
-            }
-        } else if let Some(rest) = action.trim().strip_prefix("kde:")
-            && let Some(sys) = super::system::resolve_kde_shortcut(rest)
-        {
-            out.push(Out::RunSystem(sys));
-            available = true;
-        }
-        if !available {
-            report_unavailable(action.trim());
-        }
+        let resolved = builder::resolve_action(action, &self.macros, &self.commands, "remote");
+        self.fire_action(
+            resolved.as_ref(),
+            self.default_mod_delay,
+            Instant::now(),
+            out,
+        );
     }
 }
 

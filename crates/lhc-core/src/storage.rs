@@ -154,6 +154,14 @@ impl StoragePaths {
         let dir = self.layouts_dir();
         fs::create_dir_all(&dir).map_err(|e| format!("create_dir_all: {e}"))?;
         let new_path = dir.join(format!("{new_safe}.json"));
+        if old_path != new_path && same_file(&old_path, &new_path) {
+            // Only the case changes on a case-insensitive file system
+            // (Windows, macOS): the "existing" target is this very file.
+            write_file(&old_path, contents.as_bytes(), true)?;
+            fs::rename(&old_path, &new_path).map_err(|e| format!("rename: {e}"))?;
+            sync_parent_dir(&new_path)?;
+            return Ok(new_safe);
+        }
         if new_path.exists() && old_path != new_path && !overwrite {
             return Err(format!("Layout \"{new_safe}\" already exists"));
         }
@@ -208,6 +216,27 @@ pub fn validate_layout_name(name: &str) -> Result<String, String> {
         return Err("Layout name cannot end with a dot".into());
     }
     Ok(trimmed.to_string())
+}
+
+/// Whether two existing paths name one file, e.g. names that differ only in
+/// case on a case-insensitive file system.
+fn same_file(a: &Path, b: &Path) -> bool {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        match (fs::metadata(a), fs::metadata(b)) {
+            (Ok(a), Ok(b)) => a.dev() == b.dev() && a.ino() == b.ino(),
+            _ => false,
+        }
+    }
+    #[cfg(not(unix))]
+    {
+        // Windows file systems are case-insensitive by default; std has no
+        // stable file identity there.
+        b.exists()
+            && a.file_name().map(|n| n.to_string_lossy().to_lowercase())
+                == b.file_name().map(|n| n.to_string_lossy().to_lowercase())
+    }
 }
 
 /// Per-call unique sibling path for atomic writes. A fixed `.tmp` name
@@ -473,6 +502,39 @@ mod tests {
             r#"{"description":"updated"}"#
         );
         assert!(storage.load_user_layout("Old").is_err());
+    }
+
+    #[test]
+    fn rename_that_changes_only_case_keeps_the_layout() {
+        let temp = TempDir::new("storage-layouts-case");
+        let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
+        storage
+            .save_user_layout("Work", r#"{"description":"one"}"#, false)
+            .expect("save");
+
+        let renamed = storage
+            .rename_user_layout("Work", "work", r#"{"description":"two"}"#, false)
+            .expect("rename by case");
+        assert_eq!(renamed, "work");
+        assert_eq!(storage.list_user_layouts().unwrap(), ["work"]);
+        assert_eq!(
+            storage.load_user_layout("work").unwrap(),
+            r#"{"description":"two"}"#
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn distinct_files_differing_in_case_are_never_merged() {
+        let temp = TempDir::new("storage-layouts-case-distinct");
+        let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
+        storage.save_user_layout("A", "{}", false).expect("save A");
+        // Only a case-sensitive file system can hold both names.
+        if storage.save_user_layout("a", "{\"x\":1}", false).is_err() {
+            return;
+        }
+        assert!(storage.rename_user_layout("A", "a", "{}", false).is_err());
+        assert_eq!(storage.load_user_layout("a").unwrap(), "{\"x\":1}");
     }
 
     #[test]

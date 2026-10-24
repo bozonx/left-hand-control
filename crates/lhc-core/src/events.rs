@@ -62,6 +62,9 @@ pub struct EventBus {
 }
 
 impl EventBus {
+    /// Register `listener` for every later event. It runs on the emitting
+    /// thread, often the mapper thread with the keyboard grabbed, so it must
+    /// return quickly and never block (post to a UI loop instead).
     pub fn subscribe(&self, listener: impl Fn(&CoreEvent) + Send + Sync + 'static) {
         if let Ok(mut listeners) = self.listeners.lock() {
             listeners.push(Arc::new(listener));

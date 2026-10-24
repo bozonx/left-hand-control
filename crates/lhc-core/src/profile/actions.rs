@@ -30,7 +30,9 @@ impl Action {
         let Some(value) = value else {
             return Self::Swallow;
         };
-        if let Some(text) = value.strip_prefix("text:") {
+        // Leading blanks are not part of the prefix; the text payload keeps
+        // all of its whitespace.
+        if let Some(text) = value.trim_start().strip_prefix("text:") {
             return Self::Text(text.into());
         }
         let value = value.trim();
@@ -316,21 +318,29 @@ pub fn execution_issue(action: &Action, config: &AppConfig) -> Option<ExecutionI
             return Some(ExecutionIssue::Unavailable);
         }
         match action {
-            Action::Command(_) => {
-                if !cfg!(target_os = "linux") {
+            Action::Command(id) => {
+                if !crate::mapper::runtime::SUPPORTED {
                     Some(ExecutionIssue::Unavailable)
                 } else if !config.settings.commands_enabled {
                     Some(ExecutionIssue::CommandsDisabled)
+                } else if config
+                    .commands
+                    .iter()
+                    .find(|command| &command.id == id)
+                    .is_some_and(|command| command.script().trim().is_empty())
+                {
+                    // Only a script for another OS: the mapper skips it here.
+                    Some(ExecutionIssue::Unavailable)
                 } else {
                     None
                 }
             }
             Action::System(id) => {
-                #[cfg(target_os = "linux")]
+                #[cfg(any(target_os = "linux", target_os = "windows"))]
                 if crate::mapper::system::resolve(id).is_some() {
                     return None;
                 }
-                #[cfg(not(target_os = "linux"))]
+                #[cfg(not(any(target_os = "linux", target_os = "windows")))]
                 let _ = id;
                 Some(ExecutionIssue::Unavailable)
             }
@@ -407,6 +417,12 @@ mod tests {
         }
         assert_eq!(Action::parse(None), Action::Swallow);
         assert_eq!(Action::Swallow.format(), None);
+        // Same reading as the mapper: blanks before the prefix are ignored,
+        // the payload keeps its whitespace.
+        assert_eq!(
+            Action::parse(Some("  text: hi ")),
+            Action::Text(" hi ".into())
+        );
     }
 
     #[test]
@@ -490,6 +506,58 @@ mod tests {
                 .iter()
                 .any(|entry| entry.action == Action::Macro("custom".into())
                     && entry.name == ActionName::Verbatim("Copy line".into()))
+        );
+    }
+
+    #[test]
+    fn execution_issues_follow_what_this_os_runs() {
+        let mut config =
+            AppConfig::from_parts(AppSettings::default(), LayoutPreset::default(), None);
+        let other_os_only = if cfg!(target_os = "windows") {
+            ("true", "")
+        } else {
+            ("", "dir")
+        };
+        for (id, (linux, windows)) in [("both", ("true", "dir")), ("foreign", other_os_only)] {
+            config.commands.push(crate::profile::model::Command {
+                id: id.into(),
+                name: String::new(),
+                linux: linux.into(),
+                windows: windows.into(),
+                working_directory: None,
+            });
+        }
+        let issue =
+            |config: &AppConfig, raw: &str| execution_issue(&Action::parse(Some(raw)), config);
+
+        config.settings.commands_enabled = false;
+        let disabled = if crate::mapper::runtime::SUPPORTED {
+            Some(ExecutionIssue::CommandsDisabled)
+        } else {
+            Some(ExecutionIssue::Unavailable)
+        };
+        assert_eq!(issue(&config, "cmd:both"), disabled);
+
+        config.settings.commands_enabled = true;
+        let runnable = (!crate::mapper::runtime::SUPPORTED).then_some(ExecutionIssue::Unavailable);
+        assert_eq!(issue(&config, "cmd:both"), runnable);
+        assert_eq!(
+            issue(&config, "cmd:foreign"),
+            Some(ExecutionIssue::Unavailable)
+        );
+        // Windows runs system actions through its own backend.
+        if cfg!(target_os = "windows") {
+            assert_eq!(issue(&config, "sys:windowClose"), None);
+        }
+        if !crate::mapper::runtime::SUPPORTED {
+            assert_eq!(
+                issue(&config, "sys:windowClose"),
+                Some(ExecutionIssue::Unavailable)
+            );
+        }
+        assert_eq!(
+            issue(&config, "sys:switchDesktop11"),
+            Some(ExecutionIssue::Unavailable)
         );
     }
 
