@@ -1,0 +1,3650 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Left Hand Control\n"
+"PO-Revision-Date: 2026-10-23 00:00+0000\n"
+"Last-Translator: Machine translation; review welcome\n"
+"Language-Team: Romanian\n"
+"Language: ro\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n==0 || (n%100>0 && n%100<20) ? 1 : 2);\n"
+
+msgid "Action saved"
+msgstr "Acțiunea salvată"
+
+msgid "Cancel"
+msgstr "Anulează"
+
+msgid "Increase"
+msgstr "Crește"
+
+msgid "Decrease"
+msgstr "Scădere"
+
+msgid "Configuration loaded: {n} rule"
+msgid_plural "Configuration loaded: {n} rules"
+msgstr[0] "Configurație încărcată: {n} regulă"
+msgstr[1] "Configurație încărcată: {n} reguli"
+msgstr[2] "Configurație încărcată: {n} de reguli"
+
+msgid "Configuration saved: {n} rule"
+msgid_plural "Configuration saved: {n} rules"
+msgstr[0] "Configurație salvată: {n} regulă"
+msgstr[1] "Configurație salvată: {n} reguli"
+msgstr[2] "Configurație salvată: {n} de reguli"
+
+msgid "Configuration unavailable: {}"
+msgstr "Configurație indisponibilă: {}"
+
+msgid "Delay: an integer from 1 to 10000 ms"
+msgstr "Întârziere: un număr întreg de la 1 la 10000 ms"
+
+msgid "Device saved: {}"
+msgstr "Dispozitiv salvat: {}"
+
+msgid "Emoji"
+msgstr "Emoji"
+
+msgid "Tab · {}/{}"
+msgstr "Tab · {}/{}"
+
+msgid "Enter non-empty text"
+msgstr "Introduceți text care nu este gol"
+
+msgid "Key {} only has conditional or layer rules; edit it in the full editor"
+msgstr ""
+"Cheia {} are doar reguli condiționale sau de nivel; editați-l în editorul "
+"complet"
+
+msgid "Keyboard"
+msgstr "Tastatura"
+
+msgid "Keyboard device"
+msgstr "Dispozitiv cu tastatură"
+
+msgid "Keyboard layout"
+msgstr "Dispunerea tastaturii"
+
+msgid "Load a valid configuration before starting the mapper"
+msgstr "Încărcați o configurație validă înainte de a porni mapatorul"
+
+msgid "Mapper is running"
+msgstr "Mapper rulează"
+
+msgid "Mapper is running: {}"
+msgstr "Mapper rulează: {}"
+
+msgid "Mapper is starting…"
+msgstr "Mapper începe..."
+
+msgid "Mapper is stopped"
+msgstr "Mapper este oprit"
+
+msgid "Mapper is stopped: {}"
+msgstr "Mapper este oprit: {}"
+
+msgid "Quick actions"
+msgstr "Acțiuni rapide"
+
+msgid "Quit"
+msgstr "Ieșire"
+
+msgid "Settings"
+msgstr "Setări"
+
+msgid "Mapper on / off"
+msgstr "Mapper activat/dezactivat"
+
+msgid "Switch to desktop {n}"
+msgstr "Comutați la desktop {n}"
+
+msgid "Save"
+msgstr "Salvează"
+
+msgid "Changes applied, but the mapper was not updated: {}"
+msgstr "S-au aplicat modificări, dar mapatorul nu a fost actualizat: {}"
+
+msgid "Select a key to assign an action."
+msgstr "Selectați o tastă pentru a atribui o acțiune."
+
+msgid "Select a keyboard device in the settings"
+msgstr "Selectați un dispozitiv cu tastatură din setări"
+
+msgid "Select a system action"
+msgstr "Selectați o acțiune de sistem"
+
+msgid "Spell popup process unavailable: {}"
+msgstr "Procesul pop-up de ortografie indisponibil: {}"
+
+msgid "Spell worker is not running"
+msgstr "Lucrătorul de vrăji nu rulează"
+
+msgid "Spell worker is restarting"
+msgstr "Lucrătorul de vrăjire repornește"
+
+msgid "Spell worker: restart limit exceeded (3 per minute)"
+msgstr "Vrăjitor: limita de repornire depășită (3 pe minut)"
+
+msgid "Spell worker: {}"
+msgstr "Lucrător de vrăjire: {}"
+
+msgid "Stop capture"
+msgstr "Opriți capturarea"
+
+msgid "System"
+msgstr "Sistem"
+
+msgid "Text"
+msgstr "Text"
+
+msgid "The configuration changed since editing started; repeat the change"
+msgstr ""
+"Configurația s-a schimbat de când a început editarea; repeta schimbarea"
+
+msgid "Unknown action type"
+msgstr "Tip de acțiune necunoscut"
+
+msgid "Left Hand Control"
+msgstr "Left Hand Control"
+
+msgid "Layouts"
+msgstr "Aspecte"
+
+msgid "New layout name"
+msgstr "Nume nou aspect"
+
+msgid "Mapper"
+msgstr "Remapare"
+
+msgid "Dark"
+msgstr "Întuneric"
+
+msgid "Light"
+msgstr "Aprinde"
+
+msgid "Refresh devices"
+msgstr "Actualizează dispozitivele"
+
+msgid "Mouse device path"
+msgstr "Calea dispozitivului mouse-ului"
+
+msgid "Optional device path"
+msgstr "Calea opțională a dispozitivului"
+
+msgid "General"
+msgstr "General"
+
+msgid "Appearance"
+msgstr "Aspect"
+
+msgid "Language"
+msgstr "Limbă"
+
+msgid "Automatic"
+msgstr "Automat"
+
+msgid "Key behavior"
+msgstr "Comportamentul cheie"
+
+msgid "Game mode"
+msgstr "Modul de joc"
+
+msgid "Use GameMode daemon"
+msgstr "Utilizați demonul GameMode"
+
+msgid "Detect fullscreen"
+msgstr "Detectează ecranul complet"
+
+msgid "ydotool path"
+msgstr "calea ydotool"
+
+msgid "xdotool path"
+msgstr "calea xdotool"
+
+msgid "Settings directory: "
+msgstr "Director de setări:"
+
+msgid "Layouts directory: "
+msgstr "Director cu aspect:"
+
+msgid "Save settings"
+msgstr "Salvați setările"
+
+msgid "Settings saved"
+msgstr "Setările au fost salvate"
+
+msgid "Enter a timeout from 50 to 1000 milliseconds"
+msgstr "Introduceți un timeout de la 50 la 1000 de milisecunde"
+
+msgid "Rules"
+msgstr "Reguli"
+
+msgid "Remove"
+msgstr "Elimină"
+
+msgid "Move up"
+msgstr "Mișcă-te în sus"
+
+msgid "Move down"
+msgstr "Deplasați-vă în jos"
+
+msgid "Enabled"
+msgstr "Activat"
+
+msgid "Trigger key"
+msgstr "Tasta de declanșare"
+
+msgid "Tap action"
+msgstr "Atingeți acțiune"
+
+msgid "Layout conditions (comma separated)"
+msgstr "Condiții de aspect (separate prin virgulă)"
+
+msgid "App whitelist (comma separated)"
+msgstr "Lista albă a aplicațiilor (separate prin virgulă)"
+
+msgid "App blacklist (comma separated)"
+msgstr "Lista neagră a aplicațiilor (separate prin virgulă)"
+
+msgid "Isolate"
+msgstr "Izola"
+
+msgid "Hold for"
+msgstr "Țineți pentru"
+
+msgid "Swallow tap"
+msgstr "Blochează apăsarea scurtă"
+
+msgid "Swallow hold"
+msgstr "Blochează apăsarea lungă"
+
+msgid "New layer name"
+msgstr "Nume nou strat"
+
+msgid "Create layer"
+msgstr "Creați un strat"
+
+msgid "Rules and triggers"
+msgstr "Reguli și declanșatoare"
+
+msgid "Define how physical keys activate layers or run actions."
+msgstr ""
+"Definiți modul în care cheile fizice activează straturile sau execută "
+"acțiuni."
+
+msgid "Add rule"
+msgstr "Adăugați o regulă"
+
+msgid "Not set"
+msgstr "Nu setat"
+
+msgid "Layer (hold)"
+msgstr "Strat (ține)"
+
+msgid "Double-tap action"
+msgstr "Atingeți de două ori"
+
+msgid "Hold button"
+msgstr "Țineți apăsat butonul"
+
+msgid "Default"
+msgstr "Implicit"
+
+msgid "Advanced"
+msgstr "Avansat"
+
+msgid "Choose trigger key"
+msgstr "Alegeți cheia de declanșare"
+
+msgid "Choose layer"
+msgstr "Alegeți stratul"
+
+msgid "Conditions"
+msgstr "Condiții"
+
+msgid "Advanced rule options"
+msgstr "Opțiuni avansate de reguli"
+
+msgid "Choose action"
+msgstr "Alegeți acțiunea"
+
+msgid "Ignore"
+msgstr "Ignora"
+
+msgid "On"
+msgstr "Activat"
+
+msgid "Off"
+msgstr "Dezactivat"
+
+msgid "Clear"
+msgstr "Clar"
+
+msgid "Apply"
+msgstr "Aplică"
+
+msgid "Delete rule?"
+msgstr "Ștergeți regula?"
+
+msgid "This rule will be removed from the current layout."
+msgstr "Această regulă va fi eliminată din aspectul curent."
+
+msgid "Layers"
+msgstr "Straturi"
+
+msgid "New layer"
+msgstr "Strat nou"
+
+msgid "Duplicate"
+msgstr "Duplicat"
+
+msgid "Delete"
+msgstr "Șterge"
+
+msgid "Extra keys"
+msgstr "Chei suplimentare"
+
+msgid "Edit"
+msgstr "Editează"
+
+msgid "Rename layer"
+msgstr "Redenumiți stratul"
+
+msgid "Duplicate layer"
+msgstr "Strat duplicat"
+
+msgid "Delete layer?"
+msgstr "Ștergeți stratul?"
+
+msgid "Edit layer key"
+msgstr "Editați cheia stratului"
+
+msgid "Name"
+msgstr "Nume"
+
+msgid "Description"
+msgstr "Descriere"
+
+msgid "Rules using this layer will return to the base layer."
+msgstr "Regulile care folosesc acest strat vor reveni la stratul de bază."
+
+msgid "Transparent"
+msgstr "Transparent"
+
+msgid "Swallow"
+msgstr "Blochează"
+
+msgid "Action"
+msgstr "Acţiune"
+
+msgid "Action code"
+msgstr "Cod de acțiune"
+
+msgid "Enter a layer name"
+msgstr "Introduceți un nume de strat"
+
+msgid "A layer with this name already exists."
+msgstr "Un strat cu acest nume există deja."
+
+msgid "Enter a layout name"
+msgstr "Introduceți un nume de aspect"
+
+msgid "Enter a key code"
+msgstr "Introduceți un cod de cheie"
+
+msgid "Native"
+msgstr "Nativ"
+
+msgid "Layer saved"
+msgstr "Stratul salvat"
+
+msgid "Macros"
+msgstr "Macro-uri"
+
+msgid "Built-in macros"
+msgstr "Macro-uri încorporate"
+
+msgid "Macro ID"
+msgstr "ID macro"
+
+msgid "Copy ID"
+msgstr "Copiați ID-ul"
+
+msgid "Steps"
+msgstr "Pași"
+
+msgid "Add step"
+msgstr "Adăugați pasul"
+
+msgid "Add pause"
+msgstr "Adăugați o pauză"
+
+msgid "Macro ID must contain 1–64 letters, digits, underscores or hyphens"
+msgstr ""
+"ID-ul macrocomenzii trebuie să conțină 1–64 de litere, cifre, caractere de "
+"subliniere sau cratime"
+
+msgid "Macro ID is already in use"
+msgstr "ID-ul macro este deja utilizat"
+
+msgid "Macro delays must be between 0 and 2000 ms"
+msgstr "Întârzierile macro trebuie să fie între 0 și 2000 ms"
+
+msgid "Pause must be between 1 and 10000 ms"
+msgstr "Pauza trebuie să fie între 1 și 10000 ms"
+
+msgid "Unknown key or shortcut in macro step"
+msgstr "Cheie necunoscută sau comandă rapidă în pasul macro"
+
+msgid "Macro references cannot form a cycle"
+msgstr "Referințele macro nu pot forma un ciclu"
+
+msgid "Commands"
+msgstr "Comenzi"
+
+msgid "Add"
+msgstr "Adaugă"
+
+msgid "Clear cell"
+msgstr "Șterge celula"
+
+msgid "Page name"
+msgstr "Numele paginii"
+
+msgid "Emoji cells accept at most 100 characters."
+msgstr "Celulele emoji acceptă cel mult 100 de caractere."
+
+msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
+msgstr "ID comandă: 1–64 de litere, cifre, litere de subliniere sau cratime."
+
+msgid "Command IDs must be unique."
+msgstr "ID-urile comenzilor trebuie să fie unice."
+
+msgid "Enter a shell command."
+msgstr "Introduceți o comandă shell."
+
+msgid "Save as…"
+msgstr "Salvați ca…"
+
+msgid "Save layout as…"
+msgstr "Salvați aspectul ca..."
+
+msgid "Please wait…"
+msgstr "Va rugam asteptati…"
+
+msgid "Stop"
+msgstr "Stop"
+
+msgid "Start"
+msgstr "Început"
+
+msgid "Custom layout"
+msgstr "Aspect personalizat"
+
+msgid "Base keyboard"
+msgstr "Tastatură de bază"
+
+msgid "Keyboard device path"
+msgstr "Calea dispozitivului tastaturii"
+
+msgid "Copy path"
+msgstr "Copiați calea"
+
+msgid "Create a layer to assign its keys, or edit the base keyboard."
+msgstr ""
+"Creați un strat pentru a-i atribui tastele sau editați tastatura de bază."
+
+msgid "Running"
+msgstr "Funcţionare"
+
+msgid "Stopped"
+msgstr "oprit"
+
+msgid "Layout library updated"
+msgstr "Biblioteca de aspect a fost actualizată"
+
+msgid "Select a layout"
+msgstr "Selectați un aspect"
+
+msgid "Layout changed on disk; select it again"
+msgstr "Aspectul modificat pe disc; selectați-l din nou"
+
+msgid "Any game mode"
+msgstr "Orice mod de joc"
+
+msgid "Game mode on"
+msgstr "Modul joc activat"
+
+msgid "Game mode off"
+msgstr "Modul joc dezactivat"
+
+msgid "System layouts (comma separated)"
+msgstr "Aspecte de sistem (separate prin virgulă)"
+
+msgid "Applications (comma separated)"
+msgstr "Aplicații (separate prin virgulă)"
+
+msgid "Manual"
+msgstr "Manual"
+
+msgid "Active"
+msgstr "Activ"
+
+msgid "Editing · unsaved"
+msgstr "Editare · nesalvat"
+
+msgid "Editing"
+msgstr "Editare"
+
+msgid "Activate"
+msgstr "Activa"
+
+msgid "Delete layout?"
+msgstr "Ștergeți aspectul?"
+
+msgid "Layout details"
+msgstr "Detalii de aspect"
+
+msgid "Do not use when"
+msgstr "Nu utilizați când"
+
+msgid "The layout file will be deleted. This cannot be undone."
+msgstr "Fișierul de aspect va fi șters. Acest lucru nu poate fi anulat."
+
+msgid "Duplicate…"
+msgstr "Duplicat…"
+
+msgid "Edit layout"
+msgstr "Editați aspectul"
+
+msgid "New layout"
+msgstr "Aspect nou"
+
+msgid "A layout with this name already exists."
+msgstr "Un aspect cu acest nume există deja."
+
+msgid "Add a description…"
+msgstr "Adăugați o descriere..."
+
+msgid "Create"
+msgstr "Crea"
+
+msgid "Delete…"
+msgstr "Şterge…"
+
+msgid "Description (optional)"
+msgstr "Descriere (opțional)"
+
+msgid "Discard changes"
+msgstr "Renunțați la modificări"
+
+msgid "Make active"
+msgstr "Faceți activ"
+
+msgid "Single: the layout you make active works everywhere."
+msgstr "Single: aspectul pe care îl faceți activ funcționează peste tot."
+
+msgid "Not used in automatic mode"
+msgstr "Nu este utilizat în modul automat"
+
+msgid "Rename…"
+msgstr "Redenumiți…"
+
+msgid "Save and continue"
+msgstr "Salvați și continuați"
+
+msgid ""
+"The layout you are editing has not been saved to the library. Its changes "
+"will be lost."
+msgstr ""
+"Aspectul pe care îl editați nu a fost salvat în bibliotecă. Schimbările sale"
+" se vor pierde."
+
+msgid "The name contains characters that cannot be used in a file name."
+msgstr ""
+"Numele conține caractere care nu pot fi folosite într-un nume de fișier."
+
+msgid "Unsaved changes"
+msgstr "Modificări nesalvate"
+
+msgid "You are editing “{}”, but “{}” is active."
+msgstr "Editați „{}”, dar „{}” este activ."
+
+msgid "You are editing “{}”; no layout is active."
+msgstr "Editați „{}”; niciun aspect nu este activ."
+
+msgid "game mode off"
+msgstr "modul joc dezactivat"
+
+msgid "game mode on"
+msgstr "modul joc activat"
+
+msgid "{} (copy)"
+msgstr "{} (copie)"
+
+msgid "“{}” has unsaved changes. Save them before switching?"
+msgstr "„{}” are modificări nesalvate. Le salvați înainte de a comuta?"
+
+msgid "Layout mode"
+msgstr "Modul aspect"
+
+msgid "Create layout"
+msgstr "Creați aspect"
+
+msgid "Empty"
+msgstr "Gol"
+
+msgid "Empty layout"
+msgstr "Aspect gol"
+
+msgid "Previously selected: {}"
+msgstr "Selectat anterior: {}"
+
+msgid "Current value"
+msgstr "Valoarea curentă"
+
+msgid "Capture key"
+msgstr "Tasta de captare"
+
+msgid "Press a key (including modifiers or Escape)."
+msgstr "Apăsați o tastă (inclusiv modificatorii sau Escape)."
+
+msgid "Press a key or shortcut. Release a modifier to select it alone."
+msgstr ""
+"Apăsați o tastă sau o comandă rapidă. Eliberați un modificator pentru a-l "
+"selecta singur."
+
+msgid "Choose a valid key or action."
+msgstr "Alegeți o cheie sau o acțiune validă."
+
+msgid "Search keys and actions"
+msgstr "Căutați chei și acțiuni"
+
+msgid "Search keys"
+msgstr "Cheile de căutare"
+
+msgid "Hold action"
+msgstr "Țineți acțiunea"
+
+msgid "Macro step"
+msgstr "Pasul macro"
+
+msgid ""
+"You can enter a key combination using + between keys. Some keys depend on "
+"keyboard hardware and may be ignored by the system."
+msgstr ""
+"Puteți introduce o combinație de taste folosind + între taste. Unele taste "
+"depind de hardware-ul tastaturii și pot fi ignorate de sistem."
+
+msgid ""
+"You can assign a key combination using + between keys. Availability of "
+"special keys depends on the keyboard and desktop environment."
+msgstr ""
+"Puteți aloca o combinație de taste folosind + între taste. Disponibilitatea "
+"tastelor speciale depinde de tastatură și de mediul desktop."
+
+msgid "Behavior:"
+msgstr "Comportament:"
+
+msgid "Action:"
+msgstr "Acţiune:"
+
+msgid "Trigger key:"
+msgstr "Tasta de declanșare:"
+
+msgid "{n} line"
+msgid_plural "{n} lines"
+msgstr[0] "{n} linie"
+msgstr[1] "{n} linii"
+msgstr[2] "{n} de linii"
+
+msgid "Modifiers"
+msgstr "Modificatori"
+
+msgid "Letters, digits and symbols"
+msgstr "Litere, cifre și simboluri"
+
+msgid "Control keys"
+msgstr "Tastele de control"
+
+msgid "Navigation and numpad"
+msgstr "Navigație și tastatură numerică"
+
+msgid "F1–F24"
+msgstr "F1–F24"
+
+msgid "Media and launch"
+msgstr "Media și lansare"
+
+msgid "System and laptop"
+msgstr "Sistem si laptop"
+
+msgid "Mouse"
+msgstr "Mouse"
+
+msgid "Other keys"
+msgstr "Alte chei"
+
+msgid "Actions"
+msgstr "Acțiuni"
+
+msgid "Extra button on some gaming mice"
+msgstr "Buton suplimentar pe niște șoareci de gaming"
+
+msgid "Keys"
+msgstr "Chei"
+
+msgid "System actions"
+msgstr "Acțiuni ale sistemului"
+
+msgid "KDE shortcuts"
+msgstr "Comenzi rapide KDE"
+
+msgid "Pause"
+msgstr "Pauză"
+
+msgid "Literal text (text: prefix is added automatically)"
+msgstr "Text literal (text: prefixul este adăugat automat)"
+
+msgid "Pause in milliseconds (1–10000)"
+msgstr "Pauză în milisecunde (1–10000)"
+
+msgid "No matching items"
+msgstr "Nu există articole care se potrivesc"
+
+msgid "Show Quick Action Menu page {}"
+msgstr "Afișați pagina meniului de acțiune rapidă {}"
+
+msgid "Show Emoji & Symbols menu page {}"
+msgstr "Afișați pagina de meniu Emoji și simboluri {}"
+
+msgid "Switch to desktop {}"
+msgstr "Comutați la desktop {}"
+
+msgid "Move window to desktop {}"
+msgstr "Mutați fereastra pe desktop {}"
+
+msgid "Close window"
+msgstr "Închide fereastra"
+
+msgid "Minimize window"
+msgstr "Minimizați fereastra"
+
+msgid "Maximize window"
+msgstr "Maximizați fereastra"
+
+msgid "Keep window above others"
+msgstr "Păstrați fereastra deasupra celorlalți"
+
+msgid "Show desktop"
+msgstr "Arată desktop"
+
+msgid "Window overview"
+msgstr "Prezentare generală a ferestrei"
+
+msgid "Open application launcher"
+msgstr "Deschideți lansatorul de aplicații"
+
+msgid "Turn off screen"
+msgstr "Opriți ecranul"
+
+msgid "Switch to layout {}"
+msgstr "Comutați la aspectul {}"
+
+msgid "Layer"
+msgstr "Strat"
+
+msgid "Delete layer"
+msgstr "Ștergeți stratul"
+
+msgid "Create new layer"
+msgstr "Creați un nou strat"
+
+msgid "Layer description"
+msgstr "Descrierea stratului"
+
+msgid "Add description"
+msgstr "Adăugați descriere"
+
+msgid "Type to test..."
+msgstr "Tastați pentru a testa..."
+
+msgid "Ignore key"
+msgstr "Ignorați cheia"
+
+msgid "No layers yet"
+msgstr "Încă nu există straturi"
+
+msgid "Left hand"
+msgstr "Mâna stângă"
+
+msgid "Right hand"
+msgstr "Mâna dreaptă"
+
+msgid "Key"
+msgstr "Cheie"
+
+msgid "US layout"
+msgstr "layout SUA"
+
+msgid "LHC codes"
+msgstr "codurile LHC"
+
+msgid "No extra keys for this layer yet."
+msgstr "Încă nu există chei suplimentare pentru acest strat."
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid."
+msgstr ""
+"Butoanele mouse-ului, tastele media și alte declanșatoare din afara grilei "
+"principale a tastaturii."
+
+msgid ""
+"Display modes affect labels only — the key code stays the same. “US layout” "
+"shows standard letter labels for visual reference. “LHC codes” shows app-"
+"specific codes (e.g. KeyA, ArrowLeft)."
+msgstr ""
+"Modurile de afișare afectează numai etichetele - codul cheii rămâne același."
+" „Dispunerea SUA” arată etichete standard de litere pentru referință "
+"vizuală. „Coduri LHC” arată coduri specifice aplicației (de exemplu, KeyA, "
+"ArrowLeft)."
+
+msgid "(copy)"
+msgstr "(copie)"
+
+msgid "Add page"
+msgstr "Adăugați o pagină"
+
+msgid "Allow commands"
+msgstr "Permite comenzi"
+
+msgid "Animals & Nature"
+msgstr "Animale și natură"
+
+msgid ""
+"Build reusable sequences from key chords, text actions, commands, or system "
+"actions. Steps run in order with the configured pause between them."
+msgstr ""
+"Creați secvențe reutilizabile din acorduri cheie, acțiuni text, comenzi sau "
+"acțiuni de sistem. Pașii rulează în ordine, cu pauza configurată între ei."
+
+msgid ""
+"Built-in macros that cannot be edited. To customize, create a user macro "
+"based on one."
+msgstr ""
+"Macrocomenzi încorporate care nu pot fi editate. Pentru a personaliza, "
+"creați o macrocomandă de utilizator bazată pe una."
+
+msgid "Cell {}"
+msgstr "Celula {}"
+
+msgid "Command name"
+msgstr "Numele comenzii"
+
+msgid "Create based on"
+msgstr "Creați pe baza"
+
+msgid "Delete macro"
+msgstr "Ștergeți macrocomanda"
+
+msgid "Delete macro?"
+msgstr "Ștergeți macrocomanda?"
+
+msgid "Delete page"
+msgstr "Șterge pagina"
+
+msgid "Delete page?"
+msgstr "Ștergeți pagina?"
+
+msgid "Delete step"
+msgstr "Șterge pasul"
+
+msgid "Delete step?"
+msgstr "Ștergeți pasul?"
+
+msgid "Disable"
+msgstr "Dezactivați"
+
+msgid "Drag"
+msgstr "Trageți"
+
+msgid "Emoji & Symbols"
+msgstr "Emoji și simboluri"
+
+msgid "Emoji Symbols"
+msgstr "Simboluri Emoji"
+
+msgid "Emoji, symbol, or any text"
+msgstr "Emoji, simbol sau orice text"
+
+msgid "Empty step — pick an action or remove it."
+msgstr "Pas gol — alegeți o acțiune sau eliminați-o."
+
+msgid "Fix the existing macro errors first"
+msgstr "Remediați mai întâi erorile macro existente"
+
+msgid "Food & Drink"
+msgstr "Mâncare și băutură"
+
+msgid "Human-readable macro name, shown in picker lists."
+msgstr ""
+"Numele macrocomenzii care poate fi citit de om, afișat în listele de "
+"selecție."
+
+msgid "ID"
+msgstr "ID"
+
+msgid "Key {}"
+msgstr "Cheie {}"
+
+msgid "Label"
+msgstr "Eticheta"
+
+msgid "Macro name"
+msgstr "Nume macro"
+
+msgid "Modifier delay"
+msgstr "Întârziere modificator"
+
+msgid "Move page left"
+msgstr "Mutați pagina spre stânga"
+
+msgid "Move page right"
+msgstr "Mutați pagina spre dreapta"
+
+msgid "New macro"
+msgstr "Macrocomandă nouă"
+
+msgid "No macros yet. Click \"New macro\" to create the first one."
+msgstr ""
+"Încă nu există macrocomenzi. Faceți clic pe „Macrocomandă nouă” pentru a "
+"crea prima."
+
+msgid "No steps yet. Each step — one chord or action."
+msgstr "Nu există încă pași. Fiecare pas - un acord sau acțiune."
+
+msgid ""
+"Opened by the app:showEmojiMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold an "
+"emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short "
+"phrase (e.g. \"// TODO: \")."
+msgstr ""
+"Deschis de acțiuni app:showEmojiMenuN, unde N este poziția paginii: "
+"reordonarea paginilor schimbă pagina pe care o deschide o tastă. Fiecare "
+"celulă poate conține un emoji, un simbol UTF (de exemplu, ≠), orice alt "
+"caracter (de exemplu, №) sau o frază scurtă (de exemplu, \"// TODO: \")."
+
+msgid "Opened by the app:showQuickMenu1...5 actions."
+msgstr "Deschis de aplicație: showQuickMenu1...5 acțiuni."
+
+msgid "Page"
+msgstr "Pagină"
+
+msgid "Pause (ms)"
+msgstr "Pauză (ms)"
+
+msgid "Pause between steps"
+msgstr "Pauză între pași"
+
+msgid "People & Gestures"
+msgstr "Oameni și Gesturi"
+
+msgid "Per-macro pause between steps. Defaults to the Settings value."
+msgstr "Pauză per-macro între pași. Valoarea implicită pentru Setări."
+
+msgid "Pick an action"
+msgstr "Alegeți o acțiune"
+
+msgid "Quick Actions"
+msgstr "Acțiuni rapide"
+
+msgid ""
+"Reusable shell commands for the current layout. On Linux they run through sh"
+" -lc after you explicitly allow them. Shell commands run one at a time, with"
+" a 30-second limit, in your home directory."
+msgstr ""
+"Comenzi shell reutilizabile pentru aspectul curent. Pe Linux rulează prin sh"
+" -lc după ce le permiteți în mod explicit. Comenzile Shell rulează una câte "
+"una, cu o limită de 30 de secunde, în directorul dvs. de acasă."
+
+msgid "Shell commands are allowed for this version of the current layout."
+msgstr ""
+"Comenzile Shell sunt permise pentru această versiune a aspectului curent."
+
+msgid "Smileys & Emotion"
+msgstr "Smileys & Emotion"
+
+msgid ""
+"The command will be deleted. Keys or macros that reference cmd:{} will stop "
+"working."
+msgstr ""
+"Comanda va fi ștearsă. Cheile sau macrocomenzile care fac referire la cmd:{}"
+" nu vor mai funcționa."
+
+msgid "The macro will be deleted. References macro:{} will stop working."
+msgstr ""
+"Macrocomanda va fi ștearsă. Macrocomanda referințe: {} nu va mai funcționa."
+
+msgid "The page and all assigned cells on it will be deleted."
+msgstr "Pagina și toate celulele atribuite de pe ea vor fi șterse."
+
+msgid ""
+"This layout contains shell scripts. Read every script before allowing them, "
+"especially in layouts from other people. Approval applies to the reviewed "
+"command definitions and resets when the command set, IDs, or Linux scripts "
+"change."
+msgstr ""
+"Acest aspect conține scripturi shell. Citiți fiecare script înainte de a le "
+"permite, în special în machetele de la alte persoane. Aprobarea se aplică "
+"definițiilor comenzilor revizuite și resetărilor atunci când setul de "
+"comenzi, ID-urile sau scripturile Linux se modifică."
+
+msgid "This step will be removed from the macro."
+msgstr "Acest pas va fi eliminat din macrocomandă."
+
+msgid ""
+"Time between pressing a modifier and the main key within one step. Defaults "
+"to the Settings value."
+msgstr ""
+"Timp între apăsarea unui modificator și a tastei principale într-un singur "
+"pas. Valoarea implicită pentru Setări."
+
+msgid "Travel & Places"
+msgstr "Călătorii și Locuri"
+
+msgid "UTF Symbols"
+msgstr "Simboluri UTF"
+
+msgid "Texts"
+msgstr "Texte"
+
+msgid "Non-breaking space"
+msgstr "Spațiu care nu se rupe"
+
+msgid "continue"
+msgstr "continua"
+
+msgid "do all you recommended"
+msgstr "fa tot ce ti-ai recomandat"
+
+msgid "fix the errors above"
+msgstr "remediați erorile de mai sus"
+
+msgid "I'll call you back later"
+msgstr "Te sun înapoi mai târziu"
+
+msgid "Thanks!"
+msgstr "Mulţumesc!"
+
+msgid "OK, got it 👍"
+msgstr "OK, am înțeles 👍"
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Rules tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"Identificator unic utilizat în referințe precum macro:<id>. Pentru a lega "
+"această macrocomandă la o cheie, alegeți acțiunea respectivă din fila "
+"Straturi sau Reguli. Schimbați ID-ul numai atunci când nimic nu folosește "
+"această macrocomandă."
+
+msgid "Used in:"
+msgstr "Folosit în:"
+
+msgid "User macros"
+msgstr "Macrocomenzi utilizator"
+
+msgid "Work & Objects"
+msgstr "Lucrări și obiecte"
+
+msgid "e.g. Next Track"
+msgstr "de ex. Următoarea piesă"
+
+msgid "ms"
+msgstr "Domnișoară"
+
+msgid "Rule saved"
+msgstr "Regula salvată"
+
+msgid "Search layers"
+msgstr "Căutați straturi"
+
+msgid "Set"
+msgstr "Set"
+
+msgid "Start the mapper to run actions from the menus"
+msgstr "Porniți mapatorul pentru a rula acțiuni din meniuri"
+
+msgid ""
+"The text was not typed: the keyboard layout lacks some of its characters, "
+"such as emoji. Choose a typing method with the clipboard."
+msgstr ""
+"Textul nu a fost tastat: aspectul tastaturii nu are unele dintre caracterele"
+" sale, cum ar fi emoji. Alegeți o metodă de tastare cu clipboard."
+
+msgid "The text was not typed: the active keyboard layout is unknown."
+msgstr ""
+"Textul nu a fost introdus: aspectul activ al tastaturii este necunoscut."
+
+msgid ""
+"The text was not typed: the typing method is unavailable ({}). Restart the "
+"mapper to try again."
+msgstr ""
+"Textul nu a fost introdus: metoda de tastare nu este disponibilă ({}). "
+"Reporniți mapper-ul pentru a încerca din nou."
+
+msgid "The text was not typed: safe clipboard access failed ({})."
+msgstr "Textul nu a fost introdus: accesul sigur la clipboard a eșuat ({})."
+
+msgid "The text was not typed: {}"
+msgstr "Textul nu a fost tastat: {}"
+
+msgid "The layout file is empty"
+msgstr "Fișierul de aspect este gol"
+
+msgid "↑"
+msgstr "↑"
+
+msgid "↓"
+msgstr "↓"
+
+msgid "Does not matter"
+msgstr "Nu contează"
+
+msgid "Open for editing (unsaved)"
+msgstr "Deschis pentru editare (nesalvat)"
+
+msgid "Open for editing"
+msgstr "Deschis pentru editare"
+
+msgid "Layout name"
+msgstr "Numele aspectului"
+
+msgid "System languages"
+msgstr "Limbi de sistem"
+
+msgid "No system languages detected"
+msgstr "Nu au fost detectate limbi de sistem"
+
+msgid "Applications"
+msgstr "Aplicații"
+
+msgid "“{}” will be deleted. This cannot be undone."
+msgstr "„{}” va fi șters. Acest lucru nu poate fi anulat."
+
+msgid "Reset current changes"
+msgstr "Resetați modificările curente"
+
+msgid "Available"
+msgstr "Disponibil"
+
+msgid "Unavailable"
+msgstr "Indisponibil"
+
+msgid "Not implemented"
+msgstr "Nu este implementat"
+
+msgid "No input devices were found in /dev/input."
+msgstr "Nu au fost găsite dispozitive de intrare în /dev/input."
+
+msgid ""
+"The selected keyboard is not connected. Connect it or pick another one "
+"below."
+msgstr ""
+"Tastatura selectată nu este conectată. Conectați-l sau alegeți altul de mai "
+"jos."
+
+msgid ""
+"No permission to read keyboard events. Add your user to the input group "
+"(install-linux.sh permissions does this) and log in again."
+msgstr ""
+"Fără permisiunea de a citi evenimentele de la tastatură. Adăugați "
+"utilizatorul în grupul de intrare (permisiunile instal-linux.sh face acest "
+"lucru) și conectați-vă din nou."
+
+msgid ""
+"/dev/uinput does not exist. Load the uinput kernel module: sudo modprobe "
+"uinput."
+msgstr ""
+"/dev/uinput nu există. Încărcați modulul nucleului uinput: sudo modprobe "
+"uinput."
+
+msgid ""
+"No permission to write to /dev/uinput. Install the application's udev rule "
+"(install-linux.sh permissions) or reinstall the package."
+msgstr ""
+"Fără permisiunea de a scrie în /dev/uinput. Instalați regula udev a "
+"aplicației (permisiuni install-linux.sh) sau reinstalați pachetul."
+
+msgid "Launch on startup"
+msgstr "Lansați la pornire"
+
+msgid "Start the mapper on launch"
+msgstr "Porniți mapper la lansare"
+
+msgid "No keyboard is selected, so the mapper cannot start."
+msgstr "Nu este selectată nicio tastatură, așa că mapperul nu poate porni."
+
+msgid "Choose a keyboard"
+msgstr "Alegeți o tastatură"
+
+msgid "Getting started"
+msgstr "Noțiuni de bază"
+
+msgid "Keyboard selected"
+msgstr "Tastatura selectată"
+
+msgid "Choose the keyboard to remap"
+msgstr "Alegeți tastatura pentru a remapa"
+
+msgid "Change"
+msgstr "Schimba"
+
+msgid "Add a layout"
+msgstr "Adăugați un aspect"
+
+msgid "Press Start at the top to apply it"
+msgstr "Apăsați Start în partea de sus pentru a o aplica"
+
+msgid "No active layout"
+msgstr "Niciun aspect activ"
+
+msgid "Current active layout (automatic)"
+msgstr "Aspect activ curent (automat)"
+
+msgid "Current active layout — click to switch"
+msgstr "Aspect activ curent - faceți clic pentru a comuta"
+
+msgid "Current keyboard layout in the system"
+msgstr "Dispunerea curentă a tastaturii în sistem"
+
+msgid "Game mode: active"
+msgstr "Mod joc: activ"
+
+msgid "Game mode: inactive"
+msgstr "Mod joc: inactiv"
+
+msgid "Active: {}"
+msgstr "Activ: {}"
+
+msgid "Trigger"
+msgstr "Trigger"
+
+msgid "New rule: choose a trigger"
+msgstr "Regulă nouă: alegeți un declanșator"
+
+msgid "Swallow key"
+msgstr "Blochează tasta"
+
+msgid "Pass through"
+msgstr "Trece prin"
+
+msgid "Double tap: {} ms"
+msgstr "Atingeți de două ori: {} ms"
+
+msgid "Custom hold options"
+msgstr "Opțiuni de reținere personalizate"
+
+msgid "Leave empty to use the global timing settings."
+msgstr "Lăsați gol pentru a utiliza setările globale de sincronizare."
+
+msgid ""
+"Temporarily releases the held key or modifier while these keys are pressed "
+"in the layer."
+msgstr ""
+"Eliberează temporar tasta sau modificatorul menținut în timp ce aceste taste"
+" sunt apăsate în strat."
+
+msgid ""
+"Defers the held action until one of these keys is pressed in the layer. "
+"Requires a hold action and a layer."
+msgstr ""
+"Amână acțiunea menținută până când una dintre aceste taste este apăsată în "
+"strat. Necesită o acțiune de menținere și un strat."
+
+msgid "Delete rule"
+msgstr "Ștergeți regula"
+
+msgid ""
+"Clear restores normal key behavior. Swallow prevents the key from reaching "
+"the application."
+msgstr ""
+"Clear restabilește comportamentul normal al tastei. Înghițiți împiedică "
+"cheia să ajungă în aplicație."
+
+msgctxt "Game mode control"
+msgid "Auto"
+msgstr "Automat"
+
+msgctxt "Game mode control"
+msgid "On"
+msgstr "Activat"
+
+msgctxt "Game mode control"
+msgid "Off"
+msgstr "Dezactivat"
+
+msgid "Auto: no detection sources enabled"
+msgstr "Auto: nu sunt activate surse de detectare"
+
+msgid "Auto: detection unavailable"
+msgstr "Auto: detectarea indisponibilă"
+
+msgid "Auto: game mode inactive"
+msgstr "Auto: modul joc inactiv"
+
+msgid "Auto: GameMode daemon active"
+msgstr "Auto: daemon GameMode activ"
+
+msgid "Auto: matched {}"
+msgstr "Auto: potrivit cu {}"
+
+msgid "Auto: fullscreen window active"
+msgstr "Auto: fereastra ecran complet activă"
+
+msgid "Auto: excluded by {}"
+msgstr "Auto: exclus de {}"
+
+msgid ""
+"Fullscreen detection is not supported in this session. Use process rules or "
+"On/Off."
+msgstr ""
+"Detectarea ecranului complet nu este acceptată în această sesiune. Utilizați"
+" regulile de proces sau Pornit/Oprit."
+
+msgid "Fullscreen detection tools are missing or could not query the session."
+msgstr ""
+"Instrumentele de detectare pe ecran complet lipsesc sau nu au putut interoga"
+" sesiunea."
+
+msgid "Running processes: "
+msgstr "Procese de rulare:"
+
+msgid "Active window: "
+msgstr "Fereastra activă:"
+
+msgid "Create a layer to assign its keys."
+msgstr "Creați un strat pentru a-i atribui cheile."
+
+msgid "Button {}"
+msgstr "Buton {}"
+
+msgid "Copied to clipboard"
+msgstr "Copiat în clipboard"
+
+msgid "Theme"
+msgstr "Temă"
+
+msgid "E-ink"
+msgstr "E-ink"
+
+msgid "Enter device path manually"
+msgstr "Introduceți manual calea dispozitivului"
+
+msgid "All keyboards"
+msgstr "Toate tastaturile"
+
+msgid "All mice (buttons only)"
+msgstr "Toți șoarecii (numai butoanele)"
+
+msgid "Mode"
+msgstr "Modul"
+
+msgid "New"
+msgstr "Nou"
+
+msgid "Auto"
+msgstr "Automat"
+
+msgid "Delete extra key?"
+msgstr "Ștergeți cheia suplimentară?"
+
+msgid "This key assignment will be removed from the layer."
+msgstr "Această atribuire a tastelor va fi eliminată din strat."
+
+msgid "Command started: {}"
+msgstr "Comanda a început: {}"
+
+msgid "Unavailable on this platform or desktop"
+msgstr "Indisponibil pe această platformă sau desktop"
+
+msgid "This action is not supported on macOS"
+msgstr "Această acțiune nu este acceptată pe macOS"
+
+msgid "Approve commands on the Commands tab before running this action"
+msgstr ""
+"Aprobați comenzile din fila Comenzi înainte de a executa această acțiune"
+
+msgid "Pick the physical device whose events should be intercepted."
+msgstr ""
+"Alegeți dispozitivul fizic ale cărui evenimente ar trebui interceptate."
+
+msgid ""
+"Select the mouse so the mapper can see extra buttons and clicks. Pointer "
+"movement is not affected."
+msgstr ""
+"Selectați mouse-ul astfel încât mapatorul să poată vedea butoanele și "
+"clicurile suplimentare. Mișcarea indicatorului nu este afectată."
+
+msgid ""
+"The mouse is not fully intercepted yet: a remapped extra button can emit the"
+" new action, but its native system or app action may still run. If that gets"
+" in the way, disable the native action for that button in your system, "
+"browser, or driver settings."
+msgstr ""
+"Mouse-ul nu este încă complet interceptat: un buton suplimentar remapat "
+"poate emite noua acțiune, dar sistemul său nativ sau acțiunea aplicației "
+"poate rula în continuare. Dacă acest lucru vă împiedică, dezactivați "
+"acțiunea nativă pentru acel buton din setările sistemului, browserului sau "
+"driverului."
+
+msgid ""
+"The mapper reads from /dev/input/eventX and emits through uinput. If Start "
+"fails, grant access to those devices: usually the input group plus a udev "
+"rule for /dev/uinput."
+msgstr ""
+"Mapper-ul citește din /dev/input/eventX și emite prin uinput. Dacă Start "
+"eșuează, acordați acces la acele dispozitive: de obicei, grupul de intrare "
+"plus o regulă udev pentru /dev/uinput."
+
+msgid "Refresh device list"
+msgstr "Actualizează lista de dispozitive"
+
+msgid "Mouse (optional)"
+msgstr "Mouse (opțional)"
+
+msgid "Not selected"
+msgstr "Neselectat"
+
+msgid "Not selected (no mouse support)"
+msgstr "Neselectat (fără suport pentru mouse)"
+
+msgid "Looks like a keyboard"
+msgstr "Arată ca o tastatură"
+
+msgid "Looks like a mouse"
+msgstr "Arată ca un șoarece"
+
+msgid "Other devices"
+msgstr "Alte dispozitive"
+
+msgid "Search devices"
+msgstr "Căutați dispozitive"
+
+msgid "Single"
+msgstr "Singur"
+
+msgid "{n} rule"
+msgid_plural "{n} rules"
+msgstr[0] "{n} regula"
+msgstr[1] "{n} reguli"
+msgstr[2] "{n} de reguli"
+
+msgid "{n} layer"
+msgid_plural "{n} layers"
+msgstr[0] "{n} strat"
+msgstr[1] "{n} straturi"
+msgstr[2] "{n} de straturi"
+
+msgid "{n} emoji page"
+msgid_plural "{n} emoji pages"
+msgstr[0] "{n} pagină emoji"
+msgstr[1] "{n} pagini emoji"
+msgstr[2] "{n} de pagini cu emoji"
+
+msgid "{n} action page"
+msgid_plural "{n} action pages"
+msgstr[0] "{n} pagină de acțiune"
+msgstr[1] "{n} pagini de acțiune"
+msgstr[2] "{n} de pagini de acțiune"
+
+msgid "{n} macro"
+msgid_plural "{n} macros"
+msgstr[0] "{n} macro"
+msgstr[1] "{n} macro-uri"
+msgstr[2] "{n} de macro-uri"
+
+msgid "{n} command"
+msgid_plural "{n} commands"
+msgstr[0] "{n} comandă"
+msgstr[1] "{n} comenzi"
+msgstr[2] "{n} de comenzi"
+
+msgid "Main"
+msgstr "Principal"
+
+msgid "Saved assignment: {}"
+msgstr "Temă salvată: {}"
+
+msgid "Behavior"
+msgstr "Comportament"
+
+msgid "Inherit"
+msgstr "Moşteni"
+
+msgid "No separate action"
+msgstr "Nicio acțiune separată"
+
+msgid "Activate layer only"
+msgstr "Activați numai stratul"
+
+msgid "Normal key behavior"
+msgstr "Comportament normal cheie"
+
+msgid "Suppress"
+msgstr "Suprima"
+
+msgid "Assign held key"
+msgstr "Atribuiți cheia menținută"
+
+msgid "Perform action"
+msgstr "Efectuați acțiunea"
+
+msgid "The key will not reach the application."
+msgstr "Cheia nu va ajunge la aplicație."
+
+msgid "Use the assignment from the lower layer or base layout."
+msgstr "Utilizați atribuirea din stratul inferior sau aspectul de bază."
+
+msgid "Do not assign a separate action to this gesture."
+msgstr "Nu atribuiți o acțiune separată acestui gest."
+
+msgid "Holding activates the selected layer. The original key is not sent."
+msgstr ""
+"Ținerea apăsată activează stratul selectat. Cheia originală nu este trimisă."
+
+msgid "Send the original key to the application."
+msgstr "Trimiteți cheia originală la aplicație."
+
+msgid "Capture shortcut"
+msgstr "Captură comandă rapidă"
+
+msgid "Choose a valid trigger key."
+msgstr "Alegeți o cheie de declanșare validă."
+
+msgid "Choose a valid action."
+msgstr "Alegeți o acțiune validă."
+
+msgid "Empty cell"
+msgstr "Celulă goală"
+
+msgid "Remove the action from this menu cell."
+msgstr "Eliminați acțiunea din această celulă de meniu."
+
+msgid "Edit assignment"
+msgstr "Editați sarcina"
+
+msgid "Holding also activates the selected layer."
+msgstr "Ținerea apăsată activează și stratul selectat."
+
+msgid "Block"
+msgstr "Bloc"
+
+msgid ""
+"The key press is consumed: the system and the active application will not "
+"receive it."
+msgstr ""
+"Apăsarea tastei este consumată: sistemul și aplicația activă nu o vor primi."
+
+msgid ""
+"The key press passes through unchanged, as if no assignment were configured."
+msgstr ""
+"Apăsarea tastei trece neschimbată, ca și cum nu ar fi configurată nicio "
+"alocare."
+
+msgid "Capture"
+msgstr "Capta"
+
+msgid "Unchanged"
+msgstr "Neschimbat"
+
+msgid "Leave a delay empty to use the global setting."
+msgstr "Lăsați o întârziere necompletată pentru a utiliza setarea globală."
+
+msgid "Allow command execution"
+msgstr "Permite executarea comenzii"
+
+msgid "No commands are assigned."
+msgstr "Nu sunt atribuite comenzi."
+
+msgid "Commands are disabled in Settings."
+msgstr "Comenzile sunt dezactivate în Setări."
+
+msgid "Working directory (optional)"
+msgstr "Director de lucru (opțional)"
+
+msgid "Save layout changes before opening another layout."
+msgstr "Salvați modificările aspectului înainte de a deschide un alt aspect."
+
+msgid "No layer"
+msgstr "Nici un strat"
+
+msgid "Layer not found"
+msgstr "Stratul nu a fost găsit"
+
+msgid "Create new layer…"
+msgstr "Creați un nou strat..."
+
+msgid "Create “{}”"
+msgstr "Creați „{}”"
+
+msgid ""
+"A trigger can be a single key or a combination, such as "
+"ShiftLeft+ControlLeft. The combination works in either press order and ends "
+"when any key is released."
+msgstr ""
+"Un declanșator poate fi o singură tastă sau o combinație, cum ar fi "
+"ShiftLeft+ControlLeft. Combinația funcționează în orice ordine de apăsare și"
+" se termină când se eliberează orice tastă."
+
+msgid "When held"
+msgstr "Când ținut"
+
+msgid ""
+"Choose a layer active until release, or an action performed once after the "
+"hold duration."
+msgstr ""
+"Alegeți un strat activ până la eliberare sau o acțiune efectuată o dată după"
+" durata de reținere."
+
+msgid "Nothing"
+msgstr "Nimic"
+
+msgid "Activate layer"
+msgstr "Activați stratul"
+
+msgid "Run action"
+msgstr "Rulați acțiune"
+
+msgid "Long-hold action"
+msgstr "Acțiune de lungă durată"
+
+msgid "Runs once after {} s"
+msgstr "Rulează o dată după {} s"
+
+msgid "Hold another key / combination"
+msgstr "Țineți apăsată o altă tastă/combinație"
+
+msgid "Press one key or hold a combination, then release a key to capture it."
+msgstr ""
+"Apăsați o tastă sau țineți apăsată o combinație, apoi eliberați o tastă "
+"pentru a o captura."
+
+msgid "Held key: {}"
+msgstr "Tasta menținută: {}"
+
+msgid "Assigned to"
+msgstr "Atribuit la"
+
+msgid "Languages"
+msgstr "Limbi"
+
+msgid "Excluded applications"
+msgstr "Aplicații excluse"
+
+msgid "Open page in popup"
+msgstr "Deschideți pagina în pop-up"
+
+msgid "Page:"
+msgstr "Pagină:"
+
+msgid "Layout “{}” created"
+msgstr "S-a creat aspectul „{}”."
+
+msgid "Layout “{}” saved"
+msgstr "Aspectul „{}” a fost salvat"
+
+msgid "Layout “{}” deleted"
+msgstr "Aspectul „{}” a fost șters"
+
+msgid "Layout “{}” activated"
+msgstr "Aspectul „{}” a fost activat"
+
+msgid "Could not complete the action"
+msgstr "Nu s-a putut finaliza acțiunea"
+
+msgid "Dismiss notification"
+msgstr "Respinge notificarea"
+
+msgid "Changes to layout “{}” discarded"
+msgstr "Modificările aduse aspectului „{}” au fost eliminate"
+
+msgid "Popup menus are unavailable: {}"
+msgstr "Meniurile pop-up nu sunt disponibile: {}"
+
+msgid "Popup menus are not running. Try opening the menu again."
+msgstr "Meniurile pop-up nu rulează. Încercați să deschideți din nou meniul."
+
+msgid "Popup menus are restarting. Try again shortly."
+msgstr "Meniurile pop-up repornesc. Încercați din nou în scurt timp."
+
+msgid "Popup menus could not recover. Restart the application."
+msgstr "Meniurile pop-up nu au putut fi recuperate. Reporniți aplicația."
+
+msgid "Popup menu error: {}"
+msgstr "Eroare meniu pop-up: {}"
+
+msgid "Choose a key or combination for the trigger"
+msgstr "Alegeți o cheie sau o combinație pentru declanșator"
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid. Add a trigger, then choose its action, suppress it, or inherit its "
+"assignment from the lower layer."
+msgstr ""
+"Butoanele mouse-ului, tastele media și alte declanșatoare din afara grilei "
+"principale a tastaturii. Adăugați un declanșator, apoi alegeți acțiunea "
+"acestuia, suprimați-l sau moșteniți atribuirea acestuia din stratul "
+"inferior."
+
+msgid ""
+"You can enter emoji, any text, or Unicode symbols here. Drag an item from "
+"the palette onto a key to assign it."
+msgstr ""
+"Puteți introduce emoji, orice text sau simboluri Unicode aici. Trageți un "
+"element din paletă pe o tastă pentru a-l atribui."
+
+msgid "Accessibility"
+msgstr "Accesibilitate"
+
+msgid "High contrast"
+msgstr "Contrast ridicat"
+
+msgid ""
+"Pure black or white background, stronger text, borders and focus outlines. "
+"Works with the light and dark themes."
+msgstr ""
+"Fundal alb sau negru pur, text mai puternic, margini și contururi de "
+"focalizare. Funcționează cu temele luminoase și întunecate."
+
+msgid "Reduce motion"
+msgstr "Reduceți mișcarea"
+
+msgid "Turn off highlight animations in the editor."
+msgstr "Dezactivați animațiile de evidențiere în editor."
+
+msgid ""
+"Every control can be reached with Tab and activated with Space or Enter. "
+"Interface size follows the desktop scale factor."
+msgstr ""
+"Fiecare control poate fi accesat cu Tab și activat cu Space sau Enter. "
+"Dimensiunea interfeței urmează factorul de scară de pe desktop."
+
+msgid "Always"
+msgstr "Întotdeauna"
+
+msgid "Hold duration"
+msgstr "Durata de reținere"
+
+msgid "{} s"
+msgstr "{} s"
+
+msgid "{} s (default)"
+msgstr "{} s (implicit)"
+
+msgid "Shell command or path to a script, e.g. playerctl play-pause"
+msgstr ""
+"Comanda Shell sau calea către un script, de ex. playerctl redare-pauză"
+
+msgid "Runs with sh -lc in the background; the result is not awaited."
+msgstr "Rulează cu sh -lc în fundal; rezultatul nu este așteptat."
+
+msgid "Choose script…"
+msgstr "Alegeți scenariul..."
+
+msgid "Working directory (optional, home by default)"
+msgstr "Director de lucru (opțional, acasă în mod implicit)"
+
+msgid "Choose folder…"
+msgstr "Alegeți folderul..."
+
+msgid ""
+"Command execution is turned off. Turn it on in the settings to assign "
+"commands."
+msgstr ""
+"Execuția comenzii este dezactivată. Activați-l în setări pentru a atribui "
+"comenzi."
+
+msgid "Open command settings"
+msgstr "Deschideți setările comenzii"
+
+msgid "The working directory does not exist."
+msgstr "Directorul de lucru nu există."
+
+msgid ""
+"The script file is not executable: run chmod +x on it or prefix the path "
+"with sh."
+msgstr ""
+"Fișierul script nu este executabil: rulați chmod +x pe el sau prefixați "
+"calea cu sh."
+
+msgid "Choose a script"
+msgstr "Alegeți un scenariu"
+
+msgid "Choose a working directory"
+msgstr "Alegeți un director de lucru"
+
+msgid "Commands run with sh -lc in the background and are not awaited."
+msgstr "Comenzile rulează cu sh -lc în fundal și nu sunt așteptate."
+
+msgid "Commands run with PowerShell in the background and are not awaited."
+msgstr "Comenzile rulează cu PowerShell în fundal și nu sunt așteptate."
+
+msgid ""
+"Commands stay off until you allow execution. Review below what your layouts "
+"would run."
+msgstr ""
+"Comenzile rămân dezactivate până când permiteți execuția. Examinați mai jos "
+"ce ar rula layout-urile dvs."
+
+msgid "Command"
+msgstr "Comanda"
+
+msgid "Rule {} · tap"
+msgstr "Regula {} · atingeți"
+
+msgid "Rule {} · hold"
+msgstr "Regula {} · ține"
+
+msgid "Rule {} · long hold"
+msgstr "Regula {} · ținere lungă"
+
+msgid "Rule {} · double tap"
+msgstr "Regula {} · atingeți de două ori"
+
+msgid "disabled"
+msgstr "dezactivat"
+
+msgid "Layer {}"
+msgstr "Stratul {}"
+
+msgid "Macro"
+msgstr "Macro"
+
+msgid "Quick action"
+msgstr "Acțiune rapidă"
+
+msgid "Show all"
+msgstr "Arată tot"
+
+msgid "Close"
+msgstr "Închide"
+
+msgid "Choose a key or key combination"
+msgstr "Alegeți o tastă sau o combinație de taste"
+
+msgid "Examples"
+msgstr "Exemple"
+
+msgid "Add rule…"
+msgstr "Adăugați o regulă..."
+
+msgid ""
+"All filled conditions must match. A rule without conditions always matches."
+msgstr ""
+"Toate condițiile completate trebuie să corespundă. O regulă fără condiții se"
+" potrivește întotdeauna."
+
+msgid "Automatic switching rules"
+msgstr "Reguli de comutare automată"
+
+msgid ""
+"Automatic: the layout is chosen by switching rules for the application, "
+"system language or game mode."
+msgstr ""
+"Automat: aspectul este ales prin schimbarea regulilor pentru aplicație, "
+"limba sistemului sau modul de joc."
+
+msgid "Layout"
+msgstr "Aspect"
+
+msgid "Layout not found"
+msgstr "Aspectul nu a fost găsit"
+
+msgid "New rule"
+msgstr "Regulă nouă"
+
+msgid "Now: {} (default)"
+msgstr "Acum: {} (implicit)"
+
+msgid "Otherwise (default)"
+msgstr "În caz contrar (implicit)"
+
+msgid "Rule {}"
+msgstr "Regula {}"
+
+msgid "Use layout"
+msgstr "Utilizați aspectul"
+
+msgid "When"
+msgstr "Când"
+
+msgid "If"
+msgstr "Dacă"
+
+msgid "If:"
+msgstr "Dacă:"
+
+msgid "Trigger conditions"
+msgstr "Condiții de declanșare"
+
+msgid "No layout"
+msgstr "Fără aspect"
+
+msgid "No layout (keys as is)"
+msgstr "Fără aspect (cheile așa cum sunt)"
+
+msgid "Now: {} (rule {}: {})"
+msgstr "Acum: {} (regula {}: {})"
+
+msgid ""
+"Rules are checked from top to bottom; the first enabled one whose conditions"
+" match chooses the layout. If none matches, the default is used. “No layout”"
+" leaves the keyboard unprocessed, for example in an application where the "
+"layout gets in the way."
+msgstr ""
+"Regulile sunt verificate de sus în jos; primul activat ale cărui condiții se"
+" potrivesc alege aspectul. Dacă niciuna nu se potrivește, se folosește "
+"valoarea implicită. „Fără aspect” lasă tastatura neprocesată, de exemplu "
+"într-o aplicație în care aspectul împiedică."
+
+msgid "No rules"
+msgstr "Fara reguli"
+
+msgid "The default layout is always used."
+msgstr "Aspectul implicit este întotdeauna utilizat."
+
+msgid "For games"
+msgstr "Pentru jocuri"
+
+msgid "For an application"
+msgstr "Pentru o aplicație"
+
+msgid "Custom rule"
+msgstr "Regulă personalizată"
+
+msgid "When no rule matches, the keyboard works without processing."
+msgstr ""
+"Când nicio regulă nu se potrivește, tastatura funcționează fără procesare."
+
+msgid "Never applies: rule {} always matches first."
+msgstr "Nu se aplică niciodată: regula {} se potrivește întotdeauna prima."
+
+msgid "Game mode detection is off, so this rule never matches."
+msgstr ""
+"Detectarea modului de joc este dezactivată, așa că această regulă nu se "
+"potrivește niciodată."
+
+msgid "Not among the system languages: {}"
+msgstr "Nu printre limbile de sistem: {}"
+
+msgid "Rule enabled"
+msgstr "Regula activată"
+
+msgid "Automatic mode will use no layout by default."
+msgstr "Modul automat nu va folosi niciun aspect în mod implicit."
+
+msgid "Delete rule {}?"
+msgstr "Ștergeți regula {}?"
+
+msgid "The rule will be deleted. This cannot be undone."
+msgstr "Regula va fi ștearsă. Acest lucru nu poate fi anulat."
+
+msgid "Its {n} automatic rule will be deleted too."
+msgid_plural "Its {n} automatic rules will be deleted too."
+msgstr[0] "De asemenea, regula sa automată {n} va fi ștearsă."
+msgstr[1] "Cele {n} reguli automate ale sale vor fi și ele șterse."
+msgstr[2] "Cele {n} de reguli automate ale sale vor fi și ele șterse."
+
+msgid "In {n} rule"
+msgid_plural "In {n} rules"
+msgstr[0] "În regula {n}"
+msgstr[1] "In {n} reguli"
+msgstr[2] "În {n} de reguli"
+
+msgid "Auto — detect games"
+msgstr "Auto — detectează jocuri"
+
+msgid "On — always"
+msgstr "Pornit — întotdeauna"
+
+msgid "Off — never"
+msgstr "Off — niciodată"
+
+msgid ""
+"Automatic layout rules apply only when the layout is chosen automatically "
+"(Layouts page)."
+msgstr ""
+"Regulile automate de aspect se aplică numai atunci când aspectul este ales "
+"automat (pagina Aspecte)."
+
+msgid ""
+"Borderless windows covering the screen count too. Browsers, video players "
+"and presentations are ignored."
+msgstr ""
+"Ferestrele fără margini care acoperă ecranul sunt și ele. Browserele, "
+"playerele video și prezentările sunt ignorate."
+
+msgid "Game mode is off (set manually)"
+msgstr "Modul joc este dezactivat (setat manual)"
+
+msgid "Game mode is on (set manually)"
+msgstr "Modul joc este activat (setat manual)"
+
+msgid ""
+"Game mode turns on rules and automatic layout rules that have a game-mode "
+"condition. Automatic layout rules apply only when the layout is chosen "
+"automatically (Layouts page). Auto uses the detection sources and custom "
+"rules below; On and Off set the state manually. “Never a game” takes "
+"priority over automatic detection and “Always a game”. You can also change "
+"the mode in the top bar, in the tray menu or with a key bound to a game mode"
+" action."
+msgstr ""
+"Modul joc activează regulile și regulile automate de aspect care au o "
+"condiție de modul de joc. Regulile automate de aspect se aplică numai atunci"
+" când aspectul este ales automat (pagina Aspecte). Auto folosește sursele de"
+" detectare și regulile personalizate de mai jos; Pornit și Oprit setați "
+"starea manual. „Niciodată un joc” are prioritate față de detectarea automată"
+" și „Întotdeauna un joc”. De asemenea, puteți schimba modul în bara de sus, "
+"în meniul tavă sau cu o tastă legată de o acțiune în modul de joc."
+
+msgid "Game mode: always off"
+msgstr "Mod joc: întotdeauna dezactivat"
+
+msgid "Game mode: always on"
+msgstr "Mod joc: mereu activat"
+
+msgid "Game mode: detect automatically"
+msgstr "Mod joc: detectează automat"
+
+msgid "Toggle game mode"
+msgstr "Comutați modul de joc"
+
+msgid ""
+"GameMode daemon unavailable: check the gamemode package and session D-Bus."
+msgstr ""
+"Daemon GameMode indisponibil: verificați pachetul gamemode și sesiunea "
+"D-Bus."
+
+msgid ""
+"Install {} to detect the active window and fullscreen windows. It is also "
+"needed for application conditions in rules."
+msgstr ""
+"Instalați {} pentru a detecta fereastra activă și ferestrele pe ecran "
+"complet. Este necesar și pentru condițiile de aplicare în reguli."
+
+msgid ""
+"Nothing uses game mode yet: no rule or automatic layout rule has a game-mode"
+" condition, so turning it on changes nothing."
+msgstr ""
+"Nimic nu folosește încă modul de joc: nicio regulă sau nicio regulă de "
+"aspect automat nu are o condiție de modul de joc, așa că pornirea acesteia "
+"nu schimbă nimic."
+
+msgid ""
+"On and Off are remembered after restart. Auto keeps detecting in the "
+"background."
+msgstr ""
+"Pornit și Oprit sunt memorate după repornire. Auto detectează în continuare "
+"în fundal."
+
+msgid ""
+"Rules of the current layout with a game-mode condition: {}. Automatic layout"
+" rules with a game-mode condition: {}."
+msgstr ""
+"Regulile aspectului curent cu o condiție pentru modul de joc: {}. Reguli "
+"automate de aspect cu o condiție de mod de joc: {}."
+
+msgid ""
+"Turns on while a game runs through gamemoderun or requests GameMode itself. "
+"In Steam set the launch options to “gamemoderun %command%”."
+msgstr ""
+"Se pornește în timp ce un joc rulează prin gamemoderun sau solicită GameMode"
+" în sine. În Steam setați opțiunile de lansare la „gamemoderun %command%”."
+
+msgid "Game mode: on"
+msgstr "Mod joc: activat"
+
+msgid "Game mode: off"
+msgstr "Mod joc: oprit"
+
+msgid "Active now: {}"
+msgstr "Activ acum: {}"
+
+msgid ""
+"Active window detection is unavailable in this session, so application "
+"conditions do not match."
+msgstr ""
+"Detectarea ferestrelor active nu este disponibilă în această sesiune, așa că"
+" condițiile aplicației nu se potrivesc."
+
+msgid ""
+"An application is matched by its ID or process name: the whole name, "
+"ignoring case, with * and ? as wildcards. A window title item matches when "
+"the title contains the text. Any matching item is enough. An empty list "
+"imposes no restrictions."
+msgstr ""
+"O aplicație se potrivește cu ID-ul sau numele procesului: întregul nume, "
+"ignorând majuscule, cu * și ? ca metacaractere. Un articol de titlu de "
+"fereastră se potrivește atunci când titlul conține textul. Orice articol "
+"potrivit este suficient. O listă goală nu impune restricții."
+
+msgid "Looking for open windows…"
+msgstr "Caut ferestre deschise..."
+
+msgid "No open windows found"
+msgstr "Nu s-au găsit ferestre deschise"
+
+msgid "Window title contains: {}"
+msgstr "Titlul ferestrei conține: {}"
+
+msgid "Timing"
+msgstr "Sincronizare"
+
+msgid "Used by macros without their own value."
+msgstr "Folosit de macrocomenzi fără valoare proprie."
+
+msgid ""
+"Used by macros without their own value. How long to wait between pressing "
+"modifiers (Shift, Ctrl, …) and the main key of one step."
+msgstr ""
+"Folosit de macrocomenzi fără valoare proprie. Cât timp trebuie să aștepte "
+"între apăsarea modificatorilor (Shift, Ctrl, …) și tasta principală a unui "
+"pas."
+
+msgid "Rule without a trigger is saved as a draft and will be ignored."
+msgstr "Regula fără declanșator este salvată ca schiță și va fi ignorată."
+
+msgid "Trigger \"{}\" cannot be used for a rule."
+msgstr "Declanșatorul „{}” nu poate fi utilizat pentru o regulă."
+
+msgid "Rules for trigger \"{}\" may overlap; the first matching rule wins."
+msgstr ""
+"Regulile pentru declanșatorul „{}” se pot suprapune; prima regulă de "
+"potrivire câștigă."
+
+msgid "Rule for trigger \"{}\" is covered by an earlier rule and will not run."
+msgstr ""
+"Regula pentru declanșatorul „{}” este acoperită de o regulă anterioară și nu"
+" va rula."
+
+msgid "Rule \"{}\" points to a layer that no longer exists."
+msgstr "Regula „{}” indică un strat care nu mai există."
+
+msgid "Rule \"{}\" has an invalid tap action."
+msgstr "Regula „{}” are o acțiune de atingere nevalidă."
+
+msgid "Rule \"{}\" has an invalid hold action."
+msgstr "Regula „{}” are o acțiune de reținere nevalidă."
+
+msgid "Rule \"{}\" has an invalid double-tap action."
+msgstr "Regula „{}” are o acțiune de dublă atingere nevalidă."
+
+msgid "Automatic switching rule deleted"
+msgstr "Regula de comutare automată a fost ștearsă"
+
+msgid "Only in applications"
+msgstr "Doar în aplicații"
+
+msgid "Except applications"
+msgstr "Cu excepția aplicațiilor"
+
+msgid "A match blocks the rule, even if the window is in the allowed list."
+msgstr ""
+"O potrivire blochează regula, chiar dacă fereastra este în lista permisă."
+
+msgid "Any match allows the rule. An empty list allows all windows."
+msgstr ""
+"Orice potrivire permite regula. O listă goală permite toate ferestrele."
+
+msgid "Choose applications to exclude"
+msgstr "Alegeți aplicațiile de exclus"
+
+msgid "Open windows"
+msgstr "Deschide ferestre"
+
+msgid "Last active"
+msgstr "Ultima activitate"
+
+msgid "Nothing is excluded."
+msgstr "Nimic nu este exclus."
+
+msgid "No restrictions: the rule works in every window."
+msgstr "Fără restricții: regula funcționează în fiecare fereastră."
+
+msgid "{n} window"
+msgid_plural "{n} windows"
+msgstr[0] "{n} fereastra"
+msgstr[1] "{n} ferestre"
+msgstr[2] "{n} de ferestre"
+
+msgid "Do not process"
+msgstr "Nu procesați"
+
+msgid "Command name (optional)"
+msgstr "Numele comenzii (opțional)"
+
+msgid "Working directory (home by default)"
+msgstr "Director de lucru (acasă în mod implicit)"
+
+msgid "Text to type when the action is invoked:"
+msgstr "Text de tastat atunci când acțiunea este invocată:"
+
+msgid ""
+"Enter literal text without the text: prefix. Line breaks, spaces and tabs "
+"are preserved. On Linux, text is inserted into the active application via "
+"the desktop portal; permission may be required. Text injection by the mapper"
+" is not implemented on Windows or macOS."
+msgstr ""
+"Introduceți text literal fără textul: prefix. Se păstrează întreruperile de "
+"linie, spațiile și tabulatorii. Pe Linux, textul este inserat în aplicația "
+"activă prin intermediul portalului desktop; poate fi necesară permisiunea. "
+"Injectarea de text de către mapper nu este implementată pe Windows sau "
+"macOS."
+
+msgid ""
+"Commands run with sh -lc in the background. The mapper does not wait for "
+"completion or collect output. An empty name uses the command itself as its "
+"label. The working directory defaults to your home folder; scripts need "
+"execute permission. Command execution must be enabled in settings."
+msgstr ""
+"Comenzile rulează cu sh -lc în fundal. Cartograful nu așteaptă finalizarea "
+"sau colectează rezultatul. Un nume gol folosește comanda însăși ca etichetă."
+" Directorul de lucru este implicit în folderul dvs. de acasă; scripturile au"
+" nevoie de permisiunea de execuție. Execuția comenzii trebuie să fie "
+"activată în setări."
+
+msgid ""
+"Commands run with PowerShell in the background, without a console window. "
+"The mapper does not wait for completion or collect output. An empty name "
+"uses the command itself as its label. The working directory defaults to your"
+" home folder. Command execution must be enabled in settings."
+msgstr ""
+"Comenzile rulează cu PowerShell în fundal, fără o fereastră de consolă. "
+"Cartograful nu așteaptă finalizarea sau colectează rezultatul. Un nume gol "
+"folosește comanda însăși ca etichetă. Directorul de lucru este implicit în "
+"folderul dvs. de acasă. Execuția comenzii trebuie să fie activată în setări."
+
+msgid ""
+"The name is optional: an empty name uses the command itself as its label. "
+"Command execution by the mapper is not implemented on macOS."
+msgstr ""
+"Numele este opțional: un nume gol folosește comanda însăși ca etichetă. "
+"Execuția comenzii de către mapper nu este implementată pe macOS."
+
+msgid "Triggers"
+msgstr "Declanșatoare"
+
+msgid "Disable animations"
+msgstr "Dezactivați animațiile"
+
+msgid "Add layout: "
+msgstr "Adăugați aspectul:"
+
+msgid "Save (Ctrl+S)"
+msgstr "Salvează (Ctrl+S)"
+
+msgid "Close layout"
+msgstr "Închideți aspectul"
+
+msgid "Discard layout changes?"
+msgstr "Renunțați la modificările aspectului?"
+
+msgid "Unsaved changes to this layout will be lost."
+msgstr "Modificările nesalvate ale acestui aspect se vor pierde."
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Triggers tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"Identificator unic utilizat în referințe precum macro:<id>. Pentru a lega "
+"această macrocomandă la o cheie, alegeți acea acțiune din fila Straturi sau "
+"Declanșatoare. Schimbați ID-ul numai atunci când nimic nu folosește această "
+"macrocomandă."
+
+msgid "Discard"
+msgstr "Aruncă"
+
+msgid ""
+"Build reusable sequences of key chords, text, commands and system actions. Use a unique ID in macro:<id> references and a readable name in action lists. Assign macros on the Layers or Triggers tab; change an ID only when it is unused.\n"
+"\n"
+"The step pause applies between steps of this macro. Modifier delay is the time between pressing a modifier and the main key. Leave delays empty to use Settings defaults."
+msgstr ""
+"Creați secvențe reutilizabile de acorduri cheie, text, comenzi și acțiuni ale sistemului. Utilizați un ID unic în referințele macro:<id> și un nume care poate fi citit în listele de acțiuni. Atribuiți macrocomenzi în fila Straturi sau Declanșatoare; schimbați un ID numai atunci când nu este folosit.\n"
+"\n"
+"Pauza de pas se aplică între pașii acestei macrocomenzi. Întârzierea modificatorului este timpul dintre apăsarea unui modificator și tasta principală. Lăsați întârzierile necompletate pentru a utiliza setările implicite."
+
+msgid "Global defaults: step pause {} ms; modifier delay {} ms."
+msgstr ""
+"Valori implicite globale: pas pauză {} ms; întârziere modificator {} ms."
+
+msgid "Layout changed on disk"
+msgstr "Aspectul a fost modificat pe disc"
+
+msgid ""
+"The file of “{}” was changed by another program after you opened it. Your "
+"edits are kept until you choose what to do."
+msgstr ""
+"Fișierul „{}” a fost schimbat de un alt program după ce l-ați deschis. "
+"Editările dvs. sunt păstrate până când alegeți ce să faceți."
+
+msgid "Load from disk"
+msgstr "Încărcați de pe disc"
+
+msgid "Save as new…"
+msgstr "Salvați ca nou..."
+
+msgid "Overwrite"
+msgstr "Suprascrie"
+
+msgid "Show LHC key codes used in assignments, such as KeyA and ArrowLeft."
+msgstr ""
+"Afișați codurile cheie LHC utilizate în sarcini, cum ar fi KeyA și "
+"ArrowLeft."
+
+msgid "Application"
+msgstr "Aplicație"
+
+msgid "Window title"
+msgstr "Titlul ferestrei"
+
+msgid "Click to switch"
+msgstr "Faceți clic pentru a comuta"
+
+msgid "Match by app ID or process instead"
+msgstr "În schimb, potriviți în funcție de ID-ul aplicației sau de proces"
+
+msgid "Match by window title instead"
+msgstr "În schimb, potriviți după titlul ferestrei"
+
+msgid "Open now: {n} window"
+msgid_plural "Open now: {n} windows"
+msgstr[0] "Deschide acum: {n} fereastră"
+msgstr[1] "Deschis acum: {n} ferestre"
+msgstr[2] "Deschis acum: {n} de ferestre"
+
+msgid "Not open now"
+msgstr "Nu este deschis acum"
+
+msgid "Running process"
+msgstr "Proces de rulare"
+
+msgid "Text the window title contains"
+msgstr "Textul din titlul ferestrei"
+
+msgid "Already in the list"
+msgstr "Deja în listă"
+
+msgid "Choose from open windows…"
+msgstr "Alegeți dintre ferestrele deschise..."
+
+msgid "Matches {n} open window"
+msgid_plural "Matches {n} open windows"
+msgstr[0] "Se potrivește cu {n} fereastră deschisă"
+msgstr[1] "Se potrivește cu {n} ferestre deschise"
+msgstr[2] "Se potrivește cu {n} de ferestre deschise"
+
+msgid "Matches no open window"
+msgstr "Se potrivește cu nicio fereastră deschisă"
+
+msgid "Show Quick Action Menu on the last used page"
+msgstr "Afișați meniul de acțiune rapidă pe ultima pagină utilizată"
+
+msgid "Show Emoji & Symbols menu on the last used page"
+msgstr "Afișați meniul Emoji și simboluri pe ultima pagină utilizată"
+
+msgid "Show the settings window"
+msgstr "Afișați fereastra de setări"
+
+msgid "Activate layout {} (switches to Single mode)"
+msgstr "Activați aspectul {} (comutați la modul Single)"
+
+msgid "There is no layout number {}"
+msgstr "Nu există un număr de aspect {}"
+
+msgid "Show the Left Hand Control layout name when it changes"
+msgstr "Afișați numele aspectului Control mâna stângă când se schimbă"
+
+msgid "Show the keys of a layer while it is held"
+msgstr "Afișați cheile unui strat în timp ce acesta este ținut"
+
+msgid ""
+"The hint appears 2 seconds after the layer activates. Pressing a layer key "
+"hides or cancels it until the trigger is released, including in game mode."
+msgstr ""
+"Sugestia apare la 2 secunde după activarea stratului. Apăsarea unei taste de"
+" strat ascunde sau anulează până când declanșatorul este eliberat, inclusiv "
+"în modul joc."
+
+msgid ""
+"Unavailable: build with the spell feature and use a Wayland compositor with "
+"layer-shell (KDE Plasma, Sway, Hyprland)."
+msgstr ""
+"Indisponibil: construiți cu caracteristica de vrăjire și utilizați un "
+"compozitor Wayland cu strat-shell (KDE Plasma, Sway, Hyprland)."
+
+msgid ""
+"The app:activateLayout1…5 actions activate the layout at that position in "
+"this list: reordering the list changes which layout a key activates. In Auto"
+" mode they switch to Single mode."
+msgstr ""
+"Acțiunile app:activateLayout1…5 activează aspectul în acea poziție din "
+"această listă: reordonarea listei modifică aspectul pe care îl activează o "
+"tastă. În modul Auto, aceștia trec în modul Single."
+
+msgid "Cut"
+msgstr "Decupează"
+
+msgid "Copy"
+msgstr "Copiază"
+
+msgid "Paste"
+msgstr "Lipește"
+
+msgid "Select all"
+msgstr "Selectează tot"
+
+msgid "Clear search"
+msgstr "Ștergeți căutarea"
+
+msgid "Add application"
+msgstr "Adăugați aplicația"
+
+msgid "Edit application"
+msgstr "Editați aplicația"
+
+msgid "Remove application?"
+msgstr "Eliminați aplicația?"
+
+msgid "“{}” will be removed from the list."
+msgstr "„{}” va fi eliminat din listă."
+
+msgid "Devices"
+msgstr "Dispozitive"
+
+msgid "Required"
+msgstr "Necesar"
+
+msgid "Optional"
+msgstr "Opțional"
+
+msgid "Failed to start"
+msgstr "Nu s-a putut porni"
+
+msgid "Keys work as usual. Start the mapper to apply your layouts."
+msgstr ""
+"Cheile funcționează ca de obicei. Porniți mapatorul pentru a vă aplica "
+"machetele."
+
+msgid "Select a keyboard below to start the mapper."
+msgstr "Selectați o tastatură de mai jos pentru a porni mapper."
+
+msgid "Changing a device restarts the mapper."
+msgstr "Schimbarea unui dispozitiv repornește mapper-ul."
+
+msgid "Auto: known game {}"
+msgstr "Auto: joc cunoscut {}"
+
+msgid "Ignored in fullscreen"
+msgstr "Ignorat pe ecran complet"
+
+msgid "Not available in this session."
+msgstr "Nu este disponibil în această sesiune."
+
+msgid "Steam games"
+msgstr "Jocuri pe abur"
+
+msgid ""
+"Turns on while Steam runs a game: Steam starts every game through reaper "
+"SteamLaunch, and game windows have the ID steam_app_<number>."
+msgstr ""
+"Se pornește în timp ce Steam rulează un joc: Steam începe fiecare joc prin "
+"reaper SteamLaunch, iar ferestrele jocului au ID-ul steam_app_<number>."
+
+msgid "Turns on while Steam reports a running game."
+msgstr "Se pornește în timp ce Steam raportează un joc care rulează."
+
+msgid "Lutris games"
+msgstr "Jocuri Lutris"
+
+msgid ""
+"Turns on while a game started by Lutris runs: Lutris starts every game "
+"through lutris-wrapper."
+msgstr ""
+"Se pornește în timp ce rulează un joc început de Lutris: Lutris începe "
+"fiecare joc prin lutris-wrapper."
+
+msgid "Gamescope sessions"
+msgstr "Sesiuni de gamescope"
+
+msgid "Turns on while the active window is a nested gamescope session."
+msgstr ""
+"Se activează în timp ce fereastra activă este o sesiune de gamescope "
+"imbricată."
+
+msgid "Games from the Game Bar list"
+msgstr "Jocuri din lista Game Bar"
+
+msgid "Applications of the Game category"
+msgstr "Aplicații din categoria Joc"
+
+msgid ""
+"Turns on while the active window belongs to an application whose .desktop "
+"file lists the Game category. Launchers are tagged as games too, so they are"
+" skipped."
+msgstr ""
+"Se activează în timp ce fereastra activă aparține unei aplicații al cărei "
+"fișier .desktop listează categoria Joc. Lansatoarele sunt de asemenea "
+"etichetate ca jocuri, așa că sunt omise."
+
+msgid ""
+"Turns on while the active application declares the Games category in its "
+"Info.plist. Launchers are skipped."
+msgstr ""
+"Se activează în timp ce aplicația activă declară categoria Jocuri în "
+"Info.plist. Lansatoarele sunt ignorate."
+
+msgid "Auto — according to settings"
+msgstr "Auto — în funcție de setări"
+
+msgid "Blank"
+msgstr "Necompletat"
+
+msgid "Assign action"
+msgstr "Atribuiți o acțiune"
+
+msgid "Action after {} ms of holding"
+msgstr "Acțiune după {} ms de deținere"
+
+msgid ""
+"These codes are specific to Left Hand Control, not universal keyboard codes "
+"(e.g. KeyA, ArrowLeft)."
+msgstr ""
+"Aceste coduri sunt specifice controlului mâinii stângi, nu codurilor "
+"universale de tastatură (de exemplu, KeyA, ArrowLeft)."
+
+msgid "While its window is active"
+msgstr "În timp ce fereastra sa este activă"
+
+msgid "While the process runs"
+msgstr "În timp ce procesul rulează"
+
+msgid "Counts while a window of the application has the focus."
+msgstr "Contează în timp ce o fereastră a aplicației are focalizarea."
+
+msgid ""
+"Counts while a process with this name runs, even without a window or in the "
+"background."
+msgstr ""
+"Contează în timp ce un proces cu acest nume rulează, chiar și fără o "
+"fereastră sau în fundal."
+
+msgid "Application · while its window is active"
+msgstr "Aplicație · în timp ce fereastra sa este activă"
+
+msgid "Process · while it runs"
+msgstr "Procesați · în timp ce rulează"
+
+msgid "No games added."
+msgstr "Niciun joc adăugat."
+
+msgid ""
+"Game mode turns on while any of these matches. An application is matched by "
+"its ID or process name: the whole name, ignoring case, with * and ? as "
+"wildcards. Steam games have the app ID steam_app_<number>; Proton games are "
+"also found by their .exe name. A window title item matches the active window"
+" whose title contains the text."
+msgstr ""
+"Modul joc se activează în timp ce oricare dintre aceste se potrivește. O "
+"aplicație se potrivește cu ID-ul sau numele procesului: întregul nume, "
+"ignorând majuscule, cu * și ? ca metacaractere. Jocurile Steam au ID-ul "
+"aplicației steam_app_<număr>; Jocurile cu protoni se găsesc și după numele "
+"lor .exe. Un articol de titlu de fereastră se potrivește cu fereastra activă"
+" al cărei titlu conține textul."
+
+msgid ""
+"Game mode stays off while any of these matches, even if a game or another "
+"detector would turn it on."
+msgstr ""
+"Modul joc rămâne dezactivat în timp ce oricare dintre aceste se potrivește, "
+"chiar dacă un joc sau un alt detector l-ar porni."
+
+msgid "less than a minute"
+msgstr "mai puțin de un minut"
+
+msgid "{} min"
+msgstr "{} min"
+
+msgid "{} h {} min"
+msgstr "{} h {} min"
+
+msgid "Running for {}"
+msgstr "Rulează pentru {}"
+
+msgid "Stopped unexpectedly"
+msgstr "S-a oprit pe neașteptate"
+
+msgid "Stopped {} ago after running for {}."
+msgstr "S-a oprit acum {}, după ce a alergat pentru {}."
+
+msgid "Text input"
+msgstr "Introducerea textului"
+
+msgid ""
+"How text actions in rules and macros are typed. Key remapping and the emoji "
+"popup do not use it."
+msgstr ""
+"Cum sunt tastate acțiunile text din reguli și macrocomenzi. Remapările "
+"tastelor și fereastra pop-up emoji nu le folosesc."
+
+msgid "Typing method"
+msgstr "Metoda de tastare"
+
+msgid "libei + clipboard fallback (recommended)"
+msgstr "libei + clipboard fallback (recomandat)"
+
+msgid "Paste from clipboard"
+msgstr "Lipiți din clipboard"
+
+msgid "ydotool"
+msgstr "ydotool"
+
+msgid "xdotool"
+msgstr "xdotool"
+
+msgid ""
+"Types with the current layout, or pastes the whole text when a character is "
+"unavailable. Paste requires clipboard access and support for the paste "
+"shortcut. Preserves clipboard formats and cancels if the destination "
+"changes. Requires portal permission and active-window detection."
+msgstr ""
+"Tastează cu aspectul curent sau lipește întregul text atunci când un "
+"caracter nu este disponibil. Lipirea necesită acces la clipboard și suport "
+"pentru comanda rapidă Lipire. Păstrează formatele clipboard și anulează dacă"
+" destinația se schimbă. Necesită permisiunea portalului și detectarea "
+"ferestrei active."
+
+msgid ""
+"Types only through libei using the current keyboard layout and Caps Lock "
+"state. Skips text with unavailable characters. Requires portal permission "
+"and active-window detection. Cancels if the destination changes."
+msgstr ""
+"Tastați numai prin libei folosind aspectul curent al tastaturii și starea "
+"Caps Lock. Omite textul cu caractere indisponibile. Necesită permisiunea "
+"portalului și detectarea ferestrei active. Se anulează dacă se schimbă "
+"destinația."
+
+msgid ""
+"Types only through NotifyKeyboardKeycode using the KDE layout and readable "
+"keyboard state. Skips text with unavailable characters. Requires portal "
+"permission and active-window detection. Cancels if the destination changes."
+msgstr ""
+"Tastați numai prin NotifyKeyboardKeycode folosind aspectul KDE și starea "
+"tastaturii care poate fi citită. Omite textul cu caractere indisponibile. "
+"Necesită permisiunea portalului și detectarea ferestrei active. Se anulează "
+"dacă se schimbă destinația."
+
+msgid ""
+"Pastes with the paste shortcut through the portal. Requires clipboard "
+"access, active-window detection and an app supporting that shortcut. "
+"Preserves all clipboard formats; a new user copy takes precedence. Reports "
+"an error if no text transfer is observed."
+msgstr ""
+"Lipește cu comanda rapidă Paste prin portal. Necesită acces la clipboard, "
+"detectarea ferestrei active și o aplicație care acceptă această comandă "
+"rapidă. Păstrează toate formatele de clipboard; o nouă copie de utilizator "
+"are prioritate. Raportează o eroare dacă nu se observă niciun transfer de "
+"text."
+
+msgid "Paste shortcut"
+msgstr "Lipiți comanda rapidă"
+
+msgid ""
+"Sent to the focused app to paste the text. Terminals usually need "
+"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
+"Ctrl+V does not paste there."
+msgstr ""
+"Trimis la aplicația focalizată pentru a lipi textul. Terminalele au nevoie "
+"de obicei de Ctrl+Shift+V: unele dintre ele lipesc selecția mouse-ului pe "
+"Shift+Insert, iar Ctrl+V nu lipește acolo."
+
+msgid ""
+"Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "
+"Reliable for Latin text only. On an error, stops without switching methods."
+msgstr ""
+"Rulează doar „tipul ydotool”. Are nevoie de ydotool și serviciul său "
+"ydotoold care rulează. De încredere numai pentru textul latin. La o eroare, "
+"se oprește fără a schimba metodele."
+
+msgid ""
+"Runs \"xdotool type\" only. Works only in X11 sessions and XWayland windows."
+" On an error, stops without switching methods."
+msgstr ""
+"Rulează doar „xdotool type”. Funcționează numai în sesiunile X11 și "
+"ferestrele XWayland. La o eroare, se oprește fără a schimba metodele."
+
+msgid "ydotool from PATH"
+msgstr "ydotool de la PATH"
+
+msgid "xdotool from PATH"
+msgstr "xdotool de la PATH"
+
+msgid ""
+"Each item is compared with the active window. Pick a window from the list "
+"below to fill in the field."
+msgstr ""
+"Fiecare articol este comparat cu fereastra activă. Alegeți o fereastră din "
+"lista de mai jos pentru a completa câmpul."
+
+msgid ""
+"Application: the app ID (Wayland app id or X11 WM_CLASS) or the process "
+"name. The whole name must match, case is ignored, .exe is optional. * stands"
+" for any characters and ? for one, e.g. steam_app_*. The ID is stable, so "
+"prefer it."
+msgstr ""
+"Aplicație: ID-ul aplicației (ID aplicației Wayland sau X11 WM_CLASS) sau "
+"numele procesului. Întregul nume trebuie să se potrivească, majusculele sunt"
+" ignorate, .exe este opțional. * reprezintă orice caracter și ? pentru unul,"
+" de ex. steam_app_*. ID-ul este stabil, așa că preferați-l."
+
+msgid ""
+"Window title: matches when the title contains the text, case is ignored. "
+"With * or ? the pattern must cover the whole title. A title changes with the"
+" open tab or document, and it never matches a process without a window."
+msgstr ""
+"Titlul ferestrei: se potrivește când titlul conține text, majusculele sunt "
+"ignorate. Cu * sau ? modelul trebuie să acopere întregul titlu. Un titlu se "
+"schimbă cu fila sau documentul deschis și nu se potrivește niciodată cu un "
+"proces fără o fereastră."
+
+msgid "Match by"
+msgstr "Meci de"
+
+msgid "Process"
+msgstr "Proces"
+
+msgid "Process name, * and ? allowed"
+msgstr "Numele procesului, * și ? permis"
+
+msgid "App ID, * and ? allowed"
+msgstr "ID aplicație, * și ? permis"
+
+msgid ""
+"The item is compared with the names of running processes. Pick one from the "
+"list below to fill in the field."
+msgstr ""
+"Elementul este comparat cu numele proceselor care rulează. Alegeți unul din "
+"lista de mai jos pentru a completa câmpul."
+
+msgid ""
+"Process: the executable name, as the list below shows it. The whole name "
+"must match, case is ignored, .exe is optional. * stands for any characters "
+"and ? for one."
+msgstr ""
+"Proces: numele executabilului, așa cum îl arată lista de mai jos. Întregul "
+"nume trebuie să se potrivească, majusculele sunt ignorate, .exe este "
+"opțional. * reprezintă orice caracter și ? pentru unul."
+
+msgid "Matches {n} running process"
+msgid_plural "Matches {n} running processes"
+msgstr[0] "Se potrivește cu {n} proces de rulare"
+msgstr[1] "Se potrivește cu {n} procese care rulează"
+msgstr[2] "Se potrivește cu {n} de procese care rulează"
+
+msgid "Matches no running process"
+msgstr "Se potrivește cu niciun proces care rulează"
+
+msgid ""
+"Many applications run as “{}”, so the name matches all of them. The "
+"application ID is more precise."
+msgstr ""
+"Multe aplicații rulează ca „{}”, așa că numele se potrivește cu toate. ID-ul"
+" aplicației este mai precis."
+
+msgid "When it counts"
+msgstr "Când contează"
+
+msgid "Window titles"
+msgstr "Titlurile ferestrelor"
+
+msgid "Processes of open windows"
+msgstr "Procese de ferestre deschise"
+
+msgid "Shared process"
+msgstr "Proces partajat"
+
+msgid "Running without a window"
+msgstr "Alergând fără fereastră"
+
+msgid "Type a name to find processes running without a window."
+msgstr "Tastați un nume pentru a găsi procese care rulează fără fereastră."
+
+msgid "Process · while its window is active"
+msgstr "Procesați · în timp ce fereastra sa este activă"
+
+msgid "While the trigger is held"
+msgstr "În timp ce declanșatorul este apăsat"
+
+msgid "Press key"
+msgstr "Apăsați tasta"
+
+msgid ""
+"Which key stays pressed while you hold the trigger, together with the layer."
+" “Don't press” only switches the layer."
+msgstr ""
+"Ce tastă rămâne apăsată în timp ce țineți apăsat declanșatorul, împreună cu "
+"stratul. „Nu apăsați” schimbă doar stratul."
+
+msgid ""
+"Which key stays pressed while you hold the trigger. “Trigger itself” keeps "
+"the usual behavior of the key."
+msgstr ""
+"Ce tastă rămâne apăsată în timp ce țineți apăsat declanșatorul. "
+"„Declanșatorul în sine” păstrează comportamentul obișnuit al cheii."
+
+msgid "Trigger itself"
+msgstr "Se declanșează singur"
+
+msgid "Other key…"
+msgstr "Altă cheie..."
+
+msgid "When to press"
+msgstr "Când să apăsați"
+
+msgid "Holds {}"
+msgstr "Conține {}"
+
+msgid "Holds nothing"
+msgstr "Nu reține nimic"
+
+msgid "Hold after {} ms"
+msgstr "Țineți apăsat după {} ms"
+
+msgid "Stop mapper (restore native keyboard behavior)"
+msgstr "Opriți mapper (restaurează comportamentul nativ al tastaturii)"
+
+msgid "Select a keyboard device in the settings to start the mapper"
+msgstr "Selectați un dispozitiv cu tastatură din setări pentru a porni mapper"
+
+msgid "Start mapper to intercept keys and apply layouts"
+msgstr "Porniți mapper pentru a intercepta cheile și pentru a aplica aspecte"
+
+msgid "Current active layout (selected automatically by switching rules)"
+msgstr "Aspect activ curent (selectat automat prin reguli de comutare)"
+
+msgid "Click to change mode (Auto / On / Off)"
+msgstr "Faceți clic pentru a schimba modul (Automat / Pornit / Oprit)"
+
+msgid ""
+"The mapper intercepts keyboard input, applies layers, rules and macros, and "
+"emits output through a virtual device."
+msgstr ""
+"Cartograful interceptează intrarea de la tastatură, aplică straturi, reguli "
+"și macrocomenzi și emite rezultate printr-un dispozitiv virtual."
+
+msgid ""
+"Define how physical keys behave: tap for a key or action, hold to switch "
+"layers, or double-tap for extra shortcuts."
+msgstr ""
+"Definiți modul în care se comportă tastele fizice: atingeți pentru o tastă "
+"sau o acțiune, țineți apăsat pentru a comuta între straturi sau atingeți de "
+"două ori pentru comenzi rapide suplimentare."
+
+msgid ""
+"Action performed when the trigger is pressed and released quickly without "
+"holding."
+msgstr ""
+"Acțiune efectuată atunci când declanșatorul este apăsat și eliberat rapid "
+"fără ținere."
+
+msgid ""
+"Action performed when the trigger is pressed twice quickly within the "
+"double-tap timeout."
+msgstr ""
+"Acțiune efectuată atunci când declanșatorul este apăsat de două ori rapid în"
+" intervalul de timp expirat de dublă atingere."
+
+msgid "Show standard QWERTY letter labels for visual reference."
+msgstr "Afișați etichete cu litere QWERTY standard pentru referință vizuală."
+
+msgid ""
+"Show internal key codes used in Left Hand Control profiles (e.g. KeyA, "
+"ArrowLeft)."
+msgstr ""
+"Afișați codurile interne ale tastelor utilizate în profilurile de control "
+"pentru mâna stângă (de exemplu, KeyA, ArrowLeft)."
+
+msgid "Hold detection"
+msgstr "Țineți detectarea"
+
+msgid "When a key becomes a hold"
+msgstr "Când o cheie devine o reținere"
+
+msgid ""
+"Decides when a rule key that is still down counts as a hold if you press "
+"another key meanwhile. Applies to all rules."
+msgstr ""
+"Decide când o tastă de regulă care este încă în jos contează ca o menținere "
+"dacă apăsați o altă tastă între timp. Se aplică tuturor regulilor."
+
+msgid ""
+"After another key is released: the key becomes a hold once another key is "
+"pressed and released while it is down, or when the hold threshold passes. "
+"Fast rolls while typing stay taps."
+msgstr ""
+"După ce o altă tastă este eliberată: tasta devine o menținere odată ce o "
+"altă tastă este apăsată și eliberată în timp ce este jos, sau când pragul de"
+" menținere trece. Roluri rapide în timp ce tastați apăsați."
+
+msgid ""
+"As soon as another key is pressed: reacts faster, but fast typing can "
+"trigger the hold by mistake."
+msgstr ""
+"De îndată ce o altă tastă este apăsată: reacționează mai rapid, dar tastarea"
+" rapidă poate declanșa din greșeală oprirea."
+
+msgid "After another key is released (recommended)"
+msgstr "După eliberarea unei alte taste (recomandat)"
+
+msgid "As soon as another key is pressed"
+msgstr "De îndată ce o altă tastă este apăsată"
+
+msgid ""
+"Used by rules that leave the field empty. A rule can set its own value in "
+"its advanced options."
+msgstr ""
+"Folosit de reguli care lasă câmpul gol. O regulă își poate stabili propria "
+"valoare în opțiunile sale avansate."
+
+msgid "Hold threshold, ms"
+msgstr "Țineți pragul, ms"
+
+msgid ""
+"How long to hold a rule key before it counts as a hold: its layer or hold "
+"action. Released earlier, the key runs its tap action."
+msgstr ""
+"Cât timp trebuie să țineți apăsată o tastă de regulă înainte ca aceasta să "
+"fie considerată o menținere: stratul sau acțiunea de menținere. Lansată mai "
+"devreme, tasta își execută acțiunea de atingere."
+
+msgid ""
+"Lower: layers turn on faster, but fast typing may trigger them by mistake. "
+"Higher: fewer false holds, but a longer wait. Usually 150–250 ms."
+msgstr ""
+"Mai jos: straturile se activează mai repede, dar tastarea rapidă le poate "
+"declanșa din greșeală. Mai mare: mai puține rețineri false, dar o așteptare "
+"mai lungă. De obicei 150–250 ms."
+
+msgid "Standard value: {} ms."
+msgstr "Valoare standard: {} ms."
+
+msgid "Long hold, ms"
+msgstr "Țineți lung, dna"
+
+msgid ""
+"How long to keep holding a rule key before its long-hold action runs once. "
+"Applies to rules whose hold runs an action instead of a layer."
+msgstr ""
+"Cât timp trebuie să mențineți apăsată o tastă de regulă înainte ca acțiunea "
+"de menținere lungă a acesteia să ruleze o dată. Se aplică regulilor a căror "
+"reținere rulează o acțiune în loc de un strat."
+
+msgid "Double-tap window, ms"
+msgstr "Atingeți de două ori fereastra, ms"
+
+msgid ""
+"A second tap within this time after the first release counts as a double "
+"tap."
+msgstr ""
+"O a doua atingere în acest interval de timp după prima eliberare este "
+"considerată o atingere dublă."
+
+msgid ""
+"A single tap on a key with a double-tap action runs only after this window "
+"ends, so a large value makes such keys feel slow. Keys without a double-tap "
+"action are not delayed."
+msgstr ""
+"O singură atingere pe o tastă cu o acțiune de dublă atingere rulează numai "
+"după ce această fereastră se termină, astfel încât o valoare mare face ca "
+"astfel de taste să se simtă lente. Tastele fără o acțiune de dublă atingere "
+"nu sunt întârziate."
+
+msgid ""
+"Used by macros that leave the field empty. A macro can set its own value on "
+"the Macros page."
+msgstr ""
+"Folosit de macrocomenzi care lasă câmpul gol. O macrocomandă își poate seta "
+"propria valoare pe pagina Macro-uri."
+
+msgid ""
+"Pause between consecutive steps of a macro. Increase it if an application "
+"misses keystrokes."
+msgstr ""
+"Întrerupeți între pașii consecutivi ai unei macrocomenzi. Măriți-l dacă o "
+"aplicație ratează apăsările de taste."
+
+msgid "Simultaneous presses"
+msgstr "Prese simultane"
+
+msgid ""
+"For rules triggered by several keys pressed together, such as KeyJ+KeyK. All"
+" keys must go down within this time, in any order. Until then the first key "
+"is held back; if the combination does not complete, it is typed as usual. "
+"Modifiers are never held back."
+msgstr ""
+"Pentru regulile declanșate de mai multe taste apăsate împreună, cum ar fi "
+"KeyJ+KeyK. Toate cheile trebuie să coboare în acest timp, în orice ordine. "
+"Pana atunci prima cheie este retinuta inapoi; dacă combinația nu se "
+"completează, se tastează ca de obicei. Modificatorii nu sunt niciodată "
+"reținuți."
+
+msgid ""
+"Higher: the combination is easier to hit, but typing with these keys lags "
+"slightly. Applies to all rules; a rule cannot override it."
+msgstr ""
+"Mai mare: combinația este mai ușor de lovit, dar tastarea cu aceste taste "
+"întârzie ușor. Se aplică tuturor regulilor; o regulă nu o poate depăși."
+
+msgid ""
+"Wait between pressing modifiers (Shift, Ctrl, …) and the main key of a macro"
+" step. Increase it if an application receives the shortcut without its "
+"modifier. Default for macros that leave the field empty."
+msgstr ""
+"Așteptați între apăsarea modificatorilor (Shift, Ctrl, …) și tasta "
+"principală a unui pas macro. Măriți-l dacă o aplicație primește comanda "
+"rapidă fără modificatorul acesteia. Implicit pentru macrocomenzi care lasă "
+"câmpul gol."
+
+msgid "Enter a long hold from 100 to 60000 ms."
+msgstr "Introduceți o menținere lungă de la 100 la 60000 ms."
+
+msgid "Long hold after {} ms"
+msgstr "Ținere lungă după {} ms"
+
+msgid ""
+"Released earlier, the trigger counts as a tap; held longer, as a hold. Empty"
+" uses the default from Settings: {} ms."
+msgstr ""
+"Lansat mai devreme, declanșatorul contează ca o atingere; ținut mai mult, ca"
+" o reținere. Golire folosește valoarea implicită din Setări: {} ms."
+
+msgid ""
+"How long to keep holding before the action runs. Empty uses the default from"
+" Settings: {} ms."
+msgstr ""
+"Cât timp să ții înainte ca acțiunea să se desfășoare. Golire folosește "
+"valoarea implicită din Setări: {} ms."
+
+msgid ""
+"Longest pause between two taps. Empty uses the default from Settings: {} ms."
+msgstr ""
+"Cea mai lungă pauză între două atingeri. Golire folosește valoarea implicită"
+" din Setări: {} ms."
+
+msgid "Auto: {} is not counted as a game (built-in list)"
+msgstr "Auto: {} nu este considerat un joc (lista încorporată)"
+
+msgid ""
+"These sources can take another application for a game, so each skips a "
+"built-in list of applications."
+msgstr ""
+"Aceste surse pot prelua o altă aplicație pentru un joc, așa că fiecare omite"
+" o listă încorporată de aplicații."
+
+msgid ""
+"Turns on while a program that Windows recognized as a game (the Game Bar "
+"list) runs. Launchers are listed there too, so they are skipped."
+msgstr ""
+"Se pornește în timp ce rulează un program pe care Windows l-a recunoscut ca "
+"joc (lista Bară de jocuri). Lansatoarele sunt listate și acolo, așa că sunt "
+"omise."
+
+msgid "Launchers and game tools — not counted as games"
+msgstr "Lansatoare și instrumente de joc — nu sunt considerate jocuri"
+
+msgid ""
+"Decides when a dual-role key counts as a hold if another key is pressed. "
+"Rules can override this default in advanced options. Chord detection is "
+"configured separately."
+msgstr ""
+"Decide când o tastă cu rol dublu contează ca o reținere dacă este apăsată o "
+"altă tastă. Regulile pot suprascrie această implicită în opțiunile avansate."
+" Detectarea acordurilor este configurată separat."
+
+msgid "After another key is released (better for typing)"
+msgstr "După ce o altă tastă este eliberată (mai bine pentru tastare)"
+
+msgid ""
+"As soon as another key is pressed: useful for dedicated layer or modifier "
+"keys. Reacts faster, but overlapping letters while typing can trigger the "
+"hold by mistake."
+msgstr ""
+"De îndată ce o altă tastă este apăsată: util pentru tastele de layer sau "
+"modificatoare dedicate. Reacționează mai rapid, dar literele care se "
+"suprapun în timpul tastării pot declanșa reținerea din greșeală."
+
+msgid "Default from Settings: {}"
+msgstr "Implicit din Setări: {}"
+
+msgid "after another key is released"
+msgstr "după ce o altă tastă este eliberată"
+
+msgid "as soon as another key is pressed"
+msgstr "de îndată ce o altă tastă este apăsată"
+
+msgid ""
+"Overrides the default hold detection for this rule. Use release detection "
+"for typing keys and press detection for dedicated layer or modifier keys. "
+"This does not change chord detection."
+msgstr ""
+"Ignoră detecția implicită de reținere pentru această regulă. Utilizați "
+"detectarea eliberării pentru tastarea tastelor și detectarea apăsării pentru"
+" tastele de straturi sau modificatoare dedicate. Acest lucru nu schimbă "
+"detectarea acordurilor."
+
+msgid "Cannot list input devices: {}"
+msgstr "Nu se pot enumera dispozitivele de intrare: {}"
+
+msgid "Keyboard interception is not implemented on this operating system."
+msgstr ""
+"Interceptarea tastaturii nu este implementată pe acest sistem de operare."
+
+msgid "Defaults"
+msgstr "Valori implicite"
+
+msgid "Shared by all rules"
+msgstr "Împărtășită de toate regulile"
+
+msgid "Hold threshold"
+msgstr "Țineți pragul"
+
+msgid "Long hold"
+msgstr "Ținere lungă"
+
+msgid "Double-tap window"
+msgstr "Atingeți de două ori fereastra"
+
+msgid "Reset to {} ms"
+msgstr "Resetați la {} ms"
+
+msgid "Automatic game detection"
+msgstr "Detectare automată a jocului"
+
+msgid "Works only in Auto mode."
+msgstr "Funcționează numai în modul automat."
+
+msgid "System signals"
+msgstr "Semnale de sistem"
+
+msgid "Launchers"
+msgstr "Lansatoare"
+
+msgid "Heroic games"
+msgstr "Jocuri eroice"
+
+msgid ""
+"Turns on while a game started by Heroic Games Launcher runs (Epic, GOG, "
+"Amazon and added games): Heroic passes HEROIC_APP_NAME to every game it "
+"starts."
+msgstr ""
+"Se activează în timp ce rulează un joc început de Heroic Games Launcher "
+"(Epic, GOG, Amazon și jocuri adăugate): Heroic transmite HEROIC_APP_NAME "
+"fiecărui joc pe care îl începe."
+
+msgid "Games run through umu-launcher"
+msgstr "Jocurile rulează prin umu-launcher"
+
+msgid ""
+"Turns on while a game runs through umu-run. Heroic, Lutris, Faugus Launcher "
+"and other launchers use it to start Windows games with Proton."
+msgstr ""
+"Se pornește în timp ce un joc rulează prin umu-run. Heroic, Lutris, Faugus "
+"Launcher și alte lansatoare îl folosesc pentru a porni jocuri Windows cu "
+"Proton."
+
+msgid "Guesses — can be wrong"
+msgstr "Presupuneri - poate fi greșit"
+
+msgid "Your rules"
+msgstr "Regulile tale"
+
+msgid ""
+"“Never a game” wins over everything else, automatic detection included."
+msgstr ""
+"„Niciodată un joc” câștigă peste orice altceva, inclusiv detectarea "
+"automată."
+
+msgid "Always a game"
+msgstr "Întotdeauna un joc"
+
+msgid "Never a game"
+msgstr "Niciodată un joc"
+
+msgid ""
+"Built-in list. To count one of these anyway, add it to Always a game under "
+"Your rules."
+msgstr ""
+"Lista încorporată. Pentru a număra oricum unul dintre acestea, adaugă-l la "
+"Always a game sub regulile tale."
+
+msgid "Hold"
+msgstr "Menținere apăsată"
+
+msgid "Don't press"
+msgstr "Nu apăsa"
+
+msgid "{} — change…"
+msgstr "{} — schimbați..."
+
+msgid "Choose another key above to set when it is pressed."
+msgstr "Alegeți o altă tastă de mai sus pentru a seta când este apăsată."
+
+msgid "Assign a double-tap action to the rule to change this window."
+msgstr ""
+"Atribuiți o acțiune de dublă atingere regulii pentru a schimba această "
+"fereastră."
+
+msgid "Hold on other key release"
+msgstr "Țineți apăsată eliberarea altei taste"
+
+msgid "Hold on other key press"
+msgstr "Țineți apăsată altă tastă"
+
+msgid "Reset"
+msgstr "Resetează"
+
+msgid "Return all options in this dialog to their defaults"
+msgstr "Reveniți la valorile implicite toate opțiunile din acest dialog"
+
+msgid "Macro time limit"
+msgstr "Limită de timp pentru macro"
+
+msgid ""
+"A macro still running after this time is stopped and counts as finished. A "
+"macro started while another one runs waits for it; up to 3 runs can wait, "
+"further presses are ignored."
+msgstr ""
+"O macrocomandă care încă rulează după acest timp este oprită și este "
+"considerată finalizată. O macrocomandă a pornit în timp ce o alta rulează o "
+"așteaptă; pot aștepta până la 3 rulări, alte apăsări sunt ignorate."
+
+msgid "Global shortcuts registered in this KDE session:"
+msgstr "Comenzi rapide globale înregistrate în această sesiune KDE:"
+
+msgid ""
+"The list is read from the KDE global shortcut service (kglobalaccel): KWin, "
+"Plasma and applications register their actions there. The chosen action is "
+"invoked as is, as if its shortcut were pressed, even when no keys are "
+"assigned to it. Which actions exist and how they behave depends on the "
+"Plasma version and installed applications, so Left Hand Control does not "
+"guarantee them. Common window and desktop actions that also work on other "
+"platforms are in System actions."
+msgstr ""
+"Lista este citită din serviciul global de scurtături KDE (kglobalaccel): "
+"KWin, Plasma și aplicațiile își înregistrează acțiunile acolo. Acțiunea "
+"aleasă este invocată ca atare, ca și cum ar fi apăsată scurtătura ei, chiar "
+"și atunci când nu i-au fost atribuite taste. Ce acțiuni există și cum se "
+"comportă depind de versiunea Plasma și de aplicațiile instalate, așa că Left"
+" Hand Control nu le garantează. Acțiunile comune pentru fereastră și desktop"
+" care funcționează și pe alte platforme sunt în Acțiuni de sistem."
+
+msgid "Hold key or combination"
+msgstr "Țineți apăsată tasta sau combinația"
+
+msgid ""
+"The key or combination stays pressed until you release the trigger. Choose "
+"modifiers plus one main key, for example Ctrl+KeyC."
+msgstr ""
+"Tasta sau combinația rămâne apăsată până când eliberați declanșatorul. "
+"Alegeți modificatori plus o tastă principală, de exemplu Ctrl+Tasta C."
+
+msgid "Not used when holding performs a long-hold action."
+msgstr ""
+"Nu este utilizat când menținerea efectuează o acțiune de menținere lungă."
+
+msgid "Other key or combination…"
+msgstr "Altă tastă sau combinație..."
+
+msgid "Hold detection when another key is pressed"
+msgstr "Menține detectarea când este apăsată o altă tastă"
+
+msgid "Used for single-key triggers without a long-hold action."
+msgstr ""
+"Folosit pentru declanșări cu o singură tastă fără o acțiune de menținere "
+"lungă."
+
+msgid "Long-hold threshold, ms"
+msgstr "Prag de menținere lungă, ms"
+
+msgid "Used when a long-hold action is selected."
+msgstr "Folosit atunci când este selectată o acțiune de menținere lungă."
+
+msgid "Double-tap interval, ms"
+msgstr "Interval de dublu-apăsare, ms"
+
+msgid "Double-tap actions are available only for single-key triggers."
+msgstr ""
+"Acțiunile de atingere dublă sunt disponibile numai pentru declanșatoarele cu"
+" o singură tastă."
+
+msgid "Applies when a double-tap action is assigned."
+msgstr "Se aplică atunci când este atribuită o acțiune de dublă atingere."
+
+msgid "Delete trigger"
+msgstr "Ștergeți declanșatorul"
+
+msgid "Delete trigger?"
+msgstr "Ștergeți declanșatorul?"
+
+msgid ""
+"The trigger and all its assigned actions will be removed from the current "
+"layout."
+msgstr ""
+"Declanșatorul și toate acțiunile sale atribuite vor fi eliminate din "
+"aspectul curent."
+
+msgid "Reset {} to default"
+msgstr "Resetați {} la valoarea implicită"
+
+msgid "Holding activates layer: {}"
+msgstr "Menținerea activează stratul: {}"
+
+msgid "Holding performs a long-hold action."
+msgstr "Menținerea efectuează o acțiune de menținere lungă."
+
+msgid "Holding keeps a key or combination pressed."
+msgstr "Ținerea apăsată menține apăsată o tastă sau o combinație."
+
+msgid "Paths"
+msgstr "Cărări"
+
+msgid "Unknown layer key at \"{}\"."
+msgstr "Cheie de strat necunoscută la „{}”."
+
+msgid "Invalid layer action at \"{}\"."
+msgstr "Acțiune de strat nevalidă la „{}”."
+
+msgid "Invalid macro at \"{}\"."
+msgstr "Macrocomanda nevalidă la „{}”."
+
+msgid "Invalid menu action at \"{}\"."
+msgstr "Acțiune de meniu nevalidă la „{}”."
+
+msgid "Invalid timing at \"{}\"."
+msgstr "Cronometrare nevalidă la „{}”."
+
+msgid "Invalid window condition at \"{}\"."
+msgstr "Condiție de fereastră nevalidă la „{}”."
+
+msgid "Unsupported rule combination at \"{}\"."
+msgstr "Combinație de reguli neacceptată la „{}”."
+
+msgid "Invalid macro step at \"{}\"."
+msgstr "Pasul macro nevalid la „{}”."
+
+msgid "Macro call cycle at \"{}\"."
+msgstr "Ciclul de apel macro la „{}”."
+
+msgid "A timing value is outside the range shown in Settings."
+msgstr "O valoare de timp este în afara intervalului afișat în Setări."
+
+msgid "Keep modifiers held until the layer is released"
+msgstr "Țineți modificatorii ținuți până când stratul este eliberat"
+
+msgid ""
+"For a combination such as Alt+Tab: Alt stays pressed while you press the key"
+" again and is released together with the layer key, so the window switcher "
+"stays open."
+msgstr ""
+"Pentru o combinație precum Alt+Tab: Alt rămâne apăsat în timp ce apăsați din"
+" nou tasta și este eliberat împreună cu tasta de strat, astfel încât "
+"comutatorul de fereastră rămâne deschis."
+
+msgid ""
+"Cannot list input devices. Check device access and see the application log."
+msgstr ""
+"Nu se pot enumera dispozitivele de intrare. Verificați accesul la dispozitiv"
+" și vedeți jurnalul aplicației."
+
+msgid ""
+"Configuration is unavailable. Check the configuration files and see the "
+"application log."
+msgstr ""
+"Configurația este indisponibilă. Verificați fișierele de configurare și "
+"vedeți jurnalul aplicației."
+
+msgid "Popup menus are unavailable. Try opening the menu again."
+msgstr ""
+"Meniurile pop-up nu sunt disponibile. Încercați să deschideți din nou "
+"meniul."
+
+msgid "Popup menu failed. Try opening the menu again."
+msgstr "Meniul pop-up eșuat. Încercați să deschideți din nou meniul."
+
+msgid ""
+"The text was not typed: the typing method is unavailable. Restart the mapper"
+" to try again."
+msgstr ""
+"Textul nu a fost tastat: metoda de tastare nu este disponibilă. Reporniți "
+"mapper-ul pentru a încerca din nou."
+
+msgid ""
+"The text was not typed: safe clipboard access failed. See the application "
+"log."
+msgstr ""
+"Textul nu a fost introdus: accesul sigur la clipboard a eșuat. Vedeți "
+"jurnalul aplicației."
+
+msgid ""
+"The text was not typed: the input tool failed. See the application log."
+msgstr ""
+"Textul nu a fost introdus: instrumentul de introducere a eșuat. Vedeți "
+"jurnalul aplicației."
+
+msgid "Changes applied, but the mapper was not updated. Restart the mapper."
+msgstr ""
+"S-au aplicat modificări, dar mapatorul nu a fost actualizat. Reporniți "
+"mapper-ul."
+
+msgid "The operation failed. See the application log."
+msgstr "Operația a eșuat. Vedeți jurnalul aplicației."
+
+msgid "The action failed. See the application log."
+msgstr "Acțiunea a eșuat. Vedeți jurnalul aplicației."
+
+msgid ""
+"Cannot start the mapper. Check the keyboard and device access. See the "
+"application log."
+msgstr ""
+"Nu se poate porni mapper-ul. Verificați accesul la tastatură și la "
+"dispozitiv. Vedeți jurnalul aplicației."
+
+msgid "Mapper is running, but an error occurred. See the application log."
+msgstr "Mapper rulează, dar a apărut o eroare. Vedeți jurnalul aplicației."
+
+msgid "Mapper stopped because of an error. See the application log."
+msgstr "Mapper sa oprit din cauza unei erori. Vedeți jurnalul aplicației."
+
+msgid ""
+"Cannot read or save the configuration. Check file access and see the "
+"application log."
+msgstr ""
+"Nu se poate citi sau salva configurația. Verificați accesul la fișiere și "
+"vedeți jurnalul aplicației."
+
+msgid "Cannot parse the configuration file. See the application log."
+msgstr ""
+"Nu se poate analiza fișierul de configurare. Vedeți jurnalul aplicației."
+
+msgid "The configuration contains invalid values. See the application log."
+msgstr "Configurația conține valori nevalide. Vedeți jurnalul aplicației."
+
+msgid "The action has invalid syntax."
+msgstr "Acțiunea are o sintaxă nevalidă."
+
+msgid "Pauses can only be used in macro steps."
+msgstr "Pauzele pot fi folosite numai în pași macro."
+
+msgid "The selected macro no longer exists."
+msgstr "Macrocomanda selectată nu mai există."
+
+msgid "The selected command no longer exists."
+msgstr "Comanda selectată nu mai există."
+
+msgid "Unknown system action."
+msgstr "Acțiune necunoscută a sistemului."
+
+msgid "Unknown application action."
+msgstr "Acțiune necunoscută în aplicație."
+
+msgid ""
+"Unknown action type. It may come from a newer version of the application."
+msgstr ""
+"Tip de acțiune necunoscut. Poate proveni dintr-o versiune mai nouă a "
+"aplicației."
+
+msgid "Layout: {}"
+msgstr "Aspect: {}"
+
+msgid "Select All"
+msgstr "Selectează tot"
+
+msgid "Move line down"
+msgstr "Mutați linia în jos"
+
+msgid "Down + End"
+msgstr "Jos + Sfârșit"
+
+msgid "Up + End"
+msgstr "Sus + Sfârșit"
+
+msgid "Up 5 times"
+msgstr "Până de 5 ori"
+
+msgid "Duplicate line"
+msgstr "Linie duplicat"
+
+msgid "Right + Space"
+msgstr "Dreapta + Spațiu"
+
+msgid "Empty line below"
+msgstr "Linie goală de mai jos"
+
+msgid "Cut word right from center"
+msgstr "Tăiați cuvântul chiar din centru"
+
+msgid "Copy word right from center"
+msgstr "Copiați cuvântul chiar din centru"
+
+msgid "Paste at line above"
+msgstr "Lipiți pe linia de mai sus"
+
+msgid "Replace word with buffer"
+msgstr "Înlocuiți cuvântul cu buffer"
+
+msgid "Down + Home"
+msgstr "Jos + Acasă"
+
+msgid "Up + Home"
+msgstr "Sus + Acasă"
+
+msgid "Down 5 times"
+msgstr "Jos de 5 ori"
+
+msgid "Paste at line bottom"
+msgstr "Lipiți în partea de jos a liniei"
+
+msgid "Cut to start"
+msgstr "Tăiați pentru a începe"
+
+msgid "Cut to end"
+msgstr "Tăiați până la capăt"
+
+msgid "Cut line content"
+msgstr "Tăiați conținutul liniei"
+
+msgid "Cut and remove line"
+msgstr "Tăiați și îndepărtați linia"
+
+msgid "Select 5 lines up"
+msgstr "Selectați 5 rânduri"
+
+msgid "Copy to start"
+msgstr "Copiați pentru a începe"
+
+msgid "Copy to end"
+msgstr "Copiați până la final"
+
+msgid "Copy line"
+msgstr "Copiați linia"
+
+msgid "Select whole line"
+msgstr "Selectați întreaga linie"
+
+msgid "Select word right from center"
+msgstr "Selectați cuvântul chiar din centru"
+
+msgid "Replace to start with buffer"
+msgstr "Înlocuiți pentru a începe cu tampon"
+
+msgid "Replace to end with buffer"
+msgstr "Înlocuiți pentru a termina cu tampon"
+
+msgid "Replace line with buffer"
+msgstr "Înlocuiți linia cu tampon"
+
+msgid "Select 5 lines down"
+msgstr "Selectați 5 linii în jos"
+
+msgid "Remove trigger"
+msgstr "Scoateți declanșatorul"
+
+msgid "Refresh list"
+msgstr "Actualizează lista"
+
+msgid "Remove item"
+msgstr "Eliminați elementul"
+
+msgid "Save as or reset changes"
+msgstr "Salvați ca sau resetați modificările"
+
+msgid "Edit: {}"
+msgstr "Editare: {}"
+
+msgid "Save (Enter)"
+msgstr "Salvează (Enter)"
+
+msgid "Save (Ctrl+Enter)"
+msgstr "Salvează (Ctrl+Enter)"
+
+msgid "Cancel (Esc)"
+msgstr "Anulează (Esc)"
+
+msgid "Use the default from Settings: {} ms"
+msgstr "Utilizați implicit din Setări: {} ms"
+
+msgid ""
+"Opened by the app:showQuickMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold any "
+"action: a shortcut, macro, shell command or system action."
+msgstr ""
+"Deschis de acțiunile app:showQuickMenuN, unde N este poziția paginii: "
+"reordonarea paginilor schimbă pagina pe care o deschide o tastă. Fiecare "
+"celulă poate deține orice acțiune: o comandă rapidă, macrocomandă, comandă "
+"shell sau acțiune de sistem."
+
+msgid ""
+"In the popup, click a cell or press its key: the cells follow the keyboard "
+"rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number."
+msgstr ""
+"În fereastra pop-up, faceți clic pe o celulă sau apăsați tasta acesteia: "
+"celulele urmează rândurile de la tastatură Q–T, A–G și Z–B. Tab comută "
+"paginile; cifrele deschid o pagină după numărul acesteia."
+
+msgid "Waiting for keyboard"
+msgstr "Asteptam tastatura"

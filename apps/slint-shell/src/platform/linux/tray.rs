@@ -19,7 +19,7 @@ const HOST_GRACE: Duration = Duration::from_secs(10);
 pub struct Tray {
     enabled: bool,
     in_development: bool,
-    english: bool,
+    language: Language,
     /// Index of the Auto/On/Off choice and the effective state.
     game: (usize, bool),
     dispatch: Dispatch,
@@ -37,8 +37,8 @@ impl Handle {
         self.0.update(|tray| tray.enabled = enabled);
     }
 
-    pub fn set_english(&self, english: bool) {
-        self.0.update(|tray| tray.english = english);
+    pub fn set_language(&self, language: Language) {
+        self.0.update(|tray| tray.language = language);
     }
 
     pub fn set_game(&self, status: &GameModeStatus) {
@@ -49,11 +49,7 @@ impl Handle {
 
 impl Tray {
     fn language(&self) -> Language {
-        if self.english {
-            Language::English
-        } else {
-            Language::Russian
-        }
+        self.language
     }
 
     fn game_menu(&self) -> ksni::MenuItem<Self> {
@@ -177,7 +173,7 @@ pub fn start(dispatch: Dispatch) -> Result<Handle, ksni::Error> {
     Tray {
         enabled: false,
         in_development: false,
-        english: false,
+        language: Language::English,
         game: (0, false),
         dispatch,
         online: Arc::new(AtomicBool::new(true)),

@@ -8,7 +8,6 @@ export struct Message {
 }
 
 export global Locale {
-    in-out property <bool> english: false;
 
     public pure function text(m: Message) -> string {
         if m.id == "command-help-linux" { return @tr("Commands run with sh -lc in the background. The mapper does not wait for completion or collect output. An empty name uses the command itself as its label. The working directory defaults to your home folder; scripts need execute permission. Command execution must be enabled in settings."); }

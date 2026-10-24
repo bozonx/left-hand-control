@@ -1,0 +1,3594 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Left Hand Control\n"
+"PO-Revision-Date: 2026-10-23 00:00+0000\n"
+"Last-Translator: Machine translation; review welcome\n"
+"Language-Team: Croatian\n"
+"Language: hr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
+
+msgid "Action saved"
+msgstr "Radnja je spremljena"
+
+msgid "Cancel"
+msgstr "Odustani"
+
+msgid "Increase"
+msgstr "Povećati"
+
+msgid "Decrease"
+msgstr "Smanjenje"
+
+msgid "Configuration loaded: {n} rule"
+msgid_plural "Configuration loaded: {n} rules"
+msgstr[0] "Konfiguracija je učitana: {n} pravilo"
+msgstr[1] "Učitana konfiguracija: {n} pravila"
+msgstr[2] "Učitana konfiguracija: {n} pravila"
+
+msgid "Configuration saved: {n} rule"
+msgid_plural "Configuration saved: {n} rules"
+msgstr[0] "Konfiguracija je spremljena: {n} pravilo"
+msgstr[1] "Konfiguracija je spremljena: {n} pravila"
+msgstr[2] "Konfiguracija spremljena: {n} pravila"
+
+msgid "Configuration unavailable: {}"
+msgstr "Konfiguracija nije dostupna: {}"
+
+msgid "Delay: an integer from 1 to 10000 ms"
+msgstr "Kašnjenje: cijeli broj od 1 do 10000 ms"
+
+msgid "Device saved: {}"
+msgstr "Uređaj je spremljen: {}"
+
+msgid "Emoji"
+msgstr "Emoji"
+
+msgid "Tab · {}/{}"
+msgstr "Tab · {}/{}"
+
+msgid "Enter non-empty text"
+msgstr "Unesite tekst koji nije prazan"
+
+msgid "Key {} only has conditional or layer rules; edit it in the full editor"
+msgstr ""
+"Ključ {} ima samo uvjetna ili slojna pravila; uredite ga u punom uređivaču"
+
+msgid "Keyboard"
+msgstr "Tipkovnica"
+
+msgid "Keyboard device"
+msgstr "Uređaj tipkovnice"
+
+msgid "Keyboard layout"
+msgstr "Raspored tipkovnice"
+
+msgid "Load a valid configuration before starting the mapper"
+msgstr "Učitajte valjanu konfiguraciju prije pokretanja mapera"
+
+msgid "Mapper is running"
+msgstr "Mapper je pokrenut"
+
+msgid "Mapper is running: {}"
+msgstr "Mapper radi: {}"
+
+msgid "Mapper is starting…"
+msgstr "Mapper počinje..."
+
+msgid "Mapper is stopped"
+msgstr "Mapper je zaustavljen"
+
+msgid "Mapper is stopped: {}"
+msgstr "Mapper je zaustavljen: {}"
+
+msgid "Quick actions"
+msgstr "Brze akcije"
+
+msgid "Quit"
+msgstr "Izlaz"
+
+msgid "Settings"
+msgstr "Postavke"
+
+msgid "Mapper on / off"
+msgstr "Mapper uključen/isključen"
+
+msgid "Switch to desktop {n}"
+msgstr "Prijeđi na desktop {n}"
+
+msgid "Save"
+msgstr "Spremi"
+
+msgid "Changes applied, but the mapper was not updated: {}"
+msgstr "Promjene su primijenjene, ali maper nije ažuriran: {}"
+
+msgid "Select a key to assign an action."
+msgstr "Odaberite tipku za dodjelu radnje."
+
+msgid "Select a keyboard device in the settings"
+msgstr "Odaberite tipkovnicu u postavkama"
+
+msgid "Select a system action"
+msgstr "Odaberite akciju sustava"
+
+msgid "Spell popup process unavailable: {}"
+msgstr "Proces skočnog prozora sricanja nije dostupan: {}"
+
+msgid "Spell worker is not running"
+msgstr "Spell worker nije pokrenut"
+
+msgid "Spell worker is restarting"
+msgstr "Spell worker se ponovno pokreće"
+
+msgid "Spell worker: restart limit exceeded (3 per minute)"
+msgstr ""
+"Spell worker: prekoračeno ograničenje ponovnog pokretanja (3 u minuti)"
+
+msgid "Spell worker: {}"
+msgstr "Djelatnik čarolije: {}"
+
+msgid "Stop capture"
+msgstr "Zaustavi snimanje"
+
+msgid "System"
+msgstr "sustav"
+
+msgid "Text"
+msgstr "Tekst"
+
+msgid "The configuration changed since editing started; repeat the change"
+msgstr "Konfiguracija se promijenila od početka uređivanja; ponovite promjenu"
+
+msgid "Unknown action type"
+msgstr "Nepoznata vrsta radnje"
+
+msgid "Left Hand Control"
+msgstr "Left Hand Control"
+
+msgid "Layouts"
+msgstr "Izgledi"
+
+msgid "New layout name"
+msgstr "Novi naziv izgleda"
+
+msgid "Mapper"
+msgstr "Preslikavanje"
+
+msgid "Dark"
+msgstr "tamno"
+
+msgid "Light"
+msgstr "Svjetlo"
+
+msgid "Refresh devices"
+msgstr "Osvježi uređaje"
+
+msgid "Mouse device path"
+msgstr "Put uređaja miša"
+
+msgid "Optional device path"
+msgstr "Izborni put uređaja"
+
+msgid "General"
+msgstr "General"
+
+msgid "Appearance"
+msgstr "Izgled"
+
+msgid "Language"
+msgstr "Jezik"
+
+msgid "Automatic"
+msgstr "Automatski"
+
+msgid "Key behavior"
+msgstr "Ključno ponašanje"
+
+msgid "Game mode"
+msgstr "Način igre"
+
+msgid "Use GameMode daemon"
+msgstr "Koristite GameMode demon"
+
+msgid "Detect fullscreen"
+msgstr "Prepoznaj cijeli zaslon"
+
+msgid "ydotool path"
+msgstr "ydotool put"
+
+msgid "xdotool path"
+msgstr "xdotool put"
+
+msgid "Settings directory: "
+msgstr "Direktorij postavki:"
+
+msgid "Layouts directory: "
+msgstr "Direktorij izgleda:"
+
+msgid "Save settings"
+msgstr "Spremi postavke"
+
+msgid "Settings saved"
+msgstr "Postavke su spremljene"
+
+msgid "Enter a timeout from 50 to 1000 milliseconds"
+msgstr "Unesite vremensko ograničenje od 50 do 1000 milisekundi"
+
+msgid "Rules"
+msgstr "Pravila"
+
+msgid "Remove"
+msgstr "Ukloni"
+
+msgid "Move up"
+msgstr "Pomakni se gore"
+
+msgid "Move down"
+msgstr "Pomakni se dolje"
+
+msgid "Enabled"
+msgstr "Omogućeno"
+
+msgid "Trigger key"
+msgstr "Ključ okidača"
+
+msgid "Tap action"
+msgstr "Dodirnite radnju"
+
+msgid "Layout conditions (comma separated)"
+msgstr "Uvjeti izgleda (odvojeni zarezima)"
+
+msgid "App whitelist (comma separated)"
+msgstr "Popis dopuštenih aplikacija (odvojeno zarezom)"
+
+msgid "App blacklist (comma separated)"
+msgstr "Crna lista aplikacija (odvojeno zarezom)"
+
+msgid "Isolate"
+msgstr "Izolirati"
+
+msgid "Hold for"
+msgstr "Pričekajte"
+
+msgid "Swallow tap"
+msgstr "Blokiraj kratki pritisak"
+
+msgid "Swallow hold"
+msgstr "Blokiraj držanje"
+
+msgid "New layer name"
+msgstr "Novi naziv sloja"
+
+msgid "Create layer"
+msgstr "Stvorite sloj"
+
+msgid "Rules and triggers"
+msgstr "Pravila i okidači"
+
+msgid "Define how physical keys activate layers or run actions."
+msgstr "Definirajte kako fizičke tipke aktiviraju slojeve ili pokreću akcije."
+
+msgid "Add rule"
+msgstr "Dodaj pravilo"
+
+msgid "Not set"
+msgstr "Nije postavljeno"
+
+msgid "Layer (hold)"
+msgstr "Sloj (drži)"
+
+msgid "Double-tap action"
+msgstr "Radnja dvostrukog dodira"
+
+msgid "Hold button"
+msgstr "Dugme za držanje"
+
+msgid "Default"
+msgstr "Zadano"
+
+msgid "Advanced"
+msgstr "Napredno"
+
+msgid "Choose trigger key"
+msgstr "Odaberite tipku okidača"
+
+msgid "Choose layer"
+msgstr "Odaberite sloj"
+
+msgid "Conditions"
+msgstr "Uvjeti"
+
+msgid "Advanced rule options"
+msgstr "Napredne opcije pravila"
+
+msgid "Choose action"
+msgstr "Odaberite akciju"
+
+msgid "Ignore"
+msgstr "Zanemariti"
+
+msgid "On"
+msgstr "Uključeno"
+
+msgid "Off"
+msgstr "Isključeno"
+
+msgid "Clear"
+msgstr "Jasan"
+
+msgid "Apply"
+msgstr "Primijeni"
+
+msgid "Delete rule?"
+msgstr "Izbrisati pravilo?"
+
+msgid "This rule will be removed from the current layout."
+msgstr "Ovo pravilo će biti uklonjeno iz trenutnog izgleda."
+
+msgid "Layers"
+msgstr "Slojevi"
+
+msgid "New layer"
+msgstr "Novi sloj"
+
+msgid "Duplicate"
+msgstr "Duplikat"
+
+msgid "Delete"
+msgstr "Izbriši"
+
+msgid "Extra keys"
+msgstr "Dodatni ključevi"
+
+msgid "Edit"
+msgstr "Uredi"
+
+msgid "Rename layer"
+msgstr "Preimenuj sloj"
+
+msgid "Duplicate layer"
+msgstr "Duplicirani sloj"
+
+msgid "Delete layer?"
+msgstr "Izbrisati sloj?"
+
+msgid "Edit layer key"
+msgstr "Uredi ključ sloja"
+
+msgid "Name"
+msgstr "Ime"
+
+msgid "Description"
+msgstr "Opis"
+
+msgid "Rules using this layer will return to the base layer."
+msgstr "Pravila koja koriste ovaj sloj vratit će se na osnovni sloj."
+
+msgid "Transparent"
+msgstr "Transparentan"
+
+msgid "Swallow"
+msgstr "Blokiraj"
+
+msgid "Action"
+msgstr "Akcijski"
+
+msgid "Action code"
+msgstr "Akcijski kod"
+
+msgid "Enter a layer name"
+msgstr "Unesite naziv sloja"
+
+msgid "A layer with this name already exists."
+msgstr "Sloj s ovim imenom već postoji."
+
+msgid "Enter a layout name"
+msgstr "Unesite naziv izgleda"
+
+msgid "Enter a key code"
+msgstr "Unesite šifru ključa"
+
+msgid "Native"
+msgstr "Zavičajni"
+
+msgid "Layer saved"
+msgstr "Sloj spremljen"
+
+msgid "Macros"
+msgstr "Makronaredbe"
+
+msgid "Built-in macros"
+msgstr "Ugrađeni makronaredbe"
+
+msgid "Macro ID"
+msgstr "ID makronaredbe"
+
+msgid "Copy ID"
+msgstr "Kopiraj ID"
+
+msgid "Steps"
+msgstr "Koraci"
+
+msgid "Add step"
+msgstr "Dodaj korak"
+
+msgid "Add pause"
+msgstr "Dodajte pauzu"
+
+msgid "Macro ID must contain 1–64 letters, digits, underscores or hyphens"
+msgstr "Makro ID mora sadržavati 1-64 slova, znamenki, podvlaka ili crtica"
+
+msgid "Macro ID is already in use"
+msgstr "Makro ID je već u upotrebi"
+
+msgid "Macro delays must be between 0 and 2000 ms"
+msgstr "Makro odgode moraju biti između 0 i 2000 ms"
+
+msgid "Pause must be between 1 and 10000 ms"
+msgstr "Pauza mora biti između 1 i 10000 ms"
+
+msgid "Unknown key or shortcut in macro step"
+msgstr "Nepoznata tipka ili prečac u koraku makronaredbe"
+
+msgid "Macro references cannot form a cycle"
+msgstr "Makro reference ne mogu tvoriti ciklus"
+
+msgid "Commands"
+msgstr "Naredbe"
+
+msgid "Add"
+msgstr "Dodaj"
+
+msgid "Clear cell"
+msgstr "Čista ćelija"
+
+msgid "Page name"
+msgstr "Naziv stranice"
+
+msgid "Emoji cells accept at most 100 characters."
+msgstr "Emoji ćelije prihvaćaju najviše 100 znakova."
+
+msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
+msgstr "ID naredbe: 1–64 slova, znamenke, podvlake ili crtice."
+
+msgid "Command IDs must be unique."
+msgstr "ID-ovi naredbi moraju biti jedinstveni."
+
+msgid "Enter a shell command."
+msgstr "Unesite naredbu ljuske."
+
+msgid "Save as…"
+msgstr "Spremi kao…"
+
+msgid "Save layout as…"
+msgstr "Spremi izgled kao…"
+
+msgid "Please wait…"
+msgstr "Molimo pričekajte…"
+
+msgid "Stop"
+msgstr "Stop"
+
+msgid "Start"
+msgstr "Start"
+
+msgid "Custom layout"
+msgstr "Prilagođeni izgled"
+
+msgid "Base keyboard"
+msgstr "Osnovna tipkovnica"
+
+msgid "Keyboard device path"
+msgstr "Put uređaja tipkovnice"
+
+msgid "Copy path"
+msgstr "Kopiraj put"
+
+msgid "Create a layer to assign its keys, or edit the base keyboard."
+msgstr ""
+"Stvorite sloj da biste mu dodijelili tipke ili uredite osnovnu tipkovnicu."
+
+msgid "Running"
+msgstr "Trčanje"
+
+msgid "Stopped"
+msgstr "Zaustavljeno"
+
+msgid "Layout library updated"
+msgstr "Knjižnica izgleda ažurirana"
+
+msgid "Select a layout"
+msgstr "Odaberite izgled"
+
+msgid "Layout changed on disk; select it again"
+msgstr "Izgled promijenjen na disku; ponovno ga odaberite"
+
+msgid "Any game mode"
+msgstr "Bilo koji način igre"
+
+msgid "Game mode on"
+msgstr "Način igre uključen"
+
+msgid "Game mode off"
+msgstr "Način igre isključen"
+
+msgid "System layouts (comma separated)"
+msgstr "Izgledi sustava (odvojeni zarezima)"
+
+msgid "Applications (comma separated)"
+msgstr "Prijave (odvojene zarezom)"
+
+msgid "Manual"
+msgstr "Priručnik"
+
+msgid "Active"
+msgstr "Aktivan"
+
+msgid "Editing · unsaved"
+msgstr "Uređivanje · nespremljeno"
+
+msgid "Editing"
+msgstr "Uređivanje"
+
+msgid "Activate"
+msgstr "Aktivirati"
+
+msgid "Delete layout?"
+msgstr "Izbrisati izgled?"
+
+msgid "Layout details"
+msgstr "Detalji izgleda"
+
+msgid "Do not use when"
+msgstr "Nemojte koristiti kada"
+
+msgid "The layout file will be deleted. This cannot be undone."
+msgstr "Datoteka izgleda bit će izbrisana. Ovo se ne može poništiti."
+
+msgid "Duplicate…"
+msgstr "Duplikat…"
+
+msgid "Edit layout"
+msgstr "Uredi izgled"
+
+msgid "New layout"
+msgstr "Novi izgled"
+
+msgid "A layout with this name already exists."
+msgstr "Raspored s ovim nazivom već postoji."
+
+msgid "Add a description…"
+msgstr "Dodajte opis…"
+
+msgid "Create"
+msgstr "Stvoriti"
+
+msgid "Delete…"
+msgstr "Izbrisati…"
+
+msgid "Description (optional)"
+msgstr "Opis (nije obavezno)"
+
+msgid "Discard changes"
+msgstr "Odbaci promjene"
+
+msgid "Make active"
+msgstr "Učini aktivnim"
+
+msgid "Single: the layout you make active works everywhere."
+msgstr "Pojedinačno: raspored koji aktivirate radi posvuda."
+
+msgid "Not used in automatic mode"
+msgstr "Ne koristi se u automatskom načinu rada"
+
+msgid "Rename…"
+msgstr "Preimenovati…"
+
+msgid "Save and continue"
+msgstr "Spremi i nastavi"
+
+msgid ""
+"The layout you are editing has not been saved to the library. Its changes "
+"will be lost."
+msgstr ""
+"Izgled koji uređujete nije spremljen u biblioteku. Njegove promjene bit će "
+"izgubljene."
+
+msgid "The name contains characters that cannot be used in a file name."
+msgstr "Naziv sadrži znakove koji se ne mogu koristiti u nazivu datoteke."
+
+msgid "Unsaved changes"
+msgstr "Nespremljene promjene"
+
+msgid "You are editing “{}”, but “{}” is active."
+msgstr "Uređujete “{}”, ali “{}” je aktivan."
+
+msgid "You are editing “{}”; no layout is active."
+msgstr "Uređujete “{}”; nijedan izgled nije aktivan."
+
+msgid "game mode off"
+msgstr "način igre isključen"
+
+msgid "game mode on"
+msgstr "način igre uključen"
+
+msgid "{} (copy)"
+msgstr "{} (kopija)"
+
+msgid "“{}” has unsaved changes. Save them before switching?"
+msgstr "“{}” ima nespremljene promjene. Spremiti ih prije prebacivanja?"
+
+msgid "Layout mode"
+msgstr "Način izgleda"
+
+msgid "Create layout"
+msgstr "Stvorite izgled"
+
+msgid "Empty"
+msgstr "Prazan"
+
+msgid "Empty layout"
+msgstr "Prazan izgled"
+
+msgid "Previously selected: {}"
+msgstr "Prethodno odabrano: {}"
+
+msgid "Current value"
+msgstr "Trenutna vrijednost"
+
+msgid "Capture key"
+msgstr "Ključ za snimanje"
+
+msgid "Press a key (including modifiers or Escape)."
+msgstr "Pritisnite tipku (uključujući modifikatore ili Escape)."
+
+msgid "Press a key or shortcut. Release a modifier to select it alone."
+msgstr ""
+"Pritisnite tipku ili prečac. Otpustite modifikator da odaberete samo njega."
+
+msgid "Choose a valid key or action."
+msgstr "Odaberite važeći ključ ili radnju."
+
+msgid "Search keys and actions"
+msgstr "Tipke za pretraživanje i akcije"
+
+msgid "Search keys"
+msgstr "Ključevi za pretraživanje"
+
+msgid "Hold action"
+msgstr "Zadrži akciju"
+
+msgid "Macro step"
+msgstr "Makro korak"
+
+msgid ""
+"You can enter a key combination using + between keys. Some keys depend on "
+"keyboard hardware and may be ignored by the system."
+msgstr ""
+"Možete unijeti kombinaciju tipki koristeći + između tipki. Neke tipke ovise "
+"o hardveru tipkovnice i sustav ih može zanemariti."
+
+msgid ""
+"You can assign a key combination using + between keys. Availability of "
+"special keys depends on the keyboard and desktop environment."
+msgstr ""
+"Možete dodijeliti kombinaciju tipki koristeći + između tipki. Dostupnost "
+"posebnih tipki ovisi o tipkovnici i radnoj površini."
+
+msgid "Behavior:"
+msgstr "Ponašanje:"
+
+msgid "Action:"
+msgstr "Akcijski:"
+
+msgid "Trigger key:"
+msgstr "Ključ okidača:"
+
+msgid "{n} line"
+msgid_plural "{n} lines"
+msgstr[0] "{n} redak"
+msgstr[1] "{n} reda"
+msgstr[2] "{n} redaka"
+
+msgid "Modifiers"
+msgstr "Modifikatori"
+
+msgid "Letters, digits and symbols"
+msgstr "Slova, brojke i simboli"
+
+msgid "Control keys"
+msgstr "Kontrolne tipke"
+
+msgid "Navigation and numpad"
+msgstr "Navigacija i numerička tipkovnica"
+
+msgid "F1–F24"
+msgstr "F1–F24"
+
+msgid "Media and launch"
+msgstr "Mediji i lansiranje"
+
+msgid "System and laptop"
+msgstr "Sustav i laptop"
+
+msgid "Mouse"
+msgstr "Miš"
+
+msgid "Other keys"
+msgstr "Ostali ključevi"
+
+msgid "Actions"
+msgstr "Radnje"
+
+msgid "Extra button on some gaming mice"
+msgstr "Dodatni gumb na nekim gaming miševima"
+
+msgid "Keys"
+msgstr "Ključevi"
+
+msgid "System actions"
+msgstr "Akcije sustava"
+
+msgid "KDE shortcuts"
+msgstr "KDE prečaci"
+
+msgid "Pause"
+msgstr "Pauza"
+
+msgid "Literal text (text: prefix is added automatically)"
+msgstr "Doslovni tekst (tekst: prefiks se dodaje automatski)"
+
+msgid "Pause in milliseconds (1–10000)"
+msgstr "Pauza u milisekundama (1–10000)"
+
+msgid "No matching items"
+msgstr "Nema podudarnih stavki"
+
+msgid "Show Quick Action Menu page {}"
+msgstr "Prikaži stranicu izbornika brzih radnji {}"
+
+msgid "Show Emoji & Symbols menu page {}"
+msgstr "Prikaži stranicu izbornika Emoji i simboli {}"
+
+msgid "Switch to desktop {}"
+msgstr "Prijeđi na desktop {}"
+
+msgid "Move window to desktop {}"
+msgstr "Premjesti prozor na radnu površinu {}"
+
+msgid "Close window"
+msgstr "Zatvori prozor"
+
+msgid "Minimize window"
+msgstr "Minimiziraj prozor"
+
+msgid "Maximize window"
+msgstr "Maksimiziraj prozor"
+
+msgid "Keep window above others"
+msgstr "Držite prozor iznad ostalih"
+
+msgid "Show desktop"
+msgstr "Prikaži radnu površinu"
+
+msgid "Window overview"
+msgstr "Pregled prozora"
+
+msgid "Open application launcher"
+msgstr "Otvorite pokretač aplikacija"
+
+msgid "Turn off screen"
+msgstr "Isključi ekran"
+
+msgid "Switch to layout {}"
+msgstr "Prebacite se na izgled {}"
+
+msgid "Layer"
+msgstr "Sloj"
+
+msgid "Delete layer"
+msgstr "Izbriši sloj"
+
+msgid "Create new layer"
+msgstr "Stvorite novi sloj"
+
+msgid "Layer description"
+msgstr "Opis sloja"
+
+msgid "Add description"
+msgstr "Dodajte opis"
+
+msgid "Type to test..."
+msgstr "Upišite za testiranje..."
+
+msgid "Ignore key"
+msgstr "Ignoriraj ključ"
+
+msgid "No layers yet"
+msgstr "Još nema slojeva"
+
+msgid "Left hand"
+msgstr "Lijeva ruka"
+
+msgid "Right hand"
+msgstr "Desna ruka"
+
+msgid "Key"
+msgstr "Ključ"
+
+msgid "US layout"
+msgstr "US raspored"
+
+msgid "LHC codes"
+msgstr "LHC kodovi"
+
+msgid "No extra keys for this layer yet."
+msgstr "Još nema dodatnih ključeva za ovaj sloj."
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid."
+msgstr ""
+"Tipke miša, medijske tipke i drugi okidači izvan glavne mreže tipkovnice."
+
+msgid ""
+"Display modes affect labels only — the key code stays the same. “US layout” "
+"shows standard letter labels for visual reference. “LHC codes” shows app-"
+"specific codes (e.g. KeyA, ArrowLeft)."
+msgstr ""
+"Načini prikaza utječu samo na oznake — šifra ključa ostaje ista. \"US "
+"layout\" prikazuje standardne oznake slova za vizualnu referencu. \"LHC "
+"kodovi\" prikazuju kodove specifične za aplikaciju (npr. KeyA, ArrowLeft)."
+
+msgid "(copy)"
+msgstr "(kopirati)"
+
+msgid "Add page"
+msgstr "Dodaj stranicu"
+
+msgid "Allow commands"
+msgstr "Dopusti naredbe"
+
+msgid "Animals & Nature"
+msgstr "Životinje i priroda"
+
+msgid ""
+"Build reusable sequences from key chords, text actions, commands, or system "
+"actions. Steps run in order with the configured pause between them."
+msgstr ""
+"Izgradite sekvence za višekratnu upotrebu od ključnih akorda, radnji teksta,"
+" naredbi ili radnji sustava. Koraci se izvode redom s konfiguriranom pauzom "
+"između njih."
+
+msgid ""
+"Built-in macros that cannot be edited. To customize, create a user macro "
+"based on one."
+msgstr ""
+"Ugrađene makronaredbe koje se ne mogu uređivati. Za prilagodbu izradite "
+"korisničku makronaredbu na temelju jedne."
+
+msgid "Cell {}"
+msgstr "Ćelija {}"
+
+msgid "Command name"
+msgstr "Naziv naredbe"
+
+msgid "Create based on"
+msgstr "Stvorite na temelju"
+
+msgid "Delete macro"
+msgstr "Izbriši makro"
+
+msgid "Delete macro?"
+msgstr "Izbrisati makro?"
+
+msgid "Delete page"
+msgstr "Izbriši stranicu"
+
+msgid "Delete page?"
+msgstr "Izbrisati stranicu?"
+
+msgid "Delete step"
+msgstr "Izbriši korak"
+
+msgid "Delete step?"
+msgstr "Izbrisati korak?"
+
+msgid "Disable"
+msgstr "Onemogući"
+
+msgid "Drag"
+msgstr "Drag"
+
+msgid "Emoji & Symbols"
+msgstr "Emotikoni i simboli"
+
+msgid "Emoji Symbols"
+msgstr "Emoji simboli"
+
+msgid "Emoji, symbol, or any text"
+msgstr "Emoji, simbol ili bilo koji tekst"
+
+msgid "Empty step — pick an action or remove it."
+msgstr "Prazan korak — odaberite radnju ili je uklonite."
+
+msgid "Fix the existing macro errors first"
+msgstr "Najprije popravite postojeće makro pogreške"
+
+msgid "Food & Drink"
+msgstr "Hrana i piće"
+
+msgid "Human-readable macro name, shown in picker lists."
+msgstr "Čovjek čitljiv naziv makronaredbe, prikazan na popisima za odabir."
+
+msgid "ID"
+msgstr "ID"
+
+msgid "Key {}"
+msgstr "Ključ {}"
+
+msgid "Label"
+msgstr "Označiti"
+
+msgid "Macro name"
+msgstr "Naziv makronaredbe"
+
+msgid "Modifier delay"
+msgstr "Kašnjenje modifikatora"
+
+msgid "Move page left"
+msgstr "Pomakni stranicu lijevo"
+
+msgid "Move page right"
+msgstr "Pomakni stranicu desno"
+
+msgid "New macro"
+msgstr "Novi makro"
+
+msgid "No macros yet. Click \"New macro\" to create the first one."
+msgstr "Još nema makronaredbi. Kliknite \"Nova makronaredba\" za izradu prve."
+
+msgid "No steps yet. Each step — one chord or action."
+msgstr "Još nema koraka. Svaki korak — jedan akord ili radnja."
+
+msgid ""
+"Opened by the app:showEmojiMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold an "
+"emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short "
+"phrase (e.g. \"// TODO: \")."
+msgstr ""
+"Otvoreno radnjama app:showEmojiMenuN, gdje je N položaj stranice: promjena "
+"redoslijeda stranica mijenja stranicu koju tipka otvara. Svaka ćelija može "
+"sadržavati emoji, UTF simbol (npr. ≠), bilo koji drugi znak (npr. №) ili "
+"kratku frazu (npr. \"// TODO: \")."
+
+msgid "Opened by the app:showQuickMenu1...5 actions."
+msgstr "Otvoreno aplikacijom:showQuickMenu1...5 radnji."
+
+msgid "Page"
+msgstr "Stranica"
+
+msgid "Pause (ms)"
+msgstr "Pauza (ms)"
+
+msgid "Pause between steps"
+msgstr "Pauza između koraka"
+
+msgid "People & Gestures"
+msgstr "Ljudi i geste"
+
+msgid "Per-macro pause between steps. Defaults to the Settings value."
+msgstr "Pauza između koraka po makronaredbi. Zadana je vrijednost Postavke."
+
+msgid "Pick an action"
+msgstr "Odaberite radnju"
+
+msgid "Quick Actions"
+msgstr "Brze radnje"
+
+msgid ""
+"Reusable shell commands for the current layout. On Linux they run through sh"
+" -lc after you explicitly allow them. Shell commands run one at a time, with"
+" a 30-second limit, in your home directory."
+msgstr ""
+"Višekratno upotrebljive naredbe ljuske za trenutni izgled. Na Linuxu se "
+"izvode kroz sh -lc nakon što im izričito dopustite. Naredbe ljuske izvode se"
+" jedna po jedna, s ograničenjem od 30 sekundi, u vašem početnom direktoriju."
+
+msgid "Shell commands are allowed for this version of the current layout."
+msgstr "Naredbe ljuske dopuštene su za ovu verziju trenutnog izgleda."
+
+msgid "Smileys & Emotion"
+msgstr "Smajlići i emocije"
+
+msgid ""
+"The command will be deleted. Keys or macros that reference cmd:{} will stop "
+"working."
+msgstr ""
+"Naredba će biti izbrisana. Tipke ili makronaredbe koje upućuju na cmd:{} "
+"prestat će raditi."
+
+msgid "The macro will be deleted. References macro:{} will stop working."
+msgstr "Makro će biti izbrisan. Makro reference:{} prestat će raditi."
+
+msgid "The page and all assigned cells on it will be deleted."
+msgstr "Stranica i sve dodijeljene ćelije na njoj bit će izbrisane."
+
+msgid ""
+"This layout contains shell scripts. Read every script before allowing them, "
+"especially in layouts from other people. Approval applies to the reviewed "
+"command definitions and resets when the command set, IDs, or Linux scripts "
+"change."
+msgstr ""
+"Ovaj izgled sadrži skripte ljuske. Pročitajte svaku skriptu prije nego što "
+"im dopustite, osobito u izgledima drugih ljudi. Odobrenje se odnosi na "
+"pregledane definicije naredbi i poništava se kada se promijeni skup naredbi,"
+" ID-ovi ili Linux skripte."
+
+msgid "This step will be removed from the macro."
+msgstr "Ovaj korak će biti uklonjen iz makronaredbe."
+
+msgid ""
+"Time between pressing a modifier and the main key within one step. Defaults "
+"to the Settings value."
+msgstr ""
+"Vrijeme između pritiskanja modifikatora i glavne tipke unutar jednog koraka."
+" Zadana je vrijednost Postavke."
+
+msgid "Travel & Places"
+msgstr "Putovanja i mjesta"
+
+msgid "UTF Symbols"
+msgstr "UTF simboli"
+
+msgid "Texts"
+msgstr "Tekstovi"
+
+msgid "Non-breaking space"
+msgstr "Prostor koji se ne prekida"
+
+msgid "continue"
+msgstr "nastaviti"
+
+msgid "do all you recommended"
+msgstr "učinite sve što ste preporučili"
+
+msgid "fix the errors above"
+msgstr "popravi gore navedene pogreške"
+
+msgid "I'll call you back later"
+msgstr "Nazvat ću te kasnije"
+
+msgid "Thanks!"
+msgstr "Hvala!"
+
+msgid "OK, got it 👍"
+msgstr "U redu, razumijem 👍"
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Rules tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"Jedinstveni identifikator koji se koristi u referencama poput "
+"makronaredbe:<id>. Da biste ovu makronaredbu povezali s ključem, odaberite "
+"tu radnju na kartici Slojevi ili Pravila. Promijenite ID samo kada ništa ne "
+"koristi ovu makronaredbu."
+
+msgid "Used in:"
+msgstr "Koristi se u:"
+
+msgid "User macros"
+msgstr "Korisničke makronaredbe"
+
+msgid "Work & Objects"
+msgstr "Posao i predmeti"
+
+msgid "e.g. Next Track"
+msgstr "npr. Sljedeća pjesma"
+
+msgid "ms"
+msgstr "ms"
+
+msgid "Rule saved"
+msgstr "Pravilo je spremljeno"
+
+msgid "Search layers"
+msgstr "Traži slojeve"
+
+msgid "Set"
+msgstr "set"
+
+msgid "Start the mapper to run actions from the menus"
+msgstr "Pokrenite maper za pokretanje radnji iz izbornika"
+
+msgid ""
+"The text was not typed: the keyboard layout lacks some of its characters, "
+"such as emoji. Choose a typing method with the clipboard."
+msgstr ""
+"Tekst nije upisan: na rasporedu tipkovnice nedostaju neki od znakova, poput "
+"emotikona. Odaberite metodu tipkanja s međuspremnikom."
+
+msgid "The text was not typed: the active keyboard layout is unknown."
+msgstr "Tekst nije upisan: aktivni raspored tipkovnice nije poznat."
+
+msgid ""
+"The text was not typed: the typing method is unavailable ({}). Restart the "
+"mapper to try again."
+msgstr ""
+"Tekst nije upisan: metoda upisivanja nije dostupna ({}). Ponovno pokrenite "
+"maper da pokušate ponovno."
+
+msgid "The text was not typed: safe clipboard access failed ({})."
+msgstr "Tekst nije upisan: siguran pristup međuspremniku nije uspio ({})."
+
+msgid "The text was not typed: {}"
+msgstr "Tekst nije ukucan: {}"
+
+msgid "The layout file is empty"
+msgstr "Datoteka izgleda je prazna"
+
+msgid "↑"
+msgstr "↑"
+
+msgid "↓"
+msgstr "↓"
+
+msgid "Does not matter"
+msgstr "Nije bitno"
+
+msgid "Open for editing (unsaved)"
+msgstr "Otvoreno za uređivanje (nespremljeno)"
+
+msgid "Open for editing"
+msgstr "Otvoreno za uređivanje"
+
+msgid "Layout name"
+msgstr "Naziv rasporeda"
+
+msgid "System languages"
+msgstr "Jezici sustava"
+
+msgid "No system languages detected"
+msgstr "Nema otkrivenih jezika sustava"
+
+msgid "Applications"
+msgstr "Prijave"
+
+msgid "“{}” will be deleted. This cannot be undone."
+msgstr "“{}” će biti izbrisan. Ovo se ne može poništiti."
+
+msgid "Reset current changes"
+msgstr "Poništi trenutne promjene"
+
+msgid "Available"
+msgstr "na raspolaganju"
+
+msgid "Unavailable"
+msgstr "Nedostupan"
+
+msgid "Not implemented"
+msgstr "Nije implementirano"
+
+msgid "No input devices were found in /dev/input."
+msgstr "Nijedan ulazni uređaj nije pronađen u /dev/input."
+
+msgid ""
+"The selected keyboard is not connected. Connect it or pick another one "
+"below."
+msgstr ""
+"Odabrana tipkovnica nije spojena. Povežite ga ili odaberite neki drugi "
+"ispod."
+
+msgid ""
+"No permission to read keyboard events. Add your user to the input group "
+"(install-linux.sh permissions does this) and log in again."
+msgstr ""
+"Nema dopuštenja za čitanje događaja tipkovnice. Dodajte svog korisnika u "
+"ulaznu grupu (to čine dozvole install-linux.sh) i ponovno se prijavite."
+
+msgid ""
+"/dev/uinput does not exist. Load the uinput kernel module: sudo modprobe "
+"uinput."
+msgstr ""
+"/dev/uinput ne postoji. Učitajte uinput kernel modul: sudo modprobe uinput."
+
+msgid ""
+"No permission to write to /dev/uinput. Install the application's udev rule "
+"(install-linux.sh permissions) or reinstall the package."
+msgstr ""
+"Nema dopuštenja za pisanje u /dev/uinput. Instalirajte udev pravilo "
+"aplikacije (dozvole install-linux.sh) ili ponovno instalirajte paket."
+
+msgid "Launch on startup"
+msgstr "Pokreni pri pokretanju"
+
+msgid "Start the mapper on launch"
+msgstr "Pokrenite maper pri pokretanju"
+
+msgid "No keyboard is selected, so the mapper cannot start."
+msgstr "Tipkovnica nije odabrana, pa se maper ne može pokrenuti."
+
+msgid "Choose a keyboard"
+msgstr "Odaberite tipkovnicu"
+
+msgid "Getting started"
+msgstr "Početak rada"
+
+msgid "Keyboard selected"
+msgstr "Odabrana tipkovnica"
+
+msgid "Choose the keyboard to remap"
+msgstr "Odaberite tipkovnicu za ponovno mapiranje"
+
+msgid "Change"
+msgstr "Promijeniti"
+
+msgid "Add a layout"
+msgstr "Dodajte izgled"
+
+msgid "Press Start at the top to apply it"
+msgstr "Pritisnite Start na vrhu da biste ga primijenili"
+
+msgid "No active layout"
+msgstr "Nema aktivnog izgleda"
+
+msgid "Current active layout (automatic)"
+msgstr "Trenutačni aktivni izgled (automatski)"
+
+msgid "Current active layout — click to switch"
+msgstr "Trenutačni aktivni izgled — kliknite za promjenu"
+
+msgid "Current keyboard layout in the system"
+msgstr "Trenutačni raspored tipkovnice u sustavu"
+
+msgid "Game mode: active"
+msgstr "Način igre: aktivan"
+
+msgid "Game mode: inactive"
+msgstr "Način igre: neaktivan"
+
+msgid "Active: {}"
+msgstr "Aktivno: {}"
+
+msgid "Trigger"
+msgstr "Okidač"
+
+msgid "New rule: choose a trigger"
+msgstr "Novo pravilo: odaberite okidač"
+
+msgid "Swallow key"
+msgstr "Blokiraj tipku"
+
+msgid "Pass through"
+msgstr "Prođi kroz"
+
+msgid "Double tap: {} ms"
+msgstr "Dupli dodir: {} ms"
+
+msgid "Custom hold options"
+msgstr "Prilagođene opcije zadržavanja"
+
+msgid "Leave empty to use the global timing settings."
+msgstr "Ostavite prazno za korištenje globalnih postavki vremena."
+
+msgid ""
+"Temporarily releases the held key or modifier while these keys are pressed "
+"in the layer."
+msgstr ""
+"Privremeno otpušta zadržanu tipku ili modifikator dok su te tipke pritisnute"
+" u sloju."
+
+msgid ""
+"Defers the held action until one of these keys is pressed in the layer. "
+"Requires a hold action and a layer."
+msgstr ""
+"Odgađa zadržanu radnju dok se ne pritisne jedna od ovih tipki u sloju. "
+"Zahtijeva akciju zadržavanja i sloj."
+
+msgid "Delete rule"
+msgstr "Brisanje pravila"
+
+msgid ""
+"Clear restores normal key behavior. Swallow prevents the key from reaching "
+"the application."
+msgstr ""
+"Brisanje vraća normalno ponašanje tipke. Swallow sprječava da ključ dođe do "
+"aplikacije."
+
+msgctxt "Game mode control"
+msgid "Auto"
+msgstr "Automatski"
+
+msgctxt "Game mode control"
+msgid "On"
+msgstr "Uključeno"
+
+msgctxt "Game mode control"
+msgid "Off"
+msgstr "Isključeno"
+
+msgid "Auto: no detection sources enabled"
+msgstr "Automatski: nijedan izvor detekcije nije omogućen"
+
+msgid "Auto: detection unavailable"
+msgstr "Automatski: otkrivanje nije dostupno"
+
+msgid "Auto: game mode inactive"
+msgstr "Automatski: način igre nije aktivan"
+
+msgid "Auto: GameMode daemon active"
+msgstr "Automatski: GameMode demon aktivan"
+
+msgid "Auto: matched {}"
+msgstr "Automatski: usklađeno {}"
+
+msgid "Auto: fullscreen window active"
+msgstr "Automatski: aktivan prozor preko cijelog zaslona"
+
+msgid "Auto: excluded by {}"
+msgstr "Automatski: isključeno od strane {}"
+
+msgid ""
+"Fullscreen detection is not supported in this session. Use process rules or "
+"On/Off."
+msgstr ""
+"Detekcija cijelog zaslona nije podržana u ovoj sesiji. Koristite pravila "
+"procesa ili On/Off."
+
+msgid "Fullscreen detection tools are missing or could not query the session."
+msgstr ""
+"Alati za otkrivanje preko cijelog zaslona nedostaju ili ne mogu postaviti "
+"upit sesiji."
+
+msgid "Running processes: "
+msgstr "Tekući procesi:"
+
+msgid "Active window: "
+msgstr "Aktivni prozor:"
+
+msgid "Create a layer to assign its keys."
+msgstr "Stvorite sloj da biste mu dodijelili ključeve."
+
+msgid "Button {}"
+msgstr "Gumb {}"
+
+msgid "Copied to clipboard"
+msgstr "Kopirano u međuspremnik"
+
+msgid "Theme"
+msgstr "Tema"
+
+msgid "E-ink"
+msgstr "E-ink"
+
+msgid "Enter device path manually"
+msgstr "Unesite putanju uređaja ručno"
+
+msgid "All keyboards"
+msgstr "Sve tipkovnice"
+
+msgid "All mice (buttons only)"
+msgstr "Svi miševi (samo gumbi)"
+
+msgid "Mode"
+msgstr "Način rada"
+
+msgid "New"
+msgstr "Novi"
+
+msgid "Auto"
+msgstr "Automatski"
+
+msgid "Delete extra key?"
+msgstr "Izbrisati dodatni ključ?"
+
+msgid "This key assignment will be removed from the layer."
+msgstr "Ova dodjela ključa bit će uklonjena iz sloja."
+
+msgid "Command started: {}"
+msgstr "Pokrenuta naredba: {}"
+
+msgid "Unavailable on this platform or desktop"
+msgstr "Nije dostupno na ovoj platformi ili stolnom računalu"
+
+msgid "This action is not supported on macOS"
+msgstr "Ova radnja nije podržana na macOS-u"
+
+msgid "Approve commands on the Commands tab before running this action"
+msgstr "Prije pokretanja ove akcije odobrite naredbe na kartici Naredbe"
+
+msgid "Pick the physical device whose events should be intercepted."
+msgstr "Odaberite fizički uređaj čije događaje treba presresti."
+
+msgid ""
+"Select the mouse so the mapper can see extra buttons and clicks. Pointer "
+"movement is not affected."
+msgstr ""
+"Odaberite miš tako da kartograf može vidjeti dodatne gumbe i klikove. To ne "
+"utječe na kretanje pokazivača."
+
+msgid ""
+"The mouse is not fully intercepted yet: a remapped extra button can emit the"
+" new action, but its native system or app action may still run. If that gets"
+" in the way, disable the native action for that button in your system, "
+"browser, or driver settings."
+msgstr ""
+"Miš još nije u potpunosti presretnut: remapirani dodatni gumb može emitirati"
+" novu radnju, ali njegova izvorna radnja sustava ili aplikacije može se i "
+"dalje izvoditi. Ako vam to smeta, onemogućite izvornu radnju za taj gumb u "
+"postavkama sustava, preglednika ili upravljačkog programa."
+
+msgid ""
+"The mapper reads from /dev/input/eventX and emits through uinput. If Start "
+"fails, grant access to those devices: usually the input group plus a udev "
+"rule for /dev/uinput."
+msgstr ""
+"Maper čita iz /dev/input/eventX i emitira kroz uinput. Ako Start ne uspije, "
+"odobrite pristup tim uređajima: obično ulazna grupa plus udev pravilo za "
+"/dev/uinput."
+
+msgid "Refresh device list"
+msgstr "Osvježi popis uređaja"
+
+msgid "Mouse (optional)"
+msgstr "Miš (opcionalno)"
+
+msgid "Not selected"
+msgstr "Nije odabrano"
+
+msgid "Not selected (no mouse support)"
+msgstr "Nije odabrano (bez podrške za miš)"
+
+msgid "Looks like a keyboard"
+msgstr "Izgleda kao tipkovnica"
+
+msgid "Looks like a mouse"
+msgstr "Izgleda kao miš"
+
+msgid "Other devices"
+msgstr "Ostali uređaji"
+
+msgid "Search devices"
+msgstr "Pretražite uređaje"
+
+msgid "Single"
+msgstr "Singl"
+
+msgid "{n} rule"
+msgid_plural "{n} rules"
+msgstr[0] "{n} pravilo"
+msgstr[1] "{n} pravila"
+msgstr[2] "{n} pravila"
+
+msgid "{n} layer"
+msgid_plural "{n} layers"
+msgstr[0] "{n} sloj"
+msgstr[1] "{n} sloja"
+msgstr[2] "{n} slojeva"
+
+msgid "{n} emoji page"
+msgid_plural "{n} emoji pages"
+msgstr[0] "{n} emoji stranica"
+msgstr[1] "{n} emoji stranice"
+msgstr[2] "{n} emoji stranica"
+
+msgid "{n} action page"
+msgid_plural "{n} action pages"
+msgstr[0] "{n} radna stranica"
+msgstr[1] "{n} akcijske stranice"
+msgstr[2] "{n} akcijskih stranica"
+
+msgid "{n} macro"
+msgid_plural "{n} macros"
+msgstr[0] "{n} makro"
+msgstr[1] "{n} makronaredbe"
+msgstr[2] "{n} makronaredbi"
+
+msgid "{n} command"
+msgid_plural "{n} commands"
+msgstr[0] "{n} naredba"
+msgstr[1] "{n} naredbe"
+msgstr[2] "{n} naredbi"
+
+msgid "Main"
+msgstr "Glavni"
+
+msgid "Saved assignment: {}"
+msgstr "Spremljen zadatak: {}"
+
+msgid "Behavior"
+msgstr "Ponašanje"
+
+msgid "Inherit"
+msgstr "naslijediti"
+
+msgid "No separate action"
+msgstr "Nema zasebne radnje"
+
+msgid "Activate layer only"
+msgstr "Aktiviraj samo sloj"
+
+msgid "Normal key behavior"
+msgstr "Normalno ponašanje tipke"
+
+msgid "Suppress"
+msgstr "Potisnuti"
+
+msgid "Assign held key"
+msgstr "Dodijeli zadržanu tipku"
+
+msgid "Perform action"
+msgstr "Izvršite akciju"
+
+msgid "The key will not reach the application."
+msgstr "Ključ neće doći do aplikacije."
+
+msgid "Use the assignment from the lower layer or base layout."
+msgstr "Koristite dodjelu iz donjeg sloja ili osnovnog izgleda."
+
+msgid "Do not assign a separate action to this gesture."
+msgstr "Ovoj gesti nemojte dodijeliti posebnu radnju."
+
+msgid "Holding activates the selected layer. The original key is not sent."
+msgstr "Držanjem aktivira se odabrani sloj. Originalni ključ se ne šalje."
+
+msgid "Send the original key to the application."
+msgstr "Pošaljite originalni ključ aplikaciji."
+
+msgid "Capture shortcut"
+msgstr "Prečac za snimanje"
+
+msgid "Choose a valid trigger key."
+msgstr "Odaberite važeći ključ okidača."
+
+msgid "Choose a valid action."
+msgstr "Odaberite valjanu radnju."
+
+msgid "Empty cell"
+msgstr "Prazna ćelija"
+
+msgid "Remove the action from this menu cell."
+msgstr "Ukloni radnju iz ove ćelije izbornika."
+
+msgid "Edit assignment"
+msgstr "Uredi zadatak"
+
+msgid "Holding also activates the selected layer."
+msgstr "Držanje također aktivira odabrani sloj."
+
+msgid "Block"
+msgstr "Blokirati"
+
+msgid ""
+"The key press is consumed: the system and the active application will not "
+"receive it."
+msgstr "Pritisak tipke se troši: sustav i aktivna aplikacija ga neće primiti."
+
+msgid ""
+"The key press passes through unchanged, as if no assignment were configured."
+msgstr ""
+"Pritisak na tipku prolazi kroz nepromijenjeno, kao da dodjela nije "
+"konfigurirana."
+
+msgid "Capture"
+msgstr "Hvatanje"
+
+msgid "Unchanged"
+msgstr "Nepromijenjeno"
+
+msgid "Leave a delay empty to use the global setting."
+msgstr "Ostavite odgodu prazno za korištenje globalne postavke."
+
+msgid "Allow command execution"
+msgstr "Dopusti izvršenje naredbe"
+
+msgid "No commands are assigned."
+msgstr "Nisu dodijeljene naredbe."
+
+msgid "Commands are disabled in Settings."
+msgstr "Naredbe su onemogućene u postavkama."
+
+msgid "Working directory (optional)"
+msgstr "Radni imenik (neobavezno)"
+
+msgid "Save layout changes before opening another layout."
+msgstr "Spremite promjene izgleda prije otvaranja drugog izgleda."
+
+msgid "No layer"
+msgstr "Bez sloja"
+
+msgid "Layer not found"
+msgstr "Sloj nije pronađen"
+
+msgid "Create new layer…"
+msgstr "Stvori novi sloj…"
+
+msgid "Create “{}”"
+msgstr "Stvorite \"{}\""
+
+msgid ""
+"A trigger can be a single key or a combination, such as "
+"ShiftLeft+ControlLeft. The combination works in either press order and ends "
+"when any key is released."
+msgstr ""
+"Okidač može biti jedna tipka ili kombinacija, kao što je "
+"ShiftLeft+ControlLeft. Kombinacija radi bilo kojim redoslijedom pritiska i "
+"završava kada se otpusti bilo koja tipka."
+
+msgid "When held"
+msgstr "Kada se drži"
+
+msgid ""
+"Choose a layer active until release, or an action performed once after the "
+"hold duration."
+msgstr ""
+"Odaberite sloj aktivan do otpuštanja ili radnju koja se izvodi jednom nakon "
+"trajanja čekanja."
+
+msgid "Nothing"
+msgstr "Ništa"
+
+msgid "Activate layer"
+msgstr "Aktivirajte sloj"
+
+msgid "Run action"
+msgstr "Pokrenite akciju"
+
+msgid "Long-hold action"
+msgstr "Dugotrajno djelovanje"
+
+msgid "Runs once after {} s"
+msgstr "Pokreće se jednom nakon {} s"
+
+msgid "Hold another key / combination"
+msgstr "Držite drugu tipku/kombinaciju"
+
+msgid "Press one key or hold a combination, then release a key to capture it."
+msgstr ""
+"Pritisnite jednu tipku ili držite kombinaciju, a zatim otpustite tipku da je"
+" snimite."
+
+msgid "Held key: {}"
+msgstr "Zadržani ključ: {}"
+
+msgid "Assigned to"
+msgstr "Dodijeljeno"
+
+msgid "Languages"
+msgstr "jezici"
+
+msgid "Excluded applications"
+msgstr "Isključene prijave"
+
+msgid "Open page in popup"
+msgstr "Otvaranje stranice u skočnom prozoru"
+
+msgid "Page:"
+msgstr "Stranica:"
+
+msgid "Layout “{}” created"
+msgstr "Izgled \"{}\" stvoren"
+
+msgid "Layout “{}” saved"
+msgstr "Izgled \"{}\" spremljen"
+
+msgid "Layout “{}” deleted"
+msgstr "Izgled \"{}\" izbrisan"
+
+msgid "Layout “{}” activated"
+msgstr "Raspored “{}” aktiviran"
+
+msgid "Could not complete the action"
+msgstr "Nije moguće dovršiti radnju"
+
+msgid "Dismiss notification"
+msgstr "Odbaci obavijest"
+
+msgid "Changes to layout “{}” discarded"
+msgstr "Promjene izgleda \"{}\" odbačene"
+
+msgid "Popup menus are unavailable: {}"
+msgstr "Skočni izbornici nisu dostupni: {}"
+
+msgid "Popup menus are not running. Try opening the menu again."
+msgstr "Skočni izbornici ne rade. Pokušajte ponovno otvoriti izbornik."
+
+msgid "Popup menus are restarting. Try again shortly."
+msgstr "Skočni izbornici se ponovno pokreću. Pokušajte ponovo uskoro."
+
+msgid "Popup menus could not recover. Restart the application."
+msgstr "Skočni izbornici se ne mogu oporaviti. Ponovno pokrenite aplikaciju."
+
+msgid "Popup menu error: {}"
+msgstr "Pogreška skočnog izbornika: {}"
+
+msgid "Choose a key or combination for the trigger"
+msgstr "Odaberite tipku ili kombinaciju za okidač"
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid. Add a trigger, then choose its action, suppress it, or inherit its "
+"assignment from the lower layer."
+msgstr ""
+"Tipke miša, medijske tipke i drugi okidači izvan glavne mreže tipkovnice. "
+"Dodajte okidač, zatim odaberite njegovu akciju, potisnite je ili naslijedite"
+" njegovu dodjelu s nižeg sloja."
+
+msgid ""
+"You can enter emoji, any text, or Unicode symbols here. Drag an item from "
+"the palette onto a key to assign it."
+msgstr ""
+"Ovdje možete unijeti emoji, bilo koji tekst ili Unicode simbole. Povucite "
+"stavku s palete na tipku da biste je dodijelili."
+
+msgid "Accessibility"
+msgstr "Pristupačnost"
+
+msgid "High contrast"
+msgstr "Visoki kontrast"
+
+msgid ""
+"Pure black or white background, stronger text, borders and focus outlines. "
+"Works with the light and dark themes."
+msgstr ""
+"Čista crna ili bijela pozadina, jači tekst, obrubi i obrisi fokusa. Radi sa "
+"svijetlim i tamnim temama."
+
+msgid "Reduce motion"
+msgstr "Smanjite kretanje"
+
+msgid "Turn off highlight animations in the editor."
+msgstr "Isključite istaknute animacije u uređivaču."
+
+msgid ""
+"Every control can be reached with Tab and activated with Space or Enter. "
+"Interface size follows the desktop scale factor."
+msgstr ""
+"Svaka kontrola se može dosegnuti tipkom Tab i aktivirati tipkom Space ili "
+"Enter. Veličina sučelja slijedi faktor mjerila radne površine."
+
+msgid "Always"
+msgstr "Uvijek"
+
+msgid "Hold duration"
+msgstr "Trajanje zadržavanja"
+
+msgid "{} s"
+msgstr "{} s"
+
+msgid "{} s (default)"
+msgstr "{} s (zadano)"
+
+msgid "Shell command or path to a script, e.g. playerctl play-pause"
+msgstr "Naredba ljuske ili put do skripte, npr. playerctl reprodukcija-pauza"
+
+msgid "Runs with sh -lc in the background; the result is not awaited."
+msgstr "Radi sa sh -lc u pozadini; rezultat se ne čeka."
+
+msgid "Choose script…"
+msgstr "Odaberite skriptu…"
+
+msgid "Working directory (optional, home by default)"
+msgstr "Radni imenik (neobavezno, početna prema zadanim postavkama)"
+
+msgid "Choose folder…"
+msgstr "Odaberite mapu…"
+
+msgid ""
+"Command execution is turned off. Turn it on in the settings to assign "
+"commands."
+msgstr ""
+"Izvršenje naredbe je isključeno. Uključite ga u postavkama za dodjelu "
+"naredbi."
+
+msgid "Open command settings"
+msgstr "Otvorite postavke naredbe"
+
+msgid "The working directory does not exist."
+msgstr "Radni imenik ne postoji."
+
+msgid ""
+"The script file is not executable: run chmod +x on it or prefix the path "
+"with sh."
+msgstr ""
+"Datoteka skripte nije izvršna: pokrenite chmod +x na njoj ili ispred staze "
+"dodajte sh."
+
+msgid "Choose a script"
+msgstr "Odaberite skriptu"
+
+msgid "Choose a working directory"
+msgstr "Odaberite radni imenik"
+
+msgid "Commands run with sh -lc in the background and are not awaited."
+msgstr "Naredbe se izvode sa sh -lc u pozadini i ne čekaju se."
+
+msgid "Commands run with PowerShell in the background and are not awaited."
+msgstr "Naredbe se izvode s PowerShell-om u pozadini i ne čekaju se."
+
+msgid ""
+"Commands stay off until you allow execution. Review below what your layouts "
+"would run."
+msgstr ""
+"Naredbe ostaju isključene dok ne dopustite izvršenje. U nastavku pregledajte"
+" koji bi se vaši izgledi izvodili."
+
+msgid "Command"
+msgstr "Naredba"
+
+msgid "Rule {} · tap"
+msgstr "Pravilo {} · tap"
+
+msgid "Rule {} · hold"
+msgstr "Pravilo {} · držati"
+
+msgid "Rule {} · long hold"
+msgstr "Pravilo {} · dugo zadržavanje"
+
+msgid "Rule {} · double tap"
+msgstr "Pravilo {} · dvaput dodirnite"
+
+msgid "disabled"
+msgstr "onemogućeno"
+
+msgid "Layer {}"
+msgstr "Sloj {}"
+
+msgid "Macro"
+msgstr "Makro"
+
+msgid "Quick action"
+msgstr "Brzo djelovanje"
+
+msgid "Show all"
+msgstr "Prikaži sve"
+
+msgid "Close"
+msgstr "Zatvori"
+
+msgid "Choose a key or key combination"
+msgstr "Odaberite tipku ili kombinaciju tipki"
+
+msgid "Examples"
+msgstr "Primjeri"
+
+msgid "Add rule…"
+msgstr "Dodaj pravilo…"
+
+msgid ""
+"All filled conditions must match. A rule without conditions always matches."
+msgstr ""
+"Svi ispunjeni uvjeti moraju odgovarati. Pravilo bez uvjeta uvijek odgovara."
+
+msgid "Automatic switching rules"
+msgstr "Pravila automatskog prebacivanja"
+
+msgid ""
+"Automatic: the layout is chosen by switching rules for the application, "
+"system language or game mode."
+msgstr ""
+"Automatski: izgled se bira promjenom pravila za aplikaciju, jezik sustava "
+"ili način igre."
+
+msgid "Layout"
+msgstr "Izgled"
+
+msgid "Layout not found"
+msgstr "Raspored nije pronađen"
+
+msgid "New rule"
+msgstr "Novo pravilo"
+
+msgid "Now: {} (default)"
+msgstr "Sada: {} (zadano)"
+
+msgid "Otherwise (default)"
+msgstr "Inače (zadano)"
+
+msgid "Rule {}"
+msgstr "Pravilo {}"
+
+msgid "Use layout"
+msgstr "Koristite izgled"
+
+msgid "When"
+msgstr "Kada"
+
+msgid "If"
+msgstr "Ako"
+
+msgid "If:"
+msgstr "Ako:"
+
+msgid "Trigger conditions"
+msgstr "Uvjeti okidača"
+
+msgid "No layout"
+msgstr "Nema rasporeda"
+
+msgid "No layout (keys as is)"
+msgstr "Nema rasporeda (ključevi kakvi jesu)"
+
+msgid "Now: {} (rule {}: {})"
+msgstr "Sada: {} (pravilo {}: {})"
+
+msgid ""
+"Rules are checked from top to bottom; the first enabled one whose conditions"
+" match chooses the layout. If none matches, the default is used. “No layout”"
+" leaves the keyboard unprocessed, for example in an application where the "
+"layout gets in the way."
+msgstr ""
+"Pravila se provjeravaju odozgo prema dolje; prvi omogućeni čiji uvjeti "
+"odgovaraju odabire izgled. Ako ništa ne odgovara, koristi se zadana "
+"vrijednost. \"Bez rasporeda\" ostavlja tipkovnicu neobrađenu, na primjer u "
+"aplikaciji gdje raspored smeta."
+
+msgid "No rules"
+msgstr "Nema pravila"
+
+msgid "The default layout is always used."
+msgstr "Uvijek se koristi zadani izgled."
+
+msgid "For games"
+msgstr "Za igre"
+
+msgid "For an application"
+msgstr "Za prijavu"
+
+msgid "Custom rule"
+msgstr "Prilagođeno pravilo"
+
+msgid "When no rule matches, the keyboard works without processing."
+msgstr "Kada nijedno pravilo ne odgovara, tipkovnica radi bez obrade."
+
+msgid "Never applies: rule {} always matches first."
+msgstr "Nikada se ne primjenjuje: pravilo {} uvijek odgovara prvo."
+
+msgid "Game mode detection is off, so this rule never matches."
+msgstr ""
+"Detekcija načina igre je isključena, tako da se ovo pravilo nikada ne "
+"podudara."
+
+msgid "Not among the system languages: {}"
+msgstr "Nije među jezicima sustava: {}"
+
+msgid "Rule enabled"
+msgstr "Pravilo omogućeno"
+
+msgid "Automatic mode will use no layout by default."
+msgstr "Automatski način prema zadanim postavkama neće koristiti raspored."
+
+msgid "Delete rule {}?"
+msgstr "Izbrisati pravilo {}?"
+
+msgid "The rule will be deleted. This cannot be undone."
+msgstr "Pravilo će biti izbrisano. Ovo se ne može poništiti."
+
+msgid "Its {n} automatic rule will be deleted too."
+msgid_plural "Its {n} automatic rules will be deleted too."
+msgstr[0] "Njegovo {n} automatsko pravilo također će biti izbrisano."
+msgstr[1] "Izbrisat će se i njegova {n} automatska pravila."
+msgstr[2] "Izbrisat će se i njegovih {n} automatskih pravila."
+
+msgid "In {n} rule"
+msgid_plural "In {n} rules"
+msgstr[0] "U {n} pravilu"
+msgstr[1] "U {n} pravila"
+msgstr[2] "U {n} pravila"
+
+msgid "Auto — detect games"
+msgstr "Automatski — otkrivanje igara"
+
+msgid "On — always"
+msgstr "Uključeno — uvijek"
+
+msgid "Off — never"
+msgstr "Isključeno — nikad"
+
+msgid ""
+"Automatic layout rules apply only when the layout is chosen automatically "
+"(Layouts page)."
+msgstr ""
+"Pravila automatskog izgleda primjenjuju se samo kada je izgled odabran "
+"automatski (stranica Izgledi)."
+
+msgid ""
+"Borderless windows covering the screen count too. Browsers, video players "
+"and presentations are ignored."
+msgstr ""
+"Prozori bez obruba koji prekrivaju zaslon također se računaju. Preglednici, "
+"video playeri i prezentacije se zanemaruju."
+
+msgid "Game mode is off (set manually)"
+msgstr "Način igre je isključen (ručno postavljen)"
+
+msgid "Game mode is on (set manually)"
+msgstr "Način igre je uključen (ručno postavljen)"
+
+msgid ""
+"Game mode turns on rules and automatic layout rules that have a game-mode "
+"condition. Automatic layout rules apply only when the layout is chosen "
+"automatically (Layouts page). Auto uses the detection sources and custom "
+"rules below; On and Off set the state manually. “Never a game” takes "
+"priority over automatic detection and “Always a game”. You can also change "
+"the mode in the top bar, in the tray menu or with a key bound to a game mode"
+" action."
+msgstr ""
+"Način igre uključuje pravila i pravila automatskog izgleda koji imaju uvjet "
+"načina igre. Pravila automatskog izgleda primjenjuju se samo kada je izgled "
+"odabran automatski (stranica Izgledi). Auto koristi izvore otkrivanja i "
+"prilagođena pravila u nastavku; On i Off ručno postavljaju stanje. \"Nikada "
+"igra\" ima prioritet nad automatskim otkrivanjem i \"Uvijek igra\". Također "
+"možete promijeniti način rada na gornjoj traci, u izborniku trake ili tipkom"
+" vezanom za radnju načina igre."
+
+msgid "Game mode: always off"
+msgstr "Način igre: uvijek isključen"
+
+msgid "Game mode: always on"
+msgstr "Način igre: uvijek uključen"
+
+msgid "Game mode: detect automatically"
+msgstr "Način igre: otkriva automatski"
+
+msgid "Toggle game mode"
+msgstr "Uključi/isključi način igre"
+
+msgid ""
+"GameMode daemon unavailable: check the gamemode package and session D-Bus."
+msgstr ""
+"GameMode demon nije dostupan: provjerite gamemode paket i sesiju D-Bus."
+
+msgid ""
+"Install {} to detect the active window and fullscreen windows. It is also "
+"needed for application conditions in rules."
+msgstr ""
+"Instalirajte {} za otkrivanje aktivnog prozora i prozora preko cijelog "
+"zaslona. Također je potrebno za uvjete prijave u pravilima."
+
+msgid ""
+"Nothing uses game mode yet: no rule or automatic layout rule has a game-mode"
+" condition, so turning it on changes nothing."
+msgstr ""
+"Ništa još ne koristi način igre: nijedno pravilo ili pravilo automatskog "
+"izgleda nema uvjet načina igre, tako da njegovo uključivanje ne mijenja "
+"ništa."
+
+msgid ""
+"On and Off are remembered after restart. Auto keeps detecting in the "
+"background."
+msgstr ""
+"Uključivanje i isključivanje pamte se nakon ponovnog pokretanja. Auto "
+"nastavlja otkrivati ​​u pozadini."
+
+msgid ""
+"Rules of the current layout with a game-mode condition: {}. Automatic layout"
+" rules with a game-mode condition: {}."
+msgstr ""
+"Pravila trenutnog izgleda s uvjetom načina igre: {}. Automatska pravila "
+"rasporeda s uvjetom načina igre: {}."
+
+msgid ""
+"Turns on while a game runs through gamemoderun or requests GameMode itself. "
+"In Steam set the launch options to “gamemoderun %command%”."
+msgstr ""
+"Uključuje se dok igra radi kroz gamemoderun ili zahtijeva sam GameMode. U "
+"Steamu postavite opcije pokretanja na “gamemoderun %command%”."
+
+msgid "Game mode: on"
+msgstr "Način igre: uključen"
+
+msgid "Game mode: off"
+msgstr "Način igre: isključeno"
+
+msgid "Active now: {}"
+msgstr "Trenutno aktivan: {}"
+
+msgid ""
+"Active window detection is unavailable in this session, so application "
+"conditions do not match."
+msgstr ""
+"Aktivno otkrivanje prozora nije dostupno u ovoj sesiji, tako da se uvjeti "
+"aplikacije ne podudaraju."
+
+msgid ""
+"An application is matched by its ID or process name: the whole name, "
+"ignoring case, with * and ? as wildcards. A window title item matches when "
+"the title contains the text. Any matching item is enough. An empty list "
+"imposes no restrictions."
+msgstr ""
+"Aplikacija se podudara s ID-om ili imenom procesa: cijeli naziv, "
+"zanemarujući velika i mala slova, sa * i ? kao zamjenski znakovi. Stavka "
+"naslova prozora odgovara ako naslov sadrži tekst. Bilo koja odgovarajuća "
+"stavka je dovoljna. Prazan popis ne nameće ograničenja."
+
+msgid "Looking for open windows…"
+msgstr "Traženje otvorenih prozora…"
+
+msgid "No open windows found"
+msgstr "Nema otvorenih prozora"
+
+msgid "Window title contains: {}"
+msgstr "Naslov prozora sadrži: {}"
+
+msgid "Timing"
+msgstr "Vrijeme"
+
+msgid "Used by macros without their own value."
+msgstr "Koriste ga makronaredbe bez vlastite vrijednosti."
+
+msgid ""
+"Used by macros without their own value. How long to wait between pressing "
+"modifiers (Shift, Ctrl, …) and the main key of one step."
+msgstr ""
+"Koriste ga makronaredbe bez vlastite vrijednosti. Koliko dugo čekati između "
+"pritiskanja modifikatora (Shift, Ctrl, …) i glavne tipke jednog koraka."
+
+msgid "Rule without a trigger is saved as a draft and will be ignored."
+msgstr "Pravilo bez okidača sprema se kao skica i bit će zanemareno."
+
+msgid "Trigger \"{}\" cannot be used for a rule."
+msgstr "Okidač \"{}\" ne može se koristiti za pravilo."
+
+msgid "Rules for trigger \"{}\" may overlap; the first matching rule wins."
+msgstr ""
+"Pravila za okidač \"{}\" mogu se preklapati; pobjeđuje prvo odgovarajuće "
+"pravilo."
+
+msgid "Rule for trigger \"{}\" is covered by an earlier rule and will not run."
+msgstr ""
+"Pravilo za okidač \"{}\" pokriveno je ranijim pravilom i neće se pokrenuti."
+
+msgid "Rule \"{}\" points to a layer that no longer exists."
+msgstr "Pravilo \"{}\" ukazuje na sloj koji više ne postoji."
+
+msgid "Rule \"{}\" has an invalid tap action."
+msgstr "Pravilo \"{}\" ima nevažeću radnju dodira."
+
+msgid "Rule \"{}\" has an invalid hold action."
+msgstr "Pravilo \"{}\" ima nevažeću akciju zadržavanja."
+
+msgid "Rule \"{}\" has an invalid double-tap action."
+msgstr "Pravilo \"{}\" ima nevažeću radnju dvostrukog dodira."
+
+msgid "Automatic switching rule deleted"
+msgstr "Pravilo automatskog prebacivanja izbrisano"
+
+msgid "Only in applications"
+msgstr "Samo u aplikacijama"
+
+msgid "Except applications"
+msgstr "Osim aplikacija"
+
+msgid "A match blocks the rule, even if the window is in the allowed list."
+msgstr ""
+"Podudaranje blokira pravilo, čak i ako je prozor na popisu dopuštenih."
+
+msgid "Any match allows the rule. An empty list allows all windows."
+msgstr "Svako podudaranje dopušta pravilo. Prazan popis dopušta sve prozore."
+
+msgid "Choose applications to exclude"
+msgstr "Odaberite aplikacije koje želite isključiti"
+
+msgid "Open windows"
+msgstr "Otvoreni prozori"
+
+msgid "Last active"
+msgstr "Zadnje aktivno"
+
+msgid "Nothing is excluded."
+msgstr "Ništa nije isključeno."
+
+msgid "No restrictions: the rule works in every window."
+msgstr "Nema ograničenja: pravilo radi u svakom prozoru."
+
+msgid "{n} window"
+msgid_plural "{n} windows"
+msgstr[0] "{n} prozor"
+msgstr[1] "{n} prozora"
+msgstr[2] "{n} prozora"
+
+msgid "Do not process"
+msgstr "Ne obrađivati"
+
+msgid "Command name (optional)"
+msgstr "Naziv naredbe (neobavezno)"
+
+msgid "Working directory (home by default)"
+msgstr "Radni imenik (domaći prema zadanim postavkama)"
+
+msgid "Text to type when the action is invoked:"
+msgstr "Tekst za upisivanje kada se radnja pozove:"
+
+msgid ""
+"Enter literal text without the text: prefix. Line breaks, spaces and tabs "
+"are preserved. On Linux, text is inserted into the active application via "
+"the desktop portal; permission may be required. Text injection by the mapper"
+" is not implemented on Windows or macOS."
+msgstr ""
+"Unesite doslovni tekst bez prefiksa text:. Prijelomi redaka, razmaci i "
+"kartice su sačuvani. Na Linuxu se tekst umeće u aktivnu aplikaciju putem "
+"portala radne površine; može biti potrebna dozvola. Ubacivanje teksta od "
+"strane mapera nije implementirano u sustavu Windows ili macOS."
+
+msgid ""
+"Commands run with sh -lc in the background. The mapper does not wait for "
+"completion or collect output. An empty name uses the command itself as its "
+"label. The working directory defaults to your home folder; scripts need "
+"execute permission. Command execution must be enabled in settings."
+msgstr ""
+"Naredbe se izvode sa sh -lc u pozadini. Maper ne čeka završetak niti "
+"prikuplja izlazne podatke. Prazno ime koristi samu naredbu kao oznaku. "
+"Zadani radni direktorij je vaša matična mapa; skripte trebaju dopuštenje za "
+"izvršenje. Izvršenje naredbi mora biti omogućeno u postavkama."
+
+msgid ""
+"Commands run with PowerShell in the background, without a console window. "
+"The mapper does not wait for completion or collect output. An empty name "
+"uses the command itself as its label. The working directory defaults to your"
+" home folder. Command execution must be enabled in settings."
+msgstr ""
+"Naredbe se izvode s PowerShell-om u pozadini, bez prozora konzole. Maper ne "
+"čeka završetak niti prikuplja izlazne podatke. Prazno ime koristi samu "
+"naredbu kao oznaku. Zadani radni direktorij je vaša početna mapa. Izvršenje "
+"naredbi mora biti omogućeno u postavkama."
+
+msgid ""
+"The name is optional: an empty name uses the command itself as its label. "
+"Command execution by the mapper is not implemented on macOS."
+msgstr ""
+"Ime nije obavezno: prazno ime koristi samu naredbu kao oznaku. Izvršenje "
+"naredbi od strane mapera nije implementirano na macOS."
+
+msgid "Triggers"
+msgstr "Okidači"
+
+msgid "Disable animations"
+msgstr "Onemogući animacije"
+
+msgid "Add layout: "
+msgstr "Dodaj izgled:"
+
+msgid "Save (Ctrl+S)"
+msgstr "Spremi (Ctrl+S)"
+
+msgid "Close layout"
+msgstr "Zatvori izgled"
+
+msgid "Discard layout changes?"
+msgstr "Odbaciti promjene izgleda?"
+
+msgid "Unsaved changes to this layout will be lost."
+msgstr "Nespremljene promjene ovog izgleda bit će izgubljene."
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Triggers tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"Jedinstveni identifikator koji se koristi u referencama poput "
+"makronaredbe:<id>. Da biste ovu makronaredbu povezali s ključem, odaberite "
+"tu radnju na kartici Slojevi ili Okidači. Promijenite ID samo kada ništa ne "
+"koristi ovu makronaredbu."
+
+msgid "Discard"
+msgstr "Odbaciti"
+
+msgid ""
+"Build reusable sequences of key chords, text, commands and system actions. Use a unique ID in macro:<id> references and a readable name in action lists. Assign macros on the Layers or Triggers tab; change an ID only when it is unused.\n"
+"\n"
+"The step pause applies between steps of this macro. Modifier delay is the time between pressing a modifier and the main key. Leave delays empty to use Settings defaults."
+msgstr ""
+"Izgradite višekratne sekvence ključnih akorda, teksta, naredbi i radnji sustava. Koristite jedinstveni ID u makro:<id> referencama i čitljivo ime u popisima radnji. Dodijelite makronaredbe na kartici Slojevi ili Okidači; promijeniti ID samo kada se ne koristi.\n"
+"\n"
+"Pauza koraka primjenjuje se između koraka ove makronaredbe. Odgoda modifikatora je vrijeme između pritiska modifikatora i glavne tipke. Ostavite odgode prazne za korištenje zadanih postavki."
+
+msgid "Global defaults: step pause {} ms; modifier delay {} ms."
+msgstr ""
+"Globalne zadane postavke: korak pauze {} ms; odgoda modifikatora {} ms."
+
+msgid "Layout changed on disk"
+msgstr "Izgled promijenjen na disku"
+
+msgid ""
+"The file of “{}” was changed by another program after you opened it. Your "
+"edits are kept until you choose what to do."
+msgstr ""
+"Datoteku “{}” promijenio je drugi program nakon što ste je otvorili. Vaša se"
+" uređivanja čuvaju dok ne odaberete što ćete učiniti."
+
+msgid "Load from disk"
+msgstr "Učitaj s diska"
+
+msgid "Save as new…"
+msgstr "Spremi kao novo…"
+
+msgid "Overwrite"
+msgstr "Prebrisati"
+
+msgid "Show LHC key codes used in assignments, such as KeyA and ArrowLeft."
+msgstr ""
+"Prikaži LHC šifre tipki koje se koriste u dodjelama, kao što su KeyA i "
+"ArrowLeft."
+
+msgid "Application"
+msgstr "Primjena"
+
+msgid "Window title"
+msgstr "Naslov prozora"
+
+msgid "Click to switch"
+msgstr "Pritisnite za promjenu"
+
+msgid "Match by app ID or process instead"
+msgstr "Umjesto toga podudaranje prema ID-u aplikacije ili procesu"
+
+msgid "Match by window title instead"
+msgstr "Umjesto toga podudaranje prema naslovu prozora"
+
+msgid "Open now: {n} window"
+msgid_plural "Open now: {n} windows"
+msgstr[0] "Otvoreno sada: {n} prozor"
+msgstr[1] "Otvoreno sada: {n} prozora"
+msgstr[2] "Trenutno otvoreno: {n} prozora"
+
+msgid "Not open now"
+msgstr "Nije otvoreno sada"
+
+msgid "Running process"
+msgstr "Pokretanje procesa"
+
+msgid "Text the window title contains"
+msgstr "Tekst koji sadrži naslov prozora"
+
+msgid "Already in the list"
+msgstr "Već na popisu"
+
+msgid "Choose from open windows…"
+msgstr "Odaberite među otvorenim prozorima…"
+
+msgid "Matches {n} open window"
+msgid_plural "Matches {n} open windows"
+msgstr[0] "Odgovara {n} otvorenom prozoru"
+msgstr[1] "Odgovara {n} otvorena prozora"
+msgstr[2] "Odgovara {n} otvorenih prozora"
+
+msgid "Matches no open window"
+msgstr "Odgovara bez otvorenog prozora"
+
+msgid "Show Quick Action Menu on the last used page"
+msgstr "Prikaži izbornik brzih radnji na zadnjoj korištenoj stranici"
+
+msgid "Show Emoji & Symbols menu on the last used page"
+msgstr "Prikaži izbornik Emotikoni i simboli na zadnjoj korištenoj stranici"
+
+msgid "Show the settings window"
+msgstr "Prikažite prozor postavki"
+
+msgid "Activate layout {} (switches to Single mode)"
+msgstr "Aktiviraj izgled {} (prebacuje se u pojedinačni način)"
+
+msgid "There is no layout number {}"
+msgstr "Ne postoji broj rasporeda {}"
+
+msgid "Show the Left Hand Control layout name when it changes"
+msgstr "Prikaži naziv izgleda kontrole lijeve ruke kada se promijeni"
+
+msgid "Show the keys of a layer while it is held"
+msgstr "Prikaži tipke sloja dok se drži"
+
+msgid ""
+"The hint appears 2 seconds after the layer activates. Pressing a layer key "
+"hides or cancels it until the trigger is released, including in game mode."
+msgstr ""
+"Savjet se pojavljuje 2 sekunde nakon što se sloj aktivira. Pritiskom na "
+"tipku sloja skriva se ili poništava dok se ne otpusti okidač, uključujući i "
+"način igre."
+
+msgid ""
+"Unavailable: build with the spell feature and use a Wayland compositor with "
+"layer-shell (KDE Plasma, Sway, Hyprland)."
+msgstr ""
+"Nedostupno: izgradite sa značajkom čarolije i koristite Waylandov kompozitor"
+" sa slojevitom ljuskom (KDE Plasma, Sway, Hyprland)."
+
+msgid ""
+"The app:activateLayout1…5 actions activate the layout at that position in "
+"this list: reordering the list changes which layout a key activates. In Auto"
+" mode they switch to Single mode."
+msgstr ""
+"Akcije app:activateLayout1…5 aktiviraju raspored na toj poziciji na ovom "
+"popisu: promjena redoslijeda popisa mijenja raspored koji ključ aktivira. U "
+"automatskom načinu rada prebacuju se u pojedinačni način rada."
+
+msgid "Cut"
+msgstr "Izreži"
+
+msgid "Copy"
+msgstr "Kopiraj"
+
+msgid "Paste"
+msgstr "Zalijepi"
+
+msgid "Select all"
+msgstr "Odaberi sve"
+
+msgid "Clear search"
+msgstr "Očisti pretragu"
+
+msgid "Add application"
+msgstr "Dodaj aplikaciju"
+
+msgid "Edit application"
+msgstr "Uredi aplikaciju"
+
+msgid "Remove application?"
+msgstr "Ukloniti aplikaciju?"
+
+msgid "“{}” will be removed from the list."
+msgstr "“{}” će biti uklonjen s popisa."
+
+msgid "Devices"
+msgstr "Uređaji"
+
+msgid "Required"
+msgstr "Potreban"
+
+msgid "Optional"
+msgstr "Neobavezno"
+
+msgid "Failed to start"
+msgstr "Pokretanje nije uspjelo"
+
+msgid "Keys work as usual. Start the mapper to apply your layouts."
+msgstr ""
+"Ključevi rade kao i obično. Pokrenite maper da biste primijenili svoje "
+"izglede."
+
+msgid "Select a keyboard below to start the mapper."
+msgstr "Odaberite tipkovnicu u nastavku za pokretanje mapera."
+
+msgid "Changing a device restarts the mapper."
+msgstr "Promjena uređaja ponovno pokreće maper."
+
+msgid "Auto: known game {}"
+msgstr "Automatski: poznata igra {}"
+
+msgid "Ignored in fullscreen"
+msgstr "Ignoriran na cijelom zaslonu"
+
+msgid "Not available in this session."
+msgstr "Nije dostupno u ovoj sesiji."
+
+msgid "Steam games"
+msgstr "Steam igre"
+
+msgid ""
+"Turns on while Steam runs a game: Steam starts every game through reaper "
+"SteamLaunch, and game windows have the ID steam_app_<number>."
+msgstr ""
+"Uključuje se dok Steam pokreće igru: Steam pokreće svaku igru ​​kroz reaper "
+"SteamLaunch, a prozori igre imaju ID steam_app_<number>."
+
+msgid "Turns on while Steam reports a running game."
+msgstr "Uključuje se dok Steam prijavljuje pokrenutu igru."
+
+msgid "Lutris games"
+msgstr "Lutris igre"
+
+msgid ""
+"Turns on while a game started by Lutris runs: Lutris starts every game "
+"through lutris-wrapper."
+msgstr ""
+"Uključuje se dok radi igra koju je pokrenuo Lutris: Lutris pokreće svaku "
+"igru ​​kroz lutris-wrapper."
+
+msgid "Gamescope sessions"
+msgstr "Gamescope sesije"
+
+msgid "Turns on while the active window is a nested gamescope session."
+msgstr "Uključuje se dok je aktivni prozor ugniježđena sesija gamescopea."
+
+msgid "Games from the Game Bar list"
+msgstr "Igre s popisa Game Bar"
+
+msgid "Applications of the Game category"
+msgstr "Prijave u kategoriji Igra"
+
+msgid ""
+"Turns on while the active window belongs to an application whose .desktop "
+"file lists the Game category. Launchers are tagged as games too, so they are"
+" skipped."
+msgstr ""
+"Uključuje se dok aktivni prozor pripada aplikaciji čija .desktop datoteka "
+"navodi kategoriju igre. Pokretači su također označeni kao igre, pa se "
+"preskaču."
+
+msgid ""
+"Turns on while the active application declares the Games category in its "
+"Info.plist. Launchers are skipped."
+msgstr ""
+"Uključuje se dok aktivna aplikacija deklarira kategoriju igara u svom "
+"Info.plistu. Pokretači su preskočeni."
+
+msgid "Auto — according to settings"
+msgstr "Automatski — prema postavkama"
+
+msgid "Blank"
+msgstr "Prazan"
+
+msgid "Assign action"
+msgstr "Dodijeli radnju"
+
+msgid "Action after {} ms of holding"
+msgstr "Radnja nakon {} ms zadržavanja"
+
+msgid ""
+"These codes are specific to Left Hand Control, not universal keyboard codes "
+"(e.g. KeyA, ArrowLeft)."
+msgstr ""
+"Ovi su kodovi specifični za upravljanje lijevom rukom, a ne univerzalni "
+"kodovi tipkovnice (npr. KeyA, ArrowLeft)."
+
+msgid "While its window is active"
+msgstr "Dok je njegov prozor aktivan"
+
+msgid "While the process runs"
+msgstr "Dok proces teče"
+
+msgid "Counts while a window of the application has the focus."
+msgstr "Računa se dok je prozor aplikacije u fokusu."
+
+msgid ""
+"Counts while a process with this name runs, even without a window or in the "
+"background."
+msgstr ""
+"Broji se dok se proces s ovim nazivom izvodi, čak i bez prozora ili u "
+"pozadini."
+
+msgid "Application · while its window is active"
+msgstr "Aplikacija · dok je njen prozor aktivan"
+
+msgid "Process · while it runs"
+msgstr "Proces · dok radi"
+
+msgid "No games added."
+msgstr "Nema dodanih igara."
+
+msgid ""
+"Game mode turns on while any of these matches. An application is matched by "
+"its ID or process name: the whole name, ignoring case, with * and ? as "
+"wildcards. Steam games have the app ID steam_app_<number>; Proton games are "
+"also found by their .exe name. A window title item matches the active window"
+" whose title contains the text."
+msgstr ""
+"Način igre se uključuje dok se bilo koji od ovih podudara. Aplikacija se "
+"podudara s ID-om ili imenom procesa: cijeli naziv, zanemarujući velika i "
+"mala slova, sa * i ? kao zamjenski znakovi. Steam igre imaju ID aplikacije "
+"steam_app_<broj>; Igre Proton također se mogu pronaći po imenu .exe. Stavka "
+"naslova prozora odgovara aktivnom prozoru čiji naslov sadrži tekst."
+
+msgid ""
+"Game mode stays off while any of these matches, even if a game or another "
+"detector would turn it on."
+msgstr ""
+"Način igre ostaje isključen dok se bilo koje od ovih podudaranja, čak i ako "
+"bi ga uključila igra ili drugi detektor."
+
+msgid "less than a minute"
+msgstr "manje od minute"
+
+msgid "{} min"
+msgstr "{} min"
+
+msgid "{} h {} min"
+msgstr "{} h {} min"
+
+msgid "Running for {}"
+msgstr "Trčanje za {}"
+
+msgid "Stopped unexpectedly"
+msgstr "Zaustavljeno neočekivano"
+
+msgid "Stopped {} ago after running for {}."
+msgstr "Zaustavljen prije {} nakon trčanja za {}."
+
+msgid "Text input"
+msgstr "Unos teksta"
+
+msgid ""
+"How text actions in rules and macros are typed. Key remapping and the emoji "
+"popup do not use it."
+msgstr ""
+"Kako se upisuju radnje teksta u pravilima i makronaredbama. Ponovno "
+"mapiranje tipki i skočni prozor emotikona ne koriste ga."
+
+msgid "Typing method"
+msgstr "Metoda tipkanja"
+
+msgid "libei + clipboard fallback (recommended)"
+msgstr "libei + rezervni međuspremnik (preporučeno)"
+
+msgid "Paste from clipboard"
+msgstr "Zalijepi iz međuspremnika"
+
+msgid "ydotool"
+msgstr "ydotool"
+
+msgid "xdotool"
+msgstr "xdotool"
+
+msgid ""
+"Types with the current layout, or pastes the whole text when a character is "
+"unavailable. Paste requires clipboard access and support for the paste "
+"shortcut. Preserves clipboard formats and cancels if the destination "
+"changes. Requires portal permission and active-window detection."
+msgstr ""
+"Upisuje s trenutnim izgledom ili lijepi cijeli tekst kada znak nije "
+"dostupan. Za lijepljenje je potreban pristup međuspremniku i podrška za "
+"prečac za lijepljenje. Čuva formate međuspremnika i poništava ako se "
+"odredište promijeni. Zahtijeva dozvolu portala i otkrivanje aktivnog "
+"prozora."
+
+msgid ""
+"Types only through libei using the current keyboard layout and Caps Lock "
+"state. Skips text with unavailable characters. Requires portal permission "
+"and active-window detection. Cancels if the destination changes."
+msgstr ""
+"Upisuje samo kroz libei koristeći trenutni raspored tipkovnice i stanje Caps"
+" Lock. Preskače tekst s nedostupnim znakovima. Zahtijeva dozvolu portala i "
+"otkrivanje aktivnog prozora. Otkazuje se ako se odredište promijeni."
+
+msgid ""
+"Types only through NotifyKeyboardKeycode using the KDE layout and readable "
+"keyboard state. Skips text with unavailable characters. Requires portal "
+"permission and active-window detection. Cancels if the destination changes."
+msgstr ""
+"Upisuje samo putem NotifyKeyboardKeycode koristeći KDE raspored i čitljivo "
+"stanje tipkovnice. Preskače tekst s nedostupnim znakovima. Zahtijeva dozvolu"
+" portala i otkrivanje aktivnog prozora. Otkazuje se ako se odredište "
+"promijeni."
+
+msgid ""
+"Pastes with the paste shortcut through the portal. Requires clipboard "
+"access, active-window detection and an app supporting that shortcut. "
+"Preserves all clipboard formats; a new user copy takes precedence. Reports "
+"an error if no text transfer is observed."
+msgstr ""
+"Lijepi pomoću prečaca lijepljenja kroz portal. Zahtijeva pristup "
+"međuspremniku, otkrivanje aktivnog prozora i aplikaciju koja podržava taj "
+"prečac. Čuva sve formate međuspremnika; nova korisnička kopija ima prednost."
+" Prijavljuje pogrešku ako se ne primijeti prijenos teksta."
+
+msgid "Paste shortcut"
+msgstr "Zalijepi prečac"
+
+msgid ""
+"Sent to the focused app to paste the text. Terminals usually need "
+"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
+"Ctrl+V does not paste there."
+msgstr ""
+"Poslano u fokusiranu aplikaciju za lijepljenje teksta. Terminali obično "
+"trebaju Ctrl+Shift+V: neki od njih lijepe odabir miša na Shift+Insert, a "
+"Ctrl+V ne lijepi tamo."
+
+msgid ""
+"Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "
+"Reliable for Latin text only. On an error, stops without switching methods."
+msgstr ""
+"Pokreće samo \"ydotool type\". Potreban je rad ydotoola i njegove usluge "
+"ydotoold. Pouzdan samo za latinični tekst. U slučaju pogreške, zaustavlja se"
+" bez promjene metoda."
+
+msgid ""
+"Runs \"xdotool type\" only. Works only in X11 sessions and XWayland windows."
+" On an error, stops without switching methods."
+msgstr ""
+"Pokreće samo \"xdotool type\". Radi samo u X11 sesijama i XWayland "
+"prozorima. U slučaju pogreške, zaustavlja se bez promjene metoda."
+
+msgid "ydotool from PATH"
+msgstr "ydotool iz PATH"
+
+msgid "xdotool from PATH"
+msgstr "xdotool iz PATH"
+
+msgid ""
+"Each item is compared with the active window. Pick a window from the list "
+"below to fill in the field."
+msgstr ""
+"Svaka se stavka uspoređuje s aktivnim prozorom. Odaberite prozor s donjeg "
+"popisa za popunjavanje polja."
+
+msgid ""
+"Application: the app ID (Wayland app id or X11 WM_CLASS) or the process "
+"name. The whole name must match, case is ignored, .exe is optional. * stands"
+" for any characters and ? for one, e.g. steam_app_*. The ID is stable, so "
+"prefer it."
+msgstr ""
+"Aplikacija: ID aplikacije (ID aplikacije Wayland ili X11 WM_CLASS) ili naziv"
+" procesa. Cijeli naziv mora odgovarati, velika i mala slova se zanemaruju, "
+".exe nije obavezan. * stoji za sve znakove i ? za jedno, npr. "
+"steam_aplikacija_*. ID je stabilan, pa mu dajte prednost."
+
+msgid ""
+"Window title: matches when the title contains the text, case is ignored. "
+"With * or ? the pattern must cover the whole title. A title changes with the"
+" open tab or document, and it never matches a process without a window."
+msgstr ""
+"Naslov prozora: podudara se kada naslov sadrži tekst, velika i mala slova se"
+" zanemaruju. Sa * ili ? uzorak mora pokrivati ​​cijeli naslov. Naslov se "
+"mijenja s otvorenom karticom ili dokumentom i nikada se ne podudara s "
+"procesom bez prozora."
+
+msgid "Match by"
+msgstr "Podudaranje po"
+
+msgid "Process"
+msgstr "Proces"
+
+msgid "Process name, * and ? allowed"
+msgstr "Naziv procesa, * i ? dozvoljeno"
+
+msgid "App ID, * and ? allowed"
+msgstr "ID aplikacije, * i ? dozvoljeno"
+
+msgid ""
+"The item is compared with the names of running processes. Pick one from the "
+"list below to fill in the field."
+msgstr ""
+"Stavka se uspoređuje s nazivima pokrenutih procesa. Odaberite jedan s donjeg"
+" popisa kako biste ispunili polje."
+
+msgid ""
+"Process: the executable name, as the list below shows it. The whole name "
+"must match, case is ignored, .exe is optional. * stands for any characters "
+"and ? for one."
+msgstr ""
+"Proces: ime izvršne datoteke, kao što je prikazano na donjem popisu. Cijeli "
+"naziv mora odgovarati, velika i mala slova se zanemaruju, .exe nije "
+"obavezan. * stoji za sve znakove i ? za jednu."
+
+msgid "Matches {n} running process"
+msgid_plural "Matches {n} running processes"
+msgstr[0] "Odgovara {n} pokrenutom procesu"
+msgstr[1] "Odgovara {n} pokrenuta procesa"
+msgstr[2] "Odgovara {n} pokrenutih procesa"
+
+msgid "Matches no running process"
+msgstr "Ne odgovara nijednom pokrenutom procesu"
+
+msgid ""
+"Many applications run as “{}”, so the name matches all of them. The "
+"application ID is more precise."
+msgstr ""
+"Mnoge aplikacije rade kao \"{}\", tako da ime odgovara svima njima. ID "
+"aplikacije je precizniji."
+
+msgid "When it counts"
+msgstr "Kad se računa"
+
+msgid "Window titles"
+msgstr "Naslovi prozora"
+
+msgid "Processes of open windows"
+msgstr "Procesi otvorenih prozora"
+
+msgid "Shared process"
+msgstr "Zajednički proces"
+
+msgid "Running without a window"
+msgstr "Trčanje bez prozora"
+
+msgid "Type a name to find processes running without a window."
+msgstr "Upišite naziv kako biste pronašli procese koji se izvode bez prozora."
+
+msgid "Process · while its window is active"
+msgstr "Proces · dok je njegov prozor aktivan"
+
+msgid "While the trigger is held"
+msgstr "Dok se okidač drži"
+
+msgid "Press key"
+msgstr "Pritisnite tipku"
+
+msgid ""
+"Which key stays pressed while you hold the trigger, together with the layer."
+" “Don't press” only switches the layer."
+msgstr ""
+"Koja tipka ostaje pritisnuta dok držite okidač, zajedno sa slojem. “Nemoj "
+"pritisnuti” samo mijenja sloj."
+
+msgid ""
+"Which key stays pressed while you hold the trigger. “Trigger itself” keeps "
+"the usual behavior of the key."
+msgstr ""
+"Koja tipka ostaje pritisnuta dok držite okidač. \"Sam okidač\" zadržava "
+"uobičajeno ponašanje tipke."
+
+msgid "Trigger itself"
+msgstr "Sam okidač"
+
+msgid "Other key…"
+msgstr "Drugi ključ…"
+
+msgid "When to press"
+msgstr "Kada pritisnuti"
+
+msgid "Holds {}"
+msgstr "Drži {}"
+
+msgid "Holds nothing"
+msgstr "Ne drži ništa"
+
+msgid "Hold after {} ms"
+msgstr "Držite nakon {} ms"
+
+msgid "Stop mapper (restore native keyboard behavior)"
+msgstr "Zaustavi maper (vrati izvorno ponašanje tipkovnice)"
+
+msgid "Select a keyboard device in the settings to start the mapper"
+msgstr "Odaberite tipkovnicu u postavkama za pokretanje mapera"
+
+msgid "Start mapper to intercept keys and apply layouts"
+msgstr "Pokrenite kartograf za presretanje ključeva i primjenu izgleda"
+
+msgid "Current active layout (selected automatically by switching rules)"
+msgstr "Trenutačni aktivni izgled (automatski odabire se promjenom pravila)"
+
+msgid "Click to change mode (Auto / On / Off)"
+msgstr "Kliknite za promjenu načina (automatski / uključeno / isključeno)"
+
+msgid ""
+"The mapper intercepts keyboard input, applies layers, rules and macros, and "
+"emits output through a virtual device."
+msgstr ""
+"Maper presreće unos s tipkovnice, primjenjuje slojeve, pravila i "
+"makronaredbe i emitira izlaz kroz virtualni uređaj."
+
+msgid ""
+"Define how physical keys behave: tap for a key or action, hold to switch "
+"layers, or double-tap for extra shortcuts."
+msgstr ""
+"Definirajte kako se ponašaju fizičke tipke: dodirnite za tipku ili radnju, "
+"držite za promjenu slojeva ili dvaput dodirnite za dodatne prečace."
+
+msgid ""
+"Action performed when the trigger is pressed and released quickly without "
+"holding."
+msgstr ""
+"Radnja koja se izvodi kada se okidač pritisne i otpusti brzo bez "
+"zadržavanja."
+
+msgid ""
+"Action performed when the trigger is pressed twice quickly within the "
+"double-tap timeout."
+msgstr ""
+"Radnja koja se izvodi kada se okidač dvaput brzo pritisne unutar vremenskog "
+"ograničenja dvostrukog dodira."
+
+msgid "Show standard QWERTY letter labels for visual reference."
+msgstr "Prikaži standardne QWERTY oznake slova za vizualnu referencu."
+
+msgid ""
+"Show internal key codes used in Left Hand Control profiles (e.g. KeyA, "
+"ArrowLeft)."
+msgstr ""
+"Prikaži interne šifre tipki koje se koriste u profilima upravljanja lijevom "
+"rukom (npr. KeyA, ArrowLeft)."
+
+msgid "Hold detection"
+msgstr "Otkrivanje zadržavanja"
+
+msgid "When a key becomes a hold"
+msgstr "Kada tipka postane držanje"
+
+msgid ""
+"Decides when a rule key that is still down counts as a hold if you press "
+"another key meanwhile. Applies to all rules."
+msgstr ""
+"Odlučuje kada se tipka pravila koja je još uvijek pritisnuta računa kao "
+"zadržavanje ako u međuvremenu pritisnete drugu tipku. Odnosi se na sva "
+"pravila."
+
+msgid ""
+"After another key is released: the key becomes a hold once another key is "
+"pressed and released while it is down, or when the hold threshold passes. "
+"Fast rolls while typing stay taps."
+msgstr ""
+"Nakon otpuštanja druge tipke: tipka postaje čekanje kada se druga tipka "
+"pritisne i otpusti dok je pritisnuta ili kada prijeđe prag čekanja. Brzo "
+"kotrljajte dok tipkate i ostanite dodirivati."
+
+msgid ""
+"As soon as another key is pressed: reacts faster, but fast typing can "
+"trigger the hold by mistake."
+msgstr ""
+"Čim se pritisne druga tipka: reagira brže, ali brzo tipkanje može pogreškom "
+"pokrenuti čekanje."
+
+msgid "After another key is released (recommended)"
+msgstr "Nakon otpuštanja druge tipke (preporučeno)"
+
+msgid "As soon as another key is pressed"
+msgstr "Čim se pritisne druga tipka"
+
+msgid ""
+"Used by rules that leave the field empty. A rule can set its own value in "
+"its advanced options."
+msgstr ""
+"Koriste ga pravila koja ostavljaju polje prazno. Pravilo može postaviti "
+"vlastitu vrijednost u svojim naprednim opcijama."
+
+msgid "Hold threshold, ms"
+msgstr "Zadrži prag, ms"
+
+msgid ""
+"How long to hold a rule key before it counts as a hold: its layer or hold "
+"action. Released earlier, the key runs its tap action."
+msgstr ""
+"Koliko dugo držati ključ pravila prije nego što se računa kao zadržavanje: "
+"njegov sloj ili akcija zadržavanja. Ranije objavljena, tipka pokreće radnju "
+"dodirivanja."
+
+msgid ""
+"Lower: layers turn on faster, but fast typing may trigger them by mistake. "
+"Higher: fewer false holds, but a longer wait. Usually 150–250 ms."
+msgstr ""
+"Niže: slojevi se uključuju brže, ali brzo ih tipkanje može pokrenuti "
+"greškom. Viša: manje lažnih zadržavanja, ali duže čekanje. Obično 150-250 "
+"ms."
+
+msgid "Standard value: {} ms."
+msgstr "Standardna vrijednost: {} ms."
+
+msgid "Long hold, ms"
+msgstr "Dugo čekanje, gđo"
+
+msgid ""
+"How long to keep holding a rule key before its long-hold action runs once. "
+"Applies to rules whose hold runs an action instead of a layer."
+msgstr ""
+"Koliko dugo držati tipku pravila prije nego što se jednom pokrene akcija "
+"dugog zadržavanja. Primjenjuje se na pravila čije zadržavanje pokreće radnju"
+" umjesto sloja."
+
+msgid "Double-tap window, ms"
+msgstr "Dvaput dodirnite prozor, ms"
+
+msgid ""
+"A second tap within this time after the first release counts as a double "
+"tap."
+msgstr ""
+"Drugi dodir unutar tog vremena nakon prvog otpuštanja računa se kao "
+"dvostruki dodir."
+
+msgid ""
+"A single tap on a key with a double-tap action runs only after this window "
+"ends, so a large value makes such keys feel slow. Keys without a double-tap "
+"action are not delayed."
+msgstr ""
+"Jednostruki dodir tipke s radnjom dvostrukog dodira pokreće se tek nakon što"
+" ovaj prozor završi, tako da velika vrijednost čini takve tipke sporima. "
+"Tipke bez akcije dvostrukog dodira ne kasne."
+
+msgid ""
+"Used by macros that leave the field empty. A macro can set its own value on "
+"the Macros page."
+msgstr ""
+"Koriste ga makronaredbe koje ostavljaju polje prazno. Makronaredba može "
+"postaviti vlastitu vrijednost na stranici Makronaredbe."
+
+msgid ""
+"Pause between consecutive steps of a macro. Increase it if an application "
+"misses keystrokes."
+msgstr ""
+"Pauza između uzastopnih koraka makronaredbe. Povećajte ga ako aplikacija "
+"propusti pritiske tipki."
+
+msgid "Simultaneous presses"
+msgstr "Simultane preše"
+
+msgid ""
+"For rules triggered by several keys pressed together, such as KeyJ+KeyK. All"
+" keys must go down within this time, in any order. Until then the first key "
+"is held back; if the combination does not complete, it is typed as usual. "
+"Modifiers are never held back."
+msgstr ""
+"Za pravila koja pokreće nekoliko tipki pritisnutih zajedno, kao što je "
+"KeyJ+KeyK. Sve tipke se moraju spustiti unutar tog vremena, bilo kojim "
+"redoslijedom. Do tada se prvi ključ zadržava; ako se kombinacija ne završi, "
+"upisuje se kao i obično. Modifikatori se nikada ne zadržavaju."
+
+msgid ""
+"Higher: the combination is easier to hit, but typing with these keys lags "
+"slightly. Applies to all rules; a rule cannot override it."
+msgstr ""
+"Viša: kombinaciju je lakše pogoditi, ali tipkanje ovim tipkama malo kasni. "
+"Odnosi se na sva pravila; pravilo ga ne može nadjačati."
+
+msgid ""
+"Wait between pressing modifiers (Shift, Ctrl, …) and the main key of a macro"
+" step. Increase it if an application receives the shortcut without its "
+"modifier. Default for macros that leave the field empty."
+msgstr ""
+"Pričekajte između pritiskanja modifikatora (Shift, Ctrl, …) i glavne tipke "
+"koraka makronaredbe. Povećajte ga ako aplikacija primi prečac bez "
+"modifikatora. Zadana za makronaredbe koje polje ostavljaju praznim."
+
+msgid "Enter a long hold from 100 to 60000 ms."
+msgstr "Unesite dugo čekanje od 100 do 60000 ms."
+
+msgid "Long hold after {} ms"
+msgstr "Dugo zadržavanje nakon {} ms"
+
+msgid ""
+"Released earlier, the trigger counts as a tap; held longer, as a hold. Empty"
+" uses the default from Settings: {} ms."
+msgstr ""
+"Ranije objavljen, okidač se računa kao dodir; držao duže, kao držanje. Empty"
+" koristi zadanu vrijednost iz postavki: {} ms."
+
+msgid ""
+"How long to keep holding before the action runs. Empty uses the default from"
+" Settings: {} ms."
+msgstr ""
+"Koliko dugo treba držati prije pokretanja akcije. Empty koristi zadanu "
+"vrijednost iz postavki: {} ms."
+
+msgid ""
+"Longest pause between two taps. Empty uses the default from Settings: {} ms."
+msgstr ""
+"Najduža pauza između dva dodira. Empty koristi zadanu vrijednost iz "
+"postavki: {} ms."
+
+msgid "Auto: {} is not counted as a game (built-in list)"
+msgstr "Automatski: {} se ne računa kao igra (ugrađena lista)"
+
+msgid ""
+"These sources can take another application for a game, so each skips a "
+"built-in list of applications."
+msgstr ""
+"Ovi izvori mogu uzeti drugu aplikaciju za igru, tako da svaki preskače "
+"ugrađeni popis aplikacija."
+
+msgid ""
+"Turns on while a program that Windows recognized as a game (the Game Bar "
+"list) runs. Launchers are listed there too, so they are skipped."
+msgstr ""
+"Uključuje se dok radi program koji je Windows prepoznao kao igru ​​(popis "
+"Traka za igre). Tamo su također navedeni lanseri, pa su preskočeni."
+
+msgid "Launchers and game tools — not counted as games"
+msgstr "Pokretači i alati za igre — ne računaju se kao igre"
+
+msgid ""
+"Decides when a dual-role key counts as a hold if another key is pressed. "
+"Rules can override this default in advanced options. Chord detection is "
+"configured separately."
+msgstr ""
+"Odlučuje kada se tipka s dvostrukom ulogom računa kao zadržavanje ako se "
+"pritisne druga tipka. Pravila mogu nadjačati ovu zadanu postavku u naprednim"
+" opcijama. Detekcija akorda konfigurira se zasebno."
+
+msgid "After another key is released (better for typing)"
+msgstr "Nakon otpuštanja druge tipke (bolje za tipkanje)"
+
+msgid ""
+"As soon as another key is pressed: useful for dedicated layer or modifier "
+"keys. Reacts faster, but overlapping letters while typing can trigger the "
+"hold by mistake."
+msgstr ""
+"Čim se pritisne druga tipka: korisno za namjenske tipke za slojeve ili "
+"modifikatore. Reagira brže, ali preklapanje slova tijekom tipkanja može "
+"pogreškom pokrenuti čekanje."
+
+msgid "Default from Settings: {}"
+msgstr "Zadano iz postavki: {}"
+
+msgid "after another key is released"
+msgstr "nakon što se otpusti druga tipka"
+
+msgid "as soon as another key is pressed"
+msgstr "čim se pritisne druga tipka"
+
+msgid ""
+"Overrides the default hold detection for this rule. Use release detection "
+"for typing keys and press detection for dedicated layer or modifier keys. "
+"This does not change chord detection."
+msgstr ""
+"Nadjačava zadano otkrivanje zadržavanja za ovo pravilo. Upotrijebite "
+"otkrivanje otpuštanja za upisivanje tipki i otkrivanje pritiska za namjenske"
+" slojeve ili modifikacijske tipke. Ovo ne mijenja detekciju akorda."
+
+msgid "Cannot list input devices: {}"
+msgstr "Nije moguće navesti ulazne uređaje: {}"
+
+msgid "Keyboard interception is not implemented on this operating system."
+msgstr ""
+"Presretanje tipkovnice nije implementirano na ovom operativnom sustavu."
+
+msgid "Defaults"
+msgstr "Zadane postavke"
+
+msgid "Shared by all rules"
+msgstr "Dijeli se po svim pravilima"
+
+msgid "Hold threshold"
+msgstr "Zadrži prag"
+
+msgid "Long hold"
+msgstr "Dugo držanje"
+
+msgid "Double-tap window"
+msgstr "Dvaput dodirnite prozor"
+
+msgid "Reset to {} ms"
+msgstr "Vrati na {} ms"
+
+msgid "Automatic game detection"
+msgstr "Automatsko otkrivanje igre"
+
+msgid "Works only in Auto mode."
+msgstr "Radi samo u automatskom načinu rada."
+
+msgid "System signals"
+msgstr "Signali sustava"
+
+msgid "Launchers"
+msgstr "bacači"
+
+msgid "Heroic games"
+msgstr "Junačke igre"
+
+msgid ""
+"Turns on while a game started by Heroic Games Launcher runs (Epic, GOG, "
+"Amazon and added games): Heroic passes HEROIC_APP_NAME to every game it "
+"starts."
+msgstr ""
+"Uključuje se dok igra pokrenuta pomoću Heroic Games Launchera (Epic, GOG, "
+"Amazon i dodane igre): Heroic prosljeđuje HEROIC_APP_NAME svakoj igri koju "
+"pokrene."
+
+msgid "Games run through umu-launcher"
+msgstr "Igre se pokreću kroz umu-pokretač"
+
+msgid ""
+"Turns on while a game runs through umu-run. Heroic, Lutris, Faugus Launcher "
+"and other launchers use it to start Windows games with Proton."
+msgstr ""
+"Uključuje se dok se igra izvodi kroz umu-run. Heroic, Lutris, Faugus "
+"Launcher i drugi pokretači koriste ga za pokretanje Windows igara s "
+"Protonom."
+
+msgid "Guesses — can be wrong"
+msgstr "Nagađanja - mogu biti pogrešna"
+
+msgid "Your rules"
+msgstr "Vaša pravila"
+
+msgid ""
+"“Never a game” wins over everything else, automatic detection included."
+msgstr "\"Nikada igra\" pobjeđuje sve ostalo, uključujući automatsko otkrivanje."
+
+msgid "Always a game"
+msgstr "Uvijek igra"
+
+msgid "Never a game"
+msgstr "Nikad igra"
+
+msgid ""
+"Built-in list. To count one of these anyway, add it to Always a game under "
+"Your rules."
+msgstr ""
+"Ugrađeni popis. Da biste ipak računali jednu od ovih, dodajte je u Uvijek "
+"igru ​​prema Vašim pravilima."
+
+msgid "Hold"
+msgstr "Držanje"
+
+msgid "Don't press"
+msgstr "Ne pritiskaj"
+
+msgid "{} — change…"
+msgstr "{} — promijeni…"
+
+msgid "Choose another key above to set when it is pressed."
+msgstr "Odaberite drugu tipku iznad za postavljanje kada se pritisne."
+
+msgid "Assign a double-tap action to the rule to change this window."
+msgstr "Dodijelite radnju dvostrukog dodira pravilu za promjenu ovog prozora."
+
+msgid "Hold on other key release"
+msgstr "Zadržite otpuštanje druge tipke"
+
+msgid "Hold on other key press"
+msgstr "Držite pritisnutu drugu tipku"
+
+msgid "Reset"
+msgstr "Vrati na zadano"
+
+msgid "Return all options in this dialog to their defaults"
+msgstr "Vratite sve opcije u ovom dijalogu na zadane vrijednosti"
+
+msgid "Macro time limit"
+msgstr "Makro vremensko ograničenje"
+
+msgid ""
+"A macro still running after this time is stopped and counts as finished. A "
+"macro started while another one runs waits for it; up to 3 runs can wait, "
+"further presses are ignored."
+msgstr ""
+"Makronaredba koja se i dalje izvodi nakon tog vremena se zaustavlja i računa"
+" se kao završena. Makro pokrenut dok drugi radi čeka na njega; do 3 "
+"izvođenja mogu čekati, daljnji pritisci se ignoriraju."
+
+msgid "Global shortcuts registered in this KDE session:"
+msgstr "Globalni prečaci registrirani u ovoj KDE sesiji:"
+
+msgid ""
+"The list is read from the KDE global shortcut service (kglobalaccel): KWin, "
+"Plasma and applications register their actions there. The chosen action is "
+"invoked as is, as if its shortcut were pressed, even when no keys are "
+"assigned to it. Which actions exist and how they behave depends on the "
+"Plasma version and installed applications, so Left Hand Control does not "
+"guarantee them. Common window and desktop actions that also work on other "
+"platforms are in System actions."
+msgstr ""
+"Popis se čita iz KDE globalne usluge prečaca (kglobalaccel): KWin, Plazma i "
+"aplikacije tamo registriraju svoje radnje. Odabrana radnja se poziva takva "
+"kakva jest, kao da je pritisnuta njezina prečaca, čak i kada joj nisu "
+"dodijeljene tipke. Koje akcije postoje i kako se ponašaju ovisi o verziji "
+"Plazme i instaliranim aplikacijama, tako da ih Left Hand Control ne jamči. "
+"Uobičajene radnje prozora i radne površine koje rade i na drugim platformama"
+" nalaze se u radnjama sustava."
+
+msgid "Hold key or combination"
+msgstr "Držite tipku ili kombinaciju"
+
+msgid ""
+"The key or combination stays pressed until you release the trigger. Choose "
+"modifiers plus one main key, for example Ctrl+KeyC."
+msgstr ""
+"Tipka ili kombinacija ostaje pritisnuta dok ne otpustite okidač. Odaberite "
+"modifikatore plus jednu glavnu tipku, na primjer Ctrl+KeyC."
+
+msgid "Not used when holding performs a long-hold action."
+msgstr "Ne koristi se kada držanje izvodi radnju dugog zadržavanja."
+
+msgid "Other key or combination…"
+msgstr "Drugi ključ ili kombinacija…"
+
+msgid "Hold detection when another key is pressed"
+msgstr "Detekcija zadržavanja kada se pritisne druga tipka"
+
+msgid "Used for single-key triggers without a long-hold action."
+msgstr "Koristi se za okidače s jednom tipkom bez akcije dugog zadržavanja."
+
+msgid "Long-hold threshold, ms"
+msgstr "Prag dugog zadržavanja, ms"
+
+msgid "Used when a long-hold action is selected."
+msgstr "Koristi se kada je odabrana akcija dugog čekanja."
+
+msgid "Double-tap interval, ms"
+msgstr "Interval dvostrukog dodira, ms"
+
+msgid "Double-tap actions are available only for single-key triggers."
+msgstr "Radnje dvostrukog dodira dostupne su samo za okidače s jednom tipkom."
+
+msgid "Applies when a double-tap action is assigned."
+msgstr "Primjenjuje se kada je dodijeljena radnja dvostrukog dodira."
+
+msgid "Delete trigger"
+msgstr "Izbriši okidač"
+
+msgid "Delete trigger?"
+msgstr "Izbrisati okidač?"
+
+msgid ""
+"The trigger and all its assigned actions will be removed from the current "
+"layout."
+msgstr ""
+"Okidač i sve njemu dodijeljene radnje bit će uklonjene iz trenutnog izgleda."
+
+msgid "Reset {} to default"
+msgstr "Vratite {} na zadane postavke"
+
+msgid "Holding activates layer: {}"
+msgstr "Držanje aktivira sloj: {}"
+
+msgid "Holding performs a long-hold action."
+msgstr "Držanje izvodi radnju dugog zadržavanja."
+
+msgid "Holding keeps a key or combination pressed."
+msgstr "Držanje drži tipku ili kombinaciju pritisnutom."
+
+msgid "Paths"
+msgstr "Staze"
+
+msgid "Unknown layer key at \"{}\"."
+msgstr "Nepoznati ključ sloja na \"{}\"."
+
+msgid "Invalid layer action at \"{}\"."
+msgstr "Nevažeća radnja sloja na \"{}\"."
+
+msgid "Invalid macro at \"{}\"."
+msgstr "Nevažeća makronaredba na \"{}\"."
+
+msgid "Invalid menu action at \"{}\"."
+msgstr "Nevažeća radnja izbornika na \"{}\"."
+
+msgid "Invalid timing at \"{}\"."
+msgstr "Nevažeće vrijeme u \"{}\"."
+
+msgid "Invalid window condition at \"{}\"."
+msgstr "Nevažeći uvjet prozora na \"{}\"."
+
+msgid "Unsupported rule combination at \"{}\"."
+msgstr "Nepodržana kombinacija pravila na \"{}\"."
+
+msgid "Invalid macro step at \"{}\"."
+msgstr "Nevažeći makro korak na \"{}\"."
+
+msgid "Macro call cycle at \"{}\"."
+msgstr "Ciklus makro poziva na \"{}\"."
+
+msgid "A timing value is outside the range shown in Settings."
+msgstr "Vrijednost vremena je izvan raspona prikazanog u postavkama."
+
+msgid "Keep modifiers held until the layer is released"
+msgstr "Držite modifikatore dok se sloj ne otpusti"
+
+msgid ""
+"For a combination such as Alt+Tab: Alt stays pressed while you press the key"
+" again and is released together with the layer key, so the window switcher "
+"stays open."
+msgstr ""
+"Za kombinaciju kao što je Alt+Tab: Alt ostaje pritisnut dok ponovo "
+"pritisnete tipku i otpušta se zajedno s tipkom sloja, tako da izmjenjivač "
+"prozora ostaje otvoren."
+
+msgid ""
+"Cannot list input devices. Check device access and see the application log."
+msgstr ""
+"Nije moguće navesti ulazne uređaje. Provjerite pristup uređaju i pogledajte "
+"zapisnik aplikacije."
+
+msgid ""
+"Configuration is unavailable. Check the configuration files and see the "
+"application log."
+msgstr ""
+"Konfiguracija nije dostupna. Provjerite konfiguracijske datoteke i "
+"pogledajte zapisnik aplikacije."
+
+msgid "Popup menus are unavailable. Try opening the menu again."
+msgstr "Skočni izbornici nisu dostupni. Pokušajte ponovno otvoriti izbornik."
+
+msgid "Popup menu failed. Try opening the menu again."
+msgstr "Skočni izbornik nije uspio. Pokušajte ponovno otvoriti izbornik."
+
+msgid ""
+"The text was not typed: the typing method is unavailable. Restart the mapper"
+" to try again."
+msgstr ""
+"Tekst nije upisan: metoda upisivanja nije dostupna. Ponovno pokrenite maper "
+"da pokušate ponovno."
+
+msgid ""
+"The text was not typed: safe clipboard access failed. See the application "
+"log."
+msgstr ""
+"Tekst nije upisan: siguran pristup međuspremniku nije uspio. Pogledajte "
+"dnevnik prijave."
+
+msgid ""
+"The text was not typed: the input tool failed. See the application log."
+msgstr ""
+"Tekst nije upisan: alat za unos nije uspio. Pogledajte dnevnik prijave."
+
+msgid "Changes applied, but the mapper was not updated. Restart the mapper."
+msgstr ""
+"Promjene su primijenjene, ali maper nije ažuriran. Ponovno pokrenite mapper."
+
+msgid "The operation failed. See the application log."
+msgstr "Operacija nije uspjela. Pogledajte dnevnik prijave."
+
+msgid "The action failed. See the application log."
+msgstr "Akcija nije uspjela. Pogledajte dnevnik prijave."
+
+msgid ""
+"Cannot start the mapper. Check the keyboard and device access. See the "
+"application log."
+msgstr ""
+"Nije moguće pokrenuti maper. Provjerite tipkovnicu i pristup uređaju. "
+"Pogledajte dnevnik prijave."
+
+msgid "Mapper is running, but an error occurred. See the application log."
+msgstr "Mapper radi, ali je došlo do pogreške. Pogledajte dnevnik prijave."
+
+msgid "Mapper stopped because of an error. See the application log."
+msgstr "Mapper je zaustavljen zbog pogreške. Pogledajte dnevnik prijave."
+
+msgid ""
+"Cannot read or save the configuration. Check file access and see the "
+"application log."
+msgstr ""
+"Ne mogu pročitati ili spremiti konfiguraciju. Provjerite pristup datoteci i "
+"pogledajte zapisnik aplikacije."
+
+msgid "Cannot parse the configuration file. See the application log."
+msgstr ""
+"Nije moguće analizirati konfiguracijsku datoteku. Pogledajte dnevnik "
+"prijave."
+
+msgid "The configuration contains invalid values. See the application log."
+msgstr ""
+"Konfiguracija sadrži nevažeće vrijednosti. Pogledajte dnevnik prijave."
+
+msgid "The action has invalid syntax."
+msgstr "Radnja ima nevažeću sintaksu."
+
+msgid "Pauses can only be used in macro steps."
+msgstr "Pauze se mogu koristiti samo u makro koracima."
+
+msgid "The selected macro no longer exists."
+msgstr "Odabrana makronaredba više ne postoji."
+
+msgid "The selected command no longer exists."
+msgstr "Odabrana naredba više ne postoji."
+
+msgid "Unknown system action."
+msgstr "Nepoznata radnja sustava."
+
+msgid "Unknown application action."
+msgstr "Nepoznata radnja aplikacije."
+
+msgid ""
+"Unknown action type. It may come from a newer version of the application."
+msgstr "Nepoznata vrsta radnje. Možda dolazi iz novije verzije aplikacije."
+
+msgid "Layout: {}"
+msgstr "Raspored: {}"
+
+msgid "Select All"
+msgstr "Odaberi sve"
+
+msgid "Move line down"
+msgstr "Pomakni liniju prema dolje"
+
+msgid "Down + End"
+msgstr "Dolje + kraj"
+
+msgid "Up + End"
+msgstr "Gore + kraj"
+
+msgid "Up 5 times"
+msgstr "Gore 5 puta"
+
+msgid "Duplicate line"
+msgstr "Duplicirana linija"
+
+msgid "Right + Space"
+msgstr "Desno + razmaknica"
+
+msgid "Empty line below"
+msgstr "Prazan red ispod"
+
+msgid "Cut word right from center"
+msgstr "Izrežite riječ točno od središta"
+
+msgid "Copy word right from center"
+msgstr "Kopirajte riječ desno od središta"
+
+msgid "Paste at line above"
+msgstr "Zalijepite u gornji red"
+
+msgid "Replace word with buffer"
+msgstr "Zamijenite riječ međuspremnikom"
+
+msgid "Down + Home"
+msgstr "Dolje + Home"
+
+msgid "Up + Home"
+msgstr "Gore + Početna"
+
+msgid "Down 5 times"
+msgstr "Dolje 5 puta"
+
+msgid "Paste at line bottom"
+msgstr "Zalijepite na dno retka"
+
+msgid "Cut to start"
+msgstr "Izrežite za početak"
+
+msgid "Cut to end"
+msgstr "Odrezati do kraja"
+
+msgid "Cut line content"
+msgstr "Izrežite sadržaj linije"
+
+msgid "Cut and remove line"
+msgstr "Izrežite i uklonite liniju"
+
+msgid "Select 5 lines up"
+msgstr "Odaberite 5 redaka gore"
+
+msgid "Copy to start"
+msgstr "Kopiraj za početak"
+
+msgid "Copy to end"
+msgstr "Kopiraj do kraja"
+
+msgid "Copy line"
+msgstr "Kopiraj liniju"
+
+msgid "Select whole line"
+msgstr "Odaberite cijelu liniju"
+
+msgid "Select word right from center"
+msgstr "Odaberite riječ desno od središta"
+
+msgid "Replace to start with buffer"
+msgstr "Za početak zamijenite međuspremnikom"
+
+msgid "Replace to end with buffer"
+msgstr "Zamijenite do kraja međuspremnikom"
+
+msgid "Replace line with buffer"
+msgstr "Zamijenite red međuspremnikom"
+
+msgid "Select 5 lines down"
+msgstr "Odaberite 5 redaka prema dolje"
+
+msgid "Remove trigger"
+msgstr "Uklonite okidač"
+
+msgid "Refresh list"
+msgstr "Osvježi popis"
+
+msgid "Remove item"
+msgstr "Ukloni stavku"
+
+msgid "Save as or reset changes"
+msgstr "Spremi kao ili poništi promjene"
+
+msgid "Edit: {}"
+msgstr "Uredi: {}"
+
+msgid "Save (Enter)"
+msgstr "Spremi (Enter)"
+
+msgid "Save (Ctrl+Enter)"
+msgstr "Spremi (Ctrl+Enter)"
+
+msgid "Cancel (Esc)"
+msgstr "Odustani (Esc)"
+
+msgid "Use the default from Settings: {} ms"
+msgstr "Koristite zadano iz postavki: {} ms"
+
+msgid ""
+"Opened by the app:showQuickMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold any "
+"action: a shortcut, macro, shell command or system action."
+msgstr ""
+"Otvoreno radnjama app:showQuickMenuN, gdje je N položaj stranice: promjena "
+"redoslijeda stranica mijenja stranicu koju tipka otvara. Svaka ćelija može "
+"sadržavati bilo koju radnju: prečac, makro, naredbu ljuske ili radnju "
+"sustava."
+
+msgid ""
+"In the popup, click a cell or press its key: the cells follow the keyboard "
+"rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number."
+msgstr ""
+"U skočnom prozoru kliknite ćeliju ili pritisnite njezinu tipku: ćelije "
+"slijede redove tipkovnice Q–T, A–G i Z–B. Kartica mijenja stranice; znamenke"
+" otvaraju stranicu svojim brojem."
+
+msgid "Waiting for keyboard"
+msgstr "Čeka se tipkovnica"

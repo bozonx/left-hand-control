@@ -21,6 +21,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             count,
         };
         let locale = ui.global::<Locale>();
+        // Exercise every bundled language through Slint before the detailed RU/EN assertions.
+        for code in [
+            "en", "ru", "de", "fr", "es", "it", "pt", "pl", "tr", "uk", "cs", "hu", "ro", "el",
+            "hr", "ka", "kk", "zh-Hans", "zh-Hant", "ja", "ko",
+        ] {
+            slint_shell::select_ui_language(code)?;
+            for count in [0, 1, 2, 5, 11, 21] {
+                let text = locale.invoke_text(loaded(count));
+                assert!(!text.is_empty(), "{code}: missing translation");
+                assert!(
+                    text.contains(&count.to_string()),
+                    "{code}: missing count: {text}"
+                );
+            }
+        }
         slint_shell::select_ui_language("ru")?;
         assert_eq!(
             locale.invoke_text(loaded(1)),

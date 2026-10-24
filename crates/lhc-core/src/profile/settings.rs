@@ -491,6 +491,22 @@ mod tests {
     }
 
     #[test]
+    fn all_interface_locales_persist_without_changing_schema_version() {
+        for code in [
+            "auto", "en-US", "ru-RU", "de", "fr", "es", "it", "pt", "pl", "tr", "uk", "cs", "hu",
+            "ro", "el", "hr", "ka", "kk", "zh-Hans", "zh-Hant", "ja", "ko",
+        ] {
+            let settings = parse(&config(json!({"locale": code}))).unwrap();
+            assert_eq!(settings.locale.as_str(), code);
+            let saved = serialize(&settings);
+            let raw: Value = serde_json::from_str(&saved).unwrap();
+            assert_eq!(raw["schemaVersion"], 1);
+            assert_eq!(raw["settings"]["locale"], code);
+            assert_eq!(parse(&saved).unwrap().locale, settings.locale);
+        }
+    }
+
+    #[test]
     fn editor_schema_is_preserved_and_strictly_typed() {
         let text = r#"{"schemaVersion":1,"$schema":"https://example.com/config.schema.json"}"#;
         let mut settings = parse(text).unwrap();

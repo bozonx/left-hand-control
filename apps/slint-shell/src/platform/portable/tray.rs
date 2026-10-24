@@ -16,21 +16,13 @@ pub struct Handle {
     items: Vec<(TrayItem, MenuItem)>,
     game: Submenu,
     game_items: Vec<CheckMenuItem>,
-    english: Cell<bool>,
+    language: Cell<Language>,
     game_active: Cell<bool>,
 }
 
 fn icon(enabled: bool) -> Result<Icon, tray_icon::BadIcon> {
     let (rgba, width, height) = super::super::icon::rgba(enabled);
     Icon::from_rgba(rgba, width, height)
-}
-
-fn language(english: bool) -> Language {
-    if english {
-        Language::English
-    } else {
-        Language::Russian
-    }
 }
 
 impl Handle {
@@ -59,9 +51,8 @@ impl Handle {
         }
     }
 
-    pub fn set_english(&self, english: bool) {
-        self.english.set(english);
-        let language = language(english);
+    pub fn set_language(&self, language: Language) {
+        self.language.set(language);
         for (entry, item) in &self.items {
             item.set_text(entry.label(language));
         }
@@ -81,9 +72,9 @@ impl Handle {
     }
 
     fn set_game_title(&self) {
-        let title = i18n::tray_game_title(language(self.english.get()), self.game_active.get());
+        let title = i18n::tray_game_title(self.language.get(), self.game_active.get());
         self.game.set_text(&title);
-        let name = i18n::application_name(language(self.english.get()));
+        let name = i18n::application_name(self.language.get());
         let tooltip = if self.in_development.get() {
             format!("{name}\n{title}")
         } else {
@@ -100,15 +91,15 @@ pub fn start(dispatch: Dispatch) -> Result<Handle, Box<dyn std::error::Error>> {
     let mut commands = HashMap::new();
     let mut items = Vec::new();
     for entry in TrayItem::ALL {
-        let item = MenuItem::new(entry.label(Language::Russian), true, None);
+        let item = MenuItem::new(entry.label(Language::English), true, None);
         commands.insert(item.id().clone(), entry.command());
         items.push((entry, item));
     }
-    let game = Submenu::new(i18n::tray_game_title(Language::Russian, false), true);
+    let game = Submenu::new(i18n::tray_game_title(Language::English, false), true);
     let mut game_items = Vec::new();
     for (index, mode) in i18n::TRAY_GAME_MODES.into_iter().enumerate() {
         let item = CheckMenuItem::new(
-            i18n::tray_game_choice(Language::Russian, mode),
+            i18n::tray_game_choice(Language::English, mode),
             true,
             index == 0,
             None,
@@ -126,7 +117,7 @@ pub fn start(dispatch: Dispatch) -> Result<Handle, Box<dyn std::error::Error>> {
         }
     }));
     let icon = TrayIconBuilder::new()
-        .with_tooltip(i18n::application_name(Language::Russian))
+        .with_tooltip(i18n::application_name(Language::English))
         .with_icon(icon(false)?)
         .with_menu(Box::new(menu.clone()))
         .build()?;
@@ -137,7 +128,7 @@ pub fn start(dispatch: Dispatch) -> Result<Handle, Box<dyn std::error::Error>> {
         items,
         game,
         game_items,
-        english: Cell::new(false),
+        language: Cell::new(Language::English),
         game_active: Cell::new(false),
     })
 }

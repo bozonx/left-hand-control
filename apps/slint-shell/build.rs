@@ -16,54 +16,94 @@ fn main() {
 
 fn build() {
     println!("cargo:rerun-if-changed=translations");
-    let russian = rspolib::pofile("translations/ru/LC_MESSAGES/slint-shell.po").unwrap();
     println!("cargo:rerun-if-changed=src/i18n.rs");
     println!("cargo:rerun-if-changed=ui");
     println!("cargo:rerun-if-changed=../../crates/lhc-core/src/mapper/builtin_macros.rs");
-    validate_translations(&russian);
     let output = std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
+    let languages = [
+        ("Russian", "ru"),
+        ("German", "de"),
+        ("French", "fr"),
+        ("Spanish", "es"),
+        ("Italian", "it"),
+        ("Portuguese", "pt"),
+        ("Polish", "pl"),
+        ("Turkish", "tr"),
+        ("Ukrainian", "uk"),
+        ("Czech", "cs"),
+        ("Hungarian", "hu"),
+        ("Romanian", "ro"),
+        ("Greek", "el"),
+        ("Croatian", "hr"),
+        ("Georgian", "ka"),
+        ("Kazakh", "kk"),
+        ("ChineseSimplified", "zh-Hans"),
+        ("ChineseTraditional", "zh-Hant"),
+        ("Japanese", "ja"),
+        ("Korean", "ko"),
+    ];
+    let catalogs: Vec<_> = languages
+        .iter()
+        .map(|&(name, code)| {
+            let catalog =
+                rspolib::pofile(format!("translations/{code}/LC_MESSAGES/slint-shell.po").as_str())
+                    .unwrap();
+            validate_translations(&catalog, code);
+            (name, catalog)
+        })
+        .collect();
     let mut generated = String::from("enum RustText {\n");
     for (name, _) in rust_messages::MESSAGES {
         generated.push_str(&format!("    {name},\n"));
     }
     generated.push_str("}\nimpl RustText { fn text(self, language: Language) -> &'static str { match (self, language) {\n");
     for (name, source) in rust_messages::MESSAGES {
-        let entry = russian
+        generated.push_str(&format!(
+            "(Self::{name}, Language::English) => {source:?},\n"
+        ));
+        for (language, catalog) in &catalogs {
+            let entry = catalog
+                .entries
+                .iter()
+                .find(|entry| entry.msgctxt.is_none() && entry.msgid == *source)
+                .unwrap();
+            let translated = entry.msgstr.as_ref().unwrap();
+            generated.push_str(&format!(
+                "(Self::{name}, Language::{language}) => {translated:?},\n"
+            ));
+        }
+    }
+    generated.push_str("} } }\nfn catalog(language: Language) -> &'static [CatalogEntry] { match language {\nLanguage::English => &[],\n");
+    for (language, catalog) in &catalogs {
+        generated.push_str(&format!("Language::{language} => &[\n"));
+        let mut entries: Vec<_> = catalog
             .entries
             .iter()
-            .find(|entry| entry.msgctxt.is_none() && entry.msgid == *source)
-            .unwrap();
-        let translated = entry.msgstr.as_ref().unwrap();
-        generated.push_str(&format!("(Self::{name}, Language::English) => {source:?},\n(Self::{name}, Language::Russian) => {translated:?},\n"));
+            .filter(|entry| !entry.obsolete)
+            .collect();
+        entries.sort_by_key(|entry| {
+            (
+                entry.msgctxt.as_deref().unwrap_or_default(),
+                entry.msgid.as_str(),
+            )
+        });
+        for entry in entries {
+            let translations = if entry.msgid_plural.is_some() {
+                entry.msgstr_plural.clone()
+            } else {
+                entry.msgstr.clone().into_iter().collect()
+            };
+            generated.push_str(&format!(
+                "({:?}, {:?}, {:?}, &{:?}),\n",
+                entry.msgctxt.as_deref().unwrap_or_default(),
+                entry.msgid,
+                entry.msgid_plural,
+                translations
+            ));
+        }
+        generated.push_str("],\n");
     }
-    generated.push_str("} } }\n");
-    generated.push_str("const TRANSLATIONS: &[CatalogEntry] = &[\n");
-    let mut entries: Vec<_> = russian
-        .entries
-        .iter()
-        .filter(|entry| !entry.obsolete)
-        .collect();
-    entries.sort_by_key(|entry| {
-        (
-            entry.msgctxt.as_deref().unwrap_or_default(),
-            entry.msgid.as_str(),
-        )
-    });
-    for entry in entries {
-        let translations = if entry.msgid_plural.is_some() {
-            entry.msgstr_plural.clone()
-        } else {
-            entry.msgstr.clone().into_iter().collect()
-        };
-        generated.push_str(&format!(
-            "({:?}, {:?}, {:?}, &{:?}),\n",
-            entry.msgctxt.as_deref().unwrap_or_default(),
-            entry.msgid,
-            entry.msgid_plural,
-            translations
-        ));
-    }
-    generated.push_str("];\n");
+    generated.push_str("} }\n");
     std::fs::write(output.join("rust_translations.rs"), generated).unwrap();
     let config = slint_build::CompilerConfiguration::new()
         .with_bundled_translations("translations")
@@ -79,13 +119,13 @@ fn build() {
         .unwrap_or_else(|error| panic!("i18n bundled parity: {error}"));
 }
 
-fn validate_translations(russian: &rspolib::POFile) {
+fn validate_translations(catalog: &rspolib::POFile, code: &str) {
     assert_eq!(
-        russian.metadata.get("Language").map(String::as_str),
-        Some("ru")
+        catalog.metadata.get("Language").map(String::as_str),
+        Some(code)
     );
-    assert!(!russian.metadata_is_fuzzy, "fuzzy catalog header");
-    let entries: Vec<_> = russian
+    assert!(!catalog.metadata_is_fuzzy, "fuzzy catalog header");
+    let entries: Vec<_> = catalog
         .entries
         .iter()
         .filter(|entry| !entry.obsolete)
@@ -116,8 +156,25 @@ fn validate_translations(russian: &rspolib::POFile) {
         .unwrap()
         .0;
     let locale = std::fs::read_to_string("ui/i18n.slint").unwrap();
-    i18n_checks::validate(&entries, &borrowed, rust_messages::MESSAGES, ids, &locale)
-        .unwrap_or_else(|error| panic!("i18n parity: {error}"));
+    let plural_count = catalog.metadata["Plural-Forms"]
+        .split_once("nplurals=")
+        .unwrap()
+        .1
+        .split(';')
+        .next()
+        .unwrap()
+        .parse()
+        .unwrap();
+    i18n_checks::validate_catalog(
+        &entries,
+        &borrowed,
+        rust_messages::MESSAGES,
+        ids,
+        &locale,
+        plural_count,
+        code == "ru",
+    )
+    .unwrap_or_else(|error| panic!("i18n parity: {error}"));
     let builtins =
         std::fs::read_to_string("../../crates/lhc-core/src/mapper/builtin_macros.rs").unwrap();
     i18n_checks::validate_builtin_macros(&builtins, &locale, &entries)

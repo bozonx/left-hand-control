@@ -1,0 +1,3712 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Left Hand Control\n"
+"PO-Revision-Date: 2026-10-23 00:00+0000\n"
+"Last-Translator: Machine translation; review welcome\n"
+"Language-Team: Greek\n"
+"Language: el\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+
+msgid "Action saved"
+msgstr "Η ενέργεια αποθηκεύτηκε"
+
+msgid "Cancel"
+msgstr "Ακύρωση"
+
+msgid "Increase"
+msgstr "Αύξηση"
+
+msgid "Decrease"
+msgstr "Μείωση"
+
+msgid "Configuration loaded: {n} rule"
+msgid_plural "Configuration loaded: {n} rules"
+msgstr[0] "Φορτώθηκε η διαμόρφωση: {n} κανόνας"
+msgstr[1] "Φορτώθηκε η διαμόρφωση: {n} κανόνες"
+
+msgid "Configuration saved: {n} rule"
+msgid_plural "Configuration saved: {n} rules"
+msgstr[0] "Αποθηκεύτηκε η διαμόρφωση: {n} κανόνας"
+msgstr[1] "Αποθηκεύτηκε η διαμόρφωση: {n} κανόνες"
+
+msgid "Configuration unavailable: {}"
+msgstr "Μη διαθέσιμη διαμόρφωση: {}"
+
+msgid "Delay: an integer from 1 to 10000 ms"
+msgstr "Καθυστέρηση: ένας ακέραιος αριθμός από 1 έως 10000 ms"
+
+msgid "Device saved: {}"
+msgstr "Αποθηκευμένη συσκευή: {}"
+
+msgid "Emoji"
+msgstr "Emoji"
+
+msgid "Tab · {}/{}"
+msgstr "Tab · {}/{}"
+
+msgid "Enter non-empty text"
+msgstr "Εισαγάγετε μη κενό κείμενο"
+
+msgid "Key {} only has conditional or layer rules; edit it in the full editor"
+msgstr ""
+"Το κλειδί {} έχει μόνο κανόνες υπό όρους ή επίπεδα. επεξεργαστείτε το στον "
+"πλήρη επεξεργαστή"
+
+msgid "Keyboard"
+msgstr "Πληκτρολόγιο"
+
+msgid "Keyboard device"
+msgstr "Συσκευή πληκτρολογίου"
+
+msgid "Keyboard layout"
+msgstr "Διάταξη πληκτρολογίου"
+
+msgid "Load a valid configuration before starting the mapper"
+msgstr "Φορτώστε μια έγκυρη διαμόρφωση πριν ξεκινήσετε τη χαρτογράφηση"
+
+msgid "Mapper is running"
+msgstr "Το Mapper εκτελείται"
+
+msgid "Mapper is running: {}"
+msgstr "Το Mapper εκτελείται: {}"
+
+msgid "Mapper is starting…"
+msgstr "Το Mapper ξεκινά…"
+
+msgid "Mapper is stopped"
+msgstr "Το Mapper έχει σταματήσει"
+
+msgid "Mapper is stopped: {}"
+msgstr "Η χαρτογράφηση έχει σταματήσει: {}"
+
+msgid "Quick actions"
+msgstr "Γρήγορες ενέργειες"
+
+msgid "Quit"
+msgstr "Έξοδος"
+
+msgid "Settings"
+msgstr "Ρυθμίσεις"
+
+msgid "Mapper on / off"
+msgstr "Ενεργοποίηση / απενεργοποίηση χαρτογράφησης"
+
+msgid "Switch to desktop {n}"
+msgstr "Μετάβαση στην επιφάνεια εργασίας {n}"
+
+msgid "Save"
+msgstr "Αποθήκευση"
+
+msgid "Changes applied, but the mapper was not updated: {}"
+msgstr "Εφαρμόστηκαν αλλαγές, αλλά η χαρτογράφηση δεν ενημερώθηκε: {}"
+
+msgid "Select a key to assign an action."
+msgstr "Επιλέξτε ένα κλειδί για να εκχωρήσετε μια ενέργεια."
+
+msgid "Select a keyboard device in the settings"
+msgstr "Επιλέξτε μια συσκευή πληκτρολογίου στις ρυθμίσεις"
+
+msgid "Select a system action"
+msgstr "Επιλέξτε μια ενέργεια συστήματος"
+
+msgid "Spell popup process unavailable: {}"
+msgstr ""
+"Η διαδικασία αναδυόμενου ορθογραφικού παραθύρου δεν είναι διαθέσιμη: {}"
+
+msgid "Spell worker is not running"
+msgstr "Ο ορθογραφικός εργάτης δεν τρέχει"
+
+msgid "Spell worker is restarting"
+msgstr "Ο ορθογραφικός εργάτης επανεκκινείται"
+
+msgid "Spell worker: restart limit exceeded (3 per minute)"
+msgstr "Εργάτης ορθογραφίας: Υπέρβαση του ορίου επανεκκίνησης (3 ανά λεπτό)"
+
+msgid "Spell worker: {}"
+msgstr "Ορθογραφικός: {}"
+
+msgid "Stop capture"
+msgstr "Διακοπή λήψης"
+
+msgid "System"
+msgstr "Σύστημα"
+
+msgid "Text"
+msgstr "Κείμενο"
+
+msgid "The configuration changed since editing started; repeat the change"
+msgstr ""
+"Η διαμόρφωση άλλαξε από την έναρξη της επεξεργασίας. επαναλάβετε την αλλαγή"
+
+msgid "Unknown action type"
+msgstr "Άγνωστος τύπος ενέργειας"
+
+msgid "Left Hand Control"
+msgstr "Left Hand Control"
+
+msgid "Layouts"
+msgstr "Διατάξεις"
+
+msgid "New layout name"
+msgstr "Νέο όνομα διάταξης"
+
+msgid "Mapper"
+msgstr "Αντιστοίχιση πλήκτρων"
+
+msgid "Dark"
+msgstr "Σκοτάδι"
+
+msgid "Light"
+msgstr "Φως"
+
+msgid "Refresh devices"
+msgstr "Ανανέωση συσκευών"
+
+msgid "Mouse device path"
+msgstr "Διαδρομή συσκευής ποντικιού"
+
+msgid "Optional device path"
+msgstr "Προαιρετική διαδρομή συσκευής"
+
+msgid "General"
+msgstr "Γενικός"
+
+msgid "Appearance"
+msgstr "Εμφάνιση"
+
+msgid "Language"
+msgstr "Γλώσσα"
+
+msgid "Automatic"
+msgstr "Αυτόματο"
+
+msgid "Key behavior"
+msgstr "Βασική συμπεριφορά"
+
+msgid "Game mode"
+msgstr "Λειτουργία παιχνιδιού"
+
+msgid "Use GameMode daemon"
+msgstr "Χρησιμοποιήστε τον δαίμονα GameMode"
+
+msgid "Detect fullscreen"
+msgstr "Ανίχνευση πλήρους οθόνης"
+
+msgid "ydotool path"
+msgstr "διαδρομή ydotool"
+
+msgid "xdotool path"
+msgstr "διαδρομή xdotool"
+
+msgid "Settings directory: "
+msgstr "Κατάλογος ρυθμίσεων:"
+
+msgid "Layouts directory: "
+msgstr "Κατάλογος διατάξεων:"
+
+msgid "Save settings"
+msgstr "Αποθήκευση ρυθμίσεων"
+
+msgid "Settings saved"
+msgstr "Οι ρυθμίσεις αποθηκεύτηκαν"
+
+msgid "Enter a timeout from 50 to 1000 milliseconds"
+msgstr ""
+"Εισαγάγετε ένα χρονικό όριο από 50 έως 1000 χιλιοστά του δευτερολέπτου"
+
+msgid "Rules"
+msgstr "Κανόνες"
+
+msgid "Remove"
+msgstr "Αφαίρεση"
+
+msgid "Move up"
+msgstr "Μετακινηθείτε προς τα πάνω"
+
+msgid "Move down"
+msgstr "Μετακίνηση προς τα κάτω"
+
+msgid "Enabled"
+msgstr "Ενεργοποιημένο"
+
+msgid "Trigger key"
+msgstr "Κλειδί σκανδάλης"
+
+msgid "Tap action"
+msgstr "Πατήστε ενέργεια"
+
+msgid "Layout conditions (comma separated)"
+msgstr "Συνθήκες διάταξης (χωρίζονται με κόμματα)"
+
+msgid "App whitelist (comma separated)"
+msgstr "Λίστα επιτρεπόμενων εφαρμογών (χωρισμένα με κόμματα)"
+
+msgid "App blacklist (comma separated)"
+msgstr "Μαύρη λίστα εφαρμογών (χωρισμένο με κόμμα)"
+
+msgid "Isolate"
+msgstr "Απομονώνω"
+
+msgid "Hold for"
+msgstr "Κρατήστε για"
+
+msgid "Swallow tap"
+msgstr "Αποκλεισμός σύντομου πατήματος"
+
+msgid "Swallow hold"
+msgstr "Αποκλεισμός παρατεταμένου πατήματος"
+
+msgid "New layer name"
+msgstr "Όνομα νέου επιπέδου"
+
+msgid "Create layer"
+msgstr "Δημιουργία στρώματος"
+
+msgid "Rules and triggers"
+msgstr "Κανόνες και ερεθίσματα"
+
+msgid "Define how physical keys activate layers or run actions."
+msgstr ""
+"Καθορίστε πώς τα φυσικά κλειδιά ενεργοποιούν επίπεδα ή εκτελούν ενέργειες."
+
+msgid "Add rule"
+msgstr "Προσθήκη κανόνα"
+
+msgid "Not set"
+msgstr "Δεν έχει οριστεί"
+
+msgid "Layer (hold)"
+msgstr "Επίπεδο (κρατήστε)"
+
+msgid "Double-tap action"
+msgstr "Ενέργεια με διπλό πάτημα"
+
+msgid "Hold button"
+msgstr "Κρατήστε πατημένο το κουμπί"
+
+msgid "Default"
+msgstr "Αθέτηση"
+
+msgid "Advanced"
+msgstr "Προχωρημένος"
+
+msgid "Choose trigger key"
+msgstr "Επιλέξτε κλειδί ενεργοποίησης"
+
+msgid "Choose layer"
+msgstr "Επιλέξτε στρώμα"
+
+msgid "Conditions"
+msgstr "Συνθήκες"
+
+msgid "Advanced rule options"
+msgstr "Προηγμένες επιλογές κανόνων"
+
+msgid "Choose action"
+msgstr "Επιλέξτε δράση"
+
+msgid "Ignore"
+msgstr "Αγνοώ"
+
+msgid "On"
+msgstr "Ενεργό"
+
+msgid "Off"
+msgstr "Ανενεργό"
+
+msgid "Clear"
+msgstr "Σαφής"
+
+msgid "Apply"
+msgstr "Εφαρμογή"
+
+msgid "Delete rule?"
+msgstr "Διαγραφή κανόνα;"
+
+msgid "This rule will be removed from the current layout."
+msgstr "Αυτός ο κανόνας θα αφαιρεθεί από την τρέχουσα διάταξη."
+
+msgid "Layers"
+msgstr "Επίπεδα"
+
+msgid "New layer"
+msgstr "Νέο στρώμα"
+
+msgid "Duplicate"
+msgstr "Αντίγραφο"
+
+msgid "Delete"
+msgstr "Διαγραφή"
+
+msgid "Extra keys"
+msgstr "Επιπλέον κλειδιά"
+
+msgid "Edit"
+msgstr "Επεξεργασία"
+
+msgid "Rename layer"
+msgstr "Μετονομασία επιπέδου"
+
+msgid "Duplicate layer"
+msgstr "Διπλότυπο στρώμα"
+
+msgid "Delete layer?"
+msgstr "Διαγραφή επιπέδου;"
+
+msgid "Edit layer key"
+msgstr "Επεξεργασία κλειδιού επιπέδου"
+
+msgid "Name"
+msgstr "Ονομα"
+
+msgid "Description"
+msgstr "Περιγραφή"
+
+msgid "Rules using this layer will return to the base layer."
+msgstr ""
+"Οι κανόνες που χρησιμοποιούν αυτό το επίπεδο θα επιστρέψουν στο βασικό "
+"επίπεδο."
+
+msgid "Transparent"
+msgstr "Διαφανής"
+
+msgid "Swallow"
+msgstr "Αποκλεισμός"
+
+msgid "Action"
+msgstr "Δράση"
+
+msgid "Action code"
+msgstr "Κωδικός δράσης"
+
+msgid "Enter a layer name"
+msgstr "Εισαγάγετε ένα όνομα επιπέδου"
+
+msgid "A layer with this name already exists."
+msgstr "Υπάρχει ήδη ένα επίπεδο με αυτό το όνομα."
+
+msgid "Enter a layout name"
+msgstr "Εισαγάγετε ένα όνομα διάταξης"
+
+msgid "Enter a key code"
+msgstr "Εισαγάγετε έναν κωδικό κλειδιού"
+
+msgid "Native"
+msgstr "Ντόπιος"
+
+msgid "Layer saved"
+msgstr "Το επίπεδο αποθηκεύτηκε"
+
+msgid "Macros"
+msgstr "Μακροεντολές"
+
+msgid "Built-in macros"
+msgstr "Ενσωματωμένες μακροεντολές"
+
+msgid "Macro ID"
+msgstr "Ταυτότητα μακροεντολής"
+
+msgid "Copy ID"
+msgstr "Αντιγραφή ταυτότητας"
+
+msgid "Steps"
+msgstr "Βήματα"
+
+msgid "Add step"
+msgstr "Προσθήκη βήματος"
+
+msgid "Add pause"
+msgstr "Προσθήκη παύσης"
+
+msgid "Macro ID must contain 1–64 letters, digits, underscores or hyphens"
+msgstr ""
+"Το αναγνωριστικό μακροεντολής πρέπει να περιέχει 1–64 γράμματα, ψηφία, κάτω "
+"παύλες ή παύλες"
+
+msgid "Macro ID is already in use"
+msgstr "Το αναγνωριστικό μακροεντολής χρησιμοποιείται ήδη"
+
+msgid "Macro delays must be between 0 and 2000 ms"
+msgstr "Οι καθυστερήσεις μακροεντολών πρέπει να είναι μεταξύ 0 και 2000 ms"
+
+msgid "Pause must be between 1 and 10000 ms"
+msgstr "Η παύση πρέπει να είναι μεταξύ 1 και 10000 ms"
+
+msgid "Unknown key or shortcut in macro step"
+msgstr "Άγνωστο κλειδί ή συντόμευση στο βήμα μακροεντολής"
+
+msgid "Macro references cannot form a cycle"
+msgstr "Οι αναφορές μακροεντολών δεν μπορούν να σχηματίσουν κύκλο"
+
+msgid "Commands"
+msgstr "Εντολές"
+
+msgid "Add"
+msgstr "Προσθήκη"
+
+msgid "Clear cell"
+msgstr "Καθαρίστε το κελί"
+
+msgid "Page name"
+msgstr "Όνομα σελίδας"
+
+msgid "Emoji cells accept at most 100 characters."
+msgstr "Τα κελιά emoji δέχονται το πολύ 100 χαρακτήρες."
+
+msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
+msgstr "Αναγνωριστικό εντολής: 1–64 γράμματα, ψηφία, κάτω παύλες ή παύλες."
+
+msgid "Command IDs must be unique."
+msgstr "Τα αναγνωριστικά εντολών πρέπει να είναι μοναδικά."
+
+msgid "Enter a shell command."
+msgstr "Εισαγάγετε μια εντολή φλοιού."
+
+msgid "Save as…"
+msgstr "Αποθήκευση ως…"
+
+msgid "Save layout as…"
+msgstr "Αποθήκευση διάταξης ως…"
+
+msgid "Please wait…"
+msgstr "Παρακαλώ περιμένετε…"
+
+msgid "Stop"
+msgstr "Στάση"
+
+msgid "Start"
+msgstr "Αρχή"
+
+msgid "Custom layout"
+msgstr "Προσαρμοσμένη διάταξη"
+
+msgid "Base keyboard"
+msgstr "Πληκτρολόγιο βάσης"
+
+msgid "Keyboard device path"
+msgstr "Διαδρομή συσκευής πληκτρολογίου"
+
+msgid "Copy path"
+msgstr "Διαδρομή αντιγραφής"
+
+msgid "Create a layer to assign its keys, or edit the base keyboard."
+msgstr ""
+"Δημιουργήστε ένα επίπεδο για να εκχωρήσετε τα πλήκτρα του ή επεξεργαστείτε "
+"το βασικό πληκτρολόγιο."
+
+msgid "Running"
+msgstr "Τρέξιμο"
+
+msgid "Stopped"
+msgstr "Σταμάτησε"
+
+msgid "Layout library updated"
+msgstr "Η βιβλιοθήκη διάταξης ενημερώθηκε"
+
+msgid "Select a layout"
+msgstr "Επιλέξτε μια διάταξη"
+
+msgid "Layout changed on disk; select it again"
+msgstr "Η διάταξη άλλαξε στο δίσκο. επιλέξτε το ξανά"
+
+msgid "Any game mode"
+msgstr "Οποιαδήποτε λειτουργία παιχνιδιού"
+
+msgid "Game mode on"
+msgstr "Λειτουργία παιχνιδιού ενεργοποιημένη"
+
+msgid "Game mode off"
+msgstr "Η λειτουργία παιχνιδιού είναι απενεργοποιημένη"
+
+msgid "System layouts (comma separated)"
+msgstr "Διατάξεις συστήματος (χωρισμένα με κόμματα)"
+
+msgid "Applications (comma separated)"
+msgstr "Εφαρμογές (χωρισμένες με κόμματα)"
+
+msgid "Manual"
+msgstr "Εγχειρίδιο"
+
+msgid "Active"
+msgstr "Ενεργός"
+
+msgid "Editing · unsaved"
+msgstr "Επεξεργασία · μη αποθηκευμένο"
+
+msgid "Editing"
+msgstr "Επεξεργασία"
+
+msgid "Activate"
+msgstr "Δραστηριοποιώ"
+
+msgid "Delete layout?"
+msgstr "Διαγραφή διάταξης;"
+
+msgid "Layout details"
+msgstr "Λεπτομέρειες διάταξης"
+
+msgid "Do not use when"
+msgstr "Μην χρησιμοποιείτε όταν"
+
+msgid "The layout file will be deleted. This cannot be undone."
+msgstr "Το αρχείο διάταξης θα διαγραφεί. Αυτό δεν μπορεί να αναιρεθεί."
+
+msgid "Duplicate…"
+msgstr "Αντίγραφο…"
+
+msgid "Edit layout"
+msgstr "Επεξεργασία διάταξης"
+
+msgid "New layout"
+msgstr "Νέα διάταξη"
+
+msgid "A layout with this name already exists."
+msgstr "Υπάρχει ήδη διάταξη με αυτό το όνομα."
+
+msgid "Add a description…"
+msgstr "Προσθήκη περιγραφής…"
+
+msgid "Create"
+msgstr "Δημιουργώ"
+
+msgid "Delete…"
+msgstr "Διαγράφω…"
+
+msgid "Description (optional)"
+msgstr "Περιγραφή (προαιρετικό)"
+
+msgid "Discard changes"
+msgstr "Απόρριψη αλλαγών"
+
+msgid "Make active"
+msgstr "Κάντε ενεργό"
+
+msgid "Single: the layout you make active works everywhere."
+msgstr "Single: η διάταξη που κάνετε ενεργή λειτουργεί παντού."
+
+msgid "Not used in automatic mode"
+msgstr "Δεν χρησιμοποιείται στην αυτόματη λειτουργία"
+
+msgid "Rename…"
+msgstr "Μετονομάζω…"
+
+msgid "Save and continue"
+msgstr "Αποθήκευση και συνέχεια"
+
+msgid ""
+"The layout you are editing has not been saved to the library. Its changes "
+"will be lost."
+msgstr ""
+"Η διάταξη που επεξεργάζεστε δεν έχει αποθηκευτεί στη βιβλιοθήκη. Οι αλλαγές "
+"του θα χαθούν."
+
+msgid "The name contains characters that cannot be used in a file name."
+msgstr ""
+"Το όνομα περιέχει χαρακτήρες που δεν μπορούν να χρησιμοποιηθούν σε ένα όνομα"
+" αρχείου."
+
+msgid "Unsaved changes"
+msgstr "Μη αποθηκευμένες αλλαγές"
+
+msgid "You are editing “{}”, but “{}” is active."
+msgstr "Επεξεργάζεστε το \"{}\", αλλά το \"{}\" είναι ενεργό."
+
+msgid "You are editing “{}”; no layout is active."
+msgstr "Επεξεργάζεστε το \"{}\". καμία διάταξη δεν είναι ενεργή."
+
+msgid "game mode off"
+msgstr "λειτουργία παιχνιδιού απενεργοποιημένη"
+
+msgid "game mode on"
+msgstr "λειτουργία παιχνιδιού ενεργοποιημένη"
+
+msgid "{} (copy)"
+msgstr "{} (αντίγραφο)"
+
+msgid "“{}” has unsaved changes. Save them before switching?"
+msgstr ""
+"Το \"{}\" έχει μη αποθηκευμένες αλλαγές. Να τα αποθηκεύσετε πριν από την "
+"αλλαγή;"
+
+msgid "Layout mode"
+msgstr "Λειτουργία διάταξης"
+
+msgid "Create layout"
+msgstr "Δημιουργία διάταξης"
+
+msgid "Empty"
+msgstr "Αδειάζω"
+
+msgid "Empty layout"
+msgstr "Κενή διάταξη"
+
+msgid "Previously selected: {}"
+msgstr "Προηγουμένως επιλεγμένο: {}"
+
+msgid "Current value"
+msgstr "Τρέχουσα αξία"
+
+msgid "Capture key"
+msgstr "Πλήκτρο λήψης"
+
+msgid "Press a key (including modifiers or Escape)."
+msgstr ""
+"Πατήστε ένα πλήκτρο (συμπεριλαμβανομένων των τροποποιητών ή του Escape)."
+
+msgid "Press a key or shortcut. Release a modifier to select it alone."
+msgstr ""
+"Πατήστε ένα πλήκτρο ή μια συντόμευση. Απελευθερώστε έναν τροποποιητή για να "
+"τον επιλέξετε μόνο του."
+
+msgid "Choose a valid key or action."
+msgstr "Επιλέξτε ένα έγκυρο κλειδί ή ενέργεια."
+
+msgid "Search keys and actions"
+msgstr "Αναζήτηση κλειδιών και ενεργειών"
+
+msgid "Search keys"
+msgstr "Κλειδιά αναζήτησης"
+
+msgid "Hold action"
+msgstr "Κρατήστε δράση"
+
+msgid "Macro step"
+msgstr "Μακροβήμα"
+
+msgid ""
+"You can enter a key combination using + between keys. Some keys depend on "
+"keyboard hardware and may be ignored by the system."
+msgstr ""
+"Μπορείτε να εισαγάγετε έναν συνδυασμό πλήκτρων χρησιμοποιώντας + μεταξύ των "
+"πλήκτρων. Ορισμένα πλήκτρα εξαρτώνται από το υλικό του πληκτρολογίου και "
+"ενδέχεται να αγνοηθούν από το σύστημα."
+
+msgid ""
+"You can assign a key combination using + between keys. Availability of "
+"special keys depends on the keyboard and desktop environment."
+msgstr ""
+"Μπορείτε να αντιστοιχίσετε έναν συνδυασμό πλήκτρων χρησιμοποιώντας + μεταξύ "
+"των πλήκτρων. Η διαθεσιμότητα ειδικών πλήκτρων εξαρτάται από το πληκτρολόγιο"
+" και το περιβάλλον επιφάνειας εργασίας."
+
+msgid "Behavior:"
+msgstr "Συμπεριφορά:"
+
+msgid "Action:"
+msgstr "Δράση:"
+
+msgid "Trigger key:"
+msgstr "Κλειδί ενεργοποίησης:"
+
+msgid "{n} line"
+msgid_plural "{n} lines"
+msgstr[0] "{n} γραμμή"
+msgstr[1] "{n} γραμμές"
+
+msgid "Modifiers"
+msgstr "Τροποποιητές"
+
+msgid "Letters, digits and symbols"
+msgstr "Γράμματα, ψηφία και σύμβολα"
+
+msgid "Control keys"
+msgstr "Πλήκτρα ελέγχου"
+
+msgid "Navigation and numpad"
+msgstr "Πλοήγηση και numpad"
+
+msgid "F1–F24"
+msgstr "F1–F24"
+
+msgid "Media and launch"
+msgstr "Μέσα και εκκίνηση"
+
+msgid "System and laptop"
+msgstr "Σύστημα και φορητός υπολογιστής"
+
+msgid "Mouse"
+msgstr "Ποντίκι"
+
+msgid "Other keys"
+msgstr "Άλλα κλειδιά"
+
+msgid "Actions"
+msgstr "Δράσεις"
+
+msgid "Extra button on some gaming mice"
+msgstr "Επιπλέον κουμπί σε μερικά ποντίκια gaming"
+
+msgid "Keys"
+msgstr "Κλειδιά"
+
+msgid "System actions"
+msgstr "Ενέργειες συστήματος"
+
+msgid "KDE shortcuts"
+msgstr "Συντομεύσεις KDE"
+
+msgid "Pause"
+msgstr "Παύση"
+
+msgid "Literal text (text: prefix is added automatically)"
+msgstr "Κυριολεκτικό κείμενο (κείμενο: το πρόθεμα προστίθεται αυτόματα)"
+
+msgid "Pause in milliseconds (1–10000)"
+msgstr "Παύση σε χιλιοστά του δευτερολέπτου (1–10000)"
+
+msgid "No matching items"
+msgstr "Δεν υπάρχουν στοιχεία που να ταιριάζουν"
+
+msgid "Show Quick Action Menu page {}"
+msgstr "Εμφάνιση σελίδας μενού γρήγορης δράσης {}"
+
+msgid "Show Emoji & Symbols menu page {}"
+msgstr "Εμφάνιση της σελίδας μενού Emoji & Symbols {}"
+
+msgid "Switch to desktop {}"
+msgstr "Μετάβαση στην επιφάνεια εργασίας {}"
+
+msgid "Move window to desktop {}"
+msgstr "Μετακίνηση παραθύρου στην επιφάνεια εργασίας {}"
+
+msgid "Close window"
+msgstr "Κλείσιμο παραθύρου"
+
+msgid "Minimize window"
+msgstr "Ελαχιστοποίηση παραθύρου"
+
+msgid "Maximize window"
+msgstr "Μεγιστοποίηση παραθύρου"
+
+msgid "Keep window above others"
+msgstr "Κρατήστε το παράθυρο πάνω από άλλα"
+
+msgid "Show desktop"
+msgstr "Εμφάνιση επιφάνειας εργασίας"
+
+msgid "Window overview"
+msgstr "Επισκόπηση παραθύρου"
+
+msgid "Open application launcher"
+msgstr "Ανοίξτε το πρόγραμμα εκκίνησης εφαρμογών"
+
+msgid "Turn off screen"
+msgstr "Απενεργοποιήστε την οθόνη"
+
+msgid "Switch to layout {}"
+msgstr "Μετάβαση στη διάταξη {}"
+
+msgid "Layer"
+msgstr "Επίπεδο"
+
+msgid "Delete layer"
+msgstr "Διαγραφή στρώματος"
+
+msgid "Create new layer"
+msgstr "Δημιουργία νέου επιπέδου"
+
+msgid "Layer description"
+msgstr "Περιγραφή επιπέδου"
+
+msgid "Add description"
+msgstr "Προσθήκη περιγραφής"
+
+msgid "Type to test..."
+msgstr "Πληκτρολογήστε για δοκιμή..."
+
+msgid "Ignore key"
+msgstr "Παράβλεψη κλειδιού"
+
+msgid "No layers yet"
+msgstr "Δεν υπάρχουν ακόμη επίπεδα"
+
+msgid "Left hand"
+msgstr "Αριστερό χέρι"
+
+msgid "Right hand"
+msgstr "Δεξιόστροφος"
+
+msgid "Key"
+msgstr "Κλειδί"
+
+msgid "US layout"
+msgstr "Διάταξη ΗΠΑ"
+
+msgid "LHC codes"
+msgstr "Κωδικοί LHC"
+
+msgid "No extra keys for this layer yet."
+msgstr "Δεν υπάρχουν ακόμη επιπλέον κλειδιά για αυτό το επίπεδο."
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid."
+msgstr ""
+"Κουμπιά ποντικιού, πλήκτρα πολυμέσων και άλλες ενεργοποιήσεις εκτός του "
+"κύριου πλέγματος πληκτρολογίου."
+
+msgid ""
+"Display modes affect labels only — the key code stays the same. “US layout” "
+"shows standard letter labels for visual reference. “LHC codes” shows app-"
+"specific codes (e.g. KeyA, ArrowLeft)."
+msgstr ""
+"Οι λειτουργίες εμφάνισης επηρεάζουν μόνο τις ετικέτες — ο κωδικός κλειδιού "
+"παραμένει ίδιος. Η \"Διάταξη ΗΠΑ\" εμφανίζει τυπικές ετικέτες γραμμάτων για "
+"οπτική αναφορά. Το \"LHC codes\" εμφανίζει κωδικούς για συγκεκριμένες "
+"εφαρμογές (π.χ. KeyA, ArrowLeft)."
+
+msgid "(copy)"
+msgstr "(αντίγραφο)"
+
+msgid "Add page"
+msgstr "Προσθήκη σελίδας"
+
+msgid "Allow commands"
+msgstr "Επιτρέπονται εντολές"
+
+msgid "Animals & Nature"
+msgstr "Ζώα & Φύση"
+
+msgid ""
+"Build reusable sequences from key chords, text actions, commands, or system "
+"actions. Steps run in order with the configured pause between them."
+msgstr ""
+"Δημιουργήστε επαναχρησιμοποιήσιμες ακολουθίες από συγχορδίες πλήκτρων, "
+"ενέργειες κειμένου, εντολές ή ενέργειες συστήματος. Τα βήματα εκτελούνται με"
+" τη σειρά με τη διαμορφωμένη παύση μεταξύ τους."
+
+msgid ""
+"Built-in macros that cannot be edited. To customize, create a user macro "
+"based on one."
+msgstr ""
+"Ενσωματωμένες μακροεντολές που δεν μπορούν να επεξεργαστούν. Για προσαρμογή,"
+" δημιουργήστε μια μακροεντολή χρήστη που βασίζεται σε μία."
+
+msgid "Cell {}"
+msgstr "Κελί {}"
+
+msgid "Command name"
+msgstr "Όνομα εντολής"
+
+msgid "Create based on"
+msgstr "Δημιουργία με βάση"
+
+msgid "Delete macro"
+msgstr "Διαγραφή μακροεντολής"
+
+msgid "Delete macro?"
+msgstr "Διαγραφή μακροεντολής;"
+
+msgid "Delete page"
+msgstr "Διαγραφή σελίδας"
+
+msgid "Delete page?"
+msgstr "Διαγραφή σελίδας;"
+
+msgid "Delete step"
+msgstr "Διαγραφή βήματος"
+
+msgid "Delete step?"
+msgstr "Διαγραφή βήματος;"
+
+msgid "Disable"
+msgstr "Καθιστώ ανίκανο"
+
+msgid "Drag"
+msgstr "Σέρνω"
+
+msgid "Emoji & Symbols"
+msgstr "Emoji & Σύμβολα"
+
+msgid "Emoji Symbols"
+msgstr "Σύμβολα Emoji"
+
+msgid "Emoji, symbol, or any text"
+msgstr "Emoji, σύμβολο ή οποιοδήποτε κείμενο"
+
+msgid "Empty step — pick an action or remove it."
+msgstr "Κενό βήμα — επιλέξτε μια ενέργεια ή αφαιρέστε την."
+
+msgid "Fix the existing macro errors first"
+msgstr "Διορθώστε πρώτα τα υπάρχοντα σφάλματα μακροεντολής"
+
+msgid "Food & Drink"
+msgstr "Φαγητό & Ποτό"
+
+msgid "Human-readable macro name, shown in picker lists."
+msgstr ""
+"Όνομα μακροεντολής αναγνώσιμο από τον άνθρωπο, που εμφανίζεται στις λίστες "
+"επιλογής."
+
+msgid "ID"
+msgstr "ID"
+
+msgid "Key {}"
+msgstr "Κλειδί {}"
+
+msgid "Label"
+msgstr "Επιγραφή"
+
+msgid "Macro name"
+msgstr "Όνομα μακροεντολής"
+
+msgid "Modifier delay"
+msgstr "Καθυστέρηση τροποποιητή"
+
+msgid "Move page left"
+msgstr "Μετακίνηση σελίδας αριστερά"
+
+msgid "Move page right"
+msgstr "Μετακίνηση σελίδας δεξιά"
+
+msgid "New macro"
+msgstr "Νέα μακροεντολή"
+
+msgid "No macros yet. Click \"New macro\" to create the first one."
+msgstr ""
+"Δεν υπάρχουν ακόμη μακροεντολές. Κάντε κλικ στο \"Νέα μακροεντολή\" για να "
+"δημιουργήσετε την πρώτη."
+
+msgid "No steps yet. Each step — one chord or action."
+msgstr "Κανένα βήμα ακόμα. Κάθε βήμα — μία χορδή ή δράση."
+
+msgid ""
+"Opened by the app:showEmojiMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold an "
+"emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short "
+"phrase (e.g. \"// TODO: \")."
+msgstr ""
+"Άνοιξε από τις ενέργειες της εφαρμογής:showEmojiMenuN, όπου N είναι η θέση "
+"της σελίδας: η αναδιάταξη σελίδων αλλάζει ποια σελίδα ανοίγει ένα πλήκτρο. "
+"Κάθε κελί μπορεί να περιέχει ένα emoji, ένα σύμβολο UTF (π.χ. ≠), "
+"οποιονδήποτε άλλο χαρακτήρα (π.χ. №) ή μια σύντομη φράση (π.χ. \"// TODO: "
+"\")."
+
+msgid "Opened by the app:showQuickMenu1...5 actions."
+msgstr "Άνοιξε από την εφαρμογή:showQuickMenu1...5 ενέργειες."
+
+msgid "Page"
+msgstr "Σελίδα"
+
+msgid "Pause (ms)"
+msgstr "Παύση (ms)"
+
+msgid "Pause between steps"
+msgstr "Παύση μεταξύ των βημάτων"
+
+msgid "People & Gestures"
+msgstr "Άνθρωποι & Χειρονομίες"
+
+msgid "Per-macro pause between steps. Defaults to the Settings value."
+msgstr "Παύση ανά μακροεντολή μεταξύ βημάτων. Προεπιλογή στην τιμή Ρυθμίσεις."
+
+msgid "Pick an action"
+msgstr "Επιλέξτε μια ενέργεια"
+
+msgid "Quick Actions"
+msgstr "Γρήγορες Ενέργειες"
+
+msgid ""
+"Reusable shell commands for the current layout. On Linux they run through sh"
+" -lc after you explicitly allow them. Shell commands run one at a time, with"
+" a 30-second limit, in your home directory."
+msgstr ""
+"Επαναχρησιμοποιήσιμες εντολές κελύφους για την τρέχουσα διάταξη. Στο Linux "
+"εκτελούνται μέσω sh -lc αφού τους επιτρέψετε ρητά. Οι εντολές Shell "
+"εκτελούνται μία κάθε φορά, με όριο 30 δευτερολέπτων, στον αρχικό σας "
+"κατάλογο."
+
+msgid "Shell commands are allowed for this version of the current layout."
+msgstr ""
+"Οι εντολές φλοιού επιτρέπονται για αυτήν την έκδοση της τρέχουσας διάταξης."
+
+msgid "Smileys & Emotion"
+msgstr "Χαμόγελα & Συγκίνηση"
+
+msgid ""
+"The command will be deleted. Keys or macros that reference cmd:{} will stop "
+"working."
+msgstr ""
+"Η εντολή θα διαγραφεί. Τα κλειδιά ή οι μακροεντολές που αναφέρονται σε "
+"cmd:{} θα σταματήσουν να λειτουργούν."
+
+msgid "The macro will be deleted. References macro:{} will stop working."
+msgstr ""
+"Η μακροεντολή θα διαγραφεί. Μακροεντολή αναφορών: Το {} θα σταματήσει να "
+"λειτουργεί."
+
+msgid "The page and all assigned cells on it will be deleted."
+msgstr "Η σελίδα και όλα τα εκχωρημένα κελιά σε αυτήν θα διαγραφούν."
+
+msgid ""
+"This layout contains shell scripts. Read every script before allowing them, "
+"especially in layouts from other people. Approval applies to the reviewed "
+"command definitions and resets when the command set, IDs, or Linux scripts "
+"change."
+msgstr ""
+"Αυτή η διάταξη περιέχει σενάρια φλοιού. Διαβάστε κάθε σενάριο πριν το "
+"επιτρέψετε, ειδικά σε διατάξεις από άλλα άτομα. Η έγκριση ισχύει για τους "
+"ορισμούς εντολών που έχουν ελεγχθεί και γίνεται επαναφορά όταν αλλάζουν το "
+"σύνολο εντολών, τα αναγνωριστικά ή τα σενάρια Linux."
+
+msgid "This step will be removed from the macro."
+msgstr "Αυτό το βήμα θα αφαιρεθεί από τη μακροεντολή."
+
+msgid ""
+"Time between pressing a modifier and the main key within one step. Defaults "
+"to the Settings value."
+msgstr ""
+"Χρόνος μεταξύ του πατήματος ενός τροποποιητή και του κύριου πλήκτρου σε ένα "
+"βήμα. Προεπιλογή στην τιμή Ρυθμίσεις."
+
+msgid "Travel & Places"
+msgstr "Ταξίδια & Μέρη"
+
+msgid "UTF Symbols"
+msgstr "Σύμβολα UTF"
+
+msgid "Texts"
+msgstr "Κείμενα"
+
+msgid "Non-breaking space"
+msgstr "Χώρος που δεν σπάει"
+
+msgid "continue"
+msgstr "συνεχίζω"
+
+msgid "do all you recommended"
+msgstr "κάνε όλα όσα προτείνεις"
+
+msgid "fix the errors above"
+msgstr "διορθώστε τα παραπάνω σφάλματα"
+
+msgid "I'll call you back later"
+msgstr "Θα σε καλέσω αργότερα"
+
+msgid "Thanks!"
+msgstr "Ευχαριστώ!"
+
+msgid "OK, got it 👍"
+msgstr "Εντάξει, κατάλαβα 👍"
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Rules tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"Μοναδικό αναγνωριστικό που χρησιμοποιείται σε αναφορές όπως "
+"μακροεντολή:<id>. Για να συνδέσετε αυτήν τη μακροεντολή σε ένα κλειδί, "
+"επιλέξτε αυτήν την ενέργεια στην καρτέλα Επίπεδα ή Κανόνες. Αλλάξτε το "
+"αναγνωριστικό μόνο όταν τίποτα δεν χρησιμοποιεί αυτήν τη μακροεντολή."
+
+msgid "Used in:"
+msgstr "Χρησιμοποιείται σε:"
+
+msgid "User macros"
+msgstr "Μακροεντολές χρήστη"
+
+msgid "Work & Objects"
+msgstr "Εργασία & Αντικείμενα"
+
+msgid "e.g. Next Track"
+msgstr "π.χ. Επόμενο κομμάτι"
+
+msgid "ms"
+msgstr "ms"
+
+msgid "Rule saved"
+msgstr "Ο κανόνας αποθηκεύτηκε"
+
+msgid "Search layers"
+msgstr "Αναζήτηση επιπέδων"
+
+msgid "Set"
+msgstr "Σειρά"
+
+msgid "Start the mapper to run actions from the menus"
+msgstr "Ξεκινήστε το mapper για να εκτελούνται ενέργειες από τα μενού"
+
+msgid ""
+"The text was not typed: the keyboard layout lacks some of its characters, "
+"such as emoji. Choose a typing method with the clipboard."
+msgstr ""
+"Το κείμενο δεν πληκτρολογήθηκε: από τη διάταξη του πληκτρολογίου λείπουν "
+"ορισμένοι από τους χαρακτήρες του, όπως emoji. Επιλέξτε μια μέθοδο "
+"πληκτρολόγησης με το πρόχειρο."
+
+msgid "The text was not typed: the active keyboard layout is unknown."
+msgstr ""
+"Το κείμενο δεν πληκτρολογήθηκε: η ενεργή διάταξη πληκτρολογίου είναι "
+"άγνωστη."
+
+msgid ""
+"The text was not typed: the typing method is unavailable ({}). Restart the "
+"mapper to try again."
+msgstr ""
+"Το κείμενο δεν πληκτρολογήθηκε: η μέθοδος πληκτρολόγησης δεν είναι διαθέσιμη"
+" ({}). Επανεκκινήστε τη χαρτογράφηση για να προσπαθήσετε ξανά."
+
+msgid "The text was not typed: safe clipboard access failed ({})."
+msgstr ""
+"Το κείμενο δεν πληκτρολογήθηκε: η ασφαλής πρόσβαση στο πρόχειρο απέτυχε "
+"({})."
+
+msgid "The text was not typed: {}"
+msgstr "Το κείμενο δεν πληκτρολογήθηκε: {}"
+
+msgid "The layout file is empty"
+msgstr "Το αρχείο διάταξης είναι κενό"
+
+msgid "↑"
+msgstr "↑"
+
+msgid "↓"
+msgstr "↓"
+
+msgid "Does not matter"
+msgstr "Δεν έχει σημασία"
+
+msgid "Open for editing (unsaved)"
+msgstr "Άνοιγμα για επεξεργασία (μη αποθηκευμένο)"
+
+msgid "Open for editing"
+msgstr "Ανοίξτε για επεξεργασία"
+
+msgid "Layout name"
+msgstr "Όνομα διάταξης"
+
+msgid "System languages"
+msgstr "Γλώσσες συστήματος"
+
+msgid "No system languages detected"
+msgstr "Δεν εντοπίστηκαν γλώσσες συστήματος"
+
+msgid "Applications"
+msgstr "Εφαρμογές"
+
+msgid "“{}” will be deleted. This cannot be undone."
+msgstr "Το \"{}\" θα διαγραφεί. Αυτό δεν μπορεί να αναιρεθεί."
+
+msgid "Reset current changes"
+msgstr "Επαναφέρετε τις τρέχουσες αλλαγές"
+
+msgid "Available"
+msgstr "Διαθέσιμος"
+
+msgid "Unavailable"
+msgstr "Δυσεύρετος"
+
+msgid "Not implemented"
+msgstr "Δεν εφαρμόζεται"
+
+msgid "No input devices were found in /dev/input."
+msgstr "Δεν βρέθηκαν συσκευές εισόδου στο /dev/input."
+
+msgid ""
+"The selected keyboard is not connected. Connect it or pick another one "
+"below."
+msgstr ""
+"Το επιλεγμένο πληκτρολόγιο δεν είναι συνδεδεμένο. Συνδέστε το ή επιλέξτε ένα"
+" άλλο παρακάτω."
+
+msgid ""
+"No permission to read keyboard events. Add your user to the input group "
+"(install-linux.sh permissions does this) and log in again."
+msgstr ""
+"Δεν επιτρέπεται η ανάγνωση συμβάντων πληκτρολογίου. Προσθέστε τον χρήστη σας"
+" στην ομάδα εισόδου (αυτό το κάνει τα δικαιώματα install-linux.sh) και "
+"συνδεθείτε ξανά."
+
+msgid ""
+"/dev/uinput does not exist. Load the uinput kernel module: sudo modprobe "
+"uinput."
+msgstr ""
+"Το /dev/uinput δεν υπάρχει. Φόρτωση της μονάδας πυρήνα uinput: uinput sudo "
+"modprobe."
+
+msgid ""
+"No permission to write to /dev/uinput. Install the application's udev rule "
+"(install-linux.sh permissions) or reinstall the package."
+msgstr ""
+"Δεν υπάρχει άδεια εγγραφής στο /dev/uinput. Εγκαταστήστε τον κανόνα udev της"
+" εφαρμογής (δικαιώματα install-linux.sh) ή επανεγκαταστήστε το πακέτο."
+
+msgid "Launch on startup"
+msgstr "Εκκίνηση κατά την εκκίνηση"
+
+msgid "Start the mapper on launch"
+msgstr "Εκκινήστε το mapper κατά την εκκίνηση"
+
+msgid "No keyboard is selected, so the mapper cannot start."
+msgstr ""
+"Δεν έχει επιλεγεί κανένα πληκτρολόγιο, επομένως η αντιστοίχιση δεν μπορεί να"
+" ξεκινήσει."
+
+msgid "Choose a keyboard"
+msgstr "Επιλέξτε ένα πληκτρολόγιο"
+
+msgid "Getting started"
+msgstr "Ξεκινώντας"
+
+msgid "Keyboard selected"
+msgstr "Επιλέχθηκε το πληκτρολόγιο"
+
+msgid "Choose the keyboard to remap"
+msgstr "Επιλέξτε το πληκτρολόγιο για να αντιστοιχίσετε ξανά"
+
+msgid "Change"
+msgstr "Αλλαγή"
+
+msgid "Add a layout"
+msgstr "Προσθέστε μια διάταξη"
+
+msgid "Press Start at the top to apply it"
+msgstr "Πατήστε Έναρξη στο επάνω μέρος για να το εφαρμόσετε"
+
+msgid "No active layout"
+msgstr "Δεν υπάρχει ενεργή διάταξη"
+
+msgid "Current active layout (automatic)"
+msgstr "Τρέχουσα ενεργή διάταξη (αυτόματη)"
+
+msgid "Current active layout — click to switch"
+msgstr "Τρέχουσα ενεργή διάταξη — κάντε κλικ για εναλλαγή"
+
+msgid "Current keyboard layout in the system"
+msgstr "Τρέχουσα διάταξη πληκτρολογίου στο σύστημα"
+
+msgid "Game mode: active"
+msgstr "Λειτουργία παιχνιδιού: ενεργό"
+
+msgid "Game mode: inactive"
+msgstr "Λειτουργία παιχνιδιού: ανενεργό"
+
+msgid "Active: {}"
+msgstr "Ενεργό: {}"
+
+msgid "Trigger"
+msgstr "Σκανδάλη"
+
+msgid "New rule: choose a trigger"
+msgstr "Νέος κανόνας: επιλέξτε μια σκανδάλη"
+
+msgid "Swallow key"
+msgstr "Αποκλεισμός πλήκτρου"
+
+msgid "Pass through"
+msgstr "Διέρχομαι"
+
+msgid "Double tap: {} ms"
+msgstr "Διπλό πάτημα: {} ms"
+
+msgid "Custom hold options"
+msgstr "Προσαρμοσμένες επιλογές κράτησης"
+
+msgid "Leave empty to use the global timing settings."
+msgstr ""
+"Αφήστε το κενό για να χρησιμοποιήσετε τις καθολικές ρυθμίσεις χρονισμού."
+
+msgid ""
+"Temporarily releases the held key or modifier while these keys are pressed "
+"in the layer."
+msgstr ""
+"Απελευθερώνει προσωρινά το κρατημένο πλήκτρο ή τον τροποποιητή ενώ αυτά τα "
+"πλήκτρα είναι πατημένα στο στρώμα."
+
+msgid ""
+"Defers the held action until one of these keys is pressed in the layer. "
+"Requires a hold action and a layer."
+msgstr ""
+"Αναβάλλει την ενέργεια σε αναμονή μέχρι να πατηθεί ένα από αυτά τα πλήκτρα "
+"στο επίπεδο. Απαιτεί μια ενέργεια κράτησης και ένα στρώμα."
+
+msgid "Delete rule"
+msgstr "Διαγραφή κανόνα"
+
+msgid ""
+"Clear restores normal key behavior. Swallow prevents the key from reaching "
+"the application."
+msgstr ""
+"Το Clear επαναφέρει την κανονική συμπεριφορά του κλειδιού. Το Swallow "
+"εμποδίζει το κλειδί να φτάσει στην εφαρμογή."
+
+msgctxt "Game mode control"
+msgid "Auto"
+msgstr "Αυτόματο"
+
+msgctxt "Game mode control"
+msgid "On"
+msgstr "Ενεργό"
+
+msgctxt "Game mode control"
+msgid "Off"
+msgstr "Ανενεργό"
+
+msgid "Auto: no detection sources enabled"
+msgstr "Αυτόματο: δεν υπάρχουν ενεργοποιημένες πηγές ανίχνευσης"
+
+msgid "Auto: detection unavailable"
+msgstr "Αυτόματο: η ανίχνευση δεν είναι διαθέσιμη"
+
+msgid "Auto: game mode inactive"
+msgstr "Αυτόματο: η λειτουργία παιχνιδιού είναι ανενεργή"
+
+msgid "Auto: GameMode daemon active"
+msgstr "Αυτόματο: ενεργός δαίμονας GameMode"
+
+msgid "Auto: matched {}"
+msgstr "Αυτόματο: αντιστοιχισμένο {}"
+
+msgid "Auto: fullscreen window active"
+msgstr "Αυτόματο: ενεργό παράθυρο πλήρους οθόνης"
+
+msgid "Auto: excluded by {}"
+msgstr "Αυτόματο: εξαιρείται από το {}"
+
+msgid ""
+"Fullscreen detection is not supported in this session. Use process rules or "
+"On/Off."
+msgstr ""
+"Ο εντοπισμός πλήρους οθόνης δεν υποστηρίζεται σε αυτήν την περίοδο "
+"λειτουργίας. Χρησιμοποιήστε κανόνες διαδικασίας ή On/Off."
+
+msgid "Fullscreen detection tools are missing or could not query the session."
+msgstr ""
+"Τα εργαλεία ανίχνευσης πλήρους οθόνης λείπουν ή δεν ήταν δυνατή η υποβολή "
+"ερωτήματος για τη συνεδρία."
+
+msgid "Running processes: "
+msgstr "Εκτελούμενες διαδικασίες:"
+
+msgid "Active window: "
+msgstr "Ενεργό παράθυρο:"
+
+msgid "Create a layer to assign its keys."
+msgstr "Δημιουργήστε ένα επίπεδο για να εκχωρήσετε τα κλειδιά του."
+
+msgid "Button {}"
+msgstr "Κουμπί {}"
+
+msgid "Copied to clipboard"
+msgstr "Αντιγράφηκε στο πρόχειρο"
+
+msgid "Theme"
+msgstr "Θέμα"
+
+msgid "E-ink"
+msgstr "E-ink"
+
+msgid "Enter device path manually"
+msgstr "Εισαγάγετε τη διαδρομή της συσκευής με μη αυτόματο τρόπο"
+
+msgid "All keyboards"
+msgstr "Όλα τα πληκτρολόγια"
+
+msgid "All mice (buttons only)"
+msgstr "Όλα τα ποντίκια (μόνο κουμπιά)"
+
+msgid "Mode"
+msgstr "Τρόπος"
+
+msgid "New"
+msgstr "Νέος"
+
+msgid "Auto"
+msgstr "Αυτόματο"
+
+msgid "Delete extra key?"
+msgstr "Διαγραφή επιπλέον κλειδιού;"
+
+msgid "This key assignment will be removed from the layer."
+msgstr "Αυτή η εκχώρηση κλειδιού θα αφαιρεθεί από το επίπεδο."
+
+msgid "Command started: {}"
+msgstr "Η εντολή ξεκίνησε: {}"
+
+msgid "Unavailable on this platform or desktop"
+msgstr "Δεν είναι διαθέσιμο σε αυτήν την πλατφόρμα ή υπολογιστή"
+
+msgid "This action is not supported on macOS"
+msgstr "Αυτή η ενέργεια δεν υποστηρίζεται στο macOS"
+
+msgid "Approve commands on the Commands tab before running this action"
+msgstr ""
+"Εγκρίνετε εντολές στην καρτέλα Εντολές πριν εκτελέσετε αυτήν την ενέργεια"
+
+msgid "Pick the physical device whose events should be intercepted."
+msgstr ""
+"Επιλέξτε τη φυσική συσκευή της οποίας τα συμβάντα πρέπει να υποκλαπούν."
+
+msgid ""
+"Select the mouse so the mapper can see extra buttons and clicks. Pointer "
+"movement is not affected."
+msgstr ""
+"Επιλέξτε το ποντίκι ώστε ο χαρτογράφος να μπορεί να δει επιπλέον κουμπιά και"
+" κλικ. Η κίνηση του δείκτη δεν επηρεάζεται."
+
+msgid ""
+"The mouse is not fully intercepted yet: a remapped extra button can emit the"
+" new action, but its native system or app action may still run. If that gets"
+" in the way, disable the native action for that button in your system, "
+"browser, or driver settings."
+msgstr ""
+"Το ποντίκι δεν έχει ακόμη υποκλαπεί πλήρως: ένα επανασχεδιασμένο επιπλέον "
+"κουμπί μπορεί να εκπέμψει τη νέα ενέργεια, αλλά η ενέργεια του εγγενούς "
+"συστήματος ή της εφαρμογής του μπορεί να συνεχίσει να εκτελείται. Εάν αυτό "
+"σας εμποδίσει, απενεργοποιήστε την εγγενή ενέργεια για αυτό το κουμπί στις "
+"ρυθμίσεις του συστήματος, του προγράμματος περιήγησης ή του προγράμματος "
+"οδήγησης."
+
+msgid ""
+"The mapper reads from /dev/input/eventX and emits through uinput. If Start "
+"fails, grant access to those devices: usually the input group plus a udev "
+"rule for /dev/uinput."
+msgstr ""
+"Ο χαρτογράφος διαβάζει από το /dev/input/eventX και εκπέμπει μέσω uinput. "
+"Εάν το Start αποτύχει, παραχωρήστε πρόσβαση σε αυτές τις συσκευές: συνήθως η"
+" ομάδα εισόδου συν έναν κανόνα udev για το /dev/uinput."
+
+msgid "Refresh device list"
+msgstr "Ανανέωση λίστας συσκευών"
+
+msgid "Mouse (optional)"
+msgstr "Ποντίκι (προαιρετικό)"
+
+msgid "Not selected"
+msgstr "Δεν έχει επιλεγεί"
+
+msgid "Not selected (no mouse support)"
+msgstr "Δεν έχει επιλεγεί (δεν υποστηρίζεται το ποντίκι)"
+
+msgid "Looks like a keyboard"
+msgstr "Μοιάζει με πληκτρολόγιο"
+
+msgid "Looks like a mouse"
+msgstr "Μοιάζει με ποντίκι"
+
+msgid "Other devices"
+msgstr "Άλλες συσκευές"
+
+msgid "Search devices"
+msgstr "Αναζήτηση συσκευών"
+
+msgid "Single"
+msgstr "Μονόκλινο"
+
+msgid "{n} rule"
+msgid_plural "{n} rules"
+msgstr[0] "{n} κανόνας"
+msgstr[1] "{n} κανόνες"
+
+msgid "{n} layer"
+msgid_plural "{n} layers"
+msgstr[0] "{n} στρώση"
+msgstr[1] "{n} στρώσεις"
+
+msgid "{n} emoji page"
+msgid_plural "{n} emoji pages"
+msgstr[0] "{n} σελίδα emoji"
+msgstr[1] "{n} σελίδες emoji"
+
+msgid "{n} action page"
+msgid_plural "{n} action pages"
+msgstr[0] "{n} σελίδα δράσης"
+msgstr[1] "{n} σελίδες δράσης"
+
+msgid "{n} macro"
+msgid_plural "{n} macros"
+msgstr[0] "{n} μακροεντολή"
+msgstr[1] "{n} μακροεντολές"
+
+msgid "{n} command"
+msgid_plural "{n} commands"
+msgstr[0] "{n} εντολή"
+msgstr[1] "{n} εντολές"
+
+msgid "Main"
+msgstr "Κύριος"
+
+msgid "Saved assignment: {}"
+msgstr "Αποθηκευμένη εργασία: {}"
+
+msgid "Behavior"
+msgstr "Συμπεριφορά"
+
+msgid "Inherit"
+msgstr "Κληρονομώ"
+
+msgid "No separate action"
+msgstr "Καμία ξεχωριστή ενέργεια"
+
+msgid "Activate layer only"
+msgstr "Ενεργοποίηση μόνο στρώματος"
+
+msgid "Normal key behavior"
+msgstr "Κανονική συμπεριφορά κλειδιού"
+
+msgid "Suppress"
+msgstr "Καταστέλλω"
+
+msgid "Assign held key"
+msgstr "Εκχώρηση κλειδιού σε αναμονή"
+
+msgid "Perform action"
+msgstr "Εκτελέστε δράση"
+
+msgid "The key will not reach the application."
+msgstr "Το κλειδί δεν θα φτάσει στην εφαρμογή."
+
+msgid "Use the assignment from the lower layer or base layout."
+msgstr "Χρησιμοποιήστε την ανάθεση από το κάτω στρώμα ή τη διάταξη βάσης."
+
+msgid "Do not assign a separate action to this gesture."
+msgstr "Μην εκχωρήσετε ξεχωριστή ενέργεια σε αυτήν την κίνηση."
+
+msgid "Holding activates the selected layer. The original key is not sent."
+msgstr ""
+"Κρατώντας ενεργοποιείται το επιλεγμένο επίπεδο. Το αρχικό κλειδί δεν "
+"αποστέλλεται."
+
+msgid "Send the original key to the application."
+msgstr "Στείλτε το αρχικό κλειδί στην εφαρμογή."
+
+msgid "Capture shortcut"
+msgstr "Συντόμευση λήψης"
+
+msgid "Choose a valid trigger key."
+msgstr "Επιλέξτε ένα έγκυρο κλειδί ενεργοποίησης."
+
+msgid "Choose a valid action."
+msgstr "Επιλέξτε μια έγκυρη ενέργεια."
+
+msgid "Empty cell"
+msgstr "Άδειο κελί"
+
+msgid "Remove the action from this menu cell."
+msgstr "Καταργήστε την ενέργεια από αυτό το κελί μενού."
+
+msgid "Edit assignment"
+msgstr "Επεξεργασία εργασίας"
+
+msgid "Holding also activates the selected layer."
+msgstr "Το κράτημα ενεργοποιεί επίσης το επιλεγμένο επίπεδο."
+
+msgid "Block"
+msgstr "Φραγμός"
+
+msgid ""
+"The key press is consumed: the system and the active application will not "
+"receive it."
+msgstr ""
+"Το πάτημα του πλήκτρου καταναλώνεται: το σύστημα και η ενεργή εφαρμογή δεν "
+"θα το λάβουν."
+
+msgid ""
+"The key press passes through unchanged, as if no assignment were configured."
+msgstr ""
+"Το πάτημα των πλήκτρων περνά αμετάβλητο, σαν να μην έχει διαμορφωθεί καμία "
+"ανάθεση."
+
+msgid "Capture"
+msgstr "Σύλληψη"
+
+msgid "Unchanged"
+msgstr "Αμετάβλητος"
+
+msgid "Leave a delay empty to use the global setting."
+msgstr ""
+"Αφήστε κενή μια καθυστέρηση για να χρησιμοποιήσετε την καθολική ρύθμιση."
+
+msgid "Allow command execution"
+msgstr "Να επιτρέπεται η εκτέλεση εντολών"
+
+msgid "No commands are assigned."
+msgstr "Δεν εκχωρούνται εντολές."
+
+msgid "Commands are disabled in Settings."
+msgstr "Οι εντολές είναι απενεργοποιημένες στις Ρυθμίσεις."
+
+msgid "Working directory (optional)"
+msgstr "Κατάλογος εργασίας (προαιρετικό)"
+
+msgid "Save layout changes before opening another layout."
+msgstr "Αποθηκεύστε τις αλλαγές διάταξης πριν ανοίξετε μια άλλη διάταξη."
+
+msgid "No layer"
+msgstr "Χωρίς στρώμα"
+
+msgid "Layer not found"
+msgstr "Το επίπεδο δεν βρέθηκε"
+
+msgid "Create new layer…"
+msgstr "Δημιουργία νέου επιπέδου…"
+
+msgid "Create “{}”"
+msgstr "Δημιουργία \"{}\""
+
+msgid ""
+"A trigger can be a single key or a combination, such as "
+"ShiftLeft+ControlLeft. The combination works in either press order and ends "
+"when any key is released."
+msgstr ""
+"Μια σκανδάλη μπορεί να είναι ένα μεμονωμένο πλήκτρο ή ένας συνδυασμός, όπως "
+"ShiftLeft+ControlLeft. Ο συνδυασμός λειτουργεί με τη σειρά πατήματος και "
+"τελειώνει όταν απελευθερωθεί οποιοδήποτε πλήκτρο."
+
+msgid "When held"
+msgstr "Όταν κρατιέται"
+
+msgid ""
+"Choose a layer active until release, or an action performed once after the "
+"hold duration."
+msgstr ""
+"Επιλέξτε ένα επίπεδο ενεργό μέχρι την απελευθέρωση ή μια ενέργεια που θα "
+"εκτελεστεί μία φορά μετά τη διάρκεια αναμονής."
+
+msgid "Nothing"
+msgstr "Τίποτα"
+
+msgid "Activate layer"
+msgstr "Ενεργοποίηση στρώματος"
+
+msgid "Run action"
+msgstr "Εκτέλεση δράσης"
+
+msgid "Long-hold action"
+msgstr "Μακροχρόνια δράση"
+
+msgid "Runs once after {} s"
+msgstr "Εκτελείται μία φορά μετά το {} s"
+
+msgid "Hold another key / combination"
+msgstr "Κρατήστε ένα άλλο πλήκτρο / συνδυασμό"
+
+msgid "Press one key or hold a combination, then release a key to capture it."
+msgstr ""
+"Πατήστε ένα πλήκτρο ή κρατήστε πατημένο έναν συνδυασμό και, στη συνέχεια, "
+"αφήστε ένα πλήκτρο για να τον αποτυπώσετε."
+
+msgid "Held key: {}"
+msgstr "Κλειδί συγκράτησης: {}"
+
+msgid "Assigned to"
+msgstr "Ανατέθηκε σε"
+
+msgid "Languages"
+msgstr "Γλώσσες"
+
+msgid "Excluded applications"
+msgstr "Εξαιρούμενες εφαρμογές"
+
+msgid "Open page in popup"
+msgstr "Άνοιγμα σελίδας σε αναδυόμενο παράθυρο"
+
+msgid "Page:"
+msgstr "Σελίδα:"
+
+msgid "Layout “{}” created"
+msgstr "Δημιουργήθηκε η διάταξη \"{}\"."
+
+msgid "Layout “{}” saved"
+msgstr "Η διάταξη \"{}\" αποθηκεύτηκε"
+
+msgid "Layout “{}” deleted"
+msgstr "Η διάταξη \"{}\" διαγράφηκε"
+
+msgid "Layout “{}” activated"
+msgstr "Η διάταξη \"{}\" ενεργοποιήθηκε"
+
+msgid "Could not complete the action"
+msgstr "Δεν ήταν δυνατή η ολοκλήρωση της ενέργειας"
+
+msgid "Dismiss notification"
+msgstr "Παράβλεψη ειδοποίησης"
+
+msgid "Changes to layout “{}” discarded"
+msgstr "Οι αλλαγές στη διάταξη \"{}\" απορρίφθηκαν"
+
+msgid "Popup menus are unavailable: {}"
+msgstr "Τα αναδυόμενα μενού δεν είναι διαθέσιμα: {}"
+
+msgid "Popup menus are not running. Try opening the menu again."
+msgstr ""
+"Τα αναδυόμενα μενού δεν εκτελούνται. Δοκιμάστε να ανοίξετε ξανά το μενού."
+
+msgid "Popup menus are restarting. Try again shortly."
+msgstr "Γίνεται επανεκκίνηση των αναδυόμενων μενού. Προσπαθήστε ξανά σύντομα."
+
+msgid "Popup menus could not recover. Restart the application."
+msgstr ""
+"Δεν ήταν δυνατή η ανάκτηση των αναδυόμενων μενού. Επανεκκινήστε την "
+"εφαρμογή."
+
+msgid "Popup menu error: {}"
+msgstr "Σφάλμα αναδυόμενου μενού: {}"
+
+msgid "Choose a key or combination for the trigger"
+msgstr "Επιλέξτε ένα κλειδί ή συνδυασμό για τη σκανδάλη"
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid. Add a trigger, then choose its action, suppress it, or inherit its "
+"assignment from the lower layer."
+msgstr ""
+"Κουμπιά ποντικιού, πλήκτρα πολυμέσων και άλλες ενεργοποιήσεις εκτός του "
+"κύριου πλέγματος πληκτρολογίου. Προσθέστε έναν κανόνα ετικέτας και, στη "
+"συνέχεια, επιλέξτε τη δράση του, καταργήστε τον ή κληρονομήστε την εκχώρηση "
+"του από το κάτω επίπεδο."
+
+msgid ""
+"You can enter emoji, any text, or Unicode symbols here. Drag an item from "
+"the palette onto a key to assign it."
+msgstr ""
+"Μπορείτε να εισαγάγετε emoji, οποιοδήποτε κείμενο ή σύμβολα Unicode εδώ. "
+"Σύρετε ένα στοιχείο από την παλέτα σε ένα κλειδί για να το εκχωρήσετε."
+
+msgid "Accessibility"
+msgstr "Προσιτότητα"
+
+msgid "High contrast"
+msgstr "Υψηλή αντίθεση"
+
+msgid ""
+"Pure black or white background, stronger text, borders and focus outlines. "
+"Works with the light and dark themes."
+msgstr ""
+"Καθαρό μαύρο ή άσπρο φόντο, ισχυρότερο κείμενο, περιγράμματα και "
+"περιγράμματα εστίασης. Λειτουργεί με ανοιχτά και σκοτεινά θέματα."
+
+msgid "Reduce motion"
+msgstr "Μειώστε την κίνηση"
+
+msgid "Turn off highlight animations in the editor."
+msgstr ""
+"Απενεργοποιήστε τα κινούμενα σχέδια επισήμανσης στο πρόγραμμα επεξεργασίας."
+
+msgid ""
+"Every control can be reached with Tab and activated with Space or Enter. "
+"Interface size follows the desktop scale factor."
+msgstr ""
+"Κάθε στοιχείο ελέγχου μπορεί να επιτευχθεί με το Tab και να ενεργοποιηθεί με"
+" Space ή Enter. Το μέγεθος της διεπαφής ακολουθεί τον παράγοντα κλίμακας "
+"επιφάνειας εργασίας."
+
+msgid "Always"
+msgstr "Πάντοτε"
+
+msgid "Hold duration"
+msgstr "Διάρκεια αναμονής"
+
+msgid "{} s"
+msgstr "{} s"
+
+msgid "{} s (default)"
+msgstr "{} s (προεπιλογή)"
+
+msgid "Shell command or path to a script, e.g. playerctl play-pause"
+msgstr ""
+"Εντολή Shell ή διαδρομή προς ένα σενάριο, π.χ. playerctl αναπαραγωγή-παύση"
+
+msgid "Runs with sh -lc in the background; the result is not awaited."
+msgstr "Εκτελείται με sh -lc στο παρασκήνιο. το αποτέλεσμα δεν αναμένεται."
+
+msgid "Choose script…"
+msgstr "Επιλέξτε σενάριο…"
+
+msgid "Working directory (optional, home by default)"
+msgstr "Κατάλογος εργασίας (προαιρετικός, αρχική σελίδα από προεπιλογή)"
+
+msgid "Choose folder…"
+msgstr "Επιλέξτε φάκελο…"
+
+msgid ""
+"Command execution is turned off. Turn it on in the settings to assign "
+"commands."
+msgstr ""
+"Η εκτέλεση εντολών είναι απενεργοποιημένη. Ενεργοποιήστε το στις ρυθμίσεις "
+"για να εκχωρήσετε εντολές."
+
+msgid "Open command settings"
+msgstr "Ανοίξτε τις ρυθμίσεις εντολών"
+
+msgid "The working directory does not exist."
+msgstr "Ο κατάλογος εργασίας δεν υπάρχει."
+
+msgid ""
+"The script file is not executable: run chmod +x on it or prefix the path "
+"with sh."
+msgstr ""
+"Το αρχείο σεναρίου δεν είναι εκτελέσιμο: εκτελέστε το chmod +x σε αυτό ή "
+"προσθέστε πρόθεμα στη διαδρομή με sh."
+
+msgid "Choose a script"
+msgstr "Επιλέξτε ένα σενάριο"
+
+msgid "Choose a working directory"
+msgstr "Επιλέξτε έναν κατάλογο εργασίας"
+
+msgid "Commands run with sh -lc in the background and are not awaited."
+msgstr "Οι εντολές εκτελούνται με sh -lc στο παρασκήνιο και δεν αναμένονται."
+
+msgid "Commands run with PowerShell in the background and are not awaited."
+msgstr ""
+"Οι εντολές εκτελούνται με το PowerShell στο παρασκήνιο και δεν αναμένονται."
+
+msgid ""
+"Commands stay off until you allow execution. Review below what your layouts "
+"would run."
+msgstr ""
+"Οι εντολές παραμένουν απενεργοποιημένες μέχρι να επιτρέψετε την εκτέλεση. "
+"Δείτε παρακάτω ποιες θα εκτελούνται οι διατάξεις σας."
+
+msgid "Command"
+msgstr "Εντολή"
+
+msgid "Rule {} · tap"
+msgstr "Κανόνας {} · πατήστε"
+
+msgid "Rule {} · hold"
+msgstr "Κανόνας {} · κρατήστε"
+
+msgid "Rule {} · long hold"
+msgstr "Κανόνας {} · μακρύ κράτημα"
+
+msgid "Rule {} · double tap"
+msgstr "Κανόνας {} · διπλό πάτημα"
+
+msgid "disabled"
+msgstr "ανάπηρος"
+
+msgid "Layer {}"
+msgstr "Στρώμα {}"
+
+msgid "Macro"
+msgstr "Μακροεντολή"
+
+msgid "Quick action"
+msgstr "Γρήγορη δράση"
+
+msgid "Show all"
+msgstr "Εμφάνιση όλων"
+
+msgid "Close"
+msgstr "Κλείσιμο"
+
+msgid "Choose a key or key combination"
+msgstr "Επιλέξτε ένα συνδυασμό πλήκτρων ή πλήκτρων"
+
+msgid "Examples"
+msgstr "Παραδείγματα"
+
+msgid "Add rule…"
+msgstr "Προσθήκη κανόνα…"
+
+msgid ""
+"All filled conditions must match. A rule without conditions always matches."
+msgstr ""
+"Όλες οι πληρούμενες προϋποθέσεις πρέπει να ταιριάζουν. Ένας κανόνας χωρίς "
+"προϋποθέσεις ταιριάζει πάντα."
+
+msgid "Automatic switching rules"
+msgstr "Κανόνες αυτόματης εναλλαγής"
+
+msgid ""
+"Automatic: the layout is chosen by switching rules for the application, "
+"system language or game mode."
+msgstr ""
+"Αυτόματη: η διάταξη επιλέγεται με εναλλαγή κανόνων για την εφαρμογή, τη "
+"γλώσσα συστήματος ή τη λειτουργία παιχνιδιού."
+
+msgid "Layout"
+msgstr "Σχέδιο"
+
+msgid "Layout not found"
+msgstr "Η διάταξη δεν βρέθηκε"
+
+msgid "New rule"
+msgstr "Νέος κανόνας"
+
+msgid "Now: {} (default)"
+msgstr "Τώρα: {} (προεπιλογή)"
+
+msgid "Otherwise (default)"
+msgstr "Διαφορετικά (προεπιλογή)"
+
+msgid "Rule {}"
+msgstr "Κανόνας {}"
+
+msgid "Use layout"
+msgstr "Χρήση διάταξης"
+
+msgid "When"
+msgstr "Οταν"
+
+msgid "If"
+msgstr "Αν"
+
+msgid "If:"
+msgstr "Αν:"
+
+msgid "Trigger conditions"
+msgstr "Συνθήκες ενεργοποίησης"
+
+msgid "No layout"
+msgstr "Χωρίς διάταξη"
+
+msgid "No layout (keys as is)"
+msgstr "Χωρίς διάταξη (πλήκτρα ως έχουν)"
+
+msgid "Now: {} (rule {}: {})"
+msgstr "Τώρα: {} (κανόνας {}: {})"
+
+msgid ""
+"Rules are checked from top to bottom; the first enabled one whose conditions"
+" match chooses the layout. If none matches, the default is used. “No layout”"
+" leaves the keyboard unprocessed, for example in an application where the "
+"layout gets in the way."
+msgstr ""
+"Οι κανόνες ελέγχονται από πάνω προς τα κάτω. ο πρώτος ενεργοποιημένος του "
+"οποίου οι συνθήκες ταιριάζουν επιλέγει τη διάταξη. Εάν κανένα δεν ταιριάζει,"
+" χρησιμοποιείται η προεπιλογή. Το \"No layout\" αφήνει το πληκτρολόγιο χωρίς"
+" επεξεργασία, για παράδειγμα σε μια εφαρμογή όπου η διάταξη παρεμποδίζει."
+
+msgid "No rules"
+msgstr "Χωρίς κανόνες"
+
+msgid "The default layout is always used."
+msgstr "Η προεπιλεγμένη διάταξη χρησιμοποιείται πάντα."
+
+msgid "For games"
+msgstr "Για παιχνίδια"
+
+msgid "For an application"
+msgstr "Για μια αίτηση"
+
+msgid "Custom rule"
+msgstr "Προσαρμοσμένος κανόνας"
+
+msgid "When no rule matches, the keyboard works without processing."
+msgstr ""
+"Όταν κανένας κανόνας δεν ταιριάζει, το πληκτρολόγιο λειτουργεί χωρίς "
+"επεξεργασία."
+
+msgid "Never applies: rule {} always matches first."
+msgstr "Δεν ισχύει ποτέ: ο κανόνας {} ταιριάζει πάντα πρώτος."
+
+msgid "Game mode detection is off, so this rule never matches."
+msgstr ""
+"Ο εντοπισμός λειτουργίας παιχνιδιού είναι απενεργοποιημένος, επομένως αυτός "
+"ο κανόνας δεν ταιριάζει ποτέ."
+
+msgid "Not among the system languages: {}"
+msgstr "Όχι μεταξύ των γλωσσών συστήματος: {}"
+
+msgid "Rule enabled"
+msgstr "Ο κανόνας ενεργοποιήθηκε"
+
+msgid "Automatic mode will use no layout by default."
+msgstr "Η αυτόματη λειτουργία δεν θα χρησιμοποιεί διάταξη από προεπιλογή."
+
+msgid "Delete rule {}?"
+msgstr "Διαγραφή κανόνα {};"
+
+msgid "The rule will be deleted. This cannot be undone."
+msgstr "Ο κανόνας θα διαγραφεί. Αυτό δεν μπορεί να αναιρεθεί."
+
+msgid "Its {n} automatic rule will be deleted too."
+msgid_plural "Its {n} automatic rules will be deleted too."
+msgstr[0] "Ο {n} αυτόματος κανόνας του θα διαγραφεί επίσης."
+msgstr[1] "Οι {n} αυτόματοι κανόνες του θα διαγραφούν επίσης."
+
+msgid "In {n} rule"
+msgid_plural "In {n} rules"
+msgstr[0] "Σε {n} κανόνα"
+msgstr[1] "Σε {n} κανόνες"
+
+msgid "Auto — detect games"
+msgstr "Αυτόματο — ανίχνευση παιχνιδιών"
+
+msgid "On — always"
+msgstr "Ενεργό — πάντα"
+
+msgid "Off — never"
+msgstr "Off — ποτέ"
+
+msgid ""
+"Automatic layout rules apply only when the layout is chosen automatically "
+"(Layouts page)."
+msgstr ""
+"Οι κανόνες αυτόματης διάταξης ισχύουν μόνο όταν η διάταξη επιλέγεται "
+"αυτόματα (σελίδα Layouts)."
+
+msgid ""
+"Borderless windows covering the screen count too. Browsers, video players "
+"and presentations are ignored."
+msgstr ""
+"Τα παράθυρα χωρίς περίγραμμα που καλύπτουν την οθόνη μετρούν επίσης. Τα "
+"προγράμματα περιήγησης, τα προγράμματα αναπαραγωγής βίντεο και οι "
+"παρουσιάσεις αγνοούνται."
+
+msgid "Game mode is off (set manually)"
+msgstr ""
+"Η λειτουργία παιχνιδιού είναι απενεργοποιημένη (ρυθμίζεται χειροκίνητα)"
+
+msgid "Game mode is on (set manually)"
+msgstr "Η λειτουργία παιχνιδιού είναι ενεργοποιημένη (ρυθμίζεται χειροκίνητα)"
+
+msgid ""
+"Game mode turns on rules and automatic layout rules that have a game-mode "
+"condition. Automatic layout rules apply only when the layout is chosen "
+"automatically (Layouts page). Auto uses the detection sources and custom "
+"rules below; On and Off set the state manually. “Never a game” takes "
+"priority over automatic detection and “Always a game”. You can also change "
+"the mode in the top bar, in the tray menu or with a key bound to a game mode"
+" action."
+msgstr ""
+"Η λειτουργία παιχνιδιού ενεργοποιεί κανόνες και κανόνες αυτόματης διάταξης "
+"που έχουν συνθήκη λειτουργίας παιχνιδιού. Οι κανόνες αυτόματης διάταξης "
+"ισχύουν μόνο όταν η διάταξη επιλέγεται αυτόματα (σελίδα Layouts). Το Auto "
+"χρησιμοποιεί τις πηγές ανίχνευσης και τους προσαρμοσμένους κανόνες παρακάτω."
+" Ενεργοποίηση και Απενεργοποίηση ρυθμίστε την κατάσταση χειροκίνητα. Το "
+"\"Never a game\" έχει προτεραιότητα έναντι του αυτόματου εντοπισμού και το "
+"\"Always a game\". Μπορείτε επίσης να αλλάξετε τη λειτουργία στην επάνω "
+"γραμμή, στο μενού του δίσκου ή με ένα πλήκτρο συνδεδεμένο σε μια ενέργεια "
+"λειτουργίας παιχνιδιού."
+
+msgid "Game mode: always off"
+msgstr "Λειτουργία παιχνιδιού: πάντα απενεργοποιημένο"
+
+msgid "Game mode: always on"
+msgstr "Λειτουργία παιχνιδιού: πάντα ενεργοποιημένη"
+
+msgid "Game mode: detect automatically"
+msgstr "Λειτουργία παιχνιδιού: εντοπισμός αυτόματα"
+
+msgid "Toggle game mode"
+msgstr "Εναλλαγή λειτουργίας παιχνιδιού"
+
+msgid ""
+"GameMode daemon unavailable: check the gamemode package and session D-Bus."
+msgstr ""
+"Ο δαίμονας GameMode δεν είναι διαθέσιμος: ελέγξτε το πακέτο της λειτουργίας "
+"παιχνιδιού και τη συνεδρία D-Bus."
+
+msgid ""
+"Install {} to detect the active window and fullscreen windows. It is also "
+"needed for application conditions in rules."
+msgstr ""
+"Εγκαταστήστε το {} για να εντοπίσετε το ενεργό παράθυρο και τα παράθυρα "
+"πλήρους οθόνης. Απαιτείται επίσης για προϋποθέσεις εφαρμογής σε κανόνες."
+
+msgid ""
+"Nothing uses game mode yet: no rule or automatic layout rule has a game-mode"
+" condition, so turning it on changes nothing."
+msgstr ""
+"Τίποτα δεν χρησιμοποιεί ακόμα τη λειτουργία παιχνιδιού: κανένας κανόνας ή "
+"κανόνας αυτόματης διάταξης δεν έχει κατάσταση λειτουργίας παιχνιδιού, "
+"επομένως η ενεργοποίησή του δεν αλλάζει τίποτα."
+
+msgid ""
+"On and Off are remembered after restart. Auto keeps detecting in the "
+"background."
+msgstr ""
+"Το On και το Off απομνημονεύονται μετά την επανεκκίνηση. Η αυτόματη "
+"ανίχνευση συνεχίζει να εντοπίζει στο παρασκήνιο."
+
+msgid ""
+"Rules of the current layout with a game-mode condition: {}. Automatic layout"
+" rules with a game-mode condition: {}."
+msgstr ""
+"Κανόνες της τρέχουσας διάταξης με συνθήκη λειτουργίας παιχνιδιού: {}. "
+"Κανόνες αυτόματης διάταξης με συνθήκη λειτουργίας παιχνιδιού: {}."
+
+msgid ""
+"Turns on while a game runs through gamemoderun or requests GameMode itself. "
+"In Steam set the launch options to “gamemoderun %command%”."
+msgstr ""
+"Ενεργοποιείται ενώ ένα παιχνίδι εκτελείται μέσω του gamemoderun ή ζητά από "
+"το ίδιο το GameMode. Στο Steam ρυθμίστε τις επιλογές εκκίνησης σε "
+"\"gamemoderun %command%\"."
+
+msgid "Game mode: on"
+msgstr "Λειτουργία παιχνιδιού: ενεργό"
+
+msgid "Game mode: off"
+msgstr "Λειτουργία παιχνιδιού: απενεργοποιημένο"
+
+msgid "Active now: {}"
+msgstr "Ενεργός τώρα: {}"
+
+msgid ""
+"Active window detection is unavailable in this session, so application "
+"conditions do not match."
+msgstr ""
+"Ο εντοπισμός ενεργού παραθύρου δεν είναι διαθέσιμος σε αυτήν την περίοδο "
+"λειτουργίας, επομένως οι συνθήκες της εφαρμογής δεν ταιριάζουν."
+
+msgid ""
+"An application is matched by its ID or process name: the whole name, "
+"ignoring case, with * and ? as wildcards. A window title item matches when "
+"the title contains the text. Any matching item is enough. An empty list "
+"imposes no restrictions."
+msgstr ""
+"Μια εφαρμογή αντιστοιχίζεται με το αναγνωριστικό της ή το όνομα διεργασίας: "
+"ολόκληρο το όνομα, αγνοώντας την περίπτωση, με * και ? ως μπαλαντέρ. Ένα "
+"στοιχείο τίτλου παραθύρου ταιριάζει όταν ο τίτλος περιέχει το κείμενο. "
+"Οποιοδήποτε αντίστοιχο στοιχείο είναι αρκετό. Μια κενή λίστα δεν επιβάλλει "
+"περιορισμούς."
+
+msgid "Looking for open windows…"
+msgstr "Αναζήτηση ανοιχτών παραθύρων…"
+
+msgid "No open windows found"
+msgstr "Δεν βρέθηκαν ανοιχτά παράθυρα"
+
+msgid "Window title contains: {}"
+msgstr "Ο τίτλος του παραθύρου περιέχει: {}"
+
+msgid "Timing"
+msgstr "Συγχρονισμός"
+
+msgid "Used by macros without their own value."
+msgstr "Χρησιμοποιείται από μακροεντολές χωρίς τη δική τους τιμή."
+
+msgid ""
+"Used by macros without their own value. How long to wait between pressing "
+"modifiers (Shift, Ctrl, …) and the main key of one step."
+msgstr ""
+"Χρησιμοποιείται από μακροεντολές χωρίς τη δική τους τιμή. Πόσος χρόνος να "
+"περιμένετε μεταξύ του πατήματος των τροποποιητών (Shift, Ctrl,…) και του "
+"κύριου πλήκτρου ενός βήματος."
+
+msgid "Rule without a trigger is saved as a draft and will be ignored."
+msgstr "Ο κανόνας χωρίς σκανδάλη αποθηκεύεται ως πρόχειρο και θα αγνοηθεί."
+
+msgid "Trigger \"{}\" cannot be used for a rule."
+msgstr "Η σκανδάλη \"{}\" δεν μπορεί να χρησιμοποιηθεί για κανόνα."
+
+msgid "Rules for trigger \"{}\" may overlap; the first matching rule wins."
+msgstr ""
+"Οι κανόνες για τη σκανδάλη \"{}\" ενδέχεται να επικαλύπτονται. ο πρώτος "
+"κανόνας αντιστοίχισης κερδίζει."
+
+msgid "Rule for trigger \"{}\" is covered by an earlier rule and will not run."
+msgstr ""
+"Ο κανόνας για τη σκανδάλη \"{}\" καλύπτεται από προηγούμενο κανόνα και δεν "
+"θα εκτελεστεί."
+
+msgid "Rule \"{}\" points to a layer that no longer exists."
+msgstr "Ο κανόνας \"{}\" δείχνει ένα επίπεδο που δεν υπάρχει πλέον."
+
+msgid "Rule \"{}\" has an invalid tap action."
+msgstr "Ο κανόνας \"{}\" έχει μη έγκυρη ενέργεια πατήματος."
+
+msgid "Rule \"{}\" has an invalid hold action."
+msgstr "Ο κανόνας \"{}\" έχει μη έγκυρη ενέργεια αναμονής."
+
+msgid "Rule \"{}\" has an invalid double-tap action."
+msgstr "Ο κανόνας \"{}\" έχει μη έγκυρη ενέργεια με διπλό πάτημα."
+
+msgid "Automatic switching rule deleted"
+msgstr "Ο κανόνας αυτόματης εναλλαγής διαγράφηκε"
+
+msgid "Only in applications"
+msgstr "Μόνο σε εφαρμογές"
+
+msgid "Except applications"
+msgstr "Εκτός από εφαρμογές"
+
+msgid "A match blocks the rule, even if the window is in the allowed list."
+msgstr ""
+"Μια αντιστοίχιση αποκλείει τον κανόνα, ακόμα κι αν το παράθυρο βρίσκεται "
+"στην επιτρεπόμενη λίστα."
+
+msgid "Any match allows the rule. An empty list allows all windows."
+msgstr ""
+"Κάθε αγώνας επιτρέπει τον κανόνα. Μια κενή λίστα επιτρέπει όλα τα παράθυρα."
+
+msgid "Choose applications to exclude"
+msgstr "Επιλέξτε εφαρμογές για εξαίρεση"
+
+msgid "Open windows"
+msgstr "Ανοίξτε τα παράθυρα"
+
+msgid "Last active"
+msgstr "Τελευταία ενεργή"
+
+msgid "Nothing is excluded."
+msgstr "Τίποτα δεν αποκλείεται."
+
+msgid "No restrictions: the rule works in every window."
+msgstr "Χωρίς περιορισμούς: ο κανόνας λειτουργεί σε κάθε παράθυρο."
+
+msgid "{n} window"
+msgid_plural "{n} windows"
+msgstr[0] "{n} παράθυρο"
+msgstr[1] "{n} παράθυρα"
+
+msgid "Do not process"
+msgstr "Μην επεξεργάζεστε"
+
+msgid "Command name (optional)"
+msgstr "Όνομα εντολής (προαιρετικό)"
+
+msgid "Working directory (home by default)"
+msgstr "Κατάλογος εργασίας (αρχική σελίδα από προεπιλογή)"
+
+msgid "Text to type when the action is invoked:"
+msgstr ""
+"Κείμενο που θέλετε να πληκτρολογήσετε όταν γίνεται επίκληση της ενέργειας:"
+
+msgid ""
+"Enter literal text without the text: prefix. Line breaks, spaces and tabs "
+"are preserved. On Linux, text is inserted into the active application via "
+"the desktop portal; permission may be required. Text injection by the mapper"
+" is not implemented on Windows or macOS."
+msgstr ""
+"Εισαγάγετε κυριολεκτικό κείμενο χωρίς το κείμενο: πρόθεμα. Διατηρούνται "
+"διαλείμματα γραμμής, κενά και καρτέλες. Στο Linux, το κείμενο εισάγεται στην"
+" ενεργή εφαρμογή μέσω της πύλης επιφάνειας εργασίας. μπορεί να απαιτείται "
+"άδεια. Η ένεση κειμένου από τον χαρτογράφο δεν εφαρμόζεται σε Windows ή "
+"macOS."
+
+msgid ""
+"Commands run with sh -lc in the background. The mapper does not wait for "
+"completion or collect output. An empty name uses the command itself as its "
+"label. The working directory defaults to your home folder; scripts need "
+"execute permission. Command execution must be enabled in settings."
+msgstr ""
+"Οι εντολές εκτελούνται με sh -lc στο παρασκήνιο. Ο χαρτογράφος δεν περιμένει"
+" να ολοκληρωθεί ή να συλλέξει αποτελέσματα. Ένα κενό όνομα χρησιμοποιεί την "
+"ίδια την εντολή ως ετικέτα. Ο κατάλογος εργασίας είναι προεπιλεγμένος στον "
+"αρχικό σας φάκελο. Τα σενάρια χρειάζονται άδεια εκτέλεσης. Η εκτέλεση "
+"εντολών πρέπει να είναι ενεργοποιημένη στις ρυθμίσεις."
+
+msgid ""
+"Commands run with PowerShell in the background, without a console window. "
+"The mapper does not wait for completion or collect output. An empty name "
+"uses the command itself as its label. The working directory defaults to your"
+" home folder. Command execution must be enabled in settings."
+msgstr ""
+"Οι εντολές εκτελούνται με το PowerShell στο παρασκήνιο, χωρίς παράθυρο "
+"κονσόλας. Ο χαρτογράφος δεν περιμένει να ολοκληρωθεί ή να συλλέξει "
+"αποτελέσματα. Ένα κενό όνομα χρησιμοποιεί την ίδια την εντολή ως ετικέτα. Ο "
+"κατάλογος εργασίας είναι προεπιλεγμένος στον αρχικό σας φάκελο. Η εκτέλεση "
+"εντολών πρέπει να είναι ενεργοποιημένη στις ρυθμίσεις."
+
+msgid ""
+"The name is optional: an empty name uses the command itself as its label. "
+"Command execution by the mapper is not implemented on macOS."
+msgstr ""
+"Το όνομα είναι προαιρετικό: ένα κενό όνομα χρησιμοποιεί την ίδια την εντολή "
+"ως ετικέτα. Η εκτέλεση εντολών από τον χαρτογράφο δεν εφαρμόζεται στο macOS."
+
+msgid "Triggers"
+msgstr "Ενεργοποιητές"
+
+msgid "Disable animations"
+msgstr "Απενεργοποίηση κινούμενων εικόνων"
+
+msgid "Add layout: "
+msgstr "Προσθήκη διάταξης:"
+
+msgid "Save (Ctrl+S)"
+msgstr "Αποθήκευση (Ctrl+S)"
+
+msgid "Close layout"
+msgstr "Κλείσιμο διάταξης"
+
+msgid "Discard layout changes?"
+msgstr "Απόρριψη αλλαγών διάταξης;"
+
+msgid "Unsaved changes to this layout will be lost."
+msgstr "Οι μη αποθηκευμένες αλλαγές σε αυτήν τη διάταξη θα χαθούν."
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Triggers tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"Μοναδικό αναγνωριστικό που χρησιμοποιείται σε αναφορές όπως "
+"μακροεντολή:<id>. Για να συνδέσετε αυτήν τη μακροεντολή σε ένα κλειδί, "
+"επιλέξτε αυτήν την ενέργεια στην καρτέλα Επίπεδα ή Ενεργοποιήσεις. Αλλάξτε "
+"το αναγνωριστικό μόνο όταν τίποτα δεν χρησιμοποιεί αυτήν τη μακροεντολή."
+
+msgid "Discard"
+msgstr "Απορρίπτω"
+
+msgid ""
+"Build reusable sequences of key chords, text, commands and system actions. Use a unique ID in macro:<id> references and a readable name in action lists. Assign macros on the Layers or Triggers tab; change an ID only when it is unused.\n"
+"\n"
+"The step pause applies between steps of this macro. Modifier delay is the time between pressing a modifier and the main key. Leave delays empty to use Settings defaults."
+msgstr ""
+"Δημιουργήστε επαναχρησιμοποιήσιμες ακολουθίες βασικών συγχορδιών, κειμένου, εντολών και ενεργειών συστήματος. Χρησιμοποιήστε ένα μοναδικό αναγνωριστικό σε αναφορές macro:<id> και ένα ευανάγνωστο όνομα στις λίστες ενεργειών. Αντιστοιχίστε μακροεντολές στην καρτέλα Επίπεδα ή Ενεργοποιήσεις. αλλάξτε ένα αναγνωριστικό μόνο όταν δεν χρησιμοποιείται.\n"
+"\n"
+"Η παύση βημάτων ισχύει μεταξύ των βημάτων αυτής της μακροεντολής. Καθυστέρηση τροποποιητή είναι ο χρόνος μεταξύ του πατήματος ενός τροποποιητή και του κύριου πλήκτρου. Αφήστε τις καθυστερήσεις κενές για να χρησιμοποιήσετε τις προεπιλεγμένες ρυθμίσεις."
+
+msgid "Global defaults: step pause {} ms; modifier delay {} ms."
+msgstr ""
+"Καθολικές προεπιλογές: παύση βήματος {} ms; καθυστέρηση τροποποιητή {} ms."
+
+msgid "Layout changed on disk"
+msgstr "Η διάταξη άλλαξε στο δίσκο"
+
+msgid ""
+"The file of “{}” was changed by another program after you opened it. Your "
+"edits are kept until you choose what to do."
+msgstr ""
+"Το αρχείο \"{}\" άλλαξε από άλλο πρόγραμμα αφού το ανοίξατε. Οι "
+"τροποποιήσεις σας διατηρούνται μέχρι να επιλέξετε τι θα κάνετε."
+
+msgid "Load from disk"
+msgstr "Φόρτωση από το δίσκο"
+
+msgid "Save as new…"
+msgstr "Αποθήκευση ως νέο…"
+
+msgid "Overwrite"
+msgstr "Αντικατάσταση"
+
+msgid "Show LHC key codes used in assignments, such as KeyA and ArrowLeft."
+msgstr ""
+"Εμφάνιση κωδικών κλειδιών LHC που χρησιμοποιούνται σε αναθέσεις, όπως KeyA "
+"και ArrowLeft."
+
+msgid "Application"
+msgstr "Εφαρμογή"
+
+msgid "Window title"
+msgstr "Τίτλος παραθύρου"
+
+msgid "Click to switch"
+msgstr "Κάντε κλικ για εναλλαγή"
+
+msgid "Match by app ID or process instead"
+msgstr "Αντιστοιχίστε με αναγνωριστικό εφαρμογής ή διαδικασία"
+
+msgid "Match by window title instead"
+msgstr "Αντιστοίχιση ανά τίτλο παραθύρου"
+
+msgid "Open now: {n} window"
+msgid_plural "Open now: {n} windows"
+msgstr[0] "Άνοιγμα τώρα: {n} παράθυρο"
+msgstr[1] "Άνοιγμα τώρα: {n} παράθυρα"
+
+msgid "Not open now"
+msgstr "Δεν είναι ανοιχτό τώρα"
+
+msgid "Running process"
+msgstr "Διαδικασία τρεξίματος"
+
+msgid "Text the window title contains"
+msgstr "Κείμενο που περιέχει ο τίτλος του παραθύρου"
+
+msgid "Already in the list"
+msgstr "Ήδη στη λίστα"
+
+msgid "Choose from open windows…"
+msgstr "Επιλέξτε από ανοιχτά παράθυρα…"
+
+msgid "Matches {n} open window"
+msgid_plural "Matches {n} open windows"
+msgstr[0] "Ταιριάζει {n} ανοιχτό παράθυρο"
+msgstr[1] "Ταιριάζει με {n} ανοιχτά παράθυρα"
+
+msgid "Matches no open window"
+msgstr "Ταιριάζει με κανένα ανοιχτό παράθυρο"
+
+msgid "Show Quick Action Menu on the last used page"
+msgstr ""
+"Εμφάνιση του μενού γρήγορης δράσης στην τελευταία σελίδα που χρησιμοποιήθηκε"
+
+msgid "Show Emoji & Symbols menu on the last used page"
+msgstr ""
+"Εμφάνιση μενού Emoji & Symbols στην τελευταία σελίδα που χρησιμοποιήθηκε"
+
+msgid "Show the settings window"
+msgstr "Εμφάνιση του παραθύρου ρυθμίσεων"
+
+msgid "Activate layout {} (switches to Single mode)"
+msgstr "Ενεργοποίηση διάταξης {} (μεταβαίνει σε λειτουργία Single)"
+
+msgid "There is no layout number {}"
+msgstr "Δεν υπάρχει αριθμός διάταξης {}"
+
+msgid "Show the Left Hand Control layout name when it changes"
+msgstr ""
+"Εμφάνιση του ονόματος διάταξης του αριστερού χειριστηρίου όταν αλλάζει"
+
+msgid "Show the keys of a layer while it is held"
+msgstr "Εμφάνιση των πλήκτρων ενός στρώματος ενώ κρατιέται"
+
+msgid ""
+"The hint appears 2 seconds after the layer activates. Pressing a layer key "
+"hides or cancels it until the trigger is released, including in game mode."
+msgstr ""
+"Η υπόδειξη εμφανίζεται 2 δευτερόλεπτα μετά την ενεργοποίηση του επιπέδου. Το"
+" πάτημα ενός πλήκτρου επιπέδου αποκρύπτει ή ακυρώνει μέχρι να απελευθερωθεί "
+"η σκανδάλη, συμπεριλαμβανομένης της λειτουργίας παιχνιδιού."
+
+msgid ""
+"Unavailable: build with the spell feature and use a Wayland compositor with "
+"layer-shell (KDE Plasma, Sway, Hyprland)."
+msgstr ""
+"Μη διαθέσιμο: δημιουργία με τη δυνατότητα ορθογραφίας και χρήση συνθέτη "
+"Wayland με layer-shell (KDE Plasma, Sway, Hyprland)."
+
+msgid ""
+"The app:activateLayout1…5 actions activate the layout at that position in "
+"this list: reordering the list changes which layout a key activates. In Auto"
+" mode they switch to Single mode."
+msgstr ""
+"Οι ενέργειες app:activateLayout1…5 ενεργοποιούν τη διάταξη σε αυτήν τη θέση "
+"σε αυτήν τη λίστα: η αναδιάταξη της λίστας αλλάζει ποια διάταξη ενεργοποιεί "
+"ένα πλήκτρο. Στην αυτόματη λειτουργία αλλάζουν σε λειτουργία Single."
+
+msgid "Cut"
+msgstr "Αποκοπή"
+
+msgid "Copy"
+msgstr "Αντιγραφή"
+
+msgid "Paste"
+msgstr "Επικόλληση"
+
+msgid "Select all"
+msgstr "Επιλογή όλων"
+
+msgid "Clear search"
+msgstr "Εκκαθάριση αναζήτησης"
+
+msgid "Add application"
+msgstr "Προσθήκη εφαρμογής"
+
+msgid "Edit application"
+msgstr "Επεξεργασία εφαρμογής"
+
+msgid "Remove application?"
+msgstr "Κατάργηση εφαρμογής;"
+
+msgid "“{}” will be removed from the list."
+msgstr "Το \"{}\" θα αφαιρεθεί από τη λίστα."
+
+msgid "Devices"
+msgstr "Συσκευές"
+
+msgid "Required"
+msgstr "Υποχρεούμαι"
+
+msgid "Optional"
+msgstr "Προαιρετικός"
+
+msgid "Failed to start"
+msgstr "Αποτυχία εκκίνησης"
+
+msgid "Keys work as usual. Start the mapper to apply your layouts."
+msgstr ""
+"Τα κλειδιά λειτουργούν ως συνήθως. Ξεκινήστε τη χαρτογράφηση για να "
+"εφαρμόσετε τις διατάξεις σας."
+
+msgid "Select a keyboard below to start the mapper."
+msgstr "Επιλέξτε ένα πληκτρολόγιο παρακάτω για να ξεκινήσετε τη χαρτογράφηση."
+
+msgid "Changing a device restarts the mapper."
+msgstr "Η αλλαγή μιας συσκευής επανεκκινεί τη χαρτογράφηση."
+
+msgid "Auto: known game {}"
+msgstr "Αυτόματο: γνωστό παιχνίδι {}"
+
+msgid "Ignored in fullscreen"
+msgstr "Αγνοήθηκε σε πλήρη οθόνη"
+
+msgid "Not available in this session."
+msgstr "Δεν είναι διαθέσιμο σε αυτήν την περίοδο λειτουργίας."
+
+msgid "Steam games"
+msgstr "Παιχνίδια στο Steam"
+
+msgid ""
+"Turns on while Steam runs a game: Steam starts every game through reaper "
+"SteamLaunch, and game windows have the ID steam_app_<number>."
+msgstr ""
+"Ενεργοποιείται ενώ το Steam εκτελεί ένα παιχνίδι: Το Steam ξεκινά κάθε "
+"παιχνίδι μέσω του reaper SteamLaunch και τα παράθυρα παιχνιδιών έχουν το "
+"αναγνωριστικό steam_app_<number>."
+
+msgid "Turns on while Steam reports a running game."
+msgstr "Ενεργοποιείται ενώ το Steam αναφέρει ένα παιχνίδι που τρέχει."
+
+msgid "Lutris games"
+msgstr "Παιχνίδια Lutris"
+
+msgid ""
+"Turns on while a game started by Lutris runs: Lutris starts every game "
+"through lutris-wrapper."
+msgstr ""
+"Ενεργοποιείται ενώ εκτελείται ένα παιχνίδι που ξεκίνησε από τον Lutris: Το "
+"Lutris ξεκινά κάθε παιχνίδι μέσω του lutris-wrapper."
+
+msgid "Gamescope sessions"
+msgstr "Συνεδρίες Gamescope"
+
+msgid "Turns on while the active window is a nested gamescope session."
+msgstr ""
+"Ενεργοποιείται ενώ το ενεργό παράθυρο είναι μια ένθετη περίοδος λειτουργίας "
+"παιχνιδιών."
+
+msgid "Games from the Game Bar list"
+msgstr "Παιχνίδια από τη λίστα Game Bar"
+
+msgid "Applications of the Game category"
+msgstr "Εφαρμογές της κατηγορίας Παιχνίδι"
+
+msgid ""
+"Turns on while the active window belongs to an application whose .desktop "
+"file lists the Game category. Launchers are tagged as games too, so they are"
+" skipped."
+msgstr ""
+"Ενεργοποιείται ενώ το ενεργό παράθυρο ανήκει σε μια εφαρμογή της οποίας το "
+"αρχείο .desktop παραθέτει την κατηγορία Παιχνίδι. Οι εκτοξευτές "
+"επισημαίνονται επίσης ως παιχνίδια, επομένως παραλείπονται."
+
+msgid ""
+"Turns on while the active application declares the Games category in its "
+"Info.plist. Launchers are skipped."
+msgstr ""
+"Ενεργοποιείται ενώ η ενεργή εφαρμογή δηλώνει την κατηγορία Παιχνίδια στο "
+"Info.plist της. Οι εκτοξευτές παραλείπονται."
+
+msgid "Auto — according to settings"
+msgstr "Αυτόματο — σύμφωνα με τις ρυθμίσεις"
+
+msgid "Blank"
+msgstr "Κενό"
+
+msgid "Assign action"
+msgstr "Ανάθεση δράσης"
+
+msgid "Action after {} ms of holding"
+msgstr "Ενέργεια μετά από {} ms κράτησης"
+
+msgid ""
+"These codes are specific to Left Hand Control, not universal keyboard codes "
+"(e.g. KeyA, ArrowLeft)."
+msgstr ""
+"Αυτοί οι κωδικοί είναι συγκεκριμένοι για το Left Hand Control και όχι για "
+"τους καθολικούς κωδικούς πληκτρολογίου (π.χ. KeyA, ArrowLeft)."
+
+msgid "While its window is active"
+msgstr "Ενώ το παράθυρό του είναι ενεργό"
+
+msgid "While the process runs"
+msgstr "Ενώ εκτελείται η διαδικασία"
+
+msgid "Counts while a window of the application has the focus."
+msgstr "Μετράει ενώ ένα παράθυρο της εφαρμογής έχει την εστίαση."
+
+msgid ""
+"Counts while a process with this name runs, even without a window or in the "
+"background."
+msgstr ""
+"Μετράει όσο εκτελείται μια διαδικασία με αυτό το όνομα, ακόμη και χωρίς "
+"παράθυρο ή στο παρασκήνιο."
+
+msgid "Application · while its window is active"
+msgstr "Εφαρμογή · ενώ το παράθυρό της είναι ενεργό"
+
+msgid "Process · while it runs"
+msgstr "Διαδικασία · ενώ εκτελείται"
+
+msgid "No games added."
+msgstr "Δεν προστέθηκαν παιχνίδια."
+
+msgid ""
+"Game mode turns on while any of these matches. An application is matched by "
+"its ID or process name: the whole name, ignoring case, with * and ? as "
+"wildcards. Steam games have the app ID steam_app_<number>; Proton games are "
+"also found by their .exe name. A window title item matches the active window"
+" whose title contains the text."
+msgstr ""
+"Η λειτουργία παιχνιδιού ενεργοποιείται ενώ οποιοδήποτε από αυτά ταιριάζει. "
+"Μια εφαρμογή αντιστοιχίζεται με το αναγνωριστικό της ή το όνομα διεργασίας: "
+"ολόκληρο το όνομα, αγνοώντας την περίπτωση, με * και ? ως μπαλαντέρ. Τα "
+"παιχνίδια Steam έχουν το αναγνωριστικό εφαρμογής steam_app_<number>. Τα "
+"παιχνίδια Proton βρίσκονται επίσης με το όνομά τους .exe. Ένα στοιχείο "
+"τίτλου παραθύρου ταιριάζει με το ενεργό παράθυρο του οποίου ο τίτλος "
+"περιέχει το κείμενο."
+
+msgid ""
+"Game mode stays off while any of these matches, even if a game or another "
+"detector would turn it on."
+msgstr ""
+"Η λειτουργία παιχνιδιού παραμένει απενεργοποιημένη όσο ταιριάζει με "
+"οποιοδήποτε από αυτά τα παιχνίδια, ακόμα κι αν ένα παιχνίδι ή άλλος "
+"ανιχνευτής το ενεργοποιούσε."
+
+msgid "less than a minute"
+msgstr "λιγότερο από ένα λεπτό"
+
+msgid "{} min"
+msgstr "{} ελάχ"
+
+msgid "{} h {} min"
+msgstr "{} h {} ελάχ"
+
+msgid "Running for {}"
+msgstr "Τρέχει για {}"
+
+msgid "Stopped unexpectedly"
+msgstr "Σταμάτησε απροσδόκητα"
+
+msgid "Stopped {} ago after running for {}."
+msgstr "Σταμάτησε το {} πριν μετά από εκτέλεση για {}."
+
+msgid "Text input"
+msgstr "Εισαγωγή κειμένου"
+
+msgid ""
+"How text actions in rules and macros are typed. Key remapping and the emoji "
+"popup do not use it."
+msgstr ""
+"Πώς πληκτρολογούνται οι ενέργειες κειμένου σε κανόνες και μακροεντολές. Η "
+"επαναχαρτογράφηση του κλειδιού και το αναδυόμενο παράθυρο emoji δεν το "
+"χρησιμοποιούν."
+
+msgid "Typing method"
+msgstr "Μέθοδος πληκτρολόγησης"
+
+msgid "libei + clipboard fallback (recommended)"
+msgstr "εναλλακτικό libei + πρόχειρο (συνιστάται)"
+
+msgid "Paste from clipboard"
+msgstr "Επικόλληση από το πρόχειρο"
+
+msgid "ydotool"
+msgstr "ydotool"
+
+msgid "xdotool"
+msgstr "xdotool"
+
+msgid ""
+"Types with the current layout, or pastes the whole text when a character is "
+"unavailable. Paste requires clipboard access and support for the paste "
+"shortcut. Preserves clipboard formats and cancels if the destination "
+"changes. Requires portal permission and active-window detection."
+msgstr ""
+"Πληκτρολογεί με την τρέχουσα διάταξη ή επικολλά ολόκληρο το κείμενο όταν "
+"ένας χαρακτήρας δεν είναι διαθέσιμος. Η επικόλληση απαιτεί πρόσβαση στο "
+"πρόχειρο και υποστήριξη για τη συντόμευση επικόλλησης. Διατηρεί τις μορφές "
+"του προχείρου και ακυρώνει εάν αλλάξει ο προορισμός. Απαιτεί άδεια πύλης και"
+" εντοπισμό ενεργών παραθύρων."
+
+msgid ""
+"Types only through libei using the current keyboard layout and Caps Lock "
+"state. Skips text with unavailable characters. Requires portal permission "
+"and active-window detection. Cancels if the destination changes."
+msgstr ""
+"Πληκτρολογεί μόνο μέσω libei χρησιμοποιώντας την τρέχουσα διάταξη "
+"πληκτρολογίου και την κατάσταση Caps Lock. Παραλείπει κείμενο με μη "
+"διαθέσιμους χαρακτήρες. Απαιτεί άδεια πύλης και εντοπισμό ενεργών παραθύρων."
+" Ακυρώνεται εάν αλλάξει ο προορισμός."
+
+msgid ""
+"Types only through NotifyKeyboardKeycode using the KDE layout and readable "
+"keyboard state. Skips text with unavailable characters. Requires portal "
+"permission and active-window detection. Cancels if the destination changes."
+msgstr ""
+"Πληκτρολογεί μόνο μέσω του NotifyKeyboardKeycode χρησιμοποιώντας τη διάταξη "
+"του KDE και την κατάσταση αναγνώσιμου πληκτρολογίου. Παραλείπει κείμενο με "
+"μη διαθέσιμους χαρακτήρες. Απαιτεί άδεια πύλης και εντοπισμό ενεργών "
+"παραθύρων. Ακυρώνεται εάν αλλάξει ο προορισμός."
+
+msgid ""
+"Pastes with the paste shortcut through the portal. Requires clipboard "
+"access, active-window detection and an app supporting that shortcut. "
+"Preserves all clipboard formats; a new user copy takes precedence. Reports "
+"an error if no text transfer is observed."
+msgstr ""
+"Επικόλληση με τη συντόμευση επικόλλησης μέσω της πύλης. Απαιτεί πρόσβαση στο"
+" πρόχειρο, εντοπισμό ενεργών παραθύρων και εφαρμογή που υποστηρίζει αυτήν τη"
+" συντόμευση. Διατηρεί όλες τις μορφές του προχείρου. ένα αντίγραφο νέου "
+"χρήστη έχει προτεραιότητα. Αναφέρει σφάλμα εάν δεν παρατηρηθεί μεταφορά "
+"κειμένου."
+
+msgid "Paste shortcut"
+msgstr "Επικόλληση συντόμευσης"
+
+msgid ""
+"Sent to the focused app to paste the text. Terminals usually need "
+"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
+"Ctrl+V does not paste there."
+msgstr ""
+"Στάλθηκε στην εστιασμένη εφαρμογή για επικόλληση του κειμένου. Τα τερματικά "
+"συνήθως χρειάζονται Ctrl+Shift+V: μερικά από αυτά επικολλούν την επιλογή του"
+" ποντικιού στο Shift+Insert και τα Ctrl+V δεν επικολλούν εκεί."
+
+msgid ""
+"Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "
+"Reliable for Latin text only. On an error, stops without switching methods."
+msgstr ""
+"Εκτελεί μόνο \"ydotool type\". Χρειάζεται το ydotool και η υπηρεσία του "
+"ydotoold να τρέχει. Αξιόπιστο μόνο για λατινικό κείμενο. Σε ένα σφάλμα, "
+"σταματά χωρίς εναλλαγή μεθόδων."
+
+msgid ""
+"Runs \"xdotool type\" only. Works only in X11 sessions and XWayland windows."
+" On an error, stops without switching methods."
+msgstr ""
+"Εκτελεί μόνο \"τύπος xdotool\". Λειτουργεί μόνο σε συνεδρίες X11 και "
+"παράθυρα XWayland. Σε ένα σφάλμα, σταματά χωρίς εναλλαγή μεθόδων."
+
+msgid "ydotool from PATH"
+msgstr "ydotool από το PATH"
+
+msgid "xdotool from PATH"
+msgstr "xdotool από το PATH"
+
+msgid ""
+"Each item is compared with the active window. Pick a window from the list "
+"below to fill in the field."
+msgstr ""
+"Κάθε στοιχείο συγκρίνεται με το ενεργό παράθυρο. Επιλέξτε ένα παράθυρο από "
+"την παρακάτω λίστα για να συμπληρώσετε το πεδίο."
+
+msgid ""
+"Application: the app ID (Wayland app id or X11 WM_CLASS) or the process "
+"name. The whole name must match, case is ignored, .exe is optional. * stands"
+" for any characters and ? for one, e.g. steam_app_*. The ID is stable, so "
+"prefer it."
+msgstr ""
+"Εφαρμογή: το αναγνωριστικό εφαρμογής (αναγνωριστικό εφαρμογής Wayland ή X11 "
+"WM_CLASS) ή το όνομα της διαδικασίας. Ολόκληρο το όνομα πρέπει να ταιριάζει,"
+" η περίπτωση αγνοείται, το .exe είναι προαιρετικό. * σημαίνει οποιοιδήποτε "
+"χαρακτήρες και ? για ένα, π.χ. steam_app_*. Το ID είναι σταθερό, γι' αυτό "
+"προτιμήστε το."
+
+msgid ""
+"Window title: matches when the title contains the text, case is ignored. "
+"With * or ? the pattern must cover the whole title. A title changes with the"
+" open tab or document, and it never matches a process without a window."
+msgstr ""
+"Τίτλος παραθύρου: ταιριάζει όταν ο τίτλος περιέχει το κείμενο, αγνοείται η "
+"περίπτωση πεζών-κεφαλαίων. Με * ή ? το σχέδιο πρέπει να καλύπτει ολόκληρο "
+"τον τίτλο. Ένας τίτλος αλλάζει με την ανοιχτή καρτέλα ή έγγραφο και δεν "
+"ταιριάζει ποτέ με μια διαδικασία χωρίς παράθυρο."
+
+msgid "Match by"
+msgstr "Ταίριασμα κατά"
+
+msgid "Process"
+msgstr "Διαδικασία"
+
+msgid "Process name, * and ? allowed"
+msgstr "Όνομα διεργασίας, * και ? επιτρέπεται"
+
+msgid "App ID, * and ? allowed"
+msgstr "Αναγνωριστικό εφαρμογής, * και ? επιτρέπεται"
+
+msgid ""
+"The item is compared with the names of running processes. Pick one from the "
+"list below to fill in the field."
+msgstr ""
+"Το στοιχείο συγκρίνεται με τα ονόματα των διεργασιών που εκτελούνται. "
+"Επιλέξτε ένα από την παρακάτω λίστα για να συμπληρώσετε το πεδίο."
+
+msgid ""
+"Process: the executable name, as the list below shows it. The whole name "
+"must match, case is ignored, .exe is optional. * stands for any characters "
+"and ? for one."
+msgstr ""
+"Διαδικασία: το εκτελέσιμο όνομα, όπως το δείχνει η παρακάτω λίστα. Ολόκληρο "
+"το όνομα πρέπει να ταιριάζει, η περίπτωση αγνοείται, το .exe είναι "
+"προαιρετικό. * σημαίνει οποιοιδήποτε χαρακτήρες και ? για ένα."
+
+msgid "Matches {n} running process"
+msgid_plural "Matches {n} running processes"
+msgstr[0] "Ταιριάζει με {n} διαδικασία εκτέλεσης"
+msgstr[1] "Ταιριάζει {n} διεργασίες που εκτελούνται"
+
+msgid "Matches no running process"
+msgstr "Ταιριάζει σε καμία διαδικασία εκτέλεσης"
+
+msgid ""
+"Many applications run as “{}”, so the name matches all of them. The "
+"application ID is more precise."
+msgstr ""
+"Πολλές εφαρμογές τρέχουν ως \"{}\", επομένως το όνομα ταιριάζει με όλες. Το "
+"αναγνωριστικό εφαρμογής είναι πιο ακριβές."
+
+msgid "When it counts"
+msgstr "Όταν μετράει"
+
+msgid "Window titles"
+msgstr "Τίτλοι παραθύρων"
+
+msgid "Processes of open windows"
+msgstr "Διαδικασίες ανοιχτών παραθύρων"
+
+msgid "Shared process"
+msgstr "Κοινή διαδικασία"
+
+msgid "Running without a window"
+msgstr "Τρέξιμο χωρίς παράθυρο"
+
+msgid "Type a name to find processes running without a window."
+msgstr ""
+"Πληκτρολογήστε ένα όνομα για να βρείτε διαδικασίες που εκτελούνται χωρίς "
+"παράθυρο."
+
+msgid "Process · while its window is active"
+msgstr "Διεργασία · ενώ το παράθυρό του είναι ενεργό"
+
+msgid "While the trigger is held"
+msgstr "Όσο κρατιέται η σκανδάλη"
+
+msgid "Press key"
+msgstr "Πατήστε το πλήκτρο"
+
+msgid ""
+"Which key stays pressed while you hold the trigger, together with the layer."
+" “Don't press” only switches the layer."
+msgstr ""
+"Ποιο πλήκτρο παραμένει πατημένο όσο κρατάτε τη σκανδάλη, μαζί με το στρώμα. "
+"Το \"Don't press\" αλλάζει μόνο το επίπεδο."
+
+msgid ""
+"Which key stays pressed while you hold the trigger. “Trigger itself” keeps "
+"the usual behavior of the key."
+msgstr ""
+"Ποιο πλήκτρο παραμένει πατημένο όσο κρατάτε τη σκανδάλη. Το \"Trigger same\""
+" διατηρεί τη συνήθη συμπεριφορά του κλειδιού."
+
+msgid "Trigger itself"
+msgstr "Η ίδια η σκανδάλη"
+
+msgid "Other key…"
+msgstr "Άλλο κλειδί…"
+
+msgid "When to press"
+msgstr "Πότε να πατήσετε"
+
+msgid "Holds {}"
+msgstr "Κρατάει το {}"
+
+msgid "Holds nothing"
+msgstr "Δεν κρατάει τίποτα"
+
+msgid "Hold after {} ms"
+msgstr "Κρατήστε μετά το {} ms"
+
+msgid "Stop mapper (restore native keyboard behavior)"
+msgstr "Διακοπή χαρτογράφησης (επαναφορά συμπεριφοράς εγγενούς πληκτρολογίου)"
+
+msgid "Select a keyboard device in the settings to start the mapper"
+msgstr ""
+"Επιλέξτε μια συσκευή πληκτρολογίου στις ρυθμίσεις για να ξεκινήσει η "
+"χαρτογράφηση"
+
+msgid "Start mapper to intercept keys and apply layouts"
+msgstr ""
+"Ξεκινήστε το mapper για να παρεμποδίσει τα πλήκτρα και να εφαρμόσει "
+"διατάξεις"
+
+msgid "Current active layout (selected automatically by switching rules)"
+msgstr "Τρέχουσα ενεργή διάταξη (επιλέγεται αυτόματα με εναλλαγή κανόνων)"
+
+msgid "Click to change mode (Auto / On / Off)"
+msgstr ""
+"Κάντε κλικ για αλλαγή λειτουργίας (Αυτόματο / Ενεργό / Απενεργοποιημένο)"
+
+msgid ""
+"The mapper intercepts keyboard input, applies layers, rules and macros, and "
+"emits output through a virtual device."
+msgstr ""
+"Ο χαρτογράφος παρεμποδίζει την είσοδο πληκτρολογίου, εφαρμόζει επίπεδα, "
+"κανόνες και μακροεντολές και εκπέμπει έξοδο μέσω μιας εικονικής συσκευής."
+
+msgid ""
+"Define how physical keys behave: tap for a key or action, hold to switch "
+"layers, or double-tap for extra shortcuts."
+msgstr ""
+"Καθορίστε πώς συμπεριφέρονται τα φυσικά πλήκτρα: πατήστε για ένα κλειδί ή "
+"ενέργεια, κρατήστε πατημένο για εναλλαγή επιπέδων ή πατήστε δύο φορές για "
+"επιπλέον συντομεύσεις."
+
+msgid ""
+"Action performed when the trigger is pressed and released quickly without "
+"holding."
+msgstr ""
+"Η ενέργεια εκτελείται όταν η σκανδάλη πατηθεί και απελευθερωθεί γρήγορα "
+"χωρίς να κρατάτε πατημένο."
+
+msgid ""
+"Action performed when the trigger is pressed twice quickly within the "
+"double-tap timeout."
+msgstr ""
+"Η ενέργεια εκτελείται όταν η σκανδάλη πατηθεί δύο φορές γρήγορα εντός του "
+"χρονικού ορίου διπλού χτυπήματος."
+
+msgid "Show standard QWERTY letter labels for visual reference."
+msgstr "Εμφάνιση τυπικών ετικετών γραμμάτων QWERTY για οπτική αναφορά."
+
+msgid ""
+"Show internal key codes used in Left Hand Control profiles (e.g. KeyA, "
+"ArrowLeft)."
+msgstr ""
+"Εμφάνιση εσωτερικών κωδικών κλειδιών που χρησιμοποιούνται στα προφίλ "
+"αριστερού ελέγχου (π.χ. KeyA, ArrowLeft)."
+
+msgid "Hold detection"
+msgstr "Ανίχνευση αναμονής"
+
+msgid "When a key becomes a hold"
+msgstr "Όταν ένα κλειδί γίνεται λαβή"
+
+msgid ""
+"Decides when a rule key that is still down counts as a hold if you press "
+"another key meanwhile. Applies to all rules."
+msgstr ""
+"Αποφασίζει πότε ένα πλήκτρο κανόνα που είναι ακόμα απενεργοποιημένο μετράει "
+"ως αναμονή εάν πατήσετε ένα άλλο πλήκτρο εν τω μεταξύ. Ισχύει για όλους τους"
+" κανόνες."
+
+msgid ""
+"After another key is released: the key becomes a hold once another key is "
+"pressed and released while it is down, or when the hold threshold passes. "
+"Fast rolls while typing stay taps."
+msgstr ""
+"Μετά την απελευθέρωση ενός άλλου πλήκτρου: το πλήκτρο μετατρέπεται σε "
+"αναμονή μόλις πατηθεί και αφεθεί ένα άλλο πλήκτρο ενώ είναι πατημένο ή όταν "
+"περάσει το όριο κράτησης. Γρήγορη κύλιση κατά την πληκτρολόγηση μείνετε "
+"πατήματα."
+
+msgid ""
+"As soon as another key is pressed: reacts faster, but fast typing can "
+"trigger the hold by mistake."
+msgstr ""
+"Μόλις πατηθεί ένα άλλο πλήκτρο: αντιδρά πιο γρήγορα, αλλά η γρήγορη "
+"πληκτρολόγηση μπορεί να ενεργοποιήσει το κράτημα κατά λάθος."
+
+msgid "After another key is released (recommended)"
+msgstr "Μετά την απελευθέρωση άλλου κλειδιού (συνιστάται)"
+
+msgid "As soon as another key is pressed"
+msgstr "Μόλις πατηθεί άλλο πλήκτρο"
+
+msgid ""
+"Used by rules that leave the field empty. A rule can set its own value in "
+"its advanced options."
+msgstr ""
+"Χρησιμοποιείται από κανόνες που αφήνουν το πεδίο κενό. Ένας κανόνας μπορεί "
+"να ορίσει τη δική του τιμή στις σύνθετες επιλογές του."
+
+msgid "Hold threshold, ms"
+msgstr "Όριο κράτησης, ms"
+
+msgid ""
+"How long to hold a rule key before it counts as a hold: its layer or hold "
+"action. Released earlier, the key runs its tap action."
+msgstr ""
+"Πόσο καιρό να κρατήσετε ένα κλειδί κανόνα προτού μετρήσει ως αναμονή: η "
+"ενέργεια του επιπέδου ή η κράτηση. Το κλειδί που κυκλοφόρησε νωρίτερα "
+"εκτελεί τη δράση του πατήματος."
+
+msgid ""
+"Lower: layers turn on faster, but fast typing may trigger them by mistake. "
+"Higher: fewer false holds, but a longer wait. Usually 150–250 ms."
+msgstr ""
+"Κάτω: Τα επίπεδα ενεργοποιούνται πιο γρήγορα, αλλά η γρήγορη πληκτρολόγηση "
+"μπορεί να τα ενεργοποιήσει κατά λάθος. Υψηλότερο: λιγότερες ψευδείς "
+"κρατήσεις, αλλά μεγαλύτερη αναμονή. Συνήθως 150–250 ms."
+
+msgid "Standard value: {} ms."
+msgstr "Τυπική τιμή: {} ms."
+
+msgid "Long hold, ms"
+msgstr "Υπομονή, κα"
+
+msgid ""
+"How long to keep holding a rule key before its long-hold action runs once. "
+"Applies to rules whose hold runs an action instead of a layer."
+msgstr ""
+"Για πόσο καιρό πρέπει να κρατήσετε ένα κλειδί κανόνα πριν εκτελεστεί μία "
+"φορά η δράση παρατεταμένης αναμονής. Ισχύει για κανόνες των οποίων η αναμονή"
+" εκτελεί μια ενέργεια αντί για ένα επίπεδο."
+
+msgid "Double-tap window, ms"
+msgstr "Διπλό πάτημα παραθύρου, ms"
+
+msgid ""
+"A second tap within this time after the first release counts as a double "
+"tap."
+msgstr ""
+"Ένα δεύτερο πάτημα μέσα σε αυτό το διάστημα μετά την πρώτη κυκλοφορία "
+"μετράει ως διπλό πάτημα."
+
+msgid ""
+"A single tap on a key with a double-tap action runs only after this window "
+"ends, so a large value makes such keys feel slow. Keys without a double-tap "
+"action are not delayed."
+msgstr ""
+"Ένα απλό πάτημα σε ένα πλήκτρο με ενέργεια διπλού αγγίγματος εκτελείται μόνο"
+" μετά το τέλος αυτού του παραθύρου, επομένως μια μεγάλη τιμή κάνει τέτοια "
+"πλήκτρα να αισθάνονται αργά. Τα πλήκτρα χωρίς ενέργεια διπλού αγγίγματος δεν"
+" καθυστερούν."
+
+msgid ""
+"Used by macros that leave the field empty. A macro can set its own value on "
+"the Macros page."
+msgstr ""
+"Χρησιμοποιείται από μακροεντολές που αφήνουν το πεδίο κενό. Μια μακροεντολή "
+"μπορεί να ορίσει τη δική της τιμή στη σελίδα Μακροεντολές."
+
+msgid ""
+"Pause between consecutive steps of a macro. Increase it if an application "
+"misses keystrokes."
+msgstr ""
+"Παύση μεταξύ διαδοχικών βημάτων μιας μακροεντολής. Αυξήστε το εάν μια "
+"εφαρμογή δεν πληκτρολογήσει."
+
+msgid "Simultaneous presses"
+msgstr "Ταυτόχρονα πιέσεις"
+
+msgid ""
+"For rules triggered by several keys pressed together, such as KeyJ+KeyK. All"
+" keys must go down within this time, in any order. Until then the first key "
+"is held back; if the combination does not complete, it is typed as usual. "
+"Modifiers are never held back."
+msgstr ""
+"Για κανόνες που ενεργοποιούνται από πολλά πλήκτρα που πιέζονται μαζί, όπως "
+"KeyJ+KeyK. Όλα τα πλήκτρα πρέπει να χαθούν μέσα σε αυτό το χρονικό διάστημα,"
+" με οποιαδήποτε σειρά. Μέχρι τότε το πρώτο κλειδί κρατιέται πίσω. εάν ο "
+"συνδυασμός δεν ολοκληρωθεί, πληκτρολογείται ως συνήθως. Οι τροποποιητές δεν "
+"συγκρατούνται ποτέ."
+
+msgid ""
+"Higher: the combination is easier to hit, but typing with these keys lags "
+"slightly. Applies to all rules; a rule cannot override it."
+msgstr ""
+"Υψηλότερο: ο συνδυασμός είναι πιο εύκολο να χτυπηθεί, αλλά η πληκτρολόγηση "
+"με αυτά τα πλήκτρα καθυστερεί ελαφρώς. Ισχύει για όλους τους κανόνες. ένας "
+"κανόνας δεν μπορεί να τον παρακάμψει."
+
+msgid ""
+"Wait between pressing modifiers (Shift, Ctrl, …) and the main key of a macro"
+" step. Increase it if an application receives the shortcut without its "
+"modifier. Default for macros that leave the field empty."
+msgstr ""
+"Περιμένετε ανάμεσα στο πάτημα των τροποποιητών (Shift, Ctrl,…) και του "
+"κύριου πλήκτρου ενός βήματος μακροεντολής. Αυξήστε το εάν μια εφαρμογή λάβει"
+" τη συντόμευση χωρίς τον τροποποιητή της. Προεπιλογή για μακροεντολές που "
+"αφήνουν κενό το πεδίο."
+
+msgid "Enter a long hold from 100 to 60000 ms."
+msgstr "Εισαγάγετε ένα μεγάλο κράτημα από 100 έως 60000 ms."
+
+msgid "Long hold after {} ms"
+msgstr "Παρατεταμένη αναμονή μετά από {} ms"
+
+msgid ""
+"Released earlier, the trigger counts as a tap; held longer, as a hold. Empty"
+" uses the default from Settings: {} ms."
+msgstr ""
+"Κυκλοφόρησε νωρίτερα, η σκανδάλη μετράει ως πάτημα. κράτησε περισσότερο, ως "
+"λαβή. Το Empty χρησιμοποιεί την προεπιλογή από τις Ρυθμίσεις: {} ms."
+
+msgid ""
+"How long to keep holding before the action runs. Empty uses the default from"
+" Settings: {} ms."
+msgstr ""
+"Πόσο καιρό πρέπει να κρατήσετε μέχρι να τρέξει η δράση. Το Empty "
+"χρησιμοποιεί την προεπιλογή από τις Ρυθμίσεις: {} ms."
+
+msgid ""
+"Longest pause between two taps. Empty uses the default from Settings: {} ms."
+msgstr ""
+"Η μεγαλύτερη παύση μεταξύ δύο πατημάτων. Το Empty χρησιμοποιεί την "
+"προεπιλογή από τις Ρυθμίσεις: {} ms."
+
+msgid "Auto: {} is not counted as a game (built-in list)"
+msgstr "Αυτόματο: Το {} δεν υπολογίζεται ως παιχνίδι (ενσωματωμένη λίστα)"
+
+msgid ""
+"These sources can take another application for a game, so each skips a "
+"built-in list of applications."
+msgstr ""
+"Αυτές οι πηγές μπορούν να λάβουν μια άλλη εφαρμογή για ένα παιχνίδι, "
+"επομένως κάθε μία παρακάμπτει μια ενσωματωμένη λίστα εφαρμογών."
+
+msgid ""
+"Turns on while a program that Windows recognized as a game (the Game Bar "
+"list) runs. Launchers are listed there too, so they are skipped."
+msgstr ""
+"Ενεργοποιείται ενώ εκτελείται ένα πρόγραμμα που τα Windows αναγνώρισαν ως "
+"παιχνίδι (η λίστα της γραμμής παιχνιδιών). Οι εκτοξευτές παρατίθενται επίσης"
+" εκεί, επομένως παραλείπονται."
+
+msgid "Launchers and game tools — not counted as games"
+msgstr "Εκτοξευτές και εργαλεία παιχνιδιών — δεν υπολογίζονται ως παιχνίδια"
+
+msgid ""
+"Decides when a dual-role key counts as a hold if another key is pressed. "
+"Rules can override this default in advanced options. Chord detection is "
+"configured separately."
+msgstr ""
+"Αποφασίζει πότε ένα πλήκτρο διπλού ρόλου υπολογίζεται ως αναμονή εάν πατηθεί"
+" άλλο πλήκτρο. Οι κανόνες μπορούν να παρακάμψουν αυτήν την προεπιλογή στις "
+"σύνθετες επιλογές. Η ανίχνευση χορδών διαμορφώνεται ξεχωριστά."
+
+msgid "After another key is released (better for typing)"
+msgstr "Αφού απελευθερωθεί ένα άλλο κλειδί (καλύτερα για πληκτρολόγηση)"
+
+msgid ""
+"As soon as another key is pressed: useful for dedicated layer or modifier "
+"keys. Reacts faster, but overlapping letters while typing can trigger the "
+"hold by mistake."
+msgstr ""
+"Μόλις πατηθεί ένα άλλο πλήκτρο: χρήσιμο για αποκλειστικά πλήκτρα επιπέδου ή "
+"τροποποιητών. Αντιδρά πιο γρήγορα, αλλά τα επικαλυπτόμενα γράμματα κατά την "
+"πληκτρολόγηση μπορεί να ενεργοποιήσουν το κράτημα κατά λάθος."
+
+msgid "Default from Settings: {}"
+msgstr "Προεπιλογή από τις Ρυθμίσεις: {}"
+
+msgid "after another key is released"
+msgstr "μετά την απελευθέρωση ενός άλλου κλειδιού"
+
+msgid "as soon as another key is pressed"
+msgstr "μόλις πατηθεί άλλο πλήκτρο"
+
+msgid ""
+"Overrides the default hold detection for this rule. Use release detection "
+"for typing keys and press detection for dedicated layer or modifier keys. "
+"This does not change chord detection."
+msgstr ""
+"Αντικαθιστά τον προεπιλεγμένο εντοπισμό αναμονής για αυτόν τον κανόνα. "
+"Χρησιμοποιήστε την ανίχνευση απελευθέρωσης για πλήκτρα πληκτρολόγησης και "
+"πατήστε την ανίχνευση για αποκλειστικά πλήκτρα επιπέδου ή τροποποιητών. Αυτό"
+" δεν αλλάζει την ανίχνευση χορδών."
+
+msgid "Cannot list input devices: {}"
+msgstr "Δεν είναι δυνατή η λίστα συσκευών εισόδου: {}"
+
+msgid "Keyboard interception is not implemented on this operating system."
+msgstr ""
+"Η παρακολούθηση πληκτρολογίου δεν εφαρμόζεται σε αυτό το λειτουργικό "
+"σύστημα."
+
+msgid "Defaults"
+msgstr "Προεπιλογές"
+
+msgid "Shared by all rules"
+msgstr "Κοινή χρήση όλων των κανόνων"
+
+msgid "Hold threshold"
+msgstr "Κρατήστε το κατώφλι"
+
+msgid "Long hold"
+msgstr "Μεγάλη αναμονή"
+
+msgid "Double-tap window"
+msgstr "Πατήστε δύο φορές το παράθυρο"
+
+msgid "Reset to {} ms"
+msgstr "Επαναφορά σε {} ms"
+
+msgid "Automatic game detection"
+msgstr "Αυτόματη ανίχνευση παιχνιδιού"
+
+msgid "Works only in Auto mode."
+msgstr "Λειτουργεί μόνο σε αυτόματη λειτουργία."
+
+msgid "System signals"
+msgstr "Σήματα συστήματος"
+
+msgid "Launchers"
+msgstr "Εκτοξευτές"
+
+msgid "Heroic games"
+msgstr "Ηρωικά παιχνίδια"
+
+msgid ""
+"Turns on while a game started by Heroic Games Launcher runs (Epic, GOG, "
+"Amazon and added games): Heroic passes HEROIC_APP_NAME to every game it "
+"starts."
+msgstr ""
+"Ενεργοποιείται ενώ εκτελείται ένα παιχνίδι που ξεκίνησε από το Heroic Games "
+"Launcher (Epic, GOG, Amazon και πρόσθετα παιχνίδια): Το Heroic περνάει το "
+"HEROIC_APP_NAME σε κάθε παιχνίδι που ξεκινά."
+
+msgid "Games run through umu-launcher"
+msgstr "Τα παιχνίδια τρέχουν μέσω του umu-launcher"
+
+msgid ""
+"Turns on while a game runs through umu-run. Heroic, Lutris, Faugus Launcher "
+"and other launchers use it to start Windows games with Proton."
+msgstr ""
+"Ενεργοποιείται ενώ ένα παιχνίδι εκτελείται μέσω του umu-run. Το Heroic, το "
+"Lutris, το Faugus Launcher και άλλοι εκτοξευτές το χρησιμοποιούν για να "
+"ξεκινήσουν παιχνίδια Windows με το Proton."
+
+msgid "Guesses — can be wrong"
+msgstr "Εικασίες — μπορεί να είναι λάθος"
+
+msgid "Your rules"
+msgstr "Οι κανόνες σου"
+
+msgid ""
+"“Never a game” wins over everything else, automatic detection included."
+msgstr ""
+"Το \"Ποτέ ένα παιχνίδι\" κερδίζει πάνω από οτιδήποτε άλλο, "
+"συμπεριλαμβανομένης της αυτόματης ανίχνευσης."
+
+msgid "Always a game"
+msgstr "Πάντα ένα παιχνίδι"
+
+msgid "Never a game"
+msgstr "Ποτέ παιχνίδι"
+
+msgid ""
+"Built-in list. To count one of these anyway, add it to Always a game under "
+"Your rules."
+msgstr ""
+"Ενσωματωμένη λίστα. Για να μετρήσετε ένα από αυτά ούτως ή άλλως, προσθέστε "
+"το στο Πάντα ένα παιχνίδι σύμφωνα με τους κανόνες σας."
+
+msgid "Hold"
+msgstr "Παρατεταμένο πάτημα"
+
+msgid "Don't press"
+msgstr "Μην πιέζετε"
+
+msgid "{} — change…"
+msgstr "{} — αλλαγή…"
+
+msgid "Choose another key above to set when it is pressed."
+msgstr "Επιλέξτε ένα άλλο πλήκτρο παραπάνω για να το ρυθμίσετε όταν πατιέται."
+
+msgid "Assign a double-tap action to the rule to change this window."
+msgstr ""
+"Αντιστοιχίστε μια ενέργεια με διπλό πάτημα στον κανόνα για να αλλάξετε αυτό "
+"το παράθυρο."
+
+msgid "Hold on other key release"
+msgstr "Περιμένετε την απελευθέρωση άλλου κλειδιού"
+
+msgid "Hold on other key press"
+msgstr "Κρατήστε πατημένο το άλλο πλήκτρο"
+
+msgid "Reset"
+msgstr "Επαναφορά"
+
+msgid "Return all options in this dialog to their defaults"
+msgstr ""
+"Επιστρέψτε όλες τις επιλογές σε αυτό το παράθυρο διαλόγου στις προεπιλογές "
+"τους"
+
+msgid "Macro time limit"
+msgstr "Μακροχρονικό όριο"
+
+msgid ""
+"A macro still running after this time is stopped and counts as finished. A "
+"macro started while another one runs waits for it; up to 3 runs can wait, "
+"further presses are ignored."
+msgstr ""
+"Μια μακροεντολή που εξακολουθεί να εκτελείται μετά από αυτό το διάστημα "
+"σταματά και μετράει ως ολοκληρωμένη. Μια μακροεντολή ξεκίνησε ενώ μια άλλη "
+"που τρέχει την περιμένει. έως και 3 τρεξίματα μπορούν να περιμένουν, τα "
+"περαιτέρω πατήματα αγνοούνται."
+
+msgid "Global shortcuts registered in this KDE session:"
+msgstr ""
+"Καθολικές συντομεύσεις που έχουν καταχωρηθεί σε αυτήν την περίοδο "
+"λειτουργίας του KDE:"
+
+msgid ""
+"The list is read from the KDE global shortcut service (kglobalaccel): KWin, "
+"Plasma and applications register their actions there. The chosen action is "
+"invoked as is, as if its shortcut were pressed, even when no keys are "
+"assigned to it. Which actions exist and how they behave depends on the "
+"Plasma version and installed applications, so Left Hand Control does not "
+"guarantee them. Common window and desktop actions that also work on other "
+"platforms are in System actions."
+msgstr ""
+"Η λίστα διαβάζεται από την υπηρεσία καθολικής συντόμευσης του KDE "
+"(kglobalaccel): Το KWin, το Plasma και οι εφαρμογές καταχωρούν τις ενέργειές"
+" τους εκεί. Η επιλεγμένη ενέργεια καλείται ως έχει, σαν να είχε πατηθεί η "
+"συντόμευση της, ακόμη και όταν δεν της έχουν εκχωρηθεί πλήκτρα. Ποιες "
+"ενέργειες υπάρχουν και πώς συμπεριφέρονται εξαρτώνται από την έκδοση Plasma "
+"και τις εγκατεστημένες εφαρμογές, επομένως το Left Hand Control δεν τις "
+"εγγυάται. Οι κοινές ενέργειες παραθύρων και επιτραπέζιων υπολογιστών που "
+"λειτουργούν και σε άλλες πλατφόρμες βρίσκονται στις Ενέργειες συστήματος."
+
+msgid "Hold key or combination"
+msgstr "Κρατήστε πατημένο το πλήκτρο ή συνδυασμό"
+
+msgid ""
+"The key or combination stays pressed until you release the trigger. Choose "
+"modifiers plus one main key, for example Ctrl+KeyC."
+msgstr ""
+"Το πλήκτρο ή ο συνδυασμός παραμένει πατημένο μέχρι να απελευθερώσετε τη "
+"σκανδάλη. Επιλέξτε τροποποιητές συν ένα κύριο κλειδί, για παράδειγμα "
+"Ctrl+KeyC."
+
+msgid "Not used when holding performs a long-hold action."
+msgstr ""
+"Δεν χρησιμοποιείται όταν το κράτημα εκτελεί μια ενέργεια μακράς διαρκείας."
+
+msgid "Other key or combination…"
+msgstr "Άλλο κλειδί ή συνδυασμός…"
+
+msgid "Hold detection when another key is pressed"
+msgstr "Κρατήστε την ανίχνευση όταν πατήσετε άλλο πλήκτρο"
+
+msgid "Used for single-key triggers without a long-hold action."
+msgstr ""
+"Χρησιμοποιείται για σκανδάλες με ένα κλειδί χωρίς δράση μακράς διαρκείας."
+
+msgid "Long-hold threshold, ms"
+msgstr "Όριο μακράς διατήρησης, ms"
+
+msgid "Used when a long-hold action is selected."
+msgstr ""
+"Χρησιμοποιείται όταν έχει επιλεγεί μια ενέργεια παρατεταμένης αναμονής."
+
+msgid "Double-tap interval, ms"
+msgstr "Διάστημα διπλού αγγίγματος, ms"
+
+msgid "Double-tap actions are available only for single-key triggers."
+msgstr ""
+"Οι ενέργειες με διπλό πάτημα είναι διαθέσιμες μόνο για εναύσματα με ένα "
+"κλειδί."
+
+msgid "Applies when a double-tap action is assigned."
+msgstr "Ισχύει όταν έχει εκχωρηθεί μια ενέργεια με διπλό πάτημα."
+
+msgid "Delete trigger"
+msgstr "Διαγραφή ενεργοποίησης"
+
+msgid "Delete trigger?"
+msgstr "Διαγραφή ενεργοποίησης;"
+
+msgid ""
+"The trigger and all its assigned actions will be removed from the current "
+"layout."
+msgstr ""
+"Το έναυσμα και όλες οι ενέργειες που του έχουν ανατεθεί θα αφαιρεθούν από "
+"την τρέχουσα διάταξη."
+
+msgid "Reset {} to default"
+msgstr "Επαναφέρετε το {} στις προεπιλογές"
+
+msgid "Holding activates layer: {}"
+msgstr "Το κράτημα ενεργοποιεί το επίπεδο: {}"
+
+msgid "Holding performs a long-hold action."
+msgstr "Το κράτημα εκτελεί μια ενέργεια μακράς διαρκείας."
+
+msgid "Holding keeps a key or combination pressed."
+msgstr "Κρατώντας κρατάτε πατημένο ένα πλήκτρο ή συνδυασμό."
+
+msgid "Paths"
+msgstr "Μονοπάτια"
+
+msgid "Unknown layer key at \"{}\"."
+msgstr "Άγνωστο κλειδί επιπέδου στο \"{}\"."
+
+msgid "Invalid layer action at \"{}\"."
+msgstr "Μη έγκυρη ενέργεια επιπέδου στο \"{}\"."
+
+msgid "Invalid macro at \"{}\"."
+msgstr "Μη έγκυρη μακροεντολή στο \"{}\"."
+
+msgid "Invalid menu action at \"{}\"."
+msgstr "Μη έγκυρη ενέργεια μενού στο \"{}\"."
+
+msgid "Invalid timing at \"{}\"."
+msgstr "Μη έγκυρος χρονισμός στο \"{}\"."
+
+msgid "Invalid window condition at \"{}\"."
+msgstr "Μη έγκυρη συνθήκη παραθύρου στο \"{}\"."
+
+msgid "Unsupported rule combination at \"{}\"."
+msgstr "Μη υποστηριζόμενος συνδυασμός κανόνων στο \"{}\"."
+
+msgid "Invalid macro step at \"{}\"."
+msgstr "Μη έγκυρο βήμα μακροεντολής στο \"{}\"."
+
+msgid "Macro call cycle at \"{}\"."
+msgstr "Κύκλος κλήσης μακροεντολών στο \"{}\"."
+
+msgid "A timing value is outside the range shown in Settings."
+msgstr ""
+"Μια τιμή χρονισμού βρίσκεται εκτός του εύρους που εμφανίζεται στις "
+"Ρυθμίσεις."
+
+msgid "Keep modifiers held until the layer is released"
+msgstr ""
+"Κρατήστε τους τροποποιητές σε αναμονή μέχρι να απελευθερωθεί το επίπεδο"
+
+msgid ""
+"For a combination such as Alt+Tab: Alt stays pressed while you press the key"
+" again and is released together with the layer key, so the window switcher "
+"stays open."
+msgstr ""
+"Για έναν συνδυασμό όπως το Alt+Tab: Το Alt παραμένει πατημένο ενώ πατάτε "
+"ξανά το πλήκτρο και απελευθερώνεται μαζί με το πλήκτρο στρώματος, οπότε ο "
+"διακόπτης παραθύρου παραμένει ανοιχτός."
+
+msgid ""
+"Cannot list input devices. Check device access and see the application log."
+msgstr ""
+"Δεν είναι δυνατή η λίστα συσκευών εισόδου. Ελέγξτε την πρόσβαση της συσκευής"
+" και δείτε το αρχείο καταγραφής της εφαρμογής."
+
+msgid ""
+"Configuration is unavailable. Check the configuration files and see the "
+"application log."
+msgstr ""
+"Η διαμόρφωση δεν είναι διαθέσιμη. Ελέγξτε τα αρχεία διαμόρφωσης και δείτε το"
+" αρχείο καταγραφής της εφαρμογής."
+
+msgid "Popup menus are unavailable. Try opening the menu again."
+msgstr ""
+"Τα αναδυόμενα μενού δεν είναι διαθέσιμα. Δοκιμάστε να ανοίξετε ξανά το "
+"μενού."
+
+msgid "Popup menu failed. Try opening the menu again."
+msgstr "Το αναδυόμενο μενού απέτυχε. Δοκιμάστε να ανοίξετε ξανά το μενού."
+
+msgid ""
+"The text was not typed: the typing method is unavailable. Restart the mapper"
+" to try again."
+msgstr ""
+"Το κείμενο δεν πληκτρολογήθηκε: η μέθοδος πληκτρολόγησης δεν είναι "
+"διαθέσιμη. Επανεκκινήστε τη χαρτογράφηση για να προσπαθήσετε ξανά."
+
+msgid ""
+"The text was not typed: safe clipboard access failed. See the application "
+"log."
+msgstr ""
+"Το κείμενο δεν πληκτρολογήθηκε: η ασφαλής πρόσβαση στο πρόχειρο απέτυχε. "
+"Δείτε το αρχείο καταγραφής της εφαρμογής."
+
+msgid ""
+"The text was not typed: the input tool failed. See the application log."
+msgstr ""
+"Το κείμενο δεν πληκτρολογήθηκε: το εργαλείο εισαγωγής απέτυχε. Δείτε το "
+"αρχείο καταγραφής της εφαρμογής."
+
+msgid "Changes applied, but the mapper was not updated. Restart the mapper."
+msgstr ""
+"Εφαρμόστηκαν αλλαγές, αλλά ο χάρτης δεν ενημερώθηκε. Επανεκκινήστε τον "
+"χαρτογράφο."
+
+msgid "The operation failed. See the application log."
+msgstr "Η επέμβαση απέτυχε. Δείτε το αρχείο καταγραφής της εφαρμογής."
+
+msgid "The action failed. See the application log."
+msgstr "Η ενέργεια απέτυχε. Δείτε το αρχείο καταγραφής της εφαρμογής."
+
+msgid ""
+"Cannot start the mapper. Check the keyboard and device access. See the "
+"application log."
+msgstr ""
+"Δεν είναι δυνατή η εκκίνηση του χάρτη. Ελέγξτε την πρόσβαση στο πληκτρολόγιο"
+" και τη συσκευή. Δείτε το αρχείο καταγραφής της εφαρμογής."
+
+msgid "Mapper is running, but an error occurred. See the application log."
+msgstr ""
+"Το Mapper εκτελείται, αλλά παρουσιάστηκε σφάλμα. Δείτε το αρχείο καταγραφής "
+"της εφαρμογής."
+
+msgid "Mapper stopped because of an error. See the application log."
+msgstr ""
+"Το Mapper σταμάτησε λόγω σφάλματος. Δείτε το αρχείο καταγραφής της "
+"εφαρμογής."
+
+msgid ""
+"Cannot read or save the configuration. Check file access and see the "
+"application log."
+msgstr ""
+"Δεν είναι δυνατή η ανάγνωση ή η αποθήκευση της διαμόρφωσης. Ελέγξτε την "
+"πρόσβαση στο αρχείο και δείτε το αρχείο καταγραφής της εφαρμογής."
+
+msgid "Cannot parse the configuration file. See the application log."
+msgstr ""
+"Δεν είναι δυνατή η ανάλυση του αρχείου διαμόρφωσης. Δείτε το αρχείο "
+"καταγραφής της εφαρμογής."
+
+msgid "The configuration contains invalid values. See the application log."
+msgstr ""
+"Η διαμόρφωση περιέχει μη έγκυρες τιμές. Δείτε το αρχείο καταγραφής της "
+"εφαρμογής."
+
+msgid "The action has invalid syntax."
+msgstr "Η ενέργεια έχει μη έγκυρη σύνταξη."
+
+msgid "Pauses can only be used in macro steps."
+msgstr "Οι παύσεις μπορούν να χρησιμοποιηθούν μόνο σε βήματα μακροεντολής."
+
+msgid "The selected macro no longer exists."
+msgstr "Η επιλεγμένη μακροεντολή δεν υπάρχει πλέον."
+
+msgid "The selected command no longer exists."
+msgstr "Η επιλεγμένη εντολή δεν υπάρχει πλέον."
+
+msgid "Unknown system action."
+msgstr "Άγνωστη ενέργεια συστήματος."
+
+msgid "Unknown application action."
+msgstr "Άγνωστη ενέργεια εφαρμογής."
+
+msgid ""
+"Unknown action type. It may come from a newer version of the application."
+msgstr ""
+"Άγνωστος τύπος ενέργειας. Μπορεί να προέρχεται από μια νεότερη έκδοση της "
+"εφαρμογής."
+
+msgid "Layout: {}"
+msgstr "Διάταξη: {}"
+
+msgid "Select All"
+msgstr "Επιλογή όλων"
+
+msgid "Move line down"
+msgstr "Μετακινήστε τη γραμμή προς τα κάτω"
+
+msgid "Down + End"
+msgstr "Κάτω + Τέλος"
+
+msgid "Up + End"
+msgstr "Πάνω + Τέλος"
+
+msgid "Up 5 times"
+msgstr "Έως και 5 φορές"
+
+msgid "Duplicate line"
+msgstr "Διπλότυπη γραμμή"
+
+msgid "Right + Space"
+msgstr "Δεξιά + Κενό"
+
+msgid "Empty line below"
+msgstr "Κενή γραμμή παρακάτω"
+
+msgid "Cut word right from center"
+msgstr "Κόψτε τη λέξη δεξιά από το κέντρο"
+
+msgid "Copy word right from center"
+msgstr "Αντιγράψτε τη λέξη δεξιά από το κέντρο"
+
+msgid "Paste at line above"
+msgstr "Επικόλληση στην παραπάνω γραμμή"
+
+msgid "Replace word with buffer"
+msgstr "Αντικαταστήστε τη λέξη με buffer"
+
+msgid "Down + Home"
+msgstr "Κάτω + Αρχική"
+
+msgid "Up + Home"
+msgstr "Πάνω + Αρχική"
+
+msgid "Down 5 times"
+msgstr "Πτώση 5 φορές"
+
+msgid "Paste at line bottom"
+msgstr "Επικόλληση στο κάτω μέρος της γραμμής"
+
+msgid "Cut to start"
+msgstr "Κόψτε για να ξεκινήσετε"
+
+msgid "Cut to end"
+msgstr "Κόψτε μέχρι το τέλος"
+
+msgid "Cut line content"
+msgstr "Αποκοπή περιεχομένου γραμμής"
+
+msgid "Cut and remove line"
+msgstr "Κόψτε και αφαιρέστε τη γραμμή"
+
+msgid "Select 5 lines up"
+msgstr "Επιλέξτε 5 γραμμές επάνω"
+
+msgid "Copy to start"
+msgstr "Αντιγράψτε για να ξεκινήσετε"
+
+msgid "Copy to end"
+msgstr "Αντιγραφή στο τέλος"
+
+msgid "Copy line"
+msgstr "Αντιγραφή γραμμής"
+
+msgid "Select whole line"
+msgstr "Επιλέξτε ολόκληρη τη γραμμή"
+
+msgid "Select word right from center"
+msgstr "Επιλέξτε λέξη δεξιά από το κέντρο"
+
+msgid "Replace to start with buffer"
+msgstr "Αντικαταστήστε για να ξεκινήσετε με buffer"
+
+msgid "Replace to end with buffer"
+msgstr "Αντικαταστήστε στο τέλος με buffer"
+
+msgid "Replace line with buffer"
+msgstr "Αντικαταστήστε τη γραμμή με buffer"
+
+msgid "Select 5 lines down"
+msgstr "Επιλέξτε 5 γραμμές προς τα κάτω"
+
+msgid "Remove trigger"
+msgstr "Αφαιρέστε τη σκανδάλη"
+
+msgid "Refresh list"
+msgstr "Ανανέωση λίστας"
+
+msgid "Remove item"
+msgstr "Αφαίρεση στοιχείου"
+
+msgid "Save as or reset changes"
+msgstr "Αποθήκευση ως ή επαναφορά αλλαγών"
+
+msgid "Edit: {}"
+msgstr "Επεξεργασία: {}"
+
+msgid "Save (Enter)"
+msgstr "Αποθήκευση (Enter)"
+
+msgid "Save (Ctrl+Enter)"
+msgstr "Αποθήκευση (Ctrl+Enter)"
+
+msgid "Cancel (Esc)"
+msgstr "Ακύρωση (Esc)"
+
+msgid "Use the default from Settings: {} ms"
+msgstr "Χρησιμοποιήστε την προεπιλογή από τις Ρυθμίσεις: {} ms"
+
+msgid ""
+"Opened by the app:showQuickMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold any "
+"action: a shortcut, macro, shell command or system action."
+msgstr ""
+"Ανοίγεται από τις ενέργειες app:showQuickMenuN, όπου N είναι η θέση σελίδας:"
+" η αναδιάταξη σελίδων αλλάζει ποια σελίδα ανοίγει ένα πλήκτρο. Κάθε κελί "
+"μπορεί να κρατήσει οποιαδήποτε ενέργεια: συντόμευση, μακροεντολή, εντολή "
+"φλοιού ή ενέργεια συστήματος."
+
+msgid ""
+"In the popup, click a cell or press its key: the cells follow the keyboard "
+"rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number."
+msgstr ""
+"Στο αναδυόμενο παράθυρο, κάντε κλικ σε ένα κελί ή πατήστε το πλήκτρο του: τα"
+" κελιά ακολουθούν τις σειρές του πληκτρολογίου Q–T, A–G και Z–B. Η καρτέλα "
+"αλλάζει σελίδες. ψηφία ανοίγουν μια σελίδα με τον αριθμό της."
+
+msgid "Waiting for keyboard"
+msgstr "Αναμονή για πληκτρολόγιο"

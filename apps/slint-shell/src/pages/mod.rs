@@ -135,10 +135,29 @@ pub(crate) const APPEARANCES: [Appearance; 4] = [
     Appearance::Dark,
     Appearance::EInk,
 ];
-pub(crate) const LOCALES: [LocalePreference; 3] = [
+pub(crate) const LOCALES: [LocalePreference; 22] = [
     LocalePreference::Auto,
     LocalePreference::English,
     LocalePreference::Russian,
+    LocalePreference::German,
+    LocalePreference::French,
+    LocalePreference::Spanish,
+    LocalePreference::Italian,
+    LocalePreference::Portuguese,
+    LocalePreference::Polish,
+    LocalePreference::Turkish,
+    LocalePreference::Ukrainian,
+    LocalePreference::Czech,
+    LocalePreference::Hungarian,
+    LocalePreference::Romanian,
+    LocalePreference::Greek,
+    LocalePreference::Croatian,
+    LocalePreference::Georgian,
+    LocalePreference::Kazakh,
+    LocalePreference::ChineseSimplified,
+    LocalePreference::ChineseTraditional,
+    LocalePreference::Japanese,
+    LocalePreference::Korean,
 ];
 
 /// Index of `value` in `choices`, or 0.

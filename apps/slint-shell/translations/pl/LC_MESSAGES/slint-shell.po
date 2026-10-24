@@ -1,0 +1,3641 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Left Hand Control\n"
+"PO-Revision-Date: 2026-10-23 00:00+0000\n"
+"Last-Translator: Machine translation; review welcome\n"
+"Language-Team: Polish\n"
+"Language: pl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
+
+msgid "Action saved"
+msgstr "Akcja zapisana"
+
+msgid "Cancel"
+msgstr "Anuluj"
+
+msgid "Increase"
+msgstr "Zwiększyć"
+
+msgid "Decrease"
+msgstr "Zmniejszenie"
+
+msgid "Configuration loaded: {n} rule"
+msgid_plural "Configuration loaded: {n} rules"
+msgstr[0] "Załadowana konfiguracja: {n} reguła"
+msgstr[1] "Załadowana konfiguracja: {n} reguły"
+msgstr[2] "Załadowana konfiguracja: {n} reguł"
+
+msgid "Configuration saved: {n} rule"
+msgid_plural "Configuration saved: {n} rules"
+msgstr[0] "Konfiguracja została zapisana: {n} reguła"
+msgstr[1] "Konfiguracja została zapisana: {n} reguły"
+msgstr[2] "Konfiguracja zapisana: {n} reguł"
+
+msgid "Configuration unavailable: {}"
+msgstr "Konfiguracja niedostępna: {}"
+
+msgid "Delay: an integer from 1 to 10000 ms"
+msgstr "Opóźnienie: liczba całkowita od 1 do 10000 ms"
+
+msgid "Device saved: {}"
+msgstr "Urządzenie zapisane: {}"
+
+msgid "Emoji"
+msgstr "Emoji"
+
+msgid "Tab · {}/{}"
+msgstr "Tab · {}/{}"
+
+msgid "Enter non-empty text"
+msgstr "Wpisz niepusty tekst"
+
+msgid "Key {} only has conditional or layer rules; edit it in the full editor"
+msgstr ""
+"Klucz {} ma tylko reguły warunkowe lub warstwy; edytuj go w pełnym edytorze"
+
+msgid "Keyboard"
+msgstr "Klawiatura"
+
+msgid "Keyboard device"
+msgstr "Urządzenie z klawiaturą"
+
+msgid "Keyboard layout"
+msgstr "Układ klawiatury"
+
+msgid "Load a valid configuration before starting the mapper"
+msgstr ""
+"Załaduj prawidłową konfigurację przed uruchomieniem programu mapującego"
+
+msgid "Mapper is running"
+msgstr "Maper jest uruchomiony"
+
+msgid "Mapper is running: {}"
+msgstr "Program mapujący jest uruchomiony: {}"
+
+msgid "Mapper is starting…"
+msgstr "Uruchamia się program mapujący…"
+
+msgid "Mapper is stopped"
+msgstr "Program mapujący został zatrzymany"
+
+msgid "Mapper is stopped: {}"
+msgstr "Program mapujący został zatrzymany: {}"
+
+msgid "Quick actions"
+msgstr "Szybkie działania"
+
+msgid "Quit"
+msgstr "Zakończ"
+
+msgid "Settings"
+msgstr "Ustawienia"
+
+msgid "Mapper on / off"
+msgstr "Mapowanie włączone/wyłączone"
+
+msgid "Switch to desktop {n}"
+msgstr "Przełącz na komputer stacjonarny {n}"
+
+msgid "Save"
+msgstr "Zapisz"
+
+msgid "Changes applied, but the mapper was not updated: {}"
+msgstr "Zmiany zostały zastosowane, ale maper nie został zaktualizowany: {}"
+
+msgid "Select a key to assign an action."
+msgstr "Wybierz klawisz, aby przypisać akcję."
+
+msgid "Select a keyboard device in the settings"
+msgstr "Wybierz urządzenie z klawiaturą w ustawieniach"
+
+msgid "Select a system action"
+msgstr "Wybierz akcję systemową"
+
+msgid "Spell popup process unavailable: {}"
+msgstr "Proces wyskakującego komunikatu pisowni jest niedostępny: {}"
+
+msgid "Spell worker is not running"
+msgstr "Czarownik nie działa"
+
+msgid "Spell worker is restarting"
+msgstr "Zaklęcie robocze uruchamia się ponownie"
+
+msgid "Spell worker: restart limit exceeded (3 per minute)"
+msgstr "Czarodziej: przekroczono limit ponownego uruchomienia (3 na minutę)"
+
+msgid "Spell worker: {}"
+msgstr "Czarodziej: {}"
+
+msgid "Stop capture"
+msgstr "Zatrzymaj przechwytywanie"
+
+msgid "System"
+msgstr "System"
+
+msgid "Text"
+msgstr "Tekst"
+
+msgid "The configuration changed since editing started; repeat the change"
+msgstr ""
+"Konfiguracja uległa zmianie od czasu rozpoczęcia edycji; powtórzyć zmianę"
+
+msgid "Unknown action type"
+msgstr "Nieznany typ działania"
+
+msgid "Left Hand Control"
+msgstr "Left Hand Control"
+
+msgid "Layouts"
+msgstr "Układy"
+
+msgid "New layout name"
+msgstr "Nowa nazwa układu"
+
+msgid "Mapper"
+msgstr "Mapowanie"
+
+msgid "Dark"
+msgstr "Ciemny"
+
+msgid "Light"
+msgstr "Światło"
+
+msgid "Refresh devices"
+msgstr "Odśwież urządzenia"
+
+msgid "Mouse device path"
+msgstr "Ścieżka urządzenia myszy"
+
+msgid "Optional device path"
+msgstr "Opcjonalna ścieżka urządzenia"
+
+msgid "General"
+msgstr "Ogólny"
+
+msgid "Appearance"
+msgstr "Wygląd"
+
+msgid "Language"
+msgstr "Język"
+
+msgid "Automatic"
+msgstr "Automatyczny"
+
+msgid "Key behavior"
+msgstr "Kluczowe zachowanie"
+
+msgid "Game mode"
+msgstr "Tryb gry"
+
+msgid "Use GameMode daemon"
+msgstr "Użyj demona GameMode"
+
+msgid "Detect fullscreen"
+msgstr "Wykryj pełny ekran"
+
+msgid "ydotool path"
+msgstr "ścieżka ydotool"
+
+msgid "xdotool path"
+msgstr "ścieżka xdotool"
+
+msgid "Settings directory: "
+msgstr "Katalog ustawień:"
+
+msgid "Layouts directory: "
+msgstr "Katalog układów:"
+
+msgid "Save settings"
+msgstr "Zapisz ustawienia"
+
+msgid "Settings saved"
+msgstr "Ustawienia zostały zapisane"
+
+msgid "Enter a timeout from 50 to 1000 milliseconds"
+msgstr "Wprowadź limit czasu od 50 do 1000 milisekund"
+
+msgid "Rules"
+msgstr "Zasady"
+
+msgid "Remove"
+msgstr "Usuń"
+
+msgid "Move up"
+msgstr "Podnieść"
+
+msgid "Move down"
+msgstr "Opuszczać"
+
+msgid "Enabled"
+msgstr "Włączony"
+
+msgid "Trigger key"
+msgstr "Klawisz spustowy"
+
+msgid "Tap action"
+msgstr "Kliknij akcję"
+
+msgid "Layout conditions (comma separated)"
+msgstr "Warunki układu (oddzielone przecinkami)"
+
+msgid "App whitelist (comma separated)"
+msgstr "Biała lista aplikacji (oddzielona przecinkami)"
+
+msgid "App blacklist (comma separated)"
+msgstr "Czarna lista aplikacji (oddzielona przecinkami)"
+
+msgid "Isolate"
+msgstr "Izolować"
+
+msgid "Hold for"
+msgstr "Przytrzymaj"
+
+msgid "Swallow tap"
+msgstr "Blokuj naciśnięcie"
+
+msgid "Swallow hold"
+msgstr "Blokuj przytrzymanie"
+
+msgid "New layer name"
+msgstr "Nowa nazwa warstwy"
+
+msgid "Create layer"
+msgstr "Utwórz warstwę"
+
+msgid "Rules and triggers"
+msgstr "Reguły i wyzwalacze"
+
+msgid "Define how physical keys activate layers or run actions."
+msgstr ""
+"Zdefiniuj, w jaki sposób klucze fizyczne aktywują warstwy lub uruchamiają "
+"akcje."
+
+msgid "Add rule"
+msgstr "Dodaj regułę"
+
+msgid "Not set"
+msgstr "Nie ustawiono"
+
+msgid "Layer (hold)"
+msgstr "Warstwa (przytrzymaj)"
+
+msgid "Double-tap action"
+msgstr "Akcja dwukrotnego dotknięcia"
+
+msgid "Hold button"
+msgstr "Przytrzymaj przycisk"
+
+msgid "Default"
+msgstr "Domyślny"
+
+msgid "Advanced"
+msgstr "Zaawansowany"
+
+msgid "Choose trigger key"
+msgstr "Wybierz klawisz spustowy"
+
+msgid "Choose layer"
+msgstr "Wybierz warstwę"
+
+msgid "Conditions"
+msgstr "Warunki"
+
+msgid "Advanced rule options"
+msgstr "Zaawansowane opcje reguł"
+
+msgid "Choose action"
+msgstr "Wybierz akcję"
+
+msgid "Ignore"
+msgstr "Ignorować"
+
+msgid "On"
+msgstr "Włączone"
+
+msgid "Off"
+msgstr "Wyłączone"
+
+msgid "Clear"
+msgstr "Jasne"
+
+msgid "Apply"
+msgstr "Zastosuj"
+
+msgid "Delete rule?"
+msgstr "Usunąć regułę?"
+
+msgid "This rule will be removed from the current layout."
+msgstr "Ta reguła zostanie usunięta z bieżącego układu."
+
+msgid "Layers"
+msgstr "Warstwy"
+
+msgid "New layer"
+msgstr "Nowa warstwa"
+
+msgid "Duplicate"
+msgstr "Duplikat"
+
+msgid "Delete"
+msgstr "Usuń"
+
+msgid "Extra keys"
+msgstr "Dodatkowe klucze"
+
+msgid "Edit"
+msgstr "Edytuj"
+
+msgid "Rename layer"
+msgstr "Zmień nazwę warstwy"
+
+msgid "Duplicate layer"
+msgstr "Zduplikuj warstwę"
+
+msgid "Delete layer?"
+msgstr "Usunąć warstwę?"
+
+msgid "Edit layer key"
+msgstr "Edytuj klucz warstwy"
+
+msgid "Name"
+msgstr "Nazwa"
+
+msgid "Description"
+msgstr "Opis"
+
+msgid "Rules using this layer will return to the base layer."
+msgstr "Reguły korzystające z tej warstwy powrócą do warstwy bazowej."
+
+msgid "Transparent"
+msgstr "Przezroczysty"
+
+msgid "Swallow"
+msgstr "Zablokuj"
+
+msgid "Action"
+msgstr "Działanie"
+
+msgid "Action code"
+msgstr "Kod akcji"
+
+msgid "Enter a layer name"
+msgstr "Wprowadź nazwę warstwy"
+
+msgid "A layer with this name already exists."
+msgstr "Warstwa o tej nazwie już istnieje."
+
+msgid "Enter a layout name"
+msgstr "Wprowadź nazwę układu"
+
+msgid "Enter a key code"
+msgstr "Wprowadź kod klucza"
+
+msgid "Native"
+msgstr "Rodzinny"
+
+msgid "Layer saved"
+msgstr "Warstwa została zapisana"
+
+msgid "Macros"
+msgstr "Makra"
+
+msgid "Built-in macros"
+msgstr "Wbudowane makra"
+
+msgid "Macro ID"
+msgstr "Identyfikator makra"
+
+msgid "Copy ID"
+msgstr "Skopiuj dowód"
+
+msgid "Steps"
+msgstr "Kroki"
+
+msgid "Add step"
+msgstr "Dodaj krok"
+
+msgid "Add pause"
+msgstr "Dodaj pauzę"
+
+msgid "Macro ID must contain 1–64 letters, digits, underscores or hyphens"
+msgstr ""
+"Identyfikator makra musi zawierać od 1 do 64 liter, cyfr, podkreśleń lub "
+"łączników"
+
+msgid "Macro ID is already in use"
+msgstr "Identyfikator makra jest już używany"
+
+msgid "Macro delays must be between 0 and 2000 ms"
+msgstr "Opóźnienia makro muszą mieścić się w przedziale od 0 do 2000 ms"
+
+msgid "Pause must be between 1 and 10000 ms"
+msgstr "Pauza musi wynosić od 1 do 10000 ms"
+
+msgid "Unknown key or shortcut in macro step"
+msgstr "Nieznany klawisz lub skrót w kroku makra"
+
+msgid "Macro references cannot form a cycle"
+msgstr "Odniesienia do makro nie mogą tworzyć cyklu"
+
+msgid "Commands"
+msgstr "Polecenia"
+
+msgid "Add"
+msgstr "Dodaj"
+
+msgid "Clear cell"
+msgstr "Wyczyść komórkę"
+
+msgid "Page name"
+msgstr "Nazwa strony"
+
+msgid "Emoji cells accept at most 100 characters."
+msgstr "Komórki emoji akceptują maksymalnie 100 znaków."
+
+msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
+msgstr ""
+"Identyfikator polecenia: 1–64 litery, cyfry, podkreślenia lub łączniki."
+
+msgid "Command IDs must be unique."
+msgstr "Identyfikatory poleceń muszą być unikalne."
+
+msgid "Enter a shell command."
+msgstr "Wprowadź polecenie powłoki."
+
+msgid "Save as…"
+msgstr "Zapisz jako…"
+
+msgid "Save layout as…"
+msgstr "Zapisz układ jako…"
+
+msgid "Please wait…"
+msgstr "Proszę czekać…"
+
+msgid "Stop"
+msgstr "Zatrzymywać się"
+
+msgid "Start"
+msgstr "Start"
+
+msgid "Custom layout"
+msgstr "Układ niestandardowy"
+
+msgid "Base keyboard"
+msgstr "Klawiatura podstawowa"
+
+msgid "Keyboard device path"
+msgstr "Ścieżka urządzenia klawiatury"
+
+msgid "Copy path"
+msgstr "Skopiuj ścieżkę"
+
+msgid "Create a layer to assign its keys, or edit the base keyboard."
+msgstr ""
+"Utwórz warstwę, aby przypisać jej klawisze lub edytuj klawiaturę podstawową."
+
+msgid "Running"
+msgstr "Działanie"
+
+msgid "Stopped"
+msgstr "Zatrzymany"
+
+msgid "Layout library updated"
+msgstr "Zaktualizowano bibliotekę układów"
+
+msgid "Select a layout"
+msgstr "Wybierz układ"
+
+msgid "Layout changed on disk; select it again"
+msgstr "Układ zmieniony na dysku; wybierz ponownie"
+
+msgid "Any game mode"
+msgstr "Dowolny tryb gry"
+
+msgid "Game mode on"
+msgstr "Tryb gry włączony"
+
+msgid "Game mode off"
+msgstr "Tryb gry wyłączony"
+
+msgid "System layouts (comma separated)"
+msgstr "Układy systemu (oddzielone przecinkami)"
+
+msgid "Applications (comma separated)"
+msgstr "Aplikacje (oddzielone przecinkami)"
+
+msgid "Manual"
+msgstr "Podręcznik"
+
+msgid "Active"
+msgstr "Aktywny"
+
+msgid "Editing · unsaved"
+msgstr "Edycja · niezapisane"
+
+msgid "Editing"
+msgstr "Redagowanie"
+
+msgid "Activate"
+msgstr "Aktywować"
+
+msgid "Delete layout?"
+msgstr "Usunąć układ?"
+
+msgid "Layout details"
+msgstr "Szczegóły układu"
+
+msgid "Do not use when"
+msgstr "Nie używaj kiedy"
+
+msgid "The layout file will be deleted. This cannot be undone."
+msgstr "Plik układu zostanie usunięty. Tego nie można cofnąć."
+
+msgid "Duplicate…"
+msgstr "Duplikat…"
+
+msgid "Edit layout"
+msgstr "Edytuj układ"
+
+msgid "New layout"
+msgstr "Nowy układ"
+
+msgid "A layout with this name already exists."
+msgstr "Układ o tej nazwie już istnieje."
+
+msgid "Add a description…"
+msgstr "Dodaj opis…"
+
+msgid "Create"
+msgstr "Tworzyć"
+
+msgid "Delete…"
+msgstr "Usuwać…"
+
+msgid "Description (optional)"
+msgstr "Opis (opcjonalnie)"
+
+msgid "Discard changes"
+msgstr "Odrzuć zmiany"
+
+msgid "Make active"
+msgstr "Uczyń aktywnym"
+
+msgid "Single: the layout you make active works everywhere."
+msgstr "Pojedynczy: układ, który ustawisz jako aktywny, działa wszędzie."
+
+msgid "Not used in automatic mode"
+msgstr "Nieużywany w trybie automatycznym"
+
+msgid "Rename…"
+msgstr "Przemianować…"
+
+msgid "Save and continue"
+msgstr "Zapisz i kontynuuj"
+
+msgid ""
+"The layout you are editing has not been saved to the library. Its changes "
+"will be lost."
+msgstr ""
+"Układ, który edytujesz, nie został zapisany w bibliotece. Zmiany zostaną "
+"utracone."
+
+msgid "The name contains characters that cannot be used in a file name."
+msgstr "Nazwa zawiera znaki, których nie można użyć w nazwie pliku."
+
+msgid "Unsaved changes"
+msgstr "Niezapisane zmiany"
+
+msgid "You are editing “{}”, but “{}” is active."
+msgstr "Edytujesz „{}”, ale „{}” jest aktywny."
+
+msgid "You are editing “{}”; no layout is active."
+msgstr "Edytujesz „{}”; żaden układ nie jest aktywny."
+
+msgid "game mode off"
+msgstr "tryb gry wyłączony"
+
+msgid "game mode on"
+msgstr "tryb gry włączony"
+
+msgid "{} (copy)"
+msgstr "{} (kopia)"
+
+msgid "“{}” has unsaved changes. Save them before switching?"
+msgstr "„{}” zawiera niezapisane zmiany. Zapisać je przed zmianą?"
+
+msgid "Layout mode"
+msgstr "Tryb układu"
+
+msgid "Create layout"
+msgstr "Utwórz układ"
+
+msgid "Empty"
+msgstr "Pusty"
+
+msgid "Empty layout"
+msgstr "Pusty układ"
+
+msgid "Previously selected: {}"
+msgstr "Poprzednio wybrane: {}"
+
+msgid "Current value"
+msgstr "Aktualna wartość"
+
+msgid "Capture key"
+msgstr "Klucz przechwytywania"
+
+msgid "Press a key (including modifiers or Escape)."
+msgstr "Naciśnij klawisz (w tym modyfikatory lub Escape)."
+
+msgid "Press a key or shortcut. Release a modifier to select it alone."
+msgstr ""
+"Naciśnij klawisz lub skrót. Zwolnij modyfikator, aby wybrać go samodzielnie."
+
+msgid "Choose a valid key or action."
+msgstr "Wybierz prawidłowy klucz lub akcję."
+
+msgid "Search keys and actions"
+msgstr "Wyszukaj klucze i akcje"
+
+msgid "Search keys"
+msgstr "Szukaj kluczy"
+
+msgid "Hold action"
+msgstr "Wstrzymaj akcję"
+
+msgid "Macro step"
+msgstr "Krok makro"
+
+msgid ""
+"You can enter a key combination using + between keys. Some keys depend on "
+"keyboard hardware and may be ignored by the system."
+msgstr ""
+"Możesz wprowadzić kombinację klawiszy, używając + pomiędzy klawiszami. "
+"Niektóre klawisze zależą od sprzętu klawiatury i mogą zostać zignorowane "
+"przez system."
+
+msgid ""
+"You can assign a key combination using + between keys. Availability of "
+"special keys depends on the keyboard and desktop environment."
+msgstr ""
+"Możesz przypisać kombinację klawiszy, używając + pomiędzy klawiszami. "
+"Dostępność klawiszy specjalnych zależy od klawiatury i środowiska pulpitu."
+
+msgid "Behavior:"
+msgstr "Zachowanie:"
+
+msgid "Action:"
+msgstr "Działanie:"
+
+msgid "Trigger key:"
+msgstr "Klawisz spustowy:"
+
+msgid "{n} line"
+msgid_plural "{n} lines"
+msgstr[0] "{n} linia"
+msgstr[1] "{n} linie"
+msgstr[2] "{n} linii"
+
+msgid "Modifiers"
+msgstr "Modyfikatory"
+
+msgid "Letters, digits and symbols"
+msgstr "Litery, cyfry i symbole"
+
+msgid "Control keys"
+msgstr "Klawisze sterujące"
+
+msgid "Navigation and numpad"
+msgstr "Nawigacja i klawiatura numeryczna"
+
+msgid "F1–F24"
+msgstr "F1–F24"
+
+msgid "Media and launch"
+msgstr "Media i uruchomienie"
+
+msgid "System and laptop"
+msgstr "System i laptop"
+
+msgid "Mouse"
+msgstr "Mysz"
+
+msgid "Other keys"
+msgstr "Inne klucze"
+
+msgid "Actions"
+msgstr "Działania"
+
+msgid "Extra button on some gaming mice"
+msgstr "Dodatkowy przycisk w niektórych myszach do gier"
+
+msgid "Keys"
+msgstr "Klawiatura"
+
+msgid "System actions"
+msgstr "Działania systemowe"
+
+msgid "KDE shortcuts"
+msgstr "Skróty KDE"
+
+msgid "Pause"
+msgstr "Pauza"
+
+msgid "Literal text (text: prefix is added automatically)"
+msgstr "Tekst dosłowny (tekst: przedrostek jest dodawany automatycznie)"
+
+msgid "Pause in milliseconds (1–10000)"
+msgstr "Pauza w milisekundach (1–10000)"
+
+msgid "No matching items"
+msgstr "Brak pasujących elementów"
+
+msgid "Show Quick Action Menu page {}"
+msgstr "Pokaż stronę menu szybkiej akcji {}"
+
+msgid "Show Emoji & Symbols menu page {}"
+msgstr "Pokaż stronę menu Emoji i symbole {}"
+
+msgid "Switch to desktop {}"
+msgstr "Przełącz na komputer stacjonarny {}"
+
+msgid "Move window to desktop {}"
+msgstr "Przenieś okno na pulpit {}"
+
+msgid "Close window"
+msgstr "Zamknij okno"
+
+msgid "Minimize window"
+msgstr "Minimalizuj okno"
+
+msgid "Maximize window"
+msgstr "Maksymalizuj okno"
+
+msgid "Keep window above others"
+msgstr "Trzymaj okno nad innymi"
+
+msgid "Show desktop"
+msgstr "Pokaż pulpit"
+
+msgid "Window overview"
+msgstr "Przegląd okna"
+
+msgid "Open application launcher"
+msgstr "Otwórz program uruchamiający aplikacje"
+
+msgid "Turn off screen"
+msgstr "Wyłącz ekran"
+
+msgid "Switch to layout {}"
+msgstr "Przełącz na układ {}"
+
+msgid "Layer"
+msgstr "Warstwa"
+
+msgid "Delete layer"
+msgstr "Usuń warstwę"
+
+msgid "Create new layer"
+msgstr "Utwórz nową warstwę"
+
+msgid "Layer description"
+msgstr "Opis warstwy"
+
+msgid "Add description"
+msgstr "Dodaj opis"
+
+msgid "Type to test..."
+msgstr "Wpisz, aby przetestować..."
+
+msgid "Ignore key"
+msgstr "Ignoruj ​​klucz"
+
+msgid "No layers yet"
+msgstr "Nie ma jeszcze warstw"
+
+msgid "Left hand"
+msgstr "Lewa ręka"
+
+msgid "Right hand"
+msgstr "Prawa ręka"
+
+msgid "Key"
+msgstr "Klawisz"
+
+msgid "US layout"
+msgstr "Układ amerykański"
+
+msgid "LHC codes"
+msgstr "kody LHC"
+
+msgid "No extra keys for this layer yet."
+msgstr "Nie ma jeszcze dodatkowych kluczy dla tej warstwy."
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid."
+msgstr ""
+"Przyciski myszy, klawisze multimedialne i inne wyzwalacze poza główną siatką"
+" klawiatury."
+
+msgid ""
+"Display modes affect labels only — the key code stays the same. “US layout” "
+"shows standard letter labels for visual reference. “LHC codes” shows app-"
+"specific codes (e.g. KeyA, ArrowLeft)."
+msgstr ""
+"Tryby wyświetlania wpływają tylko na etykiety — kod klucza pozostaje taki "
+"sam. „Układ amerykański” przedstawia standardowe etykiety literowe w celach "
+"wizualnych. „Kody LHC” pokazują kody specyficzne dla aplikacji (np. KeyA, "
+"ArrowLeft)."
+
+msgid "(copy)"
+msgstr "(kopia)"
+
+msgid "Add page"
+msgstr "Dodaj stronę"
+
+msgid "Allow commands"
+msgstr "Zezwalaj na polecenia"
+
+msgid "Animals & Nature"
+msgstr "Zwierzęta i przyroda"
+
+msgid ""
+"Build reusable sequences from key chords, text actions, commands, or system "
+"actions. Steps run in order with the configured pause between them."
+msgstr ""
+"Twórz sekwencje do wielokrotnego użytku na podstawie akordów klawiszowych, "
+"akcji tekstowych, poleceń lub działań systemowych. Kroki przebiegają w "
+"kolejności z skonfigurowaną przerwą pomiędzy nimi."
+
+msgid ""
+"Built-in macros that cannot be edited. To customize, create a user macro "
+"based on one."
+msgstr ""
+"Wbudowane makra, których nie można edytować. Aby dostosować, utwórz makro "
+"użytkownika na jego podstawie."
+
+msgid "Cell {}"
+msgstr "Komórka {}"
+
+msgid "Command name"
+msgstr "Nazwa polecenia"
+
+msgid "Create based on"
+msgstr "Utwórz w oparciu o"
+
+msgid "Delete macro"
+msgstr "Usuń makro"
+
+msgid "Delete macro?"
+msgstr "Usunąć makro?"
+
+msgid "Delete page"
+msgstr "Usuń stronę"
+
+msgid "Delete page?"
+msgstr "Usunąć stronę?"
+
+msgid "Delete step"
+msgstr "Usuń krok"
+
+msgid "Delete step?"
+msgstr "Usunąć krok?"
+
+msgid "Disable"
+msgstr "Wyłączyć"
+
+msgid "Drag"
+msgstr "Ciągnąć"
+
+msgid "Emoji & Symbols"
+msgstr "Emoji i symbole"
+
+msgid "Emoji Symbols"
+msgstr "Symbole emoji"
+
+msgid "Emoji, symbol, or any text"
+msgstr "Emoji, symbol lub dowolny tekst"
+
+msgid "Empty step — pick an action or remove it."
+msgstr "Pusty krok — wybierz akcję lub usuń ją."
+
+msgid "Fix the existing macro errors first"
+msgstr "Najpierw napraw istniejące błędy makr"
+
+msgid "Food & Drink"
+msgstr "Jedzenie i napoje"
+
+msgid "Human-readable macro name, shown in picker lists."
+msgstr "Czytelna dla człowieka nazwa makra, wyświetlana na listach wyboru."
+
+msgid "ID"
+msgstr "ID"
+
+msgid "Key {}"
+msgstr "Klucz {}"
+
+msgid "Label"
+msgstr "Etykieta"
+
+msgid "Macro name"
+msgstr "Nazwa makra"
+
+msgid "Modifier delay"
+msgstr "Opóźnienie modyfikatora"
+
+msgid "Move page left"
+msgstr "Przesuń stronę w lewo"
+
+msgid "Move page right"
+msgstr "Przesuń stronę w prawo"
+
+msgid "New macro"
+msgstr "Nowe makro"
+
+msgid "No macros yet. Click \"New macro\" to create the first one."
+msgstr "Nie ma jeszcze makr. Kliknij „Nowe makro”, aby utworzyć pierwsze."
+
+msgid "No steps yet. Each step — one chord or action."
+msgstr "Nie ma jeszcze żadnych kroków. Każdy krok — jeden akord lub akcja."
+
+msgid ""
+"Opened by the app:showEmojiMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold an "
+"emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short "
+"phrase (e.g. \"// TODO: \")."
+msgstr ""
+"Otwierane przez aplikację:showEmojiMenuN działania, gdzie N to pozycja "
+"strony: zmiana kolejności stron zmienia stronę otwieraną za pomocą klawisza."
+" Każda komórka może zawierać emoji, symbol UTF (np. ≠), dowolny inny znak "
+"(np. №) lub krótką frazę (np. „// TODO:”)."
+
+msgid "Opened by the app:showQuickMenu1...5 actions."
+msgstr "Otwarte przez aplikację: showQuickMenu1...5 akcji."
+
+msgid "Page"
+msgstr "Strona"
+
+msgid "Pause (ms)"
+msgstr "Pauza (ms)"
+
+msgid "Pause between steps"
+msgstr "Zatrzymaj się między krokami"
+
+msgid "People & Gestures"
+msgstr "Ludzie i gesty"
+
+msgid "Per-macro pause between steps. Defaults to the Settings value."
+msgstr ""
+"Przerwa między krokami dla poszczególnych makr. Domyślnie ustawiona jest "
+"wartość Ustawienia."
+
+msgid "Pick an action"
+msgstr "Wybierz akcję"
+
+msgid "Quick Actions"
+msgstr "Szybkie działania"
+
+msgid ""
+"Reusable shell commands for the current layout. On Linux they run through sh"
+" -lc after you explicitly allow them. Shell commands run one at a time, with"
+" a 30-second limit, in your home directory."
+msgstr ""
+"Polecenia powłoki wielokrotnego użytku dla bieżącego układu. W systemie "
+"Linux uruchamiają się poprzez sh -lc po jawnym zezwoleniu. Polecenia powłoki"
+" są uruchamiane pojedynczo, z limitem 30 sekund, w katalogu domowym."
+
+msgid "Shell commands are allowed for this version of the current layout."
+msgstr "Polecenia powłoki są dozwolone w tej wersji bieżącego układu."
+
+msgid "Smileys & Emotion"
+msgstr "Buźki i emocje"
+
+msgid ""
+"The command will be deleted. Keys or macros that reference cmd:{} will stop "
+"working."
+msgstr ""
+"Polecenie zostanie usunięte. Klawisze lub makra odwołujące się do cmd:{} "
+"przestaną działać."
+
+msgid "The macro will be deleted. References macro:{} will stop working."
+msgstr "Makro zostanie usunięte. Makro referencyjne: {} przestanie działać."
+
+msgid "The page and all assigned cells on it will be deleted."
+msgstr "Strona i wszystkie przypisane do niej komórki zostaną usunięte."
+
+msgid ""
+"This layout contains shell scripts. Read every script before allowing them, "
+"especially in layouts from other people. Approval applies to the reviewed "
+"command definitions and resets when the command set, IDs, or Linux scripts "
+"change."
+msgstr ""
+"Ten układ zawiera skrypty powłoki. Przeczytaj każdy skrypt, zanim na niego "
+"zezwolisz, szczególnie w układach innych osób. Zatwierdzenie dotyczy "
+"sprawdzonych definicji poleceń i resetuje się w przypadku zmiany zestawu "
+"poleceń, identyfikatorów lub skryptów systemu Linux."
+
+msgid "This step will be removed from the macro."
+msgstr "Ten krok zostanie usunięty z makra."
+
+msgid ""
+"Time between pressing a modifier and the main key within one step. Defaults "
+"to the Settings value."
+msgstr ""
+"Czas pomiędzy naciśnięciem modyfikatora i klawisza głównego w jednym kroku. "
+"Domyślnie ustawiona jest wartość Ustawienia."
+
+msgid "Travel & Places"
+msgstr "Podróże i miejsca"
+
+msgid "UTF Symbols"
+msgstr "Symbole UTF"
+
+msgid "Texts"
+msgstr "Teksty"
+
+msgid "Non-breaking space"
+msgstr "Nierozrywająca przestrzeń"
+
+msgid "continue"
+msgstr "Kontynuować"
+
+msgid "do all you recommended"
+msgstr "zrób wszystko, co poleciłeś"
+
+msgid "fix the errors above"
+msgstr "napraw powyższe błędy"
+
+msgid "I'll call you back later"
+msgstr "Zadzwonię do ciebie później"
+
+msgid "Thanks!"
+msgstr "Dzięki!"
+
+msgid "OK, got it 👍"
+msgstr "OK, rozumiem 👍"
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Rules tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"Unikalny identyfikator używany w referencjach takich jak makro:<id>. Aby "
+"powiązać to makro z klawiszem, wybierz tę akcję na karcie Warstwy lub "
+"Reguły. Zmień identyfikator tylko wtedy, gdy nic nie używa tego makra."
+
+msgid "Used in:"
+msgstr "Używany w:"
+
+msgid "User macros"
+msgstr "Makra użytkownika"
+
+msgid "Work & Objects"
+msgstr "Praca i przedmioty"
+
+msgid "e.g. Next Track"
+msgstr "np. Następny utwór"
+
+msgid "ms"
+msgstr "SM"
+
+msgid "Rule saved"
+msgstr "Reguła zapisana"
+
+msgid "Search layers"
+msgstr "Przeszukaj warstwy"
+
+msgid "Set"
+msgstr "Ustawić"
+
+msgid "Start the mapper to run actions from the menus"
+msgstr "Uruchom program mapujący, aby uruchomić akcje z menu"
+
+msgid ""
+"The text was not typed: the keyboard layout lacks some of its characters, "
+"such as emoji. Choose a typing method with the clipboard."
+msgstr ""
+"Tekst nie został wpisany: w układzie klawiatury brakuje niektórych znaków, "
+"np. emoji. Wybierz metodę pisania za pomocą schowka."
+
+msgid "The text was not typed: the active keyboard layout is unknown."
+msgstr "Tekst nie został wpisany: aktywny układ klawiatury jest nieznany."
+
+msgid ""
+"The text was not typed: the typing method is unavailable ({}). Restart the "
+"mapper to try again."
+msgstr ""
+"Tekst nie został wpisany: metoda wpisywania jest niedostępna ({}). Uruchom "
+"ponownie program mapujący, aby spróbować ponownie."
+
+msgid "The text was not typed: safe clipboard access failed ({})."
+msgstr ""
+"Tekst nie został wpisany: nie udało się uzyskać dostępu do bezpiecznego "
+"schowka ({})."
+
+msgid "The text was not typed: {}"
+msgstr "Tekst nie został wpisany: {}"
+
+msgid "The layout file is empty"
+msgstr "Plik układu jest pusty"
+
+msgid "↑"
+msgstr "↑"
+
+msgid "↓"
+msgstr "↓"
+
+msgid "Does not matter"
+msgstr "Nie ma znaczenia"
+
+msgid "Open for editing (unsaved)"
+msgstr "Otwarte do edycji (niezapisane)"
+
+msgid "Open for editing"
+msgstr "Otwarte do edycji"
+
+msgid "Layout name"
+msgstr "Nazwa układu"
+
+msgid "System languages"
+msgstr "Języki systemowe"
+
+msgid "No system languages detected"
+msgstr "Nie wykryto języków systemowych"
+
+msgid "Applications"
+msgstr "Aplikacje"
+
+msgid "“{}” will be deleted. This cannot be undone."
+msgstr "„{}” zostanie usunięte. Tego nie można cofnąć."
+
+msgid "Reset current changes"
+msgstr "Zresetuj bieżące zmiany"
+
+msgid "Available"
+msgstr "Dostępny"
+
+msgid "Unavailable"
+msgstr "Nie płynny"
+
+msgid "Not implemented"
+msgstr "Nie zaimplementowano"
+
+msgid "No input devices were found in /dev/input."
+msgstr "W /dev/input nie znaleziono żadnych urządzeń wejściowych."
+
+msgid ""
+"The selected keyboard is not connected. Connect it or pick another one "
+"below."
+msgstr ""
+"Wybrana klawiatura nie jest podłączona. Podłącz go lub wybierz inny poniżej."
+
+msgid ""
+"No permission to read keyboard events. Add your user to the input group "
+"(install-linux.sh permissions does this) and log in again."
+msgstr ""
+"Brak uprawnień do odczytu zdarzeń klawiatury. Dodaj swojego użytkownika do "
+"grupy wejściowej (robią to uprawnienia install-linux.sh) i zaloguj się "
+"ponownie."
+
+msgid ""
+"/dev/uinput does not exist. Load the uinput kernel module: sudo modprobe "
+"uinput."
+msgstr ""
+"/dev/uinput nie istnieje. Załaduj moduł jądra uinput: sudo modprobe uinput."
+
+msgid ""
+"No permission to write to /dev/uinput. Install the application's udev rule "
+"(install-linux.sh permissions) or reinstall the package."
+msgstr ""
+"Brak uprawnień do zapisu w /dev/uinput. Zainstaluj regułę udev aplikacji "
+"(uprawnienia install-linux.sh) lub zainstaluj ponownie pakiet."
+
+msgid "Launch on startup"
+msgstr "Uruchom przy starcie"
+
+msgid "Start the mapper on launch"
+msgstr "Uruchom program mapujący po uruchomieniu"
+
+msgid "No keyboard is selected, so the mapper cannot start."
+msgstr ""
+"Nie wybrano żadnej klawiatury, więc program mapujący nie może zostać "
+"uruchomiony."
+
+msgid "Choose a keyboard"
+msgstr "Wybierz klawiaturę"
+
+msgid "Getting started"
+msgstr "Rozpoczęcie"
+
+msgid "Keyboard selected"
+msgstr "Wybrano klawiaturę"
+
+msgid "Choose the keyboard to remap"
+msgstr "Wybierz klawiaturę, którą chcesz ponownie przypisać"
+
+msgid "Change"
+msgstr "Zmiana"
+
+msgid "Add a layout"
+msgstr "Dodaj układ"
+
+msgid "Press Start at the top to apply it"
+msgstr "Naciśnij Start u góry, aby go zastosować"
+
+msgid "No active layout"
+msgstr "Brak aktywnego układu"
+
+msgid "Current active layout (automatic)"
+msgstr "Bieżący aktywny układ (automatyczny)"
+
+msgid "Current active layout — click to switch"
+msgstr "Bieżący aktywny układ — kliknij, aby przełączyć"
+
+msgid "Current keyboard layout in the system"
+msgstr "Aktualny układ klawiatury w systemie"
+
+msgid "Game mode: active"
+msgstr "Tryb gry: aktywny"
+
+msgid "Game mode: inactive"
+msgstr "Tryb gry: nieaktywny"
+
+msgid "Active: {}"
+msgstr "Aktywny: {}"
+
+msgid "Trigger"
+msgstr "Spust"
+
+msgid "New rule: choose a trigger"
+msgstr "Nowa zasada: wybierz wyzwalacz"
+
+msgid "Swallow key"
+msgstr "Blokuj klawisz"
+
+msgid "Pass through"
+msgstr "Doznawać"
+
+msgid "Double tap: {} ms"
+msgstr "Kliknij dwukrotnie: {} ms"
+
+msgid "Custom hold options"
+msgstr "Niestandardowe opcje wstrzymania"
+
+msgid "Leave empty to use the global timing settings."
+msgstr "Pozostaw puste, aby użyć globalnych ustawień synchronizacji."
+
+msgid ""
+"Temporarily releases the held key or modifier while these keys are pressed "
+"in the layer."
+msgstr ""
+"Tymczasowo zwalnia przytrzymany klawisz lub modyfikator, gdy te klawisze są "
+"wciśnięte w warstwie."
+
+msgid ""
+"Defers the held action until one of these keys is pressed in the layer. "
+"Requires a hold action and a layer."
+msgstr ""
+"Odracza wstrzymaną akcję do momentu naciśnięcia jednego z tych klawiszy w "
+"warstwie. Wymaga akcji wstrzymania i warstwy."
+
+msgid "Delete rule"
+msgstr "Usuń regułę"
+
+msgid ""
+"Clear restores normal key behavior. Swallow prevents the key from reaching "
+"the application."
+msgstr ""
+"Wyczyść przywraca normalne zachowanie klawiszy. Jaskółka uniemożliwia "
+"dotarcie klucza do aplikacji."
+
+msgctxt "Game mode control"
+msgid "Auto"
+msgstr "Automatycznie"
+
+msgctxt "Game mode control"
+msgid "On"
+msgstr "Włączone"
+
+msgctxt "Game mode control"
+msgid "Off"
+msgstr "Wyłączone"
+
+msgid "Auto: no detection sources enabled"
+msgstr "Auto: żadne źródła detekcji nie są włączone"
+
+msgid "Auto: detection unavailable"
+msgstr "Auto: wykrywanie niedostępne"
+
+msgid "Auto: game mode inactive"
+msgstr "Auto: tryb gry nieaktywny"
+
+msgid "Auto: GameMode daemon active"
+msgstr "Auto: Demon GameMode jest aktywny"
+
+msgid "Auto: matched {}"
+msgstr "Auto: dopasowane do {}"
+
+msgid "Auto: fullscreen window active"
+msgstr "Auto: aktywne okno pełnoekranowe"
+
+msgid "Auto: excluded by {}"
+msgstr "Auto: wyłączone przez {}"
+
+msgid ""
+"Fullscreen detection is not supported in this session. Use process rules or "
+"On/Off."
+msgstr ""
+"W tej sesji nie jest obsługiwane wykrywanie pełnoekranowe. Użyj reguł "
+"procesu lub Włącz/Wyłącz."
+
+msgid "Fullscreen detection tools are missing or could not query the session."
+msgstr ""
+"Brakuje narzędzi do wykrywania pełnoekranowego lub nie można wysłać "
+"zapytania o sesję."
+
+msgid "Running processes: "
+msgstr "Uruchomione procesy:"
+
+msgid "Active window: "
+msgstr "Aktywne okno:"
+
+msgid "Create a layer to assign its keys."
+msgstr "Utwórz warstwę, aby przypisać jej klucze."
+
+msgid "Button {}"
+msgstr "Przycisk {}"
+
+msgid "Copied to clipboard"
+msgstr "Skopiowano do schowka"
+
+msgid "Theme"
+msgstr "Temat"
+
+msgid "E-ink"
+msgstr "E-ink"
+
+msgid "Enter device path manually"
+msgstr "Wprowadź ręcznie ścieżkę urządzenia"
+
+msgid "All keyboards"
+msgstr "Wszystkie klawiatury"
+
+msgid "All mice (buttons only)"
+msgstr "Wszystkie myszy (tylko przyciski)"
+
+msgid "Mode"
+msgstr "Tryb"
+
+msgid "New"
+msgstr "Nowy"
+
+msgid "Auto"
+msgstr "Automatycznie"
+
+msgid "Delete extra key?"
+msgstr "Usunąć dodatkowy klucz?"
+
+msgid "This key assignment will be removed from the layer."
+msgstr "To przypisanie klawisza zostanie usunięte z warstwy."
+
+msgid "Command started: {}"
+msgstr "Uruchomiono polecenie: {}"
+
+msgid "Unavailable on this platform or desktop"
+msgstr "Niedostępne na tej platformie lub komputerze"
+
+msgid "This action is not supported on macOS"
+msgstr "Ta czynność nie jest obsługiwana w systemie macOS"
+
+msgid "Approve commands on the Commands tab before running this action"
+msgstr "Przed uruchomieniem tej akcji zatwierdź polecenia na karcie Polecenia"
+
+msgid "Pick the physical device whose events should be intercepted."
+msgstr ""
+"Wybierz urządzenie fizyczne, którego zdarzenia mają zostać przechwycone."
+
+msgid ""
+"Select the mouse so the mapper can see extra buttons and clicks. Pointer "
+"movement is not affected."
+msgstr ""
+"Wybierz mysz, aby osoba tworząca mapę mogła zobaczyć dodatkowe przyciski i "
+"kliknięcia. Nie ma to wpływu na ruch wskaźnika."
+
+msgid ""
+"The mouse is not fully intercepted yet: a remapped extra button can emit the"
+" new action, but its native system or app action may still run. If that gets"
+" in the way, disable the native action for that button in your system, "
+"browser, or driver settings."
+msgstr ""
+"Mysz nie została jeszcze w pełni przechwycona: ponownie przypisany dodatkowy"
+" przycisk może wyemitować nową akcję, ale natywna akcja systemu lub "
+"aplikacji może nadal działać. Jeśli to przeszkadza, wyłącz natywną akcję dla"
+" tego przycisku w ustawieniach systemu, przeglądarki lub sterownika."
+
+msgid ""
+"The mapper reads from /dev/input/eventX and emits through uinput. If Start "
+"fails, grant access to those devices: usually the input group plus a udev "
+"rule for /dev/uinput."
+msgstr ""
+"Maper odczytuje z /dev/input/eventX i emituje poprzez uinput. Jeśli Start "
+"się nie powiedzie, przyznaj dostęp tym urządzeniom: zazwyczaj grupie "
+"wejściowej i regule udev dla /dev/uinput."
+
+msgid "Refresh device list"
+msgstr "Odśwież listę urządzeń"
+
+msgid "Mouse (optional)"
+msgstr "Mysz (opcjonalnie)"
+
+msgid "Not selected"
+msgstr "Nie wybrano"
+
+msgid "Not selected (no mouse support)"
+msgstr "Nie wybrano (brak obsługi myszy)"
+
+msgid "Looks like a keyboard"
+msgstr "Wygląda jak klawiatura"
+
+msgid "Looks like a mouse"
+msgstr "Wygląda jak mysz"
+
+msgid "Other devices"
+msgstr "Inne urządzenia"
+
+msgid "Search devices"
+msgstr "Wyszukaj urządzenia"
+
+msgid "Single"
+msgstr "Pojedynczy"
+
+msgid "{n} rule"
+msgid_plural "{n} rules"
+msgstr[0] "{n} zasada"
+msgstr[1] "{n} zasady"
+msgstr[2] "{n} zasad"
+
+msgid "{n} layer"
+msgid_plural "{n} layers"
+msgstr[0] "{n} warstwa"
+msgstr[1] "{n} warstwy"
+msgstr[2] "{n} warstw"
+
+msgid "{n} emoji page"
+msgid_plural "{n} emoji pages"
+msgstr[0] "{n} strona z emotikonami"
+msgstr[1] "{n} strony z emotikonami"
+msgstr[2] "{n} stron z emotikonami"
+
+msgid "{n} action page"
+msgid_plural "{n} action pages"
+msgstr[0] "{n} strona akcji"
+msgstr[1] "{n} strony akcji"
+msgstr[2] "{n} stron akcji"
+
+msgid "{n} macro"
+msgid_plural "{n} macros"
+msgstr[0] "{n} makro"
+msgstr[1] "{n} makra"
+msgstr[2] "{n} makr"
+
+msgid "{n} command"
+msgid_plural "{n} commands"
+msgstr[0] "{n} polecenie"
+msgstr[1] "{n} polecenia"
+msgstr[2] "{n} poleceń"
+
+msgid "Main"
+msgstr "Główny"
+
+msgid "Saved assignment: {}"
+msgstr "Zapisane przypisanie: {}"
+
+msgid "Behavior"
+msgstr "Zachowanie"
+
+msgid "Inherit"
+msgstr "Dziedziczyć"
+
+msgid "No separate action"
+msgstr "Żadnego osobnego działania"
+
+msgid "Activate layer only"
+msgstr "Aktywuj tylko warstwę"
+
+msgid "Normal key behavior"
+msgstr "Normalne zachowanie klawiszy"
+
+msgid "Suppress"
+msgstr "Stłumić"
+
+msgid "Assign held key"
+msgstr "Przypisz przytrzymany klawisz"
+
+msgid "Perform action"
+msgstr "Wykonaj akcję"
+
+msgid "The key will not reach the application."
+msgstr "Klucz nie dotrze do aplikacji."
+
+msgid "Use the assignment from the lower layer or base layout."
+msgstr "Użyj przypisania z niższej warstwy lub układu podstawowego."
+
+msgid "Do not assign a separate action to this gesture."
+msgstr "Nie przypisuj do tego gestu osobnej akcji."
+
+msgid "Holding activates the selected layer. The original key is not sent."
+msgstr ""
+"Przytrzymanie aktywuje wybraną warstwę. Oryginalny klucz nie został wysłany."
+
+msgid "Send the original key to the application."
+msgstr "Wyślij oryginalny klucz do aplikacji."
+
+msgid "Capture shortcut"
+msgstr "Przechwyć skrót"
+
+msgid "Choose a valid trigger key."
+msgstr "Wybierz prawidłowy klucz wyzwalający."
+
+msgid "Choose a valid action."
+msgstr "Wybierz prawidłową akcję."
+
+msgid "Empty cell"
+msgstr "Pusta komórka"
+
+msgid "Remove the action from this menu cell."
+msgstr "Usuń akcję z tej komórki menu."
+
+msgid "Edit assignment"
+msgstr "Edytuj zadanie"
+
+msgid "Holding also activates the selected layer."
+msgstr "Przytrzymanie aktywuje także wybraną warstwę."
+
+msgid "Block"
+msgstr "Blok"
+
+msgid ""
+"The key press is consumed: the system and the active application will not "
+"receive it."
+msgstr ""
+"Naciśnięcie klawisza jest zużywane: system i aktywna aplikacja go nie "
+"otrzymają."
+
+msgid ""
+"The key press passes through unchanged, as if no assignment were configured."
+msgstr ""
+"Naciśnięcie klawisza przebiega bez zmian, tak jakby nie skonfigurowano "
+"żadnego przypisania."
+
+msgid "Capture"
+msgstr "Schwytać"
+
+msgid "Unchanged"
+msgstr "Niezmienione"
+
+msgid "Leave a delay empty to use the global setting."
+msgstr "Aby użyć ustawienia globalnego, pozostaw pole opóźnienia puste."
+
+msgid "Allow command execution"
+msgstr "Zezwól na wykonanie polecenia"
+
+msgid "No commands are assigned."
+msgstr "Nie przypisano żadnych poleceń."
+
+msgid "Commands are disabled in Settings."
+msgstr "Polecenia są wyłączone w Ustawieniach."
+
+msgid "Working directory (optional)"
+msgstr "Katalog roboczy (opcjonalnie)"
+
+msgid "Save layout changes before opening another layout."
+msgstr "Zapisz zmiany układu przed otwarciem innego układu."
+
+msgid "No layer"
+msgstr "Brak warstwy"
+
+msgid "Layer not found"
+msgstr "Nie znaleziono warstwy"
+
+msgid "Create new layer…"
+msgstr "Utwórz nową warstwę…"
+
+msgid "Create “{}”"
+msgstr "Utwórz „{}”"
+
+msgid ""
+"A trigger can be a single key or a combination, such as "
+"ShiftLeft+ControlLeft. The combination works in either press order and ends "
+"when any key is released."
+msgstr ""
+"Wyzwalaczem może być pojedynczy klawisz lub kombinacja, na przykład "
+"ShiftLeft+ControlLeft. Kombinacja działa w dowolnej kolejności naciśnięcia i"
+" kończy się po zwolnieniu dowolnego klawisza."
+
+msgid "When held"
+msgstr "Kiedy jest trzymany"
+
+msgid ""
+"Choose a layer active until release, or an action performed once after the "
+"hold duration."
+msgstr ""
+"Wybierz warstwę aktywną do momentu zwolnienia lub akcję wykonaną jednorazowo"
+" po upływie czasu wstrzymania."
+
+msgid "Nothing"
+msgstr "Nic"
+
+msgid "Activate layer"
+msgstr "Aktywuj warstwę"
+
+msgid "Run action"
+msgstr "Uruchom akcję"
+
+msgid "Long-hold action"
+msgstr "Długotrwałe działanie"
+
+msgid "Runs once after {} s"
+msgstr "Uruchamia się raz po s. {}"
+
+msgid "Hold another key / combination"
+msgstr "Przytrzymaj kolejny klawisz/kombinację"
+
+msgid "Press one key or hold a combination, then release a key to capture it."
+msgstr ""
+"Naciśnij jeden klawisz lub przytrzymaj kombinację, a następnie zwolnij "
+"klawisz, aby go przechwycić."
+
+msgid "Held key: {}"
+msgstr "Przytrzymany klawisz: {}"
+
+msgid "Assigned to"
+msgstr "Przypisany do"
+
+msgid "Languages"
+msgstr "Języki"
+
+msgid "Excluded applications"
+msgstr "Wykluczone aplikacje"
+
+msgid "Open page in popup"
+msgstr "Otwórz stronę w wyskakującym okienku"
+
+msgid "Page:"
+msgstr "Strona:"
+
+msgid "Layout “{}” created"
+msgstr "Utworzono układ „{}”."
+
+msgid "Layout “{}” saved"
+msgstr "Układ „{}” został zapisany"
+
+msgid "Layout “{}” deleted"
+msgstr "Usunięto układ „{}”."
+
+msgid "Layout “{}” activated"
+msgstr "Aktywowano układ „{}”."
+
+msgid "Could not complete the action"
+msgstr "Nie można ukończyć akcji"
+
+msgid "Dismiss notification"
+msgstr "Odrzuć powiadomienie"
+
+msgid "Changes to layout “{}” discarded"
+msgstr "Zmiany w układzie „{}” odrzucone"
+
+msgid "Popup menus are unavailable: {}"
+msgstr "Menu wyskakujące są niedostępne: {}"
+
+msgid "Popup menus are not running. Try opening the menu again."
+msgstr "Wyskakujące menu nie działają. Spróbuj ponownie otworzyć menu."
+
+msgid "Popup menus are restarting. Try again shortly."
+msgstr "Menu wyskakujące uruchamiają się ponownie. Spróbuj ponownie wkrótce."
+
+msgid "Popup menus could not recover. Restart the application."
+msgstr ""
+"Nie udało się odzyskać menu wyskakujących. Uruchom ponownie aplikację."
+
+msgid "Popup menu error: {}"
+msgstr "Błąd menu wyskakującego: {}"
+
+msgid "Choose a key or combination for the trigger"
+msgstr "Wybierz klawisz lub kombinację wyzwalacza"
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid. Add a trigger, then choose its action, suppress it, or inherit its "
+"assignment from the lower layer."
+msgstr ""
+"Przyciski myszy, klawisze multimedialne i inne wyzwalacze poza główną siatką"
+" klawiatury. Dodaj wyzwalacz, a następnie wybierz jego akcję, wyłącz go lub "
+"odziedzicz jego przypisanie z niższej warstwy."
+
+msgid ""
+"You can enter emoji, any text, or Unicode symbols here. Drag an item from "
+"the palette onto a key to assign it."
+msgstr ""
+"Możesz tutaj wpisać emoji, dowolny tekst lub symbole Unicode. Przeciągnij "
+"element z palety na klawisz, aby go przypisać."
+
+msgid "Accessibility"
+msgstr "Dostępność"
+
+msgid "High contrast"
+msgstr "Wysoki kontrast"
+
+msgid ""
+"Pure black or white background, stronger text, borders and focus outlines. "
+"Works with the light and dark themes."
+msgstr ""
+"Czyste czarne lub białe tło, mocniejszy tekst, obramowania i kontury "
+"ostrości. Działa z jasnymi i ciemnymi motywami."
+
+msgid "Reduce motion"
+msgstr "Zmniejsz ruch"
+
+msgid "Turn off highlight animations in the editor."
+msgstr "Wyłącz animacje podświetlenia w edytorze."
+
+msgid ""
+"Every control can be reached with Tab and activated with Space or Enter. "
+"Interface size follows the desktop scale factor."
+msgstr ""
+"Do każdego elementu sterującego można uzyskać dostęp za pomocą klawisza Tab "
+"i aktywować go za pomocą spacji lub Enter. Rozmiar interfejsu jest zgodny ze"
+" współczynnikiem skali pulpitu."
+
+msgid "Always"
+msgstr "Zawsze"
+
+msgid "Hold duration"
+msgstr "Przytrzymaj czas trwania"
+
+msgid "{} s"
+msgstr "{} s"
+
+msgid "{} s (default)"
+msgstr "{} s (domyślnie)"
+
+msgid "Shell command or path to a script, e.g. playerctl play-pause"
+msgstr ""
+"Polecenie powłoki lub ścieżka do skryptu, np. playerctl odtwarzanie-pauza"
+
+msgid "Runs with sh -lc in the background; the result is not awaited."
+msgstr "Działa z sh -lc w tle; wynik nie jest oczekiwany."
+
+msgid "Choose script…"
+msgstr "Wybierz skrypt…"
+
+msgid "Working directory (optional, home by default)"
+msgstr "Katalog roboczy (opcjonalnie, domyślnie home)"
+
+msgid "Choose folder…"
+msgstr "Wybierz folder…"
+
+msgid ""
+"Command execution is turned off. Turn it on in the settings to assign "
+"commands."
+msgstr ""
+"Wykonywanie poleceń jest wyłączone. Włącz ją w ustawieniach, aby przypisywać"
+" polecenia."
+
+msgid "Open command settings"
+msgstr "Otwórz ustawienia poleceń"
+
+msgid "The working directory does not exist."
+msgstr "Katalog roboczy nie istnieje."
+
+msgid ""
+"The script file is not executable: run chmod +x on it or prefix the path "
+"with sh."
+msgstr ""
+"Plik skryptu nie jest wykonywalny: uruchom na nim chmod +x lub poprzedź "
+"ścieżkę sh."
+
+msgid "Choose a script"
+msgstr "Wybierz skrypt"
+
+msgid "Choose a working directory"
+msgstr "Wybierz katalog roboczy"
+
+msgid "Commands run with sh -lc in the background and are not awaited."
+msgstr "Polecenia są uruchamiane z sh -lc w tle i nie są oczekiwane."
+
+msgid "Commands run with PowerShell in the background and are not awaited."
+msgstr ""
+"Polecenia są uruchamiane z programem PowerShell w tle i nie są oczekiwane."
+
+msgid ""
+"Commands stay off until you allow execution. Review below what your layouts "
+"would run."
+msgstr ""
+"Polecenia pozostają wyłączone, dopóki nie zezwolisz na ich wykonanie. "
+"Przejrzyj poniżej, jakie układy będą działać."
+
+msgid "Command"
+msgstr "Rozkaz"
+
+msgid "Rule {} · tap"
+msgstr "Reguła {} · dotknij"
+
+msgid "Rule {} · hold"
+msgstr "Reguła {} · przytrzymaj"
+
+msgid "Rule {} · long hold"
+msgstr "Zasada {} · długie przytrzymanie"
+
+msgid "Rule {} · double tap"
+msgstr "Reguła {} · Kliknij dwukrotnie"
+
+msgid "disabled"
+msgstr "wyłączony"
+
+msgid "Layer {}"
+msgstr "Warstwa {}"
+
+msgid "Macro"
+msgstr "Makro"
+
+msgid "Quick action"
+msgstr "Szybka akcja"
+
+msgid "Show all"
+msgstr "Pokaż wszystko"
+
+msgid "Close"
+msgstr "Zamknij"
+
+msgid "Choose a key or key combination"
+msgstr "Wybierz klawisz lub kombinację klawiszy"
+
+msgid "Examples"
+msgstr "Przykłady"
+
+msgid "Add rule…"
+msgstr "Dodaj regułę…"
+
+msgid ""
+"All filled conditions must match. A rule without conditions always matches."
+msgstr ""
+"Wszystkie wypełnione warunki muszą pasować. Reguła bez warunków zawsze "
+"pasuje."
+
+msgid "Automatic switching rules"
+msgstr "Automatyczne reguły przełączania"
+
+msgid ""
+"Automatic: the layout is chosen by switching rules for the application, "
+"system language or game mode."
+msgstr ""
+"Automatyczny: układ jest wybierany poprzez zmianę reguł aplikacji, języka "
+"systemu lub trybu gry."
+
+msgid "Layout"
+msgstr "Układ"
+
+msgid "Layout not found"
+msgstr "Nie znaleziono układu"
+
+msgid "New rule"
+msgstr "Nowa zasada"
+
+msgid "Now: {} (default)"
+msgstr "Teraz: {} (domyślnie)"
+
+msgid "Otherwise (default)"
+msgstr "W przeciwnym razie (domyślnie)"
+
+msgid "Rule {}"
+msgstr "Reguła {}"
+
+msgid "Use layout"
+msgstr "Użyj układu"
+
+msgid "When"
+msgstr "Gdy"
+
+msgid "If"
+msgstr "Jeśli"
+
+msgid "If:"
+msgstr "Jeśli:"
+
+msgid "Trigger conditions"
+msgstr "Warunki wyzwalania"
+
+msgid "No layout"
+msgstr "Brak układu"
+
+msgid "No layout (keys as is)"
+msgstr "Brak układu (klawisze takie jakie są)"
+
+msgid "Now: {} (rule {}: {})"
+msgstr "Teraz: {} (reguła {}: {})"
+
+msgid ""
+"Rules are checked from top to bottom; the first enabled one whose conditions"
+" match chooses the layout. If none matches, the default is used. “No layout”"
+" leaves the keyboard unprocessed, for example in an application where the "
+"layout gets in the way."
+msgstr ""
+"Reguły sprawdzane są od góry do dołu; pierwszy włączony, którego warunki "
+"odpowiadają, wybiera układ. Jeśli żaden nie pasuje, używana jest wartość "
+"domyślna. „Brak układu” pozostawia klawiaturę nieprzetworzoną, na przykład w"
+" aplikacji, w której układ przeszkadza."
+
+msgid "No rules"
+msgstr "Żadnych zasad"
+
+msgid "The default layout is always used."
+msgstr "Zawsze używany jest układ domyślny."
+
+msgid "For games"
+msgstr "Do gier"
+
+msgid "For an application"
+msgstr "Dla aplikacji"
+
+msgid "Custom rule"
+msgstr "Niestandardowa reguła"
+
+msgid "When no rule matches, the keyboard works without processing."
+msgstr "Jeśli żadna reguła nie pasuje, klawiatura działa bez przetwarzania."
+
+msgid "Never applies: rule {} always matches first."
+msgstr "Nigdy nie ma zastosowania: reguła {} zawsze pasuje jako pierwsza."
+
+msgid "Game mode detection is off, so this rule never matches."
+msgstr "Wykrywanie trybu gry jest wyłączone, więc ta zasada nigdy nie pasuje."
+
+msgid "Not among the system languages: {}"
+msgstr "Nie wśród języków systemowych: {}"
+
+msgid "Rule enabled"
+msgstr "Reguła włączona"
+
+msgid "Automatic mode will use no layout by default."
+msgstr "Tryb automatyczny domyślnie nie będzie korzystał z żadnego układu."
+
+msgid "Delete rule {}?"
+msgstr "Usunąć regułę {}?"
+
+msgid "The rule will be deleted. This cannot be undone."
+msgstr "Reguła zostanie usunięta. Tego nie można cofnąć."
+
+msgid "Its {n} automatic rule will be deleted too."
+msgid_plural "Its {n} automatic rules will be deleted too."
+msgstr[0] "Jej {n} automatyczna reguła również zostanie usunięta."
+msgstr[1] "Jego {n} automatyczne reguły również zostaną usunięte."
+msgstr[2] "Jego {n} automatycznych reguł również zostanie usuniętych."
+
+msgid "In {n} rule"
+msgid_plural "In {n} rules"
+msgstr[0] "W {n} regule"
+msgstr[1] "W {n} zasadach"
+msgstr[2] "W {n} zasadach"
+
+msgid "Auto — detect games"
+msgstr "Auto — wykrywa gry"
+
+msgid "On — always"
+msgstr "Włączone – zawsze"
+
+msgid "Off — never"
+msgstr "Wyłączone — nigdy"
+
+msgid ""
+"Automatic layout rules apply only when the layout is chosen automatically "
+"(Layouts page)."
+msgstr ""
+"Reguły układu automatycznego mają zastosowanie tylko wtedy, gdy układ jest "
+"wybierany automatycznie (strona Układy)."
+
+msgid ""
+"Borderless windows covering the screen count too. Browsers, video players "
+"and presentations are ignored."
+msgstr ""
+"Okna bez obramowania obejmujące również liczbę ekranów. Przeglądarki, "
+"odtwarzacze wideo i prezentacje są ignorowane."
+
+msgid "Game mode is off (set manually)"
+msgstr "Tryb gry jest wyłączony (ustawiony ręcznie)"
+
+msgid "Game mode is on (set manually)"
+msgstr "Tryb gry jest włączony (ustawiany ręcznie)"
+
+msgid ""
+"Game mode turns on rules and automatic layout rules that have a game-mode "
+"condition. Automatic layout rules apply only when the layout is chosen "
+"automatically (Layouts page). Auto uses the detection sources and custom "
+"rules below; On and Off set the state manually. “Never a game” takes "
+"priority over automatic detection and “Always a game”. You can also change "
+"the mode in the top bar, in the tray menu or with a key bound to a game mode"
+" action."
+msgstr ""
+"Tryb gry włącza reguły i reguły automatycznego układu, które mają warunek "
+"trybu gry. Reguły układu automatycznego mają zastosowanie tylko wtedy, gdy "
+"układ jest wybierany automatycznie (strona Układy). Auto korzysta z "
+"poniższych źródeł wykrywania i niestandardowych reguł; Włącz i Wyłącz "
+"ustawiaj stan ręcznie. „Nigdy gra” ma pierwszeństwo przed automatycznym "
+"wykrywaniem i „Zawsze gra”. Możesz także zmienić tryb na górnym pasku, w "
+"menu na pasku zadań lub za pomocą klawisza powiązanego z akcją trybu gry."
+
+msgid "Game mode: always off"
+msgstr "Tryb gry: zawsze wyłączony"
+
+msgid "Game mode: always on"
+msgstr "Tryb gry: zawsze włączony"
+
+msgid "Game mode: detect automatically"
+msgstr "Tryb gry: wykrywaj automatycznie"
+
+msgid "Toggle game mode"
+msgstr "Przełącz tryb gry"
+
+msgid ""
+"GameMode daemon unavailable: check the gamemode package and session D-Bus."
+msgstr "Demon GameMode niedostępny: sprawdź pakiet GameMode i sesję D-Bus."
+
+msgid ""
+"Install {} to detect the active window and fullscreen windows. It is also "
+"needed for application conditions in rules."
+msgstr ""
+"Zainstaluj {}, aby wykryć aktywne okno i okna pełnoekranowe. Jest to również"
+" potrzebne w przypadku warunków stosowania w regułach."
+
+msgid ""
+"Nothing uses game mode yet: no rule or automatic layout rule has a game-mode"
+" condition, so turning it on changes nothing."
+msgstr ""
+"Nic nie korzysta jeszcze z trybu gry: żadna reguła ani reguła automatycznego"
+" układu nie ma warunku trybu gry, więc włączenie tego niczego nie zmienia."
+
+msgid ""
+"On and Off are remembered after restart. Auto keeps detecting in the "
+"background."
+msgstr ""
+"Włączenie i wyłączenie są zapamiętywane po ponownym uruchomieniu. Auto "
+"wykrywa w tle."
+
+msgid ""
+"Rules of the current layout with a game-mode condition: {}. Automatic layout"
+" rules with a game-mode condition: {}."
+msgstr ""
+"Zasady bieżącego układu z warunkiem trybu gry: {}. Automatyczne reguły "
+"układu z warunkiem trybu gry: {}."
+
+msgid ""
+"Turns on while a game runs through gamemoderun or requests GameMode itself. "
+"In Steam set the launch options to “gamemoderun %command%”."
+msgstr ""
+"Włącza się, gdy gra przechodzi przez gamemoderun lub żąda samego trybu "
+"GameMode. W Steamie ustaw opcje uruchamiania na „gamemoderun %command%”."
+
+msgid "Game mode: on"
+msgstr "Tryb gry: włączony"
+
+msgid "Game mode: off"
+msgstr "Tryb gry: wyłączony"
+
+msgid "Active now: {}"
+msgstr "Aktywny teraz: {}"
+
+msgid ""
+"Active window detection is unavailable in this session, so application "
+"conditions do not match."
+msgstr ""
+"Wykrywanie aktywnego okna jest niedostępne w tej sesji, więc warunki "
+"aplikacji nie są zgodne."
+
+msgid ""
+"An application is matched by its ID or process name: the whole name, "
+"ignoring case, with * and ? as wildcards. A window title item matches when "
+"the title contains the text. Any matching item is enough. An empty list "
+"imposes no restrictions."
+msgstr ""
+"Aplikacja jest dopasowywana na podstawie jej identyfikatora lub nazwy "
+"procesu: cała nazwa, pomijając wielkość liter, z * i ? jako symbole "
+"wieloznaczne. Element tytułu okna pasuje, jeśli tytuł zawiera tekst. "
+"Wystarczy dowolny pasujący element. Pusta lista nie nakłada żadnych "
+"ograniczeń."
+
+msgid "Looking for open windows…"
+msgstr "Szukasz otwartych okien…"
+
+msgid "No open windows found"
+msgstr "Nie znaleziono otwartych okien"
+
+msgid "Window title contains: {}"
+msgstr "Tytuł okna zawiera: {}"
+
+msgid "Timing"
+msgstr "Chronometraż"
+
+msgid "Used by macros without their own value."
+msgstr "Używane przez makra bez własnej wartości."
+
+msgid ""
+"Used by macros without their own value. How long to wait between pressing "
+"modifiers (Shift, Ctrl, …) and the main key of one step."
+msgstr ""
+"Używane przez makra bez własnej wartości. Jak długo czekać pomiędzy "
+"naciśnięciem modyfikatorów (Shift, Ctrl,…) a klawiszem głównym o jeden krok."
+
+msgid "Rule without a trigger is saved as a draft and will be ignored."
+msgstr ""
+"Reguła bez wyzwalacza zostanie zapisana jako wersja robocza i zostanie "
+"zignorowana."
+
+msgid "Trigger \"{}\" cannot be used for a rule."
+msgstr "Wyzwalacza „{}” nie można użyć w regule."
+
+msgid "Rules for trigger \"{}\" may overlap; the first matching rule wins."
+msgstr ""
+"Reguły wyzwalacza „{}” mogą się nakładać; wygrywa pierwsza pasująca reguła."
+
+msgid "Rule for trigger \"{}\" is covered by an earlier rule and will not run."
+msgstr ""
+"Reguła wyzwalacza „{}” jest objęta wcześniejszą regułą i nie będzie działać."
+
+msgid "Rule \"{}\" points to a layer that no longer exists."
+msgstr "Reguła „{}” wskazuje warstwę, która już nie istnieje."
+
+msgid "Rule \"{}\" has an invalid tap action."
+msgstr "Reguła „{}” ma nieprawidłowe działanie dotknięcia."
+
+msgid "Rule \"{}\" has an invalid hold action."
+msgstr "Reguła „{}” zawiera nieprawidłowe działanie wstrzymania."
+
+msgid "Rule \"{}\" has an invalid double-tap action."
+msgstr "Reguła „{}” ma nieprawidłową akcję dwukrotnego dotknięcia."
+
+msgid "Automatic switching rule deleted"
+msgstr "Usunięto regułę automatycznego przełączania"
+
+msgid "Only in applications"
+msgstr "Tylko w aplikacjach"
+
+msgid "Except applications"
+msgstr "Z wyjątkiem aplikacji"
+
+msgid "A match blocks the rule, even if the window is in the allowed list."
+msgstr ""
+"Dopasowanie blokuje regułę, nawet jeśli okno znajduje się na liście "
+"dozwolonych."
+
+msgid "Any match allows the rule. An empty list allows all windows."
+msgstr ""
+"Dowolne dopasowanie dopuszcza regułę. Pusta lista pozwala na dostęp do "
+"wszystkich okien."
+
+msgid "Choose applications to exclude"
+msgstr "Wybierz aplikacje do wykluczenia"
+
+msgid "Open windows"
+msgstr "Otwórz okna"
+
+msgid "Last active"
+msgstr "Ostatni aktywny"
+
+msgid "Nothing is excluded."
+msgstr "Nic nie jest wykluczone."
+
+msgid "No restrictions: the rule works in every window."
+msgstr "Brak ograniczeń: reguła działa w każdym oknie."
+
+msgid "{n} window"
+msgid_plural "{n} windows"
+msgstr[0] "{n} okno"
+msgstr[1] "{n} okna"
+msgstr[2] "{n} okien"
+
+msgid "Do not process"
+msgstr "Nie przetwarzaj"
+
+msgid "Command name (optional)"
+msgstr "Nazwa polecenia (opcjonalnie)"
+
+msgid "Working directory (home by default)"
+msgstr "Katalog roboczy (domyślnie home)"
+
+msgid "Text to type when the action is invoked:"
+msgstr "Tekst do wpisania po wywołaniu akcji:"
+
+msgid ""
+"Enter literal text without the text: prefix. Line breaks, spaces and tabs "
+"are preserved. On Linux, text is inserted into the active application via "
+"the desktop portal; permission may be required. Text injection by the mapper"
+" is not implemented on Windows or macOS."
+msgstr ""
+"Wprowadź tekst dosłowny bez tekstu: przedrostka. Podziały wierszy, spacje i "
+"tabulatory zostają zachowane. W systemie Linux tekst jest wstawiany do "
+"aktywnej aplikacji za pośrednictwem portalu komputerowego; może być wymagane"
+" pozwolenie. Wstrzykiwanie tekstu przez narzędzie mapujące nie jest "
+"zaimplementowane w systemie Windows ani macOS."
+
+msgid ""
+"Commands run with sh -lc in the background. The mapper does not wait for "
+"completion or collect output. An empty name uses the command itself as its "
+"label. The working directory defaults to your home folder; scripts need "
+"execute permission. Command execution must be enabled in settings."
+msgstr ""
+"Polecenia są uruchamiane z sh -lc w tle. Program mapujący nie czeka na "
+"zakończenie ani nie zbiera danych wyjściowych. Pusta nazwa używa samego "
+"polecenia jako etykiety. Domyślnym katalogiem roboczym jest folder domowy; "
+"skrypty wymagają pozwolenia na wykonanie. Wykonywanie poleceń musi być "
+"włączone w ustawieniach."
+
+msgid ""
+"Commands run with PowerShell in the background, without a console window. "
+"The mapper does not wait for completion or collect output. An empty name "
+"uses the command itself as its label. The working directory defaults to your"
+" home folder. Command execution must be enabled in settings."
+msgstr ""
+"Polecenia działają z PowerShellem w tle, bez okna konsoli. Program mapujący "
+"nie czeka na zakończenie ani nie zbiera danych wyjściowych. Pusta nazwa "
+"używa samego polecenia jako etykiety. Domyślnym katalogiem roboczym jest "
+"folder domowy. Wykonywanie poleceń musi być włączone w ustawieniach."
+
+msgid ""
+"The name is optional: an empty name uses the command itself as its label. "
+"Command execution by the mapper is not implemented on macOS."
+msgstr ""
+"Nazwa jest opcjonalna: pusta nazwa używa samego polecenia jako etykiety. "
+"Wykonywanie poleceń przez program mapujący nie jest zaimplementowane w "
+"systemie macOS."
+
+msgid "Triggers"
+msgstr "Wyzwalacze"
+
+msgid "Disable animations"
+msgstr "Wyłącz animacje"
+
+msgid "Add layout: "
+msgstr "Dodaj układ:"
+
+msgid "Save (Ctrl+S)"
+msgstr "Zapisz (Ctrl+S)"
+
+msgid "Close layout"
+msgstr "Zamknij układ"
+
+msgid "Discard layout changes?"
+msgstr "Odrzucić zmiany układu?"
+
+msgid "Unsaved changes to this layout will be lost."
+msgstr "Niezapisane zmiany w tym układzie zostaną utracone."
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Triggers tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"Unikalny identyfikator używany w referencjach takich jak makro:<id>. Aby "
+"powiązać to makro z klawiszem, wybierz tę akcję na karcie Warstwy lub "
+"Wyzwalacze. Zmień identyfikator tylko wtedy, gdy nic nie używa tego makra."
+
+msgid "Discard"
+msgstr "Wyrzucać"
+
+msgid ""
+"Build reusable sequences of key chords, text, commands and system actions. Use a unique ID in macro:<id> references and a readable name in action lists. Assign macros on the Layers or Triggers tab; change an ID only when it is unused.\n"
+"\n"
+"The step pause applies between steps of this macro. Modifier delay is the time between pressing a modifier and the main key. Leave delays empty to use Settings defaults."
+msgstr ""
+"Twórz sekwencje kluczowych akordów, tekstu, poleceń i działań systemowych do wielokrotnego użytku. Użyj unikalnego identyfikatora w odniesieniach makro:<id> i czytelnej nazwy na listach akcji. Przypisz makra na zakładce Warstwy lub Wyzwalacze; zmieniać identyfikator tylko wtedy, gdy jest nieużywany.\n"
+"\n"
+"Pauza kroku obowiązuje pomiędzy krokami tego makra. Opóźnienie modyfikatora to czas pomiędzy naciśnięciem modyfikatora a klawiszem głównym. Pozostaw opcję Opóźnienia puste, aby użyć ustawień domyślnych Ustawień."
+
+msgid "Global defaults: step pause {} ms; modifier delay {} ms."
+msgstr ""
+"Globalne ustawienia domyślne: przerwa krokowa {} ms; modyfikator opóźnienia "
+"{} ms."
+
+msgid "Layout changed on disk"
+msgstr "Zmieniono układ na dysku"
+
+msgid ""
+"The file of “{}” was changed by another program after you opened it. Your "
+"edits are kept until you choose what to do."
+msgstr ""
+"Plik „{}” został zmieniony przez inny program po jego otwarciu. Twoje zmiany"
+" zostaną zachowane, dopóki nie zdecydujesz, co zrobić."
+
+msgid "Load from disk"
+msgstr "Załaduj z dysku"
+
+msgid "Save as new…"
+msgstr "Zapisz jako nowy…"
+
+msgid "Overwrite"
+msgstr "Przepisać"
+
+msgid "Show LHC key codes used in assignments, such as KeyA and ArrowLeft."
+msgstr ""
+"Pokaż kody klawiszy LHC używane w przypisaniach, takie jak KeyA i ArrowLeft."
+
+msgid "Application"
+msgstr "Aplikacja"
+
+msgid "Window title"
+msgstr "Tytuł okna"
+
+msgid "Click to switch"
+msgstr "Kliknij, aby przełączyć"
+
+msgid "Match by app ID or process instead"
+msgstr "Zamiast tego dopasuj według identyfikatora aplikacji lub procesu"
+
+msgid "Match by window title instead"
+msgstr "Zamiast tego dopasuj według tytułu okna"
+
+msgid "Open now: {n} window"
+msgid_plural "Open now: {n} windows"
+msgstr[0] "Otwórz teraz: {n} okno"
+msgstr[1] "Otwórz teraz: {n} okna"
+msgstr[2] "Otwórz teraz: {n} okien"
+
+msgid "Not open now"
+msgstr "Nie otwarte teraz"
+
+msgid "Running process"
+msgstr "Uruchomiony proces"
+
+msgid "Text the window title contains"
+msgstr "Tekst zawarty w tytule okna"
+
+msgid "Already in the list"
+msgstr "Już na liście"
+
+msgid "Choose from open windows…"
+msgstr "Wybieraj spośród otwartych okien…"
+
+msgid "Matches {n} open window"
+msgid_plural "Matches {n} open windows"
+msgstr[0] "Pasuje do {n} otwartego okna"
+msgstr[1] "Pasuje do {n} otwartych okien"
+msgstr[2] "Pasuje do {n} otwartych okien"
+
+msgid "Matches no open window"
+msgstr "Nie pasuje do żadnego otwartego okna"
+
+msgid "Show Quick Action Menu on the last used page"
+msgstr "Pokaż menu szybkiej akcji na ostatnio używanej stronie"
+
+msgid "Show Emoji & Symbols menu on the last used page"
+msgstr "Pokaż menu Emoji i symbole na ostatnio używanej stronie"
+
+msgid "Show the settings window"
+msgstr "Pokaż okno ustawień"
+
+msgid "Activate layout {} (switches to Single mode)"
+msgstr "Aktywuj układ {} (przełącza w tryb pojedynczy)"
+
+msgid "There is no layout number {}"
+msgstr "Brak numeru układu {}"
+
+msgid "Show the Left Hand Control layout name when it changes"
+msgstr "Pokaż nazwę układu kontrolki lewej ręki, gdy ulegnie ona zmianie"
+
+msgid "Show the keys of a layer while it is held"
+msgstr "Pokaż klucze warstwy, gdy jest ona przytrzymywana"
+
+msgid ""
+"The hint appears 2 seconds after the layer activates. Pressing a layer key "
+"hides or cancels it until the trigger is released, including in game mode."
+msgstr ""
+"Podpowiedź pojawia się 2 sekundy po aktywowaniu warstwy. Naciśnięcie "
+"klawisza warstwy powoduje jego ukrycie lub anulowanie do momentu zwolnienia "
+"spustu, także w trybie gry."
+
+msgid ""
+"Unavailable: build with the spell feature and use a Wayland compositor with "
+"layer-shell (KDE Plasma, Sway, Hyprland)."
+msgstr ""
+"Niedostępne: buduj z funkcją zaklęć i używaj kompozytora Waylanda z powłoką "
+"warstwową (KDE Plasma, Sway, Hyprland)."
+
+msgid ""
+"The app:activateLayout1…5 actions activate the layout at that position in "
+"this list: reordering the list changes which layout a key activates. In Auto"
+" mode they switch to Single mode."
+msgstr ""
+"Akcje app:activateLayout1…5 aktywują układ w tej pozycji na liście: zmiana "
+"kolejności listy zmienia układ aktywowany za pomocą klawisza. W trybie "
+"automatycznym przełączają się na tryb pojedynczy."
+
+msgid "Cut"
+msgstr "Wytnij"
+
+msgid "Copy"
+msgstr "Kopiuj"
+
+msgid "Paste"
+msgstr "Wklej"
+
+msgid "Select all"
+msgstr "Zaznacz wszystko"
+
+msgid "Clear search"
+msgstr "Wyczyść wyszukiwanie"
+
+msgid "Add application"
+msgstr "Dodaj aplikację"
+
+msgid "Edit application"
+msgstr "Edytuj aplikację"
+
+msgid "Remove application?"
+msgstr "Usunąć aplikację?"
+
+msgid "“{}” will be removed from the list."
+msgstr "„{}” zostanie usunięty z listy."
+
+msgid "Devices"
+msgstr "Urządzenia"
+
+msgid "Required"
+msgstr "Wymagany"
+
+msgid "Optional"
+msgstr "Fakultatywny"
+
+msgid "Failed to start"
+msgstr "Nie udało się uruchomić"
+
+msgid "Keys work as usual. Start the mapper to apply your layouts."
+msgstr ""
+"Klawisze działają jak zwykle. Uruchom program mapujący, aby zastosować "
+"układy."
+
+msgid "Select a keyboard below to start the mapper."
+msgstr "Wybierz klawiaturę poniżej, aby uruchomić program mapujący."
+
+msgid "Changing a device restarts the mapper."
+msgstr "Zmiana urządzenia powoduje ponowne uruchomienie programu mapującego."
+
+msgid "Auto: known game {}"
+msgstr "Auto: znana gra {}"
+
+msgid "Ignored in fullscreen"
+msgstr "Ignorowane na pełnym ekranie"
+
+msgid "Not available in this session."
+msgstr "Niedostępne w tej sesji."
+
+msgid "Steam games"
+msgstr "Gry na Steamie"
+
+msgid ""
+"Turns on while Steam runs a game: Steam starts every game through reaper "
+"SteamLaunch, and game windows have the ID steam_app_<number>."
+msgstr ""
+"Włącza się, gdy Steam uruchamia grę: Steam uruchamia każdą grę za pomocą "
+"narzędzia SteamLaunch, a okna gier mają identyfikator steam_app_<number>."
+
+msgid "Turns on while Steam reports a running game."
+msgstr "Włącza się, gdy Steam zgłasza uruchomioną grę."
+
+msgid "Lutris games"
+msgstr "Gry Lutrisa"
+
+msgid ""
+"Turns on while a game started by Lutris runs: Lutris starts every game "
+"through lutris-wrapper."
+msgstr ""
+"Włącza się, gdy działa gra rozpoczęta przez Lutris: Lutris rozpoczyna każdą "
+"grę za pośrednictwem lutris-wrapper."
+
+msgid "Gamescope sessions"
+msgstr "Sesje z Gamescope"
+
+msgid "Turns on while the active window is a nested gamescope session."
+msgstr "Włącza się, gdy aktywne okno jest zagnieżdżoną sesją lunety."
+
+msgid "Games from the Game Bar list"
+msgstr "Gry z listy Game Bar"
+
+msgid "Applications of the Game category"
+msgstr "Aplikacje kategorii Gry"
+
+msgid ""
+"Turns on while the active window belongs to an application whose .desktop "
+"file lists the Game category. Launchers are tagged as games too, so they are"
+" skipped."
+msgstr ""
+"Włącza się, gdy aktywne okno należy do aplikacji, której plik .desktop "
+"zawiera kategorię Gra. Programy uruchamiające są również oznaczone jako gry,"
+" więc są pomijane."
+
+msgid ""
+"Turns on while the active application declares the Games category in its "
+"Info.plist. Launchers are skipped."
+msgstr ""
+"Włącza się, gdy aktywna aplikacja deklaruje kategorię Gry w pliku "
+"Info.plist. Programy uruchamiające są pomijane."
+
+msgid "Auto — according to settings"
+msgstr "Auto — zgodnie z ustawieniami"
+
+msgid "Blank"
+msgstr "Pusty"
+
+msgid "Assign action"
+msgstr "Przypisz akcję"
+
+msgid "Action after {} ms of holding"
+msgstr "Akcja po {} ms wstrzymania"
+
+msgid ""
+"These codes are specific to Left Hand Control, not universal keyboard codes "
+"(e.g. KeyA, ArrowLeft)."
+msgstr ""
+"Kody te są specyficzne dla sterowania lewą ręką, a nie uniwersalnych kodów "
+"klawiaturowych (np. KeyA, ArrowLeft)."
+
+msgid "While its window is active"
+msgstr "Gdy jego okno jest aktywne"
+
+msgid "While the process runs"
+msgstr "Podczas trwania procesu"
+
+msgid "Counts while a window of the application has the focus."
+msgstr "Liczy się, gdy okno aplikacji jest aktywne."
+
+msgid ""
+"Counts while a process with this name runs, even without a window or in the "
+"background."
+msgstr ""
+"Liczy się czas działania procesu o tej nazwie, nawet bez okna lub w tle."
+
+msgid "Application · while its window is active"
+msgstr "Aplikacja · gdy jej okno jest aktywne"
+
+msgid "Process · while it runs"
+msgstr "Proces · podczas jego działania"
+
+msgid "No games added."
+msgstr "Nie dodano żadnych gier."
+
+msgid ""
+"Game mode turns on while any of these matches. An application is matched by "
+"its ID or process name: the whole name, ignoring case, with * and ? as "
+"wildcards. Steam games have the app ID steam_app_<number>; Proton games are "
+"also found by their .exe name. A window title item matches the active window"
+" whose title contains the text."
+msgstr ""
+"Tryb gry włącza się, gdy którykolwiek z tych meczów. Aplikacja jest "
+"dopasowywana na podstawie jej identyfikatora lub nazwy procesu: cała nazwa, "
+"pomijając wielkość liter, z * i ? jako symbole wieloznaczne. Gry Steam mają "
+"identyfikator aplikacji steam_app_<number>; Gry Proton można również znaleźć"
+" po nazwie .exe. Element tytułu okna odpowiada aktywnemu oknie, którego "
+"tytuł zawiera tekst."
+
+msgid ""
+"Game mode stays off while any of these matches, even if a game or another "
+"detector would turn it on."
+msgstr ""
+"Tryb gry pozostaje wyłączony podczas dowolnego z tych dopasowań, nawet jeśli"
+" gra lub inny detektor by go włączył."
+
+msgid "less than a minute"
+msgstr "mniej niż minutę"
+
+msgid "{} min"
+msgstr "{} min"
+
+msgid "{} h {} min"
+msgstr "{} h {} min"
+
+msgid "Running for {}"
+msgstr "Działa dla {}"
+
+msgid "Stopped unexpectedly"
+msgstr "Zatrzymano nieoczekiwanie"
+
+msgid "Stopped {} ago after running for {}."
+msgstr "Zatrzymany {} temu po uruchomieniu dla {}."
+
+msgid "Text input"
+msgstr "Wprowadzanie tekstu"
+
+msgid ""
+"How text actions in rules and macros are typed. Key remapping and the emoji "
+"popup do not use it."
+msgstr ""
+"Sposób wpisywania akcji tekstowych w regułach i makrach. Ponowne mapowanie "
+"klawiszy i wyskakujące okienko emoji nie korzystają z niego."
+
+msgid "Typing method"
+msgstr "Metoda pisania"
+
+msgid "libei + clipboard fallback (recommended)"
+msgstr "libei + rezerwa schowka (zalecane)"
+
+msgid "Paste from clipboard"
+msgstr "Wklej ze schowka"
+
+msgid "ydotool"
+msgstr "ydotool"
+
+msgid "xdotool"
+msgstr "xdotool"
+
+msgid ""
+"Types with the current layout, or pastes the whole text when a character is "
+"unavailable. Paste requires clipboard access and support for the paste "
+"shortcut. Preserves clipboard formats and cancels if the destination "
+"changes. Requires portal permission and active-window detection."
+msgstr ""
+"Wpisuje z bieżącym układem lub wkleja cały tekst, gdy znak jest niedostępny."
+" Wklejanie wymaga dostępu do schowka i obsługi skrótu wklejania. Zachowuje "
+"formaty schowka i anuluje w przypadku zmiany miejsca docelowego. Wymaga "
+"uprawnień do portalu i wykrywania aktywnego okna."
+
+msgid ""
+"Types only through libei using the current keyboard layout and Caps Lock "
+"state. Skips text with unavailable characters. Requires portal permission "
+"and active-window detection. Cancels if the destination changes."
+msgstr ""
+"Pisze tylko poprzez libei, korzystając z bieżącego układu klawiatury i stanu"
+" Caps Lock. Pomija tekst zawierający niedostępne znaki. Wymaga uprawnień do "
+"portalu i wykrywania aktywnego okna. Anuluje, jeśli zmieni się miejsce "
+"docelowe."
+
+msgid ""
+"Types only through NotifyKeyboardKeycode using the KDE layout and readable "
+"keyboard state. Skips text with unavailable characters. Requires portal "
+"permission and active-window detection. Cancels if the destination changes."
+msgstr ""
+"Wpisuje tylko poprzez NotifyKeyboardKeycode, korzystając z układu KDE i "
+"czytelnego stanu klawiatury. Pomija tekst zawierający niedostępne znaki. "
+"Wymaga uprawnień do portalu i wykrywania aktywnego okna. Anuluje, jeśli "
+"zmieni się miejsce docelowe."
+
+msgid ""
+"Pastes with the paste shortcut through the portal. Requires clipboard "
+"access, active-window detection and an app supporting that shortcut. "
+"Preserves all clipboard formats; a new user copy takes precedence. Reports "
+"an error if no text transfer is observed."
+msgstr ""
+"Wkleja za pomocą skrótu wklejania przez portal. Wymaga dostępu do schowka, "
+"wykrywania aktywnego okna i aplikacji obsługującej ten skrót. Zachowuje "
+"wszystkie formaty schowka; nowa kopia użytkownika ma pierwszeństwo. Zgłasza "
+"błąd, jeśli nie zaobserwowano przesłania tekstu."
+
+msgid "Paste shortcut"
+msgstr "Wklej skrót"
+
+msgid ""
+"Sent to the focused app to paste the text. Terminals usually need "
+"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
+"Ctrl+V does not paste there."
+msgstr ""
+"Wysłano do wybranej aplikacji w celu wklejenia tekstu. Terminale zwykle "
+"wymagają Ctrl+Shift+V: niektóre z nich wklejają wybór myszy na Shift+Insert,"
+" a Ctrl+V nie wkleja tam."
+
+msgid ""
+"Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "
+"Reliable for Latin text only. On an error, stops without switching methods."
+msgstr ""
+"Uruchamia tylko „typ ydotool”. Potrzebuje ydotool i działającej usługi "
+"ydotoold. Wiarygodne tylko w przypadku tekstu łacińskiego. W przypadku błędu"
+" zatrzymuje się bez przełączania metod."
+
+msgid ""
+"Runs \"xdotool type\" only. Works only in X11 sessions and XWayland windows."
+" On an error, stops without switching methods."
+msgstr ""
+"Uruchamia tylko „typ xdotool”. Działa tylko w sesjach X11 i oknach XWayland."
+" W przypadku błędu zatrzymuje się bez przełączania metod."
+
+msgid "ydotool from PATH"
+msgstr "ydotool z PATH"
+
+msgid "xdotool from PATH"
+msgstr "xdotool z PATH"
+
+msgid ""
+"Each item is compared with the active window. Pick a window from the list "
+"below to fill in the field."
+msgstr ""
+"Każdy element jest porównywany z aktywnym oknem. Wybierz okno z poniższej "
+"listy i uzupełnij pole."
+
+msgid ""
+"Application: the app ID (Wayland app id or X11 WM_CLASS) or the process "
+"name. The whole name must match, case is ignored, .exe is optional. * stands"
+" for any characters and ? for one, e.g. steam_app_*. The ID is stable, so "
+"prefer it."
+msgstr ""
+"Aplikacja: identyfikator aplikacji (identyfikator aplikacji Wayland lub X11 "
+"WM_CLASS) lub nazwa procesu. Cała nazwa musi się zgadzać, wielkość liter "
+"jest ignorowana, rozszerzenie .exe jest opcjonalne. * oznacza dowolne znaki "
+"i ? dla jednego, np. aplikacja_parowa_*. Identyfikator jest stabilny, więc "
+"wolę go."
+
+msgid ""
+"Window title: matches when the title contains the text, case is ignored. "
+"With * or ? the pattern must cover the whole title. A title changes with the"
+" open tab or document, and it never matches a process without a window."
+msgstr ""
+"Tytuł okna: pasuje, gdy tytuł zawiera tekst, wielkość liter jest ignorowana."
+" Z * lub? wzór musi obejmować cały tytuł. Tytuł zmienia się wraz z otwartą "
+"kartą lub dokumentem i nigdy nie pasuje do procesu bez okna."
+
+msgid "Match by"
+msgstr "Dopasuj według"
+
+msgid "Process"
+msgstr "Proces"
+
+msgid "Process name, * and ? allowed"
+msgstr "Nazwa procesu, * i ? dozwolony"
+
+msgid "App ID, * and ? allowed"
+msgstr "Identyfikator aplikacji, * i? dozwolony"
+
+msgid ""
+"The item is compared with the names of running processes. Pick one from the "
+"list below to fill in the field."
+msgstr ""
+"Pozycja jest porównywana z nazwami uruchomionych procesów. Wybierz jeden z "
+"poniższej listy, aby wypełnić pole."
+
+msgid ""
+"Process: the executable name, as the list below shows it. The whole name "
+"must match, case is ignored, .exe is optional. * stands for any characters "
+"and ? for one."
+msgstr ""
+"Proces: nazwa pliku wykonywalnego, jak pokazuje poniższa lista. Cała nazwa "
+"musi się zgadzać, wielkość liter jest ignorowana, rozszerzenie .exe jest "
+"opcjonalne. * oznacza dowolne znaki i ? dla jednego."
+
+msgid "Matches {n} running process"
+msgid_plural "Matches {n} running processes"
+msgstr[0] "Pasuje do {n} działającego procesu"
+msgstr[1] "Dopasowuje {n} działające procesy"
+msgstr[2] "Dopasowuje {n} uruchomionych procesów"
+
+msgid "Matches no running process"
+msgstr "Nie pasuje do żadnego uruchomionego procesu"
+
+msgid ""
+"Many applications run as “{}”, so the name matches all of them. The "
+"application ID is more precise."
+msgstr ""
+"Wiele aplikacji działa jako „{}”, więc nazwa pasuje do nich wszystkich. "
+"Identyfikator aplikacji jest bardziej precyzyjny."
+
+msgid "When it counts"
+msgstr "Kiedy to się liczy"
+
+msgid "Window titles"
+msgstr "Tytuły okien"
+
+msgid "Processes of open windows"
+msgstr "Procesy otwartych okien"
+
+msgid "Shared process"
+msgstr "Wspólny proces"
+
+msgid "Running without a window"
+msgstr "Bieganie bez okna"
+
+msgid "Type a name to find processes running without a window."
+msgstr "Wpisz nazwę, aby znaleźć procesy działające bez okna."
+
+msgid "Process · while its window is active"
+msgstr "Proces · gdy jego okno jest aktywne"
+
+msgid "While the trigger is held"
+msgstr "Podczas trzymania spustu"
+
+msgid "Press key"
+msgstr "Naciśnij klawisz"
+
+msgid ""
+"Which key stays pressed while you hold the trigger, together with the layer."
+" “Don't press” only switches the layer."
+msgstr ""
+"Który klawisz pozostaje wciśnięty, gdy trzymasz spust, razem z warstwą. „Nie"
+" naciskaj” jedynie przełącza warstwę."
+
+msgid ""
+"Which key stays pressed while you hold the trigger. “Trigger itself” keeps "
+"the usual behavior of the key."
+msgstr ""
+"Który klawisz pozostaje wciśnięty, gdy trzymasz spust. „Sam wyzwalacz” "
+"zachowuje zwykłe zachowanie klawisza."
+
+msgid "Trigger itself"
+msgstr "Sam wyzwalacz"
+
+msgid "Other key…"
+msgstr "Inny klucz…"
+
+msgid "When to press"
+msgstr "Kiedy nacisnąć"
+
+msgid "Holds {}"
+msgstr "Mieści {}"
+
+msgid "Holds nothing"
+msgstr "Nic nie trzyma"
+
+msgid "Hold after {} ms"
+msgstr "Przytrzymaj po {} ms"
+
+msgid "Stop mapper (restore native keyboard behavior)"
+msgstr "Zatrzymaj program mapujący (przywróć natywne zachowanie klawiatury)"
+
+msgid "Select a keyboard device in the settings to start the mapper"
+msgstr "Wybierz klawiaturę w ustawieniach, aby uruchomić narzędzie mapujące"
+
+msgid "Start mapper to intercept keys and apply layouts"
+msgstr "Uruchom program mapujący, aby przechwycić klucze i zastosować układy"
+
+msgid "Current active layout (selected automatically by switching rules)"
+msgstr ""
+"Bieżący aktywny układ (wybierany automatycznie przez przełączanie reguł)"
+
+msgid "Click to change mode (Auto / On / Off)"
+msgstr "Kliknij, aby zmienić tryb (Auto / Włącz / Wyłącz)"
+
+msgid ""
+"The mapper intercepts keyboard input, applies layers, rules and macros, and "
+"emits output through a virtual device."
+msgstr ""
+"Narzędzie mapujące przechwytuje dane wprowadzane z klawiatury, stosuje "
+"warstwy, reguły i makra oraz emituje dane wyjściowe za pośrednictwem "
+"urządzenia wirtualnego."
+
+msgid ""
+"Define how physical keys behave: tap for a key or action, hold to switch "
+"layers, or double-tap for extra shortcuts."
+msgstr ""
+"Zdefiniuj zachowanie klawiszy fizycznych: dotknij, aby wyświetlić klawisz "
+"lub akcję, przytrzymaj, aby przełączyć warstwy lub dotknij dwukrotnie, aby "
+"uzyskać dodatkowe skróty."
+
+msgid ""
+"Action performed when the trigger is pressed and released quickly without "
+"holding."
+msgstr ""
+"Akcja wykonywana po naciśnięciu i szybkim zwolnieniu spustu bez "
+"przytrzymywania."
+
+msgid ""
+"Action performed when the trigger is pressed twice quickly within the "
+"double-tap timeout."
+msgstr ""
+"Akcja wykonywana po dwukrotnym szybkim naciśnięciu spustu w ramach limitu "
+"czasu dwukrotnego dotknięcia."
+
+msgid "Show standard QWERTY letter labels for visual reference."
+msgstr "Pokaż standardowe etykiety z literami QWERTY w celach wizualnych."
+
+msgid ""
+"Show internal key codes used in Left Hand Control profiles (e.g. KeyA, "
+"ArrowLeft)."
+msgstr ""
+"Pokaż wewnętrzne kody klawiszy używane w profilach sterowania lewą ręką (np."
+" KeyA, ArrowLeft)."
+
+msgid "Hold detection"
+msgstr "Wstrzymaj wykrywanie"
+
+msgid "When a key becomes a hold"
+msgstr "Kiedy klucz staje się uchwytem"
+
+msgid ""
+"Decides when a rule key that is still down counts as a hold if you press "
+"another key meanwhile. Applies to all rules."
+msgstr ""
+"Decyduje, kiedy klawisz reguły, który jest nadal wciśnięty, liczy się jako "
+"wstrzymanie, jeśli w międzyczasie naciśniesz inny klawisz. Dotyczy "
+"wszystkich zasad."
+
+msgid ""
+"After another key is released: the key becomes a hold once another key is "
+"pressed and released while it is down, or when the hold threshold passes. "
+"Fast rolls while typing stay taps."
+msgstr ""
+"Po zwolnieniu innego klawisza: klawisz zostaje zatrzymany po naciśnięciu i "
+"zwolnieniu innego klawisza, gdy jest on wciśnięty lub po przekroczeniu progu"
+" wstrzymania. Szybkie przewijanie podczas pisania, pozostań w kranach."
+
+msgid ""
+"As soon as another key is pressed: reacts faster, but fast typing can "
+"trigger the hold by mistake."
+msgstr ""
+"Gdy tylko zostanie naciśnięty inny klawisz: reaguje szybciej, ale szybkie "
+"pisanie może przez pomyłkę spowodować zatrzymanie."
+
+msgid "After another key is released (recommended)"
+msgstr "Po zwolnieniu kolejnego klawisza (zalecane)"
+
+msgid "As soon as another key is pressed"
+msgstr "Gdy tylko zostanie naciśnięty inny klawisz"
+
+msgid ""
+"Used by rules that leave the field empty. A rule can set its own value in "
+"its advanced options."
+msgstr ""
+"Używane przez reguły, które pozostawiają pole puste. Reguła może ustawić "
+"własną wartość w opcjach zaawansowanych."
+
+msgid "Hold threshold, ms"
+msgstr "Utrzymaj próg, pani"
+
+msgid ""
+"How long to hold a rule key before it counts as a hold: its layer or hold "
+"action. Released earlier, the key runs its tap action."
+msgstr ""
+"Jak długo przytrzymywać klawisz reguły, zanim zostanie on uznany za "
+"wstrzymanie: jego warstwa lub akcja wstrzymania. Wydany wcześniej klawisz "
+"uruchamia akcję dotknięcia."
+
+msgid ""
+"Lower: layers turn on faster, but fast typing may trigger them by mistake. "
+"Higher: fewer false holds, but a longer wait. Usually 150–250 ms."
+msgstr ""
+"Niższy: warstwy włączają się szybciej, ale szybkie pisanie może je uruchomić"
+" przez pomyłkę. Wyższa: mniej fałszywych wstrzymań, ale dłuższe oczekiwanie."
+" Zwykle 150–250 ms."
+
+msgid "Standard value: {} ms."
+msgstr "Wartość standardowa: {} ms."
+
+msgid "Long hold, ms"
+msgstr "Długo czekać, pani"
+
+msgid ""
+"How long to keep holding a rule key before its long-hold action runs once. "
+"Applies to rules whose hold runs an action instead of a layer."
+msgstr ""
+"Jak długo trzymać klawisz reguły, zanim jego długotrwała akcja zostanie "
+"wykonana jednokrotnie. Dotyczy reguł, których wstrzymanie uruchamia akcję "
+"zamiast warstwy."
+
+msgid "Double-tap window, ms"
+msgstr "Kliknij dwukrotnie okno, ms"
+
+msgid ""
+"A second tap within this time after the first release counts as a double "
+"tap."
+msgstr ""
+"Drugie dotknięcie w tym czasie po pierwszym zwolnieniu liczy się jako "
+"podwójne dotknięcie."
+
+msgid ""
+"A single tap on a key with a double-tap action runs only after this window "
+"ends, so a large value makes such keys feel slow. Keys without a double-tap "
+"action are not delayed."
+msgstr ""
+"Pojedyncze naciśnięcie klawisza z akcją dwukrotnego naciśnięcia następuje "
+"dopiero po zakończeniu tego okna, więc duża wartość powoduje, że takie "
+"klawisze wydają się powolne. Klawisze bez akcji dwukrotnego dotknięcia nie "
+"są opóźniane."
+
+msgid ""
+"Used by macros that leave the field empty. A macro can set its own value on "
+"the Macros page."
+msgstr ""
+"Używane przez makra, które pozostawiają pole puste. Makro może ustawić "
+"własną wartość na stronie Makra."
+
+msgid ""
+"Pause between consecutive steps of a macro. Increase it if an application "
+"misses keystrokes."
+msgstr ""
+"Wstrzymaj pomiędzy kolejnymi krokami makra. Zwiększ go, jeśli aplikacja "
+"pomija naciśnięcia klawiszy."
+
+msgid "Simultaneous presses"
+msgstr "Równoczesne prasy"
+
+msgid ""
+"For rules triggered by several keys pressed together, such as KeyJ+KeyK. All"
+" keys must go down within this time, in any order. Until then the first key "
+"is held back; if the combination does not complete, it is typed as usual. "
+"Modifiers are never held back."
+msgstr ""
+"W przypadku reguł wyzwalanych przez kilka naciśniętych razem klawiszy, "
+"takich jak KeyJ+KeyK. Wszystkie klawisze muszą zostać opuszczone w tym "
+"czasie, w dowolnej kolejności. Do tego czasu pierwszy klucz jest "
+"powstrzymywany; jeśli kombinacja nie zostanie ukończona, zostanie wpisana w "
+"zwykły sposób. Modyfikatory nigdy nie są wstrzymywane."
+
+msgid ""
+"Higher: the combination is easier to hit, but typing with these keys lags "
+"slightly. Applies to all rules; a rule cannot override it."
+msgstr ""
+"Wyższa: łatwiej jest trafić tę kombinację, ale pisanie za pomocą tych "
+"klawiszy powoduje niewielkie opóźnienia. Dotyczy wszystkich zasad; reguła "
+"nie może jej zastąpić."
+
+msgid ""
+"Wait between pressing modifiers (Shift, Ctrl, …) and the main key of a macro"
+" step. Increase it if an application receives the shortcut without its "
+"modifier. Default for macros that leave the field empty."
+msgstr ""
+"Poczekaj pomiędzy naciśnięciem modyfikatorów (Shift, Ctrl,…) a klawiszem "
+"głównym kroku makro. Zwiększ go, jeśli aplikacja otrzyma skrót bez jego "
+"modyfikatora. Wartość domyślna dla makr, które pozostawiają pole puste."
+
+msgid "Enter a long hold from 100 to 60000 ms."
+msgstr "Wprowadź długie wstrzymanie od 100 do 60000 ms."
+
+msgid "Long hold after {} ms"
+msgstr "Długie przytrzymanie po {} ms"
+
+msgid ""
+"Released earlier, the trigger counts as a tap; held longer, as a hold. Empty"
+" uses the default from Settings: {} ms."
+msgstr ""
+"Wydany wcześniej spust liczy się jako dotknięcie; trzymany dłużej, jako "
+"chwyt. Pusty używa wartości domyślnej z Ustawień: {} ms."
+
+msgid ""
+"How long to keep holding before the action runs. Empty uses the default from"
+" Settings: {} ms."
+msgstr ""
+"Jak długo trzymać, zanim akcja się uruchomi. Pusty używa wartości domyślnej "
+"z Ustawień: {} ms."
+
+msgid ""
+"Longest pause between two taps. Empty uses the default from Settings: {} ms."
+msgstr ""
+"Najdłuższa przerwa między dwoma dotknięciami. Pusty używa wartości domyślnej"
+" z Ustawień: {} ms."
+
+msgid "Auto: {} is not counted as a game (built-in list)"
+msgstr "Auto: {} nie jest liczony jako gra (wbudowana lista)"
+
+msgid ""
+"These sources can take another application for a game, so each skips a "
+"built-in list of applications."
+msgstr ""
+"Źródła te mogą pobierać inną aplikację do gry, więc każde z nich pomija "
+"wbudowaną listę aplikacji."
+
+msgid ""
+"Turns on while a program that Windows recognized as a game (the Game Bar "
+"list) runs. Launchers are listed there too, so they are skipped."
+msgstr ""
+"Włącza się, gdy działa program rozpoznawany przez system Windows jako gra "
+"(lista Game Bar). Programy uruchamiające również są tam wymienione, więc są "
+"pomijane."
+
+msgid "Launchers and game tools — not counted as games"
+msgstr "Programy uruchamiające i narzędzia do gier — nie są liczone jako gry"
+
+msgid ""
+"Decides when a dual-role key counts as a hold if another key is pressed. "
+"Rules can override this default in advanced options. Chord detection is "
+"configured separately."
+msgstr ""
+"Określa, kiedy klawisz dwufunkcyjny liczy się jako wstrzymanie po "
+"naciśnięciu innego klawisza. Reguły mogą zastąpić to ustawienie domyślne w "
+"opcjach zaawansowanych. Wykrywanie akordów konfiguruje się osobno."
+
+msgid "After another key is released (better for typing)"
+msgstr "Po zwolnieniu kolejnego klawisza (lepiej do pisania)"
+
+msgid ""
+"As soon as another key is pressed: useful for dedicated layer or modifier "
+"keys. Reacts faster, but overlapping letters while typing can trigger the "
+"hold by mistake."
+msgstr ""
+"Gdy tylko zostanie naciśnięty inny klawisz: przydatne w przypadku "
+"dedykowanych klawiszy warstwy lub klawiszy modyfikujących. Reaguje szybciej,"
+" ale nachodzące na siebie litery podczas pisania mogą przez pomyłkę "
+"spowodować zatrzymanie."
+
+msgid "Default from Settings: {}"
+msgstr "Domyślnie w Ustawieniach: {}"
+
+msgid "after another key is released"
+msgstr "po zwolnieniu innego klawisza"
+
+msgid "as soon as another key is pressed"
+msgstr "natychmiast po naciśnięciu innego klawisza"
+
+msgid ""
+"Overrides the default hold detection for this rule. Use release detection "
+"for typing keys and press detection for dedicated layer or modifier keys. "
+"This does not change chord detection."
+msgstr ""
+"Zastępuje domyślne wykrywanie wstrzymania dla tej reguły. Użyj wykrywania "
+"zwolnienia podczas wpisywania klawiszy i wykrywania naciśnięcia dla "
+"dedykowanych klawiszy warstwy lub klawiszy modyfikujących. Nie zmienia to "
+"wykrywania akordów."
+
+msgid "Cannot list input devices: {}"
+msgstr "Nie można wyświetlić listy urządzeń wejściowych: {}"
+
+msgid "Keyboard interception is not implemented on this operating system."
+msgstr ""
+"W tym systemie operacyjnym nie jest zaimplementowane przechwytywanie "
+"klawiatury."
+
+msgid "Defaults"
+msgstr "Domyślne"
+
+msgid "Shared by all rules"
+msgstr "Wspólne dla wszystkich zasad"
+
+msgid "Hold threshold"
+msgstr "Przytrzymaj próg"
+
+msgid "Long hold"
+msgstr "Długie przytrzymanie"
+
+msgid "Double-tap window"
+msgstr "Kliknij dwukrotnie okno"
+
+msgid "Reset to {} ms"
+msgstr "Zresetuj do {} ms"
+
+msgid "Automatic game detection"
+msgstr "Automatyczne wykrywanie gry"
+
+msgid "Works only in Auto mode."
+msgstr "Działa tylko w trybie automatycznym."
+
+msgid "System signals"
+msgstr "Sygnały systemowe"
+
+msgid "Launchers"
+msgstr "Miotacze"
+
+msgid "Heroic games"
+msgstr "Heroiczne gry"
+
+msgid ""
+"Turns on while a game started by Heroic Games Launcher runs (Epic, GOG, "
+"Amazon and added games): Heroic passes HEROIC_APP_NAME to every game it "
+"starts."
+msgstr ""
+"Włącza się, gdy działa gra uruchomiona przez Heroic Games Launcher (Epic, "
+"GOG, Amazon i dodane gry): Heroic przekazuje HEROIC_APP_NAME do każdej "
+"uruchamianej przez nią gry."
+
+msgid "Games run through umu-launcher"
+msgstr "Gry działają poprzez umu-launcher"
+
+msgid ""
+"Turns on while a game runs through umu-run. Heroic, Lutris, Faugus Launcher "
+"and other launchers use it to start Windows games with Proton."
+msgstr ""
+"Włącza się, gdy gra przebiega przez umu-run. Heroic, Lutris, Faugus Launcher"
+" i inne programy uruchamiające używają go do uruchamiania gier Windows z "
+"Protonem."
+
+msgid "Guesses — can be wrong"
+msgstr "Domysły – mogą się mylić"
+
+msgid "Your rules"
+msgstr "Twoje zasady"
+
+msgid ""
+"“Never a game” wins over everything else, automatic detection included."
+msgstr ""
+"„Nigdy gra” nie wygrywa ze wszystkim innym, łącznie z automatycznym "
+"wykrywaniem."
+
+msgid "Always a game"
+msgstr "Zawsze gra"
+
+msgid "Never a game"
+msgstr "Nigdy gra"
+
+msgid ""
+"Built-in list. To count one of these anyway, add it to Always a game under "
+"Your rules."
+msgstr ""
+"Wbudowana lista. Aby mimo to policzyć jedną z nich, dodaj ją do Zawsze graj "
+"na Twoich zasadach."
+
+msgid "Hold"
+msgstr "Przytrzymanie"
+
+msgid "Don't press"
+msgstr "Nie naciskaj"
+
+msgid "{} — change…"
+msgstr "{} — zmień…"
+
+msgid "Choose another key above to set when it is pressed."
+msgstr "Wybierz inny klawisz powyżej, aby ustawić moment jego naciśnięcia."
+
+msgid "Assign a double-tap action to the rule to change this window."
+msgstr "Przypisz akcję dwukrotnego dotknięcia do reguły, aby zmienić to okno."
+
+msgid "Hold on other key release"
+msgstr "Przytrzymaj zwolnienie innego klawisza"
+
+msgid "Hold on other key press"
+msgstr "Przytrzymaj naciśnięcie innego klawisza"
+
+msgid "Reset"
+msgstr "Resetuj"
+
+msgid "Return all options in this dialog to their defaults"
+msgstr ""
+"Przywróć wszystkie opcje w tym oknie dialogowym do wartości domyślnych"
+
+msgid "Macro time limit"
+msgstr "Limit czasu makro"
+
+msgid ""
+"A macro still running after this time is stopped and counts as finished. A "
+"macro started while another one runs waits for it; up to 3 runs can wait, "
+"further presses are ignored."
+msgstr ""
+"Makro nadal działające po tym czasie zostaje zatrzymane i liczy się jako "
+"zakończone. Makro uruchomione, podczas gdy inne działa, czeka na nie; do 3 "
+"przebiegów może poczekać, dalsze naciśnięcia są ignorowane."
+
+msgid "Global shortcuts registered in this KDE session:"
+msgstr "Globalne skróty zarejestrowane w tej sesji KDE:"
+
+msgid ""
+"The list is read from the KDE global shortcut service (kglobalaccel): KWin, "
+"Plasma and applications register their actions there. The chosen action is "
+"invoked as is, as if its shortcut were pressed, even when no keys are "
+"assigned to it. Which actions exist and how they behave depends on the "
+"Plasma version and installed applications, so Left Hand Control does not "
+"guarantee them. Common window and desktop actions that also work on other "
+"platforms are in System actions."
+msgstr ""
+"Lista jest odczytywana z globalnej usługi skrótów KDE (kglobalaccel): KWin, "
+"Plasma i aplikacje rejestrują tam swoje działania. Wybrana akcja jest "
+"wywoływana tak, jak gdyby naciśnięto jej skrót, nawet jeśli nie są do niej "
+"przypisane żadne klawisze. To, które akcje istnieją i jak się zachowują, "
+"zależy od wersji Plazmy i zainstalowanych aplikacji, dlatego sterowanie lewą"
+" ręką ich nie gwarantuje. Typowe akcje okien i pulpitu, które działają "
+"również na innych platformach, znajdują się w sekcji Akcje systemowe."
+
+msgid "Hold key or combination"
+msgstr "Przytrzymaj klawisz lub kombinację"
+
+msgid ""
+"The key or combination stays pressed until you release the trigger. Choose "
+"modifiers plus one main key, for example Ctrl+KeyC."
+msgstr ""
+"Klawisz lub kombinacja pozostaje wciśnięta do chwili zwolnienia spustu. "
+"Wybierz modyfikatory plus jeden klucz główny, na przykład Ctrl+KeyC."
+
+msgid "Not used when holding performs a long-hold action."
+msgstr "Nieużywane, gdy przytrzymanie wykonuje akcję długiego przytrzymania."
+
+msgid "Other key or combination…"
+msgstr "Inny klucz lub kombinacja…"
+
+msgid "Hold detection when another key is pressed"
+msgstr "Wstrzymaj wykrywanie po naciśnięciu innego klawisza"
+
+msgid "Used for single-key triggers without a long-hold action."
+msgstr "Używany do wyzwalania jednym klawiszem bez długiego przytrzymania."
+
+msgid "Long-hold threshold, ms"
+msgstr "Próg długiego trzymania, ms"
+
+msgid "Used when a long-hold action is selected."
+msgstr "Używane, gdy wybrano akcję długiego przytrzymania."
+
+msgid "Double-tap interval, ms"
+msgstr "Interwał dwukrotnego dotknięcia, ms"
+
+msgid "Double-tap actions are available only for single-key triggers."
+msgstr ""
+"Akcje dwukrotnego dotknięcia są dostępne tylko w przypadku wyzwalaczy "
+"jednoklawiszowych."
+
+msgid "Applies when a double-tap action is assigned."
+msgstr "Ma zastosowanie, gdy przypisano akcję dwukrotnego dotknięcia."
+
+msgid "Delete trigger"
+msgstr "Usuń wyzwalacz"
+
+msgid "Delete trigger?"
+msgstr "Usunąć aktywator?"
+
+msgid ""
+"The trigger and all its assigned actions will be removed from the current "
+"layout."
+msgstr ""
+"Wyzwalacz i wszystkie przypisane do niego akcje zostaną usunięte z bieżącego"
+" układu."
+
+msgid "Reset {} to default"
+msgstr "Zresetuj {} do ustawień domyślnych"
+
+msgid "Holding activates layer: {}"
+msgstr "Przytrzymanie aktywuje warstwę: {}"
+
+msgid "Holding performs a long-hold action."
+msgstr "Trzymanie wykonuje długotrwałą akcję."
+
+msgid "Holding keeps a key or combination pressed."
+msgstr "Przytrzymanie powoduje wciśnięcie klawisza lub kombinacji."
+
+msgid "Paths"
+msgstr "Ścieżki"
+
+msgid "Unknown layer key at \"{}\"."
+msgstr "Nieznany klucz warstwy w „{}”."
+
+msgid "Invalid layer action at \"{}\"."
+msgstr "Nieprawidłowa akcja warstwy w „{}”."
+
+msgid "Invalid macro at \"{}\"."
+msgstr "Nieprawidłowe makro w „{}”."
+
+msgid "Invalid menu action at \"{}\"."
+msgstr "Nieprawidłowa akcja menu w „{}”."
+
+msgid "Invalid timing at \"{}\"."
+msgstr "Nieprawidłowy czas w „{}”."
+
+msgid "Invalid window condition at \"{}\"."
+msgstr "Nieprawidłowy stan okna w „{}”."
+
+msgid "Unsupported rule combination at \"{}\"."
+msgstr "Nieobsługiwana kombinacja reguł w „{}”."
+
+msgid "Invalid macro step at \"{}\"."
+msgstr "Nieprawidłowy krok makro w „{}”."
+
+msgid "Macro call cycle at \"{}\"."
+msgstr "Cykl wywołania makra w „{}”."
+
+msgid "A timing value is outside the range shown in Settings."
+msgstr "Wartość czasu jest poza zakresem pokazanym w Ustawieniach."
+
+msgid "Keep modifiers held until the layer is released"
+msgstr "Trzymaj modyfikatory do momentu zwolnienia warstwy"
+
+msgid ""
+"For a combination such as Alt+Tab: Alt stays pressed while you press the key"
+" again and is released together with the layer key, so the window switcher "
+"stays open."
+msgstr ""
+"W przypadku kombinacji takich jak Alt+Tab: Alt pozostaje wciśnięty podczas "
+"ponownego naciśnięcia klawisza i zostaje zwolniony wraz z klawiszem warstwy,"
+" dzięki czemu przełącznik okien pozostaje otwarty."
+
+msgid ""
+"Cannot list input devices. Check device access and see the application log."
+msgstr ""
+"Nie można wyświetlić listy urządzeń wejściowych. Sprawdź dostęp do "
+"urządzenia i przejrzyj dziennik aplikacji."
+
+msgid ""
+"Configuration is unavailable. Check the configuration files and see the "
+"application log."
+msgstr ""
+"Konfiguracja jest niedostępna. Sprawdź pliki konfiguracyjne i zobacz "
+"dziennik aplikacji."
+
+msgid "Popup menus are unavailable. Try opening the menu again."
+msgstr "Wyskakujące menu są niedostępne. Spróbuj ponownie otworzyć menu."
+
+msgid "Popup menu failed. Try opening the menu again."
+msgstr "Wyskakujące menu nie powiodło się. Spróbuj ponownie otworzyć menu."
+
+msgid ""
+"The text was not typed: the typing method is unavailable. Restart the mapper"
+" to try again."
+msgstr ""
+"Tekst nie został wpisany: metoda wpisywania jest niedostępna. Uruchom "
+"ponownie program mapujący, aby spróbować ponownie."
+
+msgid ""
+"The text was not typed: safe clipboard access failed. See the application "
+"log."
+msgstr ""
+"Tekst nie został wpisany: bezpieczny dostęp do schowka nie powiódł się. "
+"Zobacz dziennik aplikacji."
+
+msgid ""
+"The text was not typed: the input tool failed. See the application log."
+msgstr ""
+"Tekst nie został wpisany: narzędzie do wprowadzania tekstu uległo awarii. "
+"Zobacz dziennik aplikacji."
+
+msgid "Changes applied, but the mapper was not updated. Restart the mapper."
+msgstr ""
+"Zmiany zostały zastosowane, ale maper nie został zaktualizowany. Uruchom "
+"ponownie program mapujący."
+
+msgid "The operation failed. See the application log."
+msgstr "Operacja nie powiodła się. Zobacz dziennik aplikacji."
+
+msgid "The action failed. See the application log."
+msgstr "Akcja nie powiodła się. Zobacz dziennik aplikacji."
+
+msgid ""
+"Cannot start the mapper. Check the keyboard and device access. See the "
+"application log."
+msgstr ""
+"Nie można uruchomić programu mapującego. Sprawdź dostęp do klawiatury i "
+"urządzenia. Zobacz dziennik aplikacji."
+
+msgid "Mapper is running, but an error occurred. See the application log."
+msgstr ""
+"Program mapujący jest uruchomiony, ale wystąpił błąd. Zobacz dziennik "
+"aplikacji."
+
+msgid "Mapper stopped because of an error. See the application log."
+msgstr ""
+"Program mapujący został zatrzymany z powodu błędu. Zobacz dziennik "
+"aplikacji."
+
+msgid ""
+"Cannot read or save the configuration. Check file access and see the "
+"application log."
+msgstr ""
+"Nie można odczytać lub zapisać konfiguracji. Sprawdź dostęp do pliku i "
+"zobacz dziennik aplikacji."
+
+msgid "Cannot parse the configuration file. See the application log."
+msgstr ""
+"Nie można przeanalizować pliku konfiguracyjnego. Zobacz dziennik aplikacji."
+
+msgid "The configuration contains invalid values. See the application log."
+msgstr ""
+"Konfiguracja zawiera nieprawidłowe wartości. Zobacz dziennik aplikacji."
+
+msgid "The action has invalid syntax."
+msgstr "Akcja ma nieprawidłową składnię."
+
+msgid "Pauses can only be used in macro steps."
+msgstr "Pauz można używać wyłącznie w krokach makro."
+
+msgid "The selected macro no longer exists."
+msgstr "Wybrane makro już nie istnieje."
+
+msgid "The selected command no longer exists."
+msgstr "Wybrane polecenie już nie istnieje."
+
+msgid "Unknown system action."
+msgstr "Nieznane działanie systemu."
+
+msgid "Unknown application action."
+msgstr "Nieznane działanie aplikacji."
+
+msgid ""
+"Unknown action type. It may come from a newer version of the application."
+msgstr "Nieznany typ działania. Może pochodzić z nowszej wersji aplikacji."
+
+msgid "Layout: {}"
+msgstr "Układ: {}"
+
+msgid "Select All"
+msgstr "Zaznacz wszystko"
+
+msgid "Move line down"
+msgstr "Przesuń linię w dół"
+
+msgid "Down + End"
+msgstr "Dół + koniec"
+
+msgid "Up + End"
+msgstr "Góra + Koniec"
+
+msgid "Up 5 times"
+msgstr "W górę 5 razy"
+
+msgid "Duplicate line"
+msgstr "Zduplikowana linia"
+
+msgid "Right + Space"
+msgstr "Prawo + spacja"
+
+msgid "Empty line below"
+msgstr "Pusta linia poniżej"
+
+msgid "Cut word right from center"
+msgstr "Wytnij słowo od środka"
+
+msgid "Copy word right from center"
+msgstr "Skopiuj słowo od środka"
+
+msgid "Paste at line above"
+msgstr "Wklej w wierszu powyżej"
+
+msgid "Replace word with buffer"
+msgstr "Zamień słowo na bufor"
+
+msgid "Down + Home"
+msgstr "Dół + Strona główna"
+
+msgid "Up + Home"
+msgstr "W górę + do domu"
+
+msgid "Down 5 times"
+msgstr "W dół 5 razy"
+
+msgid "Paste at line bottom"
+msgstr "Wklej na dole linii"
+
+msgid "Cut to start"
+msgstr "Wytnij na początek"
+
+msgid "Cut to end"
+msgstr "Przytnij do końca"
+
+msgid "Cut line content"
+msgstr "Wytnij zawartość linii"
+
+msgid "Cut and remove line"
+msgstr "Wytnij i usuń linię"
+
+msgid "Select 5 lines up"
+msgstr "Wybierz 5 linii w górę"
+
+msgid "Copy to start"
+msgstr "Skopiuj, aby rozpocząć"
+
+msgid "Copy to end"
+msgstr "Skopiuj do końca"
+
+msgid "Copy line"
+msgstr "Skopiuj linię"
+
+msgid "Select whole line"
+msgstr "Wybierz całą linię"
+
+msgid "Select word right from center"
+msgstr "Wybierz słowo od środka"
+
+msgid "Replace to start with buffer"
+msgstr "Zamień, aby zacząć od bufora"
+
+msgid "Replace to end with buffer"
+msgstr "Zastąp koniec buforem"
+
+msgid "Replace line with buffer"
+msgstr "Zamień linię na bufor"
+
+msgid "Select 5 lines down"
+msgstr "Wybierz 5 linii w dół"
+
+msgid "Remove trigger"
+msgstr "Usuń spust"
+
+msgid "Refresh list"
+msgstr "Odśwież listę"
+
+msgid "Remove item"
+msgstr "Usuń element"
+
+msgid "Save as or reset changes"
+msgstr "Zapisz jako lub zresetuj zmiany"
+
+msgid "Edit: {}"
+msgstr "Edycja: {}"
+
+msgid "Save (Enter)"
+msgstr "Zapisz (Enter)"
+
+msgid "Save (Ctrl+Enter)"
+msgstr "Zapisz (Ctrl+Enter)"
+
+msgid "Cancel (Esc)"
+msgstr "Anuluj (Esc)"
+
+msgid "Use the default from Settings: {} ms"
+msgstr "Użyj wartości domyślnej z Ustawień: {} ms"
+
+msgid ""
+"Opened by the app:showQuickMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold any "
+"action: a shortcut, macro, shell command or system action."
+msgstr ""
+"Otwierane przez aplikację:showQuickMenuN działania, gdzie N to pozycja "
+"strony: zmiana kolejności stron zmienia stronę otwieraną za pomocą klawisza."
+" Każda komórka może pomieścić dowolną akcję: skrót, makro, polecenie powłoki"
+" lub akcję systemową."
+
+msgid ""
+"In the popup, click a cell or press its key: the cells follow the keyboard "
+"rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number."
+msgstr ""
+"W wyskakującym okienku kliknij komórkę lub naciśnij jej klawisz: komórki "
+"podążają za wierszami klawiatury Q–T, A–G i Z–B. Tab przełącza strony; cyfry"
+" otwierają stronę według jej numeru."
+
+msgid "Waiting for keyboard"
+msgstr "Czekam na klawiaturę"

@@ -1,0 +1,3603 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Left Hand Control\n"
+"PO-Revision-Date: 2026-10-23 00:00+0000\n"
+"Last-Translator: Machine translation; review welcome\n"
+"Language-Team: Turkish\n"
+"Language: tr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n>1);\n"
+
+msgid "Action saved"
+msgstr "İşlem kaydedildi"
+
+msgid "Cancel"
+msgstr "İptal"
+
+msgid "Increase"
+msgstr "Arttırmak"
+
+msgid "Decrease"
+msgstr "Azaltmak"
+
+msgid "Configuration loaded: {n} rule"
+msgid_plural "Configuration loaded: {n} rules"
+msgstr[0] "Yapılandırma yüklendi: {n} kural"
+msgstr[1] "Yapılandırma yüklendi: {n} kural"
+
+msgid "Configuration saved: {n} rule"
+msgid_plural "Configuration saved: {n} rules"
+msgstr[0] "Yapılandırma kaydedildi: {n} kural"
+msgstr[1] "Yapılandırma kaydedildi: {n} kural"
+
+msgid "Configuration unavailable: {}"
+msgstr "Yapılandırma kullanılamıyor: {}"
+
+msgid "Delay: an integer from 1 to 10000 ms"
+msgstr "Gecikme: 1 ila 10000 ms arasında bir tam sayı"
+
+msgid "Device saved: {}"
+msgstr "Cihaz kaydedildi: {}"
+
+msgid "Emoji"
+msgstr "Emoji"
+
+msgid "Tab · {}/{}"
+msgstr "Tab · {}/{}"
+
+msgid "Enter non-empty text"
+msgstr "Boş olmayan metin girin"
+
+msgid "Key {} only has conditional or layer rules; edit it in the full editor"
+msgstr ""
+"{} anahtarının yalnızca koşullu veya katman kuralları vardır; tam "
+"düzenleyicide düzenleyin"
+
+msgid "Keyboard"
+msgstr "Klavye"
+
+msgid "Keyboard device"
+msgstr "Klavye cihazı"
+
+msgid "Keyboard layout"
+msgstr "Klavye düzeni"
+
+msgid "Load a valid configuration before starting the mapper"
+msgstr "Eşleyiciyi başlatmadan önce geçerli bir konfigürasyon yükleyin"
+
+msgid "Mapper is running"
+msgstr "Eşleyici çalışıyor"
+
+msgid "Mapper is running: {}"
+msgstr "Eşleyici çalışıyor: {}"
+
+msgid "Mapper is starting…"
+msgstr "Haritalayıcı başlıyor…"
+
+msgid "Mapper is stopped"
+msgstr "Eşleyici durduruldu"
+
+msgid "Mapper is stopped: {}"
+msgstr "Eşleyici durduruldu: {}"
+
+msgid "Quick actions"
+msgstr "Hızlı eylemler"
+
+msgid "Quit"
+msgstr "Çıkış"
+
+msgid "Settings"
+msgstr "Ayarlar"
+
+msgid "Mapper on / off"
+msgstr "Eşleyiciyi açma/kapama"
+
+msgid "Switch to desktop {n}"
+msgstr "Masaüstüne geç {n}"
+
+msgid "Save"
+msgstr "Kaydet"
+
+msgid "Changes applied, but the mapper was not updated: {}"
+msgstr "Değişiklikler uygulandı ancak eşleyici güncellenmedi: {}"
+
+msgid "Select a key to assign an action."
+msgstr "Bir eylem atamak için bir tuş seçin."
+
+msgid "Select a keyboard device in the settings"
+msgstr "Ayarlarda bir klavye cihazı seçin"
+
+msgid "Select a system action"
+msgstr "Bir sistem eylemi seçin"
+
+msgid "Spell popup process unavailable: {}"
+msgstr "Yazım açılır penceresi işlemi kullanılamıyor: {}"
+
+msgid "Spell worker is not running"
+msgstr "Yazım işçisi çalışmıyor"
+
+msgid "Spell worker is restarting"
+msgstr "Yazım işçisi yeniden başlatılıyor"
+
+msgid "Spell worker: restart limit exceeded (3 per minute)"
+msgstr "Büyü çalışanı: yeniden başlatma sınırı aşıldı (dakikada 3)"
+
+msgid "Spell worker: {}"
+msgstr "Büyü çalışanı: {}"
+
+msgid "Stop capture"
+msgstr "Yakalamayı durdur"
+
+msgid "System"
+msgstr "Sistem"
+
+msgid "Text"
+msgstr "Metin"
+
+msgid "The configuration changed since editing started; repeat the change"
+msgstr ""
+"Düzenleme başladığından beri konfigürasyon değişti; değişikliği tekrarla"
+
+msgid "Unknown action type"
+msgstr "Bilinmeyen eylem türü"
+
+msgid "Left Hand Control"
+msgstr "Left Hand Control"
+
+msgid "Layouts"
+msgstr "Düzenler"
+
+msgid "New layout name"
+msgstr "Yeni düzen adı"
+
+msgid "Mapper"
+msgstr "Tuş eşleyici"
+
+msgid "Dark"
+msgstr "Karanlık"
+
+msgid "Light"
+msgstr "Işık"
+
+msgid "Refresh devices"
+msgstr "Cihazları yenile"
+
+msgid "Mouse device path"
+msgstr "Fare aygıtı yolu"
+
+msgid "Optional device path"
+msgstr "İsteğe bağlı cihaz yolu"
+
+msgid "General"
+msgstr "Genel"
+
+msgid "Appearance"
+msgstr "Dış görünüş"
+
+msgid "Language"
+msgstr "Dil"
+
+msgid "Automatic"
+msgstr "Otomatik"
+
+msgid "Key behavior"
+msgstr "Temel davranış"
+
+msgid "Game mode"
+msgstr "Oyun modu"
+
+msgid "Use GameMode daemon"
+msgstr "GameMode arka plan programını kullan"
+
+msgid "Detect fullscreen"
+msgstr "Tam ekranı algıla"
+
+msgid "ydotool path"
+msgstr "ydotool yolu"
+
+msgid "xdotool path"
+msgstr "xdotool yolu"
+
+msgid "Settings directory: "
+msgstr "Ayarlar dizini:"
+
+msgid "Layouts directory: "
+msgstr "Düzenler dizini:"
+
+msgid "Save settings"
+msgstr "Ayarları kaydet"
+
+msgid "Settings saved"
+msgstr "Ayarlar kaydedildi"
+
+msgid "Enter a timeout from 50 to 1000 milliseconds"
+msgstr "50 ila 1000 milisaniye arasında bir zaman aşımı değeri girin"
+
+msgid "Rules"
+msgstr "Tüzük"
+
+msgid "Remove"
+msgstr "Kaldır"
+
+msgid "Move up"
+msgstr "Yukarı taşı"
+
+msgid "Move down"
+msgstr "Aşağı taşı"
+
+msgid "Enabled"
+msgstr "Etkinleştirilmiş"
+
+msgid "Trigger key"
+msgstr "Tetik tuşu"
+
+msgid "Tap action"
+msgstr "Dokunma eylemi"
+
+msgid "Layout conditions (comma separated)"
+msgstr "Düzen koşulları (virgülle ayrılmış)"
+
+msgid "App whitelist (comma separated)"
+msgstr "Uygulama beyaz listesi (virgülle ayrılmış)"
+
+msgid "App blacklist (comma separated)"
+msgstr "Uygulama kara listesi (virgülle ayrılmış)"
+
+msgid "Isolate"
+msgstr "İzole et"
+
+msgid "Hold for"
+msgstr "Bekle"
+
+msgid "Swallow tap"
+msgstr "Kısa basmayı engelle"
+
+msgid "Swallow hold"
+msgstr "Basılı tutmayı engelle"
+
+msgid "New layer name"
+msgstr "Yeni katman adı"
+
+msgid "Create layer"
+msgstr "Katman oluştur"
+
+msgid "Rules and triggers"
+msgstr "Kurallar ve tetikleyiciler"
+
+msgid "Define how physical keys activate layers or run actions."
+msgstr ""
+"Fiziksel anahtarların katmanları nasıl etkinleştirdiğini veya eylemleri "
+"nasıl çalıştırdığını tanımlayın."
+
+msgid "Add rule"
+msgstr "Kural ekle"
+
+msgid "Not set"
+msgstr "Ayarlanmadı"
+
+msgid "Layer (hold)"
+msgstr "Katman (basılı tutun)"
+
+msgid "Double-tap action"
+msgstr "Çift dokunma eylemi"
+
+msgid "Hold button"
+msgstr "Basılı tut düğmesi"
+
+msgid "Default"
+msgstr "Varsayılan"
+
+msgid "Advanced"
+msgstr "Gelişmiş"
+
+msgid "Choose trigger key"
+msgstr "Tetikleyici anahtarı seçin"
+
+msgid "Choose layer"
+msgstr "Katman seç"
+
+msgid "Conditions"
+msgstr "Koşullar"
+
+msgid "Advanced rule options"
+msgstr "Gelişmiş kural seçenekleri"
+
+msgid "Choose action"
+msgstr "Eylem seçin"
+
+msgid "Ignore"
+msgstr "Görmezden gelmek"
+
+msgid "On"
+msgstr "Açık"
+
+msgid "Off"
+msgstr "Kapalı"
+
+msgid "Clear"
+msgstr "Temizlemek"
+
+msgid "Apply"
+msgstr "Uygula"
+
+msgid "Delete rule?"
+msgstr "Kural silinsin mi?"
+
+msgid "This rule will be removed from the current layout."
+msgstr "Bu kural mevcut düzenden kaldırılacak."
+
+msgid "Layers"
+msgstr "Katmanlar"
+
+msgid "New layer"
+msgstr "Yeni katman"
+
+msgid "Duplicate"
+msgstr "Kopyalamak"
+
+msgid "Delete"
+msgstr "Sil"
+
+msgid "Extra keys"
+msgstr "Ekstra anahtarlar"
+
+msgid "Edit"
+msgstr "Düzenle"
+
+msgid "Rename layer"
+msgstr "Katmanı yeniden adlandır"
+
+msgid "Duplicate layer"
+msgstr "Katmanı çoğalt"
+
+msgid "Delete layer?"
+msgstr "Katman silinsin mi?"
+
+msgid "Edit layer key"
+msgstr "Katman anahtarını düzenle"
+
+msgid "Name"
+msgstr "İsim"
+
+msgid "Description"
+msgstr "Tanım"
+
+msgid "Rules using this layer will return to the base layer."
+msgstr "Bu katmanı kullanan kurallar temel katmana geri dönecektir."
+
+msgid "Transparent"
+msgstr "Şeffaf"
+
+msgid "Swallow"
+msgstr "Engelle"
+
+msgid "Action"
+msgstr "Aksiyon"
+
+msgid "Action code"
+msgstr "Eylem kodu"
+
+msgid "Enter a layer name"
+msgstr "Bir katman adı girin"
+
+msgid "A layer with this name already exists."
+msgstr "Bu ada sahip bir katman zaten mevcut."
+
+msgid "Enter a layout name"
+msgstr "Bir düzen adı girin"
+
+msgid "Enter a key code"
+msgstr "Bir anahtar kodu girin"
+
+msgid "Native"
+msgstr "Yerli"
+
+msgid "Layer saved"
+msgstr "Katman kaydedildi"
+
+msgid "Macros"
+msgstr "Makrolar"
+
+msgid "Built-in macros"
+msgstr "Yerleşik makrolar"
+
+msgid "Macro ID"
+msgstr "Makro Kimliği"
+
+msgid "Copy ID"
+msgstr "Kimliği kopyala"
+
+msgid "Steps"
+msgstr "Adımlar"
+
+msgid "Add step"
+msgstr "Adım ekle"
+
+msgid "Add pause"
+msgstr "Duraklatma ekle"
+
+msgid "Macro ID must contain 1–64 letters, digits, underscores or hyphens"
+msgstr "Makro Kimliği 1-64 harf, rakam, alt çizgi veya kısa çizgi içermelidir"
+
+msgid "Macro ID is already in use"
+msgstr "Makro Kimliği zaten kullanımda"
+
+msgid "Macro delays must be between 0 and 2000 ms"
+msgstr "Makro gecikmeleri 0 ila 2000 ms arasında olmalıdır"
+
+msgid "Pause must be between 1 and 10000 ms"
+msgstr "Duraklatma 1 ile 10.000 ms arasında olmalıdır"
+
+msgid "Unknown key or shortcut in macro step"
+msgstr "Makro adımında bilinmeyen anahtar veya kısayol"
+
+msgid "Macro references cannot form a cycle"
+msgstr "Makro referansları bir döngü oluşturamaz"
+
+msgid "Commands"
+msgstr "Komutlar"
+
+msgid "Add"
+msgstr "Ekle"
+
+msgid "Clear cell"
+msgstr "Hücreyi temizle"
+
+msgid "Page name"
+msgstr "Sayfa adı"
+
+msgid "Emoji cells accept at most 100 characters."
+msgstr "Emoji hücreleri en fazla 100 karakter kabul eder."
+
+msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
+msgstr "Komut Kimliği: 1-64 harf, rakam, alt çizgi veya kısa çizgi."
+
+msgid "Command IDs must be unique."
+msgstr "Komut kimlikleri benzersiz olmalıdır."
+
+msgid "Enter a shell command."
+msgstr "Bir kabuk komutu girin."
+
+msgid "Save as…"
+msgstr "Farklı kaydet…"
+
+msgid "Save layout as…"
+msgstr "Düzeni farklı kaydet…"
+
+msgid "Please wait…"
+msgstr "Lütfen bekleyin…"
+
+msgid "Stop"
+msgstr "Durmak"
+
+msgid "Start"
+msgstr "Başlangıç"
+
+msgid "Custom layout"
+msgstr "Özel düzen"
+
+msgid "Base keyboard"
+msgstr "Temel klavye"
+
+msgid "Keyboard device path"
+msgstr "Klavye cihazı yolu"
+
+msgid "Copy path"
+msgstr "Yolu kopyala"
+
+msgid "Create a layer to assign its keys, or edit the base keyboard."
+msgstr ""
+"Tuşlarını atamak veya temel klavyeyi düzenlemek için bir katman oluşturun."
+
+msgid "Running"
+msgstr "Koşma"
+
+msgid "Stopped"
+msgstr "Durduruldu"
+
+msgid "Layout library updated"
+msgstr "Düzen kitaplığı güncellendi"
+
+msgid "Select a layout"
+msgstr "Bir düzen seçin"
+
+msgid "Layout changed on disk; select it again"
+msgstr "Diskteki düzen değişti; tekrar seç"
+
+msgid "Any game mode"
+msgstr "Herhangi bir oyun modu"
+
+msgid "Game mode on"
+msgstr "Oyun modu açık"
+
+msgid "Game mode off"
+msgstr "Oyun modu kapalı"
+
+msgid "System layouts (comma separated)"
+msgstr "Sistem düzenleri (virgülle ayrılmış)"
+
+msgid "Applications (comma separated)"
+msgstr "Uygulamalar (virgülle ayrılmış)"
+
+msgid "Manual"
+msgstr "Manuel"
+
+msgid "Active"
+msgstr "Aktif"
+
+msgid "Editing · unsaved"
+msgstr "Düzenleniyor · kaydedilmedi"
+
+msgid "Editing"
+msgstr "Düzenleme"
+
+msgid "Activate"
+msgstr "Etkinleştir"
+
+msgid "Delete layout?"
+msgstr "Düzen silinsin mi?"
+
+msgid "Layout details"
+msgstr "Düzen ayrıntıları"
+
+msgid "Do not use when"
+msgstr "ne zaman kullanmayın"
+
+msgid "The layout file will be deleted. This cannot be undone."
+msgstr "Düzen dosyası silinecek. Bu geri alınamaz."
+
+msgid "Duplicate…"
+msgstr "Kopyalamak…"
+
+msgid "Edit layout"
+msgstr "Düzeni düzenle"
+
+msgid "New layout"
+msgstr "Yeni düzen"
+
+msgid "A layout with this name already exists."
+msgstr "Bu ada sahip bir düzen zaten mevcut."
+
+msgid "Add a description…"
+msgstr "Bir açıklama ekleyin…"
+
+msgid "Create"
+msgstr "Yaratmak"
+
+msgid "Delete…"
+msgstr "Silmek…"
+
+msgid "Description (optional)"
+msgstr "Açıklama (isteğe bağlı)"
+
+msgid "Discard changes"
+msgstr "Değişiklikleri sil"
+
+msgid "Make active"
+msgstr "Etkinleştir"
+
+msgid "Single: the layout you make active works everywhere."
+msgstr "Tekli: Etkinleştirdiğiniz düzen her yerde çalışır."
+
+msgid "Not used in automatic mode"
+msgstr "Otomatik modda kullanılmaz"
+
+msgid "Rename…"
+msgstr "Yeniden isimlendirmek…"
+
+msgid "Save and continue"
+msgstr "Kaydet ve devam et"
+
+msgid ""
+"The layout you are editing has not been saved to the library. Its changes "
+"will be lost."
+msgstr ""
+"Düzenlediğiniz düzen kitaplığa kaydedilmedi. Değişiklikleri kaybolacak."
+
+msgid "The name contains characters that cannot be used in a file name."
+msgstr "Ad, dosya adında kullanılamayan karakterler içeriyor."
+
+msgid "Unsaved changes"
+msgstr "Kaydedilmemiş değişiklikler"
+
+msgid "You are editing “{}”, but “{}” is active."
+msgstr "“{}”yi düzenliyorsunuz ancak “{}” etkin."
+
+msgid "You are editing “{}”; no layout is active."
+msgstr "“{}”yi düzenliyorsunuz; hiçbir düzen etkin değil."
+
+msgid "game mode off"
+msgstr "oyun modu kapalı"
+
+msgid "game mode on"
+msgstr "oyun modu açık"
+
+msgid "{} (copy)"
+msgstr "{} (kopya)"
+
+msgid "“{}” has unsaved changes. Save them before switching?"
+msgstr ""
+"“{}” kaydedilmemiş değişikliklere sahip. Geçiş yapmadan önce bunları "
+"kaydetmek istiyor musunuz?"
+
+msgid "Layout mode"
+msgstr "Düzen modu"
+
+msgid "Create layout"
+msgstr "Düzen oluştur"
+
+msgid "Empty"
+msgstr "Boş"
+
+msgid "Empty layout"
+msgstr "Boş düzen"
+
+msgid "Previously selected: {}"
+msgstr "Daha önce seçilen: {}"
+
+msgid "Current value"
+msgstr "Mevcut değer"
+
+msgid "Capture key"
+msgstr "Yakalama anahtarı"
+
+msgid "Press a key (including modifiers or Escape)."
+msgstr "Bir tuşa basın (değiştiriciler veya Escape dahil)."
+
+msgid "Press a key or shortcut. Release a modifier to select it alone."
+msgstr ""
+"Bir tuşa veya kısayola basın. Tek başına seçmek için değiştiriciyi bırakın."
+
+msgid "Choose a valid key or action."
+msgstr "Geçerli bir anahtar veya eylem seçin."
+
+msgid "Search keys and actions"
+msgstr "Arama tuşları ve işlemler"
+
+msgid "Search keys"
+msgstr "Arama tuşları"
+
+msgid "Hold action"
+msgstr "Eylemi beklet"
+
+msgid "Macro step"
+msgstr "Makro adım"
+
+msgid ""
+"You can enter a key combination using + between keys. Some keys depend on "
+"keyboard hardware and may be ignored by the system."
+msgstr ""
+"+ Ara tuşlarını kullanarak bir tuş kombinasyonu girebilirsiniz. Bazı tuşlar "
+"klavye donanımına bağlıdır ve sistem tarafından göz ardı edilebilir."
+
+msgid ""
+"You can assign a key combination using + between keys. Availability of "
+"special keys depends on the keyboard and desktop environment."
+msgstr ""
+"+ Ara tuşları kullanarak bir tuş kombinasyonu atayabilirsiniz. Özel tuşların"
+" kullanılabilirliği klavyeye ve masaüstü ortamına bağlıdır."
+
+msgid "Behavior:"
+msgstr "Davranış:"
+
+msgid "Action:"
+msgstr "Aksiyon:"
+
+msgid "Trigger key:"
+msgstr "Tetik tuşu:"
+
+msgid "{n} line"
+msgid_plural "{n} lines"
+msgstr[0] "{n} satır"
+msgstr[1] "{n} satır"
+
+msgid "Modifiers"
+msgstr "Değiştiriciler"
+
+msgid "Letters, digits and symbols"
+msgstr "Harfler, rakamlar ve semboller"
+
+msgid "Control keys"
+msgstr "Kontrol tuşları"
+
+msgid "Navigation and numpad"
+msgstr "Gezinme ve sayısal tuş takımı"
+
+msgid "F1–F24"
+msgstr "F1–F24"
+
+msgid "Media and launch"
+msgstr "Medya ve lansman"
+
+msgid "System and laptop"
+msgstr "Sistem ve dizüstü bilgisayar"
+
+msgid "Mouse"
+msgstr "Fare"
+
+msgid "Other keys"
+msgstr "Diğer tuşlar"
+
+msgid "Actions"
+msgstr "Eylemler"
+
+msgid "Extra button on some gaming mice"
+msgstr "Bazı oyun farelerinde ekstra düğme"
+
+msgid "Keys"
+msgstr "Anahtarlar"
+
+msgid "System actions"
+msgstr "Sistem eylemleri"
+
+msgid "KDE shortcuts"
+msgstr "KDE kısayolları"
+
+msgid "Pause"
+msgstr "Duraklat"
+
+msgid "Literal text (text: prefix is added automatically)"
+msgstr "Değişmez metin (metin: önek otomatik olarak eklenir)"
+
+msgid "Pause in milliseconds (1–10000)"
+msgstr "Milisaniye cinsinden duraklatma (1–10.000)"
+
+msgid "No matching items"
+msgstr "Eşleşen öğe yok"
+
+msgid "Show Quick Action Menu page {}"
+msgstr "Hızlı Eylem Menüsü sayfasını göster {}"
+
+msgid "Show Emoji & Symbols menu page {}"
+msgstr "Emoji ve Semboller menü sayfasını göster {}"
+
+msgid "Switch to desktop {}"
+msgstr "Masaüstüne geç {}"
+
+msgid "Move window to desktop {}"
+msgstr "Pencereyi masaüstüne taşı {}"
+
+msgid "Close window"
+msgstr "Pencereyi kapat"
+
+msgid "Minimize window"
+msgstr "Pencereyi simge durumuna küçült"
+
+msgid "Maximize window"
+msgstr "Pencereyi büyüt"
+
+msgid "Keep window above others"
+msgstr "Pencereyi diğerlerinin üstünde tut"
+
+msgid "Show desktop"
+msgstr "Masaüstünü göster"
+
+msgid "Window overview"
+msgstr "Pencereye genel bakış"
+
+msgid "Open application launcher"
+msgstr "Uygulama başlatıcıyı aç"
+
+msgid "Turn off screen"
+msgstr "Ekranı kapat"
+
+msgid "Switch to layout {}"
+msgstr "{} düzenine geç"
+
+msgid "Layer"
+msgstr "Katman"
+
+msgid "Delete layer"
+msgstr "Katmanı sil"
+
+msgid "Create new layer"
+msgstr "Yeni katman oluştur"
+
+msgid "Layer description"
+msgstr "Katman açıklaması"
+
+msgid "Add description"
+msgstr "Açıklama ekle"
+
+msgid "Type to test..."
+msgstr "Test etmek için yazın..."
+
+msgid "Ignore key"
+msgstr "Anahtarı yoksay"
+
+msgid "No layers yet"
+msgstr "Henüz katman yok"
+
+msgid "Left hand"
+msgstr "Sol el"
+
+msgid "Right hand"
+msgstr "Sağ el"
+
+msgid "Key"
+msgstr "Anahtar"
+
+msgid "US layout"
+msgstr "ABD düzeni"
+
+msgid "LHC codes"
+msgstr "LHC kodları"
+
+msgid "No extra keys for this layer yet."
+msgstr "Bu katman için henüz ekstra anahtar yok."
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid."
+msgstr ""
+"Ana klavye ızgarasının dışındaki fare düğmeleri, medya tuşları ve diğer "
+"tetikleyiciler."
+
+msgid ""
+"Display modes affect labels only — the key code stays the same. “US layout” "
+"shows standard letter labels for visual reference. “LHC codes” shows app-"
+"specific codes (e.g. KeyA, ArrowLeft)."
+msgstr ""
+"Görüntüleme modları yalnızca etiketleri etkiler; anahtar kodu aynı kalır. "
+"“ABD düzeni” görsel referans için standart harf etiketlerini gösterir. “LHC "
+"kodları” uygulamaya özel kodları gösterir (örn. KeyA, ArrowLeft)."
+
+msgid "(copy)"
+msgstr "(kopya)"
+
+msgid "Add page"
+msgstr "Sayfa ekle"
+
+msgid "Allow commands"
+msgstr "Komutlara izin ver"
+
+msgid "Animals & Nature"
+msgstr "Hayvanlar ve Doğa"
+
+msgid ""
+"Build reusable sequences from key chords, text actions, commands, or system "
+"actions. Steps run in order with the configured pause between them."
+msgstr ""
+"Tuş akorlarından, metin eylemlerinden, komutlardan veya sistem eylemlerinden"
+" yeniden kullanılabilir diziler oluşturun. Adımlar, aralarındaki "
+"yapılandırılmış duraklama süresine göre sırayla yürütülür."
+
+msgid ""
+"Built-in macros that cannot be edited. To customize, create a user macro "
+"based on one."
+msgstr ""
+"Düzenlenemeyen yerleşik makrolar. Özelleştirmek için bir kullanıcı makrosunu"
+" temel alan bir kullanıcı makrosu oluşturun."
+
+msgid "Cell {}"
+msgstr "Hücre {}"
+
+msgid "Command name"
+msgstr "Komut adı"
+
+msgid "Create based on"
+msgstr "Temel alarak oluştur"
+
+msgid "Delete macro"
+msgstr "Makroyu sil"
+
+msgid "Delete macro?"
+msgstr "Makro silinsin mi?"
+
+msgid "Delete page"
+msgstr "Sayfayı sil"
+
+msgid "Delete page?"
+msgstr "Sayfa silinsin mi?"
+
+msgid "Delete step"
+msgstr "Adımı sil"
+
+msgid "Delete step?"
+msgstr "Adım silinsin mi?"
+
+msgid "Disable"
+msgstr "Devre dışı bırakmak"
+
+msgid "Drag"
+msgstr "Sürüklemek"
+
+msgid "Emoji & Symbols"
+msgstr "Emoji ve Semboller"
+
+msgid "Emoji Symbols"
+msgstr "Emoji Sembolleri"
+
+msgid "Emoji, symbol, or any text"
+msgstr "Emoji, sembol veya herhangi bir metin"
+
+msgid "Empty step — pick an action or remove it."
+msgstr "Boş adım — bir eylem seçin veya kaldırın."
+
+msgid "Fix the existing macro errors first"
+msgstr "Önce mevcut makro hatalarını düzeltin"
+
+msgid "Food & Drink"
+msgstr "Yiyecek ve İçecek"
+
+msgid "Human-readable macro name, shown in picker lists."
+msgstr ""
+"Seçici listelerinde gösterilen, insanlar tarafından okunabilen makro adı."
+
+msgid "ID"
+msgstr "ID"
+
+msgid "Key {}"
+msgstr "Anahtar {}"
+
+msgid "Label"
+msgstr "Etiket"
+
+msgid "Macro name"
+msgstr "Makro adı"
+
+msgid "Modifier delay"
+msgstr "Değiştirici gecikmesi"
+
+msgid "Move page left"
+msgstr "Sayfayı sola taşı"
+
+msgid "Move page right"
+msgstr "Sayfayı sağa taşı"
+
+msgid "New macro"
+msgstr "Yeni makro"
+
+msgid "No macros yet. Click \"New macro\" to create the first one."
+msgstr "Henüz makro yok. İlkini oluşturmak için \"Yeni makro\"ya tıklayın."
+
+msgid "No steps yet. Each step — one chord or action."
+msgstr "Henüz adım yok. Her adım – bir akor veya eylem."
+
+msgid ""
+"Opened by the app:showEmojiMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold an "
+"emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short "
+"phrase (e.g. \"// TODO: \")."
+msgstr ""
+"Uygulama tarafından açılan:EmojiMenüN işlemlerini göster; burada N, sayfa "
+"konumudur: sayfaları yeniden sıralamak, bir tuşun hangi sayfayı açacağını "
+"değiştirir. Her hücre bir emojiyi, bir UTF sembolünü (örneğin ≠), başka "
+"herhangi bir karakteri (örneğin №) veya kısa bir ifadeyi (örneğin \"// TODO:"
+" \") tutabilir."
+
+msgid "Opened by the app:showQuickMenu1...5 actions."
+msgstr "Uygulama tarafından açıldı:showQuickMenu1...5 eylem."
+
+msgid "Page"
+msgstr "Sayfa"
+
+msgid "Pause (ms)"
+msgstr "Duraklat (ms)"
+
+msgid "Pause between steps"
+msgstr "Adımlar arasında duraklat"
+
+msgid "People & Gestures"
+msgstr "İnsanlar ve Hareketler"
+
+msgid "Per-macro pause between steps. Defaults to the Settings value."
+msgstr ""
+"Adımlar arasında makro başına duraklama. Varsayılan olarak Ayarlar değerine "
+"ayarlanır."
+
+msgid "Pick an action"
+msgstr "Bir eylem seç"
+
+msgid "Quick Actions"
+msgstr "Hızlı Eylemler"
+
+msgid ""
+"Reusable shell commands for the current layout. On Linux they run through sh"
+" -lc after you explicitly allow them. Shell commands run one at a time, with"
+" a 30-second limit, in your home directory."
+msgstr ""
+"Geçerli düzen için yeniden kullanılabilir kabuk komutları. Linux'ta siz "
+"açıkça izin verdikten sonra sh -lc komutunu çalıştırırlar. Kabuk komutları "
+"ana dizininizde 30 saniyelik bir sınırla teker teker çalıştırılır."
+
+msgid "Shell commands are allowed for this version of the current layout."
+msgstr "Geçerli düzenin bu sürümü için kabuk komutlarına izin veriliyor."
+
+msgid "Smileys & Emotion"
+msgstr "Suratlar ve Duygu"
+
+msgid ""
+"The command will be deleted. Keys or macros that reference cmd:{} will stop "
+"working."
+msgstr ""
+"Komut silinecek. Cmd:{}'ye başvuran anahtarlar veya makrolar çalışmayı "
+"durduracak."
+
+msgid "The macro will be deleted. References macro:{} will stop working."
+msgstr "Makro silinecek. Referans makrosu:{} çalışmayı durduracak."
+
+msgid "The page and all assigned cells on it will be deleted."
+msgstr "Sayfa ve sayfaya atanmış tüm hücreler silinecektir."
+
+msgid ""
+"This layout contains shell scripts. Read every script before allowing them, "
+"especially in layouts from other people. Approval applies to the reviewed "
+"command definitions and resets when the command set, IDs, or Linux scripts "
+"change."
+msgstr ""
+"Bu düzen kabuk komut dosyalarını içerir. Özellikle diğer kişilerin "
+"düzenlerinde, izin vermeden önce her komut dosyasını okuyun. Onay, gözden "
+"geçirilen komut tanımlarına uygulanır ve komut seti, kimlikler veya Linux "
+"komut dosyaları değiştiğinde sıfırlanır."
+
+msgid "This step will be removed from the macro."
+msgstr "Bu adım makrodan kaldırılacaktır."
+
+msgid ""
+"Time between pressing a modifier and the main key within one step. Defaults "
+"to the Settings value."
+msgstr ""
+"Bir adımda değiştiriciye basılması ile ana tuşa basılması arasındaki süre. "
+"Varsayılan olarak Ayarlar değerine ayarlanır."
+
+msgid "Travel & Places"
+msgstr "Seyahat ve Yerler"
+
+msgid "UTF Symbols"
+msgstr "UTF Sembolleri"
+
+msgid "Texts"
+msgstr "Metinler"
+
+msgid "Non-breaking space"
+msgstr "Bölünmeyen alan"
+
+msgid "continue"
+msgstr "devam etmek"
+
+msgid "do all you recommended"
+msgstr "tavsiye ettiğin her şeyi yap"
+
+msgid "fix the errors above"
+msgstr "yukarıdaki hataları düzeltin"
+
+msgid "I'll call you back later"
+msgstr "Seni sonra tekrar arayacağım"
+
+msgid "Thanks!"
+msgstr "Teşekkürler!"
+
+msgid "OK, got it 👍"
+msgstr "Tamam anladım 👍"
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Rules tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"Makro:<id> gibi referanslarda kullanılan benzersiz tanımlayıcı. Bu makroyu "
+"bir anahtara bağlamak için Katmanlar veya Kurallar sekmesinde söz konusu "
+"eylemi seçin. Kimliği yalnızca bu makroyu hiçbir şey kullanmadığında "
+"değiştirin."
+
+msgid "Used in:"
+msgstr "Kullanıldığı yerler:"
+
+msgid "User macros"
+msgstr "Kullanıcı makroları"
+
+msgid "Work & Objects"
+msgstr "İş ve Nesneler"
+
+msgid "e.g. Next Track"
+msgstr "örneğin Sonraki Parça"
+
+msgid "ms"
+msgstr "Bayan"
+
+msgid "Rule saved"
+msgstr "Kural kaydedildi"
+
+msgid "Search layers"
+msgstr "Katmanları ara"
+
+msgid "Set"
+msgstr "Ayarlamak"
+
+msgid "Start the mapper to run actions from the menus"
+msgstr "Menülerden eylemleri çalıştırmak için eşleyiciyi başlatın"
+
+msgid ""
+"The text was not typed: the keyboard layout lacks some of its characters, "
+"such as emoji. Choose a typing method with the clipboard."
+msgstr ""
+"Metin yazılmamış: klavye düzeninde emoji gibi bazı karakterler eksik. "
+"Panoyla bir yazma yöntemi seçin."
+
+msgid "The text was not typed: the active keyboard layout is unknown."
+msgstr "Metin yazılmadı: etkin klavye düzeni bilinmiyor."
+
+msgid ""
+"The text was not typed: the typing method is unavailable ({}). Restart the "
+"mapper to try again."
+msgstr ""
+"Metin yazılmadı: yazma yöntemi kullanılamıyor ({}). Tekrar denemek için "
+"eşleyiciyi yeniden başlatın."
+
+msgid "The text was not typed: safe clipboard access failed ({})."
+msgstr "Metin yazılmadı: güvenli panoya erişim başarısız oldu ({})."
+
+msgid "The text was not typed: {}"
+msgstr "Metin yazılmadı: {}"
+
+msgid "The layout file is empty"
+msgstr "Düzen dosyası boş"
+
+msgid "↑"
+msgstr "↑"
+
+msgid "↓"
+msgstr "↓"
+
+msgid "Does not matter"
+msgstr "Önemli değil"
+
+msgid "Open for editing (unsaved)"
+msgstr "Düzenlemeye açık (kaydedilmemiş)"
+
+msgid "Open for editing"
+msgstr "Düzenlemeye açık"
+
+msgid "Layout name"
+msgstr "Düzen adı"
+
+msgid "System languages"
+msgstr "Sistem dilleri"
+
+msgid "No system languages detected"
+msgstr "Sistem dili algılanmadı"
+
+msgid "Applications"
+msgstr "Uygulamalar"
+
+msgid "“{}” will be deleted. This cannot be undone."
+msgstr "“{}” silinecek. Bu geri alınamaz."
+
+msgid "Reset current changes"
+msgstr "Mevcut değişiklikleri sıfırla"
+
+msgid "Available"
+msgstr "Mevcut"
+
+msgid "Unavailable"
+msgstr "Kullanılamıyor"
+
+msgid "Not implemented"
+msgstr "Uygulanmadı"
+
+msgid "No input devices were found in /dev/input."
+msgstr "/dev/input'ta hiçbir giriş aygıtı bulunamadı."
+
+msgid ""
+"The selected keyboard is not connected. Connect it or pick another one "
+"below."
+msgstr ""
+"Seçilen klavye bağlı değil. Bağlayın veya aşağıdan başka bir tane seçin."
+
+msgid ""
+"No permission to read keyboard events. Add your user to the input group "
+"(install-linux.sh permissions does this) and log in again."
+msgstr ""
+"Klavye olaylarını okuma izni yok. Kullanıcınızı giriş grubuna ekleyin "
+"(install-linux.sh izinleri bunu yapar) ve tekrar oturum açın."
+
+msgid ""
+"/dev/uinput does not exist. Load the uinput kernel module: sudo modprobe "
+"uinput."
+msgstr ""
+"/dev/uinput mevcut değil. Uinput çekirdek modülünü yükleyin: sudo modprobe "
+"uinput."
+
+msgid ""
+"No permission to write to /dev/uinput. Install the application's udev rule "
+"(install-linux.sh permissions) or reinstall the package."
+msgstr ""
+"/dev/uinput'a yazma izni yok. Uygulamanın udev kuralını (install-linux.sh "
+"izinleri) yükleyin veya paketi yeniden yükleyin."
+
+msgid "Launch on startup"
+msgstr "Başlangıçta başlat"
+
+msgid "Start the mapper on launch"
+msgstr "Eşleştiriciyi açılışta başlat"
+
+msgid "No keyboard is selected, so the mapper cannot start."
+msgstr "Hiçbir klavye seçilmediğinden eşleyici başlatılamıyor."
+
+msgid "Choose a keyboard"
+msgstr "Bir klavye seçin"
+
+msgid "Getting started"
+msgstr "Başlarken"
+
+msgid "Keyboard selected"
+msgstr "Klavye seçildi"
+
+msgid "Choose the keyboard to remap"
+msgstr "Yeniden eşlenecek klavyeyi seçin"
+
+msgid "Change"
+msgstr "Değiştirmek"
+
+msgid "Add a layout"
+msgstr "Düzen ekle"
+
+msgid "Press Start at the top to apply it"
+msgstr "Uygulamak için üstteki Başlat'a basın"
+
+msgid "No active layout"
+msgstr "Etkin düzen yok"
+
+msgid "Current active layout (automatic)"
+msgstr "Geçerli etkin düzen (otomatik)"
+
+msgid "Current active layout — click to switch"
+msgstr "Mevcut aktif düzen — geçiş yapmak için tıklayın"
+
+msgid "Current keyboard layout in the system"
+msgstr "Sistemdeki mevcut klavye düzeni"
+
+msgid "Game mode: active"
+msgstr "Oyun modu: aktif"
+
+msgid "Game mode: inactive"
+msgstr "Oyun modu: etkin değil"
+
+msgid "Active: {}"
+msgstr "Aktif: {}"
+
+msgid "Trigger"
+msgstr "Tetiklemek"
+
+msgid "New rule: choose a trigger"
+msgstr "Yeni kural: bir tetikleyici seçin"
+
+msgid "Swallow key"
+msgstr "Tuşu engelle"
+
+msgid "Pass through"
+msgstr "Geçmek"
+
+msgid "Double tap: {} ms"
+msgstr "İki kez dokunun: {} ms"
+
+msgid "Custom hold options"
+msgstr "Özel bekletme seçenekleri"
+
+msgid "Leave empty to use the global timing settings."
+msgstr "Genel zamanlama ayarlarını kullanmak için boş bırakın."
+
+msgid ""
+"Temporarily releases the held key or modifier while these keys are pressed "
+"in the layer."
+msgstr ""
+"Katmanda bu tuşlara basıldığında, tutulan tuşu veya değiştiriciyi geçici "
+"olarak serbest bırakır."
+
+msgid ""
+"Defers the held action until one of these keys is pressed in the layer. "
+"Requires a hold action and a layer."
+msgstr ""
+"Katmanda bu tuşlardan birine basılana kadar bekletilen eylemi erteler. Tutma"
+" eylemi ve katman gerektirir."
+
+msgid "Delete rule"
+msgstr "Kuralı sil"
+
+msgid ""
+"Clear restores normal key behavior. Swallow prevents the key from reaching "
+"the application."
+msgstr ""
+"Temizle, normal tuş davranışını geri yükler. Yutmak, anahtarın uygulamaya "
+"ulaşmasını engeller."
+
+msgctxt "Game mode control"
+msgid "Auto"
+msgstr "Otomatik"
+
+msgctxt "Game mode control"
+msgid "On"
+msgstr "Açık"
+
+msgctxt "Game mode control"
+msgid "Off"
+msgstr "Kapalı"
+
+msgid "Auto: no detection sources enabled"
+msgstr "Otomatik: etkin algılama kaynağı yok"
+
+msgid "Auto: detection unavailable"
+msgstr "Otomatik: algılama kullanılamıyor"
+
+msgid "Auto: game mode inactive"
+msgstr "Otomatik: oyun modu etkin değil"
+
+msgid "Auto: GameMode daemon active"
+msgstr "Otomatik: GameMode arka plan programı etkin"
+
+msgid "Auto: matched {}"
+msgstr "Otomatik: eşleşti {}"
+
+msgid "Auto: fullscreen window active"
+msgstr "Otomatik: tam ekran penceresi etkin"
+
+msgid "Auto: excluded by {}"
+msgstr "Otomatik: {} tarafından hariç tutuldu"
+
+msgid ""
+"Fullscreen detection is not supported in this session. Use process rules or "
+"On/Off."
+msgstr ""
+"Bu oturumda tam ekran algılama desteklenmiyor. Süreç kurallarını veya "
+"Açık/Kapalı'yı kullanın."
+
+msgid "Fullscreen detection tools are missing or could not query the session."
+msgstr "Tam ekran algılama araçları eksik veya oturumu sorgulayamadı."
+
+msgid "Running processes: "
+msgstr "Çalışan işlemler:"
+
+msgid "Active window: "
+msgstr "Etkin pencere:"
+
+msgid "Create a layer to assign its keys."
+msgstr "Anahtarlarını atamak için bir katman oluşturun."
+
+msgid "Button {}"
+msgstr "Düğme {}"
+
+msgid "Copied to clipboard"
+msgstr "Panoya kopyalandı"
+
+msgid "Theme"
+msgstr "Tema"
+
+msgid "E-ink"
+msgstr "E-ink"
+
+msgid "Enter device path manually"
+msgstr "Cihaz yolunu manuel olarak girin"
+
+msgid "All keyboards"
+msgstr "Tüm klavyeler"
+
+msgid "All mice (buttons only)"
+msgstr "Tüm fareler (yalnızca düğmeler)"
+
+msgid "Mode"
+msgstr "Mod"
+
+msgid "New"
+msgstr "Yeni"
+
+msgid "Auto"
+msgstr "Otomatik"
+
+msgid "Delete extra key?"
+msgstr "Ekstra anahtar silinsin mi?"
+
+msgid "This key assignment will be removed from the layer."
+msgstr "Bu anahtar ataması katmandan kaldırılacak."
+
+msgid "Command started: {}"
+msgstr "Komut başlatıldı: {}"
+
+msgid "Unavailable on this platform or desktop"
+msgstr "Bu platformda veya masaüstünde kullanılamıyor"
+
+msgid "This action is not supported on macOS"
+msgstr "Bu eylem macOS'ta desteklenmiyor"
+
+msgid "Approve commands on the Commands tab before running this action"
+msgstr ""
+"Bu eylemi çalıştırmadan önce Komutlar sekmesindeki komutları onaylayın"
+
+msgid "Pick the physical device whose events should be intercepted."
+msgstr "Olaylarının ele geçirilmesi gereken fiziksel cihazı seçin."
+
+msgid ""
+"Select the mouse so the mapper can see extra buttons and clicks. Pointer "
+"movement is not affected."
+msgstr ""
+"Haritacının ekstra düğmeleri ve tıklamaları görebilmesi için fareyi seçin. "
+"İşaretçinin hareketi etkilenmez."
+
+msgid ""
+"The mouse is not fully intercepted yet: a remapped extra button can emit the"
+" new action, but its native system or app action may still run. If that gets"
+" in the way, disable the native action for that button in your system, "
+"browser, or driver settings."
+msgstr ""
+"Fare henüz tam olarak ele geçirilmedi: Yeniden eşlenen ekstra bir düğme yeni"
+" eylemi gerçekleştirebilir, ancak yerel sistemi veya uygulama eylemi hala "
+"çalışabilir. Bu durum engel teşkil ediyorsa sisteminizde, tarayıcınızda veya"
+" sürücü ayarlarınızda söz konusu düğme için yerel eylemi devre dışı bırakın."
+
+msgid ""
+"The mapper reads from /dev/input/eventX and emits through uinput. If Start "
+"fails, grant access to those devices: usually the input group plus a udev "
+"rule for /dev/uinput."
+msgstr ""
+"Eşleyici /dev/input/eventX'ten okur ve uinput aracılığıyla yayın yapar. "
+"Başlatma başarısız olursa, bu cihazlara erişim izni verin: genellikle giriş "
+"grubu artı /dev/uinput için bir udev kuralı."
+
+msgid "Refresh device list"
+msgstr "Cihaz listesini yenile"
+
+msgid "Mouse (optional)"
+msgstr "Fare (isteğe bağlı)"
+
+msgid "Not selected"
+msgstr "Seçilmedi"
+
+msgid "Not selected (no mouse support)"
+msgstr "Seçilmedi (fare desteği yok)"
+
+msgid "Looks like a keyboard"
+msgstr "Klavyeye benziyor"
+
+msgid "Looks like a mouse"
+msgstr "Fareye benziyor"
+
+msgid "Other devices"
+msgstr "Diğer cihazlar"
+
+msgid "Search devices"
+msgstr "Cihazları arayın"
+
+msgid "Single"
+msgstr "Bekar"
+
+msgid "{n} rule"
+msgid_plural "{n} rules"
+msgstr[0] "{n} kural"
+msgstr[1] "{n} kural"
+
+msgid "{n} layer"
+msgid_plural "{n} layers"
+msgstr[0] "{n} katman"
+msgstr[1] "{n} katman"
+
+msgid "{n} emoji page"
+msgid_plural "{n} emoji pages"
+msgstr[0] "{n} emoji sayfası"
+msgstr[1] "{n} emoji sayfası"
+
+msgid "{n} action page"
+msgid_plural "{n} action pages"
+msgstr[0] "{n} işlem sayfası"
+msgstr[1] "{n} eylem sayfası"
+
+msgid "{n} macro"
+msgid_plural "{n} macros"
+msgstr[0] "{n} makro"
+msgstr[1] "{n} makro"
+
+msgid "{n} command"
+msgid_plural "{n} commands"
+msgstr[0] "{n} komut"
+msgstr[1] "{n} komut"
+
+msgid "Main"
+msgstr "Ana"
+
+msgid "Saved assignment: {}"
+msgstr "Kaydedilen atama: {}"
+
+msgid "Behavior"
+msgstr "Davranış"
+
+msgid "Inherit"
+msgstr "Devral"
+
+msgid "No separate action"
+msgstr "Ayrı bir işlem yok"
+
+msgid "Activate layer only"
+msgstr "Yalnızca katmanı etkinleştir"
+
+msgid "Normal key behavior"
+msgstr "Normal tuş davranışı"
+
+msgid "Suppress"
+msgstr "Bastır"
+
+msgid "Assign held key"
+msgstr "Tutulan anahtarı ata"
+
+msgid "Perform action"
+msgstr "Eylem gerçekleştir"
+
+msgid "The key will not reach the application."
+msgstr "Anahtar uygulamaya ulaşmayacak."
+
+msgid "Use the assignment from the lower layer or base layout."
+msgstr "Alt katmandaki veya temel düzendeki atamayı kullanın."
+
+msgid "Do not assign a separate action to this gesture."
+msgstr "Bu harekete ayrı bir eylem atamayın."
+
+msgid "Holding activates the selected layer. The original key is not sent."
+msgstr "Tutmak seçilen katmanı etkinleştirir. Orijinal anahtar gönderilmedi."
+
+msgid "Send the original key to the application."
+msgstr "Orijinal anahtarı uygulamaya gönderin."
+
+msgid "Capture shortcut"
+msgstr "Kısayolu yakala"
+
+msgid "Choose a valid trigger key."
+msgstr "Geçerli bir tetik anahtarı seçin."
+
+msgid "Choose a valid action."
+msgstr "Geçerli bir eylem seçin."
+
+msgid "Empty cell"
+msgstr "Boş hücre"
+
+msgid "Remove the action from this menu cell."
+msgstr "Eylemi bu menü hücresinden kaldırın."
+
+msgid "Edit assignment"
+msgstr "Ödevi düzenle"
+
+msgid "Holding also activates the selected layer."
+msgstr "Tutmak aynı zamanda seçilen katmanı da etkinleştirir."
+
+msgid "Block"
+msgstr "Engellemek"
+
+msgid ""
+"The key press is consumed: the system and the active application will not "
+"receive it."
+msgstr "Tuşa basıldığında tüketilir: sistem ve aktif uygulama bunu almaz."
+
+msgid ""
+"The key press passes through unchanged, as if no assignment were configured."
+msgstr ""
+"Tuşa basıldığında, sanki hiçbir atama yapılandırılmamış gibi, değişmeden "
+"geçer."
+
+msgid "Capture"
+msgstr "Esir almak"
+
+msgid "Unchanged"
+msgstr "değişmedi"
+
+msgid "Leave a delay empty to use the global setting."
+msgstr "Genel ayarı kullanmak için gecikmeyi boş bırakın."
+
+msgid "Allow command execution"
+msgstr "Komutun yürütülmesine izin ver"
+
+msgid "No commands are assigned."
+msgstr "Hiçbir komut atanmamıştır."
+
+msgid "Commands are disabled in Settings."
+msgstr "Komutlar Ayarlar'da devre dışı bırakıldı."
+
+msgid "Working directory (optional)"
+msgstr "Çalışma dizini (isteğe bağlı)"
+
+msgid "Save layout changes before opening another layout."
+msgstr "Başka bir düzeni açmadan önce düzen değişikliklerini kaydedin."
+
+msgid "No layer"
+msgstr "Katman yok"
+
+msgid "Layer not found"
+msgstr "Katman bulunamadı"
+
+msgid "Create new layer…"
+msgstr "Yeni katman oluştur…"
+
+msgid "Create “{}”"
+msgstr "“{}” oluştur"
+
+msgid ""
+"A trigger can be a single key or a combination, such as "
+"ShiftLeft+ControlLeft. The combination works in either press order and ends "
+"when any key is released."
+msgstr ""
+"Tetikleyici, tek bir tuş veya ShiftLeft+ControlLeft gibi bir kombinasyon "
+"olabilir. Kombinasyon her iki basma sırasında da çalışır ve herhangi bir tuş"
+" bırakıldığında sona erer."
+
+msgid "When held"
+msgstr "Tutulduğunda"
+
+msgid ""
+"Choose a layer active until release, or an action performed once after the "
+"hold duration."
+msgstr ""
+"Serbest bırakılana kadar etkin olan bir katmanı veya bekletme süresinden "
+"sonra bir kez gerçekleştirilen bir eylemi seçin."
+
+msgid "Nothing"
+msgstr "Hiç bir şey"
+
+msgid "Activate layer"
+msgstr "Katmanı etkinleştir"
+
+msgid "Run action"
+msgstr "Eylemi çalıştır"
+
+msgid "Long-hold action"
+msgstr "Uzun süreli tutma eylemi"
+
+msgid "Runs once after {} s"
+msgstr "{}'den sonra bir kez çalışır"
+
+msgid "Hold another key / combination"
+msgstr "Başka bir tuşa / kombinasyona basılı tutun"
+
+msgid "Press one key or hold a combination, then release a key to capture it."
+msgstr ""
+"Bir tuşa basın veya bir kombinasyonu basılı tutun, ardından onu yakalamak "
+"için bir tuşu bırakın."
+
+msgid "Held key: {}"
+msgstr "Basılı tutulan tuş: {}"
+
+msgid "Assigned to"
+msgstr "Atandı"
+
+msgid "Languages"
+msgstr "Diller"
+
+msgid "Excluded applications"
+msgstr "Hariç tutulan uygulamalar"
+
+msgid "Open page in popup"
+msgstr "Sayfayı açılır pencerede aç"
+
+msgid "Page:"
+msgstr "Sayfa:"
+
+msgid "Layout “{}” created"
+msgstr "“{}” düzeni oluşturuldu"
+
+msgid "Layout “{}” saved"
+msgstr "“{}” düzeni kaydedildi"
+
+msgid "Layout “{}” deleted"
+msgstr "“{}” düzeni silindi"
+
+msgid "Layout “{}” activated"
+msgstr "“{}” düzeni etkinleştirildi"
+
+msgid "Could not complete the action"
+msgstr "İşlem tamamlanamadı"
+
+msgid "Dismiss notification"
+msgstr "Bildirimi reddet"
+
+msgid "Changes to layout “{}” discarded"
+msgstr "\"{}\" düzenindeki değişiklikler iptal edildi"
+
+msgid "Popup menus are unavailable: {}"
+msgstr "Açılır menüler kullanılamıyor: {}"
+
+msgid "Popup menus are not running. Try opening the menu again."
+msgstr "Açılır menüler çalışmıyor. Menüyü tekrar açmayı deneyin."
+
+msgid "Popup menus are restarting. Try again shortly."
+msgstr "Açılır menüler yeniden başlatılıyor. Kısa süre sonra tekrar deneyin."
+
+msgid "Popup menus could not recover. Restart the application."
+msgstr "Açılır menüler kurtarılamadı. Uygulamayı yeniden başlatın."
+
+msgid "Popup menu error: {}"
+msgstr "Açılır menü hatası: {}"
+
+msgid "Choose a key or combination for the trigger"
+msgstr "Tetikleyici için bir anahtar veya kombinasyon seçin"
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid. Add a trigger, then choose its action, suppress it, or inherit its "
+"assignment from the lower layer."
+msgstr ""
+"Ana klavye ızgarasının dışındaki fare düğmeleri, medya tuşları ve diğer "
+"tetikleyiciler. Bir tetikleyici ekleyin, ardından eylemini seçin, bastırın "
+"veya atamasını alt katmandan devralın."
+
+msgid ""
+"You can enter emoji, any text, or Unicode symbols here. Drag an item from "
+"the palette onto a key to assign it."
+msgstr ""
+"Buraya emoji, herhangi bir metin veya Unicode sembollerini girebilirsiniz. "
+"Paletteki bir öğeyi atamak için bir tuşa sürükleyin."
+
+msgid "Accessibility"
+msgstr "Erişilebilirlik"
+
+msgid "High contrast"
+msgstr "Yüksek kontrast"
+
+msgid ""
+"Pure black or white background, stronger text, borders and focus outlines. "
+"Works with the light and dark themes."
+msgstr ""
+"Saf siyah veya beyaz arka plan, daha güçlü metin, kenarlıklar ve odak ana "
+"hatları. Açık ve koyu temalarla çalışır."
+
+msgid "Reduce motion"
+msgstr "Hareketi azalt"
+
+msgid "Turn off highlight animations in the editor."
+msgstr "Düzenleyicide vurgulama animasyonlarını kapatın."
+
+msgid ""
+"Every control can be reached with Tab and activated with Space or Enter. "
+"Interface size follows the desktop scale factor."
+msgstr ""
+"Her kontrole Sekme tuşuyla ulaşılabilir ve Space veya Enter tuşuyla "
+"etkinleştirilebilir. Arayüz boyutu masaüstü ölçek faktörünü takip eder."
+
+msgid "Always"
+msgstr "Her zaman"
+
+msgid "Hold duration"
+msgstr "Tutma süresi"
+
+msgid "{} s"
+msgstr "{}'ler"
+
+msgid "{} s (default)"
+msgstr "{}'ler (varsayılan)"
+
+msgid "Shell command or path to a script, e.g. playerctl play-pause"
+msgstr ""
+"Kabuk komutu veya bir komut dosyasına giden yol, ör. playerctl oynat-"
+"duraklat"
+
+msgid "Runs with sh -lc in the background; the result is not awaited."
+msgstr "Arka planda sh -lc ile çalışır; sonuç beklenmiyor."
+
+msgid "Choose script…"
+msgstr "Senaryoyu seç…"
+
+msgid "Working directory (optional, home by default)"
+msgstr "Çalışma dizini (isteğe bağlı, varsayılan olarak ana sayfa)"
+
+msgid "Choose folder…"
+msgstr "Klasör seç…"
+
+msgid ""
+"Command execution is turned off. Turn it on in the settings to assign "
+"commands."
+msgstr "Komut yürütme kapalı. Komut atamak için ayarlardan açın."
+
+msgid "Open command settings"
+msgstr "Komut ayarlarını aç"
+
+msgid "The working directory does not exist."
+msgstr "Çalışma dizini mevcut değil."
+
+msgid ""
+"The script file is not executable: run chmod +x on it or prefix the path "
+"with sh."
+msgstr ""
+"Komut dosyası yürütülebilir değil: üzerinde chmod +x komutunu çalıştırın "
+"veya yolun önüne sh ekleyin."
+
+msgid "Choose a script"
+msgstr "Bir komut dosyası seçin"
+
+msgid "Choose a working directory"
+msgstr "Bir çalışma dizini seçin"
+
+msgid "Commands run with sh -lc in the background and are not awaited."
+msgstr "Komutlar arka planda sh -lc komutuyla çalıştırılır ve beklenmez."
+
+msgid "Commands run with PowerShell in the background and are not awaited."
+msgstr "Komutlar arka planda PowerShell ile çalışır ve beklenmez."
+
+msgid ""
+"Commands stay off until you allow execution. Review below what your layouts "
+"would run."
+msgstr ""
+"Siz yürütmeye izin verene kadar komutlar kapalı kalır. Düzenlerinizin neleri"
+" çalıştıracağını aşağıda inceleyin."
+
+msgid "Command"
+msgstr "Emretmek"
+
+msgid "Rule {} · tap"
+msgstr "Kural {} · dokunun"
+
+msgid "Rule {} · hold"
+msgstr "Kural {} · basılı tut"
+
+msgid "Rule {} · long hold"
+msgstr "Kural {} · uzun süre basılı tutun"
+
+msgid "Rule {} · double tap"
+msgstr "Kural {} · iki kez hafifçe vurun"
+
+msgid "disabled"
+msgstr "engelli"
+
+msgid "Layer {}"
+msgstr "Katman {}"
+
+msgid "Macro"
+msgstr "Makro"
+
+msgid "Quick action"
+msgstr "Hızlı eylem"
+
+msgid "Show all"
+msgstr "Tümünü göster"
+
+msgid "Close"
+msgstr "Kapat"
+
+msgid "Choose a key or key combination"
+msgstr "Bir tuş veya tuş kombinasyonu seçin"
+
+msgid "Examples"
+msgstr "Örnekler"
+
+msgid "Add rule…"
+msgstr "Kural ekle…"
+
+msgid ""
+"All filled conditions must match. A rule without conditions always matches."
+msgstr ""
+"Doldurulan tüm koşullar eşleşmelidir. Koşulsuz bir kural her zaman eşleşir."
+
+msgid "Automatic switching rules"
+msgstr "Otomatik geçiş kuralları"
+
+msgid ""
+"Automatic: the layout is chosen by switching rules for the application, "
+"system language or game mode."
+msgstr ""
+"Otomatik: Düzen, uygulama, sistem dili veya oyun modu için kurallar "
+"değiştirilerek seçilir."
+
+msgid "Layout"
+msgstr "Düzen"
+
+msgid "Layout not found"
+msgstr "Düzen bulunamadı"
+
+msgid "New rule"
+msgstr "Yeni kural"
+
+msgid "Now: {} (default)"
+msgstr "Şimdi: {} (varsayılan)"
+
+msgid "Otherwise (default)"
+msgstr "Aksi halde (varsayılan)"
+
+msgid "Rule {}"
+msgstr "Kural {}"
+
+msgid "Use layout"
+msgstr "Düzeni kullan"
+
+msgid "When"
+msgstr "Ne zaman"
+
+msgid "If"
+msgstr "Eğer"
+
+msgid "If:"
+msgstr "Eğer:"
+
+msgid "Trigger conditions"
+msgstr "Tetikleme koşulları"
+
+msgid "No layout"
+msgstr "Düzen yok"
+
+msgid "No layout (keys as is)"
+msgstr "Düzen yok (anahtarlar olduğu gibi)"
+
+msgid "Now: {} (rule {}: {})"
+msgstr "Şimdi: {} (kural {}: {})"
+
+msgid ""
+"Rules are checked from top to bottom; the first enabled one whose conditions"
+" match chooses the layout. If none matches, the default is used. “No layout”"
+" leaves the keyboard unprocessed, for example in an application where the "
+"layout gets in the way."
+msgstr ""
+"Kurallar yukarıdan aşağıya doğru kontrol edilir; koşulları eşleşen ilk etkin"
+" olan düzeni seçer. Hiçbiri eşleşmezse varsayılan kullanılır. \"Düzen yok\","
+" örneğin düzenin engel olduğu bir uygulamada klavyeyi işlenmeden bırakır."
+
+msgid "No rules"
+msgstr "Kural yok"
+
+msgid "The default layout is always used."
+msgstr "Varsayılan düzen her zaman kullanılır."
+
+msgid "For games"
+msgstr "Oyunlar için"
+
+msgid "For an application"
+msgstr "Bir başvuru için"
+
+msgid "Custom rule"
+msgstr "Özel kural"
+
+msgid "When no rule matches, the keyboard works without processing."
+msgstr "Hiçbir kural eşleşmediğinde klavye işlem yapılmadan çalışır."
+
+msgid "Never applies: rule {} always matches first."
+msgstr "Hiçbir zaman uygulanmaz: {} kuralı her zaman önce eşleşir."
+
+msgid "Game mode detection is off, so this rule never matches."
+msgstr "Oyun modu algılama kapalı olduğundan bu kural hiçbir zaman eşleşmez."
+
+msgid "Not among the system languages: {}"
+msgstr "Sistem dilleri arasında değil: {}"
+
+msgid "Rule enabled"
+msgstr "Kural etkinleştirildi"
+
+msgid "Automatic mode will use no layout by default."
+msgstr "Otomatik mod, varsayılan olarak hiçbir düzeni kullanmaz."
+
+msgid "Delete rule {}?"
+msgstr "{} kuralı silinsin mi?"
+
+msgid "The rule will be deleted. This cannot be undone."
+msgstr "Kural silinecek. Bu geri alınamaz."
+
+msgid "Its {n} automatic rule will be deleted too."
+msgid_plural "Its {n} automatic rules will be deleted too."
+msgstr[0] "{n} otomatik kuralı da silinecek."
+msgstr[1] "{n} otomatik kuralı da silinecek."
+
+msgid "In {n} rule"
+msgid_plural "In {n} rules"
+msgstr[0] "{n} kuralda"
+msgstr[1] "{n} kuralda"
+
+msgid "Auto — detect games"
+msgstr "Otomatik — oyunları algıla"
+
+msgid "On — always"
+msgstr "Açık — her zaman"
+
+msgid "Off — never"
+msgstr "Kapalı — asla"
+
+msgid ""
+"Automatic layout rules apply only when the layout is chosen automatically "
+"(Layouts page)."
+msgstr ""
+"Otomatik düzen kuralları yalnızca düzen otomatik olarak seçildiğinde "
+"uygulanır (Yerleşimler sayfası)."
+
+msgid ""
+"Borderless windows covering the screen count too. Browsers, video players "
+"and presentations are ignored."
+msgstr ""
+"Ekranı kaplayan kenarlıksız pencereler de sayılır. Tarayıcılar, video "
+"oynatıcılar ve sunumlar dikkate alınmaz."
+
+msgid "Game mode is off (set manually)"
+msgstr "Oyun modu kapalı (manuel olarak ayarlanır)"
+
+msgid "Game mode is on (set manually)"
+msgstr "Oyun modu açık (manuel olarak ayarlanır)"
+
+msgid ""
+"Game mode turns on rules and automatic layout rules that have a game-mode "
+"condition. Automatic layout rules apply only when the layout is chosen "
+"automatically (Layouts page). Auto uses the detection sources and custom "
+"rules below; On and Off set the state manually. “Never a game” takes "
+"priority over automatic detection and “Always a game”. You can also change "
+"the mode in the top bar, in the tray menu or with a key bound to a game mode"
+" action."
+msgstr ""
+"Oyun modu, oyun modu koşuluna sahip kuralları ve otomatik düzen kurallarını "
+"açar. Otomatik düzen kuralları yalnızca düzen otomatik olarak seçildiğinde "
+"uygulanır (Yerleşimler sayfası). Otomatik, aşağıdaki algılama kaynaklarını "
+"ve özel kuralları kullanır; Açık ve Kapalı durumu manuel olarak ayarlar. "
+"\"Asla bir oyun\", otomatik algılamaya ve \"Her zaman bir oyun\"a göre "
+"önceliklidir. Modu üst çubuktan, tepsi menüsünden veya oyun modu eylemine "
+"bağlı bir tuşla da değiştirebilirsiniz."
+
+msgid "Game mode: always off"
+msgstr "Oyun modu: her zaman kapalı"
+
+msgid "Game mode: always on"
+msgstr "Oyun modu: her zaman açık"
+
+msgid "Game mode: detect automatically"
+msgstr "Oyun modu: otomatik olarak algıla"
+
+msgid "Toggle game mode"
+msgstr "Oyun modunu değiştir"
+
+msgid ""
+"GameMode daemon unavailable: check the gamemode package and session D-Bus."
+msgstr ""
+"GameMode arka planı kullanılamıyor: oyun modu paketini ve D-Bus oturumunu "
+"kontrol edin."
+
+msgid ""
+"Install {} to detect the active window and fullscreen windows. It is also "
+"needed for application conditions in rules."
+msgstr ""
+"Etkin pencereyi ve tam ekran pencereleri algılamak için {}'yi yükleyin. "
+"Kurallarda uygulama koşulları için de gereklidir."
+
+msgid ""
+"Nothing uses game mode yet: no rule or automatic layout rule has a game-mode"
+" condition, so turning it on changes nothing."
+msgstr ""
+"Henüz hiçbir şey oyun modunu kullanmıyor: hiçbir kural veya otomatik düzen "
+"kuralının oyun modu koşulu yoktur, dolayısıyla onu açmak hiçbir şeyi "
+"değiştirmez."
+
+msgid ""
+"On and Off are remembered after restart. Auto keeps detecting in the "
+"background."
+msgstr ""
+"Açık ve Kapalı, yeniden başlatmanın ardından hatırlanır. Otomatik arka "
+"planda algılamaya devam eder."
+
+msgid ""
+"Rules of the current layout with a game-mode condition: {}. Automatic layout"
+" rules with a game-mode condition: {}."
+msgstr ""
+"Oyun modu koşuluna sahip mevcut düzenin kuralları: {}. Oyun modu koşuluyla "
+"otomatik düzen kuralları: {}."
+
+msgid ""
+"Turns on while a game runs through gamemoderun or requests GameMode itself. "
+"In Steam set the launch options to “gamemoderun %command%”."
+msgstr ""
+"Bir oyun, gamemoderun sırasında çalışırken veya GameMode'un kendisini talep "
+"ederken açılır. Steam'de başlatma seçeneklerini “gamemoderun %command%” "
+"olarak ayarlayın."
+
+msgid "Game mode: on"
+msgstr "Oyun modu: açık"
+
+msgid "Game mode: off"
+msgstr "Oyun modu: kapalı"
+
+msgid "Active now: {}"
+msgstr "Şu anda aktif: {}"
+
+msgid ""
+"Active window detection is unavailable in this session, so application "
+"conditions do not match."
+msgstr ""
+"Bu oturumda etkin pencere algılama kullanılamadığından uygulama koşulları "
+"eşleşmiyor."
+
+msgid ""
+"An application is matched by its ID or process name: the whole name, "
+"ignoring case, with * and ? as wildcards. A window title item matches when "
+"the title contains the text. Any matching item is enough. An empty list "
+"imposes no restrictions."
+msgstr ""
+"Bir uygulama, kimliğine veya işlem adına göre eşleştirilir: adın tamamı, "
+"büyük/küçük harf dikkate alınmadan, * ve ? joker karakterler olarak. Başlık "
+"metni içerdiğinde bir pencere başlık öğesi eşleşir. Eşleşen herhangi bir öğe"
+" yeterlidir. Boş bir liste hiçbir kısıtlama getirmez."
+
+msgid "Looking for open windows…"
+msgstr "Açık pencereler aranıyor…"
+
+msgid "No open windows found"
+msgstr "Açık pencere bulunamadı"
+
+msgid "Window title contains: {}"
+msgstr "Pencere başlığı şunu içerir: {}"
+
+msgid "Timing"
+msgstr "Zamanlama"
+
+msgid "Used by macros without their own value."
+msgstr "Makrolar tarafından kendi değerleri olmadan kullanılır."
+
+msgid ""
+"Used by macros without their own value. How long to wait between pressing "
+"modifiers (Shift, Ctrl, …) and the main key of one step."
+msgstr ""
+"Makrolar tarafından kendi değerleri olmadan kullanılır. Değiştiricilere "
+"(Shift, Ctrl,…) ve bir adımın ana tuşuna basılması arasında ne kadar "
+"bekleneceği."
+
+msgid "Rule without a trigger is saved as a draft and will be ignored."
+msgstr ""
+"Tetikleyicisi olmayan kural taslak olarak kaydedilir ve dikkate alınmaz."
+
+msgid "Trigger \"{}\" cannot be used for a rule."
+msgstr "\"{}\" tetikleyicisi bir kural için kullanılamaz."
+
+msgid "Rules for trigger \"{}\" may overlap; the first matching rule wins."
+msgstr ""
+"\"{}\" tetikleyicisine ilişkin kurallar çakışabilir; İlk eşleşen kural "
+"kazanır."
+
+msgid "Rule for trigger \"{}\" is covered by an earlier rule and will not run."
+msgstr ""
+"\"{}\" tetikleyici kuralı daha önceki bir kural kapsamındadır ve "
+"çalışmayacaktır."
+
+msgid "Rule \"{}\" points to a layer that no longer exists."
+msgstr "\"{}\" kuralı artık var olmayan bir katmana işaret ediyor."
+
+msgid "Rule \"{}\" has an invalid tap action."
+msgstr "\"{}\" kuralında geçersiz bir dokunma eylemi var."
+
+msgid "Rule \"{}\" has an invalid hold action."
+msgstr "\"{}\" kuralında geçersiz bir bekletme eylemi var."
+
+msgid "Rule \"{}\" has an invalid double-tap action."
+msgstr "\"{}\" kuralında geçersiz bir çift dokunma işlemi var."
+
+msgid "Automatic switching rule deleted"
+msgstr "Otomatik geçiş kuralı silindi"
+
+msgid "Only in applications"
+msgstr "Yalnızca uygulamalarda"
+
+msgid "Except applications"
+msgstr "Uygulamalar hariç"
+
+msgid "A match blocks the rule, even if the window is in the allowed list."
+msgstr ""
+"Bir eşleşme, pencere izin verilenler listesinde olsa bile kuralı engeller."
+
+msgid "Any match allows the rule. An empty list allows all windows."
+msgstr ""
+"Herhangi bir eşleşme kurala izin verir. Boş bir liste tüm pencerelere izin "
+"verir."
+
+msgid "Choose applications to exclude"
+msgstr "Hariç tutulacak uygulamaları seçin"
+
+msgid "Open windows"
+msgstr "Pencereleri aç"
+
+msgid "Last active"
+msgstr "Son aktif"
+
+msgid "Nothing is excluded."
+msgstr "Hiçbir şey hariç tutulmaz."
+
+msgid "No restrictions: the rule works in every window."
+msgstr "Kısıtlama yok: kural her pencerede çalışır."
+
+msgid "{n} window"
+msgid_plural "{n} windows"
+msgstr[0] "{n} pencere"
+msgstr[1] "{n} pencere"
+
+msgid "Do not process"
+msgstr "İşleme yapma"
+
+msgid "Command name (optional)"
+msgstr "Komut adı (isteğe bağlı)"
+
+msgid "Working directory (home by default)"
+msgstr "Çalışma dizini (varsayılan olarak ev)"
+
+msgid "Text to type when the action is invoked:"
+msgstr "Eylem çağrıldığında yazılacak metin:"
+
+msgid ""
+"Enter literal text without the text: prefix. Line breaks, spaces and tabs "
+"are preserved. On Linux, text is inserted into the active application via "
+"the desktop portal; permission may be required. Text injection by the mapper"
+" is not implemented on Windows or macOS."
+msgstr ""
+"Metin olmadan gerçek metni girin: önek. Satır sonları, boşluklar ve sekmeler"
+" korunur. Linux'ta metin, etkin uygulamaya masaüstü portalı aracılığıyla "
+"eklenir; izin gerekebilir. Eşleyici tarafından metin enjeksiyonu Windows "
+"veya macOS'ta uygulanmaz."
+
+msgid ""
+"Commands run with sh -lc in the background. The mapper does not wait for "
+"completion or collect output. An empty name uses the command itself as its "
+"label. The working directory defaults to your home folder; scripts need "
+"execute permission. Command execution must be enabled in settings."
+msgstr ""
+"Komutlar arka planda sh -lc komutuyla çalışır. Eşleştirici tamamlanmayı veya"
+" çıktıyı toplamayı beklemez. Boş bir ad, komutun kendisini etiketi olarak "
+"kullanır. Çalışma dizini varsayılan olarak ana klasörünüze ayarlanır; komut "
+"dosyalarının yürütme iznine ihtiyacı vardır. Komut yürütmenin ayarlarda "
+"etkinleştirilmesi gerekir."
+
+msgid ""
+"Commands run with PowerShell in the background, without a console window. "
+"The mapper does not wait for completion or collect output. An empty name "
+"uses the command itself as its label. The working directory defaults to your"
+" home folder. Command execution must be enabled in settings."
+msgstr ""
+"Komutlar, konsol penceresi olmadan arka planda PowerShell ile çalışır. "
+"Eşleştirici tamamlanmayı veya çıktıyı toplamayı beklemez. Boş bir ad, "
+"komutun kendisini etiketi olarak kullanır. Çalışma dizini varsayılan olarak "
+"ana klasörünüze ayarlanır. Komut yürütmenin ayarlarda etkinleştirilmesi "
+"gerekir."
+
+msgid ""
+"The name is optional: an empty name uses the command itself as its label. "
+"Command execution by the mapper is not implemented on macOS."
+msgstr ""
+"Ad isteğe bağlıdır: boş bir ad, komutun kendisini etiketi olarak kullanır. "
+"Eşleştirici tarafından komut yürütme, macOS'ta uygulanmaz."
+
+msgid "Triggers"
+msgstr "Tetikleyiciler"
+
+msgid "Disable animations"
+msgstr "Animasyonları devre dışı bırak"
+
+msgid "Add layout: "
+msgstr "Düzen ekle:"
+
+msgid "Save (Ctrl+S)"
+msgstr "Kaydet (Ctrl+S)"
+
+msgid "Close layout"
+msgstr "Düzeni kapat"
+
+msgid "Discard layout changes?"
+msgstr "Düzen değişiklikleri silinsin mi?"
+
+msgid "Unsaved changes to this layout will be lost."
+msgstr "Bu düzende yapılan kaydedilmemiş değişiklikler kaybolacak."
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Triggers tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"Makro:<id> gibi referanslarda kullanılan benzersiz tanımlayıcı. Bu makroyu "
+"bir tuşa bağlamak için Katmanlar veya Tetikleyiciler sekmesinde ilgili "
+"eylemi seçin. Kimliği yalnızca bu makroyu hiçbir şey kullanmadığında "
+"değiştirin."
+
+msgid "Discard"
+msgstr "At"
+
+msgid ""
+"Build reusable sequences of key chords, text, commands and system actions. Use a unique ID in macro:<id> references and a readable name in action lists. Assign macros on the Layers or Triggers tab; change an ID only when it is unused.\n"
+"\n"
+"The step pause applies between steps of this macro. Modifier delay is the time between pressing a modifier and the main key. Leave delays empty to use Settings defaults."
+msgstr ""
+"Tuş akorları, metinler, komutlar ve sistem eylemlerinden oluşan yeniden kullanılabilir diziler oluşturun. Makro:<id> referanslarında benzersiz bir kimlik ve eylem listelerinde okunabilir bir ad kullanın. Katmanlar veya Tetikleyiciler sekmesinde makroları atayın; kimliği yalnızca kullanılmadığında değiştirin.\n"
+"\n"
+"Adım duraklaması bu makronun adımları arasında uygulanır. Değiştirici gecikmesi, değiştiriciye basılması ile ana tuşa basılması arasındaki süredir. Ayarlar varsayılanlarını kullanmak için gecikmeleri boş bırakın."
+
+msgid "Global defaults: step pause {} ms; modifier delay {} ms."
+msgstr ""
+"Genel varsayılanlar: adım duraklatma {} ms; değiştirici gecikmesi {} ms."
+
+msgid "Layout changed on disk"
+msgstr "Diskteki düzen değişti"
+
+msgid ""
+"The file of “{}” was changed by another program after you opened it. Your "
+"edits are kept until you choose what to do."
+msgstr ""
+"“{}” dosyası, siz onu açtıktan sonra başka bir program tarafından "
+"değiştirildi. Düzenlemeleriniz siz ne yapacağınızı seçene kadar saklanır."
+
+msgid "Load from disk"
+msgstr "Diskten yükle"
+
+msgid "Save as new…"
+msgstr "Yeni olarak kaydet…"
+
+msgid "Overwrite"
+msgstr "Üzerine yaz"
+
+msgid "Show LHC key codes used in assignments, such as KeyA and ArrowLeft."
+msgstr ""
+"KeyA ve ArrowLeft gibi atamalarda kullanılan LHC anahtar kodlarını gösterin."
+
+msgid "Application"
+msgstr "Başvuru"
+
+msgid "Window title"
+msgstr "Pencere başlığı"
+
+msgid "Click to switch"
+msgstr "Geçiş yapmak için tıklayın"
+
+msgid "Match by app ID or process instead"
+msgstr "Bunun yerine uygulama kimliğine veya işleme göre eşleştirin"
+
+msgid "Match by window title instead"
+msgstr "Bunun yerine pencere başlığına göre eşleştir"
+
+msgid "Open now: {n} window"
+msgid_plural "Open now: {n} windows"
+msgstr[0] "Şu anda açık: {n} pencere"
+msgstr[1] "Şu anda açık: {n} pencere"
+
+msgid "Not open now"
+msgstr "Şu anda açık değil"
+
+msgid "Running process"
+msgstr "Çalışan süreç"
+
+msgid "Text the window title contains"
+msgstr "Pencere başlığının içerdiği metin"
+
+msgid "Already in the list"
+msgstr "Zaten listede"
+
+msgid "Choose from open windows…"
+msgstr "Açık pencerelerden seçim yapın…"
+
+msgid "Matches {n} open window"
+msgid_plural "Matches {n} open windows"
+msgstr[0] "{n} açık pencereyle eşleşir"
+msgstr[1] "{n} açık pencereyle eşleşir"
+
+msgid "Matches no open window"
+msgstr "Hiçbir açık pencereyle eşleşmez"
+
+msgid "Show Quick Action Menu on the last used page"
+msgstr "Hızlı Eylem Menüsünü son kullanılan sayfada göster"
+
+msgid "Show Emoji & Symbols menu on the last used page"
+msgstr "Emoji ve Semboller menüsünü son kullanılan sayfada göster"
+
+msgid "Show the settings window"
+msgstr "Ayarlar penceresini göster"
+
+msgid "Activate layout {} (switches to Single mode)"
+msgstr "{} düzenini etkinleştirin (Tekli moda geçer)"
+
+msgid "There is no layout number {}"
+msgstr "{} düzen numarası yok"
+
+msgid "Show the Left Hand Control layout name when it changes"
+msgstr "Değiştiğinde Sol El Kontrolü düzeninin adını göster"
+
+msgid "Show the keys of a layer while it is held"
+msgstr "Basılı tutulduğunda katmanın anahtarlarını göster"
+
+msgid ""
+"The hint appears 2 seconds after the layer activates. Pressing a layer key "
+"hides or cancels it until the trigger is released, including in game mode."
+msgstr ""
+"İpucu, katman etkinleştirildikten 2 saniye sonra görünür. Bir katman tuşuna "
+"basmak, oyun modu da dahil olmak üzere, tetik bırakılana kadar onu gizler "
+"veya iptal eder."
+
+msgid ""
+"Unavailable: build with the spell feature and use a Wayland compositor with "
+"layer-shell (KDE Plasma, Sway, Hyprland)."
+msgstr ""
+"Mevcut değil: büyü özelliğiyle oluşturun ve katman kabuğuna sahip bir "
+"Wayland dizgicisi kullanın (KDE Plasma, Sway, Hyprland)."
+
+msgid ""
+"The app:activateLayout1…5 actions activate the layout at that position in "
+"this list: reordering the list changes which layout a key activates. In Auto"
+" mode they switch to Single mode."
+msgstr ""
+"app:activateLayout1…5 eylemleri, bu listedeki o konumdaki düzeni "
+"etkinleştirir: listenin yeniden sıralanması, bir tuşun etkinleştirdiği "
+"düzeni değiştirir. Otomatik modda Tekli moda geçerler."
+
+msgid "Cut"
+msgstr "Kes"
+
+msgid "Copy"
+msgstr "Kopyala"
+
+msgid "Paste"
+msgstr "Yapıştır"
+
+msgid "Select all"
+msgstr "Tümünü seç"
+
+msgid "Clear search"
+msgstr "Aramayı temizle"
+
+msgid "Add application"
+msgstr "Uygulama ekle"
+
+msgid "Edit application"
+msgstr "Uygulamayı düzenle"
+
+msgid "Remove application?"
+msgstr "Uygulama kaldırılsın mı?"
+
+msgid "“{}” will be removed from the list."
+msgstr "“{}” listeden kaldırılacaktır."
+
+msgid "Devices"
+msgstr "Cihazlar"
+
+msgid "Required"
+msgstr "Gerekli"
+
+msgid "Optional"
+msgstr "İsteğe bağlı"
+
+msgid "Failed to start"
+msgstr "Başlatılamadı"
+
+msgid "Keys work as usual. Start the mapper to apply your layouts."
+msgstr ""
+"Anahtarlar her zamanki gibi çalışıyor. Düzenlerinizi uygulamak için "
+"eşleyiciyi başlatın."
+
+msgid "Select a keyboard below to start the mapper."
+msgstr "Eşleyiciyi başlatmak için aşağıdan bir klavye seçin."
+
+msgid "Changing a device restarts the mapper."
+msgstr "Bir cihazın değiştirilmesi haritalayıcıyı yeniden başlatır."
+
+msgid "Auto: known game {}"
+msgstr "Otomatik: bilinen oyun {}"
+
+msgid "Ignored in fullscreen"
+msgstr "Tam ekranda yoksayıldı"
+
+msgid "Not available in this session."
+msgstr "Bu oturumda mevcut değil."
+
+msgid "Steam games"
+msgstr "Steam oyunları"
+
+msgid ""
+"Turns on while Steam runs a game: Steam starts every game through reaper "
+"SteamLaunch, and game windows have the ID steam_app_<number>."
+msgstr ""
+"Steam bir oyunu çalıştırırken açılır: Steam her oyunu SteamLaunch "
+"aracılığıyla başlatır ve oyun pencereleri steam_app_<sayı> kimliğine "
+"sahiptir."
+
+msgid "Turns on while Steam reports a running game."
+msgstr "Steam, oyunun çalıştığını bildirirken açılır."
+
+msgid "Lutris games"
+msgstr "Lutris oyunları"
+
+msgid ""
+"Turns on while a game started by Lutris runs: Lutris starts every game "
+"through lutris-wrapper."
+msgstr ""
+"Lutris tarafından başlatılan bir oyun çalışırken açılır: Lutris her oyunu "
+"lutris-wrapper aracılığıyla başlatır."
+
+msgid "Gamescope sessions"
+msgstr "Gamescope oturumları"
+
+msgid "Turns on while the active window is a nested gamescope session."
+msgstr "Etkin pencere iç içe geçmiş bir gamescope oturumu olduğunda açılır."
+
+msgid "Games from the Game Bar list"
+msgstr "Oyun Çubuğu listesindeki oyunlar"
+
+msgid "Applications of the Game category"
+msgstr "Oyun kategorisine ait uygulamalar"
+
+msgid ""
+"Turns on while the active window belongs to an application whose .desktop "
+"file lists the Game category. Launchers are tagged as games too, so they are"
+" skipped."
+msgstr ""
+"Etkin pencere, .desktop dosyasında Oyun kategorisinin listelendiği bir "
+"uygulamaya ait olduğunda açılır. Başlatıcılar da oyun olarak "
+"etiketlendiğinden atlanırlar."
+
+msgid ""
+"Turns on while the active application declares the Games category in its "
+"Info.plist. Launchers are skipped."
+msgstr ""
+"Etkin uygulama Info.plist'inde Oyunlar kategorisini bildirirken açılır. "
+"Başlatıcılar atlanır."
+
+msgid "Auto — according to settings"
+msgstr "Otomatik — ayarlara göre"
+
+msgid "Blank"
+msgstr "Boşluk"
+
+msgid "Assign action"
+msgstr "Eylem ata"
+
+msgid "Action after {} ms of holding"
+msgstr "{} ms beklemeden sonraki eylem"
+
+msgid ""
+"These codes are specific to Left Hand Control, not universal keyboard codes "
+"(e.g. KeyA, ArrowLeft)."
+msgstr ""
+"Bu kodlar evrensel klavye kodları değil, Sol El Kontrolüne özeldir (örn. "
+"KeyA, ArrowLeft)."
+
+msgid "While its window is active"
+msgstr "Penceresi aktifken"
+
+msgid "While the process runs"
+msgstr "Süreç çalışırken"
+
+msgid "Counts while a window of the application has the focus."
+msgstr "Uygulamanın bir penceresi odağa alındığında sayılır."
+
+msgid ""
+"Counts while a process with this name runs, even without a window or in the "
+"background."
+msgstr ""
+"Bu ada sahip bir işlem, pencere olmadan veya arka planda bile çalışırken "
+"sayılır."
+
+msgid "Application · while its window is active"
+msgstr "Uygulama · penceresi etkinken"
+
+msgid "Process · while it runs"
+msgstr "İşlem · çalışırken"
+
+msgid "No games added."
+msgstr "Hiçbir oyun eklenmedi."
+
+msgid ""
+"Game mode turns on while any of these matches. An application is matched by "
+"its ID or process name: the whole name, ignoring case, with * and ? as "
+"wildcards. Steam games have the app ID steam_app_<number>; Proton games are "
+"also found by their .exe name. A window title item matches the active window"
+" whose title contains the text."
+msgstr ""
+"Bu maçlardan herhangi biri sırasında oyun modu açılır. Bir uygulama, "
+"kimliğine veya işlem adına göre eşleştirilir: adın tamamı, büyük/küçük harf "
+"dikkate alınmadan, * ve ? joker karakterler olarak. Steam oyunlarının "
+"uygulama kimliği steam_app_<number>; Proton oyunları ayrıca .exe adlarıyla "
+"da bulunur. Bir pencere başlık öğesi, başlığı metni içeren etkin pencereyle "
+"eşleşir."
+
+msgid ""
+"Game mode stays off while any of these matches, even if a game or another "
+"detector would turn it on."
+msgstr ""
+"Bu eşleşmelerden herhangi biri sırasında, bir oyun veya başka bir dedektör "
+"onu açsa bile oyun modu kapalı kalır."
+
+msgid "less than a minute"
+msgstr "bir dakikadan az"
+
+msgid "{} min"
+msgstr "{} dk."
+
+msgid "{} h {} min"
+msgstr "{} h {} dk"
+
+msgid "Running for {}"
+msgstr "{} için çalışıyor"
+
+msgid "Stopped unexpectedly"
+msgstr "Beklenmedik bir şekilde durduruldu"
+
+msgid "Stopped {} ago after running for {}."
+msgstr "{} için çalıştırdıktan sonra {} önce durduruldu."
+
+msgid "Text input"
+msgstr "Metin girişi"
+
+msgid ""
+"How text actions in rules and macros are typed. Key remapping and the emoji "
+"popup do not use it."
+msgstr ""
+"Kurallar ve makrolardaki metin eylemlerinin nasıl yazıldığı. Anahtarın "
+"yeniden eşlenmesi ve emoji açılır penceresi bunu kullanmaz."
+
+msgid "Typing method"
+msgstr "Yazma yöntemi"
+
+msgid "libei + clipboard fallback (recommended)"
+msgstr "libei + panoya geri dönüş (önerilir)"
+
+msgid "Paste from clipboard"
+msgstr "Panodan yapıştır"
+
+msgid "ydotool"
+msgstr "ydotool"
+
+msgid "xdotool"
+msgstr "xdotool"
+
+msgid ""
+"Types with the current layout, or pastes the whole text when a character is "
+"unavailable. Paste requires clipboard access and support for the paste "
+"shortcut. Preserves clipboard formats and cancels if the destination "
+"changes. Requires portal permission and active-window detection."
+msgstr ""
+"Geçerli düzende yazar veya karakter kullanılamadığında metnin tamamını "
+"yapıştırır. Yapıştır, panoya erişim ve yapıştırma kısayolu desteği "
+"gerektirir. Pano formatlarını korur ve hedef değişirse iptal eder. Portal "
+"izni ve aktif pencere tespiti gerektirir."
+
+msgid ""
+"Types only through libei using the current keyboard layout and Caps Lock "
+"state. Skips text with unavailable characters. Requires portal permission "
+"and active-window detection. Cancels if the destination changes."
+msgstr ""
+"Geçerli klavye düzenini ve Büyük Harf Kilidi durumunu kullanarak yalnızca "
+"libei aracılığıyla yazar. Kullanılamayan karakterler içeren metni atlar. "
+"Portal izni ve aktif pencere tespiti gerektirir. Hedef değişirse iptal "
+"edilir."
+
+msgid ""
+"Types only through NotifyKeyboardKeycode using the KDE layout and readable "
+"keyboard state. Skips text with unavailable characters. Requires portal "
+"permission and active-window detection. Cancels if the destination changes."
+msgstr ""
+"KDE düzenini ve okunabilir klavye durumunu kullanarak yalnızca "
+"NotifyKeyboardKeycode aracılığıyla yazar. Kullanılamayan karakterler içeren "
+"metni atlar. Portal izni ve aktif pencere tespiti gerektirir. Hedef "
+"değişirse iptal edilir."
+
+msgid ""
+"Pastes with the paste shortcut through the portal. Requires clipboard "
+"access, active-window detection and an app supporting that shortcut. "
+"Preserves all clipboard formats; a new user copy takes precedence. Reports "
+"an error if no text transfer is observed."
+msgstr ""
+"Portal üzerinden yapıştırma kısayolu ile yapıştırır. Pano erişimi, etkin "
+"pencere algılaması ve bu kısayolu destekleyen bir uygulama gerektirir. Tüm "
+"pano formatlarını korur; yeni bir kullanıcı kopyası önceliklidir. Metin "
+"aktarımı gözlenmezse bir hata bildirir."
+
+msgid "Paste shortcut"
+msgstr "Kısayolu yapıştır"
+
+msgid ""
+"Sent to the focused app to paste the text. Terminals usually need "
+"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
+"Ctrl+V does not paste there."
+msgstr ""
+"Metni yapıştırmak için odaklanılan uygulamaya gönderildi. Terminaller "
+"genellikle Ctrl+Shift+V'ye ihtiyaç duyar: bazıları fare seçimini "
+"Shift+Insert'e yapıştırır ve Ctrl+V oraya yapıştırmaz."
+
+msgid ""
+"Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "
+"Reliable for Latin text only. On an error, stops without switching methods."
+msgstr ""
+"Yalnızca \"ydotool türünü\" çalıştırır. Ydotool'un ve ydotoold hizmetinin "
+"çalışması gerekiyor. Yalnızca Latince metinler için güvenilirdir. Bir hata "
+"durumunda, yöntemleri değiştirmeden durur."
+
+msgid ""
+"Runs \"xdotool type\" only. Works only in X11 sessions and XWayland windows."
+" On an error, stops without switching methods."
+msgstr ""
+"Yalnızca \"xdotool type\"ı çalıştırır. Yalnızca X11 oturumlarında ve "
+"XWayland pencerelerinde çalışır. Bir hata durumunda, yöntemleri "
+"değiştirmeden durur."
+
+msgid "ydotool from PATH"
+msgstr "PATH'den ydotool"
+
+msgid "xdotool from PATH"
+msgstr "PATH'den xdotool"
+
+msgid ""
+"Each item is compared with the active window. Pick a window from the list "
+"below to fill in the field."
+msgstr ""
+"Her öğe etkin pencereyle karşılaştırılır. Alanı doldurmak için aşağıdaki "
+"listeden bir pencere seçin."
+
+msgid ""
+"Application: the app ID (Wayland app id or X11 WM_CLASS) or the process "
+"name. The whole name must match, case is ignored, .exe is optional. * stands"
+" for any characters and ? for one, e.g. steam_app_*. The ID is stable, so "
+"prefer it."
+msgstr ""
+"Uygulama: uygulama kimliği (Wayland uygulama kimliği veya X11 WM_CLASS) veya"
+" işlem adı. Adın tamamı eşleşmelidir, büyük/küçük harf dikkate alınmaz, .exe"
+" isteğe bağlıdır. * herhangi bir karakter anlamına gelir ve ? örneğin; "
+"steam_app_*. Kimlik sabittir, bu yüzden onu tercih edin."
+
+msgid ""
+"Window title: matches when the title contains the text, case is ignored. "
+"With * or ? the pattern must cover the whole title. A title changes with the"
+" open tab or document, and it never matches a process without a window."
+msgstr ""
+"Pencere başlığı: başlık metni içerdiğinde eşleşir, büyük/küçük harf göz ardı"
+" edilir. * veya ? desen başlığın tamamını kapsamalıdır. Bir başlık, açık "
+"sekme veya belgeyle birlikte değişir ve penceresi olmayan bir işlemle asla "
+"eşleşmez."
+
+msgid "Match by"
+msgstr "Şuna göre eşleştir:"
+
+msgid "Process"
+msgstr "İşlem"
+
+msgid "Process name, * and ? allowed"
+msgstr "İşlem adı, * ve ? izin verilmiş"
+
+msgid "App ID, * and ? allowed"
+msgstr "Uygulama kimliği, * ve ? izin verilmiş"
+
+msgid ""
+"The item is compared with the names of running processes. Pick one from the "
+"list below to fill in the field."
+msgstr ""
+"Öğe, çalışan işlemlerin adlarıyla karşılaştırılır. Alanı doldurmak için "
+"aşağıdaki listeden birini seçin."
+
+msgid ""
+"Process: the executable name, as the list below shows it. The whole name "
+"must match, case is ignored, .exe is optional. * stands for any characters "
+"and ? for one."
+msgstr ""
+"İşlem: aşağıdaki listede gösterildiği gibi yürütülebilir dosya adı. Adın "
+"tamamı eşleşmelidir, büyük/küçük harf dikkate alınmaz, .exe isteğe bağlıdır."
+" * herhangi bir karakter anlamına gelir ve ? biri için."
+
+msgid "Matches {n} running process"
+msgid_plural "Matches {n} running processes"
+msgstr[0] "Çalışan {n} işlemle eşleşir"
+msgstr[1] "Çalışan {n} işlemle eşleşir"
+
+msgid "Matches no running process"
+msgstr "Çalışan hiçbir işlemle eşleşmez"
+
+msgid ""
+"Many applications run as “{}”, so the name matches all of them. The "
+"application ID is more precise."
+msgstr ""
+"Birçok uygulama “{}” olarak çalışır, dolayısıyla ad hepsiyle eşleşir. "
+"Uygulama kimliği daha kesindir."
+
+msgid "When it counts"
+msgstr "Önemli olduğunda"
+
+msgid "Window titles"
+msgstr "Pencere başlıkları"
+
+msgid "Processes of open windows"
+msgstr "Açık pencerelerin süreçleri"
+
+msgid "Shared process"
+msgstr "Paylaşılan süreç"
+
+msgid "Running without a window"
+msgstr "Penceresiz koşmak"
+
+msgid "Type a name to find processes running without a window."
+msgstr "Penceresiz çalışan işlemleri bulmak için bir ad yazın."
+
+msgid "Process · while its window is active"
+msgstr "İşlem · penceresi etkinken"
+
+msgid "While the trigger is held"
+msgstr "Tetik basılı tutulduğunda"
+
+msgid "Press key"
+msgstr "tuşuna basın"
+
+msgid ""
+"Which key stays pressed while you hold the trigger, together with the layer."
+" “Don't press” only switches the layer."
+msgstr ""
+"Katmanla birlikte tetiği basılı tuttuğunuzda hangi tuşun basılı kalacağı. "
+"“Basma” yalnızca katmanı değiştirir."
+
+msgid ""
+"Which key stays pressed while you hold the trigger. “Trigger itself” keeps "
+"the usual behavior of the key."
+msgstr ""
+"Tetiği basılı tuttuğunuzda hangi tuşun basılı kalacağı. “Tetikleyicinin "
+"kendisi” anahtarın olağan davranışını korur."
+
+msgid "Trigger itself"
+msgstr "Kendini tetikle"
+
+msgid "Other key…"
+msgstr "Diğer anahtar…"
+
+msgid "When to press"
+msgstr "Ne zaman basılmalı"
+
+msgid "Holds {}"
+msgstr "{} tutar"
+
+msgid "Holds nothing"
+msgstr "Hiçbir şey tutmaz"
+
+msgid "Hold after {} ms"
+msgstr "{} ms'den sonra tut"
+
+msgid "Stop mapper (restore native keyboard behavior)"
+msgstr "Eşleyiciyi durdur (yerel klavye davranışını geri yükle)"
+
+msgid "Select a keyboard device in the settings to start the mapper"
+msgstr "Eşleyiciyi başlatmak için ayarlardan bir klavye cihazı seçin"
+
+msgid "Start mapper to intercept keys and apply layouts"
+msgstr "Anahtarları durdurmak ve düzenleri uygulamak için eşleyiciyi başlatın"
+
+msgid "Current active layout (selected automatically by switching rules)"
+msgstr "Geçerli etkin düzen (kurallar değiştirilerek otomatik olarak seçilir)"
+
+msgid "Click to change mode (Auto / On / Off)"
+msgstr "Modu değiştirmek için tıklayın (Otomatik / Açık / Kapalı)"
+
+msgid ""
+"The mapper intercepts keyboard input, applies layers, rules and macros, and "
+"emits output through a virtual device."
+msgstr ""
+"Eşleştirici klavye girişini keser, katmanları, kuralları ve makroları "
+"uygular ve çıktıyı sanal bir cihaz aracılığıyla yayar."
+
+msgid ""
+"Define how physical keys behave: tap for a key or action, hold to switch "
+"layers, or double-tap for extra shortcuts."
+msgstr ""
+"Fiziksel tuşların nasıl davranacağını tanımlayın: Bir tuş veya eylem için "
+"dokunun, katmanları değiştirmek için basılı tutun veya ekstra kısayollar "
+"için iki kez dokunun."
+
+msgid ""
+"Action performed when the trigger is pressed and released quickly without "
+"holding."
+msgstr ""
+"Tetiğe basılı tutmadan hızlı bir şekilde basılıp bırakıldığında "
+"gerçekleştirilen eylem."
+
+msgid ""
+"Action performed when the trigger is pressed twice quickly within the "
+"double-tap timeout."
+msgstr ""
+"Çift dokunma zaman aşımı süresi içinde tetiğe iki kez hızlıca basıldığında "
+"gerçekleştirilen eylem."
+
+msgid "Show standard QWERTY letter labels for visual reference."
+msgstr "Görsel referans için standart QWERTY harf etiketlerini gösterin."
+
+msgid ""
+"Show internal key codes used in Left Hand Control profiles (e.g. KeyA, "
+"ArrowLeft)."
+msgstr ""
+"Sol El Kontrolü profillerinde kullanılan dahili tuş kodlarını gösterin (örn."
+" KeyA, ArrowLeft)."
+
+msgid "Hold detection"
+msgstr "Tutma tespiti"
+
+msgid "When a key becomes a hold"
+msgstr "Bir anahtar tutucuya dönüştüğünde"
+
+msgid ""
+"Decides when a rule key that is still down counts as a hold if you press "
+"another key meanwhile. Applies to all rules."
+msgstr ""
+"Bu arada başka bir tuşa basarsanız, halen kapalı olan bir kural tuşunun ne "
+"zaman bekletme olarak sayılacağına karar verir. Tüm kurallar için "
+"geçerlidir."
+
+msgid ""
+"After another key is released: the key becomes a hold once another key is "
+"pressed and released while it is down, or when the hold threshold passes. "
+"Fast rolls while typing stay taps."
+msgstr ""
+"Başka bir tuş bırakıldıktan sonra: tuş, aşağıdayken başka bir tuşa "
+"basıldığında ve bırakıldığında veya tutma eşiği aşıldığında, basılı tutma "
+"haline gelir. Kalıcı musluklar yazarken hızlı yuvarlanır."
+
+msgid ""
+"As soon as another key is pressed: reacts faster, but fast typing can "
+"trigger the hold by mistake."
+msgstr ""
+"Başka bir tuşa basıldığında: daha hızlı tepki verir, ancak hızlı yazma "
+"yanlışlıkla bekletmeyi tetikleyebilir."
+
+msgid "After another key is released (recommended)"
+msgstr "Başka bir anahtar serbest bırakıldıktan sonra (önerilir)"
+
+msgid "As soon as another key is pressed"
+msgstr "Başka bir tuşa basıldığında"
+
+msgid ""
+"Used by rules that leave the field empty. A rule can set its own value in "
+"its advanced options."
+msgstr ""
+"Alanı boş bırakan kurallar tarafından kullanılır. Bir kural, gelişmiş "
+"seçeneklerinde kendi değerini ayarlayabilir."
+
+msgid "Hold threshold, ms"
+msgstr "Tutma eşiği, ms"
+
+msgid ""
+"How long to hold a rule key before it counts as a hold: its layer or hold "
+"action. Released earlier, the key runs its tap action."
+msgstr ""
+"Bir kural anahtarının bekletme olarak sayılmadan önce ne kadar süreyle "
+"tutulacağı: katmanı veya bekletme eylemi. Daha önce piyasaya sürülen tuş, "
+"dokunma eylemini çalıştırır."
+
+msgid ""
+"Lower: layers turn on faster, but fast typing may trigger them by mistake. "
+"Higher: fewer false holds, but a longer wait. Usually 150–250 ms."
+msgstr ""
+"Daha düşük: katmanlar daha hızlı açılır ancak hızlı yazma yanlışlıkla "
+"bunları tetikleyebilir. Daha yüksek: daha az yanlış bekletme, ancak daha "
+"uzun bekleme. Genellikle 150–250 ms."
+
+msgid "Standard value: {} ms."
+msgstr "Standart değer: {} ms."
+
+msgid "Long hold, ms"
+msgstr "Uzun durun hanımefendi"
+
+msgid ""
+"How long to keep holding a rule key before its long-hold action runs once. "
+"Applies to rules whose hold runs an action instead of a layer."
+msgstr ""
+"Uzun tutma eylemi bir kez çalıştırılmadan önce bir kural anahtarının ne "
+"kadar süre basılı tutulacağı. Tutuşu katman yerine bir eylemi çalıştıran "
+"kurallar için geçerlidir."
+
+msgid "Double-tap window, ms"
+msgstr "Çift dokunma penceresi, ms"
+
+msgid ""
+"A second tap within this time after the first release counts as a double "
+"tap."
+msgstr ""
+"İlk dokunuştan sonra bu süre içinde yapılan ikinci dokunuş, çift dokunma "
+"olarak sayılır."
+
+msgid ""
+"A single tap on a key with a double-tap action runs only after this window "
+"ends, so a large value makes such keys feel slow. Keys without a double-tap "
+"action are not delayed."
+msgstr ""
+"Bir tuşa çift dokunma eylemiyle tek bir dokunuş, yalnızca bu pencere sona "
+"erdikten sonra çalışır; dolayısıyla büyük bir değer, bu tür tuşların yavaş "
+"hissetmesine neden olur. Çift dokunma eylemi olmayan tuşlar gecikmez."
+
+msgid ""
+"Used by macros that leave the field empty. A macro can set its own value on "
+"the Macros page."
+msgstr ""
+"Alanı boş bırakan makrolar tarafından kullanılır. Bir makro, Makrolar "
+"sayfasında kendi değerini ayarlayabilir."
+
+msgid ""
+"Pause between consecutive steps of a macro. Increase it if an application "
+"misses keystrokes."
+msgstr ""
+"Bir makronun ardışık adımları arasında duraklayın. Bir uygulama tuş "
+"vuruşlarını kaçırırsa bunu artırın."
+
+msgid "Simultaneous presses"
+msgstr "Eş zamanlı presler"
+
+msgid ""
+"For rules triggered by several keys pressed together, such as KeyJ+KeyK. All"
+" keys must go down within this time, in any order. Until then the first key "
+"is held back; if the combination does not complete, it is typed as usual. "
+"Modifiers are never held back."
+msgstr ""
+"KeyJ+KeyK gibi birkaç tuşun birlikte basılmasıyla tetiklenen kurallar için. "
+"Bu süre içerisinde tüm anahtarların herhangi bir sırayla aşağı inmesi "
+"gerekir. O zamana kadar ilk anahtar saklı tutulur; eğer kombinasyon "
+"tamamlanmazsa her zamanki gibi yazılır. Değiştiriciler asla geri çekilmez."
+
+msgid ""
+"Higher: the combination is easier to hit, but typing with these keys lags "
+"slightly. Applies to all rules; a rule cannot override it."
+msgstr ""
+"Daha yüksek: Kombinasyona ulaşmak daha kolaydır ancak bu tuşlarla yazmak "
+"biraz gecikir. Tüm kurallar için geçerlidir; bir kural onu geçersiz kılamaz."
+
+msgid ""
+"Wait between pressing modifiers (Shift, Ctrl, …) and the main key of a macro"
+" step. Increase it if an application receives the shortcut without its "
+"modifier. Default for macros that leave the field empty."
+msgstr ""
+"Değiştiricilere (Shift, Ctrl,…) ve bir makro adımının ana tuşuna basma "
+"arasında bekleyin. Bir uygulama kısayolu değiştiricisi olmadan alırsa bunu "
+"artırın. Alanı boş bırakan makrolar için varsayılan."
+
+msgid "Enter a long hold from 100 to 60000 ms."
+msgstr "100'den 60000 ms'ye kadar uzun bir bekletme girin."
+
+msgid "Long hold after {} ms"
+msgstr "{} ms'den sonra uzun süre basılı tutun"
+
+msgid ""
+"Released earlier, the trigger counts as a tap; held longer, as a hold. Empty"
+" uses the default from Settings: {} ms."
+msgstr ""
+"Daha önce piyasaya sürülen tetik, bir dokunuş olarak sayılır; bir tutuş "
+"olarak daha uzun süre tutulur. Boş, Ayarlar'daki varsayılanı kullanır: {} "
+"ms."
+
+msgid ""
+"How long to keep holding before the action runs. Empty uses the default from"
+" Settings: {} ms."
+msgstr ""
+"Eylem çalıştırılmadan önce beklemeye ne kadar süre devam edileceği. Boş, "
+"Ayarlar'daki varsayılanı kullanır: {} ms."
+
+msgid ""
+"Longest pause between two taps. Empty uses the default from Settings: {} ms."
+msgstr ""
+"İki dokunuş arasındaki en uzun duraklama. Boş, Ayarlar'daki varsayılanı "
+"kullanır: {} ms."
+
+msgid "Auto: {} is not counted as a game (built-in list)"
+msgstr "Otomatik: {} oyun olarak sayılmaz (yerleşik liste)"
+
+msgid ""
+"These sources can take another application for a game, so each skips a "
+"built-in list of applications."
+msgstr ""
+"Bu kaynaklar bir oyun için başka bir uygulamayı alabilir, dolayısıyla her "
+"biri yerleşik uygulama listesini atlar."
+
+msgid ""
+"Turns on while a program that Windows recognized as a game (the Game Bar "
+"list) runs. Launchers are listed there too, so they are skipped."
+msgstr ""
+"Windows'un oyun olarak tanıdığı bir program (Oyun Çubuğu listesi) çalışırken"
+" açılır. Başlatıcılar da burada listelendiğinden atlanır."
+
+msgid "Launchers and game tools — not counted as games"
+msgstr "Başlatıcılar ve oyun araçları — oyun olarak sayılmaz"
+
+msgid ""
+"Decides when a dual-role key counts as a hold if another key is pressed. "
+"Rules can override this default in advanced options. Chord detection is "
+"configured separately."
+msgstr ""
+"Başka bir tuşa basıldığında çift rollü bir anahtarın ne zaman bekletme "
+"olarak sayılacağına karar verir. Kurallar, gelişmiş seçeneklerde bu "
+"varsayılanı geçersiz kılabilir. Akor algılama ayrı olarak yapılandırılır."
+
+msgid "After another key is released (better for typing)"
+msgstr "Başka bir tuş bırakıldıktan sonra (yazmak için daha iyi)"
+
+msgid ""
+"As soon as another key is pressed: useful for dedicated layer or modifier "
+"keys. Reacts faster, but overlapping letters while typing can trigger the "
+"hold by mistake."
+msgstr ""
+"Başka bir tuşa basıldığı anda: özel katman veya değiştirici tuşlar için "
+"kullanışlıdır. Daha hızlı tepki verir, ancak yazarken üst üste gelen harfler"
+" yanlışlıkla beklemeyi tetikleyebilir."
+
+msgid "Default from Settings: {}"
+msgstr "Ayarlar'dan Varsayılan: {}"
+
+msgid "after another key is released"
+msgstr "başka bir anahtar serbest bırakıldıktan sonra"
+
+msgid "as soon as another key is pressed"
+msgstr "başka bir tuşa basıldığında"
+
+msgid ""
+"Overrides the default hold detection for this rule. Use release detection "
+"for typing keys and press detection for dedicated layer or modifier keys. "
+"This does not change chord detection."
+msgstr ""
+"Bu kural için varsayılan bekletme algılamasını geçersiz kılar. Tuşları "
+"yazmak için serbest bırakma algılamayı ve özel katman veya değiştirici "
+"tuşlar için basma algılamayı kullanın. Bu akor algılamayı değiştirmez."
+
+msgid "Cannot list input devices: {}"
+msgstr "Giriş aygıtları listelenemiyor: {}"
+
+msgid "Keyboard interception is not implemented on this operating system."
+msgstr "Bu işletim sisteminde klavye müdahalesi uygulanmaz."
+
+msgid "Defaults"
+msgstr "Varsayılanlar"
+
+msgid "Shared by all rules"
+msgstr "Tüm kurallarla paylaşıldı"
+
+msgid "Hold threshold"
+msgstr "Tutma eşiği"
+
+msgid "Long hold"
+msgstr "Uzun tutma"
+
+msgid "Double-tap window"
+msgstr "Pencereye iki kez dokunun"
+
+msgid "Reset to {} ms"
+msgstr "{} ms'ye sıfırla"
+
+msgid "Automatic game detection"
+msgstr "Otomatik oyun algılama"
+
+msgid "Works only in Auto mode."
+msgstr "Yalnızca Otomatik modda çalışır."
+
+msgid "System signals"
+msgstr "Sistem sinyalleri"
+
+msgid "Launchers"
+msgstr "Başlatıcılar"
+
+msgid "Heroic games"
+msgstr "Kahramanlık oyunları"
+
+msgid ""
+"Turns on while a game started by Heroic Games Launcher runs (Epic, GOG, "
+"Amazon and added games): Heroic passes HEROIC_APP_NAME to every game it "
+"starts."
+msgstr ""
+"Heroic Games Launcher tarafından başlatılan bir oyun (Epic, GOG, Amazon ve "
+"eklenen oyunlar) çalışırken açılır: Heroic, başlattığı her oyuna "
+"HEROIC_APP_NAME aktarır."
+
+msgid "Games run through umu-launcher"
+msgstr "Oyunlar umu-launcher aracılığıyla çalıştırılır"
+
+msgid ""
+"Turns on while a game runs through umu-run. Heroic, Lutris, Faugus Launcher "
+"and other launchers use it to start Windows games with Proton."
+msgstr ""
+"Bir oyun umu-run sırasında çalışırken açılır. Heroic, Lutris, Faugus "
+"Launcher ve diğer rampalar bunu Windows oyunlarını Proton ile başlatmak için"
+" kullanıyor."
+
+msgid "Guesses — can be wrong"
+msgstr "Tahminler – yanlış olabilir"
+
+msgid "Your rules"
+msgstr "Kurallarınız"
+
+msgid ""
+"“Never a game” wins over everything else, automatic detection included."
+msgstr ""
+"Otomatik algılama da dahil olmak üzere \"Asla bir oyun\" her şeyden üstün "
+"gelir."
+
+msgid "Always a game"
+msgstr "Her zaman bir oyun"
+
+msgid "Never a game"
+msgstr "Asla bir oyun"
+
+msgid ""
+"Built-in list. To count one of these anyway, add it to Always a game under "
+"Your rules."
+msgstr ""
+"Yerleşik liste. Bunlardan birini yine de saymak için, bunu Kurallarınız "
+"altında Her zaman bir oyun'a ekleyin."
+
+msgid "Hold"
+msgstr "Basılı tutma"
+
+msgid "Don't press"
+msgstr "Basma"
+
+msgid "{} — change…"
+msgstr "{} — değiştir…"
+
+msgid "Choose another key above to set when it is pressed."
+msgstr "Basıldığında ayarlamak için yukarıdan başka bir tuş seçin."
+
+msgid "Assign a double-tap action to the rule to change this window."
+msgstr "Bu pencereyi değiştirmek için kurala iki kez dokunma eylemi atayın."
+
+msgid "Hold on other key release"
+msgstr "Diğer tuşun serbest bırakılmasını bekleyin"
+
+msgid "Hold on other key press"
+msgstr "Diğer tuşa basılı tutun"
+
+msgid "Reset"
+msgstr "Sıfırla"
+
+msgid "Return all options in this dialog to their defaults"
+msgstr ""
+"Bu iletişim kutusundaki tüm seçenekleri varsayılan ayarlarına döndürün"
+
+msgid "Macro time limit"
+msgstr "Makro zaman sınırı"
+
+msgid ""
+"A macro still running after this time is stopped and counts as finished. A "
+"macro started while another one runs waits for it; up to 3 runs can wait, "
+"further presses are ignored."
+msgstr ""
+"Bu sürenin sonunda hala çalışmakta olan bir makro durdurulur ve tamamlanmış "
+"olarak sayılır. Bir makro çalıştırılırken başlatılan bir makro onu bekler; "
+"en fazla 3 çalıştırma bekleyebilir, sonraki basışlar dikkate alınmaz."
+
+msgid "Global shortcuts registered in this KDE session:"
+msgstr "Bu KDE oturumunda kayıtlı genel kısayollar:"
+
+msgid ""
+"The list is read from the KDE global shortcut service (kglobalaccel): KWin, "
+"Plasma and applications register their actions there. The chosen action is "
+"invoked as is, as if its shortcut were pressed, even when no keys are "
+"assigned to it. Which actions exist and how they behave depends on the "
+"Plasma version and installed applications, so Left Hand Control does not "
+"guarantee them. Common window and desktop actions that also work on other "
+"platforms are in System actions."
+msgstr ""
+"Liste KDE'nin küresel kısayol hizmetinden (kglobalaccel) okunur: KWin, "
+"Plazma ve uygulamalar eylemlerini buraya kaydeder. Seçilen eylem, kendisine "
+"hiçbir tuş atanmasa bile sanki kısayoluna basılmış gibi olduğu gibi "
+"çağrılır. Hangi eylemlerin mevcut olduğu ve bunların nasıl davrandığı Plazma"
+" sürümüne ve yüklü uygulamalara bağlıdır; dolayısıyla Sol El Kontrolü "
+"bunları garanti etmez. Diğer platformlarda da çalışan ortak pencere ve "
+"masaüstü eylemleri Sistem eylemleri bölümündedir."
+
+msgid "Hold key or combination"
+msgstr "Tuşu veya kombinasyonu basılı tutun"
+
+msgid ""
+"The key or combination stays pressed until you release the trigger. Choose "
+"modifiers plus one main key, for example Ctrl+KeyC."
+msgstr ""
+"Siz tetiği bırakana kadar tuş veya kombinasyon basılı kalır. Değiştiriciler "
+"artı bir ana tuş seçin, örneğin Ctrl+TuşC."
+
+msgid "Not used when holding performs a long-hold action."
+msgstr "Tutma, uzun tutma eylemi gerçekleştirirken kullanılmaz."
+
+msgid "Other key or combination…"
+msgstr "Diğer anahtar veya kombinasyon…"
+
+msgid "Hold detection when another key is pressed"
+msgstr "Başka bir tuşa basıldığında algılamayı beklet"
+
+msgid "Used for single-key triggers without a long-hold action."
+msgstr ""
+"Uzun süreli tutma eylemi gerektirmeyen tek tuşla tetikleyiciler için "
+"kullanılır."
+
+msgid "Long-hold threshold, ms"
+msgstr "Uzun tutma eşiği, ms"
+
+msgid "Used when a long-hold action is selected."
+msgstr "Uzun süreli tutma eylemi seçildiğinde kullanılır."
+
+msgid "Double-tap interval, ms"
+msgstr "Çift dokunma aralığı, ms"
+
+msgid "Double-tap actions are available only for single-key triggers."
+msgstr ""
+"Çift dokunma eylemleri yalnızca tek tuşla tetikleyiciler için "
+"kullanılabilir."
+
+msgid "Applies when a double-tap action is assigned."
+msgstr "Çift dokunma eylemi atandığında geçerlidir."
+
+msgid "Delete trigger"
+msgstr "Tetikleyiciyi sil"
+
+msgid "Delete trigger?"
+msgstr "Tetikleyici silinsin mi?"
+
+msgid ""
+"The trigger and all its assigned actions will be removed from the current "
+"layout."
+msgstr ""
+"Tetikleyici ve ona atanan tüm eylemler mevcut düzenden kaldırılacaktır."
+
+msgid "Reset {} to default"
+msgstr "{}'yi varsayılana sıfırla"
+
+msgid "Holding activates layer: {}"
+msgstr "Tutmak katmanı etkinleştirir: {}"
+
+msgid "Holding performs a long-hold action."
+msgstr "Tutma, uzun tutma eylemi gerçekleştirir."
+
+msgid "Holding keeps a key or combination pressed."
+msgstr "Basılı tutmak bir tuşun veya kombinasyonun basılı kalmasını sağlar."
+
+msgid "Paths"
+msgstr "Yollar"
+
+msgid "Unknown layer key at \"{}\"."
+msgstr "\"{}\" konumunda bilinmeyen katman anahtarı."
+
+msgid "Invalid layer action at \"{}\"."
+msgstr "\"{}\"de geçersiz katman eylemi."
+
+msgid "Invalid macro at \"{}\"."
+msgstr "\"{}\" konumunda geçersiz makro."
+
+msgid "Invalid menu action at \"{}\"."
+msgstr "\"{}\"de geçersiz menü işlemi."
+
+msgid "Invalid timing at \"{}\"."
+msgstr "\"{}\"de geçersiz zamanlama."
+
+msgid "Invalid window condition at \"{}\"."
+msgstr "\"{}\" konumunda geçersiz pencere koşulu."
+
+msgid "Unsupported rule combination at \"{}\"."
+msgstr "\"{}\"de desteklenmeyen kural kombinasyonu."
+
+msgid "Invalid macro step at \"{}\"."
+msgstr "\"{}\"de geçersiz makro adımı."
+
+msgid "Macro call cycle at \"{}\"."
+msgstr "\"{}\" konumunda makro çağrı döngüsü."
+
+msgid "A timing value is outside the range shown in Settings."
+msgstr "Bir zamanlama değeri Ayarlar'da gösterilen aralığın dışında."
+
+msgid "Keep modifiers held until the layer is released"
+msgstr "Katman serbest bırakılana kadar değiştiricileri basılı tutun"
+
+msgid ""
+"For a combination such as Alt+Tab: Alt stays pressed while you press the key"
+" again and is released together with the layer key, so the window switcher "
+"stays open."
+msgstr ""
+"Alt+Tab gibi bir kombinasyon için: Tuşa tekrar bastığınızda Alt basılı kalır"
+" ve katman tuşuyla birlikte serbest bırakılır, böylece pencere değiştirici "
+"açık kalır."
+
+msgid ""
+"Cannot list input devices. Check device access and see the application log."
+msgstr ""
+"Giriş aygıtları listelenemiyor. Cihaz erişimini kontrol edin ve uygulama "
+"günlüğüne bakın."
+
+msgid ""
+"Configuration is unavailable. Check the configuration files and see the "
+"application log."
+msgstr ""
+"Yapılandırma kullanılamıyor. Yapılandırma dosyalarını kontrol edin ve "
+"uygulama günlüğüne bakın."
+
+msgid "Popup menus are unavailable. Try opening the menu again."
+msgstr "Açılır menüler kullanılamıyor. Menüyü tekrar açmayı deneyin."
+
+msgid "Popup menu failed. Try opening the menu again."
+msgstr "Açılır menü başarısız oldu. Menüyü tekrar açmayı deneyin."
+
+msgid ""
+"The text was not typed: the typing method is unavailable. Restart the mapper"
+" to try again."
+msgstr ""
+"Metin yazılmadı: yazma yöntemi kullanılamıyor. Tekrar denemek için "
+"eşleyiciyi yeniden başlatın."
+
+msgid ""
+"The text was not typed: safe clipboard access failed. See the application "
+"log."
+msgstr ""
+"Metin yazılmadı: güvenli panoya erişim başarısız oldu. Uygulama günlüğüne "
+"bakın."
+
+msgid ""
+"The text was not typed: the input tool failed. See the application log."
+msgstr ""
+"Metin yazılmadı: Harf çevirme aracı başarısız oldu. Uygulama günlüğüne "
+"bakın."
+
+msgid "Changes applied, but the mapper was not updated. Restart the mapper."
+msgstr ""
+"Değişiklikler uygulandı ancak eşleyici güncellenmedi. Haritalayıcıyı yeniden"
+" başlatın."
+
+msgid "The operation failed. See the application log."
+msgstr "İşlem başarısız oldu. Uygulama günlüğüne bakın."
+
+msgid "The action failed. See the application log."
+msgstr "Eylem başarısız oldu. Uygulama günlüğüne bakın."
+
+msgid ""
+"Cannot start the mapper. Check the keyboard and device access. See the "
+"application log."
+msgstr ""
+"Eşleştirici başlatılamıyor. Klavyeyi ve cihaz erişimini kontrol edin. "
+"Uygulama günlüğüne bakın."
+
+msgid "Mapper is running, but an error occurred. See the application log."
+msgstr "Eşleyici çalışıyor ancak bir hata oluştu. Uygulama günlüğüne bakın."
+
+msgid "Mapper stopped because of an error. See the application log."
+msgstr "Eşleyici bir hata nedeniyle durduruldu. Uygulama günlüğüne bakın."
+
+msgid ""
+"Cannot read or save the configuration. Check file access and see the "
+"application log."
+msgstr ""
+"Yapılandırma okunamıyor veya kaydedilemiyor. Dosya erişimini kontrol edin ve"
+" uygulama günlüğüne bakın."
+
+msgid "Cannot parse the configuration file. See the application log."
+msgstr "Yapılandırma dosyası ayrıştırılamıyor. Uygulama günlüğüne bakın."
+
+msgid "The configuration contains invalid values. See the application log."
+msgstr "Yapılandırma geçersiz değerler içeriyor. Uygulama günlüğüne bakın."
+
+msgid "The action has invalid syntax."
+msgstr "Eylemin geçersiz sözdizimi var."
+
+msgid "Pauses can only be used in macro steps."
+msgstr "Duraklatmalar yalnızca makro adımlarda kullanılabilir."
+
+msgid "The selected macro no longer exists."
+msgstr "Seçilen makro artık mevcut değil."
+
+msgid "The selected command no longer exists."
+msgstr "Seçilen komut artık mevcut değil."
+
+msgid "Unknown system action."
+msgstr "Bilinmeyen sistem eylemi."
+
+msgid "Unknown application action."
+msgstr "Bilinmeyen uygulama eylemi."
+
+msgid ""
+"Unknown action type. It may come from a newer version of the application."
+msgstr ""
+"Bilinmeyen eylem türü. Uygulamanın daha yeni bir sürümünden gelebilir."
+
+msgid "Layout: {}"
+msgstr "Düzen: {}"
+
+msgid "Select All"
+msgstr "Tümünü seç"
+
+msgid "Move line down"
+msgstr "Satırı aşağı taşı"
+
+msgid "Down + End"
+msgstr "Aşağı + Son"
+
+msgid "Up + End"
+msgstr "Yukarı + Son"
+
+msgid "Up 5 times"
+msgstr "5 kez yukarı"
+
+msgid "Duplicate line"
+msgstr "Yinelenen satır"
+
+msgid "Right + Space"
+msgstr "Sağ + Boşluk"
+
+msgid "Empty line below"
+msgstr "Aşağıdaki boş satır"
+
+msgid "Cut word right from center"
+msgstr "Kelimeyi tam ortasından kes"
+
+msgid "Copy word right from center"
+msgstr "Kelimeyi tam ortasından kopyala"
+
+msgid "Paste at line above"
+msgstr "Yukarıdaki satıra yapıştırın"
+
+msgid "Replace word with buffer"
+msgstr "Kelimeyi tamponla değiştir"
+
+msgid "Down + Home"
+msgstr "Aşağı + Ana Sayfa"
+
+msgid "Up + Home"
+msgstr "Yukarı + Ana Sayfa"
+
+msgid "Down 5 times"
+msgstr "5 kez aşağı"
+
+msgid "Paste at line bottom"
+msgstr "Satırın altına yapıştır"
+
+msgid "Cut to start"
+msgstr "Başlamak için kes"
+
+msgid "Cut to end"
+msgstr "Sonuna kadar kes"
+
+msgid "Cut line content"
+msgstr "Satır içeriğini kes"
+
+msgid "Cut and remove line"
+msgstr "Çizgiyi kes ve kaldır"
+
+msgid "Select 5 lines up"
+msgstr "5 satır yukarıyı seçin"
+
+msgid "Copy to start"
+msgstr "Başlamak için kopyalayın"
+
+msgid "Copy to end"
+msgstr "Sona kadar kopyala"
+
+msgid "Copy line"
+msgstr "Satırı kopyala"
+
+msgid "Select whole line"
+msgstr "Tüm satırı seç"
+
+msgid "Select word right from center"
+msgstr "Kelimeyi tam ortasından seç"
+
+msgid "Replace to start with buffer"
+msgstr "Tamponla başlamak için değiştirin"
+
+msgid "Replace to end with buffer"
+msgstr "Tamponla sonuna kadar değiştirin"
+
+msgid "Replace line with buffer"
+msgstr "Satırı arabellekle değiştir"
+
+msgid "Select 5 lines down"
+msgstr "5 satır aşağıyı seç"
+
+msgid "Remove trigger"
+msgstr "Tetikleyiciyi kaldır"
+
+msgid "Refresh list"
+msgstr "Listeyi yenile"
+
+msgid "Remove item"
+msgstr "Öğeyi kaldır"
+
+msgid "Save as or reset changes"
+msgstr "Farklı kaydet veya değişiklikleri sıfırla"
+
+msgid "Edit: {}"
+msgstr "Düzenleme: {}"
+
+msgid "Save (Enter)"
+msgstr "Kaydet (Enter)"
+
+msgid "Save (Ctrl+Enter)"
+msgstr "Kaydet (Ctrl+Enter)"
+
+msgid "Cancel (Esc)"
+msgstr "İptal (Esc)"
+
+msgid "Use the default from Settings: {} ms"
+msgstr "Ayarlar'dan varsayılanı kullanın: {} ms"
+
+msgid ""
+"Opened by the app:showQuickMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold any "
+"action: a shortcut, macro, shell command or system action."
+msgstr ""
+"Uygulama tarafından açılan:showQuickMenuN eylemleri; burada N, sayfa "
+"konumudur: sayfaları yeniden sıralamak, bir tuşun hangi sayfayı açacağını "
+"değiştirir. Her hücre herhangi bir eylemi barındırabilir: bir kısayol, "
+"makro, kabuk komutu veya sistem eylemi."
+
+msgid ""
+"In the popup, click a cell or press its key: the cells follow the keyboard "
+"rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number."
+msgstr ""
+"Açılan pencerede bir hücreyi tıklayın veya tuşuna basın: hücreler Q–T, A–G "
+"ve Z–B klavye satırlarını takip eder. Sekme sayfaları değiştirir; rakamlar "
+"bir sayfayı numarasına göre açar."
+
+msgid "Waiting for keyboard"
+msgstr "Klavye bekleniyor"

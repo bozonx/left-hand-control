@@ -397,7 +397,7 @@ export component SettingsPage inherits VerticalBox {
                                     VerticalLayout { alignment: center; Image { width: 16px; height: 16px; colorize: Theme.text; source: @image-url("icons/globe.svg"); } }
                                     Text { text: @tr("Language"); color: Theme.text; vertical-alignment: center; }
                                 }
-                                SelectField { width: 280px; height: 32px; vertical-stretch: 0; model: [@tr("Automatic"), "English", "Русский"]; current-index: SettingsEditor.locale-index; selected(value) => { SettingsEditor.locale-index = self.current-index; SettingsEditor.save(); } }
+                                SelectField { width: 280px; height: 32px; vertical-stretch: 0; model: [@tr("Automatic"), "English", "Русский", "Deutsch", "Français", "Español", "Italiano", "Português", "Polski", "Türkçe", "Українська", "Čeština", "Magyar", "Română", "Ελληνικά", "Hrvatski", "ქართული", "Қазақша", "简体中文", "繁體中文", "日本語", "한국어"]; current-index: SettingsEditor.locale-index; selected(value) => { SettingsEditor.locale-index = self.current-index; SettingsEditor.save(); } }
                             }
                             VerticalLayout { vertical-stretch: 0; spacing: 8px;
                                 Text { vertical-stretch: 0; text: @tr("Theme"); color: Theme.text; }

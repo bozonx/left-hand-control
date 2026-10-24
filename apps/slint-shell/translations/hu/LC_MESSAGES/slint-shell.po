@@ -1,0 +1,3648 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Left Hand Control\n"
+"PO-Revision-Date: 2026-10-23 00:00+0000\n"
+"Last-Translator: Machine translation; review welcome\n"
+"Language-Team: Hungarian\n"
+"Language: hu\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+
+msgid "Action saved"
+msgstr "Művelet mentve"
+
+msgid "Cancel"
+msgstr "Mégse"
+
+msgid "Increase"
+msgstr "Növekedés"
+
+msgid "Decrease"
+msgstr "Csökkenés"
+
+msgid "Configuration loaded: {n} rule"
+msgid_plural "Configuration loaded: {n} rules"
+msgstr[0] "Konfiguráció betöltve: {n} szabály"
+msgstr[1] "Konfiguráció betöltve: {n} szabály"
+
+msgid "Configuration saved: {n} rule"
+msgid_plural "Configuration saved: {n} rules"
+msgstr[0] "Konfiguráció mentve: {n} szabály"
+msgstr[1] "Konfiguráció mentve: {n} szabály"
+
+msgid "Configuration unavailable: {}"
+msgstr "A konfiguráció nem érhető el: {}"
+
+msgid "Delay: an integer from 1 to 10000 ms"
+msgstr "Késleltetés: 1 és 10000 ms közötti egész szám"
+
+msgid "Device saved: {}"
+msgstr "Mentett eszköz: {}"
+
+msgid "Emoji"
+msgstr "Emoji"
+
+msgid "Tab · {}/{}"
+msgstr "Tab · {}/{}"
+
+msgid "Enter non-empty text"
+msgstr "Írjon be egy nem üres szöveget"
+
+msgid "Key {} only has conditional or layer rules; edit it in the full editor"
+msgstr ""
+"A {} kulcsnak csak feltételes vagy rétegszabályai vannak; szerkessze a "
+"teljes szerkesztőben"
+
+msgid "Keyboard"
+msgstr "Billentyűzet"
+
+msgid "Keyboard device"
+msgstr "Billentyűzet eszköz"
+
+msgid "Keyboard layout"
+msgstr "Billentyűzetkiosztás"
+
+msgid "Load a valid configuration before starting the mapper"
+msgstr "A leképező elindítása előtt töltsön be egy érvényes konfigurációt"
+
+msgid "Mapper is running"
+msgstr "A Mapper fut"
+
+msgid "Mapper is running: {}"
+msgstr "A térképező fut: {}"
+
+msgid "Mapper is starting…"
+msgstr "A Mapper elindul…"
+
+msgid "Mapper is stopped"
+msgstr "A Mapper leállt"
+
+msgid "Mapper is stopped: {}"
+msgstr "A térképező leállt: {}"
+
+msgid "Quick actions"
+msgstr "Gyors cselekvések"
+
+msgid "Quit"
+msgstr "Kilépés"
+
+msgid "Settings"
+msgstr "Beállítások"
+
+msgid "Mapper on / off"
+msgstr "Mapper be/ki"
+
+msgid "Switch to desktop {n}"
+msgstr "Váltson a {n} asztali számítógépre"
+
+msgid "Save"
+msgstr "Mentés"
+
+msgid "Changes applied, but the mapper was not updated: {}"
+msgstr "Változások érvényesek, de a térképező nem frissült: {}"
+
+msgid "Select a key to assign an action."
+msgstr "Válasszon ki egy billentyűt a művelet hozzárendeléséhez."
+
+msgid "Select a keyboard device in the settings"
+msgstr "Válassza ki a billentyűzet eszközt a beállításokban"
+
+msgid "Select a system action"
+msgstr "Válasszon ki egy rendszerműveletet"
+
+msgid "Spell popup process unavailable: {}"
+msgstr "A helyesírási előugró folyamat nem érhető el: {}"
+
+msgid "Spell worker is not running"
+msgstr "A Spell worker nem fut"
+
+msgid "Spell worker is restarting"
+msgstr "A Spell worker újraindul"
+
+msgid "Spell worker: restart limit exceeded (3 per minute)"
+msgstr "Helyesírás dolgozó: az újraindítási korlát túllépve (percenként 3)"
+
+msgid "Spell worker: {}"
+msgstr "Helyesírás dolgozó: {}"
+
+msgid "Stop capture"
+msgstr "Állítsa le a rögzítést"
+
+msgid "System"
+msgstr "Rendszer"
+
+msgid "Text"
+msgstr "Szöveg"
+
+msgid "The configuration changed since editing started; repeat the change"
+msgstr ""
+"A konfiguráció megváltozott a szerkesztés megkezdése óta; ismételje meg a "
+"változtatást"
+
+msgid "Unknown action type"
+msgstr "Ismeretlen művelettípus"
+
+msgid "Left Hand Control"
+msgstr "Left Hand Control"
+
+msgid "Layouts"
+msgstr "Elrendezések"
+
+msgid "New layout name"
+msgstr "Új elrendezésnév"
+
+msgid "Mapper"
+msgstr "Billentyűátkötés"
+
+msgid "Dark"
+msgstr "Sötét"
+
+msgid "Light"
+msgstr "Fény"
+
+msgid "Refresh devices"
+msgstr "Frissítse az eszközöket"
+
+msgid "Mouse device path"
+msgstr "Egér eszköz elérési útja"
+
+msgid "Optional device path"
+msgstr "Opcionális eszközútvonal"
+
+msgid "General"
+msgstr "Általános"
+
+msgid "Appearance"
+msgstr "Megjelenés"
+
+msgid "Language"
+msgstr "Nyelv"
+
+msgid "Automatic"
+msgstr "Automatikus"
+
+msgid "Key behavior"
+msgstr "Kulcsviselkedés"
+
+msgid "Game mode"
+msgstr "Játék mód"
+
+msgid "Use GameMode daemon"
+msgstr "Használd a GameMode démont"
+
+msgid "Detect fullscreen"
+msgstr "Teljes képernyő észlelése"
+
+msgid "ydotool path"
+msgstr "ydotool út"
+
+msgid "xdotool path"
+msgstr "xdotool elérési út"
+
+msgid "Settings directory: "
+msgstr "Beállítások könyvtár:"
+
+msgid "Layouts directory: "
+msgstr "Elrendezések könyvtára:"
+
+msgid "Save settings"
+msgstr "Mentse el a beállításokat"
+
+msgid "Settings saved"
+msgstr "A beállítások mentve"
+
+msgid "Enter a timeout from 50 to 1000 milliseconds"
+msgstr "Adjon meg egy időtúllépést 50 és 1000 ezredmásodperc között"
+
+msgid "Rules"
+msgstr "Szabályok"
+
+msgid "Remove"
+msgstr "Eltávolítás"
+
+msgid "Move up"
+msgstr "Lépj felfelé"
+
+msgid "Move down"
+msgstr "Mozgás lefelé"
+
+msgid "Enabled"
+msgstr "Engedélyezve"
+
+msgid "Trigger key"
+msgstr "Trigger kulcs"
+
+msgid "Tap action"
+msgstr "Koppintson a műveletre"
+
+msgid "Layout conditions (comma separated)"
+msgstr "Elrendezési feltételek (vesszővel elválasztva)"
+
+msgid "App whitelist (comma separated)"
+msgstr "Alkalmazások engedélyezési listája (vesszővel elválasztva)"
+
+msgid "App blacklist (comma separated)"
+msgstr "Alkalmazások tiltólistája (vesszővel elválasztva)"
+
+msgid "Isolate"
+msgstr "Elszigetelni"
+
+msgid "Hold for"
+msgstr "Tarts ki"
+
+msgid "Swallow tap"
+msgstr "Rövid lenyomás elnyomása"
+
+msgid "Swallow hold"
+msgstr "Nyomva tartás elnyomása"
+
+msgid "New layer name"
+msgstr "Új rétegnév"
+
+msgid "Create layer"
+msgstr "Réteg létrehozása"
+
+msgid "Rules and triggers"
+msgstr "Szabályok és kiváltó okok"
+
+msgid "Define how physical keys activate layers or run actions."
+msgstr ""
+"Határozza meg, hogy a fizikai kulcsok hogyan aktiválják a rétegeket vagy "
+"futtassák le a műveleteket."
+
+msgid "Add rule"
+msgstr "Szabály hozzáadása"
+
+msgid "Not set"
+msgstr "Nincs beállítva"
+
+msgid "Layer (hold)"
+msgstr "Réteg (tartás)"
+
+msgid "Double-tap action"
+msgstr "Dupla koppintás művelet"
+
+msgid "Hold button"
+msgstr "Tartsa a gombot"
+
+msgid "Default"
+msgstr "Alapértelmezett"
+
+msgid "Advanced"
+msgstr "Fejlett"
+
+msgid "Choose trigger key"
+msgstr "Válassza ki a trigger kulcsot"
+
+msgid "Choose layer"
+msgstr "Válasszon réteget"
+
+msgid "Conditions"
+msgstr "Körülmények"
+
+msgid "Advanced rule options"
+msgstr "Speciális szabálybeállítások"
+
+msgid "Choose action"
+msgstr "Válasszon műveletet"
+
+msgid "Ignore"
+msgstr "Figyelmen kívül hagyni"
+
+msgid "On"
+msgstr "Be"
+
+msgid "Off"
+msgstr "Ki"
+
+msgid "Clear"
+msgstr "Világos"
+
+msgid "Apply"
+msgstr "Alkalmaz"
+
+msgid "Delete rule?"
+msgstr "Törli a szabályt?"
+
+msgid "This rule will be removed from the current layout."
+msgstr "Ez a szabály el lesz távolítva az aktuális elrendezésből."
+
+msgid "Layers"
+msgstr "Rétegek"
+
+msgid "New layer"
+msgstr "Új réteg"
+
+msgid "Duplicate"
+msgstr "Másolat"
+
+msgid "Delete"
+msgstr "Törlés"
+
+msgid "Extra keys"
+msgstr "Extra kulcsok"
+
+msgid "Edit"
+msgstr "Szerkesztés"
+
+msgid "Rename layer"
+msgstr "Réteg átnevezése"
+
+msgid "Duplicate layer"
+msgstr "Második réteg"
+
+msgid "Delete layer?"
+msgstr "Törli a réteget?"
+
+msgid "Edit layer key"
+msgstr "Rétegkulcs szerkesztése"
+
+msgid "Name"
+msgstr "Név"
+
+msgid "Description"
+msgstr "Leírás"
+
+msgid "Rules using this layer will return to the base layer."
+msgstr "Az ezt a réteget használó szabályok visszatérnek az alapréteghez."
+
+msgid "Transparent"
+msgstr "Átlátszó"
+
+msgid "Swallow"
+msgstr "Elnyomás"
+
+msgid "Action"
+msgstr "Akció"
+
+msgid "Action code"
+msgstr "Művelet kódja"
+
+msgid "Enter a layer name"
+msgstr "Adja meg a réteg nevét"
+
+msgid "A layer with this name already exists."
+msgstr "Már létezik ilyen nevű réteg."
+
+msgid "Enter a layout name"
+msgstr "Adja meg az elrendezés nevét"
+
+msgid "Enter a key code"
+msgstr "Adjon meg egy kulcskódot"
+
+msgid "Native"
+msgstr "Bennszülött"
+
+msgid "Layer saved"
+msgstr "Réteg mentve"
+
+msgid "Macros"
+msgstr "Makrók"
+
+msgid "Built-in macros"
+msgstr "Beépített makrók"
+
+msgid "Macro ID"
+msgstr "Makróazonosító"
+
+msgid "Copy ID"
+msgstr "Másolja az azonosítót"
+
+msgid "Steps"
+msgstr "Lépések"
+
+msgid "Add step"
+msgstr "Lépés hozzáadása"
+
+msgid "Add pause"
+msgstr "Szünet hozzáadása"
+
+msgid "Macro ID must contain 1–64 letters, digits, underscores or hyphens"
+msgstr ""
+"A makróazonosítónak 1–64 betűből, számjegyből, aláhúzásjelből vagy "
+"kötőjelből kell állnia"
+
+msgid "Macro ID is already in use"
+msgstr "A makróazonosító már használatban van"
+
+msgid "Macro delays must be between 0 and 2000 ms"
+msgstr "A makró késleltetésének 0 és 2000 ms között kell lennie"
+
+msgid "Pause must be between 1 and 10000 ms"
+msgstr "A szünetnek 1 és 10 000 ms között kell lennie"
+
+msgid "Unknown key or shortcut in macro step"
+msgstr "Ismeretlen kulcs vagy parancsikon a makrólépésben"
+
+msgid "Macro references cannot form a cycle"
+msgstr "A makróhivatkozások nem alkothatnak ciklust"
+
+msgid "Commands"
+msgstr "Parancsok"
+
+msgid "Add"
+msgstr "Hozzáadás"
+
+msgid "Clear cell"
+msgstr "Törölje a cellát"
+
+msgid "Page name"
+msgstr "Az oldal neve"
+
+msgid "Emoji cells accept at most 100 characters."
+msgstr "Az emoji cellák legfeljebb 100 karaktert fogadnak el."
+
+msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
+msgstr "Parancsazonosító: 1–64 betű, számjegy, aláhúzás vagy kötőjel."
+
+msgid "Command IDs must be unique."
+msgstr "A parancsazonosítóknak egyedinek kell lenniük."
+
+msgid "Enter a shell command."
+msgstr "Írjon be egy shell parancsot."
+
+msgid "Save as…"
+msgstr "Mentés másként…"
+
+msgid "Save layout as…"
+msgstr "Elrendezés mentése másként…"
+
+msgid "Please wait…"
+msgstr "Kérjük, várjon…"
+
+msgid "Stop"
+msgstr "Stop"
+
+msgid "Start"
+msgstr "Indul"
+
+msgid "Custom layout"
+msgstr "Egyedi elrendezés"
+
+msgid "Base keyboard"
+msgstr "Alap billentyűzet"
+
+msgid "Keyboard device path"
+msgstr "A billentyűzet eszköz elérési útja"
+
+msgid "Copy path"
+msgstr "Útvonal másolása"
+
+msgid "Create a layer to assign its keys, or edit the base keyboard."
+msgstr ""
+"Hozzon létre egy réteget a billentyűk hozzárendeléséhez, vagy szerkessze az "
+"alapbillentyűzetet."
+
+msgid "Running"
+msgstr "Futás"
+
+msgid "Stopped"
+msgstr "Megállt"
+
+msgid "Layout library updated"
+msgstr "Az elrendezési könyvtár frissítve"
+
+msgid "Select a layout"
+msgstr "Válasszon egy elrendezést"
+
+msgid "Layout changed on disk; select it again"
+msgstr "Az elrendezés megváltozott a lemezen; válassza ki újra"
+
+msgid "Any game mode"
+msgstr "Bármilyen játékmód"
+
+msgid "Game mode on"
+msgstr "Játék mód bekapcsolva"
+
+msgid "Game mode off"
+msgstr "Játék mód kikapcsolva"
+
+msgid "System layouts (comma separated)"
+msgstr "Rendszerelrendezések (vesszővel elválasztva)"
+
+msgid "Applications (comma separated)"
+msgstr "Alkalmazások (vesszővel elválasztva)"
+
+msgid "Manual"
+msgstr "Kézikönyv"
+
+msgid "Active"
+msgstr "Aktív"
+
+msgid "Editing · unsaved"
+msgstr "Szerkesztés · nincs mentve"
+
+msgid "Editing"
+msgstr "Szerkesztés"
+
+msgid "Activate"
+msgstr "Aktiválja"
+
+msgid "Delete layout?"
+msgstr "Törli az elrendezést?"
+
+msgid "Layout details"
+msgstr "Elrendezés részletei"
+
+msgid "Do not use when"
+msgstr "Ne használja, amikor"
+
+msgid "The layout file will be deleted. This cannot be undone."
+msgstr "Az elrendezés fájl törlődik. Ezt nem lehet visszavonni."
+
+msgid "Duplicate…"
+msgstr "Másolat…"
+
+msgid "Edit layout"
+msgstr "Elrendezés szerkesztése"
+
+msgid "New layout"
+msgstr "Új elrendezés"
+
+msgid "A layout with this name already exists."
+msgstr "Már létezik ilyen nevű elrendezés."
+
+msgid "Add a description…"
+msgstr "Leírás hozzáadása…"
+
+msgid "Create"
+msgstr "Teremt"
+
+msgid "Delete…"
+msgstr "Töröl…"
+
+msgid "Description (optional)"
+msgstr "Leírás (nem kötelező)"
+
+msgid "Discard changes"
+msgstr "A változtatások elvetése"
+
+msgid "Make active"
+msgstr "Tedd aktívvá"
+
+msgid "Single: the layout you make active works everywhere."
+msgstr "Egyetlen: az aktív elrendezés mindenhol működik."
+
+msgid "Not used in automatic mode"
+msgstr "Automata üzemmódban nem használatos"
+
+msgid "Rename…"
+msgstr "Átnevezés…"
+
+msgid "Save and continue"
+msgstr "Mentés és folytatás"
+
+msgid ""
+"The layout you are editing has not been saved to the library. Its changes "
+"will be lost."
+msgstr ""
+"A szerkesztett elrendezés nem lett elmentve a könyvtárba. Változásai "
+"elvesznek."
+
+msgid "The name contains characters that cannot be used in a file name."
+msgstr ""
+"A név olyan karaktereket tartalmaz, amelyek nem használhatók a fájlnévben."
+
+msgid "Unsaved changes"
+msgstr "Nem mentett módosítások"
+
+msgid "You are editing “{}”, but “{}” is active."
+msgstr "A „{}” elemet szerkeszti, de a „{}” aktív."
+
+msgid "You are editing “{}”; no layout is active."
+msgstr "Ön a következőt szerkeszti: „{}”; nincs aktív elrendezés."
+
+msgid "game mode off"
+msgstr "játék mód kikapcsolva"
+
+msgid "game mode on"
+msgstr "játék mód bekapcsolva"
+
+msgid "{} (copy)"
+msgstr "{} (másolat)"
+
+msgid "“{}” has unsaved changes. Save them before switching?"
+msgstr "A „{}” nem mentett módosításokat tartalmaz. Menti őket váltás előtt?"
+
+msgid "Layout mode"
+msgstr "Elrendezési mód"
+
+msgid "Create layout"
+msgstr "Elrendezés létrehozása"
+
+msgid "Empty"
+msgstr "Üres"
+
+msgid "Empty layout"
+msgstr "Üres elrendezés"
+
+msgid "Previously selected: {}"
+msgstr "Korábban kiválasztott: {}"
+
+msgid "Current value"
+msgstr "Jelenlegi érték"
+
+msgid "Capture key"
+msgstr "Rögzítési kulcs"
+
+msgid "Press a key (including modifiers or Escape)."
+msgstr ""
+"Nyomjon meg egy billentyűt (beleértve a módosítókat vagy az Escape-et)."
+
+msgid "Press a key or shortcut. Release a modifier to select it alone."
+msgstr ""
+"Nyomjon meg egy billentyűt vagy parancsikont. Engedjen fel egy módosítót, "
+"hogy egyedül válassza ki."
+
+msgid "Choose a valid key or action."
+msgstr "Válasszon egy érvényes kulcsot vagy műveletet."
+
+msgid "Search keys and actions"
+msgstr "Keresési billentyűk és műveletek"
+
+msgid "Search keys"
+msgstr "Keresési billentyűk"
+
+msgid "Hold action"
+msgstr "Tartsa akciót"
+
+msgid "Macro step"
+msgstr "Makró lépés"
+
+msgid ""
+"You can enter a key combination using + between keys. Some keys depend on "
+"keyboard hardware and may be ignored by the system."
+msgstr ""
+"A billentyűkombinációt a + gombok közötti + használatával adhatja meg. Egyes"
+" billentyűk a billentyűzet hardverétől függenek, és a rendszer figyelmen "
+"kívül hagyhatja azokat."
+
+msgid ""
+"You can assign a key combination using + between keys. Availability of "
+"special keys depends on the keyboard and desktop environment."
+msgstr ""
+"Billentyűkombinációt a + gombok közötti + használatával rendelhet hozzá. A "
+"speciális billentyűk elérhetősége a billentyűzettől és az asztali "
+"környezettől függ."
+
+msgid "Behavior:"
+msgstr "Viselkedés:"
+
+msgid "Action:"
+msgstr "Akció:"
+
+msgid "Trigger key:"
+msgstr "Trigger kulcs:"
+
+msgid "{n} line"
+msgid_plural "{n} lines"
+msgstr[0] "{n} sor"
+msgstr[1] "{n} sor"
+
+msgid "Modifiers"
+msgstr "Módosítók"
+
+msgid "Letters, digits and symbols"
+msgstr "Betűk, számok és szimbólumok"
+
+msgid "Control keys"
+msgstr "Vezérlőgombok"
+
+msgid "Navigation and numpad"
+msgstr "Navigáció és számbillentyűzet"
+
+msgid "F1–F24"
+msgstr "F1–F24"
+
+msgid "Media and launch"
+msgstr "Média és indítás"
+
+msgid "System and laptop"
+msgstr "Rendszer és laptop"
+
+msgid "Mouse"
+msgstr "Egér"
+
+msgid "Other keys"
+msgstr "Egyéb kulcsok"
+
+msgid "Actions"
+msgstr "Akciók"
+
+msgid "Extra button on some gaming mice"
+msgstr "Extra gomb néhány játék egeren"
+
+msgid "Keys"
+msgstr "Kulcsok"
+
+msgid "System actions"
+msgstr "Rendszerműveletek"
+
+msgid "KDE shortcuts"
+msgstr "KDE parancsikonok"
+
+msgid "Pause"
+msgstr "Szünet"
+
+msgid "Literal text (text: prefix is added automatically)"
+msgstr "Szó szerinti szöveg (szöveg: előtag automatikusan hozzáadódik)"
+
+msgid "Pause in milliseconds (1–10000)"
+msgstr "Szünet ezredmásodpercben (1–10 000)"
+
+msgid "No matching items"
+msgstr "Nincsenek megfelelő elemek"
+
+msgid "Show Quick Action Menu page {}"
+msgstr "Gyors műveletek menüoldalának megjelenítése {}"
+
+msgid "Show Emoji & Symbols menu page {}"
+msgstr "A hangulatjelek és szimbólumok menüoldal megjelenítése {}"
+
+msgid "Switch to desktop {}"
+msgstr "Váltson a {} asztali számítógépre"
+
+msgid "Move window to desktop {}"
+msgstr "Az ablak áthelyezése a {} asztalra"
+
+msgid "Close window"
+msgstr "Zárja be az ablakot"
+
+msgid "Minimize window"
+msgstr "Az ablak kicsinyítése"
+
+msgid "Maximize window"
+msgstr "Az ablak maximalizálása"
+
+msgid "Keep window above others"
+msgstr "Tartsa az ablakot mások felett"
+
+msgid "Show desktop"
+msgstr "Asztal megjelenítése"
+
+msgid "Window overview"
+msgstr "Ablak áttekintése"
+
+msgid "Open application launcher"
+msgstr "Nyissa meg az alkalmazásindítót"
+
+msgid "Turn off screen"
+msgstr "Kapcsolja ki a képernyőt"
+
+msgid "Switch to layout {}"
+msgstr "Váltson a {} elrendezésre"
+
+msgid "Layer"
+msgstr "Réteg"
+
+msgid "Delete layer"
+msgstr "Réteg törlése"
+
+msgid "Create new layer"
+msgstr "Új réteg létrehozása"
+
+msgid "Layer description"
+msgstr "Réteg leírása"
+
+msgid "Add description"
+msgstr "Leírás hozzáadása"
+
+msgid "Type to test..."
+msgstr "Írja be a teszteléshez..."
+
+msgid "Ignore key"
+msgstr "Figyelmen kívül hagyja a kulcsot"
+
+msgid "No layers yet"
+msgstr "Még nincsenek rétegek"
+
+msgid "Left hand"
+msgstr "Bal kéz"
+
+msgid "Right hand"
+msgstr "Jobb kéz"
+
+msgid "Key"
+msgstr "Kulcsfontosságú"
+
+msgid "US layout"
+msgstr "Amerikai elrendezés"
+
+msgid "LHC codes"
+msgstr "LHC kódok"
+
+msgid "No extra keys for this layer yet."
+msgstr "Ehhez a réteghez még nincsenek extra kulcsok."
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid."
+msgstr ""
+"Egérgombok, médiabillentyűk és egyéb triggerek a fő billentyűzetrácson "
+"kívül."
+
+msgid ""
+"Display modes affect labels only — the key code stays the same. “US layout” "
+"shows standard letter labels for visual reference. “LHC codes” shows app-"
+"specific codes (e.g. KeyA, ArrowLeft)."
+msgstr ""
+"A megjelenítési módok csak a címkékre vannak hatással – a kulcskód "
+"változatlan marad. Az „USA elrendezés” szabványos betűcímkéket jelenít meg "
+"vizuális referenciaként. Az „LHC kódok” az alkalmazásspecifikus kódokat "
+"jeleníti meg (pl. KeyA, Arrow Left)."
+
+msgid "(copy)"
+msgstr "(másolat)"
+
+msgid "Add page"
+msgstr "Oldal hozzáadása"
+
+msgid "Allow commands"
+msgstr "Parancsok engedélyezése"
+
+msgid "Animals & Nature"
+msgstr "Állatok és természet"
+
+msgid ""
+"Build reusable sequences from key chords, text actions, commands, or system "
+"actions. Steps run in order with the configured pause between them."
+msgstr ""
+"Hozzon létre újrafelhasználható sorozatokat billentyűakkordokból, szöveges "
+"műveletekből, parancsokból vagy rendszerműveletekből. A lépések sorrendben "
+"futnak a közöttük lévő konfigurált szünettel."
+
+msgid ""
+"Built-in macros that cannot be edited. To customize, create a user macro "
+"based on one."
+msgstr ""
+"Nem szerkeszthető beépített makrók. A testreszabáshoz hozzon létre egy "
+"felhasználói makrót egy alapján."
+
+msgid "Cell {}"
+msgstr "Cell {}"
+
+msgid "Command name"
+msgstr "A parancs neve"
+
+msgid "Create based on"
+msgstr "alapján létrehozni"
+
+msgid "Delete macro"
+msgstr "Makró törlése"
+
+msgid "Delete macro?"
+msgstr "Törli a makrót?"
+
+msgid "Delete page"
+msgstr "Oldal törlése"
+
+msgid "Delete page?"
+msgstr "Törli az oldalt?"
+
+msgid "Delete step"
+msgstr "Lépés törlése"
+
+msgid "Delete step?"
+msgstr "Törli a lépést?"
+
+msgid "Disable"
+msgstr "Letiltás"
+
+msgid "Drag"
+msgstr "Húzza"
+
+msgid "Emoji & Symbols"
+msgstr "Emoji és szimbólumok"
+
+msgid "Emoji Symbols"
+msgstr "Emoji szimbólumok"
+
+msgid "Emoji, symbol, or any text"
+msgstr "Emoji, szimbólum vagy bármilyen szöveg"
+
+msgid "Empty step — pick an action or remove it."
+msgstr "Üres lépés – válasszon ki egy műveletet, vagy távolítsa el."
+
+msgid "Fix the existing macro errors first"
+msgstr "Először javítsa ki a meglévő makróhibákat"
+
+msgid "Food & Drink"
+msgstr "Étel és ital"
+
+msgid "Human-readable macro name, shown in picker lists."
+msgstr "Ember által olvasható makrónév, a kiválasztó listákban látható."
+
+msgid "ID"
+msgstr "ID"
+
+msgid "Key {}"
+msgstr "Kulcs {}"
+
+msgid "Label"
+msgstr "Címke"
+
+msgid "Macro name"
+msgstr "Makró neve"
+
+msgid "Modifier delay"
+msgstr "Módosító késleltetés"
+
+msgid "Move page left"
+msgstr "Oldal mozgatása balra"
+
+msgid "Move page right"
+msgstr "Oldal mozgatása jobbra"
+
+msgid "New macro"
+msgstr "Új makró"
+
+msgid "No macros yet. Click \"New macro\" to create the first one."
+msgstr ""
+"Még nincsenek makrók. Kattintson az „Új makró” gombra az első makró "
+"létrehozásához."
+
+msgid "No steps yet. Each step — one chord or action."
+msgstr "Még nincsenek lépések. Minden lépés – egy akkord vagy akció."
+
+msgid ""
+"Opened by the app:showEmojiMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold an "
+"emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short "
+"phrase (e.g. \"// TODO: \")."
+msgstr ""
+"Az alkalmazás megnyitja:showEmojiMenuN műveletek, ahol N az oldal pozíciója:"
+" az oldalak átrendezése megváltoztatja, hogy a gomb melyik oldalt nyitja "
+"meg. Minden cella tartalmazhat egy hangulatjelet, egy UTF-szimbólumot (pl. "
+"≠), bármilyen más karaktert (pl. №) vagy egy rövid kifejezést (pl. \"// "
+"TODO: \")."
+
+msgid "Opened by the app:showQuickMenu1...5 actions."
+msgstr "Az alkalmazás megnyitja: showQuickMenu1...5 műveletek."
+
+msgid "Page"
+msgstr "oldal"
+
+msgid "Pause (ms)"
+msgstr "Szünet (ms)"
+
+msgid "Pause between steps"
+msgstr "Szünet a lépések között"
+
+msgid "People & Gestures"
+msgstr "Emberek és gesztusok"
+
+msgid "Per-macro pause between steps. Defaults to the Settings value."
+msgstr ""
+"Makrónkénti szünet a lépések között. Alapértelmezés szerint a Beállítások "
+"érték."
+
+msgid "Pick an action"
+msgstr "Válasszon egy műveletet"
+
+msgid "Quick Actions"
+msgstr "Gyors műveletek"
+
+msgid ""
+"Reusable shell commands for the current layout. On Linux they run through sh"
+" -lc after you explicitly allow them. Shell commands run one at a time, with"
+" a 30-second limit, in your home directory."
+msgstr ""
+"Újrafelhasználható shell-parancsok az aktuális elrendezéshez. Linuxon az sh "
+"-lc-n keresztül futnak, miután kifejezetten engedélyezted őket. A shell-"
+"parancsok egyenként futnak, 30 másodperces korláttal a saját könyvtárában."
+
+msgid "Shell commands are allowed for this version of the current layout."
+msgstr ""
+"A shell-parancsok engedélyezettek az aktuális elrendezés ezen verziójához."
+
+msgid "Smileys & Emotion"
+msgstr "Smiley-k és érzelmek"
+
+msgid ""
+"The command will be deleted. Keys or macros that reference cmd:{} will stop "
+"working."
+msgstr ""
+"A parancs törlődik. A cmd:{}-re hivatkozó kulcsok vagy makrók nem fognak "
+"működni."
+
+msgid "The macro will be deleted. References macro:{} will stop working."
+msgstr "A makró törlődik. Hivatkozási makró:{} leáll."
+
+msgid "The page and all assigned cells on it will be deleted."
+msgstr "Az oldal és az összes hozzárendelt cella törlődik."
+
+msgid ""
+"This layout contains shell scripts. Read every script before allowing them, "
+"especially in layouts from other people. Approval applies to the reviewed "
+"command definitions and resets when the command set, IDs, or Linux scripts "
+"change."
+msgstr ""
+"Ez az elrendezés shell szkripteket tartalmaz. Olvasson el minden szkriptet, "
+"mielőtt engedélyezné, különösen a másoktól származó elrendezéseknél. A "
+"jóváhagyás a felülvizsgált parancsdefiníciókra vonatkozik, és a "
+"parancskészlet, az azonosítók vagy a Linux-szkriptek megváltozásakor "
+"visszaáll."
+
+msgid "This step will be removed from the macro."
+msgstr "Ez a lépés el lesz távolítva a makróból."
+
+msgid ""
+"Time between pressing a modifier and the main key within one step. Defaults "
+"to the Settings value."
+msgstr ""
+"A módosító és a fő gomb lenyomása közötti idő egy lépésen belül. "
+"Alapértelmezés szerint a Beállítások érték."
+
+msgid "Travel & Places"
+msgstr "Utazás és helyek"
+
+msgid "UTF Symbols"
+msgstr "UTF szimbólumok"
+
+msgid "Texts"
+msgstr "Szövegek"
+
+msgid "Non-breaking space"
+msgstr "Törésmentes tér"
+
+msgid "continue"
+msgstr "folytassa"
+
+msgid "do all you recommended"
+msgstr "tegyen meg mindent, amit ajánlott"
+
+msgid "fix the errors above"
+msgstr "javítsa ki a fenti hibákat"
+
+msgid "I'll call you back later"
+msgstr "Később visszahívlak"
+
+msgid "Thanks!"
+msgstr "Köszönöm!"
+
+msgid "OK, got it 👍"
+msgstr "Rendben, értem 👍"
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Rules tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"A hivatkozásokban használt egyedi azonosító, például makró:<id>. Ha ezt a "
+"makrót egy kulcshoz szeretné kötni, válassza ki azt a műveletet a Rétegek "
+"vagy a Szabályok lapon. Csak akkor módosítsa az azonosítót, ha semmi sem "
+"használja ezt a makrót."
+
+msgid "Used in:"
+msgstr "Felhasználva:"
+
+msgid "User macros"
+msgstr "Felhasználói makrók"
+
+msgid "Work & Objects"
+msgstr "Munka és tárgyak"
+
+msgid "e.g. Next Track"
+msgstr "például Következő szám"
+
+msgid "ms"
+msgstr "ms"
+
+msgid "Rule saved"
+msgstr "Szabály mentve"
+
+msgid "Search layers"
+msgstr "Keresés a rétegek között"
+
+msgid "Set"
+msgstr "Készlet"
+
+msgid "Start the mapper to run actions from the menus"
+msgstr "Indítsa el a térképezőt a menükből történő műveletek futtatásához"
+
+msgid ""
+"The text was not typed: the keyboard layout lacks some of its characters, "
+"such as emoji. Choose a typing method with the clipboard."
+msgstr ""
+"A szöveget nem gépelték be: a billentyűzetkiosztásból hiányzik néhány "
+"karakter, például az emoji. Válasszon gépelési módot a vágólappal."
+
+msgid "The text was not typed: the active keyboard layout is unknown."
+msgstr "A szöveget nem gépelték be: az aktív billentyűzetkiosztás ismeretlen."
+
+msgid ""
+"The text was not typed: the typing method is unavailable ({}). Restart the "
+"mapper to try again."
+msgstr ""
+"A szöveget nem gépelték be: a gépelési módszer nem érhető el ({}). Indítsa "
+"újra a térképkészítőt, és próbálja újra."
+
+msgid "The text was not typed: safe clipboard access failed ({})."
+msgstr ""
+"A szöveg nem lett begépelve: a biztonságos vágólap elérése sikertelen ({})."
+
+msgid "The text was not typed: {}"
+msgstr "A szöveget nem gépelték be: {}"
+
+msgid "The layout file is empty"
+msgstr "Az elrendezésfájl üres"
+
+msgid "↑"
+msgstr "↑"
+
+msgid "↓"
+msgstr "↓"
+
+msgid "Does not matter"
+msgstr "Nem számít"
+
+msgid "Open for editing (unsaved)"
+msgstr "Megnyitás szerkesztésre (nem mentve)"
+
+msgid "Open for editing"
+msgstr "Nyissa meg szerkesztésre"
+
+msgid "Layout name"
+msgstr "Elrendezés neve"
+
+msgid "System languages"
+msgstr "Rendszernyelvek"
+
+msgid "No system languages detected"
+msgstr "Nem észlelhető rendszernyelv"
+
+msgid "Applications"
+msgstr "Alkalmazások"
+
+msgid "“{}” will be deleted. This cannot be undone."
+msgstr "A „{}” törlődik. Ezt nem lehet visszavonni."
+
+msgid "Reset current changes"
+msgstr "Állítsa vissza a jelenlegi változtatásokat"
+
+msgid "Available"
+msgstr "Elérhető"
+
+msgid "Unavailable"
+msgstr "Nem elérhető"
+
+msgid "Not implemented"
+msgstr "Nincs végrehajtva"
+
+msgid "No input devices were found in /dev/input."
+msgstr "A /dev/input mappában nem található beviteli eszköz."
+
+msgid ""
+"The selected keyboard is not connected. Connect it or pick another one "
+"below."
+msgstr ""
+"A kiválasztott billentyűzet nincs csatlakoztatva. Csatlakoztassa, vagy "
+"válasszon egy másikat lent."
+
+msgid ""
+"No permission to read keyboard events. Add your user to the input group "
+"(install-linux.sh permissions does this) and log in again."
+msgstr ""
+"Nincs engedély a billentyűzet eseményeinek olvasására. Adja hozzá a "
+"felhasználót a beviteli csoporthoz (az install-linux.sh engedélyek ezt "
+"teszik), és jelentkezzen be újra."
+
+msgid ""
+"/dev/uinput does not exist. Load the uinput kernel module: sudo modprobe "
+"uinput."
+msgstr ""
+"/dev/uinput nem létezik. Töltse be az uinput kernel modult: sudo modprobe "
+"uinput."
+
+msgid ""
+"No permission to write to /dev/uinput. Install the application's udev rule "
+"(install-linux.sh permissions) or reinstall the package."
+msgstr ""
+"Nincs engedély a /dev/uinput fájlba való írásra. Telepítse az alkalmazás "
+"udev szabályát (install-linux.sh engedélyek), vagy telepítse újra a "
+"csomagot."
+
+msgid "Launch on startup"
+msgstr "Indítás indításkor"
+
+msgid "Start the mapper on launch"
+msgstr "Indítsa el a térképezőt indításkor"
+
+msgid "No keyboard is selected, so the mapper cannot start."
+msgstr "Nincs billentyűzet kiválasztva, így a térképező nem indul el."
+
+msgid "Choose a keyboard"
+msgstr "Válasszon egy billentyűzetet"
+
+msgid "Getting started"
+msgstr "Kezdő lépések"
+
+msgid "Keyboard selected"
+msgstr "Billentyűzet kiválasztva"
+
+msgid "Choose the keyboard to remap"
+msgstr "Válassza ki az újraképezni kívánt billentyűzetet"
+
+msgid "Change"
+msgstr "Változás"
+
+msgid "Add a layout"
+msgstr "Adjon hozzá egy elrendezést"
+
+msgid "Press Start at the top to apply it"
+msgstr "Alkalmazásához kattintson felül a Start gombra"
+
+msgid "No active layout"
+msgstr "Nincs aktív elrendezés"
+
+msgid "Current active layout (automatic)"
+msgstr "Jelenlegi aktív elrendezés (automatikus)"
+
+msgid "Current active layout — click to switch"
+msgstr "Jelenlegi aktív elrendezés – kattintson a váltáshoz"
+
+msgid "Current keyboard layout in the system"
+msgstr "Jelenlegi billentyűzetkiosztás a rendszerben"
+
+msgid "Game mode: active"
+msgstr "Játék mód: aktív"
+
+msgid "Game mode: inactive"
+msgstr "Játék mód: inaktív"
+
+msgid "Active: {}"
+msgstr "Aktív: {}"
+
+msgid "Trigger"
+msgstr "Kioldó"
+
+msgid "New rule: choose a trigger"
+msgstr "Új szabály: válasszon kiváltót"
+
+msgid "Swallow key"
+msgstr "Billentyű elnyomása"
+
+msgid "Pass through"
+msgstr "Átmegy"
+
+msgid "Double tap: {} ms"
+msgstr "Dupla koppintás: {} ms"
+
+msgid "Custom hold options"
+msgstr "Egyéni tartási lehetőségek"
+
+msgid "Leave empty to use the global timing settings."
+msgstr "Hagyja üresen a globális időzítési beállítások használatához."
+
+msgid ""
+"Temporarily releases the held key or modifier while these keys are pressed "
+"in the layer."
+msgstr ""
+"Ideiglenesen elengedi a tartott billentyűt vagy módosítót, amíg ezek a "
+"billentyűk le vannak nyomva a rétegben."
+
+msgid ""
+"Defers the held action until one of these keys is pressed in the layer. "
+"Requires a hold action and a layer."
+msgstr ""
+"Elhalasztja a felfüggesztett műveletet mindaddig, amíg a billentyűk egyikét "
+"meg nem nyomják a rétegben. Tartási műveletet és réteget igényel."
+
+msgid "Delete rule"
+msgstr "Szabály törlése"
+
+msgid ""
+"Clear restores normal key behavior. Swallow prevents the key from reaching "
+"the application."
+msgstr ""
+"A Clear visszaállítja a normál kulcsviselkedést. A fecske megakadályozza, "
+"hogy a kulcs elérje az alkalmazást."
+
+msgctxt "Game mode control"
+msgid "Auto"
+msgstr "Automatikus"
+
+msgctxt "Game mode control"
+msgid "On"
+msgstr "Be"
+
+msgctxt "Game mode control"
+msgid "Off"
+msgstr "Ki"
+
+msgid "Auto: no detection sources enabled"
+msgstr "Auto: nincsenek engedélyezve az észlelési források"
+
+msgid "Auto: detection unavailable"
+msgstr "Auto: az észlelés nem érhető el"
+
+msgid "Auto: game mode inactive"
+msgstr "Auto: játékmód inaktív"
+
+msgid "Auto: GameMode daemon active"
+msgstr "Auto: GameMode démon aktív"
+
+msgid "Auto: matched {}"
+msgstr "Automatikus: egyezett {}"
+
+msgid "Auto: fullscreen window active"
+msgstr "Auto: teljes képernyős ablak aktív"
+
+msgid "Auto: excluded by {}"
+msgstr "Automatikus: a {} kizárja"
+
+msgid ""
+"Fullscreen detection is not supported in this session. Use process rules or "
+"On/Off."
+msgstr ""
+"A teljes képernyős észlelés nem támogatott ebben a munkamenetben. Használja "
+"a folyamatszabályokat vagy a Be/Ki."
+
+msgid "Fullscreen detection tools are missing or could not query the session."
+msgstr ""
+"A teljes képernyős észlelési eszközök hiányoznak, vagy nem tudták lekérdezni"
+" a munkamenetet."
+
+msgid "Running processes: "
+msgstr "Futó folyamatok:"
+
+msgid "Active window: "
+msgstr "Aktív ablak:"
+
+msgid "Create a layer to assign its keys."
+msgstr "Hozzon létre egy réteget a kulcsok hozzárendeléséhez."
+
+msgid "Button {}"
+msgstr "{} gomb"
+
+msgid "Copied to clipboard"
+msgstr "Vágólapra másolva"
+
+msgid "Theme"
+msgstr "Téma"
+
+msgid "E-ink"
+msgstr "E-ink"
+
+msgid "Enter device path manually"
+msgstr "Adja meg manuálisan az eszköz elérési útját"
+
+msgid "All keyboards"
+msgstr "Minden billentyűzet"
+
+msgid "All mice (buttons only)"
+msgstr "Minden egér (csak gombok)"
+
+msgid "Mode"
+msgstr "Mód"
+
+msgid "New"
+msgstr "Új"
+
+msgid "Auto"
+msgstr "Automatikus"
+
+msgid "Delete extra key?"
+msgstr "Törli az extra kulcsot?"
+
+msgid "This key assignment will be removed from the layer."
+msgstr "Ez a kulcs-hozzárendelés el lesz távolítva a rétegből."
+
+msgid "Command started: {}"
+msgstr "A parancs elindítva: {}"
+
+msgid "Unavailable on this platform or desktop"
+msgstr "Nem érhető el ezen a platformon vagy asztali számítógépen"
+
+msgid "This action is not supported on macOS"
+msgstr "Ezt a műveletet a macOS nem támogatja"
+
+msgid "Approve commands on the Commands tab before running this action"
+msgstr ""
+"A művelet végrehajtása előtt hagyja jóvá a parancsokat a Parancsok lapon"
+
+msgid "Pick the physical device whose events should be intercepted."
+msgstr ""
+"Válassza ki azt a fizikai eszközt, amelynek eseményeit le kell hallgatni."
+
+msgid ""
+"Select the mouse so the mapper can see extra buttons and clicks. Pointer "
+"movement is not affected."
+msgstr ""
+"Válassza ki az egeret, hogy a térképkészítő lássa az extra gombokat és "
+"kattintásokat. A mutató mozgását ez nem érinti."
+
+msgid ""
+"The mouse is not fully intercepted yet: a remapped extra button can emit the"
+" new action, but its native system or app action may still run. If that gets"
+" in the way, disable the native action for that button in your system, "
+"browser, or driver settings."
+msgstr ""
+"Az egeret még nem sikerült teljesen elfogni: egy újraleképezett extra gomb "
+"kiadhatja az új műveletet, de a natív rendszer- vagy alkalmazásművelet "
+"továbbra is futhat. Ha ez akadályozza, tiltsa le az adott gomb natív "
+"műveletét a rendszer, a böngésző vagy az illesztőprogram beállításaiban."
+
+msgid ""
+"The mapper reads from /dev/input/eventX and emits through uinput. If Start "
+"fails, grant access to those devices: usually the input group plus a udev "
+"rule for /dev/uinput."
+msgstr ""
+"A leképező a /dev/input/eventX fájlból olvas, és az uinput-on keresztül "
+"bocsát ki. Ha az indítás sikertelen, adjon hozzáférést ezeknek az "
+"eszközöknek: általában a bemeneti csoport, valamint egy udev szabály a "
+"/dev/uinput számára."
+
+msgid "Refresh device list"
+msgstr "Eszközlista frissítése"
+
+msgid "Mouse (optional)"
+msgstr "Egér (opcionális)"
+
+msgid "Not selected"
+msgstr "Nincs kiválasztva"
+
+msgid "Not selected (no mouse support)"
+msgstr "Nincs kiválasztva (nincs egér támogatás)"
+
+msgid "Looks like a keyboard"
+msgstr "Úgy néz ki, mint egy billentyűzet"
+
+msgid "Looks like a mouse"
+msgstr "Úgy néz ki, mint egy egér"
+
+msgid "Other devices"
+msgstr "Egyéb eszközök"
+
+msgid "Search devices"
+msgstr "Eszközök keresése"
+
+msgid "Single"
+msgstr "Egyetlen"
+
+msgid "{n} rule"
+msgid_plural "{n} rules"
+msgstr[0] "{n} szabály"
+msgstr[1] "{n} szabály"
+
+msgid "{n} layer"
+msgid_plural "{n} layers"
+msgstr[0] "{n} réteg"
+msgstr[1] "{n} réteg"
+
+msgid "{n} emoji page"
+msgid_plural "{n} emoji pages"
+msgstr[0] "{n} hangulatjel oldal"
+msgstr[1] "{n} hangulatjel oldal"
+
+msgid "{n} action page"
+msgid_plural "{n} action pages"
+msgstr[0] "{n} akcióoldal"
+msgstr[1] "{n} akcióoldal"
+
+msgid "{n} macro"
+msgid_plural "{n} macros"
+msgstr[0] "{n} makró"
+msgstr[1] "{n} makró"
+
+msgid "{n} command"
+msgid_plural "{n} commands"
+msgstr[0] "{n} parancs"
+msgstr[1] "{n} parancs"
+
+msgid "Main"
+msgstr "Fő"
+
+msgid "Saved assignment: {}"
+msgstr "Mentett feladat: {}"
+
+msgid "Behavior"
+msgstr "Viselkedés"
+
+msgid "Inherit"
+msgstr "Örököl"
+
+msgid "No separate action"
+msgstr "Nincs külön akció"
+
+msgid "Activate layer only"
+msgstr "Csak a réteg aktiválása"
+
+msgid "Normal key behavior"
+msgstr "Normál kulcsviselkedés"
+
+msgid "Suppress"
+msgstr "Elnyomni"
+
+msgid "Assign held key"
+msgstr "Tartott kulcs hozzárendelése"
+
+msgid "Perform action"
+msgstr "Hajtsa végre a műveletet"
+
+msgid "The key will not reach the application."
+msgstr "A kulcs nem éri el az alkalmazást."
+
+msgid "Use the assignment from the lower layer or base layout."
+msgstr "Használja az alsó réteg vagy az alapelrendezés hozzárendelését."
+
+msgid "Do not assign a separate action to this gesture."
+msgstr "Ne rendeljen ehhez a gesztushoz külön műveletet."
+
+msgid "Holding activates the selected layer. The original key is not sent."
+msgstr ""
+"A tartás aktiválja a kiválasztott réteget. Az eredeti kulcs nem kerül "
+"elküldésre."
+
+msgid "Send the original key to the application."
+msgstr "Küldje el az eredeti kulcsot az alkalmazásnak."
+
+msgid "Capture shortcut"
+msgstr "Parancsikon rögzítése"
+
+msgid "Choose a valid trigger key."
+msgstr "Válasszon érvényes indítókulcsot."
+
+msgid "Choose a valid action."
+msgstr "Válasszon egy érvényes műveletet."
+
+msgid "Empty cell"
+msgstr "Üres cella"
+
+msgid "Remove the action from this menu cell."
+msgstr "Távolítsa el a műveletet ebből a menücellából."
+
+msgid "Edit assignment"
+msgstr "Feladat szerkesztése"
+
+msgid "Holding also activates the selected layer."
+msgstr "A tartás a kiválasztott réteget is aktiválja."
+
+msgid "Block"
+msgstr "Tömb"
+
+msgid ""
+"The key press is consumed: the system and the active application will not "
+"receive it."
+msgstr "A gombnyomás elfogy: a rendszer és az aktív alkalmazás nem kapja meg."
+
+msgid ""
+"The key press passes through unchanged, as if no assignment were configured."
+msgstr ""
+"A gombnyomás változatlan formában halad át, mintha nem lett volna "
+"hozzárendelés konfigurálva."
+
+msgid "Capture"
+msgstr "Elfog"
+
+msgid "Unchanged"
+msgstr "Változatlan"
+
+msgid "Leave a delay empty to use the global setting."
+msgstr "Hagyja üresen a késleltetést a globális beállítás használatához."
+
+msgid "Allow command execution"
+msgstr "Parancsvégrehajtás engedélyezése"
+
+msgid "No commands are assigned."
+msgstr "Nincsenek parancsok hozzárendelve."
+
+msgid "Commands are disabled in Settings."
+msgstr "A parancsok le vannak tiltva a Beállításokban."
+
+msgid "Working directory (optional)"
+msgstr "Munkakönyvtár (opcionális)"
+
+msgid "Save layout changes before opening another layout."
+msgstr ""
+"Mentse el az elrendezés módosításait, mielőtt újabb elrendezést nyitna meg."
+
+msgid "No layer"
+msgstr "Nincs réteg"
+
+msgid "Layer not found"
+msgstr "A réteg nem található"
+
+msgid "Create new layer…"
+msgstr "Új réteg létrehozása…"
+
+msgid "Create “{}”"
+msgstr "\"{}\" létrehozása"
+
+msgid ""
+"A trigger can be a single key or a combination, such as "
+"ShiftLeft+ControlLeft. The combination works in either press order and ends "
+"when any key is released."
+msgstr ""
+"A trigger lehet egyetlen billentyű vagy kombináció, például "
+"ShiftLeft+ControlLeft. A kombináció bármelyik lenyomási sorrendben működik, "
+"és bármelyik billentyű elengedésekor véget ér."
+
+msgid "When held"
+msgstr "Amikor tartották"
+
+msgid ""
+"Choose a layer active until release, or an action performed once after the "
+"hold duration."
+msgstr ""
+"Válasszon egy réteget, amely a kiadásig aktív, vagy egy műveletet, amelyet "
+"egyszer hajt végre a visszatartás időtartama után."
+
+msgid "Nothing"
+msgstr "Semmi"
+
+msgid "Activate layer"
+msgstr "Aktiválja a réteget"
+
+msgid "Run action"
+msgstr "Művelet futtatása"
+
+msgid "Long-hold action"
+msgstr "Hosszan tartó akció"
+
+msgid "Runs once after {} s"
+msgstr "Egyszer fut a {} s után"
+
+msgid "Hold another key / combination"
+msgstr "Tartsa lenyomva egy másik billentyűt/kombinációt"
+
+msgid "Press one key or hold a combination, then release a key to capture it."
+msgstr ""
+"Nyomjon meg egy billentyűt, vagy tartsa lenyomva a kombinációt, majd engedje"
+" fel a billentyűt a rögzítéshez."
+
+msgid "Held key: {}"
+msgstr "Tartott kulcs: {}"
+
+msgid "Assigned to"
+msgstr "Hozzárendelve"
+
+msgid "Languages"
+msgstr "Nyelvek"
+
+msgid "Excluded applications"
+msgstr "Kizárt alkalmazások"
+
+msgid "Open page in popup"
+msgstr "Nyissa meg az oldalt a felugró ablakban"
+
+msgid "Page:"
+msgstr "Oldal:"
+
+msgid "Layout “{}” created"
+msgstr "„{}” elrendezés létrehozva"
+
+msgid "Layout “{}” saved"
+msgstr "A „{}” elrendezés mentve"
+
+msgid "Layout “{}” deleted"
+msgstr "A „{}” elrendezés törölve"
+
+msgid "Layout “{}” activated"
+msgstr "A „{}” elrendezés aktiválva"
+
+msgid "Could not complete the action"
+msgstr "Nem sikerült befejezni a műveletet"
+
+msgid "Dismiss notification"
+msgstr "Értesítés elvetése"
+
+msgid "Changes to layout “{}” discarded"
+msgstr "A „{}” elrendezés módosításait elvetették"
+
+msgid "Popup menus are unavailable: {}"
+msgstr "A felugró menük nem érhetők el: {}"
+
+msgid "Popup menus are not running. Try opening the menu again."
+msgstr "A felugró menük nem futnak. Próbálja meg újra megnyitni a menüt."
+
+msgid "Popup menus are restarting. Try again shortly."
+msgstr "A felugró menük újraindulnak. Próbálja újra rövidesen."
+
+msgid "Popup menus could not recover. Restart the application."
+msgstr ""
+"A felugró menüket nem sikerült helyreállítani. Indítsa újra az alkalmazást."
+
+msgid "Popup menu error: {}"
+msgstr "Előugró menü hiba: {}"
+
+msgid "Choose a key or combination for the trigger"
+msgstr "Válasszon ki egy billentyűt vagy kombinációt a triggerhez"
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid. Add a trigger, then choose its action, suppress it, or inherit its "
+"assignment from the lower layer."
+msgstr ""
+"Egérgombok, médiabillentyűk és egyéb triggerek a fő billentyűzetrácson "
+"kívül. Adjon hozzá egy triggert, majd válassza ki a műveletét, tiltsa le, "
+"vagy örökölje a hozzárendelését az alsó rétegtől."
+
+msgid ""
+"You can enter emoji, any text, or Unicode symbols here. Drag an item from "
+"the palette onto a key to assign it."
+msgstr ""
+"Ide beírhat hangulatjeleket, bármilyen szöveget vagy Unicode szimbólumokat. "
+"A hozzárendeléshez húzzon egy elemet a palettáról egy kulcsra."
+
+msgid "Accessibility"
+msgstr "Megközelíthetőség"
+
+msgid "High contrast"
+msgstr "Magas kontraszt"
+
+msgid ""
+"Pure black or white background, stronger text, borders and focus outlines. "
+"Works with the light and dark themes."
+msgstr ""
+"Tiszta fekete vagy fehér háttér, erősebb szöveg, szegélyek és "
+"fókuszkörvonalak. Világos és sötét témákkal működik."
+
+msgid "Reduce motion"
+msgstr "Csökkentse a mozgást"
+
+msgid "Turn off highlight animations in the editor."
+msgstr "Kapcsolja ki a kiemelt animációkat a szerkesztőben."
+
+msgid ""
+"Every control can be reached with Tab and activated with Space or Enter. "
+"Interface size follows the desktop scale factor."
+msgstr ""
+"Minden vezérlő elérhető a Tab billentyűvel, és aktiválható a szóközzel vagy "
+"az Enter billentyűvel. Az interfész mérete követi az asztali méretarányt."
+
+msgid "Always"
+msgstr "Mindig"
+
+msgid "Hold duration"
+msgstr "Tartás időtartama"
+
+msgid "{} s"
+msgstr "{} s"
+
+msgid "{} s (default)"
+msgstr "{} s (alapértelmezett)"
+
+msgid "Shell command or path to a script, e.g. playerctl play-pause"
+msgstr ""
+"Shell parancs vagy egy parancsfájl elérési útja, pl. playerctl play-pause"
+
+msgid "Runs with sh -lc in the background; the result is not awaited."
+msgstr "Az sh -lc-vel fut a háttérben; az eredményt nem várják."
+
+msgid "Choose script…"
+msgstr "Válassz szkriptet…"
+
+msgid "Working directory (optional, home by default)"
+msgstr "Munkakönyvtár (opcionális, alapértelmezés szerint otthon)"
+
+msgid "Choose folder…"
+msgstr "Válasszon mappát…"
+
+msgid ""
+"Command execution is turned off. Turn it on in the settings to assign "
+"commands."
+msgstr ""
+"A parancsvégrehajtás ki van kapcsolva. Kapcsolja be a beállításokban a "
+"parancsok hozzárendeléséhez."
+
+msgid "Open command settings"
+msgstr "Nyissa meg a parancsbeállításokat"
+
+msgid "The working directory does not exist."
+msgstr "A munkakönyvtár nem létezik."
+
+msgid ""
+"The script file is not executable: run chmod +x on it or prefix the path "
+"with sh."
+msgstr ""
+"A parancsfájl nem futtatható: futtassa rajta a chmod +x parancsot, vagy írja"
+" elő az elérési utat sh-val."
+
+msgid "Choose a script"
+msgstr "Válasszon egy szkriptet"
+
+msgid "Choose a working directory"
+msgstr "Válasszon egy munkakönyvtárat"
+
+msgid "Commands run with sh -lc in the background and are not awaited."
+msgstr "A parancsok sh -lc-vel futnak a háttérben, és nem várják őket."
+
+msgid "Commands run with PowerShell in the background and are not awaited."
+msgstr "A parancsok PowerShell-lel futnak a háttérben, és nem várják őket."
+
+msgid ""
+"Commands stay off until you allow execution. Review below what your layouts "
+"would run."
+msgstr ""
+"A parancsok kikapcsolva maradnak, amíg nem engedélyezi a végrehajtást. "
+"Tekintse át alább, hogy milyen elrendezések futnának."
+
+msgid "Command"
+msgstr "Parancs"
+
+msgid "Rule {} · tap"
+msgstr "{} szabály · érintse meg"
+
+msgid "Rule {} · hold"
+msgstr "{} szabály · tartsa"
+
+msgid "Rule {} · long hold"
+msgstr "{} szabály · hosszú tartás"
+
+msgid "Rule {} · double tap"
+msgstr "{} szabály · dupla koppintás"
+
+msgid "disabled"
+msgstr "letiltva"
+
+msgid "Layer {}"
+msgstr "{} réteg"
+
+msgid "Macro"
+msgstr "Makró"
+
+msgid "Quick action"
+msgstr "Gyors cselekvés"
+
+msgid "Show all"
+msgstr "Összes megjelenítése"
+
+msgid "Close"
+msgstr "Bezárás"
+
+msgid "Choose a key or key combination"
+msgstr "Válasszon egy billentyűt vagy billentyűkombinációt"
+
+msgid "Examples"
+msgstr "Példák"
+
+msgid "Add rule…"
+msgstr "Szabály hozzáadása…"
+
+msgid ""
+"All filled conditions must match. A rule without conditions always matches."
+msgstr ""
+"Minden kitöltött feltételnek meg kell egyeznie. A feltételek nélküli szabály"
+" mindig megegyezik."
+
+msgid "Automatic switching rules"
+msgstr "Automatikus váltási szabályok"
+
+msgid ""
+"Automatic: the layout is chosen by switching rules for the application, "
+"system language or game mode."
+msgstr ""
+"Automatikus: az elrendezést az alkalmazásra, a rendszer nyelvére vagy a "
+"játékmódra vonatkozó szabályok váltásával lehet kiválasztani."
+
+msgid "Layout"
+msgstr "Elrendezés"
+
+msgid "Layout not found"
+msgstr "Az elrendezés nem található"
+
+msgid "New rule"
+msgstr "Új szabály"
+
+msgid "Now: {} (default)"
+msgstr "Most: {} (alapértelmezett)"
+
+msgid "Otherwise (default)"
+msgstr "Egyébként (alapértelmezett)"
+
+msgid "Rule {}"
+msgstr "{} szabály"
+
+msgid "Use layout"
+msgstr "Elrendezés használata"
+
+msgid "When"
+msgstr "Amikor"
+
+msgid "If"
+msgstr "Ha"
+
+msgid "If:"
+msgstr "Ha:"
+
+msgid "Trigger conditions"
+msgstr "Kiváltó feltételek"
+
+msgid "No layout"
+msgstr "Nincs elrendezés"
+
+msgid "No layout (keys as is)"
+msgstr "Nincs elrendezés (a kulcsok ahogy vannak)"
+
+msgid "Now: {} (rule {}: {})"
+msgstr "Most: {} ({} szabály: {})"
+
+msgid ""
+"Rules are checked from top to bottom; the first enabled one whose conditions"
+" match chooses the layout. If none matches, the default is used. “No layout”"
+" leaves the keyboard unprocessed, for example in an application where the "
+"layout gets in the way."
+msgstr ""
+"A szabályok felülről lefelé kerülnek ellenőrzésre; az első engedélyezett, "
+"akinek a feltételei megegyeznek, választja az elrendezést. Ha egyik sem "
+"egyezik, a rendszer az alapértelmezettet használja. A „Nincs elrendezés” "
+"feldolgozás nélkül hagyja a billentyűzetet, például egy olyan alkalmazásban,"
+" ahol az elrendezés akadályozza."
+
+msgid "No rules"
+msgstr "Nincsenek szabályok"
+
+msgid "The default layout is always used."
+msgstr "Mindig az alapértelmezett elrendezést használja."
+
+msgid "For games"
+msgstr "Játékokhoz"
+
+msgid "For an application"
+msgstr "Egy alkalmazáshoz"
+
+msgid "Custom rule"
+msgstr "Egyéni szabály"
+
+msgid "When no rule matches, the keyboard works without processing."
+msgstr ""
+"Ha egyetlen szabály sem egyezik, a billentyűzet feldolgozás nélkül működik."
+
+msgid "Never applies: rule {} always matches first."
+msgstr "Soha nem érvényes: a {} szabály mindig egyezik először."
+
+msgid "Game mode detection is off, so this rule never matches."
+msgstr ""
+"A játékmód észlelése ki van kapcsolva, így ez a szabály soha nem egyezik."
+
+msgid "Not among the system languages: {}"
+msgstr "Nem a rendszernyelvek között: {}"
+
+msgid "Rule enabled"
+msgstr "Szabály engedélyezve"
+
+msgid "Automatic mode will use no layout by default."
+msgstr "Az automatikus mód alapértelmezés szerint nem használ elrendezést."
+
+msgid "Delete rule {}?"
+msgstr "Törli a {} szabályt?"
+
+msgid "The rule will be deleted. This cannot be undone."
+msgstr "A szabály törlésre kerül. Ezt nem lehet visszavonni."
+
+msgid "Its {n} automatic rule will be deleted too."
+msgid_plural "Its {n} automatic rules will be deleted too."
+msgstr[0] "{n} automatikus szabálya is törlésre kerül."
+msgstr[1] "{n} automatikus szabálya is törlésre kerül."
+
+msgid "In {n} rule"
+msgid_plural "In {n} rules"
+msgstr[0] "{n} szabályban"
+msgstr[1] "{n} szabályban"
+
+msgid "Auto — detect games"
+msgstr "Auto — játékok felismerése"
+
+msgid "On — always"
+msgstr "Be – mindig"
+
+msgid "Off — never"
+msgstr "Ki – soha"
+
+msgid ""
+"Automatic layout rules apply only when the layout is chosen automatically "
+"(Layouts page)."
+msgstr ""
+"Az automatikus elrendezési szabályok csak akkor érvényesek, ha az elrendezés"
+" automatikusan kiválasztásra kerül (Elrendezések oldal)."
+
+msgid ""
+"Borderless windows covering the screen count too. Browsers, video players "
+"and presentations are ignored."
+msgstr ""
+"A képernyőt borító, szegély nélküli ablakok is számítanak. A böngészők, "
+"videolejátszók és prezentációk figyelmen kívül maradnak."
+
+msgid "Game mode is off (set manually)"
+msgstr "A játék mód ki van kapcsolva (kézi beállítás)"
+
+msgid "Game mode is on (set manually)"
+msgstr "A játék mód be van kapcsolva (kézi beállítás)"
+
+msgid ""
+"Game mode turns on rules and automatic layout rules that have a game-mode "
+"condition. Automatic layout rules apply only when the layout is chosen "
+"automatically (Layouts page). Auto uses the detection sources and custom "
+"rules below; On and Off set the state manually. “Never a game” takes "
+"priority over automatic detection and “Always a game”. You can also change "
+"the mode in the top bar, in the tray menu or with a key bound to a game mode"
+" action."
+msgstr ""
+"A Játék mód olyan szabályokat és automatikus elrendezési szabályokat kapcsol"
+" be, amelyeknek játékmód feltétele van. Az automatikus elrendezési szabályok"
+" csak akkor érvényesek, ha az elrendezés automatikusan kiválasztásra kerül "
+"(Elrendezések oldal). Az Auto az alábbi észlelési forrásokat és egyéni "
+"szabályokat használja; On és Off állítsa be az állapotot manuálisan. A „Soha"
+" játék” elsőbbséget élvez az automatikus felismeréssel és a „Mindig "
+"játékkal” szemben. A módot a felső sávban, a tálcamenüben vagy egy játékmód-"
+"művelethez kötött billentyűvel is módosíthatja."
+
+msgid "Game mode: always off"
+msgstr "Játék mód: mindig kikapcsolva"
+
+msgid "Game mode: always on"
+msgstr "Játék mód: mindig bekapcsolva"
+
+msgid "Game mode: detect automatically"
+msgstr "Játék mód: automatikusan észleli"
+
+msgid "Toggle game mode"
+msgstr "Váltsd át a játékmódot"
+
+msgid ""
+"GameMode daemon unavailable: check the gamemode package and session D-Bus."
+msgstr ""
+"A GameMode démon nem elérhető: ellenőrizze a gamemode csomagot és a D-Bus "
+"munkamenetet."
+
+msgid ""
+"Install {} to detect the active window and fullscreen windows. It is also "
+"needed for application conditions in rules."
+msgstr ""
+"Telepítse a {}-t az aktív ablak és a teljes képernyős ablakok észleléséhez. "
+"A szabályokban szereplő alkalmazási feltételekhez is szükség van rá."
+
+msgid ""
+"Nothing uses game mode yet: no rule or automatic layout rule has a game-mode"
+" condition, so turning it on changes nothing."
+msgstr ""
+"Egyelőre semmi sem használ játékmódot: egyetlen szabálynak vagy automatikus "
+"elrendezési szabálynak sincs játékmód feltétele, így annak bekapcsolása "
+"semmit sem változtat."
+
+msgid ""
+"On and Off are remembered after restart. Auto keeps detecting in the "
+"background."
+msgstr ""
+"Az újraindítás után a Be és a Ki emlékezik. Az Auto folyamatosan észleli a "
+"háttérben."
+
+msgid ""
+"Rules of the current layout with a game-mode condition: {}. Automatic layout"
+" rules with a game-mode condition: {}."
+msgstr ""
+"Az aktuális elrendezés szabályai játékmóddal: {}. Automatikus elrendezési "
+"szabályok játékmóddal: {}."
+
+msgid ""
+"Turns on while a game runs through gamemoderun or requests GameMode itself. "
+"In Steam set the launch options to “gamemoderun %command%”."
+msgstr ""
+"Bekapcsol, amikor egy játék fut a gamemoderun-n, vagy magát a GameMode-ot "
+"kéri. A Steamben állítsa be az indítási beállításokat a „gamemoderun "
+"%command%” értékre."
+
+msgid "Game mode: on"
+msgstr "Játék mód: be"
+
+msgid "Game mode: off"
+msgstr "Játék mód: kikapcsolva"
+
+msgid "Active now: {}"
+msgstr "Jelenleg aktív: {}"
+
+msgid ""
+"Active window detection is unavailable in this session, so application "
+"conditions do not match."
+msgstr ""
+"Az aktív ablakészlelés ebben a munkamenetben nem érhető el, ezért az "
+"alkalmazás feltételei nem egyeznek."
+
+msgid ""
+"An application is matched by its ID or process name: the whole name, "
+"ignoring case, with * and ? as wildcards. A window title item matches when "
+"the title contains the text. Any matching item is enough. An empty list "
+"imposes no restrictions."
+msgstr ""
+"Egy alkalmazás az azonosítójával vagy a folyamatnévvel egyezik meg: a teljes"
+" név, a kis- és nagybetűk figyelmen kívül hagyásával, * és ? helyettesítő "
+"karakterként. Az ablak címe akkor egyezik, ha a cím tartalmazza a szöveget. "
+"Bármilyen egyező elem elég. Az üres lista nem jelent korlátozást."
+
+msgid "Looking for open windows…"
+msgstr "Nyitott ablakok keresése…"
+
+msgid "No open windows found"
+msgstr "Nem található nyitott ablak"
+
+msgid "Window title contains: {}"
+msgstr "Az ablak címe a következőt tartalmazza: {}"
+
+msgid "Timing"
+msgstr "Időzítés"
+
+msgid "Used by macros without their own value."
+msgstr "Saját érték nélküli makrók használják."
+
+msgid ""
+"Used by macros without their own value. How long to wait between pressing "
+"modifiers (Shift, Ctrl, …) and the main key of one step."
+msgstr ""
+"Saját érték nélküli makrók használják. Mennyi ideig kell várni a módosítók "
+"(Shift, Ctrl, …) és egy lépés főbillentyűjének lenyomása között."
+
+msgid "Rule without a trigger is saved as a draft and will be ignored."
+msgstr ""
+"A trigger nélküli szabály vázlatként kerül mentésre, és figyelmen kívül "
+"hagyja."
+
+msgid "Trigger \"{}\" cannot be used for a rule."
+msgstr "A „{}” trigger nem használható szabályhoz."
+
+msgid "Rules for trigger \"{}\" may overlap; the first matching rule wins."
+msgstr ""
+"A „{}” trigger szabályai átfedhetik egymást; az első egyezési szabály nyer."
+
+msgid "Rule for trigger \"{}\" is covered by an earlier rule and will not run."
+msgstr ""
+"A „{}” trigger szabályára egy korábbi szabály vonatkozik, és nem fut le."
+
+msgid "Rule \"{}\" points to a layer that no longer exists."
+msgstr "A \"{}\" szabály egy már nem létező rétegre mutat."
+
+msgid "Rule \"{}\" has an invalid tap action."
+msgstr "A „{}” szabály érvénytelen érintési műveletet tartalmaz."
+
+msgid "Rule \"{}\" has an invalid hold action."
+msgstr "A „{}” szabály érvénytelen visszatartási műveletet tartalmaz."
+
+msgid "Rule \"{}\" has an invalid double-tap action."
+msgstr "A „{}” szabály érvénytelen dupla koppintási műveletet tartalmaz."
+
+msgid "Automatic switching rule deleted"
+msgstr "Az automatikus váltási szabály törölve"
+
+msgid "Only in applications"
+msgstr "Csak alkalmazásokban"
+
+msgid "Except applications"
+msgstr "Kivéve az alkalmazásokat"
+
+msgid "A match blocks the rule, even if the window is in the allowed list."
+msgstr ""
+"Az egyezés blokkolja a szabályt, még akkor is, ha az ablak az engedélyezett "
+"listában van."
+
+msgid "Any match allows the rule. An empty list allows all windows."
+msgstr ""
+"Bármilyen mérkőzés megengedi a szabályt. Az üres lista minden ablakot "
+"engedélyez."
+
+msgid "Choose applications to exclude"
+msgstr "Válassza ki a kizárni kívánt alkalmazásokat"
+
+msgid "Open windows"
+msgstr "Nyissa ki az ablakokat"
+
+msgid "Last active"
+msgstr "Utolsó aktív"
+
+msgid "Nothing is excluded."
+msgstr "Semmi sincs kizárva."
+
+msgid "No restrictions: the rule works in every window."
+msgstr "Nincs korlátozás: a szabály minden ablakban működik."
+
+msgid "{n} window"
+msgid_plural "{n} windows"
+msgstr[0] "{n} ablak"
+msgstr[1] "{n} ablak"
+
+msgid "Do not process"
+msgstr "Ne dolgozza fel"
+
+msgid "Command name (optional)"
+msgstr "Parancsnév (nem kötelező)"
+
+msgid "Working directory (home by default)"
+msgstr "Munkakönyvtár (alapértelmezés szerint otthon)"
+
+msgid "Text to type when the action is invoked:"
+msgstr "A beírandó szöveg a művelet meghívásakor:"
+
+msgid ""
+"Enter literal text without the text: prefix. Line breaks, spaces and tabs "
+"are preserved. On Linux, text is inserted into the active application via "
+"the desktop portal; permission may be required. Text injection by the mapper"
+" is not implemented on Windows or macOS."
+msgstr ""
+"Írjon be szó szerinti szöveget a szöveg nélkül: előtag. A sortörések, "
+"szóközök és tabulátorok megmaradnak. Linuxon a szöveg az asztali portálon "
+"keresztül kerül beszúrásra az aktív alkalmazásba; engedélyre lehet szükség. "
+"A leképező szövegbefecskendezése nem valósul meg Windows vagy macOS "
+"rendszeren."
+
+msgid ""
+"Commands run with sh -lc in the background. The mapper does not wait for "
+"completion or collect output. An empty name uses the command itself as its "
+"label. The working directory defaults to your home folder; scripts need "
+"execute permission. Command execution must be enabled in settings."
+msgstr ""
+"A parancsok sh -lc-vel futnak a háttérben. A leképező nem várja meg a "
+"befejezést és nem gyűjti össze a kimenetet. Egy üres név magát a parancsot "
+"használja címkeként. A munkakönyvtár alapértelmezés szerint a saját mappája;"
+" szkripteknek végrehajtási engedélyre van szükségük. A parancsvégrehajtást "
+"engedélyezni kell a beállításokban."
+
+msgid ""
+"Commands run with PowerShell in the background, without a console window. "
+"The mapper does not wait for completion or collect output. An empty name "
+"uses the command itself as its label. The working directory defaults to your"
+" home folder. Command execution must be enabled in settings."
+msgstr ""
+"A parancsok PowerShell-lel futnak a háttérben, konzolablak nélkül. A "
+"leképező nem várja meg a befejezést és nem gyűjti össze a kimenetet. Egy "
+"üres név magát a parancsot használja címkeként. A munkakönyvtár "
+"alapértelmezés szerint a saját mappa. A parancsvégrehajtást engedélyezni "
+"kell a beállításokban."
+
+msgid ""
+"The name is optional: an empty name uses the command itself as its label. "
+"Command execution by the mapper is not implemented on macOS."
+msgstr ""
+"A név nem kötelező: egy üres név magát a parancsot használja címkeként. A "
+"leképező általi parancsvégrehajtás nem valósul meg macOS rendszeren."
+
+msgid "Triggers"
+msgstr "Kiváltók"
+
+msgid "Disable animations"
+msgstr "Animációk letiltása"
+
+msgid "Add layout: "
+msgstr "Elrendezés hozzáadása:"
+
+msgid "Save (Ctrl+S)"
+msgstr "Mentés (Ctrl+S)"
+
+msgid "Close layout"
+msgstr "Elrendezés bezárása"
+
+msgid "Discard layout changes?"
+msgstr "Elveti az elrendezés módosításait?"
+
+msgid "Unsaved changes to this layout will be lost."
+msgstr "Az elrendezés nem mentett módosításai elvesznek."
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Triggers tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"A hivatkozásokban használt egyedi azonosító, például makró:<id>. Ha ezt a "
+"makrót egy kulcshoz szeretné kötni, válassza ki azt a műveletet a Rétegek "
+"vagy Triggerek lapon. Csak akkor módosítsa az azonosítót, ha semmi sem "
+"használja ezt a makrót."
+
+msgid "Discard"
+msgstr "Eldobni"
+
+msgid ""
+"Build reusable sequences of key chords, text, commands and system actions. Use a unique ID in macro:<id> references and a readable name in action lists. Assign macros on the Layers or Triggers tab; change an ID only when it is unused.\n"
+"\n"
+"The step pause applies between steps of this macro. Modifier delay is the time between pressing a modifier and the main key. Leave delays empty to use Settings defaults."
+msgstr ""
+"Újrafelhasználható sorozatok létrehozása kulcsakkordokból, szövegekből, parancsokból és rendszerműveletekből. Használjon egyedi azonosítót a makró:<id> hivatkozásokban, és egy olvasható nevet a műveletlistákban. Makrók hozzárendelése a Rétegek vagy Triggerek lapon; csak akkor módosítsa az azonosítót, ha nem használja.\n"
+"\n"
+"A lépésszünet a makró lépései között érvényes. A módosító késleltetése a módosító gomb megnyomása és a főbillentyű lenyomása közötti idő. Hagyja üresen a késleltetéseket a Beállítások alapértelmezett értékeinek használatához."
+
+msgid "Global defaults: step pause {} ms; modifier delay {} ms."
+msgstr "Globális alapértékek: lépésszünet {} ms; módosító késleltetés {} ms."
+
+msgid "Layout changed on disk"
+msgstr "Az elrendezés megváltozott a lemezen"
+
+msgid ""
+"The file of “{}” was changed by another program after you opened it. Your "
+"edits are kept until you choose what to do."
+msgstr ""
+"A „{}” fájlt egy másik program módosította a megnyitás után. A módosításokat"
+" mindaddig megőrizzük, amíg ki nem választja, mit tegyen."
+
+msgid "Load from disk"
+msgstr "Betöltés lemezről"
+
+msgid "Save as new…"
+msgstr "Mentés újként…"
+
+msgid "Overwrite"
+msgstr "Átír"
+
+msgid "Show LHC key codes used in assignments, such as KeyA and ArrowLeft."
+msgstr ""
+"A hozzárendelésekben használt LHC kulcskódok megjelenítése, például KeyA és "
+"ArrowLeft."
+
+msgid "Application"
+msgstr "Alkalmazás"
+
+msgid "Window title"
+msgstr "Ablak címe"
+
+msgid "Click to switch"
+msgstr "Kattintson a váltáshoz"
+
+msgid "Match by app ID or process instead"
+msgstr "Egyezzen inkább alkalmazásazonosító vagy folyamat alapján"
+
+msgid "Match by window title instead"
+msgstr "Inkább az ablak címe alapján egyeztessen"
+
+msgid "Open now: {n} window"
+msgid_plural "Open now: {n} windows"
+msgstr[0] "Megnyitás most: {n} ablak"
+msgstr[1] "Most nyitva: {n} ablak"
+
+msgid "Not open now"
+msgstr "Most nincs nyitva"
+
+msgid "Running process"
+msgstr "Futó folyamat"
+
+msgid "Text the window title contains"
+msgstr "Szöveg az ablak címében"
+
+msgid "Already in the list"
+msgstr "Már a listán"
+
+msgid "Choose from open windows…"
+msgstr "Válasszon a nyitott ablakok közül…"
+
+msgid "Matches {n} open window"
+msgid_plural "Matches {n} open windows"
+msgstr[0] "{n} nyitott ablaknak felel meg"
+msgstr[1] "{n} nyitott ablaknak felel meg"
+
+msgid "Matches no open window"
+msgstr "Nem felel meg a nyitott ablaknak"
+
+msgid "Show Quick Action Menu on the last used page"
+msgstr "Gyors műveletek menü megjelenítése az utoljára használt oldalon"
+
+msgid "Show Emoji & Symbols menu on the last used page"
+msgstr ""
+"Az Emoji és szimbólumok menü megjelenítése az utoljára használt oldalon"
+
+msgid "Show the settings window"
+msgstr "Jelenítse meg a beállítások ablakot"
+
+msgid "Activate layout {} (switches to Single mode)"
+msgstr "A {} elrendezés aktiválása (egyszeri módra vált)"
+
+msgid "There is no layout number {}"
+msgstr "Nincs {} elrendezési szám"
+
+msgid "Show the Left Hand Control layout name when it changes"
+msgstr "Mutassa meg a bal oldali vezérlő elrendezés nevét, ha megváltozik"
+
+msgid "Show the keys of a layer while it is held"
+msgstr "A fólia kulcsainak megjelenítése, miközben le van tartva"
+
+msgid ""
+"The hint appears 2 seconds after the layer activates. Pressing a layer key "
+"hides or cancels it until the trigger is released, including in game mode."
+msgstr ""
+"Az utalás 2 másodperccel a réteg aktiválása után jelenik meg. A "
+"rétegbillentyű lenyomása elrejti vagy megszakítja azt a trigger "
+"elengedéséig, beleértve a játékmódot is."
+
+msgid ""
+"Unavailable: build with the spell feature and use a Wayland compositor with "
+"layer-shell (KDE Plasma, Sway, Hyprland)."
+msgstr ""
+"Nem érhető el: építs a varázslat funkcióval, és használj Wayland kompozitort"
+" réteghéjjal (KDE Plasma, Sway, Hyprland)."
+
+msgid ""
+"The app:activateLayout1…5 actions activate the layout at that position in "
+"this list: reordering the list changes which layout a key activates. In Auto"
+" mode they switch to Single mode."
+msgstr ""
+"Az app:activateLayout1…5 műveletek aktiválják az elrendezést a listában az "
+"adott helyen: a lista átrendezése megváltoztatja, hogy a billentyű melyik "
+"elrendezést aktiválja. Automatikus módban Single módba kapcsolnak."
+
+msgid "Cut"
+msgstr "Kivágás"
+
+msgid "Copy"
+msgstr "Másolás"
+
+msgid "Paste"
+msgstr "Beillesztés"
+
+msgid "Select all"
+msgstr "Összes kijelölése"
+
+msgid "Clear search"
+msgstr "Keresés törlése"
+
+msgid "Add application"
+msgstr "Alkalmazás hozzáadása"
+
+msgid "Edit application"
+msgstr "Alkalmazás szerkesztése"
+
+msgid "Remove application?"
+msgstr "Eltávolítja az alkalmazást?"
+
+msgid "“{}” will be removed from the list."
+msgstr "A „{}” törlődik a listáról."
+
+msgid "Devices"
+msgstr "Eszközök"
+
+msgid "Required"
+msgstr "Kívánt"
+
+msgid "Optional"
+msgstr "Választható"
+
+msgid "Failed to start"
+msgstr "Nem sikerült elindítani"
+
+msgid "Keys work as usual. Start the mapper to apply your layouts."
+msgstr ""
+"A kulcsok a megszokott módon működnek. Indítsa el a térképezőt az "
+"elrendezések alkalmazásához."
+
+msgid "Select a keyboard below to start the mapper."
+msgstr "A térképező elindításához válasszon lent egy billentyűzetet."
+
+msgid "Changing a device restarts the mapper."
+msgstr "Az eszköz módosítása újraindítja a leképezőt."
+
+msgid "Auto: known game {}"
+msgstr "Auto: ismert játék {}"
+
+msgid "Ignored in fullscreen"
+msgstr "Teljes képernyőn figyelmen kívül hagyva"
+
+msgid "Not available in this session."
+msgstr "Nem érhető el ebben a munkamenetben."
+
+msgid "Steam games"
+msgstr "Steam játékok"
+
+msgid ""
+"Turns on while Steam runs a game: Steam starts every game through reaper "
+"SteamLaunch, and game windows have the ID steam_app_<number>."
+msgstr ""
+"Bekapcsol, miközben a Steam játékot futtat: A Steam minden játékot a "
+"SteamLaunch kaszáson keresztül indít, és a játékablakok a steam_app_<szám> "
+"azonosítóval rendelkeznek."
+
+msgid "Turns on while Steam reports a running game."
+msgstr "Bekapcsol, miközben a Steam futó játékot jelez."
+
+msgid "Lutris games"
+msgstr "Lutris játékok"
+
+msgid ""
+"Turns on while a game started by Lutris runs: Lutris starts every game "
+"through lutris-wrapper."
+msgstr ""
+"Bekapcsol, miközben a Lutris által elindított játék fut: Lutris minden "
+"játékot a lutris-wrapperen keresztül indít."
+
+msgid "Gamescope sessions"
+msgstr "Gamescope foglalkozások"
+
+msgid "Turns on while the active window is a nested gamescope session."
+msgstr "Bekapcsol, ha az aktív ablak beágyazott gamescope munkamenet."
+
+msgid "Games from the Game Bar list"
+msgstr "Játékok a Game Bar listából"
+
+msgid "Applications of the Game category"
+msgstr "A Játék kategória alkalmazásai"
+
+msgid ""
+"Turns on while the active window belongs to an application whose .desktop "
+"file lists the Game category. Launchers are tagged as games too, so they are"
+" skipped."
+msgstr ""
+"Bekapcsol, amikor az aktív ablak olyan alkalmazáshoz tartozik, amelynek "
+".desktop fájlja a Játék kategóriát tartalmazza. Az indítók is játékként "
+"vannak megjelölve, ezért kimaradnak."
+
+msgid ""
+"Turns on while the active application declares the Games category in its "
+"Info.plist. Launchers are skipped."
+msgstr ""
+"Bekapcsol, miközben az aktív alkalmazás deklarálja a Játékok kategóriát az "
+"Info.plistjében. Az indítók kimaradnak."
+
+msgid "Auto — according to settings"
+msgstr "Auto — a beállításoknak megfelelően"
+
+msgid "Blank"
+msgstr "Üres"
+
+msgid "Assign action"
+msgstr "Művelet hozzárendelése"
+
+msgid "Action after {} ms of holding"
+msgstr "Művelet {} ms tartás után"
+
+msgid ""
+"These codes are specific to Left Hand Control, not universal keyboard codes "
+"(e.g. KeyA, ArrowLeft)."
+msgstr ""
+"Ezek a kódok a bal oldali vezérlésre vonatkoznak, nem pedig az univerzális "
+"billentyűzetkódokra (pl. KeyA, Arrow Left)."
+
+msgid "While its window is active"
+msgstr "Amíg az ablaka aktív"
+
+msgid "While the process runs"
+msgstr "Amíg a folyamat fut"
+
+msgid "Counts while a window of the application has the focus."
+msgstr "Számít, amíg az alkalmazás ablaka van a fókuszban."
+
+msgid ""
+"Counts while a process with this name runs, even without a window or in the "
+"background."
+msgstr ""
+"Számol, amíg egy ilyen nevű folyamat fut, még ablak nélkül vagy a háttérben "
+"is."
+
+msgid "Application · while its window is active"
+msgstr "Alkalmazás · amíg az ablaka aktív"
+
+msgid "Process · while it runs"
+msgstr "Folyamat · futás közben"
+
+msgid "No games added."
+msgstr "Nincsenek hozzáadva játékok."
+
+msgid ""
+"Game mode turns on while any of these matches. An application is matched by "
+"its ID or process name: the whole name, ignoring case, with * and ? as "
+"wildcards. Steam games have the app ID steam_app_<number>; Proton games are "
+"also found by their .exe name. A window title item matches the active window"
+" whose title contains the text."
+msgstr ""
+"A játék mód bekapcsolódik, ha ezek a meccsek bármelyike ​​történik. Egy "
+"alkalmazás az azonosítójával vagy a folyamatnévvel egyezik meg: a teljes "
+"név, a kis- és nagybetűk figyelmen kívül hagyásával, * és ? helyettesítő "
+"karakterként. A Steam játékok alkalmazásazonosítója steam_app_<szám>; A "
+"protonjátékokat .exe nevükön is megtaláljuk. Egy ablakcímelem megegyezik "
+"azzal az aktív ablakkal, amelynek címe tartalmazza a szöveget."
+
+msgid ""
+"Game mode stays off while any of these matches, even if a game or another "
+"detector would turn it on."
+msgstr ""
+"A játék mód kikapcsolva marad, ha ezen meccsek bármelyike ​​után egy játék "
+"vagy egy másik detektor bekapcsolja."
+
+msgid "less than a minute"
+msgstr "kevesebb mint egy perc"
+
+msgid "{} min"
+msgstr "{} min"
+
+msgid "{} h {} min"
+msgstr "{} h {} min"
+
+msgid "Running for {}"
+msgstr "{}-re fut"
+
+msgid "Stopped unexpectedly"
+msgstr "Váratlanul megállt"
+
+msgid "Stopped {} ago after running for {}."
+msgstr "A {} leállítása korábban, miután futott a {}-re."
+
+msgid "Text input"
+msgstr "Szövegbevitel"
+
+msgid ""
+"How text actions in rules and macros are typed. Key remapping and the emoji "
+"popup do not use it."
+msgstr ""
+"Hogyan történik a szöveges műveletek beírása a szabályokban és makrókban. A "
+"kulcsok újrakiosztása és az emoji előugró ablak nem használja."
+
+msgid "Typing method"
+msgstr "Gépelési módszer"
+
+msgid "libei + clipboard fallback (recommended)"
+msgstr "libei + vágólap tartalék (ajánlott)"
+
+msgid "Paste from clipboard"
+msgstr "Beillesztés a vágólapról"
+
+msgid "ydotool"
+msgstr "ydotool"
+
+msgid "xdotool"
+msgstr "xdotool"
+
+msgid ""
+"Types with the current layout, or pastes the whole text when a character is "
+"unavailable. Paste requires clipboard access and support for the paste "
+"shortcut. Preserves clipboard formats and cancels if the destination "
+"changes. Requires portal permission and active-window detection."
+msgstr ""
+"Az aktuális elrendezéssel gépel, vagy beilleszti a teljes szöveget, ha egy "
+"karakter nem elérhető. A beillesztéshez hozzá kell férni a vágólaphoz, és "
+"támogatni kell a beillesztési parancsikont. Megőrzi a vágólap formátumait, "
+"és törli, ha a cél megváltozik. Portálengedélyt és aktív ablak észlelést "
+"igényel."
+
+msgid ""
+"Types only through libei using the current keyboard layout and Caps Lock "
+"state. Skips text with unavailable characters. Requires portal permission "
+"and active-window detection. Cancels if the destination changes."
+msgstr ""
+"Csak a libei-n keresztül ír be a jelenlegi billentyűzetkiosztás és Caps Lock"
+" állapot használatával. Kihagyja a nem elérhető karaktereket tartalmazó "
+"szöveget. Portálengedélyt és aktív ablak észlelést igényel. Megszakítja, ha "
+"az úti cél megváltozik."
+
+msgid ""
+"Types only through NotifyKeyboardKeycode using the KDE layout and readable "
+"keyboard state. Skips text with unavailable characters. Requires portal "
+"permission and active-window detection. Cancels if the destination changes."
+msgstr ""
+"Csak a NotifyKeyboardKeycode-on keresztül ír be, a KDE-elrendezés és az "
+"olvasható billentyűzetállapot használatával. Kihagyja a nem elérhető "
+"karaktereket tartalmazó szöveget. Portálengedélyt és aktív ablak észlelést "
+"igényel. Megszakítja, ha az úti cél megváltozik."
+
+msgid ""
+"Pastes with the paste shortcut through the portal. Requires clipboard "
+"access, active-window detection and an app supporting that shortcut. "
+"Preserves all clipboard formats; a new user copy takes precedence. Reports "
+"an error if no text transfer is observed."
+msgstr ""
+"Beilleszti a beillesztés parancsikont a portálon keresztül. Vágólap-"
+"hozzáférést, aktív ablak-észlelést és ezt a parancsikont támogató "
+"alkalmazást igényel. Megőrzi az összes vágólap formátumot; egy új "
+"felhasználói példány élvez elsőbbséget. Hibát jelez, ha nem figyelhető meg "
+"szövegátvitel."
+
+msgid "Paste shortcut"
+msgstr "Parancsikon beillesztése"
+
+msgid ""
+"Sent to the focused app to paste the text. Terminals usually need "
+"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
+"Ctrl+V does not paste there."
+msgstr ""
+"Elküldve a fókuszált alkalmazásnak a szöveg beillesztéséhez. A terminálokhoz"
+" általában szükség van a Ctrl+Shift+V billentyűkombinációra: van, amelyik "
+"beilleszti az egér kijelölését a Shift+Insert parancsra, és a Ctrl+V nem "
+"illeszti be oda."
+
+msgid ""
+"Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "
+"Reliable for Latin text only. On an error, stops without switching methods."
+msgstr ""
+"Csak \"ydotool type\" fut. Szüksége van az ydotoolra és az ydotool "
+"szolgáltatására. Csak latin szöveg esetén megbízható. Hiba esetén a "
+"módszerek váltása nélkül leáll."
+
+msgid ""
+"Runs \"xdotool type\" only. Works only in X11 sessions and XWayland windows."
+" On an error, stops without switching methods."
+msgstr ""
+"Csak \"xdotool type\" fut. Csak X11 munkamenetekben és XWayland ablakokban "
+"működik. Hiba esetén a módszerek váltása nélkül leáll."
+
+msgid "ydotool from PATH"
+msgstr "ydotool a PATH-tól"
+
+msgid "xdotool from PATH"
+msgstr "xdotool a PATH-ról"
+
+msgid ""
+"Each item is compared with the active window. Pick a window from the list "
+"below to fill in the field."
+msgstr ""
+"Minden elem összehasonlításra kerül az aktív ablakkal. Pick a window from "
+"the list below to fill in the field."
+
+msgid ""
+"Application: the app ID (Wayland app id or X11 WM_CLASS) or the process "
+"name. The whole name must match, case is ignored, .exe is optional. * stands"
+" for any characters and ? for one, e.g. steam_app_*. The ID is stable, so "
+"prefer it."
+msgstr ""
+"Application: the app ID (Wayland app id or X11 WM_CLASS) or the process "
+"name. The whole name must match, case is ignored, .exe is optional. * "
+"bármely karaktert jelöl, és a ? egynek pl. steam_app_*. Az azonosító stabil,"
+" ezért inkább azt."
+
+msgid ""
+"Window title: matches when the title contains the text, case is ignored. "
+"With * or ? the pattern must cover the whole title. A title changes with the"
+" open tab or document, and it never matches a process without a window."
+msgstr ""
+"Window title: matches when the title contains the text, case is ignored. "
+"*-al vagy ? a mintának le kell fednie a teljes címet. A title changes with "
+"the open tab or document, and it never matches a process without a window."
+
+msgid "Match by"
+msgstr "Egyezés szerint"
+
+msgid "Process"
+msgstr "Folyamat"
+
+msgid "Process name, * and ? allowed"
+msgstr "Folyamat neve, * és ? megengedett"
+
+msgid "App ID, * and ? allowed"
+msgstr "Alkalmazásazonosító, * és ? megengedett"
+
+msgid ""
+"The item is compared with the names of running processes. Pick one from the "
+"list below to fill in the field."
+msgstr ""
+"Az elem összehasonlításra kerül a futó folyamatok neveivel. Válasszon egyet "
+"az alábbi listából a mező kitöltéséhez."
+
+msgid ""
+"Process: the executable name, as the list below shows it. The whole name "
+"must match, case is ignored, .exe is optional. * stands for any characters "
+"and ? for one."
+msgstr ""
+"Process: the executable name, as the list below shows it. The whole name "
+"must match, case is ignored, .exe is optional. * bármely karaktert jelöl, és"
+" a ? egynek."
+
+msgid "Matches {n} running process"
+msgid_plural "Matches {n} running processes"
+msgstr[0] "{n} futó folyamatnak felel meg"
+msgstr[1] "{n} futó folyamatnak felel meg"
+
+msgid "Matches no running process"
+msgstr "Nem egyezik futó folyamattal"
+
+msgid ""
+"Many applications run as “{}”, so the name matches all of them. The "
+"application ID is more precise."
+msgstr ""
+"Many applications run as “{}”, so the name matches all of them. Az "
+"alkalmazásazonosító pontosabb."
+
+msgid "When it counts"
+msgstr "Amikor számít"
+
+msgid "Window titles"
+msgstr "Ablakcímek"
+
+msgid "Processes of open windows"
+msgstr "Nyitott ablakok folyamatai"
+
+msgid "Shared process"
+msgstr "Megosztott folyamat"
+
+msgid "Running without a window"
+msgstr "Futás ablak nélkül"
+
+msgid "Type a name to find processes running without a window."
+msgstr "Írjon be egy nevet az ablak nélkül futó folyamatok kereséséhez."
+
+msgid "Process · while its window is active"
+msgstr "Folyamat · amíg az ablaka aktív"
+
+msgid "While the trigger is held"
+msgstr "Amíg a ravaszt tartjuk"
+
+msgid "Press key"
+msgstr "Nyomja meg a gombot"
+
+msgid ""
+"Which key stays pressed while you hold the trigger, together with the layer."
+" “Don't press” only switches the layer."
+msgstr ""
+"Melyik gomb marad lenyomva, amíg lenyomva tartja a ravaszt, a réteggel "
+"együtt. A „Ne nyomja meg” csak a réteget váltja."
+
+msgid ""
+"Which key stays pressed while you hold the trigger. “Trigger itself” keeps "
+"the usual behavior of the key."
+msgstr ""
+"Melyik gomb marad lenyomva, amíg lenyomva tartja a ravaszt. A „kioldó maga” "
+"megtartja a kulcs szokásos viselkedését."
+
+msgid "Trigger itself"
+msgstr "Maga a trigger"
+
+msgid "Other key…"
+msgstr "Másik kulcs…"
+
+msgid "When to press"
+msgstr "Mikor kell megnyomni"
+
+msgid "Holds {}"
+msgstr "{} tárolására alkalmas"
+
+msgid "Holds nothing"
+msgstr "Nem tart semmit"
+
+msgid "Hold after {} ms"
+msgstr "Tartsa lenyomva a {} ms után"
+
+msgid "Stop mapper (restore native keyboard behavior)"
+msgstr ""
+"Leképezés leállítása (natív billentyűzet viselkedésének visszaállítása)"
+
+msgid "Select a keyboard device in the settings to start the mapper"
+msgstr ""
+"A térképező elindításához válasszon egy billentyűzetet a beállításokban"
+
+msgid "Start mapper to intercept keys and apply layouts"
+msgstr ""
+"Indítsa el a Mappert a kulcsok elfogásához és az elrendezések alkalmazásához"
+
+msgid "Current active layout (selected automatically by switching rules)"
+msgstr ""
+"Jelenlegi aktív elrendezés (a váltási szabályok automatikusan választják ki)"
+
+msgid "Click to change mode (Auto / On / Off)"
+msgstr "Kattintson az üzemmód megváltoztatásához (Auto / Be / Ki)"
+
+msgid ""
+"The mapper intercepts keyboard input, applies layers, rules and macros, and "
+"emits output through a virtual device."
+msgstr ""
+"A leképező elfogja a billentyűzet bevitelét, rétegeket, szabályokat és "
+"makrókat alkalmaz, és egy virtuális eszközön keresztül bocsát ki kimenetet."
+
+msgid ""
+"Define how physical keys behave: tap for a key or action, hold to switch "
+"layers, or double-tap for extra shortcuts."
+msgstr ""
+"Határozza meg a fizikai billentyűk viselkedését: koppintson egy billentyűhöz"
+" vagy művelethez, tartsa lenyomva a rétegek közötti váltáshoz, vagy "
+"koppintson duplán további gyorsbillentyűkért."
+
+msgid ""
+"Action performed when the trigger is pressed and released quickly without "
+"holding."
+msgstr ""
+"A művelet akkor hajtható végre, amikor a ravaszt gyorsan lenyomják és "
+"elengedik, anélkül, hogy megfogták volna."
+
+msgid ""
+"Action performed when the trigger is pressed twice quickly within the "
+"double-tap timeout."
+msgstr ""
+"A művelet akkor hajtható végre, ha a ravaszt kétszer gyorsan megnyomják a "
+"dupla koppintási időkorláton belül."
+
+msgid "Show standard QWERTY letter labels for visual reference."
+msgstr "Szabványos QWERTY betűcímkék megjelenítése vizuális referenciaként."
+
+msgid ""
+"Show internal key codes used in Left Hand Control profiles (e.g. KeyA, "
+"ArrowLeft)."
+msgstr ""
+"A bal oldali vezérlőprofilokban használt belső kulcskódok megjelenítése (pl."
+" KeyA, Arrow Left)."
+
+msgid "Hold detection"
+msgstr "Tartsa érzékelés"
+
+msgid "When a key becomes a hold"
+msgstr "Amikor egy kulcs tartássá válik"
+
+msgid ""
+"Decides when a rule key that is still down counts as a hold if you press "
+"another key meanwhile. Applies to all rules."
+msgstr ""
+"Eldönti, hogy a még mindig lenyomott szabálybillentyű mikor számít "
+"tartásnak, ha közben megnyom egy másik gombot. Minden szabályra vonatkozik."
+
+msgid ""
+"After another key is released: the key becomes a hold once another key is "
+"pressed and released while it is down, or when the hold threshold passes. "
+"Fast rolls while typing stay taps."
+msgstr ""
+"Egy másik gomb elengedése után: a billentyű tartásba kerül, ha egy másik "
+"billentyűt lenyomnak és felengednek, miközben le van nyomva, vagy amikor a "
+"tartási küszöb átlépi. Gyors tekercselés gépelés közben maradjon koppintás."
+
+msgid ""
+"As soon as another key is pressed: reacts faster, but fast typing can "
+"trigger the hold by mistake."
+msgstr ""
+"Amint egy másik billentyűt lenyomnak: gyorsabban reagál, de a gyors gépelés "
+"tévedésből kiválthatja a tartást."
+
+msgid "After another key is released (recommended)"
+msgstr "Egy másik kulcs elengedése után (ajánlott)"
+
+msgid "As soon as another key is pressed"
+msgstr "Amint egy másik gombot megnyomnak"
+
+msgid ""
+"Used by rules that leave the field empty. A rule can set its own value in "
+"its advanced options."
+msgstr ""
+"Olyan szabályok használják, amelyek üresen hagyják a mezőt. Egy szabály "
+"saját értéket állíthat be a speciális beállításokban."
+
+msgid "Hold threshold, ms"
+msgstr "Tartási küszöb, ms"
+
+msgid ""
+"How long to hold a rule key before it counts as a hold: its layer or hold "
+"action. Released earlier, the key runs its tap action."
+msgstr ""
+"Mennyi ideig kell lenyomni egy szabálybillentyűt, mielőtt az tartásnak "
+"számítana: a réteg vagy a tartási művelet. A korábban kiadott kulcs "
+"végrehajtja a koppintási műveletet."
+
+msgid ""
+"Lower: layers turn on faster, but fast typing may trigger them by mistake. "
+"Higher: fewer false holds, but a longer wait. Usually 150–250 ms."
+msgstr ""
+"Alsó: a rétegek gyorsabban kapcsolnak be, de a gyors gépelés tévedésből "
+"kiválthatja őket. Magasabb: kevesebb hamis tartás, de hosszabb várakozás. "
+"Általában 150-250 ms."
+
+msgid "Standard value: {} ms."
+msgstr "Normál érték: {} ms."
+
+msgid "Long hold, ms"
+msgstr "Hosszú tartás, ms"
+
+msgid ""
+"How long to keep holding a rule key before its long-hold action runs once. "
+"Applies to rules whose hold runs an action instead of a layer."
+msgstr ""
+"Mennyi ideig kell tartani egy szabálybillentyűt, mielőtt a hosszú tartási "
+"művelet egyszer lefutna. Azokra a szabályokra vonatkozik, amelyeknél a "
+"tartás egy műveletet futtat réteg helyett."
+
+msgid "Double-tap window, ms"
+msgstr "Koppintson duplán az ablakon, ms"
+
+msgid ""
+"A second tap within this time after the first release counts as a double "
+"tap."
+msgstr ""
+"Az első kiadás után ezen időn belüli második koppintás dupla koppintásnak "
+"számít."
+
+msgid ""
+"A single tap on a key with a double-tap action runs only after this window "
+"ends, so a large value makes such keys feel slow. Keys without a double-tap "
+"action are not delayed."
+msgstr ""
+"A billentyű egyszeri megérintése dupla koppintással csak az ablak lejárta "
+"után fut le, így a nagy érték lassítja az ilyen billentyűket. A dupla "
+"koppintás nélküli billentyűk nem késleltethetők."
+
+msgid ""
+"Used by macros that leave the field empty. A macro can set its own value on "
+"the Macros page."
+msgstr ""
+"Olyan makrók használják, amelyek üresen hagyják a mezőt. A makró "
+"beállíthatja saját értékét a Makrók oldalon."
+
+msgid ""
+"Pause between consecutive steps of a macro. Increase it if an application "
+"misses keystrokes."
+msgstr ""
+"Szünet a makró egymást követő lépései között. Növelje, ha egy alkalmazás "
+"kihagyja a billentyűleütéseket."
+
+msgid "Simultaneous presses"
+msgstr "Egyidejű prések"
+
+msgid ""
+"For rules triggered by several keys pressed together, such as KeyJ+KeyK. All"
+" keys must go down within this time, in any order. Until then the first key "
+"is held back; if the combination does not complete, it is typed as usual. "
+"Modifiers are never held back."
+msgstr ""
+"Több billentyű együttes lenyomása által kiváltott szabályokhoz, például "
+"KeyJ+KeyK. Ezen időn belül minden kulcsnak le kell ereszkednie, bármilyen "
+"sorrendben. Addig az első kulcsot visszatartják; ha a kombináció nem "
+"fejeződik be, akkor a szokásos módon gépeljük be. A módosítókat soha nem "
+"tartják vissza."
+
+msgid ""
+"Higher: the combination is easier to hit, but typing with these keys lags "
+"slightly. Applies to all rules; a rule cannot override it."
+msgstr ""
+"Magasabb: a kombinációt könnyebb megütni, de ezekkel a billentyűkkel való "
+"gépelés kissé késik. Minden szabályra vonatkozik; egy szabály nem írhatja "
+"felül."
+
+msgid ""
+"Wait between pressing modifiers (Shift, Ctrl, …) and the main key of a macro"
+" step. Increase it if an application receives the shortcut without its "
+"modifier. Default for macros that leave the field empty."
+msgstr ""
+"Várjon a módosítók (Shift, Ctrl, …) és a makrólépés főbillentyűjének "
+"lenyomása között. Növelje meg, ha egy alkalmazás módosító nélkül kapja meg a"
+" parancsikont. A mezőt üresen hagyó makrók alapértelmezett beállítása."
+
+msgid "Enter a long hold from 100 to 60000 ms."
+msgstr "Adjon meg egy hosszú tartást 100 és 60 000 ms között."
+
+msgid "Long hold after {} ms"
+msgstr "Hosszú tartás {} ms után"
+
+msgid ""
+"Released earlier, the trigger counts as a tap; held longer, as a hold. Empty"
+" uses the default from Settings: {} ms."
+msgstr ""
+"A korábban kiadott trigger érintésnek számít; hosszabb ideig tartva, "
+"tartásként. Az Empty az alapértelmezett beállításokat használja: {} ms."
+
+msgid ""
+"How long to keep holding before the action runs. Empty uses the default from"
+" Settings: {} ms."
+msgstr ""
+"Mennyi ideig kell tartani, mielőtt az akció lefut. Az Empty az "
+"alapértelmezett beállításokat használja: {} ms."
+
+msgid ""
+"Longest pause between two taps. Empty uses the default from Settings: {} ms."
+msgstr ""
+"A leghosszabb szünet két érintés között. Az Empty az alapértelmezett "
+"beállításokat használja: {} ms."
+
+msgid "Auto: {} is not counted as a game (built-in list)"
+msgstr "Auto: A {} nem számít játéknak (beépített lista)"
+
+msgid ""
+"These sources can take another application for a game, so each skips a "
+"built-in list of applications."
+msgstr ""
+"Ezek a források egy másik alkalmazást is igénybe vehetnek egy játékhoz, így "
+"mindegyik kihagyja az alkalmazások beépített listáját."
+
+msgid ""
+"Turns on while a program that Windows recognized as a game (the Game Bar "
+"list) runs. Launchers are listed there too, so they are skipped."
+msgstr ""
+"Bekapcsol, amikor a Windows által játékként felismert program fut (a Game "
+"Bar lista). Az indítók is ott vannak felsorolva, ezért kimaradnak."
+
+msgid "Launchers and game tools — not counted as games"
+msgstr "Indítóprogramok és játékeszközök – nem számítanak játéknak"
+
+msgid ""
+"Decides when a dual-role key counts as a hold if another key is pressed. "
+"Rules can override this default in advanced options. Chord detection is "
+"configured separately."
+msgstr ""
+"Eldönti, hogy egy kettős szerepkörű billentyű mikor számít tartásnak, ha "
+"másik billentyűt lenyomnak. A szabályok felülírhatják ezt az alapértelmezett"
+" beállítást a speciális beállításoknál. Az akkordészlelés külön "
+"konfigurálható."
+
+msgid "After another key is released (better for typing)"
+msgstr "Egy másik billentyű elengedése után (jobb a gépeléshez)"
+
+msgid ""
+"As soon as another key is pressed: useful for dedicated layer or modifier "
+"keys. Reacts faster, but overlapping letters while typing can trigger the "
+"hold by mistake."
+msgstr ""
+"Amint egy másik billentyűt lenyomnak: hasznos a dedikált réteg- vagy "
+"módosítóbillentyűkhöz. Gyorsabban reagál, de a gépelés közben átfedő betűk "
+"tévedésből visszatartást válthatnak ki."
+
+msgid "Default from Settings: {}"
+msgstr "Alapértelmezett a beállításokból: {}"
+
+msgid "after another key is released"
+msgstr "egy másik kulcs elengedése után"
+
+msgid "as soon as another key is pressed"
+msgstr "amint megnyomnak egy másik gombot"
+
+msgid ""
+"Overrides the default hold detection for this rule. Use release detection "
+"for typing keys and press detection for dedicated layer or modifier keys. "
+"This does not change chord detection."
+msgstr ""
+"Felülbírálja a szabály alapértelmezett visszatartás-észlelését. Használja a "
+"feloldás-érzékelést a billentyűk begépeléséhez, és a nyomásérzékelést a "
+"dedikált réteg- vagy módosítóbillentyűkhöz. Ez nem változtatja meg az "
+"akkordfelismerést."
+
+msgid "Cannot list input devices: {}"
+msgstr "A beviteli eszközök nem listázhatók: {}"
+
+msgid "Keyboard interception is not implemented on this operating system."
+msgstr ""
+"A billentyűzet lehallgatása nincs megvalósítva ezen az operációs rendszeren."
+
+msgid "Defaults"
+msgstr "Alapértelmezések"
+
+msgid "Shared by all rules"
+msgstr "Minden szabály megosztja"
+
+msgid "Hold threshold"
+msgstr "Tartsa a küszöböt"
+
+msgid "Long hold"
+msgstr "Hosszú tartás"
+
+msgid "Double-tap window"
+msgstr "Koppintson duplán az ablakra"
+
+msgid "Reset to {} ms"
+msgstr "Visszaállítás {} ms-ra"
+
+msgid "Automatic game detection"
+msgstr "Automatikus játékfelismerés"
+
+msgid "Works only in Auto mode."
+msgstr "Csak Auto módban működik."
+
+msgid "System signals"
+msgstr "Rendszerjelek"
+
+msgid "Launchers"
+msgstr "Indítóindítók"
+
+msgid "Heroic games"
+msgstr "Hősi játékok"
+
+msgid ""
+"Turns on while a game started by Heroic Games Launcher runs (Epic, GOG, "
+"Amazon and added games): Heroic passes HEROIC_APP_NAME to every game it "
+"starts."
+msgstr ""
+"Bekapcsol, amikor a Heroic Games Launcher által elindított játék fut (Epic, "
+"GOG, Amazon és további játékok): A Heroic minden elindított játéknak átadja "
+"a HEROIC_APP_NAME alkalmazást."
+
+msgid "Games run through umu-launcher"
+msgstr "A játékok az umu-launcheren keresztül futnak"
+
+msgid ""
+"Turns on while a game runs through umu-run. Heroic, Lutris, Faugus Launcher "
+"and other launchers use it to start Windows games with Proton."
+msgstr ""
+"Bekapcsol, miközben a játék az umu-run fut. A Heroic, a Lutris, a Faugus "
+"Launcher és más indítók a Windows-játékok Protonnal való indítására "
+"használják."
+
+msgid "Guesses — can be wrong"
+msgstr "Találgatások - tévedhetnek"
+
+msgid "Your rules"
+msgstr "A te szabályaid"
+
+msgid ""
+"“Never a game” wins over everything else, automatic detection included."
+msgstr ""
+"A „Soha egy játék” minden más felett győz, beleértve az automatikus "
+"észlelést is."
+
+msgid "Always a game"
+msgstr "Mindig játék"
+
+msgid "Never a game"
+msgstr "Soha nem játék"
+
+msgid ""
+"Built-in list. To count one of these anyway, add it to Always a game under "
+"Your rules."
+msgstr ""
+"Beépített lista. Ha mégis meg szeretné számolni az egyiket, adja hozzá a "
+"Mindig játékhoz a saját szabályaihoz."
+
+msgid "Hold"
+msgstr "Nyomva tartás"
+
+msgid "Don't press"
+msgstr "Ne nyomja meg"
+
+msgid "{} — change…"
+msgstr "{} – változás…"
+
+msgid "Choose another key above to set when it is pressed."
+msgstr ""
+"Válasszon egy másik gombot a fenti gombok megnyomásának beállításához."
+
+msgid "Assign a double-tap action to the rule to change this window."
+msgstr ""
+"Az ablak módosításához rendeljen a szabályhoz egy dupla koppintásos "
+"műveletet."
+
+msgid "Hold on other key release"
+msgstr "Tartsa lenyomva a másik kulcskioldót"
+
+msgid "Hold on other key press"
+msgstr "Tartsa lenyomva a másik gombot"
+
+msgid "Reset"
+msgstr "Visszaállítás"
+
+msgid "Return all options in this dialog to their defaults"
+msgstr ""
+"A párbeszédpanel összes beállításának visszaállítása az alapértelmezett "
+"értékre"
+
+msgid "Macro time limit"
+msgstr "Makró időkorlát"
+
+msgid ""
+"A macro still running after this time is stopped and counts as finished. A "
+"macro started while another one runs waits for it; up to 3 runs can wait, "
+"further presses are ignored."
+msgstr ""
+"Az ezen idő után is futó makró leáll, és késznek számít. Egy makró elindult,"
+" miközben egy másik fut, vár rá; legfeljebb 3 futtatás várhat, a további "
+"lenyomásokat figyelmen kívül hagyja."
+
+msgid "Global shortcuts registered in this KDE session:"
+msgstr "A KDE munkamenetben regisztrált globális parancsikonok:"
+
+msgid ""
+"The list is read from the KDE global shortcut service (kglobalaccel): KWin, "
+"Plasma and applications register their actions there. The chosen action is "
+"invoked as is, as if its shortcut were pressed, even when no keys are "
+"assigned to it. Which actions exist and how they behave depends on the "
+"Plasma version and installed applications, so Left Hand Control does not "
+"guarantee them. Common window and desktop actions that also work on other "
+"platforms are in System actions."
+msgstr ""
+"A lista a KDE globális parancsikon szolgáltatásából (kglobalaccel) olvasható"
+" ki: a KWin, a Plasma és az alkalmazások ott regisztrálják tevékenységeiket."
+" A kiválasztott műveletet a rendszer úgy hívja meg, ahogy van, mintha a "
+"parancsikonját megnyomták volna, még akkor is, ha nincs hozzá rendelt "
+"billentyű. Az, hogy milyen műveletek léteznek és hogyan viselkednek, a "
+"Plasma verziótól és a telepített alkalmazásoktól függ, ezért a Left Hand "
+"Control nem garantálja ezeket. A más platformokon is működő általános ablak-"
+" és asztalműveletek a Rendszerműveletek részben találhatók."
+
+msgid "Hold key or combination"
+msgstr "Tartsa lenyomva a gombot vagy kombinációt"
+
+msgid ""
+"The key or combination stays pressed until you release the trigger. Choose "
+"modifiers plus one main key, for example Ctrl+KeyC."
+msgstr ""
+"A billentyű vagy kombináció lenyomva marad, amíg el nem engedi a ravaszt. "
+"Válasszon módosítókat és egy főbillentyűt, például Ctrl+KeyC."
+
+msgid "Not used when holding performs a long-hold action."
+msgstr "Nem használatos, ha a tartás hosszan tartó műveletet hajt végre."
+
+msgid "Other key or combination…"
+msgstr "Más billentyű vagy kombináció…"
+
+msgid "Hold detection when another key is pressed"
+msgstr "Tartsa lenyomva a felismerést, ha egy másik gombot megnyomnak"
+
+msgid "Used for single-key triggers without a long-hold action."
+msgstr "Egygombos triggerekhez használatos, hosszan tartó művelet nélkül."
+
+msgid "Long-hold threshold, ms"
+msgstr "Hosszú tartási küszöb, ms"
+
+msgid "Used when a long-hold action is selected."
+msgstr "Akkor használatos, ha egy hosszú tartási művelet van kiválasztva."
+
+msgid "Double-tap interval, ms"
+msgstr "Dupla érintés időtartama, ms"
+
+msgid "Double-tap actions are available only for single-key triggers."
+msgstr ""
+"A dupla koppintásos műveletek csak egygombos aktiválók esetén érhetők el."
+
+msgid "Applies when a double-tap action is assigned."
+msgstr "Akkor érvényes, ha dupla koppintásos művelet van hozzárendelve."
+
+msgid "Delete trigger"
+msgstr "Trigger törlése"
+
+msgid "Delete trigger?"
+msgstr "Törli az eseményindítót?"
+
+msgid ""
+"The trigger and all its assigned actions will be removed from the current "
+"layout."
+msgstr ""
+"Az eseményindító és az összes hozzárendelt művelet el lesz távolítva az "
+"aktuális elrendezésből."
+
+msgid "Reset {} to default"
+msgstr "Állítsa vissza a {}-t az alapértelmezettre"
+
+msgid "Holding activates layer: {}"
+msgstr "Tartás aktiválja a réteget: {}"
+
+msgid "Holding performs a long-hold action."
+msgstr "A Holding hosszú tartási műveletet hajt végre."
+
+msgid "Holding keeps a key or combination pressed."
+msgstr "A nyomva tartás egy billentyűt vagy kombinációt lenyomva tart."
+
+msgid "Paths"
+msgstr "Utak"
+
+msgid "Unknown layer key at \"{}\"."
+msgstr "Ismeretlen rétegkulcs itt: \"{}\"."
+
+msgid "Invalid layer action at \"{}\"."
+msgstr "Érvénytelen rétegművelet a következőnél: \"{}\"."
+
+msgid "Invalid macro at \"{}\"."
+msgstr "Érvénytelen makró itt: \"{}\"."
+
+msgid "Invalid menu action at \"{}\"."
+msgstr "Érvénytelen menüművelet itt: \"{}\"."
+
+msgid "Invalid timing at \"{}\"."
+msgstr "Érvénytelen időzítés a következőnél: \"{}\"."
+
+msgid "Invalid window condition at \"{}\"."
+msgstr "Érvénytelen ablakfeltétel a következőnél: \"{}\"."
+
+msgid "Unsupported rule combination at \"{}\"."
+msgstr "Nem támogatott szabálykombináció a következőnél: \"{}\"."
+
+msgid "Invalid macro step at \"{}\"."
+msgstr "Érvénytelen makrólépés a következőnél: \"{}\"."
+
+msgid "Macro call cycle at \"{}\"."
+msgstr "Makróhívási ciklus a \"{}\"-nél."
+
+msgid "A timing value is outside the range shown in Settings."
+msgstr "Az időzítési érték kívül esik a Beállításokban látható tartományon."
+
+msgid "Keep modifiers held until the layer is released"
+msgstr "Tartsa lenyomva a módosítókat, amíg a réteg fel nem szabadul"
+
+msgid ""
+"For a combination such as Alt+Tab: Alt stays pressed while you press the key"
+" again and is released together with the layer key, so the window switcher "
+"stays open."
+msgstr ""
+"Olyan kombinációk esetén, mint az Alt+Tab: Az Alt lenyomva marad, amíg újra "
+"megnyomja a billentyűt, és a rétegbillentyűvel együtt felengedik, így az "
+"ablakváltó nyitva marad."
+
+msgid ""
+"Cannot list input devices. Check device access and see the application log."
+msgstr ""
+"Nem lehet listázni a beviteli eszközöket. Ellenőrizze az eszköz "
+"hozzáférését, és tekintse meg az alkalmazásnaplót."
+
+msgid ""
+"Configuration is unavailable. Check the configuration files and see the "
+"application log."
+msgstr ""
+"A konfiguráció nem érhető el. Ellenőrizze a konfigurációs fájlokat és "
+"tekintse meg az alkalmazásnaplót."
+
+msgid "Popup menus are unavailable. Try opening the menu again."
+msgstr "A felugró menük nem érhetők el. Próbálja meg újra megnyitni a menüt."
+
+msgid "Popup menu failed. Try opening the menu again."
+msgstr "A felugró menü nem sikerült. Próbálja meg újra megnyitni a menüt."
+
+msgid ""
+"The text was not typed: the typing method is unavailable. Restart the mapper"
+" to try again."
+msgstr ""
+"A szöveget nem gépelték be: a gépelési mód nem érhető el. Indítsa újra a "
+"térképkészítőt, és próbálja újra."
+
+msgid ""
+"The text was not typed: safe clipboard access failed. See the application "
+"log."
+msgstr ""
+"A szöveg nem lett begépelve: a biztonságos vágólap elérése sikertelen. Lásd "
+"az alkalmazásnaplót."
+
+msgid ""
+"The text was not typed: the input tool failed. See the application log."
+msgstr ""
+"A szöveget nem gépelték be: a beviteli eszköz meghibásodott. Lásd az "
+"alkalmazásnaplót."
+
+msgid "Changes applied, but the mapper was not updated. Restart the mapper."
+msgstr ""
+"A változtatások érvénybe léptek, de a térképező nem frissült. Indítsa újra a"
+" térképezőt."
+
+msgid "The operation failed. See the application log."
+msgstr "A művelet meghiúsult. Lásd az alkalmazásnaplót."
+
+msgid "The action failed. See the application log."
+msgstr "Az akció meghiúsult. Lásd az alkalmazásnaplót."
+
+msgid ""
+"Cannot start the mapper. Check the keyboard and device access. See the "
+"application log."
+msgstr ""
+"A térképező nem indítható el. Ellenőrizze a billentyűzet és az eszköz "
+"hozzáférését. Lásd az alkalmazásnaplót."
+
+msgid "Mapper is running, but an error occurred. See the application log."
+msgstr "A Mapper fut, de hiba történt. Lásd az alkalmazásnaplót."
+
+msgid "Mapper stopped because of an error. See the application log."
+msgstr "A Mapper hiba miatt leállt. Lásd az alkalmazásnaplót."
+
+msgid ""
+"Cannot read or save the configuration. Check file access and see the "
+"application log."
+msgstr ""
+"A konfiguráció nem olvasható vagy menthető. Ellenőrizze a fájlhozzáférést, "
+"és tekintse meg az alkalmazásnaplót."
+
+msgid "Cannot parse the configuration file. See the application log."
+msgstr "A konfigurációs fájl nem értelmezhető. Lásd az alkalmazásnaplót."
+
+msgid "The configuration contains invalid values. See the application log."
+msgstr ""
+"A konfiguráció érvénytelen értékeket tartalmaz. Lásd az alkalmazásnaplót."
+
+msgid "The action has invalid syntax."
+msgstr "A művelet szintaxisa érvénytelen."
+
+msgid "Pauses can only be used in macro steps."
+msgstr "A szünetek csak makrólépésekben használhatók."
+
+msgid "The selected macro no longer exists."
+msgstr "A kiválasztott makró már nem létezik."
+
+msgid "The selected command no longer exists."
+msgstr "A kiválasztott parancs már nem létezik."
+
+msgid "Unknown system action."
+msgstr "Ismeretlen rendszerművelet."
+
+msgid "Unknown application action."
+msgstr "Ismeretlen alkalmazásművelet."
+
+msgid ""
+"Unknown action type. It may come from a newer version of the application."
+msgstr ""
+"Ismeretlen művelettípus. Lehet, hogy az alkalmazás újabb verziójából "
+"származik."
+
+msgid "Layout: {}"
+msgstr "Elrendezés: {}"
+
+msgid "Select All"
+msgstr "Összes kijelölése"
+
+msgid "Move line down"
+msgstr "Mozgassa a sort lefelé"
+
+msgid "Down + End"
+msgstr "Le + Vége"
+
+msgid "Up + End"
+msgstr "Fel + Vég"
+
+msgid "Up 5 times"
+msgstr "5-ször fel"
+
+msgid "Duplicate line"
+msgstr "Ismétlődő sor"
+
+msgid "Right + Space"
+msgstr "Jobb + szóköz"
+
+msgid "Empty line below"
+msgstr "Üres sor lent"
+
+msgid "Cut word right from center"
+msgstr "Vágja ki a szót közvetlenül a közepétől"
+
+msgid "Copy word right from center"
+msgstr "Másolja a szót közvetlenül a közepéről"
+
+msgid "Paste at line above"
+msgstr "Illessze be a fenti sorba"
+
+msgid "Replace word with buffer"
+msgstr "Cserélje ki a szót pufferre"
+
+msgid "Down + Home"
+msgstr "Le + Kezdőlap"
+
+msgid "Up + Home"
+msgstr "Fel + Kezdőlap"
+
+msgid "Down 5 times"
+msgstr "5-ször lefelé"
+
+msgid "Paste at line bottom"
+msgstr "Illessze be a sor aljára"
+
+msgid "Cut to start"
+msgstr "Vágja az induláshoz"
+
+msgid "Cut to end"
+msgstr "Vágja a végére"
+
+msgid "Cut line content"
+msgstr "Vágja le a vonal tartalmát"
+
+msgid "Cut and remove line"
+msgstr "Vágja le és távolítsa el a vonalat"
+
+msgid "Select 5 lines up"
+msgstr "Válasszon 5 sort felfelé"
+
+msgid "Copy to start"
+msgstr "Másolás kezdéshez"
+
+msgid "Copy to end"
+msgstr "Másolás a végére"
+
+msgid "Copy line"
+msgstr "Sor másolása"
+
+msgid "Select whole line"
+msgstr "Válassza ki a teljes sort"
+
+msgid "Select word right from center"
+msgstr "Válassza ki a szót közvetlenül a közepétől"
+
+msgid "Replace to start with buffer"
+msgstr "Cserélje ki a pufferrel kezdéshez"
+
+msgid "Replace to end with buffer"
+msgstr "Cserélje ki a végére pufferrel"
+
+msgid "Replace line with buffer"
+msgstr "Cserélje ki a vezetéket pufferrel"
+
+msgid "Select 5 lines down"
+msgstr "Válasszon 5 sorral lejjebb"
+
+msgid "Remove trigger"
+msgstr "Távolítsa el a triggert"
+
+msgid "Refresh list"
+msgstr "Lista frissítése"
+
+msgid "Remove item"
+msgstr "Elem eltávolítása"
+
+msgid "Save as or reset changes"
+msgstr "Mentés másként vagy a módosítások visszaállítása"
+
+msgid "Edit: {}"
+msgstr "Szerkesztés: {}"
+
+msgid "Save (Enter)"
+msgstr "Mentés (Enter)"
+
+msgid "Save (Ctrl+Enter)"
+msgstr "Mentés (Ctrl+Enter)"
+
+msgid "Cancel (Esc)"
+msgstr "Mégse (Esc)"
+
+msgid "Use the default from Settings: {} ms"
+msgstr "Használja a Beállítások menü alapértelmezett értékét: {} ms"
+
+msgid ""
+"Opened by the app:showQuickMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold any "
+"action: a shortcut, macro, shell command or system action."
+msgstr ""
+"Az alkalmazás megnyitja: showQuickMenuN műveletek, ahol N az oldal "
+"pozíciója: az oldalak átrendezése megváltoztatja, hogy a billentyű melyik "
+"oldalt nyitja meg. Minden cella tartalmazhat bármilyen műveletet: "
+"parancsikont, makrót, shell-parancsot vagy rendszerműveletet."
+
+msgid ""
+"In the popup, click a cell or press its key: the cells follow the keyboard "
+"rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number."
+msgstr ""
+"A felugró ablakban kattintson egy cellára, vagy nyomja meg a gombját: a "
+"cellák a Q–T, A–G és Z–B billentyűzetsorokat követik. Tab váltogatja az "
+"oldalakat; számjegyek nyitnak egy oldalt a szám alapján."
+
+msgid "Waiting for keyboard"
+msgstr "Várakozás a billentyűzetre"

@@ -175,7 +175,7 @@ pub enum Command {
 }
 
 pub const USAGE: &str = "usage: left-hand-control [--version | --help | show emoji|quick [page] | show settings | hide | toggle-mapper | \
-game auto|on|off|toggle | preferences system|light|dark en|ru | execute <action> | ping | quit]";
+game auto|on|off|toggle | preferences system|light|dark en|ru|de|fr|es|it|pt|pl|tr|uk|cs|hu|ro|el|hr|ka|kk|zh-Hans|zh-Hant|ja|ko | execute <action> | ping | quit]";
 
 impl Command {
     pub fn from_app_action(name: &str) -> Option<Self> {

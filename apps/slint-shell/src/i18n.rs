@@ -5,8 +5,7 @@
 //! follow language switches without Rust re-sending them.
 //!
 //! Text shown outside Slint uses a typed catalog generated at build time
-//! from the same PO file. Missing translations fail the build; runtime
-//! lookup never substitutes English text for Russian.
+//! from the same PO catalogs. Missing translations fail the build.
 
 use crate::ui::Message;
 use lhc_core::config_document::ConfigError;
@@ -21,6 +20,25 @@ pub enum Language {
     #[default]
     English,
     Russian,
+    German,
+    French,
+    Spanish,
+    Italian,
+    Portuguese,
+    Polish,
+    Turkish,
+    Ukrainian,
+    Czech,
+    Hungarian,
+    Romanian,
+    Greek,
+    Croatian,
+    Georgian,
+    Kazakh,
+    ChineseSimplified,
+    ChineseTraditional,
+    Japanese,
+    Korean,
 }
 
 impl Language {
@@ -29,6 +47,25 @@ impl Language {
         match self {
             Self::English => "en",
             Self::Russian => "ru",
+            Self::German => "de",
+            Self::French => "fr",
+            Self::Spanish => "es",
+            Self::Italian => "it",
+            Self::Portuguese => "pt",
+            Self::Polish => "pl",
+            Self::Turkish => "tr",
+            Self::Ukrainian => "uk",
+            Self::Czech => "cs",
+            Self::Hungarian => "hu",
+            Self::Romanian => "ro",
+            Self::Greek => "el",
+            Self::Croatian => "hr",
+            Self::Georgian => "ka",
+            Self::Kazakh => "kk",
+            Self::ChineseSimplified => "zh-Hans",
+            Self::ChineseTraditional => "zh-Hant",
+            Self::Japanese => "ja",
+            Self::Korean => "ko",
         }
     }
 
@@ -42,8 +79,50 @@ impl Language {
         match code {
             "en" => Some(Self::English),
             "ru" => Some(Self::Russian),
+            "de" => Some(Self::German),
+            "fr" => Some(Self::French),
+            "es" => Some(Self::Spanish),
+            "it" => Some(Self::Italian),
+            "pt" => Some(Self::Portuguese),
+            "pl" => Some(Self::Polish),
+            "tr" => Some(Self::Turkish),
+            "uk" => Some(Self::Ukrainian),
+            "cs" => Some(Self::Czech),
+            "hu" => Some(Self::Hungarian),
+            "ro" => Some(Self::Romanian),
+            "el" => Some(Self::Greek),
+            "hr" => Some(Self::Croatian),
+            "ka" => Some(Self::Georgian),
+            "kk" => Some(Self::Kazakh),
+            "zh-Hans" => Some(Self::ChineseSimplified),
+            "zh-Hant" => Some(Self::ChineseTraditional),
+            "ja" => Some(Self::Japanese),
+            "ko" => Some(Self::Korean),
             _ => None,
         }
+    }
+
+    /// Resolve an OS locale, including Chinese script and region variants.
+    fn from_os_locale(locale: &str) -> Self {
+        let normalized = locale
+            .split('.')
+            .next()
+            .unwrap_or(locale)
+            .replace('_', "-")
+            .to_ascii_lowercase();
+        let parts: Vec<_> = normalized.split('-').collect();
+        if parts[0] == "zh" {
+            return if !parts.contains(&"hans")
+                && parts
+                    .iter()
+                    .any(|part| matches!(*part, "hant" | "tw" | "hk" | "mo"))
+            {
+                Self::ChineseTraditional
+            } else {
+                Self::ChineseSimplified
+            };
+        }
+        Self::from_code(parts[0]).unwrap_or_default()
     }
 
     /// Resolve the configured preference; `auto` follows the OS language
@@ -52,12 +131,30 @@ impl Language {
         match preference {
             LocalePreference::English => Self::English,
             LocalePreference::Russian => Self::Russian,
+            LocalePreference::German => Self::German,
+            LocalePreference::French => Self::French,
+            LocalePreference::Spanish => Self::Spanish,
+            LocalePreference::Italian => Self::Italian,
+            LocalePreference::Portuguese => Self::Portuguese,
+            LocalePreference::Polish => Self::Polish,
+            LocalePreference::Turkish => Self::Turkish,
+            LocalePreference::Ukrainian => Self::Ukrainian,
+            LocalePreference::Czech => Self::Czech,
+            LocalePreference::Hungarian => Self::Hungarian,
+            LocalePreference::Romanian => Self::Romanian,
+            LocalePreference::Greek => Self::Greek,
+            LocalePreference::Croatian => Self::Croatian,
+            LocalePreference::Georgian => Self::Georgian,
+            LocalePreference::Kazakh => Self::Kazakh,
+            LocalePreference::ChineseSimplified => Self::ChineseSimplified,
+            LocalePreference::ChineseTraditional => Self::ChineseTraditional,
+            LocalePreference::Japanese => Self::Japanese,
+            LocalePreference::Korean => Self::Korean,
             LocalePreference::Auto => ["LC_ALL", "LC_MESSAGES", "LANG"]
                 .iter()
                 .filter_map(|name| std::env::var(name).ok())
                 .find(|value| !value.is_empty())
-                .filter(|value| value.starts_with("ru"))
-                .map_or(Self::English, |_| Self::Russian),
+                .map_or(Self::English, |value| Self::from_os_locale(&value)),
         }
     }
 }
@@ -65,9 +162,10 @@ impl Language {
 pub fn select_ui_language(code: &str) -> Result<(), String> {
     let language =
         Language::from_code(code).ok_or_else(|| format!("unknown UI language: {code}"))?;
-    let translator: Option<Box<dyn i_slint_core::translations::Translator>> = (language
-        == Language::Russian)
-        .then(|| Box::new(CatalogTranslator) as Box<dyn i_slint_core::translations::Translator>);
+    let translator: Option<Box<dyn i_slint_core::translations::Translator>> =
+        (language != Language::English).then(|| {
+            Box::new(CatalogTranslator(language)) as Box<dyn i_slint_core::translations::Translator>
+        });
     i_slint_core::context::with_global_context(
         || Err("initialize a Slint window before selecting the UI language".into()),
         |context| context.set_external_translator(translator),
@@ -90,15 +188,16 @@ include!(concat!(env!("OUT_DIR"), "/rust_translations.rs"));
 
 /// Lookups use the checked PO data directly. The MO parser in rspolib 0.1.2
 /// reverses context and source, so it cannot preserve contextual translations.
-struct CatalogTranslator;
+struct CatalogTranslator(Language);
 
 impl CatalogTranslator {
-    fn entry(context: Option<&str>, source: &str) -> Option<&'static CatalogEntry> {
+    fn entry(&self, context: Option<&str>, source: &str) -> Option<&'static CatalogEntry> {
         let key = (context.unwrap_or_default(), source);
-        TRANSLATIONS
+        let entries = catalog(self.0);
+        entries
             .binary_search_by_key(&key, |entry| (entry.0, entry.1))
             .ok()
-            .map(|index| &TRANSLATIONS[index])
+            .map(|index| &entries[index])
     }
 }
 
@@ -108,7 +207,7 @@ impl tr::Translator for CatalogTranslator {
         source: &'a str,
         context: Option<&'a str>,
     ) -> std::borrow::Cow<'a, str> {
-        if let Some(entry) = Self::entry(context, source)
+        if let Some(entry) = self.entry(context, source)
             && entry.2.is_none()
         {
             return entry.3[0].into();
@@ -124,18 +223,56 @@ impl tr::Translator for CatalogTranslator {
         plural: &'a str,
         context: Option<&'a str>,
     ) -> std::borrow::Cow<'a, str> {
-        if let Some(entry) = Self::entry(context, singular)
+        if let Some(entry) = self.entry(context, singular)
             && entry.2 == Some(plural)
         {
-            let form = match (n % 10, n % 100) {
-                (1, hundred) if hundred != 11 => 0,
-                (2..=4, hundred) if !(12..=14).contains(&hundred) => 1,
-                _ => 2,
-            };
+            let form = plural_form(self.0, n);
             return entry.3[form].into();
         }
         log::error!("missing plural translation: {context:?} {singular:?} {plural:?}");
         "".into()
+    }
+}
+
+/// Integer plural rules matching each bundled catalog's Plural-Forms header.
+fn plural_form(language: Language, n: u64) -> usize {
+    use Language::*;
+    match language {
+        ChineseSimplified | ChineseTraditional | Japanese | Korean => 0,
+        Russian | Ukrainian | Croatian => match (n % 10, n % 100) {
+            (1, hundred) if hundred != 11 => 0,
+            (2..=4, hundred) if !(12..=14).contains(&hundred) => 1,
+            _ => 2,
+        },
+        Polish => {
+            if n == 1 {
+                0
+            } else if (2..=4).contains(&(n % 10)) && !(12..=14).contains(&(n % 100)) {
+                1
+            } else {
+                2
+            }
+        }
+        Czech => {
+            if n == 1 {
+                0
+            } else if (2..=4).contains(&n) {
+                1
+            } else {
+                2
+            }
+        }
+        Romanian => {
+            if n == 1 {
+                0
+            } else if n == 0 || (1..20).contains(&(n % 100)) {
+                1
+            } else {
+                2
+            }
+        }
+        French | Turkish => usize::from(n > 1),
+        _ => usize::from(n != 1),
     }
 }
 
@@ -585,7 +722,7 @@ mod tests {
     fn runtime_catalog_translates_ui_and_russian_plural_forms() {
         use tr::Translator;
 
-        let translator = CatalogTranslator;
+        let translator = CatalogTranslator(Language::Russian);
         assert_eq!(translator.translate("Settings", None), "Настройки");
         for (count, suffix) in [
             (1, "правило"),
@@ -609,8 +746,8 @@ mod tests {
     #[test]
     fn runtime_catalog_contains_every_translation() {
         use tr::Translator;
-        let translator = CatalogTranslator;
-        for &(context, source, plural, translated) in TRANSLATIONS {
+        let translator = CatalogTranslator(Language::Russian);
+        for &(context, source, plural, translated) in catalog(Language::Russian) {
             let context = (!context.is_empty()).then_some(context);
             if let Some(plural) = plural {
                 for (count, form) in [(0, 2), (1, 0), (2, 1), (5, 2), (11, 2), (21, 0)] {
@@ -633,7 +770,7 @@ mod tests {
     #[test]
     fn contextual_translations_and_missing_keys_never_use_source_fallbacks() {
         use tr::Translator;
-        let translator = CatalogTranslator;
+        let translator = CatalogTranslator(Language::Russian);
         assert_eq!(
             translator.translate("Auto", Some("Game mode control")),
             "Авто"
@@ -657,7 +794,111 @@ mod tests {
         for language in [Language::Russian, Language::English] {
             assert_eq!(Language::from_code(language.code()), Some(language));
         }
-        assert_eq!(Language::from_code("de"), None);
+        assert_eq!(Language::from_code("de"), Some(Language::German));
+        assert_eq!(Language::from_code("xx"), None);
+    }
+
+    #[test]
+    fn os_locales_resolve_regions_scripts_and_fallbacks() {
+        for (locale, expected) in [
+            ("de_DE.UTF-8", Language::German),
+            ("es_AR.UTF-8", Language::Spanish),
+            ("pt_BR", Language::Portuguese),
+            ("uk_UA", Language::Ukrainian),
+            ("ka_GE", Language::Georgian),
+            ("kk_KZ", Language::Kazakh),
+            ("zh_CN.UTF-8", Language::ChineseSimplified),
+            ("zh_SG", Language::ChineseSimplified),
+            ("zh-Hans", Language::ChineseSimplified),
+            ("zh-Hans-TW", Language::ChineseSimplified),
+            ("zh_TW", Language::ChineseTraditional),
+            ("zh_HK.UTF-8", Language::ChineseTraditional),
+            ("zh-Hant", Language::ChineseTraditional),
+            ("ja_JP", Language::Japanese),
+            ("ko_KR", Language::Korean),
+            ("C.UTF-8", Language::English),
+            ("unknown", Language::English),
+        ] {
+            assert_eq!(Language::from_os_locale(locale), expected, "{locale}");
+        }
+    }
+
+    #[test]
+    fn plural_rules_cover_language_specific_boundaries() {
+        for (language, cases) in [
+            (
+                Language::Polish,
+                &[(0, 2), (1, 0), (2, 1), (5, 2), (12, 2), (21, 2), (22, 1)][..],
+            ),
+            (
+                Language::Czech,
+                &[(0, 2), (1, 0), (2, 1), (4, 1), (5, 2), (21, 2)][..],
+            ),
+            (
+                Language::Romanian,
+                &[(0, 1), (1, 0), (2, 1), (19, 1), (20, 2), (100, 2), (101, 1)][..],
+            ),
+            (
+                Language::Ukrainian,
+                &[(0, 2), (1, 0), (2, 1), (11, 2), (21, 0), (22, 1)][..],
+            ),
+            (Language::Croatian, &[(1, 0), (3, 1), (13, 2), (21, 0)][..]),
+            (Language::French, &[(0, 0), (1, 0), (2, 1)][..]),
+            (Language::Portuguese, &[(0, 1), (1, 0), (2, 1)][..]),
+            (Language::ChineseTraditional, &[(0, 0), (1, 0), (2, 0)][..]),
+        ] {
+            for &(n, expected) in cases {
+                assert_eq!(
+                    plural_form(language, n),
+                    expected,
+                    "{}: {n}",
+                    language.code()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn all_languages_roundtrip_preferences_ipc_and_plural_catalogs() {
+        use tr::Translator;
+        for preference in crate::pages::LOCALES.into_iter().skip(1) {
+            let serialized = serde_json::to_string(&preference).unwrap();
+            assert_eq!(
+                serde_json::from_str::<LocalePreference>(&serialized).unwrap(),
+                preference
+            );
+            let language = Language::resolve(preference);
+            assert_eq!(Language::from_code(language.code()), Some(language));
+            let wire = format!("preferences dark {}", language.code());
+            assert_eq!(
+                crate::command::Command::parse(&wire).unwrap().to_string(),
+                wire
+            );
+            if language == Language::English {
+                continue;
+            }
+            let translator = CatalogTranslator(language);
+            assert_eq!(catalog(language).len(), catalog(Language::Russian).len());
+            for &(context, source, plural, translated) in catalog(language) {
+                let context = (!context.is_empty()).then_some(context);
+                if let Some(plural) = plural {
+                    for n in [0, 1, 2, 3, 4, 5, 11, 12, 14, 21, 22, 100, 101, u64::MAX] {
+                        let form = plural_form(language, n);
+                        assert!(
+                            form < translated.len(),
+                            "{}: {source} ({n})",
+                            language.code()
+                        );
+                        assert_eq!(
+                            translator.ntranslate(n, source, plural, context),
+                            translated[form]
+                        );
+                    }
+                } else {
+                    assert_eq!(translator.translate(source, context), translated[0]);
+                }
+            }
+        }
     }
 
     #[test]

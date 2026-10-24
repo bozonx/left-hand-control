@@ -500,6 +500,44 @@ pub enum LocalePreference {
     English,
     #[serde(rename = "ru-RU")]
     Russian,
+    #[serde(rename = "de")]
+    German,
+    #[serde(rename = "fr")]
+    French,
+    #[serde(rename = "es")]
+    Spanish,
+    #[serde(rename = "it")]
+    Italian,
+    #[serde(rename = "pt")]
+    Portuguese,
+    #[serde(rename = "pl")]
+    Polish,
+    #[serde(rename = "tr")]
+    Turkish,
+    #[serde(rename = "uk")]
+    Ukrainian,
+    #[serde(rename = "cs")]
+    Czech,
+    #[serde(rename = "hu")]
+    Hungarian,
+    #[serde(rename = "ro")]
+    Romanian,
+    #[serde(rename = "el")]
+    Greek,
+    #[serde(rename = "hr")]
+    Croatian,
+    #[serde(rename = "ka")]
+    Georgian,
+    #[serde(rename = "kk")]
+    Kazakh,
+    #[serde(rename = "zh-Hans")]
+    ChineseSimplified,
+    #[serde(rename = "zh-Hant")]
+    ChineseTraditional,
+    #[serde(rename = "ja")]
+    Japanese,
+    #[serde(rename = "ko")]
+    Korean,
 }
 
 impl LocalePreference {
@@ -508,6 +546,25 @@ impl LocalePreference {
             Self::Auto => "auto",
             Self::English => "en-US",
             Self::Russian => "ru-RU",
+            Self::German => "de",
+            Self::French => "fr",
+            Self::Spanish => "es",
+            Self::Italian => "it",
+            Self::Portuguese => "pt",
+            Self::Polish => "pl",
+            Self::Turkish => "tr",
+            Self::Ukrainian => "uk",
+            Self::Czech => "cs",
+            Self::Hungarian => "hu",
+            Self::Romanian => "ro",
+            Self::Greek => "el",
+            Self::Croatian => "hr",
+            Self::Georgian => "ka",
+            Self::Kazakh => "kk",
+            Self::ChineseSimplified => "zh-Hans",
+            Self::ChineseTraditional => "zh-Hant",
+            Self::Japanese => "ja",
+            Self::Korean => "ko",
         }
     }
 }

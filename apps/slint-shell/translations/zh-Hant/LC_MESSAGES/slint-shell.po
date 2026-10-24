@@ -1,0 +1,3264 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Left Hand Control\n"
+"PO-Revision-Date: 2026-10-23 00:00+0000\n"
+"Last-Translator: Machine translation; review welcome\n"
+"Language-Team: ChineseTraditional\n"
+"Language: zh-Hant\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=(0);\n"
+
+msgid "Action saved"
+msgstr "操作已儲存"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Increase"
+msgstr "增加"
+
+msgid "Decrease"
+msgstr "減少"
+
+msgid "Configuration loaded: {n} rule"
+msgid_plural "Configuration loaded: {n} rules"
+msgstr[0] "已載入配置：{n} 條規則"
+
+msgid "Configuration saved: {n} rule"
+msgid_plural "Configuration saved: {n} rules"
+msgstr[0] "已儲存配置：{n} 條規則"
+
+msgid "Configuration unavailable: {}"
+msgstr "配置不可用：{}"
+
+msgid "Delay: an integer from 1 to 10000 ms"
+msgstr "延遲：1 到 10000 ms 之間的整數"
+
+msgid "Device saved: {}"
+msgstr "已儲存設備：{}"
+
+msgid "Emoji"
+msgstr "表情符號"
+
+msgid "Tab · {}/{}"
+msgstr "Tab · {}/{}"
+
+msgid "Enter non-empty text"
+msgstr "輸入非空文本"
+
+msgid "Key {} only has conditional or layer rules; edit it in the full editor"
+msgstr "密鑰{}僅具有條件或層規則；在完整編輯器中編輯它"
+
+msgid "Keyboard"
+msgstr "鍵盤"
+
+msgid "Keyboard device"
+msgstr "鍵盤裝置"
+
+msgid "Keyboard layout"
+msgstr "鍵盤佈局"
+
+msgid "Load a valid configuration before starting the mapper"
+msgstr "在啟動映射器之前載入有效的配置"
+
+msgid "Mapper is running"
+msgstr "映射器正在運行"
+
+msgid "Mapper is running: {}"
+msgstr "映射器正在運作：{}"
+
+msgid "Mapper is starting…"
+msgstr "映射器正在啟動..."
+
+msgid "Mapper is stopped"
+msgstr "映射器已停止"
+
+msgid "Mapper is stopped: {}"
+msgstr "映射器已停止：{}"
+
+msgid "Quick actions"
+msgstr "快速行動"
+
+msgid "Quit"
+msgstr "結束"
+
+msgid "Settings"
+msgstr "設定"
+
+msgid "Mapper on / off"
+msgstr "映射器開/關"
+
+msgid "Switch to desktop {n}"
+msgstr "切換到桌面 {n}"
+
+msgid "Save"
+msgstr "儲存"
+
+msgid "Changes applied, but the mapper was not updated: {}"
+msgstr "已套用更改，但映射器未更新：{}"
+
+msgid "Select a key to assign an action."
+msgstr "選擇一個鍵來分配操作。"
+
+msgid "Select a keyboard device in the settings"
+msgstr "在設定中選擇鍵盤設備"
+
+msgid "Select a system action"
+msgstr "選擇系統操作"
+
+msgid "Spell popup process unavailable: {}"
+msgstr "拼字彈出進程不可用：{}"
+
+msgid "Spell worker is not running"
+msgstr "法術工作者沒有運作"
+
+msgid "Spell worker is restarting"
+msgstr "法術工作人員正在重新啟動"
+
+msgid "Spell worker: restart limit exceeded (3 per minute)"
+msgstr "法術工作者：超出重新啟動限制（每分鐘 3 次）"
+
+msgid "Spell worker: {}"
+msgstr "法術工作者：{}"
+
+msgid "Stop capture"
+msgstr "停止捕捉"
+
+msgid "System"
+msgstr "系統"
+
+msgid "Text"
+msgstr "文字"
+
+msgid "The configuration changed since editing started; repeat the change"
+msgstr "自編輯開始以來配置發生了變化；重複更改"
+
+msgid "Unknown action type"
+msgstr "未知的動作類型"
+
+msgid "Left Hand Control"
+msgstr "Left Hand Control"
+
+msgid "Layouts"
+msgstr "佈局"
+
+msgid "New layout name"
+msgstr "新版面名稱"
+
+msgid "Mapper"
+msgstr "按鍵對應"
+
+msgid "Dark"
+msgstr "黑暗的"
+
+msgid "Light"
+msgstr "光"
+
+msgid "Refresh devices"
+msgstr "重新整理裝置"
+
+msgid "Mouse device path"
+msgstr "滑鼠裝置路徑"
+
+msgid "Optional device path"
+msgstr "選用設備路徑"
+
+msgid "General"
+msgstr "一般的"
+
+msgid "Appearance"
+msgstr "外貌"
+
+msgid "Language"
+msgstr "語言"
+
+msgid "Automatic"
+msgstr "自動的"
+
+msgid "Key behavior"
+msgstr "關鍵行為"
+
+msgid "Game mode"
+msgstr "遊戲模式"
+
+msgid "Use GameMode daemon"
+msgstr "使用 GameMode 守護程式"
+
+msgid "Detect fullscreen"
+msgstr "檢測全螢幕"
+
+msgid "ydotool path"
+msgstr "ydotool路徑"
+
+msgid "xdotool path"
+msgstr "xdotool路徑"
+
+msgid "Settings directory: "
+msgstr "設定目錄："
+
+msgid "Layouts directory: "
+msgstr "佈局目錄："
+
+msgid "Save settings"
+msgstr "儲存設定"
+
+msgid "Settings saved"
+msgstr "設定已儲存"
+
+msgid "Enter a timeout from 50 to 1000 milliseconds"
+msgstr "輸入 50 到 1000 毫秒的逾時"
+
+msgid "Rules"
+msgstr "規則"
+
+msgid "Remove"
+msgstr "移除"
+
+msgid "Move up"
+msgstr "向上移動"
+
+msgid "Move down"
+msgstr "下移"
+
+msgid "Enabled"
+msgstr "啟用"
+
+msgid "Trigger key"
+msgstr "觸發鍵"
+
+msgid "Tap action"
+msgstr "點擊動作"
+
+msgid "Layout conditions (comma separated)"
+msgstr "佈局條件（逗號分隔）"
+
+msgid "App whitelist (comma separated)"
+msgstr "應用程式白名單（逗號分隔）"
+
+msgid "App blacklist (comma separated)"
+msgstr "應用黑名單（逗號分隔）"
+
+msgid "Isolate"
+msgstr "隔離"
+
+msgid "Hold for"
+msgstr "保持"
+
+msgid "Swallow tap"
+msgstr "封鎖短按"
+
+msgid "Swallow hold"
+msgstr "封鎖長按"
+
+msgid "New layer name"
+msgstr "新圖層名稱"
+
+msgid "Create layer"
+msgstr "建立圖層"
+
+msgid "Rules and triggers"
+msgstr "規則和觸發器"
+
+msgid "Define how physical keys activate layers or run actions."
+msgstr "定義物理鍵如何啟動層或運行操作。"
+
+msgid "Add rule"
+msgstr "新增規則"
+
+msgid "Not set"
+msgstr "未設定"
+
+msgid "Layer (hold)"
+msgstr "層（保持）"
+
+msgid "Double-tap action"
+msgstr "按兩下操作"
+
+msgid "Hold button"
+msgstr "保持按鈕"
+
+msgid "Default"
+msgstr "預設"
+
+msgid "Advanced"
+msgstr "先進的"
+
+msgid "Choose trigger key"
+msgstr "選擇觸發鍵"
+
+msgid "Choose layer"
+msgstr "選擇圖層"
+
+msgid "Conditions"
+msgstr "狀況"
+
+msgid "Advanced rule options"
+msgstr "進階規則選項"
+
+msgid "Choose action"
+msgstr "選擇行動"
+
+msgid "Ignore"
+msgstr "忽略"
+
+msgid "On"
+msgstr "開啟"
+
+msgid "Off"
+msgstr "關閉"
+
+msgid "Clear"
+msgstr "清除"
+
+msgid "Apply"
+msgstr "套用"
+
+msgid "Delete rule?"
+msgstr "刪除規則？"
+
+msgid "This rule will be removed from the current layout."
+msgstr "該規則將從目前佈局中刪除。"
+
+msgid "Layers"
+msgstr "層"
+
+msgid "New layer"
+msgstr "新圖層"
+
+msgid "Duplicate"
+msgstr "複製"
+
+msgid "Delete"
+msgstr "刪除"
+
+msgid "Extra keys"
+msgstr "額外的鑰匙"
+
+msgid "Edit"
+msgstr "編輯"
+
+msgid "Rename layer"
+msgstr "重新命名圖層"
+
+msgid "Duplicate layer"
+msgstr "重複圖層"
+
+msgid "Delete layer?"
+msgstr "刪除圖層？"
+
+msgid "Edit layer key"
+msgstr "編輯圖層鍵"
+
+msgid "Name"
+msgstr "姓名"
+
+msgid "Description"
+msgstr "描述"
+
+msgid "Rules using this layer will return to the base layer."
+msgstr "使用該層的規則將返回到基礎層。"
+
+msgid "Transparent"
+msgstr "透明的"
+
+msgid "Swallow"
+msgstr "封鎖"
+
+msgid "Action"
+msgstr "行動"
+
+msgid "Action code"
+msgstr "動作代碼"
+
+msgid "Enter a layer name"
+msgstr "輸入圖層名稱"
+
+msgid "A layer with this name already exists."
+msgstr "具有此名稱的圖層已存在。"
+
+msgid "Enter a layout name"
+msgstr "輸入佈局名稱"
+
+msgid "Enter a key code"
+msgstr "輸入密鑰代碼"
+
+msgid "Native"
+msgstr "本國的"
+
+msgid "Layer saved"
+msgstr "圖層已保存"
+
+msgid "Macros"
+msgstr "宏"
+
+msgid "Built-in macros"
+msgstr "內建巨集"
+
+msgid "Macro ID"
+msgstr "巨集ID"
+
+msgid "Copy ID"
+msgstr "複製身分證件"
+
+msgid "Steps"
+msgstr "步驟"
+
+msgid "Add step"
+msgstr "新增步驟"
+
+msgid "Add pause"
+msgstr "添加暫停"
+
+msgid "Macro ID must contain 1–64 letters, digits, underscores or hyphens"
+msgstr "巨集 ID 必須包含 1-64 個字母、數字、底線或連字符"
+
+msgid "Macro ID is already in use"
+msgstr "巨集 ID 已被使用"
+
+msgid "Macro delays must be between 0 and 2000 ms"
+msgstr "巨集延遲必須介於 0 到 2000 毫秒之間"
+
+msgid "Pause must be between 1 and 10000 ms"
+msgstr "暫停時間必須介於 1 到 10000 毫秒之間"
+
+msgid "Unknown key or shortcut in macro step"
+msgstr "巨集步驟中的未知鍵或快速鍵"
+
+msgid "Macro references cannot form a cycle"
+msgstr "宏引用不能形成循環"
+
+msgid "Commands"
+msgstr "命令"
+
+msgid "Add"
+msgstr "新增"
+
+msgid "Clear cell"
+msgstr "透明細胞"
+
+msgid "Page name"
+msgstr "頁面名稱"
+
+msgid "Emoji cells accept at most 100 characters."
+msgstr "表情符號單元格最多接受 100 個字元。"
+
+msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
+msgstr "指令 ID：1–64 個字母、數字、底線或連字號。"
+
+msgid "Command IDs must be unique."
+msgstr "命令 ID 必須是唯一的。"
+
+msgid "Enter a shell command."
+msgstr "輸入 shell 指令。"
+
+msgid "Save as…"
+msgstr "另存為..."
+
+msgid "Save layout as…"
+msgstr "將佈局另存為..."
+
+msgid "Please wait…"
+msgstr "請稍等…"
+
+msgid "Stop"
+msgstr "停止"
+
+msgid "Start"
+msgstr "開始"
+
+msgid "Custom layout"
+msgstr "自訂佈局"
+
+msgid "Base keyboard"
+msgstr "基礎鍵盤"
+
+msgid "Keyboard device path"
+msgstr "鍵盤裝置路徑"
+
+msgid "Copy path"
+msgstr "複製路徑"
+
+msgid "Create a layer to assign its keys, or edit the base keyboard."
+msgstr "建立一個圖層來指派其按鍵，或編輯基本鍵盤。"
+
+msgid "Running"
+msgstr "跑步"
+
+msgid "Stopped"
+msgstr "已停止"
+
+msgid "Layout library updated"
+msgstr "版面配置已更新"
+
+msgid "Select a layout"
+msgstr "選擇佈局"
+
+msgid "Layout changed on disk; select it again"
+msgstr "磁碟佈局發生變化；再次選擇它"
+
+msgid "Any game mode"
+msgstr "任何遊戲模式"
+
+msgid "Game mode on"
+msgstr "遊戲模式開啟"
+
+msgid "Game mode off"
+msgstr "遊戲模式關閉"
+
+msgid "System layouts (comma separated)"
+msgstr "系統佈局（逗號分隔）"
+
+msgid "Applications (comma separated)"
+msgstr "應用程式（逗號分隔）"
+
+msgid "Manual"
+msgstr "手動的"
+
+msgid "Active"
+msgstr "積極的"
+
+msgid "Editing · unsaved"
+msgstr "正在編輯·未儲存"
+
+msgid "Editing"
+msgstr "編輯"
+
+msgid "Activate"
+msgstr "啟用設定"
+
+msgid "Delete layout?"
+msgstr "刪除佈局？"
+
+msgid "Layout details"
+msgstr "佈局細節"
+
+msgid "Do not use when"
+msgstr "請勿使用時"
+
+msgid "The layout file will be deleted. This cannot be undone."
+msgstr "佈局文件將被刪除。此操作無法撤銷。"
+
+msgid "Duplicate…"
+msgstr "複製…"
+
+msgid "Edit layout"
+msgstr "編輯版面"
+
+msgid "New layout"
+msgstr "新佈局"
+
+msgid "A layout with this name already exists."
+msgstr "具有此名稱的佈局已存在。"
+
+msgid "Add a description…"
+msgstr "新增描述..."
+
+msgid "Create"
+msgstr "創造"
+
+msgid "Delete…"
+msgstr "刪除…"
+
+msgid "Description (optional)"
+msgstr "說明（可選）"
+
+msgid "Discard changes"
+msgstr "放棄更改"
+
+msgid "Make active"
+msgstr "啟用設定"
+
+msgid "Single: the layout you make active works everywhere."
+msgstr "單一：您啟動的佈局在任何地方都有效。"
+
+msgid "Not used in automatic mode"
+msgstr "自動模式下不使用"
+
+msgid "Rename…"
+msgstr "重命名..."
+
+msgid "Save and continue"
+msgstr "保存並繼續"
+
+msgid ""
+"The layout you are editing has not been saved to the library. Its changes "
+"will be lost."
+msgstr "您正在編輯的佈局尚未儲存到庫中。它的更改將會丟失。"
+
+msgid "The name contains characters that cannot be used in a file name."
+msgstr "該名稱包含不能在檔案名稱中使用的字元。"
+
+msgid "Unsaved changes"
+msgstr "未儲存的更改"
+
+msgid "You are editing “{}”, but “{}” is active."
+msgstr "您正在編輯“{}”，但“{}”處於活動狀態。"
+
+msgid "You are editing “{}”; no layout is active."
+msgstr "您正在編輯“{}”；沒有佈局處於活動狀態。"
+
+msgid "game mode off"
+msgstr "遊戲模式關閉"
+
+msgid "game mode on"
+msgstr "遊戲模式開啟"
+
+msgid "{} (copy)"
+msgstr "{}（副本）"
+
+msgid "“{}” has unsaved changes. Save them before switching?"
+msgstr "“{}”有未儲存的變更。在切換之前保存它們？"
+
+msgid "Layout mode"
+msgstr "佈局方式"
+
+msgid "Create layout"
+msgstr "建立佈局"
+
+msgid "Empty"
+msgstr "空的"
+
+msgid "Empty layout"
+msgstr "空佈局"
+
+msgid "Previously selected: {}"
+msgstr "先前選擇：{}"
+
+msgid "Current value"
+msgstr "目前值"
+
+msgid "Capture key"
+msgstr "捕捉鍵"
+
+msgid "Press a key (including modifiers or Escape)."
+msgstr "按一個鍵（包括修飾鍵或 Escape）。"
+
+msgid "Press a key or shortcut. Release a modifier to select it alone."
+msgstr "按一個鍵或快速鍵。釋放修改器以單獨選擇它。"
+
+msgid "Choose a valid key or action."
+msgstr "選擇有效的鍵或操作。"
+
+msgid "Search keys and actions"
+msgstr "搜尋鍵和操作"
+
+msgid "Search keys"
+msgstr "搜尋鍵"
+
+msgid "Hold action"
+msgstr "保持動作"
+
+msgid "Macro step"
+msgstr "巨集步驟"
+
+msgid ""
+"You can enter a key combination using + between keys. Some keys depend on "
+"keyboard hardware and may be ignored by the system."
+msgstr "您可以使用按鍵之間的 + 輸入組合鍵。某些按鍵取決於鍵盤硬件，可能會被系統忽略。"
+
+msgid ""
+"You can assign a key combination using + between keys. Availability of "
+"special keys depends on the keyboard and desktop environment."
+msgstr "您可以在按鍵之間使用 + 來指派按鍵組合。特殊鍵的可用性取決於鍵盤和桌面環境。"
+
+msgid "Behavior:"
+msgstr "行為："
+
+msgid "Action:"
+msgstr "行動："
+
+msgid "Trigger key:"
+msgstr "觸發鍵："
+
+msgid "{n} line"
+msgid_plural "{n} lines"
+msgstr[0] "{n} 行"
+
+msgid "Modifiers"
+msgstr "修飾符"
+
+msgid "Letters, digits and symbols"
+msgstr "字母、數字和符號"
+
+msgid "Control keys"
+msgstr "控制鍵"
+
+msgid "Navigation and numpad"
+msgstr "導航和數字鍵盤"
+
+msgid "F1–F24"
+msgstr "F1–F24"
+
+msgid "Media and launch"
+msgstr "媒體和發布"
+
+msgid "System and laptop"
+msgstr "系統和筆記型電腦"
+
+msgid "Mouse"
+msgstr "老鼠"
+
+msgid "Other keys"
+msgstr "其他按鍵"
+
+msgid "Actions"
+msgstr "行動"
+
+msgid "Extra button on some gaming mice"
+msgstr "某些遊戲滑鼠上有額外的按鈕"
+
+msgid "Keys"
+msgstr "按鍵"
+
+msgid "System actions"
+msgstr "系統操作"
+
+msgid "KDE shortcuts"
+msgstr "KDE 快速鍵"
+
+msgid "Pause"
+msgstr "暫停"
+
+msgid "Literal text (text: prefix is added automatically)"
+msgstr "文字文字（文字：自動加上前綴）"
+
+msgid "Pause in milliseconds (1–10000)"
+msgstr "暫停以毫秒為單位 (1–10000)"
+
+msgid "No matching items"
+msgstr "沒有匹配的項目"
+
+msgid "Show Quick Action Menu page {}"
+msgstr "顯示快速操作選單頁面 {}"
+
+msgid "Show Emoji & Symbols menu page {}"
+msgstr "顯示表情符號和符號選單頁面 {}"
+
+msgid "Switch to desktop {}"
+msgstr "切換到桌面 {}"
+
+msgid "Move window to desktop {}"
+msgstr "將視窗移到桌面 {}"
+
+msgid "Close window"
+msgstr "關閉視窗"
+
+msgid "Minimize window"
+msgstr "最小化視窗"
+
+msgid "Maximize window"
+msgstr "最大化視窗"
+
+msgid "Keep window above others"
+msgstr "將窗戶放在其他窗戶上方"
+
+msgid "Show desktop"
+msgstr "顯示桌面"
+
+msgid "Window overview"
+msgstr "窗口概覽"
+
+msgid "Open application launcher"
+msgstr "打開應用程式啟動器"
+
+msgid "Turn off screen"
+msgstr "關閉螢幕"
+
+msgid "Switch to layout {}"
+msgstr "切換到佈局 {}"
+
+msgid "Layer"
+msgstr "層"
+
+msgid "Delete layer"
+msgstr "刪除圖層"
+
+msgid "Create new layer"
+msgstr "建立新圖層"
+
+msgid "Layer description"
+msgstr "圖層描述"
+
+msgid "Add description"
+msgstr "添加描述"
+
+msgid "Type to test..."
+msgstr "鍵入要測試..."
+
+msgid "Ignore key"
+msgstr "忽略鍵"
+
+msgid "No layers yet"
+msgstr "還沒有圖層"
+
+msgid "Left hand"
+msgstr "左手"
+
+msgid "Right hand"
+msgstr "右手"
+
+msgid "Key"
+msgstr "鑰匙"
+
+msgid "US layout"
+msgstr "美國佈局"
+
+msgid "LHC codes"
+msgstr "大型強子對撞機代碼"
+
+msgid "No extra keys for this layer yet."
+msgstr "該層還沒有額外的鍵。"
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid."
+msgstr "主鍵盤網格之外的滑鼠按鈕、媒體鍵和其他觸發器。"
+
+msgid ""
+"Display modes affect labels only — the key code stays the same. “US layout” "
+"shows standard letter labels for visual reference. “LHC codes” shows app-"
+"specific codes (e.g. KeyA, ArrowLeft)."
+msgstr ""
+"顯示模式僅影響標籤 - 鍵碼保持不變。 「美國佈局」顯示標準字母標籤以供視覺參考。 「LHC 程式碼」顯示應用程式特定的程式碼（例如 "
+"KeyA、ArrowLeft）。"
+
+msgid "(copy)"
+msgstr "（複製）"
+
+msgid "Add page"
+msgstr "新增頁面"
+
+msgid "Allow commands"
+msgstr "允許命令"
+
+msgid "Animals & Nature"
+msgstr "動物與自然"
+
+msgid ""
+"Build reusable sequences from key chords, text actions, commands, or system "
+"actions. Steps run in order with the configured pause between them."
+msgstr "從關鍵和弦、文字操作、指令或系統操作建立可重複使用的序列。步驟按順序運行，並在步驟之間配置配置的暫停。"
+
+msgid ""
+"Built-in macros that cannot be edited. To customize, create a user macro "
+"based on one."
+msgstr "無法編輯的內建巨集。若要進行自訂，請基於一個使用者巨集建立一個。"
+
+msgid "Cell {}"
+msgstr "電池{}"
+
+msgid "Command name"
+msgstr "命令名稱"
+
+msgid "Create based on"
+msgstr "創建基於"
+
+msgid "Delete macro"
+msgstr "刪除巨集"
+
+msgid "Delete macro?"
+msgstr "刪除巨集？"
+
+msgid "Delete page"
+msgstr "刪除頁面"
+
+msgid "Delete page?"
+msgstr "刪除頁面？"
+
+msgid "Delete step"
+msgstr "刪除步驟"
+
+msgid "Delete step?"
+msgstr "刪除步驟？"
+
+msgid "Disable"
+msgstr "停用"
+
+msgid "Drag"
+msgstr "拖"
+
+msgid "Emoji & Symbols"
+msgstr "表情符號和符號"
+
+msgid "Emoji Symbols"
+msgstr "表情符號"
+
+msgid "Emoji, symbol, or any text"
+msgstr "表情符號、符號或任何文本"
+
+msgid "Empty step — pick an action or remove it."
+msgstr "空步驟 — 選擇一個操作或將其刪除。"
+
+msgid "Fix the existing macro errors first"
+msgstr "首先修復現有的巨集錯誤"
+
+msgid "Food & Drink"
+msgstr "食品和飲料"
+
+msgid "Human-readable macro name, shown in picker lists."
+msgstr "人類可讀的巨集名稱，顯示在選擇器清單中。"
+
+msgid "ID"
+msgstr "ID"
+
+msgid "Key {}"
+msgstr "鑰匙{}"
+
+msgid "Label"
+msgstr "標籤"
+
+msgid "Macro name"
+msgstr "巨集名稱"
+
+msgid "Modifier delay"
+msgstr "修改器延遲"
+
+msgid "Move page left"
+msgstr "向左移動頁面"
+
+msgid "Move page right"
+msgstr "向右移動頁面"
+
+msgid "New macro"
+msgstr "新宏"
+
+msgid "No macros yet. Click \"New macro\" to create the first one."
+msgstr "還沒有宏。按一下“新巨集”以建立第一個巨集。"
+
+msgid "No steps yet. Each step — one chord or action."
+msgstr "還沒有步驟。每一步——一個和弦或一個動作。"
+
+msgid ""
+"Opened by the app:showEmojiMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold an "
+"emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short "
+"phrase (e.g. \"// TODO: \")."
+msgstr ""
+"由應用程式開啟：showEmojiMenuN 操作，其中 N 是頁面位置：重新排序頁面會變更按鍵開啟的頁面。每個單元格可以包含表情符號、UTF "
+"符號（例如 ≠）、任何其他字元（例如 №）或短語（例如“// TODO:”）。"
+
+msgid "Opened by the app:showQuickMenu1...5 actions."
+msgstr "由應用程式開啟：showQuickMenu1...5 操作。"
+
+msgid "Page"
+msgstr "頁"
+
+msgid "Pause (ms)"
+msgstr "暫停（毫秒）"
+
+msgid "Pause between steps"
+msgstr "步驟之間暫停"
+
+msgid "People & Gestures"
+msgstr "人物與手勢"
+
+msgid "Per-macro pause between steps. Defaults to the Settings value."
+msgstr "每個巨集步驟之間的暫停。預設為設定值。"
+
+msgid "Pick an action"
+msgstr "選擇一個動作"
+
+msgid "Quick Actions"
+msgstr "快速行動"
+
+msgid ""
+"Reusable shell commands for the current layout. On Linux they run through sh"
+" -lc after you explicitly allow them. Shell commands run one at a time, with"
+" a 30-second limit, in your home directory."
+msgstr ""
+"目前佈局的可重複使用 shell 指令。在 Linux 上，它們在您明確允許後透過 sh -lc 運行。 Shell "
+"指令在您的主目錄中一次執行一個，時間限制為 30 秒。"
+
+msgid "Shell commands are allowed for this version of the current layout."
+msgstr "此版本的目前佈局允許使用 Shell 命令。"
+
+msgid "Smileys & Emotion"
+msgstr "表情與情感"
+
+msgid ""
+"The command will be deleted. Keys or macros that reference cmd:{} will stop "
+"working."
+msgstr "該命令將被刪除。引用 cmd:{} 的按鍵或巨集將停止運作。"
+
+msgid "The macro will be deleted. References macro:{} will stop working."
+msgstr "該巨集將會被刪除。引用巨集：{} 將停止運作。"
+
+msgid "The page and all assigned cells on it will be deleted."
+msgstr "該頁面及其上所有指定的儲存格都將被刪除。"
+
+msgid ""
+"This layout contains shell scripts. Read every script before allowing them, "
+"especially in layouts from other people. Approval applies to the reviewed "
+"command definitions and resets when the command set, IDs, or Linux scripts "
+"change."
+msgstr ""
+"此佈局包含 shell 腳本。在允許之前閱讀每個腳本，尤其是其他人的佈局。批准適用於已審核的命令定義，並在命令集、ID 或 Linux 腳本變更時重設。"
+
+msgid "This step will be removed from the macro."
+msgstr "此步驟將從巨集中刪除。"
+
+msgid ""
+"Time between pressing a modifier and the main key within one step. Defaults "
+"to the Settings value."
+msgstr "在一步內按下修飾鍵和主鍵之間的時間。預設為設定值。"
+
+msgid "Travel & Places"
+msgstr "旅行與地點"
+
+msgid "UTF Symbols"
+msgstr "UTF 符號"
+
+msgid "Texts"
+msgstr "文字"
+
+msgid "Non-breaking space"
+msgstr "不間斷空格"
+
+msgid "continue"
+msgstr "繼續"
+
+msgid "do all you recommended"
+msgstr "做你推薦的一切"
+
+msgid "fix the errors above"
+msgstr "修復上面的錯誤"
+
+msgid "I'll call you back later"
+msgstr "我稍後再回你電話"
+
+msgid "Thanks!"
+msgstr "謝謝！"
+
+msgid "OK, got it 👍"
+msgstr "好的，明白了👍"
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Rules tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"引用中使用的唯一標識符，例如巨集：<id>。若要將此巨集綁定到某個鍵，請在「圖層」或「規則」標籤上選擇該動作。僅當沒有任何內容使用此巨集時才更改 ID。"
+
+msgid "Used in:"
+msgstr "用於："
+
+msgid "User macros"
+msgstr "使用者巨集"
+
+msgid "Work & Objects"
+msgstr "作品與物品"
+
+msgid "e.g. Next Track"
+msgstr "例如下一曲目"
+
+msgid "ms"
+msgstr "多發性硬化症"
+
+msgid "Rule saved"
+msgstr "規則已儲存"
+
+msgid "Search layers"
+msgstr "搜尋圖層"
+
+msgid "Set"
+msgstr "放"
+
+msgid "Start the mapper to run actions from the menus"
+msgstr "啟動映射器以從選單運行操作"
+
+msgid ""
+"The text was not typed: the keyboard layout lacks some of its characters, "
+"such as emoji. Choose a typing method with the clipboard."
+msgstr "未輸入文字：鍵盤佈局缺少某些字符，例如表情符號。使用剪貼簿選擇打字方法。"
+
+msgid "The text was not typed: the active keyboard layout is unknown."
+msgstr "未輸入文字：活動鍵盤佈局未知。"
+
+msgid ""
+"The text was not typed: the typing method is unavailable ({}). Restart the "
+"mapper to try again."
+msgstr "文字未輸入：輸入方法不可用 ({})。重新啟動映射器以重試。"
+
+msgid "The text was not typed: safe clipboard access failed ({})."
+msgstr "未輸入文字：安全剪貼簿存取失敗 ({})。"
+
+msgid "The text was not typed: {}"
+msgstr "未輸入文字：{}"
+
+msgid "The layout file is empty"
+msgstr "佈局文件為空"
+
+msgid "↑"
+msgstr "↑"
+
+msgid "↓"
+msgstr "↓"
+
+msgid "Does not matter"
+msgstr "不要緊"
+
+msgid "Open for editing (unsaved)"
+msgstr "開啟進行編輯（未儲存）"
+
+msgid "Open for editing"
+msgstr "開啟進行編輯"
+
+msgid "Layout name"
+msgstr "佈局名稱"
+
+msgid "System languages"
+msgstr "系統語言"
+
+msgid "No system languages detected"
+msgstr "未偵測到系統語言"
+
+msgid "Applications"
+msgstr "應用領域"
+
+msgid "“{}” will be deleted. This cannot be undone."
+msgstr "“{}”將會被刪除。此操作無法撤銷。"
+
+msgid "Reset current changes"
+msgstr "重置當前更改"
+
+msgid "Available"
+msgstr "可用的"
+
+msgid "Unavailable"
+msgstr "不可用"
+
+msgid "Not implemented"
+msgstr "未實施"
+
+msgid "No input devices were found in /dev/input."
+msgstr "/dev/input 中未找到輸入裝置。"
+
+msgid ""
+"The selected keyboard is not connected. Connect it or pick another one "
+"below."
+msgstr "所選鍵盤未連接。連接它或選擇下面的另一個。"
+
+msgid ""
+"No permission to read keyboard events. Add your user to the input group "
+"(install-linux.sh permissions does this) and log in again."
+msgstr "沒有讀取鍵盤事件的權限。將您的使用者新增至輸入群組（install-linux.sh 權限執行此操作）並再次登入。"
+
+msgid ""
+"/dev/uinput does not exist. Load the uinput kernel module: sudo modprobe "
+"uinput."
+msgstr "/dev/uinput 不存在。載入 uinput 核心模組：sudo modprobe uinput。"
+
+msgid ""
+"No permission to write to /dev/uinput. Install the application's udev rule "
+"(install-linux.sh permissions) or reinstall the package."
+msgstr "沒有寫入 /dev/uinput 的權限。安裝應用程式的 udev 規則（install-linux.sh 權限）或重新安裝軟體套件。"
+
+msgid "Launch on startup"
+msgstr "啟動時啟動"
+
+msgid "Start the mapper on launch"
+msgstr "在啟動時啟動映射器"
+
+msgid "No keyboard is selected, so the mapper cannot start."
+msgstr "未選擇鍵盤，因此映射器無法啟動。"
+
+msgid "Choose a keyboard"
+msgstr "選擇鍵盤"
+
+msgid "Getting started"
+msgstr "入門"
+
+msgid "Keyboard selected"
+msgstr "已選擇鍵盤"
+
+msgid "Choose the keyboard to remap"
+msgstr "選擇要重新映射的鍵盤"
+
+msgid "Change"
+msgstr "改變"
+
+msgid "Add a layout"
+msgstr "新增佈局"
+
+msgid "Press Start at the top to apply it"
+msgstr "按頂部的“開始”應用它"
+
+msgid "No active layout"
+msgstr "無活動佈局"
+
+msgid "Current active layout (automatic)"
+msgstr "目前活動佈局（自動）"
+
+msgid "Current active layout — click to switch"
+msgstr "目前活動佈局-點擊切換"
+
+msgid "Current keyboard layout in the system"
+msgstr "系統中目前的鍵盤佈局"
+
+msgid "Game mode: active"
+msgstr "遊戲模式：主動"
+
+msgid "Game mode: inactive"
+msgstr "遊戲模式：未激活"
+
+msgid "Active: {}"
+msgstr "主動：{}"
+
+msgid "Trigger"
+msgstr "扳機"
+
+msgid "New rule: choose a trigger"
+msgstr "新規則：選擇觸發器"
+
+msgid "Swallow key"
+msgstr "封鎖按鍵"
+
+msgid "Pass through"
+msgstr "透過"
+
+msgid "Double tap: {} ms"
+msgstr "雙擊：{} 毫秒"
+
+msgid "Custom hold options"
+msgstr "自訂保留選項"
+
+msgid "Leave empty to use the global timing settings."
+msgstr "留空以使用全域計時設定。"
+
+msgid ""
+"Temporarily releases the held key or modifier while these keys are pressed "
+"in the layer."
+msgstr "在圖層中按下這些鍵時，暫時釋放按住的鍵或修改鍵。"
+
+msgid ""
+"Defers the held action until one of these keys is pressed in the layer. "
+"Requires a hold action and a layer."
+msgstr "推遲保持的操作，直到在圖層中按下這些鍵之一。需要保持動作和一層。"
+
+msgid "Delete rule"
+msgstr "刪除規則"
+
+msgid ""
+"Clear restores normal key behavior. Swallow prevents the key from reaching "
+"the application."
+msgstr "清除可恢復正常的按鍵行為。 Swallow 會阻止金鑰到達應用程式。"
+
+msgctxt "Game mode control"
+msgid "Auto"
+msgstr "自動"
+
+msgctxt "Game mode control"
+msgid "On"
+msgstr "開啟"
+
+msgctxt "Game mode control"
+msgid "Off"
+msgstr "關閉"
+
+msgid "Auto: no detection sources enabled"
+msgstr "自動：未啟用偵測來源"
+
+msgid "Auto: detection unavailable"
+msgstr "自動：檢測不可用"
+
+msgid "Auto: game mode inactive"
+msgstr "自動：遊戲模式未激活"
+
+msgid "Auto: GameMode daemon active"
+msgstr "自動：GameMode 守護程式處於活動狀態"
+
+msgid "Auto: matched {}"
+msgstr "自動：匹配{}"
+
+msgid "Auto: fullscreen window active"
+msgstr "自動：全螢幕視窗處於作用中狀態"
+
+msgid "Auto: excluded by {}"
+msgstr "自動：被 {} 排除"
+
+msgid ""
+"Fullscreen detection is not supported in this session. Use process rules or "
+"On/Off."
+msgstr "此會話不支援全螢幕檢測。使用流程規則或開/關。"
+
+msgid "Fullscreen detection tools are missing or could not query the session."
+msgstr "全螢幕偵測工具遺失或無法查詢會話。"
+
+msgid "Running processes: "
+msgstr "運行進程："
+
+msgid "Active window: "
+msgstr "活動視窗："
+
+msgid "Create a layer to assign its keys."
+msgstr "建立一個圖層來分配其鍵。"
+
+msgid "Button {}"
+msgstr "按鈕 {}"
+
+msgid "Copied to clipboard"
+msgstr "已複製到剪貼簿"
+
+msgid "Theme"
+msgstr "主題"
+
+msgid "E-ink"
+msgstr "E-ink"
+
+msgid "Enter device path manually"
+msgstr "手動輸入設備路徑"
+
+msgid "All keyboards"
+msgstr "所有鍵盤"
+
+msgid "All mice (buttons only)"
+msgstr "所有滑鼠（僅限按鈕）"
+
+msgid "Mode"
+msgstr "模式"
+
+msgid "New"
+msgstr "新的"
+
+msgid "Auto"
+msgstr "自動"
+
+msgid "Delete extra key?"
+msgstr "刪除多餘的密鑰？"
+
+msgid "This key assignment will be removed from the layer."
+msgstr "該鍵分配將從層中刪除。"
+
+msgid "Command started: {}"
+msgstr "指令啟動：{}"
+
+msgid "Unavailable on this platform or desktop"
+msgstr "在此平台或桌面上不可用"
+
+msgid "This action is not supported on macOS"
+msgstr "macOS 不支援此操作"
+
+msgid "Approve commands on the Commands tab before running this action"
+msgstr "在運行此操作之前批准“命令”選項卡上的命令"
+
+msgid "Pick the physical device whose events should be intercepted."
+msgstr "選擇應攔截其事件的實體設備。"
+
+msgid ""
+"Select the mouse so the mapper can see extra buttons and clicks. Pointer "
+"movement is not affected."
+msgstr "選擇滑鼠，以便映射者可以看到額外的按鈕和點擊。指針移動不受影響。"
+
+msgid ""
+"The mouse is not fully intercepted yet: a remapped extra button can emit the"
+" new action, but its native system or app action may still run. If that gets"
+" in the way, disable the native action for that button in your system, "
+"browser, or driver settings."
+msgstr ""
+"滑鼠尚未完全攔截：重新映射的額外按鈕可以發出新操作，但其本機系統或應用程式操作可能仍會運作。如果出現問題，請在系統、瀏覽器或驅動程式設定中停用該按鈕的本機操作。"
+
+msgid ""
+"The mapper reads from /dev/input/eventX and emits through uinput. If Start "
+"fails, grant access to those devices: usually the input group plus a udev "
+"rule for /dev/uinput."
+msgstr ""
+"映射器從 /dev/input/eventX 讀取並透過 uinput 發出。如果啟動失敗，則授予對這些裝置的存取權：通常是輸入群組加上 "
+"/dev/uinput 的 udev 規則。"
+
+msgid "Refresh device list"
+msgstr "刷新設備列表"
+
+msgid "Mouse (optional)"
+msgstr "滑鼠（可選）"
+
+msgid "Not selected"
+msgstr "未選擇"
+
+msgid "Not selected (no mouse support)"
+msgstr "未選擇（不支援滑鼠）"
+
+msgid "Looks like a keyboard"
+msgstr "看起來像鍵盤"
+
+msgid "Looks like a mouse"
+msgstr "看起來像老鼠"
+
+msgid "Other devices"
+msgstr "其他設備"
+
+msgid "Search devices"
+msgstr "搜尋設備"
+
+msgid "Single"
+msgstr "單身的"
+
+msgid "{n} rule"
+msgid_plural "{n} rules"
+msgstr[0] "{n} 條規則"
+
+msgid "{n} layer"
+msgid_plural "{n} layers"
+msgstr[0] "{n}層"
+
+msgid "{n} emoji page"
+msgid_plural "{n} emoji pages"
+msgstr[0] "{n} 個表情符號頁面"
+
+msgid "{n} action page"
+msgid_plural "{n} action pages"
+msgstr[0] "{n} 個操作頁面"
+
+msgid "{n} macro"
+msgid_plural "{n} macros"
+msgstr[0] "{n} 個宏"
+
+msgid "{n} command"
+msgid_plural "{n} commands"
+msgstr[0] "{n} 個命令"
+
+msgid "Main"
+msgstr "主要的"
+
+msgid "Saved assignment: {}"
+msgstr "已儲存的作業：{}"
+
+msgid "Behavior"
+msgstr "行為"
+
+msgid "Inherit"
+msgstr "繼承"
+
+msgid "No separate action"
+msgstr "沒有單獨的行動"
+
+msgid "Activate layer only"
+msgstr "僅啟動圖層"
+
+msgid "Normal key behavior"
+msgstr "正常按鍵行為"
+
+msgid "Suppress"
+msgstr "壓制"
+
+msgid "Assign held key"
+msgstr "分配保持鍵"
+
+msgid "Perform action"
+msgstr "執行動作"
+
+msgid "The key will not reach the application."
+msgstr "密鑰不會到達應用程式。"
+
+msgid "Use the assignment from the lower layer or base layout."
+msgstr "使用下層或基本佈局中的分配。"
+
+msgid "Do not assign a separate action to this gesture."
+msgstr "不要為此手勢分配單獨的操作。"
+
+msgid "Holding activates the selected layer. The original key is not sent."
+msgstr "按住會啟動選定的圖層。原始密鑰未發送。"
+
+msgid "Send the original key to the application."
+msgstr "將原始密鑰傳送到應用程式。"
+
+msgid "Capture shortcut"
+msgstr "捕捉快捷方式"
+
+msgid "Choose a valid trigger key."
+msgstr "選擇有效的觸發鍵。"
+
+msgid "Choose a valid action."
+msgstr "選擇有效的操作。"
+
+msgid "Empty cell"
+msgstr "空白單元格"
+
+msgid "Remove the action from this menu cell."
+msgstr "從此選單單元中刪除操作。"
+
+msgid "Edit assignment"
+msgstr "編輯作業"
+
+msgid "Holding also activates the selected layer."
+msgstr "按住也會啟動選定的圖層。"
+
+msgid "Block"
+msgstr "堵塞"
+
+msgid ""
+"The key press is consumed: the system and the active application will not "
+"receive it."
+msgstr "按鍵被消耗：系統和活動應用程式將不會接收到它。"
+
+msgid ""
+"The key press passes through unchanged, as if no assignment were configured."
+msgstr "按鍵按原樣通過，就好像沒有配置分配一樣。"
+
+msgid "Capture"
+msgstr "捕獲"
+
+msgid "Unchanged"
+msgstr "不變"
+
+msgid "Leave a delay empty to use the global setting."
+msgstr "將延遲留空以使用全域設定。"
+
+msgid "Allow command execution"
+msgstr "允許命令執行"
+
+msgid "No commands are assigned."
+msgstr "沒有分配命令。"
+
+msgid "Commands are disabled in Settings."
+msgstr "命令在“設定”中被禁用。"
+
+msgid "Working directory (optional)"
+msgstr "工作目錄（可選）"
+
+msgid "Save layout changes before opening another layout."
+msgstr "在開啟另一個佈局之前儲存佈局變更。"
+
+msgid "No layer"
+msgstr "無層"
+
+msgid "Layer not found"
+msgstr "未找到圖層"
+
+msgid "Create new layer…"
+msgstr "建立新圖層..."
+
+msgid "Create “{}”"
+msgstr "創建“{}”"
+
+msgid ""
+"A trigger can be a single key or a combination, such as "
+"ShiftLeft+ControlLeft. The combination works in either press order and ends "
+"when any key is released."
+msgstr "觸發器可以是單一鍵或組合鍵，例如 ShiftLeft+ControlLeft。此組合按任一按下順序起作用，並在釋放任意鍵時結束。"
+
+msgid "When held"
+msgstr "舉行時"
+
+msgid ""
+"Choose a layer active until release, or an action performed once after the "
+"hold duration."
+msgstr "選擇釋放前處於活動狀態的圖層，或在保持持續時間後執行一次的操作。"
+
+msgid "Nothing"
+msgstr "沒有什麼"
+
+msgid "Activate layer"
+msgstr "啟動層"
+
+msgid "Run action"
+msgstr "奔跑動作"
+
+msgid "Long-hold action"
+msgstr "長按動作"
+
+msgid "Runs once after {} s"
+msgstr "{} 後運行一次"
+
+msgid "Hold another key / combination"
+msgstr "按住另一個鍵/組合鍵"
+
+msgid "Press one key or hold a combination, then release a key to capture it."
+msgstr "按一個鍵或按住組合鍵，然後釋放一個鍵即可捕捉它。"
+
+msgid "Held key: {}"
+msgstr "保持鍵：{}"
+
+msgid "Assigned to"
+msgstr "分配給"
+
+msgid "Languages"
+msgstr "語言"
+
+msgid "Excluded applications"
+msgstr "排除的應用程式"
+
+msgid "Open page in popup"
+msgstr "在彈出視窗中開啟頁面"
+
+msgid "Page:"
+msgstr "頁："
+
+msgid "Layout “{}” created"
+msgstr "建立佈局“{}”"
+
+msgid "Layout “{}” saved"
+msgstr "版面配置“{}”已儲存"
+
+msgid "Layout “{}” deleted"
+msgstr "版面配置“{}”已刪除"
+
+msgid "Layout “{}” activated"
+msgstr "版面配置“{}”已激活"
+
+msgid "Could not complete the action"
+msgstr "無法完成操作"
+
+msgid "Dismiss notification"
+msgstr "關閉通知"
+
+msgid "Changes to layout “{}” discarded"
+msgstr "放棄對版面「{}」的更改"
+
+msgid "Popup menus are unavailable: {}"
+msgstr "彈出式選單不可用：{}"
+
+msgid "Popup menus are not running. Try opening the menu again."
+msgstr "彈出式選單未運行。嘗試再次開啟選單。"
+
+msgid "Popup menus are restarting. Try again shortly."
+msgstr "彈出式選單正在重新啟動。稍後再試。"
+
+msgid "Popup menus could not recover. Restart the application."
+msgstr "彈出式選單無法恢復。重新啟動應用程式。"
+
+msgid "Popup menu error: {}"
+msgstr "彈出式選單錯誤：{}"
+
+msgid "Choose a key or combination for the trigger"
+msgstr "選擇觸發器的按鍵或組合"
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid. Add a trigger, then choose its action, suppress it, or inherit its "
+"assignment from the lower layer."
+msgstr "主鍵盤網格之外的滑鼠按鈕、媒體鍵和其他觸發器。新增觸發器，然後選擇其操作、抑制它或從下層繼承其分配。"
+
+msgid ""
+"You can enter emoji, any text, or Unicode symbols here. Drag an item from "
+"the palette onto a key to assign it."
+msgstr "您可以在此輸入表情符號、任何文字或 Unicode 符號。將項目從調色板拖曳到某個鍵上以對其進行分配。"
+
+msgid "Accessibility"
+msgstr "無障礙"
+
+msgid "High contrast"
+msgstr "高對比度"
+
+msgid ""
+"Pure black or white background, stronger text, borders and focus outlines. "
+"Works with the light and dark themes."
+msgstr "純黑色或白色背景，更強的文字、邊框和焦點輪廓。適用於淺色和深色主題。"
+
+msgid "Reduce motion"
+msgstr "減少運動"
+
+msgid "Turn off highlight animations in the editor."
+msgstr "關閉編輯器中的反白動畫。"
+
+msgid ""
+"Every control can be reached with Tab and activated with Space or Enter. "
+"Interface size follows the desktop scale factor."
+msgstr "每個控制項都可以透過 Tab 存取並透過 Space 或 Enter 啟動。介面大小遵循桌面比例因子。"
+
+msgid "Always"
+msgstr "總是"
+
+msgid "Hold duration"
+msgstr "保持時間"
+
+msgid "{} s"
+msgstr "{} s"
+
+msgid "{} s (default)"
+msgstr "{}（預設）"
+
+msgid "Shell command or path to a script, e.g. playerctl play-pause"
+msgstr "Shell 指令或腳本路徑，例如playerctl 播放暫停"
+
+msgid "Runs with sh -lc in the background; the result is not awaited."
+msgstr "在背景以 sh -lc 運行；沒有等待結果。"
+
+msgid "Choose script…"
+msgstr "選擇腳本..."
+
+msgid "Working directory (optional, home by default)"
+msgstr "工作目錄（可選，預設為 home）"
+
+msgid "Choose folder…"
+msgstr "選擇資料夾..."
+
+msgid ""
+"Command execution is turned off. Turn it on in the settings to assign "
+"commands."
+msgstr "命令執行已關閉。在設定中將其打開以分配命令。"
+
+msgid "Open command settings"
+msgstr "打開命令設定"
+
+msgid "The working directory does not exist."
+msgstr "工作目錄不存在。"
+
+msgid ""
+"The script file is not executable: run chmod +x on it or prefix the path "
+"with sh."
+msgstr "此腳本檔案無法執行：對其執行 chmod +x 或在路徑前面加上 sh 前綴。"
+
+msgid "Choose a script"
+msgstr "選擇腳本"
+
+msgid "Choose a working directory"
+msgstr "選擇工作目錄"
+
+msgid "Commands run with sh -lc in the background and are not awaited."
+msgstr "命令在背景使用 sh -lc 運行，並且不等待。"
+
+msgid "Commands run with PowerShell in the background and are not awaited."
+msgstr "命令在背景使用 PowerShell 運行，並且不會等待。"
+
+msgid ""
+"Commands stay off until you allow execution. Review below what your layouts "
+"would run."
+msgstr "命令保持關閉狀態，直到您允許執行為止。請在下面查看您的佈局將運行的內容。"
+
+msgid "Command"
+msgstr "命令"
+
+msgid "Rule {} · tap"
+msgstr "規則{}·水龍頭"
+
+msgid "Rule {} · hold"
+msgstr "規則 {} · 保留"
+
+msgid "Rule {} · long hold"
+msgstr "規則 {} · 長期持有"
+
+msgid "Rule {} · double tap"
+msgstr "規則 {} · 雙擊"
+
+msgid "disabled"
+msgstr "殘障人士"
+
+msgid "Layer {}"
+msgstr "層{}"
+
+msgid "Macro"
+msgstr "宏"
+
+msgid "Quick action"
+msgstr "快速行動"
+
+msgid "Show all"
+msgstr "顯示全部"
+
+msgid "Close"
+msgstr "關閉"
+
+msgid "Choose a key or key combination"
+msgstr "選擇一個按鍵或組合鍵"
+
+msgid "Examples"
+msgstr "範例"
+
+msgid "Add rule…"
+msgstr "新增規則..."
+
+msgid ""
+"All filled conditions must match. A rule without conditions always matches."
+msgstr "所有填寫的條件必須符合。沒有條件的規則總是符合的。"
+
+msgid "Automatic switching rules"
+msgstr "自動切換規則"
+
+msgid ""
+"Automatic: the layout is chosen by switching rules for the application, "
+"system language or game mode."
+msgstr "自動：透過應用程式、系統語言或遊戲模式的切換規則來選擇佈局。"
+
+msgid "Layout"
+msgstr "佈局"
+
+msgid "Layout not found"
+msgstr "未找到佈局"
+
+msgid "New rule"
+msgstr "新規則"
+
+msgid "Now: {} (default)"
+msgstr "現在：{}（預設）"
+
+msgid "Otherwise (default)"
+msgstr "否則（預設）"
+
+msgid "Rule {}"
+msgstr "規則{}"
+
+msgid "Use layout"
+msgstr "使用佈局"
+
+msgid "When"
+msgstr "什麼時候"
+
+msgid "If"
+msgstr "如果"
+
+msgid "If:"
+msgstr "如果："
+
+msgid "Trigger conditions"
+msgstr "觸發條件"
+
+msgid "No layout"
+msgstr "無佈局"
+
+msgid "No layout (keys as is)"
+msgstr "無版面（按鍵按原樣）"
+
+msgid "Now: {} (rule {}: {})"
+msgstr "現在：{}（規則{}：{}）"
+
+msgid ""
+"Rules are checked from top to bottom; the first enabled one whose conditions"
+" match chooses the layout. If none matches, the default is used. “No layout”"
+" leaves the keyboard unprocessed, for example in an application where the "
+"layout gets in the way."
+msgstr "從上到下檢查規則；第一個啟用且條件匹配的選擇佈局。如果沒有匹配，則使用預設值。 「無佈局」會使鍵盤未經處理，例如在佈局妨礙的應用程式中。"
+
+msgid "No rules"
+msgstr "沒有規則"
+
+msgid "The default layout is always used."
+msgstr "始終使用預設佈局。"
+
+msgid "For games"
+msgstr "對於遊戲"
+
+msgid "For an application"
+msgstr "對於申請"
+
+msgid "Custom rule"
+msgstr "自訂規則"
+
+msgid "When no rule matches, the keyboard works without processing."
+msgstr "當沒有規則匹配時，鍵盤不進行任何處理即可工作。"
+
+msgid "Never applies: rule {} always matches first."
+msgstr "從不應用：規則 {} 始終首先匹配。"
+
+msgid "Game mode detection is off, so this rule never matches."
+msgstr "遊戲模式檢測已關閉，因此該規則永遠不會匹配。"
+
+msgid "Not among the system languages: {}"
+msgstr "不在系統語言中：{}"
+
+msgid "Rule enabled"
+msgstr "規則已啟用"
+
+msgid "Automatic mode will use no layout by default."
+msgstr "自動模式預設不使用佈局。"
+
+msgid "Delete rule {}?"
+msgstr "刪除規則{}？"
+
+msgid "The rule will be deleted. This cannot be undone."
+msgstr "該規則將被刪除。此操作無法撤銷。"
+
+msgid "Its {n} automatic rule will be deleted too."
+msgid_plural "Its {n} automatic rules will be deleted too."
+msgstr[0] "它的 {n} 個自動規則也將被刪除。"
+
+msgid "In {n} rule"
+msgid_plural "In {n} rules"
+msgstr[0] "在 {n} 條規則中"
+
+msgid "Auto — detect games"
+msgstr "自動 — 檢測遊戲"
+
+msgid "On — always"
+msgstr "開啟——始終"
+
+msgid "Off — never"
+msgstr "關閉 — 從不"
+
+msgid ""
+"Automatic layout rules apply only when the layout is chosen automatically "
+"(Layouts page)."
+msgstr "只有當自動選擇佈局（佈局頁面）時，自動佈局規則才適用。"
+
+msgid ""
+"Borderless windows covering the screen count too. Browsers, video players "
+"and presentations are ignored."
+msgstr "覆蓋螢幕的無邊框視窗也很重要。瀏覽器、影片播放器和簡報將被忽略。"
+
+msgid "Game mode is off (set manually)"
+msgstr "遊戲模式關閉（手動設定）"
+
+msgid "Game mode is on (set manually)"
+msgstr "遊戲模式已開啟（手動設定）"
+
+msgid ""
+"Game mode turns on rules and automatic layout rules that have a game-mode "
+"condition. Automatic layout rules apply only when the layout is chosen "
+"automatically (Layouts page). Auto uses the detection sources and custom "
+"rules below; On and Off set the state manually. “Never a game” takes "
+"priority over automatic detection and “Always a game”. You can also change "
+"the mode in the top bar, in the tray menu or with a key bound to a game mode"
+" action."
+msgstr ""
+"遊戲模式開啟具有遊戲模式條件的規則和自動佈局規則。只有當自動選擇佈局（佈局頁面）時，自動佈局規則才適用。自動使用以下偵測來源和自訂規則； On 和Off"
+" 手動設定狀態。 「從不玩遊戲」優先於自動偵測和「永遠是遊戲」。您也可以在頂部欄中、托盤選單中或使用綁定到遊戲模式操作的按鍵來變更模式。"
+
+msgid "Game mode: always off"
+msgstr "遊戲模式：始終關閉"
+
+msgid "Game mode: always on"
+msgstr "遊戲模式：始終開啟"
+
+msgid "Game mode: detect automatically"
+msgstr "遊戲模式：自動偵測"
+
+msgid "Toggle game mode"
+msgstr "切換遊戲模式"
+
+msgid ""
+"GameMode daemon unavailable: check the gamemode package and session D-Bus."
+msgstr "GameMode 守護程式不可用：檢查遊戲模式套件和會話 D-Bus。"
+
+msgid ""
+"Install {} to detect the active window and fullscreen windows. It is also "
+"needed for application conditions in rules."
+msgstr "安裝 {} 來偵測活動視窗和全螢幕視窗。規則中的應用條件也需要它。"
+
+msgid ""
+"Nothing uses game mode yet: no rule or automatic layout rule has a game-mode"
+" condition, so turning it on changes nothing."
+msgstr "目前還沒有任何東西可以使用遊戲模式：沒有規則或自動佈局規則具有遊戲模式條件，因此打開它不會改變任何情況。"
+
+msgid ""
+"On and Off are remembered after restart. Auto keeps detecting in the "
+"background."
+msgstr "重啟後會記住 On 和 Off。自動在背景持續檢測。"
+
+msgid ""
+"Rules of the current layout with a game-mode condition: {}. Automatic layout"
+" rules with a game-mode condition: {}."
+msgstr "具有遊戲模式條件的當前佈局的規則：{}。具有遊戲模式條件的自動佈局規則：{}。"
+
+msgid ""
+"Turns on while a game runs through gamemoderun or requests GameMode itself. "
+"In Steam set the launch options to “gamemoderun %command%”."
+msgstr ""
+"當遊戲透過 gamemoderun 運行或請求 GameMode 本身時開啟。在 Steam 中將啟動選項設為「gamemoderun "
+"%command%」。"
+
+msgid "Game mode: on"
+msgstr "遊戲模式：開"
+
+msgid "Game mode: off"
+msgstr "遊戲模式：關閉"
+
+msgid "Active now: {}"
+msgstr "現在活躍：{}"
+
+msgid ""
+"Active window detection is unavailable in this session, so application "
+"conditions do not match."
+msgstr "活動視窗偵測在此會話中不可用，因此應用程式條件不符。"
+
+msgid ""
+"An application is matched by its ID or process name: the whole name, "
+"ignoring case, with * and ? as wildcards. A window title item matches when "
+"the title contains the text. Any matching item is enough. An empty list "
+"imposes no restrictions."
+msgstr ""
+"應用程式透過其 ID 或進程名稱進行匹配：整個名稱，忽略大小寫，帶有 * 和 "
+"?作為通配符。當標題包含文字時，視窗標題項相符。任何匹配的項目就足夠了。空列表不施加任何限制。"
+
+msgid "Looking for open windows…"
+msgstr "尋找打開的窗戶..."
+
+msgid "No open windows found"
+msgstr "未找到開啟的視窗"
+
+msgid "Window title contains: {}"
+msgstr "視窗標題包含：{}"
+
+msgid "Timing"
+msgstr "定時"
+
+msgid "Used by macros without their own value."
+msgstr "由宏使用，沒有自己的價值。"
+
+msgid ""
+"Used by macros without their own value. How long to wait between pressing "
+"modifiers (Shift, Ctrl, …) and the main key of one step."
+msgstr "由宏使用，沒有自己的價值。按修飾符（Shift、Ctrl、...）和一步的主鍵之間要等待多久。"
+
+msgid "Rule without a trigger is saved as a draft and will be ignored."
+msgstr "沒有觸發器的規則將儲存為草稿並將被忽略。"
+
+msgid "Trigger \"{}\" cannot be used for a rule."
+msgstr "觸發器“{}”不能用於規則。"
+
+msgid "Rules for trigger \"{}\" may overlap; the first matching rule wins."
+msgstr "觸發「{}」的規則可能會重疊；第一個匹配規則獲勝。"
+
+msgid "Rule for trigger \"{}\" is covered by an earlier rule and will not run."
+msgstr "觸發器“{}”的規則已被較早的規則覆蓋，因此不會運行。"
+
+msgid "Rule \"{}\" points to a layer that no longer exists."
+msgstr "規則“{}”指向不再存在的層。"
+
+msgid "Rule \"{}\" has an invalid tap action."
+msgstr "規則「{}」具有無效的點擊操作。"
+
+msgid "Rule \"{}\" has an invalid hold action."
+msgstr "規則“{}”具有無效的保留操作。"
+
+msgid "Rule \"{}\" has an invalid double-tap action."
+msgstr "規則“{}”具有無效的雙擊操作。"
+
+msgid "Automatic switching rule deleted"
+msgstr "自動切換規則已刪除"
+
+msgid "Only in applications"
+msgstr "僅在應用程式中"
+
+msgid "Except applications"
+msgstr "申請除外"
+
+msgid "A match blocks the rule, even if the window is in the allowed list."
+msgstr "即使視窗位於允許清單中，符合也會阻止規則。"
+
+msgid "Any match allows the rule. An empty list allows all windows."
+msgstr "任何符合都允許該規則。空列表允許所有視窗。"
+
+msgid "Choose applications to exclude"
+msgstr "選擇要排除的應用程式"
+
+msgid "Open windows"
+msgstr "打開窗戶"
+
+msgid "Last active"
+msgstr "最後活躍"
+
+msgid "Nothing is excluded."
+msgstr "沒有什麼是被排除的。"
+
+msgid "No restrictions: the rule works in every window."
+msgstr "無限制：該規則適用於每個視窗。"
+
+msgid "{n} window"
+msgid_plural "{n} windows"
+msgstr[0] "{n} 個視窗"
+
+msgid "Do not process"
+msgstr "不處理"
+
+msgid "Command name (optional)"
+msgstr "命令名稱（可選）"
+
+msgid "Working directory (home by default)"
+msgstr "工作目錄（預設為 home）"
+
+msgid "Text to type when the action is invoked:"
+msgstr "呼叫操作時要輸入的文字："
+
+msgid ""
+"Enter literal text without the text: prefix. Line breaks, spaces and tabs "
+"are preserved. On Linux, text is inserted into the active application via "
+"the desktop portal; permission may be required. Text injection by the mapper"
+" is not implemented on Windows or macOS."
+msgstr ""
+"輸入不含文字：前綴的文字文字。換行符、空格和製表符將被保留。在 Linux "
+"上，文字透過桌面入口網站插入到活動應用程式中；可能需要許可。映射器的文字注入未在 Windows 或 macOS 上實作。"
+
+msgid ""
+"Commands run with sh -lc in the background. The mapper does not wait for "
+"completion or collect output. An empty name uses the command itself as its "
+"label. The working directory defaults to your home folder; scripts need "
+"execute permission. Command execution must be enabled in settings."
+msgstr ""
+"命令在背景使用 sh -lc "
+"運行。映射器不會等待完成或收集輸出。空名稱使用命令本身作為其標籤。工作目錄預設為您的主資料夾；腳本需要執行權限。必須在設定中啟用命令執行。"
+
+msgid ""
+"Commands run with PowerShell in the background, without a console window. "
+"The mapper does not wait for completion or collect output. An empty name "
+"uses the command itself as its label. The working directory defaults to your"
+" home folder. Command execution must be enabled in settings."
+msgstr ""
+"命令在背景使用 PowerShell "
+"運行，沒有控制台視窗。映射器不會等待完成或收集輸出。空名稱使用命令本身作為其標籤。工作目錄預設為您的主資料夾。必須在設定中啟用命令執行。"
+
+msgid ""
+"The name is optional: an empty name uses the command itself as its label. "
+"Command execution by the mapper is not implemented on macOS."
+msgstr "該名稱是可選的：空名稱使用命令本身作為其標籤。 macOS 上未實作映射器執行指令。"
+
+msgid "Triggers"
+msgstr "觸發器"
+
+msgid "Disable animations"
+msgstr "停用動畫"
+
+msgid "Add layout: "
+msgstr "新增佈局："
+
+msgid "Save (Ctrl+S)"
+msgstr "儲存 (Ctrl+S)"
+
+msgid "Close layout"
+msgstr "關閉佈局"
+
+msgid "Discard layout changes?"
+msgstr "放棄佈局變更？"
+
+msgid "Unsaved changes to this layout will be lost."
+msgstr "對此佈局未儲存的變更將會遺失。"
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Triggers tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"引用中使用的唯一標識符，例如巨集：<id>。若要將此巨集綁定到某個鍵，請在「圖層」或「觸發器」標籤上選擇該動作。僅當沒有任何內容使用此巨集時才更改 "
+"ID。"
+
+msgid "Discard"
+msgstr "丟棄"
+
+msgid ""
+"Build reusable sequences of key chords, text, commands and system actions. Use a unique ID in macro:<id> references and a readable name in action lists. Assign macros on the Layers or Triggers tab; change an ID only when it is unused.\n"
+"\n"
+"The step pause applies between steps of this macro. Modifier delay is the time between pressing a modifier and the main key. Leave delays empty to use Settings defaults."
+msgstr ""
+"建立可重複使用的關鍵和弦、文字、指令和系統操作序列。在巨集：<id> 參考中使用唯一 ID，在操作清單中使用可讀名稱。在「圖層」或「觸發器」標籤上指派巨集；僅在未使用時變更 ID。\n"
+"\n"
+"步驟暫停適用於該巨集的步驟之間。修改器延遲是按下修改器和主鍵之間的時間。將延遲留空以使用設定預設值。"
+
+msgid "Global defaults: step pause {} ms; modifier delay {} ms."
+msgstr "全域預設：步進暫停 {} ms；修改器延遲 {} 毫秒。"
+
+msgid "Layout changed on disk"
+msgstr "磁碟上的佈局已更改"
+
+msgid ""
+"The file of “{}” was changed by another program after you opened it. Your "
+"edits are kept until you choose what to do."
+msgstr "“{}”檔案在您開啟後被另一個程式更改。您的編輯會一直保留，直到您選擇要執行的操作為止。"
+
+msgid "Load from disk"
+msgstr "從磁碟載入"
+
+msgid "Save as new…"
+msgstr "另存為新..."
+
+msgid "Overwrite"
+msgstr "覆蓋"
+
+msgid "Show LHC key codes used in assignments, such as KeyA and ArrowLeft."
+msgstr "顯示作業中使用的 LHC 鍵代碼，例如 KeyA 和 ArrowLeft。"
+
+msgid "Application"
+msgstr "應用"
+
+msgid "Window title"
+msgstr "視窗標題"
+
+msgid "Click to switch"
+msgstr "點擊切換"
+
+msgid "Match by app ID or process instead"
+msgstr "按應用程式 ID 或進程進行匹配"
+
+msgid "Match by window title instead"
+msgstr "改為按視窗標題匹配"
+
+msgid "Open now: {n} window"
+msgid_plural "Open now: {n} windows"
+msgstr[0] "現已開放：{n}個窗口"
+
+msgid "Not open now"
+msgstr "現在不開放"
+
+msgid "Running process"
+msgstr "運行過程"
+
+msgid "Text the window title contains"
+msgstr "視窗標題包含的文本"
+
+msgid "Already in the list"
+msgstr "已經在清單中"
+
+msgid "Choose from open windows…"
+msgstr "從開啟的視窗中選擇..."
+
+msgid "Matches {n} open window"
+msgid_plural "Matches {n} open windows"
+msgstr[0] "符合 {n} 個開啟的視窗"
+
+msgid "Matches no open window"
+msgstr "匹配沒有打開的窗口"
+
+msgid "Show Quick Action Menu on the last used page"
+msgstr "在上次使用的頁面上顯示快速操作選單"
+
+msgid "Show Emoji & Symbols menu on the last used page"
+msgstr "在上次使用的頁面上顯示表情符號和符號選單"
+
+msgid "Show the settings window"
+msgstr "顯示設定視窗"
+
+msgid "Activate layout {} (switches to Single mode)"
+msgstr "啟動佈局 {}（切換到單模式）"
+
+msgid "There is no layout number {}"
+msgstr "沒有版面編號 {}"
+
+msgid "Show the Left Hand Control layout name when it changes"
+msgstr "變更時顯示左側控制項佈局名稱"
+
+msgid "Show the keys of a layer while it is held"
+msgstr "按住圖層時顯示該圖層的關鍵點"
+
+msgid ""
+"The hint appears 2 seconds after the layer activates. Pressing a layer key "
+"hides or cancels it until the trigger is released, including in game mode."
+msgstr "圖層啟動後 2 秒出現提示。按圖層鍵會隱藏或取消它，直到釋放觸發器為止，包括在遊戲模式下。"
+
+msgid ""
+"Unavailable: build with the spell feature and use a Wayland compositor with "
+"layer-shell (KDE Plasma, Sway, Hyprland)."
+msgstr "不可用：使用拼字功能建構並使用具有層殼的 Wayland 合成器（KDE Plasma、Sway、Hyprland）。"
+
+msgid ""
+"The app:activateLayout1…5 actions activate the layout at that position in "
+"this list: reordering the list changes which layout a key activates. In Auto"
+" mode they switch to Single mode."
+msgstr ""
+"app:activateLayout1…5 操作啟動此清單中該位置的佈局：重新排序清單會變更按鍵啟動的佈局。在自動模式下，它們切換到單模式。"
+
+msgid "Cut"
+msgstr "剪下"
+
+msgid "Copy"
+msgstr "複製"
+
+msgid "Paste"
+msgstr "貼上"
+
+msgid "Select all"
+msgstr "全選"
+
+msgid "Clear search"
+msgstr "清除搜尋"
+
+msgid "Add application"
+msgstr "新增應用程式"
+
+msgid "Edit application"
+msgstr "編輯申請"
+
+msgid "Remove application?"
+msgstr "刪除應用程式？"
+
+msgid "“{}” will be removed from the list."
+msgstr "“{}”將從清單中刪除。"
+
+msgid "Devices"
+msgstr "裝置"
+
+msgid "Required"
+msgstr "必需的"
+
+msgid "Optional"
+msgstr "選修的"
+
+msgid "Failed to start"
+msgstr "啟動失敗"
+
+msgid "Keys work as usual. Start the mapper to apply your layouts."
+msgstr "鑰匙照常工作。啟動映射器以套用您的佈局。"
+
+msgid "Select a keyboard below to start the mapper."
+msgstr "選擇下面的鍵盤來啟動映射器。"
+
+msgid "Changing a device restarts the mapper."
+msgstr "更改設備會重新啟動映射器。"
+
+msgid "Auto: known game {}"
+msgstr "汽車：已知遊戲{}"
+
+msgid "Ignored in fullscreen"
+msgstr "全螢幕時忽略"
+
+msgid "Not available in this session."
+msgstr "在此會話中不可用。"
+
+msgid "Steam games"
+msgstr "蒸氣遊戲"
+
+msgid ""
+"Turns on while Steam runs a game: Steam starts every game through reaper "
+"SteamLaunch, and game windows have the ID steam_app_<number>."
+msgstr ""
+"Steam 運行遊戲時開啟：Steam 透過 reaper SteamLaunch 啟動每個遊戲，遊戲視窗的 ID 為 "
+"steam_app_<number>。"
+
+msgid "Turns on while Steam reports a running game."
+msgstr "當 Steam 報告正在運行的遊戲時亮起。"
+
+msgid "Lutris games"
+msgstr "盧特里斯遊戲"
+
+msgid ""
+"Turns on while a game started by Lutris runs: Lutris starts every game "
+"through lutris-wrapper."
+msgstr "當 Lutris 啟動的遊戲運行時開啟：Lutris 透過 lutris-wrapper 啟動每個遊戲。"
+
+msgid "Gamescope sessions"
+msgstr "遊戲範圍會議"
+
+msgid "Turns on while the active window is a nested gamescope session."
+msgstr "當活動視窗是嵌套的 gamescope 會話時開啟。"
+
+msgid "Games from the Game Bar list"
+msgstr "遊戲欄列表中的遊戲"
+
+msgid "Applications of the Game category"
+msgstr "遊戲類別的應用"
+
+msgid ""
+"Turns on while the active window belongs to an application whose .desktop "
+"file lists the Game category. Launchers are tagged as games too, so they are"
+" skipped."
+msgstr "當活動視窗屬於其 .desktop 檔案列出遊戲類別的應用程式時開啟。啟動器也被標記為遊戲，因此會被跳過。"
+
+msgid ""
+"Turns on while the active application declares the Games category in its "
+"Info.plist. Launchers are skipped."
+msgstr "當活動應用程式在其 Info.plist 中聲明遊戲類別時開啟。啟動器被跳過。"
+
+msgid "Auto — according to settings"
+msgstr "自動 — 根據設定"
+
+msgid "Blank"
+msgstr "空白的"
+
+msgid "Assign action"
+msgstr "分配動作"
+
+msgid "Action after {} ms of holding"
+msgstr "按住 {} 毫秒後的動作"
+
+msgid ""
+"These codes are specific to Left Hand Control, not universal keyboard codes "
+"(e.g. KeyA, ArrowLeft)."
+msgstr "這些代碼特定於左手控制，而不是通用鍵盤代碼（例如 KeyA、ArrowLeft）。"
+
+msgid "While its window is active"
+msgstr "當其視窗處於活動狀態時"
+
+msgid "While the process runs"
+msgstr "當進程運行時"
+
+msgid "Counts while a window of the application has the focus."
+msgstr "當應用程式的視窗獲得焦點時進行計數。"
+
+msgid ""
+"Counts while a process with this name runs, even without a window or in the "
+"background."
+msgstr "當具有此名稱的進程運行時進行計數，即使沒有視窗或在背景也是如此。"
+
+msgid "Application · while its window is active"
+msgstr "應用程式 · 當其視窗處於活動狀態時"
+
+msgid "Process · while it runs"
+msgstr "進程·運行時"
+
+msgid "No games added."
+msgstr "沒有添加遊戲。"
+
+msgid ""
+"Game mode turns on while any of these matches. An application is matched by "
+"its ID or process name: the whole name, ignoring case, with * and ? as "
+"wildcards. Steam games have the app ID steam_app_<number>; Proton games are "
+"also found by their .exe name. A window title item matches the active window"
+" whose title contains the text."
+msgstr ""
+"當這些比賽中的任何一場比賽時，遊戲模式都會開啟。應用程式透過其 ID 或進程名稱進行匹配：整個名稱，忽略大小寫，帶有 * 和 ?作為通配符。 Steam"
+" 遊戲的應用程式 ID 為 steam_app_<number>； Proton 遊戲也可透過其 .exe "
+"名稱找到。視窗標題項目與標題包含文字的活動視窗相符。"
+
+msgid ""
+"Game mode stays off while any of these matches, even if a game or another "
+"detector would turn it on."
+msgstr "當任何這些匹配時，遊戲模式都會保持關閉狀態，即使遊戲或另一個探測器將其打開。"
+
+msgid "less than a minute"
+msgstr "不到一分鐘"
+
+msgid "{} min"
+msgstr "{} 分鐘"
+
+msgid "{} h {} min"
+msgstr "{} 小時 {} 分鐘"
+
+msgid "Running for {}"
+msgstr "為{}運行"
+
+msgid "Stopped unexpectedly"
+msgstr "意外停止"
+
+msgid "Stopped {} ago after running for {}."
+msgstr "在運行 {} 後停止了 {}。"
+
+msgid "Text input"
+msgstr "文字輸入"
+
+msgid ""
+"How text actions in rules and macros are typed. Key remapping and the emoji "
+"popup do not use it."
+msgstr "如何鍵入規則和巨集中的文字操作。按鍵重新映射和表情符號彈出視窗不使用它。"
+
+msgid "Typing method"
+msgstr "打字方法"
+
+msgid "libei + clipboard fallback (recommended)"
+msgstr "libei + 剪貼簿回退（建議）"
+
+msgid "Paste from clipboard"
+msgstr "從剪貼簿貼上"
+
+msgid "ydotool"
+msgstr "ydotool"
+
+msgid "xdotool"
+msgstr "xdotool"
+
+msgid ""
+"Types with the current layout, or pastes the whole text when a character is "
+"unavailable. Paste requires clipboard access and support for the paste "
+"shortcut. Preserves clipboard formats and cancels if the destination "
+"changes. Requires portal permission and active-window detection."
+msgstr ""
+"使用目前佈局鍵入，或在字元不可用時貼上整個文字。貼上需要剪貼簿存取權限並支援貼上捷徑。保留剪貼簿格式並在目標變更時取消。需要門戶權限和活動視窗檢測。"
+
+msgid ""
+"Types only through libei using the current keyboard layout and Caps Lock "
+"state. Skips text with unavailable characters. Requires portal permission "
+"and active-window detection. Cancels if the destination changes."
+msgstr "僅使用目前鍵盤佈局和大寫鎖定狀態透過 libei 進行鍵入。跳過含有不可用字元的文字。需要門戶權限和活動視窗檢測。如果目的地變更則取消。"
+
+msgid ""
+"Types only through NotifyKeyboardKeycode using the KDE layout and readable "
+"keyboard state. Skips text with unavailable characters. Requires portal "
+"permission and active-window detection. Cancels if the destination changes."
+msgstr ""
+"僅使用 KDE 佈局和可讀鍵盤狀態透過 NotifyKeyboardKeycode "
+"進行鍵入。跳過含有不可用字元的文字。需要門戶權限和活動視窗檢測。如果目的地變更則取消。"
+
+msgid ""
+"Pastes with the paste shortcut through the portal. Requires clipboard "
+"access, active-window detection and an app supporting that shortcut. "
+"Preserves all clipboard formats; a new user copy takes precedence. Reports "
+"an error if no text transfer is observed."
+msgstr ""
+"透過入口網站使用貼上快捷方式進行貼上。需要剪貼簿存取、活動視窗偵測和支援該捷徑的應用程式。保留所有剪貼簿格式；新使用者副本優先。如果未觀察到文字傳輸，則報告錯誤。"
+
+msgid "Paste shortcut"
+msgstr "貼上快捷方式"
+
+msgid ""
+"Sent to the focused app to paste the text. Terminals usually need "
+"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
+"Ctrl+V does not paste there."
+msgstr ""
+"發送到焦點應用程式以貼上文字。終端通常需要 Ctrl+Shift+V：其中一些終端將滑鼠選擇貼在 Shift+Insert 上，而 Ctrl+V "
+"不貼到那裡。"
+
+msgid ""
+"Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "
+"Reliable for Latin text only. On an error, stops without switching methods."
+msgstr "僅運行“ydotool 類型”。需要執行 ydotool 及其 ydotoold 服務。僅對拉丁文本可靠。出現錯誤時，停止而不切換方法。"
+
+msgid ""
+"Runs \"xdotool type\" only. Works only in X11 sessions and XWayland windows."
+" On an error, stops without switching methods."
+msgstr "僅運行“xdotool type”。僅適用於 X11 會話和 XWayland 視窗。出現錯誤時，停止而不切換方法。"
+
+msgid "ydotool from PATH"
+msgstr "路徑中的 ydotool"
+
+msgid "xdotool from PATH"
+msgstr "來自 PATH 的 xdotool"
+
+msgid ""
+"Each item is compared with the active window. Pick a window from the list "
+"below to fill in the field."
+msgstr "每個項目都會與活動視窗進行比較。從下面的清單中選擇一個視窗來填寫該欄位。"
+
+msgid ""
+"Application: the app ID (Wayland app id or X11 WM_CLASS) or the process "
+"name. The whole name must match, case is ignored, .exe is optional. * stands"
+" for any characters and ? for one, e.g. steam_app_*. The ID is stable, so "
+"prefer it."
+msgstr ""
+"應用程式：應用程式 ID（Wayland 應用程式 ID 或 X11 WM_CLASS）或進程名稱。整個名稱必須匹配，忽略大小寫，.exe 是可選的。 "
+"* 代表任意字符，?其一，例如steam_app_*。 ID穩定，所以比較喜歡。"
+
+msgid ""
+"Window title: matches when the title contains the text, case is ignored. "
+"With * or ? the pattern must cover the whole title. A title changes with the"
+" open tab or document, and it never matches a process without a window."
+msgstr ""
+"視窗標題：當標題包含文字時匹配，忽略大小寫。帶 * 或 ?圖案必須覆蓋整個標題。標題會隨著開啟的選項卡或文件而變化，並且它永遠不會與沒有視窗的進程相符。"
+
+msgid "Match by"
+msgstr "匹配依據"
+
+msgid "Process"
+msgstr "過程"
+
+msgid "Process name, * and ? allowed"
+msgstr "行程名稱、* 和 ?允許"
+
+msgid "App ID, * and ? allowed"
+msgstr "應用程式 ID、* 和 ?允許"
+
+msgid ""
+"The item is compared with the names of running processes. Pick one from the "
+"list below to fill in the field."
+msgstr "此項目與正在運行的進程的名稱進行比較。從下面的清單中選擇一個來填寫該欄位。"
+
+msgid ""
+"Process: the executable name, as the list below shows it. The whole name "
+"must match, case is ignored, .exe is optional. * stands for any characters "
+"and ? for one."
+msgstr "進程：可執行檔名稱，如下列表所示。整個名稱必須匹配，忽略大小寫，.exe 是可選的。 * 代表任意字符，?其一。"
+
+msgid "Matches {n} running process"
+msgid_plural "Matches {n} running processes"
+msgstr[0] "匹配{n}個正在運行的進程"
+
+msgid "Matches no running process"
+msgstr "匹配沒有正在運行的進程"
+
+msgid ""
+"Many applications run as “{}”, so the name matches all of them. The "
+"application ID is more precise."
+msgstr "許多應用程式以“{}”運行，因此名稱與所有應用程式都相符。應用程式ID更加精確。"
+
+msgid "When it counts"
+msgstr "當它重要時"
+
+msgid "Window titles"
+msgstr "視窗標題"
+
+msgid "Processes of open windows"
+msgstr "開啟視窗的進程"
+
+msgid "Shared process"
+msgstr "共享流程"
+
+msgid "Running without a window"
+msgstr "沒有窗戶的情況下運行"
+
+msgid "Type a name to find processes running without a window."
+msgstr "鍵入名稱以尋找在沒有視窗的情況下執行的進程。"
+
+msgid "Process · while its window is active"
+msgstr "視窗處於活動狀態時進行處理"
+
+msgid "While the trigger is held"
+msgstr "當扣下板機時"
+
+msgid "Press key"
+msgstr "按鍵"
+
+msgid ""
+"Which key stays pressed while you hold the trigger, together with the layer."
+" “Don't press” only switches the layer."
+msgstr "按住扳機時哪個鍵與圖層一起保持按下狀態。 “不要按”僅切換圖層。"
+
+msgid ""
+"Which key stays pressed while you hold the trigger. “Trigger itself” keeps "
+"the usual behavior of the key."
+msgstr "按住扳機時哪個鍵保持按下狀態。 「觸發器本身」保持了按鍵的通常行為。"
+
+msgid "Trigger itself"
+msgstr "觸發本身"
+
+msgid "Other key…"
+msgstr "其他關鍵..."
+
+msgid "When to press"
+msgstr "何時按"
+
+msgid "Holds {}"
+msgstr "持有{}"
+
+msgid "Holds nothing"
+msgstr "什麼也沒有"
+
+msgid "Hold after {} ms"
+msgstr "{} 毫秒後保持"
+
+msgid "Stop mapper (restore native keyboard behavior)"
+msgstr "停止映射器（恢復本機鍵盤行為）"
+
+msgid "Select a keyboard device in the settings to start the mapper"
+msgstr "在設定中選擇鍵盤裝置以啟動映射器"
+
+msgid "Start mapper to intercept keys and apply layouts"
+msgstr "啟動映射器來攔截鍵並應用佈局"
+
+msgid "Current active layout (selected automatically by switching rules)"
+msgstr "目前活動佈局（透過切換規則自動選擇）"
+
+msgid "Click to change mode (Auto / On / Off)"
+msgstr "點擊以更改模式（自動/開/關）"
+
+msgid ""
+"The mapper intercepts keyboard input, applies layers, rules and macros, and "
+"emits output through a virtual device."
+msgstr "映射器會攔截鍵盤輸入，套用圖層、規則和巨集，並透過虛擬設備發出輸出。"
+
+msgid ""
+"Define how physical keys behave: tap for a key or action, hold to switch "
+"layers, or double-tap for extra shortcuts."
+msgstr "定義實體鍵的行為方式：點擊鍵或操作，按住切換圖層，或雙擊以獲得額外的快捷鍵。"
+
+msgid ""
+"Action performed when the trigger is pressed and released quickly without "
+"holding."
+msgstr "不要按住扳機而快速按下並釋放時執行的操作。"
+
+msgid ""
+"Action performed when the trigger is pressed twice quickly within the "
+"double-tap timeout."
+msgstr "在雙擊超時時間內快速按下扳機兩次時執行的操作。"
+
+msgid "Show standard QWERTY letter labels for visual reference."
+msgstr "顯示標準 QWERTY 字母標籤以供視覺參考。"
+
+msgid ""
+"Show internal key codes used in Left Hand Control profiles (e.g. KeyA, "
+"ArrowLeft)."
+msgstr "顯示左手控製設定檔中使用的內部鍵碼（例如 KeyA、ArrowLeft）。"
+
+msgid "Hold detection"
+msgstr "保持檢測"
+
+msgid "When a key becomes a hold"
+msgstr "當某個鍵變成按住鍵時"
+
+msgid ""
+"Decides when a rule key that is still down counts as a hold if you press "
+"another key meanwhile. Applies to all rules."
+msgstr "決定如果您同時按下另一個按鍵，仍處於按下狀態的規則鍵何時計為保持。適用於所有規則。"
+
+msgid ""
+"After another key is released: the key becomes a hold once another key is "
+"pressed and released while it is down, or when the hold threshold passes. "
+"Fast rolls while typing stay taps."
+msgstr "釋放另一個按鍵後：按下另一個按鍵並在按下時釋放該鍵，或超過保持閾值時，該鍵將變為保持狀態。敲擊時快速滾動。"
+
+msgid ""
+"As soon as another key is pressed: reacts faster, but fast typing can "
+"trigger the hold by mistake."
+msgstr "一旦按下另一個按鍵：反應速度更快，但快速打字可能會錯誤地觸發保持。"
+
+msgid "After another key is released (recommended)"
+msgstr "釋放另一個按鍵後（建議）"
+
+msgid "As soon as another key is pressed"
+msgstr "一旦按下另一個鍵"
+
+msgid ""
+"Used by rules that leave the field empty. A rule can set its own value in "
+"its advanced options."
+msgstr "由將該欄位留空的規則使用。規則可以在其進階選項中設定自己的值。"
+
+msgid "Hold threshold, ms"
+msgstr "保持閾值，毫秒"
+
+msgid ""
+"How long to hold a rule key before it counts as a hold: its layer or hold "
+"action. Released earlier, the key runs its tap action."
+msgstr "在算作保持之前保持規則鍵多長時間：其層或保持操作。該鍵較早發布，可執行輕按操作。"
+
+msgid ""
+"Lower: layers turn on faster, but fast typing may trigger them by mistake. "
+"Higher: fewer false holds, but a longer wait. Usually 150–250 ms."
+msgstr "較低：圖層開啟速度更快，但快速打字可能會錯誤地觸發它們。更高：錯誤保持更少，但等待時間更長。通常為 150–250 毫秒。"
+
+msgid "Standard value: {} ms."
+msgstr "標準值：{} 毫秒。"
+
+msgid "Long hold, ms"
+msgstr "長按，女士"
+
+msgid ""
+"How long to keep holding a rule key before its long-hold action runs once. "
+"Applies to rules whose hold runs an action instead of a layer."
+msgstr "在其長按操作運行一次之前，請保持按住規則鍵多久。適用於其持有運行操作而不是層的規則。"
+
+msgid "Double-tap window, ms"
+msgstr "雙擊窗口，毫秒"
+
+msgid ""
+"A second tap within this time after the first release counts as a double "
+"tap."
+msgstr "第一次釋放後這段時間內的第二次點擊算是雙擊。"
+
+msgid ""
+"A single tap on a key with a double-tap action runs only after this window "
+"ends, so a large value makes such keys feel slow. Keys without a double-tap "
+"action are not delayed."
+msgstr "點擊具有雙擊操作的按鍵僅在此視窗結束後運行，因此較大的值會使此類按鍵感覺很慢。沒有雙擊操作的按鍵不會延遲。"
+
+msgid ""
+"Used by macros that leave the field empty. A macro can set its own value on "
+"the Macros page."
+msgstr "由將該欄位留空的巨集使用。巨集可以在巨集頁面上設定自己的值。"
+
+msgid ""
+"Pause between consecutive steps of a macro. Increase it if an application "
+"misses keystrokes."
+msgstr "在巨集的連續步驟之間暫停。如果應用程式錯過擊鍵，請增加它。"
+
+msgid "Simultaneous presses"
+msgstr "同步壓力機"
+
+msgid ""
+"For rules triggered by several keys pressed together, such as KeyJ+KeyK. All"
+" keys must go down within this time, in any order. Until then the first key "
+"is held back; if the combination does not complete, it is typed as usual. "
+"Modifiers are never held back."
+msgstr ""
+"對於同時按下多個按鍵觸發的規則，例如KeyJ+KeyK。所有鑰匙都必須在這段時間內以任何順序按下。在此之前，第一個鍵將被保留；如果組合未完成，則照常輸入。修改者永遠不會被阻止。"
+
+msgid ""
+"Higher: the combination is easier to hit, but typing with these keys lags "
+"slightly. Applies to all rules; a rule cannot override it."
+msgstr "更高：該組合更容易擊中，但使用這些鍵打字會稍微滯後。適用於所有規則；規則不能覆蓋它。"
+
+msgid ""
+"Wait between pressing modifiers (Shift, Ctrl, …) and the main key of a macro"
+" step. Increase it if an application receives the shortcut without its "
+"modifier. Default for macros that leave the field empty."
+msgstr ""
+"在按下修飾鍵（Shift、Ctrl、...）和巨集步驟的主鍵之間等待。如果應用程式收到不含修飾符的快捷方式，請增加它。將該欄位留空的巨集的預設值。"
+
+msgid "Enter a long hold from 100 to 60000 ms."
+msgstr "輸入 100 到 60000 毫秒的長時間保持。"
+
+msgid "Long hold after {} ms"
+msgstr "{} 毫秒後長按"
+
+msgid ""
+"Released earlier, the trigger counts as a tap; held longer, as a hold. Empty"
+" uses the default from Settings: {} ms."
+msgstr "較早發佈時，觸發器算作一次點擊；保持更長時間，作為保持。空使用設定中的預設值：{} ms。"
+
+msgid ""
+"How long to keep holding before the action runs. Empty uses the default from"
+" Settings: {} ms."
+msgstr "動作開始前要維持多久。空使用設定中的預設值：{} ms。"
+
+msgid ""
+"Longest pause between two taps. Empty uses the default from Settings: {} ms."
+msgstr "兩次點擊之間的最長停頓時間。空使用設定中的預設值：{} ms。"
+
+msgid "Auto: {} is not counted as a game (built-in list)"
+msgstr "自動：{} 不算遊戲（內建清單）"
+
+msgid ""
+"These sources can take another application for a game, so each skips a "
+"built-in list of applications."
+msgstr "這些來源可以將另一個應用程式用於遊戲，因此每個來源都會跳過內建的應用程式清單。"
+
+msgid ""
+"Turns on while a program that Windows recognized as a game (the Game Bar "
+"list) runs. Launchers are listed there too, so they are skipped."
+msgstr "當 Windows 識別為遊戲的程式（遊戲欄列表）運行時會開啟。啟動器也列在那裡，因此它們被跳過。"
+
+msgid "Launchers and game tools — not counted as games"
+msgstr "啟動器和遊戲工具－不算遊戲"
+
+msgid ""
+"Decides when a dual-role key counts as a hold if another key is pressed. "
+"Rules can override this default in advanced options. Chord detection is "
+"configured separately."
+msgstr "決定如果按下另一個鍵，雙角色鍵何時計為保持。規則可以覆蓋進階選項中的此預設值。和弦檢測是單獨配置的。"
+
+msgid "After another key is released (better for typing)"
+msgstr "釋放另一個鍵後（更適合打字）"
+
+msgid ""
+"As soon as another key is pressed: useful for dedicated layer or modifier "
+"keys. Reacts faster, but overlapping letters while typing can trigger the "
+"hold by mistake."
+msgstr "一旦按下另一個按鍵：對於專用圖層或修飾鍵很有用。反應速度更快，但打字時字母重疊可能會錯誤地觸發保留。"
+
+msgid "Default from Settings: {}"
+msgstr "預設設定：{}"
+
+msgid "after another key is released"
+msgstr "釋放另一個按鍵後"
+
+msgid "as soon as another key is pressed"
+msgstr "一旦按下另一個鍵"
+
+msgid ""
+"Overrides the default hold detection for this rule. Use release detection "
+"for typing keys and press detection for dedicated layer or modifier keys. "
+"This does not change chord detection."
+msgstr "覆蓋此規則的預設保留檢測。使用釋放偵測來鍵入按鍵，使用按下偵測來偵測專用層或修飾鍵。這不會改變和弦檢測。"
+
+msgid "Cannot list input devices: {}"
+msgstr "無法列出輸入設備：{}"
+
+msgid "Keyboard interception is not implemented on this operating system."
+msgstr "該作業系統未實現鍵盤攔截。"
+
+msgid "Defaults"
+msgstr "預設值"
+
+msgid "Shared by all rules"
+msgstr "所有規則共享"
+
+msgid "Hold threshold"
+msgstr "保持閾值"
+
+msgid "Long hold"
+msgstr "長按"
+
+msgid "Double-tap window"
+msgstr "按兩下視窗"
+
+msgid "Reset to {} ms"
+msgstr "重置為 {} 毫秒"
+
+msgid "Automatic game detection"
+msgstr "自動遊戲偵測"
+
+msgid "Works only in Auto mode."
+msgstr "僅適用於自動模式。"
+
+msgid "System signals"
+msgstr "系統訊號"
+
+msgid "Launchers"
+msgstr "發射器"
+
+msgid "Heroic games"
+msgstr "英雄遊戲"
+
+msgid ""
+"Turns on while a game started by Heroic Games Launcher runs (Epic, GOG, "
+"Amazon and added games): Heroic passes HEROIC_APP_NAME to every game it "
+"starts."
+msgstr ""
+"當由 Heroic Games Launcher 啟動的遊戲運行時打開（Epic、GOG、Amazon 和添加的遊戲）：Heroic 將 "
+"HEROIC_APP_NAME 傳遞給它啟動的每個遊戲。"
+
+msgid "Games run through umu-launcher"
+msgstr "遊戲透過umu-launcher運行"
+
+msgid ""
+"Turns on while a game runs through umu-run. Heroic, Lutris, Faugus Launcher "
+"and other launchers use it to start Windows games with Proton."
+msgstr ""
+"當遊戲通過umu-run運行時打開。 Heroic、Lutris、Faugus Launcher 和其他啟動器使用它來透過 Proton 啟動 "
+"Windows 遊戲。"
+
+msgid "Guesses — can be wrong"
+msgstr "猜測——可能是錯誤的"
+
+msgid "Your rules"
+msgstr "你的規則"
+
+msgid ""
+"“Never a game” wins over everything else, automatic detection included."
+msgstr "「從來沒有一場比賽」勝過一切，包括自動檢測。"
+
+msgid "Always a game"
+msgstr "永遠是一場遊戲"
+
+msgid "Never a game"
+msgstr "從來都不是遊戲"
+
+msgid ""
+"Built-in list. To count one of these anyway, add it to Always a game under "
+"Your rules."
+msgstr "內建列表。無論如何，要計算其中一個，請將其添加到“您的規則”下的“始終是遊戲”中。"
+
+msgid "Hold"
+msgstr "按住"
+
+msgid "Don't press"
+msgstr "不要按"
+
+msgid "{} — change…"
+msgstr "{}——改變…"
+
+msgid "Choose another key above to set when it is pressed."
+msgstr "選擇上面的另一個鍵來設定按下該鍵的時間。"
+
+msgid "Assign a double-tap action to the rule to change this window."
+msgstr "將雙擊操作指派給規則以變更此視窗。"
+
+msgid "Hold on other key release"
+msgstr "按住其他鍵釋放"
+
+msgid "Hold on other key press"
+msgstr "按住其他按鍵"
+
+msgid "Reset"
+msgstr "重設"
+
+msgid "Return all options in this dialog to their defaults"
+msgstr "將此對話方塊中的所有選項還原為預設值"
+
+msgid "Macro time limit"
+msgstr "宏時間限制"
+
+msgid ""
+"A macro still running after this time is stopped and counts as finished. A "
+"macro started while another one runs waits for it; up to 3 runs can wait, "
+"further presses are ignored."
+msgstr "在此時間後仍在運行的巨集已停止並算作已完成。一個巨集啟動，另一個巨集運行等待；最多可以等待 3 次運行，進一步按下將被忽略。"
+
+msgid "Global shortcuts registered in this KDE session:"
+msgstr "在此 KDE 會話中註冊的全域快捷方式："
+
+msgid ""
+"The list is read from the KDE global shortcut service (kglobalaccel): KWin, "
+"Plasma and applications register their actions there. The chosen action is "
+"invoked as is, as if its shortcut were pressed, even when no keys are "
+"assigned to it. Which actions exist and how they behave depends on the "
+"Plasma version and installed applications, so Left Hand Control does not "
+"guarantee them. Common window and desktop actions that also work on other "
+"platforms are in System actions."
+msgstr ""
+"該清單是從 KDE 全域捷徑服務 (kglobalaccel) 讀取的：KWin、Plasma "
+"和應用程式在那裡註冊它們的操作。所選操作按原樣調用，就像按下其快捷鍵一樣，即使沒有為其分配任何鍵。有哪些操作以及它們的行為方式取決於 Plasma "
+"版本和安裝的應用程序，因此 Left Hand Control 不保證它們。也適用於其他平台的常見視窗和桌面操作位於系統操作中。"
+
+msgid "Hold key or combination"
+msgstr "按住按鍵或組合鍵"
+
+msgid ""
+"The key or combination stays pressed until you release the trigger. Choose "
+"modifiers plus one main key, for example Ctrl+KeyC."
+msgstr "該按鍵或組合鍵將保持按下狀態，直到您放開扳機。選擇修飾符加一個主鍵，例如 Ctrl+KeyC。"
+
+msgid "Not used when holding performs a long-hold action."
+msgstr "按住執行長按操作時不使用。"
+
+msgid "Other key or combination…"
+msgstr "其他按鍵或組合..."
+
+msgid "Hold detection when another key is pressed"
+msgstr "按下另一個鍵時保持檢測"
+
+msgid "Used for single-key triggers without a long-hold action."
+msgstr "用於無需長按操作的單鍵觸發器。"
+
+msgid "Long-hold threshold, ms"
+msgstr "長時間保持閾值，毫秒"
+
+msgid "Used when a long-hold action is selected."
+msgstr "當選擇長按操作時使用。"
+
+msgid "Double-tap interval, ms"
+msgstr "按兩下間隔，毫秒"
+
+msgid "Double-tap actions are available only for single-key triggers."
+msgstr "雙擊操作僅適用於單鍵觸發器。"
+
+msgid "Applies when a double-tap action is assigned."
+msgstr "當指定雙擊操作時適用。"
+
+msgid "Delete trigger"
+msgstr "刪除觸發器"
+
+msgid "Delete trigger?"
+msgstr "刪除觸發器？"
+
+msgid ""
+"The trigger and all its assigned actions will be removed from the current "
+"layout."
+msgstr "觸發器及其所有指派的操作將從目前佈局中刪除。"
+
+msgid "Reset {} to default"
+msgstr "將 {} 重設為預設值"
+
+msgid "Holding activates layer: {}"
+msgstr "按住激活層：{}"
+
+msgid "Holding performs a long-hold action."
+msgstr "Hold 執行長按動作。"
+
+msgid "Holding keeps a key or combination pressed."
+msgstr "按住可保持按下某個按鍵或組合鍵。"
+
+msgid "Paths"
+msgstr "路徑"
+
+msgid "Unknown layer key at \"{}\"."
+msgstr "「{}」處的未知層密鑰。"
+
+msgid "Invalid layer action at \"{}\"."
+msgstr "“{}”處的圖層操作無效。"
+
+msgid "Invalid macro at \"{}\"."
+msgstr "“{}”處的巨集無效。"
+
+msgid "Invalid menu action at \"{}\"."
+msgstr "“{}”處的選單操作無效。"
+
+msgid "Invalid timing at \"{}\"."
+msgstr "“{}”的計時無效。"
+
+msgid "Invalid window condition at \"{}\"."
+msgstr "“{}”處的視窗條件無效。"
+
+msgid "Unsupported rule combination at \"{}\"."
+msgstr "“{}”處不支援的規則組合。"
+
+msgid "Invalid macro step at \"{}\"."
+msgstr "“{}”處的巨集步驟無效。"
+
+msgid "Macro call cycle at \"{}\"."
+msgstr "巨集呼叫週期為“{}”。"
+
+msgid "A timing value is outside the range shown in Settings."
+msgstr "計時值超出了「設定」中顯示的範圍。"
+
+msgid "Keep modifiers held until the layer is released"
+msgstr "保持修改器不變，直到圖層被釋放"
+
+msgid ""
+"For a combination such as Alt+Tab: Alt stays pressed while you press the key"
+" again and is released together with the layer key, so the window switcher "
+"stays open."
+msgstr "對於 Alt+Tab 等組合：再次按下該鍵時 Alt 保持按下狀態，並與圖層鍵一起釋放，因此視窗切換器保持開啟。"
+
+msgid ""
+"Cannot list input devices. Check device access and see the application log."
+msgstr "無法列出輸入設備。檢查設備存取並查看應用程式日誌。"
+
+msgid ""
+"Configuration is unavailable. Check the configuration files and see the "
+"application log."
+msgstr "配置不可用。檢查設定檔並查看應用程式日誌。"
+
+msgid "Popup menus are unavailable. Try opening the menu again."
+msgstr "彈出式選單不可用。嘗試再次開啟選單。"
+
+msgid "Popup menu failed. Try opening the menu again."
+msgstr "彈出式選單失敗。嘗試再次開啟選單。"
+
+msgid ""
+"The text was not typed: the typing method is unavailable. Restart the mapper"
+" to try again."
+msgstr "文字未輸入：輸入方法不可用。重新啟動映射器以重試。"
+
+msgid ""
+"The text was not typed: safe clipboard access failed. See the application "
+"log."
+msgstr "未輸入文字：安全剪貼簿存取失敗。請參閱應用程式日誌。"
+
+msgid ""
+"The text was not typed: the input tool failed. See the application log."
+msgstr "未輸入文字：輸入工具失敗。請參閱應用程式日誌。"
+
+msgid "Changes applied, but the mapper was not updated. Restart the mapper."
+msgstr "變更已套用，但映射器未更新。重新啟動映射器。"
+
+msgid "The operation failed. See the application log."
+msgstr "操作失敗。請參閱應用程式日誌。"
+
+msgid "The action failed. See the application log."
+msgstr "行動失敗了。請參閱應用程式日誌。"
+
+msgid ""
+"Cannot start the mapper. Check the keyboard and device access. See the "
+"application log."
+msgstr "無法啟動映射器。檢查鍵盤和裝置存取。請參閱應用程式日誌。"
+
+msgid "Mapper is running, but an error occurred. See the application log."
+msgstr "映射器正在運行，但發生錯誤。請參閱應用程式日誌。"
+
+msgid "Mapper stopped because of an error. See the application log."
+msgstr "映射器因錯誤而停止。請參閱應用程式日誌。"
+
+msgid ""
+"Cannot read or save the configuration. Check file access and see the "
+"application log."
+msgstr "無法讀取或儲存配置。檢查檔案存取並查看應用程式日誌。"
+
+msgid "Cannot parse the configuration file. See the application log."
+msgstr "無法解析設定檔。請參閱應用程式日誌。"
+
+msgid "The configuration contains invalid values. See the application log."
+msgstr "配置包含無效值。請參閱應用程式日誌。"
+
+msgid "The action has invalid syntax."
+msgstr "該操作的語法無效。"
+
+msgid "Pauses can only be used in macro steps."
+msgstr "暫停只能在巨集步驟中使用。"
+
+msgid "The selected macro no longer exists."
+msgstr "所選宏不再存在。"
+
+msgid "The selected command no longer exists."
+msgstr "所選命令不再存在。"
+
+msgid "Unknown system action."
+msgstr "未知的系統操作。"
+
+msgid "Unknown application action."
+msgstr "未知的應用程式操作。"
+
+msgid ""
+"Unknown action type. It may come from a newer version of the application."
+msgstr "未知的操作類型。它可能來自應用程式的較新版本。"
+
+msgid "Layout: {}"
+msgstr "版面：{}"
+
+msgid "Select All"
+msgstr "全選"
+
+msgid "Move line down"
+msgstr "向下移動行"
+
+msgid "Down + End"
+msgstr "向下+結束"
+
+msgid "Up + End"
+msgstr "向上+結束"
+
+msgid "Up 5 times"
+msgstr "上漲5倍"
+
+msgid "Duplicate line"
+msgstr "重複行"
+
+msgid "Right + Space"
+msgstr "右鍵+空格"
+
+msgid "Empty line below"
+msgstr "下面空行"
+
+msgid "Cut word right from center"
+msgstr "從中心向右剪切單字"
+
+msgid "Copy word right from center"
+msgstr "從中心向右複製單字"
+
+msgid "Paste at line above"
+msgstr "貼到上面一行"
+
+msgid "Replace word with buffer"
+msgstr "用緩衝區取代單字"
+
+msgid "Down + Home"
+msgstr "下+首頁"
+
+msgid "Up + Home"
+msgstr "向上+主頁"
+
+msgid "Down 5 times"
+msgstr "下降5次"
+
+msgid "Paste at line bottom"
+msgstr "貼到行底部"
+
+msgid "Cut to start"
+msgstr "切入開始"
+
+msgid "Cut to end"
+msgstr "切到最後"
+
+msgid "Cut line content"
+msgstr "剪切行內容"
+
+msgid "Cut and remove line"
+msgstr "切割並移除線"
+
+msgid "Select 5 lines up"
+msgstr "選擇5行"
+
+msgid "Copy to start"
+msgstr "複製開始"
+
+msgid "Copy to end"
+msgstr "複製到最後"
+
+msgid "Copy line"
+msgstr "複製行"
+
+msgid "Select whole line"
+msgstr "選擇整行"
+
+msgid "Select word right from center"
+msgstr "從中心右側選擇單字"
+
+msgid "Replace to start with buffer"
+msgstr "替換為從緩衝區開始"
+
+msgid "Replace to end with buffer"
+msgstr "用緩衝區取代結束"
+
+msgid "Replace line with buffer"
+msgstr "用緩衝區取代行"
+
+msgid "Select 5 lines down"
+msgstr "選擇向下 5 行"
+
+msgid "Remove trigger"
+msgstr "移除扳機"
+
+msgid "Refresh list"
+msgstr "重新整理清單"
+
+msgid "Remove item"
+msgstr "刪除項目"
+
+msgid "Save as or reset changes"
+msgstr "另存為或重置更改"
+
+msgid "Edit: {}"
+msgstr "編輯：{}"
+
+msgid "Save (Enter)"
+msgstr "儲存 (Enter)"
+
+msgid "Save (Ctrl+Enter)"
+msgstr "儲存 (Ctrl+Enter)"
+
+msgid "Cancel (Esc)"
+msgstr "取消 (Esc)"
+
+msgid "Use the default from Settings: {} ms"
+msgstr "使用設定中的預設值：{} ms"
+
+msgid ""
+"Opened by the app:showQuickMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold any "
+"action: a shortcut, macro, shell command or system action."
+msgstr ""
+"由應用程式開啟：showQuickMenuN 操作，其中 N "
+"是頁面位置：重新排序頁面會變更按鍵開啟的頁面。每個單元格可以保存任何操作：快捷方式、巨集、shell 命令或系統操作。"
+
+msgid ""
+"In the popup, click a cell or press its key: the cells follow the keyboard "
+"rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number."
+msgstr "在彈出視窗中，按一下儲存格或按其鍵：儲存格遵循鍵盤行 Q–T、A–G 和 Z–B。 Tab切換頁面；數字透過頁碼開啟一頁。"
+
+msgid "Waiting for keyboard"
+msgstr "等待鍵盤"

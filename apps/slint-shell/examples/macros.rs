@@ -21,7 +21,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.set_page(Page::Macros);
     ui.global::<Theme>().invoke_apply();
     slint_shell::select_ui_language("ru")?;
-    ui.global::<Locale>().set_english(false);
     let editor = ui.global::<MacroEditor>();
     let name = ui
         .global::<Locale>()

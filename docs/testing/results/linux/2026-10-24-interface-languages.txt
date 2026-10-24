@@ -1,0 +1,54 @@
+Interface language validation — 2026-10-24
+
+Environment: Linux 7.2.3-2-MANJARO, KDE Plasma on Wayland.
+rustc 1.98.1; cargo 1.98.1.
+Checks run from the repository root. Final sequential runs used CARGO_BUILD_JOBS=1.
+UI/IPC runs inherited a temporary LHC_DEV_DIR; the UI examples also create their own temporary StoragePaths.
+UI examples used the test profile with Spell enabled. The non-Spell build was checked separately for all targets.
+
+Languages: en, ru, de, fr, es, it, pt, pl, tr, uk, cs, hu, ro, el, hr, ka, kk, zh-Hans, zh-Hant, ja, ko.
+English is the source language; 20 complete PO catalogs contain 954 entries each.
+Spanish uses es; Chinese variants use script codes zh-Hans and zh-Hant.
+The settings schema version remains 1. The locale roundtrip test verifies every supported stored value.
+
+Final checks:
+
+$ cargo check --locked -p slint-shell --all-targets
+PASS: all targets compile without Spell.
+
+$ cargo test --locked --workspace --features slint-shell/spell
+PASS: 560 tests passed; 14 ignored; no failures; doc tests passed.
+
+$ cargo run --locked -p slint-shell --features spell --profile test --example editor -- --smoke
+PASS on KDE Wayland: all 21 language selections and counts 0/1/2/5/11/21; detailed RU/EN assertions, editor assignment and validation.
+
+$ cargo run --locked -p slint-shell --features spell --profile test --example interactions
+PASS on KDE Wayland: settings, navigation, theme/language, save/reload, rules and interaction assertions.
+
+$ cargo run --locked -p slint-shell --features spell --profile test --example macros
+PASS on KDE Wayland: translated built-in macros, steps, pauses, ordering, cycle validation and save/reload.
+
+$ cargo run --locked -p slint-shell --features spell --profile test -- --help
+PASS: builds the standalone Spell-capable binary; help lists every language code.
+
+$ python apps/slint-shell/scripts/check-preferences.py /tmp/lhc21-preferences
+PASS on KDE Wayland: hidden/visible Emoji and Quick popups; English, Russian, Spanish, Traditional Chinese and Japanese preferences; clean worker shutdown.
+
+$ cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+PASS: all targets, Spell enabled, warnings denied.
+
+$ cargo fmt -p lhc-core -p slint-shell --check
+PASS.
+
+Additional focused checks:
+$ cargo test --locked -p lhc-core all_interface_locales_persist_without_changing_schema_version
+PASS: locale persistence and schema version 1.
+
+$ rustc --edition 2024 --test apps/slint-shell/build-support/i18n.rs -o /tmp/lhc21-i18n-checks
+$ /tmp/lhc21-i18n-checks
+PASS: 8 translation validation tests.
+
+Limitations:
+- The 19 new catalogs start from machine translation, with corrections to common controls and key mapping terminology. Full native-speaker editing and visual acceptance of every translated screen remain open.
+- Windows/macOS, real evdev/uinput mapper E2E and VM package acceptance were not run for this interface language change.
+- The 14 ignored workspace tests were not enabled.

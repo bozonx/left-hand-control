@@ -17,7 +17,7 @@ use crate::{
     ipc, metrics, pages,
     platform::{backend, focus, hotkey, tray},
     popup_model::ConfiguredMenus,
-    ui::{AppState, EmojiPopup, Locale, QuickPopup, SettingsWindow, Theme},
+    ui::{AppState, EmojiPopup, QuickPopup, SettingsWindow, Theme},
 };
 use lhc_core::{profile::model::Appearance, storage::StoragePaths};
 use slint::ComponentHandle;
@@ -277,23 +277,19 @@ impl App {
         let changed_language = preferences.language != self.preferences.get().language;
         self.preferences.set(preferences);
         preferences.language.select_bundled();
-        for (theme, locale) in [
-            (
-                self.settings.global::<Theme>(),
-                self.settings.global::<Locale>(),
-            ),
-            (self.emoji.global::<Theme>(), self.emoji.global::<Locale>()),
-            (self.quick.global::<Theme>(), self.quick.global::<Locale>()),
+        for theme in [
+            self.settings.global::<Theme>(),
+            self.emoji.global::<Theme>(),
+            self.quick.global::<Theme>(),
         ] {
             theme.set_dark(preferences.theme == ThemeMode::Dark);
             theme.set_eink(preferences.theme == ThemeMode::EInk);
             theme.set_high_contrast(preferences.high_contrast);
             theme.set_reduce_motion(preferences.reduce_motion);
             crate::ui::apply_theme(&theme);
-            locale.set_english(preferences.language == Language::English);
         }
         if let Some(tray) = self.tray.borrow().as_ref() {
-            tray.set_english(preferences.language == Language::English);
+            tray.set_language(preferences.language);
         }
         if self.supervisor.borrow().enabled {
             let _ = self.send_worker(
@@ -548,7 +544,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         with_app(|app| {
             let tray = match tray::start(dispatch.clone()) {
                 Ok(tray) => {
-                    tray.set_english(app.preferences.get().language == Language::English);
+                    tray.set_language(app.preferences.get().language);
                     tray.set_game(&lhc_core::gamemode::status());
                     tray.set_in_development(
                         app.document()

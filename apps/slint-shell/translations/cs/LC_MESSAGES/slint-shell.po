@@ -1,0 +1,3580 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Left Hand Control\n"
+"PO-Revision-Date: 2026-10-23 00:00+0000\n"
+"Last-Translator: Machine translation; review welcome\n"
+"Language-Team: Czech\n"
+"Language: cs\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n>=2 && n<=4 ? 1 : 2);\n"
+
+msgid "Action saved"
+msgstr "Akce uložena"
+
+msgid "Cancel"
+msgstr "Zrušit"
+
+msgid "Increase"
+msgstr "Zvýšení"
+
+msgid "Decrease"
+msgstr "Pokles"
+
+msgid "Configuration loaded: {n} rule"
+msgid_plural "Configuration loaded: {n} rules"
+msgstr[0] "Konfigurace načtena: {n} pravidlo"
+msgstr[1] "Konfigurace načtena: {n} pravidla"
+msgstr[2] "Konfigurace načtena: {n} pravidel"
+
+msgid "Configuration saved: {n} rule"
+msgid_plural "Configuration saved: {n} rules"
+msgstr[0] "Konfigurace uložena: {n} pravidlo"
+msgstr[1] "Konfigurace uložena: {n} pravidla"
+msgstr[2] "Konfigurace uložena: {n} pravidel"
+
+msgid "Configuration unavailable: {}"
+msgstr "Konfigurace není k dispozici: {}"
+
+msgid "Delay: an integer from 1 to 10000 ms"
+msgstr "Zpoždění: celé číslo od 1 do 10 000 ms"
+
+msgid "Device saved: {}"
+msgstr "Zařízení bylo uloženo: {}"
+
+msgid "Emoji"
+msgstr "Emoji"
+
+msgid "Tab · {}/{}"
+msgstr "Tab · {}/{}"
+
+msgid "Enter non-empty text"
+msgstr "Zadejte neprázdný text"
+
+msgid "Key {} only has conditional or layer rules; edit it in the full editor"
+msgstr ""
+"Klíč {} má pouze podmíněná pravidla nebo pravidla vrstvy; upravit v plném "
+"editoru"
+
+msgid "Keyboard"
+msgstr "Klávesnice"
+
+msgid "Keyboard device"
+msgstr "Zařízení s klávesnicí"
+
+msgid "Keyboard layout"
+msgstr "Rozložení klávesnice"
+
+msgid "Load a valid configuration before starting the mapper"
+msgstr "Před spuštěním mapovače načtěte platnou konfiguraci"
+
+msgid "Mapper is running"
+msgstr "Mapper běží"
+
+msgid "Mapper is running: {}"
+msgstr "Mapper běží: {}"
+
+msgid "Mapper is starting…"
+msgstr "Mapper začíná…"
+
+msgid "Mapper is stopped"
+msgstr "Mapper je zastaven"
+
+msgid "Mapper is stopped: {}"
+msgstr "Mapovač je zastaven: {}"
+
+msgid "Quick actions"
+msgstr "Rychlé akce"
+
+msgid "Quit"
+msgstr "Ukončit"
+
+msgid "Settings"
+msgstr "Nastavení"
+
+msgid "Mapper on / off"
+msgstr "Zapnutí/vypnutí mapovače"
+
+msgid "Switch to desktop {n}"
+msgstr "Přepnout na desktop {n}"
+
+msgid "Save"
+msgstr "Uložit"
+
+msgid "Changes applied, but the mapper was not updated: {}"
+msgstr "Byly použity změny, ale mapovač nebyl aktualizován: {}"
+
+msgid "Select a key to assign an action."
+msgstr "Vyberte klávesu pro přiřazení akce."
+
+msgid "Select a keyboard device in the settings"
+msgstr "V nastavení vyberte zařízení s klávesnicí"
+
+msgid "Select a system action"
+msgstr "Vyberte akci systému"
+
+msgid "Spell popup process unavailable: {}"
+msgstr "Proces vyskakovacího okna pravopisu není k dispozici: {}"
+
+msgid "Spell worker is not running"
+msgstr "Spell worker neběží"
+
+msgid "Spell worker is restarting"
+msgstr "Spell worker se restartuje"
+
+msgid "Spell worker: restart limit exceeded (3 per minute)"
+msgstr "Spell worker: překročen limit restartu (3 za minutu)"
+
+msgid "Spell worker: {}"
+msgstr "Kouzelník: {}"
+
+msgid "Stop capture"
+msgstr "Zastavit zachycení"
+
+msgid "System"
+msgstr "Systém"
+
+msgid "Text"
+msgstr "Text"
+
+msgid "The configuration changed since editing started; repeat the change"
+msgstr "Konfigurace se od začátku úprav změnila; opakujte změnu"
+
+msgid "Unknown action type"
+msgstr "Neznámý typ akce"
+
+msgid "Left Hand Control"
+msgstr "Left Hand Control"
+
+msgid "Layouts"
+msgstr "Rozvržení"
+
+msgid "New layout name"
+msgstr "Název nového rozvržení"
+
+msgid "Mapper"
+msgstr "Přemapování"
+
+msgid "Dark"
+msgstr "Tmavý"
+
+msgid "Light"
+msgstr "Světlo"
+
+msgid "Refresh devices"
+msgstr "Obnovit zařízení"
+
+msgid "Mouse device path"
+msgstr "Cesta k zařízení myši"
+
+msgid "Optional device path"
+msgstr "Volitelná cesta zařízení"
+
+msgid "General"
+msgstr "Generál"
+
+msgid "Appearance"
+msgstr "Vzhled"
+
+msgid "Language"
+msgstr "Jazyk"
+
+msgid "Automatic"
+msgstr "Automatický"
+
+msgid "Key behavior"
+msgstr "Klíčové chování"
+
+msgid "Game mode"
+msgstr "Herní režim"
+
+msgid "Use GameMode daemon"
+msgstr "Použijte démona GameMode"
+
+msgid "Detect fullscreen"
+msgstr "Detekce celé obrazovky"
+
+msgid "ydotool path"
+msgstr "ydotool cesta"
+
+msgid "xdotool path"
+msgstr "cesta xdotool"
+
+msgid "Settings directory: "
+msgstr "Adresář nastavení:"
+
+msgid "Layouts directory: "
+msgstr "Adresář rozložení:"
+
+msgid "Save settings"
+msgstr "Uložte nastavení"
+
+msgid "Settings saved"
+msgstr "Nastavení uloženo"
+
+msgid "Enter a timeout from 50 to 1000 milliseconds"
+msgstr "Zadejte časový limit od 50 do 1000 milisekund"
+
+msgid "Rules"
+msgstr "Pravidla"
+
+msgid "Remove"
+msgstr "Odebrat"
+
+msgid "Move up"
+msgstr "Posuňte se nahoru"
+
+msgid "Move down"
+msgstr "Posuňte se dolů"
+
+msgid "Enabled"
+msgstr "Povoleno"
+
+msgid "Trigger key"
+msgstr "Spouštěcí klíč"
+
+msgid "Tap action"
+msgstr "Klepněte na akci"
+
+msgid "Layout conditions (comma separated)"
+msgstr "Podmínky rozvržení (oddělené čárkou)"
+
+msgid "App whitelist (comma separated)"
+msgstr "Seznam povolených aplikací (oddělené čárkami)"
+
+msgid "App blacklist (comma separated)"
+msgstr "Černá listina aplikací (oddělená čárkou)"
+
+msgid "Isolate"
+msgstr "Izolovat"
+
+msgid "Hold for"
+msgstr "Vydržte"
+
+msgid "Swallow tap"
+msgstr "Potlačit stisk"
+
+msgid "Swallow hold"
+msgstr "Potlačit podržení"
+
+msgid "New layer name"
+msgstr "Nový název vrstvy"
+
+msgid "Create layer"
+msgstr "Vytvořte vrstvu"
+
+msgid "Rules and triggers"
+msgstr "Pravidla a spouštěče"
+
+msgid "Define how physical keys activate layers or run actions."
+msgstr "Definujte, jak fyzické klíče aktivují vrstvy nebo spouštějí akce."
+
+msgid "Add rule"
+msgstr "Přidat pravidlo"
+
+msgid "Not set"
+msgstr "Nenastaveno"
+
+msgid "Layer (hold)"
+msgstr "Vrstva (držení)"
+
+msgid "Double-tap action"
+msgstr "Akce dvojitým klepnutím"
+
+msgid "Hold button"
+msgstr "Tlačítko přidržení"
+
+msgid "Default"
+msgstr "Výchozí"
+
+msgid "Advanced"
+msgstr "Moderní"
+
+msgid "Choose trigger key"
+msgstr "Vyberte spouštěcí klíč"
+
+msgid "Choose layer"
+msgstr "Vyberte vrstvu"
+
+msgid "Conditions"
+msgstr "Podmínky"
+
+msgid "Advanced rule options"
+msgstr "Pokročilé možnosti pravidel"
+
+msgid "Choose action"
+msgstr "Vyberte akci"
+
+msgid "Ignore"
+msgstr "Ignorovat"
+
+msgid "On"
+msgstr "Zapnuto"
+
+msgid "Off"
+msgstr "Vypnuto"
+
+msgid "Clear"
+msgstr "Jasný"
+
+msgid "Apply"
+msgstr "Použít"
+
+msgid "Delete rule?"
+msgstr "Smazat pravidlo?"
+
+msgid "This rule will be removed from the current layout."
+msgstr "Toto pravidlo bude odstraněno z aktuálního rozvržení."
+
+msgid "Layers"
+msgstr "Vrstvy"
+
+msgid "New layer"
+msgstr "Nová vrstva"
+
+msgid "Duplicate"
+msgstr "Duplikát"
+
+msgid "Delete"
+msgstr "Smazat"
+
+msgid "Extra keys"
+msgstr "Klíče navíc"
+
+msgid "Edit"
+msgstr "Upravit"
+
+msgid "Rename layer"
+msgstr "Přejmenovat vrstvu"
+
+msgid "Duplicate layer"
+msgstr "Duplicitní vrstva"
+
+msgid "Delete layer?"
+msgstr "Smazat vrstvu?"
+
+msgid "Edit layer key"
+msgstr "Upravit klíč vrstvy"
+
+msgid "Name"
+msgstr "Jméno"
+
+msgid "Description"
+msgstr "Popis"
+
+msgid "Rules using this layer will return to the base layer."
+msgstr "Pravidla používající tuto vrstvu se vrátí do základní vrstvy."
+
+msgid "Transparent"
+msgstr "Průhledný"
+
+msgid "Swallow"
+msgstr "Potlačit"
+
+msgid "Action"
+msgstr "Akce"
+
+msgid "Action code"
+msgstr "Kód akce"
+
+msgid "Enter a layer name"
+msgstr "Zadejte název vrstvy"
+
+msgid "A layer with this name already exists."
+msgstr "Vrstva s tímto názvem již existuje."
+
+msgid "Enter a layout name"
+msgstr "Zadejte název rozvržení"
+
+msgid "Enter a key code"
+msgstr "Zadejte kód klíče"
+
+msgid "Native"
+msgstr "Rodák"
+
+msgid "Layer saved"
+msgstr "Vrstva uložena"
+
+msgid "Macros"
+msgstr "Makra"
+
+msgid "Built-in macros"
+msgstr "Vestavěná makra"
+
+msgid "Macro ID"
+msgstr "ID makra"
+
+msgid "Copy ID"
+msgstr "Zkopírovat ID"
+
+msgid "Steps"
+msgstr "Kroky"
+
+msgid "Add step"
+msgstr "Přidat krok"
+
+msgid "Add pause"
+msgstr "Přidat pauzu"
+
+msgid "Macro ID must contain 1–64 letters, digits, underscores or hyphens"
+msgstr "ID makra musí obsahovat 1–64 písmen, číslic, podtržítek nebo pomlček"
+
+msgid "Macro ID is already in use"
+msgstr "ID makra se již používá"
+
+msgid "Macro delays must be between 0 and 2000 ms"
+msgstr "Zpoždění makra musí být mezi 0 a 2000 ms"
+
+msgid "Pause must be between 1 and 10000 ms"
+msgstr "Pauza musí být mezi 1 a 10 000 ms"
+
+msgid "Unknown key or shortcut in macro step"
+msgstr "Neznámá klávesa nebo zkratka v kroku makra"
+
+msgid "Macro references cannot form a cycle"
+msgstr "Makro reference nemohou tvořit cyklus"
+
+msgid "Commands"
+msgstr "Příkazy"
+
+msgid "Add"
+msgstr "Přidat"
+
+msgid "Clear cell"
+msgstr "Vymazat buňku"
+
+msgid "Page name"
+msgstr "Název stránky"
+
+msgid "Emoji cells accept at most 100 characters."
+msgstr "Emoji buňky přijímají maximálně 100 znaků."
+
+msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
+msgstr "ID příkazu: 1–64 písmen, číslic, podtržítek nebo pomlček."
+
+msgid "Command IDs must be unique."
+msgstr "ID příkazů musí být jedinečné."
+
+msgid "Enter a shell command."
+msgstr "Zadejte příkaz shellu."
+
+msgid "Save as…"
+msgstr "Uložit jako…"
+
+msgid "Save layout as…"
+msgstr "Uložit rozložení jako…"
+
+msgid "Please wait…"
+msgstr "Čekejte prosím…"
+
+msgid "Stop"
+msgstr "Zastávka"
+
+msgid "Start"
+msgstr "Start"
+
+msgid "Custom layout"
+msgstr "Vlastní rozložení"
+
+msgid "Base keyboard"
+msgstr "Základní klávesnice"
+
+msgid "Keyboard device path"
+msgstr "Cesta k zařízení klávesnice"
+
+msgid "Copy path"
+msgstr "Kopírovat cestu"
+
+msgid "Create a layer to assign its keys, or edit the base keyboard."
+msgstr "Vytvořte vrstvu k přiřazení kláves nebo upravte základní klávesnici."
+
+msgid "Running"
+msgstr "Běh"
+
+msgid "Stopped"
+msgstr "Zastaveno"
+
+msgid "Layout library updated"
+msgstr "Knihovna rozvržení aktualizována"
+
+msgid "Select a layout"
+msgstr "Vyberte rozvržení"
+
+msgid "Layout changed on disk; select it again"
+msgstr "Rozložení změněno na disku; vyberte jej znovu"
+
+msgid "Any game mode"
+msgstr "Jakýkoli herní režim"
+
+msgid "Game mode on"
+msgstr "Herní režim zapnutý"
+
+msgid "Game mode off"
+msgstr "Herní režim je vypnutý"
+
+msgid "System layouts (comma separated)"
+msgstr "Rozvržení systému (oddělené čárkami)"
+
+msgid "Applications (comma separated)"
+msgstr "Aplikace (oddělené čárkou)"
+
+msgid "Manual"
+msgstr "Manuál"
+
+msgid "Active"
+msgstr "Aktivní"
+
+msgid "Editing · unsaved"
+msgstr "Úpravy · neuloženo"
+
+msgid "Editing"
+msgstr "Editace"
+
+msgid "Activate"
+msgstr "Aktivovat"
+
+msgid "Delete layout?"
+msgstr "Smazat rozvržení?"
+
+msgid "Layout details"
+msgstr "Podrobnosti rozvržení"
+
+msgid "Do not use when"
+msgstr "Nepoužívejte, když"
+
+msgid "The layout file will be deleted. This cannot be undone."
+msgstr "Soubor rozvržení bude smazán. Toto nelze vrátit zpět."
+
+msgid "Duplicate…"
+msgstr "Duplikát…"
+
+msgid "Edit layout"
+msgstr "Upravit rozložení"
+
+msgid "New layout"
+msgstr "Nové rozložení"
+
+msgid "A layout with this name already exists."
+msgstr "Rozvržení s tímto názvem již existuje."
+
+msgid "Add a description…"
+msgstr "Přidat popis…"
+
+msgid "Create"
+msgstr "Vytvořit"
+
+msgid "Delete…"
+msgstr "Vymazat…"
+
+msgid "Description (optional)"
+msgstr "Popis (volitelné)"
+
+msgid "Discard changes"
+msgstr "Zahodit změny"
+
+msgid "Make active"
+msgstr "Aktivujte"
+
+msgid "Single: the layout you make active works everywhere."
+msgstr "Single: rozvržení, které aktivujete, funguje všude."
+
+msgid "Not used in automatic mode"
+msgstr "Nepoužívá se v automatickém režimu"
+
+msgid "Rename…"
+msgstr "Přejmenovat…"
+
+msgid "Save and continue"
+msgstr "Uložte a pokračujte"
+
+msgid ""
+"The layout you are editing has not been saved to the library. Its changes "
+"will be lost."
+msgstr ""
+"Rozvržení, které upravujete, nebylo uloženo do knihovny. Jeho změny budou "
+"ztraceny."
+
+msgid "The name contains characters that cannot be used in a file name."
+msgstr "Název obsahuje znaky, které nelze použít v názvu souboru."
+
+msgid "Unsaved changes"
+msgstr "Neuložené změny"
+
+msgid "You are editing “{}”, but “{}” is active."
+msgstr "Upravujete „{}“, ale „{}“ je aktivní."
+
+msgid "You are editing “{}”; no layout is active."
+msgstr "Upravujete „{}“; není aktivní žádné rozložení."
+
+msgid "game mode off"
+msgstr "herní režim vypnutý"
+
+msgid "game mode on"
+msgstr "herní režim zapnutý"
+
+msgid "{} (copy)"
+msgstr "{} (kopie)"
+
+msgid "“{}” has unsaved changes. Save them before switching?"
+msgstr "„{}“ obsahuje neuložené změny. Uložit je před přepnutím?"
+
+msgid "Layout mode"
+msgstr "Režim rozvržení"
+
+msgid "Create layout"
+msgstr "Vytvořte rozložení"
+
+msgid "Empty"
+msgstr "Prázdný"
+
+msgid "Empty layout"
+msgstr "Prázdné rozložení"
+
+msgid "Previously selected: {}"
+msgstr "Dříve vybrané: {}"
+
+msgid "Current value"
+msgstr "Aktuální hodnota"
+
+msgid "Capture key"
+msgstr "Zachycovací klíč"
+
+msgid "Press a key (including modifiers or Escape)."
+msgstr "Stiskněte klávesu (včetně modifikátorů nebo Escape)."
+
+msgid "Press a key or shortcut. Release a modifier to select it alone."
+msgstr ""
+"Stiskněte klávesu nebo zkratku. Chcete-li jej vybrat samostatně, uvolněte "
+"modifikátor."
+
+msgid "Choose a valid key or action."
+msgstr "Vyberte platný klíč nebo akci."
+
+msgid "Search keys and actions"
+msgstr "Vyhledávací klávesy a akce"
+
+msgid "Search keys"
+msgstr "Vyhledávací klávesy"
+
+msgid "Hold action"
+msgstr "Podržte akci"
+
+msgid "Macro step"
+msgstr "Makro krok"
+
+msgid ""
+"You can enter a key combination using + between keys. Some keys depend on "
+"keyboard hardware and may be ignored by the system."
+msgstr ""
+"Kombinaci kláves můžete zadat pomocí + mezi klávesami. Některé klávesy "
+"závisí na hardwaru klávesnice a systém je může ignorovat."
+
+msgid ""
+"You can assign a key combination using + between keys. Availability of "
+"special keys depends on the keyboard and desktop environment."
+msgstr ""
+"Kombinaci kláves můžete přiřadit pomocí + mezi klávesami. Dostupnost "
+"speciálních kláves závisí na klávesnici a prostředí pracovní plochy."
+
+msgid "Behavior:"
+msgstr "Chování:"
+
+msgid "Action:"
+msgstr "Akce:"
+
+msgid "Trigger key:"
+msgstr "Spouštěcí klíč:"
+
+msgid "{n} line"
+msgid_plural "{n} lines"
+msgstr[0] "{n} řádek"
+msgstr[1] "{n} řádky"
+msgstr[2] "{n} řádků"
+
+msgid "Modifiers"
+msgstr "Modifikátory"
+
+msgid "Letters, digits and symbols"
+msgstr "Písmena, číslice a symboly"
+
+msgid "Control keys"
+msgstr "Ovládací klávesy"
+
+msgid "Navigation and numpad"
+msgstr "Navigace a numerická klávesnice"
+
+msgid "F1–F24"
+msgstr "F1–F24"
+
+msgid "Media and launch"
+msgstr "Média a spuštění"
+
+msgid "System and laptop"
+msgstr "Systém a notebook"
+
+msgid "Mouse"
+msgstr "Myš"
+
+msgid "Other keys"
+msgstr "Jiné klíče"
+
+msgid "Actions"
+msgstr "Akce"
+
+msgid "Extra button on some gaming mice"
+msgstr "Extra tlačítko na některých herních myších"
+
+msgid "Keys"
+msgstr "Klíče"
+
+msgid "System actions"
+msgstr "Systémové akce"
+
+msgid "KDE shortcuts"
+msgstr "Zkratky KDE"
+
+msgid "Pause"
+msgstr "Pauza"
+
+msgid "Literal text (text: prefix is added automatically)"
+msgstr "Doslovný text (text: předpona je přidána automaticky)"
+
+msgid "Pause in milliseconds (1–10000)"
+msgstr "Pauza v milisekundách (1–10 000)"
+
+msgid "No matching items"
+msgstr "Žádné odpovídající položky"
+
+msgid "Show Quick Action Menu page {}"
+msgstr "Zobrazit stránku nabídky Rychlá akce {}"
+
+msgid "Show Emoji & Symbols menu page {}"
+msgstr "Zobrazit stránku nabídky Emoji a symboly {}"
+
+msgid "Switch to desktop {}"
+msgstr "Přepnout na desktop {}"
+
+msgid "Move window to desktop {}"
+msgstr "Přesunout okno na plochu {}"
+
+msgid "Close window"
+msgstr "Zavřít okno"
+
+msgid "Minimize window"
+msgstr "Minimalizovat okno"
+
+msgid "Maximize window"
+msgstr "Maximalizovat okno"
+
+msgid "Keep window above others"
+msgstr "Udržujte okno nad ostatními"
+
+msgid "Show desktop"
+msgstr "Zobrazit plochu"
+
+msgid "Window overview"
+msgstr "Přehled okna"
+
+msgid "Open application launcher"
+msgstr "Otevřete spouštěč aplikací"
+
+msgid "Turn off screen"
+msgstr "Vypněte obrazovku"
+
+msgid "Switch to layout {}"
+msgstr "Přepněte na rozložení {}"
+
+msgid "Layer"
+msgstr "Vrstva"
+
+msgid "Delete layer"
+msgstr "Smazat vrstvu"
+
+msgid "Create new layer"
+msgstr "Vytvořte novou vrstvu"
+
+msgid "Layer description"
+msgstr "Popis vrstvy"
+
+msgid "Add description"
+msgstr "Přidejte popis"
+
+msgid "Type to test..."
+msgstr "Napište a otestujte..."
+
+msgid "Ignore key"
+msgstr "Ignorovat klíč"
+
+msgid "No layers yet"
+msgstr "Zatím žádné vrstvy"
+
+msgid "Left hand"
+msgstr "Levá ruka"
+
+msgid "Right hand"
+msgstr "Pravá ruka"
+
+msgid "Key"
+msgstr "Klíč"
+
+msgid "US layout"
+msgstr "US rozložení"
+
+msgid "LHC codes"
+msgstr "LHC kódy"
+
+msgid "No extra keys for this layer yet."
+msgstr "Pro tuto vrstvu zatím nejsou žádné další klávesy."
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid."
+msgstr ""
+"Tlačítka myši, mediální klávesy a další spouštěče mimo hlavní mřížku "
+"klávesnice."
+
+msgid ""
+"Display modes affect labels only — the key code stays the same. “US layout” "
+"shows standard letter labels for visual reference. “LHC codes” shows app-"
+"specific codes (e.g. KeyA, ArrowLeft)."
+msgstr ""
+"Režimy zobrazení ovlivňují pouze štítky — kód klíče zůstává stejný. „US "
+"layout“ zobrazuje standardní písmenné štítky pro vizuální orientaci. „LHC "
+"codes“ zobrazuje kódy specifické pro aplikaci (např. KeyA, ArrowLeft)."
+
+msgid "(copy)"
+msgstr "(kopie)"
+
+msgid "Add page"
+msgstr "Přidat stránku"
+
+msgid "Allow commands"
+msgstr "Povolit příkazy"
+
+msgid "Animals & Nature"
+msgstr "Zvířata a příroda"
+
+msgid ""
+"Build reusable sequences from key chords, text actions, commands, or system "
+"actions. Steps run in order with the configured pause between them."
+msgstr ""
+"Vytvářejte opakovaně použitelné sekvence z klíčových akordů, textových akcí,"
+" příkazů nebo systémových akcí. Kroky probíhají v pořadí s nakonfigurovanou "
+"pauzou mezi nimi."
+
+msgid ""
+"Built-in macros that cannot be edited. To customize, create a user macro "
+"based on one."
+msgstr ""
+"Vestavěná makra, která nelze upravovat. Chcete-li přizpůsobit, vytvořte "
+"uživatelské makro založené na jednom."
+
+msgid "Cell {}"
+msgstr "Buňka {}"
+
+msgid "Command name"
+msgstr "Název příkazu"
+
+msgid "Create based on"
+msgstr "Vytvořit na základě"
+
+msgid "Delete macro"
+msgstr "Smazat makro"
+
+msgid "Delete macro?"
+msgstr "Smazat makro?"
+
+msgid "Delete page"
+msgstr "Smazat stránku"
+
+msgid "Delete page?"
+msgstr "Smazat stránku?"
+
+msgid "Delete step"
+msgstr "Smazat krok"
+
+msgid "Delete step?"
+msgstr "Smazat krok?"
+
+msgid "Disable"
+msgstr "Zakázat"
+
+msgid "Drag"
+msgstr "Táhnout"
+
+msgid "Emoji & Symbols"
+msgstr "Emoji a symboly"
+
+msgid "Emoji Symbols"
+msgstr "Symboly Emoji"
+
+msgid "Emoji, symbol, or any text"
+msgstr "Emoji, symbol nebo jakýkoli text"
+
+msgid "Empty step — pick an action or remove it."
+msgstr "Prázdný krok – vyberte akci nebo ji odstraňte."
+
+msgid "Fix the existing macro errors first"
+msgstr "Nejprve opravte stávající chyby maker"
+
+msgid "Food & Drink"
+msgstr "Jídlo a pití"
+
+msgid "Human-readable macro name, shown in picker lists."
+msgstr "Lidsky čitelný název makra zobrazený v seznamech pro výběr."
+
+msgid "ID"
+msgstr "ID"
+
+msgid "Key {}"
+msgstr "Klíč {}"
+
+msgid "Label"
+msgstr "Označení"
+
+msgid "Macro name"
+msgstr "Název makra"
+
+msgid "Modifier delay"
+msgstr "Zpoždění modifikátoru"
+
+msgid "Move page left"
+msgstr "Přesunout stránku doleva"
+
+msgid "Move page right"
+msgstr "Přesunout stránku doprava"
+
+msgid "New macro"
+msgstr "Nové makro"
+
+msgid "No macros yet. Click \"New macro\" to create the first one."
+msgstr "Zatím žádná makra. Klikněte na \"Nové makro\" pro vytvoření prvního."
+
+msgid "No steps yet. Each step — one chord or action."
+msgstr "Zatím žádné kroky. Každý krok — jeden akord nebo akce."
+
+msgid ""
+"Opened by the app:showEmojiMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold an "
+"emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short "
+"phrase (e.g. \"// TODO: \")."
+msgstr ""
+"Otevřeno aplikací app:showEmojiMenuN akce, kde N je pozice stránky: změna "
+"pořadí stránek změní stránku, kterou klávesa otevře. Každá buňka může "
+"obsahovat emodži, symbol UTF (např. ≠), jakýkoli jiný znak (např. №) nebo "
+"krátkou frázi (např. „// TODO: “)."
+
+msgid "Opened by the app:showQuickMenu1...5 actions."
+msgstr "Otevřeno aplikací: showQuickMenu1...5 akcí."
+
+msgid "Page"
+msgstr "Strana"
+
+msgid "Pause (ms)"
+msgstr "Pauza (ms)"
+
+msgid "Pause between steps"
+msgstr "Pauza mezi kroky"
+
+msgid "People & Gestures"
+msgstr "Lidé a gesta"
+
+msgid "Per-macro pause between steps. Defaults to the Settings value."
+msgstr "Pauza mezi jednotlivými kroky na makro. Výchozí hodnota je nastavení."
+
+msgid "Pick an action"
+msgstr "Vyberte akci"
+
+msgid "Quick Actions"
+msgstr "Rychlé akce"
+
+msgid ""
+"Reusable shell commands for the current layout. On Linux they run through sh"
+" -lc after you explicitly allow them. Shell commands run one at a time, with"
+" a 30-second limit, in your home directory."
+msgstr ""
+"Opakovaně použitelné příkazy shellu pro aktuální rozvržení. V Linuxu běží "
+"přes sh -lc poté, co je výslovně povolíte. Příkazy prostředí se spouštějí "
+"jeden po druhém s limitem 30 sekund ve vašem domovském adresáři."
+
+msgid "Shell commands are allowed for this version of the current layout."
+msgstr "Pro tuto verzi aktuálního rozvržení jsou povoleny příkazy shellu."
+
+msgid "Smileys & Emotion"
+msgstr "Smajlíky a emoce"
+
+msgid ""
+"The command will be deleted. Keys or macros that reference cmd:{} will stop "
+"working."
+msgstr ""
+"Příkaz bude smazán. Klávesy nebo makra odkazující na cmd:{} přestanou "
+"fungovat."
+
+msgid "The macro will be deleted. References macro:{} will stop working."
+msgstr "Makro bude smazáno. Referenční makro:{} přestane fungovat."
+
+msgid "The page and all assigned cells on it will be deleted."
+msgstr "Stránka a všechny přiřazené buňky na ní budou smazány."
+
+msgid ""
+"This layout contains shell scripts. Read every script before allowing them, "
+"especially in layouts from other people. Approval applies to the reviewed "
+"command definitions and resets when the command set, IDs, or Linux scripts "
+"change."
+msgstr ""
+"Toto rozložení obsahuje skripty shellu. Přečtěte si všechny skripty, než je "
+"povolíte, zejména v rozvrženích od jiných lidí. Schválení se vztahuje na "
+"revidované definice příkazů a resetuje se, když se změní sada příkazů, ID "
+"nebo skripty Linux."
+
+msgid "This step will be removed from the macro."
+msgstr "Tento krok bude z makra odstraněn."
+
+msgid ""
+"Time between pressing a modifier and the main key within one step. Defaults "
+"to the Settings value."
+msgstr ""
+"Doba mezi stisknutím modifikátoru a hlavní klávesou v rámci jednoho kroku. "
+"Výchozí hodnota je nastavení."
+
+msgid "Travel & Places"
+msgstr "Cestování a místa"
+
+msgid "UTF Symbols"
+msgstr "Symboly UTF"
+
+msgid "Texts"
+msgstr "Texty"
+
+msgid "Non-breaking space"
+msgstr "Nepřerušitelný prostor"
+
+msgid "continue"
+msgstr "pokračovat"
+
+msgid "do all you recommended"
+msgstr "udělejte vše, co jste doporučil"
+
+msgid "fix the errors above"
+msgstr "opravit chyby výše"
+
+msgid "I'll call you back later"
+msgstr "Zavolám vám později"
+
+msgid "Thanks!"
+msgstr "Díky!"
+
+msgid "OK, got it 👍"
+msgstr "Dobře, rozumím 👍"
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Rules tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"Jedinečný identifikátor používaný v odkazech, jako je makro:<id>. Chcete-li "
+"toto makro svázat s klíčem, vyberte tuto akci na kartě Vrstvy nebo Pravidla."
+" Změňte ID pouze v případě, že nic nepoužívá toto makro."
+
+msgid "Used in:"
+msgstr "Používá se v:"
+
+msgid "User macros"
+msgstr "Uživatelská makra"
+
+msgid "Work & Objects"
+msgstr "Práce a předměty"
+
+msgid "e.g. Next Track"
+msgstr "např. Další stopa"
+
+msgid "ms"
+msgstr "paní"
+
+msgid "Rule saved"
+msgstr "Pravidlo uloženo"
+
+msgid "Search layers"
+msgstr "Prohledejte vrstvy"
+
+msgid "Set"
+msgstr "Soubor"
+
+msgid "Start the mapper to run actions from the menus"
+msgstr "Spusťte mapovač a spouštějte akce z nabídek"
+
+msgid ""
+"The text was not typed: the keyboard layout lacks some of its characters, "
+"such as emoji. Choose a typing method with the clipboard."
+msgstr ""
+"Text nebyl napsán: rozložení klávesnice postrádá některé jeho znaky, "
+"například emotikony. Vyberte metodu psaní pomocí schránky."
+
+msgid "The text was not typed: the active keyboard layout is unknown."
+msgstr "Text nebyl napsán: aktivní rozložení klávesnice není známo."
+
+msgid ""
+"The text was not typed: the typing method is unavailable ({}). Restart the "
+"mapper to try again."
+msgstr ""
+"Text nebyl napsán: metoda psaní není k dispozici ({}). Restartujte mapovač a"
+" zkuste to znovu."
+
+msgid "The text was not typed: safe clipboard access failed ({})."
+msgstr "Text nebyl zadán: bezpečný přístup do schránky se nezdařil ({})."
+
+msgid "The text was not typed: {}"
+msgstr "Text nebyl napsán: {}"
+
+msgid "The layout file is empty"
+msgstr "Soubor rozvržení je prázdný"
+
+msgid "↑"
+msgstr "↑"
+
+msgid "↓"
+msgstr "↓"
+
+msgid "Does not matter"
+msgstr "Na tom nezáleží"
+
+msgid "Open for editing (unsaved)"
+msgstr "Otevřít pro úpravy (neuloženo)"
+
+msgid "Open for editing"
+msgstr "Otevřít pro úpravy"
+
+msgid "Layout name"
+msgstr "Název rozvržení"
+
+msgid "System languages"
+msgstr "Systémové jazyky"
+
+msgid "No system languages detected"
+msgstr "Nebyly zjištěny žádné systémové jazyky"
+
+msgid "Applications"
+msgstr "Aplikace"
+
+msgid "“{}” will be deleted. This cannot be undone."
+msgstr "„{}“ bude vymazáno. Toto nelze vrátit zpět."
+
+msgid "Reset current changes"
+msgstr "Resetovat aktuální změny"
+
+msgid "Available"
+msgstr "K dispozici"
+
+msgid "Unavailable"
+msgstr "Není k dispozici"
+
+msgid "Not implemented"
+msgstr "Neimplementováno"
+
+msgid "No input devices were found in /dev/input."
+msgstr "V /dev/input nebyla nalezena žádná vstupní zařízení."
+
+msgid ""
+"The selected keyboard is not connected. Connect it or pick another one "
+"below."
+msgstr ""
+"Vybraná klávesnice není připojena. Připojte jej nebo níže vyberte jiný."
+
+msgid ""
+"No permission to read keyboard events. Add your user to the input group "
+"(install-linux.sh permissions does this) and log in again."
+msgstr ""
+"Žádné oprávnění ke čtení událostí klávesnice. Přidejte svého uživatele do "
+"vstupní skupiny (toto dělají oprávnění install-linux.sh) a znovu se "
+"přihlaste."
+
+msgid ""
+"/dev/uinput does not exist. Load the uinput kernel module: sudo modprobe "
+"uinput."
+msgstr ""
+"/dev/uinput neexistuje. Načtěte modul jádra uinput: sudo modprobe uinput."
+
+msgid ""
+"No permission to write to /dev/uinput. Install the application's udev rule "
+"(install-linux.sh permissions) or reinstall the package."
+msgstr ""
+"Žádné oprávnění k zápisu do /dev/uinput. Nainstalujte pravidlo udev aplikace"
+" (oprávnění install-linux.sh) nebo přeinstalujte balíček."
+
+msgid "Launch on startup"
+msgstr "Spustit při spuštění"
+
+msgid "Start the mapper on launch"
+msgstr "Spusťte mapovač při spuštění"
+
+msgid "No keyboard is selected, so the mapper cannot start."
+msgstr "Není vybrána žádná klávesnice, takže mapovač nelze spustit."
+
+msgid "Choose a keyboard"
+msgstr "Vyberte klávesnici"
+
+msgid "Getting started"
+msgstr "Začínáme"
+
+msgid "Keyboard selected"
+msgstr "Vybrána klávesnice"
+
+msgid "Choose the keyboard to remap"
+msgstr "Vyberte klávesnici, kterou chcete přemapovat"
+
+msgid "Change"
+msgstr "Přeměna"
+
+msgid "Add a layout"
+msgstr "Přidejte rozvržení"
+
+msgid "Press Start at the top to apply it"
+msgstr "Chcete-li jej použít, stiskněte tlačítko Start nahoře"
+
+msgid "No active layout"
+msgstr "Žádné aktivní rozvržení"
+
+msgid "Current active layout (automatic)"
+msgstr "Aktuální aktivní rozvržení (automaticky)"
+
+msgid "Current active layout — click to switch"
+msgstr "Aktuální aktivní rozložení – kliknutím přepnete"
+
+msgid "Current keyboard layout in the system"
+msgstr "Aktuální rozložení klávesnice v systému"
+
+msgid "Game mode: active"
+msgstr "Herní režim: aktivní"
+
+msgid "Game mode: inactive"
+msgstr "Herní režim: neaktivní"
+
+msgid "Active: {}"
+msgstr "Aktivní: {}"
+
+msgid "Trigger"
+msgstr "Spoušť"
+
+msgid "New rule: choose a trigger"
+msgstr "Nové pravidlo: vyberte spouštěč"
+
+msgid "Swallow key"
+msgstr "Potlačit klávesu"
+
+msgid "Pass through"
+msgstr "Projít"
+
+msgid "Double tap: {} ms"
+msgstr "Dvojité klepnutí: {} ms"
+
+msgid "Custom hold options"
+msgstr "Vlastní možnosti držení"
+
+msgid "Leave empty to use the global timing settings."
+msgstr "Chcete-li použít globální nastavení časování, ponechte prázdné."
+
+msgid ""
+"Temporarily releases the held key or modifier while these keys are pressed "
+"in the layer."
+msgstr ""
+"Dočasně uvolní přidrženou klávesu nebo modifikátor, když jsou tyto klávesy "
+"stisknuty ve vrstvě."
+
+msgid ""
+"Defers the held action until one of these keys is pressed in the layer. "
+"Requires a hold action and a layer."
+msgstr ""
+"Odloží podrženou akci, dokud není ve vrstvě stisknuta jedna z těchto kláves."
+" Vyžaduje akci přidržení a vrstvu."
+
+msgid "Delete rule"
+msgstr "Smazat pravidlo"
+
+msgid ""
+"Clear restores normal key behavior. Swallow prevents the key from reaching "
+"the application."
+msgstr ""
+"Clear obnoví normální chování kláves. Swallow brání klíči v dosažení "
+"aplikace."
+
+msgctxt "Game mode control"
+msgid "Auto"
+msgstr "Automaticky"
+
+msgctxt "Game mode control"
+msgid "On"
+msgstr "Zapnuto"
+
+msgctxt "Game mode control"
+msgid "Off"
+msgstr "Vypnuto"
+
+msgid "Auto: no detection sources enabled"
+msgstr "Auto: nejsou povoleny žádné zdroje detekce"
+
+msgid "Auto: detection unavailable"
+msgstr "Auto: detekce není k dispozici"
+
+msgid "Auto: game mode inactive"
+msgstr "Auto: herní režim není aktivní"
+
+msgid "Auto: GameMode daemon active"
+msgstr "Auto: Démon GameMode je aktivní"
+
+msgid "Auto: matched {}"
+msgstr "Auto: spárováno {}"
+
+msgid "Auto: fullscreen window active"
+msgstr "Auto: aktivní okno na celou obrazovku"
+
+msgid "Auto: excluded by {}"
+msgstr "Auto: vyloučeno podle {}"
+
+msgid ""
+"Fullscreen detection is not supported in this session. Use process rules or "
+"On/Off."
+msgstr ""
+"Detekce na celou obrazovku není v této relaci podporována. Použijte pravidla"
+" procesu nebo Zap/Vyp."
+
+msgid "Fullscreen detection tools are missing or could not query the session."
+msgstr ""
+"Nástroje detekce na celou obrazovku chybí nebo se nepodařilo dotazovat na "
+"relaci."
+
+msgid "Running processes: "
+msgstr "Běžící procesy:"
+
+msgid "Active window: "
+msgstr "Aktivní okno:"
+
+msgid "Create a layer to assign its keys."
+msgstr "Vytvořte vrstvu k přiřazení jejích klíčů."
+
+msgid "Button {}"
+msgstr "Tlačítko {}"
+
+msgid "Copied to clipboard"
+msgstr "Zkopírováno do schránky"
+
+msgid "Theme"
+msgstr "Téma"
+
+msgid "E-ink"
+msgstr "E-ink"
+
+msgid "Enter device path manually"
+msgstr "Zadejte cestu zařízení ručně"
+
+msgid "All keyboards"
+msgstr "Všechny klávesnice"
+
+msgid "All mice (buttons only)"
+msgstr "Všechny myši (pouze tlačítka)"
+
+msgid "Mode"
+msgstr "Režim"
+
+msgid "New"
+msgstr "Nový"
+
+msgid "Auto"
+msgstr "Automaticky"
+
+msgid "Delete extra key?"
+msgstr "Smazat nadbytečný klíč?"
+
+msgid "This key assignment will be removed from the layer."
+msgstr "Toto přiřazení klíče bude z vrstvy odstraněno."
+
+msgid "Command started: {}"
+msgstr "Příkaz spuštěn: {}"
+
+msgid "Unavailable on this platform or desktop"
+msgstr "Nedostupné na této platformě nebo ploše"
+
+msgid "This action is not supported on macOS"
+msgstr "Tato akce není podporována v systému macOS"
+
+msgid "Approve commands on the Commands tab before running this action"
+msgstr "Před spuštěním této akce schvalte příkazy na kartě Příkazy"
+
+msgid "Pick the physical device whose events should be intercepted."
+msgstr "Vyberte fyzické zařízení, jehož události mají být zachyceny."
+
+msgid ""
+"Select the mouse so the mapper can see extra buttons and clicks. Pointer "
+"movement is not affected."
+msgstr ""
+"Vyberte myš, aby mapovatel viděl další tlačítka a kliknutí. Pohyb ukazatele "
+"není ovlivněn."
+
+msgid ""
+"The mouse is not fully intercepted yet: a remapped extra button can emit the"
+" new action, but its native system or app action may still run. If that gets"
+" in the way, disable the native action for that button in your system, "
+"browser, or driver settings."
+msgstr ""
+"Myš ještě není plně zachycena: přemapované tlačítko navíc může vyvolat novou"
+" akci, ale její nativní akce systému nebo aplikace může stále běžet. Pokud "
+"to překáží, vypněte nativní akci pro toto tlačítko v nastavení systému, "
+"prohlížeče nebo ovladače."
+
+msgid ""
+"The mapper reads from /dev/input/eventX and emits through uinput. If Start "
+"fails, grant access to those devices: usually the input group plus a udev "
+"rule for /dev/uinput."
+msgstr ""
+"Mapovač čte z /dev/input/eventX a vysílá přes uinput. Pokud se spuštění "
+"nezdaří, udělte přístup těmto zařízením: obvykle vstupní skupině plus udev "
+"pravidlo pro /dev/uinput."
+
+msgid "Refresh device list"
+msgstr "Obnovit seznam zařízení"
+
+msgid "Mouse (optional)"
+msgstr "Myš (volitelné)"
+
+msgid "Not selected"
+msgstr "Nevybráno"
+
+msgid "Not selected (no mouse support)"
+msgstr "Nevybráno (žádná podpora myši)"
+
+msgid "Looks like a keyboard"
+msgstr "Vypadá jako klávesnice"
+
+msgid "Looks like a mouse"
+msgstr "Vypadá jako myš"
+
+msgid "Other devices"
+msgstr "Jiná zařízení"
+
+msgid "Search devices"
+msgstr "Vyhledejte zařízení"
+
+msgid "Single"
+msgstr "Singl"
+
+msgid "{n} rule"
+msgid_plural "{n} rules"
+msgstr[0] "{n} pravidlo"
+msgstr[1] "{n} pravidla"
+msgstr[2] "{n} pravidel"
+
+msgid "{n} layer"
+msgid_plural "{n} layers"
+msgstr[0] "{n} vrstva"
+msgstr[1] "{n} vrstvy"
+msgstr[2] "{n} vrstev"
+
+msgid "{n} emoji page"
+msgid_plural "{n} emoji pages"
+msgstr[0] "{n} stránka emodži"
+msgstr[1] "{n} stránky s emotikony"
+msgstr[2] "{n} stránek s emotikony"
+
+msgid "{n} action page"
+msgid_plural "{n} action pages"
+msgstr[0] "{n} stránka akce"
+msgstr[1] "{n} akční stránky"
+msgstr[2] "{n} akčních stránek"
+
+msgid "{n} macro"
+msgid_plural "{n} macros"
+msgstr[0] "{n} makro"
+msgstr[1] "{n} makra"
+msgstr[2] "{n} maker"
+
+msgid "{n} command"
+msgid_plural "{n} commands"
+msgstr[0] "{n} příkaz"
+msgstr[1] "{n} příkazy"
+msgstr[2] "{n} příkazů"
+
+msgid "Main"
+msgstr "Hlavní"
+
+msgid "Saved assignment: {}"
+msgstr "Uložené zadání: {}"
+
+msgid "Behavior"
+msgstr "Chování"
+
+msgid "Inherit"
+msgstr "Zdědit"
+
+msgid "No separate action"
+msgstr "Žádná samostatná akce"
+
+msgid "Activate layer only"
+msgstr "Aktivovat pouze vrstvu"
+
+msgid "Normal key behavior"
+msgstr "Normální chování kláves"
+
+msgid "Suppress"
+msgstr "Potlačit"
+
+msgid "Assign held key"
+msgstr "Přiřadit podržený klíč"
+
+msgid "Perform action"
+msgstr "Proveďte akci"
+
+msgid "The key will not reach the application."
+msgstr "Klíč se do aplikace nedostane."
+
+msgid "Use the assignment from the lower layer or base layout."
+msgstr "Použijte přiřazení ze spodní vrstvy nebo základního rozvržení."
+
+msgid "Do not assign a separate action to this gesture."
+msgstr "Nepřiřazujte tomuto gestu samostatnou akci."
+
+msgid "Holding activates the selected layer. The original key is not sent."
+msgstr "Podržením aktivujete vybranou vrstvu. Původní klíč není odeslán."
+
+msgid "Send the original key to the application."
+msgstr "Pošlete originální klíč do aplikace."
+
+msgid "Capture shortcut"
+msgstr "Zástupce zachycení"
+
+msgid "Choose a valid trigger key."
+msgstr "Vyberte platný spouštěcí klíč."
+
+msgid "Choose a valid action."
+msgstr "Vyberte platnou akci."
+
+msgid "Empty cell"
+msgstr "Prázdná buňka"
+
+msgid "Remove the action from this menu cell."
+msgstr "Odeberte akci z této buňky nabídky."
+
+msgid "Edit assignment"
+msgstr "Upravit úkol"
+
+msgid "Holding also activates the selected layer."
+msgstr "Podržením také aktivujete vybranou vrstvu."
+
+msgid "Block"
+msgstr "Blok"
+
+msgid ""
+"The key press is consumed: the system and the active application will not "
+"receive it."
+msgstr "Stisk klávesy je spotřebován: systém a aktivní aplikace jej neobdrží."
+
+msgid ""
+"The key press passes through unchanged, as if no assignment were configured."
+msgstr ""
+"Stisk klávesy prochází beze změny, jako by nebylo nakonfigurováno žádné "
+"přiřazení."
+
+msgid "Capture"
+msgstr "Zachyťte"
+
+msgid "Unchanged"
+msgstr "Beze změny"
+
+msgid "Leave a delay empty to use the global setting."
+msgstr "Chcete-li použít globální nastavení, ponechte prodlevu prázdné."
+
+msgid "Allow command execution"
+msgstr "Povolit provedení příkazu"
+
+msgid "No commands are assigned."
+msgstr "Nejsou přiřazeny žádné příkazy."
+
+msgid "Commands are disabled in Settings."
+msgstr "Příkazy jsou zakázány v Nastavení."
+
+msgid "Working directory (optional)"
+msgstr "Pracovní adresář (volitelné)"
+
+msgid "Save layout changes before opening another layout."
+msgstr "Před otevřením dalšího rozvržení uložte změny rozvržení."
+
+msgid "No layer"
+msgstr "Žádná vrstva"
+
+msgid "Layer not found"
+msgstr "Vrstva nenalezena"
+
+msgid "Create new layer…"
+msgstr "Vytvořit novou vrstvu…"
+
+msgid "Create “{}”"
+msgstr "Vytvořit „{}“"
+
+msgid ""
+"A trigger can be a single key or a combination, such as "
+"ShiftLeft+ControlLeft. The combination works in either press order and ends "
+"when any key is released."
+msgstr ""
+"Spouštěčem může být jedna klávesa nebo kombinace, například "
+"ShiftLeft+ControlLeft. Kombinace funguje buď v pořadí stisknutí a končí po "
+"uvolnění libovolné klávesy."
+
+msgid "When held"
+msgstr "Při držení"
+
+msgid ""
+"Choose a layer active until release, or an action performed once after the "
+"hold duration."
+msgstr ""
+"Vyberte vrstvu aktivní do uvolnění nebo akci provedenou jednou po trvání "
+"pozastavení."
+
+msgid "Nothing"
+msgstr "Nic"
+
+msgid "Activate layer"
+msgstr "Aktivovat vrstvu"
+
+msgid "Run action"
+msgstr "Spustit akci"
+
+msgid "Long-hold action"
+msgstr "Dlouhotrvající akce"
+
+msgid "Runs once after {} s"
+msgstr "Spustí se jednou po {} s"
+
+msgid "Hold another key / combination"
+msgstr "Podržte další klávesu / kombinaci"
+
+msgid "Press one key or hold a combination, then release a key to capture it."
+msgstr "Stiskněte jednu klávesu nebo podržte kombinaci a poté ji uvolněte."
+
+msgid "Held key: {}"
+msgstr "Držený klíč: {}"
+
+msgid "Assigned to"
+msgstr "Přiřazeno k"
+
+msgid "Languages"
+msgstr "Jazyky"
+
+msgid "Excluded applications"
+msgstr "Vyloučené aplikace"
+
+msgid "Open page in popup"
+msgstr "Otevřít stránku ve vyskakovacím okně"
+
+msgid "Page:"
+msgstr "Strana:"
+
+msgid "Layout “{}” created"
+msgstr "Bylo vytvořeno rozvržení „{}“."
+
+msgid "Layout “{}” saved"
+msgstr "Rozložení „{}“ bylo uloženo"
+
+msgid "Layout “{}” deleted"
+msgstr "Rozložení „{}“ bylo odstraněno"
+
+msgid "Layout “{}” activated"
+msgstr "Rozvržení „{}“ aktivováno"
+
+msgid "Could not complete the action"
+msgstr "Akci nelze dokončit"
+
+msgid "Dismiss notification"
+msgstr "Zavřít oznámení"
+
+msgid "Changes to layout “{}” discarded"
+msgstr "Změny rozvržení „{}“ byly vyřazeny"
+
+msgid "Popup menus are unavailable: {}"
+msgstr "Místní nabídky nejsou k dispozici: {}"
+
+msgid "Popup menus are not running. Try opening the menu again."
+msgstr "Popup menu neběží. Zkuste znovu otevřít nabídku."
+
+msgid "Popup menus are restarting. Try again shortly."
+msgstr "Vyskakovací nabídky se restartují. Zkuste to za chvíli znovu."
+
+msgid "Popup menus could not recover. Restart the application."
+msgstr "Vyskakovací nabídky se nepodařilo obnovit. Restartujte aplikaci."
+
+msgid "Popup menu error: {}"
+msgstr "Chyba místní nabídky: {}"
+
+msgid "Choose a key or combination for the trigger"
+msgstr "Vyberte klávesu nebo kombinaci pro spoušť"
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid. Add a trigger, then choose its action, suppress it, or inherit its "
+"assignment from the lower layer."
+msgstr ""
+"Tlačítka myši, mediální klávesy a další spouštěče mimo hlavní mřížku "
+"klávesnice. Přidejte spouštěč a poté vyberte jeho akci, potlačte jej nebo "
+"zděďte jeho přiřazení z nižší vrstvy."
+
+msgid ""
+"You can enter emoji, any text, or Unicode symbols here. Drag an item from "
+"the palette onto a key to assign it."
+msgstr ""
+"Zde můžete zadat emotikony, libovolný text nebo symboly Unicode. Přetažením "
+"položky z palety na klávesu ji přiřadíte."
+
+msgid "Accessibility"
+msgstr "Přístupnost"
+
+msgid "High contrast"
+msgstr "Vysoký kontrast"
+
+msgid ""
+"Pure black or white background, stronger text, borders and focus outlines. "
+"Works with the light and dark themes."
+msgstr ""
+"Čistě černé nebo bílé pozadí, silnější text, okraje a obrysy zaostření. "
+"Pracuje se světlými a tmavými tématy."
+
+msgid "Reduce motion"
+msgstr "Snižte pohyb"
+
+msgid "Turn off highlight animations in the editor."
+msgstr "Vypněte animace zvýraznění v editoru."
+
+msgid ""
+"Every control can be reached with Tab and activated with Space or Enter. "
+"Interface size follows the desktop scale factor."
+msgstr ""
+"Ke každému ovládacímu prvku se dostanete pomocí Tab a aktivujete mezerníkem "
+"nebo Enterem. Velikost rozhraní odpovídá faktoru měřítka pracovní plochy."
+
+msgid "Always"
+msgstr "Vždy"
+
+msgid "Hold duration"
+msgstr "Trvání držení"
+
+msgid "{} s"
+msgstr "{} s"
+
+msgid "{} s (default)"
+msgstr "{} s (výchozí)"
+
+msgid "Shell command or path to a script, e.g. playerctl play-pause"
+msgstr "Shell příkaz nebo cesta ke skriptu, např. playerctl play-pause"
+
+msgid "Runs with sh -lc in the background; the result is not awaited."
+msgstr "Běží s sh -lc na pozadí; na výsledek se nečeká."
+
+msgid "Choose script…"
+msgstr "Vyberte skript…"
+
+msgid "Working directory (optional, home by default)"
+msgstr "Pracovní adresář (volitelný, ve výchozím nastavení domov)"
+
+msgid "Choose folder…"
+msgstr "Vyberte složku…"
+
+msgid ""
+"Command execution is turned off. Turn it on in the settings to assign "
+"commands."
+msgstr ""
+"Provádění příkazů je vypnuto. Chcete-li přiřadit příkazy, zapněte jej v "
+"nastavení."
+
+msgid "Open command settings"
+msgstr "Otevřete nastavení příkazů"
+
+msgid "The working directory does not exist."
+msgstr "Pracovní adresář neexistuje."
+
+msgid ""
+"The script file is not executable: run chmod +x on it or prefix the path "
+"with sh."
+msgstr ""
+"Soubor skriptu není spustitelný: spusťte na něm chmod +x nebo před cestu "
+"zadejte sh."
+
+msgid "Choose a script"
+msgstr "Vyberte skript"
+
+msgid "Choose a working directory"
+msgstr "Vyberte pracovní adresář"
+
+msgid "Commands run with sh -lc in the background and are not awaited."
+msgstr "Příkazy běží s sh -lc na pozadí a nejsou očekávány."
+
+msgid "Commands run with PowerShell in the background and are not awaited."
+msgstr "Příkazy běží s PowerShell na pozadí a nejsou očekávány."
+
+msgid ""
+"Commands stay off until you allow execution. Review below what your layouts "
+"would run."
+msgstr ""
+"Příkazy zůstanou vypnuté, dokud nepovolíte provedení. Níže si přečtěte, jaké"
+" rozvržení by fungovalo."
+
+msgid "Command"
+msgstr "Příkaz"
+
+msgid "Rule {} · tap"
+msgstr "Pravidlo {} · klepněte"
+
+msgid "Rule {} · hold"
+msgstr "Pravidlo {} · držet"
+
+msgid "Rule {} · long hold"
+msgstr "Pravidlo {} · dlouhé držení"
+
+msgid "Rule {} · double tap"
+msgstr "Pravidlo {} · dvojité klepnutí"
+
+msgid "disabled"
+msgstr "zakázáno"
+
+msgid "Layer {}"
+msgstr "Vrstva {}"
+
+msgid "Macro"
+msgstr "Makro"
+
+msgid "Quick action"
+msgstr "Rychlé jednání"
+
+msgid "Show all"
+msgstr "Zobrazit vše"
+
+msgid "Close"
+msgstr "Zavřít"
+
+msgid "Choose a key or key combination"
+msgstr "Vyberte klíč nebo kombinaci klíčů"
+
+msgid "Examples"
+msgstr "Příklady"
+
+msgid "Add rule…"
+msgstr "Přidat pravidlo…"
+
+msgid ""
+"All filled conditions must match. A rule without conditions always matches."
+msgstr ""
+"Všechny vyplněné podmínky musí odpovídat. Pravidlo bez podmínek vždy "
+"odpovídá."
+
+msgid "Automatic switching rules"
+msgstr "Pravidla automatického přepínání"
+
+msgid ""
+"Automatic: the layout is chosen by switching rules for the application, "
+"system language or game mode."
+msgstr ""
+"Automaticky: rozložení se volí přepínáním pravidel pro aplikaci, jazyk "
+"systému nebo herní režim."
+
+msgid "Layout"
+msgstr "Rozložení"
+
+msgid "Layout not found"
+msgstr "Rozvržení nenalezeno"
+
+msgid "New rule"
+msgstr "Nové pravidlo"
+
+msgid "Now: {} (default)"
+msgstr "Nyní: {} (výchozí)"
+
+msgid "Otherwise (default)"
+msgstr "Jinak (výchozí)"
+
+msgid "Rule {}"
+msgstr "Pravidlo {}"
+
+msgid "Use layout"
+msgstr "Použít rozložení"
+
+msgid "When"
+msgstr "Když"
+
+msgid "If"
+msgstr "Li"
+
+msgid "If:"
+msgstr "Li:"
+
+msgid "Trigger conditions"
+msgstr "Spouštěcí podmínky"
+
+msgid "No layout"
+msgstr "Žádné rozvržení"
+
+msgid "No layout (keys as is)"
+msgstr "Žádné rozvržení (klávesy tak jak jsou)"
+
+msgid "Now: {} (rule {}: {})"
+msgstr "Nyní: {} (pravidlo {}: {})"
+
+msgid ""
+"Rules are checked from top to bottom; the first enabled one whose conditions"
+" match chooses the layout. If none matches, the default is used. “No layout”"
+" leaves the keyboard unprocessed, for example in an application where the "
+"layout gets in the way."
+msgstr ""
+"Pravidla se kontrolují shora dolů; první povolený, jehož podmínky se "
+"shodují, vybere rozvržení. Pokud žádná neodpovídá, použije se výchozí. "
+"„Žádné rozložení“ ponechává klávesnici nezpracovanou, například v aplikaci, "
+"kde rozložení překáží."
+
+msgid "No rules"
+msgstr "Žádná pravidla"
+
+msgid "The default layout is always used."
+msgstr "Vždy se použije výchozí rozložení."
+
+msgid "For games"
+msgstr "Na hry"
+
+msgid "For an application"
+msgstr "Pro aplikaci"
+
+msgid "Custom rule"
+msgstr "Vlastní pravidlo"
+
+msgid "When no rule matches, the keyboard works without processing."
+msgstr "Pokud neodpovídá žádné pravidlo, klávesnice funguje bez zpracování."
+
+msgid "Never applies: rule {} always matches first."
+msgstr "Nikdy neplatí: pravidlo {} vždy odpovídá prvnímu."
+
+msgid "Game mode detection is off, so this rule never matches."
+msgstr ""
+"Detekce herního režimu je vypnutá, takže toto pravidlo se nikdy neshoduje."
+
+msgid "Not among the system languages: {}"
+msgstr "Nepatří mezi systémové jazyky: {}"
+
+msgid "Rule enabled"
+msgstr "Pravidlo povoleno"
+
+msgid "Automatic mode will use no layout by default."
+msgstr ""
+"Automatický režim nebude ve výchozím nastavení používat žádné rozvržení."
+
+msgid "Delete rule {}?"
+msgstr "Smazat pravidlo {}?"
+
+msgid "The rule will be deleted. This cannot be undone."
+msgstr "Pravidlo bude smazáno. Toto nelze vrátit zpět."
+
+msgid "Its {n} automatic rule will be deleted too."
+msgid_plural "Its {n} automatic rules will be deleted too."
+msgstr[0] "Jeho {n} automatické pravidlo bude také smazáno."
+msgstr[1] "Jeho {n} automatická pravidla budou také smazána."
+msgstr[2] "Jeho {n} automatických pravidel bude také smazáno."
+
+msgid "In {n} rule"
+msgid_plural "In {n} rules"
+msgstr[0] "V {n} pravidle"
+msgstr[1] "Ve {n} pravidlech"
+msgstr[2] "V {n} pravidlech"
+
+msgid "Auto — detect games"
+msgstr "Auto – detekce her"
+
+msgid "On — always"
+msgstr "Zapnuto – vždy"
+
+msgid "Off — never"
+msgstr "Vypnuto – nikdy"
+
+msgid ""
+"Automatic layout rules apply only when the layout is chosen automatically "
+"(Layouts page)."
+msgstr ""
+"Automatická pravidla rozvržení platí pouze v případě, že je rozvržení "
+"vybráno automaticky (stránka Rozvržení)."
+
+msgid ""
+"Borderless windows covering the screen count too. Browsers, video players "
+"and presentations are ignored."
+msgstr ""
+"Okna bez okrajů pokrývají také počet obrazovky. Prohlížeče, přehrávače videa"
+" a prezentace jsou ignorovány."
+
+msgid "Game mode is off (set manually)"
+msgstr "Herní režim je vypnutý (nastaveno ručně)"
+
+msgid "Game mode is on (set manually)"
+msgstr "Herní režim je zapnutý (nastavuje se ručně)"
+
+msgid ""
+"Game mode turns on rules and automatic layout rules that have a game-mode "
+"condition. Automatic layout rules apply only when the layout is chosen "
+"automatically (Layouts page). Auto uses the detection sources and custom "
+"rules below; On and Off set the state manually. “Never a game” takes "
+"priority over automatic detection and “Always a game”. You can also change "
+"the mode in the top bar, in the tray menu or with a key bound to a game mode"
+" action."
+msgstr ""
+"Herní režim zapíná pravidla a automatická pravidla rozvržení, která mají "
+"podmínku herního režimu. Automatická pravidla rozvržení platí pouze v "
+"případě, že je rozvržení vybráno automaticky (stránka Rozvržení). Auto "
+"používá níže uvedené zdroje detekce a vlastní pravidla; On a Off nastavují "
+"stav ručně. „Nikdy hra“ má přednost před automatickou detekcí a „Vždy hra“. "
+"Režim můžete také změnit v horní liště, v nabídce zásobníku nebo pomocí "
+"tlačítka vázaného na akci herního režimu."
+
+msgid "Game mode: always off"
+msgstr "Herní režim: vždy vypnutý"
+
+msgid "Game mode: always on"
+msgstr "Herní režim: vždy zapnutý"
+
+msgid "Game mode: detect automatically"
+msgstr "Herní režim: detekuje automaticky"
+
+msgid "Toggle game mode"
+msgstr "Přepnout herní režim"
+
+msgid ""
+"GameMode daemon unavailable: check the gamemode package and session D-Bus."
+msgstr ""
+"Démon GameMode není k dispozici: zkontrolujte balíček herního režimu a "
+"relaci D-Bus."
+
+msgid ""
+"Install {} to detect the active window and fullscreen windows. It is also "
+"needed for application conditions in rules."
+msgstr ""
+"Nainstalujte {} pro detekci aktivního okna a oken na celou obrazovku. Je "
+"také potřeba pro podmínky aplikace v pravidlech."
+
+msgid ""
+"Nothing uses game mode yet: no rule or automatic layout rule has a game-mode"
+" condition, so turning it on changes nothing."
+msgstr ""
+"Zatím nic nepoužívá herní režim: žádné pravidlo ani pravidlo automatického "
+"rozvržení nemá podmínku herního režimu, takže jeho zapnutím se nic nezmění."
+
+msgid ""
+"On and Off are remembered after restart. Auto keeps detecting in the "
+"background."
+msgstr ""
+"Zapnutí a vypnutí jsou po restartu zapamatována. Auto stále detekuje na "
+"pozadí."
+
+msgid ""
+"Rules of the current layout with a game-mode condition: {}. Automatic layout"
+" rules with a game-mode condition: {}."
+msgstr ""
+"Pravidla aktuálního rozložení s podmínkou herního režimu: {}. Automatická "
+"pravidla rozvržení s podmínkou herního režimu: {}."
+
+msgid ""
+"Turns on while a game runs through gamemoderun or requests GameMode itself. "
+"In Steam set the launch options to “gamemoderun %command%”."
+msgstr ""
+"Zapne se, když hra běží přes gamemoderun nebo vyžaduje GameMode sám. Ve "
+"službě Steam nastavte možnosti spouštění na „gamemoderun %command%“."
+
+msgid "Game mode: on"
+msgstr "Herní režim: zapnuto"
+
+msgid "Game mode: off"
+msgstr "Herní režim: vypnuto"
+
+msgid "Active now: {}"
+msgstr "Nyní aktivní: {}"
+
+msgid ""
+"Active window detection is unavailable in this session, so application "
+"conditions do not match."
+msgstr ""
+"Detekce aktivního okna není v této relaci k dispozici, takže podmínky "
+"aplikace neodpovídají."
+
+msgid ""
+"An application is matched by its ID or process name: the whole name, "
+"ignoring case, with * and ? as wildcards. A window title item matches when "
+"the title contains the text. Any matching item is enough. An empty list "
+"imposes no restrictions."
+msgstr ""
+"Aplikaci odpovídá její ID nebo název procesu: celý název, bez ohledu na malá"
+" a velká písmena, s * a ? jako zástupné znaky. Položka nadpisu okna se "
+"shoduje, pokud nadpis obsahuje text. Stačí jakákoliv odpovídající položka. "
+"Prázdný seznam neukládá žádná omezení."
+
+msgid "Looking for open windows…"
+msgstr "Hledám otevřená okna…"
+
+msgid "No open windows found"
+msgstr "Nebyla nalezena žádná otevřená okna"
+
+msgid "Window title contains: {}"
+msgstr "Název okna obsahuje: {}"
+
+msgid "Timing"
+msgstr "Načasování"
+
+msgid "Used by macros without their own value."
+msgstr "Používají makra bez vlastní hodnoty."
+
+msgid ""
+"Used by macros without their own value. How long to wait between pressing "
+"modifiers (Shift, Ctrl, …) and the main key of one step."
+msgstr ""
+"Používají makra bez vlastní hodnoty. Jak dlouho se čeká mezi stisknutím "
+"modifikátorů (Shift, Ctrl, …) a hlavní klávesy jednoho kroku."
+
+msgid "Rule without a trigger is saved as a draft and will be ignored."
+msgstr "Pravidlo bez spouštěče se uloží jako koncept a bude ignorováno."
+
+msgid "Trigger \"{}\" cannot be used for a rule."
+msgstr "Spouštěč \"{}\" nelze použít pro pravidlo."
+
+msgid "Rules for trigger \"{}\" may overlap; the first matching rule wins."
+msgstr ""
+"Pravidla pro spouštění \"{}\" se mohou překrývat; vyhrává první odpovídající"
+" pravidlo."
+
+msgid "Rule for trigger \"{}\" is covered by an earlier rule and will not run."
+msgstr ""
+"Pravidlo pro spouštěč \"{}\" je pokryto dřívějším pravidlem a nespustí se."
+
+msgid "Rule \"{}\" points to a layer that no longer exists."
+msgstr "Pravidlo \"{}\" ukazuje na vrstvu, která již neexistuje."
+
+msgid "Rule \"{}\" has an invalid tap action."
+msgstr "Pravidlo \"{}\" má neplatnou akci klepnutí."
+
+msgid "Rule \"{}\" has an invalid hold action."
+msgstr "Pravidlo \"{}\" má neplatnou akci pozastavení."
+
+msgid "Rule \"{}\" has an invalid double-tap action."
+msgstr "Pravidlo \"{}\" má neplatnou akci dvojitého klepnutí."
+
+msgid "Automatic switching rule deleted"
+msgstr "Pravidlo automatického přepínání bylo odstraněno"
+
+msgid "Only in applications"
+msgstr "Pouze v aplikacích"
+
+msgid "Except applications"
+msgstr "Kromě aplikací"
+
+msgid "A match blocks the rule, even if the window is in the allowed list."
+msgstr "Shoda pravidlo zablokuje, i když je okno v seznamu povolených."
+
+msgid "Any match allows the rule. An empty list allows all windows."
+msgstr ""
+"Jakákoli shoda umožňuje pravidlo. Prázdný seznam umožňuje všechna okna."
+
+msgid "Choose applications to exclude"
+msgstr "Vyberte aplikace, které chcete vyloučit"
+
+msgid "Open windows"
+msgstr "Otevřete okna"
+
+msgid "Last active"
+msgstr "Poslední aktivní"
+
+msgid "Nothing is excluded."
+msgstr "Nic není vyloučeno."
+
+msgid "No restrictions: the rule works in every window."
+msgstr "Žádná omezení: pravidlo funguje v každém okně."
+
+msgid "{n} window"
+msgid_plural "{n} windows"
+msgstr[0] "{n} okno"
+msgstr[1] "{n} okna"
+msgstr[2] "{n} oken"
+
+msgid "Do not process"
+msgstr "Nezpracovávat"
+
+msgid "Command name (optional)"
+msgstr "Název příkazu (volitelné)"
+
+msgid "Working directory (home by default)"
+msgstr "Pracovní adresář (ve výchozím nastavení domov)"
+
+msgid "Text to type when the action is invoked:"
+msgstr "Text, který se má napsat při vyvolání akce:"
+
+msgid ""
+"Enter literal text without the text: prefix. Line breaks, spaces and tabs "
+"are preserved. On Linux, text is inserted into the active application via "
+"the desktop portal; permission may be required. Text injection by the mapper"
+" is not implemented on Windows or macOS."
+msgstr ""
+"Zadejte doslovný text bez textu: prefix. Konce řádků, mezery a tabulátory "
+"jsou zachovány. V Linuxu se text vkládá do aktivní aplikace přes desktopový "
+"portál; může být vyžadováno povolení. Vkládání textu mapovačem není "
+"implementováno ve Windows nebo macOS."
+
+msgid ""
+"Commands run with sh -lc in the background. The mapper does not wait for "
+"completion or collect output. An empty name uses the command itself as its "
+"label. The working directory defaults to your home folder; scripts need "
+"execute permission. Command execution must be enabled in settings."
+msgstr ""
+"Příkazy se spouštějí s sh -lc na pozadí. Mapovač nečeká na dokončení ani "
+"neshromažďuje výstup. Prázdný název používá jako štítek samotný příkaz. "
+"Výchozím pracovním adresářem je vaše domovská složka; skripty potřebují "
+"oprávnění ke spuštění. Spouštění příkazů musí být povoleno v nastavení."
+
+msgid ""
+"Commands run with PowerShell in the background, without a console window. "
+"The mapper does not wait for completion or collect output. An empty name "
+"uses the command itself as its label. The working directory defaults to your"
+" home folder. Command execution must be enabled in settings."
+msgstr ""
+"Příkazy se spouštějí v prostředí PowerShell na pozadí, bez okna konzoly. "
+"Mapovač nečeká na dokončení ani neshromažďuje výstup. Prázdný název používá "
+"jako štítek samotný příkaz. Výchozím pracovním adresářem je vaše domovská "
+"složka. Spouštění příkazů musí být povoleno v nastavení."
+
+msgid ""
+"The name is optional: an empty name uses the command itself as its label. "
+"Command execution by the mapper is not implemented on macOS."
+msgstr ""
+"Název je volitelný: prázdný název používá jako svůj štítek samotný příkaz. "
+"Spouštění příkazů mapovačem není v systému macOS implementováno."
+
+msgid "Triggers"
+msgstr "Spouštěče"
+
+msgid "Disable animations"
+msgstr "Zakázat animace"
+
+msgid "Add layout: "
+msgstr "Přidat rozvržení:"
+
+msgid "Save (Ctrl+S)"
+msgstr "Uložit (Ctrl+S)"
+
+msgid "Close layout"
+msgstr "Zavřít rozložení"
+
+msgid "Discard layout changes?"
+msgstr "Zahodit změny rozvržení?"
+
+msgid "Unsaved changes to this layout will be lost."
+msgstr "Neuložené změny tohoto rozvržení budou ztraceny."
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Triggers tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"Jedinečný identifikátor používaný v odkazech, jako je makro:<id>. Chcete-li "
+"toto makro svázat s klávesou, vyberte tuto akci na kartě Vrstvy nebo "
+"Spouštěče. Změňte ID pouze v případě, že nic nepoužívá toto makro."
+
+msgid "Discard"
+msgstr "Vyřadit"
+
+msgid ""
+"Build reusable sequences of key chords, text, commands and system actions. Use a unique ID in macro:<id> references and a readable name in action lists. Assign macros on the Layers or Triggers tab; change an ID only when it is unused.\n"
+"\n"
+"The step pause applies between steps of this macro. Modifier delay is the time between pressing a modifier and the main key. Leave delays empty to use Settings defaults."
+msgstr ""
+"Vytvářejte opakovaně použitelné sekvence klíčových akordů, textu, příkazů a systémových akcí. Použijte jedinečné ID v odkazech na makro:<id> a čitelný název v seznamech akcí. Přiřaďte makra na kartě Vrstvy nebo Spouštěče; změnit ID pouze v případě, že se nepoužívá.\n"
+"\n"
+"Mezi kroky tohoto makra se použije kroková pauza. Zpoždění modifikátoru je doba mezi stisknutím modifikátoru a hlavní klávesou. Chcete-li použít výchozí nastavení, ponechte prodlevy prázdné."
+
+msgid "Global defaults: step pause {} ms; modifier delay {} ms."
+msgstr ""
+"Globální výchozí hodnoty: kroková pauza {} ms; zpoždění modifikátoru {} ms."
+
+msgid "Layout changed on disk"
+msgstr "Rozložení disku změněno"
+
+msgid ""
+"The file of “{}” was changed by another program after you opened it. Your "
+"edits are kept until you choose what to do."
+msgstr ""
+"Soubor „{}“ byl po otevření změněn jiným programem. Vaše úpravy zůstanou "
+"zachovány, dokud nezvolíte, co dělat."
+
+msgid "Load from disk"
+msgstr "Načíst z disku"
+
+msgid "Save as new…"
+msgstr "Uložit jako nový…"
+
+msgid "Overwrite"
+msgstr "Přepsat"
+
+msgid "Show LHC key codes used in assignments, such as KeyA and ArrowLeft."
+msgstr ""
+"Zobrazit kódy kláves LHC používané v přiřazeních, jako je KeyA a ArrowLeft."
+
+msgid "Application"
+msgstr "Aplikace"
+
+msgid "Window title"
+msgstr "Název okna"
+
+msgid "Click to switch"
+msgstr "Kliknutím přepnete"
+
+msgid "Match by app ID or process instead"
+msgstr "Místo toho porovnejte podle ID aplikace nebo procesu"
+
+msgid "Match by window title instead"
+msgstr "Místo toho porovnejte podle názvu okna"
+
+msgid "Open now: {n} window"
+msgid_plural "Open now: {n} windows"
+msgstr[0] "Otevřít nyní: {n} okno"
+msgstr[1] "Nyní otevřeno: {n} okna"
+msgstr[2] "Nyní otevřeno: {n} oken"
+
+msgid "Not open now"
+msgstr "Nyní neotevřeno"
+
+msgid "Running process"
+msgstr "Běžící proces"
+
+msgid "Text the window title contains"
+msgstr "Text, který obsahuje nadpis okna"
+
+msgid "Already in the list"
+msgstr "Již v seznamu"
+
+msgid "Choose from open windows…"
+msgstr "Vyberte si z otevřených oken…"
+
+msgid "Matches {n} open window"
+msgid_plural "Matches {n} open windows"
+msgstr[0] "Odpovídá {n} otevřenému oknu"
+msgstr[1] "Odpovídá {n} otevřeným oknům"
+msgstr[2] "Odpovídá {n} otevřeným oknům"
+
+msgid "Matches no open window"
+msgstr "Neodpovídá žádnému otevřenému oknu"
+
+msgid "Show Quick Action Menu on the last used page"
+msgstr "Zobrazit nabídku rychlých akcí na poslední použité stránce"
+
+msgid "Show Emoji & Symbols menu on the last used page"
+msgstr "Zobrazit nabídku Emoji a symboly na poslední použité stránce"
+
+msgid "Show the settings window"
+msgstr "Zobrazit okno nastavení"
+
+msgid "Activate layout {} (switches to Single mode)"
+msgstr "Aktivovat rozložení {} (přepne do režimu Single)"
+
+msgid "There is no layout number {}"
+msgstr "Neexistuje žádné číslo rozvržení {}"
+
+msgid "Show the Left Hand Control layout name when it changes"
+msgstr "Při změně zobrazit název rozvržení ovládání levou rukou"
+
+msgid "Show the keys of a layer while it is held"
+msgstr "Zobrazit klávesy vrstvy, když ji držíte"
+
+msgid ""
+"The hint appears 2 seconds after the layer activates. Pressing a layer key "
+"hides or cancels it until the trigger is released, including in game mode."
+msgstr ""
+"Nápověda se objeví 2 sekundy po aktivaci vrstvy. Stisknutí klávesy vrstvy ji"
+" skryje nebo zruší, dokud neuvolníte spoušť, a to i v herním režimu."
+
+msgid ""
+"Unavailable: build with the spell feature and use a Wayland compositor with "
+"layer-shell (KDE Plasma, Sway, Hyprland)."
+msgstr ""
+"Nedostupné: stavte pomocí funkce kouzla a použijte skladatel Wayland s "
+"vrstvou shellu (KDE Plasma, Sway, Hyprland)."
+
+msgid ""
+"The app:activateLayout1…5 actions activate the layout at that position in "
+"this list: reordering the list changes which layout a key activates. In Auto"
+" mode they switch to Single mode."
+msgstr ""
+"Akce app:activateLayout1…5 aktivují rozvržení na dané pozici v tomto "
+"seznamu: změna pořadí seznamu změní rozvržení, které klávesa aktivuje. V "
+"režimu Auto se přepnou do režimu Single."
+
+msgid "Cut"
+msgstr "Vyjmout"
+
+msgid "Copy"
+msgstr "Kopírovat"
+
+msgid "Paste"
+msgstr "Vložit"
+
+msgid "Select all"
+msgstr "Vybrat vše"
+
+msgid "Clear search"
+msgstr "Vymazat vyhledávání"
+
+msgid "Add application"
+msgstr "Přidat aplikaci"
+
+msgid "Edit application"
+msgstr "Upravit aplikaci"
+
+msgid "Remove application?"
+msgstr "Odebrat aplikaci?"
+
+msgid "“{}” will be removed from the list."
+msgstr "„{}“ bude odstraněno ze seznamu."
+
+msgid "Devices"
+msgstr "Zařízení"
+
+msgid "Required"
+msgstr "Požadovaný"
+
+msgid "Optional"
+msgstr "Volitelný"
+
+msgid "Failed to start"
+msgstr "Spuštění se nezdařilo"
+
+msgid "Keys work as usual. Start the mapper to apply your layouts."
+msgstr "Klávesy fungují jako obvykle. Spusťte mapovač a použijte rozvržení."
+
+msgid "Select a keyboard below to start the mapper."
+msgstr "Chcete-li spustit mapovač, vyberte níže klávesnici."
+
+msgid "Changing a device restarts the mapper."
+msgstr "Změna zařízení restartuje mapovač."
+
+msgid "Auto: known game {}"
+msgstr "Auto: známá hra {}"
+
+msgid "Ignored in fullscreen"
+msgstr "Ignorováno v režimu celé obrazovky"
+
+msgid "Not available in this session."
+msgstr "Není k dispozici v této relaci."
+
+msgid "Steam games"
+msgstr "Steam hry"
+
+msgid ""
+"Turns on while Steam runs a game: Steam starts every game through reaper "
+"SteamLaunch, and game windows have the ID steam_app_<number>."
+msgstr ""
+"Zapne se, když Steam spouští hru: Steam spouští každou hru prostřednictvím "
+"reaper SteamLaunch a herní okna mají ID steam_app_<číslo>."
+
+msgid "Turns on while Steam reports a running game."
+msgstr "Zapne se, když Steam hlásí běžící hru."
+
+msgid "Lutris games"
+msgstr "hry Lutris"
+
+msgid ""
+"Turns on while a game started by Lutris runs: Lutris starts every game "
+"through lutris-wrapper."
+msgstr ""
+"Zapne se, když běží hra zahájená Lutrisem: Lutris spouští každou hru přes "
+"lutris-wrapper."
+
+msgid "Gamescope sessions"
+msgstr "Sezení gamescope"
+
+msgid "Turns on while the active window is a nested gamescope session."
+msgstr "Zapne se, když je aktivní okno vnořenou relací gamescope."
+
+msgid "Games from the Game Bar list"
+msgstr "Hry ze seznamu herního panelu"
+
+msgid "Applications of the Game category"
+msgstr "Aplikace kategorie Hra"
+
+msgid ""
+"Turns on while the active window belongs to an application whose .desktop "
+"file lists the Game category. Launchers are tagged as games too, so they are"
+" skipped."
+msgstr ""
+"Zapne se, když aktivní okno patří aplikaci, jejíž soubor .desktop obsahuje "
+"kategorii Hry. Spouštěče jsou také označeny jako hry, takže jsou přeskočeny."
+
+msgid ""
+"Turns on while the active application declares the Games category in its "
+"Info.plist. Launchers are skipped."
+msgstr ""
+"Zapne se, když aktivní aplikace deklaruje kategorii Hry ve svém Info.plist. "
+"Odpalovací zařízení jsou přeskočena."
+
+msgid "Auto — according to settings"
+msgstr "Auto — podle nastavení"
+
+msgid "Blank"
+msgstr "Prázdný"
+
+msgid "Assign action"
+msgstr "Přiřadit akci"
+
+msgid "Action after {} ms of holding"
+msgstr "Akce po {} ms přidržení"
+
+msgid ""
+"These codes are specific to Left Hand Control, not universal keyboard codes "
+"(e.g. KeyA, ArrowLeft)."
+msgstr ""
+"Tyto kódy jsou specifické pro ovládání levou rukou, nikoli univerzální kódy "
+"klávesnice (např. KeyA, ArrowLeft)."
+
+msgid "While its window is active"
+msgstr "Zatímco jeho okno je aktivní"
+
+msgid "While the process runs"
+msgstr "Zatímco proces běží"
+
+msgid "Counts while a window of the application has the focus."
+msgstr "Počítá, když je aktivní okno aplikace."
+
+msgid ""
+"Counts while a process with this name runs, even without a window or in the "
+"background."
+msgstr ""
+"Počítá, když běží proces s tímto názvem, a to i bez okna nebo na pozadí."
+
+msgid "Application · while its window is active"
+msgstr "Aplikace · když je její okno aktivní"
+
+msgid "Process · while it runs"
+msgstr "Proces · zatímco běží"
+
+msgid "No games added."
+msgstr "Nebyly přidány žádné hry."
+
+msgid ""
+"Game mode turns on while any of these matches. An application is matched by "
+"its ID or process name: the whole name, ignoring case, with * and ? as "
+"wildcards. Steam games have the app ID steam_app_<number>; Proton games are "
+"also found by their .exe name. A window title item matches the active window"
+" whose title contains the text."
+msgstr ""
+"Herní režim se zapne, když některý z těchto zápasů. Aplikaci odpovídá její "
+"ID nebo název procesu: celý název, bez ohledu na malá a velká písmena, s * a"
+" ? jako zástupné znaky. Steam hry mají ID aplikace steam_app_<číslo>; "
+"Protonové hry lze nalézt také podle jejich názvu .exe. Položka názvu okna "
+"odpovídá aktivnímu oknu, jehož nadpis obsahuje text."
+
+msgid ""
+"Game mode stays off while any of these matches, even if a game or another "
+"detector would turn it on."
+msgstr ""
+"Herní režim zůstává vypnutý, když se některý z těchto zápasů shoduje, i když"
+" by ho zapnula hra nebo jiný detektor."
+
+msgid "less than a minute"
+msgstr "méně než minutu"
+
+msgid "{} min"
+msgstr "{} min"
+
+msgid "{} h {} min"
+msgstr "{} h {} min"
+
+msgid "Running for {}"
+msgstr "Běží na {}"
+
+msgid "Stopped unexpectedly"
+msgstr "Nečekaně zastaveno"
+
+msgid "Stopped {} ago after running for {}."
+msgstr "Zastaveno před {} po spuštění pro {}."
+
+msgid "Text input"
+msgstr "Zadávání textu"
+
+msgid ""
+"How text actions in rules and macros are typed. Key remapping and the emoji "
+"popup do not use it."
+msgstr ""
+"Jak se zadávají textové akce v pravidlech a makrech. Přemapování klíčů a "
+"vyskakovací okno emotikony jej nepoužívají."
+
+msgid "Typing method"
+msgstr "Způsob psaní"
+
+msgid "libei + clipboard fallback (recommended)"
+msgstr "libei + záložní schránka (doporučeno)"
+
+msgid "Paste from clipboard"
+msgstr "Vložit ze schránky"
+
+msgid "ydotool"
+msgstr "ydotool"
+
+msgid "xdotool"
+msgstr "xdotool"
+
+msgid ""
+"Types with the current layout, or pastes the whole text when a character is "
+"unavailable. Paste requires clipboard access and support for the paste "
+"shortcut. Preserves clipboard formats and cancels if the destination "
+"changes. Requires portal permission and active-window detection."
+msgstr ""
+"Zadá s aktuálním rozložením nebo vloží celý text, když znak není k "
+"dispozici. Vložení vyžaduje přístup do schránky a podporu pro zkratku pro "
+"vložení. Zachová formáty schránky a zruší se, pokud se změní cíl. Vyžaduje "
+"povolení portálu a detekci aktivního okna."
+
+msgid ""
+"Types only through libei using the current keyboard layout and Caps Lock "
+"state. Skips text with unavailable characters. Requires portal permission "
+"and active-window detection. Cancels if the destination changes."
+msgstr ""
+"Píše pouze přes libei s použitím aktuálního rozložení klávesnice a stavu "
+"Caps Lock. Přeskočí text s nedostupnými znaky. Vyžaduje povolení portálu a "
+"detekci aktivního okna. Zruší se, pokud se změní cíl."
+
+msgid ""
+"Types only through NotifyKeyboardKeycode using the KDE layout and readable "
+"keyboard state. Skips text with unavailable characters. Requires portal "
+"permission and active-window detection. Cancels if the destination changes."
+msgstr ""
+"Píše pouze prostřednictvím NotifyKeyboardKeycode pomocí rozložení KDE a "
+"stavu čitelné klávesnice. Přeskočí text s nedostupnými znaky. Vyžaduje "
+"povolení portálu a detekci aktivního okna. Zruší se, pokud se změní cíl."
+
+msgid ""
+"Pastes with the paste shortcut through the portal. Requires clipboard "
+"access, active-window detection and an app supporting that shortcut. "
+"Preserves all clipboard formats; a new user copy takes precedence. Reports "
+"an error if no text transfer is observed."
+msgstr ""
+"Vloží pomocí zkratky pro vložení přes portál. Vyžaduje přístup do schránky, "
+"detekci aktivních oken a aplikaci podporující tuto zkratku. Zachová všechny "
+"formáty schránky; nová uživatelská kopie má přednost. Pokud není pozorován "
+"přenos textu, hlásí chybu."
+
+msgid "Paste shortcut"
+msgstr "Vložit zkratku"
+
+msgid ""
+"Sent to the focused app to paste the text. Terminals usually need "
+"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
+"Ctrl+V does not paste there."
+msgstr ""
+"Odesláno do vybrané aplikace k vložení textu. Terminály obvykle potřebují "
+"Ctrl+Shift+V: některé z nich vloží výběr myší na Shift+Insert a Ctrl+V tam "
+"nevloží."
+
+msgid ""
+"Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "
+"Reliable for Latin text only. On an error, stops without switching methods."
+msgstr ""
+"Spouští pouze \"ydotool type\". Potřebuje spustit ydotool a jeho službu "
+"ydotoold. Spolehlivé pouze pro latinský text. Při chybě se zastaví bez "
+"přepínání metod."
+
+msgid ""
+"Runs \"xdotool type\" only. Works only in X11 sessions and XWayland windows."
+" On an error, stops without switching methods."
+msgstr ""
+"Spouští pouze \"xdotool type\". Funguje pouze v relacích X11 a oknech "
+"XWayland. Při chybě se zastaví bez přepínání metod."
+
+msgid "ydotool from PATH"
+msgstr "ydotool od společnosti PATH"
+
+msgid "xdotool from PATH"
+msgstr "xdotool od PATH"
+
+msgid ""
+"Each item is compared with the active window. Pick a window from the list "
+"below to fill in the field."
+msgstr ""
+"Každá položka je porovnána s aktivním oknem. Vyberte okno ze seznamu níže a "
+"vyplňte pole."
+
+msgid ""
+"Application: the app ID (Wayland app id or X11 WM_CLASS) or the process "
+"name. The whole name must match, case is ignored, .exe is optional. * stands"
+" for any characters and ? for one, e.g. steam_app_*. The ID is stable, so "
+"prefer it."
+msgstr ""
+"Aplikace: ID aplikace (ID aplikace Wayland nebo X11 WM_CLASS) nebo název "
+"procesu. Celý název se musí shodovat, malá a velká písmena se ignorují, .exe"
+" je volitelný. * znamená jakékoli znaky a ? pro jednoho, např. steam_app_*. "
+"ID je stabilní, tak ho preferujte."
+
+msgid ""
+"Window title: matches when the title contains the text, case is ignored. "
+"With * or ? the pattern must cover the whole title. A title changes with the"
+" open tab or document, and it never matches a process without a window."
+msgstr ""
+"Titulek okna: odpovídá, pokud nadpis obsahuje text, velká a malá písmena se "
+"ignorují. S * nebo ? vzor musí pokrývat celý nadpis. Název se mění s "
+"otevřenou kartou nebo dokumentem a nikdy neodpovídá procesu bez okna."
+
+msgid "Match by"
+msgstr "Zápas podle"
+
+msgid "Process"
+msgstr "Proces"
+
+msgid "Process name, * and ? allowed"
+msgstr "Název procesu, * a ? povoleno"
+
+msgid "App ID, * and ? allowed"
+msgstr "ID aplikace, * a ? povoleno"
+
+msgid ""
+"The item is compared with the names of running processes. Pick one from the "
+"list below to fill in the field."
+msgstr ""
+"Položka je porovnána s názvy běžících procesů. Vyberte jednu ze seznamu níže"
+" a vyplňte pole."
+
+msgid ""
+"Process: the executable name, as the list below shows it. The whole name "
+"must match, case is ignored, .exe is optional. * stands for any characters "
+"and ? for one."
+msgstr ""
+"Proces: název spustitelného souboru, jak jej ukazuje níže uvedený seznam. "
+"Celý název se musí shodovat, malá a velká písmena se ignorují, .exe je "
+"volitelný. * znamená jakékoli znaky a ? pro jednoho."
+
+msgid "Matches {n} running process"
+msgid_plural "Matches {n} running processes"
+msgstr[0] "Odpovídá {n} běžícímu procesu"
+msgstr[1] "Odpovídá {n} běžícím procesům"
+msgstr[2] "Odpovídá {n} běžícím procesům"
+
+msgid "Matches no running process"
+msgstr "Neodpovídá žádnému běžícímu procesu"
+
+msgid ""
+"Many applications run as “{}”, so the name matches all of them. The "
+"application ID is more precise."
+msgstr ""
+"Mnoho aplikací běží jako „{}“, takže název odpovídá všem. ID aplikace je "
+"přesnější."
+
+msgid "When it counts"
+msgstr "Když se to počítá"
+
+msgid "Window titles"
+msgstr "Titulky oken"
+
+msgid "Processes of open windows"
+msgstr "Procesy otevřených oken"
+
+msgid "Shared process"
+msgstr "Sdílený proces"
+
+msgid "Running without a window"
+msgstr "Běh bez okna"
+
+msgid "Type a name to find processes running without a window."
+msgstr "Chcete-li najít procesy běžící bez okna, zadejte název."
+
+msgid "Process · while its window is active"
+msgstr "Proces · když je jeho okno aktivní"
+
+msgid "While the trigger is held"
+msgstr "Zatímco držíte spoušť"
+
+msgid "Press key"
+msgstr "Stiskněte klávesu"
+
+msgid ""
+"Which key stays pressed while you hold the trigger, together with the layer."
+" “Don't press” only switches the layer."
+msgstr ""
+"Která klávesa zůstane stisknutá, když držíte spoušť, spolu s vrstvou. "
+"„Netisknout“ pouze přepne vrstvu."
+
+msgid ""
+"Which key stays pressed while you hold the trigger. “Trigger itself” keeps "
+"the usual behavior of the key."
+msgstr ""
+"Která klávesa zůstane stisknutá, když držíte spoušť. „Spustit samotný“ "
+"zachovává obvyklé chování klíče."
+
+msgid "Trigger itself"
+msgstr "Samotná spoušť"
+
+msgid "Other key…"
+msgstr "Další klíč…"
+
+msgid "When to press"
+msgstr "Kdy stisknout"
+
+msgid "Holds {}"
+msgstr "Drží {}"
+
+msgid "Holds nothing"
+msgstr "Nic nedrží"
+
+msgid "Hold after {} ms"
+msgstr "Podržet po {} ms"
+
+msgid "Stop mapper (restore native keyboard behavior)"
+msgstr "Zastavit mapovač (obnovit chování nativní klávesnice)"
+
+msgid "Select a keyboard device in the settings to start the mapper"
+msgstr "Chcete-li spustit mapovač, vyberte v nastavení zařízení klávesnice"
+
+msgid "Start mapper to intercept keys and apply layouts"
+msgstr "Spusťte mapovač, abyste zachytili klíče a použili rozvržení"
+
+msgid "Current active layout (selected automatically by switching rules)"
+msgstr "Aktuální aktivní rozvržení (vybráno automaticky přepínáním pravidel)"
+
+msgid "Click to change mode (Auto / On / Off)"
+msgstr "Kliknutím změníte režim (Auto / Zapnuto / Vypnuto)"
+
+msgid ""
+"The mapper intercepts keyboard input, applies layers, rules and macros, and "
+"emits output through a virtual device."
+msgstr ""
+"Mapovač zachycuje vstup z klávesnice, aplikuje vrstvy, pravidla a makra a "
+"vydává výstup prostřednictvím virtuálního zařízení."
+
+msgid ""
+"Define how physical keys behave: tap for a key or action, hold to switch "
+"layers, or double-tap for extra shortcuts."
+msgstr ""
+"Definujte, jak se chovají fyzické klávesy: klepnutím zobrazíte klávesu nebo "
+"akci, podržením přepnete vrstvy nebo dvojitým klepnutím získáte další "
+"zkratky."
+
+msgid ""
+"Action performed when the trigger is pressed and released quickly without "
+"holding."
+msgstr "Akce se provádí při rychlém stisknutí a uvolnění spouště bez držení."
+
+msgid ""
+"Action performed when the trigger is pressed twice quickly within the "
+"double-tap timeout."
+msgstr ""
+"Akce provedená při rychlém dvojitém stisknutí spouště během časového limitu "
+"dvojitého klepnutí."
+
+msgid "Show standard QWERTY letter labels for visual reference."
+msgstr "Pro vizuální orientaci ukažte standardní štítky s písmeny QWERTY."
+
+msgid ""
+"Show internal key codes used in Left Hand Control profiles (e.g. KeyA, "
+"ArrowLeft)."
+msgstr ""
+"Zobrazit interní kódy klíče používané v profilech ovládání levou rukou "
+"(např. KeyA, ArrowLeft)."
+
+msgid "Hold detection"
+msgstr "Detekce podržení"
+
+msgid "When a key becomes a hold"
+msgstr "Když se klíč stane držením"
+
+msgid ""
+"Decides when a rule key that is still down counts as a hold if you press "
+"another key meanwhile. Applies to all rules."
+msgstr ""
+"Rozhoduje, kdy se klávesa pravidla, která je stále dole, počítá jako "
+"pozastavení, pokud mezitím stisknete jinou klávesu. Platí pro všechna "
+"pravidla."
+
+msgid ""
+"After another key is released: the key becomes a hold once another key is "
+"pressed and released while it is down, or when the hold threshold passes. "
+"Fast rolls while typing stay taps."
+msgstr ""
+"Po uvolnění další klávesy: klávesa se stane podržením, jakmile je stisknuta "
+"a uvolněna jiná klávesa, když je stisknutá, nebo když překročí práh "
+"podržení. Rychlé rolování při psaní klepne."
+
+msgid ""
+"As soon as another key is pressed: reacts faster, but fast typing can "
+"trigger the hold by mistake."
+msgstr ""
+"Jakmile je stisknuta další klávesa: Reaguje rychleji, ale rychlé psaní může "
+"omylem spustit přidržení."
+
+msgid "After another key is released (recommended)"
+msgstr "Po uvolnění dalšího klíče (doporučeno)"
+
+msgid "As soon as another key is pressed"
+msgstr "Jakmile je stisknuto další tlačítko"
+
+msgid ""
+"Used by rules that leave the field empty. A rule can set its own value in "
+"its advanced options."
+msgstr ""
+"Používá se pravidly, která ponechávají pole prázdné. Pravidlo může ve svých "
+"pokročilých možnostech nastavit vlastní hodnotu."
+
+msgid "Hold threshold, ms"
+msgstr "Držte práh, slečno"
+
+msgid ""
+"How long to hold a rule key before it counts as a hold: its layer or hold "
+"action. Released earlier, the key runs its tap action."
+msgstr ""
+"Jak dlouho podržet klíč pravidla, než se započítá jako pozastavení: jeho "
+"vrstva nebo akce podržení. Klávesa, která byla uvolněna dříve, spustí akci "
+"klepnutí."
+
+msgid ""
+"Lower: layers turn on faster, but fast typing may trigger them by mistake. "
+"Higher: fewer false holds, but a longer wait. Usually 150–250 ms."
+msgstr ""
+"Nižší: vrstvy se zapínají rychleji, ale rychlé psaní je může spustit omylem."
+" Vyšší: méně falešných držení, ale delší čekání. Obvykle 150–250 ms."
+
+msgid "Standard value: {} ms."
+msgstr "Standardní hodnota: {} ms."
+
+msgid "Long hold, ms"
+msgstr "Vydržte, slečno"
+
+msgid ""
+"How long to keep holding a rule key before its long-hold action runs once. "
+"Applies to rules whose hold runs an action instead of a layer."
+msgstr ""
+"Jak dlouho držet klíč pravidla, než se jednou spustí jeho dlouhé podržení. "
+"Vztahuje se na pravidla, jejichž pozastavení spouští akci namísto vrstvy."
+
+msgid "Double-tap window, ms"
+msgstr "Poklepejte na okno, ms"
+
+msgid ""
+"A second tap within this time after the first release counts as a double "
+"tap."
+msgstr ""
+"Druhé klepnutí během této doby po prvním uvolnění se počítá jako dvojité "
+"klepnutí."
+
+msgid ""
+"A single tap on a key with a double-tap action runs only after this window "
+"ends, so a large value makes such keys feel slow. Keys without a double-tap "
+"action are not delayed."
+msgstr ""
+"Jediné klepnutí na klávesu s akcí dvojitého klepnutí se spustí až po "
+"skončení tohoto okna, takže velká hodnota způsobuje, že jsou takové klávesy "
+"pomalé. Klávesy bez akce dvojitého klepnutí nejsou zpožděny."
+
+msgid ""
+"Used by macros that leave the field empty. A macro can set its own value on "
+"the Macros page."
+msgstr ""
+"Používají makra, která ponechávají pole prázdné. Makro může nastavit svou "
+"vlastní hodnotu na stránce Makra."
+
+msgid ""
+"Pause between consecutive steps of a macro. Increase it if an application "
+"misses keystrokes."
+msgstr ""
+"Pauza mezi po sobě jdoucími kroky makra. Zvyšte ji, pokud aplikace vynechá "
+"stisknutí kláves."
+
+msgid "Simultaneous presses"
+msgstr "Simultánní lisy"
+
+msgid ""
+"For rules triggered by several keys pressed together, such as KeyJ+KeyK. All"
+" keys must go down within this time, in any order. Until then the first key "
+"is held back; if the combination does not complete, it is typed as usual. "
+"Modifiers are never held back."
+msgstr ""
+"Pro pravidla spouštěná několika stisknutými klávesami, například KeyJ+KeyK. "
+"Všechny klíče musí během této doby spadnout v libovolném pořadí. Do té doby "
+"je první klíč zadržen; pokud se kombinace nedokončí, zapíše se jako obvykle."
+" Modifikátory se nikdy nedrží zpátky."
+
+msgid ""
+"Higher: the combination is easier to hit, but typing with these keys lags "
+"slightly. Applies to all rules; a rule cannot override it."
+msgstr ""
+"Vyšší: kombinace se snáze trefí, ale psaní pomocí těchto kláves mírně "
+"pokulhává. Platí pro všechna pravidla; pravidlo jej nemůže přepsat."
+
+msgid ""
+"Wait between pressing modifiers (Shift, Ctrl, …) and the main key of a macro"
+" step. Increase it if an application receives the shortcut without its "
+"modifier. Default for macros that leave the field empty."
+msgstr ""
+"Počkejte mezi stisknutím modifikátorů (Shift, Ctrl, …) a hlavní klávesy "
+"kroku makra. Zvyšte jej, pokud aplikace obdrží zástupce bez jeho "
+"modifikátoru. Výchozí pro makra, která ponechávají pole prázdné."
+
+msgid "Enter a long hold from 100 to 60000 ms."
+msgstr "Zadejte dlouhou výdrž od 100 do 60 000 ms."
+
+msgid "Long hold after {} ms"
+msgstr "Dlouhé přidržení po {} ms"
+
+msgid ""
+"Released earlier, the trigger counts as a tap; held longer, as a hold. Empty"
+" uses the default from Settings: {} ms."
+msgstr ""
+"Po uvolnění dříve se spoušť počítá jako klepnutí; držel déle, jako držení. "
+"Prázdné používá výchozí nastavení z Nastavení: {} ms."
+
+msgid ""
+"How long to keep holding before the action runs. Empty uses the default from"
+" Settings: {} ms."
+msgstr ""
+"Jak dlouho vydržet, než akce proběhne. Prázdné používá výchozí nastavení z "
+"Nastavení: {} ms."
+
+msgid ""
+"Longest pause between two taps. Empty uses the default from Settings: {} ms."
+msgstr ""
+"Nejdelší pauza mezi dvěma klepnutími. Prázdné používá výchozí nastavení z "
+"Nastavení: {} ms."
+
+msgid "Auto: {} is not counted as a game (built-in list)"
+msgstr "Auto: {} se nepočítá jako hra (vestavěný seznam)"
+
+msgid ""
+"These sources can take another application for a game, so each skips a "
+"built-in list of applications."
+msgstr ""
+"Tyto zdroje mohou mít jinou aplikaci pro hru, takže každý přeskočí vestavěný"
+" seznam aplikací."
+
+msgid ""
+"Turns on while a program that Windows recognized as a game (the Game Bar "
+"list) runs. Launchers are listed there too, so they are skipped."
+msgstr ""
+"Zapne se, když je spuštěn program, který systém Windows rozpoznal jako hru "
+"(seznam herního panelu). Spouštěče jsou tam také uvedeny, takže jsou "
+"přeskočeny."
+
+msgid "Launchers and game tools — not counted as games"
+msgstr "Spouštěče a herní nástroje – nepočítají se jako hry"
+
+msgid ""
+"Decides when a dual-role key counts as a hold if another key is pressed. "
+"Rules can override this default in advanced options. Chord detection is "
+"configured separately."
+msgstr ""
+"Rozhoduje, kdy se dvourolová klávesa počítá jako přidržení, pokud je "
+"stisknuta jiná klávesa. Pravidla mohou toto výchozí nastavení přepsat v "
+"pokročilých možnostech. Detekce akordů se konfiguruje samostatně."
+
+msgid "After another key is released (better for typing)"
+msgstr "Po uvolnění další klávesy (lepší pro psaní)"
+
+msgid ""
+"As soon as another key is pressed: useful for dedicated layer or modifier "
+"keys. Reacts faster, but overlapping letters while typing can trigger the "
+"hold by mistake."
+msgstr ""
+"Jakmile je stisknuta další klávesa: užitečné pro vyhrazenou vrstvu nebo "
+"modifikační klávesy. Reaguje rychleji, ale překrývající se písmena při psaní"
+" mohou způsobit zablokování omylem."
+
+msgid "Default from Settings: {}"
+msgstr "Výchozí z Nastavení: {}"
+
+msgid "after another key is released"
+msgstr "po uvolnění dalšího klíče"
+
+msgid "as soon as another key is pressed"
+msgstr "jakmile je stisknuto další tlačítko"
+
+msgid ""
+"Overrides the default hold detection for this rule. Use release detection "
+"for typing keys and press detection for dedicated layer or modifier keys. "
+"This does not change chord detection."
+msgstr ""
+"Přepíše výchozí detekci blokování pro toto pravidlo. Použijte detekci "
+"uvolnění pro psaní kláves a detekci stisknutí pro vyhrazené klávesy vrstvy "
+"nebo modifikační klávesy. Detekce akordů se tím nemění."
+
+msgid "Cannot list input devices: {}"
+msgstr "Nelze vypsat vstupní zařízení: {}"
+
+msgid "Keyboard interception is not implemented on this operating system."
+msgstr "Zachycování klávesnice není v tomto operačním systému implementováno."
+
+msgid "Defaults"
+msgstr "Výchozí"
+
+msgid "Shared by all rules"
+msgstr "Sdíleno všemi pravidly"
+
+msgid "Hold threshold"
+msgstr "Držte práh"
+
+msgid "Long hold"
+msgstr "Dlouhé držení"
+
+msgid "Double-tap window"
+msgstr "Poklepejte na okno"
+
+msgid "Reset to {} ms"
+msgstr "Resetovat na {} ms"
+
+msgid "Automatic game detection"
+msgstr "Automatická detekce hry"
+
+msgid "Works only in Auto mode."
+msgstr "Funguje pouze v automatickém režimu."
+
+msgid "System signals"
+msgstr "Systémové signály"
+
+msgid "Launchers"
+msgstr "Odpalovací zařízení"
+
+msgid "Heroic games"
+msgstr "Hrdinské hry"
+
+msgid ""
+"Turns on while a game started by Heroic Games Launcher runs (Epic, GOG, "
+"Amazon and added games): Heroic passes HEROIC_APP_NAME to every game it "
+"starts."
+msgstr ""
+"Zapne se, když běží hra spuštěná aplikací Heroic Games Launcher (Epic, GOG, "
+"Amazon a přidané hry): Heroic předává HEROIC_APP_NAME každé hře, kterou "
+"spustí."
+
+msgid "Games run through umu-launcher"
+msgstr "Hry běží přes umu-launcher"
+
+msgid ""
+"Turns on while a game runs through umu-run. Heroic, Lutris, Faugus Launcher "
+"and other launchers use it to start Windows games with Proton."
+msgstr ""
+"Zapne se, když hra běží přes umu-run. Heroic, Lutris, Faugus Launcher a "
+"další launchery jej používají ke spouštění her pro Windows s Protonem."
+
+msgid "Guesses — can be wrong"
+msgstr "Odhady - mohou se mýlit"
+
+msgid "Your rules"
+msgstr "Vaše pravidla"
+
+msgid ""
+"“Never a game” wins over everything else, automatic detection included."
+msgstr "„Nikdy hra“ vítězí nad vším ostatním, včetně automatické detekce."
+
+msgid "Always a game"
+msgstr "Vždy hra"
+
+msgid "Never a game"
+msgstr "Nikdy žádná hra"
+
+msgid ""
+"Built-in list. To count one of these anyway, add it to Always a game under "
+"Your rules."
+msgstr ""
+"Vestavěný seznam. Chcete-li jednu z nich přesto započítat, přidejte ji do "
+"Vždy hry podle vašich pravidel."
+
+msgid "Hold"
+msgstr "Podržení"
+
+msgid "Don't press"
+msgstr "Netlačte"
+
+msgid "{} — change…"
+msgstr "{} — změnit…"
+
+msgid "Choose another key above to set when it is pressed."
+msgstr ""
+"Vyberte jinou klávesu výše, kterou chcete nastavit, když ji stisknete."
+
+msgid "Assign a double-tap action to the rule to change this window."
+msgstr ""
+"Chcete-li toto okno změnit, přiřaďte pravidlu akci dvojitého klepnutí."
+
+msgid "Hold on other key release"
+msgstr "Podržte další uvolnění klíče"
+
+msgid "Hold on other key press"
+msgstr "Podržte stisknuté další tlačítko"
+
+msgid "Reset"
+msgstr "Obnovit"
+
+msgid "Return all options in this dialog to their defaults"
+msgstr "Vraťte všechny možnosti v tomto dialogu na výchozí hodnoty"
+
+msgid "Macro time limit"
+msgstr "Makro časový limit"
+
+msgid ""
+"A macro still running after this time is stopped and counts as finished. A "
+"macro started while another one runs waits for it; up to 3 runs can wait, "
+"further presses are ignored."
+msgstr ""
+"Makro, které je po této době stále spuštěné, se zastaví a počítá se jako "
+"dokončené. Makro spuštěné, zatímco jiné běží, na něj čeká; mohou čekat až 3 "
+"běhy, další stisknutí jsou ignorována."
+
+msgid "Global shortcuts registered in this KDE session:"
+msgstr "Globální zkratky registrované v této relaci KDE:"
+
+msgid ""
+"The list is read from the KDE global shortcut service (kglobalaccel): KWin, "
+"Plasma and applications register their actions there. The chosen action is "
+"invoked as is, as if its shortcut were pressed, even when no keys are "
+"assigned to it. Which actions exist and how they behave depends on the "
+"Plasma version and installed applications, so Left Hand Control does not "
+"guarantee them. Common window and desktop actions that also work on other "
+"platforms are in System actions."
+msgstr ""
+"Seznam je načten z globální zkratkové služby KDE (kglobalaccel): KWin, "
+"Plasma a aplikace tam registrují své akce. Vybraná akce se vyvolá tak, jak "
+"je, jako by byla stisknuta její zkratka, i když k ní nejsou přiřazeny žádné "
+"klávesy. Jaké akce existují a jak se chovají, závisí na plazmové verzi a "
+"nainstalovaných aplikacích, takže ovládání levou rukou je nezaručuje. Běžné "
+"akce oken a plochy, které fungují i ​​na jiných platformách, jsou v části "
+"Systémové akce."
+
+msgid "Hold key or combination"
+msgstr "Podržte klávesu nebo kombinaci"
+
+msgid ""
+"The key or combination stays pressed until you release the trigger. Choose "
+"modifiers plus one main key, for example Ctrl+KeyC."
+msgstr ""
+"Klávesa nebo kombinace zůstane stisknutá, dokud neuvolníte spoušť. Vyberte "
+"modifikátory plus jednu hlavní klávesu, například Ctrl+KeyC."
+
+msgid "Not used when holding performs a long-hold action."
+msgstr "Nepoužívá se, když přidržení provádí akci dlouhého přidržení."
+
+msgid "Other key or combination…"
+msgstr "Jiný klíč nebo kombinace…"
+
+msgid "Hold detection when another key is pressed"
+msgstr "Podržení detekce při stisknutí jiné klávesy"
+
+msgid "Used for single-key triggers without a long-hold action."
+msgstr "Používá se pro spouštěče s jednou klávesou bez dlouhého podržení."
+
+msgid "Long-hold threshold, ms"
+msgstr "Dlouhý zádržný práh, ms"
+
+msgid "Used when a long-hold action is selected."
+msgstr "Používá se, když je vybrána akce dlouhého podržení."
+
+msgid "Double-tap interval, ms"
+msgstr "Interval poklepání, ms"
+
+msgid "Double-tap actions are available only for single-key triggers."
+msgstr ""
+"Akce dvojitého klepnutí jsou k dispozici pouze pro spouštěče s jednou "
+"klávesou."
+
+msgid "Applies when a double-tap action is assigned."
+msgstr "Platí, když je přiřazena akce dvojitého klepnutí."
+
+msgid "Delete trigger"
+msgstr "Smazat spoušť"
+
+msgid "Delete trigger?"
+msgstr "Smazat spouštěč?"
+
+msgid ""
+"The trigger and all its assigned actions will be removed from the current "
+"layout."
+msgstr ""
+"Spouštěč a všechny jemu přiřazené akce budou odstraněny z aktuálního "
+"rozvržení."
+
+msgid "Reset {} to default"
+msgstr "Resetujte {} na výchozí"
+
+msgid "Holding activates layer: {}"
+msgstr "Podržením se aktivuje vrstva: {}"
+
+msgid "Holding performs a long-hold action."
+msgstr "Přidržení provede akci dlouhého přidržení."
+
+msgid "Holding keeps a key or combination pressed."
+msgstr "Přidržením podržíte klávesu nebo kombinaci stisknutou."
+
+msgid "Paths"
+msgstr "Cesty"
+
+msgid "Unknown layer key at \"{}\"."
+msgstr "Neznámý klíč vrstvy na \"{}\"."
+
+msgid "Invalid layer action at \"{}\"."
+msgstr "Neplatná akce vrstvy v \"{}\"."
+
+msgid "Invalid macro at \"{}\"."
+msgstr "Neplatné makro na \"{}\"."
+
+msgid "Invalid menu action at \"{}\"."
+msgstr "Neplatná akce nabídky na \"{}\"."
+
+msgid "Invalid timing at \"{}\"."
+msgstr "Neplatné načasování na \"{}\"."
+
+msgid "Invalid window condition at \"{}\"."
+msgstr "Neplatný stav okna na \"{}\"."
+
+msgid "Unsupported rule combination at \"{}\"."
+msgstr "Nepodporovaná kombinace pravidel na \"{}\"."
+
+msgid "Invalid macro step at \"{}\"."
+msgstr "Neplatný krok makra na \"{}\"."
+
+msgid "Macro call cycle at \"{}\"."
+msgstr "Cyklus volání makra v \"{}\"."
+
+msgid "A timing value is outside the range shown in Settings."
+msgstr "Hodnota časování je mimo rozsah uvedený v Nastavení."
+
+msgid "Keep modifiers held until the layer is released"
+msgstr "Držte modifikátory, dokud se vrstva neuvolní"
+
+msgid ""
+"For a combination such as Alt+Tab: Alt stays pressed while you press the key"
+" again and is released together with the layer key, so the window switcher "
+"stays open."
+msgstr ""
+"Pro kombinaci, jako je Alt+Tab: Alt zůstane stisknutý, dokud klávesu znovu "
+"stisknete, a uvolní se společně s klávesou vrstvy, takže přepínač oken "
+"zůstane otevřený."
+
+msgid ""
+"Cannot list input devices. Check device access and see the application log."
+msgstr ""
+"Nelze vypsat vstupní zařízení. Zkontrolujte přístup k zařízení a prohlédněte"
+" si protokol aplikace."
+
+msgid ""
+"Configuration is unavailable. Check the configuration files and see the "
+"application log."
+msgstr ""
+"Konfigurace není k dispozici. Zkontrolujte konfigurační soubory a "
+"prohlédněte si protokol aplikace."
+
+msgid "Popup menus are unavailable. Try opening the menu again."
+msgstr "Vyskakovací nabídky nejsou k dispozici. Zkuste znovu otevřít nabídku."
+
+msgid "Popup menu failed. Try opening the menu again."
+msgstr "Vyskakovací nabídka se nezdařila. Zkuste znovu otevřít nabídku."
+
+msgid ""
+"The text was not typed: the typing method is unavailable. Restart the mapper"
+" to try again."
+msgstr ""
+"Text nebyl napsán: metoda psaní není k dispozici. Restartujte mapovač a "
+"zkuste to znovu."
+
+msgid ""
+"The text was not typed: safe clipboard access failed. See the application "
+"log."
+msgstr ""
+"Text nebyl zadán: bezpečný přístup do schránky se nezdařil. Viz protokol "
+"aplikace."
+
+msgid ""
+"The text was not typed: the input tool failed. See the application log."
+msgstr ""
+"Text nebyl zadán: nástroj pro zadávání textu selhal. Viz protokol aplikace."
+
+msgid "Changes applied, but the mapper was not updated. Restart the mapper."
+msgstr ""
+"Změny byly použity, ale mapovač nebyl aktualizován. Restartujte mapovač."
+
+msgid "The operation failed. See the application log."
+msgstr "Operace se nezdařila. Viz protokol aplikace."
+
+msgid "The action failed. See the application log."
+msgstr "Akce se nezdařila. Viz protokol aplikace."
+
+msgid ""
+"Cannot start the mapper. Check the keyboard and device access. See the "
+"application log."
+msgstr ""
+"Nelze spustit mapovač. Zkontrolujte klávesnici a přístup k zařízení. Viz "
+"protokol aplikace."
+
+msgid "Mapper is running, but an error occurred. See the application log."
+msgstr "Mapper je spuštěn, ale došlo k chybě. Viz protokol aplikace."
+
+msgid "Mapper stopped because of an error. See the application log."
+msgstr "Mapper se zastavil kvůli chybě. Viz protokol aplikace."
+
+msgid ""
+"Cannot read or save the configuration. Check file access and see the "
+"application log."
+msgstr ""
+"Nelze přečíst nebo uložit konfiguraci. Zkontrolujte přístup k souboru a "
+"prohlédněte si protokol aplikace."
+
+msgid "Cannot parse the configuration file. See the application log."
+msgstr "Nelze analyzovat konfigurační soubor. Viz protokol aplikace."
+
+msgid "The configuration contains invalid values. See the application log."
+msgstr "Konfigurace obsahuje neplatné hodnoty. Viz protokol aplikace."
+
+msgid "The action has invalid syntax."
+msgstr "Akce má neplatnou syntaxi."
+
+msgid "Pauses can only be used in macro steps."
+msgstr "Pauzy lze použít pouze v krocích makra."
+
+msgid "The selected macro no longer exists."
+msgstr "Vybrané makro již neexistuje."
+
+msgid "The selected command no longer exists."
+msgstr "Vybraný příkaz již neexistuje."
+
+msgid "Unknown system action."
+msgstr "Neznámá akce systému."
+
+msgid "Unknown application action."
+msgstr "Neznámá akce aplikace."
+
+msgid ""
+"Unknown action type. It may come from a newer version of the application."
+msgstr "Neznámý typ akce. Může pocházet z novější verze aplikace."
+
+msgid "Layout: {}"
+msgstr "Rozložení: {}"
+
+msgid "Select All"
+msgstr "Vybrat vše"
+
+msgid "Move line down"
+msgstr "Posuňte řádek dolů"
+
+msgid "Down + End"
+msgstr "Dolů + Konec"
+
+msgid "Up + End"
+msgstr "Nahoru + konec"
+
+msgid "Up 5 times"
+msgstr "5krát nahoru"
+
+msgid "Duplicate line"
+msgstr "Duplicitní řádek"
+
+msgid "Right + Space"
+msgstr "Vpravo + mezerník"
+
+msgid "Empty line below"
+msgstr "Prázdný řádek níže"
+
+msgid "Cut word right from center"
+msgstr "Vyjmout slovo přímo od středu"
+
+msgid "Copy word right from center"
+msgstr "Zkopírujte slovo přímo od středu"
+
+msgid "Paste at line above"
+msgstr "Vložte na řádek výše"
+
+msgid "Replace word with buffer"
+msgstr "Nahraďte slovo bufferem"
+
+msgid "Down + Home"
+msgstr "Dolů + Domů"
+
+msgid "Up + Home"
+msgstr "Nahoru + Domů"
+
+msgid "Down 5 times"
+msgstr "5x dolů"
+
+msgid "Paste at line bottom"
+msgstr "Vložte do spodní části řádku"
+
+msgid "Cut to start"
+msgstr "Začněte střihem"
+
+msgid "Cut to end"
+msgstr "Střih na konec"
+
+msgid "Cut line content"
+msgstr "Vyjmout obsah řádku"
+
+msgid "Cut and remove line"
+msgstr "Odřízněte a odstraňte čáru"
+
+msgid "Select 5 lines up"
+msgstr "Vyberte 5 řádků nahoru"
+
+msgid "Copy to start"
+msgstr "Začněte kopírováním"
+
+msgid "Copy to end"
+msgstr "Kopírovat na konec"
+
+msgid "Copy line"
+msgstr "Kopírovat řádek"
+
+msgid "Select whole line"
+msgstr "Vyberte celý řádek"
+
+msgid "Select word right from center"
+msgstr "Vyberte slovo přímo od středu"
+
+msgid "Replace to start with buffer"
+msgstr "Nahraďte pro začátek vyrovnávací pamětí"
+
+msgid "Replace to end with buffer"
+msgstr "Nahraďte na konec bufferem"
+
+msgid "Replace line with buffer"
+msgstr "Nahraďte linku pufrem"
+
+msgid "Select 5 lines down"
+msgstr "Vyberte 5 řádků dolů"
+
+msgid "Remove trigger"
+msgstr "Odstraňte spoušť"
+
+msgid "Refresh list"
+msgstr "Obnovit seznam"
+
+msgid "Remove item"
+msgstr "Odebrat položku"
+
+msgid "Save as or reset changes"
+msgstr "Uložit jako nebo resetovat změny"
+
+msgid "Edit: {}"
+msgstr "Edit: {}"
+
+msgid "Save (Enter)"
+msgstr "Uložit (Enter)"
+
+msgid "Save (Ctrl+Enter)"
+msgstr "Uložit (Ctrl+Enter)"
+
+msgid "Cancel (Esc)"
+msgstr "Zrušit (Esc)"
+
+msgid "Use the default from Settings: {} ms"
+msgstr "Použijte výchozí nastavení z Nastavení: {} ms"
+
+msgid ""
+"Opened by the app:showQuickMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold any "
+"action: a shortcut, macro, shell command or system action."
+msgstr ""
+"Otevřeno aplikací:showQuickMenuN akce, kde N je pozice stránky: změna pořadí"
+" stránek změní stránku, kterou klávesa otevře. Každá buňka může obsahovat "
+"jakoukoli akci: zkratku, makro, příkaz shellu nebo systémovou akci."
+
+msgid ""
+"In the popup, click a cell or press its key: the cells follow the keyboard "
+"rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number."
+msgstr ""
+"Ve vyskakovacím okně klikněte na buňku nebo stiskněte její klávesu: buňky "
+"následují řádky klávesnice Q–T, A–G a Z–B. Karta přepíná stránky; číslice "
+"otevírají stránku podle jejího čísla."
+
+msgid "Waiting for keyboard"
+msgstr "Čekání na klávesnici"

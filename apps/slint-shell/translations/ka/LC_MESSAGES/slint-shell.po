@@ -1,0 +1,3596 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Left Hand Control\n"
+"PO-Revision-Date: 2026-10-23 00:00+0000\n"
+"Last-Translator: Machine translation; review welcome\n"
+"Language-Team: Georgian\n"
+"Language: ka\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+
+msgid "Action saved"
+msgstr "მოქმედება შენახულია"
+
+msgid "Cancel"
+msgstr "გაუქმება"
+
+msgid "Increase"
+msgstr "გაზრდა"
+
+msgid "Decrease"
+msgstr "შემცირება"
+
+msgid "Configuration loaded: {n} rule"
+msgid_plural "Configuration loaded: {n} rules"
+msgstr[0] "კონფიგურაცია ჩაიტვირთა: {n} წესი"
+msgstr[1] "ჩატვირთულია კონფიგურაცია: {n} წესი"
+
+msgid "Configuration saved: {n} rule"
+msgid_plural "Configuration saved: {n} rules"
+msgstr[0] "კონფიგურაცია შენახულია: {n} წესი"
+msgstr[1] "კონფიგურაცია შენახულია: {n} წესი"
+
+msgid "Configuration unavailable: {}"
+msgstr "კონფიგურაცია მიუწვდომელია: {}"
+
+msgid "Delay: an integer from 1 to 10000 ms"
+msgstr "დაყოვნება: მთელი რიცხვი 1-დან 10000 ms-მდე"
+
+msgid "Device saved: {}"
+msgstr "მოწყობილობა შენახულია: {}"
+
+msgid "Emoji"
+msgstr "Emoji"
+
+msgid "Tab · {}/{}"
+msgstr "Tab · {}/{}"
+
+msgid "Enter non-empty text"
+msgstr "შეიყვანეთ ცარიელი ტექსტი"
+
+msgid "Key {} only has conditional or layer rules; edit it in the full editor"
+msgstr ""
+"გასაღები {} აქვს მხოლოდ პირობითი ან ფენის წესები; შეცვალეთ იგი სრულ "
+"რედაქტორში"
+
+msgid "Keyboard"
+msgstr "კლავიატურა"
+
+msgid "Keyboard device"
+msgstr "კლავიატურის მოწყობილობა"
+
+msgid "Keyboard layout"
+msgstr "კლავიატურის განლაგება"
+
+msgid "Load a valid configuration before starting the mapper"
+msgstr "ჩატვირთეთ სწორი კონფიგურაცია რუკების გაშვებამდე"
+
+msgid "Mapper is running"
+msgstr "Mapper მუშაობს"
+
+msgid "Mapper is running: {}"
+msgstr "Mapper მუშაობს: {}"
+
+msgid "Mapper is starting…"
+msgstr "Mapper იწყება…"
+
+msgid "Mapper is stopped"
+msgstr "Mapper შეჩერებულია"
+
+msgid "Mapper is stopped: {}"
+msgstr "Mapper შეჩერებულია: {}"
+
+msgid "Quick actions"
+msgstr "სწრაფი მოქმედებები"
+
+msgid "Quit"
+msgstr "გასვლა"
+
+msgid "Settings"
+msgstr "პარამეტრები"
+
+msgid "Mapper on / off"
+msgstr "Mapper ჩართვა/გამორთვა"
+
+msgid "Switch to desktop {n}"
+msgstr "გადართეთ დესკტოპზე {n}"
+
+msgid "Save"
+msgstr "შენახვა"
+
+msgid "Changes applied, but the mapper was not updated: {}"
+msgstr "ცვლილებები განხორციელდა, მაგრამ რუკატორი არ განახლდა: {}"
+
+msgid "Select a key to assign an action."
+msgstr "აირჩიეთ გასაღები მოქმედების დასანიშნად."
+
+msgid "Select a keyboard device in the settings"
+msgstr "აირჩიეთ კლავიატურის მოწყობილობა პარამეტრებში"
+
+msgid "Select a system action"
+msgstr "აირჩიეთ სისტემის მოქმედება"
+
+msgid "Spell popup process unavailable: {}"
+msgstr "მართლწერის ამომხტარი პროცესი მიუწვდომელია: {}"
+
+msgid "Spell worker is not running"
+msgstr "მართლწერის მუშაკი არ მუშაობს"
+
+msgid "Spell worker is restarting"
+msgstr "მართლწერის მუშაკი გადაიტვირთება"
+
+msgid "Spell worker: restart limit exceeded (3 per minute)"
+msgstr "მართლწერის მუშაკი: გადატვირთვის ლიმიტი გადააჭარბა (3 წუთში)"
+
+msgid "Spell worker: {}"
+msgstr "მართლწერის მუშაკი: {}"
+
+msgid "Stop capture"
+msgstr "შეაჩერე გადაღება"
+
+msgid "System"
+msgstr "სისტემა"
+
+msgid "Text"
+msgstr "ტექსტი"
+
+msgid "The configuration changed since editing started; repeat the change"
+msgstr ""
+"რედაქტირების დაწყების შემდეგ კონფიგურაცია შეიცვალა; გაიმეორეთ ცვლილება"
+
+msgid "Unknown action type"
+msgstr "უცნობი მოქმედების ტიპი"
+
+msgid "Left Hand Control"
+msgstr "Left Hand Control"
+
+msgid "Layouts"
+msgstr "განლაგება"
+
+msgid "New layout name"
+msgstr "განლაგების ახალი სახელი"
+
+msgid "Mapper"
+msgstr "კლავიშების გადანაწილება"
+
+msgid "Dark"
+msgstr "ბნელი"
+
+msgid "Light"
+msgstr "სინათლე"
+
+msgid "Refresh devices"
+msgstr "განაახლეთ მოწყობილობები"
+
+msgid "Mouse device path"
+msgstr "მაუსის მოწყობილობის ბილიკი"
+
+msgid "Optional device path"
+msgstr "არჩევითი მოწყობილობის ბილიკი"
+
+msgid "General"
+msgstr "გენერალი"
+
+msgid "Appearance"
+msgstr "გარეგნობა"
+
+msgid "Language"
+msgstr "ენა"
+
+msgid "Automatic"
+msgstr "ავტომატური"
+
+msgid "Key behavior"
+msgstr "საკვანძო ქცევა"
+
+msgid "Game mode"
+msgstr "თამაშის რეჟიმი"
+
+msgid "Use GameMode daemon"
+msgstr "გამოიყენეთ GameMode დემონი"
+
+msgid "Detect fullscreen"
+msgstr "სრული ეკრანის აღმოჩენა"
+
+msgid "ydotool path"
+msgstr "ydotool გზა"
+
+msgid "xdotool path"
+msgstr "xdotool გზა"
+
+msgid "Settings directory: "
+msgstr "პარამეტრების დირექტორია:"
+
+msgid "Layouts directory: "
+msgstr "განლაგების დირექტორია:"
+
+msgid "Save settings"
+msgstr "პარამეტრების შენახვა"
+
+msgid "Settings saved"
+msgstr "პარამეტრები შენახულია"
+
+msgid "Enter a timeout from 50 to 1000 milliseconds"
+msgstr "შეიყვანეთ დრო 50-დან 1000 მილიწამამდე"
+
+msgid "Rules"
+msgstr "წესები"
+
+msgid "Remove"
+msgstr "ამოღება"
+
+msgid "Move up"
+msgstr "ზევით გადაადგილება"
+
+msgid "Move down"
+msgstr "ქვევით გადაადგილება"
+
+msgid "Enabled"
+msgstr "ჩართულია"
+
+msgid "Trigger key"
+msgstr "ტრიგერის გასაღები"
+
+msgid "Tap action"
+msgstr "შეეხეთ მოქმედებას"
+
+msgid "Layout conditions (comma separated)"
+msgstr "განლაგების პირობები (მძიმით გამოყოფილი)"
+
+msgid "App whitelist (comma separated)"
+msgstr "აპების თეთრი სია (მძიმით გამოყოფილი)"
+
+msgid "App blacklist (comma separated)"
+msgstr "აპების შავი სია (მძიმით გამოყოფილი)"
+
+msgid "Isolate"
+msgstr "იზოლირება"
+
+msgid "Hold for"
+msgstr "დაიჭირე"
+
+msgid "Swallow tap"
+msgstr "მოკლე დაჭერის დაბლოკვა"
+
+msgid "Swallow hold"
+msgstr "ხანგრძლივი დაჭერის დაბლოკვა"
+
+msgid "New layer name"
+msgstr "ახალი ფენის სახელი"
+
+msgid "Create layer"
+msgstr "ფენის შექმნა"
+
+msgid "Rules and triggers"
+msgstr "წესები და ტრიგერები"
+
+msgid "Define how physical keys activate layers or run actions."
+msgstr ""
+"განსაზღვრეთ, როგორ ააქტიურებენ ფიზიკური კლავიშები ფენებს ან აწარმოებენ "
+"მოქმედებებს."
+
+msgid "Add rule"
+msgstr "წესის დამატება"
+
+msgid "Not set"
+msgstr "არ არის დაყენებული"
+
+msgid "Layer (hold)"
+msgstr "ფენა (შეკავება)"
+
+msgid "Double-tap action"
+msgstr "ორმაგი შეხების მოქმედება"
+
+msgid "Hold button"
+msgstr "დააჭირეთ ღილაკს"
+
+msgid "Default"
+msgstr "ნაგულისხმევი"
+
+msgid "Advanced"
+msgstr "გაფართოებული"
+
+msgid "Choose trigger key"
+msgstr "აირჩიეთ ტრიგერის გასაღები"
+
+msgid "Choose layer"
+msgstr "აირჩიეთ ფენა"
+
+msgid "Conditions"
+msgstr "პირობები"
+
+msgid "Advanced rule options"
+msgstr "გაფართოებული წესების პარამეტრები"
+
+msgid "Choose action"
+msgstr "აირჩიეთ მოქმედება"
+
+msgid "Ignore"
+msgstr "იგნორირება"
+
+msgid "On"
+msgstr "ჩართული"
+
+msgid "Off"
+msgstr "გამორთული"
+
+msgid "Clear"
+msgstr "წმინდა"
+
+msgid "Apply"
+msgstr "გამოყენება"
+
+msgid "Delete rule?"
+msgstr "წაშალოთ წესი?"
+
+msgid "This rule will be removed from the current layout."
+msgstr "ეს წესი წაიშლება მიმდინარე განლაგებიდან."
+
+msgid "Layers"
+msgstr "ფენები"
+
+msgid "New layer"
+msgstr "ახალი ფენა"
+
+msgid "Duplicate"
+msgstr "დუბლიკატი"
+
+msgid "Delete"
+msgstr "წაშლა"
+
+msgid "Extra keys"
+msgstr "დამატებითი გასაღებები"
+
+msgid "Edit"
+msgstr "რედაქტირება"
+
+msgid "Rename layer"
+msgstr "ფენის გადარქმევა"
+
+msgid "Duplicate layer"
+msgstr "დუბლიკატი ფენა"
+
+msgid "Delete layer?"
+msgstr "წაშალოთ ფენა?"
+
+msgid "Edit layer key"
+msgstr "ფენის კლავიშის რედაქტირება"
+
+msgid "Name"
+msgstr "სახელი"
+
+msgid "Description"
+msgstr "აღწერა"
+
+msgid "Rules using this layer will return to the base layer."
+msgstr "ამ ფენის გამოყენების წესები დაუბრუნდება საბაზისო ფენას."
+
+msgid "Transparent"
+msgstr "გამჭვირვალე"
+
+msgid "Swallow"
+msgstr "დაბლოკვა"
+
+msgid "Action"
+msgstr "მოქმედება"
+
+msgid "Action code"
+msgstr "მოქმედების კოდი"
+
+msgid "Enter a layer name"
+msgstr "შეიყვანეთ ფენის სახელი"
+
+msgid "A layer with this name already exists."
+msgstr "ამ სახელის მქონე ფენა უკვე არსებობს."
+
+msgid "Enter a layout name"
+msgstr "შეიყვანეთ განლაგების სახელი"
+
+msgid "Enter a key code"
+msgstr "შეიყვანეთ გასაღების კოდი"
+
+msgid "Native"
+msgstr "მშობლიური"
+
+msgid "Layer saved"
+msgstr "ფენა შენახულია"
+
+msgid "Macros"
+msgstr "მაკროები"
+
+msgid "Built-in macros"
+msgstr "ჩამონტაჟებული მაკროები"
+
+msgid "Macro ID"
+msgstr "მაკრო ID"
+
+msgid "Copy ID"
+msgstr "დააკოპირეთ ID"
+
+msgid "Steps"
+msgstr "ნაბიჯები"
+
+msgid "Add step"
+msgstr "ნაბიჯის დამატება"
+
+msgid "Add pause"
+msgstr "დაამატეთ პაუზა"
+
+msgid "Macro ID must contain 1–64 letters, digits, underscores or hyphens"
+msgstr "მაკრო ID უნდა შეიცავდეს 1-64 ასოს, ციფრს, ქვედა ხაზს ან დეფისს"
+
+msgid "Macro ID is already in use"
+msgstr "მაკრო ID უკვე გამოიყენება"
+
+msgid "Macro delays must be between 0 and 2000 ms"
+msgstr "მაკრო დაგვიანებები უნდა იყოს 0-დან 2000 ms-მდე"
+
+msgid "Pause must be between 1 and 10000 ms"
+msgstr "პაუზა უნდა იყოს 1-დან 10000 ms-მდე"
+
+msgid "Unknown key or shortcut in macro step"
+msgstr "უცნობი ღილაკი ან მალსახმობი მაკრო ნაბიჯში"
+
+msgid "Macro references cannot form a cycle"
+msgstr "მაკრო ცნობები ვერ ქმნიან ციკლს"
+
+msgid "Commands"
+msgstr "ბრძანებები"
+
+msgid "Add"
+msgstr "დამატება"
+
+msgid "Clear cell"
+msgstr "უჯრედის გასუფთავება"
+
+msgid "Page name"
+msgstr "გვერდის სახელი"
+
+msgid "Emoji cells accept at most 100 characters."
+msgstr "Emoji უჯრედები იღებს მაქსიმუმ 100 სიმბოლოს."
+
+msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
+msgstr "ბრძანების ID: 1–64 ასო, ციფრი, ქვედა ხაზი ან დეფისი."
+
+msgid "Command IDs must be unique."
+msgstr "ბრძანების ID უნდა იყოს უნიკალური."
+
+msgid "Enter a shell command."
+msgstr "შეიყვანეთ shell ბრძანება."
+
+msgid "Save as…"
+msgstr "შენახვა როგორც…"
+
+msgid "Save layout as…"
+msgstr "განლაგების შენახვა როგორც…"
+
+msgid "Please wait…"
+msgstr "გთხოვთ დაელოდოთ…"
+
+msgid "Stop"
+msgstr "გაჩერდი"
+
+msgid "Start"
+msgstr "დაწყება"
+
+msgid "Custom layout"
+msgstr "მორგებული განლაგება"
+
+msgid "Base keyboard"
+msgstr "საბაზისო კლავიატურა"
+
+msgid "Keyboard device path"
+msgstr "კლავიატურის მოწყობილობის გზა"
+
+msgid "Copy path"
+msgstr "დააკოპირეთ გზა"
+
+msgid "Create a layer to assign its keys, or edit the base keyboard."
+msgstr ""
+"შექმენით ფენა მისი კლავიშების მინიჭებისთვის, ან შეცვალეთ საბაზისო "
+"კლავიატურა."
+
+msgid "Running"
+msgstr "სირბილი"
+
+msgid "Stopped"
+msgstr "გაჩერდა"
+
+msgid "Layout library updated"
+msgstr "განლაგების ბიბლიოთეკა განახლებულია"
+
+msgid "Select a layout"
+msgstr "აირჩიეთ განლაგება"
+
+msgid "Layout changed on disk; select it again"
+msgstr "განლაგება შეიცვალა დისკზე; ისევ აირჩიეთ"
+
+msgid "Any game mode"
+msgstr "ნებისმიერი თამაშის რეჟიმი"
+
+msgid "Game mode on"
+msgstr "თამაშის რეჟიმი ჩართულია"
+
+msgid "Game mode off"
+msgstr "თამაშის რეჟიმი გამორთულია"
+
+msgid "System layouts (comma separated)"
+msgstr "სისტემის განლაგება (მძიმით გამოყოფილი)"
+
+msgid "Applications (comma separated)"
+msgstr "აპლიკაციები (მძიმით გამოყოფილი)"
+
+msgid "Manual"
+msgstr "სახელმძღვანელო"
+
+msgid "Active"
+msgstr "აქტიური"
+
+msgid "Editing · unsaved"
+msgstr "რედაქტირება · არ არის შენახული"
+
+msgid "Editing"
+msgstr "რედაქტირება"
+
+msgid "Activate"
+msgstr "გააქტიურება"
+
+msgid "Delete layout?"
+msgstr "წაშალოთ განლაგება?"
+
+msgid "Layout details"
+msgstr "განლაგების დეტალები"
+
+msgid "Do not use when"
+msgstr "არ გამოიყენოთ როდის"
+
+msgid "The layout file will be deleted. This cannot be undone."
+msgstr "განლაგების ფაილი წაიშლება. ამის გაუქმება შეუძლებელია."
+
+msgid "Duplicate…"
+msgstr "დუბლიკატი…"
+
+msgid "Edit layout"
+msgstr "განლაგების რედაქტირება"
+
+msgid "New layout"
+msgstr "ახალი განლაგება"
+
+msgid "A layout with this name already exists."
+msgstr "განლაგება ამ სახელით უკვე არსებობს."
+
+msgid "Add a description…"
+msgstr "დაამატეთ აღწერა…"
+
+msgid "Create"
+msgstr "შექმნა"
+
+msgid "Delete…"
+msgstr "წაშლა…"
+
+msgid "Description (optional)"
+msgstr "აღწერა (სურვილისამებრ)"
+
+msgid "Discard changes"
+msgstr "ცვლილებების გაუქმება"
+
+msgid "Make active"
+msgstr "გააქტიურდით"
+
+msgid "Single: the layout you make active works everywhere."
+msgstr "Single: განლაგება, რომელსაც თქვენ აკეთებთ, მუშაობს ყველგან."
+
+msgid "Not used in automatic mode"
+msgstr "არ გამოიყენება ავტომატურ რეჟიმში"
+
+msgid "Rename…"
+msgstr "გადარქმევა…"
+
+msgid "Save and continue"
+msgstr "შეინახეთ და გააგრძელეთ"
+
+msgid ""
+"The layout you are editing has not been saved to the library. Its changes "
+"will be lost."
+msgstr ""
+"განლაგება, რომელსაც თქვენ არედაქტირებთ, არ არის შენახული ბიბლიოთეკაში. მისი "
+"ცვლილებები დაიკარგება."
+
+msgid "The name contains characters that cannot be used in a file name."
+msgstr ""
+"სახელი შეიცავს სიმბოლოებს, რომლებიც არ შეიძლება გამოყენებულ იქნას ფაილის "
+"სახელში."
+
+msgid "Unsaved changes"
+msgstr "შენახული ცვლილებები"
+
+msgid "You are editing “{}”, but “{}” is active."
+msgstr "თქვენ არედაქტირებთ „{}“, მაგრამ „{}“ აქტიურია."
+
+msgid "You are editing “{}”; no layout is active."
+msgstr "თქვენ არედაქტირებთ „{}“-ს; განლაგება არ არის აქტიური."
+
+msgid "game mode off"
+msgstr "თამაშის რეჟიმი გამორთულია"
+
+msgid "game mode on"
+msgstr "თამაშის რეჟიმი ჩართულია"
+
+msgid "{} (copy)"
+msgstr "{} (ასლი)"
+
+msgid "“{}” has unsaved changes. Save them before switching?"
+msgstr "„{}“-ს აქვს შენახული ცვლილებები. შეინახოთ ისინი გადართვამდე?"
+
+msgid "Layout mode"
+msgstr "განლაგების რეჟიმი"
+
+msgid "Create layout"
+msgstr "განლაგების შექმნა"
+
+msgid "Empty"
+msgstr "ცარიელი"
+
+msgid "Empty layout"
+msgstr "ცარიელი განლაგება"
+
+msgid "Previously selected: {}"
+msgstr "ადრე არჩეული: {}"
+
+msgid "Current value"
+msgstr "მიმდინარე ღირებულება"
+
+msgid "Capture key"
+msgstr "გადაღების გასაღები"
+
+msgid "Press a key (including modifiers or Escape)."
+msgstr "დააჭირეთ ღილაკს (მათ შორის მოდიფიკატორები ან Escape)."
+
+msgid "Press a key or shortcut. Release a modifier to select it alone."
+msgstr ""
+"დააჭირეთ ღილაკს ან მალსახმობს. გაათავისუფლეთ მოდიფიკატორი, რომ აირჩიოთ იგი "
+"მარტო."
+
+msgid "Choose a valid key or action."
+msgstr "აირჩიეთ სწორი გასაღები ან მოქმედება."
+
+msgid "Search keys and actions"
+msgstr "მოძებნეთ გასაღებები და მოქმედებები"
+
+msgid "Search keys"
+msgstr "ძებნის გასაღებები"
+
+msgid "Hold action"
+msgstr "გააჩერეთ მოქმედება"
+
+msgid "Macro step"
+msgstr "მაკრო ნაბიჯი"
+
+msgid ""
+"You can enter a key combination using + between keys. Some keys depend on "
+"keyboard hardware and may be ignored by the system."
+msgstr ""
+"თქვენ შეგიძლიათ შეიყვანოთ კლავიშთა კომბინაცია კლავიშებს შორის + გამოყენებით."
+" ზოგიერთი კლავიატურა დამოკიდებულია კლავიატურის აპარატურაზე და შეიძლება "
+"სისტემის იგნორირება მოხდეს."
+
+msgid ""
+"You can assign a key combination using + between keys. Availability of "
+"special keys depends on the keyboard and desktop environment."
+msgstr ""
+"თქვენ შეგიძლიათ მინიჭოთ კლავიშთა კომბინაცია კლავიშებს შორის + გამოყენებით. "
+"სპეციალური კლავიშების ხელმისაწვდომობა დამოკიდებულია კლავიატურაზე და "
+"დესკტოპის გარემოზე."
+
+msgid "Behavior:"
+msgstr "ქცევა:"
+
+msgid "Action:"
+msgstr "მოქმედება:"
+
+msgid "Trigger key:"
+msgstr "ტრიგერის გასაღები:"
+
+msgid "{n} line"
+msgid_plural "{n} lines"
+msgstr[0] "{n} ხაზი"
+msgstr[1] "{n} ხაზი"
+
+msgid "Modifiers"
+msgstr "მოდიფიკატორები"
+
+msgid "Letters, digits and symbols"
+msgstr "ასოები, ციფრები და სიმბოლოები"
+
+msgid "Control keys"
+msgstr "კონტროლის გასაღებები"
+
+msgid "Navigation and numpad"
+msgstr "ნავიგაცია და ნუმპედი"
+
+msgid "F1–F24"
+msgstr "F1–F24"
+
+msgid "Media and launch"
+msgstr "მედია და გაშვება"
+
+msgid "System and laptop"
+msgstr "სისტემა და ლეპტოპი"
+
+msgid "Mouse"
+msgstr "მაუსი"
+
+msgid "Other keys"
+msgstr "სხვა გასაღებები"
+
+msgid "Actions"
+msgstr "მოქმედებები"
+
+msgid "Extra button on some gaming mice"
+msgstr "დამატებითი ღილაკი რამდენიმე სათამაშო მაუსზე"
+
+msgid "Keys"
+msgstr "გასაღებები"
+
+msgid "System actions"
+msgstr "სისტემის მოქმედებები"
+
+msgid "KDE shortcuts"
+msgstr "KDE მალსახმობები"
+
+msgid "Pause"
+msgstr "პაუზა"
+
+msgid "Literal text (text: prefix is added automatically)"
+msgstr "ლიტერალური ტექსტი (ტექსტი: პრეფიქსი ემატება ავტომატურად)"
+
+msgid "Pause in milliseconds (1–10000)"
+msgstr "პაუზა მილიწამებში (1-10000)"
+
+msgid "No matching items"
+msgstr "შესატყვისი ელემენტი არ არის"
+
+msgid "Show Quick Action Menu page {}"
+msgstr "სწრაფი მოქმედების მენიუს გვერდის ჩვენება {}"
+
+msgid "Show Emoji & Symbols menu page {}"
+msgstr "Emoji & სიმბოლოების მენიუს გვერდის ჩვენება {}"
+
+msgid "Switch to desktop {}"
+msgstr "გადართეთ დესკტოპზე {}"
+
+msgid "Move window to desktop {}"
+msgstr "ფანჯრის გადატანა დესკტოპზე {}"
+
+msgid "Close window"
+msgstr "ფანჯრის დახურვა"
+
+msgid "Minimize window"
+msgstr "ფანჯრის მინიმიზაცია"
+
+msgid "Maximize window"
+msgstr "ფანჯრის მაქსიმიზაცია"
+
+msgid "Keep window above others"
+msgstr "შეინახეთ ფანჯარა სხვებზე მაღლა"
+
+msgid "Show desktop"
+msgstr "დესკტოპის ჩვენება"
+
+msgid "Window overview"
+msgstr "ფანჯრის მიმოხილვა"
+
+msgid "Open application launcher"
+msgstr "გახსენით აპლიკაციის გამშვები"
+
+msgid "Turn off screen"
+msgstr "ეკრანის გამორთვა"
+
+msgid "Switch to layout {}"
+msgstr "გადართეთ განლაგებაზე {}"
+
+msgid "Layer"
+msgstr "ფენა"
+
+msgid "Delete layer"
+msgstr "ფენის წაშლა"
+
+msgid "Create new layer"
+msgstr "შექმენით ახალი ფენა"
+
+msgid "Layer description"
+msgstr "ფენის აღწერა"
+
+msgid "Add description"
+msgstr "დაამატეთ აღწერა"
+
+msgid "Type to test..."
+msgstr "ჩაწერეთ შესამოწმებლად..."
+
+msgid "Ignore key"
+msgstr "გასაღების იგნორირება"
+
+msgid "No layers yet"
+msgstr "ჯერ არ არის ფენები"
+
+msgid "Left hand"
+msgstr "მარცხენა ხელი"
+
+msgid "Right hand"
+msgstr "მარჯვენა ხელი"
+
+msgid "Key"
+msgstr "გასაღები"
+
+msgid "US layout"
+msgstr "აშშ განლაგება"
+
+msgid "LHC codes"
+msgstr "LHC კოდები"
+
+msgid "No extra keys for this layer yet."
+msgstr "დამატებითი გასაღებები ამ ფენისთვის ჯერ არ არის."
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid."
+msgstr ""
+"მაუსის ღილაკები, მედია კლავიშები და სხვა ტრიგერები კლავიატურის მთავარი ბადის"
+" გარეთ."
+
+msgid ""
+"Display modes affect labels only — the key code stays the same. “US layout” "
+"shows standard letter labels for visual reference. “LHC codes” shows app-"
+"specific codes (e.g. KeyA, ArrowLeft)."
+msgstr ""
+"ჩვენების რეჟიმები გავლენას ახდენს მხოლოდ ეტიკეტებზე - გასაღების კოდი იგივე "
+"რჩება. „აშშ-ის განლაგება“ აჩვენებს ასოების სტანდარტულ ეტიკეტებს ვიზუალური "
+"მითითებისთვის. „LHC კოდები“ აჩვენებს აპის სპეციფიკურ კოდებს (მაგ. KeyA, "
+"ArrowLeft)."
+
+msgid "(copy)"
+msgstr "(ასლი)"
+
+msgid "Add page"
+msgstr "გვერდის დამატება"
+
+msgid "Allow commands"
+msgstr "ბრძანებების დაშვება"
+
+msgid "Animals & Nature"
+msgstr "ცხოველები და ბუნება"
+
+msgid ""
+"Build reusable sequences from key chords, text actions, commands, or system "
+"actions. Steps run in order with the configured pause between them."
+msgstr ""
+"შექმენით მრავალჯერადი გამოყენების თანმიმდევრობები ძირითადი აკორდებიდან, "
+"ტექსტური მოქმედებებიდან, ბრძანებებიდან ან სისტემის მოქმედებებიდან. ნაბიჯები "
+"მიდის თანმიმდევრობით, მათ შორის კონფიგურირებული პაუზით."
+
+msgid ""
+"Built-in macros that cannot be edited. To customize, create a user macro "
+"based on one."
+msgstr ""
+"ჩაშენებული მაკროები, რომელთა რედაქტირება შეუძლებელია. მორგებისთვის, შექმენით"
+" მომხმარებლის მაკრო ერთის საფუძველზე."
+
+msgid "Cell {}"
+msgstr "უჯრედი {}"
+
+msgid "Command name"
+msgstr "ბრძანების სახელი"
+
+msgid "Create based on"
+msgstr "საფუძველზე შექმნა"
+
+msgid "Delete macro"
+msgstr "მაკრო წაშლა"
+
+msgid "Delete macro?"
+msgstr "წაშალოთ მაკრო?"
+
+msgid "Delete page"
+msgstr "გვერდის წაშლა"
+
+msgid "Delete page?"
+msgstr "წაშალო გვერდი?"
+
+msgid "Delete step"
+msgstr "ნაბიჯის წაშლა"
+
+msgid "Delete step?"
+msgstr "წაშალოთ ნაბიჯი?"
+
+msgid "Disable"
+msgstr "გამორთვა"
+
+msgid "Drag"
+msgstr "გადაათრიეთ"
+
+msgid "Emoji & Symbols"
+msgstr "Emoji და სიმბოლოები"
+
+msgid "Emoji Symbols"
+msgstr "Emoji სიმბოლოები"
+
+msgid "Emoji, symbol, or any text"
+msgstr "Emoji, სიმბოლო ან ნებისმიერი ტექსტი"
+
+msgid "Empty step — pick an action or remove it."
+msgstr "ცარიელი ნაბიჯი — აირჩიეთ მოქმედება ან წაშალეთ იგი."
+
+msgid "Fix the existing macro errors first"
+msgstr "ჯერ გაასწორეთ არსებული მაკრო შეცდომები"
+
+msgid "Food & Drink"
+msgstr "საკვები და სასმელი"
+
+msgid "Human-readable macro name, shown in picker lists."
+msgstr "ადამიანისთვის წასაკითხი მაკრო სახელი, ნაჩვენები ამომრჩევლების სიებში."
+
+msgid "ID"
+msgstr "ID"
+
+msgid "Key {}"
+msgstr "გასაღები {}"
+
+msgid "Label"
+msgstr "ლეიბლი"
+
+msgid "Macro name"
+msgstr "მაკრო სახელი"
+
+msgid "Modifier delay"
+msgstr "მოდიფიკატორის დაყოვნება"
+
+msgid "Move page left"
+msgstr "გადაიტანეთ გვერდი მარცხნივ"
+
+msgid "Move page right"
+msgstr "გადაიტანეთ გვერდი მარჯვნივ"
+
+msgid "New macro"
+msgstr "ახალი მაკრო"
+
+msgid "No macros yet. Click \"New macro\" to create the first one."
+msgstr "მაკრო ჯერ არ არის. დააწკაპუნეთ \"ახალი მაკრო\" პირველის შესაქმნელად."
+
+msgid "No steps yet. Each step — one chord or action."
+msgstr "ჯერ ნაბიჯები არ არის. თითოეული ნაბიჯი - ერთი აკორდი ან მოქმედება."
+
+msgid ""
+"Opened by the app:showEmojiMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold an "
+"emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short "
+"phrase (e.g. \"// TODO: \")."
+msgstr ""
+"გახსნილია აპლიკაციით:showEmojiMenuN ქმედებები, სადაც N არის გვერდის პოზიცია:"
+" გვერდების ხელახალი დალაგება ცვლის რომელი გვერდის გახსნას კლავიში. თითოეულ "
+"უჯრედს შეუძლია შეინახოს emoji, UTF სიმბოლო (მაგ. ≠), ნებისმიერი სხვა სიმბოლო"
+" (მაგ. №) ან მოკლე ფრაზა (მაგ. \"// TODO: \")."
+
+msgid "Opened by the app:showQuickMenu1...5 actions."
+msgstr "გახსნილია აპლიკაციის მიერ:showQuickMenu1...5 ქმედება."
+
+msgid "Page"
+msgstr "გვერდი"
+
+msgid "Pause (ms)"
+msgstr "პაუზა (მწმ)"
+
+msgid "Pause between steps"
+msgstr "შეაჩერე ნაბიჯებს შორის"
+
+msgid "People & Gestures"
+msgstr "ხალხი და ჟესტები"
+
+msgid "Per-macro pause between steps. Defaults to the Settings value."
+msgstr ""
+"თითო მაკრო პაუზა ნაბიჯებს შორის. ნაგულისხმევი პარამეტრების მნიშვნელობა."
+
+msgid "Pick an action"
+msgstr "აირჩიე მოქმედება"
+
+msgid "Quick Actions"
+msgstr "სწრაფი მოქმედებები"
+
+msgid ""
+"Reusable shell commands for the current layout. On Linux they run through sh"
+" -lc after you explicitly allow them. Shell commands run one at a time, with"
+" a 30-second limit, in your home directory."
+msgstr ""
+"მრავალჯერადი გამოყენებადი გარსის ბრძანებები მიმდინარე განლაგებისთვის. Linux-"
+"ზე ისინი გადიან sh -lc-ს მას შემდეგ, რაც მათ პირდაპირ დაუშვებთ. Shell-ის "
+"ბრძანებები გაშვებულია ერთ დროს, 30 წამის ლიმიტით, თქვენს მთავარ "
+"დირექტორიაში."
+
+msgid "Shell commands are allowed for this version of the current layout."
+msgstr "Shell ბრძანებები დაშვებულია მიმდინარე განლაგების ამ ვერსიისთვის."
+
+msgid "Smileys & Emotion"
+msgstr "სმაილი და ემოცია"
+
+msgid ""
+"The command will be deleted. Keys or macros that reference cmd:{} will stop "
+"working."
+msgstr ""
+"ბრძანება წაიშლება. კლავიშები ან მაკროები, რომლებიც მიუთითებენ cmd:{} "
+"შეწყვეტენ მუშაობას."
+
+msgid "The macro will be deleted. References macro:{} will stop working."
+msgstr "მაკრო წაიშლება. მითითებები მაკრო:{} შეწყვეტს მუშაობას."
+
+msgid "The page and all assigned cells on it will be deleted."
+msgstr "გვერდი და მასზე მინიჭებული ყველა უჯრედი წაიშლება."
+
+msgid ""
+"This layout contains shell scripts. Read every script before allowing them, "
+"especially in layouts from other people. Approval applies to the reviewed "
+"command definitions and resets when the command set, IDs, or Linux scripts "
+"change."
+msgstr ""
+"ეს განლაგება შეიცავს shell სკრიპტებს. წაიკითხეთ ყველა სკრიპტი, სანამ მათ "
+"მისცემთ უფლებას, განსაკუთრებით სხვა ადამიანების განლაგებაში. დამტკიცება "
+"ვრცელდება განხილული ბრძანებების განმარტებებზე და გადაიტვირთება ბრძანებების "
+"ნაკრების, ID-ების ან Linux სკრიპტების ცვლილებისას."
+
+msgid "This step will be removed from the macro."
+msgstr "ეს ნაბიჯი წაიშლება მაკროდან."
+
+msgid ""
+"Time between pressing a modifier and the main key within one step. Defaults "
+"to the Settings value."
+msgstr ""
+"დრო მოდიფიკატორისა და მთავარი კლავიშის დაჭერას შორის ერთი ნაბიჯის "
+"განმავლობაში. ნაგულისხმევი პარამეტრების მნიშვნელობა."
+
+msgid "Travel & Places"
+msgstr "მოგზაურობა და ადგილები"
+
+msgid "UTF Symbols"
+msgstr "UTF სიმბოლოები"
+
+msgid "Texts"
+msgstr "ტექსტები"
+
+msgid "Non-breaking space"
+msgstr "უწყვეტი სივრცე"
+
+msgid "continue"
+msgstr "გააგრძელე"
+
+msgid "do all you recommended"
+msgstr "გააკეთე ყველაფერი რაც გირჩიე"
+
+msgid "fix the errors above"
+msgstr "შეასწორეთ ზემოთ მოცემული შეცდომები"
+
+msgid "I'll call you back later"
+msgstr "მოგვიანებით დაგირეკავ"
+
+msgid "Thanks!"
+msgstr "მადლობა!"
+
+msgid "OK, got it 👍"
+msgstr "კარგი, გავიგე 👍"
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Rules tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"უნიკალური იდენტიფიკატორი, რომელიც გამოიყენება ცნობებში, როგორიცაა "
+"მაკრო:<id>. ამ მაკროს კლავიშთან დასაკავშირებლად, აირჩიეთ ეს მოქმედება "
+"ჩანართზე Layers ან Rules. შეცვალეთ ID მხოლოდ მაშინ, როდესაც არაფერი არ "
+"იყენებს ამ მაკროს."
+
+msgid "Used in:"
+msgstr "გამოიყენება:"
+
+msgid "User macros"
+msgstr "მომხმარებლის მაკროები"
+
+msgid "Work & Objects"
+msgstr "სამუშაო და ობიექტები"
+
+msgid "e.g. Next Track"
+msgstr "მაგ. შემდეგი სიმღერა"
+
+msgid "ms"
+msgstr "ms"
+
+msgid "Rule saved"
+msgstr "წესი შენახულია"
+
+msgid "Search layers"
+msgstr "ფენების ძიება"
+
+msgid "Set"
+msgstr "კომპლექტი"
+
+msgid "Start the mapper to run actions from the menus"
+msgstr "გაუშვით რუკების ამუშავება მენიუდან მოქმედებების გასაშვებად"
+
+msgid ""
+"The text was not typed: the keyboard layout lacks some of its characters, "
+"such as emoji. Choose a typing method with the clipboard."
+msgstr ""
+"ტექსტი არ იყო აკრეფილი: კლავიატურის განლაგებას აკლია მისი ზოგიერთი სიმბოლო, "
+"როგორიცაა emoji. აირჩიეთ აკრეფის მეთოდი ბუფერთან ერთად."
+
+msgid "The text was not typed: the active keyboard layout is unknown."
+msgstr "ტექსტი არ იყო აკრეფილი: კლავიატურის აქტიური განლაგება უცნობია."
+
+msgid ""
+"The text was not typed: the typing method is unavailable ({}). Restart the "
+"mapper to try again."
+msgstr ""
+"ტექსტი არ იყო აკრეფილი: აკრეფის მეთოდი მიუწვდომელია ({}). ხელახლა საცდელად "
+"გადატვირთეთ რუკების შედგენა."
+
+msgid "The text was not typed: safe clipboard access failed ({})."
+msgstr "ტექსტი არ იყო აკრეფილი: ბუფერზე უსაფრთხო წვდომა ვერ მოხერხდა ({})."
+
+msgid "The text was not typed: {}"
+msgstr "ტექსტი არ იყო აკრეფილი: {}"
+
+msgid "The layout file is empty"
+msgstr "განლაგების ფაილი ცარიელია"
+
+msgid "↑"
+msgstr "↑"
+
+msgid "↓"
+msgstr "↓"
+
+msgid "Does not matter"
+msgstr "არ აქვს მნიშვნელობა"
+
+msgid "Open for editing (unsaved)"
+msgstr "გახსნა რედაქტირებისთვის (შეუნახავი)"
+
+msgid "Open for editing"
+msgstr "გახსენით რედაქტირებისთვის"
+
+msgid "Layout name"
+msgstr "განლაგების სახელი"
+
+msgid "System languages"
+msgstr "სისტემის ენები"
+
+msgid "No system languages detected"
+msgstr "სისტემური ენები არ არის აღმოჩენილი"
+
+msgid "Applications"
+msgstr "აპლიკაციები"
+
+msgid "“{}” will be deleted. This cannot be undone."
+msgstr "„{}“ წაიშლება. ამის გაუქმება შეუძლებელია."
+
+msgid "Reset current changes"
+msgstr "მიმდინარე ცვლილებების გადატვირთვა"
+
+msgid "Available"
+msgstr "ხელმისაწვდომია"
+
+msgid "Unavailable"
+msgstr "მიუწვდომელია"
+
+msgid "Not implemented"
+msgstr "არ განხორციელებულა"
+
+msgid "No input devices were found in /dev/input."
+msgstr "შეყვანის მოწყობილობები არ მოიძებნა /dev/input-ში."
+
+msgid ""
+"The selected keyboard is not connected. Connect it or pick another one "
+"below."
+msgstr ""
+"არჩეული კლავიატურა არ არის დაკავშირებული. შეაერთეთ იგი ან აირჩიეთ სხვა "
+"ქვემოთ."
+
+msgid ""
+"No permission to read keyboard events. Add your user to the input group "
+"(install-linux.sh permissions does this) and log in again."
+msgstr ""
+"კლავიატურის მოვლენების წაკითხვის ნებართვა არ არის. დაამატეთ თქვენი "
+"მომხმარებელი შეყვანის ჯგუფში (install-linux.sh ნებართვები ამას აკეთებს) და "
+"ხელახლა შედით სისტემაში."
+
+msgid ""
+"/dev/uinput does not exist. Load the uinput kernel module: sudo modprobe "
+"uinput."
+msgstr ""
+"/dev/uinput არ არსებობს. ჩატვირთეთ uinput kernel მოდული: sudo modprobe "
+"uinput."
+
+msgid ""
+"No permission to write to /dev/uinput. Install the application's udev rule "
+"(install-linux.sh permissions) or reinstall the package."
+msgstr ""
+"არ აქვს უფლება ჩაწეროს /dev/uinput-ზე. დააინსტალირეთ აპლიკაციის udev წესი "
+"(install-linux.sh ნებართვები) ან ხელახლა დააინსტალირეთ პაკეტი."
+
+msgid "Launch on startup"
+msgstr "გაშვება გაშვებისას"
+
+msgid "Start the mapper on launch"
+msgstr "გაუშვით რუკების გაშვება"
+
+msgid "No keyboard is selected, so the mapper cannot start."
+msgstr "კლავიატურა არ არის არჩეული, ამიტომ რუკების გაშვება შეუძლებელია."
+
+msgid "Choose a keyboard"
+msgstr "აირჩიეთ კლავიატურა"
+
+msgid "Getting started"
+msgstr "დაწყება"
+
+msgid "Keyboard selected"
+msgstr "არჩეულია კლავიატურა"
+
+msgid "Choose the keyboard to remap"
+msgstr "აირჩიეთ კლავიატურა ხელახლა გამოსაყენებლად"
+
+msgid "Change"
+msgstr "შეცვლა"
+
+msgid "Add a layout"
+msgstr "დაამატეთ განლაგება"
+
+msgid "Press Start at the top to apply it"
+msgstr "დააჭირეთ დაწყებას ზედა ნაწილში მის გამოსაყენებლად"
+
+msgid "No active layout"
+msgstr "აქტიური განლაგება არ არის"
+
+msgid "Current active layout (automatic)"
+msgstr "მიმდინარე აქტიური განლაგება (ავტომატური)"
+
+msgid "Current active layout — click to switch"
+msgstr "მიმდინარე აქტიური განლაგება — დააწკაპუნეთ გადასართავად"
+
+msgid "Current keyboard layout in the system"
+msgstr "კლავიატურის მიმდინარე განლაგება სისტემაში"
+
+msgid "Game mode: active"
+msgstr "თამაშის რეჟიმი: აქტიური"
+
+msgid "Game mode: inactive"
+msgstr "თამაშის რეჟიმი: არააქტიური"
+
+msgid "Active: {}"
+msgstr "აქტიური: {}"
+
+msgid "Trigger"
+msgstr "გამომწვევი"
+
+msgid "New rule: choose a trigger"
+msgstr "ახალი წესი: აირჩიეთ ტრიგერი"
+
+msgid "Swallow key"
+msgstr "კლავიშის დაბლოკვა"
+
+msgid "Pass through"
+msgstr "გაიარეთ"
+
+msgid "Double tap: {} ms"
+msgstr "ორმაგი შეხება: {} ms"
+
+msgid "Custom hold options"
+msgstr "მორგებული შენახვის პარამეტრები"
+
+msgid "Leave empty to use the global timing settings."
+msgstr "დატოვეთ ცარიელი გლობალური დროის პარამეტრების გამოსაყენებლად."
+
+msgid ""
+"Temporarily releases the held key or modifier while these keys are pressed "
+"in the layer."
+msgstr ""
+"დროებით ათავისუფლებს შეკავებულ კლავიშს ან მოდიფიკატორს, სანამ ეს ღილაკები "
+"დაჭერილია ფენაში."
+
+msgid ""
+"Defers the held action until one of these keys is pressed in the layer. "
+"Requires a hold action and a layer."
+msgstr ""
+"აყოვნებს შეჩერებულ მოქმედებას მანამ, სანამ ერთ-ერთი ამ კლავიშის დაჭერა "
+"ფენაში. მოითხოვს შეკავების მოქმედებას და ფენას."
+
+msgid "Delete rule"
+msgstr "წესის წაშლა"
+
+msgid ""
+"Clear restores normal key behavior. Swallow prevents the key from reaching "
+"the application."
+msgstr ""
+"Clear აღადგენს გასაღების ნორმალურ ქცევას. მერცხალი ხელს უშლის გასაღების "
+"აპლიკაციაში მისვლას."
+
+msgctxt "Game mode control"
+msgid "Auto"
+msgstr "ავტომატური"
+
+msgctxt "Game mode control"
+msgid "On"
+msgstr "ჩართული"
+
+msgctxt "Game mode control"
+msgid "Off"
+msgstr "გამორთული"
+
+msgid "Auto: no detection sources enabled"
+msgstr "ავტომატური: გამოვლენის წყაროები არ არის ჩართული"
+
+msgid "Auto: detection unavailable"
+msgstr "ავტომატური: გამოვლენა მიუწვდომელია"
+
+msgid "Auto: game mode inactive"
+msgstr "ავტომატური: თამაშის რეჟიმი არააქტიურია"
+
+msgid "Auto: GameMode daemon active"
+msgstr "ავტომატური: GameMode დემონი აქტიურია"
+
+msgid "Auto: matched {}"
+msgstr "ავტომატური: შესაბამისი {}"
+
+msgid "Auto: fullscreen window active"
+msgstr "ავტომატური: სრულეკრანიანი ფანჯარა აქტიურია"
+
+msgid "Auto: excluded by {}"
+msgstr "ავტომატური: გამორიცხულია {}-ით"
+
+msgid ""
+"Fullscreen detection is not supported in this session. Use process rules or "
+"On/Off."
+msgstr ""
+"სრულეკრანიანი ამოცნობა არ არის მხარდაჭერილი ამ სესიაზე. გამოიყენეთ პროცესის "
+"წესები ან ჩართვა/გამორთვა."
+
+msgid "Fullscreen detection tools are missing or could not query the session."
+msgstr "სრულეკრანიანი გამოვლენის ხელსაწყოები აკლია ან ვერ მოითხოვდა სესიას."
+
+msgid "Running processes: "
+msgstr "მიმდინარე პროცესები:"
+
+msgid "Active window: "
+msgstr "აქტიური ფანჯარა:"
+
+msgid "Create a layer to assign its keys."
+msgstr "შექმენით ფენა მისი გასაღებების მინიჭებისთვის."
+
+msgid "Button {}"
+msgstr "ღილაკი {}"
+
+msgid "Copied to clipboard"
+msgstr "კოპირებულია ბუფერში"
+
+msgid "Theme"
+msgstr "თემა"
+
+msgid "E-ink"
+msgstr "E-ink"
+
+msgid "Enter device path manually"
+msgstr "შეიყვანეთ მოწყობილობის გზა ხელით"
+
+msgid "All keyboards"
+msgstr "ყველა კლავიატურა"
+
+msgid "All mice (buttons only)"
+msgstr "ყველა მაუსი (მხოლოდ ღილაკები)"
+
+msgid "Mode"
+msgstr "რეჟიმი"
+
+msgid "New"
+msgstr "ახალი"
+
+msgid "Auto"
+msgstr "ავტომატური"
+
+msgid "Delete extra key?"
+msgstr "წაშალოთ დამატებითი გასაღები?"
+
+msgid "This key assignment will be removed from the layer."
+msgstr "გასაღების ეს მინიჭება წაიშლება ფენიდან."
+
+msgid "Command started: {}"
+msgstr "ბრძანება დაიწყო: {}"
+
+msgid "Unavailable on this platform or desktop"
+msgstr "მიუწვდომელია ამ პლატფორმაზე ან დესკტოპზე"
+
+msgid "This action is not supported on macOS"
+msgstr "ეს ქმედება არ არის მხარდაჭერილი macOS-ზე"
+
+msgid "Approve commands on the Commands tab before running this action"
+msgstr "დაადასტურეთ ბრძანებები ბრძანებების ჩანართზე ამ მოქმედების გაშვებამდე"
+
+msgid "Pick the physical device whose events should be intercepted."
+msgstr "აირჩიე ფიზიკური მოწყობილობა, რომლის მოვლენებსაც უნდა ჩაეჭრათ."
+
+msgid ""
+"Select the mouse so the mapper can see extra buttons and clicks. Pointer "
+"movement is not affected."
+msgstr ""
+"აირჩიეთ მაუსი, რათა რუქამ ნახოს დამატებითი ღილაკები და დაწკაპუნებები. "
+"მაჩვენებლის მოძრაობა არ იმოქმედებს."
+
+msgid ""
+"The mouse is not fully intercepted yet: a remapped extra button can emit the"
+" new action, but its native system or app action may still run. If that gets"
+" in the way, disable the native action for that button in your system, "
+"browser, or driver settings."
+msgstr ""
+"მაუსი ჯერ ბოლომდე არ არის ჩასმული: ხელახლა შედგენილ დამატებით ღილაკს შეუძლია"
+" ახალი მოქმედების გამოშვება, მაგრამ მისი ძირითადი სისტემა ან აპლიკაციის "
+"მოქმედება შეიძლება კვლავ იმუშაოს. თუ ეს ხელს შეუშლის, გამორთეთ ამ ღილაკის "
+"ძირითადი მოქმედება თქვენს სისტემაში, ბრაუზერში ან დრაივერის პარამეტრებში."
+
+msgid ""
+"The mapper reads from /dev/input/eventX and emits through uinput. If Start "
+"fails, grant access to those devices: usually the input group plus a udev "
+"rule for /dev/uinput."
+msgstr ""
+"Mapper კითხულობს /dev/input/eventX-დან და ასხივებს uinput-ის მეშვეობით. თუ "
+"დაწყება ვერ მოხერხდა, მიეცით წვდომა ამ მოწყობილობებზე: ჩვეულებრივ შეყვანის "
+"ჯგუფს პლუს udev წესი /dev/uinput-ისთვის."
+
+msgid "Refresh device list"
+msgstr "განაახლეთ მოწყობილობების სია"
+
+msgid "Mouse (optional)"
+msgstr "მაუსი (სურვილისამებრ)"
+
+msgid "Not selected"
+msgstr "არ არის შერჩეული"
+
+msgid "Not selected (no mouse support)"
+msgstr "არ არის არჩეული (მაუსის მხარდაჭერა არ არის)"
+
+msgid "Looks like a keyboard"
+msgstr "კლავიატურას ჰგავს"
+
+msgid "Looks like a mouse"
+msgstr "თაგვს ჰგავს"
+
+msgid "Other devices"
+msgstr "სხვა მოწყობილობები"
+
+msgid "Search devices"
+msgstr "მოძებნეთ მოწყობილობები"
+
+msgid "Single"
+msgstr "მარტოხელა"
+
+msgid "{n} rule"
+msgid_plural "{n} rules"
+msgstr[0] "{n} წესი"
+msgstr[1] "{n} წესი"
+
+msgid "{n} layer"
+msgid_plural "{n} layers"
+msgstr[0] "{n} ფენა"
+msgstr[1] "{n} ფენა"
+
+msgid "{n} emoji page"
+msgid_plural "{n} emoji pages"
+msgstr[0] "{n} emoji გვერდი"
+msgstr[1] "{n} emoji გვერდი"
+
+msgid "{n} action page"
+msgid_plural "{n} action pages"
+msgstr[0] "{n} მოქმედების გვერდი"
+msgstr[1] "{n} სამოქმედო გვერდი"
+
+msgid "{n} macro"
+msgid_plural "{n} macros"
+msgstr[0] "{n} მაკრო"
+msgstr[1] "{n} მაკრო"
+
+msgid "{n} command"
+msgid_plural "{n} commands"
+msgstr[0] "{n} ბრძანება"
+msgstr[1] "{n} ბრძანება"
+
+msgid "Main"
+msgstr "მთავარი"
+
+msgid "Saved assignment: {}"
+msgstr "შენახული დავალება: {}"
+
+msgid "Behavior"
+msgstr "ქცევა"
+
+msgid "Inherit"
+msgstr "მემკვიდრეობით"
+
+msgid "No separate action"
+msgstr "არ არის ცალკე მოქმედება"
+
+msgid "Activate layer only"
+msgstr "მხოლოდ ფენის გააქტიურება"
+
+msgid "Normal key behavior"
+msgstr "ნორმალური გასაღების ქცევა"
+
+msgid "Suppress"
+msgstr "ჩახშობა"
+
+msgid "Assign held key"
+msgstr "მიანიჭეთ შეკავებული გასაღები"
+
+msgid "Perform action"
+msgstr "შეასრულეთ მოქმედება"
+
+msgid "The key will not reach the application."
+msgstr "გასაღები არ მიაღწევს აპლიკაციას."
+
+msgid "Use the assignment from the lower layer or base layout."
+msgstr "გამოიყენეთ დავალება ქვედა ფენიდან ან ბაზის განლაგებიდან."
+
+msgid "Do not assign a separate action to this gesture."
+msgstr "არ მივანიჭოთ ცალკე მოქმედება ამ ჟესტს."
+
+msgid "Holding activates the selected layer. The original key is not sent."
+msgstr "დაჭერა ააქტიურებს არჩეულ ფენას. ორიგინალი გასაღები არ იგზავნება."
+
+msgid "Send the original key to the application."
+msgstr "გაგზავნეთ ორიგინალური გასაღები აპლიკაციაში."
+
+msgid "Capture shortcut"
+msgstr "გადაიღეთ მალსახმობი"
+
+msgid "Choose a valid trigger key."
+msgstr "აირჩიეთ მოქმედი ტრიგერის გასაღები."
+
+msgid "Choose a valid action."
+msgstr "აირჩიეთ სწორი მოქმედება."
+
+msgid "Empty cell"
+msgstr "ცარიელი უჯრედი"
+
+msgid "Remove the action from this menu cell."
+msgstr "ამოიღეთ მოქმედება ამ მენიუს უჯრედიდან."
+
+msgid "Edit assignment"
+msgstr "დავალების რედაქტირება"
+
+msgid "Holding also activates the selected layer."
+msgstr "დაჭერა ასევე ააქტიურებს არჩეულ ფენას."
+
+msgid "Block"
+msgstr "დაბლოკვა"
+
+msgid ""
+"The key press is consumed: the system and the active application will not "
+"receive it."
+msgstr ""
+"კლავიშის დაჭერა მოხმარებულია: სისტემა და აქტიური აპლიკაცია არ მიიღებენ მას."
+
+msgid ""
+"The key press passes through unchanged, as if no assignment were configured."
+msgstr ""
+"ღილაკის დაჭერა გადის უცვლელად, თითქოს არცერთი დავალება არ არის "
+"კონფიგურირებული."
+
+msgid "Capture"
+msgstr "გადაღება"
+
+msgid "Unchanged"
+msgstr "უცვლელი"
+
+msgid "Leave a delay empty to use the global setting."
+msgstr "დატოვეთ დაგვიანება ცარიელი გლობალური პარამეტრის გამოსაყენებლად."
+
+msgid "Allow command execution"
+msgstr "დაუშვით ბრძანების შესრულება"
+
+msgid "No commands are assigned."
+msgstr "ბრძანებები არ არის მინიჭებული."
+
+msgid "Commands are disabled in Settings."
+msgstr "ბრძანებები გამორთულია პარამეტრებში."
+
+msgid "Working directory (optional)"
+msgstr "სამუშაო დირექტორია (არასავალდებულო)"
+
+msgid "Save layout changes before opening another layout."
+msgstr "შეინახეთ განლაგების ცვლილებები სხვა განლაგების გახსნამდე."
+
+msgid "No layer"
+msgstr "ფენა არ არის"
+
+msgid "Layer not found"
+msgstr "ფენა ვერ მოიძებნა"
+
+msgid "Create new layer…"
+msgstr "შექმენით ახალი ფენა…"
+
+msgid "Create “{}”"
+msgstr "შექმენით \"{}\""
+
+msgid ""
+"A trigger can be a single key or a combination, such as "
+"ShiftLeft+ControlLeft. The combination works in either press order and ends "
+"when any key is released."
+msgstr ""
+"ტრიგერი შეიძლება იყოს ერთი კლავიში ან კომბინაცია, როგორიცაა "
+"ShiftLeft+ControlLeft. კომბინაცია მუშაობს დაჭერის თანმიმდევრობით და "
+"მთავრდება რომელიმე კლავიშის გამოშვების შემდეგ."
+
+msgid "When held"
+msgstr "როცა გაიმართა"
+
+msgid ""
+"Choose a layer active until release, or an action performed once after the "
+"hold duration."
+msgstr ""
+"აირჩიეთ ფენა აქტიური გათავისუფლებამდე, ან მოქმედება, რომელიც შესრულდება "
+"ერთხელ შეკავების ხანგრძლივობის შემდეგ."
+
+msgid "Nothing"
+msgstr "არაფერი"
+
+msgid "Activate layer"
+msgstr "ფენის გააქტიურება"
+
+msgid "Run action"
+msgstr "მოქმედების გაშვება"
+
+msgid "Long-hold action"
+msgstr "ხანგრძლივი მოქმედება"
+
+msgid "Runs once after {} s"
+msgstr "გადის ერთხელ {} s-ის შემდეგ"
+
+msgid "Hold another key / combination"
+msgstr "გეჭიროთ სხვა კლავიში / კომბინაცია"
+
+msgid "Press one key or hold a combination, then release a key to capture it."
+msgstr ""
+"დააჭირეთ ერთ ღილაკს ან გეჭიროთ კომბინაცია, შემდეგ გაათავისუფლეთ გასაღები მის"
+" გადასაღებად."
+
+msgid "Held key: {}"
+msgstr "დაჭერილი გასაღები: {}"
+
+msgid "Assigned to"
+msgstr "დაევალა"
+
+msgid "Languages"
+msgstr "ენები"
+
+msgid "Excluded applications"
+msgstr "გამორიცხული აპლიკაციები"
+
+msgid "Open page in popup"
+msgstr "გახსენით გვერდი ამომხტარ ფანჯარაში"
+
+msgid "Page:"
+msgstr "გვერდი:"
+
+msgid "Layout “{}” created"
+msgstr "განლაგება \"{}\" შეიქმნა"
+
+msgid "Layout “{}” saved"
+msgstr "განლაგება \"{}\" შენახულია"
+
+msgid "Layout “{}” deleted"
+msgstr "განლაგება „{}“ წაშლილია"
+
+msgid "Layout “{}” activated"
+msgstr "განლაგება „{}“ გააქტიურებულია"
+
+msgid "Could not complete the action"
+msgstr "მოქმედების დასრულება ვერ მოხერხდა"
+
+msgid "Dismiss notification"
+msgstr "შეტყობინების გაუქმება"
+
+msgid "Changes to layout “{}” discarded"
+msgstr "განლაგების „{}“ ცვლილებები გაუქმებულია"
+
+msgid "Popup menus are unavailable: {}"
+msgstr "ამომხტარი მენიუები მიუწვდომელია: {}"
+
+msgid "Popup menus are not running. Try opening the menu again."
+msgstr "ამომხტარი მენიუები არ მუშაობს. ისევ სცადეთ მენიუს გახსნა."
+
+msgid "Popup menus are restarting. Try again shortly."
+msgstr "ამომხტარი მენიუები გადაიტვირთება. სცადეთ ხელახლა მალე."
+
+msgid "Popup menus could not recover. Restart the application."
+msgstr "ამომხტარი მენიუები ვერ აღდგება. განაახლეთ აპლიკაცია."
+
+msgid "Popup menu error: {}"
+msgstr "ამომხტარი მენიუს შეცდომა: {}"
+
+msgid "Choose a key or combination for the trigger"
+msgstr "აირჩიეთ გასაღები ან კომბინაცია ტრიგერისთვის"
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid. Add a trigger, then choose its action, suppress it, or inherit its "
+"assignment from the lower layer."
+msgstr ""
+"მაუსის ღილაკები, მედია კლავიშები და სხვა ტრიგერები კლავიატურის მთავარი ბადის"
+" გარეთ. დაამატეთ ტრიგერი, შემდეგ აირჩიე მისი მოქმედება, ჩაახშო ან "
+"მემკვიდრეობით მიიღო მისი დანიშნულება ქვედა ფენიდან."
+
+msgid ""
+"You can enter emoji, any text, or Unicode symbols here. Drag an item from "
+"the palette onto a key to assign it."
+msgstr ""
+"აქ შეგიძლიათ შეიყვანოთ emoji, ნებისმიერი ტექსტი ან უნიკოდის სიმბოლოები. "
+"გადაიტანეთ ელემენტი პალიტრიდან კლავიშზე მის მინიჭებისთვის."
+
+msgid "Accessibility"
+msgstr "ხელმისაწვდომობა"
+
+msgid "High contrast"
+msgstr "მაღალი კონტრასტი"
+
+msgid ""
+"Pure black or white background, stronger text, borders and focus outlines. "
+"Works with the light and dark themes."
+msgstr ""
+"სუფთა შავი ან თეთრი ფონი, უფრო ძლიერი ტექსტი, საზღვრები და ფოკუსის "
+"კონტურები. მუშაობს ღია და ბნელი თემებით."
+
+msgid "Reduce motion"
+msgstr "მოძრაობის შემცირება"
+
+msgid "Turn off highlight animations in the editor."
+msgstr "გამორთეთ მონიშვნის ანიმაციები რედაქტორში."
+
+msgid ""
+"Every control can be reached with Tab and activated with Space or Enter. "
+"Interface size follows the desktop scale factor."
+msgstr ""
+"ყველა კონტროლის მიღწევა შესაძლებელია Tab-ით და გააქტიურება Space-ით ან "
+"Enter-ით. ინტერფეისის ზომა მიჰყვება დესკტოპის მასშტაბის ფაქტორს."
+
+msgid "Always"
+msgstr "ყოველთვის"
+
+msgid "Hold duration"
+msgstr "ხანგრძლივობის შენარჩუნება"
+
+msgid "{} s"
+msgstr "{} ს"
+
+msgid "{} s (default)"
+msgstr "{} s (ნაგულისხმევი)"
+
+msgid "Shell command or path to a script, e.g. playerctl play-pause"
+msgstr "Shell-ის ბრძანება ან გზა სკრიპტისკენ, მაგ. playerctl play-pause"
+
+msgid "Runs with sh -lc in the background; the result is not awaited."
+msgstr "მუშაობს sh -lc ფონზე; შედეგს არ ელოდება."
+
+msgid "Choose script…"
+msgstr "აირჩიეთ სკრიპტი…"
+
+msgid "Working directory (optional, home by default)"
+msgstr "სამუშაო დირექტორია (არასავალდებულო, საწყისი ნაგულისხმევად)"
+
+msgid "Choose folder…"
+msgstr "საქაღალდის არჩევა…"
+
+msgid ""
+"Command execution is turned off. Turn it on in the settings to assign "
+"commands."
+msgstr ""
+"ბრძანების შესრულება გამორთულია. ჩართეთ ის პარამეტრებში ბრძანებების "
+"მინიჭებისთვის."
+
+msgid "Open command settings"
+msgstr "გახსენით ბრძანების პარამეტრები"
+
+msgid "The working directory does not exist."
+msgstr "სამუშაო დირექტორია არ არსებობს."
+
+msgid ""
+"The script file is not executable: run chmod +x on it or prefix the path "
+"with sh."
+msgstr ""
+"სკრიპტის ფაილი არ არის შესრულებადი: გაუშვით მასზე chmod +x ან დააწერეთ "
+"ბილიკი sh-ით."
+
+msgid "Choose a script"
+msgstr "აირჩიეთ სკრიპტი"
+
+msgid "Choose a working directory"
+msgstr "აირჩიეთ სამუშაო დირექტორია"
+
+msgid "Commands run with sh -lc in the background and are not awaited."
+msgstr "ბრძანებები მუშაობს sh -lc-ით ფონზე და არ ელოდება."
+
+msgid "Commands run with PowerShell in the background and are not awaited."
+msgstr "ბრძანებები მუშაობს PowerShell-ით ფონზე და არ ელოდება."
+
+msgid ""
+"Commands stay off until you allow execution. Review below what your layouts "
+"would run."
+msgstr ""
+"ბრძანებები გამორთულია მანამ, სანამ არ დაუშვებთ შესრულებას. გადახედეთ ქვემოთ,"
+" თუ რა იქნება თქვენი განლაგება."
+
+msgid "Command"
+msgstr "ბრძანება"
+
+msgid "Rule {} · tap"
+msgstr "წესი {} · შეეხეთ"
+
+msgid "Rule {} · hold"
+msgstr "წესი {} · გამართავს"
+
+msgid "Rule {} · long hold"
+msgstr "წესი {} · ხანგრძლივი შეკავება"
+
+msgid "Rule {} · double tap"
+msgstr "წესი {} · ორმაგი შეხება"
+
+msgid "disabled"
+msgstr "ინვალიდი"
+
+msgid "Layer {}"
+msgstr "ფენა {}"
+
+msgid "Macro"
+msgstr "მაკრო"
+
+msgid "Quick action"
+msgstr "სწრაფი მოქმედება"
+
+msgid "Show all"
+msgstr "ყველას ჩვენება"
+
+msgid "Close"
+msgstr "დახურვა"
+
+msgid "Choose a key or key combination"
+msgstr "აირჩიეთ გასაღები ან კლავიშების კომბინაცია"
+
+msgid "Examples"
+msgstr "მაგალითები"
+
+msgid "Add rule…"
+msgstr "წესის დამატება…"
+
+msgid ""
+"All filled conditions must match. A rule without conditions always matches."
+msgstr ""
+"ყველა შევსებული პირობა უნდა ემთხვეოდეს. წესი პირობების გარეშე ყოველთვის "
+"ემთხვევა."
+
+msgid "Automatic switching rules"
+msgstr "ავტომატური გადართვის წესები"
+
+msgid ""
+"Automatic: the layout is chosen by switching rules for the application, "
+"system language or game mode."
+msgstr ""
+"ავტომატური: განლაგება შეირჩევა აპლიკაციის, სისტემის ენის ან თამაშის რეჟიმის "
+"წესების გადართვის გზით."
+
+msgid "Layout"
+msgstr "განლაგება"
+
+msgid "Layout not found"
+msgstr "განლაგება ვერ მოიძებნა"
+
+msgid "New rule"
+msgstr "ახალი წესი"
+
+msgid "Now: {} (default)"
+msgstr "ახლა: {} (ნაგულისხმევი)"
+
+msgid "Otherwise (default)"
+msgstr "წინააღმდეგ შემთხვევაში (ნაგულისხმევი)"
+
+msgid "Rule {}"
+msgstr "წესი {}"
+
+msgid "Use layout"
+msgstr "გამოიყენეთ განლაგება"
+
+msgid "When"
+msgstr "როცა"
+
+msgid "If"
+msgstr "თუ"
+
+msgid "If:"
+msgstr "თუ:"
+
+msgid "Trigger conditions"
+msgstr "გამომწვევი პირობები"
+
+msgid "No layout"
+msgstr "განლაგება არ არის"
+
+msgid "No layout (keys as is)"
+msgstr "განლაგება არ არის (გასაღებები როგორც არის)"
+
+msgid "Now: {} (rule {}: {})"
+msgstr "ახლა: {} (წესი {}: {})"
+
+msgid ""
+"Rules are checked from top to bottom; the first enabled one whose conditions"
+" match chooses the layout. If none matches, the default is used. “No layout”"
+" leaves the keyboard unprocessed, for example in an application where the "
+"layout gets in the way."
+msgstr ""
+"წესები მოწმდება ზემოდან ქვემოდან; პირველი ჩართული, რომლის პირობები ემთხვევა,"
+" ირჩევს განლაგებას. თუ არცერთი არ ემთხვევა, გამოიყენება ნაგულისხმევი. "
+"„განლაგება არ არის“ კლავიატურას დაუმუშავებელი ტოვებს, მაგალითად, "
+"აპლიკაციაში, სადაც განლაგება ხელს უშლის."
+
+msgid "No rules"
+msgstr "არანაირი წესები"
+
+msgid "The default layout is always used."
+msgstr "ნაგულისხმევი განლაგება ყოველთვის გამოიყენება."
+
+msgid "For games"
+msgstr "თამაშებისთვის"
+
+msgid "For an application"
+msgstr "განაცხადისთვის"
+
+msgid "Custom rule"
+msgstr "მორგებული წესი"
+
+msgid "When no rule matches, the keyboard works without processing."
+msgstr ""
+"როდესაც არცერთი წესი არ ემთხვევა, კლავიატურა დამუშავების გარეშე მუშაობს."
+
+msgid "Never applies: rule {} always matches first."
+msgstr "არასოდეს გამოიყენება: წესი {} ყოველთვის პირველ რიგში ემთხვევა."
+
+msgid "Game mode detection is off, so this rule never matches."
+msgstr ""
+"თამაშის რეჟიმის ამოცნობა გამორთულია, ამიტომ ეს წესი არასოდეს ემთხვევა."
+
+msgid "Not among the system languages: {}"
+msgstr "არ არის სისტემის ენებს შორის: {}"
+
+msgid "Rule enabled"
+msgstr "წესი ჩართულია"
+
+msgid "Automatic mode will use no layout by default."
+msgstr "ავტომატური რეჟიმი ნაგულისხმევად არ გამოიყენებს განლაგებას."
+
+msgid "Delete rule {}?"
+msgstr "წაშალოთ წესი {}?"
+
+msgid "The rule will be deleted. This cannot be undone."
+msgstr "წესი წაიშლება. ამის გაუქმება შეუძლებელია."
+
+msgid "Its {n} automatic rule will be deleted too."
+msgid_plural "Its {n} automatic rules will be deleted too."
+msgstr[0] "მისი {n} ავტომატური წესიც წაიშლება."
+msgstr[1] "მისი {n} ავტომატური წესიც წაიშლება."
+
+msgid "In {n} rule"
+msgid_plural "In {n} rules"
+msgstr[0] "{n} წესით"
+msgstr[1] "{n} წესში"
+
+msgid "Auto — detect games"
+msgstr "ავტომატური — თამაშების აღმოჩენა"
+
+msgid "On — always"
+msgstr "ჩართული - ყოველთვის"
+
+msgid "Off — never"
+msgstr "გამორთული - არასდროს"
+
+msgid ""
+"Automatic layout rules apply only when the layout is chosen automatically "
+"(Layouts page)."
+msgstr ""
+"განლაგების ავტომატური წესები მოქმედებს მხოლოდ მაშინ, როდესაც განლაგება "
+"ავტომატურად არჩეულია (განლაგებების გვერდი)."
+
+msgid ""
+"Borderless windows covering the screen count too. Browsers, video players "
+"and presentations are ignored."
+msgstr ""
+"ასევე მნიშვნელოვანია უსაზღვრო ფანჯრები, რომლებიც ფარავს ეკრანს. ბრაუზერები, "
+"ვიდეო პლეერები და პრეზენტაციები იგნორირებულია."
+
+msgid "Game mode is off (set manually)"
+msgstr "თამაშის რეჟიმი გამორთულია (ხელით დაყენებული)"
+
+msgid "Game mode is on (set manually)"
+msgstr "თამაშის რეჟიმი ჩართულია (ხელით დაყენებულია)"
+
+msgid ""
+"Game mode turns on rules and automatic layout rules that have a game-mode "
+"condition. Automatic layout rules apply only when the layout is chosen "
+"automatically (Layouts page). Auto uses the detection sources and custom "
+"rules below; On and Off set the state manually. “Never a game” takes "
+"priority over automatic detection and “Always a game”. You can also change "
+"the mode in the top bar, in the tray menu or with a key bound to a game mode"
+" action."
+msgstr ""
+"თამაშის რეჟიმი რთავს წესებს და ავტომატური განლაგების წესებს, რომლებსაც აქვთ "
+"თამაშის რეჟიმი. განლაგების ავტომატური წესები მოქმედებს მხოლოდ მაშინ, როდესაც"
+" განლაგება ავტომატურად არჩეულია (განლაგებების გვერდი). ავტომატური იყენებს "
+"ქვემოთ მოცემულ გამოვლენის წყაროებს და მორგებულ წესებს; ჩართვა და გამორთვა "
+"დააყენეთ მდგომარეობა ხელით. „არასოდეს თამაში“ პრიორიტეტს ანიჭებს ავტომატურ "
+"ამოცნობას და „ყოველთვის თამაშს“. თქვენ ასევე შეგიძლიათ შეცვალოთ რეჟიმი ზედა "
+"ზოლში, უჯრის მენიუში ან თამაშის რეჟიმის მოქმედებაზე მიბმული კლავიშით."
+
+msgid "Game mode: always off"
+msgstr "თამაშის რეჟიმი: ყოველთვის გამორთულია"
+
+msgid "Game mode: always on"
+msgstr "თამაშის რეჟიმი: ყოველთვის ჩართული"
+
+msgid "Game mode: detect automatically"
+msgstr "თამაშის რეჟიმი: ამოცნობა ავტომატურად"
+
+msgid "Toggle game mode"
+msgstr "თამაშის რეჟიმის გადართვა"
+
+msgid ""
+"GameMode daemon unavailable: check the gamemode package and session D-Bus."
+msgstr ""
+"GameMode დემონი მიუწვდომელია: შეამოწმეთ თამაშის რეჟიმის პაკეტი და სესია "
+"D-Bus."
+
+msgid ""
+"Install {} to detect the active window and fullscreen windows. It is also "
+"needed for application conditions in rules."
+msgstr ""
+"დააინსტალირეთ {} აქტიური ფანჯრის და სრულეკრანიანი ფანჯრების გამოსავლენად. ის"
+" ასევე საჭიროა წესების გამოყენების პირობებისთვის."
+
+msgid ""
+"Nothing uses game mode yet: no rule or automatic layout rule has a game-mode"
+" condition, so turning it on changes nothing."
+msgstr ""
+"თამაშის რეჟიმს ჯერ არაფერი იყენებს: არცერთ წესს ან ავტომატური განლაგების "
+"წესს არ აქვს თამაშის რეჟიმი, ამიტომ მისი ჩართვა არაფერს ცვლის."
+
+msgid ""
+"On and Off are remembered after restart. Auto keeps detecting in the "
+"background."
+msgstr ""
+"ჩართვა და გამორთვა ახსოვს გადატვირთვის შემდეგ. ავტომატური განაგრძობს "
+"აღმოჩენას ფონზე."
+
+msgid ""
+"Rules of the current layout with a game-mode condition: {}. Automatic layout"
+" rules with a game-mode condition: {}."
+msgstr ""
+"მიმდინარე განლაგების წესები თამაშის რეჟიმით: {}. ავტომატური განლაგების "
+"წესები თამაშის რეჟიმით: {}."
+
+msgid ""
+"Turns on while a game runs through gamemoderun or requests GameMode itself. "
+"In Steam set the launch options to “gamemoderun %command%”."
+msgstr ""
+"ჩაირთვება, სანამ თამაში გადის gamemoderun-ში ან თავად ითხოვს GameMode-ს. "
+"Steam-ში დააყენეთ გაშვების ოფციები „gamemoderun %command%“."
+
+msgid "Game mode: on"
+msgstr "თამაშის რეჟიმი: ჩართულია"
+
+msgid "Game mode: off"
+msgstr "თამაშის რეჟიმი: გამორთულია"
+
+msgid "Active now: {}"
+msgstr "აქტიურია ახლა: {}"
+
+msgid ""
+"Active window detection is unavailable in this session, so application "
+"conditions do not match."
+msgstr ""
+"აქტიური ფანჯრის ამოცნობა მიუწვდომელია ამ სესიაზე, ამიტომ აპლიკაციის პირობები"
+" არ ემთხვევა."
+
+msgid ""
+"An application is matched by its ID or process name: the whole name, "
+"ignoring case, with * and ? as wildcards. A window title item matches when "
+"the title contains the text. Any matching item is enough. An empty list "
+"imposes no restrictions."
+msgstr ""
+"აპლიკაციას ემთხვევა მისი ID ან პროცესის სახელი: მთელი სახელი, ქეისის "
+"იგნორირება, * და ? როგორც wildcards. ფანჯრის სათაურის ელემენტი ემთხვევა როცა"
+" სათაური შეიცავს ტექსტს. ნებისმიერი შესატყვისი ელემენტი საკმარისია. ცარიელი "
+"სია არ აწესებს შეზღუდვებს."
+
+msgid "Looking for open windows…"
+msgstr "ვეძებ ღია ფანჯრებს…"
+
+msgid "No open windows found"
+msgstr "ღია ფანჯრები ვერ მოიძებნა"
+
+msgid "Window title contains: {}"
+msgstr "ფანჯრის სათაური შეიცავს: {}"
+
+msgid "Timing"
+msgstr "დრო"
+
+msgid "Used by macros without their own value."
+msgstr "გამოიყენება მაკროების მიერ საკუთარი მნიშვნელობის გარეშე."
+
+msgid ""
+"Used by macros without their own value. How long to wait between pressing "
+"modifiers (Shift, Ctrl, …) and the main key of one step."
+msgstr ""
+"გამოიყენება მაკროების მიერ საკუთარი მნიშვნელობის გარეშე. რამდენი ხანი უნდა "
+"დაველოდოთ მოდიფიკატორებს (Shift, Ctrl,…) და ერთი ნაბიჯის მთავარ კლავიშს "
+"შორის."
+
+msgid "Rule without a trigger is saved as a draft and will be ignored."
+msgstr "წესი ტრიგერის გარეშე შენახულია მონახაზად და იგნორირებული იქნება."
+
+msgid "Trigger \"{}\" cannot be used for a rule."
+msgstr "ტრიგერი „{}“ არ შეიძლება გამოყენებულ იქნას წესისთვის."
+
+msgid "Rules for trigger \"{}\" may overlap; the first matching rule wins."
+msgstr ""
+"ტრიგერის წესები „{}“ შეიძლება გადაფარდეს; პირველი შესატყვისი წესი იმარჯვებს."
+
+msgid "Rule for trigger \"{}\" is covered by an earlier rule and will not run."
+msgstr "ტრიგერის წესი \"{}\" დაფარულია ადრინდელი წესით და არ იმუშავებს."
+
+msgid "Rule \"{}\" points to a layer that no longer exists."
+msgstr "წესი \"{}\" მიუთითებს ფენაზე, რომელიც აღარ არსებობს."
+
+msgid "Rule \"{}\" has an invalid tap action."
+msgstr "წესს „{}“ აქვს არასწორი შეხების მოქმედება."
+
+msgid "Rule \"{}\" has an invalid hold action."
+msgstr "წესს „{}“ აქვს არასწორი შეჩერების მოქმედება."
+
+msgid "Rule \"{}\" has an invalid double-tap action."
+msgstr "წესს „{}“ აქვს არასწორი ორმაგი შეხების მოქმედება."
+
+msgid "Automatic switching rule deleted"
+msgstr "ავტომატური გადართვის წესი წაიშალა"
+
+msgid "Only in applications"
+msgstr "მხოლოდ აპლიკაციებში"
+
+msgid "Except applications"
+msgstr "აპლიკაციების გარდა"
+
+msgid "A match blocks the rule, even if the window is in the allowed list."
+msgstr "მატჩი ბლოკავს წესს, მაშინაც კი, თუ ფანჯარა დაშვებულ სიაშია."
+
+msgid "Any match allows the rule. An empty list allows all windows."
+msgstr ""
+"ნებისმიერი მატჩი იძლევა წესს. ცარიელი სია საშუალებას აძლევს ყველა ფანჯარას."
+
+msgid "Choose applications to exclude"
+msgstr "აირჩიეთ აპლიკაციები გამოსარიცხად"
+
+msgid "Open windows"
+msgstr "გახსენი ფანჯრები"
+
+msgid "Last active"
+msgstr "ბოლო აქტიური"
+
+msgid "Nothing is excluded."
+msgstr "გამორიცხული არაფერია."
+
+msgid "No restrictions: the rule works in every window."
+msgstr "არანაირი შეზღუდვა: წესი მუშაობს ყველა ფანჯარაში."
+
+msgid "{n} window"
+msgid_plural "{n} windows"
+msgstr[0] "{n} ფანჯარა"
+msgstr[1] "{n} ფანჯარა"
+
+msgid "Do not process"
+msgstr "არ დაამუშავოთ"
+
+msgid "Command name (optional)"
+msgstr "ბრძანების სახელი (არასავალდებულო)"
+
+msgid "Working directory (home by default)"
+msgstr "სამუშაო დირექტორია (ნაგულისხმევად მთავარი)"
+
+msgid "Text to type when the action is invoked:"
+msgstr "ტექსტი, რომელიც უნდა აკრიფოთ მოქმედების გამოძახებისას:"
+
+msgid ""
+"Enter literal text without the text: prefix. Line breaks, spaces and tabs "
+"are preserved. On Linux, text is inserted into the active application via "
+"the desktop portal; permission may be required. Text injection by the mapper"
+" is not implemented on Windows or macOS."
+msgstr ""
+"შეიყვანეთ პირდაპირი ტექსტი ტექსტის გარეშე: პრეფიქსი. შემორჩენილია ხაზების "
+"წყვეტები, სივრცეები და ჩანართები. Linux-ზე ტექსტი ჩასმულია აქტიურ "
+"აპლიკაციაში დესკტოპის პორტალის მეშვეობით; შეიძლება საჭირო გახდეს ნებართვა. "
+"ტექსტის ინექცია mapper-ის მიერ არ არის დანერგილი Windows-ზე ან macOS-ზე."
+
+msgid ""
+"Commands run with sh -lc in the background. The mapper does not wait for "
+"completion or collect output. An empty name uses the command itself as its "
+"label. The working directory defaults to your home folder; scripts need "
+"execute permission. Command execution must be enabled in settings."
+msgstr ""
+"ბრძანებები მუშაობს sh -lc ფონზე. რუქტორი არ ელოდება დასრულებას და არ "
+"აგროვებს გამომავალს. ცარიელი სახელი იყენებს ბრძანებას თავის ეტიკეტად. "
+"სამუშაო დირექტორია ნაგულისხმევი თქვენი სახლის საქაღალდეში; სკრიპტებს "
+"სჭირდებათ შესრულების ნებართვა. ბრძანების შესრულება უნდა იყოს ჩართული "
+"პარამეტრებში."
+
+msgid ""
+"Commands run with PowerShell in the background, without a console window. "
+"The mapper does not wait for completion or collect output. An empty name "
+"uses the command itself as its label. The working directory defaults to your"
+" home folder. Command execution must be enabled in settings."
+msgstr ""
+"ბრძანებები მუშაობს PowerShell-ით ფონზე, კონსოლის ფანჯრის გარეშე. რუქტორი არ "
+"ელოდება დასრულებას და არ აგროვებს გამომავალს. ცარიელი სახელი იყენებს "
+"ბრძანებას თავის ეტიკეტად. სამუშაო დირექტორია ნაგულისხმევი თქვენი სახლის "
+"საქაღალდეში. ბრძანების შესრულება უნდა იყოს ჩართული პარამეტრებში."
+
+msgid ""
+"The name is optional: an empty name uses the command itself as its label. "
+"Command execution by the mapper is not implemented on macOS."
+msgstr ""
+"სახელი არჩევითია: ცარიელი სახელი იყენებს ბრძანებას თავის ეტიკეტად. ბრძანების"
+" შესრულება mapper-ის მიერ არ არის დანერგილი macOS-ზე."
+
+msgid "Triggers"
+msgstr "ტრიგერები"
+
+msgid "Disable animations"
+msgstr "გამორთეთ ანიმაციები"
+
+msgid "Add layout: "
+msgstr "განლაგების დამატება:"
+
+msgid "Save (Ctrl+S)"
+msgstr "შენახვა (Ctrl+S)"
+
+msgid "Close layout"
+msgstr "დახურეთ განლაგება"
+
+msgid "Discard layout changes?"
+msgstr "გსურთ განლაგების ცვლილებების გაუქმება?"
+
+msgid "Unsaved changes to this layout will be lost."
+msgstr "ამ განლაგების შენახული ცვლილებები დაიკარგება."
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Triggers tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"უნიკალური იდენტიფიკატორი, რომელიც გამოიყენება ცნობებში, როგორიცაა "
+"მაკრო:<id>. ამ მაკროს კლავიშთან დასაკავშირებლად, აირჩიეთ ეს მოქმედება "
+"ჩანართზე Layers ან Triggers. შეცვალეთ ID მხოლოდ მაშინ, როდესაც არაფერი არ "
+"იყენებს ამ მაკროს."
+
+msgid "Discard"
+msgstr "გაუქმება"
+
+msgid ""
+"Build reusable sequences of key chords, text, commands and system actions. Use a unique ID in macro:<id> references and a readable name in action lists. Assign macros on the Layers or Triggers tab; change an ID only when it is unused.\n"
+"\n"
+"The step pause applies between steps of this macro. Modifier delay is the time between pressing a modifier and the main key. Leave delays empty to use Settings defaults."
+msgstr ""
+"შექმენით საკვანძო აკორდების, ტექსტის, ბრძანებების და სისტემის მოქმედებების მრავალჯერადი გამოყენების თანმიმდევრობა. გამოიყენეთ უნიკალური ID მაკრო:<id> მითითებებში და წასაკითხი სახელი სამოქმედო სიებში. მიანიჭეთ მაკროები Layers ან Triggers ჩანართზე; პირადობის მოწმობის შეცვლა მხოლოდ მაშინ, როდესაც ის გამოუყენებელია.\n"
+"\n"
+"ნაბიჯის პაუზა ვრცელდება ამ მაკროს საფეხურებს შორის. მოდიფიკატორის დაყოვნება არის დრო მოდიფიკატორის დაჭერასა და მთავარ კლავიშს შორის. დატოვეთ დაგვიანებები ცარიელი პარამეტრების ნაგულისხმევი გამოყენებისთვის."
+
+msgid "Global defaults: step pause {} ms; modifier delay {} ms."
+msgstr ""
+"გლობალური ნაგულისხმევი პარამეტრები: ნაბიჯის პაუზა {} ms; მოდიფიკატორის "
+"დაყოვნება {} ms."
+
+msgid "Layout changed on disk"
+msgstr "განლაგება შეიცვალა დისკზე"
+
+msgid ""
+"The file of “{}” was changed by another program after you opened it. Your "
+"edits are kept until you choose what to do."
+msgstr ""
+"„{}“-ის ფაილი შეიცვალა სხვა პროგრამით, მას შემდეგ რაც თქვენ გახსნით. თქვენი "
+"ცვლილებები ინახება მანამ, სანამ არ აირჩევთ რა უნდა გააკეთოთ."
+
+msgid "Load from disk"
+msgstr "ჩატვირთვა დისკიდან"
+
+msgid "Save as new…"
+msgstr "შეინახე როგორც ახალი…"
+
+msgid "Overwrite"
+msgstr "გადაწერა"
+
+msgid "Show LHC key codes used in assignments, such as KeyA and ArrowLeft."
+msgstr ""
+"აჩვენეთ LHC კლავიშების კოდები, რომლებიც გამოიყენება დავალებებში, როგორიცაა "
+"KeyA და ArrowLeft."
+
+msgid "Application"
+msgstr "განაცხადი"
+
+msgid "Window title"
+msgstr "ფანჯრის სათაური"
+
+msgid "Click to switch"
+msgstr "დააწკაპუნეთ გადასართავად"
+
+msgid "Match by app ID or process instead"
+msgstr "დაემთხვა აპის ID-ს ან დამუშავების ნაცვლად"
+
+msgid "Match by window title instead"
+msgstr "ნაცვლად ფანჯრის სათაურის მიხედვით"
+
+msgid "Open now: {n} window"
+msgid_plural "Open now: {n} windows"
+msgstr[0] "გახსენით ახლა: {n} ფანჯარა"
+msgstr[1] "გახსენით ახლა: {n} ფანჯარა"
+
+msgid "Not open now"
+msgstr "ახლა არ არის გახსნილი"
+
+msgid "Running process"
+msgstr "გაშვების პროცესი"
+
+msgid "Text the window title contains"
+msgstr "ტექსტი, რომელიც შეიცავს ფანჯრის სათაურს"
+
+msgid "Already in the list"
+msgstr "უკვე სიაშია"
+
+msgid "Choose from open windows…"
+msgstr "აირჩიეთ ღია ფანჯრებიდან…"
+
+msgid "Matches {n} open window"
+msgid_plural "Matches {n} open windows"
+msgstr[0] "შეესაბამება {n} ღია ფანჯარას"
+msgstr[1] "შეესაბამება {n} ღია ფანჯარას"
+
+msgid "Matches no open window"
+msgstr "არ შეესაბამება ღია ფანჯარას"
+
+msgid "Show Quick Action Menu on the last used page"
+msgstr "აჩვენეთ სწრაფი მოქმედების მენიუ ბოლო გამოყენებულ გვერდზე"
+
+msgid "Show Emoji & Symbols menu on the last used page"
+msgstr "აჩვენეთ Emoji & Symbols მენიუ ბოლო გამოყენებულ გვერდზე"
+
+msgid "Show the settings window"
+msgstr "პარამეტრების ფანჯრის ჩვენება"
+
+msgid "Activate layout {} (switches to Single mode)"
+msgstr "გაააქტიურეთ განლაგება {} (გადართულია ერთ რეჟიმში)"
+
+msgid "There is no layout number {}"
+msgstr "არ არსებობს განლაგების ნომერი {}"
+
+msgid "Show the Left Hand Control layout name when it changes"
+msgstr ""
+"აჩვენეთ მარცხენა ხელის მართვის განლაგების სახელი, როდესაც ის შეიცვლება"
+
+msgid "Show the keys of a layer while it is held"
+msgstr "აჩვენეთ ფენის კლავიშები, სანამ ის ინახება"
+
+msgid ""
+"The hint appears 2 seconds after the layer activates. Pressing a layer key "
+"hides or cancels it until the trigger is released, including in game mode."
+msgstr ""
+"მინიშნება გამოჩნდება ფენის გააქტიურებიდან 2 წამში. ფენის ღილაკის დაჭერით "
+"მალავს ან გააუქმებს ტრიგერის გამოშვებამდე, მათ შორის თამაშის რეჟიმში."
+
+msgid ""
+"Unavailable: build with the spell feature and use a Wayland compositor with "
+"layer-shell (KDE Plasma, Sway, Hyprland)."
+msgstr ""
+"მიუწვდომელია: შექმენით მართლწერის ფუნქციით და გამოიყენეთ Wayland კომპოზიტორი"
+" ფენის გარსით (KDE Plasma, Sway, Hyprland)."
+
+msgid ""
+"The app:activateLayout1…5 actions activate the layout at that position in "
+"this list: reordering the list changes which layout a key activates. In Auto"
+" mode they switch to Single mode."
+msgstr ""
+"აპი:activateLayout1…5 ქმედება ააქტიურებს განლაგებას ამ სიაში ამ პოზიციაზე: "
+"სიის ხელახალი დალაგება იცვლება, რომელი განლაგება ააქტიურებს კლავიშს. ავტო "
+"რეჟიმში ისინი გადადიან ერთ რეჟიმში."
+
+msgid "Cut"
+msgstr "ამოჭრა"
+
+msgid "Copy"
+msgstr "კოპირება"
+
+msgid "Paste"
+msgstr "ჩასმა"
+
+msgid "Select all"
+msgstr "ყველას მონიშვნა"
+
+msgid "Clear search"
+msgstr "ძიების გასუფთავება"
+
+msgid "Add application"
+msgstr "აპლიკაციის დამატება"
+
+msgid "Edit application"
+msgstr "აპლიკაციის რედაქტირება"
+
+msgid "Remove application?"
+msgstr "გსურთ განაცხადის წაშლა?"
+
+msgid "“{}” will be removed from the list."
+msgstr "„{}“ წაიშლება სიიდან."
+
+msgid "Devices"
+msgstr "მოწყობილობები"
+
+msgid "Required"
+msgstr "საჭირო"
+
+msgid "Optional"
+msgstr "სურვილისამებრ"
+
+msgid "Failed to start"
+msgstr "დაწყება ვერ მოხერხდა"
+
+msgid "Keys work as usual. Start the mapper to apply your layouts."
+msgstr ""
+"გასაღებები ჩვეულებრივად მუშაობს. დაიწყეთ რუკების დაყენება თქვენი განლაგების "
+"გამოსაყენებლად."
+
+msgid "Select a keyboard below to start the mapper."
+msgstr "აირჩიეთ კლავიატურა ქვემოთ რუკების დასაწყებად."
+
+msgid "Changing a device restarts the mapper."
+msgstr "მოწყობილობის შეცვლა განაახლებს რუკების გადატვირთვას."
+
+msgid "Auto: known game {}"
+msgstr "ავტო: ცნობილი თამაში {}"
+
+msgid "Ignored in fullscreen"
+msgstr "იგნორირებულია სრულ ეკრანზე"
+
+msgid "Not available in this session."
+msgstr "მიუწვდომელია ამ სესიაზე."
+
+msgid "Steam games"
+msgstr "Steam თამაშები"
+
+msgid ""
+"Turns on while Steam runs a game: Steam starts every game through reaper "
+"SteamLaunch, and game windows have the ID steam_app_<number>."
+msgstr ""
+"ჩაირთვება სანამ Steam აწარმოებს თამაშს: Steam იწყებს ყველა თამაშს Reaper "
+"SteamLaunch-ის მეშვეობით და თამაშის ფანჯრებს აქვს ID steam_app_<number>."
+
+msgid "Turns on while Steam reports a running game."
+msgstr "ჩაირთვება, სანამ Steam აცნობებს გაშვებულ თამაშს."
+
+msgid "Lutris games"
+msgstr "ლუტრისის თამაშები"
+
+msgid ""
+"Turns on while a game started by Lutris runs: Lutris starts every game "
+"through lutris-wrapper."
+msgstr ""
+"ჩაირთვება სანამ Lutris-ის მიერ დაწყებული თამაში გადის: Lutris იწყებს ყველა "
+"თამაშს lutris-wrapper-ის მეშვეობით."
+
+msgid "Gamescope sessions"
+msgstr "თამაშებისკოპის სესიები"
+
+msgid "Turns on while the active window is a nested gamescope session."
+msgstr ""
+"ჩაირთვება მაშინ, როდესაც აქტიური ფანჯარა არის ჩადგმული თამაშების სესია."
+
+msgid "Games from the Game Bar list"
+msgstr "თამაშები თამაშის ზოლის სიიდან"
+
+msgid "Applications of the Game category"
+msgstr "თამაშის კატეგორიის აპლიკაციები"
+
+msgid ""
+"Turns on while the active window belongs to an application whose .desktop "
+"file lists the Game category. Launchers are tagged as games too, so they are"
+" skipped."
+msgstr ""
+"ჩაირთვება, სანამ აქტიური ფანჯარა ეკუთვნის აპლიკაციას, რომლის .desktop ფაილი "
+"ჩამოთვლის თამაშის კატეგორიას. Launchers ასევე მონიშნულია როგორც თამაშები, "
+"ამიტომ ისინი გამოტოვებულია."
+
+msgid ""
+"Turns on while the active application declares the Games category in its "
+"Info.plist. Launchers are skipped."
+msgstr ""
+"ჩაირთვება, სანამ აქტიური აპლიკაცია აცხადებს თამაშების კატეგორიას თავის "
+"Info.plist-ში. გამშვებები გამოტოვებულია."
+
+msgid "Auto — according to settings"
+msgstr "ავტომატური — პარამეტრების მიხედვით"
+
+msgid "Blank"
+msgstr "ცარიელი"
+
+msgid "Assign action"
+msgstr "დანიშნეთ მოქმედება"
+
+msgid "Action after {} ms of holding"
+msgstr "მოქმედება {} ms დაკავების შემდეგ"
+
+msgid ""
+"These codes are specific to Left Hand Control, not universal keyboard codes "
+"(e.g. KeyA, ArrowLeft)."
+msgstr ""
+"ეს კოდები სპეციფიკურია მარცხენა ხელის მართვისთვის და არა უნივერსალური "
+"კლავიატურის კოდებისთვის (მაგ. KeyA, ArrowLeft)."
+
+msgid "While its window is active"
+msgstr "სანამ მისი ფანჯარა აქტიურია"
+
+msgid "While the process runs"
+msgstr "სანამ პროცესი მიმდინარეობს"
+
+msgid "Counts while a window of the application has the focus."
+msgstr "ითვლის, სანამ აპლიკაციის ფანჯარა არის ფოკუსირებული."
+
+msgid ""
+"Counts while a process with this name runs, even without a window or in the "
+"background."
+msgstr ""
+"ითვლის ამ სახელით პროცესის გაშვებისას, თუნდაც ფანჯრის გარეშე ან ფონზე."
+
+msgid "Application · while its window is active"
+msgstr "აპლიკაცია · სანამ მისი ფანჯარა აქტიურია"
+
+msgid "Process · while it runs"
+msgstr "პროცესი · სანამ ის მუშაობს"
+
+msgid "No games added."
+msgstr "თამაშები არ არის დამატებული."
+
+msgid ""
+"Game mode turns on while any of these matches. An application is matched by "
+"its ID or process name: the whole name, ignoring case, with * and ? as "
+"wildcards. Steam games have the app ID steam_app_<number>; Proton games are "
+"also found by their .exe name. A window title item matches the active window"
+" whose title contains the text."
+msgstr ""
+"თამაშის რეჟიმი ჩაირთვება ამ რომელიმე მატჩის დროს. აპლიკაციას ემთხვევა მისი "
+"ID ან პროცესის სახელი: მთელი სახელი, ქეისის იგნორირება, * და ? როგორც "
+"wildcards. Steam თამაშებს აქვთ აპლიკაციის ID steam_app_<number>; პროტონული "
+"თამაშები ასევე გვხვდება მათი .exe სახელით. ფანჯრის სათაურის ელემენტი "
+"ემთხვევა აქტიურ ფანჯარას, რომლის სათაური შეიცავს ტექსტს."
+
+msgid ""
+"Game mode stays off while any of these matches, even if a game or another "
+"detector would turn it on."
+msgstr ""
+"თამაშის რეჟიმი გამორთულია, სანამ რომელიმე მათგანი ემთხვევა, მაშინაც კი, თუ "
+"თამაში ან სხვა დეტექტორი ჩართავს მას."
+
+msgid "less than a minute"
+msgstr "წუთზე ნაკლები"
+
+msgid "{} min"
+msgstr "{} მინ"
+
+msgid "{} h {} min"
+msgstr "{} h {} მინ"
+
+msgid "Running for {}"
+msgstr "გაშვებული {}"
+
+msgid "Stopped unexpectedly"
+msgstr "მოულოდნელად გაჩერდა"
+
+msgid "Stopped {} ago after running for {}."
+msgstr "შეჩერდა {} წინ {}-ზე გაშვების შემდეგ."
+
+msgid "Text input"
+msgstr "ტექსტის შეყვანა"
+
+msgid ""
+"How text actions in rules and macros are typed. Key remapping and the emoji "
+"popup do not use it."
+msgstr ""
+"როგორ იწერება ტექსტური მოქმედებები წესებში და მაკროებში. გასაღების "
+"გადაკეთება და emoji ამომხტარი არ იყენებენ მას."
+
+msgid "Typing method"
+msgstr "აკრეფის მეთოდი"
+
+msgid "libei + clipboard fallback (recommended)"
+msgstr "libei + ბუფერში ჩანაცვლება (რეკომენდებულია)"
+
+msgid "Paste from clipboard"
+msgstr "ჩასმა ბუფერიდან"
+
+msgid "ydotool"
+msgstr "ydotool"
+
+msgid "xdotool"
+msgstr "xdotool"
+
+msgid ""
+"Types with the current layout, or pastes the whole text when a character is "
+"unavailable. Paste requires clipboard access and support for the paste "
+"shortcut. Preserves clipboard formats and cancels if the destination "
+"changes. Requires portal permission and active-window detection."
+msgstr ""
+"აკრიფებს მიმდინარე განლაგებით, ან ათავსებს მთელ ტექსტს, როდესაც სიმბოლო "
+"მიუწვდომელია. ჩასმა მოითხოვს გაცვლის ბუფერზე წვდომას და პასტის მალსახმობის "
+"მხარდაჭერას. ინახავს ბუფერში გაცვლის ფორმატებს და გააუქმებს დანიშნულების "
+"ადგილის შეცვლის შემთხვევაში. საჭიროებს პორტალის ნებართვას და აქტიური ფანჯრის"
+" აღმოჩენას."
+
+msgid ""
+"Types only through libei using the current keyboard layout and Caps Lock "
+"state. Skips text with unavailable characters. Requires portal permission "
+"and active-window detection. Cancels if the destination changes."
+msgstr ""
+"აკრიფებს მხოლოდ libei-ის მეშვეობით კლავიატურის მიმდინარე განლაგებისა და Caps"
+" Lock მდგომარეობის გამოყენებით. გამოტოვებს ტექსტს მიუწვდომელი სიმბოლოებით. "
+"საჭიროებს პორტალის ნებართვას და აქტიური ფანჯრის აღმოჩენას. გაუქმდება, თუ "
+"დანიშნულების ადგილი შეიცვლება."
+
+msgid ""
+"Types only through NotifyKeyboardKeycode using the KDE layout and readable "
+"keyboard state. Skips text with unavailable characters. Requires portal "
+"permission and active-window detection. Cancels if the destination changes."
+msgstr ""
+"აკრიფებს მხოლოდ NotifyKeyboardKeycode-ის მეშვეობით KDE განლაგების და "
+"წასაკითხი კლავიატურის მდგომარეობის გამოყენებით. გამოტოვებს ტექსტს "
+"მიუწვდომელი სიმბოლოებით. საჭიროებს პორტალის ნებართვას და აქტიური ფანჯრის "
+"აღმოჩენას. გაუქმდება, თუ დანიშნულების ადგილი შეიცვლება."
+
+msgid ""
+"Pastes with the paste shortcut through the portal. Requires clipboard "
+"access, active-window detection and an app supporting that shortcut. "
+"Preserves all clipboard formats; a new user copy takes precedence. Reports "
+"an error if no text transfer is observed."
+msgstr ""
+"ჩასვით პასტის მალსახმობი პორტალში. საჭიროებს ბუფერზე წვდომას, აქტიური "
+"ფანჯრის ამოცნობას და ამ მალსახმობის მხარდამჭერ აპს. ინახავს ბუფერში ყველა "
+"ფორმატს; ახალი მომხმარებლის ასლს უპირატესობა ენიჭება. იტყობინება შეცდომის "
+"შესახებ, თუ ტექსტის გადაცემა არ შეინიშნება."
+
+msgid "Paste shortcut"
+msgstr "მალსახმობის ჩასმა"
+
+msgid ""
+"Sent to the focused app to paste the text. Terminals usually need "
+"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
+"Ctrl+V does not paste there."
+msgstr ""
+"გაიგზავნა ფოკუსირებულ აპლიკაციაში ტექსტის ჩასართავად. ტერმინალებს ჩვეულებრივ"
+" სჭირდებათ Ctrl+Shift+V: ზოგიერთი მათგანი ათავსებს მაუსის არჩევანს "
+"Shift+Insert-ზე და Ctrl+V იქ არ ჩასმება."
+
+msgid ""
+"Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "
+"Reliable for Latin text only. On an error, stops without switching methods."
+msgstr ""
+"მუშაობს მხოლოდ \"ydotool type\". სჭირდება ydotool და მისი ydotoold სერვისის "
+"გაშვება. სანდოა მხოლოდ ლათინური ტექსტისთვის. შეცდომის შემთხვევაში, ჩერდება "
+"მეთოდების გადართვის გარეშე."
+
+msgid ""
+"Runs \"xdotool type\" only. Works only in X11 sessions and XWayland windows."
+" On an error, stops without switching methods."
+msgstr ""
+"მუშაობს მხოლოდ \"xdotool type\". მუშაობს მხოლოდ X11 სესიებზე და XWayland "
+"Windows-ში. შეცდომის შემთხვევაში, ჩერდება მეთოდების გადართვის გარეშე."
+
+msgid "ydotool from PATH"
+msgstr "ydotool PATH-დან"
+
+msgid "xdotool from PATH"
+msgstr "xdotool PATH-დან"
+
+msgid ""
+"Each item is compared with the active window. Pick a window from the list "
+"below to fill in the field."
+msgstr ""
+"თითოეული ელემენტი შედარებულია აქტიურ ფანჯარასთან. აირჩიეთ ფანჯარა ქვემოთ "
+"მოცემული სიიდან ველის შესავსებად."
+
+msgid ""
+"Application: the app ID (Wayland app id or X11 WM_CLASS) or the process "
+"name. The whole name must match, case is ignored, .exe is optional. * stands"
+" for any characters and ? for one, e.g. steam_app_*. The ID is stable, so "
+"prefer it."
+msgstr ""
+"აპლიკაცია: აპის ID (Wayland აპის ID ან X11 WM_CLASS) ან პროცესის სახელი. "
+"მთელი სახელი უნდა ემთხვეოდეს, ქეისი იგნორირებულია, .exe არჩევითია. * ნიშნავს"
+" ნებისმიერ პერსონაჟს და ? ერთისთვის, ე.ი. steam_app_*. პირადობის მოწმობა "
+"სტაბილურია, ამიტომ უპირატესობა მიანიჭეთ მას."
+
+msgid ""
+"Window title: matches when the title contains the text, case is ignored. "
+"With * or ? the pattern must cover the whole title. A title changes with the"
+" open tab or document, and it never matches a process without a window."
+msgstr ""
+"ფანჯრის სათაური: ემთხვევა, როდესაც სათაური შეიცავს ტექსტს, იგნორირება ხდება."
+" *-ით თუ? ნიმუში უნდა მოიცავდეს მთელ სათაურს. სათაური იცვლება ღია ჩანართით "
+"ან დოკუმენტით და ის არასოდეს ემთხვევა პროცესს ფანჯრის გარეშე."
+
+msgid "Match by"
+msgstr "მატჩის მიხედვით"
+
+msgid "Process"
+msgstr "პროცესი"
+
+msgid "Process name, * and ? allowed"
+msgstr "პროცესის სახელი, * და ? დაშვებული"
+
+msgid "App ID, * and ? allowed"
+msgstr "აპლიკაციის ID, * და ? დაშვებული"
+
+msgid ""
+"The item is compared with the names of running processes. Pick one from the "
+"list below to fill in the field."
+msgstr ""
+"ელემენტი შედარებულია მიმდინარე პროცესების სახელებთან. აირჩიეთ ერთი ქვემოთ "
+"მოცემული სიიდან ველის შესავსებად."
+
+msgid ""
+"Process: the executable name, as the list below shows it. The whole name "
+"must match, case is ignored, .exe is optional. * stands for any characters "
+"and ? for one."
+msgstr ""
+"პროცესი: შესრულებადი სახელი, როგორც ამას ქვემოთ მოყვანილი სია აჩვენებს. "
+"მთელი სახელი უნდა ემთხვეოდეს, ქეისი იგნორირებულია, .exe არჩევითია. * ნიშნავს"
+" ნებისმიერ პერსონაჟს და ? ერთისთვის."
+
+msgid "Matches {n} running process"
+msgid_plural "Matches {n} running processes"
+msgstr[0] "შეესაბამება {n} გაშვებულ პროცესს"
+msgstr[1] "შეესაბამება {n} მიმდინარე პროცესს"
+
+msgid "Matches no running process"
+msgstr "არ შეესაბამება მიმდინარე პროცესს"
+
+msgid ""
+"Many applications run as “{}”, so the name matches all of them. The "
+"application ID is more precise."
+msgstr ""
+"ბევრი აპლიკაცია მუშაობს როგორც \"{}\", ასე რომ სახელი ემთხვევა ყველა "
+"მათგანს. განაცხადის ID უფრო ზუსტია."
+
+msgid "When it counts"
+msgstr "როცა ითვლის"
+
+msgid "Window titles"
+msgstr "ფანჯრის სათაურები"
+
+msgid "Processes of open windows"
+msgstr "ღია ფანჯრების პროცესები"
+
+msgid "Shared process"
+msgstr "გაზიარებული პროცესი"
+
+msgid "Running without a window"
+msgstr "სირბილი ფანჯრის გარეშე"
+
+msgid "Type a name to find processes running without a window."
+msgstr "ჩაწერეთ სახელი ფანჯრის გარეშე მიმდინარე პროცესების საპოვნელად."
+
+msgid "Process · while its window is active"
+msgstr "პროცესი · სანამ მისი ფანჯარა აქტიურია"
+
+msgid "While the trigger is held"
+msgstr "სანამ ტრიგერია გამართული"
+
+msgid "Press key"
+msgstr "დააჭირეთ ღილაკს"
+
+msgid ""
+"Which key stays pressed while you hold the trigger, together with the layer."
+" “Don't press” only switches the layer."
+msgstr ""
+"რომელი ღილაკი დაჭერილი რჩება ტრიგერის დაჭერისას ფენასთან ერთად. „ნუ დააჭირე“"
+" მხოლოდ ცვლის ფენას."
+
+msgid ""
+"Which key stays pressed while you hold the trigger. “Trigger itself” keeps "
+"the usual behavior of the key."
+msgstr ""
+"რომელი ღილაკი დაჭერილი რჩება ტრიგერის დაჭერისას. \"თვით ტრიგერი\" ინარჩუნებს"
+" გასაღების ჩვეულ ქცევას."
+
+msgid "Trigger itself"
+msgstr "თავად გამომწვევი"
+
+msgid "Other key…"
+msgstr "სხვა გასაღები…"
+
+msgid "When to press"
+msgstr "როდის უნდა დააჭიროთ"
+
+msgid "Holds {}"
+msgstr "ფლობს {}"
+
+msgid "Holds nothing"
+msgstr "არაფერს იკავებს"
+
+msgid "Hold after {} ms"
+msgstr "გააჩერეთ {} ms შემდეგ"
+
+msgid "Stop mapper (restore native keyboard behavior)"
+msgstr "რუკების შეჩერება (კლავიატურის ქცევის აღდგენა)"
+
+msgid "Select a keyboard device in the settings to start the mapper"
+msgstr "აირჩიეთ კლავიატურის მოწყობილობა პარამეტრებში რუქის დასაწყებად"
+
+msgid "Start mapper to intercept keys and apply layouts"
+msgstr "დაიწყეთ mapper კლავიშების გადასაჭრელად და განლაგების გამოსაყენებლად"
+
+msgid "Current active layout (selected automatically by switching rules)"
+msgstr "მიმდინარე აქტიური განლაგება (შერჩეულია ავტომატურად გადართვის წესებით)"
+
+msgid "Click to change mode (Auto / On / Off)"
+msgstr "დააწკაპუნეთ რეჟიმის შესაცვლელად (ავტომატური / ჩართვა / გამორთვა)"
+
+msgid ""
+"The mapper intercepts keyboard input, applies layers, rules and macros, and "
+"emits output through a virtual device."
+msgstr ""
+"Mapper წყვეტს კლავიატურის შეყვანას, იყენებს ფენებს, წესებს და მაკროებს და "
+"გამოსცემს გამოსავალს ვირტუალური მოწყობილობის მეშვეობით."
+
+msgid ""
+"Define how physical keys behave: tap for a key or action, hold to switch "
+"layers, or double-tap for extra shortcuts."
+msgstr ""
+"განსაზღვრეთ, როგორ იქცევიან ფიზიკური კლავიშები: შეეხეთ კლავიშს ან "
+"მოქმედებას, ხანგრძლივად დააჭირეთ ფენების გადასართავად, ან ორჯერ შეეხეთ "
+"დამატებითი მალსახმობებისთვის."
+
+msgid ""
+"Action performed when the trigger is pressed and released quickly without "
+"holding."
+msgstr "მოქმედება შესრულებულია ტრიგერის დაჭერისას და სწრაფად გაშვების გარეშე."
+
+msgid ""
+"Action performed when the trigger is pressed twice quickly within the "
+"double-tap timeout."
+msgstr ""
+"მოქმედება შესრულებულია, როდესაც ტრიგერის დაჭერა ორჯერ სწრაფად ხდება ორმაგი "
+"შეხების დროის ამოწურვისას."
+
+msgid "Show standard QWERTY letter labels for visual reference."
+msgstr "აჩვენეთ სტანდარტული QWERTY ასოების ეტიკეტები ვიზუალური მითითებისთვის."
+
+msgid ""
+"Show internal key codes used in Left Hand Control profiles (e.g. KeyA, "
+"ArrowLeft)."
+msgstr ""
+"მარცხენა ხელის მართვის პროფილებში გამოყენებული შიდა გასაღების კოდების "
+"ჩვენება (მაგ. KeyA, ArrowLeft)."
+
+msgid "Hold detection"
+msgstr "გააჩერეთ ამოცნობა"
+
+msgid "When a key becomes a hold"
+msgstr "როდესაც გასაღები ხდება ხელში"
+
+msgid ""
+"Decides when a rule key that is still down counts as a hold if you press "
+"another key meanwhile. Applies to all rules."
+msgstr ""
+"წყვეტს, როდის ჩაითვლება შეჩერებული წესის ღილაკი, თუ ამასობაში სხვა კლავიშს "
+"დააჭერთ. ვრცელდება ყველა წესზე."
+
+msgid ""
+"After another key is released: the key becomes a hold once another key is "
+"pressed and released while it is down, or when the hold threshold passes. "
+"Fast rolls while typing stay taps."
+msgstr ""
+"სხვა კლავიშის გამოშვების შემდეგ: კლავიატურა ხდება შეკავების შემდეგ, როდესაც "
+"სხვა კლავიშს დააჭერთ და ათავისუფლებთ, როცა ის დაშვებულია, ან როდესაც დაჭერის"
+" ზღვარი გადადის. სწრაფი რულონები აკრეფისას რჩება შეხებით."
+
+msgid ""
+"As soon as another key is pressed: reacts faster, but fast typing can "
+"trigger the hold by mistake."
+msgstr ""
+"სხვა კლავიშის დაჭერისთანავე: რეაგირებს უფრო სწრაფად, მაგრამ სწრაფმა აკრეფამ "
+"შეიძლება გამოიწვიოს შეცდომით შეკავება."
+
+msgid "After another key is released (recommended)"
+msgstr "სხვა გასაღების გამოშვების შემდეგ (რეკომენდებულია)"
+
+msgid "As soon as another key is pressed"
+msgstr "სხვა კლავიშის დაჭერისთანავე"
+
+msgid ""
+"Used by rules that leave the field empty. A rule can set its own value in "
+"its advanced options."
+msgstr ""
+"გამოიყენება წესებით, რომლებიც ველს ცარიელ ტოვებს. წესს შეუძლია დააყენოს "
+"საკუთარი მნიშვნელობა მის გაფართოებულ ვარიანტებში."
+
+msgid "Hold threshold, ms"
+msgstr "დაჭერის ბარიერი, ms"
+
+msgid ""
+"How long to hold a rule key before it counts as a hold: its layer or hold "
+"action. Released earlier, the key runs its tap action."
+msgstr ""
+"რამდენი ხანი უნდა დაიჭიროთ წესის გასაღები, სანამ ის ჩაითვლება შეკავებად: "
+"მისი ფენა ან შეჩერების მოქმედება. ადრე გამოშვებული კლავიატურა ახორციელებს "
+"შეხების მოქმედებას."
+
+msgid ""
+"Lower: layers turn on faster, but fast typing may trigger them by mistake. "
+"Higher: fewer false holds, but a longer wait. Usually 150–250 ms."
+msgstr ""
+"ქვედა: შრეები უფრო სწრაფად ირთვება, მაგრამ სწრაფმა აკრეფამ შეიძლება შეცდომით"
+" გამოიწვიოს ისინი. უფრო მაღალი: ნაკლები ცრუ შეფერხებები, მაგრამ უფრო გრძელი "
+"ლოდინი. ჩვეულებრივ 150-250 ms."
+
+msgid "Standard value: {} ms."
+msgstr "სტანდარტული მნიშვნელობა: {} ms."
+
+msgid "Long hold, ms"
+msgstr "დიდხანს გაჩერდი, ms"
+
+msgid ""
+"How long to keep holding a rule key before its long-hold action runs once. "
+"Applies to rules whose hold runs an action instead of a layer."
+msgstr ""
+"რამდენ ხანს უნდა შევინარჩუნოთ წესის გასაღები, სანამ მისი ხანგრძლივად "
+"შეკავება ერთჯერადად შესრულდება. ვრცელდება წესებზე, რომელთა შეჩერება "
+"ახორციელებს მოქმედებას ფენის ნაცვლად."
+
+msgid "Double-tap window, ms"
+msgstr "ორჯერ შეეხეთ ფანჯარას, ms"
+
+msgid ""
+"A second tap within this time after the first release counts as a double "
+"tap."
+msgstr ""
+"მეორე შეხება ამ დროის განმავლობაში პირველი გამოშვების შემდეგ ითვლება "
+"ორმაგად."
+
+msgid ""
+"A single tap on a key with a double-tap action runs only after this window "
+"ends, so a large value makes such keys feel slow. Keys without a double-tap "
+"action are not delayed."
+msgstr ""
+"ორმაგი შეხების მოქმედებით კლავიშზე ერთი შეხება მუშაობს მხოლოდ ამ ფანჯრის "
+"დასრულების შემდეგ, ამიტომ დიდი მნიშვნელობა აქცევს ასეთ კლავიშებს ნელა. "
+"ორმაგი შეხების მოქმედების გარეშე გასაღებები არ იგვიანებს."
+
+msgid ""
+"Used by macros that leave the field empty. A macro can set its own value on "
+"the Macros page."
+msgstr ""
+"გამოიყენება მაკროებით, რომლებიც ველს ცარიელ ტოვებენ. მაკროს შეუძლია დააყენოს"
+" საკუთარი მნიშვნელობა მაკროსის გვერდზე."
+
+msgid ""
+"Pause between consecutive steps of a macro. Increase it if an application "
+"misses keystrokes."
+msgstr ""
+"პაუზა მაკროს თანმიმდევრულ ნაბიჯებს შორის. გაზარდეთ ის, თუ აპლიკაცია "
+"გამოტოვებს კლავიშების დარტყმას."
+
+msgid "Simultaneous presses"
+msgstr "ერთდროული პრესები"
+
+msgid ""
+"For rules triggered by several keys pressed together, such as KeyJ+KeyK. All"
+" keys must go down within this time, in any order. Until then the first key "
+"is held back; if the combination does not complete, it is typed as usual. "
+"Modifiers are never held back."
+msgstr ""
+"წესებისთვის, რომლებიც გამოწვეულია რამდენიმე ღილაკის ერთად დაჭერით, როგორიცაა"
+" KeyJ+KeyK. ყველა კლავიატურა უნდა დაიწიოს ამ დროის განმავლობაში, ნებისმიერი "
+"თანმიმდევრობით. მანამდე პირველი გასაღები შეჩერებულია; თუ კომბინაცია არ "
+"სრულდება, ის ჩვეულებრივ აკრეფილია. მოდიფიკატორები არასდროს იკავებენ უკან."
+
+msgid ""
+"Higher: the combination is easier to hit, but typing with these keys lags "
+"slightly. Applies to all rules; a rule cannot override it."
+msgstr ""
+"უფრო მაღალი: კომბინაციის დარტყმა უფრო ადვილია, მაგრამ ამ კლავიშებით აკრეფა "
+"ოდნავ ჩამორჩება. ვრცელდება ყველა წესზე; წესი მას ვერ არღვევს."
+
+msgid ""
+"Wait between pressing modifiers (Shift, Ctrl, …) and the main key of a macro"
+" step. Increase it if an application receives the shortcut without its "
+"modifier. Default for macros that leave the field empty."
+msgstr ""
+"დაელოდეთ მოდიფიკატორებს (Shift, Ctrl,…) და მაკრო ნაბიჯის მთავარ კლავიშს "
+"შორის. გაზარდეთ ის, თუ აპლიკაცია მიიღებს მალსახმობას მისი მოდიფიკატორის "
+"გარეშე. ნაგულისხმევი მაკროებისთვის, რომლებიც ველს ცარიელ ტოვებენ."
+
+msgid "Enter a long hold from 100 to 60000 ms."
+msgstr "შეიყვანეთ ხანგრძლივი შეჩერება 100-დან 60000 ms-მდე."
+
+msgid "Long hold after {} ms"
+msgstr "დიდხანს შეჩერება {} ms-ის შემდეგ"
+
+msgid ""
+"Released earlier, the trigger counts as a tap; held longer, as a hold. Empty"
+" uses the default from Settings: {} ms."
+msgstr ""
+"ადრე გამოშვებული, ტრიგერი ითვლის როგორც ონკანი; უფრო დიდხანს გამართული, "
+"როგორც დაჭერა. Empty იყენებს ნაგულისხმევს პარამეტრებიდან: {} ms."
+
+msgid ""
+"How long to keep holding before the action runs. Empty uses the default from"
+" Settings: {} ms."
+msgstr ""
+"რამდენი ხანი უნდა შევინარჩუნოთ მოქმედების დაწყებამდე. Empty იყენებს "
+"ნაგულისხმევს პარამეტრებიდან: {} ms."
+
+msgid ""
+"Longest pause between two taps. Empty uses the default from Settings: {} ms."
+msgstr ""
+"ყველაზე გრძელი პაუზა ორ შეხებას შორის. Empty იყენებს ნაგულისხმევს "
+"პარამეტრებიდან: {} ms."
+
+msgid "Auto: {} is not counted as a game (built-in list)"
+msgstr "ავტომატური: {} არ ითვლება თამაშად (ჩაშენებული სია)"
+
+msgid ""
+"These sources can take another application for a game, so each skips a "
+"built-in list of applications."
+msgstr ""
+"ამ წყაროებს შეუძლიათ თამაშისთვის სხვა აპლიკაციის მიღება, ამიტომ თითოეული "
+"გამოტოვებს აპლიკაციების ჩაშენებულ სიას."
+
+msgid ""
+"Turns on while a program that Windows recognized as a game (the Game Bar "
+"list) runs. Launchers are listed there too, so they are skipped."
+msgstr ""
+"ჩაირთვება, სანამ პროგრამა, რომელიც Windows-მა აღიარა თამაშად (თამაშის ზოლის "
+"სია) მუშაობს. გამშვებები იქაც არის ჩამოთვლილი, ამიტომ ისინი გამოტოვებულია."
+
+msgid "Launchers and game tools — not counted as games"
+msgstr "გამშვებები და თამაშის ხელსაწყოები — არ ითვლება თამაშებად"
+
+msgid ""
+"Decides when a dual-role key counts as a hold if another key is pressed. "
+"Rules can override this default in advanced options. Chord detection is "
+"configured separately."
+msgstr ""
+"წყვეტს, როდის ჩაითვლება ორმაგი როლური ღილაკი შეკავებად, თუ სხვა კლავიშს "
+"დააჭერთ. წესებს შეუძლიათ ამ ნაგულისხმევის გადალახვა გაფართოებულ ვარიანტებში."
+" აკორდის ამოცნობა კონფიგურირებულია ცალკე."
+
+msgid "After another key is released (better for typing)"
+msgstr "კიდევ ერთი გასაღების გამოშვების შემდეგ (უკეთესი აკრეფისთვის)"
+
+msgid ""
+"As soon as another key is pressed: useful for dedicated layer or modifier "
+"keys. Reacts faster, but overlapping letters while typing can trigger the "
+"hold by mistake."
+msgstr ""
+"სხვა კლავიშის დაჭერისთანავე: სასარგებლოა სპეციალური ფენის ან მოდიფიკატორის "
+"კლავიშებისთვის. რეაგირებს უფრო სწრაფად, მაგრამ აკრეფისას ასოების გადაფარვამ "
+"შეიძლება გამოიწვიოს შეცდომით შეკავება."
+
+msgid "Default from Settings: {}"
+msgstr "ნაგულისხმევი პარამეტრებიდან: {}"
+
+msgid "after another key is released"
+msgstr "კიდევ ერთი გასაღების გამოშვების შემდეგ"
+
+msgid "as soon as another key is pressed"
+msgstr "სხვა კლავიშის დაჭერისთანავე"
+
+msgid ""
+"Overrides the default hold detection for this rule. Use release detection "
+"for typing keys and press detection for dedicated layer or modifier keys. "
+"This does not change chord detection."
+msgstr ""
+"უგულებელყოფს ნაგულისხმევი შეკავების ამოცნობას ამ წესისთვის. გამოიყენეთ "
+"გამოშვების ამოცნობა კლავიშების აკრეფისთვის და დააჭირეთ ამოცნობას გამოყოფილი "
+"ფენის ან მოდიფიკატორის გასაღებებისთვის. ეს არ ცვლის აკორდის ამოცნობას."
+
+msgid "Cannot list input devices: {}"
+msgstr "შეუძლებელია შეყვანის მოწყობილობების სია: {}"
+
+msgid "Keyboard interception is not implemented on this operating system."
+msgstr "ამ ოპერაციულ სისტემაზე კლავიატურის ჩარევა არ არის დანერგილი."
+
+msgid "Defaults"
+msgstr "ნაგულისხმევი"
+
+msgid "Shared by all rules"
+msgstr "გაზიარებულია ყველა წესით"
+
+msgid "Hold threshold"
+msgstr "ბარიერის შენარჩუნება"
+
+msgid "Long hold"
+msgstr "დიდხანს გამართვა"
+
+msgid "Double-tap window"
+msgstr "ორჯერ შეეხეთ ფანჯარას"
+
+msgid "Reset to {} ms"
+msgstr "გადატვირთეთ {} ms"
+
+msgid "Automatic game detection"
+msgstr "თამაშის ავტომატური გამოვლენა"
+
+msgid "Works only in Auto mode."
+msgstr "მუშაობს მხოლოდ ავტო რეჟიმში."
+
+msgid "System signals"
+msgstr "სისტემის სიგნალები"
+
+msgid "Launchers"
+msgstr "გამშვებები"
+
+msgid "Heroic games"
+msgstr "გმირული თამაშები"
+
+msgid ""
+"Turns on while a game started by Heroic Games Launcher runs (Epic, GOG, "
+"Amazon and added games): Heroic passes HEROIC_APP_NAME to every game it "
+"starts."
+msgstr ""
+"ჩაირთვება სანამ Heroic Games Launcher-ის მიერ დაწყებული თამაში მუშაობს "
+"(Epic, GOG, Amazon და დამატებული თამაშები): Heroic გადასცემს "
+"HEROIC_APP_NAME-ს ყველა დაწყებულ თამაშს."
+
+msgid "Games run through umu-launcher"
+msgstr "თამაშები გადის umu-launcher-ით"
+
+msgid ""
+"Turns on while a game runs through umu-run. Heroic, Lutris, Faugus Launcher "
+"and other launchers use it to start Windows games with Proton."
+msgstr ""
+"ჩაირთვება, სანამ თამაში გადის umu-run-ში. Heroic, Lutris, Faugus Launcher და"
+" სხვა გამშვებები იყენებენ მას Windows თამაშების დასაწყებად Proton-ით."
+
+msgid "Guesses — can be wrong"
+msgstr "ვარაუდები - შეიძლება არასწორი იყოს"
+
+msgid "Your rules"
+msgstr "შენი წესები"
+
+msgid ""
+"“Never a game” wins over everything else, automatic detection included."
+msgstr "\"არასოდეს თამაში\" იმარჯვებს ყველაფერზე, ავტომატური გამოვლენის ჩათვლით."
+
+msgid "Always a game"
+msgstr "ყოველთვის თამაში"
+
+msgid "Never a game"
+msgstr "არასდროს თამაში"
+
+msgid ""
+"Built-in list. To count one of these anyway, add it to Always a game under "
+"Your rules."
+msgstr ""
+"ჩამონტაჟებული სია. ერთ-ერთი მათგანის დასათვლელად, დაამატეთ ის ყოველთვის "
+"თამაშში თქვენი წესებით."
+
+msgid "Hold"
+msgstr "დაჭერა"
+
+msgid "Don't press"
+msgstr "არ დააჭიროთ"
+
+msgid "{} — change…"
+msgstr "{} - შეცვლა…"
+
+msgid "Choose another key above to set when it is pressed."
+msgstr "აირჩიეთ სხვა ღილაკი ზემოთ, რომ დააყენოთ, როდესაც ის დაჭერით."
+
+msgid "Assign a double-tap action to the rule to change this window."
+msgstr "ამ ფანჯრის შესაცვლელად წესს მიანიჭეთ ორმაგი შეხების მოქმედება."
+
+msgid "Hold on other key release"
+msgstr "გააჩერეთ სხვა გასაღების გამოშვება"
+
+msgid "Hold on other key press"
+msgstr "გააჩერეთ სხვა ღილაკის დაჭერით"
+
+msgid "Reset"
+msgstr "განულება"
+
+msgid "Return all options in this dialog to their defaults"
+msgstr "დააბრუნეთ ყველა ვარიანტი ამ დიალოგში ნაგულისხმევად"
+
+msgid "Macro time limit"
+msgstr "მაკრო დროის ლიმიტი"
+
+msgid ""
+"A macro still running after this time is stopped and counts as finished. A "
+"macro started while another one runs waits for it; up to 3 runs can wait, "
+"further presses are ignored."
+msgstr ""
+"ამ დროის შემდეგ კვლავ გაშვებული მაკრო შეჩერებულია და ითვლება დასრულებულად. "
+"მაკრო დაიწყო, ხოლო მეორე გაშვებული ელოდება მას; 3-მდე გაშვება შეიძლება "
+"დაელოდო, შემდგომი დაჭერები იგნორირებულია."
+
+msgid "Global shortcuts registered in this KDE session:"
+msgstr "ამ KDE სესიაში რეგისტრირებული გლობალური მალსახმობები:"
+
+msgid ""
+"The list is read from the KDE global shortcut service (kglobalaccel): KWin, "
+"Plasma and applications register their actions there. The chosen action is "
+"invoked as is, as if its shortcut were pressed, even when no keys are "
+"assigned to it. Which actions exist and how they behave depends on the "
+"Plasma version and installed applications, so Left Hand Control does not "
+"guarantee them. Common window and desktop actions that also work on other "
+"platforms are in System actions."
+msgstr ""
+"სია იკითხება KDE-ს გლობალური მალსახმობების სერვისიდან (kglobalaccel): KWin, "
+"Plasma და აპლიკაციები არეგისტრირებენ თავიანთ მოქმედებებს იქ. არჩეული "
+"მოქმედება გამოიძახება ისე, როგორც არის, თითქოს მისი მალსახმობი დაჭერილი "
+"იყოს, მაშინაც კი, როცა მას კლავიშები არ არის მინიჭებული. რომელი მოქმედებები "
+"არსებობს და როგორ იქცევიან ისინი დამოკიდებულია პლაზმის ვერსიაზე და "
+"დაინსტალირებულ აპლიკაციებზე, ამიტომ მარცხენა ხელის კონტროლი არ იძლევა მათ "
+"გარანტიას. ფანჯრისა და დესკტოპის ჩვეულებრივი მოქმედებები, რომლებიც ასევე "
+"მუშაობს სხვა პლატფორმებზე, არის სისტემის მოქმედებებში."
+
+msgid "Hold key or combination"
+msgstr "გეჭიროთ გასაღები ან კომბინაცია"
+
+msgid ""
+"The key or combination stays pressed until you release the trigger. Choose "
+"modifiers plus one main key, for example Ctrl+KeyC."
+msgstr ""
+"ღილაკი ან კომბინაცია დაჭერილი რჩება მანამ, სანამ არ გაათავისუფლებთ ტრიგერს. "
+"აირჩიეთ მოდიფიკატორები და ერთი მთავარი გასაღები, მაგალითად Ctrl+KeyC."
+
+msgid "Not used when holding performs a long-hold action."
+msgstr "არ გამოიყენება, როდესაც დაჭერა ასრულებს ხანგრძლივ შეკავებას."
+
+msgid "Other key or combination…"
+msgstr "სხვა გასაღები ან კომბინაცია…"
+
+msgid "Hold detection when another key is pressed"
+msgstr "გააჩერეთ ამოცნობა სხვა კლავიშის დაჭერისას"
+
+msgid "Used for single-key triggers without a long-hold action."
+msgstr "გამოიყენება ერთი ღილაკის ტრიგერებისთვის ხანგრძლივი მოქმედების გარეშე."
+
+msgid "Long-hold threshold, ms"
+msgstr "გრძელვადიანი ბარიერი, ms"
+
+msgid "Used when a long-hold action is selected."
+msgstr "გამოიყენება, როდესაც არჩეულია გრძელვადიანი მოქმედება."
+
+msgid "Double-tap interval, ms"
+msgstr "ორმაგი შეხების ინტერვალი, ms"
+
+msgid "Double-tap actions are available only for single-key triggers."
+msgstr ""
+"ორმაგი შეხებით მოქმედებები ხელმისაწვდომია მხოლოდ ერთი ღილაკის "
+"ტრიგერებისთვის."
+
+msgid "Applies when a double-tap action is assigned."
+msgstr "გამოიყენება ორმაგი შეხების მოქმედების მინიჭებისას."
+
+msgid "Delete trigger"
+msgstr "ტრიგერის წაშლა"
+
+msgid "Delete trigger?"
+msgstr "წაშალოთ ტრიგერი?"
+
+msgid ""
+"The trigger and all its assigned actions will be removed from the current "
+"layout."
+msgstr ""
+"ტრიგერი და მისი ყველა მინიჭებული მოქმედება წაიშლება მიმდინარე განლაგებიდან."
+
+msgid "Reset {} to default"
+msgstr "გადააყენეთ {} ნაგულისხმევად"
+
+msgid "Holding activates layer: {}"
+msgstr "დაჭერა ააქტიურებს ფენას: {}"
+
+msgid "Holding performs a long-hold action."
+msgstr "ჰოლდინგი ასრულებს ხანგრძლივ მოქმედებას."
+
+msgid "Holding keeps a key or combination pressed."
+msgstr "დაჭერით ინარჩუნებს ღილაკს ან კომბინაციას დაჭერილი."
+
+msgid "Paths"
+msgstr "ბილიკები"
+
+msgid "Unknown layer key at \"{}\"."
+msgstr "უცნობი ფენის გასაღები \"{}\"."
+
+msgid "Invalid layer action at \"{}\"."
+msgstr "ფენის არასწორი მოქმედება „{}“-ზე."
+
+msgid "Invalid macro at \"{}\"."
+msgstr "არასწორი მაკრო \"{}\"."
+
+msgid "Invalid menu action at \"{}\"."
+msgstr "მენიუს არასწორი მოქმედება „{}“-ზე."
+
+msgid "Invalid timing at \"{}\"."
+msgstr "არასწორი დრო „{}“-ზე."
+
+msgid "Invalid window condition at \"{}\"."
+msgstr "ფანჯრის არასწორი მდგომარეობა \"{}\"."
+
+msgid "Unsupported rule combination at \"{}\"."
+msgstr "წესების კომბინაცია „{}“-ზე მხარდაუჭერელია."
+
+msgid "Invalid macro step at \"{}\"."
+msgstr "არასწორი მაკრო ნაბიჯი „{}“-ზე."
+
+msgid "Macro call cycle at \"{}\"."
+msgstr "მაკრო ზარის ციკლი \"{}\"."
+
+msgid "A timing value is outside the range shown in Settings."
+msgstr "დროის მნიშვნელობა არის პარამეტრებში ნაჩვენები დიაპაზონის მიღმა."
+
+msgid "Keep modifiers held until the layer is released"
+msgstr "შეინახეთ მოდიფიკატორები ფენის გათავისუფლებამდე"
+
+msgid ""
+"For a combination such as Alt+Tab: Alt stays pressed while you press the key"
+" again and is released together with the layer key, so the window switcher "
+"stays open."
+msgstr ""
+"ისეთი კომბინაციისთვის, როგორიცაა Alt+Tab: Alt რჩება დაჭერილი, სანამ ისევ "
+"აჭერთ ღილაკს და იხსნება ფენის კლავიშთან ერთად, ამიტომ ფანჯრის გადამრთველი "
+"რჩება ღია."
+
+msgid ""
+"Cannot list input devices. Check device access and see the application log."
+msgstr ""
+"შეყვანის მოწყობილობების სია შეუძლებელია. შეამოწმეთ მოწყობილობაზე წვდომა და "
+"იხილეთ აპლიკაციის ჟურნალი."
+
+msgid ""
+"Configuration is unavailable. Check the configuration files and see the "
+"application log."
+msgstr ""
+"კონფიგურაცია მიუწვდომელია. შეამოწმეთ კონფიგურაციის ფაილები და იხილეთ "
+"აპლიკაციის ჟურნალი."
+
+msgid "Popup menus are unavailable. Try opening the menu again."
+msgstr "ამომხტარი მენიუები მიუწვდომელია. ისევ სცადეთ მენიუს გახსნა."
+
+msgid "Popup menu failed. Try opening the menu again."
+msgstr "ამომხტარი მენიუ ვერ მოხერხდა. ისევ სცადეთ მენიუს გახსნა."
+
+msgid ""
+"The text was not typed: the typing method is unavailable. Restart the mapper"
+" to try again."
+msgstr ""
+"ტექსტი არ იყო აკრეფილი: აკრეფის მეთოდი მიუწვდომელია. ხელახლა საცდელად "
+"გადატვირთეთ რუკების შედგენა."
+
+msgid ""
+"The text was not typed: safe clipboard access failed. See the application "
+"log."
+msgstr ""
+"ტექსტი არ იყო აკრეფილი: ბუფერში უსაფრთხო წვდომა ვერ მოხერხდა. იხილეთ "
+"განაცხადის ჟურნალი."
+
+msgid ""
+"The text was not typed: the input tool failed. See the application log."
+msgstr ""
+"ტექსტი არ იყო აკრეფილი: შეყვანის ინსტრუმენტი ვერ მოხერხდა. იხილეთ განაცხადის"
+" ჟურნალი."
+
+msgid "Changes applied, but the mapper was not updated. Restart the mapper."
+msgstr ""
+"ცვლილებები განხორციელდა, მაგრამ რუქა არ განახლებულა. გადატვირთეთ რუკების "
+"გადატვირთვა."
+
+msgid "The operation failed. See the application log."
+msgstr "ოპერაცია ჩაიშალა. იხილეთ განაცხადის ჟურნალი."
+
+msgid "The action failed. See the application log."
+msgstr "მოქმედება ჩაიშალა. იხილეთ განაცხადის ჟურნალი."
+
+msgid ""
+"Cannot start the mapper. Check the keyboard and device access. See the "
+"application log."
+msgstr ""
+"რუკების გაშვება შეუძლებელია. შეამოწმეთ კლავიატურაზე და მოწყობილობაზე წვდომა."
+" იხილეთ განაცხადის ჟურნალი."
+
+msgid "Mapper is running, but an error occurred. See the application log."
+msgstr "Mapper მუშაობს, მაგრამ მოხდა შეცდომა. იხილეთ განაცხადის ჟურნალი."
+
+msgid "Mapper stopped because of an error. See the application log."
+msgstr "Mapper შეჩერდა შეცდომის გამო. იხილეთ განაცხადის ჟურნალი."
+
+msgid ""
+"Cannot read or save the configuration. Check file access and see the "
+"application log."
+msgstr ""
+"კონფიგურაციის წაკითხვა ან შენახვა შეუძლებელია. შეამოწმეთ ფაილების წვდომა და "
+"იხილეთ განაცხადის ჟურნალი."
+
+msgid "Cannot parse the configuration file. See the application log."
+msgstr ""
+"კონფიგურაციის ფაილის გაანალიზება შეუძლებელია. იხილეთ განაცხადის ჟურნალი."
+
+msgid "The configuration contains invalid values. See the application log."
+msgstr ""
+"კონფიგურაცია შეიცავს არასწორ მნიშვნელობებს. იხილეთ განაცხადის ჟურნალი."
+
+msgid "The action has invalid syntax."
+msgstr "მოქმედებას აქვს არასწორი სინტაქსი."
+
+msgid "Pauses can only be used in macro steps."
+msgstr "პაუზების გამოყენება შესაძლებელია მხოლოდ მაკრო ნაბიჯებით."
+
+msgid "The selected macro no longer exists."
+msgstr "არჩეული მაკრო აღარ არსებობს."
+
+msgid "The selected command no longer exists."
+msgstr "არჩეული ბრძანება აღარ არსებობს."
+
+msgid "Unknown system action."
+msgstr "სისტემის უცნობი მოქმედება."
+
+msgid "Unknown application action."
+msgstr "აპლიკაციის უცნობი მოქმედება."
+
+msgid ""
+"Unknown action type. It may come from a newer version of the application."
+msgstr ""
+"უცნობი მოქმედების ტიპი. ის შეიძლება მოდიოდეს აპლიკაციის უახლესი ვერსიიდან."
+
+msgid "Layout: {}"
+msgstr "განლაგება: {}"
+
+msgid "Select All"
+msgstr "ყველას მონიშვნა"
+
+msgid "Move line down"
+msgstr "გადაიტანეთ ხაზი ქვემოთ"
+
+msgid "Down + End"
+msgstr "ქვევით + დასასრული"
+
+msgid "Up + End"
+msgstr "ზევით + დასასრული"
+
+msgid "Up 5 times"
+msgstr "5-ჯერ მაღლა"
+
+msgid "Duplicate line"
+msgstr "დუბლიკატი ხაზი"
+
+msgid "Right + Space"
+msgstr "მარჯვენა + სივრცე"
+
+msgid "Empty line below"
+msgstr "ცარიელი ხაზი ქვემოთ"
+
+msgid "Cut word right from center"
+msgstr "სიტყვის ამოჭრა ცენტრიდან მარჯვნივ"
+
+msgid "Copy word right from center"
+msgstr "დააკოპირეთ სიტყვა პირდაპირ ცენტრიდან"
+
+msgid "Paste at line above"
+msgstr "ჩასვით ზემოთ ხაზი"
+
+msgid "Replace word with buffer"
+msgstr "შეცვალეთ სიტყვა ბუფერით"
+
+msgid "Down + Home"
+msgstr "ქვემოთ + მთავარი"
+
+msgid "Up + Home"
+msgstr "ზევით + მთავარი"
+
+msgid "Down 5 times"
+msgstr "5-ჯერ დაბლა"
+
+msgid "Paste at line bottom"
+msgstr "ჩასვით ხაზის ბოლოში"
+
+msgid "Cut to start"
+msgstr "გაჭრა დასაწყებად"
+
+msgid "Cut to end"
+msgstr "გაჭრა ბოლომდე"
+
+msgid "Cut line content"
+msgstr "ხაზის შინაარსის ამოჭრა"
+
+msgid "Cut and remove line"
+msgstr "გაჭრა და ამოიღე ხაზი"
+
+msgid "Select 5 lines up"
+msgstr "აირჩიეთ 5 ხაზი"
+
+msgid "Copy to start"
+msgstr "დააკოპირეთ დასაწყებად"
+
+msgid "Copy to end"
+msgstr "დააკოპირეთ ბოლომდე"
+
+msgid "Copy line"
+msgstr "დააკოპირეთ ხაზი"
+
+msgid "Select whole line"
+msgstr "აირჩიეთ მთელი ხაზი"
+
+msgid "Select word right from center"
+msgstr "აირჩიეთ სიტყვა მარჯვენა ცენტრიდან"
+
+msgid "Replace to start with buffer"
+msgstr "ჩანაცვლება ბუფერით დასაწყებად"
+
+msgid "Replace to end with buffer"
+msgstr "ჩაანაცვლეთ ბოლომდე ბუფერით"
+
+msgid "Replace line with buffer"
+msgstr "შეცვალეთ ხაზი ბუფერით"
+
+msgid "Select 5 lines down"
+msgstr "აირჩიეთ 5 ხაზი ქვემოთ"
+
+msgid "Remove trigger"
+msgstr "ტრიგერის ამოღება"
+
+msgid "Refresh list"
+msgstr "სიის განახლება"
+
+msgid "Remove item"
+msgstr "ნივთის ამოღება"
+
+msgid "Save as or reset changes"
+msgstr "ცვლილებების შენახვა ან გადატვირთვა"
+
+msgid "Edit: {}"
+msgstr "რედაქტირება: {}"
+
+msgid "Save (Enter)"
+msgstr "შენახვა (Enter)"
+
+msgid "Save (Ctrl+Enter)"
+msgstr "შენახვა (Ctrl+Enter)"
+
+msgid "Cancel (Esc)"
+msgstr "გაუქმება (Esc)"
+
+msgid "Use the default from Settings: {} ms"
+msgstr "გამოიყენეთ ნაგულისხმევი პარამეტრებიდან: {} ms"
+
+msgid ""
+"Opened by the app:showQuickMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold any "
+"action: a shortcut, macro, shell command or system action."
+msgstr ""
+"გახსნილია აპლიკაციით:showQuickMenuN ქმედებები, სადაც N არის გვერდის პოზიცია:"
+" გვერდების გადალაგება ცვლის, რომელ გვერდს ხსნის კლავიატურა. თითოეულ უჯრედს "
+"შეუძლია შეასრულოს ნებისმიერი მოქმედება: მალსახმობი, მაკრო, ჭურვის ბრძანება "
+"ან სისტემის მოქმედება."
+
+msgid ""
+"In the popup, click a cell or press its key: the cells follow the keyboard "
+"rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number."
+msgstr ""
+"ამომხტარ ფანჯარაში დააწკაპუნეთ უჯრედზე ან დააჭირეთ მის ღილაკს: უჯრედები "
+"მიჰყვება კლავიატურის რიგებს Q–T, A–G და Z–B. ჩანართი ცვლის გვერდებს; ციფრები"
+" ხსნის გვერდს მისი ნომრის მიხედვით."
+
+msgid "Waiting for keyboard"
+msgstr "კლავიატურას ველოდები"

@@ -8,12 +8,11 @@
 
 use crate::{
     command::{Command, Dispatch, Popup, Preferences, Source, ThemeMode, Window},
-    i18n::Language,
     ipc,
     layer_hint::LayerHint,
     metrics,
     popup_model::{self, ConfiguredMenus, KeyOutcome},
-    ui::{EmojiPopup, LayerHintPopup, Locale, QuickPopup, Theme},
+    ui::{EmojiPopup, LayerHintPopup, QuickPopup, Theme},
 };
 use slint::ComponentHandle;
 use spell_framework::{
@@ -155,17 +154,16 @@ impl Layers {
 
     fn apply(&self, preferences: Preferences) {
         preferences.language.select_bundled();
-        for (theme, locale) in [
-            (self.emoji.global::<Theme>(), self.emoji.global::<Locale>()),
-            (self.quick.global::<Theme>(), self.quick.global::<Locale>()),
-            (self.hint.global::<Theme>(), self.hint.global::<Locale>()),
+        for theme in [
+            self.emoji.global::<Theme>(),
+            self.quick.global::<Theme>(),
+            self.hint.global::<Theme>(),
         ] {
             theme.set_dark(preferences.theme == ThemeMode::Dark);
             theme.set_eink(preferences.theme == ThemeMode::EInk);
             theme.set_high_contrast(preferences.high_contrast);
             theme.set_reduce_motion(preferences.reduce_motion);
             crate::ui::apply_theme(&theme);
-            locale.set_english(preferences.language == Language::English);
         }
     }
 
@@ -415,9 +413,9 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     layers.apply(preferences);
                     // Format parsed by scripts/check-preferences.py.
                     log::info!(
-                        "preferences applied: dark={}, english={}, visible={:?}",
+                        "preferences applied: dark={}, language={}, visible={:?}",
                         preferences.theme == ThemeMode::Dark,
-                        preferences.language == Language::English,
+                        preferences.language.code(),
                         visible.map(Popup::name)
                     );
                 }

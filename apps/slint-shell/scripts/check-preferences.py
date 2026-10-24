@@ -41,7 +41,8 @@ with (output / 'preferences.log').open('w') as log:
         for command in [
             'preferences light en', 'show emoji', 'preferences dark ru', 'hide',
             'preferences light en', 'show quick', 'preferences dark ru', 'hide',
-            'preferences light en', 'show emoji', 'hide', 'show quick', 'hide',
+            'preferences light en', 'show emoji', 'preferences dark es',
+            'preferences light zh-Hant', 'hide', 'show quick', 'preferences dark ja', 'hide',
         ]:
             send(command)
             time.sleep(.4)
@@ -55,9 +56,12 @@ with (output / 'preferences.log').open('w') as log:
 
 lines = (output / 'preferences.log').read_text()
 for expected in [
-    'dark=false, english=true, visible=None',
-    'dark=true, english=false, visible=Some("emoji")',
-    'dark=true, english=false, visible=Some("quick")',
+    'dark=false, language=en, visible=None',
+    'dark=true, language=ru, visible=Some("emoji")',
+    'dark=true, language=ru, visible=Some("quick")',
+    'dark=true, language=es, visible=Some("emoji")',
+    'dark=false, language=zh-Hant, visible=Some("emoji")',
+    'dark=true, language=ja, visible=Some("quick")',
 ]:
     assert expected in lines, expected
 assert 'Spell preferences:' not in lines

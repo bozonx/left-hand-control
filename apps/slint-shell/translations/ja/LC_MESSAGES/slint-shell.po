@@ -1,0 +1,3348 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Left Hand Control\n"
+"PO-Revision-Date: 2026-10-23 00:00+0000\n"
+"Last-Translator: Machine translation; review welcome\n"
+"Language-Team: Japanese\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=(0);\n"
+
+msgid "Action saved"
+msgstr "アクションが保存されました"
+
+msgid "Cancel"
+msgstr "キャンセル"
+
+msgid "Increase"
+msgstr "増加"
+
+msgid "Decrease"
+msgstr "減少"
+
+msgid "Configuration loaded: {n} rule"
+msgid_plural "Configuration loaded: {n} rules"
+msgstr[0] "ロードされた構成: {n} つのルール"
+
+msgid "Configuration saved: {n} rule"
+msgid_plural "Configuration saved: {n} rules"
+msgstr[0] "保存された構成: {n} つのルール"
+
+msgid "Configuration unavailable: {}"
+msgstr "使用できない構成: {}"
+
+msgid "Delay: an integer from 1 to 10000 ms"
+msgstr "遅延: 1 ～ 10000 ミリ秒の整数"
+
+msgid "Device saved: {}"
+msgstr "保存されたデバイス: {}"
+
+msgid "Emoji"
+msgstr "絵文字"
+
+msgid "Tab · {}/{}"
+msgstr "Tab · {}/{}"
+
+msgid "Enter non-empty text"
+msgstr "空ではないテキストを入力してください"
+
+msgid "Key {} only has conditional or layer rules; edit it in the full editor"
+msgstr "キー {} には条件ルールまたはレイヤー ルールのみがあります。フルエディタで編集してください"
+
+msgid "Keyboard"
+msgstr "キーボード"
+
+msgid "Keyboard device"
+msgstr "キーボードデバイス"
+
+msgid "Keyboard layout"
+msgstr "キーボードのレイアウト"
+
+msgid "Load a valid configuration before starting the mapper"
+msgstr "マッパーを開始する前に有効な構成をロードしてください"
+
+msgid "Mapper is running"
+msgstr "マッパーが実行中です"
+
+msgid "Mapper is running: {}"
+msgstr "マッパーが実行中: {}"
+
+msgid "Mapper is starting…"
+msgstr "マッパーが起動中です…"
+
+msgid "Mapper is stopped"
+msgstr "マッパーが停止しています"
+
+msgid "Mapper is stopped: {}"
+msgstr "マッパーが停止しています: {}"
+
+msgid "Quick actions"
+msgstr "クイックアクション"
+
+msgid "Quit"
+msgstr "終了"
+
+msgid "Settings"
+msgstr "設定"
+
+msgid "Mapper on / off"
+msgstr "マッパーのオン/オフ"
+
+msgid "Switch to desktop {n}"
+msgstr "デスクトップに切り替える {n}"
+
+msgid "Save"
+msgstr "保存"
+
+msgid "Changes applied, but the mapper was not updated: {}"
+msgstr "変更は適用されましたが、マッパーは更新されませんでした: {}"
+
+msgid "Select a key to assign an action."
+msgstr "アクションを割り当てるキーを選択します。"
+
+msgid "Select a keyboard device in the settings"
+msgstr "設定でキーボードデバイスを選択します"
+
+msgid "Select a system action"
+msgstr "システムアクションを選択してください"
+
+msgid "Spell popup process unavailable: {}"
+msgstr "スペルポップアッププロセスが利用できません: {}"
+
+msgid "Spell worker is not running"
+msgstr "スペルワーカーが実行されていません"
+
+msgid "Spell worker is restarting"
+msgstr "スペルワーカーが再起動しています"
+
+msgid "Spell worker: restart limit exceeded (3 per minute)"
+msgstr "スペルワーカー: 再起動制限を超えました (1 分あたり 3 回)"
+
+msgid "Spell worker: {}"
+msgstr "スペルワーカー: {}"
+
+msgid "Stop capture"
+msgstr "キャプチャを停止する"
+
+msgid "System"
+msgstr "システム"
+
+msgid "Text"
+msgstr "文章"
+
+msgid "The configuration changed since editing started; repeat the change"
+msgstr "編集を開始してから構成が変更されました。変化を繰り返す"
+
+msgid "Unknown action type"
+msgstr "不明なアクション タイプ"
+
+msgid "Left Hand Control"
+msgstr "Left Hand Control"
+
+msgid "Layouts"
+msgstr "レイアウト"
+
+msgid "New layout name"
+msgstr "新しいレイアウト名"
+
+msgid "Mapper"
+msgstr "キー割り当て"
+
+msgid "Dark"
+msgstr "暗い"
+
+msgid "Light"
+msgstr "ライト"
+
+msgid "Refresh devices"
+msgstr "デバイスをリフレッシュする"
+
+msgid "Mouse device path"
+msgstr "マウスデバイスのパス"
+
+msgid "Optional device path"
+msgstr "オプションのデバイスパス"
+
+msgid "General"
+msgstr "一般的な"
+
+msgid "Appearance"
+msgstr "外観"
+
+msgid "Language"
+msgstr "言語"
+
+msgid "Automatic"
+msgstr "自動"
+
+msgid "Key behavior"
+msgstr "主要な動作"
+
+msgid "Game mode"
+msgstr "ゲームモード"
+
+msgid "Use GameMode daemon"
+msgstr "GameModeデーモンを使用する"
+
+msgid "Detect fullscreen"
+msgstr "フルスクリーンを検出"
+
+msgid "ydotool path"
+msgstr "ydotool パス"
+
+msgid "xdotool path"
+msgstr "xdotool パス"
+
+msgid "Settings directory: "
+msgstr "設定ディレクトリ:"
+
+msgid "Layouts directory: "
+msgstr "レイアウトディレクトリ:"
+
+msgid "Save settings"
+msgstr "設定を保存する"
+
+msgid "Settings saved"
+msgstr "設定が保存されました"
+
+msgid "Enter a timeout from 50 to 1000 milliseconds"
+msgstr "50 ～ 1000 ミリ秒のタイムアウトを入力します。"
+
+msgid "Rules"
+msgstr "ルール"
+
+msgid "Remove"
+msgstr "取り除く"
+
+msgid "Move up"
+msgstr "上に移動"
+
+msgid "Move down"
+msgstr "下に移動"
+
+msgid "Enabled"
+msgstr "有効"
+
+msgid "Trigger key"
+msgstr "トリガーキー"
+
+msgid "Tap action"
+msgstr "タップアクション"
+
+msgid "Layout conditions (comma separated)"
+msgstr "レイアウト条件（カンマ区切り）"
+
+msgid "App whitelist (comma separated)"
+msgstr "アプリのホワイトリスト (カンマ区切り)"
+
+msgid "App blacklist (comma separated)"
+msgstr "アプリのブラックリスト (カンマ区切り)"
+
+msgid "Isolate"
+msgstr "隔離する"
+
+msgid "Hold for"
+msgstr "しばらく待ってください"
+
+msgid "Swallow tap"
+msgstr "短押しを抑制"
+
+msgid "Swallow hold"
+msgstr "長押しを抑制"
+
+msgid "New layer name"
+msgstr "新しいレイヤー名"
+
+msgid "Create layer"
+msgstr "レイヤーの作成"
+
+msgid "Rules and triggers"
+msgstr "ルールとトリガー"
+
+msgid "Define how physical keys activate layers or run actions."
+msgstr "物理キーがレイヤーをアクティブにする方法やアクションを実行する方法を定義します。"
+
+msgid "Add rule"
+msgstr "ルールの追加"
+
+msgid "Not set"
+msgstr "未設定"
+
+msgid "Layer (hold)"
+msgstr "レイヤー（長押し）"
+
+msgid "Double-tap action"
+msgstr "ダブルタップアクション"
+
+msgid "Hold button"
+msgstr "ホールドボタン"
+
+msgid "Default"
+msgstr "デフォルト"
+
+msgid "Advanced"
+msgstr "高度な"
+
+msgid "Choose trigger key"
+msgstr "トリガーキーを選択"
+
+msgid "Choose layer"
+msgstr "レイヤーを選択してください"
+
+msgid "Conditions"
+msgstr "条件"
+
+msgid "Advanced rule options"
+msgstr "高度なルールのオプション"
+
+msgid "Choose action"
+msgstr "アクションを選択してください"
+
+msgid "Ignore"
+msgstr "無視する"
+
+msgid "On"
+msgstr "オン"
+
+msgid "Off"
+msgstr "オフ"
+
+msgid "Clear"
+msgstr "クリア"
+
+msgid "Apply"
+msgstr "適用"
+
+msgid "Delete rule?"
+msgstr "ルールを削除しますか?"
+
+msgid "This rule will be removed from the current layout."
+msgstr "このルールは現在のレイアウトから削除されます。"
+
+msgid "Layers"
+msgstr "レイヤー"
+
+msgid "New layer"
+msgstr "新しいレイヤー"
+
+msgid "Duplicate"
+msgstr "重複"
+
+msgid "Delete"
+msgstr "削除"
+
+msgid "Extra keys"
+msgstr "追加のキー"
+
+msgid "Edit"
+msgstr "編集"
+
+msgid "Rename layer"
+msgstr "レイヤー名の変更"
+
+msgid "Duplicate layer"
+msgstr "レイヤーの複製"
+
+msgid "Delete layer?"
+msgstr "レイヤーを削除しますか?"
+
+msgid "Edit layer key"
+msgstr "レイヤキーの編集"
+
+msgid "Name"
+msgstr "名前"
+
+msgid "Description"
+msgstr "説明"
+
+msgid "Rules using this layer will return to the base layer."
+msgstr "このレイヤーを使用するルールは基本レイヤーに戻ります。"
+
+msgid "Transparent"
+msgstr "透明"
+
+msgid "Swallow"
+msgstr "抑制"
+
+msgid "Action"
+msgstr "アクション"
+
+msgid "Action code"
+msgstr "アクションコード"
+
+msgid "Enter a layer name"
+msgstr "レイヤー名を入力してください"
+
+msgid "A layer with this name already exists."
+msgstr "この名前のレイヤーはすでに存在します。"
+
+msgid "Enter a layout name"
+msgstr "レイアウト名を入力してください"
+
+msgid "Enter a key code"
+msgstr "キーコードを入力してください"
+
+msgid "Native"
+msgstr "ネイティブ"
+
+msgid "Layer saved"
+msgstr "レイヤーが保存されました"
+
+msgid "Macros"
+msgstr "マクロ"
+
+msgid "Built-in macros"
+msgstr "組み込みマクロ"
+
+msgid "Macro ID"
+msgstr "マクロID"
+
+msgid "Copy ID"
+msgstr "IDをコピーする"
+
+msgid "Steps"
+msgstr "ステップ"
+
+msgid "Add step"
+msgstr "ステップの追加"
+
+msgid "Add pause"
+msgstr "一時停止を追加する"
+
+msgid "Macro ID must contain 1–64 letters, digits, underscores or hyphens"
+msgstr "マクロ ID には 1 ～ 64 文字の文字、数字、アンダースコア、またはハイフンを含める必要があります"
+
+msgid "Macro ID is already in use"
+msgstr "マクロIDはすでに使用されています"
+
+msgid "Macro delays must be between 0 and 2000 ms"
+msgstr "マクロ遅延は 0 ～ 2000 ミリ秒でなければなりません"
+
+msgid "Pause must be between 1 and 10000 ms"
+msgstr "一時停止は 1 ～ 10000 ミリ秒にする必要があります"
+
+msgid "Unknown key or shortcut in macro step"
+msgstr "マクロステップ内の不明なキーまたはショートカット"
+
+msgid "Macro references cannot form a cycle"
+msgstr "マクロ参照は循環を形成できません"
+
+msgid "Commands"
+msgstr "コマンド"
+
+msgid "Add"
+msgstr "追加"
+
+msgid "Clear cell"
+msgstr "クリアセル"
+
+msgid "Page name"
+msgstr "ページ名"
+
+msgid "Emoji cells accept at most 100 characters."
+msgstr "絵文字セルには最大 100 文字を入力できます。"
+
+msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
+msgstr "コマンド ID: 1 ～ 64 の文字、数字、アンダースコア、またはハイフン。"
+
+msgid "Command IDs must be unique."
+msgstr "コマンド ID は一意である必要があります。"
+
+msgid "Enter a shell command."
+msgstr "シェルコマンドを入力します。"
+
+msgid "Save as…"
+msgstr "名前を付けて保存…"
+
+msgid "Save layout as…"
+msgstr "レイアウトを名前を付けて保存…"
+
+msgid "Please wait…"
+msgstr "お待ちください…"
+
+msgid "Stop"
+msgstr "停止"
+
+msgid "Start"
+msgstr "始める"
+
+msgid "Custom layout"
+msgstr "カスタムレイアウト"
+
+msgid "Base keyboard"
+msgstr "ベースキーボード"
+
+msgid "Keyboard device path"
+msgstr "キーボードデバイスのパス"
+
+msgid "Copy path"
+msgstr "パスをコピーする"
+
+msgid "Create a layer to assign its keys, or edit the base keyboard."
+msgstr "レイヤーを作成してキーを割り当てるか、ベースキーボードを編集します。"
+
+msgid "Running"
+msgstr "ランニング"
+
+msgid "Stopped"
+msgstr "停止しました"
+
+msgid "Layout library updated"
+msgstr "レイアウトライブラリが更新されました"
+
+msgid "Select a layout"
+msgstr "レイアウトを選択してください"
+
+msgid "Layout changed on disk; select it again"
+msgstr "ディスク上のレイアウトが変更されました。もう一度選択してください"
+
+msgid "Any game mode"
+msgstr "どのゲームモードでも"
+
+msgid "Game mode on"
+msgstr "ゲームモードオン"
+
+msgid "Game mode off"
+msgstr "ゲームモードオフ"
+
+msgid "System layouts (comma separated)"
+msgstr "システムレイアウト (カンマ区切り)"
+
+msgid "Applications (comma separated)"
+msgstr "アプリケーション (カンマ区切り)"
+
+msgid "Manual"
+msgstr "マニュアル"
+
+msgid "Active"
+msgstr "アクティブ"
+
+msgid "Editing · unsaved"
+msgstr "編集中・未保存"
+
+msgid "Editing"
+msgstr "編集"
+
+msgid "Activate"
+msgstr "活性化"
+
+msgid "Delete layout?"
+msgstr "レイアウトを削除しますか?"
+
+msgid "Layout details"
+msgstr "レイアウトの詳細"
+
+msgid "Do not use when"
+msgstr "こんなときは使用しないでください"
+
+msgid "The layout file will be deleted. This cannot be undone."
+msgstr "レイアウトファイルが削除されます。これを元に戻すことはできません。"
+
+msgid "Duplicate…"
+msgstr "重複…"
+
+msgid "Edit layout"
+msgstr "レイアウトの編集"
+
+msgid "New layout"
+msgstr "新しいレイアウト"
+
+msgid "A layout with this name already exists."
+msgstr "この名前のレイアウトはすでに存在します。"
+
+msgid "Add a description…"
+msgstr "説明を追加…"
+
+msgid "Create"
+msgstr "作成する"
+
+msgid "Delete…"
+msgstr "消去…"
+
+msgid "Description (optional)"
+msgstr "説明 (オプション)"
+
+msgid "Discard changes"
+msgstr "変更を破棄する"
+
+msgid "Make active"
+msgstr "アクティブにする"
+
+msgid "Single: the layout you make active works everywhere."
+msgstr "シングル: アクティブにしたレイアウトはどこでも機能します。"
+
+msgid "Not used in automatic mode"
+msgstr "自動モードでは使用されません"
+
+msgid "Rename…"
+msgstr "名前を変更…"
+
+msgid "Save and continue"
+msgstr "保存して続行"
+
+msgid ""
+"The layout you are editing has not been saved to the library. Its changes "
+"will be lost."
+msgstr "編集中のレイアウトはライブラリに保存されていません。その変更は失われます。"
+
+msgid "The name contains characters that cannot be used in a file name."
+msgstr "ファイル名に使用できない文字が含まれています。"
+
+msgid "Unsaved changes"
+msgstr "未保存の変更"
+
+msgid "You are editing “{}”, but “{}” is active."
+msgstr "「{}」を編集していますが、「{}」はアクティブです。"
+
+msgid "You are editing “{}”; no layout is active."
+msgstr "「{}」を編集しています。アクティブなレイアウトはありません。"
+
+msgid "game mode off"
+msgstr "ゲームモードオフ"
+
+msgid "game mode on"
+msgstr "ゲームモードオン"
+
+msgid "{} (copy)"
+msgstr "{} (コピー)"
+
+msgid "“{}” has unsaved changes. Save them before switching?"
+msgstr "「{}」には未保存の変更があります。切り替える前に保存しますか?"
+
+msgid "Layout mode"
+msgstr "レイアウトモード"
+
+msgid "Create layout"
+msgstr "レイアウトの作成"
+
+msgid "Empty"
+msgstr "空の"
+
+msgid "Empty layout"
+msgstr "空のレイアウト"
+
+msgid "Previously selected: {}"
+msgstr "以前に選択したもの: {}"
+
+msgid "Current value"
+msgstr "現在値"
+
+msgid "Capture key"
+msgstr "キャプチャキー"
+
+msgid "Press a key (including modifiers or Escape)."
+msgstr "キーを押します (修飾キーやエスケープを含む)。"
+
+msgid "Press a key or shortcut. Release a modifier to select it alone."
+msgstr "キーまたはショートカットを押します。モディファイアを放して単独で選択します。"
+
+msgid "Choose a valid key or action."
+msgstr "有効なキーまたはアクションを選択してください。"
+
+msgid "Search keys and actions"
+msgstr "検索キーとアクション"
+
+msgid "Search keys"
+msgstr "検索キー"
+
+msgid "Hold action"
+msgstr "ホールドアクション"
+
+msgid "Macro step"
+msgstr "マクロステップ"
+
+msgid ""
+"You can enter a key combination using + between keys. Some keys depend on "
+"keyboard hardware and may be ignored by the system."
+msgstr ""
+"キーの間に + を使用してキーの組み合わせを入力できます。一部のキーはキーボードのハードウェアに依存しており、システムによって無視される場合があります。"
+
+msgid ""
+"You can assign a key combination using + between keys. Availability of "
+"special keys depends on the keyboard and desktop environment."
+msgstr ""
+"キーの間に + を使用してキーの組み合わせを割り当てることができます。特殊キーが使用できるかどうかは、キーボードとデスクトップ環境によって異なります。"
+
+msgid "Behavior:"
+msgstr "行動："
+
+msgid "Action:"
+msgstr "アクション："
+
+msgid "Trigger key:"
+msgstr "トリガーキー:"
+
+msgid "{n} line"
+msgid_plural "{n} lines"
+msgstr[0] "{n}行"
+
+msgid "Modifiers"
+msgstr "修飾子"
+
+msgid "Letters, digits and symbols"
+msgstr "文字、数字、記号"
+
+msgid "Control keys"
+msgstr "コントロールキー"
+
+msgid "Navigation and numpad"
+msgstr "ナビゲーションとテンキー"
+
+msgid "F1–F24"
+msgstr "F1–F24"
+
+msgid "Media and launch"
+msgstr "メディアと発売"
+
+msgid "System and laptop"
+msgstr "システムとラップトップ"
+
+msgid "Mouse"
+msgstr "ねずみ"
+
+msgid "Other keys"
+msgstr "その他のキー"
+
+msgid "Actions"
+msgstr "アクション"
+
+msgid "Extra button on some gaming mice"
+msgstr "一部のゲーミング マウスの追加ボタン"
+
+msgid "Keys"
+msgstr "キー"
+
+msgid "System actions"
+msgstr "システムアクション"
+
+msgid "KDE shortcuts"
+msgstr "KDE ショートカット"
+
+msgid "Pause"
+msgstr "一時停止"
+
+msgid "Literal text (text: prefix is added automatically)"
+msgstr "リテラルテキスト (テキスト: プレフィックスが自動的に追加されます)"
+
+msgid "Pause in milliseconds (1–10000)"
+msgstr "ミリ秒単位で一時停止します (1 ～ 10000)"
+
+msgid "No matching items"
+msgstr "一致するアイテムはありません"
+
+msgid "Show Quick Action Menu page {}"
+msgstr "クイックアクションメニューページを表示 {}"
+
+msgid "Show Emoji & Symbols menu page {}"
+msgstr "絵文字と記号メニューページを表示 {}"
+
+msgid "Switch to desktop {}"
+msgstr "デスクトップに切り替える {}"
+
+msgid "Move window to desktop {}"
+msgstr "ウィンドウをデスクトップに移動 {}"
+
+msgid "Close window"
+msgstr "ウィンドウを閉じる"
+
+msgid "Minimize window"
+msgstr "ウィンドウを最小化する"
+
+msgid "Maximize window"
+msgstr "ウィンドウを最大化する"
+
+msgid "Keep window above others"
+msgstr "ウィンドウを他のウィンドウより上に保つ"
+
+msgid "Show desktop"
+msgstr "デスクトップを表示"
+
+msgid "Window overview"
+msgstr "ウィンドウの概要"
+
+msgid "Open application launcher"
+msgstr "アプリケーションランチャーを開く"
+
+msgid "Turn off screen"
+msgstr "画面をオフにする"
+
+msgid "Switch to layout {}"
+msgstr "レイアウト {} に切り替える"
+
+msgid "Layer"
+msgstr "レイヤー"
+
+msgid "Delete layer"
+msgstr "レイヤーの削除"
+
+msgid "Create new layer"
+msgstr "新しいレイヤーを作成する"
+
+msgid "Layer description"
+msgstr "レイヤーの説明"
+
+msgid "Add description"
+msgstr "説明を追加"
+
+msgid "Type to test..."
+msgstr "テストするために入力してください..."
+
+msgid "Ignore key"
+msgstr "キーを無視する"
+
+msgid "No layers yet"
+msgstr "まだレイヤーがありません"
+
+msgid "Left hand"
+msgstr "左手"
+
+msgid "Right hand"
+msgstr "右手"
+
+msgid "Key"
+msgstr "鍵"
+
+msgid "US layout"
+msgstr "米国レイアウト"
+
+msgid "LHC codes"
+msgstr "LHCコード"
+
+msgid "No extra keys for this layer yet."
+msgstr "このレイヤーにはまだ追加のキーがありません。"
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid."
+msgstr "マウス ボタン、メディア キー、およびメイン キーボード グリッドの外側にあるその他のトリガー。"
+
+msgid ""
+"Display modes affect labels only — the key code stays the same. “US layout” "
+"shows standard letter labels for visual reference. “LHC codes” shows app-"
+"specific codes (e.g. KeyA, ArrowLeft)."
+msgstr ""
+"表示モードはラベルにのみ影響します。キーコードは変わりません。 「US レ​​イアウト」には、視覚的な参照のために標準の文字ラベルが表示されます。 "
+"「LHC コード」には、アプリ固有のコード (KeyA、ArrowLeft など) が表示されます。"
+
+msgid "(copy)"
+msgstr "（コピー）"
+
+msgid "Add page"
+msgstr "ページを追加"
+
+msgid "Allow commands"
+msgstr "コマンドを許可する"
+
+msgid "Animals & Nature"
+msgstr "動物と自然"
+
+msgid ""
+"Build reusable sequences from key chords, text actions, commands, or system "
+"actions. Steps run in order with the configured pause between them."
+msgstr ""
+"キーコード、テキストアクション、コマンド、またはシステムアクションから再利用可能なシーケンスを構築します。ステップは、構成された一時停止を挟んで順番に実行されます。"
+
+msgid ""
+"Built-in macros that cannot be edited. To customize, create a user macro "
+"based on one."
+msgstr "編集できない組み込みマクロ。カスタマイズするには、それに基づいてユーザー マクロを作成します。"
+
+msgid "Cell {}"
+msgstr "セル {}"
+
+msgid "Command name"
+msgstr "コマンド名"
+
+msgid "Create based on"
+msgstr "に基づいて作成します"
+
+msgid "Delete macro"
+msgstr "マクロの削除"
+
+msgid "Delete macro?"
+msgstr "マクロを削除しますか?"
+
+msgid "Delete page"
+msgstr "ページの削除"
+
+msgid "Delete page?"
+msgstr "ページを削除しますか?"
+
+msgid "Delete step"
+msgstr "ステップの削除"
+
+msgid "Delete step?"
+msgstr "ステップを削除しますか?"
+
+msgid "Disable"
+msgstr "無効にする"
+
+msgid "Drag"
+msgstr "ドラッグ"
+
+msgid "Emoji & Symbols"
+msgstr "絵文字と記号"
+
+msgid "Emoji Symbols"
+msgstr "絵文字記号"
+
+msgid "Emoji, symbol, or any text"
+msgstr "絵文字、記号、または任意のテキスト"
+
+msgid "Empty step — pick an action or remove it."
+msgstr "空のステップ — アクションを選択するか、削除します。"
+
+msgid "Fix the existing macro errors first"
+msgstr "まず既存のマクロエラーを修正してください"
+
+msgid "Food & Drink"
+msgstr "食べ物と飲み物"
+
+msgid "Human-readable macro name, shown in picker lists."
+msgstr "人間が判読できるマクロ名。ピッカー リストに表示されます。"
+
+msgid "ID"
+msgstr "ID"
+
+msgid "Key {}"
+msgstr "キー {}"
+
+msgid "Label"
+msgstr "ラベル"
+
+msgid "Macro name"
+msgstr "マクロ名"
+
+msgid "Modifier delay"
+msgstr "修飾子の遅延"
+
+msgid "Move page left"
+msgstr "ページを左に移動"
+
+msgid "Move page right"
+msgstr "ページを右に移動"
+
+msgid "New macro"
+msgstr "新しいマクロ"
+
+msgid "No macros yet. Click \"New macro\" to create the first one."
+msgstr "まだマクロはありません。 「新しいマクロ」をクリックして最初のマクロを作成します。"
+
+msgid "No steps yet. Each step — one chord or action."
+msgstr "まだ手順はありません。各ステップ - 1 つのコードまたはアクション。"
+
+msgid ""
+"Opened by the app:showEmojiMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold an "
+"emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short "
+"phrase (e.g. \"// TODO: \")."
+msgstr ""
+"app:showEmojiMenuN アクションによって開きます。N "
+"はページの位置です。ページの順序を変更すると、キーが開くページが変わります。各セルには、絵文字、UTF 記号 (例: ≠)、その他の文字 (例: "
+"№)、または短いフレーズ (例: \"// TODO: \") を含めることができます。"
+
+msgid "Opened by the app:showQuickMenu1...5 actions."
+msgstr "アプリによって開かれます:showQuickMenu1...5 アクション。"
+
+msgid "Page"
+msgstr "ページ"
+
+msgid "Pause (ms)"
+msgstr "一時停止 (ミリ秒)"
+
+msgid "Pause between steps"
+msgstr "ステップ間で一時停止する"
+
+msgid "People & Gestures"
+msgstr "人物とジェスチャー"
+
+msgid "Per-macro pause between steps. Defaults to the Settings value."
+msgstr "ステップ間のマクロごとの一時停止。デフォルトは設定値です。"
+
+msgid "Pick an action"
+msgstr "アクションを選択してください"
+
+msgid "Quick Actions"
+msgstr "クイックアクション"
+
+msgid ""
+"Reusable shell commands for the current layout. On Linux they run through sh"
+" -lc after you explicitly allow them. Shell commands run one at a time, with"
+" a 30-second limit, in your home directory."
+msgstr ""
+"現在のレイアウトの再利用可能なシェル コマンド。 Linux では、明示的に許可した後、sh -lc を通じて実行されます。シェル コマンドは、ホーム "
+"ディレクトリで 30 秒の制限付きで一度に 1 つずつ実行されます。"
+
+msgid "Shell commands are allowed for this version of the current layout."
+msgstr "シェル コマンドは、現在のレイアウトのこのバージョンで使用できます。"
+
+msgid "Smileys & Emotion"
+msgstr "スマイリーと感情"
+
+msgid ""
+"The command will be deleted. Keys or macros that reference cmd:{} will stop "
+"working."
+msgstr "コマンドは削除されます。 cmd:{} を参照するキーまたはマクロは機能しなくなります。"
+
+msgid "The macro will be deleted. References macro:{} will stop working."
+msgstr "マクロが削除されます。参照マクロ:{} は動作を停止します。"
+
+msgid "The page and all assigned cells on it will be deleted."
+msgstr "ページとそのページに割り当てられているすべてのセルが削除されます。"
+
+msgid ""
+"This layout contains shell scripts. Read every script before allowing them, "
+"especially in layouts from other people. Approval applies to the reviewed "
+"command definitions and resets when the command set, IDs, or Linux scripts "
+"change."
+msgstr ""
+"このレイアウトにはシェル "
+"スクリプトが含まれています。特に他の人のレイアウトの場合は、許可する前にすべてのスクリプトを読んでください。承認はレビューされたコマンド定義に適用され、コマンド"
+" セット、ID、または Linux スクリプトが変更されるとリセットされます。"
+
+msgid "This step will be removed from the macro."
+msgstr "このステップはマクロから削除されます。"
+
+msgid ""
+"Time between pressing a modifier and the main key within one step. Defaults "
+"to the Settings value."
+msgstr "1 ステップ内で修飾キーを押してからメイン キーを押すまでの時間。デフォルトは設定値です。"
+
+msgid "Travel & Places"
+msgstr "旅行と場所"
+
+msgid "UTF Symbols"
+msgstr "UTF シンボル"
+
+msgid "Texts"
+msgstr "テキスト"
+
+msgid "Non-breaking space"
+msgstr "非改行スペース"
+
+msgid "continue"
+msgstr "続く"
+
+msgid "do all you recommended"
+msgstr "あなたが勧めたものをすべて実行してください"
+
+msgid "fix the errors above"
+msgstr "上記のエラーを修正してください"
+
+msgid "I'll call you back later"
+msgstr "後でまた電話します"
+
+msgid "Thanks!"
+msgstr "ありがとう！"
+
+msgid "OK, got it 👍"
+msgstr "わかりました👍"
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Rules tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"マクロ:<id> などの参照で使用される一意の識別子。このマクロをキーにバインドするには、[レイヤー] タブまたは [ルール] "
+"タブでそのアクションを選択します。このマクロを使用するものが何もない場合にのみ ID を変更してください。"
+
+msgid "Used in:"
+msgstr "使用場所:"
+
+msgid "User macros"
+msgstr "ユーザーマクロ"
+
+msgid "Work & Objects"
+msgstr "作品とオブジェ"
+
+msgid "e.g. Next Track"
+msgstr "例えば次のトラック"
+
+msgid "ms"
+msgstr "MS"
+
+msgid "Rule saved"
+msgstr "ルールが保存されました"
+
+msgid "Search layers"
+msgstr "検索レイヤー"
+
+msgid "Set"
+msgstr "セット"
+
+msgid "Start the mapper to run actions from the menus"
+msgstr "マッパーを起動してメニューからアクションを実行します"
+
+msgid ""
+"The text was not typed: the keyboard layout lacks some of its characters, "
+"such as emoji. Choose a typing method with the clipboard."
+msgstr "テキストが入力されていません。キーボード レイアウトに絵文字などの一部の文字がありません。クリップボードを使用して入力方法を選択します。"
+
+msgid "The text was not typed: the active keyboard layout is unknown."
+msgstr "テキストは入力されませんでした。アクティブなキーボード レイアウトが不明です。"
+
+msgid ""
+"The text was not typed: the typing method is unavailable ({}). Restart the "
+"mapper to try again."
+msgstr "テキストは入力されませんでした。入力方法は使用できません ({})。マッパーを再起動して、もう一度試してください。"
+
+msgid "The text was not typed: safe clipboard access failed ({})."
+msgstr "テキストが入力されませんでした: 安全なクリップボード アクセスに失敗しました ({})。"
+
+msgid "The text was not typed: {}"
+msgstr "テキストが入力されていません: {}"
+
+msgid "The layout file is empty"
+msgstr "レイアウトファイルが空です"
+
+msgid "↑"
+msgstr "↑"
+
+msgid "↓"
+msgstr "↓"
+
+msgid "Does not matter"
+msgstr "重要ではない"
+
+msgid "Open for editing (unsaved)"
+msgstr "編集用に開きます (未保存)"
+
+msgid "Open for editing"
+msgstr "編集用に開く"
+
+msgid "Layout name"
+msgstr "レイアウト名"
+
+msgid "System languages"
+msgstr "システム言語"
+
+msgid "No system languages detected"
+msgstr "システム言語が検出されませんでした"
+
+msgid "Applications"
+msgstr "アプリケーション"
+
+msgid "“{}” will be deleted. This cannot be undone."
+msgstr "「{}」が削除されます。これを元に戻すことはできません。"
+
+msgid "Reset current changes"
+msgstr "現在の変更をリセットする"
+
+msgid "Available"
+msgstr "利用可能"
+
+msgid "Unavailable"
+msgstr "利用不可"
+
+msgid "Not implemented"
+msgstr "未実装"
+
+msgid "No input devices were found in /dev/input."
+msgstr "/dev/input に入力デバイスが見つかりませんでした。"
+
+msgid ""
+"The selected keyboard is not connected. Connect it or pick another one "
+"below."
+msgstr "選択したキーボードは接続されていません。接続するか、下から別の接続を選択してください。"
+
+msgid ""
+"No permission to read keyboard events. Add your user to the input group "
+"(install-linux.sh permissions does this) and log in again."
+msgstr ""
+"キーボードイベントを読み取る権限がありません。ユーザーを入力グループに追加し (install-linux.sh "
+"権限がこれを行います)、再度ログインします。"
+
+msgid ""
+"/dev/uinput does not exist. Load the uinput kernel module: sudo modprobe "
+"uinput."
+msgstr "/dev/uinput が存在しません。 uinput カーネル モジュールをロードします: sudo modprobe uinput。"
+
+msgid ""
+"No permission to write to /dev/uinput. Install the application's udev rule "
+"(install-linux.sh permissions) or reinstall the package."
+msgstr ""
+"/dev/uinput に書き込む権限がありません。アプリケーションの udev ルール (install-linux.sh 権限) "
+"をインストールするか、パッケージを再インストールします。"
+
+msgid "Launch on startup"
+msgstr "起動時に起動"
+
+msgid "Start the mapper on launch"
+msgstr "起動時にマッパーを開始する"
+
+msgid "No keyboard is selected, so the mapper cannot start."
+msgstr "キーボードが選択されていないため、マッパーを開始できません。"
+
+msgid "Choose a keyboard"
+msgstr "キーボードを選択してください"
+
+msgid "Getting started"
+msgstr "はじめる"
+
+msgid "Keyboard selected"
+msgstr "キーボードが選択されました"
+
+msgid "Choose the keyboard to remap"
+msgstr "再マッピングするキーボードを選択してください"
+
+msgid "Change"
+msgstr "変化"
+
+msgid "Add a layout"
+msgstr "レイアウトを追加する"
+
+msgid "Press Start at the top to apply it"
+msgstr "上部の「開始」を押して適用します"
+
+msgid "No active layout"
+msgstr "アクティブなレイアウトがありません"
+
+msgid "Current active layout (automatic)"
+msgstr "現在アクティブなレイアウト (自動)"
+
+msgid "Current active layout — click to switch"
+msgstr "現在アクティブなレイアウト — クリックして切り替えます"
+
+msgid "Current keyboard layout in the system"
+msgstr "システムの現在のキーボード レイアウト"
+
+msgid "Game mode: active"
+msgstr "ゲームモード: アクティブ"
+
+msgid "Game mode: inactive"
+msgstr "ゲームモード: 非アクティブ"
+
+msgid "Active: {}"
+msgstr "アクティブ: {}"
+
+msgid "Trigger"
+msgstr "トリガー"
+
+msgid "New rule: choose a trigger"
+msgstr "新しいルール: トリガーを選択してください"
+
+msgid "Swallow key"
+msgstr "キーを抑制"
+
+msgid "Pass through"
+msgstr "通過"
+
+msgid "Double tap: {} ms"
+msgstr "ダブルタップ: {} ミリ秒"
+
+msgid "Custom hold options"
+msgstr "カスタムホールドオプション"
+
+msgid "Leave empty to use the global timing settings."
+msgstr "グローバル タイミング設定を使用するには、空のままにしておきます。"
+
+msgid ""
+"Temporarily releases the held key or modifier while these keys are pressed "
+"in the layer."
+msgstr "レイヤー内でこれらのキーが押されている間、保持されているキーまたはモディファイアを一時的に放します。"
+
+msgid ""
+"Defers the held action until one of these keys is pressed in the layer. "
+"Requires a hold action and a layer."
+msgstr "レイヤー内でこれらのキーのいずれかが押されるまで、保留されたアクションが延期されます。ホールドアクションとレイヤーが必要です。"
+
+msgid "Delete rule"
+msgstr "ルールの削除"
+
+msgid ""
+"Clear restores normal key behavior. Swallow prevents the key from reaching "
+"the application."
+msgstr "クリアすると、通常のキーの動作が復元されます。 Swallow はキーがアプリケーションに到達するのを防ぎます。"
+
+msgctxt "Game mode control"
+msgid "Auto"
+msgstr "自動"
+
+msgctxt "Game mode control"
+msgid "On"
+msgstr "オン"
+
+msgctxt "Game mode control"
+msgid "Off"
+msgstr "オフ"
+
+msgid "Auto: no detection sources enabled"
+msgstr "自動: 有効な検出ソースはありません"
+
+msgid "Auto: detection unavailable"
+msgstr "自動: 検出は使用できません"
+
+msgid "Auto: game mode inactive"
+msgstr "自動: ゲームモードは非アクティブです"
+
+msgid "Auto: GameMode daemon active"
+msgstr "自動: GameMode デーモンがアクティブです"
+
+msgid "Auto: matched {}"
+msgstr "自動: {} と一致"
+
+msgid "Auto: fullscreen window active"
+msgstr "自動: 全画面ウィンドウがアクティブ"
+
+msgid "Auto: excluded by {}"
+msgstr "自動: {} によって除外されます"
+
+msgid ""
+"Fullscreen detection is not supported in this session. Use process rules or "
+"On/Off."
+msgstr "このセッションでは全画面検出はサポートされていません。プロセス ルールまたはオン/オフを使用します。"
+
+msgid "Fullscreen detection tools are missing or could not query the session."
+msgstr "全画面検出ツールが見つからないか、セッションをクエリできませんでした。"
+
+msgid "Running processes: "
+msgstr "実行中のプロセス:"
+
+msgid "Active window: "
+msgstr "アクティブなウィンドウ:"
+
+msgid "Create a layer to assign its keys."
+msgstr "キーを割り当てるレイヤーを作成します。"
+
+msgid "Button {}"
+msgstr "ボタン{}"
+
+msgid "Copied to clipboard"
+msgstr "クリップボードにコピーされました"
+
+msgid "Theme"
+msgstr "テーマ"
+
+msgid "E-ink"
+msgstr "E-ink"
+
+msgid "Enter device path manually"
+msgstr "デバイスパスを手動で入力します"
+
+msgid "All keyboards"
+msgstr "すべてのキーボード"
+
+msgid "All mice (buttons only)"
+msgstr "すべてのマウス (ボタンのみ)"
+
+msgid "Mode"
+msgstr "モード"
+
+msgid "New"
+msgstr "新しい"
+
+msgid "Auto"
+msgstr "自動"
+
+msgid "Delete extra key?"
+msgstr "余分なキーを削除しますか?"
+
+msgid "This key assignment will be removed from the layer."
+msgstr "このキー割り当てはレイヤーから削除されます。"
+
+msgid "Command started: {}"
+msgstr "コマンドが開始されました: {}"
+
+msgid "Unavailable on this platform or desktop"
+msgstr "このプラットフォームまたはデスクトップでは利用できません"
+
+msgid "This action is not supported on macOS"
+msgstr "このアクションは macOS ではサポートされていません"
+
+msgid "Approve commands on the Commands tab before running this action"
+msgstr "このアクションを実行する前に、「コマンド」タブでコマンドを承認してください。"
+
+msgid "Pick the physical device whose events should be intercepted."
+msgstr "イベントをインターセプトする必要がある物理デバイスを選択します。"
+
+msgid ""
+"Select the mouse so the mapper can see extra buttons and clicks. Pointer "
+"movement is not affected."
+msgstr "マウスを選択すると、マッパーが追加のボタンとクリックを表示できるようになります。ポインタの動きには影響しません。"
+
+msgid ""
+"The mouse is not fully intercepted yet: a remapped extra button can emit the"
+" new action, but its native system or app action may still run. If that gets"
+" in the way, disable the native action for that button in your system, "
+"browser, or driver settings."
+msgstr ""
+"マウスはまだ完全にインターセプトされていません。再マップされた追加ボタンは新しいアクションを発行できますが、ネイティブ "
+"システムまたはアプリのアクションは引き続き実行される可能性があります。それが邪魔になる場合は、システム、ブラウザ、またはドライバーの設定でそのボタンのネイティブ"
+" アクションを無効にしてください。"
+
+msgid ""
+"The mapper reads from /dev/input/eventX and emits through uinput. If Start "
+"fails, grant access to those devices: usually the input group plus a udev "
+"rule for /dev/uinput."
+msgstr ""
+"マッパーは /dev/input/eventX から読み取り、uinput を通じて出力します。開始が失敗した場合は、それらのデバイス "
+"(通常は入力グループと /dev/uinput の udev ルール) へのアクセスを許可します。"
+
+msgid "Refresh device list"
+msgstr "デバイスリストを更新する"
+
+msgid "Mouse (optional)"
+msgstr "マウス (オプション)"
+
+msgid "Not selected"
+msgstr "未選択"
+
+msgid "Not selected (no mouse support)"
+msgstr "選択されていません (マウスはサポートされていません)"
+
+msgid "Looks like a keyboard"
+msgstr "キーボードっぽいですね"
+
+msgid "Looks like a mouse"
+msgstr "ネズミみたいですね"
+
+msgid "Other devices"
+msgstr "その他のデバイス"
+
+msgid "Search devices"
+msgstr "デバイスの検索"
+
+msgid "Single"
+msgstr "シングル"
+
+msgid "{n} rule"
+msgid_plural "{n} rules"
+msgstr[0] "{n} ルール"
+
+msgid "{n} layer"
+msgid_plural "{n} layers"
+msgstr[0] "{n}層"
+
+msgid "{n} emoji page"
+msgid_plural "{n} emoji pages"
+msgstr[0] "{n} 絵文字ページ"
+
+msgid "{n} action page"
+msgid_plural "{n} action pages"
+msgstr[0] "{n} アクションページ"
+
+msgid "{n} macro"
+msgid_plural "{n} macros"
+msgstr[0] "{n}マクロ"
+
+msgid "{n} command"
+msgid_plural "{n} commands"
+msgstr[0] "{n}コマンド"
+
+msgid "Main"
+msgstr "主要"
+
+msgid "Saved assignment: {}"
+msgstr "保存された割り当て: {}"
+
+msgid "Behavior"
+msgstr "行動"
+
+msgid "Inherit"
+msgstr "継承する"
+
+msgid "No separate action"
+msgstr "個別のアクションはありません"
+
+msgid "Activate layer only"
+msgstr "レイヤーのみをアクティブにする"
+
+msgid "Normal key behavior"
+msgstr "通常のキーの動作"
+
+msgid "Suppress"
+msgstr "抑制する"
+
+msgid "Assign held key"
+msgstr "保持されているキーを割り当てる"
+
+msgid "Perform action"
+msgstr "アクションを実行する"
+
+msgid "The key will not reach the application."
+msgstr "キーはアプリケーションに届きません。"
+
+msgid "Use the assignment from the lower layer or base layout."
+msgstr "下位レイヤまたはベース レイアウトからの割り当てを使用します。"
+
+msgid "Do not assign a separate action to this gesture."
+msgstr "このジェスチャに別のアクションを割り当てないでください。"
+
+msgid "Holding activates the selected layer. The original key is not sent."
+msgstr "押し続けると、選択したレイヤーがアクティブになります。元のキーは送信されません。"
+
+msgid "Send the original key to the application."
+msgstr "元のキーをアプリケーションに送信します。"
+
+msgid "Capture shortcut"
+msgstr "ショートカットをキャプチャする"
+
+msgid "Choose a valid trigger key."
+msgstr "有効なトリガー キーを選択してください。"
+
+msgid "Choose a valid action."
+msgstr "有効なアクションを選択してください。"
+
+msgid "Empty cell"
+msgstr "空のセル"
+
+msgid "Remove the action from this menu cell."
+msgstr "このメニューセルからアクションを削除します。"
+
+msgid "Edit assignment"
+msgstr "割り当ての編集"
+
+msgid "Holding also activates the selected layer."
+msgstr "押し続けると、選択したレイヤーもアクティブになります。"
+
+msgid "Block"
+msgstr "ブロック"
+
+msgid ""
+"The key press is consumed: the system and the active application will not "
+"receive it."
+msgstr "キーの押下は消費されます。システムとアクティブなアプリケーションはそれを受け取りません。"
+
+msgid ""
+"The key press passes through unchanged, as if no assignment were configured."
+msgstr "キーを押すと、割り当てが設定されていなかったかのように、変更されずに通過します。"
+
+msgid "Capture"
+msgstr "捕獲"
+
+msgid "Unchanged"
+msgstr "変わらない"
+
+msgid "Leave a delay empty to use the global setting."
+msgstr "グローバル設定を使用するには、遅延を空のままにしておきます。"
+
+msgid "Allow command execution"
+msgstr "コマンドの実行を許可する"
+
+msgid "No commands are assigned."
+msgstr "コマンドは割り当てられていません。"
+
+msgid "Commands are disabled in Settings."
+msgstr "コマンドは設定で無効になっています。"
+
+msgid "Working directory (optional)"
+msgstr "作業ディレクトリ (オプション)"
+
+msgid "Save layout changes before opening another layout."
+msgstr "別のレイアウトを開く前に、レイアウトの変更を保存します。"
+
+msgid "No layer"
+msgstr "レイヤーなし"
+
+msgid "Layer not found"
+msgstr "レイヤーが見つかりません"
+
+msgid "Create new layer…"
+msgstr "新しいレイヤーを作成…"
+
+msgid "Create “{}”"
+msgstr "「{}」を作成します"
+
+msgid ""
+"A trigger can be a single key or a combination, such as "
+"ShiftLeft+ControlLeft. The combination works in either press order and ends "
+"when any key is released."
+msgstr ""
+"トリガーには、単一のキー、または ShiftLeft+ControlLeft "
+"などの組み合わせを使用できます。この組み合わせは、どちらの押し順でも機能し、いずれかのキーが放されると終了します。"
+
+msgid "When held"
+msgstr "開催時"
+
+msgid ""
+"Choose a layer active until release, or an action performed once after the "
+"hold duration."
+msgstr "リリースするまでアクティブなレイヤー、またはホールド期間後に 1 回実行されるアクションを選択します。"
+
+msgid "Nothing"
+msgstr "何もない"
+
+msgid "Activate layer"
+msgstr "レイヤをアクティブにする"
+
+msgid "Run action"
+msgstr "アクションの実行"
+
+msgid "Long-hold action"
+msgstr "ロングホールドアクション"
+
+msgid "Runs once after {} s"
+msgstr "{} の後に 1 回実行されます"
+
+msgid "Hold another key / combination"
+msgstr "別のキー/組み合わせを押し続ける"
+
+msgid "Press one key or hold a combination, then release a key to capture it."
+msgstr "1 つのキーを押すか、組み合わせを押したままにして、キーを放してそのキーをキャプチャします。"
+
+msgid "Held key: {}"
+msgstr "保持されているキー: {}"
+
+msgid "Assigned to"
+msgstr "担当者"
+
+msgid "Languages"
+msgstr "言語"
+
+msgid "Excluded applications"
+msgstr "除外されるアプリケーション"
+
+msgid "Open page in popup"
+msgstr "ポップアップでページを開く"
+
+msgid "Page:"
+msgstr "ページ："
+
+msgid "Layout “{}” created"
+msgstr "レイアウト「{}」を作成しました"
+
+msgid "Layout “{}” saved"
+msgstr "レイアウト「{}」を保存しました"
+
+msgid "Layout “{}” deleted"
+msgstr "レイアウト「{}」を削除"
+
+msgid "Layout “{}” activated"
+msgstr "レイアウト「{}」が有効化されました"
+
+msgid "Could not complete the action"
+msgstr "アクションを完了できませんでした"
+
+msgid "Dismiss notification"
+msgstr "通知を閉じる"
+
+msgid "Changes to layout “{}” discarded"
+msgstr "レイアウト「{}」への変更は破棄されました"
+
+msgid "Popup menus are unavailable: {}"
+msgstr "ポップアップ メニューは使用できません: {}"
+
+msgid "Popup menus are not running. Try opening the menu again."
+msgstr "ポップアップ メニューが実行されていません。もう一度メニューを開いてみてください。"
+
+msgid "Popup menus are restarting. Try again shortly."
+msgstr "ポップアップメニューが再開されます。しばらくしてからもう一度お試しください。"
+
+msgid "Popup menus could not recover. Restart the application."
+msgstr "ポップアップ メニューを回復できませんでした。アプリケーションを再起動します。"
+
+msgid "Popup menu error: {}"
+msgstr "ポップアップ メニュー エラー: {}"
+
+msgid "Choose a key or combination for the trigger"
+msgstr "トリガーのキーまたは組み合わせを選択します"
+
+msgid ""
+"Mouse buttons, media keys, and other triggers outside the main keyboard "
+"grid. Add a trigger, then choose its action, suppress it, or inherit its "
+"assignment from the lower layer."
+msgstr ""
+"マウス ボタン、メディア キー、およびメイン キーボード "
+"グリッドの外側にあるその他のトリガー。トリガーを追加し、そのアクションを選択するか、抑制するか、下位層からその割り当てを継承します。"
+
+msgid ""
+"You can enter emoji, any text, or Unicode symbols here. Drag an item from "
+"the palette onto a key to assign it."
+msgstr "ここに絵文字、任意のテキスト、または Unicode 記号を入力できます。アイテムをパレットからキーにドラッグして割り当てます。"
+
+msgid "Accessibility"
+msgstr "アクセシビリティ"
+
+msgid "High contrast"
+msgstr "ハイコントラスト"
+
+msgid ""
+"Pure black or white background, stronger text, borders and focus outlines. "
+"Works with the light and dark themes."
+msgstr "純粋な黒または白の背景、より強力なテキスト、境界線、およびフォーカスのアウトライン。明るいテーマと暗いテーマに対応します。"
+
+msgid "Reduce motion"
+msgstr "動きを減らす"
+
+msgid "Turn off highlight animations in the editor."
+msgstr "エディターでハイライト アニメーションをオフにします。"
+
+msgid ""
+"Every control can be reached with Tab and activated with Space or Enter. "
+"Interface size follows the desktop scale factor."
+msgstr ""
+"すべてのコントロールには Tab キーでアクセスし、Space または Enter "
+"キーでアクティブにできます。インターフェイスのサイズはデスクトップのスケール係数に従います。"
+
+msgid "Always"
+msgstr "いつも"
+
+msgid "Hold duration"
+msgstr "ホールド持続時間"
+
+msgid "{} s"
+msgstr "{}"
+
+msgid "{} s (default)"
+msgstr "{} (デフォルト)"
+
+msgid "Shell command or path to a script, e.g. playerctl play-pause"
+msgstr "シェルコマンドまたはスクリプトへのパス（例） playerctl 再生一時停止"
+
+msgid "Runs with sh -lc in the background; the result is not awaited."
+msgstr "バックグラウンドで sh -lc を使用して実行します。結果は待っていません。"
+
+msgid "Choose script…"
+msgstr "スクリプトを選択してください…"
+
+msgid "Working directory (optional, home by default)"
+msgstr "作業ディレクトリ (オプション、デフォルトではホーム)"
+
+msgid "Choose folder…"
+msgstr "フォルダを選択してください…"
+
+msgid ""
+"Command execution is turned off. Turn it on in the settings to assign "
+"commands."
+msgstr "コマンドの実行がオフになります。設定でオンにするとコマンドを割り当てられます。"
+
+msgid "Open command settings"
+msgstr "コマンド設定を開く"
+
+msgid "The working directory does not exist."
+msgstr "作業ディレクトリが存在しません。"
+
+msgid ""
+"The script file is not executable: run chmod +x on it or prefix the path "
+"with sh."
+msgstr ""
+"スクリプト ファイルは実行可能ではありません。スクリプト ファイルに対して chmod +x を実行するか、パスの先頭に sh を付けます。"
+
+msgid "Choose a script"
+msgstr "スクリプトを選択してください"
+
+msgid "Choose a working directory"
+msgstr "作業ディレクトリを選択してください"
+
+msgid "Commands run with sh -lc in the background and are not awaited."
+msgstr "コマンドは sh -lc を使用してバックグラウンドで実行され、待機されません。"
+
+msgid "Commands run with PowerShell in the background and are not awaited."
+msgstr "コマンドは PowerShell を使用してバックグラウンドで実行され、待機されません。"
+
+msgid ""
+"Commands stay off until you allow execution. Review below what your layouts "
+"would run."
+msgstr "コマンドは実行を許可するまでオフのままです。レイアウトがどのように実行されるかを以下で確認してください。"
+
+msgid "Command"
+msgstr "指示"
+
+msgid "Rule {} · tap"
+msgstr "ルール{}・タップ"
+
+msgid "Rule {} · hold"
+msgstr "ルール {} · ホールド"
+
+msgid "Rule {} · long hold"
+msgstr "ルール {} · ロングホールド"
+
+msgid "Rule {} · double tap"
+msgstr "ルール {} ・ダブルタップ"
+
+msgid "disabled"
+msgstr "無効"
+
+msgid "Layer {}"
+msgstr "レイヤー{}"
+
+msgid "Macro"
+msgstr "マクロ"
+
+msgid "Quick action"
+msgstr "クイックアクション"
+
+msgid "Show all"
+msgstr "すべて表示"
+
+msgid "Close"
+msgstr "閉じる"
+
+msgid "Choose a key or key combination"
+msgstr "キーまたはキーの組み合わせを選択します"
+
+msgid "Examples"
+msgstr "例"
+
+msgid "Add rule…"
+msgstr "ルールを追加…"
+
+msgid ""
+"All filled conditions must match. A rule without conditions always matches."
+msgstr "入力されたすべての条件が一致する必要があります。条件のないルールは常に一致します。"
+
+msgid "Automatic switching rules"
+msgstr "自動切り替えルール"
+
+msgid ""
+"Automatic: the layout is chosen by switching rules for the application, "
+"system language or game mode."
+msgstr "自動: レイアウトは、アプリケーション、システム言語、またはゲーム モードのルールを切り替えることによって選択されます。"
+
+msgid "Layout"
+msgstr "レイアウト"
+
+msgid "Layout not found"
+msgstr "レイアウトが見つかりません"
+
+msgid "New rule"
+msgstr "新しいルール"
+
+msgid "Now: {} (default)"
+msgstr "現在: {} (デフォルト)"
+
+msgid "Otherwise (default)"
+msgstr "それ以外の場合 (デフォルト)"
+
+msgid "Rule {}"
+msgstr "ルール {}"
+
+msgid "Use layout"
+msgstr "レイアウトを使用する"
+
+msgid "When"
+msgstr "いつ"
+
+msgid "If"
+msgstr "もし"
+
+msgid "If:"
+msgstr "もし："
+
+msgid "Trigger conditions"
+msgstr "トリガー条件"
+
+msgid "No layout"
+msgstr "レイアウトなし"
+
+msgid "No layout (keys as is)"
+msgstr "レイアウトなし (キーはそのまま)"
+
+msgid "Now: {} (rule {}: {})"
+msgstr "現在: {} (ルール {}: {})"
+
+msgid ""
+"Rules are checked from top to bottom; the first enabled one whose conditions"
+" match chooses the layout. If none matches, the default is used. “No layout”"
+" leaves the keyboard unprocessed, for example in an application where the "
+"layout gets in the way."
+msgstr ""
+"ルールは上から下までチェックされます。条件が一致する最初に有効になったものがレイアウトを選択します。一致するものがない場合は、デフォルトが使用されます。"
+" 「レイアウトなし」では、レイアウトが邪魔になるアプリケーションなどでキーボードが処理されません。"
+
+msgid "No rules"
+msgstr "ルールなし"
+
+msgid "The default layout is always used."
+msgstr "デフォルトのレイアウトが常に使用されます。"
+
+msgid "For games"
+msgstr "ゲーム用"
+
+msgid "For an application"
+msgstr "アプリケーションの場合"
+
+msgid "Custom rule"
+msgstr "カスタムルール"
+
+msgid "When no rule matches, the keyboard works without processing."
+msgstr "一致するルールがない場合、キーボードは処理を行わずに動作します。"
+
+msgid "Never applies: rule {} always matches first."
+msgstr "決して適用されません: ルール {} が常に最初に一致します。"
+
+msgid "Game mode detection is off, so this rule never matches."
+msgstr "ゲームモード検出がオフになっているため、このルールは一致しません。"
+
+msgid "Not among the system languages: {}"
+msgstr "システム言語に含まれない: {}"
+
+msgid "Rule enabled"
+msgstr "ルールが有効になっています"
+
+msgid "Automatic mode will use no layout by default."
+msgstr "自動モードでは、デフォルトではレイアウトが使用されません。"
+
+msgid "Delete rule {}?"
+msgstr "ルール {} を削除しますか?"
+
+msgid "The rule will be deleted. This cannot be undone."
+msgstr "ルールは削除されます。これを元に戻すことはできません。"
+
+msgid "Its {n} automatic rule will be deleted too."
+msgid_plural "Its {n} automatic rules will be deleted too."
+msgstr[0] "その {n} つの自動ルールも削除されます。"
+
+msgid "In {n} rule"
+msgid_plural "In {n} rules"
+msgstr[0] "{n}つのルールで"
+
+msgid "Auto — detect games"
+msgstr "自動 — ゲームを検出"
+
+msgid "On — always"
+msgstr "オン — 常に"
+
+msgid "Off — never"
+msgstr "オフ — 決してしない"
+
+msgid ""
+"Automatic layout rules apply only when the layout is chosen automatically "
+"(Layouts page)."
+msgstr "自動レイアウト ルールは、レイアウトが自動的に選択された場合 ([レイアウト] ページ) にのみ適用されます。"
+
+msgid ""
+"Borderless windows covering the screen count too. Browsers, video players "
+"and presentations are ignored."
+msgstr "画面を覆うボーダーレスウィンドウもカウントされます。ブラウザ、ビデオ プレーヤー、プレゼンテーションは無視されます。"
+
+msgid "Game mode is off (set manually)"
+msgstr "ゲームモードがオフになっています（手動で設定）"
+
+msgid "Game mode is on (set manually)"
+msgstr "ゲームモードがオンになっています（手動で設定）"
+
+msgid ""
+"Game mode turns on rules and automatic layout rules that have a game-mode "
+"condition. Automatic layout rules apply only when the layout is chosen "
+"automatically (Layouts page). Auto uses the detection sources and custom "
+"rules below; On and Off set the state manually. “Never a game” takes "
+"priority over automatic detection and “Always a game”. You can also change "
+"the mode in the top bar, in the tray menu or with a key bound to a game mode"
+" action."
+msgstr ""
+"ゲーム モードでは、ゲーム モード条件のあるルールと自動レイアウト ルールがオンになります。自動レイアウト ルールは、レイアウトが自動的に選択された場合"
+" ([レイアウト] ページ) にのみ適用されます。自動では、以下の検出ソースとカスタム ルールが使用されます。オンとオフは状態を手動で設定します。 "
+"「決してゲームしない」は、自動検出や「常にゲーム」よりも優先されます。トップバー、トレイメニュー、またはゲームモードアクションにバインドされたキーを使用してモードを変更することもできます。"
+
+msgid "Game mode: always off"
+msgstr "ゲームモード: 常にオフ"
+
+msgid "Game mode: always on"
+msgstr "ゲームモード: 常時オン"
+
+msgid "Game mode: detect automatically"
+msgstr "ゲームモード: 自動的に検出"
+
+msgid "Toggle game mode"
+msgstr "ゲームモードを切り替える"
+
+msgid ""
+"GameMode daemon unavailable: check the gamemode package and session D-Bus."
+msgstr "GameMode デーモンが利用できません: ゲームモード パッケージとセッション D-Bus を確認してください。"
+
+msgid ""
+"Install {} to detect the active window and fullscreen windows. It is also "
+"needed for application conditions in rules."
+msgstr "アクティブ ウィンドウと全画面ウィンドウを検出するには、{} をインストールします。ルールの適用条件にも必要です。"
+
+msgid ""
+"Nothing uses game mode yet: no rule or automatic layout rule has a game-mode"
+" condition, so turning it on changes nothing."
+msgstr ""
+"まだゲーム モードを使用するものはありません。ルールや自動レイアウト ルールにゲーム モード条件がないため、これをオンにしても何も変わりません。"
+
+msgid ""
+"On and Off are remembered after restart. Auto keeps detecting in the "
+"background."
+msgstr "オンとオフは再起動後も記憶されます。自動はバックグラウンドで検出を続けます。"
+
+msgid ""
+"Rules of the current layout with a game-mode condition: {}. Automatic layout"
+" rules with a game-mode condition: {}."
+msgstr "ゲームモード条件による現在のレイアウトのルール: {}。ゲームモード条件付きの自動レイアウト ルール: {}。"
+
+msgid ""
+"Turns on while a game runs through gamemoderun or requests GameMode itself. "
+"In Steam set the launch options to “gamemoderun %command%”."
+msgstr ""
+"ゲームが gamemoderun を通じて実行されている間、または GameMode 自体を要求しているときにオンになります。 Steam "
+"で起動オプションを「gamemoderun %command%」に設定します。"
+
+msgid "Game mode: on"
+msgstr "ゲームモード: オン"
+
+msgid "Game mode: off"
+msgstr "ゲームモード: オフ"
+
+msgid "Active now: {}"
+msgstr "現在アクティブ: {}"
+
+msgid ""
+"Active window detection is unavailable in this session, so application "
+"conditions do not match."
+msgstr "このセッションではアクティブ ウィンドウの検出が利用できないため、アプリケーションの条件が一致しません。"
+
+msgid ""
+"An application is matched by its ID or process name: the whole name, "
+"ignoring case, with * and ? as wildcards. A window title item matches when "
+"the title contains the text. Any matching item is enough. An empty list "
+"imposes no restrictions."
+msgstr ""
+"アプリケーションは、その ID またはプロセス名 (大文字と小文字を区別せず、* と ? を使用した名前全体) "
+"によって照合されます。ワイルドカードとして。ウィンドウ "
+"タイトル項目は、タイトルにテキストが含まれている場合に一致します。似合うアイテムがあれば十分です。空のリストには制限がありません。"
+
+msgid "Looking for open windows…"
+msgstr "開いている窓を探しています…"
+
+msgid "No open windows found"
+msgstr "開いているウィンドウが見つかりません"
+
+msgid "Window title contains: {}"
+msgstr "ウィンドウのタイトルには次が含まれます: {}"
+
+msgid "Timing"
+msgstr "タイミング"
+
+msgid "Used by macros without their own value."
+msgstr "独自の値を持たないマクロによって使用されます。"
+
+msgid ""
+"Used by macros without their own value. How long to wait between pressing "
+"modifiers (Shift, Ctrl, …) and the main key of one step."
+msgstr ""
+"独自の値を持たないマクロによって使用されます。修飾キー (Shift、Ctrl など) を押してから 1 つのステップのメイン "
+"キーを押すまでの待ち時間。"
+
+msgid "Rule without a trigger is saved as a draft and will be ignored."
+msgstr "トリガーのないルールはドラフトとして保存され、無視されます。"
+
+msgid "Trigger \"{}\" cannot be used for a rule."
+msgstr "トリガー「{}」はルールには使用できません。"
+
+msgid "Rules for trigger \"{}\" may overlap; the first matching rule wins."
+msgstr "トリガー「{}」のルールは重複する可能性があります。最初に一致したルールが優先されます。"
+
+msgid "Rule for trigger \"{}\" is covered by an earlier rule and will not run."
+msgstr "トリガー「{}」のルールは以前のルールの対象となっているため、実行されません。"
+
+msgid "Rule \"{}\" points to a layer that no longer exists."
+msgstr "ルール「{}」は、もう存在しないレイヤーを指しています。"
+
+msgid "Rule \"{}\" has an invalid tap action."
+msgstr "ルール「{}」には無効なタップアクションがあります。"
+
+msgid "Rule \"{}\" has an invalid hold action."
+msgstr "ルール「{}」には無効な保留アクションがあります。"
+
+msgid "Rule \"{}\" has an invalid double-tap action."
+msgstr "ルール「{}」には無効なダブルタップ アクションが含まれています。"
+
+msgid "Automatic switching rule deleted"
+msgstr "自動切り替えルールが削除されました"
+
+msgid "Only in applications"
+msgstr "アプリケーション内のみ"
+
+msgid "Except applications"
+msgstr "アプリケーションを除く"
+
+msgid "A match blocks the rule, even if the window is in the allowed list."
+msgstr "ウィンドウが許可リストに含まれている場合でも、一致するとルールがブロックされます。"
+
+msgid "Any match allows the rule. An empty list allows all windows."
+msgstr "どの一致でもルールが許可されます。空のリストでは、すべてのウィンドウが許可されます。"
+
+msgid "Choose applications to exclude"
+msgstr "除外するアプリケーションを選択してください"
+
+msgid "Open windows"
+msgstr "開いた窓"
+
+msgid "Last active"
+msgstr "最後にアクティブだった"
+
+msgid "Nothing is excluded."
+msgstr "何も除外されません。"
+
+msgid "No restrictions: the rule works in every window."
+msgstr "制限なし: ルールはすべてのウィンドウで機能します。"
+
+msgid "{n} window"
+msgid_plural "{n} windows"
+msgstr[0] "{n}つのウィンドウ"
+
+msgid "Do not process"
+msgstr "加工しないでください"
+
+msgid "Command name (optional)"
+msgstr "コマンド名(オプション)"
+
+msgid "Working directory (home by default)"
+msgstr "作業ディレクトリ (デフォルトではホーム)"
+
+msgid "Text to type when the action is invoked:"
+msgstr "アクションの呼び出し時に入力するテキスト:"
+
+msgid ""
+"Enter literal text without the text: prefix. Line breaks, spaces and tabs "
+"are preserved. On Linux, text is inserted into the active application via "
+"the desktop portal; permission may be required. Text injection by the mapper"
+" is not implemented on Windows or macOS."
+msgstr ""
+"text: プレフィックスを付けずにリテラル テキストを入力します。改行、スペース、タブは保持されます。 Linux では、テキストはデスクトップ "
+"ポータル経由でアクティブなアプリケーションに挿入されます。許可が必要な場合があります。マッパーによるテキスト インジェクションは Windows または"
+" macOS では実装されていません。"
+
+msgid ""
+"Commands run with sh -lc in the background. The mapper does not wait for "
+"completion or collect output. An empty name uses the command itself as its "
+"label. The working directory defaults to your home folder; scripts need "
+"execute permission. Command execution must be enabled in settings."
+msgstr ""
+"コマンドはバックグラウンドで sh -lc "
+"を使用して実行されます。マッパーは完了を待機したり、出力を収集したりしません。空の名前は、コマンド自体をラベルとして使用します。作業ディレクトリのデフォルトはホーム"
+" フォルダです。スクリプトには実行権限が必要です。設定でコマンドの実行を有効にする必要があります。"
+
+msgid ""
+"Commands run with PowerShell in the background, without a console window. "
+"The mapper does not wait for completion or collect output. An empty name "
+"uses the command itself as its label. The working directory defaults to your"
+" home folder. Command execution must be enabled in settings."
+msgstr ""
+"コマンドは、コンソール ウィンドウを使用せずに、バックグラウンドで PowerShell "
+"を使用して実行されます。マッパーは完了を待機したり、出力を収集したりしません。空の名前は、コマンド自体をラベルとして使用します。作業ディレクトリのデフォルトはホーム"
+" フォルダーです。設定でコマンドの実行を有効にする必要があります。"
+
+msgid ""
+"The name is optional: an empty name uses the command itself as its label. "
+"Command execution by the mapper is not implemented on macOS."
+msgstr ""
+"名前はオプションです。名前が空の場合は、コマンド自体がラベルとして使用されます。マッパーによるコマンド実行は macOS では実装されていません。"
+
+msgid "Triggers"
+msgstr "トリガー"
+
+msgid "Disable animations"
+msgstr "アニメーションを無効にする"
+
+msgid "Add layout: "
+msgstr "レイアウトを追加します。"
+
+msgid "Save (Ctrl+S)"
+msgstr "保存 (Ctrl+S)"
+
+msgid "Close layout"
+msgstr "レイアウトを閉じる"
+
+msgid "Discard layout changes?"
+msgstr "レイアウトの変更を破棄しますか?"
+
+msgid "Unsaved changes to this layout will be lost."
+msgstr "このレイアウトに対する保存されていない変更は失われます。"
+
+msgid ""
+"Unique identifier used in references like macro:<id>. To bind this macro to "
+"a key, choose that action on the Layers or Triggers tab. Change the ID only "
+"when nothing uses this macro."
+msgstr ""
+"マクロ:<id> などの参照で使用される一意の識別子。このマクロをキーにバインドするには、[レイヤー] タブまたは [トリガー] "
+"タブでそのアクションを選択します。このマクロを使用するものが何もない場合にのみ ID を変更してください。"
+
+msgid "Discard"
+msgstr "破棄"
+
+msgid ""
+"Build reusable sequences of key chords, text, commands and system actions. Use a unique ID in macro:<id> references and a readable name in action lists. Assign macros on the Layers or Triggers tab; change an ID only when it is unused.\n"
+"\n"
+"The step pause applies between steps of this macro. Modifier delay is the time between pressing a modifier and the main key. Leave delays empty to use Settings defaults."
+msgstr ""
+"キーコード、テキスト、コマンド、システムアクションの再利用可能なシーケンスを構築します。マクロ:<id> 参照には一意の ID を使用し、アクション リストには読みやすい名前を使用します。 [レイヤー] タブまたは [トリガー] タブでマクロを割り当てます。 ID は未使用の場合にのみ変更してください。\n"
+"\n"
+"ステップ一時停止は、このマクロのステップ間に適用されます。モディファイア遅延は、モディファイアを押してからメイン キーを押すまでの時間です。設定のデフォルトを使用するには、遅延を空のままにしておきます。"
+
+msgid "Global defaults: step pause {} ms; modifier delay {} ms."
+msgstr "グローバルデフォルト: ステップ一時停止 {} ミリ秒。モディファイア遅延 {} ミリ秒。"
+
+msgid "Layout changed on disk"
+msgstr "ディスク上のレイアウトが変更されました"
+
+msgid ""
+"The file of “{}” was changed by another program after you opened it. Your "
+"edits are kept until you choose what to do."
+msgstr "「{}」のファイルは、開いた後、別のプログラムによって変更されました。編集内容は、何をするかを選択するまで保持されます。"
+
+msgid "Load from disk"
+msgstr "ディスクからロードする"
+
+msgid "Save as new…"
+msgstr "新規として保存…"
+
+msgid "Overwrite"
+msgstr "上書き"
+
+msgid "Show LHC key codes used in assignments, such as KeyA and ArrowLeft."
+msgstr "KeyA や ArrowLeft など、割り当てで使用される LHC キー コードを表示します。"
+
+msgid "Application"
+msgstr "応用"
+
+msgid "Window title"
+msgstr "ウィンドウのタイトル"
+
+msgid "Click to switch"
+msgstr "クリックして切り替えます"
+
+msgid "Match by app ID or process instead"
+msgstr "代わりにアプリ ID またはプロセスで照合します"
+
+msgid "Match by window title instead"
+msgstr "代わりにウィンドウタイトルで一致"
+
+msgid "Open now: {n} window"
+msgid_plural "Open now: {n} windows"
+msgstr[0] "現在営業中: {n} ウィンドウ"
+
+msgid "Not open now"
+msgstr "現在は営業しておりません"
+
+msgid "Running process"
+msgstr "実行中のプロセス"
+
+msgid "Text the window title contains"
+msgstr "ウィンドウタイトルに含まれるテキスト"
+
+msgid "Already in the list"
+msgstr "すでにリストにあります"
+
+msgid "Choose from open windows…"
+msgstr "開いているウィンドウから選択してください…"
+
+msgid "Matches {n} open window"
+msgid_plural "Matches {n} open windows"
+msgstr[0] "{n} つの開いているウィンドウと一致します"
+
+msgid "Matches no open window"
+msgstr "開いているウィンドウがないことに一致します"
+
+msgid "Show Quick Action Menu on the last used page"
+msgstr "最後に使用したページにクイック アクション メニューを表示する"
+
+msgid "Show Emoji & Symbols menu on the last used page"
+msgstr "最後に使用したページに絵文字と記号メニューを表示"
+
+msgid "Show the settings window"
+msgstr "設定ウィンドウを表示する"
+
+msgid "Activate layout {} (switches to Single mode)"
+msgstr "レイアウト {} をアクティブ化 (シングル モードに切り替え)"
+
+msgid "There is no layout number {}"
+msgstr "レイアウト番号{}はありません"
+
+msgid "Show the Left Hand Control layout name when it changes"
+msgstr "左手コントロールのレイアウト名が変更されたときに表示する"
+
+msgid "Show the keys of a layer while it is held"
+msgstr "レイヤーを押している間、レイヤーのキーを表示します"
+
+msgid ""
+"The hint appears 2 seconds after the layer activates. Pressing a layer key "
+"hides or cancels it until the trigger is released, including in game mode."
+msgstr ""
+"ヒントはレイヤーがアクティブになってから 2 秒後に表示されます。レイヤー キーを押すと、ゲーム モードを含め、トリガーが放されるまでレイヤー "
+"キーが非表示またはキャンセルされます。"
+
+msgid ""
+"Unavailable: build with the spell feature and use a Wayland compositor with "
+"layer-shell (KDE Plasma, Sway, Hyprland)."
+msgstr ""
+"利用不可: スペル機能を使用してビルドし、レイヤーシェル (KDE Plasma、Sway、Hyprland) を備えた Wayland "
+"コンポジターを使用します。"
+
+msgid ""
+"The app:activateLayout1…5 actions activate the layout at that position in "
+"this list: reordering the list changes which layout a key activates. In Auto"
+" mode they switch to Single mode."
+msgstr ""
+"app:activateLayout1…5 "
+"アクションは、このリスト内のその位置でレイアウトをアクティブにします。リストの順序を変更すると、キーがアクティブにするレイアウトが変わります。自動モードではシングルモードに切り替わります。"
+
+msgid "Cut"
+msgstr "切り取り"
+
+msgid "Copy"
+msgstr "コピー"
+
+msgid "Paste"
+msgstr "貼り付け"
+
+msgid "Select all"
+msgstr "すべて選択"
+
+msgid "Clear search"
+msgstr "検索をクリア"
+
+msgid "Add application"
+msgstr "アプリケーションの追加"
+
+msgid "Edit application"
+msgstr "アプリケーションの編集"
+
+msgid "Remove application?"
+msgstr "アプリケーションを削除しますか?"
+
+msgid "“{}” will be removed from the list."
+msgstr "「{}」はリストから削除されます。"
+
+msgid "Devices"
+msgstr "デバイス"
+
+msgid "Required"
+msgstr "必須"
+
+msgid "Optional"
+msgstr "オプション"
+
+msgid "Failed to start"
+msgstr "開始に失敗しました"
+
+msgid "Keys work as usual. Start the mapper to apply your layouts."
+msgstr "キーは通常どおり機能します。マッパーを起動してレイアウトを適用します。"
+
+msgid "Select a keyboard below to start the mapper."
+msgstr "以下のキーボードを選択してマッパーを起動します。"
+
+msgid "Changing a device restarts the mapper."
+msgstr "デバイスを変更するとマッパーが再起動されます。"
+
+msgid "Auto: known game {}"
+msgstr "自動: 既知のゲーム {}"
+
+msgid "Ignored in fullscreen"
+msgstr "全画面表示では無視される"
+
+msgid "Not available in this session."
+msgstr "このセッションでは利用できません。"
+
+msgid "Steam games"
+msgstr "Steam ゲーム"
+
+msgid ""
+"Turns on while Steam runs a game: Steam starts every game through reaper "
+"SteamLaunch, and game windows have the ID steam_app_<number>."
+msgstr ""
+"Steam がゲームを実行しているときにオンになります: Steam は reaper SteamLaunch を通じてすべてのゲームを開始し、ゲーム "
+"ウィンドウの ID steam_app_<number> が付けられます。"
+
+msgid "Turns on while Steam reports a running game."
+msgstr "Steam が実行中のゲームを報告している間オンになります。"
+
+msgid "Lutris games"
+msgstr "ルトリスのゲーム"
+
+msgid ""
+"Turns on while a game started by Lutris runs: Lutris starts every game "
+"through lutris-wrapper."
+msgstr ""
+"Lutris によって開始されたゲームの実行中にオンになります: Lutris は、lutris-wrapper を通じてすべてのゲームを開始します。"
+
+msgid "Gamescope sessions"
+msgstr "ゲームスコープセッション"
+
+msgid "Turns on while the active window is a nested gamescope session."
+msgstr "アクティブなウィンドウがネストされたゲームスコープ セッションであるときにオンになります。"
+
+msgid "Games from the Game Bar list"
+msgstr "ゲームバーリストのゲーム"
+
+msgid "Applications of the Game category"
+msgstr "ゲームカテゴリのアプリケーション"
+
+msgid ""
+"Turns on while the active window belongs to an application whose .desktop "
+"file lists the Game category. Launchers are tagged as games too, so they are"
+" skipped."
+msgstr ""
+"アクティブなウィンドウが、.desktop ファイルにゲーム "
+"カテゴリがリストされているアプリケーションに属しているときにオンになります。ランチャーもゲームとしてタグ付けされているため、スキップされます。"
+
+msgid ""
+"Turns on while the active application declares the Games category in its "
+"Info.plist. Launchers are skipped."
+msgstr ""
+"アクティブなアプリケーションが Info.plist で Games カテゴリを宣言しているときにオンになります。ランチャーはスキップされます。"
+
+msgid "Auto — according to settings"
+msgstr "自動 — 設定に従って"
+
+msgid "Blank"
+msgstr "空白"
+
+msgid "Assign action"
+msgstr "アクションの割り当て"
+
+msgid "Action after {} ms of holding"
+msgstr "{} ミリ秒の保持後のアクション"
+
+msgid ""
+"These codes are specific to Left Hand Control, not universal keyboard codes "
+"(e.g. KeyA, ArrowLeft)."
+msgstr "これらのコードは左手コントロールに固有であり、ユニバーサル キーボード コード (KeyA、ArrowLeft など) ではありません。"
+
+msgid "While its window is active"
+msgstr "ウィンドウがアクティブな間"
+
+msgid "While the process runs"
+msgstr "プロセスの実行中"
+
+msgid "Counts while a window of the application has the focus."
+msgstr "アプリケーションのウィンドウにフォーカスがある間のカウントです。"
+
+msgid ""
+"Counts while a process with this name runs, even without a window or in the "
+"background."
+msgstr "ウィンドウがない場合やバックグラウンドでも、この名前のプロセスが実行されている間カウントされます。"
+
+msgid "Application · while its window is active"
+msgstr "アプリケーション · ウィンドウがアクティブな間"
+
+msgid "Process · while it runs"
+msgstr "実行中のプロセス"
+
+msgid "No games added."
+msgstr "ゲームは追加されていません。"
+
+msgid ""
+"Game mode turns on while any of these matches. An application is matched by "
+"its ID or process name: the whole name, ignoring case, with * and ? as "
+"wildcards. Steam games have the app ID steam_app_<number>; Proton games are "
+"also found by their .exe name. A window title item matches the active window"
+" whose title contains the text."
+msgstr ""
+"これらのいずれかが一致すると、ゲーム モードがオンになります。アプリケーションは、その ID またはプロセス名 (大文字と小文字を区別せず、* と ? "
+"を使用した名前全体) によって照合されます。ワイルドカードとして。 Steam ゲームのアプリ ID は steam_app_<number> です。 "
+"Proton ゲームは、.exe 名でも見つかります。ウィンドウ タイトル項目は、タイトルにテキストが含まれるアクティブ ウィンドウと一致します。"
+
+msgid ""
+"Game mode stays off while any of these matches, even if a game or another "
+"detector would turn it on."
+msgstr "これらのいずれかが一致している間は、ゲームまたは別の検出器がゲーム モードをオンにしても、ゲーム モードはオフのままです。"
+
+msgid "less than a minute"
+msgstr "1分未満"
+
+msgid "{} min"
+msgstr "{}分"
+
+msgid "{} h {} min"
+msgstr "{} 時間 {} 分"
+
+msgid "Running for {}"
+msgstr "{}に立候補"
+
+msgid "Stopped unexpectedly"
+msgstr "予期せず停止しました"
+
+msgid "Stopped {} ago after running for {}."
+msgstr "{} を実行した後、前に {} を停止しました。"
+
+msgid "Text input"
+msgstr "テキスト入力"
+
+msgid ""
+"How text actions in rules and macros are typed. Key remapping and the emoji "
+"popup do not use it."
+msgstr "ルールおよびマクロ内のテキスト アクションがどのように入力されるか。キーの再マッピングと絵文字ポップアップでは使用されません。"
+
+msgid "Typing method"
+msgstr "入力方法"
+
+msgid "libei + clipboard fallback (recommended)"
+msgstr "libei + クリップボード フォールバック (推奨)"
+
+msgid "Paste from clipboard"
+msgstr "クリップボードから貼り付け"
+
+msgid "ydotool"
+msgstr "ydotool"
+
+msgid "xdotool"
+msgstr "xdotool"
+
+msgid ""
+"Types with the current layout, or pastes the whole text when a character is "
+"unavailable. Paste requires clipboard access and support for the paste "
+"shortcut. Preserves clipboard formats and cancels if the destination "
+"changes. Requires portal permission and active-window detection."
+msgstr ""
+"現在のレイアウトで入力するか、文字が使用できない場合はテキスト全体を貼り付けます。貼り付けには、クリップボードへのアクセスと貼り付けショートカットのサポートが必要です。クリップボードの形式を保持し、宛先が変更された場合はキャンセルします。ポータルの権限とアクティブ"
+" ウィンドウの検出が必要です。"
+
+msgid ""
+"Types only through libei using the current keyboard layout and Caps Lock "
+"state. Skips text with unavailable characters. Requires portal permission "
+"and active-window detection. Cancels if the destination changes."
+msgstr ""
+"現在のキーボード レイアウトと Caps Lock 状態を使用して libei "
+"のみで入力します。使用できない文字を含むテキストをスキップします。ポータルの権限とアクティブ "
+"ウィンドウの検出が必要です。目的地が変更になる場合はキャンセルとなります。"
+
+msgid ""
+"Types only through NotifyKeyboardKeycode using the KDE layout and readable "
+"keyboard state. Skips text with unavailable characters. Requires portal "
+"permission and active-window detection. Cancels if the destination changes."
+msgstr ""
+"KDE レイアウトと読み取り可能なキーボード状態を使用して、NotifyKeyboardKeycode "
+"を通じてのみ入力します。使用できない文字を含むテキストをスキップします。ポータルの権限とアクティブ "
+"ウィンドウの検出が必要です。目的地が変更になる場合はキャンセルとなります。"
+
+msgid ""
+"Pastes with the paste shortcut through the portal. Requires clipboard "
+"access, active-window detection and an app supporting that shortcut. "
+"Preserves all clipboard formats; a new user copy takes precedence. Reports "
+"an error if no text transfer is observed."
+msgstr ""
+"ポータルから貼り付けショートカットを使用して貼り付けます。クリップボードへのアクセス、アクティブ "
+"ウィンドウの検出、およびそのショートカットをサポートするアプリが必要です。すべてのクリップボード形式を保持します。新しいユーザーのコピーが優先されます。テキスト転送が観察されない場合はエラーを報告します。"
+
+msgid "Paste shortcut"
+msgstr "ショートカットを貼り付け"
+
+msgid ""
+"Sent to the focused app to paste the text. Terminals usually need "
+"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
+"Ctrl+V does not paste there."
+msgstr ""
+"テキストを貼り付けるためにフォーカスされたアプリに送信されます。ターミナルでは通常、Ctrl+Shift+V "
+"が必要です。一部のターミナルではマウス選択を Shift+Insert に貼り付けますが、Ctrl+V では貼り付けられません。"
+
+msgid ""
+"Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "
+"Reliable for Latin text only. On an error, stops without switching methods."
+msgstr ""
+"「ydotool type」のみを実行します。 ydotool とその ydotoold "
+"サービスが実行されている必要があります。ラテン語のテキストに対してのみ信頼できます。エラーが発生した場合は、メソッドを切り替えずに停止します。"
+
+msgid ""
+"Runs \"xdotool type\" only. Works only in X11 sessions and XWayland windows."
+" On an error, stops without switching methods."
+msgstr ""
+"「xdotool タイプ」のみを実行します。 X11 セッションと XWayland "
+"ウィンドウでのみ動作します。エラーが発生した場合は、メソッドを切り替えずに停止します。"
+
+msgid "ydotool from PATH"
+msgstr "PATH からの ydotool"
+
+msgid "xdotool from PATH"
+msgstr "PATH からの xdotool"
+
+msgid ""
+"Each item is compared with the active window. Pick a window from the list "
+"below to fill in the field."
+msgstr "各項目はアクティブなウィンドウと比較されます。以下のリストからウィンドウを選択してフィールドに入力します。"
+
+msgid ""
+"Application: the app ID (Wayland app id or X11 WM_CLASS) or the process "
+"name. The whole name must match, case is ignored, .exe is optional. * stands"
+" for any characters and ? for one, e.g. steam_app_*. The ID is stable, so "
+"prefer it."
+msgstr ""
+"アプリケーション: アプリ ID (Wayland アプリ ID または X11 WM_CLASS) "
+"またはプロセス名。名前全体が一致する必要があり、大文字と小文字は無視されます。.exe はオプションです。 * "
+"は任意の文字を表し、?一つには、例えばsteam_app_*。 IDは安定しているので優先してください。"
+
+msgid ""
+"Window title: matches when the title contains the text, case is ignored. "
+"With * or ? the pattern must cover the whole title. A title changes with the"
+" open tab or document, and it never matches a process without a window."
+msgstr ""
+"ウィンドウ タイトル: タイトルにテキストが含まれる場合に一致します。大文字と小文字は無視されます。 * または ? "
+"付きパターンはタイトル全体をカバーする必要があります。タイトルは開いているタブまたはドキュメントに応じて変化し、ウィンドウのないプロセスと一致することはありません。"
+
+msgid "Match by"
+msgstr "一致基準"
+
+msgid "Process"
+msgstr "プロセス"
+
+msgid "Process name, * and ? allowed"
+msgstr "プロセス名、*、?許可された"
+
+msgid "App ID, * and ? allowed"
+msgstr "アプリID、*、?許可された"
+
+msgid ""
+"The item is compared with the names of running processes. Pick one from the "
+"list below to fill in the field."
+msgstr "この項目は、実行中のプロセスの名前と比較されます。以下のリストから 1 つを選択してフィールドに記入してください。"
+
+msgid ""
+"Process: the executable name, as the list below shows it. The whole name "
+"must match, case is ignored, .exe is optional. * stands for any characters "
+"and ? for one."
+msgstr ""
+"プロセス: 以下のリストに示す実行可能ファイル名。名前全体が一致する必要があり、大文字と小文字は無視されます。.exe はオプションです。 * "
+"は任意の文字を表し、?一つには。"
+
+msgid "Matches {n} running process"
+msgid_plural "Matches {n} running processes"
+msgstr[0] "{n} つの実行中のプロセスと一致します"
+
+msgid "Matches no running process"
+msgstr "実行中のプロセスに一致しません"
+
+msgid ""
+"Many applications run as “{}”, so the name matches all of them. The "
+"application ID is more precise."
+msgstr "多くのアプリケーションは「{}」として実行されるため、名前はすべてのアプリケーションに一致します。アプリケーション ID の方が正確です。"
+
+msgid "When it counts"
+msgstr "重要なとき"
+
+msgid "Window titles"
+msgstr "ウィンドウのタイトル"
+
+msgid "Processes of open windows"
+msgstr "開いているウィンドウのプロセス"
+
+msgid "Shared process"
+msgstr "共有プロセス"
+
+msgid "Running without a window"
+msgstr "窓なしで走る"
+
+msgid "Type a name to find processes running without a window."
+msgstr "名前を入力して、ウィンドウなしで実行されているプロセスを検索します。"
+
+msgid "Process · while its window is active"
+msgstr "ウィンドウがアクティブな間のプロセス ·"
+
+msgid "While the trigger is held"
+msgstr "トリガーを押している間"
+
+msgid "Press key"
+msgstr "キーを押します"
+
+msgid ""
+"Which key stays pressed while you hold the trigger, together with the layer."
+" “Don't press” only switches the layer."
+msgstr "トリガーを押している間、レイヤーとともに押し続けられるキー。 「押さない」はレイヤーを切り替えるだけです。"
+
+msgid ""
+"Which key stays pressed while you hold the trigger. “Trigger itself” keeps "
+"the usual behavior of the key."
+msgstr "トリガーを押している間、どのキーが押し続けられるか。 「トリガー自体」はキーの通常の動作を保持します。"
+
+msgid "Trigger itself"
+msgstr "トリガー自体"
+
+msgid "Other key…"
+msgstr "他の鍵は…"
+
+msgid "When to press"
+msgstr "いつ押すか"
+
+msgid "Holds {}"
+msgstr "{}を保持します"
+
+msgid "Holds nothing"
+msgstr "何も持たない"
+
+msgid "Hold after {} ms"
+msgstr "{} ミリ秒後にホールド"
+
+msgid "Stop mapper (restore native keyboard behavior)"
+msgstr "マッパーを停止します (ネイティブのキーボード動作を復元します)。"
+
+msgid "Select a keyboard device in the settings to start the mapper"
+msgstr "設定でキーボードデバイスを選択してマッパーを起動します"
+
+msgid "Start mapper to intercept keys and apply layouts"
+msgstr "マッパーを起動してキーをインターセプトし、レイアウトを適用する"
+
+msgid "Current active layout (selected automatically by switching rules)"
+msgstr "現在アクティブなレイアウト (切り替えルールによって自動的に選択されます)"
+
+msgid "Click to change mode (Auto / On / Off)"
+msgstr "クリックしてモードを変更します (自動 / オン / オフ)"
+
+msgid ""
+"The mapper intercepts keyboard input, applies layers, rules and macros, and "
+"emits output through a virtual device."
+msgstr "マッパーはキーボード入力をインターセプトし、レイヤー、ルール、マクロを適用し、仮想デバイスを通じて出力を発行します。"
+
+msgid ""
+"Define how physical keys behave: tap for a key or action, hold to switch "
+"layers, or double-tap for extra shortcuts."
+msgstr ""
+"物理キーの動作を定義します。タップしてキーまたはアクションを選択したり、押し続けてレイヤーを切り替えたり、ダブルタップして追加のショートカットを使用したりできます。"
+
+msgid ""
+"Action performed when the trigger is pressed and released quickly without "
+"holding."
+msgstr "トリガーを押したままにせずにすぐに離したときに実行されるアクション。"
+
+msgid ""
+"Action performed when the trigger is pressed twice quickly within the "
+"double-tap timeout."
+msgstr "ダブルタップのタイムアウト内にトリガーが素早く 2 回押されたときに実行されるアクション。"
+
+msgid "Show standard QWERTY letter labels for visual reference."
+msgstr "視覚的な参照のために標準の QWERTY 文字ラベルを表示します。"
+
+msgid ""
+"Show internal key codes used in Left Hand Control profiles (e.g. KeyA, "
+"ArrowLeft)."
+msgstr "左手コントロール プロファイルで使用される内部キー コードを表示します (KeyA、ArrowLeft など)。"
+
+msgid "Hold detection"
+msgstr "ホールド検出"
+
+msgid "When a key becomes a hold"
+msgstr "キーがホールドになったとき"
+
+msgid ""
+"Decides when a rule key that is still down counts as a hold if you press "
+"another key meanwhile. Applies to all rules."
+msgstr "押し続けているルール キーを、その間に別のキーを押した場合に保留としてカウントするタイミングを決定します。すべてのルールに適用されます。"
+
+msgid ""
+"After another key is released: the key becomes a hold once another key is "
+"pressed and released while it is down, or when the hold threshold passes. "
+"Fast rolls while typing stay taps."
+msgstr ""
+"別のキーが放された後: "
+"キーが押されている間、またはホールドしきい値を超えたときに、別のキーが押されて離されると、キーはホールドになります。入力中の高速ロールはタップを維持します。"
+
+msgid ""
+"As soon as another key is pressed: reacts faster, but fast typing can "
+"trigger the hold by mistake."
+msgstr "別のキーが押されるとすぐに: 反応は速くなりますが、速く入力すると誤ってホールドがトリガーされる可能性があります。"
+
+msgid "After another key is released (recommended)"
+msgstr "別のキーを放した後 (推奨)"
+
+msgid "As soon as another key is pressed"
+msgstr "別のキーが押されるとすぐに"
+
+msgid ""
+"Used by rules that leave the field empty. A rule can set its own value in "
+"its advanced options."
+msgstr "フィールドを空のままにするルールによって使用されます。ルールは、詳細オプションで独自の値を設定できます。"
+
+msgid "Hold threshold, ms"
+msgstr "ホールドしきい値、ミリ秒"
+
+msgid ""
+"How long to hold a rule key before it counts as a hold: its layer or hold "
+"action. Released earlier, the key runs its tap action."
+msgstr ""
+"ルール キーを保持としてカウントするまでの保持時間 (そのレイヤーまたは保持アクション)。以前にリリースされたキーはタップ アクションを実行します。"
+
+msgid ""
+"Lower: layers turn on faster, but fast typing may trigger them by mistake. "
+"Higher: fewer false holds, but a longer wait. Usually 150–250 ms."
+msgstr ""
+"下: レイヤーはより速くオンになりますが、高速に入力すると誤ってレイヤーがトリガーされる可能性があります。高い場合: false "
+"ホールドは少なくなりますが、待ち時間が長くなります。通常は 150 ～ 250 ミリ秒です。"
+
+msgid "Standard value: {} ms."
+msgstr "標準値：{}ミリ秒。"
+
+msgid "Long hold, ms"
+msgstr "長押ししてください、ms"
+
+msgid ""
+"How long to keep holding a rule key before its long-hold action runs once. "
+"Applies to rules whose hold runs an action instead of a layer."
+msgstr ""
+"長押しアクションが 1 回実行されるまでに、ルール キーを押し続ける時間。保留がレイヤーの代わりにアクションを実行するルールに適用されます。"
+
+msgid "Double-tap window, ms"
+msgstr "ウィンドウをダブルタップします (ミリ秒)"
+
+msgid ""
+"A second tap within this time after the first release counts as a double "
+"tap."
+msgstr "最初のリリース後のこの時間内の 2 回目のタップはダブルタップとしてカウントされます。"
+
+msgid ""
+"A single tap on a key with a double-tap action runs only after this window "
+"ends, so a large value makes such keys feel slow. Keys without a double-tap "
+"action are not delayed."
+msgstr ""
+"ダブルタップアクションを伴うキーのシングルタップは、このウィンドウが終了した後にのみ実行されるため、値を大きくすると、そのようなキーが遅く感じられます。ダブルタップ操作のないキーは遅延しません。"
+
+msgid ""
+"Used by macros that leave the field empty. A macro can set its own value on "
+"the Macros page."
+msgstr "フィールドを空のままにするマクロによって使用されます。マクロは、[マクロ] ページで独自の値を設定できます。"
+
+msgid ""
+"Pause between consecutive steps of a macro. Increase it if an application "
+"misses keystrokes."
+msgstr "マクロの連続するステップ間で一時停止します。アプリケーションがキーストロークをミスした場合は、この値を増やします。"
+
+msgid "Simultaneous presses"
+msgstr "同時押し"
+
+msgid ""
+"For rules triggered by several keys pressed together, such as KeyJ+KeyK. All"
+" keys must go down within this time, in any order. Until then the first key "
+"is held back; if the combination does not complete, it is typed as usual. "
+"Modifiers are never held back."
+msgstr ""
+"KeyJ+KeyK "
+"など、複数のキーを同時に押すことによってトリガーされるルールの場合。すべてのキーは、任意の順序でこの時間内に押す必要があります。それまでは最初のキーは押されません。組み合わせが完了しない場合は、通常どおりに入力されます。修飾子が抑制されることはありません。"
+
+msgid ""
+"Higher: the combination is easier to hit, but typing with these keys lags "
+"slightly. Applies to all rules; a rule cannot override it."
+msgstr ""
+"高: "
+"この組み合わせは打ちやすくなりますが、これらのキーでの入力はわずかに遅れます。すべてのルールに適用されます。ルールでそれをオーバーライドすることはできません。"
+
+msgid ""
+"Wait between pressing modifiers (Shift, Ctrl, …) and the main key of a macro"
+" step. Increase it if an application receives the shortcut without its "
+"modifier. Default for macros that leave the field empty."
+msgstr ""
+"修飾キー (Shift、Ctrl、…) を押してからマクロ ステップのメイン "
+"キーを押すまで待ち​​ます。アプリケーションが修飾子のないショートカットを受け取る場合は、この値を増やします。フィールドを空のままにするマクロのデフォルト。"
+
+msgid "Enter a long hold from 100 to 60000 ms."
+msgstr "100 ～ 60000 ミリ秒の長いホールドを入力します。"
+
+msgid "Long hold after {} ms"
+msgstr "{} ミリ秒後の長押し"
+
+msgid ""
+"Released earlier, the trigger counts as a tap; held longer, as a hold. Empty"
+" uses the default from Settings: {} ms."
+msgstr ""
+"以前にリリースされたトリガーはタップとしてカウントされます。ホールドとして、より長く保持されます。空の場合は、設定のデフォルト値 {} "
+"ミリ秒を使用します。"
+
+msgid ""
+"How long to keep holding before the action runs. Empty uses the default from"
+" Settings: {} ms."
+msgstr "アクションが実行されるまで押し続ける時間。空の場合は、設定のデフォルト値 {} ミリ秒を使用します。"
+
+msgid ""
+"Longest pause between two taps. Empty uses the default from Settings: {} ms."
+msgstr "2 回のタップ間の最長の一時停止。空の場合は、設定のデフォルト値 {} ミリ秒を使用します。"
+
+msgid "Auto: {} is not counted as a game (built-in list)"
+msgstr "自動: {} はゲームとしてカウントされません (組み込みリスト)"
+
+msgid ""
+"These sources can take another application for a game, so each skips a "
+"built-in list of applications."
+msgstr "これらのソースはゲーム用に別のアプリケーションを使用できるため、それぞれがアプリケーションの組み込みリストをスキップします。"
+
+msgid ""
+"Turns on while a program that Windows recognized as a game (the Game Bar "
+"list) runs. Launchers are listed there too, so they are skipped."
+msgstr ""
+"Windows がゲームとして認識するプログラム (ゲーム バー リスト) "
+"の実行中にオンになります。ランチャーもそこにリストされているため、スキップされます。"
+
+msgid "Launchers and game tools — not counted as games"
+msgstr "ランチャーとゲームツール - ゲームとしてカウントされません"
+
+msgid ""
+"Decides when a dual-role key counts as a hold if another key is pressed. "
+"Rules can override this default in advanced options. Chord detection is "
+"configured separately."
+msgstr ""
+"別のキーが押された場合に、デュアルロール "
+"キーが保留としてカウントされるタイミングを決定します。ルールは詳細オプションでこのデフォルトをオーバーライドできます。コード検出は個別に設定されます。"
+
+msgid "After another key is released (better for typing)"
+msgstr "別のキーを放した後 (入力しやすくなります)"
+
+msgid ""
+"As soon as another key is pressed: useful for dedicated layer or modifier "
+"keys. Reacts faster, but overlapping letters while typing can trigger the "
+"hold by mistake."
+msgstr ""
+"別のキーが押されるとすぐに: "
+"専用のレイヤーまたは修飾キーに便利です。反応は速くなりますが、入力中に文字が重なると誤ってホールドがトリガーされる可能性があります。"
+
+msgid "Default from Settings: {}"
+msgstr "設定からのデフォルト: {}"
+
+msgid "after another key is released"
+msgstr "別のキーを放した後"
+
+msgid "as soon as another key is pressed"
+msgstr "別のキーが押されるとすぐに"
+
+msgid ""
+"Overrides the default hold detection for this rule. Use release detection "
+"for typing keys and press detection for dedicated layer or modifier keys. "
+"This does not change chord detection."
+msgstr ""
+"このルールのデフォルトの保留検出をオーバーライドします。キー入力にはリリース検出を使用し、専用のレイヤーまたは修飾キーには押下検出を使用します。これによってコード検出が変更されることはありません。"
+
+msgid "Cannot list input devices: {}"
+msgstr "入力デバイスをリストできません: {}"
+
+msgid "Keyboard interception is not implemented on this operating system."
+msgstr "このオペレーティング システムではキーボード インターセプトが実装されていません。"
+
+msgid "Defaults"
+msgstr "デフォルト"
+
+msgid "Shared by all rules"
+msgstr "すべてのルールで共有"
+
+msgid "Hold threshold"
+msgstr "ホールドしきい値"
+
+msgid "Long hold"
+msgstr "ロングホールド"
+
+msgid "Double-tap window"
+msgstr "ウィンドウをダブルタップします"
+
+msgid "Reset to {} ms"
+msgstr "{} ミリ秒にリセット"
+
+msgid "Automatic game detection"
+msgstr "自動ゲーム検出"
+
+msgid "Works only in Auto mode."
+msgstr "自動モードでのみ動作します。"
+
+msgid "System signals"
+msgstr "システム信号"
+
+msgid "Launchers"
+msgstr "ランチャー"
+
+msgid "Heroic games"
+msgstr "英雄的なゲーム"
+
+msgid ""
+"Turns on while a game started by Heroic Games Launcher runs (Epic, GOG, "
+"Amazon and added games): Heroic passes HEROIC_APP_NAME to every game it "
+"starts."
+msgstr ""
+"Heroic Games Launcher によって開始されたゲームの実行中にオンになります "
+"(Epic、GOG、Amazon、および追加されたゲーム): Heroic は開始するすべてのゲームに HEROIC_APP_NAME を渡します。"
+
+msgid "Games run through umu-launcher"
+msgstr "ゲームはumuランチャーを通じて実行されます"
+
+msgid ""
+"Turns on while a game runs through umu-run. Heroic, Lutris, Faugus Launcher "
+"and other launchers use it to start Windows games with Proton."
+msgstr ""
+"ゲームがumu-runを実行中にオンになります。 Heroic、Lutris、Faugus Launcher およびその他のランチャーは、Proton "
+"で Windows ゲームを開始するためにこれを使用します。"
+
+msgid "Guesses — can be wrong"
+msgstr "推測 — 間違っている可能性があります"
+
+msgid "Your rules"
+msgstr "あなたのルール"
+
+msgid ""
+"“Never a game” wins over everything else, automatic detection included."
+msgstr "「決してゲームではない」は、自動検出を含め、他のすべてに勝ります。"
+
+msgid "Always a game"
+msgstr "いつもゲーム"
+
+msgid "Never a game"
+msgstr "決してゲームではない"
+
+msgid ""
+"Built-in list. To count one of these anyway, add it to Always a game under "
+"Your rules."
+msgstr "組み込みリスト。いずれにせよ、これらの 1 つをカウントするには、それを [ルール] の [常にゲーム] に追加します。"
+
+msgid "Hold"
+msgstr "長押し"
+
+msgid "Don't press"
+msgstr "押さないでください"
+
+msgid "{} — change…"
+msgstr "{} — 変更…"
+
+msgid "Choose another key above to set when it is pressed."
+msgstr "上の別のキーを選択して、押されたときに設定します。"
+
+msgid "Assign a double-tap action to the rule to change this window."
+msgstr "このウィンドウを変更するには、ダブルタップ アクションをルールに割り当てます。"
+
+msgid "Hold on other key release"
+msgstr "他のキーを放したままにします"
+
+msgid "Hold on other key press"
+msgstr "他のキーを押したままにします"
+
+msgid "Reset"
+msgstr "リセット"
+
+msgid "Return all options in this dialog to their defaults"
+msgstr "このダイアログのすべてのオプションをデフォルトに戻します"
+
+msgid "Macro time limit"
+msgstr "マクロの制限時間"
+
+msgid ""
+"A macro still running after this time is stopped and counts as finished. A "
+"macro started while another one runs waits for it; up to 3 runs can wait, "
+"further presses are ignored."
+msgstr ""
+"この時間を過ぎても実行中のマクロは停止され、終了したものとしてカウントされます。別のマクロの実行中に開始されたマクロは、それを待機します。最大 3 "
+"回の実行まで待機できますが、それ以上押しても無視されます。"
+
+msgid "Global shortcuts registered in this KDE session:"
+msgstr "この KDE セッションに登録されたグローバル ショートカット:"
+
+msgid ""
+"The list is read from the KDE global shortcut service (kglobalaccel): KWin, "
+"Plasma and applications register their actions there. The chosen action is "
+"invoked as is, as if its shortcut were pressed, even when no keys are "
+"assigned to it. Which actions exist and how they behave depends on the "
+"Plasma version and installed applications, so Left Hand Control does not "
+"guarantee them. Common window and desktop actions that also work on other "
+"platforms are in System actions."
+msgstr ""
+"リストは KDE グローバル ショートカット サービス (kglobaccel) "
+"から読み取られます。KWin、Plasma、およびアプリケーションはそこにアクションを登録します。選択したアクションは、キーが割り当てられていない場合でも、ショートカットが押されたかのようにそのまま呼び出されます。どのアクションが存在し、どのように動作するかは、Plasma"
+" のバージョンとインストールされているアプリケーションによって異なるため、Left Hand Control "
+"はそれらを保証しません。他のプラットフォームでも動作する一般的なウィンドウおよびデスクトップのアクションは、システム アクションにあります。"
+
+msgid "Hold key or combination"
+msgstr "キーまたは組み合わせを押し続ける"
+
+msgid ""
+"The key or combination stays pressed until you release the trigger. Choose "
+"modifiers plus one main key, for example Ctrl+KeyC."
+msgstr ""
+"キーまたは組み合わせは、トリガーを放すまで押されたままになります。修飾子と 1 つのメイン キー (Ctrl+KeyC など) を選択します。"
+
+msgid "Not used when holding performs a long-hold action."
+msgstr "長押し動作を行う場合は使用しません。"
+
+msgid "Other key or combination…"
+msgstr "他のキーまたは組み合わせ…"
+
+msgid "Hold detection when another key is pressed"
+msgstr "別のキーが押されたときのホールド検出"
+
+msgid "Used for single-key triggers without a long-hold action."
+msgstr "長押しアクションを伴わない単一キーのトリガーに使用されます。"
+
+msgid "Long-hold threshold, ms"
+msgstr "長時間保持のしきい値、ミリ秒"
+
+msgid "Used when a long-hold action is selected."
+msgstr "長押しアクションが選択されている場合に使用されます。"
+
+msgid "Double-tap interval, ms"
+msgstr "ダブルタップ間隔、ミリ秒"
+
+msgid "Double-tap actions are available only for single-key triggers."
+msgstr "ダブルタップ アクションは、単一キー トリガーでのみ使用できます。"
+
+msgid "Applies when a double-tap action is assigned."
+msgstr "ダブルタップアクションが割り当てられている場合に適用されます。"
+
+msgid "Delete trigger"
+msgstr "トリガーの削除"
+
+msgid "Delete trigger?"
+msgstr "トリガーを削除しますか?"
+
+msgid ""
+"The trigger and all its assigned actions will be removed from the current "
+"layout."
+msgstr "トリガーとそれに割り当てられたすべてのアクションが現在のレイアウトから削除されます。"
+
+msgid "Reset {} to default"
+msgstr "{}をデフォルトにリセット"
+
+msgid "Holding activates layer: {}"
+msgstr "長押しするとレイヤーがアクティブになります: {}"
+
+msgid "Holding performs a long-hold action."
+msgstr "長押しすると、長押し動作が実行されます。"
+
+msgid "Holding keeps a key or combination pressed."
+msgstr "押し続けると、キーまたは組み合わせが押されたままになります。"
+
+msgid "Paths"
+msgstr "パス"
+
+msgid "Unknown layer key at \"{}\"."
+msgstr "「{}」の不明なレイヤーキー。"
+
+msgid "Invalid layer action at \"{}\"."
+msgstr "「{}」のレイヤーアクションが無効です。"
+
+msgid "Invalid macro at \"{}\"."
+msgstr "「{}」のマクロが無効です。"
+
+msgid "Invalid menu action at \"{}\"."
+msgstr "「{}」のメニューアクションが無効です。"
+
+msgid "Invalid timing at \"{}\"."
+msgstr "「{}」のタイミングが無効です。"
+
+msgid "Invalid window condition at \"{}\"."
+msgstr "「{}」のウィンドウ条件が無効です。"
+
+msgid "Unsupported rule combination at \"{}\"."
+msgstr "「{}」でサポートされていないルールの組み合わせです。"
+
+msgid "Invalid macro step at \"{}\"."
+msgstr "「{}」のマクロステップが無効です。"
+
+msgid "Macro call cycle at \"{}\"."
+msgstr "「{}」でのマクロ呼び出しサイクル。"
+
+msgid "A timing value is outside the range shown in Settings."
+msgstr "タイミング値が設定に表示されている範囲外です。"
+
+msgid "Keep modifiers held until the layer is released"
+msgstr "レイヤが解放されるまでモディファイアを押し続けます"
+
+msgid ""
+"For a combination such as Alt+Tab: Alt stays pressed while you press the key"
+" again and is released together with the layer key, so the window switcher "
+"stays open."
+msgstr ""
+"Alt+Tab などの組み合わせの場合: Alt キーを押したままにして、もう一度キーを押し、レイヤー キーと一緒に放すと、ウィンドウ "
+"スイッチャーは開いたままになります。"
+
+msgid ""
+"Cannot list input devices. Check device access and see the application log."
+msgstr "入力デバイスをリストできません。デバイスのアクセスを確認し、アプリケーション ログを確認します。"
+
+msgid ""
+"Configuration is unavailable. Check the configuration files and see the "
+"application log."
+msgstr "構成は利用できません。構成ファイルを確認し、アプリケーション ログを確認します。"
+
+msgid "Popup menus are unavailable. Try opening the menu again."
+msgstr "ポップアップメニューは使用できません。もう一度メニューを開いてみてください。"
+
+msgid "Popup menu failed. Try opening the menu again."
+msgstr "ポップアップメニューが失敗しました。もう一度メニューを開いてみてください。"
+
+msgid ""
+"The text was not typed: the typing method is unavailable. Restart the mapper"
+" to try again."
+msgstr "テキストは入力されませんでした。入力方法は使用できません。マッパーを再起動して、もう一度試してください。"
+
+msgid ""
+"The text was not typed: safe clipboard access failed. See the application "
+"log."
+msgstr "テキストが入力されませんでした。安全なクリップボードへのアクセスに失敗しました。アプリケーションログを参照してください。"
+
+msgid ""
+"The text was not typed: the input tool failed. See the application log."
+msgstr "テキストが入力されませんでした。入力ツールが失敗しました。アプリケーションログを参照してください。"
+
+msgid "Changes applied, but the mapper was not updated. Restart the mapper."
+msgstr "変更は適用されましたが、マッパーは更新されませんでした。マッパーを再起動します。"
+
+msgid "The operation failed. See the application log."
+msgstr "操作は失敗しました。アプリケーションログを参照してください。"
+
+msgid "The action failed. See the application log."
+msgstr "アクションは失敗しました。アプリケーションログを参照してください。"
+
+msgid ""
+"Cannot start the mapper. Check the keyboard and device access. See the "
+"application log."
+msgstr "マッパーを起動できません。キーボードとデバイスのアクセスを確認してください。アプリケーションログを参照してください。"
+
+msgid "Mapper is running, but an error occurred. See the application log."
+msgstr "マッパーは実行中ですが、エラーが発生しました。アプリケーションログを参照してください。"
+
+msgid "Mapper stopped because of an error. See the application log."
+msgstr "マッパーがエラーのため停止しました。アプリケーションログを参照してください。"
+
+msgid ""
+"Cannot read or save the configuration. Check file access and see the "
+"application log."
+msgstr "構成を読み取ることも保存することもできません。ファイル アクセスを確認し、アプリケーション ログを確認します。"
+
+msgid "Cannot parse the configuration file. See the application log."
+msgstr "構成ファイルを解析できません。アプリケーションログを参照してください。"
+
+msgid "The configuration contains invalid values. See the application log."
+msgstr "構成に無効な値が含まれています。アプリケーションログを参照してください。"
+
+msgid "The action has invalid syntax."
+msgstr "アクションに無効な構文が含まれています。"
+
+msgid "Pauses can only be used in macro steps."
+msgstr "一時停止はマクロ ステップでのみ使用できます。"
+
+msgid "The selected macro no longer exists."
+msgstr "選択したマクロは存在しません。"
+
+msgid "The selected command no longer exists."
+msgstr "選択したコマンドは存在しません。"
+
+msgid "Unknown system action."
+msgstr "不明なシステムアクション。"
+
+msgid "Unknown application action."
+msgstr "不明なアプリケーションアクション。"
+
+msgid ""
+"Unknown action type. It may come from a newer version of the application."
+msgstr "不明なアクション タイプです。新しいバージョンのアプリケーションからのものである可能性があります。"
+
+msgid "Layout: {}"
+msgstr "レイアウト: {}"
+
+msgid "Select All"
+msgstr "すべて選択"
+
+msgid "Move line down"
+msgstr "行を下に移動"
+
+msgid "Down + End"
+msgstr "ダウン + エンド"
+
+msgid "Up + End"
+msgstr "アップ + エンド"
+
+msgid "Up 5 times"
+msgstr "5倍アップ"
+
+msgid "Duplicate line"
+msgstr "重複行"
+
+msgid "Right + Space"
+msgstr "右 + スペース"
+
+msgid "Empty line below"
+msgstr "以下の空行"
+
+msgid "Cut word right from center"
+msgstr "単語を中央から右に切り取る"
+
+msgid "Copy word right from center"
+msgstr "単語を中央から右にコピー"
+
+msgid "Paste at line above"
+msgstr "上の行に貼り付けます"
+
+msgid "Replace word with buffer"
+msgstr "単語をバッファに置き換える"
+
+msgid "Down + Home"
+msgstr "ダウン + ホーム"
+
+msgid "Up + Home"
+msgstr "アップ + ホーム"
+
+msgid "Down 5 times"
+msgstr "ダウン5回"
+
+msgid "Paste at line bottom"
+msgstr "行末に貼り付け"
+
+msgid "Cut to start"
+msgstr "カットして開始"
+
+msgid "Cut to end"
+msgstr "最後までカット"
+
+msgid "Cut line content"
+msgstr "カットラインの内容"
+
+msgid "Cut and remove line"
+msgstr "ラインをカットして削除する"
+
+msgid "Select 5 lines up"
+msgstr "5つのラインアップを選択してください"
+
+msgid "Copy to start"
+msgstr "コピーして開始"
+
+msgid "Copy to end"
+msgstr "最後までコピー"
+
+msgid "Copy line"
+msgstr "行をコピー"
+
+msgid "Select whole line"
+msgstr "行全体を選択"
+
+msgid "Select word right from center"
+msgstr "中央から右の単語を選択"
+
+msgid "Replace to start with buffer"
+msgstr "バッファで開始するように置換"
+
+msgid "Replace to end with buffer"
+msgstr "末尾までをバッファに置換"
+
+msgid "Replace line with buffer"
+msgstr "行をバッファに置き換える"
+
+msgid "Select 5 lines down"
+msgstr "5 行下を選択"
+
+msgid "Remove trigger"
+msgstr "トリガーを削除する"
+
+msgid "Refresh list"
+msgstr "リストを更新する"
+
+msgid "Remove item"
+msgstr "アイテムを削除する"
+
+msgid "Save as or reset changes"
+msgstr "名前を付けて保存または変更をリセット"
+
+msgid "Edit: {}"
+msgstr "編集: {}"
+
+msgid "Save (Enter)"
+msgstr "保存 (Enter)"
+
+msgid "Save (Ctrl+Enter)"
+msgstr "保存 (Ctrl+Enter)"
+
+msgid "Cancel (Esc)"
+msgstr "キャンセル (Esc)"
+
+msgid "Use the default from Settings: {} ms"
+msgstr "設定からデフォルトを使用します: {} ミリ秒"
+
+msgid ""
+"Opened by the app:showQuickMenuN actions, where N is the page position: "
+"reordering pages changes which page a key opens. Each cell can hold any "
+"action: a shortcut, macro, shell command or system action."
+msgstr ""
+"app:showQuickMenuN アクションによって開きます。N "
+"はページの位置です。ページの順序を変更すると、キーが開くページが変わります。各セルには、ショートカット、マクロ、シェル コマンド、システム "
+"アクションなど、あらゆるアクションを保持できます。"
+
+msgid ""
+"In the popup, click a cell or press its key: the cells follow the keyboard "
+"rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number."
+msgstr ""
+"ポップアップでセルをクリックするか、そのキーを押します。セルはキーボードの Q ～ T、A ～ G、Z ～ B "
+"の行に続きます。タブでページを切り替えます。数字はその番号によってページを開きます。"
+
+msgid "Waiting for keyboard"
+msgstr "キーボードを待っています"

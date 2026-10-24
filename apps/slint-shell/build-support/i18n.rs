@@ -131,12 +131,25 @@ fn placeholders(text: &str) -> Result<BTreeMap<String, usize>, String> {
     Ok(out)
 }
 
+#[cfg(test)]
 pub fn validate(
     entries: &[Entry],
     slint: &[(&str, &str)],
     rust_messages: &[(&str, &str)],
     rust_ids: &str,
     locale: &str,
+) -> Result<(), String> {
+    validate_catalog(entries, slint, rust_messages, rust_ids, locale, 3, true)
+}
+
+pub fn validate_catalog(
+    entries: &[Entry],
+    slint: &[(&str, &str)],
+    rust_messages: &[(&str, &str)],
+    rust_ids: &str,
+    locale: &str,
+    plural_count: usize,
+    reject_unchanged: bool,
 ) -> Result<(), String> {
     let mut catalog = BTreeMap::new();
     for entry in entries {
@@ -147,7 +160,11 @@ pub fn validate(
         if entry.fuzzy {
             return Err(format!("fuzzy translation: {key:?}"));
         }
-        let count = if entry.plural.is_some() { 3 } else { 1 };
+        let count = if entry.plural.is_some() {
+            plural_count
+        } else {
+            1
+        };
         if entry.translations.len() != count
             || entry.translations.iter().any(|s| s.trim().is_empty())
         {
@@ -161,7 +178,8 @@ pub fn validate(
         }
         for translated in &entry.translations {
             // Product names, key names and executable names intentionally match EN.
-            if translated == &entry.source
+            if reject_unchanged
+                && translated == &entry.source
                 && entry.source.chars().any(char::is_alphabetic)
                 && !matches!(
                     entry.source.as_str(),
@@ -350,6 +368,26 @@ mod tests {
             translations: vec!["Привет {}".into()],
             ..Default::default()
         }
+    }
+
+    #[test]
+    fn catalogs_use_their_own_plural_count_and_allow_shared_words() {
+        let entries = [
+            Entry {
+                source: "Description".into(),
+                translations: vec!["Description".into()],
+                ..Default::default()
+            },
+            Entry {
+                source: "{n} rule".into(),
+                plural: Some("{n} rules".into()),
+                translations: vec!["{n} règle".into(), "{n} règles".into()],
+                ..Default::default()
+            },
+        ];
+        assert!(validate_catalog(&entries, &[], &[], "", "", 2, false).is_ok());
+        assert!(validate_catalog(&entries, &[], &[], "", "", 3, false).is_err());
+        assert!(validate_catalog(&entries, &[], &[], "", "", 2, true).is_err());
     }
 
     #[test]
