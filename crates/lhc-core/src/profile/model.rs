@@ -261,10 +261,38 @@ impl EmojiPage {
     }
 }
 
+/// Portable author information, independent of the local library filename.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct LayoutMetadata {
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "super::schema::non_null"
+    )]
+    pub name: Option<String>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "super::schema::non_null"
+    )]
+    pub author: Option<String>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "super::schema::non_null"
+    )]
+    pub version: Option<String>,
+}
+
 /// The portable keyboard configuration stored in layout JSON files.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LayoutPreset {
+    #[serde(rename = "$schema", skip_serializing_if = "Option::is_none")]
+    pub schema: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub meta: Option<LayoutMetadata>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     pub layers: Vec<Layer>,
@@ -571,6 +599,8 @@ pub enum LayoutMode {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppSettings {
+    #[serde(rename = "$schema", skip_serializing_if = "Option::is_none")]
+    pub schema: Option<String>,
     /// Expose features that are still in development.
     pub in_development: bool,
     pub launch_on_startup: bool,
@@ -620,6 +650,7 @@ pub struct AppSettings {
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
+            schema: None,
             in_development: false,
             launch_on_startup: false,
             start_mapper_on_launch: false,

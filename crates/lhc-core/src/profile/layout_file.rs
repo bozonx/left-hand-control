@@ -40,6 +40,19 @@ pub fn serialize(preset: &LayoutPreset) -> String {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct LayoutDoc {
     schema_version: u64,
+    #[serde(
+        rename = "$schema",
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "schema::non_null"
+    )]
+    schema: Option<String>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "schema::non_null"
+    )]
+    meta: Option<super::model::LayoutMetadata>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     description: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -190,7 +203,11 @@ impl OnOff {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct TimedActionDoc {
     action: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "schema::non_null"
+    )]
     timeout_ms: Option<u64>,
 }
 
@@ -208,7 +225,11 @@ struct HoldDoc {
         skip_serializing_if = "Option::is_none"
     )]
     keys: Option<Option<String>>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "schema::non_null"
+    )]
     timeout_ms: Option<u64>,
 }
 
@@ -224,9 +245,17 @@ struct MacroDoc {
     id: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     name: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "schema::non_null"
+    )]
     step_pause_ms: Option<u64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "schema::non_null"
+    )]
     modifier_delay_ms: Option<u64>,
     #[serde(default)]
     steps: Vec<String>,
@@ -536,6 +565,8 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
     }
 
     Ok(LayoutPreset {
+        schema: doc.schema,
+        meta: doc.meta,
         description: doc.description.filter(|d| !d.trim().is_empty()),
         layers,
         rules,
@@ -739,6 +770,8 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
     }
     LayoutDoc {
         schema_version: LAYOUT_SCHEMA_VERSION,
+        schema: preset.schema.clone(),
+        meta: preset.meta.clone(),
         description: preset.description.clone().filter(|d| !d.trim().is_empty()),
         layers,
         rules,
@@ -774,6 +807,47 @@ mod tests {
 
     fn round_trip(preset: &LayoutPreset) -> LayoutPreset {
         parse(&serialize(preset)).unwrap().unwrap()
+    }
+
+    #[test]
+    fn timing_inherits_only_when_absent() {
+        for kind in ["hold", "longHold", "doubleTap"] {
+            let action = if kind == "hold" {
+                json!({"keys": "KeyB"})
+            } else {
+                json!({"action": "KeyB"})
+            };
+            let mut rule = json!({"key": "KeyA", kind: action});
+            assert!(parse(&layout(json!({"rules": [rule.clone()]}))).is_ok());
+            rule[kind]["timeoutMs"] = Value::Null;
+            assert!(parse(&layout(json!({"rules": [rule]}))).is_err());
+        }
+        for field in ["stepPauseMs", "modifierDelayMs"] {
+            assert!(parse(&layout(json!({"macros": [{"id": "m", field: null}]}))).is_err());
+        }
+        let preset = parsed(json!({"rules": [{"key": "KeyA", "tap": null}]}));
+        assert_eq!(round_trip(&preset), preset);
+    }
+
+    #[test]
+    fn portable_metadata_and_schema_survive_round_trip() {
+        let body = json!({"$schema": "https://example.com/layout.schema.json",
+            "meta": {"name": "Original", "author": "Ivan K", "version": "1.0"}});
+        let preset = parsed(body.clone());
+        assert_eq!(round_trip(&preset), preset);
+        let saved: Value = serde_json::from_str(&serialize(&preset)).unwrap();
+        assert_eq!(saved["meta"], body["meta"]);
+        assert_eq!(saved["$schema"], body["$schema"]);
+        for invalid in [
+            json!({"$schema": null}),
+            json!({"$schema": 1}),
+            json!({"meta": null}),
+            json!({"meta": {"author": null}}),
+            json!({"meta": {"future": true}}),
+            json!({"meta": {"version": 1}}),
+        ] {
+            assert!(parse(&layout(invalid)).is_err());
+        }
     }
 
     #[test]

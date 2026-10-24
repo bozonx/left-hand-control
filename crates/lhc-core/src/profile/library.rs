@@ -252,6 +252,41 @@ mod tests {
     };
 
     #[test]
+    fn portable_metadata_survives_library_operations() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let text = r#"{"schemaVersion":1,"$schema":"https://example.com/layout.json",
+            "meta":{"name":"Original","author":"Ivan K","version":"1.0"}}"#;
+        paths
+            .save_user_layout("Downloaded (2)", text, false)
+            .unwrap();
+        paths
+            .save_config(
+                r#"{"schemaVersion":1,"$schema":"https://example.com/config.json",
+            "state":{"editedLayoutId":"user:Downloaded (2)"}}"#,
+            )
+            .unwrap();
+        let mut doc = ConfigDocument::load(paths.clone()).unwrap();
+        doc.save_current_layout_as("Saved").unwrap();
+        doc.create_library_layout("Copy", "New description", LibrarySource::Copy("Saved"))
+            .unwrap();
+        let expected = paths.load_user_layout("Copy").unwrap();
+        doc.edit_library_metadata("Copy", "Renamed", "Edited description", &expected)
+            .unwrap();
+        let original = layout_file::parse(text).unwrap().unwrap();
+        for name in ["Saved", "Renamed"] {
+            let saved = doc.load_layout(&user_layout_id(name)).unwrap();
+            assert_eq!(saved.meta, original.meta);
+            assert_eq!(saved.schema, original.schema);
+        }
+        let config = super::super::settings::parse(&paths.load_config().unwrap()).unwrap();
+        assert_eq!(
+            config.schema.as_deref(),
+            Some("https://example.com/config.json")
+        );
+    }
+
+    #[test]
     fn saving_renaming_and_deleting_preserve_global_command_switch() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));

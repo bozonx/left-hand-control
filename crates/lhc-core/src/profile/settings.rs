@@ -44,6 +44,13 @@ pub fn serialize(settings: &AppSettings) -> String {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ConfigDoc {
     schema_version: u64,
+    #[serde(
+        rename = "$schema",
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "schema::non_null"
+    )]
+    schema: Option<String>,
     #[serde(default)]
     settings: SettingsDoc,
     #[serde(default)]
@@ -320,6 +327,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
         });
     }
     Ok(AppSettings {
+        schema: doc.schema,
         in_development: settings.in_development,
         launch_on_startup: settings.launch_on_startup,
         start_mapper_on_launch: settings.start_mapper_on_launch,
@@ -391,6 +399,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
     let filled = |value: &Option<String>| value.clone().filter(|value| !value.is_empty());
     ConfigDoc {
         schema_version: CONFIG_SCHEMA_VERSION,
+        schema: settings.schema.clone(),
         settings: SettingsDoc {
             in_development: settings.in_development,
             launch_on_startup: settings.launch_on_startup,
@@ -479,6 +488,20 @@ mod tests {
 
     fn config(settings: Value) -> String {
         json!({"schemaVersion": 1, "settings": settings}).to_string()
+    }
+
+    #[test]
+    fn editor_schema_is_preserved_and_strictly_typed() {
+        let text = r#"{"schemaVersion":1,"$schema":"https://example.com/config.schema.json"}"#;
+        let mut settings = parse(text).unwrap();
+        settings.high_contrast = true;
+        let saved = serialize(&settings);
+        assert_eq!(parse(&saved).unwrap(), settings);
+        let raw: serde_json::Value = serde_json::from_str(&saved).unwrap();
+        assert_eq!(raw["$schema"], "https://example.com/config.schema.json");
+        for value in ["null", "1", "{}"] {
+            assert!(parse(&format!(r#"{{"schemaVersion":1,"$schema":{value}}}"#)).is_err());
+        }
     }
 
     #[test]

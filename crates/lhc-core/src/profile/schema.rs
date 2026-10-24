@@ -75,6 +75,15 @@ pub fn backup_path(path: &std::path::Path, version: u64) -> std::path::PathBuf {
     path.with_file_name(name)
 }
 
+/// Read an optional field whose absence is allowed but explicit null is not.
+pub(crate) fn non_null<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: serde::Deserialize<'de>,
+{
+    T::deserialize(deserializer).map(Some)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

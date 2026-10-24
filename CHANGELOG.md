@@ -8,6 +8,9 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Both JSON formats accept and preserve an optional string `$schema`. Layouts also preserve portable `meta.name`, `meta.author` and `meta.version`, independently of the local filename.
+- Rule and macro timing overrides now reject explicit `null`; omit the field to inherit settings. Schema versions remain 1.
+
 - An action with an unknown `word:` prefix (for example, from a newer version) is kept on save and reported as an unknown action type instead of an invalid key.
 - `config.json` and layout files now have independent schema versions (both still 1). A file with an older schema version is backed up as `<file>.v<N>.bak` before the application first overwrites it. Editing these files by hand is unsupported and at your own risk.
 
