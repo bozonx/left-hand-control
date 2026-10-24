@@ -3647,3 +3647,6 @@ msgstr ""
 msgid "Waiting for keyboard"
 msgstr "Asteptam tastatura"
 
+
+msgid "The text was not typed: the destination window changed or could not be identified."
+msgstr "Textul nu a fost introdus: fereastra de destinație s-a schimbat sau nu a putut fi identificată."

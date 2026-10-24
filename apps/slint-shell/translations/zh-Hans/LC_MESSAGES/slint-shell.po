@@ -3265,3 +3265,6 @@ msgstr "在弹出窗口中，单击一个单元格或按其键：单元格遵循
 msgid "Waiting for keyboard"
 msgstr "等待键盘"
 
+
+msgid "The text was not typed: the destination window changed or could not be identified."
+msgstr "未输入文本：目标窗口已更改或无法识别。"

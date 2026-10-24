@@ -3266,3 +3266,6 @@ msgstr "在彈出視窗中，按一下儲存格或按其鍵：儲存格遵循鍵
 msgid "Waiting for keyboard"
 msgstr "等待鍵盤"
 
+
+msgid "The text was not typed: the destination window changed or could not be identified."
+msgstr "未輸入文字：目標視窗已變更或無法識別。"

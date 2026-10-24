@@ -2930,3 +2930,6 @@ msgstr "Во всплывающем окне кликните по ячейке 
 
 msgid "Waiting for keyboard"
 msgstr "Ожидание клавиатуры"
+
+msgid "The text was not typed: the destination window changed or could not be identified."
+msgstr "Текст не введён: окно-получатель сменилось или его не удалось определить."

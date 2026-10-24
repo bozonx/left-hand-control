@@ -3612,3 +3612,6 @@ msgstr ""
 msgid "Waiting for keyboard"
 msgstr "Пернетақтаны күтуде"
 
+
+msgid "The text was not typed: the destination window changed or could not be identified."
+msgstr "Мәтін енгізілмеді: мақсатты терезе өзгерді немесе оны анықтау мүмкін болмады."

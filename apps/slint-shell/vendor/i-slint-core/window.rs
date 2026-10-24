@@ -673,6 +673,7 @@ pub struct WindowInner {
     close_requested: Callback<(), CloseRequestResponse>,
     click_state: ClickState,
     ctx: core::cell::OnceCell<crate::SlintContext>,
+    xdg_app_id: RefCell<Option<SharedString>>,
     /// The native drag we started, if one is in flight.
     /// It holds the source and seed position to report completion and to arm the in-window
     /// fallback, and lets a drop back onto this same window restore the source's `DataTransfer`:
@@ -741,6 +742,7 @@ impl WindowInner {
             click_state: ClickState::default(),
             prevent_focus_change: Default::default(),
             ctx: Default::default(),
+            xdg_app_id: Default::default(),
             menubar: Default::default(),
             native_drag: Default::default(),
         }
@@ -2466,9 +2468,14 @@ impl WindowInner {
         }
     }
 
-    /// Returns the (context global) xdg app id for use with wayland and x11.
+    /// Override the xdg app id before showing this window. The identity survives native window recreation.
+    pub fn set_xdg_app_id(&self, app_id: SharedString) {
+        self.xdg_app_id.replace(Some(app_id));
+    }
+
+    /// Returns this window's xdg app id, falling back to the context global identity.
     pub fn xdg_app_id(&self) -> Option<SharedString> {
-        self.context().xdg_app_id()
+        self.xdg_app_id.borrow().clone().or_else(|| self.context().xdg_app_id())
     }
 
     /// Returns the upgraded window adapter

@@ -3580,3 +3580,6 @@ msgstr ""
 msgid "Waiting for keyboard"
 msgstr "Čekání na klávesnici"
 
+
+msgid "The text was not typed: the destination window changed or could not be identified."
+msgstr "Text nebyl napsán: cílové okno se změnilo nebo jej nebylo možné určit."

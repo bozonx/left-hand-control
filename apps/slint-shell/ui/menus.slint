@@ -112,8 +112,7 @@ component HotkeyGrid inherits Rectangle {
     pure function preview(index: int) -> int {
         if !self.dragging || self.source-page != MenuEditor.selected-page || self.drag-over < 0 { return index; }
         if index == self.drag-from { return self.drag-over; }
-        if self.drag-from < self.drag-over && index > self.drag-from && index <= self.drag-over { return index - 1; }
-        if self.drag-from > self.drag-over && index >= self.drag-over && index < self.drag-from { return index + 1; }
+        if index == self.drag-over { return self.drag-from; }
         return index;
     }
     if root.dragging && root.drag-over >= 0: Rectangle {

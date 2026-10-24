@@ -3643,3 +3643,6 @@ msgstr ""
 msgid "Waiting for keyboard"
 msgstr "Czekam na klawiaturę"
 
+
+msgid "The text was not typed: the destination window changed or could not be identified."
+msgstr "Nie wpisano tekstu: okno docelowe zmieniło się lub nie można go zidentyfikować."

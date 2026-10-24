@@ -3594,3 +3594,6 @@ msgstr ""
 msgid "Waiting for keyboard"
 msgstr "კლავიატურას ველოდები"
 
+
+msgid "The text was not typed: the destination window changed or could not be identified."
+msgstr "ტექსტი არ შეიყვანა: სამიზნე ფანჯარა შეიცვალა ან მისი ამოცნობა ვერ მოხერხდა."

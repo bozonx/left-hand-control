@@ -3610,3 +3610,6 @@ msgstr ""
 msgid "Waiting for keyboard"
 msgstr "Очікування клавіатури"
 
+
+msgid "The text was not typed: the destination window changed or could not be identified."
+msgstr "Текст не введено: вікно призначення змінилося або його не вдалося визначити."

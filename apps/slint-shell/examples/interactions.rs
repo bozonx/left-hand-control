@@ -682,7 +682,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let n = step.get();
         match n {
             -3 => {
-                let position = slint::LogicalPosition::new(100.0, 249.0);
+                let position = accessible_position(&ui, i_slint_core::items::AccessibleRole::Tab, "Маппер", false);
                 for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
                 assert_eq!(ui.global::<SettingsEditor>().get_tab(), SettingsTab::Mapper);
                 ui.window().set_size(slint::LogicalSize::new(940.0, 700.0));
@@ -695,7 +695,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 // Wayland may keep a tiled window at its compositor-controlled size.
                 assert!(ui.window().size().width >= (940.0 * ui.window().scale_factor()) as u32);
                 snapshot(&ui, "settings-keyboard-wide");
-                let position = slint::LogicalPosition::new(100.0, 210.0);
+                let position = accessible_position(&ui, i_slint_core::items::AccessibleRole::Tab, "Основное", false);
                 for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
                 ui.window().set_size(slint::LogicalSize::new(1120.0, 760.0));
             }

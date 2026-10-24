@@ -21,7 +21,7 @@ pub(super) fn current(titles: bool) -> Option<ActiveWindow> {
 }
 
 fn remember(value: &serde_json::Value, window: &ActiveWindow) {
-    if !super::is_own_process(window.process_name.as_deref())
+    if !super::is_text_popup(window)
         && let Ok(mut external) = EXTERNAL.lock()
     {
         *external = identity(value);
@@ -57,6 +57,22 @@ fn matches_target(snapshot: Result<gnome::Snapshot, String>, target: &str) -> bo
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn own_settings_are_a_destination_but_popups_are_not() {
+        let exe = std::env::current_exe().unwrap();
+        let mut window = ActiveWindow {
+            app_id: crate::storage::APP_ID.into(),
+            process_name: exe.file_name().unwrap().to_str().map(str::to_owned),
+            ..ActiveWindow::default()
+        };
+        remember(&serde_json::json!({"windowId": "epoch:settings"}), &window);
+        assert_eq!(text_target().as_deref(), Some("epoch:settings"));
+        window.app_id = crate::storage::POPUP_APP_ID.into();
+        remember(&serde_json::json!({"windowId": "epoch:quick"}), &window);
+        assert_eq!(text_target().as_deref(), Some("epoch:settings"));
+        *EXTERNAL.lock().unwrap() = None;
+    }
 
     #[test]
     fn delivery_requires_the_live_window_identity_and_bridge() {

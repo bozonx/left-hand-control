@@ -458,8 +458,14 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     metrics.ready("settings");
     popup_attributes.set(true);
     let emoji = EmojiPopup::new()?;
+    #[cfg(target_os = "linux")]
+    i_slint_core::window::WindowInner::from_pub(emoji.window())
+        .set_xdg_app_id(lhc_core::storage::POPUP_APP_ID.into());
     metrics.ready("emoji");
     let quick = QuickPopup::new()?;
+    #[cfg(target_os = "linux")]
+    i_slint_core::window::WindowInner::from_pub(quick.window())
+        .set_xdg_app_id(lhc_core::storage::POPUP_APP_ID.into());
     metrics.ready("quick");
     let app = Rc::new(App {
         settings,

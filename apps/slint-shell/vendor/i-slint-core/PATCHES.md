@@ -15,3 +15,5 @@ The history implementation is exercised by `slint-shell` unit tests through the 
 - Expose a reactive event-loop animation switch: disabled property transitions immediately reach their target, including standard Fluent widgets; animation-tick effects become static. The shell applies the accessibility preference in `ui::apply_theme`.
 
 - Flickable wheel handling (`items/flickable.rs`): a wheel capture is released once the wheel has been idle for the filter duration or the pointer has moved, because winit never sends `Ended` for a mouse wheel whose first step is high-resolution (non-discrete); without this the capture lasted forever and the scroll view took every later wheel event. Upstream 1.18 already forwards a new wheel gesture (`TouchPhase::Started`) to the children first, so the former local patch for that was dropped.
+
+- Keep an optional per-window xdg app ID in `WindowInner`, falling back to the global ID. The shell assigns its transient input popups a distinct ID so text destinations can include settings. Unlike winit creation attributes, this identity survives hiding and recreating a Wayland surface.

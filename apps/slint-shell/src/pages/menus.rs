@@ -74,18 +74,18 @@ fn first_filled(layout: &LayoutPreset, page: usize) -> i32 {
         .map_or(-1, |i| i as i32)
 }
 
-/// Move the cell at hotkey index `from` to `to`, shifting the cells between.
+/// Swap the cells at hotkey indexes `from` and `to`; the other keys keep
+/// their cells, as with a transfer between pages.
 fn move_cell<V>(cells: &mut BTreeMap<String, V>, from: usize, to: usize) {
-    let mut values: Vec<_> = LEFT_HAND_HOTKEYS
-        .iter()
-        .map(|key| cells.remove(*key))
-        .collect();
-    let item = values.remove(from);
-    values.insert(to, item);
-    for (key, value) in LEFT_HAND_HOTKEYS.iter().zip(values) {
-        if let Some(value) = value {
-            cells.insert((*key).into(), value);
-        }
+    let (Some(from), Some(to)) = (LEFT_HAND_HOTKEYS.get(from), LEFT_HAND_HOTKEYS.get(to)) else {
+        return;
+    };
+    let source = cells.remove(*from);
+    if let Some(target) = cells.remove(*to) {
+        cells.insert((*from).into(), target);
+    }
+    if let Some(source) = source {
+        cells.insert((*to).into(), source);
     }
 }
 
@@ -585,5 +585,20 @@ mod tests {
         assert_eq!(layout.quick_action_pages.len(), 1);
         assert_eq!(first_filled(&layout, 0), -1);
         assert_eq!(first_filled(&layout, 5), -1, "missing pages are empty");
+    }
+
+    #[test]
+    fn move_cell_swaps_without_shifting() {
+        let mut cells: BTreeMap<String, &str> = [("KeyQ", "q"), ("KeyW", "w"), ("KeyE", "e")]
+            .into_iter()
+            .map(|(k, v)| (k.into(), v))
+            .collect();
+        move_cell(&mut cells, 0, 2);
+        assert_eq!(cells["KeyQ"], "e");
+        assert_eq!(cells["KeyW"], "w", "cells between stay in place");
+        assert_eq!(cells["KeyE"], "q");
+        move_cell(&mut cells, 1, 4);
+        assert!(!cells.contains_key("KeyW"), "an empty target moves back");
+        assert_eq!(cells["KeyT"], "w");
     }
 }

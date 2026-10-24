@@ -3340,3 +3340,6 @@ msgstr ""
 msgid "Waiting for keyboard"
 msgstr "키보드를 기다리는 중"
 
+
+msgid "The text was not typed: the destination window changed or could not be identified."
+msgstr "텍스트가 입력되지 않았습니다. 대상 창이 변경되었거나 식별할 수 없습니다."

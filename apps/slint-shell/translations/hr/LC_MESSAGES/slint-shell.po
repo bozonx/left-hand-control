@@ -3593,3 +3593,6 @@ msgstr ""
 msgid "Waiting for keyboard"
 msgstr "Čeka se tipkovnica"
 
+
+msgid "The text was not typed: the destination window changed or could not be identified."
+msgstr "Tekst nije upisan: ciljni prozor se promijenio ili ga nije bilo moguće identificirati."

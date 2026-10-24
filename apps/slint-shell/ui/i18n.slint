@@ -158,6 +158,7 @@ export global Locale {
         if m.id == "copy-name" { return @tr("{} (copy)", m.arg); }
         if m.id == "text-missing-characters" { return @tr("The text was not typed: the keyboard layout lacks some of its characters, such as emoji. Choose a typing method with the clipboard."); }
         if m.id == "text-layout-unknown" { return @tr("The text was not typed: the active keyboard layout is unknown."); }
+        if m.id == "text-destination-changed" { return @tr("The text was not typed: the destination window changed or could not be identified."); }
         if m.id == "text-backend-unavailable" { return @tr("The text was not typed: the typing method is unavailable. Restart the mapper to try again."); }
         if m.id == "text-clipboard-failed" { return @tr("The text was not typed: safe clipboard access failed. See the application log."); }
         if m.id == "text-tool-failed" { return @tr("The text was not typed: the input tool failed. See the application log."); }

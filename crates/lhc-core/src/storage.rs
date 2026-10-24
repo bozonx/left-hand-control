@@ -5,6 +5,8 @@ use std::path::{Path, PathBuf};
 
 /// Stable application identifier used for config and data directories.
 pub const APP_ID: &str = "dev.bozonx.left-hand-control";
+/// Window identity reserved for transient input popups.
+pub const POPUP_APP_ID: &str = "dev.bozonx.left-hand-control.popup";
 /// Application name for technical identifiers (notifications, input
 /// sessions); the UI shows a translated title instead.
 pub const APP_NAME: &str = "Left Hand Control";

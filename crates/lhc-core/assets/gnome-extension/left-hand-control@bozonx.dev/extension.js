@@ -52,7 +52,7 @@ export default class Bridge extends Extension {
         this._disconnectWindow();
         const window = global.display.focus_window;
         if (window) {
-            if (window.get_wm_class() !== 'dev.bozonx.left-hand-control')
+            if (window.get_wm_class() !== 'dev.bozonx.left-hand-control.popup')
                 this._externalId = window.get_stable_sequence();
             for (const signal of ['notify::title', 'notify::fullscreen', 'position-changed', 'size-changed'])
                 this._windowSignals.push([window, window.connect(signal, () => this._changed())]);

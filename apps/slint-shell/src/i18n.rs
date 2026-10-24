@@ -575,6 +575,7 @@ impl Msg {
                 use lhc_core::events::TextInputFailure as F;
                 match failure {
                     F::MissingCharacters => ("text-missing-characters", empty(), 0),
+                    F::DestinationChanged => ("text-destination-changed", empty(), 0),
                     F::LayoutUnknown => ("text-layout-unknown", empty(), 0),
                     F::BackendUnavailable(detail) => diagnostic("text-backend-unavailable", detail),
                     F::Clipboard(detail) => diagnostic("text-clipboard-failed", detail),

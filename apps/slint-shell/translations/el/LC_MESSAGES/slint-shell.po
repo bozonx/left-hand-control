@@ -3710,3 +3710,6 @@ msgstr ""
 msgid "Waiting for keyboard"
 msgstr "Αναμονή για πληκτρολόγιο"
 
+
+msgid "The text was not typed: the destination window changed or could not be identified."
+msgstr "Το κείμενο δεν πληκτρολογήθηκε: το παράθυρο προορισμού άλλαξε ή δεν ήταν δυνατή η αναγνώρισή του."

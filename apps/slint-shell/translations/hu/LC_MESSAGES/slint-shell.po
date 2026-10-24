@@ -3650,3 +3650,6 @@ msgstr ""
 msgid "Waiting for keyboard"
 msgstr "Várakozás a billentyűzetre"
 
+
+msgid "The text was not typed: the destination window changed or could not be identified."
+msgstr "A szöveg nem lett beírva: a célablak megváltozott vagy nem volt azonosítható."

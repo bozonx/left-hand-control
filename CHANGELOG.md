@@ -13,8 +13,11 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Removed the large Settings heading and redundant headings on the Main, Key behavior and Accessibility settings pages.
+
 - Updated Slint to 1.18.1 and the bundled Spell layer-shell library to its Slint 1.18 revision; the local text editing, shortcut and scrolling fixes were ported.
 - Selecting a quick action cell only selects it; the action picker opens from the action field in the side panel.
+- Dragging a cell onto another one in the emoji and quick action menu grids swaps the two cells instead of shifting every cell in between.
 
 - Built-in layouts use their metadata title for display and suggested copy names instead of the asset filename (LHC1 rather than LHC1_by_Ivan_K).
 
@@ -37,6 +40,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Restored `text:` input into the settings typing test by tracking text destinations separately from rule conditions and identifying popup windows explicitly. Focus cancellation now reports a destination error instead of suggesting a mapper restart.
 - Repeated presses of a layer key that keeps its modifiers held (Tab for Alt+Tab) no longer press the held modifier again or wait for the modifier delay, so fast window switching keeps up.
 - The “Command started” notification is shown again when a command action runs.
 - Unplugging the optional mouse no longer stops keyboard mapping; the mouse reconnects independently with balanced button releases.

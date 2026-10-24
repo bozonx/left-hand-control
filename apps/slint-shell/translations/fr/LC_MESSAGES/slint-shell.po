@@ -3709,3 +3709,6 @@ msgstr ""
 msgid "Waiting for keyboard"
 msgstr "En attente du clavier"
 
+
+msgid "The text was not typed: the destination window changed or could not be identified."
+msgstr "Le texte n’a pas été saisi : la fenêtre de destination a changé ou n’a pas pu être identifiée."

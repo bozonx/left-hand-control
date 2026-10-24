@@ -3350,3 +3350,6 @@ msgstr ""
 msgid "Waiting for keyboard"
 msgstr "キーボードを待っています"
 
+
+msgid "The text was not typed: the destination window changed or could not be identified."
+msgstr "テキストは入力されませんでした。入力先のウィンドウが変わったか、特定できませんでした。"

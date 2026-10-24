@@ -50,6 +50,8 @@ pub enum TextInputFailure {
     LayoutUnknown,
     /// The input backend could not start or stopped working.
     BackendUnavailable(String),
+    /// The destination lost focus or could not be identified.
+    DestinationChanged,
     /// Safe clipboard access or the paste transfer failed.
     Clipboard(String),
     /// The external typing tool failed.

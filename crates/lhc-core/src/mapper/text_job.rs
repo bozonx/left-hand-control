@@ -78,9 +78,7 @@ impl TextRequest {
     pub(super) fn check(&self) -> Result<(), TextInputFailure> {
         self.check_lifetime()?;
         if !self.target.is_current() {
-            return Err(unavailable(
-                "text input cancelled: destination window changed or is unknown",
-            ));
+            return Err(TextInputFailure::DestinationChanged);
         }
         Ok(())
     }

@@ -40,6 +40,27 @@ static TITLES_FOR_GAME_MODE: AtomicBool = AtomicBool::new(false);
 /// Windows of this application do not count as the active window.
 static IGNORE_OWN_WINDOWS: AtomicBool = AtomicBool::new(false);
 static ACTUAL_WINDOW: Mutex<Option<ActiveWindow>> = Mutex::new(None);
+#[cfg(target_os = "linux")]
+static TEXT_WINDOW: Mutex<Option<ActiveWindow>> = Mutex::new(None);
+
+#[cfg(target_os = "linux")]
+fn is_text_popup(window: &ActiveWindow) -> bool {
+    window.app_id == crate::storage::POPUP_APP_ID
+}
+
+#[cfg(target_os = "linux")]
+fn remember_text_window(current: &Option<ActiveWindow>) {
+    if let Ok(mut target) = TEXT_WINDOW.lock() {
+        update_text_window(&mut target, current);
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn update_text_window(target: &mut Option<ActiveWindow>, current: &Option<ActiveWindow>) {
+    if !current.as_ref().is_some_and(is_text_popup) {
+        *target = current.clone();
+    }
+}
 
 /// An application with an open window, for picking a condition.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -185,6 +206,8 @@ pub fn start_watcher() {
                     control.refresh = false;
                 }
                 let current = detect_active_window();
+                #[cfg(target_os = "linux")]
+                remember_text_window(&current);
                 if let Ok(mut actual) = ACTUAL_WINDOW.lock() {
                     *actual = current.clone();
                 }
@@ -287,6 +310,8 @@ fn detect_active_window_with_titles(titles: bool) -> Option<ActiveWindow> {
 /// An own window (see [`ignore_own_windows`]) leaves the cache as is.
 pub fn detect_active_window_now() -> Option<ActiveWindow> {
     let current = detect_active_window();
+    #[cfg(target_os = "linux")]
+    remember_text_window(&current);
     if let Ok(mut actual) = ACTUAL_WINDOW.lock() {
         *actual = current.clone();
     }
@@ -358,7 +383,11 @@ impl TextTarget {
         ) {
             return gnome::text_target().map_or(Self::Unknown, Self::Gnome);
         }
-        cached_active_window().map_or(Self::Unknown, Self::Cached)
+        TEXT_WINDOW
+            .lock()
+            .ok()
+            .and_then(|target| target.clone())
+            .map_or(Self::Unknown, Self::Cached)
     }
 
     pub(crate) fn is_current(&self) -> bool {
@@ -398,6 +427,26 @@ impl TextTarget {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn text_destination_is_independent_of_the_rule_cache() {
+        let window = |id: &str| {
+            Some(ActiveWindow {
+                app_id: id.into(),
+                ..ActiveWindow::default()
+            })
+        };
+        let settings = window(crate::storage::APP_ID);
+        let popup = window(crate::storage::POPUP_APP_ID);
+        let mut target = window("org.kde.kate");
+        update_text_window(&mut target, &settings);
+        assert_eq!(target, settings);
+        update_text_window(&mut target, &popup);
+        assert_eq!(target, settings);
+        update_text_window(&mut target, &None);
+        assert!(target.is_none());
+    }
 
     #[test]
     fn own_windows_are_ignored_only_when_asked() {

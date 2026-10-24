@@ -92,6 +92,19 @@ struct Focus {
     external: Option<String>,
 }
 
+impl Focus {
+    fn update(&mut self, value: &serde_json::Value) {
+        self.current = value
+            .get("windowId")
+            .and_then(|id| id.as_str())
+            .filter(|id| !id.is_empty())
+            .map(str::to_owned);
+        if value.get("appId").and_then(|id| id.as_str()) != Some(crate::storage::POPUP_APP_ID) {
+            self.external = self.current.clone();
+        }
+    }
+}
+
 static FOCUS: Mutex<Focus> = Mutex::new(Focus {
     current: None,
     external: None,
@@ -136,21 +149,10 @@ impl Service {
         if !self.sent_by_kwin(&header) {
             return;
         }
-        if let Ok(value) = serde_json::from_str::<serde_json::Value>(&json) {
-            let window = super::linux::window_from_json(&value, "title", "appId");
-            let own = window
-                .as_ref()
-                .is_some_and(|window| super::is_own_process(window.process_name.as_deref()));
-            if let Ok(mut focus) = FOCUS.lock() {
-                focus.current = value
-                    .get("windowId")
-                    .and_then(|id| id.as_str())
-                    .filter(|id| !id.is_empty())
-                    .map(str::to_owned);
-                if !own {
-                    focus.external = focus.current.clone();
-                }
-            }
+        if let Ok(value) = serde_json::from_str::<serde_json::Value>(&json)
+            && let Ok(mut focus) = FOCUS.lock()
+        {
+            focus.update(&value);
         }
         let window = serde_json::from_str::<serde_json::Value>(&json)
             .ok()
@@ -462,6 +464,24 @@ mod tests {
     use std::io::{BufRead, BufReader};
     use std::process::{Command, Stdio};
     use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[test]
+    fn settings_accept_text_and_popups_preserve_the_destination() {
+        let mut focus = super::Focus::default();
+        let report = |app, id| serde_json::json!({"appId": app, "windowId": id});
+        focus.update(&report("org.kde.kate", "editor"));
+        focus.update(&report(crate::storage::APP_ID, "settings"));
+        assert_eq!(focus.current.as_deref(), Some("settings"));
+        assert_eq!(focus.external, focus.current);
+        focus.update(&report(crate::storage::POPUP_APP_ID, "quick"));
+        assert_eq!(focus.external.as_deref(), Some("settings"));
+        assert_ne!(focus.current, focus.external);
+        focus.update(&report(crate::storage::APP_ID, "settings"));
+        assert_eq!(focus.external, focus.current);
+        focus.update(&serde_json::json!({}));
+        assert!(focus.current.is_none());
+        assert!(focus.external.is_none());
+    }
 
     struct Bus(std::process::Child);
     impl Drop for Bus {
