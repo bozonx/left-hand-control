@@ -354,6 +354,72 @@
           "action": "TouchpadToggle"
         }
       }
+    },
+    {
+      "id": "texts",
+      "name": "Texts",
+      "cells": {
+        "KeyQ": {
+          "name": "",
+          "action": ""
+        },
+        "KeyW": {
+          "name": "",
+          "action": "text:Give me a few minutes, I'll get back to you"
+        },
+        "KeyE": {
+          "name": "",
+          "action": "text:Good morning!"
+        },
+        "KeyR": {
+          "name": "",
+          "action": "text:Have a nice day!"
+        },
+        "KeyT": {
+          "name": "",
+          "action": "text:"
+        },
+        "KeyA": {
+          "name": "Fix grammar",
+          "action": "text:Fix grammar and wording, keep the meaning and tone"
+        },
+        "KeyS": {
+          "name": "",
+          "action": "text:"
+        },
+        "KeyD": {
+          "name": "Do all as suggested",
+          "action": "text:Do it all as you suggested"
+        },
+        "KeyF": {
+          "name": "Continue",
+          "action": "text:Continue"
+        },
+        "KeyG": {
+          "name": "",
+          "action": "text:"
+        },
+        "KeyZ": {
+          "name": "",
+          "action": "text:"
+        },
+        "KeyX": {
+          "name": "",
+          "action": "text:"
+        },
+        "KeyC": {
+          "name": "",
+          "action": "text:Please let me know if you have any questions"
+        },
+        "KeyV": {
+          "name": "",
+          "action": "text:"
+        },
+        "KeyB": {
+          "name": "",
+          "action": ""
+        }
+      }
     }
   ],
   "emojiPages": [
