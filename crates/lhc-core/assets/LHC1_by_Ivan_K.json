@@ -1,5 +1,9 @@
 {
   "schemaVersion": 1,
+  "meta": {
+    "name": "LHC1 by Ivan K",
+    "author": "Ivan K"
+  },
   "layers": [
     {
       "id": "navigation",

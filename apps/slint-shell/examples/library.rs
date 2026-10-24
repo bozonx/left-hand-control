@@ -247,6 +247,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             settings.manual_active_layout_id = Some("user:missing".into());
         })
     })?;
+    assert_eq!(library.get_bundled_names().row_data(0).unwrap(), "LHC1");
+    library.invoke_open_create(LayoutSource::Bundled, 0);
+    assert_eq!(library.get_create_name(), "LHC1");
     library.invoke_create("Ivan K".into(), "".into(), LayoutSource::Bundled, 0);
     assert_eq!(ui.get_page(), Page::Rules);
     assert_eq!(

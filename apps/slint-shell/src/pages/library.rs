@@ -847,7 +847,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let state: Shared = Rc::default();
     reset_context(ui, document, &mut state.borrow_mut());
     let library = ui.global::<LayoutLibrary>();
-    library.set_bundled_names(super::strings(BUNDLED.iter().map(|bundled| bundled.name)));
+    library.set_bundled_names(super::strings(
+        BUNDLED.iter().map(|bundled| bundled.display_name()),
+    ));
 
     let rows = Rc::new(RefCell::new(Vec::new()));
     let positions = rows.clone();
