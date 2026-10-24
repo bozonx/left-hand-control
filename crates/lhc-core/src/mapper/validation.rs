@@ -339,6 +339,11 @@ fn validate_action(
         Action::Pause(_) => {
             errors.push(format!("{where_}: pause is only allowed inside macros"));
         }
+        Action::Unknown(value) => {
+            errors.push(format!(
+                "{where_}: unknown action type \"{value}\" (it may come from a newer version of the application)"
+            ));
+        }
         Action::Keys(keys) => {
             if parse_action(&keys).is_none() {
                 errors.push(format!("{where_}: unknown action \"{action}\""));

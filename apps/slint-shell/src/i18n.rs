@@ -405,6 +405,7 @@ impl Msg {
                     ActionIssue::UnknownCommand => "action-unknown-command",
                     ActionIssue::UnknownSystemAction => "action-unknown-system",
                     ActionIssue::UnknownAppAction => "action-unknown-app",
+                    ActionIssue::UnknownActionType => "action-unknown-type",
                 },
                 empty(),
                 0,

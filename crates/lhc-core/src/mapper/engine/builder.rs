@@ -131,6 +131,7 @@ impl Engine {
                         ),
                     },
                     Action::Text(text) => steps.push(MacroStepItem::Literal(text)),
+                    Action::Unknown(_) => steps.push(unavailable()),
                     Action::Pause(ms) => match pause_duration(&ms) {
                         Some(duration) => steps.push(MacroStepItem::Pause(duration)),
                         None => log::debug!("[mapper] macro {} step: invalid pause {:?}", id, raw),
@@ -485,6 +486,10 @@ pub(super) fn resolve_action(
         Action::Pause(_) => {
             log::debug!("[mapper] pause is only allowed in macros ({where_})");
             None
+        }
+        Action::Unknown(value) => {
+            log::debug!("[mapper] unknown action type {value:?} ({where_})");
+            unavailable()
         }
         Action::Keys(keys) => {
             let stroke = parse_action(&keys).map(ActionDef::Stroke);

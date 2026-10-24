@@ -122,7 +122,9 @@ pub(crate) fn action_kind(action: &str) -> ActionKind {
         Action::System(_) | Action::KdeShortcut(_) => ActionKind::System,
         Action::App(_) => ActionKind::App,
         Action::Text(_) => ActionKind::Text,
-        Action::Native | Action::Swallow | Action::Pause(_) => ActionKind::None,
+        Action::Native | Action::Swallow | Action::Pause(_) | Action::Unknown(_) => {
+            ActionKind::None
+        }
     }
 }
 

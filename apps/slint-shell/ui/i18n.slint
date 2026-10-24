@@ -198,6 +198,7 @@ export global Locale {
         if m.id == "action-unknown-command" { return @tr("The selected command no longer exists."); }
         if m.id == "action-unknown-system" { return @tr("Unknown system action."); }
         if m.id == "action-unknown-app" { return @tr("Unknown application action."); }
+        if m.id == "action-unknown-type" { return @tr("Unknown action type. It may come from a newer version of the application."); }
         // Message ids are checked against Rust at build time.
         return "";
     }

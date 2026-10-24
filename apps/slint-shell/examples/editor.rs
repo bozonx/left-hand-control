@@ -51,6 +51,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "action-unknown-command",
             "action-unknown-system",
             "action-unknown-app",
+            "action-unknown-type",
             "action-failed",
             "error",
             "mapper-failed",

@@ -6,11 +6,12 @@
 //! field; unknown fields, wrong types and unknown values are errors, the
 //! same as in layout files (see [`super::layout_file`]).
 
-use super::layout_file::{SCHEMA_VERSION, WhenDoc, check_version, read_error};
+use super::layout_file::WhenDoc;
 use super::model::{
     AppSettings, Appearance, AutoRule, GameModeControl, GameModeProcessMatcher, GameModeSettings,
     LayoutMode, LocalePreference, PasteShortcut, TapDecision, TextMode,
 };
+use super::schema::{self, CONFIG_SCHEMA_VERSION};
 use serde::{Deserialize, Serialize};
 
 /// Parse `config.json`; an empty file gives the defaults.
@@ -20,10 +21,17 @@ pub fn parse(text: &str) -> Result<AppSettings, String> {
     }
     let value: serde_json::Value =
         serde_json::from_str(text).map_err(|error| format!("config.json: {error}"))?;
-    check_version(&value, "config.json")?;
-    let doc: ConfigDoc =
-        serde_json::from_str(text).map_err(|error| read_error("config.json", &error))?;
-    let settings = from_doc(doc)?;
+    let settings = match schema::read_version(&value, "config.json", CONFIG_SCHEMA_VERSION)? {
+        1 => from_doc(
+            serde_json::from_str::<ConfigDoc>(text)
+                .map_err(|error| schema::read_error("config.json", &error))?,
+        )?,
+        version => {
+            return Err(format!(
+                "config.json: no reader for schema version {version}"
+            ));
+        }
+    };
     validate(&settings)?;
     Ok(settings)
 }
@@ -382,7 +390,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
     let game_mode = &settings.game_mode;
     let filled = |value: &Option<String>| value.clone().filter(|value| !value.is_empty());
     ConfigDoc {
-        schema_version: SCHEMA_VERSION,
+        schema_version: CONFIG_SCHEMA_VERSION,
         settings: SettingsDoc {
             in_development: settings.in_development,
             launch_on_startup: settings.launch_on_startup,

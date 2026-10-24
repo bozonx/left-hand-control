@@ -102,7 +102,7 @@ docs/                         # development/, design/, testing/; README.md index
 
 **Config writes.** Pages change the configuration only through `Document::edit` (`src/document.rs`). It applies the edit, saves, pushes the result to a running mapper and notifies the other views via `Document::subscribe`. Never hold a `Document::read()` borrow across UI calls that may edit — it causes `RefCell` conflicts.
 
-**Persistence.** Settings auto-save to `config.json`; layouts are written to the library only on an explicit save. Both formats are versioned (`"schemaVersion": 1`) and parsed strictly (unknown fields and values are errors); see [`docs/config-format.md`](docs/config-format.md). Configuration is read at startup and edited through the application. Manual changes require an application restart and may be overwritten by application saves. Paths come from `StoragePaths::resolve()`: an explicit `LHC_DEV_DIR` overrides paths in debug and release builds; otherwise debug builds use `<repo>/dev-files/<os>/`, and release builds use `~/.config/dev.bozonx.left-hand-control/` and `~/.local/share/dev.bozonx.left-hand-control/`.
+**Persistence.** Settings auto-save to `config.json`; layouts are written to the library only on an explicit save. Both formats are versioned independently (`CONFIG_SCHEMA_VERSION`, `LAYOUT_SCHEMA_VERSION` in `profile/schema.rs`, both 1) and parsed strictly (unknown fields and values are errors); see [`docs/config-format.md`](docs/config-format.md). Within a version only optional fields and enum values may be added; anything else bumps that version and adds a reader arm for the old one (procedure in the `schema.rs` header); storage backs up an older-version file as `<file>.v<N>.bak` before overwriting it. Configuration is read at startup and edited only through the application; manual editing is unsupported and at the user's own risk. Paths come from `StoragePaths::resolve()`: an explicit `LHC_DEV_DIR` overrides paths in debug and release builds; otherwise debug builds use `<repo>/dev-files/<os>/`, and release builds use `~/.config/dev.bozonx.left-hand-control/` and `~/.local/share/dev.bozonx.left-hand-control/`.
 
 **Processes.** One binary, three roles: the settings process, the Spell popup worker (`--spell-worker`) and a CLI client that sends a command over IPC (Unix socket in a private `0700` dir on Linux/macOS, token-authenticated loopback TCP on Windows). The mapper holds a cross-process lock, so only one process can grab keyboards.
 
@@ -170,7 +170,7 @@ Report the exact commands you ran and their results. If something could not be r
 **Always**
 - Put domain and platform logic in `lhc-core`; keep the shell thin.
 - Edit config through `Document::edit`; resolve paths through `StoragePaths::resolve()`.
-- Support the current `config.json` and layout JSON formats only; do not add migrations or fallbacks for retired formats.
+- Support the current `config.json` and layout JSON formats, plus older `schemaVersion`s through the readers in `profile/`; do not add fallbacks for formats that predate `schemaVersion`.
 
 **Ask first**
 - Adding a dependency or bumping Slint / `spell-framework` / `i-slint-core`.

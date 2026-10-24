@@ -23,6 +23,9 @@ pub enum Action {
     Text(String),
     /// Macro-only delay in milliseconds.
     Pause(String),
+    /// A `word:` prefix this build does not know, most likely an action
+    /// type from a newer version. Kept verbatim so saving preserves it.
+    Unknown(String),
 }
 
 impl Action {
@@ -52,6 +55,8 @@ impl Action {
         }
         if value.is_empty() {
             Self::Native
+        } else if unknown_prefix(value) {
+            Self::Unknown(value.into())
         } else {
             Self::Keys(value.into())
         }
@@ -70,8 +75,18 @@ impl Action {
             Self::KdeShortcut(id) => format!("kde:{id}"),
             Self::Text(text) => format!("text:{text}"),
             Self::Pause(ms) => format!("pause:{ms}"),
+            Self::Unknown(value) => value.clone(),
         })
     }
+}
+
+/// `word:…` with a lowercase prefix, the shape of every action type. Key
+/// names never contain `:`.
+fn unknown_prefix(value: &str) -> bool {
+    value.split_once(':').is_some_and(|(prefix, _)| {
+        prefix.starts_with(|c: char| c.is_ascii_lowercase())
+            && prefix.chars().all(|c| c.is_ascii_alphanumeric())
+    })
 }
 
 /// How an action should be presented: a translatable message id with an
@@ -284,6 +299,8 @@ pub enum ActionIssue {
     UnknownCommand,
     UnknownSystemAction,
     UnknownAppAction,
+    /// An action type this build does not know (see [`Action::Unknown`]).
+    UnknownActionType,
 }
 
 /// Check an action outside a macro. Key names are checked by the mapper
@@ -293,6 +310,7 @@ pub fn validate(action: &Action, config: &AppConfig) -> Option<ActionIssue> {
         Action::Native | Action::Swallow | Action::Text(_) => None,
         Action::Keys(keys) => (!valid_held_key(keys)).then_some(ActionIssue::InvalidSyntax),
         Action::Pause(_) => Some(ActionIssue::PauseOutsideMacro),
+        Action::Unknown(_) => Some(ActionIssue::UnknownActionType),
         Action::Macro(id) => {
             let known = config.macros.iter().any(|item| &item.id == id)
                 || BUILTIN_MACROS.iter().any(|item| item.id == id);
@@ -417,6 +435,7 @@ mod tests {
             "text:   ",
             "text:first\nsecond\n",
             "pause:100",
+            "future:thing",
             "",
         ] {
             assert_eq!(Action::parse(Some(raw)).format().as_deref(), Some(raw));
@@ -429,6 +448,23 @@ mod tests {
             Action::parse(Some("  text: hi ")),
             Action::Text(" hi ".into())
         );
+    }
+
+    #[test]
+    fn unknown_action_types_are_kept_and_reported() {
+        let config = AppConfig::from_parts(AppSettings::default(), LayoutPreset::default(), None);
+        assert_eq!(
+            Action::parse(Some(" newKind:some value ")),
+            Action::Unknown("newKind:some value".into())
+        );
+        assert_eq!(
+            validate(&Action::parse(Some("newKind:x")), &config),
+            Some(ActionIssue::UnknownActionType)
+        );
+        // Not the shape of an action type: still a (bad) key chord.
+        for raw in ["Ctrl+a:b", "Key:A", ":x"] {
+            assert_eq!(Action::parse(Some(raw)), Action::Keys(raw.into()));
+        }
     }
 
     #[test]

@@ -1,3 +1,4 @@
+use crate::profile::schema::{self, CONFIG_SCHEMA_VERSION, LAYOUT_SCHEMA_VERSION};
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -84,7 +85,9 @@ impl StoragePaths {
 
     pub fn save_config(&self, contents: &str) -> Result<(), String> {
         self.ensure()?;
-        write_atomic(&self.config_path(), contents.as_bytes())
+        let path = self.config_path();
+        backup_older_schema(&path, CONFIG_SCHEMA_VERSION)?;
+        write_atomic(&path, contents.as_bytes())
     }
 
     pub fn list_user_layouts(&self) -> Result<Vec<String>, String> {
@@ -134,6 +137,7 @@ impl StoragePaths {
         if path.exists() && !overwrite {
             return Err(format!("Layout \"{safe}\" already exists"));
         }
+        backup_older_schema(&path, LAYOUT_SCHEMA_VERSION)?;
         write_file(&path, contents.as_bytes(), overwrite)?;
         Ok(safe)
     }
@@ -150,6 +154,7 @@ impl StoragePaths {
         if !old_path.exists() {
             return Err(format!("Layout \"{old_name}\" not found"));
         }
+        backup_older_schema(&old_path, LAYOUT_SCHEMA_VERSION)?;
         let new_safe = validate_layout_name(new_name)?;
         let dir = self.layouts_dir();
         fs::create_dir_all(&dir).map_err(|e| format!("create_dir_all: {e}"))?;
@@ -165,6 +170,7 @@ impl StoragePaths {
         if new_path.exists() && old_path != new_path && !overwrite {
             return Err(format!("Layout \"{new_safe}\" already exists"));
         }
+        backup_older_schema(&new_path, LAYOUT_SCHEMA_VERSION)?;
         write_file(
             &new_path,
             contents.as_bytes(),
@@ -286,6 +292,25 @@ fn dev_base_dir(override_dir: Option<PathBuf>) -> Result<PathBuf, String> {
             .ok_or_else(|| "resolve repository root".to_string())?
             .join("dev-files")),
     }
+}
+
+/// Keep a copy of `path` before it is first overwritten when it holds an
+/// older schema version than `current`, so an upgrade never loses the
+/// original file. An existing copy is left as it is.
+fn backup_older_schema(path: &Path, current: u64) -> Result<(), String> {
+    let text = match fs::read_to_string(path) {
+        Ok(text) => text,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(format!("read before backup: {error}")),
+    };
+    let Some(version) = schema::version_of(&text).filter(|version| *version < current) else {
+        return Ok(());
+    };
+    let backup = schema::backup_path(path, version);
+    if backup.exists() {
+        return Ok(());
+    }
+    write_file(&backup, text.as_bytes(), false)
 }
 
 pub(crate) fn write_atomic(path: &Path, contents: &[u8]) -> Result<(), String> {
@@ -559,6 +584,28 @@ mod tests {
         assert!(super::write_file(&destination, b"replacement", false).is_err());
         assert_eq!(fs::read_to_string(destination).unwrap(), "external");
         assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn older_schema_is_backed_up_once_before_an_upgrade() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.json");
+        let backup = dir.path().join("config.json.v1.bak");
+        let original = r#"{"schemaVersion": 1, "settings": {}}"#;
+        fs::write(&path, original).unwrap();
+
+        // The current version is not backed up.
+        super::backup_older_schema(&path, 1).unwrap();
+        assert!(!backup.exists());
+
+        super::backup_older_schema(&path, 2).unwrap();
+        assert_eq!(fs::read_to_string(&backup).unwrap(), original);
+
+        fs::write(&path, r#"{"schemaVersion": 1, "changed": true}"#).unwrap();
+        super::backup_older_schema(&path, 2).unwrap();
+        assert_eq!(fs::read_to_string(&backup).unwrap(), original);
+
+        super::backup_older_schema(&dir.path().join("missing.json"), 2).unwrap();
     }
 
     #[test]

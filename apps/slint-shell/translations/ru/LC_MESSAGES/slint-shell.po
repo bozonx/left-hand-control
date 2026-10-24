@@ -2796,6 +2796,9 @@ msgstr "Неизвестное системное действие."
 msgid "Unknown application action."
 msgstr "Неизвестное действие приложения."
 
+msgid "Unknown action type. It may come from a newer version of the application."
+msgstr "Неизвестный тип действия. Возможно, он из более новой версии приложения."
+
 msgid "Layout: {}"
 msgstr "Раскладка: {}"
 

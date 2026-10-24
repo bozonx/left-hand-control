@@ -10,11 +10,9 @@ use super::model::{
     Command, EmojiPage, HoldBehavior, LEFT_HAND_HOTKEYS, Layer, LayerKeymap, LayerRule,
     LayoutConditionSet, LayoutPreset, Macro, MacroStep, QuickAction, QuickActionPage, TapDecision,
 };
+use super::schema::{self, LAYOUT_SCHEMA_VERSION};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::{BTreeMap, BTreeSet};
-
-/// Schema version of the layout and config files this build reads and writes.
-pub const SCHEMA_VERSION: u64 = 1;
 
 /// Parse a layout file. Returns `Ok(None)` for an empty document.
 pub fn parse(text: &str) -> Result<Option<LayoutPreset>, String> {
@@ -23,42 +21,15 @@ pub fn parse(text: &str) -> Result<Option<LayoutPreset>, String> {
     }
     let value: serde_json::Value =
         serde_json::from_str(text).map_err(|error| format!("parse layout: {error}"))?;
-    check_version(&value, "layout")?;
-    let doc: LayoutDoc =
-        serde_json::from_str(text).map_err(|error| read_error("parse layout", &error))?;
-    let layout = from_doc(doc)?;
+    let layout = match schema::read_version(&value, "layout", LAYOUT_SCHEMA_VERSION)? {
+        1 => from_doc(
+            serde_json::from_str::<LayoutDoc>(text)
+                .map_err(|error| schema::read_error("parse layout", &error))?,
+        )?,
+        version => return Err(format!("layout: no reader for schema version {version}")),
+    };
     super::timing::validate_layout(&layout)?;
     Ok(Some(layout))
-}
-
-/// Check the `schemaVersion` field of a parsed document before reading the rest,
-/// so a file from a newer build is reported as such rather than as a list
-/// of unknown fields.
-pub(crate) fn check_version(value: &serde_json::Value, what: &str) -> Result<(), String> {
-    let object = value
-        .as_object()
-        .ok_or_else(|| format!("{what} must be a JSON object"))?;
-    match object.get("schemaVersion") {
-        None => Err(format!("{what}: missing \"schemaVersion\" field")),
-        Some(version) => match version.as_u64() {
-            Some(SCHEMA_VERSION) => Ok(()),
-            Some(newer) if newer > SCHEMA_VERSION => Err(format!(
-                "{what}: schema version {newer} is newer than this application supports ({SCHEMA_VERSION})"
-            )),
-            _ => Err(format!("{what}: unsupported schema version {version}")),
-        },
-    }
-}
-
-/// A strict-read error. Version 1 may gain optional fields, which an older
-/// build reports as unknown, so such errors point at the likely cause.
-pub(crate) fn read_error(what: &str, error: &serde_json::Error) -> String {
-    let text = error.to_string();
-    if text.starts_with("unknown field") || text.starts_with("unknown variant") {
-        format!("{what}: {text} (the file may come from a newer version of the application)")
-    } else {
-        format!("{what}: {text}")
-    }
 }
 
 pub fn serialize(preset: &LayoutPreset) -> String {
@@ -767,7 +738,7 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
         matches!(pages, [page] if page.name.is_none() && page.cells.is_empty())
     }
     LayoutDoc {
-        schema_version: SCHEMA_VERSION,
+        schema_version: LAYOUT_SCHEMA_VERSION,
         description: preset.description.clone().filter(|d| !d.trim().is_empty()),
         layers,
         rules,
