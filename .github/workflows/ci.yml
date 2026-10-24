@@ -95,7 +95,7 @@ jobs:
       - name: Install Linux system deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y libdbus-1-dev libwayland-dev
+          sudo apt-get install -y libdbus-1-dev libwayland-dev libxkbcommon-dev
 
       - name: Enable uinput
         id: uinput
