@@ -62,10 +62,10 @@ export component ScrollView {
     in property <bool> enabled: true;
     out property <length> visible-width <=> content.width;
     out property <length> visible-height <=> content.height;
-    in-out property <length> viewport-width <=> content.viewport-width;
-    in-out property <length> viewport-height <=> content.viewport-height;
-    in-out property <length> viewport-x <=> content.viewport-x;
-    in-out property <length> viewport-y <=> content.viewport-y;
+    in-out property <length> viewport-width <=> content.content-width;
+    in-out property <length> viewport-height <=> content.content-height;
+    in-out property <length> viewport-x <=> content.content-x;
+    in-out property <length> viewport-y <=> content.content-y;
     in property <ScrollBarPolicy> vertical-scrollbar-policy: as-needed;
     in property <ScrollBarPolicy> horizontal-scrollbar-policy: always-off;
     in property <bool> mouse-drag-pan-enabled: false;
@@ -95,10 +95,10 @@ export component ScrollView {
         root.drag-scroll-by(delta);
     }
     function drag-scroll-by(delta: length) {
-        let before = content.viewport-y;
-        content.viewport-y = clamp(before + delta, min(0px, content.height - content.viewport-height), 0px);
-        if content.viewport-y != before {
-            DragDrop.scrolled(before - content.viewport-y);
+        let before = content.content-y;
+        content.content-y = clamp(before + delta, min(0px, content.height - content.content-height), 0px);
+        if content.content-y != before {
+            DragDrop.scrolled(before - content.content-y);
             root.scrolled();
         }
     }

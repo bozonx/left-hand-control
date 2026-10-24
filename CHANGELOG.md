@@ -35,6 +35,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Repeated presses of a layer key that keeps its modifiers held (Tab for Alt+Tab) no longer press the held modifier again or wait for the modifier delay, so fast window switching keeps up.
 - The “Command started” notification is shown again when a command action runs.
 - Unplugging the optional mouse no longer stops keyboard mapping; the mouse reconnects independently with balanced button releases.
 - Keyboards selected through `/dev/input/by-id` reconnect after changing USB ports, and the shell shows when the mapper is waiting for its keyboard.

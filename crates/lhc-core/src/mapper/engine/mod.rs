@@ -876,6 +876,9 @@ impl Engine {
             return;
         };
         let previous = std::mem::replace(&mut trigger.held_mods, ks.mods.clone());
+        // Modifiers already down (Alt from the previous Tab) are not pressed
+        // again, so repeated presses skip the modifier delay.
+        let fresh = self.mods_not_held(&ks.mods);
         for m in ks.mods.iter().filter(|m| !previous.contains(m)) {
             *self.mod_refs.entry(*m).or_insert(0) += 1;
         }
@@ -888,7 +891,10 @@ impl Engine {
             out.push(Out::ReleaseMods(released));
         }
         out.push(Out::ChordPress {
-            ks: ks.clone(),
+            ks: Keystroke {
+                mods: fresh,
+                key: ks.key,
+            },
             mod_delay: self.default_mod_delay,
         });
         self.emitted.insert(
