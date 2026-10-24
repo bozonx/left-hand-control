@@ -266,9 +266,9 @@ export component SaveSplitButton inherits Rectangle {
                 height: parent.height;
                 background: touch-chevron.has-hover || focus-chevron.has-focus ? Theme.hover : transparent;
                 accessible-role: button;
-                accessible-label: @tr("Save as…");
+                accessible-label: @tr("Save as or reset changes");
                 accessible-action-default => { save-menu.show(); }
-                Tooltip { Rectangle { background: Theme.card; HorizontalLayout { padding: 8px; Text { text: @tr("Save as…"); color: Theme.text; } } } }
+                Tooltip { Rectangle { background: Theme.card; HorizontalLayout { padding: 8px; Text { text: @tr("Save as or reset changes"); color: Theme.text; } } } }
                 Image {
                     x: (parent.width - self.width) / 2;
                     y: (parent.height - self.height) / 2;

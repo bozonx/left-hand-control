@@ -435,6 +435,7 @@ export component RuleDialogOverlay inherits FocusScope {
                             active: RulesEditor.hold-mode != 2;
                             inactive-reason: @tr("Not used when holding performs a long-hold action.");
                             modified: RulesEditor.hold-timeout != "";
+                            reset-tooltip: @tr("Use the default from Settings: {} ms", RulesEditor.default-hold-timeout);
                             reset => { RulesEditor.hold-timeout = ""; }
                             HorizontalLayout { alignment: start; NumericInput { enabled: hold-form.active; text <=> RulesEditor.hold-timeout; placeholder-text: RulesEditor.default-hold-timeout; label: hold-form.label; minimum: 50; maximum: 1000; } }
                         }
@@ -444,6 +445,7 @@ export component RuleDialogOverlay inherits FocusScope {
                             active: RulesEditor.hold-mode == 2;
                             inactive-reason: @tr("Used when a long-hold action is selected.");
                             modified: RulesEditor.long-hold-timeout != "";
+                            reset-tooltip: @tr("Use the default from Settings: {} ms", RulesEditor.default-long-hold-timeout);
                             reset => { RulesEditor.long-hold-timeout = ""; }
                             HorizontalLayout { alignment: start; NumericInput { enabled: long-form.active; text <=> RulesEditor.long-hold-timeout; placeholder-text: RulesEditor.default-long-hold-timeout; minimum: 100; maximum: 60000; step: 100; label: long-form.label; } }
                         }
@@ -454,6 +456,7 @@ export component RuleDialogOverlay inherits FocusScope {
                             active: !RulesEditor.is-chord;
                             inactive-reason: @tr("Double-tap actions are available only for single-key triggers.");
                             modified: RulesEditor.double-timeout != "";
+                            reset-tooltip: @tr("Use the default from Settings: {} ms", RulesEditor.default-double-timeout);
                             reset => { RulesEditor.double-timeout = ""; }
                             HorizontalLayout { alignment: start; NumericInput { enabled: double-form.active; text <=> RulesEditor.double-timeout; placeholder-text: RulesEditor.default-double-timeout; label: double-form.label; minimum: 50; maximum: 1000; } }
                         }

@@ -101,7 +101,7 @@ export component InlineTextField inherits FocusScope {
                             IconButton {
                                 visible: display-touch.has-hover || root.has-focus;
                                 icon: @image-url("icons/pencil.svg");
-                                label: root.label;
+                                label: @tr("Edit: {}", root.label);
                                 clicked => { root.begin(); }
                             }
                         }
@@ -121,8 +121,8 @@ export component InlineTextField inherits FocusScope {
                 accepted => { root.save(); }
                 changed has-focus => { if !self.has-focus { root.blurred(); } }
             }
-            if root.editing: IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save"); enabled: root.can-save; clicked => { root.save(); } }
-            if root.editing: IconButton { icon: @image-url("icons/x.svg"); label: @tr("Cancel"); clicked => { root.cancel(); } }
+            if root.editing: IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save (Enter)"); enabled: root.can-save; clicked => { root.save(); } }
+            if root.editing: IconButton { icon: @image-url("icons/x.svg"); label: @tr("Cancel (Esc)"); clicked => { root.cancel(); } }
         }
         if root.editing && root.issue.id != "": Text {
             text: Locale.text(root.issue);
@@ -220,8 +220,8 @@ export component InlineTextArea inherits FocusScope {
         if root.editing: HorizontalLayout {
             spacing: 4px;
             alignment: end;
-            IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save"); enabled: root.allow-empty || InlineEditors.nonempty(root.draft); clicked => { root.save(); } }
-            IconButton { icon: @image-url("icons/x.svg"); label: @tr("Cancel"); clicked => { root.cancel(); } }
+            IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save (Ctrl+Enter)"); enabled: root.allow-empty || InlineEditors.nonempty(root.draft); clicked => { root.save(); } }
+            IconButton { icon: @image-url("icons/x.svg"); label: @tr("Cancel (Esc)"); clicked => { root.cancel(); } }
         }
     }
 }

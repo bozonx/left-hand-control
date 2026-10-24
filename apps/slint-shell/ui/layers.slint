@@ -184,7 +184,7 @@ component ExtraKeyLine inherits TouchArea {
                     // Opacity instead of `visible`: the button stays focusable from the keyboard.
                     opacity: root.has-hover ? 1 : 0;
                     icon: @image-url("icons/trash-2.svg");
-                    tooltip: @tr("Remove");
+                    tooltip: @tr("Remove trigger");
                     clicked => { LayersEditor.delete-extra = root.index; }
                 }
             }

@@ -1925,9 +1925,6 @@ msgstr "Открытые окна"
 msgid "Last active"
 msgstr "Последнее активное"
 
-msgid "Refresh"
-msgstr "Обновить"
-
 msgid "Nothing is excluded."
 msgstr "Ничего не исключено."
 
@@ -2400,9 +2397,6 @@ msgstr "Нажмите для выбора режима (Авто / Вкл / В�
 
 msgid "The mapper intercepts keyboard input, applies layers, rules and macros, and emits output through a virtual device."
 msgstr "Маппер перехватывает ввод с клавиатуры, применяет слои, правила и макросы и отправляет результат через виртуальное устройство."
-
-msgid "Opened by the app:showQuickMenu1...5 actions. Each cell can hold any action (shortcut, macro, shell command, or system action) invoked quickly by clicking or pressing the grid hotkey (1-9, Q-P, etc.)."
-msgstr "Открывается действиями app:showQuickMenu1...5. В каждой ячейке настраивается любое действие (сочетание клавиш, макрос, команда или системное действие), которое быстро вызывается кликом или клавишей сетки (1-9, Q-P и др.)."
 
 msgid "Define how physical keys behave: tap for a key or action, hold to switch layers, or double-tap for extra shortcuts."
 msgstr "Настройка поведения физических клавиш: одиночное нажатие для ввода или действия, удержание для переключения слоёв, двойное нажатие для дополнительных действий."
@@ -2894,3 +2888,36 @@ msgstr "Заменить строку из буфера обмена"
 
 msgid "Select 5 lines down"
 msgstr "Выделить 5 строк вниз"
+
+msgid "Remove trigger"
+msgstr "Удалить триггер"
+
+msgid "Refresh list"
+msgstr "Обновить список"
+
+msgid "Remove item"
+msgstr "Удалить элемент"
+
+msgid "Save as or reset changes"
+msgstr "Сохранить как или сбросить изменения"
+
+msgid "Edit: {}"
+msgstr "Изменить: {}"
+
+msgid "Save (Enter)"
+msgstr "Сохранить (Enter)"
+
+msgid "Save (Ctrl+Enter)"
+msgstr "Сохранить (Ctrl+Enter)"
+
+msgid "Cancel (Esc)"
+msgstr "Отмена (Esc)"
+
+msgid "Use the default from Settings: {} ms"
+msgstr "Использовать значение из настроек: {} мс"
+
+msgid "Opened by the app:showQuickMenu1...5 actions. Each cell can hold any action: a shortcut, macro, shell command or system action."
+msgstr "Открывается действиями app:showQuickMenu1...5. В каждой ячейке можно настроить любое действие: сочетание клавиш, макрос, команду оболочки или системное действие."
+
+msgid "In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number."
+msgstr "Во всплывающем окне кликните по ячейке или нажмите её клавишу: ячейки повторяют ряды клавиатуры Q–T, A–G и Z–B. Tab переключает страницы, цифры открывают страницу по номеру."

@@ -323,7 +323,7 @@ export component AppEntryOverlay inherits Rectangle {
                             color: Theme.muted; font-size: 12px; vertical-alignment: center; horizontal-stretch: 1;
                         }
                         IconButton {
-                            icon: @image-url("icons/refresh-cw.svg"); label: @tr("Refresh"); tooltip: @tr("Refresh");
+                            icon: @image-url("icons/refresh-cw.svg"); label: @tr("Refresh list");
                             enabled: !ConditionChoices.open-windows-loading;
                             clicked => { ConditionChoices.refresh-open-windows(); }
                         }
@@ -430,7 +430,7 @@ component AppItemRow inherits Rectangle {
                 if root.show-count: OpenCount { pattern: root.pattern; horizontal-stretch: 1; }
             }
         }
-        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Remove"); tooltip: @tr("Remove"); clicked => { root.remove(); } } }
+        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Remove item"); clicked => { root.remove(); } } }
     }
 }
 

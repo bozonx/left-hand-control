@@ -818,7 +818,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ui.global::<RulesEditor>().set_double_timeout("444".into());
             }
             30 => {
-                let position = accessible_position(&ui, i_slint_core::items::AccessibleRole::Button, "Reset Hold threshold, ms to default", false);
+                let label = format!("Use the default from Settings: {} ms", ui.global::<RulesEditor>().get_default_hold_timeout());
+                let position = accessible_position(&ui, i_slint_core::items::AccessibleRole::Button, &label, false);
                 for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
                 let rules = ui.global::<RulesEditor>();
                 assert_eq!(rules.get_hold_timeout(), "");
