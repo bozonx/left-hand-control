@@ -575,7 +575,7 @@ export component SettingsPage inherits VerticalBox {
                             if SettingsEditor.keyboard-manual: TextField { enabled: AppState.mapper-supported && !AppState.mapper-busy; text <=> SettingsEditor.keyboard-device-path; placeholder-text: @tr("Keyboard device path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); apply-devices(); } }
                             if !SettingsEditor.keyboard-manual && SettingsEditor.keyboard-device-path != "" && SettingsEditor.keyboard-device-path != "windows:keyboard": Text { text: SettingsEditor.keyboard-device-path; color: Theme.muted; font-size: Theme.font-body; overflow: elide; }
                         }
-                        DeviceField {
+                        if AppState.in-development: DeviceField {
                             icon: @image-url("icons/mouse.svg");
                             label: @tr("Mouse");
                             note: @tr("Optional");
@@ -687,7 +687,7 @@ export component SettingsPage inherits VerticalBox {
                                 edited => { SettingsEditor.schedule-save(); }
                                 reset => { SettingsEditor.save(); }
                             }
-                            TimingField {
+                            if AppState.in-development: TimingField {
                                 label: @tr("Long hold");
                                 info: @tr("How long to keep holding a rule key before its long-hold action runs once. Applies to rules whose hold runs an action instead of a layer.")
                                     + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-long-hold-timeout);

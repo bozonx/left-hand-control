@@ -21,6 +21,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let document = Document::load(paths.clone())?;
     let ui = SettingsWindow::new()?;
     bind_document(&ui, &document);
+    let development = ui.global::<slint_shell::ui::SettingsEditor>();
+    development.set_in_development(true);
+    development.invoke_save();
+    ui.global::<slint_shell::ui::AppState>()
+        .set_in_development(true);
     ui.set_page(Page::Menus);
     ui.global::<Theme>().invoke_apply();
     let e = ui.global::<MenuEditor>();

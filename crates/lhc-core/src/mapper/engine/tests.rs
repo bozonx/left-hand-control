@@ -4580,3 +4580,42 @@ fn builtin_and_user_macros_resolve_independently_at_every_depth() {
             .is_none()
     );
 }
+
+#[test]
+fn development_gate_disables_user_macros_popups_and_long_hold() {
+    for enabled in [false, true] {
+        let mut cfg: AppConfig = serde_json::from_value(serde_json::json!({
+            "settings": {"inDevelopment": enabled},
+            "macros": [{"id": "user", "steps": [{"action": "text:user"}]}],
+            "rules": [
+                {"key": "KeyA", "longHoldAction": "text:hold"},
+                {"key": "KeyB", "tapAction": "macro:user"},
+                {"key": "KeyC", "tapAction": "app:showEmojiMenuLast"},
+                {"key": "KeyD", "tapAction": "app:showQuickMenu1"}
+            ]
+        }))
+        .unwrap();
+        let mut engine = Engine::new(&cfg);
+        let now = Instant::now();
+        let mut out = Vec::new();
+        engine.handle(KeyCode::KEY_A, true, now, &mut out);
+        engine.tick(now + Duration::from_secs(2), &mut out);
+        assert_eq!(
+            out.iter()
+                .any(|item| matches!(item, Out::Literal(text) if text == "hold")),
+            enabled
+        );
+        assert_eq!(engine.macros.contains_key("macro:user"), enabled);
+        for rule in &mut cfg.rules {
+            rule.long_hold_action.clear();
+        }
+        let engine = Engine::new(&cfg);
+        for key in [KeyCode::KEY_B, KeyCode::KEY_C, KeyCode::KEY_D] {
+            assert_eq!(
+                matches!(engine.rules[&key][0].tap, super::model::TapMode::Action(_)),
+                enabled
+            );
+        }
+        assert!(!engine.macros.is_empty(), "built-in macros stay available");
+    }
+}

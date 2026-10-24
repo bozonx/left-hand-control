@@ -92,6 +92,13 @@ impl App {
         token: Option<String>,
         page: Option<u32>,
     ) {
+        if window.popup().is_some()
+            && !self
+                .document()
+                .is_some_and(|doc| doc.read().settings().in_development)
+        {
+            return;
+        }
         // A popup would steal focus from the game, so hotkeys are ignored.
         if window.popup().is_some()
             && source.popup_blocked(lhc_core::runtime_state::game_mode_active())

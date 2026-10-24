@@ -177,9 +177,13 @@ fn read_kde_shortcuts() -> Result<Vec<DesktopShortcutItem>, String> {
 }
 
 fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<PickerItem> {
+    let in_development = config.settings().in_development;
     let mut items: Vec<_> = CATEGORIES
         .iter()
         .enumerate()
+        .filter(|(category, _)| {
+            in_development || KEY_CATEGORIES[*category] != PickerCategory::Mouse
+        })
         .flat_map(|(category, keys)| {
             keys.iter().map(move |key| PickerItem {
                 value: (*key).into(),
@@ -189,18 +193,20 @@ fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<PickerItem> {
             })
         })
         .collect();
-    let in_development = config.settings().in_development;
     let enabled = config.settings().commands_enabled;
     let config = config.config();
     items.extend(actions::catalog(&config).into_iter().filter_map(|entry| {
         let category = match &entry.action {
-            Action::Macro(_) => PickerCategory::Macros,
+            Action::Macro(_) if in_development => PickerCategory::Macros,
+            Action::Macro(_) => return None,
             Action::BuiltinMacro(_) => PickerCategory::BuiltinMacros,
             Action::Command(_) if enabled && in_development => PickerCategory::Commands,
             Action::Command(_) => return None,
             Action::App(id)
                 if !in_development
-                    && (id.starts_with("gameMode") || id.starts_with("showQuickMenu")) =>
+                    && (id.starts_with("gameMode")
+                        || id.starts_with("showQuickMenu")
+                        || id.starts_with("showEmojiMenu")) =>
             {
                 return None;
             }
@@ -222,14 +228,16 @@ fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<PickerItem> {
             notice: notice.to_ui(),
         })
     }));
-    DESKTOP_SHORTCUTS.with(|cache| {
-        items.extend(cache.borrow().iter().map(|shortcut| PickerItem {
-            value: shortcut.value.as_str().into(),
-            label: format!("{}: {}", shortcut.component, shortcut.label).into(),
-            category: PickerCategory::DesktopShortcuts,
-            notice: Msg::None.to_ui(),
-        }));
-    });
+    if in_development {
+        DESKTOP_SHORTCUTS.with(|cache| {
+            items.extend(cache.borrow().iter().map(|shortcut| PickerItem {
+                value: shortcut.value.as_str().into(),
+                label: format!("{}: {}", shortcut.component, shortcut.label).into(),
+                category: PickerCategory::DesktopShortcuts,
+                notice: Msg::None.to_ui(),
+            }));
+        });
+    }
     items
 }
 

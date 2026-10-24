@@ -253,9 +253,9 @@ export component PickerOverlay inherits Rectangle {
                                 for entry in ActionPicker.categories: VerticalBox {
                                     private property <bool> commands: entry.category == PickerCategory.commands;
                                     padding: 0px; padding-bottom: Theme.space-xs;
-                                    if !commands || (AppState.in-development && ActionPicker.commands-enabled): VerticalBox { padding: 0px;
+                                    if (AppState.in-development || (entry.category != PickerCategory.macros && entry.category != PickerCategory.mouse && entry.category != PickerCategory.desktop-shortcuts)) && (!commands || (AppState.in-development && ActionPicker.commands-enabled)): VerticalBox { padding: 0px;
                                     // Section headings only when keys and actions share the sidebar.
-                                    if !ActionPicker.key-only && !ActionPicker.hold-action && (entry.category == PickerCategory.letters || entry.category == PickerCategory.macros): Text {
+                                    if !ActionPicker.key-only && !ActionPicker.hold-action && (entry.category == PickerCategory.letters || entry.category == (AppState.in-development ? PickerCategory.macros : PickerCategory.builtin-macros)): Text {
                                         text: entry.category == PickerCategory.letters ? @tr("Keys") : @tr("Actions");
                                         color: Theme.muted; font-size: Theme.font-small; font-weight: Theme.weight-bold;
                                     }

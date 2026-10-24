@@ -12,7 +12,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ui = SettingsWindow::new()?;
     slint::select_bundled_translation("ru")?;
     bind_document(&ui, &document);
+    // Hidden pages and action categories stay unavailable outside development mode.
+    ui.invoke_navigate(Page::Macros, MenuKind::Emoji);
+    assert_eq!(ui.get_page(), Page::Layouts);
+    ui.invoke_navigate(Page::Menus, MenuKind::Emoji);
+    assert_eq!(ui.get_page(), Page::Layouts);
     ui.invoke_navigate(Page::Rules, MenuKind::Emoji);
+    ui.global::<RulesEditor>().invoke_add();
+    let restricted = ui.global::<ActionPicker>();
+    restricted.set_category(PickerCategory::Mouse);
+    restricted.invoke_refresh();
+    assert_eq!(restricted.get_items().row_count(), 0);
+    assert!(
+        restricted
+            .get_items()
+            .iter()
+            .all(|item| item.category != PickerCategory::Mouse)
+    );
+    restricted.invoke_dismiss_picker();
+    let settings = ui.global::<SettingsEditor>();
+    settings.set_in_development(true);
+    settings.invoke_save();
+    ui.global::<AppState>().set_in_development(true);
+
     let rules = ui.global::<RulesEditor>();
     let count = document.read().layout().rules.len();
     rules.invoke_add();

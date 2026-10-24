@@ -61,6 +61,7 @@ export component SettingsWindow inherits Window {
     }
 
     public function navigate(page: Page, kind: MenuKind) {
+        if !AppState.in-development && (page == Page.menus || page == Page.macros) { return; }
         InlineEditors.commit-revision += 1;
         DragDrop.reset();
         if page == Page.layouts { LayoutLibrary.refresh(); }
@@ -168,9 +169,9 @@ export component SettingsWindow inherits Window {
                             spacing: Theme.space-2xs; alignment: start;
                             NavTab { icon: @image-url("icons/settings-2.svg"); text: @tr("Triggers") + (LayoutLibrary.rules-dirty ? " •" : ""); selected: root.page == Page.rules; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
                             NavTab { icon: @image-url("icons/keyboard.svg"); text: @tr("Layers") + (LayoutLibrary.layers-dirty ? " •" : ""); selected: root.page == Page.keyboard || root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
-                            NavTab { icon: @image-url("icons/smile.svg"); text: @tr("Emoji") + (LayoutLibrary.emoji-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
+                            if AppState.in-development: NavTab { icon: @image-url("icons/smile.svg"); text: @tr("Emoji") + (LayoutLibrary.emoji-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
                             if AppState.in-development: NavTab { icon: @image-url("icons/zap.svg"); text: @tr("Quick actions") + (LayoutLibrary.quick-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }
-                            NavTab { icon: @image-url("icons/clock.svg"); text: @tr("Macros") + ((LayoutLibrary.macros-dirty || MacroEditor.has-errors) ? " •" : ""); selected: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
+                            if AppState.in-development: NavTab { icon: @image-url("icons/clock.svg"); text: @tr("Macros") + ((LayoutLibrary.macros-dirty || MacroEditor.has-errors) ? " •" : ""); selected: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
                         }
                     }
                     VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/x.svg"); label: @tr("Close layout"); clicked => { root.close-layout(); } } }
@@ -202,8 +203,8 @@ export component SettingsWindow inherits Window {
                 if root.page == Page.settings: SettingsPage {}
                 if root.page == Page.rules: RulesPage {}
                 if root.page == Page.layers || root.page == Page.keyboard: LayersPage {}
-                if root.page == Page.macros: MacrosPage {}
-                if root.page == Page.menus: MenusPage {}
+                if AppState.in-development && root.page == Page.macros: MacrosPage {}
+                if AppState.in-development && root.page == Page.menus: MenusPage {}
             }
         }
     }

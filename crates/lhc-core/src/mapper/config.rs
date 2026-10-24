@@ -135,6 +135,9 @@ pub struct LayerKeymap {
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
+    /// Development gate supplied by the application runtime projection.
+    #[serde(default)]
+    pub in_development: Option<bool>,
     #[serde(default = "default_hold")]
     pub default_hold_timeout_ms: u64,
     #[serde(default = "default_long_hold")]
@@ -183,6 +186,7 @@ fn default_true() -> bool {
 impl Default for Settings {
     fn default() -> Self {
         Self {
+            in_development: None,
             default_long_hold_timeout_ms: default_long_hold(),
             default_hold_timeout_ms: default_hold(),
             tap_decision: TapDecision::default(),

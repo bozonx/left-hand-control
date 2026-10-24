@@ -672,12 +672,12 @@ export component LibraryPage inherits VerticalBox {
                             }
                             VerticalLayout { width: 220px; spacing: Theme.space-m; alignment: start;
                                 property <LayoutSummary> summary: LayoutLibrary.summaries[index];
-                                if summary.rules + summary.layers + summary.emoji-pages + summary.action-pages + summary.macros + summary.commands == 0: Text { text: @tr("Empty layout"); color: Theme.muted; font-size: Theme.font-medium; }
+                                if summary.rules + summary.layers + (AppState.in-development ? summary.emoji-pages + summary.action-pages + summary.macros + summary.commands : 0) == 0: Text { text: @tr("Empty layout"); color: Theme.muted; font-size: Theme.font-medium; }
                                 if summary.rules > 0: Text { text: @tr("{n} rule" | "{n} rules" % summary.rules); color: Theme.muted; font-size: Theme.font-medium; }
                                 if summary.layers > 0: Text { text: @tr("{n} layer" | "{n} layers" % summary.layers); color: Theme.muted; font-size: Theme.font-medium; }
-                                if summary.emoji-pages > 0: Text { text: @tr("{n} emoji page" | "{n} emoji pages" % summary.emoji-pages); color: Theme.muted; font-size: Theme.font-medium; }
+                                if AppState.in-development && summary.emoji-pages > 0: Text { text: @tr("{n} emoji page" | "{n} emoji pages" % summary.emoji-pages); color: Theme.muted; font-size: Theme.font-medium; }
                                 if AppState.in-development && summary.action-pages > 0: Text { text: @tr("{n} action page" | "{n} action pages" % summary.action-pages); color: Theme.muted; font-size: Theme.font-medium; }
-                                if summary.macros > 0: Text { text: @tr("{n} macro" | "{n} macros" % summary.macros); color: Theme.muted; font-size: Theme.font-medium; }
+                                if AppState.in-development && summary.macros > 0: Text { text: @tr("{n} macro" | "{n} macros" % summary.macros); color: Theme.muted; font-size: Theme.font-medium; }
                                 // Commands run shell scripts, so they stand out when reviewing a layout.
                                 if AppState.in-development && summary.commands > 0: HorizontalLayout { spacing: Theme.space-s; alignment: start;
                                     Text { text: @tr("{n} command" | "{n} commands" % summary.commands); color: Theme.warning; font-size: Theme.font-medium; font-weight: Theme.weight-semibold; }

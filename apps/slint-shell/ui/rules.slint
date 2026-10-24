@@ -159,6 +159,7 @@ component HoldField inherits VerticalBox {
     private property <bool> creating;
     private property <length> scroll-y;
     private property <int> count: RulesEditor.layer-items.length;
+    private property <int> choice-count: root.count + (AppState.in-development ? 2 : 1);
     private property <length> list-height: min(216px, max(36px, root.count * 36px));
     min-width: 0px;
     preferred-width: 0px;
@@ -173,7 +174,7 @@ component HoldField inherits VerticalBox {
         } else if index <= root.count {
             RulesEditor.choose(RulesEditor.layer-items[index - 1].id);
             if RulesEditor.dialog == RuleDialog.none { field-focus.focus(); menu.close(); }
-        } else {
+        } else if AppState.in-development {
             root.close-menu();
             RulesEditor.open-dialog(root.rule-index, RuleDialog.long-hold);
         }
@@ -188,7 +189,7 @@ component HoldField inherits VerticalBox {
         if !root.enabled { return; }
         RulesEditor.open-dialog(root.rule-index, RuleDialog.layer);
         if root.rule.hold-mode == 0 { RulesEditor.layer-highlight = 0; }
-        if root.rule.hold-mode == 2 { RulesEditor.layer-highlight = root.count + 1; }
+        if root.rule.hold-mode == 2 { RulesEditor.layer-highlight = AppState.in-development ? root.count + 1 : 0; }
         root.creating = false;
         root.scroll-y = 0px;
         menu.show();
@@ -206,13 +207,13 @@ component HoldField inherits VerticalBox {
         forward-focus: field-focus;
         HorizontalLayout { padding-left: Theme.space-m; padding-right: Theme.space-m; spacing: 5px;
             if root.rule.hold-mode == 1: VerticalLayout { alignment: center; Image { width: 16px; height: 16px; source: @image-url("icons/layers.svg"); colorize: Theme.muted; } }
-            if root.rule.hold-mode == 2 && root.rule.long-hold != "": CategoryIcon { category: root.rule.long-hold-category; }
+            if AppState.in-development && root.rule.hold-mode == 2 && root.rule.long-hold != "": CategoryIcon { category: root.rule.long-hold-category; }
             value-text := Text {
                 min-width: 0px; horizontal-stretch: 1; vertical-alignment: center; overflow: elide;
                 text: root.rule.hold-mode == 1 ? (root.rule.layer != "" ? root.rule.layer : @tr("Choose layer"))
-                    : root.rule.hold-mode == 2 ? (root.rule.long-hold != "" ? root.rule.long-hold : @tr("Choose action"))
+                    : AppState.in-development && root.rule.hold-mode == 2 ? (root.rule.long-hold != "" ? root.rule.long-hold : @tr("Choose action"))
                     : @tr("Nothing");
-                color: (root.rule.hold-mode == 1 && root.rule.layer != "") || (root.rule.hold-mode == 2 && root.rule.long-hold != "") ? Theme.text : Theme.muted;
+                color: (root.rule.hold-mode == 1 && root.rule.layer != "") || (AppState.in-development && root.rule.hold-mode == 2 && root.rule.long-hold != "") ? Theme.text : Theme.muted;
             }
             VerticalLayout { alignment: center; Image { width: 12px; height: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; } }
         }
@@ -230,7 +231,7 @@ component HoldField inherits VerticalBox {
                 capture-key-pressed(event) => {
                     if event.text == Key.Escape { root.close-menu(); return accept; }
                     if !root.creating && (event.text == Key.DownArrow || event.text == Key.UpArrow) {
-                        RulesEditor.layer-highlight = mod(RulesEditor.layer-highlight + root.count + 2 + (event.text == Key.DownArrow ? 1 : -1), root.count + 2);
+                        RulesEditor.layer-highlight = mod(RulesEditor.layer-highlight + root.choice-count + (event.text == Key.DownArrow ? 1 : -1), root.choice-count);
                         root.reveal(); return accept;
                     }
                     if !root.creating && event.text == Key.Return { root.choose(RulesEditor.layer-highlight); return accept; }
@@ -266,9 +267,9 @@ component HoldField inherits VerticalBox {
                                 accepted => { if RulesEditor.layer-name-error(RulesEditor.new-layer-name).id != "" { return; } RulesEditor.create-layer(RulesEditor.new-layer-name); if RulesEditor.dialog == RuleDialog.none { field-focus.focus(); menu.close(); } } }
                             VerticalLayout { alignment: start; Button { text: @tr("Create layer"); enabled: RulesEditor.layer-name-error(RulesEditor.new-layer-name).id == ""; clicked => { RulesEditor.create-layer(RulesEditor.new-layer-name); if RulesEditor.dialog == RuleDialog.none { field-focus.focus(); menu.close(); } } } }
                         }
-                        Rectangle { height: 1px; background: Theme.divider; }
-                        Text { text: @tr("Action after {} ms of holding", RulesEditor.long-hold-timeout != "" ? RulesEditor.long-hold-timeout : RulesEditor.default-long-hold-timeout); color: Theme.muted; font-size: Theme.font-small; }
-                        Rectangle { height: 36px; border-radius: Theme.radius-small; background: action-touch.has-hover || RulesEditor.layer-highlight == root.count + 1 ? Theme.hover : transparent;
+                        if AppState.in-development: Rectangle { height: 1px; background: Theme.divider; }
+                        if AppState.in-development: Text { text: @tr("Action after {} ms of holding", RulesEditor.long-hold-timeout != "" ? RulesEditor.long-hold-timeout : RulesEditor.default-long-hold-timeout); color: Theme.muted; font-size: Theme.font-small; }
+                        if AppState.in-development: Rectangle { height: 36px; border-radius: Theme.radius-small; background: action-touch.has-hover || RulesEditor.layer-highlight == root.count + 1 ? Theme.hover : transparent;
                             HorizontalLayout { padding-left: Theme.space-m; padding-right: Theme.space-m; spacing: Theme.space-m;
                                 VerticalLayout { alignment: center; Image { width: 16px; height: 16px; source: @image-url("icons/zap.svg"); colorize: Theme.muted; } }
                                 Text { min-width: 0px; horizontal-stretch: 1; overflow: elide; vertical-alignment: center; color: Theme.text;
@@ -292,7 +293,7 @@ export component RulesPage inherits VerticalBox {
             rule.hold-detection == HoldDetection.release ? @tr("Hold on other key release")
                 : rule.hold-detection == HoldDetection.press ? @tr("Hold on other key press") : ""),
             rule.hold-timeout != "" ? @tr("Hold after {} ms", rule.hold-timeout) : ""),
-            rule.hold-mode == 2 && rule.long-hold-timeout != "" ? @tr("Long hold after {} ms", rule.long-hold-timeout) : ""),
+            AppState.in-development && rule.hold-mode == 2 && rule.long-hold-timeout != "" ? @tr("Long hold after {} ms", rule.long-hold-timeout) : ""),
             rule.double-timeout != "" ? @tr("Double tap: {} ms", rule.double-timeout) : "");
     }
     pure function held-text(rule: RuleRow) -> string {
@@ -441,6 +442,7 @@ export component RuleDialogOverlay inherits FocusScope {
                             HorizontalLayout { alignment: start; NumericInput { enabled: hold-form.active; text <=> RulesEditor.hold-timeout; placeholder-text: RulesEditor.default-hold-timeout; label: hold-form.label; minimum: 50; maximum: 1000; } }
                         }
                         long-form := ResettableField {
+                            visible: AppState.in-development;
                             label: @tr("Long-hold threshold, ms");
                             info: @tr("How long to keep holding before the action runs. Empty uses the default from Settings: {} ms.", RulesEditor.default-long-hold-timeout);
                             active: RulesEditor.hold-mode == 2;

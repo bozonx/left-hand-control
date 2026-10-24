@@ -12,6 +12,7 @@ use std::time::Duration;
 
 impl Engine {
     pub fn new(cfg: &AppConfig) -> Self {
+        let in_development = cfg.settings.in_development.unwrap_or(true);
         let default_hold = Duration::from_millis(cfg.settings.default_hold_timeout_ms.max(1));
         let default_double_tap =
             Duration::from_millis(cfg.settings.default_double_tap_timeout_ms.max(1));
@@ -46,7 +47,7 @@ impl Engine {
         }
 
         let mut raw_user_macros: HashMap<String, &crate::mapper::config::Macro> = HashMap::new();
-        for m in &cfg.macros {
+        for m in cfg.macros.iter().filter(|_| in_development) {
             if m.id.is_empty() {
                 log::debug!("[mapper] skipping macro with empty id");
                 continue;
@@ -180,7 +181,7 @@ impl Engine {
             );
         }
 
-        for m in &cfg.macros {
+        for m in cfg.macros.iter().filter(|_| in_development) {
             if m.id.is_empty() {
                 continue;
             }
@@ -216,8 +217,15 @@ impl Engine {
             );
         }
 
-        let resolve =
-            |action: &str, where_: &str| resolve_action(action, &macros, &commands, where_);
+        let resolve = |action: &str, where_: &str| {
+            if !in_development
+                && matches!(Action::parse(Some(action)), Action::App(id)
+                    if id.starts_with("showEmojiMenu") || id.starts_with("showQuickMenu"))
+            {
+                return None;
+            }
+            resolve_action(action, &macros, &commands, where_)
+        };
 
         let mut rules = HashMap::new();
         let mut chord_rules = Vec::new();
@@ -244,6 +252,11 @@ impl Engine {
                     HoldBehavior::None
                 }
             });
+            let behavior = if !in_development && behavior == HoldBehavior::Action {
+                HoldBehavior::None
+            } else {
+                behavior
+            };
             let long_hold = if behavior == HoldBehavior::Action {
                 resolve(&r.long_hold_action, &format!("long hold for {}", r.key))
             } else {
