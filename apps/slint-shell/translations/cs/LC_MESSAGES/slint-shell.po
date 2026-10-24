@@ -54,9 +54,7 @@ msgid "Enter non-empty text"
 msgstr "Zadejte neprázdný text"
 
 msgid "Key {} only has conditional or layer rules; edit it in the full editor"
-msgstr ""
-"Klíč {} má pouze podmíněná pravidla nebo pravidla vrstvy; upravit v plném "
-"editoru"
+msgstr "Klávesa {} má pouze podmíněná pravidla nebo pravidla vrstvy; upravte ji v úplném editoru"
 
 msgid "Keyboard"
 msgstr "Klávesnice"
@@ -161,7 +159,7 @@ msgid "Dark"
 msgstr "Tmavý"
 
 msgid "Light"
-msgstr "Světlo"
+msgstr "Světlý"
 
 msgid "Refresh devices"
 msgstr "Obnovit zařízení"
@@ -233,7 +231,7 @@ msgid "Enabled"
 msgstr "Povoleno"
 
 msgid "Trigger key"
-msgstr "Spouštěcí klíč"
+msgstr "Spouštěcí klávesa"
 
 msgid "Tap action"
 msgstr "Klepněte na akci"
@@ -317,7 +315,7 @@ msgid "Off"
 msgstr "Vypnuto"
 
 msgid "Clear"
-msgstr "Jasný"
+msgstr "Vymazat"
 
 msgid "Apply"
 msgstr "Použít"
@@ -335,7 +333,7 @@ msgid "New layer"
 msgstr "Nová vrstva"
 
 msgid "Duplicate"
-msgstr "Duplikát"
+msgstr "Duplikovat"
 
 msgid "Delete"
 msgstr "Smazat"
@@ -350,7 +348,7 @@ msgid "Rename layer"
 msgstr "Přejmenovat vrstvu"
 
 msgid "Duplicate layer"
-msgstr "Duplicitní vrstva"
+msgstr "Duplikovat vrstvu"
 
 msgid "Delete layer?"
 msgstr "Smazat vrstvu?"
@@ -727,7 +725,7 @@ msgid "Extra button on some gaming mice"
 msgstr "Extra tlačítko na některých herních myších"
 
 msgid "Keys"
-msgstr "Klíče"
+msgstr "Klávesy"
 
 msgid "System actions"
 msgstr "Systémové akce"
@@ -817,7 +815,7 @@ msgid "Right hand"
 msgstr "Pravá ruka"
 
 msgid "Key"
-msgstr "Klíč"
+msgstr "Klávesa"
 
 msgid "US layout"
 msgstr "US rozložení"
@@ -929,7 +927,7 @@ msgid "ID"
 msgstr "ID"
 
 msgid "Key {}"
-msgstr "Klíč {}"
+msgstr "Klávesa {}"
 
 msgid "Label"
 msgstr "Označení"
@@ -1525,7 +1523,7 @@ msgid "Perform action"
 msgstr "Proveďte akci"
 
 msgid "The key will not reach the application."
-msgstr "Klíč se do aplikace nedostane."
+msgstr "Klávesa se do aplikace nedostane."
 
 msgid "Use the assignment from the lower layer or base layout."
 msgstr "Použijte přiřazení ze spodní vrstvy nebo základního rozvržení."
@@ -3578,3 +3576,4 @@ msgstr ""
 
 msgid "Waiting for keyboard"
 msgstr "Čekání na klávesnici"
+

@@ -157,10 +157,10 @@ msgid "Mapper"
 msgstr "კლავიშების გადანაწილება"
 
 msgid "Dark"
-msgstr "ბნელი"
+msgstr "მუქი"
 
 msgid "Light"
-msgstr "სინათლე"
+msgstr "ნათელი"
 
 msgid "Refresh devices"
 msgstr "განაახლეთ მოწყობილობები"
@@ -232,7 +232,7 @@ msgid "Enabled"
 msgstr "ჩართულია"
 
 msgid "Trigger key"
-msgstr "ტრიგერის გასაღები"
+msgstr "ტრიგერის ღილაკი"
 
 msgid "Tap action"
 msgstr "შეეხეთ მოქმედებას"
@@ -318,7 +318,7 @@ msgid "Off"
 msgstr "გამორთული"
 
 msgid "Clear"
-msgstr "წმინდა"
+msgstr "გასუფთავება"
 
 msgid "Apply"
 msgstr "გამოყენება"
@@ -336,7 +336,7 @@ msgid "New layer"
 msgstr "ახალი ფენა"
 
 msgid "Duplicate"
-msgstr "დუბლიკატი"
+msgstr "დუბლირება"
 
 msgid "Delete"
 msgstr "წაშლა"
@@ -351,7 +351,7 @@ msgid "Rename layer"
 msgstr "ფენის გადარქმევა"
 
 msgid "Duplicate layer"
-msgstr "დუბლიკატი ფენა"
+msgstr "ფენის დუბლირება"
 
 msgid "Delete layer?"
 msgstr "წაშალოთ ფენა?"
@@ -393,7 +393,7 @@ msgid "Enter a key code"
 msgstr "შეიყვანეთ გასაღების კოდი"
 
 msgid "Native"
-msgstr "მშობლიური"
+msgstr "სტანდარტული მოქმედება"
 
 msgid "Layer saved"
 msgstr "ფენა შენახულია"
@@ -444,7 +444,7 @@ msgid "Add"
 msgstr "დამატება"
 
 msgid "Clear cell"
-msgstr "უჯრედის გასუფთავება"
+msgstr "უჯრის გასუფთავება"
 
 msgid "Page name"
 msgstr "გვერდის სახელი"
@@ -733,7 +733,7 @@ msgid "Extra button on some gaming mice"
 msgstr "დამატებითი ღილაკი რამდენიმე სათამაშო მაუსზე"
 
 msgid "Keys"
-msgstr "გასაღებები"
+msgstr "ღილაკები"
 
 msgid "System actions"
 msgstr "სისტემის მოქმედებები"
@@ -823,7 +823,7 @@ msgid "Right hand"
 msgstr "მარჯვენა ხელი"
 
 msgid "Key"
-msgstr "გასაღები"
+msgstr "ღილაკი"
 
 msgid "US layout"
 msgstr "აშშ განლაგება"
@@ -936,7 +936,7 @@ msgid "ID"
 msgstr "ID"
 
 msgid "Key {}"
-msgstr "გასაღები {}"
+msgstr "ღილაკი {}"
 
 msgid "Label"
 msgstr "ლეიბლი"
@@ -1517,19 +1517,19 @@ msgid "Activate layer only"
 msgstr "მხოლოდ ფენის გააქტიურება"
 
 msgid "Normal key behavior"
-msgstr "ნორმალური გასაღების ქცევა"
+msgstr "ნორმალური ღილაკის ქცევა"
 
 msgid "Suppress"
 msgstr "ჩახშობა"
 
 msgid "Assign held key"
-msgstr "მიანიჭეთ შეკავებული გასაღები"
+msgstr "მიანიჭეთ შეკავებული ღილაკი"
 
 msgid "Perform action"
 msgstr "შეასრულეთ მოქმედება"
 
 msgid "The key will not reach the application."
-msgstr "გასაღები არ მიაღწევს აპლიკაციას."
+msgstr "ღილაკი არ მიაღწევს აპლიკაციას."
 
 msgid "Use the assignment from the lower layer or base layout."
 msgstr "გამოიყენეთ დავალება ქვედა ფენიდან ან ბაზის განლაგებიდან."
@@ -1538,16 +1538,16 @@ msgid "Do not assign a separate action to this gesture."
 msgstr "არ მივანიჭოთ ცალკე მოქმედება ამ ჟესტს."
 
 msgid "Holding activates the selected layer. The original key is not sent."
-msgstr "დაჭერა ააქტიურებს არჩეულ ფენას. ორიგინალი გასაღები არ იგზავნება."
+msgstr "დაჭერა ააქტიურებს არჩეულ ფენას. ორიგინალი ღილაკი არ იგზავნება."
 
 msgid "Send the original key to the application."
-msgstr "გაგზავნეთ ორიგინალური გასაღები აპლიკაციაში."
+msgstr "გაგზავნეთ ორიგინალური ღილაკი აპლიკაციაში."
 
 msgid "Capture shortcut"
 msgstr "გადაიღეთ მალსახმობი"
 
 msgid "Choose a valid trigger key."
-msgstr "აირჩიეთ მოქმედი ტრიგერის გასაღები."
+msgstr "აირჩიეთ მოქმედი ტრიგერის ღილაკი."
 
 msgid "Choose a valid action."
 msgstr "აირჩიეთ სწორი მოქმედება."
@@ -1653,12 +1653,10 @@ msgid "Hold another key / combination"
 msgstr "გეჭიროთ სხვა კლავიში / კომბინაცია"
 
 msgid "Press one key or hold a combination, then release a key to capture it."
-msgstr ""
-"დააჭირეთ ერთ ღილაკს ან გეჭიროთ კომბინაცია, შემდეგ გაათავისუფლეთ გასაღები მის"
-" გადასაღებად."
+msgstr "დააჭირეთ ერთ ღილაკს ან გეჭიროთ კომბინაცია, შემდეგ გაათავისუფლეთ ღილაკი მის ჩასაწერად."
 
 msgid "Held key: {}"
-msgstr "დაჭერილი გასაღები: {}"
+msgstr "დაჭერილი ღილაკი: {}"
 
 msgid "Assigned to"
 msgstr "დაევალა"
@@ -1712,7 +1710,7 @@ msgid "Popup menu error: {}"
 msgstr "ამომხტარი მენიუს შეცდომა: {}"
 
 msgid "Choose a key or combination for the trigger"
-msgstr "აირჩიეთ გასაღები ან კომბინაცია ტრიგერისთვის"
+msgstr "აირჩიეთ ღილაკი ან კომბინაცია ტრიგერისთვის"
 
 msgid ""
 "Mouse buttons, media keys, and other triggers outside the main keyboard "
@@ -1856,7 +1854,7 @@ msgid "Close"
 msgstr "დახურვა"
 
 msgid "Choose a key or key combination"
-msgstr "აირჩიეთ გასაღები ან კლავიშების კომბინაცია"
+msgstr "აირჩიეთ ღილაკი ან კლავიშთა კომბინაცია"
 
 msgid "Examples"
 msgstr "მაგალითები"
@@ -1917,7 +1915,7 @@ msgid "No layout"
 msgstr "განლაგება არ არის"
 
 msgid "No layout (keys as is)"
-msgstr "განლაგება არ არის (გასაღებები როგორც არის)"
+msgstr "განლაგება არ არის (ღილაკები როგორც არის)"
 
 msgid "Now: {} (rule {}: {})"
 msgstr "ახლა: {} (წესი {}: {})"
@@ -2447,9 +2445,7 @@ msgid "Failed to start"
 msgstr "დაწყება ვერ მოხერხდა"
 
 msgid "Keys work as usual. Start the mapper to apply your layouts."
-msgstr ""
-"გასაღებები ჩვეულებრივად მუშაობს. დაიწყეთ რუკების დაყენება თქვენი განლაგების "
-"გამოსაყენებლად."
+msgstr "ღილაკები ჩვეულებრივად მუშაობს. დაიწყეთ მაპერი თქვენი განლაგების გამოსაყენებლად."
 
 msgid "Select a keyboard below to start the mapper."
 msgstr "აირჩიეთ კლავიატურა ქვემოთ რუკების დასაწყებად."
@@ -2815,7 +2811,7 @@ msgid "Trigger itself"
 msgstr "თავად გამომწვევი"
 
 msgid "Other key…"
-msgstr "სხვა გასაღები…"
+msgstr "სხვა ღილაკი…"
 
 msgid "When to press"
 msgstr "როდის უნდა დააჭიროთ"
@@ -2885,7 +2881,7 @@ msgid "Hold detection"
 msgstr "გააჩერეთ ამოცნობა"
 
 msgid "When a key becomes a hold"
-msgstr "როდესაც გასაღები ხდება ხელში"
+msgstr "როდესაც ღილაკი გადადის დაჭერის რეჟიმში"
 
 msgid ""
 "Decides when a rule key that is still down counts as a hold if you press "
@@ -2911,7 +2907,7 @@ msgstr ""
 "შეიძლება გამოიწვიოს შეცდომით შეკავება."
 
 msgid "After another key is released (recommended)"
-msgstr "სხვა გასაღების გამოშვების შემდეგ (რეკომენდებულია)"
+msgstr "სხვა ღილაკის აშვების შემდეგ (რეკომენდებულია)"
 
 msgid "As soon as another key is pressed"
 msgstr "სხვა კლავიშის დაჭერისთანავე"
@@ -3075,7 +3071,7 @@ msgstr ""
 " აკორდის ამოცნობა კონფიგურირებულია ცალკე."
 
 msgid "After another key is released (better for typing)"
-msgstr "კიდევ ერთი გასაღების გამოშვების შემდეგ (უკეთესი აკრეფისთვის)"
+msgstr "კიდევ ერთი ღილაკის აშვების შემდეგ (უკეთესია აკრეფისთვის)"
 
 msgid ""
 "As soon as another key is pressed: useful for dedicated layer or modifier "
@@ -3090,7 +3086,7 @@ msgid "Default from Settings: {}"
 msgstr "ნაგულისხმევი პარამეტრებიდან: {}"
 
 msgid "after another key is released"
-msgstr "კიდევ ერთი გასაღების გამოშვების შემდეგ"
+msgstr "კიდევ ერთი ღილაკის აშვების შემდეგ"
 
 msgid "as soon as another key is pressed"
 msgstr "სხვა კლავიშის დაჭერისთანავე"
@@ -3201,7 +3197,7 @@ msgid "Assign a double-tap action to the rule to change this window."
 msgstr "ამ ფანჯრის შესაცვლელად წესს მიანიჭეთ ორმაგი შეხების მოქმედება."
 
 msgid "Hold on other key release"
-msgstr "გააჩერეთ სხვა გასაღების გამოშვება"
+msgstr "დაჭერა სხვა ღილაკის აშვებისას"
 
 msgid "Hold on other key press"
 msgstr "გააჩერეთ სხვა ღილაკის დაჭერით"
@@ -3246,7 +3242,7 @@ msgstr ""
 "მუშაობს სხვა პლატფორმებზე, არის სისტემის მოქმედებებში."
 
 msgid "Hold key or combination"
-msgstr "გეჭიროთ გასაღები ან კომბინაცია"
+msgstr "გეჭიროთ ღილაკი ან კომბინაცია"
 
 msgid ""
 "The key or combination stays pressed until you release the trigger. Choose "
@@ -3259,7 +3255,7 @@ msgid "Not used when holding performs a long-hold action."
 msgstr "არ გამოიყენება, როდესაც დაჭერა ასრულებს ხანგრძლივ შეკავებას."
 
 msgid "Other key or combination…"
-msgstr "სხვა გასაღები ან კომბინაცია…"
+msgstr "სხვა ღილაკი ან კომბინაცია…"
 
 msgid "Hold detection when another key is pressed"
 msgstr "გააჩერეთ ამოცნობა სხვა კლავიშის დაჭერისას"
@@ -3312,7 +3308,7 @@ msgid "Paths"
 msgstr "ბილიკები"
 
 msgid "Unknown layer key at \"{}\"."
-msgstr "უცნობი ფენის გასაღები \"{}\"."
+msgstr "უცნობი ფენის ღილაკი \"{}\"."
 
 msgid "Invalid layer action at \"{}\"."
 msgstr "ფენის არასწორი მოქმედება „{}“-ზე."
@@ -3594,3 +3590,4 @@ msgstr ""
 
 msgid "Waiting for keyboard"
 msgstr "კლავიატურას ველოდები"
+

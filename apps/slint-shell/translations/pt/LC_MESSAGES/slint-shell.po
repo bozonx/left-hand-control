@@ -159,7 +159,7 @@ msgid "Dark"
 msgstr "Escuro"
 
 msgid "Light"
-msgstr "Luz"
+msgstr "Claro"
 
 msgid "Refresh devices"
 msgstr "Atualizar dispositivos"
@@ -231,7 +231,7 @@ msgid "Enabled"
 msgstr "Habilitado"
 
 msgid "Trigger key"
-msgstr "Chave de gatilho"
+msgstr "Tecla de ativação"
 
 msgid "Tap action"
 msgstr "Ação de toque"
@@ -315,7 +315,7 @@ msgid "Off"
 msgstr "Desativado"
 
 msgid "Clear"
-msgstr "Claro"
+msgstr "Limpar"
 
 msgid "Apply"
 msgstr "Aplicar"
@@ -333,13 +333,13 @@ msgid "New layer"
 msgstr "Nova camada"
 
 msgid "Duplicate"
-msgstr "Duplicado"
+msgstr "Duplicar"
 
 msgid "Delete"
 msgstr "Eliminar"
 
 msgid "Extra keys"
-msgstr "Chaves extras"
+msgstr "Teclas adicionais"
 
 msgid "Edit"
 msgstr "Editar"
@@ -348,7 +348,7 @@ msgid "Rename layer"
 msgstr "Renomear camada"
 
 msgid "Duplicate layer"
-msgstr "Camada duplicada"
+msgstr "Duplicar camada"
 
 msgid "Delete layer?"
 msgstr "Excluir camada?"
@@ -639,7 +639,7 @@ msgid "Current value"
 msgstr "Valor atual"
 
 msgid "Capture key"
-msgstr "Chave de captura"
+msgstr "Capturar tecla"
 
 msgid "Press a key (including modifiers or Escape)."
 msgstr "Pressione uma tecla (incluindo modificadores ou Escape)."
@@ -653,10 +653,10 @@ msgid "Choose a valid key or action."
 msgstr "Escolha uma chave ou ação válida."
 
 msgid "Search keys and actions"
-msgstr "Chaves e ações de pesquisa"
+msgstr "Pesquisar teclas e ações"
 
 msgid "Search keys"
-msgstr "Chaves de pesquisa"
+msgstr "Pesquisar teclas"
 
 msgid "Hold action"
 msgstr "Manter ação"
@@ -686,7 +686,7 @@ msgid "Action:"
 msgstr "Ação:"
 
 msgid "Trigger key:"
-msgstr "Chave de gatilho:"
+msgstr "Tecla de ativação:"
 
 msgid "{n} line"
 msgid_plural "{n} lines"
@@ -700,7 +700,7 @@ msgid "Letters, digits and symbols"
 msgstr "Letras, dígitos e símbolos"
 
 msgid "Control keys"
-msgstr "Chaves de controle"
+msgstr "Teclas de controlo"
 
 msgid "Navigation and numpad"
 msgstr "Navegação e teclado numérico"
@@ -727,7 +727,7 @@ msgid "Extra button on some gaming mice"
 msgstr "Botão extra em alguns mouses para jogos"
 
 msgid "Keys"
-msgstr "Chaves"
+msgstr "Teclas"
 
 msgid "System actions"
 msgstr "Ações do sistema"
@@ -817,7 +817,7 @@ msgid "Right hand"
 msgstr "Mão direita"
 
 msgid "Key"
-msgstr "Chave"
+msgstr "Tecla"
 
 msgid "US layout"
 msgstr "Layout dos EUA"
@@ -930,7 +930,7 @@ msgid "ID"
 msgstr "ID"
 
 msgid "Key {}"
-msgstr "Chave {}"
+msgstr "Tecla {}"
 
 msgid "Label"
 msgstr "Rótulo"
@@ -1655,7 +1655,7 @@ msgstr ""
 "la."
 
 msgid "Held key: {}"
-msgstr "Chave retida: {}"
+msgstr "Tecla mantida: {}"
 
 msgid "Assigned to"
 msgstr "Atribuído a"
@@ -3136,7 +3136,7 @@ msgid "Hold threshold"
 msgstr "Limite de espera"
 
 msgid "Long hold"
-msgstr "Espera longa"
+msgstr "Premir prolongado"
 
 msgid "Double-tap window"
 msgstr "Janela de toque duplo"
@@ -3328,7 +3328,7 @@ msgid "Paths"
 msgstr "Caminhos"
 
 msgid "Unknown layer key at \"{}\"."
-msgstr "Chave de camada desconhecida em \"{}\"."
+msgstr "Tecla de camada desconhecida em \"{}\"."
 
 msgid "Invalid layer action at \"{}\"."
 msgstr "Ação de camada inválida em \"{}\"."
@@ -3613,3 +3613,4 @@ msgstr ""
 
 msgid "Waiting for keyboard"
 msgstr "Esperando pelo teclado"
+

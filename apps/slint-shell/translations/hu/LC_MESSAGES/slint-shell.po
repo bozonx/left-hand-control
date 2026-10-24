@@ -161,7 +161,7 @@ msgid "Dark"
 msgstr "Sötét"
 
 msgid "Light"
-msgstr "Fény"
+msgstr "Világos"
 
 msgid "Refresh devices"
 msgstr "Frissítse az eszközöket"
@@ -185,7 +185,7 @@ msgid "Automatic"
 msgstr "Automatikus"
 
 msgid "Key behavior"
-msgstr "Kulcsviselkedés"
+msgstr "Billentyűviselkedés"
 
 msgid "Game mode"
 msgstr "Játék mód"
@@ -233,7 +233,7 @@ msgid "Enabled"
 msgstr "Engedélyezve"
 
 msgid "Trigger key"
-msgstr "Trigger kulcs"
+msgstr "Kiváltó billentyű"
 
 msgid "Tap action"
 msgstr "Koppintson a műveletre"
@@ -319,7 +319,7 @@ msgid "Off"
 msgstr "Ki"
 
 msgid "Clear"
-msgstr "Világos"
+msgstr "Törlés"
 
 msgid "Apply"
 msgstr "Alkalmaz"
@@ -337,7 +337,7 @@ msgid "New layer"
 msgstr "Új réteg"
 
 msgid "Duplicate"
-msgstr "Másolat"
+msgstr "Kettőzés"
 
 msgid "Delete"
 msgstr "Törlés"
@@ -352,7 +352,7 @@ msgid "Rename layer"
 msgstr "Réteg átnevezése"
 
 msgid "Duplicate layer"
-msgstr "Második réteg"
+msgstr "Réteg másolása"
 
 msgid "Delete layer?"
 msgstr "Törli a réteget?"
@@ -394,7 +394,7 @@ msgid "Enter a key code"
 msgstr "Adjon meg egy kulcskódot"
 
 msgid "Native"
-msgstr "Bennszülött"
+msgstr "Natív"
 
 msgid "Layer saved"
 msgstr "Réteg mentve"
@@ -447,7 +447,7 @@ msgid "Add"
 msgstr "Hozzáadás"
 
 msgid "Clear cell"
-msgstr "Törölje a cellát"
+msgstr "Cella törlése"
 
 msgid "Page name"
 msgstr "Az oldal neve"
@@ -736,7 +736,7 @@ msgid "Extra button on some gaming mice"
 msgstr "Extra gomb néhány játék egeren"
 
 msgid "Keys"
-msgstr "Kulcsok"
+msgstr "Billentyűk"
 
 msgid "System actions"
 msgstr "Rendszerműveletek"
@@ -826,7 +826,7 @@ msgid "Right hand"
 msgstr "Jobb kéz"
 
 msgid "Key"
-msgstr "Kulcsfontosságú"
+msgstr "Billentyű"
 
 msgid "US layout"
 msgstr "Amerikai elrendezés"
@@ -939,7 +939,7 @@ msgid "ID"
 msgstr "ID"
 
 msgid "Key {}"
-msgstr "Kulcs {}"
+msgstr "Billentyű {}"
 
 msgid "Label"
 msgstr "Címke"
@@ -3646,3 +3646,4 @@ msgstr ""
 
 msgid "Waiting for keyboard"
 msgstr "Várakozás a billentyűzetre"
+

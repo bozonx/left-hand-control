@@ -158,10 +158,10 @@ msgid "Mapper"
 msgstr "Αντιστοίχιση πλήκτρων"
 
 msgid "Dark"
-msgstr "Σκοτάδι"
+msgstr "Σκοτεινό"
 
 msgid "Light"
-msgstr "Φως"
+msgstr "Φωτεινό"
 
 msgid "Refresh devices"
 msgstr "Ανανέωση συσκευών"
@@ -234,7 +234,7 @@ msgid "Enabled"
 msgstr "Ενεργοποιημένο"
 
 msgid "Trigger key"
-msgstr "Κλειδί σκανδάλης"
+msgstr "Πλήκτρο ενεργοποίησης"
 
 msgid "Tap action"
 msgstr "Πατήστε ενέργεια"
@@ -319,7 +319,7 @@ msgid "Off"
 msgstr "Ανενεργό"
 
 msgid "Clear"
-msgstr "Σαφής"
+msgstr "Εκκαθάριση"
 
 msgid "Apply"
 msgstr "Εφαρμογή"
@@ -337,7 +337,7 @@ msgid "New layer"
 msgstr "Νέο στρώμα"
 
 msgid "Duplicate"
-msgstr "Αντίγραφο"
+msgstr "Αντιγραφή"
 
 msgid "Delete"
 msgstr "Διαγραφή"
@@ -352,7 +352,7 @@ msgid "Rename layer"
 msgstr "Μετονομασία επιπέδου"
 
 msgid "Duplicate layer"
-msgstr "Διπλότυπο στρώμα"
+msgstr "Αντιγραφή επιπέδου"
 
 msgid "Delete layer?"
 msgstr "Διαγραφή επιπέδου;"
@@ -449,7 +449,7 @@ msgid "Add"
 msgstr "Προσθήκη"
 
 msgid "Clear cell"
-msgstr "Καθαρίστε το κελί"
+msgstr "Εκκαθάριση κελιού"
 
 msgid "Page name"
 msgstr "Όνομα σελίδας"
@@ -741,7 +741,7 @@ msgid "Extra button on some gaming mice"
 msgstr "Επιπλέον κουμπί σε μερικά ποντίκια gaming"
 
 msgid "Keys"
-msgstr "Κλειδιά"
+msgstr "Πλήκτρα"
 
 msgid "System actions"
 msgstr "Ενέργειες συστήματος"
@@ -831,7 +831,7 @@ msgid "Right hand"
 msgstr "Δεξιόστροφος"
 
 msgid "Key"
-msgstr "Κλειδί"
+msgstr "Πλήκτρο"
 
 msgid "US layout"
 msgstr "Διάταξη ΗΠΑ"
@@ -946,7 +946,7 @@ msgid "ID"
 msgstr "ID"
 
 msgid "Key {}"
-msgstr "Κλειδί {}"
+msgstr "Πλήκτρο {}"
 
 msgid "Label"
 msgstr "Επιγραφή"
@@ -1558,7 +1558,7 @@ msgid "Perform action"
 msgstr "Εκτελέστε δράση"
 
 msgid "The key will not reach the application."
-msgstr "Το κλειδί δεν θα φτάσει στην εφαρμογή."
+msgstr "Το πλήκτρο δεν θα φτάσει στην εφαρμογή."
 
 msgid "Use the assignment from the lower layer or base layout."
 msgstr "Χρησιμοποιήστε την ανάθεση από το κάτω στρώμα ή τη διάταξη βάσης."
@@ -1567,9 +1567,7 @@ msgid "Do not assign a separate action to this gesture."
 msgstr "Μην εκχωρήσετε ξεχωριστή ενέργεια σε αυτήν την κίνηση."
 
 msgid "Holding activates the selected layer. The original key is not sent."
-msgstr ""
-"Κρατώντας ενεργοποιείται το επιλεγμένο επίπεδο. Το αρχικό κλειδί δεν "
-"αποστέλλεται."
+msgstr "Το παρατεταμένο πάτημα ενεργοποιεί το επιλεγμένο επίπεδο. Το αρχικό πλήκτρο δεν αποστέλλεται."
 
 msgid "Send the original key to the application."
 msgstr "Στείλτε το αρχικό κλειδί στην εφαρμογή."
@@ -2507,9 +2505,7 @@ msgid "Failed to start"
 msgstr "Αποτυχία εκκίνησης"
 
 msgid "Keys work as usual. Start the mapper to apply your layouts."
-msgstr ""
-"Τα κλειδιά λειτουργούν ως συνήθως. Ξεκινήστε τη χαρτογράφηση για να "
-"εφαρμόσετε τις διατάξεις σας."
+msgstr "Τα πλήκτρα λειτουργούν κανονικά. Ξεκινήστε τον χαρτογράφο για να εφαρμόσετε τις διατάξεις σας."
 
 msgid "Select a keyboard below to start the mapper."
 msgstr "Επιλέξτε ένα πληκτρολόγιο παρακάτω για να ξεκινήσετε τη χαρτογράφηση."
@@ -3416,7 +3412,7 @@ msgid "Paths"
 msgstr "Μονοπάτια"
 
 msgid "Unknown layer key at \"{}\"."
-msgstr "Άγνωστο κλειδί επιπέδου στο \"{}\"."
+msgstr "Άγνωστο πλήκτρο επιπέδου στο \"{}\"."
 
 msgid "Invalid layer action at \"{}\"."
 msgstr "Μη έγκυρη ενέργεια επιπέδου στο \"{}\"."
@@ -3710,3 +3706,4 @@ msgstr ""
 
 msgid "Waiting for keyboard"
 msgstr "Αναμονή για πληκτρολόγιο"
+

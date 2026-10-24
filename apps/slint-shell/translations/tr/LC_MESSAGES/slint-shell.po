@@ -157,10 +157,10 @@ msgid "Mapper"
 msgstr "Tuş eşleyici"
 
 msgid "Dark"
-msgstr "Karanlık"
+msgstr "Koyu"
 
 msgid "Light"
-msgstr "Işık"
+msgstr "Açık"
 
 msgid "Refresh devices"
 msgstr "Cihazları yenile"
@@ -318,7 +318,7 @@ msgid "Off"
 msgstr "Kapalı"
 
 msgid "Clear"
-msgstr "Temizlemek"
+msgstr "Temizle"
 
 msgid "Apply"
 msgstr "Uygula"
@@ -336,7 +336,7 @@ msgid "New layer"
 msgstr "Yeni katman"
 
 msgid "Duplicate"
-msgstr "Kopyalamak"
+msgstr "Çoğalt"
 
 msgid "Delete"
 msgstr "Sil"
@@ -728,7 +728,7 @@ msgid "Extra button on some gaming mice"
 msgstr "Bazı oyun farelerinde ekstra düğme"
 
 msgid "Keys"
-msgstr "Anahtarlar"
+msgstr "Tuşlar"
 
 msgid "System actions"
 msgstr "Sistem eylemleri"
@@ -806,7 +806,7 @@ msgid "Type to test..."
 msgstr "Test etmek için yazın..."
 
 msgid "Ignore key"
-msgstr "Anahtarı yoksay"
+msgstr "Tuşu yoksay"
 
 msgid "No layers yet"
 msgstr "Henüz katman yok"
@@ -818,7 +818,7 @@ msgid "Right hand"
 msgstr "Sağ el"
 
 msgid "Key"
-msgstr "Anahtar"
+msgstr "Tuş"
 
 msgid "US layout"
 msgstr "ABD düzeni"
@@ -931,7 +931,7 @@ msgid "ID"
 msgstr "ID"
 
 msgid "Key {}"
-msgstr "Anahtar {}"
+msgstr "Tuş {}"
 
 msgid "Label"
 msgstr "Etiket"
@@ -1355,7 +1355,7 @@ msgid "Active window: "
 msgstr "Etkin pencere:"
 
 msgid "Create a layer to assign its keys."
-msgstr "Anahtarlarını atamak için bir katman oluşturun."
+msgstr "Tuşlarını atamak için bir katman oluşturun."
 
 msgid "Button {}"
 msgstr "Düğme {}"
@@ -1524,7 +1524,7 @@ msgid "Perform action"
 msgstr "Eylem gerçekleştir"
 
 msgid "The key will not reach the application."
-msgstr "Anahtar uygulamaya ulaşmayacak."
+msgstr "Tuş uygulamaya ulaşmayacak."
 
 msgid "Use the assignment from the lower layer or base layout."
 msgstr "Alt katmandaki veya temel düzendeki atamayı kullanın."
@@ -2444,9 +2444,7 @@ msgid "Failed to start"
 msgstr "Başlatılamadı"
 
 msgid "Keys work as usual. Start the mapper to apply your layouts."
-msgstr ""
-"Anahtarlar her zamanki gibi çalışıyor. Düzenlerinizi uygulamak için "
-"eşleyiciyi başlatın."
+msgstr "Tuşlar her zamanki gibi çalışır. Düzenlerinizi uygulamak için eşleyiciyi başlatın."
 
 msgid "Select a keyboard below to start the mapper."
 msgstr "Eşleyiciyi başlatmak için aşağıdan bir klavye seçin."
@@ -2836,7 +2834,7 @@ msgid "Select a keyboard device in the settings to start the mapper"
 msgstr "Eşleyiciyi başlatmak için ayarlardan bir klavye cihazı seçin"
 
 msgid "Start mapper to intercept keys and apply layouts"
-msgstr "Anahtarları durdurmak ve düzenleri uygulamak için eşleyiciyi başlatın"
+msgstr "Tuşları yakalamak ve düzenleri uygulamak için eşleyiciyi başlatın"
 
 msgid "Current active layout (selected automatically by switching rules)"
 msgstr "Geçerli etkin düzen (kurallar değiştirilerek otomatik olarak seçilir)"
@@ -3601,3 +3599,4 @@ msgstr ""
 
 msgid "Waiting for keyboard"
 msgstr "Klavye bekleniyor"
+

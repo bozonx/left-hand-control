@@ -192,9 +192,14 @@ fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<PickerItem> {
                 PickerCategory::Macros
             }
             Action::Macro(_) => PickerCategory::BuiltinMacros,
-            Action::Command(_) if enabled => PickerCategory::Commands,
+            Action::Command(_) if enabled && in_development => PickerCategory::Commands,
             Action::Command(_) => return None,
-            Action::App(id) if !in_development && id.starts_with("gameMode") => return None,
+            Action::App(id)
+                if !in_development
+                    && (id.starts_with("gameMode") || id.starts_with("showQuickMenu")) =>
+            {
+                return None;
+            }
             Action::App(_) => PickerCategory::App,
             Action::System(_) => PickerCategory::SystemActions,
             _ => return None,

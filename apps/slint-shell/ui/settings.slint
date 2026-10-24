@@ -108,10 +108,10 @@ export component SettingsWindow inherits Window {
                         HorizontalLayout {
                             alignment: center;
                             spacing: 4px;
-                            TextField { clearable: true; preferred-width: 200px; min-width: 120px; max-width: 200px; horizontal-stretch: 1; text <=> root.test-text; placeholder-text: @tr("Type to test..."); }
+                            if AppState.in-development: TextField { clearable: true; preferred-width: 200px; min-width: 120px; max-width: 200px; horizontal-stretch: 1; text <=> root.test-text; placeholder-text: @tr("Type to test..."); }
                         }
                     }
-                    VerticalLayout { alignment: center; Badge {
+                    if AppState.in-development: VerticalLayout { alignment: center; Badge {
                         min-width: 40px;
                         text: AppState.keyboard-language == "" ? "—" : AppState.keyboard-language;
                         Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 4px; HorizontalLayout { padding: 8px; Text { text: @tr("Current keyboard layout in the system") + "\n" + AppState.keyboard-language; color: Theme.text; } } } }
@@ -169,7 +169,7 @@ export component SettingsWindow inherits Window {
                             NavTab { icon: @image-url("icons/settings-2.svg"); text: @tr("Triggers") + (LayoutLibrary.rules-dirty ? " •" : ""); selected: root.page == Page.rules; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
                             NavTab { icon: @image-url("icons/keyboard.svg"); text: @tr("Layers") + (LayoutLibrary.layers-dirty ? " •" : ""); selected: root.page == Page.keyboard || root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
                             NavTab { icon: @image-url("icons/smile.svg"); text: @tr("Emoji") + (LayoutLibrary.emoji-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
-                            NavTab { icon: @image-url("icons/zap.svg"); text: @tr("Quick actions") + (LayoutLibrary.quick-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }
+                            if AppState.in-development: NavTab { icon: @image-url("icons/zap.svg"); text: @tr("Quick actions") + (LayoutLibrary.quick-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }
                             NavTab { icon: @image-url("icons/clock.svg"); text: @tr("Macros") + ((LayoutLibrary.macros-dirty || MacroEditor.has-errors) ? " •" : ""); selected: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
                         }
                     }

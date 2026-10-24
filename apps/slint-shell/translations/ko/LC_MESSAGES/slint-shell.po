@@ -128,7 +128,7 @@ msgid "Stop capture"
 msgstr "캡처 중지"
 
 msgid "System"
-msgstr "체계"
+msgstr "시스템"
 
 msgid "Text"
 msgstr "텍스트"
@@ -152,10 +152,10 @@ msgid "Mapper"
 msgstr "키 매핑"
 
 msgid "Dark"
-msgstr "어두운"
+msgstr "다크"
 
 msgid "Light"
-msgstr "빛"
+msgstr "라이트"
 
 msgid "Refresh devices"
 msgstr "장치 새로 고침"
@@ -176,7 +176,7 @@ msgid "Language"
 msgstr "언어"
 
 msgid "Automatic"
-msgstr "오토매틱"
+msgstr "자동"
 
 msgid "Key behavior"
 msgstr "주요 행동"
@@ -284,7 +284,7 @@ msgid "Default"
 msgstr "기본"
 
 msgid "Advanced"
-msgstr "고급의"
+msgstr "고급"
 
 msgid "Choose trigger key"
 msgstr "트리거 키 선택"
@@ -311,7 +311,7 @@ msgid "Off"
 msgstr "꺼짐"
 
 msgid "Clear"
-msgstr "분명한"
+msgstr "지우기"
 
 msgid "Apply"
 msgstr "적용"
@@ -329,7 +329,7 @@ msgid "New layer"
 msgstr "새 레이어"
 
 msgid "Duplicate"
-msgstr "복제하다"
+msgstr "복제"
 
 msgid "Delete"
 msgstr "삭제"
@@ -386,7 +386,7 @@ msgid "Enter a key code"
 msgstr "키 코드를 입력하세요"
 
 msgid "Native"
-msgstr "토종의"
+msgstr "기본 동작"
 
 msgid "Layer saved"
 msgstr "레이어가 저장되었습니다"
@@ -713,7 +713,7 @@ msgid "Extra button on some gaming mice"
 msgstr "일부 게임용 마우스의 추가 버튼"
 
 msgid "Keys"
-msgstr "열쇠"
+msgstr "키"
 
 msgid "System actions"
 msgstr "시스템 작업"
@@ -803,7 +803,7 @@ msgid "Right hand"
 msgstr "오른손"
 
 msgid "Key"
-msgstr "열쇠"
+msgstr "키"
 
 msgid "US layout"
 msgstr "미국 레이아웃"
@@ -2634,7 +2634,7 @@ msgid "Trigger itself"
 msgstr "자체적으로 트리거"
 
 msgid "Other key…"
-msgstr "다른 열쇠…"
+msgstr "기타 키…"
 
 msgid "When to press"
 msgstr "누를 때"
@@ -2697,7 +2697,7 @@ msgid "Hold detection"
 msgstr "보류 감지"
 
 msgid "When a key becomes a hold"
-msgstr "열쇠가 보류 상태가 되면"
+msgstr "키가 길게 누르기로 인식될 때"
 
 msgid ""
 "Decides when a rule key that is still down counts as a hold if you press "
@@ -3336,3 +3336,4 @@ msgstr ""
 
 msgid "Waiting for keyboard"
 msgstr "키보드를 기다리는 중"
+

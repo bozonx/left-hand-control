@@ -152,10 +152,10 @@ msgid "Mapper"
 msgstr "按鍵對應"
 
 msgid "Dark"
-msgstr "黑暗的"
+msgstr "深色"
 
 msgid "Light"
-msgstr "光"
+msgstr "淺色"
 
 msgid "Refresh devices"
 msgstr "重新整理裝置"
@@ -284,7 +284,7 @@ msgid "Default"
 msgstr "預設"
 
 msgid "Advanced"
-msgstr "先進的"
+msgstr "進階"
 
 msgid "Choose trigger key"
 msgstr "選擇觸發鍵"
@@ -335,7 +335,7 @@ msgid "Delete"
 msgstr "刪除"
 
 msgid "Extra keys"
-msgstr "額外的鑰匙"
+msgstr "其他按鍵"
 
 msgid "Edit"
 msgstr "編輯"
@@ -344,7 +344,7 @@ msgid "Rename layer"
 msgstr "重新命名圖層"
 
 msgid "Duplicate layer"
-msgstr "重複圖層"
+msgstr "複製圖層"
 
 msgid "Delete layer?"
 msgstr "刪除圖層？"
@@ -386,7 +386,7 @@ msgid "Enter a key code"
 msgstr "輸入密鑰代碼"
 
 msgid "Native"
-msgstr "本國的"
+msgstr "原生動作"
 
 msgid "Layer saved"
 msgstr "圖層已保存"
@@ -437,7 +437,7 @@ msgid "Add"
 msgstr "新增"
 
 msgid "Clear cell"
-msgstr "透明細胞"
+msgstr "清除單元格"
 
 msgid "Page name"
 msgstr "頁面名稱"
@@ -801,7 +801,7 @@ msgid "Right hand"
 msgstr "右手"
 
 msgid "Key"
-msgstr "鑰匙"
+msgstr "按鍵"
 
 msgid "US layout"
 msgstr "美國佈局"
@@ -848,7 +848,7 @@ msgid ""
 msgstr "無法編輯的內建巨集。若要進行自訂，請基於一個使用者巨集建立一個。"
 
 msgid "Cell {}"
-msgstr "電池{}"
+msgstr "單元格 {}"
 
 msgid "Command name"
 msgstr "命令名稱"
@@ -905,7 +905,7 @@ msgid "ID"
 msgstr "ID"
 
 msgid "Key {}"
-msgstr "鑰匙{}"
+msgstr "按鍵{}"
 
 msgid "Label"
 msgstr "標籤"
@@ -1981,7 +1981,7 @@ msgid "Window title contains: {}"
 msgstr "視窗標題包含：{}"
 
 msgid "Timing"
-msgstr "定時"
+msgstr "時間設定"
 
 msgid "Used by macros without their own value."
 msgstr "由宏使用，沒有自己的價值。"
@@ -2276,7 +2276,7 @@ msgid "Failed to start"
 msgstr "啟動失敗"
 
 msgid "Keys work as usual. Start the mapper to apply your layouts."
-msgstr "鑰匙照常工作。啟動映射器以套用您的佈局。"
+msgstr "按鍵照常工作。啟動映射器以套用您的佈局。"
 
 msgid "Select a keyboard below to start the mapper."
 msgstr "選擇下面的鍵盤來啟動映射器。"
@@ -3262,3 +3262,4 @@ msgstr "在彈出視窗中，按一下儲存格或按其鍵：儲存格遵循鍵
 
 msgid "Waiting for keyboard"
 msgstr "等待鍵盤"
+

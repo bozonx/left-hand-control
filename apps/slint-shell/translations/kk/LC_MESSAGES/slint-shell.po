@@ -72,7 +72,7 @@ msgid "Mapper is running"
 msgstr "Mapper жұмыс істейді"
 
 msgid "Mapper is running: {}"
-msgstr "Карташы жұмыс істейді: {}"
+msgstr "Маппер жұмыс істеп тұр: {}"
 
 msgid "Mapper is starting…"
 msgstr "Mapper іске қосылуда…"
@@ -93,7 +93,7 @@ msgid "Settings"
 msgstr "Баптаулар"
 
 msgid "Mapper on / off"
-msgstr "Карташы қосу/өшіру"
+msgstr "Маппер қосу / өшіру"
 
 msgid "Switch to desktop {n}"
 msgstr "{n} жұмыс үстеліне ауысыңыз"
@@ -156,10 +156,10 @@ msgid "Mapper"
 msgstr "Пернелерді қайта тағайындау"
 
 msgid "Dark"
-msgstr "Қараңғы"
+msgstr "Күңгірт"
 
 msgid "Light"
-msgstr "Жарық"
+msgstr "Ашық"
 
 msgid "Refresh devices"
 msgstr "Құрылғыларды жаңарту"
@@ -231,7 +231,7 @@ msgid "Enabled"
 msgstr "Қосылған"
 
 msgid "Trigger key"
-msgstr "Триггер кілті"
+msgstr "Триггер пернесі"
 
 msgid "Tap action"
 msgstr "Әрекетті түртіңіз"
@@ -317,7 +317,7 @@ msgid "Off"
 msgstr "Өшірулі"
 
 msgid "Clear"
-msgstr "Таза"
+msgstr "Тазалау"
 
 msgid "Apply"
 msgstr "Қолдану"
@@ -335,7 +335,7 @@ msgid "New layer"
 msgstr "Жаңа қабат"
 
 msgid "Duplicate"
-msgstr "Көшірме"
+msgstr "Көшіру"
 
 msgid "Delete"
 msgstr "Жою"
@@ -350,7 +350,7 @@ msgid "Rename layer"
 msgstr "Қабат атын өзгерту"
 
 msgid "Duplicate layer"
-msgstr "Қайталанатын қабат"
+msgstr "Қабатты көшіру"
 
 msgid "Delete layer?"
 msgstr "Қабатты жою керек пе?"
@@ -389,10 +389,10 @@ msgid "Enter a layout name"
 msgstr "Орналасу атауын енгізіңіз"
 
 msgid "Enter a key code"
-msgstr "Кілт кодын енгізіңіз"
+msgstr "Перне кодын енгізіңіз"
 
 msgid "Native"
-msgstr "Туған жер"
+msgstr "Әдеттегі әрекет"
 
 msgid "Layer saved"
 msgstr "Қабат сақталды"
@@ -445,7 +445,7 @@ msgid "Add"
 msgstr "Қосу"
 
 msgid "Clear cell"
-msgstr "Таза ұяшық"
+msgstr "Ұяшықты тазалау"
 
 msgid "Page name"
 msgstr "Бет атауы"
@@ -731,7 +731,7 @@ msgid "Extra button on some gaming mice"
 msgstr "Кейбір ойын тышқандарындағы қосымша түйме"
 
 msgid "Keys"
-msgstr "Кілттер"
+msgstr "Пернелер"
 
 msgid "System actions"
 msgstr "Жүйе әрекеттері"
@@ -809,7 +809,7 @@ msgid "Type to test..."
 msgstr "Сынақ үшін теріңіз..."
 
 msgid "Ignore key"
-msgstr "Кілтті елемеу"
+msgstr "Пернені елемеу"
 
 msgid "No layers yet"
 msgstr "Әлі қабаттар жоқ"
@@ -821,7 +821,7 @@ msgid "Right hand"
 msgstr "Оң қол"
 
 msgid "Key"
-msgstr "Кілт"
+msgstr "Перне"
 
 msgid "US layout"
 msgstr "АҚШ орналасуы"
@@ -934,7 +934,7 @@ msgid "ID"
 msgstr "ID"
 
 msgid "Key {}"
-msgstr "{} кілті"
+msgstr "Перне {}"
 
 msgid "Label"
 msgstr "Белгі"
@@ -1528,7 +1528,7 @@ msgid "Perform action"
 msgstr "Әрекетті орындау"
 
 msgid "The key will not reach the application."
-msgstr "Кілт қолданбаға жетпейді."
+msgstr "Перне қолданбаға жетпейді."
 
 msgid "Use the assignment from the lower layer or base layout."
 msgstr "Тапсырманы төменгі қабаттан немесе негізгі орналасудан пайдаланыңыз."
@@ -2456,9 +2456,7 @@ msgid "Failed to start"
 msgstr "Бастау сәтсіз аяқталды"
 
 msgid "Keys work as usual. Start the mapper to apply your layouts."
-msgstr ""
-"Кілттер әдеттегідей жұмыс істейді. Орналасуларыңызды қолдану үшін картаны "
-"іске қосыңыз."
+msgstr "Пернелер әдеттегідей жұмыс істейді. Орналасуларды қолдану үшін мапперді іске қосыңыз."
 
 msgid "Select a keyboard below to start the mapper."
 msgstr "Мапперді бастау үшін төмендегі пернетақтаны таңдаңыз."
@@ -2848,8 +2846,7 @@ msgid "Select a keyboard device in the settings to start the mapper"
 msgstr "Мапперді бастау үшін параметрлерден пернетақта құрылғысын таңдаңыз"
 
 msgid "Start mapper to intercept keys and apply layouts"
-msgstr ""
-"Кілттерді ұстап алу және орналасуларды қолдану үшін мапперді іске қосыңыз"
+msgstr "Пернелерді ұстап алу және орналасуларды қолдану үшін мапперді іске қосыңыз"
 
 msgid "Current active layout (selected automatically by switching rules)"
 msgstr ""
@@ -2901,7 +2898,7 @@ msgid "Hold detection"
 msgstr "Анықтауды ұстау"
 
 msgid "When a key becomes a hold"
-msgstr "Кілт ұстауға айналғанда"
+msgstr "Перне басып тұруға ауысқанда"
 
 msgid ""
 "Decides when a rule key that is still down counts as a hold if you press "
@@ -3611,3 +3608,4 @@ msgstr ""
 
 msgid "Waiting for keyboard"
 msgstr "Пернетақтаны күтуде"
+

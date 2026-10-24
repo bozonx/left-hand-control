@@ -43,7 +43,7 @@ msgid "Device saved: {}"
 msgstr "Dispositivo guardado: {}"
 
 msgid "Emoji"
-msgstr "emojis"
+msgstr "Emoji"
 
 msgid "Tab · {}/{}"
 msgstr "Tab · {}/{}"
@@ -160,7 +160,7 @@ msgid "Dark"
 msgstr "Oscuro"
 
 msgid "Light"
-msgstr "Luz"
+msgstr "Claro"
 
 msgid "Refresh devices"
 msgstr "Actualizar dispositivos"
@@ -316,7 +316,7 @@ msgid "Off"
 msgstr "Desactivado"
 
 msgid "Clear"
-msgstr "Claro"
+msgstr "Limpiar"
 
 msgid "Apply"
 msgstr "Aplicar"
@@ -334,7 +334,7 @@ msgid "New layer"
 msgstr "Nueva capa"
 
 msgid "Duplicate"
-msgstr "Duplicado"
+msgstr "Duplicar"
 
 msgid "Delete"
 msgstr "Eliminar"
@@ -397,7 +397,7 @@ msgid "Layer saved"
 msgstr "Capa guardada"
 
 msgid "Macros"
-msgstr "macros"
+msgstr "Macros"
 
 msgid "Built-in macros"
 msgstr "Macros integradas"
@@ -444,7 +444,7 @@ msgid "Add"
 msgstr "Agregar"
 
 msgid "Clear cell"
-msgstr "Borrar celda"
+msgstr "Limpiar celda"
 
 msgid "Page name"
 msgstr "Nombre de la página"
@@ -730,7 +730,7 @@ msgid "Extra button on some gaming mice"
 msgstr "Botón adicional en algunos ratones para juegos"
 
 msgid "Keys"
-msgstr "Llaves"
+msgstr "Teclas"
 
 msgid "System actions"
 msgstr "Acciones del sistema"
@@ -820,7 +820,7 @@ msgid "Right hand"
 msgstr "Derecha"
 
 msgid "Key"
-msgstr "Llave"
+msgstr "Tecla"
 
 msgid "US layout"
 msgstr "diseño de EE. UU."
@@ -935,7 +935,7 @@ msgid "ID"
 msgstr "ID"
 
 msgid "Key {}"
-msgstr "Clave {}"
+msgstr "Tecla {}"
 
 msgid "Label"
 msgstr "Etiqueta"
@@ -2143,7 +2143,7 @@ msgid "Window title contains: {}"
 msgstr "El título de la ventana contiene: {}"
 
 msgid "Timing"
-msgstr "Momento"
+msgstr "Tiempos"
 
 msgid "Used by macros without their own value."
 msgstr "Utilizado por macros sin valor propio."
@@ -3170,7 +3170,7 @@ msgid "Hold threshold"
 msgstr "Umbral de retención"
 
 msgid "Long hold"
-msgstr "espera larga"
+msgstr "Pulsación prolongada"
 
 msgid "Double-tap window"
 msgstr "Ventana de doble toque"
@@ -3661,3 +3661,4 @@ msgstr ""
 
 msgid "Waiting for keyboard"
 msgstr "esperando teclado"
+

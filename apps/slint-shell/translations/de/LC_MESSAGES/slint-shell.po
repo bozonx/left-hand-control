@@ -52,9 +52,7 @@ msgid "Enter non-empty text"
 msgstr "Geben Sie einen nicht leeren Text ein"
 
 msgid "Key {} only has conditional or layer rules; edit it in the full editor"
-msgstr ""
-"Der Schlüssel {} verfügt nur über bedingte oder Ebenenregeln. Bearbeiten Sie"
-" es im Volleditor"
+msgstr "Taste {} hat nur bedingte oder Ebenen-Regeln; bearbeiten Sie sie im vollständigen Editor"
 
 msgid "Keyboard"
 msgstr "Tastatur"
@@ -162,7 +160,7 @@ msgid "Dark"
 msgstr "Dunkel"
 
 msgid "Light"
-msgstr "Licht"
+msgstr "Hell"
 
 msgid "Refresh devices"
 msgstr "Geräte aktualisieren"
@@ -186,7 +184,7 @@ msgid "Automatic"
 msgstr "Automatisch"
 
 msgid "Key behavior"
-msgstr "Schlüsselverhalten"
+msgstr "Tastenverhalten"
 
 msgid "Game mode"
 msgstr "Spielmodus"
@@ -270,9 +268,7 @@ msgid "Rules and triggers"
 msgstr "Regeln und Auslöser"
 
 msgid "Define how physical keys activate layers or run actions."
-msgstr ""
-"Definieren Sie, wie physische Schlüssel Ebenen aktivieren oder Aktionen "
-"ausführen."
+msgstr "Legen Sie fest, wie physische Tasten Ebenen aktivieren oder Aktionen ausführen."
 
 msgid "Add rule"
 msgstr "Regel hinzufügen"
@@ -293,7 +289,7 @@ msgid "Default"
 msgstr "Standard"
 
 msgid "Advanced"
-msgstr "Fortschrittlich"
+msgstr "Erweitert"
 
 msgid "Choose trigger key"
 msgstr "Auslösetaste wählen"
@@ -320,7 +316,7 @@ msgid "Off"
 msgstr "Aus"
 
 msgid "Clear"
-msgstr "Klar"
+msgstr "Leeren"
 
 msgid "Apply"
 msgstr "Anwenden"
@@ -338,13 +334,13 @@ msgid "New layer"
 msgstr "Neue Ebene"
 
 msgid "Duplicate"
-msgstr "Duplikat"
+msgstr "Duplizieren"
 
 msgid "Delete"
 msgstr "Löschen"
 
 msgid "Extra keys"
-msgstr "Zusätzliche Schlüssel"
+msgstr "Zusätzliche Tasten"
 
 msgid "Edit"
 msgstr "Bearbeiten"
@@ -392,10 +388,10 @@ msgid "Enter a layout name"
 msgstr "Geben Sie einen Layoutnamen ein"
 
 msgid "Enter a key code"
-msgstr "Geben Sie einen Schlüsselcode ein"
+msgstr "Tastencode eingeben"
 
 msgid "Native"
-msgstr "Einheimisch"
+msgstr "Nativ"
 
 msgid "Layer saved"
 msgstr "Ebene gespeichert"
@@ -448,7 +444,7 @@ msgid "Add"
 msgstr "Hinzufügen"
 
 msgid "Clear cell"
-msgstr "Zelle löschen"
+msgstr "Zelle leeren"
 
 msgid "Page name"
 msgstr "Seitenname"
@@ -650,7 +646,7 @@ msgid "Current value"
 msgstr "Aktueller Wert"
 
 msgid "Capture key"
-msgstr "Capture-Schlüssel"
+msgstr "Taste erfassen"
 
 msgid "Press a key (including modifiers or Escape)."
 msgstr "Drücken Sie eine Taste (einschließlich Modifikatoren oder Escape)."
@@ -661,7 +657,7 @@ msgstr ""
 "los, um nur ihn auszuwählen."
 
 msgid "Choose a valid key or action."
-msgstr "Wählen Sie einen gültigen Schlüssel oder eine gültige Aktion."
+msgstr "Wählen Sie eine gültige Taste oder Aktion."
 
 msgid "Search keys and actions"
 msgstr "Suchschlüssel und Aktionen"
@@ -730,7 +726,7 @@ msgid "Mouse"
 msgstr "Maus"
 
 msgid "Other keys"
-msgstr "Andere Schlüssel"
+msgstr "Andere Tasten"
 
 msgid "Actions"
 msgstr "Aktionen"
@@ -739,7 +735,7 @@ msgid "Extra button on some gaming mice"
 msgstr "Zusätzliche Taste bei einigen Gaming-Mäusen"
 
 msgid "Keys"
-msgstr "Schlüssel"
+msgstr "Tasten"
 
 msgid "System actions"
 msgstr "Systemaktionen"
@@ -817,7 +813,7 @@ msgid "Type to test..."
 msgstr "Zum Testen eingeben..."
 
 msgid "Ignore key"
-msgstr "Schlüssel ignorieren"
+msgstr "Taste ignorieren"
 
 msgid "No layers yet"
 msgstr "Noch keine Schichten"
@@ -829,7 +825,7 @@ msgid "Right hand"
 msgstr "Rechte Hand"
 
 msgid "Key"
-msgstr "Schlüssel"
+msgstr "Taste"
 
 msgid "US layout"
 msgstr "US-Layout"
@@ -838,7 +834,7 @@ msgid "LHC codes"
 msgstr "LHC-Codes"
 
 msgid "No extra keys for this layer yet."
-msgstr "Für diese Ebene gibt es noch keine zusätzlichen Schlüssel."
+msgstr "Noch keine zusätzlichen Tasten für diese Ebene."
 
 msgid ""
 "Mouse buttons, media keys, and other triggers outside the main keyboard "
@@ -941,7 +937,7 @@ msgid "ID"
 msgstr "ID"
 
 msgid "Key {}"
-msgstr "Schlüssel {}"
+msgstr "Taste {}"
 
 msgid "Label"
 msgstr "Etikett"
@@ -1378,7 +1374,7 @@ msgid "Active window: "
 msgstr "Aktives Fenster:"
 
 msgid "Create a layer to assign its keys."
-msgstr "Erstellen Sie eine Ebene, um ihre Schlüssel zuzuweisen."
+msgstr "Erstellen Sie eine Ebene, um deren Tasten zuzuweisen."
 
 msgid "Button {}"
 msgstr "Taste {}"
@@ -1551,7 +1547,7 @@ msgid "Perform action"
 msgstr "Aktion ausführen"
 
 msgid "The key will not reach the application."
-msgstr "Der Schlüssel erreicht die Anwendung nicht."
+msgstr "Die Taste wird nicht an die Anwendung gesendet."
 
 msgid "Use the assignment from the lower layer or base layout."
 msgstr ""
@@ -1685,7 +1681,7 @@ msgstr ""
 "Sie dann eine Taste los, um sie zu erfassen."
 
 msgid "Held key: {}"
-msgstr "Gehaltener Schlüssel: {}"
+msgstr "Gehaltene Taste: {}"
 
 msgid "Assigned to"
 msgstr "Zugewiesen an"
@@ -2876,7 +2872,7 @@ msgid "Trigger itself"
 msgstr "Löst sich selbst aus"
 
 msgid "Other key…"
-msgstr "Anderer Schlüssel…"
+msgstr "Andere Taste…"
 
 msgid "When to press"
 msgstr "Wann drücken"
@@ -2899,8 +2895,7 @@ msgstr ""
 "starten"
 
 msgid "Start mapper to intercept keys and apply layouts"
-msgstr ""
-"Starten Sie den Mapper, um Schlüssel abzufangen und Layouts anzuwenden"
+msgstr "Mapper starten, um Tasten abzufangen und Layouts anzuwenden"
 
 msgid "Current active layout (selected automatically by switching rules)"
 msgstr ""
@@ -2955,7 +2950,7 @@ msgid "Hold detection"
 msgstr "Hold-Erkennung"
 
 msgid "When a key becomes a hold"
-msgstr "Wenn ein Schlüssel zum Halten wird"
+msgstr "Wann eine Taste als Halten gilt"
 
 msgid ""
 "Decides when a rule key that is still down counts as a hold if you press "
@@ -3200,7 +3195,7 @@ msgid "Hold threshold"
 msgstr "Schwelle halten"
 
 msgid "Long hold"
-msgstr "Langer Halt"
+msgstr "Langes Halten"
 
 msgid "Double-tap window"
 msgstr "Doppeltippen Sie auf das Fenster"
@@ -3399,7 +3394,7 @@ msgid "Paths"
 msgstr "Wege"
 
 msgid "Unknown layer key at \"{}\"."
-msgstr "Unbekannter Layer-Schlüssel bei „{}“."
+msgstr "Unbekannte Ebenentaste bei „{}“."
 
 msgid "Invalid layer action at \"{}\"."
 msgstr "Ungültige Layer-Aktion bei „{}“."
@@ -3687,3 +3682,4 @@ msgstr ""
 
 msgid "Waiting for keyboard"
 msgstr "Warten auf Tastatur"
+

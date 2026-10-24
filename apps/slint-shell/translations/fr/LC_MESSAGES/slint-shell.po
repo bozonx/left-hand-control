@@ -43,7 +43,7 @@ msgid "Device saved: {}"
 msgstr "Appareil enregistré : {}"
 
 msgid "Emoji"
-msgstr "Émoji"
+msgstr "Emoji"
 
 msgid "Tab · {}/{}"
 msgstr "Tab · {}/{}"
@@ -161,7 +161,7 @@ msgid "Dark"
 msgstr "Sombre"
 
 msgid "Light"
-msgstr "Lumière"
+msgstr "Clair"
 
 msgid "Refresh devices"
 msgstr "Actualiser les appareils"
@@ -233,7 +233,7 @@ msgid "Enabled"
 msgstr "Activé"
 
 msgid "Trigger key"
-msgstr "Clé de déclenchement"
+msgstr "Touche de déclenchement"
 
 msgid "Tap action"
 msgstr "Appuyez sur l'action"
@@ -319,7 +319,7 @@ msgid "Off"
 msgstr "Désactivé"
 
 msgid "Clear"
-msgstr "Clair"
+msgstr "Effacer"
 
 msgid "Apply"
 msgstr "Appliquer"
@@ -337,13 +337,13 @@ msgid "New layer"
 msgstr "Nouveau calque"
 
 msgid "Duplicate"
-msgstr "Double"
+msgstr "Dupliquer"
 
 msgid "Delete"
 msgstr "Supprimer"
 
 msgid "Extra keys"
-msgstr "Clés supplémentaires"
+msgstr "Touches supplémentaires"
 
 msgid "Edit"
 msgstr "Modifier"
@@ -394,13 +394,13 @@ msgid "Enter a key code"
 msgstr "Entrez un code clé"
 
 msgid "Native"
-msgstr "Indigène"
+msgstr "Native"
 
 msgid "Layer saved"
 msgstr "Calque enregistré"
 
 msgid "Macros"
-msgstr "Macro"
+msgstr "Macros"
 
 msgid "Built-in macros"
 msgstr "Macros intégrées"
@@ -447,7 +447,7 @@ msgid "Add"
 msgstr "Ajouter"
 
 msgid "Clear cell"
-msgstr "Effacer la cellule"
+msgstr "Vider la cellule"
 
 msgid "Page name"
 msgstr "Nom de la page"
@@ -651,7 +651,7 @@ msgid "Current value"
 msgstr "Valeur actuelle"
 
 msgid "Capture key"
-msgstr "Clé de capture"
+msgstr "Capturer la touche"
 
 msgid "Press a key (including modifiers or Escape)."
 msgstr "Appuyez sur une touche (y compris les modificateurs ou Échap)."
@@ -668,7 +668,7 @@ msgid "Search keys and actions"
 msgstr "Rechercher des clés et des actions"
 
 msgid "Search keys"
-msgstr "Clés de recherche"
+msgstr "Rechercher des touches"
 
 msgid "Hold action"
 msgstr "Maintenir l'action"
@@ -699,7 +699,7 @@ msgid "Action:"
 msgstr "Action:"
 
 msgid "Trigger key:"
-msgstr "Clé de déclenchement :"
+msgstr "Touche de déclenchement :"
 
 msgid "{n} line"
 msgid_plural "{n} lines"
@@ -740,7 +740,7 @@ msgid "Extra button on some gaming mice"
 msgstr "Bouton supplémentaire sur certaines souris gamer"
 
 msgid "Keys"
-msgstr "Clés"
+msgstr "Touches"
 
 msgid "System actions"
 msgstr "Actions du système"
@@ -830,7 +830,7 @@ msgid "Right hand"
 msgstr "Main droite"
 
 msgid "Key"
-msgstr "Clé"
+msgstr "Touche"
 
 msgid "US layout"
 msgstr "Disposition américaine"
@@ -944,7 +944,7 @@ msgid "ID"
 msgstr "ID"
 
 msgid "Key {}"
-msgstr "Clé {}"
+msgstr "Touche {}"
 
 msgid "Label"
 msgstr "Étiquette"
@@ -1689,7 +1689,7 @@ msgstr ""
 "une touche pour la capturer."
 
 msgid "Held key: {}"
-msgstr "Clé conservée : {}"
+msgstr "Touche maintenue : {}"
 
 msgid "Assigned to"
 msgstr "Attribué à"
@@ -3206,7 +3206,7 @@ msgid "Hold threshold"
 msgstr "Seuil de maintien"
 
 msgid "Long hold"
-msgstr "Longue tenue"
+msgstr "Appui prolongé"
 
 msgid "Double-tap window"
 msgstr "Appuyez deux fois sur la fenêtre"
@@ -3412,7 +3412,7 @@ msgid "Paths"
 msgstr "Chemins"
 
 msgid "Unknown layer key at \"{}\"."
-msgstr "Clé de couche inconnue à \"{}\"."
+msgstr "Touche de calque inconnue à « {} »."
 
 msgid "Invalid layer action at \"{}\"."
 msgstr "Action de couche non valide à \"{}\"."
@@ -3705,3 +3705,4 @@ msgstr ""
 
 msgid "Waiting for keyboard"
 msgstr "En attente du clavier"
+

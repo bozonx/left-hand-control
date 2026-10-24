@@ -54,9 +54,7 @@ msgid "Enter non-empty text"
 msgstr "Введіть непорожній текст"
 
 msgid "Key {} only has conditional or layer rules; edit it in the full editor"
-msgstr ""
-"Ключ {} має лише умовні правила або правила шару; відредагуйте його в "
-"повному редакторі"
+msgstr "Клавіша {} має лише умовні правила або правила шару; відредагуйте її в повному редакторі"
 
 msgid "Keyboard"
 msgstr "Клавіатура"
@@ -68,7 +66,7 @@ msgid "Keyboard layout"
 msgstr "Розкладка клавіатури"
 
 msgid "Load a valid configuration before starting the mapper"
-msgstr "Завантажте дійсну конфігурацію перед запуском картографа"
+msgstr "Завантажте коректну конфігурацію перед запуском мапера"
 
 msgid "Mapper is running"
 msgstr "Mapper запущено"
@@ -95,7 +93,7 @@ msgid "Settings"
 msgstr "Налаштування"
 
 msgid "Mapper on / off"
-msgstr "Картограф увімкнено/вимкнено"
+msgstr "Мапер увімк / вимк"
 
 msgid "Switch to desktop {n}"
 msgstr "Перейти на робочий стіл {n}"
@@ -104,7 +102,7 @@ msgid "Save"
 msgstr "Зберегти"
 
 msgid "Changes applied, but the mapper was not updated: {}"
-msgstr "Зміни застосовано, але картограф не оновлено: {}"
+msgstr "Зміни застосовано, але мапер не оновлено: {}"
 
 msgid "Select a key to assign an action."
 msgstr "Виберіть клавішу, щоб призначити дію."
@@ -158,10 +156,10 @@ msgid "Mapper"
 msgstr "Перепризначення"
 
 msgid "Dark"
-msgstr "Темний"
+msgstr "Темна"
 
 msgid "Light"
-msgstr "світло"
+msgstr "Світла"
 
 msgid "Refresh devices"
 msgstr "Оновити пристрої"
@@ -185,7 +183,7 @@ msgid "Automatic"
 msgstr "Автоматичний"
 
 msgid "Key behavior"
-msgstr "Ключова поведінка"
+msgstr "Поведінка клавіш"
 
 msgid "Game mode"
 msgstr "Режим гри"
@@ -233,7 +231,7 @@ msgid "Enabled"
 msgstr "Увімкнено"
 
 msgid "Trigger key"
-msgstr "Ключ тригера"
+msgstr "Клавіша тригера"
 
 msgid "Tap action"
 msgstr "Натисніть дію"
@@ -290,7 +288,7 @@ msgid "Default"
 msgstr "За замовчуванням"
 
 msgid "Advanced"
-msgstr "Просунутий"
+msgstr "Додатково"
 
 msgid "Choose trigger key"
 msgstr "Виберіть клавішу запуску"
@@ -317,7 +315,7 @@ msgid "Off"
 msgstr "Вимкнено"
 
 msgid "Clear"
-msgstr "ясно"
+msgstr "Очистити"
 
 msgid "Apply"
 msgstr "Застосувати"
@@ -335,13 +333,13 @@ msgid "New layer"
 msgstr "Новий шар"
 
 msgid "Duplicate"
-msgstr "дублікат"
+msgstr "Дублювати"
 
 msgid "Delete"
 msgstr "Видалити"
 
 msgid "Extra keys"
-msgstr "Додаткові ключі"
+msgstr "Додаткові клавіші"
 
 msgid "Edit"
 msgstr "Редагувати"
@@ -350,13 +348,13 @@ msgid "Rename layer"
 msgstr "Перейменувати шар"
 
 msgid "Duplicate layer"
-msgstr "Дубльований шар"
+msgstr "Дублювати шар"
 
 msgid "Delete layer?"
 msgstr "Видалити шар?"
 
 msgid "Edit layer key"
-msgstr "Редагувати ключ шару"
+msgstr "Редагувати клавішу шару"
 
 msgid "Name"
 msgstr "Ім'я"
@@ -389,10 +387,10 @@ msgid "Enter a layout name"
 msgstr "Введіть назву макета"
 
 msgid "Enter a key code"
-msgstr "Введіть код ключа"
+msgstr "Введіть код клавіші"
 
 msgid "Native"
-msgstr "Рідна"
+msgstr "Звичайна дія"
 
 msgid "Layer saved"
 msgstr "Шар збережено"
@@ -445,7 +443,7 @@ msgid "Add"
 msgstr "Додати"
 
 msgid "Clear cell"
-msgstr "Прозора клітинка"
+msgstr "Очистити клітинку"
 
 msgid "Page name"
 msgstr "Назва сторінки"
@@ -643,7 +641,7 @@ msgid "Current value"
 msgstr "Поточне значення"
 
 msgid "Capture key"
-msgstr "Ключ захоплення"
+msgstr "Захопити клавішу"
 
 msgid "Press a key (including modifiers or Escape)."
 msgstr "Натисніть клавішу (включно з модифікаторами або Escape)."
@@ -654,13 +652,13 @@ msgstr ""
 " його окремо."
 
 msgid "Choose a valid key or action."
-msgstr "Виберіть дійсний ключ або дію."
+msgstr "Виберіть дійсну клавішу або дію."
 
 msgid "Search keys and actions"
 msgstr "Клавіші пошуку та дії"
 
 msgid "Search keys"
-msgstr "Ключі пошуку"
+msgstr "Пошук клавіш"
 
 msgid "Hold action"
 msgstr "Тримайте дію"
@@ -689,7 +687,7 @@ msgid "Action:"
 msgstr "Дія:"
 
 msgid "Trigger key:"
-msgstr "Ключ тригера:"
+msgstr "Клавіша тригера:"
 
 msgid "{n} line"
 msgid_plural "{n} lines"
@@ -722,7 +720,7 @@ msgid "Mouse"
 msgstr "миша"
 
 msgid "Other keys"
-msgstr "Інші ключі"
+msgstr "Інші клавіші"
 
 msgid "Actions"
 msgstr "Дії"
@@ -731,7 +729,7 @@ msgid "Extra button on some gaming mice"
 msgstr "Додаткова кнопка на деяких ігрових мишках"
 
 msgid "Keys"
-msgstr "Ключі"
+msgstr "Клавіші"
 
 msgid "System actions"
 msgstr "Системні дії"
@@ -809,7 +807,7 @@ msgid "Type to test..."
 msgstr "Введіть для перевірки..."
 
 msgid "Ignore key"
-msgstr "Ігнорувати ключ"
+msgstr "Ігнорувати клавішу"
 
 msgid "No layers yet"
 msgstr "Ще немає шарів"
@@ -821,7 +819,7 @@ msgid "Right hand"
 msgstr "Права рука"
 
 msgid "Key"
-msgstr "ключ"
+msgstr "Клавіша"
 
 msgid "US layout"
 msgstr "Макет США"
@@ -830,7 +828,7 @@ msgid "LHC codes"
 msgstr "коди LHC"
 
 msgid "No extra keys for this layer yet."
-msgstr "Для цього шару ще немає додаткових ключів."
+msgstr "Для цього шару ще немає додаткових клавіш."
 
 msgid ""
 "Mouse buttons, media keys, and other triggers outside the main keyboard "
@@ -934,7 +932,7 @@ msgid "ID"
 msgstr "ID"
 
 msgid "Key {}"
-msgstr "Ключ {}"
+msgstr "Клавіша {}"
 
 msgid "Label"
 msgstr "Мітка"
@@ -1213,7 +1211,7 @@ msgid "Launch on startup"
 msgstr "Запуск під час запуску"
 
 msgid "Start the mapper on launch"
-msgstr "Запустіть програму картографування під час запуску"
+msgstr "Запускати мапер під час запуску"
 
 msgid "No keyboard is selected, so the mapper cannot start."
 msgstr ""
@@ -1358,7 +1356,7 @@ msgid "Active window: "
 msgstr "Активне вікно:"
 
 msgid "Create a layer to assign its keys."
-msgstr "Створіть шар, щоб призначити його ключі."
+msgstr "Створіть шар, щоб призначити його клавіші."
 
 msgid "Button {}"
 msgstr "Кнопка {}"
@@ -1532,7 +1530,7 @@ msgid "Perform action"
 msgstr "Виконати дію"
 
 msgid "The key will not reach the application."
-msgstr "Ключ не досягне програми."
+msgstr "Клавіша не потрапить до програми."
 
 msgid "Use the assignment from the lower layer or base layout."
 msgstr "Використовуйте призначення з нижнього шару або базового макета."
@@ -1662,7 +1660,7 @@ msgstr ""
 " щоб захопити її."
 
 msgid "Held key: {}"
-msgstr "Утриманий ключ: {}"
+msgstr "Утримувана клавіша: {}"
 
 msgid "Assigned to"
 msgstr "Призначено"
@@ -2126,7 +2124,7 @@ msgid "Window title contains: {}"
 msgstr "Заголовок вікна містить: {}"
 
 msgid "Timing"
-msgstr "Час"
+msgstr "Таймінги"
 
 msgid "Used by macros without their own value."
 msgstr "Використовується макросами без власного значення."
@@ -2459,12 +2457,10 @@ msgid "Failed to start"
 msgstr "Не вдалося запустити"
 
 msgid "Keys work as usual. Start the mapper to apply your layouts."
-msgstr ""
-"Ключі працюють як зазвичай. Запустіть програму картографування, щоб "
-"застосувати свої макети."
+msgstr "Клавіші працюють як зазвичай. Запустіть мапер, щоб застосувати розкладки."
 
 msgid "Select a keyboard below to start the mapper."
-msgstr "Виберіть клавіатуру нижче, щоб запустити картограф."
+msgstr "Виберіть клавіатуру нижче, щоб запустити мапер."
 
 msgid "Changing a device restarts the mapper."
 msgstr "Зміна пристрою перезапускає програму відображення."
@@ -2829,7 +2825,7 @@ msgid "Trigger itself"
 msgstr "Сам тригер"
 
 msgid "Other key…"
-msgstr "Інший ключ…"
+msgstr "Інша клавіша…"
 
 msgid "When to press"
 msgstr "Коли натискати"
@@ -2852,7 +2848,7 @@ msgstr ""
 "відображення"
 
 msgid "Start mapper to intercept keys and apply layouts"
-msgstr "Запустіть Mapper, щоб перехопити ключі та застосувати макети"
+msgstr "Запустіть мапер, щоб перехоплювати клавіші та застосовувати розкладки"
 
 msgid "Current active layout (selected automatically by switching rules)"
 msgstr ""
@@ -2903,7 +2899,7 @@ msgid "Hold detection"
 msgstr "Виявлення утримання"
 
 msgid "When a key becomes a hold"
-msgstr "Коли клавіша стає утримуванням"
+msgstr "Коли клавіша переходить в утримання"
 
 msgid ""
 "Decides when a rule key that is still down counts as a hold if you press "
@@ -3331,7 +3327,7 @@ msgid "Paths"
 msgstr "Шляхи"
 
 msgid "Unknown layer key at \"{}\"."
-msgstr "Невідомий ключ шару в \"{}\"."
+msgstr "Невідома клавіша шару в \"{}\"."
 
 msgid "Invalid layer action at \"{}\"."
 msgstr "Недійсна дія шару на \"{}\"."
@@ -3610,3 +3606,4 @@ msgstr ""
 
 msgid "Waiting for keyboard"
 msgstr "Очікування клавіатури"
+

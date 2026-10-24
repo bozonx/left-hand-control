@@ -152,7 +152,7 @@ msgid "Mapper"
 msgstr "キー割り当て"
 
 msgid "Dark"
-msgstr "暗い"
+msgstr "ダーク"
 
 msgid "Light"
 msgstr "ライト"
@@ -284,7 +284,7 @@ msgid "Default"
 msgstr "デフォルト"
 
 msgid "Advanced"
-msgstr "高度な"
+msgstr "詳細"
 
 msgid "Choose trigger key"
 msgstr "トリガーキーを選択"
@@ -329,7 +329,7 @@ msgid "New layer"
 msgstr "新しいレイヤー"
 
 msgid "Duplicate"
-msgstr "重複"
+msgstr "複製"
 
 msgid "Delete"
 msgstr "削除"
@@ -437,7 +437,7 @@ msgid "Add"
 msgstr "追加"
 
 msgid "Clear cell"
-msgstr "クリアセル"
+msgstr "セルをクリア"
 
 msgid "Page name"
 msgstr "ページ名"
@@ -803,7 +803,7 @@ msgid "Right hand"
 msgstr "右手"
 
 msgid "Key"
-msgstr "鍵"
+msgstr "キー"
 
 msgid "US layout"
 msgstr "米国レイアウト"
@@ -2642,7 +2642,7 @@ msgid "Trigger itself"
 msgstr "トリガー自体"
 
 msgid "Other key…"
-msgstr "他の鍵は…"
+msgstr "その他のキー…"
 
 msgid "When to press"
 msgstr "いつ押すか"
@@ -3346,3 +3346,4 @@ msgstr ""
 
 msgid "Waiting for keyboard"
 msgstr "キーボードを待っています"
+

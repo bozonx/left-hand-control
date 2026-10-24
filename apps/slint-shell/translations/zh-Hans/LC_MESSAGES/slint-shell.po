@@ -152,10 +152,10 @@ msgid "Mapper"
 msgstr "按键映射"
 
 msgid "Dark"
-msgstr "黑暗的"
+msgstr "深色"
 
 msgid "Light"
-msgstr "光"
+msgstr "浅色"
 
 msgid "Refresh devices"
 msgstr "刷新设备"
@@ -284,7 +284,7 @@ msgid "Default"
 msgstr "默认"
 
 msgid "Advanced"
-msgstr "先进的"
+msgstr "高级"
 
 msgid "Choose trigger key"
 msgstr "选择触发键"
@@ -335,7 +335,7 @@ msgid "Delete"
 msgstr "删除"
 
 msgid "Extra keys"
-msgstr "额外的钥匙"
+msgstr "其他按键"
 
 msgid "Edit"
 msgstr "编辑"
@@ -344,7 +344,7 @@ msgid "Rename layer"
 msgstr "重命名图层"
 
 msgid "Duplicate layer"
-msgstr "重复图层"
+msgstr "复制图层"
 
 msgid "Delete layer?"
 msgstr "删除图层？"
@@ -386,7 +386,7 @@ msgid "Enter a key code"
 msgstr "输入密钥代码"
 
 msgid "Native"
-msgstr "本国的"
+msgstr "原生动作"
 
 msgid "Layer saved"
 msgstr "图层已保存"
@@ -437,7 +437,7 @@ msgid "Add"
 msgstr "添加"
 
 msgid "Clear cell"
-msgstr "透明细胞"
+msgstr "清除单元格"
 
 msgid "Page name"
 msgstr "页面名称"
@@ -801,7 +801,7 @@ msgid "Right hand"
 msgstr "右手"
 
 msgid "Key"
-msgstr "钥匙"
+msgstr "按键"
 
 msgid "US layout"
 msgstr "美国布局"
@@ -848,7 +848,7 @@ msgid ""
 msgstr "无法编辑的内置宏。要进行自定义，请基于一个用户宏创建一个。"
 
 msgid "Cell {}"
-msgstr "电池{}"
+msgstr "单元格 {}"
 
 msgid "Command name"
 msgstr "命令名称"
@@ -905,7 +905,7 @@ msgid "ID"
 msgstr "ID"
 
 msgid "Key {}"
-msgstr "钥匙{}"
+msgstr "按键{}"
 
 msgid "Label"
 msgstr "标签"
@@ -1981,7 +1981,7 @@ msgid "Window title contains: {}"
 msgstr "窗口标题包含：{}"
 
 msgid "Timing"
-msgstr "定时"
+msgstr "时间设置"
 
 msgid "Used by macros without their own value."
 msgstr "由宏使用，没有自己的价值。"
@@ -2275,7 +2275,7 @@ msgid "Failed to start"
 msgstr "启动失败"
 
 msgid "Keys work as usual. Start the mapper to apply your layouts."
-msgstr "钥匙照常工作。启动映射器以应用您的布局。"
+msgstr "按键照常工作。启动映射器以应用您的布局。"
 
 msgid "Select a keyboard below to start the mapper."
 msgstr "选择下面的键盘来启动映射器。"
@@ -3261,3 +3261,4 @@ msgstr "在弹出窗口中，单击一个单元格或按其键：单元格遵循
 
 msgid "Waiting for keyboard"
 msgstr "等待键盘"
+

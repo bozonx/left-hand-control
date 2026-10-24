@@ -329,7 +329,7 @@ export component SettingsPage inherits VerticalBox {
             alignment: start;
             for label[index] in [@tr("Main"), @tr("Mapper"), @tr("Key behavior"), @tr("Game mode"), @tr("Commands"), @tr("Accessibility")]: Rectangle {
                 property <SettingsTab> tab-id: [SettingsTab.general, SettingsTab.mapper, SettingsTab.key-behavior, SettingsTab.game-mode, SettingsTab.commands, SettingsTab.accessibility][index];
-                visible: tab-id != SettingsTab.game-mode || AppState.in-development;
+                visible: (tab-id != SettingsTab.game-mode && tab-id != SettingsTab.commands) || AppState.in-development;
                 height: self.visible ? 38px : 0px;
                 border-radius: 6px;
                 border-width: focus.has-focus ? 2px : 0px;
@@ -410,20 +410,20 @@ export component SettingsPage inherits VerticalBox {
                                         RadioButton { text: @tr("System"); checked: SettingsEditor.appearance-index == 0; }
                                         RadioButton { text: @tr("Light"); checked: SettingsEditor.appearance-index == 1; }
                                         RadioButton { text: @tr("Dark"); checked: SettingsEditor.appearance-index == 2; }
-                                        RadioButton { text: @tr("E-ink"); checked: SettingsEditor.appearance-index == 3; }
+                                        RadioButton { visible: AppState.in-development; text: @tr("E-ink"); checked: SettingsEditor.appearance-index == 3; }
                                     }
                                 }
                             }
                         }
                     }
-                    if AppState.is-linux || AppState.autostart-supported: Card {
+                    if (AppState.in-development && AppState.is-linux) || AppState.autostart-supported: Card {
                         vertical-stretch: 0;
                         VerticalLayout {
                             padding: 16px;
                             spacing: 20px;
                             if AppState.autostart-supported: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; toggled => { SettingsEditor.save(); } }
-                            if AppState.is-linux: CheckBox { text: @tr("Show the Left Hand Control layout name when it changes"); checked <=> SettingsEditor.layout-osd; toggled => { SettingsEditor.save(); } }
-                            if AppState.is-linux: HorizontalLayout { vertical-stretch: 0; alignment: start; spacing: 6px;
+                            if AppState.in-development && AppState.is-linux: CheckBox { text: @tr("Show the Left Hand Control layout name when it changes"); checked <=> SettingsEditor.layout-osd; toggled => { SettingsEditor.save(); } }
+                            if AppState.in-development && AppState.is-linux: HorizontalLayout { vertical-stretch: 0; alignment: start; spacing: 6px;
                                 CheckBox { horizontal-stretch: 0; text: @tr("Show the keys of a layer while it is held"); checked <=> SettingsEditor.layer-hint; toggled => { SettingsEditor.save(); } }
                                 VerticalLayout { visible: !SettingsEditor.layer-hint-available || AppState.in-development; alignment: center; InfoTip { text: SettingsEditor.layer-hint-available ? @tr("The hint appears 2 seconds after the layer activates. Pressing a layer key hides or cancels it until the trigger is released, including in game mode.") : @tr("Unavailable: build with the spell feature and use a Wayland compositor with layer-shell (KDE Plasma, Sway, Hyprland)."); } }
                             }
@@ -469,7 +469,7 @@ export component SettingsPage inherits VerticalBox {
                         CheckBox { text: @tr("Disable animations"); checked <=> SettingsEditor.reduce-motion; toggled => { SettingsEditor.save(); } }
                     }
                 }
-                if SettingsEditor.tab == SettingsTab.commands: Section {
+                if AppState.in-development && SettingsEditor.tab == SettingsTab.commands: Section {
                     title: "";
                     HorizontalLayout { alignment: start; spacing: 6px;
                         CheckBox { horizontal-stretch: 0; text: @tr("Allow command execution"); checked <=> SettingsEditor.commands-enabled; toggled => { SettingsEditor.save(); } }

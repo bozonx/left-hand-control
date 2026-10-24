@@ -1,3 +1,4 @@
+import { AppState } from "app-state.slint";
 import { NumericInput, SearchField, TextField } from "controls.slint";
 import { ScrollView } from "scroll.slint";
 import { Locale, Message } from "i18n.slint";
@@ -252,7 +253,7 @@ export component PickerOverlay inherits Rectangle {
                                 for entry in ActionPicker.categories: VerticalBox {
                                     private property <bool> commands: entry.category == PickerCategory.commands;
                                     padding: 0px; padding-bottom: 4px;
-                                    if !commands || ActionPicker.commands-enabled: VerticalBox { padding: 0px;
+                                    if !commands || (AppState.in-development && ActionPicker.commands-enabled): VerticalBox { padding: 0px;
                                     // Section headings only when keys and actions share the sidebar.
                                     if !ActionPicker.key-only && !ActionPicker.hold-action && (entry.category == PickerCategory.letters || entry.category == PickerCategory.macros): Text {
                                         text: entry.category == PickerCategory.letters ? @tr("Keys") : @tr("Actions");
@@ -280,7 +281,7 @@ export component PickerOverlay inherits Rectangle {
                             Text { text: @tr("Global shortcuts registered in this KDE session:"); color: Theme.muted; wrap: word-wrap; vertical-alignment: center; }
                             InfoTip { text: @tr("The list is read from the KDE global shortcut service (kglobalaccel): KWin, Plasma and applications register their actions there. The chosen action is invoked as is, as if its shortcut were pressed, even when no keys are assigned to it. Which actions exist and how they behave depends on the Plasma version and installed applications, so Left Hand Control does not guarantee them. Common window and desktop actions that also work on other platforms are in System actions."); }
                         }
-                        if ActionPicker.query == "" && ActionPicker.category == PickerCategory.commands && ActionPicker.commands-enabled: VerticalBox { padding: 0px; spacing: 8px; vertical-stretch: 0;
+                        if AppState.in-development && ActionPicker.query == "" && ActionPicker.category == PickerCategory.commands && ActionPicker.commands-enabled: VerticalBox { padding: 0px; spacing: 8px; vertical-stretch: 0;
                             HorizontalBox { vertical-stretch: 0;
                                 TextField { text <=> ActionPicker.command-name; placeholder-text: @tr("Command name (optional)"); edited => { ActionPicker.edit-command(); } }
                                 InfoTip { text: Locale.text(ActionPicker.command-help); }
@@ -293,7 +294,7 @@ export component PickerOverlay inherits Rectangle {
                                 Button { horizontal-stretch: 0; text: @tr("Choose folder…"); clicked => { ActionPicker.choose-command-directory(); } }
                             }
                         }
-                        if ActionPicker.query == "" && ActionPicker.category == PickerCategory.commands && !ActionPicker.commands-enabled: VerticalBox { padding: 0px; spacing: 8px; vertical-stretch: 0;
+                        if AppState.in-development && ActionPicker.query == "" && ActionPicker.category == PickerCategory.commands && !ActionPicker.commands-enabled: VerticalBox { padding: 0px; spacing: 8px; vertical-stretch: 0;
                             Text { text: @tr("Command execution is turned off. Turn it on in the settings to assign commands."); color: Theme.muted; wrap: word-wrap; }
                             HorizontalBox { padding: 0px;
                                 Button { horizontal-stretch: 0; text: @tr("Open command settings"); clicked => { ActionPicker.open-command-settings(); } }

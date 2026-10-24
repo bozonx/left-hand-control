@@ -542,7 +542,7 @@ export component LibraryPage inherits VerticalBox {
     if LayoutLibrary.names.length > 0: HorizontalLayout {
         vertical-stretch: 0;
         spacing: 32px;
-        HorizontalLayout {
+        if AppState.in-development: HorizontalLayout {
             spacing: 6px;
             Text { text: @tr("Mode"); color: Theme.text; vertical-alignment: center; }
             VerticalLayout {
@@ -676,10 +676,10 @@ export component LibraryPage inherits VerticalBox {
                                 if summary.rules > 0: Text { text: @tr("{n} rule" | "{n} rules" % summary.rules); color: Theme.muted; font-size: 13px; }
                                 if summary.layers > 0: Text { text: @tr("{n} layer" | "{n} layers" % summary.layers); color: Theme.muted; font-size: 13px; }
                                 if summary.emoji-pages > 0: Text { text: @tr("{n} emoji page" | "{n} emoji pages" % summary.emoji-pages); color: Theme.muted; font-size: 13px; }
-                                if summary.action-pages > 0: Text { text: @tr("{n} action page" | "{n} action pages" % summary.action-pages); color: Theme.muted; font-size: 13px; }
+                                if AppState.in-development && summary.action-pages > 0: Text { text: @tr("{n} action page" | "{n} action pages" % summary.action-pages); color: Theme.muted; font-size: 13px; }
                                 if summary.macros > 0: Text { text: @tr("{n} macro" | "{n} macros" % summary.macros); color: Theme.muted; font-size: 13px; }
                                 // Commands run shell scripts, so they stand out when reviewing a layout.
-                                if summary.commands > 0: HorizontalLayout { spacing: 6px; alignment: start;
+                                if AppState.in-development && summary.commands > 0: HorizontalLayout { spacing: 6px; alignment: start;
                                     Text { text: @tr("{n} command" | "{n} commands" % summary.commands); color: Theme.warning; font-size: 13px; font-weight: 600; }
                                 }
                             }
@@ -690,7 +690,7 @@ export component LibraryPage inherits VerticalBox {
                 }
             }
         }
-        if LayoutLibrary.automatic: VerticalLayout { width: 340px; padding-bottom: Theme.page-padding; AutoRulesPanel {} }
+        if AppState.in-development && LayoutLibrary.automatic: VerticalLayout { width: 340px; padding-bottom: Theme.page-padding; AutoRulesPanel {} }
     }
 }
 

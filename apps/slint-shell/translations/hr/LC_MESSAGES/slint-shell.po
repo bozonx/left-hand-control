@@ -54,8 +54,7 @@ msgid "Enter non-empty text"
 msgstr "Unesite tekst koji nije prazan"
 
 msgid "Key {} only has conditional or layer rules; edit it in the full editor"
-msgstr ""
-"Ključ {} ima samo uvjetna ili slojna pravila; uredite ga u punom uređivaču"
+msgstr "Tipka {} ima samo uvjetna pravila ili pravila sloja; uredite je u punom uređivaču"
 
 msgid "Keyboard"
 msgstr "Tipkovnica"
@@ -158,10 +157,10 @@ msgid "Mapper"
 msgstr "Preslikavanje"
 
 msgid "Dark"
-msgstr "tamno"
+msgstr "Tamno"
 
 msgid "Light"
-msgstr "Svjetlo"
+msgstr "Svijetlo"
 
 msgid "Refresh devices"
 msgstr "Osvježi uređaje"
@@ -233,7 +232,7 @@ msgid "Enabled"
 msgstr "Omogućeno"
 
 msgid "Trigger key"
-msgstr "Ključ okidača"
+msgstr "Tipka okidača"
 
 msgid "Tap action"
 msgstr "Dodirnite radnju"
@@ -317,7 +316,7 @@ msgid "Off"
 msgstr "Isključeno"
 
 msgid "Clear"
-msgstr "Jasan"
+msgstr "Očisti"
 
 msgid "Apply"
 msgstr "Primijeni"
@@ -335,7 +334,7 @@ msgid "New layer"
 msgstr "Novi sloj"
 
 msgid "Duplicate"
-msgstr "Duplikat"
+msgstr "Dupliciraj"
 
 msgid "Delete"
 msgstr "Izbriši"
@@ -350,7 +349,7 @@ msgid "Rename layer"
 msgstr "Preimenuj sloj"
 
 msgid "Duplicate layer"
-msgstr "Duplicirani sloj"
+msgstr "Dupliciraj sloj"
 
 msgid "Delete layer?"
 msgstr "Izbrisati sloj?"
@@ -443,7 +442,7 @@ msgid "Add"
 msgstr "Dodaj"
 
 msgid "Clear cell"
-msgstr "Čista ćelija"
+msgstr "Očisti ćeliju"
 
 msgid "Page name"
 msgstr "Naziv stranice"
@@ -727,7 +726,7 @@ msgid "Extra button on some gaming mice"
 msgstr "Dodatni gumb na nekim gaming miševima"
 
 msgid "Keys"
-msgstr "Ključevi"
+msgstr "Tipke"
 
 msgid "System actions"
 msgstr "Akcije sustava"
@@ -817,7 +816,7 @@ msgid "Right hand"
 msgstr "Desna ruka"
 
 msgid "Key"
-msgstr "Ključ"
+msgstr "Tipka"
 
 msgid "US layout"
 msgstr "US raspored"
@@ -928,7 +927,7 @@ msgid "ID"
 msgstr "ID"
 
 msgid "Key {}"
-msgstr "Ključ {}"
+msgstr "Tipka {}"
 
 msgid "Label"
 msgstr "Označiti"
@@ -1525,7 +1524,7 @@ msgid "Perform action"
 msgstr "Izvršite akciju"
 
 msgid "The key will not reach the application."
-msgstr "Ključ neće doći do aplikacije."
+msgstr "Tipka neće stići do aplikacije."
 
 msgid "Use the assignment from the lower layer or base layout."
 msgstr "Koristite dodjelu iz donjeg sloja ili osnovnog izgleda."
@@ -1534,7 +1533,7 @@ msgid "Do not assign a separate action to this gesture."
 msgstr "Ovoj gesti nemojte dodijeliti posebnu radnju."
 
 msgid "Holding activates the selected layer. The original key is not sent."
-msgstr "Držanjem aktivira se odabrani sloj. Originalni ključ se ne šalje."
+msgstr "Držanje aktivira odabrani sloj. Izvorna tipka se ne šalje."
 
 msgid "Send the original key to the application."
 msgstr "Pošaljite originalni ključ aplikaciji."
@@ -2445,9 +2444,7 @@ msgid "Failed to start"
 msgstr "Pokretanje nije uspjelo"
 
 msgid "Keys work as usual. Start the mapper to apply your layouts."
-msgstr ""
-"Ključevi rade kao i obično. Pokrenite maper da biste primijenili svoje "
-"izglede."
+msgstr "Tipke rade kao i obično. Pokrenite preslikavač kako biste primijenili rasporede."
 
 msgid "Select a keyboard below to start the mapper."
 msgstr "Odaberite tipkovnicu u nastavku za pokretanje mapera."
@@ -3592,3 +3589,4 @@ msgstr ""
 
 msgid "Waiting for keyboard"
 msgstr "Čeka se tipkovnica"
+

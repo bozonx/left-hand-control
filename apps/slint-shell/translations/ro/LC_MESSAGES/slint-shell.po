@@ -54,9 +54,7 @@ msgid "Enter non-empty text"
 msgstr "Introduceți text care nu este gol"
 
 msgid "Key {} only has conditional or layer rules; edit it in the full editor"
-msgstr ""
-"Cheia {} are doar reguli condiționale sau de nivel; editați-l în editorul "
-"complet"
+msgstr "Tasta {} are doar reguli condiționale sau de strat; editați-o în editorul complet"
 
 msgid "Keyboard"
 msgstr "Tastatura"
@@ -159,10 +157,10 @@ msgid "Mapper"
 msgstr "Remapare"
 
 msgid "Dark"
-msgstr "Întuneric"
+msgstr "Întunecat"
 
 msgid "Light"
-msgstr "Aprinde"
+msgstr "Luminos"
 
 msgid "Refresh devices"
 msgstr "Actualizează dispozitivele"
@@ -320,7 +318,7 @@ msgid "Off"
 msgstr "Dezactivat"
 
 msgid "Clear"
-msgstr "Clar"
+msgstr "Șterge"
 
 msgid "Apply"
 msgstr "Aplică"
@@ -338,13 +336,13 @@ msgid "New layer"
 msgstr "Strat nou"
 
 msgid "Duplicate"
-msgstr "Duplicat"
+msgstr "Duplică"
 
 msgid "Delete"
 msgstr "Șterge"
 
 msgid "Extra keys"
-msgstr "Chei suplimentare"
+msgstr "Taste suplimentare"
 
 msgid "Edit"
 msgstr "Editează"
@@ -353,7 +351,7 @@ msgid "Rename layer"
 msgstr "Redenumiți stratul"
 
 msgid "Duplicate layer"
-msgstr "Strat duplicat"
+msgstr "Duplică stratul"
 
 msgid "Delete layer?"
 msgstr "Ștergeți stratul?"
@@ -436,7 +434,7 @@ msgid "Pause must be between 1 and 10000 ms"
 msgstr "Pauza trebuie să fie între 1 și 10000 ms"
 
 msgid "Unknown key or shortcut in macro step"
-msgstr "Cheie necunoscută sau comandă rapidă în pasul macro"
+msgstr "Tastă sau scurtătură necunoscută în pasul macro"
 
 msgid "Macro references cannot form a cycle"
 msgstr "Referințele macro nu pot forma un ciclu"
@@ -663,7 +661,7 @@ msgid "Search keys and actions"
 msgstr "Căutați chei și acțiuni"
 
 msgid "Search keys"
-msgstr "Cheile de căutare"
+msgstr "Căutare taste"
 
 msgid "Hold action"
 msgstr "Țineți acțiunea"
@@ -734,7 +732,7 @@ msgid "Extra button on some gaming mice"
 msgstr "Buton suplimentar pe niște șoareci de gaming"
 
 msgid "Keys"
-msgstr "Chei"
+msgstr "Taste"
 
 msgid "System actions"
 msgstr "Acțiuni ale sistemului"
@@ -824,7 +822,7 @@ msgid "Right hand"
 msgstr "Mâna dreaptă"
 
 msgid "Key"
-msgstr "Cheie"
+msgstr "Tastă"
 
 msgid "US layout"
 msgstr "layout SUA"
@@ -938,7 +936,7 @@ msgid "ID"
 msgstr "ID"
 
 msgid "Key {}"
-msgstr "Cheie {}"
+msgstr "Tastă {}"
 
 msgid "Label"
 msgstr "Eticheta"
@@ -1545,7 +1543,7 @@ msgid "Perform action"
 msgstr "Efectuați acțiunea"
 
 msgid "The key will not reach the application."
-msgstr "Cheia nu va ajunge la aplicație."
+msgstr "Tasta nu va ajunge la aplicație."
 
 msgid "Use the assignment from the lower layer or base layout."
 msgstr "Utilizați atribuirea din stratul inferior sau aspectul de bază."
@@ -1554,8 +1552,7 @@ msgid "Do not assign a separate action to this gesture."
 msgstr "Nu atribuiți o acțiune separată acestui gest."
 
 msgid "Holding activates the selected layer. The original key is not sent."
-msgstr ""
-"Ținerea apăsată activează stratul selectat. Cheia originală nu este trimisă."
+msgstr "Menținerea apăsată activează stratul selectat. Tasta originală nu este trimisă."
 
 msgid "Send the original key to the application."
 msgstr "Trimiteți cheia originală la aplicație."
@@ -2477,9 +2474,7 @@ msgid "Failed to start"
 msgstr "Nu s-a putut porni"
 
 msgid "Keys work as usual. Start the mapper to apply your layouts."
-msgstr ""
-"Cheile funcționează ca de obicei. Porniți mapatorul pentru a vă aplica "
-"machetele."
+msgstr "Tastele funcționează ca de obicei. Porniți mapatorul pentru a aplica aranjamentele."
 
 msgid "Select a keyboard below to start the mapper."
 msgstr "Selectați o tastatură de mai jos pentru a porni mapper."
@@ -3364,7 +3359,7 @@ msgid "Paths"
 msgstr "Cărări"
 
 msgid "Unknown layer key at \"{}\"."
-msgstr "Cheie de strat necunoscută la „{}”."
+msgstr "Tastă de strat necunoscută la „{}”."
 
 msgid "Invalid layer action at \"{}\"."
 msgstr "Acțiune de strat nevalidă la „{}”."
@@ -3648,3 +3643,4 @@ msgstr ""
 
 msgid "Waiting for keyboard"
 msgstr "Asteptam tastatura"
+

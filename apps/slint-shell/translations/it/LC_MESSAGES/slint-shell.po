@@ -93,7 +93,7 @@ msgid "Settings"
 msgstr "Impostazioni"
 
 msgid "Mapper on / off"
-msgstr "Attivazione/disattivazione del mappatore"
+msgstr "Mapper attivo / disattivo"
 
 msgid "Switch to desktop {n}"
 msgstr "Passa al desktop {n}"
@@ -159,10 +159,10 @@ msgid "Mapper"
 msgstr "Rimappatore"
 
 msgid "Dark"
-msgstr "Buio"
+msgstr "Scuro"
 
 msgid "Light"
-msgstr "Leggero"
+msgstr "Chiaro"
 
 msgid "Refresh devices"
 msgstr "Aggiorna i dispositivi"
@@ -320,7 +320,7 @@ msgid "Off"
 msgstr "Disattivato"
 
 msgid "Clear"
-msgstr "Chiaro"
+msgstr "Cancella"
 
 msgid "Apply"
 msgstr "Applica"
@@ -338,13 +338,13 @@ msgid "New layer"
 msgstr "Nuovo livello"
 
 msgid "Duplicate"
-msgstr "Duplicato"
+msgstr "Duplica"
 
 msgid "Delete"
 msgstr "Elimina"
 
 msgid "Extra keys"
-msgstr "Chiavi aggiuntive"
+msgstr "Tasti aggiuntivi"
 
 msgid "Edit"
 msgstr "Modifica"
@@ -353,7 +353,7 @@ msgid "Rename layer"
 msgstr "Rinominare il livello"
 
 msgid "Duplicate layer"
-msgstr "Livello duplicato"
+msgstr "Duplica livello"
 
 msgid "Delete layer?"
 msgstr "Eliminare il livello?"
@@ -667,7 +667,7 @@ msgid "Search keys and actions"
 msgstr "Cerca chiavi e azioni"
 
 msgid "Search keys"
-msgstr "Chiavi di ricerca"
+msgstr "Cerca tasti"
 
 msgid "Hold action"
 msgstr "Mantieni l'azione"
@@ -739,7 +739,7 @@ msgid "Extra button on some gaming mice"
 msgstr "Pulsante extra su alcuni mouse da gioco"
 
 msgid "Keys"
-msgstr "Chiavi"
+msgstr "Tasti"
 
 msgid "System actions"
 msgstr "Azioni di sistema"
@@ -829,7 +829,7 @@ msgid "Right hand"
 msgstr "Destra"
 
 msgid "Key"
-msgstr "Chiave"
+msgstr "Tasto"
 
 msgid "US layout"
 msgstr "disposizione degli Stati Uniti"
@@ -942,7 +942,7 @@ msgid "ID"
 msgstr "ID"
 
 msgid "Key {}"
-msgstr "Chiave {}"
+msgstr "Tasto {}"
 
 msgid "Label"
 msgstr "Etichetta"
@@ -1680,7 +1680,7 @@ msgstr ""
 "per acquisirla."
 
 msgid "Held key: {}"
-msgstr "Chiave tenuta: {}"
+msgstr "Tasto premuto: {}"
 
 msgid "Assigned to"
 msgstr "Assegnato a"
@@ -3185,7 +3185,7 @@ msgid "Hold threshold"
 msgstr "Mantieni soglia"
 
 msgid "Long hold"
-msgstr "Lunga tenuta"
+msgstr "Pressione prolungata"
 
 msgid "Double-tap window"
 msgstr "Tocca due volte la finestra"
@@ -3386,7 +3386,7 @@ msgid "Paths"
 msgstr "Percorsi"
 
 msgid "Unknown layer key at \"{}\"."
-msgstr "Chiave layer sconosciuta in \"{}\"."
+msgstr "Tasto del livello sconosciuto in \"{}\"."
 
 msgid "Invalid layer action at \"{}\"."
 msgstr "Azione layer non valida in \"{}\"."
@@ -3678,3 +3678,4 @@ msgstr ""
 
 msgid "Waiting for keyboard"
 msgstr "In attesa della tastiera"
+

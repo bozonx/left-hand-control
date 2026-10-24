@@ -162,7 +162,7 @@ msgid "Dark"
 msgstr "Ciemny"
 
 msgid "Light"
-msgstr "Światło"
+msgstr "Jasny"
 
 msgid "Refresh devices"
 msgstr "Odśwież urządzenia"
@@ -234,7 +234,7 @@ msgid "Enabled"
 msgstr "Włączony"
 
 msgid "Trigger key"
-msgstr "Klawisz spustowy"
+msgstr "Klawisz wyzwalacza"
 
 msgid "Tap action"
 msgstr "Kliknij akcję"
@@ -320,7 +320,7 @@ msgid "Off"
 msgstr "Wyłączone"
 
 msgid "Clear"
-msgstr "Jasne"
+msgstr "Wyczyść"
 
 msgid "Apply"
 msgstr "Zastosuj"
@@ -338,7 +338,7 @@ msgid "New layer"
 msgstr "Nowa warstwa"
 
 msgid "Duplicate"
-msgstr "Duplikat"
+msgstr "Duplikuj"
 
 msgid "Delete"
 msgstr "Usuń"
@@ -395,7 +395,7 @@ msgid "Enter a key code"
 msgstr "Wprowadź kod klucza"
 
 msgid "Native"
-msgstr "Rodzinny"
+msgstr "Natywne"
 
 msgid "Layer saved"
 msgstr "Warstwa została zapisana"
@@ -734,7 +734,7 @@ msgid "Extra button on some gaming mice"
 msgstr "Dodatkowy przycisk w niektórych myszach do gier"
 
 msgid "Keys"
-msgstr "Klawiatura"
+msgstr "Klawisze"
 
 msgid "System actions"
 msgstr "Działania systemowe"
@@ -2136,7 +2136,7 @@ msgid "Window title contains: {}"
 msgstr "Tytuł okna zawiera: {}"
 
 msgid "Timing"
-msgstr "Chronometraż"
+msgstr "Czasy"
 
 msgid "Used by macros without their own value."
 msgstr "Używane przez makra bez własnej wartości."
@@ -3639,3 +3639,4 @@ msgstr ""
 
 msgid "Waiting for keyboard"
 msgstr "Czekam na klawiaturę"
+
