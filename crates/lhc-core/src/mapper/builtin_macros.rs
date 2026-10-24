@@ -1,9 +1,7 @@
 // Built-in macros — globally available macros that resolve
-// `macro:<id>` at runtime regardless of the active layout preset.
+// `builtin:<id>` at runtime regardless of the active layout preset.
 //
-// The engine builds these first, then overlays user macros from the
-// config (same id → user wins). The action catalog derives its entries
-// from these definitions.
+// Built-in and user macros have independent action namespaces.
 
 pub struct BuiltinMacro {
     pub id: &'static str,

@@ -507,7 +507,7 @@ mod tests {
         let mut layer = rule("l", "KeyB");
         layer.layer_id = "missing".into();
         let mut hold = rule("h", "KeyC");
-        hold.hold_action = Some("macro:copyLine".into());
+        hold.hold_action = Some("builtin:copyLine".into());
         let issues = analyze_rules(&config(vec![
             rule("a", "KeyA"),
             rule("b", "KeyA"),

@@ -2,10 +2,7 @@ use super::{
     actions::{self, Action},
     model::{AppConfig, LayoutPreset, Macro},
 };
-use crate::{
-    config_document::{ConfigDocument, ConfigError},
-    mapper::builtin_macros::BUILTIN_MACROS,
-};
+use crate::config_document::{ConfigDocument, ConfigError};
 use std::collections::HashSet;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -19,9 +16,6 @@ pub enum MacroIssue {
 }
 
 pub fn validate(config: &AppConfig, item: &Macro) -> Result<(), ConfigError> {
-    if BUILTIN_MACROS.iter().any(|m| m.id == item.id) {
-        return Err(ConfigError::Macro(MacroIssue::DuplicateId));
-    }
     validate_loaded(config, item)
 }
 
@@ -88,11 +82,7 @@ pub(crate) fn validate_loaded(config: &AppConfig, item: &Macro) -> Result<(), Co
         let steps: Vec<&str> = if let Some(item) = config.macros.iter().find(|m| m.id == target) {
             item.steps.iter().map(|s| s.action.as_str()).collect()
         } else {
-            BUILTIN_MACROS
-                .iter()
-                .find(|m| m.id == target)
-                .map(|m| m.steps.to_vec())
-                .unwrap_or_default()
+            Vec::new()
         };
         steps
             .iter()
@@ -271,7 +261,10 @@ mod tests {
             )
             .unwrap();
         document
-            .save_macro(None, item("outer", &["macro:inner", "macro:copyLine", ""]))
+            .save_macro(
+                None,
+                item("outer", &["macro:inner", "builtin:copyLine", ""]),
+            )
             .unwrap();
         assert_eq!(usage(&document.config(), "outer"), ["KeyA"]);
         assert_eq!(usage(&document.config(), "inner"), ["macro:outer"]);
@@ -290,6 +283,27 @@ mod tests {
     }
 
     #[test]
+    fn builtin_names_can_be_saved_and_renamed_without_changing_builtin_references() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let mut document = ConfigDocument::load(paths).unwrap();
+        document
+            .save_macro(None, item("copyLine", &["builtin:copyLine"]))
+            .unwrap();
+        document
+            .save_macro(None, item("outer", &["macro:copyLine", "builtin:copyLine"]))
+            .unwrap();
+        assert_eq!(usage(&document.config(), "copyLine"), ["macro:outer"]);
+        let mut layout = document.layout().clone();
+        rename_references(&mut layout, &[("copyLine".into(), "custom".into())]);
+        let user = layout.macros.iter().find(|m| m.id == "copyLine").unwrap();
+        let outer = layout.macros.iter().find(|m| m.id == "outer").unwrap();
+        assert_eq!(user.steps[0].action, "builtin:copyLine");
+        assert_eq!(outer.steps[0].action, "macro:custom");
+        assert_eq!(outer.steps[1].action, "builtin:copyLine");
+    }
+
+    #[test]
     fn rejects_invalid_edits_atomically() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
@@ -303,7 +317,6 @@ mod tests {
             item("", &[]),
             item("bad id", &[]),
             item("inner", &[]),
-            item("copyLine", &[]),
             item("new", &["pause:10001"]),
             item("new", &["pause:-1"]),
             item("new", &["macro:missing"]),

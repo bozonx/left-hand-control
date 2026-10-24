@@ -23,9 +23,6 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
         if !seen_macro_ids.insert(id.to_string()) {
             errors.push(format!("Duplicate macro ID \"{id}\""));
         }
-        if builtin_macro_ids.contains(id) {
-            errors.push(format!("Macro ID \"{id}\" conflicts with a built-in macro"));
-        }
         user_macro_ids.insert(id.to_string());
     }
 
@@ -152,35 +149,38 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
 }
 
 fn validate_macro_sizes(cfg: &AppConfig, errors: &mut Vec<String>) {
-    let mut definitions: HashMap<&str, Vec<&str>> = BUILTIN_MACROS
+    let mut definitions: HashMap<String, Vec<&str>> = BUILTIN_MACROS
         .iter()
-        .map(|m| (m.id, m.steps.to_vec()))
+        .map(|m| (format!("builtin:{}", m.id), m.steps.to_vec()))
         .collect();
     for m in &cfg.macros {
         definitions.insert(
-            m.id.trim(),
+            format!("macro:{}", m.id.trim()),
             m.steps.iter().map(|s| s.action.as_str()).collect(),
         );
     }
-    fn size<'a>(
-        id: &'a str,
+    fn size(
+        id: &str,
         depth: usize,
-        definitions: &HashMap<&'a str, Vec<&'a str>>,
-        memo: &mut HashMap<(&'a str, usize), usize>,
+        definitions: &HashMap<String, Vec<&str>>,
+        memo: &mut HashMap<(String, usize), usize>,
     ) -> usize {
         if depth > 10 {
             return 1001;
         }
-        if let Some(size) = memo.get(&(id, depth)) {
+        if let Some(size) = memo.get(&(id.to_string(), depth)) {
             return *size;
         }
         let mut total = 0;
         for step in definitions.get(id).into_iter().flatten() {
             let step = step.trim();
             total += match Action::parse(Some(step)) {
-                Action::Macro(nested) => {
+                action @ (Action::Macro(_) | Action::BuiltinMacro(_)) => {
+                    let Some(reference) = action.format() else {
+                        continue;
+                    };
                     1 + definitions
-                        .get_key_value(nested.as_str())
+                        .get_key_value(&reference)
                         .map_or(0, |(id, _)| size(id, depth + 1, definitions, memo))
                 }
                 _ => usize::from(!step.is_empty()),
@@ -190,12 +190,18 @@ fn validate_macro_sizes(cfg: &AppConfig, errors: &mut Vec<String>) {
                 break;
             }
         }
-        memo.insert((id, depth), total);
+        memo.insert((id.to_string(), depth), total);
         total
     }
     let mut memo = HashMap::new();
     for m in &cfg.macros {
-        if size(m.id.trim(), 0, &definitions, &mut memo) > 1000 {
+        if size(
+            &format!("macro:{}", m.id.trim()),
+            0,
+            &definitions,
+            &mut memo,
+        ) > 1000
+        {
             errors.push(format!(
                 "Macro \"{}\": expansion exceeds 1000 entries or 10 nesting levels",
                 m.id
@@ -310,8 +316,13 @@ fn validate_action(
     match Action::parse(Some(action)) {
         Action::Native | Action::Swallow | Action::Text(_) => {}
         Action::Macro(id) => {
-            if !user_macro_ids.contains(&id) && !builtin_macro_ids.contains(id.as_str()) {
+            if !user_macro_ids.contains(&id) {
                 errors.push(format!("{where_}: unknown macro \"{id}\""));
+            }
+        }
+        Action::BuiltinMacro(id) => {
+            if !builtin_macro_ids.contains(id.as_str()) {
+                errors.push(format!("{where_}: unknown built-in macro \"{id}\""));
             }
         }
         Action::Command(id) => {
@@ -357,7 +368,7 @@ fn validate_macro_cycles(cfg: &AppConfig, errors: &mut Vec<String>) {
 
     for sys in BUILTIN_MACROS {
         graph.insert(
-            sys.id.to_string(),
+            format!("builtin:{}", sys.id),
             sys.steps
                 .iter()
                 .filter_map(|step| macro_ref(step))
@@ -367,7 +378,7 @@ fn validate_macro_cycles(cfg: &AppConfig, errors: &mut Vec<String>) {
 
     for m in &cfg.macros {
         graph.insert(
-            m.id.trim().to_string(),
+            format!("macro:{}", m.id.trim()),
             m.steps
                 .iter()
                 .filter_map(|step| macro_ref(&step.action))
@@ -376,13 +387,13 @@ fn validate_macro_cycles(cfg: &AppConfig, errors: &mut Vec<String>) {
     }
 
     for m in &cfg.macros {
-        let source = m.id.trim();
-        if source.is_empty() {
+        let source = format!("macro:{}", m.id.trim());
+        if m.id.trim().is_empty() {
             continue;
         }
-        for target in graph.get(source).into_iter().flatten() {
+        for target in graph.get(&source).into_iter().flatten() {
             let mut visited = HashSet::new();
-            if macro_path_reaches(source, target, &graph, &mut visited) {
+            if macro_path_reaches(&source, target, &graph, &mut visited) {
                 errors.push(format!(
                     "Macro \"{source}\": macro references cannot form a cycle"
                 ));
@@ -394,7 +405,7 @@ fn validate_macro_cycles(cfg: &AppConfig, errors: &mut Vec<String>) {
 
 fn macro_ref(step: &str) -> Option<String> {
     match Action::parse(Some(step)) {
-        Action::Macro(id) => Some(id),
+        action @ (Action::Macro(_) | Action::BuiltinMacro(_)) => action.format(),
         _ => None,
     }
 }
@@ -563,19 +574,18 @@ mod tests {
     }
 
     #[test]
-    fn rejects_builtin_macro_shadowing() {
+    fn accepts_separate_builtin_and_user_macro_names() {
         let mut cfg = empty_cfg();
         cfg.macros.push(Macro {
             id: "copyLine".into(),
             steps: vec![MacroStep {
-                action: "macro:duplicateLine".into(),
+                action: "builtin:copyLine".into(),
             }],
             step_pause_ms: None,
             modifier_delay_ms: None,
         });
 
-        let err = validate_config(&cfg).expect_err("validation should fail");
-        assert!(err.contains("conflicts with a built-in macro"));
+        validate_config(&cfg).expect("same id in separate namespaces is valid");
     }
 
     #[test]
@@ -588,7 +598,7 @@ mod tests {
                     action: "macro:inner".into(),
                 },
                 MacroStep {
-                    action: "macro:duplicateLine".into(),
+                    action: "builtin:duplicateLine".into(),
                 },
             ],
             step_pause_ms: None,
@@ -800,7 +810,7 @@ mod tests {
             hold_behavior: None,
             long_hold_action: String::new(),
             long_hold_timeout_ms: None,
-            hold_action: ActionSpec::Action("macro:copyLine".into()),
+            hold_action: ActionSpec::Action("builtin:copyLine".into()),
             hold_timeout_ms: None,
             tap_decision: None,
             double_tap_action: String::new(),

@@ -1,4 +1,4 @@
-//! Action strings (`KeyA`, `Ctrl+KeyC`, `macro:id`, `cmd:id`, `sys:id`,
+//! Action strings (`KeyA`, `Ctrl+KeyC`, `macro:id`, `builtin:id`, `cmd:id`, `sys:id`,
 //! `app:id`, `kde:component/shortcut`, `text:…`, `pause:ms`) and the
 //! catalogs of built-in actions.
 
@@ -14,7 +14,10 @@ pub enum Action {
     Swallow,
     /// Key or chord, e.g. `Ctrl+KeyC`.
     Keys(String),
+    /// User macro (`macro:<id>`).
     Macro(String),
+    /// Built-in macro (`builtin:<id>`), independent of user macro IDs.
+    BuiltinMacro(String),
     Command(String),
     System(String),
     App(String),
@@ -40,8 +43,9 @@ impl Action {
         }
         let value = value.trim();
         type Constructor = fn(String) -> Action;
-        let prefixed: [(&str, Constructor); 6] = [
+        let prefixed: [(&str, Constructor); 7] = [
             ("macro:", Self::Macro),
+            ("builtin:", Self::BuiltinMacro),
             ("cmd:", Self::Command),
             ("sys:", Self::System),
             ("app:", Self::App),
@@ -69,6 +73,7 @@ impl Action {
             Self::Swallow => return None,
             Self::Keys(keys) => keys.clone(),
             Self::Macro(id) => format!("macro:{id}"),
+            Self::BuiltinMacro(id) => format!("builtin:{id}"),
             Self::Command(id) => format!("cmd:{id}"),
             Self::System(id) => format!("sys:{id}"),
             Self::App(id) => format!("app:{id}"),
@@ -272,15 +277,10 @@ pub fn catalog(config: &AppConfig) -> Vec<CatalogEntry> {
             name: ActionName::Verbatim(item.name.clone()),
         })
         .collect();
-    out.extend(
-        BUILTIN_MACROS
-            .iter()
-            .filter(|builtin| !config.macros.iter().any(|user| user.id == builtin.id))
-            .map(|builtin| CatalogEntry {
-                action: Action::Macro(builtin.id.into()),
-                name: ActionName::BuiltinMacro { id: builtin.id },
-            }),
-    );
+    out.extend(BUILTIN_MACROS.iter().map(|builtin| CatalogEntry {
+        action: Action::BuiltinMacro(builtin.id.into()),
+        name: ActionName::BuiltinMacro { id: builtin.id },
+    }));
     out.extend(config.commands.iter().map(|command| CatalogEntry {
         action: Action::Command(command.id.clone()),
         name: ActionName::Verbatim(if command.name.is_empty() {
@@ -316,9 +316,11 @@ pub fn validate(action: &Action, config: &AppConfig) -> Option<ActionIssue> {
         Action::Pause(_) => Some(ActionIssue::PauseOutsideMacro),
         Action::Unknown(_) => Some(ActionIssue::UnknownActionType),
         Action::Macro(id) => {
-            let known = config.macros.iter().any(|item| &item.id == id)
-                || BUILTIN_MACROS.iter().any(|item| item.id == id);
+            let known = config.macros.iter().any(|item| &item.id == id);
             (!known).then_some(ActionIssue::UnknownMacro)
+        }
+        Action::BuiltinMacro(id) => {
+            (!BUILTIN_MACROS.iter().any(|item| item.id == id)).then_some(ActionIssue::UnknownMacro)
         }
         Action::Command(id) => (!config.commands.iter().any(|command| &command.id == id))
             .then_some(ActionIssue::UnknownCommand),
@@ -381,17 +383,21 @@ pub fn execution_issue(action: &Action, config: &AppConfig) -> Option<ExecutionI
                 let _ = id;
                 Some(ExecutionIssue::Unavailable)
             }
-            Action::Macro(id) => {
-                let steps: Vec<&str> =
-                    if let Some(item) = config.macros.iter().find(|item| item.id == *id) {
-                        item.steps.iter().map(|step| step.action.as_str()).collect()
-                    } else {
-                        BUILTIN_MACROS
-                            .iter()
-                            .find(|item| item.id == id)
-                            .map(|item| item.steps.to_vec())
-                            .unwrap_or_default()
-                    };
+            Action::Macro(_) | Action::BuiltinMacro(_) => {
+                let steps: Vec<&str> = match action {
+                    Action::Macro(id) => config
+                        .macros
+                        .iter()
+                        .find(|item| item.id == *id)
+                        .map(|item| item.steps.iter().map(|step| step.action.as_str()).collect())
+                        .unwrap_or_default(),
+                    Action::BuiltinMacro(id) => BUILTIN_MACROS
+                        .iter()
+                        .find(|item| item.id == id)
+                        .map(|item| item.steps.to_vec())
+                        .unwrap_or_default(),
+                    _ => unreachable!(),
+                };
                 steps
                     .into_iter()
                     .find_map(|value| check(&Action::parse(Some(value)), config, depth + 1))
@@ -430,7 +436,8 @@ mod tests {
         for raw in [
             "KeyA",
             "Ctrl+KeyC",
-            "macro:copyLine",
+            "macro:custom",
+            "builtin:copyLine",
             "cmd:music",
             "sys:switchDesktop2",
             "app:showQuickMenu1",
@@ -533,7 +540,7 @@ mod tests {
         let mut config =
             AppConfig::from_parts(AppSettings::default(), LayoutPreset::initial(), None);
         config.macros.push(super::super::model::Macro {
-            id: "custom".into(),
+            id: "copyLine".into(),
             name: "Copy line".into(),
             steps: vec![],
             step_pause_ms: None,
@@ -541,17 +548,14 @@ mod tests {
         });
         let entries = catalog(&config);
         for builtin in BUILTIN_MACROS {
-            assert!(
-                entries
-                    .iter()
-                    .any(|entry| entry.action == Action::Macro(builtin.id.into())
-                        && entry.name == ActionName::BuiltinMacro { id: builtin.id })
-            );
+            assert!(entries.iter().any(|entry| entry.action
+                == Action::BuiltinMacro(builtin.id.into())
+                && entry.name == ActionName::BuiltinMacro { id: builtin.id }));
         }
         assert!(
             entries
                 .iter()
-                .any(|entry| entry.action == Action::Macro("custom".into())
+                .any(|entry| entry.action == Action::Macro("copyLine".into())
                     && entry.name == ActionName::Verbatim("Copy line".into()))
         );
     }
@@ -616,7 +620,9 @@ mod tests {
         assert_eq!(check("Ctrl+"), Some(ActionIssue::InvalidSyntax));
         assert_eq!(check("NotAKey"), Some(ActionIssue::InvalidSyntax));
         assert_eq!(check("KeyA+KeyB"), Some(ActionIssue::InvalidSyntax));
-        assert_eq!(check("macro:copyLine"), None);
+        assert_eq!(check("builtin:copyLine"), None);
+        assert_eq!(check("macro:copyLine"), Some(ActionIssue::UnknownMacro));
+        assert_eq!(check("builtin:nope"), Some(ActionIssue::UnknownMacro));
         assert_eq!(check("macro:nope"), Some(ActionIssue::UnknownMacro));
         assert_eq!(check("cmd:nope"), Some(ActionIssue::UnknownCommand));
         assert_eq!(check("sys:windowToDesktop2"), None);

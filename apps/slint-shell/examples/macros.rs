@@ -43,6 +43,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(first(&document).steps.len(), 3);
     assert_eq!(first(&document).name, "Переместить строку вниз (копия)");
     assert_eq!(first(&document).id, "moveLineDownCopy");
+    editor.invoke_set_field(0, MacroField::Id, "moveLineDown".into());
+    settle();
+    assert!(!editor.get_has_errors());
+    assert_eq!(first(&document).id, "moveLineDown");
     editor.invoke_set_field(0, MacroField::Id, "testMacro".into());
     editor.invoke_set_field(0, MacroField::Name, "Тестовый макрос".into());
     editor.invoke_add_step(0, "pause:100".into());

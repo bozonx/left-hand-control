@@ -19,8 +19,7 @@ impl Engine {
         let default_mod_delay = Duration::from_millis(cfg.settings.default_macro_modifier_delay_ms);
 
         // Build the macro table first so tap / keymap actions can reference
-        // macros by id. Built-in macros are seeded first; user macros with the
-        // same id override them.
+        // macros by their fully qualified action strings.
         let mut macros: HashMap<String, MacroDef> = HashMap::new();
         let mut commands: HashMap<String, SysCommand> = HashMap::new();
         // Commands of the layout without a script for this OS.
@@ -93,16 +92,23 @@ impl Engine {
                     Action::App(name) => steps.push(
                         system::resolve_app(&name).map_or_else(unavailable, MacroStepItem::System),
                     ),
-                    Action::Macro(nested_id) => {
-                        let nested_raw: Option<Vec<&str>> = BUILTIN_MACROS
-                            .iter()
-                            .find(|s| s.id == nested_id)
-                            .map(|sys_m| sys_m.steps.to_vec())
-                            .or_else(|| {
-                                raw_user_macros.get(nested_id.as_str()).map(|user_m| {
-                                    user_m.steps.iter().map(|s| s.action.as_str()).collect()
-                                })
-                            });
+                    action @ (Action::Macro(_) | Action::BuiltinMacro(_)) => {
+                        let (nested_id, nested_raw): (_, Option<Vec<&str>>) = match action {
+                            Action::Macro(id) => {
+                                let steps = raw_user_macros
+                                    .get(id.as_str())
+                                    .map(|m| m.steps.iter().map(|s| s.action.as_str()).collect());
+                                (id, steps)
+                            }
+                            Action::BuiltinMacro(id) => {
+                                let steps = BUILTIN_MACROS
+                                    .iter()
+                                    .find(|m| m.id == id)
+                                    .map(|m| m.steps.to_vec());
+                                (id, steps)
+                            }
+                            _ => unreachable!(),
+                        };
                         match nested_raw {
                             Some(nested_raw) => steps.extend(resolve_macro_steps(
                                 &nested_id,
@@ -165,7 +171,7 @@ impl Engine {
                 continue;
             }
             macros.insert(
-                sys.id.to_string(),
+                format!("builtin:{}", sys.id),
                 MacroDef {
                     steps,
                     step_pause: default_step_pause,
@@ -201,7 +207,7 @@ impl Engine {
                 .map(Duration::from_millis)
                 .unwrap_or(default_mod_delay);
             macros.insert(
-                m.id.clone(),
+                format!("macro:{}", m.id),
                 MacroDef {
                     steps,
                     step_pause,
@@ -445,7 +451,8 @@ pub(super) fn resolve_action(
     let unavailable = || Some(ActionDef::Unavailable(action.trim().into()));
     match Action::parse(Some(action)) {
         Action::Native | Action::Swallow => None,
-        Action::Macro(id) => {
+        action @ (Action::Macro(_) | Action::BuiltinMacro(_)) => {
+            let id = action.format()?;
             let found = macros.get(&id).cloned().map(ActionDef::Macro);
             if found.is_none() {
                 log::debug!("[mapper] macro {id:?} unknown or empty ({where_})");

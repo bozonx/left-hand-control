@@ -3053,7 +3053,7 @@ fn builder_resolves_builtin_macro() {
         condition_apps_blacklist: None,
         key: "KeyQ".into(),
         layer_id: String::new(),
-        tap_action: ActionSpec::Action("macro:copyLine".into()),
+        tap_action: ActionSpec::Action("builtin:copyLine".into()),
         hold_behavior: None,
         long_hold_action: String::new(),
         long_hold_timeout_ms: None,
@@ -4521,4 +4521,64 @@ fn remote_and_bound_actions_resolve_the_same_way() {
         engine.execute_remote(action, &mut out);
     }
     assert!(out.is_empty());
+}
+
+#[test]
+fn builtin_and_user_macros_resolve_independently_at_every_depth() {
+    use crate::mapper::action::MacroStepItem;
+
+    let mut cfg = empty_cfg();
+    cfg.macros = vec![
+        Macro {
+            id: "copyLine".into(),
+            steps: vec![MacroStep {
+                action: "text:user".into(),
+            }],
+            step_pause_ms: None,
+            modifier_delay_ms: None,
+        },
+        Macro {
+            id: "outer".into(),
+            steps: vec![
+                MacroStep {
+                    action: "macro:copyLine".into(),
+                },
+                MacroStep {
+                    action: "builtin:copyLine".into(),
+                },
+            ],
+            step_pause_ms: None,
+            modifier_delay_ms: None,
+        },
+    ];
+    super::super::validation::validate_config(&cfg).unwrap();
+    let engine = Engine::new(&cfg);
+    let user = &engine.macros["macro:copyLine"];
+    let builtin = &engine.macros["builtin:copyLine"];
+    let outer = &engine.macros["macro:outer"];
+    assert!(matches!(&user.steps[..], [MacroStepItem::Literal(text)] if text == "user"));
+    assert!(
+        builtin
+            .steps
+            .iter()
+            .all(|step| matches!(step, MacroStepItem::Stroke(_)))
+    );
+    assert_eq!(outer.steps.len(), 1 + builtin.steps.len());
+    assert!(matches!(&outer.steps[0], MacroStepItem::Literal(text) if text == "user"));
+    assert!(
+        outer.steps[1..]
+            .iter()
+            .all(|step| matches!(step, MacroStepItem::Stroke(_)))
+    );
+    for reference in ["macro:copyLine", "builtin:copyLine"] {
+        assert!(matches!(
+            builder::resolve_action(reference, &engine.macros, &HashMap::new(), "test"),
+            Some(model::ActionDef::Macro(_))
+        ));
+    }
+    let engine = Engine::new(&empty_cfg());
+    assert!(
+        builder::resolve_action("macro:copyLine", &engine.macros, &HashMap::new(), "test")
+            .is_none()
+    );
 }

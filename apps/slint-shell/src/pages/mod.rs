@@ -117,7 +117,7 @@ pub(crate) fn one_line(text: &str) -> String {
 pub(crate) fn action_kind(action: &str) -> ActionKind {
     match Action::parse(Some(action)) {
         Action::Keys(_) => ActionKind::Keys,
-        Action::Macro(_) => ActionKind::Macro,
+        Action::Macro(_) | Action::BuiltinMacro(_) => ActionKind::Macro,
         Action::Command(_) => ActionKind::Command,
         Action::System(_) | Action::KdeShortcut(_) => ActionKind::System,
         Action::App(_) => ActionKind::App,

@@ -238,7 +238,7 @@ fn save_later(ui: &SettingsWindow, document: &Rc<Document>, state: &Shared) {
 }
 
 fn taken(draft: &[Entry], id: &str) -> bool {
-    draft.iter().any(|e| e.item.id == id) || BUILTIN_MACROS.iter().any(|m| m.id == id)
+    draft.iter().any(|e| e.item.id == id)
 }
 
 fn unique_id(draft: &[Entry], base: &str) -> String {
@@ -530,8 +530,8 @@ mod tests {
     }
 
     #[test]
-    fn ids_avoid_builtin_macros() {
+    fn ids_allow_builtin_macro_names() {
         let builtin = BUILTIN_MACROS[0].id;
-        assert_ne!(unique_id(&[], builtin), builtin);
+        assert_eq!(unique_id(&[], builtin), builtin);
     }
 }

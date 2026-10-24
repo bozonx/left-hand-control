@@ -84,7 +84,7 @@ fn captures_physical_keys_and_chords() {
 #[test]
 fn picker_modes_restrict_values() {
     assert!(valid("ControlRight", true, false, "", None));
-    for value in ["", "Ctrl+KeyA", "macro:copyLine", "text:hello", "NotAKey"] {
+    for value in ["", "Ctrl+KeyA", "builtin:copyLine", "text:hello", "NotAKey"] {
         assert!(!valid(value, true, false, "", None));
     }
     assert!(!valid("pause:100", false, false, "", None));
@@ -92,10 +92,16 @@ fn picker_modes_restrict_values() {
     assert!(!valid("pause:10001", false, true, "", None));
     assert!(!valid("pause:0", false, true, "", None));
     assert!(!valid("macro:self", false, true, "self", None));
+    assert!(valid("builtin:copyLine", false, true, "copyLine", None));
 }
 
 #[test]
 fn categories_follow_the_key_catalog() {
+    assert_eq!(category_for_value("macro:copyLine"), PickerCategory::Macros);
+    assert_eq!(
+        category_for_value("builtin:copyLine"),
+        PickerCategory::BuiltinMacros
+    );
     assert_eq!(category_for_value("CapsLock"), PickerCategory::Modifiers);
     assert_eq!(category_for_value("ArrowUp"), PickerCategory::Navigation);
     assert_eq!(category_for_value("Numpad5"), PickerCategory::Navigation);

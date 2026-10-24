@@ -412,8 +412,8 @@
           "action": "text:Please let me know if you have any questions."
         },
         "KeyV": {
-          "name": "Thanks in advance",
-          "action": "text:Thanks in advance!"
+          "name": "Could you please",
+          "action": "text:Could you please "
         },
         "KeyB": {
           "name": "I'll be back",

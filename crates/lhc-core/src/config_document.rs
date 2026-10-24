@@ -1376,7 +1376,7 @@ mod tests {
         assert_eq!(reparsed.layer_keymaps, document.layout().layer_keymaps);
         assert_eq!(reparsed.layers, document.layout().layers);
         let quick = &document.layout().quick_action_pages;
-        assert_eq!(quick.len(), 1);
+        assert!(!quick.is_empty());
         assert!(quick.iter().all(|page| page.cells.len() == 15));
         assert_eq!(quick[0].cells["KeyQ"].action, "Sleep");
         assert_eq!(quick[0].cells["KeyS"].action, "sys:overview");

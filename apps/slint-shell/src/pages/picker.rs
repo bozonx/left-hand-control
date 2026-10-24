@@ -59,6 +59,7 @@ fn assigns_command(value: &str, id: &str) -> bool {
 pub(crate) fn category_for_value(value: &str) -> PickerCategory {
     match Action::parse(Some(value)) {
         Action::Macro(_) => return PickerCategory::Macros,
+        Action::BuiltinMacro(_) => return PickerCategory::BuiltinMacros,
         Action::Command(_) => return PickerCategory::Commands,
         Action::App(_) => return PickerCategory::App,
         Action::System(_) => return PickerCategory::SystemActions,
@@ -193,10 +194,8 @@ fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<PickerItem> {
     let config = config.config();
     items.extend(actions::catalog(&config).into_iter().filter_map(|entry| {
         let category = match &entry.action {
-            Action::Macro(id) if config.macros.iter().any(|m| m.id == *id) => {
-                PickerCategory::Macros
-            }
-            Action::Macro(_) => PickerCategory::BuiltinMacros,
+            Action::Macro(_) => PickerCategory::Macros,
+            Action::BuiltinMacro(_) => PickerCategory::BuiltinMacros,
             Action::Command(_) if enabled && in_development => PickerCategory::Commands,
             Action::Command(_) => return None,
             Action::App(id)
