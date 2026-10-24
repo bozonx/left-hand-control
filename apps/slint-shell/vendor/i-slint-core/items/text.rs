@@ -9,10 +9,10 @@ When adding an item or a property, it needs to be kept in sync with different pl
 Lookup the [`crate::items`] module documentation.
 */
 use super::{
-    EventResult, FontMetrics, InputType, Item, ItemConsts, ItemRc, ItemRef, KeyEventArg,
-    KeyEventResult, KeyEventType, PointArg, PointerEventButton, RenderingResult, StringArg,
-    TextHorizontalAlignment, TextOverflow, TextStrokeStyle, TextVerticalAlignment, TextWrap,
-    VoidArg,
+    EventResult, FontMetrics, InputMethodHints, InputType, Item, ItemConsts, ItemRc, ItemRef,
+    KeyEventArg, KeyEventResult, KeyEventType, PointArg, PointerEventButton, RenderingResult,
+    StringArg, TextHorizontalAlignment, TextOverflow, TextStrokeStyle, TextVerticalAlignment,
+    TextWrap, VoidArg,
 };
 use crate::graphics::{Brush, Color, FontRequest};
 use crate::input::{
@@ -53,12 +53,14 @@ pub struct ComplexText {
     pub color: Property<Brush>,
     pub horizontal_alignment: Property<TextHorizontalAlignment>,
     pub vertical_alignment: Property<TextVerticalAlignment>,
+    pub max_lines: Property<i32>,
 
     pub font_family: Property<SharedString>,
     pub font_italic: Property<bool>,
     pub wrap: Property<TextWrap>,
     pub overflow: Property<TextOverflow>,
     pub letter_spacing: Property<LogicalLength>,
+    pub line_height_factor: Property<f32>,
     pub stroke: Property<Brush>,
     pub stroke_width: Property<LogicalLength>,
     pub stroke_style: Property<TextStrokeStyle>,
@@ -92,7 +94,7 @@ impl Item for ComplexText {
         _: &MouseEvent,
         _window_adapter: &Rc<dyn WindowAdapter>,
         _self_rc: &ItemRc,
-        _: &mut super::MouseCursor,
+        _: &mut super::MouseCursorInner,
     ) -> InputEventFilterResult {
         InputEventFilterResult::ForwardAndIgnore
     }
@@ -102,7 +104,7 @@ impl Item for ComplexText {
         _: &MouseEvent,
         _window_adapter: &Rc<dyn WindowAdapter>,
         _self_rc: &ItemRc,
-        _: &mut super::MouseCursor,
+        _: &mut super::MouseCursorInner,
     ) -> InputEventResult {
         InputEventResult::EventIgnored
     }
@@ -162,9 +164,7 @@ impl ItemConsts for ComplexText {
     const cached_rendering_data_offset: const_field_offset::FieldOffset<
         ComplexText,
         CachedRenderingData,
-    > = ComplexText::FIELD_OFFSETS
-        .cached_rendering_data()
-        .as_unpinned_projection();
+    > = ComplexText::FIELD_OFFSETS.cached_rendering_data().as_unpinned_projection();
 }
 
 impl HasFont for ComplexText {
@@ -175,6 +175,7 @@ impl HasFont for ComplexText {
             self.font_weight(),
             self.font_size(),
             self.letter_spacing(),
+            self.line_height_factor(),
             self.font_italic(),
         )
     }
@@ -183,6 +184,14 @@ impl HasFont for ComplexText {
 impl RenderString for ComplexText {
     fn text(self: Pin<&Self>) -> PlainOrStyledText {
         PlainOrStyledText::Plain(self.text())
+    }
+
+    fn max_lines(self: Pin<&Self>) -> i32 {
+        Self::FIELD_OFFSETS.max_lines().apply_pin(self).get()
+    }
+
+    fn stroke(self: Pin<&Self>) -> (Brush, LogicalLength, TextStrokeStyle) {
+        (self.stroke(), self.stroke_width(), self.stroke_style())
     }
 }
 
@@ -193,10 +202,6 @@ impl RenderText for ComplexText {
 
     fn color(self: Pin<&Self>) -> Brush {
         self.color()
-    }
-
-    fn link_color(self: Pin<&Self>) -> Color {
-        Default::default()
     }
 
     fn alignment(
@@ -211,10 +216,6 @@ impl RenderText for ComplexText {
 
     fn overflow(self: Pin<&Self>) -> TextOverflow {
         self.overflow()
-    }
-
-    fn stroke(self: Pin<&Self>) -> (Brush, LogicalLength, TextStrokeStyle) {
-        (self.stroke(), self.stroke_width(), self.stroke_style())
     }
 
     fn is_markdown(self: Pin<&Self>) -> bool {
@@ -246,6 +247,7 @@ pub struct StyledTextItem {
     pub default_font_family: Property<SharedString>,
     pub horizontal_alignment: Property<TextHorizontalAlignment>,
     pub vertical_alignment: Property<TextVerticalAlignment>,
+    pub max_lines: Property<i32>,
     pub link_clicked: Callback<StringArg>,
     pub link_color: Property<Color>,
     pub cached_rendering_data: CachedRenderingData,
@@ -278,7 +280,7 @@ impl Item for StyledTextItem {
         _: &MouseEvent,
         _window_adapter: &Rc<dyn WindowAdapter>,
         _self_rc: &ItemRc,
-        _: &mut super::MouseCursor,
+        _: &mut super::MouseCursorInner,
     ) -> InputEventFilterResult {
         InputEventFilterResult::ForwardEvent
     }
@@ -289,19 +291,19 @@ impl Item for StyledTextItem {
         event: &MouseEvent,
         window_adapter: &Rc<dyn WindowAdapter>,
         self_rc: &ItemRc,
-        cursor: &mut super::MouseCursor,
+        cursor: &mut super::MouseCursorInner,
     ) -> InputEventResult {
         #[cfg(feature = "shared-parley")]
         let find_link = |position: &LogicalPoint| {
             let window_inner = WindowInner::from_pub(window_adapter.window());
             let scale_factor = crate::lengths::ScaleFactor::new(window_inner.scale_factor());
             crate::textlayout::sharedparley::link_under_cursor(
-                &mut window_inner.context().font_context().borrow_mut(),
                 scale_factor,
                 self,
                 self_rc,
                 LogicalSize::from_lengths(self.width(), self.height()),
                 *position * scale_factor,
+                window_adapter.window(),
                 None,
             )
         };
@@ -314,11 +316,8 @@ impl Item for StyledTextItem {
                 touch_finger_id: _,
             } => {
                 if let Some(link) = find_link(position) {
-                    *cursor = super::MouseCursor::Pointer;
-                    Self::FIELD_OFFSETS
-                        .link_clicked()
-                        .apply_pin(self)
-                        .call(&(link.into(),));
+                    *cursor = super::MouseCursorInner::BuiltIn(super::BuiltInMouseCursor::Pointer);
+                    Self::FIELD_OFFSETS.link_clicked().apply_pin(self).call(&(link.into(),));
                 }
                 InputEventResult::EventAccepted
             }
@@ -327,7 +326,7 @@ impl Item for StyledTextItem {
             | MouseEvent::Pressed { position, .. }
             | MouseEvent::Released { position, .. } => {
                 if find_link(position).is_some() {
-                    *cursor = super::MouseCursor::Pointer;
+                    *cursor = super::MouseCursorInner::BuiltIn(super::BuiltInMouseCursor::Pointer);
                 }
                 InputEventResult::EventAccepted
             }
@@ -390,9 +389,7 @@ impl ItemConsts for StyledTextItem {
     const cached_rendering_data_offset: const_field_offset::FieldOffset<
         StyledTextItem,
         CachedRenderingData,
-    > = StyledTextItem::FIELD_OFFSETS
-        .cached_rendering_data()
-        .as_unpinned_projection();
+    > = StyledTextItem::FIELD_OFFSETS.cached_rendering_data().as_unpinned_projection();
 }
 
 impl HasFont for StyledTextItem {
@@ -403,6 +400,7 @@ impl HasFont for StyledTextItem {
             Default::default(),
             self.default_font_size(),
             Default::default(),
+            1.0,
             Default::default(),
         )
     }
@@ -411,6 +409,14 @@ impl HasFont for StyledTextItem {
 impl RenderString for StyledTextItem {
     fn text(self: Pin<&Self>) -> PlainOrStyledText {
         PlainOrStyledText::Styled(self.text())
+    }
+
+    fn max_lines(self: Pin<&Self>) -> i32 {
+        Self::FIELD_OFFSETS.max_lines().apply_pin(self).get()
+    }
+
+    fn link_color(self: Pin<&Self>) -> Color {
+        self.link_color()
     }
 }
 
@@ -421,10 +427,6 @@ impl RenderText for StyledTextItem {
 
     fn color(self: Pin<&Self>) -> Brush {
         self.default_color()
-    }
-
-    fn link_color(self: Pin<&Self>) -> Color {
-        self.link_color()
     }
 
     fn alignment(
@@ -439,10 +441,6 @@ impl RenderText for StyledTextItem {
 
     fn overflow(self: Pin<&Self>) -> TextOverflow {
         TextOverflow::Clip
-    }
-
-    fn stroke(self: Pin<&Self>) -> (Brush, LogicalLength, TextStrokeStyle) {
-        Default::default()
     }
 
     fn is_markdown(self: Pin<&Self>) -> bool {
@@ -474,6 +472,7 @@ pub struct SimpleText {
     pub color: Property<Brush>,
     pub horizontal_alignment: Property<TextHorizontalAlignment>,
     pub vertical_alignment: Property<TextVerticalAlignment>,
+    pub max_lines: Property<i32>,
 
     pub cached_rendering_data: CachedRenderingData,
 }
@@ -505,7 +504,7 @@ impl Item for SimpleText {
         _: &MouseEvent,
         _window_adapter: &Rc<dyn WindowAdapter>,
         _self_rc: &ItemRc,
-        _: &mut super::MouseCursor,
+        _: &mut super::MouseCursorInner,
     ) -> InputEventFilterResult {
         InputEventFilterResult::ForwardAndIgnore
     }
@@ -515,7 +514,7 @@ impl Item for SimpleText {
         _: &MouseEvent,
         _window_adapter: &Rc<dyn WindowAdapter>,
         _self_rc: &ItemRc,
-        _: &mut super::MouseCursor,
+        _: &mut super::MouseCursorInner,
     ) -> InputEventResult {
         InputEventResult::EventIgnored
     }
@@ -575,9 +574,7 @@ impl ItemConsts for SimpleText {
     const cached_rendering_data_offset: const_field_offset::FieldOffset<
         SimpleText,
         CachedRenderingData,
-    > = SimpleText::FIELD_OFFSETS
-        .cached_rendering_data()
-        .as_unpinned_projection();
+    > = SimpleText::FIELD_OFFSETS.cached_rendering_data().as_unpinned_projection();
 }
 
 impl HasFont for SimpleText {
@@ -588,6 +585,7 @@ impl HasFont for SimpleText {
             self.font_weight(),
             self.font_size(),
             LogicalLength::default(),
+            1.0,
             false,
         )
     }
@@ -596,6 +594,10 @@ impl HasFont for SimpleText {
 impl RenderString for SimpleText {
     fn text(self: Pin<&Self>) -> PlainOrStyledText {
         PlainOrStyledText::Plain(self.text())
+    }
+
+    fn max_lines(self: Pin<&Self>) -> i32 {
+        Self::FIELD_OFFSETS.max_lines().apply_pin(self).get()
     }
 }
 
@@ -606,10 +608,6 @@ impl RenderText for SimpleText {
 
     fn color(self: Pin<&Self>) -> Brush {
         self.color()
-    }
-
-    fn link_color(self: Pin<&Self>) -> Color {
-        Default::default()
     }
 
     fn alignment(
@@ -626,10 +624,6 @@ impl RenderText for SimpleText {
         TextOverflow::default()
     }
 
-    fn stroke(self: Pin<&Self>) -> (Brush, LogicalLength, TextStrokeStyle) {
-        Default::default()
-    }
-
     fn is_markdown(self: Pin<&Self>) -> bool {
         false
     }
@@ -641,12 +635,26 @@ impl SimpleText {
         window_adapter: &Rc<dyn WindowAdapter>,
         self_rc: &ItemRc,
     ) -> FontMetrics {
-        window_adapter
-            .renderer()
-            .font_metrics(self.font_request(self_rc))
+        window_adapter.renderer().font_metrics(self.font_request(self_rc))
     }
 }
 
+/// The height of a plain single-line `NoWrap` text, when it can be computed without shaping.
+fn single_line_height(
+    window_adapter: &Rc<dyn WindowAdapter>,
+    text: Pin<&(impl RenderString + ?Sized)>,
+    self_rc: &ItemRc,
+) -> Option<Coord> {
+    match text.text() {
+        PlainOrStyledText::Plain(s) if !s.contains('\n') => {
+            window_adapter.renderer().text_line_height(text.font_request(self_rc)).map(|h| h.get())
+        }
+        _ => None,
+    }
+}
+
+// The compiler's single-cell box layout lowering relies on text and image
+// items keeping the default stretch of 0 in their layout info.
 fn text_layout_info(
     text: Pin<&dyn RenderText>,
     self_rc: &ItemRc,
@@ -656,9 +664,7 @@ fn text_layout_info(
     cross_axis_constraint: Coord,
 ) -> LayoutInfo {
     let implicit_size = |max_width, text_wrap| {
-        window_adapter
-            .renderer()
-            .text_size(text, self_rc, max_width, text_wrap)
+        window_adapter.renderer().text_size(text, self_rc, max_width, text_wrap)
     };
 
     // Stretch uses `round_layout` to explicitly align the top left and bottom right of layout nodes
@@ -666,28 +672,36 @@ fn text_layout_info(
     // letters will be cut off, apply the ceiling here.
     match orientation {
         Orientation::Horizontal => {
-            let implicit_size = implicit_size(None, TextWrap::NoWrap);
-            let min = match text.overflow() {
-                TextOverflow::Elide => implicit_size.width.min(
-                    window_adapter
-                        .renderer()
-                        .char_size(text, self_rc, '…')
-                        .width,
-                ),
-                TextOverflow::Clip => match text.wrap() {
-                    TextWrap::NoWrap => implicit_size.width,
-                    TextWrap::WordWrap | TextWrap::CharWrap => 0 as Coord,
-                },
+            // A word-wrapping text mustn't be squeezed below its longest word. One
+            // content-widths measurement gives both that minimum and the single-line
+            // preferred width, so this replaces the plain measurement below.
+            let word_wrap_widths =
+                matches!((text.overflow(), text.wrap()), (TextOverflow::Clip, TextWrap::WordWrap))
+                    .then(|| window_adapter.renderer().text_content_widths(text, self_rc))
+                    .flatten();
+
+            let (min, preferred) = match word_wrap_widths {
+                Some(widths) => (widths.min.get(), widths.max.get()),
+                None => {
+                    let unwrapped_width = implicit_size(None, TextWrap::NoWrap).width;
+                    let min = match text.overflow() {
+                        TextOverflow::Elide => unwrapped_width
+                            .min(window_adapter.renderer().char_size(text, self_rc, '…').width),
+                        TextOverflow::Clip => match text.wrap() {
+                            TextWrap::NoWrap => unwrapped_width,
+                            // char-wrap can break anywhere, so it keeps no lower bound.
+                            TextWrap::WordWrap | TextWrap::CharWrap => 0 as Coord,
+                        },
+                    };
+                    (min, unwrapped_width)
+                }
             };
-            LayoutInfo {
-                min: min.ceil(),
-                preferred: implicit_size.width.ceil(),
-                ..LayoutInfo::default()
-            }
+            LayoutInfo { min: min.ceil(), preferred: preferred.ceil(), ..LayoutInfo::default() }
         }
         Orientation::Vertical => {
             let h = match text.wrap() {
-                TextWrap::NoWrap => implicit_size(None, TextWrap::NoWrap).height,
+                TextWrap::NoWrap => single_line_height(window_adapter, text, self_rc)
+                    .unwrap_or_else(|| implicit_size(None, TextWrap::NoWrap).height),
                 wrap @ (TextWrap::WordWrap | TextWrap::CharWrap) => {
                     let w = if cross_axis_constraint >= 0 as Coord {
                         LogicalLength::new(cross_axis_constraint)
@@ -698,11 +712,7 @@ fn text_layout_info(
                 }
             }
             .ceil();
-            LayoutInfo {
-                min: h,
-                preferred: h,
-                ..LayoutInfo::default()
-            }
+            LayoutInfo { min: h, preferred: h, ..LayoutInfo::default() }
         }
     }
 }
@@ -720,11 +730,7 @@ struct PreEditSelection {
 
 impl From<Option<core::ops::Range<i32>>> for PreEditSelection {
     fn from(value: Option<core::ops::Range<i32>>) -> Self {
-        value.map_or_else(Default::default, |r| Self {
-            valid: true,
-            start: r.start,
-            end: r.end,
-        })
+        value.map_or_else(Default::default, |r| Self { valid: true, start: r.start, end: r.end })
     }
 }
 
@@ -751,11 +757,14 @@ pub struct TextInput {
     pub vertical_alignment: Property<TextVerticalAlignment>,
     pub wrap: Property<TextWrap>,
     pub input_type: Property<InputType>,
+    pub input_method_hints: Property<InputMethodHints>,
     pub letter_spacing: Property<LogicalLength>,
+    pub line_height_factor: Property<f32>,
     pub width: Property<LogicalLength>,
     pub height: Property<LogicalLength>,
     pub cursor_position_byte_offset: Property<i32>,
     pub anchor_position_byte_offset: Property<i32>,
+    cursor_affinity: Cell<TextCursorAffinity>,
     pub text_cursor_width: Property<LogicalLength>,
     pub page_height: Property<LogicalLength>,
     pub cursor_visible: Property<bool>,
@@ -778,10 +787,34 @@ pub struct TextInput {
     /// 0 = not pressed, 1 = single press, 2 = double clicked+press , ...
     pressed: Cell<u8>,
     history: RefCell<TextHistory>,
+    /// Mirror of `text` as of the last internal edit. Used by the change handler installed
+    /// in `init` to tell internal edits apart from external assignments to the public `text`
+    /// property, so that only the latter realign the cursor/anchor offsets and undo stack.
+    internal_text: Cell<SharedString>,
+    /// Runs `align_to_text` whenever `text` is assigned externally (see issues #331 and #9024).
+    text_change_tracker: crate::properties::ChangeTracker,
 }
 
 impl Item for TextInput {
-    fn init(self: Pin<&Self>, _self_rc: &ItemRc) {}
+    fn init(self: Pin<&Self>, self_rc: &ItemRc) {
+        // Seed the mirror so the change handler doesn't treat the initial text as external.
+        self.internal_text.set(self.text());
+        self.text_change_tracker.init_delayed(
+            self_rc.downgrade(),
+            |self_weak| {
+                self_weak
+                    .upgrade()
+                    .and_then(|rc| rc.downcast::<TextInput>())
+                    .map(|text_input| text_input.as_pin_ref().text())
+                    .unwrap_or_default()
+            },
+            |self_weak, new_text| {
+                let Some(self_rc) = self_weak.upgrade() else { return };
+                let Some(text_input) = self_rc.downcast::<TextInput>() else { return };
+                text_input.as_pin_ref().align_to_text(new_text, &self_rc);
+            },
+        );
+    }
 
     fn deinit(self: Pin<&Self>, window_adapter: &Rc<dyn WindowAdapter>) {
         if self.has_focus() {
@@ -798,9 +831,7 @@ impl Item for TextInput {
         self_rc: &ItemRc,
     ) -> LayoutInfo {
         let implicit_size = |max_width, text_wrap| {
-            window_adapter
-                .renderer()
-                .text_size(self, self_rc, max_width, text_wrap)
+            window_adapter.renderer().text_size(self, self_rc, max_width, text_wrap)
         };
 
         // Stretch uses `round_layout` to explicitly align the top left and bottom right of layout nodes
@@ -821,7 +852,8 @@ impl Item for TextInput {
             }
             Orientation::Vertical => {
                 let h = match self.wrap() {
-                    TextWrap::NoWrap => implicit_size(None, TextWrap::NoWrap).height,
+                    TextWrap::NoWrap => single_line_height(window_adapter, self, self_rc)
+                        .unwrap_or_else(|| implicit_size(None, TextWrap::NoWrap).height),
                     wrap @ (TextWrap::WordWrap | TextWrap::CharWrap) => {
                         let w = if cross_axis_constraint >= 0 as Coord {
                             LogicalLength::new(cross_axis_constraint)
@@ -832,11 +864,7 @@ impl Item for TextInput {
                     }
                 }
                 .ceil();
-                LayoutInfo {
-                    min: h,
-                    preferred: h,
-                    ..LayoutInfo::default()
-                }
+                LayoutInfo { min: h, preferred: h, ..LayoutInfo::default() }
             }
         }
     }
@@ -846,7 +874,7 @@ impl Item for TextInput {
         _: &MouseEvent,
         _window_adapter: &Rc<dyn WindowAdapter>,
         _self_rc: &ItemRc,
-        _: &mut super::MouseCursor,
+        _: &mut super::MouseCursorInner,
     ) -> InputEventFilterResult {
         InputEventFilterResult::ForwardEvent
     }
@@ -856,46 +884,35 @@ impl Item for TextInput {
         event: &MouseEvent,
         window_adapter: &Rc<dyn WindowAdapter>,
         self_rc: &ItemRc,
-        cursor: &mut super::MouseCursor,
+        cursor: &mut super::MouseCursorInner,
     ) -> InputEventResult {
         if !self.enabled() {
             return InputEventResult::EventIgnored;
         }
 
-        *cursor = super::MouseCursor::Text;
+        *cursor = super::MouseCursorInner::BuiltIn(super::BuiltInMouseCursor::Text);
 
         match event {
             MouseEvent::Pressed {
-                position,
-                button: PointerEventButton::Left,
-                click_count,
-                ..
+                position, button: PointerEventButton::Left, click_count, ..
             } => {
                 self.history.borrow_mut().break_group();
-                let clicked_offset =
-                    self.byte_offset_for_position(*position, window_adapter, self_rc) as i32;
+                let (clicked_offset, clicked_affinity) =
+                    self.byte_offset_for_position(*position, window_adapter, self_rc);
+                let clicked_offset = clicked_offset as i32;
                 self.as_ref().pressed.set((click_count % 3) + 1);
 
-                if !window_adapter
-                    .window()
-                    .0
-                    .context()
-                    .0
-                    .modifiers
-                    .get()
-                    .shift()
-                {
-                    self.as_ref()
-                        .anchor_position_byte_offset
-                        .set(clicked_offset);
+                if !window_adapter.window().0.context().0.modifiers.get().shift() {
+                    self.as_ref().anchor_position_byte_offset.set(clicked_offset);
                 }
 
                 #[cfg(not(any(target_os = "android", target_os = "ios")))]
                 self.ensure_focus_and_ime(window_adapter, self_rc);
 
                 match click_count % 3 {
-                    0 => self.set_cursor_position(
+                    0 => self.set_cursor_position_with_affinity(
                         clicked_offset,
+                        clicked_affinity,
                         true,
                         TextChangeNotify::TriggerCallbacks,
                         window_adapter,
@@ -908,35 +925,25 @@ impl Item for TextInput {
 
                 return InputEventResult::GrabMouse;
             }
-            MouseEvent::Pressed {
-                button: PointerEventButton::Middle,
-                ..
-            } => {
+            MouseEvent::Pressed { button: PointerEventButton::Middle, .. } => {
                 #[cfg(not(any(target_os = "android", target_os = "ios")))]
                 self.ensure_focus_and_ime(window_adapter, self_rc);
             }
-            MouseEvent::Released {
-                button: PointerEventButton::Left,
-                ..
-            } => {
+            MouseEvent::Released { button: PointerEventButton::Left, .. } => {
                 self.as_ref().pressed.set(0);
                 self.copy_clipboard(window_adapter, Clipboard::SelectionClipboard);
                 #[cfg(any(target_os = "android", target_os = "ios"))]
                 self.ensure_focus_and_ime(window_adapter, self_rc);
             }
-            MouseEvent::Released {
-                position,
-                button: PointerEventButton::Middle,
-                ..
-            } => {
+            MouseEvent::Released { position, button: PointerEventButton::Middle, .. } => {
                 self.history.borrow_mut().break_group();
-                let clicked_offset =
-                    self.byte_offset_for_position(*position, window_adapter, self_rc) as i32;
-                self.as_ref()
-                    .anchor_position_byte_offset
-                    .set(clicked_offset);
-                self.set_cursor_position(
+                let (clicked_offset, clicked_affinity) =
+                    self.byte_offset_for_position(*position, window_adapter, self_rc);
+                let clicked_offset = clicked_offset as i32;
+                self.as_ref().anchor_position_byte_offset.set(clicked_offset);
+                self.set_cursor_position_with_affinity(
                     clicked_offset,
+                    clicked_affinity,
                     true,
                     // We trigger the callbacks because paste_clipboard might not if there is no clipboard
                     TextChangeNotify::TriggerCallbacks,
@@ -950,10 +957,11 @@ impl Item for TextInput {
                 let pressed = self.as_ref().pressed.get();
                 if pressed > 0 {
                     self.history.borrow_mut().break_group();
-                    let clicked_offset =
-                        self.byte_offset_for_position(*position, window_adapter, self_rc) as i32;
-                    self.set_cursor_position(
-                        clicked_offset,
+                    let (clicked_offset, clicked_affinity) =
+                        self.byte_offset_for_position(*position, window_adapter, self_rc);
+                    self.set_cursor_position_with_affinity(
+                        clicked_offset as i32,
+                        clicked_affinity,
                         true,
                         if (pressed - 1).is_multiple_of(3) {
                             TextChangeNotify::TriggerCallbacks
@@ -1129,15 +1137,12 @@ impl Item for TextInput {
 
                 let cursor = self.cursor_position(&self.text()) as i32;
                 self.preedit_text.set(event.preedit_text.clone());
-                self.preedit_selection
-                    .set(event.preedit_selection.clone().into());
+                self.preedit_selection.set(event.preedit_selection.clone().into());
 
                 if let Some(r) = &event.replacement_range {
                     // Set the selection so the call to insert erases it
-                    self.anchor_position_byte_offset
-                        .set(cursor.saturating_add(r.start));
-                    self.cursor_position_byte_offset
-                        .set(cursor.saturating_add(r.end));
+                    self.anchor_position_byte_offset.set(cursor.saturating_add(r.start));
+                    self.cursor_position_byte_offset.set(cursor.saturating_add(r.end));
                     if event.key_event.text.is_empty() {
                         self.delete_selection(
                             window_adapter,
@@ -1153,8 +1158,7 @@ impl Item for TextInput {
                 }
                 self.insert(&event.key_event.text, window_adapter, self_rc);
                 if let Some(cursor) = event.cursor_position {
-                    self.anchor_position_byte_offset
-                        .set(event.anchor_position.unwrap_or(cursor));
+                    self.anchor_position_byte_offset.set(event.anchor_position.unwrap_or(cursor));
                     self.set_cursor_position(
                         cursor,
                         true,
@@ -1200,10 +1204,7 @@ impl Item for TextInput {
                 self.history.borrow_mut().break_group();
                 self.has_focus.set(false);
                 self.hide_cursor();
-                if !matches!(
-                    reason,
-                    FocusReason::WindowActivation | FocusReason::PopupActivation
-                ) {
+                if !matches!(reason, FocusReason::WindowActivation | FocusReason::PopupActivation) {
                     self.as_ref()
                         .anchor_position_byte_offset
                         .set(self.as_ref().cursor_position_byte_offset());
@@ -1218,7 +1219,7 @@ impl Item for TextInput {
                             let mut text = String::from(self.text());
                             let cursor_position = self.cursor_position(&text);
                             text.insert_str(cursor_position, &preedit_text);
-                            self.text.set(text.into());
+                            self.set_text_internal(text.into());
                             let new_pos = (cursor_position + preedit_text.len()) as i32;
                             self.anchor_position_byte_offset.set(new_pos);
                             self.set_cursor_position(
@@ -1276,9 +1277,7 @@ impl ItemConsts for TextInput {
     const cached_rendering_data_offset: const_field_offset::FieldOffset<
         TextInput,
         CachedRenderingData,
-    > = TextInput::FIELD_OFFSETS
-        .cached_rendering_data()
-        .as_unpinned_projection();
+    > = TextInput::FIELD_OFFSETS.cached_rendering_data().as_unpinned_projection();
 }
 
 impl HasFont for TextInput {
@@ -1289,6 +1288,7 @@ impl HasFont for TextInput {
             self.font_weight(),
             self.font_size(),
             self.letter_spacing(),
+            self.line_height_factor(),
             self.font_italic(),
         )
     }
@@ -1296,7 +1296,10 @@ impl HasFont for TextInput {
 
 impl RenderString for TextInput {
     fn text(self: Pin<&Self>) -> PlainOrStyledText {
-        PlainOrStyledText::Plain(self.as_ref().visual_representation(None).text.clone())
+        // Deliberately not `visual_representation`, which would size the item off the cursor and
+        // the selection too -- see `text_with_preedit`.
+        let text = self.text_with_preedit().0;
+        PlainOrStyledText::Plain(if self.is_password() { mask_password(&text) } else { text })
     }
 }
 
@@ -1341,6 +1344,19 @@ impl core::convert::TryFrom<char> for TextCursorDirection {
     }
 }
 
+/// Which visual position a cursor byte offset means when it sits at a soft line break: the same
+/// offset is both the end of the wrapped line and the start of the following one.
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub enum TextCursorAffinity {
+    /// The start of the line after the break. Produced by typing and horizontal movement.
+    #[default]
+    NextCharacter,
+    /// The end of the wrapped line. Produced by hit-testing past a wrapped line's end and by
+    /// vertical movement onto it.
+    PreviousCharacter,
+}
+
 #[derive(PartialEq)]
 enum AnchorMode {
     KeepAnchor,
@@ -1349,11 +1365,7 @@ enum AnchorMode {
 
 impl From<KeyboardModifiers> for AnchorMode {
     fn from(modifiers: KeyboardModifiers) -> Self {
-        if modifiers.shift {
-            Self::KeepAnchor
-        } else {
-            Self::MoveAnchor
-        }
+        if modifiers.shift { Self::KeepAnchor } else { Self::MoveAnchor }
     }
 }
 
@@ -1374,6 +1386,20 @@ fn safe_byte_offset(unsafe_byte_offset: i32, text: &str) -> usize {
     text.ceil_char_boundary(unsafe_byte_offset as usize)
 }
 
+/// Like [`safe_byte_offset`], but additionally snaps the result up to a grapheme cluster
+/// boundary. Used when realigning the cursor/anchor to text that was replaced externally, so
+/// they never land inside a multi-codepoint grapheme (e.g. an emoji with a skin-tone modifier
+/// or a base character followed by a combining mark), matching how cursor movement treats a
+/// grapheme cluster as indivisible.
+fn safe_grapheme_boundary_offset(unsafe_byte_offset: i32, text: &str) -> usize {
+    let offset = safe_byte_offset(unsafe_byte_offset, text);
+    let mut grapheme_cursor = unicode_segmentation::GraphemeCursor::new(offset, text.len(), true);
+    match grapheme_cursor.is_boundary(text, 0) {
+        Ok(true) => offset,
+        _ => grapheme_cursor.next_boundary(text, 0).ok().flatten().unwrap_or(text.len()),
+    }
+}
+
 /// This struct holds the fields needed for rendering a TextInput item after applying any
 /// on-going composition. This way the renderer's don't have to duplicate the code for extracting
 /// and applying the pre-edit text, cursor placement within, etc.
@@ -1389,46 +1415,45 @@ pub struct TextInputVisualRepresentation {
     pub selection_range: core::ops::Range<usize>,
     /// The position where to draw the cursor, as byte offset within the text.
     pub cursor_position: Option<usize>,
+    /// Which visual position to draw `cursor_position` at when it falls on a soft line break.
+    pub cursor_affinity: TextCursorAffinity,
     /// The color of the (unselected) text
     pub text_color: Brush,
     /// The color of the blinking cursor
     pub cursor_color: Color,
     text_without_password: Option<SharedString>,
-    password_character: char,
+}
+
+/// What the characters of a password field are displayed as. The same everywhere, so that
+/// measuring, hit-testing and drawing agree on the shaped text and can share it.
+pub(crate) const PASSWORD_CHARACTER: char = '\u{25cf}';
+
+/// Replaces every character of `text` with [`PASSWORD_CHARACTER`].
+pub(crate) fn mask_password(text: &str) -> SharedString {
+    core::iter::repeat_n(PASSWORD_CHARACTER, text.chars().count()).collect()
 }
 
 impl TextInputVisualRepresentation {
     /// If the given `TextInput` renders a password, then all characters in this `TextInputVisualRepresentation` are replaced
-    /// with the password character and the selection/preedit-ranges/cursor position are adjusted.
-    /// If `password_character_fn` is Some, it is called lazily to query the password character, otherwise a default is used.
-    fn apply_password_character_substitution(
-        &mut self,
-        text_input: Pin<&TextInput>,
-        password_character_fn: Option<fn() -> char>,
-    ) {
-        if !matches!(text_input.input_type(), InputType::Password) {
+    /// with [`PASSWORD_CHARACTER`] and the selection/preedit-ranges/cursor position are adjusted.
+    fn apply_password_character_substitution(&mut self, text_input: Pin<&TextInput>) {
+        if !text_input.is_password() {
             return;
         }
-
-        let password_character = password_character_fn.map_or('●', |f| f());
 
         let text = &mut self.text;
         let fixup_range = |r: &mut core::ops::Range<usize>| {
             if !core::ops::Range::is_empty(r) {
-                r.start = text[..r.start].chars().count() * password_character.len_utf8();
-                r.end = text[..r.end].chars().count() * password_character.len_utf8();
+                r.start = text[..r.start].chars().count() * PASSWORD_CHARACTER.len_utf8();
+                r.end = text[..r.end].chars().count() * PASSWORD_CHARACTER.len_utf8();
             }
         };
         fixup_range(&mut self.preedit_range);
         fixup_range(&mut self.selection_range);
         if let Some(cursor_pos) = self.cursor_position.as_mut() {
-            *cursor_pos = text[..*cursor_pos].chars().count() * password_character.len_utf8();
+            *cursor_pos = text[..*cursor_pos].chars().count() * PASSWORD_CHARACTER.len_utf8();
         }
-        self.text_without_password = Some(core::mem::replace(
-            text,
-            core::iter::repeat_n(password_character, text.chars().count()).collect(),
-        ));
-        self.password_character = password_character;
+        self.text_without_password = Some(core::mem::replace(text, mask_password(text)));
     }
 
     /// Use this function to make a byte offset in the visual text (used for rendering) back to a byte offset in the
@@ -1437,7 +1462,7 @@ impl TextInputVisualRepresentation {
         if let Some(text_without_password) = self.text_without_password.as_ref() {
             text_without_password
                 .char_indices()
-                .nth(byte_offset / self.password_character.len_utf8())
+                .nth(byte_offset / PASSWORD_CHARACTER.len_utf8())
                 .map_or(text_without_password.len(), |(r, _)| r)
         } else {
             byte_offset
@@ -1448,8 +1473,7 @@ impl TextInputVisualRepresentation {
     /// This is the opposite of `map_byte_offset_from_byte_offset_in_visual_text`.
     pub fn map_byte_offset_from_actual_to_visual_text(&self, byte_offset: usize) -> usize {
         if let Some(text_without_password) = self.text_without_password.as_ref() {
-            text_without_password[..byte_offset].chars().count()
-                * self.password_character.len_utf8()
+            text_without_password[..byte_offset].chars().count() * PASSWORD_CHARACTER.len_utf8()
         } else {
             byte_offset
         }
@@ -1477,7 +1501,8 @@ impl TextInput {
         self.cursor_visible.set(false);
     }
 
-    /// Moves the cursor (and/or anchor) and returns true if the cursor position changed; false otherwise.
+    /// Moves the cursor (and/or anchor) and returns true if the cursor moved; false otherwise.
+    /// A change of affinity alone (same byte offset, different visual line) counts as a move.
     fn move_cursor(
         self: Pin<&Self>,
         direction: TextCursorDirection,
@@ -1500,16 +1525,21 @@ impl TextInput {
         let mut grapheme_cursor =
             unicode_segmentation::GraphemeCursor::new(last_cursor_pos, text.len(), true);
 
-        let font_height = window_adapter
-            .renderer()
-            .char_size(self, self_rc, ' ')
-            .height;
+        let font_height = window_adapter.renderer().char_size(self, self_rc, ' ').height;
 
         let mut reset_preferred_x_pos = true;
 
-        let new_cursor_pos = match direction {
+        let visual_move = |x: Coord, dy: Coord| {
+            let mut pos = self.cursor_rect(window_adapter, self_rc).center();
+            pos.x = x;
+            pos.y += dy;
+            self.byte_offset_for_position(pos, window_adapter, self_rc)
+        };
+        let logical_move = |offset: usize| (offset, TextCursorAffinity::NextCharacter);
+
+        let (new_cursor_pos, new_affinity) = match direction {
             TextCursorDirection::Forward => {
-                if anchor == cursor || anchor_mode == AnchorMode::KeepAnchor {
+                logical_move(if anchor == cursor || anchor_mode == AnchorMode::KeepAnchor {
                     grapheme_cursor
                         .next_boundary(&text, 0)
                         .ok()
@@ -1517,42 +1547,24 @@ impl TextInput {
                         .unwrap_or_else(|| text.len())
                 } else {
                     cursor
-                }
+                })
             }
             TextCursorDirection::Backward => {
-                if anchor == cursor || anchor_mode == AnchorMode::KeepAnchor {
-                    grapheme_cursor
-                        .prev_boundary(&text, 0)
-                        .ok()
-                        .flatten()
-                        .unwrap_or(0)
+                logical_move(if anchor == cursor || anchor_mode == AnchorMode::KeepAnchor {
+                    grapheme_cursor.prev_boundary(&text, 0).ok().flatten().unwrap_or(0)
                 } else {
                     anchor
-                }
+                })
             }
             TextCursorDirection::NextLine => {
                 reset_preferred_x_pos = false;
-
-                let cursor_rect =
-                    self.cursor_rect_for_byte_offset(last_cursor_pos, window_adapter, self_rc);
-                let mut cursor_xy_pos = cursor_rect.center();
-
-                cursor_xy_pos.y += font_height;
-                cursor_xy_pos.x = self.preferred_x_pos.get();
-                self.byte_offset_for_position(cursor_xy_pos, window_adapter, self_rc)
+                visual_move(self.preferred_x_pos.get(), font_height)
             }
             TextCursorDirection::PreviousLine => {
                 reset_preferred_x_pos = false;
-
-                let cursor_rect =
-                    self.cursor_rect_for_byte_offset(last_cursor_pos, window_adapter, self_rc);
-                let mut cursor_xy_pos = cursor_rect.center();
-
-                cursor_xy_pos.y -= font_height;
-                cursor_xy_pos.x = self.preferred_x_pos.get();
-                self.byte_offset_for_position(cursor_xy_pos, window_adapter, self_rc)
+                visual_move(self.preferred_x_pos.get(), -font_height)
             }
-            TextCursorDirection::PreviousCharacter => {
+            TextCursorDirection::PreviousCharacter => logical_move({
                 let mut i = last_cursor_pos;
                 loop {
                     i = i.saturating_sub(1);
@@ -1560,48 +1572,31 @@ impl TextInput {
                         break i;
                     }
                 }
-            }
+            }),
             // Currently moving by word behaves like macos: next end of word(forward) or previous beginning of word(backward)
-            TextCursorDirection::ForwardByWord => next_word_boundary(&text, last_cursor_pos + 1),
+            TextCursorDirection::ForwardByWord => {
+                logical_move(next_word_boundary(&text, last_cursor_pos + 1))
+            }
             TextCursorDirection::BackwardByWord => {
-                prev_word_boundary(&text, last_cursor_pos.saturating_sub(1))
+                logical_move(prev_word_boundary(&text, last_cursor_pos.saturating_sub(1)))
             }
-            TextCursorDirection::StartOfLine => {
-                let cursor_rect =
-                    self.cursor_rect_for_byte_offset(last_cursor_pos, window_adapter, self_rc);
-                let mut cursor_xy_pos = cursor_rect.center();
-
-                cursor_xy_pos.x = 0 as Coord;
-                self.byte_offset_for_position(cursor_xy_pos, window_adapter, self_rc)
-            }
-            TextCursorDirection::EndOfLine => {
-                let cursor_rect =
-                    self.cursor_rect_for_byte_offset(last_cursor_pos, window_adapter, self_rc);
-                let mut cursor_xy_pos = cursor_rect.center();
-
-                cursor_xy_pos.x = Coord::MAX;
-                self.byte_offset_for_position(cursor_xy_pos, window_adapter, self_rc)
-            }
+            TextCursorDirection::StartOfLine => visual_move(0 as Coord, 0 as Coord),
+            TextCursorDirection::EndOfLine => visual_move(Coord::MAX, 0 as Coord),
             TextCursorDirection::StartOfParagraph => {
-                prev_paragraph_boundary(&text, last_cursor_pos.saturating_sub(1))
+                logical_move(prev_paragraph_boundary(&text, last_cursor_pos.saturating_sub(1)))
             }
             TextCursorDirection::EndOfParagraph => {
-                next_paragraph_boundary(&text, last_cursor_pos + 1)
+                logical_move(next_paragraph_boundary(&text, last_cursor_pos + 1))
             }
-            TextCursorDirection::StartOfText => 0,
-            TextCursorDirection::EndOfText => text.len(),
+            TextCursorDirection::StartOfText => logical_move(0),
+            TextCursorDirection::EndOfText => logical_move(text.len()),
             TextCursorDirection::PageUp => {
                 let offset = self.page_height().get() - font_height;
                 if offset <= 0 as Coord {
                     return false;
                 }
                 reset_preferred_x_pos = false;
-                let cursor_rect =
-                    self.cursor_rect_for_byte_offset(last_cursor_pos, window_adapter, self_rc);
-                let mut cursor_xy_pos = cursor_rect.center();
-                cursor_xy_pos.y -= offset;
-                cursor_xy_pos.x = self.preferred_x_pos.get();
-                self.byte_offset_for_position(cursor_xy_pos, window_adapter, self_rc)
+                visual_move(self.preferred_x_pos.get(), -offset)
             }
             TextCursorDirection::PageDown => {
                 let offset = self.page_height().get() - font_height;
@@ -1609,25 +1604,21 @@ impl TextInput {
                     return false;
                 }
                 reset_preferred_x_pos = false;
-                let cursor_rect =
-                    self.cursor_rect_for_byte_offset(last_cursor_pos, window_adapter, self_rc);
-                let mut cursor_xy_pos = cursor_rect.center();
-                cursor_xy_pos.y += offset;
-                cursor_xy_pos.x = self.preferred_x_pos.get();
-                self.byte_offset_for_position(cursor_xy_pos, window_adapter, self_rc)
+                visual_move(self.preferred_x_pos.get(), offset)
             }
         };
+
+        let moved = new_cursor_pos != last_cursor_pos || new_affinity != self.cursor_affinity.get();
 
         match anchor_mode {
             AnchorMode::KeepAnchor => {}
             AnchorMode::MoveAnchor => {
-                self.as_ref()
-                    .anchor_position_byte_offset
-                    .set(new_cursor_pos as i32);
+                self.as_ref().anchor_position_byte_offset.set(new_cursor_pos as i32);
             }
         }
-        self.set_cursor_position(
+        self.set_cursor_position_with_affinity(
             new_cursor_pos as i32,
+            new_affinity,
             reset_preferred_x_pos,
             trigger_callbacks,
             window_adapter,
@@ -1638,9 +1629,53 @@ impl TextInput {
         // nothing is entered or the cursor isn't moved.
         self.as_ref().show_cursor(window_adapter);
 
-        new_cursor_pos != last_cursor_pos
+        moved
     }
 
+    /// Set `text` from an internal edit, keeping the `internal_text` mirror in sync so the
+    /// change handler doesn't mistake this edit for an external assignment.
+    fn set_text_internal(self: Pin<&Self>, text: SharedString) {
+        self.internal_text.set(text.clone());
+        self.text.set(text);
+    }
+
+    /// Called by the change handler when the public `text` property changes. If the new text
+    /// differs from our `internal_text` mirror, the change came from outside (the application
+    /// assigned `text` directly), so realign all derived state to the new text: clamp the
+    /// cursor and anchor offsets to valid boundaries (issue #331) and clear the undo/redo
+    /// stacks, whose positions refer to the now-replaced text (issue #9024).
+    fn align_to_text(self: Pin<&Self>, new_text: &SharedString, self_rc: &ItemRc) {
+        let previous_text = self.internal_text.replace(new_text.clone());
+        if previous_text == *new_text {
+            // Produced by an internal edit: `set_text_internal` already kept the mirror in sync,
+            // so the offsets and undo stack are consistent with `new_text`. Nothing to realign.
+            return;
+        }
+
+        *self.history.borrow_mut() = TextHistory::default();
+
+        let old_cursor = self.cursor_position_byte_offset();
+        let clamped_cursor = safe_grapheme_boundary_offset(old_cursor, new_text) as i32;
+        let clamped_anchor =
+            safe_grapheme_boundary_offset(self.anchor_position_byte_offset(), new_text) as i32;
+        self.anchor_position_byte_offset.set(clamped_anchor);
+
+        if let Some(window_adapter) = self_rc.window_adapter() {
+            self.set_cursor_position(
+                clamped_cursor,
+                true,
+                TextChangeNotify::TriggerCallbacks,
+                &window_adapter,
+                self_rc,
+            );
+        } else {
+            self.cursor_position_byte_offset.set(clamped_cursor);
+            self.cursor_affinity.set(TextCursorAffinity::NextCharacter);
+        }
+    }
+
+    /// Places the cursor at a text position (next-character affinity at a soft line break). Use
+    /// [`Self::set_cursor_position_with_affinity`] for a position that came from a visual location.
     pub fn set_cursor_position(
         self: Pin<&Self>,
         new_position: i32,
@@ -1649,10 +1684,35 @@ impl TextInput {
         window_adapter: &Rc<dyn WindowAdapter>,
         self_rc: &ItemRc,
     ) {
+        self.set_cursor_position_with_affinity(
+            new_position,
+            TextCursorAffinity::NextCharacter,
+            reset_preferred_x_pos,
+            trigger_callbacks,
+            window_adapter,
+            self_rc,
+        );
+    }
+
+    pub fn set_cursor_position_with_affinity(
+        self: Pin<&Self>,
+        new_position: i32,
+        affinity: TextCursorAffinity,
+        reset_preferred_x_pos: bool,
+        trigger_callbacks: TextChangeNotify,
+        window_adapter: &Rc<dyn WindowAdapter>,
+        self_rc: &ItemRc,
+    ) {
         self.cursor_position_byte_offset.set(new_position);
+        self.cursor_affinity.set(affinity);
         if new_position >= 0 {
             let pos = self
-                .cursor_rect_for_byte_offset(new_position as usize, window_adapter, self_rc)
+                .cursor_rect_for_byte_offset(
+                    new_position as usize,
+                    affinity,
+                    window_adapter,
+                    self_rc,
+                )
                 .origin;
             if reset_preferred_x_pos {
                 self.preferred_x_pos.set(pos.x);
@@ -1667,7 +1727,11 @@ impl TextInput {
         }
     }
 
-    fn update_ime(self: Pin<&Self>, window_adapter: &Rc<dyn WindowAdapter>, self_rc: &ItemRc) {
+    pub(crate) fn update_ime(
+        self: Pin<&Self>,
+        window_adapter: &Rc<dyn WindowAdapter>,
+        self_rc: &ItemRc,
+    ) {
         if self.read_only() || !self.has_focus() {
             return;
         }
@@ -1685,10 +1749,8 @@ impl TextInput {
         self_rc: &ItemRc,
     ) {
         let text = self.text();
-        let before = Selection {
-            cursor: self.cursor_position(&text),
-            anchor: self.anchor_position(&text),
-        };
+        let before =
+            Selection { cursor: self.cursor_position(&text), anchor: self.anchor_position(&text) };
         if !self.has_selection() {
             self.move_cursor(
                 step,
@@ -1747,10 +1809,10 @@ impl TextInput {
             "",
             before,
             kind,
-            crate::animations::Instant::now().duration_since(crate::animations::Instant::default()),
+            history_time(window_adapter),
         );
         let text = [text.split_at(anchor).0, text.split_at(cursor).1].concat();
-        self.text.set(text.into());
+        self.set_text_internal(text.into());
         self.anchor_position_byte_offset.set(anchor as i32);
 
         if trigger_callbacks == TextChangeNotify::TriggerCallbacks {
@@ -1764,6 +1826,7 @@ impl TextInput {
             Self::FIELD_OFFSETS.edited().apply_pin(self).call(&());
         } else {
             self.cursor_position_byte_offset.set(anchor as i32);
+            self.cursor_affinity.set(TextCursorAffinity::NextCharacter);
         }
     }
 
@@ -1771,8 +1834,19 @@ impl TextInput {
         safe_byte_offset(self.anchor_position_byte_offset(), text)
     }
 
+    /// Whether this input masks what is typed into it.
+    pub fn is_password(self: Pin<&Self>) -> bool {
+        matches!(self.input_type(), InputType::Password)
+    }
+
     pub fn cursor_position(self: Pin<&Self>, text: &str) -> usize {
         safe_byte_offset(self.cursor_position_byte_offset(), text)
+    }
+
+    /// Which of the two visual positions the cursor byte offset means, for an offset that sits at a
+    /// soft line break.
+    pub fn cursor_position_affinity(self: Pin<&Self>) -> TextCursorAffinity {
+        self.cursor_affinity.get()
     }
 
     fn ime_properties(
@@ -1781,13 +1855,10 @@ impl TextInput {
         self_rc: &ItemRc,
     ) -> InputMethodProperties {
         let text = self.text();
-        WindowInner::from_pub(window_adapter.window())
-            .last_ime_text
-            .replace(text.clone());
+        WindowInner::from_pub(window_adapter.window()).last_ime_text.replace(text.clone());
         let cursor_position = self.cursor_position(&text);
         let anchor_position = self.anchor_position(&text);
-        let cursor_relative =
-            self.cursor_rect_for_byte_offset(cursor_position, window_adapter, self_rc);
+        let cursor_relative = self.cursor_rect(window_adapter, self_rc);
         let geometry = self_rc.geometry();
         let origin = self_rc.map_to_native_window(geometry.origin);
         let origin_vector = origin.to_vector();
@@ -1795,8 +1866,13 @@ impl TextInput {
             crate::api::LogicalPosition::from_euclid(cursor_relative.origin + origin_vector);
         let cursor_rect_size = crate::api::LogicalSize::from_euclid(cursor_relative.size);
         let anchor_point = crate::api::LogicalPosition::from_euclid(
-            self.cursor_rect_for_byte_offset(anchor_position, window_adapter, self_rc)
-                .origin
+            self.cursor_rect_for_byte_offset(
+                anchor_position,
+                TextCursorAffinity::NextCharacter,
+                window_adapter,
+                self_rc,
+            )
+            .origin
                 + origin_vector
                 + cursor_relative.size,
         );
@@ -1817,6 +1893,7 @@ impl TextInput {
             cursor_rect_size,
             anchor_point,
             input_type: self.input_type(),
+            input_method_hints: self.input_method_hints(),
             clip_rect,
         }
     }
@@ -1860,10 +1937,8 @@ impl TextInput {
             return;
         }
         let mut text: String = self.text().into();
-        let before = Selection {
-            cursor: self.cursor_position(&text),
-            anchor: self.anchor_position(&text),
-        };
+        let before =
+            Selection { cursor: self.cursor_position(&text), anchor: self.anchor_position(&text) };
         let (anchor, cursor) = self.selection_anchor_and_cursor();
         let inserted = if self.single_line() {
             text_to_insert.replace('\n', " ")
@@ -1876,10 +1951,10 @@ impl TextInput {
             &inserted,
             before,
             kind,
-            crate::animations::Instant::now().duration_since(crate::animations::Instant::default()),
+            history_time(window_adapter),
         );
         text.replace_range(anchor..cursor, &inserted);
-        self.text.set(text.into());
+        self.set_text_internal(text.into());
         let cursor_pos = (anchor + inserted.len()) as i32;
         self.anchor_position_byte_offset.set(cursor_pos);
         self.set_cursor_position(
@@ -1902,19 +1977,17 @@ impl TextInput {
         self: Pin<&Self>,
         window_adapter: &Rc<dyn WindowAdapter>,
         self_rc: &ItemRc,
-        start: i32,
-        end: i32,
+        anchor: i32,
+        focus: i32,
     ) {
         let text = self.text();
         self.history.borrow_mut().break_group();
-        let safe_start = safe_byte_offset(start, &text);
-        let safe_end = safe_byte_offset(end, &text);
+        let safe_anchor = safe_byte_offset(anchor, &text);
+        let safe_focus = safe_byte_offset(focus, &text);
 
-        self.as_ref()
-            .anchor_position_byte_offset
-            .set(safe_start as i32);
+        self.as_ref().anchor_position_byte_offset.set(safe_anchor as i32);
         self.set_cursor_position(
-            safe_end as i32,
+            safe_focus as i32,
             true,
             TextChangeNotify::TriggerCallbacks,
             window_adapter,
@@ -1941,9 +2014,7 @@ impl TextInput {
 
     pub fn clear_selection(self: Pin<&Self>, _: &Rc<dyn WindowAdapter>, _: &ItemRc) {
         self.history.borrow_mut().break_group();
-        self.as_ref()
-            .anchor_position_byte_offset
-            .set(self.as_ref().cursor_position_byte_offset());
+        self.as_ref().anchor_position_byte_offset.set(self.as_ref().cursor_position_byte_offset());
     }
 
     pub fn select_word(self: Pin<&Self>, window_adapter: &Rc<dyn WindowAdapter>, self_rc: &ItemRc) {
@@ -1951,15 +2022,9 @@ impl TextInput {
         let anchor = self.anchor_position(&text);
         let cursor = self.cursor_position(&text);
         let (new_a, new_c) = if anchor <= cursor {
-            (
-                prev_word_boundary(&text, anchor),
-                next_word_boundary(&text, cursor),
-            )
+            (prev_word_boundary(&text, anchor), next_word_boundary(&text, cursor))
         } else {
-            (
-                next_word_boundary(&text, anchor),
-                prev_word_boundary(&text, cursor),
-            )
+            (next_word_boundary(&text, anchor), prev_word_boundary(&text, cursor))
         };
         self.as_ref().anchor_position_byte_offset.set(new_a as i32);
         self.set_cursor_position(
@@ -1980,15 +2045,9 @@ impl TextInput {
         let anchor = self.anchor_position(&text);
         let cursor = self.cursor_position(&text);
         let (new_a, new_c) = if anchor <= cursor {
-            (
-                prev_paragraph_boundary(&text, anchor),
-                next_paragraph_boundary(&text, cursor),
-            )
+            (prev_paragraph_boundary(&text, anchor), next_paragraph_boundary(&text, cursor))
         } else {
-            (
-                next_paragraph_boundary(&text, anchor),
-                prev_paragraph_boundary(&text, cursor),
-            )
+            (next_paragraph_boundary(&text, anchor), prev_paragraph_boundary(&text, cursor))
         };
         self.as_ref().anchor_position_byte_offset.set(new_a as i32);
         self.set_cursor_position(
@@ -2041,42 +2100,48 @@ impl TextInput {
         }
     }
 
+    /// Returns the `text` property with the IME composition (preedit) inserted at the cursor, and
+    /// the byte range that composition occupies within the returned string. The range is empty
+    /// when no composition is in progress, in which case the text is returned unchanged.
+    ///
+    /// Password fields are *not* masked here; callers that render or measure the text apply the
+    /// substitution themselves, because the masking character is renderer-specific.
+    ///
+    /// Deliberately reads less than [`Self::visual_representation`]: neither the cursor visibility
+    /// nor the selection nor the colors, so that callers which only need the string -- sizing above
+    /// all -- don't end up making the layout depend on the blinking cursor.
+    pub(crate) fn text_with_preedit(self: Pin<&Self>) -> (SharedString, core::ops::Range<usize>) {
+        let text = self.text();
+        let preedit_text = self.preedit_text();
+        if preedit_text.is_empty() {
+            return (text, Default::default());
+        }
+        let cursor_position = self.cursor_position(&text);
+        (
+            [&text[..cursor_position], &preedit_text, &text[cursor_position..]].concat().into(),
+            cursor_position..cursor_position + preedit_text.len(),
+        )
+    }
+
     /// Returns a [`TextInputVisualRepresentation`] struct that contains all the fields necessary for rendering the text input,
     /// after making adjustments such as applying a substitution of characters for password input fields, or making sure
     /// that the selection start is always less or equal than the selection end.
-    pub fn visual_representation(
-        self: Pin<&Self>,
-        password_character_fn: Option<fn() -> char>,
-    ) -> TextInputVisualRepresentation {
-        let mut text = self.text();
+    pub fn visual_representation(self: Pin<&Self>) -> TextInputVisualRepresentation {
+        let (text, composition) = self.text_with_preedit();
 
-        let preedit_text = self.preedit_text();
-        let (preedit_range, selection_range, cursor_position) = if !preedit_text.is_empty() {
-            let cursor_position = self.cursor_position(&text);
-
-            text = [
-                &text[..cursor_position],
-                &preedit_text,
-                &text[cursor_position..],
-            ]
-            .concat()
-            .into();
-            let preedit_range = cursor_position..cursor_position + preedit_text.len();
+        let (preedit_range, selection_range, cursor_position) = if !composition.is_empty() {
+            // Where the composition was inserted, i.e. the cursor within the pre-composition text.
+            let cursor_position = composition.start;
 
             if let Some(preedit_sel) = self.preedit_selection().as_option() {
                 let preedit_selection = cursor_position + preedit_sel.start as usize
                     ..cursor_position + preedit_sel.end as usize;
-                (
-                    preedit_range,
-                    preedit_selection,
-                    Some(cursor_position + preedit_sel.end as usize),
-                )
+                (composition, preedit_selection, Some(cursor_position + preedit_sel.end as usize))
             } else {
-                let cur = preedit_range.end;
-                (preedit_range, cur..cur, None)
+                let cur = composition.end;
+                (composition, cur..cur, None)
             }
         } else {
-            let preedit_range = Default::default();
             let (selection_anchor_pos, selection_cursor_pos) = self.selection_anchor_and_cursor();
             let selection_range = selection_anchor_pos..selection_cursor_pos;
             let cursor_position = self.cursor_position(&text);
@@ -2086,7 +2151,7 @@ impl TextInput {
             } else {
                 None
             };
-            (preedit_range, selection_range, cursor_position)
+            (composition, selection_range, cursor_position)
         };
 
         let text_color = self.color();
@@ -2107,24 +2172,42 @@ impl TextInput {
             preedit_range,
             selection_range,
             cursor_position,
+            cursor_affinity: self.cursor_affinity.get(),
             text_without_password: None,
-            password_character: Default::default(),
             text_color,
             cursor_color,
         };
-        repr.apply_password_character_substitution(self, password_character_fn);
+        repr.apply_password_character_substitution(self);
         repr
     }
 
     fn cursor_rect_for_byte_offset(
         self: Pin<&Self>,
         byte_offset: usize,
+        affinity: TextCursorAffinity,
         window_adapter: &Rc<dyn WindowAdapter>,
         self_rc: &ItemRc,
     ) -> LogicalRect {
-        window_adapter
-            .renderer()
-            .text_input_cursor_rect_for_byte_offset(self, self_rc, byte_offset)
+        window_adapter.renderer().text_input_cursor_rect_for_byte_offset(
+            self,
+            self_rc,
+            byte_offset,
+            affinity,
+        )
+    }
+
+    /// The caret's rectangle at its current position and affinity.
+    fn cursor_rect(
+        self: Pin<&Self>,
+        window_adapter: &Rc<dyn WindowAdapter>,
+        self_rc: &ItemRc,
+    ) -> LogicalRect {
+        self.cursor_rect_for_byte_offset(
+            self.cursor_position(&self.text()),
+            self.cursor_affinity.get(),
+            window_adapter,
+            self_rc,
+        )
     }
 
     pub fn byte_offset_for_position(
@@ -2132,10 +2215,8 @@ impl TextInput {
         pos: LogicalPoint,
         window_adapter: &Rc<dyn WindowAdapter>,
         self_rc: &ItemRc,
-    ) -> usize {
-        window_adapter
-            .renderer()
-            .text_input_byte_offset_for_position(self, self_rc, pos)
+    ) -> (usize, TextCursorAffinity) {
+        window_adapter.renderer().text_input_byte_offset_for_position(self, self_rc, pos)
     }
 
     /// When pressing the mouse (or releasing the finger, on android) we should take the focus if we don't have it already.
@@ -2187,9 +2268,8 @@ impl TextInput {
         window_adapter: &Rc<dyn WindowAdapter>,
         self_rc: &ItemRc,
     ) {
-        self.text.set(text.into());
-        self.anchor_position_byte_offset
-            .set(selection.anchor as i32);
+        self.set_text_internal(text.into());
+        self.anchor_position_byte_offset.set(selection.anchor as i32);
         self.set_cursor_position(
             selection.cursor as i32,
             true,
@@ -2222,10 +2302,8 @@ impl TextInput {
                 // Allow localized ".", "-", "-." because otherwise the cannot start entering
                 if candidate.len() <= 2
                     && crate::context::GLOBAL_CONTEXT.with(|ctx| {
-                        let sep = ctx
-                            .get()
-                            .map(|ctx| ctx.locale_decimal_separator())
-                            .unwrap_or('.');
+                        let sep =
+                            ctx.get().map(|ctx| ctx.locale_decimal_separator()).unwrap_or('.');
                         let mut it = candidate.chars();
                         match (it.next(), it.next()) {
                             (Some('-'), None) => true,
@@ -2294,13 +2372,13 @@ pub unsafe extern "C" fn slint_textinput_set_selection_offsets(
     window_adapter: *const crate::window::ffi::WindowAdapterRcOpaque,
     self_component: &vtable::VRc<crate::item_tree::ItemTreeVTable>,
     self_index: u32,
-    start: i32,
-    end: i32,
+    anchor: i32,
+    focus: i32,
 ) {
     unsafe {
         let window_adapter = &*(window_adapter as *const Rc<dyn WindowAdapter>);
         let self_rc = ItemRc::new(self_component.clone(), self_index);
-        text_input.set_selection_offsets(window_adapter, &self_rc, start, end);
+        text_input.set_selection_offsets(window_adapter, &self_rc, anchor, focus);
     }
 }
 
@@ -2431,11 +2509,18 @@ pub unsafe extern "C" fn slint_cpp_text_item_fontmetrics(
     window_adapter: *const crate::window::ffi::WindowAdapterRcOpaque,
     self_component: &vtable::VRc<crate::item_tree::ItemTreeVTable>,
     self_index: u32,
-) -> FontMetrics {
+    out: *mut FontMetrics,
+) {
     unsafe {
         let window_adapter = &*(window_adapter as *const Rc<dyn WindowAdapter>);
         let self_rc = ItemRc::new(self_component.clone(), self_index);
         let self_ref = self_rc.borrow();
-        slint_text_item_fontmetrics(window_adapter, self_ref, &self_rc)
+        core::ptr::write(out, slint_text_item_fontmetrics(window_adapter, self_ref, &self_rc));
     }
+}
+
+/// Timestamp used to group adjacent edits in the text history.
+fn history_time(window_adapter: &Rc<dyn WindowAdapter>) -> core::time::Duration {
+    let context = WindowInner::from_pub(window_adapter.window()).context();
+    core::time::Duration::from_millis(crate::animations::Instant::now(context).as_millis())
 }
