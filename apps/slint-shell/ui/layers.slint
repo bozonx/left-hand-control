@@ -1,6 +1,6 @@
 import { TextField } from "controls.slint";
 import { PageContent, ScrollView } from "scroll.slint";
-import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
+import { DragDrop, DragGroups, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
 import { CategoryIcon } from "action-picker.slint";
 import { InlineTextField, InlineTextArea, Card, Divider, ConfirmDialog, IconButton, InfoTip, FieldLabel, FormField } from "controls.slint";
@@ -60,8 +60,8 @@ component Segmented inherits Rectangle {
     background: Theme.surface;
     border-radius: Theme.radius;
     HorizontalLayout {
-        padding: 2px;
-        spacing: 2px;
+        padding: Theme.space-2xs;
+        spacing: Theme.space-2xs;
         for label[index] in root.labels: Rectangle {
             height: 28px;
             border-radius: Theme.radius-small;
@@ -71,12 +71,12 @@ component Segmented inherits Rectangle {
             accessible-checked: root.selected-index == index;
             accessible-action-default => { root.selected(index); }
             HorizontalLayout {
-                padding-left: 10px; padding-right: 10px;
+                padding-left: Theme.space-m-plus; padding-right: Theme.space-m-plus;
                 Text {
                     text: label;
                     color: root.selected-index == index ? Theme.surface : Theme.text;
                     font-size: Theme.font-medium;
-                    font-weight: 600;
+                    font-weight: Theme.weight-semibold;
                     vertical-alignment: center;
                 }
             }
@@ -95,7 +95,7 @@ component Segmented inherits Rectangle {
                     border-radius: Theme.radius-small;
                     border-width: 1px;
                     border-color: Theme.border;
-                    HorizontalLayout { padding: 6px; Text { text: root.tooltips[index]; color: Theme.text; font-size: Theme.font-body; } }
+                    HorizontalLayout { padding: Theme.space-s; Text { text: root.tooltips[index]; color: Theme.text; font-size: Theme.font-body; } }
                 }
             }
         }
@@ -138,7 +138,7 @@ component ExtraFieldButton inherits Rectangle {
     accessible-label: root.text;
     accessible-action-default => { root.clicked(); }
     HorizontalLayout {
-        padding-left: 10px; padding-right: 10px;
+        padding-left: Theme.space-m-plus; padding-right: Theme.space-m-plus;
         Text { min-width: 0px; text: root.text; color: Theme.text; font-size: Theme.font-medium; vertical-alignment: center; overflow: elide; }
     }
     focus := FocusScope {
@@ -155,12 +155,12 @@ component ExtraFieldButton inherits Rectangle {
 component ExtraKeyLine inherits TouchArea {
     in property <int> index;
     in property <LayerExtraRow> item;
-    opacity: DragDrop.dragging && DragDrop.group == 3 && DragDrop.source == root.index ? 0.6 : 1;
+    opacity: DragDrop.dragging && DragDrop.group == DragGroups.extra-keys && DragDrop.source == root.index ? Theme.dragged-opacity : 1;
     Rectangle { background: root.has-hover ? Theme.hover.transparentize(0.6) : transparent; }
     VerticalLayout {
         HorizontalLayout {
-            padding: 8px;
-            spacing: 12px;
+            padding: Theme.space-m;
+            spacing: Theme.space-l;
             ExtraFieldButton { width: 200px; text: root.item.key; clicked => { LayersEditor.pick-extra(root.index, true); } }
             ExtraFieldButton {
                 horizontal-stretch: 1;
@@ -172,8 +172,8 @@ component ExtraKeyLine inherits TouchArea {
                 width: 28px;
                 alignment: center;
                 DragHandle {
-                    opacity: root.has-hover || (DragDrop.group == 3 && DragDrop.source == root.index) ? 1 : 0;
-                    group: 3; index: root.index; count: LayersEditor.extras.length;
+                    opacity: root.has-hover || (DragDrop.group == DragGroups.extra-keys && DragDrop.source == root.index) ? 1 : 0;
+                    group: DragGroups.extra-keys; index: root.index; count: LayersEditor.extras.length;
                     dropped(from, to) => { LayersEditor.reorder-extra(from, to); }
                 }
             }
@@ -191,12 +191,7 @@ component ExtraKeyLine inherits TouchArea {
         }
         Rectangle { height: 1px; background: Theme.divider; }
     }
-    DropMarker { width: parent.width; group: 3; index: root.index; row-y: root.y; row-height: root.height; }
-}
-
-// Drag group of the keyboard grid, see `DragDrop`.
-global KeyDrag {
-    out property <int> group: 6;
+    DropMarker { width: parent.width; group: DragGroups.extra-keys; index: root.index; row-y: root.y; row-height: root.height; }
 }
 
 component KeyCap inherits Rectangle {
@@ -206,19 +201,19 @@ component KeyCap inherits Rectangle {
     in property <int> drop-target: -1;
     callback clicked();
     callback dropped(int, int);
-    private property <bool> dragged: DragDrop.dragging && DragDrop.group == KeyDrag.group && DragDrop.source == root.cell.index;
-    private property <bool> drop-over: DragDrop.dragging && DragDrop.group == KeyDrag.group && root.drop-target == root.cell.index && !root.dragged;
+    private property <bool> dragged: DragDrop.dragging && DragDrop.group == DragGroups.keys && DragDrop.source == root.cell.index;
+    private property <bool> drop-over: DragDrop.dragging && DragDrop.group == DragGroups.keys && root.drop-target == root.cell.index && !root.dragged;
     border-radius: Theme.radius;
     border-width: root.drop-over ? 2px : 1px;
     border-color: root.drop-over ? Theme.link : (touch.has-hover && !DragDrop.dragging) || focus.has-focus ? Theme.muted : Theme.border;
     background: root.drop-over ? Theme.hover : Theme.surface;
-    opacity: root.dragged ? 0.6 : 1;
+    opacity: root.dragged ? Theme.dragged-opacity : 1;
     accessible-role: button;
     accessible-label: root.cell.label;
     accessible-description: root.cell.kind == Assignment.transparent ? @tr("Inherit") : root.cell.kind == Assignment.swallow ? @tr("Suppress") : root.cell.action;
     accessible-action-default => { root.clicked(); }
     VerticalLayout {
-        padding: 4px;
+        padding: Theme.space-xs;
         spacing: 3px;
         alignment: center;
         Text {
@@ -226,7 +221,7 @@ component KeyCap inherits Rectangle {
             text: root.label-mode == LabelMode.label ? root.cell.label : root.cell.code;
             color: Theme.link;
             font-size: Theme.font-medium;
-            font-weight: 600;
+            font-weight: Theme.weight-semibold;
             horizontal-alignment: center;
             overflow: elide;
         }
@@ -245,9 +240,9 @@ component KeyCap inherits Rectangle {
         mouse-cursor: DragDrop.dragging && self.pressed ? grabbing : pointer;
         pointer-event(event) => {
             if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
-                DragDrop.reset(); DragDrop.group = KeyDrag.group; DragDrop.source = root.cell.index; DragDrop.target = root.cell.index;
+                DragDrop.reset(); DragDrop.group = DragGroups.keys; DragDrop.source = root.cell.index; DragDrop.target = root.cell.index;
             }
-            if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && DragDrop.group == KeyDrag.group {
+            if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && DragDrop.group == DragGroups.keys {
                 let from = DragDrop.source; let to = root.drop-target; let moved = DragDrop.dragging;
                 DragDrop.reset();
                 if moved { if to >= 0 && to != from { root.dropped(from, to); } }
@@ -257,11 +252,11 @@ component KeyCap inherits Rectangle {
         }
         // While the key holds the grab, the wheel comes here instead of the ScrollView.
         scroll-event(event) => {
-            if DragDrop.dragging && DragDrop.group == KeyDrag.group { DragDrop.request-scroll(event.delta-y); return accept; }
+            if DragDrop.dragging && DragDrop.group == DragGroups.keys { DragDrop.request-scroll(event.delta-y); return accept; }
             reject
         }
         moved => {
-            if self.pressed && DragDrop.group == KeyDrag.group {
+            if self.pressed && DragDrop.group == DragGroups.keys {
                 DragDrop.pointer-x = self.absolute-position.x + self.mouse-x;
                 DragDrop.pointer-y = self.absolute-position.y + self.mouse-y;
                 if abs(self.mouse-x - self.pressed-x) > 6px || abs(self.mouse-y - self.pressed-y) > 6px { DragDrop.dragging = true; }
@@ -270,7 +265,7 @@ component KeyCap inherits Rectangle {
     }
     if root.cell.kind == Assignment.action: Tooltip {
         Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-small;
-            HorizontalLayout { padding: 8px; spacing: 6px; CategoryIcon { category: root.cell.category; } Text { text: root.cell.action; color: Theme.text; } }
+            HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-s; CategoryIcon { category: root.cell.category; } Text { text: root.cell.action; color: Theme.text; } }
         }
     }
 }
@@ -297,7 +292,7 @@ component HandGrid inherits VerticalLayout {
     horizontal-stretch: root.columns;
     preferred-width: 0px;
     min-width: 0px;
-    spacing: 6px;
+    spacing: Theme.space-s;
     title := Text {
         text: root.title.to-uppercase();
         color: Theme.muted;
@@ -305,7 +300,7 @@ component HandGrid inherits VerticalLayout {
         letter-spacing: 0.5px;
     }
     for row in root.cells.length / root.columns: HorizontalLayout {
-        spacing: 6px;
+        spacing: Theme.space-s;
         for col in root.columns: Rectangle {
             height: 46px;
             width: root.cell-width;
@@ -329,25 +324,25 @@ export component LayersPage inherits VerticalLayout {
 
 
     vertical-stretch: 1;
-    spacing: 16px;
+    spacing: Theme.space-xl;
     HorizontalLayout {
         padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
         ScrollView { height: 52px; viewport-height: self.visible-height; vertical-scrollbar-policy: always-off; horizontal-scrollbar-policy: as-needed;
-            HorizontalLayout { spacing: 6px; alignment: start;
+            HorizontalLayout { spacing: Theme.space-s; alignment: start;
                 for name[index] in LayersEditor.names: Rectangle {
                     height: 36px; border-radius: Theme.radius; border-width: 1px;
-                    border-color: DragDrop.dragging && DragDrop.group == 2 && DragDrop.target == index ? Theme.link : Theme.border;
+                    border-color: DragDrop.dragging && DragDrop.group == DragGroups.layer-tabs && DragDrop.target == index ? Theme.link : Theme.border;
                     background: index == LayersEditor.selected ? Theme.selected : layer-touch.has-hover ? Theme.hover : Theme.card;
-                    opacity: DragDrop.dragging && DragDrop.group == 2 && DragDrop.source == index ? 0.6 : 1;
-                    init => { DragDrop.row(2, index, self.x, self.width); }
-                    changed x => { DragDrop.row(2, index, self.x, self.width); }
-                    changed width => { DragDrop.row(2, index, self.x, self.width); }
+                    opacity: DragDrop.dragging && DragDrop.group == DragGroups.layer-tabs && DragDrop.source == index ? Theme.dragged-opacity : 1;
+                    init => { DragDrop.row(DragGroups.layer-tabs, index, self.x, self.width); }
+                    changed x => { DragDrop.row(DragGroups.layer-tabs, index, self.x, self.width); }
+                    changed width => { DragDrop.row(DragGroups.layer-tabs, index, self.x, self.width); }
                     accessible-role: button;
                     accessible-label: name;
                     accessible-action-default => { LayersEditor.choose(index); }
                     HorizontalLayout {
-                        padding-left: 12px; padding-right: 12px;
-                        Text { text: name; color: Theme.text; font-size: Theme.font-medium; font-weight: 600; vertical-alignment: center; }
+                        padding-left: Theme.space-l; padding-right: Theme.space-l;
+                        Text { text: name; color: Theme.text; font-size: Theme.font-medium; font-weight: Theme.weight-semibold; vertical-alignment: center; }
                     }
                     FocusScope {
                         key-pressed(event) => {
@@ -359,9 +354,9 @@ export component LayersPage inherits VerticalLayout {
                         mouse-cursor: DragDrop.dragging && self.pressed ? grabbing : pointer;
                         pointer-event(event) => {
                             if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
-                                DragDrop.group = 2; DragDrop.source = index; DragDrop.target = index;
+                                DragDrop.group = DragGroups.layer-tabs; DragDrop.source = index; DragDrop.target = index;
                             }
-                            if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && DragDrop.group == 2 {
+                            if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && DragDrop.group == DragGroups.layer-tabs {
                                 let from = DragDrop.source; let to = DragDrop.target; let moved = DragDrop.dragging;
                                 DragDrop.reset();
                                 if moved { if from != to { LayersEditor.reorder(from, to); } }
@@ -370,14 +365,14 @@ export component LayersPage inherits VerticalLayout {
                             if event.kind == PointerEventKind.cancel { DragDrop.reset(); }
                         }
                         moved => {
-                            if self.pressed && DragDrop.group == 2 {
+                            if self.pressed && DragDrop.group == DragGroups.layer-tabs {
                                 DragDrop.offset = self.mouse-x - self.pressed-x;
                                 if abs(DragDrop.offset) > 6px { DragDrop.dragging = true; }
-                                if DragDrop.dragging { DragDrop.target = DragDrop.locate(2, index, DragDrop.offset, LayersEditor.names.length); }
+                                if DragDrop.dragging { DragDrop.target = DragDrop.locate(DragGroups.layer-tabs, index, DragDrop.offset, LayersEditor.names.length); }
                             }
                         }
                     }
-                    if DragDrop.dragging && DragDrop.group == 2 && DragDrop.target == index && DragDrop.target != DragDrop.source: Rectangle {
+                    if DragDrop.dragging && DragDrop.group == DragGroups.layer-tabs && DragDrop.target == index && DragDrop.target != DragDrop.source: Rectangle {
                         x: DragDrop.target > DragDrop.source ? parent.width + 1px : -4px;
                         width: 3px; height: parent.height; background: Theme.link;
                     }
@@ -393,14 +388,14 @@ export component LayersPage inherits VerticalLayout {
         viewport-width: self.visible-width;
         vertical-stretch: 1;
         PageContent {
-            spacing: 16px;
+            spacing: Theme.space-xl;
             // Layer toolbar
             Card {
                 VerticalLayout {
-                    padding: 20px;
-                    spacing: 12px;
+                    padding: Theme.space-2xl;
+                    spacing: Theme.space-l;
                     HorizontalLayout {
-                        spacing: 12px;
+                        spacing: Theme.space-l;
                         Text { horizontal-stretch: 0; text: @tr("Layer") + ":"; color: Theme.text; font-size: Theme.font-medium; vertical-alignment: center; }
                         VerticalLayout {
                             alignment: center;
@@ -425,7 +420,7 @@ export component LayersPage inherits VerticalLayout {
                                 width: 180px;
                                 Rectangle {
                                     background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: Theme.radius-large;
-                                    VerticalLayout { padding: 4px; spacing: 0px;
+                                    VerticalLayout { padding: Theme.space-xs; spacing: 0px;
                                         IconButton { height: 36px; icon: @image-url("icons/copy.svg"); text: @tr("Duplicate"); clicked => { layer-menu.close(); LayersEditor.open-dialog(LayerDialog.duplicate, -1); } }
                                         IconButton { height: 36px; icon: @image-url("icons/trash-2.svg"); text: @tr("Delete layer"); clicked => { layer-menu.close(); LayersEditor.open-dialog(LayerDialog.delete, -1); } }
                                     }
@@ -444,12 +439,12 @@ export component LayersPage inherits VerticalLayout {
 
             if LayersEditor.selected < 0: Card {
                 HorizontalLayout {
-                    padding: 20px;
-                    spacing: 12px;
+                    padding: Theme.space-2xl;
+                    spacing: Theme.space-l;
                     VerticalLayout {
                         horizontal-stretch: 1;
-                        spacing: 4px;
-                        Text { text: @tr("No layers yet"); color: Theme.text; font-size: 14px; font-weight: 600; }
+                        spacing: Theme.space-xs;
+                        Text { text: @tr("No layers yet"); color: Theme.text; font-size: Theme.font-default; font-weight: Theme.weight-semibold; }
                         Text { text: @tr("Create a layer to assign its keys."); color: Theme.muted; wrap: word-wrap; }
                     }
 
@@ -460,9 +455,9 @@ export component LayersPage inherits VerticalLayout {
             if LayersEditor.selected >= 0: Card {
                 VerticalLayout {
                     HorizontalLayout {
-                        padding-left: 20px; padding-right: 20px; padding-top: 14px; padding-bottom: 14px;
-                        spacing: 8px;
-                        Text { text: @tr("Keyboard"); color: Theme.text; font-size: 15px; font-weight: 700; vertical-alignment: center; }
+                        padding-left: Theme.space-2xl; padding-right: Theme.space-2xl; padding-top: Theme.space-l-plus; padding-bottom: Theme.space-l-plus;
+                        spacing: Theme.space-m;
+                        Text { text: @tr("Keyboard"); color: Theme.text; font-size: Theme.font-section; font-weight: Theme.weight-bold; vertical-alignment: center; }
                         VerticalLayout {
                             alignment: center;
                             InfoTip { text: @tr("Display modes affect labels only — the key code stays the same. “US layout” shows standard letter labels for visual reference. “LHC codes” shows app-specific codes (e.g. KeyA, ArrowLeft)."); }
@@ -478,10 +473,10 @@ export component LayersPage inherits VerticalLayout {
                     Divider {}
                     hands := HorizontalLayout {
                         // Recomputed from the window position, so it follows auto-scroll under a still pointer.
-                        property <int> key-target: !DragDrop.dragging || DragDrop.group != KeyDrag.group ? -1
+                        property <int> key-target: !DragDrop.dragging || DragDrop.group != DragGroups.keys ? -1
                             : max(left-hand.key-at(DragDrop.pointer-x, DragDrop.pointer-y), right-hand.key-at(DragDrop.pointer-x, DragDrop.pointer-y));
-                        padding: 20px;
-                        spacing: 24px;
+                        padding: Theme.space-2xl;
+                        spacing: Theme.space-3xl;
                         left-hand := HandGrid {
                             width: (root.width - 16px - 40px - 24px) / 2;
                             horizontal-stretch: 0;
@@ -512,13 +507,13 @@ export component LayersPage inherits VerticalLayout {
             if LayersEditor.selected >= 0: Card {
                 VerticalLayout {
                     HorizontalLayout {
-                        padding-left: 20px; padding-right: 20px; padding-top: 14px; padding-bottom: 14px;
-                        spacing: 8px;
+                        padding-left: Theme.space-2xl; padding-right: Theme.space-2xl; padding-top: Theme.space-l-plus; padding-bottom: Theme.space-l-plus;
+                        spacing: Theme.space-m;
                         VerticalLayout {
                             horizontal-stretch: 1;
-                            spacing: 2px;
-                            HorizontalLayout { spacing: 8px; alignment: start;
-                                Text { text: @tr("Extra keys"); color: Theme.text; font-size: 15px; font-weight: 700; }
+                            spacing: Theme.space-2xs;
+                            HorizontalLayout { spacing: Theme.space-m; alignment: start;
+                                Text { text: @tr("Extra keys"); color: Theme.text; font-size: Theme.font-section; font-weight: Theme.weight-bold; }
                                 InfoTip { text: @tr("Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger, then choose its action, suppress it, or inherit its assignment from the lower layer."); }
                             }
                         }
@@ -534,12 +529,12 @@ export component LayersPage inherits VerticalLayout {
                     }
                     Divider {}
                     VerticalLayout {
-                        padding: 20px;
+                        padding: Theme.space-2xl;
                         spacing: 0px;
                         if LayersEditor.extras.length == 0: Text { text: @tr("No extra keys for this layer yet."); color: Theme.muted; }
                         if LayersEditor.extras.length > 0: HorizontalLayout {
-                            padding: 8px;
-                            spacing: 12px;
+                            padding: Theme.space-m;
+                            spacing: Theme.space-l;
                             FieldLabel { width: 200px; text: @tr("Key"); }
                             FieldLabel { horizontal-stretch: 1; text: @tr("Action"); }
                             Rectangle { width: 28px; }
@@ -566,15 +561,15 @@ export component LayerDialogOverlay inherits FocusScope {
         TouchArea { clicked => { LayersEditor.dialog = LayerDialog.none; } scroll-event(event) => { accept } }
         Rectangle { x: (parent.width - self.width) / 2; y: 60px; width: min(parent.width - 80px, 560px); height: min(parent.height - 120px, 500px); background: Theme.surface; border-color: Theme.border; border-width: 1px; border-radius: Theme.radius-dialog;
             TouchArea {}
-            VerticalBox { padding: 20px; spacing: 12px;
+            VerticalBox { padding: Theme.space-2xl; spacing: Theme.space-l;
                 Text {
                     text: LayersEditor.dialog == LayerDialog.create ? @tr("New layer")
                         : LayersEditor.dialog == LayerDialog.duplicate ? @tr("Duplicate layer")
                         : LayersEditor.dialog == LayerDialog.delete ? @tr("Delete layer?")
                         : @tr("Edit layer key");
-                    color: Theme.text; font-size: Theme.font-title; font-weight: 700;
+                    color: Theme.text; font-size: Theme.font-title; font-weight: Theme.weight-bold;
                 }
-                if LayersEditor.dialog == LayerDialog.create || LayersEditor.dialog == LayerDialog.duplicate: VerticalBox { spacing: 8px;
+                if LayersEditor.dialog == LayerDialog.create || LayersEditor.dialog == LayerDialog.duplicate: VerticalBox { spacing: Theme.space-m;
                     FormField {
                         label: @tr("Name"); autofocus: true;
                         text <=> LayersEditor.dialog-name;
@@ -585,9 +580,9 @@ export component LayerDialogOverlay inherits FocusScope {
                     TextEdit { text <=> LayersEditor.dialog-description; height: 100px; }
                 }
                 if LayersEditor.dialog == LayerDialog.delete: Text { text: @tr("Rules using this layer will return to the base layer."); color: Theme.muted; wrap: word-wrap; }
-                if LayersEditor.dialog == LayerDialog.edit-key: VerticalBox { spacing: 8px;
+                if LayersEditor.dialog == LayerDialog.edit-key: VerticalBox { spacing: Theme.space-m;
                     Text { text: @tr("Behavior"); color: Theme.muted; }
-                    HorizontalBox { spacing: 8px;
+                    HorizontalBox { spacing: Theme.space-m;
                         Button { text: @tr("Inherit"); primary: LayersEditor.assignment == Assignment.transparent; clicked => { LayersEditor.assignment = Assignment.transparent; } }
                         Button { text: @tr("Suppress"); primary: LayersEditor.assignment == Assignment.swallow; clicked => { LayersEditor.assignment = Assignment.swallow; } }
                         Button { text: @tr("Perform action"); primary: LayersEditor.assignment == Assignment.action; clicked => { LayersEditor.assignment = Assignment.action; } }
@@ -596,9 +591,9 @@ export component LayerDialogOverlay inherits FocusScope {
                         text: LayersEditor.assignment == Assignment.swallow ? @tr("The key will not reach the application.") : @tr("Use the assignment from the lower layer or base layout."); color: Theme.muted; wrap: word-wrap;
                     }
                     if LayersEditor.assignment == Assignment.action: VerticalBox {
-                        padding: 0px; spacing: 4px; vertical-stretch: 0;
+                        padding: 0px; spacing: Theme.space-xs; vertical-stretch: 0;
                         Text { text: @tr("Action"); color: Theme.text; }
-                        HorizontalBox { vertical-stretch: 0; spacing: 8px;
+                        HorizontalBox { vertical-stretch: 0; spacing: Theme.space-m;
                             TextField { text <=> LayersEditor.dialog-action; placeholder-text: @tr("Action code"); horizontal-stretch: 1; }
                             Button { text: @tr("Choose action"); clicked => { ActionPicker.open(PickerTarget.layer-action, 0, LayersEditor.dialog-action, false); } }
                         }
@@ -606,7 +601,7 @@ export component LayerDialogOverlay inherits FocusScope {
                 }
                 Text { text: Locale.text(LayersEditor.status); color: Theme.error; wrap: word-wrap; }
                 Rectangle { vertical-stretch: 1; }
-                HorizontalBox { vertical-stretch: 0; spacing: 8px;
+                HorizontalBox { vertical-stretch: 0; spacing: Theme.space-m;
                     Rectangle { horizontal-stretch: 1; }
                     Button { text: @tr("Cancel"); clicked => { LayersEditor.dialog = LayerDialog.none; } }
                     Button { text: LayersEditor.dialog == LayerDialog.delete ? @tr("Delete") : @tr("Apply"); primary: true; enabled: ((LayersEditor.dialog != LayerDialog.create && LayersEditor.dialog != LayerDialog.duplicate) || LayersEditor.name-error(LayersEditor.dialog-name, false).id == "") && (LayersEditor.dialog != LayerDialog.edit-key || LayersEditor.assignment != Assignment.action || LayersEditor.dialog-action != ""); clicked => { LayersEditor.apply-dialog(); } }

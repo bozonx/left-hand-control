@@ -4,6 +4,7 @@
 //! The script calls back into a small D-Bus object this process serves
 //! on its unique bus name; calls from anyone but KWin are ignored.
 
+use crate::platform::dbus;
 use std::path::PathBuf;
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex, OnceLock};
@@ -19,7 +20,6 @@ use super::ActiveWindow;
 const SESSION_CHECK_INTERVAL: Duration = Duration::from_secs(1);
 const SESSION_RETRY: Duration = Duration::from_secs(3);
 
-const KWIN: &str = "org.kde.KWin";
 const OBJECT_PATH: &str = "/dev/bozonx/LeftHandControl/KWin";
 const INTERFACE: &str = "dev.bozonx.LeftHandControl.KWin";
 const ACTIVE_SCRIPT: &str = "left-hand-control-active-window";
@@ -239,7 +239,7 @@ fn connect_builder(
         .serve_at(OBJECT_PATH, Service { kwin: kwin.clone() })
         .and_then(|builder| builder.build())
         .map_err(|error| error.to_string())?;
-    let name = BusName::try_from(KWIN).map_err(|error| error.to_string())?;
+    let name = BusName::try_from(dbus::KWIN_SERVICE).map_err(|error| error.to_string())?;
     let owner = DBusProxy::new(&connection)
         .map_err(|error| error.to_string())?
         .get_name_owner(name)
@@ -256,7 +256,7 @@ pub(super) fn active() -> bool {
 fn owner(connection: &Connection) -> Option<String> {
     DBusProxy::new(connection)
         .ok()?
-        .get_name_owner(BusName::try_from(KWIN).ok()?)
+        .get_name_owner(BusName::try_from(dbus::KWIN_SERVICE).ok()?)
         .ok()
         .map(|owner| owner.to_string())
 }
@@ -443,8 +443,13 @@ fn script_name(connection: &Connection, name: &str) -> Result<String, String> {
 }
 
 fn scripting(connection: &Connection) -> Result<Proxy<'static>, String> {
-    Proxy::new(connection, KWIN, "/Scripting", "org.kde.kwin.Scripting")
-        .map_err(|error| error.to_string())
+    Proxy::new(
+        connection,
+        dbus::KWIN_SERVICE,
+        dbus::KWIN_SCRIPTING_PATH,
+        dbus::KWIN_SCRIPTING_INTERFACE,
+    )
+    .map_err(|error| error.to_string())
 }
 
 fn json_string(text: &str) -> String {
@@ -504,7 +509,7 @@ mod tests {
         let server = || {
             zbus::blocking::connection::Builder::address(address)
                 .unwrap()
-                .name(KWIN)
+                .name(dbus::KWIN_SERVICE)
                 .unwrap()
                 .serve_at(
                     "/Scripting",

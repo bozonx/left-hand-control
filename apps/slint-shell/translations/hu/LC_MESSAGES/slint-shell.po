@@ -491,6 +491,9 @@ msgstr "A billentyűzet eszköz elérési útja"
 msgid "Copy path"
 msgstr "Útvonal másolása"
 
+msgid "In development features"
+msgstr "Fejlesztés alatt álló funkciók"
+
 msgid "Create a layer to assign its keys, or edit the base keyboard."
 msgstr ""
 "Hozzon létre egy réteget a billentyűk hozzárendeléséhez, vagy szerkessze az "

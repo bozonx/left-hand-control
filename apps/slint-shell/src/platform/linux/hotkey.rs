@@ -15,6 +15,8 @@ use std::{
 };
 
 const RESCAN: Duration = Duration::from_secs(2);
+/// Rescans after which ignored devices are tried again (once a minute).
+const IGNORED_RESET_SCANS: u64 = 30;
 
 fn is_keyboard(device: &Device) -> bool {
     device.supported_keys().is_some_and(|keys| {
@@ -107,11 +109,11 @@ fn listen(
 pub fn set_game_active(_active: bool) {}
 
 pub fn start(dispatch: Dispatch) {
-    if std::env::var("LHC_HOTKEYS").as_deref() == Ok("off") {
+    if !lhc_core::env::popup_hotkeys_enabled() {
         return;
     }
     let watched: Arc<Mutex<HashSet<PathBuf>>> = Arc::default();
-    if let Some(path) = std::env::var_os("LHC_INPUT") {
+    if let Some(path) = std::env::var_os(crate::env::INPUT) {
         let path = PathBuf::from(path);
         match Device::open(&path) {
             Ok(device) => listen(path, device, dispatch, watched),
@@ -126,12 +128,12 @@ pub fn start(dispatch: Dispatch) {
         let mut ignored = HashSet::new();
         let mut scan = 0u64;
         loop {
-            if scan.is_multiple_of(30) {
+            if scan.is_multiple_of(IGNORED_RESET_SCANS) {
                 ignored.clear();
             }
             scan += 1;
             let mut found = !watched.lock().unwrap_or_else(|p| p.into_inner()).is_empty();
-            let paths = std::fs::read_dir("/dev/input")
+            let paths = std::fs::read_dir(lhc_core::platform::INPUT_DIR)
                 .into_iter()
                 .flatten()
                 .flatten()

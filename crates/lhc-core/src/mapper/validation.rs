@@ -5,7 +5,7 @@ use super::builtin_macros::BUILTIN_MACROS;
 use super::config::{ActionSpec, AppConfig};
 use super::keys::code_to_key;
 use super::system;
-use crate::profile::actions::Action;
+use crate::profile::actions::{Action, MAX_MACRO_DEPTH, MAX_MACRO_STEPS};
 use std::collections::{HashMap, HashSet};
 
 pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
@@ -159,14 +159,16 @@ fn validate_macro_sizes(cfg: &AppConfig, errors: &mut Vec<String>) {
             m.steps.iter().map(|s| s.action.as_str()).collect(),
         );
     }
+    /// Size reported for an expansion over the limits.
+    const TOO_LARGE: usize = MAX_MACRO_STEPS + 1;
     fn size(
         id: &str,
         depth: usize,
         definitions: &HashMap<String, Vec<&str>>,
         memo: &mut HashMap<(String, usize), usize>,
     ) -> usize {
-        if depth > 10 {
-            return 1001;
+        if depth > MAX_MACRO_DEPTH {
+            return TOO_LARGE;
         }
         if let Some(size) = memo.get(&(id.to_string(), depth)) {
             return *size;
@@ -185,8 +187,8 @@ fn validate_macro_sizes(cfg: &AppConfig, errors: &mut Vec<String>) {
                 }
                 _ => usize::from(!step.is_empty()),
             };
-            if total > 1000 {
-                total = 1001;
+            if total > MAX_MACRO_STEPS {
+                total = TOO_LARGE;
                 break;
             }
         }
@@ -200,10 +202,10 @@ fn validate_macro_sizes(cfg: &AppConfig, errors: &mut Vec<String>) {
             0,
             &definitions,
             &mut memo,
-        ) > 1000
+        ) > MAX_MACRO_STEPS
         {
             errors.push(format!(
-                "Macro \"{}\": expansion exceeds 1000 entries or 10 nesting levels",
+                "Macro \"{}\": expansion exceeds {MAX_MACRO_STEPS} entries or {MAX_MACRO_DEPTH} nesting levels",
                 m.id
             ));
         }

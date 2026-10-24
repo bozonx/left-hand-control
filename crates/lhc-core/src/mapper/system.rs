@@ -58,6 +58,15 @@ pub struct DbusCall {
     pub args: Vec<DbusArg>,
 }
 
+impl DbusCall {
+    /// Whether the call switches the KDE keyboard layout.
+    #[cfg(target_os = "linux")]
+    pub fn switches_layout(&self) -> bool {
+        use crate::platform::dbus;
+        self.destination == dbus::KEYBOARD_SERVICE && self.method == dbus::KEYBOARD_SET_LAYOUT
+    }
+}
+
 /// Resolved system-function.
 #[derive(Clone, Debug)]
 #[allow(dead_code)] // Spawn reserved for future Sway / wmctrl backends.
@@ -181,12 +190,17 @@ fn resolve_for_desktop(name: &str, desktop: &crate::platform::linux::Desktop) ->
 #[cfg(target_os = "linux")]
 mod kde {
     use super::{DbusArg, DbusCall, SysAction};
+    use crate::platform::dbus;
+    use crate::profile::actions::SYSTEM_NUMBERED_COUNT;
+
+    /// Most virtual desktops KWin can have.
+    const KWIN_MAX_DESKTOPS: u32 = 20;
 
     pub(super) fn invoke_shortcut(component: &str, shortcut: &str) -> SysAction {
         SysAction::Dbus(DbusCall {
-            destination: "org.kde.kglobalaccel".into(),
+            destination: dbus::KGLOBALACCEL_SERVICE.into(),
             path: format!("/component/{component}"),
-            interface: Some("org.kde.kglobalaccel.Component".into()),
+            interface: Some(dbus::KGLOBALACCEL_COMPONENT_INTERFACE.into()),
             method: "invokeShortcut".into(),
             args: vec![DbusArg::Str(shortcut.into())],
         })
@@ -195,32 +209,32 @@ mod kde {
     pub fn resolve(name: &str) -> Option<SysAction> {
         if let Some(rest) = name.strip_prefix("switchDesktop")
             && let Ok(n) = rest.parse::<u32>()
-            && (1..=20).contains(&n)
+            && (1..=KWIN_MAX_DESKTOPS).contains(&n)
         {
             // org.kde.KWin /KWin setCurrentDesktop(i)
             return Some(SysAction::Dbus(DbusCall {
-                destination: "org.kde.KWin".into(),
-                path: "/KWin".into(),
-                interface: Some("org.kde.KWin".into()),
+                destination: dbus::KWIN_SERVICE.into(),
+                path: dbus::KWIN_PATH.into(),
+                interface: Some(dbus::KWIN_INTERFACE.into()),
                 method: "setCurrentDesktop".into(),
                 args: vec![DbusArg::I32(n as i32)],
             }));
         }
         if let Some(rest) = name.strip_prefix("switchLayout")
             && let Ok(n) = rest.parse::<u32>()
-            && (1..=10).contains(&n)
+            && (1..=SYSTEM_NUMBERED_COUNT).contains(&n)
         {
             return Some(SysAction::Dbus(DbusCall {
-                destination: "org.kde.keyboard".into(),
-                path: "/Layouts".into(),
-                interface: Some("org.kde.KeyboardLayouts".into()),
-                method: "setLayout".into(),
+                destination: dbus::KEYBOARD_SERVICE.into(),
+                path: dbus::KEYBOARD_LAYOUTS_PATH.into(),
+                interface: Some(dbus::KEYBOARD_LAYOUTS_INTERFACE.into()),
+                method: dbus::KEYBOARD_SET_LAYOUT.into(),
                 args: vec![DbusArg::U32(n - 1)],
             }));
         }
         if let Some(rest) = name.strip_prefix("windowToDesktop")
             && let Ok(n) = rest.parse::<u32>()
-            && (1..=20).contains(&n)
+            && (1..=KWIN_MAX_DESKTOPS).contains(&n)
         {
             return Some(invoke_shortcut("kwin", &format!("Window to Desktop {n}")));
         }

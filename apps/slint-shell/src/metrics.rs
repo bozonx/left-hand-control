@@ -21,7 +21,7 @@ struct Trial {
 
 impl Metrics {
     pub fn from_env(start: Instant) -> std::io::Result<Self> {
-        let file = match std::env::var_os("LHC_METRICS") {
+        let file = match std::env::var_os(crate::env::METRICS) {
             Some(path) => {
                 let mut file = File::create(path)?;
                 writeln!(file, "trial,window,source,event,elapsed_ms,process_ms")?;

@@ -60,18 +60,22 @@ impl Activation {
         let RawDisplayHandle::Wayland(display) = window.display_handle()?.as_raw() else {
             return Err("Wayland surface without Wayland display".into());
         };
-        if self.wayland.is_none() {
-            let backend = unsafe {
-                wayland_backend::client::Backend::from_foreign_display(
-                    display.display.as_ptr().cast(),
-                )
-            };
-            let connection = Connection::from_backend(backend);
-            let (globals, queue) = registry_queue_init::<State>(&connection)?;
-            let activation = globals.bind::<XdgActivationV1, _, _>(&queue.handle(), 1..=1, ())?;
-            self.wayland = Some((connection, queue, activation));
-        }
-        let (connection, queue, activation) = self.wayland.as_mut().unwrap();
+        let wayland = match self.wayland.take() {
+            Some(wayland) => wayland,
+            None => {
+                let backend = unsafe {
+                    wayland_backend::client::Backend::from_foreign_display(
+                        display.display.as_ptr().cast(),
+                    )
+                };
+                let connection = Connection::from_backend(backend);
+                let (globals, queue) = registry_queue_init::<State>(&connection)?;
+                let activation =
+                    globals.bind::<XdgActivationV1, _, _>(&queue.handle(), 1..=1, ())?;
+                (connection, queue, activation)
+            }
+        };
+        let (connection, queue, activation) = self.wayland.insert(wayland);
         queue.dispatch_pending(&mut State)?;
         let id = unsafe {
             wayland_backend::client::ObjectId::from_ptr(

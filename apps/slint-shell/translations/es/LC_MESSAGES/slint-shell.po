@@ -488,6 +488,9 @@ msgstr "Ruta del dispositivo de teclado"
 msgid "Copy path"
 msgstr "Copiar ruta"
 
+msgid "In development features"
+msgstr "Funciones en desarrollo"
+
 msgid "Create a layer to assign its keys, or edit the base keyboard."
 msgstr "Crea una capa para asignar sus teclas o edita el teclado base."
 

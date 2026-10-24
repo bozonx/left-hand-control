@@ -52,6 +52,7 @@ pub mod ui {
 mod app;
 pub mod command;
 pub mod document;
+pub mod env;
 mod game_mode;
 mod i18n;
 mod ipc;

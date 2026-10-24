@@ -481,6 +481,9 @@ msgstr "鍵盤裝置路徑"
 msgid "Copy path"
 msgstr "複製路徑"
 
+msgid "In development features"
+msgstr "開發中的功能"
+
 msgid "Create a layer to assign its keys, or edit the base keyboard."
 msgstr "建立一個圖層來指派其按鍵，或編輯基本鍵盤。"
 

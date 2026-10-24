@@ -5,6 +5,11 @@ use std::path::{Path, PathBuf};
 
 /// Stable application identifier used for config and data directories.
 pub const APP_ID: &str = "dev.bozonx.left-hand-control";
+/// Application name for technical identifiers (notifications, input
+/// sessions); the UI shows a translated title instead.
+pub const APP_NAME: &str = "Left Hand Control";
+/// Settings file inside the config directory.
+pub const CONFIG_FILE: &str = "config.json";
 
 #[derive(Debug, Clone)]
 pub struct StoragePaths {
@@ -23,7 +28,7 @@ impl StoragePaths {
     /// Without an override, release builds use the platform config/data directories under
     /// [`APP_ID`].
     pub fn resolve() -> Result<Self, String> {
-        let override_dir = std::env::var_os("LHC_DEV_DIR").map(PathBuf::from);
+        let override_dir = std::env::var_os(crate::env::DEV_DIR).map(PathBuf::from);
         if isolated() {
             let base = dev_base_dir(override_dir)?;
             return Ok(Self::dev(&base, std::env::consts::OS));
@@ -52,7 +57,7 @@ impl StoragePaths {
     }
 
     pub fn config_path(&self) -> PathBuf {
-        self.config_dir.join("config.json")
+        self.config_dir.join(CONFIG_FILE)
     }
 
     pub fn settings_dir(&self) -> PathBuf {
@@ -198,13 +203,18 @@ impl StoragePaths {
     }
 }
 
+/// Longest layout name, in characters.
+pub const MAX_LAYOUT_NAME_CHARS: usize = 128;
+
 pub fn validate_layout_name(name: &str) -> Result<String, String> {
     let trimmed = name.trim();
     if trimmed.is_empty() {
         return Err("Layout name cannot be empty".into());
     }
-    if trimmed.chars().count() > 128 {
-        return Err("Layout name is too long (max 128 characters)".into());
+    if trimmed.chars().count() > MAX_LAYOUT_NAME_CHARS {
+        return Err(format!(
+            "Layout name is too long (max {MAX_LAYOUT_NAME_CHARS} characters)"
+        ));
     }
     for ch in trimmed.chars() {
         if ch.is_control() || matches!(ch, '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|') {
@@ -263,7 +273,7 @@ fn unique_tmp_path(path: &Path) -> PathBuf {
 /// Whether storage and OS registrations stay in the development directory
 /// instead of the user's real session (see [`StoragePaths::resolve`]).
 pub fn isolated() -> bool {
-    cfg!(debug_assertions) || std::env::var_os("LHC_DEV_DIR").is_some()
+    cfg!(debug_assertions) || std::env::var_os(crate::env::DEV_DIR).is_some()
 }
 
 /// Home-relative config and data directories per OS, matching `dirs`.

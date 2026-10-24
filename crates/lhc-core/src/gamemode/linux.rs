@@ -182,7 +182,7 @@ fn listen() -> Option<Listener> {
     let rules = [
         MatchRule::builder()
             .msg_type(message::Type::Signal)
-            .sender("org.freedesktop.DBus")
+            .sender(crate::platform::dbus::BUS_SERVICE)
             .and_then(|rule| rule.member("NameOwnerChanged"))
             .and_then(|rule| rule.arg(0, GAMEMODE_NAME))
             .map(|rule| rule.build()),
@@ -365,9 +365,15 @@ fn start_time(dir: &Path) -> Option<u64> {
 }
 
 fn parse_start_time(stat: &str) -> Option<u64> {
+    // Field numbers from proc_pid_stat(5); those after the name start with 3 (state).
+    const FIRST_AFTER_NAME: usize = 3;
+    const START_TIME: usize = 22;
     let (_, fields) = stat.rsplit_once(')')?;
-    // Fields after the name start with field 3 (state).
-    fields.split_whitespace().nth(22 - 3)?.parse().ok()
+    fields
+        .split_whitespace()
+        .nth(START_TIME - FIRST_AFTER_NAME)?
+        .parse()
+        .ok()
 }
 
 /// Names of the current user's processes, for picking a rule.

@@ -1,6 +1,6 @@
 import { NotificationCenter } from "notifications.slint";
 import { PageContent, ScrollView } from "scroll.slint";
-import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
+import { DragDrop, DragGroups, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
 import { CategoryIcon } from "action-picker.slint";
 import { Theme } from "theme.slint";
@@ -41,11 +41,11 @@ component StepRow inherits HorizontalLayout {
     in property <int> count;
     in property <MacroStepRow> step;
     callback remove();
-    spacing: 8px;
+    spacing: Theme.space-m;
     Text { width: 28px; text: "#" + (root.index + 1); color: Theme.muted; font-size: Theme.font-body; horizontal-alignment: right; vertical-alignment: center; }
     VerticalLayout {
         horizontal-stretch: 1;
-        spacing: 2px;
+        spacing: Theme.space-2xs;
         alignment: center;
         if !root.step.pause: Rectangle {
             height: 32px;
@@ -61,7 +61,7 @@ component StepRow inherits HorizontalLayout {
                 ActionPicker.open(PickerTarget.macro-step, root.index, root.step.action, false);
             }
             HorizontalLayout {
-                padding-left: 10px; padding-right: 10px; spacing: 6px;
+                padding-left: Theme.space-m-plus; padding-right: Theme.space-m-plus; spacing: Theme.space-s;
                 if root.step.action != "": CategoryIcon { category: root.step.category; }
                 Text {
                     horizontal-stretch: 1;
@@ -82,7 +82,7 @@ component StepRow inherits HorizontalLayout {
             pick-touch := TouchArea { mouse-cursor: pointer; clicked => { parent.pick(); } }
         }
         if root.step.pause: HorizontalLayout {
-            spacing: 8px;
+            spacing: Theme.space-m;
             alignment: start;
             CategoryIcon { category: PickerCategory.pause; }
             Text { text: @tr("Pause"); color: Theme.text; vertical-alignment: center; }
@@ -96,7 +96,7 @@ component StepRow inherits HorizontalLayout {
             Text { text: @tr("ms"); color: Theme.muted; font-size: Theme.font-body; vertical-alignment: center; }
         }
     }
-    DragHandle { group: 100 + root.macro-index; index: root.index; count: root.count; dropped(from, to) => { MacroEditor.move-step(root.macro-index, from, to); } }
+    DragHandle { group: DragGroups.macro-steps + root.macro-index; index: root.index; count: root.count; dropped(from, to) => { MacroEditor.move-step(root.macro-index, from, to); } }
     IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete step"); clicked => { root.remove(); } }
 }
 
@@ -104,41 +104,41 @@ component MacroCard inherits Card {
     in property <int> index;
     in property <int> count;
     in property <MacroRow> item;
-    opacity: DragDrop.dragging && DragDrop.group == 4 && DragDrop.source == root.index ? 0.6 : 1;
+    opacity: DragDrop.dragging && DragDrop.group == DragGroups.macros && DragDrop.source == root.index ? Theme.dragged-opacity : 1;
 
     callback remove();
     callback remove-step(int);
     callback copy(string);
     HorizontalLayout {
-        padding: 16px;
-        spacing: 20px;
+        padding: Theme.space-xl;
+        spacing: Theme.space-2xl;
         VerticalLayout {
             width: 400px;
             horizontal-stretch: 0;
-            spacing: 14px;
+            spacing: Theme.space-l-plus;
             alignment: start;
             HorizontalLayout {
-                spacing: 2px;
-                DragHandle { group: 4; index: root.index; count: MacroEditor.macros.length; dropped(from, to) => { MacroEditor.move(from, to); } }
+                spacing: Theme.space-2xs;
+                DragHandle { group: DragGroups.macros; index: root.index; count: MacroEditor.macros.length; dropped(from, to) => { MacroEditor.move(from, to); } }
                 Rectangle { horizontal-stretch: 1; }
                 IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete macro"); clicked => { root.remove(); } }
             }
             HorizontalLayout {
-                spacing: 12px;
+                spacing: Theme.space-l;
                 VerticalLayout {
                     width: (parent.width - 12px) / 2;
                     horizontal-stretch: 0;
-                    spacing: 4px;
+                    spacing: Theme.space-xs;
                     HorizontalLayout {
-                        spacing: 6px;
+                        spacing: Theme.space-s;
                         alignment: start;
                         FieldLabel { text: @tr("ID"); vertical-alignment: center; }
                     }
                     HorizontalLayout {
-                        spacing: 6px;
+                        spacing: Theme.space-s;
                         InlineTextField {
                             horizontal-stretch: 1;
-                            max-width: 100000px;
+                            max-width: Theme.unbounded;
                             text: root.item.id;
                             placeholder: "id";
                             label: @tr("Macro ID");
@@ -150,9 +150,9 @@ component MacroCard inherits Card {
                 VerticalLayout {
                     width: (parent.width - 12px) / 2;
                     horizontal-stretch: 0;
-                    spacing: 4px;
+                    spacing: Theme.space-xs;
                     HorizontalLayout {
-                        spacing: 6px;
+                        spacing: Theme.space-s;
                         alignment: start;
                         FieldLabel { text: @tr("Name"); vertical-alignment: center; }
                     }
@@ -166,19 +166,19 @@ component MacroCard inherits Card {
             }
             HorizontalLayout {
                 horizontal-stretch: 1;
-                spacing: 12px;
+                spacing: Theme.space-l;
                 alignment: start;
                 VerticalLayout {
                     width: (parent.width - 12px) / 2;
                     horizontal-stretch: 0;
-                    spacing: 4px;
+                    spacing: Theme.space-xs;
                     HorizontalLayout {
-                        spacing: 6px;
+                        spacing: Theme.space-s;
                         alignment: start;
                         FieldLabel { text: @tr("Pause between steps"); vertical-alignment: center; }
                     }
                     HorizontalLayout {
-                        spacing: 6px;
+                        spacing: Theme.space-s;
                         NumericInput {
                             text: root.item.step-pause;
                             placeholder-text: MacroEditor.default-step-pause;
@@ -192,14 +192,14 @@ component MacroCard inherits Card {
                 VerticalLayout {
                     width: (parent.width - 12px) / 2;
                     horizontal-stretch: 0;
-                    spacing: 4px;
+                    spacing: Theme.space-xs;
                     HorizontalLayout {
-                        spacing: 6px;
+                        spacing: Theme.space-s;
                         alignment: start;
                         FieldLabel { text: @tr("Modifier delay"); vertical-alignment: center; }
                     }
                     HorizontalLayout {
-                        spacing: 6px;
+                        spacing: Theme.space-s;
                         NumericInput {
                             text: root.item.modifier-delay;
                             placeholder-text: MacroEditor.default-modifier-delay;
@@ -214,25 +214,25 @@ component MacroCard inherits Card {
             }
             if root.item.error.id != "": Text { text: Locale.text(root.item.error); color: Theme.error; font-size: Theme.font-body; wrap: word-wrap; }
             if root.item.usage.length > 0: HorizontalLayout {
-                spacing: 4px;
+                spacing: Theme.space-xs;
                 alignment: start;
                 Text { text: @tr("Used in:"); color: Theme.muted; font-size: Theme.font-body; vertical-alignment: center; }
                 for place in root.item.usage: Badge { text: place; }
             }
         }
         Rectangle { width: 1px; background: Theme.divider; }
-        VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: 12px; alignment: start;
+        VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: Theme.space-l; alignment: start;
             HorizontalLayout {
-                spacing: 6px;
+                spacing: Theme.space-s;
                 FieldLabel { text: @tr("Steps"); vertical-alignment: center; horizontal-stretch: 1; }
                 Button { text: @tr("Add pause"); icon: @image-url("icons/clock.svg"); colorize-icon: true; clicked => { MacroEditor.add-step(root.index, "pause:100"); } }
                 Button { text: @tr("Add step"); icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { MacroEditor.add-step(root.index, ""); } }
             }
             if root.item.steps.length == 0: Text { text: @tr("No steps yet. Each step — one chord or action."); color: Theme.muted; font-italic: true; wrap: word-wrap; }
             VerticalLayout {
-                spacing: 6px;
+                spacing: Theme.space-s;
                 for step[step-index] in root.item.steps: Rectangle {
-                    opacity: DragDrop.dragging && DragDrop.group == 100 + root.index && DragDrop.source == step-index ? 0.6 : 1;
+                    opacity: DragDrop.dragging && DragDrop.group == DragGroups.macro-steps + root.index && DragDrop.source == step-index ? Theme.dragged-opacity : 1;
 
                     HorizontalLayout { StepRow {
                     macro-index: root.index;
@@ -241,12 +241,12 @@ component MacroCard inherits Card {
                     step: step;
                     remove => { root.remove-step(step-index); }
                     } }
-                    DropMarker { width: parent.width; group: 100 + root.index; index: step-index; row-y: parent.y; row-height: parent.height; }
+                    DropMarker { width: parent.width; group: DragGroups.macro-steps + root.index; index: step-index; row-y: parent.y; row-height: parent.height; }
                 }
             }
         }
     }
-    DropMarker { width: parent.width; group: 4; index: root.index; row-y: root.y; row-height: root.height; }
+    DropMarker { width: parent.width; group: DragGroups.macros; index: root.index; row-y: root.y; row-height: root.height; }
 }
 
 component BuiltinMacrosHeader inherits Rectangle {
@@ -256,15 +256,15 @@ component BuiltinMacrosHeader inherits Rectangle {
     accessible-expanded: root.open;
     accessible-action-default => { root.open = !root.open; }
     HorizontalLayout {
-        spacing: 8px;
+        spacing: Theme.space-m;
         VerticalLayout { alignment: center; Image { width: 16px; source: root.open ? @image-url("icons/chevron-down.svg") : @image-url("icons/chevron-right.svg"); colorize: Theme.muted; } }
         VerticalLayout {
             horizontal-stretch: 1;
-            spacing: 2px;
+            spacing: Theme.space-2xs;
             HorizontalLayout {
-                spacing: 8px;
+                spacing: Theme.space-m;
                 alignment: start;
-                Text { text: @tr("Built-in macros"); color: Theme.text; font-size: Theme.font-large; font-weight: 700; vertical-alignment: center; }
+                Text { text: @tr("Built-in macros"); color: Theme.text; font-size: Theme.font-large; font-weight: Theme.weight-bold; vertical-alignment: center; }
             }
         }
     }
@@ -286,11 +286,11 @@ component BuiltinMacroLine inherits TouchArea {
     Rectangle { background: root.has-hover ? Theme.hover.transparentize(0.6) : transparent; }
     VerticalLayout {
         HorizontalLayout {
-            padding: 8px;
-            spacing: 12px;
+            padding: Theme.space-m;
+            spacing: Theme.space-l;
             HorizontalLayout {
                 width: 190px;
-                spacing: 4px;
+                spacing: Theme.space-xs;
                 Text { text: root.item.id; color: Theme.text; font-family: "monospace"; font-size: Theme.font-body; vertical-alignment: center; overflow: elide; }
                 VerticalLayout { alignment: center; IconButton { size: 24px; icon: @image-url("icons/copy.svg"); label: @tr("Copy ID"); clicked => { root.copy(root.item.id); } } }
             }
@@ -326,14 +326,14 @@ component BuiltinMacrosCard inherits Card {
     in-out property <bool> open;
     callback copy(string);
     VerticalLayout {
-        padding: 16px;
-        spacing: 12px;
+        padding: Theme.space-xl;
+        spacing: Theme.space-l;
         BuiltinMacrosHeader { open <=> root.open; }
         if root.open: VerticalLayout {
             spacing: 0px;
             HorizontalLayout {
-                padding: 8px;
-                spacing: 12px;
+                padding: Theme.space-m;
+                spacing: Theme.space-l;
                 FieldLabel { width: 190px; text: @tr("ID"); }
                 FieldLabel { width: 200px; text: @tr("Name"); }
                 FieldLabel { horizontal-stretch: 1; text: @tr("Steps"); }
@@ -358,7 +358,7 @@ export component MacrosPage inherits Rectangle {
     function copy(value: string) { clipboard.text = value; clipboard.select-all(); clipboard.copy(); NotificationCenter.send({ id: "copied" }); }
     VerticalLayout {
         padding: 0px;
-        spacing: 16px;
+        spacing: Theme.space-xl;
         CardHeader {
             vertical-stretch: 0;
             padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
@@ -382,7 +382,7 @@ export component MacrosPage inherits Rectangle {
             vertical-stretch: 1;
             PageContent {
                 alignment: start;
-                spacing: 16px;
+                spacing: Theme.space-xl;
                 if MacroEditor.has-errors: Text { text: @tr("Fix the existing macro errors first"); color: Theme.muted; font-size: Theme.font-body; }
                 if MacroEditor.macros.length == 0: Text { text: @tr("No macros yet. Click \"New macro\" to create the first one."); color: Theme.muted; wrap: word-wrap; }
                 for item[index] in MacroEditor.macros: MacroCard {

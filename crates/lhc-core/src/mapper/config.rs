@@ -1,5 +1,6 @@
 pub use crate::profile::model::TapDecision;
 use crate::profile::model::{PasteShortcut, TextMode};
+use crate::profile::timing;
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 
@@ -182,7 +183,7 @@ fn default_true() -> bool {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            default_long_hold_timeout_ms: 1000,
+            default_long_hold_timeout_ms: default_long_hold(),
             default_hold_timeout_ms: default_hold(),
             tap_decision: TapDecision::default(),
             default_macro_step_pause_ms: default_step_pause(),
@@ -201,31 +202,31 @@ impl Default for Settings {
 }
 
 fn default_long_hold() -> u64 {
-    1000
+    timing::DEFAULT_LONG_HOLD_MS
 }
 
 fn default_hold() -> u64 {
-    200
+    timing::DEFAULT_HOLD_MS
 }
 
 fn default_step_pause() -> u64 {
-    20
+    timing::DEFAULT_MACRO_STEP_PAUSE_MS
 }
 
 fn default_mod_delay() -> u64 {
-    5
+    timing::DEFAULT_MACRO_MODIFIER_DELAY_MS
 }
 
 fn default_macro_timeout() -> u64 {
-    10_000
+    timing::DEFAULT_MACRO_TIMEOUT_MS
 }
 
 fn default_double_tap() -> u64 {
-    200
+    timing::DEFAULT_DOUBLE_TAP_MS
 }
 
 fn default_combo_timeout() -> u64 {
-    50
+    timing::DEFAULT_COMBO_MS
 }
 
 #[cfg(test)]

@@ -95,7 +95,8 @@ impl<B: MapperBackend> MapperRuntime<B> {
     }
 
     /// Reserve the "starting" slot. Must be paired with `finish_start`.
-    fn begin_start(&mut self) -> Result<(), String> {
+    /// Mark a start as in progress and return its cancellation flag.
+    fn begin_start(&mut self) -> Result<Arc<AtomicBool>, String> {
         if let Some(handle) = self.handle.as_mut()
             && handle.reap_if_finished()
         {
@@ -107,8 +108,9 @@ impl<B: MapperBackend> MapperRuntime<B> {
             return Err("mapper already running".into());
         }
         self.starting = true;
-        self.start_stop = Some(Arc::new(AtomicBool::new(false)));
-        Ok(())
+        let stop = Arc::new(AtomicBool::new(false));
+        self.start_stop = Some(stop.clone());
+        Ok(stop)
     }
 
     /// Commit (or roll back) a spawn attempt made outside the lock.
@@ -147,12 +149,12 @@ impl<B: MapperBackend> MapperRuntime<B> {
         mouse_path: Option<&str>,
         cfg: config::AppConfig,
     ) -> Result<(), String> {
-        self.begin_start()?;
+        let stop = self.begin_start()?;
         let result = self.backend.spawn(
             device_path.to_string(),
             mouse_path.map(|s| s.to_string()),
             cfg,
-            self.start_stop.as_ref().expect("starting flag").clone(),
+            stop,
         );
         if let Some(handle) = self.finish_start(result, device_path, mouse_path)? {
             handle.stop();
@@ -448,12 +450,7 @@ pub fn start(device_path: &str, mouse_path: Option<&str>, config_json: &str) -> 
     // concurrent status()/stop() calls from the shell.
     let stop = {
         let mut state = lock_state();
-        state.begin_start()?;
-        state
-            .start_stop
-            .as_ref()
-            .ok_or("missing mapper start flag")?
-            .clone()
+        state.begin_start()?
     };
     let result = OsBackend::new().spawn(
         device_path.to_string(),

@@ -1,5 +1,20 @@
 import { Theme } from "theme.slint";
 
+/// Drag groups: every reorderable list has its own id, because `DragDrop`
+/// remembers row positions per group and index.
+export global DragGroups {
+    out property <int> layouts: 0;
+    out property <int> rules: 1;
+    out property <int> layer-tabs: 2;
+    out property <int> extra-keys: 3;
+    out property <int> macros: 4;
+    out property <int> menu-tabs: 5;
+    out property <int> keys: 6;
+    out property <int> library-rules: 7;
+    /// Steps of macro N use `macro-steps + N`.
+    out property <int> macro-steps: 100;
+}
+
 export global DragDrop {
     in-out property <int> group: -1;
     in-out property <int> source: -1;
@@ -36,7 +51,7 @@ export component DragHandle inherits Rectangle {
     in property <bool> horizontal;
     callback dropped(int, int);
     width: 28px; height: 28px;
-    border-radius: 5px;
+    border-radius: Theme.radius-chip;
     background: touch.has-hover ? Theme.hover : transparent;
     accessible-role: button;
     accessible-label: @tr("Drag");
@@ -83,6 +98,6 @@ export component DropMarker inherits Rectangle {
     visible: DragDrop.dragging && DragDrop.group == root.group && DragDrop.target == root.index && DragDrop.target != DragDrop.source;
     y: DragDrop.target > DragDrop.source ? root.row-height - 3px : 0px;
     height: 3px;
-    border-radius: 2px;
+    border-radius: Theme.radius-tiny;
     background: Theme.link;
 }

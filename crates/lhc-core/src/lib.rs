@@ -1,6 +1,7 @@
 pub mod active_window;
 pub mod autostart;
 pub mod config_document;
+pub mod env;
 pub mod events;
 #[cfg(target_os = "linux")]
 pub mod exec;

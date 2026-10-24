@@ -493,6 +493,9 @@ msgstr "Ścieżka urządzenia klawiatury"
 msgid "Copy path"
 msgstr "Skopiuj ścieżkę"
 
+msgid "In development features"
+msgstr "Funkcje w fazie rozwoju"
+
 msgid "Create a layer to assign its keys, or edit the base keyboard."
 msgstr ""
 "Utwórz warstwę, aby przypisać jej klawisze lub edytuj klawiaturę podstawową."

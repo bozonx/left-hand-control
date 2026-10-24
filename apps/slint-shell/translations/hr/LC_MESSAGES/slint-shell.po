@@ -486,6 +486,9 @@ msgstr "Put uređaja tipkovnice"
 msgid "Copy path"
 msgstr "Kopiraj put"
 
+msgid "In development features"
+msgstr "Značajke u razvoju"
+
 msgid "Create a layer to assign its keys, or edit the base keyboard."
 msgstr ""
 "Stvorite sloj da biste mu dodijelili tipke ili uredite osnovnu tipkovnicu."

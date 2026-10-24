@@ -30,13 +30,13 @@ component ToastCard inherits Rectangle {
     accessible-role: AccessibleRole.groupbox;
     accessible-label: Locale.text(root.item.message);
     content := HorizontalLayout {
-        padding: 14px;
-        spacing: 12px;
-        Text { text: root.item.kind == ToastKind.error ? "!" : root.item.kind == ToastKind.warning ? "!" : "✓"; color: root.accent; font-weight: 700; vertical-alignment: top; }
+        padding: Theme.space-l-plus;
+        spacing: Theme.space-l;
+        Text { text: root.item.kind == ToastKind.error ? "!" : root.item.kind == ToastKind.warning ? "!" : "✓"; color: root.accent; font-weight: Theme.weight-bold; vertical-alignment: top; }
         VerticalLayout {
-            spacing: 4px;
+            spacing: Theme.space-xs;
             horizontal-stretch: 1;
-            if root.item.kind == ToastKind.error: Text { text: @tr("Could not complete the action"); color: Theme.error; font-weight: 600; wrap: word-wrap; }
+            if root.item.kind == ToastKind.error: Text { text: @tr("Could not complete the action"); color: Theme.error; font-weight: Theme.weight-semibold; wrap: word-wrap; }
             Text { text: Locale.text(root.item.message); color: Theme.text; wrap: word-wrap; max-height: 72px; overflow: elide; }
         }
         VerticalLayout {
@@ -50,7 +50,7 @@ export component ToastStack inherits TouchArea {
     height: content.preferred-height;
     changed has-hover => { NotificationCenter.hover(self.has-hover); }
     content := VerticalLayout {
-        spacing: 8px;
+        spacing: Theme.space-m;
         padding: 0px;
         for item in NotificationCenter.items: ToastCard { item: item; }
     }

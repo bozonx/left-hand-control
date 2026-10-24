@@ -11,7 +11,7 @@ export component PopupCell inherits Rectangle {
     property <bool> empty: root.content == "";
     property <int> length: root.content.character-count;
     background: area.has-hover && !root.empty ? Theme.hover : Theme.card;
-    border-radius: 10px;
+    border-radius: Theme.radius-panel;
     border-width: 1px;
     border-color: Theme.divider;
     Text {
@@ -19,7 +19,7 @@ export component PopupCell inherits Rectangle {
         text: root.hotkey;
         color: root.empty ? Theme.divider : Theme.accent;
         font-size: Theme.font-body;
-        font-weight: 700;
+        font-weight: Theme.weight-bold;
     }
     Text {
         x: 8px; y: 18px;
@@ -52,11 +52,11 @@ export component PopupHeader inherits HorizontalLayout {
     in property <int> page;
     in property <int> page-count;
     callback dismiss();
-    spacing: 10px;
+    spacing: Theme.space-m-plus;
     height: 32px;
-    Text { text: root.title; color: Theme.text; font-size: Theme.font-large; font-weight: 600; vertical-alignment: center; }
+    Text { text: root.title; color: Theme.text; font-size: Theme.font-large; font-weight: Theme.weight-semibold; vertical-alignment: center; }
     if root.page-count > 0 && root.page-name != "": Text {
-        text: root.page-name; color: Theme.muted; font-size: 14px;
+        text: root.page-name; color: Theme.muted; font-size: Theme.font-default;
         vertical-alignment: center; overflow: elide;
     }
     Rectangle { horizontal-stretch: 1; }

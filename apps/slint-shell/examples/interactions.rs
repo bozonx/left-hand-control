@@ -173,7 +173,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     settings.set_combo_timeout("80".into());
     settings.set_macro_pause("35".into());
     settings.set_modifier_delay("12".into());
-    settings.set_appearance_index(1);
+    settings.set_appearance(AppearanceChoice::Light);
     settings.set_locale_index(1);
     settings.set_keyboard_device_path("/dev/input/test-keyboard".into());
     settings.set_mouse_device_path("/dev/input/test-mouse".into());
@@ -662,7 +662,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!library.get_macros_dirty());
     assert!(!library.get_commands_dirty());
     ui.invoke_navigate(Page::Settings, MenuKind::Emoji);
-    settings.set_appearance_index(2);
+    settings.set_appearance(AppearanceChoice::Dark);
     settings.set_locale_index(2);
     settings.invoke_save();
     assert_eq!(
@@ -726,7 +726,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             6 => { snapshot(&ui, "macros-ru"); ui.invoke_navigate(Page::Menus, MenuKind::Emoji); }
             7 => { snapshot(&ui, "emoji-ru"); ui.invoke_navigate(Page::Menus, MenuKind::Quick); }
             8 => { snapshot(&ui, "quick-ru"); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); }
-            9 => { snapshot(&ui, "settings-commands-ru"); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); ui.global::<SettingsEditor>().set_appearance_index(1); ui.global::<SettingsEditor>().set_locale_index(1); ui.global::<SettingsEditor>().invoke_save(); slint_shell::select_ui_language("en").unwrap(); ui.global::<Theme>().set_dark(false); ui.global::<Theme>().invoke_apply(); ui.window().set_size(slint::LogicalSize::new(940.0, 700.0)); }
+            9 => { snapshot(&ui, "settings-commands-ru"); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); ui.global::<SettingsEditor>().set_appearance(AppearanceChoice::Light); ui.global::<SettingsEditor>().set_locale_index(1); ui.global::<SettingsEditor>().invoke_save(); slint_shell::select_ui_language("en").unwrap(); ui.global::<Theme>().set_dark(false); ui.global::<Theme>().invoke_apply(); ui.window().set_size(slint::LogicalSize::new(940.0, 700.0)); }
             10 => { snapshot(&ui, "settings-light-en-small");
                 for (x, expected) in [(60.0, Page::Layouts), (170.0, Page::Settings)] {
                     let position = slint::LogicalPosition::new(x, 27.0);
@@ -756,7 +756,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y: -900.0 });
                 snapshot(&ui, "settings-game-mode-bottom");
                 ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y: 900.0 });
-                ui.global::<SettingsEditor>().set_tab(SettingsTab::General); assert_eq!(document.read().settings().default_hold_timeout_ms, 321); ui.global::<SettingsEditor>().set_appearance_index(3); ui.global::<SettingsEditor>().invoke_save(); assert_eq!(ConfigDocument::load(paths.clone()).unwrap().settings().appearance, lhc_core::profile::model::Appearance::EInk); ui.global::<Theme>().set_eink(true); ui.global::<Theme>().set_dark(false); slint_shell::ui::apply_theme(&ui.global::<Theme>()); }
+                ui.global::<SettingsEditor>().set_tab(SettingsTab::General); assert_eq!(document.read().settings().default_hold_timeout_ms, 321); ui.global::<SettingsEditor>().set_appearance(AppearanceChoice::EInk); ui.global::<SettingsEditor>().invoke_save(); assert_eq!(ConfigDocument::load(paths.clone()).unwrap().settings().appearance, lhc_core::profile::model::Appearance::EInk); ui.global::<Theme>().set_eink(true); ui.global::<Theme>().set_dark(false); slint_shell::ui::apply_theme(&ui.global::<Theme>()); }
             19 => { snapshot(&ui, "settings-eink"); ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: slint::LogicalPosition::new(500.0, 450.0), delta_x: 0.0, delta_y: -450.0 }); }
             20 => { snapshot(&ui, "settings-behavior-eink"); ui.global::<SettingsEditor>().set_message(Message { id: "settings-timing-invalid".into(), arg: "".into(), count: 0 }); }
             21 => {

@@ -148,18 +148,18 @@ pub fn spawn() -> Result<Worker, Box<dyn std::error::Error>> {
         .arg("--spell-worker")
         .stdin(std::process::Stdio::piped())
         .env(
-            "LHC_PARENT_SOCKET",
-            std::env::var("LHC_SOCKET").unwrap_or_else(|_| ipc::DEFAULT_SOCKET.into()),
+            crate::env::PARENT_SOCKET,
+            std::env::var(crate::env::SOCKET).unwrap_or_else(|_| ipc::DEFAULT_SOCKET.into()),
         )
-        .env("LHC_SOCKET", &socket)
+        .env(crate::env::SOCKET, &socket)
         .env_remove("XDG_ACTIVATION_TOKEN");
-    match std::env::var_os("LHC_METRICS") {
+    match std::env::var_os(crate::env::METRICS) {
         Some(metrics) => {
             let mut path = metrics;
             path.push(".spell.csv");
-            command.env("LHC_METRICS", path)
+            command.env(crate::env::METRICS, path)
         }
-        None => command.env_remove("LHC_METRICS"),
+        None => command.env_remove(crate::env::METRICS),
     };
     let mut worker = Worker {
         child: Some(command.spawn()?),

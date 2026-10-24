@@ -489,6 +489,9 @@ msgstr "Пернетақта құрылғысының жолы"
 msgid "Copy path"
 msgstr "Жолды көшіру"
 
+msgid "In development features"
+msgstr "Әзірленіп жатқан мүмкіндіктер"
+
 msgid "Create a layer to assign its keys, or edit the base keyboard."
 msgstr ""
 "Оның пернелерін тағайындау үшін қабат жасаңыз немесе негізгі пернетақтаны "

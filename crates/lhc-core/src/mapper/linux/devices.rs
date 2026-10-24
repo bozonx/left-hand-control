@@ -1,12 +1,15 @@
 use super::VIRTUAL_DEVICE_NAME;
 use crate::mapper::{InputDevice, KeyboardDevice};
+use crate::platform::INPUT_DIR;
 use evdev::{Device, KeyCode};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 /// udev symlinks to event devices, preferred in this order. Their names
 /// survive reboots and replugging, unlike `eventN`.
-const STABLE_DIRS: [&str; 2] = ["/dev/input/by-id", "/dev/input/by-path"];
+const STABLE_DIRS: [&str; 2] = [BY_ID_DIR, "/dev/input/by-path"];
+/// Links named after the device itself, so they follow it to another port.
+pub(super) const BY_ID_DIR: &str = "/dev/input/by-id";
 
 /// Stable symlink for each `/dev/input/eventN` that has one.
 fn stable_paths() -> HashMap<PathBuf, PathBuf> {
@@ -44,7 +47,7 @@ fn stable_path(event: &Path, stable: &HashMap<PathBuf, PathBuf>) -> String {
 
 pub fn list_input_devices() -> Result<Vec<InputDevice>, String> {
     let mut out = Vec::new();
-    let dir = std::fs::read_dir("/dev/input").map_err(|e| format!("read /dev/input: {e}"))?;
+    let dir = std::fs::read_dir(INPUT_DIR).map_err(|e| format!("read {INPUT_DIR}: {e}"))?;
     let mut paths: Vec<PathBuf> = dir
         .filter_map(|e| e.ok())
         .map(|e| e.path())

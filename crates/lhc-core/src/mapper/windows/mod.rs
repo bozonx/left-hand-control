@@ -495,10 +495,13 @@ fn report_text(failure: TextInputFailure) {
 
 /// Text is typed on its own thread: the mapper thread keeps reading the
 /// hooks while a long text is injected.
+/// Texts queued for typing before senders drop new ones.
+const TEXT_QUEUE: usize = 32;
+
 fn text_tx() -> &'static mpsc::SyncSender<(String, TextRequest)> {
     static TX: OnceLock<mpsc::SyncSender<(String, TextRequest)>> = OnceLock::new();
     TX.get_or_init(|| {
-        let (tx, rx) = mpsc::sync_channel::<(String, TextRequest)>(32);
+        let (tx, rx) = mpsc::sync_channel::<(String, TextRequest)>(TEXT_QUEUE);
         if let Err(error) = thread::Builder::new()
             .name("lhc-text".into())
             .spawn(move || {

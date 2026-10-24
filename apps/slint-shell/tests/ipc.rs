@@ -1,6 +1,6 @@
 //! Exercise the real IPC server without compiling the UI library as a test target.
 
-pub use slint_shell::command;
+pub use slint_shell::{command, env};
 
 #[allow(dead_code)]
 #[path = "../src/ipc.rs"]

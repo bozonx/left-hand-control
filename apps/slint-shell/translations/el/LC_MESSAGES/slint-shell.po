@@ -493,6 +493,9 @@ msgstr "Διαδρομή συσκευής πληκτρολογίου"
 msgid "Copy path"
 msgstr "Διαδρομή αντιγραφής"
 
+msgid "In development features"
+msgstr "Λειτουργίες υπό ανάπτυξη"
+
 msgid "Create a layer to assign its keys, or edit the base keyboard."
 msgstr ""
 "Δημιουργήστε ένα επίπεδο για να εκχωρήσετε τα πλήκτρα του ή επεξεργαστείτε "

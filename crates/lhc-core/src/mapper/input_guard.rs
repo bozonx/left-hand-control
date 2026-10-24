@@ -1,6 +1,9 @@
 //! Complete snapshots of potentially held native keys, published before injection.
 
 use std::collections::BTreeSet;
+
+/// Most keys a snapshot may list; anything larger is a corrupt stream.
+const MAX_SNAPSHOT_KEYS: usize = 1024;
 use std::io::{self, Read, Write};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -48,7 +51,7 @@ pub(super) fn read_snapshots(reader: &mut impl Read, held: &mut BTreeSet<Key>) -
             Err(error) => return Err(error),
         }
         let count = usize::from(u16::from_le_bytes(count));
-        if count > 1024 {
+        if count > MAX_SNAPSHOT_KEYS {
             return Err(io::Error::other("invalid input guard snapshot"));
         }
         let mut next = BTreeSet::new();

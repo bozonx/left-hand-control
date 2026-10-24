@@ -15,42 +15,83 @@ const EXPIRY_TICK: Duration = Duration::from_millis(100);
 
 const VISIBLE: usize = 4;
 
+/// How long each kind of notification stays on screen.
+const SHORT: Duration = Duration::from_secs(2);
+const SUCCESS: Duration = Duration::from_secs(3);
+const WARNING: Duration = Duration::from_secs(6);
+const LONG: Duration = Duration::from_secs(10);
+
+/// Message ids shown as notifications; ids missing here stay silent unless
+/// they come from the backend.
+const POLICY: &[(&[&str], ToastKind, Duration)] = &[
+    (&["copied"], ToastKind::Success, SHORT),
+    (
+        &[
+            "layout-created",
+            "layout-saved",
+            "layout-deleted",
+            "layout-activated",
+            "layout-discarded",
+            "command-started",
+            "mapper-running",
+            "mapper-stopped",
+        ],
+        ToastKind::Success,
+        SUCCESS,
+    ),
+    (
+        &[
+            "rule-duplicate-trigger",
+            "rule-shadowed-trigger",
+            "rule-missing-trigger",
+            "config-edit-conflict",
+            "library-changed",
+            "worker-restarting",
+            "commands-disabled",
+            "action-unavailable",
+            "save-layout-first",
+            "layout-slot-empty",
+            "select-input-device",
+        ],
+        ToastKind::Warning,
+        WARNING,
+    ),
+    (
+        &[crate::i18n::SAVED_MAPPER_NOT_UPDATED],
+        ToastKind::Warning,
+        LONG,
+    ),
+    (
+        &[
+            "error",
+            "action-failed",
+            "config-unavailable",
+            "worker-unavailable",
+            "worker-restart-limit",
+            "worker-not-started",
+            "worker-error",
+            "mapper-failed",
+            "mapper-running-error",
+            "mapper-stopped-error",
+            "config-io",
+            "config-parse",
+            "config-invalid",
+        ],
+        ToastKind::Error,
+        LONG,
+    ),
+];
+
 fn policy(message: &Message, backend: bool) -> Option<(ToastKind, Duration)> {
-    let (kind, seconds) = match message.id.as_str() {
-        "" => return None,
-        "copied" => (ToastKind::Success, 2),
-        "layout-created" | "layout-saved" | "layout-deleted" | "layout-activated"
-        | "layout-discarded" | "command-completed" => (ToastKind::Success, 3),
-        "mapper-running" | "mapper-stopped" => (ToastKind::Success, 3),
-        "rule-duplicate-trigger"
-        | "rule-shadowed-trigger"
-        | "rule-missing-trigger"
-        | "config-edit-conflict"
-        | "library-changed"
-        | "worker-restarting"
-        | "commands-disabled"
-        | "action-unavailable"
-        | "save-layout-first"
-        | "layout-slot-empty"
-        | "select-input-device" => (ToastKind::Warning, 6),
-        "saved-mapper-not-updated" => (ToastKind::Warning, 10),
-        "error"
-        | "action-failed"
-        | "config-unavailable"
-        | "worker-unavailable"
-        | "worker-restart-limit"
-        | "worker-not-started"
-        | "worker-error"
-        | "mapper-failed"
-        | "mapper-running-error"
-        | "mapper-stopped-error"
-        | "config-io"
-        | "config-parse"
-        | "config-invalid" => (ToastKind::Error, 10),
-        _ if backend => (ToastKind::Error, 10),
-        _ => return None,
-    };
-    Some((kind, Duration::from_secs(seconds)))
+    let id = message.id.as_str();
+    if id.is_empty() {
+        return None;
+    }
+    POLICY
+        .iter()
+        .find(|(ids, _, _)| ids.contains(&id))
+        .map(|&(_, kind, duration)| (kind, duration))
+        .or(backend.then_some((ToastKind::Error, LONG)))
 }
 
 struct Entry {
@@ -127,10 +168,10 @@ struct State {
 }
 
 pub(crate) fn report(ui: &SettingsWindow, message: &Msg) -> Message {
+    // A successful start or stop is reported by the status line alone.
+    let silent = matches!(message, Msg::MapperRunning(None) | Msg::MapperStopped(None));
     let message = message.to_ui();
-    if !matches!(message.id.as_str(), "mapper-running" | "mapper-stopped")
-        || !message.arg.is_empty()
-    {
+    if !silent {
         ui.global::<NotificationCenter>()
             .invoke_send(message.clone());
     }
@@ -225,6 +266,17 @@ pub(crate) fn bind(ui: &SettingsWindow) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn every_policy_id_has_a_translated_message() {
+        let catalog = include_str!("../ui/i18n.slint");
+        for id in POLICY.iter().flat_map(|(ids, _, _)| ids.iter()) {
+            assert!(
+                catalog.contains(&format!("m.id == \"{id}\"")),
+                "{id} is not handled by Locale.text()"
+            );
+        }
+    }
 
     #[test]
     fn localized_diagnostic_ids_remain_error_notifications() {

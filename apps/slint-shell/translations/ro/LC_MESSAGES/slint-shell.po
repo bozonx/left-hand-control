@@ -490,6 +490,9 @@ msgstr "Calea dispozitivului tastaturii"
 msgid "Copy path"
 msgstr "Copiați calea"
 
+msgid "In development features"
+msgstr "Funcții în dezvoltare"
+
 msgid "Create a layer to assign its keys, or edit the base keyboard."
 msgstr ""
 "Creați un strat pentru a-i atribui tastele sau editați tastatura de bază."

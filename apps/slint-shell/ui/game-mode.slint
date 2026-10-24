@@ -23,9 +23,9 @@ export component GameModeButton inherits Rectangle {
         menu.show();
     }
     HorizontalLayout {
-        padding-left: 10px; padding-right: 8px; spacing: 6px; alignment: center;
+        padding-left: Theme.space-m-plus; padding-right: Theme.space-m; spacing: Theme.space-s; alignment: center;
         VerticalLayout { alignment: center; Image { width: 18px; height: 18px; source: @image-url("icons/gamepad-2.svg"); colorize: root.state-color; } }
-        Text { text: root.label; color: root.state-color; font-weight: 600; vertical-alignment: center; }
+        Text { text: root.label; color: root.state-color; font-weight: Theme.weight-semibold; vertical-alignment: center; }
         VerticalLayout { alignment: center; Image { width: 12px; height: 12px; source: @image-url("icons/chevron-down.svg"); colorize: root.state-color; transform-rotation: menu.is-open ? 180deg : 0deg; } }
     }
     forward-focus: focus;
@@ -41,7 +41,7 @@ export component GameModeButton inherits Rectangle {
     Tooltip {
         Rectangle {
             background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-small;
-            HorizontalLayout { padding: 8px; Text { text: Locale.text(AppState.game-status) + "\n" + @tr("Click to change mode (Auto / On / Off)"); color: Theme.text; } }
+            HorizontalLayout { padding: Theme.space-m; Text { text: Locale.text(AppState.game-status) + "\n" + @tr("Click to change mode (Auto / On / Off)"); color: Theme.text; } }
         }
     }
     menu := PopupWindow {
@@ -62,8 +62,8 @@ export component GameModeButton inherits Rectangle {
             Rectangle {
                 background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-large;
                 VerticalLayout {
-                    padding: 8px; spacing: 6px;
-                    Text { text: @tr("Game mode"); color: Theme.text; font-weight: 600; }
+                    padding: Theme.space-m; spacing: Theme.space-s;
+                    Text { text: @tr("Game mode"); color: Theme.text; font-weight: Theme.weight-semibold; }
                     for label[index] in [@tr("Auto — according to settings"), @tr("On — always"), @tr("Off — never")]: Button {
                         text: label + (AppState.game-control == (index == 0 ? GameModeControl.auto : index == 1 ? GameModeControl.on : GameModeControl.off) ? " ✓" : "");
                         primary: root.highlighted == index;

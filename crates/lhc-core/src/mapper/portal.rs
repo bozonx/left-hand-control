@@ -112,10 +112,9 @@ unsafe extern "C" {
 
 // --- Portal DBus identifiers --------------------------------------------
 
-pub(super) const PORTAL_DEST: &str = "org.freedesktop.portal.Desktop";
-pub(super) const PORTAL_PATH: &str = "/org/freedesktop/portal/desktop";
+pub(super) use crate::platform::dbus::{PORTAL_PATH, PORTAL_SERVICE as PORTAL_DEST};
 const IFACE_REMOTE: &str = "org.freedesktop.portal.RemoteDesktop";
-const IFACE_REQUEST: &str = "org.freedesktop.portal.Request";
+use crate::platform::dbus::PORTAL_REQUEST_INTERFACE as IFACE_REQUEST;
 const IFACE_SESSION: &str = "org.freedesktop.portal.Session";
 
 /// Keyboard capability bit in the RemoteDesktop "types" field.
@@ -128,11 +127,34 @@ const PERSIST_MODE_PERMANENT: u32 = 2;
 const PORTAL_RESPONSE_TIMEOUT: Duration = Duration::from_secs(30);
 /// `Start` may show the consent dialog: leave the user time to read it.
 const CONSENT_TIMEOUT: Duration = Duration::from_secs(180);
+/// How long typing waits for the user to release physical modifiers.
+const MODIFIER_RELEASE_TIMEOUT: Duration = Duration::from_secs(2);
+/// Pause between checks of a condition that is polled.
+const POLL_INTERVAL: Duration = Duration::from_millis(10);
+/// Pause between checks of a worker reply, so a cancelled request is noticed.
+const REPLY_POLL_INTERVAL: Duration = Duration::from_millis(20);
+/// Pause between polls of a portal future.
+const FUTURE_POLL_INTERVAL: Duration = Duration::from_millis(5);
+/// Timeout of a single D-Bus method call to the portal.
+const DBUS_METHOD_TIMEOUT: Duration = Duration::from_secs(2);
+/// EI handshake and the first keyboard device of a new session.
+const EI_SETUP_TIMEOUT: Duration = Duration::from_secs(5);
+/// Keyboard device of a running session that has to be (re)announced.
+const EI_KEYBOARD_TIMEOUT: Duration = Duration::from_secs(2);
+/// Start of keyboard emulation after the device is known.
+const EI_EMULATION_TIMEOUT: Duration = Duration::from_secs(1);
+/// Acknowledgement of sent input by the compositor.
+const EI_ACK_TIMEOUT: Duration = Duration::from_secs(2);
+const EI_ACK_POLL_INTERVAL: Duration = Duration::from_millis(1);
+/// Deadline of a typing tool: a base plus a share per character.
+const TEXT_TOOL_BASE_TIMEOUT_MS: u64 = 5_000;
+const TEXT_TOOL_PER_CHAR_MS: u64 = 50;
 
 const STATE_RELEASED: u32 = 0;
 const STATE_PRESSED: u32 = 1;
 
 const RESTORE_TOKEN_FILE: &str = "portal-remote-desktop.token";
+const CLIPBOARD_RESTORE_TOKEN_FILE: &str = "portal-remote-desktop-clipboard.token";
 
 // --- XKB keymap lookup for layout-aware text injection ------------------
 
@@ -548,14 +570,14 @@ pub fn set_token_dir(dir: PathBuf) {
 /// mapper thread. Failures are reported as `CoreEvent::TextInputFailed`.
 pub(super) fn type_text(text: &str, request: TextRequest) -> Result<(), TextInputFailure> {
     request.check()?;
-    let released = Instant::now() + Duration::from_secs(2);
+    let released = Instant::now() + MODIFIER_RELEASE_TIMEOUT;
     let hardware = HardwareState::capture();
     while let Err(error) = hardware.modifiers_released() {
         request.check()?;
         if Instant::now() >= released {
             return Err(error);
         }
-        thread::sleep(Duration::from_millis(10));
+        thread::sleep(POLL_INTERVAL);
     }
     let cfg = TEXT_BACKEND
         .lock()
@@ -592,7 +614,8 @@ fn run_text_tool(
     request: &TextRequest,
 ) -> Result<(), TextInputFailure> {
     request.check()?;
-    let timeout_ms = 5_000 + 50 * text.chars().count() as u64;
+    let timeout_ms =
+        TEXT_TOOL_BASE_TIMEOUT_MS + TEXT_TOOL_PER_CHAR_MS * text.chars().count() as u64;
     let mut cmd = std::process::Command::new(program);
     cmd.args(args);
     match crate::exec::run_cmd_with_cancel(&mut cmd, timeout_ms, || request.check().is_err()) {
@@ -689,7 +712,7 @@ impl Worker {
         // The worker reports its own fatal error; forget it so the next
         // text opens a new session.
         let result = loop {
-            match done_rx.recv_timeout(Duration::from_millis(20)) {
+            match done_rx.recv_timeout(REPLY_POLL_INTERVAL) {
                 Ok(result) => break result,
                 Err(mpsc::RecvTimeoutError::Disconnected) => {
                     *slot = None;
@@ -761,7 +784,7 @@ fn start_worker<B: 'static>(
         })
         .map_err(|e| format!("start {name}: {e}"))?;
     loop {
-        match ready_rx.recv_timeout(Duration::from_millis(20)) {
+        match ready_rx.recv_timeout(REPLY_POLL_INTERVAL) {
             Ok(result) => {
                 result?;
                 return Ok(tx);
@@ -895,7 +918,7 @@ impl LibeiBackend {
                 return Err(format!("create EI context: {e}"));
             }
         };
-        let handshake = match ei_handshake_with_timeout(&context, Duration::from_secs(5)) {
+        let handshake = match ei_handshake_with_timeout(&context, EI_SETUP_TIMEOUT) {
             Ok(handshake) => handshake,
             Err(e) => {
                 close_session(&conn, &session_handle);
@@ -921,7 +944,7 @@ impl LibeiBackend {
             depressed: 0,
             latched: 0,
         };
-        if let Err(e) = backend.wait_until(Duration::from_secs(5), Self::has_keyboard) {
+        if let Err(e) = backend.wait_until(EI_SETUP_TIMEOUT, Self::has_keyboard) {
             close_session(&backend.conn, &backend.session_handle);
             return Err(e);
         }
@@ -941,14 +964,14 @@ impl LibeiBackend {
         self.pump_events()
             .map_err(TextInputFailure::BackendUnavailable)?;
         if !self.has_keyboard() {
-            self.wait_until(Duration::from_secs(2), Self::has_keyboard)
+            self.wait_until(EI_KEYBOARD_TIMEOUT, Self::has_keyboard)
                 .map_err(TextInputFailure::BackendUnavailable)?;
         }
         // Events sent while the compositor paused the device are a protocol
         // error, e.g. on the lock screen.
         if !self.keyboard_emulating
             && self
-                .wait_until(Duration::from_secs(1), |backend| backend.keyboard_emulating)
+                .wait_until(EI_EMULATION_TIMEOUT, |backend| backend.keyboard_emulating)
                 .is_err()
         {
             return Err(TextInputFailure::BackendUnavailable(
@@ -1082,7 +1105,7 @@ impl LibeiBackend {
         self.context
             .flush()
             .map_err(|e| format!("EI sync flush: {e}"))?;
-        let deadline = Instant::now() + Duration::from_secs(2);
+        let deadline = Instant::now() + EI_ACK_TIMEOUT;
         while !done.load(Ordering::SeqCst) {
             request.check().map_err(|e| format!("{e:?}"))?;
             self.pump_events()?;
@@ -1090,7 +1113,7 @@ impl LibeiBackend {
                 return Err("EI input acknowledgement timed out".into());
             }
             if !done.load(Ordering::SeqCst) {
-                thread::sleep(Duration::from_millis(1));
+                thread::sleep(EI_ACK_POLL_INTERVAL);
             }
         }
         Ok(())
@@ -1115,7 +1138,7 @@ impl LibeiBackend {
             if Instant::now() >= deadline {
                 return Err("EI keyboard device is not available".into());
             }
-            thread::sleep(Duration::from_millis(10));
+            thread::sleep(POLL_INTERVAL);
         }
     }
 
@@ -1260,7 +1283,7 @@ fn ei_handshake_with_timeout(
     timeout: Duration,
 ) -> Result<reis::handshake::HandshakeResp, String> {
     let mut handshaker =
-        reis::handshake::EiHandshaker::new("Left Hand Control", ContextType::Sender);
+        reis::handshake::EiHandshaker::new(crate::storage::APP_NAME, ContextType::Sender);
     let deadline = Instant::now() + timeout;
     while Instant::now() < deadline {
         context
@@ -1286,7 +1309,7 @@ fn ei_handshake_with_timeout(
         context
             .flush()
             .map_err(|e| format!("EI handshake flush: {e}"))?;
-        thread::sleep(Duration::from_millis(10));
+        thread::sleep(POLL_INTERVAL);
     }
     Err("EI handshake timed out".into())
 }
@@ -1446,7 +1469,7 @@ type PortalSession = (
 
 fn init_portal(text_request: &TextRequest) -> Result<PortalSession, String> {
     let conn = zbus::blocking::connection::Builder::session()
-        .and_then(|builder| builder.method_timeout(Duration::from_secs(2)).build())
+        .and_then(|builder| builder.method_timeout(DBUS_METHOD_TIMEOUT).build())
         .map_err(|e| format!("connect session bus: {e}"))?;
     let unique_name = conn
         .unique_name()
@@ -1671,7 +1694,7 @@ fn poll_until<T>(
         if let std::task::Poll::Ready(value) = future.as_mut().poll(&mut context) {
             return Ok(value);
         }
-        thread::sleep(Duration::from_millis(5));
+        thread::sleep(FUTURE_POLL_INTERVAL);
     }
 }
 
@@ -1709,7 +1732,7 @@ impl TokenScope {
     fn filename(self) -> &'static str {
         match self {
             Self::Keyboard => RESTORE_TOKEN_FILE,
-            Self::Clipboard => "portal-remote-desktop-clipboard.token",
+            Self::Clipboard => CLIPBOARD_RESTORE_TOKEN_FILE,
         }
     }
 }
@@ -1801,7 +1824,7 @@ fn gen_token(prefix: &str) -> String {
 }
 
 fn make_request_path(sender_escaped: &str, handle_token: &str) -> String {
-    format!("/org/freedesktop/portal/desktop/request/{sender_escaped}/{handle_token}")
+    crate::platform::dbus::portal_request_path(sender_escaped, handle_token)
 }
 
 #[cfg(test)]

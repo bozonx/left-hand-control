@@ -18,7 +18,7 @@ component ScrollBar inherits Rectangle {
         y: root.horizontal ? 3px : (-root.value / max(1px, root.maximum)) * root.travel;
         width: root.horizontal ? root.thumb-size : 6px;
         height: root.horizontal ? 6px : root.thumb-size;
-        border-radius: 3px;
+        border-radius: min(self.width, self.height) / 2;
         background: touch.has-hover || touch.pressed ? Theme.muted : Theme.border;
     }
     touch := TouchArea {
@@ -78,10 +78,13 @@ export component ScrollView {
     in property <bool> drag-scroll: false;
     private property <bool> drag-active: root.drag-scroll && DragDrop.dragging;
     private property <length> drag-edge: 48px;
+    /// Edge auto-scroll while dragging: fastest step and its tick (one frame at 60 Hz).
+    private property <length> drag-max-step: 16px;
+    private property <duration> drag-tick: 16ms;
     private property <length> drag-pointer: DragDrop.pointer-y - root.absolute-position.y;
     private property <length> drag-speed: !root.drag-active ? 0px
-        : root.drag-pointer < root.drag-edge ? 16px * min(1, (root.drag-edge - root.drag-pointer) / root.drag-edge)
-        : root.drag-pointer > content.height - root.drag-edge ? -16px * min(1, (root.drag-pointer - content.height + root.drag-edge) / root.drag-edge)
+        : root.drag-pointer < root.drag-edge ? root.drag-max-step * min(1, (root.drag-edge - root.drag-pointer) / root.drag-edge)
+        : root.drag-pointer > content.height - root.drag-edge ? -root.drag-max-step * min(1, (root.drag-pointer - content.height + root.drag-edge) / root.drag-edge)
         : 0px;
     private property <int> drag-wheel: DragDrop.wheel-serial;
     // Every ScrollView sees the serial change; only the one hosting the drag may consume it.
@@ -114,7 +117,7 @@ export component ScrollView {
         @children
     }
     Timer {
-        interval: 16ms;
+        interval: root.drag-tick;
         running: root.drag-speed != 0px;
         triggered => { root.drag-scroll-by(root.drag-speed); }
     }

@@ -493,6 +493,9 @@ msgstr "Percorso del dispositivo tastiera"
 msgid "Copy path"
 msgstr "Copia percorso"
 
+msgid "In development features"
+msgstr "Funzionalità in sviluppo"
+
 msgid "Create a layer to assign its keys, or edit the base keyboard."
 msgstr ""
 "Crea un livello per assegnarne i tasti o modifica la tastiera di base."

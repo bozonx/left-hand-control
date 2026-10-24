@@ -485,6 +485,9 @@ msgstr "Cesta k zařízení klávesnice"
 msgid "Copy path"
 msgstr "Kopírovat cestu"
 
+msgid "In development features"
+msgstr "Funkce ve vývoji"
+
 msgid "Create a layer to assign its keys, or edit the base keyboard."
 msgstr "Vytvořte vrstvu k přiřazení kláves nebo upravte základní klávesnici."
 

@@ -1,5 +1,8 @@
 //! Tray icon pixels: the application icon, greyed out while the mapper is off.
 
+/// Side of the plain square drawn when the icon cannot be decoded.
+const FALLBACK_SIZE: u32 = 22;
+
 /// RGBA pixels, width and height of the tray icon.
 pub fn rgba(enabled: bool) -> (Vec<u8>, u32, u32) {
     match decode(include_bytes!("../../assets/icon.png")) {
@@ -21,7 +24,11 @@ pub fn rgba(enabled: bool) -> (Vec<u8>, u32, u32) {
             } else {
                 [130, 130, 130, 255]
             };
-            (colour.repeat(22 * 22), 22, 22)
+            (
+                colour.repeat((FALLBACK_SIZE * FALLBACK_SIZE) as usize),
+                FALLBACK_SIZE,
+                FALLBACK_SIZE,
+            )
         }
     }
 }

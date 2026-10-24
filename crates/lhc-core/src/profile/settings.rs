@@ -12,6 +12,7 @@ use super::model::{
     LayoutMode, LocalePreference, PasteShortcut, TapDecision, TextMode,
 };
 use super::schema::{self, CONFIG_SCHEMA_VERSION};
+use crate::storage::CONFIG_FILE;
 use serde::{Deserialize, Serialize};
 
 /// Parse `config.json`; an empty file gives the defaults.
@@ -20,15 +21,15 @@ pub fn parse(text: &str) -> Result<AppSettings, String> {
         return Ok(AppSettings::default());
     }
     let value: serde_json::Value =
-        serde_json::from_str(text).map_err(|error| format!("config.json: {error}"))?;
-    let settings = match schema::read_version(&value, "config.json", CONFIG_SCHEMA_VERSION)? {
+        serde_json::from_str(text).map_err(|error| format!("{CONFIG_FILE}: {error}"))?;
+    let settings = match schema::read_version(&value, CONFIG_FILE, CONFIG_SCHEMA_VERSION)? {
         1 => from_doc(
             serde_json::from_str::<ConfigDoc>(text)
-                .map_err(|error| schema::read_error("config.json", &error))?,
+                .map_err(|error| schema::read_error(CONFIG_FILE, &error))?,
         )?,
         version => {
             return Err(format!(
-                "config.json: no reader for schema version {version}"
+                "{CONFIG_FILE}: no reader for schema version {version}"
             ));
         }
     };
@@ -339,7 +340,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
         locale: settings.locale,
         default_hold_timeout_ms: timing.hold_ms,
         default_long_hold_timeout_ms: timing.long_hold_ms,
-        tap_decision: tap_decision_name(timing.tap_decision).into(),
+        tap_decision: timing.tap_decision,
         default_double_tap_timeout_ms: timing.double_tap_ms,
         combo_timeout_ms: timing.combo_ms,
         default_macro_step_pause_ms: timing.macro_step_pause_ms,
@@ -387,13 +388,6 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
     })
 }
 
-fn tap_decision_name(decision: TapDecision) -> &'static str {
-    match decision {
-        TapDecision::PermissiveHold => "permissiveHold",
-        TapDecision::HoldOnOtherKeyPress => "holdOnOtherKeyPress",
-    }
-}
-
 fn to_doc(settings: &AppSettings) -> ConfigDoc {
     let game_mode = &settings.game_mode;
     let filled = |value: &Option<String>| value.clone().filter(|value| !value.is_empty());
@@ -421,10 +415,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
                 long_hold_ms: settings.default_long_hold_timeout_ms,
                 double_tap_ms: settings.default_double_tap_timeout_ms,
                 combo_ms: settings.combo_timeout_ms,
-                tap_decision: match settings.tap_decision.as_str() {
-                    "holdOnOtherKeyPress" => TapDecision::HoldOnOtherKeyPress,
-                    _ => TapDecision::PermissiveHold,
-                },
+                tap_decision: settings.tap_decision,
                 macro_step_pause_ms: settings.default_macro_step_pause_ms,
                 macro_modifier_delay_ms: settings.default_macro_modifier_delay_ms,
                 macro_timeout_ms: settings.macro_timeout_ms,
@@ -650,7 +641,7 @@ mod tests {
             appearance: Appearance::EInk,
             locale: LocalePreference::Russian,
             default_hold_timeout_ms: 180,
-            tap_decision: "holdOnOtherKeyPress".into(),
+            tap_decision: TapDecision::HoldOnOtherKeyPress,
             input_device_path: Some("/dev/input/by-id/kbd".into()),
             input_mouse_device_path: Some("/dev/input/by-id/mouse".into()),
             current_layout_id: Some("user:Main".into()),

@@ -44,6 +44,9 @@ const ACCEPT_POLL: Duration = Duration::from_millis(20);
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(1);
 /// Read/write timeout of a client waiting for the reply.
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(2);
+/// Loopback port of the IPC server on Windows unless `LHC_PORT` sets one.
+#[cfg(windows)]
+const DEFAULT_PORT: u16 = 43176;
 
 #[derive(Serialize, Deserialize)]
 struct Request {
@@ -97,15 +100,15 @@ pub fn socket_path(name: &str) -> std::io::Result<PathBuf> {
 
 #[cfg(unix)]
 fn own_socket() -> std::io::Result<PathBuf> {
-    socket_path(&std::env::var("LHC_SOCKET").unwrap_or_else(|_| DEFAULT_SOCKET.into()))
+    socket_path(&std::env::var(crate::env::SOCKET).unwrap_or_else(|_| DEFAULT_SOCKET.into()))
 }
 
 #[cfg(windows)]
 fn tcp_address() -> SocketAddrV4 {
-    let port = std::env::var("LHC_PORT")
+    let port = std::env::var(crate::env::PORT)
         .ok()
         .and_then(|value| value.parse().ok())
-        .unwrap_or(43176);
+        .unwrap_or(DEFAULT_PORT);
     SocketAddrV4::new(Ipv4Addr::LOCALHOST, port)
 }
 

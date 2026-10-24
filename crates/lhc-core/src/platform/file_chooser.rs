@@ -1,11 +1,14 @@
 //! File and folder selection through the XDG desktop portal, so the
 //! dialog matches the desktop (KDE, GNOME, …) without a toolkit of our own.
 
+use crate::platform::dbus;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use zbus::blocking::{Connection, Proxy};
 use zbus::zvariant::{OwnedValue, Value};
+
+const FILE_CHOOSER_INTERFACE: &str = "org.freedesktop.portal.FileChooser";
 
 /// Blocks until the user picks a file (or a folder when `directory`) and
 /// returns its path; `Ok(None)` when the dialog was cancelled.
@@ -22,13 +25,13 @@ pub fn pick(title: &str, directory: bool) -> Result<Option<PathBuf>, String> {
         std::process::id(),
         COUNTER.fetch_add(1, Ordering::Relaxed)
     );
-    let request_path = format!("/org/freedesktop/portal/desktop/request/{sender}/{token}");
+    let request_path = dbus::portal_request_path(&sender, &token);
     // Subscribe before calling so the Response signal cannot be missed.
     let request = Proxy::new(
         &conn,
-        "org.freedesktop.portal.Desktop",
+        dbus::PORTAL_SERVICE,
         request_path.as_str(),
-        "org.freedesktop.portal.Request",
+        dbus::PORTAL_REQUEST_INTERFACE,
     )
     .map_err(|e| format!("file chooser: {e}"))?;
     let mut responses = request
@@ -36,9 +39,9 @@ pub fn pick(title: &str, directory: bool) -> Result<Option<PathBuf>, String> {
         .map_err(|e| format!("file chooser: {e}"))?;
     let chooser = Proxy::new(
         &conn,
-        "org.freedesktop.portal.Desktop",
-        "/org/freedesktop/portal/desktop",
-        "org.freedesktop.portal.FileChooser",
+        dbus::PORTAL_SERVICE,
+        dbus::PORTAL_PATH,
+        FILE_CHOOSER_INTERFACE,
     )
     .map_err(|e| format!("file chooser: {e}"))?;
     let mut options: HashMap<&str, Value> = HashMap::new();

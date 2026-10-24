@@ -488,6 +488,9 @@ msgstr "Klavye cihazı yolu"
 msgid "Copy path"
 msgstr "Yolu kopyala"
 
+msgid "In development features"
+msgstr "Geliştirme aşamasındaki özellikler"
+
 msgid "Create a layer to assign its keys, or edit the base keyboard."
 msgstr ""
 "Tuşlarını atamak veya temel klavyeyi düzenlemek için bir katman oluşturun."

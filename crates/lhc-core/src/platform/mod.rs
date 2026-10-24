@@ -22,6 +22,8 @@
 //! panicking.
 
 #[cfg(target_os = "linux")]
+pub mod dbus;
+#[cfg(target_os = "linux")]
 pub mod file_chooser;
 #[cfg(target_os = "windows")]
 #[path = "file_chooser_windows.rs"]
@@ -52,6 +54,12 @@ pub mod osd {
 pub(crate) mod macos;
 #[cfg(target_os = "windows")]
 pub(crate) mod windows;
+/// Directory of the evdev input devices.
+#[cfg(target_os = "linux")]
+pub const INPUT_DIR: &str = "/dev/input";
+/// Device used to create the virtual keyboard.
+#[cfg(target_os = "linux")]
+pub const UINPUT_PATH: &str = "/dev/uinput";
 /// Type text as Unicode characters into the focused window.
 #[cfg(target_os = "windows")]
 pub use crate::mapper::windows::type_unicode;
@@ -85,8 +93,8 @@ pub fn input_access_issues(keyboard: Option<&str>) -> Vec<InputAccessIssue> {
     #[cfg(target_os = "linux")]
     {
         input_access_issues_at(
-            Path::new("/dev/input"),
-            Path::new("/dev/uinput"),
+            Path::new(INPUT_DIR),
+            Path::new(UINPUT_PATH),
             keyboard.map(Path::new),
         )
     }

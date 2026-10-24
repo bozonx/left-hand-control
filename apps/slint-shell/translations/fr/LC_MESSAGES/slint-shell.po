@@ -493,6 +493,9 @@ msgstr "Chemin du périphérique clavier"
 msgid "Copy path"
 msgstr "Copier le chemin"
 
+msgid "In development features"
+msgstr "Fonctionnalités en développement"
+
 msgid "Create a layer to assign its keys, or edit the base keyboard."
 msgstr ""
 "Créez un calque pour attribuer ses touches ou modifiez le clavier de base."

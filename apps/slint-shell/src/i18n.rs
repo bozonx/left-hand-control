@@ -433,7 +433,7 @@ impl Msg {
             Self::WorkerRestartLimit => ("worker-restart-limit", empty(), 0),
             Self::WorkerNotStarted => ("worker-not-started", empty(), 0),
             Self::WorkerError(error) => diagnostic("worker-error", error),
-            Self::SavedMapperNotUpdated(error) => diagnostic("saved-mapper-not-updated", error),
+            Self::SavedMapperNotUpdated(error) => diagnostic(SAVED_MAPPER_NOT_UPDATED, error),
             Self::ActionSaved => ("action-saved", empty(), 0),
             Self::LibrarySaved => ("library-saved", empty(), 0),
             Self::LibrarySelect => ("library-select", empty(), 0),
@@ -590,6 +590,9 @@ impl Msg {
         }
     }
 }
+
+/// Id of the warning cleared once the mapper picks up the saved config.
+pub const SAVED_MAPPER_NOT_UPDATED: &str = "saved-mapper-not-updated";
 
 fn diagnostic(id: &'static str, detail: &str) -> (&'static str, String, usize) {
     log::error!("{id}: {detail}");

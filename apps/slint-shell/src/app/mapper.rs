@@ -20,6 +20,8 @@ const LAUNCH_RETRIES: u32 = 15;
 const LAUNCH_RETRY_DELAY: Duration = Duration::from_secs(2);
 /// How often the shown uptime is updated.
 const UPTIME_TICK: Duration = Duration::from_secs(20);
+/// Longest command label shown in the "command started" notification.
+const COMMAND_LABEL_CHARS: usize = 80;
 
 /// Forward core events to the UI thread. Subscribed once at startup.
 pub(super) fn forward_core_events() {
@@ -38,7 +40,7 @@ pub(super) fn forward_core_events() {
                 .next()
                 .unwrap_or_default()
                 .chars()
-                .take(80)
+                .take(COMMAND_LABEL_CHARS)
                 .collect::<String>();
             let result = result.clone();
             post(move |app| match result {
@@ -220,7 +222,9 @@ impl App {
     }
 
     fn clear_runtime_error(&self) {
-        if self.settings.global::<AppState>().get_backend_error().id == "saved-mapper-not-updated" {
+        if self.settings.global::<AppState>().get_backend_error().id
+            == crate::i18n::SAVED_MAPPER_NOT_UPDATED
+        {
             self.set_error(Msg::None);
         }
     }

@@ -488,6 +488,9 @@ msgstr "Pfad des Tastaturgeräts"
 msgid "Copy path"
 msgstr "Pfad kopieren"
 
+msgid "In development features"
+msgstr "Funktionen in Entwicklung"
+
 msgid "Create a layer to assign its keys, or edit the base keyboard."
 msgstr ""
 "Erstellen Sie eine Ebene, um deren Tasten zuzuweisen, oder bearbeiten Sie "

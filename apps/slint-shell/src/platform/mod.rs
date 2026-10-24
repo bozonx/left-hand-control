@@ -27,11 +27,14 @@ pub enum PopupMode {
 
 impl PopupMode {
     pub fn from_env() -> Result<Self, String> {
-        match std::env::var("LHC_POPUPS").as_deref() {
+        match std::env::var(crate::env::POPUPS).as_deref() {
             Err(_) | Ok("winit") => Ok(Self::Winit),
             Ok("auto") => Ok(Self::Auto),
             Ok("spell") => Ok(Self::Spell),
-            Ok(_) => Err("LHC_POPUPS must be winit, auto or spell".into()),
+            Ok(_) => Err(format!(
+                "{} must be winit, auto or spell",
+                crate::env::POPUPS
+            )),
         }
     }
 }

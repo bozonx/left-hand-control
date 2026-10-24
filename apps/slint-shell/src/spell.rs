@@ -75,6 +75,8 @@ const QUICK_WIDTH: u32 = 780;
 const MENU_HEIGHT: u32 = 350;
 const HINT_WIDTH: u32 = 1290;
 const HINT_HEIGHT: u32 = 330;
+/// Gap between the popups and the bottom screen edge.
+const BOTTOM_MARGIN: i32 = 24;
 
 fn width(popup: Popup) -> u32 {
     match popup {
@@ -93,11 +95,11 @@ fn configuration(width: u32, height: u32) -> Result<WindowConf, Box<dyn std::err
         .width(width)
         .height(height)
         .anchor_1(LayerAnchor::BOTTOM)
-        .margins(0, 0, 24, 0)
+        .margins(0, 0, BOTTOM_MARGIN, 0)
         .layer_type(LayerType::Overlay)
         .exclusive_zone(0)
         .board_interactivity(BoardType::None);
-    if let Ok(monitor) = std::env::var("LHC_OUTPUT") {
+    if let Ok(monitor) = std::env::var(crate::env::OUTPUT) {
         builder.monitor(monitor);
     }
     builder.build()
@@ -235,7 +237,8 @@ fn env_choice(
 
 /// Run `action` in the settings process, which owns the mapper.
 fn execute(action: String) {
-    let parent = std::env::var("LHC_PARENT_SOCKET").unwrap_or_else(|_| ipc::DEFAULT_SOCKET.into());
+    let parent =
+        std::env::var(crate::env::PARENT_SOCKET).unwrap_or_else(|_| ipc::DEFAULT_SOCKET.into());
     std::thread::spawn(move || {
         if let Err(error) = ipc::send(
             &parent,
@@ -281,8 +284,12 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     if !crate::platform::backend::layer_shell_available()? {
         return Err("layer-shell unavailable".into());
     }
-    let unmap = env_choice("LHC_SPELL_LIFECYCLE", "unmap", &["unmap", "transparent"])? == "unmap";
-    let initial = match env_choice("LHC_SPELL_INITIAL", "", &["emoji", "quick"])? {
+    let unmap = env_choice(
+        crate::env::SPELL_LIFECYCLE,
+        "unmap",
+        &["unmap", "transparent"],
+    )? == "unmap";
+    let initial = match env_choice(crate::env::SPELL_INITIAL, "", &["emoji", "quick"])? {
         "emoji" => Some(Popup::Emoji),
         "quick" => Some(Popup::Quick),
         _ => None,
@@ -394,8 +401,8 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         metrics.mark(popup.name(), "t2_shown");
     }
     log::info!(
-        "Spell ready: overlay, bottom center, margin=24, exclusive_zone=0, keyboard=exclusive, output={:?}",
-        std::env::var("LHC_OUTPUT")
+        "Spell ready: overlay, bottom center, margin={BOTTOM_MARGIN}, exclusive_zone=0, keyboard=exclusive, output={:?}",
+        std::env::var(crate::env::OUTPUT)
     );
     loop {
         for popup in Popup::ALL {

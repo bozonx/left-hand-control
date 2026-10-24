@@ -3,6 +3,7 @@
 //! and paste the chosen text into it.
 
 use evdev::{AttributeSet, KeyCode, KeyEvent};
+use lhc_core::platform::dbus;
 use std::{
     io::Write,
     sync::{Arc, Mutex},
@@ -24,7 +25,11 @@ impl Active {
     }
 }
 
-#[zbus::interface(name = "org.leftHandControl.SlintProbe")]
+/// D-Bus interface of the probe; the `zbus::interface` attribute below
+/// needs the same name as a literal.
+const PROBE_INTERFACE: &str = "dev.bozonx.LeftHandControl.SlintProbe";
+
+#[zbus::interface(name = "dev.bozonx.LeftHandControl.SlintProbe")]
 impl Active {
     fn update(&self, id: String) {
         log::info!("probe active window: {id}");
@@ -46,12 +51,12 @@ pub struct ReturnInput {
 
 impl ReturnInput {
     pub fn new() -> Result<Option<Self>, Box<dyn std::error::Error>> {
-        let test_mode = std::env::var("LHC_TEST_INJECT").as_deref() == Ok("1");
-        if !test_mode && std::env::var("LHC_INSERT").as_deref() != Ok("1") {
+        let test_mode = std::env::var(crate::env::TEST_INJECT).as_deref() == Ok("1");
+        if !test_mode && std::env::var(crate::env::INSERT).as_deref() != Ok("1") {
             return Ok(None);
         }
         let active = Active::default();
-        let bus_name = format!("org.leftHandControl.SlintProbe.p{}", std::process::id());
+        let bus_name = format!("{PROBE_INTERFACE}.p{}", std::process::id());
         let connection = zbus::blocking::connection::Builder::session()?
             .name(bus_name.clone())?
             .serve_at("/Probe", active.clone())?
@@ -60,13 +65,13 @@ impl ReturnInput {
         let mut script = tempfile::NamedTempFile::new()?;
         write!(
             script,
-            "function report() {{ let w = workspace.activeWindow; callDBus('{bus_name}', '/Probe', 'org.leftHandControl.SlintProbe', 'Update', w ? String(w.internalId) : ''); }} workspace.windowActivated.connect(report); report();"
+            "function report() {{ let w = workspace.activeWindow; callDBus('{bus_name}', '/Probe', '{PROBE_INTERFACE}', 'Update', w ? String(w.internalId) : ''); }} workspace.windowActivated.connect(report); report();"
         )?;
         let proxy = zbus::blocking::Proxy::new(
             &connection,
-            "org.kde.KWin",
-            "/Scripting",
-            "org.kde.kwin.Scripting",
+            dbus::KWIN_SERVICE,
+            dbus::KWIN_SCRIPTING_PATH,
+            dbus::KWIN_SCRIPTING_INTERFACE,
         )?;
         let id: i32 = proxy.call(
             "loadScript",
@@ -76,8 +81,12 @@ impl ReturnInput {
             return Err("KWin focus probe script failed to load".into());
         }
         let path = format!("/Scripting/Script{id}");
-        let run =
-            zbus::blocking::Proxy::new(&connection, "org.kde.KWin", path, "org.kde.kwin.Script")?;
+        let run = zbus::blocking::Proxy::new(
+            &connection,
+            dbus::KWIN_SERVICE,
+            path,
+            dbus::KWIN_SCRIPT_INTERFACE,
+        )?;
         if let Err(error) = run.call::<_, _, ()>("run", &()) {
             let _: Result<bool, _> = proxy.call("unloadScript", &script_name);
             return Err(error.into());
@@ -185,9 +194,9 @@ impl Drop for ReturnInput {
     fn drop(&mut self) {
         if let Ok(proxy) = zbus::blocking::Proxy::new(
             &self.connection,
-            "org.kde.KWin",
-            "/Scripting",
-            "org.kde.kwin.Scripting",
+            dbus::KWIN_SERVICE,
+            dbus::KWIN_SCRIPTING_PATH,
+            dbus::KWIN_SCRIPTING_INTERFACE,
         ) {
             let _: Result<bool, _> = proxy.call("unloadScript", &self.script_name);
         }
@@ -214,9 +223,9 @@ fn run_script(
     let name = format!("lhc-slint-activate-{}", std::process::id());
     let proxy = zbus::blocking::Proxy::new(
         connection,
-        "org.kde.KWin",
-        "/Scripting",
-        "org.kde.kwin.Scripting",
+        dbus::KWIN_SERVICE,
+        dbus::KWIN_SCRIPTING_PATH,
+        dbus::KWIN_SCRIPTING_INTERFACE,
     )?;
     let id: i32 = proxy.call(
         "loadScript",
@@ -227,9 +236,9 @@ fn run_script(
     }
     let run = zbus::blocking::Proxy::new(
         connection,
-        "org.kde.KWin",
+        dbus::KWIN_SERVICE,
         format!("/Scripting/Script{id}"),
-        "org.kde.kwin.Script",
+        dbus::KWIN_SCRIPT_INTERFACE,
     )?;
     let result = run.call::<_, _, ()>("run", &());
     let _: bool = proxy.call("unloadScript", &name)?;

@@ -54,7 +54,7 @@ pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
 }
 
 pub fn set_layout(index: u32) -> Result<(), String> {
-    if index >= 10 {
+    if index >= crate::profile::actions::SYSTEM_NUMBERED_COUNT {
         return Err("GNOME input source index is out of range".into());
     }
     gnome::action(&format!("switchLayout{}", index + 1))?;

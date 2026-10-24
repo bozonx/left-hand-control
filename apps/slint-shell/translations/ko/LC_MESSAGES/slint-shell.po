@@ -481,6 +481,9 @@ msgstr "키보드 장치 경로"
 msgid "Copy path"
 msgstr "경로 복사"
 
+msgid "In development features"
+msgstr "개발 중인 기능"
+
 msgid "Create a layer to assign its keys, or edit the base keyboard."
 msgstr "키를 할당할 레이어를 생성하거나 기본 키보드를 편집하세요."
 

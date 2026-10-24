@@ -53,9 +53,12 @@ pub(crate) fn proxy() -> Result<Proxy<'static>, String> {
 }
 
 pub(crate) fn snapshot(titles: bool) -> Result<Snapshot, String> {
-    let json: String = proxy()?
-        .call("Snapshot", &(titles,))
-        .map_err(|error| format!("Enable the Left Hand Control GNOME extension: {error}"))?;
+    let json: String = proxy()?.call("Snapshot", &(titles,)).map_err(|error| {
+        format!(
+            "Enable the {} GNOME extension: {error}",
+            crate::storage::APP_NAME
+        )
+    })?;
     parse_snapshot(&json)
 }
 

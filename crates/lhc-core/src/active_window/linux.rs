@@ -249,6 +249,10 @@ fn hyprland_event_relevant(line: &str, titles: bool) -> bool {
     }
 }
 
+/// Socket directory of Hyprland releases before 0.40, which used `/tmp`
+/// instead of `$XDG_RUNTIME_DIR/hypr`.
+const HYPRLAND_LEGACY_DIR: &str = "/tmp/hypr";
+
 fn hyprland_events() -> Option<Events> {
     use std::os::unix::net::UnixStream;
     let signature = std::env::var("HYPRLAND_INSTANCE_SIGNATURE").ok()?;
@@ -256,7 +260,7 @@ fn hyprland_events() -> Option<Events> {
         .map(|dir| dir.join("hypr").join(&signature).join(".socket2.sock"))
         .filter(|path| path.exists())
         .unwrap_or_else(|| {
-            std::path::PathBuf::from(format!("/tmp/hypr/{signature}/.socket2.sock"))
+            std::path::PathBuf::from(format!("{HYPRLAND_LEGACY_DIR}/{signature}/.socket2.sock"))
         });
     let stream = UnixStream::connect(&path)
         .inspect_err(|error| log::debug!("[active-window] Hyprland events: {error}"))

@@ -24,10 +24,7 @@ use crate::{
     ui::{ActionKind, GameCondition, Message, SettingsWindow},
 };
 use lhc_core::config_document::ConfigError;
-use lhc_core::profile::{
-    actions::Action,
-    model::{Appearance, LocalePreference},
-};
+use lhc_core::profile::{actions::Action, model::LocalePreference};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use std::rc::Rc;
 
@@ -128,13 +125,7 @@ pub(crate) fn action_kind(action: &str) -> ActionKind {
     }
 }
 
-/// Order of the appearance and language choices in the settings page.
-pub(crate) const APPEARANCES: [Appearance; 4] = [
-    Appearance::System,
-    Appearance::Light,
-    Appearance::Dark,
-    Appearance::EInk,
-];
+/// Order of the language choices in the settings page.
 pub(crate) const LOCALES: [LocalePreference; 22] = [
     LocalePreference::Auto,
     LocalePreference::English,
@@ -189,8 +180,8 @@ mod tests {
                 condition
             );
         }
-        assert_eq!(choice(&APPEARANCES, 2), Appearance::Dark);
-        assert_eq!(choice(&APPEARANCES, 9), Appearance::System);
+        assert_eq!(choice(&LOCALES, 2), LocalePreference::Russian);
+        assert_eq!(choice(&LOCALES, 99), LocalePreference::Auto);
         assert_eq!(choice_index(&LOCALES, &LocalePreference::Russian), 2);
         assert_eq!(action_kind("text:hi"), ActionKind::Text);
         assert_eq!(action_kind("Ctrl+KeyC"), ActionKind::Keys);

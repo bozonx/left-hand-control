@@ -2,6 +2,7 @@
 //! just became active. KDE Plasma shows them in its own OSD; other
 //! desktops get a transient desktop notification.
 
+use super::dbus;
 use super::linux::{self, Desktop};
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -32,9 +33,9 @@ pub fn show(text: &str) -> Result<(), String> {
 fn show_plasma(conn: &Connection, text: &str) -> Result<(), String> {
     Proxy::new(
         conn,
-        "org.kde.plasmashell",
-        "/org/kde/osdService",
-        "org.kde.osdService",
+        dbus::PLASMA_SHELL_SERVICE,
+        dbus::PLASMA_OSD_PATH,
+        dbus::PLASMA_OSD_INTERFACE,
     )
     .and_then(|proxy| proxy.call::<_, _, ()>("showText", &("input-keyboard", text)))
     .map_err(|e| format!("osdService showText: {e}"))
@@ -43,9 +44,9 @@ fn show_plasma(conn: &Connection, text: &str) -> Result<(), String> {
 fn notify(conn: &Connection, text: &str) -> Result<(), String> {
     let proxy = Proxy::new(
         conn,
-        "org.freedesktop.Notifications",
-        "/org/freedesktop/Notifications",
-        "org.freedesktop.Notifications",
+        dbus::NOTIFICATIONS_SERVICE,
+        dbus::NOTIFICATIONS_PATH,
+        dbus::NOTIFICATIONS_INTERFACE,
     )
     .map_err(|e| format!("notifications: {e}"))?;
     let mut last = LAST_NOTIFICATION.lock().map_err(|e| e.to_string())?;
@@ -54,7 +55,7 @@ fn notify(conn: &Connection, text: &str) -> Result<(), String> {
         .call(
             "Notify",
             &(
-                "Left Hand Control",
+                crate::storage::APP_NAME,
                 *last,
                 "input-keyboard",
                 text,

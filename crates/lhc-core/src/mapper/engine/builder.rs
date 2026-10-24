@@ -6,7 +6,7 @@ use crate::mapper::config::{ActionSpec, AppConfig};
 use crate::mapper::key_code::KeyCode;
 use crate::mapper::keys::code_to_key;
 use crate::mapper::system::{self, SysCommand};
-use crate::profile::actions::Action;
+use crate::profile::actions::{Action, MAX_MACRO_DEPTH, MAX_MACRO_STEPS};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::time::Duration;
 
@@ -64,7 +64,7 @@ impl Engine {
             remaining: &mut usize,
         ) -> Vec<MacroStepItem> {
             let mut steps: Vec<MacroStepItem> = Vec::new();
-            if depth > 10 {
+            if depth > MAX_MACRO_DEPTH {
                 log::debug!("[mapper] macro {} exceeded max nesting depth", id);
                 return steps;
             }
@@ -161,7 +161,7 @@ impl Engine {
                 &commands,
                 &foreign_commands,
                 0,
-                &mut 1000,
+                &mut { MAX_MACRO_STEPS },
             );
             if steps.is_empty() {
                 log::debug!(
@@ -192,7 +192,7 @@ impl Engine {
                 &commands,
                 &foreign_commands,
                 0,
-                &mut 1000,
+                &mut { MAX_MACRO_STEPS },
             );
             if steps.is_empty() {
                 log::debug!("[mapper] macro {} has no usable steps — skipped", m.id);

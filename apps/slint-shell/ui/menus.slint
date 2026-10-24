@@ -1,7 +1,7 @@
 import { TextField } from "controls.slint";
 import { InlineTextArea } from "controls.slint";
 import { PageContent, ScrollView } from "scroll.slint";
-import { DragDrop, DragHandle, DropMarker } from "reorder.slint";
+import { DragDrop, DragGroups, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
@@ -137,10 +137,10 @@ component HotkeyGrid inherits Rectangle {
         accessible-label: cell.key + " " + (root.emoji ? cell.value : cell.name);
         accessible-action-default => { root.activate(index); }
         VerticalLayout {
-            padding: 8px;
-            spacing: 4px;
+            padding: Theme.space-m;
+            spacing: Theme.space-xs;
             HorizontalLayout {
-                Text { horizontal-stretch: 1; text: MenuEditor.cells[root.preview(index)].key; color: Theme.link; font-family: "monospace"; font-size: Theme.font-body; font-weight: 600; }
+                Text { horizontal-stretch: 1; text: MenuEditor.cells[root.preview(index)].key; color: Theme.link; font-family: "monospace"; font-size: Theme.font-body; font-weight: Theme.weight-semibold; }
                 Image { width: 14px; height: 14px; source: @image-url("icons/grip.svg"); colorize: Theme.muted; accessible-label: @tr("Drag"); }
             }
             if root.emoji || cell.value == "": Text {
@@ -155,13 +155,13 @@ component HotkeyGrid inherits Rectangle {
                 overflow: elide;
             }
             if !root.emoji && cell.value != "": HorizontalLayout {
-                spacing: 6px;
+                spacing: Theme.space-s;
                 if cell.value != "": Image { width: 16px; source: @image-url("icons/zap.svg"); colorize: Theme.muted; }
                 Text {
                     horizontal-stretch: 1;
                     text: cell.value == "" ? @tr("Empty") : cell.name;
                     color: cell.value == "" ? Theme.muted : Theme.text;
-                    font-weight: 600;
+                    font-weight: Theme.weight-semibold;
                     overflow: elide;
                     vertical-alignment: center;
                 }
@@ -229,7 +229,7 @@ component DragPreview inherits Rectangle {
     height: PaletteDrag.text-item ? 76px : 64px;
     clip: true;
     border-radius: Theme.radius; border-width: 2px; border-color: Theme.link;
-    background: Theme.card; opacity: 0.95;
+    background: Theme.card; opacity: Theme.drag-preview-opacity;
     Text {
         x: 10px; y: 8px;
         width: parent.width - 20px; height: parent.height - 16px;
@@ -256,40 +256,47 @@ component MenuTabs inherits ScrollView {
     private property <length> pointer-x;
     private property <bool> cell-over-tabs: PaletteDrag.active && PaletteDrag.y >= root.absolute-position.y && PaletteDrag.y < root.absolute-position.y + root.height;
     private property <length> scroll-pointer: root.cell-over-tabs ? PaletteDrag.x : root.pointer-x;
+    /// Drag tick: edge auto-scroll and drop target updates.
+    private property <duration> tab-drag-tick: 30ms;
+    /// Pointer distance from an edge that scrolls the tabs, and the step per tick.
+    private property <length> edge-zone: 24px;
+    private property <length> edge-step: 12px;
+    /// How long a dragged cell hovers over a tab before the tab opens.
+    private property <duration> hover-open-delay: 400ms;
     Timer {
-        interval: 30ms;
-        running: (DragDrop.dragging && DragDrop.group == 5) || root.cell-over-tabs;
+        interval: root.tab-drag-tick;
+        running: (DragDrop.dragging && DragDrop.group == DragGroups.menu-tabs) || root.cell-over-tabs;
         triggered => {
-            if root.scroll-pointer < root.absolute-position.x + 24px { root.viewport-x = min(0px, root.viewport-x + 12px); }
-            if root.scroll-pointer > root.absolute-position.x + root.width - 24px { root.viewport-x = max(root.visible-width - root.viewport-width, root.viewport-x - 12px); }
+            if root.scroll-pointer < root.absolute-position.x + root.edge-zone { root.viewport-x = min(0px, root.viewport-x + root.edge-step); }
+            if root.scroll-pointer > root.absolute-position.x + root.width - root.edge-zone { root.viewport-x = max(root.visible-width - root.viewport-width, root.viewport-x - root.edge-step); }
         }
     }
-    tabs := HorizontalLayout { spacing: 6px; alignment: start;
+    tabs := HorizontalLayout { spacing: Theme.space-s; alignment: start;
         for label[index] in root.labels: Rectangle {
             width: tab.preferred-width; height: 40px;
             private property <Point> position: self.absolute-position;
             private property <bool> hovered: PaletteDrag.active && PaletteDrag.x >= max(root.absolute-position.x, self.position.x) && PaletteDrag.x < min(root.absolute-position.x + root.width, self.position.x + self.width) && PaletteDrag.y >= self.position.y && PaletteDrag.y < self.position.y + self.height;
-            init => { DragDrop.row(5, index, self.position.x, self.width); }
-            changed position => { DragDrop.row(5, index, self.position.x, self.width); }
-            changed width => { DragDrop.row(5, index, self.position.x, self.width); }
-            Timer { interval: 400ms; running: parent.hovered && index != root.selected; triggered => { root.select(index); } }
-            tab := NavTab { text: label == "" ? index + 1 : (index + 1) + " · " + label; selected: index == root.selected; clicked => { root.select(index); } opacity: DragDrop.dragging && DragDrop.group == 5 && DragDrop.source == index ? 0.5 : 1; }
-            if DragDrop.dragging && DragDrop.group == 5 && DragDrop.target == index && index != DragDrop.source: Rectangle {
+            init => { DragDrop.row(DragGroups.menu-tabs, index, self.position.x, self.width); }
+            changed position => { DragDrop.row(DragGroups.menu-tabs, index, self.position.x, self.width); }
+            changed width => { DragDrop.row(DragGroups.menu-tabs, index, self.position.x, self.width); }
+            Timer { interval: root.hover-open-delay; running: parent.hovered && index != root.selected; triggered => { root.select(index); } }
+            tab := NavTab { text: label == "" ? index + 1 : (index + 1) + " · " + label; selected: index == root.selected; clicked => { root.select(index); } opacity: DragDrop.dragging && DragDrop.group == DragGroups.menu-tabs && DragDrop.source == index ? 0.5 : 1; }
+            if DragDrop.dragging && DragDrop.group == DragGroups.menu-tabs && DragDrop.target == index && index != DragDrop.source: Rectangle {
                 x: index > DragDrop.source ? parent.width : -3px;
                 width: 3px; background: Theme.link;
             }
             Timer {
-                interval: 30ms;
-                running: DragDrop.dragging && DragDrop.group == 5 && DragDrop.source == index;
-                triggered => { DragDrop.target = DragDrop.locate(5, index, root.pointer-x - parent.position.x - touch.pressed-x, root.labels.length); }
+                interval: root.tab-drag-tick;
+                running: DragDrop.dragging && DragDrop.group == DragGroups.menu-tabs && DragDrop.source == index;
+                triggered => { DragDrop.target = DragDrop.locate(DragGroups.menu-tabs, index, root.pointer-x - parent.position.x - touch.pressed-x, root.labels.length); }
             }
             touch := TouchArea {
                 mouse-cursor: self.pressed ? grabbing : pointer;
                 pointer-event(event) => {
                     if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
-                        DragDrop.reset(); DragDrop.group = 5; DragDrop.source = index; DragDrop.target = index;
+                        DragDrop.reset(); DragDrop.group = DragGroups.menu-tabs; DragDrop.source = index; DragDrop.target = index;
                     }
-                    if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && DragDrop.group == 5 {
+                    if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && DragDrop.group == DragGroups.menu-tabs {
                         let from = DragDrop.source; let to = DragDrop.target; let moved = DragDrop.dragging;
                         DragDrop.reset();
                         if moved { MenuEditor.reorder-page(from, to); } else { root.select(index); }
@@ -297,11 +304,11 @@ component MenuTabs inherits ScrollView {
                     if event.kind == PointerEventKind.cancel { DragDrop.reset(); }
                 }
                 moved => {
-                    if self.pressed && DragDrop.group == 5 {
+                    if self.pressed && DragDrop.group == DragGroups.menu-tabs {
                         root.pointer-x = self.absolute-position.x + self.mouse-x;
                         DragDrop.offset = self.mouse-x - self.pressed-x;
                         if abs(DragDrop.offset) > 6px { DragDrop.dragging = true; }
-                        if DragDrop.dragging { DragDrop.target = DragDrop.locate(5, DragDrop.source, DragDrop.offset, root.labels.length); }
+                        if DragDrop.dragging { DragDrop.target = DragDrop.locate(DragGroups.menu-tabs, DragDrop.source, DragDrop.offset, root.labels.length); }
                     }
                 }
             }
@@ -313,7 +320,7 @@ component MenuTabs inherits ScrollView {
 /// Side card header shared by the emoji and quick action pages.
 component PageEditor inherits HorizontalLayout {
     callback remove();
-    spacing: 4px;
+    spacing: Theme.space-xs;
     FieldLabel { text: @tr("Page:"); horizontal-stretch: 0; max-width: self.preferred-width; vertical-alignment: center; }
     page-name := InlineTextField { text: MenuEditor.page-name; label: @tr("Page name"); placeholder: @tr("Page name"); saved(value) => { MenuEditor.page-name = value; MenuEditor.rename-page(); } }
     Rectangle { min-width: 0px; preferred-width: 0px; horizontal-stretch: page-name.editing ? 0 : 1; }
@@ -397,19 +404,19 @@ export component EmojiPage inherits Rectangle {
         width: 100%;
         height: 100%;
         padding: 0px;
-        padding-left: 8px;
+        padding-left: Theme.space-m;
         padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
         padding-bottom: Theme.page-padding;
-        spacing: 16px;
+        spacing: Theme.space-xl;
         CardHeader {
             title: @tr("Emoji & Symbols");
             info: @tr("Opened by the app:showEmojiMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. \"// TODO: \").") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number.");
         }
         HorizontalLayout {
-            spacing: 16px;
+            spacing: Theme.space-xl;
             VerticalLayout {
                 horizontal-stretch: 1;
-                spacing: 16px;
+                spacing: Theme.space-xl;
                 alignment: start;
                     MenuTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } add => { MenuEditor.add-page(""); } }
                 HotkeyGrid { emoji: true; activate(index) => { MenuEditor.select-cell(index); } }
@@ -418,13 +425,13 @@ export component EmojiPage inherits Rectangle {
                 width: 360px;
                 vertical-stretch: 1;
                 VerticalLayout {
-                    padding: 14px;
-                    spacing: 12px;
+                    padding: Theme.space-l-plus;
+                    spacing: Theme.space-l;
                     PageEditor { remove => { root.confirming = true; } }
                     Rectangle { height: 1px; background: Theme.divider; }
                     FieldLabel { text: @tr("Button {}", MenuEditor.cells[MenuEditor.selected-cell].key); }
                     HorizontalLayout {
-                        spacing: 4px;
+                        spacing: Theme.space-xs;
                         TextField {
                             text <=> MenuEditor.value;
                             placeholder-text: @tr("Emoji, symbol, or any text");
@@ -440,11 +447,11 @@ export component EmojiPage inherits Rectangle {
                         vertical-stretch: 1;
                         viewport-width: self.visible-width;
                         VerticalLayout {
-                            padding-right: 10px;
-                            spacing: 6px;
+                            padding-right: Theme.space-m-plus;
+                            spacing: Theme.space-s;
                             for category in MenuEditor.catalog: VerticalLayout {
-                                spacing: 6px;
-                                padding-bottom: 8px;
+                                spacing: Theme.space-s;
+                                padding-bottom: Theme.space-m;
                                 Text {
                                     text: category.id == "smileys" ? @tr("Smileys & Emotion")
                                         : category.id == "people" ? @tr("People & Gestures")
@@ -456,10 +463,10 @@ export component EmojiPage inherits Rectangle {
                                         : @tr("UTF Symbols");
                                     color: Theme.muted;
                                     font-size: Theme.font-small;
-                                    font-weight: 700;
+                                    font-weight: Theme.weight-bold;
                                 }
                                 for row in ceil(category.items.length / 6): HorizontalLayout {
-                                    spacing: 6px;
+                                    spacing: Theme.space-s;
                                     for col in 6: EmojiButton {
                                         item: category.items[row * 6 + col];
                                         visible: row * 6 + col < category.items.length;
@@ -467,11 +474,11 @@ export component EmojiPage inherits Rectangle {
                                 }
                             }
                             VerticalLayout {
-                                spacing: 6px;
-                                padding-bottom: 8px;
-                                Text { text: @tr("Texts"); color: Theme.muted; font-size: Theme.font-small; font-weight: 700; }
+                                spacing: Theme.space-s;
+                                padding-bottom: Theme.space-m;
+                                Text { text: @tr("Texts"); color: Theme.muted; font-size: Theme.font-small; font-weight: Theme.weight-bold; }
                                 for row in ceil(root.texts.length / 2): HorizontalLayout {
-                                    spacing: 6px;
+                                    spacing: Theme.space-s;
                                     for col in 2: EmojiButton {
                                         wide: true;
                                         item: root.texts[row * 2 + col];
@@ -503,7 +510,7 @@ export component QuickActionsPage inherits Rectangle {
     private property <bool> filled: MenuEditor.selected-cell >= 0 && MenuEditor.cells[MenuEditor.selected-cell].value != "";
     VerticalLayout {
         padding: 0px;
-        spacing: 16px;
+        spacing: Theme.space-xl;
         CardHeader {
             vertical-stretch: 0;
             padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
@@ -522,12 +529,12 @@ export component QuickActionsPage inherits Rectangle {
                 Rectangle {
                     VerticalLayout {
                         padding: 0px;
-                        spacing: 16px;
+                        spacing: Theme.space-xl;
                         HorizontalLayout {
-                            spacing: 16px;
+                            spacing: Theme.space-xl;
                             VerticalLayout {
                                 horizontal-stretch: 1;
-                                spacing: 16px;
+                                spacing: Theme.space-xl;
                                 alignment: start;
                                 HotkeyGrid {
                                     emoji: false;
@@ -539,23 +546,23 @@ export component QuickActionsPage inherits Rectangle {
                             Card {
                                 width: 360px;
                                 VerticalLayout {
-                                    padding: 14px;
-                                    spacing: 12px;
+                                    padding: Theme.space-l-plus;
+                                    spacing: Theme.space-l;
                                     alignment: start;
                                     PageEditor { remove => { root.confirming = true; } }
                                     Rectangle { height: 1px; background: Theme.divider; }
                                     if MenuEditor.status.id != "": Text { text: Locale.text(MenuEditor.status); color: Theme.error; wrap: word-wrap; }
                                     if MenuEditor.selected-cell >= 0: FieldLabel { text: @tr("Button {}", MenuEditor.cells[MenuEditor.selected-cell].key); }
                                     if root.filled: VerticalLayout {
-                                        spacing: 4px;
+                                        spacing: Theme.space-xs;
                                         FieldLabel { text: @tr("Label"); }
                                         TextField { text <=> MenuEditor.name; placeholder-text: @tr("e.g. Next Track"); edited => { MenuEditor.set-name(); } }
                                     }
                                     if MenuEditor.selected-cell >= 0: VerticalLayout {
-                                        spacing: 4px;
+                                        spacing: Theme.space-xs;
                                         FieldLabel { text: @tr("Action"); }
                                         HorizontalLayout {
-                                            spacing: 4px;
+                                            spacing: Theme.space-xs;
                                             Rectangle {
                                                 height: 34px;
                                                 border-radius: Theme.radius;

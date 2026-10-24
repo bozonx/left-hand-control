@@ -11,15 +11,15 @@ component HintKey inherits Rectangle {
     background: Theme.card;
     opacity: root.cell.kind == Assignment.action ? 1 : 0.55;
     VerticalLayout {
-        padding: 4px;
-        spacing: 2px;
+        padding: Theme.space-xs;
+        spacing: Theme.space-2xs;
         alignment: center;
         Text {
             min-width: 0px;
             text: root.cell.label;
             color: Theme.link;
             font-size: Theme.font-body;
-            font-weight: 600;
+            font-weight: Theme.weight-semibold;
             horizontal-alignment: center;
             overflow: clip;
         }
@@ -32,7 +32,7 @@ component HintKey inherits Rectangle {
                 color: Theme.text;
                 font-family: root.cell.emoji ? "Noto Color Emoji" : "";
                 font-size: root.cell.emoji ? 14px : 11px;
-                font-weight: 500;
+                font-weight: Theme.weight-medium;
                 horizontal-alignment: center;
                 vertical-alignment: center;
                 overflow: clip;
@@ -44,9 +44,9 @@ component HintKey inherits Rectangle {
 component HintHand inherits VerticalLayout {
     in property <[LayerKeyCell]> cells;
     in property <int> columns: 6;
-    spacing: 6px;
+    spacing: Theme.space-s;
     for row in root.cells.length / root.columns: HorizontalLayout {
-        spacing: 6px;
+        spacing: Theme.space-s;
         for col in root.columns: Rectangle {
             width: 90px;
             height: 44px;
@@ -74,17 +74,17 @@ export component LayerHintPopup inherits Window {
     Rectangle {
         visible: root.presented;
         x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px;
-        background: Theme.surface; border-radius: 16px;
+        background: Theme.surface; border-radius: Theme.radius-popup;
         border-width: 1px; border-color: Theme.divider;
         VerticalLayout {
-            padding: 16px;
-            spacing: 12px;
+            padding: Theme.space-xl;
+            spacing: Theme.space-l;
             alignment: center;
             Text {
                 text: root.name;
                 color: Theme.text;
-                font-size: 15px;
-                font-weight: 700;
+                font-size: Theme.font-section;
+                font-weight: Theme.weight-bold;
                 horizontal-alignment: center;
                 overflow: clip;
             }

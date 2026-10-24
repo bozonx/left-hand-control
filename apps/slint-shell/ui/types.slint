@@ -1,6 +1,9 @@
 // Enums shared by the Slint pages and the Rust bindings. They replace the
 // integer codes that used to cross the Rust/Slint boundary.
 
+/// Colour scheme chosen in the settings page.
+export enum AppearanceChoice { system, light, dark, e-ink }
+
 /// Top-level page of the settings window.
 export enum Page { keyboard, layouts, settings, rules, layers, macros, menus }
 

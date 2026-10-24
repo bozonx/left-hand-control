@@ -55,7 +55,7 @@ export component InlineTextField inherits FocusScope {
     horizontal-stretch: root.editing ? 1 : 0;
     min-width: root.editing ? 92px : 0px;
     preferred-width: measure.preferred-width + 40px;
-    max-width: root.editing ? 100000px : root.preferred-width;
+    max-width: root.editing ? Theme.unbounded : root.preferred-width;
     focus-on-tab-navigation: !root.editing;
     key-pressed(event) => {
         if root.editing && event.text == Key.Escape { root.cancel(); return accept; }
@@ -69,9 +69,9 @@ export component InlineTextField inherits FocusScope {
         visible: false;
     }
     VerticalLayout {
-        spacing: 2px;
+        spacing: Theme.space-2xs;
         HorizontalLayout {
-            spacing: 4px;
+            spacing: Theme.space-xs;
             if !root.editing: display-touch := TouchArea {
                 height: max(28px, measure.preferred-height + 8px);
                 mouse-cursor: MouseCursor.text;
@@ -85,8 +85,8 @@ export component InlineTextField inherits FocusScope {
                     border-width: root.has-focus ? 1px : 0px;
                     border-color: Theme.focus;
                     HorizontalLayout {
-                        padding-left: 4px;
-                        spacing: 4px;
+                        padding-left: Theme.space-xs;
+                        spacing: Theme.space-xs;
                         Text {
                             min-width: 0px;
                             text: root.text == "" ? root.placeholder : root.text;
@@ -172,7 +172,7 @@ export component InlineTextArea inherits FocusScope {
         return reject;
     }
     VerticalLayout {
-        spacing: 4px;
+        spacing: Theme.space-xs;
         if !root.editing: Rectangle {
             min-width: 0px;
             height: max(56px, display.height + 8px + (measure.preferred-height > display.height ? line.preferred-height : 0px));
@@ -218,7 +218,7 @@ export component InlineTextArea inherits FocusScope {
             changed has-focus => { if !self.has-focus { root.blurred(); } }
         }
         if root.editing: HorizontalLayout {
-            spacing: 4px;
+            spacing: Theme.space-xs;
             alignment: end;
             IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save (Ctrl+Enter)"); enabled: root.allow-empty || InlineEditors.nonempty(root.draft); clicked => { root.save(); } }
             IconButton { icon: @image-url("icons/x.svg"); label: @tr("Cancel (Esc)"); clicked => { root.cancel(); } }

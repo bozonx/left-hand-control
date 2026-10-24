@@ -146,9 +146,14 @@ const MACOS_UNSUPPORTED_SYSTEM_ACTIONS: [&str; 5] = [
 /// the user binds keys to slots once and changes what a key opens by
 /// reordering pages or library layouts, which the UI shows. Reordering
 /// therefore does not rewrite these actions. Do not switch them to ids.
-const SYSTEM_NUMBERED_COUNT: u32 = 10;
+/// Highest N of numbered system actions (`switchLayoutN`, …) the profile accepts.
+pub const SYSTEM_NUMBERED_COUNT: u32 = 10;
 /// Menu pages offered in the action picker; any page number is valid.
 pub const MENU_PAGE_PICKER_COUNT: u32 = 10;
+/// How deep macros may reference other macros.
+pub const MAX_MACRO_DEPTH: usize = 10;
+/// Most steps a macro may expand to, nested macros included.
+pub const MAX_MACRO_STEPS: usize = 1000;
 pub const LAYOUT_SLOT_COUNT: u32 = 5;
 
 /// Split `switchDesktop3` into its catalog name and number.
@@ -344,7 +349,7 @@ pub enum ExecutionIssue {
 
 pub fn execution_issue(action: &Action, config: &AppConfig) -> Option<ExecutionIssue> {
     fn check(action: &Action, config: &AppConfig, depth: usize) -> Option<ExecutionIssue> {
-        if depth > 10 {
+        if depth > MAX_MACRO_DEPTH {
             return Some(ExecutionIssue::Unavailable);
         }
         match action {

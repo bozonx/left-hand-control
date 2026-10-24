@@ -487,6 +487,9 @@ msgstr "Шлях пристрою клавіатури"
 msgid "Copy path"
 msgstr "Копіювати шлях"
 
+msgid "In development features"
+msgstr "Функції в розробці"
+
 msgid "Create a layer to assign its keys, or edit the base keyboard."
 msgstr ""
 "Створіть шар, щоб призначити його клавіші, або відредагуйте базову "

@@ -2,6 +2,7 @@
 //! `kde:component/shortcut` actions. The list is read from the running
 //! session, so it covers KWin, Plasma and third-party applications alike.
 
+use super::dbus;
 use zbus::blocking::{Connection, Proxy};
 use zbus::zvariant::OwnedObjectPath;
 
@@ -44,9 +45,9 @@ pub fn list() -> Result<Vec<KdeShortcut>, String> {
     let conn = Connection::session().map_err(|e| format!("session bus: {e}"))?;
     let accel = Proxy::new(
         &conn,
-        "org.kde.kglobalaccel",
-        "/kglobalaccel",
-        "org.kde.KGlobalAccel",
+        dbus::KGLOBALACCEL_SERVICE,
+        dbus::KGLOBALACCEL_PATH,
+        dbus::KGLOBALACCEL_INTERFACE,
     )
     .map_err(|e| format!("kglobalaccel: {e}"))?;
     let components: Vec<OwnedObjectPath> = accel
@@ -59,9 +60,9 @@ pub fn list() -> Result<Vec<KdeShortcut>, String> {
         };
         let infos: Result<Vec<ShortcutInfo>, _> = Proxy::new(
             &conn,
-            "org.kde.kglobalaccel",
+            dbus::KGLOBALACCEL_SERVICE,
             path.as_str(),
-            "org.kde.kglobalaccel.Component",
+            dbus::KGLOBALACCEL_COMPONENT_INTERFACE,
         )
         .and_then(|proxy| proxy.call("allShortcutInfos", &()));
         let infos = match infos {

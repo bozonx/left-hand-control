@@ -481,6 +481,9 @@ msgstr "キーボードデバイスのパス"
 msgid "Copy path"
 msgstr "パスをコピーする"
 
+msgid "In development features"
+msgstr "開発中の機能"
+
 msgid "Create a layer to assign its keys, or edit the base keyboard."
 msgstr "レイヤーを作成してキーを割り当てるか、ベースキーボードを編集します。"
 

@@ -486,6 +486,9 @@ msgstr "Caminho do dispositivo de teclado"
 msgid "Copy path"
 msgstr "Copiar caminho"
 
+msgid "In development features"
+msgstr "Recursos em desenvolvimento"
+
 msgid "Create a layer to assign its keys, or edit the base keyboard."
 msgstr "Crie uma camada para atribuir suas teclas ou edite o teclado base."
 

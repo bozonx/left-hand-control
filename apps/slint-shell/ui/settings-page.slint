@@ -10,7 +10,7 @@ import { Locale, Message } from "i18n.slint";
 import { Button, CheckBox, HorizontalBox, RadioGroup, VerticalBox } from "std-widgets.slint";
 import { FormLabel, NumericInput, SelectField } from "controls.slint";
 import { GameAppEntry, GameAppsField } from "conditions.slint";
-import { GameModeControl, SettingsTab } from "types.slint";
+import { AppearanceChoice, GameModeControl, SettingsTab } from "types.slint";
 
 /// `kind`: 0 rule tap, 1 rule hold, 2 rule long hold, 3 rule double tap,
 /// 4 layer key, 5 macro step, 6 quick action. `enabled` is false for a
@@ -25,14 +25,16 @@ export global SettingsEditor {
     in-out property <bool> mouse-manual;
     in-out property <bool> launch-on-startup;
     in-out property <bool> start-mapper-on-launch;
-    in-out property <int> appearance-index;
+    in-out property <AppearanceChoice> appearance;
     in-out property <bool> high-contrast;
     in-out property <bool> reduce-motion;
     in-out property <bool> layout-osd;
     in-out property <bool> layer-hint;
     /// The layer hint can be shown: layer-shell is available.
     in property <bool> layer-hint-available;
+    /// Index into `LOCALES` (src/pages/mod.rs); the language list below follows its order.
     in-out property <int> locale-index;
+    /// Index into `TAP_DECISIONS` (src/pages/settings.rs).
     in-out property <int> tap-decision-index;
     in-out property <string> hold-timeout;
     in-out property <string> long-hold-timeout;
@@ -111,7 +113,7 @@ component BuiltinList inherits VerticalLayout {
     in property <string> title;
     in property <string> items;
     private property <bool> expanded;
-    spacing: 4px;
+    spacing: Theme.space-xs;
     vertical-stretch: 0;
     HorizontalLayout {
         alignment: start;
@@ -134,10 +136,10 @@ component GameSourceOption inherits VerticalBox {
     in-out property <bool> checked;
     callback toggled();
     padding: 0px;
-    spacing: 4px;
+    spacing: Theme.space-xs;
     vertical-stretch: 0;
     HorizontalLayout {
-        spacing: 6px; alignment: start;
+        spacing: Theme.space-s; alignment: start;
         CheckBox { text: root.text; checked <=> root.checked; toggled => { root.toggled(); } }
         VerticalLayout { alignment: center; InfoTip { text: root.info; } }
     }
@@ -150,16 +152,16 @@ component Section inherits Rectangle {
     vertical-stretch: 0;
     horizontal-stretch: 1;
     min-width: 0px;
-    max-width: 100000px;
+    max-width: Theme.unbounded;
     height: section-content.preferred-height;
     background: transparent;
     section-content := VerticalLayout {
         padding: 0px;
-        padding-top: 16px;
-        padding-bottom: 16px;
-        spacing: 24px;
+        padding-top: Theme.space-xl;
+        padding-bottom: Theme.space-xl;
+        spacing: Theme.space-3xl;
         alignment: start;
-        if root.title != "": Text { text: root.title; color: Theme.text; font-size: Theme.font-heading; font-weight: 600; vertical-stretch: 0; }
+        if root.title != "": Text { text: root.title; color: Theme.text; font-size: Theme.font-heading; font-weight: Theme.weight-semibold; vertical-stretch: 0; }
         @children
     }
 }
@@ -187,7 +189,7 @@ component TimingField inherits VerticalLayout {
         modified: root.value != root.standard;
         reset-tooltip: @tr("Reset to {} ms", root.standard);
         reset => { root.value = root.standard; root.reset(); }
-        HorizontalLayout { spacing: 6px; alignment: start;
+        HorizontalLayout { spacing: Theme.space-s; alignment: start;
             NumericInput { field-width: 100px; label: root.label; minimum: root.minimum; maximum: root.maximum; step: root.step; text <=> root.value; edited => { root.edited(); } }
             Text { text: @tr("ms"); color: Theme.muted; font-size: Theme.font-body; vertical-alignment: center; }
         }
@@ -197,8 +199,8 @@ component TimingField inherits VerticalLayout {
 component SubsectionTitle inherits Text {
     vertical-stretch: 0;
     color: Theme.text;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: Theme.font-default;
+    font-weight: Theme.weight-semibold;
 }
 
 /// A card of settings with an optional title.
@@ -208,8 +210,8 @@ component BehaviorCard inherits VerticalLayout {
     max-width: 608px;
     Card {
         VerticalLayout {
-            padding: 16px;
-            spacing: 12px;
+            padding: Theme.space-xl;
+            spacing: Theme.space-l;
             if root.title != "": SubsectionTitle { text: root.title; }
             @children
         }
@@ -222,16 +224,16 @@ component DeviceField inherits HorizontalLayout {
     in property <string> label;
     in property <string> note;
     vertical-stretch: 0;
-    max-width: 576px;
-    spacing: 16px;
-    VerticalLayout { width: 160px; horizontal-stretch: 0; alignment: start; padding-top: 8px; spacing: 2px;
-        HorizontalLayout { spacing: 8px; alignment: start;
+    max-width: Theme.text-column;
+    spacing: Theme.space-xl;
+    VerticalLayout { width: 160px; horizontal-stretch: 0; alignment: start; padding-top: Theme.space-m; spacing: Theme.space-2xs;
+        HorizontalLayout { spacing: Theme.space-m; alignment: start;
             VerticalLayout { alignment: center; Image { width: 16px; height: 16px; source: root.icon; colorize: Theme.text; } }
             Text { text: root.label; color: Theme.text; vertical-alignment: center; }
         }
         if root.note != "": Text { text: root.note; color: Theme.muted; font-size: Theme.font-body; }
     }
-    VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: 6px; alignment: start;
+    VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: Theme.space-s; alignment: start;
         @children
     }
 }
@@ -246,7 +248,7 @@ component MapperStatusCard inherits Rectangle {
     private property <bool> crashed: root.failed && AppState.mapper-ran >= 0;
     private property <color> tone: root.busy ? Theme.warning : root.running ? Theme.success : root.failed ? Theme.error : Theme.muted;
     vertical-stretch: 0;
-    max-width: 576px;
+    max-width: Theme.text-column;
     min-height: content.preferred-height;
     border-radius: Theme.radius-large;
     border-width: 1px;
@@ -258,16 +260,16 @@ component MapperStatusCard inherits Rectangle {
             : @tr("{} h {} min", Math.floor(minutes / 60), Math.mod(minutes, 60));
     }
     content := HorizontalLayout {
-        padding: 12px;
-        padding-left: 14px;
-        spacing: 12px;
+        padding: Theme.space-l;
+        padding-left: Theme.space-l-plus;
+        spacing: Theme.space-l;
         VerticalLayout { alignment: start; padding-top: 5px;
-            Rectangle { width: 10px; height: 10px; border-radius: 5px; background: root.tone; }
+            Rectangle { width: 10px; height: 10px; border-radius: self.height / 2; background: root.tone; }
         }
-        VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: 4px; alignment: center;
+        VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: Theme.space-xs; alignment: center;
             Text {
                 text: root.busy ? @tr("Please wait…") : root.running ? @tr("Running") : root.crashed ? @tr("Stopped unexpectedly") : root.failed ? @tr("Failed to start") : @tr("Stopped");
-                color: Theme.text; font-weight: 700;
+                color: Theme.text; font-weight: Theme.weight-bold;
             }
             Text {
                 text: root.busy ? ""
@@ -282,7 +284,7 @@ component MapperStatusCard inherits Rectangle {
                 text: @tr("Stopped {} ago after running for {}.", root.duration(AppState.mapper-stopped-ago), root.duration(AppState.mapper-ran));
                 color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap;
             }
-            if !root.running && !root.busy: VerticalLayout { spacing: 4px;
+            if !root.running && !root.busy: VerticalLayout { spacing: Theme.space-xs;
                 for issue in SettingsEditor.input-issues: Text {
                     text: "⚠ " + Locale.text(issue);
                     color: Theme.warning; font-size: Theme.font-body; wrap: word-wrap;
@@ -308,22 +310,22 @@ component MapperStatusCard inherits Rectangle {
 
 export component SettingsPage inherits VerticalBox {
     padding: 0px;
-    spacing: 10px;
+    spacing: Theme.space-m-plus;
     horizontal-stretch: 1;
-    max-width: 100000px;
+    max-width: Theme.unbounded;
     path-clipboard := TextInput { visible: false; width: 0px; height: 0px; }
     /// A running mapper keeps the devices it started with: restart it once the new ones are saved.
     function apply-devices() { if AppState.mapper-running && SettingsEditor.message.id == "" { AppState.restart-mapper(); } }
     function copy-path(value: string) { path-clipboard.text = value; path-clipboard.select-all(); path-clipboard.copy(); NotificationCenter.send({ id: "copied" }); }
-    Text { color: Theme.text; text: @tr("Settings"); font-size: 26px; font-weight: 700; }
+    Text { color: Theme.text; text: @tr("Settings"); font-size: Theme.font-page-title; font-weight: Theme.weight-bold; }
     if SettingsEditor.message.id != "": Text { text: Locale.text(SettingsEditor.message); color: Theme.error; wrap: word-wrap; }
     HorizontalBox {
         padding: 0px;
-        spacing: 16px;
+        spacing: Theme.space-xl;
         vertical-stretch: 1;
         VerticalBox {
             padding: 0px;
-            spacing: 6px;
+            spacing: Theme.space-s;
             width: 180px;
             horizontal-stretch: 0;
             alignment: start;
@@ -341,7 +343,7 @@ export component SettingsPage inherits VerticalBox {
                 accessible-action-default => { SettingsEditor.tab = tab-id; content.viewport-y = 0px; }
                 Rectangle {
                     x: 0px; y: 8px; width: 3px; height: parent.height - 16px;
-                    border-radius: 2px;
+                    border-radius: Theme.radius-tiny;
                     background: SettingsEditor.tab == tab-id ? Theme.accent : transparent;
                 }
                 Text {
@@ -349,7 +351,7 @@ export component SettingsPage inherits VerticalBox {
                     width: parent.width - 26px;
                     text: label;
                     color: SettingsEditor.tab == tab-id ? Theme.text : Theme.muted;
-                    font-weight: 600;
+                    font-weight: Theme.weight-semibold;
                     vertical-alignment: center;
                     overflow: elide;
                 }
@@ -375,7 +377,7 @@ export component SettingsPage inherits VerticalBox {
             viewport-height: settings-content.preferred-height;
             viewport-x: 0px;
             horizontal-stretch: 1;
-            max-width: 100000px;
+            max-width: Theme.unbounded;
             vertical-stretch: 1;
             settings-content := PageContent {
                 x: 0px;
@@ -383,34 +385,38 @@ export component SettingsPage inherits VerticalBox {
                 width: content.visible-width;
                 alignment: start;
                 min-width: 0px;
-                max-width: 100000px;
+                max-width: Theme.unbounded;
                 spacing: 0px;
                 if SettingsEditor.tab == SettingsTab.general: Section {
                     title: @tr("General");
                     Card {
                         vertical-stretch: 0;
                         VerticalLayout {
-                            padding: 16px;
-                            spacing: 20px;
-                            VerticalLayout { vertical-stretch: 0; spacing: 8px;
-                                HorizontalLayout { vertical-stretch: 0; alignment: start; spacing: 6px;
+                            padding: Theme.space-xl;
+                            spacing: Theme.space-2xl;
+                            VerticalLayout { vertical-stretch: 0; spacing: Theme.space-m;
+                                HorizontalLayout { vertical-stretch: 0; alignment: start; spacing: Theme.space-s;
                                     VerticalLayout { alignment: center; Image { width: 16px; height: 16px; colorize: Theme.text; source: @image-url("icons/globe.svg"); } }
                                     Text { text: @tr("Language"); color: Theme.text; vertical-alignment: center; }
                                 }
                                 SelectField { width: 280px; height: 32px; vertical-stretch: 0; model: [@tr("Automatic"), "English", "Русский", "Deutsch", "Français", "Español", "Italiano", "Português", "Polski", "Türkçe", "Українська", "Čeština", "Magyar", "Română", "Ελληνικά", "Hrvatski", "ქართული", "Қазақша", "简体中文", "繁體中文", "日本語", "한국어"]; current-index: SettingsEditor.locale-index; selected(value) => { SettingsEditor.locale-index = self.current-index; SettingsEditor.save(); } }
                             }
-                            VerticalLayout { vertical-stretch: 0; spacing: 8px;
+                            VerticalLayout { vertical-stretch: 0; spacing: Theme.space-m;
                                 Text { vertical-stretch: 0; text: @tr("Theme"); color: Theme.text; }
                                 HorizontalLayout { alignment: start;
                                     RadioGroup {
+                                        // RadioGroup reports only the label, so each label is defined once.
+                                        property <string> system-label: @tr("System");
+                                        property <string> light-label: @tr("Light");
+                                        property <string> dark-label: @tr("Dark");
                                         vertical-stretch: 0;
                                         horizontal-stretch: 0;
                                         orientation: horizontal;
-                                        selected(value) => { SettingsEditor.appearance-index = value == @tr("System") ? 0 : value == @tr("Light") ? 1 : value == @tr("Dark") ? 2 : 3; SettingsEditor.save(); }
-                                        RadioButton { text: @tr("System"); checked: SettingsEditor.appearance-index == 0; }
-                                        RadioButton { text: @tr("Light"); checked: SettingsEditor.appearance-index == 1; }
-                                        RadioButton { text: @tr("Dark"); checked: SettingsEditor.appearance-index == 2; }
-                                        RadioButton { visible: AppState.in-development; text: @tr("E-ink"); checked: SettingsEditor.appearance-index == 3; }
+                                        selected(value) => { SettingsEditor.appearance = value == self.system-label ? AppearanceChoice.system : value == self.light-label ? AppearanceChoice.light : value == self.dark-label ? AppearanceChoice.dark : AppearanceChoice.e-ink; SettingsEditor.save(); }
+                                        RadioButton { text: parent.system-label; checked: SettingsEditor.appearance == AppearanceChoice.system; }
+                                        RadioButton { text: parent.light-label; checked: SettingsEditor.appearance == AppearanceChoice.light; }
+                                        RadioButton { text: parent.dark-label; checked: SettingsEditor.appearance == AppearanceChoice.dark; }
+                                        RadioButton { visible: AppState.in-development; text: @tr("E-ink"); checked: SettingsEditor.appearance == AppearanceChoice.e-ink; }
                                     }
                                 }
                             }
@@ -419,11 +425,11 @@ export component SettingsPage inherits VerticalBox {
                     if (AppState.in-development && AppState.is-linux) || AppState.autostart-supported: Card {
                         vertical-stretch: 0;
                         VerticalLayout {
-                            padding: 16px;
-                            spacing: 20px;
+                            padding: Theme.space-xl;
+                            spacing: Theme.space-2xl;
                             if AppState.autostart-supported: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; toggled => { SettingsEditor.save(); } }
                             if AppState.in-development && AppState.is-linux: CheckBox { text: @tr("Show the Left Hand Control layout name when it changes"); checked <=> SettingsEditor.layout-osd; toggled => { SettingsEditor.save(); } }
-                            if AppState.in-development && AppState.is-linux: HorizontalLayout { vertical-stretch: 0; alignment: start; spacing: 6px;
+                            if AppState.in-development && AppState.is-linux: HorizontalLayout { vertical-stretch: 0; alignment: start; spacing: Theme.space-s;
                                 CheckBox { horizontal-stretch: 0; text: @tr("Show the keys of a layer while it is held"); checked <=> SettingsEditor.layer-hint; toggled => { SettingsEditor.save(); } }
                                 VerticalLayout { visible: !SettingsEditor.layer-hint-available || AppState.in-development; alignment: center; InfoTip { text: SettingsEditor.layer-hint-available ? @tr("The hint appears 2 seconds after the layer activates. Pressing a layer key hides or cancels it until the trigger is released, including in game mode.") : @tr("Unavailable: build with the spell feature and use a Wayland compositor with layer-shell (KDE Plasma, Sway, Hyprland)."); } }
                             }
@@ -432,8 +438,8 @@ export component SettingsPage inherits VerticalBox {
                     Card {
                         vertical-stretch: 0;
                         VerticalLayout {
-                            padding: 16px;
-                            spacing: 20px;
+                            padding: Theme.space-xl;
+                            spacing: Theme.space-2xl;
                             CardHeader { vertical-stretch: 0; title: @tr("Paths"); }
                             HorizontalBox { padding: 0px; vertical-stretch: 0;
                                 Text { vertical-stretch: 0; text: @tr("Settings directory: ") + SettingsEditor.settings-dir; color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
@@ -450,7 +456,7 @@ export component SettingsPage inherits VerticalBox {
                         height: 32px; vertical-stretch: 0;
                         Rectangle { horizontal-stretch: 1; }
                         if SettingsEditor.in-development: CheckBox {
-                            text: "In development features";
+                            text: @tr("In development features");
                             checked <=> SettingsEditor.in-development;
                             toggled => { SettingsEditor.save(); }
                         }
@@ -462,40 +468,40 @@ export component SettingsPage inherits VerticalBox {
                 }
                 if SettingsEditor.tab == SettingsTab.accessibility: Section {
                     title: @tr("Accessibility");
-                    VerticalLayout { vertical-stretch: 0; spacing: 8px;
-                        CheckBox { text: @tr("High contrast"); enabled: SettingsEditor.appearance-index != 3; checked <=> SettingsEditor.high-contrast; toggled => { SettingsEditor.save(); } }
+                    VerticalLayout { vertical-stretch: 0; spacing: Theme.space-m;
+                        CheckBox { text: @tr("High contrast"); enabled: SettingsEditor.appearance != AppearanceChoice.e-ink; checked <=> SettingsEditor.high-contrast; toggled => { SettingsEditor.save(); } }
                     }
-                    VerticalLayout { vertical-stretch: 0; spacing: 8px;
+                    VerticalLayout { vertical-stretch: 0; spacing: Theme.space-m;
                         CheckBox { text: @tr("Disable animations"); checked <=> SettingsEditor.reduce-motion; toggled => { SettingsEditor.save(); } }
                     }
                 }
                 if AppState.in-development && SettingsEditor.tab == SettingsTab.commands: Section {
                     title: "";
-                    HorizontalLayout { alignment: start; spacing: 6px;
+                    HorizontalLayout { alignment: start; spacing: Theme.space-s;
                         CheckBox { horizontal-stretch: 0; text: @tr("Allow command execution"); checked <=> SettingsEditor.commands-enabled; toggled => { SettingsEditor.save(); } }
                         VerticalLayout { alignment: center; InfoTip { text: (AppState.is-windows ? @tr("Commands run with PowerShell in the background and are not awaited.") : @tr("Commands run with sh -lc in the background and are not awaited.")) + "\n" + @tr("Commands stay off until you allow execution. Review below what your layouts would run."); } }
                     }
-                    VerticalBox { padding: 0px; spacing: 16px;
+                    VerticalBox { padding: 0px; spacing: Theme.space-xl;
                         if SettingsEditor.command-assignments.length == 0: Text { vertical-stretch: 0; text: @tr("No commands are assigned."); color: Theme.muted; }
                         for item in SettingsEditor.command-assignments: VerticalLayout {
-                            spacing: 8px;
+                            spacing: Theme.space-m;
                             if item.first: Text {
                                 text: item.layout-name != "" ? item.layout-name : @tr("Custom layout");
-                                color: Theme.text; font-weight: 600; wrap: word-wrap;
+                                color: Theme.text; font-weight: Theme.weight-semibold; wrap: word-wrap;
                             }
                             if item.first: HorizontalLayout {
-                                spacing: 16px;
+                                spacing: Theme.space-xl;
                                 Text { width: 30%; text: @tr("Assigned to"); color: Theme.muted; font-size: Theme.font-body; }
                                 Text { width: 20%; text: @tr("Name"); color: Theme.muted; font-size: Theme.font-body; }
                                 Text { horizontal-stretch: 1; text: @tr("Command"); color: Theme.muted; font-size: Theme.font-body; }
                             }
                             Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }
                             HorizontalLayout {
-                                spacing: 16px;
+                                spacing: Theme.space-xl;
                                 VerticalLayout {
                                     width: 30%;
                                     alignment: start;
-                                    spacing: 4px;
+                                    spacing: Theme.space-xs;
                                     for place in item.places: Text {
                                         text: (place.kind == 0 ? @tr("Rule {} · tap", place.name)
                                             : place.kind == 1 ? @tr("Rule {} · hold", place.name)
@@ -514,12 +520,12 @@ export component SettingsPage inherits VerticalBox {
                                     // An empty name shows the command itself as the label.
                                     text: item.name != "" && item.name != item.script ? item.name : "—";
                                     color: item.name != "" && item.name != item.script ? Theme.text : Theme.muted;
-                                    font-weight: 600; wrap: word-wrap;
+                                    font-weight: Theme.weight-semibold; wrap: word-wrap;
                                 }
                                 VerticalLayout {
                                     horizontal-stretch: 1;
                                     alignment: start;
-                                    spacing: 4px;
+                                    spacing: Theme.space-xs;
                                     // At most five lines; the rest opens in a dialog.
                                     private property <length> limit: 5 * line.preferred-height;
                                     Rectangle {
@@ -548,7 +554,7 @@ export component SettingsPage inherits VerticalBox {
                 }
                 if SettingsEditor.tab == SettingsTab.mapper: Section {
                     title: "";
-                    VerticalBox { padding: 0px; spacing: 16px;
+                    VerticalBox { padding: 0px; spacing: Theme.space-xl;
                         CardHeader { vertical-stretch: 0;
                             title: @tr("Mapper");
                             info: @tr("The mapper intercepts keyboard input, applies layers, rules and macros, and emits output through a virtual device.") + "\n\n" + @tr("Select the mouse so the mapper can see extra buttons and clicks. Pointer movement is not affected.") + "\n\n" + @tr("The mouse is not fully intercepted yet: a remapped extra button can emit the new action, but its native system or app action may still run. If that gets in the way, disable the native action for that button in your system, browser, or driver settings.");
@@ -559,8 +565,8 @@ export component SettingsPage inherits VerticalBox {
                             color: Theme.warning; wrap: word-wrap;
                         }
                         if AppState.mapper-supported: CheckBox { text: @tr("Start the mapper on launch"); checked <=> SettingsEditor.start-mapper-on-launch; toggled => { SettingsEditor.save(); } }
-                        VerticalLayout { vertical-stretch: 0; max-width: 576px; spacing: 4px; padding-top: 8px;
-                            HorizontalLayout { spacing: 6px; height: 28px;
+                        VerticalLayout { vertical-stretch: 0; max-width: Theme.text-column; spacing: Theme.space-xs; padding-top: Theme.space-m;
+                            HorizontalLayout { spacing: Theme.space-s; height: 28px;
                                 SubsectionTitle { horizontal-stretch: 1; text: @tr("Devices"); vertical-alignment: center; }
                                 IconButton { icon: @image-url("icons/refresh-cw.svg"); tooltip: @tr("Refresh device list"); enabled: AppState.mapper-supported && !AppState.mapper-busy; clicked => { SettingsEditor.refresh-devices(); } }
                             }
@@ -586,12 +592,12 @@ export component SettingsPage inherits VerticalBox {
                 if SettingsEditor.tab == SettingsTab.mapper && AppState.is-linux: Section {
                     title: @tr("Text input");
                     VerticalBox {
-                        padding: 0px; spacing: 8px;
+                        padding: 0px; spacing: Theme.space-m;
                         FormLabel { text: @tr("Typing method"); }
                         // Same order as TextMode::ALL in lhc-core.
                         SelectField { width: 320px; height: 32px; vertical-stretch: 0; model: [@tr("libei + clipboard fallback (recommended)"), "libei", "NotifyKeyboardKeycode", @tr("Paste from clipboard"), @tr("ydotool"), @tr("xdotool")]; current-index: SettingsEditor.text-mode-index; selected(value) => { SettingsEditor.text-mode-index = self.current-index; SettingsEditor.save(); } }
                         Text {
-                            vertical-stretch: 0; max-width: 576px; color: Theme.muted; wrap: word-wrap;
+                            vertical-stretch: 0; max-width: Theme.text-column; color: Theme.muted; wrap: word-wrap;
                             text: [
                                 @tr("Types with the current layout, or pastes the whole text when a character is unavailable. Paste requires clipboard access and support for the paste shortcut. Preserves clipboard formats and cancels if the destination changes. Requires portal permission and active-window detection."),
                                 @tr("Types only through libei using the current keyboard layout and Caps Lock state. Skips text with unavailable characters. Requires portal permission and active-window detection. Cancels if the destination changes."),
@@ -603,19 +609,19 @@ export component SettingsPage inherits VerticalBox {
                         }
                     }
                     if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "libei" || SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "clipboard": VerticalBox {
-                        padding: 0px; spacing: 8px;
+                        padding: 0px; spacing: Theme.space-m;
                         FormLabel { text: @tr("Paste shortcut"); }
                         // Same order as PasteShortcut::ALL in lhc-core.
                         SelectField { width: 320px; height: 32px; vertical-stretch: 0; model: ["Shift+Insert", "Ctrl+V", "Ctrl+Shift+V"]; current-index: SettingsEditor.paste-shortcut-index; selected(value) => { SettingsEditor.paste-shortcut-index = self.current-index; SettingsEditor.save(); } }
-                        Text { vertical-stretch: 0; max-width: 576px; color: Theme.muted; wrap: word-wrap; text: @tr("Sent to the focused app to paste the text. Terminals usually need Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and Ctrl+V does not paste there."); }
+                        Text { vertical-stretch: 0; max-width: Theme.text-column; color: Theme.muted; wrap: word-wrap; text: @tr("Sent to the focused app to paste the text. Terminals usually need Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and Ctrl+V does not paste there."); }
                     }
                     if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "ydotool": VerticalBox {
-                        padding: 0px; spacing: 8px;
+                        padding: 0px; spacing: Theme.space-m;
                         FormLabel { text: @tr("ydotool path"); }
                         TextField { text <=> SettingsEditor.ydotool-path; placeholder-text: @tr("ydotool from PATH"); accessible-label: @tr("ydotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
                     }
                     if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "xdotool": VerticalBox {
-                        padding: 0px; spacing: 8px;
+                        padding: 0px; spacing: Theme.space-m;
                         FormLabel { text: @tr("xdotool path"); }
                         TextField { text <=> SettingsEditor.xdotool-path; placeholder-text: @tr("xdotool from PATH"); accessible-label: @tr("xdotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
                     }
@@ -623,7 +629,7 @@ export component SettingsPage inherits VerticalBox {
                 if SettingsEditor.tab == SettingsTab.key-behavior: Section {
                     title: @tr("Key behavior");
                     BehaviorCard {
-                        HorizontalLayout { vertical-stretch: 0; spacing: 16px; alignment: start;
+                        HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-xl; alignment: start;
                             TimingField {
                                 label: @tr("Simultaneous presses");
                                 info: @tr("For rules triggered by several keys pressed together, such as KeyJ+KeyK. All keys must go down within this time, in any order. Until then the first key is held back; if the combination does not complete, it is typed as usual. Modifiers are never held back.")
@@ -662,7 +668,7 @@ export component SettingsPage inherits VerticalBox {
                         }
                         Divider { vertical-stretch: 0; }
                         SubsectionTitle { text: @tr("Hold"); }
-                        VerticalBox { padding: 0px; vertical-stretch: 0; spacing: 8px;
+                        VerticalBox { padding: 0px; vertical-stretch: 0; spacing: Theme.space-m;
                             FormLabel {
                                 text: @tr("Hold detection");
                                 info: @tr("Decides when a dual-role key counts as a hold if another key is pressed. Rules can override this default in advanced options. Chord detection is configured separately.")
@@ -673,7 +679,7 @@ export component SettingsPage inherits VerticalBox {
                                 SelectField { width: 500px; height: 32px; vertical-stretch: 0; model: [@tr("After another key is released (better for typing)"), @tr("As soon as another key is pressed")]; current-index: SettingsEditor.tap-decision-index; selected(value) => { SettingsEditor.tap-decision-index = self.current-index; SettingsEditor.save(); } }
                             }
                         }
-                        HorizontalLayout { vertical-stretch: 0; spacing: 16px; alignment: start;
+                        HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-xl; alignment: start;
                             TimingField {
                                 label: @tr("Hold threshold");
                                 info: @tr("How long to hold a rule key before it counts as a hold: its layer or hold action. Released earlier, the key runs its tap action.")
@@ -698,7 +704,7 @@ export component SettingsPage inherits VerticalBox {
                         }
                         Divider { vertical-stretch: 0; }
                         SubsectionTitle { text: @tr("Macros"); }
-                        HorizontalLayout { vertical-stretch: 0; spacing: 16px; alignment: start;
+                        HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-xl; alignment: start;
                             TimingField {
                                 label: @tr("Pause between steps");
                                 info: @tr("Pause between consecutive steps of a macro. Increase it if an application misses keystrokes.")
@@ -724,12 +730,12 @@ export component SettingsPage inherits VerticalBox {
                 }
                 if AppState.in-development && SettingsEditor.tab == SettingsTab.game-mode: Section {
                     HorizontalLayout {
-                        vertical-stretch: 0; spacing: 8px; alignment: start;
-                        Text { text: @tr("Game mode"); color: Theme.text; font-size: Theme.font-heading; font-weight: 600; vertical-alignment: center; }
+                        vertical-stretch: 0; spacing: Theme.space-m; alignment: start;
+                        Text { text: @tr("Game mode"); color: Theme.text; font-size: Theme.font-heading; font-weight: Theme.weight-semibold; vertical-alignment: center; }
                         VerticalLayout { alignment: center; InfoTip { text: @tr("Game mode turns on rules and automatic layout rules that have a game-mode condition. Automatic layout rules apply only when the layout is chosen automatically (Layouts page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Never a game” takes priority over automatic detection and “Always a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."); } }
                     }
                     VerticalBox {
-                        padding: 0px; spacing: 12px; vertical-stretch: 0;
+                        padding: 0px; spacing: Theme.space-l; vertical-stretch: 0;
                         HorizontalLayout {
                             vertical-stretch: 0; alignment: start;
                             ButtonGroup {
@@ -746,9 +752,9 @@ export component SettingsPage inherits VerticalBox {
                         // Exact sources: the system or a launcher reports the running game; no built-in list applies.
                         if AppState.is-linux || AppState.game-gamescope-availability.id != "capability-unsupported": FieldLabel { text: @tr("System signals"); }
                         if AppState.is-linux: VerticalBox {
-                            padding: 0px; spacing: 4px; vertical-stretch: 0;
+                            padding: 0px; spacing: Theme.space-xs; vertical-stretch: 0;
                             HorizontalLayout {
-                                spacing: 6px; alignment: start;
+                                spacing: Theme.space-s; alignment: start;
                                 CheckBox { text: @tr("Use GameMode daemon"); checked <=> SettingsEditor.use-gamemoded; toggled => { SettingsEditor.save(); } }
                                 VerticalLayout { alignment: center; InfoTip { text: @tr("Turns on while a game runs through gamemoderun or requests GameMode itself. In Steam set the launch options to “gamemoderun %command%”."); } }
                             }
@@ -817,9 +823,9 @@ export component SettingsPage inherits VerticalBox {
                             if SettingsEditor.use-app-category: BuiltinList { title: @tr("Launchers and game tools — not counted as games"); items: SettingsEditor.game-launchers; }
                         }
                         VerticalBox {
-                            padding: 0px; spacing: 4px; vertical-stretch: 0;
+                            padding: 0px; spacing: Theme.space-xs; vertical-stretch: 0;
                             HorizontalLayout {
-                                spacing: 6px; alignment: start;
+                                spacing: Theme.space-s; alignment: start;
                                 CheckBox { text: @tr("Detect fullscreen"); checked <=> SettingsEditor.use-fullscreen; toggled => { SettingsEditor.save(); } enabled: AppState.game-fullscreen-availability.id != "capability-unsupported"; }
                                 VerticalLayout { alignment: center; InfoTip { text: @tr("Borderless windows covering the screen count too. Browsers, video players and presentations are ignored."); } }
                             }
@@ -834,7 +840,7 @@ export component SettingsPage inherits VerticalBox {
                         title: @tr("Your rules");
                         if AppState.game-processes-availability.id != "capability-available" || AppState.game-window-availability.id != "capability-available": Text { vertical-stretch: 0; text: @tr("Running processes: ") + Locale.text(AppState.game-processes-availability) + " · " + @tr("Active window: ") + Locale.text(AppState.game-window-availability); color: Theme.muted; wrap: word-wrap; }
                         HorizontalLayout {
-                            vertical-stretch: 0; spacing: 24px;
+                            vertical-stretch: 0; spacing: Theme.space-3xl;
                             GameAppsField {
                                 horizontal-stretch: 1; preferred-width: 0px; min-width: 0px;
                                 label: @tr("Always a game");
@@ -882,10 +888,10 @@ export component CommandDialogOverlay inherits FocusScope {
             border-width: 1px;
             border-radius: Theme.radius-dialog;
             TouchArea {}
-            dialog-box := VerticalBox { padding: 22px; spacing: 12px;
+            dialog-box := VerticalBox { padding: 22px; spacing: Theme.space-l;
                 Text {
                     text: SettingsEditor.full-command-name != "" ? SettingsEditor.full-command-name : @tr("Command");
-                    color: Theme.text; font-size: Theme.font-heading; font-weight: 700; wrap: word-wrap;
+                    color: Theme.text; font-size: Theme.font-heading; font-weight: Theme.weight-bold; wrap: word-wrap;
                 }
                 ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
                     preferred-height: full-layout.preferred-height;
@@ -897,7 +903,7 @@ export component CommandDialogOverlay inherits FocusScope {
                         }
                     }
                 }
-                HorizontalLayout { spacing: 8px; alignment: end;
+                HorizontalLayout { spacing: Theme.space-m; alignment: end;
                     Button { text: @tr("Copy"); clicked => { full-text.select-all(); full-text.copy(); NotificationCenter.send({ id: "copied" }); } }
                     Button { text: @tr("Close"); primary: true; clicked => { SettingsEditor.full-command = ""; } }
                 }

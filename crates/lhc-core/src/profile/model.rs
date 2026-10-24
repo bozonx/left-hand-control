@@ -4,6 +4,7 @@
 //! by the mapper runtime; the persisted formats (`config.json` settings and
 //! JSON layouts) are handled by [`super::settings`] and [`super::layout_file`].
 
+use super::timing;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -678,7 +679,7 @@ pub struct AppSettings {
     pub locale: LocalePreference,
     pub default_hold_timeout_ms: u64,
     pub default_long_hold_timeout_ms: u64,
-    pub tap_decision: String,
+    pub tap_decision: TapDecision,
     pub default_double_tap_timeout_ms: u64,
     /// Window in which all keys of a multi-key rule must be pressed.
     pub combo_timeout_ms: u64,
@@ -721,14 +722,14 @@ impl Default for AppSettings {
             layout_osd: false,
             layer_hint: false,
             locale: LocalePreference::Auto,
-            default_long_hold_timeout_ms: 1000,
-            default_hold_timeout_ms: 200,
-            tap_decision: "permissiveHold".into(),
-            default_double_tap_timeout_ms: 200,
-            combo_timeout_ms: 50,
-            default_macro_step_pause_ms: 20,
-            default_macro_modifier_delay_ms: 5,
-            macro_timeout_ms: 10_000,
+            default_long_hold_timeout_ms: timing::DEFAULT_LONG_HOLD_MS,
+            default_hold_timeout_ms: timing::DEFAULT_HOLD_MS,
+            tap_decision: TapDecision::default(),
+            default_double_tap_timeout_ms: timing::DEFAULT_DOUBLE_TAP_MS,
+            combo_timeout_ms: timing::DEFAULT_COMBO_MS,
+            default_macro_step_pause_ms: timing::DEFAULT_MACRO_STEP_PAUSE_MS,
+            default_macro_modifier_delay_ms: timing::DEFAULT_MACRO_MODIFIER_DELAY_MS,
+            macro_timeout_ms: timing::DEFAULT_MACRO_TIMEOUT_MS,
             input_device_path: Some(String::new()),
             input_mouse_device_path: None,
             current_layout_id: None,

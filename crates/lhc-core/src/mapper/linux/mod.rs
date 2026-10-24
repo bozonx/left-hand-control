@@ -433,7 +433,7 @@ fn set_waiting(waiting: &AtomicBool, value: bool) {
 }
 
 fn stable_device_path(path: &str) -> bool {
-    std::path::Path::new(path).parent() == Some(std::path::Path::new("/dev/input/by-id"))
+    std::path::Path::new(path).parent() == Some(std::path::Path::new(devices::BY_ID_DIR))
 }
 
 impl DeviceIdentity {

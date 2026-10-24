@@ -2,6 +2,8 @@ use super::super::engine::{Engine, Out};
 
 /// How long a system D-Bus call may take before it is abandoned.
 const DBUS_CALL_TIMEOUT: Duration = Duration::from_secs(5);
+/// Jobs queued for a worker thread before senders drop new ones.
+const WORKER_QUEUE: usize = 32;
 pub(super) use super::super::output::{
     EventSink, LoopDriver, OutputHold, SideEffects, flush_out_with, process_iteration_with,
 };
@@ -106,7 +108,7 @@ enum SideEffectJob {
 fn side_effect_tx() -> &'static mpsc::SyncSender<SideEffectJob> {
     static TX: OnceLock<mpsc::SyncSender<SideEffectJob>> = OnceLock::new();
     TX.get_or_init(|| {
-        let (tx, rx) = mpsc::sync_channel(32);
+        let (tx, rx) = mpsc::sync_channel(WORKER_QUEUE);
         match thread::Builder::new()
             .name("lhc-side-effects".into())
             .spawn(move || run_side_effect_worker(rx))
@@ -192,7 +194,7 @@ impl MultiDeviceLoopDriver {
             mouse_path: mouse_path.map(str::to_owned),
             next_mouse_retry: Instant::now() + MOUSE_RETRY,
             hotkeys: PopupHotkeys::default(),
-            hotkeys_enabled: std::env::var("LHC_HOTKEYS").as_deref() != Ok("off"),
+            hotkeys_enabled: crate::env::popup_hotkeys_enabled(),
             wake_rx,
             keys: DeviceKeys::default(),
             last_event: Instant::now(),
@@ -568,7 +570,7 @@ fn call_dbus(call: &DbusCall) {
 fn dbus_tx() -> &'static mpsc::SyncSender<DbusCall> {
     static TX: OnceLock<mpsc::SyncSender<DbusCall>> = OnceLock::new();
     TX.get_or_init(|| {
-        let (tx, rx) = mpsc::sync_channel(32);
+        let (tx, rx) = mpsc::sync_channel(WORKER_QUEUE);
         match thread::Builder::new()
             .name("lhc-dbus".into())
             .spawn(move || run_dbus_worker(rx))
@@ -606,7 +608,7 @@ fn run_dbus_worker(rx: mpsc::Receiver<DbusCall>) {
 
         match done.recv_timeout(DBUS_CALL_TIMEOUT) {
             Ok(Ok(())) => {
-                if call.destination == "org.kde.keyboard" && call.method == "setLayout" {
+                if call.switches_layout() {
                     super::super::refresh_layout();
                 }
                 log::debug!(

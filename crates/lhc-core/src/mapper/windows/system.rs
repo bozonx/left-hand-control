@@ -31,7 +31,7 @@ pub fn resolve(name: &str) -> Option<WindowsAction> {
     if let Some(n) = name
         .strip_prefix("switchLayout")
         .and_then(|rest| rest.parse::<u32>().ok())
-        .filter(|n| (1..=10).contains(n))
+        .filter(|n| (1..=crate::profile::actions::SYSTEM_NUMBERED_COUNT).contains(n))
     {
         return Some(WindowsAction::SwitchLayout(n));
     }

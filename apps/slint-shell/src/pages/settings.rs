@@ -1,21 +1,45 @@
-use super::{APPEARANCES, LOCALES, choice, choice_index, condition_list, strings};
+use super::{LOCALES, choice, choice_index, condition_list, strings};
 use crate::{
     document::{Document, View},
     i18n::Msg,
     ui::{
-        CommandAssignmentRow, CommandPlaceRow, DeviceChoice, DeviceChoices, DeviceGroup,
-        GameAppEntry, SettingsEditor, SettingsWindow,
+        AppearanceChoice, CommandAssignmentRow, CommandPlaceRow, DeviceChoice, DeviceChoices,
+        DeviceGroup, GameAppEntry, SettingsEditor, SettingsWindow,
     },
 };
 use lhc_core::profile::menus::PlaceKind;
-use lhc_core::profile::model::{AppSettings, GameModeProcessMatcher, PasteShortcut, TextMode};
+use lhc_core::profile::model::{
+    AppSettings, Appearance, GameModeProcessMatcher, PasteShortcut, TapDecision, TextMode,
+};
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
 
 /// Delay that batches quick setting changes into one save.
 const AUTOSAVE_DELAY: std::time::Duration = std::time::Duration::from_millis(500);
 
-const TAP_DECISIONS: [&str; 2] = ["permissiveHold", "holdOnOtherKeyPress"];
+/// Order of the tap decision choices in the settings page.
+const TAP_DECISIONS: [TapDecision; 2] = [
+    TapDecision::PermissiveHold,
+    TapDecision::HoldOnOtherKeyPress,
+];
+
+fn appearance_choice(appearance: Appearance) -> AppearanceChoice {
+    match appearance {
+        Appearance::System => AppearanceChoice::System,
+        Appearance::Light => AppearanceChoice::Light,
+        Appearance::Dark => AppearanceChoice::Dark,
+        Appearance::EInk => AppearanceChoice::EInk,
+    }
+}
+
+fn appearance(choice: AppearanceChoice) -> Appearance {
+    match choice {
+        AppearanceChoice::System => Appearance::System,
+        AppearanceChoice::Light => Appearance::Light,
+        AppearanceChoice::Dark => Appearance::Dark,
+        AppearanceChoice::EInk => Appearance::EInk,
+    }
+}
 
 /// The form as the user sees it. Numbers stay text until saved.
 #[derive(Clone, Debug, PartialEq)]
@@ -23,7 +47,7 @@ struct Form {
     in_development: bool,
     launch_on_startup: bool,
     start_mapper_on_launch: bool,
-    appearance: i32,
+    appearance: AppearanceChoice,
     high_contrast: bool,
     reduce_motion: bool,
     layout_osd: bool,
@@ -71,13 +95,13 @@ impl Form {
             in_development: settings.in_development,
             launch_on_startup: settings.launch_on_startup,
             start_mapper_on_launch: settings.start_mapper_on_launch,
-            appearance: choice_index(&APPEARANCES, &settings.appearance),
+            appearance: appearance_choice(settings.appearance),
             high_contrast: settings.high_contrast,
             reduce_motion: settings.reduce_motion,
             layout_osd: settings.layout_osd,
             layer_hint: settings.layer_hint,
             locale: choice_index(&LOCALES, &settings.locale),
-            tap_decision: choice_index(&TAP_DECISIONS, &settings.tap_decision.as_str()),
+            tap_decision: choice_index(&TAP_DECISIONS, &settings.tap_decision),
             hold: settings.default_hold_timeout_ms.to_string(),
             long_hold: settings.default_long_hold_timeout_ms.to_string(),
             double_tap: settings.default_double_tap_timeout_ms.to_string(),
@@ -111,7 +135,7 @@ impl Form {
             in_development: e.get_in_development(),
             launch_on_startup: e.get_launch_on_startup(),
             start_mapper_on_launch: e.get_start_mapper_on_launch(),
-            appearance: e.get_appearance_index(),
+            appearance: e.get_appearance(),
             high_contrast: e.get_high_contrast(),
             reduce_motion: e.get_reduce_motion(),
             layout_osd: e.get_layout_osd(),
@@ -150,7 +174,7 @@ impl Form {
         e.set_in_development(self.in_development);
         e.set_launch_on_startup(self.launch_on_startup);
         e.set_start_mapper_on_launch(self.start_mapper_on_launch);
-        e.set_appearance_index(self.appearance);
+        e.set_appearance(self.appearance);
         e.set_high_contrast(self.high_contrast);
         e.set_reduce_motion(self.reduce_motion);
         e.set_layout_osd(self.layout_osd);
@@ -191,27 +215,22 @@ impl Form {
 
     /// Write the fields that differ from `base` into `settings`.
     fn apply(&self, base: &Form, settings: &mut AppSettings) -> Result<(), Msg> {
-        let numbers = [
-            parse_ms(&self.hold)?,
-            parse_ms(&self.double_tap)?,
-            parse_ms(&self.macro_pause)?,
-            parse_ms(&self.modifier_delay)?,
-            parse_ms(&self.combo)?,
-            parse_ms(&self.macro_timeout)?,
-        ];
         use lhc_core::profile::timing;
-        for (value, range) in numbers.iter().zip([
-            timing::TAP_HOLD,
-            timing::TAP_HOLD,
-            timing::MACRO_DELAY,
-            timing::MACRO_DELAY,
-            timing::COMBO,
-            timing::MACRO_TIMEOUT,
-        ]) {
-            if !range.contains(*value) {
-                return Err(Msg::SettingsTimingInvalid);
-            }
-        }
+        let ms = |text: &str, range: timing::Range| {
+            parse_ms(text).and_then(|value| {
+                range
+                    .contains(value)
+                    .then_some(value)
+                    .ok_or(Msg::SettingsTimingInvalid)
+            })
+        };
+        // Validate every number before changing any field.
+        let hold = ms(&self.hold, timing::TAP_HOLD)?;
+        let double_tap = ms(&self.double_tap, timing::TAP_HOLD)?;
+        let macro_pause = ms(&self.macro_pause, timing::MACRO_DELAY)?;
+        let modifier_delay = ms(&self.modifier_delay, timing::MACRO_DELAY)?;
+        let combo = ms(&self.combo, timing::COMBO)?;
+        let macro_timeout = ms(&self.macro_timeout, timing::MACRO_TIMEOUT)?;
         macro_rules! changed {
             ($field:ident => $apply:expr) => {
                 if self.$field != base.$field {
@@ -222,20 +241,20 @@ impl Form {
         changed!(in_development => settings.in_development = self.in_development);
         changed!(launch_on_startup => settings.launch_on_startup = self.launch_on_startup);
         changed!(start_mapper_on_launch => settings.start_mapper_on_launch = self.start_mapper_on_launch);
-        changed!(appearance => settings.appearance = choice(&APPEARANCES, self.appearance));
+        changed!(appearance => settings.appearance = appearance(self.appearance));
         changed!(high_contrast => settings.high_contrast = self.high_contrast);
         changed!(reduce_motion => settings.reduce_motion = self.reduce_motion);
         changed!(layout_osd => settings.layout_osd = self.layout_osd);
         changed!(layer_hint => settings.layer_hint = self.layer_hint);
         changed!(locale => settings.locale = choice(&LOCALES, self.locale));
-        changed!(tap_decision => settings.tap_decision = choice(&TAP_DECISIONS, self.tap_decision).into());
+        changed!(tap_decision => settings.tap_decision = choice(&TAP_DECISIONS, self.tap_decision));
         changed!(long_hold => settings.default_long_hold_timeout_ms = super::rules::parse_long_hold(&self.long_hold)?);
-        changed!(hold => settings.default_hold_timeout_ms = numbers[0]);
-        changed!(double_tap => settings.default_double_tap_timeout_ms = numbers[1]);
-        changed!(macro_pause => settings.default_macro_step_pause_ms = numbers[2]);
-        changed!(modifier_delay => settings.default_macro_modifier_delay_ms = numbers[3]);
-        changed!(combo => settings.combo_timeout_ms = numbers[4]);
-        changed!(macro_timeout => settings.macro_timeout_ms = numbers[5]);
+        changed!(hold => settings.default_hold_timeout_ms = hold);
+        changed!(double_tap => settings.default_double_tap_timeout_ms = double_tap);
+        changed!(macro_pause => settings.default_macro_step_pause_ms = macro_pause);
+        changed!(modifier_delay => settings.default_macro_modifier_delay_ms = modifier_delay);
+        changed!(combo => settings.combo_timeout_ms = combo);
+        changed!(macro_timeout => settings.macro_timeout_ms = macro_timeout);
         changed!(commands_enabled => settings.commands_enabled = self.commands_enabled);
         changed!(use_gamemoded => settings.game_mode.use_gamemoded = self.use_gamemoded);
         changed!(use_fullscreen => settings.game_mode.use_fullscreen = self.use_fullscreen);
@@ -480,15 +499,16 @@ fn filtered_devices(choices: ModelRc<DeviceChoice>, query: &str) -> ModelRc<Devi
     ))
 }
 
-fn device_offset(choices: ModelRc<DeviceChoice>, index: i32) -> i32 {
+/// Offset of row `index`, given the row and group heading heights in pixels.
+fn device_offset(choices: ModelRc<DeviceChoice>, index: i32, row: i32, heading: i32) -> i32 {
     let mut group = DeviceGroup::Unselected;
     choices
         .iter()
         .take(index.max(0) as usize)
         .map(|choice| {
-            let heading = choice.group != DeviceGroup::Unselected && choice.group != group;
+            let starts_group = choice.group != DeviceGroup::Unselected && choice.group != group;
             group = choice.group;
-            36 + if heading { 28 } else { 0 }
+            row + if starts_group { heading } else { 0 }
         })
         .sum()
 }
@@ -571,7 +591,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let e = ui.global::<SettingsEditor>();
     let choices = ui.global::<DeviceChoices>();
     choices.on_filter(|choices, query| filtered_devices(choices, &query));
-    choices.on_offset(device_offset);
+    let row = choices.get_row_height() as i32;
+    let heading = choices.get_heading_height() as i32;
+    choices.on_offset(move |items, index| device_offset(items, index, row, heading));
     e.set_text_modes(strings(TextMode::ALL.map(TextMode::as_str)));
     e.set_fullscreen_non_games(lhc_core::gamemode::FULLSCREEN_NON_GAMES.join(", ").into());
     e.set_game_launchers(lhc_core::gamemode::GAME_LAUNCHERS.join(", ").into());

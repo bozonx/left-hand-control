@@ -9,7 +9,7 @@ use wayland_protocols_plasma::fake_input::client::org_kde_kwin_fake_input::{
 };
 
 pub fn isolated() -> bool {
-    std::env::var("LHC_ISOLATED_INPUT").as_deref() == Ok("1")
+    std::env::var(crate::env::ISOLATED_INPUT).as_deref() == Ok("1")
 }
 struct State;
 impl Dispatch<wl_registry::WlRegistry, GlobalListContents> for State {

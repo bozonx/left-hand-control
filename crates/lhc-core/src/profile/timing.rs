@@ -41,13 +41,16 @@ pub const MACRO_TIMEOUT: Range = Range {
     max: 600_000,
 };
 
+/// Defaults used when the configuration does not set a value.
+pub const DEFAULT_HOLD_MS: u64 = 200;
+pub const DEFAULT_LONG_HOLD_MS: u64 = 1000;
+pub const DEFAULT_DOUBLE_TAP_MS: u64 = 200;
+pub const DEFAULT_COMBO_MS: u64 = 50;
+pub const DEFAULT_MACRO_STEP_PAUSE_MS: u64 = 20;
+pub const DEFAULT_MACRO_MODIFIER_DELAY_MS: u64 = 5;
+pub const DEFAULT_MACRO_TIMEOUT_MS: u64 = 10_000;
+
 pub fn validate_settings(settings: &AppSettings) -> Result<(), String> {
-    if !matches!(
-        settings.tap_decision.as_str(),
-        "permissiveHold" | "holdOnOtherKeyPress"
-    ) {
-        return Err("settings.timing.tapDecision: unknown value".into());
-    }
     for (path, value, range) in [
         ("holdMs", settings.default_hold_timeout_ms, TAP_HOLD),
         (

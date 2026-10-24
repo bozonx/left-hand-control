@@ -24,9 +24,10 @@ const RECONNECT_DELAY: Duration = Duration::from_secs(2);
 
 type LayoutList = Vec<(String, String, String)>;
 
-const SERVICE: &str = "org.kde.keyboard";
-const OBJECT: &str = "/Layouts";
-const IFACE: &str = "org.kde.KeyboardLayouts";
+use crate::platform::dbus::{
+    KEYBOARD_LAYOUTS_INTERFACE as IFACE, KEYBOARD_LAYOUTS_PATH as OBJECT,
+    KEYBOARD_SERVICE as SERVICE, SERVICE_UNKNOWN_ERROR,
+};
 
 /// Session-bus connection for one-shot calls, opened once: layout
 /// actions call in from the key path.
@@ -249,9 +250,7 @@ fn variants_from_kxkbrc(text: &str, list: &LayoutList) -> Vec<String> {
 fn call_index(proxy: &Proxy<'_>) -> Result<Option<u32>, String> {
     let msg = match proxy.call_method("getLayout", &()) {
         Ok(msg) => msg,
-        Err(zbus::Error::MethodError(name, _, _))
-            if name.as_str() == "org.freedesktop.DBus.Error.ServiceUnknown" =>
-        {
+        Err(zbus::Error::MethodError(name, _, _)) if name.as_str() == SERVICE_UNKNOWN_ERROR => {
             return Ok(None);
         }
         Err(e) => return Err(format!("Failed to get current layout: {e}")),
@@ -266,9 +265,7 @@ fn call_index(proxy: &Proxy<'_>) -> Result<Option<u32>, String> {
 fn call_list(proxy: &Proxy<'_>) -> Result<Option<LayoutList>, String> {
     let msg = match proxy.call_method("getLayoutsList", &()) {
         Ok(msg) => msg,
-        Err(zbus::Error::MethodError(name, _, _))
-            if name.as_str() == "org.freedesktop.DBus.Error.ServiceUnknown" =>
-        {
+        Err(zbus::Error::MethodError(name, _, _)) if name.as_str() == SERVICE_UNKNOWN_ERROR => {
             return Ok(None);
         }
         Err(e) => return Err(format!("Failed to get layout list: {e}")),

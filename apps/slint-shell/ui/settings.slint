@@ -20,12 +20,12 @@ import { Button, HorizontalBox, VerticalBox } from "std-widgets.slint";
 
 export component SettingsWindow inherits Window {
     background: Theme.surface;
-    default-font-size: 14px;
+    default-font-size: Theme.font-default;
     title: @tr("Left Hand Control");
     preferred-width: 1120px;
     preferred-height: 760px;
     min-width: 940px;
-    max-width: 100000px;
+    max-width: Theme.unbounded;
     min-height: 700px;
     in-out property <Page> page: Page.layouts;
     forward-focus: shortcut-focus;
@@ -99,7 +99,7 @@ export component SettingsWindow inherits Window {
                 height: 54px;
                 background: Theme.card;
                 HorizontalLayout {
-                    padding-left: 16px; padding-right: 16px; padding-top: 8px; padding-bottom: 8px; spacing: 8px;
+                    padding-left: Theme.space-xl; padding-right: Theme.space-xl; padding-top: Theme.space-m; padding-bottom: Theme.space-m; spacing: Theme.space-m;
                     VerticalLayout { alignment: center; NavButton { icon: @image-url("icons/keyboard.svg"); text: @tr("Layouts"); selected: root.page == Page.layouts; clicked => { root.navigate(Page.layouts, MenuKind.emoji); } } }
                     VerticalLayout { alignment: center; NavButton { icon: @image-url("icons/settings-2.svg"); text: @tr("Settings"); selected: root.page == Page.settings; clicked => { root.navigate(Page.settings, MenuKind.emoji); } } }
                     Rectangle {
@@ -107,26 +107,26 @@ export component SettingsWindow inherits Window {
                         min-width: 120px;
                         HorizontalLayout {
                             alignment: center;
-                            spacing: 4px;
+                            spacing: Theme.space-xs;
                             if AppState.in-development: TextField { clearable: true; preferred-width: 200px; min-width: 120px; max-width: 200px; horizontal-stretch: 1; text <=> root.test-text; placeholder-text: @tr("Type to test..."); }
                         }
                     }
                     if AppState.in-development: VerticalLayout { alignment: center; Badge {
                         min-width: 40px;
                         text: AppState.keyboard-language == "" ? "—" : AppState.keyboard-language;
-                        Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-small; HorizontalLayout { padding: 8px; Text { text: @tr("Current keyboard layout in the system") + "\n" + AppState.keyboard-language; color: Theme.text; } } } }
+                        Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-small; HorizontalLayout { padding: Theme.space-m; Text { text: @tr("Current keyboard layout in the system") + "\n" + AppState.keyboard-language; color: Theme.text; } } } }
                     }
                     }
                     if AppState.in-development: GameModeButton {}
                     active-layout := Rectangle {
                         width: 180px; height: 36px; border-radius: Theme.radius; background: Theme.surface; border-width: 1px; border-color: Theme.border;
-                        HorizontalLayout { padding: 8px; spacing: 6px;
+                        HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-s;
                             Image { width: 14px; source: @image-url("icons/keyboard.svg"); colorize: Theme.muted; }
                             Text { text: LayoutLibrary.active-label == "" ? @tr("No active layout") : @tr("Active: {}", LayoutLibrary.active-label); color: Theme.text; overflow: elide; vertical-alignment: center; }
                             if !LayoutLibrary.automatic: Image { width: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; }
                         }
                         TouchArea { enabled: !LayoutLibrary.automatic; mouse-cursor: pointer; clicked => { LayoutLibrary.refresh(); active-menu.show(); } }
-                        Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-small; HorizontalLayout { padding: 8px; Text { text: LayoutLibrary.automatic ? @tr("Current active layout (selected automatically by switching rules)") : @tr("Current active layout — click to switch"); color: Theme.text; } } } }
+                        Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-small; HorizontalLayout { padding: Theme.space-m; Text { text: LayoutLibrary.automatic ? @tr("Current active layout (selected automatically by switching rules)") : @tr("Current active layout — click to switch"); color: Theme.text; } } } }
                     }
                     Rectangle { width: 1px; background: Theme.divider; }
                     VerticalLayout { alignment: center; MapperToggle {
@@ -148,7 +148,7 @@ export component SettingsWindow inherits Window {
                 height: 50px + (editor-tabs.viewport-width > editor-tabs.visible-width ? Theme.scrollbar-size + Theme.scrollbar-gap : 0px);
                 background: Theme.card;
                 HorizontalLayout {
-                    padding-left: 16px; padding-right: 16px; spacing: 8px;
+                    padding-left: Theme.space-xl; padding-right: Theme.space-xl; spacing: Theme.space-m;
                     Text { text: LayoutLibrary.current-label == "" ? @tr("Custom layout") : LayoutLibrary.current-label; color: Theme.text; max-width: 200px; overflow: elide; vertical-alignment: center; }
                     VerticalLayout { alignment: center; SaveSplitButton {
                         enabled: LayoutLibrary.dirty;
@@ -165,7 +165,7 @@ export component SettingsWindow inherits Window {
                         min-height: 0px;
                         viewport-height: self.visible-height;
                         HorizontalLayout {
-                            spacing: 2px; alignment: start;
+                            spacing: Theme.space-2xs; alignment: start;
                             NavTab { icon: @image-url("icons/settings-2.svg"); text: @tr("Triggers") + (LayoutLibrary.rules-dirty ? " •" : ""); selected: root.page == Page.rules; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
                             NavTab { icon: @image-url("icons/keyboard.svg"); text: @tr("Layers") + (LayoutLibrary.layers-dirty ? " •" : ""); selected: root.page == Page.keyboard || root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
                             NavTab { icon: @image-url("icons/smile.svg"); text: @tr("Emoji") + (LayoutLibrary.emoji-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
@@ -180,7 +180,7 @@ export component SettingsWindow inherits Window {
             if root.show-active-banner: Rectangle {
                 background: Theme.card;
                 HorizontalLayout {
-                    padding-left: 16px; padding-right: 16px; padding-top: 6px; padding-bottom: 6px; spacing: 8px;
+                    padding-left: Theme.space-xl; padding-right: Theme.space-xl; padding-top: Theme.space-s; padding-bottom: Theme.space-s; spacing: Theme.space-m;
                     Text {
                         text: LayoutLibrary.active-label == ""
                             ? @tr("You are editing “{}”; no layout is active.", LayoutLibrary.current-label)
@@ -196,7 +196,7 @@ export component SettingsWindow inherits Window {
                 padding: Theme.page-padding;
                 // Pages scroll to the window edge; their content keeps the bottom gap (PageContent).
                 padding-bottom: 0px;
-                spacing: 12px;
+                spacing: Theme.space-l;
                 if root.problem.id != "": Text { text: Locale.text(root.problem); color: NotificationCenter.is-warning(root.problem.id) ? Theme.warning : Theme.error; wrap: word-wrap; max-height: 96px; overflow: elide; }
                 if root.page == Page.layouts: LibraryPage {}
                 if root.page == Page.settings: SettingsPage {}
@@ -210,7 +210,7 @@ export component SettingsWindow inherits Window {
     active-menu := PopupWindow {
         x: active-layout.absolute-position.x; y: 52px; width: 240px;
         Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-large;
-            VerticalLayout { padding: 6px; spacing: 4px;
+            VerticalLayout { padding: Theme.space-s; spacing: Theme.space-xs;
                 for name[index] in LayoutLibrary.names: Button {
                     text: name; primary: name == LayoutLibrary.active-label;
                     clicked => { active-menu.close(); LayoutLibrary.select(index); LayoutLibrary.action(LibraryAction.activate); }
@@ -246,20 +246,20 @@ export component SettingsWindow inherits Window {
                 y: (parent.height - self.height) / 2;
                 height: conflict-layout.preferred-height;
                 background: Theme.surface;
-                border-radius: 10px;
+                border-radius: Theme.radius-panel;
                 border-width: 1px;
                 border-color: Theme.border;
                 TouchArea {}
                 conflict-layout := VerticalLayout {
                     padding: 18px;
-                    spacing: 12px;
-                    Text { text: @tr("Layout changed on disk"); color: Theme.text; font-size: Theme.font-large; font-weight: 700; wrap: word-wrap; }
+                    spacing: Theme.space-l;
+                    Text { text: @tr("Layout changed on disk"); color: Theme.text; font-size: Theme.font-large; font-weight: Theme.weight-bold; wrap: word-wrap; }
                     Text {
                         text: @tr("The file of “{}” was changed by another program after you opened it. Your edits are kept until you choose what to do.", LayoutLibrary.current-label);
                         color: Theme.text; wrap: word-wrap;
                     }
                     HorizontalLayout {
-                        spacing: 8px;
+                        spacing: Theme.space-m;
                         alignment: end;
                         Button { text: @tr("Cancel"); clicked => { LayoutLibrary.cancel-dialog(); } }
                         Button {

@@ -17,10 +17,10 @@ export global KeyEditor {
 }
 
 export component KeyboardPage inherits VerticalLayout {
-    spacing: 6px;
+    spacing: Theme.space-s;
     VerticalBox {
-        spacing: 8px;
-        Text { color: Theme.text; text: @tr("Keyboard layout"); font-size: 26px; font-weight: 700; }
+        spacing: Theme.space-m;
+        Text { color: Theme.text; text: @tr("Keyboard layout"); font-size: Theme.font-page-title; font-weight: Theme.weight-bold; }
         Text { color: Theme.muted; text: @tr("Select a key to assign an action."); }
     }
     keys-focus := FocusScope {
@@ -33,7 +33,7 @@ export component KeyboardPage inherits VerticalLayout {
             return reject;
         }
         VerticalLayout {
-            spacing: 6px;
+            spacing: Theme.space-s;
             for row in KeyEditor.keys.length / KeyEditor.columns: HorizontalLayout {
                 spacing: 5px;
                 for col in KeyEditor.columns: Rectangle {
@@ -52,7 +52,7 @@ export component KeyboardPage inherits VerticalLayout {
                         Text { min-width: 0px; overflow: elide; text: KeyEditor.keys[index].label; color: Theme.text; font-size: Theme.font-body; }
                         HorizontalLayout { spacing: 3px;
                             if KeyEditor.keys[index].action != "": CategoryIcon { category: KeyEditor.keys[index].category; }
-                            Text { min-width: 0px; horizontal-stretch: 1; text: KeyEditor.keys[index].action == "" ? "—" : KeyEditor.keys[index].action; color: Theme.muted; font-size: 10px; overflow: elide; vertical-alignment: center; }
+                            Text { min-width: 0px; horizontal-stretch: 1; text: KeyEditor.keys[index].action == "" ? "—" : KeyEditor.keys[index].action; color: Theme.muted; font-size: Theme.font-tiny; overflow: elide; vertical-alignment: center; }
                         }
                     }
                     key-touch := TouchArea { clicked => { KeyEditor.selected = index; keys-focus.focus(); KeyEditor.edit(index); } }

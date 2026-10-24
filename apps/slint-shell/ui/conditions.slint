@@ -195,12 +195,12 @@ component WindowRow inherits Rectangle {
     accessible-action-default => { root.clicked(); }
     touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
     row := HorizontalLayout {
-        padding: 6px; spacing: 8px;
+        padding: Theme.space-s; spacing: Theme.space-m;
         VerticalLayout { alignment: center;
             Image { width: 16px; height: 16px; colorize: Theme.muted; source: root.icon; }
         }
-        VerticalLayout { horizontal-stretch: 1; min-width: 0px; alignment: center; spacing: 2px;
-            HorizontalLayout { spacing: 6px;
+        VerticalLayout { horizontal-stretch: 1; min-width: 0px; alignment: center; spacing: Theme.space-2xs;
+            HorizontalLayout { spacing: Theme.space-s;
                 Text { text: root.text; color: Theme.text; overflow: elide; min-width: 0px; horizontal-stretch: 1; vertical-alignment: center; }
                 if root.badge != "": Badge { text: root.badge; fill: root.warning ? Theme.warning.transparentize(0.75) : Theme.accent.transparentize(0.75); }
             }
@@ -251,12 +251,12 @@ export component AppEntryOverlay inherits Rectangle {
                 border-width: 1px;
                 border-radius: Theme.radius-dialog;
                 TouchArea {}
-                VerticalLayout { padding: 20px; spacing: 10px;
+                VerticalLayout { padding: Theme.space-2xl; spacing: Theme.space-m-plus;
                     Text {
                         text: AppEntryDialog.index >= 0 ? @tr("Edit application") : @tr("Add application");
-                        color: Theme.text; font-size: Theme.font-heading; font-weight: 700;
+                        color: Theme.text; font-size: Theme.font-heading; font-weight: Theme.weight-bold;
                     }
-                    VerticalLayout { spacing: 6px;
+                    VerticalLayout { spacing: Theme.space-s;
                         Text { text: @tr("Match by"); color: Theme.muted; font-size: Theme.font-body; }
                         ButtonGroup {
                             labels: [@tr("Application"), @tr("Process"), @tr("Window title")];
@@ -267,8 +267,8 @@ export component AppEntryOverlay inherits Rectangle {
                             }
                         }
                     }
-                    VerticalLayout { spacing: 4px;
-                        HorizontalLayout { spacing: 8px;
+                    VerticalLayout { spacing: Theme.space-xs;
+                        HorizontalLayout { spacing: Theme.space-m;
                             input := TextField {
                                 text <=> AppEntryDialog.text;
                                 placeholder-text: root.kind == AppEntryKind.title ? @tr("Text the window title contains")
@@ -303,7 +303,7 @@ export component AppEntryOverlay inherits Rectangle {
                             color: Theme.warning; font-size: Theme.font-body; wrap: word-wrap;
                         }
                     }
-                    if AppEntryDialog.game && root.kind == AppEntryKind.process: VerticalLayout { spacing: 6px;
+                    if AppEntryDialog.game && root.kind == AppEntryKind.process: VerticalLayout { spacing: Theme.space-s;
                         Text { text: @tr("When it counts"); color: Theme.muted; font-size: Theme.font-body; }
                         ButtonGroup {
                             labels: [@tr("While its window is active"), @tr("While the process runs")];
@@ -317,7 +317,7 @@ export component AppEntryOverlay inherits Rectangle {
                             color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap;
                         }
                     }
-                    HorizontalLayout { spacing: 8px; padding-top: 4px;
+                    HorizontalLayout { spacing: Theme.space-m; padding-top: Theme.space-xs;
                         Text {
                             text: root.kind == AppEntryKind.title ? @tr("Window titles") : root.kind == AppEntryKind.process ? @tr("Processes of open windows") : @tr("Open windows");
                             color: Theme.muted; font-size: Theme.font-body; vertical-alignment: center; horizontal-stretch: 1;
@@ -332,10 +332,10 @@ export component AppEntryOverlay inherits Rectangle {
                         vertical-stretch: 1;
                         border-width: 1px; border-color: Theme.divider; border-radius: Theme.radius-large; background: Theme.card;
                         ScrollView { width: 100%; height: 100%; viewport-width: self.visible-width;
-                            VerticalLayout { padding: 6px; spacing: 2px; alignment: start;
+                            VerticalLayout { padding: Theme.space-s; spacing: Theme.space-2xs; alignment: start;
                                 if ConditionChoices.open-windows-loading && ConditionChoices.open-windows.length == 0: Text { text: @tr("Looking for open windows…"); color: Theme.muted; }
                                 if !ConditionChoices.open-windows-loading && ConditionChoices.open-windows.length == 0: Text { text: @tr("No open windows found"); color: Theme.muted; wrap: word-wrap; }
-                                if root.kind == AppEntryKind.application: VerticalLayout { spacing: 2px;
+                                if root.kind == AppEntryKind.application: VerticalLayout { spacing: Theme.space-2xs;
                                     for window in ConditionChoices.open-windows: WindowRow {
                                         text: window.pattern;
                                         detail: window.count > 1 ? @tr("{n} window" | "{n} windows" % window.count) + " · " + window.title : window.title;
@@ -344,7 +344,7 @@ export component AppEntryOverlay inherits Rectangle {
                                         clicked => { AppEntryDialog.text = window.pattern; input.focus(); }
                                     }
                                 }
-                                if root.kind == AppEntryKind.process: VerticalLayout { spacing: 2px;
+                                if root.kind == AppEntryKind.process: VerticalLayout { spacing: Theme.space-2xs;
                                     for process in root.by-process: WindowRow {
                                         text: process.pattern;
                                         detail: (process.app-id != "" ? process.app-id + " · " : "")
@@ -355,7 +355,7 @@ export component AppEntryOverlay inherits Rectangle {
                                         selected: ConditionChoices.has([process.pattern], root.typed);
                                         clicked => { AppEntryDialog.text = process.pattern; input.focus(); }
                                     }
-                                    if AppEntryDialog.game: VerticalLayout { spacing: 2px; padding-top: 6px;
+                                    if AppEntryDialog.game: VerticalLayout { spacing: Theme.space-2xs; padding-top: Theme.space-s;
                                         Text { text: @tr("Running without a window"); color: Theme.muted; font-size: Theme.font-body; }
                                         if AppEntryDialog.text == "": Text { text: @tr("Type a name to find processes running without a window."); color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap; }
                                         for process in root.processes: WindowRow {
@@ -366,8 +366,8 @@ export component AppEntryOverlay inherits Rectangle {
                                         }
                                     }
                                 }
-                                if root.kind == AppEntryKind.title: VerticalLayout { spacing: 2px;
-                                    for window in ConditionChoices.open-windows: VerticalLayout { spacing: 2px;
+                                if root.kind == AppEntryKind.title: VerticalLayout { spacing: Theme.space-2xs;
+                                    for window in ConditionChoices.open-windows: VerticalLayout { spacing: Theme.space-2xs;
                                         for title in window.titles: WindowRow {
                                             visible: title != "";
                                             height: title != "" ? self.preferred-height : 0px;
@@ -383,7 +383,7 @@ export component AppEntryOverlay inherits Rectangle {
                             }
                         }
                     }
-                    HorizontalLayout { spacing: 8px; alignment: end;
+                    HorizontalLayout { spacing: Theme.space-m; alignment: end;
                         Button { text: @tr("Cancel"); clicked => { AppEntryDialog.close(); } }
                         Button {
                             text: AppEntryDialog.index >= 0 ? @tr("Save") : @tr("Add");
@@ -419,13 +419,13 @@ component AppItemRow inherits Rectangle {
     background: item-touch.has-hover ? Theme.hover : transparent;
     item-touch := TouchArea { mouse-cursor: pointer; clicked => { root.edit(); } }
     item-row := HorizontalLayout {
-        padding-left: 8px; padding-right: 2px; padding-top: 4px; padding-bottom: 4px; spacing: 8px;
+        padding-left: Theme.space-m; padding-right: Theme.space-2xs; padding-top: Theme.space-xs; padding-bottom: Theme.space-xs; spacing: Theme.space-m;
         VerticalLayout { alignment: center;
             Image { width: 16px; height: 16px; colorize: Theme.muted; source: root.icon; }
         }
-        VerticalLayout { horizontal-stretch: 1; min-width: 0px; alignment: center; spacing: 2px;
+        VerticalLayout { horizontal-stretch: 1; min-width: 0px; alignment: center; spacing: Theme.space-2xs;
             Text { text: ConditionChoices.text(root.pattern); color: Theme.text; overflow: elide; min-width: 0px; }
-            HorizontalLayout { spacing: 6px;
+            HorizontalLayout { spacing: Theme.space-s;
                 if root.kind != "": Text { text: root.kind; color: Theme.muted; font-size: Theme.font-body; overflow: elide; min-width: 0px; }
                 if root.show-count: OpenCount { pattern: root.pattern; horizontal-stretch: 1; }
             }
@@ -450,8 +450,8 @@ export component ApplicationsField inherits VerticalLayout {
         if !AppEntryDialog.game && AppEntryDialog.exclusion == root.exclusion { root.value = AppEntryDialog.result; }
     }
     init => { ConditionChoices.refresh-open-windows(); }
-    spacing: 8px;
-    HorizontalLayout { spacing: 6px;
+    spacing: Theme.space-m;
+    HorizontalLayout { spacing: Theme.space-s;
         Text { text: root.label; color: Theme.text; vertical-alignment: center; }
         InfoTip {
             text: (root.exclusion ? @tr("A match blocks the rule, even if the window is in the allowed list.") : @tr("Any match allows the rule. An empty list allows all windows."))
@@ -467,8 +467,8 @@ export component ApplicationsField inherits VerticalLayout {
         border-width: 1px; border-color: Theme.divider; border-radius: Theme.radius-large; background: Theme.card;
         height: list.preferred-height;
         list := VerticalLayout {
-            padding: 6px; spacing: 2px;
-            if root.items.length == 0: HorizontalLayout { padding: 6px; Text {
+            padding: Theme.space-s; spacing: Theme.space-2xs;
+            if root.items.length == 0: HorizontalLayout { padding: Theme.space-s; Text {
                 text: root.exclusion ? @tr("Nothing is excluded.") : @tr("No restrictions: the rule works in every window.");
                 color: Theme.muted; wrap: word-wrap;
             } }
@@ -496,11 +496,11 @@ export component ConditionsForm inherits VerticalLayout {
     /// Unknown until the first status counts as available.
     private property <bool> detection-available: AppState.game-window-availability.id != "capability-unavailable"
         && AppState.game-window-availability.id != "capability-unsupported";
-    spacing: 16px;
-    VerticalLayout { spacing: 12px;
-        if root.heading != "": Text { text: root.heading; color: Theme.text; font-weight: 600; }
-        HorizontalLayout { spacing: 24px;
-            VerticalLayout { spacing: 10px; alignment: start; horizontal-stretch: 1; preferred-width: 0px; min-width: 0px;
+    spacing: Theme.space-xl;
+    VerticalLayout { spacing: Theme.space-l;
+        if root.heading != "": Text { text: root.heading; color: Theme.text; font-weight: Theme.weight-semibold; }
+        HorizontalLayout { spacing: Theme.space-3xl;
+            VerticalLayout { spacing: Theme.space-m-plus; alignment: start; horizontal-stretch: 1; preferred-width: 0px; min-width: 0px;
                 Text { text: @tr("System languages"); color: Theme.text; }
                 for language in ConditionChoices.languages: CheckBox {
                     text: language.label;
@@ -514,24 +514,27 @@ export component ConditionsForm inherits VerticalLayout {
                     toggled => { root.languages = ConditionChoices.toggle(root.languages, code, self.checked); }
                 }
             }
-            if AppState.in-development: VerticalLayout { spacing: 10px; alignment: start; horizontal-stretch: 1; preferred-width: 0px; min-width: 0px;
+            if AppState.in-development: VerticalLayout { spacing: Theme.space-m-plus; alignment: start; horizontal-stretch: 1; preferred-width: 0px; min-width: 0px;
                 Text { text: @tr("Game mode"); color: Theme.text; }
                 RadioGroup {
+                    // RadioGroup reports only the label, so each label is defined once.
+                    property <string> on-label: @tr("Game mode on");
+                    property <string> off-label: @tr("Game mode off");
                     orientation: vertical;
-                    selected(value) => { root.game = value == @tr("Game mode on") ? GameCondition.on : value == @tr("Game mode off") ? GameCondition.off : GameCondition.any; }
+                    selected(value) => { root.game = value == self.on-label ? GameCondition.on : value == self.off-label ? GameCondition.off : GameCondition.any; }
                     RadioButton { text: @tr("Does not matter"); checked: root.game == GameCondition.any; }
-                    RadioButton { text: @tr("Game mode on"); checked: root.game == GameCondition.on; }
-                    RadioButton { text: @tr("Game mode off"); checked: root.game == GameCondition.off; }
+                    RadioButton { text: parent.on-label; checked: root.game == GameCondition.on; }
+                    RadioButton { text: parent.off-label; checked: root.game == GameCondition.off; }
                 }
             }
         }
     }
-    if root.show-applications: VerticalLayout { spacing: 10px;
+    if root.show-applications: VerticalLayout { spacing: Theme.space-m-plus;
         if !root.detection-available: Text {
             text: @tr("Active window detection is unavailable in this session, so application conditions do not match.");
             color: Theme.warning; wrap: word-wrap;
         }
-        HorizontalLayout { spacing: 24px;
+        HorizontalLayout { spacing: Theme.space-3xl;
             ApplicationsField { value <=> root.applications; horizontal-stretch: 1; preferred-width: 0px; min-width: 0px; }
             if root.show-exclusions: ApplicationsField {
                 exclusion: true; label: @tr("Except applications"); value <=> root.excluded;
@@ -566,9 +569,9 @@ export component GameAppsField inherits VerticalLayout {
             }
         }
     }
-    spacing: 8px;
-    HorizontalLayout { spacing: 6px;
-        Text { text: root.label; color: Theme.text; font-weight: 600; vertical-alignment: center; }
+    spacing: Theme.space-m;
+    HorizontalLayout { spacing: Theme.space-s;
+        Text { text: root.label; color: Theme.text; font-weight: Theme.weight-semibold; vertical-alignment: center; }
         if root.info != "": InfoTip { text: root.info; }
         Rectangle { horizontal-stretch: 1; }
         IconButton {
@@ -580,8 +583,8 @@ export component GameAppsField inherits VerticalLayout {
         border-width: 1px; border-color: Theme.divider; border-radius: Theme.radius-large; background: Theme.card;
         height: list.preferred-height;
         list := VerticalLayout {
-            padding: 6px; spacing: 2px;
-            if root.entries.length == 0: HorizontalLayout { padding: 6px; Text { text: root.empty-text; color: Theme.muted; wrap: word-wrap; } }
+            padding: Theme.space-s; spacing: Theme.space-2xs;
+            if root.entries.length == 0: HorizontalLayout { padding: Theme.space-s; Text { text: root.empty-text; color: Theme.muted; wrap: word-wrap; } }
             for entry in root.entries: AppItemRow {
                 pattern: entry.pattern;
                 kind: ConditionChoices.is-title(entry.pattern) ? @tr("Window title")

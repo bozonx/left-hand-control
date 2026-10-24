@@ -24,11 +24,11 @@ export component EmojiPopup inherits Window {
         Rectangle {
             visible: root.presented;
             x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px;
-            background: Theme.surface; border-radius: 16px;
+            background: Theme.surface; border-radius: Theme.radius-popup;
             border-width: 1px; border-color: Theme.divider;
             VerticalLayout {
-                padding: 16px;
-                spacing: 12px;
+                padding: Theme.space-xl;
+                spacing: Theme.space-l;
                 PopupHeader {
                     title: @tr("Emoji");
                     page-name: root.page-names.length == 0 ? "" : root.page-names[root.page];
@@ -37,7 +37,7 @@ export component EmojiPopup inherits Window {
                     dismiss => { root.dismiss(); }
                 }
                 for row in 3: HorizontalLayout {
-                    spacing: 8px;
+                    spacing: Theme.space-m;
                     for col in 5: PopupCell {
                         height: 80px;
                         hotkey: PopupKeys.labels[row * 5 + col];

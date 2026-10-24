@@ -45,7 +45,7 @@ pub fn set_game_active(active: bool) {
 }
 
 pub fn start(dispatch: Dispatch) {
-    if std::env::var("LHC_HOTKEYS").as_deref() == Ok("off") {
+    if !lhc_core::env::popup_hotkeys_enabled() {
         return;
     }
     let modifiers = Modifiers::CONTROL | Modifiers::ALT;

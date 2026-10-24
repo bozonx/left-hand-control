@@ -488,6 +488,9 @@ msgstr "კლავიატურის მოწყობილობის �
 msgid "Copy path"
 msgstr "დააკოპირეთ გზა"
 
+msgid "In development features"
+msgstr "შემუშავების პროცესში მყოფი ფუნქციები"
+
 msgid "Create a layer to assign its keys, or edit the base keyboard."
 msgstr ""
 "შექმენით ფენა მისი კლავიშების მინიჭებისთვის, ან შეცვალეთ საბაზისო "

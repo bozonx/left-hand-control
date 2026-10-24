@@ -116,7 +116,7 @@ impl GuardProcess {
 
     fn kill(&self) {
         let _ = unsafe { TerminateProcess(self.handle(), 1) };
-        let _ = unsafe { WaitForSingleObject(self.handle(), 2000) };
+        let _ = unsafe { WaitForSingleObject(self.handle(), EXIT_TIMEOUT.as_millis() as u32) };
     }
 }
 

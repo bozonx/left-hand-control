@@ -136,11 +136,13 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
             .into(),
     );
     editor.set_default_hold_timeout(config.settings().default_hold_timeout_ms.to_string().into());
-    editor.set_default_hold_detection(if config.settings().tap_decision == "holdOnOtherKeyPress" {
-        HoldDetection::Press
-    } else {
-        HoldDetection::Release
-    });
+    editor.set_default_hold_detection(
+        if config.settings().tap_decision == TapDecision::HoldOnOtherKeyPress {
+            HoldDetection::Press
+        } else {
+            HoldDetection::Release
+        },
+    );
     editor.set_default_double_timeout(
         config
             .settings()

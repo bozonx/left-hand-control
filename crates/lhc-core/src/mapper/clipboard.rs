@@ -130,6 +130,10 @@ pub(super) const ARM_TIMEOUT: Duration = Duration::from_secs(1);
 /// How long a paste may take until the clipboard is restored.
 const PASTE_TIMEOUT: Duration = Duration::from_secs(3);
 const SENSITIVE_MIME: &str = "x-kde-passwordManagerHint";
+/// Longest single wait for Wayland events while a deadline is pending.
+const PUMP_SLICE_MS: u128 = 10;
+/// Most clipboard transfers served at the same time.
+const MAX_TRANSFERS: usize = 16;
 
 type Contents = HashMap<String, Arc<[u8]>>;
 
@@ -504,7 +508,7 @@ impl Session {
             start.elapsed().as_millis()
         );
         let _ = ready.send(Ok(()));
-        let deadline = Instant::now() + Duration::from_secs(3);
+        let deadline = Instant::now() + PASTE_TIMEOUT;
         let injected = loop {
             match trigger.try_recv() {
                 Ok(Command::Finish(injected)) => break injected,
@@ -685,7 +689,7 @@ fn pump(
     let timeout = deadline
         .saturating_duration_since(Instant::now())
         .as_millis()
-        .min(10) as u16;
+        .min(PUMP_SLICE_MS) as u16;
     wait(connection, queue, state, PollTimeout::from(timeout))
 }
 
@@ -807,7 +811,7 @@ impl State {
         }
     }
     fn send(&mut self, source: Source, mime: String, fd: OwnedFd) {
-        if self.source.as_ref() != Some(&source) || self.transfers.len() >= 16 {
+        if self.source.as_ref() != Some(&source) || self.transfers.len() >= MAX_TRANSFERS {
             return;
         }
         let Some(bytes) = self.contents.get(&mime).cloned() else {

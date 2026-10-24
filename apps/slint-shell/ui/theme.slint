@@ -7,6 +7,11 @@ import { Palette } from "std-widgets.slint";
 /// std-widgets primary buttons and our own controls share one color.
 export global Theme {
     out property <length> page-padding: 20px;
+    /// Widest readable column of help text in settings.
+    out property <length> text-column: 576px;
+    /// Stands for "no limit" in `max-width`: Slint has no infinite length,
+    /// and some widgets otherwise cap their width.
+    out property <length> unbounded: 100000px;
     out property <length> scrollbar-size: 12px;
     out property <length> scrollbar-gap: 4px;
     /// Corner radii: small controls, controls and cards, panels, dialogs.
@@ -14,13 +19,45 @@ export global Theme {
     out property <length> radius: 6px;
     out property <length> radius-large: 8px;
     out property <length> radius-dialog: 12px;
+    /// Thin bars and markers; badges and grid cells; floating panels; popups.
+    out property <length> radius-tiny: 2px;
+    out property <length> radius-chip: 5px;
+    out property <length> radius-panel: 10px;
+    out property <length> radius-popup: 16px;
     /// Font sizes from captions to page titles.
+    out property <length> font-tiny: 10px;
     out property <length> font-small: 11px;
     out property <length> font-body: 12px;
     out property <length> font-medium: 13px;
+    /// Window default text and subsection titles.
+    out property <length> font-default: 14px;
+    out property <length> font-section: 15px;
     out property <length> font-large: 16px;
+    out property <length> font-step: 17px;
     out property <length> font-heading: 18px;
+    out property <length> font-hero: 20px;
     out property <length> font-title: 22px;
+    out property <length> font-page-title: 26px;
+    /// Item being dragged in a list, and the floating preview of a dragged cell.
+    out property <float> dragged-opacity: 0.6;
+    out property <float> drag-preview-opacity: 0.95;
+    /// How long a newly created item stays highlighted.
+    out property <duration> highlight-duration: 650ms;
+    /// Font weights.
+    out property <int> weight-medium: 500;
+    out property <int> weight-semibold: 600;
+    out property <int> weight-bold: 700;
+    /// Spacing scale for layout gaps and paddings.
+    out property <length> space-2xs: 2px;
+    out property <length> space-xs: 4px;
+    out property <length> space-s: 6px;
+    out property <length> space-m: 8px;
+    out property <length> space-m-plus: 10px;
+    out property <length> space-l: 12px;
+    out property <length> space-l-plus: 14px;
+    out property <length> space-xl: 16px;
+    out property <length> space-2xl: 20px;
+    out property <length> space-3xl: 24px;
     in-out property <bool> dark: true;
     in-out property <bool> eink: false;
     in-out property <bool> high-contrast: false;
