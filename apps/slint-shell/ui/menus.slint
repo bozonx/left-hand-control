@@ -533,7 +533,6 @@ export component QuickActionsPage inherits Rectangle {
                                     emoji: false;
                                     activate(index) => {
                                         MenuEditor.select-cell(index);
-                                        ActionPicker.open(PickerTarget.quick-action, index, MenuEditor.cells[index].value, false);
                                     }
                                 }
                             }
@@ -552,7 +551,7 @@ export component QuickActionsPage inherits Rectangle {
                                         FieldLabel { text: @tr("Label"); }
                                         TextField { text <=> MenuEditor.name; placeholder-text: @tr("e.g. Next Track"); edited => { MenuEditor.set-name(); } }
                                     }
-                                    if root.filled: VerticalLayout {
+                                    if MenuEditor.selected-cell >= 0: VerticalLayout {
                                         spacing: 4px;
                                         FieldLabel { text: @tr("Action"); }
                                         HorizontalLayout {

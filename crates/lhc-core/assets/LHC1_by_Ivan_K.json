@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "meta": {
-    "name": "LHC1 by Ivan K",
+    "name": "LHC1",
     "author": "Ivan K"
   },
   "layers": [
@@ -368,12 +368,12 @@
           "action": "text:Works on my machine. Which version / OS are you on?"
         },
         "KeyW": {
-          "name": "Nice day",
-          "action": "text:Have a nice day!"
-        },
-        "KeyE": {
           "name": "Good morning",
           "action": "text:Good morning!"
+        },
+        "KeyE": {
+          "name": "Nice day",
+          "action": "text:Have a nice day!"
         },
         "KeyR": {
           "name": "Thanks",
@@ -392,12 +392,12 @@
           "action": "text:Explain this in more detail."
         },
         "KeyD": {
-          "name": "Do it all",
-          "action": "text:Do it all as you suggested."
-        },
-        "KeyF": {
           "name": "Continue",
           "action": "text:Continue."
+        },
+        "KeyF": {
+          "name": "Do it all",
+          "action": "text:Do it all as you suggested."
         },
         "KeyG": {
           "name": "Ask first",
