@@ -388,16 +388,12 @@ component EmojiButton inherits Rectangle {
 export component EmojiPage inherits Rectangle {
     vertical-stretch: 1;
     private property <bool> confirming;
-    // Common text snippets, localized so the inserted text matches the UI language.
+    // Library snippets are literal insertion text, independent of the UI language.
     private property <[string]> texts: [
         "TODO: ",
         "FIXME: ",
-        @tr("continue"),
-        @tr("do all you recommended"),
-        @tr("fix the errors above"),
-        @tr("I'll call you back later"),
-        @tr("Thanks!"),
-        @tr("OK, got it 👍"),
+        "Continue.",
+        "Thanks!",
     ];
     VerticalLayout {
         width: 100%;
