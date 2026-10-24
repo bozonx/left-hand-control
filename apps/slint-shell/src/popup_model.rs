@@ -336,13 +336,13 @@ fn moved_page(previous: &[String], page: i32, current: &[String]) -> Option<i32>
 
 /// Open command for an already visible popup: the page shown now (or no
 /// page at all) turns to the next one like Tab, another page opens directly.
-pub fn repeat_open(popup: Popup, page: Option<u8>, emoji: &EmojiPopup, quick: &QuickPopup) {
+pub fn repeat_open(popup: Popup, page: Option<u32>, emoji: &EmojiPopup, quick: &QuickPopup) {
     let current = match popup {
         Popup::Emoji => emoji.get_page(),
         Popup::Quick => quick.get_page(),
     };
     match page {
-        Some(page) if i32::from(page.saturating_sub(1)) != current => {
+        Some(page) if page_index(page) != current => {
             select_page(popup, page, emoji, quick);
         }
         _ => {
@@ -351,9 +351,15 @@ pub fn repeat_open(popup: Popup, page: Option<u8>, emoji: &EmojiPopup, quick: &Q
     }
 }
 
+/// Zero-based index of the 1-based `page`; a page past the end is
+/// clamped by the caller.
+fn page_index(page: u32) -> i32 {
+    i32::try_from(page.saturating_sub(1)).unwrap_or(i32::MAX)
+}
+
 /// Open `page` (1-based) of `popup`.
-pub fn select_page(popup: Popup, page: u8, emoji: &EmojiPopup, quick: &QuickPopup) {
-    let index = i32::from(page.saturating_sub(1));
+pub fn select_page(popup: Popup, page: u32, emoji: &EmojiPopup, quick: &QuickPopup) {
+    let index = page_index(page);
     match popup {
         Popup::Emoji => {
             emoji.set_page(index.min((emoji.get_page_names().row_count() as i32 - 1).max(0)));

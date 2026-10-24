@@ -603,7 +603,7 @@ fn show(
     focused: &mut Option<Popup>,
     metrics: &mut metrics::Metrics,
     popup: Popup,
-    page: Option<u8>,
+    page: Option<u32>,
     source: Source,
     start: Instant,
 ) {

@@ -921,8 +921,8 @@ msgstr "Нет ни одного макроса. Нажмите «Новый м�
 msgid "No steps yet. Each step — one chord or action."
 msgstr "Пока нет шагов. Каждый шаг — сочетание клавиш или действие."
 
-msgid "Opened by the app:showEmojiMenu1...5 actions. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. \"// TODO: \")."
-msgstr "Открывается по вызову действий app:showEmojiMenu1...5. В каждую ячейку можно вставить эмоджи, UTF-символ (например ≠), любой другой символ (например №) или короткую фразу (например \"// TODO: \")."
+msgid "Opened by the app:showEmojiMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. \"// TODO: \")."
+msgstr "Открывается действиями app:showEmojiMenuN, где N — позиция страницы: перестановка страниц меняет, какую страницу открывает клавиша. В каждую ячейку можно вставить эмоджи, UTF-символ (например ≠), любой другой символ (например №) или короткую фразу (например \"// TODO: \")."
 
 msgid "Opened by the app:showQuickMenu1...5 actions."
 msgstr "Открывается по вызову действий app:showQuickMenu1...5."
@@ -2084,8 +2084,8 @@ msgstr "Подсказка появляется через 2 секунды по
 msgid "Unavailable: build with the spell feature and use a Wayland compositor with layer-shell (KDE Plasma, Sway, Hyprland)."
 msgstr "Недоступно: нужна сборка с функцией spell и Wayland-композитор с layer-shell (KDE Plasma, Sway, Hyprland)."
 
-msgid "The app:activateLayout1…5 actions activate the layout with that number. In Auto mode they switch to Single mode."
-msgstr "Действия app:activateLayout1…5 активируют раскладку с этим номером. В автоматическом режиме они переключают в одиночный режим."
+msgid "The app:activateLayout1…5 actions activate the layout at that position in this list: reordering the list changes which layout a key activates. In Auto mode they switch to Single mode."
+msgstr "Действия app:activateLayout1…5 активируют раскладку с этой позицией в списке: перестановка списка меняет, какую раскладку включает клавиша. В автоматическом режиме они переключают в одиночный режим."
 
 msgid "Cut"
 msgstr "Вырезать"
@@ -2916,8 +2916,8 @@ msgstr "Отмена (Esc)"
 msgid "Use the default from Settings: {} ms"
 msgstr "Использовать значение из настроек: {} мс"
 
-msgid "Opened by the app:showQuickMenu1...5 actions. Each cell can hold any action: a shortcut, macro, shell command or system action."
-msgstr "Открывается действиями app:showQuickMenu1...5. В каждой ячейке можно настроить любое действие: сочетание клавиш, макрос, команду оболочки или системное действие."
+msgid "Opened by the app:showQuickMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold any action: a shortcut, macro, shell command or system action."
+msgstr "Открывается действиями app:showQuickMenuN, где N — позиция страницы: перестановка страниц меняет, какую страницу открывает клавиша. В каждой ячейке можно настроить любое действие: сочетание клавиш, макрос, команду оболочки или системное действие."
 
 msgid "In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number."
 msgstr "Во всплывающем окне кликните по ячейке или нажмите её клавишу: ячейки повторяют ряды клавиатуры Q–T, A–G и Z–B. Tab переключает страницы, цифры открывают страницу по номеру."

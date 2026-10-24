@@ -103,17 +103,18 @@ pub fn is_known(name: &str) -> bool {
 }
 
 pub fn resolve_app(name: &str) -> Option<SysAction> {
+    use crate::profile::actions::{ActionName, app_action_name};
     let name = name.trim();
-    for page in 1..=5 {
-        if name == format!("showQuickMenu{page}") {
-            return Some(SysAction::AppEvent(format!("show_quick_menu_{page}")));
-        }
-        if name == format!("showEmojiMenu{page}") {
-            return Some(SysAction::AppEvent(format!("show_emoji_menu_{page}")));
-        }
-        if name == format!("activateLayout{page}") {
-            return Some(SysAction::AppEvent(format!("activate_layout_{page}")));
-        }
+    if let Some(ActionName::App { id, n }) = app_action_name(name)
+        && n > 0
+    {
+        let event = match id {
+            "showQuickMenu" => "show_quick_menu",
+            "showEmojiMenu" => "show_emoji_menu",
+            "activateLayout" => "activate_layout",
+            _ => return None,
+        };
+        return Some(SysAction::AppEvent(format!("{event}_{n}")));
     }
     let event = match name {
         "showQuickMenuLast" => "show_quick_menu_last",
@@ -286,10 +287,10 @@ mod tests {
 
     #[test]
     fn resolve_show_emoji_menu_page() {
-        let Some(SysAction::AppEvent(event)) = resolve_app("showEmojiMenu5") else {
-            panic!("showEmojiMenu5 did not resolve to an AppEvent");
+        let Some(SysAction::AppEvent(event)) = resolve_app("showEmojiMenu12") else {
+            panic!("showEmojiMenu12 did not resolve to an AppEvent");
         };
-        assert_eq!(event, "show_emoji_menu_5");
+        assert_eq!(event, "show_emoji_menu_12");
         assert!(resolve_app("showEmojiMenu").is_none());
     }
 

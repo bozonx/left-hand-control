@@ -157,7 +157,7 @@ pub struct Preferences {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Command {
     Show(Window),
-    ShowPage(Popup, u8),
+    ShowPage(Popup, u32),
     PopupLayout(Option<String>),
     PopupContents(String),
     /// Show the keys of the held layer in the Spell worker; `None` hides them.
@@ -174,7 +174,7 @@ pub enum Command {
     Execute(String),
 }
 
-pub const USAGE: &str = "usage: left-hand-control [--version | --help | show emoji|quick [1-5] | show settings | hide | toggle-mapper | \
+pub const USAGE: &str = "usage: left-hand-control [--version | --help | show emoji|quick [page] | show settings | hide | toggle-mapper | \
 game auto|on|off|toggle | preferences system|light|dark en|ru | execute <action> | ping | quit]";
 
 impl Command {
@@ -201,10 +201,7 @@ impl Command {
         } else {
             (Popup::Quick, name.strip_prefix("show_quick_menu_")?)
         };
-        let page = suffix
-            .parse::<u8>()
-            .ok()
-            .filter(|page| (1..=5).contains(page))?;
+        let page = suffix.parse::<u32>().ok().filter(|page| *page >= 1)?;
         Some(Self::ShowPage(popup, page))
     }
 
@@ -242,9 +239,9 @@ impl Command {
         let command = match words.as_slice() {
             ["show", popup @ ("emoji" | "quick"), page] => {
                 let page = page
-                    .parse::<u8>()
+                    .parse::<u32>()
                     .ok()
-                    .filter(|page| (1..=5).contains(page))
+                    .filter(|page| *page >= 1)
                     .ok_or(USAGE)?;
                 Self::ShowPage(
                     if *popup == "emoji" {
@@ -423,7 +420,7 @@ mod tests {
 
     #[test]
     fn mapper_actions_preserve_pages_and_reject_invalid_actions() {
-        for page in 1..=5 {
+        for page in [1, 5, 10, 42] {
             assert_eq!(
                 Command::from_app_action(&format!("show_quick_menu_{page}")),
                 Some(Command::ShowPage(Popup::Quick, page))
@@ -447,7 +444,7 @@ mod tests {
         );
         for invalid in [
             "show_quick_menu_0",
-            "show_emoji_menu_6",
+            "show_emoji_menu_-1",
             "show_emoji_menu_bad",
             "activate_layout_1",
             "quit",

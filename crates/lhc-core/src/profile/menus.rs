@@ -121,81 +121,34 @@ pub fn command_issue(commands: &[Command], index: usize) -> Option<MenuIssue> {
 }
 
 /// Move a page and its cells together, preserving the order of other pages.
-/// `app:` actions that open a page by number follow it.
+///
+/// `app:showQuickMenuN` / `app:showEmojiMenuN` open a page by position and
+/// are deliberately left as they are: moving a page changes what those keys
+/// open. See [`actions::MENU_PAGE_PICKER_COUNT`].
 pub fn reorder_page(layout: &mut LayoutPreset, emoji: bool, from: usize, to: usize) {
-    fn reorder<T>(pages: &mut Vec<T>, from: usize, to: usize) -> bool {
+    fn reorder<T>(pages: &mut Vec<T>, from: usize, to: usize) {
         if from < pages.len() && to < pages.len() {
             let page = pages.remove(from);
             pages.insert(to, page);
-            true
-        } else {
-            false
         }
     }
-    let moved = if emoji {
-        reorder(&mut layout.emoji_pages, from, to)
+    if emoji {
+        reorder(&mut layout.emoji_pages, from, to);
     } else {
-        reorder(&mut layout.quick_action_pages, from, to)
-    };
-    if moved {
-        renumber_page_actions(layout, emoji, |index| {
-            Some(if index == from {
-                to
-            } else if from < index && index <= to {
-                index - 1
-            } else if to <= index && index < from {
-                index + 1
-            } else {
-                index
-            })
-        });
+        reorder(&mut layout.quick_action_pages, from, to);
     }
 }
 
-/// Remove a page; `app:` actions that open a later page by number follow
-/// it, those that opened the removed page now open the one after it.
+/// Remove a page; numbered `app:` menu actions keep their numbers, so the
+/// following pages move into the freed positions.
 pub fn remove_page(layout: &mut LayoutPreset, emoji: bool, index: usize) {
-    let removed = if emoji {
-        (index < layout.emoji_pages.len())
-            .then(|| layout.emoji_pages.remove(index))
-            .is_some()
-    } else {
-        (index < layout.quick_action_pages.len())
-            .then(|| layout.quick_action_pages.remove(index))
-            .is_some()
-    };
-    if removed {
-        renumber_page_actions(layout, emoji, |page| (page > index).then(|| page - 1));
+    if emoji {
+        if index < layout.emoji_pages.len() {
+            layout.emoji_pages.remove(index);
+        }
+    } else if index < layout.quick_action_pages.len() {
+        layout.quick_action_pages.remove(index);
     }
-}
-
-/// Rewrite `app:showQuickMenuN` / `app:showEmojiMenuN` after pages moved;
-/// `moved` maps an old zero-based page index to its new one, `None` keeps
-/// the action as it is.
-fn renumber_page_actions(
-    layout: &mut LayoutPreset,
-    emoji: bool,
-    moved: impl Fn(usize) -> Option<usize>,
-) {
-    layout.for_each_action_mut(|action| {
-        let Action::App(id) = Action::parse(Some(action)) else {
-            return;
-        };
-        let Some((is_emoji, page)) = actions::menu_page(&id) else {
-            return;
-        };
-        if is_emoji != emoji || page == 0 {
-            return;
-        }
-        if let Some(new) = moved(page as usize - 1) {
-            let name = if emoji {
-                "showEmojiMenu"
-            } else {
-                "showQuickMenu"
-            };
-            *action = format!("app:{name}{}", new + 1);
-        }
-    });
 }
 
 /// Transfer a cell between pages, returning the destination's contents to its source.
@@ -311,7 +264,7 @@ mod tests {
     }
 
     #[test]
-    fn page_actions_follow_moved_and_removed_pages() {
+    fn page_actions_keep_positions_when_pages_move() {
         let mut layout = LayoutPreset {
             quick_action_pages: ["a", "b", "c"]
                 .map(|id| QuickActionPage::new(id.into(), String::new()))
@@ -320,32 +273,15 @@ mod tests {
         };
         let mut rule = LayerRule::new("r".into(), "KeyA");
         rule.tap_action = Some("app:showQuickMenu1".into());
-        rule.double_tap_action = "app:showEmojiMenu1".into();
         layout.rules.push(rule);
-        layout
-            .layer_keymap_mut("nav")
-            .keys
-            .insert("KeyB".into(), Some("app:showQuickMenu3".into()));
         reorder_page(&mut layout, false, 0, 2);
-        assert_eq!(
-            layout.rules[0].tap_action.as_deref(),
-            Some("app:showQuickMenu3")
-        );
-        assert_eq!(layout.rules[0].double_tap_action, "app:showEmojiMenu1");
-        assert_eq!(
-            layout.layer_keymaps["nav"].keys["KeyB"].as_deref(),
-            Some("app:showQuickMenu2")
-        );
+        assert_eq!(layout.quick_action_pages[0].id, "b");
         remove_page(&mut layout, false, 0);
+        assert_eq!(layout.quick_action_pages[0].id, "c");
         assert_eq!(
             layout.rules[0].tap_action.as_deref(),
-            Some("app:showQuickMenu2")
-        );
-        assert_eq!(
-            layout.layer_keymaps["nav"].keys["KeyB"].as_deref(),
             Some("app:showQuickMenu1")
         );
-        assert_eq!(layout.quick_action_pages[1].id, "a");
     }
 
     #[test]

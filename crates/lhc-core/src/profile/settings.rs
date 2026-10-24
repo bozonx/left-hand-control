@@ -64,6 +64,10 @@ struct SettingsDoc {
     auto_rules: Vec<AutoRuleDoc>,
     /// Layout used in automatic mode when no rule matches; `null` is off.
     auto_default_layout_id: Option<String>,
+    /// Library order: the slots of `activateLayoutN` and the priority of
+    /// Auto mode. Behaviour, not remembered state, so it lives here.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    layout_order: Vec<String>,
     commands_enabled: bool,
     game_mode: GameModeDoc,
     linux: LinuxDoc,
@@ -223,9 +227,6 @@ struct StateDoc {
     /// Library layout open in the editor.
     #[serde(skip_serializing_if = "Option::is_none")]
     edited_layout_id: Option<String>,
-    /// Library order, also the priority of `activateLayoutN`.
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    layout_order: Vec<String>,
     /// Auto / On / Off choice of the game-mode switch.
     game_mode_switch: GameModeControl,
 }
@@ -330,7 +331,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
         current_layout_id: non_empty(state.edited_layout_id),
         layout_mode: settings.layout_mode,
         manual_active_layout_id: non_empty(settings.active_layout_id),
-        layout_order: state.layout_order,
+        layout_order: settings.layout_order,
         auto_rules,
         auto_default_layout_id: layout_ref(
             settings.auto_default_layout_id,
@@ -420,6 +421,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
                 })
                 .collect(),
             auto_default_layout_id: filled(&settings.auto_default_layout_id),
+            layout_order: settings.layout_order.clone(),
             commands_enabled: settings.commands_enabled,
             game_mode: GameModeDoc {
                 detectors: DetectorsDoc {
@@ -453,7 +455,6 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
         },
         state: StateDoc {
             edited_layout_id: filled(&settings.current_layout_id),
-            layout_order: settings.layout_order.clone(),
             game_mode_switch: game_mode.control,
         },
     }
@@ -629,6 +630,11 @@ mod tests {
         assert_eq!(raw["settings"]["gameMode"]["processes"][0]["exclude"], true);
         assert_eq!(raw["state"]["editedLayoutId"], "user:Main");
         assert_eq!(raw["state"]["gameModeSwitch"], "on");
+        assert_eq!(
+            raw["settings"]["layoutOrder"],
+            json!(["user:Other", "user:Main"])
+        );
+        assert!(raw["state"].get("layoutOrder").is_none());
         assert_eq!(
             raw["settings"]["autoRules"][0]["when"]["excludeWindows"],
             json!(["title:Preferences"])

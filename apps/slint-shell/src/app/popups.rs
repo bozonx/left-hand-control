@@ -90,7 +90,7 @@ impl App {
         source: Source,
         start: Instant,
         token: Option<String>,
-        page: Option<u8>,
+        page: Option<u32>,
     ) {
         // A popup would steal focus from the game, so hotkeys are ignored.
         if window.popup().is_some()
@@ -406,7 +406,7 @@ pub(super) fn bind(app: &Rc<App>) {
                     crate::ui::MenuKind::Emoji => Popup::Emoji,
                     crate::ui::MenuKind::Quick => Popup::Quick,
                 };
-                if let Ok(page) = u8::try_from(editor.get_selected_page() + 1) {
+                if let Ok(page) = u32::try_from(editor.get_selected_page() + 1) {
                     app.command(
                         Command::ShowPage(popup, page),
                         Source::Button,

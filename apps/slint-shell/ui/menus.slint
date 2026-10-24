@@ -403,7 +403,7 @@ export component EmojiPage inherits Rectangle {
         spacing: 16px;
         CardHeader {
             title: @tr("Emoji & Symbols");
-            info: @tr("Opened by the app:showEmojiMenu1...5 actions. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. \"// TODO: \").") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number.");
+            info: @tr("Opened by the app:showEmojiMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. \"// TODO: \").") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number.");
         }
         HorizontalLayout {
             spacing: 16px;
@@ -508,7 +508,7 @@ export component QuickActionsPage inherits Rectangle {
             vertical-stretch: 0;
             padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
             title: @tr("Quick Actions");
-            info: @tr("Opened by the app:showQuickMenu1...5 actions. Each cell can hold any action: a shortcut, macro, shell command or system action.") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number.");
+            info: @tr("Opened by the app:showQuickMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold any action: a shortcut, macro, shell command or system action.") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number.");
         }
         HorizontalLayout {
             padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;

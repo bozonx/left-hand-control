@@ -119,10 +119,16 @@ const MACOS_UNSUPPORTED_SYSTEM_ACTIONS: [&str; 5] = [
     "appLauncher",
 ];
 
-/// Numbered actions have ids 1…10 (system), 1…5 (app menus) and 1…5
-/// (layouts in library order).
+/// Numbered actions have ids 1…10 (system), 1… without an upper bound
+/// (menu pages) and 1…5 (layouts in library order).
+///
+/// Menu pages and layouts are addressed by position on purpose, not by id:
+/// the user binds keys to slots once and changes what a key opens by
+/// reordering pages or library layouts, which the UI shows. Reordering
+/// therefore does not rewrite these actions. Do not switch them to ids.
 const SYSTEM_NUMBERED_COUNT: u32 = 10;
-pub const MENU_PAGE_COUNT: u32 = 5;
+/// Menu pages offered in the action picker; any page number is valid.
+pub const MENU_PAGE_PICKER_COUNT: u32 = 10;
 pub const LAYOUT_SLOT_COUNT: u32 = 5;
 
 /// Split `switchDesktop3` into its catalog name and number.
@@ -176,7 +182,7 @@ pub const WINDOW_APP_ACTIONS: [&str; 3] =
     ["showQuickMenuLast", "showEmojiMenuLast", "showSettings"];
 
 pub fn app_action_name(id: &str) -> Option<ActionName> {
-    numbered(id, &["showQuickMenu", "showEmojiMenu"], MENU_PAGE_COUNT)
+    numbered(id, &["showQuickMenu", "showEmojiMenu"], u32::MAX)
         .or_else(|| numbered(id, &["activateLayout"], LAYOUT_SLOT_COUNT))
         .map(|(id, n)| ActionName::App { id, n })
         .or_else(|| {
@@ -228,7 +234,7 @@ pub fn app_actions() -> Vec<CatalogEntry> {
         .into_iter()
         .map(plain)
         .chain(
-            (1..=MENU_PAGE_COUNT)
+            (1..=MENU_PAGE_PICKER_COUNT)
                 .flat_map(|n| ["showQuickMenu", "showEmojiMenu"].map(|id| numbered(id, n))),
         )
         .chain((1..=LAYOUT_SLOT_COUNT).map(|n| numbered("activateLayout", n)))
@@ -428,7 +434,7 @@ mod tests {
     #[test]
     fn catalogs_preserve_builtin_action_ids() {
         assert_eq!(system_actions().len(), 38);
-        assert_eq!(app_actions().len(), 22);
+        assert_eq!(app_actions().len(), 32);
         assert_eq!(
             system_action_name("switchDesktop10"),
             Some(ActionName::System {
@@ -458,7 +464,8 @@ mod tests {
         assert_eq!(kde_shortcut_parts("kwin/ "), None);
         assert_eq!(kde_shortcut_parts("org.kde/Overview"), None);
         assert_eq!(menu_page("showEmojiMenu3"), Some((true, 3)));
-        assert_eq!(menu_page("showQuickMenu6"), None);
+        assert_eq!(menu_page("showQuickMenu42"), Some((false, 42)));
+        assert_eq!(menu_page("showQuickMenu0"), None);
         assert_eq!(menu_page("gameModeToggle"), None);
         assert_eq!(menu_page("activateLayout2"), None);
         assert_eq!(menu_page("showEmojiMenuLast"), None);
@@ -579,8 +586,9 @@ mod tests {
         );
         assert_eq!(check("kde:ksmserver/Lock Session"), None);
         assert_eq!(check("kde:Lock Session"), Some(ActionIssue::InvalidSyntax));
+        assert_eq!(check("app:showEmojiMenu42"), None);
         assert_eq!(
-            check("app:showEmojiMenu9"),
+            check("app:showEmojiMenu0"),
             Some(ActionIssue::UnknownAppAction)
         );
         assert_eq!(check("pause:10"), Some(ActionIssue::PauseOutsideMacro));
