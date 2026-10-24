@@ -768,18 +768,25 @@ docker run --rm -v "$PWD":/src -w /src fedora:latest \
 
 ### Чек-лист выпуска
 
-1. Перенести `Unreleased` в `CHANGELOG.md` в секцию версии с датой.
-2. Поднять `workspace.package.version` в `Cargo.toml`, выполнить `cargo update -w`.
-3. Добавить `<release version="…" date="…">` в
-   `apps/slint-shell/packaging/linux/dev.bozonx.left-hand-control.metainfo.xml`.
-4. Прогнать L3 (`e2e-local.sh`) на текущем `main`.
-5. Собрать артефакты (`release-linux.sh` в `ubuntu:22.04`) и прогнать L4: Linux VM
+Изменения пишутся в `## [Unreleased]` в `CHANGELOG.md` по ходу работы, вместе с
+коммитами. Версию, дату и тег ставит [cargo-release](https://github.com/crate-ci/cargo-release)
+(`cargo install cargo-release --locked`), настройка — `release.toml` и
+`[package.metadata.release]` в `apps/slint-shell/Cargo.toml`.
+
+1. Прогнать L3 (`e2e-local.sh`) на текущем `main`.
+2. Собрать артефакты (`release-linux.sh` в `ubuntu:22.04`) и прогнать L4: Linux VM
    хотя бы для Fedora KDE (rpm) и Debian 13 KDE (deb); Windows VM — при изменениях
    переносимой оболочки.
-6. Поставить тег `vX.Y.Z`, дождаться черновика релиза.
-7. Скачать артефакты черновика, проверить `sha256sum -c SHA256SUMS`, при желании
+3. Посмотреть план: `cargo release minor` (или `patch`, или `X.Y.Z`) — пробный прогон
+   без изменений, показывает diff.
+4. Выполнить: `cargo release minor --execute`. На чистом `main` он поднимает
+   `workspace.package.version` и `Cargo.lock`, переименовывает `Unreleased` в
+   `## [X.Y.Z] - <дата UTC>` (новый пустой `Unreleased` остаётся сверху), добавляет
+   `<release>` в metainfo, проверяет всё `release-metadata.py`, делает коммит
+   `Release X.Y.Z`, тег `vX.Y.Z` и пушит их — это запускает `release.yml`.
+5. Скачать артефакты черновика, проверить `sha256sum -c SHA256SUMS`, при желании
    прогнать `run-linux.py` на скачанном пакете.
-8. Опубликовать релиз; затем COPR и другие подключённые каналы.
+6. Опубликовать релиз; затем COPR и другие подключённые каналы.
 
 ### Открытые задачи
 

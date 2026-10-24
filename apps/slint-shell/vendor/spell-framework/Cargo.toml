@@ -43,6 +43,10 @@ paste = "1.0.15"
 mpris = "2.0.1"
 wl-clipboard-rs = "0.9.3"
 
+# Local change: the application release (cargo-release) must not bump this crate.
+[package.metadata.release]
+release = false
+
 [package.metadata.docs.rs]
 no-default-features = true
 features = ["docs-only"]

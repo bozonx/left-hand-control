@@ -6,6 +6,18 @@ license.workspace = true
 rust-version.workspace = true
 publish = false
 
+# cargo-release (see release.toml): the application package owns the release tag
+# and the dated CHANGELOG and AppStream entries.
+[package.metadata.release]
+tag = true
+tag-name = "v{{version}}"
+pre-release-replacements = [
+    { file = "../../CHANGELOG.md", search = "## \\[Unreleased\\]", replace = "## [Unreleased]\n\n## [{{version}}] - {{date}}", exactly = 1 },
+    { file = "packaging/linux/dev.bozonx.left-hand-control.metainfo.xml", search = "<releases>", replace = "<releases>\n    <release version=\"{{version}}\" date=\"{{date}}\">\n      <url type=\"details\">https://github.com/bozonx/left-hand-control/releases/tag/v{{version}}</url>\n    </release>", exactly = 1 },
+]
+# A dry run leaves the files unchanged, so the check would see the old version.
+pre-release-hook = ["sh", "-c", "[ \"$DRY_RUN\" = true ] || python3 scripts/release-metadata.py v{{version}}"]
+
 [[bin]]
 name = "left-hand-control"
 path = "src/main.rs"

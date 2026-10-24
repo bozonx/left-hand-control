@@ -1,0 +1,9 @@
+# cargo-release: `cargo release <minor|patch|X.Y.Z>` previews, `--execute` applies.
+# One commit and one `v<version>` tag (set in apps/slint-shell/Cargo.toml); pushing
+# the tag starts .github/workflows/release.yml.
+allow-branch = ["main"]
+shared-version = true
+consolidate-commits = true
+pre-release-commit-message = "Release {{version}}"
+publish = false
+tag = false

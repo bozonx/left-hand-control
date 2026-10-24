@@ -16,6 +16,7 @@ licensed GPL-3.0-or-later, compatible with this crate's license.
 - `on_call` dispatches without waiting; the application blocks on the event-loop file descriptors itself instead of spinning every millisecond.
 
 - Build integration: `[lib] doctest = false`, because upstream doctests do not build from this vendored copy inside the application workspace.
+- Build integration: `[package.metadata.release] release = false`, so the application's cargo-release run does not bump or tag this crate.
 
 Frame events mean rendering and buffer commit, not compositor presentation.
 
