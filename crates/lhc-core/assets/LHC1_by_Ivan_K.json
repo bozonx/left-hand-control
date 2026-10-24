@@ -365,7 +365,7 @@
         },
         "KeyW": {
           "name": "Fixed in",
-          "action": "text:Fixed in"
+          "action": "text:Fixed in "
         },
         "KeyE": {
           "name": "Good morning",
@@ -377,47 +377,47 @@
         },
         "KeyT": {
           "name": "Sorry for the inconvenience",
-          "action": "text:I'm sorry for the inconvenience"
+          "action": "text:I'm sorry for the inconvenience."
         },
         "KeyA": {
           "name": "Fix grammar",
-          "action": "text:Fix grammar and wording, keep the meaning and tone"
+          "action": "text:Fix grammar and wording, keep the meaning and tone."
         },
         "KeyS": {
           "name": "More detail",
-          "action": "text:Explain this in more detail"
+          "action": "text:Explain this in more detail."
         },
         "KeyD": {
           "name": "Do it all",
-          "action": "text:Do it all as you suggested"
+          "action": "text:Do it all as you suggested."
         },
         "KeyF": {
           "name": "Continue",
-          "action": "text:Continue"
+          "action": "text:Continue."
         },
         "KeyG": {
           "name": "Ask first",
-          "action": "text:Before you start, ask me any clarifying questions"
+          "action": "text:Before you start, ask me any clarifying questions."
         },
         "KeyZ": {
           "name": "Best regards",
-          "action": "text:Best regards!"
+          "action": "text:Best regards,\n"
         },
         "KeyX": {
           "name": "Looking forward to hearing",
-          "action": "text:Looking forward to hearing from you"
+          "action": "text:Looking forward to hearing from you."
         },
         "KeyC": {
-          "name": "Let me know questions",
-          "action": "text:Please let me know if you have any questions"
+          "name": "Any questions",
+          "action": "text:Please let me know if you have any questions."
         },
         "KeyV": {
           "name": "Thanks in advance",
           "action": "text:Thanks in advance!"
         },
         "KeyB": {
-          "name": "Few minutes, I'll back",
-          "action": "text:Give me a few minutes, I'll get back to you"
+          "name": "I'll be back",
+          "action": "text:Give me a few minutes, I'll get back to you."
         }
       }
     }
