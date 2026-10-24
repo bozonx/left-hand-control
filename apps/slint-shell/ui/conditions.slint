@@ -514,7 +514,7 @@ export component ConditionsForm inherits VerticalLayout {
                     toggled => { root.languages = ConditionChoices.toggle(root.languages, code, self.checked); }
                 }
             }
-            VerticalLayout { spacing: 10px; alignment: start; horizontal-stretch: 1; preferred-width: 0px; min-width: 0px;
+            if AppState.in-development: VerticalLayout { spacing: 10px; alignment: start; horizontal-stretch: 1; preferred-width: 0px; min-width: 0px;
                 Text { text: @tr("Game mode"); color: Theme.text; }
                 RadioGroup {
                     orientation: vertical;

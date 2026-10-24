@@ -18,6 +18,7 @@ const HOST_GRACE: Duration = Duration::from_secs(10);
 
 pub struct Tray {
     enabled: bool,
+    in_development: bool,
     english: bool,
     /// Index of the Auto/On/Off choice and the effective state.
     game: (usize, bool),
@@ -28,6 +29,10 @@ pub struct Tray {
 pub struct Handle(ksni::blocking::Handle<Tray>);
 
 impl Handle {
+    pub fn set_in_development(&self, enabled: bool) {
+        self.0.update(|tray| tray.in_development = enabled);
+    }
+
     pub fn set_enabled(&self, enabled: bool) {
         self.0.update(|tray| tray.enabled = enabled);
     }
@@ -135,7 +140,11 @@ impl ksni::Tray for Tray {
     fn tool_tip(&self) -> ksni::ToolTip {
         ksni::ToolTip {
             title: i18n::application_name(self.language()),
-            description: i18n::tray_game_title(self.language(), self.game.1),
+            description: if self.in_development {
+                i18n::tray_game_title(self.language(), self.game.1)
+            } else {
+                String::new()
+            },
             ..Default::default()
         }
     }
@@ -146,7 +155,7 @@ impl ksni::Tray for Tray {
         let language = self.language();
         let mut items = Vec::new();
         for item in TrayItem::ALL {
-            if item == TrayItem::Quit {
+            if item == TrayItem::Quit && self.in_development {
                 items.push(self.game_menu());
             }
             items.push(
@@ -167,6 +176,7 @@ impl ksni::Tray for Tray {
 pub fn start(dispatch: Dispatch) -> Result<Handle, ksni::Error> {
     Tray {
         enabled: false,
+        in_development: false,
         english: false,
         game: (0, false),
         dispatch,

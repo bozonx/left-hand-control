@@ -571,6 +571,8 @@ pub enum LayoutMode {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppSettings {
+    /// Expose features that are still in development.
+    pub in_development: bool,
     pub launch_on_startup: bool,
     /// Start the mapper when the app launches, whether by autostart or
     /// manually.
@@ -618,6 +620,7 @@ pub struct AppSettings {
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
+            in_development: false,
             launch_on_startup: false,
             start_mapper_on_launch: false,
             appearance: Appearance::System,

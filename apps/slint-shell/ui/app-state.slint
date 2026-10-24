@@ -4,6 +4,7 @@ import { GameModeControl } from "types.slint";
 /// Shell state shown on several pages: mapper, runtime context and the
 /// messages that are not tied to one page.
 export global AppState {
+    in property <bool> in-development;
     in property <bool> mapper-running;
     in property <bool> mapper-busy;
     /// A keyboard device is chosen, so the mapper can start.

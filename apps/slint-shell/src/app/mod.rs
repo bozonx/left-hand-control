@@ -318,6 +318,13 @@ impl App {
         self.settings
             .global::<AppState>()
             .set_keyboard_selected(document.read().input_device().is_some());
+        let in_development = document.read().settings().in_development;
+        self.settings
+            .global::<AppState>()
+            .set_in_development(in_development);
+        if let Some(tray) = self.tray.borrow().as_ref() {
+            tray.set_in_development(in_development);
+        }
         self.invalidate_menus();
         self.apply_preferences();
         self.announce_layout();
@@ -543,6 +550,10 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                 Ok(tray) => {
                     tray.set_english(app.preferences.get().language == Language::English);
                     tray.set_game(&lhc_core::gamemode::status());
+                    tray.set_in_development(
+                        app.document()
+                            .is_some_and(|doc| doc.read().settings().in_development),
+                    );
                     *app.tray.borrow_mut() = Some(tray);
                     app.last_mapper_status.borrow_mut().take();
                     app.refresh_mapper_status();

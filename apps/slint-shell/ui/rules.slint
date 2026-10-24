@@ -1,3 +1,4 @@
+import { AppState } from "app-state.slint";
 import { SearchField, TextField } from "controls.slint";
 import { PageContent, ScrollView } from "scroll.slint";
 import { ActionPicker } from "action-picker.slint";
@@ -115,7 +116,7 @@ component ConditionsCell inherits Rectangle {
         }
         if !root.rule.has-conditions: Text { text: @tr("Always"); color: Theme.muted; vertical-alignment: center; }
         if root.rule.has-conditions: Text { text: @tr("If:"); color: Theme.muted; vertical-alignment: center; }
-        if root.rule.game != GameCondition.any: ConditionChip { icon: @image-url("icons/gamepad-2.svg"); text: root.rule.game == GameCondition.on ? @tr("Game mode on") : @tr("Game mode off"); }
+        if AppState.in-development && root.rule.game != GameCondition.any: ConditionChip { icon: @image-url("icons/gamepad-2.svg"); text: root.rule.game == GameCondition.on ? @tr("Game mode on") : @tr("Game mode off"); }
         if root.rule.languages != "": ConditionChip { icon: @image-url("icons/globe.svg"); text: root.rule.languages; }
         if root.rule.applications != "": ConditionChip { icon: @image-url("icons/app-window.svg"); text: root.rule.applications; tint: Theme.success; }
         if root.rule.excluded != "": ConditionChip { icon: @image-url("icons/ban.svg"); text: root.rule.excluded; tint: Theme.error; }

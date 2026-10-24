@@ -145,6 +145,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(drag.get_target(), 0);
     drag.invoke_reset();
     let settings = ui.global::<SettingsEditor>();
+    assert!(!settings.get_in_development());
+    settings.set_in_development(true);
+    settings.invoke_save();
+    assert!(
+        ConfigDocument::load(paths.clone())?
+            .settings()
+            .in_development
+    );
+    settings.set_in_development(false);
+    settings.invoke_save();
+    assert!(
+        !ConfigDocument::load(paths.clone())?
+            .settings()
+            .in_development
+    );
+    settings.set_in_development(true);
+    settings.invoke_save();
+    ui.global::<AppState>().set_in_development(true);
     ui.invoke_navigate(Page::Settings, MenuKind::Emoji);
     assert!(!ui.global::<LayoutLibrary>().get_editor_open());
     settings.set_hold_timeout("not a number".into());

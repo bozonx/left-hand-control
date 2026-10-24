@@ -45,6 +45,8 @@ struct ConfigDoc {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields, default)]
 struct SettingsDoc {
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    in_development: bool,
     launch_on_startup: bool,
     /// Start the mapper when the app launches.
     start_mapper_on_launch: bool,
@@ -310,6 +312,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
         });
     }
     Ok(AppSettings {
+        in_development: settings.in_development,
         launch_on_startup: settings.launch_on_startup,
         start_mapper_on_launch: settings.start_mapper_on_launch,
         appearance: settings.appearance,
@@ -381,6 +384,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
     ConfigDoc {
         schema_version: SCHEMA_VERSION,
         settings: SettingsDoc {
+            in_development: settings.in_development,
             launch_on_startup: settings.launch_on_startup,
             start_mapper_on_launch: settings.start_mapper_on_launch,
             appearance: settings.appearance,
@@ -467,6 +471,20 @@ mod tests {
 
     fn config(settings: Value) -> String {
         json!({"schemaVersion": 1, "settings": settings}).to_string()
+    }
+
+    #[test]
+    fn development_flag_is_optional_and_removed_when_disabled() {
+        let mut settings = parse(&config(json!({}))).unwrap();
+        assert!(!settings.in_development);
+        let raw: Value = serde_json::from_str(&serialize(&settings)).unwrap();
+        assert!(raw["settings"].get("inDevelopment").is_none());
+        settings.in_development = true;
+        let saved = serialize(&settings);
+        assert!(parse(&saved).unwrap().in_development);
+        settings.in_development = false;
+        let raw: Value = serde_json::from_str(&serialize(&settings)).unwrap();
+        assert!(raw["settings"].get("inDevelopment").is_none());
     }
 
     #[test]

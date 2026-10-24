@@ -17,6 +17,7 @@ const TAP_DECISIONS: [&str; 2] = ["permissiveHold", "holdOnOtherKeyPress"];
 /// The form as the user sees it. Numbers stay text until saved.
 #[derive(Clone, Debug, PartialEq)]
 struct Form {
+    in_development: bool,
     launch_on_startup: bool,
     start_mapper_on_launch: bool,
     appearance: i32,
@@ -64,6 +65,7 @@ fn path(value: &str) -> Option<String> {
 impl Form {
     fn from_settings(settings: &AppSettings) -> Self {
         Self {
+            in_development: settings.in_development,
             launch_on_startup: settings.launch_on_startup,
             start_mapper_on_launch: settings.start_mapper_on_launch,
             appearance: choice_index(&APPEARANCES, &settings.appearance),
@@ -103,6 +105,7 @@ impl Form {
     fn read(ui: &SettingsWindow, matchers: &[GameModeProcessMatcher]) -> Self {
         let e = ui.global::<SettingsEditor>();
         Self {
+            in_development: e.get_in_development(),
             launch_on_startup: e.get_launch_on_startup(),
             start_mapper_on_launch: e.get_start_mapper_on_launch(),
             appearance: e.get_appearance_index(),
@@ -141,6 +144,7 @@ impl Form {
 
     fn show(&self, ui: &SettingsWindow) {
         let e = ui.global::<SettingsEditor>();
+        e.set_in_development(self.in_development);
         e.set_launch_on_startup(self.launch_on_startup);
         e.set_start_mapper_on_launch(self.start_mapper_on_launch);
         e.set_appearance_index(self.appearance);
@@ -212,6 +216,7 @@ impl Form {
                 }
             };
         }
+        changed!(in_development => settings.in_development = self.in_development);
         changed!(launch_on_startup => settings.launch_on_startup = self.launch_on_startup);
         changed!(start_mapper_on_launch => settings.start_mapper_on_launch = self.start_mapper_on_launch);
         changed!(appearance => settings.appearance = choice(&APPEARANCES, self.appearance));

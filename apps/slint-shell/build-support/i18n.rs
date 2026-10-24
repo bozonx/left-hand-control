@@ -189,6 +189,8 @@ pub fn validate(
                 && value.chars().filter(|c| c.is_alphabetic()).count() > 1
                 // Font-metric probe and the literal action syntax shown as data.
                 && !matches!(value.as_str(), "Ag" | "text:")
+                // This hidden developer switch deliberately has a fixed English label.
+                && !(file.ends_with("settings-page.slint") && value == "In development features")
             {
                 return Err(format!("{file}: literal UI text outside @tr: {value:?}"));
             }

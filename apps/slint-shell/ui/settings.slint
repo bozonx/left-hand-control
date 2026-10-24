@@ -117,7 +117,7 @@ export component SettingsWindow inherits Window {
                         Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 4px; HorizontalLayout { padding: 8px; Text { text: @tr("Current keyboard layout in the system") + "\n" + AppState.keyboard-language; color: Theme.text; } } } }
                     }
                     }
-                    GameModeButton {}
+                    if AppState.in-development: GameModeButton {}
                     active-layout := Rectangle {
                         width: 180px; height: 36px; border-radius: 6px; background: Theme.surface; border-width: 1px; border-color: Theme.border;
                         HorizontalLayout { padding: 8px; spacing: 6px;

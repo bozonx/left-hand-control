@@ -183,6 +183,7 @@ fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<PickerItem> {
             })
         })
         .collect();
+    let in_development = config.settings().in_development;
     let enabled = config.settings().commands_enabled;
     let config = config.config();
     items.extend(actions::catalog(&config).into_iter().filter_map(|entry| {
@@ -193,6 +194,7 @@ fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<PickerItem> {
             Action::Macro(_) => PickerCategory::BuiltinMacros,
             Action::Command(_) if enabled => PickerCategory::Commands,
             Action::Command(_) => return None,
+            Action::App(id) if !in_development && id.starts_with("gameMode") => return None,
             Action::App(_) => PickerCategory::App,
             Action::System(_) => PickerCategory::SystemActions,
             _ => return None,

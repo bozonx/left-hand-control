@@ -20,6 +20,7 @@ export struct CommandPlaceRow { kind: int, layer: string, name: string, enabled:
 export struct CommandAssignmentRow { layout-name: string, first: bool, name: string, script: string, places: [CommandPlaceRow] }
 
 export global SettingsEditor {
+    in-out property <bool> in-development;
     in-out property <bool> keyboard-manual;
     in-out property <bool> mouse-manual;
     in-out property <bool> launch-on-startup;
@@ -328,7 +329,8 @@ export component SettingsPage inherits VerticalBox {
             alignment: start;
             for label[index] in [@tr("Main"), @tr("Mapper"), @tr("Key behavior"), @tr("Game mode"), @tr("Commands"), @tr("Accessibility")]: Rectangle {
                 property <SettingsTab> tab-id: [SettingsTab.general, SettingsTab.mapper, SettingsTab.key-behavior, SettingsTab.game-mode, SettingsTab.commands, SettingsTab.accessibility][index];
-                height: 38px;
+                visible: tab-id != SettingsTab.game-mode || AppState.in-development;
+                height: self.visible ? 38px : 0px;
                 border-radius: 6px;
                 border-width: focus.has-focus ? 2px : 0px;
                 border-color: Theme.focus;
@@ -423,7 +425,7 @@ export component SettingsPage inherits VerticalBox {
                             if AppState.is-linux: CheckBox { text: @tr("Show the Left Hand Control layout name when it changes"); checked <=> SettingsEditor.layout-osd; toggled => { SettingsEditor.save(); } }
                             if AppState.is-linux: HorizontalLayout { vertical-stretch: 0; alignment: start; spacing: 6px;
                                 CheckBox { horizontal-stretch: 0; text: @tr("Show the keys of a layer while it is held"); checked <=> SettingsEditor.layer-hint; toggled => { SettingsEditor.save(); } }
-                                VerticalLayout { alignment: center; InfoTip { text: SettingsEditor.layer-hint-available ? @tr("The hint appears 2 seconds after the layer activates. Pressing a layer key hides or cancels it until the trigger is released, including in game mode.") : @tr("Unavailable: build with the spell feature and use a Wayland compositor with layer-shell (KDE Plasma, Sway, Hyprland)."); } }
+                                VerticalLayout { visible: !SettingsEditor.layer-hint-available || AppState.in-development; alignment: center; InfoTip { text: SettingsEditor.layer-hint-available ? @tr("The hint appears 2 seconds after the layer activates. Pressing a layer key hides or cancels it until the trigger is released, including in game mode.") : @tr("Unavailable: build with the spell feature and use a Wayland compositor with layer-shell (KDE Plasma, Sway, Hyprland)."); } }
                             }
                         }
                     }
@@ -442,6 +444,19 @@ export component SettingsPage inherits VerticalBox {
                                 Text { vertical-stretch: 0; text: @tr("Layouts directory: ") + SettingsEditor.layouts-dir; color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
                                 Button { text: @tr("Copy path"); clicked => { root.copy-path(SettingsEditor.layouts-dir); } }
                             }
+                        }
+                    }
+                    HorizontalLayout {
+                        height: 32px; vertical-stretch: 0;
+                        Rectangle { horizontal-stretch: 1; }
+                        if SettingsEditor.in-development: CheckBox {
+                            text: "In development features";
+                            checked <=> SettingsEditor.in-development;
+                            toggled => { SettingsEditor.save(); }
+                        }
+                        if !SettingsEditor.in-development: TouchArea {
+                            width: 32px; height: 32px; horizontal-stretch: 0;
+                            clicked => { SettingsEditor.in-development = true; SettingsEditor.save(); }
                         }
                     }
                 }
@@ -707,7 +722,7 @@ export component SettingsPage inherits VerticalBox {
                         }
                     }
                 }
-                if SettingsEditor.tab == SettingsTab.game-mode: Section {
+                if AppState.in-development && SettingsEditor.tab == SettingsTab.game-mode: Section {
                     HorizontalLayout {
                         vertical-stretch: 0; spacing: 8px; alignment: start;
                         Text { text: @tr("Game mode"); color: Theme.text; font-size: 18px; font-weight: 600; vertical-alignment: center; }

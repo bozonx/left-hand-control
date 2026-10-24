@@ -11,6 +11,8 @@ use tray_icon::{
 
 pub struct Handle {
     icon: TrayIcon,
+    menu: Menu,
+    in_development: Cell<bool>,
     items: Vec<(TrayItem, MenuItem)>,
     game: Submenu,
     game_items: Vec<CheckMenuItem>,
@@ -32,6 +34,20 @@ fn language(english: bool) -> Language {
 }
 
 impl Handle {
+    pub fn set_in_development(&self, enabled: bool) {
+        if self.in_development.replace(enabled) != enabled {
+            let result = if enabled {
+                self.menu.insert(&self.game, self.items.len() - 1)
+            } else {
+                self.menu.remove(&self.game)
+            };
+            if let Err(error) = result {
+                log::warn!("tray game menu: {error}");
+            }
+        }
+        self.set_game_title();
+    }
+
     pub fn set_enabled(&self, enabled: bool) {
         match icon(enabled) {
             Ok(icon) => {
@@ -67,10 +83,13 @@ impl Handle {
     fn set_game_title(&self) {
         let title = i18n::tray_game_title(language(self.english.get()), self.game_active.get());
         self.game.set_text(&title);
-        if let Err(error) = self.icon.set_tooltip(Some(format!(
-            "{}\n{title}",
-            i18n::application_name(language(self.english.get()))
-        ))) {
+        let name = i18n::application_name(language(self.english.get()));
+        let tooltip = if self.in_development.get() {
+            format!("{name}\n{title}")
+        } else {
+            name
+        };
+        if let Err(error) = self.icon.set_tooltip(Some(tooltip)) {
             log::warn!("tray tooltip: {error}");
         }
     }
@@ -98,10 +117,7 @@ pub fn start(dispatch: Dispatch) -> Result<Handle, Box<dyn std::error::Error>> {
         game.append(&item)?;
         game_items.push(item);
     }
-    for (entry, item) in &items {
-        if *entry == TrayItem::Quit {
-            menu.append(&game)?;
-        }
+    for (_, item) in &items {
         menu.append(item)?;
     }
     MenuEvent::set_event_handler(Some(move |event: MenuEvent| {
@@ -112,10 +128,12 @@ pub fn start(dispatch: Dispatch) -> Result<Handle, Box<dyn std::error::Error>> {
     let icon = TrayIconBuilder::new()
         .with_tooltip(i18n::application_name(Language::Russian))
         .with_icon(icon(false)?)
-        .with_menu(Box::new(menu))
+        .with_menu(Box::new(menu.clone()))
         .build()?;
     Ok(Handle {
         icon,
+        menu,
+        in_development: Cell::new(false),
         items,
         game,
         game_items,

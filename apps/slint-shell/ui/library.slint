@@ -170,6 +170,7 @@ export global LayoutLibrary {
         return self.auto-default >= 0 ? self.auto-default : self.names.length > 0 ? 0 : -1;
     }
     pure function game-text(game: GameCondition) -> string {
+        if !AppState.in-development { return ""; }
         return game == GameCondition.on ? @tr("game mode on") : game == GameCondition.off ? @tr("game mode off") : "";
     }
     public pure function rule-text(game: GameCondition, list: string) -> string {
@@ -409,7 +410,7 @@ component AutoRuleRow inherits Rectangle {
                 text: @tr("Never applies: rule {} always matches first.", root.rule.shadowed-by + 1);
                 color: Theme.warning; font-size: 12px; wrap: word-wrap;
             }
-            if root.rule.enabled && root.rule.game != GameCondition.any && !LayoutLibrary.game-detection: Text {
+            if AppState.in-development && root.rule.enabled && root.rule.game != GameCondition.any && !LayoutLibrary.game-detection: Text {
                 text: @tr("Game mode detection is off, so this rule never matches.");
                 color: Theme.warning; font-size: 12px; wrap: word-wrap;
             }
@@ -548,7 +549,7 @@ export component LibraryPage inherits VerticalBox {
                 alignment: center;
                 InfoTip {
                     text: @tr("Single: the layout you make active works everywhere.") + "\n\n"
-                        + @tr("Automatic: the layout is chosen by switching rules for the application, system language or game mode.") + "\n\n"
+                        + (AppState.in-development ? @tr("Automatic: the layout is chosen by switching rules for the application, system language or game mode.") : "") + "\n\n"
                         + @tr("The app:activateLayout1…5 actions activate the layout at that position in this list: reordering the list changes which layout a key activates. In Auto mode they switch to Single mode.");
                 }
             }
