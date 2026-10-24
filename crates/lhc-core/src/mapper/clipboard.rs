@@ -118,9 +118,17 @@ const TRANSFER_TIMEOUT: Duration = Duration::from_secs(2);
 // Data-control cannot identify the reader. A watcher may read before the target
 // processes the shortcut, so a completed transfer alone cannot trigger restore.
 const PASTE_GRACE: Duration = Duration::from_millis(200);
-const MAX_CLIPBOARD_BYTES: usize = 64 * 1024 * 1024;
-const MAX_MIME_TYPES: usize = 128;
-const TEXT_MIME: &str = "text/plain;charset=utf-8";
+/// Limits of a saved clipboard, shared with the portal clipboard.
+pub(super) const MAX_CLIPBOARD_BYTES: usize = 64 * 1024 * 1024;
+pub(super) const MAX_MIME_TYPES: usize = 128;
+pub(super) const TEXT_MIME: &str = "text/plain;charset=utf-8";
+pub(super) const PLAIN_TEXT_MIME: &str = "text/plain";
+/// How long the clipboard owner may take to take over the clipboard and to
+/// arm a paste; shared with the portal clipboard.
+pub(super) const PREPARE_TIMEOUT: Duration = Duration::from_secs(5);
+pub(super) const ARM_TIMEOUT: Duration = Duration::from_secs(1);
+/// How long a paste may take until the clipboard is restored.
+const PASTE_TIMEOUT: Duration = Duration::from_secs(3);
 const SENSITIVE_MIME: &str = "x-kde-passwordManagerHint";
 
 type Contents = HashMap<String, Arc<[u8]>>;
@@ -234,7 +242,7 @@ impl Paste {
             done,
         })?;
         prepared
-            .recv_timeout(Duration::from_secs(5))
+            .recv_timeout(PREPARE_TIMEOUT)
             .map_err(|_| "clipboard preparation timed out")??;
         Ok(Self {
             finish: Some(finish),
@@ -252,7 +260,7 @@ impl Paste {
             .send(Command::Arm(tx))
             .map_err(|_| "clipboard owner stopped")?;
         self.waker.wake();
-        rx.recv_timeout(Duration::from_secs(1))
+        rx.recv_timeout(ARM_TIMEOUT)
             .map_err(|_| "clipboard owner did not arm".into())
     }
 
@@ -265,7 +273,7 @@ impl Paste {
             self.waker.wake();
         }
         self.done
-            .recv_timeout(Duration::from_secs(3))
+            .recv_timeout(PASTE_TIMEOUT)
             .map_err(|_| "clipboard transfer timed out")?
     }
 }
@@ -484,7 +492,7 @@ impl Session {
         self.state.restored = false;
         self.own(HashMap::from([
             (TEXT_MIME.into(), Arc::from(text.as_bytes())),
-            ("text/plain".into(), Arc::from(text.into_bytes())),
+            (PLAIN_TEXT_MIME.into(), Arc::from(text.into_bytes())),
             (SENSITIVE_MIME.into(), Arc::from(b"secret".as_slice())),
         ]));
         self.barrier()?;
@@ -805,7 +813,7 @@ impl State {
         let Some(bytes) = self.contents.get(&mime).cloned() else {
             return;
         };
-        let text = mime == TEXT_MIME || mime == "text/plain";
+        let text = mime == TEXT_MIME || mime == PLAIN_TEXT_MIME;
         let (tx, rx) = mpsc::channel();
         let wake = self.wake();
         std::thread::spawn(move || {

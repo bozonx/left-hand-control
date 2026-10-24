@@ -10,6 +10,9 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
     VIRTUAL_KEY, VK_RETURN, VK_TAB,
 };
 
+/// Pause after each `VK_PACKET` unit; see `type_unicode`.
+const VK_PACKET_DELAY: std::time::Duration = std::time::Duration::from_millis(30);
+
 /// `dwExtraInfo` of events the mapper injects ("LHC!").
 pub(super) const INJECTED_MARK: usize = 0x4c48_4321;
 
@@ -165,7 +168,7 @@ pub fn type_unicode(text: &str, mut valid: impl FnMut() -> bool) -> Result<(), S
             }
             // WinUI translates VK_PACKET asynchronously from keyboard state.
             // Each UTF-16 unit must be consumed before the next replaces it.
-            std::thread::sleep(std::time::Duration::from_millis(30));
+            std::thread::sleep(VK_PACKET_DELAY);
         }
     }
     Ok(())

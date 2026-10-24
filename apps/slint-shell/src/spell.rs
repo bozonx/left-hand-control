@@ -67,20 +67,25 @@ impl Waker {
     }
 }
 
+/// Surface sizes. Layer-shell surfaces are configured before the Slint
+/// component exists, so they repeat the `width`/`height` of `EmojiPopup`,
+/// `QuickPopup` and `LayerHintPopup`; a test keeps both in sync.
+const EMOJI_WIDTH: u32 = 480;
+const QUICK_WIDTH: u32 = 780;
+const MENU_HEIGHT: u32 = 350;
+const HINT_WIDTH: u32 = 1290;
+const HINT_HEIGHT: u32 = 330;
+
 fn width(popup: Popup) -> u32 {
     match popup {
-        Popup::Emoji => 480,
-        Popup::Quick => 780,
+        Popup::Emoji => EMOJI_WIDTH,
+        Popup::Quick => QUICK_WIDTH,
     }
 }
 
 fn height(_popup: Popup) -> u32 {
-    350
+    MENU_HEIGHT
 }
-
-/// Size of the layer hint surface; matches `LayerHintPopup`.
-const HINT_WIDTH: u32 = 1290;
-const HINT_HEIGHT: u32 = 330;
 
 fn configuration(width: u32, height: u32) -> Result<WindowConf, Box<dyn std::error::Error>> {
     let mut builder = WindowConf::builder();
@@ -201,13 +206,7 @@ impl Layers {
 
     /// Action of item `index` of `popup`.
     fn action(&self, popup: Popup, index: i32) -> Option<String> {
-        match popup {
-            Popup::Emoji => self
-                .menus
-                .emoji(&self.emoji, index)
-                .map(|emoji| format!("text:{emoji}")),
-            Popup::Quick => self.menus.quick_cell(self.quick.get_page(), index),
-        }
+        self.menus.action(popup, &self.emoji, &self.quick, index)
     }
 }
 
@@ -508,7 +507,10 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     // Diagnostic stand: the probe returns focus and pastes itself.
                     #[cfg(feature = "probes")]
                     let probed = probe.as_mut().is_some_and(|probe| {
-                        probe.selected(action.strip_prefix("text:").unwrap_or(&action).to_owned())
+                        probe.selected(
+                            crate::popup_model::typed_text(&action)
+                                .unwrap_or_else(|| action.clone()),
+                        )
                     });
                     #[cfg(not(feature = "probes"))]
                     let probed = false;
@@ -651,4 +653,33 @@ fn bind_callbacks(layers: &Layers, waker: &Waker) {
     layers
         .quick
         .on_dismiss(move || w.send(Event::Hide(Popup::Quick)));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn surface_sizes_match_the_slint_components() {
+        for (source, width, height) in [
+            (
+                include_str!("../ui/popup-emoji.slint"),
+                EMOJI_WIDTH,
+                MENU_HEIGHT,
+            ),
+            (
+                include_str!("../ui/popup-quick.slint"),
+                QUICK_WIDTH,
+                MENU_HEIGHT,
+            ),
+            (
+                include_str!("../ui/popup-layer.slint"),
+                HINT_WIDTH,
+                HINT_HEIGHT,
+            ),
+        ] {
+            let size = format!("    width: {width}px;\n    height: {height}px;\n");
+            assert!(source.contains(&size), "missing {size:?}");
+        }
+    }
 }

@@ -5,7 +5,10 @@ use crate::{
     command::Popup,
     ui::{EmojiPopup, QuickPopup},
 };
-use lhc_core::profile::model::{LEFT_HAND_HOTKEYS, LayoutPreset, QuickAction};
+use lhc_core::profile::{
+    actions::Action,
+    model::{LEFT_HAND_HOTKEYS, LayoutPreset, QuickAction},
+};
 use slint::{Model, ModelRc, SharedString, VecModel};
 
 /// Cells per menu page: one per left-hand hotkey, 3 rows × 5 columns.
@@ -38,6 +41,15 @@ fn digit_page(digit: &str) -> Option<i32> {
     }
 }
 
+/// Text a popup action types, if it is a `text:` action.
+#[cfg(any(not(target_os = "linux"), feature = "probes"))]
+pub(crate) fn typed_text(action: &str) -> Option<String> {
+    match Action::parse(Some(action)) {
+        Action::Text(text) => Some(text),
+        _ => None,
+    }
+}
+
 /// Tab cycles pages, digits open one; the left-hand hotkeys pick a cell.
 pub(crate) fn shortcut(code: &str, shift: bool) -> Option<Shortcut> {
     if code == "Tab" {
@@ -52,32 +64,21 @@ pub(crate) fn shortcut(code: &str, shift: bool) -> Option<Shortcut> {
         .map(|index| Shortcut::ChooseCell(index as i32))
 }
 
+/// Same as [`shortcut`] for an evdev key code, as the Spell worker reads it.
 #[cfg(all(feature = "spell", target_os = "linux"))]
 pub(crate) fn evdev_shortcut(code: u32, shift: bool) -> Option<Shortcut> {
     const DIGITS: [&str; 10] = [
         "Digit1", "Digit2", "Digit3", "Digit4", "Digit5", "Digit6", "Digit7", "Digit8", "Digit9",
         "Digit0",
     ];
-    let name = match code {
-        2..=11 => DIGITS[code as usize - 2],
-        15 => "Tab",
-        20 => "KeyT",
-        16 => "KeyQ",
-        17 => "KeyW",
-        18 => "KeyE",
-        19 => "KeyR",
-        30 => "KeyA",
-        31 => "KeyS",
-        32 => "KeyD",
-        33 => "KeyF",
-        34 => "KeyG",
-        44 => "KeyZ",
-        45 => "KeyX",
-        46 => "KeyC",
-        47 => "KeyV",
-        48 => "KeyB",
-        _ => return None,
-    };
+    let name = ["Tab"]
+        .iter()
+        .chain(&DIGITS)
+        .chain(&LEFT_HAND_HOTKEYS)
+        .find(|name| {
+            lhc_core::mapper::keys::code_to_key(name)
+                .is_some_and(|key| u32::from(key.code()) == code)
+        })?;
     shortcut(name, shift)
 }
 
@@ -280,6 +281,23 @@ impl ConfiguredMenus {
             .get(*key)
             .filter(|value| !value.is_empty())
             .cloned()
+    }
+
+    /// Action of cell `index` on the open page of `popup`; an emoji is
+    /// typed as text.
+    pub fn action(
+        &self,
+        popup: Popup,
+        emoji: &EmojiPopup,
+        quick: &QuickPopup,
+        index: i32,
+    ) -> Option<String> {
+        match popup {
+            Popup::Emoji => self
+                .emoji(emoji, index)
+                .and_then(|emoji| Action::Text(emoji).format()),
+            Popup::Quick => self.quick_cell(quick.get_page(), index),
+        }
     }
 
     pub fn quick_cell(&self, page: i32, index: i32) -> Option<String> {

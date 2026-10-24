@@ -65,3 +65,6 @@ export enum AppEntryKind { application, process, title }
 
 /// Per-rule tap/hold detection override.
 export enum HoldDetection { inherit, release, press }
+
+/// What the action picker assigns: the native key, a blocked key, or the chosen action.
+export enum PickerBehavior { native, swallow, action }

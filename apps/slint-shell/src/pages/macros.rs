@@ -11,6 +11,7 @@ use lhc_core::{
     config_document::ConfigError,
     mapper::builtin_macros::BUILTIN_MACROS,
     profile::{
+        actions::Action,
         ids, macros,
         model::{AppConfig, Macro, MacroStep},
     },
@@ -109,11 +110,14 @@ fn steps(item: &Macro) -> ModelRc<MacroStepRow> {
         item.steps
             .iter()
             .map(|step| {
-                let pause = step.action.trim().strip_prefix("pause:");
+                let pause = match Action::parse(Some(&step.action)) {
+                    Action::Pause(ms) => Some(ms),
+                    _ => None,
+                };
                 MacroStepRow {
                     action: step.action.clone().into(),
                     pause: pause.is_some(),
-                    pause_ms: pause.unwrap_or_default().trim().into(),
+                    pause_ms: pause.unwrap_or_default().into(),
                     category: super::picker::category_for_value(&step.action),
                 }
             })
@@ -474,7 +478,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             else {
                 return;
             };
-            step.action = format!("pause:{ms}");
+            step.action = Action::Pause(ms.to_string()).format().unwrap_or_default();
             annotate(&ui, &doc, &state.draft);
         }
         save_later(&ui, &doc, &shared);

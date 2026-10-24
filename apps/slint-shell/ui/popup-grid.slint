@@ -18,7 +18,7 @@ export component PopupCell inherits Rectangle {
         x: 8px; y: 5px;
         text: root.hotkey;
         color: root.empty ? Theme.divider : Theme.accent;
-        font-size: 12px;
+        font-size: Theme.font-body;
         font-weight: 700;
     }
     Text {
@@ -54,7 +54,7 @@ export component PopupHeader inherits HorizontalLayout {
     callback dismiss();
     spacing: 10px;
     height: 32px;
-    Text { text: root.title; color: Theme.text; font-size: 16px; font-weight: 600; vertical-alignment: center; }
+    Text { text: root.title; color: Theme.text; font-size: Theme.font-large; font-weight: 600; vertical-alignment: center; }
     if root.page-count > 0 && root.page-name != "": Text {
         text: root.page-name; color: Theme.muted; font-size: 14px;
         vertical-alignment: center; overflow: elide;
@@ -62,13 +62,13 @@ export component PopupHeader inherits HorizontalLayout {
     Rectangle { horizontal-stretch: 1; }
     if root.page-count > 1: Text {
         text: @tr("Tab · {}/{}", root.page + 1, root.page-count);
-        color: Theme.muted; font-size: 12px; vertical-alignment: center;
+        color: Theme.muted; font-size: Theme.font-body; vertical-alignment: center;
     }
     Rectangle {
         width: 28px;
-        border-radius: 6px;
+        border-radius: Theme.radius;
         background: close.has-hover ? Theme.hover : transparent;
-        Text { text: "×"; color: Theme.muted; font-size: 18px; }
+        Text { text: "×"; color: Theme.muted; font-size: Theme.font-heading; }
         close := TouchArea { clicked => { root.dismiss(); } }
     }
 }

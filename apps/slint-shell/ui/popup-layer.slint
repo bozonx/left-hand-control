@@ -5,7 +5,7 @@ import { Assignment } from "types.slint";
 /// One read-only key of the hint: its label and what it does in the layer.
 component HintKey inherits Rectangle {
     in property <LayerKeyCell> cell;
-    border-radius: 6px;
+    border-radius: Theme.radius;
     border-width: 1px;
     border-color: Theme.border;
     background: Theme.card;
@@ -18,7 +18,7 @@ component HintKey inherits Rectangle {
             min-width: 0px;
             text: root.cell.label;
             color: Theme.link;
-            font-size: 12px;
+            font-size: Theme.font-body;
             font-weight: 600;
             horizontal-alignment: center;
             overflow: clip;
@@ -61,6 +61,7 @@ component HintHand inherits VerticalLayout {
 /// keyboard focus and lets the pointer through (see `spell.rs`).
 export component LayerHintPopup inherits Window {
     title: @tr("Layer");
+    // The Spell surface repeats this size (`spell.rs`).
     width: 1290px;
     height: 330px;
     no-frame: true;

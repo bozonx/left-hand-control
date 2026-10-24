@@ -19,6 +19,15 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
     INPUT, INPUT_KEYBOARD, KEYBD_EVENT_FLAGS, KEYEVENTF_KEYUP, SendInput,
 };
 
+/// How long the guard tries to release keys left held by a crashed mapper.
+const RELEASE_TIMEOUT: Duration = Duration::from_secs(30);
+const RELEASE_POLL: Duration = Duration::from_millis(100);
+/// How long the guard process may take to report that it is ready.
+const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(5);
+/// How long the guard process may take to exit after its input closes.
+const EXIT_TIMEOUT: Duration = Duration::from_secs(2);
+const EXIT_POLL: Duration = Duration::from_millis(10);
+
 const ROLE: &str = "LHC_INTERNAL_WINDOWS_INPUT_GUARD";
 static ENABLED: AtomicBool = AtomicBool::new(false);
 static GUARD: Mutex<Option<Guard>> = Mutex::new(None);
@@ -52,12 +61,12 @@ pub fn dispatch() -> Result<bool, String> {
     std::io::stdout().flush().map_err(|e| e.to_string())?;
     let mut held = BTreeSet::new();
     let journal = read_snapshots(&mut std::io::stdin().lock(), &mut held);
-    let deadline = Instant::now() + Duration::from_secs(30);
+    let deadline = Instant::now() + RELEASE_TIMEOUT;
     while !release(&held) {
         if Instant::now() >= deadline {
             return Err("input guard could not release native keys".into());
         }
-        std::thread::sleep(Duration::from_millis(100));
+        std::thread::sleep(RELEASE_POLL);
     }
     journal.map_err(|e| format!("input guard journal: {e}"))?;
     Ok(true)
@@ -152,7 +161,7 @@ impl Guard {
             })
             .map_err(|e| format!("start input guard handshake: {e}"))?;
         let pid = rx
-            .recv_timeout(Duration::from_secs(5))
+            .recv_timeout(HANDSHAKE_TIMEOUT)
             .map_err(|e| format!("input guard readiness: {e}"))??;
         let handle = unsafe {
             OpenProcess(
@@ -224,13 +233,11 @@ impl Guard {
 impl Drop for Guard {
     fn drop(&mut self) {
         self.writer.take();
-        let deadline = Instant::now() + Duration::from_secs(2);
+        let deadline = Instant::now() + EXIT_TIMEOUT;
         loop {
             match self.child.try_wait() {
                 Ok(Some(true)) if !self.failed => return,
-                Ok(None) if Instant::now() < deadline => {
-                    std::thread::sleep(Duration::from_millis(10))
-                }
+                Ok(None) if Instant::now() < deadline => std::thread::sleep(EXIT_POLL),
                 _ => break,
             }
         }

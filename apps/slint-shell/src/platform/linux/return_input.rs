@@ -9,6 +9,9 @@ use std::{
     time::{Duration, Instant},
 };
 
+/// How long pending text waits for the target window to take the focus.
+const PENDING_TEXT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
+
 #[derive(Clone, Default)]
 struct Active(Arc<Mutex<String>>);
 
@@ -118,7 +121,7 @@ impl ReturnInput {
 
     pub fn poll(&mut self, keyboard_released: bool) -> Option<&'static str> {
         let (start, id, text) = self.pending.as_ref()?;
-        if start.elapsed() > Duration::from_secs(2) {
+        if start.elapsed() > PENDING_TEXT_TIMEOUT {
             self.pending = None;
             return Some("return_input_timeout");
         }

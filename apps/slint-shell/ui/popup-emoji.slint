@@ -4,6 +4,7 @@ import { PopupCell, PopupHeader, PopupKeys } from "popup-grid.slint";
 /// Emoji menu: pages of 3 × 5 cells addressed by the left-hand hotkeys.
 export component EmojiPopup inherits Window {
     title: @tr("Emoji");
+    // The Spell surface repeats this size (`spell.rs`).
     width: 480px;
     height: 350px;
     no-frame: true;

@@ -73,7 +73,7 @@ component OpenCount inherits Text {
     visible: ConditionChoices.open-windows-ready;
     text: root.count > 0 ? @tr("Open now: {n} window" | "Open now: {n} windows" % root.count) : @tr("Not open now");
     color: root.count > 0 ? Theme.success : Theme.muted;
-    font-size: 12px;
+    font-size: Theme.font-body;
     overflow: elide;
     min-width: 0px;
     vertical-alignment: center;
@@ -188,7 +188,7 @@ component WindowRow inherits Rectangle {
     in property <image> icon: @image-url("icons/app-window.svg");
     callback clicked();
     height: row.preferred-height;
-    border-radius: 6px;
+    border-radius: Theme.radius;
     background: root.selected ? Theme.selected : touch.has-hover ? Theme.hover : transparent;
     accessible-role: button;
     accessible-label: root.text;
@@ -204,7 +204,7 @@ component WindowRow inherits Rectangle {
                 Text { text: root.text; color: Theme.text; overflow: elide; min-width: 0px; horizontal-stretch: 1; vertical-alignment: center; }
                 if root.badge != "": Badge { text: root.badge; fill: root.warning ? Theme.warning.transparentize(0.75) : Theme.accent.transparentize(0.75); }
             }
-            if root.detail != "": Text { text: root.detail; color: Theme.muted; font-size: 12px; overflow: elide; min-width: 0px; }
+            if root.detail != "": Text { text: root.detail; color: Theme.muted; font-size: Theme.font-body; overflow: elide; min-width: 0px; }
         }
         if root.selected: VerticalLayout { alignment: center;
             Image { width: 16px; height: 16px; colorize: Theme.accent; source: @image-url("icons/check.svg"); }
@@ -233,7 +233,7 @@ export component AppEntryOverlay inherits Rectangle {
         : root.matches > 0 ? @tr("Matches {n} open window" | "Matches {n} open windows" % root.matches) : @tr("Matches no open window");
     private property <bool> shared: root.kind != AppEntryKind.title && ConditionChoices.shared-runtime(AppEntryDialog.text);
     if AppEntryDialog.editing: Rectangle {
-        background: #00000099;
+        background: Theme.scrim;
         TouchArea { clicked => { AppEntryDialog.close(); } scroll-event(event) => { accept } }
         FocusScope {
             focus-on-tab-navigation: false;
@@ -249,15 +249,15 @@ export component AppEntryOverlay inherits Rectangle {
                 background: Theme.surface;
                 border-color: Theme.border;
                 border-width: 1px;
-                border-radius: 12px;
+                border-radius: Theme.radius-dialog;
                 TouchArea {}
                 VerticalLayout { padding: 20px; spacing: 10px;
                     Text {
                         text: AppEntryDialog.index >= 0 ? @tr("Edit application") : @tr("Add application");
-                        color: Theme.text; font-size: 18px; font-weight: 700;
+                        color: Theme.text; font-size: Theme.font-heading; font-weight: 700;
                     }
                     VerticalLayout { spacing: 6px;
-                        Text { text: @tr("Match by"); color: Theme.muted; font-size: 12px; }
+                        Text { text: @tr("Match by"); color: Theme.muted; font-size: Theme.font-body; }
                         ButtonGroup {
                             labels: [@tr("Application"), @tr("Process"), @tr("Window title")];
                             selected-index: root.kind == AppEntryKind.application ? 0 : root.kind == AppEntryKind.process ? 1 : 2;
@@ -296,15 +296,15 @@ export component AppEntryOverlay inherits Rectangle {
                             height: 16px;
                             text: root.status;
                             color: root.duplicate ? Theme.error : root.matches > 0 ? Theme.success : Theme.muted;
-                            font-size: 12px; overflow: elide; vertical-alignment: center;
+                            font-size: Theme.font-body; overflow: elide; vertical-alignment: center;
                         }
                         if root.shared: Text {
                             text: @tr("Many applications run as “{}”, so the name matches all of them. The application ID is more precise.", AppEntryDialog.text);
-                            color: Theme.warning; font-size: 12px; wrap: word-wrap;
+                            color: Theme.warning; font-size: Theme.font-body; wrap: word-wrap;
                         }
                     }
                     if AppEntryDialog.game && root.kind == AppEntryKind.process: VerticalLayout { spacing: 6px;
-                        Text { text: @tr("When it counts"); color: Theme.muted; font-size: 12px; }
+                        Text { text: @tr("When it counts"); color: Theme.muted; font-size: Theme.font-body; }
                         ButtonGroup {
                             labels: [@tr("While its window is active"), @tr("While the process runs")];
                             selected-index: AppEntryDialog.window-only ? 0 : 1;
@@ -314,13 +314,13 @@ export component AppEntryOverlay inherits Rectangle {
                             text: AppEntryDialog.window-only
                                 ? @tr("Counts while a window of the application has the focus.")
                                 : @tr("Counts while a process with this name runs, even without a window or in the background.");
-                            color: Theme.muted; font-size: 12px; wrap: word-wrap;
+                            color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap;
                         }
                     }
                     HorizontalLayout { spacing: 8px; padding-top: 4px;
                         Text {
                             text: root.kind == AppEntryKind.title ? @tr("Window titles") : root.kind == AppEntryKind.process ? @tr("Processes of open windows") : @tr("Open windows");
-                            color: Theme.muted; font-size: 12px; vertical-alignment: center; horizontal-stretch: 1;
+                            color: Theme.muted; font-size: Theme.font-body; vertical-alignment: center; horizontal-stretch: 1;
                         }
                         IconButton {
                             icon: @image-url("icons/refresh-cw.svg"); label: @tr("Refresh list");
@@ -330,7 +330,7 @@ export component AppEntryOverlay inherits Rectangle {
                     }
                     Rectangle {
                         vertical-stretch: 1;
-                        border-width: 1px; border-color: Theme.divider; border-radius: 8px; background: Theme.card;
+                        border-width: 1px; border-color: Theme.divider; border-radius: Theme.radius-large; background: Theme.card;
                         ScrollView { width: 100%; height: 100%; viewport-width: self.visible-width;
                             VerticalLayout { padding: 6px; spacing: 2px; alignment: start;
                                 if ConditionChoices.open-windows-loading && ConditionChoices.open-windows.length == 0: Text { text: @tr("Looking for open windows…"); color: Theme.muted; }
@@ -356,8 +356,8 @@ export component AppEntryOverlay inherits Rectangle {
                                         clicked => { AppEntryDialog.text = process.pattern; input.focus(); }
                                     }
                                     if AppEntryDialog.game: VerticalLayout { spacing: 2px; padding-top: 6px;
-                                        Text { text: @tr("Running without a window"); color: Theme.muted; font-size: 12px; }
-                                        if AppEntryDialog.text == "": Text { text: @tr("Type a name to find processes running without a window."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
+                                        Text { text: @tr("Running without a window"); color: Theme.muted; font-size: Theme.font-body; }
+                                        if AppEntryDialog.text == "": Text { text: @tr("Type a name to find processes running without a window."); color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap; }
                                         for process in root.processes: WindowRow {
                                             text: process;
                                             icon: @image-url("icons/terminal.svg");
@@ -415,7 +415,7 @@ component AppItemRow inherits Rectangle {
     in property <image> icon: ConditionChoices.is-title(root.pattern) ? @image-url("icons/text-cursor-input.svg") : @image-url("icons/app-window.svg");
     callback edit();
     callback remove();
-    height: item-row.preferred-height; border-radius: 6px;
+    height: item-row.preferred-height; border-radius: Theme.radius;
     background: item-touch.has-hover ? Theme.hover : transparent;
     item-touch := TouchArea { mouse-cursor: pointer; clicked => { root.edit(); } }
     item-row := HorizontalLayout {
@@ -426,7 +426,7 @@ component AppItemRow inherits Rectangle {
         VerticalLayout { horizontal-stretch: 1; min-width: 0px; alignment: center; spacing: 2px;
             Text { text: ConditionChoices.text(root.pattern); color: Theme.text; overflow: elide; min-width: 0px; }
             HorizontalLayout { spacing: 6px;
-                if root.kind != "": Text { text: root.kind; color: Theme.muted; font-size: 12px; overflow: elide; min-width: 0px; }
+                if root.kind != "": Text { text: root.kind; color: Theme.muted; font-size: Theme.font-body; overflow: elide; min-width: 0px; }
                 if root.show-count: OpenCount { pattern: root.pattern; horizontal-stretch: 1; }
             }
         }
@@ -464,7 +464,7 @@ export component ApplicationsField inherits VerticalLayout {
         }
     }
     Rectangle {
-        border-width: 1px; border-color: Theme.divider; border-radius: 8px; background: Theme.card;
+        border-width: 1px; border-color: Theme.divider; border-radius: Theme.radius-large; background: Theme.card;
         height: list.preferred-height;
         list := VerticalLayout {
             padding: 6px; spacing: 2px;
@@ -577,7 +577,7 @@ export component GameAppsField inherits VerticalLayout {
         }
     }
     Rectangle {
-        border-width: 1px; border-color: Theme.divider; border-radius: 8px; background: Theme.card;
+        border-width: 1px; border-color: Theme.divider; border-radius: Theme.radius-large; background: Theme.card;
         height: list.preferred-height;
         list := VerticalLayout {
             padding: 6px; spacing: 2px;

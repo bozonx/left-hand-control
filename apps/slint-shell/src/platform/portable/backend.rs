@@ -20,10 +20,11 @@ impl Worker {
 }
 
 pub fn spell_requested() -> Result<bool, Box<dyn std::error::Error>> {
-    match std::env::var("LHC_POPUPS").as_deref() {
-        Ok("spell") => Err("Spell popups are available only on Linux Wayland".into()),
-        Ok("auto" | "winit") | Err(_) => Ok(false),
-        Ok(_) => Err("LHC_POPUPS must be winit, auto or spell".into()),
+    match super::super::PopupMode::from_env()? {
+        super::super::PopupMode::Spell => {
+            Err("Spell popups are available only on Linux Wayland".into())
+        }
+        super::super::PopupMode::Auto | super::super::PopupMode::Winit => Ok(false),
     }
 }
 

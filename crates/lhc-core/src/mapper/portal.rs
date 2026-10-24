@@ -137,10 +137,10 @@ const RESTORE_TOKEN_FILE: &str = "portal-remote-desktop.token";
 // --- XKB keymap lookup for layout-aware text injection ------------------
 
 // evdev keycodes for modifier keys used in text injection.
-const KEY_LEFTCTRL_EVDEV: u32 = 29;
-const KEY_LEFTSHIFT_EVDEV: u32 = 42;
-const KEY_V_EVDEV: u32 = 47;
-const KEY_INSERT_EVDEV: u32 = 110;
+const KEY_LEFTCTRL_EVDEV: u32 = evdev::KeyCode::KEY_LEFTCTRL.code() as u32;
+const KEY_LEFTSHIFT_EVDEV: u32 = evdev::KeyCode::KEY_LEFTSHIFT.code() as u32;
+const KEY_V_EVDEV: u32 = evdev::KeyCode::KEY_V.code() as u32;
+const KEY_INSERT_EVDEV: u32 = evdev::KeyCode::KEY_INSERT.code() as u32;
 
 /// Modifiers and key of a paste shortcut as evdev codes.
 fn paste_keys(shortcut: PasteShortcut) -> (&'static [u32], u32) {
@@ -410,21 +410,27 @@ impl HardwareState {
     }
 
     fn modifiers_released(&self) -> Result<(), TextInputFailure> {
-        let modifiers = [29, 42, 54, 56, 97, 100, 125, 126];
+        use evdev::KeyCode as K;
+        let modifiers = [
+            K::KEY_LEFTCTRL,
+            K::KEY_RIGHTCTRL,
+            K::KEY_LEFTSHIFT,
+            K::KEY_RIGHTSHIFT,
+            K::KEY_LEFTALT,
+            K::KEY_RIGHTALT,
+            K::KEY_LEFTMETA,
+            K::KEY_RIGHTMETA,
+        ];
         // What a grabbed keyboard passes on is checked on the virtual device.
         for (_, device) in self.0.iter().filter(|(grabbed, _)| !grabbed) {
-            if device.supported_keys().is_some_and(|keys| {
-                modifiers
-                    .iter()
-                    .any(|key| keys.contains(evdev::KeyCode::new(*key)))
-            }) {
+            if device
+                .supported_keys()
+                .is_some_and(|keys| modifiers.iter().any(|key| keys.contains(*key)))
+            {
                 let keys = device.get_key_state().map_err(|e| {
                     TextInputFailure::BackendUnavailable(format!("read held modifiers: {e}"))
                 })?;
-                if modifiers
-                    .iter()
-                    .any(|key| keys.contains(evdev::KeyCode::new(*key)))
-                {
+                if modifiers.iter().any(|key| keys.contains(*key)) {
                     return Err(TextInputFailure::BackendUnavailable(
                         "release keyboard modifiers before text input".into(),
                     ));

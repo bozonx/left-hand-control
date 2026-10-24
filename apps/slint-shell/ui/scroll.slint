@@ -12,7 +12,7 @@ component ScrollBar inherits Rectangle {
     private property <length> thumb-size: min(root.track, max(24px, root.track * root.page-size / (root.maximum + root.page-size)));
     private property <length> travel: root.track - root.thumb-size;
     background: Theme.surface;
-    border-radius: 6px;
+    border-radius: Theme.radius;
     Rectangle {
         x: root.horizontal ? (-root.value / max(1px, root.maximum)) * root.travel : 3px;
         y: root.horizontal ? 3px : (-root.value / max(1px, root.maximum)) * root.travel;

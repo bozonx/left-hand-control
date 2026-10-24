@@ -15,3 +15,23 @@ pub use linux::*;
 mod portable;
 #[cfg(not(target_os = "linux"))]
 pub use portable::*;
+
+/// Popup backend requested with `LHC_POPUPS`; unset means winit.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PopupMode {
+    Winit,
+    /// Spell when the compositor supports layer-shell, winit otherwise.
+    Auto,
+    Spell,
+}
+
+impl PopupMode {
+    pub fn from_env() -> Result<Self, String> {
+        match std::env::var("LHC_POPUPS").as_deref() {
+            Err(_) | Ok("winit") => Ok(Self::Winit),
+            Ok("auto") => Ok(Self::Auto),
+            Ok("spell") => Ok(Self::Spell),
+            Ok(_) => Err("LHC_POPUPS must be winit, auto or spell".into()),
+        }
+    }
+}

@@ -262,7 +262,7 @@ fn unique_tmp_path(path: &Path) -> PathBuf {
 
 /// Whether storage and OS registrations stay in the development directory
 /// instead of the user's real session (see [`StoragePaths::resolve`]).
-pub(crate) fn isolated() -> bool {
+pub fn isolated() -> bool {
     cfg!(debug_assertions) || std::env::var_os("LHC_DEV_DIR").is_some()
 }
 

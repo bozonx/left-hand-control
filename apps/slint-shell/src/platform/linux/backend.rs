@@ -15,6 +15,10 @@ use wayland_client::{
     protocol::wl_registry,
 };
 
+/// Poll intervals while the worker quits and while it starts.
+const QUIT_POLL: Duration = Duration::from_millis(10);
+const STARTUP_POLL: Duration = Duration::from_millis(20);
+
 /// How long a starting worker may take to answer on its socket.
 const STARTUP_TIMEOUT: Duration = Duration::from_secs(15);
 /// How long a quitting worker may take before it is killed.
@@ -75,7 +79,7 @@ impl Worker {
             if child.try_wait().ok().flatten().is_some() {
                 break;
             }
-            std::thread::sleep(Duration::from_millis(10));
+            std::thread::sleep(QUIT_POLL);
         }
         if child.try_wait().ok().flatten().is_none() {
             let _ = child.kill();
@@ -95,19 +99,22 @@ impl Drop for Worker {
     }
 }
 
+fn wayland_session() -> bool {
+    lhc_core::platform::linux::detect()
+        .wayland_display
+        .is_some()
+}
+
 /// Whether popups should run in the Spell worker. Quick: only checks the
 /// environment and asks the compositor for layer-shell.
 pub fn spell_requested() -> Result<bool, Box<dyn std::error::Error>> {
-    let mode = std::env::var("LHC_POPUPS").unwrap_or_else(|_| "winit".into());
-    if mode == "winit" {
+    let mode = super::super::PopupMode::from_env()?;
+    if mode == super::super::PopupMode::Winit {
         return Ok(false);
     }
-    if mode != "auto" && mode != "spell" {
-        return Err("LHC_POPUPS must be winit, auto or spell".into());
-    }
-    let available = std::env::var_os("WAYLAND_DISPLAY").is_some() && layer_shell_available()?;
+    let available = wayland_session() && layer_shell_available()?;
     if !available {
-        if mode == "spell" {
+        if mode == super::super::PopupMode::Spell {
             return Err("compositor does not advertise zwlr_layer_shell_v1".into());
         }
         log::info!(
@@ -125,7 +132,7 @@ pub fn spell_requested() -> Result<bool, Box<dyn std::error::Error>> {
 /// requested: a Spell build on a compositor with layer-shell.
 pub fn layer_shell_supported() -> bool {
     cfg!(feature = "spell")
-        && std::env::var_os("WAYLAND_DISPLAY").is_some()
+        && wayland_session()
         && layer_shell_available().unwrap_or_else(|error| {
             log::warn!("layer-shell check: {error}");
             false
@@ -176,7 +183,7 @@ pub fn spawn() -> Result<Worker, Box<dyn std::error::Error>> {
         if Instant::now() >= deadline {
             return Err("Spell worker startup timed out".into());
         }
-        std::thread::sleep(Duration::from_millis(20));
+        std::thread::sleep(STARTUP_POLL);
     }
     log::info!(
         "popup backend=spell/skia-software; worker pid={}",

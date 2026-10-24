@@ -82,7 +82,7 @@ component HotkeyGrid inherits Rectangle {
     changed current-page => { if root.dragging { root.drag-over = root.drop-at(PaletteDrag.x - root.absolute-position.x, PaletteDrag.y - root.absolute-position.y); } }
     min-width: 5 * 64px + 2 * self.pad + 4 * self.gap;
     height: 2 * self.pad + 3 * self.cell-height + 2 * self.gap;
-    border-radius: 8px;
+    border-radius: Theme.radius-large;
     border-width: 1px;
     border-color: Theme.border;
     background: Theme.surface;
@@ -120,7 +120,7 @@ component HotkeyGrid inherits Rectangle {
         x: root.pad + mod(root.drag-over, 5) * (root.cell-width + root.gap);
         y: root.pad + floor(root.drag-over / 5) * (root.cell-height + root.gap);
         width: root.cell-width; height: root.cell-height;
-        border-width: 2px; border-color: Theme.link; border-radius: 6px; background: Theme.hover;
+        border-width: 2px; border-color: Theme.link; border-radius: Theme.radius; background: Theme.hover;
     }
     for cell[index] in MenuEditor.cells: Rectangle {
         x: root.pad + mod(root.preview(index), 5) * (root.cell-width + root.gap);
@@ -128,7 +128,7 @@ component HotkeyGrid inherits Rectangle {
         width: root.cell-width;
         height: root.cell-height;
         clip: true;
-        border-radius: 6px;
+        border-radius: Theme.radius;
         border-width: (PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? 2px : 1px;
         border-color: (PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.link : Theme.border;
         background: (PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == root.preview(index)) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.hover : Theme.card;
@@ -140,7 +140,7 @@ component HotkeyGrid inherits Rectangle {
             padding: 8px;
             spacing: 4px;
             HorizontalLayout {
-                Text { horizontal-stretch: 1; text: MenuEditor.cells[root.preview(index)].key; color: Theme.link; font-family: "monospace"; font-size: 12px; font-weight: 600; }
+                Text { horizontal-stretch: 1; text: MenuEditor.cells[root.preview(index)].key; color: Theme.link; font-family: "monospace"; font-size: Theme.font-body; font-weight: 600; }
                 Image { width: 14px; height: 14px; source: @image-url("icons/grip.svg"); colorize: Theme.muted; accessible-label: @tr("Drag"); }
             }
             if root.emoji || cell.value == "": Text {
@@ -166,7 +166,7 @@ component HotkeyGrid inherits Rectangle {
                     vertical-alignment: center;
                 }
             }
-            if !root.emoji && cell.value != "": Text { text: cell.value == "" ? "—" : cell.value; color: Theme.muted; font-family: "monospace"; font-size: 11px; overflow: elide; }
+            if !root.emoji && cell.value != "": Text { text: cell.value == "" ? "—" : cell.value; color: Theme.muted; font-family: "monospace"; font-size: Theme.font-small; overflow: elide; }
             if !root.emoji && cell.value != "": Rectangle { vertical-stretch: 1; }
         }
     }
@@ -228,7 +228,7 @@ component DragPreview inherits Rectangle {
     width: PaletteDrag.text-item ? 200px : 72px;
     height: PaletteDrag.text-item ? 76px : 64px;
     clip: true;
-    border-radius: 6px; border-width: 2px; border-color: Theme.link;
+    border-radius: Theme.radius; border-width: 2px; border-color: Theme.link;
     background: Theme.card; opacity: 0.95;
     Text {
         x: 10px; y: 8px;
@@ -329,7 +329,7 @@ component EmojiButton inherits Rectangle {
     horizontal-stretch: 1;
     min-width: 0px;
     preferred-width: 40px;
-    border-radius: 6px;
+    border-radius: Theme.radius;
     border-width: 1px;
     border-color: focus.has-focus ? Theme.text : touch.has-hover ? Theme.link : Theme.border;
     background: touch.has-hover ? Theme.hover : Theme.surface;
@@ -455,7 +455,7 @@ export component EmojiPage inherits Rectangle {
                                         : category.id == "travel" ? @tr("Travel & Places")
                                         : @tr("UTF Symbols");
                                     color: Theme.muted;
-                                    font-size: 11px;
+                                    font-size: Theme.font-small;
                                     font-weight: 700;
                                 }
                                 for row in ceil(category.items.length / 6): HorizontalLayout {
@@ -469,7 +469,7 @@ export component EmojiPage inherits Rectangle {
                             VerticalLayout {
                                 spacing: 6px;
                                 padding-bottom: 8px;
-                                Text { text: @tr("Texts"); color: Theme.muted; font-size: 11px; font-weight: 700; }
+                                Text { text: @tr("Texts"); color: Theme.muted; font-size: Theme.font-small; font-weight: 700; }
                                 for row in ceil(root.texts.length / 2): HorizontalLayout {
                                     spacing: 6px;
                                     for col in 2: EmojiButton {
@@ -559,7 +559,7 @@ export component QuickActionsPage inherits Rectangle {
                                             spacing: 4px;
                                             Rectangle {
                                                 height: 34px;
-                                                border-radius: 6px;
+                                                border-radius: Theme.radius;
                                                 border-width: 1px;
                                                 border-color: action-focus.has-focus ? Theme.text : Theme.border;
                                                 background: action-touch.has-hover ? Theme.hover : Theme.surface;
@@ -574,7 +574,7 @@ export component QuickActionsPage inherits Rectangle {
                                                     text: MenuEditor.value;
                                                     color: Theme.text;
                                                     font-family: "monospace";
-                                                    font-size: 12px;
+                                                    font-size: Theme.font-body;
                                                     overflow: elide;
                                                     vertical-alignment: center;
                                                 }

@@ -211,22 +211,17 @@ impl App {
     }
 
     fn choose(&self, popup: Popup, index: i32) {
-        let action = match popup {
-            Popup::Emoji => self
-                .menus()
-                .emoji(&self.emoji, index)
-                .map(|emoji| format!("text:{emoji}")),
-            Popup::Quick => self.menus().quick_cell(self.quick.get_page(), index),
+        let Some(action) = self.menus().action(popup, &self.emoji, &self.quick, index) else {
+            return;
         };
-        let Some(action) = action else { return };
         self.choose_action(popup, action);
     }
 
     fn choose_action(&self, popup: Popup, action: String) {
         self.defer_hide(Window::Popup(popup));
         #[cfg(not(target_os = "linux"))]
-        if let Some(text) = action.strip_prefix("text:") {
-            self.return_input.borrow_mut().selected(text.to_owned());
+        if let Some(text) = crate::popup_model::typed_text(&action) {
+            self.return_input.borrow_mut().selected(text);
             return;
         }
         // Run once the popup no longer has the keyboard focus.

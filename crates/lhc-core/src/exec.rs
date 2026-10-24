@@ -7,6 +7,9 @@ use std::process::{Command, Output, Stdio};
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
+/// Poll interval while waiting for a child process.
+const WAIT_POLL: Duration = Duration::from_millis(5);
+
 /// Run a command and wait at most `timeout_ms` for it to finish.
 ///
 /// Pipe readers run on helper threads so inherited pipes cannot keep the
@@ -74,7 +77,7 @@ pub(crate) fn run_cmd_with_cancel(
         std::thread::sleep(
             deadline
                 .saturating_duration_since(Instant::now())
-                .min(Duration::from_millis(5)),
+                .min(WAIT_POLL),
         );
     }
 }

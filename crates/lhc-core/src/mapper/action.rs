@@ -4,6 +4,7 @@
 use super::keys::code_to_key;
 use super::system::{SysAction, SysCommand};
 use crate::mapper::key_code::KeyCode;
+use crate::profile::actions::Action;
 use std::time::Duration;
 
 /// A keystroke = optional modifiers + one main key.
@@ -28,14 +29,17 @@ pub enum MacroStepItem {
 }
 
 pub fn explicit_text(action: &str) -> Option<String> {
-    action
-        .trim_start()
-        .strip_prefix("text:")
-        .map(|text| text.to_string())
+    match Action::parse(Some(action)) {
+        Action::Text(text) => Some(text),
+        _ => None,
+    }
 }
 
 pub fn explicit_pause(action: &str) -> Option<Duration> {
-    pause_duration(action.trim().strip_prefix("pause:")?)
+    match Action::parse(Some(action)) {
+        Action::Pause(ms) => pause_duration(&ms),
+        _ => None,
+    }
 }
 
 /// Duration of a `pause:` payload: plain digits within

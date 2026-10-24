@@ -122,7 +122,7 @@ component BuiltinList inherits VerticalLayout {
         }
     }
     if root.expanded: Text { text: root.items; color: Theme.muted; wrap: word-wrap; }
-    if root.expanded: Text { text: @tr("Built-in list. To count one of these anyway, add it to Always a game under Your rules."); color: Theme.muted; font-size: 12px; wrap: word-wrap; }
+    if root.expanded: Text { text: @tr("Built-in list. To count one of these anyway, add it to Always a game under Your rules."); color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap; }
 }
 
 /// One game-detection source: a check box, its explanation and, when the
@@ -159,7 +159,7 @@ component Section inherits Rectangle {
         padding-bottom: 16px;
         spacing: 24px;
         alignment: start;
-        if root.title != "": Text { text: root.title; color: Theme.text; font-size: 18px; font-weight: 600; vertical-stretch: 0; }
+        if root.title != "": Text { text: root.title; color: Theme.text; font-size: Theme.font-heading; font-weight: 600; vertical-stretch: 0; }
         @children
     }
 }
@@ -189,7 +189,7 @@ component TimingField inherits VerticalLayout {
         reset => { root.value = root.standard; root.reset(); }
         HorizontalLayout { spacing: 6px; alignment: start;
             NumericInput { field-width: 100px; label: root.label; minimum: root.minimum; maximum: root.maximum; step: root.step; text <=> root.value; edited => { root.edited(); } }
-            Text { text: @tr("ms"); color: Theme.muted; font-size: 12px; vertical-alignment: center; }
+            Text { text: @tr("ms"); color: Theme.muted; font-size: Theme.font-body; vertical-alignment: center; }
         }
     }
 }
@@ -229,7 +229,7 @@ component DeviceField inherits HorizontalLayout {
             VerticalLayout { alignment: center; Image { width: 16px; height: 16px; source: root.icon; colorize: Theme.text; } }
             Text { text: root.label; color: Theme.text; vertical-alignment: center; }
         }
-        if root.note != "": Text { text: root.note; color: Theme.muted; font-size: 12px; }
+        if root.note != "": Text { text: root.note; color: Theme.muted; font-size: Theme.font-body; }
     }
     VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: 6px; alignment: start;
         @children
@@ -248,7 +248,7 @@ component MapperStatusCard inherits Rectangle {
     vertical-stretch: 0;
     max-width: 576px;
     min-height: content.preferred-height;
-    border-radius: 8px;
+    border-radius: Theme.radius-large;
     border-width: 1px;
     border-color: root.failed ? Theme.error.transparentize(0.5) : root.running ? Theme.success.transparentize(0.5) : Theme.divider;
     background: root.failed ? Theme.error.transparentize(0.9) : root.running ? Theme.success.transparentize(0.9) : Theme.card;
@@ -276,21 +276,21 @@ component MapperStatusCard inherits Rectangle {
                     : root.failed ? Locale.text(AppState.mapper-error)
                     : root.ready ? @tr("Keys work as usual. Start the mapper to apply your layouts.")
                     : @tr("Select a keyboard below to start the mapper.");
-                color: root.failed ? Theme.text : Theme.muted; font-size: 12px; wrap: word-wrap;
+                color: root.failed ? Theme.text : Theme.muted; font-size: Theme.font-body; wrap: word-wrap;
             }
             if root.crashed: Text {
                 text: @tr("Stopped {} ago after running for {}.", root.duration(AppState.mapper-stopped-ago), root.duration(AppState.mapper-ran));
-                color: Theme.muted; font-size: 12px; wrap: word-wrap;
+                color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap;
             }
             if !root.running && !root.busy: VerticalLayout { spacing: 4px;
                 for issue in SettingsEditor.input-issues: Text {
                     text: "⚠ " + Locale.text(issue);
-                    color: Theme.warning; font-size: 12px; wrap: word-wrap;
+                    color: Theme.warning; font-size: Theme.font-body; wrap: word-wrap;
                 }
             }
             if root.failed && !root.crashed && AppState.is-linux && SettingsEditor.input-issues.length == 0: Text {
                 text: @tr("The mapper reads from /dev/input/eventX and emits through uinput. If Start fails, grant access to those devices: usually the input group plus a udev rule for /dev/uinput.");
-                color: Theme.muted; font-size: 12px; wrap: word-wrap;
+                color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap;
             }
         }
         VerticalLayout { alignment: center;
@@ -331,7 +331,7 @@ export component SettingsPage inherits VerticalBox {
                 property <SettingsTab> tab-id: [SettingsTab.general, SettingsTab.mapper, SettingsTab.key-behavior, SettingsTab.game-mode, SettingsTab.commands, SettingsTab.accessibility][index];
                 visible: (tab-id != SettingsTab.game-mode && tab-id != SettingsTab.commands) || AppState.in-development;
                 height: self.visible ? 38px : 0px;
-                border-radius: 6px;
+                border-radius: Theme.radius;
                 border-width: focus.has-focus ? 2px : 0px;
                 border-color: Theme.focus;
                 background: SettingsEditor.tab == tab-id ? Theme.selected : touch.has-hover ? Theme.hover : transparent;
@@ -485,9 +485,9 @@ export component SettingsPage inherits VerticalBox {
                             }
                             if item.first: HorizontalLayout {
                                 spacing: 16px;
-                                Text { width: 30%; text: @tr("Assigned to"); color: Theme.muted; font-size: 12px; }
-                                Text { width: 20%; text: @tr("Name"); color: Theme.muted; font-size: 12px; }
-                                Text { horizontal-stretch: 1; text: @tr("Command"); color: Theme.muted; font-size: 12px; }
+                                Text { width: 30%; text: @tr("Assigned to"); color: Theme.muted; font-size: Theme.font-body; }
+                                Text { width: 20%; text: @tr("Name"); color: Theme.muted; font-size: Theme.font-body; }
+                                Text { horizontal-stretch: 1; text: @tr("Command"); color: Theme.muted; font-size: Theme.font-body; }
                             }
                             Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }
                             HorizontalLayout {
@@ -525,8 +525,8 @@ export component SettingsPage inherits VerticalBox {
                                     Rectangle {
                                         clip: true;
                                         height: min(script.preferred-height, parent.limit);
-                                        line := Text { visible: false; text: "X"; font-family: "monospace"; font-size: 12px; }
-                                        script := Text { x: 0px; y: 0px; width: parent.width; text: item.script; color: Theme.text; font-family: "monospace"; font-size: 12px; wrap: word-wrap; vertical-alignment: top; }
+                                        line := Text { visible: false; text: "X"; font-family: "monospace"; font-size: Theme.font-body; }
+                                        script := Text { x: 0px; y: 0px; width: parent.width; text: item.script; color: Theme.text; font-family: "monospace"; font-size: Theme.font-body; wrap: word-wrap; vertical-alignment: top; }
                                     }
                                     // Collapsed rather than conditional: a conditional child would make
                                     // the column width depend on the text height.
@@ -570,7 +570,7 @@ export component SettingsPage inherits VerticalBox {
                             label: @tr("Keyboard");
                             DevicePicker { label: @tr("Keyboard device"); placeholder: @tr("Not selected"); suggested-label: @tr("Looks like a keyboard"); enabled: AppState.mapper-supported && !AppState.mapper-busy; choices: SettingsEditor.input-devices; selected-index: SettingsEditor.selected-device; selected(index) => { SettingsEditor.select-device(index); apply-devices(); } }
                             if SettingsEditor.keyboard-manual: TextField { enabled: AppState.mapper-supported && !AppState.mapper-busy; text <=> SettingsEditor.keyboard-device-path; placeholder-text: @tr("Keyboard device path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); apply-devices(); } }
-                            if !SettingsEditor.keyboard-manual && SettingsEditor.keyboard-device-path != "" && SettingsEditor.keyboard-device-path != "windows:keyboard": Text { text: SettingsEditor.keyboard-device-path; color: Theme.muted; font-size: 12px; overflow: elide; }
+                            if !SettingsEditor.keyboard-manual && SettingsEditor.keyboard-device-path != "" && SettingsEditor.keyboard-device-path != "windows:keyboard": Text { text: SettingsEditor.keyboard-device-path; color: Theme.muted; font-size: Theme.font-body; overflow: elide; }
                         }
                         DeviceField {
                             icon: @image-url("icons/mouse.svg");
@@ -578,7 +578,7 @@ export component SettingsPage inherits VerticalBox {
                             note: @tr("Optional");
                             DevicePicker { label: @tr("Mouse (optional)"); placeholder: @tr("Not selected (no mouse support)"); suggested-label: @tr("Looks like a mouse"); enabled: AppState.mapper-supported && !AppState.mapper-busy; choices: SettingsEditor.mouse-devices; selected-index: SettingsEditor.selected-mouse; selected(index) => { SettingsEditor.select-mouse(index); apply-devices(); } }
                             if SettingsEditor.mouse-manual: TextField { enabled: AppState.mapper-supported && !AppState.mapper-busy; text <=> SettingsEditor.mouse-device-path; placeholder-text: @tr("Optional device path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); apply-devices(); } }
-                            if !SettingsEditor.mouse-manual && SettingsEditor.mouse-device-path != "" && SettingsEditor.mouse-device-path != "windows:mouse": Text { text: SettingsEditor.mouse-device-path; color: Theme.muted; font-size: 12px; overflow: elide; }
+                            if !SettingsEditor.mouse-manual && SettingsEditor.mouse-device-path != "" && SettingsEditor.mouse-device-path != "windows:mouse": Text { text: SettingsEditor.mouse-device-path; color: Theme.muted; font-size: Theme.font-body; overflow: elide; }
                         }
                     }
                 }
@@ -725,7 +725,7 @@ export component SettingsPage inherits VerticalBox {
                 if AppState.in-development && SettingsEditor.tab == SettingsTab.game-mode: Section {
                     HorizontalLayout {
                         vertical-stretch: 0; spacing: 8px; alignment: start;
-                        Text { text: @tr("Game mode"); color: Theme.text; font-size: 18px; font-weight: 600; vertical-alignment: center; }
+                        Text { text: @tr("Game mode"); color: Theme.text; font-size: Theme.font-heading; font-weight: 600; vertical-alignment: center; }
                         VerticalLayout { alignment: center; InfoTip { text: @tr("Game mode turns on rules and automatic layout rules that have a game-mode condition. Automatic layout rules apply only when the layout is chosen automatically (Layouts page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Never a game” takes priority over automatic detection and “Always a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."); } }
                     }
                     VerticalBox {
@@ -870,7 +870,7 @@ export component CommandDialogOverlay inherits FocusScope {
     enabled: SettingsEditor.full-command != "";
     key-pressed(event) => { if event.text == Key.Escape { SettingsEditor.full-command = ""; return accept; } return reject; }
     if SettingsEditor.full-command != "": Rectangle {
-        background: #00000099;
+        background: Theme.scrim;
         TouchArea { clicked => { SettingsEditor.full-command = ""; } scroll-event(event) => { accept } }
         Rectangle {
             x: (parent.width - self.width) / 2;
@@ -880,12 +880,12 @@ export component CommandDialogOverlay inherits FocusScope {
             background: Theme.surface;
             border-color: Theme.border;
             border-width: 1px;
-            border-radius: 12px;
+            border-radius: Theme.radius-dialog;
             TouchArea {}
             dialog-box := VerticalBox { padding: 22px; spacing: 12px;
                 Text {
                     text: SettingsEditor.full-command-name != "" ? SettingsEditor.full-command-name : @tr("Command");
-                    color: Theme.text; font-size: 18px; font-weight: 700; wrap: word-wrap;
+                    color: Theme.text; font-size: Theme.font-heading; font-weight: 700; wrap: word-wrap;
                 }
                 ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
                     preferred-height: full-layout.preferred-height;
@@ -893,7 +893,7 @@ export component CommandDialogOverlay inherits FocusScope {
                         full-text := TextInput {
                             text: SettingsEditor.full-command;
                             read-only: true; single-line: false; wrap: word-wrap;
-                            color: Theme.text; font-family: "monospace"; font-size: 12px;
+                            color: Theme.text; font-family: "monospace"; font-size: Theme.font-body;
                         }
                     }
                 }

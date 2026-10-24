@@ -39,7 +39,7 @@ export component KeyboardPage inherits VerticalLayout {
                 for col in KeyEditor.columns: Rectangle {
                     property <int> index: row * KeyEditor.columns + col;
                     height: 66px; min-width: 0px; horizontal-stretch: 1;
-                    border-radius: 6px;
+                    border-radius: Theme.radius;
                     border-width: KeyEditor.selected == self.index ? 2px : 1px;
                     border-color: KeyEditor.selected == self.index ? Theme.accent : Theme.border;
                     background: key-touch.has-hover ? Theme.hover : Theme.card;
@@ -49,7 +49,7 @@ export component KeyboardPage inherits VerticalLayout {
                     accessible-action-default => { KeyEditor.edit(self.index); }
                     VerticalLayout {
                         padding: 5px;
-                        Text { min-width: 0px; overflow: elide; text: KeyEditor.keys[index].label; color: Theme.text; font-size: 12px; }
+                        Text { min-width: 0px; overflow: elide; text: KeyEditor.keys[index].label; color: Theme.text; font-size: Theme.font-body; }
                         HorizontalLayout { spacing: 3px;
                             if KeyEditor.keys[index].action != "": CategoryIcon { category: KeyEditor.keys[index].category; }
                             Text { min-width: 0px; horizontal-stretch: 1; text: KeyEditor.keys[index].action == "" ? "—" : KeyEditor.keys[index].action; color: Theme.muted; font-size: 10px; overflow: elide; vertical-alignment: center; }

@@ -17,6 +17,15 @@ use std::thread;
 use std::time::Duration;
 
 const VIRTUAL_DEVICE_NAME: &str = "LeftHandControl Virtual Keyboard";
+/// USB id of the virtual keyboard: the Linux Foundation vendor id with its
+/// "multifunction composite gadget" product, used by software devices.
+const VIRTUAL_VENDOR_ID: u16 = 0x1d6b;
+const VIRTUAL_PRODUCT_ID: u16 = 0x0104;
+const VIRTUAL_VERSION: u16 = 1;
+/// Keyboard block of evdev key codes.
+const KEYBOARD_KEY_CODES: std::ops::RangeInclusive<u16> = 1..=248;
+/// Extended `KEY_*` block above the `BTN_*` range (256..=351).
+const EXTENDED_KEY_CODES: std::ops::RangeInclusive<u16> = 352..=511;
 const DEVICE_DISCONNECTED: &str = "mapper input device disconnected";
 const START_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -494,7 +503,7 @@ fn run_device(
     // which the virtual device must register or their emits are silently
     // dropped by uinput. The BTN_* block (256..=351) is skipped on purpose
     // so the device is not classified as a mouse/joystick.
-    for code in (1u16..=248).chain(352..=511) {
+    for code in KEYBOARD_KEY_CODES.chain(EXTENDED_KEY_CODES) {
         all_keys.insert(KeyCode::new(code));
     }
     // Catalog keys beyond that block, such as KEY_TOUCHPAD_TOGGLE (0x212).
@@ -502,14 +511,19 @@ fn run_device(
         .iter()
         .flat_map(|keys| keys.iter())
         .filter_map(|name| super::keys::code_to_key(name))
-        .filter(|key| key.code() > 511)
+        .filter(|key| key.code() > *EXTENDED_KEY_CODES.end())
     {
         all_keys.insert(key);
     }
     let virt = VirtualDevice::builder()
         .map_err(|e| format!("uinput builder (need /dev/uinput access?): {e}"))?
         .name(VIRTUAL_DEVICE_NAME)
-        .input_id(InputId::new(BusType::BUS_USB, 0x1d6b, 0x0104, 1))
+        .input_id(InputId::new(
+            BusType::BUS_USB,
+            VIRTUAL_VENDOR_ID,
+            VIRTUAL_PRODUCT_ID,
+            VIRTUAL_VERSION,
+        ))
         .with_keys(&all_keys)
         .map_err(|e| format!("uinput with_keys: {e}"))?
         .build()

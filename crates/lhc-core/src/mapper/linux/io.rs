@@ -1,4 +1,7 @@
 use super::super::engine::{Engine, Out};
+
+/// How long a system D-Bus call may take before it is abandoned.
+const DBUS_CALL_TIMEOUT: Duration = Duration::from_secs(5);
 pub(super) use super::super::output::{
     EventSink, LoopDriver, OutputHold, SideEffects, flush_out_with, process_iteration_with,
 };
@@ -12,6 +15,9 @@ use std::sync::OnceLock;
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant, SystemTime};
+
+/// Pause before trying to open the shared mouse again.
+const MOUSE_RETRY: Duration = Duration::from_secs(1);
 
 nix::ioctl_write_ptr!(set_event_clock, b'E', 0xa0, libc::c_int);
 
@@ -184,7 +190,7 @@ impl MultiDeviceLoopDriver {
                 slots
             },
             mouse_path: mouse_path.map(str::to_owned),
-            next_mouse_retry: Instant::now() + Duration::from_secs(1),
+            next_mouse_retry: Instant::now() + MOUSE_RETRY,
             hotkeys: PopupHotkeys::default(),
             hotkeys_enabled: std::env::var("LHC_HOTKEYS").as_deref() != Ok("off"),
             wake_rx,
@@ -219,7 +225,7 @@ impl MultiDeviceLoopDriver {
         if self.devices[1].is_some() || Instant::now() < self.next_mouse_retry {
             return;
         }
-        self.next_mouse_retry = Instant::now() + Duration::from_secs(1);
+        self.next_mouse_retry = Instant::now() + MOUSE_RETRY;
         let Some(path) = self.mouse_path.as_deref() else {
             return;
         };
@@ -364,7 +370,7 @@ impl LoopDriver for MultiDeviceLoopDriver {
                     disconnected = true;
                     self.keys
                         .release_source(source, &mut events, event_clock_now()?);
-                    self.next_mouse_retry = Instant::now() + Duration::from_secs(1);
+                    self.next_mouse_retry = Instant::now() + MOUSE_RETRY;
                 }
                 Err(e) => return Err(format!("fetch_events: {e}")),
             };
@@ -407,8 +413,8 @@ impl PopupHotkeys {
             return None;
         }
         let action = match key {
-            KeyCode::KEY_F11 => "app:showEmojiMenuLast",
-            KeyCode::KEY_F12 => "app:showQuickMenuLast",
+            KeyCode::KEY_F11 => crate::profile::actions::SHOW_EMOJI_MENU_LAST,
+            KeyCode::KEY_F12 => crate::profile::actions::SHOW_QUICK_MENU_LAST,
             _ => return None,
         };
         self.consumed.insert(key);
@@ -598,7 +604,7 @@ fn run_dbus_worker(rx: mpsc::Receiver<DbusCall>) {
             let _ = tx.send(dispatch_dbus_call(&c, &call_clone));
         });
 
-        match done.recv_timeout(Duration::from_secs(5)) {
+        match done.recv_timeout(DBUS_CALL_TIMEOUT) {
             Ok(Ok(())) => {
                 if call.destination == "org.kde.keyboard" && call.method == "setLayout" {
                     super::super::refresh_layout();

@@ -16,6 +16,9 @@ use lhc_core::profile::{
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::rc::Rc;
 
+/// How long a newly created rule stays highlighted.
+const CREATED_HIGHLIGHT: std::time::Duration = std::time::Duration::from_millis(1400);
+
 fn join(value: &Option<Vec<String>>) -> String {
     value
         .as_ref()
@@ -367,7 +370,7 @@ pub(super) fn choose(ui: &SettingsWindow, document: &Document, value: &str) -> R
         editor.set_selected(0);
         editor.set_created(0);
         let weak = ui.as_weak();
-        slint::Timer::single_shot(std::time::Duration::from_millis(1400), move || {
+        slint::Timer::single_shot(CREATED_HIGHLIGHT, move || {
             if let Some(ui) = weak.upgrade() {
                 ui.global::<RulesEditor>().set_created(-1);
             }

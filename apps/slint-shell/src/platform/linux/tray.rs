@@ -113,7 +113,7 @@ impl ksni::Tray for Tray {
     }
 
     fn id(&self) -> String {
-        "lhc-slint-shell".into()
+        crate::ipc::RUNTIME_NAME.into()
     }
     fn title(&self) -> String {
         i18n::application_name(self.language())

@@ -136,7 +136,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         keys.invoke_edit(33);
         assert!(picker.get_opened());
         assert_eq!(keys.get_selected(), 33);
-        picker.invoke_select_behavior(2);
+        picker.invoke_select_behavior(PickerBehavior::Action);
         picker.set_value("text:Привет 👋".into());
         picker.invoke_apply();
         assert!(!picker.get_opened());
@@ -153,7 +153,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Cancel keeps the saved value.
         keys.invoke_edit(33);
         assert_eq!(picker.get_value(), "text:Привет 👋");
-        picker.invoke_select_behavior(2);
+        picker.invoke_select_behavior(PickerBehavior::Action);
         picker.set_value("Ctrl+KeyC".into());
         picker.invoke_dismiss_picker();
         assert_eq!(
@@ -163,12 +163,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // Pauses are only valid inside macros.
         keys.invoke_edit(33);
-        picker.invoke_select_behavior(2);
+        picker.invoke_select_behavior(PickerBehavior::Action);
         picker.set_value("pause:250".into());
         picker.invoke_apply();
         assert!(picker.get_opened());
         assert!(!picker.get_valid());
-        picker.invoke_select_behavior(2);
+        picker.invoke_select_behavior(PickerBehavior::Action);
         picker.set_value("Ctrl+Shift+KeyK".into());
         picker.invoke_apply();
         assert_eq!(

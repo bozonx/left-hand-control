@@ -5,6 +5,15 @@ use enigo::{Enigo, Keyboard, Settings};
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
+/// Pause that lets the closing popup give up the focus.
+const POPUP_CLOSE_DELAY: std::time::Duration = std::time::Duration::from_millis(300);
+/// How long text input waits for held modifiers to be released.
+const MODIFIER_RELEASE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
+/// How long the target window may take to come to the foreground.
+#[cfg(target_os = "windows")]
+const FOREGROUND_TIMEOUT: std::time::Duration = std::time::Duration::from_millis(500);
+const POLL_INTERVAL: std::time::Duration = std::time::Duration::from_millis(10);
+
 static GENERATION: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Default)]
@@ -40,7 +49,7 @@ impl ReturnInput {
             .name("lhc-native-text".into())
             .spawn(move || {
                 let valid = || GENERATION.load(Ordering::SeqCst) == generation;
-                std::thread::sleep(std::time::Duration::from_millis(300));
+                std::thread::sleep(POPUP_CLOSE_DELAY);
                 if !valid() {
                     return;
                 }
@@ -48,13 +57,13 @@ impl ReturnInput {
                     log::error!("native focus restore failed: {error}");
                     return;
                 }
-                let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+                let deadline = std::time::Instant::now() + MODIFIER_RELEASE_TIMEOUT;
                 while valid() && target_is_foreground(&target) && !modifiers_released() {
                     if std::time::Instant::now() >= deadline {
                         log::warn!("native text input cancelled: modifiers remain held");
                         return;
                     }
-                    std::thread::sleep(std::time::Duration::from_millis(10));
+                    std::thread::sleep(POLL_INTERVAL);
                 }
                 let check = || valid() && target_is_foreground(&target) && modifiers_released();
                 if !check() {
@@ -132,12 +141,12 @@ fn restore_target(
             return Err("SetForegroundWindow rejected the target".into());
         }
     }
-    let deadline = std::time::Instant::now() + std::time::Duration::from_millis(500);
+    let deadline = std::time::Instant::now() + FOREGROUND_TIMEOUT;
     while std::time::Instant::now() < deadline {
         if target_is_foreground(target) {
             return Ok(());
         }
-        std::thread::sleep(std::time::Duration::from_millis(10));
+        std::thread::sleep(POLL_INTERVAL);
     }
     Err("target did not become foreground".into())
 }

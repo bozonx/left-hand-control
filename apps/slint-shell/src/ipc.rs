@@ -26,9 +26,24 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
+/// Name of the per-user runtime directories and of the tray item. Kept
+/// from the shell's former name so running instances still find each other.
+pub const RUNTIME_NAME: &str = "lhc-slint-shell";
+
 /// Socket file name of the settings process.
 #[cfg(unix)]
 pub const DEFAULT_SOCKET: &str = "lhc-slint-shell.sock";
+
+/// Upper bound of one request line; a request is a short JSON object.
+const MAX_REQUEST_BYTES: u64 = 4 * 1024 * 1024;
+/// Upper bound of the server's reply line (`queued` or an error).
+const MAX_REPLY_BYTES: u64 = 4096;
+/// How often the nonblocking listener checks for a connection or a stop.
+const ACCEPT_POLL: Duration = Duration::from_millis(20);
+/// Read/write timeout of an accepted request.
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(1);
+/// Read/write timeout of a client waiting for the reply.
+const CLIENT_TIMEOUT: Duration = Duration::from_secs(2);
 
 #[derive(Serialize, Deserialize)]
 struct Request {
@@ -51,8 +66,8 @@ pub fn socket_dir() -> std::io::Result<PathBuf> {
     use std::os::unix::fs::{DirBuilderExt, MetadataExt, PermissionsExt};
     let uid = unsafe { libc::getuid() };
     let dir = match std::env::var_os("XDG_RUNTIME_DIR") {
-        Some(runtime) => PathBuf::from(runtime).join("lhc-slint-shell"),
-        None => std::env::temp_dir().join(format!("lhc-slint-shell-{uid}")),
+        Some(runtime) => PathBuf::from(runtime).join(RUNTIME_NAME),
+        None => std::env::temp_dir().join(format!("{RUNTIME_NAME}-{uid}")),
     };
     match std::fs::DirBuilder::new().mode(0o700).create(&dir) {
         Ok(()) => {}
@@ -96,14 +111,14 @@ fn tcp_address() -> SocketAddrV4 {
 
 #[cfg(windows)]
 fn token_path() -> std::io::Result<PathBuf> {
-    let dir = if std::env::var_os("LHC_DEV_DIR").is_some() {
+    let dir = if lhc_core::storage::isolated() {
         lhc_core::storage::StoragePaths::resolve()
             .map_err(std::io::Error::other)?
             .settings_dir()
     } else {
         dirs::data_local_dir()
             .ok_or_else(|| std::io::Error::other("local app data directory unknown"))?
-            .join("lhc-slint-shell")
+            .join(RUNTIME_NAME)
     };
     std::fs::create_dir_all(&dir)?;
     Ok(dir.join("ipc-token"))
@@ -195,7 +210,7 @@ impl Server {
                 let mut stream = match listener.accept() {
                     Ok((stream, _)) => stream,
                     Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                        std::thread::sleep(Duration::from_millis(20));
+                        std::thread::sleep(ACCEPT_POLL);
                         continue;
                     }
                     Err(error) => {
@@ -203,7 +218,7 @@ impl Server {
                         break;
                     }
                 };
-                let timeout = Some(Duration::from_secs(1));
+                let timeout = Some(REQUEST_TIMEOUT);
                 // Windows inherits nonblocking mode from the listener. Each
                 // accepted request uses blocking I/O with bounded timeouts.
                 if let Err(error) = stream
@@ -266,7 +281,7 @@ fn receive(
     auth: Option<&str>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut line = String::new();
-    BufReader::new(stream.take(4 * 1024 * 1024)).read_line(&mut line)?;
+    BufReader::new(stream.take(MAX_REQUEST_BYTES)).read_line(&mut line)?;
     let received = Instant::now();
     let request: Request = serde_json::from_str(&line)?;
     if auth.is_some() && request.auth.as_deref() != auth {
@@ -356,7 +371,7 @@ fn exchange(
     token: Option<String>,
     auth: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    stream.set_timeout(Duration::from_secs(2))?;
+    stream.set_timeout(CLIENT_TIMEOUT)?;
     let request = Request {
         command: command.to_string(),
         token,
@@ -369,7 +384,7 @@ fn exchange(
     };
     writeln!(stream, "{}", serde_json::to_string(&request)?)?;
     let mut reply = String::new();
-    BufReader::new(stream.take(4096)).read_line(&mut reply)?;
+    BufReader::new(stream.take(MAX_REPLY_BYTES)).read_line(&mut reply)?;
     if reply != "queued\n" {
         return Err(reply.trim_end().to_owned().into());
     }

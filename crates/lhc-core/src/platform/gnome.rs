@@ -7,9 +7,15 @@ use serde::Deserialize;
 use serde_json::Value;
 use zbus::blocking::{Connection, Proxy};
 
+/// Reply timeout of GNOME Shell calls.
+const METHOD_TIMEOUT: Duration = Duration::from_millis(750);
+
 pub(crate) const SERVICE: &str = "org.gnome.Shell";
 pub(crate) const PATH: &str = "/dev/bozonx/LeftHandControl/Gnome";
 pub(crate) const INTERFACE: &str = "dev.bozonx.LeftHandControl.Gnome";
+/// Activation tries while the window is not mapped yet, and their pause.
+const ACTIVATION_ATTEMPTS: u32 = 5;
+const ACTIVATION_RETRY: Duration = Duration::from_millis(100);
 
 #[derive(Deserialize)]
 pub(crate) struct Snapshot {
@@ -36,7 +42,7 @@ fn connection() -> Result<&'static Connection, String> {
         return Ok(bus);
     }
     let bus = zbus::blocking::connection::Builder::session()
-        .and_then(|builder| builder.method_timeout(Duration::from_millis(750)).build())
+        .and_then(|builder| builder.method_timeout(METHOD_TIMEOUT).build())
         .map_err(|error| format!("GNOME session bus: {error}"))?;
     Ok(BUS.get_or_init(|| bus))
 }
@@ -88,14 +94,14 @@ pub fn request_window_activation(title: String) -> Result<(), String> {
                     return;
                 }
             };
-            for attempt in 0..5 {
+            let not_mapped = format!("{INTERFACE}.NotMapped");
+            for attempt in 1..=ACTIVATION_ATTEMPTS {
                 match proxy.call::<_, _, ()>("Activate", &(title.as_str(),)) {
                     Ok(()) => return,
                     Err(zbus::Error::MethodError(name, _, _))
-                        if name.as_str() == "dev.bozonx.LeftHandControl.Gnome.NotMapped"
-                            && attempt < 4 =>
+                        if name.as_str() == not_mapped && attempt < ACTIVATION_ATTEMPTS =>
                     {
-                        std::thread::sleep(Duration::from_millis(100));
+                        std::thread::sleep(ACTIVATION_RETRY);
                     }
                     Err(error) => {
                         log::warn!("[gnome] activation: {error}");

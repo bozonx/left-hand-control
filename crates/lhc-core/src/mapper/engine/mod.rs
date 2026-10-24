@@ -144,7 +144,14 @@ impl Engine {
         if !cfg.settings.commands_enabled {
             fn revoke(action: &mut ActionDef) {
                 match action {
-                    ActionDef::Command(_) => *action = ActionDef::Unavailable("cmd:".into()),
+                    // Reported without an id: the command is off as a whole.
+                    ActionDef::Command(_) => {
+                        *action = ActionDef::Unavailable(
+                            crate::profile::actions::Action::Command(String::new())
+                                .format()
+                                .unwrap_or_default(),
+                        )
+                    }
                     ActionDef::Macro(m) => m.steps.retain(|step| {
                         !matches!(step, crate::mapper::action::MacroStepItem::Command(_))
                     }),

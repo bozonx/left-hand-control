@@ -7,8 +7,9 @@ use crate::{
     i18n::Msg,
     keyboard,
     ui::{
-        ActionPicker, LayersEditor, Locale, MacroEditor, MenuEditor, PickerCategory,
-        PickerCategoryCount, PickerItem, PickerTarget, SettingsWindow, ShortcutDesktop,
+        ActionPicker, LayersEditor, Locale, MacroEditor, MenuEditor, PickerBehavior,
+        PickerCategory, PickerCategoryCount, PickerItem, PickerTarget, SettingsWindow,
+        ShortcutDesktop,
     },
 };
 use lhc_core::{
@@ -50,19 +51,21 @@ fn is_key_category(category: PickerCategory) -> bool {
     KEY_CATEGORIES.contains(&category)
 }
 
+/// Whether `value` is the `cmd:` action of the command `id`.
+fn assigns_command(value: &str, id: &str) -> bool {
+    matches!(Action::parse(Some(value)), Action::Command(command) if command == id)
+}
+
 pub(crate) fn category_for_value(value: &str) -> PickerCategory {
-    for (prefix, category) in [
-        ("macro:", PickerCategory::Macros),
-        ("cmd:", PickerCategory::Commands),
-        ("app:", PickerCategory::App),
-        ("sys:", PickerCategory::SystemActions),
-        ("kde:", PickerCategory::DesktopShortcuts),
-        ("text:", PickerCategory::Text),
-        ("pause:", PickerCategory::Pause),
-    ] {
-        if value.starts_with(prefix) {
-            return category;
-        }
+    match Action::parse(Some(value)) {
+        Action::Macro(_) => return PickerCategory::Macros,
+        Action::Command(_) => return PickerCategory::Commands,
+        Action::App(_) => return PickerCategory::App,
+        Action::System(_) => return PickerCategory::SystemActions,
+        Action::KdeShortcut(_) => return PickerCategory::DesktopShortcuts,
+        Action::Text(_) => return PickerCategory::Text,
+        Action::Pause(_) => return PickerCategory::Pause,
+        Action::Native | Action::Swallow | Action::Keys(_) | Action::Unknown(_) => {}
     }
     // The last key of a chord is the main one; modifiers come first.
     for key in value.split('+').rev() {
@@ -160,7 +163,9 @@ fn read_kde_shortcuts() -> Result<Vec<DesktopShortcutItem>, String> {
         Ok(lhc_core::platform::kde_shortcuts::list()?
             .into_iter()
             .map(|shortcut| DesktopShortcutItem {
-                value: format!("kde:{}", shortcut.id()),
+                value: Action::KdeShortcut(shortcut.id())
+                    .format()
+                    .unwrap_or_default(),
                 component: shortcut.component_label,
                 label: shortcut.label,
             })
@@ -242,10 +247,10 @@ fn valid(
     if key_only {
         return CATEGORIES.iter().any(|keys| keys.contains(&value));
     }
-    if !excluded.is_empty() && value == format!("macro:{excluded}") {
+    let action = Action::parse(Some(value));
+    if matches!(&action, Action::Macro(id) if !excluded.is_empty() && id == excluded) {
         return false;
     }
-    let action = Action::parse(Some(value));
     if matches!(&action, Action::Keys(_)) && !actions::valid_held_key(value) {
         return false;
     }
@@ -262,7 +267,10 @@ fn valid(
 /// a script file that cannot be executed.
 fn command_notice(picker: &ActionPicker) -> Msg {
     use lhc_core::mapper::commands::{DraftIssue, draft_issue};
-    if !picker.get_value().starts_with("cmd:") {
+    if !matches!(
+        Action::parse(Some(picker.get_value().as_str())),
+        Action::Command(_)
+    ) {
         return Msg::None;
     }
     let directory = picker.get_command_directory();
@@ -304,14 +312,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     picker.on_select_behavior(move |behavior| {
         let Some(ui) = weak.upgrade() else { return };
         let picker = ui.global::<ActionPicker>();
-        if (behavior == 0 && !picker.get_allow_default())
-            || (behavior == 1 && !picker.get_allow_swallow())
-            || !(0..=2).contains(&behavior)
+        if (behavior == PickerBehavior::Native && !picker.get_allow_default())
+            || (behavior == PickerBehavior::Swallow && !picker.get_allow_swallow())
         {
             return;
         }
         picker.set_behavior(behavior);
-        picker.set_ignore_key(behavior == 1);
+        picker.set_ignore_key(behavior == PickerBehavior::Swallow);
         picker.set_capturing(false);
         picker.set_error(Msg::None.to_ui());
         picker.invoke_refresh();
@@ -327,14 +334,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             .iter()
             .find(|item| item.value == value)
             .map(|item| item.category)
-            .unwrap_or(if value.starts_with("text:") {
-                PickerCategory::Text
-            } else if value.starts_with("kde:") {
-                PickerCategory::DesktopShortcuts
-            } else if value.starts_with("pause:") && target == PickerTarget::MacroStep {
-                PickerCategory::Pause
-            } else {
-                PickerCategory::Modifiers
+            .unwrap_or(match Action::parse(Some(value.as_str())) {
+                Action::Text(_) => PickerCategory::Text,
+                Action::KdeShortcut(_) => PickerCategory::DesktopShortcuts,
+                Action::Pause(_) if target == PickerTarget::MacroStep => PickerCategory::Pause,
+                _ => PickerCategory::Modifiers,
             });
         *state.borrow_mut() = Session {
             target: Some((target, index)),
@@ -425,13 +429,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             standalone_layer || (rule_action && !held_key && !picker.get_hold_layer()),
         );
         picker.set_behavior(if picker.get_ignore_key() && picker.get_allow_swallow() {
-            1
+            PickerBehavior::Swallow
         } else if allow_default && (value.is_empty() || picker.get_ignore_key()) {
-            0
+            PickerBehavior::Native
         } else {
-            2
+            PickerBehavior::Action
         });
-        picker.set_ignore_key(picker.get_behavior() == 1);
+        picker.set_ignore_key(picker.get_behavior() == PickerBehavior::Swallow);
         picker.set_touched(false);
         picker.set_error(Msg::None.to_ui());
         picker.set_key_only(key_only);
@@ -439,10 +443,10 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             key_only && target == PickerTarget::Rule && rule_field == crate::ui::RuleDialog::Key,
         );
         picker.set_macro_step(target == PickerTarget::MacroStep);
-        let original = if picker.get_behavior() == 1 {
+        let original = if picker.get_behavior() == PickerBehavior::Swallow {
             ui.global::<Locale>()
                 .invoke_text(Msg::PickerSuppress.to_ui())
-        } else if picker.get_behavior() == 0 {
+        } else if picker.get_behavior() == PickerBehavior::Native {
             ui.global::<Locale>().invoke_text(
                 if picker.get_inherit_default() {
                     Msg::PickerInherit
@@ -460,7 +464,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         } else {
             ui.global::<ActionPicker>().get_original()
         };
-        let original = if picker.get_behavior() == 2 {
+        let original = if picker.get_behavior() == PickerBehavior::Action {
             state
                 .borrow()
                 .catalog
@@ -471,13 +475,17 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         } else {
             original
         };
-        if value.starts_with("cmd:") && original == value {
+        let command_id = match Action::parse(Some(value.as_str())) {
+            Action::Command(id) => Some(id),
+            _ => None,
+        };
+        if let Some(id) = command_id.filter(|_| original == value) {
             let config = doc.read();
             if let Some(command) = config
                 .layout()
                 .commands
                 .iter()
-                .find(|command| value == format!("cmd:{}", command.id))
+                .find(|command| command.id == id)
             {
                 picker.set_original(
                     if command.name.is_empty() {
@@ -510,10 +518,10 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
         let picker = ui.global::<ActionPicker>();
         let value = picker.get_value().to_string();
-        let id = value
-            .strip_prefix("cmd:")
-            .map(str::to_owned)
-            .unwrap_or_else(|| lhc_core::profile::ids::generate("cmd-"));
+        let id = match Action::parse(Some(value.as_str())) {
+            Action::Command(id) => id,
+            _ => lhc_core::profile::ids::generate("cmd-"),
+        };
         // Keep the script of the other operating systems.
         let mut command = doc
             .read()
@@ -534,7 +542,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         command.working_directory = (!picker.get_command_directory().trim().is_empty())
             .then(|| picker.get_command_directory().trim().to_owned());
         state.borrow_mut().command = Some(command);
-        picker.set_value(format!("cmd:{id}").into());
+        picker.set_value(Action::Command(id).format().unwrap_or_default().into());
         picker.set_touched(true);
         picker.invoke_refresh();
     });
@@ -614,7 +622,6 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         } else {
             "".into()
         };
-        let excluded_value = format!("macro:{excluded}");
         let key_only = picker.get_key_only();
         state.borrow_mut().catalog = catalog(&ui, &doc.read());
         let state = state.borrow();
@@ -658,7 +665,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                             .target
                             .is_some_and(|(target, _)| target == PickerTarget::Rule))
                         || lhc_core::profile::key_catalog::valid_trigger(&entry.value))
-                    && (excluded.is_empty() || entry.value != excluded_value)
+                    && (excluded.is_empty()
+                        || !matches!(
+                            Action::parse(Some(entry.value.as_str())),
+                            Action::Macro(id) if id == excluded.as_str()
+                        ))
             })
             .collect();
         picker.set_categories(ModelRc::new(VecModel::from(
@@ -700,7 +711,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             .layout()
             .commands
             .iter()
-            .find(|command| value == format!("cmd:{}", command.id))
+            .find(|command| assigns_command(&value, &command.id))
             && state
                 .command
                 .as_ref()
@@ -714,7 +725,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
         picker.set_command_notice(command_notice(&picker).to_ui());
         picker.set_value_category(category_for_value(&value));
-        let text = value.strip_prefix("text:").unwrap_or_default();
+        let action = Action::parse(Some(value.as_str()));
+        let text = match &action {
+            Action::Text(text) => text.as_str(),
+            _ => "",
+        };
         picker.set_text_content(text.into());
         picker.set_text_preview(super::one_line(text).into());
         picker.set_text_lines(if text.contains('\n') {
@@ -722,7 +737,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         } else {
             0
         });
-        picker.set_pause_content(value.strip_prefix("pause:").unwrap_or_default().into());
+        picker.set_pause_content(
+            match &action {
+                Action::Pause(ms) => ms.as_str(),
+                _ => "",
+            }
+            .into(),
+        );
         let query = picker.get_query().to_lowercase();
         let mut category = picker.get_category();
         if query.is_empty()
@@ -755,13 +776,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             };
         picker.set_notice(notice.to_ui());
         picker.set_valid(
-            ((picker.get_behavior() == 0 && picker.get_allow_default())
-                || (picker.get_behavior() == 1 && picker.get_allow_swallow()))
-                || (picker.get_behavior() == 2
+            ((picker.get_behavior() == PickerBehavior::Native && picker.get_allow_default())
+                || (picker.get_behavior() == PickerBehavior::Swallow
+                    && picker.get_allow_swallow()))
+                || (picker.get_behavior() == PickerBehavior::Action
                     && state
                         .command
                         .as_ref()
-                        .filter(|command| value == format!("cmd:{}", command.id))
+                        .filter(|command| assigns_command(&value, &command.id))
                         .map_or_else(
                             || {
                                 if key_only
@@ -815,7 +837,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             return;
         }
         picker.set_error(Msg::None.to_ui());
-        let value = if picker.get_behavior() == 2 {
+        let value = if picker.get_behavior() == PickerBehavior::Action {
             picker.get_value()
         } else {
             "".into()
@@ -824,7 +846,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             .borrow()
             .command
             .clone()
-            .filter(|command| value == format!("cmd:{}", command.id));
+            .filter(|command| assigns_command(&value, &command.id));
         if let Some(command) = command
             && let Err(error) = doc.edit(crate::document::View::Shell, |config| {
                 config.save_command(command)
@@ -845,7 +867,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                         .layout()
                         .commands
                         .iter()
-                        .find(|command| value == format!("cmd:{}", command.id))
+                        .find(|command| assigns_command(&value, &command.id))
                         .map(|command| command.name.clone().into())
                 })
                 .unwrap_or_default();

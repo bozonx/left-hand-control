@@ -18,6 +18,10 @@ use objc2_foundation::{NSBundle, NSString};
 
 use crate::runtime_state::ActiveWindow;
 
+/// How long the target application may take to become active.
+const ACTIVATION_TIMEOUT: std::time::Duration = std::time::Duration::from_millis(500);
+const ACTIVATION_POLL: std::time::Duration = std::time::Duration::from_millis(10);
+
 pub(crate) fn active_window() -> Option<ActiveWindow> {
     let app = NSWorkspace::sharedWorkspace().frontmostApplication()?;
     let app_id = app
@@ -243,12 +247,12 @@ pub fn restore_text_target(target: NativeTextTarget, selection_process: u32) -> 
     ) {
         return Err("application activation was rejected".into());
     }
-    let deadline = std::time::Instant::now() + std::time::Duration::from_millis(500);
+    let deadline = std::time::Instant::now() + ACTIVATION_TIMEOUT;
     while std::time::Instant::now() < deadline {
         if capture_text_target() == Some(target) {
             return Ok(());
         }
-        std::thread::sleep(std::time::Duration::from_millis(10));
+        std::thread::sleep(ACTIVATION_POLL);
     }
     Err("destination window did not become foreground".into())
 }

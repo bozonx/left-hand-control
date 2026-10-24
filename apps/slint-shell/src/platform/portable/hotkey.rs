@@ -10,6 +10,9 @@ use std::{
     time::{Duration, Instant},
 };
 
+/// Pause between retries of a failed hotkey registration.
+const REGISTRATION_RETRY: Duration = Duration::from_secs(3);
+
 struct Hotkeys {
     manager: GlobalHotKeyManager,
     keys: [HotKey; 2],
@@ -59,7 +62,7 @@ pub fn start(dispatch: Dispatch) {
     };
     // Retry temporary OS registration failures, on the UI thread.
     let retry = slint::Timer::default();
-    retry.start(slint::TimerMode::Repeated, Duration::from_secs(3), || {
+    retry.start(slint::TimerMode::Repeated, REGISTRATION_RETRY, || {
         set_game_active(lhc_core::runtime_state::game_mode_active());
     });
     HOTKEYS.with_borrow_mut(|state| {

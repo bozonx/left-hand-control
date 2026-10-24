@@ -10,6 +10,9 @@ use std::{
     time::{Duration, Instant},
 };
 
+/// Tick of the notification expiry timer.
+const EXPIRY_TICK: Duration = Duration::from_millis(100);
+
 const VISIBLE: usize = 4;
 
 fn policy(message: &Message, backend: bool) -> Option<(ToastKind, Duration)> {
@@ -198,10 +201,10 @@ pub(crate) fn bind(ui: &SettingsWindow) {
     });
     let weak_state = Rc::downgrade(&state);
     let weak = ui.as_weak();
-    state.borrow().timer.start(
-        slint::TimerMode::Repeated,
-        Duration::from_millis(100),
-        move || {
+    state
+        .borrow()
+        .timer
+        .start(slint::TimerMode::Repeated, EXPIRY_TICK, move || {
             let (Some(ui), Some(state)) = (weak.upgrade(), weak_state.upgrade()) else {
                 return;
             };
@@ -216,8 +219,7 @@ pub(crate) fn bind(ui: &SettingsWindow) {
             if let Some(items) = items {
                 ui.global::<NotificationCenter>().set_items(items);
             }
-        },
-    );
+        });
 }
 
 #[cfg(test)]

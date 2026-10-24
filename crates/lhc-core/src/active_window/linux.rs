@@ -23,6 +23,9 @@ use crate::platform::linux::{Desktop, SessionType, command_available};
 
 use super::{ActiveWindow, OpenWindow, gnome, kwin, wlr};
 
+/// Read timeout of the Hyprland event socket; bounds how long a stop waits.
+const EVENT_READ_TIMEOUT: Duration = Duration::from_secs(1);
+
 static KDOTOOL_WARN_ONCE: AtomicBool = AtomicBool::new(false);
 const COMMAND_TIMEOUT_MS: u64 = 1000;
 static LAST_QUERY: AtomicU8 = AtomicU8::new(0);
@@ -259,7 +262,7 @@ fn hyprland_events() -> Option<Events> {
         .inspect_err(|error| log::debug!("[active-window] Hyprland events: {error}"))
         .ok()?;
     // Bounded reads let the thread notice `stop`.
-    stream.set_read_timeout(Some(Duration::from_secs(1))).ok()?;
+    stream.set_read_timeout(Some(EVENT_READ_TIMEOUT)).ok()?;
     let stop = Arc::new(AtomicBool::new(false));
     let alive = Arc::new(AtomicBool::new(true));
     let (thread_stop, thread_alive) = (stop.clone(), alive.clone());

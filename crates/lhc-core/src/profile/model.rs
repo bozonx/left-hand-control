@@ -369,7 +369,11 @@ impl LayoutPreset {
         fn collect(value: &serde_json::Value, refs: &mut Vec<String>) {
             match value {
                 serde_json::Value::String(text) => {
-                    refs.extend(text.trim().strip_prefix("cmd:").map(str::to_owned))
+                    if let super::actions::Action::Command(id) =
+                        super::actions::Action::parse(Some(text))
+                    {
+                        refs.push(id);
+                    }
                 }
                 serde_json::Value::Array(items) => items.iter().for_each(|v| collect(v, refs)),
                 serde_json::Value::Object(map) => map.values().for_each(|v| collect(v, refs)),

@@ -196,6 +196,10 @@ pub const GAME_MODE_APP_ACTIONS: [&str; 4] = [
 pub const WINDOW_APP_ACTIONS: [&str; 3] =
     ["showQuickMenuLast", "showEmojiMenuLast", "showSettings"];
 
+/// Actions of the built-in popup hotkeys Ctrl+Alt+F11 and Ctrl+Alt+F12.
+pub const SHOW_EMOJI_MENU_LAST: &str = "app:showEmojiMenuLast";
+pub const SHOW_QUICK_MENU_LAST: &str = "app:showQuickMenuLast";
+
 pub fn app_action_name(id: &str) -> Option<ActionName> {
     numbered(id, &["showQuickMenu", "showEmojiMenu"], u32::MAX)
         .or_else(|| numbered(id, &["activateLayout"], LAYOUT_SLOT_COUNT))

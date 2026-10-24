@@ -26,7 +26,7 @@ component ToastCard inherits Rectangle {
     background: Theme.card;
     border-color: root.accent;
     border-width: 1px;
-    border-radius: 8px;
+    border-radius: Theme.radius-large;
     accessible-role: AccessibleRole.groupbox;
     accessible-label: Locale.text(root.item.message);
     content := HorizontalLayout {

@@ -19,8 +19,16 @@ use super::text_job::TextRequest;
 
 const IFACE: &str = "org.freedesktop.portal.Clipboard";
 const TIMEOUT: Duration = Duration::from_secs(2);
-const MAX_BYTES: usize = 64 * 1024 * 1024;
-const MAX_TYPES: usize = 128;
+use super::clipboard::{
+    ARM_TIMEOUT, MAX_CLIPBOARD_BYTES as MAX_BYTES, MAX_MIME_TYPES as MAX_TYPES, PLAIN_TEXT_MIME,
+    PREPARE_TIMEOUT, TEXT_MIME,
+};
+/// How long the portal may take to confirm the clipboard subscription.
+const SUBSCRIBE_TIMEOUT: Duration = Duration::from_secs(3);
+/// How long a paste may take until the clipboard is restored.
+const PASTE_TIMEOUT: Duration = Duration::from_secs(5);
+/// Poll interval of the clipboard loops.
+const POLL_INTERVAL: Duration = Duration::from_millis(5);
 type Contents = HashMap<String, Vec<u8>>;
 
 enum Command {
@@ -68,7 +76,7 @@ impl Clipboard {
             })
             .map_err(|e| e.to_string())?;
         initialized
-            .recv_timeout(Duration::from_secs(3))
+            .recv_timeout(SUBSCRIBE_TIMEOUT)
             .map_err(|_| "clipboard portal subscription timed out")??;
         let portal = zbus::blocking::Proxy::new(
             conn,
@@ -102,7 +110,7 @@ impl Clipboard {
             ))
             .map_err(|_| "clipboard portal stopped")?;
         prepared
-            .recv_timeout(Duration::from_secs(5))
+            .recv_timeout(PREPARE_TIMEOUT)
             .map_err(|_| "clipboard portal preparation timed out")??;
         Ok(Paste {
             control: Some(control),
@@ -119,7 +127,7 @@ impl Paste {
             .ok_or("clipboard transaction ended")?
             .send(Control::Arm(tx))
             .map_err(|_| "clipboard transaction ended")?;
-        rx.recv_timeout(Duration::from_secs(1))
+        rx.recv_timeout(ARM_TIMEOUT)
             .map_err(|_| "clipboard portal did not arm".into())
     }
     pub(super) fn finish(mut self, injected: bool) -> Result<(), String> {
@@ -127,7 +135,7 @@ impl Paste {
             let _ = tx.send(Control::Finish(injected));
         }
         self.done
-            .recv_timeout(Duration::from_secs(5))
+            .recv_timeout(PASTE_TIMEOUT)
             .map_err(|_| "clipboard portal transfer timed out")?
     }
 }
@@ -213,7 +221,7 @@ fn run(
             Err(mpsc::TryRecvError::Disconnected) if !state.own => break,
             Err(_) => {}
         }
-        thread::sleep(Duration::from_millis(5));
+        thread::sleep(POLL_INTERVAL);
     }
     Ok(())
 }
@@ -364,8 +372,8 @@ fn transaction(
     }
     request.check().map_err(|e| format!("{e:?}"))?;
     let temporary = HashMap::from([
-        ("text/plain;charset=utf-8".into(), text.as_bytes().to_vec()),
-        ("text/plain".into(), text.as_bytes().to_vec()),
+        (TEXT_MIME.into(), text.as_bytes().to_vec()),
+        (PLAIN_TEXT_MIME.into(), text.as_bytes().to_vec()),
     ]);
     set_selection(portal, session, &temporary)?;
     state.contents = temporary;
@@ -407,7 +415,7 @@ fn transaction(
             if Instant::now() >= deadline {
                 return Err("clipboard paste was not consumed".into());
             }
-            thread::sleep(Duration::from_millis(5));
+            thread::sleep(POLL_INTERVAL);
         }
     })();
     // A newer owner wins, including during cancellation and failed injection.

@@ -9,6 +9,18 @@ export global Theme {
     out property <length> page-padding: 20px;
     out property <length> scrollbar-size: 12px;
     out property <length> scrollbar-gap: 4px;
+    /// Corner radii: small controls, controls and cards, panels, dialogs.
+    out property <length> radius-small: 4px;
+    out property <length> radius: 6px;
+    out property <length> radius-large: 8px;
+    out property <length> radius-dialog: 12px;
+    /// Font sizes from captions to page titles.
+    out property <length> font-small: 11px;
+    out property <length> font-body: 12px;
+    out property <length> font-medium: 13px;
+    out property <length> font-large: 16px;
+    out property <length> font-heading: 18px;
+    out property <length> font-title: 22px;
     in-out property <bool> dark: true;
     in-out property <bool> eink: false;
     in-out property <bool> high-contrast: false;
@@ -38,6 +50,8 @@ export global Theme {
     out property <color> error: eink ? #000000 : hc ? (dark ? #ff8a80 : #8b0000) : dark ? #f87171 : #b91c1c;
     out property <color> warning: eink ? #000000 : hc ? (dark ? #ffd54f : #6b3a00) : dark ? #fbbf24 : #92400e;
     out property <color> success: eink ? #000000 : hc ? (dark ? #69f0ae : #0b5d2a) : dark ? #4ade80 : #15803d;
+    /// Dimmed backdrop behind modal dialogs.
+    out property <color> scrim: #00000099;
     out property <duration> motion: reduce-motion ? 0ms : 150ms;
     public function apply() {
         Palette.color-scheme = dark ? ColorScheme.dark : ColorScheme.light;

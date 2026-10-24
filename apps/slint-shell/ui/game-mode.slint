@@ -8,7 +8,7 @@ export component GameModeButton inherits Rectangle {
     private property <int> highlighted: 0;
     private property <color> state-color: !AppState.game-state-available ? Theme.warning : AppState.game-active ? Theme.success : Theme.muted;
     private property <string> label: AppState.game-control == GameModeControl.auto ? @tr("Game mode control" => "Auto") : AppState.game-control == GameModeControl.on ? @tr("Game mode control" => "On") : @tr("Game mode control" => "Off");
-    width: 98px; height: 36px; border-radius: 6px;
+    width: 98px; height: 36px; border-radius: Theme.radius;
     background: AppState.game-active ? Theme.success.transparentize(0.85) : !AppState.game-state-available ? Theme.warning.transparentize(0.9) : touch.has-hover || focus.has-focus || menu.is-open ? Theme.hover : Theme.surface;
     border-width: 1px;
     border-color: focus.has-focus ? Theme.text : root.state-color.transparentize(0.35);
@@ -40,7 +40,7 @@ export component GameModeButton inherits Rectangle {
     touch := TouchArea { mouse-cursor: pointer; clicked => { focus.focus(); root.open-menu(); } }
     Tooltip {
         Rectangle {
-            background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 4px;
+            background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-small;
             HorizontalLayout { padding: 8px; Text { text: Locale.text(AppState.game-status) + "\n" + @tr("Click to change mode (Auto / On / Off)"); color: Theme.text; } }
         }
     }
@@ -60,7 +60,7 @@ export component GameModeButton inherits Rectangle {
                 return reject;
             }
             Rectangle {
-                background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 8px;
+                background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-large;
                 VerticalLayout {
                     padding: 8px; spacing: 6px;
                     Text { text: @tr("Game mode"); color: Theme.text; font-weight: 600; }

@@ -41,16 +41,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .iter()
             .any(|item| item.value == "ControlLeft")
     );
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("Tab".into());
     picker.invoke_dismiss_picker();
     assert_eq!(document.read().layout().rules.len(), count);
     rules.invoke_add();
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("macro:copyLine".into());
     picker.invoke_apply();
     assert!(picker.get_opened(), "a trigger must be a key");
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("Tab".into());
     picker.invoke_apply();
     assert!(!picker.get_opened());
@@ -75,14 +75,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
     assert_eq!(picker.get_category(), PickerCategory::Text);
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("KeyA".into());
     picker.invoke_refresh();
     assert_eq!(picker.get_value_category(), PickerCategory::Letters);
     picker.set_query("рабочий стол".into());
     picker.invoke_refresh();
     assert!(picker.get_items().row_count() >= 2);
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("macro:copyLine".into());
     picker.invoke_apply();
     assert_eq!(
@@ -92,11 +92,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("macro:copyLine")
     );
     rules.invoke_open_dialog(index, RuleDialog::Tap);
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("KeyB".into());
-    picker.invoke_select_behavior(1);
+    picker.invoke_select_behavior(PickerBehavior::Swallow);
     assert_eq!(picker.get_value(), "KeyB");
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     assert_eq!(picker.get_value(), "KeyB");
     picker.set_value("".into());
     picker.invoke_apply();
@@ -110,7 +110,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("macro:copyLine")
     );
     rules.invoke_open_dialog(index, RuleDialog::Hold);
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("macro:copyLine".into());
     picker.invoke_apply();
     assert!(picker.get_opened());
@@ -126,11 +126,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     macros.invoke_add_step(0, "KeyA".into());
     macros.set_picker_macro(0);
     picker.invoke_open(PickerTarget::MacroStep, 0, "KeyA".into(), false);
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("macro:self".into());
     picker.invoke_apply();
     assert!(picker.get_opened(), "a macro cannot call itself");
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_category(PickerCategory::Pause);
     picker.invoke_refresh();
     assert_eq!(picker.get_value(), "pause:20");
@@ -170,7 +170,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     ui.invoke_navigate(Page::Menus, MenuKind::Quick);
     picker.invoke_open(PickerTarget::QuickAction, 1, "".into(), false);
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("text:Привет\nмир".into());
     picker.invoke_apply();
     let menus = ui.global::<MenuEditor>();
@@ -183,13 +183,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let layers = ui.global::<LayersEditor>();
     layers.set_dialog(LayerDialog::EditKey);
     picker.invoke_open(PickerTarget::LayerAction, 0, "".into(), false);
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("Ctrl+KeyC".into());
     picker.invoke_apply();
     assert_eq!(layers.get_dialog_action(), "Ctrl+KeyC");
     layers.set_dialog(LayerDialog::None);
     ui.global::<KeyEditor>().invoke_edit(33);
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("text:example".into());
     picker.invoke_apply();
     assert!(!picker.get_opened());
@@ -208,7 +208,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         picker.invoke_refresh();
     }
     if let Ok(value) = std::env::var("LHC_PICKER_VALUE") {
-        picker.invoke_select_behavior(2);
+        picker.invoke_select_behavior(PickerBehavior::Action);
         picker.set_value(value.into());
         picker.invoke_refresh();
     }

@@ -6,6 +6,9 @@ use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::cell::RefCell;
 use std::time::{Duration, Instant};
 
+/// How long the running-process list stays fresh.
+const PROCESS_CACHE_TTL: Duration = Duration::from_secs(2);
+
 /// How many running processes the picker lists.
 const PROCESSES: usize = 8;
 
@@ -184,7 +187,7 @@ fn running_processes() -> Vec<String> {
     PROCESS_CACHE.with_borrow_mut(|cache| {
         let stale = cache
             .as_ref()
-            .is_none_or(|(at, _)| at.elapsed() > Duration::from_secs(2));
+            .is_none_or(|(at, _)| at.elapsed() > PROCESS_CACHE_TTL);
         if stale {
             *cache = Some((Instant::now(), lhc_core::gamemode::running_processes()));
         }

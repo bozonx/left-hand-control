@@ -80,7 +80,7 @@ export component InlineTextField inherits FocusScope {
                 accessible-action-default => { root.begin(); }
                 clicked => { root.begin(); }
                 Rectangle {
-                    border-radius: 4px;
+                    border-radius: Theme.radius-small;
                     background: display-touch.has-hover ? Theme.hover : transparent;
                     border-width: root.has-focus ? 1px : 0px;
                     border-color: Theme.focus;
@@ -127,7 +127,7 @@ export component InlineTextField inherits FocusScope {
         if root.editing && root.issue.id != "": Text {
             text: Locale.text(root.issue);
             color: Theme.error;
-            font-size: 12px;
+            font-size: Theme.font-body;
             wrap: word-wrap;
         }
     }
@@ -176,7 +176,7 @@ export component InlineTextArea inherits FocusScope {
         if !root.editing: Rectangle {
             min-width: 0px;
             height: max(56px, display.height + 8px + (measure.preferred-height > display.height ? line.preferred-height : 0px));
-            border-radius: 4px;
+            border-radius: Theme.radius-small;
             background: edit-touch.has-hover ? Theme.hover : transparent;
             border-width: 1px;
             border-color: root.has-focus ? Theme.focus : edit-touch.has-hover ? Theme.border : transparent;

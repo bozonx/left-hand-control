@@ -12,6 +12,9 @@ use lhc_core::profile::model::{AppSettings, GameModeProcessMatcher, PasteShortcu
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
 
+/// Delay that batches quick setting changes into one save.
+const AUTOSAVE_DELAY: std::time::Duration = std::time::Duration::from_millis(500);
+
 const TAP_DECISIONS: [&str; 2] = ["permissiveHold", "holdOnOtherKeyPress"];
 
 /// The form as the user sees it. Numbers stay text until saved.
@@ -611,15 +614,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let shared = state.clone();
     e.on_schedule_save(move || {
         let weak = weak.clone();
-        shared.borrow().autosave.start(
-            slint::TimerMode::SingleShot,
-            std::time::Duration::from_millis(500),
-            move || {
+        shared
+            .borrow()
+            .autosave
+            .start(slint::TimerMode::SingleShot, AUTOSAVE_DELAY, move || {
                 if let Some(ui) = weak.upgrade() {
                     ui.global::<SettingsEditor>().invoke_save();
                 }
-            },
-        );
+            });
     });
 
     let weak = ui.as_weak();

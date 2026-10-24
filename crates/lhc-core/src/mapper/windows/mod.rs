@@ -226,9 +226,12 @@ pub fn spawn(
 /// session installs hooks.
 struct MapperLock(HANDLE);
 
+/// Session-local name of the mapper lock mutex.
+const MAPPER_LOCK_NAME: windows::core::PCWSTR = w!("Local\\LeftHandControlMapper");
+
 impl MapperLock {
     fn join_existing() -> Result<Self, String> {
-        let handle = unsafe { CreateMutexW(None, false, w!("Local\\LeftHandControlMapper")) }
+        let handle = unsafe { CreateMutexW(None, false, MAPPER_LOCK_NAME) }
             .map_err(|error| format!("open mapper lock for input guard: {error}"))?;
         if unsafe { GetLastError() } != ERROR_ALREADY_EXISTS {
             let _ = unsafe { CloseHandle(handle) };
@@ -238,7 +241,7 @@ impl MapperLock {
     }
 
     fn acquire() -> Result<Self, String> {
-        let handle = unsafe { CreateMutexW(None, false, w!("Local\\LeftHandControlMapper")) }
+        let handle = unsafe { CreateMutexW(None, false, MAPPER_LOCK_NAME) }
             .map_err(|error| format!("create mapper lock: {error}"))?;
         if unsafe { GetLastError() } == ERROR_ALREADY_EXISTS {
             let _ = unsafe { CloseHandle(handle) };

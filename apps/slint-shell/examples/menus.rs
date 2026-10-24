@@ -3,8 +3,8 @@ use slint::{ComponentHandle, Model};
 use slint_shell::{
     Document, bind_document,
     ui::{
-        ActionPicker, DragDrop, MenuEditor, MenuKind, Page, PickerCategory, PickerTarget,
-        SettingsEditor, SettingsWindow, Theme,
+        ActionPicker, DragDrop, MenuEditor, MenuKind, Page, PickerBehavior, PickerCategory,
+        PickerTarget, SettingsEditor, SettingsWindow, Theme,
     },
 };
 use std::time::Duration;
@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     settings.invoke_save();
     let picker = ui.global::<ActionPicker>();
     picker.invoke_open(PickerTarget::QuickAction, 0, "".into(), false);
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_category(PickerCategory::Commands);
     picker.set_command_name("Привет".into());
     picker.set_command_script("printf hello".into());
@@ -71,7 +71,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.invoke_dismiss_picker();
     assert!(loaded().layout().commands.is_empty());
     picker.invoke_open(PickerTarget::QuickAction, 0, "".into(), false);
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_category(PickerCategory::Commands);
     picker.set_command_name("Привет".into());
     picker.set_command_script("printf hello".into());

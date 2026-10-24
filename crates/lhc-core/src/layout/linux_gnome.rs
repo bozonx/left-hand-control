@@ -75,6 +75,9 @@ pub(super) fn interrupt_signal_watcher() {
     }
 }
 
+const RECONNECT_DELAY: Duration = Duration::from_secs(1);
+const STOP_POLL: Duration = Duration::from_millis(100);
+
 pub fn start_watcher() {
     super::register_watcher(
         std::thread::Builder::new()
@@ -84,11 +87,12 @@ pub fn start_watcher() {
                     if let Err(error) = watch_once() {
                         log::debug!("[layout/gnome] {error}");
                     }
-                    for _ in 0..10 {
+                    // Wait before reconnecting, checking for a stop meanwhile.
+                    for _ in 0..RECONNECT_DELAY.as_millis() / STOP_POLL.as_millis() {
                         if super::watcher_stop_requested() {
                             return;
                         }
-                        std::thread::sleep(Duration::from_millis(100));
+                        std::thread::sleep(STOP_POLL);
                     }
                 }
             }),

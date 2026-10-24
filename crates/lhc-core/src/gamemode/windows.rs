@@ -19,6 +19,9 @@ use windows::core::{PCWSTR, PWSTR, w};
 
 use super::{DetectorAvailability, GameModeDetectors, GameModeSettings, Observation};
 
+/// Pause before a failed catalog read is tried again.
+const CATALOG_RETRY: Duration = Duration::from_secs(3);
+
 /// How long the Game Bar list is reused before it is read again.
 const CATALOG_TTL: Duration = Duration::from_secs(60);
 
@@ -127,7 +130,7 @@ fn catalog() -> Result<HashSet<String>, ()> {
                 < if names.is_ok() {
                     CATALOG_TTL
                 } else {
-                    Duration::from_secs(3)
+                    CATALOG_RETRY
                 } =>
         {
             names.clone()

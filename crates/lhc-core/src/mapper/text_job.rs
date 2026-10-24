@@ -5,6 +5,10 @@ use std::time::{Duration, Instant};
 
 use crate::events::TextInputFailure;
 
+/// How long text input waits for the target window to take the focus.
+const TARGET_TIMEOUT: Duration = Duration::from_millis(500);
+const TARGET_POLL: Duration = Duration::from_millis(5);
+
 const MAX_QUEUED_TEXTS: usize = 16;
 const MAX_TEXT_BYTES: usize = 1024 * 1024;
 const MAX_AGE: Duration = Duration::from_secs(15);
@@ -91,7 +95,7 @@ impl TextRequest {
     }
 
     pub(super) fn wait_for_target(&self) -> Result<(), TextInputFailure> {
-        let deadline = Instant::now() + Duration::from_millis(500);
+        let deadline = Instant::now() + TARGET_TIMEOUT;
         loop {
             self.check_lifetime()?;
             if self.target.is_current() {
@@ -100,7 +104,7 @@ impl TextRequest {
             if Instant::now() >= deadline {
                 return self.check();
             }
-            std::thread::sleep(Duration::from_millis(5));
+            std::thread::sleep(TARGET_POLL);
         }
     }
 

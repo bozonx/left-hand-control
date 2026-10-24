@@ -59,7 +59,7 @@ export component InfoTip inherits Rectangle {
     Text {
         text: "i";
         color: Theme.muted;
-        font-size: 12px;
+        font-size: Theme.font-body;
         font-weight: 700;
         horizontal-alignment: center;
         vertical-alignment: center;
@@ -69,7 +69,7 @@ export component InfoTip inherits Rectangle {
             min-width: 340px;
             max-width: 340px;
             background: Theme.card;
-            border-radius: 4px;
+            border-radius: Theme.radius-small;
             border-width: 1px;
             border-color: Theme.border;
             VerticalLayout {
@@ -112,7 +112,7 @@ export component TextField inherits Rectangle {
     horizontal-stretch: 1;
     vertical-stretch: 0;
     forward-focus: input;
-    border-radius: 4px;
+    border-radius: Theme.radius-small;
     border-width: root.invalid || input.has-focus ? 2px : 1px;
     border-color: root.invalid ? Theme.error : input.has-focus ? Theme.focus : Theme.border;
     background: Theme.surface;
@@ -197,7 +197,7 @@ export component TextField inherits Rectangle {
         y: (parent.height - self.height) / 2;
         clicked => { root.clear(); }
         Rectangle {
-            width: 100%; height: 100%; border-radius: 4px;
+            width: 100%; height: 100%; border-radius: Theme.radius-small;
             background: clear-button.has-hover ? Theme.hover : transparent;
             Image { x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; width: 14px; height: 14px; source: @image-url("icons/x.svg"); colorize: Theme.muted; }
         }
@@ -222,7 +222,7 @@ export component SearchField inherits TextField {
         Rectangle {
             width: 20px;
             height: 20px;
-            border-radius: 4px;
+            border-radius: Theme.radius-small;
             background: clear-touch.has-hover ? Theme.hover : transparent;
             Image { width: 14px; height: 14px; source: @image-url("icons/x.svg"); colorize: Theme.muted; }
         }
@@ -244,7 +244,7 @@ export component IconButton inherits Rectangle {
     min-width: root.size;
     height: root.text == "" ? root.size : 32px;
     max-width: root.text == "" ? root.size : 100000px;
-    border-radius: 6px;
+    border-radius: Theme.radius;
     background: root.primary
         ? (touch.has-hover && root.enabled ? (Theme.dark ? Theme.accent.darker(0.15) : Theme.accent.brighter(0.2)) : Theme.accent)
         : root.enabled && (touch.has-hover || focus.has-focus) ? Theme.hover : transparent;
@@ -273,7 +273,7 @@ export component IconButton inherits Rectangle {
             text: root.text;
             color: root.primary ? Theme.on-accent : Theme.text;
             font-weight: 600;
-            font-size: 13px;
+            font-size: Theme.font-medium;
             vertical-alignment: center;
         }
     }
@@ -292,12 +292,12 @@ export component IconButton inherits Rectangle {
     if root.tooltip != "": Tooltip {
         Rectangle {
             background: Theme.card;
-            border-radius: 4px;
+            border-radius: Theme.radius-small;
             border-width: 1px;
             border-color: Theme.border;
             HorizontalLayout {
                 padding: 6px;
-                Text { text: root.tooltip; color: Theme.text; font-size: 12px; }
+                Text { text: root.tooltip; color: Theme.text; font-size: Theme.font-body; }
             }
         }
     }
@@ -390,7 +390,7 @@ export component Badge inherits Rectangle {
     background: root.fill;
     HorizontalLayout {
         padding-left: 7px; padding-right: 7px;
-        Text { min-width: 0px; overflow: elide; text: root.text; color: Theme.text; font-size: 12px; vertical-alignment: center; }
+        Text { min-width: 0px; overflow: elide; text: root.text; color: Theme.text; font-size: Theme.font-body; vertical-alignment: center; }
     }
 }
 
@@ -417,7 +417,7 @@ export component FormLabel inherits HorizontalLayout {
 
 export component FieldLabel inherits Text {
     color: Theme.muted;
-    font-size: 12px;
+    font-size: Theme.font-body;
     font-weight: 600;
 }
 
@@ -434,10 +434,10 @@ export component CardHeader inherits HorizontalLayout {
         HorizontalLayout {
             spacing: 6px;
             alignment: start;
-            Text { text: root.title; color: Theme.text; font-size: 16px; font-weight: 700; vertical-alignment: center; }
+            Text { text: root.title; color: Theme.text; font-size: Theme.font-large; font-weight: 700; vertical-alignment: center; }
             if root.info != "": VerticalLayout { alignment: center; InfoTip { text: root.info; } }
         }
-        if root.subtitle != "": Text { text: root.subtitle; color: Theme.muted; font-size: 12px; wrap: word-wrap; }
+        if root.subtitle != "": Text { text: root.subtitle; color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap; }
     }
     @children
 }
@@ -480,7 +480,7 @@ export component NavTab inherits Rectangle {
         background: root.selected ? Theme.accent : transparent;
     }
     Rectangle {
-        border-radius: 6px;
+        border-radius: Theme.radius;
         border-width: focus.has-focus ? 2px : 0px;
         border-color: Theme.focus;
     }
@@ -502,7 +502,7 @@ export component NavButton inherits Rectangle {
     height: 34px;
     horizontal-stretch: 0;
     min-width: row.preferred-width;
-    border-radius: 6px;
+    border-radius: Theme.radius;
     background: root.selected ? Theme.selected : touch.has-hover ? Theme.hover : transparent;
     border-width: focus.has-focus ? 2px : 0px;
     border-color: Theme.focus;
@@ -588,12 +588,12 @@ export component MapperToggle inherits Rectangle {
     if root.tooltip != "": Tooltip {
         Rectangle {
             background: Theme.card;
-            border-radius: 4px;
+            border-radius: Theme.radius-small;
             border-width: 1px;
             border-color: Theme.border;
             HorizontalLayout {
                 padding: 6px;
-                Text { text: root.tooltip; color: Theme.text; font-size: 12px; }
+                Text { text: root.tooltip; color: Theme.text; font-size: Theme.font-body; }
             }
         }
     }
@@ -633,7 +633,7 @@ export component ConfirmDialog inherits Rectangle {
     in property <string> error;
     callback confirm();
     callback cancel();
-    background: #00000099;
+    background: Theme.scrim;
     TouchArea { clicked => { root.cancel(); } scroll-event(event) => { accept } }
     FocusScope {
         focus-on-tab-navigation: false;
@@ -654,7 +654,7 @@ export component ConfirmDialog inherits Rectangle {
             dialog-layout := VerticalLayout {
                 padding: 18px;
                 spacing: 12px;
-                Text { vertical-stretch: 0; text: root.title; color: Theme.text; font-size: 16px; font-weight: 700; wrap: word-wrap; }
+                Text { vertical-stretch: 0; text: root.title; color: Theme.text; font-size: Theme.font-large; font-weight: 700; wrap: word-wrap; }
                 Text { vertical-stretch: 0; text: root.body; color: Theme.text; wrap: word-wrap; }
                 if root.error != "": Text { vertical-stretch: 0; text: root.error; color: Theme.error; wrap: word-wrap; }
                 HorizontalLayout {
@@ -696,7 +696,7 @@ export component FormField inherits VerticalLayout {
         edited => { root.touched = true; }
         accepted => { root.accepted(); }
     }
-    if root.show-error: Text { text: Locale.text(root.error); color: Theme.error; font-size: 12px; wrap: word-wrap; }
+    if root.show-error: Text { text: Locale.text(root.error); color: Theme.error; font-size: Theme.font-body; wrap: word-wrap; }
 }
 
 export global ItemStyle {
@@ -708,7 +708,7 @@ export component Alert inherits Rectangle {
     in property <string> text;
     vertical-stretch: 0;
     min-height: content.preferred-height;
-    border-radius: 8px;
+    border-radius: Theme.radius-large;
     border-width: 1px;
     border-color: Theme.warning.transparentize(0.5);
     background: Theme.warning.transparentize(0.88);

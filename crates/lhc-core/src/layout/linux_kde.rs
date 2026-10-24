@@ -19,6 +19,9 @@ use zbus::blocking::{Connection, Proxy};
 
 use super::LayoutInfo;
 
+/// Pause before the signal watcher reconnects.
+const RECONNECT_DELAY: Duration = Duration::from_secs(2);
+
 type LayoutList = Vec<(String, String, String)>;
 
 const SERVICE: &str = "org.kde.keyboard";
@@ -104,8 +107,10 @@ fn run_signal_watcher() {
         match signal_watch_once() {
             Ok(()) => return,
             Err(e) => {
-                log::debug!("[layout/kde] signal watcher error: {e}; retrying in 2s");
-                thread::sleep(Duration::from_secs(2));
+                log::debug!(
+                    "[layout/kde] signal watcher error: {e}; retrying in {RECONNECT_DELAY:?}"
+                );
+                thread::sleep(RECONNECT_DELAY);
             }
         }
     }

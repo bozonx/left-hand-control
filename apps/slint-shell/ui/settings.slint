@@ -114,19 +114,19 @@ export component SettingsWindow inherits Window {
                     if AppState.in-development: VerticalLayout { alignment: center; Badge {
                         min-width: 40px;
                         text: AppState.keyboard-language == "" ? "—" : AppState.keyboard-language;
-                        Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 4px; HorizontalLayout { padding: 8px; Text { text: @tr("Current keyboard layout in the system") + "\n" + AppState.keyboard-language; color: Theme.text; } } } }
+                        Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-small; HorizontalLayout { padding: 8px; Text { text: @tr("Current keyboard layout in the system") + "\n" + AppState.keyboard-language; color: Theme.text; } } } }
                     }
                     }
                     if AppState.in-development: GameModeButton {}
                     active-layout := Rectangle {
-                        width: 180px; height: 36px; border-radius: 6px; background: Theme.surface; border-width: 1px; border-color: Theme.border;
+                        width: 180px; height: 36px; border-radius: Theme.radius; background: Theme.surface; border-width: 1px; border-color: Theme.border;
                         HorizontalLayout { padding: 8px; spacing: 6px;
                             Image { width: 14px; source: @image-url("icons/keyboard.svg"); colorize: Theme.muted; }
                             Text { text: LayoutLibrary.active-label == "" ? @tr("No active layout") : @tr("Active: {}", LayoutLibrary.active-label); color: Theme.text; overflow: elide; vertical-alignment: center; }
                             if !LayoutLibrary.automatic: Image { width: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; }
                         }
                         TouchArea { enabled: !LayoutLibrary.automatic; mouse-cursor: pointer; clicked => { LayoutLibrary.refresh(); active-menu.show(); } }
-                        Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 4px; HorizontalLayout { padding: 8px; Text { text: LayoutLibrary.automatic ? @tr("Current active layout (selected automatically by switching rules)") : @tr("Current active layout — click to switch"); color: Theme.text; } } } }
+                        Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-small; HorizontalLayout { padding: 8px; Text { text: LayoutLibrary.automatic ? @tr("Current active layout (selected automatically by switching rules)") : @tr("Current active layout — click to switch"); color: Theme.text; } } } }
                     }
                     Rectangle { width: 1px; background: Theme.divider; }
                     VerticalLayout { alignment: center; MapperToggle {
@@ -209,7 +209,7 @@ export component SettingsWindow inherits Window {
     }
     active-menu := PopupWindow {
         x: active-layout.absolute-position.x; y: 52px; width: 240px;
-        Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: 8px;
+        Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-large;
             VerticalLayout { padding: 6px; spacing: 4px;
                 for name[index] in LayoutLibrary.names: Button {
                     text: name; primary: name == LayoutLibrary.active-label;
@@ -231,7 +231,7 @@ export component SettingsWindow inherits Window {
         }
     }
     if LayoutLibrary.dialog == LibraryDialog.conflict: Rectangle {
-        background: #00000099;
+        background: Theme.scrim;
         TouchArea { scroll-event(event) => { accept } }
         FocusScope {
             focus-on-tab-navigation: false;
@@ -253,7 +253,7 @@ export component SettingsWindow inherits Window {
                 conflict-layout := VerticalLayout {
                     padding: 18px;
                     spacing: 12px;
-                    Text { text: @tr("Layout changed on disk"); color: Theme.text; font-size: 16px; font-weight: 700; wrap: word-wrap; }
+                    Text { text: @tr("Layout changed on disk"); color: Theme.text; font-size: Theme.font-large; font-weight: 700; wrap: word-wrap; }
                     Text {
                         text: @tr("The file of “{}” was changed by another program after you opened it. Your edits are kept until you choose what to do.", LayoutLibrary.current-label);
                         color: Theme.text; wrap: word-wrap;

@@ -293,7 +293,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let library = ui.global::<LayoutLibrary>();
     ui.invoke_navigate(Page::Keyboard, MenuKind::Emoji);
     ui.global::<KeyEditor>().invoke_edit(33);
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("text:Привет 👋".into());
     picker.invoke_apply();
     library.invoke_save_as("Test layout".into());
@@ -308,7 +308,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.invoke_navigate(Page::Keyboard, MenuKind::Emoji);
     assert!(library.get_editor_open());
     ui.global::<KeyEditor>().invoke_edit(33);
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("text:Changed".into());
     picker.invoke_apply();
     assert!(library.get_dirty());
@@ -428,19 +428,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(document.read().layout().rules.len(), count);
     rules.invoke_add();
     let picker = ui.global::<ActionPicker>();
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("CapsLock".into());
     picker.invoke_apply();
     assert_eq!(rules.get_selected(), 0);
     assert_eq!(document.read().layout().rules[0].key, "CapsLock");
     assert_eq!(document.read().layout().rules[1].key, "F14");
     rules.invoke_open_dialog(0, RuleDialog::Tap);
-    picker.invoke_select_behavior(1);
+    picker.invoke_select_behavior(PickerBehavior::Swallow);
     picker.set_value("".into());
     picker.invoke_apply();
     assert_eq!(document.read().layout().rules[0].tap_action, None);
     rules.invoke_open_dialog(0, RuleDialog::Tap);
-    picker.invoke_select_behavior(0);
+    picker.invoke_select_behavior(PickerBehavior::Native);
     picker.set_value("".into());
     picker.invoke_apply();
     assert_eq!(
@@ -484,7 +484,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         rules.set_dialog(RuleDialog::None);
     }
     rules.invoke_open_dialog(0, RuleDialog::Key);
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("ShiftLeft+ControlRight".into());
     picker.invoke_apply();
     assert_eq!(
@@ -495,7 +495,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(rules.get_hold_mode(), 2);
     rules.invoke_open_dialog(0, RuleDialog::LongHold);
     assert!(!picker.get_hold_action());
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("macro:copyLine".into());
     picker.invoke_apply();
     assert_eq!(
@@ -535,7 +535,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     rules.set_double_timeout("350".into());
     rules.invoke_apply_advanced();
     rules.invoke_open_dialog(0, RuleDialog::Hold);
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("AltLeft".into());
     picker.invoke_apply();
     assert_eq!(rules.get_dialog(), RuleDialog::None);
@@ -564,7 +564,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     // Choosing the key only moves on to its action; cancelling there adds nothing.
     layers.invoke_add_extra();
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("F16".into());
     picker.invoke_apply();
     assert!(picker.get_opened());
@@ -581,10 +581,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         3
     );
     layers.invoke_add_extra();
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("F16".into());
     picker.invoke_apply();
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("F1".into());
     picker.invoke_apply();
     assert!(!picker.get_opened());
@@ -600,7 +600,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(layers.get_extras().row_data(0).unwrap().key, "F16");
     layers.invoke_pick_extra(0, false);
     assert!(picker.get_layer_action());
-    picker.invoke_select_behavior(1);
+    picker.invoke_select_behavior(PickerBehavior::Swallow);
     picker.set_value("".into());
     picker.invoke_apply();
     assert_eq!(
@@ -608,7 +608,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         None
     );
     layers.invoke_pick_extra(0, true);
-    picker.invoke_select_behavior(2);
+    picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("F17".into());
     picker.invoke_apply();
     assert!(
@@ -627,7 +627,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(picker.get_opened());
     assert!(picker.get_layer_action());
     assert_eq!(layers.get_dialog(), LayerDialog::None);
-    picker.invoke_select_behavior(1);
+    picker.invoke_select_behavior(PickerBehavior::Swallow);
     picker.set_value("".into());
     picker.invoke_apply();
     assert!(!picker.get_opened());
@@ -637,7 +637,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     layers.invoke_open_dialog(LayerDialog::EditKey, 0);
     assert!(picker.get_ignore_key());
-    picker.invoke_select_behavior(0);
+    picker.invoke_select_behavior(PickerBehavior::Native);
     picker.invoke_apply();
     assert_eq!(
         document.read().layer_key(&second, "Backquote"),
@@ -767,12 +767,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let rules = ui.global::<RulesEditor>();
                 let picker = ui.global::<ActionPicker>();
                 rules.invoke_add();
-                picker.invoke_select_behavior(2);
+                picker.invoke_select_behavior(PickerBehavior::Action);
                 picker.set_value("ShiftLeft+ControlRight".into());
                 picker.invoke_apply();
                 rules.invoke_edit(RuleField::HoldMode, "2".into());
                 rules.invoke_open_dialog(0, RuleDialog::LongHold);
-                picker.invoke_select_behavior(2);
+                picker.invoke_select_behavior(PickerBehavior::Action);
                 picker.set_value("text:hello".into());
                 picker.invoke_apply();
             }
@@ -813,7 +813,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ui.invoke_navigate(Page::Rules, MenuKind::Emoji);
                 ui.global::<RulesEditor>().invoke_open_dialog(1, RuleDialog::Advanced);
                 ui.global::<RulesEditor>().invoke_open_dialog(1, RuleDialog::Hold);
-                ui.global::<ActionPicker>().invoke_select_behavior(2);
+                ui.global::<ActionPicker>().invoke_select_behavior(PickerBehavior::Action);
                 ui.global::<ActionPicker>().set_value("Ctrl".into());
             }
             29 => {

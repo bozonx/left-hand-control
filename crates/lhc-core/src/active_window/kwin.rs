@@ -15,6 +15,10 @@ use zbus::names::BusName;
 
 use super::ActiveWindow;
 
+/// How often an open session is checked, and the pause before reopening a failed one.
+const SESSION_CHECK_INTERVAL: Duration = Duration::from_secs(1);
+const SESSION_RETRY: Duration = Duration::from_secs(3);
+
 const KWIN: &str = "org.kde.KWin";
 const OBJECT_PATH: &str = "/dev/bozonx/LeftHandControl/KWin";
 const INTERFACE: &str = "dev.bozonx.LeftHandControl.KWin";
@@ -282,7 +286,7 @@ fn sync_session(
     open: impl FnOnce(bool) -> Result<Session, String>,
 ) {
     if let Some(session) = slot.as_mut()
-        && now.duration_since(session.checked) >= Duration::from_secs(1)
+        && now.duration_since(session.checked) >= SESSION_CHECK_INTERVAL
     {
         session.checked = now;
         if owner(&session.connection).as_deref() != Some(session.owner.as_str()) {
@@ -292,7 +296,7 @@ fn sync_session(
         }
     }
     if slot.is_none() {
-        if retry.is_some_and(|at| now.duration_since(at) < Duration::from_secs(3)) {
+        if retry.is_some_and(|at| now.duration_since(at) < SESSION_RETRY) {
             return;
         }
         *retry = Some(now);
