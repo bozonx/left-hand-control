@@ -364,16 +364,16 @@
           "action": "text:Works on my machine. Which version / OS are you on?"
         },
         "KeyW": {
-          "name": "Thanks",
-          "action": "text:Thanks!"
+          "name": "Nice day",
+          "action": "text:Have a nice day!"
         },
         "KeyE": {
           "name": "Good morning",
           "action": "text:Good morning!"
         },
         "KeyR": {
-          "name": "Nice day",
-          "action": "text:Have a nice day!"
+          "name": "Thanks",
+          "action": "text:Thanks!"
         },
         "KeyT": {
           "name": "Sorry for the inconvenience",
