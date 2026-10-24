@@ -11,8 +11,9 @@ import { Button, HorizontalBox, TextEdit, Palette, VerticalBox } from "std-widge
 
 /// One slot of a hand grid. `index < 0` is an empty slot; otherwise it is the
 /// layer key index passed back with `LayerDialog.edit-key`.
-export struct LayerKeyCell { index: int, label: string, code: string, kind: Assignment, action: string, icon: ActionKind, category: PickerCategory, emoji: bool }
-export struct LayerExtraRow { key: string, kind: Assignment, action: string, icon: ActionKind, category: PickerCategory }
+/// `holds`: the keystroke keeps its modifiers held until the layer is released.
+export struct LayerKeyCell { index: int, label: string, code: string, kind: Assignment, action: string, icon: ActionKind, category: PickerCategory, emoji: bool, holds: bool }
+export struct LayerExtraRow { key: string, kind: Assignment, action: string, icon: ActionKind, category: PickerCategory, holds: bool }
 
 /// Layers of the layout being edited and their keymaps.
 export global LayersEditor {
@@ -126,8 +127,18 @@ export component ActionText inherits HorizontalLayout {
     }
 }
 
+/// Marks a layer key whose modifiers stay held until the layer is released.
+component HoldsMarker inherits Rectangle {
+    width: 6px;
+    height: 6px;
+    border-radius: 3px;
+    background: Theme.accent;
+}
+
 component ExtraFieldButton inherits Rectangle {
     in property <string> text;
+    /// Shows the held-modifiers marker after the text.
+    in property <bool> holds;
     callback clicked();
     height: 32px;
     border-radius: Theme.radius;
@@ -136,10 +147,13 @@ component ExtraFieldButton inherits Rectangle {
     background: touch.has-hover || focus.has-focus ? Theme.hover : Theme.card;
     accessible-role: button;
     accessible-label: root.text;
+    accessible-description: root.holds ? @tr("Keep modifiers held until the layer is released") : "";
     accessible-action-default => { root.clicked(); }
     HorizontalLayout {
         padding-left: Theme.space-m-plus; padding-right: Theme.space-m-plus;
-        Text { min-width: 0px; text: root.text; color: Theme.text; font-size: Theme.font-medium; vertical-alignment: center; overflow: elide; }
+        spacing: Theme.space-s;
+        Text { min-width: 0px; horizontal-stretch: 1; text: root.text; color: Theme.text; font-size: Theme.font-medium; vertical-alignment: center; overflow: elide; }
+        if root.holds: VerticalLayout { alignment: center; HoldsMarker { } }
     }
     focus := FocusScope {
         key-pressed(event) => {
@@ -148,6 +162,11 @@ component ExtraFieldButton inherits Rectangle {
         }
     }
     touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+    if root.holds: Tooltip {
+        Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-small;
+            HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-s; VerticalLayout { alignment: center; HoldsMarker { } } Text { text: @tr("Keep modifiers held until the layer is released"); color: Theme.text; } }
+        }
+    }
 }
 
 // The row itself is the TouchArea, so it keeps `has-hover` while the pointer is over one of
@@ -165,6 +184,7 @@ component ExtraKeyLine inherits TouchArea {
             ExtraFieldButton {
                 horizontal-stretch: 1;
                 min-width: 0px;
+                holds: root.item.holds && root.item.kind == Assignment.action;
                 text: root.item.kind == Assignment.transparent ? @tr("Normal key behavior") : root.item.kind == Assignment.swallow ? @tr("Suppress") : root.item.action;
                 clicked => { LayersEditor.pick-extra(root.index, false); }
             }
@@ -210,7 +230,7 @@ component KeyCap inherits Rectangle {
     opacity: root.dragged ? Theme.dragged-opacity : 1;
     accessible-role: button;
     accessible-label: root.cell.label;
-    accessible-description: root.cell.kind == Assignment.transparent ? @tr("Inherit") : root.cell.kind == Assignment.swallow ? @tr("Suppress") : root.cell.action;
+    accessible-description: root.cell.kind == Assignment.transparent ? @tr("Inherit") : root.cell.kind == Assignment.swallow ? @tr("Suppress") : root.cell.holds ? root.cell.action + ". " + @tr("Keep modifiers held until the layer is released") : root.cell.action;
     accessible-action-default => { root.clicked(); }
     VerticalLayout {
         padding: Theme.space-xs;
@@ -230,6 +250,7 @@ component KeyCap inherits Rectangle {
             ActionText { min-width: 0px; kind: root.cell.kind; action: root.cell.action; category: root.cell.category; emoji: root.cell.emoji; }
         }
     }
+    if root.cell.holds && root.cell.kind == Assignment.action: HoldsMarker { x: parent.width - self.width - 4px; y: 4px; }
     focus := FocusScope {
         key-pressed(event) => {
             if event.text == " " || event.text == "\n" { root.clicked(); return accept; }
@@ -265,7 +286,10 @@ component KeyCap inherits Rectangle {
     }
     if root.cell.kind == Assignment.action: Tooltip {
         Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-small;
-            HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-s; CategoryIcon { category: root.cell.category; } Text { text: root.cell.action; color: Theme.text; } }
+            VerticalLayout { padding: Theme.space-m; spacing: Theme.space-s;
+                HorizontalLayout { spacing: Theme.space-s; CategoryIcon { category: root.cell.category; } Text { text: root.cell.action; color: Theme.text; } }
+                if root.cell.holds: HorizontalLayout { spacing: Theme.space-s; VerticalLayout { alignment: center; HoldsMarker { } } Text { text: @tr("Keep modifiers held until the layer is released"); color: Theme.muted; } }
+            }
         }
     }
 }

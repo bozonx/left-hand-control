@@ -9,7 +9,7 @@ use crate::{
         window,
     },
 };
-use i_slint_core::items::MouseCursor;
+use i_slint_core::cursor::MouseCursorInner;
 use smithay_client_toolkit::{
     self as sctk,
     compositor::{CompositorState, Region},
@@ -211,7 +211,9 @@ impl SpellWin {
             pointer: None,
             pointer_data: None,
             cursor_shape: cursor_manager,
-            current_wayland_cursor: MouseCursor::Default,
+            current_wayland_cursor: MouseCursorInner::BuiltIn(
+                i_slint_core::items::BuiltInMouseCursor::Default,
+            ),
             last_cursor_enter_serial: None,
         };
         let input_region = Region::new(&compositor).expect("Couldn't create region");
@@ -260,7 +262,7 @@ impl SpellWin {
         };
 
         let monitors = Self::get_available_monitors(&mut event_queue, &mut win).unwrap_or_default();
-        let mut output_info = window_conf
+        let output_info = window_conf
             .monitor_name
             .as_ref()
             .and_then(|name| monitors.get(name).cloned());
@@ -278,10 +280,11 @@ impl SpellWin {
             }
             Dimension::Percentage(y) => {
                 window_conf.evaluated_width = output_info
-                    .as_mut()
+                    .as_ref()
                     .expect("Output info couldn't be retrieved")
                     .1 as u32
-                    / y;
+                    * y
+                    / 100;
             }
         }
 
@@ -291,14 +294,15 @@ impl SpellWin {
                 window_conf.evaluated_height = output_info
                     .as_ref()
                     .expect("Output info couldn't be retrieved")
-                    .1 as u32
+                    .2 as u32
             }
             Dimension::Percentage(y) => {
                 window_conf.evaluated_height = output_info
                     .as_ref()
                     .expect("Output info couldn't be retrieved")
-                    .1 as u32
-                    / y;
+                    .2 as u32
+                    * y
+                    / 100;
             }
         }
         win.config = window_conf.clone();

@@ -117,6 +117,7 @@ fn hand_cells(
                 category,
                 action: action.into(),
                 icon,
+                holds: false,
             });
             index += 1;
         }
@@ -135,15 +136,29 @@ fn hands(
 ) -> (Vec<LayerKeyCell>, Vec<LayerKeyCell>) {
     let lookup = |code: &str| assignment(keymap.and_then(|map| map.keys.get(code)), names);
     let left_len: usize = keyboard::LEFT_HAND.iter().map(|row| row.len()).sum();
+    let mark_holds = |mut cells: Vec<LayerKeyCell>| {
+        if let Some(map) = keymap {
+            for cell in &mut cells {
+                cell.holds = map.hold_modifiers.contains(cell.code.as_str());
+            }
+        }
+        cells
+    };
     (
-        hand_cells(&keyboard::LEFT_HAND, keyboard::LEFT_COLUMNS, 0, 2, &lookup),
-        hand_cells(
+        mark_holds(hand_cells(
+            &keyboard::LEFT_HAND,
+            keyboard::LEFT_COLUMNS,
+            0,
+            2,
+            &lookup,
+        )),
+        mark_holds(hand_cells(
             &keyboard::RIGHT_HAND,
             keyboard::RIGHT_COLUMNS,
             left_len,
             0,
             &lookup,
-        ),
+        )),
     )
 }
 
@@ -261,6 +276,7 @@ fn refresh(ui: &SettingsWindow, document: &Document) {
                     .map(|(key, value)| {
                         let (kind, action, icon, category) = assignment(Some(&value), &names);
                         LayerExtraRow {
+                            holds: map.hold_modifiers.contains(&key),
                             key: key.into(),
                             kind,
                             category,

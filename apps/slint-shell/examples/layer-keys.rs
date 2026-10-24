@@ -1,7 +1,8 @@
-//! Dragging a key of the layer keyboard onto another key swaps their assignments.
+//! Dragging a key of the layer keyboard onto another key swaps their assignments;
+//! keys that keep their modifiers held are marked.
 use lhc_core::{config_document::KeyAssignment, storage::StoragePaths};
 use slint::platform::{PointerEventButton, WindowEvent};
-use slint::{ComponentHandle, LogicalPosition};
+use slint::{ComponentHandle, LogicalPosition, Model};
 use slint_shell::{
     Document, bind_document,
     document::View,
@@ -35,6 +36,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let id = config.create_layer("Drag", "")?;
             config.set_layer_key(&id, "KeyQ", KeyAssignment::Action("ArrowUp".into()))?;
             config.set_layer_key(&id, "KeyJ", KeyAssignment::Swallow)?;
+            config.set_layer_key(&id, "KeyW", KeyAssignment::Action("Alt+Tab".into()))?;
+            config.set_layer_key_holds_modifiers(&id, "KeyW", true)?;
+            config.set_extra_key(&id, None, "F13", KeyAssignment::Action("Alt+Tab".into()))?;
+            config.set_layer_key_holds_modifiers(&id, "F13", true)?;
             Ok(id)
         })?
         .value;
@@ -63,6 +68,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             0..=4 => {}
             5 => {
                 snapshot(&ui, "layer-keys");
+                let editor = ui.global::<LayersEditor>();
+                let marked: Vec<_> = editor
+                    .get_left_cells()
+                    .iter()
+                    .filter(|cell| cell.holds)
+                    .map(|cell| cell.code.to_string())
+                    .collect();
+                assert_eq!(marked, ["KeyW"]);
+                assert!(editor.get_extras().iter().all(|row| row.holds == (row.key == "F13")));
                 // From the left hand to the right one: the swap crosses both grids.
                 press(q);
                 window.dispatch_event(WindowEvent::PointerMoved { position: LogicalPosition::new(q.x + 40.0, q.y) });
@@ -103,7 +117,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 press(k);
                 release(k);
                 assert!(ui.global::<slint_shell::ui::ActionPicker>().get_opened());
-                println!("Layer keys passed: drag swaps assignments across hands, drop on empty key, cancel, click");
+                println!("Layer keys passed: held-modifier marks, drag swaps assignments across hands, drop on empty key, cancel, click");
                 slint::quit_event_loop().unwrap();
             }
             _ => {}

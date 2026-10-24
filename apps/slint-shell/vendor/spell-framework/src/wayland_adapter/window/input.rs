@@ -2,7 +2,10 @@ use crate::{
     slint_adapter::SpellSkiaWinAdapter,
     wayland_adapter::{SpellWin, common, common::get_string},
 };
-use slint::{SharedString, platform::WindowEvent};
+use slint::{
+    SharedString,
+    platform::{WindowEvent, WindowEventDispatchResult},
+};
 use smithay_client_toolkit::{
     reexports::client::{Connection, QueueHandle, protocol::wl_pointer},
     seat::{
@@ -62,7 +65,10 @@ impl TouchHandler for SpellWin {
                     y: position.1 as f32,
                 },
             })
-            .unwrap_or_else(|err| warn!("Touch move event failed with error: {:?}", err));
+            .unwrap_or_else(|err| {
+                warn!("Touch move event failed with error: {:?}", err);
+                WindowEventDispatchResult::Rejected
+            });
     }
 
     fn shape(
@@ -115,14 +121,14 @@ impl PointerHandler for SpellWin {
                     continue;
                 };
 
-            match event.kind {
+            let result = match event.kind {
                 Enter { serial } => {
                     trace!(
                         "Pointer entered with serial {:?} at: {:?}",
                         serial, event.position
                     );
 
-                    adapter
+                    let result = adapter
                         .try_dispatch_event(WindowEvent::PointerMoved {
                             position: slint::LogicalPosition {
                                 x: event.position.0 as f32,
@@ -133,9 +139,11 @@ impl PointerHandler for SpellWin {
                             warn!(
                                 "Pointer move event after entry failed with error: {:?}",
                                 err
-                            )
+                            );
+                            WindowEventDispatchResult::Rejected
                         });
                     self.states.pointer_state.last_cursor_enter_serial = Some(serial);
+                    result
                 }
                 Leave { .. } => {
                     trace!("Pointer left: {:?}", event.position);
@@ -143,11 +151,12 @@ impl PointerHandler for SpellWin {
                     adapter
                         .try_dispatch_event(WindowEvent::PointerExited)
                         .unwrap_or_else(|err| {
-                            warn!("Pointer exit event failed with error: {:?}", err)
-                        });
+                            warn!("Pointer exit event failed with error: {:?}", err);
+                            WindowEventDispatchResult::Rejected
+                        })
                 }
                 Motion { .. } => {
-                    trace!("Pointer entered @{:?}", event.position);
+                    trace!("Pointer moved @{:?}", event.position);
 
                     adapter
                         .try_dispatch_event(WindowEvent::PointerMoved {
@@ -157,8 +166,9 @@ impl PointerHandler for SpellWin {
                             },
                         })
                         .unwrap_or_else(|err| {
-                            warn!("Pointer move event failed with error: {:?}", err)
-                        });
+                            warn!("Pointer move event failed with error: {:?}", err);
+                            WindowEventDispatchResult::Rejected
+                        })
                 }
                 Press { button, .. } => {
                     trace!("Press {:?} @ {:?}", button, event.position);
@@ -172,8 +182,9 @@ impl PointerHandler for SpellWin {
                             button: common::map_pointer_button(button),
                         })
                         .unwrap_or_else(|err| {
-                            warn!("Pointer press event failed with error: {:?}", err)
-                        });
+                            warn!("Pointer press event failed with error: {:?}", err);
+                            WindowEventDispatchResult::Rejected
+                        })
                 }
                 Release { button, .. } => {
                     trace!("Release {:?} @ {:?}", button, event.position);
@@ -187,8 +198,9 @@ impl PointerHandler for SpellWin {
                             button: common::map_pointer_button(button),
                         })
                         .unwrap_or_else(|err| {
-                            warn!("Pointer release event failed with error: {:?}", err)
-                        });
+                            warn!("Pointer release event failed with error: {:?}", err);
+                            WindowEventDispatchResult::Rejected
+                        })
                 }
                 Axis {
                     horizontal,
@@ -208,8 +220,10 @@ impl PointerHandler for SpellWin {
                                 delta_y: vertical.absolute as f32,
                             })
                             .unwrap_or_else(|err| {
-                                warn!("Pointer scroll event failed with error: {:?}", err)
-                            });
+                                warn!("Pointer scroll event failed with error: {:?}", err);
+
+                                WindowEventDispatchResult::Rejected
+                            })
                     } else {
                         adapter
                             .try_dispatch_event(WindowEvent::PointerScrolled {
@@ -221,10 +235,16 @@ impl PointerHandler for SpellWin {
                                 delta_y: -vertical.absolute as f32,
                             })
                             .unwrap_or_else(|err| {
-                                warn!("Pointer scroll event failed with error: {:?}", err)
-                            });
+                                warn!("Pointer scroll event failed with error: {:?}", err);
+                                WindowEventDispatchResult::Rejected
+                            })
                     }
                 }
+            };
+            if let WindowEventDispatchResult::Rejected = result {
+                // Lower logging level because rejected if nothing consimes the
+                // result also.
+                trace!("Window dispatch event is rejected");
             }
         }
     }

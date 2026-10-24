@@ -9,7 +9,7 @@ Guide for AI coding agents working in this repository. Read it before making cha
 - **The product is the Slint shell** in `apps/slint-shell/` on top of the shared Rust crate `crates/lhc-core/`. All new work goes here.
 - Primary target: **Linux, KDE Plasma 6 on Wayland**. Windows has a mapper backend (session-wide low-level hooks + `SendInput`); macOS has only the shell. Neither is accepted yet.
 
-Stack: Rust stable ≥ 1.92 (edition 2024), Cargo workspace, Slint **1.17.1** (pinned, `=1.17.1`) with winit 0.30, `ksni` tray, `evdev`/`uinput`, `zbus`, vendored `spell-framework` for layer-shell popups.
+Stack: Rust stable ≥ 1.92 (edition 2024), Cargo workspace, Slint **1.18.1** (pinned, `=1.18.1`) with winit 0.30, `ksni` tray, `evdev`/`uinput`, `zbus`, vendored `spell-framework` for layer-shell popups.
 
 ## Commands
 
@@ -141,7 +141,7 @@ docs/                         # development/, design/, testing/; README.md index
 
 **Vendored crates**
 - `spell-framework` is an explicit workspace member: workspace tests cover it. `i-slint-core` is a patched dependency, excluded from workspace membership.
-- `vendor/i-slint-core` (via `[patch.crates-io]`, text-field undo/redo and shortcut fixes) and `vendor/spell-framework` are patched copies. Any change there must be recorded in that directory's `PATCHES.md`. When upgrading Slint, port or drop the patch and keep the `=1.17.1` pins (`slint`, `i-slint-core`, `slint-build`) in sync.
+- `vendor/i-slint-core` (via `[patch.crates-io]`, text-field undo/redo and shortcut fixes) and `vendor/spell-framework` are patched copies. Any change there must be recorded in that directory's `PATCHES.md`. When upgrading Slint, port or drop the patch and keep the `=1.18.1` pins (`slint`, `i-slint-core`, `slint-build`) in sync.
 
 ## Platform support
 

@@ -3,7 +3,7 @@
 Основная desktop-оболочка Left Hand Control на Slint и `lhc-core`.
 Оболочка входит в Cargo workspace вместе с `lhc-core` и явно включённым
 vendored-пакетом `spell-framework`. Патч `i-slint-core` остаётся внешней для
-workspace зависимостью. Slint 1.17.1 /
+workspace зависимостью. Slint 1.18.1 /
 winit 0.30, ksni (D-Bus StatusNotifierItem без GTK), evdev. Редактор настроек
 работает с реальными назначениями клавиш, слоями, правилами, макросами,
 командами и Quick/Emoji. Библиотека поддерживает раздельные редактирование и
@@ -176,9 +176,8 @@ python3 apps/slint-shell/scripts/summarize.py /tmp/slint-evdev.csv
 
 ## Spell / layer-shell
 
-Приложение использует **Slint 1.17.1** и Spell **1.0.6**, Git revision
-`c3139561519cbd78fc5ac8721e1b5a6eb6412f42`. Spell из этой ревизии не собирается
-со Slint 1.18 (`i_slint_core::items::MouseCursor` удалён из прежнего места).
+Приложение использует **Slint 1.18.1** и Spell **1.0.6**, Git revision
+`b37604eb46edfec5861720915db87e646b645bd1` (первая ревизия с поддержкой Slint 1.18).
 
 ```sh
 cargo build --locked -p slint-shell --features probes --examples --bin left-hand-control

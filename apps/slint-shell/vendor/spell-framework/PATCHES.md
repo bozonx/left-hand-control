@@ -1,7 +1,7 @@
 # Local patches
 
-Source: https://github.com/VimYoung/Spell/tree/c3139561519cbd78fc5ac8721e1b5a6eb6412f42/spell-framework
-Version: 1.0.6. Original license is included in LICENSE.
+Source: https://github.com/VimYoung/Spell/tree/b37604eb46edfec5861720915db87e646b645bd1/spell-framework
+Version: 1.0.6 (unreleased Git revision with Slint 1.18 support). Original license is included in LICENSE.
 
 This copy is linked into the Slint shell (`--features spell`); the project is
 licensed GPL-3.0-or-later, compatible with this crate's license.
@@ -10,7 +10,7 @@ licensed GPL-3.0-or-later, compatible with this crate's license.
 - Bound pending frame callbacks, avoid hidden-surface commits, and recreate compositor-closed layers after output removal.
 - Deliver focus, committed rendered frame and layer closure through per-window callbacks.
 - Deliver keyboard repeats and synchronize modifiers, including modifiers held before focus; release pressed keys on focus loss.
-- Resolve output objects on each window's own Wayland connection.
+- Resolve output objects on each window's own Wayland connection (replaces the upstream global `AVAILABLE_MONITORS` lookup in `SpellWin::create_window`).
 - Calculate physical sizes from original logical sizes on every scale change; preserve logical layer geometry.
 
 - `on_call` dispatches without waiting; the application blocks on the event-loop file descriptors itself instead of spinning every millisecond.
