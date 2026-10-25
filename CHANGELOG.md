@@ -13,6 +13,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Rule headers truncate advanced option summaries before condition labels when the window narrows.
+
 - The device picker shows each device on two lines: its name (read from the `by-id` link when the device reports none) and a shortened path. It is wider, highlights the selected device, folds non-matching and virtual devices behind “Show N more devices”, and keeps a saved device that is not connected as a “Not connected” entry instead of switching to manual input.
 
 - Gate long-hold actions, emoji and quick-action popups, user macros, mouse assignment controls and KDE action selection behind In development features.

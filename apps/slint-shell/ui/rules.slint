@@ -329,10 +329,14 @@ export component RulesPage inherits VerticalBox {
                 opacity: ItemStyle.opacity(rule.enabled) * (DragDrop.dragging && DragDrop.group == DragGroups.rules && DragDrop.source == index ? Theme.dragged-opacity : 1);
 
                 rule-content := VerticalLayout { min-width: 0px; padding: Theme.space-l-plus; spacing: Theme.space-m-plus;
-                    HorizontalLayout { spacing: Theme.space-s;
-                        DragHandle { group: DragGroups.rules; index: index; count: RulesEditor.rows.length; dropped(from, to) => { RulesEditor.move(from, to); } }
-                        CheckBox { accessible-label: @tr("Enabled"); checked: rule.enabled; toggled => { RulesEditor.select(index); RulesEditor.edit(RuleField.enabled, self.checked ? "true" : "false"); } }
-                        ConditionsCell { enabled: rule.key != ""; rule: rule; clicked => { ConditionChoices.refresh(); RulesEditor.open-dialog(index, RuleDialog.conditions); } }
+                    rule-header := HorizontalLayout { spacing: Theme.space-s;
+                        rule-drag := DragHandle { group: DragGroups.rules; index: index; count: RulesEditor.rows.length; dropped(from, to) => { RulesEditor.move(from, to); } }
+                        rule-enabled := CheckBox { accessible-label: @tr("Enabled"); checked: rule.enabled; toggled => { RulesEditor.select(index); RulesEditor.edit(RuleField.enabled, self.checked ? "true" : "false"); } }
+                        ConditionsCell {
+                            // Reserve conditions before allocating space to the optional summary.
+                            min-width: min(self.preferred-width, max(0px, rule-header.width - rule-drag.preferred-width - rule-enabled.preferred-width - rule-options.preferred-width - 5 * Theme.space-s - 12px));
+                            enabled: rule.key != ""; rule: rule; clicked => { ConditionChoices.refresh(); RulesEditor.open-dialog(index, RuleDialog.conditions); }
+                        }
                         Rectangle { horizontal-stretch: 1; min-width: 12px; }
                         if root.summary(rule) != "": Text {
                             horizontal-stretch: 0; min-width: 0px; max-width: 640px; overflow: elide; vertical-alignment: center;
@@ -340,7 +344,7 @@ export component RulesPage inherits VerticalBox {
                             color: Theme.muted;
                             TouchArea { enabled: rule.key != ""; mouse-cursor: pointer; clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); } }
                         }
-                        IconButton { enabled: rule.key != ""; icon: @image-url("icons/settings-2.svg"); tooltip: @tr("Advanced rule options"); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); }
+                        rule-options := IconButton { enabled: rule.key != ""; icon: @image-url("icons/settings-2.svg"); tooltip: @tr("Advanced rule options"); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); }
                             if RulesEditor.dialog == RuleDialog.advanced && RulesEditor.selected == index && RulesEditor.advanced-dirty: Rectangle {
                                 x: parent.width - 5px; y: 3px; width: 7px; height: 7px; border-radius: Theme.radius-small; background: Theme.accent;
                             }
