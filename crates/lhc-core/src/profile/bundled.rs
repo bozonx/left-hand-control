@@ -64,7 +64,7 @@ mod tests {
             };
             assert_eq!(bundled.display_name(), expected);
         }
-        assert_eq!(BUNDLED[0].display_name(), "LHC1");
+        assert_eq!(BUNDLED[0].display_name(), "LHC1 by Ivan K");
     }
 
     #[test]

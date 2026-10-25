@@ -608,17 +608,15 @@ export component SettingsPage inherits VerticalBox {
                     }
                     if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "libei" || SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "clipboard": VerticalBox {
                         padding: 0px; spacing: Theme.space-m;
-                        FormLabel { text: @tr("Paste shortcut"); }
+                        FormLabel { text: @tr("Paste shortcut"); info: @tr("Sent to the focused app to paste the text."); }
                         // Same order as PasteShortcut::ALL in lhc-core.
                         SelectField { width: 320px; height: 32px; vertical-stretch: 0; model: ["Shift+Insert", "Ctrl+V", "Ctrl+Shift+V"]; current-index: SettingsEditor.paste-shortcut-index; selected(value) => { SettingsEditor.paste-shortcut-index = self.current-index; SettingsEditor.save(); } }
-                        Text { vertical-stretch: 0; max-width: Theme.text-column; color: Theme.muted; wrap: word-wrap; text: @tr("Sent to the focused app to paste the text."); }
                     }
                     if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "libei" || SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "clipboard": VerticalBox {
                         padding: 0px; spacing: Theme.space-m;
-                        FormLabel { text: @tr("Paste shortcut in terminals"); }
+                        FormLabel { text: @tr("Paste shortcut in terminals"); info: @tr("Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."); }
                         // The main shortcut, then the order of PasteShortcut::ALL in lhc-core.
                         SelectField { width: 320px; height: 32px; vertical-stretch: 0; model: [@tr("Same as in other apps"), "Shift+Insert", "Ctrl+V", "Ctrl+Shift+V"]; current-index: SettingsEditor.terminal-paste-shortcut-index; selected(value) => { SettingsEditor.terminal-paste-shortcut-index = self.current-index; SettingsEditor.save(); } }
-                        Text { vertical-stretch: 0; max-width: Theme.text-column; color: Theme.muted; wrap: word-wrap; text: @tr("Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."); }
                     }
                     if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "ydotool": VerticalBox {
                         padding: 0px; spacing: Theme.space-m;
