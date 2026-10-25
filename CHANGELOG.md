@@ -16,6 +16,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Built-in macros have consistent, accurate names and IDs: for example “Move line down” is now “Empty line above” (`builtin:emptyLineAbove`), “Paste at line bottom” is “Paste on new line below”, and “buffer” is “clipboard”. Old `builtin:` IDs in existing configs and layouts keep working.
+
 - All dialogs share one frame: the same width rules, padding, rounded corners, bold title and close button, centred in the window; Escape and a click outside close each of them. The layer view switch on the Layers page uses the shared button group.
 
 - Settings → Key behavior shows “Defaults” as a section heading above its card, with “Tap”, “Hold” and “Macros” as equal groups inside.

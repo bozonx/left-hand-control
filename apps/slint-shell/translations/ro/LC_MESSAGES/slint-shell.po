@@ -3503,89 +3503,89 @@ msgstr "Aspect: {}"
 msgid "Select All"
 msgstr "Selectează tot"
 
-msgid "Move line down"
-msgstr "Mutați linia în jos"
+msgid "Empty line above"
+msgstr "Linie goală deasupra"
 
-msgid "Down + End"
-msgstr "Jos + Sfârșit"
+msgid "End of next line"
+msgstr "Sfârșitul liniei următoare"
 
-msgid "Up + End"
-msgstr "Sus + Sfârșit"
+msgid "End of previous line"
+msgstr "Sfârșitul liniei anterioare"
 
-msgid "Up 5 times"
-msgstr "Până de 5 ori"
+msgid "Move up 5 lines"
+msgstr "Sus cu 5 linii"
 
 msgid "Duplicate line"
 msgstr "Linie duplicat"
 
-msgid "Right + Space"
-msgstr "Dreapta + Spațiu"
+msgid "Space after next character"
+msgstr "Spațiu după caracterul următor"
 
 msgid "Empty line below"
 msgstr "Linie goală de mai jos"
 
-msgid "Cut word right from center"
-msgstr "Tăiați cuvântul chiar din centru"
+msgid "Cut word under cursor"
+msgstr "Decupează cuvântul de sub cursor"
 
-msgid "Copy word right from center"
-msgstr "Copiați cuvântul chiar din centru"
+msgid "Copy word under cursor"
+msgstr "Copiază cuvântul de sub cursor"
 
-msgid "Paste at line above"
-msgstr "Lipiți pe linia de mai sus"
+msgid "Paste on new line above"
+msgstr "Lipește pe o linie nouă deasupra"
 
-msgid "Replace word with buffer"
-msgstr "Înlocuiți cuvântul cu buffer"
+msgid "Replace word with clipboard"
+msgstr "Înlocuiește cuvântul cu clipboardul"
 
-msgid "Down + Home"
-msgstr "Jos + Acasă"
+msgid "Start of next line"
+msgstr "Începutul liniei următoare"
 
-msgid "Up + Home"
-msgstr "Sus + Acasă"
+msgid "Start of previous line"
+msgstr "Începutul liniei anterioare"
 
-msgid "Down 5 times"
-msgstr "Jos de 5 ori"
+msgid "Move down 5 lines"
+msgstr "Jos cu 5 linii"
 
-msgid "Paste at line bottom"
-msgstr "Lipiți în partea de jos a liniei"
+msgid "Paste on new line below"
+msgstr "Lipește pe o linie nouă dedesubt"
 
-msgid "Cut to start"
-msgstr "Tăiați pentru a începe"
+msgid "Cut to line start"
+msgstr "Decupează până la începutul liniei"
 
-msgid "Cut to end"
-msgstr "Tăiați până la capăt"
+msgid "Cut to line end"
+msgstr "Decupează până la sfârșitul liniei"
 
-msgid "Cut line content"
-msgstr "Tăiați conținutul liniei"
+msgid "Cut line text"
+msgstr "Decupează textul liniei"
 
-msgid "Cut and remove line"
-msgstr "Tăiați și îndepărtați linia"
+msgid "Cut whole line"
+msgstr "Decupează linia întreagă"
 
 msgid "Select 5 lines up"
 msgstr "Selectați 5 rânduri"
 
-msgid "Copy to start"
-msgstr "Copiați pentru a începe"
+msgid "Copy to line start"
+msgstr "Copiază până la începutul liniei"
 
-msgid "Copy to end"
-msgstr "Copiați până la final"
+msgid "Copy to line end"
+msgstr "Copiază până la sfârșitul liniei"
 
-msgid "Copy line"
-msgstr "Copiați linia"
+msgid "Copy line text"
+msgstr "Copiază textul liniei"
 
-msgid "Select whole line"
-msgstr "Selectați întreaga linie"
+msgid "Select line text"
+msgstr "Selectează textul liniei"
 
-msgid "Select word right from center"
-msgstr "Selectați cuvântul chiar din centru"
+msgid "Select word under cursor"
+msgstr "Selectează cuvântul de sub cursor"
 
-msgid "Replace to start with buffer"
-msgstr "Înlocuiți pentru a începe cu tampon"
+msgid "Replace to line start with clipboard"
+msgstr "Înlocuiește până la începutul liniei cu clipboardul"
 
-msgid "Replace to end with buffer"
-msgstr "Înlocuiți pentru a termina cu tampon"
+msgid "Replace to line end with clipboard"
+msgstr "Înlocuiește până la sfârșitul liniei cu clipboardul"
 
-msgid "Replace line with buffer"
-msgstr "Înlocuiți linia cu tampon"
+msgid "Replace line text with clipboard"
+msgstr "Înlocuiește textul liniei cu clipboardul"
 
 msgid "Select 5 lines down"
 msgstr "Selectați 5 linii în jos"

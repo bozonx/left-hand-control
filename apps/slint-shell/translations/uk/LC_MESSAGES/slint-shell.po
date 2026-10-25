@@ -3467,89 +3467,89 @@ msgstr "Макет: {}"
 msgid "Select All"
 msgstr "Вибрати все"
 
-msgid "Move line down"
-msgstr "Перемістити лінію вниз"
+msgid "Empty line above"
+msgstr "Порожній рядок вище"
 
-msgid "Down + End"
-msgstr "Вниз + Кінець"
+msgid "End of next line"
+msgstr "У кінець наступного рядка"
 
-msgid "Up + End"
-msgstr "Вгору + Кінець"
+msgid "End of previous line"
+msgstr "У кінець попереднього рядка"
 
-msgid "Up 5 times"
-msgstr "У 5 разів"
+msgid "Move up 5 lines"
+msgstr "Вгору на 5 рядків"
 
 msgid "Duplicate line"
 msgstr "Дубльований рядок"
 
-msgid "Right + Space"
-msgstr "Вправо + пробіл"
+msgid "Space after next character"
+msgstr "Пробіл після наступного символу"
 
 msgid "Empty line below"
 msgstr "Порожній рядок нижче"
 
-msgid "Cut word right from center"
-msgstr "Виріжте слово прямо від центру"
+msgid "Cut word under cursor"
+msgstr "Вирізати слово під курсором"
 
-msgid "Copy word right from center"
-msgstr "Скопіюйте слово прямо від центру"
+msgid "Copy word under cursor"
+msgstr "Копіювати слово під курсором"
 
-msgid "Paste at line above"
-msgstr "Вставте в рядок вище"
+msgid "Paste on new line above"
+msgstr "Вставити рядком вище"
 
-msgid "Replace word with buffer"
-msgstr "Замінити слово на буфер"
+msgid "Replace word with clipboard"
+msgstr "Замінити слово з буфера обміну"
 
-msgid "Down + Home"
-msgstr "Вниз + Додому"
+msgid "Start of next line"
+msgstr "На початок наступного рядка"
 
-msgid "Up + Home"
-msgstr "Вгору + Додому"
+msgid "Start of previous line"
+msgstr "На початок попереднього рядка"
 
-msgid "Down 5 times"
-msgstr "Вниз у 5 разів"
+msgid "Move down 5 lines"
+msgstr "Вниз на 5 рядків"
 
-msgid "Paste at line bottom"
-msgstr "Вставити внизу рядка"
+msgid "Paste on new line below"
+msgstr "Вставити рядком нижче"
 
-msgid "Cut to start"
-msgstr "Виріжте для початку"
+msgid "Cut to line start"
+msgstr "Вирізати до початку рядка"
 
-msgid "Cut to end"
-msgstr "Обрізати до кінця"
+msgid "Cut to line end"
+msgstr "Вирізати до кінця рядка"
 
-msgid "Cut line content"
-msgstr "Вирізати вміст лінії"
+msgid "Cut line text"
+msgstr "Вирізати текст рядка"
 
-msgid "Cut and remove line"
-msgstr "Виріжте та видаліть лінію"
+msgid "Cut whole line"
+msgstr "Вирізати рядок повністю"
 
 msgid "Select 5 lines up"
 msgstr "Виберіть 5 рядків"
 
-msgid "Copy to start"
-msgstr "Скопіюйте для початку"
+msgid "Copy to line start"
+msgstr "Копіювати до початку рядка"
 
-msgid "Copy to end"
-msgstr "Копіювати до кінця"
+msgid "Copy to line end"
+msgstr "Копіювати до кінця рядка"
 
-msgid "Copy line"
-msgstr "Копіювати рядок"
+msgid "Copy line text"
+msgstr "Копіювати текст рядка"
 
-msgid "Select whole line"
-msgstr "Виділіть весь рядок"
+msgid "Select line text"
+msgstr "Виділити текст рядка"
 
-msgid "Select word right from center"
-msgstr "Виберіть слово праворуч від центру"
+msgid "Select word under cursor"
+msgstr "Виділити слово під курсором"
 
-msgid "Replace to start with buffer"
-msgstr "Замініть, щоб почати буфером"
+msgid "Replace to line start with clipboard"
+msgstr "Замінити до початку рядка з буфера обміну"
 
-msgid "Replace to end with buffer"
-msgstr "Замінити до кінця на буфер"
+msgid "Replace to line end with clipboard"
+msgstr "Замінити до кінця рядка з буфера обміну"
 
-msgid "Replace line with buffer"
-msgstr "Замінити рядок на буфер"
+msgid "Replace line text with clipboard"
+msgstr "Замінити текст рядка з буфера обміну"
 
 msgid "Select 5 lines down"
 msgstr "Виберіть 5 рядків вниз"

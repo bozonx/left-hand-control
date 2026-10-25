@@ -42,34 +42,34 @@ export global Locale {
         if m.id == "game-mode-window-skipped" { return @tr("Auto: {} is not counted as a game (built-in list)", m.arg); }
         if m.id == "game-mode-manual-on" { return @tr("Game mode is on (set manually)"); }
         if m.id == "game-mode-manual-off" { return @tr("Game mode is off (set manually)"); }
-        if m.id == "builtin-macro" && m.arg == "moveLineDown" { return @tr("Move line down"); }
-        if m.id == "builtin-macro" && m.arg == "downEnd" { return @tr("Down + End"); }
-        if m.id == "builtin-macro" && m.arg == "upEnd" { return @tr("Up + End"); }
-        if m.id == "builtin-macro" && m.arg == "up5Times" { return @tr("Up 5 times"); }
+        if m.id == "builtin-macro" && m.arg == "emptyLineAbove" { return @tr("Empty line above"); }
+        if m.id == "builtin-macro" && m.arg == "nextLineEnd" { return @tr("End of next line"); }
+        if m.id == "builtin-macro" && m.arg == "prevLineEnd" { return @tr("End of previous line"); }
+        if m.id == "builtin-macro" && m.arg == "up5Lines" { return @tr("Move up 5 lines"); }
         if m.id == "builtin-macro" && m.arg == "duplicateLine" { return @tr("Duplicate line"); }
-        if m.id == "builtin-macro" && m.arg == "rightSpace" { return @tr("Right + Space"); }
+        if m.id == "builtin-macro" && m.arg == "spaceAfterNextChar" { return @tr("Space after next character"); }
         if m.id == "builtin-macro" && m.arg == "emptyLineBelow" { return @tr("Empty line below"); }
-        if m.id == "builtin-macro" && m.arg == "cutWordRightCenter" { return @tr("Cut word right from center"); }
-        if m.id == "builtin-macro" && m.arg == "copyWordAfterCenter" { return @tr("Copy word right from center"); }
-        if m.id == "builtin-macro" && m.arg == "pasteAtLineAbove" { return @tr("Paste at line above"); }
-        if m.id == "builtin-macro" && m.arg == "replaceWordWidthBuffer" { return @tr("Replace word with buffer"); }
-        if m.id == "builtin-macro" && m.arg == "downHome" { return @tr("Down + Home"); }
-        if m.id == "builtin-macro" && m.arg == "upHome" { return @tr("Up + Home"); }
-        if m.id == "builtin-macro" && m.arg == "down5Times" { return @tr("Down 5 times"); }
-        if m.id == "builtin-macro" && m.arg == "pasteAtLineBottom" { return @tr("Paste at line bottom"); }
-        if m.id == "builtin-macro" && m.arg == "cutToStart" { return @tr("Cut to start"); }
-        if m.id == "builtin-macro" && m.arg == "cutToEnd" { return @tr("Cut to end"); }
-        if m.id == "builtin-macro" && m.arg == "cutLineContent" { return @tr("Cut line content"); }
-        if m.id == "builtin-macro" && m.arg == "cutAndRemoveLine" { return @tr("Cut and remove line"); }
+        if m.id == "builtin-macro" && m.arg == "cutWordUnderCursor" { return @tr("Cut word under cursor"); }
+        if m.id == "builtin-macro" && m.arg == "copyWordUnderCursor" { return @tr("Copy word under cursor"); }
+        if m.id == "builtin-macro" && m.arg == "pasteOnNewLineAbove" { return @tr("Paste on new line above"); }
+        if m.id == "builtin-macro" && m.arg == "replaceWordWithClipboard" { return @tr("Replace word with clipboard"); }
+        if m.id == "builtin-macro" && m.arg == "nextLineStart" { return @tr("Start of next line"); }
+        if m.id == "builtin-macro" && m.arg == "prevLineStart" { return @tr("Start of previous line"); }
+        if m.id == "builtin-macro" && m.arg == "down5Lines" { return @tr("Move down 5 lines"); }
+        if m.id == "builtin-macro" && m.arg == "pasteOnNewLineBelow" { return @tr("Paste on new line below"); }
+        if m.id == "builtin-macro" && m.arg == "cutToLineStart" { return @tr("Cut to line start"); }
+        if m.id == "builtin-macro" && m.arg == "cutToLineEnd" { return @tr("Cut to line end"); }
+        if m.id == "builtin-macro" && m.arg == "cutLineText" { return @tr("Cut line text"); }
+        if m.id == "builtin-macro" && m.arg == "cutWholeLine" { return @tr("Cut whole line"); }
         if m.id == "builtin-macro" && m.arg == "select5LinesUp" { return @tr("Select 5 lines up"); }
-        if m.id == "builtin-macro" && m.arg == "copyToStart" { return @tr("Copy to start"); }
-        if m.id == "builtin-macro" && m.arg == "copyToEnd" { return @tr("Copy to end"); }
-        if m.id == "builtin-macro" && m.arg == "copyLine" { return @tr("Copy line"); }
-        if m.id == "builtin-macro" && m.arg == "selectWholeLine" { return @tr("Select whole line"); }
-        if m.id == "builtin-macro" && m.arg == "selectWordRightCenter" { return @tr("Select word right from center"); }
-        if m.id == "builtin-macro" && m.arg == "replaceToStartWithBuffer" { return @tr("Replace to start with buffer"); }
-        if m.id == "builtin-macro" && m.arg == "replaceToEndWithBuffer" { return @tr("Replace to end with buffer"); }
-        if m.id == "builtin-macro" && m.arg == "replaceLineWidthBuffer" { return @tr("Replace line with buffer"); }
+        if m.id == "builtin-macro" && m.arg == "copyToLineStart" { return @tr("Copy to line start"); }
+        if m.id == "builtin-macro" && m.arg == "copyToLineEnd" { return @tr("Copy to line end"); }
+        if m.id == "builtin-macro" && m.arg == "copyLineText" { return @tr("Copy line text"); }
+        if m.id == "builtin-macro" && m.arg == "selectLineText" { return @tr("Select line text"); }
+        if m.id == "builtin-macro" && m.arg == "selectWordUnderCursor" { return @tr("Select word under cursor"); }
+        if m.id == "builtin-macro" && m.arg == "replaceToLineStartWithClipboard" { return @tr("Replace to line start with clipboard"); }
+        if m.id == "builtin-macro" && m.arg == "replaceToLineEndWithClipboard" { return @tr("Replace to line end with clipboard"); }
+        if m.id == "builtin-macro" && m.arg == "replaceLineTextWithClipboard" { return @tr("Replace line text with clipboard"); }
         if m.id == "builtin-macro" && m.arg == "select5LinesDown" { return @tr("Select 5 lines down"); }
         if m.id == "picker-action" && m.arg == "showQuickMenu" { return @tr("Show Quick Action Menu page {}", m.count); }
         if m.id == "picker-action" && m.arg == "showEmojiMenu" { return @tr("Show Emoji & Symbols menu page {}", m.count); }

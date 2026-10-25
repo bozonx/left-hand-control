@@ -3521,89 +3521,89 @@ msgstr "Diseño: {}"
 msgid "Select All"
 msgstr "Seleccionar todo"
 
-msgid "Move line down"
-msgstr "Mover línea hacia abajo"
+msgid "Empty line above"
+msgstr "Línea vacía arriba"
 
-msgid "Down + End"
-msgstr "Abajo + Fin"
+msgid "End of next line"
+msgstr "Final de la línea siguiente"
 
-msgid "Up + End"
-msgstr "Arriba + Fin"
+msgid "End of previous line"
+msgstr "Final de la línea anterior"
 
-msgid "Up 5 times"
-msgstr "Hasta 5 veces"
+msgid "Move up 5 lines"
+msgstr "Subir 5 líneas"
 
 msgid "Duplicate line"
 msgstr "Línea duplicada"
 
-msgid "Right + Space"
-msgstr "Derecha + Espacio"
+msgid "Space after next character"
+msgstr "Espacio tras el siguiente carácter"
 
 msgid "Empty line below"
 msgstr "Línea vacía debajo"
 
-msgid "Cut word right from center"
-msgstr "Cortar palabra desde el centro"
+msgid "Cut word under cursor"
+msgstr "Cortar la palabra bajo el cursor"
 
-msgid "Copy word right from center"
-msgstr "Copiar palabra directamente desde el centro"
+msgid "Copy word under cursor"
+msgstr "Copiar la palabra bajo el cursor"
 
-msgid "Paste at line above"
-msgstr "Pegar en la línea de arriba"
+msgid "Paste on new line above"
+msgstr "Pegar en una línea nueva arriba"
 
-msgid "Replace word with buffer"
-msgstr "Reemplazar palabra con buffer"
+msgid "Replace word with clipboard"
+msgstr "Reemplazar la palabra con el portapapeles"
 
-msgid "Down + Home"
-msgstr "Abajo + Inicio"
+msgid "Start of next line"
+msgstr "Inicio de la línea siguiente"
 
-msgid "Up + Home"
-msgstr "Arriba + Inicio"
+msgid "Start of previous line"
+msgstr "Inicio de la línea anterior"
 
-msgid "Down 5 times"
-msgstr "Abajo 5 veces"
+msgid "Move down 5 lines"
+msgstr "Bajar 5 líneas"
 
-msgid "Paste at line bottom"
-msgstr "Pegar en la línea inferior"
+msgid "Paste on new line below"
+msgstr "Pegar en una línea nueva abajo"
 
-msgid "Cut to start"
-msgstr "cortar para empezar"
+msgid "Cut to line start"
+msgstr "Cortar hasta el inicio de la línea"
 
-msgid "Cut to end"
-msgstr "cortar hasta el final"
+msgid "Cut to line end"
+msgstr "Cortar hasta el final de la línea"
 
-msgid "Cut line content"
-msgstr "Cortar contenido de línea"
+msgid "Cut line text"
+msgstr "Cortar el texto de la línea"
 
-msgid "Cut and remove line"
-msgstr "Cortar y quitar línea"
+msgid "Cut whole line"
+msgstr "Cortar la línea completa"
 
 msgid "Select 5 lines up"
 msgstr "Seleccione 5 líneas arriba"
 
-msgid "Copy to start"
-msgstr "Copiar para empezar"
+msgid "Copy to line start"
+msgstr "Copiar hasta el inicio de la línea"
 
-msgid "Copy to end"
-msgstr "Copiar al final"
+msgid "Copy to line end"
+msgstr "Copiar hasta el final de la línea"
 
-msgid "Copy line"
-msgstr "Copiar línea"
+msgid "Copy line text"
+msgstr "Copiar el texto de la línea"
 
-msgid "Select whole line"
-msgstr "Seleccionar línea completa"
+msgid "Select line text"
+msgstr "Seleccionar el texto de la línea"
 
-msgid "Select word right from center"
-msgstr "Seleccione la palabra directamente desde el centro"
+msgid "Select word under cursor"
+msgstr "Seleccionar la palabra bajo el cursor"
 
-msgid "Replace to start with buffer"
-msgstr "Reemplazar para comenzar con buffer"
+msgid "Replace to line start with clipboard"
+msgstr "Reemplazar hasta el inicio de la línea con el portapapeles"
 
-msgid "Replace to end with buffer"
-msgstr "Reemplazar para terminar con buffer"
+msgid "Replace to line end with clipboard"
+msgstr "Reemplazar hasta el final de la línea con el portapapeles"
 
-msgid "Replace line with buffer"
-msgstr "Reemplazar línea con buffer"
+msgid "Replace line text with clipboard"
+msgstr "Reemplazar el texto de la línea con el portapapeles"
 
 msgid "Select 5 lines down"
 msgstr "Seleccione 5 líneas hacia abajo"

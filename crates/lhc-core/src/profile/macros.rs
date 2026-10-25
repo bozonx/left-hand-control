@@ -263,7 +263,7 @@ mod tests {
         document
             .save_macro(
                 None,
-                item("outer", &["macro:inner", "builtin:copyLine", ""]),
+                item("outer", &["macro:inner", "builtin:copyLineText", ""]),
             )
             .unwrap();
         assert_eq!(usage(&document.config(), "outer"), ["KeyA"]);
@@ -288,19 +288,22 @@ mod tests {
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths).unwrap();
         document
-            .save_macro(None, item("copyLine", &["builtin:copyLine"]))
+            .save_macro(None, item("copyLine", &["builtin:copyLineText"]))
             .unwrap();
         document
-            .save_macro(None, item("outer", &["macro:copyLine", "builtin:copyLine"]))
+            .save_macro(
+                None,
+                item("outer", &["macro:copyLine", "builtin:copyLineText"]),
+            )
             .unwrap();
         assert_eq!(usage(&document.config(), "copyLine"), ["macro:outer"]);
         let mut layout = document.layout().clone();
         rename_references(&mut layout, &[("copyLine".into(), "custom".into())]);
         let user = layout.macros.iter().find(|m| m.id == "copyLine").unwrap();
         let outer = layout.macros.iter().find(|m| m.id == "outer").unwrap();
-        assert_eq!(user.steps[0].action, "builtin:copyLine");
+        assert_eq!(user.steps[0].action, "builtin:copyLineText");
         assert_eq!(outer.steps[0].action, "macro:custom");
-        assert_eq!(outer.steps[1].action, "builtin:copyLine");
+        assert_eq!(outer.steps[1].action, "builtin:copyLineText");
     }
 
     #[test]

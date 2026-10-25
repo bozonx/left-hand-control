@@ -3505,89 +3505,89 @@ msgstr "Elrendezés: {}"
 msgid "Select All"
 msgstr "Összes kijelölése"
 
-msgid "Move line down"
-msgstr "Mozgassa a sort lefelé"
+msgid "Empty line above"
+msgstr "Üres sor fölé"
 
-msgid "Down + End"
-msgstr "Le + Vége"
+msgid "End of next line"
+msgstr "Következő sor vége"
 
-msgid "Up + End"
-msgstr "Fel + Vég"
+msgid "End of previous line"
+msgstr "Előző sor vége"
 
-msgid "Up 5 times"
-msgstr "5-ször fel"
+msgid "Move up 5 lines"
+msgstr "5 sorral feljebb"
 
 msgid "Duplicate line"
 msgstr "Ismétlődő sor"
 
-msgid "Right + Space"
-msgstr "Jobb + szóköz"
+msgid "Space after next character"
+msgstr "Szóköz a következő karakter után"
 
 msgid "Empty line below"
 msgstr "Üres sor lent"
 
-msgid "Cut word right from center"
-msgstr "Vágja ki a szót közvetlenül a közepétől"
+msgid "Cut word under cursor"
+msgstr "Kurzor alatti szó kivágása"
 
-msgid "Copy word right from center"
-msgstr "Másolja a szót közvetlenül a közepéről"
+msgid "Copy word under cursor"
+msgstr "Kurzor alatti szó másolása"
 
-msgid "Paste at line above"
-msgstr "Illessze be a fenti sorba"
+msgid "Paste on new line above"
+msgstr "Beillesztés új sorba fölé"
 
-msgid "Replace word with buffer"
-msgstr "Cserélje ki a szót pufferre"
+msgid "Replace word with clipboard"
+msgstr "Szó cseréje a vágólapra"
 
-msgid "Down + Home"
-msgstr "Le + Kezdőlap"
+msgid "Start of next line"
+msgstr "Következő sor eleje"
 
-msgid "Up + Home"
-msgstr "Fel + Kezdőlap"
+msgid "Start of previous line"
+msgstr "Előző sor eleje"
 
-msgid "Down 5 times"
-msgstr "5-ször lefelé"
+msgid "Move down 5 lines"
+msgstr "5 sorral lejjebb"
 
-msgid "Paste at line bottom"
-msgstr "Illessze be a sor aljára"
+msgid "Paste on new line below"
+msgstr "Beillesztés új sorba alá"
 
-msgid "Cut to start"
-msgstr "Vágja az induláshoz"
+msgid "Cut to line start"
+msgstr "Kivágás a sor elejéig"
 
-msgid "Cut to end"
-msgstr "Vágja a végére"
+msgid "Cut to line end"
+msgstr "Kivágás a sor végéig"
 
-msgid "Cut line content"
-msgstr "Vágja le a vonal tartalmát"
+msgid "Cut line text"
+msgstr "Sor szövegének kivágása"
 
-msgid "Cut and remove line"
-msgstr "Vágja le és távolítsa el a vonalat"
+msgid "Cut whole line"
+msgstr "Teljes sor kivágása"
 
 msgid "Select 5 lines up"
 msgstr "Válasszon 5 sort felfelé"
 
-msgid "Copy to start"
-msgstr "Másolás kezdéshez"
+msgid "Copy to line start"
+msgstr "Másolás a sor elejéig"
 
-msgid "Copy to end"
-msgstr "Másolás a végére"
+msgid "Copy to line end"
+msgstr "Másolás a sor végéig"
 
-msgid "Copy line"
-msgstr "Sor másolása"
+msgid "Copy line text"
+msgstr "Sor szövegének másolása"
 
-msgid "Select whole line"
-msgstr "Válassza ki a teljes sort"
+msgid "Select line text"
+msgstr "Sor szövegének kijelölése"
 
-msgid "Select word right from center"
-msgstr "Válassza ki a szót közvetlenül a közepétől"
+msgid "Select word under cursor"
+msgstr "Kurzor alatti szó kijelölése"
 
-msgid "Replace to start with buffer"
-msgstr "Cserélje ki a pufferrel kezdéshez"
+msgid "Replace to line start with clipboard"
+msgstr "Csere a sor elejéig a vágólapra"
 
-msgid "Replace to end with buffer"
-msgstr "Cserélje ki a végére pufferrel"
+msgid "Replace to line end with clipboard"
+msgstr "Csere a sor végéig a vágólapra"
 
-msgid "Replace line with buffer"
-msgstr "Cserélje ki a vezetéket pufferrel"
+msgid "Replace line text with clipboard"
+msgstr "Sor szövegének cseréje a vágólapra"
 
 msgid "Select 5 lines down"
 msgstr "Válasszon 5 sorral lejjebb"

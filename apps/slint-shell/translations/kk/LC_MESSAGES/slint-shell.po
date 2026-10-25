@@ -3468,89 +3468,89 @@ msgstr "Орналасу: {}"
 msgid "Select All"
 msgstr "Барлығын таңдау"
 
-msgid "Move line down"
-msgstr "Сызықты төмен жылжытыңыз"
+msgid "Empty line above"
+msgstr "Жоғарыда бос жол"
 
-msgid "Down + End"
-msgstr "Төмен + Аяқтау"
+msgid "End of next line"
+msgstr "Келесі жолдың соңына"
 
-msgid "Up + End"
-msgstr "Жоғары + Аяқтау"
+msgid "End of previous line"
+msgstr "Алдыңғы жолдың соңына"
 
-msgid "Up 5 times"
-msgstr "5 есе жоғары"
+msgid "Move up 5 lines"
+msgstr "5 жол жоғары"
 
 msgid "Duplicate line"
 msgstr "Қайталанатын жол"
 
-msgid "Right + Space"
-msgstr "Оң жақ + Бос орын"
+msgid "Space after next character"
+msgstr "Келесі таңбадан кейін бос орын"
 
 msgid "Empty line below"
 msgstr "Төмендегі бос жол"
 
-msgid "Cut word right from center"
-msgstr "Сөзді дәл ортасынан кесіңіз"
+msgid "Cut word under cursor"
+msgstr "Курсор астындағы сөзді қиып алу"
 
-msgid "Copy word right from center"
-msgstr "Сөзді дәл ортасынан көшіріңіз"
+msgid "Copy word under cursor"
+msgstr "Курсор астындағы сөзді көшіру"
 
-msgid "Paste at line above"
-msgstr "Жоғарыдағы жолға қойыңыз"
+msgid "Paste on new line above"
+msgstr "Жоғарыдағы жаңа жолға қою"
 
-msgid "Replace word with buffer"
-msgstr "Сөзді буфермен ауыстырыңыз"
+msgid "Replace word with clipboard"
+msgstr "Сөзді алмасу буферімен ауыстыру"
 
-msgid "Down + Home"
-msgstr "Төмен + Үй"
+msgid "Start of next line"
+msgstr "Келесі жолдың басына"
 
-msgid "Up + Home"
-msgstr "Жоғары + Үй"
+msgid "Start of previous line"
+msgstr "Алдыңғы жолдың басына"
 
-msgid "Down 5 times"
-msgstr "5 есе төмен"
+msgid "Move down 5 lines"
+msgstr "5 жол төмен"
 
-msgid "Paste at line bottom"
-msgstr "Жолдың төменгі жағына қойыңыз"
+msgid "Paste on new line below"
+msgstr "Төмендегі жаңа жолға қою"
 
-msgid "Cut to start"
-msgstr "Бастау үшін кесіңіз"
+msgid "Cut to line start"
+msgstr "Жол басына дейін қиып алу"
 
-msgid "Cut to end"
-msgstr "Аяғына дейін кесіңіз"
+msgid "Cut to line end"
+msgstr "Жол соңына дейін қиып алу"
 
-msgid "Cut line content"
-msgstr "Жолдың мазмұнын кесіңіз"
+msgid "Cut line text"
+msgstr "Жол мәтінін қиып алу"
 
-msgid "Cut and remove line"
-msgstr "Сызықты кесіңіз және алыңыз"
+msgid "Cut whole line"
+msgstr "Бүкіл жолды қиып алу"
 
 msgid "Select 5 lines up"
 msgstr "Жоғарыдан 5 жолды таңдаңыз"
 
-msgid "Copy to start"
-msgstr "Бастау үшін көшіріңіз"
+msgid "Copy to line start"
+msgstr "Жол басына дейін көшіру"
 
-msgid "Copy to end"
-msgstr "Аяғына дейін көшіріңіз"
+msgid "Copy to line end"
+msgstr "Жол соңына дейін көшіру"
 
-msgid "Copy line"
-msgstr "Жолды көшіру"
+msgid "Copy line text"
+msgstr "Жол мәтінін көшіру"
 
-msgid "Select whole line"
-msgstr "Бүкіл жолды таңдаңыз"
+msgid "Select line text"
+msgstr "Жол мәтінін ерекшелеу"
 
-msgid "Select word right from center"
-msgstr "Сөзді дәл ортасынан таңдаңыз"
+msgid "Select word under cursor"
+msgstr "Курсор астындағы сөзді ерекшелеу"
 
-msgid "Replace to start with buffer"
-msgstr "Буферден бастау үшін ауыстырыңыз"
+msgid "Replace to line start with clipboard"
+msgstr "Жол басына дейін алмасу буферімен ауыстыру"
 
-msgid "Replace to end with buffer"
-msgstr "Аяқтау үшін буфермен ауыстырыңыз"
+msgid "Replace to line end with clipboard"
+msgstr "Жол соңына дейін алмасу буферімен ауыстыру"
 
-msgid "Replace line with buffer"
-msgstr "Жолды буфермен ауыстырыңыз"
+msgid "Replace line text with clipboard"
+msgstr "Жол мәтінін алмасу буферімен ауыстыру"
 
 msgid "Select 5 lines down"
 msgstr "5 жолды төменнен таңдаңыз"

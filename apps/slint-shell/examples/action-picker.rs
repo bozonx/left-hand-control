@@ -69,7 +69,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(document.read().layout().rules.len(), count);
     rules.invoke_add();
     picker.invoke_select_behavior(PickerBehavior::Action);
-    picker.set_value("builtin:copyLine".into());
+    picker.set_value("builtin:copyLineText".into());
     picker.invoke_apply();
     assert!(picker.get_opened(), "a trigger must be a key");
     picker.invoke_select_behavior(PickerBehavior::Action);
@@ -105,13 +105,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.invoke_refresh();
     assert!(picker.get_items().row_count() >= 2);
     picker.invoke_select_behavior(PickerBehavior::Action);
-    picker.set_value("builtin:copyLine".into());
+    picker.set_value("builtin:copyLineText".into());
     picker.invoke_apply();
     assert_eq!(
         document.read().layout().rules[index as usize]
             .tap_action
             .as_deref(),
-        Some("builtin:copyLine")
+        Some("builtin:copyLineText")
     );
     rules.invoke_open_dialog(index, RuleDialog::Tap);
     picker.invoke_select_behavior(PickerBehavior::Action);
@@ -129,11 +129,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         document.read().layout().rules[index as usize]
             .tap_action
             .as_deref(),
-        Some("builtin:copyLine")
+        Some("builtin:copyLineText")
     );
     rules.invoke_open_dialog(index, RuleDialog::Hold);
     picker.invoke_select_behavior(PickerBehavior::Action);
-    picker.set_value("builtin:copyLine".into());
+    picker.set_value("builtin:copyLineText".into());
     picker.invoke_apply();
     assert!(picker.get_opened());
     picker.invoke_dismiss_picker();

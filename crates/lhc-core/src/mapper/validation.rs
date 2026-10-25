@@ -581,7 +581,7 @@ mod tests {
         cfg.macros.push(Macro {
             id: "copyLine".into(),
             steps: vec![MacroStep {
-                action: "builtin:copyLine".into(),
+                action: "builtin:copyLineText".into(),
             }],
             step_pause_ms: None,
             modifier_delay_ms: None,
@@ -812,7 +812,7 @@ mod tests {
             hold_behavior: None,
             long_hold_action: String::new(),
             long_hold_timeout_ms: None,
-            hold_action: ActionSpec::Action("builtin:copyLine".into()),
+            hold_action: ActionSpec::Action("builtin:copyLineText".into()),
             hold_timeout_ms: None,
             tap_decision: None,
             double_tap_action: String::new(),

@@ -45,7 +45,9 @@ impl Action {
         type Constructor = fn(String) -> Action;
         let prefixed: [(&str, Constructor); 7] = [
             ("macro:", Self::Macro),
-            ("builtin:", Self::BuiltinMacro),
+            ("builtin:", |id| {
+                Self::BuiltinMacro(crate::mapper::builtin_macros::canonical_id(&id).into())
+            }),
             ("cmd:", Self::Command),
             ("sys:", Self::System),
             ("app:", Self::App),
@@ -448,7 +450,7 @@ mod tests {
             "KeyA",
             "Ctrl+KeyC",
             "macro:custom",
-            "builtin:copyLine",
+            "builtin:copyLineText",
             "cmd:music",
             "sys:switchDesktop2",
             "app:showQuickMenu1",
@@ -633,7 +635,12 @@ mod tests {
         assert_eq!(check("Ctrl+"), Some(ActionIssue::InvalidSyntax));
         assert_eq!(check("NotAKey"), Some(ActionIssue::InvalidSyntax));
         assert_eq!(check("KeyA+KeyB"), Some(ActionIssue::InvalidSyntax));
+        assert_eq!(check("builtin:copyLineText"), None);
         assert_eq!(check("builtin:copyLine"), None);
+        assert_eq!(
+            Action::parse(Some("builtin:replaceWordWidthBuffer")).format(),
+            Some("builtin:replaceWordWithClipboard".into())
+        );
         assert_eq!(check("macro:copyLine"), Some(ActionIssue::UnknownMacro));
         assert_eq!(check("builtin:nope"), Some(ActionIssue::UnknownMacro));
         assert_eq!(check("macro:nope"), Some(ActionIssue::UnknownMacro));

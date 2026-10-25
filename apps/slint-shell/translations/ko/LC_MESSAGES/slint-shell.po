@@ -3200,89 +3200,89 @@ msgstr "레이아웃: {}"
 msgid "Select All"
 msgstr "모두 선택"
 
-msgid "Move line down"
-msgstr "줄을 아래로 이동"
+msgid "Empty line above"
+msgstr "위에 빈 줄"
 
-msgid "Down + End"
-msgstr "아래로 + 끝"
+msgid "End of next line"
+msgstr "다음 줄 끝"
 
-msgid "Up + End"
-msgstr "위로 + 끝"
+msgid "End of previous line"
+msgstr "이전 줄 끝"
 
-msgid "Up 5 times"
-msgstr "5배"
+msgid "Move up 5 lines"
+msgstr "5줄 위로"
 
 msgid "Duplicate line"
 msgstr "중복된 줄"
 
-msgid "Right + Space"
-msgstr "오른쪽 + 스페이스바"
+msgid "Space after next character"
+msgstr "다음 문자 뒤에 공백"
 
 msgid "Empty line below"
 msgstr "아래 빈 줄"
 
-msgid "Cut word right from center"
-msgstr "중앙에서 바로 단어 자르기"
+msgid "Cut word under cursor"
+msgstr "커서 위치의 단어 잘라내기"
 
-msgid "Copy word right from center"
-msgstr "중앙에서 바로 단어 복사"
+msgid "Copy word under cursor"
+msgstr "커서 위치의 단어 복사"
 
-msgid "Paste at line above"
-msgstr "위 줄에 붙여넣기"
+msgid "Paste on new line above"
+msgstr "위쪽 새 줄에 붙여넣기"
 
-msgid "Replace word with buffer"
-msgstr "단어를 버퍼로 교체"
+msgid "Replace word with clipboard"
+msgstr "단어를 클립보드로 바꾸기"
 
-msgid "Down + Home"
-msgstr "아래 + 홈"
+msgid "Start of next line"
+msgstr "다음 줄 시작"
 
-msgid "Up + Home"
-msgstr "위로 + 집"
+msgid "Start of previous line"
+msgstr "이전 줄 시작"
 
-msgid "Down 5 times"
-msgstr "5번 다운"
+msgid "Move down 5 lines"
+msgstr "5줄 아래로"
 
-msgid "Paste at line bottom"
-msgstr "줄 하단에 붙여넣기"
+msgid "Paste on new line below"
+msgstr "아래쪽 새 줄에 붙여넣기"
 
-msgid "Cut to start"
-msgstr "잘라서 시작하세요"
+msgid "Cut to line start"
+msgstr "줄 시작까지 잘라내기"
 
-msgid "Cut to end"
-msgstr "끝까지 잘라내기"
+msgid "Cut to line end"
+msgstr "줄 끝까지 잘라내기"
 
-msgid "Cut line content"
-msgstr "절단선 내용"
+msgid "Cut line text"
+msgstr "줄 텍스트 잘라내기"
 
-msgid "Cut and remove line"
-msgstr "선 잘라내기 및 제거"
+msgid "Cut whole line"
+msgstr "줄 전체 잘라내기"
 
 msgid "Select 5 lines up"
 msgstr "5줄을 선택하세요."
 
-msgid "Copy to start"
-msgstr "시작하려면 복사하세요"
+msgid "Copy to line start"
+msgstr "줄 시작까지 복사"
 
-msgid "Copy to end"
-msgstr "끝까지 복사"
+msgid "Copy to line end"
+msgstr "줄 끝까지 복사"
 
-msgid "Copy line"
-msgstr "라인 복사"
+msgid "Copy line text"
+msgstr "줄 텍스트 복사"
 
-msgid "Select whole line"
-msgstr "전체 줄 선택"
+msgid "Select line text"
+msgstr "줄 텍스트 선택"
 
-msgid "Select word right from center"
-msgstr "가운데에서 바로 단어 선택"
+msgid "Select word under cursor"
+msgstr "커서 위치의 단어 선택"
 
-msgid "Replace to start with buffer"
-msgstr "버퍼로 시작하려면 바꾸기"
+msgid "Replace to line start with clipboard"
+msgstr "줄 시작까지 클립보드로 바꾸기"
 
-msgid "Replace to end with buffer"
-msgstr "버퍼로 끝까지 교체"
+msgid "Replace to line end with clipboard"
+msgstr "줄 끝까지 클립보드로 바꾸기"
 
-msgid "Replace line with buffer"
-msgstr "라인을 버퍼로 교체"
+msgid "Replace line text with clipboard"
+msgstr "줄 텍스트를 클립보드로 바꾸기"
 
 msgid "Select 5 lines down"
 msgstr "아래로 5줄 선택"

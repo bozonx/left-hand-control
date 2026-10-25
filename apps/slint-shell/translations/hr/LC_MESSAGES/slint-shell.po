@@ -3449,89 +3449,89 @@ msgstr "Raspored: {}"
 msgid "Select All"
 msgstr "Odaberi sve"
 
-msgid "Move line down"
-msgstr "Pomakni liniju prema dolje"
+msgid "Empty line above"
+msgstr "Prazan redak iznad"
 
-msgid "Down + End"
-msgstr "Dolje + kraj"
+msgid "End of next line"
+msgstr "Kraj sljedećeg retka"
 
-msgid "Up + End"
-msgstr "Gore + kraj"
+msgid "End of previous line"
+msgstr "Kraj prethodnog retka"
 
-msgid "Up 5 times"
-msgstr "Gore 5 puta"
+msgid "Move up 5 lines"
+msgstr "5 redaka gore"
 
 msgid "Duplicate line"
 msgstr "Duplicirana linija"
 
-msgid "Right + Space"
-msgstr "Desno + razmaknica"
+msgid "Space after next character"
+msgstr "Razmak nakon sljedećeg znaka"
 
 msgid "Empty line below"
 msgstr "Prazan red ispod"
 
-msgid "Cut word right from center"
-msgstr "Izrežite riječ točno od središta"
+msgid "Cut word under cursor"
+msgstr "Izreži riječ pod pokazivačem"
 
-msgid "Copy word right from center"
-msgstr "Kopirajte riječ desno od središta"
+msgid "Copy word under cursor"
+msgstr "Kopiraj riječ pod pokazivačem"
 
-msgid "Paste at line above"
-msgstr "Zalijepite u gornji red"
+msgid "Paste on new line above"
+msgstr "Zalijepi u novi redak iznad"
 
-msgid "Replace word with buffer"
-msgstr "Zamijenite riječ međuspremnikom"
+msgid "Replace word with clipboard"
+msgstr "Zamijeni riječ međuspremnikom"
 
-msgid "Down + Home"
-msgstr "Dolje + Home"
+msgid "Start of next line"
+msgstr "Početak sljedećeg retka"
 
-msgid "Up + Home"
-msgstr "Gore + Početna"
+msgid "Start of previous line"
+msgstr "Početak prethodnog retka"
 
-msgid "Down 5 times"
-msgstr "Dolje 5 puta"
+msgid "Move down 5 lines"
+msgstr "5 redaka dolje"
 
-msgid "Paste at line bottom"
-msgstr "Zalijepite na dno retka"
+msgid "Paste on new line below"
+msgstr "Zalijepi u novi redak ispod"
 
-msgid "Cut to start"
-msgstr "Izrežite za početak"
+msgid "Cut to line start"
+msgstr "Izreži do početka retka"
 
-msgid "Cut to end"
-msgstr "Odrezati do kraja"
+msgid "Cut to line end"
+msgstr "Izreži do kraja retka"
 
-msgid "Cut line content"
-msgstr "Izrežite sadržaj linije"
+msgid "Cut line text"
+msgstr "Izreži tekst retka"
 
-msgid "Cut and remove line"
-msgstr "Izrežite i uklonite liniju"
+msgid "Cut whole line"
+msgstr "Izreži cijeli redak"
 
 msgid "Select 5 lines up"
 msgstr "Odaberite 5 redaka gore"
 
-msgid "Copy to start"
-msgstr "Kopiraj za početak"
+msgid "Copy to line start"
+msgstr "Kopiraj do početka retka"
 
-msgid "Copy to end"
-msgstr "Kopiraj do kraja"
+msgid "Copy to line end"
+msgstr "Kopiraj do kraja retka"
 
-msgid "Copy line"
-msgstr "Kopiraj liniju"
+msgid "Copy line text"
+msgstr "Kopiraj tekst retka"
 
-msgid "Select whole line"
-msgstr "Odaberite cijelu liniju"
+msgid "Select line text"
+msgstr "Odaberi tekst retka"
 
-msgid "Select word right from center"
-msgstr "Odaberite riječ desno od središta"
+msgid "Select word under cursor"
+msgstr "Odaberi riječ pod pokazivačem"
 
-msgid "Replace to start with buffer"
-msgstr "Za početak zamijenite međuspremnikom"
+msgid "Replace to line start with clipboard"
+msgstr "Zamijeni do početka retka međuspremnikom"
 
-msgid "Replace to end with buffer"
-msgstr "Zamijenite do kraja međuspremnikom"
+msgid "Replace to line end with clipboard"
+msgstr "Zamijeni do kraja retka međuspremnikom"
 
-msgid "Replace line with buffer"
-msgstr "Zamijenite red međuspremnikom"
+msgid "Replace line text with clipboard"
+msgstr "Zamijeni tekst retka međuspremnikom"
 
 msgid "Select 5 lines down"
 msgstr "Odaberite 5 redaka prema dolje"

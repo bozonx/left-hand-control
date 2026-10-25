@@ -102,7 +102,13 @@ fn picker_modes_restrict_values() {
         ..Filter::default()
     };
     assert!(keys.accepts("ControlRight", None));
-    for value in ["", "Ctrl+KeyA", "builtin:copyLine", "text:hello", "NotAKey"] {
+    for value in [
+        "",
+        "Ctrl+KeyA",
+        "builtin:copyLineText",
+        "text:hello",
+        "NotAKey",
+    ] {
         assert!(!keys.accepts(value, None));
     }
     assert!(!Filter::default().accepts("pause:100", None));
@@ -115,7 +121,7 @@ fn picker_modes_restrict_values() {
     assert!(!step.accepts("pause:10001", None));
     assert!(!step.accepts("pause:0", None));
     assert!(!step.accepts("macro:self", None));
-    assert!(step.accepts("builtin:copyLine", None));
+    assert!(step.accepts("builtin:copyLineText", None));
 }
 
 #[test]
@@ -160,7 +166,7 @@ fn requests_choose_the_initial_behavior() {
 fn categories_follow_the_key_catalog() {
     assert_eq!(category_for_value("macro:copyLine"), PickerCategory::Macros);
     assert_eq!(
-        category_for_value("builtin:copyLine"),
+        category_for_value("builtin:copyLineText"),
         PickerCategory::BuiltinMacros
     );
     assert_eq!(category_for_value("CapsLock"), PickerCategory::Modifiers);

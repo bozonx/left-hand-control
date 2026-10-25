@@ -3051,7 +3051,7 @@ fn builder_resolves_builtin_macro() {
         condition_apps_blacklist: None,
         key: "KeyQ".into(),
         layer_id: String::new(),
-        tap_action: ActionSpec::Action("builtin:copyLine".into()),
+        tap_action: ActionSpec::Action("builtin:copyLineText".into()),
         hold_behavior: None,
         long_hold_action: String::new(),
         long_hold_timeout_ms: None,
@@ -4542,7 +4542,7 @@ fn builtin_and_user_macros_resolve_independently_at_every_depth() {
                     action: "macro:copyLine".into(),
                 },
                 MacroStep {
-                    action: "builtin:copyLine".into(),
+                    action: "builtin:copyLineText".into(),
                 },
             ],
             step_pause_ms: None,
@@ -4552,7 +4552,7 @@ fn builtin_and_user_macros_resolve_independently_at_every_depth() {
     super::super::validation::validate_config(&cfg).unwrap();
     let engine = Engine::new(&cfg);
     let user = &engine.macros["macro:copyLine"];
-    let builtin = &engine.macros["builtin:copyLine"];
+    let builtin = &engine.macros["builtin:copyLineText"];
     let outer = &engine.macros["macro:outer"];
     assert!(matches!(&user.steps[..], [MacroStepItem::Literal(text)] if text == "user"));
     assert!(
@@ -4568,7 +4568,7 @@ fn builtin_and_user_macros_resolve_independently_at_every_depth() {
             .iter()
             .all(|step| matches!(step, MacroStepItem::Stroke(_)))
     );
-    for reference in ["macro:copyLine", "builtin:copyLine"] {
+    for reference in ["macro:copyLine", "builtin:copyLineText"] {
         assert!(matches!(
             builder::resolve_action(reference, &engine.macros, &HashMap::new(), "test"),
             Some(model::ActionDef::Macro(_))

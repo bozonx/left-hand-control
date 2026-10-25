@@ -3128,89 +3128,89 @@ msgstr "版面：{}"
 msgid "Select All"
 msgstr "全選"
 
-msgid "Move line down"
-msgstr "向下移動行"
+msgid "Empty line above"
+msgstr "上方插入空行"
 
-msgid "Down + End"
-msgstr "向下+結束"
+msgid "End of next line"
+msgstr "下一行結尾"
 
-msgid "Up + End"
-msgstr "向上+結束"
+msgid "End of previous line"
+msgstr "上一行結尾"
 
-msgid "Up 5 times"
-msgstr "上漲5倍"
+msgid "Move up 5 lines"
+msgstr "上移 5 行"
 
 msgid "Duplicate line"
 msgstr "重複行"
 
-msgid "Right + Space"
-msgstr "右鍵+空格"
+msgid "Space after next character"
+msgstr "在下一個字元後加空格"
 
 msgid "Empty line below"
 msgstr "下面空行"
 
-msgid "Cut word right from center"
-msgstr "從中心向右剪切單字"
+msgid "Cut word under cursor"
+msgstr "剪下游標處的單字"
 
-msgid "Copy word right from center"
-msgstr "從中心向右複製單字"
+msgid "Copy word under cursor"
+msgstr "複製游標處的單字"
 
-msgid "Paste at line above"
-msgstr "貼到上面一行"
+msgid "Paste on new line above"
+msgstr "貼到上方新行"
 
-msgid "Replace word with buffer"
-msgstr "用緩衝區取代單字"
+msgid "Replace word with clipboard"
+msgstr "以剪貼簿取代單字"
 
-msgid "Down + Home"
-msgstr "下+首頁"
+msgid "Start of next line"
+msgstr "下一行開頭"
 
-msgid "Up + Home"
-msgstr "向上+主頁"
+msgid "Start of previous line"
+msgstr "上一行開頭"
 
-msgid "Down 5 times"
-msgstr "下降5次"
+msgid "Move down 5 lines"
+msgstr "下移 5 行"
 
-msgid "Paste at line bottom"
-msgstr "貼到行底部"
+msgid "Paste on new line below"
+msgstr "貼到下方新行"
 
-msgid "Cut to start"
-msgstr "切入開始"
+msgid "Cut to line start"
+msgstr "剪下到行首"
 
-msgid "Cut to end"
-msgstr "切到最後"
+msgid "Cut to line end"
+msgstr "剪下到行尾"
 
-msgid "Cut line content"
-msgstr "剪切行內容"
+msgid "Cut line text"
+msgstr "剪下行文字"
 
-msgid "Cut and remove line"
-msgstr "切割並移除線"
+msgid "Cut whole line"
+msgstr "剪下整行"
 
 msgid "Select 5 lines up"
 msgstr "選擇5行"
 
-msgid "Copy to start"
-msgstr "複製開始"
+msgid "Copy to line start"
+msgstr "複製到行首"
 
-msgid "Copy to end"
-msgstr "複製到最後"
+msgid "Copy to line end"
+msgstr "複製到行尾"
 
-msgid "Copy line"
-msgstr "複製行"
+msgid "Copy line text"
+msgstr "複製行文字"
 
-msgid "Select whole line"
-msgstr "選擇整行"
+msgid "Select line text"
+msgstr "選取行文字"
 
-msgid "Select word right from center"
-msgstr "從中心右側選擇單字"
+msgid "Select word under cursor"
+msgstr "選取游標處的單字"
 
-msgid "Replace to start with buffer"
-msgstr "替換為從緩衝區開始"
+msgid "Replace to line start with clipboard"
+msgstr "以剪貼簿取代到行首"
 
-msgid "Replace to end with buffer"
-msgstr "用緩衝區取代結束"
+msgid "Replace to line end with clipboard"
+msgstr "以剪貼簿取代到行尾"
 
-msgid "Replace line with buffer"
-msgstr "用緩衝區取代行"
+msgid "Replace line text with clipboard"
+msgstr "以剪貼簿取代行文字"
 
 msgid "Select 5 lines down"
 msgstr "選擇向下 5 行"

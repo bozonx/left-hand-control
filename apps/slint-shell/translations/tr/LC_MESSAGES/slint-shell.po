@@ -3459,89 +3459,89 @@ msgstr "Düzen: {}"
 msgid "Select All"
 msgstr "Tümünü seç"
 
-msgid "Move line down"
-msgstr "Satırı aşağı taşı"
+msgid "Empty line above"
+msgstr "Üste boş satır"
 
-msgid "Down + End"
-msgstr "Aşağı + Son"
+msgid "End of next line"
+msgstr "Sonraki satırın sonu"
 
-msgid "Up + End"
-msgstr "Yukarı + Son"
+msgid "End of previous line"
+msgstr "Önceki satırın sonu"
 
-msgid "Up 5 times"
-msgstr "5 kez yukarı"
+msgid "Move up 5 lines"
+msgstr "5 satır yukarı"
 
 msgid "Duplicate line"
 msgstr "Yinelenen satır"
 
-msgid "Right + Space"
-msgstr "Sağ + Boşluk"
+msgid "Space after next character"
+msgstr "Sonraki karakterden sonra boşluk"
 
 msgid "Empty line below"
 msgstr "Aşağıdaki boş satır"
 
-msgid "Cut word right from center"
-msgstr "Kelimeyi tam ortasından kes"
+msgid "Cut word under cursor"
+msgstr "İmleçteki kelimeyi kes"
 
-msgid "Copy word right from center"
-msgstr "Kelimeyi tam ortasından kopyala"
+msgid "Copy word under cursor"
+msgstr "İmleçteki kelimeyi kopyala"
 
-msgid "Paste at line above"
-msgstr "Yukarıdaki satıra yapıştırın"
+msgid "Paste on new line above"
+msgstr "Üstte yeni satıra yapıştır"
 
-msgid "Replace word with buffer"
-msgstr "Kelimeyi tamponla değiştir"
+msgid "Replace word with clipboard"
+msgstr "Kelimeyi panodakiyle değiştir"
 
-msgid "Down + Home"
-msgstr "Aşağı + Ana Sayfa"
+msgid "Start of next line"
+msgstr "Sonraki satırın başı"
 
-msgid "Up + Home"
-msgstr "Yukarı + Ana Sayfa"
+msgid "Start of previous line"
+msgstr "Önceki satırın başı"
 
-msgid "Down 5 times"
-msgstr "5 kez aşağı"
+msgid "Move down 5 lines"
+msgstr "5 satır aşağı"
 
-msgid "Paste at line bottom"
-msgstr "Satırın altına yapıştır"
+msgid "Paste on new line below"
+msgstr "Altta yeni satıra yapıştır"
 
-msgid "Cut to start"
-msgstr "Başlamak için kes"
+msgid "Cut to line start"
+msgstr "Satır başına kadar kes"
 
-msgid "Cut to end"
-msgstr "Sonuna kadar kes"
+msgid "Cut to line end"
+msgstr "Satır sonuna kadar kes"
 
-msgid "Cut line content"
-msgstr "Satır içeriğini kes"
+msgid "Cut line text"
+msgstr "Satır metnini kes"
 
-msgid "Cut and remove line"
-msgstr "Çizgiyi kes ve kaldır"
+msgid "Cut whole line"
+msgstr "Tüm satırı kes"
 
 msgid "Select 5 lines up"
 msgstr "5 satır yukarıyı seçin"
 
-msgid "Copy to start"
-msgstr "Başlamak için kopyalayın"
+msgid "Copy to line start"
+msgstr "Satır başına kadar kopyala"
 
-msgid "Copy to end"
-msgstr "Sona kadar kopyala"
+msgid "Copy to line end"
+msgstr "Satır sonuna kadar kopyala"
 
-msgid "Copy line"
-msgstr "Satırı kopyala"
+msgid "Copy line text"
+msgstr "Satır metnini kopyala"
 
-msgid "Select whole line"
-msgstr "Tüm satırı seç"
+msgid "Select line text"
+msgstr "Satır metnini seç"
 
-msgid "Select word right from center"
-msgstr "Kelimeyi tam ortasından seç"
+msgid "Select word under cursor"
+msgstr "İmleçteki kelimeyi seç"
 
-msgid "Replace to start with buffer"
-msgstr "Tamponla başlamak için değiştirin"
+msgid "Replace to line start with clipboard"
+msgstr "Satır başına kadar panodakiyle değiştir"
 
-msgid "Replace to end with buffer"
-msgstr "Tamponla sonuna kadar değiştirin"
+msgid "Replace to line end with clipboard"
+msgstr "Satır sonuna kadar panodakiyle değiştir"
 
-msgid "Replace line with buffer"
-msgstr "Satırı arabellekle değiştir"
+msgid "Replace line text with clipboard"
+msgstr "Satır metnini panodakiyle değiştir"
 
 msgid "Select 5 lines down"
 msgstr "5 satır aşağıyı seç"

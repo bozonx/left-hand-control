@@ -30,12 +30,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let name = ui
         .global::<Locale>()
         .invoke_text(editor.get_builtin_macros().row_data(0).unwrap().name);
-    assert_eq!(name, "Переместить строку вниз");
+    assert_eq!(name, "Пустая строка выше");
     slint_shell::select_ui_language("en")?;
     assert_eq!(
         ui.global::<Locale>()
             .invoke_text(editor.get_builtin_macros().row_data(0).unwrap().name),
-        "Move line down"
+        "Empty line above"
     );
     slint_shell::select_ui_language("ru")?;
     let copy_name = ui.global::<Locale>().invoke_text(slint_shell::ui::Message {
@@ -46,12 +46,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     editor.invoke_clone_builtin(0, copy_name);
     let first = |document: &Rc<Document>| document.read().layout().macros[0].clone();
     assert_eq!(first(&document).steps.len(), 3);
-    assert_eq!(first(&document).name, "Переместить строку вниз (копия)");
-    assert_eq!(first(&document).id, "moveLineDownCopy");
-    editor.invoke_set_field(0, MacroField::Id, "moveLineDown".into());
+    assert_eq!(first(&document).name, "Пустая строка выше (копия)");
+    assert_eq!(first(&document).id, "emptyLineAboveCopy");
+    editor.invoke_set_field(0, MacroField::Id, "emptyLineAbove".into());
     settle();
     assert!(!editor.get_has_errors());
-    assert_eq!(first(&document).id, "moveLineDown");
+    assert_eq!(first(&document).id, "emptyLineAbove");
     editor.invoke_set_field(0, MacroField::Id, "testMacro".into());
     editor.invoke_set_field(0, MacroField::Name, "Тестовый макрос".into());
     editor.invoke_add_step(0, "pause:100".into());

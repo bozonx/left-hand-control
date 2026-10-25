@@ -3538,89 +3538,89 @@ msgstr "Disposizione: {}"
 msgid "Select All"
 msgstr "Seleziona tutto"
 
-msgid "Move line down"
-msgstr "Sposta la linea verso il basso"
+msgid "Empty line above"
+msgstr "Riga vuota sopra"
 
-msgid "Down + End"
-msgstr "Giù + Fine"
+msgid "End of next line"
+msgstr "Fine della riga successiva"
 
-msgid "Up + End"
-msgstr "Su + Fine"
+msgid "End of previous line"
+msgstr "Fine della riga precedente"
 
-msgid "Up 5 times"
-msgstr "Su 5 volte"
+msgid "Move up 5 lines"
+msgstr "Su di 5 righe"
 
 msgid "Duplicate line"
 msgstr "Riga duplicata"
 
-msgid "Right + Space"
-msgstr "Destra + Spazio"
+msgid "Space after next character"
+msgstr "Spazio dopo il carattere successivo"
 
 msgid "Empty line below"
 msgstr "Riga vuota qui sotto"
 
-msgid "Cut word right from center"
-msgstr "Taglia la parola a destra dal centro"
+msgid "Cut word under cursor"
+msgstr "Taglia la parola sotto il cursore"
 
-msgid "Copy word right from center"
-msgstr "Copia la parola a destra dal centro"
+msgid "Copy word under cursor"
+msgstr "Copia la parola sotto il cursore"
 
-msgid "Paste at line above"
-msgstr "Incolla alla riga sopra"
+msgid "Paste on new line above"
+msgstr "Incolla in una nuova riga sopra"
 
-msgid "Replace word with buffer"
-msgstr "Sostituisci la parola con il buffer"
+msgid "Replace word with clipboard"
+msgstr "Sostituisci la parola con gli appunti"
 
-msgid "Down + Home"
-msgstr "Giù + Home"
+msgid "Start of next line"
+msgstr "Inizio della riga successiva"
 
-msgid "Up + Home"
-msgstr "Su + Casa"
+msgid "Start of previous line"
+msgstr "Inizio della riga precedente"
 
-msgid "Down 5 times"
-msgstr "Giù 5 volte"
+msgid "Move down 5 lines"
+msgstr "Giù di 5 righe"
 
-msgid "Paste at line bottom"
-msgstr "Incolla in fondo alla riga"
+msgid "Paste on new line below"
+msgstr "Incolla in una nuova riga sotto"
 
-msgid "Cut to start"
-msgstr "Taglia per iniziare"
+msgid "Cut to line start"
+msgstr "Taglia fino a inizio riga"
 
-msgid "Cut to end"
-msgstr "Taglia fino alla fine"
+msgid "Cut to line end"
+msgstr "Taglia fino a fine riga"
 
-msgid "Cut line content"
-msgstr "Taglia il contenuto della linea"
+msgid "Cut line text"
+msgstr "Taglia il testo della riga"
 
-msgid "Cut and remove line"
-msgstr "Taglia e rimuovi la linea"
+msgid "Cut whole line"
+msgstr "Taglia l’intera riga"
 
 msgid "Select 5 lines up"
 msgstr "Seleziona 5 righe in alto"
 
-msgid "Copy to start"
-msgstr "Copia per iniziare"
+msgid "Copy to line start"
+msgstr "Copia fino a inizio riga"
 
-msgid "Copy to end"
-msgstr "Copia per terminare"
+msgid "Copy to line end"
+msgstr "Copia fino a fine riga"
 
-msgid "Copy line"
-msgstr "Copia riga"
+msgid "Copy line text"
+msgstr "Copia il testo della riga"
 
-msgid "Select whole line"
-msgstr "Seleziona l'intera riga"
+msgid "Select line text"
+msgstr "Seleziona il testo della riga"
 
-msgid "Select word right from center"
-msgstr "Seleziona la parola a destra dal centro"
+msgid "Select word under cursor"
+msgstr "Seleziona la parola sotto il cursore"
 
-msgid "Replace to start with buffer"
-msgstr "Sostituisci per iniziare con buffer"
+msgid "Replace to line start with clipboard"
+msgstr "Sostituisci fino a inizio riga con gli appunti"
 
-msgid "Replace to end with buffer"
-msgstr "Sostituisci per terminare con il buffer"
+msgid "Replace to line end with clipboard"
+msgstr "Sostituisci fino a fine riga con gli appunti"
 
-msgid "Replace line with buffer"
-msgstr "Sostituisci la riga con il buffer"
+msgid "Replace line text with clipboard"
+msgstr "Sostituisci il testo della riga con gli appunti"
 
 msgid "Select 5 lines down"
 msgstr "Seleziona 5 righe in basso"

@@ -3209,89 +3209,89 @@ msgstr "レイアウト: {}"
 msgid "Select All"
 msgstr "すべて選択"
 
-msgid "Move line down"
-msgstr "行を下に移動"
+msgid "Empty line above"
+msgstr "上に空行を挿入"
 
-msgid "Down + End"
-msgstr "ダウン + エンド"
+msgid "End of next line"
+msgstr "次の行の末尾"
 
-msgid "Up + End"
-msgstr "アップ + エンド"
+msgid "End of previous line"
+msgstr "前の行の末尾"
 
-msgid "Up 5 times"
-msgstr "5倍アップ"
+msgid "Move up 5 lines"
+msgstr "5 行上へ"
 
 msgid "Duplicate line"
 msgstr "重複行"
 
-msgid "Right + Space"
-msgstr "右 + スペース"
+msgid "Space after next character"
+msgstr "次の文字の後にスペース"
 
 msgid "Empty line below"
 msgstr "以下の空行"
 
-msgid "Cut word right from center"
-msgstr "単語を中央から右に切り取る"
+msgid "Cut word under cursor"
+msgstr "カーソル位置の単語を切り取り"
 
-msgid "Copy word right from center"
-msgstr "単語を中央から右にコピー"
+msgid "Copy word under cursor"
+msgstr "カーソル位置の単語をコピー"
 
-msgid "Paste at line above"
-msgstr "上の行に貼り付けます"
+msgid "Paste on new line above"
+msgstr "上の新しい行に貼り付け"
 
-msgid "Replace word with buffer"
-msgstr "単語をバッファに置き換える"
+msgid "Replace word with clipboard"
+msgstr "単語をクリップボードで置換"
 
-msgid "Down + Home"
-msgstr "ダウン + ホーム"
+msgid "Start of next line"
+msgstr "次の行の先頭"
 
-msgid "Up + Home"
-msgstr "アップ + ホーム"
+msgid "Start of previous line"
+msgstr "前の行の先頭"
 
-msgid "Down 5 times"
-msgstr "ダウン5回"
+msgid "Move down 5 lines"
+msgstr "5 行下へ"
 
-msgid "Paste at line bottom"
-msgstr "行末に貼り付け"
+msgid "Paste on new line below"
+msgstr "下の新しい行に貼り付け"
 
-msgid "Cut to start"
-msgstr "カットして開始"
+msgid "Cut to line start"
+msgstr "行頭まで切り取り"
 
-msgid "Cut to end"
-msgstr "最後までカット"
+msgid "Cut to line end"
+msgstr "行末まで切り取り"
 
-msgid "Cut line content"
-msgstr "カットラインの内容"
+msgid "Cut line text"
+msgstr "行のテキストを切り取り"
 
-msgid "Cut and remove line"
-msgstr "ラインをカットして削除する"
+msgid "Cut whole line"
+msgstr "行全体を切り取り"
 
 msgid "Select 5 lines up"
 msgstr "5つのラインアップを選択してください"
 
-msgid "Copy to start"
-msgstr "コピーして開始"
+msgid "Copy to line start"
+msgstr "行頭までコピー"
 
-msgid "Copy to end"
-msgstr "最後までコピー"
+msgid "Copy to line end"
+msgstr "行末までコピー"
 
-msgid "Copy line"
-msgstr "行をコピー"
+msgid "Copy line text"
+msgstr "行のテキストをコピー"
 
-msgid "Select whole line"
-msgstr "行全体を選択"
+msgid "Select line text"
+msgstr "行のテキストを選択"
 
-msgid "Select word right from center"
-msgstr "中央から右の単語を選択"
+msgid "Select word under cursor"
+msgstr "カーソル位置の単語を選択"
 
-msgid "Replace to start with buffer"
-msgstr "バッファで開始するように置換"
+msgid "Replace to line start with clipboard"
+msgstr "行頭までクリップボードで置換"
 
-msgid "Replace to end with buffer"
-msgstr "末尾までをバッファに置換"
+msgid "Replace to line end with clipboard"
+msgstr "行末までクリップボードで置換"
 
-msgid "Replace line with buffer"
-msgstr "行をバッファに置き換える"
+msgid "Replace line text with clipboard"
+msgstr "行のテキストをクリップボードで置換"
 
 msgid "Select 5 lines down"
 msgstr "5 行下を選択"

@@ -3566,89 +3566,89 @@ msgstr "Διάταξη: {}"
 msgid "Select All"
 msgstr "Επιλογή όλων"
 
-msgid "Move line down"
-msgstr "Μετακινήστε τη γραμμή προς τα κάτω"
+msgid "Empty line above"
+msgstr "Κενή γραμμή από πάνω"
 
-msgid "Down + End"
-msgstr "Κάτω + Τέλος"
+msgid "End of next line"
+msgstr "Τέλος επόμενης γραμμής"
 
-msgid "Up + End"
-msgstr "Πάνω + Τέλος"
+msgid "End of previous line"
+msgstr "Τέλος προηγούμενης γραμμής"
 
-msgid "Up 5 times"
-msgstr "Έως και 5 φορές"
+msgid "Move up 5 lines"
+msgstr "5 γραμμές πάνω"
 
 msgid "Duplicate line"
 msgstr "Διπλότυπη γραμμή"
 
-msgid "Right + Space"
-msgstr "Δεξιά + Κενό"
+msgid "Space after next character"
+msgstr "Κενό μετά τον επόμενο χαρακτήρα"
 
 msgid "Empty line below"
 msgstr "Κενή γραμμή παρακάτω"
 
-msgid "Cut word right from center"
-msgstr "Κόψτε τη λέξη δεξιά από το κέντρο"
+msgid "Cut word under cursor"
+msgstr "Αποκοπή λέξης κάτω από τον δρομέα"
 
-msgid "Copy word right from center"
-msgstr "Αντιγράψτε τη λέξη δεξιά από το κέντρο"
+msgid "Copy word under cursor"
+msgstr "Αντιγραφή λέξης κάτω από τον δρομέα"
 
-msgid "Paste at line above"
-msgstr "Επικόλληση στην παραπάνω γραμμή"
+msgid "Paste on new line above"
+msgstr "Επικόλληση σε νέα γραμμή από πάνω"
 
-msgid "Replace word with buffer"
-msgstr "Αντικαταστήστε τη λέξη με buffer"
+msgid "Replace word with clipboard"
+msgstr "Αντικατάσταση λέξης με το πρόχειρο"
 
-msgid "Down + Home"
-msgstr "Κάτω + Αρχική"
+msgid "Start of next line"
+msgstr "Αρχή επόμενης γραμμής"
 
-msgid "Up + Home"
-msgstr "Πάνω + Αρχική"
+msgid "Start of previous line"
+msgstr "Αρχή προηγούμενης γραμμής"
 
-msgid "Down 5 times"
-msgstr "Πτώση 5 φορές"
+msgid "Move down 5 lines"
+msgstr "5 γραμμές κάτω"
 
-msgid "Paste at line bottom"
-msgstr "Επικόλληση στο κάτω μέρος της γραμμής"
+msgid "Paste on new line below"
+msgstr "Επικόλληση σε νέα γραμμή από κάτω"
 
-msgid "Cut to start"
-msgstr "Κόψτε για να ξεκινήσετε"
+msgid "Cut to line start"
+msgstr "Αποκοπή έως την αρχή της γραμμής"
 
-msgid "Cut to end"
-msgstr "Κόψτε μέχρι το τέλος"
+msgid "Cut to line end"
+msgstr "Αποκοπή έως το τέλος της γραμμής"
 
-msgid "Cut line content"
-msgstr "Αποκοπή περιεχομένου γραμμής"
+msgid "Cut line text"
+msgstr "Αποκοπή κειμένου γραμμής"
 
-msgid "Cut and remove line"
-msgstr "Κόψτε και αφαιρέστε τη γραμμή"
+msgid "Cut whole line"
+msgstr "Αποκοπή ολόκληρης γραμμής"
 
 msgid "Select 5 lines up"
 msgstr "Επιλέξτε 5 γραμμές επάνω"
 
-msgid "Copy to start"
-msgstr "Αντιγράψτε για να ξεκινήσετε"
+msgid "Copy to line start"
+msgstr "Αντιγραφή έως την αρχή της γραμμής"
 
-msgid "Copy to end"
-msgstr "Αντιγραφή στο τέλος"
+msgid "Copy to line end"
+msgstr "Αντιγραφή έως το τέλος της γραμμής"
 
-msgid "Copy line"
-msgstr "Αντιγραφή γραμμής"
+msgid "Copy line text"
+msgstr "Αντιγραφή κειμένου γραμμής"
 
-msgid "Select whole line"
-msgstr "Επιλέξτε ολόκληρη τη γραμμή"
+msgid "Select line text"
+msgstr "Επιλογή κειμένου γραμμής"
 
-msgid "Select word right from center"
-msgstr "Επιλέξτε λέξη δεξιά από το κέντρο"
+msgid "Select word under cursor"
+msgstr "Επιλογή λέξης κάτω από τον δρομέα"
 
-msgid "Replace to start with buffer"
-msgstr "Αντικαταστήστε για να ξεκινήσετε με buffer"
+msgid "Replace to line start with clipboard"
+msgstr "Αντικατάσταση έως την αρχή της γραμμής με το πρόχειρο"
 
-msgid "Replace to end with buffer"
-msgstr "Αντικαταστήστε στο τέλος με buffer"
+msgid "Replace to line end with clipboard"
+msgstr "Αντικατάσταση έως το τέλος της γραμμής με το πρόχειρο"
 
-msgid "Replace line with buffer"
-msgstr "Αντικαταστήστε τη γραμμή με buffer"
+msgid "Replace line text with clipboard"
+msgstr "Αντικατάσταση κειμένου γραμμής με το πρόχειρο"
 
 msgid "Select 5 lines down"
 msgstr "Επιλέξτε 5 γραμμές προς τα κάτω"

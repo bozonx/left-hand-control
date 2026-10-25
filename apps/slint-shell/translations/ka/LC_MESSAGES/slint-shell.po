@@ -3450,89 +3450,89 @@ msgstr "განლაგება: {}"
 msgid "Select All"
 msgstr "ყველას მონიშვნა"
 
-msgid "Move line down"
-msgstr "გადაიტანეთ ხაზი ქვემოთ"
+msgid "Empty line above"
+msgstr "ცარიელი ხაზი ზემოთ"
 
-msgid "Down + End"
-msgstr "ქვევით + დასასრული"
+msgid "End of next line"
+msgstr "შემდეგი ხაზის ბოლო"
 
-msgid "Up + End"
-msgstr "ზევით + დასასრული"
+msgid "End of previous line"
+msgstr "წინა ხაზის ბოლო"
 
-msgid "Up 5 times"
-msgstr "5-ჯერ მაღლა"
+msgid "Move up 5 lines"
+msgstr "5 ხაზით ზემოთ"
 
 msgid "Duplicate line"
 msgstr "დუბლიკატი ხაზი"
 
-msgid "Right + Space"
-msgstr "მარჯვენა + სივრცე"
+msgid "Space after next character"
+msgstr "ჰარი შემდეგი სიმბოლოს შემდეგ"
 
 msgid "Empty line below"
 msgstr "ცარიელი ხაზი ქვემოთ"
 
-msgid "Cut word right from center"
-msgstr "სიტყვის ამოჭრა ცენტრიდან მარჯვნივ"
+msgid "Cut word under cursor"
+msgstr "კურსორქვეშა სიტყვის ამოჭრა"
 
-msgid "Copy word right from center"
-msgstr "დააკოპირეთ სიტყვა პირდაპირ ცენტრიდან"
+msgid "Copy word under cursor"
+msgstr "კურსორქვეშა სიტყვის კოპირება"
 
-msgid "Paste at line above"
-msgstr "ჩასვით ზემოთ ხაზი"
+msgid "Paste on new line above"
+msgstr "ჩასმა ახალ ხაზზე ზემოთ"
 
-msgid "Replace word with buffer"
-msgstr "შეცვალეთ სიტყვა ბუფერით"
+msgid "Replace word with clipboard"
+msgstr "სიტყვის ჩანაცვლება ბუფერიდან"
 
-msgid "Down + Home"
-msgstr "ქვემოთ + მთავარი"
+msgid "Start of next line"
+msgstr "შემდეგი ხაზის დასაწყისი"
 
-msgid "Up + Home"
-msgstr "ზევით + მთავარი"
+msgid "Start of previous line"
+msgstr "წინა ხაზის დასაწყისი"
 
-msgid "Down 5 times"
-msgstr "5-ჯერ დაბლა"
+msgid "Move down 5 lines"
+msgstr "5 ხაზით ქვემოთ"
 
-msgid "Paste at line bottom"
-msgstr "ჩასვით ხაზის ბოლოში"
+msgid "Paste on new line below"
+msgstr "ჩასმა ახალ ხაზზე ქვემოთ"
 
-msgid "Cut to start"
-msgstr "გაჭრა დასაწყებად"
+msgid "Cut to line start"
+msgstr "ამოჭრა ხაზის დასაწყისამდე"
 
-msgid "Cut to end"
-msgstr "გაჭრა ბოლომდე"
+msgid "Cut to line end"
+msgstr "ამოჭრა ხაზის ბოლომდე"
 
-msgid "Cut line content"
-msgstr "ხაზის შინაარსის ამოჭრა"
+msgid "Cut line text"
+msgstr "ხაზის ტექსტის ამოჭრა"
 
-msgid "Cut and remove line"
-msgstr "გაჭრა და ამოიღე ხაზი"
+msgid "Cut whole line"
+msgstr "მთელი ხაზის ამოჭრა"
 
 msgid "Select 5 lines up"
 msgstr "აირჩიეთ 5 ხაზი"
 
-msgid "Copy to start"
-msgstr "დააკოპირეთ დასაწყებად"
+msgid "Copy to line start"
+msgstr "კოპირება ხაზის დასაწყისამდე"
 
-msgid "Copy to end"
-msgstr "დააკოპირეთ ბოლომდე"
+msgid "Copy to line end"
+msgstr "კოპირება ხაზის ბოლომდე"
 
-msgid "Copy line"
-msgstr "დააკოპირეთ ხაზი"
+msgid "Copy line text"
+msgstr "ხაზის ტექსტის კოპირება"
 
-msgid "Select whole line"
-msgstr "აირჩიეთ მთელი ხაზი"
+msgid "Select line text"
+msgstr "ხაზის ტექსტის მონიშვნა"
 
-msgid "Select word right from center"
-msgstr "აირჩიეთ სიტყვა მარჯვენა ცენტრიდან"
+msgid "Select word under cursor"
+msgstr "კურსორქვეშა სიტყვის მონიშვნა"
 
-msgid "Replace to start with buffer"
-msgstr "ჩანაცვლება ბუფერით დასაწყებად"
+msgid "Replace to line start with clipboard"
+msgstr "ჩანაცვლება ხაზის დასაწყისამდე ბუფერიდან"
 
-msgid "Replace to end with buffer"
-msgstr "ჩაანაცვლეთ ბოლომდე ბუფერით"
+msgid "Replace to line end with clipboard"
+msgstr "ჩანაცვლება ხაზის ბოლომდე ბუფერიდან"
 
-msgid "Replace line with buffer"
-msgstr "შეცვალეთ ხაზი ბუფერით"
+msgid "Replace line text with clipboard"
+msgstr "ხაზის ტექსტის ჩანაცვლება ბუფერიდან"
 
 msgid "Select 5 lines down"
 msgstr "აირჩიეთ 5 ხაზი ქვემოთ"

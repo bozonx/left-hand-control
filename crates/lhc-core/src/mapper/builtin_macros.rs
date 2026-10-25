@@ -13,23 +13,23 @@ pub struct BuiltinMacro {
 pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
     // nav layer
     BuiltinMacro {
-        id: "moveLineDown",
-        name: "Move line down",
+        id: "emptyLineAbove",
+        name: "Empty line above",
         steps: &["Home", "Enter", "ArrowUp"],
     },
     BuiltinMacro {
-        id: "downEnd",
-        name: "Down + End",
+        id: "nextLineEnd",
+        name: "End of next line",
         steps: &["ArrowDown", "End"],
     },
     BuiltinMacro {
-        id: "upEnd",
-        name: "Up + End",
+        id: "prevLineEnd",
+        name: "End of previous line",
         steps: &["ArrowUp", "End"],
     },
     BuiltinMacro {
-        id: "up5Times",
-        name: "Up 5 times",
+        id: "up5Lines",
+        name: "Move up 5 lines",
         steps: &["ArrowUp", "ArrowUp", "ArrowUp", "ArrowUp", "ArrowUp"],
     },
     BuiltinMacro {
@@ -45,8 +45,8 @@ pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
         ],
     },
     BuiltinMacro {
-        id: "rightSpace",
-        name: "Right + Space",
+        id: "spaceAfterNextChar",
+        name: "Space after next character",
         steps: &["ArrowRight", "Space"],
     },
     BuiltinMacro {
@@ -55,13 +55,13 @@ pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
         steps: &["End", "Enter"],
     },
     BuiltinMacro {
-        id: "cutWordRightCenter",
-        name: "Cut word right from center",
+        id: "cutWordUnderCursor",
+        name: "Cut word under cursor",
         steps: &["Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft", "Ctrl+KeyX"],
     },
     BuiltinMacro {
-        id: "copyWordAfterCenter",
-        name: "Copy word right from center",
+        id: "copyWordUnderCursor",
+        name: "Copy word under cursor",
         steps: &[
             "Ctrl+ArrowRight",
             "Ctrl+Shift+ArrowLeft",
@@ -70,28 +70,28 @@ pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
         ],
     },
     BuiltinMacro {
-        id: "pasteAtLineAbove",
-        name: "Paste at line above",
+        id: "pasteOnNewLineAbove",
+        name: "Paste on new line above",
         steps: &["Home", "Enter", "ArrowUp", "Ctrl+KeyV"],
     },
     BuiltinMacro {
-        id: "replaceWordWidthBuffer",
-        name: "Replace word with buffer",
+        id: "replaceWordWithClipboard",
+        name: "Replace word with clipboard",
         steps: &["Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft", "Ctrl+KeyV"],
     },
     BuiltinMacro {
-        id: "downHome",
-        name: "Down + Home",
+        id: "nextLineStart",
+        name: "Start of next line",
         steps: &["ArrowDown", "Home"],
     },
     BuiltinMacro {
-        id: "upHome",
-        name: "Up + Home",
+        id: "prevLineStart",
+        name: "Start of previous line",
         steps: &["ArrowUp", "Home"],
     },
     BuiltinMacro {
-        id: "down5Times",
-        name: "Down 5 times",
+        id: "down5Lines",
+        name: "Move down 5 lines",
         steps: &[
             "ArrowDown",
             "ArrowDown",
@@ -101,29 +101,29 @@ pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
         ],
     },
     BuiltinMacro {
-        id: "pasteAtLineBottom",
-        name: "Paste at line bottom",
+        id: "pasteOnNewLineBelow",
+        name: "Paste on new line below",
         steps: &["End", "Enter", "Ctrl+KeyV"],
     },
     // select layer
     BuiltinMacro {
-        id: "cutToStart",
-        name: "Cut to start",
+        id: "cutToLineStart",
+        name: "Cut to line start",
         steps: &["Shift+Home", "Ctrl+KeyX"],
     },
     BuiltinMacro {
-        id: "cutToEnd",
-        name: "Cut to end",
+        id: "cutToLineEnd",
+        name: "Cut to line end",
         steps: &["Shift+End", "Ctrl+KeyX"],
     },
     BuiltinMacro {
-        id: "cutLineContent",
-        name: "Cut line content",
+        id: "cutLineText",
+        name: "Cut line text",
         steps: &["Home", "Shift+End", "Ctrl+KeyX"],
     },
     BuiltinMacro {
-        id: "cutAndRemoveLine",
-        name: "Cut and remove line",
+        id: "cutWholeLine",
+        name: "Cut whole line",
         steps: &["Home", "Shift+End", "Ctrl+KeyX", "Delete"],
     },
     BuiltinMacro {
@@ -138,43 +138,43 @@ pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
         ],
     },
     BuiltinMacro {
-        id: "copyToStart",
-        name: "Copy to start",
+        id: "copyToLineStart",
+        name: "Copy to line start",
         steps: &["Shift+Home", "Ctrl+KeyC", "Home"],
     },
     BuiltinMacro {
-        id: "copyToEnd",
-        name: "Copy to end",
+        id: "copyToLineEnd",
+        name: "Copy to line end",
         steps: &["Shift+End", "Ctrl+KeyC", "End"],
     },
     BuiltinMacro {
-        id: "copyLine",
-        name: "Copy line",
+        id: "copyLineText",
+        name: "Copy line text",
         steps: &["Home", "Shift+End", "Ctrl+KeyC", "Home"],
     },
     BuiltinMacro {
-        id: "selectWholeLine",
-        name: "Select whole line",
+        id: "selectLineText",
+        name: "Select line text",
         steps: &["Home", "Shift+End"],
     },
     BuiltinMacro {
-        id: "selectWordRightCenter",
-        name: "Select word right from center",
+        id: "selectWordUnderCursor",
+        name: "Select word under cursor",
         steps: &["Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft"],
     },
     BuiltinMacro {
-        id: "replaceToStartWithBuffer",
-        name: "Replace to start with buffer",
+        id: "replaceToLineStartWithClipboard",
+        name: "Replace to line start with clipboard",
         steps: &["Shift+Home", "Ctrl+KeyV"],
     },
     BuiltinMacro {
-        id: "replaceToEndWithBuffer",
-        name: "Replace to end with buffer",
+        id: "replaceToLineEndWithClipboard",
+        name: "Replace to line end with clipboard",
         steps: &["Shift+End", "Ctrl+KeyV"],
     },
     BuiltinMacro {
-        id: "replaceLineWidthBuffer",
-        name: "Replace line with buffer",
+        id: "replaceLineTextWithClipboard",
+        name: "Replace line text with clipboard",
         steps: &["Home", "Shift+End", "Ctrl+KeyV"],
     },
     BuiltinMacro {
@@ -189,6 +189,47 @@ pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
         ],
     },
 ];
+
+/// IDs used before the built-in macros were renamed, mapped to the current
+/// ones so existing configs and layouts keep working.
+const LEGACY_IDS: &[(&str, &str)] = &[
+    ("moveLineDown", "emptyLineAbove"),
+    ("downEnd", "nextLineEnd"),
+    ("upEnd", "prevLineEnd"),
+    ("up5Times", "up5Lines"),
+    ("rightSpace", "spaceAfterNextChar"),
+    ("cutWordRightCenter", "cutWordUnderCursor"),
+    ("copyWordAfterCenter", "copyWordUnderCursor"),
+    ("pasteAtLineAbove", "pasteOnNewLineAbove"),
+    ("replaceWordWidthBuffer", "replaceWordWithClipboard"),
+    ("downHome", "nextLineStart"),
+    ("upHome", "prevLineStart"),
+    ("down5Times", "down5Lines"),
+    ("pasteAtLineBottom", "pasteOnNewLineBelow"),
+    ("cutToStart", "cutToLineStart"),
+    ("cutToEnd", "cutToLineEnd"),
+    ("cutLineContent", "cutLineText"),
+    ("cutAndRemoveLine", "cutWholeLine"),
+    ("copyToStart", "copyToLineStart"),
+    ("copyToEnd", "copyToLineEnd"),
+    ("copyLine", "copyLineText"),
+    ("selectWholeLine", "selectLineText"),
+    ("selectWordRightCenter", "selectWordUnderCursor"),
+    (
+        "replaceToStartWithBuffer",
+        "replaceToLineStartWithClipboard",
+    ),
+    ("replaceToEndWithBuffer", "replaceToLineEndWithClipboard"),
+    ("replaceLineWidthBuffer", "replaceLineTextWithClipboard"),
+];
+
+/// Current ID for `id`, translating a legacy built-in macro ID.
+pub fn canonical_id(id: &str) -> &str {
+    LEGACY_IDS
+        .iter()
+        .find(|(old, _)| *old == id)
+        .map_or(id, |(_, new)| new)
+}
 
 #[cfg(all(test, target_os = "linux"))]
 mod tests {

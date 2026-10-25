@@ -2805,89 +2805,89 @@ msgstr "Раскладка: {}"
 msgid "Select All"
 msgstr "Выделить всё"
 
-msgid "Move line down"
-msgstr "Переместить строку вниз"
+msgid "Empty line above"
+msgstr "Пустая строка выше"
 
-msgid "Down + End"
-msgstr "Вниз + End"
+msgid "End of next line"
+msgstr "В конец следующей строки"
 
-msgid "Up + End"
-msgstr "Вверх + End"
+msgid "End of previous line"
+msgstr "В конец предыдущей строки"
 
-msgid "Up 5 times"
-msgstr "Вверх 5 раз"
+msgid "Move up 5 lines"
+msgstr "Вверх на 5 строк"
 
 msgid "Duplicate line"
 msgstr "Дублировать строку"
 
-msgid "Right + Space"
-msgstr "Вправо + пробел"
+msgid "Space after next character"
+msgstr "Пробел после следующего символа"
 
 msgid "Empty line below"
 msgstr "Пустая строка ниже"
 
-msgid "Cut word right from center"
-msgstr "Вырезать слово справа от курсора"
+msgid "Cut word under cursor"
+msgstr "Вырезать слово под курсором"
 
-msgid "Copy word right from center"
-msgstr "Копировать слово справа от курсора"
+msgid "Copy word under cursor"
+msgstr "Копировать слово под курсором"
 
-msgid "Paste at line above"
+msgid "Paste on new line above"
 msgstr "Вставить строкой выше"
 
-msgid "Replace word with buffer"
+msgid "Replace word with clipboard"
 msgstr "Заменить слово из буфера обмена"
 
-msgid "Down + Home"
-msgstr "Вниз + Home"
+msgid "Start of next line"
+msgstr "В начало следующей строки"
 
-msgid "Up + Home"
-msgstr "Вверх + Home"
+msgid "Start of previous line"
+msgstr "В начало предыдущей строки"
 
-msgid "Down 5 times"
-msgstr "Вниз 5 раз"
+msgid "Move down 5 lines"
+msgstr "Вниз на 5 строк"
 
-msgid "Paste at line bottom"
-msgstr "Вставить в конце строки"
+msgid "Paste on new line below"
+msgstr "Вставить строкой ниже"
 
-msgid "Cut to start"
+msgid "Cut to line start"
 msgstr "Вырезать до начала строки"
 
-msgid "Cut to end"
+msgid "Cut to line end"
 msgstr "Вырезать до конца строки"
 
-msgid "Cut line content"
-msgstr "Вырезать содержимое строки"
+msgid "Cut line text"
+msgstr "Вырезать текст строки"
 
-msgid "Cut and remove line"
-msgstr "Вырезать и удалить строку"
+msgid "Cut whole line"
+msgstr "Вырезать строку целиком"
 
 msgid "Select 5 lines up"
 msgstr "Выделить 5 строк вверх"
 
-msgid "Copy to start"
+msgid "Copy to line start"
 msgstr "Копировать до начала строки"
 
-msgid "Copy to end"
+msgid "Copy to line end"
 msgstr "Копировать до конца строки"
 
-msgid "Copy line"
-msgstr "Копировать строку"
+msgid "Copy line text"
+msgstr "Копировать текст строки"
 
-msgid "Select whole line"
-msgstr "Выделить всю строку"
+msgid "Select line text"
+msgstr "Выделить текст строки"
 
-msgid "Select word right from center"
-msgstr "Выделить слово справа от курсора"
+msgid "Select word under cursor"
+msgstr "Выделить слово под курсором"
 
-msgid "Replace to start with buffer"
+msgid "Replace to line start with clipboard"
 msgstr "Заменить до начала строки из буфера обмена"
 
-msgid "Replace to end with buffer"
+msgid "Replace to line end with clipboard"
 msgstr "Заменить до конца строки из буфера обмена"
 
-msgid "Replace line with buffer"
-msgstr "Заменить строку из буфера обмена"
+msgid "Replace line text with clipboard"
+msgstr "Заменить текст строки из буфера обмена"
 
 msgid "Select 5 lines down"
 msgstr "Выделить 5 строк вниз"

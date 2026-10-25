@@ -3437,89 +3437,89 @@ msgstr "Rozložení: {}"
 msgid "Select All"
 msgstr "Vybrat vše"
 
-msgid "Move line down"
-msgstr "Posuňte řádek dolů"
+msgid "Empty line above"
+msgstr "Prázdný řádek nad"
 
-msgid "Down + End"
-msgstr "Dolů + Konec"
+msgid "End of next line"
+msgstr "Konec dalšího řádku"
 
-msgid "Up + End"
-msgstr "Nahoru + konec"
+msgid "End of previous line"
+msgstr "Konec předchozího řádku"
 
-msgid "Up 5 times"
-msgstr "5krát nahoru"
+msgid "Move up 5 lines"
+msgstr "O 5 řádků nahoru"
 
 msgid "Duplicate line"
 msgstr "Duplicitní řádek"
 
-msgid "Right + Space"
-msgstr "Vpravo + mezerník"
+msgid "Space after next character"
+msgstr "Mezera za dalším znakem"
 
 msgid "Empty line below"
 msgstr "Prázdný řádek níže"
 
-msgid "Cut word right from center"
-msgstr "Vyjmout slovo přímo od středu"
+msgid "Cut word under cursor"
+msgstr "Vyjmout slovo pod kurzorem"
 
-msgid "Copy word right from center"
-msgstr "Zkopírujte slovo přímo od středu"
+msgid "Copy word under cursor"
+msgstr "Kopírovat slovo pod kurzorem"
 
-msgid "Paste at line above"
-msgstr "Vložte na řádek výše"
+msgid "Paste on new line above"
+msgstr "Vložit na nový řádek nad"
 
-msgid "Replace word with buffer"
-msgstr "Nahraďte slovo bufferem"
+msgid "Replace word with clipboard"
+msgstr "Nahradit slovo schránkou"
 
-msgid "Down + Home"
-msgstr "Dolů + Domů"
+msgid "Start of next line"
+msgstr "Začátek dalšího řádku"
 
-msgid "Up + Home"
-msgstr "Nahoru + Domů"
+msgid "Start of previous line"
+msgstr "Začátek předchozího řádku"
 
-msgid "Down 5 times"
-msgstr "5x dolů"
+msgid "Move down 5 lines"
+msgstr "O 5 řádků dolů"
 
-msgid "Paste at line bottom"
-msgstr "Vložte do spodní části řádku"
+msgid "Paste on new line below"
+msgstr "Vložit na nový řádek pod"
 
-msgid "Cut to start"
-msgstr "Začněte střihem"
+msgid "Cut to line start"
+msgstr "Vyjmout po začátek řádku"
 
-msgid "Cut to end"
-msgstr "Střih na konec"
+msgid "Cut to line end"
+msgstr "Vyjmout po konec řádku"
 
-msgid "Cut line content"
-msgstr "Vyjmout obsah řádku"
+msgid "Cut line text"
+msgstr "Vyjmout text řádku"
 
-msgid "Cut and remove line"
-msgstr "Odřízněte a odstraňte čáru"
+msgid "Cut whole line"
+msgstr "Vyjmout celý řádek"
 
 msgid "Select 5 lines up"
 msgstr "Vyberte 5 řádků nahoru"
 
-msgid "Copy to start"
-msgstr "Začněte kopírováním"
+msgid "Copy to line start"
+msgstr "Kopírovat po začátek řádku"
 
-msgid "Copy to end"
-msgstr "Kopírovat na konec"
+msgid "Copy to line end"
+msgstr "Kopírovat po konec řádku"
 
-msgid "Copy line"
-msgstr "Kopírovat řádek"
+msgid "Copy line text"
+msgstr "Kopírovat text řádku"
 
-msgid "Select whole line"
-msgstr "Vyberte celý řádek"
+msgid "Select line text"
+msgstr "Vybrat text řádku"
 
-msgid "Select word right from center"
-msgstr "Vyberte slovo přímo od středu"
+msgid "Select word under cursor"
+msgstr "Vybrat slovo pod kurzorem"
 
-msgid "Replace to start with buffer"
-msgstr "Nahraďte pro začátek vyrovnávací pamětí"
+msgid "Replace to line start with clipboard"
+msgstr "Nahradit po začátek řádku schránkou"
 
-msgid "Replace to end with buffer"
-msgstr "Nahraďte na konec bufferem"
+msgid "Replace to line end with clipboard"
+msgstr "Nahradit po konec řádku schránkou"
 
-msgid "Replace line with buffer"
-msgstr "Nahraďte linku pufrem"
+msgid "Replace line text with clipboard"
+msgstr "Nahradit text řádku schránkou"
 
 msgid "Select 5 lines down"
 msgstr "Vyberte 5 řádků dolů"

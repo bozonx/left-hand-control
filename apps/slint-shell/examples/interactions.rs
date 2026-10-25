@@ -503,11 +503,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     rules.invoke_open_dialog(0, RuleDialog::LongHold);
     assert!(!picker.get_hold_action());
     picker.invoke_select_behavior(PickerBehavior::Action);
-    picker.set_value("builtin:copyLine".into());
+    picker.set_value("builtin:copyLineText".into());
     picker.invoke_apply();
     assert_eq!(
         document.read().layout().rules[0].long_hold_action,
-        "builtin:copyLine"
+        "builtin:copyLineText"
     );
     assert!(document.read().layout().rules[0].layer_id.is_empty());
     rules.invoke_open_dialog(0, RuleDialog::Advanced);
@@ -528,7 +528,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     assert_eq!(
         document.read().layout().rules[0].long_hold_action,
-        "builtin:copyLine"
+        "builtin:copyLineText"
     );
     rules.invoke_set_hold_mode(HoldMode::Layer);
     assert!(
