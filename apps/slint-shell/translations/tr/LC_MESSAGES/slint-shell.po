@@ -3184,6 +3184,9 @@ msgstr ""
 msgid "Hold"
 msgstr "Basılı tutma"
 
+msgid "Tap"
+msgstr "Basma"
+
 msgid "Don't press"
 msgstr "Basma"
 

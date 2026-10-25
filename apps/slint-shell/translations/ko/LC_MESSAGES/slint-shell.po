@@ -2954,6 +2954,9 @@ msgstr "내장 목록. 어쨌든 이들 중 하나를 계산하려면 규칙에 
 msgid "Hold"
 msgstr "길게 누르기"
 
+msgid "Tap"
+msgstr "탭"
+
 msgid "Don't press"
 msgstr "누르지 마세요"
 

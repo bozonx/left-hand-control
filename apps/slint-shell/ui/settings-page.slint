@@ -655,8 +655,11 @@ export component SettingsPage inherits VerticalBox {
                             }
                         }
                     }
+                }
+                if SettingsEditor.tab == SettingsTab.key-behavior: Section {
+                    title: @tr("Defaults");
                     BehaviorCard {
-                        title: @tr("Defaults");
+                        SubsectionTitle { text: @tr("Tap"); }
                         TimingField {
                             label: @tr("Double-tap window");
                             info: @tr("A second tap within this time after the first release counts as a double tap.")

@@ -2963,6 +2963,9 @@ msgstr "組み込みリスト。いずれにせよ、これらの 1 つをカウ
 msgid "Hold"
 msgstr "長押し"
 
+msgid "Tap"
+msgstr "タップ"
+
 msgid "Don't press"
 msgstr "押さないでください"
 

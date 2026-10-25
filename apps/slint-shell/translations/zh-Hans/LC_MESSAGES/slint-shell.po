@@ -2887,6 +2887,9 @@ msgstr "内置列表。无论如何，要计算其中一个，请将其添加到
 msgid "Hold"
 msgstr "按住"
 
+msgid "Tap"
+msgstr "点按"
+
 msgid "Don't press"
 msgstr "不要按"
 

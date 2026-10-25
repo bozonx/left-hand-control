@@ -3221,6 +3221,9 @@ msgstr ""
 msgid "Hold"
 msgstr "Menținere apăsată"
 
+msgid "Tap"
+msgstr "Apăsare"
+
 msgid "Don't press"
 msgstr "Nu apăsa"
 

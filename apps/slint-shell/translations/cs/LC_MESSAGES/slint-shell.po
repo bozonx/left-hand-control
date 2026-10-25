@@ -3165,6 +3165,9 @@ msgstr ""
 msgid "Hold"
 msgstr "Podržení"
 
+msgid "Tap"
+msgstr "Stisk"
+
 msgid "Don't press"
 msgstr "Netlačte"
 

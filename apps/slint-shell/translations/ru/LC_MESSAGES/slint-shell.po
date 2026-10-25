@@ -2597,6 +2597,9 @@ msgstr "Встроенный список. Чтобы всё же считать
 msgid "Hold"
 msgstr "Удержание"
 
+msgid "Tap"
+msgstr "Нажатие"
+
 msgid "Don't press"
 msgstr "Не нажимать"
 

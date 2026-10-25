@@ -3175,6 +3175,9 @@ msgstr ""
 msgid "Hold"
 msgstr "დაჭერა"
 
+msgid "Tap"
+msgstr "მოკლე დაჭერა"
+
 msgid "Don't press"
 msgstr "არ დააჭიროთ"
 

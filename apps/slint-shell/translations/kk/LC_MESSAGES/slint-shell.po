@@ -3194,6 +3194,9 @@ msgstr ""
 msgid "Hold"
 msgstr "Басып тұру"
 
+msgid "Tap"
+msgstr "Басу"
+
 msgid "Don't press"
 msgstr "Баспаңыз"
 

@@ -3196,6 +3196,9 @@ msgstr ""
 msgid "Hold"
 msgstr "Manter premido"
 
+msgid "Tap"
+msgstr "Toque"
+
 msgid "Don't press"
 msgstr "Não pressione"
 

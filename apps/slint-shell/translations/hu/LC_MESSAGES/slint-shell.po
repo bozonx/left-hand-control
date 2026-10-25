@@ -3225,6 +3225,9 @@ msgstr ""
 msgid "Hold"
 msgstr "Nyomva tartás"
 
+msgid "Tap"
+msgstr "Lenyomás"
+
 msgid "Don't press"
 msgstr "Ne nyomja meg"
 
