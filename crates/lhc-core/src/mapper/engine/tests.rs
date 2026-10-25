@@ -4619,3 +4619,227 @@ fn development_gate_disables_user_macros_popups_and_long_hold() {
         assert!(!engine.macros.is_empty(), "built-in macros stay available");
     }
 }
+
+/// Feed timed events and ticks in time order (events before a tick at the
+/// same millisecond) and describe the output compactly.
+fn timeline(cfg: serde_json::Value, events: &[(KeyCode, bool, u64)], ticks: &[u64]) -> Vec<String> {
+    let cfg: AppConfig = serde_json::from_value(cfg).unwrap();
+    let mut engine = Engine::new(&cfg);
+    let start = Instant::now();
+    let mut out = Vec::new();
+    let mut steps: Vec<(u64, Option<(KeyCode, bool)>)> = events
+        .iter()
+        .map(|&(key, down, ms)| (ms, Some((key, down))))
+        .chain(ticks.iter().map(|&ms| (ms, None)))
+        .collect();
+    steps.sort_by_key(|(ms, event)| (*ms, event.is_none()));
+    for (ms, event) in steps {
+        let at = start + Duration::from_millis(ms);
+        match event {
+            Some((key, down)) => engine.handle(key, down, at, &mut out),
+            None => engine.tick(at, &mut out),
+        }
+    }
+    engine.tick(start + Duration::from_secs(5), &mut out);
+    assert!(engine.pending.is_empty() && engine.emitted.is_empty());
+    out.iter()
+        .map(|event| match event {
+            Out::KeyRaw { key, down } => format!("{key:?}{}", if *down { "+" } else { "-" }),
+            Out::Stroke { ks, .. } => format!("tap {:?}", ks.key),
+            Out::ChordPress { ks, .. } => format!("press {:?}", ks.key),
+            Out::ChordRelease { key, .. } => format!("release {key:?}"),
+            Out::ReleaseMods(mods) => format!("release {mods:?}"),
+            Out::Literal(text) => format!("text {text}"),
+            _ => "other".into(),
+        })
+        .collect()
+}
+
+#[test]
+fn release_waiting_in_combo_buffer_decides_permissive_tap() {
+    // D is released before its hold timeout, but the release sits behind a
+    // buffered chord member when the timeout passes.
+    let out = timeline(
+        serde_json::json!({
+            "rules": [
+                {"key":"KeyD", "layerId":"nav", "holdTimeoutMs":200, "tapDecision":"permissiveHold"},
+                {"key":"KeyX+KeyY", "tapAction":"text:chord"}
+            ],
+            "layerKeymaps": {"nav": {"keys": {"KeyX": "KeyQ"}}},
+            "settings": {"comboTimeoutMs": 50}
+        }),
+        &[
+            (KeyCode::KEY_D, true, 0),
+            (KeyCode::KEY_X, true, 180),
+            (KeyCode::KEY_D, false, 190),
+            (KeyCode::KEY_X, false, 400),
+        ],
+        &[180, 190, 200, 210, 230, 240, 400],
+    );
+    assert_eq!(out, ["tap KEY_D", "KEY_X+", "KEY_X-"]);
+}
+
+#[test]
+fn release_waiting_in_decision_buffer_decides_long_hold_tap() {
+    let out = timeline(
+        serde_json::json!({"rules": [
+            {"key":"KeyL", "tapAction":"text:tap", "longHoldAction":"text:long", "longHoldTimeoutMs":100},
+            {"key":"KeyD", "holdAction":"ControlLeft", "holdTimeoutMs":300, "tapDecision":"permissiveHold"}
+        ]}),
+        &[
+            (KeyCode::KEY_L, true, 0),
+            (KeyCode::KEY_D, true, 10),
+            (KeyCode::KEY_X, true, 20),
+            (KeyCode::KEY_L, false, 50),
+            (KeyCode::KEY_D, false, 200),
+            (KeyCode::KEY_X, false, 210),
+        ],
+        &[0, 10, 20, 50, 100, 150, 200, 210],
+    );
+    assert_eq!(out, ["tap KEY_D", "KEY_X+", "text tap", "KEY_X-"]);
+}
+
+#[test]
+fn second_press_waiting_in_combo_buffer_is_a_double_tap() {
+    let out = timeline(
+        serde_json::json!({
+            "rules": [
+                {"key":"KeyA", "tapAction":"text:single", "doubleTapAction":"text:double", "doubleTapTimeoutMs":250},
+                {"key":"KeyA+KeyB", "tapAction":"text:chord"}
+            ],
+            "settings": {"comboTimeoutMs": 50}
+        }),
+        &[
+            (KeyCode::KEY_A, true, 0),
+            (KeyCode::KEY_A, false, 10),
+            (KeyCode::KEY_A, true, 240),
+            (KeyCode::KEY_A, false, 300),
+        ],
+        &[10, 240, 260, 265, 290, 300],
+    );
+    assert_eq!(out, ["text double"]);
+}
+
+#[test]
+fn deferred_double_tap_tap_keeps_a_modifier_released_in_the_window() {
+    let out = timeline(
+        serde_json::json!({"rules": [
+            {"key":"KeyA", "doubleTapAction":"text:double", "doubleTapTimeoutMs":250}
+        ]}),
+        &[
+            (KeyCode::KEY_LEFTCTRL, true, 0),
+            (KeyCode::KEY_A, true, 20),
+            (KeyCode::KEY_A, false, 60),
+            (KeyCode::KEY_LEFTCTRL, false, 80),
+        ],
+        &[20, 60, 80, 400],
+    );
+    assert_eq!(out, ["KEY_LEFTCTRL+", "tap KEY_A", "KEY_LEFTCTRL-"]);
+}
+
+#[test]
+fn tap_hold_tap_keeps_a_modifier_released_before_the_key() {
+    for mode in ["permissiveHold", "holdOnOtherKeyPress"] {
+        let rule = serde_json::json!({"rules": [
+            {"key":"KeyA", "holdAction":"ControlLeft", "holdTimeoutMs":200, "tapDecision":mode}
+        ]});
+        // Tap: Shift is released only after the tap that it shifted.
+        let out = timeline(
+            rule.clone(),
+            &[
+                (KeyCode::KEY_LEFTSHIFT, true, 0),
+                (KeyCode::KEY_A, true, 20),
+                (KeyCode::KEY_LEFTSHIFT, false, 60),
+                (KeyCode::KEY_A, false, 80),
+            ],
+            &[20, 60, 80],
+        );
+        assert_eq!(
+            out,
+            ["KEY_LEFTSHIFT+", "tap KEY_A", "KEY_LEFTSHIFT-"],
+            "{mode}"
+        );
+        // Hold by timeout: the deferred release follows the committed hold.
+        let out = timeline(
+            rule.clone(),
+            &[
+                (KeyCode::KEY_LEFTSHIFT, true, 0),
+                (KeyCode::KEY_A, true, 20),
+                (KeyCode::KEY_LEFTSHIFT, false, 60),
+                (KeyCode::KEY_A, false, 400),
+            ],
+            &[20, 60, 220, 400],
+        );
+        assert_eq!(
+            out,
+            [
+                "KEY_LEFTSHIFT+",
+                "press KEY_LEFTCTRL",
+                "KEY_LEFTSHIFT-",
+                "KEY_LEFTCTRL-"
+            ],
+            "{mode}"
+        );
+    }
+    // Hold on other key press: the release replays before the interrupting
+    // press that commits the hold.
+    let out = timeline(
+        serde_json::json!({"rules": [
+            {"key":"KeyA", "holdAction":"ControlLeft", "tapDecision":"holdOnOtherKeyPress"}
+        ]}),
+        &[
+            (KeyCode::KEY_LEFTSHIFT, true, 0),
+            (KeyCode::KEY_A, true, 20),
+            (KeyCode::KEY_LEFTSHIFT, false, 40),
+            (KeyCode::KEY_X, true, 60),
+            (KeyCode::KEY_X, false, 70),
+            (KeyCode::KEY_A, false, 80),
+        ],
+        &[],
+    );
+    assert_eq!(
+        out,
+        [
+            "KEY_LEFTSHIFT+",
+            "press KEY_LEFTCTRL",
+            "KEY_LEFTSHIFT-",
+            "KEY_X+",
+            "KEY_X-",
+            "KEY_LEFTCTRL-"
+        ]
+    );
+}
+
+#[test]
+fn chord_with_an_undecided_member_needs_the_combo_window() {
+    let cfg = serde_json::json!({
+        "rules": [
+            {"key":"Space", "layerId":"nav", "holdTimeoutMs":200},
+            {"key":"Space+KeyJ", "tapAction":"text:chord"}
+        ],
+        "layerKeymaps": {"nav": {"keys": {"KeyJ": "ArrowLeft"}}},
+        "settings": {"comboTimeoutMs": 50}
+    });
+    let late = timeline(
+        cfg.clone(),
+        &[
+            (KeyCode::KEY_SPACE, true, 0),
+            (KeyCode::KEY_J, true, 120),
+            (KeyCode::KEY_J, false, 150),
+            (KeyCode::KEY_SPACE, false, 400),
+        ],
+        &[0, 50, 60, 120, 150, 200, 400],
+    );
+    assert_eq!(late, ["press KEY_LEFT", "KEY_LEFT-"]);
+    let together = timeline(
+        cfg,
+        &[
+            (KeyCode::KEY_SPACE, true, 0),
+            (KeyCode::KEY_J, true, 30),
+            (KeyCode::KEY_J, false, 80),
+            (KeyCode::KEY_SPACE, false, 90),
+        ],
+        &[0, 30, 80, 90],
+    );
+    assert_eq!(together, ["text chord"]);
+}

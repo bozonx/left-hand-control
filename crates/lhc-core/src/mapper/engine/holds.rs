@@ -44,10 +44,12 @@ impl Engine {
         })
     }
 
-    /// Permissive-hold interception. While a rule key is deciding, other key
-    /// events are deferred: a press is buffered; a release whose press is in
-    /// the buffer (a nested press+release) resolves the decision as a hold
-    /// and lets the buffered events — and this release — replay in order.
+    /// Interception while a rule key is deciding. In permissive-hold mode
+    /// other key events are deferred: a press is buffered; a release whose
+    /// press is in the buffer (a nested press+release) resolves the decision
+    /// as a hold and lets the buffered events — and this release — replay in
+    /// order. In both modes modifier releases wait for the decision (see
+    /// `defer_release`).
     ///
     /// Returns true when the event was consumed (buffered) and `handle`
     /// should return; false to continue normal processing.
@@ -61,14 +63,22 @@ impl Engine {
         let Some(deciding) = self.deciding_key() else {
             return false;
         };
-        if !self.pending.get(&deciding).is_some_and(|p| {
-            p.rule.tap_decision == crate::mapper::config::TapDecision::PermissiveHold
-        }) {
-            return false;
-        }
         // The deciding key's own events (its release / repeat) flow normally.
         if key == deciding {
             return false;
+        }
+        if !self.pending.get(&deciding).is_some_and(|p| {
+            p.rule.tap_decision == crate::mapper::config::TapDecision::PermissiveHold
+        }) {
+            // Hold on other key press: a press commits the hold in
+            // `on_press`, after the releases deferred before it.
+            if down {
+                if !self.decision_buffer.is_empty() {
+                    self.resolve_deciding_as_hold(out);
+                }
+                return false;
+            }
+            return self.defer_release(key, now);
         }
         if down {
             self.decision_buffer
@@ -84,17 +94,28 @@ impl Engine {
             return self.permissive_intercept(key, down, now, out);
         }
         // Release of a key held *before* the decision started does not
-        // resolve the decision. But if presses are already buffered behind
-        // the decision, this release must stay ordered behind them: a key
-        // buffered while this one was still physically down has to replay in
-        // that same state. With an empty buffer nothing can be reordered, so
-        // let the release flow through immediately.
-        if !self.decision_buffer.is_empty() {
-            self.decision_buffer
-                .push(BufferedEvent { key, down, at: now });
-            return true;
+        // resolve the decision.
+        self.defer_release(key, now)
+    }
+
+    /// Defer the release of a key held before the decision started, or let
+    /// it through. It stays ordered behind presses already buffered: a key
+    /// buffered while this one was still physically down has to replay in
+    /// that same state. A modifier release waits for the decision too: a
+    /// tap fires at the deciding key's release and must still get the
+    /// modifier that was down when it was pressed (Shift+A, not "a").
+    /// Anything else with an empty buffer cannot be reordered and flows
+    /// through immediately.
+    fn defer_release(&mut self, key: KeyCode, now: Instant) -> bool {
+        if self.decision_buffer.is_empty() && !self.releases_modifier(key) {
+            return false;
         }
-        false
+        self.decision_buffer.push(BufferedEvent {
+            key,
+            down: false,
+            at: now,
+        });
+        true
     }
 
     /// Commit the current deciding key as a hold, then replay any buffered

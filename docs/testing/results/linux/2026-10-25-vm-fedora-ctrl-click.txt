@@ -1,0 +1,44 @@
+Date: 2026-10-25
+VM: fedora44-kde (/mnt/disk2/vm/lhc-fedora-kde), Plasma Wayland
+Probe: ad-hoc core mapper on the QEMU usb-kbd + usb-tablet; rule KeyD hold=ControlLeft (1000 ms); GTK window records the Ctrl state of each click; QMP clicks
+Purpose: a click while a tap-hold Ctrl key is undecided (known limitation: the mouse is not grabbed)
+
+physical-ctrl: click ctrl=True
+undecided-tap-hold-0: click ctrl=False
+undecided-tap-hold-1: click ctrl=False
+undecided-tap-hold-2: click ctrl=False
+undecided-tap-hold-3: click ctrl=False
+undecided-tap-hold-4: click ctrl=False
+committed-hold: click ctrl=True
+
+Kernel EV_KEY timeline (button 272, LeftCtrl 29):
+1792970469.428922 'QEMU QEMU USB Tablet' code=272 value=1
+1792970469.532867 'QEMU QEMU USB Tablet' code=272 value=0
+1792970470.892210 'LeftHandControl Virtual Keyboard' code=29 value=1
+1792970470.974596 'QEMU QEMU USB Tablet' code=272 value=1
+1792970471.008763 'QEMU QEMU USB Tablet' code=272 value=0
+1792970471.194541 'LeftHandControl Virtual Keyboard' code=29 value=0
+1792970472.456455 'QEMU QEMU USB Tablet' code=272 value=1
+1792970472.457043 'LeftHandControl Virtual Keyboard' code=29 value=1
+1792970472.492336 'QEMU QEMU USB Tablet' code=272 value=0
+1792970472.726120 'LeftHandControl Virtual Keyboard' code=29 value=0
+1792970474.004766 'QEMU QEMU USB Tablet' code=272 value=1
+1792970474.005007 'LeftHandControl Virtual Keyboard' code=29 value=1
+1792970474.038017 'QEMU QEMU USB Tablet' code=272 value=0
+1792970474.272752 'LeftHandControl Virtual Keyboard' code=29 value=0
+1792970475.474043 'QEMU QEMU USB Tablet' code=272 value=1
+1792970475.474349 'LeftHandControl Virtual Keyboard' code=29 value=1
+1792970475.507758 'QEMU QEMU USB Tablet' code=272 value=0
+1792970475.743589 'LeftHandControl Virtual Keyboard' code=29 value=0
+1792970476.970760 'QEMU QEMU USB Tablet' code=272 value=1
+1792970476.971263 'LeftHandControl Virtual Keyboard' code=29 value=1
+1792970477.004065 'QEMU QEMU USB Tablet' code=272 value=0
+1792970477.239484 'LeftHandControl Virtual Keyboard' code=29 value=0
+1792970478.467796 'QEMU QEMU USB Tablet' code=272 value=1
+1792970478.468578 'LeftHandControl Virtual Keyboard' code=29 value=1
+1792970478.502312 'QEMU QEMU USB Tablet' code=272 value=0
+1792970478.737105 'LeftHandControl Virtual Keyboard' code=29 value=0
+1792970480.911034 'LeftHandControl Virtual Keyboard' code=29 value=1
+1792970481.277623 'QEMU QEMU USB Tablet' code=272 value=1
+1792970481.278613 'QEMU QEMU USB Tablet' code=272 value=0
+1792970481.481680 'LeftHandControl Virtual Keyboard' code=29 value=0

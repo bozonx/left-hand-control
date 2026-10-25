@@ -417,6 +417,7 @@ impl Engine {
             rules,
             chord_rules,
             physical_down: HashSet::new(),
+            press_at: HashMap::new(),
             active_chords: HashMap::new(),
             chord_suppressed: HashMap::new(),
             chord_consumed: HashSet::new(),

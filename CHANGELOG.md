@@ -78,6 +78,10 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - The “Command started” notification is shown again when a command action runs.
 - Pressing a page-bound popup hotkey (`app:showQuickMenuN`, `app:showEmojiMenuN`) again while the popup is open turns through all pages like Tab instead of switching only between the first two.
 - Unplugging the optional mouse no longer stops keyboard mapping; the mouse reconnects independently with balanced button releases.
+- A tap that waits for a decision or for a possible double tap keeps the modifier that was held when the key was pressed: Ctrl+A on a key with a double-tap action, or Shift+A on a tap-hold key, released after the modifier, no longer types a plain “a”.
+- Tap, hold, long-hold and double-tap timers no longer expire while the key's own release or second press is still held back behind another undecided key or a possible chord: a layer key released in time stays a tap, a long-hold key released in time does not run its long action, and a quick second press stays a double tap.
+- A chord with a tap-hold key fires only when its keys are pressed within the combo window; a key pressed later while the tap-hold key is held goes to its layer or hold instead.
+- Windows: keys released on the secure desktop (Ctrl+Alt+Del, lock screen, UAC) no longer stay held afterwards, so a layer held before it no longer remains active and the next press of such a key is not lost. Auto-repeat keeps its order among key presses and releases.
 - Keyboards selected through `/dev/input/by-id` reconnect after changing USB ports, and the shell shows when the mapper is waiting for its keyboard.
 
 - A layer key bound to an empty macro or to an action that does nothing on this system no longer types the physical key.

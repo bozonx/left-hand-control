@@ -562,7 +562,8 @@ hook → общий движок → `SendInput` → WinForms receiver. `windows
 mailbox (это не IPC приложения и не новый формат конфигурации). Проверяются
 passthrough, remap/swallow, отсутствие рекурсии, modifiers/extended keys,
 repeat, tap/hold и слой, макрос с паузой и отменой при live config, Unicode,
-US/RU, отмена text job при смене foreground, stop с удержанным виртуальным Ctrl, restart и replug.
+US/RU, отмена text job при смене foreground, stop с удержанным виртуальным Ctrl, restart и replug,
+отпускание удерживаемого слоя и модификаторов на экране Ctrl+Alt+Del (`mapper-secure-desktop-held`).
 Точные текст и key-down/up проверяются в receiver; каждый сценарий имеет
 отдельный результат в отчёте. Для RU receiver при необходимости загружает
 встроенную раскладку `00000419`, владея фокусом; активный язык проверяется явно.

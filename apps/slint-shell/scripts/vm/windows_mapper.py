@@ -408,6 +408,36 @@ class WindowsMapper:
         self.text("b")
         self.mapper("status")
 
+    def secure_desktop_held(self):
+        """Keys released on the Ctrl+Alt+Del screen never reach the hook.
+        The layer held before it must not stay active afterwards."""
+        self.config({"rules": [{"key": "KeyF", "tapAction": "KeyX", "layerId": "nav",
+                                "holdTimeoutMs": 200}],
+                     "layerKeymaps": {"nav": {"keys": {"KeyJ": "KeyK"}}}})
+        self.reset()
+        self.press("f")
+        time.sleep(0.5)
+        for key in ("ctrl", "alt", "delete"):
+            self.press(key)
+            time.sleep(0.05)
+        time.sleep(1)
+        for key in ("delete", "alt", "ctrl", "f"):
+            self.release(key)
+            time.sleep(0.05)
+        time.sleep(3)
+        self.vm.qmp.screendump(self.vm.logs / "secure-desktop.png")
+        self.vm.qmp.tap("esc")
+        time.sleep(3)
+        self.reset()
+        self.vm.qmp.tap("j", "a")
+        self.text("ja")
+        self.press("f")
+        time.sleep(0.5)
+        self.vm.qmp.tap("j")
+        self.release("f")
+        self.text("jak")
+        return "layer and modifiers released on the secure desktop do not stay held"
+
     def unlock(self):
         def locked():
             return self.receiver("session-state")["locked"]
@@ -631,6 +661,7 @@ class WindowsMapper:
                 ("mapper-stop-held-restart", self.stop_held),
                 ("mapper-replug", self.replug),
                 ("mapper-lock-unavailable", self.lock_and_unavailable),
+                ("mapper-secure-desktop-held", self.secure_desktop_held),
                 ("mapper-crash-held", self.crash_held),
                 ("mapper-guard-failure", self.guard_failure),
             )

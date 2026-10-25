@@ -9,7 +9,6 @@
 
 use super::super::key_code::KeyCode;
 use super::super::scancode::from_native;
-use std::collections::HashSet;
 use std::sync::Mutex;
 use std::sync::mpsc;
 use std::thread;
@@ -44,9 +43,19 @@ const FAKE_ALTGR_CTRL: u32 = 0x200;
 
 static SINK: Mutex<Option<mpsc::Sender<HookEvent>>> = Mutex::new(None);
 
-thread_local! {
-    /// Keys down as the keyboard hook saw them; a second press is a repeat.
-    static DOWN: std::cell::RefCell<HashSet<KeyCode>> = std::cell::RefCell::new(HashSet::new());
+/// Keys down as the keyboard hook saw them; a second press is a repeat.
+static DOWN: Mutex<Vec<KeyCode>> = Mutex::new(Vec::new());
+
+/// Forget every key the hook saw pressed and return them. Used when their
+/// releases were lost on the secure desktop, so the next press of such a
+/// key is a press again and not a repeat.
+pub(super) fn forget_down() -> Vec<KeyCode> {
+    std::mem::take(&mut *DOWN.lock().unwrap_or_else(|e| e.into_inner()))
+}
+
+#[cfg(test)]
+pub(super) fn mark_down(key: KeyCode) {
+    DOWN.lock().unwrap_or_else(|e| e.into_inner()).push(key);
 }
 
 fn deliver(event: HookEvent) -> bool {
@@ -74,15 +83,16 @@ unsafe extern "system" fn keyboard_proc(code: i32, wparam: WPARAM, lparam: LPARA
                 info.scanCode,
                 info.flags.contains(LLKHF_EXTENDED),
             ) {
-                let repeat = DOWN.with(|keys| {
-                    let mut keys = keys.borrow_mut();
-                    if down {
-                        !keys.insert(key)
-                    } else {
-                        keys.remove(&key);
-                        false
+                let repeat = {
+                    let mut keys = DOWN.lock().unwrap_or_else(|e| e.into_inner());
+                    let held = keys.contains(&key);
+                    if !down {
+                        keys.retain(|k| *k != key);
+                    } else if !held {
+                        keys.push(key);
                     }
-                });
+                    down && held
+                };
                 let event = if repeat {
                     HookEvent::Repeat(key)
                 } else {
@@ -181,7 +191,7 @@ fn run(ready: mpsc::Sender<Result<u32, String>>, mouse: bool) {
     let mut msg = MSG::default();
     // Create this thread's message queue before anyone posts WM_QUIT to it.
     let _ = unsafe { PeekMessageW(&mut msg, None, 0, 0, PM_NOREMOVE) };
-    DOWN.with(|keys| keys.borrow_mut().clear());
+    forget_down();
     let module = unsafe { GetModuleHandleW(None) }
         .ok()
         .map(|module| module.into());

@@ -46,7 +46,9 @@ impl Engine {
                     && self.chord_eligible(keys, rule)
                     && keys.iter().all(|member| {
                         self.physical_down.contains(member)
-                            && (*member == key || !self.chord_member_leaked(*member))
+                            && (*member == key
+                                || (!self.chord_member_leaked(*member)
+                                    && !self.chord_member_late(*member, now)))
                     })
             })
             .max_by_key(|(keys, _)| keys.len())
@@ -121,6 +123,20 @@ impl Engine {
                     .emitted
                     .get(&member)
                     .is_some_and(|ks| !is_modifier_key(ks.key)))
+    }
+
+    /// True when a held member is an undecided tap-hold key pressed longer
+    /// than the combo window ago. Such a key prints nothing yet, but the
+    /// chord was not pressed together: the later key belongs to the member's
+    /// own tap or hold (e.g. a layer), as for keys that already leaked.
+    pub(super) fn chord_member_late(&self, member: KeyCode, now: Instant) -> bool {
+        self.pending
+            .get(&member)
+            .is_some_and(|p| matches!(p.phase, Phase::WaitingDecision { .. }))
+            && self
+                .press_at
+                .get(&member)
+                .is_some_and(|at| now.saturating_duration_since(*at) > self.combo_term)
     }
 
     pub(super) fn combo_deadline(&self) -> Option<Instant> {

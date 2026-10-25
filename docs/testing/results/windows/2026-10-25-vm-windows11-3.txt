@@ -1,0 +1,53 @@
+Date: 2026-10-25 20:17:54 -0300
+Commit: 54a611f (with uncommitted changes)
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: mapper
+Mapper build: debug
+Popup shell build: none
+Native tests/clippy/package lifecycle: not included in this suite
+Mapper from: mapper-secure-desktop-held
+Mapper only: all
+Extended: False; stress seconds: 180
+Memory: 6144 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261025-200830/logs
+
+Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: mapper
+- core-driver-build: passed
+- hardware-keyboard and mapper scenarios: passed (see named host steps)
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 927 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261025-200830/src.tar.gz; SHA256 c8f914cb6d79f91b41a4bb465a3bb3276d6fd576ea8a3c4aa71269a9f6734d06; Source sync: 5 updated, 0 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- mapper-passthrough: skipped — diagnostic run starts at mapper-secure-desktop-held
+- mapper-remap-swallow-recursion: skipped — diagnostic run starts at mapper-secure-desktop-held
+- mapper-modifiers-extended: skipped — diagnostic run starts at mapper-secure-desktop-held
+- mapper-repeat: skipped — diagnostic run starts at mapper-secure-desktop-held
+- mapper-tap-hold-layer: skipped — diagnostic run starts at mapper-secure-desktop-held
+- mapper-chord-double-tap: skipped — diagnostic run starts at mapper-secure-desktop-held
+- mapper-live-config-held: skipped — diagnostic run starts at mapper-secure-desktop-held
+- mapper-macro-live-config-cancel: skipped — diagnostic run starts at mapper-secure-desktop-held
+- mapper-unicode-us-ru: skipped — diagnostic run starts at mapper-secure-desktop-held
+- mapper-focus-cancel: skipped — diagnostic run starts at mapper-secure-desktop-held
+- mapper-stop-held-restart: skipped — diagnostic run starts at mapper-secure-desktop-held
+- mapper-replug: skipped — diagnostic run starts at mapper-secure-desktop-held
+- mapper-lock-unavailable: skipped — diagnostic run starts at mapper-secure-desktop-held
+- mapper-secure-desktop-held: passed — layer and modifiers released on the secure desktop do not stay held
+- mapper-crash-held: passed — forced owner termination releases Ctrl/Shift/Alt/Win before physical release; native input and mapper restart work
+- mapper-guard-failure: passed — guard death stops mapper, fallback releases Ctrl, native input and restart work
+- mapper-lock-unlock: skipped — run with --extended
+- mapper-suspend-resume: skipped — run with --extended
+- mapper-stress: skipped — run with --extended
+- mapper-unicode-corpus: skipped — run with --extended
+- mapper-notepad-unicode: skipped — run with --extended
+- mapper-elevated-uipi: skipped — run with --extended
+- mapper-process-tree-crash: skipped — run with --extended
+- mapper-physical-hardware: skipped — VM input does not accept physical Windows hardware
+- windows-mapper: passed
+
+Passed: 8, failed: 0

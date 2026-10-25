@@ -205,6 +205,19 @@ pub(super) trait SideEffects {
     fn run_command(&mut self, command: &SysCommand);
 }
 
+/// One input from a [`LoopDriver`], in arrival order.
+pub(super) enum DriverInput {
+    Key {
+        key: KeyCode,
+        down: bool,
+        at: Instant,
+    },
+    /// Auto-repeat of a held key, for an OS that does not repeat injected
+    /// keys itself.
+    #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+    Repeat(KeyCode),
+}
+
 pub(super) trait LoopDriver {
     fn now(&mut self) -> Instant;
     fn wait(&mut self, timeout: Duration) -> Result<bool, String>;
@@ -221,10 +234,14 @@ pub(super) trait LoopDriver {
     fn app_hotkey(&mut self, _key: KeyCode, _down: bool) -> Option<Option<&'static str>> {
         None
     }
-    /// Auto-repeats of held keys since the last fetch, for an OS that does
-    /// not repeat injected keys itself.
-    fn take_repeats(&mut self) -> Vec<KeyCode> {
-        Vec::new()
+    /// Everything received since the last fetch, repeats in their place
+    /// among the transitions.
+    fn fetch_inputs(&mut self) -> Result<Vec<DriverInput>, String> {
+        Ok(self
+            .fetch_timed_key_events()?
+            .into_iter()
+            .map(|(key, down, at)| DriverInput::Key { key, down, at })
+            .collect())
     }
 }
 
@@ -253,16 +270,18 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
     }
 
     if driver.wait(wait)? {
-        for (key, down, at) in driver.fetch_timed_key_events()? {
-            match driver.app_hotkey(key, down) {
-                Some(Some(action)) => engine.execute_remote(action, out_buf),
-                Some(None) => {}
-                None => engine.handle(key, down, at, out_buf),
+        for input in driver.fetch_inputs()? {
+            match input {
+                DriverInput::Key { key, down, at } => {
+                    match driver.app_hotkey(key, down) {
+                        Some(Some(action)) => engine.execute_remote(action, out_buf),
+                        Some(None) => {}
+                        None => engine.handle(key, down, at, out_buf),
+                    }
+                    effects.held_layer_changed(engine.held_layer_state());
+                }
+                DriverInput::Repeat(key) => engine.repeat(key, out_buf),
             }
-            effects.held_layer_changed(engine.held_layer_state());
-        }
-        for key in driver.take_repeats() {
-            engine.repeat(key, out_buf);
         }
     }
 
@@ -673,6 +692,56 @@ mod tests {
             effects.sleeps,
             vec![Duration::from_millis(3), Duration::from_millis(3)]
         );
+    }
+
+    /// Delivers one batch of inputs, repeats included.
+    struct InputDriver(Vec<DriverInput>);
+
+    impl LoopDriver for InputDriver {
+        fn now(&mut self) -> Instant {
+            Instant::now()
+        }
+
+        fn wait(&mut self, _timeout: Duration) -> Result<bool, String> {
+            Ok(!self.0.is_empty())
+        }
+
+        fn fetch_key_events(&mut self) -> Result<Vec<(KeyCode, bool)>, String> {
+            unreachable!("fetch_inputs is overridden")
+        }
+
+        fn fetch_inputs(&mut self) -> Result<Vec<DriverInput>, String> {
+            Ok(std::mem::take(&mut self.0))
+        }
+    }
+
+    #[test]
+    fn repeat_is_handled_in_its_place_among_transitions() {
+        let at = Instant::now();
+        let key = |key, down| DriverInput::Key { key, down, at };
+        // A repeat of A that arrived before its release repeats A; a repeat
+        // handled after the whole batch would come after the release.
+        let mut driver = InputDriver(vec![
+            key(KeyCode::KEY_A, true),
+            DriverInput::Repeat(KeyCode::KEY_A),
+            key(KeyCode::KEY_A, false),
+            key(KeyCode::KEY_B, true),
+            key(KeyCode::KEY_B, false),
+        ]);
+        let mut engine = Engine::new(&empty_cfg());
+        let mut sink = FakeSink::default();
+        process_iteration_with(
+            &mut driver,
+            &mut engine,
+            &mut OutputHold::default(),
+            &mut sink,
+            &mut FakeEffects::default(),
+            &mut Vec::new(),
+        )
+        .expect("iteration");
+        let events: Vec<_> = sink.batches.iter().flat_map(|b| key_events(b)).collect();
+        let (a, b) = (KeyCode::KEY_A.code(), KeyCode::KEY_B.code());
+        assert_eq!(events, vec![(a, 1), (a, 1), (a, 0), (b, 1), (b, 0)]);
     }
 
     #[test]

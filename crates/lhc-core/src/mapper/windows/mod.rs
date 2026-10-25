@@ -21,7 +21,8 @@ use super::config::AppConfig;
 use super::engine::{Engine, Out};
 use super::key_code::KeyCode;
 use super::output::{
-    EventSink, LoopDriver, OutputHold, SideEffects, flush_out_with, process_iteration_with,
+    DriverInput, EventSink, LoopDriver, OutputHold, SideEffects, flush_out_with,
+    process_iteration_with,
 };
 use super::system::{SysAction, SysCommand};
 use super::text_job::TextRequest;
@@ -337,33 +338,98 @@ fn run_loop(
     result
 }
 
+/// How often the loop checks whether the secure desktop took the input.
+const DESKTOP_CHECK: Duration = Duration::from_millis(100);
+
 /// Hook events as a [`LoopDriver`].
 struct HookDriver {
     rx: mpsc::Receiver<HookEvent>,
-    keys: VecDeque<(KeyCode, bool, Instant)>,
-    repeats: Vec<KeyCode>,
+    inputs: VecDeque<DriverInput>,
+    /// The secure desktop (Ctrl+Alt+Del, lock screen, UAC) had the input at
+    /// the last check.
+    away: bool,
+    next_desktop_check: Instant,
+    /// Whether the user's own desktop has the input.
+    desktop_is_default: fn() -> bool,
 }
 
 impl HookDriver {
     fn new(rx: mpsc::Receiver<HookEvent>) -> Self {
+        Self::with_desktop(rx, input_desktop_is_default)
+    }
+
+    fn with_desktop(rx: mpsc::Receiver<HookEvent>, desktop_is_default: fn() -> bool) -> Self {
         Self {
             rx,
-            keys: VecDeque::new(),
-            repeats: Vec::new(),
+            inputs: VecDeque::new(),
+            away: false,
+            next_desktop_check: Instant::now(),
+            desktop_is_default,
         }
     }
 
     fn accept(&mut self, event: HookEvent) {
         match event {
-            HookEvent::Key { key, down, at } => self.keys.push_back((key, down, at)),
-            HookEvent::Repeat(key) => self.repeats.push(key),
+            HookEvent::Key { key, down, at } => {
+                self.inputs.push_back(DriverInput::Key { key, down, at })
+            }
+            HookEvent::Repeat(key) => self.inputs.push_back(DriverInput::Repeat(key)),
             HookEvent::Wake => {}
         }
     }
 
-    fn has_input(&self) -> bool {
-        !self.keys.is_empty() || !self.repeats.is_empty()
+    /// The hooks see no input of the secure desktop, so keys released there
+    /// would stay held: an active layer, virtual modifiers, and the next
+    /// press of such a key taken for a repeat. Release them on return.
+    fn check_desktop(&mut self) {
+        let now = Instant::now();
+        if now < self.next_desktop_check {
+            return;
+        }
+        self.next_desktop_check = now + DESKTOP_CHECK;
+        let away = !(self.desktop_is_default)();
+        if self.away && !away {
+            let held = hook::forget_down();
+            if !held.is_empty() {
+                log::debug!("[mapper] input returned from the secure desktop; releasing {held:?}");
+            }
+            self.inputs
+                .extend(held.into_iter().map(|key| DriverInput::Key {
+                    key,
+                    down: false,
+                    at: now,
+                }));
+        }
+        self.away = away;
     }
+}
+
+/// Whether the user's default desktop has the input. The secure desktop
+/// cannot be opened by the user's process.
+fn input_desktop_is_default() -> bool {
+    use windows::Win32::System::StationsAndDesktops::{
+        CloseDesktop, DESKTOP_CONTROL_FLAGS, DESKTOP_READOBJECTS, GetUserObjectInformationW,
+        OpenInputDesktop, UOI_NAME,
+    };
+    // SAFETY: plain calls with owned buffers; the handle is closed below.
+    let Ok(desktop) =
+        (unsafe { OpenInputDesktop(DESKTOP_CONTROL_FLAGS(0), false, DESKTOP_READOBJECTS) })
+    else {
+        return false;
+    };
+    let mut name = [0u16; 32];
+    let read = unsafe {
+        GetUserObjectInformationW(
+            HANDLE(desktop.0),
+            UOI_NAME,
+            Some(name.as_mut_ptr().cast()),
+            std::mem::size_of_val(&name) as u32,
+            None,
+        )
+    };
+    let _ = unsafe { CloseDesktop(desktop) };
+    let len = name.iter().position(|c| *c == 0).unwrap_or(name.len());
+    read.is_ok() && String::from_utf16_lossy(&name[..len]).eq_ignore_ascii_case("Default")
 }
 
 impl LoopDriver for HookDriver {
@@ -372,10 +438,11 @@ impl LoopDriver for HookDriver {
     }
 
     fn wait(&mut self, timeout: Duration) -> Result<bool, String> {
-        if !self.has_input() {
-            match self.rx.recv_timeout(timeout) {
+        self.check_desktop();
+        if self.inputs.is_empty() {
+            match self.rx.recv_timeout(timeout.min(DESKTOP_CHECK)) {
                 Ok(event) => self.accept(event),
-                Err(mpsc::RecvTimeoutError::Timeout) => return Ok(false),
+                Err(mpsc::RecvTimeoutError::Timeout) => {}
                 Err(mpsc::RecvTimeoutError::Disconnected) => {
                     return Err("keyboard hook stopped".into());
                 }
@@ -384,23 +451,31 @@ impl LoopDriver for HookDriver {
         while let Ok(event) = self.rx.try_recv() {
             self.accept(event);
         }
-        Ok(self.has_input())
+        self.check_desktop();
+        Ok(!self.inputs.is_empty())
     }
 
     fn fetch_key_events(&mut self) -> Result<Vec<(KeyCode, bool)>, String> {
         Ok(self
-            .keys
-            .drain(..)
+            .fetch_timed_key_events()?
+            .into_iter()
             .map(|(key, down, _)| (key, down))
             .collect())
     }
 
     fn fetch_timed_key_events(&mut self) -> Result<Vec<(KeyCode, bool, Instant)>, String> {
-        Ok(self.keys.drain(..).collect())
+        Ok(self
+            .inputs
+            .drain(..)
+            .filter_map(|input| match input {
+                DriverInput::Key { key, down, at } => Some((key, down, at)),
+                DriverInput::Repeat(_) => None,
+            })
+            .collect())
     }
 
-    fn take_repeats(&mut self) -> Vec<KeyCode> {
-        std::mem::take(&mut self.repeats)
+    fn fetch_inputs(&mut self) -> Result<Vec<DriverInput>, String> {
+        Ok(self.inputs.drain(..).collect())
     }
 }
 
@@ -529,28 +604,73 @@ fn text_tx() -> &'static mpsc::SyncSender<(String, TextRequest)> {
 mod tests {
     use super::*;
 
+    fn keys(inputs: Vec<DriverInput>) -> Vec<(KeyCode, Option<bool>)> {
+        inputs
+            .into_iter()
+            .map(|input| match input {
+                DriverInput::Key { key, down, .. } => (key, Some(down)),
+                DriverInput::Repeat(key) => (key, None),
+            })
+            .collect()
+    }
+
     #[test]
-    fn hook_driver_separates_transitions_repeats_and_wakes() {
+    fn hook_driver_keeps_repeats_in_order_and_ignores_wakes() {
         let (tx, rx) = mpsc::channel();
-        let mut driver = HookDriver::new(rx);
+        let mut driver = HookDriver::with_desktop(rx, || true);
         let at = Instant::now();
         tx.send(HookEvent::Wake).unwrap();
         assert!(!driver.wait(Duration::ZERO).unwrap());
-        tx.send(HookEvent::Key {
-            key: KeyCode::KEY_A,
-            down: true,
-            at,
-        })
-        .unwrap();
-        tx.send(HookEvent::Repeat(KeyCode::KEY_A)).unwrap();
+        for event in [
+            HookEvent::Key {
+                key: KeyCode::KEY_A,
+                down: true,
+                at,
+            },
+            HookEvent::Repeat(KeyCode::KEY_A),
+            HookEvent::Key {
+                key: KeyCode::KEY_A,
+                down: false,
+                at,
+            },
+        ] {
+            tx.send(event).unwrap();
+        }
         assert!(driver.wait(Duration::from_millis(10)).unwrap());
         assert_eq!(
-            driver.fetch_timed_key_events().unwrap(),
-            vec![(KeyCode::KEY_A, true, at)]
+            keys(driver.fetch_inputs().unwrap()),
+            vec![
+                (KeyCode::KEY_A, Some(true)),
+                (KeyCode::KEY_A, None),
+                (KeyCode::KEY_A, Some(false))
+            ]
         );
-        assert_eq!(driver.take_repeats(), vec![KeyCode::KEY_A]);
         drop(tx);
         assert!(driver.wait(Duration::ZERO).is_err());
+    }
+
+    #[test]
+    fn keys_held_before_the_secure_desktop_are_released_on_return() {
+        static DEFAULT: AtomicBool = AtomicBool::new(true);
+        let (_tx, rx) = mpsc::channel();
+        let mut driver = HookDriver::with_desktop(rx, || DEFAULT.load(Ordering::SeqCst));
+        hook::forget_down();
+        hook::mark_down(KeyCode::KEY_F);
+        assert!(!driver.wait(Duration::ZERO).unwrap());
+        DEFAULT.store(false, Ordering::SeqCst);
+        driver.next_desktop_check = Instant::now();
+        assert!(
+            !driver.wait(Duration::ZERO).unwrap(),
+            "nothing is released while away"
+        );
+        DEFAULT.store(true, Ordering::SeqCst);
+        driver.next_desktop_check = Instant::now();
+        assert!(driver.wait(Duration::ZERO).unwrap());
+        assert_eq!(
+            keys(driver.fetch_inputs().unwrap()),
+            vec![(KeyCode::KEY_F, Some(false))]
+        );
+        assert!(hook::forget_down().is_empty());
     }
 
     #[test]

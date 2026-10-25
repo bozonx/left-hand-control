@@ -73,6 +73,8 @@ pub struct Engine {
     rules: HashMap<KeyCode, Vec<RuleEntry>>,
     chord_rules: Vec<(Vec<KeyCode>, RuleEntry)>,
     physical_down: HashSet<KeyCode>,
+    /// When each physical key in `physical_down` was pressed.
+    press_at: HashMap<KeyCode, Instant>,
     active_chords: HashMap<KeyCode, Vec<KeyCode>>,
     chord_suppressed: HashMap<KeyCode, Vec<(KeyCode, Keystroke)>>,
     chord_consumed: HashSet<KeyCode>,
@@ -213,17 +215,20 @@ impl Engine {
     /// timeout), or None.
     pub fn next_deadline(&self, now: Instant) -> Option<Duration> {
         self.pending
-            .values()
-            .filter_map(|p| match p.phase {
-                Phase::WaitingDecision { deadline } | Phase::WaitingSecond { deadline } => {
+            .iter()
+            .filter_map(|(key, p)| match p.phase {
+                Phase::WaitingDecision { deadline } | Phase::WaitingSecond { deadline }
+                    if !self.timer_blocked(*key, deadline) =>
+                {
                     Some(deadline.saturating_duration_since(now))
                 }
-                Phase::HoldActive => None,
+                _ => None,
             })
             .chain(
                 self.long_holds
-                    .values()
-                    .map(|(deadline, _)| deadline.saturating_duration_since(now)),
+                    .iter()
+                    .filter(|(key, (deadline, _))| !self.timer_blocked(**key, *deadline))
+                    .map(|(_, (deadline, _))| deadline.saturating_duration_since(now)),
             )
             .chain(
                 self.active_macro
@@ -286,7 +291,9 @@ impl Engine {
         let expired: Vec<_> = self
             .long_holds
             .iter()
-            .filter(|(_, (deadline, _))| now >= *deadline)
+            .filter(|(key, (deadline, _))| {
+                now >= *deadline && !self.timer_blocked(**key, *deadline)
+            })
             .map(|(key, _)| *key)
             .collect();
         for key in expired {
@@ -460,10 +467,14 @@ impl Engine {
         let mut expired_second: Vec<KeyCode> = Vec::new();
         for (k, p) in &self.pending {
             match p.phase {
-                Phase::WaitingDecision { deadline } if deadline <= now => {
+                Phase::WaitingDecision { deadline }
+                    if deadline <= now && !self.timer_blocked(*k, deadline) =>
+                {
                     expired_hold.push(*k);
                 }
-                Phase::WaitingSecond { deadline } if deadline <= now => {
+                Phase::WaitingSecond { deadline }
+                    if deadline <= now && !self.timer_blocked(*k, deadline) =>
+                {
                     expired_second.push(*k);
                 }
                 _ => {}
@@ -567,11 +578,13 @@ impl Engine {
             if !self.physical_down.insert(key) {
                 return;
             }
+            self.press_at.insert(key, now);
             if !self.active_layers.is_empty() {
                 self.layer_used = true;
             }
         } else {
             self.physical_down.remove(&key);
+            self.press_at.remove(&key);
         }
         // A press arriving after the combo window but before the next tick
         // must not extend the stale combo.
@@ -615,8 +628,10 @@ impl Engine {
             if down {
                 // Commit all pending tap/hold decisions before processing the
                 // mouse event. Two goals:
-                // (a) Modifier holds (ShiftLeft, CtrlLeft, …) reach uinput
-                //     before the physical mouse click arrives at the OS.
+                // (a) Modifier holds (ShiftLeft, CtrlLeft, …) are down for
+                //     the release and later clicks. The ungrabbed click
+                //     itself reaches the compositor first (KDE VM: 0.3–0.8 ms
+                //     ahead), so it arrives without the modifier.
                 // (b) Layer triggers activate so that layer keymaps are
                 //     consulted when should_handle_mouse_button runs below.
                 //
@@ -634,6 +649,10 @@ impl Engine {
             // Fall through to normal key handling below.
         } else if self.permissive_intercept(key, down, now, out) {
             return;
+        } else if !down && self.releases_modifier(key) {
+            // A deferred tap was typed while this modifier was down; firing
+            // it after the release would drop the modifier (Ctrl+A -> "a").
+            self.flush_waiting_second(now, out);
         }
 
         if !down
@@ -972,6 +991,26 @@ impl Engine {
             .collect()
     }
 
+    /// True while an event of `key` at or before `deadline` still waits in
+    /// the combo or decision buffer. The key's timer must not fire before
+    /// that event replays: a buffered release or second press decides it.
+    fn timer_blocked(&self, key: KeyCode, deadline: Instant) -> bool {
+        self.combo_buffer
+            .iter()
+            .chain(&self.decision_buffer)
+            .any(|event| event.key == key && event.at <= deadline)
+    }
+
+    /// True when releasing `key` releases a modifier: a physical modifier
+    /// or a key that currently holds one (e.g. `hold: ControlLeft`).
+    fn releases_modifier(&self, key: KeyCode) -> bool {
+        is_modifier_key(key)
+            || self
+                .emitted
+                .get(&key)
+                .is_some_and(|ks| is_modifier_key(ks.key))
+    }
+
     fn lookup_mapping(&self, key: KeyCode) -> Option<(String, ActionDef)> {
         for l in self.active_layers.iter().rev() {
             if let Some(m) = self.layer_maps.get(l)
@@ -1154,6 +1193,7 @@ impl Engine {
         self.chord_suppressed.clear();
         self.chord_consumed.clear();
         self.physical_down.clear();
+        self.press_at.clear();
     }
 
     #[allow(dead_code)]
