@@ -96,7 +96,6 @@ export global ActionPicker {
     /// value and `key-only` limits choices to plain keys.
     callback open(PickerTarget, int, string, bool);
     callback refresh();
-    in-out property <length> list-scroll;
     callback apply();
     callback dismiss-picker();
 
@@ -185,7 +184,7 @@ component CategoryButton inherits Rectangle {
             }
         }
     }
-    category-touch := TouchArea { clicked => { ActionPicker.category = root.category; ActionPicker.query = ""; ActionPicker.list-scroll = 0px; ActionPicker.refresh(); } }
+    category-touch := TouchArea { clicked => { ActionPicker.category = root.category; ActionPicker.query = ""; ActionPicker.refresh(); } }
 }
 
 export component PickerOverlay inherits Rectangle {
@@ -247,7 +246,7 @@ export component PickerOverlay inherits Rectangle {
                 if ActionPicker.behavior != PickerBehavior.action: Rectangle { background: transparent; vertical-stretch: 1; }
                 if ActionPicker.behavior == PickerBehavior.action: HorizontalBox { padding: 0px; spacing: Theme.space-l; vertical-stretch: 1;
                     VerticalBox { padding: 0px; spacing: Theme.space-m; width: min(250px, parent.width * 0.35); horizontal-stretch: 0;
-                        SearchField { text <=> ActionPicker.query; placeholder-text: ActionPicker.key-only ? @tr("Search keys") : @tr("Search keys and actions"); edited => { ActionPicker.list-scroll = 0px; ActionPicker.refresh(); } }
+                        SearchField { text <=> ActionPicker.query; placeholder-text: ActionPicker.key-only ? @tr("Search keys") : @tr("Search keys and actions"); edited => { ActionPicker.refresh(); } }
                         ScrollView { viewport-width: self.visible-width;
                             VerticalLayout { spacing: 0px;
                                 for entry in ActionPicker.categories: VerticalBox {
@@ -305,7 +304,13 @@ export component PickerOverlay inherits Rectangle {
                             Text { text: @tr("Pause in milliseconds (1–10000)"); color: Theme.muted; }
                             NumericInput { text: ActionPicker.pause-content; minimum: 1; maximum: 10000; label: @tr("Pause (ms)"); edited(value) => { ActionPicker.touched = true; ActionPicker.value = "pause:" + value; ActionPicker.refresh(); } }
                         }
-                        if (ActionPicker.query != "" || ActionPicker.is-listed(ActionPicker.category)) && ActionPicker.items.length > 0: catalog-list := ScrollView { viewport-width: self.visible-width; viewport-y <=> ActionPicker.list-scroll;
+                        if (ActionPicker.query != "" || ActionPicker.is-listed(ActionPicker.category)) && ActionPicker.items.length > 0: catalog-list := ScrollView { viewport-width: self.visible-width;
+                            // A new category or search starts at the top. The scroll offset stays local:
+                            // binding it two-way to a global property left the list unpainted on wheel scroll.
+                            private property <PickerCategory> shown-category: ActionPicker.category;
+                            private property <string> shown-query: ActionPicker.query;
+                            changed shown-category => { self.viewport-y = 0px; }
+                            changed shown-query => { self.viewport-y = 0px; }
                             VerticalLayout { spacing: 0px;
                                 for row in ceil(ActionPicker.items.length * 1.0 / catalog.columns): HorizontalBox { padding: 0px; padding-bottom: Theme.space-s; spacing: Theme.space-s;
                                     for col in catalog.columns: PickerCell {
