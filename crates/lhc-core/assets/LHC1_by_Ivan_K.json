@@ -392,12 +392,12 @@
           "action": "text:Explain this in more detail."
         },
         "KeyD": {
-          "name": "Continue",
-          "action": "text:Continue."
-        },
-        "KeyF": {
           "name": "Do it all",
           "action": "text:Do it all as you suggested."
+        },
+        "KeyF": {
+          "name": "Continue",
+          "action": "text:Continue."
         },
         "KeyG": {
           "name": "Ask first",
