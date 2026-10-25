@@ -59,6 +59,7 @@ export global ActionPicker {
     in property <string> subject;
     in property <bool> trigger-chords;
     in-out property <bool> capturing;
+    in-out property <string> capture-keys;
     in-out property <bool> valid;
     in-out property <string> value;
     in property <PickerCategory> value-category;
@@ -239,7 +240,8 @@ export component PickerOverlay inherits Rectangle {
                     InfoTip { text: @tr("For a combination such as Alt+Tab: Alt stays pressed while you press the key again and is released together with the layer key, so the window switcher stays open."); }
                 }
                 if ActionPicker.behavior == PickerBehavior.action && ActionPicker.value-category == PickerCategory.commands && !ActionPicker.commands-enabled: Text { text: ActionPicker.command-name != "" ? ActionPicker.command-name : ActionPicker.command-script; color: Theme.text; wrap: word-wrap; }
-                if ActionPicker.capturing: Text { text: ActionPicker.trigger-chords ? @tr("Press one key or hold a combination, then release a key to capture it.") : ActionPicker.key-only ? @tr("Press a key (including modifiers or Escape).") : @tr("Press a key or shortcut. Release a modifier to select it alone."); color: Theme.accent; wrap: word-wrap; }
+                if ActionPicker.capturing && ActionPicker.capture-keys != "": Text { text: ActionPicker.capture-keys; color: Theme.accent; wrap: word-wrap; }
+                if ActionPicker.capturing: Text { text: ActionPicker.trigger-chords ? @tr("Press a key or combination, then release all keys to finish capture.") : ActionPicker.key-only ? @tr("Press and release a key (including modifiers or Escape).") : @tr("Press a key or shortcut, then release all keys to finish capture."); color: Theme.accent; wrap: word-wrap; }
                 if ActionPicker.behavior == PickerBehavior.action && ActionPicker.notice.id != "": Text { text: Locale.text(ActionPicker.notice); color: Theme.warning; wrap: word-wrap; }
                 if ActionPicker.error.id != "": Text { text: Locale.text(ActionPicker.error); color: Theme.error; wrap: word-wrap; }
                 if ActionPicker.touched && !ActionPicker.valid: Text { text: ActionPicker.key-only ? @tr("Choose a valid trigger key.") : @tr("Choose a valid action."); color: Theme.error; }

@@ -647,11 +647,11 @@ msgstr "Mevcut değer"
 msgid "Capture key"
 msgstr "Yakalama anahtarı"
 
-msgid "Press a key (including modifiers or Escape)."
-msgstr "Bir tuşa basın (değiştiriciler veya Escape dahil)."
+msgid "Press and release a key (including modifiers or Escape)."
+msgstr "Bir tuşa veya tuş birleşimine basın, ardından yakalamayı tamamlamak için tüm tuşları bırakın."
 
-msgid "Press a key or shortcut. Release a modifier to select it alone."
-msgstr ""
+msgid "Press a key or shortcut, then release all keys to finish capture."
+msgstr "Bir tuşa veya tuş birleşimine basın, ardından yakalamayı tamamlamak için tüm tuşları bırakın."
 "Bir tuşa veya kısayola basın. Tek başına seçmek için değiştiriciyi bırakın."
 
 msgid "Choose a valid key or action."
@@ -1660,8 +1660,8 @@ msgstr "{}'den sonra bir kez çalışır"
 msgid "Hold another key / combination"
 msgstr "Başka bir tuşa / kombinasyona basılı tutun"
 
-msgid "Press one key or hold a combination, then release a key to capture it."
-msgstr ""
+msgid "Press a key or combination, then release all keys to finish capture."
+msgstr "Bir tuşa veya tuş birleşimine basın, ardından yakalamayı tamamlamak için tüm tuşları bırakın."
 "Bir tuşa basın veya bir kombinasyonu basılı tutun, ardından onu yakalamak "
 "için bir tuşu bırakın."
 

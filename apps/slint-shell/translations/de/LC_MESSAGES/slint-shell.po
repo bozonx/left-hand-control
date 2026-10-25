@@ -651,11 +651,11 @@ msgstr "Aktueller Wert"
 msgid "Capture key"
 msgstr "Taste erfassen"
 
-msgid "Press a key (including modifiers or Escape)."
-msgstr "Drücken Sie eine Taste (einschließlich Modifikatoren oder Escape)."
+msgid "Press and release a key (including modifiers or Escape)."
+msgstr "Drücken Sie eine Taste oder Tastenkombination und lassen Sie dann alle Tasten los, um die Erfassung abzuschließen."
 
-msgid "Press a key or shortcut. Release a modifier to select it alone."
-msgstr ""
+msgid "Press a key or shortcut, then release all keys to finish capture."
+msgstr "Drücken Sie eine Taste oder Tastenkombination und lassen Sie dann alle Tasten los, um die Erfassung abzuschließen."
 "Drücken Sie eine Taste oder einen Kurzbefehl. Lassen Sie einen Modifikator "
 "los, um nur ihn auszuwählen."
 
@@ -1689,8 +1689,8 @@ msgstr "Läuft einmal nach {} s"
 msgid "Hold another key / combination"
 msgstr "Halten Sie eine andere Taste/Kombination gedrückt"
 
-msgid "Press one key or hold a combination, then release a key to capture it."
-msgstr ""
+msgid "Press a key or combination, then release all keys to finish capture."
+msgstr "Drücken Sie eine Taste oder Tastenkombination und lassen Sie dann alle Tasten los, um die Erfassung abzuschließen."
 "Drücken Sie eine Taste oder halten Sie eine Kombination gedrückt und lassen "
 "Sie dann eine Taste los, um sie zu erfassen."
 

@@ -307,11 +307,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
 
     let weak = ui.as_weak();
     picker.on_begin_capture(move || {
-        CAPTURE_MODIFIERS.with(|state| state.borrow_mut().clear());
-        CAPTURE_TRIGGER.with(|state| state.borrow_mut().clear());
+        CAPTURE.with(|state| *state.borrow_mut() = CaptureState::default());
         if let Some(ui) = weak.upgrade() {
             let picker = ui.global::<ActionPicker>();
             picker.set_capturing(!picker.get_capturing());
+            picker.set_capture_keys("".into());
         }
     });
 
@@ -962,18 +962,17 @@ pub fn capture(ui: &SettingsWindow, event: &slint::winit_030::winit::event::Wind
     if event.repeat {
         return true;
     }
-    let value = if picker.get_trigger_chords() {
-        CAPTURE_TRIGGER.with(|state| captured_trigger(&key, event.state, &mut state.borrow_mut()))
-    } else {
-        CAPTURE_MODIFIERS.with(|state| {
-            captured_key(
-                &key,
-                event.state,
-                picker.get_key_only(),
-                &mut state.borrow_mut(),
-            )
-        })
-    };
+    let value = CAPTURE.with(|state| {
+        let mut state = state.borrow_mut();
+        let value = state.update(
+            &key,
+            event.state,
+            picker.get_trigger_chords(),
+            picker.get_key_only(),
+        );
+        picker.set_capture_keys(state.held.join("+").into());
+        value
+    });
     if let Some(value) = value {
         picker.set_touched(true);
         picker.set_value(value.into());
@@ -1014,73 +1013,77 @@ fn key_name(code: slint::winit_030::winit::keyboard::KeyCode) -> String {
     }
 }
 
-fn captured_key(
-    key: &str,
-    state: slint::winit_030::winit::event::ElementState,
-    key_only: bool,
-    modifiers: &mut Vec<&'static str>,
-) -> Option<String> {
-    use slint::winit_030::winit::event::ElementState;
-    let modifier = match key {
-        "ControlLeft" | "ControlRight" => Some("Ctrl"),
-        "ShiftLeft" | "ShiftRight" => Some("Shift"),
-        "AltLeft" | "AltRight" => Some("Alt"),
-        "MetaLeft" | "MetaRight" => Some("Meta"),
-        _ => None,
-    };
-    let known = lhc_core::profile::key_catalog::valid_key(key);
-    if key_only {
-        return (state == ElementState::Pressed && known).then(|| key.to_owned());
-    }
-    if let Some(name) = modifier
-        && state == ElementState::Pressed
-    {
-        if !modifiers.contains(&name) {
-            modifiers.push(name);
-        }
-        return None;
-    }
-    if (state == ElementState::Pressed || modifier.is_some()) && known {
-        let value = if modifier.is_some() {
-            key.to_owned()
+#[derive(Default)]
+struct CaptureState {
+    held: Vec<String>,
+    keys: Vec<String>,
+}
+
+impl CaptureState {
+    fn update(
+        &mut self,
+        key: &str,
+        state: slint::winit_030::winit::event::ElementState,
+        trigger: bool,
+        key_only: bool,
+    ) -> Option<String> {
+        use slint::winit_030::winit::event::ElementState;
+        let known = if trigger {
+            lhc_core::profile::key_catalog::valid_trigger(key)
         } else {
+            lhc_core::profile::key_catalog::valid_key(key)
+        };
+        if !known {
+            return None;
+        }
+        if state == ElementState::Pressed {
+            if !self.held.iter().any(|k| k == key) {
+                self.held.push(key.to_owned());
+            }
+            if !self.keys.iter().any(|k| k == key) {
+                self.keys.push(key.to_owned());
+            }
+            return None;
+        }
+        let index = self.held.iter().position(|k| k == key)?;
+        self.held.remove(index);
+        if !self.held.is_empty() {
+            return None;
+        }
+        let keys = std::mem::take(&mut self.keys);
+        if trigger || key_only || keys.len() == 1 {
+            return Some(keys.join("+"));
+        }
+        let mut modifiers = Vec::new();
+        let mut ordinary = Vec::new();
+        for key in &keys {
+            let modifier = match key.as_str() {
+                "ControlLeft" | "ControlRight" => Some("Ctrl"),
+                "AltLeft" | "AltRight" => Some("Alt"),
+                "ShiftLeft" | "ShiftRight" => Some("Shift"),
+                "MetaLeft" | "MetaRight" => Some("Meta"),
+                _ => None,
+            };
+            if let Some(modifier) = modifier {
+                if !modifiers.contains(&modifier) {
+                    modifiers.push(modifier);
+                }
+            } else {
+                ordinary.push(key.as_str());
+            }
+        }
+        Some(
             ["Ctrl", "Alt", "Shift", "Meta"]
                 .into_iter()
                 .filter(|m| modifiers.contains(m))
-                .chain(std::iter::once(key))
+                .chain(ordinary)
                 .collect::<Vec<_>>()
-                .join("+")
-        };
-        modifiers.clear();
-        return Some(value);
-    }
-    None
-}
-
-fn captured_trigger(
-    key: &str,
-    state: slint::winit_030::winit::event::ElementState,
-    keys: &mut Vec<String>,
-) -> Option<String> {
-    if !lhc_core::profile::key_catalog::valid_trigger(key) {
-        return None;
-    }
-    if state == slint::winit_030::winit::event::ElementState::Pressed {
-        if !keys.iter().any(|k| k == key) {
-            keys.push(key.to_owned());
-        }
-        None
-    } else if keys.iter().any(|k| k == key) {
-        let value = keys.join("+");
-        keys.clear();
-        Some(value)
-    } else {
-        None
+                .join("+"),
+        )
     }
 }
 
-thread_local! { static CAPTURE_TRIGGER: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) }; }
-thread_local! { static CAPTURE_MODIFIERS: RefCell<Vec<&'static str>> = const { RefCell::new(Vec::new()) }; }
+thread_local! { static CAPTURE: RefCell<CaptureState> = const { RefCell::new(CaptureState { held: Vec::new(), keys: Vec::new() }) }; }
 
 #[cfg(test)]
 #[path = "picker/tests.rs"]

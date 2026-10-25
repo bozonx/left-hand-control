@@ -639,11 +639,11 @@ msgstr "Текущее значение"
 msgid "Capture key"
 msgstr "Захватить клавишу"
 
-msgid "Press a key (including modifiers or Escape)."
-msgstr "Нажмите клавишу (включая модификаторы или Escape)."
+msgid "Press and release a key (including modifiers or Escape)."
+msgstr "Нажмите и отпустите клавишу (включая модификаторы или Escape)."
 
-msgid "Press a key or shortcut. Release a modifier to select it alone."
-msgstr "Нажмите клавишу или сочетание. Чтобы выбрать отдельный модификатор, отпустите его."
+msgid "Press a key or shortcut, then release all keys to finish capture."
+msgstr "Нажмите клавишу или сочетание, затем отпустите все клавиши для завершения захвата."
 
 msgid "Choose a valid key or action."
 msgstr "Выберите допустимую клавишу или действие."
@@ -1520,8 +1520,8 @@ msgstr "Выполняется один раз через {} с"
 msgid "Hold another key / combination"
 msgstr "Удерживать другую клавишу / сочетание"
 
-msgid "Press one key or hold a combination, then release a key to capture it."
-msgstr "Нажмите клавишу или удерживайте сочетание, затем отпустите клавишу для захвата."
+msgid "Press a key or combination, then release all keys to finish capture."
+msgstr "Нажмите клавишу или сочетание, затем отпустите все клавиши для завершения захвата."
 
 msgid "Held key: {}"
 msgstr "Удерживаемая клавиша: {}"

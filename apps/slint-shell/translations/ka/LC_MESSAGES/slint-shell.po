@@ -649,11 +649,11 @@ msgstr "მიმდინარე ღირებულება"
 msgid "Capture key"
 msgstr "გადაღების გასაღები"
 
-msgid "Press a key (including modifiers or Escape)."
-msgstr "დააჭირეთ ღილაკს (მათ შორის მოდიფიკატორები ან Escape)."
+msgid "Press and release a key (including modifiers or Escape)."
+msgstr "დააჭირეთ კლავიშს ან კომბინაციას, შემდეგ გაუშვით ყველა კლავიშს ჩაწერის დასასრულებლად."
 
-msgid "Press a key or shortcut. Release a modifier to select it alone."
-msgstr ""
+msgid "Press a key or shortcut, then release all keys to finish capture."
+msgstr "დააჭირეთ კლავიშს ან კომბინაციას, შემდეგ გაუშვით ყველა კლავიშს ჩაწერის დასასრულებლად."
 "დააჭირეთ ღილაკს ან მალსახმობს. გაათავისუფლეთ მოდიფიკატორი, რომ აირჩიოთ იგი "
 "მარტო."
 
@@ -1666,8 +1666,8 @@ msgstr "გადის ერთხელ {} s-ის შემდეგ"
 msgid "Hold another key / combination"
 msgstr "გეჭიროთ სხვა კლავიში / კომბინაცია"
 
-msgid "Press one key or hold a combination, then release a key to capture it."
-msgstr "დააჭირეთ ერთ ღილაკს ან გეჭიროთ კომბინაცია, შემდეგ გაათავისუფლეთ ღილაკი მის ჩასაწერად."
+msgid "Press a key or combination, then release all keys to finish capture."
+msgstr "დააჭირეთ კლავიშს ან კომბინაციას, შემდეგ გაუშვით ყველა კლავიშს ჩაწერის დასასრულებლად."
 
 msgid "Held key: {}"
 msgstr "დაჭერილი ღილაკი: {}"

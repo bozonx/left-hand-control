@@ -3,63 +3,77 @@
 use super::*;
 
 #[test]
-fn captures_trigger_combinations_including_two_modifiers() {
+fn capture_waits_for_all_releases_and_preserves_keys() {
     use slint::winit_030::winit::event::ElementState::{Pressed, Released};
-    let mut keys = Vec::new();
-    assert_eq!(captured_trigger("ShiftLeft", Pressed, &mut keys), None);
-    assert_eq!(captured_trigger("ControlRight", Pressed, &mut keys), None);
+    for trigger in [false, true] {
+        for release_order in [
+            ["ControlRight", "KeyK", "ShiftLeft"],
+            ["ShiftLeft", "ControlRight", "KeyK"],
+            ["KeyK", "ShiftLeft", "ControlRight"],
+        ] {
+            let mut capture = CaptureState::default();
+            assert_eq!(capture.update("KeyZ", Released, trigger, false), None);
+            for key in ["ShiftLeft", "ControlRight", "KeyK", "KeyK"] {
+                assert_eq!(capture.update(key, Pressed, trigger, false), None);
+            }
+            assert_eq!(capture.held, ["ShiftLeft", "ControlRight", "KeyK"]);
+            for key in &release_order[..2] {
+                assert_eq!(capture.update(key, Released, trigger, false), None);
+            }
+            assert_eq!(
+                capture
+                    .update(release_order[2], Released, trigger, false)
+                    .as_deref(),
+                Some(if trigger {
+                    "ShiftLeft+ControlRight+KeyK"
+                } else {
+                    "Ctrl+Shift+KeyK"
+                })
+            );
+            assert!(capture.held.is_empty());
+            assert!(capture.keys.is_empty());
+        }
+    }
+}
+
+#[test]
+fn capture_keeps_released_keys_while_other_keys_are_held() {
+    use slint::winit_030::winit::event::ElementState::{Pressed, Released};
+    let mut capture = CaptureState::default();
+    for (key, state) in [
+        ("ControlLeft", Pressed),
+        ("KeyA", Pressed),
+        ("KeyA", Released),
+        ("KeyB", Pressed),
+        ("ControlLeft", Released),
+    ] {
+        assert_eq!(capture.update(key, state, false, false), None);
+    }
+    assert_eq!(capture.held, ["KeyB"]);
     assert_eq!(
-        captured_trigger("ShiftLeft", Released, &mut keys).as_deref(),
-        Some("ShiftLeft+ControlRight")
-    );
-    assert!(keys.is_empty());
-    assert_eq!(captured_trigger("F13", Pressed, &mut keys), None);
-    assert_eq!(
-        captured_trigger("F13", Released, &mut keys).as_deref(),
-        Some("F13")
+        capture.update("KeyB", Released, false, false).as_deref(),
+        Some("Ctrl+KeyA+KeyB")
     );
 }
 
 #[test]
-fn captures_physical_keys_and_chords() {
-    use slint::winit_030::winit::{
-        event::ElementState::{Pressed, Released},
-        keyboard::KeyCode as K,
-    };
-    let mut modifiers = Vec::new();
-    assert_eq!(
-        captured_key("ControlRight", Pressed, true, &mut modifiers).as_deref(),
-        Some("ControlRight")
-    );
-    assert_eq!(
-        captured_key("NumpadEnter", Pressed, true, &mut modifiers).as_deref(),
-        Some("NumpadEnter")
-    );
-    assert_eq!(
-        captured_key("ShiftLeft", Pressed, false, &mut modifiers),
-        None
-    );
-    assert_eq!(
-        captured_key("ControlRight", Pressed, false, &mut modifiers),
-        None
-    );
-    assert_eq!(
-        captured_key("KeyK", Pressed, false, &mut modifiers).as_deref(),
-        Some("Ctrl+Shift+KeyK")
-    );
-    assert!(modifiers.is_empty());
-    assert_eq!(
-        captured_key("AltRight", Pressed, false, &mut modifiers),
-        None
-    );
-    assert_eq!(
-        captured_key("AltRight", Released, false, &mut modifiers).as_deref(),
-        Some("AltRight")
-    );
-    assert_eq!(
-        captured_key(&key_name(K::AudioVolumeMute), Pressed, true, &mut modifiers).as_deref(),
-        Some("AudioVolumeMute")
-    );
+fn captures_single_physical_keys_on_release() {
+    use slint::winit_030::winit::event::ElementState::{Pressed, Released};
+    for key_only in [false, true] {
+        for key in ["ControlRight", "NumpadEnter", "AudioVolumeMute", "Escape"] {
+            let mut capture = CaptureState::default();
+            assert_eq!(capture.update(key, Pressed, false, key_only), None);
+            assert_eq!(
+                capture.update(key, Released, false, key_only).as_deref(),
+                Some(key)
+            );
+        }
+    }
+}
+
+#[test]
+fn physical_key_names_match_config_codes() {
+    use slint::winit_030::winit::keyboard::KeyCode as K;
     assert_eq!(key_name(K::SuperLeft), "MetaLeft");
     assert_eq!(key_name(K::LaunchApp1), "LaunchApp1");
     assert_eq!(

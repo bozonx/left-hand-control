@@ -655,11 +655,11 @@ msgstr "Valore attuale"
 msgid "Capture key"
 msgstr "Cattura la chiave"
 
-msgid "Press a key (including modifiers or Escape)."
-msgstr "Premi un tasto (inclusi i modificatori o Escape)."
+msgid "Press and release a key (including modifiers or Escape)."
+msgstr "Premi un tasto o una combinazione, quindi rilascia tutti i tasti per completare la cattura."
 
-msgid "Press a key or shortcut. Release a modifier to select it alone."
-msgstr ""
+msgid "Press a key or shortcut, then release all keys to finish capture."
+msgstr "Premi un tasto o una combinazione, quindi rilascia tutti i tasti per completare la cattura."
 "Premi un tasto o una scorciatoia. Rilascia un modificatore per selezionarlo "
 "da solo."
 
@@ -1688,8 +1688,8 @@ msgstr "Viene eseguito una volta dopo {} s"
 msgid "Hold another key / combination"
 msgstr "Tieni premuto un altro tasto/combinazione"
 
-msgid "Press one key or hold a combination, then release a key to capture it."
-msgstr ""
+msgid "Press a key or combination, then release all keys to finish capture."
+msgstr "Premi un tasto o una combinazione, quindi rilascia tutti i tasti per completare la cattura."
 "Premi un tasto o tieni premuta una combinazione, quindi rilascia un tasto "
 "per acquisirla."
 

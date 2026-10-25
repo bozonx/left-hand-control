@@ -646,11 +646,11 @@ msgstr "Поточне значення"
 msgid "Capture key"
 msgstr "Захопити клавішу"
 
-msgid "Press a key (including modifiers or Escape)."
-msgstr "Натисніть клавішу (включно з модифікаторами або Escape)."
+msgid "Press and release a key (including modifiers or Escape)."
+msgstr "Натисніть клавішу або комбінацію, потім відпустіть усі клавіші для завершення захоплення."
 
-msgid "Press a key or shortcut. Release a modifier to select it alone."
-msgstr ""
+msgid "Press a key or shortcut, then release all keys to finish capture."
+msgstr "Натисніть клавішу або комбінацію, потім відпустіть усі клавіші для завершення захоплення."
 "Натисніть клавішу або комбінацію клавіш. Відпустіть модифікатор, щоб вибрати"
 " його окремо."
 
@@ -1669,8 +1669,8 @@ msgstr "Запускається один раз після {} s"
 msgid "Hold another key / combination"
 msgstr "Утримуйте іншу клавішу / комбінацію"
 
-msgid "Press one key or hold a combination, then release a key to capture it."
-msgstr ""
+msgid "Press a key or combination, then release all keys to finish capture."
+msgstr "Натисніть клавішу або комбінацію, потім відпустіть усі клавіші для завершення захоплення."
 "Натисніть одну клавішу або утримуйте комбінацію, а потім відпустіть клавішу,"
 " щоб захопити її."
 

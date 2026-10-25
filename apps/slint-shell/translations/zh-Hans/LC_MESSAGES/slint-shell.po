@@ -636,11 +636,11 @@ msgstr "当前值"
 msgid "Capture key"
 msgstr "捕获键"
 
-msgid "Press a key (including modifiers or Escape)."
-msgstr "按一个键（包括修饰键或 Escape）。"
+msgid "Press and release a key (including modifiers or Escape)."
+msgstr "按下按键或组合键，然后松开所有按键以完成捕获。"
 
-msgid "Press a key or shortcut. Release a modifier to select it alone."
-msgstr "按一个键或快捷键。释放修改器以单独选择它。"
+msgid "Press a key or shortcut, then release all keys to finish capture."
+msgstr "按下按键或组合键，然后松开所有按键以完成捕获。"
 
 msgid "Choose a valid key or action."
 msgstr "选择有效的键或操作。"
@@ -1578,8 +1578,8 @@ msgstr "{} 后运行一次"
 msgid "Hold another key / combination"
 msgstr "按住另一个键/组合键"
 
-msgid "Press one key or hold a combination, then release a key to capture it."
-msgstr "按一个键或按住组合键，然后释放一个键即可捕获它。"
+msgid "Press a key or combination, then release all keys to finish capture."
+msgstr "按下按键或组合键，然后松开所有按键以完成捕获。"
 
 msgid "Held key: {}"
 msgstr "保持键：{}"

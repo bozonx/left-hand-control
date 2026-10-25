@@ -636,11 +636,11 @@ msgstr "현재 가치"
 msgid "Capture key"
 msgstr "캡처 키"
 
-msgid "Press a key (including modifiers or Escape)."
-msgstr "키(수정자 또는 Esc 포함)를 누릅니다."
+msgid "Press and release a key (including modifiers or Escape)."
+msgstr "키 또는 키 조합을 누른 다음 모든 키에서 손을 떼면 캡처가 완료됩니다."
 
-msgid "Press a key or shortcut. Release a modifier to select it alone."
-msgstr "키나 단축키를 누르세요. 단독으로 선택하려면 수정자를 놓습니다."
+msgid "Press a key or shortcut, then release all keys to finish capture."
+msgstr "키 또는 키 조합을 누른 다음 모든 키에서 손을 떼면 캡처가 완료됩니다."
 
 msgid "Choose a valid key or action."
 msgstr "유효한 키나 작업을 선택하세요."
@@ -1593,8 +1593,8 @@ msgstr "{} s 이후에 한 번 실행됩니다."
 msgid "Hold another key / combination"
 msgstr "다른 키/조합 누르기"
 
-msgid "Press one key or hold a combination, then release a key to capture it."
-msgstr "하나의 키를 누르거나 조합을 누른 다음 키를 놓아 캡처하세요."
+msgid "Press a key or combination, then release all keys to finish capture."
+msgstr "키 또는 키 조합을 누른 다음 모든 키에서 손을 떼면 캡처가 완료됩니다."
 
 msgid "Held key: {}"
 msgstr "누른 키: {}"

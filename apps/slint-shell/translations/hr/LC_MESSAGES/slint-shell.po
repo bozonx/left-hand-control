@@ -644,11 +644,11 @@ msgstr "Trenutna vrijednost"
 msgid "Capture key"
 msgstr "Ključ za snimanje"
 
-msgid "Press a key (including modifiers or Escape)."
-msgstr "Pritisnite tipku (uključujući modifikatore ili Escape)."
+msgid "Press and release a key (including modifiers or Escape)."
+msgstr "Pritisnite tipku ili kombinaciju, zatim otpustite sve tipke za završetak snimanja."
 
-msgid "Press a key or shortcut. Release a modifier to select it alone."
-msgstr ""
+msgid "Press a key or shortcut, then release all keys to finish capture."
+msgstr "Pritisnite tipku ili kombinaciju, zatim otpustite sve tipke za završetak snimanja."
 "Pritisnite tipku ili prečac. Otpustite modifikator da odaberete samo njega."
 
 msgid "Choose a valid key or action."
@@ -1661,8 +1661,8 @@ msgstr "Pokreće se jednom nakon {} s"
 msgid "Hold another key / combination"
 msgstr "Držite drugu tipku/kombinaciju"
 
-msgid "Press one key or hold a combination, then release a key to capture it."
-msgstr ""
+msgid "Press a key or combination, then release all keys to finish capture."
+msgstr "Pritisnite tipku ili kombinaciju, zatim otpustite sve tipke za završetak snimanja."
 "Pritisnite jednu tipku ili držite kombinaciju, a zatim otpustite tipku da je"
 " snimite."
 

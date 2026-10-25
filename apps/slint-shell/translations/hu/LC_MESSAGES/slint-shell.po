@@ -651,12 +651,12 @@ msgstr "Jelenlegi érték"
 msgid "Capture key"
 msgstr "Rögzítési kulcs"
 
-msgid "Press a key (including modifiers or Escape)."
-msgstr ""
+msgid "Press and release a key (including modifiers or Escape)."
+msgstr "Nyomjon meg egy billentyűt vagy kombinációt, majd engedje fel az összes billentyűt a rögzítés befejezéséhez."
 "Nyomjon meg egy billentyűt (beleértve a módosítókat vagy az Escape-et)."
 
-msgid "Press a key or shortcut. Release a modifier to select it alone."
-msgstr ""
+msgid "Press a key or shortcut, then release all keys to finish capture."
+msgstr "Nyomjon meg egy billentyűt vagy kombinációt, majd engedje fel az összes billentyűt a rögzítés befejezéséhez."
 "Nyomjon meg egy billentyűt vagy parancsikont. Engedjen fel egy módosítót, "
 "hogy egyedül válassza ki."
 
@@ -1683,8 +1683,8 @@ msgstr "Egyszer fut a {} s után"
 msgid "Hold another key / combination"
 msgstr "Tartsa lenyomva egy másik billentyűt/kombinációt"
 
-msgid "Press one key or hold a combination, then release a key to capture it."
-msgstr ""
+msgid "Press a key or combination, then release all keys to finish capture."
+msgstr "Nyomjon meg egy billentyűt vagy kombinációt, majd engedje fel az összes billentyűt a rögzítés befejezéséhez."
 "Nyomjon meg egy billentyűt, vagy tartsa lenyomva a kombinációt, majd engedje"
 " fel a billentyűt a rögzítéshez."
 

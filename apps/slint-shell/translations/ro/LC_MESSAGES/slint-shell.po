@@ -649,11 +649,11 @@ msgstr "Valoarea curentă"
 msgid "Capture key"
 msgstr "Tasta de captare"
 
-msgid "Press a key (including modifiers or Escape)."
-msgstr "Apăsați o tastă (inclusiv modificatorii sau Escape)."
+msgid "Press and release a key (including modifiers or Escape)."
+msgstr "Apăsați o tastă sau o combinație, apoi eliberați toate tastele pentru a încheia capturarea."
 
-msgid "Press a key or shortcut. Release a modifier to select it alone."
-msgstr ""
+msgid "Press a key or shortcut, then release all keys to finish capture."
+msgstr "Apăsați o tastă sau o combinație, apoi eliberați toate tastele pentru a încheia capturarea."
 "Apăsați o tastă sau o comandă rapidă. Eliberați un modificator pentru a-l "
 "selecta singur."
 
@@ -1681,8 +1681,8 @@ msgstr "Rulează o dată după {} s"
 msgid "Hold another key / combination"
 msgstr "Țineți apăsată o altă tastă/combinație"
 
-msgid "Press one key or hold a combination, then release a key to capture it."
-msgstr ""
+msgid "Press a key or combination, then release all keys to finish capture."
+msgstr "Apăsați o tastă sau o combinație, apoi eliberați toate tastele pentru a încheia capturarea."
 "Apăsați o tastă sau țineți apăsată o combinație, apoi eliberați o tastă "
 "pentru a o captura."
 

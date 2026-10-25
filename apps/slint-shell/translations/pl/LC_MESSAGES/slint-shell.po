@@ -651,11 +651,11 @@ msgstr "Aktualna wartość"
 msgid "Capture key"
 msgstr "Klucz przechwytywania"
 
-msgid "Press a key (including modifiers or Escape)."
-msgstr "Naciśnij klawisz (w tym modyfikatory lub Escape)."
+msgid "Press and release a key (including modifiers or Escape)."
+msgstr "Naciśnij klawisz lub kombinację, a następnie zwolnij wszystkie klawisze, aby zakończyć przechwytywanie."
 
-msgid "Press a key or shortcut. Release a modifier to select it alone."
-msgstr ""
+msgid "Press a key or shortcut, then release all keys to finish capture."
+msgstr "Naciśnij klawisz lub kombinację, a następnie zwolnij wszystkie klawisze, aby zakończyć przechwytywanie."
 "Naciśnij klawisz lub skrót. Zwolnij modyfikator, aby wybrać go samodzielnie."
 
 msgid "Choose a valid key or action."
@@ -1680,8 +1680,8 @@ msgstr "Uruchamia się raz po s. {}"
 msgid "Hold another key / combination"
 msgstr "Przytrzymaj kolejny klawisz/kombinację"
 
-msgid "Press one key or hold a combination, then release a key to capture it."
-msgstr ""
+msgid "Press a key or combination, then release all keys to finish capture."
+msgstr "Naciśnij klawisz lub kombinację, a następnie zwolnij wszystkie klawisze, aby zakończyć przechwytywanie."
 "Naciśnij jeden klawisz lub przytrzymaj kombinację, a następnie zwolnij "
 "klawisz, aby go przechwycić."
 

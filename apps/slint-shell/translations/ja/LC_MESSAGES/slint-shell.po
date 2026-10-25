@@ -636,11 +636,11 @@ msgstr "現在値"
 msgid "Capture key"
 msgstr "キャプチャキー"
 
-msgid "Press a key (including modifiers or Escape)."
-msgstr "キーを押します (修飾キーやエスケープを含む)。"
+msgid "Press and release a key (including modifiers or Escape)."
+msgstr "キーまたはキーの組み合わせを押し、すべてのキーを離すと記録が完了します。"
 
-msgid "Press a key or shortcut. Release a modifier to select it alone."
-msgstr "キーまたはショートカットを押します。モディファイアを放して単独で選択します。"
+msgid "Press a key or shortcut, then release all keys to finish capture."
+msgstr "キーまたはキーの組み合わせを押し、すべてのキーを離すと記録が完了します。"
 
 msgid "Choose a valid key or action."
 msgstr "有効なキーまたはアクションを選択してください。"
@@ -1593,8 +1593,8 @@ msgstr "{} の後に 1 回実行されます"
 msgid "Hold another key / combination"
 msgstr "別のキー/組み合わせを押し続ける"
 
-msgid "Press one key or hold a combination, then release a key to capture it."
-msgstr "1 つのキーを押すか、組み合わせを押したままにして、キーを放してそのキーをキャプチャします。"
+msgid "Press a key or combination, then release all keys to finish capture."
+msgstr "キーまたはキーの組み合わせを押し、すべてのキーを離すと記録が完了します。"
 
 msgid "Held key: {}"
 msgstr "保持されているキー: {}"

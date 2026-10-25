@@ -642,11 +642,11 @@ msgstr "Aktuální hodnota"
 msgid "Capture key"
 msgstr "Zachycovací klíč"
 
-msgid "Press a key (including modifiers or Escape)."
-msgstr "Stiskněte klávesu (včetně modifikátorů nebo Escape)."
+msgid "Press and release a key (including modifiers or Escape)."
+msgstr "Stiskněte klávesu nebo kombinaci a poté uvolněte všechny klávesy pro dokončení záznamu."
 
-msgid "Press a key or shortcut. Release a modifier to select it alone."
-msgstr ""
+msgid "Press a key or shortcut, then release all keys to finish capture."
+msgstr "Stiskněte klávesu nebo kombinaci a poté uvolněte všechny klávesy pro dokončení záznamu."
 "Stiskněte klávesu nebo zkratku. Chcete-li jej vybrat samostatně, uvolněte "
 "modifikátor."
 
@@ -1660,8 +1660,8 @@ msgstr "Spustí se jednou po {} s"
 msgid "Hold another key / combination"
 msgstr "Podržte další klávesu / kombinaci"
 
-msgid "Press one key or hold a combination, then release a key to capture it."
-msgstr "Stiskněte jednu klávesu nebo podržte kombinaci a poté ji uvolněte."
+msgid "Press a key or combination, then release all keys to finish capture."
+msgstr "Stiskněte klávesu nebo kombinaci a poté uvolněte všechny klávesy pro dokončení záznamu."
 
 msgid "Held key: {}"
 msgstr "Držený klíč: {}"

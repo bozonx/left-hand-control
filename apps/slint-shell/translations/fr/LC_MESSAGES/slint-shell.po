@@ -656,11 +656,11 @@ msgstr "Valeur actuelle"
 msgid "Capture key"
 msgstr "Capturer la touche"
 
-msgid "Press a key (including modifiers or Escape)."
-msgstr "Appuyez sur une touche (y compris les modificateurs ou Échap)."
+msgid "Press and release a key (including modifiers or Escape)."
+msgstr "Appuyez sur une touche ou une combinaison, puis relâchez toutes les touches pour terminer la capture."
 
-msgid "Press a key or shortcut. Release a modifier to select it alone."
-msgstr ""
+msgid "Press a key or shortcut, then release all keys to finish capture."
+msgstr "Appuyez sur une touche ou une combinaison, puis relâchez toutes les touches pour terminer la capture."
 "Appuyez sur une touche ou un raccourci. Relâchez un modificateur pour le "
 "sélectionner seul."
 
@@ -1697,8 +1697,8 @@ msgstr "S'exécute une fois après les {}"
 msgid "Hold another key / combination"
 msgstr "Maintenez une autre touche/combinaison"
 
-msgid "Press one key or hold a combination, then release a key to capture it."
-msgstr ""
+msgid "Press a key or combination, then release all keys to finish capture."
+msgstr "Appuyez sur une touche ou une combinaison, puis relâchez toutes les touches pour terminer la capture."
 "Appuyez sur une touche ou maintenez une combinaison enfoncée, puis relâchez "
 "une touche pour la capturer."
 

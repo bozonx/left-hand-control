@@ -13,6 +13,10 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Application lists in automatic layout rules, trigger rules and game mode share the same heading, add button and list frame.
+
+- Action capture shows held keys and waits until every captured key is released, preserving the full combination regardless of release order.
+
 - Rule headers truncate advanced option summaries before condition labels when the window narrows.
 
 - The device picker shows each device on two lines: its name (read from the `by-id` link when the device reports none) and a shortened path. It is wider, highlights the selected device, folds non-matching and virtual devices behind “Show N more devices”, and keeps a saved device that is not connected as a “Not connected” entry instead of switching to manual input.
