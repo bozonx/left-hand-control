@@ -1379,7 +1379,7 @@ mod tests {
         assert!(!quick.is_empty());
         assert!(quick.iter().all(|page| page.cells.len() == 15));
         assert_eq!(quick[0].cells["KeyQ"].action, "Sleep");
-        assert_eq!(quick[0].cells["KeyS"].action, "sys:overview");
+        assert_eq!(quick[0].cells["KeyS"].action, "PrintScreen");
         assert_eq!(reparsed.quick_action_pages, *quick);
     }
 
