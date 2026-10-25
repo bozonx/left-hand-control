@@ -3663,8 +3663,11 @@ msgstr "Nu s-au găsit dispozitive"
 msgid "Show all devices"
 msgstr "Afișați toate dispozitivele"
 
-msgid "Enter device path manually…"
-msgstr "Introduceți manual calea dispozitivului…"
+msgid "Enter path"
+msgstr "Introduceți calea"
+
+msgid "Refresh"
+msgstr "Reîmprospătare"
 
 msgid "Device path, e.g. /dev/input/by-id/…"
 msgstr "Calea dispozitivului, de ex. /dev/input/by-id/…"

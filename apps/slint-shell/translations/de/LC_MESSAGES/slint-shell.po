@@ -3702,8 +3702,11 @@ msgstr "Keine Geräte gefunden"
 msgid "Show all devices"
 msgstr "Alle Geräte anzeigen"
 
-msgid "Enter device path manually…"
-msgstr "Gerätepfad manuell eingeben…"
+msgid "Enter path"
+msgstr "Pfad angeben"
+
+msgid "Refresh"
+msgstr "Aktualisieren"
 
 msgid "Device path, e.g. /dev/input/by-id/…"
 msgstr "Gerätepfad, z. B. /dev/input/by-id/…"

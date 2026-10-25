@@ -709,6 +709,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             -2 => {
                 if !cfg!(target_os = "windows") {
                     snapshot(&ui, "device-dialog-all");
+                    let position = accessible_position(&ui, i_slint_core::items::AccessibleRole::RadioButton, "Указать путь", false);
+                    for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
+                    snapshot(&ui, "device-dialog-manual");
                     ui.window().dispatch_event(slint::platform::WindowEvent::KeyPressed { text: slint::platform::Key::Escape.into() });
                     ui.window().dispatch_event(slint::platform::WindowEvent::KeyReleased { text: slint::platform::Key::Escape.into() });
                     assert!(!ui.global::<DeviceDialog>().get_open());

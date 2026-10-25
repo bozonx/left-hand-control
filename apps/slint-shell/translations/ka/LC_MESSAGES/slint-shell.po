@@ -3610,8 +3610,11 @@ msgstr "მოწყობილობები ვერ მოიძებნ�
 msgid "Show all devices"
 msgstr "ყველა მოწყობილობის ჩვენება"
 
-msgid "Enter device path manually…"
-msgstr "მოწყობილობის ბილიკის ხელით შეყვანა…"
+msgid "Enter path"
+msgstr "ბილიკის შეყვანა"
+
+msgid "Refresh"
+msgstr "განახლება"
 
 msgid "Device path, e.g. /dev/input/by-id/…"
 msgstr "მოწყობილობის ბილიკი, მაგ. /dev/input/by-id/…"

@@ -22,7 +22,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 - Rule headers truncate advanced option summaries before condition labels when the window narrows.
 
-- Keyboard and mouse devices are chosen in a dialog with two tabs: “Keyboards” (or “Mice”) lists the devices detected as such by name, with a note that detection is heuristic, and “All devices” lists every input device with its shortened path, virtual devices last. Both tabs are searchable; a device path can still be entered manually, and “Reset” clears the choice. Names come from the `by-id` link when a device reports none. A saved device that is not connected stays listed and is marked “Not connected”. On Windows, which intercepts every keyboard and mouse of the session, the dialog is replaced by “Intercept all keyboards” and “Intercept buttons of all mice” checkboxes.
+- Keyboard and mouse devices are chosen in a dialog with three tabs: “Keyboards” (or “Mice”) lists the devices detected as such by name, with a note below the list that detection is heuristic; “All devices” lists every input device with its shortened path, virtual devices last, and has a search field; “Enter path” takes a device path typed manually. The footer holds “Refresh”, “Reset”, which clears the choice, and “Close”. Names come from the `by-id` link when a device reports none. A saved device that is not connected stays listed and is marked “Not connected”. On Windows, which intercepts every keyboard and mouse of the session, the dialog is replaced by “Intercept all keyboards” and “Intercept buttons of all mice” checkboxes.
 
 - Gate long-hold actions, emoji and quick-action popups, user macros, mouse assignment controls and KDE action selection behind In development features.
 

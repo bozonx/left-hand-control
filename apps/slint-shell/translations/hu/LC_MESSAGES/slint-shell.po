@@ -3665,8 +3665,11 @@ msgstr "Nem található eszköz"
 msgid "Show all devices"
 msgstr "Minden eszköz megjelenítése"
 
-msgid "Enter device path manually…"
-msgstr "Eszköz elérési útjának megadása kézzel…"
+msgid "Enter path"
+msgstr "Elérési út megadása"
+
+msgid "Refresh"
+msgstr "Frissítés"
 
 msgid "Device path, e.g. /dev/input/by-id/…"
 msgstr "Eszköz elérési útja, pl. /dev/input/by-id/…"

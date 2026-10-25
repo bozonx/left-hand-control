@@ -3626,8 +3626,11 @@ msgstr "Пристрої не знайдено"
 msgid "Show all devices"
 msgstr "Показати всі пристрої"
 
-msgid "Enter device path manually…"
-msgstr "Указати шлях до пристрою вручну…"
+msgid "Enter path"
+msgstr "Указати шлях"
+
+msgid "Refresh"
+msgstr "Оновити"
 
 msgid "Device path, e.g. /dev/input/by-id/…"
 msgstr "Шлях до пристрою, наприклад /dev/input/by-id/…"

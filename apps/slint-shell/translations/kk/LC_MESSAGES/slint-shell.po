@@ -3628,8 +3628,11 @@ msgstr "Құрылғылар табылмады"
 msgid "Show all devices"
 msgstr "Барлық құрылғыларды көрсету"
 
-msgid "Enter device path manually…"
-msgstr "Құрылғы жолын қолмен енгізу…"
+msgid "Enter path"
+msgstr "Жолды енгізу"
+
+msgid "Refresh"
+msgstr "Жаңарту"
 
 msgid "Device path, e.g. /dev/input/by-id/…"
 msgstr "Құрылғы жолы, мысалы /dev/input/by-id/…"

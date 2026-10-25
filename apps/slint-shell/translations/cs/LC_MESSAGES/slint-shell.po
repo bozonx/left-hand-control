@@ -3596,8 +3596,11 @@ msgstr "Nenalezena žádná zařízení"
 msgid "Show all devices"
 msgstr "Zobrazit všechna zařízení"
 
-msgid "Enter device path manually…"
-msgstr "Zadat cestu k zařízení ručně…"
+msgid "Enter path"
+msgstr "Zadat cestu"
+
+msgid "Refresh"
+msgstr "Obnovit"
 
 msgid "Device path, e.g. /dev/input/by-id/…"
 msgstr "Cesta k zařízení, např. /dev/input/by-id/…"

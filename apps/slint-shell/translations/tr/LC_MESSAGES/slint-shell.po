@@ -3619,8 +3619,11 @@ msgstr "Aygıt bulunamadı"
 msgid "Show all devices"
 msgstr "Tüm aygıtları göster"
 
-msgid "Enter device path manually…"
-msgstr "Aygıt yolunu elle girin…"
+msgid "Enter path"
+msgstr "Yolu girin"
+
+msgid "Refresh"
+msgstr "Yenile"
 
 msgid "Device path, e.g. /dev/input/by-id/…"
 msgstr "Aygıt yolu, ör. /dev/input/by-id/…"

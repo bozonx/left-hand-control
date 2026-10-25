@@ -3367,8 +3367,11 @@ msgstr "デバイスが見つかりません"
 msgid "Show all devices"
 msgstr "すべてのデバイスを表示"
 
-msgid "Enter device path manually…"
-msgstr "デバイスのパスを手動で入力…"
+msgid "Enter path"
+msgstr "パスを入力"
+
+msgid "Refresh"
+msgstr "更新"
 
 msgid "Device path, e.g. /dev/input/by-id/…"
 msgstr "デバイスのパス（例: /dev/input/by-id/…）"

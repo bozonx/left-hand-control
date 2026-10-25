@@ -3283,8 +3283,11 @@ msgstr "找不到裝置"
 msgid "Show all devices"
 msgstr "顯示所有裝置"
 
-msgid "Enter device path manually…"
-msgstr "手動輸入裝置路徑…"
+msgid "Enter path"
+msgstr "輸入路徑"
+
+msgid "Refresh"
+msgstr "重新整理"
 
 msgid "Device path, e.g. /dev/input/by-id/…"
 msgstr "裝置路徑，例如 /dev/input/by-id/…"

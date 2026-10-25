@@ -3357,8 +3357,11 @@ msgstr "장치를 찾을 수 없음"
 msgid "Show all devices"
 msgstr "모든 장치 표시"
 
-msgid "Enter device path manually…"
-msgstr "장치 경로 직접 입력…"
+msgid "Enter path"
+msgstr "경로 입력"
+
+msgid "Refresh"
+msgstr "새로 고침"
 
 msgid "Device path, e.g. /dev/input/by-id/…"
 msgstr "장치 경로, 예: /dev/input/by-id/…"

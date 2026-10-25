@@ -3282,8 +3282,11 @@ msgstr "未找到设备"
 msgid "Show all devices"
 msgstr "显示所有设备"
 
-msgid "Enter device path manually…"
-msgstr "手动输入设备路径…"
+msgid "Enter path"
+msgstr "输入路径"
+
+msgid "Refresh"
+msgstr "刷新"
 
 msgid "Device path, e.g. /dev/input/by-id/…"
 msgstr "设备路径，例如 /dev/input/by-id/…"

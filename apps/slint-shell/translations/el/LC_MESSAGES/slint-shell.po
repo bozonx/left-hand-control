@@ -3726,8 +3726,11 @@ msgstr "Δεν βρέθηκαν συσκευές"
 msgid "Show all devices"
 msgstr "Εμφάνιση όλων των συσκευών"
 
-msgid "Enter device path manually…"
-msgstr "Χειροκίνητη εισαγωγή διαδρομής συσκευής…"
+msgid "Enter path"
+msgstr "Εισαγωγή διαδρομής"
+
+msgid "Refresh"
+msgstr "Ανανέωση"
 
 msgid "Device path, e.g. /dev/input/by-id/…"
 msgstr "Διαδρομή συσκευής, π.χ. /dev/input/by-id/…"

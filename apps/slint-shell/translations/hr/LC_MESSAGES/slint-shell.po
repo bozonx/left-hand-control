@@ -3609,8 +3609,11 @@ msgstr "Nema pronađenih uređaja"
 msgid "Show all devices"
 msgstr "Prikaži sve uređaje"
 
-msgid "Enter device path manually…"
-msgstr "Ručno unesi putanju uređaja…"
+msgid "Enter path"
+msgstr "Unesi putanju"
+
+msgid "Refresh"
+msgstr "Osvježi"
 
 msgid "Device path, e.g. /dev/input/by-id/…"
 msgstr "Putanja uređaja, npr. /dev/input/by-id/…"

@@ -2953,8 +2953,11 @@ msgstr "Устройства не найдены"
 msgid "Show all devices"
 msgstr "Показать все устройства"
 
-msgid "Enter device path manually…"
-msgstr "Указать путь к устройству вручную…"
+msgid "Enter path"
+msgstr "Указать путь"
+
+msgid "Refresh"
+msgstr "Обновить"
 
 msgid "Device path, e.g. /dev/input/by-id/…"
 msgstr "Путь к устройству, например /dev/input/by-id/…"
