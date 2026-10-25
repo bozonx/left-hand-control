@@ -707,12 +707,12 @@ export component LibraryDialogOverlay inherits Rectangle {
         Rectangle {
             x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
             width: 620px;
-            height: LayoutLibrary.dialog == LibraryDialog.rule ? min(root.height - 48px, 700px)
+            height: LayoutLibrary.dialog == LibraryDialog.rule ? min(root.height - 48px, dialog-box.preferred-height)
                 : LayoutLibrary.dialog == LibraryDialog.create ? 420px
                 : LayoutLibrary.dialog == LibraryDialog.unsaved ? 210px
                 : 210px;
             background: Theme.card; border-radius: Theme.radius-dialog;
-            VerticalBox { padding: Theme.space-3xl; spacing: Theme.space-l;
+            dialog-box := VerticalBox { padding: Theme.space-3xl; spacing: Theme.space-l;
                 Text {
                     text: LayoutLibrary.dialog == LibraryDialog.create ? @tr("New layout")
                         : LayoutLibrary.dialog == LibraryDialog.rule ? (LayoutLibrary.rule-index < 0 ? @tr("New rule") : @tr("Rule {}", LayoutLibrary.rule-index + 1))
@@ -732,11 +732,19 @@ export component LibraryDialogOverlay inherits Rectangle {
                 if LayoutLibrary.dialog == LibraryDialog.rule: ScrollView {
                     viewport-width: self.visible-width;
                     vertical-stretch: 1;
-                    VerticalLayout { spacing: Theme.space-l;
-                        Text { text: @tr("Use layout"); color: Theme.text; font-weight: Theme.weight-semibold; }
-                        TargetPicker { target: LayoutLibrary.rule-target; picked(index) => { LayoutLibrary.rule-target = index; } }
-                        ConditionsForm { heading: @tr("When"); game <=> LayoutLibrary.rule-game; languages <=> LayoutLibrary.rule-layouts; applications <=> LayoutLibrary.rule-apps; show-exclusions: true; excluded <=> LayoutLibrary.rule-excluded; }
-                        Text { text: @tr("All filled conditions must match. A rule without conditions always matches."); color: Theme.muted; wrap: word-wrap; }
+                    // The dialog grows with the form up to the window height, then scrolls.
+                    preferred-height: rule-form.preferred-height;
+                    min-height: 120px;
+                    rule-form := VerticalLayout { spacing: Theme.space-xl; alignment: start;
+                        VerticalLayout { spacing: Theme.space-m;
+                            Text { text: @tr("Use layout"); color: Theme.text; font-weight: Theme.weight-semibold; }
+                            TargetPicker { target: LayoutLibrary.rule-target; picked(index) => { LayoutLibrary.rule-target = index; } }
+                        }
+                        VerticalLayout { spacing: Theme.space-xs;
+                            Text { text: @tr("When"); color: Theme.text; font-weight: Theme.weight-semibold; }
+                            Text { text: @tr("All filled conditions must match. A rule without conditions always matches."); color: Theme.muted; wrap: word-wrap; }
+                        }
+                        ConditionsForm { game <=> LayoutLibrary.rule-game; languages <=> LayoutLibrary.rule-layouts; applications <=> LayoutLibrary.rule-apps; show-exclusions: true; excluded <=> LayoutLibrary.rule-excluded; }
                     }
                 }
                 if LayoutLibrary.dialog == LibraryDialog.unsaved: Text {

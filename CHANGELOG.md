@@ -19,6 +19,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 - The emoji library offers four language-independent text snippets: "TODO: ", "FIXME: ", "Continue." and "Thanks!".
 
+- The automatic layout rule dialog fits its content without empty gaps, shows the condition hint under “When”, and adds applications with icon-only “+” buttons; empty application lists no longer cut off wrapped text.
+
 - Removed the large Settings heading and redundant headings on the Main, Key behavior and Accessibility settings pages.
 
 - Updated Slint to 1.18.1 and the bundled Spell layer-shell library to its Slint 1.18 revision; the local text editing, shortcut and scrolling fixes were ported.

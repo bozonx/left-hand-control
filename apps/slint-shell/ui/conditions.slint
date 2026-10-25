@@ -451,21 +451,21 @@ export component ApplicationsField inherits VerticalLayout {
     }
     init => { ConditionChoices.refresh-open-windows(); }
     spacing: Theme.space-m;
+    alignment: start;
     HorizontalLayout { spacing: Theme.space-s;
-        Text { text: root.label; color: Theme.text; vertical-alignment: center; }
-        InfoTip {
+        Text { text: root.label; color: Theme.text; vertical-alignment: center; overflow: elide; min-width: 0px; }
+        VerticalLayout { alignment: center; InfoTip {
             text: (root.exclusion ? @tr("A match blocks the rule, even if the window is in the allowed list.") : @tr("Any match allows the rule. An empty list allows all windows."))
                 + "\n\n" + @tr("An application is matched by its ID or process name: the whole name, ignoring case, with * and ? as wildcards. A window title item matches when the title contains the text. Any matching item is enough. An empty list imposes no restrictions.");
-        }
+        } }
         Rectangle { horizontal-stretch: 1; }
         IconButton {
-            icon: @image-url("icons/plus.svg"); text: @tr("Add");
+            icon: @image-url("icons/plus.svg"); label: @tr("Add application");
             clicked => { AppEntryDialog.open(root.value, root.exclusion, -1); }
         }
     }
     Rectangle {
         border-width: 1px; border-color: Theme.divider; border-radius: Theme.radius-large; background: Theme.card;
-        height: list.preferred-height;
         list := VerticalLayout {
             padding: Theme.space-s; spacing: Theme.space-2xs;
             if root.items.length == 0: HorizontalLayout { padding: Theme.space-s; Text {
@@ -570,18 +570,18 @@ export component GameAppsField inherits VerticalLayout {
         }
     }
     spacing: Theme.space-m;
+    alignment: start;
     HorizontalLayout { spacing: Theme.space-s;
-        Text { text: root.label; color: Theme.text; font-weight: Theme.weight-semibold; vertical-alignment: center; }
-        if root.info != "": InfoTip { text: root.info; }
+        Text { text: root.label; color: Theme.text; font-weight: Theme.weight-semibold; vertical-alignment: center; overflow: elide; min-width: 0px; }
+        if root.info != "": VerticalLayout { alignment: center; InfoTip { text: root.info; } }
         Rectangle { horizontal-stretch: 1; }
         IconButton {
-            icon: @image-url("icons/plus.svg"); text: @tr("Add");
+            icon: @image-url("icons/plus.svg"); label: @tr("Add application");
             clicked => { AppEntryDialog.open-game(root.value, root.exclusion, -1, false); }
         }
     }
     Rectangle {
         border-width: 1px; border-color: Theme.divider; border-radius: Theme.radius-large; background: Theme.card;
-        height: list.preferred-height;
         list := VerticalLayout {
             padding: Theme.space-s; spacing: Theme.space-2xs;
             if root.entries.length == 0: HorizontalLayout { padding: Theme.space-s; Text { text: root.empty-text; color: Theme.muted; wrap: word-wrap; } }
