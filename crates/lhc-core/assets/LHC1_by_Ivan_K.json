@@ -331,7 +331,7 @@
         },
         "KeyF": {
           "name": "Fullscreen",
-          "action": "kde:kwin/Window Fullscreen"
+          "action": "F11"
         },
         "KeyG": {
           "name": "Play / pause",
