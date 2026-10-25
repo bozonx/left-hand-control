@@ -11,19 +11,17 @@ mod popups;
 mod worker;
 
 use crate::{
-    command::{Command, Dispatch, Popup, Preferences, Source, ThemeMode, Window},
+    command::{Command, Dispatch, Preferences, Source, ThemeMode, Window},
     document::{Document, View},
     i18n::{Language, Msg},
     ipc, metrics, pages,
     platform::{backend, focus, hotkey, tray},
-    popup_model::ConfiguredMenus,
     ui::{AppState, EmojiPopup, QuickPopup, SettingsWindow, Theme},
 };
 use lhc_core::{profile::model::Appearance, storage::StoragePaths};
 use slint::ComponentHandle;
 use std::{
     cell::{Cell, RefCell},
-    collections::HashMap,
     rc::Rc,
     sync::Arc,
     time::{Duration, Instant},
@@ -38,48 +36,21 @@ pub(crate) struct App {
     quick: QuickPopup,
     document: RefCell<Option<Rc<Document>>>,
     metrics: RefCell<metrics::Metrics>,
-    /// Bumped on every show; deferred work checks it to skip stale requests.
-    generations: RefCell<HashMap<Window, u64>>,
     focus: RefCell<focus::Activation>,
     tray: RefCell<Option<tray::Handle>>,
     #[cfg(not(target_os = "linux"))]
     return_input: RefCell<crate::platform::return_input::ReturnInput>,
-    /// Menus of the active layout for the winit popups.
-    menus: RefCell<Option<Rc<ConfiguredMenus>>>,
-    /// Menus the winit popups show now; their page ids locate the last
-    /// used page in newer menus.
-    applied_menus: RefCell<Option<Rc<ConfiguredMenus>>>,
-    /// Bumped whenever the menus may have changed.
-    menu_generation: Cell<u64>,
-    /// Layout and generation last sent to the Spell worker.
-    menus_sent: RefCell<Option<(Option<String>, u64)>>,
-    /// Action chosen in a popup, run once the popup lost the focus.
-    pending_action: RefCell<Option<(Popup, String, Instant)>>,
+    menus: popups::Menus,
+    popup: popups::PopupState,
     supervisor: RefCell<worker::Supervisor>,
     preferences: Cell<Preferences>,
     worker_watch: slint::Timer,
-    last_mapper_status: RefCell<Option<(bool, bool, Option<String>)>>,
-    /// When the running mapper started.
-    mapper_since: Cell<Option<Instant>>,
-    /// How long the mapper ran before it stopped unexpectedly, and when.
-    mapper_crash: Cell<Option<(Duration, Instant)>>,
-    /// Keeps the shown uptime current.
-    uptime_clock: slint::Timer,
+    mapper_status: mapper::MapperStatus,
     /// Game-mode state the active layout was last chosen for.
     game_active: Cell<Option<bool>>,
     /// Active layout last seen for the OSD; `None` before the first look.
     announced_layout: RefCell<Option<Option<String>>>,
-    /// Topmost layer the mapper holds now.
-    held_layer: RefCell<Option<String>>,
-    /// The layer hint is up, or due as soon as the worker starts.
-    layer_hint_shown: Cell<bool>,
-    /// Page of the command that opened or last turned the visible winit
-    /// popup; tells a repeated open command from one for another page.
-    requested_page: Cell<Option<u32>>,
-    layer_hint_session: Cell<layer_hint::HintSession>,
-    layer_hint_hold_id: Cell<u64>,
-    /// Delays the hint after a layer is taken.
-    layer_hint_timer: slint::Timer,
+    layer_hint: layer_hint::LayerHint,
     shutting_down: Cell<bool>,
 }
 
@@ -146,18 +117,11 @@ impl App {
     }
 
     fn generation(&self, window: Window) -> u64 {
-        self.generations
-            .borrow()
-            .get(&window)
-            .copied()
-            .unwrap_or_default()
+        self.popup.generation(window)
     }
 
     fn next_generation(&self, window: Window) -> u64 {
-        let mut generations = self.generations.borrow_mut();
-        let generation = generations.entry(window).or_default();
-        *generation += 1;
-        *generation
+        self.popup.next_generation(window)
     }
 
     fn set_error(&self, message: Msg) {
@@ -365,6 +329,59 @@ impl App {
     }
 }
 
+/// Callbacks of the settings window that drive the shell rather than a page.
+fn bind_shell(app: &Rc<App>) {
+    crate::game_mode::bind(&app.settings);
+    app.settings
+        .global::<AppState>()
+        .on_set_game_control(|control| {
+            let command = Command::GameMode(crate::game_mode::from_ui(control));
+            with_app(|app| app.command(command, Source::Button, Instant::now(), None));
+        });
+    app.settings
+        .global::<AppState>()
+        .on_toggle_mapper(|| with_app(|app| app.toggle_mapper()));
+    app.settings
+        .global::<AppState>()
+        .on_restart_mapper(|| with_app(|app| app.restart_mapper()));
+    app.settings
+        .global::<AppState>()
+        .on_open_keyboard_settings(|| {
+            with_app(|app| {
+                app.settings
+                    .global::<crate::ui::SettingsEditor>()
+                    .set_tab(crate::ui::SettingsTab::Mapper);
+                app.settings
+                    .invoke_navigate(crate::ui::Page::Settings, crate::ui::MenuKind::Emoji);
+            })
+        });
+}
+
+impl App {
+    /// Start the tray icon; `false` when the desktop has no tray.
+    fn start_tray(&self, dispatch: Dispatch) -> bool {
+        match tray::start(dispatch) {
+            Ok(tray) => {
+                tray.set_language(self.preferences.get().language);
+                tray.set_game(&lhc_core::gamemode::status());
+                tray.set_in_development(
+                    self.document()
+                        .is_some_and(|doc| doc.read().settings().in_development),
+                );
+                *self.tray.borrow_mut() = Some(tray);
+                self.mapper_status.last.borrow_mut().take();
+                self.refresh_mapper_status();
+                self.metrics.borrow_mut().ready("tray");
+                true
+            }
+            Err(error) => {
+                log::error!("tray unavailable: {error}");
+                false
+            }
+        }
+    }
+}
+
 fn load_document(settings: &SettingsWindow) -> Option<Rc<Document>> {
     let state = settings.global::<AppState>();
     match StoragePaths::resolve()
@@ -476,31 +493,19 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         quick,
         document: RefCell::new(None),
         metrics: RefCell::new(metrics),
-        generations: RefCell::default(),
         focus: RefCell::default(),
         tray: RefCell::new(None),
         #[cfg(not(target_os = "linux"))]
         return_input: RefCell::default(),
-        menus: RefCell::default(),
-        applied_menus: RefCell::default(),
-        menu_generation: Cell::new(0),
-        menus_sent: RefCell::default(),
-        pending_action: RefCell::default(),
+        menus: Default::default(),
+        popup: Default::default(),
         supervisor: RefCell::new(worker::Supervisor::new(use_spell, layer_shell)),
         preferences: Cell::new(Preferences::default()),
         worker_watch: slint::Timer::default(),
-        last_mapper_status: RefCell::new(None),
-        mapper_since: Cell::new(None),
-        mapper_crash: Cell::new(None),
-        uptime_clock: slint::Timer::default(),
+        mapper_status: Default::default(),
         game_active: Cell::new(None),
         announced_layout: RefCell::new(None),
-        held_layer: RefCell::new(None),
-        layer_hint_shown: Cell::new(false),
-        requested_page: Cell::new(None),
-        layer_hint_session: Cell::default(),
-        layer_hint_hold_id: Cell::new(0),
-        layer_hint_timer: slint::Timer::default(),
+        layer_hint: Default::default(),
         shutting_down: Cell::new(false),
     });
     APP.with(|slot| *slot.borrow_mut() = Some(app.clone()));
@@ -509,30 +514,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         app.install_document(document);
     }
     app.refresh_mapper_status();
-    crate::game_mode::bind(&app.settings);
-    app.settings
-        .global::<AppState>()
-        .on_set_game_control(|control| {
-            let command = Command::GameMode(crate::game_mode::from_ui(control));
-            with_app(|app| app.command(command, Source::Button, Instant::now(), None));
-        });
-    app.settings
-        .global::<AppState>()
-        .on_toggle_mapper(|| with_app(|app| app.toggle_mapper()));
-    app.settings
-        .global::<AppState>()
-        .on_restart_mapper(|| with_app(|app| app.restart_mapper()));
-    app.settings
-        .global::<AppState>()
-        .on_open_keyboard_settings(|| {
-            with_app(|app| {
-                app.settings
-                    .global::<crate::ui::SettingsEditor>()
-                    .set_tab(crate::ui::SettingsTab::Mapper);
-                app.settings
-                    .invoke_navigate(crate::ui::Page::Settings, crate::ui::MenuKind::Emoji);
-            })
-        });
+    bind_shell(&app);
     popups::bind(&app);
     app.settings
         .global::<crate::ui::SettingsEditor>()
@@ -552,25 +534,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     server.start(dispatch.clone())?;
     slint::Timer::single_shot(Duration::ZERO, move || {
         with_app(|app| {
-            let tray = match tray::start(dispatch.clone()) {
-                Ok(tray) => {
-                    tray.set_language(app.preferences.get().language);
-                    tray.set_game(&lhc_core::gamemode::status());
-                    tray.set_in_development(
-                        app.document()
-                            .is_some_and(|doc| doc.read().settings().in_development),
-                    );
-                    *app.tray.borrow_mut() = Some(tray);
-                    app.last_mapper_status.borrow_mut().take();
-                    app.refresh_mapper_status();
-                    app.metrics.borrow_mut().ready("tray");
-                    true
-                }
-                Err(error) => {
-                    log::error!("tray unavailable: {error}");
-                    false
-                }
-            };
+            let tray = app.start_tray(dispatch.clone());
             app.launched(tray);
         });
         hotkey::start(dispatch);

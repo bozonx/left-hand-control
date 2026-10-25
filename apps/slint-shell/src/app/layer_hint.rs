@@ -6,7 +6,10 @@ use crate::{
     command::{Command, Source},
     pages,
 };
-use std::time::{Duration, Instant};
+use std::{
+    cell::{Cell, RefCell},
+    time::{Duration, Instant},
+};
 
 /// How long a layer must stay held before its hint appears, so quick layer
 /// use by someone who knows the layout does not flash it.
@@ -15,7 +18,7 @@ const RETRY_DELAY: Duration = Duration::from_millis(100);
 
 /// A used layer stays suppressed until all layer triggers are released.
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
-pub(super) enum HintSession {
+enum HintSession {
     #[default]
     Idle,
     Ready,
@@ -39,6 +42,19 @@ impl HintSession {
     }
 }
 
+/// State of the layer hint.
+#[derive(Default)]
+pub(super) struct LayerHint {
+    /// Topmost layer the mapper holds now.
+    held: RefCell<Option<String>>,
+    /// The hint is up, or due as soon as the worker starts.
+    shown: Cell<bool>,
+    session: Cell<HintSession>,
+    hold_id: Cell<u64>,
+    /// Delays the hint after a layer is taken.
+    timer: slint::Timer,
+}
+
 impl App {
     /// Apply the saved hint setting: start or stop the worker it needs.
     pub(super) fn sync_layer_hint_setting(&self) {
@@ -54,7 +70,7 @@ impl App {
         }
         if enabled {
             self.start_worker(true);
-            if self.held_layer.borrow().is_some() {
+            if self.layer_hint.held.borrow().is_some() {
                 self.schedule_layer_hint();
             }
         } else {
@@ -67,12 +83,12 @@ impl App {
     /// event cannot revive a released or already used hold.
     pub(super) fn sync_held_layer(&self) {
         let state = lhc_core::mapper::layer_state::current();
-        let new_hold = self.layer_hint_hold_id.replace(state.hold_id) != state.hold_id;
+        let new_hold = self.layer_hint.hold_id.replace(state.hold_id) != state.hold_id;
         if new_hold {
             self.hide_layer_hint();
-            self.layer_hint_session.set(HintSession::Idle);
+            self.layer_hint.session.set(HintSession::Idle);
         }
-        if new_hold || *self.held_layer.borrow() != state.layer {
+        if new_hold || *self.layer_hint.held.borrow() != state.layer {
             self.layer_changed(state.layer);
         }
         if state.used {
@@ -82,14 +98,15 @@ impl App {
 
     /// The mapper's topmost held layer changed.
     pub(super) fn layer_changed(&self, layer: Option<String>) {
-        self.layer_hint_timer.stop();
+        self.layer_hint.timer.stop();
         let held = layer.is_some();
-        self.layer_hint_session
-            .set(self.layer_hint_session.get().layer_changed(held));
-        *self.held_layer.borrow_mut() = layer;
-        if self.layer_hint_session.get() != HintSession::Ready {
+        self.layer_hint
+            .session
+            .set(self.layer_hint.session.get().layer_changed(held));
+        *self.layer_hint.held.borrow_mut() = layer;
+        if self.layer_hint.session.get() != HintSession::Ready {
             self.hide_layer_hint();
-        } else if self.layer_hint_shown.get() {
+        } else if self.layer_hint.shown.get() {
             // Another layer took over while the hint is up.
             self.show_layer_hint();
         } else {
@@ -100,29 +117,31 @@ impl App {
 
     /// Cancel both a visible hint and its pending timer for this hold.
     pub(super) fn layer_key_pressed(&self) {
-        self.layer_hint_session
-            .set(self.layer_hint_session.get().key_pressed());
+        self.layer_hint
+            .session
+            .set(self.layer_hint.session.get().key_pressed());
         self.hide_layer_hint();
     }
 
     fn schedule_layer_hint(&self) {
-        if self.layer_hint_session.get() != HintSession::Ready {
+        if self.layer_hint.session.get() != HintSession::Ready {
             return;
         }
-        self.layer_hint_timer
+        self.layer_hint
+            .timer
             .start(slint::TimerMode::SingleShot, HINT_DELAY, || {
                 super::with_app(|app| app.show_layer_hint())
             });
     }
 
     fn show_layer_hint(&self) {
-        let Some(id) = self.held_layer.borrow().clone() else {
+        let Some(id) = self.layer_hint.held.borrow().clone() else {
             return;
         };
-        if self.layer_hint_session.get() != HintSession::Ready || !self.supervisor.borrow().hint {
+        if self.layer_hint.session.get() != HintSession::Ready || !self.supervisor.borrow().hint {
             return;
         }
-        if !lhc_core::mapper::layer_state::current().allows_hint(&id, self.layer_hint_hold_id.get())
+        if !lhc_core::mapper::layer_state::current().allows_hint(&id, self.layer_hint.hold_id.get())
         {
             self.hide_layer_hint();
             return;
@@ -137,7 +156,7 @@ impl App {
             return;
         };
         // The mapper can handle a release while captions are being built.
-        if !lhc_core::mapper::layer_state::current().allows_hint(&id, self.layer_hint_hold_id.get())
+        if !lhc_core::mapper::layer_state::current().allows_hint(&id, self.layer_hint.hold_id.get())
         {
             self.hide_layer_hint();
             return;
@@ -145,7 +164,7 @@ impl App {
         // Marked before sending: a send that fails after the worker took
         // the command must not leave the hint up with nothing to hide it.
         // A worker that is still starting gets the hint once it is up.
-        self.layer_hint_shown.set(true);
+        self.layer_hint.shown.set(true);
         if !self.supervisor.borrow().running() {
             return;
         }
@@ -156,7 +175,8 @@ impl App {
             None,
         ) {
             log::warn!("layer hint: {error:?}");
-            self.layer_hint_timer
+            self.layer_hint
+                .timer
                 .start(slint::TimerMode::SingleShot, RETRY_DELAY, || {
                     super::with_app(|app| app.show_layer_hint())
                 });
@@ -165,14 +185,14 @@ impl App {
 
     /// Send the hint again to a worker that just started.
     pub(super) fn resend_layer_hint(&self) {
-        if self.layer_hint_shown.get() {
+        if self.layer_hint.shown.get() {
             self.show_layer_hint();
         }
     }
 
     pub(super) fn hide_layer_hint(&self) {
-        self.layer_hint_timer.stop();
-        self.layer_hint_shown.set(false);
+        self.layer_hint.timer.stop();
+        self.layer_hint.shown.set(false);
         let running = self.supervisor.borrow().running();
         if running
             && let Err(error) = self.send_worker(
@@ -183,7 +203,8 @@ impl App {
             )
         {
             log::warn!("hide layer hint: {error:?}");
-            self.layer_hint_timer
+            self.layer_hint
+                .timer
                 .start(slint::TimerMode::SingleShot, RETRY_DELAY, || {
                     super::with_app(|app| app.hide_layer_hint())
                 });

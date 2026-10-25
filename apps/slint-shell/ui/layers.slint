@@ -3,7 +3,7 @@ import { PageContent, ScrollView } from "scroll.slint";
 import { DragDrop, DragGroups, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
 import { CategoryIcon } from "action-picker.slint";
-import { InlineTextField, InlineTextArea, Card, Divider, ConfirmDialog, IconButton, InfoTip, FieldLabel, FormField } from "controls.slint";
+import { ButtonGroup, InlineTextField, InlineTextArea, Card, Divider, ConfirmDialog, DialogFrame, IconButton, InfoTip, FieldLabel, FormField } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { ActionKind, Assignment, LabelMode, LayerDialog, PickerCategory, PickerTarget } from "types.slint";
@@ -50,57 +50,6 @@ export global LayersEditor {
     pure callback name-error(name: string, renaming: bool) -> Message;
     callback add-extra();
     callback pick-extra(int, bool);
-}
-
-/// Segmented keyboard view selector.
-component Segmented inherits Rectangle {
-    in property <[string]> labels;
-    in property <[string]> tooltips;
-    in property <int> selected-index;
-    callback selected(int);
-    background: Theme.surface;
-    border-radius: Theme.radius;
-    HorizontalLayout {
-        padding: Theme.space-2xs;
-        spacing: Theme.space-2xs;
-        for label[index] in root.labels: Rectangle {
-            height: 28px;
-            border-radius: Theme.radius-small;
-            background: root.selected-index == index ? Theme.text : seg-touch.has-hover || seg-focus.has-focus ? Theme.hover : transparent;
-            accessible-role: radio-button;
-            accessible-label: label;
-            accessible-checked: root.selected-index == index;
-            accessible-action-default => { root.selected(index); }
-            HorizontalLayout {
-                padding-left: Theme.space-m-plus; padding-right: Theme.space-m-plus;
-                Text {
-                    text: label;
-                    color: root.selected-index == index ? Theme.surface : Theme.text;
-                    font-size: Theme.font-medium;
-                    font-weight: Theme.weight-semibold;
-                    vertical-alignment: center;
-                }
-            }
-            seg-focus := FocusScope {
-                key-pressed(event) => {
-                    if event.text == " " || event.text == "\n" { root.selected(index); return accept; }
-                    if event.text == Key.RightArrow { root.selected(mod(root.selected-index + 1, root.labels.length)); return accept; }
-                    if event.text == Key.LeftArrow { root.selected(mod(root.selected-index + root.labels.length - 1, root.labels.length)); return accept; }
-                    return reject;
-                }
-            }
-            seg-touch := TouchArea { mouse-cursor: pointer; clicked => { root.selected(index); } }
-            if root.tooltips[index] != "": Tooltip {
-                Rectangle {
-                    background: Theme.card;
-                    border-radius: Theme.radius-small;
-                    border-width: 1px;
-                    border-color: Theme.border;
-                    HorizontalLayout { padding: Theme.space-s; Text { text: root.tooltips[index]; color: Theme.text; font-size: Theme.font-body; } }
-                }
-            }
-        }
-    }
 }
 
 export component ActionText inherits HorizontalLayout {
@@ -487,7 +436,8 @@ export component LayersPage inherits VerticalLayout {
                             InfoTip { text: @tr("Display modes affect labels only — the key code stays the same. “US layout” shows standard letter labels for visual reference. “LHC codes” shows app-specific codes (e.g. KeyA, ArrowLeft)."); }
                         }
                         Rectangle { horizontal-stretch: 1; }
-                        Segmented {
+                        ButtonGroup {
+                            pill: true;
                             labels: [@tr("US layout"), @tr("LHC codes")];
                             tooltips: [@tr("Show standard QWERTY letter labels for visual reference."), @tr("Show internal key codes used in Left Hand Control profiles (e.g. KeyA, ArrowLeft).")];
                             selected-index: root.label-mode == LabelMode.code ? 1 : 0;
@@ -580,60 +530,47 @@ export component LayerDialogOverlay inherits FocusScope {
     focus-on-tab-navigation: false;
     enabled: (LayersEditor.dialog != LayerDialog.none || LayersEditor.delete-extra >= 0) && !ActionPicker.opened;
     key-pressed(event) => { if event.text == Key.Escape { LayersEditor.dialog = LayerDialog.none; LayersEditor.delete-extra = -1; return accept; } return reject; }
-    if LayersEditor.dialog != LayerDialog.none && LayersEditor.dialog != LayerDialog.delete: Rectangle {
-        background: Theme.scrim;
-        TouchArea { clicked => { LayersEditor.dialog = LayerDialog.none; } scroll-event(event) => { accept } }
-        Rectangle { x: (parent.width - self.width) / 2; y: 60px; width: min(parent.width - 80px, 560px); height: min(parent.height - 120px, 500px); background: Theme.surface; border-color: Theme.border; border-width: 1px; border-radius: Theme.radius-dialog;
-            TouchArea {}
-            VerticalBox { padding: Theme.space-2xl; spacing: Theme.space-l;
-                HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
-                    Text { wrap: word-wrap; horizontal-stretch: 1; min-width: 0px;
-                        text: LayersEditor.dialog == LayerDialog.create ? @tr("New layer")
-                        : LayersEditor.dialog == LayerDialog.duplicate ? @tr("Duplicate layer")
-                        : LayersEditor.dialog == LayerDialog.delete ? @tr("Delete layer?")
-                        : @tr("Edit layer key");
-                        color: Theme.text; font-size: Theme.font-title; font-weight: Theme.weight-bold;
-                    }
-                    IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Close"); clicked => { LayersEditor.dialog = LayerDialog.none; } }
-                }
-                if LayersEditor.dialog == LayerDialog.create || LayersEditor.dialog == LayerDialog.duplicate: VerticalBox { spacing: Theme.space-m;
-                    FormField {
-                        label: @tr("Name"); autofocus: true;
-                        text <=> LayersEditor.dialog-name;
-                        error: LayersEditor.name-error(LayersEditor.dialog-name, false);
-                        accepted => { if LayersEditor.name-error(LayersEditor.dialog-name, false).id == "" { LayersEditor.apply-dialog(); } }
-                    }
-                    Text { text: @tr("Description"); color: Theme.text; }
-                    TextEdit { text <=> LayersEditor.dialog-description; height: 100px; }
-                }
-                if LayersEditor.dialog == LayerDialog.delete: Text { text: @tr("Rules using this layer will return to the base layer."); color: Theme.muted; wrap: word-wrap; }
-                if LayersEditor.dialog == LayerDialog.edit-key: VerticalBox { spacing: Theme.space-m;
-                    Text { text: @tr("Behavior"); color: Theme.muted; }
-                    HorizontalBox { spacing: Theme.space-m;
-                        Button { text: @tr("Inherit"); primary: LayersEditor.assignment == Assignment.transparent; clicked => { LayersEditor.assignment = Assignment.transparent; } }
-                        Button { text: @tr("Suppress"); primary: LayersEditor.assignment == Assignment.swallow; clicked => { LayersEditor.assignment = Assignment.swallow; } }
-                        Button { text: @tr("Perform action"); primary: LayersEditor.assignment == Assignment.action; clicked => { LayersEditor.assignment = Assignment.action; } }
-                    }
-                    if LayersEditor.assignment != Assignment.action: Text {
-                        text: LayersEditor.assignment == Assignment.swallow ? @tr("The key will not reach the application.") : @tr("Use the assignment from the lower layer or base layout."); color: Theme.muted; wrap: word-wrap;
-                    }
-                    if LayersEditor.assignment == Assignment.action: VerticalBox {
-                        padding: 0px; spacing: Theme.space-xs; vertical-stretch: 0;
-                        Text { text: @tr("Action"); color: Theme.text; }
-                        HorizontalBox { vertical-stretch: 0; spacing: Theme.space-m;
-                            TextField { text <=> LayersEditor.dialog-action; placeholder-text: @tr("Action code"); horizontal-stretch: 1; }
-                            Button { text: @tr("Choose action"); clicked => { ActionPicker.open(PickerTarget.layer-action, 0, LayersEditor.dialog-action, false); } }
-                        }
-                    }
-                }
-                Text { text: Locale.text(LayersEditor.status); color: Theme.error; wrap: word-wrap; }
-                Rectangle { vertical-stretch: 1; }
+    if LayersEditor.dialog != LayerDialog.none && LayersEditor.dialog != LayerDialog.delete: DialogFrame {
+        title: LayersEditor.dialog == LayerDialog.create ? @tr("New layer")
+            : LayersEditor.dialog == LayerDialog.duplicate ? @tr("Duplicate layer")
+            : @tr("Edit layer key");
+        card-height: 500px;
+        close => { LayersEditor.dialog = LayerDialog.none; }
+        if LayersEditor.dialog == LayerDialog.create || LayersEditor.dialog == LayerDialog.duplicate: VerticalBox { spacing: Theme.space-m;
+            FormField {
+                label: @tr("Name"); autofocus: true;
+                text <=> LayersEditor.dialog-name;
+                error: LayersEditor.name-error(LayersEditor.dialog-name, false);
+                accepted => { if LayersEditor.name-error(LayersEditor.dialog-name, false).id == "" { LayersEditor.apply-dialog(); } }
+            }
+            Text { text: @tr("Description"); color: Theme.text; }
+            TextEdit { text <=> LayersEditor.dialog-description; height: 100px; }
+        }
+        if LayersEditor.dialog == LayerDialog.edit-key: VerticalBox { spacing: Theme.space-m;
+            Text { text: @tr("Behavior"); color: Theme.muted; }
+            HorizontalBox { spacing: Theme.space-m;
+                Button { text: @tr("Inherit"); primary: LayersEditor.assignment == Assignment.transparent; clicked => { LayersEditor.assignment = Assignment.transparent; } }
+                Button { text: @tr("Suppress"); primary: LayersEditor.assignment == Assignment.swallow; clicked => { LayersEditor.assignment = Assignment.swallow; } }
+                Button { text: @tr("Perform action"); primary: LayersEditor.assignment == Assignment.action; clicked => { LayersEditor.assignment = Assignment.action; } }
+            }
+            if LayersEditor.assignment != Assignment.action: Text {
+                text: LayersEditor.assignment == Assignment.swallow ? @tr("The key will not reach the application.") : @tr("Use the assignment from the lower layer or base layout."); color: Theme.muted; wrap: word-wrap;
+            }
+            if LayersEditor.assignment == Assignment.action: VerticalBox {
+                padding: 0px; spacing: Theme.space-xs; vertical-stretch: 0;
+                Text { text: @tr("Action"); color: Theme.text; }
                 HorizontalBox { vertical-stretch: 0; spacing: Theme.space-m;
-                    Rectangle { horizontal-stretch: 1; }
-                    Button { text: @tr("Cancel"); clicked => { LayersEditor.dialog = LayerDialog.none; } }
-                    Button { text: LayersEditor.dialog == LayerDialog.delete ? @tr("Delete") : @tr("Apply"); primary: true; enabled: ((LayersEditor.dialog != LayerDialog.create && LayersEditor.dialog != LayerDialog.duplicate) || LayersEditor.name-error(LayersEditor.dialog-name, false).id == "") && (LayersEditor.dialog != LayerDialog.edit-key || LayersEditor.assignment != Assignment.action || LayersEditor.dialog-action != ""); clicked => { LayersEditor.apply-dialog(); } }
+                    TextField { text <=> LayersEditor.dialog-action; placeholder-text: @tr("Action code"); horizontal-stretch: 1; }
+                    Button { text: @tr("Choose action"); clicked => { ActionPicker.open(PickerTarget.layer-action, 0, LayersEditor.dialog-action, false); } }
                 }
             }
+        }
+        Text { text: Locale.text(LayersEditor.status); color: Theme.error; wrap: word-wrap; }
+        Rectangle { vertical-stretch: 1; }
+        HorizontalBox { vertical-stretch: 0; spacing: Theme.space-m;
+            Rectangle { horizontal-stretch: 1; }
+            Button { text: @tr("Cancel"); clicked => { LayersEditor.dialog = LayerDialog.none; } }
+            Button { text: @tr("Apply"); primary: true; enabled: ((LayersEditor.dialog != LayerDialog.create && LayersEditor.dialog != LayerDialog.duplicate) || LayersEditor.name-error(LayersEditor.dialog-name, false).id == "") && (LayersEditor.dialog != LayerDialog.edit-key || LayersEditor.assignment != Assignment.action || LayersEditor.dialog-action != ""); clicked => { LayersEditor.apply-dialog(); } }
         }
     }
     if LayersEditor.dialog == LayerDialog.delete: ConfirmDialog {

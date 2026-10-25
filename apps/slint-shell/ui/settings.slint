@@ -13,7 +13,7 @@ import { AppEntryDialog, AppEntryOverlay } from "conditions.slint";
 import { DragDrop } from "reorder.slint";
 import { CommandDialogOverlay, SettingsPage, SettingsEditor } from "settings-page.slint";
 import { DeviceDialog, DeviceDialogOverlay } from "device-picker.slint";
-import { ConfirmDialog, IconButton, Badge, InlineEditors, MapperToggle, NavButton, NavTab } from "controls.slint";
+import { ConfirmDialog, DialogFrame, IconButton, Badge, InlineEditors, MapperToggle, NavButton, NavTab } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { LayerDialog, LibraryDialog, LibraryAction, MenuKind, Page, RuleDialog } from "types.slint";
@@ -247,60 +247,33 @@ export component SettingsWindow inherits Window {
             root.confirm-discard = false; root.confirm-close = false;
         }
     }
-    if LayoutLibrary.dialog == LibraryDialog.conflict: Rectangle {
-        background: Theme.scrim;
-        TouchArea { scroll-event(event) => { accept } }
-        FocusScope {
-            focus-on-tab-navigation: false;
-            init => { self.focus(); }
-            key-pressed(event) => {
-                if event.text == Key.Escape { LayoutLibrary.cancel-dialog(); return accept; }
-                return reject;
-            }
-            Rectangle {
-                width: min(560px, root.width - 32px);
-                x: (parent.width - self.width) / 2;
-                y: (parent.height - self.height) / 2;
-                height: conflict-layout.preferred-height;
-                background: Theme.surface;
-                border-radius: Theme.radius-panel;
-                border-width: 1px;
-                border-color: Theme.border;
-                TouchArea {}
-                conflict-layout := VerticalLayout {
-                    padding: 18px;
-                    spacing: Theme.space-l;
-                    HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
-                        Text { horizontal-stretch: 1; min-width: 0px; text: @tr("Layout changed on disk"); color: Theme.text; font-size: Theme.font-large; font-weight: Theme.weight-bold; wrap: word-wrap; }
-                        IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Close"); clicked => { LayoutLibrary.cancel-dialog(); } }
-                    }
-                    Text {
-                        text: @tr("The file of “{}” was changed by another program after you opened it. Your edits are kept until you choose what to do.", LayoutLibrary.current-label);
-                        color: Theme.text; wrap: word-wrap;
-                    }
-                    HorizontalLayout {
-                        spacing: Theme.space-m;
-                        alignment: end;
-                        Button { text: @tr("Cancel"); clicked => { LayoutLibrary.cancel-dialog(); } }
-                        Button {
-                            text: @tr("Load from disk");
-                            clicked => {
-                                LayoutLibrary.cancel-dialog();
-                                InlineEditors.revision += 1; LayoutLibrary.discard-current(); MacroEditor.refresh(); MenuEditor.refresh();
-                            }
-                        }
-                        Button {
-                            text: @tr("Save as new…");
-                            clicked => {
-                                LayoutLibrary.cancel-dialog();
-                                LayoutLibrary.save-as-name = LayoutLibrary.suggest-name(LayoutLibrary.current-label);
-                                LayoutLibrary.save-as-open = true;
-                            }
-                        }
-                        Button { text: @tr("Overwrite"); primary: true; clicked => { LayoutLibrary.overwrite-current(); } }
-                    }
+    if LayoutLibrary.dialog == LibraryDialog.conflict: DialogFrame {
+        title: @tr("Layout changed on disk");
+        close => { LayoutLibrary.cancel-dialog(); }
+        Text {
+            text: @tr("The file of “{}” was changed by another program after you opened it. Your edits are kept until you choose what to do.", LayoutLibrary.current-label);
+            color: Theme.text; wrap: word-wrap;
+        }
+        HorizontalLayout {
+            spacing: Theme.space-m;
+            alignment: end;
+            Button { text: @tr("Cancel"); clicked => { LayoutLibrary.cancel-dialog(); } }
+            Button {
+                text: @tr("Load from disk");
+                clicked => {
+                    LayoutLibrary.cancel-dialog();
+                    InlineEditors.revision += 1; LayoutLibrary.discard-current(); MacroEditor.refresh(); MenuEditor.refresh();
                 }
             }
+            Button {
+                text: @tr("Save as new…");
+                clicked => {
+                    LayoutLibrary.cancel-dialog();
+                    LayoutLibrary.save-as-name = LayoutLibrary.suggest-name(LayoutLibrary.current-label);
+                    LayoutLibrary.save-as-open = true;
+                }
+            }
+            Button { text: @tr("Overwrite"); primary: true; clicked => { LayoutLibrary.overwrite-current(); } }
         }
     }
     LibraryDialogOverlay {}

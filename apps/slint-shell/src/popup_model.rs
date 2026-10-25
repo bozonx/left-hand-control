@@ -407,6 +407,140 @@ pub fn select_page(popup: Popup, page: u32, emoji: &EmojiPopup, quick: &QuickPop
     }
 }
 
+/// Run a chosen action at the latest this long after its popup hid, even
+/// if the window system did not report the focus leaving the popup.
+pub const FOCUS_RETURN_TIMEOUT: std::time::Duration = std::time::Duration::from_millis(300);
+
+/// An action chosen in a popup, waiting for the keyboard focus to return
+/// to the application it is meant for.
+#[derive(Debug)]
+pub struct PendingAction {
+    pub popup: Popup,
+    pub action: String,
+    pub chosen: std::time::Instant,
+}
+
+/// State of the popups shared by the winit windows and the Spell worker:
+/// which popup is open and focused, the page its open command asked for,
+/// and the chosen action that waits for the focus to leave.
+#[derive(Debug, Default)]
+pub struct PopupSession {
+    visible: Option<Popup>,
+    focused: Option<Popup>,
+    /// Page of the command that opened or last turned the visible popup;
+    /// tells a repeated open command from one for another page.
+    requested_page: Option<u32>,
+    pending: Option<PendingAction>,
+}
+
+impl PopupSession {
+    pub fn visible(&self) -> Option<Popup> {
+        self.visible
+    }
+
+    pub fn focused(&self) -> Option<Popup> {
+        self.focused
+    }
+
+    /// Handle a command opening `popup` at `page`. An open popup turns its
+    /// page and `true` is returned; a hidden one selects the page before it
+    /// is shown.
+    pub fn open(
+        &mut self,
+        popup: Popup,
+        page: Option<u32>,
+        open: bool,
+        emoji: &EmojiPopup,
+        quick: &QuickPopup,
+    ) -> bool {
+        let last = std::mem::replace(&mut self.requested_page, page);
+        if open {
+            repeat_open(popup, page, last, emoji, quick);
+            return true;
+        }
+        if let Some(page) = page {
+            select_page(popup, page, emoji, quick);
+        }
+        false
+    }
+
+    /// `popup` is now shown; returns the popup it replaced.
+    pub fn shown(&mut self, popup: Popup) -> Option<Popup> {
+        self.focused = None;
+        self.visible
+            .replace(popup)
+            .filter(|previous| *previous != popup)
+    }
+
+    /// `popup` was hidden; `false` when it was not the visible one.
+    pub fn hidden(&mut self, popup: Popup) -> bool {
+        if self.visible != Some(popup) {
+            return false;
+        }
+        self.visible = None;
+        self.focused = None;
+        true
+    }
+
+    /// Keyboard focus of `popup` changed. Returns the pending action to run
+    /// now that the focus left its popup, and whether the visible popup
+    /// lost the focus it had and should hide.
+    pub fn focus(&mut self, popup: Popup, active: bool) -> (Option<PendingAction>, FocusChange) {
+        let action = if active {
+            None
+        } else {
+            self.pending.take_if(|pending| pending.popup == popup)
+        };
+        let change = if self.visible != Some(popup) {
+            FocusChange::None
+        } else if active {
+            self.focused = Some(popup);
+            FocusChange::Entered
+        } else if self.focused == Some(popup) {
+            FocusChange::Left
+        } else {
+            FocusChange::LeftBeforeEnter
+        };
+        (action, change)
+    }
+
+    /// Run `action` once the focus left `popup`, or after the timeout.
+    pub fn choose(&mut self, popup: Popup, action: String) {
+        self.pending = Some(PendingAction {
+            popup,
+            action,
+            chosen: std::time::Instant::now(),
+        });
+    }
+
+    /// The pending action of `popup`, whatever the focus did.
+    pub fn take_pending(&mut self, popup: Popup) -> Option<PendingAction> {
+        self.pending.take_if(|pending| pending.popup == popup)
+    }
+
+    /// The pending action whose focus return timed out.
+    pub fn timed_out(&mut self) -> Option<PendingAction> {
+        self.pending
+            .take_if(|pending| pending.chosen.elapsed() >= FOCUS_RETURN_TIMEOUT)
+    }
+
+    pub fn has_pending(&self) -> bool {
+        self.pending.is_some()
+    }
+}
+
+/// What a focus change means for the visible popup.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FocusChange {
+    /// Not about the visible popup.
+    None,
+    Entered,
+    /// The popup lost the focus it had: hide it.
+    Left,
+    /// The focus left before the popup ever had it.
+    LeftBeforeEnter,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -524,5 +658,36 @@ mod tests {
         assert_eq!(menus.quick_cell(0, 0), None);
         assert_eq!(menus.quick_cell(0, 15), None);
         assert_eq!(menus.quick_cell(-1, 0), None);
+    }
+
+    #[test]
+    fn session_runs_a_choice_when_the_focus_leaves_its_popup() {
+        let mut session = PopupSession::default();
+        assert_eq!(session.shown(Popup::Emoji), None);
+        assert_eq!(session.focus(Popup::Emoji, true).1, FocusChange::Entered);
+        session.choose(Popup::Emoji, "text:x".into());
+        assert!(session.timed_out().is_none());
+        assert!(session.hidden(Popup::Emoji));
+        assert!(!session.hidden(Popup::Emoji));
+        // Focus of another popup does not run it.
+        assert!(session.focus(Popup::Quick, false).0.is_none());
+        let (action, change) = session.focus(Popup::Emoji, false);
+        assert_eq!(action.map(|a| a.action).as_deref(), Some("text:x"));
+        assert_eq!(change, FocusChange::None);
+        assert!(!session.has_pending());
+    }
+
+    #[test]
+    fn session_hides_a_popup_only_after_it_had_the_focus() {
+        let mut session = PopupSession::default();
+        session.shown(Popup::Quick);
+        assert_eq!(
+            session.focus(Popup::Quick, false).1,
+            FocusChange::LeftBeforeEnter
+        );
+        session.focus(Popup::Quick, true);
+        assert_eq!(session.focus(Popup::Quick, false).1, FocusChange::Left);
+        assert_eq!(session.shown(Popup::Emoji), Some(Popup::Quick));
+        assert_eq!(session.focused(), None);
     }
 }

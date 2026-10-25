@@ -1,6 +1,21 @@
 //! Pages of the settings window. Each module binds one Slint global to the
 //! shared [`Document`] and refreshes it when the document changes.
 
+/// Bind a callback that needs the settings window, skipping it once the
+/// window is gone: `on!(ui, global.on_x, doc = document => |ui, arg| { … })`
+/// clones each capture and passes the upgraded window as `ui`.
+macro_rules! on {
+    ($ui:ident, $target:ident . $method:ident $(, $cap:ident = $src:expr)* => |$w:ident $(, $arg:pat_param)*| $body:block) => {{
+        let weak = $ui.as_weak();
+        $(let $cap = $src.clone();)*
+        $target.$method(move |$($arg),*| {
+            let Some($w) = weak.upgrade() else { return Default::default() };
+            $body
+        });
+    }};
+}
+
+mod autosave;
 pub(crate) mod conditions;
 mod inline;
 mod keys;
@@ -19,12 +34,12 @@ pub use picker::capture;
 pub(crate) use settings::check_input_access;
 
 use crate::{
-    document::Document,
+    document::{Document, Saved, View},
     i18n::Msg,
     ui::{ActionKind, GameCondition, Message, SettingsWindow},
 };
-use lhc_core::config_document::ConfigError;
-use lhc_core::profile::{actions::Action, model::LocalePreference};
+use lhc_core::config_document::{ConfigDocument, ConfigError};
+use lhc_core::profile::actions::Action;
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use std::rc::Rc;
 
@@ -94,6 +109,32 @@ pub(crate) fn game_condition_value(condition: GameCondition) -> Option<String> {
     }
 }
 
+/// Message for the result of a page edit: `ok`, a warning that the mapper
+/// was not updated, or the error.
+pub(crate) fn outcome<T>(result: &Result<Saved<T>, ConfigError>, ok: Msg) -> Msg {
+    match result {
+        Ok(saved) => saved.message(ok),
+        Err(error) => Msg::from(error),
+    }
+}
+
+/// Save `edit` from page `view`, refresh the page whether or not it was
+/// saved, and show the outcome in the page's status line.
+pub(crate) fn change<T>(
+    ui: &SettingsWindow,
+    document: &Document,
+    view: View,
+    edit: impl FnOnce(&mut ConfigDocument) -> Result<T, ConfigError>,
+    refresh: impl FnOnce(),
+    set_status: impl FnOnce(Message),
+) -> Result<T, Msg> {
+    let result = document.edit(view, edit);
+    refresh();
+    let message = outcome(&result, Msg::None);
+    set_status(crate::notifications::report(ui, &message));
+    result.map(|saved| saved.value).map_err(|_| message)
+}
+
 /// Message shown under a name field; empty when the name can be used.
 pub(crate) fn name_error<T>(result: Result<T, ConfigError>) -> Message {
     result
@@ -125,38 +166,17 @@ pub(crate) fn action_kind(action: &str) -> ActionKind {
     }
 }
 
-/// Order of the language choices in the settings page.
-pub(crate) const LOCALES: [LocalePreference; 22] = [
-    LocalePreference::Auto,
-    LocalePreference::English,
-    LocalePreference::Russian,
-    LocalePreference::German,
-    LocalePreference::French,
-    LocalePreference::Spanish,
-    LocalePreference::Italian,
-    LocalePreference::Portuguese,
-    LocalePreference::Polish,
-    LocalePreference::Turkish,
-    LocalePreference::Ukrainian,
-    LocalePreference::Czech,
-    LocalePreference::Hungarian,
-    LocalePreference::Romanian,
-    LocalePreference::Greek,
-    LocalePreference::Croatian,
-    LocalePreference::Georgian,
-    LocalePreference::Kazakh,
-    LocalePreference::ChineseSimplified,
-    LocalePreference::ChineseTraditional,
-    LocalePreference::Japanese,
-    LocalePreference::Korean,
-];
-
 /// Index of `value` in `choices`, or 0.
 pub(crate) fn choice_index<T: PartialEq>(choices: &[T], value: &T) -> i32 {
     choices
         .iter()
         .position(|choice| choice == value)
         .unwrap_or(0) as i32
+}
+
+/// UI index as a position in a list of `len` items.
+pub(crate) fn index(value: i32, len: usize) -> Option<usize> {
+    usize::try_from(value).ok().filter(|index| *index < len)
 }
 
 /// Choice at a UI index, falling back to the first one.
@@ -170,6 +190,7 @@ pub(crate) fn choice<T: Copy>(choices: &[T], index: i32) -> T {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use lhc_core::profile::model::LocalePreference;
 
     #[test]
     fn helpers_round_trip() {
@@ -180,9 +201,12 @@ mod tests {
                 condition
             );
         }
-        assert_eq!(choice(&LOCALES, 2), LocalePreference::Russian);
-        assert_eq!(choice(&LOCALES, 99), LocalePreference::Auto);
-        assert_eq!(choice_index(&LOCALES, &LocalePreference::Russian), 2);
+        assert_eq!(choice(&LocalePreference::ALL, 2), LocalePreference::Russian);
+        assert_eq!(choice(&LocalePreference::ALL, 99), LocalePreference::Auto);
+        assert_eq!(
+            choice_index(&LocalePreference::ALL, &LocalePreference::Russian),
+            2
+        );
         assert_eq!(action_kind("text:hi"), ActionKind::Text);
         assert_eq!(action_kind("Ctrl+KeyC"), ActionKind::Keys);
     }

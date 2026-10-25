@@ -8,14 +8,12 @@ import { DeviceChoice, DeviceDialog, DevicePicker } from "device-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { Button, CheckBox, HorizontalBox, RadioGroup, VerticalBox } from "std-widgets.slint";
-import { FormLabel, NumericInput, SelectField } from "controls.slint";
+import { DialogFrame, FormLabel, NumericInput, SelectField } from "controls.slint";
 import { GameAppEntry, GameAppsField } from "conditions.slint";
-import { AppearanceChoice, GameModeControl, SettingsTab } from "types.slint";
+import { AppearanceChoice, CommandPlace, GameModeControl, SettingsTab } from "types.slint";
 
-/// `kind`: 0 rule tap, 1 rule hold, 2 rule long hold, 3 rule double tap,
-/// 4 layer key, 5 macro step, 6 quick action. `enabled` is false for a
-/// disabled rule.
-export struct CommandPlaceRow { kind: int, layer: string, name: string, enabled: bool }
+/// `enabled` is false for a disabled rule.
+export struct CommandPlaceRow { kind: CommandPlace, layer: string, name: string, enabled: bool }
 /// `first` marks the first row of a layout, which shows its header.
 export struct CommandAssignmentRow { layout-name: string, first: bool, name: string, script: string, places: [CommandPlaceRow] }
 
@@ -500,12 +498,12 @@ export component SettingsPage inherits VerticalBox {
                                     alignment: start;
                                     spacing: Theme.space-xs;
                                     for place in item.places: Text {
-                                        text: (place.kind == 0 ? @tr("Rule {} · tap", place.name)
-                                            : place.kind == 1 ? @tr("Rule {} · hold", place.name)
-                                            : place.kind == 2 ? @tr("Rule {} · long hold", place.name)
-                                            : place.kind == 3 ? @tr("Rule {} · double tap", place.name)
-                                            : place.kind == 4 ? @tr("Layer {}", place.layer) + " · " + place.name
-                                            : place.kind == 5 ? @tr("Macro") + " · " + place.name
+                                        text: (place.kind == CommandPlace.rule-tap ? @tr("Rule {} · tap", place.name)
+                                            : place.kind == CommandPlace.rule-hold ? @tr("Rule {} · hold", place.name)
+                                            : place.kind == CommandPlace.rule-long-hold ? @tr("Rule {} · long hold", place.name)
+                                            : place.kind == CommandPlace.rule-double-tap ? @tr("Rule {} · double tap", place.name)
+                                            : place.kind == CommandPlace.layer-key ? @tr("Layer {}", place.layer) + " · " + place.name
+                                            : place.kind == CommandPlace.macro ? @tr("Macro") + " · " + place.name
                                             : @tr("Quick action") + " · " + place.name)
                                             + (place.enabled ? "" : " · " + @tr("disabled"));
                                         color: place.enabled ? Theme.text : Theme.muted; wrap: word-wrap;
@@ -876,42 +874,23 @@ export component CommandDialogOverlay inherits FocusScope {
     focus-on-tab-navigation: false;
     enabled: SettingsEditor.full-command != "";
     key-pressed(event) => { if event.text == Key.Escape { SettingsEditor.full-command = ""; return accept; } return reject; }
-    if SettingsEditor.full-command != "": Rectangle {
-        background: Theme.scrim;
-        TouchArea { clicked => { SettingsEditor.full-command = ""; } scroll-event(event) => { accept } }
-        Rectangle {
-            x: (parent.width - self.width) / 2;
-            y: 32px;
-            width: min(parent.width - 48px, 720px);
-            height: min(parent.height - 64px, dialog-box.preferred-height);
-            background: Theme.surface;
-            border-color: Theme.border;
-            border-width: 1px;
-            border-radius: Theme.radius-dialog;
-            TouchArea {}
-            dialog-box := VerticalBox { padding: 22px; spacing: Theme.space-l;
-                HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
-                    Text { horizontal-stretch: 1; min-width: 0px;
-                        text: SettingsEditor.full-command-name != "" ? SettingsEditor.full-command-name : @tr("Command");
-                        color: Theme.text; font-size: Theme.font-heading; font-weight: Theme.weight-bold; wrap: word-wrap;
-                    }
-                    IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Close"); clicked => { SettingsEditor.full-command = ""; } }
-                }
-                ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
-                    preferred-height: full-layout.preferred-height;
-                    full-layout := VerticalLayout {
-                        full-text := TextInput {
-                            text: SettingsEditor.full-command;
-                            read-only: true; single-line: false; wrap: word-wrap;
-                            color: Theme.text; font-family: "monospace"; font-size: Theme.font-body;
-                        }
-                    }
-                }
-                HorizontalLayout { spacing: Theme.space-m; alignment: end;
-                    Button { text: @tr("Copy"); clicked => { full-text.select-all(); full-text.copy(); NotificationCenter.send({ id: "copied" }); } }
-                    Button { text: @tr("Close"); primary: true; clicked => { SettingsEditor.full-command = ""; } }
+    if SettingsEditor.full-command != "": DialogFrame {
+        title: SettingsEditor.full-command-name != "" ? SettingsEditor.full-command-name : @tr("Command");
+        card-width: 720px;
+        close => { SettingsEditor.full-command = ""; }
+        ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
+            preferred-height: full-layout.preferred-height;
+            full-layout := VerticalLayout {
+                full-text := TextInput {
+                    text: SettingsEditor.full-command;
+                    read-only: true; single-line: false; wrap: word-wrap;
+                    color: Theme.text; font-family: "monospace"; font-size: Theme.font-body;
                 }
             }
+        }
+        HorizontalLayout { spacing: Theme.space-m; alignment: end;
+            Button { text: @tr("Copy"); clicked => { full-text.select-all(); full-text.copy(); NotificationCenter.send({ id: "copied" }); } }
+            Button { text: @tr("Close"); primary: true; clicked => { SettingsEditor.full-command = ""; } }
         }
     }
 }

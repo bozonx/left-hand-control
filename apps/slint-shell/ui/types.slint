@@ -22,8 +22,8 @@ export enum ActionKind { none, keys, macro, command, system, app, text }
 /// Dialog of the rules page; also the rule property being edited.
 export enum RuleDialog { none, key, layer, tap, hold, long-hold, double-tap, conditions, hold-timeout, double-timeout, advanced, remove }
 
-/// Rule property changed in place (without a dialog).
-export enum RuleField { enabled, hold-mode, swallow-tap, swallow-hold }
+/// What holding a rule's trigger does: nothing extra, activate a layer, or run an action.
+export enum HoldMode { none, layer, action }
 
 /// What key caps on the layers page show: the US-layout label or the internal key code.
 export enum LabelMode { label, code }
@@ -69,5 +69,11 @@ export enum AppEntryKind { application, process, title }
 /// Per-rule tap/hold detection override.
 export enum HoldDetection { inherit, release, press }
 
+/// Title of the action picker; `auto` picks one from what it may assign.
+export enum PickerTitle { auto, double-tap, tap, hold, macro-step, long-hold }
+
 /// What the action picker assigns: the native key, a blocked key, or the chosen action.
 export enum PickerBehavior { native, swallow, action }
+
+/// Where a command is assigned, listed on the commands settings tab.
+export enum CommandPlace { rule-tap, rule-hold, rule-long-hold, rule-double-tap, layer-key, macro, quick-action }

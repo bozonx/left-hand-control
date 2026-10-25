@@ -212,9 +212,10 @@ fn is_emoji(text: &str) -> bool {
 
 /// Index of the selected layer, if it exists.
 fn selected(ui: &SettingsWindow, config: &ConfigDocument) -> Option<usize> {
-    usize::try_from(ui.global::<LayersEditor>().get_selected())
-        .ok()
-        .filter(|index| *index < config.layout().layers.len())
+    super::index(
+        ui.global::<LayersEditor>().get_selected(),
+        config.layout().layers.len(),
+    )
 }
 
 fn selected_id(ui: &SettingsWindow, document: &Document) -> Option<String> {
@@ -296,20 +297,14 @@ fn change<T>(
     document: &Document,
     edit: impl FnOnce(&mut ConfigDocument) -> Result<T, ConfigError>,
 ) -> Result<T, Msg> {
-    let editor = ui.global::<LayersEditor>();
-    match document.edit(View::Layers, edit) {
-        Ok(saved) => {
-            refresh(ui, document);
-            editor.set_status(crate::notifications::report(ui, &saved.message(Msg::None)));
-            Ok(saved.value)
-        }
-        Err(error) => {
-            refresh(ui, document);
-            let message = Msg::from(&error);
-            editor.set_status(crate::notifications::report(ui, &message));
-            Err(message)
-        }
-    }
+    super::change(
+        ui,
+        document,
+        View::Layers,
+        edit,
+        || refresh(ui, document),
+        |status| ui.global::<LayersEditor>().set_status(status),
+    )
 }
 
 /// Fill the dialog for `dialog` on key `index`.
@@ -542,10 +537,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let except = renaming.then(|| selected_id(&ui, &doc)).flatten();
         super::name_error(doc.read().layer_name(&name, except.as_deref()))
     });
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_update_name(move |name| {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, editor.on_update_name, doc = document => |ui, name| {
         let Some(id) = selected_id(&ui, &doc) else {
             return;
         };
@@ -554,20 +546,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             config.rename_layer(&id, name.trim(), &description)
         });
     });
-    let weak = ui.as_weak();
-    editor.on_add_extra(move || {
-        if let Some(ui) = weak.upgrade() {
-            let editor = ui.global::<LayersEditor>();
-            editor.set_dialog_key("".into());
-            editor.set_assignment(Assignment::Transparent);
-            ui.global::<ActionPicker>()
-                .invoke_open(PickerTarget::ExtraKey, -1, "".into(), true);
-        }
+    on!(ui, editor.on_add_extra => |ui| {
+        let editor = ui.global::<LayersEditor>();
+        editor.set_dialog_key("".into());
+        editor.set_assignment(Assignment::Transparent);
+        ui.global::<ActionPicker>()
+            .invoke_open(PickerTarget::ExtraKey, -1, "".into(), true);
     });
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_pick_extra(move |index, key_only| {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, editor.on_pick_extra, doc = document => |ui, index, key_only| {
         let Some(id) = selected_id(&ui, &doc) else {
             return;
         };
@@ -595,34 +581,19 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             picker.set_subject(key.into());
         }
     });
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_refresh(move || {
-        if let Some(ui) = weak.upgrade() {
-            refresh(&ui, &doc);
-        }
+    on!(ui, editor.on_refresh, doc = document => |ui| {
+        refresh(&ui, &doc);
     });
 
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_choose(move |index| {
-        if let Some(ui) = weak.upgrade() {
-            select_layer(&ui, &doc, index);
-        }
+    on!(ui, editor.on_choose, doc = document => |ui, index| {
+        select_layer(&ui, &doc, index);
     });
 
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_open_dialog(move |dialog, index| {
-        if let Some(ui) = weak.upgrade() {
-            open_dialog(&ui, &doc, dialog, index);
-        }
+    on!(ui, editor.on_open_dialog, doc = document => |ui, dialog, index| {
+        open_dialog(&ui, &doc, dialog, index);
     });
 
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_apply_dialog(move || {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, editor.on_apply_dialog, doc = document => |ui| {
         let editor = ui.global::<LayersEditor>();
         match apply_dialog(&ui, &doc) {
             Ok(()) => editor.set_dialog(LayerDialog::None),
@@ -630,10 +601,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
     });
 
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_update_description(move |description| {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, editor.on_update_description, doc = document => |ui, description| {
         let Some(id) = selected_id(&ui, &doc) else {
             return;
         };
@@ -652,10 +620,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         });
     });
 
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_remove_extra(move |index| {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, editor.on_remove_extra, doc = document => |ui, index| {
         let Some(id) = selected_id(&ui, &doc) else {
             return;
         };
@@ -669,7 +634,59 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
 
 /// Whether the layer key `index` of picker `target` keeps its modifiers
 /// held until the layer is released.
-pub(super) fn holds_modifiers(
+/// What the picker may assign to a layer key or extra row.
+pub(super) fn picker_request(
+    ui: &SettingsWindow,
+    document: &Document,
+    target: PickerTarget,
+    index: i32,
+) -> super::picker::PickerRequest {
+    let editor = ui.global::<LayersEditor>();
+    // Inside a layer dialog the picker only fills the dialog's draft.
+    let direct = matches!(
+        target,
+        PickerTarget::LayerAction | PickerTarget::ExtraAction
+    ) && editor.get_dialog() == LayerDialog::None;
+    if !direct {
+        return super::picker::PickerRequest::default();
+    }
+    // An extra row exists only while it has an assignment, so it is
+    // removed with its delete button rather than by inheriting.
+    let inherit = target != PickerTarget::ExtraAction;
+    super::picker::PickerRequest {
+        layer_action: true,
+        swallowed: editor.get_assignment() == Assignment::Swallow,
+        hold_modifiers: holds_modifiers(ui, document, target, index),
+        allow_default: inherit,
+        inherit_default: inherit,
+        allow_swallow: true,
+        ..Default::default()
+    }
+}
+
+/// Keys the picker cannot offer for a new extra row: layer keys and keys
+/// that already have a row (except the one being edited).
+pub(super) fn taken_extra_keys(ui: &SettingsWindow, document: &Document) -> Vec<String> {
+    let editor = ui.global::<LayersEditor>();
+    let selected = editor.get_selected_id();
+    let current = editor.get_dialog_key();
+    let config = document.read();
+    keyboard::layer_keys()
+        .map(str::to_owned)
+        .chain(
+            config
+                .layout()
+                .layer_keymaps
+                .get(selected.as_str())
+                .into_iter()
+                .flat_map(|map| map.keys.keys())
+                .filter(|key| key.as_str() != current.as_str())
+                .cloned(),
+        )
+        .collect()
+}
+
+fn holds_modifiers(
     ui: &SettingsWindow,
     document: &Document,
     target: PickerTarget,

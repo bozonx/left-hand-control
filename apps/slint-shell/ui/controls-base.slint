@@ -3,48 +3,74 @@ import { ScrollView } from "scroll.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 
-export component ButtonGroup inherits HorizontalLayout {
+/// One choice out of several buttons, with arrow-key navigation.
+/// `pill` draws the compact segmented style used in toolbars.
+export component ButtonGroup inherits Rectangle {
     in property <[string]> labels;
+    /// Tooltip per button; empty strings show none.
+    in property <[string]> tooltips;
     in property <int> selected-index;
     in property <bool> enabled: true;
+    in property <bool> pill;
     callback selected(int);
-    spacing: 0px;
     vertical-stretch: 0;
-    for label[index] in root.labels: Rectangle {
-        height: 36px;
-        border-top-left-radius: index == 0 ? 4px : 0px;
-        border-bottom-left-radius: index == 0 ? 4px : 0px;
-        border-top-right-radius: index == root.labels.length - 1 ? 4px : 0px;
-        border-bottom-right-radius: index == root.labels.length - 1 ? 4px : 0px;
-        background: root.selected-index == index ? Theme.selected : touch.has-hover ? Theme.hover : Theme.card;
-        opacity: root.enabled ? 1 : 0.5;
-        border-width: focus.has-focus ? 2px : 1px;
-        border-color: focus.has-focus ? Theme.focus : root.selected-index == index ? Theme.accent : Theme.border;
-        accessible-role: radio-button;
-        accessible-label: label;
-        accessible-checked: root.selected-index == index;
-        accessible-enabled: root.enabled;
-        accessible-action-default => { if root.enabled { root.selected(index); } }
-        HorizontalLayout {
-            padding-left: Theme.space-l; padding-right: Theme.space-l;
-            Text {
-                text: label;
-                color: Theme.text;
-                font-weight: root.selected-index == index ? 600 : 400;
-                vertical-alignment: center;
-                horizontal-alignment: center;
+    background: root.pill ? Theme.surface : transparent;
+    border-radius: root.pill ? Theme.radius : 0px;
+    HorizontalLayout {
+        padding: root.pill ? Theme.space-2xs : 0px;
+        spacing: root.pill ? Theme.space-2xs : 0px;
+        for label[index] in root.labels: button := Rectangle {
+            property <bool> current: root.selected-index == index;
+            private property <bool> first: index == 0;
+            private property <bool> last: index == root.labels.length - 1;
+            height: root.pill ? 28px : 36px;
+            border-top-left-radius: root.pill ? Theme.radius-small : self.first ? 4px : 0px;
+            border-bottom-left-radius: root.pill ? Theme.radius-small : self.first ? 4px : 0px;
+            border-top-right-radius: root.pill ? Theme.radius-small : self.last ? 4px : 0px;
+            border-bottom-right-radius: root.pill ? Theme.radius-small : self.last ? 4px : 0px;
+            background: root.pill
+                ? (self.current ? Theme.text : touch.has-hover || focus.has-focus ? Theme.hover : transparent)
+                : (self.current ? Theme.selected : touch.has-hover ? Theme.hover : Theme.card);
+            opacity: root.enabled ? 1 : 0.5;
+            border-width: root.pill ? 0px : focus.has-focus ? 2px : 1px;
+            border-color: focus.has-focus ? Theme.focus : self.current ? Theme.accent : Theme.border;
+            accessible-role: radio-button;
+            accessible-label: label;
+            accessible-checked: self.current;
+            accessible-enabled: root.enabled;
+            accessible-action-default => { if root.enabled { root.selected(index); } }
+            HorizontalLayout {
+                padding-left: root.pill ? Theme.space-m-plus : Theme.space-l;
+                padding-right: root.pill ? Theme.space-m-plus : Theme.space-l;
+                Text {
+                    text: label;
+                    color: root.pill && button.current ? Theme.surface : Theme.text;
+                    font-size: root.pill ? Theme.font-medium : Theme.font-default;
+                    font-weight: root.pill || button.current ? Theme.weight-semibold : 400;
+                    vertical-alignment: center;
+                    horizontal-alignment: center;
+                }
+            }
+            focus := FocusScope {
+                enabled: root.enabled;
+                key-pressed(event) => {
+                    if event.text == " " || event.text == "\n" { root.selected(index); return accept; }
+                    if event.text == Key.RightArrow { root.selected(mod(root.selected-index + 1, root.labels.length)); return accept; }
+                    if event.text == Key.LeftArrow { root.selected(mod(root.selected-index + root.labels.length - 1, root.labels.length)); return accept; }
+                    return reject;
+                }
+            }
+            touch := TouchArea { enabled: root.enabled; mouse-cursor: pointer; clicked => { focus.focus(); root.selected(index); } }
+            if index < root.tooltips.length && root.tooltips[index] != "": Tooltip {
+                Rectangle {
+                    background: Theme.card;
+                    border-radius: Theme.radius-small;
+                    border-width: 1px;
+                    border-color: Theme.border;
+                    HorizontalLayout { padding: Theme.space-s; Text { text: root.tooltips[index]; color: Theme.text; font-size: Theme.font-body; } }
+                }
             }
         }
-        focus := FocusScope {
-            enabled: root.enabled;
-            key-pressed(event) => {
-                if event.text == " " || event.text == "\n" { root.selected(index); return accept; }
-                if event.text == Key.RightArrow { root.selected(mod(root.selected-index + 1, root.labels.length)); return accept; }
-                if event.text == Key.LeftArrow { root.selected(mod(root.selected-index + root.labels.length - 1, root.labels.length)); return accept; }
-                return reject;
-            }
-        }
-        touch := TouchArea { enabled: root.enabled; clicked => { focus.focus(); root.selected(index); } }
     }
 }
 
@@ -599,76 +625,78 @@ export component MapperToggle inherits Rectangle {
     }
 }
 
-export component PageTabs inherits ScrollView {
-    in property <[string]> labels;
-    in property <int> selected;
-    callback select(int);
-    callback add();
-    height: 44px;
-    viewport-height: self.visible-height;
-    viewport-width: max(self.visible-width, tabs.preferred-width);
-    vertical-scrollbar-policy: always-off;
-    horizontal-scrollbar-policy: as-needed;
-    tabs := HorizontalLayout { spacing: Theme.space-s; alignment: start;
-        for label[index] in root.labels: NavTab {
-            height: 40px;
-            text: label;
-            selected: index == root.selected;
-            clicked => { root.select(index); }
-        }
-        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/plus.svg"); tooltip: @tr("Add page"); primary: true; clicked => { root.add(); } } }
-    }
-}
-
 export component Divider inherits Rectangle {
     height: 1px;
     background: Theme.divider;
 }
 
-export component ConfirmDialog inherits Rectangle {
+/// Modal dialog frame: a scrim that closes the dialog on click, and a
+/// centred card with the title, a close button and the dialog content.
+/// Escape closes it while focus is inside.
+export component DialogFrame inherits Rectangle {
     in property <string> title;
+    /// Smaller line under the title; hidden when empty.
+    in property <string> subtitle;
+    /// Fill the window except a margin instead of using the card size.
+    in property <bool> fill;
+    in property <length> card-width: 560px;
+    /// Card height; 0 fits the content.
+    in property <length> card-height: 0px;
+    /// Off when the content handles Escape itself.
+    in property <bool> close-on-escape: true;
+    callback close();
+    background: Theme.scrim;
+    TouchArea { clicked => { root.close(); } scroll-event(event) => { accept } }
+    FocusScope {
+        focus-on-tab-navigation: false;
+        init => { self.focus(); }
+        capture-key-pressed(event) => {
+            if root.close-on-escape && event.text == Key.Escape { root.close(); return accept; }
+            return reject;
+        }
+        card := Rectangle {
+            width: root.fill ? root.width - 48px : min(root.width - 32px, root.card-width);
+            height: root.fill ? root.height - 48px : min(root.height - 64px, root.card-height > 0 ? root.card-height : card-layout.preferred-height);
+            x: (root.width - self.width) / 2;
+            y: (root.height - self.height) / 2;
+            background: Theme.surface;
+            border-color: Theme.border;
+            border-width: 1px;
+            border-radius: Theme.radius-dialog;
+            TouchArea {}
+            card-layout := VerticalLayout {
+                padding: Theme.space-2xl;
+                spacing: Theme.space-l;
+                HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
+                    VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: Theme.space-xs;
+                        Text { vertical-stretch: 0; text: root.title; color: Theme.text; font-size: Theme.font-title; font-weight: Theme.weight-bold; wrap: word-wrap; }
+                        if root.subtitle != "": Text { text: root.subtitle; color: Theme.muted; font-size: Theme.font-medium; }
+                    }
+                    IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Close"); clicked => { root.close(); } }
+                }
+                @children
+            }
+        }
+    }
+}
+
+export component ConfirmDialog inherits DialogFrame {
     in property <string> body;
     in property <string> confirm-text;
     in property <image> confirm-icon: @image-url("icons/trash-2.svg");
     in property <string> error;
     callback confirm();
     callback cancel();
-    background: Theme.scrim;
-    TouchArea { clicked => { root.cancel(); } scroll-event(event) => { accept } }
-    FocusScope {
-        focus-on-tab-navigation: false;
-        capture-key-pressed(event) => {
-            if event.text == Key.Escape { root.cancel(); return accept; }
-            return reject;
-        }
-        Rectangle {
-            width: min(440px, root.width - 32px);
-            x: (root.width - self.width) / 2;
-            y: (root.height - self.height) / 2;
-            height: dialog-layout.preferred-height;
-            background: Theme.surface;
-            border-radius: Theme.radius-panel;
-            border-width: 1px;
-            border-color: Theme.border;
-            TouchArea {}
-            dialog-layout := VerticalLayout {
-                padding: 18px;
-                spacing: Theme.space-l;
-                HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
-                    Text { horizontal-stretch: 1; min-width: 0px; vertical-stretch: 0; text: root.title; color: Theme.text; font-size: Theme.font-large; font-weight: Theme.weight-bold; wrap: word-wrap; }
-                    IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Close"); clicked => { root.cancel(); } }
-                }
-                Text { vertical-stretch: 0; text: root.body; color: Theme.text; wrap: word-wrap; }
-                if root.error != "": Text { vertical-stretch: 0; text: root.error; color: Theme.error; wrap: word-wrap; }
-                HorizontalLayout {
-                    vertical-stretch: 0;
-                    spacing: Theme.space-m;
-                    alignment: end;
-                    Button { text: @tr("Cancel"); clicked => { root.cancel(); } }
-                    confirm-button := Button { init => { self.focus(); } text: root.confirm-text; primary: true; icon: root.confirm-icon; colorize-icon: true; clicked => { root.confirm(); } }
-                }
-            }
-        }
+    card-width: 440px;
+    close => { root.cancel(); }
+    Text { vertical-stretch: 0; text: root.body; color: Theme.text; wrap: word-wrap; }
+    if root.error != "": Text { vertical-stretch: 0; text: root.error; color: Theme.error; wrap: word-wrap; }
+    HorizontalLayout {
+        vertical-stretch: 0;
+        spacing: Theme.space-m;
+        alignment: end;
+        Button { text: @tr("Cancel"); clicked => { root.cancel(); } }
+        Button { init => { self.focus(); } text: root.confirm-text; primary: true; icon: root.confirm-icon; colorize-icon: true; clicked => { root.confirm(); } }
     }
 }
 

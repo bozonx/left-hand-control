@@ -11,7 +11,7 @@ use crate::{
     ipc,
     layer_hint::LayerHint,
     metrics,
-    popup_model::{self, ConfiguredMenus, KeyOutcome},
+    popup_model::{self, ConfiguredMenus, FocusChange, KeyOutcome, PopupSession},
     ui::{EmojiPopup, LayerHintPopup, QuickPopup, Theme},
 };
 use slint::ComponentHandle;
@@ -37,9 +37,6 @@ const ACTIVE_POLL: Duration = Duration::from_millis(4);
 const ACTIVE_GRACE: Duration = Duration::from_millis(250);
 /// Idle wake-up while everything is hidden; IPC wakes the loop at once.
 const IDLE_POLL: Duration = Duration::from_millis(500);
-/// Run a chosen action at the latest this long after the popup hid, even
-/// if the compositor did not report the keyboard focus leaving it.
-const FOCUS_RETURN_TIMEOUT: Duration = Duration::from_millis(300);
 
 enum Event {
     Command(Command, Source, Instant),
@@ -119,6 +116,34 @@ struct Layers {
 }
 
 impl Layers {
+    /// Show `popup` at `page`, or turn the page of the open popup.
+    fn show(
+        &mut self,
+        session: &mut PopupSession,
+        metrics: &mut metrics::Metrics,
+        popup: Popup,
+        page: Option<u32>,
+        source: Source,
+        start: Instant,
+    ) {
+        let open = session.visible() == Some(popup);
+        if !open {
+            self.filter();
+        }
+        let repeated = session.open(popup, page, open, &self.emoji, &self.quick);
+        self.filter();
+        if repeated {
+            return;
+        }
+        if let Some(previous) = session.shown(popup) {
+            self.conceal(previous);
+            metrics.end(previous.name());
+        }
+        metrics.begin(popup.name(), source.as_str(), start);
+        self.present(popup);
+        metrics.mark(popup.name(), "t2_shown");
+    }
+
     fn way(&mut self, popup: Popup) -> &mut SpellWin {
         match popup {
             Popup::Emoji => &mut self.emoji_way,
@@ -273,13 +298,6 @@ fn wait(fds: &[RawFd], timeout: Duration) {
     }
 }
 
-/// A chosen action waiting for the keyboard focus to return.
-struct PendingAction {
-    popup: Popup,
-    action: String,
-    hidden: Instant,
-}
-
 pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     if !crate::platform::backend::layer_shell_available()? {
         return Err("layer-shell unavailable".into());
@@ -389,15 +407,12 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     server.start(dispatch)?;
     #[cfg(feature = "probes")]
     let mut probe = crate::platform::return_input::ReturnInput::new()?;
-    let mut pending: Option<PendingAction> = None;
-    let mut visible = initial;
-    // Page of the command that opened or last turned the visible popup.
-    let mut requested_page: Option<u32> = None;
-    let mut focused: Option<Popup> = None;
+    let mut session = PopupSession::default();
     let mut last_activity = Instant::now();
     // Navigation keys handled since the popup opened (metrics only).
     let mut navigation_count = 0;
     if let Some(popup) = initial {
+        session.shown(popup);
         metrics.begin(popup.name(), Source::Diagnostic.as_str(), start);
         layers.present(popup);
         metrics.mark(popup.name(), "t2_shown");
@@ -424,7 +439,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                         "preferences applied: dark={}, language={}, visible={:?}",
                         preferences.theme == ThemeMode::Dark,
                         preferences.language.code(),
-                        visible.map(Popup::name)
+                        session.visible().map(Popup::name)
                     );
                 }
                 Event::Command(Command::Quit, _, _) => {
@@ -461,57 +476,44 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     };
                     #[cfg(feature = "probes")]
                     if let Some(probe) = &mut probe
-                        && visible.is_none()
+                        && session.visible().is_none()
                     {
                         probe.capture();
                     }
                     navigation_count = 0;
-                    show(
-                        &mut layers,
-                        &mut visible,
-                        &mut focused,
-                        &mut requested_page,
-                        &mut metrics,
-                        popup,
-                        page,
-                        source,
-                        start,
-                    );
+                    layers.show(&mut session, &mut metrics, popup, page, source, start);
                 }
                 Event::Command(Command::LayerHint(hint), _, _) => layers.set_hint(hint),
-                Event::Command(Command::Hide, _, _) => dismiss = visible,
+                Event::Command(Command::Hide, _, _) => dismiss = session.visible(),
                 Event::Command(_, _, _) => {}
                 Event::Focus(popup, active) => {
-                    if !active && pending.as_ref().is_some_and(|p| p.popup == popup) {
+                    let (action, change) = session.focus(popup, active);
+                    if let Some(action) = action {
                         metrics.mark(popup.name(), "keyboard_released");
-                        if let Some(action) = pending.take() {
-                            log::info!(
-                                "Spell focus left {} ms after the choice",
-                                action.hidden.elapsed().as_millis()
-                            );
-                            execute(action.action);
-                        }
+                        log::info!(
+                            "Spell focus left {} ms after the choice",
+                            action.chosen.elapsed().as_millis()
+                        );
+                        execute(action.action);
                     }
-                    if visible == Some(popup) {
-                        if active {
-                            focused = Some(popup);
-                            metrics.mark(popup.name(), "t4_focused");
-                        } else if focused == Some(popup) {
-                            dismiss = Some(popup);
-                        } else {
-                            metrics.mark(popup.name(), "focus_left_before_enter");
+                    match change {
+                        FocusChange::Entered => metrics.mark(popup.name(), "t4_focused"),
+                        FocusChange::Left => dismiss = Some(popup),
+                        FocusChange::LeftBeforeEnter => {
+                            metrics.mark(popup.name(), "focus_left_before_enter")
                         }
+                        FocusChange::None => {}
                     }
                 }
                 Event::Frame(popup) => metrics.mark(popup.name(), "t3_first_frame"),
                 Event::Hide(popup) => dismiss = Some(popup),
-                Event::Choose(popup, index) if visible == Some(popup) => {
+                Event::Choose(popup, index) if session.visible() == Some(popup) => {
                     if let Some(action) = layers.action(popup, index) {
                         waker.send(Event::Action(popup, index, action));
                     }
                 }
                 Event::Choose(_, _) => {}
-                Event::Action(popup, index, action) if visible == Some(popup) => {
+                Event::Action(popup, index, action) if session.visible() == Some(popup) => {
                     log::info!("Spell selected {} index={index}: {action}", popup.name());
                     metrics.mark(popup.name(), "selected");
                     // Diagnostic stand: the probe returns focus and pastes itself.
@@ -525,16 +527,12 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     #[cfg(not(feature = "probes"))]
                     let probed = false;
                     if !probed {
-                        pending = Some(PendingAction {
-                            popup,
-                            action,
-                            hidden: Instant::now(),
-                        });
+                        session.choose(popup, action);
                     }
                     dismiss = Some(popup);
                 }
                 Event::Action(_, _, _) => {}
-                Event::Shortcut(popup, shortcut) if visible == Some(popup) => {
+                Event::Shortcut(popup, shortcut) if session.visible() == Some(popup) => {
                     metrics.mark(popup.name(), "t5_first_key");
                     outcome = Some((
                         popup,
@@ -542,7 +540,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     ));
                 }
                 Event::Shortcut(_, _) => {}
-                Event::Key(popup, key) if visible == Some(popup) => {
+                Event::Key(popup, key) if session.visible() == Some(popup) => {
                     metrics.mark(popup.name(), "t5_first_key");
                     let result = match popup {
                         Popup::Emoji => popup_model::emoji_key(&layers.emoji, &key),
@@ -570,23 +568,21 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                 Some((_, KeyOutcome::Ignored)) | None => {}
             }
             if let Some(popup) = dismiss
-                && visible == Some(popup)
+                && session.hidden(popup)
             {
                 layers.conceal(popup);
-                visible = None;
-                focused = None;
                 metrics.mark(popup.name(), "hidden");
                 metrics.end(popup.name());
             }
         }
-        if let Some(action) = pending.take_if(|p| p.hidden.elapsed() >= FOCUS_RETURN_TIMEOUT) {
+        if let Some(action) = session.timed_out() {
             metrics.mark(action.popup.name(), "focus_return_timeout");
             log::info!("Spell focus did not leave the popup, running the choice anyway");
             execute(action.action);
         }
         #[cfg(feature = "probes")]
         if let Some(probe) = &mut probe
-            && let Some(event) = probe.poll(focused.is_none())
+            && let Some(event) = probe.poll(session.focused().is_none())
         {
             log::info!("probe: {event}");
             for popup in Popup::ALL {
@@ -597,47 +593,15 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
             last_activity = Instant::now();
             continue;
         }
-        let busy = visible.is_some() || pending.is_some() || last_activity.elapsed() < ACTIVE_GRACE;
+        let busy = session.visible().is_some()
+            || session.has_pending()
+            || last_activity.elapsed() < ACTIVE_GRACE;
         let timeout = slint::platform::duration_until_next_timer_update()
             .unwrap_or(Duration::MAX)
             .min(if busy { ACTIVE_POLL } else { IDLE_POLL });
         wait(&fds, timeout);
         while (&wake_read).read(&mut [0u8; 64]).is_ok_and(|n| n > 0) {}
     }
-}
-
-#[allow(clippy::too_many_arguments)]
-fn show(
-    layers: &mut Layers,
-    visible: &mut Option<Popup>,
-    focused: &mut Option<Popup>,
-    requested_page: &mut Option<u32>,
-    metrics: &mut metrics::Metrics,
-    popup: Popup,
-    page: Option<u32>,
-    source: Source,
-    start: Instant,
-) {
-    let last = std::mem::replace(requested_page, page);
-    if *visible == Some(popup) {
-        popup_model::repeat_open(popup, page, last, &layers.emoji, &layers.quick);
-        layers.filter();
-        return;
-    }
-    layers.filter();
-    if let Some(page) = page {
-        popup_model::select_page(popup, page, &layers.emoji, &layers.quick);
-        layers.filter();
-    }
-    if let Some(previous) = visible.take() {
-        layers.conceal(previous);
-        metrics.end(previous.name());
-    }
-    metrics.begin(popup.name(), source.as_str(), start);
-    *focused = None;
-    *visible = Some(popup);
-    layers.present(popup);
-    metrics.mark(popup.name(), "t2_shown");
 }
 
 fn bind_callbacks(layers: &Layers, waker: &Waker) {

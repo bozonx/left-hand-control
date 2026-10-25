@@ -17,10 +17,9 @@ use lhc_core::{
     },
 };
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
-use std::{cell::RefCell, rc::Rc, time::Duration};
+use std::{cell::RefCell, rc::Rc};
 
 /// Delay between the last keystroke and saving it.
-const TYPING_DELAY: Duration = Duration::from_millis(400);
 /// Longest delay a macro may configure between steps, in milliseconds.
 const MAX_DELAY_MS: u64 = 2000;
 
@@ -86,10 +85,20 @@ fn load(document: &Document) -> Vec<Entry> {
 struct State {
     draft: Vec<Entry>,
     /// Pending save of typed changes.
-    timer: Option<slint::Timer>,
+    autosave: Autosave,
 }
 
 type Shared = Rc<RefCell<State>>;
+
+impl super::autosave::Draft for State {
+    fn autosave(&self) -> &Autosave {
+        &self.autosave
+    }
+
+    fn save(&mut self, ui: &SettingsWindow, document: &Document) {
+        save(ui, document, self);
+    }
+}
 
 /// The configuration with the draft macros, used for validation and usage.
 fn candidate(document: &Document, draft: &[Entry]) -> AppConfig {
@@ -185,7 +194,7 @@ fn annotate(ui: &SettingsWindow, document: &Document, draft: &[Entry]) {
 
 /// Save the draft when every macro is valid.
 fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
-    state.timer = None;
+    state.autosave.cancel();
     let editor = ui.global::<MacroEditor>();
     let config = candidate(document, &state.draft);
     let valid = state.draft.iter().all(|e| issue(&config, e).is_none());
@@ -205,36 +214,21 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
         .filter_map(|e| Some((e.saved_id.clone()?, e.item.id.clone())))
         .collect();
     let edit = document.edit(View::Macros, |config| config.save_macros(items, &renames));
-    let message = match edit {
-        Ok(saved) => {
+    match &edit {
+        Ok(_) => {
             for entry in &mut state.draft {
                 entry.saved_id = Some(entry.item.id.clone());
             }
-            saved.message(Msg::None)
         }
-        Err(error) => {
-            // Refresh the draft from the current document.
-            if error == ConfigError::EditConflict {
-                state.draft = load(document);
-                render(ui, document, &state.draft);
-            }
-            Msg::from(&error)
+        // Refresh the draft from the current document.
+        Err(ConfigError::EditConflict) => {
+            state.draft = load(document);
+            render(ui, document, &state.draft);
         }
-    };
+        Err(_) => {}
+    }
+    let message = super::outcome(&edit, Msg::None);
     editor.set_status(crate::notifications::report(ui, &message));
-}
-
-/// Save typed changes once typing pauses.
-fn save_later(ui: &SettingsWindow, document: &Rc<Document>, state: &Shared) {
-    let timer = slint::Timer::default();
-    let weak = ui.as_weak();
-    let (doc, shared) = (document.clone(), Rc::downgrade(state));
-    timer.start(slint::TimerMode::SingleShot, TYPING_DELAY, move || {
-        if let (Some(ui), Some(state)) = (weak.upgrade(), shared.upgrade()) {
-            save(&ui, &doc, &mut state.borrow_mut());
-        }
-    });
-    state.borrow_mut().timer = Some(timer);
 }
 
 fn taken(draft: &[Entry], id: &str) -> bool {
@@ -266,8 +260,26 @@ fn step(action: impl Into<String>) -> MacroStep {
     }
 }
 
-fn index(value: i32, len: usize) -> Option<usize> {
-    usize::try_from(value).ok().filter(|index| *index < len)
+use super::{autosave::Autosave, index};
+
+/// Row of the macro whose step the picker edits.
+fn picker_macro(ui: &SettingsWindow) -> Option<crate::ui::MacroRow> {
+    let editor = ui.global::<MacroEditor>();
+    editor
+        .get_macros()
+        .row_data(editor.get_picker_macro().max(0) as usize)
+}
+
+/// Id of the macro whose step the picker edits; a macro cannot call itself.
+pub(super) fn picker_macro_id(ui: &SettingsWindow) -> String {
+    picker_macro(ui)
+        .map(|row| row.id.into())
+        .unwrap_or_default()
+}
+
+/// Step pause set on the macro whose step the picker edits.
+pub(super) fn picker_macro_pause(ui: &SettingsWindow) -> Option<u64> {
+    picker_macro(ui).and_then(|row| row.step_pause.trim().parse().ok())
 }
 
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
@@ -284,46 +296,30 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     )));
     let state: Shared = Rc::new(RefCell::new(State {
         draft: load(document),
-        timer: None,
+        autosave: Autosave::default(),
     }));
     render(ui, document, &state.borrow().draft);
-    let weak = ui.as_weak();
-    let (doc, shared) = (document.clone(), state.clone());
-    editor.on_flush_pending(move || {
-        if let Some(ui) = weak.upgrade() {
-            let mut state = shared.borrow_mut();
-            if state.timer.is_some() {
-                save(&ui, &doc, &mut state);
-            }
-        }
+    on!(ui, editor.on_flush_pending, doc = document, shared = state => |ui| {
+        let mut state = shared.borrow_mut();
+        super::autosave::flush(&ui, &doc, &mut *state);
     });
 
     // Other pages change macro usage; a reload replaces a draft without
     // unsaved edits.
-    let weak = ui.as_weak();
-    let shared = state.clone();
-    document.subscribe(View::Macros, move |document| {
-        let Some(ui) = weak.upgrade() else { return };
-        // Busy: this page's own save is running and reloads by itself.
-        let Ok(mut state) = shared.try_borrow_mut() else {
-            return;
-        };
+    super::autosave::subscribe(ui, document, View::Macros, &state, |ui, document, state| {
         let saved: Vec<Macro> = state.draft.iter().filter_map(Entry::saved).collect();
-        let pending = state.timer.is_some() || saved.len() != state.draft.len();
+        let pending = state.autosave.pending() || saved.len() != state.draft.len();
         if !pending && saved != document.read().layout().macros {
             state.draft = load(document);
-            render(&ui, document, &state.draft);
+            render(ui, document, &state.draft);
         } else {
-            annotate(&ui, document, &state.draft);
+            annotate(ui, document, &state.draft);
         }
     });
 
-    let weak = ui.as_weak();
-    let (doc, shared) = (document.clone(), state.clone());
-    editor.on_refresh(move || {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, editor.on_refresh, doc = document, shared = state => |ui| {
         let mut state = shared.borrow_mut();
-        state.timer = None;
+        state.autosave.cancel();
         state.draft = load(&doc);
         let editor = ui.global::<MacroEditor>();
         editor.set_has_errors(false);
@@ -460,10 +456,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
 
     // Typing: change the draft in place so the focused field survives.
-    let weak = ui.as_weak();
-    let (doc, shared) = (document.clone(), state.clone());
-    editor.on_set_pause(move |at, step_index, ms| {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, editor.on_set_pause, doc = document, shared = state => |ui, at, step_index, ms| {
         {
             let mut state = shared.borrow_mut();
             let len = state.draft.len();
@@ -481,12 +474,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             step.action = Action::Pause(ms.to_string()).format().unwrap_or_default();
             annotate(&ui, &doc, &state.draft);
         }
-        save_later(&ui, &doc, &shared);
+        super::autosave::schedule(&ui, &doc, &shared);
     });
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_set_field(move |at, field, value| {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, editor.on_set_field, doc = document => |ui, at, field, value| {
         {
             let mut state = state.borrow_mut();
             let len = state.draft.len();
@@ -502,7 +492,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             }
             annotate(&ui, &doc, &state.draft);
         }
-        save_later(&ui, &doc, &state);
+        super::autosave::schedule(&ui, &doc, &state);
     });
 }
 

@@ -41,32 +41,46 @@ pub enum Language {
     Korean,
 }
 
+/// Every language with its translation code and settings choice.
+const LANGUAGES: [(Language, &str, LocalePreference); 21] = [
+    (Language::English, "en", LocalePreference::English),
+    (Language::Russian, "ru", LocalePreference::Russian),
+    (Language::German, "de", LocalePreference::German),
+    (Language::French, "fr", LocalePreference::French),
+    (Language::Spanish, "es", LocalePreference::Spanish),
+    (Language::Italian, "it", LocalePreference::Italian),
+    (Language::Portuguese, "pt", LocalePreference::Portuguese),
+    (Language::Polish, "pl", LocalePreference::Polish),
+    (Language::Turkish, "tr", LocalePreference::Turkish),
+    (Language::Ukrainian, "uk", LocalePreference::Ukrainian),
+    (Language::Czech, "cs", LocalePreference::Czech),
+    (Language::Hungarian, "hu", LocalePreference::Hungarian),
+    (Language::Romanian, "ro", LocalePreference::Romanian),
+    (Language::Greek, "el", LocalePreference::Greek),
+    (Language::Croatian, "hr", LocalePreference::Croatian),
+    (Language::Georgian, "ka", LocalePreference::Georgian),
+    (Language::Kazakh, "kk", LocalePreference::Kazakh),
+    (
+        Language::ChineseSimplified,
+        "zh-Hans",
+        LocalePreference::ChineseSimplified,
+    ),
+    (
+        Language::ChineseTraditional,
+        "zh-Hant",
+        LocalePreference::ChineseTraditional,
+    ),
+    (Language::Japanese, "ja", LocalePreference::Japanese),
+    (Language::Korean, "ko", LocalePreference::Korean),
+];
+
 impl Language {
     /// Code of the bundled Slint translation.
     pub fn code(self) -> &'static str {
-        match self {
-            Self::English => "en",
-            Self::Russian => "ru",
-            Self::German => "de",
-            Self::French => "fr",
-            Self::Spanish => "es",
-            Self::Italian => "it",
-            Self::Portuguese => "pt",
-            Self::Polish => "pl",
-            Self::Turkish => "tr",
-            Self::Ukrainian => "uk",
-            Self::Czech => "cs",
-            Self::Hungarian => "hu",
-            Self::Romanian => "ro",
-            Self::Greek => "el",
-            Self::Croatian => "hr",
-            Self::Georgian => "ka",
-            Self::Kazakh => "kk",
-            Self::ChineseSimplified => "zh-Hans",
-            Self::ChineseTraditional => "zh-Hant",
-            Self::Japanese => "ja",
-            Self::Korean => "ko",
-        }
+        LANGUAGES
+            .iter()
+            .find(|(language, ..)| *language == self)
+            .map_or("en", |(_, code, _)| code)
     }
 
     pub fn select_bundled(self) {
@@ -76,30 +90,10 @@ impl Language {
     }
 
     pub fn from_code(code: &str) -> Option<Self> {
-        match code {
-            "en" => Some(Self::English),
-            "ru" => Some(Self::Russian),
-            "de" => Some(Self::German),
-            "fr" => Some(Self::French),
-            "es" => Some(Self::Spanish),
-            "it" => Some(Self::Italian),
-            "pt" => Some(Self::Portuguese),
-            "pl" => Some(Self::Polish),
-            "tr" => Some(Self::Turkish),
-            "uk" => Some(Self::Ukrainian),
-            "cs" => Some(Self::Czech),
-            "hu" => Some(Self::Hungarian),
-            "ro" => Some(Self::Romanian),
-            "el" => Some(Self::Greek),
-            "hr" => Some(Self::Croatian),
-            "ka" => Some(Self::Georgian),
-            "kk" => Some(Self::Kazakh),
-            "zh-Hans" => Some(Self::ChineseSimplified),
-            "zh-Hant" => Some(Self::ChineseTraditional),
-            "ja" => Some(Self::Japanese),
-            "ko" => Some(Self::Korean),
-            _ => None,
-        }
+        LANGUAGES
+            .iter()
+            .find(|(_, known, _)| *known == code)
+            .map(|(language, ..)| *language)
     }
 
     /// Resolve an OS locale, including Chinese script and region variants.
@@ -128,33 +122,16 @@ impl Language {
     /// Resolve the configured preference; `auto` follows the OS language
     /// and falls back to English.
     pub fn resolve(preference: LocalePreference) -> Self {
+        if let Some((language, ..)) = LANGUAGES.iter().find(|(.., choice)| *choice == preference) {
+            return *language;
+        }
         match preference {
-            LocalePreference::English => Self::English,
-            LocalePreference::Russian => Self::Russian,
-            LocalePreference::German => Self::German,
-            LocalePreference::French => Self::French,
-            LocalePreference::Spanish => Self::Spanish,
-            LocalePreference::Italian => Self::Italian,
-            LocalePreference::Portuguese => Self::Portuguese,
-            LocalePreference::Polish => Self::Polish,
-            LocalePreference::Turkish => Self::Turkish,
-            LocalePreference::Ukrainian => Self::Ukrainian,
-            LocalePreference::Czech => Self::Czech,
-            LocalePreference::Hungarian => Self::Hungarian,
-            LocalePreference::Romanian => Self::Romanian,
-            LocalePreference::Greek => Self::Greek,
-            LocalePreference::Croatian => Self::Croatian,
-            LocalePreference::Georgian => Self::Georgian,
-            LocalePreference::Kazakh => Self::Kazakh,
-            LocalePreference::ChineseSimplified => Self::ChineseSimplified,
-            LocalePreference::ChineseTraditional => Self::ChineseTraditional,
-            LocalePreference::Japanese => Self::Japanese,
-            LocalePreference::Korean => Self::Korean,
             LocalePreference::Auto => ["LC_ALL", "LC_MESSAGES", "LANG"]
                 .iter()
                 .filter_map(|name| std::env::var(name).ok())
                 .find(|value| !value.is_empty())
                 .map_or(Self::English, |value| Self::from_os_locale(&value)),
+            _ => Self::English,
         }
     }
 }
@@ -865,7 +842,7 @@ mod tests {
     #[test]
     fn all_languages_roundtrip_preferences_ipc_and_plural_catalogs() {
         use tr::Translator;
-        for preference in crate::pages::LOCALES.into_iter().skip(1) {
+        for preference in LocalePreference::ALL.into_iter().skip(1) {
             let serialized = serde_json::to_string(&preference).unwrap();
             assert_eq!(
                 serde_json::from_str::<LocalePreference>(&serialized).unwrap(),

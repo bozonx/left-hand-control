@@ -1,21 +1,21 @@
-use super::{LOCALES, choice, choice_index, condition_list, strings};
+use super::{choice, choice_index, condition_list, strings};
 use crate::{
     document::{Document, View},
     i18n::Msg,
     ui::{
-        AppearanceChoice, CommandAssignmentRow, CommandPlaceRow, DeviceChoice, DeviceChoices,
-        DeviceGroup, DeviceMatch, GameAppEntry, SettingsEditor, SettingsWindow,
+        AppearanceChoice, CommandAssignmentRow, CommandPlace, CommandPlaceRow, DeviceChoice,
+        DeviceChoices, DeviceGroup, DeviceMatch, GameAppEntry, SettingsEditor, SettingsWindow,
     },
 };
+use lhc_core::mapper::devices;
 use lhc_core::profile::menus::PlaceKind;
 use lhc_core::profile::model::{
-    AppSettings, Appearance, GameModeProcessMatcher, PasteShortcut, TapDecision, TextMode,
+    AppSettings, Appearance, GameModeProcessMatcher, LocalePreference, PasteShortcut, TapDecision,
+    TextMode,
 };
+use lhc_core::profile::timing;
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
-
-/// Delay that batches quick setting changes into one save.
-const AUTOSAVE_DELAY: std::time::Duration = std::time::Duration::from_millis(500);
 
 /// Order of the tap decision choices in the settings page.
 const TAP_DECISIONS: [TapDecision; 2] = [
@@ -49,44 +49,153 @@ fn appearance(choice: AppearanceChoice) -> Appearance {
     }
 }
 
-/// The form as the user sees it. Numbers stay text until saved.
-#[derive(Clone, Debug, PartialEq)]
-struct Form {
-    in_development: bool,
-    launch_on_startup: bool,
-    start_mapper_on_launch: bool,
-    appearance: AppearanceChoice,
-    high_contrast: bool,
-    reduce_motion: bool,
-    layout_osd: bool,
-    layer_hint: bool,
-    locale: i32,
-    tap_decision: i32,
-    hold: String,
-    long_hold: String,
-    double_tap: String,
-    combo: String,
-    macro_pause: String,
-    modifier_delay: String,
-    macro_timeout: String,
-    commands_enabled: bool,
-    use_gamemoded: bool,
-    use_fullscreen: bool,
-    use_steam: bool,
-    use_lutris: bool,
-    use_heroic: bool,
-    use_umu: bool,
-    use_gamescope: bool,
-    use_app_category: bool,
-    use_game_bar: bool,
-    matchers: Vec<GameModeProcessMatcher>,
-    text_mode: i32,
-    paste_shortcut: i32,
-    terminal_paste_shortcut: i32,
-    ydotool: String,
-    xdotool: String,
-    keyboard: String,
-    mouse: String,
+/// Declares [`Form`] from one table. Each row names a field, its type,
+/// the `SettingsEditor` getter and setter, how it is loaded from the
+/// settings and how a changed value is stored back (`?` rejects it).
+macro_rules! form {
+    ($($field:ident: $ty:ty = $get:ident / $set:ident,
+        load |$s:ident| $load:expr,
+        store |$t:ident, $v:ident| $store:expr;)*) => {
+        /// The form as the user sees it. Numbers stay text until saved.
+        #[derive(Clone, Debug, PartialEq)]
+        struct Form {
+            $($field: $ty,)*
+            matchers: Vec<GameModeProcessMatcher>,
+        }
+
+        impl Form {
+            fn from_settings(settings: &AppSettings) -> Self {
+                Self {
+                    $($field: {
+                        let $s = settings;
+                        $load
+                    },)*
+                    matchers: settings.game_mode.process_matchers.clone(),
+                }
+            }
+
+            fn read(ui: &SettingsWindow, matchers: &[GameModeProcessMatcher]) -> Self {
+                let e = ui.global::<SettingsEditor>();
+                Self {
+                    $($field: e.$get().into(),)*
+                    matchers: matchers.to_vec(),
+                }
+            }
+
+            fn show(&self, ui: &SettingsWindow) {
+                let e = ui.global::<SettingsEditor>();
+                $(e.$set(self.$field.clone().into());)*
+                show_matchers(&e, &self.matchers);
+            }
+
+            /// Write the fields that differ from `base` into `settings`.
+            /// On an error `settings` may be partly changed and is dropped.
+            fn apply(&self, base: &Form, settings: &mut AppSettings) -> Result<(), Msg> {
+                $(if self.$field != base.$field {
+                    let ($t, $v) = (&mut *settings, &self.$field);
+                    $store;
+                })*
+                if self.matchers != base.matchers {
+                    settings.game_mode.process_matchers = self.matchers.clone();
+                }
+                Ok(())
+            }
+        }
+    };
+}
+
+/// Milliseconds typed in the form, within `range`.
+fn ms(text: &str, range: lhc_core::profile::timing::Range) -> Result<u64, Msg> {
+    parse_ms(text).and_then(|value| {
+        range
+            .contains(value)
+            .then_some(value)
+            .ok_or(Msg::SettingsTimingInvalid)
+    })
+}
+
+form! {
+    in_development: bool = get_in_development / set_in_development,
+        load |s| s.in_development, store |t, v| t.in_development = *v;
+    launch_on_startup: bool = get_launch_on_startup / set_launch_on_startup,
+        load |s| s.launch_on_startup, store |t, v| t.launch_on_startup = *v;
+    start_mapper_on_launch: bool = get_start_mapper_on_launch / set_start_mapper_on_launch,
+        load |s| s.start_mapper_on_launch, store |t, v| t.start_mapper_on_launch = *v;
+    appearance: AppearanceChoice = get_appearance / set_appearance,
+        load |s| appearance_choice(s.appearance), store |t, v| t.appearance = appearance(*v);
+    high_contrast: bool = get_high_contrast / set_high_contrast,
+        load |s| s.high_contrast, store |t, v| t.high_contrast = *v;
+    reduce_motion: bool = get_reduce_motion / set_reduce_motion,
+        load |s| s.reduce_motion, store |t, v| t.reduce_motion = *v;
+    layout_osd: bool = get_layout_osd / set_layout_osd,
+        load |s| s.layout_osd, store |t, v| t.layout_osd = *v;
+    layer_hint: bool = get_layer_hint / set_layer_hint,
+        load |s| s.layer_hint, store |t, v| t.layer_hint = *v;
+    locale: i32 = get_locale_index / set_locale_index,
+        load |s| choice_index(&LocalePreference::ALL, &s.locale), store |t, v| t.locale = choice(&LocalePreference::ALL, *v);
+    tap_decision: i32 = get_tap_decision_index / set_tap_decision_index,
+        load |s| choice_index(&TAP_DECISIONS, &s.tap_decision),
+        store |t, v| t.tap_decision = choice(&TAP_DECISIONS, *v);
+    hold: String = get_hold_timeout / set_hold_timeout,
+        load |s| s.default_hold_timeout_ms.to_string(),
+        store |t, v| t.default_hold_timeout_ms = ms(v, timing::TAP_HOLD)?;
+    long_hold: String = get_long_hold_timeout / set_long_hold_timeout,
+        load |s| s.default_long_hold_timeout_ms.to_string(),
+        store |t, v| t.default_long_hold_timeout_ms = super::rules::parse_long_hold(v)?;
+    double_tap: String = get_double_tap_timeout / set_double_tap_timeout,
+        load |s| s.default_double_tap_timeout_ms.to_string(),
+        store |t, v| t.default_double_tap_timeout_ms = ms(v, timing::TAP_HOLD)?;
+    combo: String = get_combo_timeout / set_combo_timeout,
+        load |s| s.combo_timeout_ms.to_string(),
+        store |t, v| t.combo_timeout_ms = ms(v, timing::COMBO)?;
+    macro_pause: String = get_macro_pause / set_macro_pause,
+        load |s| s.default_macro_step_pause_ms.to_string(),
+        store |t, v| t.default_macro_step_pause_ms = ms(v, timing::MACRO_DELAY)?;
+    modifier_delay: String = get_modifier_delay / set_modifier_delay,
+        load |s| s.default_macro_modifier_delay_ms.to_string(),
+        store |t, v| t.default_macro_modifier_delay_ms = ms(v, timing::MACRO_DELAY)?;
+    macro_timeout: String = get_macro_timeout / set_macro_timeout,
+        load |s| s.macro_timeout_ms.to_string(),
+        store |t, v| t.macro_timeout_ms = ms(v, timing::MACRO_TIMEOUT)?;
+    commands_enabled: bool = get_commands_enabled / set_commands_enabled,
+        load |s| s.commands_enabled, store |t, v| t.commands_enabled = *v;
+    use_gamemoded: bool = get_use_gamemoded / set_use_gamemoded,
+        load |s| s.game_mode.use_gamemoded, store |t, v| t.game_mode.use_gamemoded = *v;
+    use_fullscreen: bool = get_use_fullscreen / set_use_fullscreen,
+        load |s| s.game_mode.use_fullscreen, store |t, v| t.game_mode.use_fullscreen = *v;
+    use_steam: bool = get_use_steam / set_use_steam,
+        load |s| s.game_mode.use_steam, store |t, v| t.game_mode.use_steam = *v;
+    use_lutris: bool = get_use_lutris / set_use_lutris,
+        load |s| s.game_mode.use_lutris, store |t, v| t.game_mode.use_lutris = *v;
+    use_heroic: bool = get_use_heroic / set_use_heroic,
+        load |s| s.game_mode.use_heroic, store |t, v| t.game_mode.use_heroic = *v;
+    use_umu: bool = get_use_umu / set_use_umu,
+        load |s| s.game_mode.use_umu, store |t, v| t.game_mode.use_umu = *v;
+    use_gamescope: bool = get_use_gamescope / set_use_gamescope,
+        load |s| s.game_mode.use_gamescope, store |t, v| t.game_mode.use_gamescope = *v;
+    use_app_category: bool = get_use_app_category / set_use_app_category,
+        load |s| s.game_mode.use_app_category, store |t, v| t.game_mode.use_app_category = *v;
+    use_game_bar: bool = get_use_game_bar / set_use_game_bar,
+        load |s| s.game_mode.use_game_bar, store |t, v| t.game_mode.use_game_bar = *v;
+    text_mode: i32 = get_text_mode_index / set_text_mode_index,
+        load |s| choice_index(&TextMode::ALL, &s.linux_wayland_text_mode),
+        store |t, v| t.linux_wayland_text_mode = choice(&TextMode::ALL, *v);
+    paste_shortcut: i32 = get_paste_shortcut_index / set_paste_shortcut_index,
+        load |s| choice_index(&PasteShortcut::ALL, &s.linux_paste_shortcut),
+        store |t, v| t.linux_paste_shortcut = choice(&PasteShortcut::ALL, *v);
+    terminal_paste_shortcut: i32 = get_terminal_paste_shortcut_index / set_terminal_paste_shortcut_index,
+        load |s| choice_index(&TERMINAL_PASTE_SHORTCUTS, &s.linux_terminal_paste_shortcut),
+        store |t, v| t.linux_terminal_paste_shortcut = choice(&TERMINAL_PASTE_SHORTCUTS, *v);
+    ydotool: String = get_ydotool_path / set_ydotool_path,
+        load |s| s.linux_ydotool_path.clone(), store |t, v| t.linux_ydotool_path = v.trim().into();
+    xdotool: String = get_xdotool_path / set_xdotool_path,
+        load |s| s.linux_xdotool_path.clone(), store |t, v| t.linux_xdotool_path = v.trim().into();
+    keyboard: String = get_keyboard_device_path / set_keyboard_device_path,
+        load |s| s.input_device_path.clone().unwrap_or_default(),
+        store |t, v| t.input_device_path = path(v);
+    mouse: String = get_mouse_device_path / set_mouse_device_path,
+        load |s| s.input_mouse_device_path.clone().unwrap_or_default(),
+        store |t, v| t.input_mouse_device_path = path(v);
 }
 
 fn parse_ms(value: &str) -> Result<u64, Msg> {
@@ -96,194 +205,6 @@ fn parse_ms(value: &str) -> Result<u64, Msg> {
 fn path(value: &str) -> Option<String> {
     let value = value.trim();
     (!value.is_empty()).then(|| value.to_owned())
-}
-
-impl Form {
-    fn from_settings(settings: &AppSettings) -> Self {
-        Self {
-            in_development: settings.in_development,
-            launch_on_startup: settings.launch_on_startup,
-            start_mapper_on_launch: settings.start_mapper_on_launch,
-            appearance: appearance_choice(settings.appearance),
-            high_contrast: settings.high_contrast,
-            reduce_motion: settings.reduce_motion,
-            layout_osd: settings.layout_osd,
-            layer_hint: settings.layer_hint,
-            locale: choice_index(&LOCALES, &settings.locale),
-            tap_decision: choice_index(&TAP_DECISIONS, &settings.tap_decision),
-            hold: settings.default_hold_timeout_ms.to_string(),
-            long_hold: settings.default_long_hold_timeout_ms.to_string(),
-            double_tap: settings.default_double_tap_timeout_ms.to_string(),
-            combo: settings.combo_timeout_ms.to_string(),
-            macro_pause: settings.default_macro_step_pause_ms.to_string(),
-            modifier_delay: settings.default_macro_modifier_delay_ms.to_string(),
-            macro_timeout: settings.macro_timeout_ms.to_string(),
-            commands_enabled: settings.commands_enabled,
-            use_gamemoded: settings.game_mode.use_gamemoded,
-            use_fullscreen: settings.game_mode.use_fullscreen,
-            use_steam: settings.game_mode.use_steam,
-            use_lutris: settings.game_mode.use_lutris,
-            use_heroic: settings.game_mode.use_heroic,
-            use_umu: settings.game_mode.use_umu,
-            use_gamescope: settings.game_mode.use_gamescope,
-            use_app_category: settings.game_mode.use_app_category,
-            use_game_bar: settings.game_mode.use_game_bar,
-            matchers: settings.game_mode.process_matchers.clone(),
-            text_mode: choice_index(&TextMode::ALL, &settings.linux_wayland_text_mode),
-            paste_shortcut: choice_index(&PasteShortcut::ALL, &settings.linux_paste_shortcut),
-            terminal_paste_shortcut: choice_index(
-                &TERMINAL_PASTE_SHORTCUTS,
-                &settings.linux_terminal_paste_shortcut,
-            ),
-            ydotool: settings.linux_ydotool_path.clone(),
-            xdotool: settings.linux_xdotool_path.clone(),
-            keyboard: settings.input_device_path.clone().unwrap_or_default(),
-            mouse: settings.input_mouse_device_path.clone().unwrap_or_default(),
-        }
-    }
-
-    fn read(ui: &SettingsWindow, matchers: &[GameModeProcessMatcher]) -> Self {
-        let e = ui.global::<SettingsEditor>();
-        Self {
-            in_development: e.get_in_development(),
-            launch_on_startup: e.get_launch_on_startup(),
-            start_mapper_on_launch: e.get_start_mapper_on_launch(),
-            appearance: e.get_appearance(),
-            high_contrast: e.get_high_contrast(),
-            reduce_motion: e.get_reduce_motion(),
-            layout_osd: e.get_layout_osd(),
-            layer_hint: e.get_layer_hint(),
-            locale: e.get_locale_index(),
-            tap_decision: e.get_tap_decision_index(),
-            hold: e.get_hold_timeout().into(),
-            long_hold: e.get_long_hold_timeout().into(),
-            double_tap: e.get_double_tap_timeout().into(),
-            combo: e.get_combo_timeout().into(),
-            macro_pause: e.get_macro_pause().into(),
-            modifier_delay: e.get_modifier_delay().into(),
-            macro_timeout: e.get_macro_timeout().into(),
-            commands_enabled: e.get_commands_enabled(),
-            use_gamemoded: e.get_use_gamemoded(),
-            use_fullscreen: e.get_use_fullscreen(),
-            use_steam: e.get_use_steam(),
-            use_lutris: e.get_use_lutris(),
-            use_heroic: e.get_use_heroic(),
-            use_umu: e.get_use_umu(),
-            use_gamescope: e.get_use_gamescope(),
-            use_app_category: e.get_use_app_category(),
-            use_game_bar: e.get_use_game_bar(),
-            matchers: matchers.to_vec(),
-            text_mode: e.get_text_mode_index(),
-            paste_shortcut: e.get_paste_shortcut_index(),
-            terminal_paste_shortcut: e.get_terminal_paste_shortcut_index(),
-            ydotool: e.get_ydotool_path().into(),
-            xdotool: e.get_xdotool_path().into(),
-            keyboard: e.get_keyboard_device_path().into(),
-            mouse: e.get_mouse_device_path().into(),
-        }
-    }
-
-    fn show(&self, ui: &SettingsWindow) {
-        let e = ui.global::<SettingsEditor>();
-        e.set_in_development(self.in_development);
-        e.set_launch_on_startup(self.launch_on_startup);
-        e.set_start_mapper_on_launch(self.start_mapper_on_launch);
-        e.set_appearance(self.appearance);
-        e.set_high_contrast(self.high_contrast);
-        e.set_reduce_motion(self.reduce_motion);
-        e.set_layout_osd(self.layout_osd);
-        e.set_layer_hint(self.layer_hint);
-        e.set_locale_index(self.locale);
-        e.set_tap_decision_index(self.tap_decision);
-        e.set_hold_timeout(self.hold.clone().into());
-        e.set_long_hold_timeout(self.long_hold.clone().into());
-        e.set_double_tap_timeout(self.double_tap.clone().into());
-        e.set_combo_timeout(self.combo.clone().into());
-        e.set_macro_pause(self.macro_pause.clone().into());
-        e.set_modifier_delay(self.modifier_delay.clone().into());
-        e.set_macro_timeout(self.macro_timeout.clone().into());
-        e.set_commands_enabled(self.commands_enabled);
-        e.set_use_gamemoded(self.use_gamemoded);
-        e.set_use_fullscreen(self.use_fullscreen);
-        e.set_use_steam(self.use_steam);
-        e.set_use_lutris(self.use_lutris);
-        e.set_use_heroic(self.use_heroic);
-        e.set_use_umu(self.use_umu);
-        e.set_use_gamescope(self.use_gamescope);
-        e.set_use_app_category(self.use_app_category);
-        e.set_use_game_bar(self.use_game_bar);
-        show_matchers(&e, &self.matchers);
-        e.set_text_mode_index(self.text_mode);
-        e.set_paste_shortcut_index(self.paste_shortcut);
-        e.set_terminal_paste_shortcut_index(self.terminal_paste_shortcut);
-        e.set_ydotool_path(self.ydotool.clone().into());
-        e.set_xdotool_path(self.xdotool.clone().into());
-        e.set_keyboard_device_path(self.keyboard.clone().into());
-        e.set_mouse_device_path(self.mouse.clone().into());
-    }
-
-    /// Write the fields that differ from `base` into `settings`.
-    fn apply(&self, base: &Form, settings: &mut AppSettings) -> Result<(), Msg> {
-        use lhc_core::profile::timing;
-        let ms = |text: &str, range: timing::Range| {
-            parse_ms(text).and_then(|value| {
-                range
-                    .contains(value)
-                    .then_some(value)
-                    .ok_or(Msg::SettingsTimingInvalid)
-            })
-        };
-        // Validate every number before changing any field.
-        let hold = ms(&self.hold, timing::TAP_HOLD)?;
-        let double_tap = ms(&self.double_tap, timing::TAP_HOLD)?;
-        let macro_pause = ms(&self.macro_pause, timing::MACRO_DELAY)?;
-        let modifier_delay = ms(&self.modifier_delay, timing::MACRO_DELAY)?;
-        let combo = ms(&self.combo, timing::COMBO)?;
-        let macro_timeout = ms(&self.macro_timeout, timing::MACRO_TIMEOUT)?;
-        macro_rules! changed {
-            ($field:ident => $apply:expr) => {
-                if self.$field != base.$field {
-                    $apply;
-                }
-            };
-        }
-        changed!(in_development => settings.in_development = self.in_development);
-        changed!(launch_on_startup => settings.launch_on_startup = self.launch_on_startup);
-        changed!(start_mapper_on_launch => settings.start_mapper_on_launch = self.start_mapper_on_launch);
-        changed!(appearance => settings.appearance = appearance(self.appearance));
-        changed!(high_contrast => settings.high_contrast = self.high_contrast);
-        changed!(reduce_motion => settings.reduce_motion = self.reduce_motion);
-        changed!(layout_osd => settings.layout_osd = self.layout_osd);
-        changed!(layer_hint => settings.layer_hint = self.layer_hint);
-        changed!(locale => settings.locale = choice(&LOCALES, self.locale));
-        changed!(tap_decision => settings.tap_decision = choice(&TAP_DECISIONS, self.tap_decision));
-        changed!(long_hold => settings.default_long_hold_timeout_ms = super::rules::parse_long_hold(&self.long_hold)?);
-        changed!(hold => settings.default_hold_timeout_ms = hold);
-        changed!(double_tap => settings.default_double_tap_timeout_ms = double_tap);
-        changed!(macro_pause => settings.default_macro_step_pause_ms = macro_pause);
-        changed!(modifier_delay => settings.default_macro_modifier_delay_ms = modifier_delay);
-        changed!(combo => settings.combo_timeout_ms = combo);
-        changed!(macro_timeout => settings.macro_timeout_ms = macro_timeout);
-        changed!(commands_enabled => settings.commands_enabled = self.commands_enabled);
-        changed!(use_gamemoded => settings.game_mode.use_gamemoded = self.use_gamemoded);
-        changed!(use_fullscreen => settings.game_mode.use_fullscreen = self.use_fullscreen);
-        changed!(use_steam => settings.game_mode.use_steam = self.use_steam);
-        changed!(use_lutris => settings.game_mode.use_lutris = self.use_lutris);
-        changed!(use_heroic => settings.game_mode.use_heroic = self.use_heroic);
-        changed!(use_umu => settings.game_mode.use_umu = self.use_umu);
-        changed!(use_gamescope => settings.game_mode.use_gamescope = self.use_gamescope);
-        changed!(use_app_category => settings.game_mode.use_app_category = self.use_app_category);
-        changed!(use_game_bar => settings.game_mode.use_game_bar = self.use_game_bar);
-        changed!(matchers => settings.game_mode.process_matchers = self.matchers.clone());
-        changed!(text_mode => settings.linux_wayland_text_mode = choice(&TextMode::ALL, self.text_mode));
-        changed!(paste_shortcut => settings.linux_paste_shortcut = choice(&PasteShortcut::ALL, self.paste_shortcut));
-        changed!(terminal_paste_shortcut => settings.linux_terminal_paste_shortcut = choice(&TERMINAL_PASTE_SHORTCUTS, self.terminal_paste_shortcut));
-        changed!(ydotool => settings.linux_ydotool_path = self.ydotool.trim().into());
-        changed!(xdotool => settings.linux_xdotool_path = self.xdotool.trim().into());
-        changed!(keyboard => settings.input_device_path = path(&self.keyboard));
-        changed!(mouse => settings.input_mouse_device_path = path(&self.mouse));
-        Ok(())
-    }
 }
 
 /// Show the games and the exclusions, and all names for the duplicate check.
@@ -351,7 +272,20 @@ fn save_matcher(
 struct State {
     base: Option<Form>,
     matchers: Vec<GameModeProcessMatcher>,
-    autosave: slint::Timer,
+    autosave: super::autosave::Autosave,
+}
+
+impl super::autosave::Draft for State {
+    fn autosave(&self) -> &super::autosave::Autosave {
+        &self.autosave
+    }
+
+    fn save(&mut self, ui: &SettingsWindow, document: &Document) {
+        self.autosave.cancel();
+        let message = save(ui, document, self);
+        ui.global::<SettingsEditor>()
+            .set_message(crate::notifications::report(ui, &message));
+    }
 }
 
 /// Rules and automatic layout rules that depend on game mode.
@@ -402,13 +336,13 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State, force: b
                                 .into_iter()
                                 .map(|place| CommandPlaceRow {
                                     kind: match place.kind {
-                                        PlaceKind::RuleTap => 0,
-                                        PlaceKind::RuleHold => 1,
-                                        PlaceKind::RuleLongHold => 2,
-                                        PlaceKind::RuleDoubleTap => 3,
-                                        PlaceKind::LayerKey => 4,
-                                        PlaceKind::Macro => 5,
-                                        PlaceKind::QuickAction => 6,
+                                        PlaceKind::RuleTap => CommandPlace::RuleTap,
+                                        PlaceKind::RuleHold => CommandPlace::RuleHold,
+                                        PlaceKind::RuleLongHold => CommandPlace::RuleLongHold,
+                                        PlaceKind::RuleDoubleTap => CommandPlace::RuleDoubleTap,
+                                        PlaceKind::LayerKey => CommandPlace::LayerKey,
+                                        PlaceKind::Macro => CommandPlace::Macro,
+                                        PlaceKind::QuickAction => CommandPlace::QuickAction,
                                     },
                                     layer: place.layer.into(),
                                     name: place.name.into(),
@@ -450,8 +384,8 @@ fn device_choices(
     let saved = saved.trim();
     if !saved.is_empty() && !devices.iter().any(|device| device.path == saved) {
         choices.push(DeviceChoice {
-            label: device_label("", saved).into(),
-            detail: short_path(saved).into(),
+            label: devices::label("", saved).into(),
+            detail: devices::short_path(saved).into(),
             path: saved.into(),
             group: DeviceGroup::Missing,
             ..Default::default()
@@ -479,8 +413,8 @@ fn device_choices(
     ] {
         for device in devices.iter().filter(|device| group_of(device) == group) {
             choices.push(DeviceChoice {
-                label: device_label(&device.name, &device.path).into(),
-                detail: short_path(&device.path).into(),
+                label: devices::label(&device.name, &device.path).into(),
+                detail: devices::short_path(&device.path).into(),
                 path: device.path.clone().into(),
                 group,
                 ..Default::default()
@@ -504,64 +438,6 @@ fn device_choices(
             > 1;
     }
     choices
-}
-
-const INPUT_PREFIX: &str = "/dev/input/";
-/// Longest path shown in a row; longer ones keep their distinctive end.
-const MAX_DETAIL_CHARS: usize = 60;
-
-/// Device name, or one read from its `by-id` link when the kernel gives none.
-fn device_label(name: &str, path: &str) -> String {
-    let name = name.trim();
-    if !name.is_empty() && name != "(unknown)" {
-        return name.to_owned();
-    }
-    path.strip_prefix("/dev/input/by-id/")
-        .map(|link| {
-            let link = strip_event_suffix(link);
-            let link = ["usb-", "bluetooth-", "i2c-", "serio-", "platform-"]
-                .iter()
-                .find_map(|bus| link.strip_prefix(bus))
-                .unwrap_or(link);
-            let link = link.split(':').next().unwrap_or(link);
-            let link = match link.rsplit_once("-if") {
-                Some((head, tail))
-                    if !tail.is_empty() && tail.chars().all(|c| c.is_ascii_digit()) =>
-                {
-                    head
-                }
-                _ => link,
-            };
-            link.replace('_', " ").trim().to_owned()
-        })
-        .filter(|label| !label.is_empty())
-        .unwrap_or_else(|| short_path(path))
-}
-
-/// Path without the shared `/dev/input/` prefix and udev's `-event-*`
-/// suffix, cut from the left when still too long.
-fn short_path(path: &str) -> String {
-    let Some(rest) = path.strip_prefix(INPUT_PREFIX) else {
-        return path.to_owned();
-    };
-    let rest = strip_event_suffix(rest);
-    let rest = match rest.split_once('/') {
-        Some((dir, link)) => format!("{dir} · {link}"),
-        None => rest.to_owned(),
-    };
-    let count = rest.chars().count();
-    if count <= MAX_DETAIL_CHARS {
-        return rest;
-    }
-    let tail: String = rest.chars().skip(count - (MAX_DETAIL_CHARS - 1)).collect();
-    format!("…{tail}")
-}
-
-fn strip_event_suffix(link: &str) -> &str {
-    match link.rfind("-event") {
-        Some(at) if !link[at + 6..].contains(['/', '.']) && at > 0 => &link[..at],
-        _ => link,
-    }
 }
 
 /// Rows matching `query`: the suggested devices and a missing saved one,
@@ -668,14 +544,11 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) -> Msg {
     let saved = document.edit(View::Settings, |config| {
         config.update_settings(|current| *current = settings)
     });
-    match saved {
-        Ok(saved) => {
-            state.base = None;
-            refresh(ui, document, state, true);
-            saved.message(Msg::None)
-        }
-        Err(error) => Msg::from(&error),
+    if saved.is_ok() {
+        state.base = None;
+        refresh(ui, document, state, true);
     }
+    super::outcome(&saved, Msg::None)
 }
 
 /// Show what keeps the mapper from using the input devices, if anything.
@@ -724,71 +597,41 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     }
     refresh(ui, document, &mut state.borrow_mut(), true);
 
-    let weak = ui.as_weak();
-    let shared = state.clone();
-    document.subscribe(View::Settings, move |document| {
-        // Busy: this page's own save is running and refreshes by itself.
-        if let (Some(ui), Ok(mut state)) = (weak.upgrade(), shared.try_borrow_mut()) {
-            refresh(&ui, document, &mut state, false);
-        }
+    super::autosave::subscribe(
+        ui,
+        document,
+        View::Settings,
+        &state,
+        |ui, document, state| refresh(ui, document, state, false),
+    );
+
+    on!(ui, e.on_save, doc = document, shared = state => |ui| {
+        super::autosave::Draft::save(&mut *shared.borrow_mut(), &ui, &doc);
     });
 
-    let weak = ui.as_weak();
-    let (doc, shared) = (document.clone(), state.clone());
-    e.on_save(move || {
-        if let Some(ui) = weak.upgrade() {
-            shared.borrow().autosave.stop();
-            let message = save(&ui, &doc, &mut shared.borrow_mut());
-            ui.global::<SettingsEditor>()
-                .set_message(crate::notifications::report(&ui, &message));
-        }
+    on!(ui, e.on_schedule_save, doc = document, shared = state => |ui| {
+        super::autosave::schedule(&ui, &doc, &shared);
     });
 
-    let weak = ui.as_weak();
-    let shared = state.clone();
-    e.on_schedule_save(move || {
-        let weak = weak.clone();
-        shared
-            .borrow()
-            .autosave
-            .start(slint::TimerMode::SingleShot, AUTOSAVE_DELAY, move || {
-                if let Some(ui) = weak.upgrade() {
-                    ui.global::<SettingsEditor>().invoke_save();
-                }
-            });
+    on!(ui, e.on_refresh_devices => |ui| {
+        refresh_devices(&ui);
     });
 
-    let weak = ui.as_weak();
-    e.on_refresh_devices(move || {
-        if let Some(ui) = weak.upgrade() {
-            refresh_devices(&ui);
-        }
+    on!(ui, e.on_select_device => |ui, path| {
+        let e = ui.global::<SettingsEditor>();
+        e.set_keyboard_device_path(path.trim().into());
+        // Saving reloads the form, which rebuilds both device lists.
+        e.invoke_save();
     });
 
-    let weak = ui.as_weak();
-    e.on_select_device(move |path| {
-        if let Some(ui) = weak.upgrade() {
-            let e = ui.global::<SettingsEditor>();
-            e.set_keyboard_device_path(path.trim().into());
-            // Saving reloads the form, which rebuilds both device lists.
-            e.invoke_save();
-        }
+    on!(ui, e.on_select_mouse => |ui, path| {
+        let e = ui.global::<SettingsEditor>();
+        e.set_mouse_device_path(path.trim().into());
+        // Saving reloads the form, which rebuilds both device lists.
+        e.invoke_save();
     });
 
-    let weak = ui.as_weak();
-    e.on_select_mouse(move |path| {
-        if let Some(ui) = weak.upgrade() {
-            let e = ui.global::<SettingsEditor>();
-            e.set_mouse_device_path(path.trim().into());
-            // Saving reloads the form, which rebuilds both device lists.
-            e.invoke_save();
-        }
-    });
-
-    let weak = ui.as_weak();
-    let shared = state.clone();
-    e.on_save_process(move |index, name, window_only, blacklist| {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, e.on_save_process, shared = state => |ui, index, name, window_only, blacklist| {
         let e = ui.global::<SettingsEditor>();
         let mut state = shared.borrow_mut();
         if !save_matcher(&mut state.matchers, index, &name, window_only, blacklist) {
@@ -799,15 +642,10 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         e.invoke_save();
     });
 
-    let weak = ui.as_weak();
-    let shared = state.clone();
-    e.on_delete_process(move |index| {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, e.on_delete_process, shared = state => |ui, index| {
         let e = ui.global::<SettingsEditor>();
         let mut state = shared.borrow_mut();
-        let Some(index) = usize::try_from(index)
-            .ok()
-            .filter(|index| *index < state.matchers.len())
+        let Some(index) = super::index(index, state.matchers.len())
         else {
             return;
         };

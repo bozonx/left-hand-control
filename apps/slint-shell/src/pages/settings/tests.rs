@@ -154,30 +154,6 @@ fn virtual_group_rows_start_under_a_heading() {
 }
 
 #[test]
-fn device_rows_show_readable_names_and_short_paths() {
-    let sofle = "/dev/input/by-id/usb-MTKB_W-SOFLE_vial:f64c2b3c-event-kbd";
-    assert_eq!(device_label("", sofle), "MTKB W-SOFLE vial");
-    assert_eq!(device_label("(unknown)", sofle), "MTKB W-SOFLE vial");
-    assert_eq!(device_label("Logitech", sofle), "Logitech");
-    assert_eq!(
-        device_label(
-            "",
-            "/dev/input/by-id/usb-Logitech_USB_Receiver-if02-event-mouse"
-        ),
-        "Logitech USB Receiver"
-    );
-    assert_eq!(short_path(sofle), "by-id · usb-MTKB_W-SOFLE_vial:f64c2b3c");
-    assert_eq!(short_path("/dev/input/event18"), "event18");
-    assert_eq!(device_label("", "/dev/input/event18"), "event18");
-    assert_eq!(short_path("windows:keyboard"), "windows:keyboard");
-    let long = short_path(
-        "/dev/input/by-path/pci-0000:00:14.3-platform-PNP0C0D:00-very-long-name-for-a-device-event",
-    );
-    assert!(long.starts_with('…') && long.ends_with("long-name-for-a-device"));
-    assert_eq!(long.chars().count(), MAX_DETAIL_CHARS);
-}
-
-#[test]
 fn saving_keeps_fields_changed_elsewhere() {
     let mut settings = AppSettings::default();
     let base = Form::from_settings(&settings);

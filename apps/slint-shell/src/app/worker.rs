@@ -215,7 +215,7 @@ impl App {
                     Err(error) => self.set_error(Msg::WorkerError(error.to_string())),
                 }
                 self.supervisor.borrow_mut().worker = Some(worker);
-                self.menus_sent.borrow_mut().take();
+                self.menus.sent.borrow_mut().take();
                 self.flush_worker_show();
                 self.resend_layer_hint();
             }

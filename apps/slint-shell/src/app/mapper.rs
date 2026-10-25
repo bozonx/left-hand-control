@@ -11,7 +11,10 @@ use lhc_core::{
     },
 };
 use slint::ComponentHandle;
-use std::time::{Duration, Instant};
+use std::{
+    cell::{Cell, RefCell},
+    time::{Duration, Instant},
+};
 
 /// Attempts after the first one to start the mapper on launch. At login the
 /// keyboard or `/dev/input` permissions may not be ready yet, and a quickly
@@ -87,6 +90,47 @@ pub(super) fn forward_core_events() {
             post(|app| app.context_changed())
         }
     });
+}
+
+/// What the settings show about the mapper's state and uptime.
+#[derive(Default)]
+pub(super) struct MapperStatus {
+    /// Running, busy and error last shown.
+    pub(super) last: RefCell<Option<(bool, bool, Option<String>)>>,
+    /// When the running mapper started.
+    since: Cell<Option<Instant>>,
+    /// How long the mapper ran before it stopped unexpectedly, and when.
+    crash: Cell<Option<(Duration, Instant)>>,
+    /// Keeps the shown uptime current.
+    uptime_clock: slint::Timer,
+}
+
+impl MapperStatus {
+    /// Remember when the mapper started and, when it stopped by itself, how
+    /// long it ran. Returns whether there is an uptime to show.
+    fn track(&self, running: bool, failed: bool, now: Instant) -> bool {
+        if running {
+            if self.since.get().is_none() {
+                self.since.set(Some(now));
+                self.crash.set(None);
+            }
+        } else if let Some(since) = self.since.take() {
+            self.crash.set(failed.then(|| (now - since, now)));
+        }
+        self.since.get().is_some() || self.crash.get().is_some()
+    }
+
+    /// Minutes the mapper runs, ran before a crash and since that crash;
+    /// -1 when unknown.
+    fn minutes(&self, now: Instant) -> (i32, i32, i32) {
+        let minutes = |time: Duration| i32::try_from(time.as_secs() / 60).unwrap_or(i32::MAX);
+        let (ran, ago) = self
+            .crash
+            .get()
+            .map_or((-1, -1), |(ran, at)| (minutes(ran), minutes(now - at)));
+        let uptime = self.since.get().map_or(-1, |since| minutes(now - since));
+        (uptime, ran, ago)
+    }
 }
 
 impl App {
@@ -243,10 +287,10 @@ impl App {
             status.waiting_for_device,
             status.last_error.clone(),
         );
-        if self.last_mapper_status.borrow().as_ref() == Some(&current) {
+        if self.mapper_status.last.borrow().as_ref() == Some(&current) {
             return;
         }
-        *self.last_mapper_status.borrow_mut() = Some(current);
+        *self.mapper_status.last.borrow_mut() = Some(current);
         if !status.running
             && let Some(error) = &status.last_error
         {
@@ -264,23 +308,14 @@ impl App {
             .set_status(crate::notifications::report(&self.settings, &message));
     }
 
-    /// Remember when the mapper started and, when it stopped by itself, how
-    /// long it ran, so the settings can show it.
+    /// Track the mapper's uptime and keep it shown while there is one.
     fn track_uptime(&self, running: bool, failed: bool) {
-        let now = Instant::now();
-        if running {
-            if self.mapper_since.get().is_none() {
-                self.mapper_since.set(Some(now));
-                self.mapper_crash.set(None);
-            }
-        } else if let Some(since) = self.mapper_since.take() {
-            self.mapper_crash.set(failed.then(|| (now - since, now)));
-        }
-        let shown = self.mapper_since.get().is_some() || self.mapper_crash.get().is_some();
-        if !shown {
-            self.uptime_clock.stop();
-        } else if !self.uptime_clock.running() {
-            self.uptime_clock
+        let status = &self.mapper_status;
+        if !status.track(running, failed, Instant::now()) {
+            status.uptime_clock.stop();
+        } else if !status.uptime_clock.running() {
+            status
+                .uptime_clock
                 .start(slint::TimerMode::Repeated, UPTIME_TICK, || {
                     super::with_app(|app| app.show_uptime())
                 });
@@ -289,18 +324,9 @@ impl App {
     }
 
     fn show_uptime(&self) {
-        let now = Instant::now();
-        let minutes = |time: Duration| i32::try_from(time.as_secs() / 60).unwrap_or(i32::MAX);
-        let (ran, ago) = self
-            .mapper_crash
-            .get()
-            .map_or((-1, -1), |(ran, at)| (minutes(ran), minutes(now - at)));
+        let (uptime, ran, ago) = self.mapper_status.minutes(Instant::now());
         let state = self.settings.global::<AppState>();
-        state.set_mapper_uptime(
-            self.mapper_since
-                .get()
-                .map_or(-1, |since| minutes(now - since)),
-        );
+        state.set_mapper_uptime(uptime);
         state.set_mapper_ran(ran);
         state.set_mapper_stopped_ago(ago);
     }
@@ -398,7 +424,7 @@ impl App {
             }
         };
         lhc_core::active_window::set_titles_needed(runtime.uses_titles);
-        self.mapper_crash.set(None);
+        self.mapper_status.crash.set(None);
         self.set_mapper_busy(true);
         state.set_status(Msg::MapperStarting.to_ui());
         std::thread::spawn(move || {

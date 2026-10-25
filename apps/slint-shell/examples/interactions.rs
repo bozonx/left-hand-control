@@ -498,8 +498,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         document.read().layout().rules[0].key,
         "ShiftLeft+ControlRight"
     );
-    rules.invoke_edit(RuleField::HoldMode, "2".into());
-    assert_eq!(rules.get_hold_mode(), 2);
+    rules.invoke_set_hold_mode(HoldMode::Action);
+    assert_eq!(rules.get_hold_mode(), HoldMode::Action);
     rules.invoke_open_dialog(0, RuleDialog::LongHold);
     assert!(!picker.get_hold_action());
     picker.invoke_select_behavior(PickerBehavior::Action);
@@ -530,7 +530,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         document.read().layout().rules[0].long_hold_action,
         "builtin:copyLine"
     );
-    rules.invoke_edit(RuleField::HoldMode, "1".into());
+    rules.invoke_set_hold_mode(HoldMode::Layer);
     assert!(
         document.read().layout().rules[0]
             .long_hold_action
@@ -811,7 +811,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 picker.invoke_select_behavior(PickerBehavior::Action);
                 picker.set_value("ShiftLeft+ControlRight".into());
                 picker.invoke_apply();
-                rules.invoke_edit(RuleField::HoldMode, "2".into());
+                rules.invoke_set_hold_mode(HoldMode::Action);
                 rules.invoke_open_dialog(0, RuleDialog::LongHold);
                 picker.invoke_select_behavior(PickerBehavior::Action);
                 picker.set_value("text:hello".into());
@@ -822,7 +822,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 snapshot(&ui, "rules-long-hold-advanced");
                 let rules = ui.global::<RulesEditor>();
                 rules.set_dialog(RuleDialog::None);
-                rules.invoke_edit(RuleField::HoldMode, "1".into());
+                rules.invoke_set_hold_mode(HoldMode::Layer);
                 rules.invoke_open_dialog(0, RuleDialog::Layer);
                 let id = document.read().layout().layers[0].id.clone();
                 rules.invoke_choose(id.into());

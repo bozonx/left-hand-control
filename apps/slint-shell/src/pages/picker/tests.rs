@@ -97,16 +97,63 @@ fn physical_key_names_match_config_codes() {
 
 #[test]
 fn picker_modes_restrict_values() {
-    assert!(valid("ControlRight", true, false, "", None));
+    let keys = Filter {
+        key_only: true,
+        ..Filter::default()
+    };
+    assert!(keys.accepts("ControlRight", None));
     for value in ["", "Ctrl+KeyA", "builtin:copyLine", "text:hello", "NotAKey"] {
-        assert!(!valid(value, true, false, "", None));
+        assert!(!keys.accepts(value, None));
     }
-    assert!(!valid("pause:100", false, false, "", None));
-    assert!(valid("pause:100", false, true, "", None));
-    assert!(!valid("pause:10001", false, true, "", None));
-    assert!(!valid("pause:0", false, true, "", None));
-    assert!(!valid("macro:self", false, true, "self", None));
-    assert!(valid("builtin:copyLine", false, true, "copyLine", None));
+    assert!(!Filter::default().accepts("pause:100", None));
+    let step = Filter {
+        macro_step: true,
+        excluded_macro: "self".into(),
+        ..Filter::default()
+    };
+    assert!(step.accepts("pause:100", None));
+    assert!(!step.accepts("pause:10001", None));
+    assert!(!step.accepts("pause:0", None));
+    assert!(!step.accepts("macro:self", None));
+    assert!(step.accepts("builtin:copyLine", None));
+}
+
+#[test]
+fn listed_values_are_the_accepted_ones() {
+    let trigger = Filter {
+        key_only: true,
+        trigger: true,
+        ..Filter::default()
+    };
+    assert!(trigger.admits("ShiftLeft+KeyA") == trigger.accepts("ShiftLeft+KeyA", None));
+    let extra = Filter {
+        unavailable_keys: vec!["KeyA".into()],
+        key_only: true,
+        ..Filter::default()
+    };
+    assert!(!extra.admits("KeyA") && !extra.accepts("KeyA", None));
+    let held = Filter {
+        held_key: true,
+        ..Filter::default()
+    };
+    assert!(!held.admits("text:hi") && !held.accepts("text:hi", None));
+}
+
+#[test]
+fn requests_choose_the_initial_behavior() {
+    let tap = PickerRequest {
+        allow_default: true,
+        allow_swallow: true,
+        swallowed: true,
+        ..PickerRequest::default()
+    };
+    assert_eq!(tap.behavior(false), PickerBehavior::Swallow);
+    let default = PickerRequest {
+        allow_default: true,
+        ..PickerRequest::default()
+    };
+    assert_eq!(default.behavior(true), PickerBehavior::Native);
+    assert_eq!(default.behavior(false), PickerBehavior::Action);
 }
 
 #[test]

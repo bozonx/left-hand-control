@@ -24,13 +24,13 @@ fn hold_modes_clear_incompatible_options_and_preserve_layer_assignments() {
     let mut rule = LayerRule::new("r".into(), "ShiftLeft+ControlLeft");
     rule.layer_id = "nav".into();
     rule.hold_action = Some("AltLeft".into());
-    assert_eq!(hold_mode(&rule), 1);
-    set_field(&mut rule, RuleField::HoldMode, "2", "");
+    assert_eq!(hold_mode(&rule), HoldMode::Layer);
+    set_hold_behavior(&mut rule, HoldBehavior::Action);
     assert_eq!(rule.hold_behavior(), HoldBehavior::Action);
     assert!(rule.layer_id.is_empty());
     assert_eq!(rule.hold_action.as_deref(), Some(""));
     rule.long_hold_action = "text:hello".into();
-    set_field(&mut rule, RuleField::HoldMode, "1", "");
+    set_hold_behavior(&mut rule, HoldBehavior::Layer);
     assert!(rule.long_hold_action.is_empty());
     assert_eq!(rule.hold_behavior(), HoldBehavior::Layer);
 }
@@ -55,7 +55,7 @@ fn choosing_nothing_clears_all_hold_assignments() {
     rule.layer_id = "nav".into();
     rule.long_hold_action = "text:hello".into();
     rule.hold_action = Some("AltLeft".into());
-    set_field(&mut rule, RuleField::HoldMode, "0", "");
+    set_hold_behavior(&mut rule, HoldBehavior::None);
     assert_eq!(rule.hold_behavior(), HoldBehavior::None);
     assert!(rule.layer_id.is_empty());
     assert!(rule.long_hold_action.is_empty());
@@ -77,18 +77,6 @@ fn properties_validate_and_apply() {
     );
     set_property(&mut rule, RuleDialog::HoldTimeout, "").unwrap();
     assert_eq!(rule.hold_timeout_ms, None);
-}
-
-#[test]
-fn swallow_toggles_keep_the_action() {
-    let mut rule = LayerRule::new("r".into(), "KeyA");
-    rule.tap_action = Some("KeyB".into());
-    set_field(&mut rule, RuleField::SwallowTap, "true", "KeyB");
-    assert_eq!(rule.tap_action, None);
-    set_field(&mut rule, RuleField::SwallowTap, "false", "KeyB");
-    assert_eq!(rule.tap_action.as_deref(), Some("KeyB"));
-    set_field(&mut rule, RuleField::Enabled, "false", "");
-    assert!(!rule.is_enabled());
 }
 
 #[test]

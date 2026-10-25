@@ -5,8 +5,8 @@ use crate::{
     document::{Document, Saved, View},
     i18n::Msg,
     ui::{
-        ActionPicker, HoldDetection, PickerTarget, RuleDialog, RuleField, RuleLayerChoice, RuleRow,
-        RulesEditor, SettingsWindow,
+        ActionPicker, HoldDetection, HoldMode, PickerTarget, PickerTitle, RuleDialog,
+        RuleLayerChoice, RuleRow, RulesEditor, SettingsWindow,
     },
 };
 use lhc_core::profile::{
@@ -84,11 +84,19 @@ fn optional_long_hold(value: &str) -> Result<Option<u64>, Msg> {
     }
 }
 
-fn hold_mode(rule: &LayerRule) -> i32 {
+fn hold_mode(rule: &LayerRule) -> HoldMode {
     match rule.hold_behavior() {
-        HoldBehavior::None => 0,
-        HoldBehavior::Layer => 1,
-        HoldBehavior::Action => 2,
+        HoldBehavior::None => HoldMode::None,
+        HoldBehavior::Layer => HoldMode::Layer,
+        HoldBehavior::Action => HoldMode::Action,
+    }
+}
+
+fn hold_behavior(mode: HoldMode) -> HoldBehavior {
+    match mode {
+        HoldMode::None => HoldBehavior::None,
+        HoldMode::Layer => HoldBehavior::Layer,
+        HoldMode::Action => HoldBehavior::Action,
     }
 }
 
@@ -117,9 +125,10 @@ fn has_conditions(rule: &LayerRule) -> bool {
 
 /// Selected rule index, or `None` when nothing valid is selected.
 fn selected(ui: &SettingsWindow, document: &Document) -> Option<usize> {
-    usize::try_from(ui.global::<RulesEditor>().get_selected())
-        .ok()
-        .filter(|index| *index < document.read().layout().rules.len())
+    super::index(
+        ui.global::<RulesEditor>().get_selected(),
+        document.read().layout().rules.len(),
+    )
 }
 
 /// Show the rules; with `fields` also load the selected rule into the
@@ -168,7 +177,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
             languages: join(&rule.condition_layouts).into(),
             applications: chip_text(&rule.condition_apps_whitelist).into(),
             excluded: chip_text(&rule.condition_apps_blacklist).into(),
-            hold_timeout: if hold_mode(rule) == 2 {
+            hold_timeout: if hold_mode(rule) == HoldMode::Action {
                 String::new()
             } else {
                 timeout_text(rule.hold_timeout_ms)
@@ -206,9 +215,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
     } else {
         editor.set_rows(ModelRc::new(VecModel::from(rows)));
     }
-    let index = usize::try_from(editor.get_selected())
-        .ok()
-        .filter(|index| *index < layout.rules.len());
+    let index = super::index(editor.get_selected(), layout.rules.len());
     editor.set_selected(index.map_or(-1, |index| index as i32));
     let (true, Some(rule)) = (fields, index.and_then(|index| layout.rules.get(index))) else {
         return;
@@ -330,30 +337,8 @@ fn set_hold_behavior(rule: &mut LayerRule, behavior: HoldBehavior) {
     if behavior != HoldBehavior::Action {
         rule.long_hold_action.clear();
     }
-    if behavior == HoldBehavior::None {
+    if behavior != HoldBehavior::Layer {
         rule.hold_action = Some(String::new());
-    }
-    if behavior == HoldBehavior::Action {
-        rule.hold_action = Some(String::new());
-    }
-}
-
-/// Set a property edited in place. Swallowing keeps `current` so turning
-/// it off restores the previous action.
-fn set_field(rule: &mut LayerRule, field: RuleField, value: &str, current: &str) {
-    let on = value == "true";
-    match field {
-        RuleField::HoldMode => set_hold_behavior(
-            rule,
-            match value {
-                "1" => HoldBehavior::Layer,
-                "2" => HoldBehavior::Action,
-                _ => HoldBehavior::None,
-            },
-        ),
-        RuleField::Enabled => rule.enabled = (!on).then_some(false),
-        RuleField::SwallowTap => rule.tap_action = (!on).then(|| current.to_owned()),
-        RuleField::SwallowHold => rule.hold_action = (!on).then(|| current.to_owned()),
     }
 }
 
@@ -417,6 +402,38 @@ pub(super) fn choose(ui: &SettingsWindow, document: &Document, value: &str) -> R
     Ok(())
 }
 
+/// What the picker may assign to the rule property being edited.
+pub(super) fn picker_request(ui: &SettingsWindow, key_only: bool) -> super::picker::PickerRequest {
+    let editor = ui.global::<RulesEditor>();
+    let field = editor.get_field();
+    // The advanced dialog chooses "trigger itself" / "nothing" for the
+    // held key; the picker only picks the key.
+    let held_key = field == RuleDialog::Hold;
+    let hold_layer = held_key && !editor.get_layer().is_empty();
+    super::picker::PickerRequest {
+        title: match field {
+            RuleDialog::DoubleTap => PickerTitle::DoubleTap,
+            RuleDialog::Tap => PickerTitle::Tap,
+            RuleDialog::Hold => PickerTitle::Hold,
+            RuleDialog::LongHold => PickerTitle::LongHold,
+            _ => PickerTitle::Auto,
+        },
+        trigger_chords: key_only && field == RuleDialog::Key,
+        rule_action: matches!(field, RuleDialog::Tap | RuleDialog::Hold),
+        swallowed: match field {
+            RuleDialog::Tap => editor.get_swallow_tap(),
+            RuleDialog::Hold => editor.get_swallow_hold(),
+            _ => false,
+        },
+        allow_default: matches!(field, RuleDialog::Tap | RuleDialog::DoubleTap),
+        allow_swallow: field == RuleDialog::Tap,
+        empty_default: matches!(field, RuleDialog::DoubleTap | RuleDialog::LongHold),
+        hold_action: held_key,
+        hold_layer,
+        ..Default::default()
+    }
+}
+
 fn layer_choices<'a>(layers: impl Iterator<Item = &'a Layer>) -> ModelRc<RuleLayerChoice> {
     ModelRc::new(VecModel::from(
         layers
@@ -445,26 +462,16 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
     let editor = ui.global::<RulesEditor>();
 
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_refresh(move || {
-        if let Some(ui) = weak.upgrade() {
-            refresh(&ui, &doc, true);
-        }
+    on!(ui, editor.on_refresh, doc = document => |ui| {
+        refresh(&ui, &doc, true);
     });
 
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_select(move |index| {
-        if let Some(ui) = weak.upgrade() {
-            ui.global::<RulesEditor>().set_selected(index);
-            refresh(&ui, &doc, true);
-        }
+    on!(ui, editor.on_select, doc = document => |ui, index| {
+        ui.global::<RulesEditor>().set_selected(index);
+        refresh(&ui, &doc, true);
     });
 
-    let weak = ui.as_weak();
-    editor.on_add(move || {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, editor.on_add => |ui| {
         let editor = ui.global::<RulesEditor>();
         editor.set_selected(-1);
         editor.set_field(RuleDialog::Key);
@@ -473,10 +480,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             .invoke_open(PickerTarget::Rule, -1, "".into(), true);
     });
 
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_remove(move || {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, editor.on_remove, doc = document => |ui| {
         let Some(index) = selected(&ui, &doc) else {
             return;
         };
@@ -499,10 +503,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
     });
 
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_move(move |from, to| {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, editor.on_move, doc = document => |ui, from, to| {
         let len = doc.read().layout().rules.len();
         let (Ok(from), Ok(to)) = (usize::try_from(from), usize::try_from(to)) else {
             return;
@@ -524,10 +525,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let doc = document.clone();
     editor.on_layer_name_error(move |name| super::name_error(doc.read().layer_name(&name, None)));
 
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_create_layer(move |name| {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, editor.on_create_layer, doc = document => |ui, name| {
         let editor = ui.global::<RulesEditor>();
         let checked = doc.read().layer_name(&name, None);
         let name = match checked {
@@ -557,10 +555,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
     });
 
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_open_dialog(move |index, dialog| {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, editor.on_open_dialog, doc = document => |ui, index, dialog| {
         let editor = ui.global::<RulesEditor>();
         // A key picked for the advanced dialog must not reload its draft.
         let draft = editor.get_dialog() == RuleDialog::Advanced && dialog == RuleDialog::Hold;
@@ -620,10 +615,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         editor.set_dialog(dialog);
     });
 
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_filter_layers(move |query| {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, editor.on_filter_layers, doc = document => |ui, query| {
         let query = query.to_lowercase();
         let config = doc.read();
         ui.global::<RulesEditor>().set_layer_items(layer_choices(
@@ -634,18 +626,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         ));
     });
 
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_choose(move |value| {
-        if let Some(ui) = weak.upgrade() {
-            let _ = choose(&ui, &doc, &value);
-        }
+    on!(ui, editor.on_choose, doc = document => |ui, value| {
+        let _ = choose(&ui, &doc, &value);
     });
 
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_apply_conditions(move || {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, editor.on_apply_conditions, doc = document => |ui| {
         let Some(index) = selected(&ui, &doc) else {
             return;
         };
@@ -665,10 +650,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
     });
 
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_apply_advanced(move || {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, editor.on_apply_advanced, doc = document => |ui| {
         let Some(index) = selected(&ui, &doc) else {
             return;
         };
@@ -711,24 +693,19 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
     });
 
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    editor.on_edit(move |field, value| {
-        let Some(ui) = weak.upgrade() else { return };
-        let Some(index) = selected(&ui, &doc) else {
-            return;
-        };
-        let editor = ui.global::<RulesEditor>();
-        let current = match field {
-            RuleField::SwallowTap => editor.get_tap(),
-            RuleField::SwallowHold => editor.get_hold(),
-            _ => "".into(),
-        };
-        let _ = change_rule(&ui, &doc, index, false, |rule| {
-            set_field(rule, field, &value, &current)
-        });
-        if field == RuleField::HoldMode {
-            refresh(&ui, &doc, true);
+    on!(ui, editor.on_set_enabled, doc = document => |ui, enabled| {
+        if let Some(index) = selected(&ui, &doc) {
+            let _ = change_rule(&ui, &doc, index, false, |rule| {
+                rule.enabled = (!enabled).then_some(false);
+            });
+        }
+    });
+
+    on!(ui, editor.on_set_hold_mode, doc = document => |ui, mode| {
+        if let Some(index) = selected(&ui, &doc) {
+            let _ = change_rule(&ui, &doc, index, true, |rule| {
+                set_hold_behavior(rule, hold_behavior(mode));
+            });
         }
     });
 }

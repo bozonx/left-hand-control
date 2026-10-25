@@ -195,6 +195,11 @@ impl Command {
         }
     }
 
+    /// Name shown for the command: its name, or the script when unnamed.
+    pub fn display_name(&self) -> &str {
+        display_name(&self.name, self.script())
+    }
+
     /// Replace the script this operating system runs.
     pub fn set_script(&mut self, script: String) {
         if cfg!(target_os = "windows") {
@@ -203,6 +208,11 @@ impl Command {
             self.linux = script;
         }
     }
+}
+
+/// `name`, or `fallback` when the name is empty.
+pub fn display_name<'a>(name: &'a str, fallback: &'a str) -> &'a str {
+    if name.is_empty() { fallback } else { name }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
@@ -546,6 +556,32 @@ pub enum LocalePreference {
 }
 
 impl LocalePreference {
+    /// Every choice, in the order the settings page lists them.
+    pub const ALL: [Self; 22] = [
+        Self::Auto,
+        Self::English,
+        Self::Russian,
+        Self::German,
+        Self::French,
+        Self::Spanish,
+        Self::Italian,
+        Self::Portuguese,
+        Self::Polish,
+        Self::Turkish,
+        Self::Ukrainian,
+        Self::Czech,
+        Self::Hungarian,
+        Self::Romanian,
+        Self::Greek,
+        Self::Croatian,
+        Self::Georgian,
+        Self::Kazakh,
+        Self::ChineseSimplified,
+        Self::ChineseTraditional,
+        Self::Japanese,
+        Self::Korean,
+    ];
+
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Auto => "auto",

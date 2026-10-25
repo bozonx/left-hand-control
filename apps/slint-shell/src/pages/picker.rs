@@ -5,10 +5,9 @@ use super::{keys, layers, rules};
 use crate::{
     document::Document,
     i18n::Msg,
-    keyboard,
     ui::{
         ActionPicker, LayersEditor, Locale, MacroEditor, MenuEditor, PickerBehavior,
-        PickerCategory, PickerCategoryCount, PickerItem, PickerTarget, SettingsWindow,
+        PickerCategory, PickerCategoryCount, PickerItem, PickerTarget, PickerTitle, SettingsWindow,
         ShortcutDesktop,
     },
 };
@@ -214,11 +213,7 @@ fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<PickerItem> {
             Action::System(_) => PickerCategory::SystemActions,
             _ => return None,
         };
-        let notice = match actions::execution_issue(&entry.action, &config) {
-            Some(actions::ExecutionIssue::CommandsDisabled) => Msg::CommandsDisabled,
-            Some(actions::ExecutionIssue::Unavailable) => Msg::ActionUnavailable,
-            None => Msg::None,
-        };
+        let notice = execution_notice(&entry.action, &config);
         let value = entry.action.format()?;
         let label = action_label(ui, entry.name).unwrap_or_else(|| value.clone());
         Some(PickerItem {
@@ -241,33 +236,188 @@ fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<PickerItem> {
     items
 }
 
-fn valid(
-    value: &str,
+/// Why a valid action may still not run, shown as a notice.
+fn execution_notice(action: &Action, config: &lhc_core::profile::model::AppConfig) -> Msg {
+    match actions::execution_issue(action, config) {
+        Some(actions::ExecutionIssue::CommandsDisabled) => Msg::CommandsDisabled,
+        Some(actions::ExecutionIssue::Unavailable) => Msg::ActionUnavailable,
+        None => Msg::None,
+    }
+}
+
+/// What the page opening the picker allows; built by that page from its
+/// own state so the picker does not read other pages.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub(super) struct PickerRequest {
+    pub title: PickerTitle,
+    /// Only a key can be chosen (no action).
+    pub key_only: bool,
+    /// A rule trigger: a key or key chord.
+    pub trigger_chords: bool,
+    pub macro_step: bool,
+    /// Assigns a layer key directly rather than a dialog draft.
+    pub layer_action: bool,
+    /// The tap or held-key action of a rule.
+    pub rule_action: bool,
+    /// The current assignment swallows the key.
+    pub swallowed: bool,
+    pub hold_modifiers: bool,
+    pub allow_default: bool,
+    pub allow_swallow: bool,
+    pub inherit_default: bool,
+    pub empty_default: bool,
+    pub quick_action: bool,
+    /// The key another key is held as: only held keys are allowed.
+    pub hold_action: bool,
+    /// Holding also activates a layer.
+    pub hold_layer: bool,
+}
+
+impl PickerRequest {
+    /// Request of a target that has no page-specific options.
+    fn plain(target: PickerTarget, key_only: bool) -> Self {
+        Self {
+            key_only,
+            macro_step: target == PickerTarget::MacroStep,
+            title: if target == PickerTarget::MacroStep {
+                PickerTitle::MacroStep
+            } else {
+                PickerTitle::Auto
+            },
+            quick_action: target == PickerTarget::QuickAction,
+            allow_default: target == PickerTarget::BaseKey,
+            ..Self::default()
+        }
+    }
+
+    /// Initial behavior for a current value (`empty` when unassigned).
+    fn behavior(&self, empty: bool) -> PickerBehavior {
+        if self.swallowed && self.allow_swallow {
+            PickerBehavior::Swallow
+        } else if self.allow_default && (empty || self.swallowed) {
+            PickerBehavior::Native
+        } else {
+            PickerBehavior::Action
+        }
+    }
+
+    /// Label of the "default" behavior.
+    fn native_label(&self) -> Msg {
+        if self.inherit_default {
+            Msg::PickerInherit
+        } else if self.quick_action {
+            Msg::PickerEmptyCell
+        } else if self.empty_default {
+            Msg::PickerNoAction
+        } else if self.hold_layer {
+            Msg::PickerLayerOnly
+        } else {
+            Msg::PickerNative
+        }
+    }
+}
+
+/// Ask the page owning `target` what the picker may assign.
+fn request(
+    ui: &SettingsWindow,
+    document: &Document,
+    target: PickerTarget,
+    index: i32,
     key_only: bool,
+) -> PickerRequest {
+    let mut request = match target {
+        PickerTarget::Rule => rules::picker_request(ui, key_only),
+        PickerTarget::LayerAction | PickerTarget::ExtraAction | PickerTarget::ExtraKey => {
+            layers::picker_request(ui, document, target, index)
+        }
+        PickerTarget::MacroStep | PickerTarget::QuickAction | PickerTarget::BaseKey => {
+            PickerRequest::plain(target, key_only)
+        }
+    };
+    request.key_only = key_only;
+    request.allow_default &= !key_only;
+    request
+}
+
+/// Which values the open picker accepts. The list and the Apply check use
+/// the same rules, so a listed value can always be applied.
+#[derive(Debug, Default)]
+struct Filter {
+    key_only: bool,
+    /// Rule trigger: a key or key chord.
+    trigger: bool,
+    /// Only keys that can be held.
+    held_key: bool,
     macro_step: bool,
-    excluded: &str,
-    config: Option<&ConfigDocument>,
-) -> bool {
-    if value.trim().is_empty() {
-        return false;
+    /// Macro being edited, which cannot call itself.
+    excluded_macro: String,
+    /// Keys that already have an extra row.
+    unavailable_keys: Vec<String>,
+}
+
+impl Filter {
+    /// Restrictions of the open picker; list items are checked with it.
+    fn admits(&self, value: &str) -> bool {
+        if self.unavailable_keys.iter().any(|key| key == value) {
+            return false;
+        }
+        if self.trigger {
+            return lhc_core::profile::key_catalog::valid_trigger(value);
+        }
+        if self.key_only {
+            return CATEGORIES.iter().any(|keys| keys.contains(&value));
+        }
+        if self.held_key && !actions::valid_held_key(value) {
+            return false;
+        }
+        !matches!(Action::parse(Some(value)),
+            Action::Macro(id) if !self.excluded_macro.is_empty() && id == self.excluded_macro)
     }
-    if key_only {
-        return CATEGORIES.iter().any(|keys| keys.contains(&value));
+
+    /// Whether `value` can be applied; `config` validates references.
+    fn accepts(&self, value: &str, config: Option<&ConfigDocument>) -> bool {
+        if value.trim().is_empty() || !self.admits(value) {
+            return false;
+        }
+        if self.key_only || self.trigger {
+            return true;
+        }
+        let action = Action::parse(Some(value));
+        match &action {
+            Action::Keys(_) if !actions::valid_held_key(value) => return false,
+            Action::Text(text) if text.is_empty() => return false,
+            Action::Pause(ms) => return self.macro_step && valid_pause(ms),
+            _ => {}
+        }
+        config.is_none_or(|config| actions::validate(&action, &config.config()).is_none())
     }
-    let action = Action::parse(Some(value));
-    if matches!(&action, Action::Macro(id) if !excluded.is_empty() && id == excluded) {
-        return false;
+}
+
+/// Filter of the open picker.
+fn filter(
+    ui: &SettingsWindow,
+    document: &Document,
+    picker: &ActionPicker,
+    target: Option<(PickerTarget, i32)>,
+) -> Filter {
+    let target = target.map(|(target, _)| target);
+    let key_only = picker.get_key_only();
+    Filter {
+        key_only,
+        trigger: key_only && target == Some(PickerTarget::Rule),
+        held_key: picker.get_hold_action(),
+        macro_step: picker.get_macro_step(),
+        excluded_macro: if picker.get_macro_step() {
+            super::macros::picker_macro_id(ui)
+        } else {
+            String::new()
+        },
+        unavailable_keys: if target == Some(PickerTarget::ExtraKey) {
+            layers::taken_extra_keys(ui, document)
+        } else {
+            Vec::new()
+        },
     }
-    if matches!(&action, Action::Keys(_)) && !actions::valid_held_key(value) {
-        return false;
-    }
-    if matches!(&action, Action::Text(text) if text.is_empty()) {
-        return false;
-    }
-    if let Action::Pause(ms) = &action {
-        return macro_step && valid_pause(ms);
-    }
-    config.is_none_or(|config| actions::validate(&action, &config.config()).is_none())
 }
 
 /// Warning for the command being edited: a missing working directory or
@@ -315,9 +465,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
     });
 
-    let weak = ui.as_weak();
-    picker.on_select_behavior(move |behavior| {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, picker.on_select_behavior => |ui, behavior| {
         let picker = ui.global::<ActionPicker>();
         if (behavior == PickerBehavior::Native && !picker.get_allow_default())
             || (behavior == PickerBehavior::Swallow && !picker.get_allow_swallow())
@@ -347,6 +495,29 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 Action::Pause(_) if target == PickerTarget::MacroStep => PickerCategory::Pause,
                 _ => PickerCategory::Modifiers,
             });
+        let request = request(&ui, &doc, target, index, key_only);
+        let behavior = request.behavior(value.is_empty());
+        let original = match behavior {
+            PickerBehavior::Swallow => ui
+                .global::<Locale>()
+                .invoke_text(Msg::PickerSuppress.to_ui()),
+            PickerBehavior::Native => ui
+                .global::<Locale>()
+                .invoke_text(request.native_label().to_ui()),
+            PickerBehavior::Action => catalog
+                .iter()
+                .find(|item| item.value == value)
+                .map(|item| item.label.clone())
+                .or_else(|| {
+                    let Action::Command(id) = Action::parse(Some(value.as_str())) else {
+                        return None;
+                    };
+                    let config = doc.read();
+                    let command = config.layout().commands.iter().find(|c| c.id == id)?;
+                    Some(command.display_name().into())
+                })
+                .unwrap_or_else(|| value.clone()),
+        };
         *state.borrow_mut() = Session {
             target: Some((target, index)),
             catalog,
@@ -366,148 +537,25 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         picker.set_command_script("".into());
         picker.set_command_directory("".into());
         picker.set_command_notice(Msg::None.to_ui());
-        picker.set_layer_action(
-            matches!(
-                target,
-                PickerTarget::LayerAction | PickerTarget::ExtraAction
-            ) && ui.global::<LayersEditor>().get_dialog() == crate::ui::LayerDialog::None,
-        );
-        let rule_field = ui.global::<crate::ui::RulesEditor>().get_field();
-        picker.set_title_context(if target == PickerTarget::MacroStep {
-            4
-        } else if target == PickerTarget::Rule {
-            match rule_field {
-                crate::ui::RuleDialog::DoubleTap => 1,
-                crate::ui::RuleDialog::Tap => 2,
-                crate::ui::RuleDialog::Hold => 3,
-                crate::ui::RuleDialog::LongHold => 5,
-                _ => 0,
-            }
-        } else {
-            0
-        });
-        let rule_action = target == PickerTarget::Rule
-            && matches!(
-                rule_field,
-                crate::ui::RuleDialog::Tap | crate::ui::RuleDialog::Hold
-            );
-        picker.set_rule_action(rule_action);
-        picker.set_ignore_key(
-            (picker.get_layer_action()
-                && ui.global::<LayersEditor>().get_assignment() == crate::ui::Assignment::Swallow)
-                || (rule_action
-                    && if rule_field == crate::ui::RuleDialog::Tap {
-                        ui.global::<crate::ui::RulesEditor>().get_swallow_tap()
-                    } else {
-                        ui.global::<crate::ui::RulesEditor>().get_swallow_hold()
-                    }),
-        );
-        let standalone_layer = picker.get_layer_action();
-        picker.set_hold_modifiers(
-            standalone_layer && layers::holds_modifiers(&ui, &doc, target, index),
-        );
-        // An extra row exists only while it has an assignment, so it is
-        // removed with its delete button rather than by inheriting.
-        let extra_action = target == PickerTarget::ExtraAction;
-        let double_tap = target == PickerTarget::Rule
-            && matches!(
-                rule_field,
-                crate::ui::RuleDialog::DoubleTap | crate::ui::RuleDialog::LongHold
-            );
-        // The advanced rule dialog chooses "trigger itself" / "nothing" for
-        // the held key; the picker only picks the key.
-        let held_key = rule_action && rule_field == crate::ui::RuleDialog::Hold;
-        let allow_default = !key_only
-            && ((standalone_layer && !extra_action)
-                || (rule_action && !held_key)
-                || (double_tap && rule_field != crate::ui::RuleDialog::LongHold)
-                || matches!(target, PickerTarget::BaseKey));
-        picker.set_allow_default(allow_default);
-
-        picker.set_inherit_default(standalone_layer && !extra_action);
-        picker.set_empty_default(double_tap);
-        picker.set_quick_action(target == PickerTarget::QuickAction);
-        picker.set_hold_action(rule_action && rule_field == crate::ui::RuleDialog::Hold);
-        picker.set_hold_layer(
-            picker.get_hold_action()
-                && !ui.global::<crate::ui::RulesEditor>().get_layer().is_empty(),
-        );
-        picker.set_allow_swallow(
-            standalone_layer || (rule_action && !held_key && !picker.get_hold_layer()),
-        );
-        picker.set_behavior(if picker.get_ignore_key() && picker.get_allow_swallow() {
-            PickerBehavior::Swallow
-        } else if allow_default && (value.is_empty() || picker.get_ignore_key()) {
-            PickerBehavior::Native
-        } else {
-            PickerBehavior::Action
-        });
-        picker.set_ignore_key(picker.get_behavior() == PickerBehavior::Swallow);
+        picker.set_dialog_title(request.title);
+        picker.set_layer_action(request.layer_action);
+        picker.set_rule_action(request.rule_action);
+        picker.set_hold_modifiers(request.hold_modifiers);
+        picker.set_allow_default(request.allow_default);
+        picker.set_allow_swallow(request.allow_swallow);
+        picker.set_inherit_default(request.inherit_default);
+        picker.set_empty_default(request.empty_default);
+        picker.set_quick_action(request.quick_action);
+        picker.set_hold_action(request.hold_action);
+        picker.set_hold_layer(request.hold_layer);
+        picker.set_behavior(behavior);
+        picker.set_ignore_key(behavior == PickerBehavior::Swallow);
         picker.set_touched(false);
         picker.set_error(Msg::None.to_ui());
-        picker.set_key_only(key_only);
-        picker.set_trigger_chords(
-            key_only && target == PickerTarget::Rule && rule_field == crate::ui::RuleDialog::Key,
-        );
-        picker.set_macro_step(target == PickerTarget::MacroStep);
-        let original = if picker.get_behavior() == PickerBehavior::Swallow {
-            ui.global::<Locale>()
-                .invoke_text(Msg::PickerSuppress.to_ui())
-        } else if picker.get_behavior() == PickerBehavior::Native {
-            ui.global::<Locale>().invoke_text(
-                if picker.get_inherit_default() {
-                    Msg::PickerInherit
-                } else if picker.get_quick_action() {
-                    Msg::PickerEmptyCell
-                } else if picker.get_empty_default() {
-                    Msg::PickerNoAction
-                } else if picker.get_hold_layer() {
-                    Msg::PickerLayerOnly
-                } else {
-                    Msg::PickerNative
-                }
-                .to_ui(),
-            )
-        } else {
-            ui.global::<ActionPicker>().get_original()
-        };
-        let original = if picker.get_behavior() == PickerBehavior::Action {
-            state
-                .borrow()
-                .catalog
-                .iter()
-                .find(|item| item.value == value)
-                .map(|item| item.label.clone())
-                .unwrap_or_else(|| value.clone())
-        } else {
-            original
-        };
-        let command_id = match Action::parse(Some(value.as_str())) {
-            Action::Command(id) => Some(id),
-            _ => None,
-        };
-        if let Some(id) = command_id.filter(|_| original == value) {
-            let config = doc.read();
-            if let Some(command) = config
-                .layout()
-                .commands
-                .iter()
-                .find(|command| command.id == id)
-            {
-                picker.set_original(
-                    if command.name.is_empty() {
-                        command.script().to_owned()
-                    } else {
-                        command.name.clone()
-                    }
-                    .into(),
-                );
-            } else {
-                picker.set_original(original);
-            }
-        } else {
-            picker.set_original(original);
-        }
+        picker.set_key_only(request.key_only);
+        picker.set_trigger_chords(request.trigger_chords);
+        picker.set_macro_step(request.macro_step);
+        picker.set_original(original);
         picker.set_value(value);
         picker.set_query("".into());
         picker.set_capturing(false);
@@ -516,10 +564,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         picker.invoke_refresh();
     });
 
-    let weak = ui.as_weak();
-    let (doc, state) = (document.clone(), session.clone());
-    picker.on_edit_command(move || {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, picker.on_edit_command, doc = document, state = session => |ui| {
         if !doc.read().settings().commands_enabled {
             return;
         }
@@ -604,80 +649,23 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
     }
 
-    let weak = ui.as_weak();
-    picker.on_open_command_settings(move || {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, picker.on_open_command_settings => |ui| {
         ui.global::<ActionPicker>().invoke_dismiss_picker();
         ui.global::<crate::ui::SettingsEditor>()
             .set_tab(crate::ui::SettingsTab::Commands);
         ui.invoke_navigate(crate::ui::Page::Settings, crate::ui::MenuKind::Emoji);
     });
 
-    let weak = ui.as_weak();
-    let (doc, state) = (document.clone(), session.clone());
-    picker.on_refresh(move || {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, picker.on_refresh, doc = document, state = session => |ui| {
         let picker = ui.global::<ActionPicker>();
-        let excluded = if picker.get_macro_step() {
-            let editor = ui.global::<MacroEditor>();
-            slint::Model::row_data(
-                &editor.get_macros(),
-                editor.get_picker_macro().max(0) as usize,
-            )
-            .map(|row| row.id)
-            .unwrap_or_default()
-        } else {
-            "".into()
-        };
-        let key_only = picker.get_key_only();
         state.borrow_mut().catalog = catalog(&ui, &doc.read());
         let state = state.borrow();
-        let unavailable_keys: Vec<String> = if state
-            .target
-            .is_some_and(|(target, _)| target == PickerTarget::ExtraKey)
-        {
-            let editor = ui.global::<LayersEditor>();
-            let selected = editor.get_selected_id();
-            let current = editor.get_dialog_key();
-            let config = doc.read();
-            keyboard::layer_keys()
-                .map(str::to_owned)
-                .chain(
-                    config
-                        .layout()
-                        .layer_keymaps
-                        .get(selected.as_str())
-                        .into_iter()
-                        .flat_map(|map| map.keys.keys())
-                        .filter(|key| key.as_str() != current.as_str())
-                        .cloned(),
-                )
-                .collect()
-        } else {
-            Vec::new()
-        };
+        let filter = filter(&ui, &doc, &picker, state.target);
         let entries: Vec<&PickerItem> = state
             .catalog
             .iter()
-            .filter(|entry| {
-                (!key_only || is_key_category(entry.category))
-                    // Each action owns its command; existing ones are not offered.
-                    && entry.category != PickerCategory::Commands
-                    && !unavailable_keys
-                        .iter()
-                        .any(|key| key == entry.value.as_str())
-                    && (!picker.get_hold_action() || actions::valid_held_key(&entry.value))
-                    && (!(key_only
-                        && state
-                            .target
-                            .is_some_and(|(target, _)| target == PickerTarget::Rule))
-                        || lhc_core::profile::key_catalog::valid_trigger(&entry.value))
-                    && (excluded.is_empty()
-                        || !matches!(
-                            Action::parse(Some(entry.value.as_str())),
-                            Action::Macro(id) if id == excluded.as_str()
-                        ))
-            })
+            // Each action owns its command; existing ones are not offered.
+            .filter(|entry| entry.category != PickerCategory::Commands && filter.admits(&entry.value))
             .collect();
         picker.set_categories(ModelRc::new(VecModel::from(
             KEY_CATEGORIES
@@ -696,12 +684,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 Action::Pause(_)
             )
         {
-            let editor = ui.global::<MacroEditor>();
-            let pause = slint::Model::row_data(
-                &editor.get_macros(),
-                editor.get_picker_macro().max(0) as usize,
-            )
-            .and_then(|row| row.step_pause.trim().parse::<u64>().ok())
+            let pause = super::macros::picker_macro_pause(&ui)
             .unwrap_or_else(|| doc.read().settings().default_macro_step_pause_ms)
             .clamp(1, u64::from(MAX_PAUSE_MS));
             picker.set_value(
@@ -775,52 +758,24 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 .cloned()
                 .collect::<Vec<_>>(),
         )));
-        let notice =
-            match actions::execution_issue(&Action::parse(Some(&value)), &doc.read().config()) {
-                Some(actions::ExecutionIssue::CommandsDisabled) => Msg::CommandsDisabled,
-                Some(actions::ExecutionIssue::Unavailable) => Msg::ActionUnavailable,
-                None => Msg::None,
-            };
-        picker.set_notice(notice.to_ui());
-        picker.set_valid(
-            ((picker.get_behavior() == PickerBehavior::Native && picker.get_allow_default())
-                || (picker.get_behavior() == PickerBehavior::Swallow
-                    && picker.get_allow_swallow()))
-                || (picker.get_behavior() == PickerBehavior::Action
-                    && state
-                        .command
-                        .as_ref()
-                        .filter(|command| assigns_command(&value, &command.id))
-                        .map_or_else(
-                            || {
-                                if key_only
-                                    && state
-                                        .target
-                                        .is_some_and(|(target, _)| target == PickerTarget::Rule)
-                                {
-                                    lhc_core::profile::key_catalog::valid_trigger(&value)
-                                } else {
-                                    valid(
-                                        &value,
-                                        key_only,
-                                        picker.get_macro_step(),
-                                        &excluded,
-                                        Some(&doc.read()),
-                                    )
-                                }
-                            },
-                            |command| {
-                                doc.read().settings().commands_enabled
-                                    && !command.script().trim().is_empty()
-                            },
-                        )
-                    && (!picker.get_hold_action() || actions::valid_held_key(&value))
-                    && (!(key_only
-                        && state
-                            .target
-                            .is_some_and(|(target, _)| target == PickerTarget::Rule))
-                        || lhc_core::profile::key_catalog::valid_trigger(&value))),
-        );
+        picker.set_notice(execution_notice(&action, &doc.read().config()).to_ui());
+        let valid = match picker.get_behavior() {
+            PickerBehavior::Native => picker.get_allow_default(),
+            PickerBehavior::Swallow => picker.get_allow_swallow(),
+            PickerBehavior::Action => match state
+                .command
+                .as_ref()
+                .filter(|command| assigns_command(&value, &command.id))
+            {
+                Some(command) => {
+                    filter.admits(&value)
+                        && doc.read().settings().commands_enabled
+                        && !command.script().trim().is_empty()
+                }
+                None => filter.accepts(&value, Some(&doc.read())),
+            },
+        };
+        picker.set_valid(valid);
     });
 
     let weak = ui.as_weak();
@@ -834,10 +789,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
     });
 
-    let weak = ui.as_weak();
-    let doc = document.clone();
-    picker.on_apply(move || {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, picker.on_apply, doc = document => |ui| {
         let picker = ui.global::<ActionPicker>();
         picker.invoke_refresh();
         if !picker.get_valid() || picker.get_capturing() {

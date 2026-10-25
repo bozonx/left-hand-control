@@ -894,29 +894,21 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
     });
 
-    macro_rules! on {
-        ($method:ident, |$ui:ident, $doc:ident, $state:ident $(, $arg:ident)*| $body:expr) => {{
-            let weak = ui.as_weak();
-            let doc = document.clone();
-            let shared = state.clone();
-            library.$method(move |$($arg),*| {
-                let Some($ui) = weak.upgrade() else { return Default::default() };
-                let ($doc, $state) = (&doc, &shared);
-                $body
-            });
-        }};
-    }
-
-    on!(on_refresh, |ui, doc, state| report(
+    on!(ui, library.on_refresh, doc = document, state = state => |ui| {
+        let (doc, state) = (&doc, &state);
+        report(
         &ui,
         refresh(&ui, doc, &mut state.borrow_mut()).map(|()| Msg::None)
-    ));
-    on!(on_select, |ui, doc, state, index| {
+    )
+    });
+    on!(ui, library.on_select, doc = document, state = state => |ui, index| {
+        let (doc, state) = (&doc, &state);
         if let Err(error) = select(&ui, doc, state, index) {
             report(&ui, Err(error));
         }
     });
-    on!(on_set_automatic, |ui, doc, state, automatic| {
+    on!(ui, library.on_set_automatic, doc = document, state = state => |ui, automatic| {
+        let (doc, state) = (&doc, &state);
         let mode = if automatic {
             LayoutMode::Auto
         } else {
@@ -929,41 +921,46 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             }),
         );
     });
-    on!(on_action, |ui, doc, state, action| report(
+    on!(ui, library.on_action, doc = document, state = state => |ui, action| {
+        let (doc, state) = (&doc, &state);
+        report(
         &ui,
         library_action(&ui, doc, state, action)
-    ));
-    on!(on_suggest_name, |_ui, doc, _state, base| doc
+    )
+    });
+    on!(ui, library.on_suggest_name, doc = document => |_ui, base| {
+        let (doc,) = (&doc,);
+        doc
         .read()
         .unique_library_name(&base)
         .unwrap_or_else(|_| base.to_string())
-        .into());
-    on!(on_name_error, |_ui, doc, _state, name, except| {
+        .into()
+    });
+    on!(ui, library.on_name_error, doc = document => |_ui, name, except| {
+        let (doc,) = (&doc,);
         let except = (!except.is_empty()).then_some(except.as_str());
         super::name_error(doc.read().checked_layout_name(&name, except))
     });
-    on!(on_create, |ui,
-                    doc,
-                    state,
-                    name,
-                    description,
-                    source,
-                    copy_index| {
+    on!(ui, library.on_create, doc = document, state = state => |ui, name, description, source, copy_index| {
+        let (doc, state) = (&doc, &state);
         if let Err(error) = create(&ui, doc, state, &name, &description, source, copy_index) {
             report(&ui, Err(error));
         }
     });
-    on!(on_set_description, |ui, doc, state, index, description| {
+    on!(ui, library.on_set_description, doc = document, state = state => |ui, index, description| {
+        let (doc, state) = (&doc, &state);
         report(&ui, set_description(&ui, doc, state, index, &description))
     });
-    on!(on_rename, |ui, doc, state, index, name| {
+    on!(ui, library.on_rename, doc = document, state = state => |ui, index, name| {
+        let (doc, state) = (&doc, &state);
         let result = select(&ui, doc, state, index).and_then(|()| {
             ui.global::<LayoutLibrary>().set_name(name);
             library_action(&ui, doc, state, LibraryAction::SaveDetails)
         });
         report(&ui, result);
     });
-    on!(on_reorder, |ui, doc, state, from, to| {
+    on!(ui, library.on_reorder, doc = document, state = state => |ui, from, to| {
+        let (doc, state) = (&doc, &state);
         let result = select(&ui, doc, state, from).and_then(|()| {
             let id = user_layout_id(&selected_name(state)?);
             edit(&ui, doc, state, |config| {
@@ -973,7 +970,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         });
         report(&ui, result);
     });
-    on!(on_discard_current, |ui, doc, state| {
+    on!(ui, library.on_discard_current, doc = document, state = state => |ui| {
+        let (doc, state) = (&doc, &state);
         let name = current_name(&doc.read()).ok_or(Msg::LibrarySelect);
         let result = name.and_then(|name| {
             edit(&ui, doc, state, |config| {
@@ -984,7 +982,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         });
         report(&ui, result);
     });
-    on!(on_activate_current, |ui, doc, state| {
+    on!(ui, library.on_activate_current, doc = document, state = state => |ui| {
+        let (doc, state) = (&doc, &state);
         let result = doc
             .read()
             .settings()
@@ -999,61 +998,100 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let name = current_name(&doc.read()).unwrap_or_default();
         report(&ui, result.map(|()| Msg::LayoutActivated(name)));
     });
-    on!(on_load, |ui, doc, state| report(&ui, load(&ui, doc, state)));
-    on!(on_load_rule, |ui, doc, _state, index, target| load_rule(
+    on!(ui, library.on_load, doc = document, state = state => |ui| {
+        let (doc, state) = (&doc, &state);
+        report(&ui, load(&ui, doc, state))
+    });
+    on!(ui, library.on_load_rule, doc = document => |ui, index, target| {
+        let (doc,) = (&doc,);
+        load_rule(
         &ui, doc, index, target
-    ));
-    on!(on_save_rule, |ui, doc, state| report(
+    )
+    });
+    on!(ui, library.on_save_rule, doc = document, state = state => |ui| {
+        let (doc, state) = (&doc, &state);
+        report(
         &ui,
         save_rule(&ui, doc, state)
-    ));
-    on!(on_delete_rule, |ui, doc, state, index| report(
+    )
+    });
+    on!(ui, library.on_delete_rule, doc = document, state = state => |ui, index| {
+        let (doc, state) = (&doc, &state);
+        report(
         &ui,
         delete_rule(&ui, doc, state, index)
-    ));
-    on!(on_move_rule, |ui, doc, state, from, to| report(
+    )
+    });
+    on!(ui, library.on_move_rule, doc = document, state = state => |ui, from, to| {
+        let (doc, state) = (&doc, &state);
+        report(
         &ui,
         move_rule(&ui, doc, state, from, to)
-    ));
-    on!(
-        on_set_rule_enabled,
-        |ui, doc, state, index, enabled| report(
+    )
+    });
+    on!(ui, library.on_set_rule_enabled, doc = document, state = state => |ui, index, enabled| {
+        let (doc, state) = (&doc, &state);
+        report(
             &ui,
             set_rule_enabled(&ui, doc, state, index, enabled)
         )
-    );
-    on!(on_add_game_rule, |ui, doc, state| report(
+    });
+    on!(ui, library.on_add_game_rule, doc = document, state = state => |ui| {
+        let (doc, state) = (&doc, &state);
+        report(
         &ui,
         add_game_rule(&ui, doc, state)
-    ));
-    on!(on_set_auto_default, |ui, doc, state, index| report(
+    )
+    });
+    on!(ui, library.on_set_auto_default, doc = document, state = state => |ui, index| {
+        let (doc, state) = (&doc, &state);
+        report(
         &ui,
         set_auto_default(&ui, doc, state, index)
-    ));
-    on!(on_delete, |ui, doc, state| report(
+    )
+    });
+    on!(ui, library.on_delete, doc = document, state = state => |ui| {
+        let (doc, state) = (&doc, &state);
+        report(
         &ui,
         delete(&ui, doc, state)
-    ));
-    on!(on_reset_context, |ui, doc, state| reset_context(
+    )
+    });
+    on!(ui, library.on_reset_context, doc = document, state = state => |ui| {
+        let (doc, state) = (&doc, &state);
+        reset_context(
         &ui,
         doc,
         &mut state.borrow_mut()
-    ));
-    on!(on_refresh_context, |ui, doc, _state| refresh_context(
+    )
+    });
+    on!(ui, library.on_refresh_context, doc = document => |ui| {
+        let (doc,) = (&doc,);
+        refresh_context(
         &ui, doc
-    ));
-    on!(on_save_current, |ui, doc, state| report(
+    )
+    });
+    on!(ui, library.on_save_current, doc = document, state = state => |ui| {
+        let (doc, state) = (&doc, &state);
+        report(
         &ui,
         save_current(&ui, doc, state)
-    ));
-    on!(on_overwrite_current, |ui, doc, state| report(
+    )
+    });
+    on!(ui, library.on_overwrite_current, doc = document, state = state => |ui| {
+        let (doc, state) = (&doc, &state);
+        report(
         &ui,
         overwrite_current(&ui, doc, state)
-    ));
-    on!(on_save_as, |ui, doc, state, name| report(
+    )
+    });
+    on!(ui, library.on_save_as, doc = document, state = state => |ui, name| {
+        let (doc, state) = (&doc, &state);
+        report(
         &ui,
         save_as(&ui, doc, state, &name)
-    ));
+    )
+    });
 }
 
 #[cfg(test)]

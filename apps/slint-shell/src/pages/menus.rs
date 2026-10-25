@@ -3,6 +3,7 @@
 //! The page edits a draft of the menus. Changes save as soon as the draft
 //! is valid; typing saves after a short pause.
 
+use super::autosave::Autosave;
 use crate::{
     document::{Document, View},
     i18n::Msg,
@@ -13,10 +14,9 @@ use lhc_core::{
     profile::{ids, model::*},
 };
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
-use std::{cell::RefCell, collections::BTreeMap, rc::Rc, time::Duration};
+use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
 
 const PAGE: usize = LEFT_HAND_HOTKEYS.len();
-const TYPING_DELAY: Duration = Duration::from_millis(400);
 
 #[derive(serde::Deserialize)]
 struct Category {
@@ -28,10 +28,20 @@ struct State {
     /// The menus as last saved or loaded.
     baseline: LayoutPreset,
     layout: LayoutPreset,
-    timer: Option<slint::Timer>,
+    autosave: Autosave,
 }
 
 type Shared = Rc<RefCell<State>>;
+
+impl super::autosave::Draft for State {
+    fn autosave(&self) -> &Autosave {
+        &self.autosave
+    }
+
+    fn save(&mut self, ui: &SettingsWindow, document: &Document) {
+        save(ui, document, self);
+    }
+}
 
 fn key_label(key: &str) -> SharedString {
     key.trim_start_matches("Key").into()
@@ -169,7 +179,7 @@ fn refresh(ui: &SettingsWindow, layout: &LayoutPreset, fields: bool) {
 }
 
 fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
-    state.timer = None;
+    state.autosave.cancel();
     let e = ui.global::<MenuEditor>();
     let baseline = state.baseline.clone();
     let candidate = state.layout.clone();
@@ -180,43 +190,21 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
     let result = document.edit(View::Menus, |config| {
         config.save_menu_pages(&baseline, &candidate)
     });
-    let message = match result {
-        Ok(saved) => {
-            state.baseline = document.read().layout().clone();
-            saved.message(Msg::None)
-        }
-        Err(error) => {
-            if error == ConfigError::EditConflict {
-                reload(ui, document, state);
-            }
-            Msg::from(&error)
-        }
-    };
+    match &result {
+        Ok(_) => state.baseline = document.read().layout().clone(),
+        Err(ConfigError::EditConflict) => reload(ui, document, state),
+        Err(_) => {}
+    }
+    let message = super::outcome(&result, Msg::None);
     e.set_status(crate::notifications::report(ui, &message));
 }
 
 fn reload(ui: &SettingsWindow, document: &Document, state: &mut State) {
-    state.timer = None;
+    state.autosave.cancel();
     state.baseline = document.read().layout().clone();
     state.layout = state.baseline.clone();
     normalize(&mut state.layout);
     refresh(ui, &state.layout, true);
-}
-
-fn save_later(ui: &SettingsWindow, document: &Rc<Document>, state: &Shared) {
-    let timer = slint::Timer::default();
-    let weak = ui.as_weak();
-    let (doc, shared) = (document.clone(), Rc::downgrade(state));
-    timer.start(slint::TimerMode::SingleShot, TYPING_DELAY, move || {
-        if let (Some(ui), Some(state)) = (weak.upgrade(), shared.upgrade()) {
-            save(&ui, &doc, &mut state.borrow_mut());
-        }
-    });
-    state.borrow_mut().timer = Some(timer);
-}
-
-fn action_name(label: &str, action: &str) -> String {
-    if label.is_empty() { action } else { label }.into()
 }
 
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
@@ -226,18 +214,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let state: Shared = Rc::new(RefCell::new(State {
         baseline,
         layout,
-        timer: None,
+        autosave: Autosave::default(),
     }));
     let e = ui.global::<MenuEditor>();
-    let weak = ui.as_weak();
-    let (doc, shared) = (document.clone(), state.clone());
-    e.on_flush_pending(move || {
-        if let Some(ui) = weak.upgrade() {
-            let mut state = shared.borrow_mut();
-            if state.timer.is_some() {
-                save(&ui, &doc, &mut state);
-            }
-        }
+    on!(ui, e.on_flush_pending, doc = document, shared = state => |ui| {
+        let mut state = shared.borrow_mut();
+        super::autosave::flush(&ui, &doc, &mut *state);
     });
     match serde_json::from_str::<Vec<Category>>(include_str!("../../assets/emoji-catalog.json")) {
         Ok(categories) => e.set_catalog(ModelRc::new(VecModel::from(
@@ -253,21 +235,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     }
 
     // Reload when the menus changed elsewhere and no edit is pending.
-    let weak = ui.as_weak();
-    let shared = state.clone();
-    document.subscribe(View::Menus, move |document| {
-        let Some(ui) = weak.upgrade() else { return };
-        // Busy: this page's own save is running and reloads by itself.
-        let Ok(mut state) = shared.try_borrow_mut() else {
-            return;
-        };
+    super::autosave::subscribe(ui, document, View::Menus, &state, |ui, document, state| {
         let mut saved = state.baseline.clone();
         normalize(&mut saved);
-        if state.timer.is_none()
+        if !state.autosave.pending()
             && state.layout == saved
             && state.baseline != *document.read().layout()
         {
-            reload(&ui, document, &mut state);
+            reload(ui, document, state);
         }
     });
 
@@ -289,20 +264,15 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                     refresh(&ui, &state.layout, !typing);
                 }
                 if typing {
-                    save_later(&ui, &doc, &shared);
+                    super::autosave::schedule(&ui, &doc, &shared);
                 }
             },
         )
     };
 
-    let weak = ui.as_weak();
-    let (doc, shared) = (document.clone(), state.clone());
-    e.on_open(move |kind| {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, e.on_open, doc = document, shared = state => |ui, kind| {
         let mut state = shared.borrow_mut();
-        if state.timer.is_some() {
-            save(&ui, &doc, &mut state);
-        }
+        super::autosave::flush(&ui, &doc, &mut *state);
         let e = ui.global::<MenuEditor>();
         e.set_editing_count(0);
         e.set_kind(kind);
@@ -317,21 +287,15 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         refresh(&ui, &state.layout, true);
     });
 
-    let weak = ui.as_weak();
-    let (doc, shared) = (document.clone(), state.clone());
-    e.on_refresh(move || {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, e.on_refresh, doc = document, shared = state => |ui| {
         let mut state = shared.borrow_mut();
-        state.timer = None;
+        state.autosave.cancel();
         reload(&ui, &doc, &mut state);
         ui.global::<MenuEditor>().set_status(Msg::None.to_ui());
         refresh(&ui, &state.layout, true);
     });
 
-    let weak = ui.as_weak();
-    let shared = state.clone();
-    e.on_select_page(move |index| {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, e.on_select_page, shared = state => |ui, index| {
         let state = shared.borrow();
         let e = ui.global::<MenuEditor>();
         e.set_selected_page(index);
@@ -342,13 +306,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         });
         refresh(&ui, &state.layout, true);
     });
-    let weak = ui.as_weak();
-    let shared = state.clone();
-    e.on_select_cell(move |index| {
-        if let Some(ui) = weak.upgrade() {
-            ui.global::<MenuEditor>().set_selected_cell(index);
-            refresh(&ui, &shared.borrow().layout, true);
-        }
+    on!(ui, e.on_select_cell, shared = state => |ui, index| {
+        ui.global::<MenuEditor>().set_selected_cell(index);
+        refresh(&ui, &shared.borrow().layout, true);
     });
 
     let c = change.clone();
@@ -525,14 +485,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             let automatic = item.name.trim().is_empty() || item.name == item.action;
             if item.action.trim().is_empty() {
                 *item = QuickAction {
-                    name: action_name(&label, &action),
+                    name: lhc_core::profile::model::display_name(&label, &action).into(),
                     action: action.to_string(),
                     icon: None,
                 };
             } else {
                 item.action = action.to_string();
                 if automatic {
-                    item.name = action_name(&label, &action);
+                    item.name = lhc_core::profile::model::display_name(&label, &action).into();
                 }
             }
             e.set_selected_cell(cell);

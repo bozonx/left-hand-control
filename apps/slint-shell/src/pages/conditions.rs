@@ -293,9 +293,7 @@ pub(super) fn bind(ui: &SettingsWindow) {
         });
     });
 
-    let weak = ui.as_weak();
-    choices.on_refresh(move || {
-        let Some(ui) = weak.upgrade() else { return };
+    on!(ui, choices.on_refresh => |ui| {
         match lhc_core::layout::available_layouts() {
             Ok(layouts) => {
                 ui.global::<ConditionChoices>()

@@ -1,6 +1,6 @@
 import { DragDrop, DragGroups, DragHandle, DropMarker } from "reorder.slint";
 import { PageContent, ScrollView } from "scroll.slint";
-import { ButtonGroup, FormField, InfoTip, InlineTextField, InlineTextArea, ItemStyle, IconButton, ConfirmDialog } from "controls.slint";
+import { ButtonGroup, FormField, InfoTip, InlineTextField, InlineTextArea, ItemStyle, IconButton, ConfirmDialog, DialogFrame } from "controls.slint";
 import { ConditionChoices, ConditionsForm } from "conditions.slint";
 import { AppState } from "app-state.slint";
 import { Theme } from "theme.slint";
@@ -695,86 +695,63 @@ export component LibraryPage inherits VerticalBox {
 }
 
 export component LibraryDialogOverlay inherits Rectangle {
-    if LayoutLibrary.dialog != LibraryDialog.none && LayoutLibrary.dialog != LibraryDialog.delete && LayoutLibrary.dialog != LibraryDialog.delete-rule && LayoutLibrary.dialog != LibraryDialog.conflict: Rectangle {
-        background: Theme.scrim;
-        TouchArea { scroll-event(event) => { accept } }
-        FocusScope {
-            focus-on-tab-navigation: false;
-            key-pressed(event) => {
-                if event.text == Key.Escape { LayoutLibrary.cancel-dialog(); return accept; }
-                return reject;
+    if LayoutLibrary.dialog != LibraryDialog.none && LayoutLibrary.dialog != LibraryDialog.delete && LayoutLibrary.dialog != LibraryDialog.delete-rule && LayoutLibrary.dialog != LibraryDialog.conflict: DialogFrame {
+        title: LayoutLibrary.dialog == LibraryDialog.create ? @tr("New layout")
+            : LayoutLibrary.dialog == LibraryDialog.rule ? (LayoutLibrary.rule-index < 0 ? @tr("New rule") : @tr("Rule {}", LayoutLibrary.rule-index + 1))
+            : @tr("Unsaved changes");
+        card-width: 620px;
+        card-height: LayoutLibrary.dialog == LibraryDialog.create ? 420px : 0px;
+        close => { LayoutLibrary.cancel-dialog(); }
+        if LayoutLibrary.dialog == LibraryDialog.create: VerticalBox { padding: 0px; spacing: Theme.space-m-plus;
+            FormField {
+                label: @tr("Name"); placeholder: @tr("New layout name"); autofocus: true;
+                text <=> LayoutLibrary.create-name;
+                error: LayoutLibrary.name-error(LayoutLibrary.create-name, "");
+                accepted => { LayoutLibrary.submit-create(); }
             }
-        Rectangle {
-            x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
-            width: 620px;
-            height: LayoutLibrary.dialog == LibraryDialog.rule ? min(root.height - 48px, dialog-box.preferred-height)
-                : LayoutLibrary.dialog == LibraryDialog.create ? 420px
-                : LayoutLibrary.dialog == LibraryDialog.unsaved ? 210px
-                : 210px;
-            background: Theme.card; border-radius: Theme.radius-dialog;
-            dialog-box := VerticalBox { padding: Theme.space-3xl; spacing: Theme.space-l;
-                HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
-                    Text { wrap: word-wrap; horizontal-stretch: 1; min-width: 0px;
-                        text: LayoutLibrary.dialog == LibraryDialog.create ? @tr("New layout")
-                        : LayoutLibrary.dialog == LibraryDialog.rule ? (LayoutLibrary.rule-index < 0 ? @tr("New rule") : @tr("Rule {}", LayoutLibrary.rule-index + 1))
-                        : @tr("Unsaved changes");
-                        color: Theme.text; font-size: Theme.font-title;
-                    }
-                    IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Close"); clicked => { LayoutLibrary.cancel-dialog(); } }
+            Text { text: @tr("Description (optional)"); color: Theme.text; }
+            TextEdit { text <=> LayoutLibrary.create-description; height: 120px; }
+        }
+        if LayoutLibrary.dialog == LibraryDialog.rule: ScrollView {
+            viewport-width: self.visible-width;
+            vertical-stretch: 1;
+            // The dialog grows with the form up to the window height, then scrolls.
+            preferred-height: rule-form.preferred-height;
+            min-height: 120px;
+            rule-form := VerticalLayout { spacing: Theme.space-xl; alignment: start;
+                VerticalLayout { spacing: Theme.space-m;
+                    Text { text: @tr("Use layout"); color: Theme.text; font-weight: Theme.weight-semibold; }
+                    TargetPicker { target: LayoutLibrary.rule-target; picked(index) => { LayoutLibrary.rule-target = index; } }
                 }
-                if LayoutLibrary.dialog == LibraryDialog.create: VerticalBox { padding: 0px; spacing: Theme.space-m-plus;
-                    FormField {
-                        label: @tr("Name"); placeholder: @tr("New layout name"); autofocus: true;
-                        text <=> LayoutLibrary.create-name;
-                        error: LayoutLibrary.name-error(LayoutLibrary.create-name, "");
-                        accepted => { LayoutLibrary.submit-create(); }
-                    }
-                    Text { text: @tr("Description (optional)"); color: Theme.text; }
-                    TextEdit { text <=> LayoutLibrary.create-description; height: 120px; }
+                VerticalLayout { spacing: Theme.space-xs;
+                    Text { text: @tr("When"); color: Theme.text; font-weight: Theme.weight-semibold; }
+                    Text { text: @tr("All filled conditions must match. A rule without conditions always matches."); color: Theme.muted; wrap: word-wrap; }
                 }
-                if LayoutLibrary.dialog == LibraryDialog.rule: ScrollView {
-                    viewport-width: self.visible-width;
-                    vertical-stretch: 1;
-                    // The dialog grows with the form up to the window height, then scrolls.
-                    preferred-height: rule-form.preferred-height;
-                    min-height: 120px;
-                    rule-form := VerticalLayout { spacing: Theme.space-xl; alignment: start;
-                        VerticalLayout { spacing: Theme.space-m;
-                            Text { text: @tr("Use layout"); color: Theme.text; font-weight: Theme.weight-semibold; }
-                            TargetPicker { target: LayoutLibrary.rule-target; picked(index) => { LayoutLibrary.rule-target = index; } }
-                        }
-                        VerticalLayout { spacing: Theme.space-xs;
-                            Text { text: @tr("When"); color: Theme.text; font-weight: Theme.weight-semibold; }
-                            Text { text: @tr("All filled conditions must match. A rule without conditions always matches."); color: Theme.muted; wrap: word-wrap; }
-                        }
-                        ConditionsForm { game <=> LayoutLibrary.rule-game; languages <=> LayoutLibrary.rule-layouts; applications <=> LayoutLibrary.rule-apps; show-exclusions: true; excluded <=> LayoutLibrary.rule-excluded; }
-                    }
-                }
-                if LayoutLibrary.dialog == LibraryDialog.unsaved: Text {
-                    text: LayoutLibrary.current-label == ""
-                        ? @tr("The layout you are editing has not been saved to the library. Its changes will be lost.")
-                        : @tr("“{}” has unsaved changes. Save them before switching?", LayoutLibrary.current-label);
-                    color: Theme.text; wrap: word-wrap;
-                }
-                if LayoutLibrary.status.id != "" && LayoutLibrary.status.id != "library-saved": Text { text: Locale.text(LayoutLibrary.status); color: Theme.error; wrap: word-wrap; }
-                if LayoutLibrary.dialog != LibraryDialog.rule: Rectangle { vertical-stretch: 1; }
-                HorizontalBox {
-                    if LayoutLibrary.dialog == LibraryDialog.rule && LayoutLibrary.rule-index >= 0: Button {
-                        text: @tr("Delete rule"); icon: @image-url("icons/trash-2.svg"); colorize-icon: true;
-                        clicked => { LayoutLibrary.dialog = LibraryDialog.delete-rule; }
-                    }
-                    Rectangle { horizontal-stretch: 1; }
-                    Button { text: @tr("Cancel"); clicked => { LayoutLibrary.cancel-dialog(); } }
-                    if LayoutLibrary.dialog == LibraryDialog.create: Button { text: @tr("Create"); primary: true; enabled: LayoutLibrary.name-error(LayoutLibrary.create-name, "").id == ""; clicked => { LayoutLibrary.submit-create(); } }
-                    if LayoutLibrary.dialog == LibraryDialog.rule: Button { text: @tr("Save"); primary: true; clicked => { LayoutLibrary.save-rule(); } }
-                    if LayoutLibrary.dialog == LibraryDialog.unsaved: Button { text: @tr("Discard changes"); clicked => { LayoutLibrary.continue-pending(); } }
-                    if LayoutLibrary.dialog == LibraryDialog.unsaved && LayoutLibrary.current-label != "": Button {
-                        text: @tr("Save and continue"); primary: true;
-                        clicked => { LayoutLibrary.save-and-continue(); }
-                    }
-                }
+                ConditionsForm { game <=> LayoutLibrary.rule-game; languages <=> LayoutLibrary.rule-layouts; applications <=> LayoutLibrary.rule-apps; show-exclusions: true; excluded <=> LayoutLibrary.rule-excluded; }
             }
         }
+        if LayoutLibrary.dialog == LibraryDialog.unsaved: Text {
+            text: LayoutLibrary.current-label == ""
+                ? @tr("The layout you are editing has not been saved to the library. Its changes will be lost.")
+                : @tr("“{}” has unsaved changes. Save them before switching?", LayoutLibrary.current-label);
+            color: Theme.text; wrap: word-wrap;
+        }
+        if LayoutLibrary.status.id != "" && LayoutLibrary.status.id != "library-saved": Text { text: Locale.text(LayoutLibrary.status); color: Theme.error; wrap: word-wrap; }
+        if LayoutLibrary.dialog != LibraryDialog.rule: Rectangle { vertical-stretch: 1; }
+        HorizontalBox {
+            if LayoutLibrary.dialog == LibraryDialog.rule && LayoutLibrary.rule-index >= 0: Button {
+                text: @tr("Delete rule"); icon: @image-url("icons/trash-2.svg"); colorize-icon: true;
+                clicked => { LayoutLibrary.dialog = LibraryDialog.delete-rule; }
+            }
+            Rectangle { horizontal-stretch: 1; }
+            Button { text: @tr("Cancel"); clicked => { LayoutLibrary.cancel-dialog(); } }
+            if LayoutLibrary.dialog == LibraryDialog.create: Button { text: @tr("Create"); primary: true; enabled: LayoutLibrary.name-error(LayoutLibrary.create-name, "").id == ""; clicked => { LayoutLibrary.submit-create(); } }
+            if LayoutLibrary.dialog == LibraryDialog.rule: Button { text: @tr("Save"); primary: true; clicked => { LayoutLibrary.save-rule(); } }
+            if LayoutLibrary.dialog == LibraryDialog.unsaved: Button { text: @tr("Discard changes"); clicked => { LayoutLibrary.continue-pending(); } }
+            if LayoutLibrary.dialog == LibraryDialog.unsaved && LayoutLibrary.current-label != "": Button {
+                text: @tr("Save and continue"); primary: true;
+                clicked => { LayoutLibrary.save-and-continue(); }
+            }
         }
     }
     if LayoutLibrary.dialog == LibraryDialog.delete: ConfirmDialog {
@@ -797,31 +774,21 @@ export component LibraryDialogOverlay inherits Rectangle {
         cancel => { LayoutLibrary.dialog = LibraryDialog.rule; }
         confirm => { LayoutLibrary.delete-rule(LayoutLibrary.rule-index); }
     }
-    if LayoutLibrary.save-as-open: Rectangle {
-        background: Theme.scrim;
-        TouchArea { scroll-event(event) => { accept } }
-        Rectangle {
-            x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
-            width: 480px; height: 250px; background: Theme.card; border-radius: Theme.radius-dialog;
-            VerticalBox {
-                padding: Theme.space-3xl; spacing: Theme.space-l;
-                HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
-                    Text { wrap: word-wrap; horizontal-stretch: 1; min-width: 0px; text: @tr("Save layout as…"); color: Theme.text; font-size: Theme.font-title; }
-                    IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Close"); clicked => { LayoutLibrary.save-as-open = false; } }
-                }
-                FormField {
-                    label: @tr("Layout name"); autofocus: true;
-                    text <=> LayoutLibrary.save-as-name;
-                    error: LayoutLibrary.name-error(LayoutLibrary.save-as-name, "");
-                    accepted => { if LayoutLibrary.name-error(LayoutLibrary.save-as-name, "").id == "" { LayoutLibrary.save-as(LayoutLibrary.save-as-name); } }
-                }
-                Text { text: Locale.text(LayoutLibrary.status); color: Theme.error; wrap: word-wrap; }
-                HorizontalBox { vertical-stretch: 0;
-                    Rectangle { horizontal-stretch: 1; }
-                    Button { text: @tr("Cancel"); clicked => { LayoutLibrary.save-as-open = false; } }
-                    Button { text: @tr("Save"); enabled: LayoutLibrary.name-error(LayoutLibrary.save-as-name, "").id == ""; clicked => { LayoutLibrary.save-as(LayoutLibrary.save-as-name); } }
-                }
-            }
+    if LayoutLibrary.save-as-open: DialogFrame {
+        title: @tr("Save layout as…");
+        card-width: 480px;
+        close => { LayoutLibrary.save-as-open = false; }
+        FormField {
+            label: @tr("Layout name"); autofocus: true;
+            text <=> LayoutLibrary.save-as-name;
+            error: LayoutLibrary.name-error(LayoutLibrary.save-as-name, "");
+            accepted => { if LayoutLibrary.name-error(LayoutLibrary.save-as-name, "").id == "" { LayoutLibrary.save-as(LayoutLibrary.save-as-name); } }
+        }
+        Text { text: Locale.text(LayoutLibrary.status); color: Theme.error; wrap: word-wrap; }
+        HorizontalBox { vertical-stretch: 0;
+            Rectangle { horizontal-stretch: 1; }
+            Button { text: @tr("Cancel"); clicked => { LayoutLibrary.save-as-open = false; } }
+            Button { text: @tr("Save"); enabled: LayoutLibrary.name-error(LayoutLibrary.save-as-name, "").id == ""; clicked => { LayoutLibrary.save-as(LayoutLibrary.save-as-name); } }
         }
     }
 }
