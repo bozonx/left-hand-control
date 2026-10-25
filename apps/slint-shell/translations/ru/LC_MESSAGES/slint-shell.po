@@ -2263,8 +2263,17 @@ msgstr "Вставляет текст через портал сочетание
 msgid "Paste shortcut"
 msgstr "Сочетание вставки"
 
-msgid "Sent to the focused app to paste the text. Terminals usually need Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and Ctrl+V does not paste there."
-msgstr "Отправляется активному приложению, чтобы вставить текст. Терминалам обычно нужно Ctrl+Shift+V: некоторые из них по Shift+Insert вставляют выделение мышью, а Ctrl+V там не вставляет."
+msgid "Sent to the focused app to paste the text."
+msgstr "Отправляется активному приложению, чтобы вставить текст."
+
+msgid "Paste shortcut in terminals"
+msgstr "Сочетание вставки в терминалах"
+
+msgid "Same as in other apps"
+msgstr "Как в остальных приложениях"
+
+msgid "Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."
+msgstr "Используется вместо основного, когда активное окно — терминал, например Konsole, kitty или Alacritty. Ctrl+V в терминалах не вставляет, а некоторые из них по Shift+Insert вставляют выделение мышью."
 
 msgid "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. Reliable for Latin text only. On an error, stops without switching methods."
 msgstr "Использует только «ydotool type». Требуются ydotool и запущенная служба ydotoold. Надёжно работает только с латиницей. При ошибке ввод прекращается без смены способа."

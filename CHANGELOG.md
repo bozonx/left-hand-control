@@ -11,6 +11,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - System action `sys:windowMaximizeVertical` stretches the focused window to the full screen height and restores it on the next press: KDE through KWin, GNOME through the extension where Mutter exposes partial maximization, Windows through Win+Shift+Up/Down. The bundled LHC1 layout uses it instead of the KDE shortcut.
 - System action `sys:windowToNextDesktop` moves the focused window to the next virtual desktop and follows it (KDE, GNOME). Like `windowToDesktopN`, it is skipped with a notice on Windows and macOS. The bundled LHC1 layout uses it instead of the KDE shortcut.
 - The Layers page marks keys and extra keys that keep their modifiers held until the layer is released with an accent dot; the key tooltip explains it.
+- Clipboard text input uses a separate paste shortcut in terminals (Konsole, kitty, Alacritty, GNOME Terminal and others, recognised by window class), Ctrl+Shift+V by default: Ctrl+V does not paste there, and many terminals paste the mouse selection on Shift+Insert. Settings → Mapper → Text input can set it to any shortcut or to the one used in other apps.
 - Interface language choices and machine-translated catalogs for German, French, international Spanish, Italian, Portuguese, Polish, Turkish, Ukrainian, Czech, Hungarian, Romanian, Greek, Croatian, Georgian, Kazakh, Simplified and Traditional Chinese, Japanese, and Korean.
 
 ### Changed

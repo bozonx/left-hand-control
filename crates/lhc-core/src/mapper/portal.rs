@@ -492,6 +492,8 @@ pub(super) fn report(failure: TextInputFailure) {
 struct TextBackendConfig {
     mode: TextMode,
     paste: PasteShortcut,
+    /// Used instead of `paste` when the destination is a terminal.
+    terminal_paste: Option<PasteShortcut>,
     ydotool_path: Option<String>,
     xdotool_path: Option<String>,
 }
@@ -499,11 +501,12 @@ struct TextBackendConfig {
 static TEXT_BACKEND: Mutex<TextBackendConfig> = Mutex::new(TextBackendConfig {
     mode: TextMode::Libei,
     paste: PasteShortcut::ShiftInsert,
+    terminal_paste: Some(PasteShortcut::CtrlShiftV),
     ydotool_path: None,
     xdotool_path: None,
 });
 
-/// Select the text injection mode, paste shortcut and external tool paths.
+/// Select the text injection mode, paste shortcuts and external tool paths.
 ///
 /// Changing the mode closes the open portal sessions and forgets earlier
 /// start failures; the same mode keeps them, so pushing an unrelated config
@@ -511,6 +514,7 @@ static TEXT_BACKEND: Mutex<TextBackendConfig> = Mutex::new(TextBackendConfig {
 pub fn set_text_backend(
     mode: TextMode,
     paste: PasteShortcut,
+    terminal_paste: Option<PasteShortcut>,
     ydotool_path: Option<&str>,
     xdotool_path: Option<&str>,
 ) {
@@ -522,6 +526,7 @@ pub fn set_text_backend(
     let next = TextBackendConfig {
         mode,
         paste,
+        terminal_paste,
         ydotool_path: path(ydotool_path),
         xdotool_path: path(xdotool_path),
     };
@@ -583,6 +588,10 @@ pub(super) fn type_text(text: &str, request: TextRequest) -> Result<(), TextInpu
         .lock()
         .unwrap_or_else(|e| e.into_inner())
         .clone();
+    let paste = cfg
+        .terminal_paste
+        .filter(|_| request.is_terminal())
+        .unwrap_or(cfg.paste);
     match cfg.mode {
         TextMode::Ydotool => run_text_tool(
             cfg.ydotool_path.as_deref().unwrap_or("ydotool"),
@@ -596,12 +605,8 @@ pub(super) fn type_text(text: &str, request: TextRequest) -> Result<(), TextInpu
             text,
             &request,
         ),
-        TextMode::Libei | TextMode::LibeiPure => {
-            LIBEI.type_text(text, cfg.mode, cfg.paste, request)
-        }
-        TextMode::Keycode | TextMode::Clipboard => {
-            PORTAL.type_text(text, cfg.mode, cfg.paste, request)
-        }
+        TextMode::Libei | TextMode::LibeiPure => LIBEI.type_text(text, cfg.mode, paste, request),
+        TextMode::Keycode | TextMode::Clipboard => PORTAL.type_text(text, cfg.mode, paste, request),
     }
 }
 
@@ -2039,7 +2044,13 @@ mod tests {
         assert_eq!(std::env::var("LHC_GNOME_PORTAL_TEST").as_deref(), Ok("1"));
         let data = tempfile::tempdir().unwrap();
         set_token_dir(data.path().to_owned());
-        set_text_backend(TextMode::Libei, PasteShortcut::ShiftInsert, None, None);
+        set_text_backend(
+            TextMode::Libei,
+            PasteShortcut::ShiftInsert,
+            None,
+            None,
+            None,
+        );
         crate::layout::refresh_cache().unwrap();
         assert!(crate::active_window::detect_active_window_now().is_some());
         super::super::text_job::start();

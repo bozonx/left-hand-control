@@ -24,6 +24,8 @@ mod kwin;
 #[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "linux")]
+mod terminal;
+#[cfg(target_os = "linux")]
 mod wlr;
 
 pub use crate::runtime_state::ActiveWindow;
@@ -60,6 +62,15 @@ fn update_text_window(target: &mut Option<ActiveWindow>, current: &Option<Active
     if !current.as_ref().is_some_and(is_text_popup) {
         *target = current.clone();
     }
+}
+
+/// Whether the window text input goes to is a terminal emulator.
+#[cfg(target_os = "linux")]
+pub(crate) fn text_window_is_terminal() -> bool {
+    TEXT_WINDOW
+        .lock()
+        .ok()
+        .is_some_and(|target| target.as_ref().is_some_and(terminal::is_terminal))
 }
 
 /// An application with an open window, for picking a condition.

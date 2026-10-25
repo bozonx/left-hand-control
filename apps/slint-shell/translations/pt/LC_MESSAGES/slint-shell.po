@@ -2664,14 +2664,17 @@ msgstr ""
 msgid "Paste shortcut"
 msgstr "Colar atalho"
 
-msgid ""
-"Sent to the focused app to paste the text. Terminals usually need "
-"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
-"Ctrl+V does not paste there."
-msgstr ""
-"Enviado para o aplicativo em foco para colar o texto. Os terminais "
-"geralmente precisam de Ctrl+Shift+V: alguns deles colam a seleção do mouse "
-"em Shift+Insert, e Ctrl+V não cola lá."
+msgid "Sent to the focused app to paste the text."
+msgstr "Enviado à aplicação ativa para colar o texto."
+
+msgid "Paste shortcut in terminals"
+msgstr "Atalho de colagem em terminais"
+
+msgid "Same as in other apps"
+msgstr "Igual às outras aplicações"
+
+msgid "Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."
+msgstr "Usado em vez do principal quando a janela ativa é um terminal, como Konsole, kitty ou Alacritty. Ctrl+V não cola em terminais, e alguns colam a seleção do rato com Shift+Insert."
 
 msgid ""
 "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "

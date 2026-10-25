@@ -705,6 +705,8 @@ pub struct AppSettings {
     pub linux_wayland_text_mode: TextMode,
     /// Shortcut the clipboard text modes send to paste.
     pub linux_paste_shortcut: PasteShortcut,
+    /// Paste shortcut for terminal windows; `None` uses `linux_paste_shortcut`.
+    pub linux_terminal_paste_shortcut: Option<PasteShortcut>,
     pub linux_ydotool_path: String,
     pub linux_xdotool_path: String,
 }
@@ -754,6 +756,7 @@ impl Default for AppSettings {
             },
             linux_wayland_text_mode: TextMode::Libei,
             linux_paste_shortcut: PasteShortcut::ShiftInsert,
+            linux_terminal_paste_shortcut: Some(PasteShortcut::CtrlShiftV),
             linux_ydotool_path: String::new(),
             linux_xdotool_path: String::new(),
         }

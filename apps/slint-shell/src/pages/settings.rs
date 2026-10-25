@@ -23,6 +23,14 @@ const TAP_DECISIONS: [TapDecision; 2] = [
     TapDecision::HoldOnOtherKeyPress,
 ];
 
+/// Order of the terminal paste shortcut choices; `None` follows the main one.
+const TERMINAL_PASTE_SHORTCUTS: [Option<PasteShortcut>; 4] = [
+    None,
+    Some(PasteShortcut::ShiftInsert),
+    Some(PasteShortcut::CtrlV),
+    Some(PasteShortcut::CtrlShiftV),
+];
+
 fn appearance_choice(appearance: Appearance) -> AppearanceChoice {
     match appearance {
         Appearance::System => AppearanceChoice::System,
@@ -74,6 +82,7 @@ struct Form {
     matchers: Vec<GameModeProcessMatcher>,
     text_mode: i32,
     paste_shortcut: i32,
+    terminal_paste_shortcut: i32,
     ydotool: String,
     xdotool: String,
     keyboard: String,
@@ -122,6 +131,10 @@ impl Form {
             matchers: settings.game_mode.process_matchers.clone(),
             text_mode: choice_index(&TextMode::ALL, &settings.linux_wayland_text_mode),
             paste_shortcut: choice_index(&PasteShortcut::ALL, &settings.linux_paste_shortcut),
+            terminal_paste_shortcut: choice_index(
+                &TERMINAL_PASTE_SHORTCUTS,
+                &settings.linux_terminal_paste_shortcut,
+            ),
             ydotool: settings.linux_ydotool_path.clone(),
             xdotool: settings.linux_xdotool_path.clone(),
             keyboard: settings.input_device_path.clone().unwrap_or_default(),
@@ -162,6 +175,7 @@ impl Form {
             matchers: matchers.to_vec(),
             text_mode: e.get_text_mode_index(),
             paste_shortcut: e.get_paste_shortcut_index(),
+            terminal_paste_shortcut: e.get_terminal_paste_shortcut_index(),
             ydotool: e.get_ydotool_path().into(),
             xdotool: e.get_xdotool_path().into(),
             keyboard: e.get_keyboard_device_path().into(),
@@ -201,6 +215,7 @@ impl Form {
         show_matchers(&e, &self.matchers);
         e.set_text_mode_index(self.text_mode);
         e.set_paste_shortcut_index(self.paste_shortcut);
+        e.set_terminal_paste_shortcut_index(self.terminal_paste_shortcut);
         e.set_ydotool_path(self.ydotool.clone().into());
         e.set_xdotool_path(self.xdotool.clone().into());
         e.set_keyboard_device_path(self.keyboard.clone().into());
@@ -262,6 +277,7 @@ impl Form {
         changed!(matchers => settings.game_mode.process_matchers = self.matchers.clone());
         changed!(text_mode => settings.linux_wayland_text_mode = choice(&TextMode::ALL, self.text_mode));
         changed!(paste_shortcut => settings.linux_paste_shortcut = choice(&PasteShortcut::ALL, self.paste_shortcut));
+        changed!(terminal_paste_shortcut => settings.linux_terminal_paste_shortcut = choice(&TERMINAL_PASTE_SHORTCUTS, self.terminal_paste_shortcut));
         changed!(ydotool => settings.linux_ydotool_path = self.ydotool.trim().into());
         changed!(xdotool => settings.linux_xdotool_path = self.xdotool.trim().into());
         changed!(keyboard => settings.input_device_path = path(&self.keyboard));

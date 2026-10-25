@@ -2711,14 +2711,17 @@ msgstr ""
 msgid "Paste shortcut"
 msgstr "Verknüpfung einfügen"
 
-msgid ""
-"Sent to the focused app to paste the text. Terminals usually need "
-"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
-"Ctrl+V does not paste there."
-msgstr ""
-"Wird an die fokussierte App gesendet, um den Text einzufügen. Terminals "
-"benötigen normalerweise Strg+Umschalt+V: Einige von ihnen fügen die "
-"Mausauswahl bei Umschalt+Einfügen ein, und Strg+V fügt dort nicht ein."
+msgid "Sent to the focused app to paste the text."
+msgstr "Wird an die fokussierte App gesendet, um den Text einzufügen."
+
+msgid "Paste shortcut in terminals"
+msgstr "Einfügekürzel in Terminals"
+
+msgid "Same as in other apps"
+msgstr "Wie in anderen Apps"
+
+msgid "Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."
+msgstr "Wird stattdessen verwendet, wenn das fokussierte Fenster ein Terminal ist, etwa Konsole, kitty oder Alacritty. Strg+V fügt in Terminals nicht ein, und manche fügen bei Umschalt+Einfg die Mausauswahl ein."
 
 msgid ""
 "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "

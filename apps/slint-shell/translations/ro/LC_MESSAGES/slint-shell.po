@@ -2687,14 +2687,17 @@ msgstr ""
 msgid "Paste shortcut"
 msgstr "Lipiți comanda rapidă"
 
-msgid ""
-"Sent to the focused app to paste the text. Terminals usually need "
-"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
-"Ctrl+V does not paste there."
-msgstr ""
-"Trimis la aplicația focalizată pentru a lipi textul. Terminalele au nevoie "
-"de obicei de Ctrl+Shift+V: unele dintre ele lipesc selecția mouse-ului pe "
-"Shift+Insert, iar Ctrl+V nu lipește acolo."
+msgid "Sent to the focused app to paste the text."
+msgstr "Trimisă aplicației active pentru a lipi textul."
+
+msgid "Paste shortcut in terminals"
+msgstr "Comandă rapidă de lipire în terminale"
+
+msgid "Same as in other apps"
+msgstr "La fel ca în celelalte aplicații"
+
+msgid "Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."
+msgstr "Folosită în locul celei principale când fereastra activă este un terminal, cum ar fi Konsole, kitty sau Alacritty. Ctrl+V nu lipește în terminale, iar unele lipesc selecția mouse-ului la Shift+Insert."
 
 msgid ""
 "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "

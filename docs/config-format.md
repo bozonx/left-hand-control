@@ -179,6 +179,7 @@ JSON Schema для редактора. Приложение сохраняет �
     "linux": {
       "textMode": "libei",
       "pasteShortcut": "shift-insert",
+      "terminalPasteShortcut": "ctrl-shift-v",
       "ydotoolPath": "",
       "xdotoolPath": ""
     }
@@ -209,6 +210,7 @@ JSON Schema для редактора. Приложение сохраняет �
 | `gameMode.processes[]` | процесс-признак игры: `name` — шаблон процесса, `onlyActiveWindow` (по умолчанию `true`) — учитывать процесс, только пока его окно активно; с `"exclude": true` — процесс, который игровой режим не включает | — |
 | `linux.textMode` | `libei`, `libei-pure`, `keycode`, `clipboard`, `ydotool`, `xdotool` | `libei` |
 | `linux.pasteShortcut` | `shift-insert`, `ctrl-v`, `ctrl-shift-v` | `shift-insert` |
+| `linux.terminalPasteShortcut` | сочетание вставки, когда получатель — терминал (Konsole, kitty, Alacritty, GNOME Terminal и др., определяется по классу окна); те же значения или `null` — как `pasteShortcut` | `ctrl-shift-v` |
 
 Id раскладок библиотеки имеют вид `user:<имя файла без .json>`. При переименовании раскладки в приложении все ссылки в `config.json` обновляются.
 

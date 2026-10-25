@@ -2654,14 +2654,17 @@ msgstr ""
 msgid "Paste shortcut"
 msgstr "Kısayolu yapıştır"
 
-msgid ""
-"Sent to the focused app to paste the text. Terminals usually need "
-"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
-"Ctrl+V does not paste there."
-msgstr ""
-"Metni yapıştırmak için odaklanılan uygulamaya gönderildi. Terminaller "
-"genellikle Ctrl+Shift+V'ye ihtiyaç duyar: bazıları fare seçimini "
-"Shift+Insert'e yapıştırır ve Ctrl+V oraya yapıştırmaz."
+msgid "Sent to the focused app to paste the text."
+msgstr "Metni yapıştırmak için etkin uygulamaya gönderilir."
+
+msgid "Paste shortcut in terminals"
+msgstr "Uçbirimlerde yapıştırma kısayolu"
+
+msgid "Same as in other apps"
+msgstr "Diğer uygulamalardaki gibi"
+
+msgid "Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."
+msgstr "Etkin pencere Konsole, kitty veya Alacritty gibi bir uçbirim olduğunda bunun yerine kullanılır. Ctrl+V uçbirimlerde yapıştırmaz ve bazıları Shift+Insert ile fare seçimini yapıştırır."
 
 msgid ""
 "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "

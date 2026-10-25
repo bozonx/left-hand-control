@@ -182,6 +182,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     settings.set_text_mode_index(4);
     settings.set_ydotool_path("/usr/bin/ydotool".into());
     settings.set_paste_shortcut_index(2);
+    settings.set_terminal_paste_shortcut_index(0);
     settings.invoke_save_process(-1, "test-game".into(), true, false);
     settings.invoke_save();
     assert_eq!(settings.get_message().id, "");
@@ -214,6 +215,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         loaded.settings().linux_paste_shortcut,
         lhc_core::profile::model::PasteShortcut::CtrlShiftV
     );
+    assert_eq!(loaded.settings().linux_terminal_paste_shortcut, None);
     // Windows has no device paths: the mapper takes the whole session.
     if cfg!(target_os = "windows") {
         settings.invoke_select_device("windows:keyboard".into());

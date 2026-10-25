@@ -227,6 +227,8 @@ struct LinuxDoc {
     text_mode: TextMode,
     /// Shortcut the clipboard text modes send to paste.
     paste_shortcut: PasteShortcut,
+    /// Paste shortcut for terminal windows; `null` uses `paste_shortcut`.
+    terminal_paste_shortcut: Option<PasteShortcut>,
     #[serde(skip_serializing_if = "String::is_empty")]
     ydotool_path: String,
     #[serde(skip_serializing_if = "String::is_empty")]
@@ -383,6 +385,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
         },
         linux_wayland_text_mode: settings.linux.text_mode,
         linux_paste_shortcut: settings.linux.paste_shortcut,
+        linux_terminal_paste_shortcut: settings.linux.terminal_paste_shortcut,
         linux_ydotool_path: settings.linux.ydotool_path,
         linux_xdotool_path: settings.linux.xdotool_path,
     })
@@ -461,6 +464,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
             linux: LinuxDoc {
                 text_mode: settings.linux_wayland_text_mode,
                 paste_shortcut: settings.linux_paste_shortcut,
+                terminal_paste_shortcut: settings.linux_terminal_paste_shortcut,
                 ydotool_path: settings.linux_ydotool_path.clone(),
                 xdotool_path: settings.linux_xdotool_path.clone(),
             },
@@ -674,6 +678,7 @@ mod tests {
             },
             linux_wayland_text_mode: TextMode::Clipboard,
             linux_paste_shortcut: PasteShortcut::CtrlShiftV,
+            linux_terminal_paste_shortcut: None,
             linux_ydotool_path: "/usr/bin/ydotool".into(),
             ..AppSettings::default()
         };
@@ -683,6 +688,10 @@ mod tests {
         assert_eq!(raw["schemaVersion"], 1);
         assert_eq!(raw["settings"]["timing"]["holdMs"], 180);
         assert_eq!(raw["settings"]["linux"]["pasteShortcut"], "ctrl-shift-v");
+        assert_eq!(
+            raw["settings"]["linux"]["terminalPasteShortcut"],
+            Value::Null
+        );
         assert_eq!(raw["settings"]["gameMode"]["processes"][0]["exclude"], true);
         assert_eq!(raw["state"]["editedLayoutId"], "user:Main");
         assert_eq!(raw["state"]["gameModeSwitch"], "on");
@@ -723,6 +732,24 @@ mod tests {
         assert_eq!(process.id, "process-1");
         assert!(process.only_active_window);
         assert!(!process.is_blacklist);
+    }
+
+    #[test]
+    fn terminal_paste_shortcut_defaults_and_can_follow_the_main_one() {
+        let shortcut = |linux: Value| {
+            parse(&config(json!({ "linux": linux })))
+                .unwrap()
+                .linux_terminal_paste_shortcut
+        };
+        assert_eq!(
+            shortcut(json!({"pasteShortcut": "ctrl-v"})),
+            Some(PasteShortcut::CtrlShiftV)
+        );
+        assert_eq!(shortcut(json!({"terminalPasteShortcut": null})), None);
+        assert_eq!(
+            shortcut(json!({"terminalPasteShortcut": "shift-insert"})),
+            Some(PasteShortcut::ShiftInsert)
+        );
     }
 
     #[test]

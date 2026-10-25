@@ -2681,14 +2681,17 @@ msgstr ""
 msgid "Paste shortcut"
 msgstr "Wklej skrót"
 
-msgid ""
-"Sent to the focused app to paste the text. Terminals usually need "
-"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
-"Ctrl+V does not paste there."
-msgstr ""
-"Wysłano do wybranej aplikacji w celu wklejenia tekstu. Terminale zwykle "
-"wymagają Ctrl+Shift+V: niektóre z nich wklejają wybór myszy na Shift+Insert,"
-" a Ctrl+V nie wkleja tam."
+msgid "Sent to the focused app to paste the text."
+msgstr "Wysyłany do aktywnej aplikacji, aby wkleić tekst."
+
+msgid "Paste shortcut in terminals"
+msgstr "Skrót wklejania w terminalach"
+
+msgid "Same as in other apps"
+msgstr "Jak w innych aplikacjach"
+
+msgid "Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."
+msgstr "Używany zamiast głównego, gdy aktywne okno jest terminalem, np. Konsole, kitty lub Alacritty. Ctrl+V nie wkleja w terminalach, a niektóre z nich wklejają zaznaczenie myszą po Shift+Insert."
 
 msgid ""
 "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "

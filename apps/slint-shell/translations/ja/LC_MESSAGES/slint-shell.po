@@ -2501,13 +2501,17 @@ msgstr ""
 msgid "Paste shortcut"
 msgstr "ショートカットを貼り付け"
 
-msgid ""
-"Sent to the focused app to paste the text. Terminals usually need "
-"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
-"Ctrl+V does not paste there."
-msgstr ""
-"テキストを貼り付けるためにフォーカスされたアプリに送信されます。ターミナルでは通常、Ctrl+Shift+V "
-"が必要です。一部のターミナルではマウス選択を Shift+Insert に貼り付けますが、Ctrl+V では貼り付けられません。"
+msgid "Sent to the focused app to paste the text."
+msgstr "テキストを貼り付けるためにアクティブなアプリへ送信されます。"
+
+msgid "Paste shortcut in terminals"
+msgstr "ターミナルでの貼り付けショートカット"
+
+msgid "Same as in other apps"
+msgstr "他のアプリと同じ"
+
+msgid "Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."
+msgstr "アクティブなウィンドウが Konsole、kitty、Alacritty などのターミナルの場合に代わりに使用されます。ターミナルでは Ctrl+V で貼り付けできず、一部は Shift+Insert でマウスの選択範囲を貼り付けます。"
 
 msgid ""
 "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "

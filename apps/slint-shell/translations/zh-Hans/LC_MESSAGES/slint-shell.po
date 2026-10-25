@@ -2454,13 +2454,17 @@ msgstr ""
 msgid "Paste shortcut"
 msgstr "粘贴快捷方式"
 
-msgid ""
-"Sent to the focused app to paste the text. Terminals usually need "
-"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
-"Ctrl+V does not paste there."
-msgstr ""
-"发送到焦点应用程序以粘贴文本。终端通常需要 Ctrl+Shift+V：其中一些终端将鼠标选择粘贴到 Shift+Insert 上，而 Ctrl+V "
-"不粘贴到那里。"
+msgid "Sent to the focused app to paste the text."
+msgstr "发送到当前应用以粘贴文本。"
+
+msgid "Paste shortcut in terminals"
+msgstr "终端中的粘贴快捷键"
+
+msgid "Same as in other apps"
+msgstr "与其他应用相同"
+
+msgid "Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."
+msgstr "当前窗口是终端（如 Konsole、kitty 或 Alacritty）时改用此快捷键。Ctrl+V 在终端中不能粘贴，部分终端按 Shift+Insert 会粘贴鼠标选中的内容。"
 
 msgid ""
 "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "

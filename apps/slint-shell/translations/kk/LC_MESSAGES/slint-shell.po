@@ -2666,14 +2666,17 @@ msgstr ""
 msgid "Paste shortcut"
 msgstr "Таңбашаны қою"
 
-msgid ""
-"Sent to the focused app to paste the text. Terminals usually need "
-"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
-"Ctrl+V does not paste there."
-msgstr ""
-"Мәтінді қою үшін бағытталған қолданбаға жіберілді. Терминалдарға әдетте "
-"Ctrl+Shift+V қажет: олардың кейбіреулері тінтуірдің таңдауын Shift+Insert "
-"пернелеріне қояды, ал Ctrl+V бұл жерге қоймайды."
+msgid "Sent to the focused app to paste the text."
+msgstr "Мәтінді қою үшін белсенді қолданбаға жіберіледі."
+
+msgid "Paste shortcut in terminals"
+msgstr "Терминалдардағы қою пернелер тіркесімі"
+
+msgid "Same as in other apps"
+msgstr "Басқа қолданбалардағыдай"
+
+msgid "Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."
+msgstr "Белсенді терезе Konsole, kitty немесе Alacritty сияқты терминал болғанда, оның орнына қолданылады. Ctrl+V терминалдарда қоймайды, ал кейбірі Shift+Insert арқылы тінтуірмен ерекшеленгенді қояды."
 
 msgid ""
 "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "

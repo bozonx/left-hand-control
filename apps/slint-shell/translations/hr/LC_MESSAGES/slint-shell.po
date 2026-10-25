@@ -2652,14 +2652,17 @@ msgstr ""
 msgid "Paste shortcut"
 msgstr "Zalijepi prečac"
 
-msgid ""
-"Sent to the focused app to paste the text. Terminals usually need "
-"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
-"Ctrl+V does not paste there."
-msgstr ""
-"Poslano u fokusiranu aplikaciju za lijepljenje teksta. Terminali obično "
-"trebaju Ctrl+Shift+V: neki od njih lijepe odabir miša na Shift+Insert, a "
-"Ctrl+V ne lijepi tamo."
+msgid "Sent to the focused app to paste the text."
+msgstr "Šalje se aktivnoj aplikaciji radi lijepljenja teksta."
+
+msgid "Paste shortcut in terminals"
+msgstr "Prečac za lijepljenje u terminalima"
+
+msgid "Same as in other apps"
+msgstr "Kao u ostalim aplikacijama"
+
+msgid "Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."
+msgstr "Koristi se umjesto glavnog kada je aktivni prozor terminal, poput Konsole, kitty ili Alacritty. Ctrl+V ne lijepi u terminalima, a neki od njih na Shift+Insert lijepe odabir mišem."
 
 msgid ""
 "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "

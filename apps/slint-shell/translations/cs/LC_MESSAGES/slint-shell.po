@@ -2643,14 +2643,17 @@ msgstr ""
 msgid "Paste shortcut"
 msgstr "Vložit zkratku"
 
-msgid ""
-"Sent to the focused app to paste the text. Terminals usually need "
-"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
-"Ctrl+V does not paste there."
-msgstr ""
-"Odesláno do vybrané aplikace k vložení textu. Terminály obvykle potřebují "
-"Ctrl+Shift+V: některé z nich vloží výběr myší na Shift+Insert a Ctrl+V tam "
-"nevloží."
+msgid "Sent to the focused app to paste the text."
+msgstr "Odesílá se aktivní aplikaci pro vložení textu."
+
+msgid "Paste shortcut in terminals"
+msgstr "Zkratka vložení v terminálech"
+
+msgid "Same as in other apps"
+msgstr "Stejně jako v ostatních aplikacích"
+
+msgid "Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."
+msgstr "Použije se místo ní, když je aktivním oknem terminál, například Konsole, kitty nebo Alacritty. Ctrl+V v terminálech nevkládá a některé z nich na Shift+Insert vkládají výběr myší."
 
 msgid ""
 "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "

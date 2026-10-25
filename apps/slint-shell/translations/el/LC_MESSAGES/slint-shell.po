@@ -2722,14 +2722,17 @@ msgstr ""
 msgid "Paste shortcut"
 msgstr "Επικόλληση συντόμευσης"
 
-msgid ""
-"Sent to the focused app to paste the text. Terminals usually need "
-"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
-"Ctrl+V does not paste there."
-msgstr ""
-"Στάλθηκε στην εστιασμένη εφαρμογή για επικόλληση του κειμένου. Τα τερματικά "
-"συνήθως χρειάζονται Ctrl+Shift+V: μερικά από αυτά επικολλούν την επιλογή του"
-" ποντικιού στο Shift+Insert και τα Ctrl+V δεν επικολλούν εκεί."
+msgid "Sent to the focused app to paste the text."
+msgstr "Στέλνεται στην ενεργή εφαρμογή για επικόλληση του κειμένου."
+
+msgid "Paste shortcut in terminals"
+msgstr "Συντόμευση επικόλλησης σε τερματικά"
+
+msgid "Same as in other apps"
+msgstr "Όπως στις άλλες εφαρμογές"
+
+msgid "Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."
+msgstr "Χρησιμοποιείται αντί για την κύρια όταν το ενεργό παράθυρο είναι τερματικό, όπως Konsole, kitty ή Alacritty. Το Ctrl+V δεν επικολλά στα τερματικά και ορισμένα επικολλούν την επιλογή του ποντικιού με Shift+Insert."
 
 msgid ""
 "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "

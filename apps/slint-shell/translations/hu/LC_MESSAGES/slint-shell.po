@@ -2690,15 +2690,17 @@ msgstr ""
 msgid "Paste shortcut"
 msgstr "Parancsikon beillesztése"
 
-msgid ""
-"Sent to the focused app to paste the text. Terminals usually need "
-"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
-"Ctrl+V does not paste there."
-msgstr ""
-"Elküldve a fókuszált alkalmazásnak a szöveg beillesztéséhez. A terminálokhoz"
-" általában szükség van a Ctrl+Shift+V billentyűkombinációra: van, amelyik "
-"beilleszti az egér kijelölését a Shift+Insert parancsra, és a Ctrl+V nem "
-"illeszti be oda."
+msgid "Sent to the focused app to paste the text."
+msgstr "Az aktív alkalmazásnak küldi a szöveg beillesztéséhez."
+
+msgid "Paste shortcut in terminals"
+msgstr "Beillesztési billentyűparancs terminálokban"
+
+msgid "Same as in other apps"
+msgstr "Ugyanaz, mint más alkalmazásokban"
+
+msgid "Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."
+msgstr "Ezt használja helyette, ha az aktív ablak terminál, például Konsole, kitty vagy Alacritty. A Ctrl+V terminálokban nem illeszt be, néhányuk pedig Shift+Insert hatására az egérrel kijelölt szöveget illeszti be."
 
 msgid ""
 "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "

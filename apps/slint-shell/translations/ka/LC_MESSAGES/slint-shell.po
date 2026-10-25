@@ -2654,14 +2654,17 @@ msgstr ""
 msgid "Paste shortcut"
 msgstr "მალსახმობის ჩასმა"
 
-msgid ""
-"Sent to the focused app to paste the text. Terminals usually need "
-"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
-"Ctrl+V does not paste there."
-msgstr ""
-"გაიგზავნა ფოკუსირებულ აპლიკაციაში ტექსტის ჩასართავად. ტერმინალებს ჩვეულებრივ"
-" სჭირდებათ Ctrl+Shift+V: ზოგიერთი მათგანი ათავსებს მაუსის არჩევანს "
-"Shift+Insert-ზე და Ctrl+V იქ არ ჩასმება."
+msgid "Sent to the focused app to paste the text."
+msgstr "ეგზავნება აქტიურ აპს ტექსტის ჩასასმელად."
+
+msgid "Paste shortcut in terminals"
+msgstr "ჩასმის მალსახმობი ტერმინალებში"
+
+msgid "Same as in other apps"
+msgstr "როგორც სხვა აპებში"
+
+msgid "Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."
+msgstr "გამოიყენება მის ნაცვლად, როცა აქტიური ფანჯარა ტერმინალია, მაგალითად Konsole, kitty ან Alacritty. Ctrl+V ტერმინალებში არ სვამს, ზოგიერთი კი Shift+Insert-ზე თაგუნათი მონიშნულს სვამს."
 
 msgid ""
 "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "

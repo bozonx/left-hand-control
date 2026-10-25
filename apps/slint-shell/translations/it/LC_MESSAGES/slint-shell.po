@@ -2706,14 +2706,17 @@ msgstr ""
 msgid "Paste shortcut"
 msgstr "Incolla scorciatoia"
 
-msgid ""
-"Sent to the focused app to paste the text. Terminals usually need "
-"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
-"Ctrl+V does not paste there."
-msgstr ""
-"Inviato all'app focalizzata per incollare il testo. I terminali di solito "
-"necessitano di Ctrl+Shift+V: alcuni incollano la selezione del mouse su "
-"Shift+Insert e Ctrl+V non la incolla lì."
+msgid "Sent to the focused app to paste the text."
+msgstr "Inviata all’app attiva per incollare il testo."
+
+msgid "Paste shortcut in terminals"
+msgstr "Scorciatoia per incollare nei terminali"
+
+msgid "Same as in other apps"
+msgstr "Come nelle altre app"
+
+msgid "Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."
+msgstr "Usata al suo posto quando la finestra attiva è un terminale, come Konsole, kitty o Alacritty. Ctrl+V non incolla nei terminali, e alcuni incollano la selezione del mouse con Maiusc+Ins."
 
 msgid ""
 "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "

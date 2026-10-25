@@ -2494,13 +2494,17 @@ msgstr ""
 msgid "Paste shortcut"
 msgstr "바로가기 붙여넣기"
 
-msgid ""
-"Sent to the focused app to paste the text. Terminals usually need "
-"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
-"Ctrl+V does not paste there."
-msgstr ""
-"텍스트를 붙여넣기 위해 집중된 앱으로 전송됩니다. 터미널에는 일반적으로 Ctrl+Shift+V가 필요합니다. 일부는 "
-"Shift+Insert에 마우스 선택 항목을 붙여넣고 Ctrl+V는 거기에 붙여넣지 않습니다."
+msgid "Sent to the focused app to paste the text."
+msgstr "텍스트를 붙여넣기 위해 활성 앱으로 보냅니다."
+
+msgid "Paste shortcut in terminals"
+msgstr "터미널의 붙여넣기 단축키"
+
+msgid "Same as in other apps"
+msgstr "다른 앱과 동일"
+
+msgid "Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."
+msgstr "활성 창이 Konsole, kitty, Alacritty 같은 터미널일 때 대신 사용합니다. 터미널에서는 Ctrl+V로 붙여넣을 수 없고, 일부는 Shift+Insert로 마우스 선택 영역을 붙여넣습니다."
 
 msgid ""
 "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "

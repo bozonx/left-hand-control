@@ -162,6 +162,8 @@ pub struct Settings {
     pub linux_wayland_text_mode: TextMode,
     #[serde(default)]
     pub linux_paste_shortcut: PasteShortcut,
+    #[serde(default = "default_terminal_paste")]
+    pub linux_terminal_paste_shortcut: Option<PasteShortcut>,
     #[serde(default)]
     pub linux_ydotool_path: Option<String>,
     #[serde(default)]
@@ -199,10 +201,15 @@ impl Default for Settings {
             commands_enabled: false,
             linux_wayland_text_mode: TextMode::Libei,
             linux_paste_shortcut: PasteShortcut::ShiftInsert,
+            linux_terminal_paste_shortcut: default_terminal_paste(),
             linux_ydotool_path: None,
             linux_xdotool_path: None,
         }
     }
+}
+
+fn default_terminal_paste() -> Option<PasteShortcut> {
+    Some(PasteShortcut::CtrlShiftV)
 }
 
 fn default_long_hold() -> u64 {
@@ -297,6 +304,10 @@ mod tests {
         assert_eq!(s.tap_decision, TapDecision::PermissiveHold);
         assert_eq!(s.linux_wayland_text_mode, TextMode::Libei);
         assert_eq!(s.linux_paste_shortcut, PasteShortcut::ShiftInsert);
+        assert_eq!(
+            s.linux_terminal_paste_shortcut,
+            Some(PasteShortcut::CtrlShiftV)
+        );
         assert!(s.linux_ydotool_path.is_none());
     }
 }

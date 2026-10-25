@@ -2666,14 +2666,17 @@ msgstr ""
 msgid "Paste shortcut"
 msgstr "Вставити ярлик"
 
-msgid ""
-"Sent to the focused app to paste the text. Terminals usually need "
-"Ctrl+Shift+V: some of them paste the mouse selection on Shift+Insert, and "
-"Ctrl+V does not paste there."
-msgstr ""
-"Надіслано у вибрану програму для вставлення тексту. Термінали зазвичай "
-"потребують Ctrl+Shift+V: деякі з них вставляють виділення миші на "
-"Shift+Insert, а Ctrl+V не вставляє туди."
+msgid "Sent to the focused app to paste the text."
+msgstr "Надсилається активній програмі, щоб вставити текст."
+
+msgid "Paste shortcut in terminals"
+msgstr "Комбінація вставлення в терміналах"
+
+msgid "Same as in other apps"
+msgstr "Як в інших програмах"
+
+msgid "Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."
+msgstr "Використовується замість основної, коли активне вікно — термінал, наприклад Konsole, kitty або Alacritty. Ctrl+V у терміналах не вставляє, а деякі з них за Shift+Insert вставляють виділення мишею."
 
 msgid ""
 "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. "
