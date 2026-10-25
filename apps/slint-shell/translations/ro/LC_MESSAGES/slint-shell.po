@@ -168,9 +168,6 @@ msgstr "Actualizează dispozitivele"
 msgid "Mouse device path"
 msgstr "Calea dispozitivului mouse-ului"
 
-msgid "Optional device path"
-msgstr "Calea opțională a dispozitivului"
-
 msgid "General"
 msgstr "General"
 
@@ -484,9 +481,6 @@ msgstr "Aspect personalizat"
 msgid "Base keyboard"
 msgstr "Tastatură de bază"
 
-msgid "Keyboard device path"
-msgstr "Calea dispozitivului tastaturii"
-
 msgid "Copy path"
 msgstr "Copiați calea"
 
@@ -526,9 +520,6 @@ msgstr "Aspecte de sistem (separate prin virgulă)"
 
 msgid "Applications (comma separated)"
 msgstr "Aplicații (separate prin virgulă)"
-
-msgid "Manual"
-msgstr "Manual"
 
 msgid "Active"
 msgstr "Activ"
@@ -1389,15 +1380,6 @@ msgstr "Temă"
 msgid "E-ink"
 msgstr "E-ink"
 
-msgid "Enter device path manually"
-msgstr "Introduceți manual calea dispozitivului"
-
-msgid "All keyboards"
-msgstr "Toate tastaturile"
-
-msgid "All mice (buttons only)"
-msgstr "Toți șoarecii (numai butoanele)"
-
 msgid "Mode"
 msgstr "Modul"
 
@@ -1470,26 +1452,11 @@ msgstr "Neselectat"
 msgid "Not selected (no mouse support)"
 msgstr "Neselectat (fără suport pentru mouse)"
 
-msgid "Looks like a keyboard"
-msgstr "Arată ca o tastatură"
-
-msgid "Looks like a mouse"
-msgstr "Arată ca un șoarece"
-
-msgid "Other devices"
-msgstr "Alte dispozitive"
-
 msgid "Virtual devices"
 msgstr "Dispozitive virtuale"
 
 msgid "Not connected · {}"
 msgstr "Neconectat · {}"
-
-msgid "Show {n} more device"
-msgid_plural "Show {n} more devices"
-msgstr[0] "Afișează încă {n} dispozitiv"
-msgstr[1] "Afișează încă {n} dispozitive"
-msgstr[2] "Afișează încă {n} de dispozitive"
 
 msgid "Search devices"
 msgstr "Căutați dispozitive"
@@ -3668,3 +3635,42 @@ msgstr "Asteptam tastatura"
 
 msgid "The text was not typed: the destination window changed or could not be identified."
 msgstr "Textul nu a fost introdus: fereastra de destinație s-a schimbat sau nu a putut fi identificată."
+
+msgid "Not connected"
+msgstr "Neconectat"
+
+msgid "Choose a mouse"
+msgstr "Alegeți un mouse"
+
+msgid "Keyboards"
+msgstr "Tastaturi"
+
+msgid "Mice"
+msgstr "Mouse-uri"
+
+msgid "All devices"
+msgstr "Toate dispozitivele"
+
+msgid "Detected automatically from what each device reports, so the list may be incomplete. If your device is missing, look under All devices."
+msgstr "Detectate automat după capabilitățile dispozitivelor, așa că lista poate fi incompletă. Dacă dispozitivul lipsește, uitați-vă în „Toate dispozitivele”."
+
+msgid "No devices found"
+msgstr "Nu s-au găsit dispozitive"
+
+msgid "Show all devices"
+msgstr "Afișați toate dispozitivele"
+
+msgid "Enter device path manually…"
+msgstr "Introduceți manual calea dispozitivului…"
+
+msgid "Device path, e.g. /dev/input/by-id/…"
+msgstr "Calea dispozitivului, de ex. /dev/input/by-id/…"
+
+msgid "Intercept all keyboards"
+msgstr "Interceptează toate tastaturile"
+
+msgid "Intercept buttons of all mice"
+msgstr "Interceptează butoanele tuturor mouse-urilor"
+
+msgid "Windows does not tell input devices apart, so all of them are intercepted."
+msgstr "Windows nu deosebește dispozitivele de intrare, așa că sunt interceptate toate."

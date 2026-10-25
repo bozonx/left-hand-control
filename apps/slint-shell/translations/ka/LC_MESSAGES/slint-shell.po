@@ -168,9 +168,6 @@ msgstr "განაახლეთ მოწყობილობები"
 msgid "Mouse device path"
 msgstr "მაუსის მოწყობილობის ბილიკი"
 
-msgid "Optional device path"
-msgstr "არჩევითი მოწყობილობის ბილიკი"
-
 msgid "General"
 msgstr "გენერალი"
 
@@ -482,9 +479,6 @@ msgstr "მორგებული განლაგება"
 msgid "Base keyboard"
 msgstr "საბაზისო კლავიატურა"
 
-msgid "Keyboard device path"
-msgstr "კლავიატურის მოწყობილობის გზა"
-
 msgid "Copy path"
 msgstr "დააკოპირეთ გზა"
 
@@ -525,9 +519,6 @@ msgstr "სისტემის განლაგება (მძიმით
 
 msgid "Applications (comma separated)"
 msgstr "აპლიკაციები (მძიმით გამოყოფილი)"
-
-msgid "Manual"
-msgstr "სახელმძღვანელო"
 
 msgid "Active"
 msgstr "აქტიური"
@@ -1384,15 +1375,6 @@ msgstr "თემა"
 msgid "E-ink"
 msgstr "E-ink"
 
-msgid "Enter device path manually"
-msgstr "შეიყვანეთ მოწყობილობის გზა ხელით"
-
-msgid "All keyboards"
-msgstr "ყველა კლავიატურა"
-
-msgid "All mice (buttons only)"
-msgstr "ყველა მაუსი (მხოლოდ ღილაკები)"
-
 msgid "Mode"
 msgstr "რეჟიმი"
 
@@ -1462,25 +1444,11 @@ msgstr "არ არის შერჩეული"
 msgid "Not selected (no mouse support)"
 msgstr "არ არის არჩეული (მაუსის მხარდაჭერა არ არის)"
 
-msgid "Looks like a keyboard"
-msgstr "კლავიატურას ჰგავს"
-
-msgid "Looks like a mouse"
-msgstr "თაგვს ჰგავს"
-
-msgid "Other devices"
-msgstr "სხვა მოწყობილობები"
-
 msgid "Virtual devices"
 msgstr "ვირტუალური მოწყობილობები"
 
 msgid "Not connected · {}"
 msgstr "არ არის დაკავშირებული · {}"
-
-msgid "Show {n} more device"
-msgid_plural "Show {n} more devices"
-msgstr[0] "კიდევ {n} მოწყობილობის ჩვენება"
-msgstr[1] "კიდევ {n} მოწყობილობის ჩვენება"
 
 msgid "Search devices"
 msgstr "მოძებნეთ მოწყობილობები"
@@ -3614,3 +3582,42 @@ msgstr "კლავიატურას ველოდები"
 
 msgid "The text was not typed: the destination window changed or could not be identified."
 msgstr "ტექსტი არ შეიყვანა: სამიზნე ფანჯარა შეიცვალა ან მისი ამოცნობა ვერ მოხერხდა."
+
+msgid "Not connected"
+msgstr "არ არის დაკავშირებული"
+
+msgid "Choose a mouse"
+msgstr "თაგვის არჩევა"
+
+msgid "Keyboards"
+msgstr "კლავიატურები"
+
+msgid "Mice"
+msgstr "თაგვები"
+
+msgid "All devices"
+msgstr "ყველა მოწყობილობა"
+
+msgid "Detected automatically from what each device reports, so the list may be incomplete. If your device is missing, look under All devices."
+msgstr "ავტომატურად განისაზღვრა მოწყობილობების შესაძლებლობების მიხედვით, ამიტომ სია შეიძლება არასრული იყოს. თუ თქვენი მოწყობილობა არ ჩანს, ნახეთ ჩანართი „ყველა მოწყობილობა“."
+
+msgid "No devices found"
+msgstr "მოწყობილობები ვერ მოიძებნა"
+
+msgid "Show all devices"
+msgstr "ყველა მოწყობილობის ჩვენება"
+
+msgid "Enter device path manually…"
+msgstr "მოწყობილობის ბილიკის ხელით შეყვანა…"
+
+msgid "Device path, e.g. /dev/input/by-id/…"
+msgstr "მოწყობილობის ბილიკი, მაგ. /dev/input/by-id/…"
+
+msgid "Intercept all keyboards"
+msgstr "ყველა კლავიატურის ჩაჭერა"
+
+msgid "Intercept buttons of all mice"
+msgstr "ყველა თაგვის ღილაკების ჩაჭერა"
+
+msgid "Windows does not tell input devices apart, so all of them are intercepted."
+msgstr "Windows ვერ არჩევს შეყვანის მოწყობილობებს ერთმანეთისგან, ამიტომ ყველა ჩაიჭერა."

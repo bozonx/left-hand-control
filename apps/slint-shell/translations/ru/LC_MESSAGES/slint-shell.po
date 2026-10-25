@@ -166,9 +166,6 @@ msgstr "Обновить устройства"
 msgid "Mouse device path"
 msgstr "Путь к мыши"
 
-msgid "Optional device path"
-msgstr "Необязательный путь к устройству"
-
 msgid "General"
 msgstr "Общие"
 
@@ -480,9 +477,6 @@ msgstr "Своя раскладка"
 msgid "Base keyboard"
 msgstr "Базовая клавиатура"
 
-msgid "Keyboard device path"
-msgstr "Путь к устройству клавиатуры"
-
 msgid "Copy path"
 msgstr "Копировать путь"
 
@@ -521,9 +515,6 @@ msgstr "Языки клавиатуры через запятую"
 
 msgid "Applications (comma separated)"
 msgstr "Приложения через запятую"
-
-msgid "Manual"
-msgstr "Ручной"
 
 msgid "Active"
 msgstr "Активна"
@@ -1264,15 +1255,6 @@ msgstr "Тема"
 msgid "E-ink"
 msgstr "E-ink"
 
-msgid "Enter device path manually"
-msgstr "Ввести путь устройства вручную"
-
-msgid "All keyboards"
-msgstr "Все клавиатуры"
-
-msgid "All mice (buttons only)"
-msgstr "Все мыши (только кнопки)"
-
 msgid "Mode"
 msgstr "Режим"
 
@@ -1324,26 +1306,11 @@ msgstr "Не выбрано"
 msgid "Not selected (no mouse support)"
 msgstr "Не выбрано (без поддержки мыши)"
 
-msgid "Looks like a keyboard"
-msgstr "Похоже на клавиатуру"
-
-msgid "Looks like a mouse"
-msgstr "Похоже на мышь"
-
-msgid "Other devices"
-msgstr "Остальные устройства"
-
 msgid "Virtual devices"
 msgstr "Виртуальные устройства"
 
 msgid "Not connected · {}"
 msgstr "Не подключено · {}"
-
-msgid "Show {n} more device"
-msgid_plural "Show {n} more devices"
-msgstr[0] "Показать ещё {n} устройство"
-msgstr[1] "Показать ещё {n} устройства"
-msgstr[2] "Показать ещё {n} устройств"
 
 msgid "Search devices"
 msgstr "Поиск устройств"
@@ -2951,3 +2918,43 @@ msgstr "Ожидание клавиатуры"
 
 msgid "The text was not typed: the destination window changed or could not be identified."
 msgstr "Текст не введён: окно-получатель сменилось или его не удалось определить."
+
+
+msgid "Not connected"
+msgstr "Не подключено"
+
+msgid "Choose a mouse"
+msgstr "Выбрать мышь"
+
+msgid "Keyboards"
+msgstr "Клавиатуры"
+
+msgid "Mice"
+msgstr "Мыши"
+
+msgid "All devices"
+msgstr "Все устройства"
+
+msgid "Detected automatically from what each device reports, so the list may be incomplete. If your device is missing, look under All devices."
+msgstr "Список определён автоматически по возможностям устройств и может быть неполным. Если нужного устройства нет, загляните во вкладку «Все устройства»."
+
+msgid "No devices found"
+msgstr "Устройства не найдены"
+
+msgid "Show all devices"
+msgstr "Показать все устройства"
+
+msgid "Enter device path manually…"
+msgstr "Указать путь к устройству вручную…"
+
+msgid "Device path, e.g. /dev/input/by-id/…"
+msgstr "Путь к устройству, например /dev/input/by-id/…"
+
+msgid "Intercept all keyboards"
+msgstr "Перехватывать все клавиатуры"
+
+msgid "Intercept buttons of all mice"
+msgstr "Перехватывать кнопки всех мышей"
+
+msgid "Windows does not tell input devices apart, so all of them are intercepted."
+msgstr "Windows не различает отдельные устройства ввода, поэтому перехватываются все сразу."

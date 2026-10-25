@@ -203,12 +203,6 @@ impl Form {
         e.set_paste_shortcut_index(self.paste_shortcut);
         e.set_ydotool_path(self.ydotool.clone().into());
         e.set_xdotool_path(self.xdotool.clone().into());
-        if e.get_keyboard_device_path() != self.keyboard {
-            e.set_keyboard_manual(false);
-        }
-        if e.get_mouse_device_path() != self.mouse {
-            e.set_mouse_manual(false);
-        }
         e.set_keyboard_device_path(self.keyboard.clone().into());
         e.set_mouse_device_path(self.mouse.clone().into());
     }
@@ -436,10 +430,7 @@ fn device_choices(
     mouse: bool,
     saved: &str,
 ) -> Vec<DeviceChoice> {
-    let mut choices = vec![DeviceChoice {
-        group: DeviceGroup::Unselected,
-        ..Default::default()
-    }];
+    let mut choices = Vec::new();
     let saved = saved.trim();
     if !saved.is_empty() && !devices.iter().any(|device| device.path == saved) {
         choices.push(DeviceChoice {
@@ -447,36 +438,24 @@ fn device_choices(
             detail: short_path(saved).into(),
             path: saved.into(),
             group: DeviceGroup::Missing,
-            source_index: choices.len() as i32,
             ..Default::default()
         });
     }
+    // Virtual devices (ydotoold, other remappers) also pass the keyboard
+    // heuristic, but are never the keyboard the user types on.
     let group_of = |device: &lhc_core::mapper::devices::InputDevice| {
-        if if mouse {
+        if device.is_virtual {
+            DeviceGroup::VirtualDevice
+        } else if if mouse {
             device.is_mouse
         } else {
             device.is_keyboard
         } {
             DeviceGroup::Suggested
-        } else if device.is_virtual {
-            DeviceGroup::VirtualDevice
         } else {
             DeviceGroup::Other
         }
     };
-    let hidden = devices
-        .iter()
-        .filter(|device| group_of(device) != DeviceGroup::Suggested)
-        .count();
-    if hidden > 0 {
-        // Folds the rarely needed groups until the user asks for them.
-        choices.push(DeviceChoice {
-            group: DeviceGroup::More,
-            source_index: -1,
-            count: hidden as i32,
-            ..Default::default()
-        });
-    }
     for group in [
         DeviceGroup::Suggested,
         DeviceGroup::Other,
@@ -488,18 +467,25 @@ fn device_choices(
                 detail: short_path(&device.path).into(),
                 path: device.path.clone().into(),
                 group,
-                source_index: choices.len() as i32,
                 ..Default::default()
             });
         }
     }
-    // Windows has no device paths to enter: the mapper takes the session.
-    if !cfg!(target_os = "windows") {
-        choices.push(DeviceChoice {
-            group: DeviceGroup::Manual,
-            source_index: choices.len() as i32,
-            ..Default::default()
-        });
+    // The suggested tab hides paths, so rows sharing a name keep theirs.
+    let shown = |choice: &DeviceChoice| {
+        matches!(choice.group, DeviceGroup::Missing | DeviceGroup::Suggested)
+    };
+    let labels: Vec<_> = choices
+        .iter()
+        .filter(|choice| shown(choice))
+        .map(|choice| choice.label.clone())
+        .collect();
+    for choice in choices.iter_mut().filter(|choice| shown(choice)) {
+        choice.ambiguous = labels
+            .iter()
+            .filter(|label| **label == choice.label)
+            .count()
+            > 1;
     }
     choices
 }
@@ -562,40 +548,21 @@ fn strip_event_suffix(link: &str) -> &str {
     }
 }
 
-fn device_selection(choices: &[DeviceChoice], path: &str, manual: bool) -> (i32, bool) {
-    if !manual && let Some(index) = choices.iter().position(|choice| choice.path == path) {
-        (index as i32, false)
-    } else if choices
-        .last()
-        .is_some_and(|choice| choice.group == DeviceGroup::Manual)
-    {
-        (choices.len() as i32 - 1, true)
-    } else {
-        // Without manual entry an unknown path (e.g. from another OS) is unset.
-        (0, false)
-    }
-}
-
-/// Rows matching `query`; the folded groups show only while `expanded`
-/// or searching.
+/// Rows matching `query`: the suggested devices and a missing saved one,
+/// or every device when `all`.
 fn filtered_devices(
     choices: ModelRc<DeviceChoice>,
     query: &str,
-    expanded: bool,
+    all: bool,
 ) -> ModelRc<DeviceChoice> {
     let query = query.trim().to_lowercase();
-    let unfold = expanded || !query.is_empty();
     ModelRc::new(VecModel::from(
         choices
             .iter()
-            .filter(|choice| match choice.group {
-                DeviceGroup::Manual | DeviceGroup::Unselected => true,
-                DeviceGroup::More => !unfold,
-                DeviceGroup::Other | DeviceGroup::VirtualDevice if !unfold => false,
-                _ => {
-                    choice.label.to_lowercase().contains(&query)
-                        || choice.path.to_lowercase().contains(&query)
-                }
+            .filter(|choice| {
+                (all || matches!(choice.group, DeviceGroup::Missing | DeviceGroup::Suggested))
+                    && (choice.label.to_lowercase().contains(&query)
+                        || choice.path.to_lowercase().contains(&query))
             })
             .collect::<Vec<_>>(),
     ))
@@ -603,15 +570,12 @@ fn filtered_devices(
 
 /// Whether rows of `group` sit under a heading.
 fn has_heading(group: DeviceGroup) -> bool {
-    !matches!(
-        group,
-        DeviceGroup::Unselected | DeviceGroup::Missing | DeviceGroup::More
-    )
+    group == DeviceGroup::VirtualDevice
 }
 
 /// Offset of row `index`, given the row and group heading heights in pixels.
 fn device_offset(choices: ModelRc<DeviceChoice>, index: i32, row: i32, heading: i32) -> i32 {
-    let mut group = DeviceGroup::Unselected;
+    let mut group = DeviceGroup::Missing;
     choices
         .iter()
         .take(index.max(0) as usize)
@@ -641,20 +605,9 @@ fn refresh_devices(ui: &SettingsWindow) {
     };
     e.set_device_discovery_error(error.to_ui());
     let keyboards = device_choices(&devices, false, &e.get_keyboard_device_path());
-    let (selected, manual) = device_selection(
-        &keyboards,
-        &e.get_keyboard_device_path(),
-        e.get_keyboard_manual(),
-    );
     e.set_input_devices(ModelRc::new(VecModel::from(keyboards)));
-    e.set_selected_device(selected);
-    e.set_keyboard_manual(manual);
     let mice = device_choices(&devices, true, &e.get_mouse_device_path());
-    let (selected, manual) =
-        device_selection(&mice, &e.get_mouse_device_path(), e.get_mouse_manual());
     e.set_mouse_devices(ModelRc::new(VecModel::from(mice)));
-    e.set_selected_mouse(selected);
-    e.set_mouse_manual(manual);
     check_input_access(ui);
 }
 
@@ -700,14 +653,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let state = Rc::new(RefCell::new(State::default()));
     let e = ui.global::<SettingsEditor>();
     let choices = ui.global::<DeviceChoices>();
-    choices.on_filter(|choices, query, expanded| filtered_devices(choices, &query, expanded));
+    choices.on_filter(|choices, query, all| filtered_devices(choices, &query, all));
     let row = choices.get_row_height() as i32;
     let heading = choices.get_heading_height() as i32;
     choices.on_offset(move |items, index| device_offset(items, index, row, heading));
-    choices.on_position(|items, source| {
+    choices.on_position(|items, path| {
         items
             .iter()
-            .position(|choice| choice.source_index >= 0 && choice.source_index == source)
+            .position(|choice| choice.path == path)
             .map_or(-1, |index| index as i32)
     });
     e.set_text_modes(strings(TextMode::ALL.map(TextMode::as_str)));
@@ -770,37 +723,21 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
 
     let weak = ui.as_weak();
-    e.on_select_device(move |index| {
-        let Some(ui) = weak.upgrade() else { return };
-        let e = ui.global::<SettingsEditor>();
-        let Some(choice) = usize::try_from(index)
-            .ok()
-            .and_then(|index| e.get_input_devices().row_data(index))
-        else {
-            return;
-        };
-        e.set_selected_device(index);
-        e.set_keyboard_manual(choice.group == DeviceGroup::Manual);
-        if choice.group != DeviceGroup::Manual {
-            e.set_keyboard_device_path(choice.path);
+    e.on_select_device(move |path| {
+        if let Some(ui) = weak.upgrade() {
+            let e = ui.global::<SettingsEditor>();
+            e.set_keyboard_device_path(path.trim().into());
+            // Saving reloads the form, which rebuilds both device lists.
             e.invoke_save();
         }
     });
 
     let weak = ui.as_weak();
-    e.on_select_mouse(move |index| {
-        let Some(ui) = weak.upgrade() else { return };
-        let e = ui.global::<SettingsEditor>();
-        let Some(choice) = usize::try_from(index)
-            .ok()
-            .and_then(|index| e.get_mouse_devices().row_data(index))
-        else {
-            return;
-        };
-        e.set_selected_mouse(index);
-        e.set_mouse_manual(choice.group == DeviceGroup::Manual);
-        if choice.group != DeviceGroup::Manual {
-            e.set_mouse_device_path(choice.path);
+    e.on_select_mouse(move |path| {
+        if let Some(ui) = weak.upgrade() {
+            let e = ui.global::<SettingsEditor>();
+            e.set_mouse_device_path(path.trim().into());
+            // Saving reloads the form, which rebuilds both device lists.
             e.invoke_save();
         }
     });

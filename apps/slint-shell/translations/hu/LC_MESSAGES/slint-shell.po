@@ -169,9 +169,6 @@ msgstr "Frissítse az eszközöket"
 msgid "Mouse device path"
 msgstr "Egér eszköz elérési útja"
 
-msgid "Optional device path"
-msgstr "Opcionális eszközútvonal"
-
 msgid "General"
 msgstr "Általános"
 
@@ -485,9 +482,6 @@ msgstr "Egyedi elrendezés"
 msgid "Base keyboard"
 msgstr "Alap billentyűzet"
 
-msgid "Keyboard device path"
-msgstr "A billentyűzet eszköz elérési útja"
-
 msgid "Copy path"
 msgstr "Útvonal másolása"
 
@@ -528,9 +522,6 @@ msgstr "Rendszerelrendezések (vesszővel elválasztva)"
 
 msgid "Applications (comma separated)"
 msgstr "Alkalmazások (vesszővel elválasztva)"
-
-msgid "Manual"
-msgstr "Kézikönyv"
 
 msgid "Active"
 msgstr "Aktív"
@@ -1396,15 +1387,6 @@ msgstr "Téma"
 msgid "E-ink"
 msgstr "E-ink"
 
-msgid "Enter device path manually"
-msgstr "Adja meg manuálisan az eszköz elérési útját"
-
-msgid "All keyboards"
-msgstr "Minden billentyűzet"
-
-msgid "All mice (buttons only)"
-msgstr "Minden egér (csak gombok)"
-
 msgid "Mode"
 msgstr "Mód"
 
@@ -1477,25 +1459,11 @@ msgstr "Nincs kiválasztva"
 msgid "Not selected (no mouse support)"
 msgstr "Nincs kiválasztva (nincs egér támogatás)"
 
-msgid "Looks like a keyboard"
-msgstr "Úgy néz ki, mint egy billentyűzet"
-
-msgid "Looks like a mouse"
-msgstr "Úgy néz ki, mint egy egér"
-
-msgid "Other devices"
-msgstr "Egyéb eszközök"
-
 msgid "Virtual devices"
 msgstr "Virtuális eszközök"
 
 msgid "Not connected · {}"
 msgstr "Nincs csatlakoztatva · {}"
-
-msgid "Show {n} more device"
-msgid_plural "Show {n} more devices"
-msgstr[0] "További {n} eszköz megjelenítése"
-msgstr[1] "További {n} eszköz megjelenítése"
 
 msgid "Search devices"
 msgstr "Eszközök keresése"
@@ -3670,3 +3638,42 @@ msgstr "Várakozás a billentyűzetre"
 
 msgid "The text was not typed: the destination window changed or could not be identified."
 msgstr "A szöveg nem lett beírva: a célablak megváltozott vagy nem volt azonosítható."
+
+msgid "Not connected"
+msgstr "Nincs csatlakoztatva"
+
+msgid "Choose a mouse"
+msgstr "Egér kiválasztása"
+
+msgid "Keyboards"
+msgstr "Billentyűzetek"
+
+msgid "Mice"
+msgstr "Egerek"
+
+msgid "All devices"
+msgstr "Minden eszköz"
+
+msgid "Detected automatically from what each device reports, so the list may be incomplete. If your device is missing, look under All devices."
+msgstr "Az eszközök képességei alapján automatikusan észlelve, ezért a lista hiányos lehet. Ha az eszköze hiányzik, nézze meg a „Minden eszköz” lapon."
+
+msgid "No devices found"
+msgstr "Nem található eszköz"
+
+msgid "Show all devices"
+msgstr "Minden eszköz megjelenítése"
+
+msgid "Enter device path manually…"
+msgstr "Eszköz elérési útjának megadása kézzel…"
+
+msgid "Device path, e.g. /dev/input/by-id/…"
+msgstr "Eszköz elérési útja, pl. /dev/input/by-id/…"
+
+msgid "Intercept all keyboards"
+msgstr "Minden billentyűzet elfogása"
+
+msgid "Intercept buttons of all mice"
+msgstr "Minden egér gombjainak elfogása"
+
+msgid "Windows does not tell input devices apart, so all of them are intercepted."
+msgstr "A Windows nem különbözteti meg a beviteli eszközöket, ezért mindegyik elfogásra kerül."

@@ -168,9 +168,6 @@ msgstr "Osvježi uređaje"
 msgid "Mouse device path"
 msgstr "Put uređaja miša"
 
-msgid "Optional device path"
-msgstr "Izborni put uređaja"
-
 msgid "General"
 msgstr "General"
 
@@ -480,9 +477,6 @@ msgstr "Prilagođeni izgled"
 msgid "Base keyboard"
 msgstr "Osnovna tipkovnica"
 
-msgid "Keyboard device path"
-msgstr "Put uređaja tipkovnice"
-
 msgid "Copy path"
 msgstr "Kopiraj put"
 
@@ -522,9 +516,6 @@ msgstr "Izgledi sustava (odvojeni zarezima)"
 
 msgid "Applications (comma separated)"
 msgstr "Prijave (odvojene zarezom)"
-
-msgid "Manual"
-msgstr "Priručnik"
 
 msgid "Active"
 msgstr "Aktivan"
@@ -1373,15 +1364,6 @@ msgstr "Tema"
 msgid "E-ink"
 msgstr "E-ink"
 
-msgid "Enter device path manually"
-msgstr "Unesite putanju uređaja ručno"
-
-msgid "All keyboards"
-msgstr "Sve tipkovnice"
-
-msgid "All mice (buttons only)"
-msgstr "Svi miševi (samo gumbi)"
-
 msgid "Mode"
 msgstr "Način rada"
 
@@ -1451,26 +1433,11 @@ msgstr "Nije odabrano"
 msgid "Not selected (no mouse support)"
 msgstr "Nije odabrano (bez podrške za miš)"
 
-msgid "Looks like a keyboard"
-msgstr "Izgleda kao tipkovnica"
-
-msgid "Looks like a mouse"
-msgstr "Izgleda kao miš"
-
-msgid "Other devices"
-msgstr "Ostali uređaji"
-
 msgid "Virtual devices"
 msgstr "Virtualni uređaji"
 
 msgid "Not connected · {}"
 msgstr "Nije povezano · {}"
-
-msgid "Show {n} more device"
-msgid_plural "Show {n} more devices"
-msgstr[0] "Prikaži još {n} uređaj"
-msgstr[1] "Prikaži još {n} uređaja"
-msgstr[2] "Prikaži još {n} uređaja"
 
 msgid "Search devices"
 msgstr "Pretražite uređaje"
@@ -3614,3 +3581,42 @@ msgstr "Čeka se tipkovnica"
 
 msgid "The text was not typed: the destination window changed or could not be identified."
 msgstr "Tekst nije upisan: ciljni prozor se promijenio ili ga nije bilo moguće identificirati."
+
+msgid "Not connected"
+msgstr "Nije povezano"
+
+msgid "Choose a mouse"
+msgstr "Odaberi miš"
+
+msgid "Keyboards"
+msgstr "Tipkovnice"
+
+msgid "Mice"
+msgstr "Miševi"
+
+msgid "All devices"
+msgstr "Svi uređaji"
+
+msgid "Detected automatically from what each device reports, so the list may be incomplete. If your device is missing, look under All devices."
+msgstr "Automatski otkriveno prema mogućnostima uređaja, pa popis može biti nepotpun. Ako vašeg uređaja nema, pogledajte karticu „Svi uređaji”."
+
+msgid "No devices found"
+msgstr "Nema pronađenih uređaja"
+
+msgid "Show all devices"
+msgstr "Prikaži sve uređaje"
+
+msgid "Enter device path manually…"
+msgstr "Ručno unesi putanju uređaja…"
+
+msgid "Device path, e.g. /dev/input/by-id/…"
+msgstr "Putanja uređaja, npr. /dev/input/by-id/…"
+
+msgid "Intercept all keyboards"
+msgstr "Presreći sve tipkovnice"
+
+msgid "Intercept buttons of all mice"
+msgstr "Presreći tipke svih miševa"
+
+msgid "Windows does not tell input devices apart, so all of them are intercepted."
+msgstr "Windows ne razlikuje ulazne uređaje, pa se presreću svi."

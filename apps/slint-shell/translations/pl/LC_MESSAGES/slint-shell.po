@@ -170,9 +170,6 @@ msgstr "Odśwież urządzenia"
 msgid "Mouse device path"
 msgstr "Ścieżka urządzenia myszy"
 
-msgid "Optional device path"
-msgstr "Opcjonalna ścieżka urządzenia"
-
 msgid "General"
 msgstr "Ogólny"
 
@@ -487,9 +484,6 @@ msgstr "Układ niestandardowy"
 msgid "Base keyboard"
 msgstr "Klawiatura podstawowa"
 
-msgid "Keyboard device path"
-msgstr "Ścieżka urządzenia klawiatury"
-
 msgid "Copy path"
 msgstr "Skopiuj ścieżkę"
 
@@ -529,9 +523,6 @@ msgstr "Układy systemu (oddzielone przecinkami)"
 
 msgid "Applications (comma separated)"
 msgstr "Aplikacje (oddzielone przecinkami)"
-
-msgid "Manual"
-msgstr "Podręcznik"
 
 msgid "Active"
 msgstr "Aktywny"
@@ -1388,15 +1379,6 @@ msgstr "Temat"
 msgid "E-ink"
 msgstr "E-ink"
 
-msgid "Enter device path manually"
-msgstr "Wprowadź ręcznie ścieżkę urządzenia"
-
-msgid "All keyboards"
-msgstr "Wszystkie klawiatury"
-
-msgid "All mice (buttons only)"
-msgstr "Wszystkie myszy (tylko przyciski)"
-
 msgid "Mode"
 msgstr "Tryb"
 
@@ -1467,26 +1449,11 @@ msgstr "Nie wybrano"
 msgid "Not selected (no mouse support)"
 msgstr "Nie wybrano (brak obsługi myszy)"
 
-msgid "Looks like a keyboard"
-msgstr "Wygląda jak klawiatura"
-
-msgid "Looks like a mouse"
-msgstr "Wygląda jak mysz"
-
-msgid "Other devices"
-msgstr "Inne urządzenia"
-
 msgid "Virtual devices"
 msgstr "Urządzenia wirtualne"
 
 msgid "Not connected · {}"
 msgstr "Niepodłączone · {}"
-
-msgid "Show {n} more device"
-msgid_plural "Show {n} more devices"
-msgstr[0] "Pokaż jeszcze {n} urządzenie"
-msgstr[1] "Pokaż jeszcze {n} urządzenia"
-msgstr[2] "Pokaż jeszcze {n} urządzeń"
 
 msgid "Search devices"
 msgstr "Wyszukaj urządzenia"
@@ -3664,3 +3631,42 @@ msgstr "Czekam na klawiaturę"
 
 msgid "The text was not typed: the destination window changed or could not be identified."
 msgstr "Nie wpisano tekstu: okno docelowe zmieniło się lub nie można go zidentyfikować."
+
+msgid "Not connected"
+msgstr "Niepodłączone"
+
+msgid "Choose a mouse"
+msgstr "Wybierz mysz"
+
+msgid "Keyboards"
+msgstr "Klawiatury"
+
+msgid "Mice"
+msgstr "Myszy"
+
+msgid "All devices"
+msgstr "Wszystkie urządzenia"
+
+msgid "Detected automatically from what each device reports, so the list may be incomplete. If your device is missing, look under All devices."
+msgstr "Wykryte automatycznie na podstawie możliwości urządzeń, więc lista może być niepełna. Jeśli brakuje Twojego urządzenia, zajrzyj do karty „Wszystkie urządzenia”."
+
+msgid "No devices found"
+msgstr "Nie znaleziono urządzeń"
+
+msgid "Show all devices"
+msgstr "Pokaż wszystkie urządzenia"
+
+msgid "Enter device path manually…"
+msgstr "Wpisz ścieżkę urządzenia ręcznie…"
+
+msgid "Device path, e.g. /dev/input/by-id/…"
+msgstr "Ścieżka urządzenia, np. /dev/input/by-id/…"
+
+msgid "Intercept all keyboards"
+msgstr "Przechwytuj wszystkie klawiatury"
+
+msgid "Intercept buttons of all mice"
+msgstr "Przechwytuj przyciski wszystkich myszy"
+
+msgid "Windows does not tell input devices apart, so all of them are intercepted."
+msgstr "Windows nie rozróżnia urządzeń wejściowych, więc przechwytywane są wszystkie."

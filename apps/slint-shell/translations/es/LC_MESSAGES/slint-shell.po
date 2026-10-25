@@ -168,9 +168,6 @@ msgstr "Actualizar dispositivos"
 msgid "Mouse device path"
 msgstr "Ruta del dispositivo del mouse"
 
-msgid "Optional device path"
-msgstr "Ruta de dispositivo opcional"
-
 msgid "General"
 msgstr "General"
 
@@ -482,9 +479,6 @@ msgstr "Diseño personalizado"
 msgid "Base keyboard"
 msgstr "teclado básico"
 
-msgid "Keyboard device path"
-msgstr "Ruta del dispositivo de teclado"
-
 msgid "Copy path"
 msgstr "Copiar ruta"
 
@@ -523,9 +517,6 @@ msgstr "Diseños del sistema (separados por comas)"
 
 msgid "Applications (comma separated)"
 msgstr "Aplicaciones (separadas por comas)"
-
-msgid "Manual"
-msgstr "Manual"
 
 msgid "Active"
 msgstr "Activo"
@@ -1392,15 +1383,6 @@ msgstr "Tema"
 msgid "E-ink"
 msgstr "E-ink"
 
-msgid "Enter device path manually"
-msgstr "Ingrese la ruta del dispositivo manualmente"
-
-msgid "All keyboards"
-msgstr "Todos los teclados"
-
-msgid "All mice (buttons only)"
-msgstr "Todos los ratones (solo botones)"
-
 msgid "Mode"
 msgstr "Modo"
 
@@ -1472,25 +1454,11 @@ msgstr "No seleccionado"
 msgid "Not selected (no mouse support)"
 msgstr "No seleccionado (no admite mouse)"
 
-msgid "Looks like a keyboard"
-msgstr "Parece un teclado"
-
-msgid "Looks like a mouse"
-msgstr "Parece un ratón"
-
-msgid "Other devices"
-msgstr "Otros dispositivos"
-
 msgid "Virtual devices"
 msgstr "Dispositivos virtuales"
 
 msgid "Not connected · {}"
 msgstr "No conectado · {}"
-
-msgid "Show {n} more device"
-msgid_plural "Show {n} more devices"
-msgstr[0] "Mostrar {n} dispositivo más"
-msgstr[1] "Mostrar {n} dispositivos más"
 
 msgid "Search devices"
 msgstr "Dispositivos de búsqueda"
@@ -3685,3 +3653,42 @@ msgstr "esperando teclado"
 
 msgid "The text was not typed: the destination window changed or could not be identified."
 msgstr "No se ha escrito el texto: la ventana de destino ha cambiado o no se ha podido identificar."
+
+msgid "Not connected"
+msgstr "No conectado"
+
+msgid "Choose a mouse"
+msgstr "Elegir un ratón"
+
+msgid "Keyboards"
+msgstr "Teclados"
+
+msgid "Mice"
+msgstr "Ratones"
+
+msgid "All devices"
+msgstr "Todos los dispositivos"
+
+msgid "Detected automatically from what each device reports, so the list may be incomplete. If your device is missing, look under All devices."
+msgstr "Detectados automáticamente según lo que informa cada dispositivo, por lo que la lista puede estar incompleta. Si falta tu dispositivo, mira en «Todos los dispositivos»."
+
+msgid "No devices found"
+msgstr "No se encontraron dispositivos"
+
+msgid "Show all devices"
+msgstr "Mostrar todos los dispositivos"
+
+msgid "Enter device path manually…"
+msgstr "Introducir la ruta del dispositivo manualmente…"
+
+msgid "Device path, e.g. /dev/input/by-id/…"
+msgstr "Ruta del dispositivo, p. ej. /dev/input/by-id/…"
+
+msgid "Intercept all keyboards"
+msgstr "Interceptar todos los teclados"
+
+msgid "Intercept buttons of all mice"
+msgstr "Interceptar los botones de todos los ratones"
+
+msgid "Windows does not tell input devices apart, so all of them are intercepted."
+msgstr "Windows no distingue entre dispositivos de entrada, así que se interceptan todos."

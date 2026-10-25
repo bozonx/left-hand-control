@@ -163,9 +163,6 @@ msgstr "장치 새로 고침"
 msgid "Mouse device path"
 msgstr "마우스 장치 경로"
 
-msgid "Optional device path"
-msgstr "선택적 장치 경로"
-
 msgid "General"
 msgstr "일반적인"
 
@@ -475,9 +472,6 @@ msgstr "맞춤 레이아웃"
 msgid "Base keyboard"
 msgstr "기본 키보드"
 
-msgid "Keyboard device path"
-msgstr "키보드 장치 경로"
-
 msgid "Copy path"
 msgstr "경로 복사"
 
@@ -516,9 +510,6 @@ msgstr "시스템 레이아웃(쉼표로 구분)"
 
 msgid "Applications (comma separated)"
 msgstr "애플리케이션(쉼표로 구분)"
-
-msgid "Manual"
-msgstr "수동"
 
 msgid "Active"
 msgstr "활동적인"
@@ -1329,15 +1320,6 @@ msgstr "주제"
 msgid "E-ink"
 msgstr "E-ink"
 
-msgid "Enter device path manually"
-msgstr "장치 경로를 수동으로 입력하세요."
-
-msgid "All keyboards"
-msgstr "모든 키보드"
-
-msgid "All mice (buttons only)"
-msgstr "모든 마우스(버튼만 해당)"
-
 msgid "Mode"
 msgstr "방법"
 
@@ -1402,24 +1384,11 @@ msgstr "선택되지 않음"
 msgid "Not selected (no mouse support)"
 msgstr "선택되지 않음(마우스 지원 안 함)"
 
-msgid "Looks like a keyboard"
-msgstr "키보드 같은데"
-
-msgid "Looks like a mouse"
-msgstr "쥐처럼 생겼어"
-
-msgid "Other devices"
-msgstr "기타 장치"
-
 msgid "Virtual devices"
 msgstr "가상 장치"
 
 msgid "Not connected · {}"
 msgstr "연결되지 않음 · {}"
-
-msgid "Show {n} more device"
-msgid_plural "Show {n} more devices"
-msgstr[0] "장치 {n}개 더 보기"
 
 msgid "Search devices"
 msgstr "기기 검색"
@@ -3359,3 +3328,42 @@ msgstr "키보드를 기다리는 중"
 
 msgid "The text was not typed: the destination window changed or could not be identified."
 msgstr "텍스트가 입력되지 않았습니다. 대상 창이 변경되었거나 식별할 수 없습니다."
+
+msgid "Not connected"
+msgstr "연결되지 않음"
+
+msgid "Choose a mouse"
+msgstr "마우스 선택"
+
+msgid "Keyboards"
+msgstr "키보드"
+
+msgid "Mice"
+msgstr "마우스"
+
+msgid "All devices"
+msgstr "모든 장치"
+
+msgid "Detected automatically from what each device reports, so the list may be incomplete. If your device is missing, look under All devices."
+msgstr "장치가 보고하는 기능을 바탕으로 자동 감지하므로 목록이 불완전할 수 있습니다. 원하는 장치가 없으면 \"모든 장치\" 탭을 확인하세요."
+
+msgid "No devices found"
+msgstr "장치를 찾을 수 없음"
+
+msgid "Show all devices"
+msgstr "모든 장치 표시"
+
+msgid "Enter device path manually…"
+msgstr "장치 경로 직접 입력…"
+
+msgid "Device path, e.g. /dev/input/by-id/…"
+msgstr "장치 경로, 예: /dev/input/by-id/…"
+
+msgid "Intercept all keyboards"
+msgstr "모든 키보드 가로채기"
+
+msgid "Intercept buttons of all mice"
+msgstr "모든 마우스의 버튼 가로채기"
+
+msgid "Windows does not tell input devices apart, so all of them are intercepted."
+msgstr "Windows는 입력 장치를 구분하지 않으므로 모든 장치를 가로챕니다."

@@ -163,9 +163,6 @@ msgstr "デバイスをリフレッシュする"
 msgid "Mouse device path"
 msgstr "マウスデバイスのパス"
 
-msgid "Optional device path"
-msgstr "オプションのデバイスパス"
-
 msgid "General"
 msgstr "一般的な"
 
@@ -475,9 +472,6 @@ msgstr "カスタムレイアウト"
 msgid "Base keyboard"
 msgstr "ベースキーボード"
 
-msgid "Keyboard device path"
-msgstr "キーボードデバイスのパス"
-
 msgid "Copy path"
 msgstr "パスをコピーする"
 
@@ -516,9 +510,6 @@ msgstr "システムレイアウト (カンマ区切り)"
 
 msgid "Applications (comma separated)"
 msgstr "アプリケーション (カンマ区切り)"
-
-msgid "Manual"
-msgstr "マニュアル"
 
 msgid "Active"
 msgstr "アクティブ"
@@ -1328,15 +1319,6 @@ msgstr "テーマ"
 msgid "E-ink"
 msgstr "E-ink"
 
-msgid "Enter device path manually"
-msgstr "デバイスパスを手動で入力します"
-
-msgid "All keyboards"
-msgstr "すべてのキーボード"
-
-msgid "All mice (buttons only)"
-msgstr "すべてのマウス (ボタンのみ)"
-
 msgid "Mode"
 msgstr "モード"
 
@@ -1402,24 +1384,11 @@ msgstr "未選択"
 msgid "Not selected (no mouse support)"
 msgstr "選択されていません (マウスはサポートされていません)"
 
-msgid "Looks like a keyboard"
-msgstr "キーボードっぽいですね"
-
-msgid "Looks like a mouse"
-msgstr "ネズミみたいですね"
-
-msgid "Other devices"
-msgstr "その他のデバイス"
-
 msgid "Virtual devices"
 msgstr "仮想デバイス"
 
 msgid "Not connected · {}"
 msgstr "未接続 · {}"
-
-msgid "Show {n} more device"
-msgid_plural "Show {n} more devices"
-msgstr[0] "他の {n} 台のデバイスを表示"
 
 msgid "Search devices"
 msgstr "デバイスの検索"
@@ -3369,3 +3338,42 @@ msgstr "キーボードを待っています"
 
 msgid "The text was not typed: the destination window changed or could not be identified."
 msgstr "テキストは入力されませんでした。入力先のウィンドウが変わったか、特定できませんでした。"
+
+msgid "Not connected"
+msgstr "未接続"
+
+msgid "Choose a mouse"
+msgstr "マウスを選択"
+
+msgid "Keyboards"
+msgstr "キーボード"
+
+msgid "Mice"
+msgstr "マウス"
+
+msgid "All devices"
+msgstr "すべてのデバイス"
+
+msgid "Detected automatically from what each device reports, so the list may be incomplete. If your device is missing, look under All devices."
+msgstr "デバイスが報告する機能から自動的に判定しているため、一覧が不完全な場合があります。目的のデバイスがない場合は「すべてのデバイス」を確認してください。"
+
+msgid "No devices found"
+msgstr "デバイスが見つかりません"
+
+msgid "Show all devices"
+msgstr "すべてのデバイスを表示"
+
+msgid "Enter device path manually…"
+msgstr "デバイスのパスを手動で入力…"
+
+msgid "Device path, e.g. /dev/input/by-id/…"
+msgstr "デバイスのパス（例: /dev/input/by-id/…）"
+
+msgid "Intercept all keyboards"
+msgstr "すべてのキーボードを横取りする"
+
+msgid "Intercept buttons of all mice"
+msgstr "すべてのマウスのボタンを横取りする"
+
+msgid "Windows does not tell input devices apart, so all of them are intercepted."
+msgstr "Windows は入力デバイスを区別しないため、すべてが横取りされます。"

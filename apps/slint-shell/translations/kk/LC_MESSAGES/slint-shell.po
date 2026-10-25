@@ -167,9 +167,6 @@ msgstr "Құрылғыларды жаңарту"
 msgid "Mouse device path"
 msgstr "Тінтуір құрылғысының жолы"
 
-msgid "Optional device path"
-msgstr "Қосымша құрылғы жолы"
-
 msgid "General"
 msgstr "Жалпы"
 
@@ -483,9 +480,6 @@ msgstr "Арнаулы орналасу"
 msgid "Base keyboard"
 msgstr "Негізгі пернетақта"
 
-msgid "Keyboard device path"
-msgstr "Пернетақта құрылғысының жолы"
-
 msgid "Copy path"
 msgstr "Жолды көшіру"
 
@@ -526,9 +520,6 @@ msgstr "Жүйе макеттері (үтірмен бөлінген)"
 
 msgid "Applications (comma separated)"
 msgstr "Қолданбалар (үтірмен бөлінген)"
-
-msgid "Manual"
-msgstr "Нұсқаулық"
 
 msgid "Active"
 msgstr "Белсенді"
@@ -1382,15 +1373,6 @@ msgstr "Тақырып"
 msgid "E-ink"
 msgstr "E-ink"
 
-msgid "Enter device path manually"
-msgstr "Құрылғы жолын қолмен енгізіңіз"
-
-msgid "All keyboards"
-msgstr "Барлық пернетақталар"
-
-msgid "All mice (buttons only)"
-msgstr "Барлық тышқандар (тек түймелер)"
-
 msgid "Mode"
 msgstr "Режим"
 
@@ -1461,25 +1443,11 @@ msgstr "Таңдалмаған"
 msgid "Not selected (no mouse support)"
 msgstr "Таңдалмаған (тінтуірді қолдау жоқ)"
 
-msgid "Looks like a keyboard"
-msgstr "Пернетақтаға ұқсайды"
-
-msgid "Looks like a mouse"
-msgstr "Тышқанға ұқсайды"
-
-msgid "Other devices"
-msgstr "Басқа құрылғылар"
-
 msgid "Virtual devices"
 msgstr "Виртуалды құрылғылар"
 
 msgid "Not connected · {}"
 msgstr "Қосылмаған · {}"
-
-msgid "Show {n} more device"
-msgid_plural "Show {n} more devices"
-msgstr[0] "Тағы {n} құрылғыны көрсету"
-msgstr[1] "Тағы {n} құрылғыны көрсету"
 
 msgid "Search devices"
 msgstr "Құрылғыларды іздеу"
@@ -3632,3 +3600,42 @@ msgstr "Пернетақтаны күтуде"
 
 msgid "The text was not typed: the destination window changed or could not be identified."
 msgstr "Мәтін енгізілмеді: мақсатты терезе өзгерді немесе оны анықтау мүмкін болмады."
+
+msgid "Not connected"
+msgstr "Қосылмаған"
+
+msgid "Choose a mouse"
+msgstr "Тінтуірді таңдау"
+
+msgid "Keyboards"
+msgstr "Пернетақталар"
+
+msgid "Mice"
+msgstr "Тінтуірлер"
+
+msgid "All devices"
+msgstr "Барлық құрылғылар"
+
+msgid "Detected automatically from what each device reports, so the list may be incomplete. If your device is missing, look under All devices."
+msgstr "Тізім құрылғылардың мүмкіндіктері бойынша автоматты түрде анықталған, сондықтан ол толық болмауы мүмкін. Қажетті құрылғы болмаса, «Барлық құрылғылар» қойындысын қараңыз."
+
+msgid "No devices found"
+msgstr "Құрылғылар табылмады"
+
+msgid "Show all devices"
+msgstr "Барлық құрылғыларды көрсету"
+
+msgid "Enter device path manually…"
+msgstr "Құрылғы жолын қолмен енгізу…"
+
+msgid "Device path, e.g. /dev/input/by-id/…"
+msgstr "Құрылғы жолы, мысалы /dev/input/by-id/…"
+
+msgid "Intercept all keyboards"
+msgstr "Барлық пернетақталарды ұстап алу"
+
+msgid "Intercept buttons of all mice"
+msgstr "Барлық тінтуірлердің түймелерін ұстап алу"
+
+msgid "Windows does not tell input devices apart, so all of them are intercepted."
+msgstr "Windows енгізу құрылғыларын ажыратпайды, сондықтан барлығы ұсталады."

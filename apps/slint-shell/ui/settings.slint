@@ -12,6 +12,7 @@ import { RuleDialogOverlay, RulesEditor, RulesPage } from "rules.slint";
 import { AppEntryDialog, AppEntryOverlay } from "conditions.slint";
 import { DragDrop } from "reorder.slint";
 import { CommandDialogOverlay, SettingsPage, SettingsEditor } from "settings-page.slint";
+import { DeviceDialog, DeviceDialogOverlay } from "device-picker.slint";
 import { ConfirmDialog, IconButton, Badge, InlineEditors, MapperToggle, NavButton, NavTab } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
@@ -289,6 +290,23 @@ export component SettingsWindow inherits Window {
     LayerDialogOverlay {}
     AppEntryOverlay { width: 100%; height: 100%; }
     CommandDialogOverlay {}
+    if DeviceDialog.open: DeviceDialogOverlay {
+        mouse: DeviceDialog.mouse;
+        choices: DeviceDialog.mouse ? SettingsEditor.mouse-devices : SettingsEditor.input-devices;
+        current: DeviceDialog.mouse ? SettingsEditor.mouse-device-path : SettingsEditor.keyboard-device-path;
+        manual-allowed: !AppState.is-windows;
+        enabled: AppState.mapper-supported && !AppState.mapper-busy;
+        refresh => { SettingsEditor.refresh-devices(); }
+        close => { DeviceDialog.open = false; }
+        chosen(path) => {
+            if path != self.current {
+                if DeviceDialog.mouse { SettingsEditor.select-mouse(path); } else { SettingsEditor.select-device(path); }
+                // A running mapper keeps the devices it started with.
+                if AppState.mapper-running && SettingsEditor.message.id == "" { AppState.restart-mapper(); }
+            }
+            DeviceDialog.open = false;
+        }
+    }
     if ActionPicker.opened: PickerOverlay {}
     ToastStack {
         x: parent.width - self.width - 20px;

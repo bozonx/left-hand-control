@@ -1,105 +1,68 @@
-import { SearchField } from "controls.slint";
+import { Button } from "std-widgets.slint";
+import { ButtonGroup, IconButton, SearchField, TextField } from "controls.slint";
 import { ScrollView } from "scroll.slint";
 import { Theme } from "theme.slint";
 
-/// `missing`: the saved device, not connected now. `more`: a row that
-/// unfolds the `other` and `virtual-device` groups (`count` of them).
-export enum DeviceGroup { unselected, missing, suggested, more, other, virtual-device, manual }
-/// `detail` is the shortened path shown under the name.
-export struct DeviceChoice { label: string, detail: string, path: string, group: DeviceGroup, source-index: int, count: int }
+/// `missing`: the saved device, not connected now. `suggested` passes the
+/// keyboard or mouse heuristic; `other` and `virtual-device` show only
+/// under "All devices".
+export enum DeviceGroup { missing, suggested, other, virtual-device }
+/// `detail` is the shortened path; `ambiguous` rows share their name with
+/// another suggested row, so the path is shown there too.
+export struct DeviceChoice { label: string, detail: string, path: string, group: DeviceGroup, ambiguous: bool }
 
 export global DeviceChoices {
+    /// Rows matching the query: suggested ones, or every device when `all`.
     pure callback filter([DeviceChoice], string, bool) -> [DeviceChoice];
     /// Pixel offset of a row; Rust computes it from the heights below.
     pure callback offset([DeviceChoice], int) -> int;
-    /// Row showing the choice with this source index, or -1.
-    pure callback position([DeviceChoice], int) -> int;
+    /// Row with this device path, or -1.
+    pure callback position([DeviceChoice], string) -> int;
     out property <length> row-height: 44px;
     out property <length> heading-height: 28px;
 }
 
+/// Which device dialog is open, if any.
+export global DeviceDialog {
+    in-out property <bool> open;
+    in-out property <bool> mouse;
+}
+
+/// Field showing the chosen device; clicking it opens the device dialog.
 export component DevicePicker inherits Rectangle {
     in property <[DeviceChoice]> choices;
-    in property <int> selected-index;
+    in property <string> path;
     in property <string> placeholder;
-    in property <string> suggested-label;
     in property <string> label;
     in property <bool> enabled: true;
-    callback selected(int);
-    private property <string> query;
-    private property <bool> expanded;
-    private property <[DeviceChoice]> filtered: DeviceChoices.filter(root.choices, root.query, root.expanded);
-    private property <int> highlighted;
-    private property <string> selected-text: root.selected-index >= 0 && root.selected-index < root.choices.length ? root.choice-label(root.choices[root.selected-index]) : root.placeholder;
-    private property <length> scroll-y;
-    private property <length> content-height: DeviceChoices.offset(root.filtered, root.filtered.length) * 1px;
-    private property <length> popup-height: min(420px, 60px + root.content-height);
-    // Wider than the field so names and paths fit; grows to the left.
-    private property <length> popup-width: max(root.width, 520px);
+    callback open();
+    private property <int> position: root.path == "" ? -1 : DeviceChoices.position(root.choices, root.path);
+    private property <bool> missing: root.position >= 0 && root.choices[root.position].group == DeviceGroup.missing;
+    private property <string> selected-text: root.position >= 0 ? root.choices[root.position].label : root.placeholder;
     min-width: 0px;
     height: 36px;
     horizontal-stretch: 1;
     border-radius: Theme.radius;
     border-width: 1px;
-    border-color: focus.has-focus || menu.is-open ? Theme.link : Theme.border;
+    border-color: focus.has-focus ? Theme.link : Theme.border;
     background: root.enabled && touch.has-hover ? Theme.hover : Theme.surface;
     opacity: root.enabled ? 1.0 : 0.45;
     accessible-role: combobox;
     accessible-label: root.label;
     accessible-value: root.selected-text;
+    accessible-description: root.missing ? @tr("Not connected") : "";
     accessible-enabled: root.enabled;
-    accessible-expandable: true;
-    accessible-expanded: menu.is-open;
-    accessible-action-expand => { root.open-menu(); }
-    accessible-action-default => { root.open-menu(); }
+    accessible-action-default => { if root.enabled { root.open(); } }
     forward-focus: focus;
-
-    pure function choice-label(choice: DeviceChoice) -> string {
-        return choice.group == DeviceGroup.manual ? @tr("Enter device path manually") : choice.group == DeviceGroup.unselected ? root.placeholder
-            // Windows intercepts the whole session, not one device.
-            : choice.path == "windows:keyboard" ? @tr("All keyboards")
-            : choice.path == "windows:mouse" ? @tr("All mice (buttons only)")
-            : choice.label;
-    }
-    public function open-menu() {
-        if !root.enabled { return; }
-        root.query = "";
-        // A device from a folded group stays visible when it is the selected one.
-        root.expanded = root.selected-index >= 0 && root.selected-index < root.choices.length
-            && (root.choices[root.selected-index].group == DeviceGroup.other || root.choices[root.selected-index].group == DeviceGroup.virtual-device);
-        root.highlighted = max(0, DeviceChoices.position(root.filtered, root.selected-index));
-        menu.show();
-        root.scroll-to-highlight();
-    }
-    function scroll-to-highlight() {
-        let top = DeviceChoices.offset(root.filtered, root.highlighted) * 1px;
-        let bottom = DeviceChoices.offset(root.filtered, root.highlighted + 1) * 1px;
-        let visible-height = root.popup-height - 60px;
-        root.scroll-y = clamp(root.scroll-y, -max(0px, root.content-height - visible-height), 0px);
-        if top < -root.scroll-y { root.scroll-y = -top; }
-        if bottom > -root.scroll-y + visible-height { root.scroll-y = -(bottom - visible-height); }
-    }
-    function choose(index: int) {
-        if index >= 0 && index < root.filtered.length && root.filtered[index].group == DeviceGroup.more {
-            root.expanded = true;
-            return;
-        }
-        if index >= 0 && index < root.filtered.length {
-            root.selected(root.filtered[index].source-index);
-            menu.close();
-            focus.focus();
-        }
-    }
-    changed enabled => { if !root.enabled { menu.close(); } }
-    changed query => { root.highlighted = 0; root.scroll-y = 0px; }
     HorizontalLayout {
         padding-left: Theme.space-m-plus; padding-right: Theme.space-m-plus; spacing: Theme.space-m;
         Text {
             min-width: 0px; horizontal-stretch: 1; overflow: elide;
             text: root.selected-text;
-            color: root.selected-index > 0 ? Theme.text : Theme.muted;
+            color: root.position >= 0 ? Theme.text : Theme.muted;
             vertical-alignment: center;
         }
+        if root.missing: Text { text: @tr("Not connected"); color: Theme.warning; font-size: Theme.font-body; vertical-alignment: center; }
         VerticalLayout { alignment: center;
             Image { width: 12px; height: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; }
         }
@@ -108,57 +71,152 @@ export component DevicePicker inherits Rectangle {
         enabled: root.enabled;
         key-pressed(event) => {
             if event.text == " " || event.text == "\n" || event.text == Key.DownArrow || event.text == Key.UpArrow {
-                root.open-menu(); return accept;
+                root.open(); return accept;
             }
             return reject;
         }
     }
-    touch := TouchArea { enabled: root.enabled; mouse-cursor: pointer; clicked => { focus.focus(); root.open-menu(); } }
-    menu := PopupWindow {
-        x: root.width - root.popup-width; y: root.height + 4px; width: root.popup-width;
-        height: root.popup-height;
-        close-policy: close-on-click-outside;
-        forward-focus: search;
-        FocusScope {
-            capture-key-pressed(event) => {
-                if event.text == Key.DownArrow || event.text == Key.UpArrow {
-                    root.highlighted = mod(root.highlighted + root.filtered.length + (event.text == Key.DownArrow ? 1 : -1), root.filtered.length);
-                    root.scroll-to-highlight();
-                    return accept;
-                }
-                if event.text == "\n" { root.choose(root.highlighted); return accept; }
-                if event.text == Key.Escape && root.query != "" { search.clear(); return accept; }
-                if event.text == Key.Escape { menu.close(); focus.focus(); return accept; }
+    touch := TouchArea { enabled: root.enabled; mouse-cursor: pointer; clicked => { focus.focus(); root.open(); } }
+}
+
+/// Clickable text in the link colour.
+component LinkText inherits Text {
+    callback clicked();
+    color: link-touch.has-hover ? Theme.accent : Theme.link;
+    vertical-alignment: center;
+    accessible-role: button;
+    accessible-action-default => { root.clicked(); }
+    link-touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+/// Modal device list: the devices that look like a keyboard (or mouse),
+/// every device, and a manual path.
+export component DeviceDialogOverlay inherits Rectangle {
+    in property <[DeviceChoice]> choices;
+    in property <string> current;
+    in property <bool> mouse;
+    /// Windows has no device paths to enter.
+    in property <bool> manual-allowed: true;
+    /// False while the mapper starts or stops.
+    in property <bool> enabled: true;
+    callback chosen(string);
+    callback refresh();
+    callback close();
+    // A device chosen from "All devices" opens there again.
+    private property <bool> all: root.current-group == DeviceGroup.other || root.current-group == DeviceGroup.virtual-device;
+    private property <DeviceGroup> current-group: DeviceChoices.position(root.choices, root.current) >= 0 ? root.choices[DeviceChoices.position(root.choices, root.current)].group : DeviceGroup.missing;
+    private property <string> query;
+    private property <bool> manual;
+    private property <string> manual-path;
+    private property <[DeviceChoice]> filtered: DeviceChoices.filter(root.choices, root.query, root.all);
+    private property <int> highlighted: max(0, DeviceChoices.position(root.filtered, root.current));
+    private property <length> scroll-y;
+    private property <length> content-height: DeviceChoices.offset(root.filtered, root.filtered.length) * 1px;
+    background: Theme.scrim;
+
+    function choose(index: int) {
+        if root.enabled && index >= 0 && index < root.filtered.length { root.chosen(root.filtered[index].path); }
+    }
+    function scroll-to-highlight() {
+        let top = DeviceChoices.offset(root.filtered, root.highlighted) * 1px;
+        let bottom = DeviceChoices.offset(root.filtered, root.highlighted + 1) * 1px;
+        let visible-height = list.visible-height;
+        if top < -root.scroll-y { root.scroll-y = -top; }
+        if bottom > -root.scroll-y + visible-height { root.scroll-y = -(bottom - visible-height); }
+    }
+    function show-tab(all: bool) {
+        root.all = all;
+        root.highlighted = max(0, DeviceChoices.position(root.filtered, root.current));
+        root.scroll-y = 0px;
+        root.scroll-to-highlight();
+    }
+    function open-manual() {
+        root.manual-path = root.current;
+        root.manual = true;
+    }
+    changed query => { root.highlighted = 0; root.scroll-y = 0px; }
+
+    TouchArea { clicked => { root.close(); } scroll-event(event) => { accept } }
+    keys := FocusScope {
+        capture-key-pressed(event) => {
+            if root.manual {
+                if event.text == Key.Escape { root.manual = false; search.focus(); return accept; }
                 return reject;
             }
-            Rectangle {
-                background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius;
-                VerticalLayout { padding: Theme.space-m; spacing: Theme.space-m;
-                    search := SearchField { text <=> root.query; placeholder-text: @tr("Search devices"); }
+            if (event.text == Key.DownArrow || event.text == Key.UpArrow) && root.filtered.length > 0 {
+                root.highlighted = mod(root.highlighted + root.filtered.length + (event.text == Key.DownArrow ? 1 : -1), root.filtered.length);
+                root.scroll-to-highlight();
+                return accept;
+            }
+            if event.text == "\n" { root.choose(root.highlighted); return accept; }
+            if event.text == Key.Escape && root.query != "" { search.clear(); return accept; }
+            if event.text == Key.Escape { root.close(); return accept; }
+            return reject;
+        }
+        Rectangle {
+            width: min(560px, root.width - 48px);
+            height: min(root.height - 64px, 540px);
+            x: (root.width - self.width) / 2;
+            y: (root.height - self.height) / 2;
+            background: Theme.surface;
+            border-radius: Theme.radius-dialog;
+            border-width: 1px;
+            border-color: Theme.border;
+            TouchArea {}
+            VerticalLayout { padding: 18px; spacing: Theme.space-l;
+                HorizontalLayout { spacing: Theme.space-m; vertical-stretch: 0;
+                    Text {
+                        horizontal-stretch: 1;
+                        text: root.mouse ? @tr("Choose a mouse") : @tr("Choose a keyboard");
+                        color: Theme.text; font-size: Theme.font-large; font-weight: Theme.weight-bold; vertical-alignment: center;
+                    }
+                    IconButton { icon: @image-url("icons/refresh-cw.svg"); tooltip: @tr("Refresh device list"); enabled: root.enabled; clicked => { root.refresh(); } }
+                }
+                HorizontalLayout { alignment: start; vertical-stretch: 0;
+                    ButtonGroup {
+                        labels: [root.mouse ? @tr("Mice") : @tr("Keyboards"), @tr("All devices")];
+                        selected-index: root.all ? 1 : 0;
+                        selected(index) => { root.show-tab(index == 1); }
+                    }
+                }
+                if !root.all: Text {
+                    text: @tr("Detected automatically from what each device reports, so the list may be incomplete. If your device is missing, look under All devices.");
+                    color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap;
+                }
+                search := SearchField {
+                    init => { self.focus(); }
+                    text <=> root.query;
+                    placeholder-text: @tr("Search devices");
+                }
+                // List and its empty state share the space left by the controls above.
+                Rectangle { vertical-stretch: 1;
                     list := ScrollView {
+                        width: parent.width; height: parent.height;
+                        visible: root.filtered.length > 0;
                         viewport-width: self.visible-width;
                         viewport-y <=> root.scroll-y;
                         VerticalLayout { width: parent.width; spacing: 0px;
                             for choice[index] in root.filtered: Rectangle {
-                                private property <bool> heading: choice.group != DeviceGroup.unselected && choice.group != DeviceGroup.missing && choice.group != DeviceGroup.more && (index == 0 || root.filtered[index - 1].group != choice.group);
-                                private property <bool> current: choice.source-index >= 0 && root.selected-index == choice.source-index;
+                                private property <bool> heading: choice.group == DeviceGroup.virtual-device && (index == 0 || root.filtered[index - 1].group != choice.group);
+                                private property <bool> current: choice.path == root.current;
                                 height: DeviceChoices.row-height + (self.heading ? DeviceChoices.heading-height : 0px);
                                 vertical-stretch: 0;
                                 if self.heading: Text {
                                     x: 8px; y: 0px; height: DeviceChoices.heading-height; width: parent.width - 16px;
-                                    text: choice.group == DeviceGroup.suggested ? root.suggested-label : choice.group == DeviceGroup.other ? @tr("Other devices") : choice.group == DeviceGroup.virtual-device ? @tr("Virtual devices") : @tr("Manual");
+                                    text: @tr("Virtual devices");
                                     color: Theme.muted; font-size: Theme.font-body; font-weight: Theme.weight-semibold; vertical-alignment: center;
                                 }
                                 row := Rectangle {
                                     property <bool> current: parent.current;
+                                    property <bool> show-detail: choice.detail != "" && choice.detail != choice.label && (root.all || choice.ambiguous);
                                     y: parent.heading ? DeviceChoices.heading-height : 0px; height: DeviceChoices.row-height; width: parent.width;
                                     border-radius: Theme.radius-small;
                                     background: self.current ? Theme.selected : row-touch.has-hover || root.highlighted == index ? Theme.hover : transparent;
                                     border-width: self.current && root.highlighted == index ? 1px : 0px;
                                     border-color: Theme.accent;
                                     accessible-role: button;
-                                    accessible-label: root.choice-label(choice);
-                                    accessible-description: choice.path;
+                                    accessible-label: choice.label;
+                                    accessible-description: choice.group == DeviceGroup.missing ? @tr("Not connected · {}", choice.path) : choice.path;
                                     accessible-checked: self.current;
                                     accessible-action-default => { root.choose(index); }
                                     if row.current: Rectangle { x: 0px; y: 8px; width: 3px; height: parent.height - 16px; border-radius: 1.5px; background: Theme.accent; }
@@ -166,25 +224,50 @@ export component DevicePicker inherits Rectangle {
                                         VerticalLayout { horizontal-stretch: 1; min-width: 0px; alignment: center; spacing: 1px;
                                             Text {
                                                 min-width: 0px; overflow: elide;
-                                                text: choice.group == DeviceGroup.more ? @tr("Show {n} more device" | "Show {n} more devices" % choice.count) : root.choice-label(choice);
-                                                color: choice.group == DeviceGroup.more ? Theme.link : Theme.text;
+                                                text: choice.label;
+                                                color: Theme.text;
                                                 font-weight: row.current ? Theme.weight-semibold : 400;
                                             }
-                                            if choice.detail != "" && choice.detail != choice.label: Text {
+                                            if choice.group == DeviceGroup.missing || row.show-detail: Text {
                                                 min-width: 0px; overflow: elide;
-                                                text: choice.group == DeviceGroup.missing ? @tr("Not connected · {}", choice.detail) : choice.detail;
+                                                text: choice.group != DeviceGroup.missing ? choice.detail
+                                                    : row.show-detail ? @tr("Not connected · {}", choice.detail) : @tr("Not connected");
                                                 color: choice.group == DeviceGroup.missing ? Theme.warning : Theme.muted;
                                                 font-size: Theme.font-small;
                                             }
                                         }
                                         if row.current: VerticalLayout { alignment: center; Image { width: 16px; height: 16px; source: @image-url("icons/check.svg"); colorize: Theme.accent; } }
-                                        if choice.group == DeviceGroup.more: VerticalLayout { alignment: center; Image { width: 12px; height: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.link; } }
                                     }
                                     row-touch := TouchArea { mouse-cursor: pointer; clicked => { root.choose(index); } }
                                 }
                             }
                         }
                     }
+                    if root.filtered.length == 0: VerticalLayout { width: parent.width; height: parent.height; alignment: start; spacing: Theme.space-m; padding-top: Theme.space-m;
+                        Text {
+                            horizontal-alignment: center; wrap: word-wrap; color: Theme.muted;
+                            text: root.query != "" ? @tr("No matching items") : @tr("No devices found");
+                        }
+                        if !root.all: HorizontalLayout { alignment: center;
+                            LinkText { text: @tr("Show all devices"); clicked => { root.show-tab(true); } }
+                        }
+                    }
+                }
+                if root.manual: HorizontalLayout { spacing: Theme.space-m; vertical-stretch: 0;
+                    manual-field := TextField {
+                        init => { self.focus(); }
+                        text <=> root.manual-path;
+                        placeholder-text: @tr("Device path, e.g. /dev/input/by-id/…");
+                        accepted => { if root.enabled && root.manual-path != "" { root.chosen(root.manual-path); } }
+                    }
+                    Button { text: @tr("Apply"); primary: true; enabled: root.enabled && root.manual-path != ""; clicked => { root.chosen(root.manual-path); } }
+                    Button { text: @tr("Cancel"); clicked => { root.manual = false; search.focus(); } }
+                }
+                HorizontalLayout { spacing: Theme.space-m; vertical-stretch: 0;
+                    if root.manual-allowed && !root.manual: LinkText { text: @tr("Enter device path manually…"); clicked => { root.open-manual(); } }
+                    Rectangle { horizontal-stretch: 1; }
+                    Button { text: @tr("Reset"); enabled: root.enabled && root.current != ""; clicked => { root.chosen(""); } }
+                    Button { text: @tr("Close"); clicked => { root.close(); } }
                 }
             }
         }

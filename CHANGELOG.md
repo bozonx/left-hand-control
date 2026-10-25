@@ -21,7 +21,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 - Rule headers truncate advanced option summaries before condition labels when the window narrows.
 
-- The device picker shows each device on two lines: its name (read from the `by-id` link when the device reports none) and a shortened path. It is wider, highlights the selected device, folds non-matching and virtual devices behind “Show N more devices”, and keeps a saved device that is not connected as a “Not connected” entry instead of switching to manual input.
+- Keyboard and mouse devices are chosen in a dialog with two tabs: “Keyboards” (or “Mice”) lists the devices detected as such by name, with a note that detection is heuristic, and “All devices” lists every input device with its shortened path, virtual devices last. Both tabs are searchable; a device path can still be entered manually, and “Reset” clears the choice. Names come from the `by-id` link when a device reports none. A saved device that is not connected stays listed and is marked “Not connected”. On Windows, which intercepts every keyboard and mouse of the session, the dialog is replaced by “Intercept all keyboards” and “Intercept buttons of all mice” checkboxes.
 
 - Gate long-hold actions, emoji and quick-action popups, user macros, mouse assignment controls and KDE action selection behind In development features.
 
@@ -56,6 +56,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Virtual input devices, such as the ydotoold device, are no longer suggested as keyboards or mice.
 - Restored `text:` input into the settings typing test by tracking text destinations separately from rule conditions and identifying popup windows explicitly. Focus cancellation now reports a destination error instead of suggesting a mapper restart.
 - Repeated presses of a layer key that keeps its modifiers held (Tab for Alt+Tab) no longer press the held modifier again or wait for the modifier delay, so fast window switching keeps up.
 - The “Command started” notification is shown again when a command action runs.

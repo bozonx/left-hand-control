@@ -216,43 +216,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     // Windows has no device paths: the mapper takes the whole session.
     if cfg!(target_os = "windows") {
-        assert!(!settings.get_keyboard_manual());
-        settings.invoke_select_device(1);
-        settings.invoke_select_mouse(1);
+        settings.invoke_select_device("windows:keyboard".into());
+        settings.invoke_select_mouse("windows:mouse".into());
         assert_eq!(settings.get_keyboard_device_path(), "windows:keyboard");
         assert_eq!(settings.get_mouse_device_path(), "windows:mouse");
     } else {
-        // Saved devices that are not connected stay selected as their own rows.
-        assert!(!settings.get_keyboard_manual());
-        assert!(!settings.get_mouse_manual());
-        for (devices, selected) in [
-            (settings.get_input_devices(), settings.get_selected_device()),
-            (settings.get_mouse_devices(), settings.get_selected_mouse()),
+        // Saved devices that are not connected stay listed as their own rows.
+        for (devices, path) in [
+            (settings.get_input_devices(), "/dev/input/test-keyboard"),
+            (settings.get_mouse_devices(), "/dev/input/test-mouse"),
         ] {
             let row = devices
-                .row_data(selected as usize)
-                .expect("selected device row");
+                .iter()
+                .find(|row| row.path == path)
+                .expect("saved device row");
             assert_eq!(row.group, DeviceGroup::Missing);
         }
-        settings.invoke_select_device(0);
-        settings.invoke_select_mouse(0);
-        assert!(!settings.get_keyboard_manual());
-        assert!(!settings.get_mouse_manual());
+        settings.invoke_select_device("".into());
+        settings.invoke_select_mouse("".into());
         assert!(document.read().settings().input_device_path.is_none());
         assert!(document.read().settings().input_mouse_device_path.is_none());
-        settings.invoke_select_device(settings.get_input_devices().row_count() as i32 - 1);
-        settings.invoke_select_mouse(settings.get_mouse_devices().row_count() as i32 - 1);
-        assert!(settings.get_keyboard_manual());
-        assert!(settings.get_mouse_manual());
-        settings.set_keyboard_device_path("/dev/input/test-keyboard".into());
-        settings.set_mouse_device_path("/dev/input/test-mouse".into());
-        settings.invoke_save();
+        // A path typed by hand is kept even when no such device exists.
+        settings.invoke_select_device(" /dev/input/test-keyboard ".into());
+        settings.invoke_select_mouse("/dev/input/test-mouse".into());
         settings.invoke_refresh_devices();
-        assert!(settings.get_keyboard_manual());
-        assert!(settings.get_mouse_manual());
         assert_eq!(
-            settings.get_keyboard_device_path(),
-            "/dev/input/test-keyboard"
+            document.read().settings().input_device_path.as_deref(),
+            Some("/dev/input/test-keyboard")
         );
         assert_eq!(settings.get_mouse_device_path(), "/dev/input/test-mouse");
     }
@@ -686,19 +676,42 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.window().set_size(slint::LogicalSize::new(1120.0, 760.0));
     let timer = slint::Timer::default();
     let weak = ui.as_weak();
-    let step = Rc::new(std::cell::Cell::new(-3));
+    let step = Rc::new(std::cell::Cell::new(-5));
     timer.start(slint::TimerMode::Repeated, Duration::from_millis(400), move || {
         let ui = weak.unwrap();
         let n = step.get();
         match n {
-            -3 => {
+            -5 => {
                 let position = accessible_position(&ui, i_slint_core::items::AccessibleRole::Tab, "Маппер", false);
                 for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
                 assert_eq!(ui.global::<SettingsEditor>().get_tab(), SettingsTab::Mapper);
                 ui.window().set_size(slint::LogicalSize::new(940.0, 700.0));
             }
-            -2 => {
+            -4 => {
                 snapshot(&ui, "settings-keyboard-narrow");
+                if !cfg!(target_os = "windows") {
+                    // The picker is disabled where the mapper is unsupported.
+                    ui.global::<AppState>().set_mapper_supported(true);
+                    let position = accessible_position(&ui, i_slint_core::items::AccessibleRole::Combobox, "Устройство клавиатуры", false);
+                    for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
+                    assert!(ui.global::<DeviceDialog>().get_open());
+                }
+            }
+            -3 => {
+                if !cfg!(target_os = "windows") {
+                    snapshot(&ui, "device-dialog-suggested");
+                    let position = accessible_position(&ui, i_slint_core::items::AccessibleRole::RadioButton, "Все устройства", false);
+                    for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
+                }
+            }
+            -2 => {
+                if !cfg!(target_os = "windows") {
+                    snapshot(&ui, "device-dialog-all");
+                    ui.window().dispatch_event(slint::platform::WindowEvent::KeyPressed { text: slint::platform::Key::Escape.into() });
+                    ui.window().dispatch_event(slint::platform::WindowEvent::KeyReleased { text: slint::platform::Key::Escape.into() });
+                    assert!(!ui.global::<DeviceDialog>().get_open());
+                    ui.global::<AppState>().set_mapper_supported(false);
+                }
                 ui.window().set_size(slint::LogicalSize::new(1400.0, 760.0));
             }
             -1 => {

@@ -37,10 +37,8 @@ fn input_devices() -> Vec<lhc_core::mapper::devices::InputDevice> {
     .collect()
 }
 
-// Windows offers no manual device path.
-#[cfg(not(target_os = "windows"))]
 #[test]
-fn pickers_suggest_matching_devices_and_fold_other_inputs() {
+fn pickers_suggest_matching_devices_and_list_the_rest_under_all() {
     let devices = input_devices();
     for (mouse, expected_path) in [(false, "/dev/input/event2"), (true, "/dev/input/event1")] {
         let choices = device_choices(&devices, mouse, "");
@@ -48,85 +46,84 @@ fn pickers_suggest_matching_devices_and_fold_other_inputs() {
         assert_eq!(
             groups,
             [
-                DeviceGroup::Unselected,
-                DeviceGroup::More,
                 DeviceGroup::Suggested,
                 DeviceGroup::Other,
-                DeviceGroup::Other,
-                DeviceGroup::Manual,
+                DeviceGroup::Other
             ]
         );
-        assert_eq!(choices[1].count, 2);
-        assert_eq!(choices[1].source_index, -1);
-        assert_eq!(choices[2].path, expected_path);
-        assert!(
-            devices
-                .iter()
-                .all(|device| choices.iter().any(|choice| choice.path == device.path))
-        );
+        assert_eq!(choices[0].path, expected_path);
         let model = ModelRc::new(VecModel::from(choices));
-        assert_eq!(filtered_devices(model.clone(), "", false).row_count(), 4);
-        let expanded = filtered_devices(model, "", true);
-        assert_eq!(expanded.row_count(), 5);
-        assert!(
-            expanded
-                .iter()
-                .all(|choice| choice.group != DeviceGroup::More)
-        );
+        assert_eq!(filtered_devices(model.clone(), "", false).row_count(), 1);
+        assert_eq!(filtered_devices(model, "", true).row_count(), 3);
     }
 }
 
 #[test]
-fn virtual_devices_get_their_own_group() {
+fn virtual_keyboards_are_not_suggested() {
     let mut devices = input_devices();
-    devices[0].is_virtual = true;
+    devices[2].is_virtual = true;
     let choices = device_choices(&devices, false, "");
-    let power = choices.iter().find(|c| c.label == "Power button").unwrap();
-    assert_eq!(power.group, DeviceGroup::VirtualDevice);
+    let keyboard = choices.iter().find(|c| c.label == "Клавиатура").unwrap();
+    assert_eq!(keyboard.group, DeviceGroup::VirtualDevice);
+    let model = ModelRc::new(VecModel::from(choices));
+    assert_eq!(filtered_devices(model, "", false).row_count(), 0);
 }
 
-// Windows offers no manual device path.
-#[cfg(not(target_os = "windows"))]
 #[test]
-fn search_keeps_original_selection_indices_and_matches_names_and_paths() {
+fn search_matches_names_and_paths_within_the_tab() {
     let choices = device_choices(&input_devices(), false, "");
     let model = ModelRc::new(VecModel::from(choices.clone()));
     for query in [" КЛАВИАТУРА ", "event2"] {
         let filtered = filtered_devices(model.clone(), query, false);
-        assert_eq!(filtered.row_count(), 3);
-        assert_eq!(filtered.row_data(1), Some(choices[2].clone()));
+        assert_eq!(filtered.row_count(), 1);
+        assert_eq!(filtered.row_data(0), Some(choices[0].clone()));
     }
-    // Searching looks into folded groups too.
-    let filtered = filtered_devices(model.clone(), "mouse", false);
-    assert_eq!(filtered.row_data(1), Some(choices[4].clone()));
-    let filtered = filtered_devices(model, "no matching device", false);
-    assert_eq!(filtered.row_count(), 2);
-    assert_eq!(filtered.row_data(0).unwrap().group, DeviceGroup::Unselected);
-    assert_eq!(filtered.row_data(1).unwrap().group, DeviceGroup::Manual);
+    assert_eq!(
+        filtered_devices(model.clone(), "mouse", false).row_count(),
+        0
+    );
+    let filtered = filtered_devices(model, "mouse", true);
+    assert_eq!(filtered.row_count(), 1);
+    assert_eq!(filtered.row_data(0).unwrap().path, "/dev/input/event1");
 }
 
-// Windows offers no manual device path.
-#[cfg(not(target_os = "windows"))]
 #[test]
-fn saved_unavailable_paths_stay_selected_and_explicit_manual_mode_survives_refresh() {
-    let choices = device_choices(&input_devices(), false, "/dev/input/missing");
-    let manual = choices.len() as i32 - 1;
-    assert_eq!(choices[1].group, DeviceGroup::Missing);
-    assert_eq!(choices[1].path, "/dev/input/missing");
-    assert_eq!(device_selection(&choices, "", false), (0, false));
-    assert_eq!(
-        device_selection(&choices, "/dev/input/event2", false),
-        (3, false)
+fn saved_unavailable_path_stays_listed_as_not_connected() {
+    let choices = device_choices(&input_devices(), false, " /dev/input/missing ");
+    assert_eq!(choices[0].group, DeviceGroup::Missing);
+    assert_eq!(choices[0].path, "/dev/input/missing");
+    let model = ModelRc::new(VecModel::from(choices));
+    // Shown in both tabs, so the current choice is never hidden.
+    assert_eq!(filtered_devices(model.clone(), "", false).row_count(), 2);
+    assert_eq!(filtered_devices(model, "", true).row_count(), 4);
+    let connected = device_choices(&input_devices(), false, "/dev/input/event2");
+    assert!(connected.iter().all(|c| c.group != DeviceGroup::Missing));
+}
+
+#[test]
+fn suggested_rows_sharing_a_name_keep_their_path() {
+    let mut devices = input_devices();
+    devices[0].name = "Клавиатура".into();
+    devices[0].is_keyboard = true;
+    let choices = device_choices(&devices, false, "");
+    assert!(
+        choices
+            .iter()
+            .filter(|c| c.group == DeviceGroup::Suggested)
+            .all(|c| c.ambiguous)
     );
-    assert_eq!(
-        device_selection(&choices, "/dev/input/missing", false),
-        (1, false)
-    );
-    assert_eq!(device_selection(&choices, "", true), (manual, true));
-    assert_eq!(
-        device_selection(&choices, "/dev/input/other", false),
-        (manual, true)
-    );
+    let unique = device_choices(&input_devices(), false, "");
+    assert!(unique.iter().all(|c| !c.ambiguous));
+}
+
+#[test]
+fn virtual_group_rows_start_under_a_heading() {
+    let mut devices = input_devices();
+    devices[0].is_virtual = true;
+    let model = ModelRc::new(VecModel::from(device_choices(&devices, false, "")));
+    // Suggested, other, then the virtual group with its heading.
+    assert_eq!(device_offset(model.clone(), 2, 44, 28), 88);
+    assert_eq!(device_offset(model, 3, 44, 28), 88 + 44 + 28);
 }
 
 #[test]
@@ -151,25 +148,6 @@ fn device_rows_show_readable_names_and_short_paths() {
     );
     assert!(long.starts_with('…') && long.ends_with("long-name-for-a-device"));
     assert_eq!(long.chars().count(), MAX_DETAIL_CHARS);
-}
-
-#[test]
-fn without_manual_entry_unknown_paths_are_unselected() {
-    let mut choices = device_choices(&input_devices(), false, "");
-    if choices
-        .last()
-        .is_some_and(|choice| choice.group == DeviceGroup::Manual)
-    {
-        choices.pop();
-    }
-    assert_eq!(
-        device_selection(&choices, "/dev/input/event2", false),
-        (2, false)
-    );
-    assert_eq!(
-        device_selection(&choices, "/dev/input/missing", false),
-        (0, false)
-    );
 }
 
 #[test]

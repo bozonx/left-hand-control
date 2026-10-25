@@ -163,9 +163,6 @@ msgstr "刷新设备"
 msgid "Mouse device path"
 msgstr "鼠标设备路径"
 
-msgid "Optional device path"
-msgstr "可选设备路径"
-
 msgid "General"
 msgstr "一般的"
 
@@ -475,9 +472,6 @@ msgstr "自定义布局"
 msgid "Base keyboard"
 msgstr "基础键盘"
 
-msgid "Keyboard device path"
-msgstr "键盘设备路径"
-
 msgid "Copy path"
 msgstr "复制路径"
 
@@ -516,9 +510,6 @@ msgstr "系统布局（逗号分隔）"
 
 msgid "Applications (comma separated)"
 msgstr "应用程序（逗号分隔）"
-
-msgid "Manual"
-msgstr "手动的"
 
 msgid "Active"
 msgstr "积极的"
@@ -1317,15 +1308,6 @@ msgstr "主题"
 msgid "E-ink"
 msgstr "E-ink"
 
-msgid "Enter device path manually"
-msgstr "手动输入设备路径"
-
-msgid "All keyboards"
-msgstr "所有键盘"
-
-msgid "All mice (buttons only)"
-msgstr "所有鼠标（仅限按钮）"
-
 msgid "Mode"
 msgstr "模式"
 
@@ -1389,24 +1371,11 @@ msgstr "未选择"
 msgid "Not selected (no mouse support)"
 msgstr "未选择（不支持鼠标）"
 
-msgid "Looks like a keyboard"
-msgstr "看起来像键盘"
-
-msgid "Looks like a mouse"
-msgstr "看起来像一只老鼠"
-
-msgid "Other devices"
-msgstr "其他设备"
-
 msgid "Virtual devices"
 msgstr "虚拟设备"
 
 msgid "Not connected · {}"
 msgstr "未连接 · {}"
-
-msgid "Show {n} more device"
-msgid_plural "Show {n} more devices"
-msgstr[0] "显示其余 {n} 个设备"
 
 msgid "Search devices"
 msgstr "搜索设备"
@@ -3284,3 +3253,42 @@ msgstr "等待键盘"
 
 msgid "The text was not typed: the destination window changed or could not be identified."
 msgstr "未输入文本：目标窗口已更改或无法识别。"
+
+msgid "Not connected"
+msgstr "未连接"
+
+msgid "Choose a mouse"
+msgstr "选择鼠标"
+
+msgid "Keyboards"
+msgstr "键盘"
+
+msgid "Mice"
+msgstr "鼠标"
+
+msgid "All devices"
+msgstr "所有设备"
+
+msgid "Detected automatically from what each device reports, so the list may be incomplete. If your device is missing, look under All devices."
+msgstr "根据设备报告的功能自动识别，因此列表可能不完整。如果找不到你的设备，请查看“所有设备”。"
+
+msgid "No devices found"
+msgstr "未找到设备"
+
+msgid "Show all devices"
+msgstr "显示所有设备"
+
+msgid "Enter device path manually…"
+msgstr "手动输入设备路径…"
+
+msgid "Device path, e.g. /dev/input/by-id/…"
+msgstr "设备路径，例如 /dev/input/by-id/…"
+
+msgid "Intercept all keyboards"
+msgstr "拦截所有键盘"
+
+msgid "Intercept buttons of all mice"
+msgstr "拦截所有鼠标的按键"
+
+msgid "Windows does not tell input devices apart, so all of them are intercepted."
+msgstr "Windows 不区分各个输入设备，因此会拦截全部设备。"

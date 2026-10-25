@@ -169,9 +169,6 @@ msgstr "Ανανέωση συσκευών"
 msgid "Mouse device path"
 msgstr "Διαδρομή συσκευής ποντικιού"
 
-msgid "Optional device path"
-msgstr "Προαιρετική διαδρομή συσκευής"
-
 msgid "General"
 msgstr "Γενικός"
 
@@ -487,9 +484,6 @@ msgstr "Προσαρμοσμένη διάταξη"
 msgid "Base keyboard"
 msgstr "Πληκτρολόγιο βάσης"
 
-msgid "Keyboard device path"
-msgstr "Διαδρομή συσκευής πληκτρολογίου"
-
 msgid "Copy path"
 msgstr "Διαδρομή αντιγραφής"
 
@@ -530,9 +524,6 @@ msgstr "Διατάξεις συστήματος (χωρισμένα με κόμ�
 
 msgid "Applications (comma separated)"
 msgstr "Εφαρμογές (χωρισμένες με κόμματα)"
-
-msgid "Manual"
-msgstr "Εγχειρίδιο"
 
 msgid "Active"
 msgstr "Ενεργός"
@@ -1409,15 +1400,6 @@ msgstr "Θέμα"
 msgid "E-ink"
 msgstr "E-ink"
 
-msgid "Enter device path manually"
-msgstr "Εισαγάγετε τη διαδρομή της συσκευής με μη αυτόματο τρόπο"
-
-msgid "All keyboards"
-msgstr "Όλα τα πληκτρολόγια"
-
-msgid "All mice (buttons only)"
-msgstr "Όλα τα ποντίκια (μόνο κουμπιά)"
-
 msgid "Mode"
 msgstr "Τρόπος"
 
@@ -1491,25 +1473,11 @@ msgstr "Δεν έχει επιλεγεί"
 msgid "Not selected (no mouse support)"
 msgstr "Δεν έχει επιλεγεί (δεν υποστηρίζεται το ποντίκι)"
 
-msgid "Looks like a keyboard"
-msgstr "Μοιάζει με πληκτρολόγιο"
-
-msgid "Looks like a mouse"
-msgstr "Μοιάζει με ποντίκι"
-
-msgid "Other devices"
-msgstr "Άλλες συσκευές"
-
 msgid "Virtual devices"
 msgstr "Εικονικές συσκευές"
 
 msgid "Not connected · {}"
 msgstr "Δεν είναι συνδεδεμένη · {}"
-
-msgid "Show {n} more device"
-msgid_plural "Show {n} more devices"
-msgstr[0] "Εμφάνιση {n} ακόμη συσκευής"
-msgstr[1] "Εμφάνιση {n} ακόμη συσκευών"
 
 msgid "Search devices"
 msgstr "Αναζήτηση συσκευών"
@@ -3730,3 +3698,42 @@ msgstr "Αναμονή για πληκτρολόγιο"
 
 msgid "The text was not typed: the destination window changed or could not be identified."
 msgstr "Το κείμενο δεν πληκτρολογήθηκε: το παράθυρο προορισμού άλλαξε ή δεν ήταν δυνατή η αναγνώρισή του."
+
+msgid "Not connected"
+msgstr "Δεν είναι συνδεδεμένο"
+
+msgid "Choose a mouse"
+msgstr "Επιλογή ποντικιού"
+
+msgid "Keyboards"
+msgstr "Πληκτρολόγια"
+
+msgid "Mice"
+msgstr "Ποντίκια"
+
+msgid "All devices"
+msgstr "Όλες οι συσκευές"
+
+msgid "Detected automatically from what each device reports, so the list may be incomplete. If your device is missing, look under All devices."
+msgstr "Εντοπίστηκαν αυτόματα με βάση τις δυνατότητες των συσκευών, οπότε η λίστα μπορεί να είναι ελλιπής. Αν λείπει η συσκευή σας, δείτε στην καρτέλα «Όλες οι συσκευές»."
+
+msgid "No devices found"
+msgstr "Δεν βρέθηκαν συσκευές"
+
+msgid "Show all devices"
+msgstr "Εμφάνιση όλων των συσκευών"
+
+msgid "Enter device path manually…"
+msgstr "Χειροκίνητη εισαγωγή διαδρομής συσκευής…"
+
+msgid "Device path, e.g. /dev/input/by-id/…"
+msgstr "Διαδρομή συσκευής, π.χ. /dev/input/by-id/…"
+
+msgid "Intercept all keyboards"
+msgstr "Υποκλοπή όλων των πληκτρολογίων"
+
+msgid "Intercept buttons of all mice"
+msgstr "Υποκλοπή κουμπιών όλων των ποντικιών"
+
+msgid "Windows does not tell input devices apart, so all of them are intercepted."
+msgstr "Τα Windows δεν ξεχωρίζουν τις συσκευές εισόδου, οπότε υποκλέπτονται όλες."

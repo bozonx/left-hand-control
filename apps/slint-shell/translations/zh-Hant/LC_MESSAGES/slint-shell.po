@@ -163,9 +163,6 @@ msgstr "重新整理裝置"
 msgid "Mouse device path"
 msgstr "滑鼠裝置路徑"
 
-msgid "Optional device path"
-msgstr "選用設備路徑"
-
 msgid "General"
 msgstr "一般的"
 
@@ -475,9 +472,6 @@ msgstr "自訂佈局"
 msgid "Base keyboard"
 msgstr "基礎鍵盤"
 
-msgid "Keyboard device path"
-msgstr "鍵盤裝置路徑"
-
 msgid "Copy path"
 msgstr "複製路徑"
 
@@ -516,9 +510,6 @@ msgstr "系統佈局（逗號分隔）"
 
 msgid "Applications (comma separated)"
 msgstr "應用程式（逗號分隔）"
-
-msgid "Manual"
-msgstr "手動的"
 
 msgid "Active"
 msgstr "積極的"
@@ -1317,15 +1308,6 @@ msgstr "主題"
 msgid "E-ink"
 msgstr "E-ink"
 
-msgid "Enter device path manually"
-msgstr "手動輸入設備路徑"
-
-msgid "All keyboards"
-msgstr "所有鍵盤"
-
-msgid "All mice (buttons only)"
-msgstr "所有滑鼠（僅限按鈕）"
-
 msgid "Mode"
 msgstr "模式"
 
@@ -1389,24 +1371,11 @@ msgstr "未選擇"
 msgid "Not selected (no mouse support)"
 msgstr "未選擇（不支援滑鼠）"
 
-msgid "Looks like a keyboard"
-msgstr "看起來像鍵盤"
-
-msgid "Looks like a mouse"
-msgstr "看起來像老鼠"
-
-msgid "Other devices"
-msgstr "其他設備"
-
 msgid "Virtual devices"
 msgstr "虛擬設備"
 
 msgid "Not connected · {}"
 msgstr "未連接 · {}"
-
-msgid "Show {n} more device"
-msgid_plural "Show {n} more devices"
-msgstr[0] "顯示其餘 {n} 個設備"
 
 msgid "Search devices"
 msgstr "搜尋設備"
@@ -3285,3 +3254,42 @@ msgstr "等待鍵盤"
 
 msgid "The text was not typed: the destination window changed or could not be identified."
 msgstr "未輸入文字：目標視窗已變更或無法識別。"
+
+msgid "Not connected"
+msgstr "未連接"
+
+msgid "Choose a mouse"
+msgstr "選擇滑鼠"
+
+msgid "Keyboards"
+msgstr "鍵盤"
+
+msgid "Mice"
+msgstr "滑鼠"
+
+msgid "All devices"
+msgstr "所有裝置"
+
+msgid "Detected automatically from what each device reports, so the list may be incomplete. If your device is missing, look under All devices."
+msgstr "根據裝置回報的功能自動辨識，因此清單可能不完整。如果找不到你的裝置，請查看「所有裝置」。"
+
+msgid "No devices found"
+msgstr "找不到裝置"
+
+msgid "Show all devices"
+msgstr "顯示所有裝置"
+
+msgid "Enter device path manually…"
+msgstr "手動輸入裝置路徑…"
+
+msgid "Device path, e.g. /dev/input/by-id/…"
+msgstr "裝置路徑，例如 /dev/input/by-id/…"
+
+msgid "Intercept all keyboards"
+msgstr "攔截所有鍵盤"
+
+msgid "Intercept buttons of all mice"
+msgstr "攔截所有滑鼠的按鍵"
+
+msgid "Windows does not tell input devices apart, so all of them are intercepted."
+msgstr "Windows 不區分各個輸入裝置，因此會攔截全部裝置。"
