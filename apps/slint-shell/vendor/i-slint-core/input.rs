@@ -1158,6 +1158,26 @@ impl InternalKeyEvent {
         }
     }
 
+    /// Local patch: CUA clipboard keys Shift+Insert (paste), Ctrl+Insert (copy)
+    /// and Shift+Delete (cut). Text inputs check them before cursor and delete keys.
+    pub fn insert_delete_clipboard_shortcut(&self) -> Option<StandardShortcut> {
+        let modifiers = &self.key_event.modifiers;
+        if cfg!(target_arch = "wasm32") || modifiers.alt || modifiers.meta {
+            return None;
+        }
+        let mut chars = self.key_event.text.chars();
+        let key = chars.next()?;
+        if chars.next().is_some() {
+            return None;
+        }
+        match (modifiers.control, modifiers.shift, key) {
+            (false, true, key_codes::Insert) => Some(StandardShortcut::Paste),
+            (true, false, key_codes::Insert) => Some(StandardShortcut::Copy),
+            (false, true, key_codes::Delete) => Some(StandardShortcut::Cut),
+            _ => None,
+        }
+    }
+
     /// If a shortcut concerning text editing was pressed, this function
     /// returns `Some(TextShortcut)`. Otherwise it returns None.
     pub fn text_shortcut(&self) -> Option<TextShortcut> {

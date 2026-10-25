@@ -1015,6 +1015,23 @@ impl Item for TextInput {
                     return KeyEventResult::EventAccepted;
                 }
 
+                match event.insert_delete_clipboard_shortcut() {
+                    Some(StandardShortcut::Copy) => {
+                        self.copy(window_adapter, self_rc);
+                        return KeyEventResult::EventAccepted;
+                    }
+                    Some(StandardShortcut::Paste) if !self.read_only() => {
+                        self.paste(window_adapter, self_rc);
+                        return KeyEventResult::EventAccepted;
+                    }
+                    Some(StandardShortcut::Cut) if !self.read_only() => {
+                        self.cut(window_adapter, self_rc);
+                        return KeyEventResult::EventAccepted;
+                    }
+                    Some(_) => return KeyEventResult::EventIgnored,
+                    None => {}
+                }
+
                 let delete_direction = match event.text_shortcut() {
                     Some(TextShortcut::Move(direction)) => {
                         TextInput::move_cursor(
