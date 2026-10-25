@@ -763,6 +763,9 @@ msgstr "ウィンドウを縦方向に最大化する"
 msgid "Keep window above others"
 msgstr "ウィンドウを他のウィンドウより上に保つ"
 
+msgid "Move window to next desktop"
+msgstr "ウィンドウを次のデスクトップに移動する"
+
 msgid "Show desktop"
 msgstr "デスクトップを表示"
 

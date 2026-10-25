@@ -211,6 +211,19 @@ export default class Bridge extends Extension {
                 window.set_maximize_flags(vertical);
             return;
         }
+        case 'windowToNextDesktop': {
+            // Like KWin, the view follows the window. GNOME's dynamic
+            // workspaces always keep an empty last one to move into.
+            const current = window.get_workspace();
+            if (!current || window.is_on_all_workspaces())
+                throw new Error('Window is on all workspaces');
+            const next = global.workspace_manager.get_workspace_by_index(current.index() + 1);
+            if (!next)
+                throw new Error('Workspace is unavailable');
+            window.change_workspace(next);
+            next.activate_with_focus(window, global.get_current_time());
+            return;
+        }
         case 'windowKeepAbove':
             if (window.is_above()) window.unmake_above(); else window.make_above();
             return;

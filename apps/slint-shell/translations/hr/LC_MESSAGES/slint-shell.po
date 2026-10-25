@@ -776,6 +776,9 @@ msgstr "Maksimiziraj prozor okomito"
 msgid "Keep window above others"
 msgstr "Držite prozor iznad ostalih"
 
+msgid "Move window to next desktop"
+msgstr "Premjesti prozor na sljedeću radnu površinu"
+
 msgid "Show desktop"
 msgstr "Prikaži radnu površinu"
 

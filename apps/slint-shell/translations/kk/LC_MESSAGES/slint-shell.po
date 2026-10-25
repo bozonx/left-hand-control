@@ -781,6 +781,9 @@ msgstr "Терезені тігінен үлкейту"
 msgid "Keep window above others"
 msgstr "Терезені басқалардан жоғары ұстаңыз"
 
+msgid "Move window to next desktop"
+msgstr "Терезені келесі жұмыс үстеліне жылжыту"
+
 msgid "Show desktop"
 msgstr "Жұмыс үстелін көрсету"
 

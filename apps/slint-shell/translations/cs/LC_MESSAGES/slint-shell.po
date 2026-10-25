@@ -775,6 +775,9 @@ msgstr "Maximalizovat okno svisle"
 msgid "Keep window above others"
 msgstr "Udržujte okno nad ostatními"
 
+msgid "Move window to next desktop"
+msgstr "Přesunout okno na další plochu"
+
 msgid "Show desktop"
 msgstr "Zobrazit plochu"
 

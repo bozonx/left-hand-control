@@ -5,7 +5,7 @@
 | Key interception | ✅ evdev+uinput | ✅ | ✅ | ✅ | ✅ session-wide `WH_KEYBOARD_LL` + `SendInput` (untested on hardware) | ❌ stub |
 | Literal text (xdg-desktop-portal) | ✅ | ⚠ requires bundled Shell extension; acceptance pending | ⚠ backend/protocol dependent | ⚠ portal and focus detection required | ✅ Unicode `SendInput` (mapper and popups) | ❌ mapper; popup Unicode only |
 | Layout detection | ✅ DBus `org.kde.keyboard` | ⚠ Shell extension | 🚧 | 🚧 | ✅ input language of the foreground window | 🚧 |
-| System actions (`switchDesktopN`, `switchLayoutN`, `windowToDesktopN`, window/shell actions) | ✅ KWin DBus, kglobalaccel | ⚠ Shell extension; subset | 🚧 | 🚧 | ✅ Win32 messages and fixed shortcuts; no public API for `switchDesktopN` / `windowToDesktopN` | ❌; ids without a macOS API are ignored with a notification |
+| System actions (`switchDesktopN`, `switchLayoutN`, `windowToDesktopN`, window/shell actions) | ✅ KWin DBus, kglobalaccel | ⚠ Shell extension; subset | 🚧 | 🚧 | ✅ Win32 messages and fixed shortcuts; no public API for `switchDesktopN` / `windowToDesktopN` / `windowToNextDesktop` | ❌; ids without a macOS API are ignored with a notification |
 | KDE global shortcuts (`kde:`) | ✅ kglobalaccel | — | — | — | — | — |
 | Layer-shell popups (Spell) | ✅ | ❌ winit fallback | ✅ not accepted | ❌ winit | — | — |
 | Game mode: GameMode daemon | ✅ D-Bus | ✅ | ✅ | ✅ | — | — |
@@ -20,7 +20,7 @@ GNOME bridge installation, security model, supported actions and VM smoke: [GNOM
 
 **Adding a Linux DE backend:** add a variant to `platform::linux::Desktop` and `classify_desktop()`; create `layout/linux_<de>.rs` with `current()` and `start_watcher()` that report through `super::publish(&info)`; wire it into `layout/mod.rs`; add `mod <de>` with `resolve(name) -> Option<SysAction>` in `mapper/system.rs` and wire it into the dispatcher.
 
-**Adding a system action:** a `sys:` id must have a documented API (or a fixed system shortcut) on Linux desktops and Windows; undocumented APIs are not used. Add it to `PLAIN_SYSTEM_ACTIONS` in `profile/actions.rs`, list it in `MACOS_UNSUPPORTED_SYSTEM_ACTIONS` when macOS has no public API for it, implement it in every backend of `mapper/system.rs` that can, and add its picker label (`picker-action` in `ui/i18n.slint` plus the Russian PO). Desktop-specific actions stay in `kde:` and similar backend categories.
+**Adding a system action:** a `sys:` id must have a documented API (or a fixed system shortcut) on Linux desktops and Windows; undocumented APIs are not used. The only exceptions are virtual-desktop actions (`switchDesktopN`, `windowToDesktopN`, `windowToNextDesktop`), which Windows cannot run and skips with a notice. Add it to `PLAIN_SYSTEM_ACTIONS` in `profile/actions.rs`, list it in `MACOS_UNSUPPORTED_SYSTEM_ACTIONS` when macOS has no public API for it, implement it in every backend of `mapper/system.rs` that can, and add its picker label (`picker-action` in `ui/i18n.slint` plus the Russian PO). Desktop-specific actions stay in `kde:` and similar backend categories.
 
 **Windows mapper preparation:** see [implementation stages and VM acceptance matrix](windows-mapper.md).
 

@@ -789,6 +789,9 @@ msgstr "Ingrandisci la finestra verticalmente"
 msgid "Keep window above others"
 msgstr "Mantieni la finestra sopra gli altri"
 
+msgid "Move window to next desktop"
+msgstr "Sposta la finestra sul desktop successivo"
+
 msgid "Show desktop"
 msgstr "Mostra scrivania"
 

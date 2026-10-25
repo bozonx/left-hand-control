@@ -761,6 +761,9 @@ msgstr "垂直最大化窗口"
 msgid "Keep window above others"
 msgstr "将窗户放在其他窗户上方"
 
+msgid "Move window to next desktop"
+msgstr "将窗口移到下一个桌面"
+
 msgid "Show desktop"
 msgstr "显示桌面"
 

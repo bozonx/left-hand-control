@@ -786,6 +786,9 @@ msgstr "Az ablak függőleges maximalizálása"
 msgid "Keep window above others"
 msgstr "Tartsa az ablakot mások felett"
 
+msgid "Move window to next desktop"
+msgstr "Ablak áthelyezése a következő asztalra"
+
 msgid "Show desktop"
 msgstr "Asztal megjelenítése"
 

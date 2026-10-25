@@ -763,6 +763,9 @@ msgstr "창 세로로 최대화"
 msgid "Keep window above others"
 msgstr "창을 다른 창 위에 유지"
 
+msgid "Move window to next desktop"
+msgstr "창을 다음 데스크톱으로 이동"
+
 msgid "Show desktop"
 msgstr "데스크탑 표시"
 

@@ -244,6 +244,7 @@ mod kde {
             "windowMaximize" => ("kwin", "Window Maximize"),
             "windowMaximizeVertical" => ("kwin", "Window Maximize Vertical"),
             "windowKeepAbove" => ("kwin", "Window Above Other Windows"),
+            "windowToNextDesktop" => ("kwin", "Window to Next Desktop"),
             "showDesktop" => ("kwin", "Show Desktop"),
             "overview" => ("kwin", "Overview"),
             "appLauncher" => ("plasmashell", "activate application launcher"),
@@ -371,6 +372,7 @@ mod linux_tests {
             "windowToDesktop3",
             "windowClose",
             "windowMaximizeVertical",
+            "windowToNextDesktop",
             "overview",
         ] {
             let Some(SysAction::Dbus(call)) = resolve_for_desktop(name, &Desktop::Gnome) else {

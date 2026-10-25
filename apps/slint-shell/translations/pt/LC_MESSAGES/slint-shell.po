@@ -777,6 +777,9 @@ msgstr "Maximizar janela verticalmente"
 msgid "Keep window above others"
 msgstr "Mantenha a janela acima das outras"
 
+msgid "Move window to next desktop"
+msgstr "Mover janela para a próxima área de trabalho"
+
 msgid "Show desktop"
 msgstr "Mostrar área de trabalho"
 

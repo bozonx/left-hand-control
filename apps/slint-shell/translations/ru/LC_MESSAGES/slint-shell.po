@@ -762,6 +762,9 @@ msgstr "Развернуть окно по вертикали"
 msgid "Keep window above others"
 msgstr "Окно поверх остальных"
 
+msgid "Move window to next desktop"
+msgstr "Переместить окно на следующий рабочий стол"
+
 msgid "Show desktop"
 msgstr "Показать рабочий стол"
 

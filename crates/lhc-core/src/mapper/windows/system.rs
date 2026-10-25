@@ -2,8 +2,8 @@
 //! messages to the foreground window, layouts use `WM_INPUTLANGCHANGEREQUEST`,
 //! and shell actions and vertical maximization press their fixed system
 //! shortcuts. Windows has no
-//! public API to switch to or move a window to virtual desktop N, so those
-//! ids do not resolve. Every call returns without waiting for the target.
+//! public API to switch to or move a window to virtual desktop N, or to the
+//! next one, so those ids do not resolve. Every call returns without waiting for the target.
 
 use super::super::key_code::KeyCode;
 use windows::Win32::Foundation::{HWND, LPARAM, RECT, WPARAM};
@@ -181,7 +181,7 @@ mod tests {
     #[test]
     fn resolves_every_plain_action_but_not_virtual_desktops() {
         for id in crate::profile::actions::PLAIN_SYSTEM_ACTIONS {
-            assert!(resolve(id).is_some(), "{id}");
+            assert_eq!(resolve(id).is_some(), id != "windowToNextDesktop", "{id}");
         }
         assert_eq!(
             resolve("switchLayout3"),

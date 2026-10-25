@@ -784,6 +784,9 @@ msgstr "Maksymalizuj okno w pionie"
 msgid "Keep window above others"
 msgstr "Trzymaj okno nad innymi"
 
+msgid "Move window to next desktop"
+msgstr "Przenieś okno na następny pulpit"
+
 msgid "Show desktop"
 msgstr "Pokaż pulpit"
 

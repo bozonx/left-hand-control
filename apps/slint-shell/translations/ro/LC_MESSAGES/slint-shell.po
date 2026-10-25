@@ -782,6 +782,9 @@ msgstr "Maximizați fereastra pe verticală"
 msgid "Keep window above others"
 msgstr "Păstrați fereastra deasupra celorlalți"
 
+msgid "Move window to next desktop"
+msgstr "Mutați fereastra pe următorul desktop"
+
 msgid "Show desktop"
 msgstr "Arată desktop"
 

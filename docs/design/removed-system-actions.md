@@ -94,13 +94,15 @@ as `kde:` if its key or chord does not work.
 | `windowMaximize` | `kde:kwin/Window Maximize` |
 | `windowMaximizeVertical` | `kde:kwin/Window Maximize Vertical` |
 | `windowKeepAbove` | `kde:kwin/Window Above Other Windows` |
+| `windowToNextDesktop` | `kde:kwin/Window to Next Desktop` |
 | `showDesktop` | `kde:kwin/Show Desktop` |
 | `overview` | `kde:kwin/Overview` |
 | `appLauncher` | `kde:plasmashell/activate application launcher` |
 | `screenOff` | `kde:org_kde_powerdevil/Turn Off Screen` |
 
-On macOS, `switchDesktopN`, `windowToDesktopN`, `windowMaximizeVertical`, `windowKeepAbove`,
-`showDesktop` and `appLauncher` have no public API; running them there is
+On macOS, `switchDesktopN`, `windowToDesktopN`, `windowToNextDesktop`,
+`windowMaximizeVertical`, `windowKeepAbove`, `showDesktop` and `appLauncher`
+have no public API; running them there is
 ignored with a notification.
 
 ## Notes

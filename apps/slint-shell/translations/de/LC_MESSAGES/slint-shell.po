@@ -785,6 +785,9 @@ msgstr "Fenster vertikal maximieren"
 msgid "Keep window above others"
 msgstr "Halten Sie das Fenster über anderen"
 
+msgid "Move window to next desktop"
+msgstr "Fenster auf nächste Arbeitsfläche verschieben"
+
 msgid "Show desktop"
 msgstr "Desktop anzeigen"
 

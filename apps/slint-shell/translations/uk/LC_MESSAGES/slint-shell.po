@@ -779,6 +779,9 @@ msgstr "Розгорнути вікно по вертикалі"
 msgid "Keep window above others"
 msgstr "Тримайте вікно над іншими"
 
+msgid "Move window to next desktop"
+msgstr "Перемістити вікно на наступний робочий стіл"
+
 msgid "Show desktop"
 msgstr "Показати робочий стіл"
 
