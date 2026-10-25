@@ -40,6 +40,12 @@ cargo check --locked -p slint-shell --all-targets              # build without S
 
 Single test: `cargo test --locked -p slint-shell --lib <name>` or `cargo test --locked -p lhc-core <name>`.
 
+**Memory.** A full build is heavy (the generated Slint UI is ~28 MB of Rust; `cargo test --workspace` also builds and links every example), and several agents often share this machine and its `target/`. Therefore:
+- While iterating, run only the affected tests: a single test as above, or `cargo test --locked -p <crate> --lib --tests` (skips building examples).
+- Run the full workspace tests, clippy `--all-targets` and UI scenarios once, at the end of the task, not after every edit.
+- Do not start UI scenarios or e2e while another build or test run is in progress; cargo serialises builds in the shared `target/`, but test and example processes run concurrently.
+- Do not raise build parallelism; `CARGO_BUILD_JOBS` / `RUST_TEST_THREADS` may be limited by the environment on purpose.
+
 UI scenarios (need a graphical session, use a temporary config, exit on their own):
 
 ```sh

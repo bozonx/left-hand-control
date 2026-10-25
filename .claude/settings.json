@@ -1,0 +1,6 @@
+{
+  "env": {
+    "CARGO_BUILD_JOBS": "4",
+    "RUST_TEST_THREADS": "4"
+  }
+}
