@@ -400,7 +400,7 @@ export component RuleDialogOverlay inherits FocusScope {
                 }
                 if RulesEditor.dialog == RuleDialog.advanced: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
                     preferred-height: advanced-form.preferred-height;
-                    advanced-form := VerticalLayout { spacing: Theme.space-l-plus; alignment: start;
+                    advanced-form := VerticalLayout { spacing: Theme.space-3xl; alignment: start;
                         held-form := ResettableField {
                             label: @tr("Hold key or combination");
                             info: @tr("The key or combination stays pressed until you release the trigger. Choose modifiers plus one main key, for example Ctrl+KeyC.");
