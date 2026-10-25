@@ -552,8 +552,10 @@ export component SettingsPage inherits VerticalBox {
                 if SettingsEditor.tab == SettingsTab.mapper: Section {
                     title: "";
                     VerticalBox { padding: 0px; spacing: Theme.space-xl;
-                        HorizontalLayout { vertical-stretch: 0; max-width: Theme.text-column + Theme.space-m + 18px; spacing: Theme.space-m;
+                        HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
                             MapperStatusCard { horizontal-stretch: 1; }
+                            // Takes only what is left once the card reaches its max width.
+                            Rectangle { horizontal-stretch: 0.0001; min-width: 0px; }
                             VerticalLayout { alignment: center; InfoTip { text: @tr("The mapper intercepts keyboard input, applies layers, rules and macros, and emits output through a virtual device.") + "\n\n" + @tr("Select the mouse so the mapper can see extra buttons and clicks. Pointer movement is not affected.") + "\n\n" + @tr("The mouse is not fully intercepted yet: a remapped extra button can emit the new action, but its native system or app action may still run. If that gets in the way, disable the native action for that button in your system, browser, or driver settings."); } }
                         }
                         if AppState.mapper-supported && SettingsEditor.device-discovery-error.id != "": Text {
