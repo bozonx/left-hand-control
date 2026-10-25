@@ -303,12 +303,12 @@
           "action": "Sleep"
         },
         "KeyW": {
-          "name": "Lock screen",
-          "action": "LockScreen"
-        },
-        "KeyE": {
           "name": "Screen off",
           "action": "sys:screenOff"
+        },
+        "KeyE": {
+          "name": "Airplane Mode",
+          "action": "AirplaneMode"
         },
         "KeyR": {
           "name": "Mute",
@@ -319,24 +319,24 @@
           "action": "MicrophoneMuteToggle"
         },
         "KeyA": {
-          "name": "Grid view",
-          "action": "kde:kwin/Grid View"
+          "name": "Play / pause",
+          "action": "MediaPlayPause"
         },
         "KeyS": {
-          "name": "Overview",
-          "action": "sys:overview"
+          "name": "PrintScreen",
+          "action": "PrintScreen"
         },
         "KeyD": {
-          "name": "Show desktop",
-          "action": "sys:showDesktop"
+          "name": "Overview",
+          "action": "sys:overview"
         },
         "KeyF": {
           "name": "Fullscreen",
           "action": "F11"
         },
         "KeyG": {
-          "name": "Play / pause",
-          "action": "MediaPlay"
+          "name": "Touchpad Toggle",
+          "action": "TouchpadToggle"
         },
         "KeyZ": {
           "name": "Brightness Down",
@@ -355,8 +355,8 @@
           "action": "AudioVolumeUp"
         },
         "KeyB": {
-          "name": "Touchpad Toggle",
-          "action": "TouchpadToggle"
+          "name": "Keyboard Backlight Toggle",
+          "action": "KeyboardBacklightToggle"
         }
       }
     },

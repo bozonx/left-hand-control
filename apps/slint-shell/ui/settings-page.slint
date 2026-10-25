@@ -552,11 +552,10 @@ export component SettingsPage inherits VerticalBox {
                 if SettingsEditor.tab == SettingsTab.mapper: Section {
                     title: "";
                     VerticalBox { padding: 0px; spacing: Theme.space-xl;
-                        CardHeader { vertical-stretch: 0;
-                            title: @tr("Mapper");
-                            info: @tr("The mapper intercepts keyboard input, applies layers, rules and macros, and emits output through a virtual device.") + "\n\n" + @tr("Select the mouse so the mapper can see extra buttons and clicks. Pointer movement is not affected.") + "\n\n" + @tr("The mouse is not fully intercepted yet: a remapped extra button can emit the new action, but its native system or app action may still run. If that gets in the way, disable the native action for that button in your system, browser, or driver settings.");
+                        HorizontalLayout { vertical-stretch: 0; max-width: Theme.text-column + Theme.space-m + 18px; spacing: Theme.space-m;
+                            MapperStatusCard { horizontal-stretch: 1; }
+                            VerticalLayout { alignment: center; InfoTip { text: @tr("The mapper intercepts keyboard input, applies layers, rules and macros, and emits output through a virtual device.") + "\n\n" + @tr("Select the mouse so the mapper can see extra buttons and clicks. Pointer movement is not affected.") + "\n\n" + @tr("The mouse is not fully intercepted yet: a remapped extra button can emit the new action, but its native system or app action may still run. If that gets in the way, disable the native action for that button in your system, browser, or driver settings."); } }
                         }
-                        MapperStatusCard { }
                         if AppState.mapper-supported && SettingsEditor.device-discovery-error.id != "": Text {
                             text: Locale.text(SettingsEditor.device-discovery-error);
                             color: Theme.warning; wrap: word-wrap;
