@@ -102,7 +102,8 @@ pub fn run(args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
         _ => {}
     }
     env_logger::Builder::from_env(
-        env_logger::Env::default().default_filter_or("info,zbus=warn,tracing=warn"),
+        env_logger::Env::default()
+            .default_filter_or("info,zbus=warn,tracing=warn,spell_framework=warn"),
     )
     .init();
     #[cfg(all(feature = "spell", target_os = "linux"))]

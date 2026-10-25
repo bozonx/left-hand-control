@@ -1,6 +1,6 @@
 use crate::{
     PopupSlint, SpellAssociatedNew,
-    configure::{Dimension, HomeHandle, PopupConf, WindowConf, set_up_tracing},
+    configure::{Dimension, PopupConf, WindowConf},
     slint_adapter::{ADAPTERS, SpellLayerShell, SpellSkiaWinAdapter},
     wayland_adapter::{
         common::PointerState,
@@ -185,12 +185,7 @@ impl SpellWin {
         self.adapter.as_ref().unwrap().needs_redraw.set(true);
     }
 
-    fn create_window(
-        conn: &Connection,
-        mut window_conf: WindowConf,
-        layer_name: String,
-        handle: HomeHandle,
-    ) -> Self {
+    fn create_window(conn: &Connection, mut window_conf: WindowConf, layer_name: String) -> Self {
         let (globals, mut event_queue) = registry_queue_init(conn).unwrap();
         let qh: QueueHandle<SpellWin> = event_queue.handle();
         let compositor =
@@ -385,7 +380,7 @@ impl SpellWin {
         win.viewport = Some(viewport);
 
         win.layer.as_ref().unwrap().commit();
-        win.set_event_sources(handle, slint_event_receiver);
+        win.set_event_sources(slint_event_receiver);
 
         info!("Win: {} layer created successfully.", layer_name);
 
@@ -412,9 +407,8 @@ impl SpellWin {
     /// This function needs to be called "before" initialising your slint window to avoid
     /// panicing of this function.
     pub fn invoke_spell(name: &str, window_conf: WindowConf) -> Self {
-        let handle = set_up_tracing(name);
         let conn = Connection::connect_to_env().unwrap();
-        SpellWin::create_window(&conn, window_conf.clone(), name.to_string(), handle)
+        SpellWin::create_window(&conn, window_conf.clone(), name.to_string())
     }
 
     /// Hides the layer (aka the widget) if it is visible in screen.

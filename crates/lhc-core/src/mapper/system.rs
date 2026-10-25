@@ -58,9 +58,9 @@ pub struct DbusCall {
     pub args: Vec<DbusArg>,
 }
 
+#[cfg(target_os = "linux")]
 impl DbusCall {
     /// Whether the call switches the KDE keyboard layout.
-    #[cfg(target_os = "linux")]
     pub fn switches_layout(&self) -> bool {
         use crate::platform::dbus;
         self.destination == dbus::KEYBOARD_SERVICE && self.method == dbus::KEYBOARD_SET_LAYOUT

@@ -40,7 +40,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build libdbus-1-dev libpam0g-dev libfontconfig1-dev libwayland-dev libxkbcommon-dev
+          sudo apt-get install -y clang cmake ninja-build libfontconfig1-dev libwayland-dev libxkbcommon-dev
 
       - name: Check formatting
         run: cargo fmt -p lhc-core -p slint-shell --check
@@ -95,7 +95,7 @@ jobs:
       - name: Install Linux system deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y libdbus-1-dev libwayland-dev libxkbcommon-dev
+          sudo apt-get install -y libwayland-dev libxkbcommon-dev
 
       - name: Enable uinput
         id: uinput
@@ -113,18 +113,17 @@ jobs:
         # sg picks up the input group without a new login, for reading /dev/input.
         run: sg input -c "cargo test --locked -p lhc-core --test mapper_e2e -- --ignored"
 
-  audit:
-    name: Rust dependency audit
+  deny:
+    name: Rust dependency check (cargo-deny)
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      checks: write
-      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Audit Rust dependencies
-        uses: rustsec/audit-check@v2
+      # Advisories (RustSec), licences, banned/duplicate crates and sources; see deny.toml.
+      - name: cargo deny check
+        uses: EmbarkStudios/cargo-deny-action@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          command: check

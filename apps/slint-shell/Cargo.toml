@@ -24,14 +24,14 @@ path = "src/main.rs"
 
 [dependencies]
 lhc-core = { path = "../../crates/lhc-core" }
-slint = { version = "=1.18.1", default-features = false, features = ["std", "accessibility", "compat-1-2", "backend-winit", "renderer-software", "renderer-femtovg", "renderer-skia", "unstable-winit-030"] }
+slint = { version = "=1.18.1", default-features = false, features = ["std", "accessibility", "compat-1-2", "backend-winit", "renderer-software", "renderer-skia", "unstable-winit-030"] }
 i-slint-core = { version = "=1.18.1", default-features = false, features = ["tr"] }
 tr = { version = "0.1.11", default-features = false, features = ["mo-translator"] }
 serde.workspace = true
 serde_json.workspace = true
 log.workspace = true
 env_logger = "0.11"
-png = "0.17"
+png = "0.18"
 
 [target.'cfg(unix)'.dependencies]
 libc.workspace = true
@@ -47,13 +47,14 @@ wayland-protocols = { version = "0.32", features = ["client", "staging"] }
 [target.'cfg(any(target_os = "windows", target_os = "macos"))'.dependencies]
 global-hotkey = "0.8"
 dirs.workspace = true
-tray-icon = "0.25"
+# 0.24 shares muda 0.19 with the Slint winit backend; 0.25+ adds a second muda.
+tray-icon = "0.24"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 enigo = "0.6"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows = { version = "0.61", features = ["Win32_Security_Cryptography", "Win32_System_DataExchange", "Win32_System_Memory", "Win32_System_Ole", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_WindowsAndMessaging"] }
+windows = { version = "0.62", features = ["Win32_Security_Cryptography", "Win32_System_DataExchange", "Win32_System_Memory", "Win32_System_Ole", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_WindowsAndMessaging"] }
 
 [features]
 spell = ["dep:spell-framework"]

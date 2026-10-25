@@ -10,14 +10,12 @@
 mod configure;
 #[cfg(docsrs)]
 mod dummy_skia_docs;
-mod event_macros;
 pub mod forge;
 #[cfg(feature = "i-slint-renderer-skia")]
 #[cfg(not(docsrs))]
 #[doc(hidden)]
 mod skia_non_docs;
 pub mod slint_adapter;
-pub mod vault;
 pub mod wayland_adapter;
 
 /// It contains related enums and struct which are used to manage,
@@ -48,17 +46,6 @@ pub mod layer_properties {
             Gravity as PopupGravity
         };
     }
-}
-/// Components of this module are not be used by end user directly. This module contains
-/// certain reexports used by public facing macros like [cast_spell] and [generate_widgets]
-/// internally.
-pub mod macro_internal {
-    pub use crate::vault::set_notification;
-    pub use paste::paste;
-    pub use smithay_client_toolkit::reexports::calloop::{
-        Interest, Mode, PostAction, generic::Generic,
-    };
-    pub use tracing::{info, span::Span, warn};
 }
 use smithay_client_toolkit::{
     reexports::{

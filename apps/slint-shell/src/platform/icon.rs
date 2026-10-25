@@ -34,12 +34,15 @@ pub fn rgba(enabled: bool) -> (Vec<u8>, u32, u32) {
 }
 
 fn decode(bytes: &[u8]) -> Result<(Vec<u8>, u32, u32), png::DecodingError> {
-    let mut decoder = png::Decoder::new(bytes);
+    let mut decoder = png::Decoder::new(std::io::Cursor::new(bytes));
     decoder.set_transformations(
         png::Transformations::normalize_to_color8() | png::Transformations::ALPHA,
     );
     let mut reader = decoder.read_info()?;
-    let mut pixels = vec![0; reader.output_buffer_size()];
+    let size = reader
+        .output_buffer_size()
+        .ok_or(png::DecodingError::LimitsExceeded)?;
+    let mut pixels = vec![0; size];
     let info = reader.next_frame(&mut pixels)?;
     pixels.truncate(info.buffer_size());
     if info.color_type != png::ColorType::Rgba {

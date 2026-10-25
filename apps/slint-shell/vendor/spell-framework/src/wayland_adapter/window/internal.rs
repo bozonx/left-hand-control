@@ -1,24 +1,14 @@
-use std::{
-    cell::RefCell,
-    collections::HashMap,
-    fs,
-    io::{BufRead, BufReader},
-    rc::Rc,
-    time::Duration,
-};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
-    configure::{HomeHandle, PopupConf, PopupCore, WindowConf},
+    configure::{PopupConf, PopupCore, WindowConf},
     wayland_adapter::window::SpellWin,
 };
 use slint::platform::WindowAdapter;
 use smithay_client_toolkit::{
     compositor::FrameCallbackData,
     reexports::{
-        calloop::{
-            self,
-            timer::{TimeoutAction, Timer},
-        },
+        calloop,
         client::{
             EventQueue, QueueHandle,
             protocol::{wl_output, wl_region::WlRegion},
@@ -32,7 +22,6 @@ use smithay_client_toolkit::{
     shm::slot::SlotPool,
 };
 use tracing::{info, warn};
-use tracing_subscriber::EnvFilter;
 
 impl SpellWin {
     pub(super) fn set_config_internal(&self) {
@@ -141,97 +130,9 @@ impl SpellWin {
 
     pub(super) fn set_event_sources(
         &self,
-        handle: HomeHandle,
         slint_event_receiver: calloop::channel::Channel<Box<dyn FnOnce() + Send>>,
     ) {
         let event_loop = self.event_loop.as_ref().borrow();
-        // let backspace_event = event_loop
-        //     .handle()
-        //     .insert_source(
-        //         Timer::from_duration(Duration::from_millis(1500)),
-        //         |_, _, data| {
-        //             data.adapter
-        //                 .try_dispatch_event(slint::platform::WindowEvent::KeyPressed {
-        //                     text: Key::Backspace.into(),
-        //                 })
-        //                 .unwrap();
-        //             TimeoutAction::ToDuration(Duration::from_millis(1500))
-        //         },
-        //     )
-        //     .unwrap();
-        // event_loop.handle().disable(&backspace_event).unwrap();
-
-        // // Inserting tracing source
-        let runtime_dir = std::env::var("XDG_RUNTIME_DIR").expect("runtime dir is not set");
-        let logging_dir = runtime_dir + "/spell/";
-        let socket_cli_dir = logging_dir.clone() + "/spell_cli";
-
-        // This is currently redundent source as it is not working in any way
-        event_loop
-            .handle()
-            .insert_source(
-                Timer::from_duration(Duration::from_secs(2)),
-                move |_, _, _| {
-                    let file = fs::File::open(&socket_cli_dir)
-                        .unwrap_or_else(|_| fs::File::create_new(&socket_cli_dir).unwrap());
-                    let buf = BufReader::new(file);
-                    let file_contents: Vec<String> = buf
-                        .lines()
-                        .map(|l| l.expect("Could not parse line"))
-                        .collect();
-                    if !file_contents.is_empty() {
-                        match file_contents[0].as_str() {
-                            "slint_log" => {
-                                handle
-                                    .modify(|layer| {
-                                        *layer.filter_mut() = EnvFilter::new(
-                                            "spell_framework::slint_adapter=info,warn",
-                                        );
-                                    })
-                                    .unwrap_or_else(|error| {
-                                        warn!("Error when setting slint_log: {}", error);
-                                    });
-                            }
-                            "debug" => {
-                                handle
-                                    .modify(|layer| {
-                                        *layer.filter_mut() =
-                                            EnvFilter::new("spell_framework=info,warn"); //*layer;
-                                    })
-                                    .unwrap_or_else(|error| {
-                                        warn!("Error when setting slint_log: {}", error);
-                                    });
-                            }
-                            "dump" => {
-                                handle
-                                    .modify(|layer| {
-                                        *layer.filter_mut() =
-                                            EnvFilter::new("spell_framework=trace,info"); //*layer;
-                                    })
-                                    .unwrap_or_else(|error| {
-                                        warn!("Error when setting slint_log: {}", error);
-                                    });
-                            }
-                            "dev" => {
-                                handle
-                                    .modify(|layer| {
-                                        *layer.filter_mut() =
-                                            EnvFilter::new("spell_framework=trace,warn"); //*layer;
-                                    })
-                                    .unwrap_or_else(|error| {
-                                        warn!("Error when setting slint_log: {}", error);
-                                    });
-                            }
-                            val => {
-                                warn!("Something else came: {}", val);
-                            }
-                        }
-                    }
-                    TimeoutAction::ToDuration(Duration::from_secs(2))
-                },
-            )
-            .unwrap();
-
         event_loop
             .handle()
             .insert_source(slint_event_receiver, |event, _, data| {

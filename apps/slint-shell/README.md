@@ -34,7 +34,7 @@ SLINT_BACKEND=winit-software LHC_METRICS=/tmp/slint-software.csv target/debug/le
 CSV метрик пишется только при заданном `LHC_METRICS`; Spell worker
 пишет рядом файл с суффиксом `.spell.csv`.
 
-По очереди замените backend на `winit-femtovg` и `winit-skia`.
+Для сравнения замените backend на `winit-skia` (рендерер по умолчанию).
 Одновременно запускается только один экземпляр на `XDG_RUNTIME_DIR`.
 Окна изначально скрыты. Процесс остаётся в трее до команды «Выход».
 Индикатор mapper в трее отражает реальный статус. Quick и Emoji используют сохранённые данные; действия выполняются через mapper.

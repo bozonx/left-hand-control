@@ -15,6 +15,10 @@ licensed GPL-3.0-or-later, compatible with this crate's license.
 
 - `on_call` dispatches without waiting; the application blocks on the event-loop file descriptors itself instead of spinning every millisecond.
 
+- Trimmed to the layer-shell windows the application uses: removed `vault` (MPRIS, desktop entries, notification server), the session lock (`SpellLock`, PAM), the `cast_spell`/`generate_widgets` macros and their docs, and the dependencies only they needed (`mpris`/libdbus, `nonstick`/libpam, `tokio`, `zbus`, `rust-fuzzy-search`, `paste`) plus the unused `event-listener` and `futures-util`.
+- Removed the built-in logging setup (`tracing-subscriber`, `tracing-appender`): no global subscriber, no hourly log files and CLI socket in `$XDG_RUNTIME_DIR/spell/`, no 2-second polling of `spell_cli`. `tracing` uses its `log` feature, so events reach the application's logger. Clipboard reads no longer log the pasted text.
+- Slint crates are pinned to `=1.18.1` like the application.
+
 - Build integration: `[lib] doctest = false`, because upstream doctests do not build from this vendored copy inside the application workspace.
 - Build integration: `[package.metadata.release] release = false`, so the application's cargo-release run does not bump or tag this crate.
 

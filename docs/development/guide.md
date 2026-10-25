@@ -29,7 +29,7 @@ Skia собирается из исходников при первой сбор
 
 ```sh
 sudo pacman -S --needed base-devel clang cmake ninja python pkgconf \
-  fontconfig freetype2 libxkbcommon wayland dbus pam noto-fonts-emoji \
+  fontconfig freetype2 libxkbcommon wayland noto-fonts-emoji \
   wl-clipboard
 ```
 
@@ -38,11 +38,8 @@ sudo pacman -S --needed base-devel clang cmake ninja python pkgconf \
 ```sh
 sudo apt install build-essential clang cmake ninja-build python3 pkg-config \
   libfontconfig1-dev libfreetype-dev libxkbcommon-dev libwayland-dev \
-  libdbus-1-dev libpam0g-dev fonts-noto-color-emoji wl-clipboard
+  fonts-noto-color-emoji wl-clipboard
 ```
-
-`libpam0g-dev` (`pam` на Arch) нужен только для линковки тестов Spell; release-бинарник
-libpam не требует.
 
 Для отдельных функций дополнительно:
 
@@ -90,7 +87,7 @@ cargo build -p slint-shell --release --features spell       # release-сборк
 | `spell` | Только layer-shell; без протокола запуск завершается ошибкой |
 
 `auto` и `spell` требуют сборки с `--features spell`. Рендерер окна настроек задаёт
-`SLINT_BACKEND`: `winit-software`, `winit-femtovg` или `winit-skia`; цветные emoji в
+`SLINT_BACKEND`: `winit-skia` (по умолчанию) или `winit-software`; цветные emoji в
 окнах winit рисует только `winit-skia`. Spell-попапы всегда используют Skia software.
 
 ### Hot reload интерфейса
@@ -190,7 +187,11 @@ cargo clippy --locked -p lhc-core -p slint-shell \
   --features slint-shell/spell --all-targets --no-deps -- -D warnings
 cargo test --locked --workspace --features slint-shell/spell
 cargo check --locked -p slint-shell --all-targets              # сборка без Spell
+cargo deny check                                               # advisories, лицензии, источники (deny.toml)
 ```
+
+`cargo deny` ставится через `cargo install --locked cargo-deny` или пакетом
+дистрибутива; при добавлении зависимости с новой лицензией дополните `deny.toml`.
 
 Один тест: `cargo test --locked -p slint-shell --lib <имя>` или
 `cargo test --locked -p lhc-core <имя>`. Во время работы удобнее

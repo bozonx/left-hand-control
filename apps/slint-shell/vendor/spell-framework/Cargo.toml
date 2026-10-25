@@ -16,31 +16,22 @@ doctest = false
 
 [dependencies]
 # env_logger = "0.11.7"
-event-listener = "5.4.0"
 # fs2 = "0.4.3"
-futures-util = "0.3.31"
-i-slint-core = { version = "1.18.1", default-features = false }
+i-slint-core = { version = "=1.18.1", default-features = false }
 # i-slint-renderer-skia = { version = "1.15.1", features = [
 #   "wayland",
 # ], optional = true }
-i-slint-renderer-skia = { version = "1.17.1", default-features = false, optional = true }
-rust-fuzzy-search = "0.1.1"
+i-slint-renderer-skia = { version = "=1.18.1", default-features = false, optional = true }
 # signal-hook = "0.4.3"
-slint = { version = "1.18.1", default-features = false, features = ["renderer-skia", "compat-1-2"] }
+slint = { version = "=1.18.1", default-features = false, features = ["renderer-skia", "compat-1-2"] }
 smithay-client-toolkit = { version = "0.21.1", default-features = false, features = [
   "xkbcommon",
   "calloop",
 ] }
-tokio = { version = "1.45.1", features = ["macros", "rt-multi-thread", "sync"] }
-tracing = { version = "0.1.44", features = ["max_level_trace"] }
-tracing-subscriber = { version = "0.3.19", features = ["std", "env-filter"] }
+# Local change: no subscriber is installed here, so events reach the application's `log` logger.
+tracing = { version = "0.1.44", features = ["log"] }
 # tracing-rfc-5424 = "0.2.0"
 # zbus = {version = "5.10.0", default-features=false, features=["blocking-api"]}
-zbus = "5.10.0"
-nonstick = "0.1.1"
-tracing-appender = "0.2.3"
-paste = "1.0.15"
-mpris = "2.0.1"
 wl-clipboard-rs = "0.9.3"
 
 # Local change: the application release (cargo-release) must not bump this crate.

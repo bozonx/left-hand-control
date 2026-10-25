@@ -36,6 +36,7 @@ cargo clippy --locked -p lhc-core -p slint-shell \
   --features slint-shell/spell --all-targets --no-deps -- -D warnings
 cargo test --locked --workspace --features slint-shell/spell
 cargo check --locked -p slint-shell --all-targets              # build without Spell
+cargo deny check                                               # advisories, licences, sources (deny.toml)
 ```
 
 Single test: `cargo test --locked -p slint-shell --lib <name>` or `cargo test --locked -p lhc-core <name>`.

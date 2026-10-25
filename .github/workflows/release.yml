@@ -53,8 +53,8 @@ jobs:
         run: |
           apt-get update
           apt-get install -y --no-install-recommends build-essential ca-certificates clang cmake \
-            curl git ninja-build pkg-config python3 xz-utils libdbus-1-dev libfontconfig1-dev \
-            libfreetype-dev libpam0g-dev libwayland-dev libxkbcommon-dev lintian
+            curl git ninja-build pkg-config python3 xz-utils libfontconfig1-dev \
+            libfreetype-dev libwayland-dev libxkbcommon-dev lintian
 
       - name: Checkout
         uses: actions/checkout@v4
