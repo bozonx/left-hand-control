@@ -1454,6 +1454,18 @@ msgstr "Izgleda kao miš"
 msgid "Other devices"
 msgstr "Ostali uređaji"
 
+msgid "Virtual devices"
+msgstr "Virtualni uređaji"
+
+msgid "Not connected · {}"
+msgstr "Nije povezano · {}"
+
+msgid "Show {n} more device"
+msgid_plural "Show {n} more devices"
+msgstr[0] "Prikaži još {n} uređaj"
+msgstr[1] "Prikaži još {n} uređaja"
+msgstr[2] "Prikaži još {n} uređaja"
+
 msgid "Search devices"
 msgstr "Pretražite uređaje"
 

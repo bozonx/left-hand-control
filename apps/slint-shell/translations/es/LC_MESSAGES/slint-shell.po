@@ -1475,6 +1475,17 @@ msgstr "Parece un ratón"
 msgid "Other devices"
 msgstr "Otros dispositivos"
 
+msgid "Virtual devices"
+msgstr "Dispositivos virtuales"
+
+msgid "Not connected · {}"
+msgstr "No conectado · {}"
+
+msgid "Show {n} more device"
+msgid_plural "Show {n} more devices"
+msgstr[0] "Mostrar {n} dispositivo más"
+msgstr[1] "Mostrar {n} dispositivos más"
+
 msgid "Search devices"
 msgstr "Dispositivos de búsqueda"
 

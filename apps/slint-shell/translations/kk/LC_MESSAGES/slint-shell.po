@@ -1464,6 +1464,17 @@ msgstr "Тышқанға ұқсайды"
 msgid "Other devices"
 msgstr "Басқа құрылғылар"
 
+msgid "Virtual devices"
+msgstr "Виртуалды құрылғылар"
+
+msgid "Not connected · {}"
+msgstr "Қосылмаған · {}"
+
+msgid "Show {n} more device"
+msgid_plural "Show {n} more devices"
+msgstr[0] "Тағы {n} құрылғыны көрсету"
+msgstr[1] "Тағы {n} құрылғыны көрсету"
+
 msgid "Search devices"
 msgstr "Құрылғыларды іздеу"
 

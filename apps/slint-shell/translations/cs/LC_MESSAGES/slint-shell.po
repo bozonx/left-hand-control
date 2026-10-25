@@ -1453,6 +1453,18 @@ msgstr "Vypadá jako myš"
 msgid "Other devices"
 msgstr "Jiná zařízení"
 
+msgid "Virtual devices"
+msgstr "Virtuální zařízení"
+
+msgid "Not connected · {}"
+msgstr "Nepřipojeno · {}"
+
+msgid "Show {n} more device"
+msgid_plural "Show {n} more devices"
+msgstr[0] "Zobrazit {n} další zařízení"
+msgstr[1] "Zobrazit {n} další zařízení"
+msgstr[2] "Zobrazit {n} dalších zařízení"
+
 msgid "Search devices"
 msgstr "Vyhledejte zařízení"
 

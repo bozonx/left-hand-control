@@ -222,8 +222,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(settings.get_keyboard_device_path(), "windows:keyboard");
         assert_eq!(settings.get_mouse_device_path(), "windows:mouse");
     } else {
-        assert!(settings.get_keyboard_manual());
-        assert!(settings.get_mouse_manual());
+        // Saved devices that are not connected stay selected as their own rows.
+        assert!(!settings.get_keyboard_manual());
+        assert!(!settings.get_mouse_manual());
+        for (devices, selected) in [
+            (settings.get_input_devices(), settings.get_selected_device()),
+            (settings.get_mouse_devices(), settings.get_selected_mouse()),
+        ] {
+            let row = devices
+                .row_data(selected as usize)
+                .expect("selected device row");
+            assert_eq!(row.group, DeviceGroup::Missing);
+        }
         settings.invoke_select_device(0);
         settings.invoke_select_mouse(0);
         assert!(!settings.get_keyboard_manual());

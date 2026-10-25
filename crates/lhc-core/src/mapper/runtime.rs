@@ -615,6 +615,7 @@ mod tests {
                     name: device.name.clone(),
                     is_keyboard: true,
                     is_mouse: false,
+                    is_virtual: false,
                 })
                 .collect())
         }

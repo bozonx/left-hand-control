@@ -1483,6 +1483,17 @@ msgstr "Sieht aus wie eine Maus"
 msgid "Other devices"
 msgstr "Andere Geräte"
 
+msgid "Virtual devices"
+msgstr "Virtuelle Geräte"
+
+msgid "Not connected · {}"
+msgstr "Nicht verbunden · {}"
+
+msgid "Show {n} more device"
+msgid_plural "Show {n} more devices"
+msgstr[0] "{n} weiteres Gerät anzeigen"
+msgstr[1] "{n} weitere Geräte anzeigen"
+
 msgid "Search devices"
 msgstr "Geräte suchen"
 

@@ -429,34 +429,67 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State, force: b
     refresh_devices(ui);
 }
 
+/// Picker rows for `devices`; a `saved` path that is not connected is kept
+/// as its own row so the choice is not lost.
 fn device_choices(
     devices: &[lhc_core::mapper::devices::InputDevice],
     mouse: bool,
+    saved: &str,
 ) -> Vec<DeviceChoice> {
     let mut choices = vec![DeviceChoice {
         group: DeviceGroup::Unselected,
         ..Default::default()
     }];
-    for group in [DeviceGroup::Suggested, DeviceGroup::Other] {
-        for device in devices {
-            let suggested = if mouse {
-                device.is_mouse
-            } else {
-                device.is_keyboard
-            };
-            if suggested != (group == DeviceGroup::Suggested) {
-                continue;
-            }
+    let saved = saved.trim();
+    if !saved.is_empty() && !devices.iter().any(|device| device.path == saved) {
+        choices.push(DeviceChoice {
+            label: device_label("", saved).into(),
+            detail: short_path(saved).into(),
+            path: saved.into(),
+            group: DeviceGroup::Missing,
+            source_index: choices.len() as i32,
+            ..Default::default()
+        });
+    }
+    let group_of = |device: &lhc_core::mapper::devices::InputDevice| {
+        if if mouse {
+            device.is_mouse
+        } else {
+            device.is_keyboard
+        } {
+            DeviceGroup::Suggested
+        } else if device.is_virtual {
+            DeviceGroup::VirtualDevice
+        } else {
+            DeviceGroup::Other
+        }
+    };
+    let hidden = devices
+        .iter()
+        .filter(|device| group_of(device) != DeviceGroup::Suggested)
+        .count();
+    if hidden > 0 {
+        // Folds the rarely needed groups until the user asks for them.
+        choices.push(DeviceChoice {
+            group: DeviceGroup::More,
+            source_index: -1,
+            count: hidden as i32,
+            ..Default::default()
+        });
+    }
+    for group in [
+        DeviceGroup::Suggested,
+        DeviceGroup::Other,
+        DeviceGroup::VirtualDevice,
+    ] {
+        for device in devices.iter().filter(|device| group_of(device) == group) {
             choices.push(DeviceChoice {
-                label: if device.name.is_empty() {
-                    device.path.clone()
-                } else {
-                    device.name.clone()
-                }
-                .into(),
+                label: device_label(&device.name, &device.path).into(),
+                detail: short_path(&device.path).into(),
                 path: device.path.clone().into(),
                 group,
                 source_index: choices.len() as i32,
+                ..Default::default()
             });
         }
     }
@@ -469,6 +502,64 @@ fn device_choices(
         });
     }
     choices
+}
+
+const INPUT_PREFIX: &str = "/dev/input/";
+/// Longest path shown in a row; longer ones keep their distinctive end.
+const MAX_DETAIL_CHARS: usize = 60;
+
+/// Device name, or one read from its `by-id` link when the kernel gives none.
+fn device_label(name: &str, path: &str) -> String {
+    let name = name.trim();
+    if !name.is_empty() && name != "(unknown)" {
+        return name.to_owned();
+    }
+    path.strip_prefix("/dev/input/by-id/")
+        .map(|link| {
+            let link = strip_event_suffix(link);
+            let link = ["usb-", "bluetooth-", "i2c-", "serio-", "platform-"]
+                .iter()
+                .find_map(|bus| link.strip_prefix(bus))
+                .unwrap_or(link);
+            let link = link.split(':').next().unwrap_or(link);
+            let link = match link.rsplit_once("-if") {
+                Some((head, tail))
+                    if !tail.is_empty() && tail.chars().all(|c| c.is_ascii_digit()) =>
+                {
+                    head
+                }
+                _ => link,
+            };
+            link.replace('_', " ").trim().to_owned()
+        })
+        .filter(|label| !label.is_empty())
+        .unwrap_or_else(|| short_path(path))
+}
+
+/// Path without the shared `/dev/input/` prefix and udev's `-event-*`
+/// suffix, cut from the left when still too long.
+fn short_path(path: &str) -> String {
+    let Some(rest) = path.strip_prefix(INPUT_PREFIX) else {
+        return path.to_owned();
+    };
+    let rest = strip_event_suffix(rest);
+    let rest = match rest.split_once('/') {
+        Some((dir, link)) => format!("{dir} · {link}"),
+        None => rest.to_owned(),
+    };
+    let count = rest.chars().count();
+    if count <= MAX_DETAIL_CHARS {
+        return rest;
+    }
+    let tail: String = rest.chars().skip(count - (MAX_DETAIL_CHARS - 1)).collect();
+    format!("…{tail}")
+}
+
+fn strip_event_suffix(link: &str) -> &str {
+    match link.rfind("-event") {
+        Some(at) if !link[at + 6..].contains(['/', '.']) && at > 0 => &link[..at],
+        _ => link,
+    }
 }
 
 fn device_selection(choices: &[DeviceChoice], path: &str, manual: bool) -> (i32, bool) {
@@ -485,18 +576,37 @@ fn device_selection(choices: &[DeviceChoice], path: &str, manual: bool) -> (i32,
     }
 }
 
-fn filtered_devices(choices: ModelRc<DeviceChoice>, query: &str) -> ModelRc<DeviceChoice> {
+/// Rows matching `query`; the folded groups show only while `expanded`
+/// or searching.
+fn filtered_devices(
+    choices: ModelRc<DeviceChoice>,
+    query: &str,
+    expanded: bool,
+) -> ModelRc<DeviceChoice> {
     let query = query.trim().to_lowercase();
+    let unfold = expanded || !query.is_empty();
     ModelRc::new(VecModel::from(
         choices
             .iter()
-            .filter(|choice| {
-                matches!(choice.group, DeviceGroup::Manual | DeviceGroup::Unselected)
-                    || choice.label.to_lowercase().contains(&query)
-                    || choice.path.to_lowercase().contains(&query)
+            .filter(|choice| match choice.group {
+                DeviceGroup::Manual | DeviceGroup::Unselected => true,
+                DeviceGroup::More => !unfold,
+                DeviceGroup::Other | DeviceGroup::VirtualDevice if !unfold => false,
+                _ => {
+                    choice.label.to_lowercase().contains(&query)
+                        || choice.path.to_lowercase().contains(&query)
+                }
             })
             .collect::<Vec<_>>(),
     ))
+}
+
+/// Whether rows of `group` sit under a heading.
+fn has_heading(group: DeviceGroup) -> bool {
+    !matches!(
+        group,
+        DeviceGroup::Unselected | DeviceGroup::Missing | DeviceGroup::More
+    )
 }
 
 /// Offset of row `index`, given the row and group heading heights in pixels.
@@ -506,7 +616,7 @@ fn device_offset(choices: ModelRc<DeviceChoice>, index: i32, row: i32, heading: 
         .iter()
         .take(index.max(0) as usize)
         .map(|choice| {
-            let starts_group = choice.group != DeviceGroup::Unselected && choice.group != group;
+            let starts_group = has_heading(choice.group) && choice.group != group;
             group = choice.group;
             row + if starts_group { heading } else { 0 }
         })
@@ -530,7 +640,7 @@ fn refresh_devices(ui: &SettingsWindow) {
         }
     };
     e.set_device_discovery_error(error.to_ui());
-    let keyboards = device_choices(&devices, false);
+    let keyboards = device_choices(&devices, false, &e.get_keyboard_device_path());
     let (selected, manual) = device_selection(
         &keyboards,
         &e.get_keyboard_device_path(),
@@ -539,7 +649,7 @@ fn refresh_devices(ui: &SettingsWindow) {
     e.set_input_devices(ModelRc::new(VecModel::from(keyboards)));
     e.set_selected_device(selected);
     e.set_keyboard_manual(manual);
-    let mice = device_choices(&devices, true);
+    let mice = device_choices(&devices, true, &e.get_mouse_device_path());
     let (selected, manual) =
         device_selection(&mice, &e.get_mouse_device_path(), e.get_mouse_manual());
     e.set_mouse_devices(ModelRc::new(VecModel::from(mice)));
@@ -590,10 +700,16 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let state = Rc::new(RefCell::new(State::default()));
     let e = ui.global::<SettingsEditor>();
     let choices = ui.global::<DeviceChoices>();
-    choices.on_filter(|choices, query| filtered_devices(choices, &query));
+    choices.on_filter(|choices, query, expanded| filtered_devices(choices, &query, expanded));
     let row = choices.get_row_height() as i32;
     let heading = choices.get_heading_height() as i32;
     choices.on_offset(move |items, index| device_offset(items, index, row, heading));
+    choices.on_position(|items, source| {
+        items
+            .iter()
+            .position(|choice| choice.source_index >= 0 && choice.source_index == source)
+            .map_or(-1, |index| index as i32)
+    });
     e.set_text_modes(strings(TextMode::ALL.map(TextMode::as_str)));
     e.set_fullscreen_non_games(lhc_core::gamemode::FULLSCREEN_NON_GAMES.join(", ").into());
     e.set_game_launchers(lhc_core::gamemode::GAME_LAUNCHERS.join(", ").into());

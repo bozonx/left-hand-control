@@ -1405,6 +1405,16 @@ msgstr "쥐처럼 생겼어"
 msgid "Other devices"
 msgstr "기타 장치"
 
+msgid "Virtual devices"
+msgstr "가상 장치"
+
+msgid "Not connected · {}"
+msgstr "연결되지 않음 · {}"
+
+msgid "Show {n} more device"
+msgid_plural "Show {n} more devices"
+msgstr[0] "장치 {n}개 더 보기"
+
 msgid "Search devices"
 msgstr "기기 검색"
 

@@ -1480,6 +1480,17 @@ msgstr "Úgy néz ki, mint egy egér"
 msgid "Other devices"
 msgstr "Egyéb eszközök"
 
+msgid "Virtual devices"
+msgstr "Virtuális eszközök"
+
+msgid "Not connected · {}"
+msgstr "Nincs csatlakoztatva · {}"
+
+msgid "Show {n} more device"
+msgid_plural "Show {n} more devices"
+msgstr[0] "További {n} eszköz megjelenítése"
+msgstr[1] "További {n} eszköz megjelenítése"
+
 msgid "Search devices"
 msgstr "Eszközök keresése"
 

@@ -1465,6 +1465,17 @@ msgstr "თაგვს ჰგავს"
 msgid "Other devices"
 msgstr "სხვა მოწყობილობები"
 
+msgid "Virtual devices"
+msgstr "ვირტუალური მოწყობილობები"
+
+msgid "Not connected · {}"
+msgstr "არ არის დაკავშირებული · {}"
+
+msgid "Show {n} more device"
+msgid_plural "Show {n} more devices"
+msgstr[0] "კიდევ {n} მოწყობილობის ჩვენება"
+msgstr[1] "კიდევ {n} მოწყობილობის ჩვენება"
+
 msgid "Search devices"
 msgstr "მოძებნეთ მოწყობილობები"
 

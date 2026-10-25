@@ -1494,6 +1494,17 @@ msgstr "Μοιάζει με ποντίκι"
 msgid "Other devices"
 msgstr "Άλλες συσκευές"
 
+msgid "Virtual devices"
+msgstr "Εικονικές συσκευές"
+
+msgid "Not connected · {}"
+msgstr "Δεν είναι συνδεδεμένη · {}"
+
+msgid "Show {n} more device"
+msgid_plural "Show {n} more devices"
+msgstr[0] "Εμφάνιση {n} ακόμη συσκευής"
+msgstr[1] "Εμφάνιση {n} ακόμη συσκευών"
+
 msgid "Search devices"
 msgstr "Αναζήτηση συσκευών"
 

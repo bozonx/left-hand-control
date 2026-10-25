@@ -31,6 +31,7 @@ fn input_devices() -> Vec<lhc_core::mapper::devices::InputDevice> {
             path: path.into(),
             is_keyboard,
             is_mouse,
+            is_virtual: false,
         },
     )
     .collect()
@@ -39,38 +40,66 @@ fn input_devices() -> Vec<lhc_core::mapper::devices::InputDevice> {
 // Windows offers no manual device path.
 #[cfg(not(target_os = "windows"))]
 #[test]
-fn pickers_suggest_matching_devices_and_keep_other_inputs_available() {
+fn pickers_suggest_matching_devices_and_fold_other_inputs() {
     let devices = input_devices();
     for (mouse, expected_path) in [(false, "/dev/input/event2"), (true, "/dev/input/event1")] {
-        let choices = device_choices(&devices, mouse);
-        assert_eq!(choices[0].group, DeviceGroup::Unselected);
-        assert_eq!(choices[1].group, DeviceGroup::Suggested);
-        assert_eq!(choices[1].path, expected_path);
-        assert_eq!(choices[2].group, DeviceGroup::Other);
-        assert_eq!(choices[3].group, DeviceGroup::Other);
-        assert_eq!(choices[4].group, DeviceGroup::Manual);
+        let choices = device_choices(&devices, mouse, "");
+        let groups: Vec<_> = choices.iter().map(|choice| choice.group).collect();
+        assert_eq!(
+            groups,
+            [
+                DeviceGroup::Unselected,
+                DeviceGroup::More,
+                DeviceGroup::Suggested,
+                DeviceGroup::Other,
+                DeviceGroup::Other,
+                DeviceGroup::Manual,
+            ]
+        );
+        assert_eq!(choices[1].count, 2);
+        assert_eq!(choices[1].source_index, -1);
+        assert_eq!(choices[2].path, expected_path);
         assert!(
             devices
                 .iter()
                 .all(|device| choices.iter().any(|choice| choice.path == device.path))
         );
+        let model = ModelRc::new(VecModel::from(choices));
+        assert_eq!(filtered_devices(model.clone(), "", false).row_count(), 4);
+        let expanded = filtered_devices(model, "", true);
+        assert_eq!(expanded.row_count(), 5);
+        assert!(
+            expanded
+                .iter()
+                .all(|choice| choice.group != DeviceGroup::More)
+        );
     }
+}
+
+#[test]
+fn virtual_devices_get_their_own_group() {
+    let mut devices = input_devices();
+    devices[0].is_virtual = true;
+    let choices = device_choices(&devices, false, "");
+    let power = choices.iter().find(|c| c.label == "Power button").unwrap();
+    assert_eq!(power.group, DeviceGroup::VirtualDevice);
 }
 
 // Windows offers no manual device path.
 #[cfg(not(target_os = "windows"))]
 #[test]
 fn search_keeps_original_selection_indices_and_matches_names_and_paths() {
-    let choices = device_choices(&input_devices(), false);
+    let choices = device_choices(&input_devices(), false, "");
     let model = ModelRc::new(VecModel::from(choices.clone()));
     for query in [" КЛАВИАТУРА ", "event2"] {
-        let filtered = filtered_devices(model.clone(), query);
+        let filtered = filtered_devices(model.clone(), query, false);
         assert_eq!(filtered.row_count(), 3);
-        assert_eq!(filtered.row_data(1), Some(choices[1].clone()));
+        assert_eq!(filtered.row_data(1), Some(choices[2].clone()));
     }
-    let filtered = filtered_devices(model.clone(), "mouse");
-    assert_eq!(filtered.row_data(1), Some(choices[3].clone()));
-    let filtered = filtered_devices(model, "no matching device");
+    // Searching looks into folded groups too.
+    let filtered = filtered_devices(model.clone(), "mouse", false);
+    assert_eq!(filtered.row_data(1), Some(choices[4].clone()));
+    let filtered = filtered_devices(model, "no matching device", false);
     assert_eq!(filtered.row_count(), 2);
     assert_eq!(filtered.row_data(0).unwrap().group, DeviceGroup::Unselected);
     assert_eq!(filtered.row_data(1).unwrap().group, DeviceGroup::Manual);
@@ -79,28 +108,54 @@ fn search_keeps_original_selection_indices_and_matches_names_and_paths() {
 // Windows offers no manual device path.
 #[cfg(not(target_os = "windows"))]
 #[test]
-fn saved_unavailable_paths_use_manual_input_and_explicit_manual_mode_survives_refresh() {
-    let choices = device_choices(&input_devices(), false);
+fn saved_unavailable_paths_stay_selected_and_explicit_manual_mode_survives_refresh() {
+    let choices = device_choices(&input_devices(), false, "/dev/input/missing");
     let manual = choices.len() as i32 - 1;
+    assert_eq!(choices[1].group, DeviceGroup::Missing);
+    assert_eq!(choices[1].path, "/dev/input/missing");
     assert_eq!(device_selection(&choices, "", false), (0, false));
     assert_eq!(
         device_selection(&choices, "/dev/input/event2", false),
-        (1, false)
+        (3, false)
     );
     assert_eq!(
         device_selection(&choices, "/dev/input/missing", false),
-        (manual, true)
+        (1, false)
     );
     assert_eq!(device_selection(&choices, "", true), (manual, true));
     assert_eq!(
-        device_selection(&choices, "/dev/input/event2", true),
+        device_selection(&choices, "/dev/input/other", false),
         (manual, true)
     );
 }
 
 #[test]
+fn device_rows_show_readable_names_and_short_paths() {
+    let sofle = "/dev/input/by-id/usb-MTKB_W-SOFLE_vial:f64c2b3c-event-kbd";
+    assert_eq!(device_label("", sofle), "MTKB W-SOFLE vial");
+    assert_eq!(device_label("(unknown)", sofle), "MTKB W-SOFLE vial");
+    assert_eq!(device_label("Logitech", sofle), "Logitech");
+    assert_eq!(
+        device_label(
+            "",
+            "/dev/input/by-id/usb-Logitech_USB_Receiver-if02-event-mouse"
+        ),
+        "Logitech USB Receiver"
+    );
+    assert_eq!(short_path(sofle), "by-id · usb-MTKB_W-SOFLE_vial:f64c2b3c");
+    assert_eq!(short_path("/dev/input/event18"), "event18");
+    assert_eq!(device_label("", "/dev/input/event18"), "event18");
+    assert_eq!(short_path("windows:keyboard"), "windows:keyboard");
+    let long = short_path(
+        "/dev/input/by-path/pci-0000:00:14.3-platform-PNP0C0D:00-very-long-name-for-a-device-event",
+    );
+    assert!(long.starts_with('…') && long.ends_with("long-name-for-a-device"));
+    assert_eq!(long.chars().count(), MAX_DETAIL_CHARS);
+}
+
+#[test]
 fn without_manual_entry_unknown_paths_are_unselected() {
-    let mut choices = device_choices(&input_devices(), false);
+    let mut choices = device_choices(&input_devices(), false, "");
     if choices
         .last()
         .is_some_and(|choice| choice.group == DeviceGroup::Manual)
@@ -109,7 +164,7 @@ fn without_manual_entry_unknown_paths_are_unselected() {
     }
     assert_eq!(
         device_selection(&choices, "/dev/input/event2", false),
-        (1, false)
+        (2, false)
     );
     assert_eq!(
         device_selection(&choices, "/dev/input/missing", false),

@@ -1460,6 +1460,18 @@ msgstr "Схожа на мишку"
 msgid "Other devices"
 msgstr "Інші пристрої"
 
+msgid "Virtual devices"
+msgstr "Віртуальні пристрої"
+
+msgid "Not connected · {}"
+msgstr "Не підключено · {}"
+
+msgid "Show {n} more device"
+msgid_plural "Show {n} more devices"
+msgstr[0] "Показати ще {n} пристрій"
+msgstr[1] "Показати ще {n} пристрої"
+msgstr[2] "Показати ще {n} пристроїв"
+
 msgid "Search devices"
 msgstr "Пошук пристроїв"
 

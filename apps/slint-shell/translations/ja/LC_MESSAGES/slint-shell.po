@@ -1405,6 +1405,16 @@ msgstr "ネズミみたいですね"
 msgid "Other devices"
 msgstr "その他のデバイス"
 
+msgid "Virtual devices"
+msgstr "仮想デバイス"
+
+msgid "Not connected · {}"
+msgstr "未接続 · {}"
+
+msgid "Show {n} more device"
+msgid_plural "Show {n} more devices"
+msgstr[0] "他の {n} 台のデバイスを表示"
+
 msgid "Search devices"
 msgstr "デバイスの検索"
 

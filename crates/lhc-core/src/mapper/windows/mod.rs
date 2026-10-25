@@ -50,12 +50,14 @@ pub fn list_input_devices() -> Result<Vec<InputDevice>, String> {
             name: KEYBOARD_PATH.into(),
             is_keyboard: true,
             is_mouse: false,
+            is_virtual: false,
         },
         InputDevice {
             path: MOUSE_PATH.into(),
             name: MOUSE_PATH.into(),
             is_keyboard: false,
             is_mouse: true,
+            is_virtual: false,
         },
     ])
 }

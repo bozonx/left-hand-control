@@ -1473,6 +1473,18 @@ msgstr "Arată ca un șoarece"
 msgid "Other devices"
 msgstr "Alte dispozitive"
 
+msgid "Virtual devices"
+msgstr "Dispozitive virtuale"
+
+msgid "Not connected · {}"
+msgstr "Neconectat · {}"
+
+msgid "Show {n} more device"
+msgid_plural "Show {n} more devices"
+msgstr[0] "Afișează încă {n} dispozitiv"
+msgstr[1] "Afișează încă {n} dispozitive"
+msgstr[2] "Afișează încă {n} de dispozitive"
+
 msgid "Search devices"
 msgstr "Căutați dispozitive"
 

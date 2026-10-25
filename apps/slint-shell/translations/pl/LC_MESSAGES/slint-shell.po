@@ -1470,6 +1470,18 @@ msgstr "Wygląda jak mysz"
 msgid "Other devices"
 msgstr "Inne urządzenia"
 
+msgid "Virtual devices"
+msgstr "Urządzenia wirtualne"
+
+msgid "Not connected · {}"
+msgstr "Niepodłączone · {}"
+
+msgid "Show {n} more device"
+msgid_plural "Show {n} more devices"
+msgstr[0] "Pokaż jeszcze {n} urządzenie"
+msgstr[1] "Pokaż jeszcze {n} urządzenia"
+msgstr[2] "Pokaż jeszcze {n} urządzeń"
+
 msgid "Search devices"
 msgstr "Wyszukaj urządzenia"
 

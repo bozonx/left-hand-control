@@ -1460,6 +1460,17 @@ msgstr "Fareye benziyor"
 msgid "Other devices"
 msgstr "Diğer cihazlar"
 
+msgid "Virtual devices"
+msgstr "Sanal cihazlar"
+
+msgid "Not connected · {}"
+msgstr "Bağlı değil · {}"
+
+msgid "Show {n} more device"
+msgid_plural "Show {n} more devices"
+msgstr[0] "{n} cihaz daha göster"
+msgstr[1] "{n} cihaz daha göster"
+
 msgid "Search devices"
 msgstr "Cihazları arayın"
 

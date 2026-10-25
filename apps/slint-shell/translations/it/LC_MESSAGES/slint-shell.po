@@ -1484,6 +1484,17 @@ msgstr "Sembra un topo"
 msgid "Other devices"
 msgstr "Altri dispositivi"
 
+msgid "Virtual devices"
+msgstr "Dispositivi virtuali"
+
+msgid "Not connected · {}"
+msgstr "Non connesso · {}"
+
+msgid "Show {n} more device"
+msgid_plural "Show {n} more devices"
+msgstr[0] "Mostra {n} altro dispositivo"
+msgstr[1] "Mostra altri {n} dispositivi"
+
 msgid "Search devices"
 msgstr "Cerca dispositivi"
 

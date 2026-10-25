@@ -88,11 +88,17 @@ pub fn list_input_devices() -> Result<Vec<InputDevice>, String> {
         if name == VIRTUAL_DEVICE_NAME {
             continue;
         }
+        let path_to_store = stable_path(&path, &stable);
+        // uinput devices get no udev links and usually no physical location.
+        let is_virtual = dev.input_id().bus_type() == evdev::BusType::BUS_VIRTUAL
+            || (path_to_store == path.to_string_lossy()
+                && dev.physical_path().is_none_or(str::is_empty));
         out.push(InputDevice {
-            path: stable_path(&path, &stable),
+            path: path_to_store,
             name,
             is_keyboard,
             is_mouse,
+            is_virtual,
         });
     }
     if out.is_empty()

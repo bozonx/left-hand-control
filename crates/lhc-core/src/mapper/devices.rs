@@ -12,4 +12,6 @@ pub struct InputDevice {
     pub name: String,
     pub is_keyboard: bool,
     pub is_mouse: bool,
+    /// Created by software (uinput) rather than attached hardware.
+    pub is_virtual: bool,
 }

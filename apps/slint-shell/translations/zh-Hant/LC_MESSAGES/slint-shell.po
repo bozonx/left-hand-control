@@ -1392,6 +1392,16 @@ msgstr "看起來像老鼠"
 msgid "Other devices"
 msgstr "其他設備"
 
+msgid "Virtual devices"
+msgstr "虛擬設備"
+
+msgid "Not connected · {}"
+msgstr "未連接 · {}"
+
+msgid "Show {n} more device"
+msgid_plural "Show {n} more devices"
+msgstr[0] "顯示其餘 {n} 個設備"
+
 msgid "Search devices"
 msgstr "搜尋設備"
 

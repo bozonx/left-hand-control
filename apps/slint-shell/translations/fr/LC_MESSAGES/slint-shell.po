@@ -1490,6 +1490,17 @@ msgstr "On dirait une souris"
 msgid "Other devices"
 msgstr "Autres appareils"
 
+msgid "Virtual devices"
+msgstr "Appareils virtuels"
+
+msgid "Not connected · {}"
+msgstr "Non connecté · {}"
+
+msgid "Show {n} more device"
+msgid_plural "Show {n} more devices"
+msgstr[0] "Afficher {n} autre appareil"
+msgstr[1] "Afficher {n} autres appareils"
+
 msgid "Search devices"
 msgstr "Rechercher des appareils"
 
