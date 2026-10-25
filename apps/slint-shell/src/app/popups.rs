@@ -125,10 +125,11 @@ impl App {
                 self.flush_worker_show();
                 return;
             }
+            let last = self.requested_page.replace(page);
             if self.window(window).is_visible() {
                 // The popup already has the focus, so no focus event follows.
                 release_mapper_input();
-                popup_model::repeat_open(popup, page, &self.emoji, &self.quick);
+                popup_model::repeat_open(popup, page, last, &self.emoji, &self.quick);
                 self.popup_outcome(popup, KeyOutcome::PageChanged);
                 return;
             }

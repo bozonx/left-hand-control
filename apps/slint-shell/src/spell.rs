@@ -391,6 +391,8 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     let mut probe = crate::platform::return_input::ReturnInput::new()?;
     let mut pending: Option<PendingAction> = None;
     let mut visible = initial;
+    // Page of the command that opened or last turned the visible popup.
+    let mut requested_page: Option<u32> = None;
     let mut focused: Option<Popup> = None;
     let mut last_activity = Instant::now();
     // Navigation keys handled since the popup opened (metrics only).
@@ -468,6 +470,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                         &mut layers,
                         &mut visible,
                         &mut focused,
+                        &mut requested_page,
                         &mut metrics,
                         popup,
                         page,
@@ -608,14 +611,16 @@ fn show(
     layers: &mut Layers,
     visible: &mut Option<Popup>,
     focused: &mut Option<Popup>,
+    requested_page: &mut Option<u32>,
     metrics: &mut metrics::Metrics,
     popup: Popup,
     page: Option<u32>,
     source: Source,
     start: Instant,
 ) {
+    let last = std::mem::replace(requested_page, page);
     if *visible == Some(popup) {
-        popup_model::repeat_open(popup, page, &layers.emoji, &layers.quick);
+        popup_model::repeat_open(popup, page, last, &layers.emoji, &layers.quick);
         layers.filter();
         return;
     }

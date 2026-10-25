@@ -73,6 +73,9 @@ pub(crate) struct App {
     held_layer: RefCell<Option<String>>,
     /// The layer hint is up, or due as soon as the worker starts.
     layer_hint_shown: Cell<bool>,
+    /// Page of the command that opened or last turned the visible winit
+    /// popup; tells a repeated open command from one for another page.
+    requested_page: Cell<Option<u32>>,
     layer_hint_session: Cell<layer_hint::HintSession>,
     layer_hint_hold_id: Cell<u64>,
     /// Delays the hint after a layer is taken.
@@ -494,6 +497,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         announced_layout: RefCell::new(None),
         held_layer: RefCell::new(None),
         layer_hint_shown: Cell::new(false),
+        requested_page: Cell::new(None),
         layer_hint_session: Cell::default(),
         layer_hint_hold_id: Cell::new(0),
         layer_hint_timer: slint::Timer::default(),

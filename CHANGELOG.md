@@ -59,6 +59,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Restored `text:` input into the settings typing test by tracking text destinations separately from rule conditions and identifying popup windows explicitly. Focus cancellation now reports a destination error instead of suggesting a mapper restart.
 - Repeated presses of a layer key that keeps its modifiers held (Tab for Alt+Tab) no longer press the held modifier again or wait for the modifier delay, so fast window switching keeps up.
 - The “Command started” notification is shown again when a command action runs.
+- Pressing a page-bound popup hotkey (`app:showQuickMenuN`, `app:showEmojiMenuN`) again while the popup is open turns through all pages like Tab instead of switching only between the first two.
 - Unplugging the optional mouse no longer stops keyboard mapping; the mouse reconnects independently with balanced button releases.
 - Keyboards selected through `/dev/input/by-id` reconnect after changing USB ports, and the shell shows when the mapper is waiting for its keyboard.
 

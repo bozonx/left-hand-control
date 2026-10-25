@@ -352,20 +352,39 @@ fn moved_page(previous: &[String], page: i32, current: &[String]) -> Option<i32>
         .and_then(|index| i32::try_from(index).ok())
 }
 
-/// Open command for an already visible popup: the page shown now (or no
-/// page at all) turns to the next one like Tab, another page opens directly.
-pub fn repeat_open(popup: Popup, page: Option<u32>, emoji: &EmojiPopup, quick: &QuickPopup) {
-    let current = match popup {
-        Popup::Emoji => emoji.get_page(),
-        Popup::Quick => quick.get_page(),
-    };
+/// Open command for an already visible popup. Repeating the command that
+/// opened it (`last` is its page) or a command without a page turns to the
+/// next page like Tab; a command for another page opens that page directly.
+pub fn repeat_open(
+    popup: Popup,
+    page: Option<u32>,
+    last: Option<u32>,
+    emoji: &EmojiPopup,
+    quick: &QuickPopup,
+) {
+    match popup {
+        Popup::Emoji => emoji.set_page(repeat_page(
+            emoji.get_page(),
+            emoji.get_page_names().row_count(),
+            page,
+            last,
+        )),
+        Popup::Quick => quick.set_page(repeat_page(
+            quick.get_page(),
+            quick.get_page_names().row_count(),
+            page,
+            last,
+        )),
+    }
+}
+
+/// Page index a repeated open command leaves the popup on; see `repeat_open`.
+fn repeat_page(current: i32, count: usize, page: Option<u32>, last: Option<u32>) -> i32 {
     match page {
-        Some(page) if page_index(page) != current => {
-            select_page(popup, page, emoji, quick);
+        Some(page) if Some(page) != last && page_index(page) != current => {
+            page_index(page).min((count as i32 - 1).max(0))
         }
-        _ => {
-            apply_shortcut(popup, Shortcut::ChangePage(1), emoji, quick);
-        }
+        _ => advance(current, 1, count),
     }
 }
 
@@ -442,6 +461,25 @@ mod tests {
         assert_eq!(popup_key(0, 2, "B"), (None, KeyOutcome::ChooseCell(14)));
         assert_eq!(hotkey_index("q"), Some(0));
         assert_eq!(hotkey_index("p"), None);
+    }
+
+    #[test]
+    fn repeated_open_command_cycles_all_pages() {
+        // The same page-bound hotkey keeps turning pages, also past page 2.
+        let mut page = 0;
+        let mut seen = Vec::new();
+        for _ in 0..4 {
+            page = repeat_page(page, 3, Some(1), Some(1));
+            seen.push(page);
+        }
+        assert_eq!(seen, [1, 2, 0, 1]);
+        // Without a page every repeat turns the page as well.
+        assert_eq!(repeat_page(2, 3, None, None), 0);
+        // A hotkey for another page opens it directly, clamped to the last.
+        assert_eq!(repeat_page(0, 3, Some(3), Some(1)), 2);
+        assert_eq!(repeat_page(0, 3, Some(9), None), 2);
+        // A command for the page already shown turns it even if it is new.
+        assert_eq!(repeat_page(0, 3, Some(1), None), 1);
     }
 
     #[test]
