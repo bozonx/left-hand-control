@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.invoke_navigate(Page::Rules, MenuKind::Emoji);
     ui.global::<RulesEditor>().invoke_add();
     let restricted = ui.global::<ActionPicker>();
-    restricted.set_category(PickerCategory::Mouse);
+    restricted.set_query("Mouse".into());
     restricted.invoke_refresh();
     assert_eq!(restricted.get_items().row_count(), 0);
     assert!(
