@@ -100,6 +100,33 @@ fn saved_unavailable_path_stays_listed_as_not_connected() {
     assert!(connected.iter().all(|c| c.group != DeviceGroup::Missing));
 }
 
+#[cfg(unix)]
+#[test]
+fn typed_paths_find_the_device_they_open() {
+    let temp = tempfile::tempdir().unwrap();
+    let event = temp.path().join("event7");
+    let link = temp.path().join("usb-Kbd-event-kbd");
+    std::fs::write(&event, "").unwrap();
+    std::os::unix::fs::symlink(&event, &link).unwrap();
+    let mut devices = input_devices();
+    devices[2].path = link.to_string_lossy().into_owned();
+    let model = ModelRc::new(VecModel::from(device_choices(&devices, false, "")));
+    let found = |path: &str| {
+        let found = find_device(model.clone(), path);
+        (found.index, found.exact)
+    };
+
+    let index = model
+        .iter()
+        .position(|c| c.path == devices[2].path)
+        .unwrap() as i32;
+    assert_eq!(found(&format!(" {} ", devices[2].path)), (index, true));
+    // The event node is the same keyboard under its unstable name.
+    assert_eq!(found(&event.to_string_lossy()), (index, false));
+    assert_eq!(found("/dev/input/nothing-here"), (-1, false));
+    assert_eq!(found("  "), (-1, false));
+}
+
 #[test]
 fn suggested_rows_sharing_a_name_keep_their_path() {
     let mut devices = input_devices();

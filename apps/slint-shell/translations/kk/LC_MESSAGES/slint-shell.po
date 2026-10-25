@@ -3648,3 +3648,15 @@ msgstr "Барлық тінтуірлердің түймелерін ұстап 
 
 msgid "Windows does not tell input devices apart, so all of them are intercepted."
 msgstr "Windows енгізу құрылғыларын ажыратпайды, сондықтан барлығы ұсталады."
+
+msgid "Connected: {}"
+msgstr "Қосылған: {}"
+
+msgid "This path may change after reconnecting."
+msgstr "Бұл жол қайта қосқаннан кейін өзгеруі мүмкін."
+
+msgid "Use the stable path"
+msgstr "Тұрақты жолды пайдалану"
+
+msgid "A path from /dev/input/by-id/ stays the same after reboots and reconnecting."
+msgstr "/dev/input/by-id/ ішіндегі жол қайта іске қосу мен қайта қосудан кейін өзгермейді."

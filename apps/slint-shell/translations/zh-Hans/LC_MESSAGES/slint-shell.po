@@ -3302,3 +3302,15 @@ msgstr "拦截所有鼠标的按键"
 
 msgid "Windows does not tell input devices apart, so all of them are intercepted."
 msgstr "Windows 不区分各个输入设备，因此会拦截全部设备。"
+
+msgid "Connected: {}"
+msgstr "已连接：{}"
+
+msgid "This path may change after reconnecting."
+msgstr "重新连接后此路径可能会变化。"
+
+msgid "Use the stable path"
+msgstr "使用固定路径"
+
+msgid "A path from /dev/input/by-id/ stays the same after reboots and reconnecting."
+msgstr "/dev/input/by-id/ 中的路径在重启和重新连接后保持不变。"

@@ -4,7 +4,7 @@ use crate::{
     i18n::Msg,
     ui::{
         AppearanceChoice, CommandAssignmentRow, CommandPlaceRow, DeviceChoice, DeviceChoices,
-        DeviceGroup, GameAppEntry, SettingsEditor, SettingsWindow,
+        DeviceGroup, DeviceMatch, GameAppEntry, SettingsEditor, SettingsWindow,
     },
 };
 use lhc_core::profile::menus::PlaceKind;
@@ -584,6 +584,32 @@ fn filtered_devices(
     ))
 }
 
+/// Row for the device a typed `path` opens: the same path, or another
+/// link to the same device.
+fn find_device(choices: ModelRc<DeviceChoice>, path: &str) -> DeviceMatch {
+    let path = path.trim();
+    let position = |matches: &dyn Fn(&str) -> bool| {
+        choices
+            .iter()
+            .position(|choice| matches(&choice.path))
+            .map(|index| index as i32)
+    };
+    if path.is_empty() {
+        return DeviceMatch {
+            index: -1,
+            exact: false,
+        };
+    }
+    if let Some(index) = position(&|choice| choice == path) {
+        return DeviceMatch { index, exact: true };
+    }
+    let index = position(&|choice| lhc_core::mapper::devices::same_device(choice, path));
+    DeviceMatch {
+        index: index.unwrap_or(-1),
+        exact: false,
+    }
+}
+
 /// Whether rows of `group` sit under a heading.
 fn has_heading(group: DeviceGroup) -> bool {
     group == DeviceGroup::VirtualDevice
@@ -679,6 +705,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             .position(|choice| choice.path == path)
             .map_or(-1, |index| index as i32)
     });
+    choices.on_find_device(|items, path| find_device(items, &path));
     e.set_text_modes(strings(TextMode::ALL.map(TextMode::as_str)));
     e.set_fullscreen_non_games(lhc_core::gamemode::FULLSCREEN_NON_GAMES.join(", ").into());
     e.set_game_launchers(lhc_core::gamemode::GAME_LAUNCHERS.join(", ").into());

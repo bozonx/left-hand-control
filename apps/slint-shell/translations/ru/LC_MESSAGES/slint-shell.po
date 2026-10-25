@@ -2973,3 +2973,15 @@ msgstr "Перехватывать кнопки всех мышей"
 
 msgid "Windows does not tell input devices apart, so all of them are intercepted."
 msgstr "Windows не различает отдельные устройства ввода, поэтому перехватываются все сразу."
+
+msgid "Connected: {}"
+msgstr "Подключено: {}"
+
+msgid "This path may change after reconnecting."
+msgstr "Этот путь может измениться после переподключения."
+
+msgid "Use the stable path"
+msgstr "Использовать постоянный путь"
+
+msgid "A path from /dev/input/by-id/ stays the same after reboots and reconnecting."
+msgstr "Путь из /dev/input/by-id/ не меняется после перезагрузки и переподключения."

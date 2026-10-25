@@ -3377,3 +3377,15 @@ msgstr "모든 마우스의 버튼 가로채기"
 
 msgid "Windows does not tell input devices apart, so all of them are intercepted."
 msgstr "Windows는 입력 장치를 구분하지 않으므로 모든 장치를 가로챕니다."
+
+msgid "Connected: {}"
+msgstr "연결됨: {}"
+
+msgid "This path may change after reconnecting."
+msgstr "이 경로는 다시 연결한 후 바뀔 수 있습니다."
+
+msgid "Use the stable path"
+msgstr "고정 경로 사용"
+
+msgid "A path from /dev/input/by-id/ stays the same after reboots and reconnecting."
+msgstr "/dev/input/by-id/의 경로는 재부팅하거나 다시 연결해도 바뀌지 않습니다."

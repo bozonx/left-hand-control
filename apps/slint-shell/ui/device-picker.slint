@@ -10,6 +10,9 @@ export enum DeviceGroup { missing, suggested, other, virtual-device }
 /// `detail` is the shortened path; `ambiguous` rows share their name with
 /// another suggested row, so the path is shown there too.
 export struct DeviceChoice { label: string, detail: string, path: string, group: DeviceGroup, ambiguous: bool }
+/// Row a typed path opens, or -1; `exact` when it is the row's own path
+/// rather than another link to the same device.
+export struct DeviceMatch { index: int, exact: bool }
 
 export global DeviceChoices {
     /// Rows matching the query: suggested ones, or every device when `all`.
@@ -18,6 +21,8 @@ export global DeviceChoices {
     pure callback offset([DeviceChoice], int) -> int;
     /// Row with this device path, or -1.
     pure callback position([DeviceChoice], string) -> int;
+    /// Row for the device a typed path opens, following symlinks.
+    pure callback find-device([DeviceChoice], string) -> DeviceMatch;
     out property <length> row-height: 44px;
     out property <length> heading-height: 28px;
 }
@@ -109,6 +114,9 @@ export component DeviceDialogOverlay inherits Rectangle {
     private property <DeviceGroup> current-group: DeviceChoices.position(root.choices, root.current) >= 0 ? root.choices[DeviceChoices.position(root.choices, root.current)].group : DeviceGroup.missing;
     private property <string> query;
     private property <string> manual-path;
+    private property <DeviceMatch> manual-match: root.tab == 2 ? DeviceChoices.find-device(root.choices, root.manual-path) : { index: -1, exact: false };
+    private property <bool> manual-connected: root.manual-match.index >= 0 && root.choices[root.manual-match.index].group != DeviceGroup.missing;
+    private property <bool> manual-changed: root.manual-path != "" && root.manual-path != root.current;
     // Search exists only on the "All devices" tab.
     private property <[DeviceChoice]> filtered: DeviceChoices.filter(root.choices, root.all ? root.query : "", root.all);
     private property <int> highlighted: max(0, DeviceChoices.position(root.filtered, root.current));
@@ -118,6 +126,9 @@ export component DeviceDialogOverlay inherits Rectangle {
 
     function choose(index: int) {
         if root.enabled && index >= 0 && index < root.filtered.length { root.chosen(root.filtered[index].path); }
+    }
+    function apply-manual() {
+        if root.enabled && root.manual-changed { root.chosen(root.manual-path); }
     }
     function scroll-to-highlight() {
         let top = DeviceChoices.offset(root.filtered, root.highlighted) * 1px;
@@ -251,17 +262,47 @@ export component DeviceDialogOverlay inherits Rectangle {
                             LinkText { text: @tr("Show all devices"); clicked => { root.show-tab(1); } }
                         }
                     }
-                    if root.tab == 2: VerticalLayout { width: parent.width; height: parent.height; alignment: start;
-                        HorizontalLayout { spacing: Theme.space-m;
-                            TextField {
-                                init => { self.focus(); }
-                                text <=> root.manual-path;
-                                placeholder-text: @tr("Device path, e.g. /dev/input/by-id/…");
-                                accepted => { if root.enabled && root.manual-path != "" { root.chosen(root.manual-path); } }
+                    if root.tab == 2: VerticalLayout { width: parent.width; height: parent.height; alignment: start; spacing: Theme.space-m;
+                        TextField {
+                            init => { self.focus(); }
+                            text <=> root.manual-path;
+                            placeholder-text: @tr("Device path, e.g. /dev/input/by-id/…");
+                            accepted => { root.apply-manual(); }
+                        }
+                        // What the typed path opens right now; a missing device can still be saved.
+                        if root.manual-path != "": HorizontalLayout { spacing: Theme.space-s;
+                            VerticalLayout { alignment: center;
+                                Image {
+                                    width: 14px; height: 14px;
+                                    source: root.manual-connected ? @image-url("icons/check.svg") : @image-url("icons/triangle-alert.svg");
+                                    colorize: root.manual-connected ? Theme.success : Theme.warning;
+                                }
                             }
-                            Button { text: @tr("Apply"); primary: true; enabled: root.enabled && root.manual-path != ""; clicked => { root.chosen(root.manual-path); } }
+                            Text {
+                                min-width: 0px; horizontal-stretch: 1; overflow: elide; vertical-alignment: center;
+                                text: root.manual-connected ? @tr("Connected: {}", root.choices[root.manual-match.index].label) : @tr("Not connected");
+                                color: root.manual-connected ? Theme.text : Theme.warning;
+                            }
+                        }
+                        if root.manual-connected && !root.manual-match.exact: HorizontalLayout { spacing: Theme.space-m;
+                            Text {
+                                min-width: 0px; horizontal-stretch: 1; wrap: word-wrap; vertical-alignment: center;
+                                text: @tr("This path may change after reconnecting.");
+                                color: Theme.muted; font-size: Theme.font-body;
+                            }
+                            LinkText {
+                                horizontal-stretch: 0;
+                                text: @tr("Use the stable path");
+                                font-size: Theme.font-body;
+                                clicked => { root.manual-path = root.choices[root.manual-match.index].path; }
+                            }
                         }
                     }
+                }
+                if root.tab == 2: Text {
+                    vertical-stretch: 0;
+                    text: @tr("A path from /dev/input/by-id/ stays the same after reboots and reconnecting.");
+                    color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap;
                 }
                 if root.tab == 0: Text {
                     vertical-stretch: 0;
@@ -269,10 +310,13 @@ export component DeviceDialogOverlay inherits Rectangle {
                     color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap;
                 }
                 HorizontalLayout { spacing: Theme.space-m; vertical-stretch: 0;
-                    Button { text: @tr("Refresh"); enabled: root.enabled; clicked => { root.refresh(); } }
+                    // The manual path does not depend on the device list.
+                    if root.tab != 2: Button { text: @tr("Refresh"); enabled: root.enabled; clicked => { root.refresh(); } }
                     Rectangle { horizontal-stretch: 1; }
                     Button { text: @tr("Reset"); enabled: root.enabled && root.current != ""; clicked => { root.chosen(""); } }
-                    Button { text: @tr("Close"); clicked => { root.close(); } }
+                    if root.tab != 2: Button { text: @tr("Close"); clicked => { root.close(); } }
+                    if root.tab == 2: Button { text: @tr("Cancel"); clicked => { root.close(); } }
+                    if root.tab == 2: Button { text: @tr("Apply"); primary: true; enabled: root.enabled && root.manual-changed; clicked => { root.apply-manual(); } }
                 }
             }
         }

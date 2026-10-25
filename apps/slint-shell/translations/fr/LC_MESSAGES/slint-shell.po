@@ -3745,3 +3745,15 @@ msgstr "Intercepter les boutons de toutes les souris"
 
 msgid "Windows does not tell input devices apart, so all of them are intercepted."
 msgstr "Windows ne distingue pas les périphériques d’entrée, ils sont donc tous interceptés."
+
+msgid "Connected: {}"
+msgstr "Connecté : {}"
+
+msgid "This path may change after reconnecting."
+msgstr "Ce chemin peut changer après une reconnexion."
+
+msgid "Use the stable path"
+msgstr "Utiliser le chemin stable"
+
+msgid "A path from /dev/input/by-id/ stays the same after reboots and reconnecting."
+msgstr "Un chemin de /dev/input/by-id/ reste identique après un redémarrage ou une reconnexion."

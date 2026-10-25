@@ -3639,3 +3639,15 @@ msgstr "Tüm farelerin düğmelerini yakala"
 
 msgid "Windows does not tell input devices apart, so all of them are intercepted."
 msgstr "Windows giriş aygıtlarını ayırt etmez, bu nedenle hepsi yakalanır."
+
+msgid "Connected: {}"
+msgstr "Bağlı: {}"
+
+msgid "This path may change after reconnecting."
+msgstr "Bu yol yeniden bağlandıktan sonra değişebilir."
+
+msgid "Use the stable path"
+msgstr "Kalıcı yolu kullan"
+
+msgid "A path from /dev/input/by-id/ stays the same after reboots and reconnecting."
+msgstr "/dev/input/by-id/ içindeki bir yol yeniden başlatma ve yeniden bağlanma sonrasında değişmez."

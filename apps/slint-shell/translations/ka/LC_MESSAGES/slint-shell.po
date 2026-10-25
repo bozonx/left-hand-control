@@ -3630,3 +3630,15 @@ msgstr "ყველა თაგვის ღილაკების ჩაჭ
 
 msgid "Windows does not tell input devices apart, so all of them are intercepted."
 msgstr "Windows ვერ არჩევს შეყვანის მოწყობილობებს ერთმანეთისგან, ამიტომ ყველა ჩაიჭერა."
+
+msgid "Connected: {}"
+msgstr "დაკავშირებულია: {}"
+
+msgid "This path may change after reconnecting."
+msgstr "ეს გზა შეიძლება შეიცვალოს ხელახლა დაკავშირების შემდეგ."
+
+msgid "Use the stable path"
+msgstr "მუდმივი გზის გამოყენება"
+
+msgid "A path from /dev/input/by-id/ stays the same after reboots and reconnecting."
+msgstr "/dev/input/by-id/-დან აღებული გზა არ იცვლება გადატვირთვისა და ხელახლა დაკავშირების შემდეგ."
