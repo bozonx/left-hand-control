@@ -252,9 +252,12 @@ export component AppEntryOverlay inherits Rectangle {
                 border-radius: Theme.radius-dialog;
                 TouchArea {}
                 VerticalLayout { padding: Theme.space-2xl; spacing: Theme.space-m-plus;
-                    Text {
-                        text: AppEntryDialog.index >= 0 ? @tr("Edit application") : @tr("Add application");
-                        color: Theme.text; font-size: Theme.font-heading; font-weight: Theme.weight-bold;
+                    HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
+                        Text { wrap: word-wrap; horizontal-stretch: 1; min-width: 0px;
+                            text: AppEntryDialog.index >= 0 ? @tr("Edit application") : @tr("Add application");
+                            color: Theme.text; font-size: Theme.font-heading; font-weight: Theme.weight-bold;
+                        }
+                        IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Close"); clicked => { AppEntryDialog.close(); } }
                     }
                     VerticalLayout { spacing: Theme.space-s;
                         Text { text: @tr("Match by"); color: Theme.muted; font-size: Theme.font-body; }

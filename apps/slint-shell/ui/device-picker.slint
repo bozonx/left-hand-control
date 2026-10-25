@@ -1,5 +1,5 @@
 import { Button } from "std-widgets.slint";
-import { ButtonGroup, SearchField, TextField } from "controls.slint";
+import { IconButton, ButtonGroup, SearchField, TextField } from "controls.slint";
 import { ScrollView } from "scroll.slint";
 import { Theme } from "theme.slint";
 
@@ -165,10 +165,13 @@ export component DeviceDialogOverlay inherits Rectangle {
             border-color: Theme.border;
             TouchArea {}
             VerticalLayout { padding: 18px; spacing: Theme.space-l;
-                Text {
-                    vertical-stretch: 0;
-                    text: root.mouse ? @tr("Choose a mouse") : @tr("Choose a keyboard");
-                    color: Theme.text; font-size: Theme.font-large; font-weight: Theme.weight-bold; vertical-alignment: center;
+                HorizontalLayout { vertical-stretch: 0;
+                    Text { wrap: word-wrap; horizontal-stretch: 1; min-width: 0px;
+                        vertical-stretch: 0;
+                        text: root.mouse ? @tr("Choose a mouse") : @tr("Choose a keyboard");
+                        color: Theme.text; font-size: Theme.font-large; font-weight: Theme.weight-bold; vertical-alignment: center;
+                    }
+                    IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Close"); clicked => { root.close(); } }
                 }
                 HorizontalLayout { alignment: start; vertical-stretch: 0;
                     ButtonGroup {

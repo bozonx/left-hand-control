@@ -206,7 +206,8 @@ component SubsectionTitle inherits Text {
 component BehaviorCard inherits VerticalLayout {
     in property <string> title;
     vertical-stretch: 0;
-    max-width: 608px;
+    horizontal-stretch: 1;
+    max-width: Theme.unbounded;
     Card {
         VerticalLayout {
             padding: Theme.space-xl;
@@ -564,7 +565,6 @@ export component SettingsPage inherits VerticalBox {
                         VerticalLayout { vertical-stretch: 0; max-width: Theme.text-column; spacing: Theme.space-xs; padding-top: Theme.space-m;
                             HorizontalLayout { spacing: Theme.space-s; height: 28px;
                                 SubsectionTitle { horizontal-stretch: 1; text: @tr("Devices"); vertical-alignment: center; }
-                                IconButton { icon: @image-url("icons/refresh-cw.svg"); tooltip: @tr("Refresh device list"); enabled: AppState.mapper-supported && !AppState.mapper-busy; clicked => { SettingsEditor.refresh-devices(); } }
                             }
                         }
                         DeviceField {
@@ -734,20 +734,15 @@ export component SettingsPage inherits VerticalBox {
                 }
                 if AppState.in-development && SettingsEditor.tab == SettingsTab.game-mode: Section {
                     HorizontalLayout {
-                        vertical-stretch: 0; spacing: Theme.space-m; alignment: start;
-                        Text { text: @tr("Game mode"); color: Theme.text; font-size: Theme.font-heading; font-weight: Theme.weight-semibold; vertical-alignment: center; }
-                        VerticalLayout { alignment: center; InfoTip { text: @tr("Game mode turns on rules and automatic layout rules that have a game-mode condition. Automatic layout rules apply only when the layout is chosen automatically (Layouts page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Never a game” takes priority over automatic detection and “Always a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."); } }
-                    }
-                    VerticalBox {
-                        padding: 0px; spacing: Theme.space-l; vertical-stretch: 0;
-                        HorizontalLayout {
-                            vertical-stretch: 0; alignment: start;
-                            ButtonGroup {
-                                labels: [@tr("Game mode control" => "Off"), @tr("Game mode control" => "On"), @tr("Game mode control" => "Auto")];
-                                selected-index: AppState.game-control == GameModeControl.off ? 0 : AppState.game-control == GameModeControl.on ? 1 : 2;
-                                selected(index) => { AppState.set-game-control(index == 0 ? GameModeControl.off : index == 1 ? GameModeControl.on : GameModeControl.auto); }
-                            }
+                        vertical-stretch: 0; spacing: Theme.space-m;
+                        ButtonGroup {
+                            horizontal-stretch: 0;
+                            labels: [@tr("Game mode control" => "Auto"), @tr("Game mode control" => "On"), @tr("Game mode control" => "Off")];
+                            selected-index: AppState.game-control == GameModeControl.auto ? 0 : AppState.game-control == GameModeControl.on ? 1 : 2;
+                            selected(index) => { AppState.set-game-control(index == 0 ? GameModeControl.auto : index == 1 ? GameModeControl.on : GameModeControl.off); }
                         }
+                        Rectangle { horizontal-stretch: 1; }
+                        VerticalLayout { alignment: center; InfoTip { text: @tr("Game mode turns on rules and automatic layout rules that have a game-mode condition. Automatic layout rules apply only when the layout is chosen automatically (Layouts page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Never a game” takes priority over automatic detection and “Always a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."); } }
                     }
 
                     BehaviorCard {
@@ -893,9 +888,12 @@ export component CommandDialogOverlay inherits FocusScope {
             border-radius: Theme.radius-dialog;
             TouchArea {}
             dialog-box := VerticalBox { padding: 22px; spacing: Theme.space-l;
-                Text {
-                    text: SettingsEditor.full-command-name != "" ? SettingsEditor.full-command-name : @tr("Command");
-                    color: Theme.text; font-size: Theme.font-heading; font-weight: Theme.weight-bold; wrap: word-wrap;
+                HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
+                    Text { horizontal-stretch: 1; min-width: 0px;
+                        text: SettingsEditor.full-command-name != "" ? SettingsEditor.full-command-name : @tr("Command");
+                        color: Theme.text; font-size: Theme.font-heading; font-weight: Theme.weight-bold; wrap: word-wrap;
+                    }
+                    IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Close"); clicked => { SettingsEditor.full-command = ""; } }
                 }
                 ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
                     preferred-height: full-layout.preferred-height;

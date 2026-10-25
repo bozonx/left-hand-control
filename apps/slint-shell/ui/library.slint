@@ -713,11 +713,14 @@ export component LibraryDialogOverlay inherits Rectangle {
                 : 210px;
             background: Theme.card; border-radius: Theme.radius-dialog;
             dialog-box := VerticalBox { padding: Theme.space-3xl; spacing: Theme.space-l;
-                Text {
-                    text: LayoutLibrary.dialog == LibraryDialog.create ? @tr("New layout")
+                HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
+                    Text { wrap: word-wrap; horizontal-stretch: 1; min-width: 0px;
+                        text: LayoutLibrary.dialog == LibraryDialog.create ? @tr("New layout")
                         : LayoutLibrary.dialog == LibraryDialog.rule ? (LayoutLibrary.rule-index < 0 ? @tr("New rule") : @tr("Rule {}", LayoutLibrary.rule-index + 1))
                         : @tr("Unsaved changes");
-                    color: Theme.text; font-size: Theme.font-title;
+                        color: Theme.text; font-size: Theme.font-title;
+                    }
+                    IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Close"); clicked => { LayoutLibrary.cancel-dialog(); } }
                 }
                 if LayoutLibrary.dialog == LibraryDialog.create: VerticalBox { padding: 0px; spacing: Theme.space-m-plus;
                     FormField {
@@ -802,7 +805,10 @@ export component LibraryDialogOverlay inherits Rectangle {
             width: 480px; height: 250px; background: Theme.card; border-radius: Theme.radius-dialog;
             VerticalBox {
                 padding: Theme.space-3xl; spacing: Theme.space-l;
-                Text { text: @tr("Save layout as…"); color: Theme.text; font-size: Theme.font-title; }
+                HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
+                    Text { wrap: word-wrap; horizontal-stretch: 1; min-width: 0px; text: @tr("Save layout as…"); color: Theme.text; font-size: Theme.font-title; }
+                    IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Close"); clicked => { LayoutLibrary.save-as-open = false; } }
+                }
                 FormField {
                     label: @tr("Layout name"); autofocus: true;
                     text <=> LayoutLibrary.save-as-name;

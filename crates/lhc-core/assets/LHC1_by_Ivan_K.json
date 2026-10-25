@@ -253,7 +253,8 @@
       "key": "ControlLeft",
       "tap": "app:showQuickMenu1",
       "hold": {
-        "keys": "AltLeft"
+        "keys": "AltLeft",
+        "timeoutMs": 350
       }
     },
     {

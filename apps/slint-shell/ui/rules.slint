@@ -5,7 +5,7 @@ import { ActionPicker } from "action-picker.slint";
 import { CategoryIcon } from "action-picker.slint";
 import { ConditionsForm, ConditionChoices } from "conditions.slint";
 import { DragDrop, DragGroups, DragHandle, DropMarker } from "reorder.slint";
-import { ResettableField, IconButton, ConfirmDialog, ItemStyle, InfoTip, Badge, SelectField, NumericInput, FormLabel, FormField, ButtonGroup } from "controls.slint";
+import { CardHeader, ResettableField, IconButton, ConfirmDialog, ItemStyle, InfoTip, Badge, SelectField, NumericInput, FormLabel, FormField, ButtonGroup } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { RuleDialog, RuleField, GameCondition, PickerCategory, HoldDetection } from "types.slint";
@@ -307,13 +307,14 @@ export component RulesPage inherits VerticalBox {
     padding: 0px;
     vertical-stretch: 1;
     spacing: Theme.space-l;
-    HorizontalBox { padding: 0px; vertical-stretch: 0; spacing: Theme.space-m;
-        HorizontalBox { padding: 0px; spacing: Theme.space-s;
-            Text { text: @tr("Triggers"); color: Theme.text; font-size: Theme.font-title; font-weight: Theme.weight-bold; }
-            InfoTip { text: @tr("Define how physical keys behave: tap for a key or action, hold to switch layers, or double-tap for extra shortcuts."); }
+    CardHeader {
+        vertical-stretch: 0;
+        padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
+        title: @tr("Triggers");
+        info: @tr("Define how physical keys behave: tap for a key or action, hold to switch layers, or double-tap for extra shortcuts.");
+        VerticalLayout { alignment: center;
+            Button { text: @tr("Add rule"); primary: true; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { RulesEditor.add(); rule-scroll.viewport-y = 0px; } }
         }
-        Rectangle { horizontal-stretch: 1; }
-        Button { max-height: 36px; text: @tr("Add rule"); primary: true; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { RulesEditor.add(); rule-scroll.viewport-y = 0px; } }
     }
     rule-scroll := ScrollView { viewport-width: self.visible-width; drag-scroll: true; vertical-stretch: 1;
         PageContent { width: rule-scroll.visible-width; spacing: Theme.space-m-plus; alignment: start;
@@ -384,14 +385,17 @@ export component RuleDialogOverlay inherits FocusScope {
             border-radius: Theme.radius-dialog;
             TouchArea {}
             dialog-box := VerticalBox { padding: 22px; spacing: Theme.space-m-plus;
-                Text {
-                    text: RulesEditor.dialog == RuleDialog.key ? @tr("Choose a key or combination for the trigger")
+                HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
+                    Text { wrap: word-wrap; horizontal-stretch: 1; min-width: 0px;
+                        text: RulesEditor.dialog == RuleDialog.key ? @tr("Choose a key or combination for the trigger")
                         : RulesEditor.dialog == RuleDialog.layer ? @tr("Choose layer")
                         : RulesEditor.dialog == RuleDialog.conditions ? @tr("Trigger conditions")
                         : RulesEditor.dialog == RuleDialog.advanced ? @tr("Advanced rule options")
                         : RulesEditor.dialog == RuleDialog.remove ? @tr("Delete trigger?")
                         : @tr("Choose action");
-                    color: Theme.text; font-size: Theme.font-title; font-weight: Theme.weight-bold;
+                        color: Theme.text; font-size: Theme.font-title; font-weight: Theme.weight-bold;
+                    }
+                    IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Close"); clicked => { RulesEditor.dialog = RuleDialog.none; } }
                 }
                 if RulesEditor.dialog == RuleDialog.conditions: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
                     preferred-height: conditions-form.preferred-height;

@@ -57,7 +57,7 @@ export component SettingsWindow inherits Window {
             root.confirm-close = true;
         } else {
             LayoutLibrary.editor-open = false;
-            root.navigate(Page.layouts, MenuKind.emoji);
+            if root.page != Page.settings && root.page != Page.layouts { root.navigate(Page.layouts, MenuKind.emoji); }
         }
     }
 
@@ -74,7 +74,7 @@ export component SettingsWindow inherits Window {
 
     property <bool> modal-open: root.confirm-discard || root.confirm-close || ActionPicker.opened || RulesEditor.dialog != RuleDialog.none || LayersEditor.dialog != LayerDialog.none || LayersEditor.delete-extra >= 0
         || LayoutLibrary.save-as-open || LayoutLibrary.dialog != LibraryDialog.none
-        || AppEntryDialog.editing || AppEntryDialog.removing;
+        || AppEntryDialog.editing || AppEntryDialog.removing || DeviceDialog.open || SettingsEditor.full-command != "";
     property <bool> show-active-banner: root.page != Page.layouts && root.page != Page.settings && !LayoutLibrary.automatic
         && LayoutLibrary.current-label != "" && LayoutLibrary.current-label != LayoutLibrary.active-label;
 
@@ -84,6 +84,21 @@ export component SettingsWindow inherits Window {
         focus-on-tab-navigation: false;
         init => { self.focus(); }
         capture-key-pressed(event) => {
+            if InlineEditors.window-active && event.text == Key.Escape {
+                if ActionPicker.opened {
+                    if ActionPicker.capturing { return reject; }
+                    ActionPicker.dismiss-picker(); return accept;
+                }
+                if DeviceDialog.open { DeviceDialog.open = false; return accept; }
+                if SettingsEditor.full-command != "" { SettingsEditor.full-command = ""; return accept; }
+                if AppEntryDialog.editing || AppEntryDialog.removing { AppEntryDialog.close(); return accept; }
+                if LayersEditor.delete-extra >= 0 { LayersEditor.delete-extra = -1; return accept; }
+                if LayersEditor.dialog != LayerDialog.none { LayersEditor.dialog = LayerDialog.none; return accept; }
+                if RulesEditor.dialog != RuleDialog.none { RulesEditor.dialog = RuleDialog.none; return accept; }
+                if LayoutLibrary.save-as-open { LayoutLibrary.save-as-open = false; return accept; }
+                if LayoutLibrary.dialog != LibraryDialog.none { LayoutLibrary.cancel-dialog(); return accept; }
+                if root.confirm-discard || root.confirm-close { root.confirm-discard = false; root.confirm-close = false; return accept; }
+            }
             if InlineEditors.window-active && !root.modal-open && event.modifiers.control && event.text.to-lowercase() == "s" && LayoutLibrary.editor-open {
                 InlineEditors.commit-revision += 1; MacroEditor.flush-pending();
                 if LayoutLibrary.dirty { LayoutLibrary.save-current(); }
@@ -228,7 +243,7 @@ export component SettingsWindow inherits Window {
         cancel => { root.confirm-discard = false; root.confirm-close = false; }
         confirm => {
             InlineEditors.revision += 1; LayoutLibrary.discard-current(); MacroEditor.refresh(); MenuEditor.refresh();
-            if root.confirm-close && !LayoutLibrary.dirty { LayoutLibrary.editor-open = false; root.navigate(Page.layouts, MenuKind.emoji); }
+            if root.confirm-close && !LayoutLibrary.dirty { LayoutLibrary.editor-open = false; if root.page != Page.settings && root.page != Page.layouts { root.navigate(Page.layouts, MenuKind.emoji); } }
             root.confirm-discard = false; root.confirm-close = false;
         }
     }
@@ -255,7 +270,10 @@ export component SettingsWindow inherits Window {
                 conflict-layout := VerticalLayout {
                     padding: 18px;
                     spacing: Theme.space-l;
-                    Text { text: @tr("Layout changed on disk"); color: Theme.text; font-size: Theme.font-large; font-weight: Theme.weight-bold; wrap: word-wrap; }
+                    HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
+                        Text { horizontal-stretch: 1; min-width: 0px; text: @tr("Layout changed on disk"); color: Theme.text; font-size: Theme.font-large; font-weight: Theme.weight-bold; wrap: word-wrap; }
+                        IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Close"); clicked => { LayoutLibrary.cancel-dialog(); } }
+                    }
                     Text {
                         text: @tr("The file of “{}” was changed by another program after you opened it. Your edits are kept until you choose what to do.", LayoutLibrary.current-label);
                         color: Theme.text; wrap: word-wrap;

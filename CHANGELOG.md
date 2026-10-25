@@ -16,6 +16,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Standardize the Triggers header, use full-width settings cards, simplify game mode and device settings, and move quick-action clearing beside the cell heading.
+
 - Application lists in automatic layout rules, trigger rules and game mode share the same heading, add button and list frame.
 
 - Action capture shows held keys and waits until every captured key is released, preserving the full combination regardless of release order.
@@ -58,6 +60,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Layer-shell popups no longer write hourly log files to `$XDG_RUNTIME_DIR/spell/` or poll a file there every two seconds; their messages go to the application log (`RUST_LOG=spell_framework=info` to see them). Building no longer needs the libdbus and libpam development packages.
 
 ### Fixed
+
+- Closing a layout preserves global settings navigation. Dialogs have header close buttons and Escape dismissal while the application is active.
 
 - Text fields of the application accept Shift+Insert (paste), Ctrl+Insert (copy) and Shift+Delete (cut), so text input with the Shift+Insert paste shortcut works in them too.
 - Virtual input devices, such as the ydotoold device, are no longer suggested as keyboards or mice.

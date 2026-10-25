@@ -586,12 +586,15 @@ export component LayerDialogOverlay inherits FocusScope {
         Rectangle { x: (parent.width - self.width) / 2; y: 60px; width: min(parent.width - 80px, 560px); height: min(parent.height - 120px, 500px); background: Theme.surface; border-color: Theme.border; border-width: 1px; border-radius: Theme.radius-dialog;
             TouchArea {}
             VerticalBox { padding: Theme.space-2xl; spacing: Theme.space-l;
-                Text {
-                    text: LayersEditor.dialog == LayerDialog.create ? @tr("New layer")
+                HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
+                    Text { wrap: word-wrap; horizontal-stretch: 1; min-width: 0px;
+                        text: LayersEditor.dialog == LayerDialog.create ? @tr("New layer")
                         : LayersEditor.dialog == LayerDialog.duplicate ? @tr("Duplicate layer")
                         : LayersEditor.dialog == LayerDialog.delete ? @tr("Delete layer?")
                         : @tr("Edit layer key");
-                    color: Theme.text; font-size: Theme.font-title; font-weight: Theme.weight-bold;
+                        color: Theme.text; font-size: Theme.font-title; font-weight: Theme.weight-bold;
+                    }
+                    IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Close"); clicked => { LayersEditor.dialog = LayerDialog.none; } }
                 }
                 if LayersEditor.dialog == LayerDialog.create || LayersEditor.dialog == LayerDialog.duplicate: VerticalBox { spacing: Theme.space-m;
                     FormField {

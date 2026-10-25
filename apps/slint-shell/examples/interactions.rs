@@ -308,6 +308,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(ui.get_page(), Page::Layouts);
     assert_eq!(library.get_current_label(), "Test layout");
     ui.invoke_navigate(Page::Keyboard, MenuKind::Emoji);
+    ui.invoke_navigate(Page::Settings, MenuKind::Emoji);
+    ui.invoke_close_layout();
+    assert!(!library.get_editor_open());
+    assert_eq!(ui.get_page(), Page::Settings);
+    ui.invoke_navigate(Page::Keyboard, MenuKind::Emoji);
     assert!(library.get_editor_open());
     ui.global::<KeyEditor>().invoke_edit(33);
     picker.invoke_select_behavior(PickerBehavior::Action);
@@ -750,6 +755,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         ui.global::<LayoutLibrary>().get_save_as_open(), ui.global::<LayoutLibrary>().get_status().id);
 
                 }
+                ui.global::<LayoutLibrary>().set_save_as_open(true);
+                ui.window().dispatch_event(slint::platform::WindowEvent::KeyPressed { text: slint::platform::Key::Escape.into() });
+                ui.window().dispatch_event(slint::platform::WindowEvent::KeyReleased { text: slint::platform::Key::Escape.into() });
+                assert!(!ui.global::<LayoutLibrary>().get_save_as_open());
+                ui.global::<LayersEditor>().invoke_open_dialog(slint_shell::ui::LayerDialog::Create, -1);
+                ui.window().dispatch_event(slint::platform::WindowEvent::KeyPressed { text: slint::platform::Key::Escape.into() });
+                ui.window().dispatch_event(slint::platform::WindowEvent::KeyReleased { text: slint::platform::Key::Escape.into() });
+                assert_eq!(ui.global::<LayersEditor>().get_dialog(), slint_shell::ui::LayerDialog::None);
                 snapshot(&ui, "layers-ru"); ui.invoke_navigate(Page::Macros, MenuKind::Emoji); }
             6 => { snapshot(&ui, "macros-ru"); ui.invoke_navigate(Page::Menus, MenuKind::Emoji); }
             7 => { snapshot(&ui, "emoji-ru"); ui.invoke_navigate(Page::Menus, MenuKind::Quick); }

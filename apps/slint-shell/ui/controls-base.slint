@@ -637,7 +637,7 @@ export component ConfirmDialog inherits Rectangle {
     TouchArea { clicked => { root.cancel(); } scroll-event(event) => { accept } }
     FocusScope {
         focus-on-tab-navigation: false;
-        key-pressed(event) => {
+        capture-key-pressed(event) => {
             if event.text == Key.Escape { root.cancel(); return accept; }
             return reject;
         }
@@ -654,7 +654,10 @@ export component ConfirmDialog inherits Rectangle {
             dialog-layout := VerticalLayout {
                 padding: 18px;
                 spacing: Theme.space-l;
-                Text { vertical-stretch: 0; text: root.title; color: Theme.text; font-size: Theme.font-large; font-weight: Theme.weight-bold; wrap: word-wrap; }
+                HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
+                    Text { horizontal-stretch: 1; min-width: 0px; vertical-stretch: 0; text: root.title; color: Theme.text; font-size: Theme.font-large; font-weight: Theme.weight-bold; wrap: word-wrap; }
+                    IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Close"); clicked => { root.cancel(); } }
+                }
                 Text { vertical-stretch: 0; text: root.body; color: Theme.text; wrap: word-wrap; }
                 if root.error != "": Text { vertical-stretch: 0; text: root.error; color: Theme.error; wrap: word-wrap; }
                 HorizontalLayout {

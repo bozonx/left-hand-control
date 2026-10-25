@@ -1,5 +1,5 @@
 import { AppState } from "app-state.slint";
-import { NumericInput, SearchField, TextField } from "controls.slint";
+import { IconButton, NumericInput, SearchField, TextField } from "controls.slint";
 import { ScrollView } from "scroll.slint";
 import { Locale, Message } from "i18n.slint";
 import { Theme } from "theme.slint";
@@ -208,6 +208,7 @@ export component PickerOverlay inherits Rectangle {
                         Text { text: ActionPicker.key-only ? (ActionPicker.trigger-chords ? @tr("Choose a key or key combination") : @tr("Choose trigger key")) : ActionPicker.title-context == 1 ? @tr("Double-tap action") : ActionPicker.title-context == 2 ? @tr("Tap action") : ActionPicker.title-context == 3 ? @tr("Hold another key / combination") : ActionPicker.title-context == 4 ? @tr("Macro step") : ActionPicker.title-context == 5 ? @tr("Long-hold action") : ActionPicker.allow-default || ActionPicker.allow-swallow ? @tr("Edit assignment") : @tr("Choose action"); color: Theme.text; font-size: Theme.font-title; font-weight: Theme.weight-bold; }
                         if ActionPicker.subject != "": Text { text: ActionPicker.subject; color: Theme.muted; font-size: Theme.font-medium; }
                     }
+                    IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Close"); clicked => { ActionPicker.dismiss-picker(); } }
                 }
                 if ActionPicker.allow-default || ActionPicker.allow-swallow: HorizontalBox { padding: 0px; spacing: Theme.space-m; vertical-stretch: 0;
                     Text { text: @tr("Behavior:"); color: Theme.muted; vertical-alignment: center; }

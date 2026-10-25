@@ -547,7 +547,11 @@ export component QuickActionsPage inherits Rectangle {
                                     PageEditor { remove => { root.confirming = true; } }
                                     Rectangle { height: 1px; background: Theme.divider; }
                                     if MenuEditor.status.id != "": Text { text: Locale.text(MenuEditor.status); color: Theme.error; wrap: word-wrap; }
-                                    if MenuEditor.selected-cell >= 0: FieldLabel { text: @tr("Button {}", MenuEditor.cells[MenuEditor.selected-cell].key); }
+                                    if MenuEditor.selected-cell >= 0: HorizontalLayout {
+                                        FieldLabel { text: @tr("Button {}", MenuEditor.cells[MenuEditor.selected-cell].key); vertical-alignment: center; }
+                                        Rectangle { horizontal-stretch: 1; }
+                                        IconButton { icon: @image-url("icons/eraser.svg"); label: @tr("Clear cell"); clicked => { MenuEditor.clear-cell(); } }
+                                    }
                                     if root.filled: VerticalLayout {
                                         spacing: Theme.space-xs;
                                         FieldLabel { text: @tr("Label"); }
@@ -587,7 +591,6 @@ export component QuickActionsPage inherits Rectangle {
                                                 }
                                                 action-touch := TouchArea { mouse-cursor: pointer; clicked => { parent.pick(); } }
                                             }
-                                            VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/eraser.svg"); label: @tr("Clear cell"); clicked => { MenuEditor.clear-cell(); } } }
                                         }
                                     }
                                 }
