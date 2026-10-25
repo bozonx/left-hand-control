@@ -757,6 +757,9 @@ msgstr "창 최소화"
 msgid "Maximize window"
 msgstr "창 최대화"
 
+msgid "Maximize window vertically"
+msgstr "창 세로로 최대화"
+
 msgid "Keep window above others"
 msgstr "창을 다른 창 위에 유지"
 

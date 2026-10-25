@@ -198,6 +198,19 @@ export default class Bridge extends Extension {
             else
                 window.maximize();
             return;
+        case 'windowMaximizeVertical': {
+            // Partial maximization is public again only in some Mutter
+            // releases; without it the action reports itself unsupported.
+            const vertical = Meta.MaximizeFlags.VERTICAL;
+            const api = ['get_maximize_flags', 'set_maximize_flags', 'set_unmaximize_flags'];
+            if (api.some(method => typeof window[method] !== 'function'))
+                throw new Error('Unsupported action');
+            if (window.get_maximize_flags() & vertical)
+                window.set_unmaximize_flags(vertical);
+            else
+                window.set_maximize_flags(vertical);
+            return;
+        }
         case 'windowKeepAbove':
             if (window.is_above()) window.unmake_above(); else window.make_above();
             return;

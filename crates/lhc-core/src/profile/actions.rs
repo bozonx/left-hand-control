@@ -118,10 +118,11 @@ const NUMBERED_SYSTEM_ACTIONS: [&str; 3] = ["switchDesktop", "switchLayout", "wi
 
 /// System actions without a number. Each has a documented counterpart on
 /// Linux desktops and Windows; see [`unsupported_on_macos`] for macOS.
-pub const PLAIN_SYSTEM_ACTIONS: [&str; 8] = [
+pub const PLAIN_SYSTEM_ACTIONS: [&str; 9] = [
     "windowClose",
     "windowMinimize",
     "windowMaximize",
+    "windowMaximizeVertical",
     "windowKeepAbove",
     "showDesktop",
     "overview",
@@ -131,9 +132,10 @@ pub const PLAIN_SYSTEM_ACTIONS: [&str; 8] = [
 
 /// `sys:` ids (numbered ones without their number) that macOS has no
 /// public API for. Running one there is ignored with a notice.
-const MACOS_UNSUPPORTED_SYSTEM_ACTIONS: [&str; 5] = [
+const MACOS_UNSUPPORTED_SYSTEM_ACTIONS: [&str; 6] = [
     "switchDesktop",
     "windowToDesktop",
+    "windowMaximizeVertical",
     "windowKeepAbove",
     "showDesktop",
     "appLauncher",
@@ -485,7 +487,7 @@ mod tests {
 
     #[test]
     fn catalogs_preserve_builtin_action_ids() {
-        assert_eq!(system_actions().len(), 38);
+        assert_eq!(system_actions().len(), 39);
         assert_eq!(app_actions().len(), 32);
         assert_eq!(
             system_action_name("switchDesktop10"),
@@ -505,6 +507,7 @@ mod tests {
         );
         assert!(unsupported_on_macos("switchDesktop3"));
         assert!(unsupported_on_macos("windowKeepAbove"));
+        assert!(unsupported_on_macos("windowMaximizeVertical"));
         assert!(!unsupported_on_macos("switchLayout2"));
         assert!(!unsupported_on_macos("windowClose"));
         assert!(!unsupported_on_macos("lockSession"));

@@ -778,6 +778,9 @@ msgstr "Minimalizuj okno"
 msgid "Maximize window"
 msgstr "Maksymalizuj okno"
 
+msgid "Maximize window vertically"
+msgstr "Maksymalizuj okno w pionie"
+
 msgid "Keep window above others"
 msgstr "Trzymaj okno nad innymi"
 

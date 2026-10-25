@@ -783,6 +783,9 @@ msgstr "Riduci a icona la finestra"
 msgid "Maximize window"
 msgstr "Ingrandisci la finestra"
 
+msgid "Maximize window vertically"
+msgstr "Ingrandisci la finestra verticalmente"
+
 msgid "Keep window above others"
 msgstr "Mantieni la finestra sopra gli altri"
 

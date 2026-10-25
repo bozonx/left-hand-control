@@ -242,6 +242,7 @@ mod kde {
             "windowClose" => ("kwin", "Window Close"),
             "windowMinimize" => ("kwin", "Window Minimize"),
             "windowMaximize" => ("kwin", "Window Maximize"),
+            "windowMaximizeVertical" => ("kwin", "Window Maximize Vertical"),
             "windowKeepAbove" => ("kwin", "Window Above Other Windows"),
             "showDesktop" => ("kwin", "Show Desktop"),
             "overview" => ("kwin", "Overview"),
@@ -369,6 +370,7 @@ mod linux_tests {
             "switchDesktop2",
             "windowToDesktop3",
             "windowClose",
+            "windowMaximizeVertical",
             "overview",
         ] {
             let Some(SysAction::Dbus(call)) = resolve_for_desktop(name, &Desktop::Gnome) else {

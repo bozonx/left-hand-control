@@ -757,6 +757,9 @@ msgstr "ウィンドウを最小化する"
 msgid "Maximize window"
 msgstr "ウィンドウを最大化する"
 
+msgid "Maximize window vertically"
+msgstr "ウィンドウを縦方向に最大化する"
+
 msgid "Keep window above others"
 msgstr "ウィンドウを他のウィンドウより上に保つ"
 

@@ -775,6 +775,9 @@ msgstr "Терезені кішірейту"
 msgid "Maximize window"
 msgstr "Терезені үлкейту"
 
+msgid "Maximize window vertically"
+msgstr "Терезені тігінен үлкейту"
+
 msgid "Keep window above others"
 msgstr "Терезені басқалардан жоғары ұстаңыз"
 

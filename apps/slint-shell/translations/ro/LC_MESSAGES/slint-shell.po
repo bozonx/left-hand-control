@@ -776,6 +776,9 @@ msgstr "Minimizați fereastra"
 msgid "Maximize window"
 msgstr "Maximizați fereastra"
 
+msgid "Maximize window vertically"
+msgstr "Maximizați fereastra pe verticală"
+
 msgid "Keep window above others"
 msgstr "Păstrați fereastra deasupra celorlalți"
 

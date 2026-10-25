@@ -772,6 +772,9 @@ msgstr "Pencereyi simge durumuna küçült"
 msgid "Maximize window"
 msgstr "Pencereyi büyüt"
 
+msgid "Maximize window vertically"
+msgstr "Pencereyi dikey olarak büyüt"
+
 msgid "Keep window above others"
 msgstr "Pencereyi diğerlerinin üstünde tut"
 

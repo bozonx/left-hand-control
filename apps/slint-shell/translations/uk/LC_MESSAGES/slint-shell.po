@@ -773,6 +773,9 @@ msgstr "Згорнути вікно"
 msgid "Maximize window"
 msgstr "Розгорнути вікно"
 
+msgid "Maximize window vertically"
+msgstr "Розгорнути вікно по вертикалі"
+
 msgid "Keep window above others"
 msgstr "Тримайте вікно над іншими"
 

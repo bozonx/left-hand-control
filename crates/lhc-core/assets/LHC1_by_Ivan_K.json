@@ -211,7 +211,7 @@
         "KeyJ": "Meta+ArrowUp",
         "KeyK": "Meta+ArrowDown",
         "KeyL": "Meta+ArrowRight",
-        "Semicolon": "kde:kwin/Window Maximize Vertical",
+        "Semicolon": "sys:windowMaximizeVertical",
         "Quote": "kde:kwin/Window Maximize Horizontal",
         "KeyZ": "sys:switchLayout3",
         "KeyX": "sys:switchLayout2",

@@ -118,8 +118,9 @@ and `CoreEvent` bus. The active-window watcher also has its normal safety reread
 
 The bridge implements `switchDesktop1..20`, `windowToDesktop1..20`,
 `switchLayout1..10`, `windowClose`, `windowMinimize`, `windowMaximize`,
-`windowKeepAbove`, `overview`, and `appLauncher`. A numbered workspace/source must
-already exist. `showDesktop` and `screenOff` remain unavailable on GNOME.
+`windowMaximizeVertical`, `windowKeepAbove`, `overview`, and `appLauncher`. A numbered
+workspace/source must already exist. `windowMaximizeVertical` needs Mutter's public
+`get/set_maximize_flags`; without them the extension reports it unsupported. `showDesktop` and `screenOff` remain unavailable on GNOME.
 The extension does not provide a clipboard/data-control protocol or remove portal
 permission requirements. In GNOME Wayland, the `libei + clipboard` and clipboard
 modes request `org.freedesktop.portal.Clipboard` access on their RemoteDesktop

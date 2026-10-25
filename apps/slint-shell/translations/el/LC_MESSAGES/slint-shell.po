@@ -785,6 +785,9 @@ msgstr "Ελαχιστοποίηση παραθύρου"
 msgid "Maximize window"
 msgstr "Μεγιστοποίηση παραθύρου"
 
+msgid "Maximize window vertically"
+msgstr "Κάθετη μεγιστοποίηση παραθύρου"
+
 msgid "Keep window above others"
 msgstr "Κρατήστε το παράθυρο πάνω από άλλα"
 

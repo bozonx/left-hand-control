@@ -770,6 +770,9 @@ msgstr "Minimiziraj prozor"
 msgid "Maximize window"
 msgstr "Maksimiziraj prozor"
 
+msgid "Maximize window vertically"
+msgstr "Maksimiziraj prozor okomito"
+
 msgid "Keep window above others"
 msgstr "Držite prozor iznad ostalih"
 
