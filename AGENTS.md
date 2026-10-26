@@ -56,12 +56,12 @@ cargo run --locked -p slint-shell --example interactions        # settings, save
 
 Page-specific examples: `action-picker`, `library`, `macros`, `menus`, `undo-redo`, `inline-edit`, `drag-scroll`, `notifications`. Benchmarks and diagnostic stands (`bench-*`, `probes` feature, `apps/slint-shell/scripts/`) are described in `apps/slint-shell/README.md`.
 
-Mapper, e2e and release checks (desktop e2e run only locally, never in GitHub Actions):
+Mapper, e2e and release checks (desktop e2e and VM runs are local only; CI runs just the mapper e2e, when the runner has `/dev/uinput`):
 
 ```sh
 cargo test --locked -p lhc-core --test mapper_e2e -- --ignored  # real evdev → engine → uinput path; needs /dev/uinput and /dev/input
 apps/slint-shell/scripts/e2e-local.sh                           # all UI scenarios + mapper e2e; writes docs/testing/results/linux/<date>.txt
-apps/slint-shell/scripts/release-linux.sh                       # tar.gz, deb, rpm, vendor archive, SHA256SUMS (needs nfpm)
+apps/slint-shell/scripts/release/release-linux.sh               # tar.gz, deb, rpm, vendor archive, SHA256SUMS (needs nfpm)
 apps/slint-shell/scripts/vm/run-linux.py --vm <dir> --package <file>  # L4: package in a disposable KDE VM (mapper, text:, popups, lock, suspend, replug, upgrade)
 apps/slint-shell/scripts/vm/run-windows.py --vm <dir>                  # L4: Windows shell acceptance in a disposable VM
 ```
@@ -78,6 +78,7 @@ crates/lhc-core/src/          # UI-independent domain + platform code (no UI fra
 ├── storage.rs                # StoragePaths::resolve(): dev vs release directories
 ├── events.rs                 # CoreEvent bus — the only core → shell channel
 ├── mapper/                   # engine/, output.rs (shared loop), linux/ (evdev+uinput), windows/ (hooks+SendInput), system.rs, runtime.rs
+├── text_input/               # text: injection: portal/ (RemoteDesktop, libei), clipboard, job accounting
 ├── layout/ gamemode/ active_window/   # system watchers feeding rule conditions
 └── platform/                 # OS / DE / session detection
 
@@ -96,6 +97,7 @@ apps/slint-shell/
 ├── ui/*.slint                # app.slint entry; types.slint enums; i18n.slint messages; theme.slint
 ├── translations/ru/          # Russian PO catalog (source strings are English)
 ├── examples/                 # UI scenarios and benchmarks
+├── scripts/                  # check/, release/, windows/, bench/, vm/ (L4), experimental/
 └── vendor/                   # patched i-slint-core and spell-framework (see PATCHES.md in each)
 
 docs/                         # development/, design/, testing/; README.md index
@@ -123,6 +125,7 @@ docs/                         # development/, design/, testing/; README.md index
 | --- | --- |
 | Config field, validation, layout file format | `crates/lhc-core/src/profile/`, `config_document/` |
 | Mapper behaviour, key handling, system actions | `crates/lhc-core/src/mapper/` |
+| Text injection (`text:`, popup insertion) | `crates/lhc-core/src/text_input/` |
 | New OS/DE detection or watcher | `crates/lhc-core/src/platform/`, `layout/`, `gamemode/`, `active_window/` |
 | Settings page logic | `apps/slint-shell/src/pages/<page>.rs` + `ui/<page>.slint` |
 | Popup content or keys | `apps/slint-shell/src/popup_model.rs`, `ui/popup-*.slint` |
