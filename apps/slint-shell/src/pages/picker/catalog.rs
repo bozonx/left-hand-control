@@ -222,7 +222,7 @@ pub(super) fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<Picke
 /// Why a valid action may still not run, shown as a notice.
 pub(super) fn execution_notice(
     action: &Action,
-    config: &lhc_core::profile::model::AppConfig,
+    config: &lhc_core::profile::model::ResolvedAppConfig,
 ) -> Msg {
     match actions::execution_issue(action, config) {
         Some(actions::ExecutionIssue::CommandsDisabled) => Msg::CommandsDisabled,

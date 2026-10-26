@@ -12,14 +12,14 @@
 //! `docs/design/removed-system-actions.md`.
 //!
 //! Action shapes:
-//!   * `SysAction::Dbus`    — Linux session-bus method call. Preferred when
+//!   * `SystemAction::Dbus`    — Linux session-bus method call. Preferred when
 //!                            the target DE exposes a DBus service: avoids
 //!                            `fork+exec` of helper binaries (qdbus, gdbus)
 //!                            and gives sub-millisecond latency.
-//!   * `SysAction::Spawn`   — fire-and-forget child process, for DEs whose
+//!   * `SystemAction::Spawn`   — fire-and-forget child process, for DEs whose
 //!                            control surface is a CLI tool (swaymsg, …).
-//!   * `SysAction::Windows` — a Win32 call (`mapper::windows::system`).
-//!   * `SysAction::AppEvent` — handled by the shell on every OS.
+//!   * `SystemAction::Windows` — a Win32 call (`mapper::windows::system`).
+//!   * `SystemAction::AppEvent` — handled by the shell on every OS.
 //!
 //! Current product support:
 //!   * Linux + KDE   — implemented.
@@ -31,7 +31,7 @@
 
 /// A concrete child-process invocation: `program` + positional args.
 #[derive(Clone, Debug)]
-pub struct SysCommand {
+pub struct ProcessInvocation {
     pub program: String,
     pub args: Vec<String>,
     pub working_directory: Option<String>,
@@ -72,16 +72,16 @@ impl DbusCall {
 /// Resolved system-function.
 #[derive(Clone, Debug)]
 #[allow(dead_code)] // Spawn reserved for future Sway / wmctrl backends.
-pub enum SysAction {
+pub enum SystemAction {
     #[cfg(target_os = "linux")]
     Dbus(DbusCall),
-    Spawn(SysCommand),
+    Spawn(ProcessInvocation),
     #[cfg(target_os = "windows")]
     Windows(super::windows::system::WindowsAction),
     AppEvent(String),
 }
 
-impl SysAction {
+impl SystemAction {
     /// Whether the shell answers this action by showing a popup that takes
     /// the keyboard focus.
     pub fn opens_popup(&self) -> bool {
@@ -93,7 +93,7 @@ impl SysAction {
 /// Resolve a system-function id (e.g. "switchDesktop3") into a concrete
 /// action to run on this machine, or `None` if the function is not
 /// available under the current OS or desktop environment.
-pub fn resolve(name: &str) -> Option<SysAction> {
+pub fn resolve(name: &str) -> Option<SystemAction> {
     #[cfg(target_os = "linux")]
     {
         use crate::platform::linux::detect;
@@ -101,7 +101,7 @@ pub fn resolve(name: &str) -> Option<SysAction> {
     }
     #[cfg(target_os = "windows")]
     {
-        super::windows::system::resolve(name.trim()).map(SysAction::Windows)
+        super::windows::system::resolve(name.trim()).map(SystemAction::Windows)
     }
 }
 
@@ -113,7 +113,7 @@ pub fn is_known(name: &str) -> bool {
     crate::profile::actions::system_action_name(name.trim()).is_some()
 }
 
-pub fn resolve_app(name: &str) -> Option<SysAction> {
+pub fn resolve_app(name: &str) -> Option<SystemAction> {
     use crate::profile::actions::{ActionName, app_action_name};
     let name = name.trim();
     if let Some(ActionName::App { id, n }) = app_action_name(name)
@@ -125,7 +125,7 @@ pub fn resolve_app(name: &str) -> Option<SysAction> {
             "activateLayout" => "activate_layout",
             _ => return None,
         };
-        return Some(SysAction::AppEvent(format!("{event}_{n}")));
+        return Some(SystemAction::AppEvent(format!("{event}_{n}")));
     }
     let event = match name {
         "showQuickMenuLast" => "show_quick_menu_last",
@@ -137,7 +137,7 @@ pub fn resolve_app(name: &str) -> Option<SysAction> {
         "gameModeOff" => "game_mode_off",
         _ => return None,
     };
-    Some(SysAction::AppEvent(event.into()))
+    Some(SystemAction::AppEvent(event.into()))
 }
 
 pub fn is_known_app(name: &str) -> bool {
@@ -146,7 +146,7 @@ pub fn is_known_app(name: &str) -> bool {
 
 /// Resolve a `kde:` id (`component/shortcut`) into a kglobalaccel call,
 /// or `None` outside KDE or when the id is malformed.
-pub fn resolve_kde_shortcut(id: &str) -> Option<SysAction> {
+pub fn resolve_kde_shortcut(id: &str) -> Option<SystemAction> {
     #[cfg(target_os = "linux")]
     {
         use crate::platform::linux::{Desktop, detect};
@@ -163,13 +163,16 @@ pub fn resolve_kde_shortcut(id: &str) -> Option<SysAction> {
 }
 
 #[cfg(target_os = "linux")]
-fn kde_shortcut(id: &str) -> Option<SysAction> {
+fn kde_shortcut(id: &str) -> Option<SystemAction> {
     let (component, shortcut) = crate::profile::actions::kde_shortcut_parts(id.trim())?;
     Some(kde::invoke_shortcut(component, shortcut))
 }
 
 #[cfg(target_os = "linux")]
-fn resolve_for_desktop(name: &str, desktop: &crate::platform::linux::Desktop) -> Option<SysAction> {
+fn resolve_for_desktop(
+    name: &str,
+    desktop: &crate::platform::linux::Desktop,
+) -> Option<SystemAction> {
     let name = name.trim();
     if !is_known(name) {
         return None;
@@ -191,15 +194,15 @@ fn resolve_for_desktop(name: &str, desktop: &crate::platform::linux::Desktop) ->
 
 #[cfg(target_os = "linux")]
 mod kde {
-    use super::{DbusArg, DbusCall, SysAction};
+    use super::{DbusArg, DbusCall, SystemAction};
     use crate::platform::dbus;
     use crate::profile::actions::SYSTEM_NUMBERED_COUNT;
 
     /// Most virtual desktops KWin can have.
     const KWIN_MAX_DESKTOPS: u32 = 20;
 
-    pub(super) fn invoke_shortcut(component: &str, shortcut: &str) -> SysAction {
-        SysAction::Dbus(DbusCall {
+    pub(super) fn invoke_shortcut(component: &str, shortcut: &str) -> SystemAction {
+        SystemAction::Dbus(DbusCall {
             destination: dbus::KGLOBALACCEL_SERVICE.into(),
             path: format!("/component/{component}"),
             interface: Some(dbus::KGLOBALACCEL_COMPONENT_INTERFACE.into()),
@@ -208,13 +211,13 @@ mod kde {
         })
     }
 
-    pub fn resolve(name: &str) -> Option<SysAction> {
+    pub fn resolve(name: &str) -> Option<SystemAction> {
         if let Some(rest) = name.strip_prefix("switchDesktop")
             && let Ok(n) = rest.parse::<u32>()
             && (1..=KWIN_MAX_DESKTOPS).contains(&n)
         {
             // org.kde.KWin /KWin setCurrentDesktop(i)
-            return Some(SysAction::Dbus(DbusCall {
+            return Some(SystemAction::Dbus(DbusCall {
                 destination: dbus::KWIN_SERVICE.into(),
                 path: dbus::KWIN_PATH.into(),
                 interface: Some(dbus::KWIN_INTERFACE.into()),
@@ -226,7 +229,7 @@ mod kde {
             && let Ok(n) = rest.parse::<u32>()
             && (1..=SYSTEM_NUMBERED_COUNT).contains(&n)
         {
-            return Some(SysAction::Dbus(DbusCall {
+            return Some(SystemAction::Dbus(DbusCall {
                 destination: dbus::KEYBOARD_SERVICE.into(),
                 path: dbus::KEYBOARD_LAYOUTS_PATH.into(),
                 interface: Some(dbus::KEYBOARD_LAYOUTS_INTERFACE.into()),
@@ -259,7 +262,7 @@ mod kde {
 
 #[cfg(test)]
 mod tests {
-    use super::{SysAction, is_known, resolve_app};
+    use super::{SystemAction, is_known, resolve_app};
     #[test]
     fn resolve_window_and_layout_actions() {
         for (name, event) in [
@@ -269,7 +272,7 @@ mod tests {
             ("activateLayout1", "activate_layout_1"),
             ("activateLayout5", "activate_layout_5"),
         ] {
-            let Some(SysAction::AppEvent(resolved)) = resolve_app(name) else {
+            let Some(SystemAction::AppEvent(resolved)) = resolve_app(name) else {
                 panic!("{name} did not resolve to an AppEvent");
             };
             assert_eq!(resolved, event);
@@ -286,7 +289,7 @@ mod tests {
             ("gameModeOn", "game_mode_on"),
             ("gameModeOff", "game_mode_off"),
         ] {
-            let Some(SysAction::AppEvent(resolved)) = resolve_app(name) else {
+            let Some(SystemAction::AppEvent(resolved)) = resolve_app(name) else {
                 panic!("{name} did not resolve to an AppEvent");
             };
             assert_eq!(resolved, event);
@@ -296,7 +299,7 @@ mod tests {
 
     #[test]
     fn resolve_show_quick_menu_page() {
-        let Some(SysAction::AppEvent(event)) = resolve_app("showQuickMenu3") else {
+        let Some(SystemAction::AppEvent(event)) = resolve_app("showQuickMenu3") else {
             panic!("showQuickMenu3 did not resolve to an AppEvent");
         };
         assert_eq!(event, "show_quick_menu_3");
@@ -305,7 +308,7 @@ mod tests {
 
     #[test]
     fn resolve_show_emoji_menu_page() {
-        let Some(SysAction::AppEvent(event)) = resolve_app("showEmojiMenu12") else {
+        let Some(SystemAction::AppEvent(event)) = resolve_app("showEmojiMenu12") else {
             panic!("showEmojiMenu12 did not resolve to an AppEvent");
         };
         assert_eq!(event, "show_emoji_menu_12");
@@ -334,14 +337,14 @@ mod tests {
         }
         assert!(matches!(
             resolve_app("showSettings"),
-            Some(SysAction::AppEvent(_))
+            Some(SystemAction::AppEvent(_))
         ));
     }
 }
 
 #[cfg(all(test, target_os = "linux"))]
 mod linux_tests {
-    use super::{DbusArg, SysAction, is_known, kde_shortcut, resolve_for_desktop};
+    use super::{DbusArg, SystemAction, is_known, kde_shortcut, resolve_for_desktop};
     use crate::platform::linux::Desktop;
 
     #[test]
@@ -377,7 +380,7 @@ mod linux_tests {
             "windowToNextDesktop",
             "overview",
         ] {
-            let Some(SysAction::Dbus(call)) = resolve_for_desktop(name, &Desktop::Gnome) else {
+            let Some(SystemAction::Dbus(call)) = resolve_for_desktop(name, &Desktop::Gnome) else {
                 panic!("{name} did not resolve");
             };
             assert_eq!(call.destination, "org.gnome.Shell");
@@ -400,14 +403,14 @@ mod linux_tests {
 
     #[test]
     fn switch_layout_uses_zero_based_kde_index() {
-        let Some(SysAction::Dbus(call)) = resolve_for_desktop("switchLayout1", &Desktop::Kde)
+        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("switchLayout1", &Desktop::Kde)
         else {
             panic!("switchLayout1 did not resolve to a DBus action");
         };
         assert_eq!(call.method, "setLayout");
         assert!(matches!(call.args.as_slice(), [DbusArg::U32(0)]));
 
-        let Some(SysAction::Dbus(call)) = resolve_for_desktop("switchLayout3", &Desktop::Kde)
+        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("switchLayout3", &Desktop::Kde)
         else {
             panic!("switchLayout3 did not resolve to a DBus action");
         };
@@ -416,7 +419,7 @@ mod linux_tests {
 
     #[test]
     fn window_to_desktop_and_kde_shortcuts_use_kglobalaccel() {
-        let Some(SysAction::Dbus(call)) = resolve_for_desktop("windowToDesktop3", &Desktop::Kde)
+        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("windowToDesktop3", &Desktop::Kde)
         else {
             panic!("windowToDesktop3 did not resolve to a DBus action");
         };
@@ -429,7 +432,8 @@ mod linux_tests {
         assert_eq!(call.method, "invokeShortcut");
         assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Window to Desktop 3"));
 
-        let Some(SysAction::Dbus(call)) = kde_shortcut("org_kde_powerdevil/Turn Off Screen") else {
+        let Some(SystemAction::Dbus(call)) = kde_shortcut("org_kde_powerdevil/Turn Off Screen")
+        else {
             panic!("kde shortcut did not resolve to a DBus action");
         };
         assert_eq!(call.path, "/component/org_kde_powerdevil");
@@ -447,12 +451,12 @@ mod linux_tests {
             assert!(
                 matches!(
                     resolve_for_desktop(id, &Desktop::Kde),
-                    Some(SysAction::Dbus(_))
+                    Some(SystemAction::Dbus(_))
                 ),
                 "{id} has no KDE implementation"
             );
         }
-        let Some(SysAction::Dbus(call)) = resolve_for_desktop("screenOff", &Desktop::Kde) else {
+        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("screenOff", &Desktop::Kde) else {
             panic!("screenOff did not resolve to a DBus action");
         };
         assert_eq!(call.path, "/component/org_kde_powerdevil");
@@ -464,13 +468,13 @@ mod linux_tests {
 
 #[cfg(target_os = "linux")]
 mod gnome {
-    use super::{DbusArg, DbusCall, SysAction};
+    use super::{DbusArg, DbusCall, SystemAction};
 
-    pub fn resolve(name: &str) -> Option<SysAction> {
+    pub fn resolve(name: &str) -> Option<SystemAction> {
         if !super::is_known(name) || matches!(name, "showDesktop" | "screenOff") {
             return None;
         }
-        Some(SysAction::Dbus(DbusCall {
+        Some(SystemAction::Dbus(DbusCall {
             destination: crate::platform::gnome::SERVICE.into(),
             path: crate::platform::gnome::PATH.into(),
             interface: Some(crate::platform::gnome::INTERFACE.into()),
@@ -484,14 +488,14 @@ mod gnome {
 
 #[cfg(target_os = "linux")]
 mod sway {
-    use super::SysAction;
+    use super::SystemAction;
 
-    pub fn resolve(name: &str) -> Option<SysAction> {
+    pub fn resolve(name: &str) -> Option<SystemAction> {
         // TODO: `swaymsg workspace number N` covers the common case.
         // Implementation sketch:
         //   if let Some(rest) = name.strip_prefix("switchDesktop") {
         //       if let Ok(n) = rest.parse::<u32>() {
-        //           return Some(SysAction::Spawn(SysCommand {
+        //           return Some(SystemAction::Spawn(ProcessInvocation {
         //               program: "swaymsg".into(),
         //               args: vec!["workspace".into(), "number".into(), n.to_string()],
         //           }));
@@ -506,9 +510,9 @@ mod sway {
 
 #[cfg(target_os = "linux")]
 mod x11_generic {
-    use super::SysAction;
+    use super::SystemAction;
 
-    pub fn resolve(name: &str) -> Option<SysAction> {
+    pub fn resolve(name: &str) -> Option<SystemAction> {
         // TODO: spawn `wmctrl -s (N-1)` (EWMH-compliant WMs: i3, Openbox,
         // Fluxbox, Xfwm, Mutter-on-X11, Marco, Metacity, Kwin-on-X11).
         log::debug!("[sys/x11] {name:?}: not implemented yet");

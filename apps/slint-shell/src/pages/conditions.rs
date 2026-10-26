@@ -300,20 +300,20 @@ pub(super) fn bind(ui: &SettingsWindow) {
     });
 
     on!(ui, choices.on_refresh => |ui| {
-        match lhc_core::layout::available_layouts() {
+        match lhc_core::keyboard_layout::available_layouts() {
             Ok(layouts) => {
                 ui.global::<ConditionChoices>()
                     .set_languages(ModelRc::new(VecModel::from(
                         layouts
                             .into_iter()
                             .map(|layout| LanguageChoice {
-                                label: if layout.display.is_empty() {
-                                    layout.short.clone()
+                                label: if layout.display_label.is_empty() {
+                                    layout.code.clone()
                                 } else {
-                                    format!("{} ({})", layout.short, layout.display)
+                                    format!("{} ({})", layout.code, layout.display_label)
                                 }
                                 .into(),
-                                code: layout.short.into(),
+                                code: layout.code.into(),
                             })
                             .collect::<Vec<_>>(),
                     )))

@@ -11,7 +11,9 @@ mod activation;
 
 use crate::profile::actions::{self, Action, ActionIssue};
 use crate::profile::diagnostics::RuleIssue;
-use crate::profile::model::{AppConfig, AppSettings, Appearance, LayoutPreset, LocalePreference};
+use crate::profile::model::{
+    AppSettings, Appearance, LayoutPreset, LocalePreference, ResolvedAppConfig,
+};
 use crate::profile::names::{self, NameIssue, NameKind};
 use crate::profile::{key_catalog, layout_file, settings};
 use crate::storage::StoragePaths;
@@ -75,7 +77,7 @@ impl ConfigDocument {
         let settings_text = paths.load_config().map_err(ConfigError::Io)?;
         let mut settings = settings::parse(&settings_text).map_err(ConfigError::Parse)?;
         let mut layout_load_error = None;
-        let layout = match settings.current_layout_id.as_deref() {
+        let layout = match settings.editing_layout_id.as_deref() {
             Some(id) => match load_current_layout(&paths, id) {
                 Ok(layout) => layout,
                 Err(error) => {
@@ -84,7 +86,7 @@ impl ConfigDocument {
                     // a fresh layout that is not linked to the broken file,
                     // so saving it never overwrites that file.
                     log::warn!("layout {id} cannot be opened for editing: {error}");
-                    settings.current_layout_id = None;
+                    settings.editing_layout_id = None;
                     layout_load_error = Some(error);
                     LayoutPreset::initial()
                 }
@@ -119,11 +121,11 @@ impl ConfigDocument {
     }
 
     /// Settings and the current layout combined.
-    pub fn config(&self) -> AppConfig {
-        AppConfig::from_parts(
+    pub fn config(&self) -> ResolvedAppConfig {
+        ResolvedAppConfig::from_parts(
             self.settings.clone(),
             self.layout.clone(),
-            self.settings.current_layout_id.as_deref(),
+            self.settings.editing_layout_id.as_deref(),
         )
     }
 
@@ -281,7 +283,7 @@ impl ConfigDocument {
         }
         let key = keys.remove(from);
         keys.insert(to, key);
-        self.update_layout(|layout| layout.layer_keymap_mut(id).extra_key_order = keys)
+        self.update_layout(|layout| layout.get_or_create_layer_keymap(id).extra_key_order = keys)
     }
 
     fn require_layer(&self, id: &str) -> Result<(), ConfigError> {
@@ -488,7 +490,7 @@ mod tests {
             let mut document = ConfigDocument::load(paths.clone()).unwrap();
             assert!(document.layout_load_error().is_some(), "{damage}");
             assert_eq!(document.settings().appearance, Appearance::Dark);
-            assert_eq!(document.settings().current_layout_id, None);
+            assert_eq!(document.settings().editing_layout_id, None);
             // Saving settings and the fresh layout never touches the broken file.
             document
                 .update_settings(|settings| settings.default_hold_timeout_ms = 300)
@@ -1010,7 +1012,7 @@ mod tests {
                     enabled: true,
                     layout_id: None,
                     conditions: crate::profile::model::LayoutConditionSet {
-                        apps: vec!["title:YouTube".into()],
+                        window_patterns: vec!["title:YouTube".into()],
                         ..Default::default()
                     },
                 }];
@@ -1043,7 +1045,7 @@ mod tests {
         assert_eq!(value["settings"]["currentLayoutId"], "user:Other");
 
         document
-            .update_settings(|settings| settings.manual_active_layout_id = Some("user:Main".into()))
+            .update_settings(|settings| settings.manual_layout_id = Some("user:Main".into()))
             .unwrap();
         let runtime = document
             .runtime_config(&AutoSwitchContext::default())

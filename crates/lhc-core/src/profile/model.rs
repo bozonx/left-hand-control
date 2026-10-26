@@ -1,6 +1,6 @@
 //! Editable application model used by the shell and mapper.
 //!
-//! Serialising [`AppConfig`] with `serde_json` produces the JSON consumed
+//! Serialising [`ResolvedAppConfig`] with `serde_json` produces the JSON consumed
 //! by the mapper runtime; the persisted formats (`config.json` settings and
 //! JSON layouts) are handled by [`super::settings`] and [`super::layout_file`].
 
@@ -62,18 +62,21 @@ pub enum HoldBehavior {
 /// the key and any other value is an action.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct LayerRule {
+pub struct KeyRule {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enabled: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub condition_game_mode: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub condition_layouts: Option<Vec<String>>,
+    #[serde(rename = "conditionLayouts")]
+    pub condition_keyboard_layouts: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub condition_apps_whitelist: Option<Vec<String>>,
+    #[serde(rename = "conditionAppsWhitelist")]
+    pub condition_window_patterns: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub condition_apps_blacklist: Option<Vec<String>>,
+    #[serde(rename = "conditionAppsBlacklist")]
+    pub condition_excluded_window_patterns: Option<Vec<String>>,
     pub key: String,
     pub layer_id: String,
     pub tap_action: Option<String>,
@@ -93,7 +96,7 @@ pub struct LayerRule {
     pub double_tap_timeout_ms: Option<u64>,
 }
 
-impl LayerRule {
+impl KeyRule {
     pub fn hold_behavior(&self) -> HoldBehavior {
         self.hold_behavior.unwrap_or({
             if !self.long_hold_action.is_empty() {
@@ -111,9 +114,9 @@ impl LayerRule {
             id,
             enabled: None,
             condition_game_mode: None,
-            condition_layouts: None,
-            condition_apps_whitelist: None,
-            condition_apps_blacklist: None,
+            condition_keyboard_layouts: None,
+            condition_window_patterns: None,
+            condition_excluded_window_patterns: None,
             key: key.into(),
             layer_id: String::new(),
             tap_action: Some(String::new()),
@@ -177,10 +180,12 @@ pub struct Command {
     pub id: String,
     pub name: String,
     /// POSIX `sh` script, run on Linux and macOS.
-    pub linux: String,
+    #[serde(rename = "linux")]
+    pub posix_script: String,
     /// PowerShell script, run on Windows.
     #[serde(skip_serializing_if = "String::is_empty")]
-    pub windows: String,
+    #[serde(rename = "windows")]
+    pub powershell_script: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub working_directory: Option<String>,
 }
@@ -189,9 +194,9 @@ impl Command {
     /// The script this operating system runs.
     pub fn script(&self) -> &str {
         if cfg!(target_os = "windows") {
-            &self.windows
+            &self.powershell_script
         } else {
-            &self.linux
+            &self.posix_script
         }
     }
 
@@ -203,9 +208,9 @@ impl Command {
     /// Replace the script this operating system runs.
     pub fn set_script(&mut self, script: String) {
         if cfg!(target_os = "windows") {
-            self.windows = script;
+            self.powershell_script = script;
         } else {
-            self.linux = script;
+            self.posix_script = script;
         }
     }
 }
@@ -307,7 +312,7 @@ pub struct LayoutPreset {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     pub layers: Vec<Layer>,
-    pub rules: Vec<LayerRule>,
+    pub rules: Vec<KeyRule>,
     pub layer_keymaps: BTreeMap<String, LayerKeymap>,
     pub macros: Vec<Macro>,
     pub commands: Vec<Command>,
@@ -354,13 +359,13 @@ impl LayoutPreset {
         }
     }
 
-    pub fn layer_keymap_mut(&mut self, layer_id: &str) -> &mut LayerKeymap {
+    pub fn get_or_create_layer_keymap(&mut self, layer_id: &str) -> &mut LayerKeymap {
         self.layer_keymaps.entry(layer_id.into()).or_default()
     }
 
     /// Number of commands some action of the preset refers to; commands
     /// left behind by reassigned actions are not counted.
-    pub fn used_commands(&self) -> usize {
+    pub fn used_command_count(&self) -> usize {
         let refs = self.command_refs();
         self.commands
             .iter()
@@ -370,7 +375,7 @@ impl LayoutPreset {
 
     /// Drops commands no action refers to any more: each action owns its
     /// command, so a reassigned action leaves its old command behind.
-    pub fn prune_commands(&mut self) {
+    pub fn remove_unused_commands(&mut self) {
         let refs = self.command_refs();
         self.commands.retain(|command| refs.contains(&command.id));
     }
@@ -410,18 +415,18 @@ pub struct LayoutConditionSet {
     pub layouts: Vec<String>,
     /// Window patterns, see [`super::app_match`].
     #[serde(rename = "windows", skip_serializing_if = "Vec::is_empty")]
-    pub apps: Vec<String>,
+    pub window_patterns: Vec<String>,
     /// Window patterns that block the match.
     #[serde(rename = "excludeWindows", skip_serializing_if = "Vec::is_empty")]
-    pub excluded_apps: Vec<String>,
+    pub excluded_window_patterns: Vec<String>,
 }
 
 impl LayoutConditionSet {
     pub fn is_empty(&self) -> bool {
         self.game_mode.is_none()
             && self.layouts.is_empty()
-            && self.apps.is_empty()
-            && self.excluded_apps.is_empty()
+            && self.window_patterns.is_empty()
+            && self.excluded_window_patterns.is_empty()
     }
 }
 
@@ -721,7 +726,8 @@ pub struct AppSettings {
     pub tap_decision: TapDecision,
     pub default_double_tap_timeout_ms: u64,
     /// Window in which all keys of a multi-key rule must be pressed.
-    pub combo_timeout_ms: u64,
+    #[serde(rename = "comboTimeoutMs")]
+    pub trigger_chord_timeout_ms: u64,
     pub default_macro_step_pause_ms: u64,
     pub default_macro_modifier_delay_ms: u64,
     /// A macro run still going after this time is aborted.
@@ -731,10 +737,12 @@ pub struct AppSettings {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub input_mouse_device_path: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub current_layout_id: Option<String>,
+    #[serde(rename = "currentLayoutId")]
+    pub editing_layout_id: Option<String>,
     pub layout_mode: LayoutMode,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub manual_active_layout_id: Option<String>,
+    #[serde(rename = "manualActiveLayoutId")]
+    pub manual_layout_id: Option<String>,
     pub layout_order: Vec<String>,
     pub auto_rules: Vec<AutoRule>,
     /// Layout used in automatic mode when no rule matches; `None` is off.
@@ -767,15 +775,15 @@ impl Default for AppSettings {
             default_hold_timeout_ms: timing::DEFAULT_HOLD_MS,
             tap_decision: TapDecision::default(),
             default_double_tap_timeout_ms: timing::DEFAULT_DOUBLE_TAP_MS,
-            combo_timeout_ms: timing::DEFAULT_COMBO_MS,
+            trigger_chord_timeout_ms: timing::DEFAULT_TRIGGER_CHORD_MS,
             default_macro_step_pause_ms: timing::DEFAULT_MACRO_STEP_PAUSE_MS,
             default_macro_modifier_delay_ms: timing::DEFAULT_MACRO_MODIFIER_DELAY_MS,
             macro_timeout_ms: timing::DEFAULT_MACRO_TIMEOUT_MS,
             input_device_path: Some(String::new()),
             input_mouse_device_path: None,
-            current_layout_id: None,
+            editing_layout_id: None,
             layout_mode: LayoutMode::Manual,
-            manual_active_layout_id: None,
+            manual_layout_id: None,
             layout_order: Vec::new(),
             auto_rules: Vec::new(),
             auto_default_layout_id: None,
@@ -806,12 +814,12 @@ impl Default for AppSettings {
 /// Settings plus the current layout, consumed by the mapper runtime as JSON.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct AppConfig {
+pub struct ResolvedAppConfig {
     pub version: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub layout_description: Option<String>,
     pub layers: Vec<Layer>,
-    pub rules: Vec<LayerRule>,
+    pub rules: Vec<KeyRule>,
     pub layer_keymaps: BTreeMap<String, LayerKeymap>,
     pub macros: Vec<Macro>,
     pub commands: Vec<Command>,
@@ -820,7 +828,7 @@ pub struct AppConfig {
     pub settings: AppSettings,
 }
 
-impl AppConfig {
+impl ResolvedAppConfig {
     /// Combine settings with a preset, as `applyPresetToConfig()` does:
     /// the preset's layout id becomes `currentLayoutId` and every layer
     /// gets a keymap.
@@ -844,7 +852,7 @@ impl AppConfig {
             quick_action_pages: preset.quick_action_pages,
             emoji_pages: preset.emoji_pages,
             settings: AppSettings {
-                current_layout_id: layout_id.map(str::to_owned),
+                editing_layout_id: layout_id.map(str::to_owned),
                 ..settings
             },
         }
@@ -860,24 +868,74 @@ mod tests {
     use super::*;
 
     #[test]
+    fn renamed_model_fields_preserve_runtime_json_contract() {
+        let mut rule = KeyRule::new("r1".into(), "KeyA");
+        rule.condition_keyboard_layouts = Some(vec!["us".into()]);
+        rule.condition_window_patterns = Some(vec!["konsole".into()]);
+        rule.condition_excluded_window_patterns = Some(vec!["title:private".into()]);
+        let layout = LayoutPreset {
+            rules: vec![rule],
+            commands: vec![Command {
+                id: "c1".into(),
+                name: "Command".into(),
+                posix_script: "printf test".into(),
+                powershell_script: "Write-Output test".into(),
+                working_directory: None,
+            }],
+            ..LayoutPreset::default()
+        };
+        let settings = AppSettings {
+            manual_layout_id: Some("user:Manual".into()),
+            trigger_chord_timeout_ms: 80,
+            ..AppSettings::default()
+        };
+        let config = ResolvedAppConfig::from_parts(settings, layout, Some("user:Editing"));
+        let value = serde_json::to_value(&config).unwrap();
+        assert_eq!(value["settings"]["currentLayoutId"], "user:Editing");
+        assert_eq!(value["settings"]["manualActiveLayoutId"], "user:Manual");
+        assert_eq!(value["settings"]["comboTimeoutMs"], 80);
+        assert_eq!(value["rules"][0]["conditionLayouts"][0], "us");
+        assert_eq!(value["rules"][0]["conditionAppsWhitelist"][0], "konsole");
+        assert_eq!(
+            value["rules"][0]["conditionAppsBlacklist"][0],
+            "title:private"
+        );
+        assert_eq!(value["commands"][0]["linux"], "printf test");
+        assert_eq!(value["commands"][0]["windows"], "Write-Output test");
+
+        let mapper: crate::mapper::config::MapperConfig = serde_json::from_value(value).unwrap();
+        assert_eq!(
+            mapper.settings.editing_layout_id.as_deref(),
+            Some("user:Editing")
+        );
+        assert_eq!(mapper.settings.trigger_chord_timeout_ms, 80);
+        assert_eq!(
+            mapper.rules[0].condition_window_patterns,
+            config.rules[0].condition_window_patterns
+        );
+        assert_eq!(mapper.commands[0].posix_script, "printf test");
+        assert_eq!(mapper.commands[0].powershell_script, "Write-Output test");
+    }
+
+    #[test]
     fn used_commands_skips_orphans() {
         let command = |id: &str| Command {
             id: id.into(),
             name: String::new(),
-            linux: "ls".into(),
-            windows: "ls".into(),
+            posix_script: "ls".into(),
+            powershell_script: "ls".into(),
             working_directory: None,
         };
-        let mut rule = LayerRule::new("r1".into(), "KeyA");
+        let mut rule = KeyRule::new("r1".into(), "KeyA");
         rule.tap_action = Some("cmd:used".into());
         let preset = LayoutPreset {
             rules: vec![rule],
             commands: vec![command("used"), command("orphan")],
             ..LayoutPreset::default()
         };
-        assert_eq!(preset.used_commands(), 1);
+        assert_eq!(preset.used_command_count(), 1);
         let mut preset = preset;
-        preset.prune_commands();
+        preset.remove_unused_commands();
         assert_eq!(preset.commands, vec![command("used")]);
     }
 }

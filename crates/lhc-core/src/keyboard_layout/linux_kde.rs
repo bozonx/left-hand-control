@@ -17,7 +17,7 @@ use std::time::Duration;
 
 use zbus::blocking::{Connection, Proxy};
 
-use super::LayoutInfo;
+use super::KeyboardLayoutInfo;
 
 /// Pause before the signal watcher reconnects.
 const RECONNECT_DELAY: Duration = Duration::from_secs(2);
@@ -44,15 +44,15 @@ fn keyboard_proxy(conn: &Connection) -> Result<Proxy<'static>, String> {
     Proxy::new(conn, SERVICE, OBJECT, IFACE).map_err(|e| format!("create keyboard proxy: {e}"))
 }
 
-pub fn current() -> Result<Option<LayoutInfo>, String> {
+pub fn current() -> Result<Option<KeyboardLayoutInfo>, String> {
     current_with_proxy(&keyboard_proxy(session_bus()?)?)
 }
 
-pub fn refresh_cache() -> Result<Option<LayoutInfo>, String> {
+pub fn refresh_cache() -> Result<Option<KeyboardLayoutInfo>, String> {
     current()
 }
 
-pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
+pub fn available_layouts() -> Result<Vec<KeyboardLayoutInfo>, String> {
     let proxy = keyboard_proxy(session_bus()?)?;
     let list = match call_list(&proxy)? {
         Some(v) => v,
@@ -62,10 +62,10 @@ pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
     Ok(list
         .into_iter()
         .enumerate()
-        .map(|(idx, entry)| LayoutInfo {
-            short: entry.0,
-            display: entry.1,
-            long: entry.2,
+        .map(|(idx, entry)| KeyboardLayoutInfo {
+            code: entry.0,
+            display_label: entry.1,
+            name: entry.2,
             variant: variants.get(idx).cloned().unwrap_or_default(),
             index: idx as u32,
             backend: "linux-kde",
@@ -167,7 +167,7 @@ fn emit_current(proxy: &Proxy<'_>) {
     }
 }
 
-fn current_with_proxy(proxy: &Proxy<'_>) -> Result<Option<LayoutInfo>, String> {
+fn current_with_proxy(proxy: &Proxy<'_>) -> Result<Option<KeyboardLayoutInfo>, String> {
     let list = match call_list(proxy)? {
         Some(v) => v,
         None => return Ok(None),
@@ -186,10 +186,10 @@ fn current_with_proxy(proxy: &Proxy<'_>) -> Result<Option<LayoutInfo>, String> {
         .get(position)
         .cloned()
         .unwrap_or_default();
-    let info = LayoutInfo {
-        short: entry.0,
-        display: entry.1,
-        long: entry.2,
+    let info = KeyboardLayoutInfo {
+        code: entry.0,
+        display_label: entry.1,
+        name: entry.2,
         variant,
         index: idx,
         backend: "linux-kde",

@@ -1,20 +1,20 @@
-//! Compiles an `AppConfig` into the engine's rule, layer and macro tables.
+//! Compiles an `MapperConfig` into the engine's rule, layer and macro tables.
 
 use super::Engine;
-use super::model::{ActionDef, HoldMode, MacroDef, RuleEntry, TapMode};
+use super::model::{CompiledAction, CompiledMacro, HoldOutputMode, RuleEntry, TapMode};
 use super::state::{ChordState, CompiledLayout, LayerStack, MacroRunner, VirtualKeys};
 use crate::mapper::action::{MacroStepItem, parse_action, pause_duration};
 use crate::mapper::builtin_macros::BUILTIN_MACROS;
-use crate::mapper::config::{ActionSpec, AppConfig};
+use crate::mapper::config::{ActionSpec, MapperConfig};
 use crate::mapper::key_code::KeyCode;
 use crate::mapper::keys::code_to_key;
-use crate::mapper::system::{self, SysCommand};
+use crate::mapper::system::{self, ProcessInvocation};
 use crate::profile::actions::{Action, MAX_MACRO_DEPTH, MAX_MACRO_STEPS};
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 impl Engine {
-    pub fn new(cfg: &AppConfig) -> Self {
+    pub fn new(cfg: &MapperConfig) -> Self {
         let in_development = cfg.settings.in_development.unwrap_or(true);
         let default_hold = Duration::from_millis(cfg.settings.default_hold_timeout_ms.max(1));
         let default_double_tap =
@@ -24,8 +24,8 @@ impl Engine {
 
         // Build the macro table first so tap / keymap actions can reference
         // macros by their fully qualified action strings.
-        let mut macros: HashMap<String, MacroDef> = HashMap::new();
-        let mut commands: HashMap<String, SysCommand> = HashMap::new();
+        let mut macros: HashMap<String, CompiledMacro> = HashMap::new();
+        let mut commands: HashMap<String, ProcessInvocation> = HashMap::new();
         // Commands of the layout without a script for this OS.
         let mut foreign_commands: HashSet<String> = HashSet::new();
 
@@ -62,7 +62,7 @@ impl Engine {
             id: &str,
             raw_steps: Vec<&str>,
             raw_user_macros: &HashMap<String, &crate::mapper::config::Macro>,
-            commands: &HashMap<String, SysCommand>,
+            commands: &HashMap<String, ProcessInvocation>,
             foreign_commands: &HashSet<String>,
             depth: usize,
             remaining: &mut usize,
@@ -176,7 +176,7 @@ impl Engine {
             }
             macros.insert(
                 format!("builtin:{}", sys.id),
-                MacroDef {
+                CompiledMacro {
                     steps,
                     step_pause: default_step_pause,
                     mod_delay: default_mod_delay,
@@ -212,7 +212,7 @@ impl Engine {
                 .unwrap_or(default_mod_delay);
             macros.insert(
                 format!("macro:{}", m.id),
-                MacroDef {
+                CompiledMacro {
                     steps,
                     step_pause,
                     mod_delay,
@@ -295,27 +295,27 @@ impl Engine {
                 Some(r.layer_id.clone())
             };
             let hold = match &r.hold_action {
-                _ if behavior == HoldBehavior::Action => HoldMode::Swallow,
+                _ if behavior == HoldBehavior::Action => HoldOutputMode::Swallow,
                 ActionSpec::Native if layer_id.is_some() || long_hold.is_some() => {
-                    HoldMode::Swallow
+                    HoldOutputMode::Swallow
                 }
                 ActionSpec::Native if keys.len() > 1 => {
-                    HoldMode::Keystroke(crate::mapper::action::Keystroke {
+                    HoldOutputMode::Keystroke(crate::mapper::action::Keystroke {
                         mods: keys[..keys.len() - 1].to_vec(),
                         key: keys[keys.len() - 1],
                     })
                 }
-                ActionSpec::Native => HoldMode::Native,
-                ActionSpec::Swallow => HoldMode::Swallow,
+                ActionSpec::Native => HoldOutputMode::Native,
+                ActionSpec::Swallow => HoldOutputMode::Swallow,
                 ActionSpec::Action(s) => match parse_action(s) {
-                    Some(ks) => HoldMode::Keystroke(ks),
+                    Some(ks) => HoldOutputMode::Keystroke(ks),
                     None => {
                         log::debug!(
                             "[mapper] rule {:?}: unknown hold keystroke {:?} — falling back to native hold",
                             r.key,
                             s
                         );
-                        HoldMode::Native
+                        HoldOutputMode::Native
                     }
                 },
             };
@@ -330,7 +330,7 @@ impl Engine {
             // straight through the kernel → uinput grab.
             if layer_id.is_none()
                 && matches!(tap, TapMode::Native | TapMode::NativeChord(_))
-                && (matches!(hold, HoldMode::Native)
+                && (matches!(hold, HoldOutputMode::Native)
                     || (keys.len() > 1 && matches!(r.hold_action, ActionSpec::Native)))
                 && double_tap.is_none()
                 && long_hold.is_none()
@@ -372,9 +372,9 @@ impl Engine {
                 },
                 double_tap_window,
                 condition_game_mode: r.condition_game_mode.clone(),
-                condition_layouts: r.condition_layouts.clone(),
-                condition_apps_whitelist: r.condition_apps_whitelist.clone(),
-                condition_apps_blacklist: r.condition_apps_blacklist.clone(),
+                condition_keyboard_layouts: r.condition_keyboard_layouts.clone(),
+                condition_window_patterns: r.condition_window_patterns.clone(),
+                condition_excluded_window_patterns: r.condition_excluded_window_patterns.clone(),
             };
             if keys.len() > 1 {
                 chord_rules.push((keys, entry));
@@ -383,7 +383,7 @@ impl Engine {
             }
         }
 
-        let mut layer_maps: HashMap<String, HashMap<KeyCode, ActionDef>> = HashMap::new();
+        let mut layer_maps: HashMap<String, HashMap<KeyCode, CompiledAction>> = HashMap::new();
         let mut layer_hold_mods: HashMap<String, HashSet<KeyCode>> = HashMap::new();
         for (layer_id, km) in &cfg.layer_keymaps {
             let hold_mods: HashSet<KeyCode> = km
@@ -401,14 +401,14 @@ impl Engine {
                     continue;
                 };
                 let def = match action.as_deref() {
-                    None => ActionDef::Swallow,
+                    None => CompiledAction::Swallow,
                     // An empty entry leaves the key to the base layout.
                     Some(s) if s.trim().is_empty() => continue,
                     // An entry that does nothing here (an empty macro, a key
                     // this OS lacks) still covers the key, as a tap action
                     // does: typing the physical key instead would surprise.
                     Some(s) => resolve(s, &format!("keymap {layer_id}.{code}"))
-                        .unwrap_or(ActionDef::Swallow),
+                        .unwrap_or(CompiledAction::Swallow),
                 };
                 m.insert(key, def);
             }
@@ -426,7 +426,7 @@ impl Engine {
                 layer_hold_mods,
                 default_hold,
                 default_mod_delay,
-                combo_term: Duration::from_millis(cfg.settings.combo_timeout_ms),
+                trigger_chord_timeout: Duration::from_millis(cfg.settings.trigger_chord_timeout_ms),
             },
             physical_down: HashSet::new(),
             press_at: HashMap::new(),
@@ -449,26 +449,26 @@ impl Engine {
 /// What an action bound outside a macro does on this system. `None` means
 /// it does nothing (empty, `pause:`, an unknown key or an empty macro); an
 /// action that exists but cannot run here becomes
-/// [`ActionDef::Unavailable`], so firing it reports why nothing happened.
+/// [`CompiledAction::Unavailable`], so firing it reports why nothing happened.
 pub(super) fn resolve_action(
     action: &str,
-    macros: &HashMap<String, MacroDef>,
-    commands: &HashMap<String, SysCommand>,
+    macros: &HashMap<String, CompiledMacro>,
+    commands: &HashMap<String, ProcessInvocation>,
     where_: &str,
-) -> Option<ActionDef> {
-    let unavailable = || Some(ActionDef::Unavailable(action.trim().into()));
+) -> Option<CompiledAction> {
+    let unavailable = || Some(CompiledAction::Unavailable(action.trim().into()));
     match Action::parse(Some(action)) {
         Action::Native | Action::Swallow => None,
         action @ (Action::Macro(_) | Action::BuiltinMacro(_)) => {
             let id = action.format()?;
-            let found = macros.get(&id).cloned().map(ActionDef::Macro);
+            let found = macros.get(&id).cloned().map(CompiledAction::Macro);
             if found.is_none() {
                 log::debug!("[mapper] macro {id:?} unknown or empty ({where_})");
             }
             found
         }
         Action::Command(id) => match commands.get(&id) {
-            Some(cmd) => Some(ActionDef::Command(cmd.clone())),
+            Some(cmd) => Some(CompiledAction::Command(cmd.clone())),
             None => {
                 log::debug!(
                     "[mapper] command {id:?} disabled, without a script for this OS or unknown ({where_})"
@@ -477,27 +477,27 @@ pub(super) fn resolve_action(
             }
         },
         Action::System(name) => match system::resolve(&name) {
-            Some(cmd) => Some(ActionDef::System(cmd)),
+            Some(cmd) => Some(CompiledAction::System(cmd)),
             None => {
                 log::debug!("[mapper] system fn {name:?} not available on this OS/DE ({where_})");
                 unavailable()
             }
         },
         Action::KdeShortcut(shortcut) => match system::resolve_kde_shortcut(&shortcut) {
-            Some(cmd) => Some(ActionDef::System(cmd)),
+            Some(cmd) => Some(CompiledAction::System(cmd)),
             None => {
                 log::debug!("[mapper] KDE shortcut {shortcut:?} not available ({where_})");
                 unavailable()
             }
         },
         Action::App(name) => match system::resolve_app(&name) {
-            Some(cmd) => Some(ActionDef::System(cmd)),
+            Some(cmd) => Some(CompiledAction::System(cmd)),
             None => {
                 log::debug!("[mapper] app action {name:?} not available ({where_})");
                 unavailable()
             }
         },
-        Action::Text(text) => Some(ActionDef::Literal(text)),
+        Action::Text(text) => Some(CompiledAction::Literal(text)),
         Action::Pause(_) => {
             log::debug!("[mapper] pause is only allowed in macros ({where_})");
             None
@@ -507,7 +507,7 @@ pub(super) fn resolve_action(
             unavailable()
         }
         Action::Keys(keys) => {
-            let stroke = parse_action(&keys).map(ActionDef::Stroke);
+            let stroke = parse_action(&keys).map(CompiledAction::Stroke);
             if stroke.is_none() {
                 log::debug!("[mapper] unknown action {keys:?} ({where_})");
             }

@@ -1,7 +1,7 @@
 //! Linux mapper loop I/O: reading grabbed devices, emitting through uinput and
 //! running side effects off the input thread.
 
-use super::super::engine::{Engine, Out};
+use super::super::engine::{Engine, EngineOutput};
 
 /// How long a system D-Bus call may take before it is abandoned.
 const DBUS_CALL_TIMEOUT: Duration = Duration::from_secs(5);
@@ -10,7 +10,7 @@ const WORKER_QUEUE: usize = 32;
 pub(super) use super::super::output::{
     EventSink, LoopDriver, OutputHold, SideEffects, flush_out_with, process_iteration_with,
 };
-use super::super::system::{DbusArg, DbusCall, SysAction, SysCommand};
+use super::super::system::{DbusArg, DbusCall, ProcessInvocation, SystemAction};
 use crate::text_input::portal;
 use evdev::uinput::VirtualDevice;
 use evdev::{Device, EventType, InputEvent, KeyCode, KeyEvent};
@@ -95,11 +95,11 @@ impl SideEffects for RuntimeSideEffects {
         crate::text_input::job::take_failure()
     }
 
-    fn run_system(&mut self, action: &SysAction) {
+    fn run_system(&mut self, action: &SystemAction) {
         run_sys_action(action);
     }
 
-    fn run_command(&mut self, command: &SysCommand) {
+    fn run_command(&mut self, command: &ProcessInvocation) {
         super::super::commands::spawn(command.clone());
     }
 }
@@ -498,31 +498,34 @@ pub(super) fn process_iteration<D: LoopDriver>(
     engine: &mut Engine,
     hold: &mut OutputHold,
     virt: &mut VirtualDevice,
-    out_buf: &mut Vec<Out>,
+    out_buf: &mut Vec<EngineOutput>,
 ) -> Result<(), String> {
     let mut sink = VirtualEventSink { virt };
     let mut effects = RuntimeSideEffects;
     process_iteration_with(driver, engine, hold, &mut sink, &mut effects, out_buf)
 }
 
-pub(super) fn flush_out(virt: &mut VirtualDevice, buf: &mut Vec<Out>) -> Result<(), String> {
+pub(super) fn flush_out(
+    virt: &mut VirtualDevice,
+    buf: &mut Vec<EngineOutput>,
+) -> Result<(), String> {
     let mut sink = VirtualEventSink { virt };
     let mut effects = RuntimeSideEffects;
     flush_out_with(&mut sink, &mut effects, buf)
 }
 
 /// Dispatch a resolved system action on the current OS/DE.
-fn run_sys_action(action: &SysAction) {
+fn run_sys_action(action: &SystemAction) {
     match action {
-        SysAction::Spawn(cmd) => spawn_system(cmd),
-        SysAction::Dbus(call) => call_dbus(call),
-        SysAction::AppEvent(event) => {
+        SystemAction::Spawn(cmd) => spawn_system(cmd),
+        SystemAction::Dbus(call) => call_dbus(call),
+        SystemAction::AppEvent(event) => {
             super::super::emit_app_event(event);
         }
     }
 }
 
-fn spawn_system(cmd: &SysCommand) {
+fn spawn_system(cmd: &ProcessInvocation) {
     let mut c = std::process::Command::new(&cmd.program);
     c.args(&cmd.args);
     c.stdin(std::process::Stdio::null())
@@ -873,7 +876,7 @@ mod tests {
                 flag.store(true, std::sync::atomic::Ordering::SeqCst);
             }
         });
-        RuntimeSideEffects.run_system(&SysAction::AppEvent("audit-popup-test".into()));
+        RuntimeSideEffects.run_system(&SystemAction::AppEvent("audit-popup-test".into()));
         assert!(received.load(std::sync::atomic::Ordering::SeqCst));
     }
 }

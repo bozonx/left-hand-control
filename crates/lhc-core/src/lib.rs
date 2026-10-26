@@ -13,7 +13,7 @@ pub mod events;
 #[cfg(target_os = "linux")]
 pub mod exec;
 pub mod gamemode;
-pub mod layout;
+pub mod keyboard_layout;
 pub mod mapper;
 pub mod platform;
 pub mod profile;

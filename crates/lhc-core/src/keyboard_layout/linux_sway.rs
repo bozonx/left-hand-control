@@ -12,9 +12,9 @@
 
 #![cfg(target_os = "linux")]
 
-use super::LayoutInfo;
+use super::KeyboardLayoutInfo;
 
-pub fn current() -> Result<Option<LayoutInfo>, String> {
+pub fn current() -> Result<Option<KeyboardLayoutInfo>, String> {
     Ok(None)
 }
 

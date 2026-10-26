@@ -6,12 +6,12 @@ impl Engine {
     /// Promote every rule currently in WaitingDecision to HoldActive
     /// (hold gets committed). Called from `on_press` for any new key to
     /// implement "interrupt on other key press".
-    pub(super) fn commit_waiting_decisions(&mut self, out: &mut Vec<Out>) {
+    pub(super) fn commit_waiting_decisions(&mut self, out: &mut Vec<EngineOutput>) {
         let keys: Vec<KeyCode> = self
             .pending
             .iter()
             .filter(|(_, p)| {
-                p.rule.long_hold.is_none() && matches!(p.phase, Phase::WaitingDecision { .. })
+                p.rule.long_hold.is_none() && matches!(p.phase, RulePhase::WaitingDecision { .. })
             })
             .map(|(k, _)| *k)
             .collect();
@@ -24,7 +24,7 @@ impl Engine {
     /// mode there is at most one (further rule keys are buffered).
     pub(super) fn deciding_key(&self) -> Option<KeyCode> {
         self.pending.iter().find_map(|(k, p)| {
-            (p.rule.long_hold.is_none() && matches!(p.phase, Phase::WaitingDecision { .. }))
+            (p.rule.long_hold.is_none() && matches!(p.phase, RulePhase::WaitingDecision { .. }))
                 .then_some(*k)
         })
     }
@@ -43,7 +43,7 @@ impl Engine {
         key: KeyCode,
         down: bool,
         now: Instant,
-        out: &mut Vec<Out>,
+        out: &mut Vec<EngineOutput>,
     ) -> bool {
         let Some(deciding) = self.deciding_key() else {
             return false;
@@ -105,7 +105,7 @@ impl Engine {
 
     /// Commit the current deciding key as a hold, then replay any buffered
     /// events in order.
-    pub(super) fn resolve_deciding_as_hold(&mut self, out: &mut Vec<Out>) {
+    pub(super) fn resolve_deciding_as_hold(&mut self, out: &mut Vec<EngineOutput>) {
         if let Some(key) = self.deciding_key() {
             self.commit_hold(key, out);
         }
@@ -116,7 +116,7 @@ impl Engine {
     /// resolved. Each event carries its original timestamp so downstream
     /// deadlines (a replayed rule key opening its own decision) stay
     /// anchored to when the key was physically pressed.
-    pub(super) fn drain_decision_buffer(&mut self, out: &mut Vec<Out>) {
+    pub(super) fn drain_decision_buffer(&mut self, out: &mut Vec<EngineOutput>) {
         if self.decision_buffer.is_empty() {
             return;
         }
@@ -128,21 +128,26 @@ impl Engine {
 
     /// Commit a pending rule to HoldActive and emit the corresponding
     /// press side-effect (layer push, native key-down, keystroke-down).
-    pub(super) fn commit_hold(&mut self, key: KeyCode, out: &mut Vec<Out>) {
+    pub(super) fn commit_hold(&mut self, key: KeyCode, out: &mut Vec<EngineOutput>) {
         let Some(p) = self.pending.get_mut(&key) else {
             return;
         };
-        if !matches!(p.phase, Phase::WaitingDecision { .. }) {
+        if !matches!(p.phase, RulePhase::WaitingDecision { .. }) {
             return;
         }
         let rule = p.rule.clone();
         {
-            p.phase = Phase::HoldActive;
+            p.phase = RulePhase::HoldActive;
         }
         self.commit_hold_with(&rule, key, out);
     }
 
-    pub(super) fn commit_hold_with(&mut self, rule: &RuleEntry, key: KeyCode, out: &mut Vec<Out>) {
+    pub(super) fn commit_hold_with(
+        &mut self,
+        rule: &RuleEntry,
+        key: KeyCode,
+        out: &mut Vec<EngineOutput>,
+    ) {
         if let Some(id) = &rule.layer_id {
             self.layers.push(id.clone());
             self.layers
@@ -155,23 +160,28 @@ impl Engine {
                 });
         }
         match &rule.hold {
-            HoldMode::Native => {
-                out.push(Out::KeyRaw { key, down: true });
+            HoldOutputMode::Native => {
+                out.push(EngineOutput::KeyRaw { key, down: true });
                 self.virt
                     .emitted
                     .insert(key, Keystroke { mods: vec![], key });
             }
-            HoldMode::Swallow => {
+            HoldOutputMode::Swallow => {
                 // Nothing — physical key is eaten.
             }
-            HoldMode::Keystroke(ks) => {
+            HoldOutputMode::Keystroke(ks) => {
                 self.emit_stroke_press(key, ks.clone(), out);
             }
         }
     }
 
     /// Undo whatever `commit_hold_with` did for this rule key.
-    pub(super) fn release_hold_with(&mut self, rule: &RuleEntry, key: KeyCode, out: &mut Vec<Out>) {
+    pub(super) fn release_hold_with(
+        &mut self,
+        rule: &RuleEntry,
+        key: KeyCode,
+        out: &mut Vec<EngineOutput>,
+    ) {
         if let Some(id) = &rule.layer_id {
             let mut held_mods = Vec::new();
             if let Some(triggers) = self.layers.triggers.get_mut(id) {
@@ -185,14 +195,14 @@ impl Engine {
             self.layers.pop(id);
             let mods = self.virt.take_releasable_mods(&held_mods);
             if !mods.is_empty() {
-                out.push(Out::ReleaseMods(mods));
+                out.push(EngineOutput::ReleaseMods(mods));
             }
         }
         match &rule.hold {
-            HoldMode::Native | HoldMode::Keystroke(_) => {
+            HoldOutputMode::Native | HoldOutputMode::Keystroke(_) => {
                 self.release_emitted(key, out);
             }
-            HoldMode::Swallow => {}
+            HoldOutputMode::Swallow => {}
         }
     }
 }

@@ -61,16 +61,16 @@ fn undetected_game_mode_counts_as_off() {
         trigger_keys: vec![],
         tap: TapMode::Native,
         layer_id: None,
-        hold: HoldMode::Swallow,
+        hold: HoldOutputMode::Swallow,
         long_hold: None,
         long_hold_timeout: Duration::from_secs(1),
         double_tap: None,
         hold_timeout: Duration::from_millis(200),
         double_tap_window: Duration::from_millis(200),
         condition_game_mode: Some(GameModeCondition::On),
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
     };
 
     assert!(!rule_passes_conditions(&rule, &ctx));
@@ -96,16 +96,16 @@ fn game_mode_condition_passes_when_cached_state_matches() {
         trigger_keys: vec![],
         tap: TapMode::Native,
         layer_id: None,
-        hold: HoldMode::Swallow,
+        hold: HoldOutputMode::Swallow,
         long_hold: None,
         long_hold_timeout: Duration::from_secs(1),
         double_tap: None,
         hold_timeout: Duration::from_millis(200),
         double_tap_window: Duration::from_millis(200),
         condition_game_mode: Some(GameModeCondition::On),
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
     };
 
     assert!(rule_passes_conditions(&rule, &ctx));
@@ -113,14 +113,13 @@ fn game_mode_condition_passes_when_cached_state_matches() {
 
 #[test]
 fn duplicate_key_rules_use_first_matching_condition() {
-
     let mut cfg = empty_cfg();
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: Some(vec!["firefox".into()]),
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: Some(vec!["firefox".into()]),
+        condition_excluded_window_patterns: None,
         key: "KeyQ".into(),
         layer_id: String::new(),
         tap_action: ActionSpec::Action("KeyA".into()),
@@ -136,9 +135,9 @@ fn duplicate_key_rules_use_first_matching_condition() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "KeyQ".into(),
         layer_id: String::new(),
         tap_action: ActionSpec::Action("KeyB".into()),
@@ -156,8 +155,8 @@ fn duplicate_key_rules_use_first_matching_condition() {
     engine.set_context_source(Box::new(AutoSwitchContext::default));
     let mut out = Vec::new();
     let now = Instant::now();
-    engine.handle(KeyCode::KEY_Q, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_Q, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_Q,
         false,
         now + Duration::from_millis(10),
@@ -166,6 +165,6 @@ fn duplicate_key_rules_use_first_matching_condition() {
 
     assert!(matches!(
         out.as_slice(),
-        [Out::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_B
+        [EngineOutput::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_B
     ));
 }

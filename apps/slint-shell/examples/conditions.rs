@@ -10,7 +10,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     bind_document(&ui, &document);
     document.edit(slint_shell::document::View::Library, |config| {
         config.update_layout(|layout| {
-            layout.rules = vec![lhc_core::profile::model::LayerRule::new(
+            layout.rules = vec![lhc_core::profile::model::KeyRule::new(
                 "r".to_string(),
                 "F13",
             )];

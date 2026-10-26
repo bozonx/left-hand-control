@@ -1,7 +1,7 @@
 //! Rule checks run before the mapper starts.
 
 use super::actions::{self, Action};
-use super::model::{AppConfig, LayerRule};
+use super::model::{KeyRule, ResolvedAppConfig};
 use std::collections::{BTreeMap, HashSet};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -97,15 +97,15 @@ impl std::fmt::Display for RuleIssue {
     }
 }
 
-pub fn analyze_rules(config: &AppConfig) -> Vec<RuleIssue> {
+pub fn analyze_rules(config: &ResolvedAppConfig) -> Vec<RuleIssue> {
     let layer_ids: HashSet<&str> = config
         .layers
         .iter()
         .map(|layer| layer.id.as_str())
         .collect();
-    let mut by_trigger: BTreeMap<Vec<&str>, Vec<&LayerRule>> = BTreeMap::new();
+    let mut by_trigger: BTreeMap<Vec<&str>, Vec<&KeyRule>> = BTreeMap::new();
     let mut issues = Vec::new();
-    let issue = |code, rule: &LayerRule, trigger: Option<&str>| RuleIssue {
+    let issue = |code, rule: &KeyRule, trigger: Option<&str>| RuleIssue {
         code,
         rule_id: rule.id.clone(),
         trigger: trigger.map(str::to_owned),
@@ -171,7 +171,7 @@ pub fn analyze_rules(config: &AppConfig) -> Vec<RuleIssue> {
 
 /// Check the complete active configuration, including actions outside rules.
 /// `trigger` carries the document path for issues outside a rule.
-pub fn analyze(config: &AppConfig) -> Vec<RuleIssue> {
+pub fn analyze(config: &ResolvedAppConfig) -> Vec<RuleIssue> {
     let mut issues = analyze_rules(config);
     let mut add = |code, path: String| {
         issues.push(RuleIssue {
@@ -214,9 +214,9 @@ pub fn analyze(config: &AppConfig) -> Vec<RuleIssue> {
                 );
             }
         }
-        if list(&rule.condition_apps_whitelist)
+        if list(&rule.condition_window_patterns)
             .iter()
-            .chain(list(&rule.condition_apps_blacklist))
+            .chain(list(&rule.condition_excluded_window_patterns))
             .any(invalid_pattern)
         {
             add(
@@ -294,13 +294,18 @@ pub fn analyze(config: &AppConfig) -> Vec<RuleIssue> {
         .enumerate()
         .filter(|(_, rule)| rule.enabled)
     {
-        if rule.conditions.apps.iter().any(invalid_pattern) {
+        if rule.conditions.window_patterns.iter().any(invalid_pattern) {
             add(
                 RuleIssueCode::InvalidCondition,
                 format!("settings.autoRules[{index}].when.windows"),
             );
         }
-        if rule.conditions.excluded_apps.iter().any(invalid_pattern) {
+        if rule
+            .conditions
+            .excluded_window_patterns
+            .iter()
+            .any(invalid_pattern)
+        {
             add(
                 RuleIssueCode::InvalidCondition,
                 format!("settings.autoRules[{index}].when.excludeWindows"),
@@ -314,7 +319,7 @@ fn list(value: &Option<Vec<String>>) -> &[String] {
     value.as_deref().unwrap_or_default()
 }
 
-fn game(rule: &LayerRule) -> Option<&str> {
+fn game(rule: &KeyRule) -> Option<&str> {
     rule.condition_game_mode
         .as_deref()
         .filter(|mode| matches!(*mode, "on" | "off"))
@@ -331,11 +336,14 @@ fn apps_exclude(whitelist: &[String], blacklist: &[String]) -> bool {
         })
 }
 
-fn conditions_overlap(a: &LayerRule, b: &LayerRule) -> bool {
+fn conditions_overlap(a: &KeyRule, b: &KeyRule) -> bool {
     if game(a).is_some() && game(b).is_some() && game(a) != game(b) {
         return false;
     }
-    let (a_layouts, b_layouts) = (list(&a.condition_layouts), list(&b.condition_layouts));
+    let (a_layouts, b_layouts) = (
+        list(&a.condition_keyboard_layouts),
+        list(&b.condition_keyboard_layouts),
+    );
     if !a_layouts.is_empty()
         && !b_layouts.is_empty()
         && !a_layouts.iter().any(|layout| b_layouts.contains(layout))
@@ -343,30 +351,31 @@ fn conditions_overlap(a: &LayerRule, b: &LayerRule) -> bool {
         return false;
     }
     !apps_exclude(
-        list(&a.condition_apps_whitelist),
-        list(&b.condition_apps_blacklist),
+        list(&a.condition_window_patterns),
+        list(&b.condition_excluded_window_patterns),
     ) && !apps_exclude(
-        list(&b.condition_apps_whitelist),
-        list(&a.condition_apps_blacklist),
+        list(&b.condition_window_patterns),
+        list(&a.condition_excluded_window_patterns),
     )
 }
 
-fn conditions_cover(earlier: &LayerRule, later: &LayerRule) -> bool {
-    let layouts = list(&earlier.condition_layouts);
-    let later_layouts = list(&later.condition_layouts);
-    let apps = list(&earlier.condition_apps_whitelist);
-    let later_apps = list(&later.condition_apps_whitelist);
-    let excluded = list(&earlier.condition_apps_blacklist);
-    let later_excluded = list(&later.condition_apps_blacklist);
+fn conditions_cover(earlier: &KeyRule, later: &KeyRule) -> bool {
+    let layouts = list(&earlier.condition_keyboard_layouts);
+    let later_layouts = list(&later.condition_keyboard_layouts);
+    let window_patterns = list(&earlier.condition_window_patterns);
+    let later_apps = list(&later.condition_window_patterns);
+    let excluded = list(&earlier.condition_excluded_window_patterns);
+    let later_excluded = list(&later.condition_excluded_window_patterns);
     conditions_overlap(earlier, later)
         && (game(earlier).is_none() || game(earlier) == game(later))
         && (layouts.is_empty()
             || (!later_layouts.is_empty()
                 && later_layouts.iter().all(|layout| layouts.contains(layout))))
-        && (apps.is_empty()
+        && (window_patterns.is_empty()
             || (!later_apps.is_empty()
                 && later_apps.iter().all(|pattern| {
-                    apps.iter()
+                    window_patterns
+                        .iter()
                         .any(|outer| super::app_match::covers(outer, pattern))
                 })))
         && excluded.iter().all(|pattern| {
@@ -377,7 +386,7 @@ fn conditions_cover(earlier: &LayerRule, later: &LayerRule) -> bool {
 }
 
 /// Drop disabled rules and drafts without a trigger.
-pub fn runtime_rules(config: &mut AppConfig) {
+pub fn retain_runtime_rules(config: &mut ResolvedAppConfig) {
     config
         .rules
         .retain(|rule| rule.is_enabled() && rule.has_trigger());
@@ -388,7 +397,7 @@ mod tests {
     use super::*;
     use crate::profile::model::{AppSettings, Layer, LayoutPreset};
 
-    fn config(rules: Vec<LayerRule>) -> AppConfig {
+    fn config(rules: Vec<KeyRule>) -> ResolvedAppConfig {
         let preset = LayoutPreset {
             layers: vec![Layer {
                 id: "nav".into(),
@@ -398,17 +407,17 @@ mod tests {
             rules,
             ..LayoutPreset::initial()
         };
-        AppConfig::from_parts(AppSettings::default(), preset, None)
+        ResolvedAppConfig::from_parts(AppSettings::default(), preset, None)
     }
 
-    fn rule(id: &str, key: &str) -> LayerRule {
-        LayerRule::new(id.into(), key)
+    fn rule(id: &str, key: &str) -> KeyRule {
+        KeyRule::new(id.into(), key)
     }
 
     #[test]
     fn incomplete_rule_drafts_do_not_block_runtime() {
         let mut draft = rule("draft", "");
-        draft.condition_apps_whitelist = Some(vec!["title:".into()]);
+        draft.condition_window_patterns = Some(vec!["title:".into()]);
         let issues = analyze(&config(vec![draft]));
         assert_eq!(issues.len(), 1);
         assert_eq!(issues[0].code, RuleIssueCode::MissingTrigger);
@@ -425,7 +434,11 @@ mod tests {
         )
         .unwrap()
         .unwrap();
-        let issues = analyze(&AppConfig::from_parts(AppSettings::default(), layout, None));
+        let issues = analyze(&ResolvedAppConfig::from_parts(
+            AppSettings::default(),
+            layout,
+            None,
+        ));
         assert_eq!(
             issues
                 .iter()
@@ -452,7 +465,7 @@ mod tests {
         )
         .unwrap()
         .unwrap();
-        let config = AppConfig::from_parts(AppSettings::default(), layout, None);
+        let config = ResolvedAppConfig::from_parts(AppSettings::default(), layout, None);
         let issues = analyze(&config);
         for code in [
             RuleIssueCode::InvalidLayerKey,
@@ -482,7 +495,7 @@ mod tests {
             let text = serde_json::json!({"schemaVersion":1,"macros":[{"id":"m","steps":[step]}]})
                 .to_string();
             let layout = super::super::layout_file::parse(&text).unwrap().unwrap();
-            let config = AppConfig::from_parts(AppSettings::default(), layout, None);
+            let config = ResolvedAppConfig::from_parts(AppSettings::default(), layout, None);
             assert!(
                 analyze(&config)
                     .iter()
@@ -495,7 +508,12 @@ mod tests {
                 .to_string();
             let layout = super::super::layout_file::parse(&text).unwrap().unwrap();
             assert!(
-                analyze(&AppConfig::from_parts(AppSettings::default(), layout, None)).is_empty()
+                analyze(&ResolvedAppConfig::from_parts(
+                    AppSettings::default(),
+                    layout,
+                    None
+                ))
+                .is_empty()
             );
         }
     }
@@ -554,13 +572,13 @@ mod tests {
         assert!(analyze_rules(&config(vec![a.clone(), b.clone()])).is_empty());
         a.condition_game_mode = None;
         b.condition_game_mode = Some("ignore".into());
-        a.condition_layouts = Some(vec!["en".into()]);
-        b.condition_layouts = Some(vec!["ru".into()]);
+        a.condition_keyboard_layouts = Some(vec!["en".into()]);
+        b.condition_keyboard_layouts = Some(vec!["ru".into()]);
         assert!(analyze_rules(&config(vec![a.clone(), b.clone()])).is_empty());
-        a.condition_layouts = None;
-        b.condition_layouts = Some(vec![]);
-        a.condition_apps_whitelist = Some(vec!["Firefox".into()]);
-        b.condition_apps_blacklist = Some(vec!["fire*".into()]);
+        a.condition_keyboard_layouts = None;
+        b.condition_keyboard_layouts = Some(vec![]);
+        a.condition_window_patterns = Some(vec!["Firefox".into()]);
+        b.condition_excluded_window_patterns = Some(vec!["fire*".into()]);
         assert!(analyze_rules(&config(vec![a.clone(), b.clone()])).is_empty());
         assert!(analyze_rules(&config(vec![b, a])).is_empty());
     }
@@ -568,7 +586,7 @@ mod tests {
     #[test]
     fn conditional_rule_before_fallback_overlaps_but_reverse_shadows() {
         let mut conditional = rule("app", "KeyQ");
-        conditional.condition_apps_whitelist = Some(vec!["firefox".into()]);
+        conditional.condition_window_patterns = Some(vec!["firefox".into()]);
         let fallback = rule("fallback", "KeyQ");
         let issues = analyze_rules(&config(vec![conditional.clone(), fallback.clone()]));
         assert_eq!(issues[0].code, RuleIssueCode::DuplicateTrigger);
@@ -582,10 +600,10 @@ mod tests {
     fn partial_layout_overlap_and_title_patterns_are_not_declared_disjoint() {
         let mut a = rule("a", "KeyQ");
         let mut b = rule("b", "KeyQ");
-        a.condition_layouts = Some(vec!["en".into(), "ru".into()]);
-        b.condition_layouts = Some(vec!["ru".into(), "de".into()]);
-        a.condition_apps_whitelist = Some(vec!["firefox".into()]);
-        b.condition_apps_whitelist = Some(vec!["title:YouTube".into()]);
+        a.condition_keyboard_layouts = Some(vec!["en".into(), "ru".into()]);
+        b.condition_keyboard_layouts = Some(vec!["ru".into(), "de".into()]);
+        a.condition_window_patterns = Some(vec!["firefox".into()]);
+        b.condition_window_patterns = Some(vec!["title:YouTube".into()]);
         let issues = analyze_rules(&config(vec![a, b]));
         assert_eq!(issues[0].code, RuleIssueCode::DuplicateTrigger);
     }
@@ -595,7 +613,7 @@ mod tests {
         let mut disabled = rule("d", "KeyA");
         disabled.enabled = Some(false);
         let mut config = config(vec![disabled, rule("draft", ""), rule("ok", "KeyB")]);
-        runtime_rules(&mut config);
+        retain_runtime_rules(&mut config);
         assert_eq!(config.rules.len(), 1);
         assert_eq!(config.rules[0].id, "ok");
     }

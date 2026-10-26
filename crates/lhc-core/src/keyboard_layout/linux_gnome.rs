@@ -2,21 +2,21 @@
 
 use std::time::Duration;
 
-use super::LayoutInfo;
+use super::KeyboardLayoutInfo;
 use crate::platform::gnome;
 
-fn info(source: gnome::InputSource) -> LayoutInfo {
-    LayoutInfo {
-        short: source.short,
+fn info(source: gnome::InputSource) -> KeyboardLayoutInfo {
+    KeyboardLayoutInfo {
+        code: source.short,
         variant: source.variant,
-        display: source.display,
-        long: source.long,
+        display_label: source.display,
+        name: source.long,
         index: source.index,
         backend: "linux-gnome",
     }
 }
 
-pub fn current() -> Result<Option<LayoutInfo>, String> {
+pub fn current() -> Result<Option<KeyboardLayoutInfo>, String> {
     let snapshot = match gnome::snapshot(false) {
         Ok(snapshot) => snapshot,
         Err(error) => {
@@ -39,13 +39,13 @@ pub fn current() -> Result<Option<LayoutInfo>, String> {
 }
 
 fn clear_layout() {
-    crate::runtime_state::set_layout(None);
+    crate::runtime_state::set_keyboard_layout(None);
     if let Ok(mut last) = super::LAST_PUBLISHED.lock() {
         *last = None;
     }
 }
 
-pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
+pub fn available_layouts() -> Result<Vec<KeyboardLayoutInfo>, String> {
     Ok(gnome::snapshot(false)?
         .layouts
         .into_iter()

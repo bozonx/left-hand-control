@@ -9,7 +9,7 @@
 //! implementations (KDE, GNOME, Sway, generic X11) for APIs that are
 //! DE-specific:
 //!
-//!   * `layout::current()` / `layout::start_watcher()`   — which DBus / CLI tool
+//!   * `keyboard_layout::current()` / `keyboard_layout::start_watcher()`   — which DBus / CLI tool
 //!     tells us the active keyboard layout.
 //!   * `mapper::system::resolve()`                       — how to implement
 //!     "system functions" (virtual-desktop switching, etc.)

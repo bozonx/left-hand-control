@@ -20,7 +20,7 @@ impl AutoSwitchContext {
     /// Snapshot of the state cached by the core watchers.
     pub fn current() -> Self {
         Self {
-            system_layout: crate::runtime_state::layout_short(),
+            system_layout: crate::runtime_state::keyboard_layout_code(),
             game_mode_active: crate::runtime_state::game_mode_active(),
             window: crate::runtime_state::active_window(),
         }
@@ -40,19 +40,18 @@ pub fn matches_condition_set(set: &LayoutConditionSet, ctx: &AutoSwitchContext) 
         }
     }
     // Fail closed like rule conditions: an unknown window counts as excluded.
-    if !set.excluded_apps.is_empty()
-        && ctx
-            .window
-            .as_ref()
-            .is_none_or(|window| app_match::any_matches_window(&set.excluded_apps, window))
+    if !set.excluded_window_patterns.is_empty()
+        && ctx.window.as_ref().is_none_or(|window| {
+            app_match::any_matches_window(&set.excluded_window_patterns, window)
+        })
     {
         return false;
     }
-    set.apps.is_empty()
+    set.window_patterns.is_empty()
         || ctx
             .window
             .as_ref()
-            .is_some_and(|window| app_match::any_matches_window(&set.apps, window))
+            .is_some_and(|window| app_match::any_matches_window(&set.window_patterns, window))
 }
 
 /// `available` sorted by `order`; ids missing from `order` keep their
@@ -71,7 +70,7 @@ pub fn order_layout_ids(available: &[String], order: &[String]) -> Vec<String> {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct AutoChoice {
     /// Index of the matching rule; `None` means the default applied.
-    pub rule: Option<usize>,
+    pub matched_rule_index: Option<usize>,
     /// Layout to use; `None` means off (native passthrough).
     pub layout_id: Option<String>,
 }
@@ -88,11 +87,11 @@ pub fn choose(available: &[String], settings: &AppSettings, ctx: &AutoSwitchCont
             rule.enabled && usable(&rule.layout_id) && matches_condition_set(&rule.conditions, ctx)
         })
         .map(|(index, rule)| AutoChoice {
-            rule: Some(index),
+            matched_rule_index: Some(index),
             layout_id: rule.layout_id.clone(),
         })
         .unwrap_or_else(|| AutoChoice {
-            rule: None,
+            matched_rule_index: None,
             layout_id: settings
                 .auto_default_layout_id
                 .clone()
@@ -111,20 +110,25 @@ pub fn covers(outer: &LayoutConditionSet, inner: &LayoutConditionSet) -> bool {
                 .iter()
                 .all(|item| outer.layouts.contains(item)));
     // Every window pattern of `inner` must be covered by one of `outer`.
-    let apps = outer.apps.iter().all(|app| app.trim().is_empty())
-        || (!inner.apps.is_empty()
-            && inner
-                .apps
-                .iter()
-                .all(|app| outer.apps.iter().any(|outer| app_match::covers(outer, app))));
+    let window_patterns = outer
+        .window_patterns
+        .iter()
+        .all(|app| app.trim().is_empty())
+        || (!inner.window_patterns.is_empty()
+            && inner.window_patterns.iter().all(|app| {
+                outer
+                    .window_patterns
+                    .iter()
+                    .any(|outer| app_match::covers(outer, app))
+            }));
     // Every exclusion of `outer` must also be excluded by `inner`.
-    let excluded = outer.excluded_apps.iter().all(|pattern| {
+    let excluded = outer.excluded_window_patterns.iter().all(|pattern| {
         inner
-            .excluded_apps
+            .excluded_window_patterns
             .iter()
             .any(|inner| app_match::covers(inner, pattern))
     });
-    game && layouts && apps && excluded
+    game && layouts && window_patterns && excluded
 }
 
 /// Index of the first enabled rule before `index` that always matches
@@ -144,7 +148,7 @@ pub fn set_mode(settings: &mut AppSettings, mode: LayoutMode) {
         && settings.auto_rules.is_empty()
         && settings.auto_default_layout_id.is_none()
     {
-        settings.auto_default_layout_id = settings.manual_active_layout_id.clone();
+        settings.auto_default_layout_id = settings.manual_layout_id.clone();
     }
     settings.layout_mode = mode;
 }
@@ -153,17 +157,21 @@ pub fn set_mode(settings: &mut AppSettings, mode: LayoutMode) {
 mod tests {
     use super::*;
 
-    fn set(game_mode: Option<&str>, layouts: &[&str], apps: &[&str]) -> LayoutConditionSet {
+    fn set(
+        game_mode: Option<&str>,
+        layouts: &[&str],
+        window_patterns: &[&str],
+    ) -> LayoutConditionSet {
         LayoutConditionSet {
             game_mode: game_mode.map(str::to_owned),
             layouts: layouts.iter().map(|s| s.to_string()).collect(),
-            apps: apps.iter().map(|s| s.to_string()).collect(),
-            excluded_apps: Vec::new(),
+            window_patterns: window_patterns.iter().map(|s| s.to_string()).collect(),
+            excluded_window_patterns: Vec::new(),
         }
     }
 
     fn except(mut set: LayoutConditionSet, excluded: &[&str]) -> LayoutConditionSet {
-        set.excluded_apps = excluded.iter().map(|s| s.to_string()).collect();
+        set.excluded_window_patterns = excluded.iter().map(|s| s.to_string()).collect();
         set
     }
 
@@ -253,21 +261,21 @@ mod tests {
         assert_eq!(
             pick(&settings, "ru", "Blender"),
             AutoChoice {
-                rule: Some(0),
+                matched_rule_index: Some(0),
                 layout_id: None
             }
         );
         assert_eq!(
             pick(&settings, "ru", "Kate"),
             AutoChoice {
-                rule: Some(1),
+                matched_rule_index: Some(1),
                 layout_id: Some("user:B".into())
             }
         );
         assert_eq!(
             pick(&settings, "us", "Kate"),
             AutoChoice {
-                rule: None,
+                matched_rule_index: None,
                 layout_id: Some("user:A".into())
             }
         );
@@ -331,7 +339,7 @@ mod tests {
     #[test]
     fn first_switch_to_auto_keeps_the_single_layout() {
         let mut settings = AppSettings {
-            manual_active_layout_id: Some("user:A".into()),
+            manual_layout_id: Some("user:A".into()),
             ..AppSettings::default()
         };
         set_mode(&mut settings, LayoutMode::Auto);

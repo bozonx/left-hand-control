@@ -5,7 +5,10 @@ use crate::{
     document::Document,
     i18n::Msg,
     pages::{layers, macros, rules},
-    ui::{ActionPicker, PickerBehavior, PickerTarget, PickerTitle, SettingsWindow},
+    ui::{
+        ActionPicker, DefaultAssignmentBehavior, PickerBehavior, PickerTarget, PickerTitle,
+        SettingsWindow,
+    },
 };
 use lhc_core::{
     config_document::ConfigDocument,
@@ -41,8 +44,7 @@ pub(crate) struct PickerRequest {
     pub hold_modifiers: bool,
     pub allow_default: bool,
     pub allow_swallow: bool,
-    pub inherit_default: bool,
-    pub empty_default: bool,
+    pub default_behavior: DefaultAssignmentBehavior,
     /// Holding also activates a layer.
     pub hold_layer: bool,
 }
@@ -63,6 +65,11 @@ impl PickerRequest {
                 PickerTitle::Auto
             },
             allow_default: target == PickerTarget::BaseKey,
+            default_behavior: if target == PickerTarget::QuickAction {
+                DefaultAssignmentBehavior::EmptyCell
+            } else {
+                DefaultAssignmentBehavior::Passthrough
+            },
             ..Self::default()
         }
     }
@@ -80,16 +87,12 @@ impl PickerRequest {
 
     /// Label of the "default" behavior.
     pub(super) fn native_label(&self) -> Msg {
-        if self.inherit_default {
-            Msg::PickerInherit
-        } else if self.mode == PickerMode::QuickAction {
-            Msg::PickerEmptyCell
-        } else if self.empty_default {
-            Msg::PickerNoAction
-        } else if self.hold_layer {
-            Msg::PickerLayerOnly
-        } else {
-            Msg::PickerNative
+        match self.default_behavior {
+            DefaultAssignmentBehavior::Inherit => Msg::PickerInherit,
+            DefaultAssignmentBehavior::EmptyCell => Msg::PickerEmptyCell,
+            DefaultAssignmentBehavior::NoAction => Msg::PickerNoAction,
+            DefaultAssignmentBehavior::LayerOnly => Msg::PickerLayerOnly,
+            DefaultAssignmentBehavior::Passthrough => Msg::PickerNative,
         }
     }
 }

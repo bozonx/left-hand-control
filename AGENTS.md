@@ -84,7 +84,7 @@ crates/lhc-core/
     ├── events.rs             # CoreEvent bus — the only core → shell channel
     ├── mapper/               # engine/, output.rs (shared loop), linux/ (evdev+uinput), windows/ (hooks+SendInput), system.rs, runtime.rs
     ├── text_input/           # text: injection: portal (RemoteDesktop, libei), clipboard, job accounting
-    ├── layout/ gamemode/ active_window/   # system watchers feeding rule conditions
+    ├── keyboard_layout/ gamemode/ active_window/   # system watchers feeding rule conditions
     └── platform/             # OS / DE / session detection, KDE and GNOME integrations
 
 apps/slint-shell/
@@ -128,7 +128,7 @@ docs/                         # development/, design/, testing/, config-format.m
 | Config field, validation, layout file format | `crates/lhc-core/src/profile/`, `config_document/` |
 | Mapper behaviour, key handling, system actions | `crates/lhc-core/src/mapper/` |
 | Text injection (`text:`, popup insertion) | `crates/lhc-core/src/text_input/` |
-| OS/DE detection or watcher | `crates/lhc-core/src/platform/`, `layout/`, `gamemode/`, `active_window/` |
+| OS/DE detection or watcher | `crates/lhc-core/src/platform/`, `keyboard_layout/`, `gamemode/`, `active_window/` |
 | GNOME Shell side | `crates/lhc-core/assets/gnome-extension/` |
 | Settings page | `apps/slint-shell/src/pages/<page>.rs` + `ui/<page>.slint` |
 | Popup content or keys | `apps/slint-shell/src/popup_model.rs`, `ui/popup-*.slint` |

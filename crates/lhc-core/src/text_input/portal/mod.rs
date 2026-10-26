@@ -497,7 +497,7 @@ mod tests {
             None,
             None,
         );
-        crate::layout::refresh_cache().unwrap();
+        crate::keyboard_layout::refresh_cache().unwrap();
         assert!(crate::active_window::detect_active_window_now().is_some());
         crate::text_input::job::start();
         let text = "Привет, ёж 😀";

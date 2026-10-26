@@ -162,7 +162,7 @@ impl LibeiBackend {
         };
         let group = self
             .group
-            .or_else(|| crate::runtime_state::layout().map(|layout| layout.index))
+            .or_else(|| crate::runtime_state::keyboard_layout().map(|layout| layout.index))
             .ok_or(TextInputFailure::LayoutUnknown)?;
         if let Some((cached, table)) = &self.table
             && *cached == (group, self.locked)

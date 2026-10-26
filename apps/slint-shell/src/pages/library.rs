@@ -61,14 +61,14 @@ fn config_error(error: ConfigError) -> Msg {
 fn current_name(config: &ConfigDocument) -> Option<String> {
     config
         .settings()
-        .current_layout_id
+        .editing_layout_id
         .as_deref()
         .and_then(user_layout_name)
         .map(str::to_owned)
 }
 
 fn summary(set: &LayoutConditionSet) -> (GameCondition, String) {
-    let list = [set.layouts.join(", "), set.apps.join(", ")]
+    let list = [set.layouts.join(", "), set.window_patterns.join(", ")]
         .into_iter()
         .filter(|part| !part.is_empty())
         .collect::<Vec<_>>()
@@ -80,8 +80,8 @@ fn condition(game: GameCondition, layouts: &str, apps: &str, excluded: &str) -> 
     LayoutConditionSet {
         game_mode: game_condition_value(game),
         layouts: parse_list(layouts),
-        apps: parse_list(apps),
-        excluded_apps: parse_list(excluded),
+        window_patterns: parse_list(apps),
+        excluded_window_patterns: parse_list(excluded),
     }
 }
 
@@ -139,7 +139,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State) -> Resul
                         0
                     },
                     macros: preset.macros.len() as i32,
-                    commands: preset.used_commands() as i32,
+                    commands: preset.used_command_count() as i32,
                 }
             })
             .collect::<Vec<_>>(),
@@ -182,8 +182,8 @@ fn refresh_auto(ui: &SettingsWindow, document: &Document) {
     let rules = &settings.auto_rules;
     // Without layout detection every language would look unknown.
     let languages: Vec<String> = if rules.iter().any(|rule| !rule.conditions.layouts.is_empty()) {
-        lhc_core::layout::available_layouts()
-            .map(|layouts| layouts.into_iter().map(|layout| layout.short).collect())
+        lhc_core::keyboard_layout::available_layouts()
+            .map(|layouts| layouts.into_iter().map(|layout| layout.code).collect())
             .unwrap_or_default()
     } else {
         Vec::new()
@@ -205,7 +205,7 @@ fn refresh_auto(ui: &SettingsWindow, document: &Document) {
                 AutoRuleView {
                     game,
                     list: list.into(),
-                    excluded: rule.conditions.excluded_apps.join(", ").into(),
+                    excluded: rule.conditions.excluded_window_patterns.join(", ").into(),
                     target,
                     missing,
                     enabled: rule.enabled,
@@ -339,8 +339,8 @@ fn condition_fields(set: Option<LayoutConditionSet>) -> (GameCondition, String, 
         (
             game_condition(set.game_mode.as_deref()),
             super::condition_list(&set.layouts),
-            super::condition_list(&set.apps),
-            super::condition_list(&set.excluded_apps),
+            super::condition_list(&set.window_patterns),
+            super::condition_list(&set.excluded_window_patterns),
         )
     })
     .unwrap_or_default()
@@ -367,7 +367,7 @@ fn library_action(
     match action {
         LibraryAction::Activate => {
             edit(ui, document, state, |config| {
-                config.update_settings(|settings| settings.manual_active_layout_id = Some(id))
+                config.update_settings(|settings| settings.manual_layout_id = Some(id))
             })?;
         }
         LibraryAction::MoveUp | LibraryAction::MoveDown => {
@@ -454,7 +454,7 @@ fn create(
         let created = config.create_library_layout(name, description, source)?;
         if activate_first {
             config.update_settings(|settings| {
-                settings.manual_active_layout_id = Some(user_layout_id(&created));
+                settings.manual_layout_id = Some(user_layout_id(&created));
             })?;
         }
         Ok(created)
@@ -628,12 +628,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let result = doc
             .read()
             .settings()
-            .current_layout_id
+            .editing_layout_id
             .clone()
             .ok_or(Msg::LibrarySelect)
             .and_then(|id| {
                 edit(&ui, doc, state, |config| {
-                    config.update_settings(|settings| settings.manual_active_layout_id = Some(id))
+                    config.update_settings(|settings| settings.manual_layout_id = Some(id))
                 })
             });
         let name = current_name(&doc.read()).unwrap_or_default();

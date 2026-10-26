@@ -7,7 +7,7 @@
 //! diagnostics, which report them without refusing the file.
 
 use super::model::{
-    Command, EmojiPage, HoldBehavior, LEFT_HAND_HOTKEYS, Layer, LayerKeymap, LayerRule,
+    Command, EmojiPage, HoldBehavior, KeyRule, LEFT_HAND_HOTKEYS, Layer, LayerKeymap,
     LayoutConditionSet, LayoutPreset, Macro, MacroStep, QuickAction, QuickActionPage, TapDecision,
 };
 use super::schema::{self, LAYOUT_SCHEMA_VERSION};
@@ -153,8 +153,8 @@ impl WhenDoc {
         Ok(LayoutConditionSet {
             game_mode: self.game_mode.map(|mode| mode.as_str().to_owned()),
             layouts: self.keyboard_layouts,
-            apps: self.windows,
-            excluded_apps: self.exclude_windows,
+            window_patterns: self.windows,
+            excluded_window_patterns: self.exclude_windows,
         })
     }
 
@@ -169,8 +169,8 @@ impl WhenDoc {
         Self {
             game_mode: OnOff::parse(set.game_mode.as_deref()),
             keyboard_layouts: list(&set.layouts),
-            windows: list(&set.apps),
-            exclude_windows: list(&set.excluded_apps),
+            windows: list(&set.window_patterns),
+            exclude_windows: list(&set.excluded_window_patterns),
         }
     }
 }
@@ -464,14 +464,15 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
         if let Some(layer) = &hold.layer {
             non_empty(layer, &what("hold layer"))?;
         }
-        rules.push(LayerRule {
+        rules.push(KeyRule {
             id: rule.id.unwrap_or_default(),
             enabled: (!rule.enabled).then_some(false),
             condition_game_mode: when.game_mode,
-            condition_layouts: (!when.layouts.is_empty()).then_some(when.layouts),
-            condition_apps_whitelist: (!when.apps.is_empty()).then_some(when.apps),
-            condition_apps_blacklist: (!when.excluded_apps.is_empty())
-                .then_some(when.excluded_apps),
+            condition_keyboard_layouts: (!when.layouts.is_empty()).then_some(when.layouts),
+            condition_window_patterns: (!when.window_patterns.is_empty())
+                .then_some(when.window_patterns),
+            condition_excluded_window_patterns: (!when.excluded_window_patterns.is_empty())
+                .then_some(when.excluded_window_patterns),
             key: canonical_trigger(&rule.key),
             layer_id: hold.layer.unwrap_or_default(),
             tap_action,
@@ -513,8 +514,8 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
         commands.push(Command {
             name: command.name.unwrap_or_else(|| command.id.clone()),
             id: command.id,
-            linux: command.unix,
-            windows: command.windows,
+            posix_script: command.unix,
+            powershell_script: command.windows,
             working_directory: command.working_directory.filter(|dir| !dir.is_empty()),
         });
     }
@@ -671,9 +672,9 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
                 enabled: rule.is_enabled(),
                 when: WhenDoc {
                     game_mode: OnOff::parse(rule.condition_game_mode.as_deref()),
-                    keyboard_layouts: list(&rule.condition_layouts),
-                    windows: list(&rule.condition_apps_whitelist),
-                    exclude_windows: list(&rule.condition_apps_blacklist),
+                    keyboard_layouts: list(&rule.condition_keyboard_layouts),
+                    windows: list(&rule.condition_window_patterns),
+                    exclude_windows: list(&rule.condition_excluded_window_patterns),
                 },
                 tap: three_state(&rule.tap_action),
                 double_tap: (!rule.double_tap_action.trim().is_empty()).then(|| TimedActionDoc {
@@ -712,8 +713,8 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
         .map(|command| CommandDoc {
             id: command.id.clone(),
             name: Some(command.name.clone()),
-            unix: command.linux.clone(),
-            windows: command.windows.clone(),
+            unix: command.posix_script.clone(),
+            windows: command.powershell_script.clone(),
             working_directory: command.working_directory.clone().filter(|d| !d.is_empty()),
         })
         .collect();
@@ -1024,13 +1025,16 @@ mod tests {
         assert_eq!(space.hold_action, None);
         assert_eq!(space.hold_behavior(), HoldBehavior::None);
         assert_eq!(space.condition_game_mode.as_deref(), Some("on"));
-        assert_eq!(space.condition_layouts, Some(vec!["us".to_string()]));
         assert_eq!(
-            space.condition_apps_whitelist,
+            space.condition_keyboard_layouts,
+            Some(vec!["us".to_string()])
+        );
+        assert_eq!(
+            space.condition_window_patterns,
             Some(vec!["code".to_string()])
         );
         assert_eq!(
-            space.condition_apps_blacklist,
+            space.condition_excluded_window_patterns,
             Some(vec!["title:x".to_string()])
         );
         let chord = &preset.rules[2];
@@ -1047,7 +1051,7 @@ mod tests {
 
     #[test]
     fn only_the_selected_hold_behaviour_is_saved() {
-        let mut rule = LayerRule::new("r1".into(), "KeyA");
+        let mut rule = KeyRule::new("r1".into(), "KeyA");
         rule.layer_id = "nav".into();
         rule.long_hold_action = "KeyB".into();
         rule.hold_behavior = Some(HoldBehavior::Layer);
@@ -1092,8 +1096,8 @@ mod tests {
         assert_eq!(nav.extra_key_order, ["F15", "F13"]);
         assert_eq!(nav.hold_modifiers, BTreeSet::from(["Tab".to_owned()]));
         assert_eq!(preset.macros[0].steps.len(), 3);
-        assert_eq!(preset.commands[0].linux, "playerctl play-pause");
-        assert_eq!(preset.commands[0].windows, "Start-Process x");
+        assert_eq!(preset.commands[0].posix_script, "playerctl play-pause");
+        assert_eq!(preset.commands[0].powershell_script, "Start-Process x");
         let quick = &preset.quick_action_pages[0];
         assert_eq!(quick.cells["KeyQ"].icon.as_deref(), Some("lock"));
         assert_eq!(quick.cells["KeyW"].name, "");
@@ -1112,7 +1116,7 @@ mod tests {
 
     #[test]
     fn transient_editor_entries_are_not_saved() {
-        let mut rule = LayerRule::new("r1".into(), "");
+        let mut rule = KeyRule::new("r1".into(), "");
         rule.tap_action = Some("KeyA".into());
         let mut preset = LayoutPreset::initial();
         preset.rules.push(rule);
@@ -1132,7 +1136,7 @@ mod tests {
             name: "nav".into(),
             description: None,
         });
-        let keymap = preset.layer_keymap_mut("nav");
+        let keymap = preset.get_or_create_layer_keymap("nav");
         keymap.keys.insert("KeyQ".into(), None);
         keymap.hold_modifiers.insert("KeyQ".into());
         keymap.hold_modifiers.insert("Tab".into());

@@ -139,7 +139,7 @@ fn toggle_maximize_vertical() -> Result<(), String> {
 
 pub(super) fn run(action: WindowsAction) -> Result<(), String> {
     match action {
-        WindowsAction::SwitchLayout(n) => crate::layout::set(n - 1),
+        WindowsAction::SwitchLayout(n) => crate::keyboard_layout::set(n - 1),
         WindowsAction::WindowClose => system_command(SC_CLOSE),
         WindowsAction::WindowMinimize => system_command(SC_MINIMIZE),
         WindowsAction::WindowMaximize => {

@@ -18,6 +18,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Internal APIs distinguish system keyboard layouts, edited layouts and mapper configuration; engine output, rule execution, window conditions and process invocations use explicit names. The action picker represents its unassigned behavior with a single enum. Existing configuration files and CLI/IPC formats remain compatible.
 - Confirmation dialogs focus their primary button after the shared frame initializes, so Enter confirms reliably.
 
 - Game mode is off unless the in-development setting is on: detection does not poll, manual On is ignored, and popup hotkeys are no longer blocked by a hidden game mode.

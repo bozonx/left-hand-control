@@ -19,7 +19,7 @@
 //!
 //! Shell contract:
 //!   * `current()` / `available_layouts()` / `set()` for one-shot calls
-//!   * `CoreEvent::LayoutChanged(LayoutInfo)` from the watcher
+//!   * `CoreEvent::LayoutChanged(KeyboardLayoutInfo)` from the watcher
 //! ```
 
 use serde::Serialize;
@@ -40,13 +40,16 @@ mod macos;
 mod windows;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
-pub struct LayoutInfo {
+pub struct KeyboardLayoutInfo {
     /// Short code, e.g. "us", "ru".
-    pub short: String,
+    #[serde(rename = "short")]
+    pub code: String,
     /// Optional user-visible label, e.g. "lat"; not an XKB variant.
-    pub display: String,
+    #[serde(rename = "display")]
+    pub display_label: String,
     /// Long human-readable name, e.g. "English (US)".
-    pub long: String,
+    #[serde(rename = "long")]
+    pub name: String,
     /// XKB variant, e.g. "dvorak"; empty for the base layout or when unknown.
     pub variant: String,
     /// Zero-based index among the configured layouts.
@@ -97,20 +100,22 @@ fn watcher_stop_requested() -> bool {
 /// short code or variant differs from the last published value.
 /// Backends publish only observations from the current session.
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
-pub(crate) fn publish(info: &LayoutInfo) {
-    crate::runtime_state::set_layout(Some(crate::runtime_state::LayoutSelection {
-        short: info.short.clone(),
-        variant: info.variant.clone(),
-        index: info.index,
-    }));
+pub(crate) fn publish(info: &KeyboardLayoutInfo) {
+    crate::runtime_state::set_keyboard_layout(Some(
+        crate::runtime_state::KeyboardLayoutSelection {
+            code: info.code.clone(),
+            variant: info.variant.clone(),
+            index: info.index,
+        },
+    ));
     if should_publish(info) {
         crate::events::emit(crate::events::CoreEvent::LayoutChanged(info.clone()));
     }
 }
 
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
-fn should_publish(info: &LayoutInfo) -> bool {
-    let key = (info.short.clone(), info.display.clone());
+fn should_publish(info: &KeyboardLayoutInfo) -> bool {
+    let key = (info.code.clone(), info.display_label.clone());
     match LAST_PUBLISHED.lock() {
         Ok(mut last) => {
             if last.as_ref() == Some(&key) {
@@ -123,7 +128,7 @@ fn should_publish(info: &LayoutInfo) -> bool {
     }
 }
 
-pub fn current() -> Result<Option<LayoutInfo>, String> {
+pub fn current() -> Result<Option<KeyboardLayoutInfo>, String> {
     #[cfg(target_os = "linux")]
     {
         use crate::platform::linux::{Desktop, detect};
@@ -152,7 +157,7 @@ pub fn current() -> Result<Option<LayoutInfo>, String> {
 }
 
 #[cfg(target_os = "linux")]
-pub(crate) fn refresh_cache() -> Result<Option<LayoutInfo>, String> {
+pub(crate) fn refresh_cache() -> Result<Option<KeyboardLayoutInfo>, String> {
     use crate::platform::linux::{Desktop, detect};
     match detect().desktop {
         Desktop::Kde => linux_kde::refresh_cache(),
@@ -161,11 +166,11 @@ pub(crate) fn refresh_cache() -> Result<Option<LayoutInfo>, String> {
 }
 
 #[cfg(target_os = "windows")]
-pub(crate) fn refresh_cache() -> Result<Option<LayoutInfo>, String> {
+pub(crate) fn refresh_cache() -> Result<Option<KeyboardLayoutInfo>, String> {
     windows::refresh_cache()
 }
 
-pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
+pub fn available_layouts() -> Result<Vec<KeyboardLayoutInfo>, String> {
     #[cfg(target_os = "linux")]
     {
         use crate::platform::linux::{Desktop, detect};
@@ -259,11 +264,11 @@ pub(crate) fn xkb_options() -> String {
 mod tests {
     use super::*;
 
-    fn info(short: &str, display: &str) -> LayoutInfo {
-        LayoutInfo {
-            short: short.into(),
-            display: display.into(),
-            long: String::new(),
+    fn info(code: &str, display_label: &str) -> KeyboardLayoutInfo {
+        KeyboardLayoutInfo {
+            code: code.into(),
+            display_label: display_label.into(),
+            name: String::new(),
             variant: String::new(),
             index: 0,
             backend: "test",

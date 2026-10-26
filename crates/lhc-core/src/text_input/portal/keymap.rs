@@ -87,11 +87,11 @@ pub(super) static KEYMAP_CACHE: Mutex<KeymapCache> = Mutex::new(None);
 /// Fails when the layout is unknown (only the KDE backend reports it) or
 /// XKB cannot compile it: guessing a layout would type wrong characters.
 pub(super) fn layout_key_table() -> Result<Arc<KeyTable>, TextInputFailure> {
-    let layout = crate::runtime_state::layout().ok_or(TextInputFailure::LayoutUnknown)?;
+    let layout = crate::runtime_state::keyboard_layout().ok_or(TextInputFailure::LayoutUnknown)?;
     let variant = layout.variant.trim();
     let caps_lock = caps_lock_state()?;
-    let options = crate::layout::xkb_options();
-    let cache_key = format!("{}\0{variant}\0{caps_lock}\0{options}", layout.short);
+    let options = crate::keyboard_layout::xkb_options();
+    let cache_key = format!("{}\0{variant}\0{caps_lock}\0{options}", layout.code);
     let mut cache = KEYMAP_CACHE.lock().unwrap_or_else(|e| e.into_inner());
     if let Some((key, table)) = cache.as_ref()
         && *key == cache_key
@@ -100,7 +100,7 @@ pub(super) fn layout_key_table() -> Result<Arc<KeyTable>, TextInputFailure> {
     }
     let table = Arc::new(
         table_from_names_with_options(
-            &layout.short,
+            &layout.code,
             (!variant.is_empty()).then_some(variant),
             caps_lock,
             &options,

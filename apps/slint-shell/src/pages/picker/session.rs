@@ -94,9 +94,7 @@ pub(super) fn open(
     picker.set_hold_modifiers(request.hold_modifiers);
     picker.set_allow_default(request.allow_default);
     picker.set_allow_swallow(request.allow_swallow);
-    picker.set_inherit_default(request.inherit_default);
-    picker.set_empty_default(request.empty_default);
-    picker.set_quick_action(request.mode == PickerMode::QuickAction);
+    picker.set_default_behavior(request.default_behavior);
     picker.set_hold_action(request.mode == PickerMode::RuleHold);
     picker.set_hold_layer(request.hold_layer);
     picker.set_behavior(behavior);

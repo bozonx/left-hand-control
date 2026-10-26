@@ -160,8 +160,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         config.save_command(lhc_core::profile::model::Command {
             id: reference.trim_start_matches("cmd:").into(),
             name: "Плеер".into(),
-            linux: "playerctl play-pause".into(),
-            windows: String::new(),
+            posix_script: "playerctl play-pause".into(),
+            powershell_script: String::new(),
             working_directory: None,
         })
     })?;

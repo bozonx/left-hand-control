@@ -207,7 +207,7 @@ fn out_of_range_timings_do_not_modify_settings() {
             0 => form.hold = value.into(),
             1 => form.double_tap = value.into(),
             2 => form.macro_pause = value.into(),
-            3 => form.combo = value.into(),
+            3 => form.trigger_chord = value.into(),
             _ => form.macro_timeout = value.into(),
         }
         assert_eq!(

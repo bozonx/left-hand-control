@@ -8,10 +8,10 @@ import { DragDrop, DragGroups, DragHandle, DropMarker } from "reorder.slint";
 import { CardHeader, ResettableField, IconButton, ConfirmDialog, DialogFrame, ItemStyle, InfoTip, Badge, SelectField, NumericInput, FormLabel, FormField, ButtonGroup, Divider, MenuSurface, MenuItem, MenuLabel, PageLayout, PageHeader, FieldButton } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
-import { RuleDialog, HoldMode, GameCondition, PickerCategory, HoldDetection } from "types.slint";
+import { RuleDialog, HoldBehavior, GameCondition, PickerCategory, HoldDetection } from "types.slint";
 import { Button, CheckBox, ComboBox } from "std-widgets.slint";
 
-export struct RuleRow { key: string, is-chord: bool, tap: string, hold: string, long-hold: string, long-hold-timeout: string, hold-mode: HoldMode, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, hold-detection: HoldDetection, double-timeout: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool, key-category: PickerCategory, tap-category: PickerCategory, hold-category: PickerCategory, double-category: PickerCategory, long-hold-category: PickerCategory }
+export struct RuleRow { key: string, is-chord: bool, tap: string, hold: string, long-hold: string, long-hold-timeout: string, hold-mode: HoldBehavior, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, hold-detection: HoldDetection, double-timeout: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool, key-category: PickerCategory, tap-category: PickerCategory, hold-category: PickerCategory, double-category: PickerCategory, long-hold-category: PickerCategory }
 export struct RuleLayerChoice { id: string, label: string }
 
 /// Rules of the layout being edited.
@@ -33,7 +33,7 @@ export global RulesEditor {
     in-out property <string> long-hold;
     in-out property <string> long-hold-timeout;
     in-out property <string> original-long-hold-timeout;
-    in-out property <HoldMode> hold-mode;
+    in-out property <HoldBehavior> hold-mode;
     in-out property <string> double-tap;
     in-out property <GameCondition> game-mode;
     in-out property <string> layouts;
@@ -71,7 +71,7 @@ export global RulesEditor {
     /// Enable or disable the selected rule.
     callback set-enabled(bool);
     /// Change what holding the selected rule's trigger does.
-    callback set-hold-mode(HoldMode);
+    callback set-hold-mode(HoldBehavior);
     /// Open `dialog` for rule `index`.
     callback open-dialog(int, RuleDialog);
     /// Apply `value` to `field` of the selected rule.
@@ -172,7 +172,7 @@ component HoldField inherits VerticalLayout {
     // Menu entries: 0 = nothing, 1..count = layers, count + 1 = action.
     function choose(index: int) {
         if index == 0 {
-            RulesEditor.set-hold-mode(HoldMode.none);
+            RulesEditor.set-hold-mode(HoldBehavior.none);
             root.close-menu();
         } else if index <= root.count {
             RulesEditor.choose(RulesEditor.layer-items[index - 1].id);
@@ -191,8 +191,8 @@ component HoldField inherits VerticalLayout {
     function open-menu() {
         if !root.enabled { return; }
         RulesEditor.open-dialog(root.rule-index, RuleDialog.layer);
-        if root.rule.hold-mode == HoldMode.none { RulesEditor.layer-highlight = 0; }
-        if root.rule.hold-mode == HoldMode.action { RulesEditor.layer-highlight = AppState.in-development ? root.count + 1 : 0; }
+        if root.rule.hold-mode == HoldBehavior.none { RulesEditor.layer-highlight = 0; }
+        if root.rule.hold-mode == HoldBehavior.action { RulesEditor.layer-highlight = AppState.in-development ? root.count + 1 : 0; }
         root.creating = false;
         root.scroll-y = 0px;
         menu.show();
@@ -210,14 +210,14 @@ component HoldField inherits VerticalLayout {
         accessible-action-expand => { root.open-menu(); }
         forward-focus: field-focus;
         HorizontalLayout { padding-left: Theme.space-m-plus; padding-right: Theme.space-m-plus; spacing: Theme.space-s;
-            if root.rule.hold-mode == HoldMode.layer: VerticalLayout { alignment: center; Image { width: 16px; height: 16px; source: @image-url("icons/layers.svg"); colorize: Theme.muted; } }
-            if AppState.in-development && root.rule.hold-mode == HoldMode.action && root.rule.long-hold != "": CategoryIcon { category: root.rule.long-hold-category; }
+            if root.rule.hold-mode == HoldBehavior.layer: VerticalLayout { alignment: center; Image { width: 16px; height: 16px; source: @image-url("icons/layers.svg"); colorize: Theme.muted; } }
+            if AppState.in-development && root.rule.hold-mode == HoldBehavior.action && root.rule.long-hold != "": CategoryIcon { category: root.rule.long-hold-category; }
             value-text := Text {
                 min-width: 0px; horizontal-stretch: 1; vertical-alignment: center; overflow: elide;
-                text: root.rule.hold-mode == HoldMode.layer ? (root.rule.layer != "" ? root.rule.layer : @tr("Choose layer"))
-                    : AppState.in-development && root.rule.hold-mode == HoldMode.action ? (root.rule.long-hold != "" ? root.rule.long-hold : @tr("Choose action"))
+                text: root.rule.hold-mode == HoldBehavior.layer ? (root.rule.layer != "" ? root.rule.layer : @tr("Choose layer"))
+                    : AppState.in-development && root.rule.hold-mode == HoldBehavior.action ? (root.rule.long-hold != "" ? root.rule.long-hold : @tr("Choose action"))
                     : @tr("Nothing");
-                color: (root.rule.hold-mode == HoldMode.layer && root.rule.layer != "") || (AppState.in-development && root.rule.hold-mode == HoldMode.action && root.rule.long-hold != "") ? Theme.text : Theme.muted;
+                color: (root.rule.hold-mode == HoldBehavior.layer && root.rule.layer != "") || (AppState.in-development && root.rule.hold-mode == HoldBehavior.action && root.rule.long-hold != "") ? Theme.text : Theme.muted;
             }
             VerticalLayout { alignment: center; Image { width: 12px; height: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; } }
         }
@@ -242,14 +242,14 @@ component HoldField inherits VerticalLayout {
                     return reject;
                 }
                 popup-content := MenuSurface { inset: Theme.space-m; gap: Theme.space-s;
-                        MenuItem { text: @tr("Nothing"); checked: root.rule.hold-mode == HoldMode.none; highlighted: RulesEditor.layer-highlight == 0; clicked => { root.choose(0); } }
+                        MenuItem { text: @tr("Nothing"); checked: root.rule.hold-mode == HoldBehavior.none; highlighted: RulesEditor.layer-highlight == 0; clicked => { root.choose(0); } }
                         Divider {}
                         MenuLabel { text: @tr("Layers"); }
                         ScrollView { height: root.list-height; vertical-stretch: 0; viewport-width: self.visible-width; viewport-y <=> root.scroll-y;
                             VerticalLayout { spacing: 0px; alignment: start;
                                 for item[index] in RulesEditor.layer-items: MenuItem {
                                     text: item.label; has-icon: true; icon: @image-url("icons/layers.svg");
-                                    checked: root.rule.hold-mode == HoldMode.layer && RulesEditor.layer-id == item.id;
+                                    checked: root.rule.hold-mode == HoldBehavior.layer && RulesEditor.layer-id == item.id;
                                     highlighted: RulesEditor.layer-highlight == index + 1;
                                     clicked => { root.choose(index + 1); }
                                 }
@@ -266,8 +266,8 @@ component HoldField inherits VerticalLayout {
                         if AppState.in-development: MenuLabel { text: @tr("Action after {} ms of holding", RulesEditor.long-hold-timeout != "" ? RulesEditor.long-hold-timeout : RulesEditor.default-long-hold-timeout); }
                         if AppState.in-development: MenuItem {
                             has-icon: true; icon: @image-url("icons/zap.svg");
-                            text: root.rule.hold-mode == HoldMode.action && root.rule.long-hold != "" ? @tr("Assign action") + ": " + root.rule.long-hold : @tr("Assign action") + "…";
-                            checked: root.rule.hold-mode == HoldMode.action;
+                            text: root.rule.hold-mode == HoldBehavior.action && root.rule.long-hold != "" ? @tr("Assign action") + ": " + root.rule.long-hold : @tr("Assign action") + "…";
+                            checked: root.rule.hold-mode == HoldBehavior.action;
                             highlighted: RulesEditor.layer-highlight == root.count + 1;
                             clicked => { root.choose(root.count + 1); }
                         }
@@ -285,13 +285,13 @@ export component RulesPage inherits PageLayout {
             rule.hold-detection == HoldDetection.release ? @tr("Hold on other key release")
                 : rule.hold-detection == HoldDetection.press ? @tr("Hold on other key press") : ""),
             rule.hold-timeout != "" ? @tr("Hold after {} ms", rule.hold-timeout) : ""),
-            AppState.in-development && rule.hold-mode == HoldMode.action && rule.long-hold-timeout != "" ? @tr("Long hold after {} ms", rule.long-hold-timeout) : ""),
+            AppState.in-development && rule.hold-mode == HoldBehavior.action && rule.long-hold-timeout != "" ? @tr("Long hold after {} ms", rule.long-hold-timeout) : ""),
             rule.double-timeout != "" ? @tr("Double tap: {} ms", rule.double-timeout) : "");
     }
     pure function held-text(rule: RuleRow) -> string {
-        return rule.hold-mode == HoldMode.action ? ""
+        return rule.hold-mode == HoldBehavior.action ? ""
             : rule.hold != "" ? @tr("Holds {}", rule.hold)
-            : rule.hold-mode == HoldMode.none && rule.swallow-hold ? @tr("Holds nothing") : "";
+            : rule.hold-mode == HoldBehavior.none && rule.swallow-hold ? @tr("Holds nothing") : "";
     }
     pure function join(first: string, second: string) -> string {
         return first == "" ? second : second == "" ? first : first + " · " + second;
@@ -381,21 +381,21 @@ export component RuleDialogOverlay inherits FocusScope {
                 held-form := ResettableField {
                     label: @tr("Hold key or combination");
                     info: @tr("The key or combination stays pressed until you release the trigger. Choose modifiers plus one main key, for example Ctrl+KeyC.");
-                    active: RulesEditor.hold-mode != HoldMode.action;
+                    active: RulesEditor.hold-mode != HoldBehavior.action;
                     inactive-reason: @tr("Not used when holding performs a long-hold action.");
                     resettable: false;
                     ButtonGroup {
                         enabled: held-form.active;
-                        labels: RulesEditor.hold-mode == HoldMode.none
+                        labels: RulesEditor.hold-mode == HoldBehavior.none
                             ? [@tr("Trigger itself"), @tr("Don't press"), RulesEditor.hold != "" ? @tr("{} — change…", RulesEditor.hold) : @tr("Other key or combination…")]
                             : [@tr("Don't press"), RulesEditor.hold != "" ? @tr("{} — change…", RulesEditor.hold) : @tr("Other key or combination…")];
-                        selected-index: RulesEditor.hold != "" ? (RulesEditor.hold-mode == HoldMode.none ? 2 : 1) : RulesEditor.hold-mode == HoldMode.none && RulesEditor.swallow-hold ? 1 : 0;
+                        selected-index: RulesEditor.hold != "" ? (RulesEditor.hold-mode == HoldBehavior.none ? 2 : 1) : RulesEditor.hold-mode == HoldBehavior.none && RulesEditor.swallow-hold ? 1 : 0;
                         selected(index) => {
-                            if index == (RulesEditor.hold-mode == HoldMode.none ? 2 : 1) {
+                            if index == (RulesEditor.hold-mode == HoldBehavior.none ? 2 : 1) {
                                 RulesEditor.open-dialog(RulesEditor.selected, RuleDialog.hold);
                             } else {
                                 RulesEditor.hold = "";
-                                RulesEditor.swallow-hold = RulesEditor.hold-mode == HoldMode.none && index == 1;
+                                RulesEditor.swallow-hold = RulesEditor.hold-mode == HoldBehavior.none && index == 1;
                             }
                         }
                     }
@@ -403,7 +403,7 @@ export component RuleDialogOverlay inherits FocusScope {
                 detection-form := ResettableField {
                     label: @tr("Hold detection when another key is pressed");
                     info: @tr("Overrides the default hold detection for this rule. Use release detection for typing keys and press detection for dedicated layer or modifier keys. This does not change chord detection.");
-                    active: !RulesEditor.is-chord && RulesEditor.hold-mode != HoldMode.action;
+                    active: !RulesEditor.is-chord && RulesEditor.hold-mode != HoldBehavior.action;
                     inactive-reason: @tr("Used for single-key triggers without a long-hold action.");
                     resettable: false;
                     ComboBox { enabled: detection-form.active; height: Theme.control-height; model: [@tr("Default from Settings: {}", RulesEditor.default-hold-detection == HoldDetection.press ? @tr("as soon as another key is pressed") : @tr("after another key is released")), @tr("After another key is released (better for typing)"), @tr("As soon as another key is pressed")]; current-index: RulesEditor.hold-detection == HoldDetection.release ? 1 : RulesEditor.hold-detection == HoldDetection.press ? 2 : 0; selected(value) => { RulesEditor.hold-detection = self.current-index == 1 ? HoldDetection.release : self.current-index == 2 ? HoldDetection.press : HoldDetection.inherit; } }
@@ -411,7 +411,7 @@ export component RuleDialogOverlay inherits FocusScope {
                 hold-form := ResettableField {
                     label: @tr("Hold threshold, ms");
                     info: @tr("Released earlier, the trigger counts as a tap; held longer, as a hold. Empty uses the default from Settings: {} ms.", RulesEditor.default-hold-timeout);
-                    active: RulesEditor.hold-mode != HoldMode.action;
+                    active: RulesEditor.hold-mode != HoldBehavior.action;
                     inactive-reason: @tr("Not used when holding performs a long-hold action.");
                     modified: RulesEditor.hold-timeout != "";
                     reset-tooltip: @tr("Use the default from Settings: {} ms", RulesEditor.default-hold-timeout);
@@ -422,7 +422,7 @@ export component RuleDialogOverlay inherits FocusScope {
                     visible: AppState.in-development;
                     label: @tr("Long-hold threshold, ms");
                     info: @tr("How long to keep holding before the action runs. Empty uses the default from Settings: {} ms.", RulesEditor.default-long-hold-timeout);
-                    active: RulesEditor.hold-mode == HoldMode.action;
+                    active: RulesEditor.hold-mode == HoldBehavior.action;
                     inactive-reason: @tr("Used when a long-hold action is selected.");
                     modified: RulesEditor.long-hold-timeout != "";
                     reset-tooltip: @tr("Use the default from Settings: {} ms", RulesEditor.default-long-hold-timeout);

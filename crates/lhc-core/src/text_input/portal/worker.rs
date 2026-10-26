@@ -2,7 +2,7 @@
 
 use super::*;
 
-pub(super) struct Cmd {
+pub(super) struct TextInjectionJob {
     pub(super) text: String,
     pub(super) mode: TextMode,
     pub(super) paste: PasteShortcut,
@@ -13,13 +13,13 @@ pub(super) struct Cmd {
 
 /// A portal session on its own thread, started on first use.
 pub(super) struct Worker {
-    pub(super) tx: Mutex<Option<Sender<Cmd>>>,
+    pub(super) tx: Mutex<Option<Sender<TextInjectionJob>>>,
     /// Why the last start failed. Later texts are reported as failed instead
     /// of starting again, which could block and show the dialog every time.
     pub(super) failure: Mutex<Option<String>>,
     /// Set by `stop` while a text holds `tx`, e.g. during the consent dialog.
     pub(super) stop_pending: AtomicBool,
-    pub(super) start: fn(TextRequest) -> Result<Sender<Cmd>, String>,
+    pub(super) start: fn(TextRequest) -> Result<Sender<TextInjectionJob>, String>,
 }
 
 pub(super) static LIBEI: Worker =
@@ -28,7 +28,7 @@ pub(super) static PORTAL: Worker =
     Worker::new(|request| start_worker("lhc-portal", PortalBackend::new, portal_worker, request));
 
 impl Worker {
-    const fn new(start: fn(TextRequest) -> Result<Sender<Cmd>, String>) -> Self {
+    const fn new(start: fn(TextRequest) -> Result<Sender<TextInjectionJob>, String>) -> Self {
         Self {
             tx: Mutex::new(None),
             failure: Mutex::new(None),
@@ -65,7 +65,7 @@ impl Worker {
         }
         request.wait_for_target()?;
         let (done, done_rx) = mpsc::channel();
-        let cmd = Cmd {
+        let cmd = TextInjectionJob {
             text: text.to_owned(),
             mode,
             paste,
@@ -134,9 +134,9 @@ impl Worker {
 pub(super) fn start_worker<B: 'static>(
     name: &'static str,
     init: fn(&TextRequest) -> Result<B, String>,
-    run: fn(B, Receiver<Cmd>),
+    run: fn(B, Receiver<TextInjectionJob>),
     request: TextRequest,
-) -> Result<Sender<Cmd>, String> {
+) -> Result<Sender<TextInjectionJob>, String> {
     let (tx, rx) = mpsc::channel();
     let (ready_tx, ready_rx) = mpsc::sync_channel(1);
     let init_request = request.clone();
@@ -195,7 +195,7 @@ impl PortalBackend {
     }
 }
 
-pub(super) fn portal_worker(backend: PortalBackend, rx: Receiver<Cmd>) {
+pub(super) fn portal_worker(backend: PortalBackend, rx: Receiver<TextInjectionJob>) {
     log::debug!("[portal] backend online");
     for cmd in rx {
         let session = &backend.session_handle;
@@ -226,7 +226,7 @@ pub(super) fn portal_worker(backend: PortalBackend, rx: Receiver<Cmd>) {
     }
 }
 
-pub(super) fn libei_worker(mut backend: LibeiBackend, rx: Receiver<Cmd>) {
+pub(super) fn libei_worker(mut backend: LibeiBackend, rx: Receiver<TextInjectionJob>) {
     log::debug!("[libei] backend online");
     for cmd in rx {
         let fallback = (cmd.mode == TextMode::Libei).then_some(cmd.paste);

@@ -4,7 +4,7 @@ import { ScrollView } from "scroll.slint";
 import { Locale, Message } from "i18n.slint";
 import { Theme } from "theme.slint";
 import { InfoTip, TooltipText } from "controls.slint";
-import { PickerBehavior, PickerCategory, PickerTarget, PickerTitle, ShortcutDesktop } from "types.slint";
+import { DefaultAssignmentBehavior, PickerBehavior, PickerCategory, PickerTarget, PickerTitle, ShortcutDesktop } from "types.slint";
 import { Button, CheckBox, TextEdit } from "std-widgets.slint";
 export struct PickerItem { value: string, label: string, category: PickerCategory, notice: Message }
 /// Picker category in sidebar order with the number of its catalog items.
@@ -43,9 +43,7 @@ export global ActionPicker {
     in-out property <bool> ignore-key;
     in property <bool> allow-default;
     in property <bool> allow-swallow;
-    in property <bool> inherit-default;
-    in property <bool> empty-default;
-    in property <bool> quick-action;
+    in property <DefaultAssignmentBehavior> default-behavior;
     in property <bool> hold-layer;
     in property <bool> hold-action;
     in-out property <PickerBehavior> behavior: PickerBehavior.action;
@@ -199,7 +197,7 @@ export component PickerOverlay inherits DialogFrame {
                 Text { text: @tr("Behavior:"); color: Theme.muted; vertical-alignment: center; }
                 HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m; horizontal-stretch: 1;
                     if ActionPicker.allow-default: Button {
-                        text: ActionPicker.inherit-default ? @tr("Inherit") : ActionPicker.quick-action ? @tr("Empty cell") : ActionPicker.empty-default ? @tr("No separate action") : ActionPicker.hold-layer ? @tr("Activate layer only") : @tr("Do not process");
+                        text: ActionPicker.default-behavior == DefaultAssignmentBehavior.inherit ? @tr("Inherit") : ActionPicker.default-behavior == DefaultAssignmentBehavior.empty-cell ? @tr("Empty cell") : ActionPicker.default-behavior == DefaultAssignmentBehavior.no-action ? @tr("No separate action") : ActionPicker.default-behavior == DefaultAssignmentBehavior.layer-only ? @tr("Activate layer only") : @tr("Do not process");
                         primary: ActionPicker.behavior == PickerBehavior.native;
                         clicked => { ActionPicker.select-behavior(PickerBehavior.native); }
                     }
@@ -209,7 +207,7 @@ export component PickerOverlay inherits DialogFrame {
             }
             if ActionPicker.hold-layer && ActionPicker.behavior != PickerBehavior.native: Text { text: @tr("Holding also activates the selected layer."); color: Theme.muted; wrap: word-wrap; }
             if ActionPicker.behavior != PickerBehavior.action: Text {
-                text: ActionPicker.behavior == PickerBehavior.swallow ? @tr("The key press is consumed: the system and the active application will not receive it.") : ActionPicker.inherit-default ? @tr("Use the assignment from the lower layer or base layout.") : ActionPicker.quick-action ? @tr("Remove the action from this menu cell.") : ActionPicker.empty-default ? @tr("Do not assign a separate action to this gesture.") : ActionPicker.hold-layer ? @tr("Holding activates the selected layer. The original key is not sent.") : @tr("The key press passes through unchanged, as if no assignment were configured.");
+                text: ActionPicker.behavior == PickerBehavior.swallow ? @tr("The key press is consumed: the system and the active application will not receive it.") : ActionPicker.default-behavior == DefaultAssignmentBehavior.inherit ? @tr("Use the assignment from the lower layer or base layout.") : ActionPicker.default-behavior == DefaultAssignmentBehavior.empty-cell ? @tr("Remove the action from this menu cell.") : ActionPicker.default-behavior == DefaultAssignmentBehavior.no-action ? @tr("Do not assign a separate action to this gesture.") : ActionPicker.default-behavior == DefaultAssignmentBehavior.layer-only ? @tr("Holding activates the selected layer. The original key is not sent.") : @tr("The key press passes through unchanged, as if no assignment were configured.");
                 color: Theme.muted; wrap: word-wrap;
             }
             if ActionPicker.behavior == PickerBehavior.action && ActionPicker.value-category != PickerCategory.commands: HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m; vertical-stretch: 0;

@@ -61,7 +61,7 @@ pub fn refresh_active(ui: &SettingsWindow, document: &Document) {
     let matched = config
         .auto_choice(&context)
         .ok()
-        .and_then(|choice| choice.rule)
+        .and_then(|choice| choice.matched_rule_index)
         .map_or(-1, |index| index as i32);
     drop(config);
     let library = ui.global::<LayoutLibrary>();

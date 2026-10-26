@@ -13,9 +13,9 @@
 
 #![cfg(target_os = "macos")]
 
-use super::LayoutInfo;
+use super::KeyboardLayoutInfo;
 
-pub fn current() -> Result<Option<LayoutInfo>, String> {
+pub fn current() -> Result<Option<KeyboardLayoutInfo>, String> {
     Ok(None)
 }
 

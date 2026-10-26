@@ -5,13 +5,13 @@ use crate::{
     document::{Document, Saved, View},
     i18n::Msg,
     ui::{
-        ActionPicker, HoldDetection, HoldMode, PickerTarget, PickerTitle, RuleDialog,
-        RuleLayerChoice, RuleRow, RulesEditor, SettingsWindow,
+        ActionPicker, HoldBehavior as UiHoldBehavior, HoldDetection, PickerTarget, PickerTitle,
+        RuleDialog, RuleLayerChoice, RuleRow, RulesEditor, SettingsWindow,
     },
 };
 use lhc_core::profile::{
     diagnostics, ids,
-    model::{HoldBehavior, Layer, LayerRule, LayoutPreset, TapDecision},
+    model::{HoldBehavior, KeyRule, Layer, LayoutPreset, TapDecision},
 };
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::rc::Rc;
@@ -84,23 +84,23 @@ fn optional_long_hold(value: &str) -> Result<Option<u64>, Msg> {
     }
 }
 
-fn hold_mode(rule: &LayerRule) -> HoldMode {
+fn hold_mode(rule: &KeyRule) -> UiHoldBehavior {
     match rule.hold_behavior() {
-        HoldBehavior::None => HoldMode::None,
-        HoldBehavior::Layer => HoldMode::Layer,
-        HoldBehavior::Action => HoldMode::Action,
+        HoldBehavior::None => UiHoldBehavior::None,
+        HoldBehavior::Layer => UiHoldBehavior::Layer,
+        HoldBehavior::Action => UiHoldBehavior::Action,
     }
 }
 
-fn hold_behavior(mode: HoldMode) -> HoldBehavior {
+fn hold_behavior(mode: UiHoldBehavior) -> HoldBehavior {
     match mode {
-        HoldMode::None => HoldBehavior::None,
-        HoldMode::Layer => HoldBehavior::Layer,
-        HoldMode::Action => HoldBehavior::Action,
+        UiHoldBehavior::None => HoldBehavior::None,
+        UiHoldBehavior::Layer => HoldBehavior::Layer,
+        UiHoldBehavior::Action => HoldBehavior::Action,
     }
 }
 
-fn hold_detection(rule: &LayerRule) -> HoldDetection {
+fn hold_detection(rule: &KeyRule) -> HoldDetection {
     match rule.tap_decision {
         None => HoldDetection::Inherit,
         Some(TapDecision::PermissiveHold) => HoldDetection::Release,
@@ -116,11 +116,11 @@ fn layer_name(layout: &LayoutPreset, id: &str) -> String {
         .map_or_else(|| id.to_owned(), |layer| layer.name.clone())
 }
 
-fn has_conditions(rule: &LayerRule) -> bool {
+fn has_conditions(rule: &KeyRule) -> bool {
     rule.condition_game_mode.is_some()
-        || rule.condition_layouts.is_some()
-        || rule.condition_apps_whitelist.is_some()
-        || rule.condition_apps_blacklist.is_some()
+        || rule.condition_keyboard_layouts.is_some()
+        || rule.condition_window_patterns.is_some()
+        || rule.condition_excluded_window_patterns.is_some()
 }
 
 /// Selected rule index, or `None` when nothing valid is selected.
@@ -174,10 +174,10 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
             layer: layer_name(layout, &rule.layer_id).into(),
             has_conditions: has_conditions(rule),
             game: game_condition(rule.condition_game_mode.as_deref()),
-            languages: join(&rule.condition_layouts).into(),
-            applications: chip_text(&rule.condition_apps_whitelist).into(),
-            excluded: chip_text(&rule.condition_apps_blacklist).into(),
-            hold_timeout: if hold_mode(rule) == HoldMode::Action {
+            languages: join(&rule.condition_keyboard_layouts).into(),
+            applications: chip_text(&rule.condition_window_patterns).into(),
+            excluded: chip_text(&rule.condition_excluded_window_patterns).into(),
+            hold_timeout: if hold_mode(rule) == UiHoldBehavior::Action {
                 String::new()
             } else {
                 timeout_text(rule.hold_timeout_ms)
@@ -235,9 +235,9 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
     editor.set_is_chord(rule.key.contains('+'));
     editor.set_double_tap(rule.double_tap_action.clone().into());
     editor.set_game_mode(game_condition(rule.condition_game_mode.as_deref()));
-    editor.set_layouts(join(&rule.condition_layouts).into());
-    editor.set_apps_include(join(&rule.condition_apps_whitelist).into());
-    editor.set_apps_exclude(join(&rule.condition_apps_blacklist).into());
+    editor.set_layouts(join(&rule.condition_keyboard_layouts).into());
+    editor.set_apps_include(join(&rule.condition_window_patterns).into());
+    editor.set_apps_exclude(join(&rule.condition_excluded_window_patterns).into());
     editor.set_original_hold(rule.hold_action.clone().unwrap_or_default().into());
     editor.set_original_swallow_hold(rule.hold_action.is_none());
     let decision = hold_detection(rule);
@@ -293,7 +293,7 @@ fn change_rule(
     document: &Document,
     index: usize,
     fields: bool,
-    edit: impl FnOnce(&mut LayerRule),
+    edit: impl FnOnce(&mut KeyRule),
 ) -> Result<(), Msg> {
     change(ui, document, fields, |layout| {
         if let Some(rule) = layout.rules.get_mut(index) {
@@ -303,7 +303,7 @@ fn change_rule(
 }
 
 /// Set the property a dialog (or the picker) edits.
-fn set_property(rule: &mut LayerRule, property: RuleDialog, value: &str) -> Result<(), Msg> {
+fn set_property(rule: &mut KeyRule, property: RuleDialog, value: &str) -> Result<(), Msg> {
     match property {
         RuleDialog::Key => rule.key = value.into(),
         RuleDialog::Layer => {
@@ -329,7 +329,7 @@ fn set_property(rule: &mut LayerRule, property: RuleDialog, value: &str) -> Resu
 }
 
 /// Switch what holding the trigger does, dropping options of the other modes.
-fn set_hold_behavior(rule: &mut LayerRule, behavior: HoldBehavior) {
+fn set_hold_behavior(rule: &mut KeyRule, behavior: HoldBehavior) {
     rule.hold_behavior = Some(behavior);
     if behavior != HoldBehavior::Layer {
         rule.layer_id.clear();
@@ -352,7 +352,7 @@ pub(super) fn choose(ui: &SettingsWindow, document: &Document, value: &str) -> R
     if property == RuleDialog::Key && editor.get_selected() == -1 {
         change(ui, document, true, |layout| {
             let id = unique_rule_id(&layout.rules);
-            layout.rules.insert(0, LayerRule::new(id, value));
+            layout.rules.insert(0, KeyRule::new(id, value));
         })?;
         editor.set_selected(0);
         editor.set_created(0);
@@ -384,7 +384,7 @@ pub(super) fn choose(ui: &SettingsWindow, document: &Document, value: &str) -> R
     }
     let index = selected(ui, document).ok_or(Msg::None)?;
     // Validate before saving so a bad value leaves the rule untouched.
-    set_property(&mut LayerRule::new(String::new(), ""), property, value).inspect_err(|error| {
+    set_property(&mut KeyRule::new(String::new(), ""), property, value).inspect_err(|error| {
         editor.set_status(crate::notifications::report(ui, error));
     })?;
     change_rule(ui, document, index, true, |rule| {
@@ -431,7 +431,13 @@ pub(super) fn picker_request(ui: &SettingsWindow, key_only: bool) -> super::pick
         },
         allow_default: matches!(field, RuleDialog::Tap | RuleDialog::DoubleTap),
         allow_swallow: field == RuleDialog::Tap,
-        empty_default: matches!(field, RuleDialog::DoubleTap | RuleDialog::LongHold),
+        default_behavior: if matches!(field, RuleDialog::DoubleTap | RuleDialog::LongHold) {
+            crate::ui::DefaultAssignmentBehavior::NoAction
+        } else if hold_layer {
+            crate::ui::DefaultAssignmentBehavior::LayerOnly
+        } else {
+            crate::ui::DefaultAssignmentBehavior::Passthrough
+        },
         hold_layer,
         ..Default::default()
     }
@@ -448,7 +454,7 @@ fn layer_choices<'a>(layers: impl Iterator<Item = &'a Layer>) -> ModelRc<RuleLay
     ))
 }
 
-fn unique_rule_id(rules: &[LayerRule]) -> String {
+fn unique_rule_id(rules: &[KeyRule]) -> String {
     (1..)
         .map(|n| format!("slint-rule-{n}"))
         .find(|id| rules.iter().all(|rule| rule.id != *id))
@@ -641,9 +647,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let exclude = optional_list(&editor.get_apps_exclude());
         let result = change_rule(&ui, &doc, index, true, |rule| {
             rule.condition_game_mode = game_mode;
-            rule.condition_layouts = layouts;
-            rule.condition_apps_whitelist = include;
-            rule.condition_apps_blacklist = exclude;
+            rule.condition_keyboard_layouts = layouts;
+            rule.condition_window_patterns = include;
+            rule.condition_excluded_window_patterns = exclude;
         });
         if result.is_ok() {
             editor.set_dialog(RuleDialog::None);

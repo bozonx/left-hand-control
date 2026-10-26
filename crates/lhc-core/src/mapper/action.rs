@@ -2,7 +2,7 @@
 //! sequence of key events the mapper should emit.
 
 use super::keys::code_to_key;
-use super::system::{SysAction, SysCommand};
+use super::system::{ProcessInvocation, SystemAction};
 use crate::mapper::key_code::KeyCode;
 use crate::profile::actions::Action;
 use std::time::Duration;
@@ -20,8 +20,8 @@ pub struct Keystroke {
 #[derive(Clone, Debug)]
 pub enum MacroStepItem {
     Stroke(Keystroke),
-    System(SysAction),
-    Command(SysCommand),
+    System(SystemAction),
+    Command(ProcessInvocation),
     Literal(String),
     Pause(Duration),
     /// A step this OS or desktop cannot run; the macro is skipped as a whole.

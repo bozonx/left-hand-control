@@ -1,6 +1,5 @@
 use super::*;
 
-
 #[test]
 fn mouse_button_commits_pending_hold() {
     // All pending WaitingDecision holds commit on mouse button press,
@@ -9,9 +8,9 @@ fn mouse_button_commits_pending_hold() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "ShiftLeft".into(),
         layer_id: String::new(),
         tap_action: ActionSpec::Action("Escape".into()),
@@ -28,19 +27,19 @@ fn mouse_button_commits_pending_hold() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
     // No hold committed yet — Shift is still in WaitingDecision.
     assert!(out.is_empty());
 
     // LMB click commits the pending hold (ControlLeft) so the physical
     // mouse event reaches the OS with the modifier active.
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::BTN_LEFT,
         true,
         now + Duration::from_millis(10),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::BTN_LEFT,
         false,
         now + Duration::from_millis(11),
@@ -48,7 +47,7 @@ fn mouse_button_commits_pending_hold() {
     );
 
     // Releasing Shift releases the committed hold (ControlLeft).
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_LEFTSHIFT,
         false,
         now + Duration::from_millis(20),
@@ -57,10 +56,10 @@ fn mouse_button_commits_pending_hold() {
     assert!(matches!(
         out.as_slice(),
         [
-            Out::ChordPress { ks, .. },
-            Out::KeyRaw { key: k1, down: true },
-            Out::KeyRaw { key: k2, down: false },
-            Out::KeyRaw { key: ctrl, down: false },
+            EngineOutput::ChordPress { ks, .. },
+            EngineOutput::KeyRaw { key: k1, down: true },
+            EngineOutput::KeyRaw { key: k2, down: false },
+            EngineOutput::KeyRaw { key: ctrl, down: false },
         ] if ks.mods.is_empty()
             && ks.key == KeyCode::KEY_LEFTCTRL
             && *k1 == KeyCode::BTN_LEFT
@@ -75,9 +74,9 @@ fn extra_mouse_button_commits_pending_keystroke_hold() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "ShiftLeft".into(),
         layer_id: String::new(),
         tap_action: ActionSpec::Action("Escape".into()),
@@ -94,20 +93,20 @@ fn extra_mouse_button_commits_pending_keystroke_hold() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::BTN_SIDE,
         true,
         now + Duration::from_millis(10),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::BTN_SIDE,
         false,
         now + Duration::from_millis(11),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_LEFTSHIFT,
         false,
         now + Duration::from_millis(20),
@@ -118,10 +117,10 @@ fn extra_mouse_button_commits_pending_keystroke_hold() {
     assert!(matches!(
         out.as_slice(),
         [
-            Out::ChordPress { ks, .. },
-            Out::KeyRaw { key: k1, down: true },
-            Out::KeyRaw { key: k2, down: false },
-            Out::KeyRaw { key: ctrl, down: false },
+            EngineOutput::ChordPress { ks, .. },
+            EngineOutput::KeyRaw { key: k1, down: true },
+            EngineOutput::KeyRaw { key: k2, down: false },
+            EngineOutput::KeyRaw { key: ctrl, down: false },
         ] if ks.mods.is_empty()
             && ks.key == KeyCode::KEY_LEFTCTRL
             && *k1 == KeyCode::BTN_SIDE
@@ -140,9 +139,9 @@ fn mouse_button_commits_layer_trigger_enabling_layer_mapping() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "Space".into(),
         layer_id: "sp".into(),
         tap_action: ActionSpec::Native,
@@ -166,14 +165,14 @@ fn mouse_button_commits_layer_trigger_enabling_layer_mapping() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
     assert!(out.is_empty()); // WaitingDecision, no output yet
 
     // BTN_SIDE pressed while Space is still in WaitingDecision.
     // commit_waiting_decisions commits Space (layer activates), then
     // should_handle_mouse_button sees the layer mapping and routes
     // BTN_SIDE through on_press → BrowserBack keystroke fires.
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::BTN_SIDE,
         true,
         now + Duration::from_millis(10),
@@ -181,17 +180,17 @@ fn mouse_button_commits_layer_trigger_enabling_layer_mapping() {
     );
     assert!(matches!(
         out.as_slice(),
-        [Out::ChordPress { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_BACK
+        [EngineOutput::ChordPress { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_BACK
     ));
 
     out.clear();
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::BTN_SIDE,
         false,
         now + Duration::from_millis(11),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_SPACE,
         false,
         now + Duration::from_millis(20),
@@ -201,7 +200,7 @@ fn mouse_button_commits_layer_trigger_enabling_layer_mapping() {
     // Space hold release is silent (Swallow hold mode).
     assert!(matches!(
         out.as_slice(),
-        [Out::KeyRaw { key: back, down: false }] if *back == KeyCode::KEY_BACK
+        [EngineOutput::KeyRaw { key: back, down: false }] if *back == KeyCode::KEY_BACK
     ));
 }
 
@@ -211,9 +210,9 @@ fn extra_mouse_button_can_be_rule_trigger() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "MouseBack".into(),
         layer_id: String::new(),
         tap_action: ActionSpec::Action("BrowserBack".into()),
@@ -230,8 +229,8 @@ fn extra_mouse_button_can_be_rule_trigger() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::BTN_SIDE, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::BTN_SIDE, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::BTN_SIDE,
         false,
         now + Duration::from_millis(10),
@@ -240,7 +239,7 @@ fn extra_mouse_button_can_be_rule_trigger() {
 
     assert!(matches!(
         out.as_slice(),
-        [Out::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_BACK
+        [EngineOutput::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_BACK
     ));
 }
 
@@ -250,9 +249,9 @@ fn primary_mouse_button_can_be_layer_mapping() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "Space".into(),
         layer_id: "mouse".into(),
         tap_action: ActionSpec::Native,
@@ -275,15 +274,15 @@ fn primary_mouse_button_can_be_layer_mapping() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
     engine.tick(now + Duration::from_millis(260), &mut out);
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::BTN_LEFT,
         true,
         now + Duration::from_millis(270),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::BTN_LEFT,
         false,
         now + Duration::from_millis(271),
@@ -293,8 +292,8 @@ fn primary_mouse_button_can_be_layer_mapping() {
     assert!(matches!(
         out.as_slice(),
         [
-            Out::ChordPress { ks: press, .. },
-            Out::KeyRaw {
+            EngineOutput::ChordPress { ks: press, .. },
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_ESC,
                 down: false,
             }
@@ -308,9 +307,9 @@ fn explicit_null_mouse_key_in_layer_keymap_swallows_key() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "Space".into(),
         layer_id: "mouse".into(),
         tap_action: ActionSpec::Native,
@@ -333,16 +332,16 @@ fn explicit_null_mouse_key_in_layer_keymap_swallows_key() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
     engine.tick(now + Duration::from_millis(260), &mut out);
     out.clear();
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::BTN_SIDE,
         true,
         now + Duration::from_millis(270),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::BTN_SIDE,
         false,
         now + Duration::from_millis(271),

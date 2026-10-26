@@ -3,12 +3,12 @@
 use super::model::{AppSettings, LayoutPreset};
 
 #[derive(Clone, Copy)]
-pub struct Range {
+pub struct MillisecondsRange {
     pub min: u64,
     pub max: u64,
 }
 
-impl Range {
+impl MillisecondsRange {
     pub fn contains(self, value: u64) -> bool {
         (self.min..=self.max).contains(&value)
     }
@@ -33,18 +33,18 @@ impl Range {
     }
 }
 
-pub const TAP_HOLD: Range = Range { min: 50, max: 1000 };
-pub const LONG_HOLD: Range = Range {
+pub const TAP_HOLD: MillisecondsRange = MillisecondsRange { min: 50, max: 1000 };
+pub const LONG_HOLD: MillisecondsRange = MillisecondsRange {
     min: 100,
     max: 60_000,
 };
-pub const COMBO: Range = Range { min: 10, max: 500 };
-pub const MACRO_DELAY: Range = Range { min: 0, max: 2000 };
-pub const PAUSE: Range = Range {
+pub const TRIGGER_CHORD: MillisecondsRange = MillisecondsRange { min: 10, max: 500 };
+pub const MACRO_DELAY: MillisecondsRange = MillisecondsRange { min: 0, max: 2000 };
+pub const PAUSE: MillisecondsRange = MillisecondsRange {
     min: 1,
     max: 10_000,
 };
-pub const MACRO_TIMEOUT: Range = Range {
+pub const MACRO_TIMEOUT: MillisecondsRange = MillisecondsRange {
     min: 1000,
     max: 600_000,
 };
@@ -53,7 +53,7 @@ pub const MACRO_TIMEOUT: Range = Range {
 pub const DEFAULT_HOLD_MS: u64 = 200;
 pub const DEFAULT_LONG_HOLD_MS: u64 = 1000;
 pub const DEFAULT_DOUBLE_TAP_MS: u64 = 200;
-pub const DEFAULT_COMBO_MS: u64 = 50;
+pub const DEFAULT_TRIGGER_CHORD_MS: u64 = 50;
 pub const DEFAULT_MACRO_STEP_PAUSE_MS: u64 = 20;
 pub const DEFAULT_MACRO_MODIFIER_DELAY_MS: u64 = 5;
 pub const DEFAULT_MACRO_TIMEOUT_MS: u64 = 10_000;
@@ -71,7 +71,7 @@ pub fn validate_settings(settings: &AppSettings) -> Result<(), String> {
             settings.default_long_hold_timeout_ms,
             LONG_HOLD,
         ),
-        ("comboMs", settings.combo_timeout_ms, COMBO),
+        ("comboMs", settings.trigger_chord_timeout_ms, TRIGGER_CHORD),
         (
             "macroStepPauseMs",
             settings.default_macro_step_pause_ms,

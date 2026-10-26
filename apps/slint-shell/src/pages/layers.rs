@@ -15,14 +15,14 @@ use lhc_core::{
     config_document::{ConfigDocument, ConfigError, KeyAssignment},
     profile::{
         actions,
-        model::{AppConfig, LayerKeymap, LayoutPreset},
+        model::{LayerKeymap, LayoutPreset, ResolvedAppConfig},
     },
 };
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{collections::HashMap, rc::Rc};
 
 /// Display names of catalog actions (macros, commands, built-ins).
-fn action_names(ui: &SettingsWindow, config: &AppConfig) -> HashMap<String, String> {
+fn action_names(ui: &SettingsWindow, config: &ResolvedAppConfig) -> HashMap<String, String> {
     let mut names: HashMap<String, String> = actions::catalog(config)
         .into_iter()
         .filter_map(|entry| Some((entry.action.format()?, action_label(ui, entry.name)?)))
@@ -173,7 +173,7 @@ pub(crate) fn hint(
     let layer = layout.layers.iter().find(|layer| layer.id == id)?;
     let names = action_names(
         ui,
-        &AppConfig::from_parts(config.settings().clone(), layout.clone(), None),
+        &ResolvedAppConfig::from_parts(config.settings().clone(), layout.clone(), None),
     );
     let (left, right) = hands(layout.layer_keymaps.get(id), &names);
     Some(crate::layer_hint_model::LayerHint::from_cells(
@@ -655,7 +655,11 @@ pub(super) fn picker_request(
         swallowed: editor.get_assignment() == Assignment::Swallow,
         hold_modifiers: holds_modifiers(ui, document, target, index),
         allow_default: inherit,
-        inherit_default: inherit,
+        default_behavior: if inherit {
+            crate::ui::DefaultAssignmentBehavior::Inherit
+        } else {
+            crate::ui::DefaultAssignmentBehavior::Passthrough
+        },
         allow_swallow: true,
         ..Default::default()
     }

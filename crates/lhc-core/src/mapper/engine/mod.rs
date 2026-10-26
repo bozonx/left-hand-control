@@ -2,8 +2,8 @@
 //!
 //! Per-rule configuration (see `RuleEntry`):
 //!   * `tap`        — TapMode::Native | Swallow | Action
-//!   * `hold`       — HoldMode::Native | Swallow | Layer | Keystroke
-//!   * `double_tap` — Option<ActionDef>
+//!   * `hold`       — HoldOutputMode::Native | Swallow | Layer | Keystroke
+//!   * `double_tap` — Option<CompiledAction>
 //!   * `hold_timeout`, `double_tap_window`
 //!
 //! Three-state "tap" / "hold" semantics:
@@ -56,9 +56,10 @@ mod macros;
 mod model;
 mod state;
 
-pub use self::model::Out;
+pub use self::model::EngineOutput;
 use self::model::{
-    ActionDef, BufferedEvent, HoldMode, LayerTrigger, Pending, Phase, RuleEntry, TapMode,
+    BufferedEvent, CompiledAction, HoldOutputMode, LayerTrigger, RuleEntry, RuleExecution,
+    RulePhase, TapMode,
 };
 use self::state::{ChordState, CompiledLayout, LayerStack, MacroRunner, VirtualKeys};
 use super::action::Keystroke;
@@ -76,13 +77,13 @@ pub struct Engine {
     physical_down: HashSet<KeyCode>,
     /// When each physical key in `physical_down` was pressed.
     press_at: HashMap<KeyCode, Instant>,
-    long_holds: HashMap<KeyCode, (Instant, ActionDef)>,
+    long_holds: HashMap<KeyCode, (Instant, CompiledAction)>,
     /// Events deferred while a rule key is in `WaitingDecision`
     /// (permissive-hold mode only). Replayed in order once the decision
     /// resolves.
     decision_buffer: Vec<BufferedEvent>,
     /// Per-rule pending state (waiting for release/timeout decision).
-    pending: HashMap<KeyCode, Pending>,
+    pending: HashMap<KeyCode, RuleExecution>,
     chords: ChordState,
     layers: LayerStack,
     virt: VirtualKeys,
@@ -103,21 +104,21 @@ impl Engine {
 
     /// Apply new bindings without releasing keys already held by the user.
     /// Pending decisions retain their original rule until physical release.
-    pub fn reconfigure(&mut self, cfg: &super::config::AppConfig, out: &mut Vec<Out>) {
-        self.flush_combo_buffer(out);
+    pub fn reconfigure(&mut self, cfg: &super::config::MapperConfig, out: &mut Vec<EngineOutput>) {
+        self.flush_trigger_chord_buffer(out);
         self.runner.cancel(&mut self.virt, out);
         if !cfg.settings.commands_enabled {
-            fn revoke(action: &mut ActionDef) {
+            fn revoke(action: &mut CompiledAction) {
                 match action {
                     // Reported without an id: the command is off as a whole.
-                    ActionDef::Command(_) => {
-                        *action = ActionDef::Unavailable(
+                    CompiledAction::Command(_) => {
+                        *action = CompiledAction::Unavailable(
                             crate::profile::actions::Action::Command(String::new())
                                 .format()
                                 .unwrap_or_default(),
                         )
                     }
-                    ActionDef::Macro(m) => m.steps.retain(|step| {
+                    CompiledAction::Macro(m) => m.steps.retain(|step| {
                         !matches!(step, crate::mapper::action::MacroStepItem::Command(_))
                     }),
                     _ => {}
@@ -172,7 +173,7 @@ impl Engine {
         self.pending
             .iter()
             .filter_map(|(key, p)| match p.phase {
-                Phase::WaitingDecision { deadline } | Phase::WaitingSecond { deadline }
+                RulePhase::WaitingDecision { deadline } | RulePhase::WaitingSecond { deadline }
                     if !self.timer_blocked(*key, deadline) =>
                 {
                     Some(deadline.saturating_duration_since(now))
@@ -187,14 +188,14 @@ impl Engine {
             )
             .chain(self.runner.next_deadline(now))
             .chain(
-                self.combo_deadline()
+                self.trigger_chord_deadline()
                     .map(|deadline| deadline.saturating_duration_since(now)),
             )
             .min()
     }
 
     /// A failed text step must not submit incomplete input with subsequent keys.
-    pub fn text_input_failed(&mut self, out: &mut Vec<Out>) {
+    pub fn text_input_failed(&mut self, out: &mut Vec<EngineOutput>) {
         self.runner.abort(&mut self.virt, out);
     }
 
@@ -205,12 +206,12 @@ impl Engine {
 
     /// Tick pending state machines. Commits holds whose decision window
     /// elapsed and fires taps whose double-tap window elapsed.
-    pub fn tick(&mut self, now: Instant, out: &mut Vec<Out>) {
+    pub fn tick(&mut self, now: Instant, out: &mut Vec<EngineOutput>) {
         if self
-            .combo_deadline()
+            .trigger_chord_deadline()
             .is_some_and(|deadline| now >= deadline)
         {
-            self.flush_combo_buffer(out);
+            self.flush_trigger_chord_buffer(out);
         }
         let expired: Vec<_> = self
             .long_holds
@@ -232,12 +233,12 @@ impl Engine {
         let mut expired_second: Vec<KeyCode> = Vec::new();
         for (k, p) in &self.pending {
             match p.phase {
-                Phase::WaitingDecision { deadline }
+                RulePhase::WaitingDecision { deadline }
                     if deadline <= now && !self.timer_blocked(*k, deadline) =>
                 {
                     expired_hold.push(*k);
                 }
-                Phase::WaitingSecond { deadline }
+                RulePhase::WaitingSecond { deadline }
                     if deadline <= now && !self.timer_blocked(*k, deadline) =>
                 {
                     expired_second.push(*k);
@@ -260,7 +261,13 @@ impl Engine {
     }
 
     /// Handle a raw key event from the grabbed device.
-    pub fn handle(&mut self, key: KeyCode, down: bool, now: Instant, out: &mut Vec<Out>) {
+    pub fn handle_key_event(
+        &mut self,
+        key: KeyCode,
+        down: bool,
+        now: Instant,
+        out: &mut Vec<EngineOutput>,
+    ) {
         if down {
             if !self.physical_down.insert(key) {
                 return;
@@ -273,18 +280,18 @@ impl Engine {
             self.physical_down.remove(&key);
             self.press_at.remove(&key);
         }
-        // A press arriving after the combo window but before the next tick
+        // A press arriving after the trigger chord window but before the next tick
         // must not extend the stale combo.
         if self
-            .combo_deadline()
+            .trigger_chord_deadline()
             .is_some_and(|deadline| now >= deadline)
         {
-            self.flush_combo_buffer(out);
+            self.flush_trigger_chord_buffer(out);
         }
         if self.handle_chord(key, down, now, out) {
             return;
         }
-        if self.combo_intercept(key, down, now, out) {
+        if self.intercept_trigger_chord(key, down, now, out) {
             return;
         }
         self.handle_event(key, down, now, out);
@@ -294,23 +301,29 @@ impl Engine {
     /// repeat injected keys itself (Windows). Only a key that currently
     /// holds a virtual key down repeats it; undecided taps, layer triggers
     /// and one-shot actions do not.
-    pub fn repeat(&self, key: KeyCode, out: &mut Vec<Out>) {
+    pub fn repeat(&self, key: KeyCode, out: &mut Vec<EngineOutput>) {
         if self
             .pending
             .get(&key)
-            .is_some_and(|pending| !matches!(pending.phase, Phase::HoldActive))
+            .is_some_and(|pending| !matches!(pending.phase, RulePhase::HoldActive))
         {
             return;
         }
         if let Some(ks) = self.virt.emitted.get(&key) {
-            out.push(Out::KeyRaw {
+            out.push(EngineOutput::KeyRaw {
                 key: ks.key,
                 down: true,
             });
         }
     }
 
-    fn handle_event(&mut self, key: KeyCode, down: bool, now: Instant, out: &mut Vec<Out>) {
+    fn handle_event(
+        &mut self,
+        key: KeyCode,
+        down: bool,
+        now: Instant,
+        out: &mut Vec<EngineOutput>,
+    ) {
         if is_mouse_button(key) {
             if down {
                 // Commit all pending tap/hold decisions before processing the
@@ -330,7 +343,7 @@ impl Engine {
                 self.drain_decision_buffer(out);
             }
             if !self.should_handle_mouse_button(key, down) {
-                out.push(Out::KeyRaw { key, down });
+                out.push(EngineOutput::KeyRaw { key, down });
                 return;
             }
             // Fall through to normal key handling below.
@@ -348,7 +361,7 @@ impl Engine {
             && !self.virt.oneshot.contains(&key)
         {
             if !self.virt.is_held(key) {
-                out.push(Out::KeyRaw { key, down });
+                out.push(EngineOutput::KeyRaw { key, down });
             }
             return;
         }
@@ -360,7 +373,7 @@ impl Engine {
         }
     }
 
-    fn on_press(&mut self, key: KeyCode, now: Instant, out: &mut Vec<Out>) {
+    fn on_press(&mut self, key: KeyCode, now: Instant, out: &mut Vec<EngineOutput>) {
         // Second press of a rule key that is currently waiting for a
         // double-tap. Compare the *event* time against the window deadline
         // rather than trusting the phase alone: a live press can arrive
@@ -368,7 +381,7 @@ impl Engine {
         // permissive-hold replay carries an old timestamp. Only a press that
         // actually lands inside the window is a double-tap.
         let waiting_second_deadline = match self.pending.get(&key).map(|p| &p.phase) {
-            Some(Phase::WaitingSecond { deadline })
+            Some(RulePhase::WaitingSecond { deadline })
                 if self.pending[&key].rule.trigger_keys.len() <= 1 =>
             {
                 Some(*deadline)
@@ -422,7 +435,7 @@ impl Engine {
                 return;
             }
             if self.layout.rules.contains_key(&key) {
-                out.push(Out::KeyRaw { key, down: true });
+                out.push(EngineOutput::KeyRaw { key, down: true });
                 self.virt
                     .emitted
                     .insert(key, Keystroke { mods: vec![], key });
@@ -437,7 +450,7 @@ impl Engine {
             let mapped = self.lookup_mapping(key);
             match mapped {
                 Some((layer_id, def)) => match def {
-                    ActionDef::Stroke(ks)
+                    CompiledAction::Stroke(ks)
                         if !ks.mods.is_empty()
                             && self
                                 .layout
@@ -447,35 +460,35 @@ impl Engine {
                     {
                         self.press_holding_mods(&layer_id, key, ks, out);
                     }
-                    ActionDef::Stroke(ks) => {
+                    CompiledAction::Stroke(ks) => {
                         self.emit_stroke_press(key, ks, out);
                     }
-                    ActionDef::Literal(text) => {
-                        out.push(Out::Literal(text));
+                    CompiledAction::Literal(text) => {
+                        out.push(EngineOutput::Literal(text));
                         self.virt.oneshot.insert(key);
                     }
-                    ActionDef::Macro(md) => {
+                    CompiledAction::Macro(md) => {
                         self.runner.run(md, now);
                         self.virt.oneshot.insert(key);
                     }
-                    ActionDef::System(action) => {
-                        out.push(Out::RunSystem(action));
+                    CompiledAction::System(action) => {
+                        out.push(EngineOutput::RunSystem(action));
                         self.virt.oneshot.insert(key);
                     }
-                    ActionDef::Command(command) => {
-                        out.push(Out::RunCommand(command));
+                    CompiledAction::Command(command) => {
+                        out.push(EngineOutput::RunCommand(command));
                         self.virt.oneshot.insert(key);
                     }
-                    ActionDef::Swallow => {
+                    CompiledAction::Swallow => {
                         self.virt.oneshot.insert(key);
                     }
-                    ActionDef::Unavailable(action) => {
+                    CompiledAction::Unavailable(action) => {
                         report_unavailable(&action);
                         self.virt.oneshot.insert(key);
                     }
                 },
                 None => {
-                    out.push(Out::KeyRaw { key, down: true });
+                    out.push(EngineOutput::KeyRaw { key, down: true });
                     self.virt
                         .emitted
                         .insert(key, Keystroke { mods: vec![], key });
@@ -484,7 +497,7 @@ impl Engine {
         }
     }
 
-    fn on_release(&mut self, key: KeyCode, now: Instant, out: &mut Vec<Out>) {
+    fn on_release(&mut self, key: KeyCode, now: Instant, out: &mut Vec<EngineOutput>) {
         // Releases can arrive through replay or a chord owner, bypassing
         // `handle`. Resolve only this key's timer at the event timestamp.
         if self
@@ -497,7 +510,7 @@ impl Engine {
             self.fire_action(Some(&action), self.layout.default_mod_delay, now, out);
         }
         if self.pending.get(&key).is_some_and(
-            |p| matches!(p.phase, Phase::WaitingDecision { deadline } if now >= deadline),
+            |p| matches!(p.phase, RulePhase::WaitingDecision { deadline } if now >= deadline),
         ) {
             self.commit_hold(key, out);
             self.drain_decision_buffer(out);
@@ -505,11 +518,11 @@ impl Engine {
         self.long_holds.remove(&key);
         if let Some(pending) = self.pending.get(&key).cloned() {
             match pending.phase {
-                Phase::HoldActive => {
+                RulePhase::HoldActive => {
                     self.pending.remove(&key);
                     self.release_hold_with(&pending.rule, key, out);
                 }
-                Phase::WaitingDecision { .. } => {
+                RulePhase::WaitingDecision { .. } => {
                     // Short press. If double-tap is configured, delay the
                     // tap by double_tap_window to see if a second press
                     // follows; otherwise fire tap immediately.
@@ -517,7 +530,7 @@ impl Engine {
                     let rule_window = pending.rule.double_tap_window;
                     if has_dtap {
                         if let Some(p) = self.pending.get_mut(&key) {
-                            p.phase = Phase::WaitingSecond {
+                            p.phase = RulePhase::WaitingSecond {
                                 deadline: now + rule_window,
                             };
                         }
@@ -526,7 +539,7 @@ impl Engine {
                         self.fire_tap(key, &pending.rule.tap, now, out);
                     }
                 }
-                Phase::WaitingSecond { .. } => {
+                RulePhase::WaitingSecond { .. } => {
                     self.release_emitted(key, out);
                 }
             }
@@ -546,20 +559,20 @@ impl Engine {
             self.release_emitted(key, out);
         } else {
             // Unknown / orphan release — pass through as release to avoid stuck keys.
-            out.push(Out::KeyRaw { key, down: false });
+            out.push(EngineOutput::KeyRaw { key, down: false });
         }
     }
 
     /// Press a resolved keystroke and remember it so the matching
     /// release event (on physical key up) can emit the correct virtual
     /// key-up + mod-release.
-    fn emit_stroke_press(&mut self, physical: KeyCode, ks: Keystroke, out: &mut Vec<Out>) {
+    fn emit_stroke_press(&mut self, physical: KeyCode, ks: Keystroke, out: &mut Vec<EngineOutput>) {
         if !ks.mods.is_empty() {
             for m in &ks.mods {
                 *self.virt.mod_refs.entry(*m).or_insert(0) += 1;
             }
         }
-        out.push(Out::ChordPress {
+        out.push(EngineOutput::ChordPress {
             ks: ks.clone(),
             mod_delay: self.layout.default_mod_delay,
         });
@@ -576,7 +589,7 @@ impl Engine {
         layer_id: &str,
         physical: KeyCode,
         ks: Keystroke,
-        out: &mut Vec<Out>,
+        out: &mut Vec<EngineOutput>,
     ) {
         let Some(trigger) = self
             .layers
@@ -600,9 +613,9 @@ impl Engine {
             .collect();
         let released = self.virt.take_releasable_mods(&dropped);
         if !released.is_empty() {
-            out.push(Out::ReleaseMods(released));
+            out.push(EngineOutput::ReleaseMods(released));
         }
-        out.push(Out::ChordPress {
+        out.push(EngineOutput::ChordPress {
             ks: Keystroke {
                 mods: fresh,
                 key: ks.key,
@@ -618,25 +631,25 @@ impl Engine {
         );
     }
 
-    fn release_emitted(&mut self, physical: KeyCode, out: &mut Vec<Out>) {
+    fn release_emitted(&mut self, physical: KeyCode, out: &mut Vec<EngineOutput>) {
         let Some(ks) = self.virt.emitted.remove(&physical) else {
             return;
         };
         let mods = self.virt.take_releasable_mods(&ks.mods);
         if self.virt.is_held(ks.key) {
             if !mods.is_empty() {
-                out.push(Out::ReleaseMods(mods));
+                out.push(EngineOutput::ReleaseMods(mods));
             }
             return;
         }
         if ks.mods.is_empty() {
-            out.push(Out::KeyRaw {
+            out.push(EngineOutput::KeyRaw {
                 key: ks.key,
                 down: false,
             });
             return;
         }
-        out.push(Out::ChordRelease {
+        out.push(EngineOutput::ChordRelease {
             key: ks.key,
             mods,
             mod_delay: self.layout.default_mod_delay,
@@ -665,11 +678,17 @@ impl Engine {
                 .is_some_and(|ks| is_modifier_key(ks.key))
     }
 
-    fn lookup_mapping(&self, key: KeyCode) -> Option<(String, ActionDef)> {
+    fn lookup_mapping(&self, key: KeyCode) -> Option<(String, CompiledAction)> {
         self.layers.lookup(&self.layout.layer_maps, key)
     }
 
-    fn start_rule(&mut self, key: KeyCode, rule: RuleEntry, now: Instant, out: &mut Vec<Out>) {
+    fn start_rule(
+        &mut self,
+        key: KeyCode,
+        rule: RuleEntry,
+        now: Instant,
+        out: &mut Vec<EngineOutput>,
+    ) {
         if let Some(action) = rule.long_hold.clone() {
             self.long_holds
                 .insert(key, (now + rule.long_hold_timeout, action));
@@ -677,9 +696,9 @@ impl Engine {
         if matches!(rule.tap, TapMode::Swallow) && rule.double_tap.is_none() {
             self.pending.insert(
                 key,
-                Pending {
+                RuleExecution {
                     rule: rule.clone(),
-                    phase: Phase::HoldActive,
+                    phase: RulePhase::HoldActive,
                 },
             );
             self.commit_hold_with(&rule, key, out);
@@ -687,9 +706,9 @@ impl Engine {
             let deadline = now + rule.hold_timeout;
             self.pending.insert(
                 key,
-                Pending {
+                RuleExecution {
                     rule,
-                    phase: Phase::WaitingDecision { deadline },
+                    phase: RulePhase::WaitingDecision { deadline },
                 },
             );
         }
@@ -723,13 +742,13 @@ impl Engine {
 
     fn fire_action(
         &mut self,
-        action: Option<&ActionDef>,
+        action: Option<&CompiledAction>,
         mod_delay: Duration,
         now: Instant,
-        out: &mut Vec<Out>,
+        out: &mut Vec<EngineOutput>,
     ) {
         match action {
-            Some(ActionDef::Stroke(ks)) => {
+            Some(CompiledAction::Stroke(ks)) => {
                 if self.virt.is_held(ks.key) {
                     return;
                 }
@@ -740,23 +759,33 @@ impl Engine {
                     mods: self.virt.mods_not_held(&ks.mods),
                     key: ks.key,
                 };
-                out.push(Out::Stroke { ks, mod_delay });
+                out.push(EngineOutput::Stroke { ks, mod_delay });
             }
-            Some(ActionDef::Literal(text)) => out.push(Out::Literal(text.clone())),
-            Some(ActionDef::Macro(md)) => self.runner.run(md.clone(), now),
-            Some(ActionDef::System(action)) => out.push(Out::RunSystem(action.clone())),
-            Some(ActionDef::Command(command)) => out.push(Out::RunCommand(command.clone())),
-            Some(ActionDef::Swallow) => {}
-            Some(ActionDef::Unavailable(action)) => report_unavailable(action),
+            Some(CompiledAction::Literal(text)) => out.push(EngineOutput::Literal(text.clone())),
+            Some(CompiledAction::Macro(md)) => self.runner.run(md.clone(), now),
+            Some(CompiledAction::System(action)) => {
+                out.push(EngineOutput::RunSystem(action.clone()))
+            }
+            Some(CompiledAction::Command(command)) => {
+                out.push(EngineOutput::RunCommand(command.clone()))
+            }
+            Some(CompiledAction::Swallow) => {}
+            Some(CompiledAction::Unavailable(action)) => report_unavailable(action),
             None => {}
         }
     }
 
-    fn fire_tap(&mut self, physical: KeyCode, tap: &TapMode, now: Instant, out: &mut Vec<Out>) {
+    fn fire_tap(
+        &mut self,
+        physical: KeyCode,
+        tap: &TapMode,
+        now: Instant,
+        out: &mut Vec<EngineOutput>,
+    ) {
         match tap {
             TapMode::Native => {
                 // Short native press+release of the physical key.
-                out.push(Out::Stroke {
+                out.push(EngineOutput::Stroke {
                     ks: Keystroke {
                         mods: vec![],
                         key: physical,
@@ -771,13 +800,13 @@ impl Engine {
                     .copied()
                     .collect();
                 for key in &keys {
-                    out.push(Out::KeyRaw {
+                    out.push(EngineOutput::KeyRaw {
                         key: *key,
                         down: true,
                     });
                 }
                 for key in keys.iter().rev() {
-                    out.push(Out::KeyRaw {
+                    out.push(EngineOutput::KeyRaw {
                         key: *key,
                         down: false,
                     });
@@ -793,11 +822,11 @@ impl Engine {
     /// Fire all pending taps whose double-tap window is still open — used
     /// when another key is pressed, so the deferred tap is committed
     /// before the new key's action. Preserves ordering.
-    fn flush_waiting_second(&mut self, now: Instant, out: &mut Vec<Out>) {
+    fn flush_waiting_second(&mut self, now: Instant, out: &mut Vec<EngineOutput>) {
         let keys: Vec<KeyCode> = self
             .pending
             .iter()
-            .filter(|(_, p)| matches!(p.phase, Phase::WaitingSecond { deadline } if deadline <= now || p.rule.trigger_keys.len() <= 1 || !p.rule.trigger_keys.iter().any(|key| self.physical_down.contains(key))))
+            .filter(|(_, p)| matches!(p.phase, RulePhase::WaitingSecond { deadline } if deadline <= now || p.rule.trigger_keys.len() <= 1 || !p.rule.trigger_keys.iter().any(|key| self.physical_down.contains(key))))
             .map(|(k, _)| *k)
             .collect();
         for k in keys {
@@ -809,14 +838,14 @@ impl Engine {
     }
 
     /// Generic shutdown helper — release everything that is currently held.
-    pub fn shutdown(&mut self, out: &mut Vec<Out>) {
+    pub fn shutdown(&mut self, out: &mut Vec<EngineOutput>) {
         self.runner.cancel(&mut self.virt, out);
         // HashMap drain order is arbitrary; release plain keys before
         // modifier keys so a chord's main key never outlives its modifier.
         let mut held: Vec<KeyCode> = self.virt.emitted.drain().map(|(_, ks)| ks.key).collect();
         held.sort_by_key(|k| is_modifier_key(*k));
         for key in held {
-            out.push(Out::KeyRaw { key, down: false });
+            out.push(EngineOutput::KeyRaw { key, down: false });
         }
         let mods: Vec<KeyCode> = self
             .virt
@@ -826,7 +855,7 @@ impl Engine {
             .map(|(k, _)| k)
             .collect();
         if !mods.is_empty() {
-            out.push(Out::ReleaseMods(mods));
+            out.push(EngineOutput::ReleaseMods(mods));
         }
         self.layers.active.clear();
         self.pending.clear();
@@ -850,7 +879,7 @@ impl Engine {
         self.layout.default_hold
     }
 
-    pub fn execute_remote(&mut self, action: &str, out: &mut Vec<Out>) {
+    pub fn execute_remote(&mut self, action: &str, out: &mut Vec<EngineOutput>) {
         let resolved =
             builder::resolve_action(action, &self.layout.macros, &self.layout.commands, "remote");
         self.fire_action(
@@ -872,11 +901,11 @@ fn report_unavailable(action: &str) {
 /// non-empty, must match for the rule to fire.
 fn rule_passes_apps(rule: &RuleEntry, ctx: &AutoSwitchContext) -> bool {
     let bl = rule
-        .condition_apps_blacklist
+        .condition_excluded_window_patterns
         .as_deref()
         .filter(|l| !l.is_empty());
     let wl = rule
-        .condition_apps_whitelist
+        .condition_window_patterns
         .as_deref()
         .filter(|l| !l.is_empty());
     if bl.is_none() && wl.is_none() {
@@ -919,7 +948,7 @@ fn rule_passes_conditions(rule: &RuleEntry, ctx: &AutoSwitchContext) -> bool {
         .as_ref()
         .is_some_and(|m| *m != GameModeCondition::Ignore);
     let has_layout_cond = rule
-        .condition_layouts
+        .condition_keyboard_layouts
         .as_ref()
         .is_some_and(|l| !l.is_empty());
 
@@ -942,7 +971,7 @@ fn rule_passes_conditions(rule: &RuleEntry, ctx: &AutoSwitchContext) -> bool {
             return false;
         };
         if !rule
-            .condition_layouts
+            .condition_keyboard_layouts
             .as_ref()
             .is_some_and(|layouts| layouts.contains(current))
         {

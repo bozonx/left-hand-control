@@ -3,7 +3,7 @@
 //! These operations change the layout only; validation of action strings
 //! and saving belong to [`crate::config_document::ConfigDocument`].
 
-use super::model::{Layer, LayerRule, LayoutPreset};
+use super::model::{KeyRule, Layer, LayoutPreset};
 
 /// What a key does inside a layer keymap.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -32,9 +32,9 @@ impl LayoutPreset {
             && !matching.iter().any(|rule| {
                 !rule.layer_id.is_empty()
                     || rule.condition_game_mode.is_some()
-                    || rule.condition_layouts.is_some()
-                    || rule.condition_apps_whitelist.is_some()
-                    || rule.condition_apps_blacklist.is_some()
+                    || rule.condition_keyboard_layouts.is_some()
+                    || rule.condition_window_patterns.is_some()
+                    || rule.condition_excluded_window_patterns.is_some()
                     || rule
                         .hold_action
                         .as_deref()
@@ -62,7 +62,7 @@ impl LayoutPreset {
             }
             index += 1;
         };
-        let mut rule = LayerRule::new(id, key);
+        let mut rule = KeyRule::new(id, key);
         rule.tap_action = Some(action.into());
         self.rules.push(rule);
     }
@@ -73,7 +73,7 @@ impl LayoutPreset {
             name,
             description,
         });
-        self.layer_keymap_mut(id);
+        self.get_or_create_layer_keymap(id);
     }
 
     pub fn rename_layer(&mut self, id: &str, name: String, description: Option<String>) {
@@ -116,7 +116,7 @@ impl LayoutPreset {
     }
 
     pub fn clear_layer_keys(&mut self, id: &str) {
-        let map = self.layer_keymap_mut(id);
+        let map = self.get_or_create_layer_keymap(id);
         map.keys.clear();
         map.extra_key_order.clear();
         map.hold_modifiers.clear();
@@ -142,7 +142,7 @@ impl LayoutPreset {
     }
 
     pub fn set_layer_key(&mut self, layer_id: &str, key: &str, assignment: KeyAssignment) {
-        let map = self.layer_keymap_mut(layer_id);
+        let map = self.get_or_create_layer_keymap(layer_id);
         match assignment {
             KeyAssignment::Transparent => {
                 map.keys.remove(key);
@@ -169,7 +169,7 @@ impl LayoutPreset {
         assignment: KeyAssignment,
     ) {
         if let Some(previous) = previous {
-            let map = self.layer_keymap_mut(layer_id);
+            let map = self.get_or_create_layer_keymap(layer_id);
             map.keys.remove(previous);
             for code in &mut map.extra_key_order {
                 if code == previous {
@@ -192,7 +192,7 @@ impl LayoutPreset {
     }
 
     pub fn set_layer_key_holds_modifiers(&mut self, layer_id: &str, key: &str, hold: bool) {
-        let held = &mut self.layer_keymap_mut(layer_id).hold_modifiers;
+        let held = &mut self.get_or_create_layer_keymap(layer_id).hold_modifiers;
         if hold {
             held.insert(key.to_owned());
         } else {
@@ -202,7 +202,7 @@ impl LayoutPreset {
 
     /// Exchange the entries of keys `a` and `b` in the keymap of `layer_id`.
     pub fn swap_layer_keys(&mut self, layer_id: &str, a: &str, b: &str) {
-        let map = self.layer_keymap_mut(layer_id);
+        let map = self.get_or_create_layer_keymap(layer_id);
         let first = map.keys.remove(a);
         let second = map.keys.remove(b);
         if let Some(value) = first {

@@ -5,13 +5,13 @@
 
 use super::action::{explicit_pause, parse_action};
 use super::builtin_macros::BUILTIN_MACROS;
-use super::config::{ActionSpec, AppConfig};
+use super::config::{ActionSpec, MapperConfig};
 use super::keys::code_to_key;
 use super::system;
 use crate::profile::actions::{Action, MAX_MACRO_DEPTH, MAX_MACRO_STEPS};
 use std::collections::{HashMap, HashSet};
 
-pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
+pub fn validate_config(cfg: &MapperConfig) -> Result<(), String> {
     let mut errors = Vec::new();
     let builtin_macro_ids: HashSet<&str> = BUILTIN_MACROS.iter().map(|m| m.id).collect();
 
@@ -151,7 +151,7 @@ pub fn validate_config(cfg: &AppConfig) -> Result<(), String> {
     }
 }
 
-fn validate_macro_sizes(cfg: &AppConfig, errors: &mut Vec<String>) {
+fn validate_macro_sizes(cfg: &MapperConfig, errors: &mut Vec<String>) {
     let mut definitions: HashMap<String, Vec<&str>> = BUILTIN_MACROS
         .iter()
         .map(|m| (format!("builtin:{}", m.id), m.steps.to_vec()))
@@ -368,7 +368,7 @@ fn validate_action(
     }
 }
 
-fn validate_macro_cycles(cfg: &AppConfig, errors: &mut Vec<String>) {
+fn validate_macro_cycles(cfg: &MapperConfig, errors: &mut Vec<String>) {
     let mut graph: HashMap<String, Vec<String>> = HashMap::new();
 
     for sys in BUILTIN_MACROS {
@@ -439,8 +439,8 @@ mod tests {
     use crate::mapper::config::{Command, LayerKeymap, Macro, MacroStep, Rule, Settings};
     use std::collections::HashMap;
 
-    fn empty_cfg() -> AppConfig {
-        AppConfig {
+    fn empty_cfg() -> MapperConfig {
+        MapperConfig {
             rules: Vec::new(),
             layer_keymaps: HashMap::new(),
             macros: Vec::new(),
@@ -452,7 +452,7 @@ mod tests {
     #[test]
     fn mapper_and_editor_accept_the_same_actions() {
         let check = |tap: &str, step: &str| {
-            let cfg: AppConfig = serde_json::from_value(serde_json::json!({
+            let cfg: MapperConfig = serde_json::from_value(serde_json::json!({
                 "macros": [{"id": "m", "steps": [{"action": step}]}],
                 "rules": [{"key": "KeyQ", "tapAction": tap}]
             }))
@@ -481,9 +481,9 @@ mod tests {
         cfg.rules.push(Rule {
             enabled: true,
             condition_game_mode: None,
-            condition_layouts: None,
-            condition_apps_whitelist: None,
-            condition_apps_blacklist: None,
+            condition_keyboard_layouts: None,
+            condition_window_patterns: None,
+            condition_excluded_window_patterns: None,
             key: "CapsLock".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("macro:missing".into()),
@@ -507,9 +507,9 @@ mod tests {
         cfg.rules.push(Rule {
             enabled: true,
             condition_game_mode: None,
-            condition_layouts: None,
-            condition_apps_whitelist: None,
-            condition_apps_blacklist: None,
+            condition_keyboard_layouts: None,
+            condition_window_patterns: None,
+            condition_excluded_window_patterns: None,
             key: "CapsLock".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Native,
@@ -539,8 +539,8 @@ mod tests {
         let mut cfg = empty_cfg();
         cfg.commands.push(Command {
             id: "music".into(),
-            linux: "playerctl play-pause".into(),
-            windows: "playerctl play-pause".into(),
+            posix_script: "playerctl play-pause".into(),
+            powershell_script: "playerctl play-pause".into(),
             working_directory: None,
         });
         cfg.macros.push(Macro {
@@ -560,11 +560,11 @@ mod tests {
         let mut cfg = empty_cfg();
         cfg.commands.push(Command {
             id: "music".into(),
-            linux: "playerctl play-pause".into(),
-            windows: "playerctl play-pause".into(),
+            posix_script: "playerctl play-pause".into(),
+            powershell_script: "playerctl play-pause".into(),
             working_directory: None,
         });
-        cfg.settings.current_layout_id = Some("custom".into());
+        cfg.settings.editing_layout_id = Some("custom".into());
         cfg.settings.commands_enabled = true;
         cfg.macros.push(Macro {
             id: "m".into(),
@@ -642,9 +642,9 @@ mod tests {
         cfg.rules.push(Rule {
             enabled: true,
             condition_game_mode: None,
-            condition_layouts: None,
-            condition_apps_whitelist: None,
-            condition_apps_blacklist: None,
+            condition_keyboard_layouts: None,
+            condition_window_patterns: None,
+            condition_excluded_window_patterns: None,
             key: "CapsLock".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("pause:250".into()),
@@ -692,9 +692,9 @@ mod tests {
         cfg.rules.push(Rule {
             enabled: true,
             condition_game_mode: None,
-            condition_layouts: None,
-            condition_apps_whitelist: None,
-            condition_apps_blacklist: None,
+            condition_keyboard_layouts: None,
+            condition_window_patterns: None,
+            condition_excluded_window_patterns: None,
             key: "UnknownKey".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Native,
@@ -717,9 +717,9 @@ mod tests {
         cfg.rules.push(Rule {
             enabled: true,
             condition_game_mode: None,
-            condition_layouts: None,
-            condition_apps_whitelist: None,
-            condition_apps_blacklist: None,
+            condition_keyboard_layouts: None,
+            condition_window_patterns: None,
+            condition_excluded_window_patterns: None,
             key: "CapsLock".into(),
             layer_id: "missing".into(),
             tap_action: ActionSpec::Native,
@@ -764,14 +764,14 @@ mod tests {
         let mut cfg = empty_cfg();
         cfg.commands.push(Command {
             id: "dup".into(),
-            linux: "echo 1".into(),
-            windows: "echo 1".into(),
+            posix_script: "echo 1".into(),
+            powershell_script: "echo 1".into(),
             working_directory: None,
         });
         cfg.commands.push(Command {
             id: "dup".into(),
-            linux: "echo 2".into(),
-            windows: "echo 2".into(),
+            posix_script: "echo 2".into(),
+            powershell_script: "echo 2".into(),
             working_directory: None,
         });
         let err = validate_config(&cfg).expect_err("validation should fail");
@@ -783,8 +783,8 @@ mod tests {
         let mut cfg = empty_cfg();
         cfg.commands.push(Command {
             id: "empty".into(),
-            linux: "   ".into(),
-            windows: "   ".into(),
+            posix_script: "   ".into(),
+            powershell_script: "   ".into(),
             working_directory: None,
         });
         validate_config(&cfg).expect("empty command scripts are ignored drafts");
@@ -806,9 +806,9 @@ mod tests {
         cfg.rules.push(Rule {
             enabled: true,
             condition_game_mode: None,
-            condition_layouts: None,
-            condition_apps_whitelist: None,
-            condition_apps_blacklist: None,
+            condition_keyboard_layouts: None,
+            condition_window_patterns: None,
+            condition_excluded_window_patterns: None,
             key: "CapsLock".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Native,

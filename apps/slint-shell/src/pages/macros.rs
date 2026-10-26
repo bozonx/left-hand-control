@@ -13,7 +13,7 @@ use lhc_core::{
     profile::{
         actions::Action,
         ids, macros,
-        model::{AppConfig, Macro, MacroStep},
+        model::{Macro, MacroStep, ResolvedAppConfig},
     },
 };
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
@@ -95,13 +95,13 @@ impl super::autosave::Draft for State {
 }
 
 /// The configuration with the draft macros, used for validation and usage.
-fn candidate(document: &Document, draft: &[Entry]) -> AppConfig {
+fn candidate(document: &Document, draft: &[Entry]) -> ResolvedAppConfig {
     let mut config = document.read().config();
     config.macros = draft.iter().map(|e| e.item.clone()).collect();
     config
 }
 
-fn issue(config: &AppConfig, entry: &Entry) -> Option<ConfigError> {
+fn issue(config: &ResolvedAppConfig, entry: &Entry) -> Option<ConfigError> {
     if entry.saved().is_none() {
         return Some(ConfigError::Macro(macros::MacroIssue::DelayRange));
     }
@@ -128,7 +128,7 @@ fn steps(item: &Macro) -> ModelRc<MacroStepRow> {
     ))
 }
 
-fn row(config: &AppConfig, entry: &Entry) -> MacroRow {
+fn row(config: &ResolvedAppConfig, entry: &Entry) -> MacroRow {
     MacroRow {
         id: entry.item.id.clone().into(),
         name: entry.item.name.clone().into(),

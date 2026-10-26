@@ -41,7 +41,7 @@ impl ConfigDocument {
     pub fn library_save_target(&self, baseline: Option<(&str, &str)>) -> LibrarySaveTarget {
         let Some(name) = self
             .settings()
-            .current_layout_id
+            .editing_layout_id
             .as_deref()
             .and_then(super::model::user_layout_name)
         else {
@@ -73,13 +73,13 @@ impl ConfigDocument {
             return true;
         }
         let mut current = config.layout().clone();
-        current.prune_commands();
+        current.remove_unused_commands();
         normalized(&layout_file::serialize(&current)).as_ref() == Some(&disk_layout)
     }
 
     /// Save the working copy over an existing library file, returning its contents.
     pub fn overwrite_library_layout(&mut self, name: &str) -> Result<String, ConfigError> {
-        self.update_layout(LayoutPreset::prune_commands)?;
+        self.update_layout(LayoutPreset::remove_unused_commands)?;
         let text = layout_file::serialize(self.layout());
         self.paths()
             .save_user_layout(name, &text, true)
@@ -149,7 +149,7 @@ impl ConfigDocument {
 
     /// Save an edited working copy under a new name, dropping unreferenced commands.
     pub fn save_working_layout_as(&mut self, name: &str) -> Result<(String, String), ConfigError> {
-        self.update_layout(LayoutPreset::prune_commands)?;
+        self.update_layout(LayoutPreset::remove_unused_commands)?;
         let text = layout_file::serialize(self.layout());
         Ok((self.save_current_layout_as(name)?, text))
     }
@@ -161,11 +161,11 @@ impl ConfigDocument {
             .save_user_layout(name, &layout_file::serialize(self.layout()), false)
             .map_err(ConfigError::Io)?;
         let result = self.update_settings(|settings| {
-            let old = settings.current_layout_id.clone();
+            let old = settings.editing_layout_id.clone();
             let new = user_layout_id(&saved);
-            settings.current_layout_id = Some(new);
-            if settings.manual_active_layout_id == old {
-                settings.manual_active_layout_id = settings.current_layout_id.clone();
+            settings.editing_layout_id = Some(new);
+            if settings.manual_layout_id == old {
+                settings.manual_layout_id = settings.editing_layout_id.clone();
             }
         });
         if let Err(error) = result {
@@ -225,11 +225,11 @@ impl ConfigDocument {
         let old = user_layout_id(name);
         let new = user_layout_id(&saved);
         let result = self.update_settings(|settings| {
-            if settings.current_layout_id.as_ref() == Some(&old) {
-                settings.current_layout_id = Some(new.clone());
+            if settings.editing_layout_id.as_ref() == Some(&old) {
+                settings.editing_layout_id = Some(new.clone());
             }
-            if settings.manual_active_layout_id.as_ref() == Some(&old) {
-                settings.manual_active_layout_id = Some(new.clone());
+            if settings.manual_layout_id.as_ref() == Some(&old) {
+                settings.manual_layout_id = Some(new.clone());
             }
             for id in &mut settings.layout_order {
                 if id == &old {
@@ -253,7 +253,7 @@ impl ConfigDocument {
                 .map_err(ConfigError::Io)?;
             return Err(error);
         }
-        if self.settings().current_layout_id.as_ref() == Some(&new) {
+        if self.settings().editing_layout_id.as_ref() == Some(&new) {
             self.update_layout(|layout| layout.description = preset.description)?;
         }
         Ok(saved)
@@ -283,11 +283,11 @@ impl ConfigDocument {
                 if settings.auto_default_layout_id.as_ref() == Some(&id) {
                     settings.auto_default_layout_id = None;
                 }
-                if settings.current_layout_id.as_ref() == Some(&id) {
-                    settings.current_layout_id = None;
+                if settings.editing_layout_id.as_ref() == Some(&id) {
+                    settings.editing_layout_id = None;
                 }
-                if settings.manual_active_layout_id.as_ref() == Some(&id) {
-                    settings.manual_active_layout_id = remaining.first().cloned();
+                if settings.manual_layout_id.as_ref() == Some(&id) {
+                    settings.manual_layout_id = remaining.first().cloned();
                 }
             })
         });
@@ -302,7 +302,7 @@ impl ConfigDocument {
     pub fn load_library_for_editing(&mut self, name: &str) -> Result<(), ConfigError> {
         let preset: LayoutPreset = self.load_layout(&user_layout_id(name))?;
         self.update_layout(|layout| *layout = preset)?;
-        self.update_settings(|settings| settings.current_layout_id = Some(user_layout_id(name)))
+        self.update_settings(|settings| settings.editing_layout_id = Some(user_layout_id(name)))
     }
 }
 
@@ -524,7 +524,7 @@ mod tests {
         }
         document
             .update_settings(|settings| {
-                settings.manual_active_layout_id = Some("user:A".into());
+                settings.manual_layout_id = Some("user:A".into());
                 settings.layout_order = vec!["user:A".into(), "user:B".into()];
                 settings.auto_rules = vec![AutoRule {
                     id: "r".into(),
@@ -556,7 +556,7 @@ mod tests {
             Some("original")
         );
         assert_eq!(
-            document.settings().current_layout_id.as_deref(),
+            document.settings().editing_layout_id.as_deref(),
             Some("user:C")
         );
         assert_eq!(
@@ -578,9 +578,9 @@ mod tests {
             .remove_library_layout("C", &paths.load_user_layout("C").unwrap())
             .unwrap();
         let reloaded = ConfigDocument::load(paths).unwrap();
-        assert!(reloaded.settings().current_layout_id.is_none());
+        assert!(reloaded.settings().editing_layout_id.is_none());
         assert_eq!(
-            reloaded.settings().manual_active_layout_id.as_deref(),
+            reloaded.settings().manual_layout_id.as_deref(),
             Some("user:A")
         );
         assert_eq!(reloaded.settings().layout_order, ["user:A"]);
@@ -600,7 +600,7 @@ mod tests {
         }
         document
             .update_settings(|settings| {
-                settings.manual_active_layout_id = Some("user:B".into());
+                settings.manual_layout_id = Some("user:B".into());
                 settings.layout_order = vec!["user:C".into(), "user:B".into(), "user:A".into()];
             })
             .unwrap();
@@ -608,20 +608,20 @@ mod tests {
             .remove_library_layout("A", &paths.load_user_layout("A").unwrap())
             .unwrap();
         assert_eq!(
-            document.settings().manual_active_layout_id.as_deref(),
+            document.settings().manual_layout_id.as_deref(),
             Some("user:B")
         );
         document
             .remove_library_layout("B", &paths.load_user_layout("B").unwrap())
             .unwrap();
         assert_eq!(
-            document.settings().manual_active_layout_id.as_deref(),
+            document.settings().manual_layout_id.as_deref(),
             Some("user:C")
         );
         document
             .remove_library_layout("C", &paths.load_user_layout("C").unwrap())
             .unwrap();
-        assert!(document.settings().manual_active_layout_id.is_none());
+        assert!(document.settings().manual_layout_id.is_none());
     }
 
     #[test]
@@ -656,8 +656,8 @@ mod tests {
                         conditions: LayoutConditionSet {
                             game_mode: None,
                             layouts: vec!["us".into()],
-                            apps: vec!["*kate".into()],
-                            excluded_apps: vec![],
+                            window_patterns: vec!["*kate".into()],
+                            excluded_window_patterns: vec![],
                         },
                     },
                 ];

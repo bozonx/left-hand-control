@@ -4,7 +4,7 @@ use super::{ConfigDocument, ConfigError};
 use crate::profile::app_match;
 use crate::profile::auto_switch::{self, AutoSwitchContext};
 use crate::profile::diagnostics::{self, RuleIssue};
-use crate::profile::model::{AppConfig, AppSettings, LayoutMode, LayoutPreset};
+use crate::profile::model::{AppSettings, LayoutMode, LayoutPreset, ResolvedAppConfig};
 
 /// Mapper input computed from the document for the current system state.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -26,7 +26,8 @@ impl RuntimeConfig {
         layout: LayoutPreset,
         layout_id: Option<String>,
     ) -> Result<Self, ConfigError> {
-        let mut config = AppConfig::from_parts(settings.clone(), layout, layout_id.as_deref());
+        let mut config =
+            ResolvedAppConfig::from_parts(settings.clone(), layout, layout_id.as_deref());
         let blocking: Vec<RuleIssue> = diagnostics::analyze(&config)
             .into_iter()
             .filter(|issue| issue.code.is_error())
@@ -34,11 +35,11 @@ impl RuntimeConfig {
         if !blocking.is_empty() {
             return Err(ConfigError::Rules(blocking));
         }
-        diagnostics::runtime_rules(&mut config);
+        diagnostics::retain_runtime_rules(&mut config);
         let rule_patterns = config.rules.iter().flat_map(|rule| {
             [
-                &rule.condition_apps_whitelist,
-                &rule.condition_apps_blacklist,
+                &rule.condition_window_patterns,
+                &rule.condition_excluded_window_patterns,
             ]
             .into_iter()
             .flatten()
@@ -50,9 +51,9 @@ impl RuntimeConfig {
             .filter(|_| settings.layout_mode == LayoutMode::Auto)
             .flat_map(|rule| {
                 rule.conditions
-                    .apps
+                    .window_patterns
                     .iter()
-                    .chain(&rule.conditions.excluded_apps)
+                    .chain(&rule.conditions.excluded_window_patterns)
             });
         let uses_titles = app_match::uses_title(rule_patterns.chain(auto_patterns));
         let json = config.to_json();
@@ -70,7 +71,7 @@ impl ConfigDocument {
     /// mode the first matching rule's layout or the default.
     pub fn active_layout_id(&self, ctx: &AutoSwitchContext) -> Result<Option<String>, ConfigError> {
         Ok(match self.settings.layout_mode {
-            LayoutMode::Manual => self.settings.manual_active_layout_id.clone(),
+            LayoutMode::Manual => self.settings.manual_layout_id.clone(),
             LayoutMode::Auto => self.auto_choice(ctx)?.layout_id,
         })
     }
@@ -101,7 +102,7 @@ impl ConfigDocument {
     }
 
     pub fn layout_for_activation(&self, id: Option<&str>) -> Result<LayoutPreset, ConfigError> {
-        if id == self.settings.current_layout_id.as_deref()
+        if id == self.settings.editing_layout_id.as_deref()
             && (id.is_some() || self.settings.layout_mode == LayoutMode::Manual)
         {
             return Ok(self.layout.clone());
@@ -115,7 +116,7 @@ impl ConfigDocument {
 
 /// Run the mapper's own validation, which also checks key names.
 fn validate_for_mapper(json: &str) -> Result<(), ConfigError> {
-    let config: crate::mapper::config::AppConfig =
+    let config: crate::mapper::config::MapperConfig =
         serde_json::from_str(json).map_err(|error| ConfigError::Invalid(error.to_string()))?;
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     crate::mapper::validation::validate_config(&config).map_err(ConfigError::Invalid)?;

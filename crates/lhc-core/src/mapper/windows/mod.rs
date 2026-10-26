@@ -17,14 +17,14 @@ pub mod system;
 pub use guard::{dispatch as dispatch_input_guard, pid as input_guard_pid};
 pub use input::type_unicode;
 
-use super::config::AppConfig;
-use super::engine::{Engine, Out};
+use super::config::MapperConfig;
+use super::engine::{Engine, EngineOutput};
 use super::key_code::KeyCode;
 use super::output::{
     DriverInput, EventSink, LoopDriver, OutputHold, SideEffects, flush_out_with,
     process_iteration_with,
 };
-use super::system::{SysAction, SysCommand};
+use super::system::{ProcessInvocation, SystemAction};
 use super::{InputDevice, KeyboardDevice};
 use crate::events::{CoreEvent, TextInputFailure};
 use crate::text_input::job::TextRequest;
@@ -78,7 +78,7 @@ pub fn list_mice() -> Result<Vec<KeyboardDevice>, String> {
 }
 
 enum MapperControl {
-    Config(Box<AppConfig>),
+    Config(Box<MapperConfig>),
     Execute(String),
     /// A popup took the keyboard focus; emit the output held for it.
     PopupFocused,
@@ -115,7 +115,7 @@ impl Handle {
         self.error.lock().ok().and_then(|g| g.clone())
     }
 
-    pub fn update_config(&self, cfg: AppConfig) -> Result<(), String> {
+    pub fn update_config(&self, cfg: MapperConfig) -> Result<(), String> {
         self.send(MapperControl::Config(Box::new(cfg)))
     }
 
@@ -143,7 +143,7 @@ const START_TIMEOUT: Duration = Duration::from_secs(5);
 pub fn spawn(
     device_path: String,
     mouse_path: Option<String>,
-    cfg: AppConfig,
+    cfg: MapperConfig,
     stop: Arc<AtomicBool>,
 ) -> Result<Handle, String> {
     if device_path != KEYBOARD_PATH {
@@ -270,7 +270,7 @@ impl Drop for MapperLock {
 #[allow(clippy::too_many_arguments)]
 fn run(
     mouse: bool,
-    cfg: AppConfig,
+    cfg: MapperConfig,
     stop: Arc<AtomicBool>,
     ready_tx: mpsc::Sender<Result<(), String>>,
     control_rx: mpsc::Receiver<MapperControl>,
@@ -294,13 +294,13 @@ fn run(
 
 fn run_loop(
     mut driver: HookDriver,
-    cfg: AppConfig,
+    cfg: MapperConfig,
     stop: &AtomicBool,
     control_rx: mpsc::Receiver<MapperControl>,
 ) -> Result<(), String> {
     let mut cfg = cfg;
     let mut engine = Engine::new(&cfg);
-    let mut out_buf: Vec<Out> = Vec::with_capacity(16);
+    let mut out_buf: Vec<EngineOutput> = Vec::with_capacity(16);
     let mut hold = OutputHold::default();
     let mut sink = InjectSink;
     let mut effects = RuntimeSideEffects;
@@ -555,9 +555,9 @@ impl SideEffects for RuntimeSideEffects {
         crate::text_input::job::take_failure()
     }
 
-    fn run_system(&mut self, action: &SysAction) {
+    fn run_system(&mut self, action: &SystemAction) {
         match action {
-            SysAction::Windows(action) => {
+            SystemAction::Windows(action) => {
                 let result = system::run(*action);
                 if matches!(action, system::WindowsAction::SwitchLayout(_)) && result.is_ok() {
                     super::refresh_layout();
@@ -566,12 +566,12 @@ impl SideEffects for RuntimeSideEffects {
                     report_action_failure(error);
                 }
             }
-            SysAction::Spawn(command) => super::commands::spawn(command.clone()),
-            SysAction::AppEvent(event) => super::emit_app_event(event),
+            SystemAction::Spawn(command) => super::commands::spawn(command.clone()),
+            SystemAction::AppEvent(event) => super::emit_app_event(event),
         }
     }
 
-    fn run_command(&mut self, command: &SysCommand) {
+    fn run_command(&mut self, command: &ProcessInvocation) {
         super::commands::spawn(command.clone());
     }
 }
@@ -694,7 +694,7 @@ mod tests {
         assert!(spawn("x".into(), None, empty(), Arc::default()).is_err());
     }
 
-    fn empty() -> AppConfig {
+    fn empty() -> MapperConfig {
         serde_json::from_value(serde_json::json!({})).unwrap()
     }
 }

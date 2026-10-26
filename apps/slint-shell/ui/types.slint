@@ -23,7 +23,7 @@ export enum ActionKind { none, keys, macro, command, system, app, text }
 export enum RuleDialog { none, key, layer, tap, hold, long-hold, double-tap, conditions, hold-timeout, double-timeout, advanced, remove }
 
 /// What holding a rule's trigger does: nothing extra, activate a layer, or run an action.
-export enum HoldMode { none, layer, action }
+export enum HoldBehavior { none, layer, action }
 
 /// What key caps on the layers page show: the US-layout label or the internal key code.
 export enum LabelMode { label, code }
@@ -77,3 +77,6 @@ export enum PickerBehavior { native, swallow, action }
 
 /// Where a command is assigned, listed on the commands settings tab.
 export enum CommandPlace { rule-tap, rule-hold, rule-long-hold, rule-double-tap, layer-key, macro, quick-action }
+
+/// Meaning of the unassigned option in the action picker.
+export enum DefaultAssignmentBehavior { passthrough, inherit, no-action, empty-cell, layer-only }

@@ -52,15 +52,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     library.invoke_select(1);
     library.invoke_load();
     assert_eq!(
-        document.read().settings().current_layout_id.as_deref(),
+        document.read().settings().editing_layout_id.as_deref(),
         Some("user:B")
     );
     assert_eq!(
-        document
-            .read()
-            .settings()
-            .manual_active_layout_id
-            .as_deref(),
+        document.read().settings().manual_layout_id.as_deref(),
         Some("user:A")
     );
     library.set_name("Профиль".into());
@@ -243,13 +239,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let reloaded = ConfigDocument::load(paths.clone())?;
     assert!(reloaded.settings().auto_rules.is_empty());
     assert_eq!(
-        reloaded.settings().current_layout_id.as_deref(),
+        reloaded.settings().editing_layout_id.as_deref(),
         Some("user:Copy")
     );
     document.edit(slint_shell::document::View::Shell, |config| {
         config.update_settings(|settings| {
             settings.layout_mode = LayoutMode::Manual;
-            settings.manual_active_layout_id = Some("user:missing".into());
+            settings.manual_layout_id = Some("user:missing".into());
         })
     })?;
     let bundled_name = BUNDLED[0].display_name();
@@ -286,7 +282,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     library.invoke_submit_create();
     assert!(paths.load_user_layout("Empty").is_ok());
     assert_eq!(
-        document.read().settings().current_layout_id.as_deref(),
+        document.read().settings().editing_layout_id.as_deref(),
         Some("user:Empty")
     );
     assert!(document.read().layout().rules.is_empty());

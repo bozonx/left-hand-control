@@ -60,6 +60,6 @@ with_backend! {
     /// Layout-switching actions refresh the cached layout immediately so the
     /// next key is evaluated against the new layout.
     pub(crate) fn refresh_layout() {
-        let _ = crate::layout::refresh_cache();
+        let _ = crate::keyboard_layout::refresh_cache();
     }
 }

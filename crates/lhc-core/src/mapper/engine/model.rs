@@ -1,20 +1,20 @@
-//! Compiled engine data: rule entries, actions, macros and the `Out` events the
+//! Compiled engine data: rule entries, actions, macros and the `EngineOutput` events the
 //! engine emits.
 
 use super::super::action::{Keystroke, MacroStepItem};
 use super::super::config::GameModeCondition;
-use super::super::system::{SysAction, SysCommand};
+use super::super::system::{ProcessInvocation, SystemAction};
 use crate::mapper::key_code::KeyCode;
 use std::time::{Duration, Instant};
 
 /// Resolved action: single chord, macro, system function, or a
 /// layout-independent Unicode character.
 #[derive(Clone)]
-pub(super) enum ActionDef {
+pub(super) enum CompiledAction {
     Stroke(Keystroke),
-    Macro(MacroDef),
-    System(SysAction),
-    Command(SysCommand),
+    Macro(CompiledMacro),
+    System(SystemAction),
+    Command(ProcessInvocation),
     Literal(String),
     Swallow,
     /// Cannot run on this OS or desktop; firing it reports the action.
@@ -22,7 +22,7 @@ pub(super) enum ActionDef {
 }
 
 #[derive(Clone)]
-pub(super) struct MacroDef {
+pub(super) struct CompiledMacro {
     pub(super) steps: Vec<MacroStepItem>,
     pub(super) step_pause: Duration,
     pub(super) mod_delay: Duration,
@@ -33,11 +33,11 @@ pub(super) enum TapMode {
     Native,
     NativeChord(Vec<KeyCode>),
     Swallow,
-    Action(ActionDef),
+    Action(CompiledAction),
 }
 
 #[derive(Clone)]
-pub(super) enum HoldMode {
+pub(super) enum HoldOutputMode {
     Native,
     Swallow,
     Keystroke(Keystroke),
@@ -49,16 +49,16 @@ pub(super) struct RuleEntry {
     pub(super) trigger_keys: Vec<KeyCode>,
     pub(super) tap: TapMode,
     pub(super) layer_id: Option<String>,
-    pub(super) hold: HoldMode,
-    pub(super) long_hold: Option<ActionDef>,
+    pub(super) hold: HoldOutputMode,
+    pub(super) long_hold: Option<CompiledAction>,
     pub(super) long_hold_timeout: Duration,
-    pub(super) double_tap: Option<ActionDef>,
+    pub(super) double_tap: Option<CompiledAction>,
     pub(super) hold_timeout: Duration,
     pub(super) double_tap_window: Duration,
     pub(super) condition_game_mode: Option<GameModeCondition>,
-    pub(super) condition_layouts: Option<Vec<String>>,
-    pub(super) condition_apps_whitelist: Option<Vec<String>>,
-    pub(super) condition_apps_blacklist: Option<Vec<String>>,
+    pub(super) condition_keyboard_layouts: Option<Vec<String>>,
+    pub(super) condition_window_patterns: Option<Vec<String>>,
+    pub(super) condition_excluded_window_patterns: Option<Vec<String>>,
 }
 
 #[derive(Clone)]
@@ -90,7 +90,7 @@ pub(super) enum MacroPhase {
 }
 
 #[derive(Clone)]
-pub(super) enum Phase {
+pub(super) enum RulePhase {
     /// Waiting to decide between tap and hold (key is still down).
     WaitingDecision { deadline: Instant },
     /// Hold has been committed — layer (if any) is active, native /
@@ -101,9 +101,9 @@ pub(super) enum Phase {
 }
 
 #[derive(Clone)]
-pub(super) struct Pending {
+pub(super) struct RuleExecution {
     pub(super) rule: RuleEntry,
-    pub(super) phase: Phase,
+    pub(super) phase: RulePhase,
 }
 
 /// A key event deferred while a rule key is in `WaitingDecision`
@@ -117,7 +117,7 @@ pub(super) struct BufferedEvent {
 }
 
 /// Outgoing action the engine asks the I/O layer to perform.
-pub enum Out {
+pub enum EngineOutput {
     /// Press or release a single key (no modifiers).
     KeyRaw { key: KeyCode, down: bool },
     /// Press/release a keystroke (mods + key), emitted atomically.
@@ -133,9 +133,9 @@ pub enum Out {
     /// Release modifiers.
     ReleaseMods(Vec<KeyCode>),
     /// Execute a system function (DBus call or fire-and-forget spawn).
-    RunSystem(SysAction),
+    RunSystem(SystemAction),
     /// Execute a shell command defined by the current layout.
-    RunCommand(SysCommand),
+    RunCommand(ProcessInvocation),
     /// Type a single Unicode character via the Wayland virtual-keyboard
     /// backend. Fire-and-forget on key press; no release event is needed.
     Literal(String),

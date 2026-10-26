@@ -166,6 +166,29 @@ fn requests_choose_the_initial_behavior() {
 }
 
 #[test]
+fn unassigned_behavior_keeps_each_context_label() {
+    use crate::ui::DefaultAssignmentBehavior;
+
+    for (behavior, label) in [
+        (DefaultAssignmentBehavior::Passthrough, Msg::PickerNative),
+        (DefaultAssignmentBehavior::Inherit, Msg::PickerInherit),
+        (DefaultAssignmentBehavior::NoAction, Msg::PickerNoAction),
+        (DefaultAssignmentBehavior::EmptyCell, Msg::PickerEmptyCell),
+        (DefaultAssignmentBehavior::LayerOnly, Msg::PickerLayerOnly),
+    ] {
+        let request = PickerRequest {
+            default_behavior: behavior,
+            ..PickerRequest::default()
+        };
+        assert_eq!(request.native_label(), label);
+    }
+    assert_eq!(
+        PickerRequest::plain(PickerTarget::QuickAction, false).default_behavior,
+        DefaultAssignmentBehavior::EmptyCell
+    );
+}
+
+#[test]
 fn categories_follow_the_key_catalog() {
     assert_eq!(category_for_value("macro:copyLine"), PickerCategory::Macros);
     assert_eq!(

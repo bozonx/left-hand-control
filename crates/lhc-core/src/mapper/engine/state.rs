@@ -1,9 +1,12 @@
 //! State groups the engine is composed of.
 
-use super::model::{ActionDef, ActiveMacro, BufferedEvent, LayerTrigger, MacroDef, Out, RuleEntry};
+use super::model::{
+    ActiveMacro, BufferedEvent, CompiledAction, CompiledMacro, EngineOutput, LayerTrigger,
+    RuleEntry,
+};
 use crate::mapper::action::Keystroke;
 use crate::mapper::key_code::KeyCode;
-use crate::mapper::system::SysCommand;
+use crate::mapper::system::ProcessInvocation;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::time::{Duration, Instant};
 
@@ -12,10 +15,10 @@ use std::time::{Duration, Instant};
 pub(super) struct CompiledLayout {
     pub(super) rules: HashMap<KeyCode, Vec<RuleEntry>>,
     pub(super) chord_rules: Vec<(Vec<KeyCode>, RuleEntry)>,
-    pub(super) macros: HashMap<String, MacroDef>,
-    pub(super) commands: HashMap<String, SysCommand>,
+    pub(super) macros: HashMap<String, CompiledMacro>,
+    pub(super) commands: HashMap<String, ProcessInvocation>,
     /// layer_id -> (physical_key -> resolved action)
-    pub(super) layer_maps: HashMap<String, HashMap<KeyCode, ActionDef>>,
+    pub(super) layer_maps: HashMap<String, HashMap<KeyCode, CompiledAction>>,
     /// layer_id -> keys whose keystroke modifiers stay pressed until the
     /// layer's trigger is released.
     pub(super) layer_hold_mods: HashMap<String, HashSet<KeyCode>>,
@@ -24,7 +27,7 @@ pub(super) struct CompiledLayout {
     /// How long a press of a chord member is held back waiting for the rest
     /// of the chord (QMK's `COMBO_TERM`). A chord whose keys arrive within
     /// this window fires without its members ever reaching the app.
-    pub(super) combo_term: Duration,
+    pub(super) trigger_chord_timeout: Duration,
 }
 
 /// Chords in progress.
@@ -38,7 +41,7 @@ pub(super) struct ChordState {
     /// Members of a fired chord whose events are swallowed until release.
     pub(super) consumed: HashSet<KeyCode>,
     /// Events deferred while a non-modifier chord member waits for the rest
-    /// of its chord (see `combo_term`). Replayed in order when the chord
+    /// of its chord (see `trigger_chord_timeout`). Replayed in order when the chord
     /// cannot complete any more; dropped for members when it fires.
     pub(super) buffer: Vec<BufferedEvent>,
 }
@@ -57,9 +60,9 @@ pub(super) struct LayerStack {
 }
 
 impl ChordState {
-    /// When the buffered combo stops waiting for the rest of its chord.
-    pub(super) fn deadline(&self, combo_term: Duration) -> Option<Instant> {
-        self.buffer.first().map(|ev| ev.at + combo_term)
+    /// When the buffered trigger chord stops waiting for the rest of its chord.
+    pub(super) fn deadline(&self, trigger_chord_timeout: Duration) -> Option<Instant> {
+        self.buffer.first().map(|ev| ev.at + trigger_chord_timeout)
     }
 }
 
@@ -87,9 +90,9 @@ impl LayerStack {
     /// The action the topmost active layer that maps `key` binds to it.
     pub(super) fn lookup(
         &self,
-        maps: &HashMap<String, HashMap<KeyCode, ActionDef>>,
+        maps: &HashMap<String, HashMap<KeyCode, CompiledAction>>,
         key: KeyCode,
-    ) -> Option<(String, ActionDef)> {
+    ) -> Option<(String, CompiledAction)> {
         self.active.iter().rev().find_map(|l| {
             maps.get(l)
                 .and_then(|m| m.get(&key))
@@ -153,10 +156,10 @@ impl VirtualKeys {
     }
 
     /// Tap `key` unless it is already held down.
-    pub(super) fn tap_unless_held(&self, key: KeyCode, out: &mut Vec<Out>) {
+    pub(super) fn tap_unless_held(&self, key: KeyCode, out: &mut Vec<EngineOutput>) {
         if !self.is_held(key) {
-            out.push(Out::KeyRaw { key, down: true });
-            out.push(Out::KeyRaw { key, down: false });
+            out.push(EngineOutput::KeyRaw { key, down: true });
+            out.push(EngineOutput::KeyRaw { key, down: false });
         }
     }
 }
@@ -166,7 +169,7 @@ pub(super) struct MacroRunner {
     pub(super) active: Option<ActiveMacro>,
     /// Runs waiting for the active macro, oldest first; at most
     /// `MACRO_QUEUE_LIMIT`.
-    pub(super) queue: VecDeque<MacroDef>,
+    pub(super) queue: VecDeque<CompiledMacro>,
     /// Longest a single macro run may take before it is aborted.
     pub(super) timeout: Duration,
     /// A text step is being injected; the next step waits for it.

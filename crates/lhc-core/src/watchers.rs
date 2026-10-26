@@ -17,7 +17,7 @@ impl Watchers {
     /// settings; `ignore_own_windows` hides this process's windows from
     /// app conditions (settings and popups must not change them while open).
     pub fn start(storage: Option<StoragePaths>, ignore_own_windows: bool) -> Self {
-        crate::layout::start_watcher();
+        crate::keyboard_layout::start_watcher();
         crate::gamemode::start_watcher(storage);
         crate::active_window::ignore_own_windows(ignore_own_windows);
         crate::active_window::start_watcher();
@@ -27,7 +27,7 @@ impl Watchers {
 
 impl Drop for Watchers {
     fn drop(&mut self) {
-        crate::layout::stop_watcher();
+        crate::keyboard_layout::stop_watcher();
         crate::gamemode::stop_watcher();
         crate::active_window::stop_watcher();
     }

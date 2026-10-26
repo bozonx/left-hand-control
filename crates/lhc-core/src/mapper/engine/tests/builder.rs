@@ -1,15 +1,14 @@
 use super::*;
 
-
 #[test]
 fn builder_skips_unknown_rule_key() {
     let mut cfg = empty_cfg();
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "UnknownKey".into(),
         layer_id: String::new(),
         tap_action: ActionSpec::Native,
@@ -33,9 +32,9 @@ fn builder_skips_primary_mouse_buttons_as_triggers() {
         cfg.rules.push(Rule {
             enabled: true,
             condition_game_mode: None,
-            condition_layouts: None,
-            condition_apps_whitelist: None,
-            condition_apps_blacklist: None,
+            condition_keyboard_layouts: None,
+            condition_window_patterns: None,
+            condition_excluded_window_patterns: None,
             key: key.into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("Escape".into()),
@@ -61,9 +60,9 @@ fn builder_unknown_tap_action_falls_back_to_swallow() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "KeyQ".into(),
         layer_id: String::new(),
         tap_action: ActionSpec::Action("BadActionSyntax!!!".into()),
@@ -80,8 +79,8 @@ fn builder_unknown_tap_action_falls_back_to_swallow() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_Q, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_Q, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_Q,
         false,
         now + Duration::from_millis(10),
@@ -97,9 +96,9 @@ fn builder_resolves_builtin_macro() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "KeyQ".into(),
         layer_id: String::new(),
         tap_action: ActionSpec::Action("builtin:copyLineText".into()),
@@ -117,9 +116,9 @@ fn builder_resolves_builtin_macro() {
     let now = Instant::now();
 
     // Tap fires the macro on release (no double-tap)
-    engine.handle(KeyCode::KEY_Q, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_Q, true, now, &mut out);
     assert!(out.is_empty());
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_Q,
         false,
         now + Duration::from_millis(10),
@@ -130,17 +129,17 @@ fn builder_resolves_builtin_macro() {
 }
 
 #[test]
-fn combo_buffered_long_hold_resolves_at_release_timestamp() {
+fn trigger_chord_buffered_long_hold_resolves_at_release_timestamp() {
     for release_ms in [19, 20, 21] {
-        let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+        let cfg: MapperConfig = serde_json::from_value(serde_json::json!({"rules": [
             {"key":"KeyA", "tapAction":"text:tap", "longHoldAction":"text:long", "longHoldTimeoutMs":20},
             {"key":"KeyA+KeyB", "tapAction":"text:chord"}
         ]})).unwrap();
         let mut engine = Engine::new(&cfg);
         let now = Instant::now();
         let mut out = Vec::new();
-        engine.handle(KeyCode::KEY_A, true, now, &mut out);
-        engine.handle(
+        engine.handle_key_event(KeyCode::KEY_A, true, now, &mut out);
+        engine.handle_key_event(
             KeyCode::KEY_A,
             false,
             now + Duration::from_millis(release_ms),
@@ -148,13 +147,13 @@ fn combo_buffered_long_hold_resolves_at_release_timestamp() {
         );
         engine.tick(now + Duration::from_secs(1), &mut out);
         let expected = if release_ms < 20 { "tap" } else { "long" };
-        assert!(matches!(out.as_slice(), [Out::Literal(s)] if s == expected));
+        assert!(matches!(out.as_slice(), [EngineOutput::Literal(s)] if s == expected));
     }
 }
 
 #[test]
 fn remote_and_bound_actions_resolve_the_same_way() {
-    let cfg: AppConfig = serde_json::from_value(serde_json::json!({
+    let cfg: MapperConfig = serde_json::from_value(serde_json::json!({
         "macros": [{"id": "m", "steps": [{"action": "KeyA"}]}],
         "rules": [{"key": "KeyQ", "tapAction": "  text: hi "}]
     }))
@@ -162,13 +161,13 @@ fn remote_and_bound_actions_resolve_the_same_way() {
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_Q, true, now, &mut out);
-    engine.handle(KeyCode::KEY_Q, false, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_Q, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_Q, false, now, &mut out);
     engine.execute_remote("  text: hi ", &mut out);
     let texts: Vec<_> = out
         .iter()
         .filter_map(|item| match item {
-            Out::Literal(text) => Some(text.as_str()),
+            EngineOutput::Literal(text) => Some(text.as_str()),
             _ => None,
         })
         .collect();
@@ -230,8 +229,13 @@ fn builtin_and_user_macros_resolve_independently_at_every_depth() {
     );
     for reference in ["macro:copyLine", "builtin:copyLineText"] {
         assert!(matches!(
-            crate::mapper::engine::builder::resolve_action(reference, &engine.layout.macros, &HashMap::new(), "test"),
-            Some(model::ActionDef::Macro(_))
+            crate::mapper::engine::builder::resolve_action(
+                reference,
+                &engine.layout.macros,
+                &HashMap::new(),
+                "test"
+            ),
+            Some(model::CompiledAction::Macro(_))
         ));
     }
     let engine = Engine::new(&empty_cfg());
@@ -249,7 +253,7 @@ fn builtin_and_user_macros_resolve_independently_at_every_depth() {
 #[test]
 fn development_gate_disables_user_macros_popups_and_long_hold() {
     for enabled in [false, true] {
-        let mut cfg: AppConfig = serde_json::from_value(serde_json::json!({
+        let mut cfg: MapperConfig = serde_json::from_value(serde_json::json!({
             "settings": {"inDevelopment": enabled},
             "macros": [{"id": "user", "steps": [{"action": "text:user"}]}],
             "rules": [
@@ -263,11 +267,11 @@ fn development_gate_disables_user_macros_popups_and_long_hold() {
         let mut engine = Engine::new(&cfg);
         let now = Instant::now();
         let mut out = Vec::new();
-        engine.handle(KeyCode::KEY_A, true, now, &mut out);
+        engine.handle_key_event(KeyCode::KEY_A, true, now, &mut out);
         engine.tick(now + Duration::from_secs(2), &mut out);
         assert_eq!(
             out.iter()
-                .any(|item| matches!(item, Out::Literal(text) if text == "hold")),
+                .any(|item| matches!(item, EngineOutput::Literal(text) if text == "hold")),
             enabled
         );
         assert_eq!(engine.layout.macros.contains_key("macro:user"), enabled);

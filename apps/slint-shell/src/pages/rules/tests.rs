@@ -21,10 +21,10 @@ fn long_hold_accepts_milliseconds_in_range_and_rejects_the_rest() {
 
 #[test]
 fn hold_modes_clear_incompatible_options_and_preserve_layer_assignments() {
-    let mut rule = LayerRule::new("r".into(), "ShiftLeft+ControlLeft");
+    let mut rule = KeyRule::new("r".into(), "ShiftLeft+ControlLeft");
     rule.layer_id = "nav".into();
     rule.hold_action = Some("AltLeft".into());
-    assert_eq!(hold_mode(&rule), HoldMode::Layer);
+    assert_eq!(hold_mode(&rule), UiHoldBehavior::Layer);
     set_hold_behavior(&mut rule, HoldBehavior::Action);
     assert_eq!(rule.hold_behavior(), HoldBehavior::Action);
     assert!(rule.layer_id.is_empty());
@@ -37,7 +37,7 @@ fn hold_modes_clear_incompatible_options_and_preserve_layer_assignments() {
 
 #[test]
 fn choosing_a_layer_or_long_hold_action_switches_the_hold_mode() {
-    let mut rule = LayerRule::new("r".into(), "Tab");
+    let mut rule = KeyRule::new("r".into(), "Tab");
     rule.long_hold_action = "text:hello".into();
     set_property(&mut rule, RuleDialog::Layer, "nav").unwrap();
     assert_eq!(rule.hold_behavior(), HoldBehavior::Layer);
@@ -51,7 +51,7 @@ fn choosing_a_layer_or_long_hold_action_switches_the_hold_mode() {
 
 #[test]
 fn choosing_nothing_clears_all_hold_assignments() {
-    let mut rule = LayerRule::new("r".into(), "Tab");
+    let mut rule = KeyRule::new("r".into(), "Tab");
     rule.layer_id = "nav".into();
     rule.long_hold_action = "text:hello".into();
     rule.hold_action = Some("AltLeft".into());
@@ -64,7 +64,7 @@ fn choosing_nothing_clears_all_hold_assignments() {
 
 #[test]
 fn properties_validate_and_apply() {
-    let mut rule = LayerRule::new("r".into(), "");
+    let mut rule = KeyRule::new("r".into(), "");
     set_property(&mut rule, RuleDialog::Key, "CapsLock").unwrap();
     set_property(&mut rule, RuleDialog::HoldTimeout, " 250 ").unwrap();
     assert_eq!(
@@ -81,7 +81,7 @@ fn properties_validate_and_apply() {
 
 #[test]
 fn rule_ids_are_unique() {
-    let rules = vec![LayerRule::new("slint-rule-1".into(), "")];
+    let rules = vec![KeyRule::new("slint-rule-1".into(), "")];
     assert_eq!(unique_rule_id(&rules), "slint-rule-2");
 }
 

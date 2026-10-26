@@ -2,7 +2,7 @@
 
 use super::{
     actions::{self, Action},
-    model::{AppConfig, LayoutPreset, Macro},
+    model::{LayoutPreset, Macro, ResolvedAppConfig},
 };
 use crate::config_document::{ConfigDocument, ConfigError};
 use std::collections::HashSet;
@@ -17,11 +17,11 @@ pub enum MacroIssue {
     Cycle,
 }
 
-pub fn validate(config: &AppConfig, item: &Macro) -> Result<(), ConfigError> {
+pub fn validate(config: &ResolvedAppConfig, item: &Macro) -> Result<(), ConfigError> {
     validate_loaded(config, item)
 }
 
-pub(crate) fn validate_step(config: &AppConfig, raw: &str) -> Result<(), ConfigError> {
+pub(crate) fn validate_step(config: &ResolvedAppConfig, raw: &str) -> Result<(), ConfigError> {
     let raw = raw.trim();
     if raw.is_empty() {
         return Ok(());
@@ -45,7 +45,7 @@ pub(crate) fn validate_step(config: &AppConfig, raw: &str) -> Result<(), ConfigE
     Ok(())
 }
 
-pub(crate) fn validate_loaded(config: &AppConfig, item: &Macro) -> Result<(), ConfigError> {
+pub(crate) fn validate_loaded(config: &ResolvedAppConfig, item: &Macro) -> Result<(), ConfigError> {
     if !super::ids::valid(&item.id) {
         return Err(ConfigError::Macro(MacroIssue::InvalidId));
     }
@@ -65,7 +65,7 @@ pub(crate) fn validate_loaded(config: &AppConfig, item: &Macro) -> Result<(), Co
         validate_step(config, &step.action)?;
     }
     fn reaches(
-        config: &AppConfig,
+        config: &ResolvedAppConfig,
         source: &str,
         target: &str,
         visited: &mut HashSet<String>,
@@ -97,11 +97,11 @@ pub(crate) fn validate_loaded(config: &AppConfig, item: &Macro) -> Result<(), Co
     Ok(())
 }
 
-pub fn usage(config: &AppConfig, id: &str) -> Vec<String> {
+pub fn usage(config: &ResolvedAppConfig, id: &str) -> Vec<String> {
     action_usage(config, &format!("macro:{id}"))
 }
 
-pub fn action_usage(config: &AppConfig, action: &str) -> Vec<String> {
+pub fn action_usage(config: &ResolvedAppConfig, action: &str) -> Vec<String> {
     let mut places = Vec::new();
     for rule in &config.rules {
         if [
@@ -344,7 +344,7 @@ mod tests {
     #[test]
     fn renamed_ids_carry_their_references() {
         let mut layout = LayoutPreset::initial();
-        let mut rule = crate::profile::model::LayerRule::new("r1".into(), "KeyA");
+        let mut rule = crate::profile::model::KeyRule::new("r1".into(), "KeyA");
         rule.tap_action = Some("macro:a".into());
         rule.hold_action = Some("macro:b".into());
         layout.rules.push(rule);

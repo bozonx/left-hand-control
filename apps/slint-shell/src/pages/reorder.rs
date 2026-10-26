@@ -5,10 +5,10 @@ use slint::ComponentHandle;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 /// Row positions by (group, index): start and size along the drag axis.
-type Rows = HashMap<(i32, i32), (f32, f32)>;
+type RowGeometryMap = HashMap<(i32, i32), (f32, f32)>;
 
 pub(super) fn bind(ui: &SettingsWindow) {
-    let rows = Rc::new(RefCell::new(Rows::new()));
+    let rows = Rc::new(RefCell::new(RowGeometryMap::new()));
     let positions = rows.clone();
     ui.global::<DragDrop>()
         .on_row(move |group, index, y, height| {
@@ -17,14 +17,14 @@ pub(super) fn bind(ui: &SettingsWindow) {
     ui.global::<DragDrop>()
         .on_locate(move |group, source, offset, count| {
             let mut rows = rows.borrow_mut();
-            // Rows of a shrunk list never unregister; drop them so the map stays bounded.
+            // RowGeometryMap of a shrunk list never unregister; drop them so the map stays bounded.
             rows.retain(|&(g, index), _| g != group || index < count);
             locate(&rows, group, source, offset, count)
         });
 }
 
 /// Index the dragged row lands on: the farthest row whose middle its middle has passed.
-fn locate(rows: &Rows, group: i32, source: i32, offset: f32, count: i32) -> i32 {
+fn locate(rows: &RowGeometryMap, group: i32, source: i32, offset: f32, count: i32) -> i32 {
     let Some(&(y, height)) = rows.get(&(group, source)) else {
         return source;
     };
@@ -48,7 +48,7 @@ mod tests {
 
     #[test]
     fn locate_follows_row_middles() {
-        let rows: Rows = (0..3).map(|i| ((1, i), (i as f32 * 40.0, 40.0))).collect();
+        let rows: RowGeometryMap = (0..3).map(|i| ((1, i), (i as f32 * 40.0, 40.0))).collect();
         assert_eq!(locate(&rows, 1, 0, 0.0, 3), 0);
         assert_eq!(locate(&rows, 1, 0, 45.0, 3), 1);
         assert_eq!(locate(&rows, 1, 0, 200.0, 3), 2);

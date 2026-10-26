@@ -85,20 +85,12 @@ fn check_first_layout_activation() -> Result<(), Box<dyn std::error::Error>> {
         library.invoke_set_automatic(automatic);
         library.invoke_create("First".into(), "".into(), LayoutSource::Empty, 0);
         assert_eq!(
-            document
-                .read()
-                .settings()
-                .manual_active_layout_id
-                .as_deref(),
+            document.read().settings().manual_layout_id.as_deref(),
             if automatic { None } else { Some("user:First") }
         );
         library.invoke_create("Second".into(), "".into(), LayoutSource::Empty, 0);
         assert_eq!(
-            document
-                .read()
-                .settings()
-                .manual_active_layout_id
-                .as_deref(),
+            document.read().settings().manual_layout_id.as_deref(),
             if automatic { None } else { Some("user:First") }
         );
     }
@@ -176,7 +168,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(settings.get_message().id, "settings-timing-invalid");
     settings.set_hold_timeout("310".into());
     settings.set_double_tap_timeout("270".into());
-    settings.set_combo_timeout("80".into());
+    settings.set_trigger_chord_timeout("80".into());
     settings.set_macro_pause("35".into());
     settings.set_modifier_delay("12".into());
     settings.set_appearance(AppearanceChoice::Light);
@@ -195,7 +187,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let loaded = ConfigDocument::load(paths.clone())?;
     assert_eq!(loaded.settings(), document.read().settings());
     assert_eq!(loaded.settings().default_hold_timeout_ms, 310);
-    assert_eq!(loaded.settings().combo_timeout_ms, 80);
+    assert_eq!(loaded.settings().trigger_chord_timeout_ms, 80);
     assert_eq!(loaded.settings().game_mode.process_matchers.len(), 1);
     assert!(loaded.settings().game_mode.process_matchers[0].only_active_window);
     assert_eq!(settings.get_game_processes().row_count(), 1);
@@ -359,12 +351,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     document.edit(slint_shell::document::View::Library, |config| {
         config.update_layout(|layout| {
-            use lhc_core::profile::model::{Command, LayerRule, Macro, MacroStep};
+            use lhc_core::profile::model::{Command, KeyRule, Macro, MacroStep};
             layout.rules = ["F13", "F14", "F15"]
                 .into_iter()
                 .enumerate()
                 .map(|(index, key)| {
-                    let mut rule = LayerRule::new(format!("drag-rule-{index}"), key);
+                    let mut rule = KeyRule::new(format!("drag-rule-{index}"), key);
                     rule.tap_action = Some("Escape".into());
                     rule
                 })
@@ -389,8 +381,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .map(|index| Command {
                     id: format!("dragCommand{index}"),
                     name: format!("Command {index}"),
-                    linux: "printf test".into(),
-                    windows: "Write-Output test".into(),
+                    posix_script: "printf test".into(),
+                    powershell_script: "Write-Output test".into(),
                     working_directory: None,
                 })
                 .collect();
@@ -504,8 +496,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         document.read().layout().rules[0].key,
         "ShiftLeft+ControlRight"
     );
-    rules.invoke_set_hold_mode(HoldMode::Action);
-    assert_eq!(rules.get_hold_mode(), HoldMode::Action);
+    rules.invoke_set_hold_mode(HoldBehavior::Action);
+    assert_eq!(rules.get_hold_mode(), HoldBehavior::Action);
     rules.invoke_open_dialog(0, RuleDialog::LongHold);
     assert!(!picker.get_hold_action());
     picker.invoke_select_behavior(PickerBehavior::Action);
@@ -536,7 +528,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         document.read().layout().rules[0].long_hold_action,
         "builtin:copyLineText"
     );
-    rules.invoke_set_hold_mode(HoldMode::Layer);
+    rules.invoke_set_hold_mode(HoldBehavior::Layer);
     assert!(
         document.read().layout().rules[0]
             .long_hold_action
@@ -817,7 +809,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 picker.invoke_select_behavior(PickerBehavior::Action);
                 picker.set_value("ShiftLeft+ControlRight".into());
                 picker.invoke_apply();
-                rules.invoke_set_hold_mode(HoldMode::Action);
+                rules.invoke_set_hold_mode(HoldBehavior::Action);
                 rules.invoke_open_dialog(0, RuleDialog::LongHold);
                 picker.invoke_select_behavior(PickerBehavior::Action);
                 picker.set_value("text:hello".into());
@@ -828,7 +820,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 snapshot(&ui, "rules-long-hold-advanced");
                 let rules = ui.global::<RulesEditor>();
                 rules.set_dialog(RuleDialog::None);
-                rules.invoke_set_hold_mode(HoldMode::Layer);
+                rules.invoke_set_hold_mode(HoldBehavior::Layer);
                 rules.invoke_open_dialog(0, RuleDialog::Layer);
                 let id = document.read().layout().layers[0].id.clone();
                 rules.invoke_choose(id.into());

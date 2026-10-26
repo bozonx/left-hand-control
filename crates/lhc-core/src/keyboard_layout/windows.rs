@@ -2,13 +2,13 @@
 //!
 //! Windows keeps one input language per thread, so the current layout is
 //! the one of the foreground window's thread. Layouts are named by their
-//! input language: `short` is the language subtag (`en`, `ru`), `display`
-//! the locale name (`en-US`), `long` its localized display name. A watcher
+//! input language: `code` is the language subtag (`en`, `ru`), `display_label`
+//! the locale name (`en-US`), `name` its localized display name. A watcher
 //! polls the foreground layout, which also follows focus changes.
 
 #![cfg(target_os = "windows")]
 
-use super::LayoutInfo;
+use super::KeyboardLayoutInfo;
 use std::time::Duration;
 use windows::Win32::Foundation::{LPARAM, WPARAM};
 use windows::Win32::Globalization::{
@@ -49,7 +49,7 @@ fn locale_name(layout: HKL) -> Option<Vec<u16>> {
     (length > 1).then(|| name[..length as usize].to_vec())
 }
 
-fn info(layout: HKL, index: u32) -> Option<LayoutInfo> {
+fn info(layout: HKL, index: u32) -> Option<KeyboardLayoutInfo> {
     let name = locale_name(layout)?;
     let display = String::from_utf16_lossy(&name[..name.len() - 1]);
     let mut long = [0_u16; 256];
@@ -61,10 +61,10 @@ fn info(layout: HKL, index: u32) -> Option<LayoutInfo> {
         )
     };
     let long = String::from_utf16_lossy(&long[..(length.max(1) as usize - 1)]);
-    Some(LayoutInfo {
-        short: short_code(&display),
-        display,
-        long,
+    Some(KeyboardLayoutInfo {
+        code: short_code(&display),
+        display_label: display,
+        name: long,
         variant: String::new(),
         index,
         backend: "windows",
@@ -80,7 +80,7 @@ fn short_code(locale: &str) -> String {
         .to_ascii_lowercase()
 }
 
-pub fn current() -> Result<Option<LayoutInfo>, String> {
+pub fn current() -> Result<Option<KeyboardLayoutInfo>, String> {
     let Some(layout) = foreground_layout() else {
         return Ok(None);
     };
@@ -91,7 +91,7 @@ pub fn current() -> Result<Option<LayoutInfo>, String> {
     Ok(info(layout, index))
 }
 
-pub fn available_layouts() -> Result<Vec<LayoutInfo>, String> {
+pub fn available_layouts() -> Result<Vec<KeyboardLayoutInfo>, String> {
     Ok(installed()
         .into_iter()
         .enumerate()
@@ -122,7 +122,7 @@ pub fn set_layout(index: u32) -> Result<(), String> {
 
 /// Publish the current layout; the posted switch request lands a moment
 /// later, so the watcher publishes its result too.
-pub fn refresh_cache() -> Result<Option<LayoutInfo>, String> {
+pub fn refresh_cache() -> Result<Option<KeyboardLayoutInfo>, String> {
     let current = current()?;
     if let Some(info) = &current {
         super::publish(info);

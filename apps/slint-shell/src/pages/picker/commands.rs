@@ -54,8 +54,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>, session: &Rc<Re
             .unwrap_or_else(|| lhc_core::profile::model::Command {
                 id: id.clone(),
                 name: String::new(),
-                linux: String::new(),
-                windows: String::new(),
+                posix_script: String::new(),
+                powershell_script: String::new(),
                 working_directory: None,
             });
         command.name = picker.get_command_name().to_string();

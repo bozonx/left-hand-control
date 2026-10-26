@@ -1,4 +1,4 @@
-//! Chord recognition and deferred combo events.
+//! Chord recognition and deferred trigger-chord events.
 
 use super::*;
 
@@ -8,7 +8,7 @@ impl Engine {
         key: KeyCode,
         down: bool,
         now: Instant,
-        out: &mut Vec<Out>,
+        out: &mut Vec<EngineOutput>,
     ) -> bool {
         if !down {
             let owner = self
@@ -77,7 +77,7 @@ impl Engine {
             self.long_holds.remove(member);
             let pending = self.pending.remove(member);
             if let Some(pending) = pending
-                && matches!(pending.phase, Phase::HoldActive)
+                && matches!(pending.phase, RulePhase::HoldActive)
             {
                 self.release_hold_with(&pending.rule, *member, out);
             }
@@ -131,27 +131,26 @@ impl Engine {
     }
 
     /// True when a held member is an undecided tap-hold key pressed longer
-    /// than the combo window ago. Such a key prints nothing yet, but the
+    /// than the trigger chord window ago. Such a key prints nothing yet, but the
     /// chord was not pressed together: the later key belongs to the member's
     /// own tap or hold (e.g. a layer), as for keys that already leaked.
     pub(super) fn chord_member_late(&self, member: KeyCode, now: Instant) -> bool {
         self.pending
             .get(&member)
-            .is_some_and(|p| matches!(p.phase, Phase::WaitingDecision { .. }))
-            && self
-                .press_at
-                .get(&member)
-                .is_some_and(|at| now.saturating_duration_since(*at) > self.layout.combo_term)
+            .is_some_and(|p| matches!(p.phase, RulePhase::WaitingDecision { .. }))
+            && self.press_at.get(&member).is_some_and(|at| {
+                now.saturating_duration_since(*at) > self.layout.trigger_chord_timeout
+            })
     }
 
-    pub(super) fn combo_deadline(&self) -> Option<Instant> {
-        self.chords.deadline(self.layout.combo_term)
+    pub(super) fn trigger_chord_deadline(&self) -> Option<Instant> {
+        self.chords.deadline(self.layout.trigger_chord_timeout)
     }
 
     /// A non-modifier key that belongs to an eligible chord starts a combo
     /// window. Modifiers pass through as before: a held modifier prints
     /// nothing and the chord suppresses it if it completes.
-    pub(super) fn starts_combo(&self, key: KeyCode) -> bool {
+    pub(super) fn starts_trigger_chord(&self, key: KeyCode) -> bool {
         !is_modifier_key(key)
             && self
                 .layout
@@ -162,7 +161,7 @@ impl Engine {
 
     /// True when `key` together with every buffered press is still part of
     /// some eligible chord.
-    pub(super) fn extends_combo(&self, key: KeyCode) -> bool {
+    pub(super) fn extends_trigger_chord(&self, key: KeyCode) -> bool {
         self.layout.chord_rules.iter().any(|(keys, rule)| {
             keys.contains(&key)
                 && self
@@ -181,15 +180,15 @@ impl Engine {
     /// physical order.
     ///
     /// Returns true when the event was consumed (buffered).
-    pub(super) fn combo_intercept(
+    pub(super) fn intercept_trigger_chord(
         &mut self,
         key: KeyCode,
         down: bool,
         now: Instant,
-        out: &mut Vec<Out>,
+        out: &mut Vec<EngineOutput>,
     ) -> bool {
         if !self.chords.buffer.is_empty() {
-            if down && self.extends_combo(key) {
+            if down && self.extends_trigger_chord(key) {
                 self.chords
                     .buffer
                     .push(BufferedEvent { key, down, at: now });
@@ -198,7 +197,7 @@ impl Engine {
             if down || self.chords.buffer.iter().any(|ev| ev.key == key) {
                 // A key outside the chord, or a buffered member released
                 // before the chord completed: no chord here.
-                self.flush_combo_buffer(out);
+                self.flush_trigger_chord_buffer(out);
             } else {
                 // Release of a key held before the combo started: keep it
                 // ordered behind the buffered presses.
@@ -208,7 +207,7 @@ impl Engine {
                 return true;
             }
         }
-        if down && self.starts_combo(key) {
+        if down && self.starts_trigger_chord(key) {
             self.chords
                 .buffer
                 .push(BufferedEvent { key, down, at: now });
@@ -217,9 +216,9 @@ impl Engine {
         false
     }
 
-    /// Replay the combo buffer as ordinary key events with their original
+    /// Replay the trigger chord buffer as ordinary key events with their original
     /// timestamps, so tap/hold deadlines stay anchored to the physical press.
-    pub(super) fn flush_combo_buffer(&mut self, out: &mut Vec<Out>) {
+    pub(super) fn flush_trigger_chord_buffer(&mut self, out: &mut Vec<EngineOutput>) {
         for ev in std::mem::take(&mut self.chords.buffer) {
             self.handle_event(ev.key, ev.down, ev.at, out);
         }

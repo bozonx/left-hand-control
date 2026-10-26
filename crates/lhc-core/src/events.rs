@@ -7,13 +7,13 @@
 
 use crate::active_window::ActiveWindow;
 use crate::gamemode::GameModeStatus;
-use crate::layout::LayoutInfo;
+use crate::keyboard_layout::KeyboardLayoutInfo;
 use std::sync::{Arc, Mutex, OnceLock};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CoreEvent {
     /// The OS keyboard layout changed.
-    LayoutChanged(LayoutInfo),
+    LayoutChanged(KeyboardLayoutInfo),
     /// Game-mode detection produced a new status.
     GameModeChanged(GameModeStatus),
     /// The focused window changed (`None` when it cannot be detected).

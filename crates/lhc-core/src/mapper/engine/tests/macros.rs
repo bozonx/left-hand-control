@@ -1,6 +1,5 @@
 use super::*;
 
-
 #[test]
 fn text_actions_preserve_whitespace_in_remote_rules_and_macros() {
     for text in [" ", "   ", "  a  b  ", "one\ntwo\n", "\t\n", "Привет 👋 "] {
@@ -11,11 +10,11 @@ fn text_actions_preserve_whitespace_in_remote_rules_and_macros() {
         let mut engine = Engine::new(&cfg);
         let mut out = Vec::new();
         engine.execute_remote(&action, &mut out);
-        assert!(matches!(out.as_slice(), [Out::Literal(value)] if value == text));
+        assert!(matches!(out.as_slice(), [EngineOutput::Literal(value)] if value == text));
         out.clear();
         let now = Instant::now();
-        engine.handle(KeyCode::KEY_A, true, now, &mut out);
-        engine.handle(
+        engine.handle_key_event(KeyCode::KEY_A, true, now, &mut out);
+        engine.handle_key_event(
             KeyCode::KEY_A,
             false,
             now + Duration::from_millis(1),
@@ -24,7 +23,7 @@ fn text_actions_preserve_whitespace_in_remote_rules_and_macros() {
         engine.tick(now + Duration::from_secs(1), &mut out);
         assert!(
             out.iter()
-                .any(|event| matches!(event, Out::Literal(value) if value == text))
+                .any(|event| matches!(event, EngineOutput::Literal(value) if value == text))
         );
 
         let mut cfg = empty_cfg();
@@ -38,7 +37,7 @@ fn text_actions_preserve_whitespace_in_remote_rules_and_macros() {
         out.clear();
         engine.execute_remote("macro:text", &mut out);
         engine.tick(Instant::now(), &mut out);
-        assert!(matches!(out.as_slice(), [Out::Literal(value)] if value == text));
+        assert!(matches!(out.as_slice(), [EngineOutput::Literal(value)] if value == text));
     }
 }
 
@@ -68,7 +67,7 @@ fn macro_waits_for_text_completion_before_next_step_and_pause() {
         engine.execute_remote("macro:text", &mut out);
         let now = Instant::now();
         engine.tick(now, &mut out);
-        assert!(matches!(out.as_slice(), [Out::Literal(_)]));
+        assert!(matches!(out.as_slice(), [EngineOutput::Literal(_)]));
         out.clear();
         let completed = now + Duration::from_secs(5);
         engine.tick(completed, &mut out);
@@ -90,7 +89,7 @@ fn macro_waits_for_text_completion_before_next_step_and_pause() {
         );
         assert!(out.iter().any(|event| matches!(
             event,
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_ENTER,
                 down: true
             }
@@ -121,7 +120,7 @@ fn pending_text_does_not_keep_macro_modifiers_pressed() {
     engine.tick(now, &mut out);
     assert!(matches!(
         out.as_slice(),
-        [Out::KeyRaw {
+        [EngineOutput::KeyRaw {
             key: KeyCode::KEY_LEFTCTRL,
             down: true
         }]
@@ -133,7 +132,7 @@ fn pending_text_does_not_keep_macro_modifiers_pressed() {
     engine.tick(now + Duration::from_millis(20), &mut out);
     assert!(matches!(
         out.as_slice(),
-        [Out::KeyRaw {
+        [EngineOutput::KeyRaw {
             key: KeyCode::KEY_LEFTCTRL,
             down: false
         }]
@@ -171,7 +170,7 @@ fn unrelated_text_does_not_reset_an_existing_macro_pause() {
     engine.tick(now + Duration::from_millis(100), &mut out);
     assert!(out.iter().any(|event| matches!(
         event,
-        Out::KeyRaw {
+        EngineOutput::KeyRaw {
             key: KeyCode::KEY_ENTER,
             down: true
         }
@@ -199,11 +198,11 @@ fn remote_execute_macro_uses_current_macro_table() {
     assert!(matches!(
         out.as_slice(),
         [
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_H,
                 down: true
             },
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_H,
                 down: false
             },
@@ -238,11 +237,11 @@ fn macro_pause_step_delays_following_steps() {
     assert!(matches!(
         out.as_slice(),
         [
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_H,
                 down: true
             },
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_H,
                 down: false
             },
@@ -258,11 +257,11 @@ fn macro_pause_step_delays_following_steps() {
     assert!(matches!(
         out.as_slice(),
         [
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_I,
                 down: true
             },
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_I,
                 down: false
             },
@@ -275,8 +274,8 @@ fn disabled_commands_are_skipped_in_macros_and_preserve_other_keys() {
     let mut cfg = empty_cfg();
     cfg.commands.push(Command {
         id: "blocked".into(),
-        linux: "printf hello".into(),
-        windows: "printf hello".into(),
+        posix_script: "printf hello".into(),
+        powershell_script: "printf hello".into(),
         working_directory: None,
     });
     cfg.macros.push(Macro {
@@ -297,10 +296,13 @@ fn disabled_commands_are_skipped_in_macros_and_preserve_other_keys() {
     engine.execute_remote("macro:sequence", &mut out);
     engine.execute_remote("cmd:blocked", &mut out);
     engine.tick(Instant::now() + Duration::from_millis(1), &mut out);
-    assert!(out.iter().all(|item| !matches!(item, Out::RunCommand(_))));
+    assert!(
+        out.iter()
+            .all(|item| !matches!(item, EngineOutput::RunCommand(_)))
+    );
     assert!(out.iter().any(|item| matches!(
         item,
-        Out::KeyRaw {
+        EngineOutput::KeyRaw {
             key: KeyCode::KEY_A,
             ..
         }
@@ -317,15 +319,15 @@ fn command_invocations_use_configured_directory_and_timeout() {
     let mut cfg = empty_cfg();
     cfg.commands.push(Command {
         id: "hello".into(),
-        linux: "pwd".into(),
-        windows: "pwd".into(),
+        posix_script: "pwd".into(),
+        powershell_script: "pwd".into(),
         working_directory: Some("~/Documents".into()),
     });
     cfg.settings.commands_enabled = true;
     let mut engine = Engine::new(&cfg);
     let mut out = Vec::new();
     engine.execute_remote("cmd:hello", &mut out);
-    assert!(matches!(out.as_slice(), [Out::RunCommand(cmd)]
+    assert!(matches!(out.as_slice(), [EngineOutput::RunCommand(cmd)]
         if cmd.working_directory.as_deref() == Some("~/Documents")));
 }
 
@@ -334,8 +336,8 @@ fn remote_execute_command_uses_current_command_table() {
     let mut cfg = empty_cfg();
     cfg.commands.push(Command {
         id: "play".into(),
-        linux: "playerctl play-pause".into(),
-        windows: "playerctl play-pause".into(),
+        posix_script: "playerctl play-pause".into(),
+        powershell_script: "playerctl play-pause".into(),
         working_directory: None,
     });
     cfg.settings.commands_enabled = true;
@@ -347,7 +349,7 @@ fn remote_execute_command_uses_current_command_table() {
     let expected = crate::mapper::commands::shell_command(&cfg.commands[0], None).expect("script");
     assert!(matches!(
         out.as_slice(),
-        [Out::RunCommand(cmd)] if cmd.program == expected.program && cmd.args == expected.args
+        [EngineOutput::RunCommand(cmd)] if cmd.program == expected.program && cmd.args == expected.args
     ));
 }
 
@@ -406,14 +408,14 @@ fn macro_repeats_inside_a_held_layer_and_queues_at_most_three_runs() {
     let now = Instant::now();
     let at = |ms| now + Duration::from_millis(ms);
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
     engine.tick(at(60), &mut out);
     assert_eq!(engine.top_layer(), Some("nav"));
 
     // Five quick presses: one run, three queued, one dropped.
     for i in 0..5 {
-        engine.handle(KeyCode::KEY_J, true, at(61 + 2 * i), &mut out);
-        engine.handle(KeyCode::KEY_J, false, at(62 + 2 * i), &mut out);
+        engine.handle_key_event(KeyCode::KEY_J, true, at(61 + 2 * i), &mut out);
+        engine.handle_key_event(KeyCode::KEY_J, false, at(62 + 2 * i), &mut out);
     }
     run_ticks(&mut engine, at(71), at(500), &mut out);
     let presses = raw_keys(&out)
@@ -426,8 +428,8 @@ fn macro_repeats_inside_a_held_layer_and_queues_at_most_three_runs() {
 
     // Finished runs leave room: the layer is still held, so it runs again.
     out.clear();
-    engine.handle(KeyCode::KEY_J, true, at(600), &mut out);
-    engine.handle(KeyCode::KEY_J, false, at(601), &mut out);
+    engine.handle_key_event(KeyCode::KEY_J, true, at(600), &mut out);
+    engine.handle_key_event(KeyCode::KEY_J, false, at(601), &mut out);
     run_ticks(&mut engine, at(600), at(700), &mut out);
     assert_eq!(raw_keys(&out).len(), 4);
 }
@@ -440,12 +442,12 @@ fn macro_over_the_time_limit_is_aborted_and_the_queue_continues() {
     let now = Instant::now();
     let at = |ms| now + Duration::from_millis(ms);
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
     engine.tick(at(60), &mut out);
-    engine.handle(KeyCode::KEY_J, true, at(100), &mut out);
-    engine.handle(KeyCode::KEY_J, false, at(101), &mut out);
-    engine.handle(KeyCode::KEY_J, true, at(102), &mut out);
-    engine.handle(KeyCode::KEY_J, false, at(103), &mut out);
+    engine.handle_key_event(KeyCode::KEY_J, true, at(100), &mut out);
+    engine.handle_key_event(KeyCode::KEY_J, false, at(101), &mut out);
+    engine.handle_key_event(KeyCode::KEY_J, true, at(102), &mut out);
+    engine.handle_key_event(KeyCode::KEY_J, false, at(103), &mut out);
     engine.tick(at(100), &mut out);
     engine.tick(at(110), &mut out);
     assert_eq!(
@@ -513,7 +515,7 @@ fn shutdown_releases_mods_of_in_flight_macro() {
     engine.shutdown(&mut out);
     assert!(out.iter().any(|o| matches!(
         o,
-        Out::KeyRaw {
+        EngineOutput::KeyRaw {
             key: KeyCode::KEY_LEFTCTRL,
             down: false
         }
@@ -561,9 +563,9 @@ fn empty_macro_does_not_crash() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "KeyQ".into(),
         layer_id: String::new(),
         tap_action: ActionSpec::Action("macro:empty".into()),
@@ -580,7 +582,7 @@ fn empty_macro_does_not_crash() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_Q, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_Q, true, now, &mut out);
     // Empty macro resolves to nothing → fast path Swallow+Swallow, no crash
     assert!(engine.runner.active.is_none());
 }
@@ -606,7 +608,7 @@ fn failed_text_aborts_macro_before_enter() {
     engine.execute_remote("macro:text", &mut out);
     let now = Instant::now();
     engine.tick(now, &mut out);
-    assert!(matches!(out.as_slice(), [Out::Literal(_)]));
+    assert!(matches!(out.as_slice(), [EngineOutput::Literal(_)]));
     out.clear();
     engine.text_input_failed(&mut out);
     engine.set_text_pending(false, now);
@@ -617,7 +619,7 @@ fn failed_text_aborts_macro_before_enter() {
 #[test]
 fn macro_and_physical_modifier_ownership_survives_either_release_order() {
     for physical_first in [false, true] {
-        let cfg: AppConfig = serde_json::from_value(serde_json::json!({"macros": [
+        let cfg: MapperConfig = serde_json::from_value(serde_json::json!({"macros": [
             {"id": "m", "steps": [{"action": "Ctrl+KeyC"}], "modifierDelayMs": 20}
         ]}))
         .unwrap();
@@ -625,13 +627,13 @@ fn macro_and_physical_modifier_ownership_survives_either_release_order() {
         let mut out = Vec::new();
         let now = Instant::now();
         if physical_first {
-            engine.handle(KeyCode::KEY_LEFTCTRL, true, now, &mut out);
+            engine.handle_key_event(KeyCode::KEY_LEFTCTRL, true, now, &mut out);
         }
         engine.execute_remote("macro:m", &mut out);
         let now = Instant::now();
         engine.tick(now, &mut out);
         if physical_first {
-            engine.handle(
+            engine.handle_key_event(
                 KeyCode::KEY_LEFTCTRL,
                 false,
                 now + Duration::from_millis(1),
@@ -639,13 +641,13 @@ fn macro_and_physical_modifier_ownership_survives_either_release_order() {
             );
             assert!(!out.iter().any(|o| matches!(
                 o,
-                Out::KeyRaw {
+                EngineOutput::KeyRaw {
                     key: KeyCode::KEY_LEFTCTRL,
                     down: false
                 }
             )));
         } else {
-            engine.handle(
+            engine.handle_key_event(
                 KeyCode::KEY_LEFTCTRL,
                 true,
                 now + Duration::from_millis(1),
@@ -658,7 +660,7 @@ fn macro_and_physical_modifier_ownership_survives_either_release_order() {
         assert_eq!(
             out.iter().any(|o| matches!(
                 o,
-                Out::KeyRaw {
+                EngineOutput::KeyRaw {
                     key: KeyCode::KEY_LEFTCTRL,
                     down: false
                 }
@@ -666,7 +668,7 @@ fn macro_and_physical_modifier_ownership_survives_either_release_order() {
             physical_first
         );
         if !physical_first {
-            engine.handle(
+            engine.handle_key_event(
                 KeyCode::KEY_LEFTCTRL,
                 false,
                 now + Duration::from_millis(60),
@@ -674,7 +676,7 @@ fn macro_and_physical_modifier_ownership_survives_either_release_order() {
             );
             assert!(matches!(
                 out.last(),
-                Some(Out::KeyRaw {
+                Some(EngineOutput::KeyRaw {
                     key: KeyCode::KEY_LEFTCTRL,
                     down: false
                 })
@@ -685,7 +687,7 @@ fn macro_and_physical_modifier_ownership_survives_either_release_order() {
 
 #[test]
 fn unchecked_exponential_macro_expansion_is_bounded() {
-    let mut cfg = AppConfig::default();
+    let mut cfg = MapperConfig::default();
     for n in 0..11 {
         cfg.macros.push(Macro {
             id: format!("m{n}"),
@@ -713,7 +715,7 @@ fn unchecked_exponential_macro_expansion_is_bounded() {
 
 #[test]
 fn cancelling_a_macro_keeps_a_new_physical_modifier_owner() {
-    let cfg: AppConfig = serde_json::from_value(serde_json::json!({"macros": [
+    let cfg: MapperConfig = serde_json::from_value(serde_json::json!({"macros": [
         {"id": "m", "steps": [{"action": "Ctrl+KeyC"}], "modifierDelayMs": 20}
     ]}))
     .unwrap();
@@ -722,14 +724,14 @@ fn cancelling_a_macro_keeps_a_new_physical_modifier_owner() {
     engine.execute_remote("macro:m", &mut out);
     let now = Instant::now();
     engine.tick(now, &mut out);
-    engine.handle(KeyCode::KEY_LEFTCTRL, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_LEFTCTRL, true, now, &mut out);
     out.clear();
-    engine.reconfigure(&AppConfig::default(), &mut out);
+    engine.reconfigure(&MapperConfig::default(), &mut out);
     assert!(out.is_empty());
-    engine.handle(KeyCode::KEY_LEFTCTRL, false, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_LEFTCTRL, false, now, &mut out);
     assert!(matches!(
         out.as_slice(),
-        [Out::KeyRaw {
+        [EngineOutput::KeyRaw {
             key: KeyCode::KEY_LEFTCTRL,
             down: false
         }]
@@ -738,7 +740,7 @@ fn cancelling_a_macro_keeps_a_new_physical_modifier_owner() {
 
 #[test]
 fn disabling_commands_revokes_a_pending_tap_without_releasing_other_keys() {
-    let cfg: AppConfig = serde_json::from_value(serde_json::json!({
+    let cfg: MapperConfig = serde_json::from_value(serde_json::json!({
         "settings": {"commandsEnabled": true},
         "commands": [{"id": "test", "linux": "true"}],
         "rules": [{"key": "KeyA", "tapAction": "cmd:test"}]
@@ -747,9 +749,9 @@ fn disabling_commands_revokes_a_pending_tap_without_releasing_other_keys() {
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_A, true, now, &mut out);
-    engine.reconfigure(&AppConfig::default(), &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_A, true, now, &mut out);
+    engine.reconfigure(&MapperConfig::default(), &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_A,
         false,
         now + Duration::from_millis(10),
@@ -760,7 +762,7 @@ fn disabling_commands_revokes_a_pending_tap_without_releasing_other_keys() {
 
 #[test]
 fn layer_key_bound_to_an_empty_macro_swallows_the_key() {
-    let cfg: AppConfig = serde_json::from_value(serde_json::json!({
+    let cfg: MapperConfig = serde_json::from_value(serde_json::json!({
         "macros": [{"id": "empty", "steps": []}],
         "rules": [{"key": "Space", "layerId": "nav", "tapAction": "Space"}],
         "layerKeymaps": {"nav": {"keys": {"KeyQ": "macro:empty", "KeyW": ""}}}
@@ -770,16 +772,16 @@ fn layer_key_bound_to_an_empty_macro_swallows_the_key() {
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
     engine.tick(now + Duration::from_millis(300), &mut out);
     out.clear();
     let t = now + Duration::from_millis(310);
-    engine.handle(KeyCode::KEY_Q, true, t, &mut out);
-    engine.handle(KeyCode::KEY_Q, false, t, &mut out);
+    engine.handle_key_event(KeyCode::KEY_Q, true, t, &mut out);
+    engine.handle_key_event(KeyCode::KEY_Q, false, t, &mut out);
     // Like a tap bound to the same macro: the key does nothing.
     assert!(raw_keys(&out).is_empty());
     // An empty entry still leaves the key to the base layout.
-    engine.handle(KeyCode::KEY_W, true, t, &mut out);
+    engine.handle_key_event(KeyCode::KEY_W, true, t, &mut out);
     assert_eq!(raw_keys(&out), [(KeyCode::KEY_W, true)]);
 }
 
@@ -799,7 +801,7 @@ fn bindings_to_commands_that_cannot_run_report_instead_of_doing_nothing() {
             *record.lock().unwrap() += 1;
         }
     });
-    let cfg: AppConfig = serde_json::from_value(serde_json::json!({
+    let cfg: MapperConfig = serde_json::from_value(serde_json::json!({
         "settings": {"commandsEnabled": false},
         "commands": [{"id": "disabledHere", "linux": "true", "windows": "dir"}],
         "rules": [{"key": "KeyQ", "tapAction": "cmd:disabledHere"}]
@@ -808,24 +810,24 @@ fn bindings_to_commands_that_cannot_run_report_instead_of_doing_nothing() {
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_Q, true, now, &mut out);
-    engine.handle(KeyCode::KEY_Q, false, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_Q, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_Q, false, now, &mut out);
     engine.execute_remote("cmd:disabledHere", &mut out);
     assert!(out.is_empty());
     assert_eq!(*seen.lock().unwrap(), 2);
 
     // A tap still waiting for its decision when commands are switched off
     // reports at release instead of silently doing nothing.
-    let enabled: AppConfig = serde_json::from_value(serde_json::json!({
+    let enabled: MapperConfig = serde_json::from_value(serde_json::json!({
         "settings": {"commandsEnabled": true},
         "commands": [{"id": "disabledHere", "linux": "true", "windows": "dir"}],
         "rules": [{"key": "KeyQ", "tapAction": "cmd:disabledHere"}]
     }))
     .unwrap();
     let mut engine = Engine::new(&enabled);
-    engine.handle(KeyCode::KEY_Q, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_Q, true, now, &mut out);
     engine.reconfigure(&cfg, &mut out);
-    engine.handle(KeyCode::KEY_Q, false, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_Q, false, now, &mut out);
     assert!(out.is_empty());
     assert_eq!(*seen.lock().unwrap(), 3);
 }

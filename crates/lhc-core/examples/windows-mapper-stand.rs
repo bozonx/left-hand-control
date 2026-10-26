@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         fn drop(&mut self) {
             let _ = runtime::stop();
             lhc_core::active_window::stop_watcher();
-            lhc_core::layout::stop_watcher();
+            lhc_core::keyboard_layout::stop_watcher();
         }
     }
     let argument = std::env::args_os()
@@ -45,7 +45,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     fs::create_dir_all(&directory)?;
     let _cleanup = Cleanup;
     lhc_core::active_window::start_watcher();
-    lhc_core::layout::start_watcher();
+    lhc_core::keyboard_layout::start_watcher();
     let (event_tx, event_rx) = std::sync::mpsc::channel();
     lhc_core::events::bus().subscribe(move |event| {
         let _ = event_tx.send(format!("{event:?}"));

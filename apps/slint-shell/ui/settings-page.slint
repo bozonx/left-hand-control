@@ -35,7 +35,7 @@ export global SettingsEditor {
     in-out property <string> hold-timeout;
     in-out property <string> long-hold-timeout;
     in-out property <string> double-tap-timeout;
-    in-out property <string> combo-timeout;
+    in-out property <string> trigger-chord-timeout;
     in-out property <string> macro-pause;
     in-out property <string> modifier-delay;
     in-out property <string> macro-timeout;
@@ -43,7 +43,7 @@ export global SettingsEditor {
     in property <string> default-hold-timeout;
     in property <string> default-long-hold-timeout;
     in property <string> default-double-tap-timeout;
-    in property <string> default-combo-timeout;
+    in property <string> default-trigger-chord-timeout;
     in property <string> default-macro-pause;
     in property <string> default-modifier-delay;
     in property <string> default-macro-timeout;
@@ -589,10 +589,10 @@ export component SettingsPage inherits PageLayout {
                                 label: @tr("Simultaneous presses");
                                 info: @tr("For rules triggered by several keys pressed together, such as KeyJ+KeyK. All keys must go down within this time, in any order. Until then the first key is held back; if the combination does not complete, it is typed as usual. Modifiers are never held back.")
                                     + "\n\n" + @tr("Higher: the combination is easier to hit, but typing with these keys lags slightly. Applies to all rules; a rule cannot override it.")
-                                    + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-combo-timeout);
+                                    + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-trigger-chord-timeout);
                                 minimum: 10; maximum: 500;
-                                value <=> SettingsEditor.combo-timeout;
-                                standard: SettingsEditor.default-combo-timeout;
+                                value <=> SettingsEditor.trigger-chord-timeout;
+                                standard: SettingsEditor.default-trigger-chord-timeout;
                                 edited => { SettingsEditor.schedule-save(); }
                                 reset => { SettingsEditor.save(); }
                             }

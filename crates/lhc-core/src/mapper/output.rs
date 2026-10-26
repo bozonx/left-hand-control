@@ -4,9 +4,9 @@
 //! an [`EventSink`], [`SideEffects`] and a [`LoopDriver`].
 
 use super::action::Keystroke;
-use super::engine::{Engine, Out};
+use super::engine::{Engine, EngineOutput};
 use super::key_code::KeyCode;
-use super::system::{SysAction, SysCommand};
+use super::system::{ProcessInvocation, SystemAction};
 use std::time::{Duration, Instant};
 
 /// Gap inserted between a synthetic key-down and key-up so the receiving
@@ -38,10 +38,10 @@ const TEXT_HOLD_POLL: Duration = Duration::from_millis(5);
 /// keys typed meanwhile land after the text instead of before it.
 #[derive(Default)]
 pub(super) struct OutputHold {
-    held: Vec<Out>,
+    held: Vec<EngineOutput>,
     until: Option<Instant>,
     released: bool,
-    after_text: Vec<Out>,
+    after_text: Vec<EngineOutput>,
     text_until: Option<Instant>,
 }
 
@@ -52,7 +52,7 @@ impl OutputHold {
     }
 
     /// Stop holding and put held output in front of `buf`.
-    pub(super) fn take(&mut self, buf: &mut Vec<Out>) {
+    pub(super) fn take(&mut self, buf: &mut Vec<EngineOutput>) {
         self.until = None;
         if !self.held.is_empty() {
             let mut held = std::mem::take(&mut self.held);
@@ -72,11 +72,11 @@ impl OutputHold {
 
     /// Config changes revoke pending side effects, while key transitions
     /// must remain balanced with presses already emitted before the popup.
-    pub(super) fn cancel_actions(&mut self, buf: &mut Vec<Out>) {
-        let key_transition = |out: &Out| {
+    pub(super) fn cancel_actions(&mut self, buf: &mut Vec<EngineOutput>) {
+        let key_transition = |out: &EngineOutput| {
             !matches!(
                 out,
-                Out::Literal(_) | Out::RunCommand(_) | Out::RunSystem(_)
+                EngineOutput::Literal(_) | EngineOutput::RunCommand(_) | EngineOutput::RunSystem(_)
             )
         };
         self.held.retain(key_transition);
@@ -95,12 +95,12 @@ impl OutputHold {
 
     /// Leave in `buf` only what may be emitted now. `text_pending` tells
     /// whether text sent to the text worker is still being typed.
-    pub(super) fn gate(&mut self, buf: &mut Vec<Out>, now: Instant, text_pending: bool) {
+    pub(super) fn gate(&mut self, buf: &mut Vec<EngineOutput>, now: Instant, text_pending: bool) {
         self.gate_popup(buf, now);
         self.gate_text(buf, now, text_pending);
     }
 
-    fn gate_popup(&mut self, buf: &mut Vec<Out>, now: Instant) {
+    fn gate_popup(&mut self, buf: &mut Vec<EngineOutput>, now: Instant) {
         if self
             .until
             .is_some_and(|until| self.released || now >= until)
@@ -113,7 +113,7 @@ impl OutputHold {
             std::mem::take(buf)
         } else if let Some(index) = buf
             .iter()
-            .position(|out| matches!(out, Out::RunSystem(action) if action.opens_popup()))
+            .position(|out| matches!(out, EngineOutput::RunSystem(action) if action.opens_popup()))
         {
             self.until = Some(now + POPUP_HOLD_MAX);
             buf.split_off(index + 1)
@@ -131,7 +131,7 @@ impl OutputHold {
         }
     }
 
-    fn gate_text(&mut self, buf: &mut Vec<Out>, now: Instant, text_pending: bool) {
+    fn gate_text(&mut self, buf: &mut Vec<EngineOutput>, now: Instant, text_pending: bool) {
         if self
             .text_until
             .is_some_and(|until| !text_pending || now >= until)
@@ -143,7 +143,10 @@ impl OutputHold {
         }
         let rest = if self.text_until.is_some() {
             std::mem::take(buf)
-        } else if let Some(index) = buf.iter().position(|out| matches!(out, Out::Literal(_))) {
+        } else if let Some(index) = buf
+            .iter()
+            .position(|out| matches!(out, EngineOutput::Literal(_)))
+        {
             self.text_until = Some(now + TEXT_HOLD_MAX);
             buf.split_off(index + 1)
         } else {
@@ -161,26 +164,28 @@ impl OutputHold {
     }
 }
 
-fn is_release(out: &Out) -> bool {
+fn is_release(out: &EngineOutput) -> bool {
     matches!(
         out,
-        Out::KeyRaw { down: false, .. } | Out::ChordRelease { .. } | Out::ReleaseMods(_)
+        EngineOutput::KeyRaw { down: false, .. }
+            | EngineOutput::ChordRelease { .. }
+            | EngineOutput::ReleaseMods(_)
     )
 }
 
 /// Whether `release` belongs to a press that is itself held in `held`.
-fn releases_held_press(held: &[Out], release: &Out) -> bool {
+fn releases_held_press(held: &[EngineOutput], release: &EngineOutput) -> bool {
     let pressed = |key: KeyCode| {
         held.iter().any(|out| match out {
-            Out::KeyRaw { key: k, down: true } => *k == key,
-            Out::ChordPress { ks, .. } => ks.key == key || ks.mods.contains(&key),
+            EngineOutput::KeyRaw { key: k, down: true } => *k == key,
+            EngineOutput::ChordPress { ks, .. } => ks.key == key || ks.mods.contains(&key),
             _ => false,
         })
     };
     match release {
-        Out::KeyRaw { key, .. } => pressed(*key),
-        Out::ChordRelease { key, .. } => pressed(*key),
-        Out::ReleaseMods(mods) => mods.iter().any(|key| pressed(*key)),
+        EngineOutput::KeyRaw { key, .. } => pressed(*key),
+        EngineOutput::ChordRelease { key, .. } => pressed(*key),
+        EngineOutput::ReleaseMods(mods) => mods.iter().any(|key| pressed(*key)),
         _ => false,
     }
 }
@@ -201,8 +206,8 @@ pub(super) trait SideEffects {
     fn text_pending(&self) -> bool {
         false
     }
-    fn run_system(&mut self, action: &SysAction);
-    fn run_command(&mut self, command: &SysCommand);
+    fn run_system(&mut self, action: &SystemAction);
+    fn run_command(&mut self, command: &ProcessInvocation);
 }
 
 /// One input from a [`LoopDriver`], in arrival order.
@@ -251,7 +256,7 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
     hold: &mut OutputHold,
     sink: &mut S,
     effects: &mut E,
-    out_buf: &mut Vec<Out>,
+    out_buf: &mut Vec<EngineOutput>,
 ) -> Result<(), String> {
     const MAX_WAIT: Duration = Duration::from_millis(100);
 
@@ -276,7 +281,7 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
                     match driver.app_hotkey(key, down) {
                         Some(Some(action)) => engine.execute_remote(action, out_buf),
                         Some(None) => {}
-                        None => engine.handle(key, down, at, out_buf),
+                        None => engine.handle_key_event(key, down, at, out_buf),
                     }
                     effects.held_layer_changed(engine.held_layer_state());
                 }
@@ -372,12 +377,12 @@ fn emit_chord_release<S: EventSink, E: SideEffects>(
 pub(super) fn flush_out_with<S: EventSink, E: SideEffects>(
     sink: &mut S,
     effects: &mut E,
-    buf: &mut Vec<Out>,
+    buf: &mut Vec<EngineOutput>,
 ) -> Result<(), String> {
     if buf.is_empty() {
         return Ok(());
     }
-    // We emit in chunks: most Out variants go into a single atomic batch, while
+    // We emit in chunks: most EngineOutput variants go into a single atomic batch, while
     // chords, literals, and side effects need ordered flush boundaries.
     let mut events: Vec<(KeyCode, bool)> = Vec::with_capacity(buf.len() * 3);
 
@@ -395,7 +400,7 @@ pub(super) fn flush_out_with<S: EventSink, E: SideEffects>(
 
     for out in buf.drain(..) {
         match out {
-            Out::KeyRaw { key, down } => {
+            EngineOutput::KeyRaw { key, down } => {
                 // Mouse buttons are not grabbed, so they already reach the OS.
                 // Re-emitting them would create duplicates.
                 let code = key.code();
@@ -410,15 +415,15 @@ pub(super) fn flush_out_with<S: EventSink, E: SideEffects>(
                 }
                 events.push((key, down));
             }
-            Out::Stroke { ks, mod_delay } => {
+            EngineOutput::Stroke { ks, mod_delay } => {
                 flush_events(sink, &mut events)?;
                 emit_stroke_tap(sink, effects, &ks, mod_delay)?;
             }
-            Out::ChordPress { ks, mod_delay } => {
+            EngineOutput::ChordPress { ks, mod_delay } => {
                 flush_events(sink, &mut events)?;
                 emit_chord_press(sink, effects, &ks, mod_delay)?;
             }
-            Out::ChordRelease {
+            EngineOutput::ChordRelease {
                 key,
                 mods,
                 mod_delay,
@@ -426,7 +431,7 @@ pub(super) fn flush_out_with<S: EventSink, E: SideEffects>(
                 flush_events(sink, &mut events)?;
                 emit_chord_release(sink, effects, key, &mods, mod_delay)?;
             }
-            Out::ReleaseMods(mods) => {
+            EngineOutput::ReleaseMods(mods) => {
                 for m in mods {
                     let code = m.code();
                     // Same rule as KeyRaw: two transitions of one key must
@@ -437,15 +442,15 @@ pub(super) fn flush_out_with<S: EventSink, E: SideEffects>(
                     events.push((m, false));
                 }
             }
-            Out::RunSystem(action) => {
+            EngineOutput::RunSystem(action) => {
                 flush_events(sink, &mut events)?;
                 effects.run_system(&action);
             }
-            Out::RunCommand(command) => {
+            EngineOutput::RunCommand(command) => {
                 flush_events(sink, &mut events)?;
                 effects.run_command(&command);
             }
-            Out::Literal(text) => {
+            EngineOutput::Literal(text) => {
                 flush_events(sink, &mut events)?;
                 effects.type_text(&text);
             }
@@ -458,7 +463,7 @@ pub(super) fn flush_out_with<S: EventSink, E: SideEffects>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mapper::config::{ActionSpec, AppConfig, Rule, Settings};
+    use crate::mapper::config::{ActionSpec, MapperConfig, Rule, Settings};
     use std::collections::{HashMap, VecDeque};
     #[derive(Default)]
     struct FakeSink {
@@ -506,21 +511,21 @@ mod tests {
             self.texts.push(text.to_string());
         }
 
-        fn run_system(&mut self, action: &SysAction) {
+        fn run_system(&mut self, action: &SystemAction) {
             let label = match action {
-                SysAction::Spawn(SysCommand { program, args, .. }) => {
+                SystemAction::Spawn(ProcessInvocation { program, args, .. }) => {
                     format!("spawn:{program}:{args:?}")
                 }
                 #[cfg(target_os = "linux")]
-                SysAction::Dbus(call) => format!("dbus:{}:{}", call.destination, call.method),
+                SystemAction::Dbus(call) => format!("dbus:{}:{}", call.destination, call.method),
                 #[cfg(target_os = "windows")]
-                SysAction::Windows(action) => format!("windows:{action:?}"),
-                SysAction::AppEvent(event) => format!("app:{event}"),
+                SystemAction::Windows(action) => format!("windows:{action:?}"),
+                SystemAction::AppEvent(event) => format!("app:{event}"),
             };
             self.systems.push(label);
         }
 
-        fn run_command(&mut self, command: &SysCommand) {
+        fn run_command(&mut self, command: &ProcessInvocation) {
             self.commands
                 .push(format!("cmd:{}:{:?}", command.program, command.args));
         }
@@ -567,8 +572,8 @@ mod tests {
         }
     }
 
-    fn empty_cfg() -> AppConfig {
-        AppConfig {
+    fn empty_cfg() -> MapperConfig {
+        MapperConfig {
             rules: Vec::new(),
             layer_keymaps: HashMap::new(),
             macros: Vec::new(),
@@ -582,25 +587,25 @@ mod tests {
         let mut sink = FakeSink::default();
         let mut effects = FakeEffects::default();
         let mut buf = vec![
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_A,
                 down: true,
             },
-            Out::ReleaseMods(vec![KeyCode::KEY_LEFTSHIFT]),
-            Out::Stroke {
+            EngineOutput::ReleaseMods(vec![KeyCode::KEY_LEFTSHIFT]),
+            EngineOutput::Stroke {
                 ks: Keystroke {
                     mods: vec![KeyCode::KEY_LEFTCTRL],
                     key: KeyCode::KEY_C,
                 },
                 mod_delay: Duration::from_millis(2),
             },
-            Out::Literal("tail".into()),
-            Out::RunSystem(SysAction::Spawn(SysCommand {
+            EngineOutput::Literal("tail".into()),
+            EngineOutput::RunSystem(SystemAction::Spawn(ProcessInvocation {
                 program: "fire".into(),
                 args: vec!["now".into()],
                 working_directory: None,
             })),
-            Out::RunCommand(SysCommand {
+            EngineOutput::RunCommand(ProcessInvocation {
                 program: "sh".into(),
                 working_directory: None,
                 args: vec!["-lc".into(), "notify-send done".into()],
@@ -655,14 +660,14 @@ mod tests {
         let mut sink = FakeSink::default();
         let mut effects = FakeEffects::default();
         let mut buf = vec![
-            Out::ChordPress {
+            EngineOutput::ChordPress {
                 ks: Keystroke {
                     mods: vec![KeyCode::KEY_LEFTALT],
                     key: KeyCode::KEY_TAB,
                 },
                 mod_delay: Duration::from_millis(3),
             },
-            Out::ChordRelease {
+            EngineOutput::ChordRelease {
                 key: KeyCode::KEY_TAB,
                 mods: vec![KeyCode::KEY_LEFTALT],
                 mod_delay: Duration::from_millis(3),
@@ -784,7 +789,7 @@ mod tests {
     #[test]
     fn output_after_popup_action_waits_for_focus_or_timeout() {
         let start = Instant::now();
-        let key_a = |down| Out::KeyRaw {
+        let key_a = |down| EngineOutput::KeyRaw {
             key: KeyCode::KEY_A,
             down,
         };
@@ -796,7 +801,7 @@ mod tests {
             sink: &mut FakeSink,
             effects: &mut FakeEffects,
             now: Instant,
-            mut out_buf: Vec<Out>,
+            mut out_buf: Vec<EngineOutput>,
         ) -> Duration {
             let mut driver = FakeDriver::new(vec![now, now], vec![Ok(false)], Vec::new());
             let mut engine = Engine::new(&empty_cfg());
@@ -810,7 +815,7 @@ mod tests {
             };
         }
 
-        let popup = Out::RunSystem(SysAction::AppEvent("show_quick_menu_1".into()));
+        let popup = EngineOutput::RunSystem(SystemAction::AppEvent("show_quick_menu_1".into()));
         iterate!(&mut hold, start, vec![popup, key_a(true)]);
         let wait = iterate!(&mut hold, start, vec![key_a(false)]);
         assert_eq!(effects.systems, vec!["app:show_quick_menu_1"]);
@@ -827,7 +832,7 @@ mod tests {
             ]
         );
 
-        let popup = Out::RunSystem(SysAction::AppEvent("show_emoji_menu_last".into()));
+        let popup = EngineOutput::RunSystem(SystemAction::AppEvent("show_emoji_menu_last".into()));
         iterate!(&mut hold, start, vec![popup, key_a(true)]);
         assert_eq!(sink.batches.len(), 2);
         iterate!(&mut hold, start + Duration::from_secs(1), Vec::new());
@@ -835,33 +840,33 @@ mod tests {
 
         // Other app actions and releases with nothing held change nothing.
         hold.release();
-        let settings = Out::RunSystem(SysAction::AppEvent("show_settings".into()));
+        let settings = EngineOutput::RunSystem(SystemAction::AppEvent("show_settings".into()));
         iterate!(&mut hold, start, vec![settings, key_a(false)]);
         assert_eq!(sink.batches.len(), 4);
     }
 
     #[test]
     fn popup_hold_lets_releases_of_earlier_presses_through() {
-        let key = |key, down| Out::KeyRaw { key, down };
+        let key = |key, down| EngineOutput::KeyRaw { key, down };
         let start = Instant::now();
         let mut hold = OutputHold::default();
-        let popup = Out::RunSystem(SysAction::AppEvent("show_quick_menu_1".into()));
+        let popup = EngineOutput::RunSystem(SystemAction::AppEvent("show_quick_menu_1".into()));
         let mut buf = vec![
             popup,
             key(KeyCode::KEY_B, true),
             key(KeyCode::KEY_LEFTCTRL, false),
-            Out::ReleaseMods(vec![KeyCode::KEY_LEFTALT]),
+            EngineOutput::ReleaseMods(vec![KeyCode::KEY_LEFTALT]),
         ];
         hold.gate(&mut buf, start, false);
         assert!(matches!(
             buf.as_slice(),
             [
-                Out::RunSystem(_),
-                Out::KeyRaw {
+                EngineOutput::RunSystem(_),
+                EngineOutput::KeyRaw {
                     key: KeyCode::KEY_LEFTCTRL,
                     down: false
                 },
-                Out::ReleaseMods(_)
+                EngineOutput::ReleaseMods(_)
             ]
         ));
         // A release of a press that is itself held stays behind it.
@@ -872,7 +877,7 @@ mod tests {
         hold.gate(&mut buf, start, false);
         assert!(matches!(
             buf.as_slice(),
-            [Out::KeyRaw {
+            [EngineOutput::KeyRaw {
                 key: KeyCode::KEY_LEFTSHIFT,
                 down: false
             }]
@@ -886,10 +891,10 @@ mod tests {
         );
     }
 
-    fn transitions_of(buf: &[Out]) -> Vec<(KeyCode, bool)> {
+    fn transitions_of(buf: &[EngineOutput]) -> Vec<(KeyCode, bool)> {
         buf.iter()
             .filter_map(|out| match out {
-                Out::KeyRaw { key, down } => Some((*key, *down)),
+                EngineOutput::KeyRaw { key, down } => Some((*key, *down)),
                 _ => None,
             })
             .collect()
@@ -905,15 +910,15 @@ mod tests {
         };
         let long = Duration::from_millis(2000);
         let mut buf = vec![
-            Out::Stroke {
+            EngineOutput::Stroke {
                 ks: ks.clone(),
                 mod_delay: long,
             },
-            Out::ChordPress {
+            EngineOutput::ChordPress {
                 ks,
                 mod_delay: long,
             },
-            Out::ChordRelease {
+            EngineOutput::ChordRelease {
                 key: KeyCode::KEY_C,
                 mods: vec![KeyCode::KEY_LEFTCTRL],
                 mod_delay: long,
@@ -927,7 +932,7 @@ mod tests {
     #[test]
     fn output_after_text_waits_until_it_is_typed() {
         let start = Instant::now();
-        let key = |key, down| Out::KeyRaw { key, down };
+        let key = |key, down| EngineOutput::KeyRaw { key, down };
         let mut hold = OutputHold::default();
         let mut sink = FakeSink::default();
         let mut effects = FakeEffects::default();
@@ -936,7 +941,7 @@ mod tests {
             sink: &mut FakeSink,
             effects: &mut FakeEffects,
             now: Instant,
-            mut out_buf: Vec<Out>,
+            mut out_buf: Vec<EngineOutput>,
         ) -> Duration {
             let mut driver = FakeDriver::new(vec![now, now], vec![Ok(false)], Vec::new());
             let mut engine = Engine::new(&empty_cfg());
@@ -954,7 +959,7 @@ mod tests {
         iterate!(
             start,
             vec![
-                Out::Literal("🙂".into()),
+                EngineOutput::Literal("🙂".into()),
                 key(KeyCode::KEY_A, true),
                 key(KeyCode::KEY_LEFTSHIFT, false),
             ],
@@ -982,7 +987,7 @@ mod tests {
         effects.text_pending = true;
         iterate!(
             start,
-            vec![Out::Literal("x".into()), key(KeyCode::KEY_B, true)],
+            vec![EngineOutput::Literal("x".into()), key(KeyCode::KEY_B, true)],
         );
         iterate!(start, Vec::new());
         assert_eq!(sink.batches.len(), 3);
@@ -995,15 +1000,15 @@ mod tests {
         let mut sink = FakeSink::default();
         let mut effects = FakeEffects::default();
         let mut buf = vec![
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::BTN_LEFT,
                 down: true,
             },
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::BTN_RIGHT,
                 down: true,
             },
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_A,
                 down: true,
             },
@@ -1024,11 +1029,11 @@ mod tests {
         let mut sink = FakeSink::default();
         let mut effects = FakeEffects::default();
         let mut buf = vec![
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_A,
                 down: true,
             },
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_A,
                 down: false,
             },
@@ -1053,9 +1058,9 @@ mod tests {
         cfg.rules.push(Rule {
             enabled: true,
             condition_game_mode: None,
-            condition_layouts: None,
-            condition_apps_whitelist: None,
-            condition_apps_blacklist: None,
+            condition_keyboard_layouts: None,
+            condition_window_patterns: None,
+            condition_excluded_window_patterns: None,
             key: "AltLeft".into(),
             layer_id: String::new(),
             tap_action: ActionSpec::Action("Escape".into()),
@@ -1071,7 +1076,7 @@ mod tests {
         let mut engine = Engine::new(&cfg);
         let mut pending = Vec::new();
         let start = Instant::now();
-        engine.handle(KeyCode::KEY_LEFTALT, true, start, &mut pending);
+        engine.handle_key_event(KeyCode::KEY_LEFTALT, true, start, &mut pending);
 
         let mut driver = FakeDriver::new(
             vec![start, start + Duration::from_millis(20)],
@@ -1101,7 +1106,7 @@ mod tests {
 
     #[test]
     fn one_input_batch_reports_release_repress_and_usage_separately() {
-        let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+        let cfg: MapperConfig = serde_json::from_value(serde_json::json!({"rules": [
             {"key": "Space", "layerId": "nav", "tapAction": null}
         ]}))
         .unwrap();
@@ -1141,7 +1146,7 @@ mod tests {
     #[test]
     fn config_changes_revoke_buffered_actions_without_losing_key_releases() {
         let command = || {
-            Out::RunCommand(SysCommand {
+            EngineOutput::RunCommand(ProcessInvocation {
                 program: "sh".into(),
                 args: vec!["-c".into(), "true".into()],
                 working_directory: None,
@@ -1149,18 +1154,18 @@ mod tests {
         };
         let mut hold = OutputHold::default();
         let mut out = vec![
-            Out::RunSystem(SysAction::AppEvent("show_quick_menu_1".into())),
-            Out::KeyRaw {
+            EngineOutput::RunSystem(SystemAction::AppEvent("show_quick_menu_1".into())),
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_B,
                 down: true,
             },
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_LEFTCTRL,
                 down: false,
             },
-            Out::Literal("stale".into()),
+            EngineOutput::Literal("stale".into()),
             command(),
-            Out::RunSystem(SysAction::AppEvent("game_mode_toggle".into())),
+            EngineOutput::RunSystem(SystemAction::AppEvent("game_mode_toggle".into())),
         ];
         let now = Instant::now();
         hold.gate(&mut out, now, false);
@@ -1168,8 +1173,8 @@ mod tests {
         assert!(matches!(
             out.as_slice(),
             [
-                Out::RunSystem(_),
-                Out::KeyRaw {
+                EngineOutput::RunSystem(_),
+                EngineOutput::KeyRaw {
                     key: KeyCode::KEY_LEFTCTRL,
                     down: false
                 }
@@ -1182,7 +1187,7 @@ mod tests {
         hold.gate(&mut out, now, false);
         assert!(matches!(
             out.as_slice(),
-            [Out::KeyRaw {
+            [EngineOutput::KeyRaw {
                 key: KeyCode::KEY_B,
                 down: true
             }]
@@ -1193,8 +1198,8 @@ mod tests {
     fn shutdown_discards_actions_waiting_for_popup_focus() {
         let mut hold = OutputHold::default();
         let mut out = vec![
-            Out::RunSystem(SysAction::AppEvent("show_quick_menu_1".into())),
-            Out::Literal("must not be typed on shutdown".into()),
+            EngineOutput::RunSystem(SystemAction::AppEvent("show_quick_menu_1".into())),
+            EngineOutput::Literal("must not be typed on shutdown".into()),
         ];
         hold.gate(&mut out, Instant::now(), false);
         out.clear();

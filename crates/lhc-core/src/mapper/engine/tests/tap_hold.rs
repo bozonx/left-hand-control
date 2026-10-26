@@ -1,22 +1,21 @@
 use super::*;
 
-
 #[test]
 fn long_hold_runs_once_at_default_deadline_without_native_key() {
     let cfg = config_with_rule(serde_json::json!({"key": "KeyA", "longHoldAction": "text:done"}));
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_A, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_A, true, now, &mut out);
     assert_eq!(engine.next_deadline(now), Some(Duration::from_secs(1)));
     engine.tick(now + Duration::from_millis(999), &mut out);
     assert!(out.is_empty());
     engine.tick(now + Duration::from_secs(1), &mut out);
-    assert!(matches!(out.as_slice(), [Out::Literal(text)] if text == "done"));
+    assert!(matches!(out.as_slice(), [EngineOutput::Literal(text)] if text == "done"));
     out.clear();
-    engine.handle(KeyCode::KEY_A, true, now + Duration::from_secs(2), &mut out);
+    engine.handle_key_event(KeyCode::KEY_A, true, now + Duration::from_secs(2), &mut out);
     engine.tick(now + Duration::from_secs(3), &mut out);
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_A,
         false,
         now + Duration::from_secs(4),
@@ -36,14 +35,14 @@ fn long_hold_early_release_taps_and_other_keys_do_not_commit_it() {
         let mut engine = Engine::new(&cfg);
         let now = Instant::now();
         let mut out = Vec::new();
-        engine.handle(KeyCode::KEY_A, true, now, &mut out);
-        engine.handle(
+        engine.handle_key_event(KeyCode::KEY_A, true, now, &mut out);
+        engine.handle_key_event(
             KeyCode::KEY_B,
             true,
             now + Duration::from_millis(50),
             &mut out,
         );
-        engine.handle(
+        engine.handle_key_event(
             KeyCode::KEY_B,
             false,
             now + Duration::from_millis(100),
@@ -52,25 +51,27 @@ fn long_hold_early_release_taps_and_other_keys_do_not_commit_it() {
         assert!(matches!(
             out.as_slice(),
             [
-                Out::KeyRaw {
+                EngineOutput::KeyRaw {
                     key: KeyCode::KEY_B,
                     down: true
                 },
-                Out::KeyRaw {
+                EngineOutput::KeyRaw {
                     key: KeyCode::KEY_B,
                     down: false
                 }
             ]
         ));
         out.clear();
-        engine.handle(
+        engine.handle_key_event(
             KeyCode::KEY_A,
             false,
             now + Duration::from_millis(500),
             &mut out,
         );
         engine.tick(now + Duration::from_secs(2), &mut out);
-        assert!(matches!(out.as_slice(), [Out::Stroke {ks, ..}] if ks.key == KeyCode::KEY_ESC));
+        assert!(
+            matches!(out.as_slice(), [EngineOutput::Stroke {ks, ..}] if ks.key == KeyCode::KEY_ESC)
+        );
     }
 }
 
@@ -82,16 +83,16 @@ fn long_hold_override_fires_even_when_release_arrives_before_tick() {
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_A, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_A, true, now, &mut out);
     engine.tick(now + Duration::from_secs(1), &mut out);
     assert!(out.is_empty());
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_A,
         false,
         now + Duration::from_millis(1500),
         &mut out,
     );
-    assert!(matches!(out.as_slice(), [Out::Literal(text)] if text == "done"));
+    assert!(matches!(out.as_slice(), [EngineOutput::Literal(text)] if text == "done"));
 }
 
 #[test]
@@ -100,9 +101,9 @@ fn tap_on_release_fires_tap_action() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "CapsLock".into(),
         layer_id: String::new(),
         tap_action: ActionSpec::Action("Escape".into()),
@@ -119,10 +120,10 @@ fn tap_on_release_fires_tap_action() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_CAPSLOCK, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_CAPSLOCK, true, now, &mut out);
     assert!(out.is_empty());
 
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_CAPSLOCK,
         false,
         now + Duration::from_millis(10),
@@ -130,7 +131,7 @@ fn tap_on_release_fires_tap_action() {
     );
     assert!(matches!(
         out.as_slice(),
-        [Out::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_ESC
+        [EngineOutput::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_ESC
     ));
 }
 
@@ -140,9 +141,9 @@ fn hold_timeout_commits_hold_via_tick() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "AltLeft".into(),
         layer_id: String::new(),
         tap_action: ActionSpec::Action("Escape".into()),
@@ -159,13 +160,13 @@ fn hold_timeout_commits_hold_via_tick() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_LEFTALT, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_LEFTALT, true, now, &mut out);
     assert!(out.is_empty());
 
     engine.tick(now + Duration::from_millis(60), &mut out);
     assert!(matches!(
         out.as_slice(),
-        [Out::ChordPress { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_LEFTCTRL
+        [EngineOutput::ChordPress { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_LEFTCTRL
     ));
 }
 
@@ -175,9 +176,9 @@ fn double_tap_fires_double_tap_action() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "KeyQ".into(),
         layer_id: String::new(),
         tap_action: ActionSpec::Action("KeyA".into()),
@@ -195,8 +196,8 @@ fn double_tap_fires_double_tap_action() {
     let now = Instant::now();
 
     // First tap
-    engine.handle(KeyCode::KEY_Q, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_Q, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_Q,
         false,
         now + Duration::from_millis(10),
@@ -205,7 +206,7 @@ fn double_tap_fires_double_tap_action() {
     assert!(out.is_empty()); // WaitingSecond
 
     // Second tap within window
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_Q,
         true,
         now + Duration::from_millis(20),
@@ -213,12 +214,12 @@ fn double_tap_fires_double_tap_action() {
     );
     assert!(matches!(
         out.as_slice(),
-        [Out::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_B
+        [EngineOutput::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_B
     ));
 
     // Release of second tap must be silent
     out.clear();
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_Q,
         false,
         now + Duration::from_millis(30),
@@ -233,9 +234,9 @@ fn double_tap_window_expired_fires_tap() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "KeyQ".into(),
         layer_id: String::new(),
         tap_action: ActionSpec::Action("KeyA".into()),
@@ -252,8 +253,8 @@ fn double_tap_window_expired_fires_tap() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_Q, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_Q, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_Q,
         false,
         now + Duration::from_millis(10),
@@ -264,7 +265,7 @@ fn double_tap_window_expired_fires_tap() {
     engine.tick(now + Duration::from_millis(250), &mut out);
     assert!(matches!(
         out.as_slice(),
-        [Out::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_A
+        [EngineOutput::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_A
     ));
 }
 
@@ -274,9 +275,9 @@ fn double_tap_flush_on_other_key_press() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "KeyQ".into(),
         layer_id: String::new(),
         tap_action: ActionSpec::Action("KeyA".into()),
@@ -293,8 +294,8 @@ fn double_tap_flush_on_other_key_press() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_Q, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_Q, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_Q,
         false,
         now + Duration::from_millis(10),
@@ -303,7 +304,7 @@ fn double_tap_flush_on_other_key_press() {
     assert!(out.is_empty());
 
     // Another key press flushes the deferred tap before processing
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_W,
         true,
         now + Duration::from_millis(20),
@@ -312,11 +313,11 @@ fn double_tap_flush_on_other_key_press() {
     assert_eq!(out.len(), 2);
     assert!(matches!(
         out[0],
-        Out::Stroke { ref ks, .. } if ks.mods.is_empty() && ks.key == KeyCode::KEY_A
+        EngineOutput::Stroke { ref ks, .. } if ks.mods.is_empty() && ks.key == KeyCode::KEY_A
     ));
     assert!(matches!(
         out[1],
-        Out::KeyRaw { key, down: true } if key == KeyCode::KEY_W
+        EngineOutput::KeyRaw { key, down: true } if key == KeyCode::KEY_W
     ));
 }
 
@@ -330,9 +331,9 @@ fn double_tap_late_second_press_is_tap_not_double_tap() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "KeyQ".into(),
         layer_id: String::new(),
         tap_action: ActionSpec::Action("KeyA".into()),
@@ -349,8 +350,8 @@ fn double_tap_late_second_press_is_tap_not_double_tap() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_Q, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_Q, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_Q,
         false,
         now + Duration::from_millis(10),
@@ -359,7 +360,7 @@ fn double_tap_late_second_press_is_tap_not_double_tap() {
     assert!(out.is_empty()); // WaitingSecond, deadline = now + 210ms
 
     // Second press well past the 200 ms window.
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_Q,
         true,
         now + Duration::from_millis(500),
@@ -368,7 +369,7 @@ fn double_tap_late_second_press_is_tap_not_double_tap() {
     assert!(
         matches!(
             out.as_slice(),
-            [Out::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_A
+            [EngineOutput::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_A
         ),
         "late second press must fire the first tap (KeyA), not the double-tap"
     );
@@ -390,26 +391,26 @@ fn permissive_prior_key_release_replays_after_buffer() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
     assert!(matches!(
         out.as_slice(),
-        [Out::KeyRaw { key, down: true }] if *key == KeyCode::KEY_LEFTSHIFT
+        [EngineOutput::KeyRaw { key, down: true }] if *key == KeyCode::KEY_LEFTSHIFT
     ));
     out.clear();
 
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_F,
         true,
         now + Duration::from_millis(5),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_J,
         true,
         now + Duration::from_millis(10),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_LEFTSHIFT,
         false,
         now + Duration::from_millis(15),
@@ -419,7 +420,7 @@ fn permissive_prior_key_release_replays_after_buffer() {
     assert!(out.is_empty());
 
     // F released first → F is a tap; the buffer replays in physical order.
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_F,
         false,
         now + Duration::from_millis(20),
@@ -429,9 +430,9 @@ fn permissive_prior_key_release_replays_after_buffer() {
         matches!(
             out.as_slice(),
             [
-                Out::Stroke { ks, .. },
-                Out::KeyRaw { key: j, down: true },
-                Out::KeyRaw { key: sh, down: false },
+                EngineOutput::Stroke { ks, .. },
+                EngineOutput::KeyRaw { key: j, down: true },
+                EngineOutput::KeyRaw { key: sh, down: false },
             ] if ks.key == KeyCode::KEY_ESC
                 && *j == KeyCode::KEY_J
                 && *sh == KeyCode::KEY_LEFTSHIFT
@@ -446,9 +447,9 @@ fn shutdown_releases_all_emitted_keys_and_mods() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "Space".into(),
         layer_id: "sp".into(),
         tap_action: ActionSpec::Native,
@@ -471,9 +472,9 @@ fn shutdown_releases_all_emitted_keys_and_mods() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
     engine.tick(now + Duration::from_millis(260), &mut out);
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_A,
         true,
         now + Duration::from_millis(270),
@@ -484,13 +485,13 @@ fn shutdown_releases_all_emitted_keys_and_mods() {
     engine.shutdown(&mut out);
     // Should emit: KeyC release, Ctrl release (ReleaseMods)
     assert!(
-        out.iter()
-            .any(|o| matches!(o, Out::KeyRaw { key, down: false } if *key == KeyCode::KEY_C))
+        out.iter().any(
+            |o| matches!(o, EngineOutput::KeyRaw { key, down: false } if *key == KeyCode::KEY_C)
+        )
     );
-    assert!(
-        out.iter()
-            .any(|o| matches!(o, Out::ReleaseMods(mods) if mods.contains(&KeyCode::KEY_LEFTCTRL)))
-    );
+    assert!(out.iter().any(
+        |o| matches!(o, EngineOutput::ReleaseMods(mods) if mods.contains(&KeyCode::KEY_LEFTCTRL))
+    ));
     assert!(engine.layers.active.is_empty());
     assert!(engine.pending.is_empty());
 }
@@ -501,9 +502,9 @@ fn mod_refs_shared_by_two_keys() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "Space".into(),
         layer_id: "sp".into(),
         tap_action: ActionSpec::Native,
@@ -528,16 +529,16 @@ fn mod_refs_shared_by_two_keys() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
     engine.tick(now + Duration::from_millis(260), &mut out);
 
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_A,
         true,
         now + Duration::from_millis(270),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_B,
         true,
         now + Duration::from_millis(280),
@@ -546,7 +547,7 @@ fn mod_refs_shared_by_two_keys() {
     out.clear();
 
     // Release KeyA — Ctrl should NOT be released because KeyB still holds it
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_A,
         false,
         now + Duration::from_millis(290),
@@ -554,15 +555,15 @@ fn mod_refs_shared_by_two_keys() {
     );
     assert!(
         out.iter()
-            .any(|o| matches!(o, Out::ChordRelease { key, .. } if *key == KeyCode::KEY_C))
+            .any(|o| matches!(o, EngineOutput::ChordRelease { key, .. } if *key == KeyCode::KEY_C))
     );
     assert!(!out.iter().any(
-        |o| matches!(o, Out::ChordRelease { mods, .. } if mods.contains(&KeyCode::KEY_LEFTCTRL))
+        |o| matches!(o, EngineOutput::ChordRelease { mods, .. } if mods.contains(&KeyCode::KEY_LEFTCTRL))
     ));
 
     out.clear();
     // Release KeyB — now Ctrl should be released
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_B,
         false,
         now + Duration::from_millis(300),
@@ -570,10 +571,10 @@ fn mod_refs_shared_by_two_keys() {
     );
     assert!(
         out.iter()
-            .any(|o| matches!(o, Out::ChordRelease { key, .. } if *key == KeyCode::KEY_V))
+            .any(|o| matches!(o, EngineOutput::ChordRelease { key, .. } if *key == KeyCode::KEY_V))
     );
     assert!(out.iter().any(
-        |o| matches!(o, Out::ChordRelease { mods, .. } if mods.contains(&KeyCode::KEY_LEFTCTRL))
+        |o| matches!(o, EngineOutput::ChordRelease { mods, .. } if mods.contains(&KeyCode::KEY_LEFTCTRL))
     ));
 }
 
@@ -583,10 +584,10 @@ fn unknown_key_on_release_passes_through() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_A, false, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_A, false, now, &mut out);
     assert!(matches!(
         out.as_slice(),
-        [Out::KeyRaw { key, down: false }] if *key == KeyCode::KEY_A
+        [EngineOutput::KeyRaw { key, down: false }] if *key == KeyCode::KEY_A
     ));
 }
 
@@ -596,9 +597,9 @@ fn commit_waiting_decisions_on_other_key_press() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "ShiftLeft".into(),
         layer_id: String::new(),
         tap_action: ActionSpec::Action("Escape".into()),
@@ -617,11 +618,11 @@ fn commit_waiting_decisions_on_other_key_press() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
     assert!(out.is_empty());
 
     // Another key press commits the pending hold
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_A,
         true,
         now + Duration::from_millis(10),
@@ -630,8 +631,8 @@ fn commit_waiting_decisions_on_other_key_press() {
     assert!(matches!(
         out.as_slice(),
         [
-            Out::ChordPress { ks, .. },
-            Out::KeyRaw { key: k1, down: true },
+            EngineOutput::ChordPress { ks, .. },
+            EngineOutput::KeyRaw { key: k1, down: true },
         ] if ks.mods.is_empty() && ks.key == KeyCode::KEY_LEFTCTRL && *k1 == KeyCode::KEY_A
     ));
 }
@@ -650,8 +651,8 @@ fn permissive_roll_fires_tap_not_hold() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_A,
         true,
         now + Duration::from_millis(10),
@@ -660,7 +661,7 @@ fn permissive_roll_fires_tap_not_hold() {
     // Nothing emitted yet — A is buffered behind Shift's decision.
     assert!(out.is_empty());
 
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_LEFTSHIFT,
         false,
         now + Duration::from_millis(20),
@@ -670,8 +671,8 @@ fn permissive_roll_fires_tap_not_hold() {
         matches!(
             out.as_slice(),
             [
-                Out::Stroke { ks: esc, .. },
-                Out::KeyRaw { key: a, down: true },
+                EngineOutput::Stroke { ks: esc, .. },
+                EngineOutput::KeyRaw { key: a, down: true },
             ] if esc.mods.is_empty()
                 && esc.key == KeyCode::KEY_ESC
                 && *a == KeyCode::KEY_A
@@ -694,14 +695,14 @@ fn permissive_nested_release_commits_hold() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_A,
         true,
         now + Duration::from_millis(10),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_A,
         false,
         now + Duration::from_millis(20),
@@ -712,9 +713,9 @@ fn permissive_nested_release_commits_hold() {
         matches!(
             out.as_slice(),
             [
-                Out::ChordPress { ks: ctrl, .. },
-                Out::KeyRaw { key: a_down, down: true },
-                Out::KeyRaw { key: a_up, down: false },
+                EngineOutput::ChordPress { ks: ctrl, .. },
+                EngineOutput::KeyRaw { key: a_down, down: true },
+                EngineOutput::KeyRaw { key: a_up, down: false },
             ] if ctrl.mods.is_empty()
                 && ctrl.key == KeyCode::KEY_LEFTCTRL
                 && *a_down == KeyCode::KEY_A
@@ -742,8 +743,8 @@ fn permissive_timeout_commits_hold_with_buffer() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_CAPSLOCK, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_CAPSLOCK, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_J,
         true,
         now + Duration::from_millis(10),
@@ -755,7 +756,7 @@ fn permissive_timeout_commits_hold_with_buffer() {
     assert!(
         matches!(
             out.as_slice(),
-            [Out::ChordPress { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_LEFT
+            [EngineOutput::ChordPress { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_LEFT
         ),
         "expected buffered J to resolve as Left in the nav layer"
     );
@@ -775,20 +776,20 @@ fn permissive_release_of_prior_key_does_not_commit() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_A, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_A, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_LEFTSHIFT,
         true,
         now + Duration::from_millis(10),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_A,
         false,
         now + Duration::from_millis(20),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_LEFTSHIFT,
         false,
         now + Duration::from_millis(30),
@@ -797,12 +798,13 @@ fn permissive_release_of_prior_key_does_not_commit() {
 
     // No ControlLeft hold anywhere; Shift resolved as a tap (Escape).
     assert!(
-        !out.iter().any(|o| matches!(o, Out::ChordPress { .. })),
+        !out.iter()
+            .any(|o| matches!(o, EngineOutput::ChordPress { .. })),
         "hold must not commit"
     );
     assert!(
         out.iter()
-            .any(|o| matches!(o, Out::Stroke { ks, .. } if ks.key == KeyCode::KEY_ESC)),
+            .any(|o| matches!(o, EngineOutput::Stroke { ks, .. } if ks.key == KeyCode::KEY_ESC)),
         "Shift tap (Escape) must fire"
     );
 }
@@ -826,14 +828,14 @@ fn permissive_chain_of_two_rule_keys_both_tap() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_CAPSLOCK,
         true,
         now + Duration::from_millis(10),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_LEFTSHIFT,
         false,
         now + Duration::from_millis(20),
@@ -843,13 +845,13 @@ fn permissive_chain_of_two_rule_keys_both_tap() {
     assert!(
         matches!(
             out.as_slice(),
-            [Out::Stroke { ks, .. }] if ks.key == KeyCode::KEY_ESC
+            [EngineOutput::Stroke { ks, .. }] if ks.key == KeyCode::KEY_ESC
         ),
         "expected only Shift's Escape tap so far"
     );
 
     out.clear();
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_CAPSLOCK,
         false,
         now + Duration::from_millis(30),
@@ -858,7 +860,7 @@ fn permissive_chain_of_two_rule_keys_both_tap() {
     assert!(
         matches!(
             out.as_slice(),
-            [Out::Stroke { ks, .. }] if ks.key == KeyCode::KEY_TAB
+            [EngineOutput::Stroke { ks, .. }] if ks.key == KeyCode::KEY_TAB
         ),
         "expected Caps's Tab tap"
     );
@@ -879,14 +881,14 @@ fn permissive_native_hold_shift_roll_still_taps() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_A,
         true,
         now + Duration::from_millis(30),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_LEFTSHIFT,
         false,
         now + Duration::from_millis(60),
@@ -897,8 +899,8 @@ fn permissive_native_hold_shift_roll_still_taps() {
         matches!(
             out.as_slice(),
             [
-                Out::Stroke { ks: copy, .. },
-                Out::KeyRaw { key: a, down: true },
+                EngineOutput::Stroke { ks: copy, .. },
+                EngineOutput::KeyRaw { key: a, down: true },
             ] if copy.mods == vec![KeyCode::KEY_LEFTCTRL]
                 && copy.key == KeyCode::KEY_C
                 && *a == KeyCode::KEY_A
@@ -936,8 +938,8 @@ fn rule_hold_detection_overrides_default_and_can_mix_in_one_layout() {
         ] {
             let mut out = Vec::new();
             let now = Instant::now();
-            engine.handle(key, true, now, &mut out);
-            engine.handle(
+            engine.handle_key_event(key, true, now, &mut out);
+            engine.handle_key_event(
                 KeyCode::KEY_C,
                 true,
                 now + Duration::from_millis(10),
@@ -945,7 +947,7 @@ fn rule_hold_detection_overrides_default_and_can_mix_in_one_layout() {
             );
             if press_hold {
                 assert!(
-                    matches!(out.as_slice(), [Out::ChordPress { ks, .. }, Out::KeyRaw { key: KeyCode::KEY_C, down: true }] if ks.key == KeyCode::KEY_LEFTCTRL)
+                    matches!(out.as_slice(), [EngineOutput::ChordPress { ks, .. }, EngineOutput::KeyRaw { key: KeyCode::KEY_C, down: true }] if ks.key == KeyCode::KEY_LEFTCTRL)
                 );
             } else {
                 assert!(
@@ -953,13 +955,13 @@ fn rule_hold_detection_overrides_default_and_can_mix_in_one_layout() {
                     "release detection must buffer the second key"
                 );
             }
-            engine.handle(key, false, now + Duration::from_millis(20), &mut out);
+            engine.handle_key_event(key, false, now + Duration::from_millis(20), &mut out);
             if !press_hold {
                 assert!(
-                    matches!(out.as_slice(), [Out::Stroke { ks, .. }, Out::KeyRaw { key: KeyCode::KEY_C, down: true }] if ks.key == key)
+                    matches!(out.as_slice(), [EngineOutput::Stroke { ks, .. }, EngineOutput::KeyRaw { key: KeyCode::KEY_C, down: true }] if ks.key == key)
                 );
             }
-            engine.handle(
+            engine.handle_key_event(
                 KeyCode::KEY_C,
                 false,
                 now + Duration::from_millis(30),
@@ -988,37 +990,39 @@ fn buffered_rule_keeps_its_own_hold_detection_after_replay() {
     let mut engine = Engine::new(&cfg);
     let mut out = Vec::new();
     let now = Instant::now();
-    engine.handle(KeyCode::KEY_F, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_F, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_SPACE,
         true,
         now + Duration::from_millis(10),
         &mut out,
     );
     assert!(out.is_empty());
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_F,
         false,
         now + Duration::from_millis(20),
         &mut out,
     );
-    assert!(matches!(out.as_slice(), [Out::Stroke { ks, .. }] if ks.key == KeyCode::KEY_F));
+    assert!(
+        matches!(out.as_slice(), [EngineOutput::Stroke { ks, .. }] if ks.key == KeyCode::KEY_F)
+    );
     out.clear();
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_C,
         true,
         now + Duration::from_millis(30),
         &mut out,
     );
     assert!(
-        matches!(out.as_slice(), [Out::ChordPress { ks, .. }, Out::KeyRaw { key: KeyCode::KEY_C, down: true }] if ks.key == KeyCode::KEY_LEFTCTRL)
+        matches!(out.as_slice(), [EngineOutput::ChordPress { ks, .. }, EngineOutput::KeyRaw { key: KeyCode::KEY_C, down: true }] if ks.key == KeyCode::KEY_LEFTCTRL)
     );
 }
 
 #[test]
 fn shared_main_key_is_released_only_by_the_last_owner() {
     for target in ["ControlLeft", "KeyC"] {
-        let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+        let cfg: MapperConfig = serde_json::from_value(serde_json::json!({"rules": [
             {"key": "KeyA", "tapAction": null, "holdAction": target},
             {"key": "KeyB", "tapAction": null, "holdAction": target}
         ]}))
@@ -1026,13 +1030,16 @@ fn shared_main_key_is_released_only_by_the_last_owner() {
         let mut engine = Engine::new(&cfg);
         let now = Instant::now();
         let mut out = Vec::new();
-        engine.handle(KeyCode::KEY_A, true, now, &mut out);
-        engine.handle(KeyCode::KEY_B, true, now, &mut out);
+        engine.handle_key_event(KeyCode::KEY_A, true, now, &mut out);
+        engine.handle_key_event(KeyCode::KEY_B, true, now, &mut out);
         out.clear();
-        engine.handle(KeyCode::KEY_A, false, now, &mut out);
+        engine.handle_key_event(KeyCode::KEY_A, false, now, &mut out);
         assert!(out.is_empty());
-        engine.handle(KeyCode::KEY_B, false, now, &mut out);
-        assert!(matches!(out.as_slice(), [Out::KeyRaw { down: false, .. }]));
+        engine.handle_key_event(KeyCode::KEY_B, false, now, &mut out);
+        assert!(matches!(
+            out.as_slice(),
+            [EngineOutput::KeyRaw { down: false, .. }]
+        ));
     }
 }
 
@@ -1044,15 +1051,15 @@ fn release_after_hold_deadline_commits_hold_before_release() {
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_A, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_A, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_A,
         false,
         now + Duration::from_millis(20),
         &mut out,
     );
     assert!(
-        matches!(out.as_slice(), [Out::ChordPress { ks, .. }, Out::KeyRaw { key: KeyCode::KEY_LEFTCTRL, down: false }] if ks.key == KeyCode::KEY_LEFTCTRL)
+        matches!(out.as_slice(), [EngineOutput::ChordPress { ks, .. }, EngineOutput::KeyRaw { key: KeyCode::KEY_LEFTCTRL, down: false }] if ks.key == KeyCode::KEY_LEFTCTRL)
     );
 }
 
@@ -1064,29 +1071,29 @@ fn late_release_replays_buffered_keys_before_releasing_the_hold() {
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_A, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_A, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_B,
         true,
         now + Duration::from_millis(5),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_A,
         false,
         now + Duration::from_millis(20),
         &mut out,
     );
     assert!(matches!(out.as_slice(), [
-        Out::ChordPress { ks, .. },
-        Out::KeyRaw { key: KeyCode::KEY_B, down: true },
-        Out::KeyRaw { key: KeyCode::KEY_LEFTCTRL, down: false }
+        EngineOutput::ChordPress { ks, .. },
+        EngineOutput::KeyRaw { key: KeyCode::KEY_B, down: true },
+        EngineOutput::KeyRaw { key: KeyCode::KEY_LEFTCTRL, down: false }
     ] if ks.key == KeyCode::KEY_LEFTCTRL));
 }
 
 #[test]
 fn nested_release_must_not_leave_key_pressed() {
-    let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+    let cfg: MapperConfig = serde_json::from_value(serde_json::json!({"rules": [
         {"key":"KeyA", "tapAction":"Escape", "holdAction":"ControlLeft", "holdTimeoutMs":200},
         {"key":"KeyB", "tapAction":"Tab", "holdAction":"ShiftLeft", "holdTimeoutMs":200}
     ]}))
@@ -1102,7 +1109,7 @@ fn nested_release_must_not_leave_key_pressed() {
         (KeyCode::KEY_B, false, 40),
         (KeyCode::KEY_A, false, 50),
     ] {
-        engine.handle(key, down, now + Duration::from_millis(ms), &mut out);
+        engine.handle_key_event(key, down, now + Duration::from_millis(ms), &mut out);
         engine.tick(now + Duration::from_millis(ms), &mut out);
     }
     engine.tick(now + Duration::from_secs(1), &mut out);
@@ -1113,7 +1120,7 @@ fn nested_release_must_not_leave_key_pressed() {
     let c_events: Vec<_> = out
         .iter()
         .filter_map(|event| match event {
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_C,
                 down,
             } => Some(*down),
@@ -1125,7 +1132,7 @@ fn nested_release_must_not_leave_key_pressed() {
 
 #[test]
 fn buffered_long_hold_must_fire() {
-    let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+    let cfg: MapperConfig = serde_json::from_value(serde_json::json!({"rules": [
         {"key":"KeyA", "tapAction":"Escape", "holdAction":"ControlLeft", "holdTimeoutMs":200},
         {"key":"KeyB", "tapAction":"Tab", "longHoldAction":"text:long", "longHoldTimeoutMs":100}
     ]}))
@@ -1139,19 +1146,19 @@ fn buffered_long_hold_must_fire() {
         (KeyCode::KEY_B, false, 150),
         (KeyCode::KEY_A, false, 160),
     ] {
-        engine.handle(key, down, now + Duration::from_millis(ms), &mut out);
+        engine.handle_key_event(key, down, now + Duration::from_millis(ms), &mut out);
         engine.tick(now + Duration::from_millis(ms), &mut out);
     }
     engine.tick(now + Duration::from_secs(1), &mut out);
     assert_eq!(
         out.iter()
-            .filter(|o| matches!(o, Out::Literal(s) if s == "long"))
+            .filter(|o| matches!(o, EngineOutput::Literal(s) if s == "long"))
             .count(),
         1
     );
     assert!(
         !out.iter()
-            .any(|o| matches!(o, Out::Stroke { ks, .. } if ks.key == KeyCode::KEY_TAB))
+            .any(|o| matches!(o, EngineOutput::Stroke { ks, .. } if ks.key == KeyCode::KEY_TAB))
     );
 }
 
@@ -1171,13 +1178,13 @@ fn actions_unavailable_here_are_skipped_with_a_notice() {
     // A script only for the other OS: this one cannot run the command.
     cfg.commands.push(Command {
         id: "foreignOnly".into(),
-        linux: if cfg!(target_os = "windows") {
+        posix_script: if cfg!(target_os = "windows") {
             "ls"
         } else {
             ""
         }
         .into(),
-        windows: if cfg!(target_os = "windows") {
+        powershell_script: if cfg!(target_os = "windows") {
             ""
         } else {
             "dir"
@@ -1202,8 +1209,8 @@ fn actions_unavailable_here_are_skipped_with_a_notice() {
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_Q, true, now, &mut out);
-    engine.handle(KeyCode::KEY_Q, false, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_Q, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_Q, false, now, &mut out);
     engine.execute_remote("macro:mixed", &mut out);
     engine.tick(now + Duration::from_millis(1), &mut out);
     // Neither the trigger key nor a half-run macro reaches the OS.
@@ -1222,22 +1229,22 @@ fn repeats_reemit_only_keys_that_hold_a_virtual_key() {
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_A, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_A, true, now, &mut out);
     out.clear();
     engine.repeat(KeyCode::KEY_A, &mut out);
     assert!(matches!(
         out.as_slice(),
-        [Out::KeyRaw {
+        [EngineOutput::KeyRaw {
             key: KeyCode::KEY_A,
             down: true
         }]
     ));
     out.clear();
     // A released key and an undecided tap/hold key do not repeat.
-    engine.handle(KeyCode::KEY_A, false, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_A, false, now, &mut out);
     out.clear();
     engine.repeat(KeyCode::KEY_A, &mut out);
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
     engine.repeat(KeyCode::KEY_SPACE, &mut out);
     assert!(out.is_empty());
 }
@@ -1249,7 +1256,7 @@ fn confirmed_hold_repeats_the_mapped_key_until_release() {
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_A, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_A, true, now, &mut out);
     engine.repeat(KeyCode::KEY_A, &mut out);
     assert!(out.is_empty());
     engine.tick(now + Duration::from_secs(1), &mut out);
@@ -1259,17 +1266,17 @@ fn confirmed_hold_repeats_the_mapped_key_until_release() {
     assert!(matches!(
         out.as_slice(),
         [
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_B,
                 down: true
             },
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_B,
                 down: true
             }
         ]
     ));
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_A,
         false,
         now + Duration::from_secs(2),
@@ -1312,16 +1319,16 @@ fn left_and_right_modifier_taps_remain_distinct() {
         .zip(actions)
         .map(|(key, action)| serde_json::json!({"key":key,"tapAction":action}))
         .collect();
-    let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules":rules})).unwrap();
+    let cfg: MapperConfig = serde_json::from_value(serde_json::json!({"rules":rules})).unwrap();
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     for (index, (input, expected)) in inputs.into_iter().zip(outputs).enumerate() {
         let at = now + Duration::from_millis(index as u64 * 150);
         let mut out = Vec::new();
-        engine.handle(input, true, at, &mut out);
-        engine.handle(input, false, at + Duration::from_millis(20), &mut out);
+        engine.handle_key_event(input, true, at, &mut out);
+        engine.handle_key_event(input, false, at + Duration::from_millis(20), &mut out);
         assert!(
-            matches!(out.as_slice(), [Out::Stroke {ks, ..}] if ks.key == expected),
+            matches!(out.as_slice(), [EngineOutput::Stroke {ks, ..}] if ks.key == expected),
             "{}",
             names[index]
         );

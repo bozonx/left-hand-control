@@ -1,6 +1,5 @@
 use super::*;
 
-
 #[test]
 fn unassigned_chord_ignores_double_tap_and_preserves_normal_keys() {
     for extra in ["", "text:double"] {
@@ -25,13 +24,13 @@ fn chord_layer_works_in_either_order_and_ends_on_any_release() {
             let mut engine = Engine::new(&cfg);
             let now = Instant::now();
             let mut out = Vec::new();
-            engine.handle(first, true, now, &mut out);
-            engine.handle(second, true, now + Duration::from_millis(10), &mut out);
+            engine.handle_key_event(first, true, now, &mut out);
+            engine.handle_key_event(second, true, now + Duration::from_millis(10), &mut out);
             assert_eq!(engine.layers.active, vec!["nav"]);
-            engine.handle(release, false, now + Duration::from_millis(20), &mut out);
+            engine.handle_key_event(release, false, now + Duration::from_millis(20), &mut out);
             assert!(engine.layers.active.is_empty());
             let other = if release == first { second } else { first };
-            engine.handle(other, false, now + Duration::from_millis(30), &mut out);
+            engine.handle_key_event(other, false, now + Duration::from_millis(30), &mut out);
             assert!(engine.virt.emitted.is_empty());
             assert!(engine.virt.mod_refs.values().all(|count| *count == 0));
             assert!(engine.chords.consumed.is_empty());
@@ -47,34 +46,37 @@ fn chord_long_hold_cancels_on_first_release_and_rearms_after_all_keys_are_up() {
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_B, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_B, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_A,
         true,
         now + Duration::from_millis(10),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_B,
         false,
         now + Duration::from_millis(400),
         &mut out,
     );
     engine.tick(now + Duration::from_secs(1), &mut out);
-    assert!(!out.iter().any(|event| matches!(event, Out::Literal(_))));
-    engine.handle(
+    assert!(
+        !out.iter()
+            .any(|event| matches!(event, EngineOutput::Literal(_)))
+    );
+    engine.handle_key_event(
         KeyCode::KEY_A,
         false,
         now + Duration::from_millis(1100),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_A,
         true,
         now + Duration::from_millis(1200),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_B,
         true,
         now + Duration::from_millis(1210),
@@ -83,7 +85,7 @@ fn chord_long_hold_cancels_on_first_release_and_rearms_after_all_keys_are_up() {
     out.clear();
     engine.tick(now + Duration::from_millis(1800), &mut out);
     engine.tick(now + Duration::from_secs(3), &mut out);
-    assert!(matches!(out.as_slice(), [Out::Literal(text)] if text == "done"));
+    assert!(matches!(out.as_slice(), [EngineOutput::Literal(text)] if text == "done"));
     engine.shutdown(&mut out);
     assert!(engine.long_holds.is_empty());
     assert!(engine.chords.active.is_empty());
@@ -101,14 +103,14 @@ fn chord_ignores_double_tap_without_delaying_tap() {
         (0, KeyCode::KEY_LEFTSHIFT, KeyCode::KEY_LEFTCTRL),
         (40, KeyCode::KEY_LEFTCTRL, KeyCode::KEY_LEFTSHIFT),
     ] {
-        engine.handle(first, true, now + Duration::from_millis(offset), &mut out);
-        engine.handle(
+        engine.handle_key_event(first, true, now + Duration::from_millis(offset), &mut out);
+        engine.handle_key_event(
             second,
             true,
             now + Duration::from_millis(offset + 10),
             &mut out,
         );
-        engine.handle(
+        engine.handle_key_event(
             first,
             false,
             now + Duration::from_millis(offset + 20),
@@ -116,13 +118,13 @@ fn chord_ignores_double_tap_without_delaying_tap() {
         );
         assert!(
             out.iter()
-                .any(|event| matches!(event, Out::Literal(text) if text == "tap"))
+                .any(|event| matches!(event, EngineOutput::Literal(text) if text == "tap"))
         );
         assert!(
             !out.iter()
-                .any(|event| matches!(event, Out::Literal(text) if text == "double"))
+                .any(|event| matches!(event, EngineOutput::Literal(text) if text == "double"))
         );
-        engine.handle(
+        engine.handle_key_event(
             second,
             false,
             now + Duration::from_millis(offset + 30),
@@ -133,7 +135,7 @@ fn chord_ignores_double_tap_without_delaying_tap() {
 }
 
 #[test]
-fn combo_members_never_reach_the_app() {
+fn trigger_chord_members_never_reach_the_app() {
     for (first, second) in [
         (KeyCode::KEY_J, KeyCode::KEY_K),
         (KeyCode::KEY_K, KeyCode::KEY_J),
@@ -143,11 +145,11 @@ fn combo_members_never_reach_the_app() {
         let mut engine = Engine::new(&cfg);
         let now = Instant::now();
         let mut out = Vec::new();
-        engine.handle(first, true, now, &mut out);
+        engine.handle_key_event(first, true, now, &mut out);
         assert!(out.is_empty());
-        engine.handle(second, true, now + Duration::from_millis(20), &mut out);
-        engine.handle(first, false, now + Duration::from_millis(60), &mut out);
-        engine.handle(second, false, now + Duration::from_millis(70), &mut out);
+        engine.handle_key_event(second, true, now + Duration::from_millis(20), &mut out);
+        engine.handle_key_event(first, false, now + Duration::from_millis(60), &mut out);
+        engine.handle_key_event(second, false, now + Duration::from_millis(70), &mut out);
         assert!(fired_text(&out));
         assert!(raw_keys(&out).is_empty());
         assert!(engine.chords.buffer.is_empty());
@@ -156,17 +158,20 @@ fn combo_members_never_reach_the_app() {
 }
 
 #[test]
-fn combo_window_expiry_types_the_member_and_blocks_the_chord() {
+fn trigger_chord_window_expiry_types_the_member_and_blocks_the_chord() {
     let cfg = config_with_rule(serde_json::json!({"key": "KeyJ+KeyK", "tapAction": "text:esc"}));
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_J, true, now, &mut out);
-    assert_eq!(engine.next_deadline(now), Some(engine.layout.combo_term));
-    engine.tick(now + engine.layout.combo_term, &mut out);
+    engine.handle_key_event(KeyCode::KEY_J, true, now, &mut out);
+    assert_eq!(
+        engine.next_deadline(now),
+        Some(engine.layout.trigger_chord_timeout)
+    );
+    engine.tick(now + engine.layout.trigger_chord_timeout, &mut out);
     assert_eq!(raw_keys(&out), vec![(KeyCode::KEY_J, true)]);
     // `j` is already typed — a late K must not turn it into the chord.
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_K,
         true,
         now + Duration::from_millis(70),
@@ -181,8 +186,8 @@ fn combo_window_expiry_types_the_member_and_blocks_the_chord() {
 }
 
 #[test]
-fn combo_window_comes_from_settings() {
-    let cfg: AppConfig = serde_json::from_value(serde_json::json!({
+fn trigger_chord_window_comes_from_settings() {
+    let cfg: MapperConfig = serde_json::from_value(serde_json::json!({
         "rules": [{"key": "KeyJ+KeyK", "tapAction": "text:esc"}],
         "settings": {"comboTimeoutMs": 120},
     }))
@@ -190,21 +195,21 @@ fn combo_window_comes_from_settings() {
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_J, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_J, true, now, &mut out);
     assert_eq!(engine.next_deadline(now), Some(Duration::from_millis(120)));
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_K,
         true,
         now + Duration::from_millis(100),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_K,
         false,
         now + Duration::from_millis(130),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_J,
         false,
         now + Duration::from_millis(140),
@@ -215,13 +220,13 @@ fn combo_window_comes_from_settings() {
 }
 
 #[test]
-fn combo_late_press_before_tick_does_not_extend_stale_window() {
+fn trigger_chord_late_press_before_tick_does_not_extend_stale_window() {
     let cfg = config_with_rule(serde_json::json!({"key": "KeyJ+KeyK", "tapAction": "text:esc"}));
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_J, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_J, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_K,
         true,
         now + Duration::from_millis(80),
@@ -236,13 +241,13 @@ fn combo_late_press_before_tick_does_not_extend_stale_window() {
 }
 
 #[test]
-fn combo_member_released_early_types_normally() {
+fn trigger_chord_member_released_early_types_normally() {
     let cfg = config_with_rule(serde_json::json!({"key": "KeyJ+KeyK", "tapAction": "text:esc"}));
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_J, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_J, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_J,
         false,
         now + Duration::from_millis(10),
@@ -252,13 +257,13 @@ fn combo_member_released_early_types_normally() {
         raw_keys(&out),
         vec![(KeyCode::KEY_J, true), (KeyCode::KEY_J, false)]
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_K,
         true,
         now + Duration::from_millis(20),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_K,
         false,
         now + Duration::from_millis(30),
@@ -277,14 +282,14 @@ fn combo_member_released_early_types_normally() {
 }
 
 #[test]
-fn combo_flush_keeps_physical_order() {
+fn trigger_chord_flush_keeps_physical_order() {
     let cfg = config_with_rule(serde_json::json!({"key": "KeyJ+KeyK", "tapAction": "text:esc"}));
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
     // A non-member press rules the chord out and replays J before itself.
-    engine.handle(KeyCode::KEY_J, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_J, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_L,
         true,
         now + Duration::from_millis(10),
@@ -300,14 +305,14 @@ fn combo_flush_keeps_physical_order() {
     // Shift released while J is buffered must stay behind J, or the
     // replayed `J` would lose its Shift.
     let now = now + Duration::from_secs(1);
-    engine.handle(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_J,
         true,
         now + Duration::from_millis(10),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_LEFTSHIFT,
         false,
         now + Duration::from_millis(20),
@@ -326,7 +331,7 @@ fn combo_flush_keeps_physical_order() {
 
 #[test]
 fn chords_are_inactive_inside_a_layer() {
-    let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+    let cfg: MapperConfig = serde_json::from_value(serde_json::json!({"rules": [
         {"key": "Space", "layerId": "nav", "tapAction": null},
         {"key": "KeyJ+KeyK", "tapAction": "text:esc"},
     ]}))
@@ -334,9 +339,9 @@ fn chords_are_inactive_inside_a_layer() {
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
     assert_eq!(engine.layers.active, vec!["nav"]);
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_J,
         true,
         now + Duration::from_millis(10),
@@ -344,7 +349,7 @@ fn chords_are_inactive_inside_a_layer() {
     );
     // No combo delay inside the layer: J flows through at once.
     assert_eq!(raw_keys(&out), vec![(KeyCode::KEY_J, true)]);
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_K,
         true,
         now + Duration::from_millis(20),
@@ -372,23 +377,23 @@ fn duplicate_chords_use_first_matching_rule() {
     let mut engine = Engine::new(&cfg);
     let mut out = Vec::new();
     let now = Instant::now();
-    engine.handle(KeyCode::KEY_LEFTCTRL, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_LEFTCTRL, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_Q,
         true,
         now + Duration::from_millis(10),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_Q,
         false,
         now + Duration::from_millis(20),
         &mut out,
     );
     assert!(out.iter().any(|event| matches!(event,
-        Out::Stroke { ks, .. } if ks.key == KeyCode::KEY_A)));
+        EngineOutput::Stroke { ks, .. } if ks.key == KeyCode::KEY_A)));
     assert!(!out.iter().any(|event| matches!(event,
-        Out::Stroke { ks, .. } if ks.key == KeyCode::KEY_B)));
+        EngineOutput::Stroke { ks, .. } if ks.key == KeyCode::KEY_B)));
 }
 
 #[test]
@@ -399,9 +404,9 @@ fn chord_release_keeps_mod_held_as_main_key() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "Space".into(),
         layer_id: "sp".into(),
         tap_action: ActionSpec::Native,
@@ -425,15 +430,15 @@ fn chord_release_keeps_mod_held_as_main_key() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
     engine.tick(now + Duration::from_millis(260), &mut out);
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_A,
         true,
         now + Duration::from_millis(270),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_B,
         true,
         now + Duration::from_millis(280),
@@ -442,7 +447,7 @@ fn chord_release_keeps_mod_held_as_main_key() {
     out.clear();
 
     // Release the chord: Ctrl must stay down (KeyA still holds it).
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_B,
         false,
         now + Duration::from_millis(290),
@@ -450,13 +455,13 @@ fn chord_release_keeps_mod_held_as_main_key() {
     );
     assert!(matches!(
         out.as_slice(),
-        [Out::ChordRelease { key, mods, .. }]
+        [EngineOutput::ChordRelease { key, mods, .. }]
             if *key == KeyCode::KEY_C && mods.is_empty()
     ));
 
     out.clear();
     // Now releasing KeyA releases Ctrl.
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_A,
         false,
         now + Duration::from_millis(300),
@@ -464,7 +469,7 @@ fn chord_release_keeps_mod_held_as_main_key() {
     );
     assert!(matches!(
         out.as_slice(),
-        [Out::KeyRaw {
+        [EngineOutput::KeyRaw {
             key: KeyCode::KEY_LEFTCTRL,
             down: false
         }]
@@ -473,7 +478,7 @@ fn chord_release_keeps_mod_held_as_main_key() {
 
 #[test]
 fn chord_must_not_fire_single_key_double_tap() {
-    let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+    let cfg: MapperConfig = serde_json::from_value(serde_json::json!({"rules": [
         {"key":"KeyA", "tapAction":"text:single", "doubleTapAction":"text:double"},
         {"key":"KeyA+KeyB", "tapAction":"text:chord"}
     ]}))
@@ -489,14 +494,14 @@ fn chord_must_not_fire_single_key_double_tap() {
         (KeyCode::KEY_B, false, 30),
         (KeyCode::KEY_A, false, 35),
     ] {
-        engine.handle(key, down, now + Duration::from_millis(ms), &mut out);
+        engine.handle_key_event(key, down, now + Duration::from_millis(ms), &mut out);
         engine.tick(now + Duration::from_millis(ms), &mut out);
     }
     engine.tick(now + Duration::from_secs(1), &mut out);
     let texts: Vec<_> = out
         .iter()
         .filter_map(|o| match o {
-            Out::Literal(s) => Some(s.as_str()),
+            EngineOutput::Literal(s) => Some(s.as_str()),
             _ => None,
         })
         .collect();
@@ -512,15 +517,15 @@ fn chord_long_hold_fires_on_late_member_release_without_tick() {
         let mut engine = Engine::new(&cfg);
         let now = Instant::now();
         let mut out = Vec::new();
-        engine.handle(KeyCode::KEY_A, true, now, &mut out);
-        engine.handle(
+        engine.handle_key_event(KeyCode::KEY_A, true, now, &mut out);
+        engine.handle_key_event(
             KeyCode::KEY_B,
             true,
             now + Duration::from_millis(10),
             &mut out,
         );
-        engine.handle(released, false, now + Duration::from_millis(110), &mut out);
-        assert!(matches!(out.as_slice(), [Out::Literal(s)] if s == "long"));
+        engine.handle_key_event(released, false, now + Duration::from_millis(110), &mut out);
+        assert!(matches!(out.as_slice(), [EngineOutput::Literal(s)] if s == "long"));
         out.clear();
         engine.tick(now + Duration::from_secs(1), &mut out);
         assert!(out.is_empty());
@@ -614,7 +619,7 @@ fn unassigned_space_keeps_order_behind_another_tap_hold_key() {
 #[test]
 fn unassigned_space_prevents_a_later_chord_from_overtaking_typing() {
     for tick_each in [false, true] {
-        let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+        let cfg: MapperConfig = serde_json::from_value(serde_json::json!({"rules": [
             {"key":"KeyA", "holdAction":"ControlLeft"},
             {"key":"KeyB+KeyC", "tapAction":null, "holdAction":"KeyX"}
         ]}))
@@ -632,7 +637,7 @@ fn unassigned_space_prevents_a_later_chord_from_overtaking_typing() {
             (KeyCode::KEY_B, false, 60),
             (KeyCode::KEY_C, false, 70),
         ] {
-            engine.handle(key, down, now + Duration::from_millis(ms), &mut out);
+            engine.handle_key_event(key, down, now + Duration::from_millis(ms), &mut out);
             if tick_each {
                 engine.tick(now + Duration::from_millis(ms), &mut out);
             }
@@ -640,8 +645,10 @@ fn unassigned_space_prevents_a_later_chord_from_overtaking_typing() {
         let presses: Vec<_> = out
             .iter()
             .filter_map(|event| match event {
-                Out::KeyRaw { key, down: true } => Some(*key),
-                Out::Stroke { ks, .. } | Out::ChordPress { ks, .. } => Some(ks.key),
+                EngineOutput::KeyRaw { key, down: true } => Some(*key),
+                EngineOutput::Stroke { ks, .. } | EngineOutput::ChordPress { ks, .. } => {
+                    Some(ks.key)
+                }
                 _ => None,
             })
             .collect();
@@ -662,7 +669,7 @@ fn unassigned_space_prevents_a_later_chord_from_overtaking_typing() {
 #[test]
 fn unassigned_space_prevents_a_later_chord_from_changing_its_layer() {
     for tick_each in [false, true] {
-        let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+        let cfg: MapperConfig = serde_json::from_value(serde_json::json!({"rules": [
             {"key":"KeyA", "holdAction":"ControlLeft"},
             {"key":"KeyB+KeyC", "tapAction":null, "layerId":"nav"}
         ], "layerKeymaps":{"nav":{"keys":{"Space":"Backspace"}}}}))
@@ -680,7 +687,7 @@ fn unassigned_space_prevents_a_later_chord_from_changing_its_layer() {
             (KeyCode::KEY_B, false, 60),
             (KeyCode::KEY_C, false, 70),
         ] {
-            engine.handle(key, down, now + Duration::from_millis(ms), &mut out);
+            engine.handle_key_event(key, down, now + Duration::from_millis(ms), &mut out);
             if tick_each {
                 engine.tick(now + Duration::from_millis(ms), &mut out);
             }
@@ -688,8 +695,10 @@ fn unassigned_space_prevents_a_later_chord_from_changing_its_layer() {
         let presses: Vec<_> = out
             .iter()
             .filter_map(|event| match event {
-                Out::KeyRaw { key, down: true } => Some(*key),
-                Out::Stroke { ks, .. } | Out::ChordPress { ks, .. } => Some(ks.key),
+                EngineOutput::KeyRaw { key, down: true } => Some(*key),
+                EngineOutput::Stroke { ks, .. } | EngineOutput::ChordPress { ks, .. } => {
+                    Some(ks.key)
+                }
                 _ => None,
             })
             .collect();
@@ -709,7 +718,7 @@ fn unassigned_space_prevents_a_later_chord_from_changing_its_layer() {
 
 #[test]
 fn chord_still_activates_after_earlier_deferred_typing_finishes() {
-    let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+    let cfg: MapperConfig = serde_json::from_value(serde_json::json!({"rules": [
         {"key":"KeyA", "holdAction":"ControlLeft"},
         {"key":"KeyB+KeyC", "tapAction":null, "layerId":"nav"}
     ], "layerKeymaps":{"nav":{"keys":{"Space":"Backspace"}}}}))
@@ -731,18 +740,18 @@ fn chord_still_activates_after_earlier_deferred_typing_finishes() {
             (first, true, 40),
             (second, true, 50),
         ] {
-            engine.handle(key, down, now + Duration::from_millis(ms), &mut out);
+            engine.handle_key_event(key, down, now + Duration::from_millis(ms), &mut out);
         }
         assert_eq!(engine.layers.active, vec!["nav"]);
         assert!(out.iter().any(|event| matches!(
             event,
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_SPACE,
                 down: true
             }
         )));
-        engine.handle(first, false, now + Duration::from_millis(60), &mut out);
-        engine.handle(second, false, now + Duration::from_millis(70), &mut out);
+        engine.handle_key_event(first, false, now + Duration::from_millis(60), &mut out);
+        engine.handle_key_event(second, false, now + Duration::from_millis(70), &mut out);
         assert!(engine.layers.active.is_empty());
         assert!(engine.pending.is_empty());
         assert!(engine.virt.emitted.is_empty());

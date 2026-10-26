@@ -108,7 +108,7 @@ macro_rules! form {
 }
 
 /// Milliseconds typed in the form, within `range`.
-fn ms(text: &str, range: lhc_core::profile::timing::Range) -> Result<u64, Msg> {
+fn ms(text: &str, range: lhc_core::profile::timing::MillisecondsRange) -> Result<u64, Msg> {
     parse_ms(text).and_then(|value| {
         range
             .contains(value)
@@ -148,9 +148,9 @@ form! {
     double_tap: String = get_double_tap_timeout / set_double_tap_timeout,
         load |s| s.default_double_tap_timeout_ms.to_string(),
         store |t, v| t.default_double_tap_timeout_ms = ms(v, timing::TAP_HOLD)?;
-    combo: String = get_combo_timeout / set_combo_timeout,
-        load |s| s.combo_timeout_ms.to_string(),
-        store |t, v| t.combo_timeout_ms = ms(v, timing::COMBO)?;
+    trigger_chord: String = get_trigger_chord_timeout / set_trigger_chord_timeout,
+        load |s| s.trigger_chord_timeout_ms.to_string(),
+        store |t, v| t.trigger_chord_timeout_ms = ms(v, timing::TRIGGER_CHORD)?;
     macro_pause: String = get_macro_pause / set_macro_pause,
         load |s| s.default_macro_step_pause_ms.to_string(),
         store |t, v| t.default_macro_step_pause_ms = ms(v, timing::MACRO_DELAY)?;
@@ -593,7 +593,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     e.set_default_hold_timeout(defaults.hold.clone().into());
     e.set_default_long_hold_timeout(defaults.long_hold.clone().into());
     e.set_default_double_tap_timeout(defaults.double_tap.clone().into());
-    e.set_default_combo_timeout(defaults.combo.clone().into());
+    e.set_default_trigger_chord_timeout(defaults.trigger_chord.clone().into());
     e.set_default_macro_pause(defaults.macro_pause.clone().into());
     e.set_default_modifier_delay(defaults.modifier_delay.clone().into());
     e.set_default_macro_timeout(defaults.macro_timeout.clone().into());

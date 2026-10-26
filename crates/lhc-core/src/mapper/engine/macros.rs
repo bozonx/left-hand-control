@@ -1,6 +1,6 @@
 //! Macro playback: the running macro and the runs queued behind it.
 
-use super::model::{ActiveMacro, MacroDef, MacroPhase, Out};
+use super::model::{ActiveMacro, CompiledMacro, EngineOutput, MacroPhase};
 use super::report_unavailable;
 use super::state::{MacroRunner, VirtualKeys};
 use crate::mapper::action::Keystroke;
@@ -11,7 +11,12 @@ const MACRO_QUEUE_LIMIT: usize = 3;
 
 impl MacroRunner {
     /// Advance the active macro and start a queued one when it finishes.
-    pub(super) fn tick(&mut self, virt: &mut VirtualKeys, now: Instant, out: &mut Vec<Out>) {
+    pub(super) fn tick(
+        &mut self,
+        virt: &mut VirtualKeys,
+        now: Instant,
+        out: &mut Vec<EngineOutput>,
+    ) {
         if self.active.as_ref().is_some_and(|am| now >= am.deadline) {
             log::warn!(
                 "[mapper] macro exceeded {} ms, aborting",
@@ -44,7 +49,7 @@ impl MacroRunner {
                         | MacroPhase::StrokeModDelayRelease(ref ks) = am.phase
                         {
                             for m in virt.take_releasable_mods(&ks.mods).iter().rev() {
-                                out.push(Out::KeyRaw {
+                                out.push(EngineOutput::KeyRaw {
                                     key: *m,
                                     down: false,
                                 });
@@ -68,7 +73,7 @@ impl MacroRunner {
                                     }
                                     if !ks.mods.is_empty() {
                                         for m in &press {
-                                            out.push(Out::KeyRaw {
+                                            out.push(EngineOutput::KeyRaw {
                                                 key: *m,
                                                 down: true,
                                             });
@@ -92,7 +97,7 @@ impl MacroRunner {
                                     }
                                 }
                                 MacroStepItem::System(action) => {
-                                    out.push(Out::RunSystem(action.clone()));
+                                    out.push(EngineOutput::RunSystem(action.clone()));
                                     am.steps_emitted += 1;
                                     am.current_step += 1;
                                     if am.current_step < am.steps.len() {
@@ -102,7 +107,7 @@ impl MacroRunner {
                                     }
                                 }
                                 MacroStepItem::Command(command) => {
-                                    out.push(Out::RunCommand(command.clone()));
+                                    out.push(EngineOutput::RunCommand(command.clone()));
                                     am.steps_emitted += 1;
                                     am.current_step += 1;
                                     if am.current_step < am.steps.len() {
@@ -112,7 +117,7 @@ impl MacroRunner {
                                     }
                                 }
                                 MacroStepItem::Literal(text) => {
-                                    out.push(Out::Literal(text.clone()));
+                                    out.push(EngineOutput::Literal(text.clone()));
                                     self.text_pending = true;
                                     am.steps_emitted += 1;
                                     am.current_step += 1;
@@ -147,7 +152,7 @@ impl MacroRunner {
                         }
                         MacroPhase::StrokeModDelayRelease(ref ks) => {
                             for m in virt.take_releasable_mods(&ks.mods).iter().rev() {
-                                out.push(Out::KeyRaw {
+                                out.push(EngineOutput::KeyRaw {
                                     key: *m,
                                     down: false,
                                 });
@@ -209,14 +214,14 @@ impl MacroRunner {
     /// Abort the in-flight macro (if any). A stroke step presses its
     /// modifiers first and releases them only in a later phase, so an
     /// abort mid-stroke must release them here or they stay stuck down.
-    pub(super) fn abort(&mut self, virt: &mut VirtualKeys, out: &mut Vec<Out>) {
+    pub(super) fn abort(&mut self, virt: &mut VirtualKeys, out: &mut Vec<EngineOutput>) {
         let Some(am) = self.active.take() else {
             return;
         };
         match am.phase {
             MacroPhase::StrokeModDelayPress(ks) | MacroPhase::StrokeModDelayRelease(ks) => {
                 for m in virt.take_releasable_mods(&ks.mods).iter().rev() {
-                    out.push(Out::KeyRaw {
+                    out.push(EngineOutput::KeyRaw {
                         key: *m,
                         down: false,
                     });
@@ -227,14 +232,14 @@ impl MacroRunner {
     }
 
     /// Abort the active macro and drop the queued runs.
-    pub(super) fn cancel(&mut self, virt: &mut VirtualKeys, out: &mut Vec<Out>) {
+    pub(super) fn cancel(&mut self, virt: &mut VirtualKeys, out: &mut Vec<EngineOutput>) {
         self.queue.clear();
         self.abort(virt, out);
     }
 
     /// Start a macro run, or queue it behind the active one: a run that is
     /// cut short leaves the application half-edited.
-    pub(super) fn run(&mut self, md: MacroDef, now: Instant) {
+    pub(super) fn run(&mut self, md: CompiledMacro, now: Instant) {
         if md.steps.is_empty() {
             return;
         }
@@ -263,7 +268,7 @@ impl MacroRunner {
         }
     }
 
-    fn begin(&self, md: MacroDef, now: Instant) -> ActiveMacro {
+    fn begin(&self, md: CompiledMacro, now: Instant) -> ActiveMacro {
         ActiveMacro {
             steps: md.steps,
             step_pause: md.step_pause,

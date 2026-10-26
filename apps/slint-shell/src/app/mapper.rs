@@ -204,7 +204,7 @@ impl App {
         let result = document.edit(View::Shell, |config| {
             config.update_settings(|settings| {
                 auto_switch::set_mode(settings, LayoutMode::Manual);
-                settings.manual_active_layout_id = Some(id);
+                settings.manual_layout_id = Some(id);
             })
         });
         match result {
@@ -256,9 +256,9 @@ impl App {
         let state = self.settings.global::<AppState>();
         crate::game_mode::refresh(&self.settings, &lhc_core::gamemode::status());
         state.set_keyboard_language(
-            lhc_core::runtime_state::layout()
+            lhc_core::runtime_state::keyboard_layout()
                 .map(|layout| {
-                    let code = layout.short.to_uppercase();
+                    let code = layout.code.to_uppercase();
                     if code.chars().count() > 8 {
                         let mut label: String = code.chars().take(7).collect();
                         label.push('…');

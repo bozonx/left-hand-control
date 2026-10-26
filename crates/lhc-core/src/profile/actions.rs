@@ -2,7 +2,7 @@
 //! `app:id`, `kde:component/shortcut`, `text:…`, `pause:ms`) and the
 //! catalogs of built-in actions.
 
-use super::model::AppConfig;
+use super::model::ResolvedAppConfig;
 use crate::mapper::builtin_macros::BUILTIN_MACROS;
 
 /// A bindable action, parsed from its canonical string form.
@@ -279,7 +279,7 @@ pub fn app_actions() -> Vec<CatalogEntry> {
 
 /// Every action that can be picked for `config`: user macros and
 /// commands, built-in macros, system and app actions.
-pub fn catalog(config: &AppConfig) -> Vec<CatalogEntry> {
+pub fn catalog(config: &ResolvedAppConfig) -> Vec<CatalogEntry> {
     let mut out: Vec<CatalogEntry> = config
         .macros
         .iter()
@@ -295,7 +295,7 @@ pub fn catalog(config: &AppConfig) -> Vec<CatalogEntry> {
     out.extend(config.commands.iter().map(|command| CatalogEntry {
         action: Action::Command(command.id.clone()),
         name: ActionName::Verbatim(if command.name.is_empty() {
-            command.linux.clone()
+            command.posix_script.clone()
         } else {
             command.name.clone()
         }),
@@ -320,7 +320,7 @@ pub enum ActionIssue {
 
 /// Check an action outside a macro. Key names are checked by the mapper
 /// when it starts; here only the chord shape is validated.
-pub fn validate(action: &Action, config: &AppConfig) -> Option<ActionIssue> {
+pub fn validate(action: &Action, config: &ResolvedAppConfig) -> Option<ActionIssue> {
     match action {
         Action::Native | Action::Swallow | Action::Text(_) => None,
         Action::Keys(keys) => (!valid_held_key(keys)).then_some(ActionIssue::InvalidSyntax),
@@ -353,8 +353,8 @@ pub enum ExecutionIssue {
     Unavailable,
 }
 
-pub fn execution_issue(action: &Action, config: &AppConfig) -> Option<ExecutionIssue> {
-    fn check(action: &Action, config: &AppConfig, depth: usize) -> Option<ExecutionIssue> {
+pub fn execution_issue(action: &Action, config: &ResolvedAppConfig) -> Option<ExecutionIssue> {
+    fn check(action: &Action, config: &ResolvedAppConfig, depth: usize) -> Option<ExecutionIssue> {
         if depth > MAX_MACRO_DEPTH {
             return Some(ExecutionIssue::Unavailable);
         }
@@ -474,7 +474,8 @@ mod tests {
 
     #[test]
     fn unknown_action_types_are_kept_and_reported() {
-        let config = AppConfig::from_parts(AppSettings::default(), LayoutPreset::default(), None);
+        let config =
+            ResolvedAppConfig::from_parts(AppSettings::default(), LayoutPreset::default(), None);
         assert_eq!(
             Action::parse(Some(" newKind:some value ")),
             Action::Unknown("newKind:some value".into())
@@ -551,7 +552,7 @@ mod tests {
     #[test]
     fn builtin_macro_labels_are_typed_and_user_names_stay_verbatim() {
         let mut config =
-            AppConfig::from_parts(AppSettings::default(), LayoutPreset::initial(), None);
+            ResolvedAppConfig::from_parts(AppSettings::default(), LayoutPreset::initial(), None);
         config.macros.push(super::super::model::Macro {
             id: "copyLine".into(),
             name: "Copy line".into(),
@@ -576,7 +577,7 @@ mod tests {
     #[test]
     fn execution_issues_follow_what_this_os_runs() {
         let mut config =
-            AppConfig::from_parts(AppSettings::default(), LayoutPreset::default(), None);
+            ResolvedAppConfig::from_parts(AppSettings::default(), LayoutPreset::default(), None);
         let other_os_only = if cfg!(target_os = "windows") {
             ("true", "")
         } else {
@@ -586,13 +587,14 @@ mod tests {
             config.commands.push(crate::profile::model::Command {
                 id: id.into(),
                 name: String::new(),
-                linux: linux.into(),
-                windows: windows.into(),
+                posix_script: linux.into(),
+                powershell_script: windows.into(),
                 working_directory: None,
             });
         }
-        let issue =
-            |config: &AppConfig, raw: &str| execution_issue(&Action::parse(Some(raw)), config);
+        let issue = |config: &ResolvedAppConfig, raw: &str| {
+            execution_issue(&Action::parse(Some(raw)), config)
+        };
 
         config.settings.commands_enabled = false;
         let disabled = if crate::mapper::runtime::SUPPORTED {
@@ -627,7 +629,8 @@ mod tests {
 
     #[test]
     fn validation_checks_references() {
-        let config = AppConfig::from_parts(AppSettings::default(), LayoutPreset::initial(), None);
+        let config =
+            ResolvedAppConfig::from_parts(AppSettings::default(), LayoutPreset::initial(), None);
         let check = |raw: &str| validate(&Action::parse(Some(raw)), &config);
         assert_eq!(check("Ctrl+KeyC"), None);
         assert_eq!(check("Ctrl+"), Some(ActionIssue::InvalidSyntax));

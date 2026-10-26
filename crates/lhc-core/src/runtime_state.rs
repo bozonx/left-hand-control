@@ -19,11 +19,11 @@ pub struct ActiveWindow {
 
 static ACTIVE_WINDOW: Mutex<Option<ActiveWindow>> = Mutex::new(None);
 static GAME_MODE: AtomicBool = AtomicBool::new(false);
-static LAYOUT: Mutex<Option<LayoutSelection>> = Mutex::new(None);
+static LAYOUT: Mutex<Option<KeyboardLayoutSelection>> = Mutex::new(None);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LayoutSelection {
-    pub short: String,
+pub struct KeyboardLayoutSelection {
+    pub code: String,
     /// XKB variant; empty for the base layout or when unknown.
     pub variant: String,
     /// Zero-based index among the configured layouts (the XKB group).
@@ -49,15 +49,15 @@ pub fn set_game_mode_active(active: bool) {
     GAME_MODE.store(active, Ordering::SeqCst);
 }
 
-pub fn layout_short() -> Option<String> {
-    layout().map(|value| value.short)
+pub fn keyboard_layout_code() -> Option<String> {
+    keyboard_layout().map(|value| value.code)
 }
 
-pub fn layout() -> Option<LayoutSelection> {
+pub fn keyboard_layout() -> Option<KeyboardLayoutSelection> {
     LAYOUT.lock().ok().and_then(|value| value.clone())
 }
 
-pub fn set_layout(value: Option<LayoutSelection>) {
+pub fn set_keyboard_layout(value: Option<KeyboardLayoutSelection>) {
     if let Ok(mut current) = LAYOUT.lock() {
         *current = value;
     }

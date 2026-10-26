@@ -33,10 +33,10 @@ impl ConfigDocument {
                 return Err(ConfigError::Menu(MenuIssue::EmojiCell));
             }
         }
-        let config = AppConfig::from_parts(
+        let config = ResolvedAppConfig::from_parts(
             self.settings().clone(),
             candidate.clone(),
-            self.settings().current_layout_id.as_deref(),
+            self.settings().editing_layout_id.as_deref(),
         );
         for page in &candidate.quick_action_pages {
             if page
@@ -274,7 +274,7 @@ mod tests {
                 .into(),
             ..LayoutPreset::default()
         };
-        let mut rule = LayerRule::new("r".into(), "KeyA");
+        let mut rule = KeyRule::new("r".into(), "KeyA");
         rule.tap_action = Some("app:showQuickMenu1".into());
         layout.rules.push(rule);
         reorder_page(&mut layout, false, 0, 2);
@@ -296,8 +296,8 @@ mod tests {
         let command = Command {
             id: "hello".into(),
             name: String::new(),
-            linux: "printf hello".into(),
-            windows: "printf hello".into(),
+            posix_script: "printf hello".into(),
+            powershell_script: "printf hello".into(),
             working_directory: None,
         };
         assert!(doc.save_command(command.clone()).is_err());
@@ -320,16 +320,16 @@ mod tests {
 
     #[test]
     fn command_places_name_rule_triggers_not_the_hold_layer() {
-        let mut tap = LayerRule::new("r1".into(), "F1");
+        let mut tap = KeyRule::new("r1".into(), "F1");
         tap.layer_id = "sel".into();
         tap.tap_action = Some("cmd:ls".into());
         // Long hold is ignored while holding switches a layer.
         tap.hold_behavior = Some(HoldBehavior::Layer);
         tap.long_hold_action = "cmd:ls".into();
-        let mut double = LayerRule::new("r2".into(), "KeyQ");
+        let mut double = KeyRule::new("r2".into(), "KeyQ");
         double.enabled = Some(false);
         double.double_tap_action = "cmd:ls".into();
-        let config = AppConfig::from_parts(
+        let config = ResolvedAppConfig::from_parts(
             AppSettings::default(),
             LayoutPreset {
                 layers: vec![Layer {
@@ -446,7 +446,7 @@ pub struct CommandPlace {
 }
 
 /// Every binding of `action`, named for people rather than by id.
-pub fn command_places(config: &AppConfig, action: &str) -> Vec<CommandPlace> {
+pub fn command_places(config: &ResolvedAppConfig, action: &str) -> Vec<CommandPlace> {
     let layer_name = |id: &str| {
         config
             .layers
@@ -531,12 +531,12 @@ pub fn command_places(config: &AppConfig, action: &str) -> Vec<CommandPlace> {
 impl ConfigDocument {
     pub fn command_assignments(&self) -> Result<Vec<CommandAssignment>, ConfigError> {
         let mut layouts = vec![(
-            self.settings().current_layout_id.clone(),
+            self.settings().editing_layout_id.clone(),
             self.layout().clone(),
         )];
         for name in self.paths().list_user_layouts().map_err(ConfigError::Io)? {
             let id = super::model::user_layout_id(&name);
-            if self.settings().current_layout_id.as_ref() == Some(&id) {
+            if self.settings().editing_layout_id.as_ref() == Some(&id) {
                 continue;
             }
             let text = self
@@ -549,8 +549,11 @@ impl ConfigDocument {
         }
         let mut rows = Vec::new();
         for (layout_id, layout) in layouts {
-            let config =
-                AppConfig::from_parts(self.settings().clone(), layout, layout_id.as_deref());
+            let config = ResolvedAppConfig::from_parts(
+                self.settings().clone(),
+                layout,
+                layout_id.as_deref(),
+            );
             for command in &config.commands {
                 let action = format!("cmd:{}", command.id);
                 let usage = super::macros::action_usage(&config, &action);

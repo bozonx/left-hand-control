@@ -33,7 +33,7 @@ static STATE: Mutex<MapperRuntime<OsBackend>> = Mutex::new(MapperRuntime::new(Os
 
 trait BackendHandle: Send {
     fn stop(self: Box<Self>);
-    fn update_config(&self, cfg: config::AppConfig) -> Result<(), String>;
+    fn update_config(&self, cfg: config::MapperConfig) -> Result<(), String>;
     fn execute_action(&self, action: String) -> Result<(), String>;
     fn popup_focused(&self) -> Result<(), String>;
     fn waiting_for_device(&self) -> bool {
@@ -51,7 +51,7 @@ trait MapperBackend: Send + Sync + 'static {
         &self,
         device_path: String,
         mouse_path: Option<String>,
-        cfg: config::AppConfig,
+        cfg: config::MapperConfig,
         stop: Arc<AtomicBool>,
     ) -> Result<Box<dyn BackendHandle>, String>;
 }
@@ -152,7 +152,7 @@ impl<B: MapperBackend> MapperRuntime<B> {
         &mut self,
         device_path: &str,
         mouse_path: Option<&str>,
-        cfg: config::AppConfig,
+        cfg: config::MapperConfig,
     ) -> Result<(), String> {
         let stop = self.begin_start()?;
         let result = self.backend.spawn(
@@ -186,7 +186,7 @@ impl<B: MapperBackend> MapperRuntime<B> {
         self.take_handle().map(|handle| handle.stop())
     }
 
-    fn update_config(&mut self, cfg: config::AppConfig) -> Result<(), String> {
+    fn update_config(&mut self, cfg: config::MapperConfig) -> Result<(), String> {
         let Some(handle) = self.handle.as_mut() else {
             return Err("mapper is not running".into());
         };
@@ -248,7 +248,7 @@ impl BackendHandle for linux::Handle {
         (*self).stop();
     }
 
-    fn update_config(&self, cfg: config::AppConfig) -> Result<(), String> {
+    fn update_config(&self, cfg: config::MapperConfig) -> Result<(), String> {
         self.update_config(cfg)
     }
 
@@ -297,7 +297,7 @@ impl MapperBackend for LinuxBackend {
         &self,
         device_path: String,
         mouse_path: Option<String>,
-        cfg: config::AppConfig,
+        cfg: config::MapperConfig,
         stop: Arc<AtomicBool>,
     ) -> Result<Box<dyn BackendHandle>, String> {
         linux::spawn(device_path, mouse_path, cfg, stop)
@@ -311,7 +311,7 @@ impl BackendHandle for windows::Handle {
         (*self).stop();
     }
 
-    fn update_config(&self, cfg: config::AppConfig) -> Result<(), String> {
+    fn update_config(&self, cfg: config::MapperConfig) -> Result<(), String> {
         self.update_config(cfg)
     }
 
@@ -360,7 +360,7 @@ impl MapperBackend for WindowsBackend {
         &self,
         device_path: String,
         mouse_path: Option<String>,
-        cfg: config::AppConfig,
+        cfg: config::MapperConfig,
         stop: Arc<AtomicBool>,
     ) -> Result<Box<dyn BackendHandle>, String> {
         windows::spawn(device_path, mouse_path, cfg, stop)
@@ -396,7 +396,7 @@ impl MapperBackend for UnsupportedBackend {
         &self,
         _device_path: String,
         _mouse_path: Option<String>,
-        _cfg: config::AppConfig,
+        _cfg: config::MapperConfig,
         _stop: Arc<AtomicBool>,
     ) -> Result<Box<dyn BackendHandle>, String> {
         Err(unsupported_os_msg("starting mapper"))
@@ -446,7 +446,7 @@ fn unsupported_os_msg(op: &str) -> String {
 }
 
 pub fn start(device_path: &str, mouse_path: Option<&str>, config_json: &str) -> Result<(), String> {
-    let cfg: config::AppConfig =
+    let cfg: config::MapperConfig =
         serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     validation::validate_config(&cfg)?;
@@ -489,7 +489,7 @@ pub fn stop() -> Result<(), String> {
 }
 
 pub fn update_config(config_json: &str) -> Result<(), String> {
-    let cfg: config::AppConfig =
+    let cfg: config::MapperConfig =
         serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     validation::validate_config(&cfg)?;
@@ -545,7 +545,7 @@ pub fn set_portal_token_dir(_dir: std::path::PathBuf) {}
 #[cfg(test)]
 mod tests {
     use super::{BackendHandle, InputDevice, KeyboardDevice, MapperBackend, MapperRuntime};
-    use crate::mapper::config::{AppConfig, Settings};
+    use crate::mapper::config::{MapperConfig, Settings};
     use std::collections::VecDeque;
     use std::sync::{Arc, Mutex};
 
@@ -553,7 +553,7 @@ mod tests {
         stop_called: Arc<Mutex<bool>>,
         finished: bool,
         last_error: Option<String>,
-        update_configs: Arc<Mutex<Vec<AppConfig>>>,
+        update_configs: Arc<Mutex<Vec<MapperConfig>>>,
         executed_actions: Arc<Mutex<Vec<String>>>,
     }
 
@@ -564,7 +564,7 @@ mod tests {
             }
         }
 
-        fn update_config(&self, cfg: AppConfig) -> Result<(), String> {
+        fn update_config(&self, cfg: MapperConfig) -> Result<(), String> {
             if let Ok(mut slot) = self.update_configs.lock() {
                 slot.push(cfg);
             }
@@ -637,7 +637,7 @@ mod tests {
             &self,
             _device_path: String,
             _mouse_path: Option<String>,
-            _cfg: AppConfig,
+            _cfg: MapperConfig,
             _stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
         ) -> Result<Box<dyn BackendHandle>, String> {
             self.next_handles
@@ -648,8 +648,8 @@ mod tests {
         }
     }
 
-    fn empty_cfg() -> AppConfig {
-        AppConfig {
+    fn empty_cfg() -> MapperConfig {
+        MapperConfig {
             rules: Vec::new(),
             layer_keymaps: Default::default(),
             macros: Vec::new(),

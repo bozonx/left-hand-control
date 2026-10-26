@@ -1,6 +1,5 @@
 use super::*;
 
-
 #[test]
 fn explicit_hold_behavior_prevents_layer_and_delayed_action_from_running_together() {
     for mode in ["none", "layer", "action"] {
@@ -10,17 +9,18 @@ fn explicit_hold_behavior_prevents_layer_and_delayed_action_from_running_togethe
         let mut engine = Engine::new(&cfg);
         let now = Instant::now();
         let mut out = Vec::new();
-        engine.handle(KeyCode::KEY_A, true, now, &mut out);
+        engine.handle_key_event(KeyCode::KEY_A, true, now, &mut out);
         engine.tick(now + Duration::from_secs(1), &mut out);
         assert_eq!(!engine.layers.active.is_empty(), mode == "layer");
         assert_eq!(
-            out.iter().any(|event| matches!(event, Out::Literal(_))),
+            out.iter()
+                .any(|event| matches!(event, EngineOutput::Literal(_))),
             mode == "action"
         );
         if mode == "action" {
             assert!(engine.virt.emitted.is_empty());
         }
-        engine.handle(
+        engine.handle_key_event(
             KeyCode::KEY_A,
             false,
             now + Duration::from_secs(2),
@@ -36,9 +36,9 @@ fn sel_layer_q_emits_ctrl_key_z() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "Tab".into(),
         layer_id: "sel".into(),
         tap_action: ActionSpec::Native,
@@ -64,8 +64,8 @@ fn sel_layer_q_emits_ctrl_key_z() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_TAB, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_TAB, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_Q,
         true,
         now + Duration::from_millis(10),
@@ -74,7 +74,7 @@ fn sel_layer_q_emits_ctrl_key_z() {
 
     assert!(matches!(
         out.as_slice(),
-        [Out::ChordPress { ks, .. }]
+        [EngineOutput::ChordPress { ks, .. }]
             if ks.mods == vec![KeyCode::KEY_LEFTCTRL] && ks.key == KeyCode::KEY_Z
     ));
 }
@@ -85,9 +85,9 @@ fn active_layer_bypasses_rule_for_same_key() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "Space".into(),
         layer_id: "space".into(),
         tap_action: ActionSpec::Native,
@@ -103,9 +103,9 @@ fn active_layer_bypasses_rule_for_same_key() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "Tab".into(),
         layer_id: "sel".into(),
         tap_action: ActionSpec::Native,
@@ -131,8 +131,8 @@ fn active_layer_bypasses_rule_for_same_key() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_TAB,
         true,
         now + Duration::from_millis(10),
@@ -141,7 +141,7 @@ fn active_layer_bypasses_rule_for_same_key() {
 
     assert!(matches!(
         out.as_slice(),
-        [Out::ChordPress { ks, .. }]
+        [EngineOutput::ChordPress { ks, .. }]
             if ks.mods.is_empty() && ks.key == KeyCode::KEY_ESC
     ));
 }
@@ -152,9 +152,9 @@ fn unmapped_key_in_active_layer_passthroughs() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "Space".into(),
         layer_id: "space".into(),
         tap_action: ActionSpec::Native,
@@ -178,14 +178,14 @@ fn unmapped_key_in_active_layer_passthroughs() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_A,
         true,
         now + Duration::from_millis(10),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_A,
         false,
         now + Duration::from_millis(11),
@@ -195,11 +195,11 @@ fn unmapped_key_in_active_layer_passthroughs() {
     assert!(matches!(
         out.as_slice(),
         [
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_A,
                 down: true
             },
-            Out::KeyRaw {
+            EngineOutput::KeyRaw {
                 key: KeyCode::KEY_A,
                 down: false
             }
@@ -213,9 +213,9 @@ fn explicit_null_in_layer_keymap_swallows_key() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "Space".into(),
         layer_id: "space".into(),
         tap_action: ActionSpec::Native,
@@ -238,14 +238,14 @@ fn explicit_null_in_layer_keymap_swallows_key() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_A,
         true,
         now + Duration::from_millis(10),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_A,
         false,
         now + Duration::from_millis(11),
@@ -261,9 +261,9 @@ fn hold_can_activate_layer_and_modifier_together() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "AltLeft".into(),
         layer_id: "win".into(),
         tap_action: ActionSpec::Action("Enter".into()),
@@ -289,8 +289,8 @@ fn hold_can_activate_layer_and_modifier_together() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_LEFTALT, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_LEFTALT, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_TAB,
         true,
         now + Duration::from_millis(10),
@@ -300,8 +300,8 @@ fn hold_can_activate_layer_and_modifier_together() {
     assert!(matches!(
         out.as_slice(),
         [
-            Out::ChordPress { ks: alt, .. },
-            Out::ChordPress { ks: tab, .. },
+            EngineOutput::ChordPress { ks: alt, .. },
+            EngineOutput::ChordPress { ks: tab, .. },
         ] if alt.mods.is_empty()
             && alt.key == KeyCode::KEY_LEFTALT
             && tab.mods.is_empty()
@@ -410,9 +410,9 @@ fn layer_only_rule_is_not_treated_as_passthrough() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "AltLeft".into(),
         layer_id: "win".into(),
         tap_action: ActionSpec::Action("Enter".into()),
@@ -438,8 +438,8 @@ fn layer_only_rule_is_not_treated_as_passthrough() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_LEFTALT, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_LEFTALT, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_TAB,
         true,
         now + Duration::from_millis(10),
@@ -448,32 +448,32 @@ fn layer_only_rule_is_not_treated_as_passthrough() {
 
     assert!(matches!(
         out.as_slice(),
-        [Out::ChordPress { ks, .. }]
+        [EngineOutput::ChordPress { ks, .. }]
             if ks.mods.is_empty() && ks.key == KeyCode::KEY_ESC
     ));
 }
 
 #[test]
 fn layer_presses_count_only_keys_pressed_inside_a_layer() {
-    let cfg: AppConfig = serde_json::from_value(serde_json::json!({"rules": [
+    let cfg: MapperConfig = serde_json::from_value(serde_json::json!({"rules": [
         {"key": "Space", "layerId": "nav", "tapAction": "Space"},
     ]}))
     .unwrap();
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_A, true, now, &mut out);
-    engine.handle(KeyCode::KEY_A, false, now, &mut out);
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_A, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_A, false, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
     assert_eq!(engine.layer_presses(), 0);
     // The press that resolves the layer key as a hold is used inside it.
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_J,
         true,
         now + Duration::from_millis(10),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_J,
         false,
         now + Duration::from_millis(20),
@@ -481,14 +481,14 @@ fn layer_presses_count_only_keys_pressed_inside_a_layer() {
     );
     assert_eq!(engine.top_layer(), Some("nav"));
     assert_eq!(engine.layer_presses(), 1);
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_SPACE,
         false,
         now + Duration::from_millis(30),
         &mut out,
     );
     assert_eq!(engine.top_layer(), None);
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_A,
         true,
         now + Duration::from_millis(40),
@@ -503,9 +503,9 @@ fn layer_missing_key_is_transparent() {
     cfg.rules.push(Rule {
         enabled: true,
         condition_game_mode: None,
-        condition_layouts: None,
-        condition_apps_whitelist: None,
-        condition_apps_blacklist: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
         key: "Space".into(),
         layer_id: "sp".into(),
         tap_action: ActionSpec::Native,
@@ -530,12 +530,12 @@ fn layer_missing_key_is_transparent() {
     let mut out = Vec::new();
     let now = Instant::now();
 
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
     engine.tick(now + Duration::from_millis(260), &mut out);
     out.clear();
 
     // KeyB without a mapping should passthrough
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_B,
         true,
         now + Duration::from_millis(270),
@@ -543,7 +543,7 @@ fn layer_missing_key_is_transparent() {
     );
     assert!(matches!(
         out.as_slice(),
-        [Out::KeyRaw { key, down: true }] if *key == KeyCode::KEY_B
+        [EngineOutput::KeyRaw { key, down: true }] if *key == KeyCode::KEY_B
     ));
 }
 
@@ -570,8 +570,8 @@ fn permissive_layer_rule_quick_tap_fires_paste() {
     let now = Instant::now();
 
     // Solo tap within the timeout → paste.
-    engine.handle(KeyCode::KEY_CAPSLOCK, true, now, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_CAPSLOCK, true, now, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_CAPSLOCK,
         false,
         now + Duration::from_millis(150),
@@ -580,7 +580,7 @@ fn permissive_layer_rule_quick_tap_fires_paste() {
     assert!(
         matches!(
             out.as_slice(),
-            [Out::Stroke { ks, .. }]
+            [EngineOutput::Stroke { ks, .. }]
                 if ks.mods == vec![KeyCode::KEY_LEFTCTRL] && ks.key == KeyCode::KEY_V
         ),
         "expected Ctrl+V tap"
@@ -589,20 +589,20 @@ fn permissive_layer_rule_quick_tap_fires_paste() {
     // Nested layer use (J pressed and released while Caps held) → layer.
     out.clear();
     let t2 = now + Duration::from_millis(500);
-    engine.handle(KeyCode::KEY_CAPSLOCK, true, t2, &mut out);
-    engine.handle(
+    engine.handle_key_event(KeyCode::KEY_CAPSLOCK, true, t2, &mut out);
+    engine.handle_key_event(
         KeyCode::KEY_J,
         true,
         t2 + Duration::from_millis(30),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_J,
         false,
         t2 + Duration::from_millis(60),
         &mut out,
     );
-    engine.handle(
+    engine.handle_key_event(
         KeyCode::KEY_CAPSLOCK,
         false,
         t2 + Duration::from_millis(90),
@@ -612,8 +612,8 @@ fn permissive_layer_rule_quick_tap_fires_paste() {
         matches!(
             out.as_slice(),
             [
-                Out::ChordPress { ks: left, .. },
-                Out::KeyRaw { key: up, down: false },
+                EngineOutput::ChordPress { ks: left, .. },
+                EngineOutput::KeyRaw { key: up, down: false },
             ] if left.mods.is_empty()
                 && left.key == KeyCode::KEY_LEFT
                 && *up == KeyCode::KEY_LEFT
@@ -629,26 +629,26 @@ fn held_layer_snapshot_distinguishes_fast_represses_and_mapper_restarts() {
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
     let first = engine.held_layer_state();
     assert!(first.allows_hint("nav", first.hold_id));
     // Both events may arrive in the same fetch_key_events batch.
-    engine.handle(KeyCode::KEY_SPACE, false, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, false, now, &mut out);
     assert!(engine.held_layer_state().layer.is_none());
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
     let second = engine.held_layer_state();
     assert_eq!(second.layer, first.layer);
     assert!(!second.allows_hint("nav", first.hold_id));
     assert!(second.allows_hint("nav", second.hold_id));
-    engine.handle(KeyCode::KEY_J, true, now, &mut out);
-    engine.handle(KeyCode::KEY_J, false, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_J, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_J, false, now, &mut out);
     assert!(!engine.held_layer_state().allows_hint("nav", second.hold_id));
-    engine.handle(KeyCode::KEY_SPACE, false, now, &mut out);
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, false, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
     let third = engine.held_layer_state();
     assert!(third.allows_hint("nav", third.hold_id));
     let mut restarted = Engine::new(&cfg);
-    restarted.handle(KeyCode::KEY_SPACE, true, now, &mut out);
+    restarted.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
     assert_ne!(restarted.held_layer_state().hold_id, third.hold_id);
 }
 
@@ -658,7 +658,7 @@ fn nested_layers_keep_usage_suppressed_until_all_triggers_are_released() {
     let mut out = Vec::new();
     engine.layers.push("nav".into());
     let first = engine.held_layer_state();
-    engine.handle(KeyCode::KEY_J, true, Instant::now(), &mut out);
+    engine.handle_key_event(KeyCode::KEY_J, true, Instant::now(), &mut out);
     engine.layers.push("symbols".into());
     assert_eq!(engine.held_layer_state().hold_id, first.hold_id);
     assert!(engine.held_layer_state().used);
@@ -672,7 +672,7 @@ fn nested_layers_keep_usage_suppressed_until_all_triggers_are_released() {
 
 #[test]
 fn reconfigure_preserves_held_keys_layers_and_original_release_mapping() {
-    let cfg: AppConfig = serde_json::from_value(serde_json::json!({
+    let cfg: MapperConfig = serde_json::from_value(serde_json::json!({
         "rules": [{"key": "Space", "tapAction": null, "layerId": "nav"}],
         "layerKeymaps": {"nav": {"keys": {"KeyJ": "ArrowLeft"}}}
     }))
@@ -680,27 +680,27 @@ fn reconfigure_preserves_held_keys_layers_and_original_release_mapping() {
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();
     let mut out = Vec::new();
-    engine.handle(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
-    engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
-    engine.handle(KeyCode::KEY_J, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_J, true, now, &mut out);
     out.clear();
-    engine.reconfigure(&AppConfig::default(), &mut out);
+    engine.reconfigure(&MapperConfig::default(), &mut out);
     assert!(out.is_empty());
     assert_eq!(engine.top_layer(), Some("nav"));
-    engine.handle(KeyCode::KEY_J, false, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_J, false, now, &mut out);
     assert!(matches!(
         out.last(),
-        Some(Out::KeyRaw {
+        Some(EngineOutput::KeyRaw {
             key: KeyCode::KEY_LEFT,
             down: false
         })
     ));
-    engine.handle(KeyCode::KEY_SPACE, false, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, false, now, &mut out);
     assert_eq!(engine.top_layer(), None);
-    engine.handle(KeyCode::KEY_LEFTSHIFT, false, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_LEFTSHIFT, false, now, &mut out);
     assert!(matches!(
         out.last(),
-        Some(Out::KeyRaw {
+        Some(EngineOutput::KeyRaw {
             key: KeyCode::KEY_LEFTSHIFT,
             down: false
         })

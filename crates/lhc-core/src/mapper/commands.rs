@@ -1,12 +1,12 @@
 //! Fire-and-forget shell commands: each one starts in its own process
 //! group and is never waited on by the mapper. Only a failure to start
 //! is reported; exit status and output are not collected. Linux runs the
-//! `linux` script with `sh`, Windows the `windows` script with PowerShell
+//! `posix_script` with `sh`, Windows the `powershell_script` with PowerShell
 //! and no console window. Draft validation and quoting are also available
 //! to portable shells.
 
 #[cfg(any(target_os = "linux", target_os = "windows"))]
-use super::system::SysCommand;
+use super::system::ProcessInvocation;
 #[cfg(any(target_os = "linux", target_os = "windows"))]
 use crate::events::{self, CoreEvent};
 #[cfg(any(target_os = "linux", target_os = "windows"))]
@@ -18,9 +18,9 @@ use std::process::{Command, Stdio};
 pub(super) fn shell_command(
     command: &super::config::Command,
     working_directory: Option<String>,
-) -> Option<SysCommand> {
+) -> Option<ProcessInvocation> {
     #[cfg(target_os = "linux")]
-    let (program, flags, script) = ("sh", &["-lc"][..], command.linux.trim());
+    let (program, flags, script) = ("sh", &["-lc"][..], command.posix_script.trim());
     #[cfg(target_os = "windows")]
     let (program, flags, script) = (
         "powershell.exe",
@@ -32,14 +32,14 @@ pub(super) fn shell_command(
             "Bypass",
             "-Command",
         ][..],
-        command.windows.trim(),
+        command.powershell_script.trim(),
     );
     if script.is_empty() {
         return None;
     }
     let mut args: Vec<String> = flags.iter().map(|flag| flag.to_string()).collect();
     args.push(script.to_owned());
-    Some(SysCommand {
+    Some(ProcessInvocation {
         program: program.into(),
         args,
         working_directory,
@@ -47,7 +47,7 @@ pub(super) fn shell_command(
 }
 
 #[cfg(any(target_os = "linux", target_os = "windows"))]
-fn report(command: &SysCommand, result: Result<(), String>) {
+fn report(command: &ProcessInvocation, result: Result<(), String>) {
     events::emit(CoreEvent::CommandFinished {
         script: command
             .args
@@ -61,7 +61,7 @@ fn report(command: &SysCommand, result: Result<(), String>) {
 /// Starts `command` and returns at once; a reaper thread collects the
 /// exit status so finished commands do not linger as zombies.
 #[cfg(any(target_os = "linux", target_os = "windows"))]
-pub(super) fn spawn(command: SysCommand) {
+pub(super) fn spawn(command: ProcessInvocation) {
     let result = start(&command).map(|mut child| {
         let _ = std::thread::Builder::new()
             .name("lhc-command".into())
@@ -73,7 +73,7 @@ pub(super) fn spawn(command: SysCommand) {
 }
 
 #[cfg(any(target_os = "linux", target_os = "windows"))]
-fn start(command: &SysCommand) -> Result<std::process::Child, String> {
+fn start(command: &ProcessInvocation) -> Result<std::process::Child, String> {
     let mut process = Command::new(&command.program);
     process
         .args(&command.args)
@@ -191,8 +191,8 @@ mod tests {
     use super::*;
     use std::time::{Duration, Instant};
 
-    fn shell(script: String, directory: Option<String>) -> SysCommand {
-        SysCommand {
+    fn shell(script: String, directory: Option<String>) -> ProcessInvocation {
+        ProcessInvocation {
             program: "sh".into(),
             args: vec!["-c".into(), script],
             working_directory: directory,
@@ -296,8 +296,8 @@ mod portable_tests {
     fn each_os_runs_its_own_script() {
         let command = |linux: &str, windows: &str| super::super::config::Command {
             id: "c".into(),
-            linux: linux.into(),
-            windows: windows.into(),
+            posix_script: linux.into(),
+            powershell_script: windows.into(),
             working_directory: None,
         };
         let both = shell_command(&command(" ls ", " dir "), Some("~".into())).unwrap();

@@ -11,7 +11,7 @@ pub(super) fn type_text_keycode(
     let hardware = HardwareState::capture();
     hardware.modifiers_released()?;
     let table = layout_key_table()?;
-    let layout = crate::runtime_state::layout();
+    let layout = crate::runtime_state::keyboard_layout();
     let caps = hardware.caps_lock_state()?;
     let text = text.replace("\r\n", "\n");
     if missing_characters(&table, &text) {
@@ -20,7 +20,9 @@ pub(super) fn type_text_keycode(
     for ch in text.chars() {
         request.check()?;
         hardware.modifiers_released()?;
-        if layout != crate::runtime_state::layout() || caps != hardware.caps_lock_state()? {
+        if layout != crate::runtime_state::keyboard_layout()
+            || caps != hardware.caps_lock_state()?
+        {
             return Err(TextInputFailure::BackendUnavailable(
                 "keyboard state changed during text input".into(),
             ));

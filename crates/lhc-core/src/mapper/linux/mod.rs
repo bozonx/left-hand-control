@@ -6,8 +6,8 @@ mod io;
 
 pub use devices::{list_input_devices, list_keyboards, list_mice};
 
-use super::config::AppConfig;
-use super::engine::{Engine, Out};
+use super::config::MapperConfig;
+use super::engine::{Engine, EngineOutput};
 use evdev::uinput::VirtualDevice;
 use evdev::{AttributeSet, BusType, Device, InputId, KeyCode};
 use io::{LoopDriver, MultiDeviceLoopDriver, OutputHold, flush_out, process_iteration};
@@ -58,7 +58,7 @@ impl Drop for GrabbedKeyboard {
 }
 
 pub enum MapperControl {
-    Config(Box<AppConfig>),
+    Config(Box<MapperConfig>),
     Execute(String),
     /// A popup took the keyboard focus; emit the output held for it.
     PopupFocused,
@@ -112,7 +112,7 @@ impl Handle {
         self.error.lock().ok().and_then(|g| g.clone())
     }
 
-    pub fn update_config(&self, cfg: AppConfig) -> Result<(), String> {
+    pub fn update_config(&self, cfg: MapperConfig) -> Result<(), String> {
         self.control_tx
             .send(MapperControl::Config(Box::new(cfg)))
             .map_err(|e| format!("mapper update channel closed: {e}"))?;
@@ -150,7 +150,7 @@ impl Handle {
 pub fn spawn(
     device_path: String,
     mouse_path: Option<String>,
-    cfg: AppConfig,
+    cfg: MapperConfig,
     stop: Arc<AtomicBool>,
 ) -> Result<Handle, String> {
     crate::text_input::job::start();
@@ -338,7 +338,7 @@ fn lock_mapper_file(path: &std::path::Path) -> Result<std::fs::File, String> {
 fn run(
     device_path: String,
     mouse_path: Option<String>,
-    cfg: AppConfig,
+    cfg: MapperConfig,
     stop: Arc<AtomicBool>,
     ready_tx: mpsc::Sender<Result<(), String>>,
     control_rx: mpsc::Receiver<MapperControl>,
@@ -475,7 +475,7 @@ fn run_device(
     mut device: Device,
     device_path: &str,
     mouse_path: Option<&str>,
-    cfg: &mut AppConfig,
+    cfg: &mut MapperConfig,
     stop: Arc<AtomicBool>,
     ready_tx: &mpsc::Sender<Result<(), String>>,
     control_rx: &mpsc::Receiver<MapperControl>,
@@ -570,12 +570,12 @@ fn validate_keyboard_capabilities(
 fn run_loop<D: LoopDriver>(
     mut driver: D,
     mut virt: VirtualDevice,
-    cfg: &mut AppConfig,
+    cfg: &mut MapperConfig,
     stop: Arc<AtomicBool>,
     control_rx: &mpsc::Receiver<MapperControl>,
 ) -> Result<(), String> {
     let mut engine = Engine::new(cfg);
-    let mut out_buf: Vec<Out> = Vec::with_capacity(16);
+    let mut out_buf: Vec<EngineOutput> = Vec::with_capacity(16);
     let mut hold = OutputHold::default();
     let result = (|| {
         while !stop.load(Ordering::SeqCst) {

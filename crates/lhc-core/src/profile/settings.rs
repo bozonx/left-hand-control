@@ -347,15 +347,15 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
         default_long_hold_timeout_ms: timing.long_hold_ms,
         tap_decision: timing.tap_decision,
         default_double_tap_timeout_ms: timing.double_tap_ms,
-        combo_timeout_ms: timing.combo_ms,
+        trigger_chord_timeout_ms: timing.combo_ms,
         default_macro_step_pause_ms: timing.macro_step_pause_ms,
         default_macro_modifier_delay_ms: timing.macro_modifier_delay_ms,
         macro_timeout_ms: timing.macro_timeout_ms,
         input_device_path: Some(keyboard_device.unwrap_or_default()),
         input_mouse_device_path: mouse_device,
-        current_layout_id: non_empty(state.edited_layout_id),
+        editing_layout_id: non_empty(state.edited_layout_id),
         layout_mode: settings.layout_mode,
-        manual_active_layout_id: non_empty(settings.active_layout_id),
+        manual_layout_id: non_empty(settings.active_layout_id),
         layout_order: settings.layout_order,
         auto_rules,
         auto_default_layout_id: layout_ref(
@@ -421,14 +421,14 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
                 hold_ms: settings.default_hold_timeout_ms,
                 long_hold_ms: settings.default_long_hold_timeout_ms,
                 double_tap_ms: settings.default_double_tap_timeout_ms,
-                combo_ms: settings.combo_timeout_ms,
+                combo_ms: settings.trigger_chord_timeout_ms,
                 tap_decision: settings.tap_decision,
                 macro_step_pause_ms: settings.default_macro_step_pause_ms,
                 macro_modifier_delay_ms: settings.default_macro_modifier_delay_ms,
                 macro_timeout_ms: settings.macro_timeout_ms,
             },
             layout_mode: settings.layout_mode,
-            active_layout_id: filled(&settings.manual_active_layout_id),
+            active_layout_id: filled(&settings.manual_layout_id),
             auto_rules: settings
                 .auto_rules
                 .iter()
@@ -475,7 +475,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
             },
         },
         state: StateDoc {
-            edited_layout_id: filled(&settings.current_layout_id),
+            edited_layout_id: filled(&settings.editing_layout_id),
             game_mode_switch: game_mode.control,
         },
     }
@@ -570,7 +570,7 @@ mod tests {
             ("holdMs", TAP_HOLD),
             ("doubleTapMs", TAP_HOLD),
             ("longHoldMs", LONG_HOLD),
-            ("comboMs", COMBO),
+            ("comboMs", TRIGGER_CHORD),
             ("macroStepPauseMs", MACRO_DELAY),
             ("macroModifierDelayMs", MACRO_DELAY),
             ("macroTimeoutMs", MACRO_TIMEOUT),
@@ -622,7 +622,7 @@ mod tests {
             json!({"linux": {"textMode": "magic"}}),
             json!({"gameMode": {"detectors": {"origin": true}}}),
             json!({"gameMode": {"processes": [{"name": "steam", "isBlacklist": true}]}}),
-            json!({"autoRules": [{"layoutId": "user:A", "apps": ["kate"]}]}),
+            json!({"autoRules": [{"layoutId": "user:A", "window_patterns": ["kate"]}]}),
             json!({"autoRules": [{"when": {"gameMode": "on"}}]}),
             json!({"autoRules": [{"layoutId": ""}]}),
             json!({"autoDefaultLayoutId": " "}),
@@ -653,9 +653,9 @@ mod tests {
             tap_decision: TapDecision::HoldOnOtherKeyPress,
             input_device_path: Some("/dev/input/by-id/kbd".into()),
             input_mouse_device_path: Some("/dev/input/by-id/mouse".into()),
-            current_layout_id: Some("user:Main".into()),
+            editing_layout_id: Some("user:Main".into()),
             layout_mode: LayoutMode::Auto,
-            manual_active_layout_id: Some("user:Other".into()),
+            manual_layout_id: Some("user:Other".into()),
             layout_order: vec!["user:Other".into(), "user:Main".into()],
             auto_rules: vec![AutoRule {
                 id: "a".into(),
@@ -664,8 +664,8 @@ mod tests {
                 conditions: super::super::model::LayoutConditionSet {
                     game_mode: Some("on".into()),
                     layouts: vec!["us".into()],
-                    apps: vec!["blender".into()],
-                    excluded_apps: vec!["title:Preferences".into()],
+                    window_patterns: vec!["blender".into()],
+                    excluded_window_patterns: vec!["title:Preferences".into()],
                 },
             }],
             auto_default_layout_id: Some("user:Main".into()),
@@ -768,8 +768,8 @@ mod tests {
     fn manual_activation_is_independent_of_the_edited_layout() {
         let settings =
             parse(r#"{"schemaVersion": 1, "state": {"editedLayoutId": "user:Main"}}"#).unwrap();
-        assert_eq!(settings.current_layout_id.as_deref(), Some("user:Main"));
-        assert_eq!(settings.manual_active_layout_id, None);
+        assert_eq!(settings.editing_layout_id.as_deref(), Some("user:Main"));
+        assert_eq!(settings.manual_layout_id, None);
     }
 
     #[test]
@@ -783,7 +783,10 @@ mod tests {
         })))
         .unwrap();
         assert_eq!(settings.auto_rules.len(), 2);
-        assert_eq!(settings.auto_rules[0].conditions.apps, ["blender"]);
+        assert_eq!(
+            settings.auto_rules[0].conditions.window_patterns,
+            ["blender"]
+        );
         assert_eq!(settings.auto_rules[1].id, "rule-1");
         assert_eq!(settings.auto_rules[1].layout_id, None);
         assert!(!settings.auto_rules[1].enabled);
