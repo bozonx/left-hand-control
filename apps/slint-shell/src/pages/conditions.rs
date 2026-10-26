@@ -15,9 +15,24 @@ const PROCESS_CACHE_TTL: Duration = Duration::from_secs(2);
 /// How many running processes the picker lists.
 const PROCESSES: usize = 8;
 
-thread_local! {
-    /// Running processes, re-read when older than two seconds.
-    static PROCESS_CACHE: RefCell<Option<(Instant, Vec<String>)>> = const { RefCell::new(None) };
+/// Running processes, re-read when older than [`PROCESS_CACHE_TTL`].
+#[derive(Default)]
+struct ProcessCache(RefCell<Option<(Instant, Vec<String>)>>);
+
+impl ProcessCache {
+    fn get(&self) -> Vec<String> {
+        let mut cache = self.0.borrow_mut();
+        let stale = cache
+            .as_ref()
+            .is_none_or(|(at, _)| at.elapsed() > PROCESS_CACHE_TTL);
+        if stale {
+            *cache = Some((Instant::now(), lhc_core::gamemode::running_processes()));
+        }
+        cache
+            .as_ref()
+            .map(|(_, names)| names.clone())
+            .unwrap_or_default()
+    }
 }
 
 /// Put the focused application first in the picker's open-window list.
@@ -186,21 +201,6 @@ fn process_matches(processes: &[String], taken: &[String], query: &str) -> Vec<S
         .collect()
 }
 
-fn running_processes() -> Vec<String> {
-    PROCESS_CACHE.with_borrow_mut(|cache| {
-        let stale = cache
-            .as_ref()
-            .is_none_or(|(at, _)| at.elapsed() > PROCESS_CACHE_TTL);
-        if stale {
-            *cache = Some((Instant::now(), lhc_core::gamemode::running_processes()));
-        }
-        cache
-            .as_ref()
-            .map(|(_, names)| names.clone())
-            .unwrap_or_default()
-    })
-}
-
 /// The pattern a condition stores for a window: its app id, or the
 /// process when there is none.
 fn window_pattern(app_id: &str, process: Option<&str>) -> String {
@@ -213,6 +213,7 @@ fn window_pattern(app_id: &str, process: Option<&str>) -> String {
 
 pub(super) fn bind(ui: &SettingsWindow) {
     let choices = ui.global::<ConditionChoices>();
+    let processes = std::rc::Rc::new(ProcessCache::default());
     choices.on_has(|patterns, pattern| {
         patterns
             .iter()
@@ -227,7 +228,8 @@ pub(super) fn bind(ui: &SettingsWindow) {
                 .collect::<Vec<_>>(),
         ))
     });
-    choices.on_processes(|windows, query| {
+    let cache = processes.clone();
+    choices.on_processes(move |windows, query| {
         if query.trim().is_empty() {
             return strings(Vec::<String>::new());
         }
@@ -235,7 +237,7 @@ pub(super) fn bind(ui: &SettingsWindow) {
             .iter()
             .flat_map(|window| [window.pattern.to_string(), window.process.to_string()])
             .collect::<Vec<_>>();
-        strings(process_matches(&running_processes(), &taken, &query))
+        strings(process_matches(&cache.get(), &taken, &query))
     });
     choices.on_by_process(|windows| {
         let rows = windows.iter().collect::<Vec<_>>();
@@ -245,11 +247,12 @@ pub(super) fn bind(ui: &SettingsWindow) {
         names_process(&windows.iter().collect::<Vec<_>>(), &pattern)
     });
     choices.on_shared_runtime(|name| app_match::is_shared_runtime(&name));
-    choices.on_running_count(|pattern| {
+    choices.on_running_count(move |pattern| {
         let Some(matcher) = app_match::AppMatcher::parse(&pattern) else {
             return 0;
         };
-        let count = running_processes()
+        let count = processes
+            .get()
             .iter()
             .filter(|name| matcher.matches_process(name))
             .count();

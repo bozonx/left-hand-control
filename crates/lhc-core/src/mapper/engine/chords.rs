@@ -110,8 +110,10 @@ impl Engine {
                 .decision_buffer
                 .iter()
                 .any(|event| event.down && !keys.contains(&event.key))
-            && rule_passes_apps(rule)
-            && rule_passes_conditions(rule)
+            && {
+                let ctx = (self.context)();
+                rule_passes_apps(rule, &ctx) && rule_passes_conditions(rule, &ctx)
+            }
     }
 
     /// True when a held chord member already produced visible output (a

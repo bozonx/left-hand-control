@@ -1,6 +1,7 @@
 //! Action picker: one dialog that chooses a key, shortcut or action for
 //! every page and hands the value to the page that opened it.
 
+use super::WindowInput;
 use crate::{
     document::Document,
     i18n::Msg,
@@ -16,8 +17,7 @@ mod commands;
 mod request;
 mod session;
 
-pub use capture::capture;
-use capture::{CAPTURE, CaptureState};
+pub(super) use capture::{CaptureState, capture};
 #[cfg(test)]
 use capture::{key_name, physical_key_name};
 pub(crate) use catalog::{DESKTOP_SHORTCUTS, action_label, category_for_value};
@@ -39,15 +39,16 @@ struct Session {
     command: Option<lhc_core::profile::model::Command>,
 }
 
-pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
+pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>, input: &Rc<WindowInput>) {
     let session = Rc::new(RefCell::new(Session::default()));
     let picker = ui.global::<ActionPicker>();
     picker.set_shortcut_desktop(shortcut_desktop());
     load_desktop_shortcuts(ui.as_weak());
 
     let weak = ui.as_weak();
+    let input = input.clone();
     picker.on_begin_capture(move || {
-        CAPTURE.with(|state| *state.borrow_mut() = CaptureState::default());
+        input.reset_capture();
         if let Some(ui) = weak.upgrade() {
             let picker = ui.global::<ActionPicker>();
             picker.set_capturing(!picker.get_capturing());

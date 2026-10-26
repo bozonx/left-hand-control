@@ -7,13 +7,10 @@ use slint::ComponentHandle;
 use slint::winit_030::winit::event::{ElementState, TouchPhase, WindowEvent};
 use std::cell::Cell;
 
-thread_local! {
-    /// Last cursor position in physical pixels; winit reports presses without it.
-    static CURSOR: Cell<(f64, f64)> = const { Cell::new((0.0, 0.0)) };
-}
-
-/// Forward `event` of the settings window to [`InlineEditors`].
-pub fn observe(ui: &SettingsWindow, event: &WindowEvent) {
+/// Forward `event` of the settings window to [`InlineEditors`]. `cursor`
+/// keeps the last pointer position in physical pixels; winit reports presses
+/// without it.
+pub(super) fn observe(ui: &SettingsWindow, event: &WindowEvent, cursor: &Cell<(f64, f64)>) {
     let editors = ui.global::<InlineEditors>();
     let pressed = match event {
         WindowEvent::Focused(active) => {
@@ -21,13 +18,13 @@ pub fn observe(ui: &SettingsWindow, event: &WindowEvent) {
             None
         }
         WindowEvent::CursorMoved { position, .. } => {
-            CURSOR.set((position.x, position.y));
+            cursor.set((position.x, position.y));
             None
         }
         WindowEvent::MouseInput {
             state: ElementState::Pressed,
             ..
-        } => Some(CURSOR.get()),
+        } => Some(cursor.get()),
         WindowEvent::Touch(touch) if touch.phase == TouchPhase::Started => {
             Some((touch.location.x, touch.location.y))
         }

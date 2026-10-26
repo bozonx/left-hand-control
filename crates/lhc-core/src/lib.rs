@@ -21,6 +21,7 @@ pub mod runtime_state;
 pub mod storage;
 #[cfg(any(target_os = "linux", target_os = "windows"))]
 pub mod text_input;
+pub mod watchers;
 
 pub use events::{CoreEvent, EventBus};
 pub use storage::StoragePaths;

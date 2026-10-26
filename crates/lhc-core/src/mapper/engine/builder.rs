@@ -441,6 +441,7 @@ impl Engine {
                 crate::profile::timing::MACRO_TIMEOUT.min,
                 crate::profile::timing::MACRO_TIMEOUT.max,
             ))),
+            context: Box::new(crate::profile::auto_switch::AutoSwitchContext::current),
         }
     }
 }

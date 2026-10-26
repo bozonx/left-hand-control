@@ -35,6 +35,8 @@ pub(crate) struct App {
     emoji: EmojiPopup,
     quick: QuickPopup,
     document: RefCell<Option<Rc<Document>>>,
+    /// Settings-window input state shared with the pages.
+    input: Rc<pages::WindowInput>,
     metrics: RefCell<metrics::Metrics>,
     focus: RefCell<focus::Activation>,
     tray: RefCell<Option<tray::Handle>>,
@@ -92,7 +94,7 @@ impl App {
         if let Err(error) = document.edit(View::Shell, |config| config.sync_autostart()) {
             self.set_error(Msg::from(&error));
         }
-        pages::bind_document(&self.settings, &document);
+        pages::bind_document_with_input(&self.settings, &document, &self.input);
         let weak = Rc::downgrade(self);
         document.subscribe(View::Shell, move |_| {
             if let Some(app) = weak.upgrade() {
@@ -380,7 +382,7 @@ fn load_document(settings: &SettingsWindow) -> Option<Rc<Document>> {
     }
 }
 
-fn start_core() {
+fn start_core() -> lhc_core::watchers::Watchers {
     let paths = StoragePaths::resolve();
     if let Ok(paths) = &paths {
         if let Err(error) = paths.ensure() {
@@ -388,12 +390,9 @@ fn start_core() {
         }
         lhc_core::mapper::runtime::set_portal_token_dir(paths.data_dir().clone());
     }
-    lhc_core::layout::start_watcher();
-    lhc_core::gamemode::start_watcher(paths.ok());
-    // Settings and popups must not change app conditions while open.
-    lhc_core::active_window::ignore_own_windows(true);
-    lhc_core::active_window::start_watcher();
+    let watchers = lhc_core::watchers::Watchers::start(paths.ok(), true);
     mapper::forward_core_events();
+    watchers
 }
 
 fn stop_core() {
@@ -402,16 +401,15 @@ fn stop_core() {
     if running && let Err(error) = result {
         log::error!("stop mapper during shutdown: {error}");
     }
-    lhc_core::layout::stop_watcher();
-    lhc_core::gamemode::stop_watcher();
-    lhc_core::active_window::stop_watcher();
 }
 
-struct CoreGuard;
+/// Stops the mapper first, then the watchers it reads from.
+struct CoreGuard(Option<lhc_core::watchers::Watchers>);
 
 impl Drop for CoreGuard {
     fn drop(&mut self) {
         stop_core();
+        self.0.take();
     }
 }
 
@@ -432,8 +430,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     select_backend(popup_attributes.clone())?;
     // Core watchers post to the UI via `invoke_from_event_loop`, which fails
     // until a Slint platform exists.
-    start_core();
-    let _core_guard = CoreGuard;
+    let _core_guard = CoreGuard(Some(start_core()));
     let mut metrics = metrics::Metrics::from_env(start)?;
     let settings = SettingsWindow::new()?;
     crate::notifications::bind(&settings);
@@ -467,6 +464,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         emoji,
         quick,
         document: RefCell::new(None),
+        input: Rc::default(),
         metrics: RefCell::new(metrics),
         focus: RefCell::default(),
         tray: RefCell::new(None),

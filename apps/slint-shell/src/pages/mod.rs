@@ -28,9 +28,7 @@ mod reorder;
 mod rules;
 mod settings;
 
-pub use inline::observe as observe_inline_editors;
 pub use library::refresh_active;
-pub use picker::capture;
 pub(crate) use settings::check_input_access;
 
 use crate::{
@@ -43,14 +41,49 @@ use lhc_core::profile::actions::Action;
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use std::rc::Rc;
 
+/// Input state of the settings window that pages keep between window events:
+/// the pointer position for inline editors and the action picker's key capture.
+#[derive(Default)]
+pub struct WindowInput {
+    cursor: std::cell::Cell<(f64, f64)>,
+    capture: std::cell::RefCell<picker::CaptureState>,
+}
+
+impl WindowInput {
+    /// Route a settings-window event to inline editors and key capture;
+    /// returns `true` to withhold the event from Slint.
+    pub fn observe(
+        &self,
+        ui: &SettingsWindow,
+        event: &slint::winit_030::winit::event::WindowEvent,
+    ) -> bool {
+        inline::observe(ui, event, &self.cursor);
+        picker::capture(ui, event, &self.capture)
+    }
+
+    fn reset_capture(&self) {
+        *self.capture.borrow_mut() = picker::CaptureState::default();
+    }
+}
+
 /// Bind every page of `ui` to `document`.
 pub fn bind_document(ui: &SettingsWindow, document: &Rc<Document>) {
+    bind_document_with_input(ui, document, &Rc::default());
+}
+
+/// [`bind_document`] with the window input state that the window event
+/// handler feeds through [`WindowInput::observe`].
+pub fn bind_document_with_input(
+    ui: &SettingsWindow,
+    document: &Rc<Document>,
+    input: &Rc<WindowInput>,
+) {
     crate::notifications::bind(ui);
     ui.global::<crate::ui::InlineEditors>()
         .on_nonempty(|value| !value.trim().is_empty());
     reorder::bind(ui);
     conditions::bind(ui);
-    picker::bind(ui, document);
+    picker::bind(ui, document, input);
     keys::bind(ui, document);
     library::bind(ui, document);
     rules::bind(ui, document);

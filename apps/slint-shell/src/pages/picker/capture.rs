@@ -5,7 +5,11 @@ use slint::ComponentHandle;
 use std::cell::RefCell;
 
 /// Keyboard capture for the picker; returns `true` to withhold the event from Slint.
-pub fn capture(ui: &SettingsWindow, event: &slint::winit_030::winit::event::WindowEvent) -> bool {
+pub(in crate::pages) fn capture(
+    ui: &SettingsWindow,
+    event: &slint::winit_030::winit::event::WindowEvent,
+    capture: &RefCell<CaptureState>,
+) -> bool {
     use slint::winit_030::winit::event::WindowEvent;
     let picker = ui.global::<ActionPicker>();
     if !picker.get_opened() || !picker.get_capturing() {
@@ -24,8 +28,8 @@ pub fn capture(ui: &SettingsWindow, event: &slint::winit_030::winit::event::Wind
     if event.repeat {
         return true;
     }
-    let value = CAPTURE.with(|state| {
-        let mut state = state.borrow_mut();
+    let value = {
+        let mut state = capture.borrow_mut();
         let value = state.update(
             &key,
             event.state,
@@ -34,7 +38,7 @@ pub fn capture(ui: &SettingsWindow, event: &slint::winit_030::winit::event::Wind
         );
         picker.set_capture_keys(state.held.join("+").into());
         value
-    });
+    };
     if let Some(value) = value {
         picker.set_touched(true);
         picker.set_value(value.into());
@@ -78,7 +82,7 @@ pub(super) fn key_name(code: slint::winit_030::winit::keyboard::KeyCode) -> Stri
 }
 
 #[derive(Default)]
-pub(super) struct CaptureState {
+pub(in crate::pages) struct CaptureState {
     pub(super) held: Vec<String>,
     pub(super) keys: Vec<String>,
 }
@@ -146,5 +150,3 @@ impl CaptureState {
         )
     }
 }
-
-thread_local! { pub(super) static CAPTURE: RefCell<CaptureState> = const { RefCell::new(CaptureState { held: Vec::new(), keys: Vec::new() }) }; }

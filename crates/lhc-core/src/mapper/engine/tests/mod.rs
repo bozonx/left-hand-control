@@ -100,10 +100,6 @@ fn transitions(out: &[Out]) -> Vec<(KeyCode, bool)> {
     keys
 }
 
-// Serialise all tests that mutate the shared `active_window::CACHED`
-// so they don't race when cargo runs the suite in parallel.
-static APPS_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
-
 fn rule_with_apps(whitelist: Option<Vec<String>>, blacklist: Option<Vec<String>>) -> RuleEntry {
     RuleEntry {
         tap_decision: TapDecision::PermissiveHold,

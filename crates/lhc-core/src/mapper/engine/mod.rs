@@ -65,6 +65,7 @@ use super::action::Keystroke;
 use super::config::GameModeCondition;
 use crate::mapper::key_code::KeyCode;
 use crate::profile::app_match::any_matches_window;
+use crate::profile::auto_switch::AutoSwitchContext;
 use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
 
@@ -86,8 +87,20 @@ pub struct Engine {
     layers: LayerStack,
     virt: VirtualKeys,
     runner: MacroRunner,
+    /// Where rule conditions read the observed system state from; the live
+    /// watcher cache by default, a fixed snapshot in tests.
+    context: ContextSource,
 }
+
+/// Source of the system state that rule conditions are evaluated against.
+pub type ContextSource = Box<dyn Fn() -> AutoSwitchContext + Send>;
+
 impl Engine {
+    /// Replace the source of rule-condition state (window, game mode, layout).
+    pub fn set_context_source(&mut self, source: ContextSource) {
+        self.context = source;
+    }
+
     /// Apply new bindings without releasing keys already held by the user.
     /// Pending decisions retain their original rule until physical release.
     pub fn reconfigure(&mut self, cfg: &super::config::AppConfig, out: &mut Vec<Out>) {
@@ -684,9 +697,10 @@ impl Engine {
 
     fn active_rule_for_key(&self, key: KeyCode) -> Option<RuleEntry> {
         self.layout.rules.get(&key).and_then(|rules| {
+            let ctx = (self.context)();
             rules
                 .iter()
-                .find(|rule| rule_passes_apps(rule) && rule_passes_conditions(rule))
+                .find(|rule| rule_passes_apps(rule, &ctx) && rule_passes_conditions(rule, &ctx))
                 .cloned()
         })
     }
@@ -856,7 +870,7 @@ fn report_unavailable(action: &str) {
 /// Evaluates the apps whitelist / blacklist for a rule.
 /// Blacklist takes precedence: a match blocks the rule. Whitelist, when
 /// non-empty, must match for the rule to fire.
-fn rule_passes_apps(rule: &RuleEntry) -> bool {
+fn rule_passes_apps(rule: &RuleEntry, ctx: &AutoSwitchContext) -> bool {
     let bl = rule
         .condition_apps_blacklist
         .as_deref()
@@ -868,7 +882,7 @@ fn rule_passes_apps(rule: &RuleEntry) -> bool {
     if bl.is_none() && wl.is_none() {
         return true;
     }
-    let aw = crate::runtime_state::active_window();
+    let aw = &ctx.window;
     if aw.is_none() {
         // Without active-window detection (e.g. KDE Wayland missing
         // `kdotool`) app-conditioned rules silently never fire (whitelist)
@@ -884,14 +898,14 @@ fn rule_passes_apps(rule: &RuleEntry) -> bool {
         }
     }
     if let Some(bl) = bl {
-        match &aw {
+        match aw {
             Some(aw) if any_matches_window(bl, aw) => return false,
             Some(_) => {}
             None => return false, // fail-closed: unknown window + blacklist -> block
         }
     }
     if let Some(wl) = wl {
-        match &aw {
+        match aw {
             Some(aw) if any_matches_window(wl, aw) => {}
             _ => return false,
         }
@@ -899,7 +913,7 @@ fn rule_passes_apps(rule: &RuleEntry) -> bool {
     true
 }
 
-fn rule_passes_conditions(rule: &RuleEntry) -> bool {
+fn rule_passes_conditions(rule: &RuleEntry, ctx: &AutoSwitchContext) -> bool {
     let has_gm_cond = rule
         .condition_game_mode
         .as_ref()
@@ -914,7 +928,7 @@ fn rule_passes_conditions(rule: &RuleEntry) -> bool {
     }
     if has_gm_cond {
         // Undetectable game mode counts as off, so desktop rules keep working.
-        let gm_active = crate::runtime_state::game_mode_active();
+        let gm_active = ctx.game_mode_active;
         if !match rule.condition_game_mode {
             Some(GameModeCondition::On) => gm_active,
             Some(GameModeCondition::Off) => !gm_active,
@@ -924,13 +938,13 @@ fn rule_passes_conditions(rule: &RuleEntry) -> bool {
         }
     }
     if has_layout_cond {
-        let Some(current) = crate::runtime_state::layout_short() else {
+        let Some(current) = &ctx.system_layout else {
             return false;
         };
         if !rule
             .condition_layouts
             .as_ref()
-            .is_some_and(|layouts| layouts.contains(&current))
+            .is_some_and(|layouts| layouts.contains(current))
         {
             return false;
         }

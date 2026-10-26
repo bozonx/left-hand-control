@@ -431,10 +431,7 @@ fn observe(app: &Rc<App>, window: Window) {
             let Some(app) = weak.upgrade() else {
                 return EventResult::Propagate;
             };
-            if window == Window::Settings {
-                crate::pages::observe_inline_editors(&app.settings, event);
-            }
-            if window == Window::Settings && crate::pages::capture(&app.settings, event) {
+            if window == Window::Settings && app.input.observe(&app.settings, event) {
                 return EventResult::PreventDefault;
             }
             if let WindowEvent::ModifiersChanged(next) = event {
