@@ -171,6 +171,7 @@ JSON Schema для редактора. Приложение сохраняет �
         "gamemoded": true, "fullscreen": false, "steam": true, "lutris": true,
         "heroic": true, "umu": true, "gamescope": true, "appCategory": false, "gameBar": false
       },
+      "foregroundOnly": true,
       "processes": [
         { "id": "p1", "name": "factorio", "onlyActiveWindow": true },
         { "id": "p2", "name": "obs", "onlyActiveWindow": false, "exclude": true }
@@ -207,6 +208,7 @@ JSON Schema для редактора. Приложение сохраняет �
 | `layoutOrder` | порядок раскладок библиотеки (id); задаёт номера для `app:activateLayoutN` и порядок списка. Раскладки, которых нет в списке, идут после перечисленных | пусто |
 | `commandsEnabled` | разрешить действия `cmd:`; без этого команды из раскладок не выполняются | `false` |
 | `gameMode.detectors` | источники автоопределения игр; каждая платформа использует только свои | зависит от ОС |
+| `gameMode.foregroundOnly` | игры из `detectors` (лаунчеры, Game Bar) учитываются, только пока их окно активно; Steam в Windows не называет процесс игры и учитывается всегда | `true` |
 | `gameMode.processes[]` | процесс-признак игры: `name` — шаблон процесса, `onlyActiveWindow` (по умолчанию `true`) — учитывать процесс, только пока его окно активно; с `"exclude": true` — процесс, который игровой режим не включает | — |
 | `linux.textMode` | `libei`, `libei-pure`, `keycode`, `clipboard`, `ydotool`, `xdotool` | `libei` |
 | `linux.pasteShortcut` | `shift-insert`, `ctrl-v`, `ctrl-shift-v` | `shift-insert` |

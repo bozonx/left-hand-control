@@ -67,7 +67,7 @@ pub(super) fn availability() -> crate::gamemode::DetectorAvailability {
         (Desktop::Kde, SessionType::Wayland) => kwin::active() || command_available("kdotool"),
         (Desktop::Hyprland, SessionType::Wayland) => command_available("hyprctl"),
         (Desktop::Sway, SessionType::Wayland) => command_available("swaymsg"),
-        (Desktop::Gnome, SessionType::Wayland) => crate::platform::gnome::snapshot(false).is_ok(),
+        (Desktop::Gnome, SessionType::Wayland) => gnome_reachable(),
         _ => return DetectorAvailability::Unsupported,
     };
     if available && LAST_QUERY.load(Ordering::Relaxed) != 2 {
@@ -75,6 +75,24 @@ pub(super) fn availability() -> crate::gamemode::DetectorAvailability {
     } else {
         DetectorAvailability::Unavailable
     }
+}
+
+/// Whether the GNOME Shell extension answers. The answer is reused for a
+/// while: game mode asks on every detection pass.
+fn gnome_reachable() -> bool {
+    const TTL: std::time::Duration = std::time::Duration::from_secs(10);
+    static CACHE: Mutex<Option<(std::time::Instant, bool)>> = Mutex::new(None);
+    if let Ok(cache) = CACHE.lock()
+        && let Some((at, reachable)) = *cache
+        && at.elapsed() < TTL
+    {
+        return reachable;
+    }
+    let reachable = crate::platform::gnome::snapshot(false).is_ok();
+    if let Ok(mut cache) = CACHE.lock() {
+        *cache = Some((std::time::Instant::now(), reachable));
+    }
+    reachable
 }
 
 /// Tool that window detection needs in this session but cannot find.

@@ -17,7 +17,7 @@ use windows::Win32::System::Registry::{
 };
 use windows::core::{PCWSTR, PWSTR, w};
 
-use super::{DetectorAvailability, GameModeDetectors, GameModeSettings, Observation};
+use super::{DetectorAvailability, GameModeDetectors, GameModeSettings, KnownGame, Observation};
 
 /// Pause before a failed catalog read is tried again.
 const CATALOG_RETRY: Duration = Duration::from_secs(3);
@@ -26,14 +26,30 @@ const CATALOG_RETRY: Duration = Duration::from_secs(3);
 const CATALOG_TTL: Duration = Duration::from_secs(60);
 
 pub(super) fn observe(settings: &GameModeSettings) -> Observation {
-    let running = crate::platform::windows::running_process_names();
+    // Steam needs the process list too: after a crash it leaves its game
+    // in the registry.
+    let need_running =
+        super::needs_running_processes(settings) || settings.use_steam || settings.use_game_bar;
+    let running = need_running
+        .then(crate::platform::windows::running_process_names)
+        .flatten();
     let steam = steam_running_app();
     let catalog = catalog();
     let mut known_games = Vec::new();
+    let steam_alive = running.as_ref().is_some_and(|running| {
+        running
+            .iter()
+            .any(|name| name.eq_ignore_ascii_case("steam.exe"))
+    });
     if settings.use_steam
+        && steam_alive
         && let Ok(Some(id)) = steam
     {
-        known_games.push(format!("steam_app_{id}"));
+        known_games.push(KnownGame {
+            name: format!("steam_app_{id}"),
+            // Steam does not say which executable the game runs.
+            processes: None,
+        });
     }
     if settings.use_game_bar
         && let (Some(running), Ok(catalog)) = (&running, &catalog)
@@ -45,18 +61,23 @@ pub(super) fn observe(settings: &GameModeSettings) -> Observation {
                     catalog.contains(&name.to_lowercase())
                         && !super::process::launcher_process(name)
                 })
-                .cloned(),
+                .map(|name| KnownGame {
+                    name: name.clone(),
+                    processes: Some(vec![name.to_lowercase()]),
+                }),
         );
     }
-    let window = crate::active_window::cached_active_window();
     Observation {
         detectors: GameModeDetectors {
             gamemoded: DetectorAvailability::Unsupported,
-            fullscreen: availability(window.and_then(|window| window.fullscreen).is_some()),
-            processes: availability(running.is_some()),
+            // Win32 always answers; no window in front is simply "not fullscreen".
+            fullscreen: DetectorAvailability::Available,
+            processes: availability(!need_running || running.is_some()),
             active_window: crate::active_window::availability(),
             steam: Some(availability(steam.is_ok())),
-            game_bar: Some(availability(catalog.is_ok() && running.is_some())),
+            game_bar: Some(availability(
+                catalog.is_ok() && (!need_running || running.is_some()),
+            )),
             missing_window_tool: None,
         },
         running: running.unwrap_or_default(),

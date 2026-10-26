@@ -3686,3 +3686,9 @@ msgstr "Una ruta de /dev/input/by-id/ no cambia tras reiniciar o volver a conect
 
 msgid "Hold modifiers"
 msgstr "Mantener modificadores"
+
+msgid "Only while the game is in front"
+msgstr "Solo cuando el juego está en primer plano"
+
+msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
+msgstr "Los juegos que informan los lanzadores o el sistema solo cuentan mientras su ventana está activa, así que cambiar a un navegador desactiva el modo juego. Steam en Windows no indica qué programa es el juego, por lo que sus juegos siempre cuentan."

@@ -3380,3 +3380,9 @@ msgstr "/dev/input/by-id/ のパスは再起動や再接続後も変わりませ
 
 msgid "Hold modifiers"
 msgstr "修飾キーを保持"
+
+msgid "Only while the game is in front"
+msgstr "ゲームが前面にあるときのみ"
+
+msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
+msgstr "ランチャーやシステムが報告するゲームは、そのウィンドウがアクティブな間だけ数えられます。そのためブラウザーに切り替えるとゲームモードはオフになります。Windows の Steam はどのプログラムがゲームかを伝えないため、そのゲームは常に数えられます。"

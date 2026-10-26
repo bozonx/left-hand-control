@@ -115,6 +115,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     slint_shell::bind_game_mode(&ui);
     let game_mode_config = paths.load_config()?;
     let game_state = ui.global::<AppState>();
+    // Game mode is an in-development feature: without the setting On does nothing.
+    game_state.invoke_set_game_control(GameModeControl::On);
+    assert!(!game_state.get_game_active());
+    assert!(!lhc_core::runtime_state::game_mode_active());
+    lhc_core::gamemode::set_settings(&document.read().settings().game_mode, true);
     for (control, active) in [(GameModeControl::On, true), (GameModeControl::Off, false)] {
         game_state.invoke_set_game_control(control);
         assert_eq!(game_state.get_game_control(), control);

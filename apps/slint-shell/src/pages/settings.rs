@@ -180,6 +180,8 @@ form! {
         load |s| s.game_mode.use_app_category, store |t, v| t.game_mode.use_app_category = *v;
     use_game_bar: bool = get_use_game_bar / set_use_game_bar,
         load |s| s.game_mode.use_game_bar, store |t, v| t.game_mode.use_game_bar = *v;
+    game_foreground_only: bool = get_game_foreground_only / set_game_foreground_only,
+        load |s| s.game_mode.foreground_only, store |t, v| t.game_mode.foreground_only = *v;
     text_mode: i32 = get_text_mode_index / set_text_mode_index,
         load |s| choice_index(&TextMode::ALL, &s.linux_wayland_text_mode),
         store |t, v| t.linux_wayland_text_mode = choice(&TextMode::ALL, *v);

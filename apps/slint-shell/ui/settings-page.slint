@@ -63,6 +63,7 @@ export global SettingsEditor {
     in-out property <bool> use-gamescope: true;
     in-out property <bool> use-app-category: true;
     in-out property <bool> use-game-bar: true;
+    in-out property <bool> game-foreground-only: true;
     /// Built-in lists, comma-separated: applications whose fullscreen
     /// windows are not games, and launchers that never count as games.
     in property <string> fullscreen-non-games;
@@ -752,6 +753,11 @@ export component SettingsPage inherits PageLayout {
                             availability: AppState.game-umu-availability;
                             checked <=> SettingsEditor.use-umu;
                             toggled => { SettingsEditor.save(); }
+                        }
+                        HorizontalLayout {
+                            spacing: Theme.space-s; alignment: start; vertical-stretch: 0;
+                            CheckBox { text: @tr("Only while the game is in front"); checked <=> SettingsEditor.game-foreground-only; toggled => { SettingsEditor.save(); } }
+                            VerticalLayout { alignment: center; InfoTip { text: @tr("Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."); } }
                         }
                         Divider { vertical-stretch: 0; }
                         // Heuristics: each skips its built-in list.

@@ -177,6 +177,9 @@ fn nullable<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<
 #[serde(rename_all = "camelCase", deny_unknown_fields, default)]
 struct GameModeDoc {
     detectors: DetectorsDoc,
+    /// Games a launcher or the system reports count only while their
+    /// window is active.
+    foreground_only: bool,
     processes: Vec<ProcessDoc>,
 }
 
@@ -370,6 +373,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
             use_gamescope: detectors.gamescope,
             use_app_category: detectors.app_category,
             use_game_bar: detectors.game_bar,
+            foreground_only: settings.game_mode.foreground_only,
             process_matchers: settings
                 .game_mode
                 .processes
@@ -450,6 +454,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
                     app_category: game_mode.use_app_category,
                     game_bar: game_mode.use_game_bar,
                 },
+                foreground_only: game_mode.foreground_only,
                 processes: game_mode
                     .process_matchers
                     .iter()

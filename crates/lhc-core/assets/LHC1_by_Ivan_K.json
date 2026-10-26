@@ -307,16 +307,16 @@
           "action": "sys:screenOff"
         },
         "KeyE": {
-          "name": "Airplane Mode",
-          "action": "AirplaneMode"
-        },
-        "KeyR": {
           "name": "Mute",
           "action": "AudioVolumeMute"
         },
-        "KeyT": {
+        "KeyR": {
           "name": "Mute microphone",
           "action": "MicrophoneMuteToggle"
+        },
+        "KeyT": {
+          "name": "Airplane Mode",
+          "action": "AirplaneMode"
         },
         "KeyA": {
           "name": "Play / pause",

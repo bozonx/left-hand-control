@@ -3299,3 +3299,9 @@ msgstr "/dev/input/by-id/ 中的路径在重启和重新连接后保持不变。
 
 msgid "Hold modifiers"
 msgstr "保持修饰键"
+
+msgid "Only while the game is in front"
+msgstr "仅当游戏位于前台时"
+
+msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
+msgstr "启动器或系统报告的游戏仅在其窗口处于活动状态时计入，因此切换到浏览器会关闭游戏模式。Windows 上的 Steam 不会说明哪个程序是游戏，因此其游戏始终计入。"

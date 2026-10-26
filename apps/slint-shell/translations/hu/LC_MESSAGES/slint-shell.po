@@ -3668,3 +3668,9 @@ msgstr "A /dev/input/by-id/ alatti útvonal újraindítás és újracsatlakoztat
 
 msgid "Hold modifiers"
 msgstr "Módosítók nyomva tartása"
+
+msgid "Only while the game is in front"
+msgstr "Csak amikor a játék az előtérben van"
+
+msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
+msgstr "Az indítók vagy a rendszer által jelentett játékok csak addig számítanak, amíg az ablakuk aktív, így a böngészőre váltás kikapcsolja a játékmódot. A Steam Windowson nem közli, melyik program a játék, ezért a játékai mindig számítanak."

@@ -33,7 +33,7 @@ fn startup_and_watcher_restart_follow_persisted_control() {
         directory.path().join("settings"),
         directory.path().join("data"),
     );
-    paths.save_config(r#"{"schemaVersion":1,"settings":{"gameMode":{"detectors":{"gamemoded":false,"steam":false,"lutris":false,"heroic":false,"umu":false,"gamescope":false,"appCategory":false}}},"state":{"gameModeSwitch":"on"}}"#).unwrap();
+    paths.save_config(r#"{"schemaVersion":1,"settings":{"inDevelopment":true,"gameMode":{"detectors":{"gamemoded":false,"steam":false,"lutris":false,"heroic":false,"umu":false,"gamescope":false,"appCategory":false}}},"state":{"gameModeSwitch":"on"}}"#).unwrap();
     gamemode::start_watcher(Some(paths.clone()));
     let _watcher = Watcher;
     wait_for(|| gamemode::status().control == GameModeControl::On);
@@ -55,6 +55,15 @@ fn startup_and_watcher_restart_follow_persisted_control() {
     gamemode::start_watcher(Some(paths));
     document
         .update_settings(|settings| settings.game_mode.control = GameModeControl::On)
+        .unwrap();
+    assert!(gamemode::status().active);
+    // Game mode is an in-development feature: off without the setting.
+    document
+        .update_settings(|settings| settings.in_development = false)
+        .unwrap();
+    assert!(!gamemode::status().active);
+    document
+        .update_settings(|settings| settings.in_development = true)
         .unwrap();
     assert!(gamemode::status().active);
     #[cfg(target_os = "linux")]

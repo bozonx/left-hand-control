@@ -3603,3 +3603,9 @@ msgstr "Cesta z /dev/input/by-id/ zůstává stejná i po restartu a opětovném
 
 msgid "Hold modifiers"
 msgstr "Držet modifikátory"
+
+msgid "Only while the game is in front"
+msgstr "Jen když je hra v popředí"
+
+msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
+msgstr "Hry hlášené spouštěči nebo systémem se počítají jen tehdy, když je jejich okno aktivní, takže přepnutí do prohlížeče herní režim vypne. Steam ve Windows neuvádí, který program je hra, proto se jeho hry počítají vždy."

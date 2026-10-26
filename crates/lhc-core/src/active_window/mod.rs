@@ -86,13 +86,10 @@ pub(crate) fn availability() -> crate::gamemode::DetectorAvailability {
     {
         linux::availability()
     }
+    // The system API always answers; an empty desktop is no failure.
     #[cfg(any(target_os = "windows", target_os = "macos"))]
     {
-        if cached_active_window().is_some() {
-            crate::gamemode::DetectorAvailability::Available
-        } else {
-            crate::gamemode::DetectorAvailability::Unavailable
-        }
+        crate::gamemode::DetectorAvailability::Available
     }
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {

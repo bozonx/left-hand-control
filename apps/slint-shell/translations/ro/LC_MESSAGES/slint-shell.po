@@ -3668,3 +3668,9 @@ msgstr "O cale din /dev/input/by-id/ rămâne aceeași după reporniri și recon
 
 msgid "Hold modifiers"
 msgstr "Menține modificatorii"
+
+msgid "Only while the game is in front"
+msgstr "Doar când jocul este în prim-plan"
+
+msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
+msgstr "Jocurile raportate de lansatoare sau de sistem contează doar cât timp fereastra lor este activă, așa că trecerea la un browser dezactivează modul joc. Steam pe Windows nu indică ce program este jocul, așa că jocurile sale contează mereu."

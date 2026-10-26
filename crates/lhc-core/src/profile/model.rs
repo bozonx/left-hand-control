@@ -468,6 +468,9 @@ pub struct GameModeSettings {
     pub use_gamescope: bool,
     pub use_app_category: bool,
     pub use_game_bar: bool,
+    /// Games from the sources above count only while their window is
+    /// active; sources that cannot name the game's processes always count.
+    pub foreground_only: bool,
     pub process_matchers: Vec<GameModeProcessMatcher>,
     /// Persisted Auto/On/Off choice, restored at startup.
     pub control: GameModeControl,
@@ -787,6 +790,7 @@ impl Default for AppSettings {
                 use_gamescope: cfg!(target_os = "linux"),
                 use_app_category: cfg!(target_os = "macos"),
                 use_game_bar: false,
+                foreground_only: true,
                 process_matchers: Vec::new(),
                 control: GameModeControl::Auto,
             },

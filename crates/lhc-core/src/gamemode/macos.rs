@@ -15,11 +15,8 @@ pub(super) fn observe(settings: &GameModeSettings, window: Option<&ActiveWindow>
     Observation {
         detectors: GameModeDetectors {
             gamemoded: DetectorAvailability::Unsupported,
-            fullscreen: if window.and_then(|window| window.fullscreen).is_some() {
-                DetectorAvailability::Available
-            } else {
-                DetectorAvailability::Unavailable
-            },
+            // NSWorkspace always answers; no window is simply "not fullscreen".
+            fullscreen: DetectorAvailability::Available,
             processes: if need_running && running.is_none() {
                 DetectorAvailability::Unavailable
             } else {

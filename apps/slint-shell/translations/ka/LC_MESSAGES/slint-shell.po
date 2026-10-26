@@ -3615,3 +3615,9 @@ msgstr "/dev/input/by-id/-დან აღებული გზა არ ი�
 
 msgid "Hold modifiers"
 msgstr "მოდიფიკატორების დაჭერა"
+
+msgid "Only while the game is in front"
+msgstr "მხოლოდ როცა თამაში წინა პლანზეა"
+
+msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
+msgstr "გამშვებების ან სისტემის მიერ მოწოდებული თამაშები ითვლება მხოლოდ მაშინ, როცა მათი ფანჯარა აქტიურია, ამიტომ ბრაუზერზე გადასვლა თამაშის რეჟიმს გამორთავს. Windows-ზე Steam არ ამბობს, რომელი პროგრამაა თამაში, ამიტომ მისი თამაშები ყოველთვის ითვლება."

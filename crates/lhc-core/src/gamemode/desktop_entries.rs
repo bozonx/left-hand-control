@@ -7,15 +7,20 @@ use std::collections::HashMap;
 use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use std::time::SystemTime;
+use std::time::{Duration, Instant, SystemTime};
 
 use crate::runtime_state::ActiveWindow;
 
-#[derive(Default)]
 struct Index {
     stamp: Stamp,
+    /// When `stamp` was last compared with the disk.
+    checked: Instant,
     games: Catalog,
 }
+
+/// How often the desktop files are checked for changes: there may be
+/// thousands, and detection runs every second while a game is on.
+const RECHECK: Duration = Duration::from_secs(5);
 
 #[derive(Default)]
 struct Catalog {
@@ -58,9 +63,22 @@ pub(super) fn game_window(window: &ActiveWindow) -> Option<String> {
         return None;
     }
     let mut index = INDEX.lock().ok()?;
-    if index.as_ref().is_none_or(|index| !current(&index.stamp)) {
+    let now = Instant::now();
+    let stale = match index.as_mut() {
+        None => true,
+        Some(index) if now.duration_since(index.checked) < RECHECK => false,
+        Some(index) => {
+            index.checked = now;
+            !current(&index.stamp)
+        }
+    };
+    if stale {
         let (games, stamp) = build(&application_dirs());
-        *index = Some(Index { games, stamp });
+        *index = Some(Index {
+            games,
+            stamp,
+            checked: now,
+        });
     }
     index.as_ref()?.games.game(window)
 }

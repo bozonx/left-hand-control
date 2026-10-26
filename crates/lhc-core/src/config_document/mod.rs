@@ -91,7 +91,7 @@ impl ConfigDocument {
             },
             None => LayoutPreset::initial(),
         };
-        crate::gamemode::set_settings(&settings.game_mode);
+        crate::gamemode::set_settings(&settings.game_mode, settings.in_development);
         Ok(Self {
             settings,
             layout,
@@ -176,7 +176,7 @@ impl ConfigDocument {
             }
             return Err(ConfigError::Io(error));
         }
-        crate::gamemode::set_settings(&updated.game_mode);
+        crate::gamemode::set_settings(&updated.game_mode, updated.in_development);
         self.settings = updated;
         Ok(())
     }

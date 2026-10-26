@@ -3730,3 +3730,9 @@ msgstr "Un chemin de /dev/input/by-id/ reste identique après un redémarrage ou
 
 msgid "Hold modifiers"
 msgstr "Maintenir les modificateurs"
+
+msgid "Only while the game is in front"
+msgstr "Uniquement quand le jeu est au premier plan"
+
+msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
+msgstr "Les jeux signalés par les lanceurs ou le système ne comptent que lorsque leur fenêtre est active : passer à un navigateur désactive donc le mode jeu. Sous Windows, Steam n’indique pas quel programme est le jeu, ses jeux comptent donc toujours."

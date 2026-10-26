@@ -3666,3 +3666,9 @@ msgstr "Ścieżka z /dev/input/by-id/ nie zmienia się po ponownym uruchomieniu 
 
 msgid "Hold modifiers"
 msgstr "Przytrzymuj modyfikatory"
+
+msgid "Only while the game is in front"
+msgstr "Tylko gdy gra jest na pierwszym planie"
+
+msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
+msgstr "Gry zgłaszane przez launchery lub system liczą się tylko, gdy ich okno jest aktywne, więc przejście do przeglądarki wyłącza tryb gry. Steam w systemie Windows nie podaje, który program jest grą, dlatego jego gry liczą się zawsze."

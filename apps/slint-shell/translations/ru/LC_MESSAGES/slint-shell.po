@@ -2985,3 +2985,9 @@ msgstr "Путь из /dev/input/by-id/ не меняется после пер�
 
 msgid "Hold modifiers"
 msgstr "Удерживать модификаторы"
+
+msgid "Only while the game is in front"
+msgstr "Только когда игра на переднем плане"
+
+msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
+msgstr "Игры, о которых сообщают лаунчеры или система, учитываются только пока их окно активно, поэтому переход в браузер выключает игровой режим. Steam в Windows не сообщает, какая программа является игрой, поэтому его игры учитываются всегда."

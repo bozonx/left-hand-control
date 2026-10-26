@@ -17,7 +17,7 @@ use zbus::proxy::CacheProperties;
 use zbus::{MatchRule, message};
 
 use super::{
-    DetectorAvailability, GameModeDetectors, GameModeSettings, GameSource, Observation,
+    DetectorAvailability, GameModeDetectors, GameModeSettings, GameSource, KnownGame, Observation,
     desktop_entries,
 };
 use crate::runtime_state::ActiveWindow;
@@ -26,6 +26,8 @@ const GAMEMODE_NAME: &str = "com.feralinteractive.GameMode";
 const GAMEMODE_PATH: &str = "/com/feralinteractive/GameMode";
 /// How long the answer to "is GameMode installed" is reused.
 const INSTALLED_TTL: Duration = Duration::from_secs(60);
+/// Pause before a failed GameMode listener is started again.
+const LISTEN_RETRY: Duration = Duration::from_secs(10);
 
 pub(super) fn observe(settings: &GameModeSettings, window: Option<&ActiveWindow>) -> Observation {
     let daemon = if settings.use_gamemoded {
@@ -50,8 +52,11 @@ pub(super) fn observe(settings: &GameModeSettings, window: Option<&ActiveWindow>
         .unwrap_or_default();
     let known_games = games
         .into_iter()
-        .filter(|(source, _)| source.enabled(settings))
-        .map(|(_, name)| name)
+        .filter(|game| game.source.enabled(settings))
+        .map(|game| KnownGame {
+            name: game.name,
+            processes: Some(game.processes),
+        })
         .collect();
     Observation {
         detectors: GameModeDetectors {
@@ -153,7 +158,17 @@ fn daemon_state() -> Option<Daemon> {
     if let Some(old) = listener.take() {
         let _ = old.connection.close();
     }
-    let started = listen()?;
+    // Without a session bus every poll would try again.
+    static FAILED: Mutex<Option<Instant>> = Mutex::new(None);
+    let mut failed = FAILED.lock().ok()?;
+    if failed.is_some_and(|at| at.elapsed() < LISTEN_RETRY) {
+        return None;
+    }
+    let Some(started) = listen() else {
+        *failed = Some(Instant::now());
+        return None;
+    };
+    *failed = None;
     let state = *started.state.lock().ok()?;
     *listener = Some(started);
     state
@@ -256,6 +271,7 @@ fn client_count(connection: &Connection) -> zbus::Result<i32> {
 struct ProcInfo {
     /// Start time in clock ticks: tells a reused pid from the old process.
     start: u64,
+    parent: u32,
     executable: Option<PathBuf>,
     refreshed: Instant,
     names: Vec<String>,
@@ -269,8 +285,20 @@ pub(super) struct Scan {
     /// plus `steam_app_<id>` for running Steam games.
     pub names: Vec<String>,
     /// Games that a launcher runs, sorted.
-    pub games: Vec<(GameSource, String)>,
+    pub games: Vec<ScannedGame>,
 }
+
+/// A game a launcher runs and the names of its processes.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub(super) struct ScannedGame {
+    pub source: GameSource,
+    pub name: String,
+    /// Lowercase names of the launching process and its descendants.
+    pub processes: Vec<String>,
+}
+
+/// How far up the process tree a game's launcher is looked for.
+const MAX_TREE_DEPTH: usize = 64;
 
 /// Processes of the previous scan by pid.
 #[derive(Default)]
@@ -308,41 +336,81 @@ pub(super) fn scan_processes() -> Option<Scan> {
         current.insert(pid, info);
     }
     let mut names = HashSet::new();
-    let mut games = Vec::new();
     for info in current.values() {
         names.extend(info.names.iter().cloned());
         for (source, game) in &info.games {
             if *source == GameSource::Steam {
                 names.insert(game.clone());
             }
-            games.push((*source, game.clone()));
         }
     }
+    let games = group_games(&current);
     *cache = Some(ProcessCache { processes: current });
-    games.sort();
-    games.dedup();
     Some(Scan {
         names: names.into_iter().collect(),
         games,
     })
 }
 
+/// Running games with the names of their processes, sorted.
+fn group_games(current: &HashMap<u32, ProcInfo>) -> Vec<ScannedGame> {
+    let mut games: std::collections::BTreeMap<(GameSource, String), HashSet<String>> =
+        std::collections::BTreeMap::new();
+    for info in current.values() {
+        // The process belongs to its own games and to those of its
+        // ancestors: the game runs below `reaper` or `lutris-wrapper`.
+        let lower: Vec<String> = info.names.iter().map(|name| name.to_lowercase()).collect();
+        let mut owner = Some(info);
+        for _ in 0..MAX_TREE_DEPTH {
+            let Some(process) = owner else {
+                break;
+            };
+            for game in &process.games {
+                games
+                    .entry(game.clone())
+                    .or_default()
+                    .extend(lower.iter().cloned());
+            }
+            owner = (process.parent > 1)
+                .then(|| current.get(&process.parent))
+                .flatten();
+        }
+    }
+    let mut games: Vec<ScannedGame> = games
+        .into_iter()
+        .map(|((source, name), processes)| {
+            let mut processes: Vec<String> = processes.into_iter().collect();
+            processes.sort();
+            ScannedGame {
+                source,
+                name,
+                processes,
+            }
+        })
+        .collect();
+    games.sort();
+    games
+}
+
 fn cached_process(dir: &Path, uid: u32, known: Option<ProcInfo>, now: Instant) -> Option<ProcInfo> {
     if std::fs::metadata(dir).ok()?.uid() != uid {
         return None;
     }
-    let start = start_time(dir)?;
+    let (start, parent) = start_time(dir)?;
     let executable = std::fs::read_link(dir.join("exe")).ok();
-    if let Some(info) = known
+    if let Some(mut info) = known
         && info.start == start
         && info.executable == executable
         && now.duration_since(info.refreshed) < PROCESS_REFRESH
     {
+        // Orphans move to a new parent without exec.
+        info.parent = parent;
         return Some(info);
     }
     let args = super::process::proc_args(dir);
     Some(ProcInfo {
         start,
+        parent,
         executable,
         refreshed: now,
         names: super::process::proc_names(dir, &args),
@@ -357,21 +425,28 @@ fn cached_process(dir: &Path, uid: u32, known: Option<ProcInfo>, now: Instant) -
     })
 }
 
-/// Field 22 of `/proc/<pid>/stat`. The command name before it may hold
-/// spaces and parentheses, so fields are counted after the last `)`.
-fn start_time(dir: &Path) -> Option<u64> {
+/// Start time (field 22) and parent pid (field 4) of `/proc/<pid>/stat`.
+fn start_time(dir: &Path) -> Option<(u64, u32)> {
     let stat = std::fs::read_to_string(dir.join("stat")).ok()?;
-    parse_start_time(&stat)
+    Some((parse_start_time(&stat)?, stat_field(&stat, PARENT)?))
 }
 
+// Field numbers from proc_pid_stat(5); those after the name start with 3 (state).
+const FIRST_AFTER_NAME: usize = 3;
+const PARENT: usize = 4;
+const START_TIME: usize = 22;
+
 fn parse_start_time(stat: &str) -> Option<u64> {
-    // Field numbers from proc_pid_stat(5); those after the name start with 3 (state).
-    const FIRST_AFTER_NAME: usize = 3;
-    const START_TIME: usize = 22;
+    stat_field(stat, START_TIME)
+}
+
+/// A numeric field of `stat`. The command name may hold spaces and
+/// parentheses, so fields are counted after the last `)`.
+fn stat_field<T: std::str::FromStr>(stat: &str, field: usize) -> Option<T> {
     let (_, fields) = stat.rsplit_once(')')?;
     fields
         .split_whitespace()
-        .nth(START_TIME - FIRST_AFTER_NAME)?
+        .nth(field - FIRST_AFTER_NAME)?
         .parse()
         .ok()
 }
@@ -420,10 +495,43 @@ mod tests {
     }
 
     #[test]
+    fn games_own_the_processes_below_their_launcher() {
+        let info = |parent, names: &[&str], games: Vec<(GameSource, String)>| ProcInfo {
+            start: 0,
+            parent,
+            executable: None,
+            refreshed: Instant::now(),
+            names: names.iter().map(|name| name.to_string()).collect(),
+            games,
+        };
+        let current = HashMap::from([
+            (
+                10,
+                info(
+                    1,
+                    &["reaper"],
+                    vec![(GameSource::Steam, "steam_app_7".into())],
+                ),
+            ),
+            (11, info(10, &["wine64-preload", "Game.exe"], Vec::new())),
+            (12, info(1, &["firefox"], Vec::new())),
+        ]);
+        assert_eq!(
+            group_games(&current),
+            vec![ScannedGame {
+                source: GameSource::Steam,
+                name: "steam_app_7".into(),
+                processes: vec!["game.exe".into(), "reaper".into(), "wine64-preload".into()],
+            }]
+        );
+    }
+
+    #[test]
     fn start_time_skips_odd_command_names() {
         let stat =
             "4242 (Web (Content) x) S 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 987654 20";
         assert_eq!(parse_start_time(stat), Some(987654));
+        assert_eq!(stat_field::<u32>(stat, PARENT), Some(1));
         assert_eq!(parse_start_time("4242 (short) S 1"), None);
         let own = std::fs::read_to_string("/proc/self/stat").unwrap();
         let expected = own.split_whitespace().nth(21).unwrap().parse().ok();
