@@ -55,6 +55,27 @@ pub fn is_enabled(paths: &StoragePaths) -> Result<bool, String> {
     }
 }
 
+/// Follow a change of the setting from `was` to `now`. Returns whether the
+/// registration changed, so the caller can undo it if saving fails.
+pub fn apply_setting(paths: &StoragePaths, was: bool, now: bool) -> Result<bool, String> {
+    let changed = SUPPORTED && was != now;
+    if changed {
+        set_enabled(paths, now)?;
+    }
+    Ok(changed)
+}
+
+/// The registration the OS currently has. An active one is refreshed so it
+/// points to this executable after a move or upgrade; a missing or disabled
+/// one is left untouched.
+pub fn refresh(paths: &StoragePaths) -> Result<bool, String> {
+    let registered = is_enabled(paths)?;
+    if registered {
+        set_enabled(paths, true)?;
+    }
+    Ok(registered)
+}
+
 #[cfg(any(target_os = "linux", target_os = "windows"))]
 fn entry_path(paths: &StoragePaths) -> Result<std::path::PathBuf, String> {
     let directory = paths

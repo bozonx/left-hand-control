@@ -3,21 +3,6 @@
 use super::*;
 
 impl Engine {
-    pub(super) fn push_layer(&mut self, id: String) {
-        if self.active_layers.is_empty() {
-            self.layer_hold_id = super::super::layer_state::next_hold_id();
-            self.layer_used = false;
-        }
-        self.active_layers.push(id);
-    }
-
-    pub(super) fn pop_layer(&mut self, id: &str) {
-        // Remove the topmost occurrence.
-        if let Some(pos) = self.active_layers.iter().rposition(|l| l == id) {
-            self.active_layers.remove(pos);
-        }
-    }
-
     /// Promote every rule currently in WaitingDecision to HoldActive
     /// (hold gets committed). Called from `on_press` for any new key to
     /// implement "interrupt on other key press".
@@ -159,8 +144,9 @@ impl Engine {
 
     pub(super) fn commit_hold_with(&mut self, rule: &RuleEntry, key: KeyCode, out: &mut Vec<Out>) {
         if let Some(id) = &rule.layer_id {
-            self.push_layer(id.clone());
-            self.layer_triggers
+            self.layers.push(id.clone());
+            self.layers
+                .triggers
                 .entry(id.clone())
                 .or_default()
                 .push(LayerTrigger {
@@ -171,7 +157,9 @@ impl Engine {
         match &rule.hold {
             HoldMode::Native => {
                 out.push(Out::KeyRaw { key, down: true });
-                self.emitted.insert(key, Keystroke { mods: vec![], key });
+                self.virt
+                    .emitted
+                    .insert(key, Keystroke { mods: vec![], key });
             }
             HoldMode::Swallow => {
                 // Nothing — physical key is eaten.
@@ -186,16 +174,16 @@ impl Engine {
     pub(super) fn release_hold_with(&mut self, rule: &RuleEntry, key: KeyCode, out: &mut Vec<Out>) {
         if let Some(id) = &rule.layer_id {
             let mut held_mods = Vec::new();
-            if let Some(triggers) = self.layer_triggers.get_mut(id) {
+            if let Some(triggers) = self.layers.triggers.get_mut(id) {
                 if let Some(pos) = triggers.iter().rposition(|trigger| trigger.key == key) {
                     held_mods = triggers.remove(pos).held_mods;
                 }
                 if triggers.is_empty() {
-                    self.layer_triggers.remove(id);
+                    self.layers.triggers.remove(id);
                 }
             }
-            self.pop_layer(id);
-            let mods = self.take_releasable_mods(&held_mods);
+            self.layers.pop(id);
+            let mods = self.virt.take_releasable_mods(&held_mods);
             if !mods.is_empty() {
                 out.push(Out::ReleaseMods(mods));
             }

@@ -1,5 +1,6 @@
 use super::Engine;
 use super::model::{ActionDef, HoldMode, MacroDef, RuleEntry, TapMode};
+use super::state::{ChordState, CompiledLayout, LayerStack, MacroRunner, VirtualKeys};
 use crate::mapper::action::{MacroStepItem, parse_action, pause_duration};
 use crate::mapper::builtin_macros::BUILTIN_MACROS;
 use crate::mapper::config::{ActionSpec, AppConfig};
@@ -7,7 +8,7 @@ use crate::mapper::key_code::KeyCode;
 use crate::mapper::keys::code_to_key;
 use crate::mapper::system::{self, SysCommand};
 use crate::profile::actions::{Action, MAX_MACRO_DEPTH, MAX_MACRO_STEPS};
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 impl Engine {
@@ -414,40 +415,30 @@ impl Engine {
         }
 
         Self {
-            rules,
-            chord_rules,
+            layout: CompiledLayout {
+                rules,
+                chord_rules,
+                macros,
+                commands,
+                layer_maps,
+                layer_hold_mods,
+                default_hold,
+                default_mod_delay,
+                combo_term: Duration::from_millis(cfg.settings.combo_timeout_ms),
+            },
             physical_down: HashSet::new(),
             press_at: HashMap::new(),
-            active_chords: HashMap::new(),
-            chord_suppressed: HashMap::new(),
-            chord_consumed: HashSet::new(),
             long_holds: HashMap::new(),
-            macros,
-            commands,
-            layer_maps,
-            layer_hold_mods,
-            default_hold,
-            default_mod_delay,
             decision_buffer: Vec::new(),
-            combo_buffer: Vec::new(),
-            combo_term: Duration::from_millis(cfg.settings.combo_timeout_ms),
-            active_layers: Vec::new(),
             pending: HashMap::new(),
-            emitted: HashMap::new(),
-            oneshot_consumed: HashSet::new(),
-            mod_refs: HashMap::new(),
-            layer_triggers: HashMap::new(),
-            active_macro: None,
-            macro_queue: VecDeque::new(),
+            chords: ChordState::default(),
+            layers: LayerStack::default(),
+            virt: VirtualKeys::default(),
             // Hand-edited configs may hold 0 or a value that overflows `Instant`.
-            macro_timeout: Duration::from_millis(cfg.settings.macro_timeout_ms.clamp(
+            runner: MacroRunner::new(Duration::from_millis(cfg.settings.macro_timeout_ms.clamp(
                 crate::profile::timing::MACRO_TIMEOUT.min,
                 crate::profile::timing::MACRO_TIMEOUT.max,
-            )),
-            text_pending: false,
-            layer_presses: 0,
-            layer_hold_id: 0,
-            layer_used: false,
+            ))),
         }
     }
 }

@@ -8,6 +8,7 @@ pub mod auto_switch;
 pub mod bundled;
 pub mod diagnostics;
 pub mod ids;
+pub mod layer_edit;
 pub mod layout_file;
 pub mod macros;
 pub mod model;

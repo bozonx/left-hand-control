@@ -4,7 +4,7 @@
 
 ## Проблема
 
-На KDE Plasma 6 Wayland текст вводится через libei (`crates/lhc-core/src/mapper/portal.rs`).
+На KDE Plasma 6 Wayland текст вводится через libei (`crates/lhc-core/src/mapper/portal/`).
 libei, как и uinput, ydotool и портал RemoteDesktop, отправляет **коды клавиш**, а не символы.
 Символ из кода получает KWin по текущей XKB-раскладке. Если символа (`→`, `é`, `😀`) в
 раскладке нет, его не набрать клавишами, и режим `libei` вставляет весь текст через буфер
@@ -71,7 +71,7 @@ Options=terminate:ctrl_alt_bksp,lhc:extra
 ## Важно: имена keysym
 
 Символ нужно записывать **тем же keysym, который ищет наш код**. `text_keysym()` в
-`portal.rs` вызывает `xkb_utf32_to_keysym`, а она для многих символов возвращает старый
+`portal/keymap.rs` вызывает `xkb_utf32_to_keysym`, а она для многих символов возвращает старый
 keysym, а не `U+XXXX`:
 
 | Символ | `xkb_utf32_to_keysym` | Неверная запись |
@@ -131,7 +131,7 @@ Wayland-приложениях: X11 (XWayland) их не поддерживае�
 
 ## Что поменять в коде
 
-`build_keymap_table()` в `portal.rs` сейчас собирает раскладку только из имени текущей
+`build_keymap_table()` в `portal/keymap.rs` сейчас собирает раскладку только из имени текущей
 раскладки и варианта, без опций (`options: null`) и только для группы 0. Добавленные
 символы она не увидит, и текст по-прежнему уйдёт в буфер. Нужно:
 

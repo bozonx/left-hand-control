@@ -7,15 +7,13 @@
 //! Both formats are described in [`crate::profile::settings`] and
 //! [`crate::profile::layout_file`].
 
+mod activation;
+
 use crate::profile::actions::{self, Action, ActionIssue};
-use crate::profile::auto_switch::{self, AutoSwitchContext};
-use crate::profile::diagnostics::{self, RuleIssue};
-use crate::profile::model::{
-    AppConfig, AppSettings, Appearance, Layer, LayerRule, LayoutMode, LayoutPreset,
-    LocalePreference,
-};
+use crate::profile::diagnostics::RuleIssue;
+use crate::profile::model::{AppConfig, AppSettings, Appearance, LayoutPreset, LocalePreference};
 use crate::profile::names::{self, NameIssue, NameKind};
-use crate::profile::{app_match, key_catalog, layout_file, settings};
+use crate::profile::{key_catalog, layout_file, settings};
 use crate::storage::StoragePaths;
 use std::fmt;
 
@@ -60,27 +58,8 @@ impl fmt::Display for ConfigError {
 
 impl std::error::Error for ConfigError {}
 
-/// What a key does inside a layer keymap.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum KeyAssignment {
-    /// No entry: the base layout decides.
-    Transparent,
-    /// `null`: the key does nothing.
-    Swallow,
-    Action(String),
-}
-
-/// Mapper input computed from the document for the current system state.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RuntimeConfig {
-    /// JSON for [`crate::mapper::runtime::start`] / `update_config`.
-    pub json: String,
-    /// Layout the rules come from; `None` means native passthrough.
-    pub layout_id: Option<String>,
-    /// Whether the rules or the auto-mode choice look at window titles,
-    /// see [`crate::active_window::set_titles_needed`].
-    pub uses_titles: bool,
-}
+pub use self::activation::RuntimeConfig;
+pub use crate::profile::layer_edit::KeyAssignment;
 
 pub struct ConfigDocument {
     paths: StoragePaths,
@@ -182,12 +161,12 @@ impl ConfigDocument {
         edit(&mut updated);
         settings::validate(&updated).map_err(ConfigError::Invalid)?;
         let text = settings::serialize(&updated);
-        let autostart_changed = crate::autostart::SUPPORTED
-            && updated.launch_on_startup != self.settings.launch_on_startup;
-        if autostart_changed {
-            crate::autostart::set_enabled(&self.paths, updated.launch_on_startup)
-                .map_err(ConfigError::Io)?;
-        }
+        let autostart_changed = crate::autostart::apply_setting(
+            &self.paths,
+            self.settings.launch_on_startup,
+            updated.launch_on_startup,
+        )
+        .map_err(ConfigError::Io)?;
         if let Err(error) = self.paths.save_config(&text) {
             if autostart_changed
                 && let Err(rollback) =
@@ -204,17 +183,13 @@ impl ConfigDocument {
 
     /// Align launch on startup with the system at application start: the
     /// user may have removed or disabled it in the desktop or Windows
-    /// settings. An active registration is refreshed so it points to this
-    /// executable after a move or upgrade; a missing or disabled one is left
-    /// untouched. Returns whether the setting changed.
+    /// settings (see [`crate::autostart::refresh`]). Returns whether the
+    /// setting changed.
     pub fn sync_autostart(&mut self) -> Result<bool, ConfigError> {
         if !crate::autostart::SUPPORTED {
             return Ok(false);
         }
-        let registered = crate::autostart::is_enabled(&self.paths).map_err(ConfigError::Io)?;
-        if registered {
-            crate::autostart::set_enabled(&self.paths, true).map_err(ConfigError::Io)?;
-        }
+        let registered = crate::autostart::refresh(&self.paths).map_err(ConfigError::Io)?;
         if registered == self.settings.launch_on_startup {
             return Ok(false);
         }
@@ -235,51 +210,12 @@ impl ConfigDocument {
         if let Some(issue) = actions::validate(&Action::parse(Some(action)), &self.config()) {
             return Err(ConfigError::InvalidAction(issue));
         }
-        let matching: Vec<_> = self
-            .layout
-            .rules
-            .iter()
-            .filter(|rule| rule.key == key && rule.is_enabled())
-            .collect();
-        if matching.iter().any(|rule| {
-            !rule.layer_id.is_empty()
-                || rule.condition_game_mode.is_some()
-                || rule.condition_layouts.is_some()
-                || rule.condition_apps_whitelist.is_some()
-                || rule.condition_apps_blacklist.is_some()
-                || rule
-                    .hold_action
-                    .as_deref()
-                    .is_some_and(|value| !value.is_empty())
-                || !rule.long_hold_action.is_empty()
-                || !rule.double_tap_action.is_empty()
-        }) || matching.len() > 1
-        {
+        if !self.layout.base_tap_editable(key) {
             return Err(ConfigError::Invalid(format!(
                 "key {key} has a rule that requires the full editor"
             )));
         }
-        self.update_layout(|layout| {
-            if let Some(rule) = layout
-                .rules
-                .iter_mut()
-                .find(|rule| rule.key == key && rule.is_enabled())
-            {
-                rule.tap_action = Some(action.into());
-            } else {
-                let mut index = 1;
-                let id = loop {
-                    let id = format!("slint-key-{index}");
-                    if layout.rules.iter().all(|rule| rule.id != id) {
-                        break id;
-                    }
-                    index += 1;
-                };
-                let mut rule = LayerRule::new(id, key);
-                rule.tap_action = Some(action.into());
-                layout.rules.push(rule);
-            }
-        })
+        self.update_layout(|layout| layout.set_base_tap(key, action))
     }
 
     /// Trimmed `name` for a new layer or for renaming layer `except`.
@@ -291,14 +227,7 @@ impl ConfigDocument {
     pub fn create_layer(&mut self, name: &str, description: &str) -> Result<String, ConfigError> {
         let name = self.layer_name(name, None)?;
         let id = crate::profile::ids::generate("layer-");
-        self.update_layout(|layout| {
-            layout.layers.push(Layer {
-                id: id.clone(),
-                name,
-                description: optional_text(description),
-            });
-            layout.layer_keymap_mut(&id);
-        })?;
+        self.update_layout(|layout| layout.add_layer(&id, name, optional_text(description)))?;
         Ok(id)
     }
 
@@ -310,12 +239,7 @@ impl ConfigDocument {
     ) -> Result<(), ConfigError> {
         let name = self.layer_name(name, Some(id))?;
         self.require_layer(id)?;
-        self.update_layout(|layout| {
-            if let Some(layer) = layout.layers.iter_mut().find(|layer| layer.id == id) {
-                layer.name = name;
-                layer.description = optional_text(description);
-            }
-        })
+        self.update_layout(|layout| layout.rename_layer(id, name, optional_text(description)))
     }
 
     pub fn clone_layer(
@@ -325,49 +249,22 @@ impl ConfigDocument {
         description: &str,
     ) -> Result<String, ConfigError> {
         let name = self.layer_name(name, None)?;
-        if !self.layout.layers.iter().any(|layer| layer.id == source_id) {
-            return Err(ConfigError::Invalid("unknown layer".into()));
-        }
+        self.require_layer(source_id)?;
         let id = crate::profile::ids::generate("layer-");
         self.update_layout(|layout| {
-            let keymap = layout
-                .layer_keymaps
-                .get(source_id)
-                .cloned()
-                .unwrap_or_default();
-            layout.layer_keymaps.insert(id.clone(), keymap);
-            layout.layers.push(Layer {
-                id: id.clone(),
-                name,
-                description: optional_text(description),
-            });
+            layout.clone_layer(source_id, &id, name, optional_text(description))
         })?;
         Ok(id)
     }
 
     pub fn delete_layer(&mut self, id: &str) -> Result<(), ConfigError> {
-        if !self.layout.layers.iter().any(|layer| layer.id == id) {
-            return Err(ConfigError::Invalid("unknown layer".into()));
-        }
-        self.update_layout(|layout| {
-            layout.layers.retain(|layer| layer.id != id);
-            layout.layer_keymaps.remove(id);
-            for rule in &mut layout.rules {
-                if rule.layer_id == id {
-                    rule.layer_id.clear();
-                }
-            }
-        })
+        self.require_layer(id)?;
+        self.update_layout(|layout| layout.remove_layer(id))
     }
 
     pub fn clear_layer_keys(&mut self, id: &str) -> Result<(), ConfigError> {
         self.require_layer(id)?;
-        self.update_layout(|layout| {
-            let map = layout.layer_keymap_mut(id);
-            map.keys.clear();
-            map.extra_key_order.clear();
-            map.hold_modifiers.clear();
-        })
+        self.update_layout(|layout| layout.clear_layer_keys(id))
     }
 
     /// Save the displayed additional-key order after a drag operation.
@@ -388,7 +285,7 @@ impl ConfigDocument {
     }
 
     fn require_layer(&self, id: &str) -> Result<(), ConfigError> {
-        if self.layout.layers.iter().any(|layer| layer.id == id) {
+        if self.layout.has_layer(id) {
             Ok(())
         } else {
             Err(ConfigError::Invalid("unknown layer".into()))
@@ -397,16 +294,7 @@ impl ConfigDocument {
 
     /// Entry of `key` in the keymap of `layer_id`.
     pub fn layer_key(&self, layer_id: &str, key: &str) -> KeyAssignment {
-        match self
-            .layout
-            .layer_keymaps
-            .get(layer_id)
-            .and_then(|keymap| keymap.keys.get(key))
-        {
-            None => KeyAssignment::Transparent,
-            Some(None) => KeyAssignment::Swallow,
-            Some(Some(action)) => KeyAssignment::Action(action.clone()),
-        }
+        self.layout.layer_key(layer_id, key)
     }
 
     pub fn set_layer_key(
@@ -415,30 +303,13 @@ impl ConfigDocument {
         key: &str,
         assignment: KeyAssignment,
     ) -> Result<(), ConfigError> {
-        if !self.layout.layers.iter().any(|layer| layer.id == layer_id) {
+        if !self.layout.has_layer(layer_id) {
             return Err(ConfigError::Invalid(format!(
                 "unknown layer \"{layer_id}\""
             )));
         }
         self.check_assignment(&assignment)?;
-        self.update_layout(|layout| {
-            let map = layout.layer_keymap_mut(layer_id);
-            let keys = &mut map.keys;
-            match assignment {
-                KeyAssignment::Transparent => {
-                    keys.remove(key);
-                    map.extra_key_order.retain(|code| code != key);
-                    map.hold_modifiers.remove(key);
-                }
-                KeyAssignment::Swallow => {
-                    keys.insert(key.into(), None);
-                    map.hold_modifiers.remove(key);
-                }
-                KeyAssignment::Action(action) => {
-                    keys.insert(key.into(), Some(action));
-                }
-            }
-        })
+        self.update_layout(|layout| layout.set_layer_key(layer_id, key, assignment))
     }
 
     /// Set an additional key of `layer_id`, replacing the row of `previous`
@@ -454,53 +325,17 @@ impl ConfigDocument {
         if !key_catalog::valid_key(key) {
             return Err(ConfigError::Invalid("invalid additional key".into()));
         }
-        if previous != Some(key)
-            && self
-                .layout
-                .layer_keymaps
-                .get(layer_id)
-                .is_some_and(|map| map.keys.contains_key(key))
-        {
+        if previous != Some(key) && self.layout.layer_has_key(layer_id, key) {
             return Err(ConfigError::Invalid("key already assigned".into()));
         }
         self.check_assignment(&assignment)?;
-        self.update_layout(|layout| {
-            let map = layout.layer_keymap_mut(layer_id);
-            if let Some(previous) = previous {
-                map.keys.remove(previous);
-                for code in &mut map.extra_key_order {
-                    if code == previous {
-                        *code = key.to_owned();
-                    }
-                }
-                if map.hold_modifiers.remove(previous) {
-                    map.hold_modifiers.insert(key.to_owned());
-                }
-            }
-            match assignment {
-                KeyAssignment::Transparent => {
-                    map.keys.remove(key);
-                    map.extra_key_order.retain(|code| code != key);
-                    map.hold_modifiers.remove(key);
-                }
-                KeyAssignment::Swallow => {
-                    map.keys.insert(key.into(), None);
-                    map.hold_modifiers.remove(key);
-                }
-                KeyAssignment::Action(action) => {
-                    map.keys.insert(key.into(), Some(action));
-                }
-            }
-        })
+        self.update_layout(|layout| layout.set_extra_key(layer_id, previous, key, assignment))
     }
 
     /// Whether `key` of `layer_id` keeps its modifiers pressed until the
     /// layer is released.
     pub fn layer_key_holds_modifiers(&self, layer_id: &str, key: &str) -> bool {
-        self.layout
-            .layer_keymaps
-            .get(layer_id)
-            .is_some_and(|keymap| keymap.hold_modifiers.contains(key))
+        self.layout.layer_key_holds_modifiers(layer_id, key)
     }
 
     /// Keep the modifiers of `key`'s keystroke pressed until the layer is
@@ -520,14 +355,7 @@ impl ConfigDocument {
         if self.layer_key_holds_modifiers(layer_id, key) == hold {
             return Ok(());
         }
-        self.update_layout(|layout| {
-            let held = &mut layout.layer_keymap_mut(layer_id).hold_modifiers;
-            if hold {
-                held.insert(key.to_owned());
-            } else {
-                held.remove(key);
-            }
-        })
+        self.update_layout(|layout| layout.set_layer_key_holds_modifiers(layer_id, key, hold))
     }
 
     fn check_assignment(&self, assignment: &KeyAssignment) -> Result<(), ConfigError> {
@@ -549,25 +377,7 @@ impl ConfigDocument {
         if a == b {
             return Ok(());
         }
-        self.update_layout(|layout| {
-            let map = layout.layer_keymap_mut(layer_id);
-            let first = map.keys.remove(a);
-            let second = map.keys.remove(b);
-            if let Some(value) = first {
-                map.keys.insert(b.into(), value);
-            }
-            if let Some(value) = second {
-                map.keys.insert(a.into(), value);
-            }
-            let held_a = map.hold_modifiers.remove(a);
-            let held_b = map.hold_modifiers.remove(b);
-            if held_a {
-                map.hold_modifiers.insert(b.into());
-            }
-            if held_b {
-                map.hold_modifiers.insert(a.into());
-            }
-        })
+        self.update_layout(|layout| layout.swap_layer_keys(layer_id, a, b))
     }
 
     /// Apply `edit` to a copy of the current layout.
@@ -601,91 +411,6 @@ impl ConfigDocument {
         let text = self.paths.load_user_layout(name).map_err(ConfigError::Io)?;
         parse_layout(&text)
     }
-
-    /// Layout whose rules should run now: the manual choice, or in auto
-    /// mode the first matching rule's layout or the default.
-    pub fn active_layout_id(&self, ctx: &AutoSwitchContext) -> Result<Option<String>, ConfigError> {
-        Ok(match self.settings.layout_mode {
-            LayoutMode::Manual => self.settings.manual_active_layout_id.clone(),
-            LayoutMode::Auto => self.auto_choice(ctx)?.layout_id,
-        })
-    }
-
-    /// Which automatic rule applies under `ctx`, whatever the current mode.
-    pub fn auto_choice(
-        &self,
-        ctx: &AutoSwitchContext,
-    ) -> Result<auto_switch::AutoChoice, ConfigError> {
-        Ok(auto_switch::choose(
-            &self.layout_ids()?,
-            &self.settings,
-            ctx,
-        ))
-    }
-
-    /// Mapper configuration for the current system state: picks the active layout,
-    /// refuses blocking rule problems and drops disabled or draft rules.
-    pub fn runtime_config(&self, ctx: &AutoSwitchContext) -> Result<RuntimeConfig, ConfigError> {
-        let layout_id = self.active_layout_id(ctx)?;
-        // In auto mode "no match" means passthrough, never the current layout.
-        let mut config = AppConfig::from_parts(
-            self.settings.clone(),
-            self.layout_for_activation(layout_id.as_deref())?,
-            layout_id.as_deref(),
-        );
-        let blocking: Vec<RuleIssue> = diagnostics::analyze(&config)
-            .into_iter()
-            .filter(|issue| issue.code.is_error())
-            .collect();
-        if !blocking.is_empty() {
-            return Err(ConfigError::Rules(blocking));
-        }
-        diagnostics::runtime_rules(&mut config);
-        let rule_patterns = config.rules.iter().flat_map(|rule| {
-            [
-                &rule.condition_apps_whitelist,
-                &rule.condition_apps_blacklist,
-            ]
-            .into_iter()
-            .flatten()
-            .flatten()
-        });
-        let auto_patterns = self
-            .settings
-            .auto_rules
-            .iter()
-            .filter(|_| self.settings.layout_mode == LayoutMode::Auto)
-            .flat_map(|rule| {
-                rule.conditions
-                    .apps
-                    .iter()
-                    .chain(&rule.conditions.excluded_apps)
-            });
-        let uses_titles = app_match::uses_title(rule_patterns.chain(auto_patterns));
-        let json = config.to_json();
-        validate_for_mapper(&json)?;
-        Ok(RuntimeConfig {
-            json,
-            layout_id,
-            uses_titles,
-        })
-    }
-
-    pub fn active_layout(&self, ctx: &AutoSwitchContext) -> Result<LayoutPreset, ConfigError> {
-        self.layout_for_activation(self.active_layout_id(ctx)?.as_deref())
-    }
-
-    pub fn layout_for_activation(&self, id: Option<&str>) -> Result<LayoutPreset, ConfigError> {
-        if id == self.settings.current_layout_id.as_deref()
-            && (id.is_some() || self.settings.layout_mode == LayoutMode::Manual)
-        {
-            return Ok(self.layout.clone());
-        }
-        match id {
-            Some(id) => self.load_layout(id),
-            None => Ok(LayoutPreset::default()),
-        }
-    }
 }
 
 fn load_current_layout(paths: &StoragePaths, id: &str) -> Result<LayoutPreset, ConfigError> {
@@ -704,20 +429,12 @@ fn parse_layout(text: &str) -> Result<LayoutPreset, ConfigError> {
         .unwrap_or_else(LayoutPreset::initial))
 }
 
-/// Run the mapper's own validation, which also checks key names.
-fn validate_for_mapper(json: &str) -> Result<(), ConfigError> {
-    let config: crate::mapper::config::AppConfig =
-        serde_json::from_str(json).map_err(|error| ConfigError::Invalid(error.to_string()))?;
-    #[cfg(any(target_os = "linux", target_os = "windows"))]
-    crate::mapper::validation::validate_config(&config).map_err(ConfigError::Invalid)?;
-    let _ = config;
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::profile::auto_switch::AutoSwitchContext;
     use crate::profile::diagnostics::RuleIssueCode;
+    use crate::profile::model::LayoutMode;
     use serde_json::{Value, json};
     use std::fs;
 

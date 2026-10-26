@@ -12,32 +12,34 @@ impl Engine {
     ) -> bool {
         if !down {
             let owner = self
-                .active_chords
+                .chords
+                .active
                 .iter()
                 .find(|(_, keys)| keys.contains(&key))
                 .map(|(owner, _)| *owner);
             if let Some(owner) = owner {
-                self.active_chords.remove(&owner);
+                self.chords.active.remove(&owner);
                 self.on_release(owner, now, out);
-                for (member, stroke) in self.chord_suppressed.remove(&owner).unwrap_or_default() {
+                for (member, stroke) in self.chords.suppressed.remove(&owner).unwrap_or_default() {
                     if self.physical_down.contains(&member) {
                         self.emit_stroke_press(member, stroke, out);
                     }
                 }
                 self.release_emitted(key, out);
-                self.chord_consumed.remove(&key);
+                self.chords.consumed.remove(&key);
                 return true;
             }
-            if self.chord_consumed.remove(&key) {
+            if self.chords.consumed.remove(&key) {
                 self.release_emitted(key, out);
                 return true;
             }
             return false;
         }
-        if self.chord_consumed.contains(&key) {
+        if self.chords.consumed.contains(&key) {
             return true;
         }
         let matching = self
+            .layout
             .chord_rules
             .iter()
             .rev()
@@ -59,7 +61,7 @@ impl Engine {
         // Buffered member presses never reached the app — drop them. Anything
         // else in the buffer (releases of unrelated keys) happened before
         // this press, so it replays first.
-        for ev in std::mem::take(&mut self.combo_buffer) {
+        for ev in std::mem::take(&mut self.chords.buffer) {
             if !keys.contains(&ev.key) {
                 self.handle_event(ev.key, ev.down, ev.at, out);
             }
@@ -79,15 +81,15 @@ impl Engine {
             {
                 self.release_hold_with(&pending.rule, *member, out);
             }
-            if let Some(stroke) = self.emitted.get(member).cloned() {
+            if let Some(stroke) = self.virt.emitted.get(member).cloned() {
                 suppressed.push((*member, stroke));
             }
             self.release_emitted(*member, out);
-            self.oneshot_consumed.remove(member);
-            self.chord_consumed.insert(*member);
+            self.virt.oneshot.remove(member);
+            self.chords.consumed.insert(*member);
         }
-        self.active_chords.insert(owner, keys);
-        self.chord_suppressed.insert(owner, suppressed);
+        self.chords.active.insert(owner, keys);
+        self.chords.suppressed.insert(owner, suppressed);
         self.start_rule(owner, rule, now, out);
         self.drain_decision_buffer(out);
         true
@@ -97,10 +99,10 @@ impl Engine {
     /// active), never reuse a key owned by an active chord and obey the
     /// rule's conditions.
     pub(super) fn chord_eligible(&self, keys: &[KeyCode], rule: &RuleEntry) -> bool {
-        self.active_layers.is_empty()
+        self.layers.active.is_empty()
             && !keys
                 .iter()
-                .any(|member| self.chord_consumed.contains(member))
+                .any(|member| self.chords.consumed.contains(member))
             // An unrelated deferred press must reach the old context first.
             // Claiming a chord now would overtake it or replay it in the new
             // layer. Keep typing buffered rather than force a tap/hold choice.
@@ -118,8 +120,9 @@ impl Engine {
     /// later restores them.
     pub(super) fn chord_member_leaked(&self, member: KeyCode) -> bool {
         !is_modifier_key(member)
-            && (self.oneshot_consumed.contains(&member)
+            && (self.virt.oneshot.contains(&member)
                 || self
+                    .virt
                     .emitted
                     .get(&member)
                     .is_some_and(|ks| !is_modifier_key(ks.key)))
@@ -136,11 +139,11 @@ impl Engine {
             && self
                 .press_at
                 .get(&member)
-                .is_some_and(|at| now.saturating_duration_since(*at) > self.combo_term)
+                .is_some_and(|at| now.saturating_duration_since(*at) > self.layout.combo_term)
     }
 
     pub(super) fn combo_deadline(&self) -> Option<Instant> {
-        self.combo_buffer.first().map(|ev| ev.at + self.combo_term)
+        self.chords.deadline(self.layout.combo_term)
     }
 
     /// A non-modifier key that belongs to an eligible chord starts a combo
@@ -149,6 +152,7 @@ impl Engine {
     pub(super) fn starts_combo(&self, key: KeyCode) -> bool {
         !is_modifier_key(key)
             && self
+                .layout
                 .chord_rules
                 .iter()
                 .any(|(keys, rule)| keys.contains(&key) && self.chord_eligible(keys, rule))
@@ -157,10 +161,11 @@ impl Engine {
     /// True when `key` together with every buffered press is still part of
     /// some eligible chord.
     pub(super) fn extends_combo(&self, key: KeyCode) -> bool {
-        self.chord_rules.iter().any(|(keys, rule)| {
+        self.layout.chord_rules.iter().any(|(keys, rule)| {
             keys.contains(&key)
                 && self
-                    .combo_buffer
+                    .chords
+                    .buffer
                     .iter()
                     .filter(|ev| ev.down)
                     .all(|ev| keys.contains(&ev.key))
@@ -181,24 +186,30 @@ impl Engine {
         now: Instant,
         out: &mut Vec<Out>,
     ) -> bool {
-        if !self.combo_buffer.is_empty() {
+        if !self.chords.buffer.is_empty() {
             if down && self.extends_combo(key) {
-                self.combo_buffer.push(BufferedEvent { key, down, at: now });
+                self.chords
+                    .buffer
+                    .push(BufferedEvent { key, down, at: now });
                 return true;
             }
-            if down || self.combo_buffer.iter().any(|ev| ev.key == key) {
+            if down || self.chords.buffer.iter().any(|ev| ev.key == key) {
                 // A key outside the chord, or a buffered member released
                 // before the chord completed: no chord here.
                 self.flush_combo_buffer(out);
             } else {
                 // Release of a key held before the combo started: keep it
                 // ordered behind the buffered presses.
-                self.combo_buffer.push(BufferedEvent { key, down, at: now });
+                self.chords
+                    .buffer
+                    .push(BufferedEvent { key, down, at: now });
                 return true;
             }
         }
         if down && self.starts_combo(key) {
-            self.combo_buffer.push(BufferedEvent { key, down, at: now });
+            self.chords
+                .buffer
+                .push(BufferedEvent { key, down, at: now });
             return true;
         }
         false
@@ -207,7 +218,7 @@ impl Engine {
     /// Replay the combo buffer as ordinary key events with their original
     /// timestamps, so tap/hold deadlines stay anchored to the physical press.
     pub(super) fn flush_combo_buffer(&mut self, out: &mut Vec<Out>) {
-        for ev in std::mem::take(&mut self.combo_buffer) {
+        for ev in std::mem::take(&mut self.chords.buffer) {
             self.handle_event(ev.key, ev.down, ev.at, out);
         }
     }

@@ -52,97 +52,47 @@
 mod builder;
 mod chords;
 mod holds;
+mod macros;
 mod model;
+mod state;
 
 pub use self::model::Out;
 use self::model::{
     ActionDef, BufferedEvent, HoldMode, LayerTrigger, Pending, Phase, RuleEntry, TapMode,
 };
+use self::state::{ChordState, CompiledLayout, LayerStack, MacroRunner, VirtualKeys};
 use super::action::Keystroke;
 use super::config::GameModeCondition;
-use super::system::SysCommand;
 use crate::mapper::key_code::KeyCode;
 use crate::profile::app_match::any_matches_window;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
 
-/// Macro runs that may wait behind the active one; further runs are dropped.
-const MACRO_QUEUE_LIMIT: usize = 3;
-
 pub struct Engine {
-    rules: HashMap<KeyCode, Vec<RuleEntry>>,
-    chord_rules: Vec<(Vec<KeyCode>, RuleEntry)>,
+    /// Bindings compiled from the configuration; replaced as a whole by
+    /// `reconfigure`.
+    layout: CompiledLayout,
     physical_down: HashSet<KeyCode>,
     /// When each physical key in `physical_down` was pressed.
     press_at: HashMap<KeyCode, Instant>,
-    active_chords: HashMap<KeyCode, Vec<KeyCode>>,
-    chord_suppressed: HashMap<KeyCode, Vec<(KeyCode, Keystroke)>>,
-    chord_consumed: HashSet<KeyCode>,
     long_holds: HashMap<KeyCode, (Instant, ActionDef)>,
-    macros: HashMap<String, self::model::MacroDef>,
-    commands: HashMap<String, SysCommand>,
-    /// layer_id -> (physical_key -> resolved action)
-    layer_maps: HashMap<String, HashMap<KeyCode, ActionDef>>,
-    /// layer_id -> keys whose keystroke modifiers stay pressed until the
-    /// layer's trigger is released.
-    layer_hold_mods: HashMap<String, HashSet<KeyCode>>,
-    default_hold: Duration,
-    default_mod_delay: Duration,
-
     /// Events deferred while a rule key is in `WaitingDecision`
     /// (permissive-hold mode only). Replayed in order once the decision
     /// resolves.
     decision_buffer: Vec<BufferedEvent>,
-    /// Events deferred while a non-modifier chord member waits for the rest
-    /// of its chord (see `combo_term`). Replayed in order when the chord
-    /// cannot complete any more; dropped for members when it fires.
-    combo_buffer: Vec<BufferedEvent>,
-    /// How long a press of a chord member is held back waiting for the rest
-    /// of the chord (QMK's `COMBO_TERM`). A chord whose keys arrive within
-    /// this window fires without its members ever reaching the app.
-    combo_term: Duration,
-
-    /// Stack of currently active layers (top = highest priority).
-    active_layers: Vec<String>,
-
     /// Per-rule pending state (waiting for release/timeout decision).
     pending: HashMap<KeyCode, Pending>,
-
-    /// Tracks which physical keys are currently pressed AND what keystroke
-    /// we emitted for them, so key-up releases the right virtual keys.
-    /// Used both for non-rule remaps (keymap lookups) and for rule-keys
-    /// whose hold mode is Native/Keystroke (uniform release path).
-    emitted: HashMap<KeyCode, Keystroke>,
-
-    /// Physical keys whose press triggered a one-shot macro / literal.
-    /// Release just clears the entry — no virtual key release is needed.
-    oneshot_consumed: HashSet<KeyCode>,
-
-    /// Currently "held down" virtual modifiers (refcounted).
-    mod_refs: HashMap<KeyCode, u32>,
-
-    /// layer_id -> rules that activated it, oldest to newest
-    layer_triggers: HashMap<String, Vec<LayerTrigger>>,
-
-    /// Currently executing macro (if any)
-    active_macro: Option<self::model::ActiveMacro>,
-    /// Runs waiting for the active macro, oldest first; at most
-    /// `MACRO_QUEUE_LIMIT`.
-    macro_queue: VecDeque<self::model::MacroDef>,
-    /// Longest a single macro run may take before it is aborted.
-    macro_timeout: Duration,
-    text_pending: bool,
-    /// Key presses handled while a layer was active.
-    layer_presses: u64,
-    layer_hold_id: u64,
-    layer_used: bool,
+    chords: ChordState,
+    layers: LayerStack,
+    virt: VirtualKeys,
+    runner: MacroRunner,
 }
 impl Engine {
     /// Apply new bindings without releasing keys already held by the user.
     /// Pending decisions retain their original rule until physical release.
     pub fn reconfigure(&mut self, cfg: &super::config::AppConfig, out: &mut Vec<Out>) {
         self.flush_combo_buffer(out);
-        self.cancel_macros(out);
+        self.runner.cancel(&mut self.virt, out);
         if !cfg.settings.commands_enabled {
             fn revoke(action: &mut ActionDef) {
                 match action {
@@ -176,22 +126,14 @@ impl Engine {
             }
         }
         let next = Self::new(cfg);
-        self.rules = next.rules;
-        self.chord_rules = next.chord_rules;
-        self.macros = next.macros;
-        self.commands = next.commands;
-        self.layer_maps = next.layer_maps;
-        self.layer_hold_mods = next.layer_hold_mods;
-        self.default_hold = next.default_hold;
-        self.default_mod_delay = next.default_mod_delay;
-        self.combo_term = next.combo_term;
-        self.macro_timeout = next.macro_timeout;
-        self.text_pending = false;
+        self.layout = next.layout;
+        self.runner.timeout = next.runner.timeout;
+        self.runner.text_pending = false;
     }
 
     /// The topmost active layer, if any layer is held.
     pub fn top_layer(&self) -> Option<&str> {
-        self.active_layers.last().map(String::as_str)
+        self.layers.top()
     }
 
     /// Snapshot for delayed shell notifications; separate presses of the same
@@ -199,15 +141,15 @@ impl Engine {
     pub fn held_layer_state(&self) -> super::layer_state::HeldLayerState {
         super::layer_state::HeldLayerState {
             layer: self.top_layer().map(str::to_owned),
-            hold_id: self.layer_hold_id,
-            used: self.top_layer().is_some() && self.layer_used,
+            hold_id: self.layers.hold_id,
+            used: self.top_layer().is_some() && self.layers.used,
         }
     }
 
     /// Number of key presses handled while a layer was active; changes
     /// whenever a key is pressed inside a held layer.
     pub fn layer_presses(&self) -> u64 {
-        self.layer_presses
+        self.layers.presses
     }
 
     /// Time until the nearest pending deadline (hold-decision,
@@ -230,24 +172,7 @@ impl Engine {
                     .filter(|(key, (deadline, _))| !self.timer_blocked(**key, *deadline))
                     .map(|(_, (deadline, _))| deadline.saturating_duration_since(now)),
             )
-            .chain(
-                self.active_macro
-                    .as_ref()
-                    .filter(|am| {
-                        !self.text_pending || !matches!(am.phase, self::model::MacroPhase::NextStep)
-                    })
-                    .map(|am| am.next_wake.saturating_duration_since(now)),
-            )
-            .chain(
-                self.active_macro
-                    .as_ref()
-                    .map(|am| am.deadline.saturating_duration_since(now)),
-            )
-            .chain(
-                // A queued run starts on the next tick.
-                (self.active_macro.is_none() && !self.macro_queue.is_empty())
-                    .then_some(Duration::ZERO),
-            )
+            .chain(self.runner.next_deadline(now))
             .chain(
                 self.combo_deadline()
                     .map(|deadline| deadline.saturating_duration_since(now)),
@@ -257,26 +182,12 @@ impl Engine {
 
     /// A failed text step must not submit incomplete input with subsequent keys.
     pub fn text_input_failed(&mut self, out: &mut Vec<Out>) {
-        self.abort_active_macro(out);
+        self.runner.abort(&mut self.virt, out);
     }
 
     /// Resume macro timing only after the text worker has completed injection.
     pub fn set_text_pending(&mut self, pending: bool, now: Instant) {
-        if self.text_pending
-            && !pending
-            && let Some(am) = self.active_macro.as_mut()
-        {
-            let previous = am.current_step.checked_sub(1).and_then(|i| am.steps.get(i));
-            if matches!(am.phase, self::model::MacroPhase::NextStep)
-                && matches!(
-                    previous,
-                    Some(crate::mapper::action::MacroStepItem::Literal(_))
-                )
-            {
-                am.next_wake = next_macro_wake(now, am);
-            }
-        }
-        self.text_pending = pending;
+        self.runner.set_text_pending(pending, now);
     }
 
     /// Tick pending state machines. Commits holds whose decision window
@@ -299,169 +210,10 @@ impl Engine {
         for key in expired {
             if let Some((_, action)) = self.long_holds.remove(&key) {
                 self.commit_hold(key, out);
-                self.fire_action(Some(&action), self.default_mod_delay, now, out);
+                self.fire_action(Some(&action), self.layout.default_mod_delay, now, out);
             }
         }
-        if self
-            .active_macro
-            .as_ref()
-            .is_some_and(|am| now >= am.deadline)
-        {
-            log::warn!(
-                "[mapper] macro exceeded {} ms, aborting",
-                self.macro_timeout.as_millis()
-            );
-            self.abort_active_macro(out);
-        }
-        self.start_queued_macro(now);
-        if let Some(mut am) = self.active_macro.take() {
-            if now >= am.next_wake
-                && (!self.text_pending || !matches!(am.phase, self::model::MacroPhase::NextStep))
-            {
-                use self::model::MacroPhase;
-                use crate::mapper::action::MacroStepItem;
-                const MAX_MACRO_STEPS: usize = 1000;
-
-                loop {
-                    if am.current_step >= am.steps.len() {
-                        break;
-                    }
-                    if am.steps_emitted >= MAX_MACRO_STEPS {
-                        log::debug!(
-                            "[mapper] macro step limit ({}) exceeded, aborting",
-                            MAX_MACRO_STEPS
-                        );
-                        // Aborting mid-stroke: the stroke's modifiers were
-                        // pressed in an earlier phase and must be released
-                        // here or they stay stuck down.
-                        if let MacroPhase::StrokeModDelayPress(ref ks)
-                        | MacroPhase::StrokeModDelayRelease(ref ks) = am.phase
-                        {
-                            for m in self.take_releasable_mods(&ks.mods).iter().rev() {
-                                out.push(Out::KeyRaw {
-                                    key: *m,
-                                    down: false,
-                                });
-                            }
-                        }
-                        break;
-                    }
-                    match am.phase {
-                        MacroPhase::NextStep => {
-                            let step = &am.steps[am.current_step];
-                            match step {
-                                MacroStepItem::Stroke(ks) => {
-                                    // Skip modifiers something else already
-                                    // holds down (a `hold:` rule, a chord, a
-                                    // passthrough key): pressing them again is
-                                    // redundant, and releasing them at the end
-                                    // of the stroke would break the hold.
-                                    let press = self.mods_not_held(&ks.mods);
-                                    for m in &ks.mods {
-                                        *self.mod_refs.entry(*m).or_insert(0) += 1;
-                                    }
-                                    if !ks.mods.is_empty() {
-                                        for m in &press {
-                                            out.push(Out::KeyRaw {
-                                                key: *m,
-                                                down: true,
-                                            });
-                                        }
-                                        am.phase = MacroPhase::StrokeModDelayPress(Keystroke {
-                                            mods: ks.mods.clone(),
-                                            key: ks.key,
-                                        });
-                                        am.next_wake = now + am.mod_delay;
-                                        self.active_macro = Some(am);
-                                        break;
-                                    } else {
-                                        self.emit_macro_key(ks.key, out);
-                                        am.steps_emitted += 1;
-                                        am.current_step += 1;
-                                        if am.current_step < am.steps.len() {
-                                            am.next_wake = next_macro_wake(now, &am);
-                                            self.active_macro = Some(am);
-                                            break;
-                                        }
-                                    }
-                                }
-                                MacroStepItem::System(action) => {
-                                    out.push(Out::RunSystem(action.clone()));
-                                    am.steps_emitted += 1;
-                                    am.current_step += 1;
-                                    if am.current_step < am.steps.len() {
-                                        am.next_wake = next_macro_wake(now, &am);
-                                        self.active_macro = Some(am);
-                                        break;
-                                    }
-                                }
-                                MacroStepItem::Command(command) => {
-                                    out.push(Out::RunCommand(command.clone()));
-                                    am.steps_emitted += 1;
-                                    am.current_step += 1;
-                                    if am.current_step < am.steps.len() {
-                                        am.next_wake = next_macro_wake(now, &am);
-                                        self.active_macro = Some(am);
-                                        break;
-                                    }
-                                }
-                                MacroStepItem::Literal(text) => {
-                                    out.push(Out::Literal(text.clone()));
-                                    self.text_pending = true;
-                                    am.steps_emitted += 1;
-                                    am.current_step += 1;
-                                    if am.current_step < am.steps.len() {
-                                        am.next_wake = next_macro_wake(now, &am);
-                                        self.active_macro = Some(am);
-                                        break;
-                                    }
-                                }
-                                // `run_macro` never starts a run with one.
-                                MacroStepItem::Unavailable(_) => {
-                                    am.current_step = am.steps.len();
-                                }
-                                MacroStepItem::Pause(duration) => {
-                                    am.steps_emitted += 1;
-                                    am.current_step += 1;
-                                    if am.current_step < am.steps.len() {
-                                        am.next_wake = now + *duration;
-                                        self.active_macro = Some(am);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        MacroPhase::StrokeModDelayPress(ref ks) => {
-                            let ks = ks.clone();
-                            self.emit_macro_key(ks.key, out);
-                            am.phase = MacroPhase::StrokeModDelayRelease(ks.clone());
-                            am.next_wake = now + am.mod_delay;
-                            self.active_macro = Some(am);
-                            break;
-                        }
-                        MacroPhase::StrokeModDelayRelease(ref ks) => {
-                            for m in self.take_releasable_mods(&ks.mods).iter().rev() {
-                                out.push(Out::KeyRaw {
-                                    key: *m,
-                                    down: false,
-                                });
-                            }
-                            am.phase = MacroPhase::NextStep;
-                            am.steps_emitted += 1;
-                            am.current_step += 1;
-                            if am.current_step < am.steps.len() {
-                                am.next_wake = next_macro_wake(now, &am);
-                                self.active_macro = Some(am);
-                                break;
-                            }
-                        }
-                    }
-                }
-            } else {
-                self.active_macro = Some(am);
-            }
-        }
-        self.start_queued_macro(now);
+        self.runner.tick(&mut self.virt, now, out);
 
         let mut expired_hold: Vec<KeyCode> = Vec::new();
         let mut expired_second: Vec<KeyCode> = Vec::new();
@@ -494,84 +246,6 @@ impl Engine {
         }
     }
 
-    fn emit_macro_key(&self, key: KeyCode, out: &mut Vec<Out>) {
-        if !self.is_virtually_held(key) {
-            out.push(Out::KeyRaw { key, down: true });
-            out.push(Out::KeyRaw { key, down: false });
-        }
-    }
-
-    /// Abort the in-flight macro (if any). A stroke step presses its
-    /// modifiers first and releases them only in a later phase, so an
-    /// abort mid-stroke must release them here or they stay stuck down.
-    fn abort_active_macro(&mut self, out: &mut Vec<Out>) {
-        let Some(am) = self.active_macro.take() else {
-            return;
-        };
-        match am.phase {
-            self::model::MacroPhase::StrokeModDelayPress(ks)
-            | self::model::MacroPhase::StrokeModDelayRelease(ks) => {
-                for m in self.take_releasable_mods(&ks.mods).iter().rev() {
-                    out.push(Out::KeyRaw {
-                        key: *m,
-                        down: false,
-                    });
-                }
-            }
-            self::model::MacroPhase::NextStep => {}
-        }
-    }
-
-    /// Abort the active macro and drop the queued runs.
-    fn cancel_macros(&mut self, out: &mut Vec<Out>) {
-        self.macro_queue.clear();
-        self.abort_active_macro(out);
-    }
-
-    /// Start a macro run, or queue it behind the active one: a run that is
-    /// cut short leaves the application half-edited.
-    fn run_macro(&mut self, md: self::model::MacroDef, now: Instant) {
-        if md.steps.is_empty() {
-            return;
-        }
-        // A step this system cannot run would leave the macro half done.
-        if let Some(action) = md.steps.iter().find_map(|step| match step {
-            crate::mapper::action::MacroStepItem::Unavailable(action) => Some(action),
-            _ => None,
-        }) {
-            report_unavailable(action);
-            return;
-        }
-        if self.active_macro.is_none() {
-            self.active_macro = Some(self.begin_macro(md, now));
-        } else if self.macro_queue.len() < MACRO_QUEUE_LIMIT {
-            self.macro_queue.push_back(md);
-        } else {
-            log::debug!("[mapper] macro queue is full, dropping the run");
-        }
-    }
-
-    fn start_queued_macro(&mut self, now: Instant) {
-        if self.active_macro.is_none()
-            && let Some(md) = self.macro_queue.pop_front()
-        {
-            self.active_macro = Some(self.begin_macro(md, now));
-        }
-    }
-
-    fn begin_macro(&self, md: self::model::MacroDef, now: Instant) -> self::model::ActiveMacro {
-        self::model::ActiveMacro {
-            steps: md.steps,
-            step_pause: md.step_pause,
-            mod_delay: md.mod_delay,
-            current_step: 0,
-            steps_emitted: 0,
-            phase: self::model::MacroPhase::NextStep,
-            next_wake: now,
-            deadline: now + self.macro_timeout,
-        }
-    }
-
     /// Handle a raw key event from the grabbed device.
     pub fn handle(&mut self, key: KeyCode, down: bool, now: Instant, out: &mut Vec<Out>) {
         if down {
@@ -579,8 +253,8 @@ impl Engine {
                 return;
             }
             self.press_at.insert(key, now);
-            if !self.active_layers.is_empty() {
-                self.layer_used = true;
+            if !self.layers.active.is_empty() {
+                self.layers.used = true;
             }
         } else {
             self.physical_down.remove(&key);
@@ -615,7 +289,7 @@ impl Engine {
         {
             return;
         }
-        if let Some(ks) = self.emitted.get(&key) {
+        if let Some(ks) = self.virt.emitted.get(&key) {
             out.push(Out::KeyRaw {
                 key: ks.key,
                 down: true,
@@ -657,10 +331,10 @@ impl Engine {
 
         if !down
             && !self.pending.contains_key(&key)
-            && !self.emitted.contains_key(&key)
-            && !self.oneshot_consumed.contains(&key)
+            && !self.virt.emitted.contains_key(&key)
+            && !self.virt.oneshot.contains(&key)
         {
-            if !self.is_virtually_held(key) {
+            if !self.virt.is_held(key) {
                 out.push(Out::KeyRaw { key, down });
             }
             return;
@@ -697,9 +371,9 @@ impl Engine {
                 // Permissive rules already intercepted this event above.
                 self.commit_waiting_decisions(out);
                 let dtap = pending.and_then(|p| p.rule.double_tap);
-                self.fire_action(dtap.as_ref(), self.default_mod_delay, now, out);
+                self.fire_action(dtap.as_ref(), self.layout.default_mod_delay, now, out);
                 // The matching release must not emit anything (fire-and-forget).
-                self.oneshot_consumed.insert(key);
+                self.virt.oneshot.insert(key);
                 return;
             }
             // Window elapsed: emit the deferred first tap now, then fall
@@ -725,18 +399,20 @@ impl Engine {
         // in WaitingDecision here.
         self.commit_waiting_decisions(out);
 
-        if !self.active_layers.is_empty() {
-            self.layer_presses += 1;
-            self.layer_used = true;
+        if !self.layers.active.is_empty() {
+            self.layers.presses += 1;
+            self.layers.used = true;
         }
-        if self.active_layers.is_empty() {
+        if self.layers.active.is_empty() {
             if let Some(rule) = self.active_rule_for_key(key) {
                 self.start_rule(key, rule, now, out);
                 return;
             }
-            if self.rules.contains_key(&key) {
+            if self.layout.rules.contains_key(&key) {
                 out.push(Out::KeyRaw { key, down: true });
-                self.emitted.insert(key, Keystroke { mods: vec![], key });
+                self.virt
+                    .emitted
+                    .insert(key, Keystroke { mods: vec![], key });
                 return;
             }
         }
@@ -751,6 +427,7 @@ impl Engine {
                     ActionDef::Stroke(ks)
                         if !ks.mods.is_empty()
                             && self
+                                .layout
                                 .layer_hold_mods
                                 .get(&layer_id)
                                 .is_some_and(|keys| keys.contains(&key)) =>
@@ -762,31 +439,33 @@ impl Engine {
                     }
                     ActionDef::Literal(text) => {
                         out.push(Out::Literal(text));
-                        self.oneshot_consumed.insert(key);
+                        self.virt.oneshot.insert(key);
                     }
                     ActionDef::Macro(md) => {
-                        self.run_macro(md, now);
-                        self.oneshot_consumed.insert(key);
+                        self.runner.run(md, now);
+                        self.virt.oneshot.insert(key);
                     }
                     ActionDef::System(action) => {
                         out.push(Out::RunSystem(action));
-                        self.oneshot_consumed.insert(key);
+                        self.virt.oneshot.insert(key);
                     }
                     ActionDef::Command(command) => {
                         out.push(Out::RunCommand(command));
-                        self.oneshot_consumed.insert(key);
+                        self.virt.oneshot.insert(key);
                     }
                     ActionDef::Swallow => {
-                        self.oneshot_consumed.insert(key);
+                        self.virt.oneshot.insert(key);
                     }
                     ActionDef::Unavailable(action) => {
                         report_unavailable(&action);
-                        self.oneshot_consumed.insert(key);
+                        self.virt.oneshot.insert(key);
                     }
                 },
                 None => {
                     out.push(Out::KeyRaw { key, down: true });
-                    self.emitted.insert(key, Keystroke { mods: vec![], key });
+                    self.virt
+                        .emitted
+                        .insert(key, Keystroke { mods: vec![], key });
                 }
             }
         }
@@ -802,7 +481,7 @@ impl Engine {
             && let Some((_, action)) = self.long_holds.remove(&key)
         {
             self.commit_hold(key, out);
-            self.fire_action(Some(&action), self.default_mod_delay, now, out);
+            self.fire_action(Some(&action), self.layout.default_mod_delay, now, out);
         }
         if self.pending.get(&key).is_some_and(
             |p| matches!(p.phase, Phase::WaitingDecision { deadline } if now >= deadline),
@@ -845,12 +524,12 @@ impl Engine {
             return;
         }
 
-        if self.oneshot_consumed.remove(&key) {
+        if self.virt.oneshot.remove(&key) {
             // Macro / literal / double-tap fired on press — nothing to release.
             return;
         }
 
-        if self.emitted.contains_key(&key) {
+        if self.virt.emitted.contains_key(&key) {
             self.release_emitted(key, out);
         } else {
             // Unknown / orphan release — pass through as release to avoid stuck keys.
@@ -864,14 +543,14 @@ impl Engine {
     fn emit_stroke_press(&mut self, physical: KeyCode, ks: Keystroke, out: &mut Vec<Out>) {
         if !ks.mods.is_empty() {
             for m in &ks.mods {
-                *self.mod_refs.entry(*m).or_insert(0) += 1;
+                *self.virt.mod_refs.entry(*m).or_insert(0) += 1;
             }
         }
         out.push(Out::ChordPress {
             ks: ks.clone(),
-            mod_delay: self.default_mod_delay,
+            mod_delay: self.layout.default_mod_delay,
         });
-        self.emitted.insert(physical, ks);
+        self.virt.emitted.insert(physical, ks);
     }
 
     /// Press `ks` for a hold-modifiers layer key. Its modifiers stay down
@@ -887,7 +566,8 @@ impl Engine {
         out: &mut Vec<Out>,
     ) {
         let Some(trigger) = self
-            .layer_triggers
+            .layers
+            .triggers
             .get_mut(layer_id)
             .and_then(|triggers| triggers.last_mut())
         else {
@@ -897,15 +577,15 @@ impl Engine {
         let previous = std::mem::replace(&mut trigger.held_mods, ks.mods.clone());
         // Modifiers already down (Alt from the previous Tab) are not pressed
         // again, so repeated presses skip the modifier delay.
-        let fresh = self.mods_not_held(&ks.mods);
+        let fresh = self.virt.mods_not_held(&ks.mods);
         for m in ks.mods.iter().filter(|m| !previous.contains(m)) {
-            *self.mod_refs.entry(*m).or_insert(0) += 1;
+            *self.virt.mod_refs.entry(*m).or_insert(0) += 1;
         }
         let dropped: Vec<KeyCode> = previous
             .into_iter()
             .filter(|m| !ks.mods.contains(m))
             .collect();
-        let released = self.take_releasable_mods(&dropped);
+        let released = self.virt.take_releasable_mods(&dropped);
         if !released.is_empty() {
             out.push(Out::ReleaseMods(released));
         }
@@ -914,9 +594,9 @@ impl Engine {
                 mods: fresh,
                 key: ks.key,
             },
-            mod_delay: self.default_mod_delay,
+            mod_delay: self.layout.default_mod_delay,
         });
-        self.emitted.insert(
+        self.virt.emitted.insert(
             physical,
             Keystroke {
                 mods: Vec::new(),
@@ -926,11 +606,11 @@ impl Engine {
     }
 
     fn release_emitted(&mut self, physical: KeyCode, out: &mut Vec<Out>) {
-        let Some(ks) = self.emitted.remove(&physical) else {
+        let Some(ks) = self.virt.emitted.remove(&physical) else {
             return;
         };
-        let mods = self.take_releasable_mods(&ks.mods);
-        if self.is_virtually_held(ks.key) {
+        let mods = self.virt.take_releasable_mods(&ks.mods);
+        if self.virt.is_held(ks.key) {
             if !mods.is_empty() {
                 out.push(Out::ReleaseMods(mods));
             }
@@ -946,56 +626,16 @@ impl Engine {
         out.push(Out::ChordRelease {
             key: ks.key,
             mods,
-            mod_delay: self.default_mod_delay,
+            mod_delay: self.layout.default_mod_delay,
         });
-    }
-
-    fn take_releasable_mods(&mut self, mods: &[KeyCode]) -> Vec<KeyCode> {
-        if mods.is_empty() {
-            return Vec::new();
-        }
-        for m in mods {
-            if let Some(r) = self.mod_refs.get_mut(m) {
-                *r = r.saturating_sub(1);
-            }
-        }
-        // A modifier stays down while another chord still references it
-        // (refcount) or while some mapping holds it as its *main* key
-        // (e.g. a rule with `hold: ControlLeft`).
-        mods.iter()
-            .copied()
-            .filter(|m| {
-                self.mod_refs.get(m).copied().unwrap_or(0) == 0
-                    && !self.emitted.values().any(|ks| ks.key == *m)
-            })
-            .collect()
-    }
-
-    /// True when the key is currently held down on the virtual device —
-    /// either refcounted as a chord modifier or held as the main key of
-    /// an emitted stroke (hold rules, passthrough keys).
-    fn is_virtually_held(&self, key: KeyCode) -> bool {
-        self.mod_refs.get(&key).copied().unwrap_or(0) > 0
-            || self
-                .emitted
-                .values()
-                .any(|ks| ks.key == key || ks.mods.contains(&key))
-    }
-
-    /// Subset of `mods` that a fired stroke actually needs to press (and
-    /// later release): modifiers already held elsewhere are excluded.
-    fn mods_not_held(&self, mods: &[KeyCode]) -> Vec<KeyCode> {
-        mods.iter()
-            .copied()
-            .filter(|m| !self.is_virtually_held(*m))
-            .collect()
     }
 
     /// True while an event of `key` at or before `deadline` still waits in
     /// the combo or decision buffer. The key's timer must not fire before
     /// that event replays: a buffered release or second press decides it.
     fn timer_blocked(&self, key: KeyCode, deadline: Instant) -> bool {
-        self.combo_buffer
+        self.chords
+            .buffer
             .iter()
             .chain(&self.decision_buffer)
             .any(|event| event.key == key && event.at <= deadline)
@@ -1006,20 +646,14 @@ impl Engine {
     fn releases_modifier(&self, key: KeyCode) -> bool {
         is_modifier_key(key)
             || self
+                .virt
                 .emitted
                 .get(&key)
                 .is_some_and(|ks| is_modifier_key(ks.key))
     }
 
     fn lookup_mapping(&self, key: KeyCode) -> Option<(String, ActionDef)> {
-        for l in self.active_layers.iter().rev() {
-            if let Some(m) = self.layer_maps.get(l)
-                && let Some(def) = m.get(&key)
-            {
-                return Some((l.clone(), def.clone()));
-            }
-        }
-        None
+        self.layers.lookup(&self.layout.layer_maps, key)
     }
 
     fn start_rule(&mut self, key: KeyCode, rule: RuleEntry, now: Instant, out: &mut Vec<Out>) {
@@ -1049,7 +683,7 @@ impl Engine {
     }
 
     fn active_rule_for_key(&self, key: KeyCode) -> Option<RuleEntry> {
-        self.rules.get(&key).and_then(|rules| {
+        self.layout.rules.get(&key).and_then(|rules| {
             rules
                 .iter()
                 .find(|rule| rule_passes_apps(rule) && rule_passes_conditions(rule))
@@ -1060,8 +694,8 @@ impl Engine {
     fn should_handle_mouse_button(&self, key: KeyCode, down: bool) -> bool {
         if !down
             && (self.pending.contains_key(&key)
-                || self.emitted.contains_key(&key)
-                || self.oneshot_consumed.contains(&key))
+                || self.virt.emitted.contains_key(&key)
+                || self.virt.oneshot.contains(&key))
         {
             return true;
         }
@@ -1070,7 +704,7 @@ impl Engine {
             return true;
         }
 
-        !is_primary_mouse_button(key) && self.rules.contains_key(&key)
+        !is_primary_mouse_button(key) && self.layout.rules.contains_key(&key)
     }
 
     fn fire_action(
@@ -1082,20 +716,20 @@ impl Engine {
     ) {
         match action {
             Some(ActionDef::Stroke(ks)) => {
-                if self.is_virtually_held(ks.key) {
+                if self.virt.is_held(ks.key) {
                     return;
                 }
                 // Don't press — and above all don't release — modifiers that
                 // are already virtually held (hold rules, active chords):
                 // the stroke's trailing mod-release would break the hold.
                 let ks = Keystroke {
-                    mods: self.mods_not_held(&ks.mods),
+                    mods: self.virt.mods_not_held(&ks.mods),
                     key: ks.key,
                 };
                 out.push(Out::Stroke { ks, mod_delay });
             }
             Some(ActionDef::Literal(text)) => out.push(Out::Literal(text.clone())),
-            Some(ActionDef::Macro(md)) => self.run_macro(md.clone(), now),
+            Some(ActionDef::Macro(md)) => self.runner.run(md.clone(), now),
             Some(ActionDef::System(action)) => out.push(Out::RunSystem(action.clone())),
             Some(ActionDef::Command(command)) => out.push(Out::RunCommand(command.clone())),
             Some(ActionDef::Swallow) => {}
@@ -1113,13 +747,13 @@ impl Engine {
                         mods: vec![],
                         key: physical,
                     },
-                    mod_delay: self.default_mod_delay,
+                    mod_delay: self.layout.default_mod_delay,
                 });
             }
             TapMode::NativeChord(keys) => {
                 let keys: Vec<_> = keys
                     .iter()
-                    .filter(|key| !self.is_virtually_held(**key))
+                    .filter(|key| !self.virt.is_held(**key))
                     .copied()
                     .collect();
                 for key in &keys {
@@ -1137,7 +771,7 @@ impl Engine {
             }
             TapMode::Swallow => {}
             TapMode::Action(a) => {
-                self.fire_action(Some(a), self.default_mod_delay, now, out);
+                self.fire_action(Some(a), self.layout.default_mod_delay, now, out);
             }
         }
     }
@@ -1162,15 +796,16 @@ impl Engine {
 
     /// Generic shutdown helper — release everything that is currently held.
     pub fn shutdown(&mut self, out: &mut Vec<Out>) {
-        self.cancel_macros(out);
+        self.runner.cancel(&mut self.virt, out);
         // HashMap drain order is arbitrary; release plain keys before
         // modifier keys so a chord's main key never outlives its modifier.
-        let mut held: Vec<KeyCode> = self.emitted.drain().map(|(_, ks)| ks.key).collect();
+        let mut held: Vec<KeyCode> = self.virt.emitted.drain().map(|(_, ks)| ks.key).collect();
         held.sort_by_key(|k| is_modifier_key(*k));
         for key in held {
             out.push(Out::KeyRaw { key, down: false });
         }
         let mods: Vec<KeyCode> = self
+            .virt
             .mod_refs
             .drain()
             .filter(|(_, r)| *r > 0)
@@ -1179,33 +814,34 @@ impl Engine {
         if !mods.is_empty() {
             out.push(Out::ReleaseMods(mods));
         }
-        self.active_layers.clear();
+        self.layers.active.clear();
         self.pending.clear();
         // Buffered presses were never emitted to uinput, so there is nothing
         // to release — drop them rather than replaying into a tearing-down
         // engine.
         self.decision_buffer.clear();
-        self.combo_buffer.clear();
-        self.oneshot_consumed.clear();
-        self.layer_triggers.clear();
+        self.chords.buffer.clear();
+        self.virt.oneshot.clear();
+        self.layers.triggers.clear();
         self.long_holds.clear();
-        self.active_chords.clear();
-        self.chord_suppressed.clear();
-        self.chord_consumed.clear();
+        self.chords.active.clear();
+        self.chords.suppressed.clear();
+        self.chords.consumed.clear();
         self.physical_down.clear();
         self.press_at.clear();
     }
 
     #[allow(dead_code)]
     pub fn default_hold(&self) -> Duration {
-        self.default_hold
+        self.layout.default_hold
     }
 
     pub fn execute_remote(&mut self, action: &str, out: &mut Vec<Out>) {
-        let resolved = builder::resolve_action(action, &self.macros, &self.commands, "remote");
+        let resolved =
+            builder::resolve_action(action, &self.layout.macros, &self.layout.commands, "remote");
         self.fire_action(
             resolved.as_ref(),
-            self.default_mod_delay,
+            self.layout.default_mod_delay,
             Instant::now(),
             out,
         );
@@ -1321,16 +957,6 @@ fn is_modifier_key(key: KeyCode) -> bool {
             | KeyCode::KEY_LEFTMETA
             | KeyCode::KEY_RIGHTMETA
     )
-}
-
-fn next_macro_wake(now: Instant, am: &self::model::ActiveMacro) -> Instant {
-    use crate::mapper::action::MacroStepItem;
-
-    if matches!(am.steps.get(am.current_step), Some(MacroStepItem::Pause(_))) {
-        now
-    } else {
-        now + am.step_pause
-    }
 }
 
 fn is_mouse_button(key: KeyCode) -> bool {

@@ -19,7 +19,7 @@ fn unassigned_chord_ignores_double_tap_and_preserves_normal_keys() {
             serde_json::json!({"key": "ShiftLeft+ControlLeft", "doubleTapAction": extra}),
         );
         let engine = Engine::new(&cfg);
-        assert!(engine.chord_rules.is_empty());
+        assert!(engine.layout.chord_rules.is_empty());
     }
 }
 
@@ -131,14 +131,14 @@ fn chord_layer_works_in_either_order_and_ends_on_any_release() {
             let mut out = Vec::new();
             engine.handle(first, true, now, &mut out);
             engine.handle(second, true, now + Duration::from_millis(10), &mut out);
-            assert_eq!(engine.active_layers, vec!["nav"]);
+            assert_eq!(engine.layers.active, vec!["nav"]);
             engine.handle(release, false, now + Duration::from_millis(20), &mut out);
-            assert!(engine.active_layers.is_empty());
+            assert!(engine.layers.active.is_empty());
             let other = if release == first { second } else { first };
             engine.handle(other, false, now + Duration::from_millis(30), &mut out);
-            assert!(engine.emitted.is_empty());
-            assert!(engine.mod_refs.values().all(|count| *count == 0));
-            assert!(engine.chord_consumed.is_empty());
+            assert!(engine.virt.emitted.is_empty());
+            assert!(engine.virt.mod_refs.values().all(|count| *count == 0));
+            assert!(engine.chords.consumed.is_empty());
         }
     }
 }
@@ -190,7 +190,7 @@ fn chord_long_hold_cancels_on_first_release_and_rearms_after_all_keys_are_up() {
     assert!(matches!(out.as_slice(), [Out::Literal(text)] if text == "done"));
     engine.shutdown(&mut out);
     assert!(engine.long_holds.is_empty());
-    assert!(engine.active_chords.is_empty());
+    assert!(engine.chords.active.is_empty());
 }
 
 #[test]
@@ -247,13 +247,13 @@ fn explicit_hold_behavior_prevents_layer_and_delayed_action_from_running_togethe
         let mut out = Vec::new();
         engine.handle(KeyCode::KEY_A, true, now, &mut out);
         engine.tick(now + Duration::from_secs(1), &mut out);
-        assert_eq!(!engine.active_layers.is_empty(), mode == "layer");
+        assert_eq!(!engine.layers.active.is_empty(), mode == "layer");
         assert_eq!(
             out.iter().any(|event| matches!(event, Out::Literal(_))),
             mode == "action"
         );
         if mode == "action" {
-            assert!(engine.emitted.is_empty());
+            assert!(engine.virt.emitted.is_empty());
         }
         engine.handle(
             KeyCode::KEY_A,
@@ -261,7 +261,7 @@ fn explicit_hold_behavior_prevents_layer_and_delayed_action_from_running_togethe
             now + Duration::from_secs(2),
             &mut out,
         );
-        assert!(engine.emitted.is_empty());
+        assert!(engine.virt.emitted.is_empty());
     }
 }
 
@@ -1354,8 +1354,8 @@ fn combo_members_never_reach_the_app() {
         engine.handle(second, false, now + Duration::from_millis(70), &mut out);
         assert!(fired_text(&out));
         assert!(raw_keys(&out).is_empty());
-        assert!(engine.combo_buffer.is_empty());
-        assert!(engine.chord_consumed.is_empty());
+        assert!(engine.chords.buffer.is_empty());
+        assert!(engine.chords.consumed.is_empty());
     }
 }
 
@@ -1366,8 +1366,8 @@ fn combo_window_expiry_types_the_member_and_blocks_the_chord() {
     let now = Instant::now();
     let mut out = Vec::new();
     engine.handle(KeyCode::KEY_J, true, now, &mut out);
-    assert_eq!(engine.next_deadline(now), Some(engine.combo_term));
-    engine.tick(now + engine.combo_term, &mut out);
+    assert_eq!(engine.next_deadline(now), Some(engine.layout.combo_term));
+    engine.tick(now + engine.layout.combo_term, &mut out);
     assert_eq!(raw_keys(&out), vec![(KeyCode::KEY_J, true)]);
     // `j` is already typed — a late K must not turn it into the chord.
     engine.handle(
@@ -1539,7 +1539,7 @@ fn chords_are_inactive_inside_a_layer() {
     let now = Instant::now();
     let mut out = Vec::new();
     engine.handle(KeyCode::KEY_SPACE, true, now, &mut out);
-    assert_eq!(engine.active_layers, vec!["nav"]);
+    assert_eq!(engine.layers.active, vec!["nav"]);
     engine.handle(
         KeyCode::KEY_J,
         true,
@@ -1555,7 +1555,7 @@ fn chords_are_inactive_inside_a_layer() {
         &mut out,
     );
     assert!(!fired_text(&out));
-    assert!(engine.combo_buffer.is_empty());
+    assert!(engine.chords.buffer.is_empty());
 }
 
 #[test]
@@ -2387,7 +2387,7 @@ fn shutdown_releases_all_emitted_keys_and_mods() {
         out.iter()
             .any(|o| matches!(o, Out::ReleaseMods(mods) if mods.contains(&KeyCode::KEY_LEFTCTRL)))
     );
-    assert!(engine.active_layers.is_empty());
+    assert!(engine.layers.active.is_empty());
     assert!(engine.pending.is_empty());
 }
 
@@ -2972,7 +2972,7 @@ fn builder_skips_unknown_rule_key() {
         double_tap_timeout_ms: None,
     });
     let engine = Engine::new(&cfg);
-    assert!(!engine.rules.contains_key(&KeyCode::KEY_A));
+    assert!(!engine.layout.rules.contains_key(&KeyCode::KEY_A));
 }
 
 #[test]
@@ -2999,9 +2999,9 @@ fn builder_skips_primary_mouse_buttons_as_triggers() {
         });
     }
     let engine = Engine::new(&cfg);
-    assert!(!engine.rules.contains_key(&KeyCode::BTN_LEFT));
-    assert!(!engine.rules.contains_key(&KeyCode::BTN_RIGHT));
-    assert!(!engine.rules.contains_key(&KeyCode::BTN_MIDDLE));
+    assert!(!engine.layout.rules.contains_key(&KeyCode::BTN_LEFT));
+    assert!(!engine.layout.rules.contains_key(&KeyCode::BTN_RIGHT));
+    assert!(!engine.layout.rules.contains_key(&KeyCode::BTN_MIDDLE));
 }
 
 #[test]
@@ -3075,7 +3075,7 @@ fn builder_resolves_builtin_macro() {
         &mut out,
     );
     // Macro should now be active
-    assert!(engine.active_macro.is_some());
+    assert!(engine.runner.active.is_some());
 }
 
 #[test]
@@ -3212,8 +3212,8 @@ fn macro_over_the_time_limit_is_aborted_and_the_queue_continues() {
             (KeyCode::KEY_H, false),
         ]
     );
-    assert!(engine.active_macro.is_some());
-    assert!(engine.macro_queue.is_empty());
+    assert!(engine.runner.active.is_some());
+    assert!(engine.runner.queue.is_empty());
 }
 
 #[test]
@@ -3225,14 +3225,14 @@ fn shutdown_and_reconfigure_drop_queued_macro_runs() {
         let mut out = Vec::new();
         engine.execute_remote("macro:m", &mut out);
         engine.execute_remote("macro:m", &mut out);
-        assert_eq!(engine.macro_queue.len(), 1);
+        assert_eq!(engine.runner.queue.len(), 1);
         if reconfigure {
             engine.reconfigure(&cfg, &mut out);
         } else {
             engine.shutdown(&mut out);
         }
-        assert!(engine.active_macro.is_none());
-        assert!(engine.macro_queue.is_empty());
+        assert!(engine.runner.active.is_none());
+        assert!(engine.runner.queue.is_empty());
         run_ticks(&mut engine, now, now + Duration::from_millis(100), &mut out);
         assert!(raw_keys(&out).is_empty());
     }
@@ -3265,7 +3265,7 @@ fn shutdown_releases_mods_of_in_flight_macro() {
             down: false
         }
     )));
-    assert!(engine.active_macro.is_none());
+    assert!(engine.runner.active.is_none());
 }
 
 #[test]
@@ -3409,7 +3409,7 @@ fn empty_macro_does_not_crash() {
 
     engine.handle(KeyCode::KEY_Q, true, now, &mut out);
     // Empty macro resolves to nothing → fast path Swallow+Swallow, no crash
-    assert!(engine.active_macro.is_none());
+    assert!(engine.runner.active.is_none());
 }
 
 #[test]
@@ -3446,16 +3446,16 @@ fn held_layer_snapshot_distinguishes_fast_represses_and_mapper_restarts() {
 fn nested_layers_keep_usage_suppressed_until_all_triggers_are_released() {
     let mut engine = Engine::new(&empty_cfg());
     let mut out = Vec::new();
-    engine.push_layer("nav".into());
+    engine.layers.push("nav".into());
     let first = engine.held_layer_state();
     engine.handle(KeyCode::KEY_J, true, Instant::now(), &mut out);
-    engine.push_layer("symbols".into());
+    engine.layers.push("symbols".into());
     assert_eq!(engine.held_layer_state().hold_id, first.hold_id);
     assert!(engine.held_layer_state().used);
-    engine.pop_layer("symbols");
+    engine.layers.pop("symbols");
     assert!(engine.held_layer_state().used);
-    engine.pop_layer("nav");
-    engine.push_layer("nav".into());
+    engine.layers.pop("nav");
+    engine.layers.push("nav".into());
     assert!(!engine.held_layer_state().used);
     assert_ne!(engine.held_layer_state().hold_id, first.hold_id);
 }
@@ -3769,7 +3769,7 @@ fn unchecked_exponential_macro_expansion_is_bounded() {
             .contains("expansion exceeds")
     );
     let engine = Engine::new(&cfg);
-    assert!(engine.macros.values().all(|m| m.steps.len() <= 1000));
+    assert!(engine.layout.macros.values().all(|m| m.steps.len() <= 1000));
 }
 
 #[test]
@@ -3869,7 +3869,10 @@ fn nested_release_must_not_leave_key_pressed() {
         engine.tick(now + Duration::from_millis(ms), &mut out);
     }
     engine.tick(now + Duration::from_secs(1), &mut out);
-    assert!(engine.emitted.is_empty(), "all physical keys were released");
+    assert!(
+        engine.virt.emitted.is_empty(),
+        "all physical keys were released"
+    );
     let c_events: Vec<_> = out
         .iter()
         .filter_map(|event| match event {
@@ -4022,7 +4025,7 @@ fn space_audit_presses(
             })
             .collect();
         assert!(engine.pending.is_empty());
-        assert!(engine.emitted.is_empty());
+        assert!(engine.virt.emitted.is_empty());
         results.push(presses);
     }
     assert_eq!(results[0], results[1], "batch delivery changed typing");
@@ -4156,7 +4159,7 @@ fn unassigned_space_prevents_a_later_chord_from_overtaking_typing() {
                 KeyCode::KEY_C
             ]
         );
-        assert!(engine.emitted.is_empty());
+        assert!(engine.virt.emitted.is_empty());
         assert!(engine.pending.is_empty());
     }
 }
@@ -4204,7 +4207,7 @@ fn unassigned_space_prevents_a_later_chord_from_changing_its_layer() {
                 KeyCode::KEY_C
             ]
         );
-        assert!(engine.emitted.is_empty());
+        assert!(engine.virt.emitted.is_empty());
         assert!(engine.pending.is_empty());
     }
 }
@@ -4235,7 +4238,7 @@ fn chord_still_activates_after_earlier_deferred_typing_finishes() {
         ] {
             engine.handle(key, down, now + Duration::from_millis(ms), &mut out);
         }
-        assert_eq!(engine.active_layers, vec!["nav"]);
+        assert_eq!(engine.layers.active, vec!["nav"]);
         assert!(out.iter().any(|event| matches!(
             event,
             Out::KeyRaw {
@@ -4245,10 +4248,10 @@ fn chord_still_activates_after_earlier_deferred_typing_finishes() {
         )));
         engine.handle(first, false, now + Duration::from_millis(60), &mut out);
         engine.handle(second, false, now + Duration::from_millis(70), &mut out);
-        assert!(engine.active_layers.is_empty());
+        assert!(engine.layers.active.is_empty());
         assert!(engine.pending.is_empty());
-        assert!(engine.emitted.is_empty());
-        assert!(engine.chord_consumed.is_empty());
+        assert!(engine.virt.emitted.is_empty());
+        assert!(engine.chords.consumed.is_empty());
     }
 }
 
@@ -4551,9 +4554,9 @@ fn builtin_and_user_macros_resolve_independently_at_every_depth() {
     ];
     super::super::validation::validate_config(&cfg).unwrap();
     let engine = Engine::new(&cfg);
-    let user = &engine.macros["macro:copyLine"];
-    let builtin = &engine.macros["builtin:copyLineText"];
-    let outer = &engine.macros["macro:outer"];
+    let user = &engine.layout.macros["macro:copyLine"];
+    let builtin = &engine.layout.macros["builtin:copyLineText"];
+    let outer = &engine.layout.macros["macro:outer"];
     assert!(matches!(&user.steps[..], [MacroStepItem::Literal(text)] if text == "user"));
     assert!(
         builtin
@@ -4570,14 +4573,19 @@ fn builtin_and_user_macros_resolve_independently_at_every_depth() {
     );
     for reference in ["macro:copyLine", "builtin:copyLineText"] {
         assert!(matches!(
-            builder::resolve_action(reference, &engine.macros, &HashMap::new(), "test"),
+            builder::resolve_action(reference, &engine.layout.macros, &HashMap::new(), "test"),
             Some(model::ActionDef::Macro(_))
         ));
     }
     let engine = Engine::new(&empty_cfg());
     assert!(
-        builder::resolve_action("macro:copyLine", &engine.macros, &HashMap::new(), "test")
-            .is_none()
+        builder::resolve_action(
+            "macro:copyLine",
+            &engine.layout.macros,
+            &HashMap::new(),
+            "test"
+        )
+        .is_none()
     );
 }
 
@@ -4605,18 +4613,24 @@ fn development_gate_disables_user_macros_popups_and_long_hold() {
                 .any(|item| matches!(item, Out::Literal(text) if text == "hold")),
             enabled
         );
-        assert_eq!(engine.macros.contains_key("macro:user"), enabled);
+        assert_eq!(engine.layout.macros.contains_key("macro:user"), enabled);
         for rule in &mut cfg.rules {
             rule.long_hold_action.clear();
         }
         let engine = Engine::new(&cfg);
         for key in [KeyCode::KEY_B, KeyCode::KEY_C, KeyCode::KEY_D] {
             assert_eq!(
-                matches!(engine.rules[&key][0].tap, super::model::TapMode::Action(_)),
+                matches!(
+                    engine.layout.rules[&key][0].tap,
+                    super::model::TapMode::Action(_)
+                ),
                 enabled
             );
         }
-        assert!(!engine.macros.is_empty(), "built-in macros stay available");
+        assert!(
+            !engine.layout.macros.is_empty(),
+            "built-in macros stay available"
+        );
     }
 }
 
@@ -4641,7 +4655,7 @@ fn timeline(cfg: serde_json::Value, events: &[(KeyCode, bool, u64)], ticks: &[u6
         }
     }
     engine.tick(start + Duration::from_secs(5), &mut out);
-    assert!(engine.pending.is_empty() && engine.emitted.is_empty());
+    assert!(engine.pending.is_empty() && engine.virt.emitted.is_empty());
     out.iter()
         .map(|event| match event {
             Out::KeyRaw { key, down } => format!("{key:?}{}", if *down { "+" } else { "-" }),

@@ -74,7 +74,7 @@ Releases: `cargo release <minor|patch>` previews and `--execute` bumps the versi
 crates/lhc-core/assets/       # bundled layouts (<name>.json, templates for new library layouts)
 crates/lhc-core/src/          # UI-independent domain + platform code (no UI framework)
 ├── profile/                  # config model: settings, layouts, actions, macros, menus, auto-switch
-├── config_document.rs        # editable config.json: validation and saving
+├── config_document/          # editable config.json: validation, saving, active layout
 ├── storage.rs                # StoragePaths::resolve(): dev vs release directories
 ├── events.rs                 # CoreEvent bus — the only core → shell channel
 ├── mapper/                   # engine/, output.rs (shared loop), linux/ (evdev+uinput), windows/ (hooks+SendInput), system.rs, runtime.rs
@@ -121,7 +121,7 @@ docs/                         # development/, design/, testing/; README.md index
 
 | Change | Location |
 | --- | --- |
-| Config field, validation, layout file format | `crates/lhc-core/src/profile/`, `config_document.rs` |
+| Config field, validation, layout file format | `crates/lhc-core/src/profile/`, `config_document/` |
 | Mapper behaviour, key handling, system actions | `crates/lhc-core/src/mapper/` |
 | New OS/DE detection or watcher | `crates/lhc-core/src/platform/`, `layout/`, `gamemode/`, `active_window/` |
 | Settings page logic | `apps/slint-shell/src/pages/<page>.rs` + `ui/<page>.slint` |
