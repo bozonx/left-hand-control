@@ -27,6 +27,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Settings → Key behavior shows “Defaults” as a section heading above its card, with “Tap”, “Hold” and “Macros” as equal groups inside.
 
 - Move paste shortcut explanations into information icons beside their settings labels.
+- Errors are reported once, as a toast. The line under the top bar shows only lasting problems such as an unreadable configuration. A failed mapper start no longer also reports “Mapper stopped because of an error”, and the mapper card shows the known cause (for example a disconnected keyboard) instead of the generic failure text.
 
 - Standardize the Triggers header, use full-width settings cards, simplify game mode and device settings, and move quick-action clearing beside the cell heading.
 

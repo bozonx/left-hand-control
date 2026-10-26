@@ -191,6 +191,10 @@ pub fn spawn(
     let error: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
     let waiting = Arc::new(AtomicBool::new(false));
     let waiting_thread = waiting.clone();
+    // Set once the worker reports readiness: an earlier failure is returned
+    // by `spawn`, so it must not also be announced as a stopped mapper.
+    let ready = Arc::new(AtomicBool::new(false));
+    let ready_thread = ready.clone();
     let stop_thread = stop.clone();
     let err_thread = error.clone();
     let (ready_tx, ready_rx) = mpsc::channel::<Result<(), String>>();
@@ -211,11 +215,13 @@ pub fn spawn(
                     control_rx,
                     wake_rx,
                     waiting_thread,
+                    &ready_thread,
                 )
             }));
             if stop_thread.load(Ordering::SeqCst) {
                 return;
             }
+            let started = ready_thread.load(Ordering::SeqCst);
             match result {
                 Ok(Ok(())) => {}
                 Ok(Err(e)) => {
@@ -223,7 +229,9 @@ pub fn spawn(
                     if let Ok(mut slot) = err_thread.lock() {
                         *slot = Some(e.clone());
                     }
-                    notify_mapper_stopped(&e);
+                    if started {
+                        notify_mapper_stopped(&e);
+                    }
                 }
                 Err(panic_info) => {
                     let msg = if let Some(s) = panic_info.downcast_ref::<String>() {
@@ -237,7 +245,9 @@ pub fn spawn(
                     if let Ok(mut slot) = err_thread.lock() {
                         *slot = Some(msg.clone());
                     }
-                    notify_mapper_stopped(&msg);
+                    if started {
+                        notify_mapper_stopped(&msg);
+                    }
                 }
             }
         })
@@ -334,6 +344,7 @@ fn run(
     control_rx: mpsc::Receiver<MapperControl>,
     wake_rx: OwnedFd,
     waiting: Arc<AtomicBool>,
+    ready: &AtomicBool,
 ) -> Result<(), String> {
     if stop.load(Ordering::SeqCst) {
         return Err("mapper start cancelled".into());
@@ -361,6 +372,7 @@ fn run(
                 &ready_tx,
                 &control_rx,
                 &waiting,
+                ready,
                 wake_rx
                     .try_clone()
                     .map_err(|e| format!("clone wake pipe: {e}"))?,
@@ -468,6 +480,7 @@ fn run_device(
     ready_tx: &mpsc::Sender<Result<(), String>>,
     control_rx: &mpsc::Receiver<MapperControl>,
     waiting: &AtomicBool,
+    ready: &AtomicBool,
     wake_rx: OwnedFd,
 ) -> Result<(), String> {
     validate_keyboard_capabilities(device.supported_events(), device.supported_keys())?;
@@ -536,6 +549,7 @@ fn run_device(
     let driver = MultiDeviceLoopDriver::new(devices, mouse_path, Some(wake_rx))?;
     crate::text_input::job::start();
     set_waiting(waiting, false);
+    ready.store(true, Ordering::SeqCst);
     let _ = ready_tx.send(Ok(()));
     run_loop(driver, virt, cfg, stop, control_rx)
 }

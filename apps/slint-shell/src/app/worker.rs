@@ -210,9 +210,8 @@ impl App {
         match result {
             Ok(worker) => {
                 let preferences = Command::Preferences(self.preferences.get());
-                match worker.send(&preferences, Source::Ipc, Instant::now(), None) {
-                    Ok(()) => self.set_error(Msg::None),
-                    Err(error) => self.set_error(Msg::WorkerError(error.to_string())),
+                if let Err(error) = worker.send(&preferences, Source::Ipc, Instant::now(), None) {
+                    self.set_error(Msg::WorkerError(error.to_string()));
                 }
                 self.supervisor.borrow_mut().worker = Some(worker);
                 self.popups.reset_worker();

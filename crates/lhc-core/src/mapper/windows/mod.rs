@@ -161,6 +161,10 @@ pub fn spawn(
     let (events_tx, events_rx) = mpsc::channel::<HookEvent>();
     let wake_tx = events_tx.clone();
     let (stop_thread, err_thread) = (stop.clone(), error.clone());
+    // Set once the hooks report readiness: an earlier failure is returned by
+    // `spawn`, so it must not also be announced as a stopped mapper.
+    let ready = Arc::new(AtomicBool::new(false));
+    let ready_thread = ready.clone();
     let join = thread::Builder::new()
         .name("lhc-mapper".into())
         .spawn(move || {
@@ -173,6 +177,7 @@ pub fn spawn(
                     control_rx,
                     events_tx,
                     events_rx,
+                    &ready_thread,
                 )
             }));
             if stop_thread.load(Ordering::SeqCst) {
@@ -191,7 +196,9 @@ pub fn spawn(
             if let Ok(mut slot) = err_thread.lock() {
                 *slot = Some(message.clone());
             }
-            super::notify_mapper_stopped(&message);
+            if ready_thread.load(Ordering::SeqCst) {
+                super::notify_mapper_stopped(&message);
+            }
         })
         .map_err(|e| format!("spawn thread: {e}"))?;
 
@@ -260,6 +267,7 @@ impl Drop for MapperLock {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn run(
     mouse: bool,
     cfg: AppConfig,
@@ -268,6 +276,7 @@ fn run(
     control_rx: mpsc::Receiver<MapperControl>,
     events_tx: mpsc::Sender<HookEvent>,
     events_rx: mpsc::Receiver<HookEvent>,
+    ready: &AtomicBool,
 ) -> Result<(), String> {
     if stop.load(Ordering::SeqCst) {
         return Err("mapper start cancelled".into());
@@ -276,6 +285,7 @@ fn run(
     let _guard = guard::Session::start()?;
     // Declared after the lock so the hooks are removed first on return.
     let hooks = Hooks::install(events_tx, mouse)?;
+    ready.store(true, Ordering::SeqCst);
     let _ = ready_tx.send(Ok(()));
     let result = run_loop(HookDriver::new(events_rx), cfg, &stop, control_rx);
     drop(hooks);

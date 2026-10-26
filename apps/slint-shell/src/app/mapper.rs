@@ -47,10 +47,7 @@ pub(super) fn forward_core_events() {
                 .collect::<String>();
             let result = result.clone();
             post(move |app| match result {
-                Ok(()) => {
-                    app.clear_action_error();
-                    crate::notifications::send(&app.settings, Msg::CommandStarted(label));
-                }
+                Ok(()) => crate::notifications::send(&app.settings, Msg::CommandStarted(label)),
                 Err(error) => app.set_error(Msg::ActionFailed(error)),
             });
         }
@@ -276,22 +273,13 @@ impl App {
         let Some(document) = self.document() else {
             return;
         };
-        match document.sync_runtime(false) {
-            Ok(()) => self.clear_runtime_error(),
-            Err(error) => self.set_error(Msg::SavedMapperNotUpdated(error)),
+        if let Err(error) = document.sync_runtime(false) {
+            self.set_error(Msg::SavedMapperNotUpdated(error));
         }
         self.refresh_mapper_status();
         pages::refresh_active(&self.settings, &document);
         self.invalidate_menus();
         self.announce_layout();
-    }
-
-    fn clear_runtime_error(&self) {
-        if self.settings.global::<AppState>().get_backend_error().id
-            == crate::i18n::SAVED_MAPPER_NOT_UPDATED
-        {
-            self.set_error(Msg::None);
-        }
     }
 
     pub(super) fn refresh_mapper_status(&self) {
@@ -388,7 +376,6 @@ impl App {
                 app.set_mapper_busy(false);
                 match result {
                     Ok(()) => {
-                        app.set_error(Msg::None);
                         app.set_mapper_error(String::new());
                         if restart {
                             app.start_mapper(0);
@@ -453,7 +440,6 @@ impl App {
                 app.set_mapper_busy(false);
                 match result {
                     Ok(()) => {
-                        app.set_error(Msg::None);
                         app.set_mapper_error(String::new());
                         crate::notifications::send(&app.settings, Msg::MapperRunning(None));
                         if let Some(document) = app.document() {
@@ -478,7 +464,7 @@ impl App {
                     }
                     Err(error) => {
                         app.set_mapper_error(error.clone());
-                        app.set_error(Msg::Error(error));
+                        app.set_error(Msg::MapperFailed(error));
                         pages::check_input_access(&app.settings);
                     }
                 }

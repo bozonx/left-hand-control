@@ -44,7 +44,6 @@ export global AppState {
     /// Launch on startup can be registered on this OS.
     in property <bool> autostart-supported;
     in property <Message> status;
-    in property <Message> backend-error;
     in property <Message> config-status;
     callback toggle-mapper();
     /// Restart a running mapper after its devices changed.

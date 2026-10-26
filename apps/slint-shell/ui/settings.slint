@@ -33,16 +33,14 @@ export component SettingsWindow inherits Window {
     private property <string> test-text;
     private property <bool> confirm-discard: false;
     private property <bool> confirm-close: false;
-    property <bool> shell-problem: NotificationCenter.is-problem(AppState.status.id);
     property <bool> library-problem: NotificationCenter.is-problem(LayoutLibrary.status.id);
     property <bool> layers-problem: NotificationCenter.is-problem(LayersEditor.status.id);
     property <bool> rules-problem: NotificationCenter.is-problem(RulesEditor.status.id);
     property <bool> macros-problem: NotificationCenter.is-problem(MacroEditor.status.id);
     property <bool> menus-problem: NotificationCenter.is-problem(MenuEditor.status.id);
     property <bool> settings-problem: NotificationCenter.is-problem(SettingsEditor.message.id);
-    property <Message> problem: AppState.backend-error.id != "" ? AppState.backend-error
-        : AppState.config-status.id == "config-unavailable" ? AppState.config-status
-        : root.shell-problem ? AppState.status
+    /// Lasting problems only: one-off errors are toasts, mapper state is on its card.
+    property <Message> problem: AppState.config-status.id == "config-unavailable" ? AppState.config-status
         : root.library-problem ? LayoutLibrary.status
         : root.layers-problem ? LayersEditor.status
         : root.rules-problem ? RulesEditor.status
