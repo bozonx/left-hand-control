@@ -10,6 +10,7 @@ use crate::{
     },
 };
 use lhc_core::mapper::devices;
+use lhc_core::platform::InputAccessIssue;
 use lhc_core::profile::menus::PlaceKind;
 use lhc_core::profile::model::{
     AppSettings, Appearance, GameModeProcessMatcher, LocalePreference, PasteShortcut, TapDecision,
@@ -553,17 +554,19 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) -> Msg {
     super::outcome(&saved, Msg::None)
 }
 
-/// Show what keeps the mapper from using the input devices, if anything.
-pub(crate) fn check_input_access(ui: &SettingsWindow) {
+/// Show and return what keeps the mapper from using the input devices.
+pub(crate) fn check_input_access(ui: &SettingsWindow) -> Vec<InputAccessIssue> {
     let e = ui.global::<SettingsEditor>();
     let keyboard = e.get_keyboard_device_path();
     let keyboard = keyboard.trim();
-    let issues: Vec<_> =
-        lhc_core::platform::input_access_issues((!keyboard.is_empty()).then_some(keyboard))
-            .into_iter()
-            .map(|issue| Msg::InputAccess(issue).to_ui())
-            .collect();
-    e.set_input_issues(ModelRc::new(VecModel::from(issues)));
+    let issues =
+        lhc_core::platform::input_access_issues((!keyboard.is_empty()).then_some(keyboard));
+    let messages: Vec<_> = issues
+        .iter()
+        .map(|issue| Msg::InputAccess(*issue).to_ui())
+        .collect();
+    e.set_input_issues(ModelRc::new(VecModel::from(messages)));
+    issues
 }
 
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {

@@ -359,12 +359,16 @@ impl App {
         self.start_mapper(LAUNCH_RETRIES);
     }
 
-    /// Restart a running mapper so it picks up the saved devices.
-    pub(super) fn restart_mapper(&self) {
-        if !self.settings.global::<AppState>().get_mapper_busy()
-            && lhc_core::mapper::runtime::status().running
-        {
+    /// The saved devices changed: restart a running mapper so it picks them
+    /// up, or forget a stopped mapper's failure, which was about the old ones.
+    pub(super) fn devices_changed(&self) {
+        if self.settings.global::<AppState>().get_mapper_busy() {
+            return;
+        }
+        if lhc_core::mapper::runtime::status().running {
             self.stop_mapper(true);
+        } else {
+            self.set_mapper_error(String::new());
         }
     }
 
@@ -464,8 +468,11 @@ impl App {
                     }
                     Err(error) => {
                         app.set_mapper_error(error.clone());
-                        app.set_error(Msg::MapperFailed(error));
-                        pages::check_input_access(&app.settings);
+                        // A known cause says more than the generic failure.
+                        match pages::check_input_access(&app.settings).first() {
+                            Some(issue) => app.set_error(Msg::InputAccess(*issue)),
+                            None => app.set_error(Msg::MapperFailed(error)),
+                        }
                     }
                 }
                 app.refresh_mapper_status();

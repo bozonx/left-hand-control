@@ -242,15 +242,10 @@ component MapperStatusCard inherits Rectangle {
                 text: @tr("Stopped {} ago after running for {}.", root.duration(AppState.mapper-stopped-ago), root.duration(AppState.mapper-ran));
                 color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap;
             }
-            if root.has-issues: VerticalLayout { spacing: Theme.space-xs;
-                for issue in SettingsEditor.input-issues: Text {
-                    text: "⚠ " + Locale.text(issue);
-                    color: Theme.warning; font-size: Theme.font-body; wrap: word-wrap;
-                }
-            }
-            if root.failed && !root.crashed && AppState.is-linux && !root.has-issues: Text {
-                text: @tr("The mapper reads from /dev/input/eventX and emits through uinput. If Start fails, grant access to those devices: usually the input group plus a udev rule for /dev/uinput.");
-                color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap;
+            // Directly in this layout: a nested one would size wrapped lines for the unwrapped width.
+            for issue in (root.has-issues ? SettingsEditor.input-issues : []): Text {
+                text: "⚠ " + Locale.text(issue);
+                color: Theme.warning; font-size: Theme.font-body; wrap: word-wrap;
             }
         }
         VerticalLayout { alignment: center;
@@ -271,7 +266,7 @@ export component SettingsPage inherits PageLayout {
     max-width: Theme.unbounded;
     path-clipboard := TextInput { visible: false; width: 0px; height: 0px; }
     /// A running mapper keeps the devices it started with: restart it once the new ones are saved.
-    function apply-devices() { if AppState.mapper-running && SettingsEditor.message.id == "" { AppState.restart-mapper(); } }
+    function apply-devices() { if SettingsEditor.message.id == "" { AppState.devices-changed(); } }
     function copy-path(value: string) { path-clipboard.text = value; path-clipboard.select-all(); path-clipboard.copy(); NotificationCenter.send({ id: "copied" }); }
     if SettingsEditor.message.id != "": Text { text: Locale.text(SettingsEditor.message); color: Theme.error; wrap: word-wrap; }
     HorizontalLayout {

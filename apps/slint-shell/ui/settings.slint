@@ -288,8 +288,7 @@ export component SettingsWindow inherits Window {
         chosen(path) => {
             if path != self.current {
                 if DeviceDialog.mouse { SettingsEditor.select-mouse(path); } else { SettingsEditor.select-device(path); }
-                // A running mapper keeps the devices it started with.
-                if AppState.mapper-running && SettingsEditor.message.id == "" { AppState.restart-mapper(); }
+                if SettingsEditor.message.id == "" { AppState.devices-changed(); }
             }
             DeviceDialog.open = false;
         }

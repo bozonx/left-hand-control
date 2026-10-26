@@ -28,6 +28,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 - Move paste shortcut explanations into information icons beside their settings labels.
 - Errors are reported once, as a toast. The line under the top bar shows only lasting problems such as an unreadable configuration. A failed mapper start no longer also reports “Mapper stopped because of an error”, and the mapper card shows the known cause (for example a disconnected keyboard) instead of the generic failure text.
+- Mapper start errors are shorter and more specific: the toast names the cause (disconnected keyboard, no access to the keyboard or /dev/uinput) instead of the generic failure, and the long device-access hint is gone. Choosing another device while the mapper is stopped clears the previous failure. Wrapped cause lines no longer overflow the mapper card in a narrow window.
 
 - Standardize the Triggers header, use full-width settings cards, simplify game mode and device settings, and move quick-action clearing beside the cell heading.
 

@@ -46,8 +46,8 @@ export global AppState {
     in property <Message> status;
     in property <Message> config-status;
     callback toggle-mapper();
-    /// Restart a running mapper after its devices changed.
-    callback restart-mapper();
+    /// The saved devices changed: restart a running mapper, clear a stale failure.
+    callback devices-changed();
     /// Open the settings tab where the keyboard device is chosen.
     callback open-keyboard-settings();
     callback set-game-control(GameModeControl);

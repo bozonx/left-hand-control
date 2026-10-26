@@ -1098,17 +1098,17 @@ msgstr "Не реализовано"
 msgid "No input devices were found in /dev/input."
 msgstr "В /dev/input не найдено ни одного устройства ввода."
 
-msgid "The selected keyboard is not connected. Connect it or pick another one below."
-msgstr "Выбранная клавиатура не подключена. Подключите её или выберите другую ниже."
+msgid "The selected keyboard is not connected."
+msgstr "Выбранная клавиатура не подключена."
 
-msgid "No permission to read keyboard events. Add your user to the input group (install-linux.sh permissions does this) and log in again."
-msgstr "Нет прав на чтение событий клавиатуры. Добавьте пользователя в группу input (это делает install-linux.sh permissions) и войдите в систему заново."
+msgid "No access to the keyboard. Add your user to the input group and log in again."
+msgstr "Нет доступа к клавиатуре. Добавьте пользователя в группу input и войдите в систему заново."
 
-msgid "/dev/uinput does not exist. Load the uinput kernel module: sudo modprobe uinput."
-msgstr "/dev/uinput не существует. Загрузите модуль ядра uinput: sudo modprobe uinput."
+msgid "/dev/uinput is missing. Run: sudo modprobe uinput."
+msgstr "Нет /dev/uinput. Выполните: sudo modprobe uinput."
 
-msgid "No permission to write to /dev/uinput. Install the application's udev rule (install-linux.sh permissions) or reinstall the package."
-msgstr "Нет прав на запись в /dev/uinput. Установите udev-правило приложения (install-linux.sh permissions) или переустановите пакет."
+msgid "No access to /dev/uinput. Run install-linux.sh permissions or reinstall the package."
+msgstr "Нет доступа к /dev/uinput. Выполните install-linux.sh permissions или переустановите пакет."
 
 msgid "Launch on startup"
 msgstr "Запускать вместе с системой"
@@ -1290,9 +1290,6 @@ msgstr "Выберите мышь, чтобы маппер видел допол
 
 msgid "The mouse is not fully intercepted yet: a remapped extra button can emit the new action, but its native system or app action may still run. If that gets in the way, disable the native action for that button in your system, browser, or driver settings."
 msgstr "Сейчас мышь не перехватывается полностью: переназначенная дополнительная кнопка может выполнить новое действие, но её исходное действие в системе или приложении тоже может сработать. Если это мешает, отключите исходное действие этой кнопки в настройках системы, браузера или драйвера."
-
-msgid "The mapper reads from /dev/input/eventX and emits through uinput. If Start fails, grant access to those devices: usually the input group plus a udev rule for /dev/uinput."
-msgstr "Маппер читает события с /dev/input/eventX и отправляет их через uinput. Если запуск не удаётся, выдайте доступ к этим устройствам: обычно нужна группа input и udev-правило для /dev/uinput."
 
 msgid "Refresh device list"
 msgstr "Обновить список устройств"
@@ -2760,8 +2757,8 @@ msgstr "Не удалось выполнить операцию. Подробн�
 msgid "The action failed. See the application log."
 msgstr "Не удалось выполнить действие. Подробности в журнале приложения."
 
-msgid "Cannot start the mapper. Check the keyboard and device access. See the application log."
-msgstr "Не удалось запустить маппер. Проверьте клавиатуру и доступ к устройствам. Подробности в журнале приложения."
+msgid "Cannot start the mapper. See the application log."
+msgstr "Не удалось запустить маппер. Подробности в журнале приложения."
 
 msgid "Mapper is running, but an error occurred. See the application log."
 msgstr "Маппер работает, но возникла ошибка. Подробности в журнале приложения."

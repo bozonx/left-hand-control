@@ -27,10 +27,10 @@ export global Locale {
         if m.id == "input-discovery-failed" { return @tr("Cannot list input devices. Check device access and see the application log."); }
         if m.id == "mapper-unsupported" { return @tr("Keyboard interception is not implemented on this operating system."); }
         if m.id == "input-access-no-devices" { return @tr("No input devices were found in /dev/input."); }
-        if m.id == "input-access-keyboard-missing" { return @tr("The selected keyboard is not connected. Connect it or pick another one below."); }
-        if m.id == "input-access-input-denied" { return @tr("No permission to read keyboard events. Add your user to the input group (install-linux.sh permissions does this) and log in again."); }
-        if m.id == "input-access-uinput-missing" { return @tr("/dev/uinput does not exist. Load the uinput kernel module: sudo modprobe uinput."); }
-        if m.id == "input-access-uinput-denied" { return @tr("No permission to write to /dev/uinput. Install the application's udev rule (install-linux.sh permissions) or reinstall the package."); }
+        if m.id == "input-access-keyboard-missing" { return @tr("The selected keyboard is not connected."); }
+        if m.id == "input-access-input-denied" { return @tr("No access to the keyboard. Add your user to the input group and log in again."); }
+        if m.id == "input-access-uinput-missing" { return @tr("/dev/uinput is missing. Run: sudo modprobe uinput."); }
+        if m.id == "input-access-uinput-denied" { return @tr("No access to /dev/uinput. Run install-linux.sh permissions or reinstall the package."); }
         if m.id == "game-mode-auto-disabled" { return @tr("Auto: no detection sources enabled"); }
         if m.id == "game-mode-auto-unavailable" { return @tr("Auto: detection unavailable"); }
         if m.id == "game-mode-auto-inactive" { return @tr("Auto: game mode inactive"); }
@@ -188,7 +188,7 @@ export global Locale {
         if m.id == "unknown-kind" { return @tr("Unknown action type"); }
         if m.id == "error" { return @tr("The operation failed. See the application log."); }
         if m.id == "action-failed" { return @tr("The action failed. See the application log."); }
-        if m.id == "mapper-failed" { return @tr("Cannot start the mapper. Check the keyboard and device access. See the application log."); }
+        if m.id == "mapper-failed" { return @tr("Cannot start the mapper. See the application log."); }
         if m.id == "mapper-running-error" { return @tr("Mapper is running, but an error occurred. See the application log."); }
         if m.id == "mapper-stopped-error" { return @tr("Mapper stopped because of an error. See the application log."); }
         if m.id == "config-io" { return @tr("Cannot read or save the configuration. Check file access and see the application log."); }

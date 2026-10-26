@@ -318,7 +318,7 @@ fn bind_shell(app: &Rc<App>) {
         .on_toggle_mapper(|| with_app(|app| app.toggle_mapper()));
     app.settings
         .global::<AppState>()
-        .on_restart_mapper(|| with_app(|app| app.restart_mapper()));
+        .on_devices_changed(|| with_app(|app| app.devices_changed()));
     app.settings
         .global::<AppState>()
         .on_open_keyboard_settings(|| {
