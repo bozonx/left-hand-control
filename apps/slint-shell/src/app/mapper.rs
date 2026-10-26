@@ -94,9 +94,11 @@ pub(super) fn forward_core_events() {
 
 /// What the settings show about the mapper's state and uptime.
 #[derive(Default)]
-pub(super) struct MapperStatus {
+pub(super) struct MapperController {
+    game_active: Cell<Option<bool>>,
+    announced_layout: RefCell<Option<Option<String>>>,
     /// Running, busy and error last shown.
-    pub(super) last: RefCell<Option<(bool, bool, Option<String>)>>,
+    last: RefCell<Option<(bool, bool, Option<String>)>>,
     /// When the running mapper started.
     since: Cell<Option<Instant>>,
     /// How long the mapper ran before it stopped unexpectedly, and when.
@@ -105,7 +107,29 @@ pub(super) struct MapperStatus {
     uptime_clock: slint::Timer,
 }
 
-impl MapperStatus {
+impl MapperController {
+    pub(super) fn reset_status(&self) {
+        self.last.borrow_mut().take();
+    }
+
+    fn game_changed(&self, active: bool) -> bool {
+        self.game_active.replace(Some(active)) != Some(active)
+    }
+
+    fn layout_changed(&self, id: &Option<String>) -> bool {
+        self.announced_layout
+            .replace(Some(id.clone()))
+            .is_some_and(|previous| previous != *id)
+    }
+
+    fn status_changed(&self, current: (bool, bool, Option<String>)) -> bool {
+        if self.last.borrow().as_ref() == Some(&current) {
+            return false;
+        }
+        *self.last.borrow_mut() = Some(current);
+        true
+    }
+
     /// Remember when the mapper started and, when it stopped by itself, how
     /// long it ran. Returns whether there is an uptime to show.
     fn track(&self, running: bool, failed: bool, now: Instant) -> bool {
@@ -152,7 +176,7 @@ impl App {
         if let Some(tray) = self.tray.borrow().as_ref() {
             tray.set_game(status);
         }
-        if self.game_active.replace(Some(status.active)) != Some(status.active) {
+        if self.mapper.game_changed(status.active) {
             self.context_changed();
         }
     }
@@ -210,11 +234,8 @@ impl App {
             };
             (id, config.settings().layout_osd)
         };
-        let previous = self.announced_layout.replace(Some(id.clone()));
-        if !enabled
-            || previous.is_none_or(|previous| previous == id)
-            || !lhc_core::mapper::runtime::status().running
-        {
+        let changed = self.mapper.layout_changed(&id);
+        if !enabled || !changed || !lhc_core::mapper::runtime::status().running {
             return;
         }
         let name = id
@@ -287,10 +308,9 @@ impl App {
             status.waiting_for_device,
             status.last_error.clone(),
         );
-        if self.mapper_status.last.borrow().as_ref() == Some(&current) {
+        if !self.mapper.status_changed(current) {
             return;
         }
-        *self.mapper_status.last.borrow_mut() = Some(current);
         if !status.running
             && let Some(error) = &status.last_error
         {
@@ -310,7 +330,7 @@ impl App {
 
     /// Track the mapper's uptime and keep it shown while there is one.
     fn track_uptime(&self, running: bool, failed: bool) {
-        let status = &self.mapper_status;
+        let status = &self.mapper;
         if !status.track(running, failed, Instant::now()) {
             status.uptime_clock.stop();
         } else if !status.uptime_clock.running() {
@@ -324,7 +344,7 @@ impl App {
     }
 
     fn show_uptime(&self) {
-        let (uptime, ran, ago) = self.mapper_status.minutes(Instant::now());
+        let (uptime, ran, ago) = self.mapper.minutes(Instant::now());
         let state = self.settings.global::<AppState>();
         state.set_mapper_uptime(uptime);
         state.set_mapper_ran(ran);
@@ -424,7 +444,7 @@ impl App {
             }
         };
         lhc_core::active_window::set_titles_needed(runtime.uses_titles);
-        self.mapper_status.crash.set(None);
+        self.mapper.crash.set(None);
         self.set_mapper_busy(true);
         state.set_status(Msg::MapperStarting.to_ui());
         std::thread::spawn(move || {

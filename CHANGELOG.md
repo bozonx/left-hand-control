@@ -16,6 +16,9 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Settings pages refresh only when their dependent layout sections change; dirty indicators reuse the saved library snapshot until the library is refreshed or edited.
+- Macro pause editing follows the same numeric validation as saved layouts. A successful library save completes even when updating the running mapper fails, with a separate warning.
+
 - The settings window looks the same on every page: dropdown menus share one style with a check mark for the current choice and arrow-key highlighting, value fields and pickers use one outline and background, every focusable control shows the same focus ring, and page spacing, tooltips, card titles and empty-list hints are consistent.
 - Built-in macros have consistent, accurate names and IDs: for example “Move line down” is now “Empty line above” (`builtin:emptyLineAbove`), “Paste at line bottom” is “Paste on new line below”, “Move up 5 times” is “Move 5 lines up” (`builtin:move5LinesUp`), and “buffer” is “clipboard”. Old `builtin:` IDs are not migrated: bindings that use them show as unknown macros and need to be reassigned.
 

@@ -1,6 +1,7 @@
 //! Regression tests for picker.
 
 use super::*;
+use crate::ui::PickerCategory;
 
 #[test]
 fn capture_waits_for_all_releases_and_preserves_keys() {
@@ -120,6 +121,8 @@ fn picker_modes_restrict_values() {
     assert!(step.accepts("pause:100", None));
     assert!(!step.accepts("pause:10001", None));
     assert!(!step.accepts("pause:0", None));
+    assert!(!step.accepts("pause:+100", None));
+    assert!(!step.accepts("pause: 100", None));
     assert!(!step.accepts("macro:self", None));
     assert!(step.accepts("builtin:copyLineText", None));
 }

@@ -28,12 +28,7 @@ pub(crate) fn validate_step(config: &AppConfig, raw: &str) -> Result<(), ConfigE
     }
     let action = Action::parse(Some(raw));
     if let Action::Pause(ms) = &action {
-        return if !ms.is_empty()
-            && ms.bytes().all(|c| c.is_ascii_digit())
-            && ms
-                .parse::<u64>()
-                .is_ok_and(|v| super::timing::PAUSE.contains(v))
-        {
+        return if super::timing::PAUSE.parse(ms).is_some() {
             Ok(())
         } else {
             Err(ConfigError::Macro(MacroIssue::PauseRange))

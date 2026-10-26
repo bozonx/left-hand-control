@@ -215,7 +215,7 @@ impl App {
                     Err(error) => self.set_error(Msg::WorkerError(error.to_string())),
                 }
                 self.supervisor.borrow_mut().worker = Some(worker);
-                self.menus.sent.borrow_mut().take();
+                self.popups.reset_worker();
                 self.flush_worker_show();
                 self.resend_layer_hint();
             }

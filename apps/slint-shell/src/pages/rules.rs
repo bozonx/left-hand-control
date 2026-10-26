@@ -418,8 +418,12 @@ pub(super) fn picker_request(ui: &SettingsWindow, key_only: bool) -> super::pick
             RuleDialog::LongHold => PickerTitle::LongHold,
             _ => PickerTitle::Auto,
         },
-        trigger_chords: key_only && field == RuleDialog::Key,
-        rule_action: matches!(field, RuleDialog::Tap | RuleDialog::Hold),
+        mode: match field {
+            RuleDialog::Key if key_only => super::picker::PickerMode::Trigger,
+            RuleDialog::Tap => super::picker::PickerMode::RuleTap,
+            RuleDialog::Hold => super::picker::PickerMode::RuleHold,
+            _ => super::picker::PickerMode::Action,
+        },
         swallowed: match field {
             RuleDialog::Tap => editor.get_swallow_tap(),
             RuleDialog::Hold => editor.get_swallow_hold(),
@@ -428,7 +432,6 @@ pub(super) fn picker_request(ui: &SettingsWindow, key_only: bool) -> super::pick
         allow_default: matches!(field, RuleDialog::Tap | RuleDialog::DoubleTap),
         allow_swallow: field == RuleDialog::Tap,
         empty_default: matches!(field, RuleDialog::DoubleTap | RuleDialog::LongHold),
-        hold_action: held_key,
         hold_layer,
         ..Default::default()
     }

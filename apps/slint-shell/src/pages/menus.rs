@@ -242,7 +242,16 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             && state.layout == saved
             && state.baseline != *document.read().layout()
         {
-            reload(ui, document, state);
+            let baseline = document.read().layout().clone();
+            let mut layout = baseline.clone();
+            normalize(&mut layout);
+            let changed = state.layout.emoji_pages != layout.emoji_pages
+                || state.layout.quick_action_pages != layout.quick_action_pages;
+            state.baseline = baseline;
+            state.layout = layout;
+            if changed {
+                refresh(ui, &state.layout, true);
+            }
         }
     });
 

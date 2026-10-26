@@ -32,6 +32,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let loaded = || document.read();
 
     e.invoke_open(MenuKind::Emoji);
+    let cells = e.get_cells();
+    document.edit(slint_shell::document::View::Layers, |config| {
+        config.create_layer("Navigation", "")
+    })?;
+    assert!(
+        e.get_cells() == cells,
+        "unrelated edits must retain the menu model"
+    );
     e.set_value("Привет 👋".into());
     e.invoke_set_cell();
     e.set_page_name("Мои эмоджи".into());

@@ -19,9 +19,10 @@ use std::{
     time::Instant,
 };
 
-/// Menus of the active layout as the popups and the worker use them.
+/// Popup requests, cached menus and the revision sent to the worker.
 #[derive(Default)]
-pub(super) struct Menus {
+pub(super) struct PopupController {
+    state: PopupState,
     /// Menus of the active layout for the winit popups.
     configured: RefCell<Option<Rc<ConfiguredMenus>>>,
     /// Menus the winit popups show now; their page ids locate the last
@@ -30,12 +31,12 @@ pub(super) struct Menus {
     /// Bumped whenever the menus may have changed.
     generation: Cell<u64>,
     /// Layout and generation last sent to the Spell worker.
-    pub(super) sent: RefCell<Option<(Option<String>, u64)>>,
+    sent: RefCell<Option<(Option<String>, u64)>>,
 }
 
 /// Requests in flight for the popups.
 #[derive(Default)]
-pub(super) struct PopupState {
+struct PopupState {
     /// Bumped on every show; deferred work checks it to skip stale requests.
     generations: RefCell<HashMap<Window, u64>>,
     /// Requested page and the chosen action waiting for the focus to leave.
@@ -59,6 +60,60 @@ impl PopupState {
     }
 }
 
+impl PopupController {
+    pub(super) fn generation(&self, window: Window) -> u64 {
+        self.state.generation(window)
+    }
+    pub(super) fn next_generation(&self, window: Window) -> u64 {
+        self.state.next_generation(window)
+    }
+
+    fn menus(&self, document: Option<&crate::document::Document>) -> Rc<ConfiguredMenus> {
+        if let Some(menus) = self.configured.borrow().as_ref() {
+            return menus.clone();
+        }
+        let layout = document
+            .and_then(|document| {
+                document
+                    .read()
+                    .active_layout(&lhc_core::profile::auto_switch::AutoSwitchContext::current())
+                    .map_err(|error| log::warn!("popup menus: {error}"))
+                    .ok()
+            })
+            .unwrap_or_default();
+        let menus = Rc::new(ConfiguredMenus { layout });
+        *self.configured.borrow_mut() = Some(menus.clone());
+        menus
+    }
+
+    pub(super) fn invalidate(&self) {
+        self.configured.borrow_mut().take();
+        self.generation.set(self.generation.get() + 1);
+    }
+
+    pub(super) fn reset_worker(&self) {
+        self.sent.borrow_mut().take();
+    }
+
+    fn needs_worker_update(&self, id: &Option<String>) -> bool {
+        self.sent.borrow().as_ref() != Some(&(id.clone(), self.generation.get()))
+    }
+
+    fn worker_updated(&self, id: Option<String>) {
+        *self.sent.borrow_mut() = Some((id, self.generation.get()));
+    }
+
+    fn apply(
+        &self,
+        menus: Rc<ConfiguredMenus>,
+        emoji: &crate::ui::EmojiPopup,
+        quick: &crate::ui::QuickPopup,
+    ) {
+        let previous = self.applied.replace(Some(menus.clone()));
+        menus.apply(previous.as_deref(), emoji, quick);
+    }
+}
+
 impl App {
     pub(super) fn hide(&self, window: Window) {
         if let Err(error) = self.window(window).hide() {
@@ -79,29 +134,12 @@ impl App {
 
     /// Menus of the active layout, loaded once per change.
     pub(super) fn menus(&self) -> Rc<ConfiguredMenus> {
-        if let Some(menus) = self.menus.configured.borrow().as_ref() {
-            return menus.clone();
-        }
-        let layout = self
-            .document()
-            .as_ref()
-            .and_then(|document| {
-                document
-                    .read()
-                    .active_layout(&lhc_core::profile::auto_switch::AutoSwitchContext::current())
-                    .map_err(|error| log::warn!("popup menus: {error}"))
-                    .ok()
-            })
-            .unwrap_or_default();
-        let menus = Rc::new(ConfiguredMenus { layout });
-        *self.menus.configured.borrow_mut() = Some(menus.clone());
-        menus
+        self.popups.menus(self.document().as_deref())
     }
 
     /// Forget cached menus after the configuration or context changed.
     pub(super) fn invalidate_menus(&self) {
-        self.menus.configured.borrow_mut().take();
-        self.menus.generation.set(self.menus.generation.get() + 1);
+        self.popups.invalidate();
     }
 
     /// Tell the worker which layout's menus to show, when that changed.
@@ -117,13 +155,12 @@ impl App {
                 .ok()
                 .flatten()
         });
-        let current = (id.clone(), self.menus.generation.get());
-        if self.menus.sent.borrow().as_ref() == Some(&current) {
+        if !self.popups.needs_worker_update(&id) {
             return Ok(());
         }
         let contents = lhc_core::profile::layout_file::serialize(&self.menus().layout);
         self.send_worker(&Command::PopupContents(contents), source, start, None)?;
-        *self.menus.sent.borrow_mut() = Some(current);
+        self.popups.worker_updated(id);
         Ok(())
     }
 
@@ -171,10 +208,13 @@ impl App {
             if self.window(window).is_visible() {
                 // The popup already has the focus, so no focus event follows.
                 release_mapper_input();
-                self.popup
-                    .session
-                    .borrow_mut()
-                    .open(popup, page, true, &self.emoji, &self.quick);
+                self.popups.state.session.borrow_mut().open(
+                    popup,
+                    page,
+                    true,
+                    &self.emoji,
+                    &self.quick,
+                );
                 self.popup_outcome(popup, KeyOutcome::PageChanged);
                 return;
             }
@@ -188,10 +228,13 @@ impl App {
                 }
             }
             self.refresh_popup_data();
-            self.popup
-                .session
-                .borrow_mut()
-                .open(popup, page, false, &self.emoji, &self.quick);
+            self.popups.state.session.borrow_mut().open(
+                popup,
+                page,
+                false,
+                &self.emoji,
+                &self.quick,
+            );
             if page.is_some() {
                 self.filter_quick();
             }
@@ -281,14 +324,14 @@ impl App {
             return;
         }
         // Run once the popup no longer has the keyboard focus.
-        self.popup.session.borrow_mut().choose(popup, action);
+        self.popups.state.session.borrow_mut().choose(popup, action);
         slint::Timer::single_shot(FOCUS_RETURN_TIMEOUT, move || {
             with_app(|app| app.run_pending_action(popup, false));
         });
     }
 
     fn run_pending_action(&self, popup: Popup, focus_left: bool) {
-        let action = self.popup.session.borrow_mut().take_pending(popup);
+        let action = self.popups.state.session.borrow_mut().take_pending(popup);
         if let Some(PendingAction { action, chosen, .. }) = action {
             if focus_left {
                 log::info!(
@@ -316,8 +359,7 @@ impl App {
 
     fn refresh_popup_data(&self) {
         let menus = self.menus();
-        let previous = self.menus.applied.replace(Some(menus.clone()));
-        menus.apply(previous.as_deref(), &self.emoji, &self.quick);
+        self.popups.apply(menus, &self.emoji, &self.quick);
         self.filter_quick();
     }
 

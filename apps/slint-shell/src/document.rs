@@ -9,7 +9,10 @@
 use crate::i18n::Msg;
 use lhc_core::{
     config_document::{ConfigDocument, ConfigError, RuntimeConfig},
-    profile::auto_switch::AutoSwitchContext,
+    profile::{
+        auto_switch::AutoSwitchContext,
+        model::{AppSettings, LayoutPreset},
+    },
     storage::StoragePaths,
 };
 use std::{
@@ -31,10 +34,60 @@ pub enum View {
     Shell,
 }
 
+/// Sections changed by an edit, used to refresh only dependent views.
+#[derive(Default)]
+struct Changes {
+    settings: bool,
+    rules: bool,
+    layers: bool,
+    macros: bool,
+    commands: bool,
+    library: bool,
+}
+
+impl Changes {
+    fn between(
+        layout: &LayoutPreset,
+        settings: &AppSettings,
+        next: &ConfigDocument,
+        origin: View,
+    ) -> Self {
+        let current = next.layout();
+        Self {
+            settings: settings != next.settings(),
+            rules: layout.rules != current.rules,
+            layers: layout.layers != current.layers
+                || layout.layer_keymaps != current.layer_keymaps,
+            macros: layout.macros != current.macros,
+            commands: layout.commands != current.commands,
+            library: origin == View::Library,
+        }
+    }
+
+    fn affects(&self, view: View) -> bool {
+        if self.settings || self.library {
+            return true;
+        }
+        match view {
+            View::Keys => self.rules,
+            View::Rules => self.rules || self.layers,
+            View::Layers => self.layers || self.rules || self.macros || self.commands,
+            // Menu drafts use a full-layout baseline for optimistic locking.
+            View::Menus | View::Macros | View::Library | View::Settings | View::Shell => true,
+        }
+    }
+}
+
+struct LibrarySnapshot {
+    name: String,
+    layout: Option<LayoutPreset>,
+}
+
 type Listener = Rc<dyn Fn(&Document)>;
 
 pub struct Document {
     config: RefCell<ConfigDocument>,
+    library_snapshot: RefCell<Option<LibrarySnapshot>>,
     listeners: RefCell<Vec<(View, Listener)>>,
     /// Layout last given to the running mapper; `None` before the first push.
     pushed_layout: RefCell<Option<Option<String>>>,
@@ -48,6 +101,12 @@ pub struct Saved<T> {
 }
 
 impl<T> Saved<T> {
+    /// Keep the applied value even when the mapper could not take the change.
+    pub fn into_parts(self) -> (T, Option<Msg>) {
+        let warning = self.runtime.err().map(Msg::SavedMapperNotUpdated);
+        (self.value, warning)
+    }
+
     /// `ok` when the mapper is up to date, otherwise a warning that the
     /// change was applied to the document but not to the mapper.
     pub fn message(&self, ok: Msg) -> Msg {
@@ -62,6 +121,7 @@ impl Document {
     pub fn new(config: ConfigDocument) -> Rc<Self> {
         Rc::new(Self {
             config: RefCell::new(config),
+            library_snapshot: RefCell::default(),
             listeners: RefCell::default(),
             pushed_layout: RefCell::default(),
         })
@@ -76,22 +136,56 @@ impl Document {
         self.config.borrow()
     }
 
-    /// Call `refresh` whenever the document changes outside `view`.
+    /// Call `refresh` when another view changes this view's dependencies.
     pub fn subscribe(&self, view: View, refresh: impl Fn(&Document) + 'static) {
         self.listeners.borrow_mut().push((view, Rc::new(refresh)));
     }
 
     /// Change the document on behalf of `origin`, update a running mapper
-    /// and refresh every other view.
+    /// and refresh other views that depend on the changed sections.
     pub fn edit<T>(
         &self,
         origin: View,
         edit: impl FnOnce(&mut ConfigDocument) -> Result<T, ConfigError>,
     ) -> Result<Saved<T>, ConfigError> {
-        let value = edit(&mut self.config.borrow_mut())?;
+        let (value, changes) = {
+            let mut config = self.config.borrow_mut();
+            let layout = config.layout().clone();
+            let settings = config.settings().clone();
+            let value = edit(&mut config)?;
+            (value, Changes::between(&layout, &settings, &config, origin))
+        };
+        if changes.library {
+            self.invalidate_library();
+        }
         let runtime = self.sync_runtime(true);
-        self.notify(Some(origin));
+        self.notify(Some(origin), Some(&changes));
         Ok(Saved { value, runtime })
+    }
+
+    /// Re-read library contents on the next request (library edits or explicit refresh).
+    pub(crate) fn invalidate_library(&self) {
+        self.library_snapshot.borrow_mut().take();
+    }
+
+    /// Saved library layout used by dirty indicators; disk reads happen once per refresh.
+    pub(crate) fn saved_layout(&self, name: &str) -> Option<LayoutPreset> {
+        let mut snapshot = self.library_snapshot.borrow_mut();
+        if snapshot
+            .as_ref()
+            .is_none_or(|snapshot| snapshot.name != name)
+        {
+            *snapshot = Some(LibrarySnapshot {
+                name: name.to_owned(),
+                layout: self
+                    .read()
+                    .load_layout(&lhc_core::profile::model::user_layout_id(name))
+                    .ok(),
+            });
+        }
+        snapshot
+            .as_ref()
+            .and_then(|snapshot| snapshot.layout.clone())
     }
 
     /// Mapper input for the current system state.
@@ -136,15 +230,18 @@ impl Document {
 
     /// Refresh every view, for example after the language changed.
     pub fn refresh_all(&self) {
-        self.notify(None);
+        self.invalidate_library();
+        self.notify(None, None);
     }
 
-    fn notify(&self, origin: Option<View>) {
+    fn notify(&self, origin: Option<View>, changes: Option<&Changes>) {
         let listeners: Vec<Listener> = self
             .listeners
             .borrow()
             .iter()
-            .filter(|(view, _)| Some(*view) != origin)
+            .filter(|(view, _)| {
+                Some(*view) != origin && changes.is_none_or(|changes| changes.affects(*view))
+            })
             .map(|(_, listener)| listener.clone())
             .collect();
         for listener in listeners {
@@ -163,6 +260,93 @@ mod tests {
         let paths = StoragePaths::new(dir.path().join("settings"), dir.path().join("data"));
         let document = Document::load(paths).unwrap();
         (dir, document)
+    }
+
+    #[test]
+    fn mapper_warning_does_not_discard_an_applied_edit() {
+        let saved = Saved {
+            value: "saved file contents",
+            runtime: Err("mapper failed".into()),
+        };
+        let (value, warning) = saved.into_parts();
+        assert_eq!(value, "saved file contents");
+        assert!(
+            matches!(warning, Some(Msg::SavedMapperNotUpdated(error)) if error == "mapper failed")
+        );
+    }
+
+    #[test]
+    fn menu_edits_skip_unrelated_keyboard_views() {
+        let (_dir, document) = document();
+        let counters: Vec<_> = [
+            View::Keys,
+            View::Rules,
+            View::Layers,
+            View::Macros,
+            View::Library,
+        ]
+        .into_iter()
+        .map(|view| {
+            let count = Rc::new(Cell::new(0));
+            let next = count.clone();
+            document.subscribe(view, move |_| next.set(next.get() + 1));
+            count
+        })
+        .collect();
+        document
+            .edit(View::Menus, |config| {
+                config.update_layout(|layout| {
+                    layout.emoji_pages[0].name = "Edited".into();
+                })
+            })
+            .unwrap();
+        assert_eq!(
+            counters.iter().map(|count| count.get()).collect::<Vec<_>>(),
+            [0, 0, 0, 1, 1]
+        );
+        document.refresh_all();
+        assert_eq!(
+            counters.iter().map(|count| count.get()).collect::<Vec<_>>(),
+            [1, 1, 1, 2, 2]
+        );
+    }
+
+    #[test]
+    fn library_snapshot_refreshes_after_library_edits_and_explicit_refresh() {
+        let (_dir, document) = document();
+        document
+            .edit(View::Library, |config| {
+                config.save_current_layout_as("Saved")
+            })
+            .unwrap();
+        let before = document.saved_layout("Saved").unwrap();
+        document
+            .edit(View::Layers, |config| {
+                config.update_layout(|layout| layout.description = Some("working".into()))
+            })
+            .unwrap();
+        assert_eq!(document.saved_layout("Saved"), Some(before.clone()));
+        document
+            .edit(View::Library, |config| {
+                config.overwrite_library_layout("Saved")
+            })
+            .unwrap();
+        assert_eq!(
+            document
+                .saved_layout("Saved")
+                .unwrap()
+                .description
+                .as_deref(),
+            Some("working")
+        );
+        let text = lhc_core::profile::layout_file::serialize(&before);
+        document
+            .read()
+            .paths()
+            .save_user_layout("Saved", &text, true)
+            .unwrap();
+        document.refresh_all();
+        assert_eq!(document.saved_layout("Saved"), Some(before));
     }
 
     #[test]

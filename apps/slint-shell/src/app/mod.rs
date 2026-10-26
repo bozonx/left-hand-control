@@ -40,16 +40,11 @@ pub(crate) struct App {
     tray: RefCell<Option<tray::Handle>>,
     #[cfg(not(target_os = "linux"))]
     return_input: RefCell<crate::platform::return_input::ReturnInput>,
-    menus: popups::Menus,
-    popup: popups::PopupState,
+    popups: popups::PopupController,
     supervisor: RefCell<worker::Supervisor>,
     preferences: Cell<Preferences>,
     worker_watch: slint::Timer,
-    mapper_status: mapper::MapperStatus,
-    /// Game-mode state the active layout was last chosen for.
-    game_active: Cell<Option<bool>>,
-    /// Active layout last seen for the OSD; `None` before the first look.
-    announced_layout: RefCell<Option<Option<String>>>,
+    mapper: mapper::MapperController,
     layer_hint: layer_hint::LayerHint,
     shutting_down: Cell<bool>,
 }
@@ -117,11 +112,11 @@ impl App {
     }
 
     fn generation(&self, window: Window) -> u64 {
-        self.popup.generation(window)
+        self.popups.generation(window)
     }
 
     fn next_generation(&self, window: Window) -> u64 {
-        self.popup.next_generation(window)
+        self.popups.next_generation(window)
     }
 
     fn set_error(&self, message: Msg) {
@@ -369,7 +364,7 @@ impl App {
                         .is_some_and(|doc| doc.read().settings().in_development),
                 );
                 *self.tray.borrow_mut() = Some(tray);
-                self.mapper_status.last.borrow_mut().take();
+                self.mapper.reset_status();
                 self.refresh_mapper_status();
                 self.metrics.borrow_mut().ready("tray");
                 true
@@ -497,14 +492,11 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         tray: RefCell::new(None),
         #[cfg(not(target_os = "linux"))]
         return_input: RefCell::default(),
-        menus: Default::default(),
-        popup: Default::default(),
+        popups: Default::default(),
         supervisor: RefCell::new(worker::Supervisor::new(use_spell, layer_shell)),
         preferences: Cell::new(Preferences::default()),
         worker_watch: slint::Timer::default(),
-        mapper_status: Default::default(),
-        game_active: Cell::new(None),
-        announced_layout: RefCell::new(None),
+        mapper: Default::default(),
         layer_hint: Default::default(),
         shutting_down: Cell::new(false),
     });

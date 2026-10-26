@@ -4,6 +4,14 @@
 //! the library holds named layouts. Library files are compared with the
 //! contents last read so a change made elsewhere is never overwritten.
 
+mod auto_rules;
+mod working;
+use auto_rules::{
+    add_game_rule, delete_rule, load_rule, move_rule, save_rule, set_auto_default, set_rule_enabled,
+};
+pub use working::refresh_active;
+use working::{overwrite_current, refresh_context, reset_context, save_as, save_current};
+
 use super::{game_condition, game_condition_value, parse_list};
 use crate::{
     document::{Document, View},
@@ -19,7 +27,7 @@ use lhc_core::{
         auto_switch::{self, AutoSwitchContext},
         bundled::BUNDLED,
         ids, layout_file,
-        library::LibrarySource,
+        library::{LibrarySaveTarget, LibrarySource},
         model::{
             AppSettings, AutoRule, LayoutConditionSet, LayoutMode, LayoutPreset, user_layout_id,
             user_layout_name,
@@ -36,6 +44,7 @@ struct State {
     known: Option<String>,
     /// Library layout the working copy came from and its saved contents.
     baseline: Option<(String, String)>,
+    warning: Option<Msg>,
 }
 
 type Shared = Rc<RefCell<State>>;
@@ -78,6 +87,7 @@ fn condition(game: GameCondition, layouts: &str, apps: &str, excluded: &str) -> 
 
 /// Show the library. Descriptions are read from the layout files.
 fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State) -> Result<(), Msg> {
+    document.invalidate_library();
     let config = document.read();
     let library = ui.global::<LayoutLibrary>();
     let names: Vec<String> = config
@@ -226,103 +236,17 @@ fn refresh_auto(ui: &SettingsWindow, document: &Document) {
 /// Label and dirty flag of the working copy: it differs from its library
 /// file. Both sides go through the same parser, so formatting differences
 /// in the file do not count as changes.
-fn refresh_context(ui: &SettingsWindow, document: &Document) {
-    let config = document.read();
-    let library = ui.global::<LayoutLibrary>();
-    let name = current_name(&config);
-    library.set_current_label(name.clone().unwrap_or_default().into());
-    let named = name.is_some();
-    let saved = name
-        .and_then(|name| config.load_layout(&user_layout_id(&name)).ok())
-        .or_else(|| (!named).then(LayoutPreset::initial));
-    let current = config.layout();
-    let normalized = layout_file::parse(&layout_file::serialize(current))
-        .ok()
-        .flatten();
-    let current = normalized.as_ref().unwrap_or(current);
-    let dirty = saved
-        .as_ref()
-        .is_none_or(|saved| layout_file::serialize(saved) != layout_file::serialize(current));
-    library.set_dirty(dirty);
-    let changed = |section: fn(&LayoutPreset) -> LayoutPreset| {
-        saved.as_ref().map_or(dirty, |saved| {
-            layout_file::serialize(&section(saved)) != layout_file::serialize(&section(current))
-        })
+fn report(ui: &SettingsWindow, state: &Shared, result: Result<Msg, Msg>) {
+    let warning = state.borrow_mut().warning.take();
+    let message = match result {
+        Ok(message) => warning.unwrap_or(message),
+        Err(error) => {
+            if let Some(warning) = warning {
+                crate::notifications::send(ui, warning);
+            }
+            error
+        }
     };
-    library.set_rules_dirty(changed(|layout| LayoutPreset {
-        rules: layout.rules.clone(),
-        ..Default::default()
-    }));
-    let base_dirty = saved.as_ref().map_or(dirty, |saved| {
-        crate::keyboard::BASE
-            .iter()
-            .any(|key| saved.base_tap_action(key) != current.base_tap_action(key))
-    });
-    library.set_layers_dirty(
-        base_dirty
-            || changed(|layout| LayoutPreset {
-                layers: layout.layers.clone(),
-                layer_keymaps: layout.layer_keymaps.clone(),
-                ..Default::default()
-            }),
-    );
-    library.set_macros_dirty(changed(|layout| LayoutPreset {
-        macros: layout.macros.clone(),
-        ..Default::default()
-    }));
-    library.set_quick_dirty(changed(|layout| LayoutPreset {
-        quick_action_pages: layout.quick_action_pages.clone(),
-        ..Default::default()
-    }));
-    library.set_emoji_dirty(changed(|layout| LayoutPreset {
-        emoji_pages: layout.emoji_pages.clone(),
-        ..Default::default()
-    }));
-    library.set_commands_dirty(changed(|layout| LayoutPreset {
-        commands: layout.commands.clone(),
-        ..Default::default()
-    }));
-}
-
-/// Name of the layout the mapper uses now and the automatic rule that
-/// chose it.
-pub fn refresh_active(ui: &SettingsWindow, document: &Document) {
-    let config = document.read();
-    let context = AutoSwitchContext::current();
-    let label = config
-        .active_layout_id(&context)
-        .ok()
-        .flatten()
-        .and_then(|id| user_layout_name(&id).map(str::to_owned))
-        .unwrap_or_default();
-    let matched = config
-        .auto_choice(&context)
-        .ok()
-        .and_then(|choice| choice.rule)
-        .map_or(-1, |index| index as i32);
-    drop(config);
-    let library = ui.global::<LayoutLibrary>();
-    library.set_active_label(label.into());
-    library.set_auto_matched(matched);
-    let game = lhc_core::gamemode::status();
-    library.set_game_detection(
-        game.detection_enabled || game.control != lhc_core::gamemode::GameModeControl::Auto,
-    );
-}
-
-/// Remember the library file of the working copy as its saved state.
-fn reset_context(ui: &SettingsWindow, document: &Document, state: &mut State) {
-    let config = document.read();
-    state.baseline = current_name(&config).and_then(|name| {
-        let text = config.paths().load_user_layout(&name).ok()?;
-        Some((name, text))
-    });
-    drop(config);
-    refresh_context(ui, document);
-}
-
-fn report(ui: &SettingsWindow, result: Result<Msg, Msg>) {
-    let message = result.unwrap_or_else(|error| error);
     if matches!(
         message,
         Msg::LayoutCreated(_)
@@ -358,11 +282,11 @@ fn edit<T>(
             other => config_error(other),
         }
     })?;
-    refresh(ui, document, &mut state.borrow_mut())?;
-    if let Err(error) = saved.runtime {
-        return Err(Msg::SavedMapperNotUpdated(error));
-    }
-    Ok(saved.value)
+    let refreshed = refresh(ui, document, &mut state.borrow_mut());
+    let (value, warning) = saved.into_parts();
+    let mut state = state.borrow_mut();
+    state.warning = state.warning.take().or(warning).or_else(|| refreshed.err());
+    Ok(value)
 }
 
 /// Change automatic-mode settings and refresh only the rules panel, so
@@ -544,97 +468,6 @@ fn create(
     Ok(Msg::LayoutCreated(created))
 }
 
-/// Layout text as it would be saved, so formatting does not count.
-fn normalized(text: &str) -> Option<String> {
-    layout_file::parse(text)
-        .ok()
-        .flatten()
-        .map(|layout| layout_file::serialize(&layout))
-}
-
-/// Whether saving the working copy as `name` loses nothing on disk: the
-/// file is what the working copy was opened from, or already holds it.
-fn safe_to_save(config: &ConfigDocument, state: &State, name: &str) -> bool {
-    let Ok(disk) = config.paths().load_user_layout(name) else {
-        return false;
-    };
-    let Some(disk_layout) = normalized(&disk) else {
-        return false;
-    };
-    let opened = state
-        .baseline
-        .as_ref()
-        .filter(|(baseline, _)| baseline == name)
-        .map(|(_, text)| text);
-    if opened.is_some_and(|text| *text == disk || normalized(text).as_ref() == Some(&disk_layout)) {
-        return true;
-    }
-    let mut current = config.layout().clone();
-    current.prune_commands();
-    normalized(&layout_file::serialize(&current)).as_ref() == Some(&disk_layout)
-}
-
-/// Save the working copy back to its library file. When the file was
-/// changed elsewhere, ask whether to overwrite, save a copy or reload.
-fn save_current(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result<Msg, Msg> {
-    let library = ui.global::<LayoutLibrary>();
-    let Some(name) = current_name(&document.read()) else {
-        library.set_save_as_name("".into());
-        library.set_save_as_open(true);
-        return Ok(Msg::None);
-    };
-    if !safe_to_save(&document.read(), &state.borrow(), &name) {
-        library.set_dialog(LibraryDialog::Conflict);
-        return Ok(Msg::None);
-    }
-    write_current(ui, document, state, name)
-}
-
-/// Write the working copy over its library file.
-fn overwrite_current(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result<Msg, Msg> {
-    let name = current_name(&document.read()).ok_or(Msg::LibrarySelect)?;
-    ui.global::<LayoutLibrary>().set_dialog(LibraryDialog::None);
-    write_current(ui, document, state, name)
-}
-
-fn write_current(
-    ui: &SettingsWindow,
-    document: &Document,
-    state: &Shared,
-    name: String,
-) -> Result<Msg, Msg> {
-    let text = edit(ui, document, state, |config| {
-        config.update_layout(LayoutPreset::prune_commands)?;
-        let text = layout_file::serialize(config.layout());
-        config
-            .paths()
-            .save_user_layout(&name, &text, true)
-            .map_err(ConfigError::Io)?;
-        Ok(text)
-    })?;
-    state.borrow_mut().baseline = Some((name.clone(), text));
-    refresh_context(ui, document);
-    Ok(Msg::LayoutSaved(name))
-}
-
-/// Save the working copy as a new library layout and continue editing it.
-fn save_as(
-    ui: &SettingsWindow,
-    document: &Document,
-    state: &Shared,
-    name: &str,
-) -> Result<Msg, Msg> {
-    let (saved, text) = edit(ui, document, state, |config| {
-        config.update_layout(LayoutPreset::prune_commands)?;
-        let text = layout_file::serialize(config.layout());
-        Ok((config.save_current_layout_as(name)?, text))
-    })?;
-    state.borrow_mut().baseline = Some((saved.clone(), text));
-    ui.global::<LayoutLibrary>().set_save_as_open(false);
-    refresh(ui, document, &mut state.borrow_mut())?;
-    Ok(Msg::LayoutSaved(saved))
-}
-
 fn delete(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result<Msg, Msg> {
     let name = selected_name(state)?;
     let current = check_unchanged(document, state, &name)?;
@@ -680,169 +513,6 @@ fn set_description(
     Ok(Msg::None)
 }
 
-/// Layout id of the library row `index`; any other index means off.
-fn target_id(ui: &SettingsWindow, index: i32) -> Option<String> {
-    usize::try_from(index)
-        .ok()
-        .and_then(|index| slint::Model::row_data(&ui.global::<LayoutLibrary>().get_names(), index))
-        .map(|name| user_layout_id(&name))
-}
-
-/// Fill the rule dialog with rule `index`, or a new rule for `target`.
-fn load_rule(ui: &SettingsWindow, document: &Document, index: i32, target: i32) {
-    let library = ui.global::<LayoutLibrary>();
-    let rule = usize::try_from(index)
-        .ok()
-        .and_then(|index| document.read().settings().auto_rules.get(index).cloned());
-    let (game, layouts, apps, excluded) = condition_fields(rule.map(|rule| rule.conditions));
-    library.set_rule_index(if rule_exists(document, index) {
-        index
-    } else {
-        -1
-    });
-    library.set_rule_target(target);
-    library.set_rule_game(game);
-    library.set_rule_layouts(layouts.into());
-    library.set_rule_apps(apps.into());
-    library.set_rule_excluded(excluded.into());
-    library.set_status(Msg::None.to_ui());
-    library.set_dialog(LibraryDialog::Rule);
-}
-
-fn rule_exists(document: &Document, index: i32) -> bool {
-    usize::try_from(index).is_ok_and(|index| index < document.read().settings().auto_rules.len())
-}
-
-fn save_rule(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result<Msg, Msg> {
-    let library = ui.global::<LayoutLibrary>();
-    let layout_id = target_id(ui, library.get_rule_target());
-    let conditions = condition(
-        library.get_rule_game(),
-        &library.get_rule_layouts(),
-        &library.get_rule_apps(),
-        &library.get_rule_excluded(),
-    );
-    let index = usize::try_from(library.get_rule_index()).ok();
-    let message = edit_auto(ui, document, state, |settings| {
-        match index.and_then(|index| settings.auto_rules.get_mut(index)) {
-            Some(rule) => {
-                rule.layout_id = layout_id;
-                rule.conditions = conditions;
-            }
-            None => settings.auto_rules.insert(
-                0,
-                AutoRule {
-                    id: ids::generate("rule-"),
-                    enabled: true,
-                    layout_id,
-                    conditions,
-                },
-            ),
-        }
-    })?;
-    library.set_dialog(LibraryDialog::None);
-    Ok(message)
-}
-
-fn delete_rule(
-    ui: &SettingsWindow,
-    document: &Document,
-    state: &Shared,
-    index: i32,
-) -> Result<Msg, Msg> {
-    let index = usize::try_from(index).map_err(|_| Msg::LibrarySelect)?;
-    let message = edit_auto(ui, document, state, |settings| {
-        if index < settings.auto_rules.len() {
-            settings.auto_rules.remove(index);
-        }
-    })?;
-    ui.global::<LayoutLibrary>().set_dialog(LibraryDialog::None);
-    Ok(if matches!(message, Msg::None) {
-        Msg::AutoRuleDeleted
-    } else {
-        message
-    })
-}
-
-fn move_rule(
-    ui: &SettingsWindow,
-    document: &Document,
-    state: &Shared,
-    from: i32,
-    to: i32,
-) -> Result<Msg, Msg> {
-    let (Ok(from), Ok(to)) = (usize::try_from(from), usize::try_from(to)) else {
-        return Ok(Msg::None);
-    };
-    edit_auto(ui, document, state, |settings| {
-        let rules = &mut settings.auto_rules;
-        if from < rules.len() && to < rules.len() {
-            let rule = rules.remove(from);
-            rules.insert(to, rule);
-        }
-    })
-}
-
-fn set_rule_enabled(
-    ui: &SettingsWindow,
-    document: &Document,
-    state: &Shared,
-    index: i32,
-    enabled: bool,
-) -> Result<Msg, Msg> {
-    let index = usize::try_from(index).map_err(|_| Msg::LibrarySelect)?;
-    edit_auto(ui, document, state, |settings| {
-        if let Some(rule) = settings.auto_rules.get_mut(index) {
-            rule.enabled = enabled;
-        }
-    })
-}
-
-/// Ready-made rule: no layout while game mode is on.
-fn add_game_rule(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result<Msg, Msg> {
-    edit_auto(ui, document, state, |settings| {
-        settings.auto_rules.insert(
-            0,
-            AutoRule {
-                id: ids::generate("rule-"),
-                enabled: true,
-                layout_id: None,
-                conditions: LayoutConditionSet {
-                    game_mode: Some("on".into()),
-                    ..LayoutConditionSet::default()
-                },
-            },
-        );
-    })
-}
-
-fn set_auto_default(
-    ui: &SettingsWindow,
-    document: &Document,
-    state: &Shared,
-    index: i32,
-) -> Result<Msg, Msg> {
-    let id = target_id(ui, index);
-    edit_auto(ui, document, state, |settings| {
-        settings.auto_default_layout_id = id
-    })
-}
-
-fn drag_target(rows: &[Option<(f32, f32)>], source: usize, offset: f32, count: usize) -> i32 {
-    let Some(Some((y, height))) = rows.get(source) else {
-        return source as i32;
-    };
-    let pointer = y + height / 2.0 + offset;
-    rows.iter()
-        .take(count)
-        .enumerate()
-        .filter_map(|(index, row)| {
-            row.map(|(y, height)| (index, (y + height / 2.0 - pointer).abs()))
-        })
-        .min_by(|left, right| left.1.total_cmp(&right.1))
-        .map_or(source as i32, |(index, _)| index as i32)
-}
-
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let state: Shared = Rc::default();
     reset_context(ui, document, &mut state.borrow_mut());
@@ -851,38 +521,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         BUNDLED.iter().map(|bundled| bundled.display_name()),
     ));
 
-    let rows = Rc::new(RefCell::new(Vec::new()));
-    let positions = rows.clone();
-    library.on_row_position(move |index, y, height| {
-        let Ok(index) = usize::try_from(index) else {
-            return;
-        };
-        let mut rows = positions.borrow_mut();
-        if rows.len() <= index {
-            rows.resize(index + 1, None);
-        }
-        rows[index] = Some((y, height));
-    });
-    let weak = ui.as_weak();
-    library.on_drag_target(move |source, offset| {
-        let Some(ui) = weak.upgrade() else {
-            return source;
-        };
-        let Ok(index) = usize::try_from(source) else {
-            return source;
-        };
-        drag_target(
-            &rows.borrow(),
-            index,
-            offset,
-            slint::Model::row_count(&ui.global::<LayoutLibrary>().get_names()),
-        )
-    });
-
-    report(
-        ui,
-        refresh(ui, document, &mut state.borrow_mut()).map(|()| Msg::None),
-    );
+    let result = refresh(ui, document, &mut state.borrow_mut()).map(|()| Msg::None);
+    report(ui, &state, result);
 
     let weak = ui.as_weak();
     // Other pages change the working copy: only the toolbar depends on it.
@@ -895,16 +535,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
 
     on!(ui, library.on_refresh, doc = document, state = state => |ui| {
-        let (doc, state) = (&doc, &state);
-        report(
-        &ui,
-        refresh(&ui, doc, &mut state.borrow_mut()).map(|()| Msg::None)
-    )
+        let result = refresh(&ui, &doc, &mut state.borrow_mut()).map(|()| Msg::None);
+        report(&ui, &state, result);
     });
     on!(ui, library.on_select, doc = document, state = state => |ui, index| {
         let (doc, state) = (&doc, &state);
         if let Err(error) = select(&ui, doc, state, index) {
-            report(&ui, Err(error));
+            report(&ui, state, Err(error));
         }
     });
     on!(ui, library.on_set_automatic, doc = document, state = state => |ui, automatic| {
@@ -915,7 +552,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             LayoutMode::Manual
         };
         report(
-            &ui,
+            &ui, state,
             edit_auto(&ui, doc, state, |settings| {
                 auto_switch::set_mode(settings, mode)
             }),
@@ -924,7 +561,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     on!(ui, library.on_action, doc = document, state = state => |ui, action| {
         let (doc, state) = (&doc, &state);
         report(
-        &ui,
+        &ui, state,
         library_action(&ui, doc, state, action)
     )
     });
@@ -943,13 +580,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
     on!(ui, library.on_create, doc = document, state = state => |ui, name, description, source, copy_index| {
         let (doc, state) = (&doc, &state);
-        if let Err(error) = create(&ui, doc, state, &name, &description, source, copy_index) {
-            report(&ui, Err(error));
-        }
+        let result = create(&ui, doc, state, &name, &description, source, copy_index);
+        report(&ui, state, result);
     });
     on!(ui, library.on_set_description, doc = document, state = state => |ui, index, description| {
         let (doc, state) = (&doc, &state);
-        report(&ui, set_description(&ui, doc, state, index, &description))
+        report(&ui, state, set_description(&ui, doc, state, index, &description))
     });
     on!(ui, library.on_rename, doc = document, state = state => |ui, index, name| {
         let (doc, state) = (&doc, &state);
@@ -957,7 +593,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             ui.global::<LayoutLibrary>().set_name(name);
             library_action(&ui, doc, state, LibraryAction::SaveDetails)
         });
-        report(&ui, result);
+        report(&ui, state, result);
     });
     on!(ui, library.on_reorder, doc = document, state = state => |ui, from, to| {
         let (doc, state) = (&doc, &state);
@@ -968,7 +604,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             })
             .map(|()| Msg::None)
         });
-        report(&ui, result);
+        report(&ui, state, result);
     });
     on!(ui, library.on_discard_current, doc = document, state = state => |ui| {
         let (doc, state) = (&doc, &state);
@@ -980,7 +616,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             reset_context(&ui, doc, &mut state.borrow_mut());
             Ok(Msg::LayoutDiscarded(name))
         });
-        report(&ui, result);
+        report(&ui, state, result);
     });
     on!(ui, library.on_activate_current, doc = document, state = state => |ui| {
         let (doc, state) = (&doc, &state);
@@ -996,11 +632,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 })
             });
         let name = current_name(&doc.read()).unwrap_or_default();
-        report(&ui, result.map(|()| Msg::LayoutActivated(name)));
+        report(&ui, state, result.map(|()| Msg::LayoutActivated(name)));
     });
     on!(ui, library.on_load, doc = document, state = state => |ui| {
         let (doc, state) = (&doc, &state);
-        report(&ui, load(&ui, doc, state))
+        report(&ui, state, load(&ui, doc, state))
     });
     on!(ui, library.on_load_rule, doc = document => |ui, index, target| {
         let (doc,) = (&doc,);
@@ -1011,49 +647,49 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     on!(ui, library.on_save_rule, doc = document, state = state => |ui| {
         let (doc, state) = (&doc, &state);
         report(
-        &ui,
+        &ui, state,
         save_rule(&ui, doc, state)
     )
     });
     on!(ui, library.on_delete_rule, doc = document, state = state => |ui, index| {
         let (doc, state) = (&doc, &state);
         report(
-        &ui,
+        &ui, state,
         delete_rule(&ui, doc, state, index)
     )
     });
     on!(ui, library.on_move_rule, doc = document, state = state => |ui, from, to| {
         let (doc, state) = (&doc, &state);
         report(
-        &ui,
+        &ui, state,
         move_rule(&ui, doc, state, from, to)
     )
     });
     on!(ui, library.on_set_rule_enabled, doc = document, state = state => |ui, index, enabled| {
         let (doc, state) = (&doc, &state);
         report(
-            &ui,
+            &ui, state,
             set_rule_enabled(&ui, doc, state, index, enabled)
         )
     });
     on!(ui, library.on_add_game_rule, doc = document, state = state => |ui| {
         let (doc, state) = (&doc, &state);
         report(
-        &ui,
+        &ui, state,
         add_game_rule(&ui, doc, state)
     )
     });
     on!(ui, library.on_set_auto_default, doc = document, state = state => |ui, index| {
         let (doc, state) = (&doc, &state);
         report(
-        &ui,
+        &ui, state,
         set_auto_default(&ui, doc, state, index)
     )
     });
     on!(ui, library.on_delete, doc = document, state = state => |ui| {
         let (doc, state) = (&doc, &state);
         report(
-        &ui,
+        &ui, state,
         delete(&ui, doc, state)
     )
     });
@@ -1074,21 +710,21 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     on!(ui, library.on_save_current, doc = document, state = state => |ui| {
         let (doc, state) = (&doc, &state);
         report(
-        &ui,
+        &ui, state,
         save_current(&ui, doc, state)
     )
     });
     on!(ui, library.on_overwrite_current, doc = document, state = state => |ui| {
         let (doc, state) = (&doc, &state);
         report(
-        &ui,
+        &ui, state,
         overwrite_current(&ui, doc, state)
     )
     });
     on!(ui, library.on_save_as, doc = document, state = state => |ui, name| {
         let (doc, state) = (&doc, &state);
         report(
-        &ui,
+        &ui, state,
         save_as(&ui, doc, state, &name)
     )
     });

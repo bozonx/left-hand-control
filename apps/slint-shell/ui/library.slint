@@ -82,8 +82,6 @@ export global LayoutLibrary {
     callback set-description(int, string);
     callback rename(int, string);
     callback reorder(int, int);
-    callback row-position(int, length, length);
-    callback drag-target(int, length) -> int;
     callback discard-current();
     callback activate-current();
     /// Replace the working copy with the selected layout.
@@ -473,8 +471,6 @@ component SetupStep inherits HorizontalLayout {
 }
 
 export component LibraryPage inherits PageLayout {
-    private property <int> drag-from: -1;
-    private property <int> drag-over: -1;
     // The first-run card covers the missing keyboard itself; the warning is for an
     // existing setup that lost its device.
     if !AppState.keyboard-selected && LayoutLibrary.names.length > 0: Rectangle {
@@ -558,9 +554,6 @@ export component LibraryPage inherits PageLayout {
                         property <bool> current: LayoutLibrary.editor-open && LayoutLibrary.current-label == name;
                         property <bool> auto: LayoutLibrary.automatic;
                         height: max(132px, card-content.preferred-height + 10px);
-                        init => { LayoutLibrary.row-position(index, self.y, self.height); }
-                        changed y => { LayoutLibrary.row-position(index, self.y, self.height); }
-                        changed height => { LayoutLibrary.row-position(index, self.y, self.height); }
                         Rectangle {
                         height: parent.height - 10px; width: parent.width;
                                 background: Theme.card;

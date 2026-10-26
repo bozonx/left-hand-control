@@ -13,6 +13,14 @@ impl Range {
         (self.min..=self.max).contains(&value)
     }
 
+    /// Parse a persisted millisecond value: ASCII digits within this range.
+    pub fn parse(self, value: &str) -> Option<u64> {
+        if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
+            return None;
+        }
+        value.parse().ok().filter(|value| self.contains(*value))
+    }
+
     pub fn check(self, value: u64, path: &str) -> Result<(), String> {
         if self.contains(value) {
             Ok(())
@@ -104,4 +112,32 @@ pub fn validate_layout(layout: &LayoutPreset) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn numeric_fields_share_strict_boundaries() {
+        for range in [MACRO_DELAY, PAUSE] {
+            assert_eq!(range.parse(&range.min.to_string()), Some(range.min));
+            assert_eq!(range.parse(&range.max.to_string()), Some(range.max));
+            assert_eq!(range.parse(&(range.max + 1).to_string()), None);
+            for invalid in [
+                "",
+                "+100",
+                "-100",
+                " 100",
+                "100 ",
+                "1.5",
+                "١٠٠",
+                "18446744073709551616",
+            ] {
+                assert_eq!(range.parse(invalid), None, "{invalid}");
+            }
+        }
+        assert_eq!(PAUSE.parse("0"), None);
+        assert_eq!(MACRO_DELAY.parse("0"), Some(0));
+    }
 }

@@ -19,10 +19,6 @@ use lhc_core::{
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
 
-/// Delay between the last keystroke and saving it.
-/// Longest delay a macro may configure between steps, in milliseconds.
-const MAX_DELAY_MS: u64 = 2000;
-
 /// A macro being edited plus the raw delay fields, which may not parse yet.
 #[derive(Clone, PartialEq)]
 struct Entry {
@@ -59,10 +55,8 @@ fn parse_delay(value: &str) -> Result<Option<u64>, ()> {
     if value.is_empty() {
         return Ok(None);
     }
-    value
-        .parse::<u64>()
-        .ok()
-        .filter(|v| *v <= MAX_DELAY_MS)
+    lhc_core::profile::timing::MACRO_DELAY
+        .parse(value)
         .map(Some)
         .ok_or(())
 }

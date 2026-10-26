@@ -21,7 +21,72 @@ pub enum LibrarySource<'a> {
     Copy(&'a str),
 }
 
+/// Next step when saving the working copy back to its library entry.
+#[derive(Debug, PartialEq, Eq)]
+pub enum LibrarySaveTarget {
+    NeedsName,
+    Conflict,
+    Existing(String),
+}
+
+fn normalized(text: &str) -> Option<String> {
+    layout_file::parse(text)
+        .ok()
+        .flatten()
+        .map(|layout| layout_file::serialize(&layout))
+}
+
 impl ConfigDocument {
+    /// Resolve a normal save without letting the shell interpret file conflicts.
+    pub fn library_save_target(&self, baseline: Option<(&str, &str)>) -> LibrarySaveTarget {
+        let Some(name) = self
+            .settings()
+            .current_layout_id
+            .as_deref()
+            .and_then(super::model::user_layout_name)
+        else {
+            return LibrarySaveTarget::NeedsName;
+        };
+        if self.can_save_library_layout(name, baseline) {
+            LibrarySaveTarget::Existing(name.to_owned())
+        } else {
+            LibrarySaveTarget::Conflict
+        }
+    }
+
+    /// Whether saving the working copy as `name` loses nothing on disk: the
+    /// file is what the working copy was opened from, or already holds it.
+    fn can_save_library_layout(&self, name: &str, baseline: Option<(&str, &str)>) -> bool {
+        let config = self;
+        let Ok(disk) = config.paths().load_user_layout(name) else {
+            return false;
+        };
+        let Some(disk_layout) = normalized(&disk) else {
+            return false;
+        };
+        let opened = baseline
+            .filter(|(baseline, _)| *baseline == name)
+            .map(|(_, text)| text);
+        if opened
+            .is_some_and(|text| text == disk || normalized(text).as_ref() == Some(&disk_layout))
+        {
+            return true;
+        }
+        let mut current = config.layout().clone();
+        current.prune_commands();
+        normalized(&layout_file::serialize(&current)).as_ref() == Some(&disk_layout)
+    }
+
+    /// Save the working copy over an existing library file, returning its contents.
+    pub fn overwrite_library_layout(&mut self, name: &str) -> Result<String, ConfigError> {
+        self.update_layout(LayoutPreset::prune_commands)?;
+        let text = layout_file::serialize(self.layout());
+        self.paths()
+            .save_user_layout(name, &text, true)
+            .map_err(ConfigError::Io)?;
+        Ok(text)
+    }
+
     /// `base`, or `base (2)`, `base (3)`, … — the first name not taken in the library.
     pub fn unique_library_name(&self, base: &str) -> Result<String, ConfigError> {
         self.paths().list_user_layouts().map_err(ConfigError::Io)?;
@@ -80,6 +145,13 @@ impl ConfigDocument {
     ) -> Result<String, ConfigError> {
         self.layout_name(name, except)
             .map_err(|issue| ConfigError::Name(NameKind::Layout, issue))
+    }
+
+    /// Save an edited working copy under a new name, dropping unreferenced commands.
+    pub fn save_working_layout_as(&mut self, name: &str) -> Result<(String, String), ConfigError> {
+        self.update_layout(LayoutPreset::prune_commands)?;
+        let text = layout_file::serialize(self.layout());
+        Ok((self.save_current_layout_as(name)?, text))
     }
 
     pub fn save_current_layout_as(&mut self, name: &str) -> Result<String, ConfigError> {
@@ -252,6 +324,39 @@ mod tests {
         },
         storage::StoragePaths,
     };
+
+    #[test]
+    fn save_target_detects_external_changes_and_accepts_unchanged_baselines() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let mut doc = ConfigDocument::load(paths).unwrap();
+        assert_eq!(doc.library_save_target(None), LibrarySaveTarget::NeedsName);
+        doc.save_current_layout_as("Saved").unwrap();
+        let original = doc.paths().load_user_layout("Saved").unwrap();
+        doc.update_layout(|layout| layout.description = Some("working edit".into()))
+            .unwrap();
+        assert_eq!(
+            doc.library_save_target(Some(("Saved", &original))),
+            LibrarySaveTarget::Existing("Saved".into())
+        );
+        let mut external = doc.layout().clone();
+        external.description = Some("external edit".into());
+        let external = layout_file::serialize(&external);
+        doc.paths()
+            .save_user_layout("Saved", &external, true)
+            .unwrap();
+        assert_eq!(
+            doc.library_save_target(Some(("Saved", &original))),
+            LibrarySaveTarget::Conflict
+        );
+        assert_eq!(doc.paths().load_user_layout("Saved").unwrap(), external);
+        let saved = doc.overwrite_library_layout("Saved").unwrap();
+        assert_eq!(doc.paths().load_user_layout("Saved").unwrap(), saved);
+        assert_eq!(
+            doc.library_save_target(None),
+            LibrarySaveTarget::Existing("Saved".into())
+        );
+    }
 
     #[test]
     fn portable_metadata_survives_library_operations() {

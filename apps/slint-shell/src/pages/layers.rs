@@ -654,7 +654,7 @@ pub(super) fn picker_request(
     // removed with its delete button rather than by inheriting.
     let inherit = target != PickerTarget::ExtraAction;
     super::picker::PickerRequest {
-        layer_action: true,
+        mode: super::picker::PickerMode::LayerAction,
         swallowed: editor.get_assignment() == Assignment::Swallow,
         hold_modifiers: holds_modifiers(ui, document, target, index),
         allow_default: inherit,
