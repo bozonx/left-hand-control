@@ -17,7 +17,7 @@ component HintKey inherits Rectangle {
         Text {
             min-width: 0px;
             text: root.cell.label;
-            color: Theme.link;
+            color: Theme.accent;
             font-size: Theme.font-body;
             font-weight: Theme.weight-semibold;
             horizontal-alignment: center;
@@ -83,14 +83,14 @@ export component LayerHintPopup inherits Window {
             Text {
                 text: root.name;
                 color: Theme.text;
-                font-size: Theme.font-section;
+                font-size: Theme.font-subtitle;
                 font-weight: Theme.weight-bold;
                 horizontal-alignment: center;
                 overflow: clip;
             }
             HorizontalLayout {
                 alignment: center;
-                spacing: 32px;
+                spacing: Theme.space-4xl;
                 HintHand { cells: root.left-cells; }
                 HintHand { cells: root.right-cells; }
             }

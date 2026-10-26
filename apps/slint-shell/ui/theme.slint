@@ -7,35 +7,41 @@ import { Palette } from "std-widgets.slint";
 /// std-widgets primary buttons and our own controls share one color.
 export global Theme {
     out property <length> page-padding: 20px;
+    /// Gap between the blocks of a page (header, toolbars, content).
+    out property <length> page-gap: 16px;
     /// Widest readable column of help text in settings.
     out property <length> text-column: 576px;
+    /// Text width of long help tooltips.
+    out property <length> text-tooltip: 320px;
     /// Stands for "no limit" in `max-width`: Slint has no infinite length,
     /// and some widgets otherwise cap their width.
     out property <length> unbounded: 100000px;
     out property <length> scrollbar-size: 12px;
     out property <length> scrollbar-gap: 4px;
-    /// Corner radii: small controls, controls and cards, panels, dialogs.
+    /// Corner radii: small controls and chips, controls, menus, cards and
+    /// panels, dialogs, popups.
     out property <length> radius-small: 4px;
     out property <length> radius: 6px;
     out property <length> radius-large: 8px;
-    out property <length> radius-dialog: 12px;
-    /// Thin bars and markers; badges and grid cells; floating panels; popups.
-    out property <length> radius-tiny: 2px;
-    out property <length> radius-chip: 5px;
     out property <length> radius-panel: 10px;
+    out property <length> radius-dialog: 12px;
     out property <length> radius-popup: 16px;
-    /// Font sizes from captions to page titles.
-    out property <length> font-tiny: 10px;
-    out property <length> font-small: 11px;
+    /// Control heights: compact, regular, large (buttons, rows, menu items).
+    out property <length> control-height-s: 28px;
+    out property <length> control-height: 32px;
+    out property <length> control-height-l: 36px;
+    out property <length> icon-button-size: 28px;
+    out property <length> badge-height: 22px;
+    /// Gap between a dropdown menu and the control that opened it.
+    out property <length> menu-offset: 4px;
+    /// Type roles from captions to page titles.
+    out property <length> font-caption: 11px;
     out property <length> font-body: 12px;
     out property <length> font-medium: 13px;
     /// Window default text and subsection titles.
     out property <length> font-default: 14px;
-    out property <length> font-section: 15px;
-    out property <length> font-large: 16px;
-    out property <length> font-step: 17px;
+    out property <length> font-subtitle: 16px;
     out property <length> font-heading: 18px;
-    out property <length> font-hero: 20px;
     out property <length> font-title: 22px;
     out property <length> font-page-title: 26px;
     /// Item being dragged in a list, and the floating preview of a dragged cell.
@@ -58,6 +64,7 @@ export global Theme {
     out property <length> space-xl: 16px;
     out property <length> space-2xl: 20px;
     out property <length> space-3xl: 24px;
+    out property <length> space-4xl: 32px;
     in-out property <bool> dark: true;
     in-out property <bool> eink: false;
     in-out property <bool> high-contrast: false;
@@ -82,14 +89,13 @@ export global Theme {
     /// Separators and card outlines.
     out property <color> divider: eink ? #000000 : hc ? (dark ? #a1a1aa : #52525b) : dark ? #2e2e33 : #e4e4e7;
     out property <color> focus: eink ? #000000 : hc ? text : accent;
-    /// Foreground for assigned actions on key caps.
-    out property <color> link: eink ? #000000 : dark ? #4dccff : #0069a9;
     out property <color> error: eink ? #000000 : hc ? (dark ? #ff8a80 : #8b0000) : dark ? #f87171 : #b91c1c;
     out property <color> warning: eink ? #000000 : hc ? (dark ? #ffd54f : #6b3a00) : dark ? #fbbf24 : #92400e;
     out property <color> success: eink ? #000000 : hc ? (dark ? #69f0ae : #0b5d2a) : dark ? #4ade80 : #15803d;
     /// Dimmed backdrop behind modal dialogs.
     out property <color> scrim: #00000099;
     out property <duration> motion: reduce-motion ? 0ms : 150ms;
+    out property <duration> highlight-motion: reduce-motion ? 0ms : highlight-duration;
     public function apply() {
         Palette.color-scheme = dark ? ColorScheme.dark : ColorScheme.light;
     }

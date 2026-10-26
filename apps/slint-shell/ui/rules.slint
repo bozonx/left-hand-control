@@ -5,11 +5,11 @@ import { ActionPicker } from "action-picker.slint";
 import { CategoryIcon } from "action-picker.slint";
 import { ConditionsForm, ConditionChoices } from "conditions.slint";
 import { DragDrop, DragGroups, DragHandle, DropMarker } from "reorder.slint";
-import { CardHeader, ResettableField, IconButton, ConfirmDialog, DialogFrame, ItemStyle, InfoTip, Badge, SelectField, NumericInput, FormLabel, FormField, ButtonGroup } from "controls.slint";
+import { CardHeader, ResettableField, IconButton, ConfirmDialog, DialogFrame, ItemStyle, InfoTip, Badge, SelectField, NumericInput, FormLabel, FormField, ButtonGroup, Divider, MenuSurface, MenuItem, MenuLabel, PageLayout, PageHeader } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { RuleDialog, HoldMode, GameCondition, PickerCategory, HoldDetection } from "types.slint";
-import { Button, VerticalBox, HorizontalBox, CheckBox, ComboBox } from "std-widgets.slint";
+import { Button, CheckBox, ComboBox } from "std-widgets.slint";
 
 export struct RuleRow { key: string, is-chord: bool, tap: string, hold: string, long-hold: string, long-hold-timeout: string, hold-mode: HoldMode, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, hold-detection: HoldDetection, double-timeout: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool, key-category: PickerCategory, tap-category: PickerCategory, hold-category: PickerCategory, double-category: PickerCategory, long-hold-category: PickerCategory }
 export struct RuleLayerChoice { id: string, label: string }
@@ -92,9 +92,9 @@ component ConditionChip inherits VerticalLayout {
     min-width: 0px;
     horizontal-stretch: 0;
     Rectangle {
-        min-width: 0px; max-width: 260px; height: 24px; border-radius: Theme.radius-dialog;
+        min-width: 0px; max-width: 260px; height: 24px; border-radius: self.height / 2;
         background: Theme.selected; border-width: Theme.eink ? 1px : 0px; border-color: Theme.divider;
-        HorizontalLayout { padding-left: Theme.space-m; padding-right: Theme.space-m-plus; spacing: 5px; min-width: 0px;
+        HorizontalLayout { padding-left: Theme.space-m; padding-right: Theme.space-m-plus; spacing: Theme.space-xs; min-width: 0px;
             VerticalLayout { alignment: center; Image { width: 14px; height: 14px; source: root.icon; colorize: root.tint; } }
             Text { min-width: 0px; text: root.text; color: Theme.text; font-size: Theme.font-body; vertical-alignment: center; overflow: elide; }
         }
@@ -108,7 +108,7 @@ component ConditionsCell inherits Rectangle {
     callback clicked();
     min-width: 0px;
     horizontal-stretch: 0;
-    height: 32px;
+    height: Theme.control-height;
     border-radius: Theme.radius;
     background: conditions-touch.has-hover ? Theme.hover : transparent;
     accessible-role: button; accessible-label: @tr("Conditions");
@@ -127,7 +127,7 @@ component ConditionsCell inherits Rectangle {
     conditions-touch := TouchArea { enabled: root.enabled; mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
-component RuleCell inherits VerticalBox {
+component RuleCell inherits VerticalLayout {
     padding: 0px;
     in property <string> title;
     in property <string> info;
@@ -137,24 +137,24 @@ component RuleCell inherits VerticalBox {
     in property <PickerCategory> category;
     callback clicked();
     opacity: root.enabled ? 1 : 0.5;
-    spacing: 5px;
+    spacing: Theme.space-xs;
     horizontal-stretch: 1;
     min-width: 0px;
     preferred-width: 0px;
     FormLabel { text: root.title; info: root.info; }
-    Rectangle {
-        min-width: 0px; height: 32px; border-radius: Theme.radius-chip; border-width: 1px; border-color: Theme.border; background: rule-cell-touch.has-hover ? Theme.hover : Theme.card;
-        HorizontalLayout { padding-left: Theme.space-m; padding-right: Theme.space-m; spacing: 5px;
-            if root.value != "" && root.category != PickerCategory.none: CategoryIcon { category: root.category; }
-            Text { min-width: 0px; horizontal-stretch: 1; text: root.value == "" ? root.empty-text : root.value; color: root.value == "" ? Theme.muted : Theme.text; vertical-alignment: center; overflow: elide; }
-        }
-        rule-cell-touch := TouchArea { enabled: root.enabled; clicked => { root.clicked(); } }
+    FieldButton {
+        enabled: root.enabled;
+        accessible-label: root.title;
+        accessible-value: root.value;
+        clicked => { root.clicked(); }
+        if root.value != "" && root.category != PickerCategory.none: CategoryIcon { category: root.category; }
+        Text { min-width: 0px; horizontal-stretch: 1; text: root.value == "" ? root.empty-text : root.value; color: root.value == "" ? Theme.muted : Theme.text; vertical-alignment: center; overflow: elide; }
     }
 }
 
 /// What holding the trigger does: nothing, a layer, or a long-hold action,
 /// all picked from one menu.
-component HoldField inherits VerticalBox {
+component HoldField inherits VerticalLayout {
     padding: 0px;
     in property <int> rule-index;
     in property <RuleRow> rule;
@@ -163,11 +163,11 @@ component HoldField inherits VerticalBox {
     private property <length> scroll-y;
     private property <int> count: RulesEditor.layer-items.length;
     private property <int> choice-count: root.count + (AppState.in-development ? 2 : 1);
-    private property <length> list-height: min(216px, max(36px, root.count * 36px));
+    private property <length> list-height: min(216px, max(Theme.control-height-l, root.count * Theme.control-height-l));
     min-width: 0px;
     preferred-width: 0px;
     horizontal-stretch: 1;
-    spacing: 5px;
+    spacing: Theme.space-xs;
     function close-menu() { menu.close(); RulesEditor.dialog = RuleDialog.none; field-focus.focus(); }
     // Menu entries: 0 = nothing, 1..count = layers, count + 1 = action.
     function choose(index: int) {
@@ -184,9 +184,9 @@ component HoldField inherits VerticalBox {
     }
     function reveal() {
         if RulesEditor.layer-highlight < 1 || RulesEditor.layer-highlight > root.count { return; }
-        let top = (RulesEditor.layer-highlight - 1) * 36px;
+        let top = (RulesEditor.layer-highlight - 1) * Theme.control-height-l;
         if top < -root.scroll-y { root.scroll-y = -top; }
-        if top + 36px > -root.scroll-y + root.list-height { root.scroll-y = -(top + 36px - root.list-height); }
+        if top + Theme.control-height-l > -root.scroll-y + root.list-height { root.scroll-y = -(top + Theme.control-height-l - root.list-height); }
     }
     function open-menu() {
         if !root.enabled { return; }
@@ -200,15 +200,16 @@ component HoldField inherits VerticalBox {
     }
     FormLabel { text: @tr("When held"); info: @tr("Choose a layer active until release, or an action performed once after the hold duration."); }
     field := Rectangle {
-        min-width: 0px; height: 32px; border-radius: Theme.radius-chip; border-width: 1px;
-        border-color: field-focus.has-focus || menu.is-open ? Theme.link : Theme.border;
-        background: touch.has-hover ? Theme.hover : Theme.card;
+        min-width: 0px; height: Theme.control-height; border-radius: Theme.radius;
+        border-width: field-focus.has-focus || menu.is-open ? 2px : 1px;
+        border-color: field-focus.has-focus ? Theme.focus : menu.is-open ? Theme.accent : Theme.border;
+        background: touch.has-hover ? Theme.hover : Theme.surface;
         opacity: root.enabled ? 1 : 0.5;
         accessible-role: combobox; accessible-label: @tr("When held");
         accessible-value: value-text.text; accessible-expandable: true; accessible-expanded: menu.is-open;
         accessible-action-expand => { root.open-menu(); }
         forward-focus: field-focus;
-        HorizontalLayout { padding-left: Theme.space-m; padding-right: Theme.space-m; spacing: 5px;
+        HorizontalLayout { padding-left: Theme.space-m-plus; padding-right: Theme.space-m-plus; spacing: Theme.space-s;
             if root.rule.hold-mode == HoldMode.layer: VerticalLayout { alignment: center; Image { width: 16px; height: 16px; source: @image-url("icons/layers.svg"); colorize: Theme.muted; } }
             if AppState.in-development && root.rule.hold-mode == HoldMode.action && root.rule.long-hold != "": CategoryIcon { category: root.rule.long-hold-category; }
             value-text := Text {
@@ -226,7 +227,7 @@ component HoldField inherits VerticalBox {
         } }
         touch := TouchArea { enabled: root.enabled; mouse-cursor: pointer; clicked => { root.open-menu(); } }
         menu := PopupWindow {
-            x: 0px; y: field.height + 4px; width: max(field.width, 300px);
+            x: 0px; y: field.height + Theme.menu-offset; width: max(field.width, 300px);
             height: popup-content.preferred-height;
             close-policy: close-on-click-outside;
             forward-focus: menu-focus;
@@ -240,28 +241,19 @@ component HoldField inherits VerticalBox {
                     if !root.creating && event.text == Key.Return { root.choose(RulesEditor.layer-highlight); return accept; }
                     return reject;
                 }
-                Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-large;
-                    popup-content := VerticalLayout { padding: Theme.space-m; spacing: Theme.space-s;
-                        Rectangle { height: 36px; border-radius: Theme.radius-small; background: none-touch.has-hover || RulesEditor.layer-highlight == 0 ? Theme.hover : transparent;
-                            HorizontalLayout { padding-left: Theme.space-m; padding-right: Theme.space-m;
-                                Text { horizontal-stretch: 1; text: @tr("Nothing"); color: Theme.text; vertical-alignment: center; }
-                                if root.rule.hold-mode == HoldMode.none: Text { text: "✓"; color: Theme.link; vertical-alignment: center; }
-                            }
-                            none-touch := TouchArea { mouse-cursor: pointer; clicked => { root.choose(0); } }
-                        }
-                        Rectangle { height: 1px; background: Theme.divider; }
-                        Text { text: @tr("Layers"); color: Theme.muted; font-size: Theme.font-small; }
+                popup-content := MenuSurface { inset: Theme.space-m; gap: Theme.space-s;
+                        MenuItem { text: @tr("Nothing"); checked: root.rule.hold-mode == HoldMode.none; highlighted: RulesEditor.layer-highlight == 0; clicked => { root.choose(0); } }
+                        Divider {}
+                        MenuLabel { text: @tr("Layers"); }
                         ScrollView { height: root.list-height; vertical-stretch: 0; viewport-width: self.visible-width; viewport-y <=> root.scroll-y;
                             VerticalLayout { spacing: 0px; alignment: start;
-                                for item[index] in RulesEditor.layer-items: Rectangle { height: 36px; border-radius: Theme.radius-small; background: row-touch.has-hover || RulesEditor.layer-highlight == index + 1 ? Theme.hover : transparent;
-                                    HorizontalLayout { padding-left: Theme.space-m; padding-right: Theme.space-m; spacing: Theme.space-m;
-                                        VerticalLayout { alignment: center; Image { width: 16px; height: 16px; source: @image-url("icons/layers.svg"); colorize: Theme.muted; } }
-                                        Text { min-width: 0px; horizontal-stretch: 1; text: item.label; overflow: elide; color: Theme.text; vertical-alignment: center; }
-                                        if root.rule.hold-mode == HoldMode.layer && RulesEditor.layer-id == item.id: Text { text: "✓"; color: Theme.link; vertical-alignment: center; }
-                                    }
-                                    row-touch := TouchArea { mouse-cursor: pointer; clicked => { root.choose(index + 1); } }
+                                for item[index] in RulesEditor.layer-items: MenuItem {
+                                    text: item.label; has-icon: true; icon: @image-url("icons/layers.svg");
+                                    checked: root.rule.hold-mode == HoldMode.layer && RulesEditor.layer-id == item.id;
+                                    highlighted: RulesEditor.layer-highlight == index + 1;
+                                    clicked => { root.choose(index + 1); }
                                 }
-                                if root.count == 0: Text { height: 36px; text: @tr("Layer not found"); color: Theme.muted; vertical-alignment: center; }
+                                if root.count == 0: MenuItem { text: @tr("Layer not found"); enabled: false; }
                             }
                         }
                         Button { text: RulesEditor.dialog-value == "" ? @tr("Create new layer…") : @tr("Create “{}”", RulesEditor.dialog-value); clicked => { root.creating = true; RulesEditor.new-layer-name = RulesEditor.dialog-value; } }
@@ -270,26 +262,23 @@ component HoldField inherits VerticalBox {
                                 accepted => { if RulesEditor.layer-name-error(RulesEditor.new-layer-name).id != "" { return; } RulesEditor.create-layer(RulesEditor.new-layer-name); if RulesEditor.dialog == RuleDialog.none { field-focus.focus(); menu.close(); } } }
                             VerticalLayout { alignment: start; Button { text: @tr("Create layer"); enabled: RulesEditor.layer-name-error(RulesEditor.new-layer-name).id == ""; clicked => { RulesEditor.create-layer(RulesEditor.new-layer-name); if RulesEditor.dialog == RuleDialog.none { field-focus.focus(); menu.close(); } } } }
                         }
-                        if AppState.in-development: Rectangle { height: 1px; background: Theme.divider; }
-                        if AppState.in-development: Text { text: @tr("Action after {} ms of holding", RulesEditor.long-hold-timeout != "" ? RulesEditor.long-hold-timeout : RulesEditor.default-long-hold-timeout); color: Theme.muted; font-size: Theme.font-small; }
-                        if AppState.in-development: Rectangle { height: 36px; border-radius: Theme.radius-small; background: action-touch.has-hover || RulesEditor.layer-highlight == root.count + 1 ? Theme.hover : transparent;
-                            HorizontalLayout { padding-left: Theme.space-m; padding-right: Theme.space-m; spacing: Theme.space-m;
-                                VerticalLayout { alignment: center; Image { width: 16px; height: 16px; source: @image-url("icons/zap.svg"); colorize: Theme.muted; } }
-                                Text { min-width: 0px; horizontal-stretch: 1; overflow: elide; vertical-alignment: center; color: Theme.text;
-                                    text: root.rule.hold-mode == HoldMode.action && root.rule.long-hold != "" ? @tr("Assign action") + ": " + root.rule.long-hold : @tr("Assign action") + "…"; }
-                                if root.rule.hold-mode == HoldMode.action: Text { text: "✓"; color: Theme.link; vertical-alignment: center; }
-                            }
-                            action-touch := TouchArea { mouse-cursor: pointer; clicked => { root.choose(root.count + 1); } }
+                        if AppState.in-development: Divider {}
+                        if AppState.in-development: MenuLabel { text: @tr("Action after {} ms of holding", RulesEditor.long-hold-timeout != "" ? RulesEditor.long-hold-timeout : RulesEditor.default-long-hold-timeout); }
+                        if AppState.in-development: MenuItem {
+                            has-icon: true; icon: @image-url("icons/zap.svg");
+                            text: root.rule.hold-mode == HoldMode.action && root.rule.long-hold != "" ? @tr("Assign action") + ": " + root.rule.long-hold : @tr("Assign action") + "…";
+                            checked: root.rule.hold-mode == HoldMode.action;
+                            highlighted: RulesEditor.layer-highlight == root.count + 1;
+                            clicked => { root.choose(root.count + 1); }
                         }
                         if RulesEditor.status.id != "": Text { text: Locale.text(RulesEditor.status); color: Theme.error; wrap: word-wrap; }
-                    }
                 }
             }
         }
     }
 }
 
-export component RulesPage inherits VerticalBox {
+export component RulesPage inherits PageLayout {
     /// Advanced options of `rule` that differ from the defaults, as one line.
     pure function summary(rule: RuleRow) -> string {
         return join(join(join(join(held-text(rule),
@@ -307,12 +296,7 @@ export component RulesPage inherits VerticalBox {
     pure function join(first: string, second: string) -> string {
         return first == "" ? second : second == "" ? first : first + " · " + second;
     }
-    padding: 0px;
-    vertical-stretch: 1;
-    spacing: Theme.space-l;
-    CardHeader {
-        vertical-stretch: 0;
-        padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
+    PageHeader {
         title: @tr("Triggers");
         info: @tr("Define how physical keys behave: tap for a key or action, hold to switch layers, or double-tap for extra shortcuts.");
         VerticalLayout { alignment: center;
@@ -326,7 +310,7 @@ export component RulesPage inherits VerticalBox {
                 min-height: rule-content.preferred-height;
                 min-width: 0px;
                 background: RulesEditor.created == index ? Theme.selected : Theme.card;
-                animate background { duration: Theme.reduce-motion ? 0ms : Theme.highlight-duration; }
+                animate background { duration: Theme.highlight-motion; }
                 border-color: (DragDrop.dragging && DragDrop.group == DragGroups.rules && DragDrop.source == index) ? Theme.focus : Theme.divider;
                 border-width: 1px;
                 border-radius: Theme.radius-panel;
@@ -422,7 +406,7 @@ export component RuleDialogOverlay inherits FocusScope {
                     active: !RulesEditor.is-chord && RulesEditor.hold-mode != HoldMode.action;
                     inactive-reason: @tr("Used for single-key triggers without a long-hold action.");
                     resettable: false;
-                    ComboBox { enabled: detection-form.active; height: 32px; model: [@tr("Default from Settings: {}", RulesEditor.default-hold-detection == HoldDetection.press ? @tr("as soon as another key is pressed") : @tr("after another key is released")), @tr("After another key is released (better for typing)"), @tr("As soon as another key is pressed")]; current-index: RulesEditor.hold-detection == HoldDetection.release ? 1 : RulesEditor.hold-detection == HoldDetection.press ? 2 : 0; selected(value) => { RulesEditor.hold-detection = self.current-index == 1 ? HoldDetection.release : self.current-index == 2 ? HoldDetection.press : HoldDetection.inherit; } }
+                    ComboBox { enabled: detection-form.active; height: Theme.control-height; model: [@tr("Default from Settings: {}", RulesEditor.default-hold-detection == HoldDetection.press ? @tr("as soon as another key is pressed") : @tr("after another key is released")), @tr("After another key is released (better for typing)"), @tr("As soon as another key is pressed")]; current-index: RulesEditor.hold-detection == HoldDetection.release ? 1 : RulesEditor.hold-detection == HoldDetection.press ? 2 : 0; selected(value) => { RulesEditor.hold-detection = self.current-index == 1 ? HoldDetection.release : self.current-index == 2 ? HoldDetection.press : HoldDetection.inherit; } }
                 }
                 hold-form := ResettableField {
                     label: @tr("Hold threshold, ms");
@@ -468,7 +452,7 @@ export component RuleDialogOverlay inherits FocusScope {
         }
         if RulesEditor.status.id != "": Text { text: Locale.text(RulesEditor.status); color: Theme.error; wrap: word-wrap; }
         if RulesEditor.dialog != RuleDialog.conditions && RulesEditor.dialog != RuleDialog.advanced: Rectangle { vertical-stretch: 1; }
-        HorizontalBox { vertical-stretch: 0; spacing: Theme.space-m;
+        HorizontalLayout { padding: Theme.space-m; vertical-stretch: 0; spacing: Theme.space-m;
             if RulesEditor.dialog != RuleDialog.advanced && RulesEditor.dialog != RuleDialog.conditions: Button {
                 text: @tr("Clear");
                 clicked => { RulesEditor.choose(""); }

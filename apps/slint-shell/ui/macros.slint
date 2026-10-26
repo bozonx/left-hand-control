@@ -6,7 +6,7 @@ import { CategoryIcon } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { MacroField, PickerCategory, PickerTarget } from "types.slint";
-import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, NumericInput } from "controls.slint";
+import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, Divider, FieldLabel, IconButton, NumericInput, PageLayout, PageHeader, CardTitle } from "controls.slint";
 import { Button } from "std-widgets.slint";
 
 export struct MacroStepRow { action: string, pause: bool, pause-ms: string, category: PickerCategory }
@@ -47,39 +47,22 @@ component StepRow inherits HorizontalLayout {
         horizontal-stretch: 1;
         spacing: Theme.space-2xs;
         alignment: center;
-        if !root.step.pause: Rectangle {
-            height: 32px;
-            border-radius: Theme.radius;
-            border-width: 1px;
-            border-color: pick-focus.has-focus ? Theme.text : Theme.border;
-            background: pick-touch.has-hover ? Theme.hover : Theme.surface;
-            accessible-role: button;
+        if !root.step.pause: FieldButton {
             accessible-label: root.step.action;
-            accessible-action-default => { self.pick(); }
-            function pick() {
+            clicked => {
                 MacroEditor.picker-macro = root.macro-index;
                 ActionPicker.open(PickerTarget.macro-step, root.index, root.step.action, false);
             }
-            HorizontalLayout {
-                padding-left: Theme.space-m-plus; padding-right: Theme.space-m-plus; spacing: Theme.space-s;
-                if root.step.action != "": CategoryIcon { category: root.step.category; }
-                Text {
-                    horizontal-stretch: 1;
-                    text: root.step.action;
-                    color: Theme.text;
-                    font-family: "monospace";
-                    font-size: Theme.font-medium;
-                    overflow: elide;
-                    vertical-alignment: center;
-                }
+            if root.step.action != "": CategoryIcon { category: root.step.category; }
+            Text {
+                horizontal-stretch: 1;
+                text: root.step.action;
+                color: Theme.text;
+                font-family: "monospace";
+                font-size: Theme.font-medium;
+                overflow: elide;
+                vertical-alignment: center;
             }
-            pick-focus := FocusScope {
-                key-pressed(event) => {
-                    if event.text == " " || event.text == "\n" { parent.pick(); return accept; }
-                    return reject;
-                }
-            }
-            pick-touch := TouchArea { mouse-cursor: pointer; clicked => { parent.pick(); } }
         }
         if root.step.pause: HorizontalLayout {
             spacing: Theme.space-m;
@@ -264,7 +247,7 @@ component BuiltinMacrosHeader inherits Rectangle {
             HorizontalLayout {
                 spacing: Theme.space-m;
                 alignment: start;
-                Text { text: @tr("Built-in macros"); color: Theme.text; font-size: Theme.font-large; font-weight: Theme.weight-bold; vertical-alignment: center; }
+                CardTitle { text: @tr("Built-in macros"); vertical-alignment: center; }
             }
         }
     }
@@ -318,7 +301,7 @@ component BuiltinMacroLine inherits TouchArea {
                 }
             }
         }
-        Rectangle { height: 1px; background: Theme.divider; }
+        Divider {}
     }
 }
 
@@ -339,7 +322,7 @@ component BuiltinMacrosCard inherits Card {
                 FieldLabel { horizontal-stretch: 1; text: @tr("Steps"); }
                 Rectangle { width: 170px; }
             }
-            Rectangle { height: 1px; background: Theme.divider; }
+            Divider {}
             for item[index] in MacroEditor.builtin-macros: BuiltinMacroLine {
                 index: index;
                 item: item;
@@ -356,12 +339,8 @@ export component MacrosPage inherits Rectangle {
     private property <int> delete-step: -1;
     clipboard := TextInput { visible: false; width: 0px; height: 0px; }
     function copy(value: string) { clipboard.text = value; clipboard.select-all(); clipboard.copy(); NotificationCenter.send({ id: "copied" }); }
-    VerticalLayout {
-        padding: 0px;
-        spacing: Theme.space-xl;
-        CardHeader {
-            vertical-stretch: 0;
-            padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
+    PageLayout {
+        PageHeader {
             title: @tr("User macros");
             info: @tr("Build reusable sequences of key chords, text, commands and system actions. Use a unique ID in macro:<id> references and a readable name in action lists. Assign macros on the Layers or Triggers tab; change an ID only when it is unused.\n\nThe step pause applies between steps of this macro. Modifier delay is the time between pressing a modifier and the main key. Leave delays empty to use Settings defaults.") + "\n" + @tr("Global defaults: step pause {} ms; modifier delay {} ms.", MacroEditor.default-step-pause, MacroEditor.default-modifier-delay);
             VerticalLayout {

@@ -1,4 +1,4 @@
-import { Button } from "std-widgets.slint";
+import { MenuSurface, MenuItem, MenuLabel, TooltipText } from "controls.slint";
 import { AppState } from "app-state.slint";
 import { Locale } from "i18n.slint";
 import { Theme } from "theme.slint";
@@ -8,10 +8,10 @@ export component GameModeButton inherits Rectangle {
     private property <int> highlighted: 0;
     private property <color> state-color: !AppState.game-state-available ? Theme.warning : AppState.game-active ? Theme.success : Theme.muted;
     private property <string> label: AppState.game-control == GameModeControl.auto ? @tr("Game mode control" => "Auto") : AppState.game-control == GameModeControl.on ? @tr("Game mode control" => "On") : @tr("Game mode control" => "Off");
-    width: 98px; height: 36px; border-radius: Theme.radius;
+    width: 98px; height: Theme.control-height-l; border-radius: Theme.radius;
     background: AppState.game-active ? Theme.success.transparentize(0.85) : !AppState.game-state-available ? Theme.warning.transparentize(0.9) : touch.has-hover || focus.has-focus || menu.is-open ? Theme.hover : Theme.surface;
-    border-width: 1px;
-    border-color: focus.has-focus ? Theme.text : root.state-color.transparentize(0.35);
+    border-width: focus.has-focus ? 2px : 1px;
+    border-color: focus.has-focus ? Theme.focus : root.state-color.transparentize(0.35);
     accessible-role: button;
     accessible-label: @tr("Game mode") + ": " + root.label + ". " + Locale.text(AppState.game-status);
     accessible-expandable: true;
@@ -38,14 +38,9 @@ export component GameModeButton inherits Rectangle {
         }
     }
     touch := TouchArea { mouse-cursor: pointer; clicked => { focus.focus(); root.open-menu(); } }
-    Tooltip {
-        Rectangle {
-            background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-small;
-            HorizontalLayout { padding: Theme.space-m; Text { text: Locale.text(AppState.game-status) + "\n" + @tr("Click to change mode (Auto / On / Off)"); color: Theme.text; } }
-        }
-    }
+    Tooltip { TooltipText { text: Locale.text(AppState.game-status) + "\n" + @tr("Click to change mode (Auto / On / Off)"); } }
     menu := PopupWindow {
-        x: root.width - self.width; y: root.height + 4px; width: 280px;
+        x: root.width - self.width; y: root.height + Theme.menu-offset; width: 280px;
         close-policy: close-on-click-outside;
         forward-focus: menu-focus;
         menu-focus := FocusScope {
@@ -59,24 +54,18 @@ export component GameModeButton inherits Rectangle {
                 if event.text == Key.Escape { focus.focus(); menu.close(); return accept; }
                 return reject;
             }
-            Rectangle {
-                background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-large;
-                VerticalLayout {
-                    padding: Theme.space-m; spacing: Theme.space-s;
-                    Text { text: @tr("Game mode"); color: Theme.text; font-weight: Theme.weight-semibold; }
-                    for label[index] in [@tr("Auto — according to settings"), @tr("On — always"), @tr("Off — never")]: Button {
-                        text: label + (AppState.game-control == (index == 0 ? GameModeControl.auto : index == 1 ? GameModeControl.on : GameModeControl.off) ? " ✓" : "");
-                        primary: root.highlighted == index;
-                        accessible-role: radio-button;
-                        accessible-checkable: true;
-                        accessible-checked: AppState.game-control == (index == 0 ? GameModeControl.auto : index == 1 ? GameModeControl.on : GameModeControl.off);
-                        changed has-focus => { if self.has-focus { root.highlighted = index; } }
-                        clicked => {
-                            AppState.set-game-control(index == 0 ? GameModeControl.auto : index == 1 ? GameModeControl.on : GameModeControl.off);
-                            focus.focus(); menu.close();
-                        }
+            MenuSurface {
+                MenuLabel { text: @tr("Game mode"); }
+                for label[index] in [@tr("Auto — according to settings"), @tr("On — always"), @tr("Off — never")]: MenuItem {
+                    text: label;
+                    checked: AppState.game-control == (index == 0 ? GameModeControl.auto : index == 1 ? GameModeControl.on : GameModeControl.off);
+                    highlighted: root.highlighted == index;
+                    accessible-role: radio-button;
+                    accessible-checkable: true;
+                    clicked => {
+                        AppState.set-game-control(index == 0 ? GameModeControl.auto : index == 1 ? GameModeControl.on : GameModeControl.off);
+                        focus.focus(); menu.close();
                     }
-
                 }
             }
         }

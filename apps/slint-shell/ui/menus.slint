@@ -6,7 +6,7 @@ import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { MenuKind, PickerTarget } from "types.slint";
-import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, FieldLabel, IconButton, InfoTip, NavTab } from "controls.slint";
+import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, Divider, FieldLabel, IconButton, InfoTip, NavTab, PageLayout, PageHeader } from "controls.slint";
 import { Button, TextEdit } from "std-widgets.slint";
 
 export struct MenuCell { key: string, value: string, name: string }
@@ -119,7 +119,7 @@ component HotkeyGrid inherits Rectangle {
         x: root.pad + mod(root.drag-over, 5) * (root.cell-width + root.gap);
         y: root.pad + floor(root.drag-over / 5) * (root.cell-height + root.gap);
         width: root.cell-width; height: root.cell-height;
-        border-width: 2px; border-color: Theme.link; border-radius: Theme.radius; background: Theme.hover;
+        border-width: 2px; border-color: Theme.accent; border-radius: Theme.radius; background: Theme.hover;
     }
     for cell[index] in MenuEditor.cells: Rectangle {
         x: root.pad + mod(root.preview(index), 5) * (root.cell-width + root.gap);
@@ -129,7 +129,7 @@ component HotkeyGrid inherits Rectangle {
         clip: true;
         border-radius: Theme.radius;
         border-width: (PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? 2px : 1px;
-        border-color: (PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.link : Theme.border;
+        border-color: (PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.accent : Theme.border;
         background: (PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == root.preview(index)) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.hover : Theme.card;
         opacity: root.dragging && root.source-page == MenuEditor.selected-page && index == root.drag-from ? 0.25 : 1.0;
         accessible-role: button;
@@ -139,7 +139,7 @@ component HotkeyGrid inherits Rectangle {
             padding: Theme.space-m;
             spacing: Theme.space-xs;
             HorizontalLayout {
-                Text { horizontal-stretch: 1; text: MenuEditor.cells[root.preview(index)].key; color: Theme.link; font-family: "monospace"; font-size: Theme.font-body; font-weight: Theme.weight-semibold; }
+                Text { horizontal-stretch: 1; text: MenuEditor.cells[root.preview(index)].key; color: Theme.accent; font-family: "monospace"; font-size: Theme.font-body; font-weight: Theme.weight-semibold; }
                 Image { width: 14px; height: 14px; source: @image-url("icons/grip.svg"); colorize: Theme.muted; accessible-label: @tr("Drag"); }
             }
             if root.emoji || cell.value == "": Text {
@@ -165,7 +165,7 @@ component HotkeyGrid inherits Rectangle {
                     vertical-alignment: center;
                 }
             }
-            if !root.emoji && cell.value != "": Text { text: cell.value == "" ? "—" : cell.value; color: Theme.muted; font-family: "monospace"; font-size: Theme.font-small; overflow: elide; }
+            if !root.emoji && cell.value != "": Text { text: cell.value == "" ? "—" : cell.value; color: Theme.muted; font-family: "monospace"; font-size: Theme.font-caption; overflow: elide; }
             if !root.emoji && cell.value != "": Rectangle { vertical-stretch: 1; }
         }
     }
@@ -227,7 +227,7 @@ component DragPreview inherits Rectangle {
     width: PaletteDrag.text-item ? 200px : 72px;
     height: PaletteDrag.text-item ? 76px : 64px;
     clip: true;
-    border-radius: Theme.radius; border-width: 2px; border-color: Theme.link;
+    border-radius: Theme.radius; border-width: 2px; border-color: Theme.accent;
     background: Theme.card; opacity: Theme.drag-preview-opacity;
     Text {
         x: 10px; y: 8px;
@@ -282,7 +282,7 @@ component MenuTabs inherits ScrollView {
             tab := NavTab { text: label == "" ? index + 1 : (index + 1) + " · " + label; selected: index == root.selected; clicked => { root.select(index); } opacity: DragDrop.dragging && DragDrop.group == DragGroups.menu-tabs && DragDrop.source == index ? 0.5 : 1; }
             if DragDrop.dragging && DragDrop.group == DragGroups.menu-tabs && DragDrop.target == index && index != DragDrop.source: Rectangle {
                 x: index > DragDrop.source ? parent.width : -3px;
-                width: 3px; background: Theme.link;
+                width: 3px; background: Theme.accent;
             }
             Timer {
                 interval: root.tab-drag-tick;
@@ -336,8 +336,8 @@ component EmojiButton inherits Rectangle {
     min-width: 0px;
     preferred-width: 40px;
     border-radius: Theme.radius;
-    border-width: 1px;
-    border-color: focus.has-focus ? Theme.text : touch.has-hover ? Theme.link : Theme.border;
+    border-width: focus.has-focus ? 2px : 1px;
+    border-color: focus.has-focus ? Theme.focus : touch.has-hover ? Theme.accent : Theme.border;
     background: touch.has-hover ? Theme.hover : Theme.surface;
     accessible-role: button;
     accessible-label: root.item == "\u{a0}" ? @tr("Non-breaking space") : root.item;
@@ -423,7 +423,7 @@ export component EmojiPage inherits Rectangle {
                     padding: Theme.space-l-plus;
                     spacing: Theme.space-l;
                     PageEditor { remove => { root.confirming = true; } }
-                    Rectangle { height: 1px; background: Theme.divider; }
+                    Divider {}
                     FieldLabel { text: @tr("Button {}", MenuEditor.cells[MenuEditor.selected-cell].key); }
                     HorizontalLayout {
                         spacing: Theme.space-xs;
@@ -457,7 +457,7 @@ export component EmojiPage inherits Rectangle {
                                         : category.id == "travel" ? @tr("Travel & Places")
                                         : @tr("UTF Symbols");
                                     color: Theme.muted;
-                                    font-size: Theme.font-small;
+                                    font-size: Theme.font-caption;
                                     font-weight: Theme.weight-bold;
                                 }
                                 for row in ceil(category.items.length / 6): HorizontalLayout {
@@ -471,7 +471,7 @@ export component EmojiPage inherits Rectangle {
                             VerticalLayout {
                                 spacing: Theme.space-s;
                                 padding-bottom: Theme.space-m;
-                                Text { text: @tr("Texts"); color: Theme.muted; font-size: Theme.font-small; font-weight: Theme.weight-bold; }
+                                Text { text: @tr("Texts"); color: Theme.muted; font-size: Theme.font-caption; font-weight: Theme.weight-bold; }
                                 for row in ceil(root.texts.length / 2): HorizontalLayout {
                                     spacing: Theme.space-s;
                                     for col in 2: EmojiButton {
@@ -503,12 +503,8 @@ export component QuickActionsPage inherits Rectangle {
     vertical-stretch: 1;
     private property <bool> confirming;
     private property <bool> filled: MenuEditor.selected-cell >= 0 && MenuEditor.cells[MenuEditor.selected-cell].value != "";
-    VerticalLayout {
-        padding: 0px;
-        spacing: Theme.space-xl;
-        CardHeader {
-            vertical-stretch: 0;
-            padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
+    PageLayout {
+        PageHeader {
             title: @tr("Quick Actions");
             info: @tr("Opened by the app:showQuickMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold any action: a shortcut, macro, shell command or system action.") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number.");
         }
@@ -545,7 +541,7 @@ export component QuickActionsPage inherits Rectangle {
                                     spacing: Theme.space-l;
                                     alignment: start;
                                     PageEditor { remove => { root.confirming = true; } }
-                                    Rectangle { height: 1px; background: Theme.divider; }
+                                    Divider {}
                                     if MenuEditor.status.id != "": Text { text: Locale.text(MenuEditor.status); color: Theme.error; wrap: word-wrap; }
                                     if MenuEditor.selected-cell >= 0: HorizontalLayout {
                                         FieldLabel { text: @tr("Button {}", MenuEditor.cells[MenuEditor.selected-cell].key); vertical-alignment: center; }
@@ -562,20 +558,14 @@ export component QuickActionsPage inherits Rectangle {
                                         FieldLabel { text: @tr("Action"); }
                                         HorizontalLayout {
                                             spacing: Theme.space-xs;
-                                            Rectangle {
-                                                height: 34px;
-                                                border-radius: Theme.radius;
-                                                border-width: 1px;
-                                                border-color: action-focus.has-focus ? Theme.text : Theme.border;
-                                                background: action-touch.has-hover ? Theme.hover : Theme.surface;
-                                                accessible-role: button;
+                                            FieldButton {
+                                                horizontal-stretch: 1;
                                                 accessible-label: @tr("Action");
                                                 accessible-value: MenuEditor.value;
-                                                accessible-action-default => { self.pick(); }
-                                                function pick() { ActionPicker.open(PickerTarget.quick-action, MenuEditor.selected-cell, MenuEditor.value, false); }
+                                                clicked => { ActionPicker.open(PickerTarget.quick-action, MenuEditor.selected-cell, MenuEditor.value, false); }
                                                 Text {
-                                                    x: 10px;
-                                                    width: parent.width - 20px;
+                                                    min-width: 0px;
+                                                    horizontal-stretch: 1;
                                                     text: MenuEditor.value;
                                                     color: Theme.text;
                                                     font-family: "monospace";
@@ -583,13 +573,7 @@ export component QuickActionsPage inherits Rectangle {
                                                     overflow: elide;
                                                     vertical-alignment: center;
                                                 }
-                                                action-focus := FocusScope {
-                                                    key-pressed(event) => {
-                                                        if event.text == " " || event.text == "\n" { parent.pick(); return accept; }
-                                                        return reject;
-                                                    }
-                                                }
-                                                action-touch := TouchArea { mouse-cursor: pointer; clicked => { parent.pick(); } }
+                                            }
                                             }
                                         }
                                     }

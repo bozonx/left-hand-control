@@ -13,11 +13,11 @@ import { AppEntryDialog, AppEntryOverlay } from "conditions.slint";
 import { DragDrop } from "reorder.slint";
 import { CommandDialogOverlay, SettingsPage, SettingsEditor } from "settings-page.slint";
 import { DeviceDialog, DeviceDialogOverlay } from "device-picker.slint";
-import { ConfirmDialog, DialogFrame, IconButton, Badge, InlineEditors, MapperToggle, NavButton, NavTab } from "controls.slint";
+import { ConfirmDialog, DialogFrame, IconButton, Badge, InlineEditors, MapperToggle, Divider, MenuSurface, MenuItem, NavButton, NavTab, TooltipText } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { LayerDialog, LibraryDialog, LibraryAction, MenuKind, Page, RuleDialog } from "types.slint";
-import { Button, HorizontalBox, VerticalBox } from "std-widgets.slint";
+import { Button } from "std-widgets.slint";
 
 export component SettingsWindow inherits Window {
     background: Theme.surface;
@@ -109,7 +109,7 @@ export component SettingsWindow inherits Window {
     FocusScope {
         focus-on-tab-navigation: false;
         enabled: !root.modal-open;
-        VerticalBox {
+        VerticalLayout {
             padding: 0px;
             spacing: 0px;
             Rectangle {
@@ -131,19 +131,19 @@ export component SettingsWindow inherits Window {
                     if AppState.in-development: VerticalLayout { alignment: center; Badge {
                         min-width: 40px;
                         text: AppState.keyboard-language == "" ? "—" : AppState.keyboard-language;
-                        Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-small; HorizontalLayout { padding: Theme.space-m; Text { text: @tr("Current keyboard layout in the system") + "\n" + AppState.keyboard-language; color: Theme.text; } } } }
+                        Tooltip { TooltipText { text: @tr("Current keyboard layout in the system") + "\n" + AppState.keyboard-language; } }
                     }
                     }
                     if AppState.in-development: GameModeButton {}
                     active-layout := Rectangle {
-                        width: 180px; height: 36px; border-radius: Theme.radius; background: Theme.surface; border-width: 1px; border-color: Theme.border;
+                        width: 180px; height: Theme.control-height-l; border-radius: Theme.radius; background: Theme.surface; border-width: 1px; border-color: Theme.border;
                         HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-s;
                             Image { width: 14px; source: @image-url("icons/keyboard.svg"); colorize: Theme.muted; }
                             Text { text: LayoutLibrary.active-label == "" ? @tr("No active layout") : @tr("Active: {}", LayoutLibrary.active-label); color: Theme.text; overflow: elide; vertical-alignment: center; }
                             if !LayoutLibrary.automatic: Image { width: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; }
                         }
                         TouchArea { enabled: !LayoutLibrary.automatic; mouse-cursor: pointer; clicked => { LayoutLibrary.refresh(); active-menu.show(); } }
-                        Tooltip { Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-small; HorizontalLayout { padding: Theme.space-m; Text { text: LayoutLibrary.automatic ? @tr("Current active layout (selected automatically by switching rules)") : @tr("Current active layout — click to switch"); color: Theme.text; } } } }
+                        Tooltip { TooltipText { text: LayoutLibrary.automatic ? @tr("Current active layout (selected automatically by switching rules)") : @tr("Current active layout — click to switch"); } }
                     }
                     Rectangle { width: 1px; background: Theme.divider; }
                     VerticalLayout { alignment: center; MapperToggle {
@@ -160,7 +160,7 @@ export component SettingsWindow inherits Window {
                     } }
                 }
             }
-            Rectangle { height: 1px; background: Theme.divider; }
+            Divider {}
             if LayoutLibrary.editor-open: Rectangle {
                 height: 50px + (editor-tabs.viewport-width > editor-tabs.visible-width ? Theme.scrollbar-size + Theme.scrollbar-gap : 0px);
                 background: Theme.card;
@@ -193,7 +193,7 @@ export component SettingsWindow inherits Window {
                     VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/x.svg"); label: @tr("Close layout"); clicked => { root.close-layout(); } } }
                 }
             }
-            if LayoutLibrary.editor-open: Rectangle { height: 1px; background: Theme.divider; }
+            if LayoutLibrary.editor-open: Divider {}
             if root.show-active-banner: Rectangle {
                 background: Theme.card;
                 HorizontalLayout {
@@ -207,7 +207,7 @@ export component SettingsWindow inherits Window {
                     Button { text: @tr("Make active"); clicked => { LayoutLibrary.activate-current(); } }
                 }
             }
-            if root.show-active-banner: Rectangle { height: 1px; background: Theme.divider; }
+            if root.show-active-banner: Divider {}
             VerticalLayout {
                 vertical-stretch: 1;
                 padding: Theme.page-padding;
@@ -225,13 +225,11 @@ export component SettingsWindow inherits Window {
         }
     }
     active-menu := PopupWindow {
-        x: active-layout.absolute-position.x; y: 52px; width: 240px;
-        Rectangle { background: Theme.card; border-width: 1px; border-color: Theme.border; border-radius: Theme.radius-large;
-            VerticalLayout { padding: Theme.space-s; spacing: Theme.space-xs;
-                for name[index] in LayoutLibrary.names: Button {
-                    text: name; primary: name == LayoutLibrary.active-label;
-                    clicked => { active-menu.close(); LayoutLibrary.select(index); LayoutLibrary.action(LibraryAction.activate); }
-                }
+        x: active-layout.absolute-position.x; y: active-layout.absolute-position.y + active-layout.height + Theme.menu-offset; width: 240px;
+        MenuSurface {
+            for name[index] in LayoutLibrary.names: MenuItem {
+                text: name; checked: name == LayoutLibrary.active-label;
+                clicked => { active-menu.close(); LayoutLibrary.select(index); LayoutLibrary.action(LibraryAction.activate); }
             }
         }
     }

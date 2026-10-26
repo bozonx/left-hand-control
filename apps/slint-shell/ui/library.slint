@@ -1,12 +1,12 @@
 import { DragDrop, DragGroups, DragHandle, DropMarker } from "reorder.slint";
 import { PageContent, ScrollView } from "scroll.slint";
-import { ButtonGroup, FormField, InfoTip, InlineTextField, InlineTextArea, ItemStyle, IconButton, ConfirmDialog, DialogFrame } from "controls.slint";
+import { ButtonGroup, FormField, InfoTip, InlineTextField, InlineTextArea, ItemStyle, IconButton, ConfirmDialog, Divider, MenuSurface, MenuItem, DialogFrame, PageLayout, TooltipText, Card, CardTitle } from "controls.slint";
 import { ConditionChoices, ConditionsForm } from "conditions.slint";
 import { AppState } from "app-state.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { GameCondition, LayoutSource, LibraryAction, LibraryDialog, PendingLayoutAction } from "types.slint";
-import { Button, CheckBox, ComboBox, HorizontalBox, Palette, TextEdit, VerticalBox } from "std-widgets.slint";
+import { Button, CheckBox, ComboBox, Palette, TextEdit } from "std-widgets.slint";
 
 export struct LayoutSummary { rules: int, layers: int, emoji-pages: int, action-pages: int, macros: int, commands: int }
 
@@ -182,37 +182,6 @@ export global LayoutLibrary {
     }
 }
 
-component LayoutMenuItem inherits Rectangle {
-    in property <string> text;
-    in property <bool> enabled: true;
-    in property <bool> danger: false;
-    callback clicked();
-    height: 32px;
-    border-radius: Theme.radius-small;
-    background: enabled && (touch.has-hover || focus.has-focus) ? Theme.hover : transparent;
-    accessible-role: button;
-    accessible-label: text;
-    accessible-enabled: enabled;
-    accessible-action-default => { if root.enabled { root.clicked(); } }
-    Text {
-        x: 12px; width: parent.width - 24px; height: parent.height;
-        text: root.text; color: root.danger ? Theme.error : Theme.text;
-        opacity: root.enabled ? 1 : 0.45;
-        vertical-alignment: center;
-    }
-    focus := FocusScope {
-        enabled: root.enabled;
-        key-pressed(event) => {
-            if event.text == "\n" || event.text == " " { root.clicked(); return accept; }
-            return reject;
-        }
-    }
-    touch := TouchArea {
-        enabled: root.enabled;
-        clicked => { root.clicked(); }
-    }
-}
-
 export component SaveSplitButton inherits Rectangle {
     in property <bool> enabled: true;
     callback save();
@@ -234,15 +203,17 @@ export component SaveSplitButton inherits Rectangle {
             save-btn := Rectangle {
                 horizontal-stretch: 1;
                 height: parent.height;
-                background: root.enabled ? Theme.link.transparentize(touch-save.has-hover ? 0.7 : 0.85) : transparent;
+                background: root.enabled ? Theme.accent.transparentize(touch-save.has-hover ? 0.7 : 0.85) : transparent;
+                border-width: focus-save.has-focus ? 2px : 0px;
+                border-color: Theme.focus;
                 accessible-role: button;
                 accessible-label: @tr("Save (Ctrl+S)");
-                Tooltip { Rectangle { background: Theme.card; HorizontalLayout { padding: Theme.space-m; Text { text: @tr("Save (Ctrl+S)"); color: Theme.text; } } } }
+                Tooltip { TooltipText { text: @tr("Save (Ctrl+S)"); } }
                 accessible-enabled: root.enabled;
                 accessible-action-default => { if root.enabled { root.save(); } }
                 HorizontalLayout { padding-left: Theme.space-m-plus; padding-right: Theme.space-m; spacing: Theme.space-s; alignment: center;
-                    VerticalLayout { alignment: center; Image { width: 18px; height: 18px; source: @image-url("icons/save.svg"); colorize: root.enabled ? Theme.link : Theme.muted; } }
-                    VerticalLayout { alignment: center; Rectangle { width: 6px; height: 6px; border-radius: self.height / 2; background: root.enabled ? Theme.link : transparent; } }
+                    VerticalLayout { alignment: center; Image { width: 18px; height: 18px; source: @image-url("icons/save.svg"); colorize: root.enabled ? Theme.accent : Theme.muted; } }
+                    VerticalLayout { alignment: center; Rectangle { width: 6px; height: 6px; border-radius: self.height / 2; background: root.enabled ? Theme.accent : transparent; } }
                 }
                 focus-save := FocusScope {
                     enabled: root.enabled;
@@ -266,10 +237,12 @@ export component SaveSplitButton inherits Rectangle {
                 width: 26px;
                 height: parent.height;
                 background: touch-chevron.has-hover || focus-chevron.has-focus ? Theme.hover : transparent;
+                border-width: focus-chevron.has-focus ? 2px : 0px;
+                border-color: Theme.focus;
                 accessible-role: button;
                 accessible-label: @tr("Save as or reset changes");
                 accessible-action-default => { save-menu.show(); }
-                Tooltip { Rectangle { background: Theme.card; HorizontalLayout { padding: Theme.space-m; Text { text: @tr("Save as or reset changes"); color: Theme.text; } } } }
+                Tooltip { TooltipText { text: @tr("Save as or reset changes"); } }
                 Image {
                     x: (parent.width - self.width) / 2;
                     y: (parent.height - self.height) / 2;
@@ -294,25 +267,11 @@ export component SaveSplitButton inherits Rectangle {
 
     save-menu := PopupWindow {
         x: 0px;
-        y: parent.height + 4px;
+        y: parent.height + Theme.menu-offset;
         width: 240px;
-        Rectangle {
-            background: Theme.card;
-            border-color: Theme.border;
-            border-width: 1px;
-            border-radius: Theme.radius-large;
-            VerticalBox {
-                padding: Theme.space-xs;
-                spacing: 0px;
-                LayoutMenuItem {
-                    text: @tr("Save as…");
-                    clicked => {
-                        save-menu.close();
-                        root.save-as();
-                    }
-                }
-                LayoutMenuItem { text: @tr("Reset current changes"); enabled: root.enabled; clicked => { save-menu.close(); root.discard(); } }
-            }
+        MenuSurface {
+            MenuItem { text: @tr("Save as…"); clicked => { save-menu.close(); root.save-as(); } }
+            MenuItem { text: @tr("Reset current changes"); enabled: root.enabled; clicked => { save-menu.close(); root.discard(); } }
         }
     }
 }
@@ -328,10 +287,10 @@ component TargetPicker inherits Rectangle {
         menu.close();
         root.picked(index);
     }
-    height: 32px;
+    height: Theme.control-height;
     border-radius: Theme.radius;
-    border-width: 1px;
-    border-color: Theme.border;
+    border-width: focus.has-focus ? 2px : 1px;
+    border-color: focus.has-focus ? Theme.focus : Theme.border;
     background: touch.has-hover || focus.has-focus ? Theme.hover : Theme.card;
     accessible-role: combobox;
     accessible-label: @tr("Layout");
@@ -357,15 +316,12 @@ component TargetPicker inherits Rectangle {
     }
     touch := TouchArea { mouse-cursor: pointer; clicked => { menu.show(); } }
     menu := PopupWindow {
-        y: root.height + 4px;
+        y: root.height + Theme.menu-offset;
         width: max(root.width, 220px);
-        Rectangle {
-            background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: Theme.radius-large;
-            VerticalBox { padding: Theme.space-xs; spacing: 0px;
-                LayoutMenuItem { text: @tr("No layout (keys as is)"); clicked => { root.choose(-1); } }
-                Rectangle { height: 1px; background: Theme.divider; }
-                for name[index] in LayoutLibrary.names: LayoutMenuItem { text: name; clicked => { root.choose(index); } }
-            }
+        MenuSurface {
+            MenuItem { text: @tr("No layout (keys as is)"); clicked => { root.choose(-1); } }
+            Divider {}
+            for name[index] in LayoutLibrary.names: MenuItem { text: name; clicked => { root.choose(index); } }
         }
     }
 }
@@ -378,7 +334,7 @@ component AutoRuleRow inherits Rectangle {
     property <bool> highlighted: LayoutLibrary.highlight-target >= 0 && LayoutLibrary.highlight-target == root.rule.target;
     border-radius: Theme.radius;
     border-width: root.highlighted ? 2px : 1px;
-    border-color: root.matched ? Theme.accent : root.highlighted ? Theme.link : Theme.divider;
+    border-color: root.matched ? Theme.accent : root.highlighted ? Theme.accent : Theme.divider;
     background: root.matched ? Theme.accent.transparentize(0.88) : touch.has-hover ? Theme.hover : transparent;
     height: row.preferred-height;
     accessible-role: button;
@@ -444,14 +400,10 @@ component AddRuleButton inherits Rectangle {
 }
 
 /// Automatic mode rules shown next to the library.
-component AutoRulesPanel inherits Rectangle {
-    background: Theme.card;
-    border-radius: Theme.radius-large;
-    border-width: 1px;
-    border-color: Theme.divider;
+component AutoRulesPanel inherits Card {
     VerticalLayout { padding: Theme.space-l-plus; spacing: Theme.space-m-plus;
         HorizontalLayout { spacing: Theme.space-s; vertical-stretch: 0;
-            Text { text: @tr("Automatic switching rules"); min-width: 0px; wrap: word-wrap; color: Theme.text; font-size: Theme.font-large; font-weight: Theme.weight-semibold; vertical-alignment: center; }
+            CardTitle { text: @tr("Automatic switching rules"); min-width: 0px; wrap: word-wrap; vertical-alignment: center; }
             VerticalLayout { alignment: center;
                 InfoTip { text: @tr("Rules are checked from top to bottom; the first enabled one whose conditions match chooses the layout. If none matches, the default is used. “No layout” leaves the keyboard unprocessed, for example in an application where the layout gets in the way."); }
             }
@@ -509,20 +461,18 @@ component SetupStep inherits HorizontalLayout {
     spacing: Theme.space-l;
     VerticalLayout { alignment: center;
         Rectangle {
-            width: 28px; height: 28px; border-radius: self.height / 2;
+            width: Theme.icon-button-size; height: Theme.icon-button-size; border-radius: self.height / 2;
             background: root.done ? Theme.success.transparentize(0.8) : Theme.selected;
             accessible-role: none;
             if root.done: Image { width: 16px; source: @image-url("icons/check.svg"); colorize: Theme.success; }
             if !root.done: Text { text: root.number; color: Theme.accent; font-weight: Theme.weight-semibold; horizontal-alignment: center; vertical-alignment: center; }
         }
     }
-    Text { text: root.title; color: root.done ? Theme.muted : Theme.text; font-size: Theme.font-section; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; min-width: 160px; }
+    Text { text: root.title; color: root.done ? Theme.muted : Theme.text; font-size: Theme.font-subtitle; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; min-width: 160px; }
     @children
 }
 
-export component LibraryPage inherits VerticalBox {
-    padding: 0px;
-    spacing: Theme.space-l;
+export component LibraryPage inherits PageLayout {
     private property <int> drag-from: -1;
     private property <int> drag-over: -1;
     // The first-run card covers the missing keyboard itself; the warning is for an
@@ -541,7 +491,7 @@ export component LibraryPage inherits VerticalBox {
     }
     if LayoutLibrary.names.length > 0: HorizontalLayout {
         vertical-stretch: 0;
-        spacing: 32px;
+        spacing: Theme.space-4xl;
         if AppState.in-development: HorizontalLayout {
             spacing: Theme.space-s;
             Text { text: @tr("Mode"); color: Theme.text; vertical-alignment: center; }
@@ -578,11 +528,10 @@ export component LibraryPage inherits VerticalBox {
                 VerticalLayout {
                     alignment: center;
                     HorizontalLayout { alignment: center;
-                        Rectangle {
+                        Card {
                             max-width: 560px; horizontal-stretch: 1;
-                            background: Theme.card; border-radius: Theme.radius-large; border-width: 1px; border-color: Theme.divider;
-                            VerticalLayout { padding: Theme.space-3xl; spacing: 18px;
-                                Text { text: @tr("Getting started"); color: Theme.text; font-size: Theme.font-hero; font-weight: Theme.weight-semibold; }
+                            VerticalLayout { padding: Theme.space-3xl; spacing: Theme.space-xl;
+                                Text { text: @tr("Getting started"); color: Theme.text; font-size: Theme.font-heading; font-weight: Theme.weight-semibold; }
                                 SetupStep {
                                     number: 1; done: AppState.keyboard-selected;
                                     title: AppState.keyboard-selected ? @tr("Keyboard selected") : @tr("Choose the keyboard to remap");
@@ -622,7 +571,7 @@ export component LibraryPage inherits VerticalBox {
                         card-content := HorizontalLayout { padding: Theme.space-xl; spacing: Theme.space-2xl;
                             VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: Theme.space-m-plus;
                                 HorizontalLayout { spacing: Theme.space-m; vertical-stretch: 0;
-                                    Text { text: (index + 1) + "."; color: Theme.muted; font-size: Theme.font-step; font-weight: Theme.weight-semibold; vertical-alignment: center; accessible-role: none; }
+                                    Text { text: (index + 1) + "."; color: Theme.muted; font-size: Theme.font-subtitle; font-weight: Theme.weight-semibold; vertical-alignment: center; accessible-role: none; }
                                     InlineTextField { min-width: 0px; text: name; text-size: 17px; text-weight: 600; label: @tr("Layout name"); validate(value) => { return LayoutLibrary.name-error(value, name); } saved(value) => { LayoutLibrary.rename(index, value); } }
                                     Rectangle { horizontal-stretch: 1; }
                                     if card.auto && LayoutLibrary.auto-default == index: Text { text: @tr("Default"); color: Theme.accent; font-size: Theme.font-medium; font-weight: Theme.weight-semibold; vertical-alignment: center; }
@@ -630,13 +579,13 @@ export component LibraryPage inherits VerticalBox {
                                         property <bool> on: LayoutLibrary.highlight-target == index;
                                         width: badge.preferred-width + 12px;
                                         border-radius: Theme.radius-small;
-                                        background: self.on ? Theme.link.transparentize(0.85) : badge-touch.has-hover ? Theme.hover : transparent;
+                                        background: self.on ? Theme.accent.transparentize(0.85) : badge-touch.has-hover ? Theme.hover : transparent;
                                         accessible-role: button;
                                         accessible-label: badge.text;
                                         accessible-action-default => { LayoutLibrary.highlight-target = self.on ? -1 : index; }
                                         badge := Text {
                                             text: @tr("In {n} rule" | "In {n} rules" % LayoutLibrary.rule-counts[index]);
-                                            color: parent.on ? Theme.link : Theme.muted; font-size: Theme.font-medium; vertical-alignment: center;
+                                            color: parent.on ? Theme.accent : Theme.muted; font-size: Theme.font-medium; vertical-alignment: center;
                                         }
                                         badge-touch := TouchArea { mouse-cursor: pointer; clicked => { LayoutLibrary.highlight-target = parent.on ? -1 : index; } }
                                     }
@@ -650,21 +599,18 @@ export component LibraryPage inherits VerticalBox {
                                     if card.current: Text { text: LayoutLibrary.dirty ? @tr("Open for editing (unsaved)") : @tr("Open for editing"); color: Theme.text; vertical-alignment: center; }
                                     if !card.current: Button { text: @tr("Edit layout"); icon: @image-url("icons/pencil.svg"); colorize-icon: true; clicked => { LayoutLibrary.edit(index); } }
                                     Rectangle {
-                                        width: 44px; height: 36px;
+                                        width: 44px; height: Theme.control-height-l;
                                         Button {
                                             width: parent.width; height: parent.height; text: "…";
                                             clicked => { LayoutLibrary.select(index); more-menu.show(); }
                                         }
                                         more-menu := PopupWindow {
-                                            x: parent.width - self.width; y: parent.height;
+                                            x: parent.width - self.width; y: parent.height + Theme.menu-offset;
                                             width: 240px;
-                                            Rectangle {
-                                                background: Theme.card; border-color: Theme.border; border-width: 1px; border-radius: Theme.radius-large;
-                                                VerticalBox { padding: Theme.space-xs; spacing: 0px;
-                                                    LayoutMenuItem { text: @tr("Duplicate…"); clicked => { more-menu.close(); LayoutLibrary.open-create(LayoutSource.copy, index); } }
-                                                    Rectangle { height: 1px; background: Theme.divider; }
-                                                    LayoutMenuItem { text: @tr("Delete…"); clicked => { more-menu.close(); LayoutLibrary.dialog = LibraryDialog.delete; } }
-                                                }
+                                            MenuSurface {
+                                                MenuItem { text: @tr("Duplicate…"); has-icon: true; icon: @image-url("icons/copy.svg"); clicked => { more-menu.close(); LayoutLibrary.open-create(LayoutSource.copy, index); } }
+                                                Divider {}
+                                                MenuItem { text: @tr("Delete…"); has-icon: true; icon: @image-url("icons/trash-2.svg"); danger: true; clicked => { more-menu.close(); LayoutLibrary.dialog = LibraryDialog.delete; } }
                                             }
                                         }
                                     }
@@ -702,7 +648,7 @@ export component LibraryDialogOverlay inherits Rectangle {
         card-width: 620px;
         card-height: LayoutLibrary.dialog == LibraryDialog.create ? 420px : 0px;
         close => { LayoutLibrary.cancel-dialog(); }
-        if LayoutLibrary.dialog == LibraryDialog.create: VerticalBox { padding: 0px; spacing: Theme.space-m-plus;
+        if LayoutLibrary.dialog == LibraryDialog.create: VerticalLayout { padding: 0px; spacing: Theme.space-m-plus;
             FormField {
                 label: @tr("Name"); placeholder: @tr("New layout name"); autofocus: true;
                 text <=> LayoutLibrary.create-name;
@@ -738,7 +684,7 @@ export component LibraryDialogOverlay inherits Rectangle {
         }
         if LayoutLibrary.status.id != "" && LayoutLibrary.status.id != "library-saved": Text { text: Locale.text(LayoutLibrary.status); color: Theme.error; wrap: word-wrap; }
         if LayoutLibrary.dialog != LibraryDialog.rule: Rectangle { vertical-stretch: 1; }
-        HorizontalBox {
+        HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m;
             if LayoutLibrary.dialog == LibraryDialog.rule && LayoutLibrary.rule-index >= 0: Button {
                 text: @tr("Delete rule"); icon: @image-url("icons/trash-2.svg"); colorize-icon: true;
                 clicked => { LayoutLibrary.dialog = LibraryDialog.delete-rule; }
@@ -785,7 +731,7 @@ export component LibraryDialogOverlay inherits Rectangle {
             accepted => { if LayoutLibrary.name-error(LayoutLibrary.save-as-name, "").id == "" { LayoutLibrary.save-as(LayoutLibrary.save-as-name); } }
         }
         Text { text: Locale.text(LayoutLibrary.status); color: Theme.error; wrap: word-wrap; }
-        HorizontalBox { vertical-stretch: 0;
+        HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m; vertical-stretch: 0;
             Rectangle { horizontal-stretch: 1; }
             Button { text: @tr("Cancel"); clicked => { LayoutLibrary.save-as-open = false; } }
             Button { text: @tr("Save"); enabled: LayoutLibrary.name-error(LayoutLibrary.save-as-name, "").id == ""; clicked => { LayoutLibrary.save-as(LayoutLibrary.save-as-name); } }

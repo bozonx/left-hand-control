@@ -1,7 +1,6 @@
 import { Theme } from "theme.slint";
 import { CategoryIcon } from "action-picker.slint";
 import { PickerCategory } from "types.slint";
-import { VerticalBox } from "std-widgets.slint";
 
 /// One cap of the base keyboard grid.
 export struct BaseKey { code: string, label: string, action: string, category: PickerCategory }
@@ -18,7 +17,7 @@ export global KeyEditor {
 
 export component KeyboardPage inherits VerticalLayout {
     spacing: Theme.space-s;
-    VerticalBox {
+    VerticalLayout { padding: Theme.space-m;
         spacing: Theme.space-m;
         Text { color: Theme.text; text: @tr("Keyboard layout"); font-size: Theme.font-page-title; font-weight: Theme.weight-bold; }
         Text { color: Theme.muted; text: @tr("Select a key to assign an action."); }
@@ -35,7 +34,7 @@ export component KeyboardPage inherits VerticalLayout {
         VerticalLayout {
             spacing: Theme.space-s;
             for row in KeyEditor.keys.length / KeyEditor.columns: HorizontalLayout {
-                spacing: 5px;
+                spacing: Theme.space-xs;
                 for col in KeyEditor.columns: Rectangle {
                     property <int> index: row * KeyEditor.columns + col;
                     height: 66px; min-width: 0px; horizontal-stretch: 1;
@@ -48,11 +47,11 @@ export component KeyboardPage inherits VerticalLayout {
                     accessible-description: KeyEditor.keys[self.index].action;
                     accessible-action-default => { KeyEditor.edit(self.index); }
                     VerticalLayout {
-                        padding: 5px;
+                        padding: Theme.space-xs;
                         Text { min-width: 0px; overflow: elide; text: KeyEditor.keys[index].label; color: Theme.text; font-size: Theme.font-body; }
-                        HorizontalLayout { spacing: 3px;
+                        HorizontalLayout { spacing: Theme.space-xs;
                             if KeyEditor.keys[index].action != "": CategoryIcon { category: KeyEditor.keys[index].category; }
-                            Text { min-width: 0px; horizontal-stretch: 1; text: KeyEditor.keys[index].action == "" ? "—" : KeyEditor.keys[index].action; color: Theme.muted; font-size: Theme.font-tiny; overflow: elide; vertical-alignment: center; }
+                            Text { min-width: 0px; horizontal-stretch: 1; text: KeyEditor.keys[index].action == "" ? "—" : KeyEditor.keys[index].action; color: Theme.muted; font-size: Theme.font-caption; overflow: elide; vertical-alignment: center; }
                         }
                     }
                     key-touch := TouchArea { clicked => { KeyEditor.selected = index; keys-focus.focus(); KeyEditor.edit(index); } }

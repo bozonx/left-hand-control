@@ -53,8 +53,8 @@ export component PopupHeader inherits HorizontalLayout {
     in property <int> page-count;
     callback dismiss();
     spacing: Theme.space-m-plus;
-    height: 32px;
-    Text { text: root.title; color: Theme.text; font-size: Theme.font-large; font-weight: Theme.weight-semibold; vertical-alignment: center; }
+    height: Theme.control-height;
+    Text { text: root.title; color: Theme.text; font-size: Theme.font-subtitle; font-weight: Theme.weight-semibold; vertical-alignment: center; }
     if root.page-count > 0 && root.page-name != "": Text {
         text: root.page-name; color: Theme.muted; font-size: Theme.font-default;
         vertical-alignment: center; overflow: elide;
