@@ -135,7 +135,7 @@ export component TextField inherits Rectangle {
     public function select-all() { input.select-all(); }
     public function clear() { input.text = ""; root.edited(""); input.focus(); }
     min-width: 160px;
-    min-height: max(32px, input.preferred-height + 8px);
+    min-height: max(Theme.control-height, input.preferred-height + 8px);
     horizontal-stretch: 1;
     vertical-stretch: 0;
     forward-focus: input;
@@ -303,10 +303,10 @@ export component IconButton inherits Rectangle {
     in property <bool> enabled: true;
     in property <bool> primary: false;
     in property <bool> danger: false;
-    in property <length> size: 28px;
+    in property <length> size: Theme.icon-button-size;
     callback clicked();
     min-width: root.size;
-    height: root.text == "" ? root.size : 32px;
+    height: root.text == "" ? root.size : Theme.control-height;
     max-width: root.text == "" ? root.size : Theme.unbounded;
     border-radius: Theme.radius;
     background: root.primary
@@ -709,6 +709,12 @@ export component MapperToggle inherits Rectangle {
         clicked => { root.toggled(); }
     }
     if root.tooltip != "": Tooltip { TooltipText { text: root.tooltip; } }
+}
+
+/// Placeholder text of an empty list.
+export component EmptyState inherits Text {
+    color: Theme.muted;
+    wrap: word-wrap;
 }
 
 export component Divider inherits Rectangle {

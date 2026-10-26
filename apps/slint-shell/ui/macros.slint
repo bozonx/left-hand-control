@@ -6,7 +6,7 @@ import { CategoryIcon } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { MacroField, PickerCategory, PickerTarget } from "types.slint";
-import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, Divider, FieldLabel, IconButton, NumericInput, PageLayout, PageHeader, CardTitle } from "controls.slint";
+import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, Divider, FieldLabel, IconButton, NumericInput, PageLayout, PageHeader, CardTitle, FieldButton, EmptyState } from "controls.slint";
 import { Button } from "std-widgets.slint";
 
 export struct MacroStepRow { action: string, pause: bool, pause-ms: string, category: PickerCategory }
@@ -211,7 +211,7 @@ component MacroCard inherits Card {
                 Button { text: @tr("Add pause"); icon: @image-url("icons/clock.svg"); colorize-icon: true; clicked => { MacroEditor.add-step(root.index, "pause:100"); } }
                 Button { text: @tr("Add step"); icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { MacroEditor.add-step(root.index, ""); } }
             }
-            if root.item.steps.length == 0: Text { text: @tr("No steps yet. Each step — one chord or action."); color: Theme.muted; font-italic: true; wrap: word-wrap; }
+            if root.item.steps.length == 0: EmptyState { text: @tr("No steps yet. Each step — one chord or action."); }
             VerticalLayout {
                 spacing: Theme.space-s;
                 for step[step-index] in root.item.steps: Rectangle {
@@ -363,7 +363,7 @@ export component MacrosPage inherits Rectangle {
                 alignment: start;
                 spacing: Theme.space-xl;
                 if MacroEditor.has-errors: Text { text: @tr("Fix the existing macro errors first"); color: Theme.muted; font-size: Theme.font-body; }
-                if MacroEditor.macros.length == 0: Text { text: @tr("No macros yet. Click \"New macro\" to create the first one."); color: Theme.muted; wrap: word-wrap; }
+                if MacroEditor.macros.length == 0: EmptyState { text: @tr("No macros yet. Click \"New macro\" to create the first one."); }
                 for item[index] in MacroEditor.macros: MacroCard {
                     index: index;
                     count: MacroEditor.macros.length;

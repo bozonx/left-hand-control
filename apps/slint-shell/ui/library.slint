@@ -291,7 +291,7 @@ component TargetPicker inherits Rectangle {
     border-radius: Theme.radius;
     border-width: focus.has-focus ? 2px : 1px;
     border-color: focus.has-focus ? Theme.focus : Theme.border;
-    background: touch.has-hover || focus.has-focus ? Theme.hover : Theme.card;
+    background: touch.has-hover || focus.has-focus ? Theme.hover : Theme.surface;
     accessible-role: combobox;
     accessible-label: @tr("Layout");
     accessible-value: label.text;
@@ -572,7 +572,7 @@ export component LibraryPage inherits PageLayout {
                             VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: Theme.space-m-plus;
                                 HorizontalLayout { spacing: Theme.space-m; vertical-stretch: 0;
                                     Text { text: (index + 1) + "."; color: Theme.muted; font-size: Theme.font-subtitle; font-weight: Theme.weight-semibold; vertical-alignment: center; accessible-role: none; }
-                                    InlineTextField { min-width: 0px; text: name; text-size: 17px; text-weight: 600; label: @tr("Layout name"); validate(value) => { return LayoutLibrary.name-error(value, name); } saved(value) => { LayoutLibrary.rename(index, value); } }
+                                    InlineTextField { min-width: 0px; text: name; text-size: Theme.font-subtitle; text-weight: Theme.weight-semibold; label: @tr("Layout name"); validate(value) => { return LayoutLibrary.name-error(value, name); } saved(value) => { LayoutLibrary.rename(index, value); } }
                                     Rectangle { horizontal-stretch: 1; }
                                     if card.auto && LayoutLibrary.auto-default == index: Text { text: @tr("Default"); color: Theme.accent; font-size: Theme.font-medium; font-weight: Theme.weight-semibold; vertical-alignment: center; }
                                     if card.auto && LayoutLibrary.rule-counts[index] > 0: Rectangle {

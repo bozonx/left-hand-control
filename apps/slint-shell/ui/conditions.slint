@@ -3,7 +3,7 @@ import { ScrollView } from "scroll.slint";
 import { Theme } from "theme.slint";
 import { AppEntryKind, GameCondition } from "types.slint";
 import { AppState } from "app-state.slint";
-import { Badge, ButtonGroup, ConfirmDialog, DialogFrame, IconButton, InfoTip, Card } from "controls.slint";
+import { Badge, ButtonGroup, ConfirmDialog, DialogFrame, IconButton, InfoTip, Card, EmptyState } from "controls.slint";
 import { Button, CheckBox, RadioGroup } from "std-widgets.slint";
 
 export struct LanguageChoice { code: string, label: string }
@@ -314,8 +314,8 @@ export component AppEntryOverlay inherits Rectangle {
             
             ScrollView { width: 100%; height: 100%; viewport-width: self.visible-width;
                 VerticalLayout { padding: Theme.space-s; spacing: Theme.space-2xs; alignment: start;
-                    if ConditionChoices.open-windows-loading && ConditionChoices.open-windows.length == 0: Text { text: @tr("Looking for open windows…"); color: Theme.muted; }
-                    if !ConditionChoices.open-windows-loading && ConditionChoices.open-windows.length == 0: Text { text: @tr("No open windows found"); color: Theme.muted; wrap: word-wrap; }
+                    if ConditionChoices.open-windows-loading && ConditionChoices.open-windows.length == 0: EmptyState { text: @tr("Looking for open windows…"); }
+                    if !ConditionChoices.open-windows-loading && ConditionChoices.open-windows.length == 0: EmptyState { text: @tr("No open windows found"); }
                     if root.kind == AppEntryKind.application: VerticalLayout { spacing: Theme.space-2xs;
                         for window in ConditionChoices.open-windows: WindowRow {
                             text: window.pattern;

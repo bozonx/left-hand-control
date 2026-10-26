@@ -6,7 +6,7 @@ import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { MenuKind, PickerTarget } from "types.slint";
-import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, Divider, FieldLabel, IconButton, InfoTip, NavTab, PageLayout, PageHeader } from "controls.slint";
+import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, Divider, FieldLabel, IconButton, InfoTip, NavTab, PageLayout, PageHeader, FieldButton } from "controls.slint";
 import { Button, TextEdit } from "std-widgets.slint";
 
 export struct MenuCell { key: string, value: string, name: string }
@@ -573,7 +573,6 @@ export component QuickActionsPage inherits Rectangle {
                                                     overflow: elide;
                                                     vertical-alignment: center;
                                                 }
-                                            }
                                             }
                                         }
                                     }
