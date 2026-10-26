@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=../../../../vitepress-theme-neptu/packages/blog/schema/site.schema.json
+
+lang: 'ru-RU'
+title: 'Left Hand Control'
+description: 'Клавиатурный маппер и автоматизация для Linux (KDE Wayland) и Windows'
+
+themeConfig:
+  sidebar:
+    doc:
+      - text: 'Документация'
+        items:
+          - text: 'Обзор'
+            link: ''
+
+  nav:
+    - text: '📖 Документация'
+      link: '/${localeIndex}/doc'
+    - text: 'GitHub'
+      link: 'https://github.com/bozonx/left-hand-control'
+
+  footer:
+    message: 'Выпущено под лицензией MIT.'
+    copyright: 'Copyright © 2026-present Left Hand Control'

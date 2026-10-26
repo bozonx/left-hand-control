@@ -1,0 +1,46 @@
+backend:
+  name: github
+  repo: bozonx/left-hand-control
+  branch: main
+  use_graphql: true
+
+site_url: https://bozonx.github.io/left-hand-control
+media_folder: site/src/public/media
+public_folder: /media
+slug:
+  encoding: ascii
+  clean_accents: true
+i18n:
+  structure: multiple_folders
+  locales: [en, ru]
+  default_locale: en
+  enforce_required_non_default: false
+
+collections:
+  - name: doc
+    label: Docs
+    label_singular: Doc
+    description: Documentation pages
+    i18n: true
+    folder: "site/src/{{locale}}/doc"
+    create: true
+    slug: "{{slug}}"
+    preview_path: "{{locale}}/doc/{{slug}}"
+    summary: "{{title}} | {{commit_date}} | {{commit_author}} | {{filename}}.md"
+    sortable_fields: ["commit_date", "title", "commit_author"]
+    fields:
+      - label: "Title"
+        name: "title"
+        widget: "string"
+        preview: false
+        i18n: true
+      - label: "Description"
+        name: "description"
+        widget: "text"
+        required: false
+        preview: false
+        i18n: true
+      - label: "Body"
+        name: "body"
+        widget: "markdown"
+        i18n: true

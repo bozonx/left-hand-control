@@ -1,0 +1,14 @@
+:root {
+  --ln-container: 1200px;
+}
+
+.ln-accent {
+  background: linear-gradient(
+    120deg,
+    var(--ln-c-brand),
+    color-mix(in srgb, var(--ln-c-brand) 45%, #e879f9)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

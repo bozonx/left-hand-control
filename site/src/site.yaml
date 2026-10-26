@@ -1,0 +1,11 @@
+themeConfig:
+  logo: '/img/logo.svg'
+  heroImage: '/img/home-logo.svg'
+  defaultColorTheme: 'blue'
+  defaultStylePreset: 'soft'
+  publisher:
+    name: 'Left Hand Control'
+    url: '${config.siteUrl}'
+    logo: '${config.siteUrl}/img/home-logo.svg'
+  colorPicker: true
+  stylePicker: true

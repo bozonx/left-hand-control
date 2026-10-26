@@ -19,6 +19,11 @@ __pycache__/
 .vscode
 .idea
 
+# Site
+site/node_modules/
+site/src/.vitepress/cache/
+site/src/.vitepress/dist/
+
 # Archived build artifacts and dependency caches
 _old/**/target/
 _old/**/node_modules/

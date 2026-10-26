@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /admin
+
+Disallow: /*utm_
+Disallow: /*?m=1
+Allow: /
+
+Sitemap: https://....org/sitemap.xml

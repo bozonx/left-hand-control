@@ -1,0 +1,28 @@
+{
+  "name": "left-hand-control-site",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Documentation and landing site for Left Hand Control",
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev src",
+    "build": "vitepress build src",
+    "preview": "vitepress preview src",
+    "validate:blocks": "neptu-landing src",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "vitepress": "2.0.0-alpha.18",
+    "vitepress-theme-neptu": "file:../../vitepress-theme-neptu/packages/blog",
+    "vitepress-theme-neptu-landing": "file:../../vitepress-theme-neptu/packages/landing",
+    "vue": "^3.5.40"
+  },
+  "overrides": {
+    "vitepress-theme-neptu": "file:../../vitepress-theme-neptu/packages/blog"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "typescript": "^5.7.0",
+    "vue-tsc": "^3.0.0"
+  }
+}
