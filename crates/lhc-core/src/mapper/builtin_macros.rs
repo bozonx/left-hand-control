@@ -28,8 +28,8 @@ pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
         steps: &["ArrowUp", "End"],
     },
     BuiltinMacro {
-        id: "up5Lines",
-        name: "Move up 5 lines",
+        id: "move5LinesUp",
+        name: "Move 5 lines up",
         steps: &["ArrowUp", "ArrowUp", "ArrowUp", "ArrowUp", "ArrowUp"],
     },
     BuiltinMacro {
@@ -90,8 +90,8 @@ pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
         steps: &["ArrowUp", "Home"],
     },
     BuiltinMacro {
-        id: "down5Lines",
-        name: "Move down 5 lines",
+        id: "move5LinesDown",
+        name: "Move 5 lines down",
         steps: &[
             "ArrowDown",
             "ArrowDown",
@@ -189,47 +189,6 @@ pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
         ],
     },
 ];
-
-/// IDs used before the built-in macros were renamed, mapped to the current
-/// ones so existing configs and layouts keep working.
-const LEGACY_IDS: &[(&str, &str)] = &[
-    ("moveLineDown", "emptyLineAbove"),
-    ("downEnd", "nextLineEnd"),
-    ("upEnd", "prevLineEnd"),
-    ("up5Times", "up5Lines"),
-    ("rightSpace", "spaceAfterNextChar"),
-    ("cutWordRightCenter", "cutWordUnderCursor"),
-    ("copyWordAfterCenter", "copyWordUnderCursor"),
-    ("pasteAtLineAbove", "pasteOnNewLineAbove"),
-    ("replaceWordWidthBuffer", "replaceWordWithClipboard"),
-    ("downHome", "nextLineStart"),
-    ("upHome", "prevLineStart"),
-    ("down5Times", "down5Lines"),
-    ("pasteAtLineBottom", "pasteOnNewLineBelow"),
-    ("cutToStart", "cutToLineStart"),
-    ("cutToEnd", "cutToLineEnd"),
-    ("cutLineContent", "cutLineText"),
-    ("cutAndRemoveLine", "cutWholeLine"),
-    ("copyToStart", "copyToLineStart"),
-    ("copyToEnd", "copyToLineEnd"),
-    ("copyLine", "copyLineText"),
-    ("selectWholeLine", "selectLineText"),
-    ("selectWordRightCenter", "selectWordUnderCursor"),
-    (
-        "replaceToStartWithBuffer",
-        "replaceToLineStartWithClipboard",
-    ),
-    ("replaceToEndWithBuffer", "replaceToLineEndWithClipboard"),
-    ("replaceLineWidthBuffer", "replaceLineTextWithClipboard"),
-];
-
-/// Current ID for `id`, translating a legacy built-in macro ID.
-pub fn canonical_id(id: &str) -> &str {
-    LEGACY_IDS
-        .iter()
-        .find(|(old, _)| *old == id)
-        .map_or(id, |(_, new)| new)
-}
 
 #[cfg(all(test, target_os = "linux"))]
 mod tests {

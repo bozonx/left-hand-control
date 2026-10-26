@@ -3512,7 +3512,7 @@ msgstr "Sfârșitul liniei următoare"
 msgid "End of previous line"
 msgstr "Sfârșitul liniei anterioare"
 
-msgid "Move up 5 lines"
+msgid "Move 5 lines up"
 msgstr "Sus cu 5 linii"
 
 msgid "Duplicate line"
@@ -3542,7 +3542,7 @@ msgstr "Începutul liniei următoare"
 msgid "Start of previous line"
 msgstr "Începutul liniei anterioare"
 
-msgid "Move down 5 lines"
+msgid "Move 5 lines down"
 msgstr "Jos cu 5 linii"
 
 msgid "Paste on new line below"

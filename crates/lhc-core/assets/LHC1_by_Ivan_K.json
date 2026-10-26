@@ -20,7 +20,7 @@
         "KeyU": "builtin:nextLineEnd",
         "KeyI": "builtin:prevLineEnd",
         "KeyO": "End",
-        "KeyP": "builtin:up5Lines",
+        "KeyP": "builtin:move5LinesUp",
         "BracketLeft": null,
         "KeyA": "app:showEmojiMenu1",
         "KeyS": "builtin:duplicateLine",
@@ -42,7 +42,7 @@
         "KeyM": "builtin:nextLineStart",
         "Comma": "builtin:prevLineStart",
         "Period": "Ctrl+ArrowRight",
-        "Slash": "builtin:down5Lines"
+        "Slash": "builtin:move5LinesDown"
       }
     },
     {

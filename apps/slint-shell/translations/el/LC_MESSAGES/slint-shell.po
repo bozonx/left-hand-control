@@ -3575,7 +3575,7 @@ msgstr "Τέλος επόμενης γραμμής"
 msgid "End of previous line"
 msgstr "Τέλος προηγούμενης γραμμής"
 
-msgid "Move up 5 lines"
+msgid "Move 5 lines up"
 msgstr "5 γραμμές πάνω"
 
 msgid "Duplicate line"
@@ -3605,7 +3605,7 @@ msgstr "Αρχή επόμενης γραμμής"
 msgid "Start of previous line"
 msgstr "Αρχή προηγούμενης γραμμής"
 
-msgid "Move down 5 lines"
+msgid "Move 5 lines down"
 msgstr "5 γραμμές κάτω"
 
 msgid "Paste on new line below"

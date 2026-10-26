@@ -2814,7 +2814,7 @@ msgstr "В конец следующей строки"
 msgid "End of previous line"
 msgstr "В конец предыдущей строки"
 
-msgid "Move up 5 lines"
+msgid "Move 5 lines up"
 msgstr "Вверх на 5 строк"
 
 msgid "Duplicate line"
@@ -2844,7 +2844,7 @@ msgstr "В начало следующей строки"
 msgid "Start of previous line"
 msgstr "В начало предыдущей строки"
 
-msgid "Move down 5 lines"
+msgid "Move 5 lines down"
 msgstr "Вниз на 5 строк"
 
 msgid "Paste on new line below"

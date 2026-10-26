@@ -3459,7 +3459,7 @@ msgstr "შემდეგი ხაზის ბოლო"
 msgid "End of previous line"
 msgstr "წინა ხაზის ბოლო"
 
-msgid "Move up 5 lines"
+msgid "Move 5 lines up"
 msgstr "5 ხაზით ზემოთ"
 
 msgid "Duplicate line"
@@ -3489,7 +3489,7 @@ msgstr "შემდეგი ხაზის დასაწყისი"
 msgid "Start of previous line"
 msgstr "წინა ხაზის დასაწყისი"
 
-msgid "Move down 5 lines"
+msgid "Move 5 lines down"
 msgstr "5 ხაზით ქვემოთ"
 
 msgid "Paste on new line below"

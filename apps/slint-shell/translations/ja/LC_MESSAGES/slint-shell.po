@@ -3218,7 +3218,7 @@ msgstr "次の行の末尾"
 msgid "End of previous line"
 msgstr "前の行の末尾"
 
-msgid "Move up 5 lines"
+msgid "Move 5 lines up"
 msgstr "5 行上へ"
 
 msgid "Duplicate line"
@@ -3248,7 +3248,7 @@ msgstr "次の行の先頭"
 msgid "Start of previous line"
 msgstr "前の行の先頭"
 
-msgid "Move down 5 lines"
+msgid "Move 5 lines down"
 msgstr "5 行下へ"
 
 msgid "Paste on new line below"

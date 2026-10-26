@@ -3458,7 +3458,7 @@ msgstr "Kraj sljedećeg retka"
 msgid "End of previous line"
 msgstr "Kraj prethodnog retka"
 
-msgid "Move up 5 lines"
+msgid "Move 5 lines up"
 msgstr "5 redaka gore"
 
 msgid "Duplicate line"
@@ -3488,7 +3488,7 @@ msgstr "Početak sljedećeg retka"
 msgid "Start of previous line"
 msgstr "Početak prethodnog retka"
 
-msgid "Move down 5 lines"
+msgid "Move 5 lines down"
 msgstr "5 redaka dolje"
 
 msgid "Paste on new line below"

@@ -3136,7 +3136,7 @@ msgstr "下一行末尾"
 msgid "End of previous line"
 msgstr "上一行末尾"
 
-msgid "Move up 5 lines"
+msgid "Move 5 lines up"
 msgstr "上移 5 行"
 
 msgid "Duplicate line"
@@ -3166,7 +3166,7 @@ msgstr "下一行开头"
 msgid "Start of previous line"
 msgstr "上一行开头"
 
-msgid "Move down 5 lines"
+msgid "Move 5 lines down"
 msgstr "下移 5 行"
 
 msgid "Paste on new line below"

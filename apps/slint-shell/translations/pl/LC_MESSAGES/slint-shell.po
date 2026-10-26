@@ -3508,7 +3508,7 @@ msgstr "Koniec następnego wiersza"
 msgid "End of previous line"
 msgstr "Koniec poprzedniego wiersza"
 
-msgid "Move up 5 lines"
+msgid "Move 5 lines up"
 msgstr "5 wierszy w górę"
 
 msgid "Duplicate line"
@@ -3538,7 +3538,7 @@ msgstr "Początek następnego wiersza"
 msgid "Start of previous line"
 msgstr "Początek poprzedniego wiersza"
 
-msgid "Move down 5 lines"
+msgid "Move 5 lines down"
 msgstr "5 wierszy w dół"
 
 msgid "Paste on new line below"

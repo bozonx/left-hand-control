@@ -3209,7 +3209,7 @@ msgstr "다음 줄 끝"
 msgid "End of previous line"
 msgstr "이전 줄 끝"
 
-msgid "Move up 5 lines"
+msgid "Move 5 lines up"
 msgstr "5줄 위로"
 
 msgid "Duplicate line"
@@ -3239,7 +3239,7 @@ msgstr "다음 줄 시작"
 msgid "Start of previous line"
 msgstr "이전 줄 시작"
 
-msgid "Move down 5 lines"
+msgid "Move 5 lines down"
 msgstr "5줄 아래로"
 
 msgid "Paste on new line below"

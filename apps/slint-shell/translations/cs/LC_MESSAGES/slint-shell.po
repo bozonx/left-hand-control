@@ -3446,7 +3446,7 @@ msgstr "Konec dalšího řádku"
 msgid "End of previous line"
 msgstr "Konec předchozího řádku"
 
-msgid "Move up 5 lines"
+msgid "Move 5 lines up"
 msgstr "O 5 řádků nahoru"
 
 msgid "Duplicate line"
@@ -3476,7 +3476,7 @@ msgstr "Začátek dalšího řádku"
 msgid "Start of previous line"
 msgstr "Začátek předchozího řádku"
 
-msgid "Move down 5 lines"
+msgid "Move 5 lines down"
 msgstr "O 5 řádků dolů"
 
 msgid "Paste on new line below"

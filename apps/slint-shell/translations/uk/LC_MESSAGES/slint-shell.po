@@ -3476,7 +3476,7 @@ msgstr "У кінець наступного рядка"
 msgid "End of previous line"
 msgstr "У кінець попереднього рядка"
 
-msgid "Move up 5 lines"
+msgid "Move 5 lines up"
 msgstr "Вгору на 5 рядків"
 
 msgid "Duplicate line"
@@ -3506,7 +3506,7 @@ msgstr "На початок наступного рядка"
 msgid "Start of previous line"
 msgstr "На початок попереднього рядка"
 
-msgid "Move down 5 lines"
+msgid "Move 5 lines down"
 msgstr "Вниз на 5 рядків"
 
 msgid "Paste on new line below"

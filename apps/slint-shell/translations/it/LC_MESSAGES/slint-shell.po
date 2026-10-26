@@ -3547,7 +3547,7 @@ msgstr "Fine della riga successiva"
 msgid "End of previous line"
 msgstr "Fine della riga precedente"
 
-msgid "Move up 5 lines"
+msgid "Move 5 lines up"
 msgstr "Su di 5 righe"
 
 msgid "Duplicate line"
@@ -3577,7 +3577,7 @@ msgstr "Inizio della riga successiva"
 msgid "Start of previous line"
 msgstr "Inizio della riga precedente"
 
-msgid "Move down 5 lines"
+msgid "Move 5 lines down"
 msgstr "Giù di 5 righe"
 
 msgid "Paste on new line below"

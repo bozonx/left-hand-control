@@ -3514,7 +3514,7 @@ msgstr "Következő sor vége"
 msgid "End of previous line"
 msgstr "Előző sor vége"
 
-msgid "Move up 5 lines"
+msgid "Move 5 lines up"
 msgstr "5 sorral feljebb"
 
 msgid "Duplicate line"
@@ -3544,7 +3544,7 @@ msgstr "Következő sor eleje"
 msgid "Start of previous line"
 msgstr "Előző sor eleje"
 
-msgid "Move down 5 lines"
+msgid "Move 5 lines down"
 msgstr "5 sorral lejjebb"
 
 msgid "Paste on new line below"
