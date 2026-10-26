@@ -57,6 +57,9 @@ pub(super) struct Supervisor {
     starting: bool,
     /// The restart limit was hit; wait for the user to ask again.
     gave_up: bool,
+    /// A start failure was already shown; later ones only go to the log
+    /// until a start succeeds.
+    start_error_shown: bool,
     policy: RestartPolicy,
 }
 
@@ -191,9 +194,12 @@ impl App {
                 return;
             }
             if !supervisor.policy.allow(Instant::now()) {
-                supervisor.gave_up = true;
+                let first = !std::mem::replace(&mut supervisor.gave_up, true);
                 drop(supervisor);
-                self.set_error(Msg::WorkerRestartLimit);
+                log::error!("Spell worker: restart limit reached");
+                if first {
+                    self.set_error(Msg::WorkerRestartLimit);
+                }
                 return;
             }
             supervisor.gave_up = false;
@@ -209,6 +215,7 @@ impl App {
         self.supervisor.borrow_mut().starting = false;
         match result {
             Ok(worker) => {
+                self.supervisor.borrow_mut().start_error_shown = false;
                 let preferences = Command::Preferences(self.preferences.get());
                 if let Err(error) = worker.send(&preferences, Source::Ipc, Instant::now(), None) {
                     self.set_error(Msg::WorkerError(error.to_string()));
@@ -220,7 +227,11 @@ impl App {
             }
             Err(error) => {
                 log::error!("Spell worker: {error}");
-                self.set_error(Msg::WorkerError(error));
+                let shown =
+                    std::mem::replace(&mut self.supervisor.borrow_mut().start_error_shown, true);
+                if !shown {
+                    self.set_error(Msg::WorkerError(error));
+                }
                 // A start that failed counts against the restart limit too.
                 slint::Timer::single_shot(RETRY_DELAY, || {
                     super::with_app(|app| app.start_worker(false))

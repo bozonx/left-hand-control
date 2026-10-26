@@ -43,6 +43,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 - The emoji library offers four language-independent text snippets: "TODO: ", "FIXME: ", "Continue." and "Thanks!".
 
+- When the popup process keeps failing to start, its error is shown once instead of on every retry, and “Popup menus could not recover” appears once when retries stop; the repeats go to the log.
+
 - The automatic layout rule dialog fits its content without empty gaps, shows the condition hint under “When”, and adds applications with icon-only “+” buttons; empty application lists no longer cut off wrapped text.
 
 - Removed the large Settings heading and redundant headings on the Main, Key behavior and Accessibility settings pages.
