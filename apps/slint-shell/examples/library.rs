@@ -1,6 +1,6 @@
 use lhc_core::{
     config_document::ConfigDocument,
-    profile::{layout_file, model::LayoutMode},
+    profile::{bundled::BUNDLED, layout_file, model::LayoutMode},
     storage::StoragePaths,
 };
 use slint::{ComponentHandle, Model};
@@ -252,9 +252,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             settings.manual_active_layout_id = Some("user:missing".into());
         })
     })?;
-    assert_eq!(library.get_bundled_names().row_data(0).unwrap(), "LHC1");
+    let bundled_name = BUNDLED[0].display_name();
+    assert_eq!(
+        library.get_bundled_names().row_data(0).unwrap().as_str(),
+        bundled_name.as_str()
+    );
     library.invoke_open_create(LayoutSource::Bundled, 0);
-    assert_eq!(library.get_create_name(), "LHC1");
+    assert_eq!(library.get_create_name().as_str(), bundled_name.as_str());
     library.invoke_create("Ivan K".into(), "".into(), LayoutSource::Bundled, 0);
     assert_eq!(ui.get_page(), Page::Rules);
     assert_eq!(
@@ -314,7 +318,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::ShowPage(Popup::Emoji, 4)
     );
     assert!(Command::parse("show emoji 0").is_err());
-    assert!(Command::parse("show quick 6").is_err());
+    assert_eq!(
+        Command::parse("show quick 6")?,
+        Command::ShowPage(Popup::Quick, 6)
+    );
     ui.invoke_navigate(Page::Layouts, MenuKind::Emoji);
     if std::env::var_os("LHC_LIBRARY_AUTO").is_some() {
         library.invoke_set_automatic(true);

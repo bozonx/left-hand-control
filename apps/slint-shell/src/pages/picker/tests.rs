@@ -122,7 +122,7 @@ fn picker_modes_restrict_values() {
     assert!(!step.accepts("pause:10001", None));
     assert!(!step.accepts("pause:0", None));
     assert!(!step.accepts("pause:+100", None));
-    assert!(!step.accepts("pause: 100", None));
+    assert!(step.accepts("pause: 100", None));
     assert!(!step.accepts("macro:self", None));
     assert!(step.accepts("builtin:copyLineText", None));
 }

@@ -806,11 +806,13 @@ export component DialogFrame inherits Rectangle {
     /// Off when the content handles Escape itself.
     in property <bool> close-on-escape: true;
     callback close();
+    /// Focus the preferred content after the frame has taken keyboard focus.
+    callback focus-content();
     background: Theme.scrim;
     TouchArea { clicked => { root.close(); } scroll-event(event) => { accept } }
     FocusScope {
         focus-on-tab-navigation: false;
-        init => { self.focus(); }
+        init => { self.focus(); root.focus-content(); }
         capture-key-pressed(event) => {
             if root.close-on-escape && event.text == Key.Escape { root.close(); return accept; }
             return reject;
@@ -850,6 +852,7 @@ export component ConfirmDialog inherits DialogFrame {
     callback cancel();
     card-width: 440px;
     close => { root.cancel(); }
+    focus-content => { confirm-button.focus(); }
     Text { vertical-stretch: 0; text: root.body; color: Theme.text; wrap: word-wrap; }
     if root.error != "": Text { vertical-stretch: 0; text: root.error; color: Theme.error; wrap: word-wrap; }
     HorizontalLayout {
@@ -857,7 +860,7 @@ export component ConfirmDialog inherits DialogFrame {
         spacing: Theme.space-m;
         alignment: end;
         Button { text: @tr("Cancel"); clicked => { root.cancel(); } }
-        Button { init => { self.focus(); } text: root.confirm-text; primary: true; icon: root.confirm-icon; colorize-icon: true; clicked => { root.confirm(); } }
+        confirm-button := Button { text: root.confirm-text; primary: true; icon: root.confirm-icon; colorize-icon: true; clicked => { root.confirm(); } }
     }
 }
 

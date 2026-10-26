@@ -787,7 +787,12 @@ fn layer_key_bound_to_an_empty_macro_swallows_the_key() {
 fn bindings_to_commands_that_cannot_run_report_instead_of_doing_nothing() {
     let seen = std::sync::Arc::new(std::sync::Mutex::new(0usize));
     let record = seen.clone();
+    let origin = std::thread::current().id();
     crate::events::bus().subscribe(move |event| {
+        // The global bus also receives events from tests running in parallel.
+        if std::thread::current().id() != origin {
+            return;
+        }
         if matches!(event, crate::events::CoreEvent::ActionUnavailable(action)
             if action == "cmd:disabledHere" || action == "cmd:")
         {

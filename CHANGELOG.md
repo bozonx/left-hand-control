@@ -18,6 +18,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Confirmation dialogs focus their primary button after the shared frame initializes, so Enter confirms reliably.
+
 - Game mode is off unless the in-development setting is on: detection does not poll, manual On is ignored, and popup hotkeys are no longer blocked by a hidden game mode.
 - Game mode counts games from launchers and the Game Bar list only while their window is in front (Settings → Game mode → “Only while the game is in front”, on by default), so switching to a browser turns it off. Detection polls every second only in Auto, a stale Steam `RunningAppID` after a Steam crash no longer keeps game mode on (Windows), and fullscreen detection no longer flips to “unavailable” on an empty desktop (Windows, macOS).
 - Settings pages refresh only when their dependent layout sections change; dirty indicators reuse the saved library snapshot until the library is refreshed or edited.
