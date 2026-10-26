@@ -3637,3 +3637,6 @@ msgstr "Usar o caminho estável"
 
 msgid "A path from /dev/input/by-id/ stays the same after reboots and reconnecting."
 msgstr "Um caminho de /dev/input/by-id/ permanece igual após reinícios e reconexões."
+
+msgid "Hold modifiers"
+msgstr "Manter modificadores"

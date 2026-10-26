@@ -3663,3 +3663,6 @@ msgstr "Użyj stałej ścieżki"
 
 msgid "A path from /dev/input/by-id/ stays the same after reboots and reconnecting."
 msgstr "Ścieżka z /dev/input/by-id/ nie zmienia się po ponownym uruchomieniu i podłączeniu."
+
+msgid "Hold modifiers"
+msgstr "Przytrzymuj modyfikatory"

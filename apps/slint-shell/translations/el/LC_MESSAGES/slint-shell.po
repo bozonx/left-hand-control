@@ -3728,3 +3728,6 @@ msgstr "Χρήση της σταθερής διαδρομής"
 
 msgid "A path from /dev/input/by-id/ stays the same after reboots and reconnecting."
 msgstr "Μια διαδρομή από το /dev/input/by-id/ παραμένει ίδια μετά από επανεκκινήσεις και επανασυνδέσεις."
+
+msgid "Hold modifiers"
+msgstr "Διατήρηση τροποποιητών"

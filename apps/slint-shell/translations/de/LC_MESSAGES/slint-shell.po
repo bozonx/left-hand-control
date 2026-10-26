@@ -3703,3 +3703,6 @@ msgstr "Stabilen Pfad verwenden"
 
 msgid "A path from /dev/input/by-id/ stays the same after reboots and reconnecting."
 msgstr "Ein Pfad aus /dev/input/by-id/ bleibt nach Neustarts und erneutem Anschließen gleich."
+
+msgid "Hold modifiers"
+msgstr "Modifikatoren halten"

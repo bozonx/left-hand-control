@@ -3665,3 +3665,6 @@ msgstr "Állandó útvonal használata"
 
 msgid "A path from /dev/input/by-id/ stays the same after reboots and reconnecting."
 msgstr "A /dev/input/by-id/ alatti útvonal újraindítás és újracsatlakoztatás után is ugyanaz marad."
+
+msgid "Hold modifiers"
+msgstr "Módosítók nyomva tartása"

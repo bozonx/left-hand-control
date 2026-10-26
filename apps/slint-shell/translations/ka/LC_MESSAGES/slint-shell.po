@@ -3612,3 +3612,6 @@ msgstr "მუდმივი გზის გამოყენება"
 
 msgid "A path from /dev/input/by-id/ stays the same after reboots and reconnecting."
 msgstr "/dev/input/by-id/-დან აღებული გზა არ იცვლება გადატვირთვისა და ხელახლა დაკავშირების შემდეგ."
+
+msgid "Hold modifiers"
+msgstr "მოდიფიკატორების დაჭერა"

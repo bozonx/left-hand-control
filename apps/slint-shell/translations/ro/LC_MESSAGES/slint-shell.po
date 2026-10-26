@@ -3665,3 +3665,6 @@ msgstr "Folosește calea stabilă"
 
 msgid "A path from /dev/input/by-id/ stays the same after reboots and reconnecting."
 msgstr "O cale din /dev/input/by-id/ rămâne aceeași după reporniri și reconectări."
+
+msgid "Hold modifiers"
+msgstr "Menține modificatorii"

@@ -2982,3 +2982,6 @@ msgstr "Использовать постоянный путь"
 
 msgid "A path from /dev/input/by-id/ stays the same after reboots and reconnecting."
 msgstr "Путь из /dev/input/by-id/ не меняется после перезагрузки и переподключения."
+
+msgid "Hold modifiers"
+msgstr "Удерживать модификаторы"

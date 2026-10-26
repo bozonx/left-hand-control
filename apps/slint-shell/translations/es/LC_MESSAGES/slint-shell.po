@@ -3683,3 +3683,6 @@ msgstr "Usar la ruta estable"
 
 msgid "A path from /dev/input/by-id/ stays the same after reboots and reconnecting."
 msgstr "Una ruta de /dev/input/by-id/ no cambia tras reiniciar o volver a conectar."
+
+msgid "Hold modifiers"
+msgstr "Mantener modificadores"

@@ -3377,3 +3377,6 @@ msgstr "固定パスを使用"
 
 msgid "A path from /dev/input/by-id/ stays the same after reboots and reconnecting."
 msgstr "/dev/input/by-id/ のパスは再起動や再接続後も変わりません。"
+
+msgid "Hold modifiers"
+msgstr "修飾キーを保持"

@@ -3367,3 +3367,6 @@ msgstr "고정 경로 사용"
 
 msgid "A path from /dev/input/by-id/ stays the same after reboots and reconnecting."
 msgstr "/dev/input/by-id/의 경로는 재부팅하거나 다시 연결해도 바뀌지 않습니다."
+
+msgid "Hold modifiers"
+msgstr "수정자 키 유지"

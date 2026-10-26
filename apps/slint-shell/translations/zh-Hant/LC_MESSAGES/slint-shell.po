@@ -3297,3 +3297,6 @@ msgstr "使用固定路徑"
 
 msgid "A path from /dev/input/by-id/ stays the same after reboots and reconnecting."
 msgstr "/dev/input/by-id/ 中的路徑在重新開機和重新連接後保持不變。"
+
+msgid "Hold modifiers"
+msgstr "保持修飾鍵"
