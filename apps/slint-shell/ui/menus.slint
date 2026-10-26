@@ -1,7 +1,7 @@
 import { TextField } from "controls.slint";
 import { InlineTextArea } from "controls.slint";
 import { PageContent, ScrollView } from "scroll.slint";
-import { DragDrop, DragGroups, DragHandle, DropMarker } from "reorder.slint";
+import { DragArea, DragAxis, DragGroups, DropMarker, PaletteDrag } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
@@ -11,27 +11,6 @@ import { Button, TextEdit } from "std-widgets.slint";
 
 export struct MenuCell { key: string, value: string, name: string }
 export struct EmojiCategory { id: string, items: [string] }
-global PaletteDrag {
-    in-out property <bool> active;
-    in-out property <string> value;
-    in-out property <string> name;
-    in-out property <bool> text-item;
-    public function reset() { self.active = false; self.value = ""; self.name = ""; }
-    in-out property <length> x;
-    in-out property <length> y;
-    in-out property <length> grid-x;
-    in-out property <length> grid-y;
-    in-out property <length> cell-width;
-    in-out property <length> cell-height;
-    public pure function target(x: length, y: length) -> int {
-        let local-x = x - self.grid-x - 12px;
-        let local-y = y - self.grid-y - 12px;
-        if local-x < 0px || local-y < 0px || local-x >= 5 * (self.cell-width + 8px) - 8px || local-y >= 3 * (self.cell-height + 8px) - 8px { return -1; }
-        if mod(local-x, self.cell-width + 8px) >= self.cell-width || mod(local-y, self.cell-height + 8px) >= self.cell-height { return -1; }
-        return floor(local-y / (self.cell-height + 8px)) * 5 + floor(local-x / (self.cell-width + 8px));
-    }
-}
-
 export global MenuEditor {
     in-out property <MenuKind> kind;
     in property <[string]> pages;
@@ -86,18 +65,9 @@ component HotkeyGrid inherits Rectangle {
     border-width: 1px;
     border-color: Theme.border;
     background: Theme.surface;
-    private property <Point> grid-position: root.absolute-position;
-    function sync-grid() {
-        PaletteDrag.grid-x = root.grid-position.x;
-        PaletteDrag.grid-y = root.grid-position.y;
-        PaletteDrag.cell-width = root.cell-width;
-        PaletteDrag.cell-height = root.cell-height;
-    }
-    init => { root.sync-grid(); }
-    changed grid-position => { root.sync-grid(); }
-    changed width => { root.sync-grid(); }
-    changed cell-width => { root.sync-grid(); }
-    changed cell-height => { root.sync-grid(); }
+    /// Cell under a palette item dragged over this grid; the palette drops onto it.
+    private property <int> palette-cell: PaletteDrag.active ? root.drop-at(PaletteDrag.x - root.absolute-position.x, PaletteDrag.y - root.absolute-position.y) : -1;
+    changed palette-cell => { PaletteDrag.cell = self.palette-cell; }
     pure function index-at(x: length, y: length) -> int {
         return max(0, min(2, floor((y - self.pad) / (self.cell-height + self.gap)))) * 5
             + max(0, min(4, floor((x - self.pad) / (self.cell-width + self.gap))));
@@ -128,10 +98,10 @@ component HotkeyGrid inherits Rectangle {
         height: root.cell-height;
         clip: true;
         border-radius: Theme.radius;
-        border-width: (PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? 2px : 1px;
-        border-color: (PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.accent : Theme.border;
-        background: (PaletteDrag.active && PaletteDrag.target(PaletteDrag.x, PaletteDrag.y) == root.preview(index)) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.hover : Theme.card;
-        opacity: root.dragging && root.source-page == MenuEditor.selected-page && index == root.drag-from ? 0.25 : 1.0;
+        border-width: (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? 2px : 1px;
+        border-color: (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.accent : Theme.border;
+        background: (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.hover : Theme.card;
+        opacity: root.dragging && root.source-page == MenuEditor.selected-page && index == root.drag-from ? Theme.dragged-opacity : 1.0;
         accessible-role: button;
         accessible-label: cell.key + " " + (root.emoji ? cell.value : cell.name);
         accessible-action-default => { root.activate(index); }
@@ -184,6 +154,10 @@ component HotkeyGrid inherits Rectangle {
                 root.press-y = self.mouse-y;
                 root.dragging = false;
             }
+            // Escape cancelled the drag: the release neither drops nor clicks.
+            if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && root.drag-from >= 0 && PaletteDrag.cancelled {
+                PaletteDrag.reset(); root.dragging = false; root.drag-from = -1; root.drag-over = -1;
+            }
             if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && root.drag-from >= 0 {
                 if root.dragging { root.drag-over = root.drop-at(self.mouse-x, self.mouse-y); }
                 if !root.dragging {
@@ -203,13 +177,12 @@ component HotkeyGrid inherits Rectangle {
             if event.kind == PointerEventKind.cancel { PaletteDrag.reset(); root.dragging = false; root.drag-from = -1; root.drag-over = -1; }
         }
         moved => {
-            if self.pressed && root.drag-from >= 0 {
-                if abs(self.mouse-x - root.press-x) > 6px || abs(self.mouse-y - root.press-y) > 6px {
+            if self.pressed && root.drag-from >= 0 && !PaletteDrag.cancelled {
+                if abs(self.mouse-x - root.press-x) > Theme.drag-threshold || abs(self.mouse-y - root.press-y) > Theme.drag-threshold {
                     root.dragging = PaletteDrag.value != "";
                     PaletteDrag.active = root.dragging;
                 }
                 if root.dragging {
-                    root.sync-grid();
                     PaletteDrag.x = root.absolute-position.x + self.mouse-x;
                     PaletteDrag.y = root.absolute-position.y + self.mouse-y;
                     root.drag-over = root.drop-at(PaletteDrag.x - root.absolute-position.x, PaletteDrag.y - root.absolute-position.y);
@@ -252,22 +225,22 @@ component MenuTabs inherits ScrollView {
     viewport-width: max(self.visible-width, tabs.preferred-width);
     vertical-scrollbar-policy: always-off;
     horizontal-scrollbar-policy: as-needed;
-    private property <length> pointer-x;
+    // Reordering tabs auto-scrolls through the ScrollView; this covers a grid cell
+    // dragged over the tabs, which is not a `DragDrop` drag.
     private property <bool> cell-over-tabs: PaletteDrag.active && PaletteDrag.y >= root.absolute-position.y && PaletteDrag.y < root.absolute-position.y + root.height;
-    private property <length> scroll-pointer: root.cell-over-tabs ? PaletteDrag.x : root.pointer-x;
-    /// Drag tick: edge auto-scroll and drop target updates.
-    private property <duration> tab-drag-tick: 30ms;
-    /// Pointer distance from an edge that scrolls the tabs, and the step per tick.
+    /// Edge auto-scroll for a dragged cell: tick, pointer distance from an edge, and step.
+    private property <duration> cell-scroll-tick: 30ms;
     private property <length> edge-zone: 24px;
     private property <length> edge-step: 12px;
     /// How long a dragged cell hovers over a tab before the tab opens.
     private property <duration> hover-open-delay: 400ms;
+    drag-scroll: true;
     Timer {
-        interval: root.tab-drag-tick;
-        running: (DragDrop.dragging && DragDrop.group == DragGroups.menu-tabs) || root.cell-over-tabs;
+        interval: root.cell-scroll-tick;
+        running: root.cell-over-tabs;
         triggered => {
-            if root.scroll-pointer < root.absolute-position.x + root.edge-zone { root.viewport-x = min(0px, root.viewport-x + root.edge-step); }
-            if root.scroll-pointer > root.absolute-position.x + root.width - root.edge-zone { root.viewport-x = max(root.visible-width - root.viewport-width, root.viewport-x - root.edge-step); }
+            if PaletteDrag.x < root.absolute-position.x + root.edge-zone { root.viewport-x = min(0px, root.viewport-x + root.edge-step); }
+            if PaletteDrag.x > root.absolute-position.x + root.width - root.edge-zone { root.viewport-x = max(root.visible-width - root.viewport-width, root.viewport-x - root.edge-step); }
         }
     }
     tabs := HorizontalLayout { spacing: Theme.space-s; alignment: start;
@@ -275,42 +248,17 @@ component MenuTabs inherits ScrollView {
             width: tab.preferred-width; height: 40px;
             private property <Point> position: self.absolute-position;
             private property <bool> hovered: PaletteDrag.active && PaletteDrag.x >= max(root.absolute-position.x, self.position.x) && PaletteDrag.x < min(root.absolute-position.x + root.width, self.position.x + self.width) && PaletteDrag.y >= self.position.y && PaletteDrag.y < self.position.y + self.height;
-            init => { DragDrop.row(DragGroups.menu-tabs, index, self.position.x, self.width); }
-            changed position => { DragDrop.row(DragGroups.menu-tabs, index, self.position.x, self.width); }
-            changed width => { DragDrop.row(DragGroups.menu-tabs, index, self.position.x, self.width); }
             Timer { interval: root.hover-open-delay; running: parent.hovered && index != root.selected; triggered => { root.select(index); } }
-            tab := NavTab { text: label == "" ? index + 1 : (index + 1) + " · " + label; selected: index == root.selected; clicked => { root.select(index); } opacity: DragDrop.dragging && DragDrop.group == DragGroups.menu-tabs && DragDrop.source == index ? 0.5 : 1; }
-            if DragDrop.dragging && DragDrop.group == DragGroups.menu-tabs && DragDrop.target == index && index != DragDrop.source: Rectangle {
-                x: index > DragDrop.source ? parent.width : -3px;
-                width: 3px; background: Theme.accent;
+            tab := NavTab { text: label == "" ? index + 1 : (index + 1) + " · " + label; selected: index == root.selected; clicked => { root.select(index); } opacity: tab-drag.dragged ? Theme.dragged-opacity : 1; }
+            tab-drag := DragArea {
+                width: 100%; height: 100%;
+                group: DragGroups.menu-tabs; index: index; count: root.labels.length;
+                axis: DragAxis.horizontal;
+                cursor: MouseCursor.pointer;
+                clicked => { root.select(index); }
+                dropped(from, to) => { MenuEditor.reorder-page(from, to); }
             }
-            Timer {
-                interval: root.tab-drag-tick;
-                running: DragDrop.dragging && DragDrop.group == DragGroups.menu-tabs && DragDrop.source == index;
-                triggered => { DragDrop.target = DragDrop.locate(DragGroups.menu-tabs, index, root.pointer-x - parent.position.x - touch.pressed-x, root.labels.length); }
-            }
-            touch := TouchArea {
-                mouse-cursor: self.pressed ? grabbing : pointer;
-                pointer-event(event) => {
-                    if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
-                        DragDrop.reset(); DragDrop.group = DragGroups.menu-tabs; DragDrop.source = index; DragDrop.target = index;
-                    }
-                    if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && DragDrop.group == DragGroups.menu-tabs {
-                        let from = DragDrop.source; let to = DragDrop.target; let moved = DragDrop.dragging;
-                        DragDrop.reset();
-                        if moved { MenuEditor.reorder-page(from, to); } else { root.select(index); }
-                    }
-                    if event.kind == PointerEventKind.cancel { DragDrop.reset(); }
-                }
-                moved => {
-                    if self.pressed && DragDrop.group == DragGroups.menu-tabs {
-                        root.pointer-x = self.absolute-position.x + self.mouse-x;
-                        DragDrop.offset = self.mouse-x - self.pressed-x;
-                        if abs(DragDrop.offset) > 6px { DragDrop.dragging = true; }
-                        if DragDrop.dragging { DragDrop.target = DragDrop.locate(DragGroups.menu-tabs, DragDrop.source, DragDrop.offset, root.labels.length); }
-                    }
-                }
-            }
+            DropMarker { cross-size: parent.height; group: DragGroups.menu-tabs; index: index; horizontal: true; row-start: parent.x; row-size: parent.width; }
         }
         VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/plus.svg"); tooltip: @tr("Add page"); primary: true; clicked => { root.add(); } } }
     }
@@ -363,8 +311,8 @@ component EmojiButton inherits Rectangle {
     touch := TouchArea {
         mouse-cursor: PaletteDrag.active ? grabbing : grab;
         moved => {
-            if self.pressed {
-                if abs(self.mouse-x - self.pressed-x) > 6px || abs(self.mouse-y - self.pressed-y) > 6px { PaletteDrag.active = true; }
+            if self.pressed && !PaletteDrag.cancelled {
+                if abs(self.mouse-x - self.pressed-x) > Theme.drag-threshold || abs(self.mouse-y - self.pressed-y) > Theme.drag-threshold { PaletteDrag.active = true; }
                 PaletteDrag.x = root.absolute-position.x + self.mouse-x;
                 PaletteDrag.y = root.absolute-position.y + self.mouse-y;
             }
@@ -375,9 +323,9 @@ component EmojiButton inherits Rectangle {
             }
             if event.kind == PointerEventKind.up && event.button == PointerEventButton.left {
                 if PaletteDrag.active {
-                    let target = PaletteDrag.target(root.absolute-position.x + self.mouse-x, root.absolute-position.y + self.mouse-y);
+                    let target = PaletteDrag.cell;
                     if target >= 0 { MenuEditor.select-cell(target); root.pick(); }
-                } else { root.pick(); }
+                } else if !PaletteDrag.cancelled { root.pick(); }
                 PaletteDrag.reset();
             }
             if event.kind == PointerEventKind.cancel { PaletteDrag.reset(); }

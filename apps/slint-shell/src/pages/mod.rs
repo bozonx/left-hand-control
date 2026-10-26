@@ -212,6 +212,23 @@ pub(crate) fn index(value: i32, len: usize) -> Option<usize> {
     usize::try_from(value).ok().filter(|index| *index < len)
 }
 
+/// Positions of a drag-and-drop move in a list of `len` items, or `None`
+/// when either index is out of range or the item stays in place.
+pub(crate) fn move_indices(from: i32, to: i32, len: usize) -> Option<(usize, usize)> {
+    let (from, to) = (index(from, len)?, index(to, len)?);
+    (from != to).then_some((from, to))
+}
+
+/// Move the item at `from` so that it ends up at `to`; returns whether anything moved.
+pub(crate) fn move_item<T>(items: &mut Vec<T>, from: i32, to: i32) -> bool {
+    let Some((from, to)) = move_indices(from, to, items.len()) else {
+        return false;
+    };
+    let item = items.remove(from);
+    items.insert(to, item);
+    true
+}
+
 /// Choice at a UI index, falling back to the first one.
 pub(crate) fn choice<T: Copy>(choices: &[T], index: i32) -> T {
     usize::try_from(index)
@@ -224,6 +241,19 @@ pub(crate) fn choice<T: Copy>(choices: &[T], index: i32) -> T {
 mod tests {
     use super::*;
     use lhc_core::profile::model::LocalePreference;
+
+    #[test]
+    fn move_item_checks_bounds() {
+        let mut items = vec![1, 2, 3];
+        assert!(move_item(&mut items, 0, 2));
+        assert_eq!(items, [2, 3, 1]);
+        assert!(move_item(&mut items, 2, 0));
+        assert_eq!(items, [1, 2, 3]);
+        assert!(!move_item(&mut items, 1, 1));
+        assert!(!move_item(&mut items, -1, 0));
+        assert!(!move_item(&mut items, 0, 3));
+        assert_eq!(items, [1, 2, 3]);
+    }
 
     #[test]
     fn helpers_round_trip() {

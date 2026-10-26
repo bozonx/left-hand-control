@@ -1,4 +1,5 @@
-//! Scrolling a list while a DragHandle drag is in progress: wheel and edge auto-scroll.
+//! Scrolling a list while a DragHandle drag is in progress: wheel and edge auto-scroll,
+//! cancelling a drag, and a stale drag state left by a lost release.
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition};
 use std::{cell::Cell, rc::Rc, time::Duration};
@@ -11,6 +12,7 @@ slint::slint! {
         width: 400px; height: 300px;
         out property <length> scroll-y: list.viewport-y;
         out property <length> other-y: other.viewport-y;
+        out property <int> drops;
         // A second ScrollView on the page also observes the wheel and must leave it alone.
         other := ScrollView {
             x: 300px; width: 50px; height: 100%;
@@ -23,8 +25,8 @@ slint::slint! {
             VerticalLayout {
                 for i in 30: Rectangle {
                     height: 40px;
-                    HorizontalLayout { DragHandle { group: 7; index: i; count: 30; } Text { text: i; } }
-                    DropMarker { width: parent.width; group: 7; index: i; row-y: parent.y; row-height: parent.height; }
+                    HorizontalLayout { DragHandle { group: 7; index: i; count: 30; dropped(from, to) => { root.drops += 1; } } Text { text: i; } }
+                    DropMarker { cross-size: parent.width; group: 7; index: i; row-start: parent.y; row-size: parent.height; }
                 }
             }
         }
@@ -77,7 +79,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 window.dispatch_event(WindowEvent::PointerReleased { position: at(150.0), button: PointerEventButton::Left });
                 assert!(!drag.get_dragging());
                 assert_eq!(ui.get_scroll_y(), y);
-                println!("Drag scroll passed: wheel during drag, edge auto-scroll, drop target follows the list");
+                assert_eq!(ui.get_drops(), 1);
+                // Escape: the release after a cancel drops nothing.
+                window.dispatch_event(WindowEvent::PointerPressed { position: at(150.0), button: PointerEventButton::Left });
+                window.dispatch_event(WindowEvent::PointerMoved { position: at(230.0) });
+                assert!(drag.get_dragging());
+                drag.invoke_cancel();
+                window.dispatch_event(WindowEvent::PointerMoved { position: at(240.0) });
+                window.dispatch_event(WindowEvent::PointerReleased { position: at(240.0), button: PointerEventButton::Left });
+                assert_eq!(ui.get_drops(), 1, "cancelled drag dropped");
+                assert!(!drag.get_dragging());
+                // A release lost elsewhere leaves `dragging` set; the next click must not drop.
+                drag.set_dragging(true);
+                drag.set_target(drag.get_target() + 3);
+                window.dispatch_event(WindowEvent::PointerPressed { position: at(150.0), button: PointerEventButton::Left });
+                window.dispatch_event(WindowEvent::PointerReleased { position: at(150.0), button: PointerEventButton::Left });
+                assert_eq!(ui.get_drops(), 1, "click after a lost release dropped");
+                println!("Drag scroll passed: wheel during drag, edge auto-scroll, drop target follows the list, cancel, stale state");
                 slint::quit_event_loop().unwrap();
             }
             _ => {}

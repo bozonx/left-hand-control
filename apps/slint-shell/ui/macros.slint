@@ -224,12 +224,12 @@ component MacroCard inherits Card {
                     step: step;
                     remove => { root.remove-step(step-index); }
                     } }
-                    DropMarker { width: parent.width; group: DragGroups.macro-steps + root.index; index: step-index; row-y: parent.y; row-height: parent.height; }
+                    DropMarker { cross-size: parent.width; group: DragGroups.macro-steps + root.index; index: step-index; row-start: parent.y; row-size: parent.height; }
                 }
             }
         }
     }
-    DropMarker { width: parent.width; group: DragGroups.macros; index: root.index; row-y: root.y; row-height: root.height; }
+    DropMarker { cross-size: parent.width; group: DragGroups.macros; index: root.index; row-start: root.y; row-size: root.height; }
 }
 
 component BuiltinMacrosHeader inherits Rectangle {

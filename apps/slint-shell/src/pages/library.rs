@@ -597,13 +597,18 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
     on!(ui, library.on_reorder, doc = document, state = state => |ui, from, to| {
         let (doc, state) = (&doc, &state);
-        let result = select(&ui, doc, state, from).and_then(|()| {
-            let id = user_layout_id(&selected_name(state)?);
-            edit(&ui, doc, state, |config| {
-                config.move_library_layout(&id, to - from)
-            })
-            .map(|()| Msg::None)
-        });
+        // Moving a card must not select or load it: take the name from the list.
+        let names = ui.global::<LayoutLibrary>().get_names();
+        let result = match super::move_indices(from, to, slint::Model::row_count(&names))
+            .and_then(|(from, _)| slint::Model::row_data(&names, from))
+        {
+            Some(name) => {
+                let id = user_layout_id(&name);
+                edit(&ui, doc, state, |config| config.move_library_layout(&id, to - from))
+                    .map(|()| Msg::None)
+            }
+            None => Ok(Msg::None),
+        };
         report(&ui, state, result);
     });
     on!(ui, library.on_discard_current, doc = document, state = state => |ui| {

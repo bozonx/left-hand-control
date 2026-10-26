@@ -473,13 +473,10 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let doc = document.clone();
     ui.global::<LayersEditor>().on_reorder(move |from, to| {
         let Some(ui) = weak.upgrade() else { return };
-        let (Ok(from), Ok(to)) = (usize::try_from(from), usize::try_from(to)) else {
+        let len = doc.read().layout().layers.len();
+        let Some((from, to)) = super::move_indices(from, to, len) else {
             return;
         };
-        let len = doc.read().layout().layers.len();
-        if from >= len || to >= len {
-            return;
-        }
         let _ = change(&ui, &doc, |config| {
             config.update_layout(|layout| {
                 let item = layout.layers.remove(from);

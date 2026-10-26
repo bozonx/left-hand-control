@@ -13,6 +13,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - The Layers page marks keys and extra keys that keep their modifiers held until the layer is released with an accent dot; the key tooltip explains it.
 - Clipboard text input uses a separate paste shortcut in terminals (Konsole, kitty, Alacritty, GNOME Terminal and others, recognised by window class), Ctrl+Shift+V by default: Ctrl+V does not paste there, and many terminals paste the mouse selection on Shift+Insert. Settings → Mapper → Text input can set it to any shortcut or to the one used in other apps.
 - Interface language choices and machine-translated catalogs for German, French, international Spanish, Italian, Portuguese, Polish, Turkish, Ukrainian, Czech, Hungarian, Romanian, Greek, Croatian, Georgian, Kazakh, Simplified and Traditional Chinese, Japanese, and Korean.
+- Escape cancels a drag in progress. Reorder handles respond to Alt+Up/Down and layer tabs to Alt+Left/Right, so lists can be reordered from the keyboard.
+- Dragging a layer tab or a menu page tab scrolls the tab strip at its edges.
 
 ### Changed
 

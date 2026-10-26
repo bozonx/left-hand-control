@@ -508,12 +508,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
 
     on!(ui, editor.on_move, doc = document => |ui, from, to| {
         let len = doc.read().layout().rules.len();
-        let (Ok(from), Ok(to)) = (usize::try_from(from), usize::try_from(to)) else {
+        let Some((from, to)) = super::move_indices(from, to, len) else {
             return;
         };
-        if from >= len || to >= len {
-            return;
-        }
         if change(&ui, &doc, true, |layout| {
             let item = layout.rules.remove(from);
             layout.rules.insert(to, item);

@@ -347,7 +347,7 @@ export component RulesPage inherits PageLayout {
                         if rule.is-chord: Rectangle { horizontal-stretch: 1; min-width: 0px; preferred-width: 0px; }
                     }
                 }
-                DropMarker { width: parent.width; group: DragGroups.rules; index: index; row-y: parent.y; row-height: parent.height; }
+                DropMarker { cross-size: parent.width; group: DragGroups.rules; index: index; row-start: parent.y; row-size: parent.height; }
             }
         }
     }

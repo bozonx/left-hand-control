@@ -47,6 +47,8 @@ export global Theme {
     /// Item being dragged in a list, and the floating preview of a dragged cell.
     out property <float> dragged-opacity: 0.6;
     out property <float> drag-preview-opacity: 0.95;
+    /// Pointer travel that turns a press into a drag.
+    out property <length> drag-threshold: 6px;
     /// How long a newly created item stays highlighted.
     out property <duration> highlight-duration: 650ms;
     /// Font weights.

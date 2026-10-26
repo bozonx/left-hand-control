@@ -15,6 +15,26 @@ export global DragGroups {
     out property <int> macro-steps: 100;
 }
 
+/// How a `DragArea` measures the drag: along one axis for lists and tabs,
+/// or freely for grids, where the caller picks the drop target from the pointer.
+export enum DragAxis { vertical, horizontal, free }
+
+/// Cell dragged from the menu grid or the emoji palette onto a grid cell.
+export global PaletteDrag {
+    in-out property <bool> active;
+    /// Set by Escape; the pressed source ignores the rest of the gesture.
+    in-out property <bool> cancelled;
+    in-out property <string> value;
+    in-out property <string> name;
+    in-out property <bool> text-item;
+    in-out property <length> x;
+    in-out property <length> y;
+    /// Grid cell under the pointer, or -1; kept up to date by the visible grid.
+    in-out property <int> cell: -1;
+    public function reset() { self.active = false; self.cancelled = false; self.value = ""; self.name = ""; self.cell = -1; }
+    public function cancel() { self.reset(); self.cancelled = true; }
+}
+
 export global DragDrop {
     in-out property <int> group: -1;
     in-out property <int> source: -1;
@@ -22,21 +42,31 @@ export global DragDrop {
     in-out property <int> count;
     in-out property <length> offset;
     in-out property <bool> dragging;
+    /// The drag runs along x (tabs); ScrollViews auto-scroll only along the drag axis.
+    in-out property <bool> horizontal;
     // Pointer position in window coordinates, for edge auto-scroll and 2D drop targets.
     in-out property <length> pointer-x;
     in-out property <length> pointer-y;
-    // Wheel deltas from the drag handle (it holds the mouse grab), consumed by the ScrollView.
+    // Wheel deltas from the drag source (it holds the mouse grab), consumed by the ScrollView.
     in-out property <length> wheel;
     in-out property <int> wheel-serial;
     callback row(int, int, length, length);
     callback locate(int, int, length, int) -> int;
     public function reset() {
         self.group = -1; self.source = -1; self.target = -1; self.count = 0; self.offset = 0px; self.dragging = false;
-        self.wheel = 0px;
+        self.horizontal = false; self.wheel = 0px;
     }
+    /// Press on a drag source. Starts from a clean state, so a release lost
+    /// elsewhere cannot turn the next click into a drop.
+    public function start(group: int, source: int, count: int, horizontal: bool) {
+        self.reset();
+        self.group = group; self.source = source; self.target = source; self.count = count; self.horizontal = horizontal;
+    }
+    /// Abandon any drag in progress (Escape, page change); the release then does nothing.
+    public function cancel() { self.reset(); PaletteDrag.cancel(); }
     public function request-scroll(delta: length) { self.wheel += delta; self.wheel-serial += 1; }
     // The list moved by `shift` under a stationary pointer; the next move event recomputes
-    // the offset from the handle, which scrolled along with the list.
+    // the offset from the source, which scrolled along with the list.
     public function scrolled(shift: length) {
         if !self.dragging || shift == 0px { return; }
         self.offset += shift;
@@ -44,60 +74,119 @@ export global DragDrop {
     }
 }
 
-export component DragHandle inherits Rectangle {
+/// Pointer gesture shared by every drag source: press, threshold, move, drop or click.
+export component DragArea {
     in property <int> group;
     in property <int> index;
     in property <int> count;
-    in property <bool> horizontal;
+    in property <DragAxis> axis: DragAxis.vertical;
+    /// Drop index for `free` drags, computed by the caller from `DragDrop.pointer-x/y`.
+    in property <int> free-target: -1;
+    in property <MouseCursor> cursor: MouseCursor.grab;
+    out property <bool> has-hover: touch.has-hover;
+    out property <bool> pressed: touch.pressed;
+    /// This source is being dragged.
+    out property <bool> dragged: DragDrop.dragging && DragDrop.group == root.group && DragDrop.source == root.index;
+    callback clicked();
     callback dropped(int, int);
-    width: Theme.icon-button-size; height: Theme.icon-button-size;
-    border-radius: Theme.radius-small;
-    background: touch.has-hover ? Theme.hover : transparent;
-    accessible-role: button;
-    accessible-label: @tr("Drag");
-    Image { x: 6px; y: 6px; width: 16px; height: 16px; source: @image-url("icons/grip.svg"); colorize: Theme.muted; }
+    private property <bool> own: DragDrop.group == root.group && DragDrop.source == root.index;
     touch := TouchArea {
-        mouse-cursor: self.pressed ? grabbing : grab;
+        mouse-cursor: self.pressed && (DragDrop.dragging || root.cursor == MouseCursor.grab) ? MouseCursor.grabbing : root.cursor;
         pointer-event(event) => {
             if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
-                DragDrop.group = root.group; DragDrop.source = root.index; DragDrop.target = root.index; DragDrop.count = root.count;
+                DragDrop.start(root.group, root.index, root.count, root.axis == DragAxis.horizontal);
+                DragDrop.pointer-x = self.absolute-position.x + self.mouse-x;
+                DragDrop.pointer-y = self.absolute-position.y + self.mouse-y;
             }
-            if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && DragDrop.group == root.group {
-                let from = DragDrop.source; let to = DragDrop.target; let moved = DragDrop.dragging;
+            if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && root.own {
+                let from = DragDrop.source;
+                let to = root.axis == DragAxis.free ? root.free-target : DragDrop.target;
+                let moved = DragDrop.dragging;
                 DragDrop.reset();
-                if moved && from != to { root.dropped(from, to); }
+                if moved {
+                    if to >= 0 && to != from { root.dropped(from, to); }
+                } else if self.has-hover {
+                    root.clicked();
+                }
             }
-            if event.kind == PointerEventKind.cancel { DragDrop.reset(); }
+            if event.kind == PointerEventKind.cancel && root.own { DragDrop.reset(); }
         }
-        // While the handle holds the grab, the wheel comes here instead of the ScrollView.
+        // While the source holds the grab, the wheel comes here instead of the ScrollView.
         scroll-event(event) => {
-            if DragDrop.dragging && DragDrop.group == root.group && !root.horizontal { DragDrop.request-scroll(event.delta-y); return accept; }
+            if root.dragged && root.axis != DragAxis.horizontal { DragDrop.request-scroll(event.delta-y); return accept; }
             reject
         }
         moved => {
-            if self.pressed && DragDrop.group == root.group {
+            if self.pressed && root.own {
+                DragDrop.pointer-x = self.absolute-position.x + self.mouse-x;
                 DragDrop.pointer-y = self.absolute-position.y + self.mouse-y;
-                DragDrop.offset = root.horizontal ? self.mouse-x - self.pressed-x : self.mouse-y - self.pressed-y;
-                if abs(DragDrop.offset) > 6px { DragDrop.dragging = true; }
-                if DragDrop.dragging { DragDrop.target = DragDrop.locate(root.group, root.index, DragDrop.offset, root.count); }
+                DragDrop.offset = root.axis == DragAxis.horizontal ? self.mouse-x - self.pressed-x : self.mouse-y - self.pressed-y;
+                if abs(self.mouse-x - self.pressed-x) > Theme.drag-threshold || abs(self.mouse-y - self.pressed-y) > Theme.drag-threshold {
+                    DragDrop.dragging = true;
+                }
+                if DragDrop.dragging && root.axis != DragAxis.free {
+                    DragDrop.target = DragDrop.locate(root.group, root.index, DragDrop.offset, root.count);
+                }
             }
         }
     }
 }
 
+/// Grip for list rows: drag with the mouse, or focus it and press Alt+Up/Down.
+export component DragHandle inherits Rectangle {
+    in property <int> group;
+    in property <int> index;
+    in property <int> count;
+    callback dropped(int, int);
+    width: Theme.icon-button-size; height: Theme.icon-button-size;
+    border-radius: Theme.radius-small;
+    border-width: focus.has-focus ? 2px : 0px;
+    border-color: Theme.focus;
+    background: area.has-hover ? Theme.hover : transparent;
+    accessible-role: button;
+    accessible-label: @tr("Drag");
+    accessible-action-increment => { root.step(1); }
+    accessible-action-decrement => { root.step(-1); }
+    function step(delta: int) {
+        if root.index + delta >= 0 && root.index + delta < root.count { root.dropped(root.index, root.index + delta); }
+    }
+    Image { x: 6px; y: 6px; width: 16px; height: 16px; source: @image-url("icons/grip.svg"); colorize: Theme.muted; }
+    focus := FocusScope {
+        key-pressed(event) => {
+            if event.modifiers.alt && event.text == Key.UpArrow { root.step(-1); return accept; }
+            if event.modifiers.alt && event.text == Key.DownArrow { root.step(1); return accept; }
+            return reject;
+        }
+    }
+    area := DragArea {
+        width: 100%; height: 100%;
+        group: root.group; index: root.index; count: root.count;
+        dropped(from, to) => { root.dropped(from, to); }
+        clicked => { focus.focus(); }
+    }
+}
+
+/// Insertion line for a row of a reorderable list; also reports the row's
+/// position (in its list's coordinates) to `DragDrop`. Horizontal lists pass
+/// the x and width as `row-start` and `row-size`.
 export component DropMarker inherits Rectangle {
     in property <int> group;
     in property <int> index;
-    in property <length> row-y;
-    in property <length> row-height;
-    init => { DragDrop.row(root.group, root.index, root.row-y, root.row-height); }
-    changed group => { DragDrop.row(root.group, root.index, root.row-y, root.row-height); }
-    changed index => { DragDrop.row(root.group, root.index, root.row-y, root.row-height); }
-    changed row-y => { DragDrop.row(root.group, root.index, root.row-y, root.row-height); }
-    changed row-height => { DragDrop.row(root.group, root.index, root.row-y, root.row-height); }
+    in property <length> row-start;
+    in property <length> row-size;
+    in property <bool> horizontal;
+    /// Length of the line across the list: the row width, or the tab height.
+    in property <length> cross-size;
+    init => { DragDrop.row(root.group, root.index, root.row-start, root.row-size); }
+    changed group => { DragDrop.row(root.group, root.index, root.row-start, root.row-size); }
+    changed index => { DragDrop.row(root.group, root.index, root.row-start, root.row-size); }
+    changed row-start => { DragDrop.row(root.group, root.index, root.row-start, root.row-size); }
+    changed row-size => { DragDrop.row(root.group, root.index, root.row-start, root.row-size); }
     visible: DragDrop.dragging && DragDrop.group == root.group && DragDrop.target == root.index && DragDrop.target != DragDrop.source;
-    y: DragDrop.target > DragDrop.source ? root.row-height - 3px : 0px;
-    height: 3px;
+    x: !root.horizontal ? 0px : DragDrop.target > DragDrop.source ? root.row-size - 3px : 0px;
+    y: root.horizontal ? 0px : DragDrop.target > DragDrop.source ? root.row-size - 3px : 0px;
+    width: root.horizontal ? 3px : root.cross-size;
+    height: root.horizontal ? root.cross-size : 3px;
     border-radius: Theme.radius-small;
     background: Theme.accent;
 }

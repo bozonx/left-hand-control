@@ -96,15 +96,12 @@ pub(super) fn move_rule(
     from: i32,
     to: i32,
 ) -> Result<Msg, Msg> {
-    let (Ok(from), Ok(to)) = (usize::try_from(from), usize::try_from(to)) else {
+    let len = document.read().settings().auto_rules.len();
+    if super::super::move_indices(from, to, len).is_none() {
         return Ok(Msg::None);
-    };
+    }
     edit_auto(ui, document, state, |settings| {
-        let rules = &mut settings.auto_rules;
-        if from < rules.len() && to < rules.len() {
-            let rule = rules.remove(from);
-            rules.insert(to, rule);
-        }
+        super::super::move_item(&mut settings.auto_rules, from, to);
     })
 }
 

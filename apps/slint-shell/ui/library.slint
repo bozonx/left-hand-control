@@ -1,4 +1,4 @@
-import { DragDrop, DragGroups, DragHandle, DropMarker } from "reorder.slint";
+import { DragGroups, DragHandle, DropMarker } from "reorder.slint";
 import { PageContent, ScrollView } from "scroll.slint";
 import { ButtonGroup, FormField, InfoTip, InlineTextField, InlineTextArea, ItemStyle, IconButton, ConfirmDialog, Divider, MenuSurface, MenuItem, DialogFrame, PageLayout, TooltipText, Card, CardTitle } from "controls.slint";
 import { ConditionChoices, ConditionsForm } from "conditions.slint";
@@ -381,7 +381,7 @@ component AutoRuleRow inherits Rectangle {
             }
         }
     }
-    DropMarker { width: parent.width; group: DragGroups.library-rules; index: root.index; row-y: root.absolute-position.y; row-height: root.height; }
+    DropMarker { cross-size: parent.width; group: DragGroups.library-rules; index: root.index; row-start: root.y; row-size: root.height; }
 }
 
 /// Shared entry point for common and custom automatic rules.
@@ -558,8 +558,8 @@ export component LibraryPage inherits PageLayout {
                         height: parent.height - 10px; width: parent.width;
                                 background: Theme.card;
                         border-radius: Theme.radius-large;
-                        border-width: DragDrop.dragging && DragDrop.group == DragGroups.layouts && DragDrop.target == index ? 2px : card.active ? 2px : 1px;
-                        border-color: card.active || (DragDrop.dragging && DragDrop.group == DragGroups.layouts && DragDrop.target == index) ? Theme.accent : Theme.divider;
+                        border-width: card.active ? 2px : 1px;
+                        border-color: card.active ? Theme.accent : Theme.divider;
                         TouchArea { double-clicked => { LayoutLibrary.edit(index); } }
                         card-content := HorizontalLayout { padding: Theme.space-xl; spacing: Theme.space-2xl;
                             VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: Theme.space-m-plus;
@@ -624,7 +624,7 @@ export component LibraryPage inherits PageLayout {
                             }
                         }
                         }
-                        DropMarker { width: parent.width; group: DragGroups.layouts; index: index; row-y: card.y; row-height: card.height; }
+                        DropMarker { cross-size: parent.width; group: DragGroups.layouts; index: index; row-start: card.y; row-size: card.height; }
                     }
                 }
             }

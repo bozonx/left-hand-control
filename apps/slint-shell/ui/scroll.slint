@@ -73,33 +73,46 @@ export component ScrollView {
     private property <length> scrollbar-gap: Theme.scrollbar-gap;
     private property <bool> vertical: root.vertical-scrollbar-policy == ScrollBarPolicy.always-on || (root.vertical-scrollbar-policy == ScrollBarPolicy.as-needed && root.viewport-height > root.visible-height);
     private property <bool> horizontal: root.horizontal-scrollbar-policy == ScrollBarPolicy.always-on || (root.horizontal-scrollbar-policy == ScrollBarPolicy.as-needed && root.viewport-width > root.visible-width);
-    // Scroll under an active DragHandle drag: wheel events forwarded by the handle and
-    // auto-scroll while the pointer is near the top or bottom edge.
+    // Scroll under an active drag: wheel events forwarded by the drag source and
+    // auto-scroll while the pointer is near an edge. A ScrollView without a vertical
+    // scrollbar (tab strips) follows horizontal drags along x; the others follow
+    // vertical and free drags along y.
     in property <bool> drag-scroll: false;
-    private property <bool> drag-active: root.drag-scroll && DragDrop.dragging;
+    private property <bool> drag-x: root.vertical-scrollbar-policy == ScrollBarPolicy.always-off;
+    private property <bool> drag-active: root.drag-scroll && DragDrop.dragging && DragDrop.horizontal == root.drag-x;
     private property <length> drag-edge: 48px;
     /// Edge auto-scroll while dragging: fastest step and its tick (one frame at 60 Hz).
     private property <length> drag-max-step: 16px;
     private property <duration> drag-tick: 16ms;
-    private property <length> drag-pointer: DragDrop.pointer-y - root.absolute-position.y;
+    private property <length> drag-pointer: root.drag-x ? DragDrop.pointer-x - root.absolute-position.x : DragDrop.pointer-y - root.absolute-position.y;
+    private property <length> drag-extent: root.drag-x ? content.width : content.height;
     private property <length> drag-speed: !root.drag-active ? 0px
         : root.drag-pointer < root.drag-edge ? root.drag-max-step * min(1, (root.drag-edge - root.drag-pointer) / root.drag-edge)
-        : root.drag-pointer > content.height - root.drag-edge ? -root.drag-max-step * min(1, (root.drag-pointer - content.height + root.drag-edge) / root.drag-edge)
+        : root.drag-pointer > root.drag-extent - root.drag-edge ? -root.drag-max-step * min(1, (root.drag-pointer - root.drag-extent + root.drag-edge) / root.drag-edge)
         : 0px;
     private property <int> drag-wheel: DragDrop.wheel-serial;
     // Every ScrollView sees the serial change; only the one hosting the drag may consume it.
     changed drag-wheel => {
-        if !root.drag-active { return; }
+        if !root.drag-active || root.drag-x { return; }
         let delta = DragDrop.wheel;
         DragDrop.wheel = 0px;
         root.drag-scroll-by(delta);
     }
     function drag-scroll-by(delta: length) {
-        let before = content.content-y;
-        content.content-y = clamp(before + delta, min(0px, content.height - content.content-height), 0px);
-        if content.content-y != before {
-            DragDrop.scrolled(before - content.content-y);
-            root.scrolled();
+        if root.drag-x {
+            let before = content.content-x;
+            content.content-x = clamp(before + delta, min(0px, content.width - content.content-width), 0px);
+            if content.content-x != before {
+                DragDrop.scrolled(before - content.content-x);
+                root.scrolled();
+            }
+        } else {
+            let before = content.content-y;
+            content.content-y = clamp(before + delta, min(0px, content.height - content.content-height), 0px);
+            if content.content-y != before {
+                DragDrop.scrolled(before - content.content-y);
+                root.scrolled();
+            }
         }
     }
     callback scrolled();

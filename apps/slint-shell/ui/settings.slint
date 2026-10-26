@@ -10,7 +10,7 @@ import { MacroEditor, MacrosPage } from "macros.slint";
 import { MenuEditor, MenusPage } from "menus.slint";
 import { RuleDialogOverlay, RulesEditor, RulesPage } from "rules.slint";
 import { AppEntryDialog, AppEntryOverlay } from "conditions.slint";
-import { DragDrop } from "reorder.slint";
+import { DragDrop, PaletteDrag } from "reorder.slint";
 import { CommandDialogOverlay, SettingsPage, SettingsEditor } from "settings-page.slint";
 import { DeviceDialog, DeviceDialogOverlay } from "device-picker.slint";
 import { ConfirmDialog, DialogFrame, IconButton, Badge, InlineEditors, MapperToggle, Divider, MenuSurface, MenuItem, NavButton, NavTab, TooltipText } from "controls.slint";
@@ -62,7 +62,7 @@ export component SettingsWindow inherits Window {
     public function navigate(page: Page, kind: MenuKind) {
         if !AppState.in-development && (page == Page.menus || page == Page.macros) { return; }
         InlineEditors.commit-revision += 1;
-        DragDrop.reset();
+        DragDrop.cancel();
         if page == Page.layouts { LayoutLibrary.refresh(); }
         if page == Page.menus { MenuEditor.open(kind); }
         if page != Page.layouts && page != Page.settings { LayoutLibrary.editor-open = true; }
@@ -82,6 +82,7 @@ export component SettingsWindow inherits Window {
         focus-on-tab-navigation: false;
         init => { self.focus(); }
         capture-key-pressed(event) => {
+            if event.text == Key.Escape && (DragDrop.dragging || PaletteDrag.active) { DragDrop.cancel(); return accept; }
             if InlineEditors.window-active && event.text == Key.Escape {
                 if ActionPicker.opened {
                     if ActionPicker.capturing { return reject; }

@@ -1,6 +1,6 @@
 import { TextField } from "controls.slint";
 import { PageContent, ScrollView } from "scroll.slint";
-import { DragDrop, DragGroups, DragHandle, DropMarker } from "reorder.slint";
+import { DragArea, DragAxis, DragDrop, DragGroups, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
 import { CategoryIcon } from "action-picker.slint";
 import { ButtonGroup, InlineTextField, InlineTextArea, Card, Divider, MenuSurface, MenuItem, ConfirmDialog, DialogFrame, IconButton, InfoTip, FieldLabel, FormField, PageLayout, TooltipSurface, CardTitle, FieldButton, EmptyState } from "controls.slint";
@@ -147,7 +147,7 @@ component ExtraKeyLine inherits TouchArea {
         }
         Divider {}
     }
-    DropMarker { width: parent.width; group: DragGroups.extra-keys; index: root.index; row-y: root.y; row-height: root.height; }
+    DropMarker { cross-size: parent.width; group: DragGroups.extra-keys; index: root.index; row-start: root.y; row-size: root.height; }
 }
 
 component KeyCap inherits Rectangle {
@@ -157,7 +157,7 @@ component KeyCap inherits Rectangle {
     in property <int> drop-target: -1;
     callback clicked();
     callback dropped(int, int);
-    private property <bool> dragged: DragDrop.dragging && DragDrop.group == DragGroups.keys && DragDrop.source == root.cell.index;
+    private property <bool> dragged: touch.dragged;
     private property <bool> drop-over: DragDrop.dragging && DragDrop.group == DragGroups.keys && root.drop-target == root.cell.index && !root.dragged;
     border-radius: Theme.radius;
     border-width: root.drop-over || focus.has-focus ? 2px : 1px;
@@ -193,32 +193,14 @@ component KeyCap inherits Rectangle {
             return reject;
         }
     }
-    touch := TouchArea {
-        mouse-cursor: DragDrop.dragging && self.pressed ? grabbing : pointer;
-        pointer-event(event) => {
-            if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
-                DragDrop.reset(); DragDrop.group = DragGroups.keys; DragDrop.source = root.cell.index; DragDrop.target = root.cell.index;
-            }
-            if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && DragDrop.group == DragGroups.keys {
-                let from = DragDrop.source; let to = root.drop-target; let moved = DragDrop.dragging;
-                DragDrop.reset();
-                if moved { if to >= 0 && to != from { root.dropped(from, to); } }
-                else if self.has-hover { root.clicked(); }
-            }
-            if event.kind == PointerEventKind.cancel { DragDrop.reset(); }
-        }
-        // While the key holds the grab, the wheel comes here instead of the ScrollView.
-        scroll-event(event) => {
-            if DragDrop.dragging && DragDrop.group == DragGroups.keys { DragDrop.request-scroll(event.delta-y); return accept; }
-            reject
-        }
-        moved => {
-            if self.pressed && DragDrop.group == DragGroups.keys {
-                DragDrop.pointer-x = self.absolute-position.x + self.mouse-x;
-                DragDrop.pointer-y = self.absolute-position.y + self.mouse-y;
-                if abs(self.mouse-x - self.pressed-x) > 6px || abs(self.mouse-y - self.pressed-y) > 6px { DragDrop.dragging = true; }
-            }
-        }
+    touch := DragArea {
+        width: 100%; height: 100%;
+        group: DragGroups.keys; index: root.cell.index;
+        axis: DragAxis.free;
+        free-target: root.drop-target;
+        cursor: MouseCursor.pointer;
+        clicked => { root.clicked(); }
+        dropped(from, to) => { root.dropped(from, to); }
     }
     if root.cell.kind == Assignment.action: Tooltip {
         TooltipSurface {
@@ -238,14 +220,16 @@ component HandGrid inherits VerticalLayout {
     in property <int> drop-target: -1;
     callback edit(int);
     callback dropped(int, int);
-    private property <length> cell-width: (root.width - (root.columns - 1) * 6px) / root.columns;
+    private property <length> cell-height: 46px;
+    private property <length> cell-width: (root.width - (root.columns - 1) * root.spacing) / root.columns;
     /// Layer key index at window position (`x`, `y`), or -1 outside the keys.
     public pure function key-at(x: length, y: length) -> int {
         let local-x = x - root.absolute-position.x;
-        let local-y = y - root.absolute-position.y - title.height - 6px;
+        let local-y = y - root.absolute-position.y - title.height - root.spacing;
         if local-x < 0px || local-y < 0px || local-x >= root.width { return -1; }
-        let col = floor(local-x / (root.cell-width + 6px));
-        let row = floor(local-y / 52px);
+        // Gaps belong to the cell before them, so the target does not flicker between keys.
+        let col = floor(local-x / (root.cell-width + root.spacing));
+        let row = floor(local-y / (root.cell-height + root.spacing));
         if row >= root.cells.length / root.columns { return -1; }
         return root.cells[row * root.columns + col].index;
     }
@@ -260,9 +244,9 @@ component HandGrid inherits VerticalLayout {
         letter-spacing: 0.5px;
     }
     for row in root.cells.length / root.columns: HorizontalLayout {
-        spacing: Theme.space-s;
+        spacing: root.spacing;
         for col in root.columns: Rectangle {
-            height: 46px;
+            height: root.cell-height;
             width: root.cell-width;
             horizontal-stretch: 0;
             if root.cells[row * root.columns + col].index >= 0: KeyCap {
@@ -282,16 +266,13 @@ export component LayersPage inherits PageLayout {
     in-out property <LabelMode> label-mode <=> LayersEditor.label-mode;
     HorizontalLayout {
         padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
-        ScrollView { height: 52px; viewport-height: self.visible-height; vertical-scrollbar-policy: always-off; horizontal-scrollbar-policy: as-needed;
+        ScrollView { height: 52px; viewport-height: self.visible-height; vertical-scrollbar-policy: always-off; horizontal-scrollbar-policy: as-needed; drag-scroll: true;
             HorizontalLayout { spacing: Theme.space-s; alignment: start;
                 for name[index] in LayersEditor.names: Rectangle {
                     height: Theme.control-height-l; border-radius: Theme.radius; border-width: 1px;
-                    border-color: DragDrop.dragging && DragDrop.group == DragGroups.layer-tabs && DragDrop.target == index ? Theme.accent : Theme.border;
-                    background: index == LayersEditor.selected ? Theme.selected : layer-touch.has-hover ? Theme.hover : Theme.card;
-                    opacity: DragDrop.dragging && DragDrop.group == DragGroups.layer-tabs && DragDrop.source == index ? Theme.dragged-opacity : 1;
-                    init => { DragDrop.row(DragGroups.layer-tabs, index, self.x, self.width); }
-                    changed x => { DragDrop.row(DragGroups.layer-tabs, index, self.x, self.width); }
-                    changed width => { DragDrop.row(DragGroups.layer-tabs, index, self.x, self.width); }
+                    border-color: layer-focus.has-focus ? Theme.focus : Theme.border;
+                    background: index == LayersEditor.selected ? Theme.selected : layer-drag.has-hover ? Theme.hover : Theme.card;
+                    opacity: layer-drag.dragged ? Theme.dragged-opacity : 1;
                     accessible-role: button;
                     accessible-label: name;
                     accessible-action-default => { LayersEditor.choose(index); }
@@ -299,38 +280,24 @@ export component LayersPage inherits PageLayout {
                         padding-left: Theme.space-l; padding-right: Theme.space-l;
                         Text { text: name; color: Theme.text; font-size: Theme.font-medium; font-weight: Theme.weight-semibold; vertical-alignment: center; }
                     }
-                    FocusScope {
+                    layer-focus := FocusScope {
                         key-pressed(event) => {
                             if event.text == " " || event.text == "\n" { LayersEditor.choose(index); return accept; }
+                            // Alt+Left/Right: keyboard alternative to dragging the tab.
+                            if event.modifiers.alt && event.text == Key.LeftArrow && index > 0 { LayersEditor.reorder(index, index - 1); return accept; }
+                            if event.modifiers.alt && event.text == Key.RightArrow && index + 1 < LayersEditor.names.length { LayersEditor.reorder(index, index + 1); return accept; }
                             return reject;
                         }
                     }
-                    layer-touch := TouchArea {
-                        mouse-cursor: DragDrop.dragging && self.pressed ? grabbing : pointer;
-                        pointer-event(event) => {
-                            if event.button == PointerEventButton.left && event.kind == PointerEventKind.down {
-                                DragDrop.group = DragGroups.layer-tabs; DragDrop.source = index; DragDrop.target = index;
-                            }
-                            if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && DragDrop.group == DragGroups.layer-tabs {
-                                let from = DragDrop.source; let to = DragDrop.target; let moved = DragDrop.dragging;
-                                DragDrop.reset();
-                                if moved { if from != to { LayersEditor.reorder(from, to); } }
-                                else { LayersEditor.choose(index); }
-                            }
-                            if event.kind == PointerEventKind.cancel { DragDrop.reset(); }
-                        }
-                        moved => {
-                            if self.pressed && DragDrop.group == DragGroups.layer-tabs {
-                                DragDrop.offset = self.mouse-x - self.pressed-x;
-                                if abs(DragDrop.offset) > 6px { DragDrop.dragging = true; }
-                                if DragDrop.dragging { DragDrop.target = DragDrop.locate(DragGroups.layer-tabs, index, DragDrop.offset, LayersEditor.names.length); }
-                            }
-                        }
+                    layer-drag := DragArea {
+                        width: 100%; height: 100%;
+                        group: DragGroups.layer-tabs; index: index; count: LayersEditor.names.length;
+                        axis: DragAxis.horizontal;
+                        cursor: MouseCursor.pointer;
+                        clicked => { LayersEditor.choose(index); }
+                        dropped(from, to) => { LayersEditor.reorder(from, to); }
                     }
-                    if DragDrop.dragging && DragDrop.group == DragGroups.layer-tabs && DragDrop.target == index && DragDrop.target != DragDrop.source: Rectangle {
-                        x: DragDrop.target > DragDrop.source ? parent.width + 1px : -4px;
-                        width: 3px; height: parent.height; background: Theme.accent;
-                    }
+                    DropMarker { cross-size: parent.height; group: DragGroups.layer-tabs; index: index; horizontal: true; row-start: parent.x; row-size: parent.width; }
                 }
                 VerticalLayout { height: Theme.control-height-l; alignment: center;
                     IconButton { icon: @image-url("icons/plus.svg"); tooltip: @tr("Create new layer"); primary: true; clicked => { LayersEditor.open-dialog(LayerDialog.create, -1); } }
