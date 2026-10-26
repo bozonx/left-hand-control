@@ -27,7 +27,7 @@ const UPTIME_TICK: Duration = Duration::from_secs(20);
 const COMMAND_LABEL_CHARS: usize = 80;
 
 /// Forward core events to the UI thread. Subscribed once at startup.
-pub(super) fn forward_core_events() {
+pub(super) fn forward_core_events() -> Result<lhc_core::events::Subscription, String> {
     lhc_core::events::bus().subscribe(|event| match event {
         CoreEvent::MapperDeviceChanged => post(|app| app.refresh_mapper_status()),
         CoreEvent::MapperStopped(error) => {
@@ -86,7 +86,7 @@ pub(super) fn forward_core_events() {
         CoreEvent::LayoutChanged(_) | CoreEvent::ActiveWindowChanged(_) => {
             post(|app| app.context_changed())
         }
-    });
+    })
 }
 
 /// What the settings show about the mapper's state and uptime.

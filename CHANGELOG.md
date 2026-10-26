@@ -84,6 +84,12 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Mapper restart waits for the previous worker to stop. Text jobs are cancelled when their mapper session exits, including on panic.
+- While a Linux keyboard is disconnected, mapper control keeps only the latest configuration and rejects new actions; pending actions are cancelled instead of running after reconnection. Control queues are bounded.
+- Slow or panicking core event subscribers no longer interrupt keyboard processing; subscriptions are released when their owner exits.
+- Watcher subprocess timeouts close inherited pipes and terminate the process group, with bounded output collection.
+- A directory-sync failure after a settings or layout file is published no longer rolls back in-memory settings against an already updated file; the durability failure is logged.
+
 - Closing a layout preserves global settings navigation. Dialogs have header close buttons and Escape dismissal while the application is active.
 
 - Text fields of the application accept Shift+Insert (paste), Ctrl+Insert (copy) and Shift+Delete (cut), so text input with the Shift+Insert paste shortcut works in them too.

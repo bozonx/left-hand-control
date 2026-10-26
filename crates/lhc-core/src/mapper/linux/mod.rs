@@ -64,10 +64,78 @@ pub enum MapperControl {
     PopupFocused,
 }
 
+const CONTROL_QUEUE_LIMIT: usize = 32;
+
+#[derive(Default)]
+struct ControlQueue {
+    messages: std::collections::VecDeque<MapperControl>,
+    disconnected: bool,
+    closed: bool,
+}
+
+impl ControlQueue {
+    fn send(&mut self, control: MapperControl) -> Result<(), String> {
+        if self.closed {
+            return Err("mapper control queue closed".into());
+        }
+        match &control {
+            MapperControl::Config(_) => {
+                self.messages
+                    .retain(|item| !matches!(item, MapperControl::Config(_)));
+            }
+            MapperControl::Execute(_) if self.disconnected => {
+                return Err("mapper is waiting for its keyboard".into());
+            }
+            MapperControl::PopupFocused
+                if self.disconnected
+                    || self
+                        .messages
+                        .iter()
+                        .any(|item| matches!(item, MapperControl::PopupFocused)) =>
+            {
+                return Ok(());
+            }
+            _ => {}
+        }
+        // Reserve one slot for the latest configuration.
+        let limit = if matches!(control, MapperControl::Config(_)) {
+            CONTROL_QUEUE_LIMIT
+        } else {
+            CONTROL_QUEUE_LIMIT - 1
+        };
+        if self.messages.len() >= limit {
+            return Err("mapper control queue full".into());
+        }
+        self.messages.push_back(control);
+        Ok(())
+    }
+
+    fn disconnect(&mut self) -> bool {
+        self.disconnected = true;
+        let dropped = self
+            .messages
+            .iter()
+            .any(|item| matches!(item, MapperControl::Execute(_)));
+        self.messages
+            .retain(|item| matches!(item, MapperControl::Config(_)));
+        dropped
+    }
+}
+
+struct ControlOwner(Arc<Mutex<ControlQueue>>);
+
+impl Drop for ControlOwner {
+    fn drop(&mut self) {
+        let mut queue = self.0.lock().unwrap_or_else(|e| e.into_inner());
+        queue.closed = true;
+        queue.messages.clear();
+    }
+}
+
 /// Handle to a running mapper thread.
 pub struct Handle {
     stop: Arc<AtomicBool>,
-    control_tx: mpsc::Sender<MapperControl>,
+    control: Arc<Mutex<ControlQueue>>,
     /// Write end of the wake pipe: one byte per control message so the
     /// mapper's poll loop reacts immediately instead of after its timeout.
     wake_tx: OwnedFd,
@@ -112,28 +180,25 @@ impl Handle {
         self.error.lock().ok().and_then(|g| g.clone())
     }
 
-    pub fn update_config(&self, cfg: MapperConfig) -> Result<(), String> {
-        self.control_tx
-            .send(MapperControl::Config(Box::new(cfg)))
-            .map_err(|e| format!("mapper update channel closed: {e}"))?;
+    fn send(&self, control: MapperControl) -> Result<(), String> {
+        self.control
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .send(control)?;
         self.wake();
         Ok(())
+    }
+
+    pub fn update_config(&self, cfg: MapperConfig) -> Result<(), String> {
+        self.send(MapperControl::Config(Box::new(cfg)))
     }
 
     pub fn execute_action(&self, action: String) -> Result<(), String> {
-        self.control_tx
-            .send(MapperControl::Execute(action))
-            .map_err(|e| format!("mapper update channel closed: {e}"))?;
-        self.wake();
-        Ok(())
+        self.send(MapperControl::Execute(action))
     }
 
     pub fn popup_focused(&self) -> Result<(), String> {
-        self.control_tx
-            .send(MapperControl::PopupFocused)
-            .map_err(|e| format!("mapper update channel closed: {e}"))?;
-        self.wake();
-        Ok(())
+        self.send(MapperControl::PopupFocused)
     }
 
     pub fn reap_if_finished(&mut self) -> bool {
@@ -153,7 +218,6 @@ pub fn spawn(
     cfg: MapperConfig,
     stop: Arc<AtomicBool>,
 ) -> Result<Handle, String> {
-    crate::text_input::job::start();
     crate::text_input::portal::set_text_backend(
         cfg.settings.linux_wayland_text_mode,
         cfg.settings.linux_paste_shortcut,
@@ -198,12 +262,14 @@ pub fn spawn(
     let stop_thread = stop.clone();
     let err_thread = error.clone();
     let (ready_tx, ready_rx) = mpsc::channel::<Result<(), String>>();
-    let (control_tx, control_rx) = mpsc::channel::<MapperControl>();
+    let control = Arc::new(Mutex::new(ControlQueue::default()));
+    let control_rx = control.clone();
     let (wake_rx, wake_tx) = make_wake_pipe()?;
 
     let join = thread::Builder::new()
         .name("lhc-mapper".into())
         .spawn(move || {
+            let _control_owner = ControlOwner(control_rx.clone());
             use std::panic::catch_unwind;
             let result = catch_unwind(std::panic::AssertUnwindSafe(|| {
                 run(
@@ -284,7 +350,7 @@ pub fn spawn(
 
     Ok(Handle {
         stop,
-        control_tx,
+        control,
         wake_tx,
         join: Some(join),
         error,
@@ -341,7 +407,7 @@ fn run(
     cfg: MapperConfig,
     stop: Arc<AtomicBool>,
     ready_tx: mpsc::Sender<Result<(), String>>,
-    control_rx: mpsc::Receiver<MapperControl>,
+    control_rx: Arc<Mutex<ControlQueue>>,
     wake_rx: OwnedFd,
     waiting: Arc<AtomicBool>,
     ready: &AtomicBool,
@@ -378,7 +444,16 @@ fn run(
                     .map_err(|e| format!("clone wake pipe: {e}"))?,
             );
             if matches!(&result, Err(error) if error == DEVICE_DISCONNECTED) {
+                let dropped = control_rx
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .disconnect();
                 set_waiting(&waiting, true);
+                if dropped {
+                    crate::events::emit(crate::events::CoreEvent::MapperActionFailed(
+                        "pending actions cancelled because the keyboard disconnected".into(),
+                    ));
+                }
             }
             result
         },
@@ -478,7 +553,7 @@ fn run_device(
     cfg: &mut MapperConfig,
     stop: Arc<AtomicBool>,
     ready_tx: &mpsc::Sender<Result<(), String>>,
-    control_rx: &mpsc::Receiver<MapperControl>,
+    control_rx: &Arc<Mutex<ControlQueue>>,
     waiting: &AtomicBool,
     ready: &AtomicBool,
     wake_rx: OwnedFd,
@@ -546,12 +621,33 @@ fn run_device(
         .build()
         .map_err(|e| format!("uinput build: {e}"))?;
 
+    {
+        let mut controls = control_rx.lock().unwrap_or_else(|e| e.into_inner());
+        if controls.disconnected {
+            for control in controls.messages.drain(..) {
+                if let MapperControl::Config(next) = control {
+                    *cfg = *next;
+                }
+            }
+        }
+    }
+    crate::text_input::portal::set_text_backend(
+        cfg.settings.linux_wayland_text_mode,
+        cfg.settings.linux_paste_shortcut,
+        cfg.settings.linux_terminal_paste_shortcut,
+        cfg.settings.linux_ydotool_path.as_deref(),
+        cfg.settings.linux_xdotool_path.as_deref(),
+    );
     let driver = MultiDeviceLoopDriver::new(devices, mouse_path, Some(wake_rx))?;
-    crate::text_input::job::start();
+    let mut text_session = crate::text_input::job::Session::start();
+    control_rx
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .disconnected = false;
     set_waiting(waiting, false);
     ready.store(true, Ordering::SeqCst);
     let _ = ready_tx.send(Ok(()));
-    run_loop(driver, virt, cfg, stop, control_rx)
+    run_loop(driver, virt, cfg, stop, control_rx, &mut text_session)
 }
 
 fn validate_keyboard_capabilities(
@@ -572,14 +668,22 @@ fn run_loop<D: LoopDriver>(
     mut virt: VirtualDevice,
     cfg: &mut MapperConfig,
     stop: Arc<AtomicBool>,
-    control_rx: &mpsc::Receiver<MapperControl>,
+    control_rx: &Arc<Mutex<ControlQueue>>,
+    text_session: &mut crate::text_input::job::Session,
 ) -> Result<(), String> {
     let mut engine = Engine::new(cfg);
     let mut out_buf: Vec<EngineOutput> = Vec::with_capacity(16);
     let mut hold = OutputHold::default();
     let result = (|| {
         while !stop.load(Ordering::SeqCst) {
-            while let Ok(ctrl) = control_rx.try_recv() {
+            // Take a bounded batch without holding the queue lock during engine work.
+            let controls = std::mem::take(
+                &mut control_rx
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .messages,
+            );
+            for ctrl in controls {
                 match ctrl {
                     MapperControl::Config(next_cfg) => {
                         let next_cfg = *next_cfg;
@@ -602,7 +706,7 @@ fn run_loop<D: LoopDriver>(
                         );
                         engine.reconfigure(&next_cfg, &mut out_buf);
                         super::layer_state::publish(engine.held_layer_state());
-                        crate::text_input::job::start();
+                        text_session.restart();
                         *cfg = next_cfg;
                     }
                     MapperControl::Execute(action) => {
@@ -633,6 +737,53 @@ fn run_loop<D: LoopDriver>(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn disconnected_control_queue_keeps_only_latest_config_and_rejects_actions() {
+        let mut queue = super::ControlQueue::default();
+        queue
+            .send(super::MapperControl::Execute("old action".into()))
+            .unwrap();
+        assert!(queue.disconnect());
+        for delay in 1..100 {
+            let mut cfg: super::MapperConfig = serde_json::from_str("{}").unwrap();
+            cfg.settings.default_macro_modifier_delay_ms = delay;
+            queue
+                .send(super::MapperControl::Config(Box::new(cfg)))
+                .unwrap();
+        }
+        assert_eq!(queue.messages.len(), 1);
+        assert!(
+            queue
+                .send(super::MapperControl::Execute("late action".into()))
+                .is_err()
+        );
+        assert!(
+            matches!(queue.messages.pop_front(), Some(super::MapperControl::Config(cfg)) if cfg.settings.default_macro_modifier_delay_ms == 99)
+        );
+    }
+
+    #[test]
+    fn control_queue_is_bounded_and_reserves_space_for_configuration() {
+        let mut queue = super::ControlQueue::default();
+        for _ in 0..super::CONTROL_QUEUE_LIMIT - 1 {
+            queue
+                .send(super::MapperControl::Execute("action".into()))
+                .unwrap();
+        }
+        assert!(
+            queue
+                .send(super::MapperControl::Execute("overflow".into()))
+                .is_err()
+        );
+        let cfg = serde_json::from_str("{}").unwrap();
+        queue
+            .send(super::MapperControl::Config(Box::new(cfg)))
+            .unwrap();
+        assert_eq!(queue.messages.len(), super::CONTROL_QUEUE_LIMIT);
+        queue.closed = true;
+        assert!(queue.send(super::MapperControl::PopupFocused).is_err());
+    }
+
     #[test]
     fn stable_identity_allows_port_change_but_not_another_device() {
         let identity = |physical: &str, unique: &str| super::DeviceIdentity {

@@ -499,7 +499,7 @@ mod tests {
         );
         crate::keyboard_layout::refresh_cache().unwrap();
         assert!(crate::active_window::detect_active_window_now().is_some());
-        crate::text_input::job::start();
+        let _text_session = crate::text_input::job::Session::start();
         let text = "Привет, ёж 😀";
         let request = TextRequest::enqueue(text).unwrap();
         println!("Native portal probe ready for consent");

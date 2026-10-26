@@ -8,7 +8,11 @@
 use crate::active_window::ActiveWindow;
 use crate::gamemode::GameModeStatus;
 use crate::keyboard_layout::KeyboardLayoutInfo;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{
+    Arc, Mutex, OnceLock, Weak,
+    atomic::{AtomicBool, Ordering},
+    mpsc,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CoreEvent {
@@ -58,31 +62,96 @@ pub enum TextInputFailure {
     Tool(String),
 }
 
-type Listener = Arc<dyn Fn(&CoreEvent) + Send + Sync>;
+/// Each subscription buffers at most this many events. A full subscriber
+/// drops new events and logs the loss; producers never wait for callbacks.
+const SUBSCRIBER_QUEUE: usize = 1024;
+
+type Listeners = Mutex<Vec<Arc<Listener>>>;
+
+struct Listener {
+    tx: mpsc::SyncSender<CoreEvent>,
+    active: Arc<AtomicBool>,
+}
+
+/// Keeps a callback subscribed. Dropping it revokes queued delivery without
+/// waiting for a callback that may already be running.
+#[must_use = "dropping the subscription stops event delivery"]
+pub struct Subscription {
+    listener: Arc<Listener>,
+    listeners: Weak<Listeners>,
+}
+
+impl Drop for Subscription {
+    fn drop(&mut self) {
+        self.listener.active.store(false, Ordering::Release);
+        if let Some(listeners) = self.listeners.upgrade() {
+            listeners
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .retain(|listener| !Arc::ptr_eq(listener, &self.listener));
+        }
+    }
+}
 
 #[derive(Clone, Default)]
 pub struct EventBus {
-    listeners: Arc<Mutex<Vec<Listener>>>,
+    listeners: Arc<Listeners>,
 }
 
 impl EventBus {
-    /// Register `listener` for every later event. It runs on the emitting
-    /// thread, often the mapper thread with the keyboard grabbed, so it must
-    /// return quickly and never block (post to a UI loop instead).
-    pub fn subscribe(&self, listener: impl Fn(&CoreEvent) + Send + Sync + 'static) {
-        if let Ok(mut listeners) = self.listeners.lock() {
-            listeners.push(Arc::new(listener));
-        }
+    /// Deliver events in order on this subscription's worker thread. Slow or
+    /// panicking callbacks cannot block or unwind through an emitting thread.
+    pub fn subscribe(
+        &self,
+        listener: impl Fn(&CoreEvent) + Send + 'static,
+    ) -> Result<Subscription, String> {
+        let (tx, rx) = mpsc::sync_channel(SUBSCRIBER_QUEUE);
+        let active = Arc::new(AtomicBool::new(true));
+        let running = active.clone();
+        std::thread::Builder::new()
+            .name("lhc-events".into())
+            .spawn(move || {
+                while let Ok(event) = rx.recv() {
+                    if !running.load(Ordering::Acquire) {
+                        break;
+                    }
+                    if std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| listener(&event)))
+                        .is_err()
+                    {
+                        log::error!("core event subscriber panicked");
+                    }
+                }
+            })
+            .map_err(|error| format!("start event subscriber: {error}"))?;
+        let listener = Arc::new(Listener { tx, active });
+        self.listeners
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .push(listener.clone());
+        Ok(Subscription {
+            listener,
+            listeners: Arc::downgrade(&self.listeners),
+        })
     }
 
     pub fn emit(&self, event: CoreEvent) {
         let listeners = self
             .listeners
             .lock()
-            .map(|listeners| listeners.clone())
-            .unwrap_or_default();
+            .unwrap_or_else(|e| e.into_inner())
+            .clone();
         for listener in listeners {
-            listener(&event);
+            if listener.active.load(Ordering::Acquire) {
+                match listener.tx.try_send(event.clone()) {
+                    Ok(()) => {}
+                    Err(mpsc::TrySendError::Full(_)) => {
+                        log::error!("core event subscriber queue full; event dropped")
+                    }
+                    Err(mpsc::TrySendError::Disconnected(_)) => {
+                        log::error!("core event subscriber stopped")
+                    }
+                }
+            }
         }
     }
 }
@@ -99,19 +168,75 @@ pub fn emit(event: CoreEvent) {
 
 #[cfg(test)]
 mod tests {
-    use super::{CoreEvent, EventBus};
-    use std::sync::{Arc, Mutex};
+    use super::*;
+    use std::time::Duration;
 
     #[test]
-    fn delivers_events_to_subscribers() {
-        let events = EventBus::default();
-        let received = Arc::new(Mutex::new(Vec::new()));
-        let target = received.clone();
-        events.subscribe(move |event| target.lock().unwrap().push(event.clone()));
-        events.emit(CoreEvent::MapperStopped("boom".into()));
+    fn delivers_in_order_and_unsubscribes_on_drop() {
+        let bus = EventBus::default();
+        let (tx, rx) = mpsc::channel();
+        let subscription = bus
+            .subscribe(move |event| tx.send(event.clone()).unwrap())
+            .unwrap();
+        bus.emit(CoreEvent::MapperStopped("first".into()));
+        bus.emit(CoreEvent::MapperStopped("second".into()));
         assert_eq!(
-            *received.lock().unwrap(),
-            vec![CoreEvent::MapperStopped("boom".into())]
+            rx.recv_timeout(Duration::from_secs(1)).unwrap(),
+            CoreEvent::MapperStopped("first".into())
         );
+        assert_eq!(
+            rx.recv_timeout(Duration::from_secs(1)).unwrap(),
+            CoreEvent::MapperStopped("second".into())
+        );
+        drop(subscription);
+        assert!(bus.listeners.lock().unwrap().is_empty());
+        bus.emit(CoreEvent::LayerKeyPressed);
+        assert!(rx.recv_timeout(Duration::from_secs(1)).is_err());
+    }
+
+    #[test]
+    fn blocked_subscriber_cannot_block_producers_or_other_subscribers() {
+        let bus = EventBus::default();
+        let (entered, entry) = mpsc::channel();
+        let (release, wait) = mpsc::channel();
+        let slow = bus
+            .subscribe(move |_| {
+                entered.send(()).unwrap();
+                wait.recv().unwrap();
+            })
+            .unwrap();
+        bus.emit(CoreEvent::LayerKeyPressed);
+        entry.recv_timeout(Duration::from_secs(1)).unwrap();
+        // Even filling the slow subscriber's queue must return.
+        for _ in 0..SUBSCRIBER_QUEUE + 1 {
+            bus.emit(CoreEvent::LayerKeyPressed);
+        }
+        let (tx, rx) = mpsc::channel();
+        let _fast = bus
+            .subscribe(move |_| {
+                tx.send(()).unwrap();
+            })
+            .unwrap();
+        bus.emit(CoreEvent::LayerKeyPressed);
+        rx.recv_timeout(Duration::from_secs(1)).unwrap();
+        drop(slow);
+        release.send(()).unwrap();
+    }
+
+    #[test]
+    fn panicking_callback_does_not_stop_later_delivery() {
+        let bus = EventBus::default();
+        let (tx, rx) = mpsc::channel();
+        let _subscription = bus
+            .subscribe(move |event| {
+                if matches!(event, CoreEvent::LayerKeyPressed) {
+                    panic!("subscriber failure");
+                }
+                tx.send(()).unwrap();
+            })
+            .unwrap();
+        bus.emit(CoreEvent::LayerKeyPressed);
+        bus.emit(CoreEvent::MapperDeviceChanged);
+        rx.recv_timeout(Duration::from_secs(1)).unwrap();
     }
 }

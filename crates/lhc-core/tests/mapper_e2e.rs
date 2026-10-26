@@ -405,6 +405,7 @@ fn mapper_e2e_unplugged_keyboard_waits_until_explicit_stop() {
         || runtime::status().waiting_for_device.then_some(()),
     );
     assert!(runtime::status().running);
+    assert!(runtime::execute_action("KeyA".into()).is_err());
     runtime::stop().unwrap();
     assert!(!runtime::status().running);
     assert!(!runtime::status().waiting_for_device);
@@ -446,6 +447,16 @@ fn mapper_e2e_replug_recovers_latest_config_and_releases_held_keys() {
         runtime::status().running,
         "reconnect keeps the mapper enabled"
     );
+    wait_until("disconnected mapper", Duration::from_secs(2), || {
+        runtime::status().waiting_for_device.then_some(())
+    });
+    assert!(runtime::execute_action("KeyD".into()).is_err());
+    for target in ["KeyD", "KeyC"] {
+        runtime::update_config(
+            &json!({"rules": [{"key": "KeyA", "tapAction": target}]}).to_string(),
+        )
+        .unwrap();
+    }
     std::fs::remove_file(&link).unwrap();
     let other = Keyboard::named("LHC e2e unrelated keyboard");
     std::os::unix::fs::symlink(&other.path, &link).unwrap();
@@ -467,7 +478,7 @@ fn mapper_e2e_replug_recovers_latest_config_and_releases_held_keys() {
     output.set_nonblocking(true).unwrap();
     mapper.output = Some(output);
     replacement.tap(KeyCode::KEY_A);
-    assert_eq!(mapper.keys(), [down(KeyCode::KEY_B), up(KeyCode::KEY_B)]);
+    assert_eq!(mapper.keys(), [down(KeyCode::KEY_C), up(KeyCode::KEY_C)]);
     assert!(!runtime::status().waiting_for_device);
     drop(replacement);
     thread::sleep(Duration::from_millis(200));

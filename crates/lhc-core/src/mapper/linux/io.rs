@@ -869,15 +869,14 @@ mod tests {
 
     #[test]
     fn app_actions_bypass_the_text_worker() {
-        let received = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
-        let flag = received.clone();
-        crate::events::bus().subscribe(move |event| {
+        let (sent, received) = std::sync::mpsc::channel();
+        let _events = crate::events::bus().subscribe(move |event| {
             if matches!(event, crate::events::CoreEvent::AppAction(name) if name == "audit-popup-test") {
-                flag.store(true, std::sync::atomic::Ordering::SeqCst);
+                sent.send(()).unwrap();
             }
-        });
+        }).unwrap();
         RuntimeSideEffects.run_system(&SystemAction::AppEvent("audit-popup-test".into()));
-        assert!(received.load(std::sync::atomic::Ordering::SeqCst));
+        received.recv_timeout(Duration::from_secs(1)).unwrap();
     }
 }
 

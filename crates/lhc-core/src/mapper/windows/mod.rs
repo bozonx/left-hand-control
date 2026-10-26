@@ -154,7 +154,6 @@ pub fn spawn(
         Some(MOUSE_PATH) => true,
         Some(other) => return Err(format!("Unknown mouse {other}")),
     };
-    crate::text_input::job::start();
     let error: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
     let (ready_tx, ready_rx) = mpsc::channel::<Result<(), String>>();
     let (control_tx, control_rx) = mpsc::channel::<MapperControl>();
@@ -285,9 +284,16 @@ fn run(
     let _guard = guard::Session::start()?;
     // Declared after the lock so the hooks are removed first on return.
     let hooks = Hooks::install(events_tx, mouse)?;
+    let mut text_session = crate::text_input::job::Session::start();
     ready.store(true, Ordering::SeqCst);
     let _ = ready_tx.send(Ok(()));
-    let result = run_loop(HookDriver::new(events_rx), cfg, &stop, control_rx);
+    let result = run_loop(
+        HookDriver::new(events_rx),
+        cfg,
+        &stop,
+        control_rx,
+        &mut text_session,
+    );
     drop(hooks);
     result
 }
@@ -297,6 +303,7 @@ fn run_loop(
     cfg: MapperConfig,
     stop: &AtomicBool,
     control_rx: mpsc::Receiver<MapperControl>,
+    text_session: &mut crate::text_input::job::Session,
 ) -> Result<(), String> {
     let mut cfg = cfg;
     let mut engine = Engine::new(&cfg);
@@ -320,7 +327,7 @@ fn run_loop(
                         crate::text_input::job::cancel();
                         engine.reconfigure(&next, &mut out_buf);
                         super::layer_state::publish(engine.held_layer_state());
-                        crate::text_input::job::start();
+                        text_session.restart();
                         cfg = next;
                     }
                     MapperControl::Execute(action) => engine.execute_remote(&action, &mut out_buf),

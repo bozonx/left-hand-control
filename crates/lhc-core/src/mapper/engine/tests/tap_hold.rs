@@ -1164,15 +1164,14 @@ fn buffered_long_hold_must_fire() {
 
 #[test]
 fn actions_unavailable_here_are_skipped_with_a_notice() {
-    let seen = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
-    let record = seen.clone();
-    crate::events::bus().subscribe(move |event| {
+    let (record, seen) = std::sync::mpsc::channel();
+    let _events = crate::events::bus().subscribe(move |event| {
         if let crate::events::CoreEvent::ActionUnavailable(action) = event
             && action.contains("foreignOnly")
         {
-            record.lock().unwrap().push(action.clone());
+            record.send(action.clone()).unwrap();
         }
-    });
+    }).unwrap();
     let mut cfg =
         config_with_rule(serde_json::json!({"key": "KeyQ", "tapAction": "cmd:foreignOnly"}));
     // A script only for the other OS: this one cannot run the command.
@@ -1216,7 +1215,7 @@ fn actions_unavailable_here_are_skipped_with_a_notice() {
     // Neither the trigger key nor a half-run macro reaches the OS.
     assert!(out.is_empty());
     assert_eq!(
-        *seen.lock().unwrap(),
+        (0..2).map(|_| seen.recv_timeout(Duration::from_secs(1)).unwrap()).collect::<Vec<_>>(),
         ["cmd:foreignOnly", "cmd:foreignOnly"]
     );
 }

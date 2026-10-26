@@ -137,11 +137,34 @@ pub(crate) fn cancel() {
     progress.reset(false);
 }
 
-pub(crate) fn start() {
-    PROGRESS
-        .lock()
-        .unwrap_or_else(|e| e.into_inner())
-        .reset(true);
+/// Owns one mapper text session, including cancellation on unwinding.
+pub(crate) struct Session {
+    generation: u64,
+}
+
+impl Session {
+    pub(crate) fn start() -> Self {
+        let mut progress = PROGRESS.lock().unwrap_or_else(|e| e.into_inner());
+        progress.reset(true);
+        Self {
+            generation: progress.generation,
+        }
+    }
+
+    pub(crate) fn restart(&mut self) {
+        let mut progress = PROGRESS.lock().unwrap_or_else(|e| e.into_inner());
+        progress.reset(true);
+        self.generation = progress.generation;
+    }
+}
+
+impl Drop for Session {
+    fn drop(&mut self) {
+        let mut progress = PROGRESS.lock().unwrap_or_else(|e| e.into_inner());
+        if progress.generation == self.generation {
+            progress.reset(false);
+        }
+    }
 }
 
 pub(crate) fn pending() -> bool {
@@ -172,6 +195,25 @@ fn validate(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn session_ownership_survives_restarts_and_cancels_on_unwind() {
+        let old = Session::start();
+        let mut current = Session::start();
+        drop(old);
+        assert!(PROGRESS.lock().unwrap().active);
+        current.restart();
+        drop(current);
+        assert!(!PROGRESS.lock().unwrap().active);
+        assert!(
+            std::panic::catch_unwind(|| {
+                let _session = Session::start();
+                panic!("mapper failed");
+            })
+            .is_err()
+        );
+        assert!(!PROGRESS.lock().unwrap().active);
+    }
 
     #[test]
     fn old_completions_cannot_release_new_jobs_or_abort_new_macros() {

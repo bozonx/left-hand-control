@@ -382,7 +382,7 @@ fn load_document(settings: &SettingsWindow) -> Option<Rc<Document>> {
     }
 }
 
-fn start_core() -> lhc_core::watchers::Watchers {
+fn start_core() -> Result<CoreGuard, String> {
     let paths = StoragePaths::resolve();
     if let Ok(paths) = &paths {
         if let Err(error) = paths.ensure() {
@@ -390,9 +390,12 @@ fn start_core() -> lhc_core::watchers::Watchers {
         }
         lhc_core::mapper::runtime::set_portal_token_dir(paths.data_dir().clone());
     }
+    let events = mapper::forward_core_events()?;
     let watchers = lhc_core::watchers::Watchers::start(paths.ok(), true);
-    mapper::forward_core_events();
-    watchers
+    Ok(CoreGuard {
+        watchers: Some(watchers),
+        events: Some(events),
+    })
 }
 
 fn stop_core() {
@@ -404,12 +407,16 @@ fn stop_core() {
 }
 
 /// Stops the mapper first, then the watchers it reads from.
-struct CoreGuard(Option<lhc_core::watchers::Watchers>);
+struct CoreGuard {
+    watchers: Option<lhc_core::watchers::Watchers>,
+    events: Option<lhc_core::events::Subscription>,
+}
 
 impl Drop for CoreGuard {
     fn drop(&mut self) {
         stop_core();
-        self.0.take();
+        self.watchers.take();
+        self.events.take();
     }
 }
 
@@ -430,7 +437,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     select_backend(popup_attributes.clone())?;
     // Core watchers post to the UI via `invoke_from_event_loop`, which fails
     // until a Slint platform exists.
-    let _core_guard = CoreGuard(Some(start_core()));
+    let _core_guard = start_core()?;
     let mut metrics = metrics::Metrics::from_env(start)?;
     let settings = SettingsWindow::new()?;
     crate::notifications::bind(&settings);

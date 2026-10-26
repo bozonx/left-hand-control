@@ -47,9 +47,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     lhc_core::active_window::start_watcher();
     lhc_core::keyboard_layout::start_watcher();
     let (event_tx, event_rx) = std::sync::mpsc::channel();
-    lhc_core::events::bus().subscribe(move |event| {
+    let _events = lhc_core::events::bus().subscribe(move |event| {
         let _ = event_tx.send(format!("{event:?}"));
-    });
+    })?;
     fs::write(directory.join("ready"), std::process::id().to_string())?;
     let mut last_id = Value::Null;
     struct CrashProbe(Option<std::process::Child>);

@@ -93,6 +93,8 @@ impl StoragePaths {
         fs::read_to_string(&path).map_err(|e| format!("read_to_string: {e}"))
     }
 
+    /// Publish new settings atomically. Once published, durability failures
+    /// are logged rather than reported as an uncommitted edit.
     pub fn save_config(&self, contents: &str) -> Result<(), String> {
         self.ensure()?;
         let path = self.config_path();
@@ -174,7 +176,7 @@ impl StoragePaths {
             // (Windows, macOS): the "existing" target is this very file.
             write_file(&old_path, contents.as_bytes(), true)?;
             fs::rename(&old_path, &new_path).map_err(|e| format!("rename: {e}"))?;
-            sync_parent_dir(&new_path)?;
+            publication_sync(&new_path, sync_parent_dir);
             return Ok(new_safe);
         }
         if new_path.exists() && old_path != new_path && !overwrite {
@@ -188,7 +190,7 @@ impl StoragePaths {
         )?;
         if old_path != new_path && old_path.exists() {
             fs::remove_file(&old_path).map_err(|e| format!("remove_file: {e}"))?;
-            sync_parent_dir(&old_path)?;
+            publication_sync(&old_path, sync_parent_dir);
         }
         Ok(new_safe)
     }
@@ -333,6 +335,15 @@ pub(crate) fn write_atomic(path: &Path, contents: &[u8]) -> Result<(), String> {
 }
 
 fn write_file(path: &Path, contents: &[u8], overwrite: bool) -> Result<(), String> {
+    write_file_with_sync(path, contents, overwrite, sync_parent_dir)
+}
+
+fn write_file_with_sync(
+    path: &Path,
+    contents: &[u8],
+    overwrite: bool,
+    sync: impl FnOnce(&Path) -> Result<(), String>,
+) -> Result<(), String> {
     let mut tmp = TemporaryWrite::create(path)?;
     tmp.write(contents)?;
     if overwrite {
@@ -341,9 +352,26 @@ fn write_file(path: &Path, contents: &[u8], overwrite: bool) -> Result<(), Strin
         // A hard link publishes the completed file without replacing a destination
         // created after the caller's existence check.
         fs::hard_link(&tmp.path, path).map_err(|e| format!("publish new file: {e}"))?;
-        fs::remove_file(&tmp.path).map_err(|e| format!("remove tmp: {e}"))?;
+        if let Err(error) = fs::remove_file(&tmp.path) {
+            log::warn!(
+                "published {}, temporary file cleanup failed: {error}",
+                path.display()
+            );
+        }
     }
-    sync_parent_dir(path)
+    publication_sync(path, sync);
+    Ok(())
+}
+
+fn publication_sync(path: &Path, sync: impl FnOnce(&Path) -> Result<(), String>) {
+    // Publication is the commit point. Returning Err here would make callers
+    // roll back their in-memory state while the new file is already visible.
+    if let Err(error) = sync(path) {
+        log::warn!(
+            "published {}, durability is not confirmed: {error}",
+            path.display()
+        );
+    }
 }
 
 struct TemporaryWrite {
@@ -413,6 +441,19 @@ fn sync_parent_dir(_path: &Path) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn publication_is_committed_even_if_directory_sync_fails() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        for overwrite in [false, true] {
+            super::write_file_with_sync(&path, b"new settings", overwrite, |_| {
+                Err("sync failed".into())
+            })
+            .unwrap();
+            assert_eq!(std::fs::read(&path).unwrap(), b"new settings");
+        }
+    }
+
     #[test]
     fn dev_base_dir_defaults_to_repo_dev_files() {
         let base = super::dev_base_dir(None).unwrap();
