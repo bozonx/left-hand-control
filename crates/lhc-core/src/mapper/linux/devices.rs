@@ -1,3 +1,6 @@
+//! Enumeration of Linux input devices (keyboards, mice) with stable
+//! `/dev/input/by-id` paths.
+
 use super::VIRTUAL_DEVICE_NAME;
 use crate::mapper::{InputDevice, KeyboardDevice};
 use crate::platform::INPUT_DIR;

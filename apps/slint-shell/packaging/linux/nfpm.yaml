@@ -1,5 +1,5 @@
 # deb and rpm packages built by nfpm from the release binary; built by
-# scripts/release-linux.sh, which substitutes @BINARY@ and @CHANGELOG@
+# scripts/release/release-linux.sh, which substitutes @BINARY@ and @CHANGELOG@
 # (nfpm does not expand variables in paths) and passes VERSION in the environment.
 name: left-hand-control
 arch: amd64

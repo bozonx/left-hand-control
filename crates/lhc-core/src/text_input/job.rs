@@ -29,7 +29,7 @@ static PROGRESS: Mutex<Progress> = Mutex::new(Progress {
 });
 
 #[derive(Clone)]
-pub(super) struct TextRequest {
+pub(crate) struct TextRequest {
     generation: u64,
     deadline: Instant,
     target: crate::active_window::TextTarget,
@@ -67,7 +67,7 @@ impl Progress {
 }
 
 impl TextRequest {
-    pub(super) fn enqueue(text: &str) -> Result<Self, TextInputFailure> {
+    pub(crate) fn enqueue(text: &str) -> Result<Self, TextInputFailure> {
         let mut progress = PROGRESS.lock().unwrap_or_else(|e| e.into_inner());
         let generation = progress.reserve(text.len())?;
         let request = Self {
@@ -80,7 +80,7 @@ impl TextRequest {
         Ok(request)
     }
 
-    pub(super) fn check(&self) -> Result<(), TextInputFailure> {
+    pub(crate) fn check(&self) -> Result<(), TextInputFailure> {
         self.check_lifetime()?;
         if !self.target.is_current() {
             return Err(TextInputFailure::DestinationChanged);
@@ -89,7 +89,7 @@ impl TextRequest {
     }
 
     #[cfg(target_os = "windows")]
-    pub(super) fn check_progress(&mut self) -> Result<(), TextInputFailure> {
+    pub(crate) fn check_progress(&mut self) -> Result<(), TextInputFailure> {
         self.check()?;
         // Native Unicode delivery is paced for WinUI. Bound inactivity and queue
         // age, while allowing a long text that keeps reaching the same target.
@@ -98,11 +98,11 @@ impl TextRequest {
     }
 
     #[cfg(target_os = "linux")]
-    pub(super) fn is_terminal(&self) -> bool {
+    pub(crate) fn is_terminal(&self) -> bool {
         self.terminal
     }
 
-    pub(super) fn wait_for_target(&self) -> Result<(), TextInputFailure> {
+    pub(crate) fn wait_for_target(&self) -> Result<(), TextInputFailure> {
         let deadline = Instant::now() + TARGET_TIMEOUT;
         loop {
             self.check_lifetime()?;
@@ -116,7 +116,7 @@ impl TextRequest {
         }
     }
 
-    pub(super) fn check_lifetime(&self) -> Result<(), TextInputFailure> {
+    pub(crate) fn check_lifetime(&self) -> Result<(), TextInputFailure> {
         let progress = PROGRESS.lock().unwrap_or_else(|e| e.into_inner());
         validate(
             self.generation,
@@ -126,29 +126,29 @@ impl TextRequest {
         )
     }
 
-    pub(super) fn complete(&self, failed: bool) {
+    pub(crate) fn complete(&self, failed: bool) {
         let mut progress = PROGRESS.lock().unwrap_or_else(|e| e.into_inner());
         progress.complete(self.generation, failed);
     }
 }
 
-pub(super) fn cancel() {
+pub(crate) fn cancel() {
     let mut progress = PROGRESS.lock().unwrap_or_else(|e| e.into_inner());
     progress.reset(false);
 }
 
-pub(super) fn start() {
+pub(crate) fn start() {
     PROGRESS
         .lock()
         .unwrap_or_else(|e| e.into_inner())
         .reset(true);
 }
 
-pub(super) fn pending() -> bool {
+pub(crate) fn pending() -> bool {
     PROGRESS.lock().unwrap_or_else(|e| e.into_inner()).pending != 0
 }
 
-pub(super) fn take_failure() -> bool {
+pub(crate) fn take_failure() -> bool {
     std::mem::take(&mut PROGRESS.lock().unwrap_or_else(|e| e.into_inner()).failed)
 }
 

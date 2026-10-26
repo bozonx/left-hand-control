@@ -24,8 +24,6 @@ jobs:
     uses: ./.github/workflows/ci.yml
     permissions:
       contents: read
-      checks: write
-      issues: write
 
   metadata:
     name: Release metadata
@@ -33,10 +31,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Check tag, CHANGELOG.md and metainfo
-        run: python3 apps/slint-shell/scripts/release-metadata.py "$GITHUB_REF_NAME"
+        run: python3 apps/slint-shell/scripts/release/release-metadata.py "$GITHUB_REF_NAME"
 
   build-linux:
     name: Build Linux x86_64
@@ -57,10 +55,12 @@ jobs:
             libfreetype-dev libwayland-dev libxkbcommon-dev lintian
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          toolchain: 1.98.1  # keep in sync with rust-toolchain.toml
 
       - name: Install nfpm
         run: |
@@ -71,13 +71,13 @@ jobs:
           rm nfpm.tar.gz
 
       - name: Build artifacts
-        run: apps/slint-shell/scripts/release-linux.sh
+        run: apps/slint-shell/scripts/release/release-linux.sh
 
       - name: Lint deb
         run: lintian --fail-on error target/release-artifacts/*.deb
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: linux-x86_64
           path: target/release-artifacts/
@@ -89,18 +89,19 @@ jobs:
     if: ${{ !failure() && !cancelled() }}
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
+          toolchain: 1.98.1  # keep in sync with rust-toolchain.toml
           targets: x86_64-pc-windows-msvc
       - name: Build portable ZIP
-        run: powershell -NoProfile -File apps/slint-shell/scripts/package-windows.ps1
+        run: powershell -NoProfile -File apps/slint-shell/scripts/release/package-windows.ps1
       - name: Check extracted package CLI
         shell: pwsh
         run: |
           $zip = Get-Item target/release-artifacts-windows/*.zip
-          & ./apps/slint-shell/scripts/check-windows-package.ps1 -Archive $zip.FullName
-      - uses: actions/upload-artifact@v4
+          & ./apps/slint-shell/scripts/windows/check-windows-package.ps1 -Archive $zip.FullName
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: windows-x86_64
           path: target/release-artifacts-windows/*
@@ -112,7 +113,7 @@ jobs:
     runs-on: ubuntu-latest
     container: fedora:latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: linux-x86_64
           path: artifacts
@@ -140,15 +141,15 @@ jobs:
           - { image: 'archlinux:latest', package: '*.tar.gz' }
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: linux-x86_64
           path: artifacts
 
       - name: Install, check and remove
-        run: sh apps/slint-shell/scripts/smoke-linux-package.sh artifacts/${{ matrix.package }}
+        run: sh apps/slint-shell/scripts/release/smoke-linux-package.sh artifacts/${{ matrix.package }}
 
   verify-artifacts:
     name: Verify assembled distribution
@@ -156,19 +157,19 @@ jobs:
     if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: linux-x86_64
           path: artifacts
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: windows-x86_64
           path: artifacts
       - name: Check manifests, formats, architecture and bundled sources
         run: |
           version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["workspace"]["package"]["version"])')
-          python3 apps/slint-shell/scripts/check-release-artifacts.py --directory artifacts --version "$version" --require-vendor
+          python3 apps/slint-shell/scripts/release/check-release-artifacts.py --directory artifacts --version "$version" --require-vendor
 
   draft-release:
     name: Draft release
@@ -181,14 +182,14 @@ jobs:
       attestations: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: linux-x86_64
           path: artifacts
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: windows-x86_64
           path: artifacts
@@ -200,7 +201,7 @@ jobs:
           sha256sum -c WINDOWS-SHA256SUMS
 
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2
         with:
           subject-path: |
             artifacts/*.tar.gz
@@ -213,6 +214,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          python3 apps/slint-shell/scripts/release-metadata.py "$GITHUB_REF_NAME" --notes > notes.md
+          python3 apps/slint-shell/scripts/release/release-metadata.py "$GITHUB_REF_NAME" --notes > notes.md
           gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
             --title "Left Hand Control ${GITHUB_REF_NAME#v}" --notes-file notes.md artifacts/*

@@ -5,7 +5,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
-$root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
+$root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
 $exe = if ($Executable) { (Resolve-Path $Executable).Path } else { Join-Path $root 'target\release\left-hand-control.exe' }
 $workingDirectory = if ($Executable) { Split-Path $exe } else { $root }
 $output = Join-Path $root 'windows-runtime\lifecycle'

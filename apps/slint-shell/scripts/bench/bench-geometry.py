@@ -8,7 +8,7 @@ import time
 
 if not os.environ.get('WAYLAND_DISPLAY', '').startswith('lhc-stage3a-'):
     raise SystemExit('Run only inside the dedicated lhc-stage3a-* virtual compositor')
-root = Path(__file__).resolve().parents[1]
+root = Path(__file__).resolve().parents[2]
 binary = root.parents[1] / 'target/debug/left-hand-control'
 probe = root.parents[1] / 'target/debug/examples/inspect-geometry'
 output = Path(sys.argv[1]).resolve()

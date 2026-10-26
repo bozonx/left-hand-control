@@ -1,53 +1,53 @@
-// Tap / hold / double-tap + layer state machine.
-//
-// Per-rule configuration (see `RuleEntry`):
-//   * `tap`        — TapMode::Native | Swallow | Action
-//   * `hold`       — HoldMode::Native | Swallow | Layer | Keystroke
-//   * `double_tap` — Option<ActionDef>
-//   * `hold_timeout`, `double_tap_window`
-//
-// Three-state "tap" / "hold" semantics:
-//   Native   — pass the physical key through on that event.
-//              For `tap`: emit a short press+release of the physical key.
-//              For `hold`: press physical key down on commit, release on
-//                          physical key up.
-//   Swallow  — do nothing on that event.
-//   Action   — user-defined action string (tap fires an action; hold
-//              presses the resolved keystroke down on commit and releases
-//              it on physical key up, so e.g. `hold: ControlLeft` makes
-//              the physical key behave like a held Ctrl modifier).
-//
-// Rules where `tap == Native`, `hold == Native` and no layer/keystroke
-// hold is configured are completely transparent — they are not
-// registered with the engine at all so the key passes through the kernel
-// → uinput path unchanged.
-//
-// Phases of a rule key's pending state:
-//   * WaitingDecision — key was pressed, we don't yet know if it is a
-//     tap or a hold. Transitions:
-//       - release before deadline, no double_tap configured → fire tap.
-//       - release before deadline, double_tap configured  → enter
-//         WaitingSecond (delay the tap by double_tap_window).
-//       - deadline expires while still held                → commit hold.
-//       - another key is pressed while we're still in this phase — behaviour
-//         depends on the rule’s `tap_decision`:
-//           * PermissiveHold (default, QMK-style): the interrupting key is
-//             buffered (see `permissive_intercept`). The hold commits only
-//             if that key is *released* before the rule key (nested
-//             press+release) or the hold timeout elapses; the buffered
-//             events then replay in order. If the rule key is released
-//             first, it is a tap and the buffer replays after it. This lets
-//             fast rolling overlaps during typing resolve as taps instead of
-//             swallowing them into a hold.
-//           * HoldOnOtherKeyPress: any other key press commits the
-//             hold immediately, then the new key flows through.
-//   * HoldActive — hold has been committed (layer pushed, native key or
-//     keystroke held). On release: undo the hold.
-//   * WaitingSecond — short press finished; waiting for a possible
-//     second press within `double_tap_window`.
-//
-// Fast path: a rule with `tap == Swallow` and no `double_tap` skips
-// WaitingDecision and commits the hold immediately on key-down.
+//! Tap / hold / double-tap + layer state machine.
+//!
+//! Per-rule configuration (see `RuleEntry`):
+//!   * `tap`        — TapMode::Native | Swallow | Action
+//!   * `hold`       — HoldMode::Native | Swallow | Layer | Keystroke
+//!   * `double_tap` — Option<ActionDef>
+//!   * `hold_timeout`, `double_tap_window`
+//!
+//! Three-state "tap" / "hold" semantics:
+//!   Native   — pass the physical key through on that event.
+//!              For `tap`: emit a short press+release of the physical key.
+//!              For `hold`: press physical key down on commit, release on
+//!                          physical key up.
+//!   Swallow  — do nothing on that event.
+//!   Action   — user-defined action string (tap fires an action; hold
+//!              presses the resolved keystroke down on commit and releases
+//!              it on physical key up, so e.g. `hold: ControlLeft` makes
+//!              the physical key behave like a held Ctrl modifier).
+//!
+//! Rules where `tap == Native`, `hold == Native` and no layer/keystroke
+//! hold is configured are completely transparent — they are not
+//! registered with the engine at all so the key passes through the kernel
+//! → uinput path unchanged.
+//!
+//! Phases of a rule key's pending state:
+//!   * WaitingDecision — key was pressed, we don't yet know if it is a
+//!     tap or a hold. Transitions:
+//!       - release before deadline, no double_tap configured → fire tap.
+//!       - release before deadline, double_tap configured  → enter
+//!         WaitingSecond (delay the tap by double_tap_window).
+//!       - deadline expires while still held                → commit hold.
+//!       - another key is pressed while we're still in this phase — behaviour
+//!         depends on the rule’s `tap_decision`:
+//!           * PermissiveHold (default, QMK-style): the interrupting key is
+//!             buffered (see `permissive_intercept`). The hold commits only
+//!             if that key is *released* before the rule key (nested
+//!             press+release) or the hold timeout elapses; the buffered
+//!             events then replay in order. If the rule key is released
+//!             first, it is a tap and the buffer replays after it. This lets
+//!             fast rolling overlaps during typing resolve as taps instead of
+//!             swallowing them into a hold.
+//!           * HoldOnOtherKeyPress: any other key press commits the
+//!             hold immediately, then the new key flows through.
+//!   * HoldActive — hold has been committed (layer pushed, native key or
+//!     keystroke held). On release: undo the hold.
+//!   * WaitingSecond — short press finished; waiting for a possible
+//!     second press within `double_tap_window`.
+//!
+//! Fast path: a rule with `tap == Swallow` and no `double_tap` skips
+//! WaitingDecision and commits the hold immediately on key-down.
 
 mod builder;
 mod chords;

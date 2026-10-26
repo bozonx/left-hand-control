@@ -8,7 +8,7 @@ $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIde
 if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     throw 'Run smoke without elevation so it exercises ordinary application permissions.'
 }
-$root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
+$root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
 $output = Join-Path $root 'windows-runtime\smoke'
 $exe = Join-Path $root 'target\debug\left-hand-control.exe'
 . (Join-Path $PSScriptRoot 'windows-test-lib.ps1')

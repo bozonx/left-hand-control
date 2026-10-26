@@ -151,7 +151,7 @@ impl App {
         if let Some(popup) = window.popup() {
             // A choice may paste text; save the clipboard while the user picks.
             #[cfg(target_os = "linux")]
-            lhc_core::mapper::portal::prepare_text_input();
+            lhc_core::text_input::portal::prepare_text_input();
             // Both are anchored at the bottom centre; the popup wins.
             self.hide_layer_hint();
             if self.supervisor.borrow().enabled {

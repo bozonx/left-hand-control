@@ -1,3 +1,6 @@
+//! Linux mapper backend: grabs keyboards through evdev, runs the engine and
+//! emits through uinput.
+
 mod devices;
 mod io;
 
@@ -34,7 +37,7 @@ const START_TIMEOUT: Duration = Duration::from_secs(5);
 static GRABBED_KEYBOARD: Mutex<Option<u64>> = Mutex::new(None);
 
 /// Whether `rdev` is the keyboard the running mapper grabbed.
-pub(super) fn is_grabbed_keyboard(rdev: u64) -> bool {
+pub(crate) fn is_grabbed_keyboard(rdev: u64) -> bool {
     *GRABBED_KEYBOARD.lock().unwrap_or_else(|e| e.into_inner()) == Some(rdev)
 }
 
@@ -86,7 +89,7 @@ impl Handle {
     }
 
     pub fn stop(mut self) {
-        super::text_job::cancel();
+        crate::text_input::job::cancel();
         self.stop.store(true, Ordering::SeqCst);
         self.wake();
         if let Some(j) = self.join.take() {
@@ -150,8 +153,8 @@ pub fn spawn(
     cfg: AppConfig,
     stop: Arc<AtomicBool>,
 ) -> Result<Handle, String> {
-    super::text_job::start();
-    super::portal::set_text_backend(
+    crate::text_input::job::start();
+    crate::text_input::portal::set_text_backend(
         cfg.settings.linux_wayland_text_mode,
         cfg.settings.linux_paste_shortcut,
         cfg.settings.linux_terminal_paste_shortcut,
@@ -160,7 +163,7 @@ pub fn spawn(
     );
     // Starting the mapper is an explicit user action: give a backend that
     // failed before (e.g. a declined portal dialog) another chance.
-    super::portal::retry_text_backend();
+    crate::text_input::portal::retry_text_backend();
     #[cfg(debug_assertions)]
     {
         log::debug!(
@@ -531,7 +534,7 @@ fn run_device(
         .map_err(|e| format!("uinput build: {e}"))?;
 
     let driver = MultiDeviceLoopDriver::new(devices, mouse_path, Some(wake_rx))?;
-    super::text_job::start();
+    crate::text_input::job::start();
     set_waiting(waiting, false);
     let _ = ready_tx.send(Ok(()));
     run_loop(driver, virt, cfg, stop, control_rx)
@@ -570,13 +573,13 @@ fn run_loop<D: LoopDriver>(
                             continue;
                         }
                         hold.cancel_actions(&mut out_buf);
-                        super::text_job::cancel();
+                        crate::text_input::job::cancel();
                         log::debug!(
                             "[mapper] live config update: rules={} layers={}",
                             next_cfg.rules.len(),
                             next_cfg.layer_keymaps.len()
                         );
-                        super::portal::set_text_backend(
+                        crate::text_input::portal::set_text_backend(
                             next_cfg.settings.linux_wayland_text_mode,
                             next_cfg.settings.linux_paste_shortcut,
                             next_cfg.settings.linux_terminal_paste_shortcut,
@@ -585,7 +588,7 @@ fn run_loop<D: LoopDriver>(
                         );
                         engine.reconfigure(&next_cfg, &mut out_buf);
                         super::layer_state::publish(engine.held_layer_state());
-                        super::text_job::start();
+                        crate::text_input::job::start();
                         *cfg = next_cfg;
                     }
                     MapperControl::Execute(action) => {
@@ -598,14 +601,14 @@ fn run_loop<D: LoopDriver>(
             hold.gate(
                 &mut out_buf,
                 std::time::Instant::now(),
-                super::text_job::pending(),
+                crate::text_input::job::pending(),
             );
             flush_out(&mut virt, &mut out_buf)?;
             process_iteration(&mut driver, &mut engine, &mut hold, &mut virt, &mut out_buf)?;
         }
         Ok(())
     })();
-    super::text_job::cancel();
+    crate::text_input::job::cancel();
     super::layer_state::publish(super::layer_state::HeldLayerState::default());
 
     hold.discard();

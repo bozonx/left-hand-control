@@ -60,7 +60,7 @@ def check(directory, version, require_vendor=False, compare_linux=False, lockfil
             config = tomllib.loads(tf.extractfile(f'{root}/.cargo/config.toml').read().decode())
             if config.get('source', {}).get('vendored-sources', {}).get('directory') != 'vendor':
                 raise ValueError('Vendor config does not use its relative vendor directory')
-            lock = tomllib.loads((lockfile or Path(__file__).resolve().parents[3] / 'Cargo.lock').read_text())
+            lock = tomllib.loads((lockfile or Path(__file__).resolve().parents[4] / 'Cargo.lock').read_text())
             for package in lock['package']:
                 if not package.get('source', '').startswith('registry+'):
                     continue

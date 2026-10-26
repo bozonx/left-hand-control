@@ -1,3 +1,6 @@
+//! Linux mapper loop I/O: reading grabbed devices, emitting through uinput and
+//! running side effects off the input thread.
+
 use super::super::engine::{Engine, Out};
 
 /// How long a system D-Bus call may take before it is abandoned.
@@ -7,8 +10,8 @@ const WORKER_QUEUE: usize = 32;
 pub(super) use super::super::output::{
     EventSink, LoopDriver, OutputHold, SideEffects, flush_out_with, process_iteration_with,
 };
-use super::super::portal;
 use super::super::system::{DbusArg, DbusCall, SysAction, SysCommand};
+use crate::text_input::portal;
 use evdev::uinput::VirtualDevice;
 use evdev::{Device, EventType, InputEvent, KeyCode, KeyEvent};
 use std::collections::{HashMap, HashSet};
@@ -70,7 +73,7 @@ impl SideEffects for RuntimeSideEffects {
         // portal::type_text can block for seconds on its first call (libei
         // handshake / consent dialog) — never run it on the mapper thread
         // while the keyboard is grabbed.
-        match super::super::text_job::TextRequest::enqueue(text) {
+        match crate::text_input::job::TextRequest::enqueue(text) {
             Ok(request) => {
                 let job = SideEffectJob::Text(text.to_owned(), request.clone());
                 if !enqueue_side_effect(job) {
@@ -85,11 +88,11 @@ impl SideEffects for RuntimeSideEffects {
     }
 
     fn text_pending(&self) -> bool {
-        super::super::text_job::pending()
+        crate::text_input::job::pending()
     }
 
     fn text_failed(&mut self) -> bool {
-        super::super::text_job::take_failure()
+        crate::text_input::job::take_failure()
     }
 
     fn run_system(&mut self, action: &SysAction) {
@@ -102,7 +105,7 @@ impl SideEffects for RuntimeSideEffects {
 }
 
 enum SideEffectJob {
-    Text(String, super::super::text_job::TextRequest),
+    Text(String, crate::text_input::job::TextRequest),
 }
 
 fn side_effect_tx() -> &'static mpsc::SyncSender<SideEffectJob> {

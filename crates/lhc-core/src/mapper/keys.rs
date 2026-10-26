@@ -1,5 +1,5 @@
-// Mapping between configuration key codes (following KeyboardEvent.code)
-// and Linux evdev `KeyCode` values.
+//! Mapping between configuration key codes (following KeyboardEvent.code)
+//! and Linux evdev `KeyCode` values.
 
 use crate::mapper::key_code::KeyCode;
 

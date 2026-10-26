@@ -161,7 +161,7 @@ pub enum Command {
     PopupLayout(Option<String>),
     PopupContents(String),
     /// Show the keys of the held layer in the Spell worker; `None` hides them.
-    LayerHint(Option<crate::layer_hint::LayerHint>),
+    LayerHint(Option<crate::layer_hint_model::LayerHint>),
     Hide,
     ToggleSettings,
     ToggleMapper,
@@ -364,20 +364,20 @@ mod tests {
             Command::PopupLayout(None),
             Command::PopupContents(r#"{"rules": [], "description": "Привет"}"#.into()),
             Command::LayerHint(None),
-            Command::LayerHint(Some(crate::layer_hint::LayerHint {
+            Command::LayerHint(Some(crate::layer_hint_model::LayerHint {
                 name: "Навигация".into(),
                 left: vec![
                     None,
-                    Some(crate::layer_hint::HintKey {
+                    Some(crate::layer_hint_model::HintKey {
                         label: "Q".into(),
-                        kind: crate::layer_hint::HintKind::Action,
+                        kind: crate::layer_hint_model::HintKind::Action,
                         action: "text: 👋".into(),
                         emoji: false,
                     }),
                 ],
-                right: vec![Some(crate::layer_hint::HintKey {
+                right: vec![Some(crate::layer_hint_model::HintKey {
                     label: "H".into(),
-                    kind: crate::layer_hint::HintKind::Suppress,
+                    kind: crate::layer_hint_model::HintKind::Suppress,
                     action: String::new(),
                     emoji: false,
                 })],

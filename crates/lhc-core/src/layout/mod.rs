@@ -1,24 +1,26 @@
-// Current keyboard layout detection.
-//
-// Current product support is Linux/KDE. The facade keeps the other backends
-// visible as explicit stubs/skeletons so unsupported platforms and desktop
-// environments fail predictably instead of silently diverging.
-//
-// Backends:
-//   * Linux + KDE Plasma     — DBus `org.kde.keyboard`            (implemented)
-//   * Linux + GNOME          — optional Shell extension over D-Bus
-//   * Linux + Sway / wlroots — `swaymsg -t get_inputs`             (skeleton)
-//   * Linux + generic X11    — `setxkbmap -query`                  (skeleton,
-//                                                                   also used
-//                                                                   as fallback
-//                                                                   for unknown
-//                                                                   DEs)
-//   * Windows                — GetKeyboardLayout (foreground)      (implemented)
-//   * macOS                  — TISCopyCurrentKeyboardInputSource   (stub)
-//
-// Shell contract:
-//   * `current()` / `available_layouts()` / `set()` for one-shot calls
-//   * `CoreEvent::LayoutChanged(LayoutInfo)` from the watcher
+//! Current keyboard layout detection.
+//!
+//! ```text
+//! Current product support is Linux/KDE. The facade keeps the other backends
+//! visible as explicit stubs/skeletons so unsupported platforms and desktop
+//! environments fail predictably instead of silently diverging.
+//!
+//! Backends:
+//!   * Linux + KDE Plasma     — DBus `org.kde.keyboard`            (implemented)
+//!   * Linux + GNOME          — optional Shell extension over D-Bus
+//!   * Linux + Sway / wlroots — `swaymsg -t get_inputs`             (skeleton)
+//!   * Linux + generic X11    — `setxkbmap -query`                  (skeleton,
+//!                                                                   also used
+//!                                                                   as fallback
+//!                                                                   for unknown
+//!                                                                   DEs)
+//!   * Windows                — GetKeyboardLayout (foreground)      (implemented)
+//!   * macOS                  — TISCopyCurrentKeyboardInputSource   (stub)
+//!
+//! Shell contract:
+//!   * `current()` / `available_layouts()` / `set()` for one-shot calls
+//!   * `CoreEvent::LayoutChanged(LayoutInfo)` from the watcher
+//! ```
 
 use serde::Serialize;
 use std::sync::Mutex;

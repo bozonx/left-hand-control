@@ -5,7 +5,7 @@ use super::*;
 pub(super) type PortalSession = (
     Connection,
     OwnedObjectPath,
-    Option<crate::mapper::portal_clipboard::Clipboard>,
+    Option<crate::text_input::portal_clipboard::Clipboard>,
 );
 
 pub(super) fn init_portal(text_request: &TextRequest) -> Result<PortalSession, String> {
@@ -96,7 +96,7 @@ pub(super) fn init_portal(text_request: &TextRequest) -> Result<PortalSession, S
     }
 
     let clipboard = if clipboard_requested {
-        Some(crate::mapper::portal_clipboard::Clipboard::request(
+        Some(crate::text_input::portal_clipboard::Clipboard::request(
             &conn,
             &session_handle,
         )?)

@@ -86,8 +86,7 @@ CI проверяет core и оболочку на Linux, Windows и macOS. Des
 - `apps/slint-shell/` — UI, IPC, трей, платформенные адаптеры и Spell worker;
   `assets/` содержит иконку приложения и каталог emoji.
 - `docs/` — [индекс документации](docs/README.md): разработка, проектирование и тестирование.
-- `apps/slint-shell/scripts/` — диагностика и проверки оболочки.
-- `scripts/experimental/` — экспериментальные XKB-проверки.
+- `apps/slint-shell/scripts/` — проверки, релиз, бенчмарки, Windows- и VM-стенды.
 
 ## Документация
 

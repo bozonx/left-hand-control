@@ -25,9 +25,9 @@ use super::output::{
     process_iteration_with,
 };
 use super::system::{SysAction, SysCommand};
-use super::text_job::TextRequest;
 use super::{InputDevice, KeyboardDevice};
 use crate::events::{CoreEvent, TextInputFailure};
+use crate::text_input::job::TextRequest;
 use hook::{HookEvent, Hooks};
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -103,7 +103,7 @@ impl Handle {
     }
 
     pub fn stop(mut self) {
-        super::text_job::cancel();
+        crate::text_input::job::cancel();
         self.stop.store(true, Ordering::SeqCst);
         hook::wake(&self.wake_tx);
         if let Some(join) = self.join.take() {
@@ -154,7 +154,7 @@ pub fn spawn(
         Some(MOUSE_PATH) => true,
         Some(other) => return Err(format!("Unknown mouse {other}")),
     };
-    super::text_job::start();
+    crate::text_input::job::start();
     let error: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
     let (ready_tx, ready_rx) = mpsc::channel::<Result<(), String>>();
     let (control_tx, control_rx) = mpsc::channel::<MapperControl>();
@@ -307,17 +307,21 @@ fn run_loop(
                             continue;
                         }
                         hold.cancel_actions(&mut out_buf);
-                        super::text_job::cancel();
+                        crate::text_input::job::cancel();
                         engine.reconfigure(&next, &mut out_buf);
                         super::layer_state::publish(engine.held_layer_state());
-                        super::text_job::start();
+                        crate::text_input::job::start();
                         cfg = next;
                     }
                     MapperControl::Execute(action) => engine.execute_remote(&action, &mut out_buf),
                     MapperControl::PopupFocused => hold.release(),
                 }
             }
-            hold.gate(&mut out_buf, Instant::now(), super::text_job::pending());
+            hold.gate(
+                &mut out_buf,
+                Instant::now(),
+                crate::text_input::job::pending(),
+            );
             flush_out_with(&mut sink, &mut effects, &mut out_buf)?;
             process_iteration_with(
                 &mut driver,
@@ -330,7 +334,7 @@ fn run_loop(
         }
         Ok(())
     })();
-    super::text_job::cancel();
+    crate::text_input::job::cancel();
     super::layer_state::publish(super::layer_state::HeldLayerState::default());
     hold.discard();
     engine.shutdown(&mut out_buf);
@@ -534,11 +538,11 @@ impl SideEffects for RuntimeSideEffects {
     }
 
     fn text_pending(&self) -> bool {
-        super::text_job::pending()
+        crate::text_input::job::pending()
     }
 
     fn text_failed(&mut self) -> bool {
-        super::text_job::take_failure()
+        crate::text_input::job::take_failure()
     }
 
     fn run_system(&mut self, action: &SysAction) {

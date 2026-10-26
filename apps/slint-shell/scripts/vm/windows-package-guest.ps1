@@ -34,8 +34,8 @@ try {
         if (-not (Test-Path "$env:windir\System32\MSVCP140.dll")) { throw 'VC runtime DLL still absent' }
     }
     $archive = Get-Item (Join-Path $root '*.zip')
-    & (Join-Path $root 'apps\slint-shell\scripts\check-windows-syntax.ps1')
-    & (Join-Path $root 'apps\slint-shell\scripts\check-windows-package.ps1') -Archive $archive.FullName -Desktop -StressCycles $settings.cycles -StressSeconds $settings.seconds
+    & (Join-Path $root 'apps\slint-shell\scripts\windows\check-windows-syntax.ps1')
+    & (Join-Path $root 'apps\slint-shell\scripts\windows\check-windows-package.ps1') -Archive $archive.FullName -Desktop -StressCycles $settings.cycles -StressSeconds $settings.seconds
     $configs = @(Get-ChildItem (Join-Path $root 'windows-runtime') -Recurse -File -Filter config.json)
     if (-not $configs.Count) { throw 'Portable removal lost the isolated test profiles' }
     Write-Host 'Package extraction removed, isolated configuration retained'

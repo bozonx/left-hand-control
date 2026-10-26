@@ -703,7 +703,7 @@ fn unchecked_exponential_macro_expansion_is_bounded() {
         });
     }
     assert!(
-        super::super::validation::validate_config(&cfg)
+        crate::mapper::validation::validate_config(&cfg)
             .unwrap_err()
             .contains("expansion exceeds")
     );

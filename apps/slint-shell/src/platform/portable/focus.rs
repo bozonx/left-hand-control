@@ -1,3 +1,5 @@
+//! Window activation on Windows and macOS through winit's `focus_window`.
+
 use slint::winit_030::winit;
 
 #[derive(Default)]

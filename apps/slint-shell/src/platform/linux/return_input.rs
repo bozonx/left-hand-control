@@ -173,7 +173,7 @@ impl ReturnInput {
 
 fn paste(device: &mut crate::test_keyboard::Keyboard, text: &str) -> std::io::Result<()> {
     let clipboard =
-        lhc_core::mapper::clipboard::Paste::prepare(text).map_err(std::io::Error::other)?;
+        lhc_core::text_input::clipboard::Paste::prepare(text).map_err(std::io::Error::other)?;
     clipboard.arm().map_err(std::io::Error::other)?;
     let result = (|| {
         device.emit(&[*KeyEvent::new(KeyCode::KEY_LEFTSHIFT, 1)])?;

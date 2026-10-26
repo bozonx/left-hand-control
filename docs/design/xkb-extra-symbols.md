@@ -4,7 +4,7 @@
 
 ## Проблема
 
-На KDE Plasma 6 Wayland текст вводится через libei (`crates/lhc-core/src/mapper/portal/`).
+На KDE Plasma 6 Wayland текст вводится через libei (`crates/lhc-core/src/text_input/portal/`).
 libei, как и uinput, ydotool и портал RemoteDesktop, отправляет **коды клавиш**, а не символы.
 Символ из кода получает KWin по текущей XKB-раскладке. Если символа (`→`, `é`, `😀`) в
 раскладке нет, его не набрать клавишами, и режим `libei` вставляет весь текст через буфер

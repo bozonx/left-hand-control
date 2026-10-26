@@ -9,7 +9,7 @@ import sys
 import tomllib
 import xml.etree.ElementTree as ET
 
-root = Path(__file__).resolve().parents[3]
+root = Path(__file__).resolve().parents[4]
 
 
 def changelog_section(version: str) -> str | None:

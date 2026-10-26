@@ -1,3 +1,6 @@
+//! Mapper configuration: rules, layer keymaps, macros, commands and settings as
+//! the engine receives them.
+
 pub use crate::profile::model::TapDecision;
 use crate::profile::model::{PasteShortcut, TextMode};
 use crate::profile::timing;

@@ -117,14 +117,14 @@ backend маппера; общую логику размещать в `lhc-core`
 сценарии через QMP; full включает shell smoke и release lifecycle.
 Сценарии находятся в `scripts/vm/windows_mapper.py`, Rust driver —
 `crates/lhc-core/examples/windows-mapper-stand.rs`, native receiver —
-`scripts/windows-receiver.ps1` (пути scripts относительно `apps/slint-shell/`).
+`scripts/windows/windows-receiver.ps1` (пути scripts относительно `apps/slint-shell/`).
 Driver не читает пользовательский config: принимает runtime JSON через отдельный
 mailbox, вызывает публичный `mapper::runtime` и снимает hooks при штатном выходе.
 Строки матрицы считаются пройденными только при наличии соответствующего
 успешного именованного шага в отчёте конкретного прогона.
 
 Перед mapper оба набора также выполняют `scripts/vm/windows_popups.py`.
-`scripts/windows-popup-stand.ps1` запускает отдельный shell (release в full,
+`scripts/windows/windows-popup-stand.ps1` запускает отдельный shell (release в full,
 debug в smoke) с тестовой
 активной раскладкой, профилем и портом. Ctrl+Alt+F11/F12 и клавиши ячеек приходят
 через USB-ввод QEMU; приложение не получает синтетических вызовов выбора.

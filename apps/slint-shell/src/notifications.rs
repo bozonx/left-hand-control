@@ -1,3 +1,6 @@
+//! Toast notifications of the settings window: which messages are shown, for
+//! how long, and the visible queue.
+
 use crate::{
     i18n::Msg,
     ui::{Message, NotificationCenter, SettingsWindow, ToastItem, ToastKind},

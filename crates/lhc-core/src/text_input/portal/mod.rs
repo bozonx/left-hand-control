@@ -1,39 +1,41 @@
-// Text injection on Linux for `text:` actions.
-//
-// Two of the modes go through the XDG Desktop Portal RemoteDesktop
-// interface, the cross-compositor way to inject input on Wayland (the
-// `zwp_virtual_keyboard_v1` protocol is not offered to ordinary clients on
-// KDE Plasma 6 or GNOME):
-//
-//   1. `CreateSession()`        – async, via a `Request` object + `Response` signal.
-//   2. `SelectDevices(keyboard)`– declares what we plan to inject; this is
-//                                 also where we set `persist_mode = 2` and
-//                                 pass back any previously-saved
-//                                 `restore_token` so the user does not see
-//                                 the consent dialog again.
-//   3. `Start()`                – shows the permission dialog (only once
-//                                 per machine if persist mode + token work).
-//   4. `ConnectToEIS()` (libei modes) or `NotifyKeyboardKeycode()` (keycode
-//      mode and the paste shortcut of the clipboard mode).
-//
-// Each backend owns one session on its own worker thread. The session is
-// created on the first text and kept until the mode changes or the session
-// breaks, so the consent dialog is not shown on every mapper restart. The
-// `restore_token` from `Start` is persisted next to the user data, so later
-// app launches restore the permission silently.
-//
-// Characters are typed as keycodes of the active layout (`NotifyKeyboardKeysym`
-// emits keysyms without the needed modifier on KDE, giving wrong characters
-// in non-Latin layouts). libei uses the keymap and layout group the
-// compositor sends; the keycode mode rebuilds the keymap from the active
-// layout name and variant.
-//
-// Text modes must never silently switch injection mechanisms: hidden fallbacks
-// mask failures and make backend debugging unreliable. The only allowed fallback
-// is the explicitly selected libei + clipboard mode, which pastes the whole text
-// when the keymap lacks a character. It still requires a working libei session.
-// Every failure is reported as `CoreEvent::TextInputFailed`, never retried
-// through another input method.
+//! Text injection on Linux for `text:` actions.
+//!
+//! ```text
+//! Two of the modes go through the XDG Desktop Portal RemoteDesktop
+//! interface, the cross-compositor way to inject input on Wayland (the
+//! `zwp_virtual_keyboard_v1` protocol is not offered to ordinary clients on
+//! KDE Plasma 6 or GNOME):
+//!
+//!   1. `CreateSession()`        – async, via a `Request` object + `Response` signal.
+//!   2. `SelectDevices(keyboard)`– declares what we plan to inject; this is
+//!                                 also where we set `persist_mode = 2` and
+//!                                 pass back any previously-saved
+//!                                 `restore_token` so the user does not see
+//!                                 the consent dialog again.
+//!   3. `Start()`                – shows the permission dialog (only once
+//!                                 per machine if persist mode + token work).
+//!   4. `ConnectToEIS()` (libei modes) or `NotifyKeyboardKeycode()` (keycode
+//!      mode and the paste shortcut of the clipboard mode).
+//!
+//! Each backend owns one session on its own worker thread. The session is
+//! created on the first text and kept until the mode changes or the session
+//! breaks, so the consent dialog is not shown on every mapper restart. The
+//! `restore_token` from `Start` is persisted next to the user data, so later
+//! app launches restore the permission silently.
+//!
+//! Characters are typed as keycodes of the active layout (`NotifyKeyboardKeysym`
+//! emits keysyms without the needed modifier on KDE, giving wrong characters
+//! in non-Latin layouts). libei uses the keymap and layout group the
+//! compositor sends; the keycode mode rebuilds the keymap from the active
+//! layout name and variant.
+//!
+//! Text modes must never silently switch injection mechanisms: hidden fallbacks
+//! mask failures and make backend debugging unreliable. The only allowed fallback
+//! is the explicitly selected libei + clipboard mode, which pastes the whole text
+//! when the keymap lacks a character. It still requires a working libei session.
+//! Every failure is reported as `CoreEvent::TextInputFailed`, never retried
+//! through another input method.
+//! ```
 
 #![cfg(target_os = "linux")]
 
@@ -46,7 +48,7 @@ mod token;
 mod worker;
 
 use self::hardware::*;
-pub(super) use self::inject::close_session;
+pub(crate) use self::inject::close_session;
 use self::inject::*;
 use self::keymap::*;
 use self::libei::*;
@@ -71,13 +73,13 @@ use reis::event::{DeviceCapability, EiEvent, EiEventConverter};
 use zbus::blocking::{Connection, Proxy};
 use zbus::zvariant::{OwnedFd, OwnedObjectPath, OwnedValue, Value};
 
-use super::text_job::TextRequest;
 use crate::events::{CoreEvent, TextInputFailure};
 use crate::profile::model::{PasteShortcut, TextMode};
+use crate::text_input::job::TextRequest;
 
 // --- Portal DBus identifiers --------------------------------------------
 
-pub(super) use crate::platform::dbus::{PORTAL_PATH, PORTAL_SERVICE as PORTAL_DEST};
+pub(crate) use crate::platform::dbus::{PORTAL_PATH, PORTAL_SERVICE as PORTAL_DEST};
 const IFACE_REMOTE: &str = "org.freedesktop.portal.RemoteDesktop";
 use crate::platform::dbus::PORTAL_REQUEST_INTERFACE as IFACE_REQUEST;
 const IFACE_SESSION: &str = "org.freedesktop.portal.Session";
@@ -121,7 +123,7 @@ const STATE_PRESSED: u32 = 1;
 const RESTORE_TOKEN_FILE: &str = "portal-remote-desktop.token";
 const CLIPBOARD_RESTORE_TOKEN_FILE: &str = "portal-remote-desktop-clipboard.token";
 
-pub(super) fn report(failure: TextInputFailure) {
+pub(crate) fn report(failure: TextInputFailure) {
     log::warn!("[text] text not typed: {failure:?}");
     crate::events::emit(CoreEvent::TextInputFailed(failure));
 }
@@ -213,7 +215,7 @@ pub fn set_token_dir(dir: PathBuf) {
 /// Type `text` with the selected mode and return when the backend is done.
 /// The first call may block on the portal consent dialog, so run it off the
 /// mapper thread. Failures are reported as `CoreEvent::TextInputFailed`.
-pub(super) fn type_text(text: &str, request: TextRequest) -> Result<(), TextInputFailure> {
+pub(crate) fn type_text(text: &str, request: TextRequest) -> Result<(), TextInputFailure> {
     request.check()?;
     let released = Instant::now() + MODIFIER_RELEASE_TIMEOUT;
     let hardware = HardwareState::capture();
@@ -497,7 +499,7 @@ mod tests {
         );
         crate::layout::refresh_cache().unwrap();
         assert!(crate::active_window::detect_active_window_now().is_some());
-        super::super::text_job::start();
+        crate::text_input::job::start();
         let text = "Привет, ёж 😀";
         let request = TextRequest::enqueue(text).unwrap();
         println!("Native portal probe ready for consent");

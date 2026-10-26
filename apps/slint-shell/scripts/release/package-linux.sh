@@ -6,7 +6,7 @@ if [ "$(uname -s)" != Linux ]; then
     echo 'This script builds native Linux bundles only.' >&2
     exit 1
 fi
-repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/../../.." && pwd)
+repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/../../../.." && pwd)
 cd -- "$repo_dir"
 metadata=$(cargo metadata --locked --format-version 1 --no-deps)
 version=$(printf '%s' "$metadata" | python3 -c 'import json,sys; print(next(p["version"] for p in json.load(sys.stdin)["packages"] if p["name"] == "slint-shell"))')

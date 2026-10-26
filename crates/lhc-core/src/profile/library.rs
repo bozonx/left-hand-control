@@ -1,3 +1,5 @@
+//! Layout library: creating, copying, renaming and deleting user layouts.
+
 use crate::{
     config_document::{ConfigDocument, ConfigError},
     profile::{

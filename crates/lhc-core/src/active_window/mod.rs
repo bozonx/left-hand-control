@@ -1,16 +1,16 @@
-// Detection of the currently focused window.
-//
-// A watcher thread caches the latest result in `runtime_state` and emits
-// `CoreEvent::ActiveWindowChanged`; the mapper engine reads the cache to
-// evaluate per-rule app conditions. Where the platform reports focus
-// changes (KWin script, Hyprland and Sway IPC, wlr foreign-toplevel
-// events, the X11 root property, a Windows WinEvent hook) the watcher re-reads on every event and polls
-// only as a slow fallback.
-//
-// Window titles are read only while some condition needs them
-// (`title:` patterns, see `profile::app_match`): the app id and the
-// process are enough otherwise, and a title is the most private and the
-// least stable part of a window.
+//! Detection of the currently focused window.
+//!
+//! A watcher thread caches the latest result in `runtime_state` and emits
+//! `CoreEvent::ActiveWindowChanged`; the mapper engine reads the cache to
+//! evaluate per-rule app conditions. Where the platform reports focus
+//! changes (KWin script, Hyprland and Sway IPC, wlr foreign-toplevel
+//! events, the X11 root property, a Windows WinEvent hook) the watcher re-reads on every event and polls
+//! only as a slow fallback.
+//!
+//! Window titles are read only while some condition needs them
+//! (`title:` patterns, see `profile::app_match`): the app id and the
+//! process are enough otherwise, and a title is the most private and the
+//! least stable part of a window.
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex};

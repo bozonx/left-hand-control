@@ -5,7 +5,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'windows-test-lib.ps1')
-$root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
+$root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
 $output = Join-Path $root 'windows-runtime\upgrade'
 $saved = Initialize-WindowsTest $output
 $temp = Join-Path $output ([guid]::NewGuid().ToString())

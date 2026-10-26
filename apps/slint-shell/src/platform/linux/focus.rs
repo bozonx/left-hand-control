@@ -1,3 +1,6 @@
+//! Wayland activation of the settings window and popups (XDG activation
+//! tokens).
+
 use raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle};
 use slint::winit_030::winit;
 use wayland_client::{

@@ -122,4 +122,4 @@ echo "    sudo evemu-event /dev/input/eventN --type EV_KEY --code KEY_F20 --valu
 echo "    sudo evemu-event /dev/input/eventN --type EV_KEY --code KEY_F20 --value 0 --sync"
 echo "in a terminal focused on a text editor, with different layouts active."
 echo
-echo "To uninstall: run scripts/experimental/xkb-test-uninstall.sh"
+echo "To uninstall: run apps/slint-shell/scripts/experimental/xkb-test-uninstall.sh"

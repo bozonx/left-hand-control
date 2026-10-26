@@ -15,7 +15,7 @@ import urllib.error
 from vmlib import Qmp, StepFailed
 from windows_mapper import WindowsMapper
 
-spec = importlib.util.spec_from_file_location('artifact_gate', Path(__file__).parents[1] / 'check-release-artifacts.py')
+spec = importlib.util.spec_from_file_location('artifact_gate', Path(__file__).parents[1] / 'release' / 'check-release-artifacts.py')
 gate = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(gate)
 

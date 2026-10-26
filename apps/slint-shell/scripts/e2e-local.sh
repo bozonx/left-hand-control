@@ -61,10 +61,10 @@ for example in 'editor --smoke' interactions library action-picker macros menus 
     shift
     run "example-$name" cargo run --locked -q -p slint-shell --features spell --example "$name" -- "$@"
 done
-run check-recovery python3 apps/slint-shell/scripts/check-recovery.py --binary "$binary" --popups spell
-run check-preferences env LHC_BIN="$binary" python3 apps/slint-shell/scripts/check-preferences.py
-run check-worker-crash python3 apps/slint-shell/scripts/check-worker-crash.py "$binary"
-run check-linux-install python3 apps/slint-shell/scripts/check-linux-install.py
+run check-recovery python3 apps/slint-shell/scripts/check/check-recovery.py --binary "$binary" --popups spell
+run check-preferences env LHC_BIN="$binary" python3 apps/slint-shell/scripts/check/check-preferences.py
+run check-worker-crash python3 apps/slint-shell/scripts/check/check-worker-crash.py "$binary"
+run check-linux-install python3 apps/slint-shell/scripts/release/check-linux-install.py
 if $run_mapper; then
     run mapper-e2e cargo test --locked -q -p lhc-core --test mapper_e2e -- --ignored
 fi

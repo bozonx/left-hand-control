@@ -174,7 +174,7 @@ pub(super) struct PortalBackend {
     pub(super) conn: Connection,
     pub(super) session_handle: OwnedObjectPath,
     pub(super) portal: Proxy<'static>,
-    pub(super) clipboard: Option<crate::mapper::portal_clipboard::Clipboard>,
+    pub(super) clipboard: Option<crate::text_input::portal_clipboard::Clipboard>,
 }
 
 impl PortalBackend {

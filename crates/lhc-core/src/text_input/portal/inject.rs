@@ -35,18 +35,18 @@ pub(super) fn type_text_keycode(
 }
 
 pub(super) enum ClipboardPaste {
-    Wayland(crate::mapper::clipboard::Paste),
-    Portal(crate::mapper::portal_clipboard::Paste),
+    Wayland(crate::text_input::clipboard::Paste),
+    Portal(crate::text_input::portal_clipboard::Paste),
 }
 
 pub(super) fn prepare_clipboard(
-    portal: Option<&crate::mapper::portal_clipboard::Clipboard>,
+    portal: Option<&crate::text_input::portal_clipboard::Clipboard>,
     text: &str,
     request: &TextRequest,
 ) -> Result<ClipboardPaste, TextInputFailure> {
     match portal {
         Some(portal) => portal.prepare(text, request).map(ClipboardPaste::Portal),
-        None => crate::mapper::clipboard::Paste::prepare(text).map(ClipboardPaste::Wayland),
+        None => crate::text_input::clipboard::Paste::prepare(text).map(ClipboardPaste::Wayland),
     }
     .map_err(TextInputFailure::Clipboard)
 }
@@ -69,7 +69,7 @@ impl ClipboardPaste {
 pub(super) fn paste_text(
     portal: &Proxy,
     session: &OwnedObjectPath,
-    portal_clipboard: Option<&crate::mapper::portal_clipboard::Clipboard>,
+    portal_clipboard: Option<&crate::text_input::portal_clipboard::Clipboard>,
     text: &str,
     shortcut: PasteShortcut,
     request: &TextRequest,
@@ -136,7 +136,7 @@ pub(super) fn inject_keycode_combo(
     result
 }
 
-pub(in crate::mapper) fn close_session(conn: &Connection, session: &OwnedObjectPath) {
+pub(crate) fn close_session(conn: &Connection, session: &OwnedObjectPath) {
     match Proxy::new(conn, PORTAL_DEST, &**session, IFACE_SESSION) {
         Ok(sp) => {
             if let Err(e) = sp.call_method("Close", &()) {

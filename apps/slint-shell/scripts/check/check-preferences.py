@@ -5,7 +5,7 @@ import sys
 import tempfile
 import time
 
-root = Path(__file__).resolve().parents[1]
+root = Path(__file__).resolve().parents[2]
 binary = Path(os.environ.get('LHC_BIN', root.parents[1] / 'target/debug/left-hand-control')).resolve()
 output = Path(sys.argv[1] if len(sys.argv) > 1 else tempfile.mkdtemp(prefix='lhc-3b-ipc-'))
 output.mkdir(parents=True, exist_ok=True)

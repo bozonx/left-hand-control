@@ -1,3 +1,5 @@
+//! Drag-and-drop reordering of list rows (`DragDrop` global).
+
 use crate::ui::{DragDrop, SettingsWindow};
 use slint::ComponentHandle;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};

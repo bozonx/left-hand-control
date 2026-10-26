@@ -1,0 +1,6 @@
+# Pins the toolchain for CI and release builds so artifacts are reproducible.
+# Dependabot does not update it: bump it by hand. MSRV is `rust-version` in Cargo.toml.
+[toolchain]
+channel = "1.98.1"
+components = ["rustfmt", "clippy"]
+profile = "minimal"

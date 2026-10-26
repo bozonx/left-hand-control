@@ -7,7 +7,7 @@ import subprocess
 import sys
 import time
 
-root = Path(__file__).resolve().parents[1]
+root = Path(__file__).resolve().parents[2]
 binary = Path(os.environ.get('LHC_BIN', root.parents[1] / 'target/debug/left-hand-control')).resolve()
 output = Path(sys.argv[1]).resolve()
 count = int(sys.argv[2]) if len(sys.argv) > 2 else 500
@@ -26,7 +26,7 @@ def command(*args):
     subprocess.run([binary, *args], env=env, check=True, timeout=4, capture_output=True)
 
 def sample(label):
-    result = subprocess.check_output([root / 'scripts/mem.sh', str(server.pid), label], text=True)
+    result = subprocess.check_output([root / 'scripts/bench/mem.sh', str(server.pid), label], text=True)
     samples.extend(csv.DictReader(io.StringIO(result)))
 
 with (output / 'server.log').open('w') as log:

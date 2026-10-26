@@ -1,5 +1,5 @@
-// Parse user-facing action strings (from config.json) into a concrete
-// sequence of key events the mapper should emit.
+//! Parse user-facing action strings (from config.json) into a concrete
+//! sequence of key events the mapper should emit.
 
 use super::keys::code_to_key;
 use super::system::{SysAction, SysCommand};

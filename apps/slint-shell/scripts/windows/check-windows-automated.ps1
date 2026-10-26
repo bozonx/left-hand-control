@@ -2,7 +2,7 @@ param([switch]$SkipSmoke)
 $ErrorActionPreference = 'Stop'
 if (-not $env:CARGO_LOG) { $env:CARGO_LOG = 'cargo::core::compiler::fingerprint=info' }
 
-$root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
+$root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
 $manifest = Join-Path $root 'apps\slint-shell\Cargo.toml'
 
 function Invoke-Checked {
@@ -31,7 +31,7 @@ try {
     )
 
 
-    & (Join-Path $PSScriptRoot 'package-windows.ps1')
+    & (Join-Path $PSScriptRoot '..\release\package-windows.ps1')
     $metadataJson = & cargo metadata --locked --format-version 1 --no-deps
     if ($LASTEXITCODE -ne 0) { throw 'cargo metadata failed' }
     $metadata = $metadataJson | ConvertFrom-Json

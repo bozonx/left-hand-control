@@ -1,10 +1,15 @@
+//! Mapper lifecycle shared by all platforms: start, stop, reconfigure and
+//! status over the platform backend.
+
+#[cfg(target_os = "linux")]
+use super::linux;
 #[cfg(any(target_os = "linux", target_os = "windows"))]
 use super::validation;
 #[cfg(target_os = "windows")]
 use super::windows;
 use super::{InputDevice, KeyboardDevice, config};
 #[cfg(target_os = "linux")]
-use super::{linux, portal};
+use crate::text_input::portal;
 use serde::Serialize;
 use std::sync::{
     Arc, Mutex, MutexGuard,

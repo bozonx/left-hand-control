@@ -1,3 +1,5 @@
+//! Macro editing: validation, usage lookup and reference renaming.
+
 use super::{
     actions::{self, Action},
     model::{AppConfig, LayoutPreset, Macro},

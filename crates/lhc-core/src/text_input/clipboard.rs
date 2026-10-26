@@ -119,14 +119,14 @@ const TRANSFER_TIMEOUT: Duration = Duration::from_secs(2);
 // processes the shortcut, so a completed transfer alone cannot trigger restore.
 const PASTE_GRACE: Duration = Duration::from_millis(200);
 /// Limits of a saved clipboard, shared with the portal clipboard.
-pub(super) const MAX_CLIPBOARD_BYTES: usize = 64 * 1024 * 1024;
-pub(super) const MAX_MIME_TYPES: usize = 128;
-pub(super) const TEXT_MIME: &str = "text/plain;charset=utf-8";
-pub(super) const PLAIN_TEXT_MIME: &str = "text/plain";
+pub(crate) const MAX_CLIPBOARD_BYTES: usize = 64 * 1024 * 1024;
+pub(crate) const MAX_MIME_TYPES: usize = 128;
+pub(crate) const TEXT_MIME: &str = "text/plain;charset=utf-8";
+pub(crate) const PLAIN_TEXT_MIME: &str = "text/plain";
 /// How long the clipboard owner may take to take over the clipboard and to
 /// arm a paste; shared with the portal clipboard.
-pub(super) const PREPARE_TIMEOUT: Duration = Duration::from_secs(5);
-pub(super) const ARM_TIMEOUT: Duration = Duration::from_secs(1);
+pub(crate) const PREPARE_TIMEOUT: Duration = Duration::from_secs(5);
+pub(crate) const ARM_TIMEOUT: Duration = Duration::from_secs(1);
 /// How long a paste may take until the clipboard is restored.
 const PASTE_TIMEOUT: Duration = Duration::from_secs(3);
 const SENSITIVE_MIME: &str = "x-kde-passwordManagerHint";
@@ -910,7 +910,7 @@ fn write_transfer(fd: OwnedFd, bytes: &[u8]) -> Result<(), String> {
     write_transfer_checked(fd, bytes, || Ok(()))
 }
 
-pub(super) fn write_transfer_checked(
+pub(crate) fn write_transfer_checked(
     fd: OwnedFd,
     bytes: &[u8],
     valid: impl Fn() -> Result<(), String>,

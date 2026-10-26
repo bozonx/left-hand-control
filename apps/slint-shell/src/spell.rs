@@ -9,7 +9,7 @@
 use crate::{
     command::{Command, Dispatch, Popup, Preferences, Source, ThemeMode, Window},
     ipc,
-    layer_hint::LayerHint,
+    layer_hint_model::LayerHint,
     metrics,
     popup_model::{self, ConfiguredMenus, FocusChange, KeyOutcome, PopupSession},
     ui::{EmojiPopup, LayerHintPopup, QuickPopup, Theme},
@@ -434,7 +434,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
             match event {
                 Event::Command(Command::Preferences(preferences), _, _) => {
                     layers.apply(preferences);
-                    // Format parsed by scripts/check-preferences.py.
+                    // Format parsed by scripts/check/check-preferences.py.
                     log::info!(
                         "preferences applied: dark={}, language={}, visible={:?}",
                         preferences.theme == ThemeMode::Dark,

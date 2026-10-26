@@ -1,14 +1,16 @@
-// Linux-side active window detection.
-//
-// Dispatches by detected desktop / session type:
-//   * KDE Wayland     -> KWin script over D-Bus (`kwin`), `kdotool` fallback
-//   * Hyprland        -> hyprctl activewindow -j, events from socket2
-//   * Sway            -> swaymsg get_tree, events from `swaymsg subscribe`
-//   * other Wayland   -> wlr foreign-toplevel events (`wlr`) where the
-//                        compositor offers them (niri, Wayfire, labwc, …)
-//   * X11 (any DE)    -> xprop (+ xdotool for titles), events from `xprop -spy`
-//   * GNOME Wayland   -> optional Left Hand Control Shell extension
-//   * everything else -> None (condition will not match)
+//! Linux-side active window detection.
+//!
+//! ```text
+//! Dispatches by detected desktop / session type:
+//!   * KDE Wayland     -> KWin script over D-Bus (`kwin`), `kdotool` fallback
+//!   * Hyprland        -> hyprctl activewindow -j, events from socket2
+//!   * Sway            -> swaymsg get_tree, events from `swaymsg subscribe`
+//!   * other Wayland   -> wlr foreign-toplevel events (`wlr`) where the
+//!                        compositor offers them (niri, Wayfire, labwc, …)
+//!   * X11 (any DE)    -> xprop (+ xdotool for titles), events from `xprop -spy`
+//!   * GNOME Wayland   -> optional Left Hand Control Shell extension
+//!   * everything else -> None (condition will not match)
+//! ```
 
 use std::io::{BufRead, BufReader};
 use std::os::unix::process::CommandExt;

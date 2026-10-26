@@ -1,3 +1,6 @@
+//! Rule conditions editor: window and process matchers, open-window choices and
+//! condition lists.
+
 use super::{condition_list, parse_list, strings};
 use crate::ui::{ConditionChoices, LanguageChoice, SettingsWindow, WindowChoice};
 use lhc_core::active_window::{ActiveWindow, OpenWindow};

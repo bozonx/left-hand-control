@@ -1,3 +1,5 @@
+//! System tray icon and menu through StatusNotifierItem (`ksni`).
+
 use crate::{
     command::{Command, Dispatch, Source, Window},
     i18n::{self, Language, TrayItem},

@@ -38,7 +38,7 @@ cargo check --release --locked -p slint-shell
 Windows дополнительно:
 
 ```powershell
-powershell -NoProfile -File apps/slint-shell/scripts/check-windows-syntax.ps1
+powershell -NoProfile -File apps/slint-shell/scripts/windows/check-windows-syntax.ps1
 ```
 
 При ограниченной памяти допустим `CARGO_BUILD_JOBS=1` (в PowerShell —

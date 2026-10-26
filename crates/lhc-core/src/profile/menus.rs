@@ -1,3 +1,6 @@
+//! Emoji and quick action menus: validation, page reordering and command
+//! placement.
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MenuIssue {
     EmojiCell,

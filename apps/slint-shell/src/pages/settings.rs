@@ -1,3 +1,5 @@
+//! Settings page: general options, appearance, timings and window matchers.
+
 use super::{choice, choice_index, condition_list, strings};
 use crate::{
     document::{Document, View},

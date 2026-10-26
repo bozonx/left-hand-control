@@ -1,3 +1,6 @@
+//! Process-wide cache of watcher results (active window, game mode, layout)
+//! read by the engine.
+
 use serde::Serialize;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};

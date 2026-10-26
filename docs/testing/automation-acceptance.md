@@ -43,7 +43,7 @@ Debian clipboard/auto: **45 PASS, 0 FAIL**. Новый Windows ZIP с испра
 python3 apps/slint-shell/scripts/vm/run-linux.py --vm /path/to/kde-vm --package /path/to/package.deb --text-backend clipboard --stress-seconds 180
 python3 apps/slint-shell/scripts/vm/run-windows.py --vm /path/to/windows-vm --suite mapper --extended --stress-seconds 180
 python3 apps/slint-shell/scripts/vm/run-windows-package.py --vm /path/to/clean-windows-vm --package /path/to/package.zip --runtime-installer /path/to/vc_redist.x64.exe
-python3 apps/slint-shell/scripts/check-release-artifacts.py --directory /path/to/artifacts --version 0.3.0 --require-vendor
+python3 apps/slint-shell/scripts/release/check-release-artifacts.py --directory /path/to/artifacts --version 0.3.0 --require-vendor
 python3 -m unittest discover -s apps/slint-shell/scripts/vm -p 'test_*.py'
 ```
 

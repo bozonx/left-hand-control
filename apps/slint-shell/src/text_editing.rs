@@ -1,3 +1,5 @@
+//! Text field shortcuts: their display text and dispatch to the focused editor.
+
 use slint::winit_030::winit::{
     event::{ElementState, WindowEvent},
     keyboard::{Key, KeyCode, ModifiersState, PhysicalKey},

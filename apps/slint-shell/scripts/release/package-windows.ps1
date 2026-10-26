@@ -1,7 +1,7 @@
 # Build the portable Windows x64 distribution. No user configuration is bundled.
 $ErrorActionPreference = 'Stop'
 if ($env:OS -ne 'Windows_NT') { throw 'Run on native Windows x64.' }
-$root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
+$root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
 Push-Location $root
 $staging = $null
 

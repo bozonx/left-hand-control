@@ -1,3 +1,5 @@
+//! Compiles an `AppConfig` into the engine's rule, layer and macro tables.
+
 use super::Engine;
 use super::model::{ActionDef, HoldMode, MacroDef, RuleEntry, TapMode};
 use super::state::{ChordState, CompiledLayout, LayerStack, MacroRunner, VirtualKeys};

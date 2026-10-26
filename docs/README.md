@@ -20,6 +20,7 @@
 
 - [Ввод сочетаний клавиш](design/chord-input.md)
 - [Удалённые системные действия и их замены](design/removed-system-actions.md)
+- [Ввод любых символов через общую XKB-раскладку (исследование)](design/xkb-extra-symbols.md)
 
 ## Тестирование
 

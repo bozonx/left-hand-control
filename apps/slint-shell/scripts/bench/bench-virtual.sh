@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-export LHC_PROTOTYPE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+export LHC_PROTOTYPE_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 export LHC_WORKSPACE_ROOT="$(cd "$LHC_PROTOTYPE_ROOT/../.." && pwd)"
 export LHC_PROTOTYPE_RESULTS="$(realpath -m "${1:?output directory required}")"
 export LHC_VIRTUAL_TASK="${2:-geometry}"
@@ -36,14 +36,14 @@ set -euo pipefail
 export LHC_HOTKEYS=off
 export RUST_LOG=warn
 if [[ "$LHC_VIRTUAL_TASK" == geometry ]]; then
-    exec python3 "$LHC_PROTOTYPE_ROOT/scripts/bench-geometry.py" "$LHC_PROTOTYPE_RESULTS"
+    exec python3 "$LHC_PROTOTYPE_ROOT/scripts/bench/bench-geometry.py" "$LHC_PROTOTYPE_RESULTS"
 elif [[ "$LHC_VIRTUAL_TASK" == input ]]; then
     mkdir -p "$LHC_PROTOTYPE_RESULTS"
     export LHC_ISOLATED_INPUT=1
     export SLINT_BACKEND=winit-software
     exec "$LHC_BENCH_RETURN_BIN" "$LHC_SLINT_SHELL_BIN" "$LHC_PROTOTYPE_RESULTS/parent.csv"
 else
-    exec python3 "$LHC_PROTOTYPE_ROOT/scripts/bench-lifecycle.py" "$LHC_PROTOTYPE_RESULTS" 500
+    exec python3 "$LHC_PROTOTYPE_ROOT/scripts/bench/bench-lifecycle.py" "$LHC_PROTOTYPE_RESULTS" 500
 fi
 SESSION
 chmod +x "$lhc_test_root/session"

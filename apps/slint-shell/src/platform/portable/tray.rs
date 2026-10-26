@@ -1,3 +1,5 @@
+//! System tray icon and menu through `tray-icon`.
+
 use crate::{
     command::{Command, Dispatch, Source},
     i18n::{self, Language, TrayItem},

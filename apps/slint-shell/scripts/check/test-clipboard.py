@@ -15,7 +15,7 @@ def main():
             "dbus-run-session",
             ["dbus-run-session", "--", sys.executable, __file__, "--isolated"],
         )
-    repo = Path(__file__).resolve().parents[3]
+    repo = Path(__file__).resolve().parents[4]
     with tempfile.TemporaryDirectory(prefix="lhc-clipboard-") as directory:
         root = Path(directory)
         for name in ("runtime", "config", "data", "cache"):

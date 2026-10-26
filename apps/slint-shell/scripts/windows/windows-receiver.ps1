@@ -1,5 +1,5 @@
 param(
-    [string]$Output = (Join-Path (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path 'windows-runtime\receiver'),
+    [string]$Output = (Join-Path (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path 'windows-runtime\receiver'),
     [string]$InputLocale
 )
 

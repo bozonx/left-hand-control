@@ -186,6 +186,10 @@ pub struct ConfiguredMenus {
 
 impl ConfiguredMenus {
     /// Menus of layout `id`, read from the configuration on disk.
+    ///
+    /// Read-only and outside `Document`: the Spell worker is a separate
+    /// process without a `Document`, and `Document::edit` saves each edit
+    /// to disk immediately.
     pub fn load_for(id: Option<&str>) -> Result<Self, String> {
         let document = lhc_core::config_document::ConfigDocument::load(
             lhc_core::storage::StoragePaths::resolve()?,

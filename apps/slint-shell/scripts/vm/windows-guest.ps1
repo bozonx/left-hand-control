@@ -37,7 +37,7 @@ try {
 
     $suite = (Get-Content 'D:\lhc-e2e\suite.txt' -Raw).Trim()
     if ($suite -notin @('smoke', 'full', 'release', 'mapper')) { throw "Unknown suite: $suite" }
-    $script = 'check-windows-smoke.ps1'
+    $script = 'windows\check-windows-smoke.ps1'
     Add-Line "Suite: $suite"
 
     # Native commands write progress to stderr; the exit code is the verdict.
@@ -75,13 +75,13 @@ try {
             Add-Line '- release-shell-build: passed'
         }
         $driverProfile = if ($suite -in @('full', 'release')) { 'release' } else { 'debug' }
-        $receiverScript = Join-Path $root 'apps\slint-shell\scripts\windows-receiver.ps1'
+        $receiverScript = Join-Path $root 'apps\slint-shell\scripts\windows\windows-receiver.ps1'
         $receiver = Start-Process powershell -PassThru -ArgumentList @(
             '-NoProfile', '-STA', '-ExecutionPolicy', 'Bypass', '-File', $receiverScript,
             '-Output', "$out\receiver", '-InputLocale', 'en-US'
         ) -RedirectStandardOutput "$out\receiver-stdout.log" -RedirectStandardError "$out\receiver-stderr.log"
         if ($suite -ne 'mapper') {
-            $popupScript = Join-Path $root 'apps\slint-shell\scripts\windows-popup-stand.ps1'
+            $popupScript = Join-Path $root 'apps\slint-shell\scripts\windows\windows-popup-stand.ps1'
             $popupStand = Start-Process powershell -PassThru -ArgumentList @(
                 '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $popupScript, '-Output', "$out\popups",
                 '-BuildProfile', $driverProfile
@@ -126,7 +126,7 @@ try {
         # Functional input checks run first; the heavier compile matrix follows.
         $ErrorActionPreference = 'Continue'
         & powershell -NoProfile -ExecutionPolicy Bypass -File `
-            (Join-Path $root 'apps\slint-shell\scripts\check-windows-automated.ps1') -SkipSmoke *>&1 |
+            (Join-Path $root 'apps\slint-shell\scripts\windows\check-windows-automated.ps1') -SkipSmoke *>&1 |
             Out-File -FilePath (Join-Path $out 'full.log') -Encoding utf8
         $code = $LASTEXITCODE
         $ErrorActionPreference = 'Stop'

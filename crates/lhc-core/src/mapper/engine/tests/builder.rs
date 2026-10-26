@@ -209,7 +209,7 @@ fn builtin_and_user_macros_resolve_independently_at_every_depth() {
             modifier_delay_ms: None,
         },
     ];
-    super::super::validation::validate_config(&cfg).unwrap();
+    crate::mapper::validation::validate_config(&cfg).unwrap();
     let engine = Engine::new(&cfg);
     let user = &engine.layout.macros["macro:copyLine"];
     let builtin = &engine.layout.macros["builtin:copyLineText"];
@@ -230,13 +230,13 @@ fn builtin_and_user_macros_resolve_independently_at_every_depth() {
     );
     for reference in ["macro:copyLine", "builtin:copyLineText"] {
         assert!(matches!(
-            builder::resolve_action(reference, &engine.layout.macros, &HashMap::new(), "test"),
+            crate::mapper::engine::builder::resolve_action(reference, &engine.layout.macros, &HashMap::new(), "test"),
             Some(model::ActionDef::Macro(_))
         ));
     }
     let engine = Engine::new(&empty_cfg());
     assert!(
-        builder::resolve_action(
+        crate::mapper::engine::builder::resolve_action(
             "macro:copyLine",
             &engine.layout.macros,
             &HashMap::new(),
@@ -279,7 +279,7 @@ fn development_gate_disables_user_macros_popups_and_long_hold() {
             assert_eq!(
                 matches!(
                     engine.layout.rules[&key][0].tap,
-                    super::model::TapMode::Action(_)
+                    crate::mapper::engine::model::TapMode::Action(_)
                 ),
                 enabled
             );

@@ -1,3 +1,6 @@
+//! Validation of a mapper configuration before it reaches the engine: actions,
+//! macro sizes and cycles.
+
 #![allow(clippy::too_many_arguments)]
 
 use super::action::{explicit_pause, parse_action};

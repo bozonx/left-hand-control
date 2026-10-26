@@ -15,7 +15,7 @@ use zbus::export::futures_core::Stream;
 use zbus::proxy::SignalStream;
 use zbus::zvariant::{OwnedFd, OwnedObjectPath, OwnedValue, Value};
 
-use super::text_job::TextRequest;
+use super::job::TextRequest;
 
 const IFACE: &str = "org.freedesktop.portal.Clipboard";
 const TIMEOUT: Duration = Duration::from_secs(2);
@@ -46,16 +46,16 @@ enum Control {
     Finish(bool),
 }
 
-pub(super) struct Clipboard(Sender<Command>);
+pub(crate) struct Clipboard(Sender<Command>);
 
-pub(super) struct Paste {
+pub(crate) struct Paste {
     control: Option<Sender<Control>>,
     done: Receiver<Result<(), String>>,
 }
 
 impl Clipboard {
     /// Subscribe before RequestClipboard/Start so the initial offer is not lost.
-    pub(super) fn request(
+    pub(crate) fn request(
         conn: &zbus::blocking::Connection,
         session: &OwnedObjectPath,
     ) -> Result<Self, String> {
@@ -92,11 +92,11 @@ impl Clipboard {
         Ok(Self(tx))
     }
 
-    pub(super) fn enabled(&self, enabled: bool) {
+    pub(crate) fn enabled(&self, enabled: bool) {
         let _ = self.0.send(Command::Enabled(enabled));
     }
 
-    pub(super) fn prepare(&self, text: &str, request: &TextRequest) -> Result<Paste, String> {
+    pub(crate) fn prepare(&self, text: &str, request: &TextRequest) -> Result<Paste, String> {
         let (ready, prepared) = mpsc::channel();
         let (control, trigger) = mpsc::channel();
         let (done, completed) = mpsc::channel();
@@ -120,7 +120,7 @@ impl Clipboard {
 }
 
 impl Paste {
-    pub(super) fn arm(&self) -> Result<(), String> {
+    pub(crate) fn arm(&self) -> Result<(), String> {
         let (tx, rx) = mpsc::channel();
         self.control
             .as_ref()
@@ -130,7 +130,7 @@ impl Paste {
         rx.recv_timeout(ARM_TIMEOUT)
             .map_err(|_| "clipboard portal did not arm".into())
     }
-    pub(super) fn finish(mut self, injected: bool) -> Result<(), String> {
+    pub(crate) fn finish(mut self, injected: bool) -> Result<(), String> {
         if let Some(tx) = self.control.take() {
             let _ = tx.send(Control::Finish(injected));
         }

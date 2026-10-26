@@ -1,3 +1,6 @@
+//! Virtual test keyboards for the diagnostic stands (feature `probes`): uinput
+//! or KWin fake input.
+
 use evdev::{AttributeSet, InputEvent, KeyCode, uinput::VirtualDevice};
 use wayland_client::{
     Connection, Dispatch, QueueHandle,

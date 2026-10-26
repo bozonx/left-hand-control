@@ -8,6 +8,9 @@ on:
   workflow_dispatch:
   workflow_call:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -24,15 +27,16 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
+          toolchain: 1.98.1  # keep in sync with rust-toolchain.toml
           components: rustfmt, clippy
 
       - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           key: slint
 
@@ -47,7 +51,7 @@ jobs:
 
       - name: Check Windows script syntax (no desktop)
         if: matrix.os == 'windows-latest'
-        run: powershell -NoProfile -File apps/slint-shell/scripts/check-windows-syntax.ps1
+        run: powershell -NoProfile -File apps/slint-shell/scripts/windows/check-windows-syntax.ps1
 
       - name: Test VM controllers and release gates (no desktop)
         if: matrix.os == 'ubuntu-latest'
@@ -77,18 +81,48 @@ jobs:
         if: matrix.os != 'ubuntu-latest'
         run: cargo check --release --locked -p slint-shell
 
+  msrv:
+    name: MSRV (rust-version)
+    runs-on: ubuntu-latest
+    env:
+      # Overrides rust-toolchain.toml; keep in sync with rust-version in Cargo.toml.
+      RUSTUP_TOOLCHAIN: "1.92"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          toolchain: "1.92"
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          key: msrv
+
+      - name: Install Linux system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build libfontconfig1-dev libwayland-dev libxkbcommon-dev
+
+      - name: Check
+        run: cargo check --locked -p lhc-core -p slint-shell --features slint-shell/spell
+
   mapper-e2e:
     name: Mapper e2e (uinput)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          toolchain: 1.98.1  # keep in sync with rust-toolchain.toml
 
       - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           key: mapper-e2e
 
@@ -116,14 +150,12 @@ jobs:
   deny:
     name: Rust dependency check (cargo-deny)
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       # Advisories (RustSec), licences, banned/duplicate crates and sources; see deny.toml.
       - name: cargo deny check
-        uses: EmbarkStudios/cargo-deny-action@v2
+        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2
         with:
           command: check

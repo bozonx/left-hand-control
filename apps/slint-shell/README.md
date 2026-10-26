@@ -127,8 +127,8 @@ t5 первая обработанная клавиша, navigation_handled, hid
 не поддерживает notifier, t3 отсутствует и в лог выводится предупреждение.
 
 ```sh
-apps/slint-shell/scripts/bench-open.sh emoji 20
-python3 apps/slint-shell/scripts/summarize.py /tmp/slint-software.csv
+apps/slint-shell/scripts/bench/bench-open.sh emoji 20
+python3 apps/slint-shell/scripts/bench/summarize.py /tmp/slint-software.csv
 ```
 
 Скрипт проверяет только IPC без activation token при обычном запуске из shell.
@@ -146,7 +146,7 @@ CSV перезаписывается при старте; используйте
 Проверка поведения при аварийном завершении Spell worker:
 
 ```sh
-python3 apps/slint-shell/scripts/check-worker-crash.py \
+python3 apps/slint-shell/scripts/check/check-worker-crash.py \
   target/debug/left-hand-control
 ```
 
@@ -164,7 +164,7 @@ python3 apps/slint-shell/scripts/check-worker-crash.py \
 cargo build --locked -p slint-shell --features probes --examples
 SLINT_BACKEND=winit-software target/debug/examples/bench-evdev \
   target/debug/left-hand-control /tmp/slint-evdev.csv
-python3 apps/slint-shell/scripts/summarize.py /tmp/slint-evdev.csv
+python3 apps/slint-shell/scripts/bench/summarize.py /tmp/slint-evdev.csv
 ```
 
 Пример создаёт временную виртуальную клавиатуру и запускает отдельный сервер,
@@ -245,10 +245,10 @@ cargo check --locked -p slint-shell --no-default-features
 cargo clippy --locked -p slint-shell --features probes --all-targets --no-deps -- -D warnings
 
 # Изолированный KWin: не переключает фокус рабочего стола пользователя.
-apps/slint-shell/scripts/bench-virtual.sh /tmp/slint-geometry geometry
-apps/slint-shell/scripts/bench-virtual.sh /tmp/slint-input input
-apps/slint-shell/scripts/bench-virtual.sh /tmp/slint-lifecycle lifecycle
-python3 apps/slint-shell/scripts/summarize.py /tmp/slint-lifecycle/parent.csv.spell.csv
+apps/slint-shell/scripts/bench/bench-virtual.sh /tmp/slint-geometry geometry
+apps/slint-shell/scripts/bench/bench-virtual.sh /tmp/slint-input input
+apps/slint-shell/scripts/bench/bench-virtual.sh /tmp/slint-lifecycle lifecycle
+python3 apps/slint-shell/scripts/bench/summarize.py /tmp/slint-lifecycle/parent.csv.spell.csv
 
 # Реальная KDE Wayland-сессия: на время теста не пользоваться клавиатурой.
 LHC_POPUPS=spell SLINT_BACKEND=winit-software \
@@ -298,14 +298,16 @@ SLINT_BACKEND=winit-software \
 `bench-*` остаются исполняемыми примерами: они работают с реальными окнами и
 устройствами и не используют стандартный Cargo benchmark harness.
 
-| Скрипты | Назначение |
-| --- | --- |
-| `check-recovery.py` | Восстановление конфигурации, worker и Live Preview |
-| `check-worker-crash.py`, `check-preferences.py` | Проверки worker и настроек |
-| `check-windows-automated.ps1`, `check-windows-lifecycle.ps1`, `windows-receiver.ps1` | Windows-приёмка и окно получения ввода |
-| `bench-open.sh`, `bench-virtual.sh`, `bench-geometry.py`, `bench-lifecycle.py` | Измерительные прогоны |
-| `mem.sh`, `summarize.py` | Сбор памяти и сводка результатов |
-| `e2e-local.sh` | Локальный прогон L3 со сводкой в `docs/testing/results/linux/` |
-| `vm/run-linux.py`, `vm/run-windows.py` и гостевые скрипты `vm/` | E2E в одноразовых KVM/QEMU VM (L4), см. [руководство разработчика](../../docs/development/guide.md#l4-e2e-в-виртуальных-машинах) |
+Скрипты в `scripts/` разложены по назначению:
 
-Общие экспериментальные XKB-инструменты описаны в [scripts/README.md](../../scripts/README.md).
+| Каталог / скрипт | Назначение |
+| --- | --- |
+| `check/` | Локальные проверки: восстановление конфигурации, worker, настройки, буфер обмена |
+| `release/` | Сборка и проверка релиза: `release-linux.sh`, `package-*.{sh,ps1}`, `release-metadata.py`, `check-release-artifacts.py`, smoke и проверка установщика |
+| `windows/` | Windows-приёмка (`check-windows-*.ps1`), окно получения ввода и стенд popup |
+| `bench/` | Измерительные прогоны (`bench-*`), сбор памяти `mem.sh` и сводка `summarize.py` |
+| `experimental/` | Ручные XKB-эксперименты: меняют системные XKB-файлы через `sudo`, см. [исследование](../../docs/design/xkb-extra-symbols.md) |
+| `e2e-local.sh` | Локальный прогон L3 со сводкой в `docs/testing/results/linux/` |
+| `install-linux.sh`, `install-gnome-extension.sh` | Установщики, которые кладутся в tar.gz |
+| `render-icons.sh` | Генерация PNG-иконок из `assets/icon.svg` |
+| `vm/run-linux.py`, `vm/run-windows.py` и гостевые скрипты `vm/` | E2E в одноразовых KVM/QEMU VM (L4), см. [руководство разработчика](../../docs/development/guide.md#l4-e2e-в-виртуальных-машинах) |

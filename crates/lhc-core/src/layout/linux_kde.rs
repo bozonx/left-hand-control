@@ -1,15 +1,15 @@
-// KDE Plasma keyboard layout backend (Wayland + X11).
-//
-// Current product support is Linux/KDE, so this backend stays fully native:
-// it talks to DBus directly through `zbus`, which the project already ships
-// for the portal backend. Other desktops remain explicit skeletons for now.
-// Every successful read goes through `super::publish`, which updates the
-// mapper cache and emits `LayoutChanged` only on real changes.
-//
-// The watcher listens to the interface's signals (`layoutChanged`,
-// `layoutListChanged`) and re-reads the layout on each, so nothing is
-// polled. Switching the active layout goes through the same DBus interface
-// (`setLayout(uint)`).
+//! KDE Plasma keyboard layout backend (Wayland + X11).
+//!
+//! Current product support is Linux/KDE, so this backend stays fully native:
+//! it talks to DBus directly through `zbus`, which the project already ships
+//! for the portal backend. Other desktops remain explicit skeletons for now.
+//! Every successful read goes through `super::publish`, which updates the
+//! mapper cache and emits `LayoutChanged` only on real changes.
+//!
+//! The watcher listens to the interface's signals (`layoutChanged`,
+//! `layoutListChanged`) and re-reads the layout on each, so nothing is
+//! polled. Switching the active layout goes through the same DBus interface
+//! (`setLayout(uint)`).
 
 use std::sync::{Mutex, OnceLock};
 use std::thread;

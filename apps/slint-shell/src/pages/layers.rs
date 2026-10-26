@@ -169,14 +169,14 @@ pub(crate) fn hint(
     config: &ConfigDocument,
     layout: &LayoutPreset,
     id: &str,
-) -> Option<crate::layer_hint::LayerHint> {
+) -> Option<crate::layer_hint_model::LayerHint> {
     let layer = layout.layers.iter().find(|layer| layer.id == id)?;
     let names = action_names(
         ui,
         &AppConfig::from_parts(config.settings().clone(), layout.clone(), None),
     );
     let (left, right) = hands(layout.layer_keymaps.get(id), &names);
-    Some(crate::layer_hint::LayerHint::from_cells(
+    Some(crate::layer_hint_model::LayerHint::from_cells(
         layer.name.clone(),
         &left,
         &right,

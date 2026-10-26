@@ -1,3 +1,6 @@
+//! Config and data paths (`StoragePaths`), file names and layout name
+//! validation.
+
 use crate::profile::schema::{self, CONFIG_SCHEMA_VERSION, LAYOUT_SCHEMA_VERSION};
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;

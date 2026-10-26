@@ -1,31 +1,33 @@
-// System functions: OS-level actions that each desktop environment
-// implements its own way. Function names (`switchDesktop1`, …) stay
-// cross-platform; the concrete action is picked per OS, and on Linux per
-// DE by dispatching through `crate::platform::linux::detect()`.
-//
-// Only actions a key cannot express live here: switch to desktop / layout N,
-// move window to desktop N, and window/shell actions that every supported
-// platform documents (close, minimize, maximize, keep above, show desktop,
-// overview, application launcher, screen off). Everything else is a
-// standard key, a chord or a `kde:` global shortcut. See
-// `docs/design/removed-system-actions.md`.
-//
-// Action shapes:
-//   * `SysAction::Dbus`    — Linux session-bus method call. Preferred when
-//                            the target DE exposes a DBus service: avoids
-//                            `fork+exec` of helper binaries (qdbus, gdbus)
-//                            and gives sub-millisecond latency.
-//   * `SysAction::Spawn`   — fire-and-forget child process, for DEs whose
-//                            control surface is a CLI tool (swaymsg, …).
-//   * `SysAction::Windows` — a Win32 call (`mapper::windows::system`).
-//   * `SysAction::AppEvent` — handled by the shell on every OS.
-//
-// Current product support:
-//   * Linux + KDE   — implemented.
-//   * Linux + GNOME — optional Shell extension, fixed action allowlist.
-//   * Linux + Sway / X11 generic — intentional skeletons for now.
-//   * Windows — every id with a documented Win32 API or fixed system
-//     shortcut; virtual-desktop ids have no public API there.
+//! System functions: OS-level actions that each desktop environment
+//! implements its own way. Function names (`switchDesktop1`, …) stay
+//! cross-platform; the concrete action is picked per OS, and on Linux per
+//! DE by dispatching through `crate::platform::linux::detect()`.
+//!
+//! ```text
+//! Only actions a key cannot express live here: switch to desktop / layout N,
+//! move window to desktop N, and window/shell actions that every supported
+//! platform documents (close, minimize, maximize, keep above, show desktop,
+//! overview, application launcher, screen off). Everything else is a
+//! standard key, a chord or a `kde:` global shortcut. See
+//! `docs/design/removed-system-actions.md`.
+//!
+//! Action shapes:
+//!   * `SysAction::Dbus`    — Linux session-bus method call. Preferred when
+//!                            the target DE exposes a DBus service: avoids
+//!                            `fork+exec` of helper binaries (qdbus, gdbus)
+//!                            and gives sub-millisecond latency.
+//!   * `SysAction::Spawn`   — fire-and-forget child process, for DEs whose
+//!                            control surface is a CLI tool (swaymsg, …).
+//!   * `SysAction::Windows` — a Win32 call (`mapper::windows::system`).
+//!   * `SysAction::AppEvent` — handled by the shell on every OS.
+//!
+//! Current product support:
+//!   * Linux + KDE   — implemented.
+//!   * Linux + GNOME — optional Shell extension, fixed action allowlist.
+//!   * Linux + Sway / X11 generic — intentional skeletons for now.
+//!   * Windows — every id with a documented Win32 API or fixed system
+//!     shortcut; virtual-desktop ids have no public API there.
+//! ```
 
 /// A concrete child-process invocation: `program` + positional args.
 #[derive(Clone, Debug)]

@@ -3,7 +3,7 @@
 # SHA256SUMS) into <cargo-target>/release-artifacts. Needs nfpm in PATH.
 set -eu
 
-repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/../../.." && pwd)
+repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/../../../.." && pwd)
 cd -- "$repo_dir"
 metadata=$(cargo metadata --locked --format-version 1 --no-deps)
 version=$(printf '%s' "$metadata" | python3 -c 'import json,sys; print(next(p["version"] for p in json.load(sys.stdin)["packages"] if p["name"] == "slint-shell"))')
@@ -12,7 +12,7 @@ out="$target_dir/release-artifacts"
 rm -rf -- "$out"
 mkdir -p -- "$out"
 
-apps/slint-shell/scripts/package-linux.sh
+apps/slint-shell/scripts/release/package-linux.sh
 binary="$target_dir/release/left-hand-control"
 if ldd "$binary" | grep 'not found'; then
     echo 'The release binary has unresolved libraries.' >&2

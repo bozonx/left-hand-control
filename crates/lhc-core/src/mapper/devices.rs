@@ -1,3 +1,5 @@
+//! Input device descriptions shared by the backends and the device pickers.
+
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]

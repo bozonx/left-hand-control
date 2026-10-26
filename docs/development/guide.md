@@ -236,11 +236,11 @@ EN/RU-ветви генерируются из PO при сборке, без ф
 
 | Команда | Что проверяет |
 | --- | --- |
-| `python3 apps/slint-shell/scripts/check-recovery.py --popups spell` | Восстановление исправленного конфига после перезапуска приложения и доставку попапа после перезапуска Spell (`--popups winit`; `--live-preview` — перезагрузку `.slint`) |
-| `python3 apps/slint-shell/scripts/check-preferences.py` | Смену темы и языка по IPC при открытых попапах, штатный `quit` |
-| `python3 apps/slint-shell/scripts/check-worker-crash.py target/debug/left-hand-control` | Перезапуск упавшего Spell worker |
-| `python3 apps/slint-shell/scripts/check-linux-install.py` | Инсталлятор архива во временном префиксе (нужен `desktop-file-validate`) |
-| `python3 apps/slint-shell/scripts/test-clipboard.py` | Вставку через буфер в отдельном виртуальном KWin (нужны `kwin_wayland`, `dbus-run-session`); рабочий буфер не затрагивается |
+| `python3 apps/slint-shell/scripts/check/check-recovery.py --popups spell` | Восстановление исправленного конфига после перезапуска приложения и доставку попапа после перезапуска Spell (`--popups winit`; `--live-preview` — перезагрузку `.slint`) |
+| `python3 apps/slint-shell/scripts/check/check-preferences.py` | Смену темы и языка по IPC при открытых попапах, штатный `quit` |
+| `python3 apps/slint-shell/scripts/check/check-worker-crash.py target/debug/left-hand-control` | Перезапуск упавшего Spell worker |
+| `python3 apps/slint-shell/scripts/release/check-linux-install.py` | Инсталлятор архива во временном префиксе (нужен `desktop-file-validate`) |
+| `python3 apps/slint-shell/scripts/check/test-clipboard.py` | Вставку через буфер в отдельном виртуальном KWin (нужны `kwin_wayland`, `dbus-run-session`); рабочий буфер не затрагивается |
 
 ### Игровой режим
 
@@ -255,7 +255,7 @@ cargo test --locked -p slint-shell --lib game_mode
 Контролируемые правила game mode входят в [автоматическую матрицу](../testing/automation-acceptance.md);
 поведение в реальной игре — раздел 2 [ручного чек-листа](../testing/manual-acceptance.md).
 
-Стенды задержек и lifecycle (`bench-*`, feature `probes`, `scripts/bench-virtual.sh`)
+Стенды задержек и lifecycle (`bench-*`, feature `probes`, `scripts/bench/bench-virtual.sh`)
 описаны в `apps/slint-shell/README.md`.
 
 ## 4. E2E-проверки
@@ -554,7 +554,7 @@ debug в smoke) с
 Затем принудительно завершается этот экземпляр приложения с удерживаемым Ctrl;
 проверяются отпускание клавиши помощником и работоспособность нативного ввода.
 Сценарии находятся в `scripts/vm/windows_popups.py`, launcher —
-`scripts/windows-popup-stand.ps1` (пути относительно `apps/slint-shell/`).
+`scripts/windows/windows-popup-stand.ps1` (пути относительно `apps/slint-shell/`).
 
 После оболочки оба набора проверяют QMP → эмулируемую USB-клавиатуру → Windows
 hook → общий движок → `SendInput` → WinForms receiver. `windows_mapper.py`
@@ -721,8 +721,8 @@ SHA256SUMS
 На Windows x64 MSVC:
 
 ```powershell
-powershell -NoProfile -File apps/slint-shell/scripts/package-windows.ps1
-powershell -NoProfile -File apps/slint-shell/scripts/check-windows-package.ps1 -Archive target/release-artifacts-windows/left-hand-control-<версия>-windows-x86_64.zip -Desktop
+powershell -NoProfile -File apps/slint-shell/scripts/release/package-windows.ps1
+powershell -NoProfile -File apps/slint-shell/scripts/windows/check-windows-package.ps1 -Archive target/release-artifacts-windows/left-hand-control-<версия>-windows-x86_64.zip -Desktop
 ```
 
 Артефакты: `left-hand-control-<версия>-windows-x86_64.zip` и
@@ -740,8 +740,8 @@ ZIP и контрольная сумма сохраняются с VM-журна
 ### Локальная сборка
 
 ```sh
-apps/slint-shell/scripts/package-linux.sh   # только tar.gz для этой машины → <target>/packages/
-apps/slint-shell/scripts/release-linux.sh   # все артефакты → <target>/release-artifacts/ (нужен nfpm)
+apps/slint-shell/scripts/release/package-linux.sh   # только tar.gz для этой машины → <target>/packages/
+apps/slint-shell/scripts/release/release-linux.sh   # все артефакты → <target>/release-artifacts/ (нужен nfpm)
 ```
 
 Переносимые артефакты собирайте в `ubuntu:22.04`, как в workflow:
@@ -749,14 +749,14 @@ apps/slint-shell/scripts/release-linux.sh   # все артефакты → <tar
 ```sh
 docker run --rm -it -v "$PWD":/src -w /src ubuntu:22.04 bash
 # внутри: зависимости из раздела 1, rustup stable, nfpm 2.47.0, затем
-apps/slint-shell/scripts/release-linux.sh
+apps/slint-shell/scripts/release/release-linux.sh
 ```
 
 Smoke пакета в чистом контейнере (то же, что `release.yml`):
 
 ```sh
 docker run --rm -v "$PWD":/src -w /src fedora:latest \
-  apps/slint-shell/scripts/smoke-linux-package.sh target/release-artifacts/<файл>.rpm
+  apps/slint-shell/scripts/release/smoke-linux-package.sh target/release-artifacts/<файл>.rpm
 ```
 
 Образы матрицы: `debian:12`, `debian:13`, `ubuntu:22.04`, `ubuntu:24.04`,

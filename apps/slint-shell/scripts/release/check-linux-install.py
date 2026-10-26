@@ -12,12 +12,12 @@ with tempfile.TemporaryDirectory(prefix="lhc-linux-install-") as directory:
     root = Path(directory)
     bundle = root / "bundle"
     bundle.mkdir()
-    shutil.copy2(scripts / "install-linux.sh", bundle / "install-linux.sh")
-    shutil.copy2(scripts / "install-gnome-extension.sh", bundle / "install-gnome-extension.sh")
-    shutil.copytree(scripts.parents[2] / "crates/lhc-core/assets/gnome-extension", bundle / "gnome-extension")
+    shutil.copy2(scripts.parent / "install-linux.sh", bundle / "install-linux.sh")
+    shutil.copy2(scripts.parent / "install-gnome-extension.sh", bundle / "install-gnome-extension.sh")
+    shutil.copytree(scripts.parents[3] / "crates/lhc-core/assets/gnome-extension", bundle / "gnome-extension")
     for name in ("LICENSE", "README.md", "features.md"):
         (bundle / name).write_text("fixture", encoding="utf-8")
-    packaging = scripts.parent / "packaging/linux"
+    packaging = scripts.parents[1] / "packaging/linux"
     for name in (
         "dev.bozonx.left-hand-control.desktop",
         "dev.bozonx.left-hand-control.metainfo.xml",
@@ -26,7 +26,7 @@ with tempfile.TemporaryDirectory(prefix="lhc-linux-install-") as directory:
     ):
         shutil.copy2(packaging / name, bundle / name)
     shutil.copytree(packaging / "icons", bundle / "icons")
-    shutil.copy2(scripts.parent / "assets/icon.svg", bundle / "icons/scalable.svg")
+    shutil.copy2(scripts.parents[1] / "assets/icon.svg", bundle / "icons/scalable.svg")
     (bundle / "left-hand-control").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     prefix = root / 'prefix with $cash%quote"back`slash\\ space'
     env = dict(os.environ, LHC_INSTALL_PREFIX=str(prefix))

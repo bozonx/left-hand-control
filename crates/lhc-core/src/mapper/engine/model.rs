@@ -1,3 +1,6 @@
+//! Compiled engine data: rule entries, actions, macros and the `Out` events the
+//! engine emits.
+
 use super::super::action::{Keystroke, MacroStepItem};
 use super::super::config::GameModeCondition;
 use super::super::system::{SysAction, SysCommand};

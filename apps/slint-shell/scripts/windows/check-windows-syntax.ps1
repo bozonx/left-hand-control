@@ -1,7 +1,7 @@
 # Syntax-only check; safe in CI and without an interactive desktop.
 $ErrorActionPreference = 'Stop'
 $count = 0
-foreach ($file in Get-ChildItem $PSScriptRoot -Recurse -File -Filter '*.ps1') {
+foreach ($file in Get-ChildItem (Join-Path $PSScriptRoot '..') -Recurse -File -Filter '*.ps1') {
     $tokens = $null
     $parseErrors = $null
     [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$parseErrors) | Out-Null

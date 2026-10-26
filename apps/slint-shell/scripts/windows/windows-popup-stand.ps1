@@ -4,7 +4,7 @@ param(
     [ValidateSet('debug', 'release')][string]$BuildProfile = 'debug'
 )
 $ErrorActionPreference = 'Stop'
-$root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
+$root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
 . (Join-Path $PSScriptRoot 'windows-test-lib.ps1')
 $saved = Initialize-WindowsTest $Output
 $process = $null

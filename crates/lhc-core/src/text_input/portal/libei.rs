@@ -3,7 +3,7 @@
 use super::*;
 
 pub(super) struct LibeiBackend {
-    pub(super) clipboard: Option<crate::mapper::portal_clipboard::Clipboard>,
+    pub(super) clipboard: Option<crate::text_input::portal_clipboard::Clipboard>,
     pub(super) conn: Connection,
     pub(super) session_handle: OwnedObjectPath,
     pub(super) context: ei::Context,

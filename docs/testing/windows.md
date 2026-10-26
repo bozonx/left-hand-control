@@ -55,8 +55,8 @@ python3 apps/slint-shell/scripts/vm/run-windows.py --vm /path/to/windows11 --sui
 Сначала [общие portable-проверки](common.md), для desktop-набора:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File apps/slint-shell/scripts/check-windows-smoke.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File apps/slint-shell/scripts/check-windows-automated.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File apps/slint-shell/scripts/windows/check-windows-smoke.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File apps/slint-shell/scripts/windows/check-windows-automated.ps1
 ```
 
 Это нативные оболочечные проверки. Полный путь физических событий QEMU к mapper
@@ -261,7 +261,7 @@ archive explicitly, then confirm the archive contents before serving it:
 ```bash
 git archive --format=zip --output="$vm_dir/left-hand-control-current.zip" HEAD
 zip -u "$vm_dir/left-hand-control-current.zip" \
-  apps/slint-shell/scripts/check-windows-lifecycle.ps1
+  apps/slint-shell/scripts/windows/check-windows-lifecycle.ps1
 unzip -l "$vm_dir/left-hand-control-current.zip" | \
   grep check-windows-lifecycle.ps1
 ```
@@ -447,7 +447,7 @@ Exact commands and Linux regression results are in the
 For a local run in an interactive Windows desktop:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\apps\slint-shell\scripts\check-windows-smoke.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\apps\slint-shell\scripts\windows\check-windows-smoke.ps1
 ```
 
 Use `-SkipBuild` only with already built debug binaries. Use `--suite full` on the
@@ -475,7 +475,7 @@ interactive pass:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File `
-  .\apps\slint-shell\scripts\check-windows-lifecycle.ps1
+  .\apps\slint-shell\scripts\windows\check-windows-lifecycle.ps1
 ```
 
 It verifies shutdown from both hidden and visible states, 100 alternating popup cycles,
@@ -489,7 +489,7 @@ Run the complete non-manual Windows acceptance suite with:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File `
-  .\apps\slint-shell\scripts\check-windows-automated.ps1
+  .\apps\slint-shell\scripts\windows\check-windows-automated.ps1
 ```
 
 It runs shell smoke, native tests/clippy, the release storage override tests, the
@@ -572,7 +572,7 @@ Use the committed receiver for the repeatable Unicode and focus matrix:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File `
-  .\apps\slint-shell\scripts\windows-receiver.ps1
+  .\apps\slint-shell\scripts\windows\windows-receiver.ps1
 ```
 
 It opens a native WinForms edit control and writes `snapshot.json` plus append-only
