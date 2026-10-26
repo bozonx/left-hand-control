@@ -320,7 +320,7 @@ export component RulesPage inherits PageLayout {
                     rule-header := HorizontalLayout { spacing: Theme.space-s;
                         rule-drag := DragHandle { group: DragGroups.rules; index: index; count: RulesEditor.rows.length; dropped(from, to) => { RulesEditor.move(from, to); } }
                         rule-enabled := CheckBox { accessible-label: @tr("Enabled"); checked: rule.enabled; toggled => { RulesEditor.select(index); RulesEditor.set-enabled(self.checked); } }
-                        ConditionsCell {
+                        if AppState.in-development: ConditionsCell {
                             // Reserve conditions before allocating space to the optional summary.
                             min-width: min(self.preferred-width, max(0px, rule-header.width - rule-drag.preferred-width - rule-enabled.preferred-width - rule-options.preferred-width - 5 * Theme.space-s - 12px));
                             enabled: rule.key != ""; rule: rule; clicked => { ConditionChoices.refresh(); RulesEditor.open-dialog(index, RuleDialog.conditions); }
