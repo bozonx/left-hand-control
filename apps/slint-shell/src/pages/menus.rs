@@ -9,10 +9,7 @@ use crate::{
     i18n::Msg,
     ui::{EmojiCategory, MenuCell, MenuEditor, MenuKind, SettingsWindow},
 };
-use lhc_core::{
-    config_document::ConfigError,
-    profile::{ids, model::*},
-};
+use lhc_core::profile::{ids, model::*};
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
 
@@ -178,23 +175,30 @@ fn refresh(ui: &SettingsWindow, layout: &LayoutPreset, fields: bool) {
     e.set_cells(ModelRc::new(VecModel::from(cells)));
 }
 
+fn menu_changed(state: &State) -> bool {
+    state.layout.emoji_pages != state.baseline.emoji_pages
+        || state.layout.quick_action_pages != state.baseline.quick_action_pages
+}
+
 fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
     state.autosave.cancel();
     let e = ui.global::<MenuEditor>();
     let baseline = state.baseline.clone();
     let candidate = state.layout.clone();
-    if candidate == baseline {
+    if !menu_changed(state) {
+        e.set_has_unsaved_changes(false);
         e.set_status(Msg::None.to_ui());
         return;
     }
     let result = document.edit(View::Menus, |config| {
         config.save_menu_pages(&baseline, &candidate)
     });
-    match &result {
-        Ok(_) => state.baseline = document.read().layout().clone(),
-        Err(ConfigError::EditConflict) => reload(ui, document, state),
-        Err(_) => {}
+    if result.is_ok() {
+        state.baseline = document.read().layout().clone();
+        state.layout = state.baseline.clone();
+        normalize(&mut state.layout);
     }
+    e.set_has_unsaved_changes(menu_changed(state));
     let message = super::outcome(&result, Msg::None);
     e.set_status(crate::notifications::report(ui, &message));
 }
@@ -204,6 +208,7 @@ fn reload(ui: &SettingsWindow, document: &Document, state: &mut State) {
     state.baseline = document.read().layout().clone();
     state.layout = state.baseline.clone();
     normalize(&mut state.layout);
+    ui.global::<MenuEditor>().set_has_unsaved_changes(false);
     refresh(ui, &state.layout, true);
 }
 
@@ -219,7 +224,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let e = ui.global::<MenuEditor>();
     on!(ui, e.on_flush_pending, doc = document, shared = state => |ui| {
         let mut state = shared.borrow_mut();
-        super::autosave::flush(&ui, &doc, &mut *state);
+        save(&ui, &doc, &mut state);
+        !menu_changed(&state)
     });
     match serde_json::from_str::<Vec<Category>>(include_str!("../../assets/emoji-catalog.json")) {
         Ok(categories) => e.set_catalog(ModelRc::new(VecModel::from(
@@ -265,6 +271,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 {
                     let mut state = shared.borrow_mut();
                     edit(&ui.global::<MenuEditor>(), &mut state.layout);
+                    ui.global::<MenuEditor>()
+                        .set_has_unsaved_changes(menu_changed(&state));
                     normalize(&mut state.layout);
                     ui.global::<MenuEditor>().set_editing_count(0);
                     if !typing {
@@ -286,8 +294,10 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         e.set_editing_count(0);
         e.set_kind(kind);
         e.set_selected_page(0);
-        reload(&ui, &doc, &mut state);
-        e.set_status(Msg::None.to_ui());
+        if !menu_changed(&state) {
+            reload(&ui, &doc, &mut state);
+            e.set_status(Msg::None.to_ui());
+        }
         e.set_selected_cell(if kind == MenuKind::Quick {
             first_filled(&state.layout, 0)
         } else {

@@ -49,9 +49,8 @@ export component SettingsWindow inherits Window {
         : root.settings-problem ? SettingsEditor.message : {};
 
     public function close-layout() {
-        InlineEditors.commit-revision += 1;
-        MacroEditor.flush-pending();
-        if LayoutLibrary.dirty || MacroEditor.has-errors {
+        let drafts-saved = LayoutLibrary.flush-drafts();
+        if LayoutLibrary.dirty || !drafts-saved {
             root.confirm-close = true;
         } else {
             LayoutLibrary.editor-open = false;
@@ -99,8 +98,7 @@ export component SettingsWindow inherits Window {
                 if root.confirm-discard || root.confirm-close { root.confirm-discard = false; root.confirm-close = false; return accept; }
             }
             if InlineEditors.window-active && !root.modal-open && event.modifiers.control && event.text.to-lowercase() == "s" && LayoutLibrary.editor-open {
-                InlineEditors.commit-revision += 1; MacroEditor.flush-pending();
-                if LayoutLibrary.dirty { LayoutLibrary.save-current(); }
+                if LayoutLibrary.flush-drafts() && LayoutLibrary.dirty { LayoutLibrary.save-current(); }
                 return accept;
             }
             return reject;
@@ -167,7 +165,7 @@ export component SettingsWindow inherits Window {
                     padding-left: Theme.space-xl; padding-right: Theme.space-xl; spacing: Theme.space-m;
                     Text { text: LayoutLibrary.current-label == "" ? @tr("Custom layout") : LayoutLibrary.current-label; color: Theme.text; max-width: 200px; overflow: elide; vertical-alignment: center; }
                     VerticalLayout { alignment: center; SaveSplitButton {
-                        enabled: LayoutLibrary.dirty;
+                        enabled: LayoutLibrary.dirty || MacroEditor.has-unsaved-changes || MenuEditor.has-unsaved-changes;
                         save => { LayoutLibrary.save-current(); }
                         discard => { root.confirm-discard = true; }
                         save-as => { LayoutLibrary.save-as-name = ""; LayoutLibrary.save-as-open = true; }

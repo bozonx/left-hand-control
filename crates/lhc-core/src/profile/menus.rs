@@ -23,9 +23,23 @@ impl ConfigDocument {
         baseline: &LayoutPreset,
         candidate: &LayoutPreset,
     ) -> Result<(), ConfigError> {
-        if self.layout() != baseline {
+        let current = self.layout();
+        let emoji_changed = baseline.emoji_pages != candidate.emoji_pages;
+        let quick_changed = baseline.quick_action_pages != candidate.quick_action_pages;
+        if (emoji_changed && current.emoji_pages != baseline.emoji_pages)
+            || (quick_changed && current.quick_action_pages != baseline.quick_action_pages)
+        {
             return Err(ConfigError::EditConflict);
         }
+        // Validate against current commands, macros and the untouched menu.
+        let mut merged = current.clone();
+        if emoji_changed {
+            merged.emoji_pages = candidate.emoji_pages.clone();
+        }
+        if quick_changed {
+            merged.quick_action_pages = candidate.quick_action_pages.clone();
+        }
+        let candidate = &merged;
         for page in &candidate.emoji_pages {
             if page.cells.iter().any(|(key, value)| {
                 !LEFT_HAND_HOTKEYS.contains(&key.as_str()) || value.encode_utf16().count() > 100
@@ -368,6 +382,91 @@ mod tests {
     }
 
     #[test]
+    fn menu_save_merges_unrelated_edits_and_preserves_same_section_conflicts() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let mut doc = ConfigDocument::load(paths).unwrap();
+        let baseline = doc.layout().clone();
+        let mut draft = baseline.clone();
+        draft.emoji_pages[0].name = "Draft emoji".into();
+        doc.update_layout(|layout| {
+            layout.description = Some("New description".into());
+            layout.quick_action_pages[0].name = "New quick menu".into();
+        })
+        .unwrap();
+        doc.save_menu_pages(&baseline, &draft).unwrap();
+        assert_eq!(doc.layout().emoji_pages[0].name, "Draft emoji");
+        assert_eq!(doc.layout().quick_action_pages[0].name, "New quick menu");
+        assert_eq!(doc.layout().description.as_deref(), Some("New description"));
+        let unchanged = doc.layout().clone();
+        draft.emoji_pages[0].name = "Conflicting emoji".into();
+        assert!(matches!(
+            doc.save_menu_pages(&baseline, &draft),
+            Err(ConfigError::EditConflict)
+        ));
+        assert_eq!(doc.layout(), &unchanged);
+    }
+
+    #[test]
+    fn menu_save_validates_against_current_macros() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let mut doc = ConfigDocument::load(paths).unwrap();
+        let baseline = doc.layout().clone();
+        let mut draft = baseline.clone();
+        doc.save_macros(
+            vec![Macro {
+                id: "newMacro".into(),
+                name: String::new(),
+                steps: vec![],
+                step_pause_ms: None,
+                modifier_delay_ms: None,
+            }],
+            &[],
+        )
+        .unwrap();
+        draft.quick_action_pages[0].cells.insert(
+            "KeyQ".into(),
+            QuickAction {
+                action: "macro:newMacro".into(),
+                ..Default::default()
+            },
+        );
+        doc.save_menu_pages(&baseline, &draft).unwrap();
+        assert_eq!(doc.layout().macros[0].id, "newMacro");
+        assert_eq!(
+            doc.layout().quick_action_pages[0].cells["KeyQ"].action,
+            "macro:newMacro"
+        );
+    }
+
+    #[test]
+    fn command_overview_snapshot_owns_the_working_copy() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let mut doc = ConfigDocument::load(paths).unwrap();
+        doc.update_settings(|s| s.commands_enabled = true).unwrap();
+        doc.save_command(Command {
+            id: "test".into(),
+            name: "Before".into(),
+            posix_script: "true".into(),
+            powershell_script: "exit 0".into(),
+            working_directory: None,
+        })
+        .unwrap();
+        doc.set_base_tap_action("KeyQ", "cmd:test").unwrap();
+        let snapshot = doc.command_assignment_snapshot();
+        doc.update_layout(|layout| layout.commands[0].name = "After".into())
+            .unwrap();
+        let rows = std::thread::spawn(move || snapshot.load())
+            .join()
+            .unwrap()
+            .unwrap();
+        assert_eq!(rows[0].command.name, "Before");
+        assert_eq!(doc.command_assignments().unwrap()[0].command.name, "After");
+    }
+
+    #[test]
     fn command_overview_lists_only_assignments_across_saved_layouts() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
@@ -528,19 +627,37 @@ pub fn command_places(config: &ResolvedAppConfig, action: &str) -> Vec<CommandPl
     places
 }
 
+/// Owned input for reading command assignments away from the UI thread.
+pub struct CommandAssignmentSnapshot {
+    paths: crate::storage::StoragePaths,
+    settings: AppSettings,
+    layout: LayoutPreset,
+}
+
 impl ConfigDocument {
+    pub fn command_assignment_snapshot(&self) -> CommandAssignmentSnapshot {
+        CommandAssignmentSnapshot {
+            paths: self.paths().clone(),
+            settings: self.settings().clone(),
+            layout: self.layout().clone(),
+        }
+    }
+
     pub fn command_assignments(&self) -> Result<Vec<CommandAssignment>, ConfigError> {
-        let mut layouts = vec![(
-            self.settings().editing_layout_id.clone(),
-            self.layout().clone(),
-        )];
-        for name in self.paths().list_user_layouts().map_err(ConfigError::Io)? {
+        self.command_assignment_snapshot().load()
+    }
+}
+
+impl CommandAssignmentSnapshot {
+    pub fn load(self) -> Result<Vec<CommandAssignment>, ConfigError> {
+        let mut layouts = vec![(self.settings.editing_layout_id.clone(), self.layout)];
+        for name in self.paths.list_user_layouts().map_err(ConfigError::Io)? {
             let id = super::model::user_layout_id(&name);
-            if self.settings().editing_layout_id.as_ref() == Some(&id) {
+            if self.settings.editing_layout_id.as_ref() == Some(&id) {
                 continue;
             }
             let text = self
-                .paths()
+                .paths
                 .load_user_layout(&name)
                 .map_err(ConfigError::Io)?;
             if let Some(layout) = super::layout_file::parse(&text).map_err(ConfigError::Parse)? {
@@ -549,11 +666,8 @@ impl ConfigDocument {
         }
         let mut rows = Vec::new();
         for (layout_id, layout) in layouts {
-            let config = ResolvedAppConfig::from_parts(
-                self.settings().clone(),
-                layout,
-                layout_id.as_deref(),
-            );
+            let config =
+                ResolvedAppConfig::from_parts(self.settings.clone(), layout, layout_id.as_deref());
             for command in &config.commands {
                 let action = format!("cmd:{}", command.id);
                 let usage = super::macros::action_usage(&config, &action);

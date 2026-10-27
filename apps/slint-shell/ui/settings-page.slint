@@ -97,6 +97,11 @@ export global SettingsEditor {
     callback save();
     callback schedule-save();
     callback refresh-devices();
+    callback refresh-commands();
+    in property <int> commands-revision;
+    in property <bool> commands-loading;
+    in property <bool> commands-loaded;
+    in property <Message> commands-error;
     /// Choose the keyboard or mouse by device path; empty clears it.
     callback select-device(string);
     callback select-mouse(string);
@@ -263,6 +268,9 @@ component MapperStatusCard inherits Rectangle {
 }
 
 export component SettingsPage inherits PageLayout {
+    init => { SettingsEditor.refresh-commands(); }
+    private property <SettingsTab> commands-tab: SettingsEditor.tab;
+    changed commands-tab => { SettingsEditor.refresh-commands(); }
     horizontal-stretch: 1;
     max-width: Theme.unbounded;
     path-clipboard := TextInput { visible: false; width: 0px; height: 0px; }
@@ -431,7 +439,12 @@ export component SettingsPage inherits PageLayout {
                         VerticalLayout { alignment: center; InfoTip { text: (AppState.is-windows ? @tr("Commands run with PowerShell in the background and are not awaited.") : @tr("Commands run with sh -lc in the background and are not awaited.")) + "\n" + @tr("Commands stay off until you allow execution. Review below what your layouts would run."); } }
                     }
                     VerticalLayout { padding: 0px; spacing: Theme.space-xl;
-                        if SettingsEditor.command-assignments.length == 0: Text { vertical-stretch: 0; text: @tr("No commands are assigned."); color: Theme.muted; }
+                        if SettingsEditor.commands-loading: Text { text: @tr("Please wait…"); color: Theme.muted; }
+                        if SettingsEditor.commands-error.id != "": HorizontalLayout {
+                            Text { text: Locale.text(SettingsEditor.commands-error); color: Theme.error; wrap: word-wrap; horizontal-stretch: 1; }
+                            Button { text: @tr("Refresh"); enabled: !SettingsEditor.commands-loading; clicked => { SettingsEditor.refresh-commands(); } }
+                        }
+                        if SettingsEditor.commands-loaded && SettingsEditor.command-assignments.length == 0: Text { vertical-stretch: 0; text: @tr("No commands are assigned."); color: Theme.muted; }
                         for item in SettingsEditor.command-assignments: VerticalLayout {
                             spacing: Theme.space-m;
                             if item.first: Text {

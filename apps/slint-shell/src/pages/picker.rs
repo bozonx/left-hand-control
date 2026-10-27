@@ -34,6 +34,7 @@ fn assigns_command(value: &str, id: &str) -> bool {
 /// The open picker: who receives the value and the catalog built on open.
 #[derive(Default)]
 struct Session {
+    identity: std::sync::Arc<()>,
     target: Option<(PickerTarget, i32)>,
     catalog: Vec<PickerItem>,
     command: Option<lhc_core::profile::model::Command>,
@@ -87,7 +88,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>, input: &Rc<Wind
     let weak = ui.as_weak();
     let state = session.clone();
     picker.on_dismiss_picker(move || {
-        state.borrow_mut().target = None;
+        {
+            let mut state = state.borrow_mut();
+            state.target = None;
+            state.identity = std::sync::Arc::new(());
+        }
         if let Some(ui) = weak.upgrade() {
             let picker = ui.global::<ActionPicker>();
             picker.set_capturing(false);

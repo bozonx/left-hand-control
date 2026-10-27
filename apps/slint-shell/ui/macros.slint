@@ -18,10 +18,11 @@ export global MacroEditor {
     in property <string> default-step-pause;
     in property <string> default-modifier-delay;
     in property <bool> has-errors;
+    in property <bool> has-unsaved-changes;
     in property <Message> status;
     in-out property <int> picker-macro: -1;
     callback refresh();
-    callback flush-pending();
+    callback flush-pending() -> bool;
     callback add(string);
     callback clone-builtin(int, string);
     callback remove(int);

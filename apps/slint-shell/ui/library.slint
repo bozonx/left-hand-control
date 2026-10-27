@@ -92,6 +92,8 @@ export global LayoutLibrary {
     /// Recompute `current-label` and `dirty`.
     callback refresh-context();
     callback save-current();
+    callback flush-drafts() -> bool;
+    callback discard-drafts();
     /// Save the working copy over a library file changed elsewhere.
     callback overwrite-current();
     callback save-as(string);
@@ -133,6 +135,7 @@ export global LayoutLibrary {
     public function continue-pending() {
         let action = self.pending-action;
         self.pending-action = PendingLayoutAction.none;
+        if action != PendingLayoutAction.none { self.discard-drafts(); }
         if action == PendingLayoutAction.edit { self.dialog = LibraryDialog.none; self.load(); }
         if action == PendingLayoutAction.create {
             self.proceed-open-create(self.pending-create-source, self.pending-create-copy-index);
@@ -140,14 +143,16 @@ export global LayoutLibrary {
     }
     // Replacing the working copy discards its unsaved edits, so ask first.
     function guard-switch(action: PendingLayoutAction) {
+        let drafts-saved = self.flush-drafts();
         self.pending-action = action;
-        if self.dirty && !(action == PendingLayoutAction.edit && self.names[self.selected] == self.current-label) {
+        if !drafts-saved || (self.dirty && !(action == PendingLayoutAction.edit && self.names[self.selected] == self.current-label)) {
             self.dialog = LibraryDialog.unsaved;
         } else {
             self.continue-pending();
         }
     }
     public function save-and-continue() {
+        if !self.flush-drafts() { return; }
         self.save-current();
         if !self.dirty { self.continue-pending(); }
     }

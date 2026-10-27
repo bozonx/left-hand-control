@@ -16,7 +16,7 @@ use lhc_core::{
     storage::StoragePaths,
 };
 use std::{
-    cell::{Ref, RefCell},
+    cell::{Cell, Ref, RefCell},
     rc::Rc,
 };
 
@@ -43,6 +43,7 @@ struct Changes {
     macros: bool,
     commands: bool,
     library: bool,
+    quick: bool,
 }
 
 impl Changes {
@@ -61,6 +62,7 @@ impl Changes {
             macros: layout.macros != current.macros,
             commands: layout.commands != current.commands,
             library: origin == View::Library,
+            quick: layout.quick_action_pages != current.quick_action_pages,
         }
     }
 
@@ -72,8 +74,10 @@ impl Changes {
             View::Keys => self.rules,
             View::Rules => self.rules || self.layers,
             View::Layers => self.layers || self.rules || self.macros || self.commands,
-            // Menu drafts use a full-layout baseline for optimistic locking.
-            View::Menus | View::Macros | View::Library | View::Settings | View::Shell => true,
+            View::Settings => {
+                self.rules || self.layers || self.macros || self.commands || self.quick
+            }
+            View::Menus | View::Macros | View::Library | View::Shell => true,
         }
     }
 }
@@ -87,6 +91,7 @@ type Listener = Rc<dyn Fn(&Document)>;
 
 pub struct Document {
     config: RefCell<ConfigDocument>,
+    command_revision: Cell<u64>,
     library_snapshot: RefCell<Option<LibrarySnapshot>>,
     listeners: RefCell<Vec<(View, Listener)>>,
     /// Layout last given to the running mapper; `None` before the first push.
@@ -121,6 +126,7 @@ impl Document {
     pub fn new(config: ConfigDocument) -> Rc<Self> {
         Rc::new(Self {
             config: RefCell::new(config),
+            command_revision: Cell::new(0),
             library_snapshot: RefCell::default(),
             listeners: RefCell::default(),
             pushed_layout: RefCell::default(),
@@ -155,6 +161,10 @@ impl Document {
             let value = edit(&mut config)?;
             (value, Changes::between(&layout, &settings, &config, origin))
         };
+        if changes.affects(View::Settings) {
+            self.command_revision
+                .set(self.command_revision.get().wrapping_add(1));
+        }
         if changes.library {
             self.invalidate_library();
         }
@@ -165,6 +175,8 @@ impl Document {
 
     /// Re-read library contents on the next request (library edits or explicit refresh).
     pub(crate) fn invalidate_library(&self) {
+        self.command_revision
+            .set(self.command_revision.get().wrapping_add(1));
         self.library_snapshot.borrow_mut().take();
     }
 
@@ -186,6 +198,10 @@ impl Document {
         snapshot
             .as_ref()
             .and_then(|snapshot| snapshot.layout.clone())
+    }
+
+    pub(crate) fn command_revision(&self) -> u64 {
+        self.command_revision.get()
     }
 
     /// Mapper input for the current system state.
@@ -230,6 +246,8 @@ impl Document {
 
     /// Refresh every view, for example after the language changed.
     pub fn refresh_all(&self) {
+        self.command_revision
+            .set(self.command_revision.get().wrapping_add(1));
         self.invalidate_library();
         self.notify(None, None);
     }
@@ -273,6 +291,27 @@ mod tests {
         assert!(
             matches!(warning, Some(Msg::SavedMapperNotUpdated(error)) if error == "mapper failed")
         );
+    }
+
+    #[test]
+    fn command_revision_skips_emoji_edits_and_tracks_assignments_and_library_refresh() {
+        let (_dir, document) = document();
+        let initial = document.command_revision();
+        document
+            .edit(View::Menus, |config| {
+                config.update_layout(|layout| layout.emoji_pages[0].name = "Emoji".into())
+            })
+            .unwrap();
+        assert_eq!(document.command_revision(), initial);
+        document
+            .edit(View::Menus, |config| {
+                config.update_layout(|layout| layout.quick_action_pages[0].name = "Quick".into())
+            })
+            .unwrap();
+        assert_ne!(document.command_revision(), initial);
+        let before_refresh = document.command_revision();
+        document.refresh_all();
+        assert_ne!(document.command_revision(), before_refresh);
     }
 
     #[test]

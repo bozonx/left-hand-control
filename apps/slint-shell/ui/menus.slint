@@ -23,8 +23,9 @@ export global MenuEditor {
     in-out property <string> name;
     in-out property <int> editing-count: 0;
     in property <Message> status;
+    in property <bool> has-unsaved-changes;
     callback open(MenuKind);
-    callback flush-pending();
+    callback flush-pending() -> bool;
     callback refresh();
     callback select-page(int);
     callback select-cell(int);

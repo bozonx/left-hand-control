@@ -145,7 +145,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     e.invoke_open(MenuKind::Quick);
     assert_eq!(e.get_cells().row_count(), 15);
-    assert_eq!(e.get_value().as_str(), reference.as_str());
+    assert_eq!(e.get_value().as_str(), "macro:missing");
+    assert!(e.get_has_unsaved_changes());
+    assert!(!e.invoke_flush_pending());
+    e.invoke_refresh();
     paths.save_config(r#"{"schemaVersion":1}"#)?;
     e.set_name("Updated".into());
     e.invoke_set_name();
@@ -172,6 +175,52 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         quick_action(document.read().layout(), 0, "KeyS"),
         "Ctrl+KeyC"
     );
+    // A pending menu draft merges edits from another page before saving.
+    e.invoke_open(MenuKind::Emoji);
+    e.set_page_name("Pending emoji".into());
+    e.invoke_rename_page();
+    document.edit(slint_shell::document::View::Layers, |config| {
+        config.create_layer("Pending layer", "")
+    })?;
+    assert!(e.invoke_flush_pending());
+    assert_eq!(
+        document.read().layout().emoji_pages[0].name,
+        "Pending emoji"
+    );
+    assert!(
+        document
+            .read()
+            .layout()
+            .layers
+            .iter()
+            .any(|layer| layer.name == "Pending layer")
+    );
+    let library = ui.global::<slint_shell::ui::LayoutLibrary>();
+    library.invoke_save_as("Menu draft regression".into());
+    e.set_value("Saved immediately".into());
+    e.invoke_set_cell();
+    library.invoke_save_current();
+    let saved = document.read().load_layout("user:Menu draft regression")?;
+    assert_eq!(saved.emoji_pages[0].cells["KeyQ"], "Saved immediately");
+    // Conflicts keep the draft and prevent a misleading successful library save.
+    e.set_page_name("Conflicting draft".into());
+    e.invoke_rename_page();
+    document.edit(slint_shell::document::View::Shell, |config| {
+        config.update_layout(|layout| layout.emoji_pages[0].name = "Other writer".into())
+    })?;
+    assert!(!e.invoke_flush_pending());
+    assert_eq!(e.get_page_name(), "Conflicting draft");
+    library.invoke_save_current();
+    assert_eq!(
+        document
+            .read()
+            .load_layout("user:Menu draft regression")?
+            .emoji_pages[0]
+            .name,
+        saved.emoji_pages[0].name
+    );
+    e.invoke_refresh();
+    assert!(!e.get_has_unsaved_changes());
     e.invoke_open(match std::env::var("LHC_MENUS_PAGE").as_deref() {
         Ok("1") => MenuKind::Quick,
         _ => MenuKind::Emoji,

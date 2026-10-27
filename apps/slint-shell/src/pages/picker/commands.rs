@@ -10,6 +10,24 @@ use lhc_core::profile::actions::Action;
 use slint::ComponentHandle;
 use std::{cell::RefCell, rc::Rc};
 
+/// The session and command fields a file chooser is allowed to update.
+struct ChoiceRequest {
+    session: std::sync::Weak<()>,
+    value: String,
+    script: String,
+    directory: String,
+}
+
+impl ChoiceRequest {
+    fn accepts(&self, opened: bool, value: &str, script: &str, directory: &str) -> bool {
+        opened
+            && self.session.upgrade().is_some()
+            && self.value == value
+            && self.script == script
+            && self.directory == directory
+    }
+}
+
 /// Warning for the command being edited: a missing working directory or
 /// a script file that cannot be executed.
 pub(super) fn command_notice(picker: &ActionPicker) -> Msg {
@@ -70,6 +88,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>, session: &Rc<Re
 
     for directory in [false, true] {
         let weak = ui.as_weak();
+        let session = session.clone();
         let choose = move || {
             let Some(ui) = weak.upgrade() else { return };
             let title = ui
@@ -83,12 +102,30 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>, session: &Rc<Re
                     .to_ui(),
                 )
                 .to_string();
+            if session.borrow().target.is_none() {
+                return;
+            }
+            let picker = ui.global::<ActionPicker>();
+            let request = ChoiceRequest {
+                session: std::sync::Arc::downgrade(&session.borrow().identity),
+                value: picker.get_value().to_string(),
+                script: picker.get_command_script().to_string(),
+                directory: picker.get_command_directory().to_string(),
+            };
             let weak = ui.as_weak();
             std::thread::spawn(move || {
                 let picked = lhc_core::platform::file_chooser::pick(&title, directory);
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
                     let picker = ui.global::<ActionPicker>();
+                    if !request.accepts(
+                        picker.get_opened(),
+                        &picker.get_value(),
+                        &picker.get_command_script(),
+                        &picker.get_command_directory(),
+                    ) {
+                        return;
+                    }
                     match picked {
                         Ok(Some(path)) => {
                             let path = path.to_string_lossy();
@@ -124,4 +161,27 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>, session: &Rc<Re
             .set_tab(crate::ui::SettingsTab::Commands);
         ui.invoke_navigate(crate::ui::Page::Settings, crate::ui::MenuKind::Emoji);
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn file_choice_ignores_closed_reopened_and_changed_editors() {
+        let mut session = Session::default();
+        let request = ChoiceRequest {
+            session: std::sync::Arc::downgrade(&session.identity),
+            value: "cmd:test".into(),
+            script: "printf".into(),
+            directory: "/tmp".into(),
+        };
+        assert!(request.accepts(true, "cmd:test", "printf", "/tmp"));
+        assert!(!request.accepts(false, "cmd:test", "printf", "/tmp"));
+        assert!(!request.accepts(true, "cmd:other", "printf", "/tmp"));
+        assert!(!request.accepts(true, "cmd:test", "edited", "/tmp"));
+        assert!(!request.accepts(true, "cmd:test", "printf", "/other"));
+        session.identity = std::sync::Arc::new(());
+        assert!(!request.accepts(true, "cmd:test", "printf", "/tmp"));
+    }
 }

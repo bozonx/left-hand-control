@@ -78,6 +78,7 @@ fn load(document: &Document) -> Vec<Entry> {
 #[derive(Default)]
 struct State {
     draft: Vec<Entry>,
+    baseline: Vec<Entry>,
     /// Pending save of typed changes.
     autosave: Autosave,
 }
@@ -102,10 +103,10 @@ fn candidate(document: &Document, draft: &[Entry]) -> ResolvedAppConfig {
 }
 
 fn issue(config: &ResolvedAppConfig, entry: &Entry) -> Option<ConfigError> {
-    if entry.saved().is_none() {
+    let Some(item) = entry.saved() else {
         return Some(ConfigError::Macro(macros::MacroIssue::DelayRange));
-    }
-    macros::validate(config, &entry.item).err()
+    };
+    macros::validate(config, &item).err()
 }
 
 fn steps(item: &Macro) -> ModelRc<MacroStepRow> {
@@ -160,6 +161,8 @@ fn render(ui: &SettingsWindow, document: &Document, draft: &[Entry]) {
 fn annotate(ui: &SettingsWindow, document: &Document, draft: &[Entry]) {
     let config = candidate(document, draft);
     let rows = ui.global::<MacroEditor>().get_macros();
+    ui.global::<MacroEditor>()
+        .set_has_errors(draft.iter().any(|e| issue(&config, e).is_some()));
     for (index, entry) in draft.iter().enumerate() {
         if let Some(current) = rows.row_data(index) {
             let next = row(&config, entry);
@@ -193,12 +196,15 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
     let config = candidate(document, &state.draft);
     let valid = state.draft.iter().all(|e| issue(&config, e).is_none());
     editor.set_has_errors(!valid);
+    editor.set_has_unsaved_changes(state.draft != state.baseline);
     if !valid {
         editor.set_status(Msg::None.to_ui());
         return;
     }
     let items: Vec<Macro> = state.draft.iter().filter_map(Entry::saved).collect();
     if document.read().layout().macros == items {
+        state.baseline = state.draft.clone();
+        editor.set_has_unsaved_changes(false);
         editor.set_status(Msg::None.to_ui());
         return;
     }
@@ -208,19 +214,13 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
         .filter_map(|e| Some((e.saved_id.clone()?, e.item.id.clone())))
         .collect();
     let edit = document.edit(View::Macros, |config| config.save_macros(items, &renames));
-    match &edit {
-        Ok(_) => {
-            for entry in &mut state.draft {
-                entry.saved_id = Some(entry.item.id.clone());
-            }
+    if edit.is_ok() {
+        for entry in &mut state.draft {
+            entry.saved_id = Some(entry.item.id.clone());
         }
-        // Refresh the draft from the current document.
-        Err(ConfigError::EditConflict) => {
-            state.draft = load(document);
-            render(ui, document, &state.draft);
-        }
-        Err(_) => {}
+        state.baseline = state.draft.clone();
     }
+    editor.set_has_unsaved_changes(state.draft != state.baseline);
     let message = super::outcome(&edit, Msg::None);
     editor.set_status(crate::notifications::report(ui, &message));
 }
@@ -289,22 +289,25 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             .collect::<Vec<_>>(),
     )));
     let state: Shared = Rc::new(RefCell::new(State {
+        baseline: load(document),
         draft: load(document),
         autosave: Autosave::default(),
     }));
     render(ui, document, &state.borrow().draft);
     on!(ui, editor.on_flush_pending, doc = document, shared = state => |ui| {
         let mut state = shared.borrow_mut();
-        super::autosave::flush(&ui, &doc, &mut *state);
+        save(&ui, &doc, &mut state);
+        state.draft == state.baseline && !ui.global::<MacroEditor>().get_has_errors()
     });
 
     // Other pages change macro usage; a reload replaces a draft without
     // unsaved edits.
     super::autosave::subscribe(ui, document, View::Macros, &state, |ui, document, state| {
-        let saved: Vec<Macro> = state.draft.iter().filter_map(Entry::saved).collect();
-        let pending = state.autosave.pending() || saved.len() != state.draft.len();
-        if !pending && saved != document.read().layout().macros {
-            state.draft = load(document);
+        let loaded = load(document);
+        if state.draft == state.baseline && state.baseline != loaded {
+            state.draft = loaded;
+            state.baseline = state.draft.clone();
+            ui.global::<MacroEditor>().set_has_errors(false);
             render(ui, document, &state.draft);
         } else {
             annotate(ui, document, &state.draft);
@@ -315,8 +318,10 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let mut state = shared.borrow_mut();
         state.autosave.cancel();
         state.draft = load(&doc);
+        state.baseline = state.draft.clone();
         let editor = ui.global::<MacroEditor>();
         editor.set_has_errors(false);
+        editor.set_has_unsaved_changes(false);
         editor.set_status(Msg::None.to_ui());
         render(&ui, &doc, &state.draft);
     });
@@ -459,6 +464,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 return;
             };
             step.action = Action::Pause(ms.to_string()).format().unwrap_or_default();
+            ui.global::<MacroEditor>().set_has_unsaved_changes(state.draft != state.baseline);
             annotate(&ui, &doc, &state.draft);
         }
         super::autosave::schedule(&ui, &doc, &shared);
@@ -477,6 +483,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 MacroField::StepPause => entry.step_pause = value,
                 MacroField::ModifierDelay => entry.modifier_delay = value,
             }
+            ui.global::<MacroEditor>().set_has_unsaved_changes(state.draft != state.baseline);
             annotate(&ui, &doc, &state.draft);
         }
         super::autosave::schedule(&ui, &doc, &state);

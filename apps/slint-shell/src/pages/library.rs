@@ -619,6 +619,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 config.load_library_for_editing(&name)
             })?;
             reset_context(&ui, doc, &mut state.borrow_mut());
+            ui.global::<LayoutLibrary>().invoke_discard_drafts();
             Ok(Msg::LayoutDiscarded(name))
         });
         report(&ui, state, result);
@@ -713,6 +714,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     )
     });
     on!(ui, library.on_save_current, doc = document, state = state => |ui| {
+        if !ui.global::<LayoutLibrary>().invoke_flush_drafts() { return; }
         let (doc, state) = (&doc, &state);
         report(
         &ui, state,
@@ -720,6 +722,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     )
     });
     on!(ui, library.on_overwrite_current, doc = document, state = state => |ui| {
+        if !ui.global::<LayoutLibrary>().invoke_flush_drafts() { return; }
         let (doc, state) = (&doc, &state);
         report(
         &ui, state,
@@ -727,6 +730,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     )
     });
     on!(ui, library.on_save_as, doc = document, state = state => |ui, name| {
+        if !ui.global::<LayoutLibrary>().invoke_flush_drafts() { return; }
         let (doc, state) = (&doc, &state);
         report(
         &ui, state,

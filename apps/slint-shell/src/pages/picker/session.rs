@@ -67,6 +67,7 @@ pub(super) fn open(
             .unwrap_or_else(|| value.clone()),
     };
     *state.borrow_mut() = Session {
+        identity: std::sync::Arc::new(()),
         target: Some((target, index)),
         catalog,
         command: None,

@@ -84,6 +84,9 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Preserve invalid macro and menu drafts across page updates, merge unrelated menu edits, and flush pending edits before saving or replacing a layout. Ignore file chooser results from closed or changed command editors.
+- Load command assignments in the background only when their settings panel is opened, and cache them until relevant configuration changes.
+
 - Mapper restart waits for the previous worker to stop. Text jobs are cancelled when their mapper session exits, including on panic.
 - While a Linux keyboard is disconnected, mapper control keeps only the latest configuration and rejects new actions; pending actions are cancelled instead of running after reconnection. Control queues are bounded.
 - Slow or panicking core event subscribers no longer interrupt keyboard processing; subscriptions are released when their owner exits.

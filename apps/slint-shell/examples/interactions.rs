@@ -682,6 +682,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let timer = slint::Timer::default();
     let weak = ui.as_weak();
     let step = Rc::new(std::cell::Cell::new(-5));
+    let command_waits = std::cell::Cell::new(0);
     timer.start(slint::TimerMode::Repeated, Duration::from_millis(400), move || {
         let ui = weak.unwrap();
         let n = step.get();
@@ -893,7 +894,46 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             31 => {
                 snapshot(&ui, "rules-advanced-dark-ru");
-                println!("Interactions passed: settings, numeric wheel, rules, typed held combination, independent reset, long-hold actions, chord triggers, extra-key sorting, persistence, validation, navigation and game mode");
+                paths.save_user_layout("Broken overview", "invalid json", true).unwrap();
+                document.edit(slint_shell::document::View::Settings, |config| config.update_settings(|s| s.reduce_motion = !s.reduce_motion)).unwrap();
+                assert!(!ui.global::<SettingsEditor>().get_commands_loading(), "a hidden command panel must not read the library");
+                ui.global::<RulesEditor>().set_dialog(RuleDialog::None);
+                ui.invoke_navigate(Page::Settings, MenuKind::Emoji);
+                ui.global::<SettingsEditor>().set_tab(SettingsTab::Commands);
+                ui.global::<SettingsEditor>().invoke_refresh_commands();
+            }
+            32 | 33 | 35 => {
+                let settings = ui.global::<SettingsEditor>();
+                if settings.get_commands_loading() {
+                    command_waits.set(command_waits.get() + 1);
+                    assert!(command_waits.get() < 50, "command overview load timed out");
+                    return;
+                }
+                if n == 32 || n == 35 {
+                    assert_eq!(settings.get_commands_error().id, "config-parse");
+                    assert!(!settings.get_commands_loaded());
+                    paths.delete_user_layout("Broken overview").unwrap();
+                    settings.invoke_refresh_commands();
+                } else {
+                    assert!(settings.get_commands_loaded());
+                    assert_eq!(settings.get_commands_error().id, "");
+                    paths.save_user_layout("Broken overview", "invalid json", true).unwrap();
+                    document.edit(slint_shell::document::View::Menus, |config| config.update_layout(|layout| layout.emoji_pages[0].name = "Cached overview".into())).unwrap();
+                    settings.invoke_refresh_commands();
+                    assert!(!settings.get_commands_loading(), "emoji-only changes must reuse the overview");
+                }
+            }
+            34 => {
+                assert_eq!(ui.global::<SettingsEditor>().get_commands_error().id, "");
+                ui.global::<LayoutLibrary>().invoke_refresh();
+                ui.global::<SettingsEditor>().invoke_refresh_commands();
+            }
+            36 => {
+                let settings = ui.global::<SettingsEditor>();
+                if settings.get_commands_loading() { return; }
+                assert!(settings.get_commands_loaded());
+                assert_eq!(settings.get_commands_error().id, "");
+                println!("Interactions passed: settings, rules, persistence, navigation, background command overview, caching and error recovery");
                 slint::quit_event_loop().unwrap();
             }
 

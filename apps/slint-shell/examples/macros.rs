@@ -72,6 +72,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "macro-cycle"
     );
     assert_eq!(first(&document).steps.len(), 5);
+    document.edit(slint_shell::document::View::Settings, |config| {
+        config.update_settings(|s| s.reduce_motion = !s.reduce_motion)
+    })?;
+    assert_eq!(
+        editor.get_macros().row_data(0).unwrap().steps.row_count(),
+        6
+    );
+    assert!(editor.get_has_errors());
+    assert!(editor.get_has_unsaved_changes());
+    assert!(
+        !ui.global::<slint_shell::ui::LayoutLibrary>()
+            .invoke_flush_drafts()
+    );
     editor.invoke_remove_step(0, 5);
     assert!(!editor.get_has_errors());
     editor.invoke_set_field(0, MacroField::ModifierDelay, "abc".into());
@@ -91,6 +104,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let picker = ui.global::<slint_shell::ui::ActionPicker>();
     picker.set_value("KeyA".into());
     picker.invoke_apply();
+    let library = ui.global::<slint_shell::ui::LayoutLibrary>();
+    library.set_save_as_name("Draft regression".into());
+    library.invoke_save_as("Draft regression".into());
+    editor.invoke_set_field(0, MacroField::Name, "Saved without waiting".into());
+    library.invoke_save_current();
+    let saved = document.read().load_layout("user:Draft regression")?;
+    assert_eq!(saved.macros[0].name, "Saved without waiting");
+    editor.invoke_set_field(0, MacroField::Id, "invalid id".into());
+    settle();
+    document.edit(slint_shell::document::View::Layers, |config| {
+        config.create_layer("Draft test", "")
+    })?;
+    assert_eq!(editor.get_macros().row_data(0).unwrap().id, "invalid id");
+    assert!(!library.invoke_flush_drafts());
+    library.invoke_save_current();
+    assert_eq!(
+        document.read().load_layout("user:Draft regression")?.macros[0].id,
+        saved.macros[0].id
+    );
+    editor.invoke_refresh();
+    assert!(!editor.get_has_errors());
+    assert!(!editor.get_has_unsaved_changes());
     ui.show()?;
     ui.window().set_size(slint::LogicalSize::new(1120.0, 760.0));
     let timer = slint::Timer::default();

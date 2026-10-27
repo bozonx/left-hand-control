@@ -91,6 +91,18 @@ pub fn bind_document_with_input(
     macros::bind(ui, document);
     menus::bind(ui, document);
     settings::bind(ui, document);
+    let library = ui.global::<crate::ui::LayoutLibrary>();
+    on!(ui, library.on_discard_drafts => |ui| {
+        ui.global::<crate::ui::MacroEditor>().invoke_refresh();
+        ui.global::<crate::ui::MenuEditor>().invoke_refresh();
+    });
+    on!(ui, library.on_flush_drafts => |ui| {
+        let inline = ui.global::<crate::ui::InlineEditors>();
+        inline.set_commit_revision(inline.get_commit_revision().wrapping_add(1));
+        let macros = ui.global::<crate::ui::MacroEditor>().invoke_flush_pending();
+        let menus = ui.global::<crate::ui::MenuEditor>().invoke_flush_pending();
+        macros && menus
+    });
 }
 
 pub(crate) fn strings(

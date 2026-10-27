@@ -278,6 +278,7 @@ struct State {
     base: Option<Form>,
     matchers: Vec<GameModeProcessMatcher>,
     autosave: super::autosave::Autosave,
+    command_revision: Option<u64>,
 }
 
 impl super::autosave::Draft for State {
@@ -316,8 +317,27 @@ fn game_usage(ui: &SettingsWindow, document: &Document) {
 /// Load the form unless the user has unsaved edits in it.
 fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State, force: bool) {
     game_usage(ui, document);
-    // Listed even while commands are off, so they can be reviewed first.
-    let assignments = document.read().command_assignments();
+    refresh_commands(ui, document, state);
+    let loaded = Form::from_settings(document.read().settings());
+    if let Some(base) = &state.base {
+        let pending = Form::read(ui, &state.matchers) != *base;
+        if (pending && !force) || *base == loaded {
+            return;
+        }
+    }
+    loaded.show(ui);
+    state.matchers = loaded.matchers.clone();
+    state.base = Some(loaded);
+    refresh_devices(ui);
+}
+
+fn show_command_assignments(
+    ui: &SettingsWindow,
+    assignments: Result<
+        Vec<lhc_core::profile::menus::CommandAssignment>,
+        lhc_core::config_document::ConfigError,
+    >,
+) {
     match assignments {
         Ok(rows) => {
             let mut previous = None;
@@ -363,19 +383,48 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State, force: b
         }
         Err(error) => ui
             .global::<SettingsEditor>()
-            .set_message(crate::notifications::report(ui, &Msg::from(&error))),
+            .set_commands_error(crate::notifications::report(ui, &Msg::from(&error))),
     }
-    let loaded = Form::from_settings(document.read().settings());
-    if let Some(base) = &state.base {
-        let pending = Form::read(ui, &state.matchers) != *base;
-        if (pending && !force) || *base == loaded {
-            return;
-        }
+}
+
+fn refresh_commands(ui: &SettingsWindow, document: &Document, state: &mut State) {
+    let e = ui.global::<SettingsEditor>();
+    let revision = document.command_revision();
+    if state.command_revision != Some(revision) {
+        state.command_revision = Some(revision);
+        e.set_commands_revision(e.get_commands_revision().wrapping_add(1));
+        e.set_commands_loaded(false);
+        e.set_command_assignments(ModelRc::default());
     }
-    loaded.show(ui);
-    state.matchers = loaded.matchers.clone();
-    state.base = Some(loaded);
-    refresh_devices(ui);
+    if ui.get_page() != crate::ui::Page::Settings
+        || e.get_tab() != crate::ui::SettingsTab::Commands
+        || e.get_commands_loaded()
+        || e.get_commands_loading()
+    {
+        return;
+    }
+    let snapshot = document.read().command_assignment_snapshot();
+    let revision = e.get_commands_revision();
+    e.set_commands_loading(true);
+    e.set_commands_error(Msg::None.to_ui());
+    let weak = ui.as_weak();
+    std::thread::spawn(move || {
+        let assignments = snapshot.load();
+        let _ = slint::invoke_from_event_loop(move || {
+            let Some(ui) = weak.upgrade() else { return };
+            let e = ui.global::<SettingsEditor>();
+            e.set_commands_loading(false);
+            if revision != e.get_commands_revision() {
+                e.invoke_refresh_commands();
+                return;
+            }
+            e.set_commands_loaded(assignments.is_ok());
+            if assignments.is_err() {
+                e.set_command_assignments(ModelRc::default());
+            }
+            show_command_assignments(&ui, assignments);
+        });
+    });
 }
 
 /// Picker rows for `devices`; a `saved` path that is not connected is kept
@@ -618,6 +667,10 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
 
     on!(ui, e.on_schedule_save, doc = document, shared = state => |ui| {
         super::autosave::schedule(&ui, &doc, &shared);
+    });
+
+    on!(ui, e.on_refresh_commands, doc = document, shared = state => |ui| {
+        refresh_commands(&ui, &doc, &mut shared.borrow_mut());
     });
 
     on!(ui, e.on_refresh_devices => |ui| {
