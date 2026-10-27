@@ -95,6 +95,8 @@ export global SettingsEditor {
     in property <Message> device-discovery-error;
     in property <Message> message;
     callback save();
+    /// Save typed settings and report whether the form has no pending edits.
+    callback flush-pending() -> bool;
     callback schedule-save();
     callback refresh-devices();
     callback refresh-commands();

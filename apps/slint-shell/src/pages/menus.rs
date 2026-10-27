@@ -21,11 +21,12 @@ struct Category {
     items: Vec<String>,
 }
 
-struct State {
+pub(super) struct State {
     /// The menus as last saved or loaded.
     baseline: LayoutPreset,
     layout: LayoutPreset,
     autosave: Autosave,
+    commands: Vec<Command>,
 }
 
 type Shared = Rc<RefCell<State>>;
@@ -176,13 +177,25 @@ fn refresh(ui: &SettingsWindow, layout: &LayoutPreset, fields: bool) {
 }
 
 fn menu_changed(state: &State) -> bool {
-    state.layout.emoji_pages != state.baseline.emoji_pages
+    !state.commands.is_empty()
+        || state.layout.emoji_pages != state.baseline.emoji_pages
         || state.layout.quick_action_pages != state.baseline.quick_action_pages
 }
 
 fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
     state.autosave.cancel();
     let e = ui.global::<MenuEditor>();
+    state.commands.retain(|command| {
+        state
+            .layout
+            .quick_action_pages
+            .iter()
+            .flat_map(|page| page.cells.values())
+            .any(|cell| {
+                matches!(lhc_core::profile::actions::Action::parse(Some(&cell.action)),
+                lhc_core::profile::actions::Action::Command(id) if id == command.id)
+            })
+    });
     let baseline = state.baseline.clone();
     let candidate = state.layout.clone();
     if !menu_changed(state) {
@@ -191,9 +204,12 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
         return;
     }
     let result = document.edit(View::Menus, |config| {
-        config.save_menu_pages(&baseline, &candidate)
+        config.edit_layout_with_commands(state.commands.clone(), |config| {
+            config.save_menu_pages(&baseline, &candidate)
+        })
     });
     if result.is_ok() {
+        state.commands.clear();
         state.baseline = document.read().layout().clone();
         state.layout = state.baseline.clone();
         normalize(&mut state.layout);
@@ -205,6 +221,7 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
 
 fn reload(ui: &SettingsWindow, document: &Document, state: &mut State) {
     state.autosave.cancel();
+    state.commands.clear();
     state.baseline = document.read().layout().clone();
     state.layout = state.baseline.clone();
     normalize(&mut state.layout);
@@ -212,7 +229,82 @@ fn reload(ui: &SettingsWindow, document: &Document, state: &mut State) {
     refresh(ui, &state.layout, true);
 }
 
-pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
+pub(super) fn command(state: &RefCell<State>, id: &str) -> Option<Command> {
+    state
+        .borrow()
+        .commands
+        .iter()
+        .find(|command| command.id == id)
+        .cloned()
+}
+
+pub(super) fn choose(
+    ui: &SettingsWindow,
+    document: &Document,
+    state: &RefCell<State>,
+    cell: i32,
+    action: &str,
+    label: &str,
+    command: Option<Command>,
+) -> Result<(), Msg> {
+    let mut state = state.borrow_mut();
+    let e = ui.global::<MenuEditor>();
+    set_action(&e, &mut state.layout, cell, action, label)?;
+    if let Some(command) = command {
+        super::stage_command(&mut state.commands, command);
+    }
+    save(ui, document, &mut state);
+    refresh(ui, &state.layout, true);
+    Ok(())
+}
+
+fn set_action(
+    e: &MenuEditor,
+    layout: &mut LayoutPreset,
+    cell: i32,
+    action: &str,
+    label: &str,
+) -> Result<(), Msg> {
+    let (Ok(page), Ok(cell_index)) = (
+        usize::try_from(e.get_selected_page()),
+        usize::try_from(cell),
+    ) else {
+        return Err(Msg::from(
+            &lhc_core::config_document::ConfigError::EditConflict,
+        ));
+    };
+    let (Some(page), Some(key)) = (
+        layout.quick_action_pages.get_mut(page),
+        LEFT_HAND_HOTKEYS.get(cell_index),
+    ) else {
+        return Err(Msg::from(
+            &lhc_core::config_document::ConfigError::EditConflict,
+        ));
+    };
+    if action.is_empty() {
+        page.cells.remove(*key);
+        e.set_selected_cell(-1);
+        return Ok(());
+    }
+    let item = page.cells.entry((*key).into()).or_default();
+    let automatic = item.name.trim().is_empty() || item.name == item.action;
+    if item.action.trim().is_empty() {
+        *item = QuickAction {
+            name: lhc_core::profile::model::display_name(label, action).into(),
+            action: action.to_string(),
+            icon: None,
+        };
+    } else {
+        item.action = action.to_string();
+        if automatic {
+            item.name = lhc_core::profile::model::display_name(label, action).into();
+        }
+    }
+    e.set_selected_cell(cell);
+    Ok(())
+}
+
+pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
     let baseline = document.read().layout().clone();
     let mut layout = baseline.clone();
     normalize(&mut layout);
@@ -220,6 +312,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         baseline,
         layout,
         autosave: Autosave::default(),
+        commands: Vec::new(),
     }));
     let e = ui.global::<MenuEditor>();
     on!(ui, e.on_flush_pending, doc = document, shared = state => |ui| {
@@ -245,6 +338,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let mut saved = state.baseline.clone();
         normalize(&mut saved);
         if !state.autosave.pending()
+            && state.commands.is_empty()
             && state.layout == saved
             && state.baseline != *document.read().layout()
         {
@@ -480,42 +574,10 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             }
         });
     });
-    let c = change.clone();
-    e.on_set_action(move |cell, action, label| {
-        c(false, &|e, layout| {
-            let (Ok(page), Ok(cell_index)) = (
-                usize::try_from(e.get_selected_page()),
-                usize::try_from(cell),
-            ) else {
-                return;
-            };
-            let (Some(page), Some(key)) = (
-                layout.quick_action_pages.get_mut(page),
-                LEFT_HAND_HOTKEYS.get(cell_index),
-            ) else {
-                return;
-            };
-            if action.is_empty() {
-                page.cells.remove(*key);
-                e.set_selected_cell(-1);
-                return;
-            }
-            let item = page.cells.entry((*key).into()).or_default();
-            let automatic = item.name.trim().is_empty() || item.name == item.action;
-            if item.action.trim().is_empty() {
-                *item = QuickAction {
-                    name: lhc_core::profile::model::display_name(&label, &action).into(),
-                    action: action.to_string(),
-                    icon: None,
-                };
-            } else {
-                item.action = action.to_string();
-                if automatic {
-                    item.name = lhc_core::profile::model::display_name(&label, &action).into();
-                }
-            }
-            e.set_selected_cell(cell);
-        });
+    on!(ui, e.on_set_action, doc = document, shared = state => |ui, cell, action, label| {
+        if let Err(error) = choose(&ui, &doc, &shared, cell, &action, &label, None) {
+            ui.global::<MenuEditor>().set_status(crate::notifications::report(&ui, &error));
+        }
     });
     let c = change.clone();
     e.on_clear_cell(move || {
@@ -550,6 +612,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             e.set_selected_cell(to as i32);
         });
     });
+    state
 }
 
 #[cfg(test)]

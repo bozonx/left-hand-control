@@ -1,6 +1,9 @@
 // Enums shared by the Slint pages and the Rust bindings. They replace the
 // integer codes that used to cross the Rust/Slint boundary.
 
+/// Core mapper lifecycle, plus the shell's delayed startup retry.
+export enum MapperPhase { stopped, starting, running, stopping, retrying }
+
 /// Colour scheme chosen in the settings page.
 export enum AppearanceChoice { system, light, dark, e-ink }
 

@@ -13,7 +13,7 @@ use lhc_core::{
     profile::{
         actions::Action,
         ids, macros,
-        model::{Macro, MacroStep, ResolvedAppConfig},
+        model::{Command, Macro, MacroStep, ResolvedAppConfig},
     },
 };
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
@@ -23,6 +23,7 @@ use std::{cell::RefCell, rc::Rc};
 #[derive(Clone, PartialEq)]
 struct Entry {
     item: Macro,
+    commands: Vec<Command>,
     /// Id on disk, `None` until first saved; used to follow id renames.
     saved_id: Option<String>,
     step_pause: String,
@@ -36,6 +37,7 @@ impl Entry {
             step_pause: text(item.step_pause_ms),
             modifier_delay: text(item.modifier_delay_ms),
             saved_id: None,
+            commands: Vec::new(),
             item,
         }
     }
@@ -76,7 +78,7 @@ fn load(document: &Document) -> Vec<Entry> {
 }
 
 #[derive(Default)]
-struct State {
+pub(super) struct State {
     draft: Vec<Entry>,
     baseline: Vec<Entry>,
     /// Pending save of typed changes.
@@ -99,6 +101,9 @@ impl super::autosave::Draft for State {
 fn candidate(document: &Document, draft: &[Entry]) -> ResolvedAppConfig {
     let mut config = document.read().config();
     config.macros = draft.iter().map(|e| e.item.clone()).collect();
+    for command in draft.iter().flat_map(|entry| &entry.commands) {
+        super::stage_command(&mut config.commands, command.clone());
+    }
     config
 }
 
@@ -193,6 +198,13 @@ fn annotate(ui: &SettingsWindow, document: &Document, draft: &[Entry]) {
 fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
     state.autosave.cancel();
     let editor = ui.global::<MacroEditor>();
+    for entry in &mut state.draft {
+        entry.commands.retain(|command| {
+            entry.item.steps.iter().any(|step| {
+                matches!(Action::parse(Some(&step.action)), Action::Command(id) if id == command.id)
+            })
+        });
+    }
     let config = candidate(document, &state.draft);
     let valid = state.draft.iter().all(|e| issue(&config, e).is_none());
     editor.set_has_errors(!valid);
@@ -202,7 +214,12 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
         return;
     }
     let items: Vec<Macro> = state.draft.iter().filter_map(Entry::saved).collect();
-    if document.read().layout().macros == items {
+    let commands: Vec<_> = state
+        .draft
+        .iter()
+        .flat_map(|entry| entry.commands.clone())
+        .collect();
+    if commands.is_empty() && document.read().layout().macros == items {
         state.baseline = state.draft.clone();
         editor.set_has_unsaved_changes(false);
         editor.set_status(Msg::None.to_ui());
@@ -213,10 +230,13 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
         .iter()
         .filter_map(|e| Some((e.saved_id.clone()?, e.item.id.clone())))
         .collect();
-    let edit = document.edit(View::Macros, |config| config.save_macros(items, &renames));
+    let edit = document.edit(View::Macros, |config| {
+        config.edit_layout_with_commands(commands, |config| config.save_macros(items, &renames))
+    });
     if edit.is_ok() {
         for entry in &mut state.draft {
             entry.saved_id = Some(entry.item.id.clone());
+            entry.commands.clear();
         }
         state.baseline = state.draft.clone();
     }
@@ -276,7 +296,48 @@ pub(super) fn picker_macro_pause(ui: &SettingsWindow) -> Option<u64> {
     picker_macro(ui).and_then(|row| row.step_pause.trim().parse().ok())
 }
 
-pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
+pub(super) fn command(state: &RefCell<State>, id: &str) -> Option<Command> {
+    state
+        .borrow()
+        .draft
+        .iter()
+        .flat_map(|entry| &entry.commands)
+        .find(|command| command.id == id)
+        .cloned()
+}
+
+/// Apply the picker to the page draft; commands are committed with the macros.
+pub(super) fn choose(
+    ui: &SettingsWindow,
+    document: &Document,
+    state: &RefCell<State>,
+    step_index: i32,
+    action: &str,
+    command: Option<Command>,
+) -> Result<(), Msg> {
+    let mut state = state.borrow_mut();
+    let at = index(
+        ui.global::<MacroEditor>().get_picker_macro(),
+        state.draft.len(),
+    )
+    .ok_or(Msg::from(&ConfigError::EditConflict))?;
+    let entry = &mut state.draft[at];
+    if step_index == -1 {
+        entry.item.steps.push(step(action));
+    } else {
+        let index = index(step_index, entry.item.steps.len())
+            .ok_or(Msg::from(&ConfigError::EditConflict))?;
+        entry.item.steps[index].action = action.into();
+    }
+    if let Some(command) = command {
+        super::stage_command(&mut entry.commands, command);
+    }
+    save(ui, document, &mut state);
+    render(ui, document, &state.draft);
+    Ok(())
+}
+
+pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
     let editor = ui.global::<MacroEditor>();
     editor.set_builtin_macros(ModelRc::new(VecModel::from(
         BUILTIN_MACROS
@@ -469,7 +530,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
         super::autosave::schedule(&ui, &doc, &shared);
     });
-    on!(ui, editor.on_set_field, doc = document => |ui, at, field, value| {
+    on!(ui, editor.on_set_field, doc = document, state = state => |ui, at, field, value| {
         {
             let mut state = state.borrow_mut();
             let len = state.draft.len();
@@ -488,6 +549,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
         super::autosave::schedule(&ui, &doc, &state);
     });
+    state
 }
 
 #[cfg(test)]

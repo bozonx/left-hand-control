@@ -343,7 +343,12 @@ fn set_hold_behavior(rule: &mut KeyRule, behavior: HoldBehavior) {
 }
 
 /// Apply `value` to the property `RulesEditor.field` of the selected rule.
-pub(super) fn choose(ui: &SettingsWindow, document: &Document, value: &str) -> Result<(), Msg> {
+pub(super) fn choose(
+    ui: &SettingsWindow,
+    document: &Document,
+    value: &str,
+    command: Option<lhc_core::profile::model::Command>,
+) -> Result<(), Msg> {
     let editor = ui.global::<RulesEditor>();
     let property = editor.get_field();
     if property == RuleDialog::Key && !lhc_core::profile::key_catalog::valid_trigger(value) {
@@ -382,21 +387,31 @@ pub(super) fn choose(ui: &SettingsWindow, document: &Document, value: &str) -> R
         editor.set_field(RuleDialog::None);
         return Ok(());
     }
-    let index = selected(ui, document).ok_or(Msg::None)?;
+    let index = selected(ui, document)
+        .ok_or_else(|| Msg::from(&lhc_core::config_document::ConfigError::EditConflict))?;
     // Validate before saving so a bad value leaves the rule untouched.
     set_property(&mut KeyRule::new(String::new(), ""), property, value).inspect_err(|error| {
         editor.set_status(crate::notifications::report(ui, error));
     })?;
-    change_rule(ui, document, index, true, |rule| {
-        let _ = set_property(rule, property, value);
-        if ui.global::<ActionPicker>().get_ignore_key() && value.is_empty() {
-            match property {
-                RuleDialog::Tap => rule.tap_action = None,
-                RuleDialog::Hold => rule.hold_action = None,
-                _ => {}
-            }
-        }
-    })?;
+    let saved = document
+        .edit(View::Rules, |config| {
+            config.edit_layout_with_commands(command, |config| {
+                config.update_layout(|layout| {
+                    let rule = &mut layout.rules[index];
+                    let _ = set_property(rule, property, value);
+                    if ui.global::<ActionPicker>().get_ignore_key() && value.is_empty() {
+                        match property {
+                            RuleDialog::Tap => rule.tap_action = None,
+                            RuleDialog::Hold => rule.hold_action = None,
+                            _ => {}
+                        }
+                    }
+                })
+            })
+        })
+        .map_err(|error| Msg::from(&error))?;
+    refresh(ui, document, true);
+    report(ui, document, &saved, Msg::None);
     editor.set_dialog(RuleDialog::None);
     editor.set_field(RuleDialog::None);
     Ok(())
@@ -633,7 +648,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
 
     on!(ui, editor.on_choose, doc = document => |ui, value| {
-        let _ = choose(&ui, &doc, &value);
+        let _ = choose(&ui, &doc, &value, None);
     });
 
     on!(ui, editor.on_apply_conditions, doc = document => |ui| {

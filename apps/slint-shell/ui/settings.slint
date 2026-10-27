@@ -48,6 +48,18 @@ export component SettingsWindow inherits Window {
         : root.menus-problem ? MenuEditor.status
         : root.settings-problem ? SettingsEditor.message : {};
 
+    /// Quit is allowed only after all page drafts have been applied.
+    public function flush-drafts() -> bool {
+        InlineEditors.commit-revision += 1;
+        let macros = MacroEditor.flush-pending();
+        let menus = MenuEditor.flush-pending();
+        let settings = SettingsEditor.flush-pending();
+        if !settings { root.navigate(Page.settings, MenuKind.emoji); }
+        else if !macros { root.navigate(Page.macros, MenuKind.emoji); }
+        else if !menus { root.navigate(Page.menus, MenuEditor.kind); }
+        return macros && menus && settings;
+    }
+
     public function close-layout() {
         let drafts-saved = LayoutLibrary.flush-drafts();
         if LayoutLibrary.dirty || !drafts-saved {

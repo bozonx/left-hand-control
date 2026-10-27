@@ -84,6 +84,10 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Mapper startup applies edits made while the device was starting, even when the active layout is unchanged. The mapper card derives its running, busy and error state from one lifecycle snapshot.
+- Commands chosen for a key or rule are applied together with their assignment; commands in macro and menu drafts stay pending until the draft is saved. Failed assignments and discarded drafts do not change existing commands.
+- Quit keeps the settings window open when a page draft cannot be saved, and reentrant page refreshes are retried instead of being dropped.
+
 - Preserve invalid macro and menu drafts across page updates, merge unrelated menu edits, and flush pending edits before saving or replacing a layout. Ignore file chooser results from closed or changed command editors.
 - Load command assignments in the background only when their settings panel is opened, and cache them until relevant configuration changes.
 

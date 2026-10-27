@@ -91,11 +91,12 @@ type Listener = Rc<dyn Fn(&Document)>;
 
 pub struct Document {
     config: RefCell<ConfigDocument>,
+    revision: Cell<u64>,
     command_revision: Cell<u64>,
     library_snapshot: RefCell<Option<LibrarySnapshot>>,
     listeners: RefCell<Vec<(View, Listener)>>,
-    /// Layout last given to the running mapper; `None` before the first push.
-    pushed_layout: RefCell<Option<Option<String>>>,
+    /// Document revision and layout last given to the running mapper.
+    pushed_layout: RefCell<Option<(u64, Option<String>)>>,
 }
 
 /// An applied edit and whether the running mapper took it.
@@ -126,6 +127,7 @@ impl Document {
     pub fn new(config: ConfigDocument) -> Rc<Self> {
         Rc::new(Self {
             config: RefCell::new(config),
+            revision: Cell::new(0),
             command_revision: Cell::new(0),
             library_snapshot: RefCell::default(),
             listeners: RefCell::default(),
@@ -161,6 +163,7 @@ impl Document {
             let value = edit(&mut config)?;
             (value, Changes::between(&layout, &settings, &config, origin))
         };
+        self.revision.set(self.revision.get().wrapping_add(1));
         if changes.affects(View::Settings) {
             self.command_revision
                 .set(self.command_revision.get().wrapping_add(1));
@@ -204,13 +207,18 @@ impl Document {
         self.command_revision.get()
     }
 
+    /// Revision captured together with a mapper startup snapshot.
+    pub fn revision(&self) -> u64 {
+        self.revision.get()
+    }
+
     /// Mapper input for the current system state.
     pub fn runtime_config(&self) -> Result<RuntimeConfig, ConfigError> {
         self.read().runtime_config(&AutoSwitchContext::current())
     }
 
     /// Bring a running mapper up to date. With `force` the configuration is
-    /// always sent; otherwise only when the active layout changed (system
+    /// always sent; otherwise only when the document or active layout changed (system
     /// context changes). A stopped mapper is left alone. A failed edit
     /// stops the mapper, which would run outdated rules; a failed context
     /// switch (e.g. a game started) keeps the current layout running and
@@ -220,17 +228,22 @@ impl Document {
             self.pushed_layout.borrow_mut().take();
             return Ok(());
         }
+        let document_changed = self
+            .pushed_layout
+            .borrow()
+            .as_ref()
+            .is_some_and(|(revision, _)| *revision != self.revision.get());
         let result = (|| {
             let runtime = self.runtime_config().map_err(|error| error.to_string())?;
             lhc_core::active_window::set_titles_needed(runtime.uses_titles);
-            if !force && self.pushed_layout.borrow().as_ref() == Some(&runtime.layout_id) {
+            if !force && self.runtime_is_current(&runtime.layout_id) {
                 return Ok(());
             }
             lhc_core::mapper::runtime::update_config_if_running(&runtime.json)?;
-            *self.pushed_layout.borrow_mut() = Some(runtime.layout_id);
+            *self.pushed_layout.borrow_mut() = Some((self.revision.get(), runtime.layout_id));
             Ok(())
         })();
-        if result.is_err() && force {
+        if result.is_err() && (force || document_changed) {
             self.pushed_layout.borrow_mut().take();
             if let Err(error) = lhc_core::mapper::runtime::stop() {
                 log::warn!("stop outdated mapper: {error}");
@@ -239,9 +252,16 @@ impl Document {
         result
     }
 
+    fn runtime_is_current(&self, layout_id: &Option<String>) -> bool {
+        self.pushed_layout
+            .borrow()
+            .as_ref()
+            .is_some_and(|(revision, id)| *revision == self.revision.get() && id == layout_id)
+    }
+
     /// Record the layout a freshly started mapper runs.
-    pub fn mapper_started(&self, layout_id: Option<String>) {
-        *self.pushed_layout.borrow_mut() = Some(layout_id);
+    pub fn mapper_started(&self, revision: u64, layout_id: Option<String>) {
+        *self.pushed_layout.borrow_mut() = Some((revision, layout_id));
     }
 
     /// Refresh every view, for example after the language changed.
@@ -278,6 +298,36 @@ mod tests {
         let paths = StoragePaths::new(dir.path().join("settings"), dir.path().join("data"));
         let document = Document::load(paths).unwrap();
         (dir, document)
+    }
+
+    #[test]
+    fn startup_snapshot_does_not_hide_edits_with_the_same_layout_id() {
+        let (_dir, document) = document();
+        let started_revision = document.revision();
+        let layout_id = document.runtime_config().unwrap().layout_id;
+        document.mapper_started(started_revision, layout_id.clone());
+        assert!(document.runtime_is_current(&layout_id));
+        document
+            .edit(View::Keys, |config| {
+                config.set_base_tap_action("KeyA", "KeyB")
+            })
+            .unwrap();
+        document.mapper_started(started_revision, layout_id.clone());
+        assert!(!document.runtime_is_current(&layout_id));
+        assert_eq!(document.runtime_config().unwrap().layout_id, layout_id);
+        document.mapper_started(document.revision(), layout_id.clone());
+        assert!(document.runtime_is_current(&layout_id));
+        assert!(!document.runtime_is_current(&Some("user:other".into())));
+        let revision = document.revision();
+        assert!(
+            document
+                .edit(View::Settings, |config| {
+                    config.update_settings(|settings| settings.default_hold_timeout_ms = 0)
+                })
+                .is_err()
+        );
+        assert_eq!(document.revision(), revision);
+        assert!(document.runtime_is_current(&layout_id));
     }
 
     #[test]

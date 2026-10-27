@@ -2,7 +2,13 @@
 //! sync with changes other processes make.
 
 use super::{App, post};
-use crate::{command::Source, document::View, i18n::Msg, pages, ui::AppState};
+use crate::{
+    command::Source,
+    document::View,
+    i18n::Msg,
+    pages,
+    ui::{AppState, MapperPhase, MapperState},
+};
 use lhc_core::{
     CoreEvent,
     profile::{
@@ -89,13 +95,42 @@ pub(super) fn forward_core_events() -> Result<lhc_core::events::Subscription, St
     })
 }
 
+/// Operations owned by the shell before/after a core worker exists.
+#[derive(Clone, Copy, Default)]
+enum MapperOperation {
+    #[default]
+    Idle,
+    Starting,
+    Retrying,
+    Stopping,
+}
+
+fn mapper_phase(
+    operation: MapperOperation,
+    phase: lhc_core::mapper::runtime::MapperPhase,
+) -> MapperPhase {
+    use lhc_core::mapper::runtime::MapperPhase as Core;
+    match operation {
+        MapperOperation::Starting => MapperPhase::Starting,
+        MapperOperation::Retrying => MapperPhase::Retrying,
+        MapperOperation::Stopping => MapperPhase::Stopping,
+        MapperOperation::Idle => match phase {
+            Core::Stopped => MapperPhase::Stopped,
+            Core::Starting => MapperPhase::Starting,
+            Core::Running => MapperPhase::Running,
+            Core::Stopping => MapperPhase::Stopping,
+        },
+    }
+}
+
 /// What the settings show about the mapper's state and uptime.
 #[derive(Default)]
 pub(super) struct MapperController {
+    operation: Cell<MapperOperation>,
     game_active: Cell<Option<bool>>,
     announced_layout: RefCell<Option<Option<String>>>,
-    /// Running, busy and error last shown.
-    last: RefCell<Option<(bool, bool, Option<String>)>>,
+    /// Lifecycle, device wait and error last shown.
+    last: RefCell<Option<(MapperPhase, bool, Option<String>)>>,
     /// When the running mapper started.
     since: Cell<Option<Instant>>,
     /// How long the mapper ran before it stopped unexpectedly, and when.
@@ -119,7 +154,7 @@ impl MapperController {
             .is_some_and(|previous| previous != *id)
     }
 
-    fn status_changed(&self, current: (bool, bool, Option<String>)) -> bool {
+    fn status_changed(&self, current: (MapperPhase, bool, Option<String>)) -> bool {
         if self.last.borrow().as_ref() == Some(&current) {
             return false;
         }
@@ -287,24 +322,25 @@ impl App {
         if let Some(tray) = self.tray.borrow().as_ref() {
             tray.set_enabled(status.running);
         }
+        let phase = mapper_phase(self.mapper.operation.get(), status.phase);
         self.settings
             .global::<AppState>()
-            .set_mapper_running(status.running);
+            .set_mapper_state(MapperState {
+                phase,
+                error: status
+                    .last_error
+                    .as_ref()
+                    .map_or(Msg::None, |error| Msg::MapperFailed(error.clone()))
+                    .to_ui(),
+            });
         self.track_uptime(status.running, status.last_error.is_some());
-        let current = (
-            status.running,
-            status.waiting_for_device,
-            status.last_error.clone(),
-        );
+        let current = (phase, status.waiting_for_device, status.last_error.clone());
         if !self.mapper.status_changed(current) {
             return;
         }
-        if !status.running
-            && let Some(error) = &status.last_error
-        {
-            self.set_mapper_error(error.clone());
-        }
-        let message = if status.waiting_for_device {
+        let message = if matches!(phase, MapperPhase::Starting | MapperPhase::Retrying) {
+            Msg::MapperStarting
+        } else if status.waiting_for_device {
             Msg::MapperWaiting
         } else if status.running {
             Msg::MapperRunning(status.last_error)
@@ -313,7 +349,7 @@ impl App {
         };
         self.settings
             .global::<AppState>()
-            .set_status(crate::notifications::report(&self.settings, &message));
+            .set_status(message.to_ui());
     }
 
     /// Track the mapper's uptime and keep it shown while there is one.
@@ -339,8 +375,9 @@ impl App {
         state.set_mapper_stopped_ago(ago);
     }
 
-    fn set_mapper_busy(&self, busy: bool) {
-        self.settings.global::<AppState>().set_mapper_busy(busy);
+    fn set_mapper_operation(&self, operation: MapperOperation) {
+        self.mapper.operation.set(operation);
+        self.refresh_mapper_status();
     }
 
     pub(super) fn toggle_mapper(&self) {
@@ -368,19 +405,19 @@ impl App {
         if lhc_core::mapper::runtime::status().running {
             self.stop_mapper(true);
         } else {
-            self.set_mapper_error(String::new());
+            lhc_core::mapper::runtime::clear_stopped_error();
+            self.refresh_mapper_status();
         }
     }
 
     fn stop_mapper(&self, restart: bool) {
-        self.set_mapper_busy(true);
+        self.set_mapper_operation(MapperOperation::Stopping);
         std::thread::spawn(move || {
             let result = lhc_core::mapper::runtime::stop();
             post(move |app| {
-                app.set_mapper_busy(false);
+                app.set_mapper_operation(MapperOperation::Idle);
                 match result {
                     Ok(()) => {
-                        app.set_mapper_error(String::new());
                         if restart {
                             app.start_mapper(0);
                             return;
@@ -394,24 +431,12 @@ impl App {
         });
     }
 
-    fn set_mapper_error(&self, error: String) {
-        self.settings.global::<AppState>().set_mapper_error(
-            if error.is_empty() {
-                Msg::None
-            } else {
-                Msg::MapperFailed(error)
-            }
-            .to_ui(),
-        );
-    }
-
     /// Start the mapper; a failed start is tried again `retries` times.
     fn start_mapper(&self, retries: u32) {
         if !lhc_core::mapper::runtime::SUPPORTED {
             self.set_error(Msg::MapperUnsupported);
             return;
         }
-        let state = self.settings.global::<AppState>();
         let Some(document) = self.document() else {
             self.set_error(Msg::LoadConfigFirst);
             return;
@@ -427,6 +452,7 @@ impl App {
             self.set_error(Msg::SelectInputDevice);
             return;
         };
+        let revision = document.revision();
         let runtime = match document.runtime_config() {
             Ok(runtime) => runtime,
             Err(error) => {
@@ -436,19 +462,17 @@ impl App {
         };
         lhc_core::active_window::set_titles_needed(runtime.uses_titles);
         self.mapper.crash.set(None);
-        self.set_mapper_busy(true);
-        state.set_status(Msg::MapperStarting.to_ui());
+        self.set_mapper_operation(MapperOperation::Starting);
         std::thread::spawn(move || {
             let result = lhc_core::mapper::runtime::start(&device, mouse.as_deref(), &runtime.json);
             post(move |app| {
-                app.set_mapper_busy(false);
+                app.set_mapper_operation(MapperOperation::Idle);
                 match result {
                     Ok(()) => {
-                        app.set_mapper_error(String::new());
                         crate::notifications::send(&app.settings, Msg::MapperRunning(None));
                         if let Some(document) = app.document() {
-                            document.mapper_started(runtime.layout_id);
-                            // The context may have changed while starting.
+                            document.mapper_started(revision, runtime.layout_id);
+                            // Both the document and context may have changed while starting.
                             if let Err(error) = document.sync_runtime(false) {
                                 app.set_error(Msg::SavedMapperNotUpdated(error));
                             }
@@ -457,17 +481,16 @@ impl App {
                     Err(error) if retries > 0 => {
                         log::info!("mapper start failed, retrying: {error}");
                         // Stay busy until the next attempt.
-                        app.set_mapper_busy(true);
+                        app.set_mapper_operation(MapperOperation::Retrying);
                         slint::Timer::single_shot(LAUNCH_RETRY_DELAY, move || {
                             super::with_app(|app| {
-                                app.set_mapper_busy(false);
+                                app.set_mapper_operation(MapperOperation::Idle);
                                 app.start_mapper(retries - 1);
                             })
                         });
                         return;
                     }
                     Err(error) => {
-                        app.set_mapper_error(error.clone());
                         // A known cause says more than the generic failure.
                         match pages::check_input_access(&app.settings).first() {
                             Some(issue) => app.set_error(Msg::InputAccess(*issue)),

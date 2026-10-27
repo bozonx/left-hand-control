@@ -19,7 +19,52 @@ use lhc_core::{
     },
 };
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
-use std::{collections::HashMap, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
+
+/// A command chosen inside a layer-key dialog, pending its Apply button.
+#[derive(Default)]
+pub(super) struct Draft {
+    command: Option<lhc_core::profile::model::Command>,
+    target: Option<(String, i32)>,
+}
+
+pub(super) fn command(
+    ui: &SettingsWindow,
+    state: &RefCell<Draft>,
+    id: &str,
+) -> Option<lhc_core::profile::model::Command> {
+    let editor = ui.global::<LayersEditor>();
+    let state = state.borrow();
+    let target = (
+        editor.get_selected_id().to_string(),
+        editor.get_dialog_index(),
+    );
+    state
+        .command
+        .as_ref()
+        .filter(|command| {
+            editor.get_dialog() == LayerDialog::EditKey
+                && state.target.as_ref() == Some(&target)
+                && command.id == id
+        })
+        .cloned()
+}
+
+pub(super) fn choose_dialog_action(
+    ui: &SettingsWindow,
+    state: &RefCell<Draft>,
+    action: slint::SharedString,
+    command: Option<lhc_core::profile::model::Command>,
+) {
+    let editor = ui.global::<LayersEditor>();
+    let mut state = state.borrow_mut();
+    state.command = command;
+    state.target = Some((
+        editor.get_selected_id().to_string(),
+        editor.get_dialog_index(),
+    ));
+    editor.set_dialog_action(action);
+}
 
 /// Display names of catalog actions (macros, commands, built-ins).
 fn action_names(ui: &SettingsWindow, config: &ResolvedAppConfig) -> HashMap<String, String> {
@@ -366,7 +411,11 @@ fn open_dialog(ui: &SettingsWindow, document: &Document, dialog: LayerDialog, in
 }
 
 /// Apply the open dialog.
-fn apply_dialog(ui: &SettingsWindow, document: &Document) -> Result<(), Msg> {
+fn apply_dialog(
+    ui: &SettingsWindow,
+    document: &Document,
+    command: Option<lhc_core::profile::model::Command>,
+) -> Result<(), Msg> {
     let editor = ui.global::<LayersEditor>();
     let dialog = editor.get_dialog();
     let index = editor.get_dialog_index();
@@ -382,7 +431,11 @@ fn apply_dialog(ui: &SettingsWindow, document: &Document) -> Result<(), Msg> {
         if matches!(&parsed, actions::Action::Text(text) if text.is_empty()) {
             return Err(Msg::TextEmpty);
         }
-        if let Some(issue) = actions::validate(&parsed, &document.read().config()) {
+        let mut candidate = document.read().config();
+        if let Some(command) = command.as_ref() {
+            super::stage_command(&mut candidate.commands, command.clone());
+        }
+        if let Some(issue) = actions::validate(&parsed, &candidate) {
             return Err(Msg::InvalidAction(issue));
         }
     }
@@ -414,7 +467,11 @@ fn apply_dialog(ui: &SettingsWindow, document: &Document) -> Result<(), Msg> {
                 Assignment::Swallow => KeyAssignment::Swallow,
                 Assignment::Action => KeyAssignment::Action(action),
             };
-            change(ui, document, |config| config.set_layer_key(&id, key, value))?
+            change(ui, document, |config| {
+                config.edit_layout_with_commands(command, |config| {
+                    config.set_layer_key(&id, key, value)
+                })
+            })?
         }
         LayerDialog::Create | LayerDialog::None => {}
     }
@@ -468,7 +525,8 @@ fn extra_at(document: &Document, id: &str, index: i32) -> Option<(String, Option
         .and_then(|map| ordered_extra_entries(map).into_iter().nth(index))
 }
 
-pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
+pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Rc<RefCell<Draft>> {
+    let draft = Rc::new(RefCell::new(Draft::default()));
     let weak = ui.as_weak();
     let doc = document.clone();
     ui.global::<LayersEditor>().on_reorder(move |from, to| {
@@ -586,14 +644,22 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         select_layer(&ui, &doc, index);
     });
 
-    on!(ui, editor.on_open_dialog, doc = document => |ui, dialog, index| {
+    on!(ui, editor.on_open_dialog, doc = document, draft = draft => |ui, dialog, index| {
+        *draft.borrow_mut() = Draft::default();
         open_dialog(&ui, &doc, dialog, index);
     });
 
-    on!(ui, editor.on_apply_dialog, doc = document => |ui| {
+    on!(ui, editor.on_apply_dialog, doc = document, draft = draft => |ui| {
         let editor = ui.global::<LayersEditor>();
-        match apply_dialog(&ui, &doc) {
-            Ok(()) => editor.set_dialog(LayerDialog::None),
+        let pending = match actions::Action::parse(Some(&editor.get_dialog_action())) {
+            actions::Action::Command(id) if editor.get_assignment() == Assignment::Action => command(&ui, &draft, &id),
+            _ => None,
+        };
+        match apply_dialog(&ui, &doc, pending) {
+            Ok(()) => {
+                *draft.borrow_mut() = Draft::default();
+                editor.set_dialog(LayerDialog::None);
+            },
             Err(error) => editor.set_status(crate::notifications::report(&ui, &error)),
         }
     });
@@ -627,6 +693,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             });
         }
     });
+    draft
 }
 
 /// Whether the layer key `index` of picker `target` keeps its modifiers
@@ -704,16 +771,29 @@ fn holds_modifiers(
     key.is_some_and(|key| document.read().layer_key_holds_modifiers(&id, &key))
 }
 
+/// Picker options applied together with a layer assignment.
+pub(super) struct Choice {
+    pub ignore: bool,
+    pub hold_modifiers: bool,
+    pub command: Option<lhc_core::profile::model::Command>,
+}
+
 pub(super) fn assign(
     ui: &SettingsWindow,
     document: &Document,
     index: i32,
     value: &str,
-    ignore: bool,
-    hold_modifiers: bool,
+    choice: Choice,
 ) -> Result<(), Msg> {
-    let id = selected_id(ui, document).ok_or(Msg::None)?;
-    let key = keyboard::layer_key(index).ok_or(Msg::None)?;
+    let Choice {
+        ignore,
+        hold_modifiers,
+        command,
+    } = choice;
+    let id = selected_id(ui, document)
+        .ok_or_else(|| Msg::from(&lhc_core::config_document::ConfigError::EditConflict))?;
+    let key = keyboard::layer_key(index)
+        .ok_or_else(|| Msg::from(&lhc_core::config_document::ConfigError::EditConflict))?;
     let assignment = if ignore {
         KeyAssignment::Swallow
     } else if value.is_empty() {
@@ -723,11 +803,13 @@ pub(super) fn assign(
     };
     let action = matches!(assignment, KeyAssignment::Action(_));
     change(ui, document, |config| {
-        config.set_layer_key(&id, key, assignment)?;
-        if action {
-            config.set_layer_key_holds_modifiers(&id, key, hold_modifiers)?;
-        }
-        Ok(())
+        config.edit_layout_with_commands(command, |config| {
+            config.set_layer_key(&id, key, assignment)?;
+            if action {
+                config.set_layer_key_holds_modifiers(&id, key, hold_modifiers)?;
+            }
+            Ok(())
+        })
     })
 }
 
@@ -740,10 +822,15 @@ pub(super) fn assign_extra(
     index: i32,
     value: &str,
     key_only: bool,
-    ignore: bool,
-    hold_modifiers: bool,
+    choice: Choice,
 ) -> Result<bool, Msg> {
-    let id = selected_id(ui, document).ok_or(Msg::None)?;
+    let Choice {
+        ignore,
+        hold_modifiers,
+        command,
+    } = choice;
+    let id = selected_id(ui, document)
+        .ok_or_else(|| Msg::from(&lhc_core::config_document::ConfigError::EditConflict))?;
     let existing = extra_at(document, &id, index);
     let editor = ui.global::<LayersEditor>();
     if key_only {
@@ -789,8 +876,10 @@ pub(super) fn assign_extra(
     };
     let holds = matches!(action, KeyAssignment::Action(_)) && hold_modifiers;
     change(ui, document, |config| {
-        config.set_extra_key(&id, previous.as_deref(), &key, action)?;
-        config.set_layer_key_holds_modifiers(&id, &key, holds)
+        config.edit_layout_with_commands(command, |config| {
+            config.set_extra_key(&id, previous.as_deref(), &key, action)?;
+            config.set_layer_key_holds_modifiers(&id, &key, holds)
+        })
     })?;
     Ok(false)
 }

@@ -665,6 +665,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         super::autosave::Draft::save(&mut *shared.borrow_mut(), &ui, &doc);
     });
 
+    on!(ui, e.on_flush_pending, doc = document, shared = state => |ui| {
+        let mut state = shared.borrow_mut();
+        super::autosave::Draft::save(&mut *state, &ui, &doc);
+        state.base.as_ref().is_some_and(|base| Form::read(&ui, &state.matchers) == *base)
+    });
+
     on!(ui, e.on_schedule_save, doc = document, shared = state => |ui| {
         super::autosave::schedule(&ui, &doc, &shared);
     });

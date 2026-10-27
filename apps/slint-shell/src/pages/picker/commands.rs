@@ -1,6 +1,6 @@
 //! Command drafts and file chooser callbacks for the action picker.
 
-use super::Session;
+use super::{Drafts, Session};
 use crate::{
     document::Document,
     i18n::Msg,
@@ -49,9 +49,14 @@ pub(super) fn command_notice(picker: &ActionPicker) -> Msg {
     }
 }
 
-pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>, session: &Rc<RefCell<Session>>) {
+pub(super) fn bind(
+    ui: &SettingsWindow,
+    document: &Rc<Document>,
+    session: &Rc<RefCell<Session>>,
+    drafts: &Rc<Drafts>,
+) {
     let picker = ui.global::<ActionPicker>();
-    on!(ui, picker.on_edit_command, doc = document, state = session => |ui| {
+    on!(ui, picker.on_edit_command, doc = document, state = session, drafts = drafts => |ui| {
         if !doc.read().settings().commands_enabled {
             return;
         }
@@ -62,13 +67,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>, session: &Rc<Re
             _ => lhc_core::profile::ids::generate("cmd-"),
         };
         // Keep the script of the other operating systems.
-        let mut command = doc
+        let mut command = drafts.command(&ui, &id).or_else(|| doc
             .read()
             .layout()
             .commands
             .iter()
             .find(|command| command.id == id)
-            .cloned()
+            .cloned())
             .unwrap_or_else(|| lhc_core::profile::model::Command {
                 id: id.clone(),
                 name: String::new(),

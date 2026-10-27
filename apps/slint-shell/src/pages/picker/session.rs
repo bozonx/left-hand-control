@@ -1,7 +1,7 @@
 //! Open, refresh and apply an action picker session.
 
 use super::{
-    Session, assigns_command,
+    Drafts, Session, assigns_command,
     catalog::{
         ACTION_CATEGORIES, KEY_CATEGORIES, catalog, category_for_value, execution_notice,
         is_key_category, load_desktop_shortcuts,
@@ -12,10 +12,10 @@ use super::{
 use crate::{
     document::Document,
     i18n::Msg,
-    pages::{keys, layers, macros, one_line, rules},
+    pages::{keys, layers, macros, menus, one_line, rules},
     ui::{
-        ActionPicker, LayersEditor, Locale, MacroEditor, MenuEditor, PickerBehavior,
-        PickerCategory, PickerCategoryCount, PickerItem, PickerTarget, SettingsWindow,
+        ActionPicker, Locale, PickerBehavior, PickerCategory, PickerCategoryCount, PickerItem,
+        PickerTarget, SettingsWindow,
     },
 };
 use lhc_core::profile::actions::Action;
@@ -26,11 +26,12 @@ pub(super) fn open(
     ui: &SettingsWindow,
     doc: &Document,
     state: &RefCell<Session>,
-    target: PickerTarget,
-    index: i32,
+    drafts: &Drafts,
+    selection: (PickerTarget, i32),
     value: slint::SharedString,
     key_only: bool,
 ) {
+    let (target, index) = selection;
     load_desktop_shortcuts(ui.as_weak());
     let catalog = catalog(ui, &doc.read());
     let category = catalog
@@ -66,11 +67,15 @@ pub(super) fn open(
             })
             .unwrap_or_else(|| value.clone()),
     };
+    let command = match Action::parse(Some(value.as_str())) {
+        Action::Command(id) => drafts.command(ui, &id),
+        _ => None,
+    };
     *state.borrow_mut() = Session {
         identity: std::sync::Arc::new(()),
         target: Some((target, index)),
         catalog,
-        command: None,
+        command: command.clone(),
     };
     let picker = ui.global::<ActionPicker>();
     picker.set_command_help(if cfg!(target_os = "windows") {
@@ -82,9 +87,26 @@ pub(super) fn open(
     });
     picker.set_commands_enabled(doc.read().settings().commands_enabled);
     picker.set_subject("".into());
-    picker.set_command_name("".into());
-    picker.set_command_script("".into());
-    picker.set_command_directory("".into());
+    picker.set_command_name(
+        command
+            .as_ref()
+            .map(|c| c.name.clone())
+            .unwrap_or_default()
+            .into(),
+    );
+    picker.set_command_script(
+        command
+            .as_ref()
+            .map(|c| c.script().to_owned())
+            .unwrap_or_default()
+            .into(),
+    );
+    picker.set_command_directory(
+        command
+            .and_then(|c| c.working_directory)
+            .unwrap_or_default()
+            .into(),
+    );
     picker.set_command_notice(Msg::None.to_ui());
     picker.set_dialog_title(request.title);
     picker.set_layer_action(request.mode == PickerMode::LayerAction);
@@ -237,7 +259,12 @@ pub(super) fn refresh(ui: &SettingsWindow, doc: &Document, state: &RefCell<Sessi
     picker.set_valid(valid);
 }
 
-pub(super) fn apply(ui: &SettingsWindow, doc: &Document, session: &RefCell<Session>) {
+pub(super) fn apply(
+    ui: &SettingsWindow,
+    doc: &Document,
+    session: &RefCell<Session>,
+    drafts: &Drafts,
+) {
     let picker = ui.global::<ActionPicker>();
     picker.invoke_refresh();
     if !picker.get_valid() || picker.get_capturing() {
@@ -254,21 +281,18 @@ pub(super) fn apply(ui: &SettingsWindow, doc: &Document, session: &RefCell<Sessi
         .command
         .clone()
         .filter(|command| assigns_command(&value, &command.id));
-    if let Some(command) = command
-        && let Err(error) = doc.edit(crate::document::View::Shell, |config| {
-            config.save_command(command)
-        })
-    {
-        picker.set_error(Msg::from(&error).to_ui());
-        return;
-    }
     let (target, label) = {
         let state = session.borrow();
-        let label = state
-            .catalog
-            .iter()
-            .find(|item| item.value == value)
-            .map(|item| item.label.clone())
+        let label = command
+            .as_ref()
+            .map(|command| command.display_name().into())
+            .or_else(|| {
+                state
+                    .catalog
+                    .iter()
+                    .find(|item| item.value == value)
+                    .map(|item| item.label.clone())
+            })
             .or_else(|| {
                 doc.read()
                     .layout()
@@ -286,17 +310,22 @@ pub(super) fn apply(ui: &SettingsWindow, doc: &Document, session: &RefCell<Sessi
     let mut next_step = false;
     match target {
         PickerTarget::Rule => {
-            if let Err(error) = rules::choose(ui, doc, &value) {
+            if let Err(error) = rules::choose(ui, doc, &value, command) {
                 picker.set_error(error.to_ui());
             }
         }
         PickerTarget::MacroStep => {
-            let editor = ui.global::<MacroEditor>();
-            editor.invoke_set_step(editor.get_picker_macro(), index, value);
+            if let Err(error) = macros::choose(ui, doc, &drafts.macros, index, &value, command) {
+                picker.set_error(error.to_ui());
+            }
         }
-        PickerTarget::QuickAction => ui
-            .global::<MenuEditor>()
-            .invoke_set_action(index, value, label),
+        PickerTarget::QuickAction => {
+            if let Err(error) =
+                menus::choose(ui, doc, &drafts.menus, index, &value, &label, command)
+            {
+                picker.set_error(error.to_ui());
+            }
+        }
         PickerTarget::LayerAction => {
             if picker.get_layer_action() {
                 if let Err(error) = layers::assign(
@@ -304,13 +333,16 @@ pub(super) fn apply(ui: &SettingsWindow, doc: &Document, session: &RefCell<Sessi
                     doc,
                     index,
                     &value,
-                    picker.get_ignore_key() && value.is_empty(),
-                    picker.get_hold_modifiers(),
+                    layers::Choice {
+                        ignore: picker.get_ignore_key() && value.is_empty(),
+                        hold_modifiers: picker.get_hold_modifiers(),
+                        command,
+                    },
                 ) {
                     picker.set_error(error.to_ui());
                 }
             } else {
-                ui.global::<LayersEditor>().set_dialog_action(value);
+                layers::choose_dialog_action(ui, &drafts.layers, value, command);
             }
         }
         PickerTarget::ExtraKey | PickerTarget::ExtraAction => {
@@ -320,15 +352,18 @@ pub(super) fn apply(ui: &SettingsWindow, doc: &Document, session: &RefCell<Sessi
                 index,
                 &value,
                 target == PickerTarget::ExtraKey,
-                picker.get_ignore_key() && value.is_empty(),
-                picker.get_hold_modifiers(),
+                layers::Choice {
+                    ignore: picker.get_ignore_key() && value.is_empty(),
+                    hold_modifiers: picker.get_hold_modifiers(),
+                    command,
+                },
             ) {
                 Ok(next) => next_step = next,
                 Err(error) => picker.set_error(error.to_ui()),
             }
         }
         PickerTarget::BaseKey => {
-            if let Err(error) = keys::assign(ui, doc, index, &value) {
+            if let Err(error) = keys::assign(ui, doc, index, &value, command) {
                 picker.set_error(error.to_ui());
             }
         }

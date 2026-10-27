@@ -4,6 +4,7 @@ use slint_shell::{Document, bind_document, ui::*};
 use std::time::Duration;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    check_atomic_commands()?;
     let dir = tempfile::tempdir()?;
     let document = Document::load(StoragePaths::new(
         dir.path().join("settings"),
@@ -291,4 +292,144 @@ fn quick_action(layout: &lhc_core::profile::model::LayoutPreset, page: usize, ke
         .get(key)
         .map(|item| item.action.clone())
         .unwrap_or_default()
+}
+
+/// Command edits stay with their target, including invalid page drafts.
+fn check_atomic_commands() -> Result<(), Box<dyn std::error::Error>> {
+    let dir = tempfile::tempdir()?;
+    let document = Document::load(StoragePaths::new(
+        dir.path().join("settings"),
+        dir.path().join("data"),
+    ))?;
+    let ui = SettingsWindow::new()?;
+    bind_document(&ui, &document);
+    let settings = ui.global::<SettingsEditor>();
+    settings.set_commands_enabled(true);
+    settings.set_in_development(true);
+    settings.invoke_save();
+    ui.global::<AppState>().set_in_development(true);
+    let picker = ui.global::<ActionPicker>();
+    let edit_command = |script: &str| {
+        picker.invoke_select_behavior(PickerBehavior::Action);
+        picker.set_command_script(script.into());
+        picker.invoke_edit_command();
+    };
+    let before = document.read().layout().clone();
+    picker.invoke_open(PickerTarget::BaseKey, i32::MAX, "".into(), false);
+    edit_command("echo invalid-target");
+    picker.invoke_apply();
+    assert!(picker.get_opened());
+    assert_eq!(picker.get_error().id, "config-edit-conflict");
+    assert_eq!(document.read().layout(), &before);
+    picker.invoke_dismiss_picker();
+    ui.global::<KeyEditor>().invoke_edit(33);
+    edit_command("echo assigned");
+    let action = picker.get_value().to_string();
+    picker.invoke_apply();
+    assert!(!picker.get_opened());
+    assert_eq!(
+        document.read().base_tap_action("KeyQ"),
+        Some(action.as_str())
+    );
+    assert_eq!(document.read().layout().commands.len(), 1);
+    let before = document.read().layout().clone();
+    picker.invoke_open(PickerTarget::BaseKey, i32::MAX, action.into(), false);
+    edit_command("echo must-not-overwrite");
+    picker.invoke_apply();
+    assert!(picker.get_opened());
+    assert_eq!(document.read().layout(), &before);
+    picker.invoke_dismiss_picker();
+
+    let macros = ui.global::<MacroEditor>();
+    macros.invoke_add("Draft".into());
+    macros.invoke_set_field(0, MacroField::ModifierDelay, "invalid".into());
+    macros.invoke_add_step(0, "".into());
+    edit_command("echo macro-draft");
+    let action = picker.get_value();
+    picker.invoke_apply();
+    assert!(!picker.get_opened());
+    assert_eq!(document.read().layout().commands.len(), 1);
+    assert!(document.read().layout().macros[0].steps.is_empty());
+    assert!(
+        !ui.invoke_flush_drafts(),
+        "quit must keep an invalid macro draft"
+    );
+    assert_eq!(ui.get_page(), Page::Macros);
+    // Reopening a pending command restores its fields without committing it.
+    macros.set_picker_macro(0);
+    picker.invoke_open(PickerTarget::MacroStep, 0, action, false);
+    assert_eq!(picker.get_command_script(), "echo macro-draft");
+    picker.invoke_dismiss_picker();
+    macros.invoke_set_field(0, MacroField::ModifierDelay, "10".into());
+    assert!(ui.invoke_flush_drafts());
+    assert_eq!(document.read().layout().commands.len(), 2);
+    assert_eq!(document.read().layout().macros[0].steps.len(), 1);
+
+    // A quick-menu conflict keeps both the pending command and the local menu.
+    let menus = ui.global::<MenuEditor>();
+    menus.invoke_open(MenuKind::Quick);
+    menus.set_page_name("Local".into());
+    menus.invoke_rename_page();
+    document.edit(slint_shell::document::View::Shell, |config| {
+        config.update_layout(|layout| {
+            layout.quick_action_pages[0].name = "Concurrent".into();
+        })
+    })?;
+    picker.invoke_open(PickerTarget::QuickAction, 0, "".into(), false);
+    edit_command("echo menu-draft");
+    let action = picker.get_value();
+    picker.invoke_apply();
+    assert_eq!(document.read().layout().commands.len(), 2);
+    assert!(
+        !ui.invoke_flush_drafts(),
+        "quit must keep a conflicting menu draft"
+    );
+    assert_eq!(ui.get_page(), Page::Menus);
+    assert_eq!(menus.get_value(), action);
+    picker.invoke_open(PickerTarget::QuickAction, 0, action, false);
+    assert_eq!(picker.get_command_script(), "echo menu-draft");
+    picker.invoke_dismiss_picker();
+    menus.invoke_refresh();
+    assert!(ui.invoke_flush_drafts());
+    assert_eq!(
+        document.read().layout().commands.len(),
+        2,
+        "discarding the menu discards its command"
+    );
+
+    settings.set_hold_timeout("invalid".into());
+    assert!(!ui.invoke_flush_drafts(), "quit must keep invalid settings");
+    assert_eq!(ui.get_page(), Page::Settings);
+    settings.set_hold_timeout(settings.get_default_hold_timeout());
+    assert!(ui.invoke_flush_drafts());
+
+    // The layer-key dialog keeps its command until its own Apply button.
+    document.edit(slint_shell::document::View::Shell, |config| {
+        config.create_layer("Layer", "")
+    })?;
+    let layers = ui.global::<LayersEditor>();
+    layers.invoke_choose(0);
+    layers.set_dialog_index(0);
+    layers.set_assignment(Assignment::Action);
+    layers.set_dialog(LayerDialog::EditKey);
+    picker.invoke_open(PickerTarget::LayerAction, 0, "".into(), false);
+    edit_command("echo layer-draft");
+    let action = picker.get_value();
+    picker.invoke_apply();
+    assert_eq!(document.read().layout().commands.len(), 2);
+    assert_eq!(layers.get_dialog_action(), action);
+    picker.invoke_open(PickerTarget::LayerAction, 0, action.clone(), false);
+    assert_eq!(picker.get_command_script(), "echo layer-draft");
+    picker.invoke_dismiss_picker();
+    layers.invoke_apply_dialog();
+    assert_eq!(layers.get_dialog(), LayerDialog::None);
+    assert_eq!(document.read().layout().commands.len(), 3);
+    assert_eq!(
+        document.read().layer_key(
+            &layers.get_selected_id(),
+            slint_shell::keyboard::layer_key(0).unwrap()
+        ),
+        lhc_core::config_document::KeyAssignment::Action(action.to_string())
+    );
+    Ok(())
 }

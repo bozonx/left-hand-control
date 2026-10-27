@@ -382,6 +382,27 @@ impl ConfigDocument {
         self.update_layout(|layout| layout.swap_layer_keys(layer_id, a, b))
     }
 
+    /// Stage commands and a layout-only edit, committing the working copy only
+    /// when every operation succeeds. The callback must not change settings or files.
+    pub fn edit_layout_with_commands<T>(
+        &mut self,
+        commands: impl IntoIterator<Item = crate::profile::model::Command>,
+        edit: impl FnOnce(&mut Self) -> Result<T, ConfigError>,
+    ) -> Result<T, ConfigError> {
+        let mut draft = Self {
+            paths: self.paths.clone(),
+            settings: self.settings.clone(),
+            layout: self.layout.clone(),
+            layout_load_error: self.layout_load_error.clone(),
+        };
+        for command in commands {
+            draft.save_command(command)?;
+        }
+        let result = edit(&mut draft)?;
+        self.layout = draft.layout;
+        Ok(result)
+    }
+
     /// Apply `edit` to a copy of the current layout.
     pub fn update_layout(
         &mut self,
@@ -464,6 +485,58 @@ mod tests {
             .unwrap();
         paths.save_user_layout(name, layout, true).unwrap();
         (dir, ConfigDocument::load(paths).unwrap())
+    }
+
+    #[test]
+    fn commands_and_assignments_commit_together_or_leave_the_layout_unchanged() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut document = ConfigDocument::load(StoragePaths::new(
+            dir.path().join("config"),
+            dir.path().join("data"),
+        ))
+        .unwrap();
+        document
+            .update_settings(|settings| settings.commands_enabled = true)
+            .unwrap();
+        let command = crate::profile::model::Command {
+            id: "cmd-test".into(),
+            name: "Test".into(),
+            posix_script: "true".into(),
+            powershell_script: "exit 0".into(),
+            working_directory: None,
+        };
+        let before = document.layout().clone();
+        let failed = document.edit_layout_with_commands([command.clone()], |config| {
+            config.set_base_tap_action("KeyA", "cmd:cmd-test")?;
+            config.set_layer_key(
+                "missing",
+                "KeyB",
+                KeyAssignment::Action("cmd:cmd-test".into()),
+            )
+        });
+        assert!(failed.is_err());
+        assert_eq!(document.layout(), &before);
+        document
+            .edit_layout_with_commands([command.clone()], |config| {
+                config.set_base_tap_action("KeyA", "cmd:cmd-test")
+            })
+            .unwrap();
+        assert_eq!(
+            document.layout().commands.as_slice(),
+            std::slice::from_ref(&command)
+        );
+        assert_eq!(document.base_tap_action("KeyA"), Some("cmd:cmd-test"));
+        let before = document.layout().clone();
+        let mut edited = command;
+        edited.posix_script = "false".into();
+        assert!(
+            document
+                .edit_layout_with_commands([edited], |config| {
+                    config.set_layer_key("missing", "KeyB", KeyAssignment::Swallow)
+                })
+                .is_err()
+        );
+        assert_eq!(document.layout(), &before);
     }
 
     #[test]

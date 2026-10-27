@@ -1,16 +1,21 @@
 import { Message } from "i18n.slint";
-import { GameModeControl } from "types.slint";
+import { GameModeControl, MapperPhase } from "types.slint";
+
+/// One projection of the mapper lifecycle and its failure.
+export struct MapperState { phase: MapperPhase, error: Message }
 
 /// Shell state shown on several pages: mapper, runtime context and the
 /// messages that are not tied to one page.
 export global AppState {
     in property <bool> in-development;
-    in property <bool> mapper-running;
-    in property <bool> mapper-busy;
+    in property <MapperState> mapper-state;
+    out property <bool> mapper-running: mapper-state.phase == MapperPhase.running;
+    out property <bool> mapper-busy: mapper-state.phase == MapperPhase.starting
+        || mapper-state.phase == MapperPhase.stopping || mapper-state.phase == MapperPhase.retrying;
     /// A keyboard device is chosen, so the mapper can start.
     in property <bool> keyboard-selected;
     /// Why the mapper failed to start or stopped; empty when it is fine.
-    in property <Message> mapper-error;
+    out property <Message> mapper-error: mapper-state.error;
     /// Whole minutes the mapper has been running; -1 when stopped.
     in property <int> mapper-uptime: -1;
     /// After the mapper stopped by itself: whole minutes it ran and

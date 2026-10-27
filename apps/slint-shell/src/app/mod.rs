@@ -173,8 +173,11 @@ impl App {
                 }
             }
             Command::Quit => {
-                self.shutdown();
-                let _ = slint::quit_event_loop();
+                if self.shutdown() {
+                    let _ = slint::quit_event_loop();
+                } else {
+                    self.show(Window::Settings, Source::Button, start, None, None);
+                }
             }
         }
     }
@@ -289,20 +292,17 @@ impl App {
         }
     }
 
-    fn shutdown(&self) {
-        if self.shutting_down.replace(true) {
-            return;
+    fn shutdown(&self) -> bool {
+        if self.shutting_down.get() {
+            return true;
         }
-        self.settings
-            .global::<crate::ui::MenuEditor>()
-            .invoke_flush_pending();
-        self.settings
-            .global::<crate::ui::MacroEditor>()
-            .invoke_flush_pending();
-        self.settings
-            .global::<crate::ui::SettingsEditor>()
-            .invoke_save();
+        if self.document().is_some() && !self.settings.invoke_flush_drafts() {
+            log::warn!("shutdown deferred: page drafts could not be saved");
+            return false;
+        }
+        self.shutting_down.set(true);
         self.supervisor.borrow_mut().shutdown();
+        true
     }
 }
 

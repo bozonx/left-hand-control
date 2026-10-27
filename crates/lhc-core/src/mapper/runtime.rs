@@ -18,6 +18,8 @@ use std::sync::{
 
 #[derive(Debug, Clone, Serialize, Default)]
 pub struct MapperStatus {
+    #[serde(skip)]
+    pub phase: MapperPhase,
     pub running: bool,
     pub waiting_for_device: bool,
     pub device_path: Option<String>,
@@ -56,21 +58,29 @@ trait MapperBackend: Send + Sync + 'static {
     ) -> Result<Box<dyn BackendHandle>, String>;
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Lifecycle {
+/// Device-worker lifecycle; startup and teardown reserve the mapper slot.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum MapperPhase {
+    #[default]
     Stopped,
     Starting,
     Running,
     Stopping,
 }
 
+struct MapperDetails {
+    device_path: Option<String>,
+    mouse_device_path: Option<String>,
+    last_error: Option<String>,
+}
+
 struct MapperRuntime<B> {
     backend: B,
     handle: Option<Box<dyn BackendHandle>>,
-    status: MapperStatus,
+    details: MapperDetails,
     config_json: Option<String>,
     /// Reserves the mapper while starting or joining outside the state lock.
-    lifecycle: Lifecycle,
+    lifecycle: MapperPhase,
     start_stop: Option<Arc<AtomicBool>>,
 }
 
@@ -79,15 +89,13 @@ impl<B> MapperRuntime<B> {
         Self {
             backend,
             handle: None,
-            status: MapperStatus {
-                running: false,
-                waiting_for_device: false,
+            details: MapperDetails {
                 device_path: None,
                 mouse_device_path: None,
                 last_error: None,
             },
             config_json: None,
-            lifecycle: Lifecycle::Stopped,
+            lifecycle: MapperPhase::Stopped,
             start_stop: None,
         }
     }
@@ -113,14 +121,14 @@ impl<B: MapperBackend> MapperRuntime<B> {
             && handle.reap_if_finished()
         {
             self.handle = None;
-            self.lifecycle = Lifecycle::Stopped;
-            self.status.running = false;
+            self.lifecycle = MapperPhase::Stopped;
             self.config_json = None;
         }
-        if self.lifecycle != Lifecycle::Stopped {
+        if self.lifecycle != MapperPhase::Stopped {
             return Err("mapper already running".into());
         }
-        self.lifecycle = Lifecycle::Starting;
+        self.details.last_error = None;
+        self.lifecycle = MapperPhase::Starting;
         let stop = Arc::new(AtomicBool::new(false));
         self.start_stop = Some(stop.clone());
         Ok(stop)
@@ -133,25 +141,23 @@ impl<B: MapperBackend> MapperRuntime<B> {
         device_path: &str,
         mouse_path: Option<&str>,
     ) -> Result<Option<Box<dyn BackendHandle>>, String> {
-        self.lifecycle = Lifecycle::Stopped;
+        self.lifecycle = MapperPhase::Stopped;
         let cancelled = self
             .start_stop
             .take()
             .is_some_and(|stop| stop.load(Ordering::SeqCst));
         if cancelled {
             if result.is_ok() {
-                self.lifecycle = Lifecycle::Stopping;
+                self.lifecycle = MapperPhase::Stopping;
             }
             return result
                 .map(Some)
                 .map_err(|_| "mapper start cancelled".into());
         }
-        let handle = result?;
+        let handle = result.inspect_err(|error| self.details.last_error = Some(error.clone()))?;
         self.handle = Some(handle);
-        self.lifecycle = Lifecycle::Running;
-        self.status = MapperStatus {
-            running: true,
-            waiting_for_device: false,
+        self.lifecycle = MapperPhase::Running;
+        self.details = MapperDetails {
             device_path: Some(device_path.to_string()),
             mouse_device_path: mouse_path.map(|s| s.to_string()),
             last_error: None,
@@ -186,9 +192,8 @@ impl<B: MapperBackend> MapperRuntime<B> {
     fn take_handle(&mut self) -> Result<Box<dyn BackendHandle>, String> {
         match self.handle.take() {
             Some(handle) => {
-                self.status.running = false;
                 self.config_json = None;
-                self.lifecycle = Lifecycle::Stopping;
+                self.lifecycle = MapperPhase::Stopping;
                 Ok(handle)
             }
             None => Err("mapper is not running".into()),
@@ -204,7 +209,8 @@ impl<B: MapperBackend> MapperRuntime<B> {
     }
 
     fn finish_stop(&mut self) {
-        self.lifecycle = Lifecycle::Stopped;
+        self.details.last_error = None;
+        self.lifecycle = MapperPhase::Stopped;
     }
 
     fn update_config(&mut self, cfg: config::MapperConfig) -> Result<(), String> {
@@ -213,8 +219,7 @@ impl<B: MapperBackend> MapperRuntime<B> {
         };
         if handle.reap_if_finished() {
             self.handle = None;
-            self.lifecycle = Lifecycle::Stopped;
-            self.status.running = false;
+            self.lifecycle = MapperPhase::Stopped;
             self.config_json = None;
             return Err("mapper is not running".into());
         }
@@ -227,8 +232,7 @@ impl<B: MapperBackend> MapperRuntime<B> {
         };
         if handle.reap_if_finished() {
             self.handle = None;
-            self.lifecycle = Lifecycle::Stopped;
-            self.status.running = false;
+            self.lifecycle = MapperPhase::Stopped;
             self.config_json = None;
             return Err("mapper is not running".into());
         }
@@ -246,20 +250,25 @@ impl<B: MapperBackend> MapperRuntime<B> {
             let err = handle.last_error();
             let finished = handle.reap_if_finished();
             if let Some(err) = err {
-                self.status.last_error = Some(err);
+                self.details.last_error = Some(err);
             }
             if finished {
                 self.handle = None;
-                self.lifecycle = Lifecycle::Stopped;
-                self.status.running = false;
+                self.lifecycle = MapperPhase::Stopped;
                 self.config_json = None;
             }
         }
-        self.status.waiting_for_device = self
-            .handle
-            .as_ref()
-            .is_some_and(|handle| handle.waiting_for_device());
-        self.status.clone()
+        MapperStatus {
+            phase: self.lifecycle,
+            running: self.lifecycle == MapperPhase::Running,
+            waiting_for_device: self
+                .handle
+                .as_ref()
+                .is_some_and(|handle| handle.waiting_for_device()),
+            device_path: self.details.device_path.clone(),
+            mouse_device_path: self.details.mouse_device_path.clone(),
+            last_error: self.details.last_error.clone(),
+        }
     }
 }
 
@@ -527,10 +536,17 @@ pub fn update_config(config_json: &str) -> Result<(), String> {
 
 /// Push a saved config to the mapper when it is running; no-op otherwise.
 pub fn update_config_if_running(config_json: &str) -> Result<(), String> {
-    if !status().running {
+    let mut state = lock_state();
+    if !state.status().running {
         return Ok(());
     }
-    update_config(config_json)
+    let cfg: config::MapperConfig =
+        serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    validation::validate_config(&cfg)?;
+    state.update_config(cfg)?;
+    state.config_json = Some(config_json.to_owned());
+    Ok(())
 }
 
 pub fn config_json() -> Option<String> {
@@ -553,6 +569,14 @@ pub fn popup_focused() -> Result<(), String> {
     lock_state().popup_focused()
 }
 
+/// Forget a failure tied to the old device selection while stopped.
+pub fn clear_stopped_error() {
+    let mut state = lock_state();
+    if state.lifecycle == MapperPhase::Stopped {
+        state.details.last_error = None;
+    }
+}
+
 pub fn status() -> MapperStatus {
     lock_state().status()
 }
@@ -571,7 +595,7 @@ pub fn set_portal_token_dir(_dir: std::path::PathBuf) {}
 #[cfg(test)]
 mod tests {
     use super::{
-        BackendHandle, InputDevice, KeyboardDevice, Lifecycle, MapperBackend, MapperRuntime,
+        BackendHandle, InputDevice, KeyboardDevice, MapperBackend, MapperPhase, MapperRuntime,
     };
     use crate::mapper::config::{MapperConfig, Settings};
     use std::collections::VecDeque;
@@ -687,6 +711,35 @@ mod tests {
     }
 
     #[test]
+    fn status_projects_lifecycle_and_preserves_start_failure_until_retry() {
+        let mut runtime = MapperRuntime::new(FakeBackend::new(Vec::new(), Vec::new()));
+        assert_eq!(runtime.status().phase, MapperPhase::Stopped);
+        runtime.begin_start().unwrap();
+        let starting = runtime.status();
+        assert_eq!(starting.phase, MapperPhase::Starting);
+        assert!(!starting.running);
+        assert!(
+            runtime
+                .finish_start(Err("device unavailable".into()), "keyboard", None)
+                .is_err()
+        );
+        let failed = runtime.status();
+        assert_eq!(failed.phase, MapperPhase::Stopped);
+        assert_eq!(failed.last_error.as_deref(), Some("device unavailable"));
+        assert!(!failed.running);
+        assert!(
+            serde_json::to_value(&failed)
+                .unwrap()
+                .get("phase")
+                .is_none()
+        );
+        runtime.begin_start().unwrap();
+        let retrying = runtime.status();
+        assert_eq!(retrying.phase, MapperPhase::Starting);
+        assert!(retrying.last_error.is_none());
+    }
+
+    #[test]
     fn runtime_updates_status_from_finished_handle() {
         let runtime_backend = FakeBackend::new(
             Vec::new(),
@@ -749,7 +802,7 @@ mod tests {
             update_configs: Arc::new(Mutex::new(Vec::new())),
             executed_actions: Arc::new(Mutex::new(Vec::new())),
         }));
-        runtime.lifecycle = Lifecycle::Running;
+        runtime.lifecycle = MapperPhase::Running;
         let handle = runtime.take_handle().unwrap();
         assert!(!runtime.status().running);
         assert!(runtime.begin_start().is_err());
@@ -919,6 +972,6 @@ mod tests {
                 .finish_start(Err("open failed".into()), "keyboard", None)
                 .is_err()
         );
-        assert!(runtime.lifecycle == Lifecycle::Stopped);
+        assert!(runtime.lifecycle == MapperPhase::Stopped);
     }
 }

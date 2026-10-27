@@ -40,7 +40,27 @@ struct Session {
     command: Option<lhc_core::profile::model::Command>,
 }
 
-pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>, input: &Rc<WindowInput>) {
+pub(super) struct Drafts {
+    pub layers: Rc<RefCell<super::layers::Draft>>,
+    pub macros: Rc<RefCell<super::macros::State>>,
+    pub menus: Rc<RefCell<super::menus::State>>,
+}
+
+impl Drafts {
+    fn command(&self, ui: &SettingsWindow, id: &str) -> Option<lhc_core::profile::model::Command> {
+        super::macros::command(&self.macros, id)
+            .or_else(|| super::menus::command(&self.menus, id))
+            .or_else(|| super::layers::command(ui, &self.layers, id))
+    }
+}
+
+pub(super) fn bind(
+    ui: &SettingsWindow,
+    document: &Rc<Document>,
+    input: &Rc<WindowInput>,
+    drafts: Drafts,
+) {
+    let drafts = Rc::new(drafts);
     let session = Rc::new(RefCell::new(Session::default()));
     let picker = ui.global::<ActionPicker>();
     picker.set_shortcut_desktop(shortcut_desktop());
@@ -72,14 +92,22 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>, input: &Rc<Wind
     });
 
     let weak = ui.as_weak();
-    let (doc, state) = (document.clone(), session.clone());
+    let (doc, state, pending) = (document.clone(), session.clone(), drafts.clone());
     picker.on_open(move |target, index, value, key_only| {
         if let Some(ui) = weak.upgrade() {
-            session::open(&ui, &doc, &state, target, index, value, key_only);
+            session::open(
+                &ui,
+                &doc,
+                &state,
+                &pending,
+                (target, index),
+                value,
+                key_only,
+            );
         }
     });
 
-    commands::bind(ui, document, &session);
+    commands::bind(ui, document, &session, &drafts);
 
     on!(ui, picker.on_refresh, doc = document, state = session => |ui| {
         session::refresh(&ui, &doc, &state);
@@ -100,8 +128,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>, input: &Rc<Wind
         }
     });
 
-    on!(ui, picker.on_apply, doc = document, state = session => |ui| {
-        session::apply(&ui, &doc, &state);
+    on!(ui, picker.on_apply, doc = document, state = session, drafts = drafts => |ui| {
+        session::apply(&ui, &doc, &state, &drafts);
     });
 }
 

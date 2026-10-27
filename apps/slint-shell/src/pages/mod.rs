@@ -83,13 +83,22 @@ pub fn bind_document_with_input(
         .on_nonempty(|value| !value.trim().is_empty());
     reorder::bind(ui);
     conditions::bind(ui);
-    picker::bind(ui, document, input);
     keys::bind(ui, document);
     library::bind(ui, document);
     rules::bind(ui, document);
-    layers::bind(ui, document);
-    macros::bind(ui, document);
-    menus::bind(ui, document);
+    let layers = layers::bind(ui, document);
+    let macros = macros::bind(ui, document);
+    let menus = menus::bind(ui, document);
+    picker::bind(
+        ui,
+        document,
+        input,
+        picker::Drafts {
+            layers,
+            macros,
+            menus,
+        },
+    );
     settings::bind(ui, document);
     let library = ui.global::<crate::ui::LayoutLibrary>();
     on!(ui, library.on_discard_drafts => |ui| {
@@ -103,6 +112,18 @@ pub fn bind_document_with_input(
         let menus = ui.global::<crate::ui::MenuEditor>().invoke_flush_pending();
         macros && menus
     });
+}
+
+/// Replace a command draft by identity, preserving the other commands.
+fn stage_command(
+    commands: &mut Vec<lhc_core::profile::model::Command>,
+    command: lhc_core::profile::model::Command,
+) {
+    if let Some(current) = commands.iter_mut().find(|current| current.id == command.id) {
+        *current = command;
+    } else {
+        commands.push(command);
+    }
 }
 
 pub(crate) fn strings(
