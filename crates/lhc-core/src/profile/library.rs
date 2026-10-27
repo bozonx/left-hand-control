@@ -301,14 +301,42 @@ impl ConfigDocument {
 
     pub fn load_library_for_editing(&mut self, name: &str) -> Result<(), ConfigError> {
         let preset: LayoutPreset = self.load_layout(&user_layout_id(name))?;
-        self.update_layout(|layout| *layout = preset)?;
-        self.update_settings(|settings| settings.editing_layout_id = Some(user_layout_id(name)))
+        // Validate before saving the identity, so a failed open changes neither part.
+        super::ids::validate_layout(&preset).map_err(ConfigError::Invalid)?;
+        super::timing::validate_layout(&preset).map_err(ConfigError::Invalid)?;
+        self.update_settings(|settings| settings.editing_layout_id = Some(user_layout_id(name)))?;
+        self.update_layout(|layout| *layout = preset)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn failed_open_preserves_the_working_copy_and_its_identity() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let mut doc = ConfigDocument::load(paths.clone()).unwrap();
+        doc.update_layout(|layout| layout.description = Some("working A".into()))
+            .unwrap();
+        doc.save_current_layout_as("A").unwrap();
+        paths
+            .save_user_layout("B", r#"{"schemaVersion":1,"description":"B"}"#, false)
+            .unwrap();
+        let before = doc.layout().clone();
+        std::fs::remove_file(paths.config_path()).unwrap();
+        std::fs::create_dir(paths.config_path()).unwrap();
+
+        assert!(doc.load_library_for_editing("B").is_err());
+        assert_eq!(doc.layout(), &before);
+        assert_eq!(doc.settings().editing_layout_id.as_deref(), Some("user:A"));
+
+        std::fs::remove_dir(paths.config_path()).unwrap();
+        doc.load_library_for_editing("B").unwrap();
+        assert_eq!(doc.layout().description.as_deref(), Some("B"));
+        assert_eq!(doc.settings().editing_layout_id.as_deref(), Some("user:B"));
+    }
 
     fn window(app_id: &str) -> crate::runtime_state::ActiveWindow {
         crate::runtime_state::ActiveWindow {

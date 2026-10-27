@@ -44,6 +44,48 @@ const ACCEPT_POLL: Duration = Duration::from_millis(20);
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(1);
 /// Read/write timeout of a client waiting for the reply.
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(2);
+#[cfg(unix)]
+type Connection = UnixStream;
+#[cfg(windows)]
+type Connection = TcpStream;
+
+/// Bound the entire request, including a client that keeps trickling bytes.
+struct RequestReader<'a> {
+    stream: &'a Connection,
+    deadline: Instant,
+    stopped: &'a AtomicBool,
+}
+
+impl Read for RequestReader<'_> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        loop {
+            if self.stopped.load(Ordering::Acquire) {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::ConnectionAborted,
+                    "IPC server stopped",
+                ));
+            }
+            let remaining = self.deadline.saturating_duration_since(Instant::now());
+            if remaining.is_zero() {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::TimedOut,
+                    "IPC request deadline exceeded",
+                ));
+            }
+            self.stream
+                .set_read_timeout(Some(remaining.min(ACCEPT_POLL)))?;
+            match self.stream.read(buf) {
+                Err(error)
+                    if matches!(
+                        error.kind(),
+                        std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+                    ) => {}
+                result => return result,
+            }
+        }
+    }
+}
+
 /// Loopback port of the IPC server on Windows unless `LHC_PORT` sets one.
 #[cfg(windows)]
 const DEFAULT_PORT: u16 = 43176;
@@ -232,7 +274,15 @@ impl Server {
                     log::warn!("IPC timeout: {error}");
                     continue;
                 }
-                let reply = reply(receive(&stream, &dispatch, auth.as_deref()));
+                let reader = RequestReader {
+                    stream: &stream,
+                    deadline: Instant::now() + REQUEST_TIMEOUT,
+                    stopped: &stopped,
+                };
+                let reply = reply(receive(reader, &dispatch, auth.as_deref()));
+                if stopped.load(Ordering::Acquire) {
+                    break;
+                }
                 let _ = stream.write_all(reply.as_bytes());
             }
         });
@@ -442,6 +492,71 @@ mod tests {
         receive(&line("hide", None)[..], &dispatch, None).unwrap();
         assert_eq!(*seen.lock().unwrap(), [Command::Ping, Command::Hide]);
         assert!(receive(&b"not json\n"[..], &dispatch, None).is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn trickling_requests_cannot_extend_the_deadline() {
+        let (reader, mut writer) = UnixStream::pair().unwrap();
+        let finished = Arc::new(AtomicBool::new(false));
+        let done = finished.clone();
+        let writing = std::thread::spawn(move || {
+            let deadline = Instant::now() + Duration::from_secs(2);
+            while !done.load(Ordering::Acquire) && Instant::now() < deadline {
+                if writer.write_all(b" ").is_err() {
+                    break;
+                }
+                std::thread::sleep(Duration::from_millis(10));
+            }
+        });
+        let (dispatch, seen) = dispatch();
+        let stopped = AtomicBool::new(false);
+        let start = Instant::now();
+        let result = receive(
+            RequestReader {
+                stream: &reader,
+                deadline: start + Duration::from_millis(100),
+                stopped: &stopped,
+            },
+            &dispatch,
+            None,
+        );
+        let elapsed = start.elapsed();
+        finished.store(true, Ordering::Release);
+        writing.join().unwrap();
+        assert_eq!(
+            result
+                .unwrap_err()
+                .downcast::<std::io::Error>()
+                .unwrap()
+                .kind(),
+            std::io::ErrorKind::TimedOut
+        );
+        assert!(elapsed < Duration::from_millis(700), "{elapsed:?}");
+        assert!(seen.lock().unwrap().is_empty());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn stopping_interrupts_an_incomplete_request() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("ipc.sock");
+        let server = Server {
+            listener: UnixListener::bind(&path).unwrap(),
+            path: path.clone(),
+            stopped: Arc::new(AtomicBool::new(false)),
+            thread: Mutex::new(None),
+        };
+        let (dispatch, seen) = dispatch();
+        server.start(dispatch).unwrap();
+        let mut stream = UnixStream::connect(&path).unwrap();
+        stream.write_all(b"{").unwrap();
+        std::thread::sleep(Duration::from_millis(100));
+        let start = Instant::now();
+        server.stop();
+        let elapsed = start.elapsed();
+        assert!(elapsed < Duration::from_millis(700), "{elapsed:?}");
+        assert!(seen.lock().unwrap().is_empty());
     }
 
     #[test]

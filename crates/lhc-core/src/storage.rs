@@ -212,6 +212,8 @@ impl StoragePaths {
 
 /// Longest layout name, in characters.
 pub const MAX_LAYOUT_NAME_CHARS: usize = 128;
+// Common file systems limit a component to 255 bytes; reserve the extension.
+const MAX_LAYOUT_NAME_BYTES: usize = 255 - ".json".len();
 
 pub fn validate_layout_name(name: &str) -> Result<String, String> {
     let trimmed = name.trim();
@@ -221,6 +223,11 @@ pub fn validate_layout_name(name: &str) -> Result<String, String> {
     if trimmed.chars().count() > MAX_LAYOUT_NAME_CHARS {
         return Err(format!(
             "Layout name is too long (max {MAX_LAYOUT_NAME_CHARS} characters)"
+        ));
+    }
+    if trimmed.len() > MAX_LAYOUT_NAME_BYTES {
+        return Err(format!(
+            "Layout name is too long (max {MAX_LAYOUT_NAME_BYTES} UTF-8 bytes)"
         ));
     }
     for ch in trimmed.chars() {
@@ -269,12 +276,8 @@ fn unique_tmp_path(path: &Path) -> PathBuf {
     use std::sync::atomic::{AtomicU64, Ordering};
     static COUNTER: AtomicU64 = AtomicU64::new(0);
     let n = COUNTER.fetch_add(1, Ordering::Relaxed);
-    let mut name = path
-        .file_name()
-        .map(|s| s.to_os_string())
-        .unwrap_or_default();
-    name.push(format!(".{}.{n}.tmp", std::process::id()));
-    path.with_file_name(name)
+    // Keep temporary names short even when the destination fills NAME_MAX.
+    path.with_file_name(format!(".lhc-{}.{n}.tmp", std::process::id()))
 }
 
 /// Whether storage and OS registrations stay in the development directory
@@ -535,6 +538,19 @@ mod tests {
         assert!(validate_layout_name("   ").is_err());
         assert!(validate_layout_name("...").is_err());
         assert!(validate_layout_name("left/hand").is_err());
+    }
+
+    #[test]
+    fn unicode_layout_names_fit_both_destination_and_temporary_files() {
+        let dir = tempfile::tempdir().unwrap();
+        let storage = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let name = "я".repeat(125);
+        assert!(validate_layout_name(&name).is_ok());
+        storage.save_user_layout(&name, "first", false).unwrap();
+        storage.save_user_layout(&name, "second", true).unwrap();
+        assert_eq!(storage.load_user_layout(&name).unwrap(), "second");
+        assert!(validate_layout_name(&"я".repeat(126)).is_err());
+        assert!(validate_layout_name(&"a".repeat(128)).is_ok());
     }
 
     #[test]

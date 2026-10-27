@@ -84,6 +84,10 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Opening a library layout keeps the previous working copy and its identity when saving settings fails.
+- Incomplete IPC requests have a total deadline and no longer hold up application shutdown while a client slowly sends data.
+- Long Unicode layout names are checked against file name byte limits, and atomic saves use short temporary names.
+
 - Mapper startup applies edits made while the device was starting, even when the active layout is unchanged. The mapper card derives its running, busy and error state from one lifecycle snapshot.
 - Commands chosen for a key or rule are applied together with their assignment; commands in macro and menu drafts stay pending until the draft is saved. Failed assignments and discarded drafts do not change existing commands.
 - Quit keeps the settings window open when a page draft cannot be saved, and reentrant page refreshes are retried instead of being dropped.
