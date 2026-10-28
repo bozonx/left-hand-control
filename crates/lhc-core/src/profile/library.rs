@@ -79,22 +79,44 @@ impl ConfigDocument {
 
     /// Save the working copy over an existing library file, returning its contents.
     pub fn overwrite_library_layout(&mut self, name: &str) -> Result<String, ConfigError> {
-        self.update_layout(LayoutPreset::remove_unused_commands)?;
-        let text = layout_file::serialize(self.layout());
-        self.paths()
+        let mut draft = self.clone();
+        draft.update_layout(LayoutPreset::remove_unused_commands)?;
+        let text = layout_file::serialize(draft.layout());
+        draft
+            .paths()
             .save_user_layout(name, &text, true)
             .map_err(ConfigError::Io)?;
+        *self = draft;
         Ok(text)
     }
 
     /// `base`, or `base (2)`, `base (3)`, … — the first name not taken in the library.
     pub fn unique_library_name(&self, base: &str) -> Result<String, ConfigError> {
-        self.paths().list_user_layouts().map_err(ConfigError::Io)?;
-        let base = base.trim();
-        let mut name = base.to_owned();
+        let names = self.paths().list_user_layouts().map_err(ConfigError::Io)?;
+        let base = crate::storage::validate_layout_name(base).map_err(|_| {
+            ConfigError::Name(
+                NameKind::Layout,
+                if base.trim().is_empty() {
+                    NameIssue::Empty
+                } else {
+                    NameIssue::Invalid
+                },
+            )
+        })?;
+        let taken: std::collections::HashSet<_> =
+            names.iter().map(|name| name.to_lowercase()).collect();
+        let mut name = base.clone();
         let mut suffix = 2;
-        while self.layout_name(&name, None) == Err(NameIssue::Taken) {
-            name = format!("{base} ({suffix})");
+        while taken.contains(&name.to_lowercase()) {
+            let ending = format!(" ({suffix})");
+            let mut stem = base.clone();
+            loop {
+                name = format!("{stem}{ending}");
+                if crate::storage::validate_layout_name(&name).is_ok() {
+                    break;
+                }
+                stem.pop();
+            }
             suffix += 1;
         }
         Ok(name)
@@ -149,9 +171,12 @@ impl ConfigDocument {
 
     /// Save an edited working copy under a new name, dropping unreferenced commands.
     pub fn save_working_layout_as(&mut self, name: &str) -> Result<(String, String), ConfigError> {
-        self.update_layout(LayoutPreset::remove_unused_commands)?;
-        let text = layout_file::serialize(self.layout());
-        Ok((self.save_current_layout_as(name)?, text))
+        let mut draft = self.clone();
+        draft.update_layout(LayoutPreset::remove_unused_commands)?;
+        let text = layout_file::serialize(draft.layout());
+        let saved = draft.save_current_layout_as(name)?;
+        *self = draft;
+        Ok((saved, text))
     }
 
     pub fn save_current_layout_as(&mut self, name: &str) -> Result<String, ConfigError> {
@@ -312,6 +337,77 @@ impl ConfigDocument {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn failed_saves_preserve_commands_and_working_copy() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        paths
+            .save_user_layout(
+                "Original",
+                r#"{"schemaVersion":1,"commands":[{"id":"unused","unix":"true"}]}"#,
+                false,
+            )
+            .unwrap();
+        paths
+            .save_config(r#"{"schemaVersion":1,"state":{"editedLayoutId":"user:Original"}}"#)
+            .unwrap();
+        let mut doc = ConfigDocument::load(paths.clone()).unwrap();
+        let before = doc.layout().clone();
+        let settings = doc.settings().clone();
+        let original = paths.load_user_layout("Original").unwrap();
+
+        assert!(doc.save_working_layout_as("Original").is_err());
+        assert_eq!(doc.layout(), &before);
+        assert!(doc.save_working_layout_as("invalid/name").is_err());
+        assert_eq!(doc.layout(), &before);
+
+        let blocked = paths.layout_path("Blocked").unwrap();
+        std::fs::create_dir(&blocked).unwrap();
+        assert!(doc.overwrite_library_layout("Blocked").is_err());
+        assert_eq!(doc.layout(), &before);
+
+        std::fs::remove_file(paths.config_path()).unwrap();
+        std::fs::create_dir(paths.config_path()).unwrap();
+        assert!(doc.save_working_layout_as("New").is_err());
+        assert_eq!(doc.layout(), &before);
+        assert_eq!(doc.settings(), &settings);
+        assert!(!paths.layout_path("New").unwrap().exists());
+        assert_eq!(paths.load_user_layout("Original").unwrap(), original);
+
+        std::fs::remove_dir(paths.config_path()).unwrap();
+        doc.save_working_layout_as("New").unwrap();
+        assert!(doc.layout().commands.is_empty());
+        assert!(doc.load_layout("user:New").unwrap().commands.is_empty());
+    }
+
+    #[test]
+    fn suggested_names_fit_character_and_byte_limits() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let doc = ConfigDocument::load(paths.clone()).unwrap();
+        for base in ["a".repeat(128), "я".repeat(125), "界".repeat(83)] {
+            paths
+                .save_user_layout(&base, r#"{"schemaVersion":1}"#, false)
+                .unwrap();
+            for suffix in 2..=12 {
+                let name = doc.unique_library_name(&base).unwrap();
+                assert!(name.ends_with(&format!(" ({suffix})")));
+                assert!(crate::storage::validate_layout_name(&name).is_ok());
+                paths
+                    .save_user_layout(&name, r#"{"schemaVersion":1}"#, false)
+                    .unwrap();
+            }
+        }
+        assert_eq!(
+            doc.unique_library_name(" "),
+            Err(ConfigError::Name(NameKind::Layout, NameIssue::Empty))
+        );
+        assert_eq!(
+            doc.unique_library_name("bad/name"),
+            Err(ConfigError::Name(NameKind::Layout, NameIssue::Invalid))
+        );
+    }
 
     #[test]
     fn failed_open_preserves_the_working_copy_and_its_identity() {

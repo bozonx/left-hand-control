@@ -84,6 +84,9 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Failed library saves preserve the working copy and its commands; suggested copy names fit file-name limits, including UTF-8 names.
+- Concurrent starts cannot remove another running instance's IPC socket while recovering a stale socket.
+
 - Opening a library layout keeps the previous working copy and its identity when saving settings fails.
 - Incomplete IPC requests have a total deadline and no longer hold up application shutdown while a client slowly sends data.
 - Long Unicode layout names are checked against file name byte limits, and atomic saves use short temporary names.

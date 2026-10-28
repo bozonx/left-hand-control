@@ -192,6 +192,9 @@ pub struct Server {
     listener: UnixListener,
     #[cfg(unix)]
     path: PathBuf,
+    /// Held through socket cleanup; the lock file must never be unlinked.
+    #[cfg(unix)]
+    _lock: std::fs::File,
     #[cfg(windows)]
     listener: TcpListener,
     #[cfg(windows)]
@@ -203,7 +206,26 @@ pub struct Server {
 impl Server {
     #[cfg(unix)]
     pub fn bind() -> std::io::Result<Self> {
-        let path = own_socket()?;
+        Self::bind_path(own_socket()?)
+    }
+
+    #[cfg(unix)]
+    fn bind_path(path: PathBuf) -> std::io::Result<Self> {
+        let mut lock_path = path.as_os_str().to_os_string();
+        lock_path.push(".lock");
+        let lock = std::fs::OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(lock_path)?;
+        lock.try_lock().map_err(|error| match error {
+            std::fs::TryLockError::WouldBlock => std::io::Error::new(
+                std::io::ErrorKind::AddrInUse,
+                "left-hand-control is already running",
+            ),
+            std::fs::TryLockError::Error(error) => error,
+        })?;
         if path.exists() {
             match UnixStream::connect(&path) {
                 Ok(_) => {
@@ -223,6 +245,7 @@ impl Server {
         Ok(Self {
             listener,
             path,
+            _lock: lock,
             stopped: Arc::new(AtomicBool::new(false)),
             thread: Mutex::new(None),
         })
@@ -496,6 +519,49 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
+    fn concurrent_binds_preserve_the_winning_socket() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("ipc.sock");
+        // Leave a stale socket, as after an unclean process exit.
+        drop(UnixListener::bind(&path).unwrap());
+        let barrier = Arc::new(std::sync::Barrier::new(2));
+        let threads: Vec<_> = (0..2)
+            .map(|_| {
+                let path = path.clone();
+                let barrier = barrier.clone();
+                std::thread::spawn(move || {
+                    barrier.wait();
+                    let result = Server::bind_path(path.clone());
+                    // Keep the winner alive until both bind attempts have finished.
+                    barrier.wait();
+                    match result {
+                        Ok(server) => {
+                            assert!(UnixStream::connect(&path).is_ok());
+                            drop(server);
+                            true
+                        }
+                        Err(error) => {
+                            assert_eq!(error.kind(), std::io::ErrorKind::AddrInUse);
+                            false
+                        }
+                    }
+                })
+            })
+            .collect();
+        let won = threads
+            .into_iter()
+            .map(|thread| usize::from(thread.join().unwrap()))
+            .sum::<usize>();
+        assert_eq!(won, 1);
+        assert!(!path.exists());
+        // Cleanup releases the lock, allowing a subsequent instance to start.
+        let server = Server::bind_path(path.clone()).unwrap();
+        assert!(UnixStream::connect(&path).is_ok());
+        drop(server);
+    }
+
+    #[cfg(unix)]
+    #[test]
     fn trickling_requests_cannot_extend_the_deadline() {
         let (reader, mut writer) = UnixStream::pair().unwrap();
         let finished = Arc::new(AtomicBool::new(false));
@@ -541,12 +607,7 @@ mod tests {
     fn stopping_interrupts_an_incomplete_request() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("ipc.sock");
-        let server = Server {
-            listener: UnixListener::bind(&path).unwrap(),
-            path: path.clone(),
-            stopped: Arc::new(AtomicBool::new(false)),
-            thread: Mutex::new(None),
-        };
+        let server = Server::bind_path(path.clone()).unwrap();
         let (dispatch, seen) = dispatch();
         server.start(dispatch).unwrap();
         let mut stream = UnixStream::connect(&path).unwrap();
@@ -566,16 +627,14 @@ mod tests {
         #[cfg(unix)]
         let path = dir.path().join("ipc.sock");
         #[cfg(unix)]
-        let listener = UnixListener::bind(&path).unwrap();
+        let server = Server::bind_path(path.clone()).unwrap();
         #[cfg(windows)]
         let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
         #[cfg(windows)]
         let address = listener.local_addr().unwrap();
+        #[cfg(windows)]
         let server = Server {
             listener,
-            #[cfg(unix)]
-            path: path.clone(),
-            #[cfg(windows)]
             token: "secret".into(),
             stopped: Arc::new(AtomicBool::new(false)),
             thread: Mutex::new(None),

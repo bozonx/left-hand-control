@@ -63,6 +63,7 @@ impl std::error::Error for ConfigError {}
 pub use self::activation::RuntimeConfig;
 pub use crate::profile::layer_edit::KeyAssignment;
 
+#[derive(Clone)]
 pub struct ConfigDocument {
     paths: StoragePaths,
     settings: AppSettings,
