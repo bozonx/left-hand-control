@@ -337,28 +337,6 @@ impl LayoutPreset {
         }
     }
 
-    /// Call `fix` with every action string of the preset: rule actions,
-    /// layer keys, macro steps and quick-action cells.
-    pub fn for_each_action_mut(&mut self, mut fix: impl FnMut(&mut String)) {
-        for rule in &mut self.rules {
-            rule.tap_action.iter_mut().for_each(&mut fix);
-            rule.hold_action.iter_mut().for_each(&mut fix);
-            fix(&mut rule.long_hold_action);
-            fix(&mut rule.double_tap_action);
-        }
-        for map in self.layer_keymaps.values_mut() {
-            map.keys.values_mut().flatten().for_each(&mut fix);
-        }
-        for item in &mut self.macros {
-            item.steps.iter_mut().for_each(|step| fix(&mut step.action));
-        }
-        for page in &mut self.quick_action_pages {
-            page.cells
-                .values_mut()
-                .for_each(|item| fix(&mut item.action));
-        }
-    }
-
     pub fn get_or_create_layer_keymap(&mut self, layer_id: &str) -> &mut LayerKeymap {
         self.layer_keymaps.entry(layer_id.into()).or_default()
     }
@@ -382,27 +360,12 @@ impl LayoutPreset {
 
     /// Ids of every `cmd:` action anywhere in the preset.
     fn command_refs(&self) -> Vec<String> {
-        fn collect(value: &serde_json::Value, refs: &mut Vec<String>) {
-            match value {
-                serde_json::Value::String(text) => {
-                    if let super::actions::Action::Command(id) =
-                        super::actions::Action::parse(Some(text))
-                    {
-                        refs.push(id);
-                    }
-                }
-                serde_json::Value::Array(items) => items.iter().for_each(|v| collect(v, refs)),
-                serde_json::Value::Object(map) => map.values().for_each(|v| collect(v, refs)),
-                _ => {}
-            }
-        }
-        let actions = serde_json::to_value(Self {
-            commands: Vec::new(),
-            ..self.clone()
-        })
-        .unwrap_or_default();
         let mut refs = Vec::new();
-        collect(&actions, &mut refs);
+        self.for_each_action(|_, raw| {
+            if let super::actions::Action::Command(id) = super::actions::Action::parse(Some(raw)) {
+                refs.push(id);
+            }
+        });
         refs
     }
 }

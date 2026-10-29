@@ -244,7 +244,7 @@ impl State {
         }
     }
 
-    /// Apply `change`, publish the new status if it differs and return it.
+    /// Apply `change` and return the new status with its change flag.
     fn update(&mut self, change: impl FnOnce(&mut Self)) -> (GameModeStatus, bool) {
         let before = self.status();
         change(self);
@@ -254,7 +254,6 @@ impl State {
             self.revision += 1;
             status.revision = self.revision;
         }
-        crate::runtime_state::set_game_mode_active(status.active);
         (status, changed)
     }
 }
@@ -292,6 +291,14 @@ fn state() -> &'static Mutex<State> {
     STATE.get_or_init(|| Mutex::new(State::default()))
 }
 
+// Update the shared cache while holding the same state lock. Publication may
+// happen later, but concurrent settings changes must not regress the cache.
+fn update_state(state: &mut State, change: impl FnOnce(&mut State)) -> (GameModeStatus, bool) {
+    let result = state.update(change);
+    crate::runtime_state::set_game_mode_active(result.0.active);
+    result
+}
+
 fn publish((status, changed): (GameModeStatus, bool)) -> GameModeStatus {
     if changed {
         log::debug!("[gamemode] state changed: {status:?}");
@@ -311,7 +318,7 @@ pub fn set_control(control: GameModeControl) -> GameModeStatus {
     let Ok(mut state) = state().lock() else {
         return GameModeStatus::default();
     };
-    let result = state.update(|state| state.control = control);
+    let result = update_state(&mut state, |state| state.control = control);
     drop(state);
     // Auto polls faster than a manual state.
     wake();
@@ -324,7 +331,7 @@ pub fn toggle() -> GameModeStatus {
     let Ok(mut state) = state().lock() else {
         return GameModeStatus::default();
     };
-    let result = state.update(|state| {
+    let result = update_state(&mut state, |state| {
         state.control = if state.status().active {
             GameModeControl::Off
         } else {
@@ -372,7 +379,7 @@ pub fn set_settings(settings: &GameModeSettings, enabled: bool) {
         let (apply_control, changed) = cache.update(settings, enabled);
         // Serialize persisted choices with cache updates, including startup.
         let result = state().lock().ok().map(|mut state| {
-            state.update(|state| {
+            update_state(&mut state, |state| {
                 state.enabled = enabled;
                 if apply_control {
                     state.control = settings.control;
@@ -436,7 +443,7 @@ pub fn stop_watcher() {
         }
         // Nothing keeps a detected game alive without the watcher.
         if let Ok(mut state) = state().lock() {
-            let result = state.update(|state| state.detection = Detection::default());
+            let result = update_state(&mut state, |state| state.detection = Detection::default());
             drop(state);
             publish(result);
         }
@@ -460,8 +467,7 @@ pub fn start_watcher(storage: Option<StoragePaths>) {
     let thread = thread::Builder::new()
         .name("gamemode-watcher".into())
         .spawn(move || {
-            let mut last_match: Option<Instant> = None;
-            let mut last_revision = None;
+            let mut history = DetectionHistory::default();
             loop {
                 {
                     let Ok(mut control) = thread_control.0.lock() else {
@@ -477,26 +483,8 @@ pub fn start_watcher(storage: Option<StoragePaths>) {
                     .lock()
                     .map_or(true, |state| state.control == GameModeControl::Auto);
                 let window = crate::active_window::cached_active_window();
-                // A disabled feature reads no sources at all.
-                let detection = if enabled {
-                    evaluate(
-                        &settings,
-                        &observe(&settings, window.as_ref()),
-                        window.as_ref(),
-                    )
-                } else {
-                    last_match = None;
-                    Detection {
-                        available: true,
-                        ..Detection::default()
-                    }
-                };
+                let detection = detect_with(&settings, enabled, window.as_ref(), observe);
                 let now = Instant::now();
-                if detection.active {
-                    last_match = Some(now);
-                }
-                // A settings change applies at once; detection gaps wait.
-                let settings_changed = last_revision.replace(revision) != Some(revision);
                 // Processes have no change events, and a held state must
                 // expire on time; everything else wakes the watcher. A
                 // manual state only shows detection, so it is not polled.
@@ -511,12 +499,9 @@ pub fn start_watcher(storage: Option<StoragePaths>) {
                     && !control.stop
                     && let Ok(mut state) = state().lock()
                 {
-                    let detection = if settings_changed {
-                        detection
-                    } else {
-                        hold_active(&state.detection, detection, last_match, now)
-                    };
-                    let result = state.update(|state| state.detection = detection);
+                    let detection =
+                        history.apply(&state.detection, detection, enabled, revision, now);
+                    let result = update_state(&mut state, |state| state.detection = detection);
                     if state.detection.active && state.control == GameModeControl::Auto {
                         interval = WATCH_INTERVAL;
                     }
@@ -545,6 +530,53 @@ pub fn start_watcher(storage: Option<StoragePaths>) {
     match thread {
         Ok(thread) => *watcher = Some(Watcher { control, thread }),
         Err(error) => log::error!("[gamemode] watcher thread spawn failed: {error}"),
+    }
+}
+
+/// Per-watcher history. Time and observations come from the caller; restarting
+/// the worker creates a fresh history, independent of process-wide caches.
+#[derive(Default)]
+struct DetectionHistory {
+    last_match: Option<Instant>,
+    revision: Option<u64>,
+}
+
+impl DetectionHistory {
+    fn apply(
+        &mut self,
+        previous: &Detection,
+        next: Detection,
+        enabled: bool,
+        revision: u64,
+        now: Instant,
+    ) -> Detection {
+        if !enabled {
+            self.last_match = None;
+        }
+        if next.active {
+            self.last_match = Some(now);
+        }
+        if self.revision.replace(revision) != Some(revision) {
+            next
+        } else {
+            hold_active(previous, next, self.last_match, now)
+        }
+    }
+}
+
+fn detect_with(
+    settings: &GameModeSettings,
+    enabled: bool,
+    window: Option<&ActiveWindow>,
+    source: impl FnOnce(&GameModeSettings, Option<&ActiveWindow>) -> Observation,
+) -> Detection {
+    if enabled {
+        evaluate(settings, &source(settings, window), window)
+    } else {
+        Detection {
+            available: true,
+            ..Detection::default()
+        }
     }
 }
 
@@ -805,7 +837,7 @@ fn load_game_mode_settings(storage: Option<&StoragePaths>) -> (GameModeSettings,
         cache.update(&settings, enabled);
         let revision = cache.revision;
         let result = state().lock().ok().map(|mut state| {
-            state.update(|state| {
+            update_state(&mut state, |state| {
                 state.enabled = enabled;
                 state.control = settings.control;
             })
@@ -896,6 +928,36 @@ mod tests {
             fullscreen: Some(true),
             ..ActiveWindow::default()
         }
+    }
+
+    #[test]
+    fn isolated_observer_handles_gaps_settings_changes_and_restart_without_sleeping() {
+        let settings = settings(vec![matcher("game", false, false)]);
+        let now = Instant::now();
+        let active = detect_with(&settings, true, None, |_, _| observation(&["game"], false));
+        let gap = detect_with(&settings, true, None, |_, _| observation(&[], false));
+        let mut history = DetectionHistory::default();
+        let first = history.apply(&Detection::default(), active, true, 1, now);
+        assert!(first.active);
+        let held = history.apply(&first, gap.clone(), true, 1, now + OFF_DELAY / 2);
+        assert!(held.active);
+        assert!(
+            !history
+                .apply(&held, gap.clone(), true, 1, now + OFF_DELAY)
+                .active
+        );
+        // A new worker never inherits the old worker's grace period.
+        assert!(
+            !DetectionHistory::default()
+                .apply(&held, gap.clone(), true, 1, now)
+                .active
+        );
+        assert!(!history.apply(&held, gap, true, 2, now).active);
+        let disabled = detect_with(&settings, false, None, |_, _| {
+            panic!("disabled source was read")
+        });
+        assert!(!history.apply(&held, disabled, false, 3, now).active);
+        assert!(history.last_match.is_none());
     }
 
     #[test]

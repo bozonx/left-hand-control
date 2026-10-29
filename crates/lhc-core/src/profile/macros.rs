@@ -1,5 +1,6 @@
 //! Macro editing: validation, usage lookup and reference renaming.
 
+use super::macro_graph::{MacroGraph, MacroRef};
 use super::{
     actions::{self, Action},
     model::{LayoutPreset, Macro, ResolvedAppConfig},
@@ -64,34 +65,13 @@ pub(crate) fn validate_loaded(config: &ResolvedAppConfig, item: &Macro) -> Resul
     for step in &item.steps {
         validate_step(config, &step.action)?;
     }
-    fn reaches(
-        config: &ResolvedAppConfig,
-        source: &str,
-        target: &str,
-        visited: &mut HashSet<String>,
-    ) -> bool {
-        if source == target {
-            return true;
-        }
-        if !visited.insert(target.into()) {
-            return false;
-        }
-        let steps: Vec<&str> = if let Some(item) = config.macros.iter().find(|m| m.id == target) {
-            item.steps.iter().map(|s| s.action.as_str()).collect()
-        } else {
-            Vec::new()
-        };
-        steps
-            .iter()
-            .filter_map(|a| a.trim().strip_prefix("macro:").map(str::trim))
-            .any(|next| reaches(config, source, next, visited))
-    }
-    if item
-        .steps
-        .iter()
-        .filter_map(|s| s.action.trim().strip_prefix("macro:").map(str::trim))
-        .any(|target| reaches(config, &item.id, target, &mut HashSet::new()))
-    {
+    let graph = MacroGraph::new(config.macros.iter().map(|item| {
+        (
+            item.id.as_str(),
+            item.steps.iter().map(|step| step.action.as_str()).collect(),
+        )
+    }));
+    if graph.has_cycle(&MacroRef::User(item.id.clone())) {
         return Err(ConfigError::Macro(MacroIssue::Cycle));
     }
     Ok(())
@@ -102,58 +82,52 @@ pub fn usage(config: &ResolvedAppConfig, id: &str) -> Vec<String> {
 }
 
 pub fn action_usage(config: &ResolvedAppConfig, action: &str) -> Vec<String> {
+    use super::action_walk::ActionLocation;
     let mut places = Vec::new();
-    for rule in &config.rules {
-        if [
-            rule.tap_action.as_deref(),
-            rule.hold_action.as_deref(),
-            Some(rule.long_hold_action.as_str()),
-            Some(rule.double_tap_action.as_str()),
-        ]
-        .contains(&Some(action))
-        {
-            places.push(rule.key.clone());
+    let mut visited = HashSet::new();
+    let action = Action::parse(Some(action));
+    config.for_each_action(|location, raw| {
+        if Action::parse(Some(raw)) != action {
+            return;
         }
-    }
-    for (layer, map) in &config.layer_keymaps {
-        for (key, value) in &map.keys {
-            if value.as_deref() == Some(action) {
-                places.push(format!("{layer}: {key}"));
+        let place = match location {
+            ActionLocation::Rule { index, .. } => {
+                if !visited.insert((0, index)) {
+                    return;
+                }
+                config.rules[index].key.clone()
             }
-        }
-    }
-    for item in &config.macros {
-        if item.steps.iter().any(|s| s.action.trim() == action) {
-            places.push(format!("macro:{}", item.id));
-        }
-    }
-    for (key, item) in config.quick_action_pages.iter().flat_map(|p| &p.cells) {
-        if item.action.trim() == action {
-            let name = if item.name.is_empty() {
-                key
-            } else {
-                &item.name
-            };
-            places.push(format!("quick:{name}"));
-        }
-    }
+            ActionLocation::Layer { layer, key } => format!("{layer}: {key}"),
+            ActionLocation::Macro { index, .. } => {
+                if !visited.insert((1, index)) {
+                    return;
+                }
+                format!("macro:{}", config.macros[index].id)
+            }
+            ActionLocation::QuickAction { page, key } => {
+                let cell = &config.quick_action_pages[page].cells[key];
+                let name = if cell.name.is_empty() {
+                    key
+                } else {
+                    &cell.name
+                };
+                format!("quick:{name}")
+            }
+        };
+        places.push(place);
+    });
     places
 }
 
 /// Point `macro:<old>` actions at the new ids. All renames apply at once, so
 /// swapping two ids works.
 fn rename_references(layout: &mut LayoutPreset, renames: &[(String, String)]) {
-    let renames: Vec<_> = renames
-        .iter()
-        .filter(|(old, new)| old != new)
-        .map(|(old, new)| (format!("macro:{old}"), format!("macro:{new}")))
-        .collect();
-    if renames.is_empty() {
-        return;
-    }
-    layout.for_each_action_mut(|action| {
-        if let Some((_, new)) = renames.iter().find(|(old, _)| action.trim() == old) {
-            *action = new.clone();
+    layout.for_each_action_mut(|raw| {
+        if let Action::Macro(id) = Action::parse(Some(raw))
+            && let Some((_, new)) = renames.iter().find(|(old, new)| old != new && *old == id)
+            && let Some(renamed) = Action::Macro(new.clone()).format()
+        {
+            *raw = renamed;
         }
     });
 }
@@ -233,6 +207,24 @@ mod tests {
             step_pause_ms: None,
             modifier_delay_ms: Some(0),
         }
+    }
+
+    #[test]
+    fn usage_and_renaming_share_typed_actions_and_preserve_separate_rules() {
+        let mut layout = LayoutPreset::default();
+        for index in 0..2 {
+            let mut rule = crate::profile::model::KeyRule::new(format!("r{index}"), "KeyA");
+            rule.tap_action = Some(" macro: a ".into());
+            rule.long_hold_action = "macro:a".into();
+            layout.rules.push(rule);
+        }
+        layout.macros = vec![item("outer", &[" macro: a ", "macro:a", "text:macro:a"])];
+        let config = ResolvedAppConfig::from_parts(Default::default(), layout.clone(), None);
+        assert_eq!(usage(&config, "a"), ["KeyA", "KeyA", "macro:outer"]);
+        rename_references(&mut layout, &[("a".into(), "b".into())]);
+        assert_eq!(layout.rules[0].tap_action.as_deref(), Some("macro:b"));
+        assert_eq!(layout.macros[0].steps[0].action, "macro:b");
+        assert_eq!(layout.macros[0].steps[2].action, "text:macro:a");
     }
 
     #[test]

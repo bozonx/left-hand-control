@@ -126,7 +126,11 @@ fn is_own_process(process: Option<&str>) -> bool {
 }
 
 fn is_ignored(window: &ActiveWindow) -> bool {
-    IGNORE_OWN_WINDOWS.load(Ordering::SeqCst) && is_own_process(window.process_name.as_deref())
+    ignored_by_policy(window, IGNORE_OWN_WINDOWS.load(Ordering::SeqCst))
+}
+
+fn ignored_by_policy(window: &ActiveWindow, ignore_own: bool) -> bool {
+    ignore_own && is_own_process(window.process_name.as_deref())
 }
 
 pub fn set_titles_needed(needed: bool) {
@@ -186,6 +190,31 @@ pub fn stop_watcher() {
     }
 }
 
+#[derive(Default)]
+struct WindowPublisher {
+    last: Option<ActiveWindow>,
+}
+
+impl WindowPublisher {
+    fn publish(
+        &mut self,
+        current: Option<ActiveWindow>,
+        ignored: bool,
+        cache: &crate::runtime_state::RuntimeState,
+        emit: impl FnOnce(crate::events::CoreEvent),
+    ) -> bool {
+        if current == self.last || ignored {
+            return false;
+        }
+        cache.set_active_window(current.clone());
+        emit(crate::events::CoreEvent::ActiveWindowChanged(
+            current.clone(),
+        ));
+        self.last = current;
+        true
+    }
+}
+
 pub fn start_watcher() {
     let Ok(mut slot) = WATCHER.lock() else {
         return;
@@ -202,7 +231,7 @@ pub fn start_watcher() {
         .name("active-window-watcher".into())
         .spawn(move || {
             let events = start_events();
-            let mut last: Option<ActiveWindow> = None;
+            let mut publisher = WindowPublisher::default();
             loop {
                 {
                     let Ok(mut control) = thread_control.0.lock() else {
@@ -219,14 +248,15 @@ pub fn start_watcher() {
                 if let Ok(mut actual) = ACTUAL_WINDOW.lock() {
                     *actual = current.clone();
                 }
-                if current != last && !current.as_ref().is_some_and(is_ignored) {
-                    crate::runtime_state::set_active_window(current.clone());
-                    crate::events::emit(crate::events::CoreEvent::ActiveWindowChanged(
-                        current.clone(),
-                    ));
+                let ignored = current.as_ref().is_some_and(is_ignored);
+                if publisher.publish(
+                    current,
+                    ignored,
+                    crate::runtime_state::current(),
+                    crate::events::emit,
+                ) {
                     // Fullscreen and foreground rules depend on the window.
                     crate::gamemode::wake();
-                    last = current;
                 }
                 let interval = if events_active(events) {
                     EVENT_FALLBACK_INTERVAL
@@ -438,6 +468,28 @@ mod tests {
 
     #[cfg(target_os = "linux")]
     #[test]
+    fn isolated_window_publisher_preserves_focus_across_ignored_windows() {
+        let cache = crate::runtime_state::RuntimeState::default();
+        let window = Some(ActiveWindow {
+            app_id: "kate".into(),
+            ..Default::default()
+        });
+        let own = Some(ActiveWindow {
+            app_id: "settings".into(),
+            ..Default::default()
+        });
+        let mut publisher = WindowPublisher::default();
+        let mut events = Vec::new();
+        assert!(publisher.publish(window.clone(), false, &cache, |event| events.push(event)));
+        assert!(!publisher.publish(own, true, &cache, |event| events.push(event)));
+        assert_eq!(cache.active_window(), window);
+        assert!(!publisher.publish(window, false, &cache, |event| events.push(event)));
+        assert!(publisher.publish(None, false, &cache, |event| events.push(event)));
+        assert!(cache.active_window().is_none());
+        assert_eq!(events.len(), 2);
+    }
+
+    #[test]
     fn text_destination_is_independent_of_the_rule_cache() {
         let window = |id: &str| {
             Some(ActiveWindow {
@@ -468,10 +520,8 @@ mod tests {
             process_name: Some("kate".into()),
             ..ActiveWindow::default()
         };
-        assert!(!is_ignored(&own));
-        ignore_own_windows(true);
-        assert!(is_ignored(&own));
-        assert!(!is_ignored(&other));
-        ignore_own_windows(false);
+        assert!(!ignored_by_policy(&own, false));
+        assert!(ignored_by_policy(&own, true));
+        assert!(!ignored_by_policy(&other, true));
     }
 }

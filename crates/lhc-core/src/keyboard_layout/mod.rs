@@ -36,6 +36,8 @@ mod linux_sway;
 mod linux_x11;
 #[cfg(target_os = "macos")]
 mod macos;
+#[cfg(target_os = "linux")]
+mod signal_watcher;
 #[cfg(target_os = "windows")]
 mod windows;
 
@@ -61,7 +63,7 @@ pub struct KeyboardLayoutInfo {
 static WATCHER_STOP: AtomicBool = AtomicBool::new(false);
 static WATCHERS: Mutex<Vec<std::thread::JoinHandle<()>>> = Mutex::new(Vec::new());
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
-static LAST_PUBLISHED: Mutex<Option<(String, String)>> = Mutex::new(None);
+static LAST_PUBLISHED: Mutex<LayoutPublisher> = Mutex::new(LayoutPublisher { last: None });
 
 pub fn stop_watcher() {
     WATCHER_STOP.store(true, Ordering::SeqCst);
@@ -77,6 +79,10 @@ pub fn stop_watcher() {
             }
         }
     }
+    LAST_PUBLISHED
+        .lock()
+        .unwrap_or_else(|error| error.into_inner())
+        .last = None;
 }
 
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
@@ -96,36 +102,38 @@ fn watcher_stop_requested() -> bool {
     WATCHER_STOP.load(Ordering::SeqCst)
 }
 
-/// Cache the layout for the mapper and emit `LayoutChanged` when the
-/// short code or variant differs from the last published value.
-/// Backends publish only observations from the current session.
-#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
-pub(crate) fn publish(info: &KeyboardLayoutInfo) {
-    crate::runtime_state::set_keyboard_layout(Some(
-        crate::runtime_state::KeyboardLayoutSelection {
+#[derive(Default)]
+struct LayoutPublisher {
+    last: Option<KeyboardLayoutInfo>,
+}
+
+impl LayoutPublisher {
+    fn publish(
+        &mut self,
+        info: &KeyboardLayoutInfo,
+        cache: &crate::runtime_state::RuntimeState,
+        emit: impl FnOnce(crate::events::CoreEvent),
+    ) {
+        cache.set_keyboard_layout(Some(crate::runtime_state::KeyboardLayoutSelection {
             code: info.code.clone(),
             variant: info.variant.clone(),
             index: info.index,
-        },
-    ));
-    if should_publish(info) {
-        crate::events::emit(crate::events::CoreEvent::LayoutChanged(info.clone()));
+        }));
+        if self.last.as_ref() != Some(info) {
+            self.last = Some(info.clone());
+            emit(crate::events::CoreEvent::LayoutChanged(info.clone()));
+        }
     }
 }
 
+/// Cache each observation and publish changes, including variants and group
+/// indices: two configured groups may use the same code and display label.
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
-fn should_publish(info: &KeyboardLayoutInfo) -> bool {
-    let key = (info.code.clone(), info.display_label.clone());
-    match LAST_PUBLISHED.lock() {
-        Ok(mut last) => {
-            if last.as_ref() == Some(&key) {
-                return false;
-            }
-            *last = Some(key);
-            true
-        }
-        Err(_) => true,
-    }
+pub(crate) fn publish(info: &KeyboardLayoutInfo) {
+    LAST_PUBLISHED
+        .lock()
+        .unwrap_or_else(|error| error.into_inner())
+        .publish(info, crate::runtime_state::current(), crate::events::emit);
 }
 
 pub fn current() -> Result<Option<KeyboardLayoutInfo>, String> {
@@ -276,11 +284,28 @@ mod tests {
     }
 
     #[test]
-    fn publishes_only_changed_layouts() {
-        *LAST_PUBLISHED.lock().unwrap() = None;
-        assert!(should_publish(&info("us", "")));
-        assert!(!should_publish(&info("us", "")));
-        assert!(should_publish(&info("ru", "")));
-        assert!(should_publish(&info("ru", "phonetic")));
+    fn publishes_variant_index_and_label_changes_but_not_repeated_observations() {
+        let cache = crate::runtime_state::RuntimeState::default();
+        let mut publisher = LayoutPublisher::default();
+        let mut events = Vec::new();
+        let mut observe =
+            |info: &KeyboardLayoutInfo| publisher.publish(info, &cache, |event| events.push(event));
+        let mut layout = info("us", "");
+        observe(&layout);
+        observe(&layout);
+        layout.variant = "dvorak".into();
+        observe(&layout);
+        observe(&layout);
+        layout.index = 1;
+        observe(&layout);
+        layout.display_label = "custom".into();
+        observe(&layout);
+        assert_eq!(events.len(), 4);
+        assert_eq!(cache.keyboard_layout().unwrap().variant, "dvorak");
+        assert_eq!(cache.keyboard_layout().unwrap().index, 1);
+        // A new watcher session must announce its initial observation.
+        publisher.last = None;
+        publisher.publish(&layout, &cache, |event| events.push(event));
+        assert_eq!(events.len(), 5);
     }
 }

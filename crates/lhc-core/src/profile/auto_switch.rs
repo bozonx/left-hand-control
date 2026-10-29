@@ -19,10 +19,15 @@ pub struct AutoSwitchContext {
 impl AutoSwitchContext {
     /// Snapshot of the state cached by the core watchers.
     pub fn current() -> Self {
+        Self::from_state(crate::runtime_state::current())
+    }
+
+    /// Snapshot an independent runtime, including in isolated engine tests.
+    pub fn from_state(state: &crate::runtime_state::RuntimeState) -> Self {
         Self {
-            system_layout: crate::runtime_state::keyboard_layout_code(),
-            game_mode_active: crate::runtime_state::game_mode_active(),
-            window: crate::runtime_state::active_window(),
+            system_layout: state.keyboard_layout().map(|layout| layout.code),
+            game_mode_active: state.game_mode_active(),
+            window: state.active_window(),
         }
     }
 }

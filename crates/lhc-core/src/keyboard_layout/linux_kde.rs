@@ -11,7 +11,7 @@
 //! polled. Switching the active layout goes through the same DBus interface
 //! (`setLayout(uint)`).
 
-use std::sync::{Mutex, OnceLock};
+use std::sync::OnceLock;
 use std::thread;
 use std::time::Duration;
 
@@ -96,6 +96,7 @@ pub fn set_layout(index: u32) -> Result<(), String> {
 }
 
 pub fn start_watcher() {
+    SIGNAL_WATCHER.reset();
     super::register_watcher(
         thread::Builder::new()
             .name("layout-kde-signal".into())
@@ -103,40 +104,21 @@ pub fn start_watcher() {
     );
 }
 
+static SIGNAL_WATCHER: super::signal_watcher::SignalWatcher =
+    super::signal_watcher::SignalWatcher::new();
+
 fn run_signal_watcher() {
-    while !super::watcher_stop_requested() {
-        match signal_watch_once() {
-            Ok(()) => return,
-            Err(e) => {
-                log::debug!(
-                    "[layout/kde] signal watcher error: {e}; retrying in {RECONNECT_DELAY:?}"
-                );
-                thread::sleep(RECONNECT_DELAY);
-            }
-        }
-    }
+    SIGNAL_WATCHER.run("kde", RECONNECT_DELAY, signal_watch_once);
 }
 
-/// Connection the signal watcher blocks on; closed to wake it for stop.
-static SIGNAL_CONNECTION: Mutex<Option<Connection>> = Mutex::new(None);
-
-/// End the signal watcher's wait so it notices the stop request.
 pub(super) fn interrupt_signal_watcher() {
-    let connection = SIGNAL_CONNECTION
-        .lock()
-        .ok()
-        .and_then(|mut slot| slot.take());
-    if let Some(connection) = connection
-        && let Err(e) = connection.close()
-    {
-        log::debug!("[layout/kde] close signal connection: {e}");
-    }
+    SIGNAL_WATCHER.stop();
 }
 
 fn signal_watch_once() -> Result<(), String> {
     let conn = Connection::session().map_err(|e| format!("connect session bus: {e}"))?;
-    if let Ok(mut slot) = SIGNAL_CONNECTION.lock() {
-        *slot = Some(conn.clone());
+    if !SIGNAL_WATCHER.connected(conn.clone()) {
+        return Ok(());
     }
     // A stop requested before the connection was published.
     if super::watcher_stop_requested() {

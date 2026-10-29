@@ -1,5 +1,9 @@
 //! Temporary Wayland clipboard ownership with bounded transfers and MIME preservation.
 
+use super::clipboard_transaction::{
+    DATA_CONTROL_GRACE as PASTE_GRACE, PasteFailure, PasteProgress, SavedSelection,
+};
+
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::os::fd::{AsFd, OwnedFd};
@@ -115,9 +119,6 @@ impl Source {
 }
 
 const TRANSFER_TIMEOUT: Duration = Duration::from_secs(2);
-// Data-control cannot identify the reader. A watcher may read before the target
-// processes the shortcut, so a completed transfer alone cannot trigger restore.
-const PASTE_GRACE: Duration = Duration::from_millis(200);
 /// Limits of a saved clipboard, shared with the portal clipboard.
 pub(crate) const MAX_CLIPBOARD_BYTES: usize = 64 * 1024 * 1024;
 pub(crate) const MAX_MIME_TYPES: usize = 128;
@@ -304,7 +305,7 @@ struct State {
     /// `contents` is the restored selection, not a paste in progress.
     restored: bool,
     cancelled: bool,
-    transferred: bool,
+    progress: PasteProgress,
     transfers: Vec<Receiver<(bool, Result<(), String>)>>,
     waker: Option<Arc<Waker>>,
 }
@@ -490,6 +491,7 @@ impl Session {
     ) -> Result<(), String> {
         let start = Instant::now();
         let (saved, origin) = self.saved(start + TRANSFER_TIMEOUT)?;
+        let saved = SavedSelection::new(saved);
         if matches!(trigger.try_recv(), Err(mpsc::TryRecvError::Disconnected)) {
             return Err("clipboard preparation cancelled".into());
         }
@@ -513,7 +515,7 @@ impl Session {
             match trigger.try_recv() {
                 Ok(Command::Finish(injected)) => break injected,
                 Ok(Command::Arm(armed)) => {
-                    self.state.transferred = false;
+                    self.state.progress.arm();
                     self.state.transfers.clear();
                     let _ = armed.send(());
                     continue;
@@ -528,6 +530,7 @@ impl Session {
                 break false;
             }
         };
+        self.state.progress.finish(injected, Instant::now());
         let mut result = if injected {
             Ok(())
         } else {
@@ -536,40 +539,46 @@ impl Session {
         if injected {
             let injected_at = Instant::now();
             let deadline = injected_at + TRANSFER_TIMEOUT;
-            while !self.state.cancelled
-                && (!self.state.transferred
-                    || injected_at.elapsed() < PASTE_GRACE
-                    || !self.state.transfers.is_empty())
-            {
+            while !self.state.cancelled {
+                if let Some(outcome) = self.state.progress.outcome(
+                    Instant::now(),
+                    deadline,
+                    PASTE_GRACE,
+                    self.state.transfers.len(),
+                ) {
+                    result = outcome.map_err(|failure| match failure {
+                        PasteFailure::Cancelled => "paste cancelled before injection".into(),
+                        PasteFailure::Timeout => {
+                            "clipboard text transfer did not complete in time".into()
+                        }
+                    });
+                    break;
+                }
                 if let Err(error) =
                     pump(&self.connection, &mut self.queue, &mut self.state, deadline)
                 {
                     result = Err(error);
                     break;
                 }
-                if Instant::now() >= deadline {
-                    result = Err("clipboard text transfer did not complete in time".into());
-                    break;
-                }
             }
         }
         // Apply queued cancellation before restoring; a user copy always takes precedence.
         self.barrier()?;
-        if self.state.cancelled {
-            return Err("clipboard ownership changed during paste".into());
-        }
-        if saved.is_empty() {
-            self.device.set_selection(None);
-            if let Some(source) = self.state.source.take() {
-                source.destroy();
+        saved.restore(!self.state.cancelled, |saved| {
+            if saved.is_empty() {
+                self.device.set_selection(None);
+                if let Some(source) = self.state.source.take() {
+                    source.destroy();
+                }
+                self.state.contents.clear();
+                self.connection.flush().map_err(|error| error.to_string())?;
+            } else {
+                self.own(saved);
+                self.state.restored = true;
+                self.barrier()?;
             }
-            self.state.contents.clear();
-            self.connection.flush().map_err(|e| e.to_string())?;
-            return result;
-        }
-        self.own(saved);
-        self.state.restored = true;
-        self.barrier()?;
+            Ok(())
+        })?;
         let _ = completed.send(result);
         Ok(())
     }
@@ -589,7 +598,7 @@ fn own(
     let previous = state.source.replace(source.clone());
     state.contents = contents;
     state.cancelled = false;
-    state.transferred = false;
+    state.progress = PasteProgress::default();
     state.transfers.clear();
     device.set_selection(Some(&source));
     if let Some(previous) = previous {
@@ -706,7 +715,7 @@ fn wait(
         .transfers
         .retain(|transfer| match transfer.try_recv() {
             Ok((text, Ok(()))) => {
-                state.transferred |= text;
+                state.progress.transferred(text);
                 false
             }
             Ok((_, Err(_))) | Err(mpsc::TryRecvError::Disconnected) => false,
@@ -1110,6 +1119,14 @@ mod tests {
         paste.arm().unwrap();
         assert!(paste.finish(true).is_err());
         assert_eq!(read_all(), newer);
+
+        // An initially empty selection must be restored as empty too.
+        let _empty_owner = Owner::new(Contents::new());
+        let paste = Paste::prepare("empty clipboard").unwrap();
+        paste.arm().unwrap();
+        assert_eq!(&*read_all()[TEXT_MIME], b"empty clipboard");
+        paste.finish(true).unwrap();
+        assert!(read_all().is_empty());
     }
 
     #[test]

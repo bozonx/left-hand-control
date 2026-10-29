@@ -15,6 +15,7 @@ use zbus::export::futures_core::Stream;
 use zbus::proxy::SignalStream;
 use zbus::zvariant::{OwnedFd, OwnedObjectPath, OwnedValue, Value};
 
+use super::clipboard_transaction::{PasteFailure, PasteProgress, SavedSelection};
 use super::job::TextRequest;
 
 const IFACE: &str = "org.freedesktop.portal.Clipboard";
@@ -155,8 +156,7 @@ struct State {
     revision: u64,
     types: Vec<String>,
     contents: Contents,
-    armed: bool,
-    transferred: bool,
+    progress: PasteProgress,
     request: Option<TextRequest>,
 }
 
@@ -306,8 +306,10 @@ fn event(
             portal
                 .call::<_, _, ()>("SelectionWriteDone", &(session, serial, result.is_ok()))
                 .map_err(|e| e.to_string())?;
-            if result.is_ok() && state.armed {
-                state.transferred = true;
+            if result.is_ok() {
+                state
+                    .progress
+                    .transferred(mime == TEXT_MIME || mime == PLAIN_TEXT_MIME);
             }
         }
         _ => {}
@@ -379,15 +381,13 @@ fn transaction(
     state.contents = temporary;
     state.request = Some(request.clone());
     state.own = true;
-    state.armed = false;
-    state.transferred = false;
+    state.progress = PasteProgress::default();
     let result = (|| {
         let deadline = Instant::now() + TIMEOUT;
         drain(portal, session, signals, state)?;
         ready
             .send(Ok(()))
             .map_err(|_| "clipboard preparation cancelled")?;
-        let mut injected = None;
         loop {
             drain(portal, session, signals, state)?;
             if !state.own {
@@ -396,36 +396,37 @@ fn transaction(
             request.check().map_err(|e| format!("{e:?}"))?;
             match controls.try_recv() {
                 Ok(Control::Arm(ack)) => {
-                    state.armed = true;
-                    state.transferred = false;
+                    state.progress.arm();
                     let _ = ack.send(());
                 }
-                Ok(Control::Finish(value)) => injected = Some(value),
-                Err(mpsc::TryRecvError::Disconnected) if injected.is_none() => {
+                Ok(Control::Finish(value)) => state.progress.finish(value, Instant::now()),
+                Err(mpsc::TryRecvError::Disconnected) if !state.progress.is_finished() => {
                     return Err("clipboard paste cancelled".into());
                 }
                 Err(_) => {}
             }
-            if injected == Some(false) {
-                return Err("clipboard shortcut failed".into());
-            }
-            if injected == Some(true) && state.transferred {
-                return Ok(());
-            }
-            if Instant::now() >= deadline {
-                return Err("clipboard paste was not consumed".into());
+            if let Some(outcome) =
+                state
+                    .progress
+                    .outcome(Instant::now(), deadline, Duration::ZERO, 0)
+            {
+                return outcome.map_err(|failure| match failure {
+                    PasteFailure::Cancelled => "clipboard shortcut failed".into(),
+                    PasteFailure::Timeout => "clipboard paste was not consumed".into(),
+                });
             }
             thread::sleep(POLL_INTERVAL);
         }
     })();
     // A newer owner wins, including during cancellation and failed injection.
     drain(portal, session, signals, state)?;
-    state.armed = false;
+    state.progress.disarm();
     state.request = None;
-    if state.own {
+    SavedSelection::new(saved).restore(state.own, |saved| {
         set_selection(portal, session, &saved)?;
         state.contents = saved;
-    }
+        Ok(())
+    })?;
     result
 }
 

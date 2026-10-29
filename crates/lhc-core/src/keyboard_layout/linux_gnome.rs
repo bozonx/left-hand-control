@@ -41,7 +41,7 @@ pub fn current() -> Result<Option<KeyboardLayoutInfo>, String> {
 fn clear_layout() {
     crate::runtime_state::set_keyboard_layout(None);
     if let Ok(mut last) = super::LAST_PUBLISHED.lock() {
-        *last = None;
+        last.last = None;
     }
 }
 
@@ -62,47 +62,28 @@ pub fn set_layout(index: u32) -> Result<(), String> {
     Ok(())
 }
 
-static SIGNAL_CONNECTION: std::sync::Mutex<Option<zbus::blocking::Connection>> =
-    std::sync::Mutex::new(None);
+static SIGNAL_WATCHER: super::signal_watcher::SignalWatcher =
+    super::signal_watcher::SignalWatcher::new();
 
 pub(super) fn interrupt_signal_watcher() {
-    if let Some(connection) = SIGNAL_CONNECTION
-        .lock()
-        .ok()
-        .and_then(|mut slot| slot.take())
-    {
-        let _ = connection.close();
-    }
+    SIGNAL_WATCHER.stop();
 }
 
 const RECONNECT_DELAY: Duration = Duration::from_secs(1);
-const STOP_POLL: Duration = Duration::from_millis(100);
 
 pub fn start_watcher() {
+    SIGNAL_WATCHER.reset();
     super::register_watcher(
         std::thread::Builder::new()
             .name("layout-gnome".into())
-            .spawn(|| {
-                while !super::watcher_stop_requested() {
-                    if let Err(error) = watch_once() {
-                        log::debug!("[layout/gnome] {error}");
-                    }
-                    // Wait before reconnecting, checking for a stop meanwhile.
-                    for _ in 0..RECONNECT_DELAY.as_millis() / STOP_POLL.as_millis() {
-                        if super::watcher_stop_requested() {
-                            return;
-                        }
-                        std::thread::sleep(STOP_POLL);
-                    }
-                }
-            }),
+            .spawn(|| SIGNAL_WATCHER.run("gnome", RECONNECT_DELAY, watch_once)),
     );
 }
 
 fn watch_once() -> Result<(), String> {
     let connection = zbus::blocking::Connection::session().map_err(|error| error.to_string())?;
-    if let Ok(mut slot) = SIGNAL_CONNECTION.lock() {
-        *slot = Some(connection.clone());
+    if !SIGNAL_WATCHER.connected(connection.clone()) {
+        return Ok(());
     }
     if super::watcher_stop_requested() {
         return Ok(());
@@ -121,5 +102,8 @@ fn watch_once() -> Result<(), String> {
         crate::active_window::wake();
         let _ = current();
     }
-    Ok(())
+    if super::watcher_stop_requested() {
+        return Ok(());
+    }
+    Err("keyboard signal stream ended".into())
 }

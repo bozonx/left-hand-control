@@ -7,6 +7,8 @@ pub(crate) mod job;
 #[cfg(target_os = "linux")]
 pub mod clipboard;
 #[cfg(target_os = "linux")]
+mod clipboard_transaction;
+#[cfg(target_os = "linux")]
 pub mod portal;
 #[cfg(target_os = "linux")]
 pub(crate) mod portal_clipboard;

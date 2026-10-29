@@ -9,7 +9,8 @@ use super::config::{ActionSpec, MapperConfig};
 use super::keys::code_to_key;
 use super::system;
 use crate::profile::actions::{Action, MAX_MACRO_DEPTH, MAX_MACRO_STEPS};
-use std::collections::{HashMap, HashSet};
+use crate::profile::macro_graph::{MacroGraph, MacroRef};
+use std::collections::HashSet;
 
 pub fn validate_config(cfg: &MapperConfig) -> Result<(), String> {
     let mut errors = Vec::new();
@@ -133,8 +134,14 @@ pub fn validate_config(cfg: &MapperConfig) -> Result<(), String> {
             );
         }
     }
-    validate_macro_cycles(cfg, &mut errors);
-    validate_macro_sizes(cfg, &mut errors);
+    let graph = MacroGraph::new(cfg.macros.iter().map(|item| {
+        (
+            item.id.as_str(),
+            item.steps.iter().map(|step| step.action.as_str()).collect(),
+        )
+    }));
+    validate_macro_cycles(cfg, &graph, &mut errors);
+    validate_macro_sizes(cfg, &graph, &mut errors);
 
     if errors.is_empty() {
         Ok(())
@@ -151,65 +158,13 @@ pub fn validate_config(cfg: &MapperConfig) -> Result<(), String> {
     }
 }
 
-fn validate_macro_sizes(cfg: &MapperConfig, errors: &mut Vec<String>) {
-    let mut definitions: HashMap<String, Vec<&str>> = BUILTIN_MACROS
-        .iter()
-        .map(|m| (format!("builtin:{}", m.id), m.steps.to_vec()))
-        .collect();
-    for m in &cfg.macros {
-        definitions.insert(
-            format!("macro:{}", m.id.trim()),
-            m.steps.iter().map(|s| s.action.as_str()).collect(),
-        );
-    }
-    /// Size reported for an expansion over the limits.
-    const TOO_LARGE: usize = MAX_MACRO_STEPS + 1;
-    fn size(
-        id: &str,
-        depth: usize,
-        definitions: &HashMap<String, Vec<&str>>,
-        memo: &mut HashMap<(String, usize), usize>,
-    ) -> usize {
-        if depth > MAX_MACRO_DEPTH {
-            return TOO_LARGE;
-        }
-        if let Some(size) = memo.get(&(id.to_string(), depth)) {
-            return *size;
-        }
-        let mut total = 0;
-        for step in definitions.get(id).into_iter().flatten() {
-            let step = step.trim();
-            total += match Action::parse(Some(step)) {
-                action @ (Action::Macro(_) | Action::BuiltinMacro(_)) => {
-                    let Some(reference) = action.format() else {
-                        continue;
-                    };
-                    1 + definitions
-                        .get_key_value(&reference)
-                        .map_or(0, |(id, _)| size(id, depth + 1, definitions, memo))
-                }
-                _ => usize::from(!step.is_empty()),
-            };
-            if total > MAX_MACRO_STEPS {
-                total = TOO_LARGE;
-                break;
-            }
-        }
-        memo.insert((id.to_string(), depth), total);
-        total
-    }
-    let mut memo = HashMap::new();
-    for m in &cfg.macros {
-        if size(
-            &format!("macro:{}", m.id.trim()),
-            0,
-            &definitions,
-            &mut memo,
-        ) > MAX_MACRO_STEPS
-        {
+fn validate_macro_sizes(cfg: &MapperConfig, graph: &MacroGraph<'_>, errors: &mut Vec<String>) {
+    let issues = graph.expansion_issues();
+    for item in &cfg.macros {
+        if issues.contains_key(&MacroRef::User(item.id.trim().into())) {
             errors.push(format!(
                 "Macro \"{}\": expansion exceeds {MAX_MACRO_STEPS} entries or {MAX_MACRO_DEPTH} nesting levels",
-                m.id
+                item.id
             ));
         }
     }
@@ -368,69 +323,15 @@ fn validate_action(
     }
 }
 
-fn validate_macro_cycles(cfg: &MapperConfig, errors: &mut Vec<String>) {
-    let mut graph: HashMap<String, Vec<String>> = HashMap::new();
-
-    for sys in BUILTIN_MACROS {
-        graph.insert(
-            format!("builtin:{}", sys.id),
-            sys.steps
-                .iter()
-                .filter_map(|step| macro_ref(step))
-                .collect(),
-        );
-    }
-
-    for m in &cfg.macros {
-        graph.insert(
-            format!("macro:{}", m.id.trim()),
-            m.steps
-                .iter()
-                .filter_map(|step| macro_ref(&step.action))
-                .collect(),
-        );
-    }
-
-    for m in &cfg.macros {
-        let source = format!("macro:{}", m.id.trim());
-        if m.id.trim().is_empty() {
-            continue;
-        }
-        for target in graph.get(&source).into_iter().flatten() {
-            let mut visited = HashSet::new();
-            if macro_path_reaches(&source, target, &graph, &mut visited) {
-                errors.push(format!(
-                    "Macro \"{source}\": macro references cannot form a cycle"
-                ));
-                break;
-            }
+fn validate_macro_cycles(cfg: &MapperConfig, graph: &MacroGraph<'_>, errors: &mut Vec<String>) {
+    for item in &cfg.macros {
+        let id = item.id.trim();
+        if !id.is_empty() && graph.has_cycle(&MacroRef::User(id.into())) {
+            errors.push(format!(
+                "Macro \"macro:{id}\": macro references cannot form a cycle"
+            ));
         }
     }
-}
-
-fn macro_ref(step: &str) -> Option<String> {
-    match Action::parse(Some(step)) {
-        action @ (Action::Macro(_) | Action::BuiltinMacro(_)) => action.format(),
-        _ => None,
-    }
-}
-
-fn macro_path_reaches(
-    source: &str,
-    current: &str,
-    graph: &HashMap<String, Vec<String>>,
-    visited: &mut HashSet<String>,
-) -> bool {
-    let mut pending = vec![current];
-    while let Some(current) = pending.pop() {
-        if current == source {
-            return true;
-        }
-        if visited.insert(current.to_string()) {
-            pending.extend(graph.get(current).into_iter().flatten().map(String::as_str));
-        }
-    }
-    false
 }
 
 #[cfg(test)]
@@ -446,6 +347,48 @@ mod tests {
             macros: Vec::new(),
             commands: Vec::new(),
             settings: Settings::default(),
+        }
+    }
+
+    #[test]
+    fn editor_and_mapper_agree_on_macro_cycles_and_missing_references() {
+        use crate::profile::{macros, model};
+        for steps in [
+            ["macro:b", "macro:a"],
+            ["macro:a", "KeyA"],
+            [" macro: b ", "KeyA"],
+            ["macro:missing", "KeyA"],
+            ["builtin:copyLineText", "text:macro:a"],
+        ] {
+            let layout = model::LayoutPreset {
+                macros: ["a", "b"]
+                    .into_iter()
+                    .zip(steps)
+                    .map(|(id, action)| model::Macro {
+                        id: id.into(),
+                        name: id.into(),
+                        steps: vec![model::MacroStep {
+                            id: "s".into(),
+                            action: action.into(),
+                        }],
+                        step_pause_ms: None,
+                        modifier_delay_ms: None,
+                    })
+                    .collect(),
+                ..Default::default()
+            };
+            let mapper: MapperConfig =
+                serde_json::from_value(serde_json::to_value(&layout).unwrap()).unwrap();
+            let editor =
+                model::ResolvedAppConfig::from_parts(model::AppSettings::default(), layout, None);
+            assert_eq!(
+                editor
+                    .macros
+                    .iter()
+                    .all(|item| macros::validate(&editor, item).is_ok()),
+                validate_config(&mapper).is_ok(),
+                "{steps:?}",
+            );
         }
     }
 
