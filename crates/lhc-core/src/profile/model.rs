@@ -1,7 +1,7 @@
 //! Editable application model used by the shell and mapper.
 //!
-//! Serialising [`ResolvedAppConfig`] with `serde_json` produces the JSON consumed
-//! by the mapper runtime; the persisted formats (`config.json` settings and
+//! [`ResolvedAppConfig`] combines settings with a layout for diagnostics and
+//! typed mapper projection; the persisted formats (`config.json` settings and
 //! JSON layouts) are handled by [`super::settings`] and [`super::layout_file`].
 
 use super::timing;
@@ -774,7 +774,7 @@ impl Default for AppSettings {
     }
 }
 
-/// Settings plus the current layout, consumed by the mapper runtime as JSON.
+/// Settings plus a layout, used for editor diagnostics and mapper projection.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResolvedAppConfig {
@@ -792,9 +792,8 @@ pub struct ResolvedAppConfig {
 }
 
 impl ResolvedAppConfig {
-    /// Combine settings with a preset, as `applyPresetToConfig()` does:
-    /// the preset's layout id becomes `currentLayoutId` and every layer
-    /// gets a keymap.
+    /// Combine settings with a layout, assigning its active identity and
+    /// ensuring every layer has a keymap.
     pub fn from_parts(
         settings: AppSettings,
         preset: LayoutPreset,
@@ -819,10 +818,6 @@ impl ResolvedAppConfig {
                 ..settings
             },
         }
-    }
-
-    pub fn to_json(&self) -> String {
-        serde_json::to_string(self).unwrap_or_default()
     }
 }
 
@@ -868,6 +863,10 @@ mod tests {
 
         let mapper: crate::mapper::config::MapperConfig = serde_json::from_value(value).unwrap();
         assert_eq!(
+            mapper,
+            crate::mapper::config::MapperConfig::try_from(&config).unwrap()
+        );
+        assert_eq!(
             mapper.settings.editing_layout_id.as_deref(),
             Some("user:Editing")
         );
@@ -900,5 +899,21 @@ mod tests {
         let mut preset = preset;
         preset.remove_unused_commands();
         assert_eq!(preset.commands, vec![command("used")]);
+    }
+    #[test]
+    fn typed_mapper_projection_matches_the_existing_serialized_model() {
+        for layout in super::super::bundled::BUNDLED {
+            let config = ResolvedAppConfig::from_parts(
+                AppSettings::default(),
+                layout.layout().unwrap(),
+                Some("user:Example"),
+            );
+            let serialized: crate::mapper::config::MapperConfig =
+                serde_json::from_value(serde_json::to_value(&config).unwrap()).unwrap();
+            assert_eq!(
+                crate::mapper::config::MapperConfig::try_from(&config).unwrap(),
+                serialized
+            );
+        }
     }
 }

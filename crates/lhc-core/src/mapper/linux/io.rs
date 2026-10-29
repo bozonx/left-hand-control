@@ -839,11 +839,13 @@ mod tests {
     fn app_actions_bypass_the_text_worker() {
         let (sent, received) = std::sync::mpsc::channel();
         let _events = crate::events::bus().subscribe(move |event| {
-            if matches!(event, crate::events::CoreEvent::AppAction(name) if name == "audit-popup-test") {
+            if matches!(event, crate::events::CoreEvent::AppAction(name) if *name == crate::profile::app_action::AppAction::parse("activateLayout5").unwrap()) {
                 sent.send(()).unwrap();
             }
         }).unwrap();
-        RuntimeSideEffects.run_system(&SystemAction::AppEvent("audit-popup-test".into()));
+        RuntimeSideEffects.run_system(&SystemAction::AppEvent(
+            crate::profile::app_action::AppAction::parse("activateLayout5").unwrap(),
+        ));
         received.recv_timeout(Duration::from_secs(1)).unwrap();
     }
 }

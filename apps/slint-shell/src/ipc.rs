@@ -9,7 +9,7 @@
 //! `error: …`. `queued` means the command reached the UI queue, not that a
 //! window is ready for input.
 
-use crate::command::{Command, Dispatch, Source};
+use crate::command::{Command, Dispatch, Endpoint, Source};
 use serde::{Deserialize, Serialize};
 #[cfg(windows)]
 use std::net::{Ipv4Addr, SocketAddrV4, TcpListener, TcpStream};
@@ -265,7 +265,7 @@ impl Server {
     }
 
     /// Serve requests on a background thread, handing commands to `dispatch`.
-    pub fn start(&self, dispatch: Dispatch) -> std::io::Result<()> {
+    pub fn start(&self, endpoint: Endpoint, dispatch: Dispatch) -> std::io::Result<()> {
         let listener = self.listener.try_clone()?;
         listener.set_nonblocking(true)?;
         let stopped = self.stopped.clone();
@@ -302,7 +302,7 @@ impl Server {
                     deadline: Instant::now() + REQUEST_TIMEOUT,
                     stopped: &stopped,
                 };
-                let reply = reply(receive(reader, &dispatch, auth.as_deref()));
+                let reply = reply(receive(reader, &dispatch, endpoint, auth.as_deref()));
                 if stopped.load(Ordering::Acquire) {
                     break;
                 }
@@ -354,6 +354,7 @@ fn reply(result: Result<(), Box<dyn std::error::Error>>) -> String {
 fn receive(
     stream: impl Read,
     dispatch: &Dispatch,
+    endpoint: Endpoint,
     auth: Option<&str>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut line = String::new();
@@ -364,12 +365,13 @@ fn receive(
         return Err("not authorized".into());
     }
     let command = Command::parse(&request.command)?;
+    endpoint.validate(&command)?;
     dispatch(
         command,
         Source::from_wire(request.source.as_deref()),
         forwarded_start(request.trigger_ns, received),
         request.token,
-    );
+    )?;
     Ok(())
 }
 
@@ -490,8 +492,10 @@ mod tests {
     fn dispatch() -> (Dispatch, Arc<Mutex<Vec<Command>>>) {
         let seen = Arc::new(Mutex::new(Vec::new()));
         let sink = seen.clone();
-        let dispatch: Dispatch =
-            Arc::new(move |command, _, _, _| sink.lock().unwrap().push(command));
+        let dispatch: Dispatch = Arc::new(move |command, _, _, _| {
+            sink.lock().unwrap().push(command);
+            Ok(())
+        });
         (dispatch, seen)
     }
 
@@ -509,12 +513,34 @@ mod tests {
     #[test]
     fn requests_need_the_token_when_one_is_set() {
         let (dispatch, seen) = dispatch();
-        assert!(receive(&line("ping", None)[..], &dispatch, Some("secret")).is_err());
-        assert!(receive(&line("ping", Some("wrong"))[..], &dispatch, Some("secret")).is_err());
-        receive(&line("ping", Some("secret"))[..], &dispatch, Some("secret")).unwrap();
-        receive(&line("hide", None)[..], &dispatch, None).unwrap();
+        assert!(
+            receive(
+                &line("ping", None)[..],
+                &dispatch,
+                Endpoint::Settings,
+                Some("secret")
+            )
+            .is_err()
+        );
+        assert!(
+            receive(
+                &line("ping", Some("wrong"))[..],
+                &dispatch,
+                Endpoint::Settings,
+                Some("secret")
+            )
+            .is_err()
+        );
+        receive(
+            &line("ping", Some("secret"))[..],
+            &dispatch,
+            Endpoint::Settings,
+            Some("secret"),
+        )
+        .unwrap();
+        receive(&line("hide", None)[..], &dispatch, Endpoint::Settings, None).unwrap();
         assert_eq!(*seen.lock().unwrap(), [Command::Ping, Command::Hide]);
-        assert!(receive(&b"not json\n"[..], &dispatch, None).is_err());
+        assert!(receive(&b"not json\n"[..], &dispatch, Endpoint::Settings, None).is_err());
     }
 
     #[cfg(unix)]
@@ -585,6 +611,7 @@ mod tests {
                 stopped: &stopped,
             },
             &dispatch,
+            Endpoint::Settings,
             None,
         );
         let elapsed = start.elapsed();
@@ -609,7 +636,7 @@ mod tests {
         let path = dir.path().join("ipc.sock");
         let server = Server::bind_path(path.clone()).unwrap();
         let (dispatch, seen) = dispatch();
-        server.start(dispatch).unwrap();
+        server.start(Endpoint::Settings, dispatch).unwrap();
         let mut stream = UnixStream::connect(&path).unwrap();
         stream.write_all(b"{").unwrap();
         std::thread::sleep(Duration::from_millis(100));
@@ -640,7 +667,7 @@ mod tests {
             thread: Mutex::new(None),
         };
         let (dispatch, seen) = dispatch();
-        server.start(dispatch).unwrap();
+        server.start(Endpoint::Settings, dispatch).unwrap();
         #[cfg(unix)]
         let mut stream = UnixStream::connect(path).unwrap();
         #[cfg(windows)]
@@ -668,5 +695,27 @@ mod tests {
     fn socket_names_stay_inside_the_private_dir() {
         assert!(socket_path("../escape.sock").is_err());
         assert!(socket_path("").is_err());
+    }
+    #[test]
+    fn failed_dispatch_and_wrong_endpoint_are_not_acknowledged() {
+        let dispatch: Dispatch = Arc::new(|_, _, _, _| Err("UI queue closed".into()));
+        assert_eq!(
+            reply(receive(
+                &line("ping", None)[..],
+                &dispatch,
+                Endpoint::Settings,
+                None
+            )),
+            "error: UI queue closed\n"
+        );
+        let (dispatch, seen) = self::dispatch();
+        for (command, endpoint) in [
+            ("popup-layout null", Endpoint::Settings),
+            ("execute KeyA", Endpoint::PopupWorker),
+            ("show settings", Endpoint::PopupWorker),
+        ] {
+            assert!(receive(&line(command, None)[..], &dispatch, endpoint, None).is_err());
+        }
+        assert!(seen.lock().unwrap().is_empty());
     }
 }

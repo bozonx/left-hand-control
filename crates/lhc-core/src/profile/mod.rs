@@ -4,6 +4,7 @@
 
 mod action_walk;
 pub mod actions;
+pub mod app_action;
 pub mod app_match;
 pub mod auto_switch;
 pub mod bundled;

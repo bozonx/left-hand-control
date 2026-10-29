@@ -9,8 +9,8 @@ use crate::profile::model::{AppSettings, LayoutMode, LayoutPreset, ResolvedAppCo
 /// Mapper input computed from the document for the current system state.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuntimeConfig {
-    /// JSON for [`crate::mapper::runtime::start`] / `update_config`.
-    pub json: String,
+    /// Typed input for the mapper lifecycle API.
+    pub mapper: crate::mapper::config::MapperConfig,
     /// Layout the rules come from; `None` means native passthrough.
     pub layout_id: Option<String>,
     /// Whether the rules or the auto-mode choice look at window titles,
@@ -56,10 +56,12 @@ impl RuntimeConfig {
                     .chain(&rule.conditions.excluded_window_patterns)
             });
         let uses_titles = app_match::uses_title(rule_patterns.chain(auto_patterns));
-        let json = config.to_json();
-        validate_for_mapper(&json)?;
+        let mapper =
+            crate::mapper::config::MapperConfig::try_from(&config).map_err(ConfigError::Invalid)?;
+        #[cfg(any(target_os = "linux", target_os = "windows"))]
+        crate::mapper::validation::validate_config(&mapper).map_err(ConfigError::Invalid)?;
         Ok(Self {
-            json,
+            mapper,
             layout_id,
             uses_titles,
         })
@@ -112,14 +114,4 @@ impl ConfigDocument {
             None => Ok(LayoutPreset::default()),
         }
     }
-}
-
-/// Run the mapper's own validation, which also checks key names.
-fn validate_for_mapper(json: &str) -> Result<(), ConfigError> {
-    let config: crate::mapper::config::MapperConfig =
-        serde_json::from_str(json).map_err(|error| ConfigError::Invalid(error.to_string()))?;
-    #[cfg(any(target_os = "linux", target_os = "windows"))]
-    crate::mapper::validation::validate_config(&config).map_err(ConfigError::Invalid)?;
-    let _ = config;
-    Ok(())
 }

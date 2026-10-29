@@ -66,6 +66,8 @@ pub use crate::profile::layer_edit::KeyAssignment;
 #[derive(Clone)]
 pub struct ConfigDocument {
     paths: StoragePaths,
+    staged: bool,
+    layout_only: bool,
     settings: AppSettings,
     layout: LayoutPreset,
     /// Why the layout last opened for editing could not be read at load.
@@ -96,6 +98,8 @@ impl ConfigDocument {
         };
         crate::gamemode::set_settings(&settings.game_mode, settings.in_development);
         Ok(Self {
+            staged: false,
+            layout_only: false,
             settings,
             layout,
             paths,
@@ -156,13 +160,50 @@ impl ConfigDocument {
         self.update_settings(|settings| settings.locale = locale)
     }
 
+    /// Stage settings and layout changes, saving settings only after the
+    /// entire callback succeeds. Library writes and autostart refresh are
+    /// separate operations and are rejected inside a transaction.
+    pub fn transaction<T>(
+        &mut self,
+        edit: impl FnOnce(&mut Self) -> Result<T, ConfigError>,
+    ) -> Result<T, ConfigError> {
+        let mut draft = self.clone();
+        draft.staged = true;
+        let result = edit(&mut draft)?;
+        if draft.settings != self.settings {
+            self.update_settings(|settings| *settings = draft.settings.clone())?;
+        }
+        draft.staged = self.staged;
+        *self = draft;
+        Ok(result)
+    }
+
+    pub(crate) fn require_external_operation(&self) -> Result<(), ConfigError> {
+        if self.staged || self.layout_only {
+            Err(ConfigError::Invalid(
+                "external operation is not allowed inside a document transaction".into(),
+            ))
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn update_settings(
         &mut self,
         edit: impl FnOnce(&mut AppSettings),
     ) -> Result<(), ConfigError> {
+        if self.layout_only {
+            return Err(ConfigError::Invalid(
+                "settings cannot change inside a layout edit".into(),
+            ));
+        }
         let mut updated = self.settings.clone();
         edit(&mut updated);
         settings::validate(&updated).map_err(ConfigError::Invalid)?;
+        if self.staged {
+            self.settings = updated;
+            return Ok(());
+        }
         let text = settings::serialize(&updated);
         let autostart_changed = crate::autostart::apply_setting(
             &self.paths,
@@ -189,6 +230,7 @@ impl ConfigDocument {
     /// settings (see [`crate::autostart::refresh`]). Returns whether the
     /// setting changed.
     pub fn sync_autostart(&mut self) -> Result<bool, ConfigError> {
+        self.require_external_operation()?;
         if !crate::autostart::SUPPORTED {
             return Ok(false);
         }
@@ -392,6 +434,8 @@ impl ConfigDocument {
     ) -> Result<T, ConfigError> {
         let mut draft = Self {
             paths: self.paths.clone(),
+            staged: self.staged,
+            layout_only: true,
             settings: self.settings.clone(),
             layout: self.layout.clone(),
             layout_load_error: self.layout_load_error.clone(),
@@ -1113,7 +1157,7 @@ mod tests {
             .runtime_config(&AutoSwitchContext::default())
             .unwrap();
         assert_eq!(runtime.layout_id.as_deref(), Some("user:Other"));
-        let value: Value = serde_json::from_str(&runtime.json).unwrap();
+        let value: Value = serde_json::to_value(&runtime.mapper).unwrap();
         assert_eq!(value["rules"].as_array().unwrap().len(), 1);
         assert_eq!(value["rules"][0]["key"], "KeyA");
         assert_eq!(value["settings"]["currentLayoutId"], "user:Other");
@@ -1124,7 +1168,7 @@ mod tests {
         let runtime = document
             .runtime_config(&AutoSwitchContext::default())
             .unwrap();
-        let value: Value = serde_json::from_str(&runtime.json).unwrap();
+        let value: Value = serde_json::to_value(&runtime.mapper).unwrap();
         assert_eq!(value["rules"][0]["key"], "CapsLock");
         assert_eq!(value["rules"][0]["tapAction"], "Escape");
         assert_eq!(value["rules"][0]["holdAction"], "");
@@ -1137,7 +1181,7 @@ mod tests {
             .runtime_config(&AutoSwitchContext::default())
             .unwrap();
         assert_eq!(runtime.layout_id, None);
-        let value: Value = serde_json::from_str(&runtime.json).unwrap();
+        let value: Value = serde_json::to_value(&runtime.mapper).unwrap();
         assert!(value["rules"].as_array().unwrap().is_empty());
     }
 
@@ -1153,7 +1197,7 @@ mod tests {
             let runtime = document
                 .runtime_config(&AutoSwitchContext::default())
                 .unwrap();
-            let value: Value = serde_json::from_str(&runtime.json).unwrap();
+            let value: Value = serde_json::to_value(&runtime.mapper).unwrap();
             assert!(!value["rules"].as_array().unwrap().is_empty());
         }
         let (_dir, document) = document(json!({}), crate::profile::bundled::BUNDLED[0].text());
@@ -1161,7 +1205,7 @@ mod tests {
         let runtime = document
             .runtime_config(&AutoSwitchContext::default())
             .unwrap();
-        let value: Value = serde_json::from_str(&runtime.json).unwrap();
+        let value: Value = serde_json::to_value(&runtime.mapper).unwrap();
         assert!(!value["rules"].as_array().unwrap().is_empty());
         let reparsed = layout_file::parse(&layout_file::serialize(document.layout()))
             .unwrap()
@@ -1203,7 +1247,7 @@ mod tests {
         let runtime = document
             .runtime_config(&AutoSwitchContext::default())
             .unwrap();
-        let value: Value = serde_json::from_str(&runtime.json).unwrap();
+        let value: Value = serde_json::to_value(&runtime.mapper).unwrap();
         assert_eq!(value["rules"].as_array().unwrap().len(), 2);
         assert_eq!(value["rules"][0]["tapAction"], "KeyB");
         assert_eq!(value["rules"][1]["tapAction"], "KeyC");
@@ -1237,5 +1281,57 @@ mod tests {
         let saved = ConfigDocument::load(document.paths().clone()).unwrap();
         assert_eq!(saved.layout().layers[0].name, "Navigation copy");
         assert!(saved.layout().rules[0].layer_id.is_empty());
+    }
+    #[test]
+    fn compound_transaction_rolls_back_memory_disk_and_runtime_settings() {
+        let (_dir, mut document) = document(json!({}), r#"{"schemaVersion":1}"#);
+        let before_settings = document.settings().clone();
+        let before_layout = document.layout().clone();
+        let disk = std::fs::read(document.paths().config_path()).ok();
+        let result: Result<(), ConfigError> = document.transaction(|draft| {
+            draft.update_settings(|settings| settings.high_contrast = !settings.high_contrast)?;
+            draft.create_layer("Staged", "")?;
+            Err(ConfigError::EditConflict)
+        });
+        assert_eq!(result, Err(ConfigError::EditConflict));
+        assert_eq!(document.settings(), &before_settings);
+        assert_eq!(document.layout(), &before_layout);
+        assert_eq!(std::fs::read(document.paths().config_path()).ok(), disk);
+        document
+            .transaction(|draft| {
+                draft
+                    .update_settings(|settings| settings.high_contrast = !settings.high_contrast)?;
+                draft.create_layer("Committed", "")
+            })
+            .unwrap();
+        assert_ne!(document.settings(), &before_settings);
+        assert_eq!(
+            document.layout().layers.len(),
+            before_layout.layers.len() + 1
+        );
+    }
+
+    #[test]
+    fn staged_edits_reject_external_writes_and_layout_callbacks_reject_settings() {
+        let (_dir, mut document) = document(json!({}), r#"{"schemaVersion":1}"#);
+        assert!(
+            document
+                .transaction(|draft| draft.save_current_layout_as("Forbidden"))
+                .is_err()
+        );
+        assert!(
+            !document
+                .layout_ids()
+                .unwrap()
+                .contains(&"user:Forbidden".to_owned())
+        );
+        let before = document.settings().clone();
+        assert!(
+            document
+                .edit_layout_with_commands([], |draft| draft
+                    .update_settings(|settings| settings.high_contrast = true))
+                .is_err()
+        );
+        assert_eq!(document.settings(), &before);
     }
 }

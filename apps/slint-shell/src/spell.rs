@@ -7,7 +7,7 @@
 //! and exits when the parent closes its stdin.
 
 use crate::{
-    command::{Command, Dispatch, Popup, Preferences, Source, ThemeMode, Window},
+    command::{Command, Dispatch, Popup, Preferences, Source, ThemeMode, WorkerCommand},
     ipc,
     layer_hint_model::LayerHint,
     metrics,
@@ -39,7 +39,7 @@ const ACTIVE_GRACE: Duration = Duration::from_millis(250);
 const IDLE_POLL: Duration = Duration::from_millis(500);
 
 enum Event {
-    Command(Command, Source, Instant),
+    Command(WorkerCommand, Source, Instant),
     Key(Popup, String),
     Shortcut(Popup, popup_model::Shortcut),
     Choose(Popup, i32),
@@ -58,8 +58,19 @@ struct Waker {
 
 impl Waker {
     fn send(&self, event: Event) {
-        if self.sender.send(event).is_ok() {
-            let _ = (&*self.pipe).write(&[0]);
+        if let Err(error) = self.try_send(event) {
+            log::error!("Spell dispatch: {error}");
+        }
+    }
+
+    fn try_send(&self, event: Event) -> Result<(), String> {
+        self.sender
+            .send(event)
+            .map_err(|_| "Spell event queue closed".to_owned())?;
+        match (&*self.pipe).write(&[0]) {
+            Ok(_) => Ok(()),
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => Ok(()),
+            Err(error) => Err(error.to_string()),
         }
     }
 }
@@ -396,15 +407,23 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     bind_callbacks(&layers, &waker);
     let ipc_waker = waker.clone();
     let dispatch: Dispatch = Arc::new(move |command, source, start, _| {
-        ipc_waker.send(Event::Command(command, source, start));
+        ipc_waker.try_send(Event::Command(
+            WorkerCommand::try_from(command)?,
+            source,
+            start,
+        ))
     });
     let stdin_waker = waker.clone();
     std::thread::spawn(move || {
         let _ = std::io::stdin().read(&mut [0u8]);
-        stdin_waker.send(Event::Command(Command::Quit, Source::Ipc, Instant::now()));
+        stdin_waker.send(Event::Command(
+            WorkerCommand::Quit,
+            Source::Ipc,
+            Instant::now(),
+        ));
     });
     let server = ipc::Server::bind()?;
-    server.start(dispatch)?;
+    server.start(crate::command::Endpoint::PopupWorker, dispatch)?;
     #[cfg(feature = "probes")]
     let mut probe = crate::platform::return_input::ReturnInput::new()?;
     let mut session = PopupSession::default();
@@ -432,7 +451,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
             let mut dismiss = None;
             let mut outcome = None;
             match event {
-                Event::Command(Command::Preferences(preferences), _, _) => {
+                Event::Command(WorkerCommand::Preferences(preferences), _, _) => {
                     layers.apply(preferences);
                     // Format parsed by scripts/check/check-preferences.py.
                     log::info!(
@@ -442,14 +461,14 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                         session.visible().map(Popup::name)
                     );
                 }
-                Event::Command(Command::Quit, _, _) => {
+                Event::Command(WorkerCommand::Quit, _, _) => {
                     for popup in Popup::ALL {
                         layers.way(popup).hide();
                     }
                     layers.hint_way.hide();
                     return Ok(());
                 }
-                Event::Command(Command::PopupContents(contents), _, _) => {
+                Event::Command(WorkerCommand::PopupContents(contents), _, _) => {
                     match lhc_core::profile::layout_file::parse(&contents) {
                         Ok(layout) => layers.set_menus(ConfiguredMenus {
                             layout: layout.unwrap_or_default(),
@@ -457,7 +476,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                         Err(error) => log::error!("popup configuration: {error}"),
                     }
                 }
-                Event::Command(Command::PopupLayout(id), _, _) => {
+                Event::Command(WorkerCommand::PopupLayout(id), _, _) => {
                     let menus = ConfiguredMenus::load_for(id.as_deref()).unwrap_or_else(|error| {
                         log::error!("load popup configuration: {error}");
                         ConfiguredMenus::default()
@@ -465,13 +484,13 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     layers.set_menus(menus);
                 }
                 Event::Command(
-                    command @ (Command::Show(Window::Popup(_)) | Command::ShowPage(_, _)),
+                    command @ (WorkerCommand::Show(_) | WorkerCommand::ShowPage(_, _)),
                     source,
                     start,
                 ) => {
                     let (popup, page) = match command {
-                        Command::ShowPage(popup, page) => (popup, Some(page)),
-                        Command::Show(window) => (window.popup().unwrap_or(Popup::Emoji), None),
+                        WorkerCommand::ShowPage(popup, page) => (popup, Some(page)),
+                        WorkerCommand::Show(popup) => (popup, None),
                         _ => continue,
                     };
                     #[cfg(feature = "probes")]
@@ -483,9 +502,9 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     navigation_count = 0;
                     layers.show(&mut session, &mut metrics, popup, page, source, start);
                 }
-                Event::Command(Command::LayerHint(hint), _, _) => layers.set_hint(hint),
-                Event::Command(Command::Hide, _, _) => dismiss = session.visible(),
-                Event::Command(_, _, _) => {}
+                Event::Command(WorkerCommand::LayerHint(hint), _, _) => layers.set_hint(hint),
+                Event::Command(WorkerCommand::Hide, _, _) => dismiss = session.visible(),
+                Event::Command(WorkerCommand::Ping, _, _) => {}
                 Event::Focus(popup, active) => {
                     let (action, change) = session.focus(popup, active);
                     if let Some(action) = action {

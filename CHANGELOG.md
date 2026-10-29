@@ -18,6 +18,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Shell/core commands use typed mapper configuration and application actions. IPC rejects commands sent to the wrong process and reports UI queue failures; popup worker communication no longer blocks the settings interface. Compound settings/layout edits roll back on failure, and core state notifications are coalesced without discarding application requests.
+
 - Search fields share the text-field clear button, with consistent availability for disabled and read-only fields.
 
 - Library card summaries and input device discovery load in the background. Macro typing updates the edited field immediately and validates the draft after a short pause.

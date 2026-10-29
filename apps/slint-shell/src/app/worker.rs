@@ -5,7 +5,7 @@
 
 use super::{App, post};
 use crate::{
-    command::{Command, Source},
+    command::{Source, WorkerCommand},
     i18n::Msg,
     platform::backend::{self, Worker},
 };
@@ -37,10 +37,12 @@ impl RestartPolicy {
 
 #[derive(Clone)]
 pub(super) struct PendingShow {
-    pub(super) command: Command,
+    pub(super) command: WorkerCommand,
     pub(super) source: Source,
     pub(super) start: Instant,
     pub(super) token: Option<String>,
+    pub(super) queued: bool,
+    id: u64,
 }
 
 #[derive(Default)]
@@ -54,6 +56,8 @@ pub(super) struct Supervisor {
     /// popups are winit windows.
     pub(super) hint: bool,
     worker: Option<Worker>,
+    generation: u64,
+    next_show: u64,
     starting: bool,
     /// The restart limit was hit; wait for the user to ask again.
     gave_up: bool,
@@ -64,6 +68,34 @@ pub(super) struct Supervisor {
 }
 
 impl Supervisor {
+    pub(super) fn request_show(
+        &mut self,
+        command: WorkerCommand,
+        source: Source,
+        start: Instant,
+        token: Option<String>,
+    ) {
+        self.next_show = self.next_show.wrapping_add(1);
+        self.pending_show = Some(PendingShow {
+            command,
+            source,
+            start,
+            token,
+            queued: false,
+            id: self.next_show,
+        });
+    }
+
+    fn acknowledge_show(&mut self, id: u64) {
+        if self
+            .pending_show
+            .as_ref()
+            .is_some_and(|pending| pending.id == id)
+        {
+            self.pending_show.take();
+        }
+    }
+
     pub(super) fn cancel_blocked_show(&mut self, game_active: bool) {
         if self
             .pending_show
@@ -115,7 +147,10 @@ impl App {
             if supervisor.worker.is_none() {
                 return;
             }
-            supervisor.pending_show.clone()
+            supervisor
+                .pending_show
+                .clone()
+                .filter(|pending| !pending.queued)
         };
         let Some(pending) = pending else { return };
         let result = self
@@ -130,7 +165,9 @@ impl App {
             });
         match result {
             Ok(()) => {
-                self.supervisor.borrow_mut().pending_show.take();
+                if let Some(pending) = self.supervisor.borrow_mut().pending_show.as_mut() {
+                    pending.queued = true;
+                }
             }
             Err(error) => self.set_error(error),
         }
@@ -139,7 +176,7 @@ impl App {
     /// Forward `command` to the worker.
     pub(super) fn send_worker(
         &self,
-        command: &Command,
+        command: &WorkerCommand,
         source: Source,
         start: Instant,
         token: Option<String>,
@@ -147,9 +184,39 @@ impl App {
         let result = {
             let supervisor = self.supervisor.borrow();
             match &supervisor.worker {
-                Some(worker) => worker
-                    .send(command, source, start, token)
-                    .map_err(|error| error.to_string()),
+                Some(worker) => worker.send(command, source, start, token, {
+                    let generation = supervisor.generation;
+                    let show_id = matches!(
+                        command,
+                        WorkerCommand::Show(_) | WorkerCommand::ShowPage(_, _)
+                    )
+                    .then(|| supervisor.pending_show.as_ref().map(|pending| pending.id))
+                    .flatten();
+                    move |result| {
+                        post(move |app| {
+                            if app.supervisor.borrow().generation != generation {
+                                return;
+                            }
+                            match result {
+                                Ok(()) => {
+                                    if let Some(id) = show_id {
+                                        app.supervisor.borrow_mut().acknowledge_show(id);
+                                    }
+                                }
+                                Err(error) => {
+                                    if let Some(pending) =
+                                        app.supervisor.borrow_mut().pending_show.as_mut()
+                                    {
+                                        pending.queued = false;
+                                    }
+                                    app.popups.reset_worker();
+                                    app.set_error(Msg::WorkerError(error));
+                                    app.check_worker();
+                                }
+                            }
+                        });
+                    }
+                }),
                 None if supervisor.starting => return Err(Msg::WorkerRestarting),
                 None => return Err(Msg::WorkerNotStarted),
             }
@@ -172,6 +239,9 @@ impl App {
                 .is_some_and(|worker| !worker.is_alive());
             if dead {
                 supervisor.worker = None;
+                if let Some(pending) = supervisor.pending_show.as_mut() {
+                    pending.queued = false;
+                }
             }
             dead
         };
@@ -215,12 +285,18 @@ impl App {
         self.supervisor.borrow_mut().starting = false;
         match result {
             Ok(worker) => {
-                self.supervisor.borrow_mut().start_error_shown = false;
-                let preferences = Command::Preferences(self.preferences.get());
-                if let Err(error) = worker.send(&preferences, Source::Ipc, Instant::now(), None) {
-                    self.set_error(Msg::WorkerError(error.to_string()));
+                {
+                    let mut supervisor = self.supervisor.borrow_mut();
+                    supervisor.start_error_shown = false;
+                    supervisor.generation = supervisor.generation.wrapping_add(1);
+                    supervisor.worker = Some(worker);
                 }
-                self.supervisor.borrow_mut().worker = Some(worker);
+                let preferences = WorkerCommand::Preferences(self.preferences.get());
+                if let Err(error) =
+                    self.send_worker(&preferences, Source::Ipc, Instant::now(), None)
+                {
+                    self.set_error(error);
+                }
                 self.popups.reset_worker();
                 self.flush_worker_show();
                 self.resend_layer_hint();
@@ -250,10 +326,12 @@ mod tests {
         for source in [Source::Hotkey, Source::Evdev, Source::Mapper, Source::Ipc] {
             let mut supervisor = Supervisor::new(true, true);
             supervisor.pending_show = Some(PendingShow {
-                command: Command::Show(crate::command::Window::EMOJI),
+                command: WorkerCommand::Show(crate::command::Popup::Emoji),
                 source,
                 start: Instant::now(),
                 token: None,
+                queued: false,
+                id: 1,
             });
             supervisor.cancel_blocked_show(false);
             assert!(supervisor.pending_show.is_some());
@@ -279,5 +357,19 @@ mod tests {
         assert!(policy.allow(now + Duration::from_secs(2)));
         assert!(!policy.allow(now + Duration::from_secs(3)));
         assert!(policy.allow(now + Duration::from_secs(61)));
+    }
+    #[test]
+    fn old_acknowledgement_cannot_clear_a_new_show_with_the_same_trigger_time() {
+        let mut supervisor = Supervisor::new(true, true);
+        let start = Instant::now();
+        let show = WorkerCommand::Show(crate::command::Popup::Quick);
+        supervisor.request_show(show.clone(), Source::Ipc, start, None);
+        let first = supervisor.pending_show.as_ref().unwrap().id;
+        supervisor.request_show(show, Source::Ipc, start, None);
+        let second = supervisor.pending_show.as_ref().unwrap().id;
+        supervisor.acknowledge_show(first);
+        assert_eq!(supervisor.pending_show.as_ref().unwrap().id, second);
+        supervisor.acknowledge_show(second);
+        assert!(supervisor.pending_show.is_none());
     }
 }

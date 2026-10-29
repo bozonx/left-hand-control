@@ -11,7 +11,9 @@ mod popups;
 mod worker;
 
 use crate::{
-    command::{Command, Dispatch, Preferences, Source, ThemeMode, Window},
+    command::{
+        Command, Dispatch, Preferences, ShellCommand, Source, ThemeMode, Window, WorkerCommand,
+    },
     document::{Document, View},
     i18n::{Language, Msg},
     ipc, metrics, pages,
@@ -91,7 +93,7 @@ impl App {
 
     fn install_document(self: &Rc<Self>, document: Rc<Document>) {
         *self.document.borrow_mut() = Some(document.clone());
-        if let Err(error) = document.edit(View::Shell, |config| config.sync_autostart()) {
+        if let Err(error) = document.sync_autostart() {
             self.set_error(Msg::from(&error));
         }
         pages::bind_document_with_input(&self.settings, &document, &self.input);
@@ -120,40 +122,43 @@ impl App {
             .invoke_backend(message.to_ui());
     }
 
-    fn command(&self, command: Command, source: Source, start: Instant, token: Option<String>) {
+    fn command(
+        &self,
+        command: ShellCommand,
+        source: Source,
+        start: Instant,
+        token: Option<String>,
+    ) {
         match command {
-            Command::Show(window) => self.show(window, source, start, token, None),
-            Command::ShowPage(popup, page) => {
+            ShellCommand::Show(window) => self.show(window, source, start, token, None),
+            ShellCommand::ShowPage(popup, page) => {
                 self.show(Window::Popup(popup), source, start, token, Some(page))
             }
-            Command::Hide => {
+            ShellCommand::Hide => {
                 self.supervisor.borrow_mut().pending_show.take();
                 if self.supervisor.borrow().enabled {
-                    let _ = self.send_worker(&Command::Hide, source, start, token);
+                    let _ = self.send_worker(&WorkerCommand::Hide, source, start, token);
                 }
                 self.hide(Window::EMOJI);
                 self.hide(Window::QUICK);
             }
-            Command::ToggleSettings => {
+            ShellCommand::ToggleSettings => {
                 if self.settings.window().is_visible() {
                     self.hide(Window::Settings);
                 } else {
                     self.show(Window::Settings, source, start, token, None);
                 }
             }
-            Command::ToggleMapper => self.toggle_mapper(),
-            Command::GameMode(mode) => {
+            ShellCommand::ToggleMapper => self.toggle_mapper(),
+            ShellCommand::GameMode(mode) => {
                 match crate::game_mode::apply(mode, self.document().as_deref()) {
                     Ok(status) => self.game_mode_changed(&status),
                     Err(error) => self.set_error(error),
                 }
             }
-            Command::Preferences(preferences) => self.set_preferences(preferences),
-            Command::Ping
-            | Command::PopupLayout(_)
-            | Command::PopupContents(_)
-            | Command::LayerHint(_) => {}
-            Command::Execute(action) => {
+            ShellCommand::Preferences(preferences) => self.set_preferences(preferences),
+            ShellCommand::Ping => {}
+            ShellCommand::Execute(action) => {
                 if cfg!(target_os = "macos") && unsupported_on_macos(&action) {
                     self.set_error(Msg::ActionUnsupportedMacos);
                 } else if !lhc_core::mapper::runtime::status().running {
@@ -164,7 +169,7 @@ impl App {
                     }
                 }
             }
-            Command::Quit => {
+            ShellCommand::Quit => {
                 if self.shutdown() {
                     let _ = slint::quit_event_loop();
                 } else {
@@ -232,7 +237,7 @@ impl App {
         }
         if self.supervisor.borrow().enabled {
             let _ = self.send_worker(
-                &Command::Preferences(preferences),
+                &WorkerCommand::Preferences(preferences),
                 Source::Ipc,
                 Instant::now(),
                 None,
@@ -304,7 +309,7 @@ fn bind_shell(app: &Rc<App>) {
     app.settings
         .global::<AppState>()
         .on_set_game_control(|control| {
-            let command = Command::GameMode(crate::game_mode::from_ui(control));
+            let command = ShellCommand::GameMode(crate::game_mode::from_ui(control));
             with_app(|app| app.command(command, Source::Button, Instant::now(), None));
         });
     app.settings
@@ -498,9 +503,13 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
             });
     }
     let dispatch: Dispatch = Arc::new(|command, source, start, token| {
-        post(move |app| app.command(command, source, start, token));
+        let command = ShellCommand::try_from(command)?;
+        slint::invoke_from_event_loop(move || {
+            with_app(|app| app.command(command, source, start, token))
+        })
+        .map_err(|error| error.to_string())
     });
-    server.start(dispatch.clone())?;
+    server.start(crate::command::Endpoint::Settings, dispatch.clone())?;
     slint::Timer::single_shot(Duration::ZERO, move || {
         with_app(|app| {
             let tray = app.start_tray(dispatch.clone());

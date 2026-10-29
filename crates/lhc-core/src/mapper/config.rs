@@ -4,7 +4,7 @@
 pub use crate::profile::model::TapDecision;
 use crate::profile::model::{PasteShortcut, TextMode};
 use crate::profile::timing;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 
 /// Three-state spec for a rule's tap / hold behaviour.
@@ -29,6 +29,16 @@ pub enum ActionSpec {
     Action(String),
 }
 
+impl Serialize for ActionSpec {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Self::Native => serializer.serialize_str(""),
+            Self::Swallow => serializer.serialize_none(),
+            Self::Action(value) => serializer.serialize_str(value),
+        }
+    }
+}
+
 impl<'de> Deserialize<'de> for ActionSpec {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -44,7 +54,7 @@ impl<'de> Deserialize<'de> for ActionSpec {
     }
 }
 
-#[derive(Debug, Deserialize, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct MapperConfig {
     #[serde(default)]
@@ -59,7 +69,7 @@ pub struct MapperConfig {
     pub settings: Settings,
 }
 
-#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Command {
     pub id: String,
@@ -73,7 +83,7 @@ pub struct Command {
     pub working_directory: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Macro {
     pub id: String,
@@ -85,14 +95,14 @@ pub struct Macro {
     pub modifier_delay_ms: Option<u64>,
 }
 
-#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct MacroStep {
     #[serde(default)]
     pub action: String,
 }
 
-#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Rule {
     #[serde(default = "default_true")]
@@ -130,7 +140,7 @@ pub struct Rule {
     #[serde(default)]
     pub double_tap_timeout_ms: Option<u64>,
 }
-#[derive(Debug, Deserialize, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct LayerKeymap {
     #[serde(default)]
@@ -140,7 +150,7 @@ pub struct LayerKeymap {
     pub hold_modifiers: Vec<String>,
 }
 
-#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     /// Development gate supplied by the application runtime projection.
@@ -180,10 +190,122 @@ pub struct Settings {
     pub linux_xdotool_path: Option<String>,
 }
 
+impl TryFrom<&crate::profile::model::ResolvedAppConfig> for MapperConfig {
+    type Error = String;
+
+    fn try_from(value: &crate::profile::model::ResolvedAppConfig) -> Result<Self, Self::Error> {
+        if value.rules.iter().any(|rule| {
+            rule.condition_game_mode
+                .as_deref()
+                .is_some_and(|mode| !matches!(mode, "on" | "off" | "ignore"))
+        }) {
+            return Err("unknown game-mode condition".into());
+        }
+        let action = |value: &Option<String>| match value {
+            None => ActionSpec::Swallow,
+            Some(value) if value.is_empty() => ActionSpec::Native,
+            Some(value) => ActionSpec::Action(value.clone()),
+        };
+        Ok(Self {
+            rules: value
+                .rules
+                .iter()
+                .map(|rule| Rule {
+                    enabled: rule.enabled.unwrap_or(true),
+                    condition_game_mode: rule.condition_game_mode.as_deref().map(
+                        |mode| match mode {
+                            "on" => GameModeCondition::On,
+                            "off" => GameModeCondition::Off,
+                            _ => GameModeCondition::Ignore,
+                        },
+                    ),
+                    condition_keyboard_layouts: rule.condition_keyboard_layouts.clone(),
+                    condition_window_patterns: rule.condition_window_patterns.clone(),
+                    condition_excluded_window_patterns: rule
+                        .condition_excluded_window_patterns
+                        .clone(),
+                    key: rule.key.clone(),
+                    layer_id: rule.layer_id.clone(),
+                    hold_behavior: rule.hold_behavior,
+                    long_hold_action: rule.long_hold_action.clone(),
+                    long_hold_timeout_ms: rule.long_hold_timeout_ms,
+                    hold_timeout_ms: rule.hold_timeout_ms,
+                    tap_decision: rule.tap_decision,
+                    double_tap_action: rule.double_tap_action.clone(),
+                    double_tap_timeout_ms: rule.double_tap_timeout_ms,
+                    tap_action: action(&rule.tap_action),
+                    hold_action: action(&rule.hold_action),
+                })
+                .collect(),
+            layer_keymaps: value
+                .layer_keymaps
+                .iter()
+                .map(|(id, map)| {
+                    (
+                        id.clone(),
+                        LayerKeymap {
+                            keys: map
+                                .keys
+                                .iter()
+                                .map(|(key, action)| (key.clone(), action.clone()))
+                                .collect(),
+                            hold_modifiers: map.hold_modifiers.iter().cloned().collect(),
+                        },
+                    )
+                })
+                .collect(),
+            macros: value
+                .macros
+                .iter()
+                .map(|item| Macro {
+                    id: item.id.clone(),
+                    steps: item
+                        .steps
+                        .iter()
+                        .map(|step| MacroStep {
+                            action: step.action.clone(),
+                        })
+                        .collect(),
+                    step_pause_ms: item.step_pause_ms,
+                    modifier_delay_ms: item.modifier_delay_ms,
+                })
+                .collect(),
+            commands: value
+                .commands
+                .iter()
+                .map(|item| Command {
+                    id: item.id.clone(),
+                    posix_script: item.posix_script.clone(),
+                    powershell_script: item.powershell_script.clone(),
+                    working_directory: item.working_directory.clone(),
+                })
+                .collect(),
+            settings: Settings {
+                in_development: Some(value.settings.in_development),
+                default_hold_timeout_ms: value.settings.default_hold_timeout_ms,
+                default_long_hold_timeout_ms: value.settings.default_long_hold_timeout_ms,
+                tap_decision: value.settings.tap_decision,
+                default_macro_step_pause_ms: value.settings.default_macro_step_pause_ms,
+                default_macro_modifier_delay_ms: value.settings.default_macro_modifier_delay_ms,
+                macro_timeout_ms: value.settings.macro_timeout_ms,
+                default_double_tap_timeout_ms: value.settings.default_double_tap_timeout_ms,
+                trigger_chord_timeout_ms: value.settings.trigger_chord_timeout_ms,
+                editing_layout_id: value.settings.editing_layout_id.clone(),
+                commands_enabled: value.settings.commands_enabled,
+                linux_wayland_text_mode: value.settings.linux_wayland_text_mode,
+                linux_paste_shortcut: value.settings.linux_paste_shortcut,
+                linux_terminal_paste_shortcut: value.settings.linux_terminal_paste_shortcut,
+                linux_ydotool_path: Some(value.settings.linux_ydotool_path.clone()),
+                linux_xdotool_path: Some(value.settings.linux_xdotool_path.clone()),
+            },
+        })
+    }
+}
+
 /// Three-valued condition on game-mode state for a rule.
 /// `Ignore` (the default when the field is absent) means the rule always
 /// fires regardless of game-mode state.
-#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum GameModeCondition {
     On,

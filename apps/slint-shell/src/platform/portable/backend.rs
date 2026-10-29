@@ -10,11 +10,12 @@ impl Worker {
 
     pub fn send(
         &self,
-        _: &crate::command::Command,
+        _: &crate::command::WorkerCommand,
         _: crate::command::Source,
         _: std::time::Instant,
         _: Option<String>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+        _: impl FnOnce(Result<(), String>) + Send + 'static,
+    ) -> Result<(), String> {
         Err("Spell worker is unavailable on this platform".into())
     }
 }

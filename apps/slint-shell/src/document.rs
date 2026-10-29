@@ -156,11 +156,39 @@ impl Document {
         origin: View,
         edit: impl FnOnce(&mut ConfigDocument) -> Result<T, ConfigError>,
     ) -> Result<Saved<T>, ConfigError> {
+        self.apply_operation(origin, |config| config.transaction(edit))
+    }
+
+    /// Apply one core library operation, which owns its file rollback.
+    /// Do not compose several fallible operations here; use a core operation
+    /// that stages the compound change (for example create-and-select).
+    pub fn edit_library<T>(
+        &self,
+        edit: impl FnOnce(&mut ConfigDocument) -> Result<T, ConfigError>,
+    ) -> Result<Saved<T>, ConfigError> {
+        self.apply_operation(View::Library, edit)
+    }
+
+    pub fn sync_autostart(&self) -> Result<Saved<bool>, ConfigError> {
+        self.apply_operation(View::Shell, ConfigDocument::sync_autostart)
+    }
+
+    fn apply_operation<T>(
+        &self,
+        origin: View,
+        edit: impl FnOnce(&mut ConfigDocument) -> Result<T, ConfigError>,
+    ) -> Result<Saved<T>, ConfigError> {
         let (value, changes) = {
             let mut config = self.config.borrow_mut();
             let layout = config.layout().clone();
             let settings = config.settings().clone();
-            let value = edit(&mut config)?;
+            let value = edit(&mut config);
+            if let Err(error) = &value
+                && layout == *config.layout()
+                && settings == *config.settings()
+            {
+                return Err(error.clone());
+            }
             (value, Changes::between(&layout, &settings, &config, origin))
         };
         self.revision.set(self.revision.get().wrapping_add(1));
@@ -173,7 +201,7 @@ impl Document {
         }
         let runtime = self.sync_runtime(true);
         self.notify(Some(origin), Some(&changes));
-        Ok(Saved { value, runtime })
+        value.map(|value| Saved { value, runtime })
     }
 
     /// Re-read library contents on the next request (library edits or explicit refresh).
@@ -239,7 +267,7 @@ impl Document {
             if !force && self.runtime_is_current(&runtime.layout_id) {
                 return Ok(());
             }
-            lhc_core::mapper::runtime::update_config_if_running(&runtime.json)?;
+            lhc_core::mapper::runtime::update_config_if_running(runtime.mapper)?;
             *self.pushed_layout.borrow_mut() = Some((self.revision.get(), runtime.layout_id));
             Ok(())
         })();
@@ -404,9 +432,7 @@ mod tests {
     fn library_snapshot_refreshes_after_library_edits_and_explicit_refresh() {
         let (_dir, document) = document();
         document
-            .edit(View::Library, |config| {
-                config.save_current_layout_as("Saved")
-            })
+            .edit_library(|config| config.save_current_layout_as("Saved"))
             .unwrap();
         let before = document.saved_layout("Saved").unwrap();
         document
@@ -416,9 +442,7 @@ mod tests {
             .unwrap();
         assert_eq!(document.saved_layout("Saved"), Some(before.clone()));
         document
-            .edit(View::Library, |config| {
-                config.overwrite_library_layout("Saved")
-            })
+            .edit_library(|config| config.overwrite_library_layout("Saved"))
             .unwrap();
         assert_eq!(
             document
@@ -471,5 +495,22 @@ mod tests {
             .edit(View::Rules, |config| config.create_layer("First", ""))
             .unwrap();
         assert_eq!(document.read().layout().layers.len(), 2);
+    }
+    #[test]
+    fn failed_compound_edit_does_not_advance_revision_or_notify_views() {
+        let (_dir, document) = document();
+        let revision = document.revision();
+        let before = document.read().layout().clone();
+        let notified = Rc::new(Cell::new(false));
+        let flag = notified.clone();
+        document.subscribe(View::Shell, move |_| flag.set(true));
+        let result: Result<Saved<()>, ConfigError> = document.edit(View::Layers, |config| {
+            config.create_layer("Staged", "")?;
+            Err(ConfigError::EditConflict)
+        });
+        assert!(matches!(result, Err(ConfigError::EditConflict)));
+        assert_eq!(document.revision(), revision);
+        assert_eq!(document.read().layout(), &before);
+        assert!(!notified.get());
     }
 }

@@ -2,7 +2,7 @@
 //! above all windows without taking focus.
 
 use super::App;
-use crate::command::{Command, Source};
+use crate::command::{Source, WorkerCommand};
 use std::{
     cell::{Cell, RefCell},
     time::{Duration, Instant},
@@ -167,7 +167,7 @@ impl App {
             return;
         }
         if let Err(error) = self.send_worker(
-            &Command::LayerHint(Some(hint)),
+            &WorkerCommand::LayerHint(Some(hint)),
             Source::Mapper,
             Instant::now(),
             None,
@@ -194,7 +194,7 @@ impl App {
         let running = self.supervisor.borrow().running();
         if running
             && let Err(error) = self.send_worker(
-                &Command::LayerHint(None),
+                &WorkerCommand::LayerHint(None),
                 Source::Mapper,
                 Instant::now(),
                 None,

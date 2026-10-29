@@ -72,15 +72,14 @@ pub enum SystemAction {
     Dbus(DbusCall),
     #[cfg(target_os = "windows")]
     Windows(super::windows::system::WindowsAction),
-    AppEvent(String),
+    AppEvent(crate::profile::app_action::AppAction),
 }
 
 impl SystemAction {
     /// Whether the shell answers this action by showing a popup that takes
     /// the keyboard focus.
     pub fn opens_popup(&self) -> bool {
-        matches!(self, Self::AppEvent(event)
-            if event.starts_with("show_quick_menu_") || event.starts_with("show_emoji_menu_"))
+        matches!(self, Self::AppEvent(crate::profile::app_action::AppAction::ShowMenu { .. }))
     }
 }
 
@@ -108,30 +107,7 @@ pub fn is_known(name: &str) -> bool {
 }
 
 pub fn resolve_app(name: &str) -> Option<SystemAction> {
-    use crate::profile::actions::{ActionName, app_action_name};
-    let name = name.trim();
-    if let Some(ActionName::App { id, n }) = app_action_name(name)
-        && n > 0
-    {
-        let event = match id {
-            "showQuickMenu" => "show_quick_menu",
-            "showEmojiMenu" => "show_emoji_menu",
-            "activateLayout" => "activate_layout",
-            _ => return None,
-        };
-        return Some(SystemAction::AppEvent(format!("{event}_{n}")));
-    }
-    let event = match name {
-        "showQuickMenuLast" => "show_quick_menu_last",
-        "showEmojiMenuLast" => "show_emoji_menu_last",
-        "showSettings" => "show_settings",
-        "gameModeToggle" => "game_mode_toggle",
-        "gameModeAuto" => "game_mode_auto",
-        "gameModeOn" => "game_mode_on",
-        "gameModeOff" => "game_mode_off",
-        _ => return None,
-    };
-    Some(SystemAction::AppEvent(event.into()))
+    crate::profile::app_action::AppAction::parse(name).map(SystemAction::AppEvent)
 }
 
 pub fn is_known_app(name: &str) -> bool {
@@ -257,14 +233,16 @@ mod kde {
 #[cfg(test)]
 mod tests {
     use super::{SystemAction, is_known, resolve_app};
+    use crate::profile::app_action::{AppAction, GameModeRequest, Menu};
+    use std::num::NonZeroU32;
     #[test]
     fn resolve_window_and_layout_actions() {
         for (name, event) in [
-            ("showQuickMenuLast", "show_quick_menu_last"),
-            ("showEmojiMenuLast", "show_emoji_menu_last"),
-            ("showSettings", "show_settings"),
-            ("activateLayout1", "activate_layout_1"),
-            ("activateLayout5", "activate_layout_5"),
+            ("showQuickMenuLast", AppAction::ShowMenu { menu: Menu::Quick, page: None }),
+            ("showEmojiMenuLast", AppAction::ShowMenu { menu: Menu::Emoji, page: None }),
+            ("showSettings", AppAction::ShowSettings),
+            ("activateLayout1", AppAction::ActivateLayout(NonZeroU32::new(1).unwrap())),
+            ("activateLayout5", AppAction::ActivateLayout(NonZeroU32::new(5).unwrap())),
         ] {
             let Some(SystemAction::AppEvent(resolved)) = resolve_app(name) else {
                 panic!("{name} did not resolve to an AppEvent");
@@ -278,10 +256,10 @@ mod tests {
     #[test]
     fn resolve_game_mode_actions() {
         for (name, event) in [
-            ("gameModeToggle", "game_mode_toggle"),
-            ("gameModeAuto", "game_mode_auto"),
-            ("gameModeOn", "game_mode_on"),
-            ("gameModeOff", "game_mode_off"),
+            ("gameModeToggle", AppAction::GameMode(GameModeRequest::Toggle)),
+            ("gameModeAuto", AppAction::GameMode(GameModeRequest::Auto)),
+            ("gameModeOn", AppAction::GameMode(GameModeRequest::On)),
+            ("gameModeOff", AppAction::GameMode(GameModeRequest::Off)),
         ] {
             let Some(SystemAction::AppEvent(resolved)) = resolve_app(name) else {
                 panic!("{name} did not resolve to an AppEvent");
@@ -296,7 +274,7 @@ mod tests {
         let Some(SystemAction::AppEvent(event)) = resolve_app("showQuickMenu3") else {
             panic!("showQuickMenu3 did not resolve to an AppEvent");
         };
-        assert_eq!(event, "show_quick_menu_3");
+        assert_eq!(event, AppAction::ShowMenu { menu: Menu::Quick, page: NonZeroU32::new(3) });
         assert!(resolve_app("showQuickMenu").is_none());
     }
 
@@ -305,7 +283,7 @@ mod tests {
         let Some(SystemAction::AppEvent(event)) = resolve_app("showEmojiMenu12") else {
             panic!("showEmojiMenu12 did not resolve to an AppEvent");
         };
-        assert_eq!(event, "show_emoji_menu_12");
+        assert_eq!(event, AppAction::ShowMenu { menu: Menu::Emoji, page: NonZeroU32::new(12) });
         assert!(resolve_app("showEmojiMenu").is_none());
     }
 

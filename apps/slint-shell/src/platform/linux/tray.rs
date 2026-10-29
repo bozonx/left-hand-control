@@ -66,12 +66,12 @@ impl Tray {
                             return;
                         };
                         tray.game.0 = index;
-                        (tray.dispatch)(
+                        let _ = (tray.dispatch)(
                             Command::GameMode(*mode),
                             Source::Tray,
                             Instant::now(),
                             None,
-                        )
+                        );
                     }),
                     options: i18n::TRAY_GAME_MODES
                         .into_iter()
@@ -98,7 +98,7 @@ impl ksni::Tray for Tray {
         std::thread::spawn(move || {
             std::thread::sleep(HOST_GRACE);
             if !online.load(Ordering::SeqCst) {
-                dispatch(
+                let _ = dispatch(
                     Command::Show(Window::Settings),
                     Source::Tray,
                     Instant::now(),
@@ -147,7 +147,7 @@ impl ksni::Tray for Tray {
         }
     }
     fn activate(&mut self, _: i32, _: i32) {
-        (self.dispatch)(Command::ToggleSettings, Source::Tray, Instant::now(), None);
+        let _ = (self.dispatch)(Command::ToggleSettings, Source::Tray, Instant::now(), None);
     }
     fn menu(&self) -> Vec<ksni::MenuItem<Self>> {
         let language = self.language();
@@ -160,7 +160,7 @@ impl ksni::Tray for Tray {
                 StandardItem {
                     label: item.label(language),
                     activate: Box::new(move |tray: &mut Self| {
-                        (tray.dispatch)(item.command(), Source::Tray, Instant::now(), None)
+                        let _ = (tray.dispatch)(item.command(), Source::Tray, Instant::now(), None);
                     }),
                     ..Default::default()
                 }

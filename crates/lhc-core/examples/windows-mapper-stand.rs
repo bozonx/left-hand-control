@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .nth(1)
         .ok_or("mailbox directory required")?;
     if argument == "--probe-lock" {
-        return match runtime::start(KEYBOARD_PATH, None, "{}") {
+        return match runtime::start(KEYBOARD_PATH, None, Default::default()) {
             Err(error) if error.contains("already active in another process") => Ok(()),
             other => {
                 let _ = runtime::stop();
@@ -79,8 +79,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         last_request = Instant::now();
         let op = request["op"].as_str().unwrap_or_default();
         let result = match op {
-            "start" => runtime::start(KEYBOARD_PATH, None, &request["config"].to_string()),
-            "config" => runtime::update_config(&request["config"].to_string()),
+            "start" => serde_json::from_value(request["config"].clone())
+                .map_err(|error| error.to_string())
+                .and_then(|config| runtime::start(KEYBOARD_PATH, None, config)),
+            "config" => serde_json::from_value(request["config"].clone())
+                .map_err(|error| error.to_string())
+                .and_then(runtime::update_config),
             "stop" => runtime::stop(),
             "crash-start" => {
                 use std::os::windows::process::CommandExt;

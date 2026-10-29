@@ -7,7 +7,8 @@ use crate::i18n::Language;
 use std::{fmt, sync::Arc, time::Instant};
 
 /// Thread-safe entry point that forwards a command to the UI thread.
-pub type Dispatch = Arc<dyn Fn(Command, Source, Instant, Option<String>) + Send + Sync>;
+pub type Dispatch =
+    Arc<dyn Fn(Command, Source, Instant, Option<String>) -> Result<(), String> + Send + Sync>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Popup {
@@ -125,25 +126,7 @@ impl ThemeMode {
 }
 
 /// Game-mode control from the tray, the CLI or a key binding.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum GameMode {
-    Auto,
-    On,
-    Off,
-    /// Override to the opposite of the current effective state.
-    Toggle,
-}
-
-impl GameMode {
-    pub fn name(self) -> &'static str {
-        match self {
-            Self::Auto => "auto",
-            Self::On => "on",
-            Self::Off => "off",
-            Self::Toggle => "toggle",
-        }
-    }
-}
+pub use lhc_core::profile::app_action::GameModeRequest as GameMode;
 
 /// Resolved appearance shared with the Spell worker.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -174,35 +157,158 @@ pub enum Command {
     Execute(String),
 }
 
+/// Commands accepted by the settings shell.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ShellCommand {
+    Show(Window),
+    ShowPage(Popup, u32),
+    Hide,
+    ToggleSettings,
+    ToggleMapper,
+    GameMode(GameMode),
+    Quit,
+    Ping,
+    Preferences(Preferences),
+    Execute(String),
+}
+
+impl TryFrom<Command> for ShellCommand {
+    type Error = String;
+    fn try_from(command: Command) -> Result<Self, Self::Error> {
+        Ok(match command {
+            Command::Show(window) => Self::Show(window),
+            Command::ShowPage(popup, page) => Self::ShowPage(popup, page),
+            Command::Hide => Self::Hide,
+            Command::ToggleSettings => Self::ToggleSettings,
+            Command::ToggleMapper => Self::ToggleMapper,
+            Command::GameMode(mode) => Self::GameMode(mode),
+            Command::Quit => Self::Quit,
+            Command::Ping => Self::Ping,
+            Command::Preferences(preferences) => Self::Preferences(preferences),
+            Command::Execute(action) => Self::Execute(action),
+            _ => return Err("command is not supported by ShellCommand".into()),
+        })
+    }
+}
+
+/// Commands accepted by the popup worker.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum WorkerCommand {
+    Show(Popup),
+    ShowPage(Popup, u32),
+    PopupLayout(Option<String>),
+    PopupContents(String),
+    LayerHint(Option<crate::layer_hint_model::LayerHint>),
+    Hide,
+    Quit,
+    Ping,
+    Preferences(Preferences),
+}
+
+impl TryFrom<Command> for WorkerCommand {
+    type Error = String;
+    fn try_from(command: Command) -> Result<Self, Self::Error> {
+        Ok(match command {
+            Command::Show(Window::Popup(popup)) => Self::Show(popup),
+            Command::ShowPage(popup, page) => Self::ShowPage(popup, page),
+            Command::PopupLayout(layout) => Self::PopupLayout(layout),
+            Command::PopupContents(contents) => Self::PopupContents(contents),
+            Command::LayerHint(hint) => Self::LayerHint(hint),
+            Command::Hide => Self::Hide,
+            Command::Quit => Self::Quit,
+            Command::Ping => Self::Ping,
+            Command::Preferences(preferences) => Self::Preferences(preferences),
+            _ => return Err("command is not supported by WorkerCommand".into()),
+        })
+    }
+}
+
+impl From<WorkerCommand> for Command {
+    fn from(command: WorkerCommand) -> Self {
+        match command {
+            WorkerCommand::Show(popup) => Self::Show(Window::Popup(popup)),
+            WorkerCommand::ShowPage(popup, page) => Self::ShowPage(popup, page),
+            WorkerCommand::PopupLayout(layout) => Self::PopupLayout(layout),
+            WorkerCommand::PopupContents(contents) => Self::PopupContents(contents),
+            WorkerCommand::LayerHint(hint) => Self::LayerHint(hint),
+            WorkerCommand::Hide => Self::Hide,
+            WorkerCommand::Quit => Self::Quit,
+            WorkerCommand::Ping => Self::Ping,
+            WorkerCommand::Preferences(preferences) => Self::Preferences(preferences),
+        }
+    }
+}
+
+/// The process accepting a wire command. Internal worker commands are not
+/// accepted by the public settings endpoint.
+#[derive(Clone, Copy, Debug)]
+pub enum Endpoint {
+    Settings,
+    PopupWorker,
+}
+
+impl Endpoint {
+    pub fn validate(self, command: &Command) -> Result<(), String> {
+        let supported = match self {
+            Self::Settings => match command {
+                Command::PopupLayout(_) | Command::PopupContents(_) | Command::LayerHint(_) => {
+                    false
+                }
+                Command::Show(_)
+                | Command::ShowPage(_, _)
+                | Command::Hide
+                | Command::ToggleSettings
+                | Command::ToggleMapper
+                | Command::GameMode(_)
+                | Command::Quit
+                | Command::Ping
+                | Command::Preferences(_)
+                | Command::Execute(_) => true,
+            },
+            Self::PopupWorker => matches!(
+                command,
+                Command::Show(Window::Popup(_))
+                    | Command::ShowPage(_, _)
+                    | Command::PopupLayout(_)
+                    | Command::PopupContents(_)
+                    | Command::LayerHint(_)
+                    | Command::Hide
+                    | Command::Quit
+                    | Command::Ping
+                    | Command::Preferences(_)
+            ),
+        };
+        if supported {
+            Ok(())
+        } else {
+            Err(format!("command is not supported by {self:?}"))
+        }
+    }
+}
+
 pub const USAGE: &str = "usage: left-hand-control [--version | --help | show emoji|quick [page] | show settings | hide | toggle-mapper | \
 game auto|on|off|toggle | preferences system|light|dark en|ru|de|fr|es|it|pt|pl|tr|uk|cs|hu|ro|el|hr|ka|kk|zh-Hans|zh-Hant|ja|ko | execute <action> | ping | quit]";
 
 impl Command {
-    pub fn from_app_action(name: &str) -> Option<Self> {
-        match name {
-            // Without a page the popups keep the page they showed last.
-            "show_quick_menu_last" => return Some(Self::Show(Window::QUICK)),
-            "show_emoji_menu_last" => return Some(Self::Show(Window::EMOJI)),
-            "show_settings" => return Some(Self::Show(Window::Settings)),
-            _ => {}
-        }
-        let game = match name {
-            "game_mode_toggle" => Some(GameMode::Toggle),
-            "game_mode_auto" => Some(GameMode::Auto),
-            "game_mode_on" => Some(GameMode::On),
-            "game_mode_off" => Some(GameMode::Off),
-            _ => None,
-        };
-        if let Some(game) = game {
-            return Some(Self::GameMode(game));
-        }
-        let (popup, suffix) = if let Some(suffix) = name.strip_prefix("show_emoji_menu_") {
-            (Popup::Emoji, suffix)
-        } else {
-            (Popup::Quick, name.strip_prefix("show_quick_menu_")?)
-        };
-        let page = suffix.parse::<u32>().ok().filter(|page| *page >= 1)?;
-        Some(Self::ShowPage(popup, page))
+    pub fn from_app_action(
+        action: lhc_core::profile::app_action::AppAction,
+    ) -> Option<ShellCommand> {
+        use lhc_core::profile::app_action::{AppAction, Menu};
+        Some(match action {
+            AppAction::ShowMenu { menu, page } => {
+                let popup = match menu {
+                    Menu::Quick => Popup::Quick,
+                    Menu::Emoji => Popup::Emoji,
+                };
+                match page {
+                    Some(page) => ShellCommand::ShowPage(popup, page.get()),
+                    None => ShellCommand::Show(Window::Popup(popup)),
+                }
+            }
+            AppAction::ShowSettings => ShellCommand::Show(Window::Settings),
+            AppAction::GameMode(mode) => ShellCommand::GameMode(mode),
+            AppAction::ActivateLayout(_) => return None,
+        })
     }
 
     /// Parse command-line arguments. `execute` takes the rest of the line
@@ -414,43 +520,39 @@ mod tests {
             Command::Execute("Ctrl+KeyC".into()),
         ];
         for command in commands {
+            assert_eq!(
+                Endpoint::Settings.validate(&command).is_ok(),
+                ShellCommand::try_from(command.clone()).is_ok()
+            );
+            assert_eq!(
+                Endpoint::PopupWorker.validate(&command).is_ok(),
+                WorkerCommand::try_from(command.clone()).is_ok()
+            );
+            if let Ok(worker) = WorkerCommand::try_from(command.clone()) {
+                assert_eq!(Command::from(worker), command);
+            }
             assert_eq!(Command::parse(&command.to_string()), Ok(command));
         }
     }
 
     #[test]
-    fn mapper_actions_preserve_pages_and_reject_invalid_actions() {
+    fn mapper_actions_preserve_pages() {
+        use lhc_core::profile::app_action::AppAction;
         for page in [1, 5, 10, 42] {
+            let action = AppAction::parse(&format!("showQuickMenu{page}")).unwrap();
             assert_eq!(
-                Command::from_app_action(&format!("show_quick_menu_{page}")),
-                Some(Command::ShowPage(Popup::Quick, page))
-            );
-            assert_eq!(
-                Command::from_app_action(&format!("show_emoji_menu_{page}")),
-                Some(Command::ShowPage(Popup::Emoji, page))
+                Command::from_app_action(action),
+                Some(ShellCommand::ShowPage(Popup::Quick, page))
             );
         }
         assert_eq!(
-            Command::from_app_action("game_mode_toggle"),
-            Some(Command::GameMode(GameMode::Toggle))
+            Command::from_app_action(AppAction::parse("gameModeToggle").unwrap()),
+            Some(ShellCommand::GameMode(GameMode::Toggle))
         );
         assert_eq!(
-            Command::from_app_action("show_emoji_menu_last"),
-            Some(Command::Show(Window::EMOJI))
+            Command::from_app_action(AppAction::ShowSettings),
+            Some(ShellCommand::Show(Window::Settings))
         );
-        assert_eq!(
-            Command::from_app_action("show_settings"),
-            Some(Command::Show(Window::Settings))
-        );
-        for invalid in [
-            "show_quick_menu_0",
-            "show_emoji_menu_-1",
-            "show_emoji_menu_bad",
-            "activate_layout_1",
-            "quit",
-        ] {
-            assert!(Command::from_app_action(invalid).is_none());
-        }
     }
 
     #[test]

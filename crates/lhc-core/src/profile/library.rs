@@ -97,6 +97,7 @@ impl ConfigDocument {
 
     /// Save the working copy over an existing library file, returning its contents.
     pub fn overwrite_library_layout(&mut self, name: &str) -> Result<String, ConfigError> {
+        self.require_external_operation()?;
         let mut draft = self.clone();
         draft.update_layout(LayoutPreset::remove_unused_commands)?;
         let text = layout_file::serialize(draft.layout());
@@ -122,6 +123,7 @@ impl ConfigDocument {
         description: &str,
         source: LibrarySource,
     ) -> Result<String, ConfigError> {
+        self.require_external_operation()?;
         let name = &self.checked_layout_name(name, None)?;
         let description = description.trim();
         let mut preset = match source {
@@ -152,6 +154,30 @@ impl ConfigDocument {
             .map_err(ConfigError::Io)
     }
 
+    /// Create a library entry and optionally select it; failed activation
+    /// removes the new entry before returning the settings error.
+    pub fn create_and_select_library_layout(
+        &mut self,
+        name: &str,
+        description: &str,
+        source: LibrarySource,
+        select: bool,
+    ) -> Result<String, ConfigError> {
+        self.require_external_operation()?;
+        let created = self.create_library_layout(name, description, source)?;
+        if select
+            && let Err(error) = self.update_settings(|settings| {
+                settings.manual_layout_id = Some(user_layout_id(&created));
+            })
+        {
+            self.paths()
+                .delete_user_layout(&created)
+                .map_err(ConfigError::Io)?;
+            return Err(error);
+        }
+        Ok(created)
+    }
+
     /// Validate a layout name against the current directory before writing.
     pub fn checked_layout_name(
         &self,
@@ -165,6 +191,7 @@ impl ConfigDocument {
 
     /// Save an edited working copy under a new name, dropping unreferenced commands.
     pub fn save_working_layout_as(&mut self, name: &str) -> Result<(String, String), ConfigError> {
+        self.require_external_operation()?;
         let mut draft = self.clone();
         draft.update_layout(LayoutPreset::remove_unused_commands)?;
         let text = layout_file::serialize(draft.layout());
@@ -174,6 +201,7 @@ impl ConfigDocument {
     }
 
     pub fn save_current_layout_as(&mut self, name: &str) -> Result<String, ConfigError> {
+        self.require_external_operation()?;
         let name = &self.checked_layout_name(name, None)?;
         let saved = self
             .paths()
@@ -222,6 +250,7 @@ impl ConfigDocument {
         description: &str,
         expected: &str,
     ) -> Result<String, ConfigError> {
+        self.require_external_operation()?;
         let new_name = &self.checked_layout_name(new_name, Some(name))?;
         if self
             .paths()
@@ -279,6 +308,7 @@ impl ConfigDocument {
     }
 
     pub fn remove_library_layout(&mut self, name: &str, expected: &str) -> Result<(), ConfigError> {
+        self.require_external_operation()?;
         if self
             .paths()
             .load_user_layout(name)
@@ -823,7 +853,7 @@ mod tests {
             }
             let runtime = document.runtime_config(&context).unwrap();
             assert!(runtime.layout_id.is_none());
-            let raw: serde_json::Value = serde_json::from_str(&runtime.json).unwrap();
+            let raw: serde_json::Value = serde_json::to_value(&runtime.mapper).unwrap();
             assert!(raw["rules"].as_array().unwrap().is_empty());
         }
     }

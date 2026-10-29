@@ -8,10 +8,10 @@
 use crate::active_window::ActiveWindow;
 use crate::gamemode::GameModeStatus;
 use crate::keyboard_layout::KeyboardLayoutInfo;
+use std::collections::VecDeque;
 use std::sync::{
-    Arc, Mutex, OnceLock, Weak,
+    Arc, Condvar, Mutex, OnceLock, Weak,
     atomic::{AtomicBool, Ordering},
-    mpsc,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -30,9 +30,9 @@ pub enum CoreEvent {
     ActiveLayerChanged(Option<String>),
     /// A key was pressed inside the held layer.
     LayerKeyPressed,
-    /// An `app:` action fired inside the mapper, e.g. `show_quick_menu_1`.
-    AppAction(String),
-    CommandFinished {
+    /// An application action requested by the mapper.
+    AppAction(crate::profile::app_action::AppAction),
+    CommandLaunchResult {
         script: String,
         result: Result<(), String>,
     },
@@ -62,14 +62,32 @@ pub enum TextInputFailure {
     Tool(String),
 }
 
-/// Each subscription buffers at most this many events. A full subscriber
-/// drops new events and logs the loss; producers never wait for callbacks.
-const SUBSCRIBER_QUEUE: usize = 1024;
-
+/// State notifications may be coalesced; application requests and results
+/// are retained in order. Producers never wait for subscriber callbacks.
 type Listeners = Mutex<Vec<Arc<Listener>>>;
 
+#[derive(Default)]
+struct Pending {
+    events: Mutex<VecDeque<CoreEvent>>,
+    ready: Condvar,
+}
+
+impl CoreEvent {
+    fn state_key(&self) -> Option<u8> {
+        Some(match self {
+            Self::LayoutChanged(_) => 0,
+            Self::GameModeChanged(_) => 1,
+            Self::ActiveWindowChanged(_) => 2,
+            Self::MapperDeviceChanged => 3,
+            Self::ActiveLayerChanged(_) => 4,
+            Self::LayerKeyPressed => 5,
+            _ => return None,
+        })
+    }
+}
+
 struct Listener {
-    tx: mpsc::SyncSender<CoreEvent>,
+    pending: Arc<Pending>,
     active: Arc<AtomicBool>,
 }
 
@@ -83,7 +101,16 @@ pub struct Subscription {
 
 impl Drop for Subscription {
     fn drop(&mut self) {
+        // Synchronize with the consumer's condition-variable wait.
+        let guard = self
+            .listener
+            .pending
+            .events
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         self.listener.active.store(false, Ordering::Release);
+        self.listener.pending.ready.notify_one();
+        drop(guard);
         if let Some(listeners) = self.listeners.upgrade() {
             listeners
                 .lock()
@@ -105,16 +132,30 @@ impl EventBus {
         &self,
         listener: impl Fn(&CoreEvent) + Send + 'static,
     ) -> Result<Subscription, String> {
-        let (tx, rx) = mpsc::sync_channel(SUBSCRIBER_QUEUE);
+        let pending = Arc::new(Pending::default());
+        let receiving = pending.clone();
         let active = Arc::new(AtomicBool::new(true));
         let running = active.clone();
         std::thread::Builder::new()
             .name("lhc-events".into())
             .spawn(move || {
-                while let Ok(event) = rx.recv() {
-                    if !running.load(Ordering::Acquire) {
-                        break;
-                    }
+                loop {
+                    let event = {
+                        let mut events = receiving.events.lock().unwrap_or_else(|e| e.into_inner());
+                        while events.is_empty() && running.load(Ordering::Acquire) {
+                            events = receiving
+                                .ready
+                                .wait(events)
+                                .unwrap_or_else(|e| e.into_inner());
+                        }
+                        if !running.load(Ordering::Acquire) {
+                            break;
+                        }
+                        let Some(event) = events.pop_front() else {
+                            continue;
+                        };
+                        event
+                    };
                     if std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| listener(&event)))
                         .is_err()
                     {
@@ -123,7 +164,7 @@ impl EventBus {
                 }
             })
             .map_err(|error| format!("start event subscriber: {error}"))?;
-        let listener = Arc::new(Listener { tx, active });
+        let listener = Arc::new(Listener { pending, active });
         self.listeners
             .lock()
             .unwrap_or_else(|e| e.into_inner())
@@ -142,15 +183,18 @@ impl EventBus {
             .clone();
         for listener in listeners {
             if listener.active.load(Ordering::Acquire) {
-                match listener.tx.try_send(event.clone()) {
-                    Ok(()) => {}
-                    Err(mpsc::TrySendError::Full(_)) => {
-                        log::error!("core event subscriber queue full; event dropped")
-                    }
-                    Err(mpsc::TrySendError::Disconnected(_)) => {
-                        log::error!("core event subscriber stopped")
-                    }
+                let mut events = listener
+                    .pending
+                    .events
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner());
+                if let Some(key) = event.state_key() {
+                    // Remove the older notification and append the latest one so
+                    // retained requests keep their relative ordering.
+                    events.retain(|queued| queued.state_key() != Some(key));
                 }
+                events.push_back(event.clone());
+                listener.pending.ready.notify_one();
             }
         }
     }
@@ -169,7 +213,7 @@ pub fn emit(event: CoreEvent) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::Duration;
+    use std::{sync::mpsc, time::Duration};
 
     #[test]
     fn delivers_in_order_and_unsubscribes_on_drop() {
@@ -208,7 +252,7 @@ mod tests {
         bus.emit(CoreEvent::LayerKeyPressed);
         entry.recv_timeout(Duration::from_secs(1)).unwrap();
         // Even filling the slow subscriber's queue must return.
-        for _ in 0..SUBSCRIBER_QUEUE + 1 {
+        for _ in 0..2048 {
             bus.emit(CoreEvent::LayerKeyPressed);
         }
         let (tx, rx) = mpsc::channel();
@@ -238,5 +282,50 @@ mod tests {
         bus.emit(CoreEvent::LayerKeyPressed);
         bus.emit(CoreEvent::MapperDeviceChanged);
         rx.recv_timeout(Duration::from_secs(1)).unwrap();
+    }
+    #[test]
+    fn overload_coalesces_state_without_dropping_requests() {
+        let bus = EventBus::default();
+        let (entered, entry) = mpsc::channel();
+        let (release, wait) = mpsc::channel();
+        let (tx, rx) = mpsc::channel();
+        let _subscription = bus
+            .subscribe(move |event| {
+                if matches!(event, CoreEvent::LayerKeyPressed) {
+                    entered.send(()).unwrap();
+                    wait.recv().unwrap();
+                } else {
+                    tx.send(event.clone()).unwrap();
+                }
+            })
+            .unwrap();
+        bus.emit(CoreEvent::LayerKeyPressed);
+        entry.recv_timeout(Duration::from_secs(1)).unwrap();
+        for n in 0..2048 {
+            bus.emit(CoreEvent::ActiveLayerChanged(Some(n.to_string())));
+            bus.emit(CoreEvent::MapperStopped(n.to_string()));
+        }
+        release.send(()).unwrap();
+        let events: Vec<_> = (0..2049)
+            .map(|_| rx.recv_timeout(Duration::from_secs(2)).unwrap())
+            .collect();
+        let requests: Vec<_> = events
+            .iter()
+            .filter_map(|event| match event {
+                CoreEvent::MapperStopped(reason) => Some(reason.clone()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            requests,
+            (0..2048).map(|n| n.to_string()).collect::<Vec<_>>()
+        );
+        assert_eq!(
+            events
+                .iter()
+                .filter(|event| matches!(event, CoreEvent::ActiveLayerChanged(_)))
+                .count(),
+            1
+        );
     }
 }

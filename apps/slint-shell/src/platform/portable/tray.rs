@@ -115,7 +115,7 @@ pub fn start(dispatch: Dispatch) -> Result<Handle, Box<dyn std::error::Error>> {
     }
     MenuEvent::set_event_handler(Some(move |event: MenuEvent| {
         if let Some(command) = commands.get(&event.id) {
-            dispatch(command.clone(), Source::Tray, Instant::now(), None);
+            let _ = dispatch(command.clone(), Source::Tray, Instant::now(), None);
         }
     }));
     let icon = TrayIconBuilder::new()

@@ -78,7 +78,7 @@ struct MapperRuntime<B> {
     backend: B,
     handle: Option<Box<dyn BackendHandle>>,
     details: MapperDetails,
-    config_json: Option<String>,
+    current_config: Option<config::MapperConfig>,
     /// Reserves the mapper while starting or joining outside the state lock.
     lifecycle: MapperPhase,
     start_stop: Option<Arc<AtomicBool>>,
@@ -94,7 +94,7 @@ impl<B> MapperRuntime<B> {
                 mouse_device_path: None,
                 last_error: None,
             },
-            config_json: None,
+            current_config: None,
             lifecycle: MapperPhase::Stopped,
             start_stop: None,
         }
@@ -122,7 +122,7 @@ impl<B: MapperBackend> MapperRuntime<B> {
         {
             self.handle = None;
             self.lifecycle = MapperPhase::Stopped;
-            self.config_json = None;
+            self.current_config = None;
         }
         if self.lifecycle != MapperPhase::Stopped {
             return Err("mapper already running".into());
@@ -192,7 +192,7 @@ impl<B: MapperBackend> MapperRuntime<B> {
     fn take_handle(&mut self) -> Result<Box<dyn BackendHandle>, String> {
         match self.handle.take() {
             Some(handle) => {
-                self.config_json = None;
+                self.current_config = None;
                 self.lifecycle = MapperPhase::Stopping;
                 Ok(handle)
             }
@@ -220,7 +220,7 @@ impl<B: MapperBackend> MapperRuntime<B> {
         if handle.reap_if_finished() {
             self.handle = None;
             self.lifecycle = MapperPhase::Stopped;
-            self.config_json = None;
+            self.current_config = None;
             return Err("mapper is not running".into());
         }
         handle.update_config(cfg)
@@ -233,7 +233,7 @@ impl<B: MapperBackend> MapperRuntime<B> {
         if handle.reap_if_finished() {
             self.handle = None;
             self.lifecycle = MapperPhase::Stopped;
-            self.config_json = None;
+            self.current_config = None;
             return Err("mapper is not running".into());
         }
         handle.execute_action(action)
@@ -255,7 +255,7 @@ impl<B: MapperBackend> MapperRuntime<B> {
             if finished {
                 self.handle = None;
                 self.lifecycle = MapperPhase::Stopped;
-                self.config_json = None;
+                self.current_config = None;
             }
         }
         MapperStatus {
@@ -478,9 +478,11 @@ fn unsupported_os_msg(op: &str) -> String {
     }
 }
 
-pub fn start(device_path: &str, mouse_path: Option<&str>, config_json: &str) -> Result<(), String> {
-    let cfg: config::MapperConfig =
-        serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
+pub fn start(
+    device_path: &str,
+    mouse_path: Option<&str>,
+    cfg: config::MapperConfig,
+) -> Result<(), String> {
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     validation::validate_config(&cfg)?;
     // Spawn outside the state lock: waiting for the worker to grab the
@@ -493,7 +495,7 @@ pub fn start(device_path: &str, mouse_path: Option<&str>, config_json: &str) -> 
     let result = OsBackend::new().spawn(
         device_path.to_string(),
         mouse_path.map(|s| s.to_string()),
-        cfg,
+        cfg.clone(),
         stop,
     );
     let mut state = lock_state();
@@ -503,7 +505,7 @@ pub fn start(device_path: &str, mouse_path: Option<&str>, config_json: &str) -> 
         lock_state().finish_stop();
         return Err("mapper start cancelled".into());
     }
-    state.config_json = Some(config_json.to_owned());
+    state.current_config = Some(cfg);
     Ok(())
 }
 
@@ -523,38 +525,34 @@ pub fn stop() -> Result<(), String> {
     Ok(())
 }
 
-pub fn update_config(config_json: &str) -> Result<(), String> {
-    let cfg: config::MapperConfig =
-        serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
+pub fn update_config(cfg: config::MapperConfig) -> Result<(), String> {
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     validation::validate_config(&cfg)?;
     let mut state = lock_state();
-    state.update_config(cfg)?;
-    state.config_json = Some(config_json.to_owned());
+    state.update_config(cfg.clone())?;
+    state.current_config = Some(cfg);
     Ok(())
 }
 
 /// Push a saved config to the mapper when it is running; no-op otherwise.
-pub fn update_config_if_running(config_json: &str) -> Result<(), String> {
+pub fn update_config_if_running(cfg: config::MapperConfig) -> Result<(), String> {
     let mut state = lock_state();
     if !state.status().running {
         return Ok(());
     }
-    let cfg: config::MapperConfig =
-        serde_json::from_str(config_json).map_err(|e| format!("parse config: {e}"))?;
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     validation::validate_config(&cfg)?;
-    state.update_config(cfg)?;
-    state.config_json = Some(config_json.to_owned());
+    state.update_config(cfg.clone())?;
+    state.current_config = Some(cfg);
     Ok(())
 }
 
-pub fn config_json() -> Option<String> {
+pub fn current_config() -> Option<config::MapperConfig> {
     let mut state = lock_state();
     state
         .status()
         .running
-        .then(|| state.config_json.clone())
+        .then(|| state.current_config.clone())
         .flatten()
 }
 
@@ -756,10 +754,10 @@ mod tests {
         runtime
             .start("/dev/input/event1", None, empty_cfg())
             .expect("start");
-        runtime.config_json = Some("session config".into());
+        runtime.current_config = Some(empty_cfg());
         let status = runtime.status();
 
-        assert!(runtime.config_json.is_none());
+        assert!(runtime.current_config.is_none());
         assert!(!status.running);
         assert_eq!(status.device_path.as_deref(), Some("/dev/input/event1"));
         assert_eq!(status.last_error.as_deref(), Some("boom"));
@@ -783,9 +781,9 @@ mod tests {
         runtime
             .start("/dev/input/event2", None, empty_cfg())
             .expect("start");
-        runtime.config_json = Some("session config".into());
+        runtime.current_config = Some(empty_cfg());
         runtime.stop().expect("stop");
-        assert!(runtime.config_json.is_none());
+        assert!(runtime.current_config.is_none());
 
         assert!(*stop_called.lock().expect("lock stop flag"));
         assert!(!runtime.status().running);

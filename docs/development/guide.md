@@ -9,6 +9,7 @@
 
 - [AGENTS.md](../../AGENTS.md) — архитектура, правила кода, границы изменений;
 - [features.md](../features.md) — как работают функции приложения;
+- [api.md](api.md) — контракты shell/core, команды, гарантии IPC и транзакции;
 - [platforms.md](platforms.md) — матрица окружений и добавление backend'ов;
 - [install-linux.md](../install-linux.md) — установка для пользователей (входит в архив релиза);
 - [testing/windows.md](../testing/windows.md) — установка Windows VM;

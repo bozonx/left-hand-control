@@ -124,7 +124,12 @@ impl Mapper {
         // A running desktop instance has a virtual keyboard with the same
         // name; only the node that appears now belongs to this mapper.
         let existing: Vec<_> = mapper_devices().map(|(path, _)| path).collect();
-        runtime::start(&keyboard.path, None, &config.to_string()).expect("start mapper");
+        runtime::start(
+            &keyboard.path,
+            None,
+            serde_json::from_value(config).unwrap(),
+        )
+        .expect("start mapper");
         let mut output = wait_until("mapper virtual keyboard", Duration::from_secs(2), || {
             mapper_devices()
                 .find(|(path, _)| !existing.contains(path))
@@ -422,8 +427,10 @@ fn mapper_e2e_replug_recovers_latest_config_and_releases_held_keys() {
     std::os::unix::fs::symlink(&keyboard.path, &link).unwrap();
     keyboard.path = link.to_string_lossy().into_owned();
     let mut mapper = Mapper::start(&keyboard, json!({}));
-    runtime::update_config(&json!({"rules": [{"key": "KeyA", "tapAction": "KeyB"}]}).to_string())
-        .unwrap();
+    runtime::update_config(
+        serde_json::from_value(json!({"rules": [{"key": "KeyA", "tapAction": "KeyB"}]})).unwrap(),
+    )
+    .unwrap();
     keyboard.send(KeyCode::KEY_LEFTCTRL, true);
     assert_eq!(mapper.keys(), [down(KeyCode::KEY_LEFTCTRL)]);
     // Read releases before the disconnected virtual device is destroyed.
@@ -453,7 +460,8 @@ fn mapper_e2e_replug_recovers_latest_config_and_releases_held_keys() {
     assert!(runtime::execute_action("KeyD".into()).is_err());
     for target in ["KeyD", "KeyC"] {
         runtime::update_config(
-            &json!({"rules": [{"key": "KeyA", "tapAction": target}]}).to_string(),
+            serde_json::from_value(json!({"rules": [{"key": "KeyA", "tapAction": target}]}))
+                .unwrap(),
         )
         .unwrap();
     }

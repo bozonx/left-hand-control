@@ -48,7 +48,7 @@ pub(super) fn shell_command(
 
 #[cfg(any(target_os = "linux", target_os = "windows"))]
 fn report(command: &ProcessInvocation, result: Result<(), String>) {
-    events::emit(CoreEvent::CommandFinished {
+    events::emit(CoreEvent::CommandLaunchResult {
         script: command
             .args
             .last()

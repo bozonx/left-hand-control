@@ -5,7 +5,7 @@
 
 use super::{APP, App, with_app};
 use crate::{
-    command::{Command, Popup, Source, Window},
+    command::{Popup, ShellCommand, Source, Window, WorkerCommand},
     popup_model::{
         self, ConfiguredMenus, FOCUS_RETURN_TIMEOUT, KeyOutcome, PendingAction, PopupSession,
     },
@@ -144,7 +144,7 @@ impl App {
             return Ok(());
         }
         let contents = lhc_core::profile::layout_file::serialize(&self.menus().layout);
-        self.send_worker(&Command::PopupContents(contents), source, start, None)?;
+        self.send_worker(&WorkerCommand::PopupContents(contents), source, start, None)?;
         self.popups.worker_updated(id);
         Ok(())
     }
@@ -177,14 +177,12 @@ impl App {
             // Both are anchored at the bottom centre; the popup wins.
             self.hide_layer_hint();
             if self.supervisor.borrow().enabled {
-                let command =
-                    page.map_or(Command::Show(window), |page| Command::ShowPage(popup, page));
-                self.supervisor.borrow_mut().pending_show = Some(super::worker::PendingShow {
-                    command,
-                    source,
-                    start,
-                    token,
+                let command = page.map_or(WorkerCommand::Show(popup), |page| {
+                    WorkerCommand::ShowPage(popup, page)
                 });
+                self.supervisor
+                    .borrow_mut()
+                    .request_show(command, source, start, token);
                 self.check_worker();
                 self.start_worker(true);
                 self.flush_worker_show();
@@ -330,7 +328,7 @@ impl App {
                 );
             }
             self.command(
-                Command::Execute(action),
+                ShellCommand::Execute(action),
                 Source::Button,
                 Instant::now(),
                 None,
@@ -476,7 +474,7 @@ pub(super) fn bind(app: &Rc<App>) {
                 };
                 if let Ok(page) = u32::try_from(editor.get_selected_page() + 1) {
                     app.command(
-                        Command::ShowPage(popup, page),
+                        ShellCommand::ShowPage(popup, page),
                         Source::Button,
                         Instant::now(),
                         None,

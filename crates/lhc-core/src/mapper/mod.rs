@@ -45,8 +45,8 @@ with_backend! {
         crate::events::emit(crate::events::CoreEvent::MapperStopped(error.to_string()));
     }
 
-    pub(crate) fn emit_app_event(name: &str) {
-        crate::events::emit(crate::events::CoreEvent::AppAction(name.to_string()));
+    pub(crate) fn emit_app_event(action: &crate::profile::app_action::AppAction) {
+        crate::events::emit(crate::events::CoreEvent::AppAction(*action));
     }
 
     pub(crate) fn notify_active_layer(layer: Option<String>) {

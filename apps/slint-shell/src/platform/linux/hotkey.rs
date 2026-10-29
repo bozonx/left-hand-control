@@ -88,7 +88,7 @@ fn listen(
                         if let Some(command) =
                             command(&mut modifiers, KeyCode::new(event.code()), event.value())
                         {
-                            dispatch(command, Source::Evdev, Instant::now(), None);
+                            let _ = dispatch(command, Source::Evdev, Instant::now(), None);
                         }
                     }
                 }

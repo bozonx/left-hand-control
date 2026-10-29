@@ -85,6 +85,6 @@ pub fn start(dispatch: Dispatch) {
         } else {
             return;
         };
-        dispatch(command, Source::Hotkey, Instant::now(), None);
+        let _ = dispatch(command, Source::Hotkey, Instant::now(), None);
     }));
 }

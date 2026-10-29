@@ -34,6 +34,19 @@ const COMMAND_LABEL_CHARS: usize = 80;
 
 /// Forward core events to the UI thread. Subscribed once at startup.
 pub(super) fn forward_core_events() -> Result<lhc_core::events::Subscription, String> {
+    // Keep at most one core callback in the UI queue. Waiting here blocks
+    // only this subscription, so the core can coalesce state notifications.
+    fn post(f: impl FnOnce(&std::rc::Rc<App>) + Send + 'static) {
+        let (tx, rx) = std::sync::mpsc::channel();
+        if slint::invoke_from_event_loop(move || {
+            super::with_app(f);
+            let _ = tx.send(());
+        })
+        .is_ok()
+        {
+            let _ = rx.recv();
+        }
+    }
     lhc_core::events::bus().subscribe(|event| match event {
         CoreEvent::MapperDeviceChanged => post(|app| app.refresh_mapper_status()),
         CoreEvent::MapperStopped(error) => {
@@ -43,7 +56,7 @@ pub(super) fn forward_core_events() -> Result<lhc_core::events::Subscription, St
                 app.refresh_mapper_status();
             });
         }
-        CoreEvent::CommandFinished { script, result } => {
+        CoreEvent::CommandLaunchResult { script, result } => {
             let label = script
                 .lines()
                 .next()
@@ -57,18 +70,15 @@ pub(super) fn forward_core_events() -> Result<lhc_core::events::Subscription, St
                 Err(error) => app.set_error(Msg::ActionFailed(error)),
             });
         }
-        CoreEvent::AppAction(name) => {
-            if let Some(slot) = name
-                .strip_prefix("activate_layout_")
-                .and_then(|slot| slot.parse::<u32>().ok())
-            {
-                post(move |app| app.activate_layout(slot));
-                return;
-            }
-            let Some(command) = crate::command::Command::from_app_action(name) else {
-                return;
-            };
-            post(move |app| app.command(command, Source::Mapper, Instant::now(), None));
+        CoreEvent::AppAction(action) => {
+            let action = *action;
+            post(move |app| {
+                if let lhc_core::profile::app_action::AppAction::ActivateLayout(slot) = action {
+                    app.activate_layout(slot.get());
+                } else if let Some(command) = crate::command::Command::from_app_action(action) {
+                    app.command(command, Source::Mapper, Instant::now(), None);
+                }
+            });
         }
         CoreEvent::ActiveLayerChanged(_) | CoreEvent::LayerKeyPressed => {
             post(|app| app.sync_held_layer());
@@ -464,7 +474,8 @@ impl App {
         self.mapper.crash.set(None);
         self.set_mapper_operation(MapperOperation::Starting);
         std::thread::spawn(move || {
-            let result = lhc_core::mapper::runtime::start(&device, mouse.as_deref(), &runtime.json);
+            let result =
+                lhc_core::mapper::runtime::start(&device, mouse.as_deref(), runtime.mapper);
             post(move |app| {
                 app.set_mapper_operation(MapperOperation::Idle);
                 match result {

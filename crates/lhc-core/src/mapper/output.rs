@@ -517,7 +517,7 @@ mod tests {
                 SystemAction::Dbus(call) => format!("dbus:{}:{}", call.destination, call.method),
                 #[cfg(target_os = "windows")]
                 SystemAction::Windows(action) => format!("windows:{action:?}"),
-                SystemAction::AppEvent(event) => format!("app:{event}"),
+                SystemAction::AppEvent(event) => format!("app:{event:?}"),
             };
             self.systems.push(label);
         }
@@ -597,7 +597,7 @@ mod tests {
                 mod_delay: Duration::from_millis(2),
             },
             EngineOutput::Literal("tail".into()),
-            EngineOutput::RunSystem(SystemAction::AppEvent("show_settings".into())),
+            EngineOutput::RunSystem(SystemAction::AppEvent(crate::profile::app_action::AppAction::parse("showSettings").unwrap())),
             EngineOutput::RunCommand(ProcessInvocation {
                 program: "sh".into(),
                 working_directory: None,
@@ -641,7 +641,7 @@ mod tests {
             ]
         );
         assert_eq!(effects.texts, vec!["tail".to_string()]);
-        assert_eq!(effects.systems, vec!["app:show_settings".to_string()]);
+        assert_eq!(effects.systems, vec!["app:ShowSettings".to_string()]);
         assert_eq!(
             effects.commands,
             vec!["cmd:sh:[\"-lc\", \"notify-send done\"]".to_string()]
@@ -808,10 +808,10 @@ mod tests {
             };
         }
 
-        let popup = EngineOutput::RunSystem(SystemAction::AppEvent("show_quick_menu_1".into()));
+        let popup = EngineOutput::RunSystem(SystemAction::AppEvent(crate::profile::app_action::AppAction::parse("showQuickMenu1").unwrap()));
         iterate!(&mut hold, start, vec![popup, key_a(true)]);
         let wait = iterate!(&mut hold, start, vec![key_a(false)]);
-        assert_eq!(effects.systems, vec!["app:show_quick_menu_1"]);
+        assert_eq!(effects.systems, vec!["app:ShowMenu { menu: Quick, page: Some(1) }"]);
         assert!(sink.batches.is_empty(), "keys wait for the popup");
         assert_eq!(wait, Duration::from_millis(100));
 
@@ -825,7 +825,7 @@ mod tests {
             ]
         );
 
-        let popup = EngineOutput::RunSystem(SystemAction::AppEvent("show_emoji_menu_last".into()));
+        let popup = EngineOutput::RunSystem(SystemAction::AppEvent(crate::profile::app_action::AppAction::parse("showEmojiMenuLast").unwrap()));
         iterate!(&mut hold, start, vec![popup, key_a(true)]);
         assert_eq!(sink.batches.len(), 2);
         iterate!(&mut hold, start + Duration::from_secs(1), Vec::new());
@@ -833,7 +833,7 @@ mod tests {
 
         // Other app actions and releases with nothing held change nothing.
         hold.release();
-        let settings = EngineOutput::RunSystem(SystemAction::AppEvent("show_settings".into()));
+        let settings = EngineOutput::RunSystem(SystemAction::AppEvent(crate::profile::app_action::AppAction::parse("showSettings").unwrap()));
         iterate!(&mut hold, start, vec![settings, key_a(false)]);
         assert_eq!(sink.batches.len(), 4);
     }
@@ -843,7 +843,7 @@ mod tests {
         let key = |key, down| EngineOutput::KeyRaw { key, down };
         let start = Instant::now();
         let mut hold = OutputHold::default();
-        let popup = EngineOutput::RunSystem(SystemAction::AppEvent("show_quick_menu_1".into()));
+        let popup = EngineOutput::RunSystem(SystemAction::AppEvent(crate::profile::app_action::AppAction::parse("showQuickMenu1").unwrap()));
         let mut buf = vec![
             popup,
             key(KeyCode::KEY_B, true),
@@ -1147,7 +1147,7 @@ mod tests {
         };
         let mut hold = OutputHold::default();
         let mut out = vec![
-            EngineOutput::RunSystem(SystemAction::AppEvent("show_quick_menu_1".into())),
+            EngineOutput::RunSystem(SystemAction::AppEvent(crate::profile::app_action::AppAction::parse("showQuickMenu1").unwrap())),
             EngineOutput::KeyRaw {
                 key: KeyCode::KEY_B,
                 down: true,
@@ -1158,7 +1158,7 @@ mod tests {
             },
             EngineOutput::Literal("stale".into()),
             command(),
-            EngineOutput::RunSystem(SystemAction::AppEvent("game_mode_toggle".into())),
+            EngineOutput::RunSystem(SystemAction::AppEvent(crate::profile::app_action::AppAction::parse("gameModeToggle").unwrap())),
         ];
         let now = Instant::now();
         hold.gate(&mut out, now, false);
@@ -1191,7 +1191,7 @@ mod tests {
     fn shutdown_discards_actions_waiting_for_popup_focus() {
         let mut hold = OutputHold::default();
         let mut out = vec![
-            EngineOutput::RunSystem(SystemAction::AppEvent("show_quick_menu_1".into())),
+            EngineOutput::RunSystem(SystemAction::AppEvent(crate::profile::app_action::AppAction::parse("showQuickMenu1").unwrap())),
             EngineOutput::Literal("must not be typed on shutdown".into()),
         ];
         hold.gate(&mut out, Instant::now(), false);
