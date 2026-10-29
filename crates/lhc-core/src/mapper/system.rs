@@ -16,8 +16,6 @@
 //!                            the target DE exposes a DBus service: avoids
 //!                            `fork+exec` of helper binaries (qdbus, gdbus)
 //!                            and gives sub-millisecond latency.
-//!   * `SystemAction::Spawn`   — fire-and-forget child process, for DEs whose
-//!                            control surface is a CLI tool (swaymsg, …).
 //!   * `SystemAction::Windows` — a Win32 call (`mapper::windows::system`).
 //!   * `SystemAction::AppEvent` — handled by the shell on every OS.
 //!
@@ -41,11 +39,9 @@ pub struct ProcessInvocation {
 /// are listed; extend as new backends come online.
 #[cfg(target_os = "linux")]
 #[derive(Clone, Debug)]
-#[allow(dead_code)] // I32/Bool/Str reserved for future backends (GNOME Shell.Eval, etc.)
 pub enum DbusArg {
     U32(u32),
     I32(i32),
-    Bool(bool),
     Str(String),
 }
 
@@ -71,11 +67,9 @@ impl DbusCall {
 
 /// Resolved system-function.
 #[derive(Clone, Debug)]
-#[allow(dead_code)] // Spawn reserved for future Sway / wmctrl backends.
 pub enum SystemAction {
     #[cfg(target_os = "linux")]
     Dbus(DbusCall),
-    Spawn(ProcessInvocation),
     #[cfg(target_os = "windows")]
     Windows(super::windows::system::WindowsAction),
     AppEvent(String),
@@ -491,16 +485,6 @@ mod sway {
     use super::SystemAction;
 
     pub fn resolve(name: &str) -> Option<SystemAction> {
-        // TODO: `swaymsg workspace number N` covers the common case.
-        // Implementation sketch:
-        //   if let Some(rest) = name.strip_prefix("switchDesktop") {
-        //       if let Ok(n) = rest.parse::<u32>() {
-        //           return Some(SystemAction::Spawn(ProcessInvocation {
-        //               program: "swaymsg".into(),
-        //               args: vec!["workspace".into(), "number".into(), n.to_string()],
-        //           }));
-        //       }
-        //   }
         log::debug!("[sys/sway] {name:?}: not implemented yet");
         None
     }

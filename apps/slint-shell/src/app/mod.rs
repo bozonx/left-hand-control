@@ -113,14 +113,6 @@ impl App {
         }
     }
 
-    fn generation(&self, window: Window) -> u64 {
-        self.popups.generation(window)
-    }
-
-    fn next_generation(&self, window: Window) -> u64 {
-        self.popups.next_generation(window)
-    }
-
     /// Report a one-off failure as a toast.
     fn set_error(&self, message: Msg) {
         self.settings

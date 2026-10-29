@@ -513,9 +513,6 @@ mod tests {
 
         fn run_system(&mut self, action: &SystemAction) {
             let label = match action {
-                SystemAction::Spawn(ProcessInvocation { program, args, .. }) => {
-                    format!("spawn:{program}:{args:?}")
-                }
                 #[cfg(target_os = "linux")]
                 SystemAction::Dbus(call) => format!("dbus:{}:{}", call.destination, call.method),
                 #[cfg(target_os = "windows")]
@@ -600,11 +597,7 @@ mod tests {
                 mod_delay: Duration::from_millis(2),
             },
             EngineOutput::Literal("tail".into()),
-            EngineOutput::RunSystem(SystemAction::Spawn(ProcessInvocation {
-                program: "fire".into(),
-                args: vec!["now".into()],
-                working_directory: None,
-            })),
+            EngineOutput::RunSystem(SystemAction::AppEvent("show_settings".into())),
             EngineOutput::RunCommand(ProcessInvocation {
                 program: "sh".into(),
                 working_directory: None,
@@ -648,7 +641,7 @@ mod tests {
             ]
         );
         assert_eq!(effects.texts, vec!["tail".to_string()]);
-        assert_eq!(effects.systems, vec!["spawn:fire:[\"now\"]".to_string()]);
+        assert_eq!(effects.systems, vec!["app:show_settings".to_string()]);
         assert_eq!(
             effects.commands,
             vec!["cmd:sh:[\"-lc\", \"notify-send done\"]".to_string()]

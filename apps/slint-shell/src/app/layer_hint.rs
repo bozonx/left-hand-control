@@ -2,10 +2,7 @@
 //! above all windows without taking focus.
 
 use super::App;
-use crate::{
-    command::{Command, Source},
-    pages,
-};
+use crate::command::{Command, Source};
 use std::{
     cell::{Cell, RefCell},
     time::{Duration, Instant},
@@ -150,7 +147,8 @@ impl App {
             return;
         };
         let layout = self.menus();
-        let hint = pages::layers::hint(&self.settings, &document.read(), &layout.layout, &id);
+        let hint =
+            crate::layer_key_model::hint(&self.settings, &document.read(), &layout.layout, &id);
         let Some(hint) = hint else {
             self.hide_layer_hint();
             return;

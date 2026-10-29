@@ -517,40 +517,9 @@ pub(super) fn flush_out(
 /// Dispatch a resolved system action on the current OS/DE.
 fn run_sys_action(action: &SystemAction) {
     match action {
-        SystemAction::Spawn(cmd) => spawn_system(cmd),
         SystemAction::Dbus(call) => call_dbus(call),
         SystemAction::AppEvent(event) => {
             super::super::emit_app_event(event);
-        }
-    }
-}
-
-fn spawn_system(cmd: &ProcessInvocation) {
-    let mut c = std::process::Command::new(&cmd.program);
-    c.args(&cmd.args);
-    c.stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null());
-    match c.spawn() {
-        Ok(mut child) => {
-            let pid = child.id();
-            log::debug!("[mapper] spawned side-effect pid={pid}");
-            // Detach the wait so a hung child cannot stall the side-effect worker.
-            std::thread::spawn(move || match child.wait() {
-                Ok(status) if status.success() => {
-                    log::debug!("[mapper] side-effect pid={pid} exited: {status}");
-                }
-                Ok(status) => {
-                    log::debug!("[mapper] side-effect pid={pid} failed: {status}");
-                }
-                Err(e) => {
-                    log::debug!("[mapper] side-effect pid={pid} wait failed: {e}");
-                }
-            });
-        }
-        Err(e) => {
-            log::debug!("[mapper] spawn system {:?} failed: {}", cmd.program, e);
-            report_action_failure(format!("Cannot start {}: {e}", cmd.program));
         }
     }
 }
@@ -674,7 +643,6 @@ fn dispatch_dbus_call(conn: &zbus::blocking::Connection, call: &DbusCall) -> zbu
         b = match a {
             DbusArg::U32(v) => b.add_field(*v),
             DbusArg::I32(v) => b.add_field(*v),
-            DbusArg::Bool(v) => b.add_field(*v),
             DbusArg::Str(s) => b.add_field(s.clone()),
         };
     }

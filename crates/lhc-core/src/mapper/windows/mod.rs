@@ -573,7 +573,6 @@ impl SideEffects for RuntimeSideEffects {
                     report_action_failure(error);
                 }
             }
-            SystemAction::Spawn(command) => super::commands::spawn(command.clone()),
             SystemAction::AppEvent(event) => super::emit_app_event(event),
         }
     }

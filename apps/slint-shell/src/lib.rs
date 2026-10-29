@@ -25,6 +25,7 @@ mod i18n;
 mod ipc;
 pub mod keyboard;
 mod layer_hint_model;
+mod layer_key_model;
 mod metrics;
 mod notifications;
 pub mod pages;

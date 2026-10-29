@@ -424,7 +424,6 @@ impl Engine {
                 commands,
                 layer_maps,
                 layer_hold_mods,
-                default_hold,
                 default_mod_delay,
                 trigger_chord_timeout: Duration::from_millis(cfg.settings.trigger_chord_timeout_ms),
             },

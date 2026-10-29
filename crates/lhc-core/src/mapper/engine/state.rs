@@ -22,7 +22,6 @@ pub(super) struct CompiledLayout {
     /// layer_id -> keys whose keystroke modifiers stay pressed until the
     /// layer's trigger is released.
     pub(super) layer_hold_mods: HashMap<String, HashSet<KeyCode>>,
-    pub(super) default_hold: Duration,
     pub(super) default_mod_delay: Duration,
     /// How long a press of a chord member is held back waiting for the rest
     /// of the chord (QMK's `COMBO_TERM`). A chord whose keys arrive within

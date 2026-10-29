@@ -23,7 +23,7 @@ pub(crate) mod layers;
 mod library;
 mod macros;
 mod menus;
-mod picker;
+pub(crate) mod picker;
 mod reorder;
 mod rules;
 mod settings;

@@ -22,7 +22,10 @@ use std::{
 /// Popup requests, cached menus and the revision sent to the worker.
 #[derive(Default)]
 pub(super) struct PopupController {
-    state: PopupState,
+    /// Bumped on every show; deferred work checks it to skip stale requests.
+    generations: RefCell<HashMap<Window, u64>>,
+    /// Requested page and the chosen action waiting for the focus to leave.
+    session: RefCell<PopupSession>,
     /// Menus of the active layout for the winit popups.
     configured: RefCell<Option<Rc<ConfiguredMenus>>>,
     /// Menus the winit popups show now; their page ids locate the last
@@ -34,16 +37,7 @@ pub(super) struct PopupController {
     sent: RefCell<Option<(Option<String>, u64)>>,
 }
 
-/// Requests in flight for the popups.
-#[derive(Default)]
-struct PopupState {
-    /// Bumped on every show; deferred work checks it to skip stale requests.
-    generations: RefCell<HashMap<Window, u64>>,
-    /// Requested page and the chosen action waiting for the focus to leave.
-    session: RefCell<PopupSession>,
-}
-
-impl PopupState {
+impl PopupController {
     pub(super) fn generation(&self, window: Window) -> u64 {
         self.generations
             .borrow()
@@ -57,15 +51,6 @@ impl PopupState {
         let generation = generations.entry(window).or_default();
         *generation += 1;
         *generation
-    }
-}
-
-impl PopupController {
-    pub(super) fn generation(&self, window: Window) -> u64 {
-        self.state.generation(window)
-    }
-    pub(super) fn next_generation(&self, window: Window) -> u64 {
-        self.state.next_generation(window)
     }
 
     fn menus(&self, document: Option<&crate::document::Document>) -> Rc<ConfiguredMenus> {
@@ -124,9 +109,9 @@ impl App {
 
     /// Hide on the next event-loop turn unless the window was shown again.
     pub(super) fn defer_hide(&self, window: Window) {
-        let generation = self.generation(window);
+        let generation = self.popups.generation(window);
         super::post(move |app| {
-            if app.generation(window) == generation {
+            if app.popups.generation(window) == generation {
                 app.hide(window);
             }
         });
@@ -208,13 +193,10 @@ impl App {
             if self.window(window).is_visible() {
                 // The popup already has the focus, so no focus event follows.
                 release_mapper_input();
-                self.popups.state.session.borrow_mut().open(
-                    popup,
-                    page,
-                    true,
-                    &self.emoji,
-                    &self.quick,
-                );
+                self.popups
+                    .session
+                    .borrow_mut()
+                    .open(popup, page, true, &self.emoji, &self.quick);
                 self.popup_outcome(popup, KeyOutcome::PageChanged);
                 return;
             }
@@ -228,13 +210,10 @@ impl App {
                 }
             }
             self.refresh_popup_data();
-            self.popups.state.session.borrow_mut().open(
-                popup,
-                page,
-                false,
-                &self.emoji,
-                &self.quick,
-            );
+            self.popups
+                .session
+                .borrow_mut()
+                .open(popup, page, false, &self.emoji, &self.quick);
             if page.is_some() {
                 self.filter_quick();
             }
@@ -248,7 +227,7 @@ impl App {
                 .borrow_mut()
                 .begin(window.name(), source.as_str(), start);
         }
-        let generation = self.next_generation(window);
+        let generation = self.popups.next_generation(window);
         log::info!(
             "show {}, source={}, activation_token={}",
             window.name(),
@@ -272,7 +251,9 @@ impl App {
             };
             match app.window(window).winit_window().await {
                 Ok(native) => {
-                    if !app.window(window).is_visible() || app.generation(window) != generation {
+                    if !app.window(window).is_visible()
+                        || app.popups.generation(window) != generation
+                    {
                         return;
                     }
                     if let Err(error) = app.focus.borrow_mut().activate(&native, token.as_deref()) {
@@ -324,14 +305,14 @@ impl App {
             return;
         }
         // Run once the popup no longer has the keyboard focus.
-        self.popups.state.session.borrow_mut().choose(popup, action);
+        self.popups.session.borrow_mut().choose(popup, action);
         slint::Timer::single_shot(FOCUS_RETURN_TIMEOUT, move || {
             with_app(|app| app.run_pending_action(popup, false));
         });
     }
 
     fn run_pending_action(&self, popup: Popup, focus_left: bool) {
-        let action = self.popups.state.session.borrow_mut().take_pending(popup);
+        let action = self.popups.session.borrow_mut().take_pending(popup);
         if let Some(PendingAction { action, chosen, .. }) = action {
             if focus_left {
                 log::info!(

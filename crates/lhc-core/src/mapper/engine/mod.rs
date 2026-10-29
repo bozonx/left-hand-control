@@ -874,11 +874,6 @@ impl Engine {
         self.press_at.clear();
     }
 
-    #[allow(dead_code)]
-    pub fn default_hold(&self) -> Duration {
-        self.layout.default_hold
-    }
-
     pub fn execute_remote(&mut self, action: &str, out: &mut Vec<EngineOutput>) {
         let resolved =
             builder::resolve_action(action, &self.layout.macros, &self.layout.commands, "remote");
