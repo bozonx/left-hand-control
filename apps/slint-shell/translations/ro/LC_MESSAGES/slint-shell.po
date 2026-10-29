@@ -3670,3 +3670,9 @@ msgstr "Jocurile raportate de lansatoare sau de sistem contează doar cât timp 
 
 msgid "Cannot load this layout. See the application log."
 msgstr "Acest aranjament nu poate fi încărcat. Consultați jurnalul aplicației."
+
+msgid "Scroll horizontally"
+msgstr "Derulare orizontală"
+
+msgid "Scroll vertically"
+msgstr "Derulare verticală"

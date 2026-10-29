@@ -1,0 +1,12 @@
+/// Per-window modal focus stack, implemented by the shell.
+export global KeyboardFocus {
+    callback has-focus() -> bool;
+    callback describe() -> string;
+    callback save();
+    callback enter() -> int;
+    callback is-top(int) -> bool;
+    in-out property <bool> active;
+    callback cycle(bool);
+    callback step(bool);
+    callback focus-checked();
+}

@@ -228,6 +228,9 @@ component MacroCard inherits Card {
 }
 
 component BuiltinMacrosHeader inherits Rectangle {
+    border-width: header-focus.has-focus ? 2px : 0px;
+    border-color: Theme.focus;
+    border-radius: Theme.radius;
     in-out property <bool> open;
     accessible-role: button;
     accessible-label: @tr("Built-in macros");

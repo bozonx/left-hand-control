@@ -3631,3 +3631,9 @@ msgstr "Los juegos que informan los lanzadores o el sistema solo cuentan mientra
 
 msgid "Cannot load this layout. See the application log."
 msgstr "No se puede cargar esta distribución. Consulta el registro de la aplicación."
+
+msgid "Scroll horizontally"
+msgstr "Desplazar horizontalmente"
+
+msgid "Scroll vertically"
+msgstr "Desplazar verticalmente"

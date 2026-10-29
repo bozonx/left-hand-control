@@ -3386,3 +3386,9 @@ msgstr "ランチャーやシステムが報告するゲームは、そのウィ
 
 msgid "Cannot load this layout. See the application log."
 msgstr "この配列を読み込めません。アプリケーションのログを確認してください。"
+
+msgid "Scroll horizontally"
+msgstr "横にスクロール"
+
+msgid "Scroll vertically"
+msgstr "縦にスクロール"

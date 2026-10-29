@@ -3669,3 +3669,9 @@ msgstr "Gry zgłaszane przez launchery lub system liczą się tylko, gdy ich okn
 
 msgid "Cannot load this layout. See the application log."
 msgstr "Nie można wczytać tego układu. Sprawdź dziennik aplikacji."
+
+msgid "Scroll horizontally"
+msgstr "Przewijanie w poziomie"
+
+msgid "Scroll vertically"
+msgstr "Przewijanie w pionie"

@@ -3732,3 +3732,9 @@ msgstr "Les jeux signalés par les lanceurs ou le système ne comptent que lorsq
 
 msgid "Cannot load this layout. See the application log."
 msgstr "Impossible de charger cette disposition. Consultez le journal de l’application."
+
+msgid "Scroll horizontally"
+msgstr "Défilement horizontal"
+
+msgid "Scroll vertically"
+msgstr "Défilement vertical"

@@ -2991,3 +2991,9 @@ msgstr "Игры, о которых сообщают лаунчеры или с�
 
 msgid "Cannot load this layout. See the application log."
 msgstr "Не удалось загрузить эту раскладку. Подробности — в журнале приложения."
+
+msgid "Scroll horizontally"
+msgstr "Прокрутка по горизонтали"
+
+msgid "Scroll vertically"
+msgstr "Прокрутка по вертикали"

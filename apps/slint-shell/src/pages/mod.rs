@@ -17,6 +17,7 @@ macro_rules! on {
 
 mod autosave;
 pub(crate) mod conditions;
+mod focus;
 mod inline;
 mod keys;
 pub(crate) mod layers;
@@ -79,6 +80,7 @@ pub fn bind_document_with_input(
     document: &Rc<Document>,
     input: &Rc<WindowInput>,
 ) {
+    focus::bind(ui);
     timing::bind(ui);
     crate::notifications::bind(ui);
     let inline = ui.global::<crate::ui::InlineEditors>();

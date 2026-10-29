@@ -31,6 +31,10 @@ export global InlineEditors {
 /// Shared lifecycle for single-line and multiline editors. A failed save
 /// keeps the draft open; only the owner can acknowledge a persisted edit.
 component InlineEditor inherits FocusScope {
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-value: root.text;
+    accessible-action-default => { if !root.editing { root.begin(); } }
     in property <bool> multiline: false;
     in property <string> text;
     in property <string> placeholder;
@@ -70,8 +74,8 @@ component InlineEditor inherits FocusScope {
     }
     focus-on-tab-navigation: !root.editing;
     key-pressed(event) => {
-        if root.editing && event.text == Key.Escape { root.cancel(); return accept; }
-        if root.editing && root.multiline && event.modifiers.control && event.text == Key.Return { root.save(); return accept; }
+        if root.editing && event.text == Key.Escape { root.cancel(); root.focus(); return accept; }
+        if root.editing && root.multiline && event.modifiers.control && event.text == Key.Return { if root.save() { root.focus(); } return accept; }
         if !root.editing && (event.text == Key.Return || event.text == " ") { root.begin(); return accept; }
         return reject;
     }
@@ -139,11 +143,11 @@ export component InlineTextField inherits InlineEditor {
                 accessible-label: root.label;
                 accessible-description: Locale.text(root.issue);
                 init => { self.focus(); self.select-all(); }
-                accepted => { root.save(); }
+                accepted => { if root.save() { root.focus(); } }
                 changed has-focus => { if !self.has-focus { root.blurred(); } }
             }
-            if root.editing: IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save (Enter)"); enabled: root.can-save; clicked => { root.save(); } }
-            if root.editing: IconButton { icon: @image-url("icons/x.svg"); label: @tr("Cancel (Esc)"); clicked => { root.cancel(); } }
+            if root.editing: IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save (Enter)"); enabled: root.can-save; clicked => { if root.save() { root.focus(); } } }
+            if root.editing: IconButton { icon: @image-url("icons/x.svg"); label: @tr("Cancel (Esc)"); clicked => { root.cancel(); root.focus(); } }
         }
         if root.editing && root.issue.id != "": Text {
             text: Locale.text(root.issue);
@@ -209,8 +213,8 @@ export component InlineTextArea inherits InlineEditor {
         if root.editing: HorizontalLayout {
             spacing: Theme.space-xs;
             alignment: end;
-            IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save (Ctrl+Enter)"); enabled: root.can-save; clicked => { root.save(); } }
-            IconButton { icon: @image-url("icons/x.svg"); label: @tr("Cancel (Esc)"); clicked => { root.cancel(); } }
+            IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save (Ctrl+Enter)"); enabled: root.can-save; clicked => { if root.save() { root.focus(); } } }
+            IconButton { icon: @image-url("icons/x.svg"); label: @tr("Cancel (Esc)"); clicked => { root.cancel(); root.focus(); } }
         }
     }
 }

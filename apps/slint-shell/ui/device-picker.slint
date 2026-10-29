@@ -1,3 +1,4 @@
+import { KeyboardFocus } from "focus.slint";
 import { Button } from "std-widgets.slint";
 import { IconButton, ButtonGroup, DialogFrame, SearchField, TextField } from "controls.slint";
 import { ScrollView } from "scroll.slint";
@@ -145,23 +146,17 @@ export component DeviceDialogOverlay inherits DialogFrame {
         root.highlighted = max(0, DeviceChoices.position(root.filtered, root.current));
         root.scroll-y = 0px;
         root.scroll-to-highlight();
-        if tab == 0 { keys.focus(); }
+
     }
     changed query => { root.highlighted = 0; root.scroll-y = 0px; }
 
     keys := FocusScope {
-        init => { if root.tab == 0 { self.focus(); } }
-        capture-key-pressed(event) => {
+        focus-on-tab-navigation: false;
+        key-pressed(event) => {
             if root.tab == 2 {
                 if event.text == Key.Escape { root.close(); return accept; }
                 return reject;
             }
-            if (event.text == Key.DownArrow || event.text == Key.UpArrow) && root.filtered.length > 0 {
-                root.highlighted = mod(root.highlighted + root.filtered.length + (event.text == Key.DownArrow ? 1 : -1), root.filtered.length);
-                root.scroll-to-highlight();
-                return accept;
-            }
-            if event.text == "\n" { root.choose(root.highlighted); return accept; }
             if event.text == Key.Escape && root.all && root.query != "" { root.query = ""; return accept; }
             if event.text == Key.Escape { root.close(); return accept; }
             return reject;
@@ -231,6 +226,15 @@ export component DeviceDialogOverlay inherits DialogFrame {
                                     }
                                     if row.current: VerticalLayout { alignment: center; Image { width: 16px; height: 16px; source: @image-url("icons/check.svg"); colorize: Theme.accent; } }
                                 }
+                                row-focus := FocusScope {
+                                    key-pressed(event) => {
+                                        if event.text == Key.Return || event.text == " " { root.choose(index); return accept; }
+                                        if event.text == Key.DownArrow { KeyboardFocus.step(false); return accept; }
+                                        if event.text == Key.UpArrow { KeyboardFocus.step(true); return accept; }
+                                        return reject;
+                                    }
+                                }
+                                Rectangle { border-width: row-focus.has-focus ? 2px : 0px; border-color: Theme.focus; border-radius: Theme.radius-small; }
                                 row-touch := TouchArea { mouse-cursor: pointer; clicked => { root.choose(index); } }
                             }
                         }

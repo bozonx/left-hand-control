@@ -3704,3 +3704,9 @@ msgstr "I giochi segnalati dai launcher o dal sistema contano solo mentre la lor
 
 msgid "Cannot load this layout. See the application log."
 msgstr "Impossibile caricare questa disposizione. Consulta il registro dell’applicazione."
+
+msgid "Scroll horizontally"
+msgstr "Scorrimento orizzontale"
+
+msgid "Scroll vertically"
+msgstr "Scorrimento verticale"

@@ -19,7 +19,7 @@ use crate::{
     },
 };
 use lhc_core::profile::actions::Action;
-use slint::{ComponentHandle, ModelRc, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::cell::RefCell;
 
 pub(super) fn open(
@@ -136,6 +136,22 @@ pub(super) fn open(
     picker.invoke_refresh();
 }
 
+// Keep repeater instances (and their keyboard focus) when only row data changes.
+fn update_model<T: Clone + PartialEq + 'static>(model: ModelRc<T>, rows: Vec<T>) -> ModelRc<T> {
+    if let Some(existing) = model.as_any().downcast_ref::<VecModel<T>>()
+        && existing.row_count() == rows.len()
+    {
+        for (index, row) in rows.into_iter().enumerate() {
+            if existing.row_data(index).as_ref() != Some(&row) {
+                existing.set_row_data(index, row);
+            }
+        }
+        model
+    } else {
+        ModelRc::new(VecModel::from(rows))
+    }
+}
+
 pub(super) fn refresh(ui: &SettingsWindow, doc: &Document, state: &RefCell<Session>) {
     let picker = ui.global::<ActionPicker>();
     state.borrow_mut().catalog = catalog(ui, &doc.read());
@@ -147,7 +163,8 @@ pub(super) fn refresh(ui: &SettingsWindow, doc: &Document, state: &RefCell<Sessi
         // Each action owns its command; existing ones are not offered.
         .filter(|entry| entry.category != PickerCategory::Commands && filter.admits(&entry.value))
         .collect();
-    picker.set_categories(ModelRc::new(VecModel::from(
+    picker.set_categories(update_model(
+        picker.get_categories(),
         KEY_CATEGORIES
             .into_iter()
             .chain(ACTION_CATEGORIES)
@@ -156,7 +173,7 @@ pub(super) fn refresh(ui: &SettingsWindow, doc: &Document, state: &RefCell<Sessi
                 count: entries.iter().filter(|e| e.category == category).count() as i32,
             })
             .collect::<Vec<_>>(),
-    )));
+    ));
     if picker.get_macro_step()
         && picker.get_category() == PickerCategory::Pause
         && !matches!(
@@ -225,7 +242,8 @@ pub(super) fn refresh(ui: &SettingsWindow, doc: &Document, state: &RefCell<Sessi
         category = entry.category;
         picker.set_category(category);
     }
-    picker.set_items(ModelRc::new(VecModel::from(
+    picker.set_items(update_model(
+        picker.get_items(),
         entries
             .into_iter()
             .filter(|entry| {
@@ -238,7 +256,7 @@ pub(super) fn refresh(ui: &SettingsWindow, doc: &Document, state: &RefCell<Sessi
             })
             .cloned()
             .collect::<Vec<_>>(),
-    )));
+    ));
     picker.set_notice(execution_notice(&action, &doc.read().config()).to_ui());
     let valid = match picker.get_behavior() {
         PickerBehavior::Native => picker.get_allow_default(),

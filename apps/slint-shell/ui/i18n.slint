@@ -15,6 +15,8 @@ export global Locale {
         if m.id == "command-help-macos" { return @tr("The name is optional: an empty name uses the command itself as its label. Command execution by the mapper is not implemented on macOS."); }
 
         if m.id == "layout-discarded" { return @tr("Changes to layout “{}” discarded", m.arg); }
+        if m.id == "scroll-horizontal" { return @tr("Scroll horizontally"); }
+        if m.id == "scroll-vertical" { return @tr("Scroll vertically"); }
         if m.id == "copied" { return @tr("Copied to clipboard"); }
         if m.id == "layout-created" { return @tr("Layout “{}” created", m.arg); }
         if m.id == "layout-saved" { return @tr("Layout “{}” saved", m.arg); }

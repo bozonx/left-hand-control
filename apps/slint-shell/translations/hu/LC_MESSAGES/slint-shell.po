@@ -3669,3 +3669,9 @@ msgstr "Az indítók vagy a rendszer által jelentett játékok csak addig szám
 
 msgid "Cannot load this layout. See the application log."
 msgstr "Ez a kiosztás nem tölthető be. Lásd az alkalmazás naplóját."
+
+msgid "Scroll horizontally"
+msgstr "Vízszintes görgetés"
+
+msgid "Scroll vertically"
+msgstr "Függőleges görgetés"

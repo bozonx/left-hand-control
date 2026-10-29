@@ -3305,3 +3305,9 @@ msgstr "启动器或系统报告的游戏仅在其窗口处于活动状态时计
 
 msgid "Cannot load this layout. See the application log."
 msgstr "无法加载此布局。请查看应用程序日志。"
+
+msgid "Scroll horizontally"
+msgstr "水平滚动"
+
+msgid "Scroll vertically"
+msgstr "垂直滚动"

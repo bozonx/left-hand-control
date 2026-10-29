@@ -335,6 +335,13 @@ component TargetPicker inherits Rectangle {
 }
 
 component AutoRuleRow inherits Rectangle {
+    action-focus := FocusScope {
+        key-pressed(event) => {
+            if event.text == Key.Return || event.text == " " { LayoutLibrary.open-rule(root.index, root.rule.target); return accept; }
+            return reject;
+        }
+    }
+    Rectangle { border-width: action-focus.has-focus ? 2px : 0px; border-color: Theme.focus; border-radius: Theme.radius; }
     in property <AutoRuleView> rule;
     in property <int> index;
     in property <int> count;
@@ -591,6 +598,13 @@ export component LibraryPage inherits PageLayout {
                                             text: @tr("In {n} rule" | "In {n} rules" % row.rule-count);
                                             color: parent.on ? Theme.accent : Theme.muted; font-size: Theme.font-medium; vertical-alignment: center;
                                         }
+                                        badge-focus := FocusScope {
+                                            key-pressed(event) => {
+                                                if event.text == Key.Return || event.text == " " { LayoutLibrary.highlight-target = LayoutLibrary.highlight-target == index ? -1 : index; return accept; }
+                                                return reject;
+                                            }
+                                        }
+                                        Rectangle { border-width: badge-focus.has-focus ? 2px : 0px; border-color: Theme.focus; border-radius: Theme.radius-small; }
                                         badge-touch := TouchArea { mouse-cursor: pointer; clicked => { LayoutLibrary.highlight-target = parent.on ? -1 : index; } }
                                     }
                                 }

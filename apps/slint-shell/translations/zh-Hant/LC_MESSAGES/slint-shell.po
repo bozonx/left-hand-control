@@ -3306,3 +3306,9 @@ msgstr "啟動器或系統回報的遊戲僅在其視窗處於作用中時計入
 
 msgid "Cannot load this layout. See the application log."
 msgstr "無法載入此配置。請查看應用程式記錄。"
+
+msgid "Scroll horizontally"
+msgstr "水平捲動"
+
+msgid "Scroll vertically"
+msgstr "垂直捲動"

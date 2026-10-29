@@ -3732,3 +3732,9 @@ msgstr "Τα παιχνίδια που αναφέρουν οι εκκινητέ�
 
 msgid "Cannot load this layout. See the application log."
 msgstr "Δεν είναι δυνατή η φόρτωση αυτής της διάταξης. Δείτε το αρχείο καταγραφής της εφαρμογής."
+
+msgid "Scroll horizontally"
+msgstr "Οριζόντια κύλιση"
+
+msgid "Scroll vertically"
+msgstr "Κατακόρυφη κύλιση"

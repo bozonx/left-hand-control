@@ -125,6 +125,8 @@ component PickerCell inherits Rectangle {
     background: root.selected ? Theme.selected : item-touch.has-hover ? Theme.hover : Theme.card;
     accessible-role: button;
     accessible-label: item.label;
+    accessible-value: item.value;
+    accessible-description: Locale.text(root.item.notice) + "\n" + ActionPicker.key-hint(root.item.value);
     accessible-action-default => { root.pick(); }
     function pick() { ActionPicker.touched = true; ActionPicker.value = root.item.value; ActionPicker.refresh(); }
     HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-s;
@@ -141,6 +143,19 @@ component PickerCell inherits Rectangle {
 }
 
 component CategoryButton inherits Rectangle {
+    accessible-role: button;
+    accessible-label: root.title;
+    accessible-checked: ActionPicker.category == root.category;
+    accessible-action-default => { root.choose(); }
+    border-width: category-focus.has-focus ? 2px : 0px;
+    border-color: Theme.focus;
+    function choose() { ActionPicker.category = root.category; ActionPicker.query = ""; ActionPicker.refresh(); }
+    category-focus := FocusScope {
+        key-pressed(event) => {
+            if event.text == Key.Return || event.text == " " { root.choose(); return accept; }
+            return reject;
+        }
+    }
     in property <PickerCategory> category;
     in property <int> count;
     private property <string> title: ActionPicker.title(root.category);
@@ -153,7 +168,7 @@ component CategoryButton inherits Rectangle {
         Text { text: root.title; wrap: no-wrap; color: Theme.text; horizontal-stretch: 1; vertical-alignment: center; overflow: elide; }
     }
     Tooltip { TooltipText { text: root.title; } }
-    category-touch := TouchArea { clicked => { ActionPicker.category = root.category; ActionPicker.query = ""; ActionPicker.refresh(); } }
+    category-touch := TouchArea { clicked => { category-focus.focus(); root.choose(); } }
 }
 
 export component PickerOverlay inherits DialogFrame {

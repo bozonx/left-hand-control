@@ -1,3 +1,4 @@
+import { KeyboardFocus } from "focus.slint";
 import { MenuSurface, MenuItem, MenuLabel, TooltipText } from "controls.slint";
 import { AppState } from "app-state.slint";
 import { Locale } from "i18n.slint";
@@ -21,6 +22,7 @@ export component GameModeButton inherits Rectangle {
     public function open-menu() {
         root.highlighted = AppState.game-control == GameModeControl.auto ? 0 : AppState.game-control == GameModeControl.on ? 1 : 2;
         menu.show();
+        KeyboardFocus.focus-checked();
     }
     HorizontalLayout {
         padding-left: Theme.space-m-plus; padding-right: Theme.space-m; spacing: Theme.space-s; alignment: center;
@@ -45,12 +47,8 @@ export component GameModeButton inherits Rectangle {
         forward-focus: menu-focus;
         menu-focus := FocusScope {
             capture-key-pressed(event) => {
-                if event.text == Key.DownArrow { root.highlighted = mod(root.highlighted + 1, 3); return accept; }
-                if event.text == Key.UpArrow { root.highlighted = mod(root.highlighted + 2, 3); return accept; }
-                if event.text == "\n" || event.text == " " {
-                    AppState.set-game-control(root.highlighted == 0 ? GameModeControl.auto : root.highlighted == 1 ? GameModeControl.on : GameModeControl.off);
-                    focus.focus(); menu.close(); return accept;
-                }
+                if event.text == Key.DownArrow { KeyboardFocus.step(false); return accept; }
+                if event.text == Key.UpArrow { KeyboardFocus.step(true); return accept; }
                 if event.text == Key.Escape { focus.focus(); menu.close(); return accept; }
                 return reject;
             }
@@ -59,7 +57,7 @@ export component GameModeButton inherits Rectangle {
                 for label[index] in [@tr("Auto — according to settings"), @tr("On — always"), @tr("Off — never")]: MenuItem {
                     text: label;
                     checked: AppState.game-control == (index == 0 ? GameModeControl.auto : index == 1 ? GameModeControl.on : GameModeControl.off);
-                    highlighted: root.highlighted == index;
+
                     accessible-role: radio-button;
                     accessible-checkable: true;
                     clicked => {

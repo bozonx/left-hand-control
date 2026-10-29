@@ -48,11 +48,12 @@ export component NavTab inherits Rectangle {
             return reject;
         }
     }
-    touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+    touch := TouchArea { mouse-cursor: pointer; clicked => { focus.focus(); root.clicked(); } }
 }
 
 /// Top-bar section switch: quiet until selected, then a soft accent fill.
 export component NavButton inherits Rectangle {
+    forward-focus: focus;
     in property <image> icon;
     in property <string> text;
     in property <bool> selected;
@@ -84,5 +85,5 @@ export component NavButton inherits Rectangle {
             return reject;
         }
     }
-    touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+    touch := TouchArea { mouse-cursor: pointer; clicked => { focus.focus(); root.clicked(); } }
 }

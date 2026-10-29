@@ -3619,3 +3619,9 @@ msgstr "Igre koje prijave pokretači ili sustav broje se samo dok je njihov proz
 
 msgid "Cannot load this layout. See the application log."
 msgstr "Nije moguće učitati ovaj raspored. Pogledajte zapisnik aplikacije."
+
+msgid "Scroll horizontally"
+msgstr "Vodoravno pomicanje"
+
+msgid "Scroll vertically"
+msgstr "Okomito pomicanje"

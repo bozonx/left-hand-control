@@ -1,3 +1,4 @@
+import { KeyboardFocus } from "focus.slint";
 import { TextField } from "controls.slint";
 import { NotificationCenter, ToastStack } from "notifications.slint";
 import { ScrollView } from "scroll.slint";
@@ -31,6 +32,7 @@ export component SettingsWindow inherits Window {
     in-out property <Page> page: Page.layouts;
     forward-focus: shortcut-focus;
     private property <string> test-text;
+    private property <string> focus-help;
     private property <bool> confirm-discard: false;
     private property <bool> confirm-close: false;
     property <bool> library-problem: NotificationCenter.is-problem(LayoutLibrary.status.id);
@@ -76,21 +78,25 @@ export component SettingsWindow inherits Window {
         if page == Page.menus { MenuEditor.open(kind); }
         if page != Page.layouts && page != Page.settings { LayoutLibrary.editor-open = true; }
         root.page = page;
-        shortcut-focus.focus();
+        if !KeyboardFocus.has-focus() {
+            if page == Page.settings { settings-navigation.focus(); }
+            else { layouts-navigation.focus(); }
+        }
     }
 
-    property <bool> modal-open: root.confirm-discard || root.confirm-close || ActionPicker.opened || RulesEditor.dialog != RuleDialog.none || LayersEditor.dialog != LayerDialog.none || LayersEditor.delete-extra >= 0
+    property <bool> modal-open: KeyboardFocus.active || root.confirm-discard || root.confirm-close || ActionPicker.opened || RulesEditor.dialog != RuleDialog.none || LayersEditor.dialog != LayerDialog.none || LayersEditor.delete-extra >= 0
         || LayoutLibrary.save-as-open || LayoutLibrary.dialog != LibraryDialog.none
         || AppEntryDialog.editing || AppEntryDialog.removing || DeviceDialog.open || SettingsEditor.full-command != "";
     property <bool> show-active-banner: root.page != Page.layouts && root.page != Page.settings && !LayoutLibrary.automatic
         && LayoutLibrary.current-label != "" && LayoutLibrary.current-label != LayoutLibrary.active-label;
 
-    changed modal-open => { if !root.modal-open { shortcut-focus.focus(); } }
 
     shortcut-focus := FocusScope {
         focus-on-tab-navigation: false;
         init => { self.focus(); }
         capture-key-pressed(event) => {
+            if event.text == Key.F1 { root.focus-help = KeyboardFocus.describe(); if root.focus-help != "" { focus-help-popup.show(); } return accept; }
+            if focus-help-popup.is-open && event.text == Key.Escape { focus-help-popup.close(); return accept; }
             if event.text == Key.Escape && (DragDrop.dragging || PaletteDrag.active) { DragDrop.cancel(); return accept; }
             if InlineEditors.window-active && event.text == Key.Escape {
                 if ActionPicker.opened {
@@ -124,8 +130,8 @@ export component SettingsWindow inherits Window {
                 background: Theme.card;
                 HorizontalLayout {
                     padding-left: Theme.space-xl; padding-right: Theme.space-xl; padding-top: Theme.space-m; padding-bottom: Theme.space-m; spacing: Theme.space-m;
-                    VerticalLayout { alignment: center; NavButton { icon: @image-url("icons/keyboard.svg"); text: @tr("Layouts"); selected: root.page == Page.layouts; clicked => { root.navigate(Page.layouts, MenuKind.emoji); } } }
-                    VerticalLayout { alignment: center; NavButton { icon: @image-url("icons/settings-2.svg"); text: @tr("Settings"); selected: root.page == Page.settings; clicked => { root.navigate(Page.settings, MenuKind.emoji); } } }
+                    VerticalLayout { alignment: center; layouts-navigation := NavButton { icon: @image-url("icons/keyboard.svg"); text: @tr("Layouts"); selected: root.page == Page.layouts; clicked => { root.navigate(Page.layouts, MenuKind.emoji); } } }
+                    VerticalLayout { alignment: center; settings-navigation := NavButton { icon: @image-url("icons/settings-2.svg"); text: @tr("Settings"); selected: root.page == Page.settings; clicked => { root.navigate(Page.settings, MenuKind.emoji); } } }
                     Rectangle {
                         horizontal-stretch: 1;
                         min-width: 120px;
@@ -143,13 +149,26 @@ export component SettingsWindow inherits Window {
                     }
                     if AppState.in-development: GameModeButton {}
                     active-layout := Rectangle {
+                        accessible-role: button;
+                        accessible-label: LayoutLibrary.active-label == "" ? @tr("No active layout") : @tr("Active: {}", LayoutLibrary.active-label);
+                        accessible-expandable: !LayoutLibrary.automatic;
+                        accessible-expanded: active-menu.is-open;
+                        accessible-action-default => { if !LayoutLibrary.automatic { LayoutLibrary.refresh(); active-menu.show(); } }
+                        active-focus := FocusScope {
+                            enabled: !LayoutLibrary.automatic;
+                            key-pressed(event) => {
+                                if event.text == Key.Return || event.text == " " || event.text == Key.DownArrow { LayoutLibrary.refresh(); active-menu.show(); return accept; }
+                                return reject;
+                            }
+                        }
+                        Rectangle { border-width: active-focus.has-focus ? 2px : 0px; border-color: Theme.focus; border-radius: Theme.radius; }
                         width: 180px; height: Theme.control-height-l; border-radius: Theme.radius; background: Theme.surface; border-width: 1px; border-color: Theme.border;
                         HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-s;
                             Image { width: 14px; source: @image-url("icons/keyboard.svg"); colorize: Theme.muted; }
                             Text { text: LayoutLibrary.active-label == "" ? @tr("No active layout") : @tr("Active: {}", LayoutLibrary.active-label); color: Theme.text; overflow: elide; vertical-alignment: center; }
                             if !LayoutLibrary.automatic: Image { width: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; }
                         }
-                        TouchArea { enabled: !LayoutLibrary.automatic; mouse-cursor: pointer; clicked => { LayoutLibrary.refresh(); active-menu.show(); } }
+                        TouchArea { enabled: !LayoutLibrary.automatic; mouse-cursor: pointer; clicked => { active-focus.focus(); LayoutLibrary.refresh(); active-menu.show(); } }
                         Tooltip { TooltipText { text: LayoutLibrary.automatic ? @tr("Current active layout (selected automatically by switching rules)") : @tr("Current active layout — click to switch"); } }
                     }
                     Rectangle { width: 1px; background: Theme.divider; }
@@ -228,6 +247,22 @@ export component SettingsWindow inherits Window {
                 if root.page == Page.layers || root.page == Page.keyboard: LayersPage {}
                 if AppState.in-development && root.page == Page.macros: MacrosPage {}
                 if AppState.in-development && root.page == Page.menus: MenusPage {}
+            }
+        }
+    }
+    focus-help-popup := PopupWindow {
+        width: min(Theme.text-tooltip, root.width - 64px) + 2 * Theme.space-xs;
+        x: (root.width - self.width) / 2; y: 64px;
+        forward-focus: help-focus;
+        MenuSurface {
+            help-focus := FocusScope {
+                accessible-role: groupbox;
+                accessible-label: root.focus-help;
+                key-pressed(event) => {
+                    if event.text == Key.Escape || event.text == Key.Return || event.text == " " { focus-help-popup.close(); return accept; }
+                    return reject;
+                }
+                Text { width: min(Theme.text-tooltip, root.width - 64px); text: root.focus-help; color: Theme.text; wrap: word-wrap; }
             }
         }
     }

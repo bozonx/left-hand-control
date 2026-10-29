@@ -33,52 +33,59 @@ export component ButtonGroup inherits Rectangle {
     vertical-stretch: 0;
     background: root.pill ? Theme.surface : transparent;
     border-radius: root.pill ? Theme.radius : 0px;
-    HorizontalLayout {
-        padding: root.pill ? Theme.space-2xs : 0px;
-        spacing: root.pill ? Theme.space-2xs : 0px;
-        for label[index] in root.labels: button := Rectangle {
-            property <bool> current: root.selected-index == index;
-            private property <bool> first: index == 0;
-            private property <bool> last: index == root.labels.length - 1;
-            height: root.pill ? 28px : 36px;
-            border-top-left-radius: root.pill ? Theme.radius-small : self.first ? 4px : 0px;
-            border-bottom-left-radius: root.pill ? Theme.radius-small : self.first ? 4px : 0px;
-            border-top-right-radius: root.pill ? Theme.radius-small : self.last ? 4px : 0px;
-            border-bottom-right-radius: root.pill ? Theme.radius-small : self.last ? 4px : 0px;
-            background: root.pill
-                ? (self.current ? Theme.text : touch.has-hover || focus.has-focus ? Theme.hover : transparent)
-                : (self.current ? Theme.selected : touch.has-hover ? Theme.hover : Theme.card);
-            opacity: root.enabled ? 1 : 0.5;
-            border-width: root.pill ? 0px : focus.has-focus ? 2px : 1px;
-            border-color: focus.has-focus ? Theme.focus : self.current ? Theme.accent : Theme.border;
-            accessible-role: radio-button;
-            accessible-label: label;
-            accessible-checked: self.current;
-            accessible-enabled: root.enabled;
-            accessible-action-default => { if root.enabled { root.selected(index); } }
-            HorizontalLayout {
-                padding-left: root.pill ? Theme.space-m-plus : Theme.space-l;
-                padding-right: root.pill ? Theme.space-m-plus : Theme.space-l;
-                Text {
-                    text: label;
-                    color: root.pill && button.current ? Theme.surface : Theme.text;
-                    font-size: root.pill ? Theme.font-medium : Theme.font-default;
-                    font-weight: root.pill || button.current ? Theme.weight-semibold : 400;
-                    vertical-alignment: center;
-                    horizontal-alignment: center;
+    forward-focus: group-focus;
+    group-focus := FocusScope {
+        accessible-role: radio-button;
+        accessible-label: root.selected-index >= 0 && root.selected-index < root.labels.length ? root.labels[root.selected-index] : "";
+        accessible-checkable: true;
+        accessible-checked: true;
+        enabled: root.enabled;
+        key-pressed(event) => {
+            if event.text == Key.Return || event.text == " " { root.selected(root.selected-index); return accept; }
+            if root.labels.length == 0 { return reject; }
+            if event.text == Key.RightArrow { root.selected(mod(root.selected-index + 1, root.labels.length)); return accept; }
+            if event.text == Key.LeftArrow { root.selected(mod(root.selected-index + root.labels.length - 1, root.labels.length)); return accept; }
+            return reject;
+        }
+        HorizontalLayout {
+            padding: root.pill ? Theme.space-2xs : 0px;
+            spacing: root.pill ? Theme.space-2xs : 0px;
+            for label[index] in root.labels: button := Rectangle {
+                property <bool> current: root.selected-index == index;
+                private property <bool> first: index == 0;
+                private property <bool> last: index == root.labels.length - 1;
+                height: root.pill ? 28px : 36px;
+                border-top-left-radius: root.pill ? Theme.radius-small : self.first ? 4px : 0px;
+                border-bottom-left-radius: root.pill ? Theme.radius-small : self.first ? 4px : 0px;
+                border-top-right-radius: root.pill ? Theme.radius-small : self.last ? 4px : 0px;
+                border-bottom-right-radius: root.pill ? Theme.radius-small : self.last ? 4px : 0px;
+                background: root.pill
+                    ? (self.current ? Theme.text : touch.has-hover || (group-focus.has-focus && button.current) ? Theme.hover : transparent)
+                    : (self.current ? Theme.selected : touch.has-hover ? Theme.hover : Theme.card);
+                opacity: root.enabled ? 1 : 0.5;
+                border-width: (group-focus.has-focus && button.current) ? 2px : root.pill ? 0px : 1px;
+                border-color: (group-focus.has-focus && button.current) ? Theme.focus : self.current ? Theme.accent : Theme.border;
+                accessible-role: radio-button;
+                accessible-label: label;
+                accessible-checkable: true;
+                accessible-checked: self.current;
+                accessible-enabled: root.enabled;
+                accessible-action-default => { if root.enabled { root.selected(index); } }
+                HorizontalLayout {
+                    padding-left: root.pill ? Theme.space-m-plus : Theme.space-l;
+                    padding-right: root.pill ? Theme.space-m-plus : Theme.space-l;
+                    Text {
+                        text: label;
+                        color: root.pill && button.current ? Theme.surface : Theme.text;
+                        font-size: root.pill ? Theme.font-medium : Theme.font-default;
+                        font-weight: root.pill || button.current ? Theme.weight-semibold : 400;
+                        vertical-alignment: center;
+                        horizontal-alignment: center;
+                    }
                 }
+                touch := TouchArea { enabled: root.enabled; mouse-cursor: pointer; clicked => { group-focus.focus(); root.selected(index); } }
+                if index < root.tooltips.length && root.tooltips[index] != "": Tooltip { TooltipText { text: root.tooltips[index]; } }
             }
-            focus := FocusScope {
-                enabled: root.enabled;
-                key-pressed(event) => {
-                    if event.text == " " || event.text == "\n" { root.selected(index); return accept; }
-                    if event.text == Key.RightArrow { root.selected(mod(root.selected-index + 1, root.labels.length)); return accept; }
-                    if event.text == Key.LeftArrow { root.selected(mod(root.selected-index + root.labels.length - 1, root.labels.length)); return accept; }
-                    return reject;
-                }
-            }
-            touch := TouchArea { enabled: root.enabled; mouse-cursor: pointer; clicked => { focus.focus(); root.selected(index); } }
-            if index < root.tooltips.length && root.tooltips[index] != "": Tooltip { TooltipText { text: root.tooltips[index]; } }
         }
     }
 }
@@ -88,8 +95,34 @@ export component InfoTip inherits Rectangle {
     width: 18px; height: 18px;
     border-radius: self.height / 2;
     border-width: 1px;
-    border-color: Theme.muted;
-    accessible-role: AccessibleRole.text;
+    accessible-role: button;
+    accessible-action-default => { help.show(); }
+    border-color: help-focus.has-focus ? Theme.focus : Theme.muted;
+    forward-focus: help-focus;
+    help-focus := FocusScope {
+        key-pressed(event) => {
+            if event.text == Key.Return || event.text == " " { help.show(); return accept; }
+            if event.text == Key.Escape { help.close(); return accept; }
+            return reject;
+        }
+    }
+    TouchArea { mouse-cursor: pointer; clicked => { help-focus.focus(); help.show(); } }
+    help := PopupWindow {
+        width: Theme.text-tooltip + 2 * Theme.space-m;
+        forward-focus: help-body;
+        x: 0px; y: root.height + Theme.menu-offset;
+        TooltipSurface {
+            help-body := FocusScope {
+                accessible-role: groupbox;
+                accessible-label: root.text;
+                key-pressed(event) => {
+                    if event.text == Key.Escape || event.text == Key.Return || event.text == " " { help.close(); help-focus.focus(); return accept; }
+                    return reject;
+                }
+                Text { width: Theme.text-tooltip; text: root.text; color: Theme.text; font-size: Theme.font-body; wrap: word-wrap; }
+            }
+        }
+    }
     accessible-label: root.text;
     Text {
         text: "i";
@@ -271,7 +304,7 @@ export component FieldButton inherits Rectangle {
     touch := TouchArea {
         enabled: root.enabled;
         mouse-cursor: root.enabled ? pointer : default;
-        clicked => { root.clicked(); }
+        clicked => { focus.focus(); root.clicked(); }
     }
     HorizontalLayout {
         padding-left: Theme.space-m-plus; padding-right: Theme.space-m-plus;
@@ -282,6 +315,7 @@ export component FieldButton inherits Rectangle {
 
 /// Icon button; with `text` it grows into an icon + label button.
 export component IconButton inherits Rectangle {
+    out property <bool> has-focus: focus.has-focus;
     in property <image> icon;
     /// Accessible name when there is no visible text.
     in property <string> label;
@@ -304,6 +338,7 @@ export component IconButton inherits Rectangle {
     opacity: root.enabled || root.text == "" ? 1.0 : 0.45;
     accessible-role: button;
     accessible-label: root.text != "" ? root.text : root.label != "" ? root.label : root.tooltip;
+    accessible-description: root.tooltip;
     accessible-enabled: root.enabled;
     accessible-action-default => { if root.enabled { root.clicked(); } }
     HorizontalLayout {
@@ -338,7 +373,7 @@ export component IconButton inherits Rectangle {
     touch := TouchArea {
         enabled: root.enabled;
         mouse-cursor: root.enabled ? pointer : default;
-        clicked => { root.clicked(); }
+        clicked => { focus.focus(); root.clicked(); }
     }
     if root.tooltip != "": Tooltip { TooltipText { text: root.tooltip; } }
 }

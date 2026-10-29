@@ -3637,3 +3637,9 @@ msgstr "Іске қосқыштар немесе жүйе хабарлайтын
 
 msgid "Cannot load this layout. See the application log."
 msgstr "Бұл жайманы жүктеу мүмкін болмады. Қолданба журналын қараңыз."
+
+msgid "Scroll horizontally"
+msgstr "Көлденең айналдыру"
+
+msgid "Scroll vertically"
+msgstr "Тігінен айналдыру"

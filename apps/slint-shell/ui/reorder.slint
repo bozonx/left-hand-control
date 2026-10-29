@@ -134,6 +134,7 @@ export component DragArea {
 
 /// Grip for list rows: drag with the mouse, or focus it and press Alt+Up/Down.
 export component DragHandle inherits Rectangle {
+    out property <bool> has-focus: focus.has-focus;
     in property <int> group;
     in property <int> index;
     in property <int> count;

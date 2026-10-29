@@ -180,6 +180,13 @@ export global AppEntryDialog {
 /// An item to fill the dialog field with: an application, a process or
 /// a window title; `warning` marks the badge as a caution.
 component WindowRow inherits Rectangle {
+    action-focus := FocusScope {
+        key-pressed(event) => {
+            if event.text == Key.Return || event.text == " " { root.clicked(); return accept; }
+            return reject;
+        }
+    }
+    Rectangle { border-width: action-focus.has-focus ? 2px : 0px; border-color: Theme.focus; border-radius: Theme.radius; }
     in property <string> text;
     in property <string> detail;
     in property <string> badge;
@@ -311,7 +318,7 @@ export component AppEntryOverlay inherits Rectangle {
         }
         Card {
             vertical-stretch: 1;
-            
+
             ScrollView { width: 100%; height: 100%; viewport-width: self.visible-width;
                 VerticalLayout { padding: Theme.space-s; spacing: Theme.space-2xs; alignment: start;
                     if ConditionChoices.open-windows-loading && ConditionChoices.open-windows.length == 0: EmptyState { text: @tr("Looking for open windows…"); }
@@ -387,6 +394,17 @@ export component AppEntryOverlay inherits Rectangle {
 /// A row of an applications list: the pattern, an optional `kind` under
 /// it, how many open windows it matches and a remove button; a click edits.
 component AppItemRow inherits Rectangle {
+    accessible-role: button;
+    accessible-label: ConditionChoices.text(root.pattern);
+    accessible-description: root.kind;
+    accessible-action-default => { root.edit(); }
+    action-focus := FocusScope {
+        key-pressed(event) => {
+            if event.text == Key.Return || event.text == " " { root.edit(); return accept; }
+            return reject;
+        }
+    }
+    Rectangle { border-width: action-focus.has-focus ? 2px : 0px; border-color: Theme.focus; border-radius: Theme.radius; }
     in property <string> pattern;
     in property <string> kind;
     in property <bool> show-count;
@@ -429,7 +447,7 @@ component ApplicationsList inherits VerticalLayout {
         }
     }
     Card {
-        
+
         VerticalLayout {
             padding: Theme.space-s; spacing: Theme.space-2xs;
             @children

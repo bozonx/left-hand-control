@@ -92,6 +92,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Keyboard navigation stays inside modal dialogs and returns to their initiator. Device and layer menus activate the focused control, segmented choices retain arrow-key selection, hidden buttons show their focus, and InfoTip help opens with Enter/Space. F1 shows the full focused value and help; menu cells and page reordering, action categories, application rows and scrolling also support the keyboard.
+
 - Interface language selection respects the LANGUAGE preference list and C/POSIX locales. Missing runtime translations display English text; translation checks allow reordered arguments. Settings paths and detection statuses use complete translated messages. Correct Spanish key/action terminology and remove obsolete capture instructions accidentally appended to translations.
 
 - Activating the edited layout no longer panics. Inline editors retain their draft after a failed save, and explicit saves finish inline edits before flushing page drafts. Unreadable library files show an error instead of appearing as empty layouts.

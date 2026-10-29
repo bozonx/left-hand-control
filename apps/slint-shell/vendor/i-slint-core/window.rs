@@ -46,6 +46,17 @@ fn previous_focus_item(item: ItemRc) -> ItemRc {
     item.previous_focus_item()
 }
 
+fn item_is_within(item: &ItemRc, boundary: &ItemRc) -> bool {
+    let mut current = Some(item.clone());
+    while let Some(item) = current {
+        if item == *boundary {
+            return true;
+        }
+        current = item.parent_item(ParentItemTraversalMode::FindAllParents);
+    }
+    false
+}
+
 /// The window kind when creating a new child window
 #[repr(C)]
 pub enum WindowKind {
@@ -651,6 +662,7 @@ pub struct WindowInner {
 
     /// ItemRC that currently have the focus (possibly an instance of TextInput)
     pub focus_item: RefCell<crate::item_tree::ItemWeak>,
+    modal_focus_boundaries: RefCell<Vec<ItemWeak>>,
     focus_item_visibility_tracker: ChangeTracker,
     focus_item_position_tracker: ChangeTracker,
     /// The last text that was sent to the input method
@@ -731,6 +743,7 @@ impl WindowInner {
                 ),
             }),
             focus_item: Default::default(),
+            modal_focus_boundaries: Default::default(),
             focus_item_visibility_tracker: Default::default(),
             focus_item_position_tracker: Default::default(),
             last_ime_text: Default::default(),
@@ -1590,12 +1603,19 @@ impl WindowInner {
         }
     }
 
+    /// Set the modal roots in stacking order. Dead roots are skipped during traversal.
+    pub fn set_modal_focus_boundaries(&self, boundaries: Vec<ItemWeak>) {
+        *self.modal_focus_boundaries.borrow_mut() = boundaries;
+    }
+
     fn move_focus(
         &self,
         start_item: ItemRc,
         forward: impl Fn(ItemRc) -> ItemRc,
         reason: FocusReason,
     ) -> Option<ItemRc> {
+        let boundary = self.modal_focus_boundaries.borrow().iter().rev()
+            .filter_map(ItemWeak::upgrade).find(ItemRc::is_visible);
         let mut current_item = start_item.clone();
         // The walk normally comes back to `start_item`, but ends in a cycle that misses it
         // when the tree changed under it, e.g. when the focus was on a removed item.
@@ -1610,7 +1630,9 @@ impl WindowInner {
                 FocusReason::TabNavigation => current_item.is_visible_or_clipped_by_flickable(),
                 _ => current_item.is_visible(),
             };
-            if can_receive_focus
+            let inside_modal = !matches!(reason, FocusReason::TabNavigation)
+                || boundary.as_ref().is_none_or(|boundary| item_is_within(&current_item, boundary));
+            if can_receive_focus && inside_modal
                 && self.publish_focus_item(&Some(current_item.clone()), reason)
                     == crate::input::FocusEventResult::FocusAccepted
             {
@@ -1627,6 +1649,31 @@ impl WindowInner {
                 steps = 0;
                 next_checkpoint *= 2;
             }
+        }
+    }
+
+    /// Move focus within a modal subtree, wrapping at its edges.
+    pub fn focus_within(&self, boundary: &ItemRc, backwards: bool) {
+        let advance = |item: ItemRc| {
+            let next = if backwards { previous_focus_item(item) } else { next_focus_item(item) };
+            if item_is_within(&next, boundary) {
+                next
+            } else if backwards {
+                let mut last = boundary.clone();
+                while let Some(child) = last.last_child() {
+                    last = child;
+                }
+                last
+            } else {
+                boundary.clone()
+            }
+        };
+        let old = self.take_focus_item(&FocusEvent::FocusOut(FocusReason::TabNavigation));
+        let start = old.as_ref().filter(|item| item_is_within(item, boundary))
+            .map_or_else(|| boundary.clone(), |item| advance(item.clone()));
+        let end = self.move_focus(start, advance, FocusReason::TabNavigation);
+        if let Some(adapter) = self.window_adapter().internal(crate::InternalToken) {
+            adapter.handle_focus_change(old, end);
         }
     }
 

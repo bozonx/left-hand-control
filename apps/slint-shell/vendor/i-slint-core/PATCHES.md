@@ -19,3 +19,5 @@ The history implementation is exercised by `slint-shell` unit tests through the 
 - Keep an optional per-window xdg app ID in `WindowInner`, falling back to the global ID. The shell assigns its transient input popups a distinct ID so text destinations can include settings. Unlike winit creation attributes, this identity survives hiding and recreating a Wayland surface.
 
 - Text inputs accept the CUA clipboard keys Shift+Insert (paste), Ctrl+Insert (copy) and Shift+Delete (cut) (`input.rs`, `items/text.rs`). Upstream handles only Ctrl+C/X/V, so text input with the Shift+Insert paste shortcut failed in the application's own fields.
+
+- Add `WindowInner::focus_within` and weak modal boundaries to constrain Tab/Shift+Tab even when a dynamic control loses focus, including Flickable reveal and native focus notifications. Dead upper roots fall back to the remaining modal boundary. The shell owns the modal stack and restores weak initiator references when conditional dialogs disappear.

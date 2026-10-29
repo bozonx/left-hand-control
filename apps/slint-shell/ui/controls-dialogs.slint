@@ -1,3 +1,4 @@
+import { KeyboardFocus } from "focus.slint";
 import { Button } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { IconButton } from "controls-base.slint";
@@ -59,7 +60,7 @@ export component MenuItem inherits Rectangle {
     touch := TouchArea {
         enabled: root.enabled;
         mouse-cursor: root.enabled ? pointer : default;
-        clicked => { root.clicked(); }
+        clicked => { focus.focus(); root.clicked(); }
     }
 }
 
@@ -85,15 +86,20 @@ export component DialogFrame inherits Rectangle {
     in property <length> card-height: 0px;
     /// Off when the content handles Escape itself.
     in property <bool> close-on-escape: true;
+    private property <int> focus-token;
     callback close();
     /// Focus the preferred content after the frame has taken keyboard focus.
     callback focus-content();
     background: Theme.scrim;
     TouchArea { clicked => { root.close(); } scroll-event(event) => { accept } }
     FocusScope {
+        accessible-role: groupbox;
+        accessible-label: root.title;
         focus-on-tab-navigation: false;
-        init => { self.focus(); root.focus-content(); }
+        init => { KeyboardFocus.save(); self.focus(); root.focus-token = KeyboardFocus.enter(); root.focus-content(); }
         capture-key-pressed(event) => {
+            if !KeyboardFocus.is-top(root.focus-token) { return reject; }
+            if event.text == Key.Tab { KeyboardFocus.cycle(event.modifiers.shift); return accept; }
             if root.close-on-escape && event.text == Key.Escape { root.close(); return accept; }
             return reject;
         }

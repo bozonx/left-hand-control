@@ -3629,3 +3629,9 @@ msgstr "Başlatıcıların veya sistemin bildirdiği oyunlar yalnızca pencerele
 
 msgid "Cannot load this layout. See the application log."
 msgstr "Bu düzen yüklenemiyor. Uygulama günlüğüne bakın."
+
+msgid "Scroll horizontally"
+msgstr "Yatay kaydır"
+
+msgid "Scroll vertically"
+msgstr "Dikey kaydır"

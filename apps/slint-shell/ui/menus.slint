@@ -14,6 +14,16 @@ export struct MenuCell { key: string, value: string, name: string }
 export struct EmojiCategory { id: string, items: [string] }
 export global MenuEditor {
     in-out property <MenuKind> kind;
+    changed kind => { self.keyboard-source-page = -1; self.keyboard-source-cell = -1; }
+    in-out property <int> keyboard-source-page: -1;
+    in-out property <int> keyboard-source-cell: -1;
+    public function mark-cell(cell: int) { self.keyboard-source-page = self.selected-page; self.keyboard-source-cell = cell; }
+    public function drop-cell(cell: int) {
+        if self.keyboard-source-cell < 0 { return; }
+        if self.keyboard-source-page == self.selected-page { self.move-cell(self.keyboard-source-cell, cell); }
+        else { self.transfer-cell(self.keyboard-source-page, self.keyboard-source-cell, cell); }
+        self.keyboard-source-page = -1; self.keyboard-source-cell = -1;
+    }
     in property <[string]> pages;
     in property <[MenuCell]> cells;
     in property <[EmojiCategory]> catalog;
@@ -50,6 +60,26 @@ component HotkeyGrid inherits Rectangle {
     in property <bool> emoji;
     in property <length> cell-height: 96px;
     callback activate(int);
+    private property <int> keyboard-cell: 0;
+    private property <int> selected-cell: MenuEditor.selected-cell;
+    changed selected-cell => { if root.selected-cell >= 0 { root.keyboard-cell = root.selected-cell; } }
+    forward-focus: grid-focus;
+    grid-focus := FocusScope {
+        accessible-role: button;
+        accessible-label: MenuEditor.cells.length > root.keyboard-cell ? MenuEditor.cells[root.keyboard-cell].key + " " + (root.emoji ? MenuEditor.cells[root.keyboard-cell].value : MenuEditor.cells[root.keyboard-cell].name) : "";
+        accessible-value: MenuEditor.cells.length > root.keyboard-cell ? MenuEditor.cells[root.keyboard-cell].value : "";
+        key-pressed(event) => {
+            if MenuEditor.cells.length == 0 { return reject; }
+            if event.modifiers.control && event.text.to-lowercase() == "x" { MenuEditor.mark-cell(root.keyboard-cell); return accept; }
+            if event.modifiers.control && event.text.to-lowercase() == "v" { MenuEditor.drop-cell(root.keyboard-cell); return accept; }
+            if event.text == Key.Return || event.text == " " { root.activate(root.keyboard-cell); return accept; }
+            let step = event.text == Key.RightArrow ? 1 : event.text == Key.LeftArrow ? -1 : event.text == Key.DownArrow ? 5 : event.text == Key.UpArrow ? -5 : 0;
+            if step != 0 { root.keyboard-cell = mod(root.keyboard-cell + MenuEditor.cells.length + step, MenuEditor.cells.length); return accept; }
+            if event.text == Key.Home { root.keyboard-cell = 0; return accept; }
+            if event.text == Key.End { root.keyboard-cell = MenuEditor.cells.length - 1; return accept; }
+            return reject;
+        }
+    }
     private property <length> pad: 12px;
     private property <length> gap: 8px;
     private property <length> cell-width: (self.width - 2 * self.pad - 4 * self.gap) / 5;
@@ -100,12 +130,13 @@ component HotkeyGrid inherits Rectangle {
         height: root.cell-height;
         clip: true;
         border-radius: Theme.radius;
-        border-width: (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? 2px : 1px;
-        border-color: (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.accent : Theme.border;
+        border-width: grid-focus.has-focus && root.keyboard-cell == index ? 3px : (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? 2px : 1px;
+        border-color: grid-focus.has-focus && root.keyboard-cell == index ? Theme.focus : (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.accent : Theme.border;
         background: (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.hover : Theme.card;
         opacity: root.dragging && root.source-page == MenuEditor.selected-page && index == root.drag-from ? Theme.dragged-opacity : 1.0;
         accessible-role: button;
         accessible-label: cell.key + " " + (root.emoji ? cell.value : cell.name);
+        accessible-value: cell.value;
         accessible-action-default => { root.activate(index); }
         VerticalLayout {
             padding: Theme.space-m;
@@ -163,6 +194,8 @@ component HotkeyGrid inherits Rectangle {
             if event.button == PointerEventButton.left && event.kind == PointerEventKind.up && root.drag-from >= 0 {
                 if root.dragging { root.drag-over = root.drop-at(self.mouse-x, self.mouse-y); }
                 if !root.dragging {
+                    root.keyboard-cell = root.drag-from;
+                    grid-focus.focus();
                     root.activate(root.drag-from);
                 } else if root.drag-over >= 0 {
                     if root.source-page == MenuEditor.selected-page {
@@ -251,7 +284,15 @@ component MenuTabs inherits ScrollView {
             private property <Point> position: self.absolute-position;
             private property <bool> hovered: PaletteDrag.active && PaletteDrag.x >= max(root.absolute-position.x, self.position.x) && PaletteDrag.x < min(root.absolute-position.x + root.width, self.position.x + self.width) && PaletteDrag.y >= self.position.y && PaletteDrag.y < self.position.y + self.height;
             Timer { interval: root.hover-open-delay; running: parent.hovered && index != root.selected; triggered => { root.select(index); } }
+            FocusScope {
+                focus-on-tab-navigation: false;
+                capture-key-pressed(event) => {
+                    if event.modifiers.alt && event.text == Key.LeftArrow && index > 0 { MenuEditor.reorder-page(index, index - 1); return accept; }
+                    if event.modifiers.alt && event.text == Key.RightArrow && index + 1 < root.labels.length { MenuEditor.reorder-page(index, index + 1); return accept; }
+                    return reject;
+                }
             tab := NavTab { text: label == "" ? index + 1 : (index + 1) + " · " + label; selected: index == root.selected; clicked => { root.select(index); } opacity: tab-drag.dragged ? Theme.dragged-opacity : 1; }
+            }
             tab-drag := DragArea {
                 width: 100%; height: 100%;
                 group: DragGroups.menu-tabs; index: index; count: root.labels.length;
@@ -364,6 +405,10 @@ export component EmojiPage inherits Rectangle {
                 spacing: Theme.space-xl;
                 alignment: start;
                     MenuTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } add => { MenuEditor.add-page(""); } }
+                HorizontalLayout { alignment: start; spacing: Theme.space-s;
+                    Button { text: @tr("Cut") + " (Ctrl+X)"; clicked => { MenuEditor.mark-cell(MenuEditor.selected-cell); } }
+                    Button { text: @tr("Paste") + " (Ctrl+V)"; enabled: MenuEditor.keyboard-source-cell >= 0; clicked => { MenuEditor.drop-cell(MenuEditor.selected-cell); } }
+                }
                 HotkeyGrid { emoji: true; activate(index) => { MenuEditor.select-cell(index); } }
             }
             Card {
@@ -477,6 +522,10 @@ export component QuickActionsPage inherits Rectangle {
                                 horizontal-stretch: 1;
                                 spacing: Theme.space-xl;
                                 alignment: start;
+                                HorizontalLayout { alignment: start; spacing: Theme.space-s;
+                                    Button { text: @tr("Cut") + " (Ctrl+X)"; enabled: MenuEditor.selected-cell >= 0; clicked => { MenuEditor.mark-cell(MenuEditor.selected-cell); } }
+                                    Button { text: @tr("Paste") + " (Ctrl+V)"; enabled: MenuEditor.keyboard-source-cell >= 0 && MenuEditor.selected-cell >= 0; clicked => { MenuEditor.drop-cell(MenuEditor.selected-cell); } }
+                                }
                                 HotkeyGrid {
                                     emoji: false;
                                     activate(index) => {

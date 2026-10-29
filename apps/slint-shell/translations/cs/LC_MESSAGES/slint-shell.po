@@ -3607,3 +3607,9 @@ msgstr "Hry hlášené spouštěči nebo systémem se počítají jen tehdy, kdy
 
 msgid "Cannot load this layout. See the application log."
 msgstr "Toto rozložení nelze načíst. Podrobnosti najdete v protokolu aplikace."
+
+msgid "Scroll horizontally"
+msgstr "Vodorovné posouvání"
+
+msgid "Scroll vertically"
+msgstr "Svislé posouvání"

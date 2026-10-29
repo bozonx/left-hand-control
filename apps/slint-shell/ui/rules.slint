@@ -1,3 +1,4 @@
+import { KeyboardFocus } from "focus.slint";
 import { ActionField } from "action-controls.slint";
 import { Timing } from "timing.slint";
 import { AppState } from "app-state.slint";
@@ -105,6 +106,14 @@ component ConditionChip inherits VerticalLayout {
 
 /// Rule conditions as one chip per kind; the whole group opens the editor.
 component ConditionsCell inherits Rectangle {
+    action-focus := FocusScope {
+        enabled: root.enabled;
+        key-pressed(event) => {
+            if event.text == Key.Return || event.text == " " { root.clicked(); return accept; }
+            return reject;
+        }
+    }
+    Rectangle { border-width: action-focus.has-focus ? 2px : 0px; border-color: Theme.focus; border-radius: Theme.radius; }
     in property <RuleRow> rule;
     in property <bool> enabled: true;
     callback clicked();
@@ -114,7 +123,7 @@ component ConditionsCell inherits Rectangle {
     border-radius: Theme.radius;
     background: conditions-touch.has-hover ? Theme.hover : transparent;
     accessible-role: button; accessible-label: @tr("Conditions");
-    accessible-action-default => { root.clicked(); }
+    accessible-action-default => { if root.enabled { root.clicked(); } }
     HorizontalLayout { min-width: 0px; padding-left: Theme.space-s; padding-right: Theme.space-s; spacing: Theme.space-s;
         VerticalLayout { alignment: center;
             Image { width: 16px; height: 16px; source: @image-url("icons/list-filter.svg"); colorize: root.rule.has-conditions ? Theme.accent : Theme.muted; }
@@ -198,6 +207,7 @@ component HoldField inherits VerticalLayout {
         root.creating = false;
         root.scroll-y = 0px;
         menu.show();
+        KeyboardFocus.focus-checked();
         root.reveal();
     }
     FormLabel { text: @tr("When held"); info: @tr("Choose a layer active until release, or an action performed once after the hold duration."); }
@@ -236,15 +246,12 @@ component HoldField inherits VerticalLayout {
             menu-focus := FocusScope {
                 capture-key-pressed(event) => {
                     if event.text == Key.Escape { root.close-menu(); return accept; }
-                    if !root.creating && (event.text == Key.DownArrow || event.text == Key.UpArrow) {
-                        RulesEditor.layer-highlight = mod(RulesEditor.layer-highlight + root.choice-count + (event.text == Key.DownArrow ? 1 : -1), root.choice-count);
-                        root.reveal(); return accept;
-                    }
-                    if !root.creating && event.text == Key.Return { root.choose(RulesEditor.layer-highlight); return accept; }
+                    if !root.creating && event.text == Key.DownArrow { KeyboardFocus.step(false); return accept; }
+                    if !root.creating && event.text == Key.UpArrow { KeyboardFocus.step(true); return accept; }
                     return reject;
                 }
                 popup-content := MenuSurface { inset: Theme.space-m; gap: Theme.space-s;
-                        MenuItem { text: @tr("Nothing"); checked: root.rule.hold-mode == HoldBehavior.none; highlighted: RulesEditor.layer-highlight == 0; clicked => { root.choose(0); } }
+                        MenuItem { text: @tr("Nothing"); checked: root.rule.hold-mode == HoldBehavior.none;  clicked => { root.choose(0); } }
                         Divider {}
                         MenuLabel { text: @tr("Layers"); }
                         ScrollView { height: root.list-height; vertical-stretch: 0; viewport-width: self.visible-width; viewport-y <=> root.scroll-y;
@@ -252,7 +259,7 @@ component HoldField inherits VerticalLayout {
                                 for item[index] in RulesEditor.layer-items: MenuItem {
                                     text: item.label; has-icon: true; icon: @image-url("icons/layers.svg");
                                     checked: root.rule.hold-mode == HoldBehavior.layer && RulesEditor.layer-id == item.id;
-                                    highlighted: RulesEditor.layer-highlight == index + 1;
+
                                     clicked => { root.choose(index + 1); }
                                 }
                                 if root.count == 0: MenuItem { text: @tr("Layer not found"); enabled: false; }

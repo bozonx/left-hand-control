@@ -1,3 +1,4 @@
+import { Locale } from "i18n.slint";
 import { Theme } from "theme.slint";
 import { DragDrop } from "reorder.slint";
 
@@ -11,6 +12,30 @@ component ScrollBar inherits Rectangle {
     private property <length> track: root.horizontal ? root.width : root.height;
     private property <length> thumb-size: min(root.track, max(24px, root.track * root.page-size / (root.maximum + root.page-size)));
     private property <length> travel: root.track - root.thumb-size;
+    accessible-role: slider;
+    accessible-label: Locale.text({ id: root.horizontal ? "scroll-horizontal" : "scroll-vertical" });
+    accessible-value: (-root.value / 1px);
+    accessible-value-minimum: 0;
+    accessible-value-maximum: root.maximum / 1px;
+    accessible-value-step: 40;
+    accessible-action-increment => { root.value = max(-root.maximum, root.value - 40px); root.scrolled(); }
+    accessible-action-decrement => { root.value = min(0px, root.value + 40px); root.scrolled(); }
+    border-width: scroll-focus.has-focus ? 2px : 0px;
+    border-color: Theme.focus;
+    scroll-focus := FocusScope {
+        enabled: root.enabled;
+        key-pressed(event) => {
+            let delta = event.text == Key.PageDown ? -root.page-size
+                : event.text == Key.PageUp ? root.page-size
+                : event.text == Key.DownArrow || event.text == Key.RightArrow ? -40px
+                : event.text == Key.UpArrow || event.text == Key.LeftArrow ? 40px : 0px;
+            if event.text == Key.Home { root.value = 0px; }
+            else if event.text == Key.End { root.value = -root.maximum; }
+            else if delta != 0px { root.value = clamp(root.value + delta, -root.maximum, 0px); }
+            else { return reject; }
+            root.scrolled(); return accept;
+        }
+    }
     background: Theme.surface;
     border-radius: Theme.radius;
     Rectangle {

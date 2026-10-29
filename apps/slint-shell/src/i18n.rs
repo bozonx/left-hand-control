@@ -264,6 +264,8 @@ fn plural_form(language: Language, n: u64) -> usize {
 pub enum Msg {
     None,
     Copied,
+    ScrollHorizontal,
+    ScrollVertical,
     LayoutCreated(String),
     LayoutSaved(String),
     LayoutDeleted(String),
@@ -377,6 +379,8 @@ impl Msg {
         let (id, arg, count) = match self {
             Self::None => ("", empty(), 0),
             Self::Copied => ("copied", empty(), 0),
+            Self::ScrollHorizontal => ("scroll-horizontal", empty(), 0),
+            Self::ScrollVertical => ("scroll-vertical", empty(), 0),
             Self::LayoutCreated(name) => ("layout-created", name.clone(), 0),
             Self::LayoutSaved(name) => ("layout-saved", name.clone(), 0),
             Self::AutoRuleDeleted => ("auto-rule-deleted", String::new(), 0),

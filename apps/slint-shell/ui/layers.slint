@@ -127,7 +127,7 @@ component ExtraKeyLine inherits TouchArea {
                 width: 28px;
                 alignment: center;
                 DragHandle {
-                    opacity: root.has-hover || (DragDrop.group == DragGroups.extra-keys && DragDrop.source == root.index) ? 1 : 0;
+                    opacity: root.has-hover || self.has-focus || (DragDrop.group == DragGroups.extra-keys && DragDrop.source == root.index) ? 1 : 0;
                     group: DragGroups.extra-keys; index: root.index; count: LayersEditor.extras.length;
                     dropped(from, to) => { LayersEditor.reorder-extra(from, to); }
                 }
@@ -137,7 +137,7 @@ component ExtraKeyLine inherits TouchArea {
                 alignment: center;
                 IconButton {
                     // Opacity instead of `visible`: the button stays focusable from the keyboard.
-                    opacity: root.has-hover ? 1 : 0;
+                    opacity: root.has-hover || self.has-focus ? 1 : 0;
                     icon: @image-url("icons/trash-2.svg");
                     tooltip: @tr("Remove trigger");
                     clicked => { LayersEditor.delete-extra = root.index; }
@@ -165,6 +165,7 @@ component KeyCap inherits Rectangle {
     opacity: root.dragged ? Theme.dragged-opacity : 1;
     accessible-role: button;
     accessible-label: root.cell.label;
+    accessible-value: root.cell.code;
     accessible-description: root.cell.kind == Assignment.transparent ? @tr("Inherit") : root.cell.kind == Assignment.swallow ? @tr("Suppress") : root.cell.holds ? root.cell.action + ". " + @tr("Keep modifiers held until the layer is released") : root.cell.action;
     accessible-action-default => { root.clicked(); }
     VerticalLayout {

@@ -3619,3 +3619,9 @@ msgstr "გამშვებების ან სისტემის მი
 
 msgid "Cannot load this layout. See the application log."
 msgstr "ამ განლაგების ჩატვირთვა ვერ მოხერხდა. იხილეთ აპლიკაციის ჟურნალი."
+
+msgid "Scroll horizontally"
+msgstr "ჰორიზონტალური გადახვევა"
+
+msgid "Scroll vertically"
+msgstr "ვერტიკალური გადახვევა"
