@@ -1,0 +1,838 @@
+{
+  "role": "desktop frame",
+  "name": "main",
+  "description": "",
+  "states": [],
+  "children": [
+    {
+      "role": "application",
+      "name": "kwin",
+      "description": "/usr/bin/kwin_wayland",
+      "states": [
+        "enabled",
+        "sensitive",
+        "showing",
+        "visible"
+      ],
+      "children": []
+    },
+    {
+      "role": "application",
+      "name": "xdg-desktop-portal-gtk",
+      "description": "",
+      "states": [],
+      "children": []
+    },
+    {
+      "role": "application",
+      "name": "a11y_probe",
+      "description": "",
+      "states": [],
+      "children": [
+        {
+          "role": "frame",
+          "name": "Left Hand Control",
+          "description": "",
+          "states": [
+            "active",
+            "enabled",
+            "sensitive",
+            "showing",
+            "visible"
+          ],
+          "children": [
+            {
+              "role": "page tab",
+              "name": "Layouts",
+              "description": "",
+              "states": [
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": [
+                {
+                  "role": "image",
+                  "name": "",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                },
+                {
+                  "role": "label",
+                  "name": "Layouts",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "role": "page tab",
+              "name": "Settings",
+              "description": "",
+              "states": [
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": [
+                {
+                  "role": "image",
+                  "name": "",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                },
+                {
+                  "role": "label",
+                  "name": "Settings",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "role": "entry",
+              "name": "",
+              "description": "",
+              "states": [
+                "editable",
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "single-line",
+                "visible",
+                "selectable-text"
+              ],
+              "children": []
+            },
+            {
+              "role": "label",
+              "name": "—",
+              "description": "",
+              "states": [
+                "enabled",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": []
+            },
+            {
+              "role": "button",
+              "name": "Game mode: Auto. ",
+              "description": "",
+              "states": [
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": [
+                {
+                  "role": "image",
+                  "name": "",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                },
+                {
+                  "role": "label",
+                  "name": "Auto",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                },
+                {
+                  "role": "image",
+                  "name": "",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "role": "image",
+              "name": "",
+              "description": "",
+              "states": [
+                "enabled",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": []
+            },
+            {
+              "role": "label",
+              "name": "Active: Audit",
+              "description": "",
+              "states": [
+                "enabled",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": []
+            },
+            {
+              "role": "button",
+              "name": "Start",
+              "description": "",
+              "states": [
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": [
+                {
+                  "role": "image",
+                  "name": "",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                },
+                {
+                  "role": "label",
+                  "name": "Start",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "role": "label",
+              "name": "Audit",
+              "description": "",
+              "states": [
+                "enabled",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": []
+            },
+            {
+              "role": "button",
+              "name": "Save (Ctrl+S)",
+              "description": "",
+              "states": [
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": [
+                {
+                  "role": "image",
+                  "name": "",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "role": "button",
+              "name": "Save as or reset changes",
+              "description": "",
+              "states": [
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": [
+                {
+                  "role": "image",
+                  "name": "",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "role": "page tab",
+              "name": "Layers •",
+              "description": "",
+              "states": [
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": []
+            },
+            {
+              "role": "page tab",
+              "name": "Emoji",
+              "description": "",
+              "states": [
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": [
+                {
+                  "role": "image",
+                  "name": "",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                },
+                {
+                  "role": "label",
+                  "name": "Emoji",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "role": "page tab",
+              "name": "Quick actions",
+              "description": "",
+              "states": [
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": [
+                {
+                  "role": "image",
+                  "name": "",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                },
+                {
+                  "role": "label",
+                  "name": "Quick actions",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "role": "page tab",
+              "name": "Macros •",
+              "description": "",
+              "states": [
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": [
+                {
+                  "role": "image",
+                  "name": "",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                },
+                {
+                  "role": "label",
+                  "name": "Macros •",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "role": "button",
+              "name": "Close layout",
+              "description": "",
+              "states": [
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": [
+                {
+                  "role": "image",
+                  "name": "",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "role": "label",
+              "name": "User macros",
+              "description": "",
+              "states": [
+                "enabled",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": []
+            },
+            {
+              "role": "label",
+              "name": "Build reusable sequences of key chords, text, commands and system actions. Use a unique ID in macro:<id> references and a readable name in action lists. Assign macros on the Layers or Triggers tab; change an ID only when it is unused.\n\nThe step pause applies between steps of this macro. Modifier delay is the time between pressing a modifier and the main key. Leave delays empty to use Settings defaults.\nGlobal defaults: step pause 20 ms; modifier delay 5 ms.",
+              "description": "",
+              "states": [
+                "enabled",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": [
+                {
+                  "role": "label",
+                  "name": "i",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "role": "button",
+              "name": "New macro",
+              "description": "",
+              "states": [
+                "enabled",
+                "focusable",
+                "focused",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": []
+            },
+            {
+              "role": "button",
+              "name": "Drag",
+              "description": "",
+              "states": [
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": [
+                {
+                  "role": "image",
+                  "name": "",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "role": "button",
+              "name": "Delete macro",
+              "description": "",
+              "states": [
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": [
+                {
+                  "role": "image",
+                  "name": "",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "role": "label",
+              "name": "ID",
+              "description": "",
+              "states": [
+                "enabled",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": []
+            },
+            {
+              "role": "button",
+              "name": "Macro ID",
+              "description": "",
+              "states": [
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": [
+                {
+                  "role": "label",
+                  "name": "m1",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "role": "button",
+              "name": "Copy ID",
+              "description": "",
+              "states": [
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": [
+                {
+                  "role": "image",
+                  "name": "",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "role": "label",
+              "name": "Name",
+              "description": "",
+              "states": [
+                "enabled",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": []
+            },
+            {
+              "role": "button",
+              "name": "Name",
+              "description": "",
+              "states": [
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": [
+                {
+                  "role": "label",
+                  "name": "Audit macro",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "role": "label",
+              "name": "Pause between steps",
+              "description": "",
+              "states": [
+                "enabled",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": []
+            },
+            {
+              "role": "spin button",
+              "name": "Pause between steps",
+              "description": "",
+              "states": [
+                "editable",
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "single-line",
+                "visible",
+                "selectable-text"
+              ],
+              "children": [
+                {
+                  "role": "entry",
+                  "name": "Pause between steps",
+                  "description": "",
+                  "states": [
+                    "editable",
+                    "enabled",
+                    "focusable",
+                    "sensitive",
+                    "showing",
+                    "single-line",
+                    "visible",
+                    "selectable-text"
+                  ],
+                  "children": []
+                },
+                {
+                  "role": "label",
+                  "name": "ms",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "role": "label",
+              "name": "Modifier delay",
+              "description": "",
+              "states": [
+                "enabled",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": []
+            },
+            {
+              "role": "spin button",
+              "name": "Modifier delay",
+              "description": "",
+              "states": [
+                "editable",
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "single-line",
+                "visible",
+                "selectable-text"
+              ],
+              "children": [
+                {
+                  "role": "entry",
+                  "name": "Modifier delay",
+                  "description": "",
+                  "states": [
+                    "editable",
+                    "enabled",
+                    "focusable",
+                    "sensitive",
+                    "showing",
+                    "single-line",
+                    "visible",
+                    "selectable-text"
+                  ],
+                  "children": []
+                },
+                {
+                  "role": "label",
+                  "name": "ms",
+                  "description": "",
+                  "states": [
+                    "enabled",
+                    "sensitive",
+                    "showing",
+                    "visible"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "role": "label",
+              "name": "Steps",
+              "description": "",
+              "states": [
+                "enabled",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": []
+            },
+            {
+              "role": "button",
+              "name": "Add pause",
+              "description": "",
+              "states": [
+                "enabled",
+                "focusable",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": []
+            },
+            {
+              "role": "label",
+              "name": "No steps yet. Each step — one chord or action.",
+              "description": "",
+              "states": [
+                "enabled",
+                "sensitive",
+                "showing",
+                "visible"
+              ],
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

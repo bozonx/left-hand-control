@@ -1,0 +1,221 @@
+mode,foreground,background,fg_hex,bg_hex,ratio,threshold,usage
+dark,text,surface,#f4f4f5,#141416,16.7387,4.5,candidate pair; confirm source usage
+dark,text,card,#f4f4f5,#1c1c1f,15.4667,4.5,candidate pair; confirm source usage
+dark,text,hover,#f4f4f5,#27272b,13.5369,4.5,candidate pair; confirm source usage
+dark,text,selected,#f4f4f5,#163246,12.1013,4.5,candidate pair; confirm source usage
+dark,muted,surface,#a1a1aa,#141416,7.1788,4.5,candidate pair; confirm source usage
+dark,muted,card,#a1a1aa,#1c1c1f,6.6333,4.5,candidate pair; confirm source usage
+dark,muted,hover,#a1a1aa,#27272b,5.8056,4.5,candidate pair; confirm source usage
+dark,muted,selected,#a1a1aa,#163246,5.1899,4.5,candidate pair; confirm source usage
+dark,placeholder,surface,#71717a,#141416,3.8069,4.5,candidate pair; confirm source usage
+dark,placeholder,card,#71717a,#1c1c1f,3.5176,4.5,candidate pair; confirm source usage
+dark,placeholder,hover,#71717a,#27272b,3.0788,4.5,candidate pair; confirm source usage
+dark,placeholder,selected,#71717a,#163246,2.7522,4.5,candidate pair; confirm source usage
+dark,accent,surface,#4dccff,#141416,9.9849,4.5,candidate pair; confirm source usage
+dark,accent,card,#4dccff,#1c1c1f,9.2261,4.5,candidate pair; confirm source usage
+dark,accent,hover,#4dccff,#27272b,8.075,4.5,candidate pair; confirm source usage
+dark,accent,selected,#4dccff,#163246,7.2186,4.5,candidate pair; confirm source usage
+dark,error,surface,#f87171,#141416,6.6513,4.5,candidate pair; confirm source usage
+dark,error,card,#f87171,#1c1c1f,6.1459,4.5,candidate pair; confirm source usage
+dark,error,hover,#f87171,#27272b,5.3791,4.5,candidate pair; confirm source usage
+dark,error,selected,#f87171,#163246,4.8086,4.5,candidate pair; confirm source usage
+dark,warning,surface,#fbbf24,#141416,11.0213,4.5,candidate pair; confirm source usage
+dark,warning,card,#fbbf24,#1c1c1f,10.1838,4.5,candidate pair; confirm source usage
+dark,warning,hover,#fbbf24,#27272b,8.9131,4.5,candidate pair; confirm source usage
+dark,warning,selected,#fbbf24,#163246,7.9679,4.5,candidate pair; confirm source usage
+dark,success,surface,#4ade80,#141416,10.5585,4.5,candidate pair; confirm source usage
+dark,success,card,#4ade80,#1c1c1f,9.7561,4.5,candidate pair; confirm source usage
+dark,success,hover,#4ade80,#27272b,8.5389,4.5,candidate pair; confirm source usage
+dark,success,selected,#4ade80,#163246,7.6333,4.5,candidate pair; confirm source usage
+dark,border,surface,#71717a,#141416,3.8069,3,candidate pair; confirm source usage
+dark,border,card,#71717a,#1c1c1f,3.5176,3,candidate pair; confirm source usage
+dark,border,hover,#71717a,#27272b,3.0788,3,candidate pair; confirm source usage
+dark,border,selected,#71717a,#163246,2.7522,3,candidate pair; confirm source usage
+dark,divider,surface,#2e2e33,#141416,1.3622,3,candidate pair; confirm source usage
+dark,divider,card,#2e2e33,#1c1c1f,1.2587,3,candidate pair; confirm source usage
+dark,divider,hover,#2e2e33,#27272b,1.1016,3,candidate pair; confirm source usage
+dark,divider,selected,#2e2e33,#163246,1.0155,3,candidate pair; confirm source usage
+dark,focus,surface,#4dccff,#141416,9.9849,3,candidate pair; confirm source usage
+dark,focus,card,#4dccff,#1c1c1f,9.2261,3,candidate pair; confirm source usage
+dark,focus,hover,#4dccff,#27272b,8.075,3,candidate pair; confirm source usage
+dark,focus,selected,#4dccff,#163246,7.2186,3,candidate pair; confirm source usage
+dark,on-accent,accent,#000000,#4dccff,11.3967,4.5,primary icon button
+dark,text,card,#646466,#171719,3.032,4.5,disabled rule: whole card opacity; readable checkbox remains interactive
+dark,muted,card,#47474c,#171719,1.9382,4.5,disabled rule summary
+dark,text,card,#939395,#1c1c1f,5.5438,4.5,category buttons remain clickable during query
+light,text,surface,#18181b,#f4f4f5,16.1184,4.5,candidate pair; confirm source usage
+light,text,card,#18181b,#ffffff,17.7168,4.5,candidate pair; confirm source usage
+light,text,hover,#18181b,#ececee,15.0165,4.5,candidate pair; confirm source usage
+light,text,selected,#18181b,#e0f0fb,15.2082,4.5,candidate pair; confirm source usage
+light,muted,surface,#52525b,#f4f4f5,7.0324,4.5,candidate pair; confirm source usage
+light,muted,card,#52525b,#ffffff,7.7298,4.5,candidate pair; confirm source usage
+light,muted,hover,#52525b,#ececee,6.5517,4.5,candidate pair; confirm source usage
+light,muted,selected,#52525b,#e0f0fb,6.6353,4.5,candidate pair; confirm source usage
+light,placeholder,surface,#92929b,#f4f4f5,2.8067,4.5,candidate pair; confirm source usage
+light,placeholder,card,#92929b,#ffffff,3.085,4.5,candidate pair; confirm source usage
+light,placeholder,hover,#92929b,#ececee,2.6148,4.5,candidate pair; confirm source usage
+light,placeholder,selected,#92929b,#e0f0fb,2.6482,4.5,candidate pair; confirm source usage
+light,accent,surface,#0069a9,#f4f4f5,5.3166,4.5,candidate pair; confirm source usage
+light,accent,card,#0069a9,#ffffff,5.8438,4.5,candidate pair; confirm source usage
+light,accent,hover,#0069a9,#ececee,4.9531,4.5,candidate pair; confirm source usage
+light,accent,selected,#0069a9,#e0f0fb,5.0164,4.5,candidate pair; confirm source usage
+light,error,surface,#b91c1c,#f4f4f5,5.8863,4.5,candidate pair; confirm source usage
+light,error,card,#b91c1c,#ffffff,6.47,4.5,candidate pair; confirm source usage
+light,error,hover,#b91c1c,#ececee,5.4839,4.5,candidate pair; confirm source usage
+light,error,selected,#b91c1c,#e0f0fb,5.5539,4.5,candidate pair; confirm source usage
+light,warning,surface,#92400e,#f4f4f5,6.4504,4.5,candidate pair; confirm source usage
+light,warning,card,#92400e,#ffffff,7.09,4.5,candidate pair; confirm source usage
+light,warning,hover,#92400e,#ececee,6.0094,4.5,candidate pair; confirm source usage
+light,warning,selected,#92400e,#e0f0fb,6.0861,4.5,candidate pair; confirm source usage
+light,success,surface,#15803d,#f4f4f5,4.5631,4.5,candidate pair; confirm source usage
+light,success,card,#15803d,#ffffff,5.0156,4.5,candidate pair; confirm source usage
+light,success,hover,#15803d,#ececee,4.2512,4.5,candidate pair; confirm source usage
+light,success,selected,#15803d,#e0f0fb,4.3054,4.5,candidate pair; confirm source usage
+light,border,surface,#8a8a93,#f4f4f5,3.113,3,candidate pair; confirm source usage
+light,border,card,#8a8a93,#ffffff,3.4217,3,candidate pair; confirm source usage
+light,border,hover,#8a8a93,#ececee,2.9002,3,candidate pair; confirm source usage
+light,border,selected,#8a8a93,#e0f0fb,2.9372,3,candidate pair; confirm source usage
+light,divider,surface,#e4e4e7,#f4f4f5,1.1544,3,candidate pair; confirm source usage
+light,divider,card,#e4e4e7,#ffffff,1.2689,3,candidate pair; confirm source usage
+light,divider,hover,#e4e4e7,#ececee,1.0755,3,candidate pair; confirm source usage
+light,divider,selected,#e4e4e7,#e0f0fb,1.0892,3,candidate pair; confirm source usage
+light,focus,surface,#0069a9,#f4f4f5,5.3166,3,candidate pair; confirm source usage
+light,focus,card,#0069a9,#ffffff,5.8438,3,candidate pair; confirm source usage
+light,focus,hover,#0069a9,#ececee,4.9531,3,candidate pair; confirm source usage
+light,focus,selected,#0069a9,#e0f0fb,5.0164,3,candidate pair; confirm source usage
+light,on-accent,accent,#ffffff,#0069a9,5.8438,4.5,primary icon button
+light,text,card,#aaaaab,#f8f8f8,2.1856,4.5,disabled rule: whole card opacity; readable checkbox remains interactive
+light,muted,card,#bebec1,#f8f8f8,1.746,4.5,disabled rule summary
+light,text,card,#808082,#ffffff,3.9416,4.5,category buttons remain clickable during query
+dark-hc,text,surface,#ffffff,#000000,21.0,4.5,candidate pair; confirm source usage
+dark-hc,text,card,#ffffff,#0a0a0a,19.7981,4.5,candidate pair; confirm source usage
+dark-hc,text,hover,#ffffff,#262626,15.1335,4.5,candidate pair; confirm source usage
+dark-hc,text,selected,#ffffff,#003a5c,11.9334,4.5,candidate pair; confirm source usage
+dark-hc,muted,surface,#e4e4e7,#000000,16.5501,4.5,candidate pair; confirm source usage
+dark-hc,muted,card,#e4e4e7,#0a0a0a,15.6029,4.5,candidate pair; confirm source usage
+dark-hc,muted,hover,#e4e4e7,#262626,11.9267,4.5,candidate pair; confirm source usage
+dark-hc,muted,selected,#e4e4e7,#003a5c,9.4047,4.5,candidate pair; confirm source usage
+dark-hc,placeholder,surface,#e4e4e7,#000000,16.5501,4.5,candidate pair; confirm source usage
+dark-hc,placeholder,card,#e4e4e7,#0a0a0a,15.6029,4.5,candidate pair; confirm source usage
+dark-hc,placeholder,hover,#e4e4e7,#262626,11.9267,4.5,candidate pair; confirm source usage
+dark-hc,placeholder,selected,#e4e4e7,#003a5c,9.4047,4.5,candidate pair; confirm source usage
+dark-hc,accent,surface,#4dccff,#000000,11.3967,4.5,candidate pair; confirm source usage
+dark-hc,accent,card,#4dccff,#0a0a0a,10.7445,4.5,candidate pair; confirm source usage
+dark-hc,accent,hover,#4dccff,#262626,8.213,4.5,candidate pair; confirm source usage
+dark-hc,accent,selected,#4dccff,#003a5c,6.4763,4.5,candidate pair; confirm source usage
+dark-hc,error,surface,#ff8a80,#000000,9.1991,4.5,candidate pair; confirm source usage
+dark-hc,error,card,#ff8a80,#0a0a0a,8.6726,4.5,candidate pair; confirm source usage
+dark-hc,error,hover,#ff8a80,#262626,6.6293,4.5,candidate pair; confirm source usage
+dark-hc,error,selected,#ff8a80,#003a5c,5.2275,4.5,candidate pair; confirm source usage
+dark-hc,warning,surface,#ffd54f,#000000,14.8826,4.5,candidate pair; confirm source usage
+dark-hc,warning,card,#ffd54f,#0a0a0a,14.0309,4.5,candidate pair; confirm source usage
+dark-hc,warning,hover,#ffd54f,#262626,10.7251,4.5,candidate pair; confirm source usage
+dark-hc,warning,selected,#ffd54f,#003a5c,8.4572,4.5,candidate pair; confirm source usage
+dark-hc,success,surface,#69f0ae,#000000,14.6759,4.5,candidate pair; confirm source usage
+dark-hc,success,card,#69f0ae,#0a0a0a,13.836,4.5,candidate pair; confirm source usage
+dark-hc,success,hover,#69f0ae,#262626,10.5761,4.5,candidate pair; confirm source usage
+dark-hc,success,selected,#69f0ae,#003a5c,8.3397,4.5,candidate pair; confirm source usage
+dark-hc,border,surface,#ffffff,#000000,21.0,3,candidate pair; confirm source usage
+dark-hc,border,card,#ffffff,#0a0a0a,19.7981,3,candidate pair; confirm source usage
+dark-hc,border,hover,#ffffff,#262626,15.1335,3,candidate pair; confirm source usage
+dark-hc,border,selected,#ffffff,#003a5c,11.9334,3,candidate pair; confirm source usage
+dark-hc,divider,surface,#a1a1aa,#000000,8.1938,3,candidate pair; confirm source usage
+dark-hc,divider,card,#a1a1aa,#0a0a0a,7.7249,3,candidate pair; confirm source usage
+dark-hc,divider,hover,#a1a1aa,#262626,5.9048,3,candidate pair; confirm source usage
+dark-hc,divider,selected,#a1a1aa,#003a5c,4.6562,3,candidate pair; confirm source usage
+dark-hc,focus,surface,#ffffff,#000000,21.0,3,candidate pair; confirm source usage
+dark-hc,focus,card,#ffffff,#0a0a0a,19.7981,3,candidate pair; confirm source usage
+dark-hc,focus,hover,#ffffff,#262626,15.1335,3,candidate pair; confirm source usage
+dark-hc,focus,selected,#ffffff,#003a5c,11.9334,3,candidate pair; confirm source usage
+dark-hc,on-accent,accent,#000000,#4dccff,11.3967,4.5,primary icon button
+dark-hc,text,card,#5b5b5b,#030303,3.037,4.5,disabled rule: whole card opacity; readable checkbox remains interactive
+dark-hc,muted,card,#525253,#030303,2.6425,4.5,disabled rule summary
+dark-hc,text,card,#919191,#0a0a0a,6.2816,4.5,category buttons remain clickable during query
+light-hc,text,surface,#000000,#ffffff,21.0,4.5,candidate pair; confirm source usage
+light-hc,text,card,#000000,#ffffff,21.0,4.5,candidate pair; confirm source usage
+light-hc,text,hover,#000000,#e4e4e7,16.5501,4.5,candidate pair; confirm source usage
+light-hc,text,selected,#000000,#cce7f8,16.3533,4.5,candidate pair; confirm source usage
+light-hc,muted,surface,#27272a,#ffffff,14.8946,4.5,candidate pair; confirm source usage
+light-hc,muted,card,#27272a,#ffffff,14.8946,4.5,candidate pair; confirm source usage
+light-hc,muted,hover,#27272a,#e4e4e7,11.7384,4.5,candidate pair; confirm source usage
+light-hc,muted,selected,#27272a,#cce7f8,11.5988,4.5,candidate pair; confirm source usage
+light-hc,placeholder,surface,#27272a,#ffffff,14.8946,4.5,candidate pair; confirm source usage
+light-hc,placeholder,card,#27272a,#ffffff,14.8946,4.5,candidate pair; confirm source usage
+light-hc,placeholder,hover,#27272a,#e4e4e7,11.7384,4.5,candidate pair; confirm source usage
+light-hc,placeholder,selected,#27272a,#cce7f8,11.5988,4.5,candidate pair; confirm source usage
+light-hc,accent,surface,#0069a9,#ffffff,5.8438,4.5,candidate pair; confirm source usage
+light-hc,accent,card,#0069a9,#ffffff,5.8438,4.5,candidate pair; confirm source usage
+light-hc,accent,hover,#0069a9,#e4e4e7,4.6055,4.5,candidate pair; confirm source usage
+light-hc,accent,selected,#0069a9,#cce7f8,4.5507,4.5,candidate pair; confirm source usage
+light-hc,error,surface,#8b0000,#ffffff,10.0105,4.5,candidate pair; confirm source usage
+light-hc,error,card,#8b0000,#ffffff,10.0105,4.5,candidate pair; confirm source usage
+light-hc,error,hover,#8b0000,#e4e4e7,7.8893,4.5,candidate pair; confirm source usage
+light-hc,error,selected,#8b0000,#cce7f8,7.7955,4.5,candidate pair; confirm source usage
+light-hc,warning,surface,#6b3a00,#ffffff,9.4154,4.5,candidate pair; confirm source usage
+light-hc,warning,card,#6b3a00,#ffffff,9.4154,4.5,candidate pair; confirm source usage
+light-hc,warning,hover,#6b3a00,#e4e4e7,7.4203,4.5,candidate pair; confirm source usage
+light-hc,warning,selected,#6b3a00,#cce7f8,7.3321,4.5,candidate pair; confirm source usage
+light-hc,success,surface,#0b5d2a,#ffffff,8.0355,4.5,candidate pair; confirm source usage
+light-hc,success,card,#0b5d2a,#ffffff,8.0355,4.5,candidate pair; confirm source usage
+light-hc,success,hover,#0b5d2a,#e4e4e7,6.3328,4.5,candidate pair; confirm source usage
+light-hc,success,selected,#0b5d2a,#cce7f8,6.2575,4.5,candidate pair; confirm source usage
+light-hc,border,surface,#000000,#ffffff,21.0,3,candidate pair; confirm source usage
+light-hc,border,card,#000000,#ffffff,21.0,3,candidate pair; confirm source usage
+light-hc,border,hover,#000000,#e4e4e7,16.5501,3,candidate pair; confirm source usage
+light-hc,border,selected,#000000,#cce7f8,16.3533,3,candidate pair; confirm source usage
+light-hc,divider,surface,#52525b,#ffffff,7.7298,3,candidate pair; confirm source usage
+light-hc,divider,card,#52525b,#ffffff,7.7298,3,candidate pair; confirm source usage
+light-hc,divider,hover,#52525b,#e4e4e7,6.0919,3,candidate pair; confirm source usage
+light-hc,divider,selected,#52525b,#cce7f8,6.0194,3,candidate pair; confirm source usage
+light-hc,focus,surface,#000000,#ffffff,21.0,3,candidate pair; confirm source usage
+light-hc,focus,card,#000000,#ffffff,21.0,3,candidate pair; confirm source usage
+light-hc,focus,hover,#000000,#e4e4e7,16.5501,3,candidate pair; confirm source usage
+light-hc,focus,selected,#000000,#cce7f8,16.3533,3,candidate pair; confirm source usage
+light-hc,on-accent,accent,#ffffff,#0069a9,5.8438,4.5,primary icon button
+light-hc,text,card,#a6a6a6,#ffffff,2.4344,4.5,disabled rule: whole card opacity; readable checkbox remains interactive
+light-hc,muted,card,#b3b3b4,#ffffff,2.095,4.5,disabled rule summary
+light-hc,text,card,#737373,#ffffff,4.7417,4.5,category buttons remain clickable during query
+eink,text,surface,#000000,#ffffff,21.0,4.5,candidate pair; confirm source usage
+eink,text,card,#000000,#ffffff,21.0,4.5,candidate pair; confirm source usage
+eink,text,hover,#000000,#eeeeee,18.0999,4.5,candidate pair; confirm source usage
+eink,text,selected,#000000,#cccccc,13.0765,4.5,candidate pair; confirm source usage
+eink,muted,surface,#333333,#ffffff,12.6347,4.5,candidate pair; confirm source usage
+eink,muted,card,#333333,#ffffff,12.6347,4.5,candidate pair; confirm source usage
+eink,muted,hover,#333333,#eeeeee,10.8898,4.5,candidate pair; confirm source usage
+eink,muted,selected,#333333,#cccccc,7.8675,4.5,candidate pair; confirm source usage
+eink,placeholder,surface,#333333,#ffffff,12.6347,4.5,candidate pair; confirm source usage
+eink,placeholder,card,#333333,#ffffff,12.6347,4.5,candidate pair; confirm source usage
+eink,placeholder,hover,#333333,#eeeeee,10.8898,4.5,candidate pair; confirm source usage
+eink,placeholder,selected,#333333,#cccccc,7.8675,4.5,candidate pair; confirm source usage
+eink,accent,surface,#000000,#ffffff,21.0,4.5,candidate pair; confirm source usage
+eink,accent,card,#000000,#ffffff,21.0,4.5,candidate pair; confirm source usage
+eink,accent,hover,#000000,#eeeeee,18.0999,4.5,candidate pair; confirm source usage
+eink,accent,selected,#000000,#cccccc,13.0765,4.5,candidate pair; confirm source usage
+eink,error,surface,#000000,#ffffff,21.0,4.5,candidate pair; confirm source usage
+eink,error,card,#000000,#ffffff,21.0,4.5,candidate pair; confirm source usage
+eink,error,hover,#000000,#eeeeee,18.0999,4.5,candidate pair; confirm source usage
+eink,error,selected,#000000,#cccccc,13.0765,4.5,candidate pair; confirm source usage
+eink,warning,surface,#000000,#ffffff,21.0,4.5,candidate pair; confirm source usage
+eink,warning,card,#000000,#ffffff,21.0,4.5,candidate pair; confirm source usage
+eink,warning,hover,#000000,#eeeeee,18.0999,4.5,candidate pair; confirm source usage
+eink,warning,selected,#000000,#cccccc,13.0765,4.5,candidate pair; confirm source usage
+eink,success,surface,#000000,#ffffff,21.0,4.5,candidate pair; confirm source usage
+eink,success,card,#000000,#ffffff,21.0,4.5,candidate pair; confirm source usage
+eink,success,hover,#000000,#eeeeee,18.0999,4.5,candidate pair; confirm source usage
+eink,success,selected,#000000,#cccccc,13.0765,4.5,candidate pair; confirm source usage
+eink,border,surface,#000000,#ffffff,21.0,3,candidate pair; confirm source usage
+eink,border,card,#000000,#ffffff,21.0,3,candidate pair; confirm source usage
+eink,border,hover,#000000,#eeeeee,18.0999,3,candidate pair; confirm source usage
+eink,border,selected,#000000,#cccccc,13.0765,3,candidate pair; confirm source usage
+eink,divider,surface,#000000,#ffffff,21.0,3,candidate pair; confirm source usage
+eink,divider,card,#000000,#ffffff,21.0,3,candidate pair; confirm source usage
+eink,divider,hover,#000000,#eeeeee,18.0999,3,candidate pair; confirm source usage
+eink,divider,selected,#000000,#cccccc,13.0765,3,candidate pair; confirm source usage
+eink,focus,surface,#000000,#ffffff,21.0,3,candidate pair; confirm source usage
+eink,focus,card,#000000,#ffffff,21.0,3,candidate pair; confirm source usage
+eink,focus,hover,#000000,#eeeeee,18.0999,3,candidate pair; confirm source usage
+eink,focus,selected,#000000,#cccccc,13.0765,3,candidate pair; confirm source usage
+eink,on-accent,accent,#ffffff,#000000,21.0,4.5,primary icon button
+eink,text,card,#a6a6a6,#ffffff,2.4344,4.5,disabled rule: whole card opacity; readable checkbox remains interactive
+eink,muted,card,#b8b8b8,#ffffff,1.9837,4.5,disabled rule summary
+eink,text,card,#737373,#ffffff,4.7417,4.5,category buttons remain clickable during query

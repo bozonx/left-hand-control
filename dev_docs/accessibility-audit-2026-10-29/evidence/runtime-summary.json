@@ -1,0 +1,3254 @@
+{
+  "evidence": [
+    {
+      "screen": "advanced",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 214,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Default from Settings: after another key is released"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "auto-rule-dialog",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 106,
+      "tabs": 180,
+      "none_focus": 10,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "conditions",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 209,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "dark-hc-940",
+      "scale": 1.0,
+      "size": [
+        940,
+        700
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "device-dialog",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 96,
+      "tabs": 180,
+      "none_focus": 6,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Shift+Insert"
+        },
+        {
+          "role": "Combobox",
+          "value": "libei + clipboard fallback (recommended)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "device-with-fixture",
+      "scale": 1.0,
+      "size": [
+        940,
+        700
+      ],
+      "nodes": 91,
+      "tabs": 180,
+      "none_focus": 6,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "libei + clipboard fallback (recommended)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "eink-940",
+      "scale": 1.0,
+      "size": [
+        940,
+        700
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "emoji-editor",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 204,
+      "tabs": 180,
+      "none_focus": 1,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": "🤦"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "emoji-popup",
+      "scale": 1.0,
+      "size": [
+        480,
+        350
+      ],
+      "nodes": 33,
+      "tabs": 180,
+      "none_focus": 180,
+      "has_background_layouts_tab": false,
+      "unnamed_inputs": []
+    },
+    {
+      "screen": "extra-keys",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 241,
+      "tabs": 180,
+      "none_focus": 4,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "layers",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 241,
+      "tabs": 180,
+      "none_focus": 4,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "library",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 70,
+      "tabs": 180,
+      "none_focus": 16,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "light-940",
+      "scale": 1.0,
+      "size": [
+        940,
+        700
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "light-hc-940",
+      "scale": 1.0,
+      "size": [
+        940,
+        700
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "macros",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 70,
+      "tabs": 180,
+      "none_focus": 16,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "nested-app-dialog",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 242,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": "firefox"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "new-layer-dialog",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 252,
+      "tabs": 180,
+      "none_focus": 4,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "picker",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 331,
+      "tabs": 180,
+      "none_focus": 2,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "quick-editor",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 153,
+      "tabs": 180,
+      "none_focus": 8,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": "Sleep"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "quick-popup",
+      "scale": 1.0,
+      "size": [
+        780,
+        350
+      ],
+      "nodes": 33,
+      "tabs": 180,
+      "none_focus": 180,
+      "has_background_layouts_tab": false,
+      "unnamed_inputs": []
+    },
+    {
+      "screen": "rules",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 180,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-accessibility",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 53,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-behavior",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-commands",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 55,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-game",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-general",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 71,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Automatic"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-mapper",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 77,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Shift+Insert"
+        },
+        {
+          "role": "Combobox",
+          "value": "libei + clipboard fallback (recommended)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    }
+  ],
+  "evidence/skia": [
+    {
+      "screen": "advanced",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 214,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Default from Settings: after another key is released"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "auto-rule-dialog",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 106,
+      "tabs": 180,
+      "none_focus": 10,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "conditions",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 209,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "dark-hc-940",
+      "scale": 1.0,
+      "size": [
+        940,
+        700
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "device-dialog",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 96,
+      "tabs": 180,
+      "none_focus": 6,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Shift+Insert"
+        },
+        {
+          "role": "Combobox",
+          "value": "libei + clipboard fallback (recommended)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "device-with-fixture",
+      "scale": 1.0,
+      "size": [
+        940,
+        700
+      ],
+      "nodes": 91,
+      "tabs": 180,
+      "none_focus": 6,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "libei + clipboard fallback (recommended)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "eink-940",
+      "scale": 1.0,
+      "size": [
+        940,
+        700
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "emoji-editor",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 204,
+      "tabs": 180,
+      "none_focus": 1,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": "🤦"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "emoji-popup",
+      "scale": 1.0,
+      "size": [
+        480,
+        350
+      ],
+      "nodes": 33,
+      "tabs": 180,
+      "none_focus": 180,
+      "has_background_layouts_tab": false,
+      "unnamed_inputs": []
+    },
+    {
+      "screen": "extra-keys",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 241,
+      "tabs": 180,
+      "none_focus": 4,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "layers",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 241,
+      "tabs": 180,
+      "none_focus": 4,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "library",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 70,
+      "tabs": 180,
+      "none_focus": 16,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "light-940",
+      "scale": 1.0,
+      "size": [
+        940,
+        700
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "light-hc-940",
+      "scale": 1.0,
+      "size": [
+        940,
+        700
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "macros",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 70,
+      "tabs": 180,
+      "none_focus": 16,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "nested-app-dialog",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 242,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": "firefox"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "new-layer-dialog",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 252,
+      "tabs": 180,
+      "none_focus": 4,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "picker",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 331,
+      "tabs": 180,
+      "none_focus": 2,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "quick-editor",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 153,
+      "tabs": 180,
+      "none_focus": 8,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": "Sleep"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "quick-popup",
+      "scale": 1.0,
+      "size": [
+        780,
+        350
+      ],
+      "nodes": 33,
+      "tabs": 180,
+      "none_focus": 180,
+      "has_background_layouts_tab": false,
+      "unnamed_inputs": []
+    },
+    {
+      "screen": "rules",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 180,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-accessibility",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 53,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-behavior",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-commands",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 55,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-game",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-general",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 71,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Automatic"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-mapper",
+      "scale": 1.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 77,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Shift+Insert"
+        },
+        {
+          "role": "Combobox",
+          "value": "libei + clipboard fallback (recommended)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    }
+  ],
+  "evidence/scale-2": [
+    {
+      "screen": "advanced",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 101,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Default from Settings: after another key is released"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "auto-rule-dialog",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 78,
+      "tabs": 172,
+      "none_focus": 16,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "conditions",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 92,
+      "tabs": 177,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "dark-hc-940",
+      "scale": 2.0,
+      "size": [
+        940,
+        700
+      ],
+      "nodes": 56,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "device-dialog",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 78,
+      "tabs": 180,
+      "none_focus": 6,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "device-with-fixture",
+      "scale": 2.0,
+      "size": [
+        940,
+        700
+      ],
+      "nodes": 72,
+      "tabs": 180,
+      "none_focus": 6,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "eink-940",
+      "scale": 2.0,
+      "size": [
+        940,
+        700
+      ],
+      "nodes": 56,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "emoji-editor",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 158,
+      "tabs": 180,
+      "none_focus": 1,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": "🤦"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "emoji-popup",
+      "scale": 1.0,
+      "size": [
+        480,
+        350
+      ],
+      "nodes": 33,
+      "tabs": 180,
+      "none_focus": 180,
+      "has_background_layouts_tab": false,
+      "unnamed_inputs": []
+    },
+    {
+      "screen": "extra-keys",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 55,
+      "tabs": 180,
+      "none_focus": 4,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "layers",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 53,
+      "tabs": 180,
+      "none_focus": 4,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "library",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 62,
+      "tabs": 180,
+      "none_focus": 16,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "light-940",
+      "scale": 2.0,
+      "size": [
+        940,
+        700
+      ],
+      "nodes": 60,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "light-hc-940",
+      "scale": 2.0,
+      "size": [
+        940,
+        700
+      ],
+      "nodes": 56,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "macros",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 61,
+      "tabs": 172,
+      "none_focus": 16,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "nested-app-dialog",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 118,
+      "tabs": 178,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": "firefox"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "new-layer-dialog",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 122,
+      "tabs": 180,
+      "none_focus": 4,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "picker",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 135,
+      "tabs": 180,
+      "none_focus": 2,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "quick-editor",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 94,
+      "tabs": 170,
+      "none_focus": 10,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": "Sleep"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "quick-popup",
+      "scale": 1.0,
+      "size": [
+        780,
+        350
+      ],
+      "nodes": 33,
+      "tabs": 180,
+      "none_focus": 180,
+      "has_background_layouts_tab": false,
+      "unnamed_inputs": []
+    },
+    {
+      "screen": "rules",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 80,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-accessibility",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 50,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-behavior",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 62,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-commands",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 46,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-game",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 61,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-general",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 56,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Automatic"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-mapper",
+      "scale": 2.0,
+      "size": [
+        1120,
+        760
+      ],
+      "nodes": 52,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "libei + clipboard fallback (recommended)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    }
+  ],
+  "evidence/output-scale-1.25": [
+    {
+      "screen": "advanced",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 214,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Default from Settings: after another key is released"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "auto-rule-dialog",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 106,
+      "tabs": 180,
+      "none_focus": 10,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "conditions",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 209,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "dark-hc-940",
+      "scale": 1.25,
+      "size": [
+        1175,
+        875
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "device-dialog",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 96,
+      "tabs": 180,
+      "none_focus": 6,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Shift+Insert"
+        },
+        {
+          "role": "Combobox",
+          "value": "libei + clipboard fallback (recommended)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "device-with-fixture",
+      "scale": 1.25,
+      "size": [
+        1175,
+        875
+      ],
+      "nodes": 91,
+      "tabs": 180,
+      "none_focus": 6,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "libei + clipboard fallback (recommended)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "eink-940",
+      "scale": 1.25,
+      "size": [
+        1175,
+        875
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "emoji-editor",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 204,
+      "tabs": 180,
+      "none_focus": 1,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": "🤦"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "emoji-popup",
+      "scale": 1.0,
+      "size": [
+        480,
+        350
+      ],
+      "nodes": 33,
+      "tabs": 180,
+      "none_focus": 180,
+      "has_background_layouts_tab": false,
+      "unnamed_inputs": []
+    },
+    {
+      "screen": "extra-keys",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 241,
+      "tabs": 180,
+      "none_focus": 4,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "layers",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 241,
+      "tabs": 180,
+      "none_focus": 4,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "library",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 70,
+      "tabs": 180,
+      "none_focus": 16,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "light-940",
+      "scale": 1.25,
+      "size": [
+        1175,
+        875
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "light-hc-940",
+      "scale": 1.25,
+      "size": [
+        1175,
+        875
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "macros",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 70,
+      "tabs": 180,
+      "none_focus": 16,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "nested-app-dialog",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 242,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": "firefox"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "new-layer-dialog",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 252,
+      "tabs": 180,
+      "none_focus": 4,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "picker",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 331,
+      "tabs": 180,
+      "none_focus": 2,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "quick-editor",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 153,
+      "tabs": 180,
+      "none_focus": 8,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": "Sleep"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "quick-popup",
+      "scale": 1.0,
+      "size": [
+        780,
+        350
+      ],
+      "nodes": 33,
+      "tabs": 180,
+      "none_focus": 180,
+      "has_background_layouts_tab": false,
+      "unnamed_inputs": []
+    },
+    {
+      "screen": "rules",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 180,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-accessibility",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 53,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-behavior",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-commands",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 55,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-game",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-general",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 71,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Automatic"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-mapper",
+      "scale": 1.25,
+      "size": [
+        1400,
+        950
+      ],
+      "nodes": 77,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Shift+Insert"
+        },
+        {
+          "role": "Combobox",
+          "value": "libei + clipboard fallback (recommended)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    }
+  ],
+  "evidence/output-scale-1.5": [
+    {
+      "screen": "advanced",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 214,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Default from Settings: after another key is released"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "auto-rule-dialog",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 106,
+      "tabs": 180,
+      "none_focus": 10,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "conditions",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 209,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "dark-hc-940",
+      "scale": 1.5,
+      "size": [
+        1410,
+        1050
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "device-dialog",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 96,
+      "tabs": 180,
+      "none_focus": 6,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Shift+Insert"
+        },
+        {
+          "role": "Combobox",
+          "value": "libei + clipboard fallback (recommended)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "device-with-fixture",
+      "scale": 1.5,
+      "size": [
+        1410,
+        1050
+      ],
+      "nodes": 91,
+      "tabs": 180,
+      "none_focus": 6,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "libei + clipboard fallback (recommended)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "eink-940",
+      "scale": 1.5,
+      "size": [
+        1410,
+        1050
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "emoji-editor",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 204,
+      "tabs": 180,
+      "none_focus": 1,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": "🤦"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "emoji-popup",
+      "scale": 1.0,
+      "size": [
+        480,
+        350
+      ],
+      "nodes": 33,
+      "tabs": 180,
+      "none_focus": 180,
+      "has_background_layouts_tab": false,
+      "unnamed_inputs": []
+    },
+    {
+      "screen": "extra-keys",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 241,
+      "tabs": 180,
+      "none_focus": 4,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "layers",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 241,
+      "tabs": 180,
+      "none_focus": 4,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "library",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 70,
+      "tabs": 180,
+      "none_focus": 16,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "light-940",
+      "scale": 1.5,
+      "size": [
+        1410,
+        1050
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "light-hc-940",
+      "scale": 1.5,
+      "size": [
+        1410,
+        1050
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "macros",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 70,
+      "tabs": 180,
+      "none_focus": 16,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "nested-app-dialog",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 242,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": "firefox"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "new-layer-dialog",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 252,
+      "tabs": 180,
+      "none_focus": 4,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "picker",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 331,
+      "tabs": 180,
+      "none_focus": 2,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "quick-editor",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 153,
+      "tabs": 180,
+      "none_focus": 8,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": "Sleep"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "quick-popup",
+      "scale": 1.0,
+      "size": [
+        780,
+        350
+      ],
+      "nodes": 33,
+      "tabs": 180,
+      "none_focus": 180,
+      "has_background_layouts_tab": false,
+      "unnamed_inputs": []
+    },
+    {
+      "screen": "rules",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 180,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-accessibility",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 53,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-behavior",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-commands",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 55,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-game",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-general",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 71,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Automatic"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-mapper",
+      "scale": 1.5,
+      "size": [
+        1680,
+        1140
+      ],
+      "nodes": 77,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Shift+Insert"
+        },
+        {
+          "role": "Combobox",
+          "value": "libei + clipboard fallback (recommended)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    }
+  ],
+  "evidence/output-scale-2": [
+    {
+      "screen": "advanced",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 214,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Default from Settings: after another key is released"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "auto-rule-dialog",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 106,
+      "tabs": 180,
+      "none_focus": 10,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "conditions",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 209,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "dark-hc-940",
+      "scale": 2.0,
+      "size": [
+        1880,
+        1400
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "device-dialog",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 96,
+      "tabs": 180,
+      "none_focus": 6,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Shift+Insert"
+        },
+        {
+          "role": "Combobox",
+          "value": "libei + clipboard fallback (recommended)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "device-with-fixture",
+      "scale": 2.0,
+      "size": [
+        1880,
+        1400
+      ],
+      "nodes": 91,
+      "tabs": 180,
+      "none_focus": 6,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "libei + clipboard fallback (recommended)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "eink-940",
+      "scale": 2.0,
+      "size": [
+        1880,
+        1400
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "emoji-editor",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 204,
+      "tabs": 180,
+      "none_focus": 1,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": "🤦"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "emoji-popup",
+      "scale": 1.0,
+      "size": [
+        480,
+        350
+      ],
+      "nodes": 33,
+      "tabs": 180,
+      "none_focus": 180,
+      "has_background_layouts_tab": false,
+      "unnamed_inputs": []
+    },
+    {
+      "screen": "extra-keys",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 241,
+      "tabs": 180,
+      "none_focus": 4,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "layers",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 241,
+      "tabs": 180,
+      "none_focus": 4,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "library",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 70,
+      "tabs": 180,
+      "none_focus": 16,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "light-940",
+      "scale": 2.0,
+      "size": [
+        1880,
+        1400
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "light-hc-940",
+      "scale": 2.0,
+      "size": [
+        1880,
+        1400
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "macros",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 70,
+      "tabs": 180,
+      "none_focus": 16,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "nested-app-dialog",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 242,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": "firefox"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "new-layer-dialog",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 252,
+      "tabs": 180,
+      "none_focus": 4,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "picker",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 331,
+      "tabs": 180,
+      "none_focus": 2,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "quick-editor",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 153,
+      "tabs": 180,
+      "none_focus": 8,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": "Sleep"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "quick-popup",
+      "scale": 1.0,
+      "size": [
+        780,
+        350
+      ],
+      "nodes": 33,
+      "tabs": 180,
+      "none_focus": 180,
+      "has_background_layouts_tab": false,
+      "unnamed_inputs": []
+    },
+    {
+      "screen": "rules",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 180,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-accessibility",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 53,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-behavior",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "After another key is released (better for typing)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-commands",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 55,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-game",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 95,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-general",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 71,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Automatic"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "screen": "settings-mapper",
+      "scale": 2.0,
+      "size": [
+        2240,
+        1520
+      ],
+      "nodes": 77,
+      "tabs": 180,
+      "none_focus": 0,
+      "has_background_layouts_tab": true,
+      "unnamed_inputs": [
+        {
+          "role": "Combobox",
+          "value": "Shift+Insert"
+        },
+        {
+          "role": "Combobox",
+          "value": "libei + clipboard fallback (recommended)"
+        },
+        {
+          "role": "TextInput",
+          "value": ""
+        }
+      ]
+    }
+  ]
+}

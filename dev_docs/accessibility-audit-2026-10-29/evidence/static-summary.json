@@ -1,0 +1,15 @@
+{
+  "files": 33,
+  "lines": 7602,
+  "instances": 238,
+  "counts": {
+    "touch": 43,
+    "focus": 33,
+    "accessible_roles": 39,
+    "keyboard_handlers": 35,
+    "live_regions": 0,
+    "text_fields": 40
+  },
+  "contrast_pairs": 220,
+  "below_threshold_candidates": 32
+}

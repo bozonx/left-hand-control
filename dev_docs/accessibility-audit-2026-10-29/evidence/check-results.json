@@ -1,0 +1,34 @@
+{
+  "static_audit": 0,
+  "probe_build_final": 0,
+  "scenario_build": 0,
+  "scenario_processes": {
+    "editor": 0,
+    "interactions": 0,
+    "action-picker": 0,
+    "conditions": 0,
+    "library": 0,
+    "macros": 0,
+    "menus": 0,
+    "layer-keys": 0,
+    "inline-edit": 0,
+    "drag-scroll": 0,
+    "notifications": 0,
+    "undo-redo": 0,
+    "popup-grid": 0
+  },
+  "early_outer_runner": {
+    "status": 1,
+    "reason": "temporary runtime directory cleanup race; complete probe/scenario outputs preserved"
+  },
+  "output_scale_probe_states": {
+    "1.25": 27,
+    "1.5": 27,
+    "2": 27
+  },
+  "final_skia_atspi_outer_runner": 0,
+  "cargo_fmt_check": 0,
+  "bash_syntax": 0,
+  "python_syntax": "pass",
+  "notes": "No product implementation edits; no real mapper input/Orca speech/braille/VM acceptance."
+}
