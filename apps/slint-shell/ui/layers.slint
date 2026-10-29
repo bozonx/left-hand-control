@@ -2,7 +2,7 @@ import { TextField } from "controls.slint";
 import { PageContent, ScrollView } from "scroll.slint";
 import { DragArea, DragAxis, DragDrop, DragGroups, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
-import { CategoryIcon } from "action-picker.slint";
+import { CategoryIcon } from "action-controls.slint";
 import { ButtonGroup, InlineTextField, InlineTextArea, Card, Divider, MenuSurface, MenuItem, ConfirmDialog, DialogFrame, IconButton, InfoTip, FieldLabel, FormField, PageLayout, TooltipSurface, CardTitle, FieldButton, EmptyState } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
@@ -52,10 +52,9 @@ export global LayersEditor {
     callback pick-extra(int, bool);
 }
 
-export component ActionText inherits HorizontalLayout {
+component ActionText inherits HorizontalLayout {
     in property <Assignment> kind;
     in property <string> action;
-    in property <PickerCategory> category;
     /// The action is emoji-only text, drawn with the colour emoji font.
     in property <bool> emoji;
     in property <length> text-size: Theme.font-caption;
@@ -183,7 +182,7 @@ component KeyCap inherits Rectangle {
         }
         HorizontalLayout {
             alignment: center;
-            ActionText { min-width: 0px; kind: root.cell.kind; action: root.cell.action; category: root.cell.category; emoji: root.cell.emoji; }
+            ActionText { min-width: 0px; kind: root.cell.kind; action: root.cell.action; emoji: root.cell.emoji; }
         }
     }
     if root.cell.holds && root.cell.kind == Assignment.action: HoldsMarker { x: parent.width - self.width - 4px; y: 4px; }

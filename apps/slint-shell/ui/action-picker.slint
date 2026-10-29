@@ -1,3 +1,4 @@
+import { CategoryIcon } from "action-controls.slint";
 import { Timing } from "timing.slint";
 import { AppState } from "app-state.slint";
 import { DialogFrame, IconButton, NumericInput, SearchField, TextField } from "controls.slint";
@@ -10,31 +11,6 @@ import { Button, CheckBox, TextEdit } from "std-widgets.slint";
 export struct PickerItem { value: string, label: string, category: PickerCategory, notice: Message }
 /// Picker category in sidebar order with the number of its catalog items.
 export struct PickerCategoryCount { category: PickerCategory, count: int }
-export component CategoryIcon inherits VerticalLayout {
-    in property <PickerCategory> category;
-    in property <length> size: 16px;
-    width: root.size; min-height: root.size; preferred-height: root.size;
-    horizontal-stretch: 0; alignment: center;
-    Image {
-        width: root.size; height: root.size;
-        image-fit: contain; colorize: Theme.muted;
-        source: root.category == PickerCategory.modifiers ? @image-url("icons/arrow-big-up.svg")
-            : root.category == PickerCategory.letters || root.category == PickerCategory.text ? @image-url("icons/text-cursor-input.svg")
-            : root.category == PickerCategory.control-keys ? @image-url("icons/corner-down-left.svg")
-            : root.category == PickerCategory.navigation ? @image-url("icons/move.svg")
-            : root.category == PickerCategory.media ? @image-url("icons/music-2.svg")
-            : root.category == PickerCategory.system-keys ? @image-url("icons/laptop.svg")
-            : root.category == PickerCategory.mouse ? @image-url("icons/mouse.svg")
-            : root.category == PickerCategory.other-keys ? @image-url("icons/ellipsis.svg")
-            : root.category == PickerCategory.macros || root.category == PickerCategory.builtin-macros ? @image-url("icons/zap.svg")
-            : root.category == PickerCategory.commands ? @image-url("icons/terminal.svg")
-            : root.category == PickerCategory.app ? @image-url("icons/hand.svg")
-            : root.category == PickerCategory.system-actions ? @image-url("icons/settings-2.svg")
-            : root.category == PickerCategory.desktop-shortcuts ? @image-url("icons/square-function.svg")
-            : root.category == PickerCategory.pause ? @image-url("icons/clock.svg")
-            : @image-url("icons/keyboard.svg");
-    }
-}
 export global ActionPicker {
     in-out property <bool> opened;
     in-out property <bool> layer-action;

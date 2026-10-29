@@ -1,5 +1,3 @@
-import { Theme } from "theme.slint";
-import { CategoryIcon } from "action-picker.slint";
 import { PickerCategory } from "types.slint";
 
 /// One cap of the base keyboard grid.
@@ -13,51 +11,4 @@ export global KeyEditor {
     in-out property <int> selected: -1;
     /// Open the action picker for the key at `index`.
     callback edit(int);
-}
-
-export component KeyboardPage inherits VerticalLayout {
-    spacing: Theme.space-s;
-    VerticalLayout { padding: Theme.space-m;
-        spacing: Theme.space-m;
-        Text { color: Theme.text; text: @tr("Keyboard layout"); font-size: Theme.font-page-title; font-weight: Theme.weight-bold; }
-        Text { color: Theme.muted; text: @tr("Select a key to assign an action."); }
-    }
-    keys-focus := FocusScope {
-        key-pressed(event) => {
-            let count = KeyEditor.keys.length;
-            if count == 0 { return reject; }
-            if event.text == Key.Return { KeyEditor.edit(max(0, KeyEditor.selected)); return accept; }
-            if event.text == Key.RightArrow { KeyEditor.selected = mod(KeyEditor.selected + 1, count); return accept; }
-            if event.text == Key.LeftArrow { KeyEditor.selected = mod(KeyEditor.selected + count - 1, count); return accept; }
-            return reject;
-        }
-        VerticalLayout {
-            spacing: Theme.space-s;
-            for row in KeyEditor.keys.length / KeyEditor.columns: HorizontalLayout {
-                spacing: Theme.space-xs;
-                for col in KeyEditor.columns: Rectangle {
-                    property <int> index: row * KeyEditor.columns + col;
-                    height: 66px; min-width: 0px; horizontal-stretch: 1;
-                    border-radius: Theme.radius;
-                    border-width: KeyEditor.selected == self.index ? 2px : 1px;
-                    border-color: KeyEditor.selected == self.index ? Theme.accent : Theme.border;
-                    background: key-touch.has-hover ? Theme.hover : Theme.card;
-                    accessible-role: button;
-                    accessible-label: KeyEditor.keys[self.index].label;
-                    accessible-description: KeyEditor.keys[self.index].action;
-                    accessible-action-default => { KeyEditor.edit(self.index); }
-                    VerticalLayout {
-                        padding: Theme.space-xs;
-                        Text { min-width: 0px; overflow: elide; text: KeyEditor.keys[index].label; color: Theme.text; font-size: Theme.font-body; }
-                        HorizontalLayout { spacing: Theme.space-xs;
-                            if KeyEditor.keys[index].action != "": CategoryIcon { category: KeyEditor.keys[index].category; }
-                            Text { min-width: 0px; horizontal-stretch: 1; text: KeyEditor.keys[index].action == "" ? "—" : KeyEditor.keys[index].action; color: Theme.muted; font-size: Theme.font-caption; overflow: elide; vertical-alignment: center; }
-                        }
-                    }
-                    key-touch := TouchArea { clicked => { KeyEditor.selected = index; keys-focus.focus(); KeyEditor.edit(index); } }
-                }
-            }
-        }
-    }
-    Rectangle { vertical-stretch: 1; }
 }

@@ -1,0 +1,61 @@
+import { Theme } from "theme.slint";
+import { TooltipText } from "controls-base.slint";
+
+/// Start/stop switch of the mapper. A pill with a round state puck so it
+/// reads as a global on/off switch, never as the page's primary action.
+export component MapperToggle inherits Rectangle {
+    in property <bool> running;
+    in property <bool> busy;
+    in property <string> text;
+    in property <string> tooltip;
+    in property <bool> enabled: true;
+    callback toggled();
+    height: Theme.control-height-l;
+    horizontal-stretch: 0;
+    min-width: max(132px, row.preferred-width);
+    border-radius: self.height / 2;
+    background: root.running
+        ? Theme.success.transparentize(touch.has-hover ? 0.78 : 0.86)
+        : touch.has-hover ? Theme.hover : Theme.card;
+    border-width: focus.has-focus ? 2px : 1px;
+    border-color: focus.has-focus ? Theme.focus : root.running ? Theme.success : Theme.border;
+    opacity: !root.enabled ? 0.5 : root.busy ? 0.7 : 1;
+    accessible-role: button;
+    accessible-label: root.text;
+    accessible-checked: root.running;
+    accessible-enabled: root.enabled && !root.busy;
+    accessible-action-default => { if root.enabled && !root.busy { root.toggled(); } }
+    row := HorizontalLayout {
+        padding-left: Theme.space-xs; padding-right: Theme.space-xl;
+        spacing: Theme.space-m;
+        VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: 26px; height: 26px;
+                border-radius: self.height / 2;
+                background: root.running ? Theme.success : transparent;
+                border-width: root.running ? 0px : 1px;
+                border-color: Theme.success;
+                Image {
+                    width: 12px; height: 12px;
+                    source: root.running ? @image-url("icons/square.svg") : @image-url("icons/play.svg");
+                    colorize: root.running ? Theme.card : Theme.success;
+                }
+            }
+        }
+        Text { text: root.text; color: Theme.text; font-weight: Theme.weight-semibold; vertical-alignment: center; }
+    }
+    focus := FocusScope {
+        enabled: root.enabled && !root.busy;
+        key-pressed(event) => {
+            if event.text == " " || event.text == "\n" { root.toggled(); return accept; }
+            return reject;
+        }
+    }
+    touch := TouchArea {
+        enabled: root.enabled && !root.busy;
+        mouse-cursor: root.enabled && !root.busy ? pointer : default;
+        clicked => { root.toggled(); }
+    }
+    if root.tooltip != "": Tooltip { TooltipText { text: root.tooltip; } }
+}

@@ -1,0 +1,51 @@
+import { Theme } from "theme.slint";
+import { PickerCategory } from "types.slint";
+import { FieldButton } from "controls.slint";
+
+export component CategoryIcon inherits VerticalLayout {
+    in property <PickerCategory> category;
+    in property <length> size: 16px;
+    width: root.size; min-height: root.size; preferred-height: root.size;
+    horizontal-stretch: 0; alignment: center;
+    Image {
+        width: root.size; height: root.size;
+        image-fit: contain; colorize: Theme.muted;
+        source: root.category == PickerCategory.modifiers ? @image-url("icons/arrow-big-up.svg")
+            : root.category == PickerCategory.letters || root.category == PickerCategory.text ? @image-url("icons/text-cursor-input.svg")
+            : root.category == PickerCategory.control-keys ? @image-url("icons/corner-down-left.svg")
+            : root.category == PickerCategory.navigation ? @image-url("icons/move.svg")
+            : root.category == PickerCategory.media ? @image-url("icons/music-2.svg")
+            : root.category == PickerCategory.system-keys ? @image-url("icons/laptop.svg")
+            : root.category == PickerCategory.mouse ? @image-url("icons/mouse.svg")
+            : root.category == PickerCategory.other-keys ? @image-url("icons/ellipsis.svg")
+            : root.category == PickerCategory.macros || root.category == PickerCategory.builtin-macros ? @image-url("icons/zap.svg")
+            : root.category == PickerCategory.commands ? @image-url("icons/terminal.svg")
+            : root.category == PickerCategory.app ? @image-url("icons/hand.svg")
+            : root.category == PickerCategory.system-actions ? @image-url("icons/settings-2.svg")
+            : root.category == PickerCategory.desktop-shortcuts ? @image-url("icons/square-function.svg")
+            : root.category == PickerCategory.pause ? @image-url("icons/clock.svg")
+            : @image-url("icons/keyboard.svg");
+    }
+}
+/// Displays an action; its owner decides which picker to open.
+export component ActionField inherits FieldButton {
+    in property <string> value;
+    in property <string> label;
+    in property <string> empty-text;
+    in property <PickerCategory> category: PickerCategory.none;
+    in property <string> text-family;
+    in property <length> text-size: Theme.font-default;
+    accessible-label: root.label;
+    accessible-value: root.value;
+    if root.value != "" && root.category != PickerCategory.none: CategoryIcon { category: root.category; }
+    Text {
+        min-width: 0px;
+        horizontal-stretch: 1;
+        text: root.value == "" ? root.empty-text : root.value;
+        color: root.value == "" && root.empty-text != "" ? Theme.muted : Theme.text;
+        font-family: root.text-family;
+        font-size: root.text-size;
+        vertical-alignment: center;
+        overflow: elide;
+    }
+}

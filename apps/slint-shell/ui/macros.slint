@@ -1,13 +1,14 @@
+import { ActionField } from "action-controls.slint";
 import { Timing } from "timing.slint";
 import { NotificationCenter } from "notifications.slint";
 import { PageContent, ScrollView } from "scroll.slint";
 import { DragDrop, DragGroups, DragHandle, DropMarker } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
-import { CategoryIcon } from "action-picker.slint";
+import { CategoryIcon } from "action-controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { MacroField, PickerCategory, PickerTarget } from "types.slint";
-import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, Divider, FieldLabel, IconButton, NumericInput, PageLayout, PageHeader, CardTitle, FieldButton, EmptyState } from "controls.slint";
+import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, Divider, FieldLabel, IconButton, DurationInput, PageLayout, PageHeader, CardTitle, EmptyState } from "controls.slint";
 import { Button } from "std-widgets.slint";
 
 export struct MacroStepRow { action: string, pause: bool, pause-ms: string, category: PickerCategory }
@@ -49,21 +50,15 @@ component StepRow inherits HorizontalLayout {
         horizontal-stretch: 1;
         spacing: Theme.space-2xs;
         alignment: center;
-        if !root.step.pause: FieldButton {
-            accessible-label: root.step.action;
+        if !root.step.pause: ActionField {
+            label: root.step.action;
+            value: root.step.action;
+            category: root.step.category;
+            text-family: "monospace";
+            text-size: Theme.font-medium;
             clicked => {
                 MacroEditor.picker-macro = root.macro-index;
                 ActionPicker.open(PickerTarget.macro-step, root.index, root.step.action, false);
-            }
-            if root.step.action != "": CategoryIcon { category: root.step.category; }
-            Text {
-                horizontal-stretch: 1;
-                text: root.step.action;
-                color: Theme.text;
-                font-family: "monospace";
-                font-size: Theme.font-medium;
-                overflow: elide;
-                vertical-alignment: center;
             }
         }
         if root.step.pause: HorizontalLayout {
@@ -71,14 +66,14 @@ component StepRow inherits HorizontalLayout {
             alignment: start;
             CategoryIcon { category: PickerCategory.pause; }
             Text { text: @tr("Pause"); color: Theme.text; vertical-alignment: center; }
-            NumericInput {
+            DurationInput {
+                spacing: Theme.space-m;
                 text: root.step.pause-ms;
                 minimum: Timing.pause.minimum;
                 maximum: Timing.pause.maximum;
                 label: @tr("Pause (ms)");
                 edited(value) => { MacroEditor.set-pause(root.macro-index, root.index, value); }
             }
-            Text { text: @tr("ms"); color: Theme.muted; font-size: Theme.font-body; vertical-alignment: center; }
         }
     }
     DragHandle { group: DragGroups.macro-steps + root.macro-index; index: root.index; count: root.count; dropped(from, to) => { MacroEditor.move-step(root.macro-index, from, to); } }
@@ -164,14 +159,13 @@ component MacroCard inherits Card {
                     }
                     HorizontalLayout {
                         spacing: Theme.space-s;
-                        NumericInput {
+                        DurationInput {
                             text: root.item.step-pause;
                             placeholder-text: MacroEditor.default-step-pause;
                             minimum: Timing.macro-delay.minimum; maximum: Timing.macro-delay.maximum;
                             label: @tr("Pause between steps");
                             edited(value) => { MacroEditor.set-field(root.index, MacroField.step-pause, value); }
                         }
-                        Text { text: @tr("ms"); color: Theme.muted; font-size: Theme.font-body; vertical-alignment: center; }
                     }
                 }
                 VerticalLayout {
@@ -185,7 +179,7 @@ component MacroCard inherits Card {
                     }
                     HorizontalLayout {
                         spacing: Theme.space-s;
-                        NumericInput {
+                        DurationInput {
                             text: root.item.modifier-delay;
                             placeholder-text: MacroEditor.default-modifier-delay;
                             minimum: Timing.macro-delay.minimum; maximum: Timing.macro-delay.maximum;
@@ -193,7 +187,6 @@ component MacroCard inherits Card {
                             label: @tr("Modifier delay");
                             edited(value) => { MacroEditor.set-field(root.index, MacroField.modifier-delay, value); }
                         }
-                        Text { text: @tr("ms"); color: Theme.muted; font-size: Theme.font-body; vertical-alignment: center; }
                     }
                 }
             }

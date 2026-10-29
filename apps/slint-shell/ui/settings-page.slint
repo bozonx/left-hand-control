@@ -9,7 +9,7 @@ import { DeviceChoice, DeviceDialog, DevicePicker } from "device-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { Button, CheckBox, RadioGroup } from "std-widgets.slint";
-import { DialogFrame, FormLabel, NumericInput, SelectField, PageLayout, Section, SubsectionTitle, TitledCard, SectionTitle } from "controls.slint";
+import { DialogFrame, FormLabel, DurationInput, SelectField, PageLayout, Section, SubsectionTitle, TitledCard, SectionTitle } from "controls.slint";
 import { GameAppEntry, GameAppsField } from "conditions.slint";
 import { AppearanceChoice, CommandPlace, GameModeControl, SettingsTab } from "types.slint";
 
@@ -178,8 +178,7 @@ component TimingField inherits VerticalLayout {
         reset-tooltip: @tr("Reset to {} ms", root.standard);
         reset => { root.value = root.standard; root.reset(); }
         HorizontalLayout { spacing: Theme.space-s; alignment: start;
-            NumericInput { field-width: 100px; label: root.label; minimum: root.minimum; maximum: root.maximum; step: root.step; text <=> root.value; edited => { root.edited(); } }
-            Text { text: @tr("ms"); color: Theme.muted; font-size: Theme.font-body; vertical-alignment: center; }
+            DurationInput { field-width: 100px; label: root.label; minimum: root.minimum; maximum: root.maximum; step: root.step; text <=> root.value; edited => { root.edited(); } }
         }
     }
 }

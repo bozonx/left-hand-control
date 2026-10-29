@@ -1,3 +1,4 @@
+import { ActionField } from "action-controls.slint";
 import { TextField } from "controls.slint";
 import { InlineTextArea } from "controls.slint";
 import { PageContent, ScrollView } from "scroll.slint";
@@ -6,7 +7,7 @@ import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { MenuKind, PickerTarget } from "types.slint";
-import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, Divider, FieldLabel, IconButton, InfoTip, NavTab, PageLayout, PageHeader, FieldButton } from "controls.slint";
+import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, Divider, FieldLabel, IconButton, InfoTip, NavTab, PageLayout, PageHeader } from "controls.slint";
 import { Button, TextEdit } from "std-widgets.slint";
 
 export struct MenuCell { key: string, value: string, name: string }
@@ -507,21 +508,13 @@ export component QuickActionsPage inherits Rectangle {
                                         FieldLabel { text: @tr("Action"); }
                                         HorizontalLayout {
                                             spacing: Theme.space-xs;
-                                            FieldButton {
+                                            ActionField {
                                                 horizontal-stretch: 1;
-                                                accessible-label: @tr("Action");
-                                                accessible-value: MenuEditor.value;
+                                                label: @tr("Action");
+                                                value: MenuEditor.value;
+                                                text-family: "monospace";
+                                                text-size: Theme.font-body;
                                                 clicked => { ActionPicker.open(PickerTarget.quick-action, MenuEditor.selected-cell, MenuEditor.value, false); }
-                                                Text {
-                                                    min-width: 0px;
-                                                    horizontal-stretch: 1;
-                                                    text: MenuEditor.value;
-                                                    color: Theme.text;
-                                                    font-family: "monospace";
-                                                    font-size: Theme.font-body;
-                                                    overflow: elide;
-                                                    vertical-alignment: center;
-                                                }
                                             }
                                         }
                                     }

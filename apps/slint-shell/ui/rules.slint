@@ -1,9 +1,10 @@
+import { ActionField } from "action-controls.slint";
 import { Timing } from "timing.slint";
 import { AppState } from "app-state.slint";
 import { SearchField, TextField } from "controls.slint";
 import { PageContent, ScrollView } from "scroll.slint";
 import { ActionPicker } from "action-picker.slint";
-import { CategoryIcon } from "action-picker.slint";
+import { CategoryIcon } from "action-controls.slint";
 import { ConditionsForm, ConditionChoices } from "conditions.slint";
 import { DragDrop, DragGroups, DragHandle, DropMarker } from "reorder.slint";
 import { CardHeader, ResettableField, IconButton, ConfirmDialog, DialogFrame, ItemStyle, InfoTip, Badge, SelectField, NumericInput, FormLabel, FormField, ButtonGroup, Divider, MenuSurface, MenuItem, MenuLabel, PageLayout, PageHeader, FieldButton } from "controls.slint";
@@ -143,13 +144,13 @@ component RuleCell inherits VerticalLayout {
     min-width: 0px;
     preferred-width: 0px;
     FormLabel { text: root.title; info: root.info; }
-    FieldButton {
+    ActionField {
         enabled: root.enabled;
-        accessible-label: root.title;
-        accessible-value: root.value;
+        label: root.title;
+        value: root.value;
+        empty-text: root.empty-text;
+        category: root.category;
         clicked => { root.clicked(); }
-        if root.value != "" && root.category != PickerCategory.none: CategoryIcon { category: root.category; }
-        Text { min-width: 0px; horizontal-stretch: 1; text: root.value == "" ? root.empty-text : root.value; color: root.value == "" ? Theme.muted : Theme.text; vertical-alignment: center; overflow: elide; }
     }
 }
 

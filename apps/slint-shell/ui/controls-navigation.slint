@@ -1,0 +1,88 @@
+import { Theme } from "theme.slint";
+
+/// Document tab with an accent underline; `icon` is optional.
+export component NavTab inherits Rectangle {
+    in property <image> icon;
+    in property <string> text;
+    in property <bool> selected;
+    callback clicked();
+    horizontal-stretch: 0;
+    min-width: row.preferred-width;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    background: touch.has-hover && !root.selected ? Theme.hover : transparent;
+    accessible-role: tab;
+    accessible-label: root.text;
+    accessible-checked: root.selected;
+    accessible-action-default => { root.clicked(); }
+    row := HorizontalLayout {
+        padding-left: Theme.space-l; padding-right: Theme.space-l; padding-bottom: Theme.space-xs;
+        spacing: Theme.space-s;
+        alignment: center;
+        if root.icon.width > 0: VerticalLayout {
+            alignment: center;
+            Image { width: 16px; height: 16px; source: root.icon; colorize: root.selected ? Theme.accent : Theme.muted; }
+        }
+        Text {
+            text: root.text;
+            color: root.selected ? Theme.text : Theme.muted;
+            font-weight: Theme.weight-semibold;
+            vertical-alignment: center;
+            wrap: no-wrap;
+        }
+    }
+    Rectangle {
+        x: 6px; y: parent.height - self.height;
+        width: parent.width - 12px; height: 3px;
+        border-top-left-radius: 2px; border-top-right-radius: 2px;
+        background: root.selected ? Theme.accent : transparent;
+    }
+    Rectangle {
+        border-radius: Theme.radius;
+        border-width: focus.has-focus ? 2px : 0px;
+        border-color: Theme.focus;
+    }
+    focus := FocusScope {
+        key-pressed(event) => {
+            if event.text == " " || event.text == "\n" { root.clicked(); return accept; }
+            return reject;
+        }
+    }
+    touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+/// Top-bar section switch: quiet until selected, then a soft accent fill.
+export component NavButton inherits Rectangle {
+    in property <image> icon;
+    in property <string> text;
+    in property <bool> selected;
+    callback clicked();
+    height: 34px;
+    horizontal-stretch: 0;
+    min-width: row.preferred-width;
+    border-radius: Theme.radius;
+    background: root.selected ? Theme.selected : touch.has-hover ? Theme.hover : transparent;
+    border-width: focus.has-focus ? 2px : 0px;
+    border-color: Theme.focus;
+    accessible-role: tab;
+    accessible-label: root.text;
+    accessible-checked: root.selected;
+    accessible-action-default => { root.clicked(); }
+    row := HorizontalLayout {
+        padding-left: Theme.space-l; padding-right: Theme.space-l;
+        spacing: Theme.space-s;
+        alignment: center;
+        if root.icon.width > 0: VerticalLayout {
+            alignment: center;
+            Image { width: 16px; height: 16px; source: root.icon; colorize: root.selected ? Theme.accent : Theme.muted; }
+        }
+        Text { text: root.text; color: root.selected ? Theme.text : Theme.muted; font-weight: Theme.weight-semibold; vertical-alignment: center; }
+    }
+    focus := FocusScope {
+        key-pressed(event) => {
+            if event.text == " " || event.text == "\n" { root.clicked(); return accept; }
+            return reject;
+        }
+    }
+    touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}

@@ -18,6 +18,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Search fields share the text-field clear button, with consistent availability for disabled and read-only fields.
+
 - Library card summaries and input device discovery load in the background. Macro typing updates the edited field immediately and validates the draft after a short pause.
 
 - Numeric editors use the timing limits from the shared core contract; Emoji and Quick actions use the same popup surface and grid. Editor saving now has desktop-independent regression tests, including debounce and invalid drafts.
