@@ -198,11 +198,11 @@ msgstr "Путь к ydotool"
 msgid "xdotool path"
 msgstr "Путь к xdotool"
 
-msgid "Settings directory: "
-msgstr "Каталог настроек: "
+msgid "Settings directory: {}"
+msgstr "Каталог настроек: {}"
 
-msgid "Layouts directory: "
-msgstr "Каталог раскладок: "
+msgid "Layouts directory: {}"
+msgstr "Каталог раскладок: {}"
 
 msgid "Save settings"
 msgstr "Сохранить настройки"
@@ -1234,11 +1234,8 @@ msgstr "Определение полноэкранного окна не под
 msgid "Fullscreen detection tools are missing or could not query the session."
 msgstr "Инструменты определения полноэкранного окна отсутствуют или не смогли получить данные сессии."
 
-msgid "Running processes: "
-msgstr "Запущенные процессы: "
-
-msgid "Active window: "
-msgstr "Активное окно: "
+msgid "Running processes: {0} · Active window: {1}"
+msgstr "Запущенные процессы: {0} · Активное окно: {1}"
 
 msgid "Create a layer to assign its keys."
 msgstr "Создайте слой, чтобы назначить его клавиши."

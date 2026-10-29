@@ -41,6 +41,7 @@ pub mod gnome;
 pub mod kde_shortcuts;
 #[cfg(target_os = "linux")]
 pub mod linux;
+pub mod locale;
 #[cfg(target_os = "linux")]
 pub mod osd;
 #[cfg(not(target_os = "linux"))]

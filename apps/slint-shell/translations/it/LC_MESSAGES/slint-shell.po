@@ -200,11 +200,11 @@ msgstr "percorso ydotool"
 msgid "xdotool path"
 msgstr "percorso xdotool"
 
-msgid "Settings directory: "
-msgstr "Directory delle impostazioni:"
+msgid "Settings directory: {}"
+msgstr "Directory delle impostazioni: {}"
 
-msgid "Layouts directory: "
-msgstr "Directory dei layout:"
+msgid "Layouts directory: {}"
+msgstr "Directory dei layout: {}"
 
 msgid "Save settings"
 msgstr "Salva impostazioni"
@@ -647,12 +647,10 @@ msgid "Capture key"
 msgstr "Cattura la chiave"
 
 msgid "Press and release a key (including modifiers or Escape)."
-msgstr "Premi un tasto o una combinazione, quindi rilascia tutti i tasti per completare la cattura."
+msgstr "Premi e rilascia un tasto (inclusi i modificatori o Esc)."
 
 msgid "Press a key or shortcut, then release all keys to finish capture."
 msgstr "Premi un tasto o una combinazione, quindi rilascia tutti i tasti per completare la cattura."
-"Premi un tasto o una scorciatoia. Rilascia un modificatore per selezionarlo "
-"da solo."
 
 msgid "Choose a valid key or action."
 msgstr "Scegli un tasto o un'azione valida."
@@ -1353,11 +1351,8 @@ msgstr ""
 "Mancano gli strumenti di rilevamento a schermo intero o non è possibile "
 "eseguire query sulla sessione."
 
-msgid "Running processes: "
-msgstr "Processi in esecuzione:"
-
-msgid "Active window: "
-msgstr "Finestra attiva:"
+msgid "Running processes: {0} · Active window: {1}"
+msgstr "Processi in esecuzione: {0} · Finestra attiva: {1}"
 
 msgid "Create a layer to assign its keys."
 msgstr "Crea un livello per assegnarne le chiavi."
@@ -1637,8 +1632,6 @@ msgstr "Tieni premuto un altro tasto/combinazione"
 
 msgid "Press a key or combination, then release all keys to finish capture."
 msgstr "Premi un tasto o una combinazione, quindi rilascia tutti i tasti per completare la cattura."
-"Premi un tasto o tieni premuta una combinazione, quindi rilascia un tasto "
-"per acquisirla."
 
 msgid "Held key: {}"
 msgstr "Tasto premuto: {}"

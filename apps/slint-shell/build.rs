@@ -45,9 +45,10 @@ fn build() {
     let catalogs: Vec<_> = languages
         .iter()
         .map(|&(name, code)| {
-            let catalog =
-                rspolib::pofile(format!("translations/{code}/LC_MESSAGES/slint-shell.po").as_str())
-                    .unwrap();
+            let path = format!("translations/{code}/LC_MESSAGES/slint-shell.po");
+            i18n_checks::validate_po_wrapping(&std::fs::read_to_string(&path).unwrap())
+                .unwrap_or_else(|error| panic!("i18n {code}: {error}"));
+            let catalog = rspolib::pofile(path.as_str()).unwrap();
             validate_translations(&catalog, code);
             (name, catalog)
         })

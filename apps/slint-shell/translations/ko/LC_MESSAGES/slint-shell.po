@@ -193,11 +193,11 @@ msgstr "ydotool 경로"
 msgid "xdotool path"
 msgstr "xdotool 경로"
 
-msgid "Settings directory: "
-msgstr "설정 디렉토리:"
+msgid "Settings directory: {}"
+msgstr "설정 디렉토리: {}"
 
-msgid "Layouts directory: "
-msgstr "레이아웃 디렉토리:"
+msgid "Layouts directory: {}"
+msgstr "레이아웃 디렉토리: {}"
 
 msgid "Save settings"
 msgstr "설정 저장"
@@ -628,7 +628,7 @@ msgid "Capture key"
 msgstr "캡처 키"
 
 msgid "Press and release a key (including modifiers or Escape)."
-msgstr "키 또는 키 조합을 누른 다음 모든 키에서 손을 떼면 캡처가 완료됩니다."
+msgstr "키를 눌렀다가 놓으세요(보조 키 또는 Escape 포함)."
 
 msgid "Press a key or shortcut, then release all keys to finish capture."
 msgstr "키 또는 키 조합을 누른 다음 모든 키에서 손을 떼면 캡처가 완료됩니다."
@@ -1287,11 +1287,8 @@ msgstr "이 세션에서는 전체 화면 감지가 지원되지 않습니다. �
 msgid "Fullscreen detection tools are missing or could not query the session."
 msgstr "전체 화면 감지 도구가 없거나 세션을 쿼리할 수 없습니다."
 
-msgid "Running processes: "
-msgstr "실행 중인 프로세스:"
-
-msgid "Active window: "
-msgstr "활성 창:"
+msgid "Running processes: {0} · Active window: {1}"
+msgstr "실행 중인 프로세스: {0} · 활성 창: {1}"
 
 msgid "Create a layer to assign its keys."
 msgstr "키를 할당할 레이어를 만듭니다."

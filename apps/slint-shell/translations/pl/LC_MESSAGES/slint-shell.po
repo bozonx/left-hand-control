@@ -200,11 +200,11 @@ msgstr "ścieżka ydotool"
 msgid "xdotool path"
 msgstr "ścieżka xdotool"
 
-msgid "Settings directory: "
-msgstr "Katalog ustawień:"
+msgid "Settings directory: {}"
+msgstr "Katalog ustawień: {}"
 
-msgid "Layouts directory: "
-msgstr "Katalog układów:"
+msgid "Layouts directory: {}"
+msgstr "Katalog układów: {}"
 
 msgid "Save settings"
 msgstr "Zapisz ustawienia"
@@ -643,11 +643,10 @@ msgid "Capture key"
 msgstr "Klucz przechwytywania"
 
 msgid "Press and release a key (including modifiers or Escape)."
-msgstr "Naciśnij klawisz lub kombinację, a następnie zwolnij wszystkie klawisze, aby zakończyć przechwytywanie."
+msgstr "Naciśnij i zwolnij klawisz (w tym modyfikator lub Escape)."
 
 msgid "Press a key or shortcut, then release all keys to finish capture."
 msgstr "Naciśnij klawisz lub kombinację, a następnie zwolnij wszystkie klawisze, aby zakończyć przechwytywanie."
-"Naciśnij klawisz lub skrót. Zwolnij modyfikator, aby wybrać go samodzielnie."
 
 msgid "Choose a valid key or action."
 msgstr "Wybierz prawidłowy klucz lub akcję."
@@ -1343,11 +1342,8 @@ msgstr ""
 "Brakuje narzędzi do wykrywania pełnoekranowego lub nie można wysłać "
 "zapytania o sesję."
 
-msgid "Running processes: "
-msgstr "Uruchomione procesy:"
-
-msgid "Active window: "
-msgstr "Aktywne okno:"
+msgid "Running processes: {0} · Active window: {1}"
+msgstr "Uruchomione procesy: {0} · Aktywne okno: {1}"
 
 msgid "Create a layer to assign its keys."
 msgstr "Utwórz warstwę, aby przypisać jej klucze."
@@ -1631,8 +1627,6 @@ msgstr "Przytrzymaj kolejny klawisz/kombinację"
 
 msgid "Press a key or combination, then release all keys to finish capture."
 msgstr "Naciśnij klawisz lub kombinację, a następnie zwolnij wszystkie klawisze, aby zakończyć przechwytywanie."
-"Naciśnij jeden klawisz lub przytrzymaj kombinację, a następnie zwolnij "
-"klawisz, aby go przechwycić."
 
 msgid "Held key: {}"
 msgstr "Przytrzymany klawisz: {}"

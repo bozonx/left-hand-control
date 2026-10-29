@@ -97,26 +97,28 @@ impl Language {
     }
 
     /// Resolve an OS locale, including Chinese script and region variants.
-    fn from_os_locale(locale: &str) -> Self {
+    fn from_os_locale(locale: &str) -> Option<Self> {
         let normalized = locale
-            .split('.')
+            .split(['.', '@'])
             .next()
             .unwrap_or(locale)
             .replace('_', "-")
             .to_ascii_lowercase();
         let parts: Vec<_> = normalized.split('-').collect();
         if parts[0] == "zh" {
-            return if !parts.contains(&"hans")
-                && parts
-                    .iter()
-                    .any(|part| matches!(*part, "hant" | "tw" | "hk" | "mo"))
-            {
-                Self::ChineseTraditional
-            } else {
-                Self::ChineseSimplified
-            };
+            return Some(
+                if !parts.contains(&"hans")
+                    && parts
+                        .iter()
+                        .any(|part| matches!(*part, "hant" | "tw" | "hk" | "mo"))
+                {
+                    Self::ChineseTraditional
+                } else {
+                    Self::ChineseSimplified
+                },
+            );
         }
-        Self::from_code(parts[0]).unwrap_or_default()
+        Self::from_code(parts[0])
     }
 
     /// Resolve the configured preference; `auto` follows the OS language
@@ -126,13 +128,18 @@ impl Language {
             return *language;
         }
         match preference {
-            LocalePreference::Auto => ["LC_ALL", "LC_MESSAGES", "LANG"]
-                .iter()
-                .filter_map(|name| std::env::var(name).ok())
-                .find(|value| !value.is_empty())
-                .map_or(Self::English, |value| Self::from_os_locale(&value)),
+            LocalePreference::Auto => {
+                Self::from_languages(&lhc_core::platform::locale::message_languages())
+            }
             _ => Self::English,
         }
+    }
+
+    fn from_languages(languages: &[String]) -> Self {
+        languages
+            .iter()
+            .find_map(|locale| Self::from_os_locale(locale))
+            .unwrap_or_default()
     }
 }
 
@@ -190,7 +197,7 @@ impl tr::Translator for CatalogTranslator {
             return entry.3[0].into();
         }
         log::error!("missing singular translation: {context:?} {source:?}");
-        "".into()
+        source.into()
     }
 
     fn ntranslate<'a>(
@@ -207,7 +214,7 @@ impl tr::Translator for CatalogTranslator {
             return entry.3[form].into();
         }
         log::error!("missing plural translation: {context:?} {singular:?} {plural:?}");
-        "".into()
+        if n == 1 { singular } else { plural }.into()
     }
 }
 
@@ -682,7 +689,10 @@ pub fn tray_game_choice(language: Language, mode: crate::command::GameMode) -> S
 /// On-screen text announcing the active layout; `None` is no layout.
 pub fn layout_osd(language: Language, name: Option<&str>) -> String {
     match name {
-        Some(name) => RustText::Layout.text(language).replace("{}", name),
+        Some(name) => {
+            let template = RustText::Layout.text(language);
+            template.replace(if template.contains("{}") { "{}" } else { "{0}" }, name)
+        }
         None => RustText::NoLayout.text(language).to_owned(),
     }
 }
@@ -751,7 +761,7 @@ mod tests {
     }
 
     #[test]
-    fn contextual_translations_and_missing_keys_never_use_source_fallbacks() {
+    fn contextual_translations_and_missing_keys_use_readable_fallbacks() {
         use tr::Translator;
         let translator = CatalogTranslator(Language::Russian);
         assert_eq!(
@@ -759,9 +769,20 @@ mod tests {
             "Авто"
         );
         assert_eq!(translator.translate("On", Some("Game mode control")), "Вкл");
-        assert_eq!(translator.translate("not in the catalog", None), "");
-        assert_eq!(translator.translate("Auto", Some("unknown context")), "");
-        assert_eq!(translator.ntranslate(2, "unknown", "unknowns", None), "");
+        assert_eq!(
+            translator.translate("not in the catalog", None),
+            "not in the catalog"
+        );
+        assert_eq!(
+            translator.translate("Auto", Some("unknown context")),
+            "Auto"
+        );
+        for (n, expected) in [(0, "unknowns"), (1, "unknown"), (2, "unknowns")] {
+            assert_eq!(
+                translator.ntranslate(n, "unknown", "unknowns", None),
+                expected
+            );
+        }
     }
 
     #[test]
@@ -802,7 +823,29 @@ mod tests {
             ("C.UTF-8", Language::English),
             ("unknown", Language::English),
         ] {
-            assert_eq!(Language::from_os_locale(locale), expected, "{locale}");
+            assert_eq!(
+                Language::from_os_locale(locale).unwrap_or_default(),
+                expected,
+                "{locale}"
+            );
+        }
+    }
+
+    #[test]
+    fn language_preferences_skip_unsupported_languages_and_respect_english() {
+        for (locales, expected) in [
+            (vec!["xx", "ru", "en"], Language::Russian),
+            (vec!["xx", "en", "ru"], Language::English),
+            (vec!["", "zh_HK.UTF-8"], Language::ChineseTraditional),
+            (vec!["xx"], Language::English),
+            (vec![], Language::English),
+        ] {
+            assert_eq!(
+                Language::from_languages(
+                    &locales.into_iter().map(String::from).collect::<Vec<_>>()
+                ),
+                expected
+            );
         }
     }
 

@@ -193,11 +193,11 @@ msgstr "ydotool路径"
 msgid "xdotool path"
 msgstr "xdotool路径"
 
-msgid "Settings directory: "
-msgstr "设置目录："
+msgid "Settings directory: {}"
+msgstr "设置目录： {}"
 
-msgid "Layouts directory: "
-msgstr "布局目录："
+msgid "Layouts directory: {}"
+msgstr "布局目录： {}"
 
 msgid "Save settings"
 msgstr "保存设置"
@@ -628,7 +628,7 @@ msgid "Capture key"
 msgstr "捕获键"
 
 msgid "Press and release a key (including modifiers or Escape)."
-msgstr "按下按键或组合键，然后松开所有按键以完成捕获。"
+msgstr "按下并松开一个按键（包括修饰键或 Escape）。"
 
 msgid "Press a key or shortcut, then release all keys to finish capture."
 msgstr "按下按键或组合键，然后松开所有按键以完成捕获。"
@@ -1279,11 +1279,8 @@ msgstr "此会话不支持全屏检测。使用流程规则或开/关。"
 msgid "Fullscreen detection tools are missing or could not query the session."
 msgstr "全屏检测工具丢失或无法查询会话。"
 
-msgid "Running processes: "
-msgstr "运行进程："
-
-msgid "Active window: "
-msgstr "活动窗口："
+msgid "Running processes: {0} · Active window: {1}"
+msgstr "运行进程： {0} · 活动窗口： {1}"
 
 msgid "Create a layer to assign its keys."
 msgstr "创建一个图层来分配其键。"

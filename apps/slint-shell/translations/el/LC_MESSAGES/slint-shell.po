@@ -199,11 +199,11 @@ msgstr "διαδρομή ydotool"
 msgid "xdotool path"
 msgstr "διαδρομή xdotool"
 
-msgid "Settings directory: "
-msgstr "Κατάλογος ρυθμίσεων:"
+msgid "Settings directory: {}"
+msgstr "Κατάλογος ρυθμίσεων: {}"
 
-msgid "Layouts directory: "
-msgstr "Κατάλογος διατάξεων:"
+msgid "Layouts directory: {}"
+msgstr "Κατάλογος διατάξεων: {}"
 
 msgid "Save settings"
 msgstr "Αποθήκευση ρυθμίσεων"
@@ -648,13 +648,10 @@ msgid "Capture key"
 msgstr "Πλήκτρο λήψης"
 
 msgid "Press and release a key (including modifiers or Escape)."
-msgstr "Πατήστε ένα πλήκτρο ή συνδυασμό και αφήστε όλα τα πλήκτρα για να ολοκληρώσετε την καταγραφή."
-"Πατήστε ένα πλήκτρο (συμπεριλαμβανομένων των τροποποιητών ή του Escape)."
+msgstr "Πατήστε και αφήστε ένα πλήκτρο (συμπεριλαμβανομένων των τροποποιητών ή του Escape)."
 
 msgid "Press a key or shortcut, then release all keys to finish capture."
 msgstr "Πατήστε ένα πλήκτρο ή συνδυασμό και αφήστε όλα τα πλήκτρα για να ολοκληρώσετε την καταγραφή."
-"Πατήστε ένα πλήκτρο ή μια συντόμευση. Απελευθερώστε έναν τροποποιητή για να "
-"τον επιλέξετε μόνο του."
 
 msgid "Choose a valid key or action."
 msgstr "Επιλέξτε ένα έγκυρο κλειδί ή ενέργεια."
@@ -1362,11 +1359,8 @@ msgstr ""
 "Τα εργαλεία ανίχνευσης πλήρους οθόνης λείπουν ή δεν ήταν δυνατή η υποβολή "
 "ερωτήματος για τη συνεδρία."
 
-msgid "Running processes: "
-msgstr "Εκτελούμενες διαδικασίες:"
-
-msgid "Active window: "
-msgstr "Ενεργό παράθυρο:"
+msgid "Running processes: {0} · Active window: {1}"
+msgstr "Εκτελούμενες διαδικασίες: {0} · Ενεργό παράθυρο: {1}"
 
 msgid "Create a layer to assign its keys."
 msgstr "Δημιουργήστε ένα επίπεδο για να εκχωρήσετε τα κλειδιά του."
@@ -1647,8 +1641,6 @@ msgstr "Κρατήστε ένα άλλο πλήκτρο / συνδυασμό"
 
 msgid "Press a key or combination, then release all keys to finish capture."
 msgstr "Πατήστε ένα πλήκτρο ή συνδυασμό και αφήστε όλα τα πλήκτρα για να ολοκληρώσετε την καταγραφή."
-"Πατήστε ένα πλήκτρο ή κρατήστε πατημένο έναν συνδυασμό και, στη συνέχεια, "
-"αφήστε ένα πλήκτρο για να τον αποτυπώσετε."
 
 msgid "Held key: {}"
 msgstr "Κλειδί συγκράτησης: {}"

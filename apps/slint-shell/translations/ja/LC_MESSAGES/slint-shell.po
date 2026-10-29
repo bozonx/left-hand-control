@@ -193,11 +193,11 @@ msgstr "ydotool パス"
 msgid "xdotool path"
 msgstr "xdotool パス"
 
-msgid "Settings directory: "
-msgstr "設定ディレクトリ:"
+msgid "Settings directory: {}"
+msgstr "設定ディレクトリ: {}"
 
-msgid "Layouts directory: "
-msgstr "レイアウトディレクトリ:"
+msgid "Layouts directory: {}"
+msgstr "レイアウトディレクトリ: {}"
 
 msgid "Save settings"
 msgstr "設定を保存する"
@@ -628,7 +628,7 @@ msgid "Capture key"
 msgstr "キャプチャキー"
 
 msgid "Press and release a key (including modifiers or Escape)."
-msgstr "キーまたはキーの組み合わせを押し、すべてのキーを離すと記録が完了します。"
+msgstr "キーを押して離してください（修飾キーや Escape キーも含みます）。"
 
 msgid "Press a key or shortcut, then release all keys to finish capture."
 msgstr "キーまたはキーの組み合わせを押し、すべてのキーを離すと記録が完了します。"
@@ -1286,11 +1286,8 @@ msgstr "このセッションでは全画面検出はサポートされていま
 msgid "Fullscreen detection tools are missing or could not query the session."
 msgstr "全画面検出ツールが見つからないか、セッションをクエリできませんでした。"
 
-msgid "Running processes: "
-msgstr "実行中のプロセス:"
-
-msgid "Active window: "
-msgstr "アクティブなウィンドウ:"
+msgid "Running processes: {0} · Active window: {1}"
+msgstr "実行中のプロセス: {0} · アクティブなウィンドウ: {1}"
 
 msgid "Create a layer to assign its keys."
 msgstr "キーを割り当てるレイヤーを作成します。"

@@ -11,6 +11,27 @@ pub struct Entry {
     pub fuzzy: bool,
 }
 
+/// Multiline translations start with an empty msgstr, as emitted by gettext.
+/// This also catches stale continuations left after replacing a translation
+/// with a complete one-line value.
+pub fn validate_po_wrapping(text: &str) -> Result<(), String> {
+    let mut complete_translation = false;
+    for (line_number, line) in text.lines().enumerate() {
+        let line = line.trim();
+        if complete_translation && line.starts_with('"') {
+            return Err(format!(
+                "line {}: multiline translation must start with an empty msgstr",
+                line_number + 1
+            ));
+        }
+        complete_translation = line.starts_with("msgstr")
+            && line
+                .split_once(' ')
+                .is_some_and(|(_, value)| value != "\"\"");
+    }
+    Ok(())
+}
+
 #[derive(Debug, PartialEq, Eq)]
 enum Token {
     String(String),
@@ -103,6 +124,7 @@ fn tokens(text: &str) -> Result<Vec<Token>, String> {
 
 fn placeholders(text: &str) -> Result<BTreeMap<String, usize>, String> {
     let mut out = BTreeMap::new();
+    let mut implicit_index = 0;
     let mut chars = text.chars().peekable();
     while let Some(c) = chars.next() {
         if (c == '{' || c == '}') && chars.peek() == Some(&c) {
@@ -123,6 +145,15 @@ fn placeholders(text: &str) -> Result<BTreeMap<String, usize>, String> {
             if !closed {
                 return Err(format!("unclosed placeholder in {text:?}"));
             }
+            let name = if name.is_empty() {
+                let index = implicit_index;
+                implicit_index += 1;
+                index.to_string()
+            } else if let Ok(index) = name.trim().parse::<usize>() {
+                index.to_string()
+            } else {
+                name.trim().to_owned()
+            };
             *out.entry(name).or_default() += 1;
         } else if c == '}' {
             return Err(format!("unmatched brace in {text:?}"));
@@ -362,6 +393,18 @@ pub fn validate_bundled(rust: &str) -> Result<(), String> {
 mod tests {
     use super::*;
 
+    #[test]
+    fn po_wrapping_rejects_stale_continuations() {
+        assert!(validate_po_wrapping("msgstr \"New instruction.\"\n\"Old instruction.\"").is_err());
+        assert!(
+            validate_po_wrapping("msgstr[0] \"New instruction.\"\n\"Old instruction.\"").is_err()
+        );
+        assert!(validate_po_wrapping("msgstr \"\"\n\"First part \"\n\"second part.\"").is_ok());
+        assert!(
+            validate_po_wrapping("msgstr \"Complete instruction.\"\n\nmsgid \"Other\"").is_ok()
+        );
+    }
+
     fn entry() -> Entry {
         Entry {
             source: "Hello {}".into(),
@@ -428,6 +471,39 @@ mod tests {
             }])
             .unwrap_err()
             .contains("fuzzy")
+        );
+    }
+
+    #[test]
+    fn translations_can_reorder_positional_arguments() {
+        let entry = Entry {
+            source: "First {}, second {}".into(),
+            translations: vec!["Второй {1}, первый {0}".into()],
+            ..Default::default()
+        };
+        assert!(validate(std::slice::from_ref(&entry), &[], &[], "", "").is_ok());
+        for translated in [
+            "Первый {0}, второй {2}",
+            "Первый {0}, второй {0}",
+            "Первый {}",
+        ] {
+            assert!(
+                validate(
+                    &[Entry {
+                        translations: vec![translated.into()],
+                        ..entry.clone()
+                    }],
+                    &[],
+                    &[],
+                    "",
+                    ""
+                )
+                .is_err()
+            );
+        }
+        assert_eq!(
+            placeholders("{{literal}} {} {1} {n}").unwrap(),
+            placeholders("{n} {1} {0} {{текст}}").unwrap()
         );
     }
 

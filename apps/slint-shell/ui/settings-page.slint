@@ -403,12 +403,12 @@ export component SettingsPage inherits PageLayout {
                             spacing: Theme.space-2xl;
                             CardHeader { vertical-stretch: 0; title: @tr("Paths"); }
                             HorizontalLayout { spacing: Theme.space-m; padding: 0px; vertical-stretch: 0;
-                                Text { vertical-stretch: 0; text: @tr("Settings directory: ") + SettingsEditor.settings-dir; color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
+                                Text { vertical-stretch: 0; text: @tr("Settings directory: {}", SettingsEditor.settings-dir); color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
                                 Button { text: @tr("Copy path"); clicked => { root.copy-path(SettingsEditor.settings-dir); } }
                             }
                             Divider {}
                             HorizontalLayout { spacing: Theme.space-m; padding: 0px; vertical-stretch: 0;
-                                Text { vertical-stretch: 0; text: @tr("Layouts directory: ") + SettingsEditor.layouts-dir; color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
+                                Text { vertical-stretch: 0; text: @tr("Layouts directory: {}", SettingsEditor.layouts-dir); color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
                                 Button { text: @tr("Copy path"); clicked => { root.copy-path(SettingsEditor.layouts-dir); } }
                             }
                         }
@@ -812,7 +812,7 @@ export component SettingsPage inherits PageLayout {
 
                     TitledCard {
                         title: @tr("Your rules");
-                        if AppState.game-processes-availability.id != "capability-available" || AppState.game-window-availability.id != "capability-available": Text { vertical-stretch: 0; text: @tr("Running processes: ") + Locale.text(AppState.game-processes-availability) + " · " + @tr("Active window: ") + Locale.text(AppState.game-window-availability); color: Theme.muted; wrap: word-wrap; }
+                        if AppState.game-processes-availability.id != "capability-available" || AppState.game-window-availability.id != "capability-available": Text { vertical-stretch: 0; text: @tr("Running processes: {0} · Active window: {1}", Locale.text(AppState.game-processes-availability), Locale.text(AppState.game-window-availability)); color: Theme.muted; wrap: word-wrap; }
                         HorizontalLayout {
                             vertical-stretch: 0; spacing: Theme.space-3xl;
                             GameAppsField {

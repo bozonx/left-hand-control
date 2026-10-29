@@ -197,11 +197,11 @@ msgstr "ydotool cesta"
 msgid "xdotool path"
 msgstr "cesta xdotool"
 
-msgid "Settings directory: "
-msgstr "Adresář nastavení:"
+msgid "Settings directory: {}"
+msgstr "Adresář nastavení: {}"
 
-msgid "Layouts directory: "
-msgstr "Adresář rozložení:"
+msgid "Layouts directory: {}"
+msgstr "Adresář rozložení: {}"
 
 msgid "Save settings"
 msgstr "Uložte nastavení"
@@ -634,12 +634,10 @@ msgid "Capture key"
 msgstr "Zachycovací klíč"
 
 msgid "Press and release a key (including modifiers or Escape)."
-msgstr "Stiskněte klávesu nebo kombinaci a poté uvolněte všechny klávesy pro dokončení záznamu."
+msgstr "Stiskněte a uvolněte klávesu (včetně modifikátorů nebo Escape)."
 
 msgid "Press a key or shortcut, then release all keys to finish capture."
 msgstr "Stiskněte klávesu nebo kombinaci a poté uvolněte všechny klávesy pro dokončení záznamu."
-"Stiskněte klávesu nebo zkratku. Chcete-li jej vybrat samostatně, uvolněte "
-"modifikátor."
 
 msgid "Choose a valid key or action."
 msgstr "Vyberte platný klíč nebo akci."
@@ -1327,11 +1325,8 @@ msgstr ""
 "Nástroje detekce na celou obrazovku chybí nebo se nepodařilo dotazovat na "
 "relaci."
 
-msgid "Running processes: "
-msgstr "Běžící procesy:"
-
-msgid "Active window: "
-msgstr "Aktivní okno:"
+msgid "Running processes: {0} · Active window: {1}"
+msgstr "Běžící procesy: {0} · Aktivní okno: {1}"
 
 msgid "Create a layer to assign its keys."
 msgstr "Vytvořte vrstvu k přiřazení jejích klíčů."

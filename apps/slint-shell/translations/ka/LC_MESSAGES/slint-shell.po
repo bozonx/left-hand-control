@@ -198,11 +198,11 @@ msgstr "ydotool გზა"
 msgid "xdotool path"
 msgstr "xdotool გზა"
 
-msgid "Settings directory: "
-msgstr "პარამეტრების დირექტორია:"
+msgid "Settings directory: {}"
+msgstr "პარამეტრების დირექტორია: {}"
 
-msgid "Layouts directory: "
-msgstr "განლაგების დირექტორია:"
+msgid "Layouts directory: {}"
+msgstr "განლაგების დირექტორია: {}"
 
 msgid "Save settings"
 msgstr "პარამეტრების შენახვა"
@@ -641,12 +641,10 @@ msgid "Capture key"
 msgstr "გადაღების გასაღები"
 
 msgid "Press and release a key (including modifiers or Escape)."
-msgstr "დააჭირეთ კლავიშს ან კომბინაციას, შემდეგ გაუშვით ყველა კლავიშს ჩაწერის დასასრულებლად."
+msgstr "დააჭირეთ და გაუშვით კლავიშს (მოდიფიკატორების ან Escape-ის ჩათვლით)."
 
 msgid "Press a key or shortcut, then release all keys to finish capture."
 msgstr "დააჭირეთ კლავიშს ან კომბინაციას, შემდეგ გაუშვით ყველა კლავიშს ჩაწერის დასასრულებლად."
-"დააჭირეთ ღილაკს ან მალსახმობს. გაათავისუფლეთ მოდიფიკატორი, რომ აირჩიოთ იგი "
-"მარტო."
 
 msgid "Choose a valid key or action."
 msgstr "აირჩიეთ სწორი გასაღები ან მოქმედება."
@@ -1337,11 +1335,8 @@ msgstr ""
 msgid "Fullscreen detection tools are missing or could not query the session."
 msgstr "სრულეკრანიანი გამოვლენის ხელსაწყოები აკლია ან ვერ მოითხოვდა სესიას."
 
-msgid "Running processes: "
-msgstr "მიმდინარე პროცესები:"
-
-msgid "Active window: "
-msgstr "აქტიური ფანჯარა:"
+msgid "Running processes: {0} · Active window: {1}"
+msgstr "მიმდინარე პროცესები: {0} · აქტიური ფანჯარა: {1}"
 
 msgid "Create a layer to assign its keys."
 msgstr "შექმენით ფენა მისი გასაღებების მინიჭებისთვის."

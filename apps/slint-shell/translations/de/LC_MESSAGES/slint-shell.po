@@ -198,11 +198,11 @@ msgstr "ydotool-Pfad"
 msgid "xdotool path"
 msgstr "xdotool-Pfad"
 
-msgid "Settings directory: "
-msgstr "Einstellungsverzeichnis:"
+msgid "Settings directory: {}"
+msgstr "Einstellungsverzeichnis: {}"
 
-msgid "Layouts directory: "
-msgstr "Layouts-Verzeichnis:"
+msgid "Layouts directory: {}"
+msgstr "Layouts-Verzeichnis: {}"
 
 msgid "Save settings"
 msgstr "Einstellungen speichern"
@@ -643,12 +643,10 @@ msgid "Capture key"
 msgstr "Taste erfassen"
 
 msgid "Press and release a key (including modifiers or Escape)."
-msgstr "Drücken Sie eine Taste oder Tastenkombination und lassen Sie dann alle Tasten los, um die Erfassung abzuschließen."
+msgstr "Drücken Sie eine Taste und lassen Sie sie wieder los (auch Modifikatortasten oder Escape)."
 
 msgid "Press a key or shortcut, then release all keys to finish capture."
 msgstr "Drücken Sie eine Taste oder Tastenkombination und lassen Sie dann alle Tasten los, um die Erfassung abzuschließen."
-"Drücken Sie eine Taste oder einen Kurzbefehl. Lassen Sie einen Modifikator "
-"los, um nur ihn auszuwählen."
 
 msgid "Choose a valid key or action."
 msgstr "Wählen Sie eine gültige Taste oder Aktion."
@@ -1349,11 +1347,8 @@ msgid "Fullscreen detection tools are missing or could not query the session."
 msgstr ""
 "Tools zur Vollbilderkennung fehlen oder konnten die Sitzung nicht abfragen."
 
-msgid "Running processes: "
-msgstr "Laufende Prozesse:"
-
-msgid "Active window: "
-msgstr "Aktives Fenster:"
+msgid "Running processes: {0} · Active window: {1}"
+msgstr "Laufende Prozesse: {0} · Aktives Fenster: {1}"
 
 msgid "Create a layer to assign its keys."
 msgstr "Erstellen Sie eine Ebene, um deren Tasten zuzuweisen."
@@ -1638,8 +1633,6 @@ msgstr "Halten Sie eine andere Taste/Kombination gedrückt"
 
 msgid "Press a key or combination, then release all keys to finish capture."
 msgstr "Drücken Sie eine Taste oder Tastenkombination und lassen Sie dann alle Tasten los, um die Erfassung abzuschließen."
-"Drücken Sie eine Taste oder halten Sie eine Kombination gedrückt und lassen "
-"Sie dann eine Taste los, um sie zu erfassen."
 
 msgid "Held key: {}"
 msgstr "Gehaltene Taste: {}"

@@ -197,11 +197,11 @@ msgstr "ydotool жолы"
 msgid "xdotool path"
 msgstr "xdotool жолы"
 
-msgid "Settings directory: "
-msgstr "Параметрлер каталогы:"
+msgid "Settings directory: {}"
+msgstr "Параметрлер каталогы: {}"
 
-msgid "Layouts directory: "
-msgstr "Орналасулар каталогы:"
+msgid "Layouts directory: {}"
+msgstr "Орналасулар каталогы: {}"
 
 msgid "Save settings"
 msgstr "Параметрлерді сақтау"
@@ -641,12 +641,10 @@ msgid "Capture key"
 msgstr "Түсіру кілті"
 
 msgid "Press and release a key (including modifiers or Escape)."
-msgstr "Пернені немесе тіркесімді басып, түсіруді аяқтау үшін барлық пернелерді жіберіңіз."
+msgstr "Пернені басып, жіберіңіз (модификаторлар немесе Escape қоса)."
 
 msgid "Press a key or shortcut, then release all keys to finish capture."
 msgstr "Пернені немесе тіркесімді басып, түсіруді аяқтау үшін барлық пернелерді жіберіңіз."
-"Пернені немесе төте жолды басыңыз. Модификаторды жалғыз таңдау үшін "
-"босатыңыз."
 
 msgid "Choose a valid key or action."
 msgstr "Жарамды кілтті немесе әрекетті таңдаңыз."
@@ -1337,11 +1335,8 @@ msgstr ""
 msgid "Fullscreen detection tools are missing or could not query the session."
 msgstr "Толық экранды анықтау құралдары жоқ немесе сеансты сұрау мүмкін емес."
 
-msgid "Running processes: "
-msgstr "Орындалатын процестер:"
-
-msgid "Active window: "
-msgstr "Белсенді терезе:"
+msgid "Running processes: {0} · Active window: {1}"
+msgstr "Орындалатын процестер: {0} · Белсенді терезе: {1}"
 
 msgid "Create a layer to assign its keys."
 msgstr "Оның кілттерін тағайындау үшін қабат жасаңыз."
@@ -1616,8 +1611,6 @@ msgstr "Басқа пернені/комбинацияны басып тұрың
 
 msgid "Press a key or combination, then release all keys to finish capture."
 msgstr "Пернені немесе тіркесімді басып, түсіруді аяқтау үшін барлық пернелерді жіберіңіз."
-"Бір пернені басыңыз немесе комбинацияны басып тұрыңыз, содан кейін оны "
-"түсіру үшін пернені жіберіңіз."
 
 msgid "Held key: {}"
 msgstr "Ұстап тұрған перне: {}"

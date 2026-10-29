@@ -199,11 +199,11 @@ msgstr "chemin ydotool"
 msgid "xdotool path"
 msgstr "chemin xdotool"
 
-msgid "Settings directory: "
-msgstr "Répertoire des paramètres :"
+msgid "Settings directory: {}"
+msgstr "Répertoire des paramètres : {}"
 
-msgid "Layouts directory: "
-msgstr "Répertoire des mises en page :"
+msgid "Layouts directory: {}"
+msgstr "Répertoire des mises en page : {}"
 
 msgid "Save settings"
 msgstr "Enregistrer les paramètres"
@@ -648,12 +648,10 @@ msgid "Capture key"
 msgstr "Capturer la touche"
 
 msgid "Press and release a key (including modifiers or Escape)."
-msgstr "Appuyez sur une touche ou une combinaison, puis relâchez toutes les touches pour terminer la capture."
+msgstr "Appuyez sur une touche puis relâchez-la (y compris une touche de modification ou Échap)."
 
 msgid "Press a key or shortcut, then release all keys to finish capture."
 msgstr "Appuyez sur une touche ou une combinaison, puis relâchez toutes les touches pour terminer la capture."
-"Appuyez sur une touche ou un raccourci. Relâchez un modificateur pour le "
-"sélectionner seul."
 
 msgid "Choose a valid key or action."
 msgstr "Choisissez une clé ou une action valide."
@@ -1358,11 +1356,8 @@ msgstr ""
 "Les outils de détection plein écran sont manquants ou n'ont pas pu "
 "interroger la session."
 
-msgid "Running processes: "
-msgstr "Processus en cours :"
-
-msgid "Active window: "
-msgstr "Fenêtre active :"
+msgid "Running processes: {0} · Active window: {1}"
+msgstr "Processus en cours : {0} · Fenêtre active : {1}"
 
 msgid "Create a layer to assign its keys."
 msgstr "Créez un calque pour attribuer ses clés."
@@ -1647,8 +1642,6 @@ msgstr "Maintenez une autre touche/combinaison"
 
 msgid "Press a key or combination, then release all keys to finish capture."
 msgstr "Appuyez sur une touche ou une combinaison, puis relâchez toutes les touches pour terminer la capture."
-"Appuyez sur une touche ou maintenez une combinaison enfoncée, puis relâchez "
-"une touche pour la capturer."
 
 msgid "Held key: {}"
 msgstr "Touche maintenue : {}"

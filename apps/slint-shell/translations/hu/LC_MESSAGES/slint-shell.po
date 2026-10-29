@@ -199,11 +199,11 @@ msgstr "ydotool út"
 msgid "xdotool path"
 msgstr "xdotool elérési út"
 
-msgid "Settings directory: "
-msgstr "Beállítások könyvtár:"
+msgid "Settings directory: {}"
+msgstr "Beállítások könyvtár: {}"
 
-msgid "Layouts directory: "
-msgstr "Elrendezések könyvtára:"
+msgid "Layouts directory: {}"
+msgstr "Elrendezések könyvtára: {}"
 
 msgid "Save settings"
 msgstr "Mentse el a beállításokat"
@@ -643,13 +643,10 @@ msgid "Capture key"
 msgstr "Rögzítési kulcs"
 
 msgid "Press and release a key (including modifiers or Escape)."
-msgstr "Nyomjon meg egy billentyűt vagy kombinációt, majd engedje fel az összes billentyűt a rögzítés befejezéséhez."
-"Nyomjon meg egy billentyűt (beleértve a módosítókat vagy az Escape-et)."
+msgstr "Nyomjon meg és engedjen fel egy billentyűt (módosítóbillentyű vagy Escape is lehet)."
 
 msgid "Press a key or shortcut, then release all keys to finish capture."
 msgstr "Nyomjon meg egy billentyűt vagy kombinációt, majd engedje fel az összes billentyűt a rögzítés befejezéséhez."
-"Nyomjon meg egy billentyűt vagy parancsikont. Engedjen fel egy módosítót, "
-"hogy egyedül válassza ki."
 
 msgid "Choose a valid key or action."
 msgstr "Válasszon egy érvényes kulcsot vagy műveletet."
@@ -1348,11 +1345,8 @@ msgstr ""
 "A teljes képernyős észlelési eszközök hiányoznak, vagy nem tudták lekérdezni"
 " a munkamenetet."
 
-msgid "Running processes: "
-msgstr "Futó folyamatok:"
-
-msgid "Active window: "
-msgstr "Aktív ablak:"
+msgid "Running processes: {0} · Active window: {1}"
+msgstr "Futó folyamatok: {0} · Aktív ablak: {1}"
 
 msgid "Create a layer to assign its keys."
 msgstr "Hozzon létre egy réteget a kulcsok hozzárendeléséhez."
@@ -1631,8 +1625,6 @@ msgstr "Tartsa lenyomva egy másik billentyűt/kombinációt"
 
 msgid "Press a key or combination, then release all keys to finish capture."
 msgstr "Nyomjon meg egy billentyűt vagy kombinációt, majd engedje fel az összes billentyűt a rögzítés befejezéséhez."
-"Nyomjon meg egy billentyűt, vagy tartsa lenyomva a kombinációt, majd engedje"
-" fel a billentyűt a rögzítéshez."
 
 msgid "Held key: {}"
 msgstr "Tartott kulcs: {}"

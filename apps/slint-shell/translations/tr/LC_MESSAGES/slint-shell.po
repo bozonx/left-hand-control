@@ -198,11 +198,11 @@ msgstr "ydotool yolu"
 msgid "xdotool path"
 msgstr "xdotool yolu"
 
-msgid "Settings directory: "
-msgstr "Ayarlar dizini:"
+msgid "Settings directory: {}"
+msgstr "Ayarlar dizini: {}"
 
-msgid "Layouts directory: "
-msgstr "Düzenler dizini:"
+msgid "Layouts directory: {}"
+msgstr "Düzenler dizini: {}"
 
 msgid "Save settings"
 msgstr "Ayarları kaydet"
@@ -639,11 +639,10 @@ msgid "Capture key"
 msgstr "Yakalama anahtarı"
 
 msgid "Press and release a key (including modifiers or Escape)."
-msgstr "Bir tuşa veya tuş birleşimine basın, ardından yakalamayı tamamlamak için tüm tuşları bırakın."
+msgstr "Bir tuşa basıp bırakın (değiştirici tuşlar veya Escape dahil)."
 
 msgid "Press a key or shortcut, then release all keys to finish capture."
 msgstr "Bir tuşa veya tuş birleşimine basın, ardından yakalamayı tamamlamak için tüm tuşları bırakın."
-"Bir tuşa veya kısayola basın. Tek başına seçmek için değiştiriciyi bırakın."
 
 msgid "Choose a valid key or action."
 msgstr "Geçerli bir anahtar veya eylem seçin."
@@ -1333,11 +1332,8 @@ msgstr ""
 msgid "Fullscreen detection tools are missing or could not query the session."
 msgstr "Tam ekran algılama araçları eksik veya oturumu sorgulayamadı."
 
-msgid "Running processes: "
-msgstr "Çalışan işlemler:"
-
-msgid "Active window: "
-msgstr "Etkin pencere:"
+msgid "Running processes: {0} · Active window: {1}"
+msgstr "Çalışan işlemler: {0} · Etkin pencere: {1}"
 
 msgid "Create a layer to assign its keys."
 msgstr "Tuşlarını atamak için bir katman oluşturun."
@@ -1612,8 +1608,6 @@ msgstr "Başka bir tuşa / kombinasyona basılı tutun"
 
 msgid "Press a key or combination, then release all keys to finish capture."
 msgstr "Bir tuşa veya tuş birleşimine basın, ardından yakalamayı tamamlamak için tüm tuşları bırakın."
-"Bir tuşa basın veya bir kombinasyonu basılı tutun, ardından onu yakalamak "
-"için bir tuşu bırakın."
 
 msgid "Held key: {}"
 msgstr "Basılı tutulan tuş: {}"
