@@ -127,7 +127,7 @@ component MacroCard inherits Card {
                             text: root.item.id;
                             placeholder: "id";
                             label: @tr("Macro ID");
-                            saved(value) => { MacroEditor.set-field(root.index, MacroField.id, value); }
+                            saved(value) => { MacroEditor.set-field(root.index, MacroField.id, value); return true; }
                         }
                         VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/copy.svg"); label: @tr("Copy ID"); enabled: root.item.id != ""; clicked => { root.copy(root.item.id); } } }
                     }
@@ -145,7 +145,7 @@ component MacroCard inherits Card {
                         text: root.item.name;
                         placeholder: @tr("Macro name");
                         label: @tr("Name");
-                        saved(value) => { MacroEditor.set-field(root.index, MacroField.name, value); }
+                        saved(value) => { MacroEditor.set-field(root.index, MacroField.name, value); return true; }
                     }
                 }
             }

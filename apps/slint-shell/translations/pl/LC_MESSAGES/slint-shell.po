@@ -3672,3 +3672,6 @@ msgstr "Tylko gdy gra jest na pierwszym planie"
 
 msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
 msgstr "Gry zgłaszane przez launchery lub system liczą się tylko, gdy ich okno jest aktywne, więc przejście do przeglądarki wyłącza tryb gry. Steam w systemie Windows nie podaje, który program jest grą, dlatego jego gry liczą się zawsze."
+
+msgid "Cannot load this layout. See the application log."
+msgstr "Nie można wczytać tego układu. Sprawdź dziennik aplikacji."

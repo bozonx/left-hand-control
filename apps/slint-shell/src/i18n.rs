@@ -312,6 +312,7 @@ pub enum Msg {
     LayerSaved,
     RuleSaved,
     LayoutEmpty,
+    LayoutLoadFailed(String),
     /// Default name of a copy of the named item.
     CopyName(String),
     /// Menu actions run through the mapper, which is stopped.
@@ -481,6 +482,7 @@ impl Msg {
             Self::LayerSaved => ("layer-saved", empty(), 0),
             Self::RuleSaved => ("rule-saved", empty(), 0),
             Self::LayoutEmpty => ("layout-empty", empty(), 0),
+            Self::LayoutLoadFailed(error) => diagnostic("layout-load-failed", error),
             Self::CopyName(name) => ("copy-name", name.clone(), 0),
             Self::MapperRequired => ("mapper-required", empty(), 0),
             Self::Name(kind, issue) => (

@@ -102,6 +102,7 @@ export global SettingsEditor {
     callback refresh-devices();
     callback refresh-commands();
     in property <int> commands-revision;
+    in-out property <bool> devices-loading;
     in property <bool> commands-loading;
     in property <bool> commands-loaded;
     in property <Message> commands-error;

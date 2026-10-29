@@ -44,8 +44,8 @@ export global LayersEditor {
     /// Exchange the assignments of layer keys `from` and `to`.
     callback swap-keys(int, int);
     callback remove-extra(int);
-    callback update-description(string);
-    callback update-name(string);
+    callback update-description(string) -> bool;
+    callback update-name(string) -> bool;
     /// Why `name` cannot be used for a new layer or, when `renaming`, for the selected one.
     pure callback name-error(name: string, renaming: bool) -> Message;
     callback add-extra();
@@ -326,7 +326,7 @@ export component LayersPage inherits PageLayout {
                                 text: LayersEditor.selected >= 0 ? LayersEditor.names[LayersEditor.selected] : @tr("No layers yet");
                                 label: @tr("Name"); text-size: Theme.font-medium; text-weight: Theme.weight-semibold;
                                 validate(value) => { return LayersEditor.name-error(value, true); }
-                                saved(value) => { LayersEditor.update-name(value); }
+                                saved(value) => { return LayersEditor.update-name(value); }
                             }
                         }
                         Rectangle { horizontal-stretch: 1; }
@@ -350,7 +350,7 @@ export component LayersPage inherits PageLayout {
                     if LayersEditor.selected >= 0: InlineTextArea {
                         text: LayersEditor.description; placeholder: @tr("Add description"); label: @tr("Layer description");
                         text-color: Theme.muted;
-                        saved(value) => { LayersEditor.update-description(value); }
+                        saved(value) => { return LayersEditor.update-description(value); }
                     }
 
                 }

@@ -4,7 +4,17 @@ import { Locale, Message } from "i18n.slint";
 import { TextField, IconButton } from "controls-base.slint";
 
 export global InlineEditors {
-    in-out property <int> commit-revision: 0; in-out property <int> revision; pure callback nonempty(string) -> bool;
+    in-out property <int> commit-revision: 0;
+    in-out property <int> revision;
+    in-out property <bool> commit-succeeded: true;
+    pure callback nonempty(string) -> bool;
+    callback synchronize();
+    public function flush() -> bool {
+        root.commit-succeeded = true;
+        root.commit-revision += 1;
+        root.synchronize();
+        return root.commit-succeeded;
+    }
     // Set from the winit window events: focus loss caused by switching windows must not commit.
     in-out property <bool> window-active: true;
     // Buttons and other touch areas take presses without moving focus, so focus loss
@@ -18,7 +28,10 @@ export global InlineEditors {
     }
 }
 
-export component InlineTextField inherits FocusScope {
+/// Shared lifecycle for single-line and multiline editors. A failed save
+/// keeps the draft open; only the owner can acknowledge a persisted edit.
+component InlineEditor inherits FocusScope {
+    in property <bool> multiline: false;
     in property <string> text;
     in property <string> placeholder;
     in property <string> label;
@@ -27,41 +40,49 @@ export component InlineTextField inherits FocusScope {
     in property <int> text-weight: Theme.weight-regular;
     in property <color> text-color: Theme.text;
     in-out property <bool> editing: false;
-    private property <string> draft;
+    in-out property <string> draft;
     private property <int> revision: InlineEditors.revision;
     private property <int> commit-revision: InlineEditors.commit-revision;
     private property <int> press-revision: InlineEditors.press-revision;
     private property <Message> no-issue;
-    // Checked only while editing: validation may read the library from disk.
-    private property <Message> issue: root.editing ? root.validate(root.draft) : root.no-issue;
-    private property <bool> can-save: (root.allow-empty || InlineEditors.nonempty(root.draft)) && root.issue.id == "";
-    changed commit-revision => { if root.editing { root.save(); } }
+    out property <Message> issue: root.editing ? root.validate(root.draft) : root.no-issue;
+    out property <bool> can-save: (root.allow-empty || InlineEditors.nonempty(root.draft)) && root.issue.id == "";
+    changed commit-revision => { if root.editing && !root.save() { InlineEditors.commit-succeeded = false; } }
     changed press-revision => {
         if InlineEditors.pressed-outside(root.absolute-position.x, root.absolute-position.y, root.width, root.height) { root.blurred(); }
     }
     changed revision => { root.editing = false; }
     changed text => { root.editing = false; }
-    callback saved(string);
+    callback saved(string) -> bool;
     /// Why the draft cannot be saved; an empty id accepts it.
     pure callback validate(string) -> Message;
     public function begin() { root.draft = root.text; root.editing = true; }
-    function save() { if root.can-save { root.saved(root.draft); root.editing = false; } }
-    function cancel() { root.draft = root.text; root.editing = false; }
-    function blurred() {
-        if !root.editing || !InlineEditors.window-active { return; }
-        if root.can-save { root.save(); } else { root.cancel(); }
+    public function save() -> bool {
+        if !root.can-save { return false; }
+        let applied = root.saved(root.draft);
+        if applied { root.editing = false; }
+        return applied;
     }
+    public function cancel() { root.draft = root.text; root.editing = false; }
+    public function blurred() {
+        if !root.editing || !InlineEditors.window-active { return; }
+        root.save();
+    }
+    focus-on-tab-navigation: !root.editing;
+    key-pressed(event) => {
+        if root.editing && event.text == Key.Escape { root.cancel(); return accept; }
+        if root.editing && root.multiline && event.modifiers.control && event.text == Key.Return { root.save(); return accept; }
+        if !root.editing && (event.text == Key.Return || event.text == " ") { root.begin(); return accept; }
+        return reject;
+    }
+}
+
+export component InlineTextField inherits InlineEditor {
     vertical-stretch: 0;
     horizontal-stretch: root.editing ? 1 : 0;
     min-width: root.editing ? 92px : 0px;
     preferred-width: measure.preferred-width + 40px;
     max-width: root.editing ? Theme.unbounded : root.preferred-width;
-    focus-on-tab-navigation: !root.editing;
-    key-pressed(event) => {
-        if root.editing && event.text == Key.Escape { root.cancel(); return accept; }
-        if !root.editing && (event.text == Key.Return || event.text == " ") { root.begin(); return accept; }
-        return reject;
-    }
     measure := Text {
         text: root.text == "" ? root.placeholder : root.text;
         font-size: root.text-size;
@@ -133,44 +154,12 @@ export component InlineTextField inherits FocusScope {
     }
 }
 
-export component InlineTextArea inherits FocusScope {
+export component InlineTextArea inherits InlineEditor {
+    multiline: true;
     in property <bool> expanded: false;
-    in property <string> text;
-    in property <string> placeholder;
-    in property <string> label;
-    in property <bool> allow-empty: true;
-    in property <length> text-size: Theme.font-default;
-    in property <int> text-weight: Theme.weight-regular;
-    in property <color> text-color: Theme.text;
-    in-out property <bool> editing: false;
-    private property <string> draft;
-    private property <int> revision: InlineEditors.revision;
-    private property <int> commit-revision: InlineEditors.commit-revision;
-    private property <int> press-revision: InlineEditors.press-revision;
-    changed commit-revision => { if root.editing { root.save(); } }
-    changed press-revision => {
-        if InlineEditors.pressed-outside(root.absolute-position.x, root.absolute-position.y, root.width, root.height) { root.blurred(); }
-    }
-    changed revision => { root.editing = false; }
-    changed text => { root.editing = false; }
-    callback saved(string);
-    public function begin() { root.draft = root.text; root.editing = true; }
-    function save() { if root.allow-empty || InlineEditors.nonempty(root.draft) { root.saved(root.draft); root.editing = false; } }
-    function cancel() { root.draft = root.text; root.editing = false; }
-    function blurred() {
-        if !root.editing || !InlineEditors.window-active { return; }
-        if root.allow-empty || InlineEditors.nonempty(root.draft) { root.save(); } else { root.cancel(); }
-    }
     vertical-stretch: 0;
     horizontal-stretch: 1;
     min-width: 0px;
-    focus-on-tab-navigation: !root.editing;
-    key-pressed(event) => {
-        if root.editing && event.text == Key.Escape { root.cancel(); return accept; }
-        if root.editing && event.modifiers.control && event.text == Key.Return { root.save(); return accept; }
-        if !root.editing && (event.text == Key.Return || event.text == " ") { root.begin(); return accept; }
-        return reject;
-    }
     VerticalLayout {
         spacing: Theme.space-xs;
         if !root.editing: Rectangle {
@@ -220,7 +209,7 @@ export component InlineTextArea inherits FocusScope {
         if root.editing: HorizontalLayout {
             spacing: Theme.space-xs;
             alignment: end;
-            IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save (Ctrl+Enter)"); enabled: root.allow-empty || InlineEditors.nonempty(root.draft); clicked => { root.save(); } }
+            IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save (Ctrl+Enter)"); enabled: root.can-save; clicked => { root.save(); } }
             IconButton { icon: @image-url("icons/x.svg"); label: @tr("Cancel (Esc)"); clicked => { root.cancel(); } }
         }
     }

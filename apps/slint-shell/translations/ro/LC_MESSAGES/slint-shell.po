@@ -3674,3 +3674,6 @@ msgstr "Doar când jocul este în prim-plan"
 
 msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
 msgstr "Jocurile raportate de lansatoare sau de sistem contează doar cât timp fereastra lor este activă, așa că trecerea la un browser dezactivează modul joc. Steam pe Windows nu indică ce program este jocul, așa că jocurile sale contează mereu."
+
+msgid "Cannot load this layout. See the application log."
+msgstr "Acest aranjament nu poate fi încărcat. Consultați jurnalul aplicației."

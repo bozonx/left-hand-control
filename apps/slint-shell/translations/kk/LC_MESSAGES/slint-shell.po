@@ -3641,3 +3641,6 @@ msgstr "Тек ойын алдыңғы планда болғанда"
 
 msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
 msgstr "Іске қосқыштар немесе жүйе хабарлайтын ойындар тек терезесі белсенді кезде ескеріледі, сондықтан браузерге ауысу ойын режимін өшіреді. Windows жүйесіндегі Steam қай бағдарлама ойын екенін айтпайды, сондықтан оның ойындары әрқашан ескеріледі."
+
+msgid "Cannot load this layout. See the application log."
+msgstr "Бұл жайманы жүктеу мүмкін болмады. Қолданба журналын қараңыз."

@@ -5,6 +5,7 @@
 //! contents last read so a change made elsewhere is never overwritten.
 
 mod auto_rules;
+mod metadata;
 mod working;
 use auto_rules::{
     add_game_rule, delete_rule, load_rule, move_rule, save_rule, set_auto_default, set_rule_enabled,
@@ -17,7 +18,7 @@ use crate::{
     document::{Document, View},
     i18n::Msg,
     ui::{
-        AutoRuleView, GameCondition, LayoutLibrary, LayoutSource, LayoutSummary, LibraryAction,
+        AutoRuleView, GameCondition, LayoutLibrary, LayoutRow, LayoutSource, LibraryAction,
         LibraryDialog, MenuKind, Page, SettingsWindow,
     },
 };
@@ -85,7 +86,7 @@ fn condition(game: GameCondition, layouts: &str, apps: &str, excluded: &str) -> 
     }
 }
 
-/// Show the library. Descriptions are read from the layout files.
+/// Publish the ordered names immediately; file metadata arrives in the background.
 fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State) -> Result<(), Msg> {
     document.invalidate_library();
     let config = document.read();
@@ -96,59 +97,32 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State) -> Resul
         .iter()
         .filter_map(|id| user_layout_name(id).map(str::to_owned))
         .collect();
-    let presets: Vec<Option<LayoutPreset>> = names
-        .iter()
-        .map(|name| {
-            config
-                .paths()
-                .load_user_layout(name)
-                .ok()
-                .and_then(|text| layout_file::parse(&text).ok().flatten())
-        })
-        .collect();
-    library.set_descriptions(super::strings(presets.iter().map(|preset| {
-        preset
-            .as_ref()
-            .and_then(|preset| preset.description.clone())
-            .unwrap_or_default()
-    })));
-    library.set_summaries(ModelRc::new(VecModel::from(
-        presets
-            .into_iter()
-            .map(|preset| {
-                let preset = preset.unwrap_or_default();
-                LayoutSummary {
-                    rules: preset.rules.len() as i32,
-                    layers: preset.layers.len() as i32,
-                    emoji_pages: if preset
-                        .emoji_pages
-                        .iter()
-                        .any(|page| page.cells.values().any(|value| !value.is_empty()))
-                    {
-                        preset.emoji_pages.len() as i32
-                    } else {
-                        0
-                    },
-                    action_pages: if preset
-                        .quick_action_pages
-                        .iter()
-                        .any(|page| page.cells.values().any(|cell| !cell.action.is_empty()))
-                    {
-                        preset.quick_action_pages.len() as i32
-                    } else {
-                        0
-                    },
-                    macros: preset.macros.len() as i32,
-                    commands: preset.used_command_count() as i32,
-                }
-            })
-            .collect::<Vec<_>>(),
-    )));
+    let previous = library.get_rows();
+    let same_names = slint::Model::iter(&previous)
+        .map(|row| row.name.to_string())
+        .eq(names.iter().cloned());
+    if !same_names {
+        library.set_rows(ModelRc::new(VecModel::from(
+            names
+                .iter()
+                .map(|name| {
+                    slint::Model::iter(&previous)
+                        .find(|row| row.name == name.as_str())
+                        .unwrap_or_else(|| LayoutRow {
+                            id: user_layout_id(name).into(),
+                            name: name.clone().into(),
+                            ..Default::default()
+                        })
+                })
+                .collect::<Vec<_>>(),
+        )));
+    }
+    let paths = config.paths().clone();
+    metadata::load(ui, paths, names.clone());
     let selected = state
         .selected
         .as_ref()
         .and_then(|name| names.iter().position(|item| item == name));
-    library.set_names(super::strings(names));
     library.set_selected(selected.map_or(-1, |index| index as i32));
     if selected.is_none() {
         state.selected = None;
@@ -219,16 +193,19 @@ fn refresh_auto(ui: &SettingsWindow, document: &Document) {
     let (default, default_missing) = target(&settings.auto_default_layout_id);
     library.set_auto_default(default);
     library.set_auto_default_missing(default_missing);
-    library.set_rule_counts(ModelRc::new(VecModel::from(
-        ids.iter()
-            .map(|id| {
-                rules
-                    .iter()
-                    .filter(|rule| rule.layout_id.as_ref() == Some(id))
-                    .count() as i32
-            })
-            .collect::<Vec<_>>(),
-    )));
+    let rows = library.get_rows();
+    for (index, id) in ids.iter().enumerate() {
+        if let Some(mut row) = slint::Model::row_data(&rows, index) {
+            let count = rules
+                .iter()
+                .filter(|rule| rule.layout_id.as_ref() == Some(id))
+                .count() as i32;
+            if row.rule_count != count {
+                row.rule_count = count;
+                slint::Model::set_row_data(&rows, index, row);
+            }
+        }
+    }
     drop(config);
     refresh_active(ui, document);
 }
@@ -517,6 +494,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let state: Shared = Rc::default();
     reset_context(ui, document, &mut state.borrow_mut());
     let library = ui.global::<LayoutLibrary>();
+    library.on_row_names(|rows| super::strings(slint::Model::iter(&rows).map(|row| row.name)));
     library.set_bundled_names(super::strings(
         BUNDLED.iter().map(|bundled| bundled.display_name()),
     ));
@@ -565,18 +543,25 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         library_action(&ui, doc, state, action)
     )
     });
-    on!(ui, library.on_suggest_name, doc = document => |_ui, base| {
-        let (doc,) = (&doc,);
-        doc
-        .read()
-        .unique_library_name(&base)
-        .unwrap_or_else(|_| base.to_string())
-        .into()
+    library.on_suggest_name_value(|base, names| {
+        let names: Vec<String> = slint::Model::iter(&names)
+            .map(|name| name.to_string())
+            .collect();
+        lhc_core::profile::names::unique_layout_name(&base, &names)
+            .unwrap_or_else(|_| base.to_string())
+            .into()
     });
-    on!(ui, library.on_name_error, doc = document => |_ui, name, except| {
-        let (doc,) = (&doc,);
+    library.on_name_error_value(|name, except, names| {
+        let names: Vec<String> = slint::Model::iter(&names)
+            .map(|name| name.to_string())
+            .collect();
         let except = (!except.is_empty()).then_some(except.as_str());
-        super::name_error(doc.read().checked_layout_name(&name, except))
+        let result =
+            lhc_core::profile::names::layout_name(&name, except, names.iter().map(String::as_str))
+                .map_err(|issue| {
+                    ConfigError::Name(lhc_core::profile::names::NameKind::Layout, issue)
+                });
+        super::name_error(result)
     });
     on!(ui, library.on_create, doc = document, state = state => |ui, name, description, source, copy_index| {
         let (doc, state) = (&doc, &state);
@@ -585,7 +570,10 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
     on!(ui, library.on_set_description, doc = document, state = state => |ui, index, description| {
         let (doc, state) = (&doc, &state);
-        report(&ui, state, set_description(&ui, doc, state, index, &description))
+        let result = set_description(&ui, doc, state, index, &description);
+        let applied = result.is_ok();
+        report(&ui, state, result);
+        applied
     });
     on!(ui, library.on_rename, doc = document, state = state => |ui, index, name| {
         let (doc, state) = (&doc, &state);
@@ -593,7 +581,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             ui.global::<LayoutLibrary>().set_name(name);
             library_action(&ui, doc, state, LibraryAction::SaveDetails)
         });
+        let applied = result.is_ok();
         report(&ui, state, result);
+        applied
     });
     on!(ui, library.on_reorder, doc = document, state = state => |ui, from, to| {
         let (doc, state) = (&doc, &state);
@@ -626,13 +616,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
     on!(ui, library.on_activate_current, doc = document, state = state => |ui| {
         let (doc, state) = (&doc, &state);
-        let result = doc
-            .read()
-            .settings()
-            .editing_layout_id
-            .clone()
-            .ok_or(Msg::LibrarySelect)
-            .and_then(|id| {
+        let id = doc.read().settings().editing_layout_id.clone();
+        let result = id.ok_or(Msg::LibrarySelect).and_then(|id| {
                 edit(&ui, doc, state, |config| {
                     config.update_settings(|settings| settings.manual_layout_id = Some(id))
                 })

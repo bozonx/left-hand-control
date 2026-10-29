@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!library.get_create_name().is_empty());
     library.invoke_create("A".into(), "".into(), LayoutSource::Empty, 0);
     assert_eq!(library.get_dialog(), LibraryDialog::None);
-    let summary = library.get_summaries().row_data(0).unwrap();
+    let summary = library.get_rows().row_data(0).unwrap().summary;
     assert_eq!(summary.emoji_pages, 0);
     assert_eq!(summary.action_pages, 0);
     assert!(
@@ -117,7 +117,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(settings.auto_default_layout_id.as_deref(), Some("user:A"));
     }
     assert_eq!(library.get_auto_rules().row_data(1).unwrap().target, 1);
-    assert_eq!(library.get_rule_counts().row_data(1).unwrap(), 1);
+    assert_eq!(library.get_rows().row_data(1).unwrap().rule_count, 1);
     library.invoke_open_rule(1, 1);
     assert_eq!(library.get_rule_apps(), "kate, terminal");
     library.invoke_delete_rule(0);

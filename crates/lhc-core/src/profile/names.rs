@@ -4,7 +4,7 @@
 //! look the same in lists and action pickers.
 
 use super::model::LayoutPreset;
-use crate::{config_document::ConfigDocument, storage::validate_layout_name};
+use crate::storage::validate_layout_name;
 
 /// What a name belongs to; selects the wording of the error.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -47,24 +47,45 @@ pub fn layer_name(
     Ok(name.to_owned())
 }
 
-impl ConfigDocument {
-    /// Trimmed `name` for a library layout; `except` is the name of the
-    /// layout being renamed.
-    pub fn layout_name(&self, name: &str, except: Option<&str>) -> Result<String, NameIssue> {
-        if name.trim().is_empty() {
-            return Err(NameIssue::Empty);
-        }
-        let name = validate_layout_name(name).map_err(|_| NameIssue::Invalid)?;
-        let taken = self.paths().list_user_layouts().is_ok_and(|names| {
-            names
-                .iter()
-                .any(|item| except.is_none_or(|except| !same(item, except)) && same(item, &name))
-        });
-        if taken {
-            return Err(NameIssue::Taken);
-        }
-        Ok(name)
+/// Validate a layout name against a previously loaded library listing.
+pub fn layout_name<'a>(
+    name: &str,
+    except: Option<&str>,
+    names: impl IntoIterator<Item = &'a str>,
+) -> Result<String, NameIssue> {
+    if name.trim().is_empty() {
+        return Err(NameIssue::Empty);
     }
+    let name = validate_layout_name(name).map_err(|_| NameIssue::Invalid)?;
+    if names
+        .into_iter()
+        .any(|item| except.is_none_or(|except| !same(item, except)) && same(item, &name))
+    {
+        return Err(NameIssue::Taken);
+    }
+    Ok(name)
+}
+
+/// First available layout name, using a loaded listing rather than disk access.
+pub fn unique_layout_name(base: &str, names: &[String]) -> Result<String, NameIssue> {
+    let base = layout_name(base, None, std::iter::empty())?;
+    let taken: std::collections::HashSet<_> =
+        names.iter().map(|name| name.to_lowercase()).collect();
+    let mut name = base.clone();
+    let mut suffix = 2;
+    while taken.contains(&name.to_lowercase()) {
+        let ending = format!(" ({suffix})");
+        let mut stem = base.clone();
+        loop {
+            name = format!("{stem}{ending}");
+            if validate_layout_name(&name).is_ok() {
+                break;
+            }
+            stem.pop();
+        }
+        suffix += 1;
+    }
+    Ok(name)
 }
 
 #[cfg(test)]
@@ -81,6 +102,24 @@ mod tests {
             }],
             ..LayoutPreset::default()
         }
+    }
+
+    #[test]
+    fn library_snapshot_checks_names_without_filesystem_access() {
+        let names = vec!["Work".to_owned(), "Work (2)".to_owned()];
+        assert_eq!(
+            layout_name(" work ", None, names.iter().map(String::as_str)),
+            Err(NameIssue::Taken)
+        );
+        assert_eq!(
+            layout_name(" work ", Some("WORK"), names.iter().map(String::as_str)),
+            Ok("work".into())
+        );
+        assert_eq!(unique_layout_name("Work", &names), Ok("Work (3)".into()));
+        assert_eq!(
+            unique_layout_name("bad/name", &names),
+            Err(NameIssue::Invalid)
+        );
     }
 
     #[test]

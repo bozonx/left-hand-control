@@ -50,14 +50,12 @@ export component SettingsWindow inherits Window {
 
     /// Quit is allowed only after all page drafts have been applied.
     public function flush-drafts() -> bool {
-        InlineEditors.commit-revision += 1;
-        let macros = MacroEditor.flush-pending();
-        let menus = MenuEditor.flush-pending();
+        let layout = LayoutLibrary.flush-drafts();
         let settings = SettingsEditor.flush-pending();
         if !settings { root.navigate(Page.settings, MenuKind.emoji); }
-        else if !macros { root.navigate(Page.macros, MenuKind.emoji); }
-        else if !menus { root.navigate(Page.menus, MenuEditor.kind); }
-        return macros && menus && settings;
+        else if MacroEditor.has-unsaved-changes || MacroEditor.has-errors { root.navigate(Page.macros, MenuKind.emoji); }
+        else if MenuEditor.has-unsaved-changes { root.navigate(Page.menus, MenuEditor.kind); }
+        return layout && settings;
     }
 
     public function close-layout() {
@@ -72,7 +70,7 @@ export component SettingsWindow inherits Window {
 
     public function navigate(page: Page, kind: MenuKind) {
         if !AppState.in-development && (page == Page.menus || page == Page.macros) { return; }
-        InlineEditors.commit-revision += 1;
+        if !InlineEditors.flush() { return; }
         DragDrop.cancel();
         if page == Page.layouts { LayoutLibrary.refresh(); }
         if page == Page.menus { MenuEditor.open(kind); }
@@ -249,7 +247,7 @@ export component SettingsWindow inherits Window {
         confirm-text: @tr("Discard");
         cancel => { root.confirm-discard = false; root.confirm-close = false; }
         confirm => {
-            InlineEditors.revision += 1; LayoutLibrary.discard-current(); MacroEditor.refresh(); MenuEditor.refresh();
+            InlineEditors.revision += 1; LayoutLibrary.discard-current();
             if root.confirm-close && !LayoutLibrary.dirty { LayoutLibrary.editor-open = false; if root.page != Page.settings && root.page != Page.layouts { root.navigate(Page.layouts, MenuKind.emoji); } }
             root.confirm-discard = false; root.confirm-close = false;
         }
@@ -269,7 +267,7 @@ export component SettingsWindow inherits Window {
                 text: @tr("Load from disk");
                 clicked => {
                     LayoutLibrary.cancel-dialog();
-                    InlineEditors.revision += 1; LayoutLibrary.discard-current(); MacroEditor.refresh(); MenuEditor.refresh();
+                    InlineEditors.revision += 1; LayoutLibrary.discard-current();
                 }
             }
             Button {

@@ -3737,3 +3737,6 @@ msgstr "Μόνο όταν το παιχνίδι είναι στο προσκήν
 
 msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
 msgstr "Τα παιχνίδια που αναφέρουν οι εκκινητές ή το σύστημα μετρούν μόνο όσο το παράθυρό τους είναι ενεργό, οπότε η μετάβαση σε πρόγραμμα περιήγησης απενεργοποιεί τη λειτουργία παιχνιδιού. Το Steam στα Windows δεν δηλώνει ποιο πρόγραμμα είναι το παιχνίδι, οπότε τα παιχνίδια του μετρούν πάντα."
+
+msgid "Cannot load this layout. See the application log."
+msgstr "Δεν είναι δυνατή η φόρτωση αυτής της διάταξης. Δείτε το αρχείο καταγραφής της εφαρμογής."

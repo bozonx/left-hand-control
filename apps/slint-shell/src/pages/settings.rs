@@ -561,26 +561,53 @@ fn device_offset(choices: ModelRc<DeviceChoice>, index: i32, row: i32, heading: 
 
 fn refresh_devices(ui: &SettingsWindow) {
     let e = ui.global::<SettingsEditor>();
-    let (devices, error) = match lhc_core::mapper::runtime::list_input_devices() {
-        Ok(devices) => (devices, Msg::None),
-        Err(error) => {
-            log::warn!("input device discovery: {error}");
-            (
-                Vec::new(),
-                if cfg!(target_os = "linux") {
-                    Msg::InputDiscoveryFailed(error)
-                } else {
-                    Msg::MapperUnsupported
-                },
-            )
+    for (rows, saved, mouse) in [
+        (e.get_input_devices(), e.get_keyboard_device_path(), false),
+        (e.get_mouse_devices(), e.get_mouse_device_path(), true),
+    ] {
+        if !saved.is_empty() && !rows.iter().any(|row| row.path == saved) {
+            let mut choices: Vec<_> = rows.iter().collect();
+            choices.extend(device_choices(&[], mouse, &saved));
+            let choices = ModelRc::new(VecModel::from(choices));
+            if mouse {
+                e.set_mouse_devices(choices);
+            } else {
+                e.set_input_devices(choices);
+            }
         }
-    };
-    e.set_device_discovery_error(error.to_ui());
-    let keyboards = device_choices(&devices, false, &e.get_keyboard_device_path());
-    e.set_input_devices(ModelRc::new(VecModel::from(keyboards)));
-    let mice = device_choices(&devices, true, &e.get_mouse_device_path());
-    e.set_mouse_devices(ModelRc::new(VecModel::from(mice)));
-    check_input_access(ui);
+    }
+    if e.get_devices_loading() {
+        return;
+    }
+    e.set_devices_loading(true);
+    let weak = ui.as_weak();
+    std::thread::spawn(move || {
+        let result = lhc_core::mapper::runtime::list_input_devices();
+        let _ = weak.upgrade_in_event_loop(move |ui| {
+            let e = ui.global::<SettingsEditor>();
+            e.set_devices_loading(false);
+            let (devices, error) = match result {
+                Ok(devices) => (devices, Msg::None),
+                Err(error) => {
+                    log::warn!("input device discovery: {error}");
+                    (
+                        Vec::new(),
+                        if cfg!(target_os = "linux") {
+                            Msg::InputDiscoveryFailed(error)
+                        } else {
+                            Msg::MapperUnsupported
+                        },
+                    )
+                }
+            };
+            e.set_device_discovery_error(error.to_ui());
+            let keyboards = device_choices(&devices, false, &e.get_keyboard_device_path());
+            e.set_input_devices(ModelRc::new(VecModel::from(keyboards)));
+            let mice = device_choices(&devices, true, &e.get_mouse_device_path());
+            e.set_mouse_devices(ModelRc::new(VecModel::from(mice)));
+            check_input_access(&ui);
+        });
+    });
 }
 
 fn persist(document: &Document, state: &mut State, form: &Form) -> (bool, Msg) {

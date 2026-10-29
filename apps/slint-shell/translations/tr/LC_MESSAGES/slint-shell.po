@@ -3632,3 +3632,6 @@ msgstr "Yalnızca oyun öndeyken"
 
 msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
 msgstr "Başlatıcıların veya sistemin bildirdiği oyunlar yalnızca pencereleri etkinken sayılır; bu yüzden tarayıcıya geçmek oyun modunu kapatır. Windows'ta Steam hangi programın oyun olduğunu bildirmez, bu nedenle oyunları her zaman sayılır."
+
+msgid "Cannot load this layout. See the application log."
+msgstr "Bu düzen yüklenemiyor. Uygulama günlüğüne bakın."

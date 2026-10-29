@@ -3622,3 +3622,6 @@ msgstr "Samo kad je igra u prvom planu"
 
 msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
 msgstr "Igre koje prijave pokretači ili sustav broje se samo dok je njihov prozor aktivan, pa prelazak u preglednik isključuje način igre. Steam na Windowsima ne navodi koji je program igra, pa se njegove igre uvijek broje."
+
+msgid "Cannot load this layout. See the application log."
+msgstr "Nije moguće učitati ovaj raspored. Pogledajte zapisnik aplikacije."

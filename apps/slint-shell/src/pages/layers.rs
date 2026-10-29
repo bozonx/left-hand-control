@@ -402,12 +402,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Rc<RefCell<D
     });
     on!(ui, editor.on_update_name, doc = document => |ui, name| {
         let Some(id) = selected_id(&ui, &doc) else {
-            return;
+            return false;
         };
         let description = ui.global::<LayersEditor>().get_description();
-        let _ = change(&ui, &doc, |config| {
+        change(&ui, &doc, |config| {
             config.rename_layer(&id, name.trim(), &description)
-        });
+        }).is_ok()
     });
     on!(ui, editor.on_add_extra => |ui| {
         let editor = ui.global::<LayersEditor>();
@@ -474,7 +474,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Rc<RefCell<D
 
     on!(ui, editor.on_update_description, doc = document => |ui, description| {
         let Some(id) = selected_id(&ui, &doc) else {
-            return;
+            return false;
         };
         let name = {
             let config = doc.read();
@@ -486,9 +486,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Rc<RefCell<D
                 .map(|layer| layer.name.clone())
                 .unwrap_or_default()
         };
-        let _ = change(&ui, &doc, |config| {
+        change(&ui, &doc, |config| {
             config.rename_layer(&id, &name, description.trim())
-        });
+        }).is_ok()
     });
 
     on!(ui, editor.on_remove_extra, doc = document => |ui, index| {

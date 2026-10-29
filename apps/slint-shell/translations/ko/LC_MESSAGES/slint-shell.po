@@ -3376,3 +3376,6 @@ msgstr "게임이 앞에 있을 때만"
 
 msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
 msgstr "런처나 시스템이 알려 주는 게임은 해당 창이 활성 상태일 때만 인정되므로 브라우저로 전환하면 게임 모드가 꺼집니다. Windows의 Steam은 어떤 프로그램이 게임인지 알려 주지 않으므로 해당 게임은 항상 인정됩니다."
+
+msgid "Cannot load this layout. See the application log."
+msgstr "이 배열을 불러올 수 없습니다. 애플리케이션 로그를 확인하세요."

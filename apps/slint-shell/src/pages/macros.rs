@@ -134,7 +134,7 @@ fn steps(item: &Macro) -> ModelRc<MacroStepRow> {
     ))
 }
 
-fn row(config: &ResolvedAppConfig, entry: &Entry) -> MacroRow {
+fn row(config: &ResolvedAppConfig, entry: &Entry, steps: ModelRc<MacroStepRow>) -> MacroRow {
     MacroRow {
         id: entry.item.id.clone().into(),
         name: entry.item.name.clone().into(),
@@ -144,7 +144,7 @@ fn row(config: &ResolvedAppConfig, entry: &Entry) -> MacroRow {
         error: issue(config, entry)
             .map_or(Msg::None, |e| Msg::from(&e))
             .to_ui(),
-        steps: steps(&entry.item),
+        steps,
     }
 }
 
@@ -153,7 +153,10 @@ fn render(ui: &SettingsWindow, document: &Document, draft: &[Entry]) {
     let editor = ui.global::<MacroEditor>();
     let config = candidate(document, draft);
     editor.set_macros(ModelRc::new(VecModel::from(
-        draft.iter().map(|e| row(&config, e)).collect::<Vec<_>>(),
+        draft
+            .iter()
+            .map(|e| row(&config, e, steps(&e.item)))
+            .collect::<Vec<_>>(),
     )));
     let settings = document.read();
     let settings = settings.settings();
@@ -166,11 +169,11 @@ fn render(ui: &SettingsWindow, document: &Document, draft: &[Entry]) {
 fn annotate(ui: &SettingsWindow, document: &Document, draft: &[Entry]) {
     let config = candidate(document, draft);
     let rows = ui.global::<MacroEditor>().get_macros();
-    ui.global::<MacroEditor>()
-        .set_has_errors(draft.iter().any(|e| issue(&config, e).is_some()));
+    let mut has_errors = false;
     for (index, entry) in draft.iter().enumerate() {
         if let Some(current) = rows.row_data(index) {
-            let next = row(&config, entry);
+            let next = row(&config, entry, current.steps.clone());
+            has_errors |= !next.error.id.is_empty();
             // Models compare by identity, so compare usage by content. Skipping
             // unchanged rows matters for the interpreter (live preview): it wraps
             // the step model anew on every row update, which recreates the step
@@ -192,6 +195,7 @@ fn annotate(ui: &SettingsWindow, document: &Document, draft: &[Entry]) {
             }
         }
     }
+    ui.global::<MacroEditor>().set_has_errors(has_errors);
 }
 
 enum SaveResult {
@@ -246,6 +250,7 @@ fn persist(document: &Document, state: &mut State) -> Result<SaveResult, ConfigE
 fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
     state.autosave.cancel();
     let result = persist(document, state);
+    annotate(ui, document, &state.draft);
     let editor = ui.global::<MacroEditor>();
     editor.set_has_errors(matches!(result, Ok(SaveResult::Invalid)));
     editor.set_has_unsaved_changes(state.draft != state.baseline);
@@ -551,7 +556,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
             };
             step.action = Action::Pause(ms.to_string()).format().unwrap_or_default();
             ui.global::<MacroEditor>().set_has_unsaved_changes(state.draft != state.baseline);
-            annotate(&ui, &doc, &state.draft);
+            let rows = ui.global::<MacroEditor>().get_macros();
+            if let Some(row) = rows.row_data(at as usize)
+                && let Some(mut step) = row.steps.row_data(step_index as usize)
+            {
+                step.action = Action::Pause(ms.to_string()).format().unwrap_or_default().into();
+                step.pause_ms = ms;
+                row.steps.set_row_data(step_index as usize, step);
+            }
         }
         super::autosave::schedule(&ui, &doc, &shared);
     });
@@ -570,7 +582,15 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
                 MacroField::ModifierDelay => entry.modifier_delay = value,
             }
             ui.global::<MacroEditor>().set_has_unsaved_changes(state.draft != state.baseline);
-            annotate(&ui, &doc, &state.draft);
+            let rows = ui.global::<MacroEditor>().get_macros();
+            if let Some(mut row) = rows.row_data(at as usize) {
+                let entry = &state.draft[at as usize];
+                row.id = entry.item.id.clone().into();
+                row.name = entry.item.name.clone().into();
+                row.step_pause = entry.step_pause.clone().into();
+                row.modifier_delay = entry.modifier_delay.clone().into();
+                rows.set_row_data(at as usize, row);
+            }
         }
         super::autosave::schedule(&ui, &doc, &state);
     });

@@ -7,9 +7,27 @@ use crate::{
         bundled::BundledLayout,
         layout_file,
         model::{LayoutPreset, user_layout_id},
-        names::{NameIssue, NameKind},
+        names::NameKind,
     },
 };
+
+/// Read one metadata snapshot per listed layout, preserving failures per file.
+/// Callers may load this snapshot on a worker without sharing a document.
+pub fn load_library_entries(
+    paths: &crate::storage::StoragePaths,
+    names: &[String],
+) -> Vec<Result<super::model::LayoutPreset, crate::config_document::ConfigError>> {
+    use crate::config_document::ConfigError;
+    names
+        .iter()
+        .map(|name| {
+            let text = paths.load_user_layout(name).map_err(ConfigError::Io)?;
+            super::layout_file::parse(&text)
+                .map_err(ConfigError::Parse)?
+                .ok_or_else(|| ConfigError::Parse("empty layout file".into()))
+        })
+        .collect()
+}
 
 /// What a new library layout starts from.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -93,33 +111,8 @@ impl ConfigDocument {
     /// `base`, or `base (2)`, `base (3)`, … — the first name not taken in the library.
     pub fn unique_library_name(&self, base: &str) -> Result<String, ConfigError> {
         let names = self.paths().list_user_layouts().map_err(ConfigError::Io)?;
-        let base = crate::storage::validate_layout_name(base).map_err(|_| {
-            ConfigError::Name(
-                NameKind::Layout,
-                if base.trim().is_empty() {
-                    NameIssue::Empty
-                } else {
-                    NameIssue::Invalid
-                },
-            )
-        })?;
-        let taken: std::collections::HashSet<_> =
-            names.iter().map(|name| name.to_lowercase()).collect();
-        let mut name = base.clone();
-        let mut suffix = 2;
-        while taken.contains(&name.to_lowercase()) {
-            let ending = format!(" ({suffix})");
-            let mut stem = base.clone();
-            loop {
-                name = format!("{stem}{ending}");
-                if crate::storage::validate_layout_name(&name).is_ok() {
-                    break;
-                }
-                stem.pop();
-            }
-            suffix += 1;
-        }
-        Ok(name)
+        super::names::unique_layout_name(base, &names)
+            .map_err(|issue| ConfigError::Name(NameKind::Layout, issue))
     }
 
     /// Creates `name` in the library; fails if it is already taken.
@@ -159,13 +152,14 @@ impl ConfigDocument {
             .map_err(ConfigError::Io)
     }
 
-    /// [`ConfigDocument::layout_name`] as a [`ConfigError`].
+    /// Validate a layout name against the current directory before writing.
     pub fn checked_layout_name(
         &self,
         name: &str,
         except: Option<&str>,
     ) -> Result<String, ConfigError> {
-        self.layout_name(name, except)
+        let names = self.paths().list_user_layouts().map_err(ConfigError::Io)?;
+        super::names::layout_name(name, except, names.iter().map(String::as_str))
             .map_err(|issue| ConfigError::Name(NameKind::Layout, issue))
     }
 
@@ -337,6 +331,27 @@ impl ConfigDocument {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::profile::names::NameIssue;
+
+    #[test]
+    fn metadata_snapshot_preserves_invalid_and_missing_files() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths =
+            crate::storage::StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        paths
+            .save_user_layout(
+                "Valid",
+                &layout_file::serialize(&LayoutPreset::initial()),
+                false,
+            )
+            .unwrap();
+        std::fs::write(paths.layout_path("Broken").unwrap(), "not json").unwrap();
+        let names = vec!["Valid".into(), "Broken".into(), "Missing".into()];
+        let loaded = load_library_entries(&paths, &names);
+        assert!(loaded[0].is_ok());
+        assert!(matches!(&loaded[1], Err(ConfigError::Parse(_))));
+        assert!(matches!(&loaded[2], Err(ConfigError::Io(_))));
+    }
 
     #[test]
     fn failed_saves_preserve_commands_and_working_copy() {
@@ -560,7 +575,7 @@ mod tests {
             Err(ConfigError::Name(NameKind::Layout, NameIssue::Taken))
         );
         assert_eq!(
-            document.layout_name("IVAN", Some("Ivan")),
+            document.checked_layout_name("IVAN", Some("Ivan")),
             Ok("IVAN".into())
         );
         assert!(

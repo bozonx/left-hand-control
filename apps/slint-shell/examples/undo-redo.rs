@@ -38,8 +38,8 @@ slint::slint! {
             raw := TextInput { text <=> root.raw-text; single-line: true; read-only: root.read-only; height: 36px; }
             line := TextField { text <=> root.line-text; read-only: root.read-only; height: 32px; }
             area := TextEdit { text <=> root.area-text; read-only: root.read-only; height: 120px; }
-            inline := InlineTextField { text: root.inline-text; saved(value) => { root.inline-text = value; } }
-            inline-area := InlineTextArea { text: root.inline-area; saved(value) => { root.inline-area = value; } }
+            inline := InlineTextField { text: root.inline-text; saved(value) => { root.inline-text = value; return true; } }
+            inline-area := InlineTextArea { text: root.inline-area; saved(value) => { root.inline-area = value; return true; } }
         }
     }
 }

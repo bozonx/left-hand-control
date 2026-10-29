@@ -3306,3 +3306,6 @@ msgstr "僅當遊戲位於前景時"
 
 msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
 msgstr "啟動器或系統回報的遊戲僅在其視窗處於作用中時計入，因此切換到瀏覽器會關閉遊戲模式。Windows 上的 Steam 不會說明哪個程式是遊戲，因此其遊戲一律計入。"
+
+msgid "Cannot load this layout. See the application log."
+msgstr "無法載入此配置。請查看應用程式記錄。"

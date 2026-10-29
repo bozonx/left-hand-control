@@ -5,7 +5,8 @@ use std::{cell::Cell, rc::Rc, time::Duration};
 use support::snapshot;
 
 slint::slint! {
-    import { InlineTextField, InlineTextArea, ConfirmDialog, InfoTip, NumericInput, InlineEditors } from "../ui/controls.slint";
+    import { InlineEditors as EditorState, InlineTextField, InlineTextArea, ConfirmDialog, InfoTip, NumericInput } from "../ui/controls.slint";
+    export { InlineEditors } from "../ui/controls.slint";
     export component ControlsWindow inherits Window {
         width: 520px; height: 320px;
         in-out property <string> value: "Original";
@@ -14,16 +15,16 @@ slint::slint! {
         in-out property <bool> confirmed;
         public function edit() { field.begin(); }
         public function edit-description() { description-field.begin(); }
-        public function set-window-active(active: bool) { InlineEditors.window-active = active; }
-        public function pointer-pressed(x: length, y: length) { InlineEditors.pointer-pressed(x, y); }
+        public function set-window-active(active: bool) { EditorState.window-active = active; }
+        public function pointer-pressed(x: length, y: length) { EditorState.pointer-pressed(x, y); }
         in-out property <bool> touched;
         out property <bool> editing: field.editing;
         out property <int> number: numeric.text.to-float();
         // Stands in for the settings window's root FocusScope that takes focus on empty clicks.
         FocusScope { }
         VerticalLayout { padding: 20px; spacing: 12px; alignment: start;
-            field := InlineTextField { text: root.value; saved(value) => { root.value = value; } }
-            description-field := InlineTextArea { text: root.description; saved(value) => { root.description = value; } }
+            field := InlineTextField { text: root.value; saved(value) => { root.value = value; return true; } }
+            description-field := InlineTextArea { text: root.description; saved(value) => { root.description = value; return true; } }
             InfoTip { text: "First line\nSecond line\nA longer explanation that should wrap onto several lines without extending beyond the tooltip."; }
         }
         // Stands in for a card's touch area: it takes the press without moving focus.
@@ -101,6 +102,8 @@ fn wheel(ui: &ControlsWindow, x: f32, y: f32, delta_y: f32) {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ui = ControlsWindow::new()?;
+    ui.global::<InlineEditors>()
+        .on_synchronize(i_slint_core::properties::ChangeTracker::run_change_handlers);
     ui.show()?;
     let timer = slint::Timer::default();
     let step = Rc::new(Cell::new(0));

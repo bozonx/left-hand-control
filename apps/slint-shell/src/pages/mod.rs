@@ -81,8 +81,11 @@ pub fn bind_document_with_input(
 ) {
     timing::bind(ui);
     crate::notifications::bind(ui);
-    ui.global::<crate::ui::InlineEditors>()
-        .on_nonempty(|value| !value.trim().is_empty());
+    let inline = ui.global::<crate::ui::InlineEditors>();
+    inline.on_nonempty(|value| !value.trim().is_empty());
+    // Slint defers `changed` handlers. Explicit saves must finish inline
+    // commits before flushing page drafts or replacing the current page.
+    inline.on_synchronize(i_slint_core::properties::ChangeTracker::run_change_handlers);
     reorder::bind(ui);
     conditions::bind(ui);
     keys::bind(ui, document);
@@ -109,10 +112,10 @@ pub fn bind_document_with_input(
     });
     on!(ui, library.on_flush_drafts => |ui| {
         let inline = ui.global::<crate::ui::InlineEditors>();
-        inline.set_commit_revision(inline.get_commit_revision().wrapping_add(1));
+        let inline_saved = inline.invoke_flush();
         let macros = ui.global::<crate::ui::MacroEditor>().invoke_flush_pending();
         let menus = ui.global::<crate::ui::MenuEditor>().invoke_flush_pending();
-        macros && menus
+        inline_saved && macros && menus
     });
 }
 

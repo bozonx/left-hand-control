@@ -8,7 +8,10 @@ import { Locale, Message } from "i18n.slint";
 import { GameCondition, LayoutSource, LibraryAction, LibraryDialog, PendingLayoutAction } from "types.slint";
 import { Button, CheckBox, ComboBox, Palette, TextEdit } from "std-widgets.slint";
 
+
 export struct LayoutSummary { rules: int, layers: int, emoji-pages: int, action-pages: int, macros: int, commands: int }
+
+export struct LayoutRow { id: string, name: string, description: string, summary: LayoutSummary, rule-count: int, loaded: bool, error: Message }
 
 /// One automatic-mode rule. `target` indexes `names`; -1 means no layout.
 /// `shadowed-by` is the earlier rule that always matches first, or -1;
@@ -18,16 +21,16 @@ export struct AutoRuleView { game: GameCondition, list: string, excluded: string
 
 /// The layout library and the working copy being edited.
 export global LayoutLibrary {
-    in property <[string]> names;
-    in property <[string]> descriptions;
-    in property <[LayoutSummary]> summaries;
+    in property <[LayoutRow]> rows;
+    in-out property <int> metadata-revision;
+    out property <[string]> names: self.row-names(self.rows);
+    pure callback row-names([LayoutRow]) -> [string];
     /// Automatic mode: ordered rules, the default (-1 is off), the rule
     /// that applies now (-1 is the default) and rules per layout.
     in property <[AutoRuleView]> auto-rules;
     in property <int> auto-default: -1;
     in property <bool> auto-default-missing;
     in property <int> auto-matched: -1;
-    in property <[int]> rule-counts;
     /// Game mode detection works, so game-mode conditions can match.
     in property <bool> game-detection: true;
     /// Layout whose rules are highlighted in the rules panel, or -1.
@@ -75,12 +78,14 @@ export global LayoutLibrary {
     callback select(int);
     callback set-automatic(bool);
     callback action(LibraryAction);
-    pure callback suggest-name(string) -> string;
+    pure callback suggest-name-value(string, [string]) -> string;
+    public pure function suggest-name(base: string) -> string { return self.suggest-name-value(base, self.names); }
     /// Why `name` cannot be used for a layout; `except` is the layout being renamed, or "".
-    pure callback name-error(name: string, except: string) -> Message;
+    pure callback name-error-value(name: string, except: string, names: [string]) -> Message;
+    public pure function name-error(name: string, except: string) -> Message { return self.name-error-value(name, except, self.names); }
     callback create(string, string, LayoutSource, int);
-    callback set-description(int, string);
-    callback rename(int, string);
+    callback set-description(int, string) -> bool;
+    callback rename(int, string) -> bool;
     callback reorder(int, int);
     callback discard-current();
     callback activate-current();
@@ -554,7 +559,8 @@ export component LibraryPage inherits PageLayout {
             if LayoutLibrary.names.length > 0: ScrollView { viewport-width: self.visible-width; drag-scroll: true;
                 vertical-stretch: 1;
                 PageContent { spacing: 0px;
-                    for name[index] in LayoutLibrary.names: card := Rectangle {
+                    for row[index] in LayoutLibrary.rows: card := Rectangle {
+                        property <string> name: row.name;
                         property <bool> active: LayoutLibrary.active-label == name;
                         property <bool> current: LayoutLibrary.editor-open && LayoutLibrary.current-label == name;
                         property <bool> auto: LayoutLibrary.automatic;
@@ -570,10 +576,10 @@ export component LibraryPage inherits PageLayout {
                             VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: Theme.space-m-plus;
                                 HorizontalLayout { spacing: Theme.space-m; vertical-stretch: 0;
                                     Text { text: (index + 1) + "."; color: Theme.muted; font-size: Theme.font-subtitle; font-weight: Theme.weight-semibold; vertical-alignment: center; accessible-role: none; }
-                                    InlineTextField { min-width: 0px; text: name; text-size: Theme.font-subtitle; text-weight: Theme.weight-semibold; label: @tr("Layout name"); validate(value) => { return LayoutLibrary.name-error(value, name); } saved(value) => { LayoutLibrary.rename(index, value); } }
+                                    InlineTextField { min-width: 0px; text: name; text-size: Theme.font-subtitle; text-weight: Theme.weight-semibold; label: @tr("Layout name"); validate(value) => { return LayoutLibrary.name-error(value, name); } saved(value) => { return LayoutLibrary.rename(index, value); } }
                                     Rectangle { horizontal-stretch: 1; }
                                     if card.auto && LayoutLibrary.auto-default == index: Text { text: @tr("Default"); color: Theme.accent; font-size: Theme.font-medium; font-weight: Theme.weight-semibold; vertical-alignment: center; }
-                                    if card.auto && LayoutLibrary.rule-counts[index] > 0: Rectangle {
+                                    if card.auto && row.rule-count > 0: Rectangle {
                                         property <bool> on: LayoutLibrary.highlight-target == index;
                                         width: badge.preferred-width + 12px;
                                         border-radius: Theme.radius-small;
@@ -582,13 +588,15 @@ export component LibraryPage inherits PageLayout {
                                         accessible-label: badge.text;
                                         accessible-action-default => { LayoutLibrary.highlight-target = self.on ? -1 : index; }
                                         badge := Text {
-                                            text: @tr("In {n} rule" | "In {n} rules" % LayoutLibrary.rule-counts[index]);
+                                            text: @tr("In {n} rule" | "In {n} rules" % row.rule-count);
                                             color: parent.on ? Theme.accent : Theme.muted; font-size: Theme.font-medium; vertical-alignment: center;
                                         }
                                         badge-touch := TouchArea { mouse-cursor: pointer; clicked => { LayoutLibrary.highlight-target = parent.on ? -1 : index; } }
                                     }
                                 }
-                                InlineTextArea { text: LayoutLibrary.descriptions[index]; placeholder: @tr("Add a description…"); label: @tr("Description"); text-color: Theme.muted; saved(value) => { LayoutLibrary.set-description(index, value); } }
+                                if !row.loaded: Text { text: @tr("Please wait…"); color: Theme.muted; }
+                                if row.error.id != "": Text { text: Locale.text(row.error); color: Theme.error; wrap: word-wrap; }
+                                if row.loaded: InlineTextArea { text: row.description; placeholder: @tr("Add a description…"); label: @tr("Description"); text-color: Theme.muted; saved(value) => { return LayoutLibrary.set-description(index, value); } }
                                 Rectangle { vertical-stretch: 1; }
                                 HorizontalLayout { spacing: Theme.space-m; alignment: start; vertical-stretch: 0;
                                     DragHandle { group: DragGroups.layouts; index: index; count: LayoutLibrary.names.length; dropped(from, to) => { LayoutLibrary.reorder(from, to); } }
@@ -615,7 +623,8 @@ export component LibraryPage inherits PageLayout {
                                 }
                             }
                             VerticalLayout { width: 220px; spacing: Theme.space-m; alignment: start;
-                                property <LayoutSummary> summary: LayoutLibrary.summaries[index];
+                                visible: row.loaded && row.error.id == "";
+                                property <LayoutSummary> summary: row.summary;
                                 if summary.rules + summary.layers + (AppState.in-development ? summary.emoji-pages + summary.action-pages + summary.macros + summary.commands : 0) == 0: Text { text: @tr("Empty layout"); color: Theme.muted; font-size: Theme.font-medium; }
                                 if summary.rules > 0: Text { text: @tr("{n} rule" | "{n} rules" % summary.rules); color: Theme.muted; font-size: Theme.font-medium; }
                                 if summary.layers > 0: Text { text: @tr("{n} layer" | "{n} layers" % summary.layers); color: Theme.muted; font-size: Theme.font-medium; }
@@ -702,8 +711,8 @@ export component LibraryDialogOverlay inherits Rectangle {
         title: @tr("Delete layout?");
         error: LayoutLibrary.status.id == "library-saved" ? "" : Locale.text(LayoutLibrary.status);
         body: @tr("“{}” will be deleted. This cannot be undone.", LayoutLibrary.names[LayoutLibrary.selected])
-            + (LayoutLibrary.rule-counts[LayoutLibrary.selected] > 0
-                ? " " + @tr("Its {n} automatic rule will be deleted too." | "Its {n} automatic rules will be deleted too." % LayoutLibrary.rule-counts[LayoutLibrary.selected])
+            + (LayoutLibrary.rows[LayoutLibrary.selected].rule-count > 0
+                ? " " + @tr("Its {n} automatic rule will be deleted too." | "Its {n} automatic rules will be deleted too." % LayoutLibrary.rows[LayoutLibrary.selected].rule-count)
                 : "")
             + (LayoutLibrary.auto-default == LayoutLibrary.selected ? " " + @tr("Automatic mode will use no layout by default.") : "");
         confirm-text: @tr("Delete");

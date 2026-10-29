@@ -3386,3 +3386,6 @@ msgstr "ゲームが前面にあるときのみ"
 
 msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
 msgstr "ランチャーやシステムが報告するゲームは、そのウィンドウがアクティブな間だけ数えられます。そのためブラウザーに切り替えるとゲームモードはオフになります。Windows の Steam はどのプログラムがゲームかを伝えないため、そのゲームは常に数えられます。"
+
+msgid "Cannot load this layout. See the application log."
+msgstr "この配列を読み込めません。アプリケーションのログを確認してください。"

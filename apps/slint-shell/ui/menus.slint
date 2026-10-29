@@ -270,7 +270,7 @@ component PageEditor inherits HorizontalLayout {
     callback remove();
     spacing: Theme.space-xs;
     FieldLabel { text: @tr("Page:"); horizontal-stretch: 0; max-width: self.preferred-width; vertical-alignment: center; }
-    page-name := InlineTextField { text: MenuEditor.page-name; label: @tr("Page name"); placeholder: @tr("Page name"); saved(value) => { MenuEditor.page-name = value; MenuEditor.rename-page(); } }
+    page-name := InlineTextField { text: MenuEditor.page-name; label: @tr("Page name"); placeholder: @tr("Page name"); saved(value) => { MenuEditor.page-name = value; MenuEditor.rename-page(); return true; } }
     Rectangle { min-width: 0px; preferred-width: 0px; horizontal-stretch: page-name.editing ? 0 : 1; }
     VerticalLayout { horizontal-stretch: 0; alignment: center; IconButton { icon: @image-url("icons/app-window.svg"); label: @tr("Open page in popup"); clicked => { MenuEditor.show-page(); } } }
     VerticalLayout { horizontal-stretch: 0; alignment: center; IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete page"); clicked => { root.remove(); } } }

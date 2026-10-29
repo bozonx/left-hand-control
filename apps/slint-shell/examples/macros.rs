@@ -84,7 +84,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     editor.invoke_remove_step(0, 5);
     assert!(!editor.get_has_errors());
     editor.invoke_set_field(0, MacroField::ModifierDelay, "abc".into());
-    assert!(editor.get_has_errors());
+    wait_until("macro validation", || editor.get_has_errors());
     editor.invoke_set_field(0, MacroField::ModifierDelay, "".into());
     wait_until("macro autosave", || !editor.get_has_unsaved_changes());
     editor.invoke_add("Второй".into());

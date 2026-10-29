@@ -18,6 +18,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Library card summaries and input device discovery load in the background. Macro typing updates the edited field immediately and validates the draft after a short pause.
+
 - Numeric editors use the timing limits from the shared core contract; Emoji and Quick actions use the same popup surface and grid. Editor saving now has desktop-independent regression tests, including debounce and invalid drafts.
 
 - Internal APIs distinguish system keyboard layouts, edited layouts and mapper configuration; engine output, rule execution, window conditions and process invocations use explicit names. The action picker represents its unassigned behavior with a single enum. Existing configuration files and CLI/IPC formats remain compatible.
@@ -85,6 +87,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Layer-shell popups no longer write hourly log files to `$XDG_RUNTIME_DIR/spell/` or poll a file there every two seconds; their messages go to the application log (`RUST_LOG=spell_framework=info` to see them). Building no longer needs the libdbus and libpam development packages.
 
 ### Fixed
+
+- Activating the edited layout no longer panics. Inline editors retain their draft after a failed save, and explicit saves finish inline edits before flushing page drafts. Unreadable library files show an error instead of appearing as empty layouts.
 
 - Keyboard layout notifications include XKB variant and group-index changes even when the layout code and label stay the same. Layout signal watchers stop promptly while waiting to reconnect.
 - Command cleanup checks action fields only, so metadata resembling a `cmd:` reference no longer retains unused commands. Clipboard paste acknowledgement ignores reads before arming and non-text transfers.

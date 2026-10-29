@@ -2991,3 +2991,6 @@ msgstr "Только когда игра на переднем плане"
 
 msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
 msgstr "Игры, о которых сообщают лаунчеры или система, учитываются только пока их окно активно, поэтому переход в браузер выключает игровой режим. Steam в Windows не сообщает, какая программа является игрой, поэтому его игры учитываются всегда."
+
+msgid "Cannot load this layout. See the application log."
+msgstr "Не удалось загрузить эту раскладку. Подробности — в журнале приложения."

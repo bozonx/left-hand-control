@@ -3,18 +3,60 @@
 use lhc_core::{profile::timing, storage::StoragePaths};
 use slint::{
     ComponentHandle, Model,
-    platform::{Platform, WindowAdapter, software_renderer::MinimalSoftwareWindow},
+    platform::{EventLoopProxy, Platform, WindowAdapter, software_renderer::MinimalSoftwareWindow},
 };
 use slint_shell::{Document, bind_document, ui::*};
-use std::{cell::Cell, rc::Rc, time::Duration};
+use std::{
+    cell::Cell,
+    collections::VecDeque,
+    rc::Rc,
+    sync::{Arc, Mutex},
+    time::{Duration, Instant},
+};
 
-struct TestPlatform(Rc<Cell<Duration>>);
+type Tasks = Arc<Mutex<VecDeque<Box<dyn FnOnce() + Send>>>>;
+struct TestPlatform(Rc<Cell<Duration>>, Tasks);
+struct Proxy(Tasks);
+impl EventLoopProxy for Proxy {
+    fn quit_event_loop(&self) -> Result<(), slint::EventLoopError> {
+        Ok(())
+    }
+    fn invoke_from_event_loop(
+        &self,
+        event: Box<dyn FnOnce() + Send>,
+    ) -> Result<(), slint::EventLoopError> {
+        self.0.lock().unwrap().push_back(event);
+        Ok(())
+    }
+}
+fn drain(tasks: &Tasks) {
+    loop {
+        let task = tasks.lock().unwrap().pop_front();
+        let Some(task) = task else { break };
+        task();
+    }
+}
+fn wait(tasks: &Tasks, ready: impl Fn() -> bool) {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        drain(tasks);
+        slint::platform::update_timers_and_animations();
+        if ready() {
+            return;
+        }
+        assert!(Instant::now() < deadline, "background request timed out");
+        std::thread::sleep(Duration::from_millis(5));
+    }
+}
 
 impl Platform for TestPlatform {
     fn create_window_adapter(&self) -> Result<Rc<dyn WindowAdapter>, slint::PlatformError> {
         Ok(MinimalSoftwareWindow::new(Default::default()))
     }
 
+    fn new_event_loop_proxy(&self) -> Option<Box<dyn EventLoopProxy>> {
+        Some(Box::new(Proxy(self.1.clone())))
+    }
     fn duration_since_start(&self) -> Duration {
         self.0.get()
     }
@@ -23,7 +65,8 @@ impl Platform for TestPlatform {
 #[test]
 fn editor_callbacks_save_flush_and_debounce_without_a_desktop() {
     let clock = Rc::new(Cell::new(Duration::ZERO));
-    slint::platform::set_platform(Box::new(TestPlatform(clock.clone()))).unwrap();
+    let tasks = Tasks::default();
+    slint::platform::set_platform(Box::new(TestPlatform(clock.clone(), tasks.clone()))).unwrap();
     let dir = tempfile::tempdir().unwrap();
     let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
     let document = Document::load(paths).unwrap();
@@ -105,4 +148,49 @@ fn editor_callbacks_save_flush_and_debounce_without_a_desktop() {
         assert_eq!(actual.minimum, expected.min as f32);
         assert_eq!(actual.maximum, expected.max as f32);
     }
+    // The activation callback must release its read guard before editing.
+    library.invoke_activate_current();
+    assert_eq!(
+        document.read().settings().manual_layout_id.as_deref(),
+        Some("user:Draft regression")
+    );
+
+    // A corrupt file is an error row, and an older refresh cannot overwrite
+    // the metadata from a newer request.
+    let library_path = document.read().paths().layouts_dir();
+    let path = library_path.join("Draft regression.json");
+    let original = std::fs::read_to_string(&path).unwrap();
+    std::fs::write(&path, "not json").unwrap();
+    library.invoke_refresh();
+    wait(&tasks, || {
+        library
+            .get_rows()
+            .iter()
+            .any(|row| row.loaded && !row.error.id.is_empty())
+    });
+    std::fs::write(&path, &original).unwrap();
+    library.invoke_refresh();
+    library.invoke_refresh();
+    wait(&tasks, || {
+        library
+            .get_rows()
+            .iter()
+            .all(|row| row.loaded && row.error.id.is_empty())
+    });
+    assert!(
+        !library
+            .get_rows()
+            .row_data(0)
+            .unwrap()
+            .summary
+            .macros
+            .eq(&0)
+    );
+
+    // Disk failure is acknowledged by the inline callback without losing
+    // the last successfully persisted library contents.
+    std::fs::remove_file(&path).unwrap();
+    assert!(!library.invoke_rename(0, "Cannot rename".into()));
+    std::fs::write(&path, original).unwrap();
+    assert!(library.invoke_rename(0, "Renamed".into()));
 }
