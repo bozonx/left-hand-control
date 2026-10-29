@@ -1,3 +1,4 @@
+mod support;
 use lhc_core::storage::StoragePaths;
 use slint::{ComponentHandle, Model};
 use slint_shell::{Document, bind_document, ui::*};
@@ -61,6 +62,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     bind_document(&ui, &document);
     slint_shell::select_ui_language("ru")?;
+    ui.show()?;
+    // Cold renderer/font initialization must not consume the short toast's lifetime.
+    let _ = ui.window().take_snapshot()?;
     let center = ui.global::<NotificationCenter>();
     center.invoke_send(message("timeout-invalid", ""));
     assert_eq!(center.get_items().row_count(), 0);
@@ -73,7 +77,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         center.invoke_send(message(id, arg));
     }
     assert_eq!(center.get_items().row_count(), 4);
-    ui.show()?;
+    ui.window()
+        .dispatch_event(slint::platform::WindowEvent::PointerMoved {
+            position: last_dismiss_position(&ui),
+        });
+    slint::platform::update_timers_and_animations();
     let weak = ui.as_weak();
     slint::Timer::single_shot(Duration::from_millis(500), move || {
         let ui = weak.unwrap();
@@ -81,19 +89,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .dispatch_event(slint::platform::WindowEvent::PointerMoved {
                 position: last_dismiss_position(&ui),
             });
-        if let Some(dir) = std::env::var_os("LHC_EDITOR_SNAPSHOTS") {
-            let pixels = ui.window().take_snapshot().unwrap();
-            let mut bytes =
-                format!("P6\n{} {}\n255\n", pixels.width(), pixels.height()).into_bytes();
-            for pixel in pixels.as_slice() {
-                bytes.extend_from_slice(&[pixel.r, pixel.g, pixel.b]);
-            }
-            std::fs::write(
-                std::path::PathBuf::from(dir).join(format!("notifications-{appearance}.ppm")),
-                bytes,
-            )
-            .unwrap();
-        }
+        support::snapshot(&ui, &format!("notifications-{appearance}"));
     });
     let weak = ui.as_weak();
     slint::Timer::single_shot(Duration::from_millis(1500), move || {
@@ -144,6 +140,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     slint::Timer::single_shot(Duration::from_millis(9500), move || {
         let ui = weak.unwrap();
         let center = ui.global::<NotificationCenter>();
+        support::wait_until("non-error notifications to expire", || {
+            let items = center.get_items();
+            items.row_count() == 1 && items.row_data(0).unwrap().message.id == "error"
+        });
         assert_eq!(
             center
                 .get_items()

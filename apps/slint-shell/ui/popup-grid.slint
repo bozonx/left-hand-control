@@ -76,3 +76,46 @@ export component PopupHeader inherits HorizontalLayout {
 export global PopupKeys {
     out property <[string]> labels: ["Q", "W", "E", "R", "T", "A", "S", "D", "F", "G", "Z", "X", "C", "V", "B"];
 }
+
+/// Shared focus, surface and cell layout of both popup windows.
+export component PopupGridBody inherits FocusScope {
+    in property <bool> presented: true;
+    in property <string> title;
+    in property <[string]> page-names;
+    in property <int> page;
+    in property <[string]> items;
+    in property <int> item-offset;
+    in property <bool> emoji;
+    callback key(string);
+    callback choose(int);
+    callback dismiss();
+    public function prepare() { self.focus(); }
+    key-pressed(event) => { root.key(event.text); return accept; }
+    Rectangle {
+        visible: root.presented;
+        x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px;
+        background: Theme.surface; border-radius: Theme.radius-popup;
+        border-width: 1px; border-color: Theme.divider;
+        VerticalLayout {
+            padding: Theme.space-xl;
+            spacing: Theme.space-l;
+            PopupHeader {
+                title: root.title;
+                page-name: root.page-names.length == 0 ? "" : root.page-names[root.page];
+                page: root.page;
+                page-count: root.page-names.length;
+                dismiss => { root.dismiss(); }
+            }
+            for row in 3: HorizontalLayout {
+                spacing: Theme.space-m;
+                for col in 5: PopupCell {
+                    height: 80px;
+                    hotkey: PopupKeys.labels[row * 5 + col];
+                    content: root.items[root.item-offset + row * 5 + col];
+                    emoji: root.emoji;
+                    clicked => { root.choose(row * 5 + col); }
+                }
+            }
+        }
+    }
+}

@@ -1,7 +1,9 @@
+mod support;
 use lhc_core::storage::StoragePaths;
 use slint::{ComponentHandle, Model};
 use slint_shell::{Document, bind_document, ui::*};
 use std::time::Duration;
+use support::quick_action;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     check_atomic_commands()?;
@@ -247,12 +249,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     timer.start(slint::TimerMode::SingleShot, Duration::from_millis(600), move || {
         let ui = weak.unwrap();
         if let Some(path) = std::env::var_os("LHC_PICKER_SNAPSHOT") {
-            let pixels = ui.window().take_snapshot().unwrap();
-            let mut bytes = format!("P6\n{} {}\n255\n", pixels.width(), pixels.height()).into_bytes();
-            for pixel in pixels.as_slice() {
-                bytes.extend_from_slice(&[pixel.r, pixel.g, pixel.b]);
-            }
-            std::fs::write(path, bytes).unwrap();
+            support::write_snapshot(&ui, std::path::Path::new(&path));
         }
         println!("Picker passed: catalog, trigger validation, cancel, rule actions, macro steps and quick actions");
         slint::quit_event_loop().unwrap();
@@ -283,15 +280,6 @@ fn parse_category(name: &str) -> Result<PickerCategory, String> {
         "pause" => C::Pause,
         other => return Err(format!("unknown picker category: {other}")),
     })
-}
-
-/// Action of quick action cell `key` on `page`, empty when the cell is empty.
-fn quick_action(layout: &lhc_core::profile::model::LayoutPreset, page: usize, key: &str) -> String {
-    layout.quick_action_pages[page]
-        .cells
-        .get(key)
-        .map(|item| item.action.clone())
-        .unwrap_or_default()
 }
 
 /// Command edits stay with their target, including invalid page drafts.

@@ -18,6 +18,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Numeric editors use the timing limits from the shared core contract; Emoji and Quick actions use the same popup surface and grid. Editor saving now has desktop-independent regression tests, including debounce and invalid drafts.
+
 - Internal APIs distinguish system keyboard layouts, edited layouts and mapper configuration; engine output, rule execution, window conditions and process invocations use explicit names. The action picker represents its unassigned behavior with a single enum. Existing configuration files and CLI/IPC formats remain compatible.
 - Confirmation dialogs focus their primary button after the shared frame initializes, so Enter confirms reliably.
 

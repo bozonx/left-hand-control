@@ -1,5 +1,4 @@
-import { Theme } from "theme.slint";
-import { PopupCell, PopupHeader, PopupKeys } from "popup-grid.slint";
+import { PopupGridBody } from "popup-grid.slint";
 
 /// Quick actions: pages of 3 × 5 cells addressed by the left-hand hotkeys.
 export component QuickPopup inherits Window {
@@ -16,34 +15,16 @@ export component QuickPopup inherits Window {
     callback key(string);
     callback choose(int);
     callback dismiss();
-    public function prepare() { keys.focus(); }
-    keys := FocusScope {
-        key-pressed(event) => { root.key(event.text); return accept; }
-        Rectangle {
-            visible: root.presented;
-            x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px;
-            background: Theme.surface; border-radius: Theme.radius-popup;
-            border-width: 1px; border-color: Theme.divider;
-            VerticalLayout {
-                padding: Theme.space-xl;
-                spacing: Theme.space-l;
-                PopupHeader {
-                    title: @tr("Quick actions");
-                    page-name: root.page-names.length == 0 ? "" : root.page-names[root.page];
-                    page: root.page;
-                    page-count: root.page-names.length;
-                    dismiss => { root.dismiss(); }
-                }
-                for row in 3: HorizontalLayout {
-                    spacing: Theme.space-m;
-                    for col in 5: PopupCell {
-                        height: 80px;
-                        hotkey: PopupKeys.labels[row * 5 + col];
-                        content: root.items[row * 5 + col];
-                        clicked => { root.choose(row * 5 + col); }
-                    }
-                }
-            }
-        }
+    public function prepare() { body.prepare(); }
+    body := PopupGridBody {
+        width: parent.width; height: parent.height;
+        title: root.title;
+        presented: root.presented;
+        page-names: root.page-names;
+        page: root.page;
+        items: root.items;
+        key(text) => { root.key(text); }
+        choose(index) => { root.choose(index); }
+        dismiss => { root.dismiss(); }
     }
 }

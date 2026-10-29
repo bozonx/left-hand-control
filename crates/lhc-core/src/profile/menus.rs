@@ -17,6 +17,44 @@ use super::{
 use crate::config_document::{ConfigDocument, ConfigError};
 use std::collections::BTreeMap;
 
+/// Set or clear a quick action, preserving a custom name and existing icon.
+pub fn set_quick_action(
+    layout: &mut LayoutPreset,
+    page: i32,
+    cell: i32,
+    action: &str,
+    label: &str,
+) -> Result<(), ConfigError> {
+    let (Ok(page), Ok(cell_index)) = (usize::try_from(page), usize::try_from(cell)) else {
+        return Err(ConfigError::EditConflict);
+    };
+    let (Some(page), Some(key)) = (
+        layout.quick_action_pages.get_mut(page),
+        LEFT_HAND_HOTKEYS.get(cell_index),
+    ) else {
+        return Err(ConfigError::EditConflict);
+    };
+    if action.is_empty() {
+        page.cells.remove(*key);
+        return Ok(());
+    }
+    let item = page.cells.entry((*key).into()).or_default();
+    let automatic = item.name.trim().is_empty() || item.name == item.action;
+    if item.action.trim().is_empty() {
+        *item = QuickAction {
+            name: display_name(label, action).into(),
+            action: action.to_string(),
+            icon: None,
+        };
+    } else {
+        item.action = action.to_string();
+        if automatic {
+            item.name = display_name(label, action).into();
+        }
+    }
+    Ok(())
+}
+
 impl ConfigDocument {
     pub fn save_menu_pages(
         &mut self,
@@ -219,6 +257,36 @@ pub fn transfer_cell(
 mod tests {
     use super::*;
     use crate::storage::StoragePaths;
+
+    #[test]
+    fn quick_action_edits_preserve_custom_names_and_icons_and_clear_cells() {
+        let mut layout = LayoutPreset {
+            quick_action_pages: vec![QuickActionPage::new("page".into(), "".into())],
+            ..LayoutPreset::default()
+        };
+        set_quick_action(&mut layout, 0, 0, "KeyA", "First").unwrap();
+        assert_eq!(layout.quick_action_pages[0].cells["KeyQ"].name, "First");
+        let item = layout.quick_action_pages[0].cells.get_mut("KeyQ").unwrap();
+        item.name = "Custom".into();
+        item.icon = Some("icon".into());
+        set_quick_action(&mut layout, 0, 0, "KeyB", "Second").unwrap();
+        let item = &layout.quick_action_pages[0].cells["KeyQ"];
+        assert_eq!(item.name, "Custom");
+        assert_eq!(item.icon.as_deref(), Some("icon"));
+        set_quick_action(&mut layout, 0, 0, "", "").unwrap();
+        assert!(layout.quick_action_pages[0].cells.is_empty());
+        set_quick_action(&mut layout, 0, 0, "KeyA", "").unwrap();
+        set_quick_action(&mut layout, 0, 0, "KeyB", "Second").unwrap();
+        assert_eq!(layout.quick_action_pages[0].cells["KeyQ"].name, "Second");
+        let saved = layout.clone();
+        for (page, cell) in [(-1, 0), (1, 0), (0, -1), (0, 15)] {
+            assert!(matches!(
+                set_quick_action(&mut layout, page, cell, "KeyC", ""),
+                Err(ConfigError::EditConflict)
+            ));
+            assert_eq!(layout, saved);
+        }
+    }
 
     #[test]
     fn transfers_and_page_reorders_preserve_cells_and_action_metadata() {

@@ -1,3 +1,4 @@
+mod support;
 use slint::platform::{Key, WindowEvent};
 use slint::winit_030::{
     WinitWindowAccessor,
@@ -9,6 +10,7 @@ use std::{
     rc::Rc,
     time::Duration,
 };
+use support::snapshot;
 
 slint::slint! {
     import { TextEdit } from "std-widgets.slint";
@@ -214,22 +216,6 @@ fn verify(ui: &EditingWindow) -> ClipboardRestore {
     old_clipboard
 }
 
-fn snapshot(ui: &EditingWindow) {
-    let Some(dir) = std::env::var_os("LHC_EDITOR_SNAPSHOTS") else {
-        return;
-    };
-    let pixels = ui.window().take_snapshot().unwrap();
-    let mut bytes = format!("P6\n{} {}\n255\n", pixels.width(), pixels.height()).into_bytes();
-    for pixel in pixels.as_slice() {
-        bytes.extend_from_slice(&[pixel.r, pixel.g, pixel.b]);
-    }
-    std::fs::write(
-        std::path::PathBuf::from(dir).join("undo-redo-scroll.ppm"),
-        bytes,
-    )
-    .unwrap();
-}
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ui = EditingWindow::new()?;
     let modifiers = Cell::new(ModifiersState::empty());
@@ -299,7 +285,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             17 => ui.invoke_begin_inline(),
             18 => key(&ui, Key::End),
             19 => {
-                snapshot(&ui);
+                snapshot(&ui, "undo-redo-scroll");
                 key(&ui, Key::Backspace);
                 shortcut(&ui, "я", KeyCode::KeyZ, false);
                 shortcut(&ui, "н", KeyCode::KeyY, false);

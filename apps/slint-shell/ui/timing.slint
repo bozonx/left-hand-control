@@ -1,0 +1,11 @@
+export struct TimingRange { minimum: float, maximum: float }
+
+/// Bounds supplied by lhc-core when the settings window is bound.
+export global Timing {
+    in property <TimingRange> tap-hold;
+    in property <TimingRange> long-hold;
+    in property <TimingRange> trigger-chord;
+    in property <TimingRange> macro-delay;
+    in property <TimingRange> pause;
+    in property <TimingRange> macro-timeout;
+}

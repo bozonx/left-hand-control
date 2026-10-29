@@ -182,9 +182,11 @@ fn menu_changed(state: &State) -> bool {
         || state.layout.quick_action_pages != state.baseline.quick_action_pages
 }
 
-fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
-    state.autosave.cancel();
-    let e = ui.global::<MenuEditor>();
+/// Persist the menu draft independently of the Slint editor.
+fn persist(
+    document: &Document,
+    state: &mut State,
+) -> Result<Option<crate::document::Saved<()>>, lhc_core::config_document::ConfigError> {
     state.commands.retain(|command| {
         state
             .layout
@@ -199,9 +201,7 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
     let baseline = state.baseline.clone();
     let candidate = state.layout.clone();
     if !menu_changed(state) {
-        e.set_has_unsaved_changes(false);
-        e.set_status(Msg::None.to_ui());
-        return;
+        return Ok(None);
     }
     let result = document.edit(View::Menus, |config| {
         config.edit_layout_with_commands(state.commands.clone(), |config| {
@@ -214,8 +214,19 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
         state.layout = state.baseline.clone();
         normalize(&mut state.layout);
     }
+    result.map(Some)
+}
+
+fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
+    state.autosave.cancel();
+    let result = persist(document, state);
+    let e = ui.global::<MenuEditor>();
     e.set_has_unsaved_changes(menu_changed(state));
-    let message = super::outcome(&result, Msg::None);
+    let message = match result {
+        Ok(Some(saved)) => saved.message(Msg::None),
+        Ok(None) => Msg::None,
+        Err(error) => Msg::from(&error),
+    };
     e.set_status(crate::notifications::report(ui, &message));
 }
 
@@ -249,58 +260,20 @@ pub(super) fn choose(
 ) -> Result<(), Msg> {
     let mut state = state.borrow_mut();
     let e = ui.global::<MenuEditor>();
-    set_action(&e, &mut state.layout, cell, action, label)?;
+    lhc_core::profile::menus::set_quick_action(
+        &mut state.layout,
+        e.get_selected_page(),
+        cell,
+        action,
+        label,
+    )
+    .map_err(|error| Msg::from(&error))?;
+    e.set_selected_cell(if action.is_empty() { -1 } else { cell });
     if let Some(command) = command {
         super::stage_command(&mut state.commands, command);
     }
     save(ui, document, &mut state);
     refresh(ui, &state.layout, true);
-    Ok(())
-}
-
-fn set_action(
-    e: &MenuEditor,
-    layout: &mut LayoutPreset,
-    cell: i32,
-    action: &str,
-    label: &str,
-) -> Result<(), Msg> {
-    let (Ok(page), Ok(cell_index)) = (
-        usize::try_from(e.get_selected_page()),
-        usize::try_from(cell),
-    ) else {
-        return Err(Msg::from(
-            &lhc_core::config_document::ConfigError::EditConflict,
-        ));
-    };
-    let (Some(page), Some(key)) = (
-        layout.quick_action_pages.get_mut(page),
-        LEFT_HAND_HOTKEYS.get(cell_index),
-    ) else {
-        return Err(Msg::from(
-            &lhc_core::config_document::ConfigError::EditConflict,
-        ));
-    };
-    if action.is_empty() {
-        page.cells.remove(*key);
-        e.set_selected_cell(-1);
-        return Ok(());
-    }
-    let item = page.cells.entry((*key).into()).or_default();
-    let automatic = item.name.trim().is_empty() || item.name == item.action;
-    if item.action.trim().is_empty() {
-        *item = QuickAction {
-            name: lhc_core::profile::model::display_name(label, action).into(),
-            action: action.to_string(),
-            icon: None,
-        };
-    } else {
-        item.action = action.to_string();
-        if automatic {
-            item.name = lhc_core::profile::model::display_name(label, action).into();
-        }
-    }
-    e.set_selected_cell(cell);
     Ok(())
 }
 
@@ -616,31 +589,5 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn normalize_fills_pages() {
-        let mut layout = LayoutPreset::default();
-        normalize(&mut layout);
-        assert_eq!(layout.emoji_pages.len(), 1);
-        assert_eq!(layout.quick_action_pages.len(), 1);
-        assert_eq!(first_filled(&layout, 0), -1);
-        assert_eq!(first_filled(&layout, 5), -1, "missing pages are empty");
-    }
-
-    #[test]
-    fn move_cell_swaps_without_shifting() {
-        let mut cells: BTreeMap<String, &str> = [("KeyQ", "q"), ("KeyW", "w"), ("KeyE", "e")]
-            .into_iter()
-            .map(|(k, v)| (k.into(), v))
-            .collect();
-        move_cell(&mut cells, 0, 2);
-        assert_eq!(cells["KeyQ"], "e");
-        assert_eq!(cells["KeyW"], "w", "cells between stay in place");
-        assert_eq!(cells["KeyE"], "q");
-        move_cell(&mut cells, 1, 4);
-        assert!(!cells.contains_key("KeyW"), "an empty target moves back");
-        assert_eq!(cells["KeyT"], "w");
-    }
-}
+#[path = "menus/tests.rs"]
+mod tests;

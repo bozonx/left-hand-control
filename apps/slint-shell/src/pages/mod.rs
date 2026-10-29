@@ -27,6 +27,7 @@ pub(crate) mod picker;
 mod reorder;
 mod rules;
 mod settings;
+mod timing;
 
 pub use library::refresh_active;
 pub(crate) use settings::check_input_access;
@@ -78,6 +79,7 @@ pub fn bind_document_with_input(
     document: &Rc<Document>,
     input: &Rc<WindowInput>,
 ) {
+    timing::bind(ui);
     crate::notifications::bind(ui);
     ui.global::<crate::ui::InlineEditors>()
         .on_nonempty(|value| !value.trim().is_empty());
@@ -268,6 +270,15 @@ pub(crate) fn choice<T: Copy>(choices: &[T], index: i32) -> T {
         .ok()
         .and_then(|index| choices.get(index).copied())
         .unwrap_or(choices[0])
+}
+
+#[cfg(test)]
+fn test_document() -> (tempfile::TempDir, Rc<Document>) {
+    let dir = tempfile::tempdir().unwrap();
+    let paths =
+        lhc_core::storage::StoragePaths::new(dir.path().join("settings"), dir.path().join("data"));
+    let document = Document::load(paths).unwrap();
+    (dir, document)
 }
 
 #[cfg(test)]

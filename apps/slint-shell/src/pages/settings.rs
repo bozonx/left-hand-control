@@ -583,26 +583,34 @@ fn refresh_devices(ui: &SettingsWindow) {
     check_input_access(ui);
 }
 
-fn save(ui: &SettingsWindow, document: &Document, state: &mut State) -> Msg {
-    let Some(base) = state.base.clone() else {
-        return Msg::LoadConfigFirst;
+fn persist(document: &Document, state: &mut State, form: &Form) -> (bool, Msg) {
+    let Some(base) = state.base.as_ref() else {
+        return (false, Msg::LoadConfigFirst);
     };
-    let form = Form::read(ui, &state.matchers);
     if form == base {
-        return Msg::None;
+        return (false, Msg::None);
     }
     let mut settings = document.read().settings().clone();
-    if let Err(error) = form.apply(&base, &mut settings) {
-        return error;
+    if let Err(error) = form.apply(base, &mut settings) {
+        return (false, error);
     }
     let saved = document.edit(View::Settings, |config| {
         config.update_settings(|current| *current = settings)
     });
-    if saved.is_ok() {
+    let applied = saved.is_ok();
+    if applied {
         state.base = None;
+    }
+    (applied, super::outcome(&saved, Msg::None))
+}
+
+fn save(ui: &SettingsWindow, document: &Document, state: &mut State) -> Msg {
+    let form = Form::read(ui, &state.matchers);
+    let (applied, message) = persist(document, state, &form);
+    if applied {
         refresh(ui, document, state, true);
     }
-    super::outcome(&saved, Msg::None)
+    message
 }
 
 /// Show and return what keeps the mapper from using the input devices.

@@ -1,3 +1,4 @@
+mod support;
 use lhc_core::{
     config_document::ConfigDocument,
     profile::{bundled::BUNDLED, layout_file, model::LayoutMode},
@@ -404,13 +405,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("Automatic rule drag-and-drop passed");
         }
         if let Some(path) = std::env::var_os("LHC_LIBRARY_SNAPSHOT") {
-            let pixels = ui.window().take_snapshot().unwrap();
-            let mut bytes =
-                format!("P6\n{} {}\n255\n", pixels.width(), pixels.height()).into_bytes();
-            for pixel in pixels.as_slice() {
-                bytes.extend_from_slice(&[pixel.r, pixel.g, pixel.b]);
-            }
-            std::fs::write(path, bytes).unwrap();
+            support::write_snapshot(&ui, std::path::Path::new(&path));
         }
         slint::quit_event_loop().unwrap();
     });

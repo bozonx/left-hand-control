@@ -1,6 +1,8 @@
+mod support;
 use slint::platform::{Key, WindowEvent};
 use slint::{ComponentHandle, SharedString};
 use std::{cell::Cell, rc::Rc, time::Duration};
+use support::snapshot;
 
 slint::slint! {
     import { InlineTextField, InlineTextArea, ConfirmDialog, InfoTip, NumericInput, InlineEditors } from "../ui/controls.slint";
@@ -95,22 +97,6 @@ fn wheel(ui: &ControlsWindow, x: f32, y: f32, delta_y: f32) {
         delta_x: 0.0,
         delta_y,
     });
-}
-
-fn snapshot(ui: &ControlsWindow, name: &str) {
-    let Some(dir) = std::env::var_os("LHC_EDITOR_SNAPSHOTS") else {
-        return;
-    };
-    let pixels = ui.window().take_snapshot().unwrap();
-    let mut bytes = format!("P6\n{} {}\n255\n", pixels.width(), pixels.height()).into_bytes();
-    for pixel in pixels.as_slice() {
-        bytes.extend_from_slice(&[pixel.r, pixel.g, pixel.b]);
-    }
-    std::fs::write(
-        std::path::PathBuf::from(dir).join(format!("{name}.ppm")),
-        bytes,
-    )
-    .unwrap();
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

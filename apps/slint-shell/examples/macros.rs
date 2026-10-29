@@ -1,23 +1,19 @@
-use lhc_core::storage::StoragePaths;
+mod support;
 use slint::{ComponentHandle, Model};
 use slint_shell::{
-    Document, bind_document,
-    ui::{Locale, MacroEditor, MacroField, Page, SettingsWindow, Theme},
+    Document,
+    ui::{Locale, MacroEditor, MacroField, Page, Theme},
 };
 use std::{rc::Rc, time::Duration};
-
-/// Let the delayed save of typed fields run.
-fn settle() {
-    std::thread::sleep(Duration::from_millis(450));
-    slint::platform::update_timers_and_animations();
-}
+use support::{Fixture, wait_until};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let dir = tempfile::tempdir()?;
-    let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
-    let document = Document::load(paths.clone())?;
-    let ui = SettingsWindow::new()?;
-    bind_document(&ui, &document);
+    let Fixture {
+        dir: _dir,
+        paths: _,
+        document,
+        ui,
+    } = Fixture::new()?;
     let development = ui.global::<slint_shell::ui::SettingsEditor>();
     development.set_in_development(true);
     development.invoke_save();
@@ -49,7 +45,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(first(&document).name, "Пустая строка выше (копия)");
     assert_eq!(first(&document).id, "emptyLineAboveCopy");
     editor.invoke_set_field(0, MacroField::Id, "emptyLineAbove".into());
-    settle();
+    wait_until("macro autosave", || !editor.get_has_unsaved_changes());
     assert!(!editor.get_has_errors());
     assert_eq!(first(&document).id, "emptyLineAbove");
     editor.invoke_set_field(0, MacroField::Id, "testMacro".into());
@@ -58,7 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     editor.invoke_add_step(0, "text: hello ".into());
     editor.invoke_move_step(0, 4, 3);
     editor.invoke_set_field(0, MacroField::StepPause, "0".into());
-    settle();
+    wait_until("macro autosave", || !editor.get_has_unsaved_changes());
     assert!(!editor.get_has_errors());
     assert_eq!(first(&document).id, "testMacro");
     assert_eq!(first(&document).steps[3].action, "text: hello ");
@@ -88,10 +84,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     editor.invoke_remove_step(0, 5);
     assert!(!editor.get_has_errors());
     editor.invoke_set_field(0, MacroField::ModifierDelay, "abc".into());
-    settle();
     assert!(editor.get_has_errors());
     editor.invoke_set_field(0, MacroField::ModifierDelay, "".into());
-    settle();
+    wait_until("macro autosave", || !editor.get_has_unsaved_changes());
     editor.invoke_add("Второй".into());
     editor.invoke_move(0, 1);
     assert_eq!(document.read().layout().macros[0].id, "testMacro");
@@ -112,7 +107,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let saved = document.read().load_layout("user:Draft regression")?;
     assert_eq!(saved.macros[0].name, "Saved without waiting");
     editor.invoke_set_field(0, MacroField::Id, "invalid id".into());
-    settle();
     document.edit(slint_shell::document::View::Layers, |config| {
         config.create_layer("Draft test", "")
     })?;
@@ -138,10 +132,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             });
         }
         if let Ok(path) = std::env::var("LHC_MACROS_SNAPSHOT") {
-            let pixels = ui.window().take_snapshot().unwrap();
-            let mut data = format!("P6\n{} {}\n255\n", pixels.width(), pixels.height()).into_bytes();
-            for p in pixels.as_slice() { data.extend([p.r, p.g, p.b]); }
-            std::fs::write(path, data).unwrap();
+            support::write_snapshot(&ui, std::path::Path::new(&path));
         }
         println!("Macros smoke: passed (built-in copy, steps, pauses, order, cycle validation, delayed save and reload)");
         slint::quit_event_loop().unwrap();

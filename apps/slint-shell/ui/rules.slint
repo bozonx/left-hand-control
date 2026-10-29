@@ -1,3 +1,4 @@
+import { Timing } from "timing.slint";
 import { AppState } from "app-state.slint";
 import { SearchField, TextField } from "controls.slint";
 import { PageContent, ScrollView } from "scroll.slint";
@@ -416,7 +417,7 @@ export component RuleDialogOverlay inherits FocusScope {
                     modified: RulesEditor.hold-timeout != "";
                     reset-tooltip: @tr("Use the default from Settings: {} ms", RulesEditor.default-hold-timeout);
                     reset => { RulesEditor.hold-timeout = ""; }
-                    HorizontalLayout { alignment: start; NumericInput { enabled: hold-form.active; text <=> RulesEditor.hold-timeout; placeholder-text: RulesEditor.default-hold-timeout; label: hold-form.label; minimum: 50; maximum: 1000; } }
+                    HorizontalLayout { alignment: start; NumericInput { enabled: hold-form.active; text <=> RulesEditor.hold-timeout; placeholder-text: RulesEditor.default-hold-timeout; label: hold-form.label; minimum: Timing.tap-hold.minimum; maximum: Timing.tap-hold.maximum; } }
                 }
                 long-form := ResettableField {
                     visible: AppState.in-development;
@@ -427,7 +428,7 @@ export component RuleDialogOverlay inherits FocusScope {
                     modified: RulesEditor.long-hold-timeout != "";
                     reset-tooltip: @tr("Use the default from Settings: {} ms", RulesEditor.default-long-hold-timeout);
                     reset => { RulesEditor.long-hold-timeout = ""; }
-                    HorizontalLayout { alignment: start; NumericInput { enabled: long-form.active; text <=> RulesEditor.long-hold-timeout; placeholder-text: RulesEditor.default-long-hold-timeout; minimum: 100; maximum: 60000; step: 100; label: long-form.label; } }
+                    HorizontalLayout { alignment: start; NumericInput { enabled: long-form.active; text <=> RulesEditor.long-hold-timeout; placeholder-text: RulesEditor.default-long-hold-timeout; minimum: Timing.long-hold.minimum; maximum: Timing.long-hold.maximum; step: 100; label: long-form.label; } }
                 }
                 double-form := ResettableField {
                     label: @tr("Double-tap interval, ms");
@@ -438,14 +439,14 @@ export component RuleDialogOverlay inherits FocusScope {
                     modified: RulesEditor.double-timeout != "";
                     reset-tooltip: @tr("Use the default from Settings: {} ms", RulesEditor.default-double-timeout);
                     reset => { RulesEditor.double-timeout = ""; }
-                    HorizontalLayout { alignment: start; NumericInput { enabled: double-form.active; text <=> RulesEditor.double-timeout; placeholder-text: RulesEditor.default-double-timeout; label: double-form.label; minimum: 50; maximum: 1000; } }
+                    HorizontalLayout { alignment: start; NumericInput { enabled: double-form.active; text <=> RulesEditor.double-timeout; placeholder-text: RulesEditor.default-double-timeout; label: double-form.label; minimum: Timing.tap-hold.minimum; maximum: Timing.tap-hold.maximum; } }
                 }
             }
         }
 
         if RulesEditor.dialog == RuleDialog.hold-timeout || RulesEditor.dialog == RuleDialog.double-timeout: NumericInput {
             text <=> RulesEditor.dialog-value;
-            minimum: 50; maximum: 1000;
+            minimum: Timing.tap-hold.minimum; maximum: Timing.tap-hold.maximum;
             placeholder-text: RulesEditor.dialog == RuleDialog.hold-timeout ? RulesEditor.default-hold-timeout : RulesEditor.default-double-timeout;
             label: RulesEditor.dialog == RuleDialog.hold-timeout ? @tr("Hold threshold, ms") : @tr("Double-tap window, ms");
             accepted => { RulesEditor.choose(RulesEditor.dialog-value); }

@@ -217,3 +217,54 @@ fn out_of_range_timings_do_not_modify_settings() {
         assert_eq!(settings, original);
     }
 }
+
+#[test]
+fn saving_a_form_without_a_window_preserves_other_edits_and_rejects_invalid_input() {
+    let (_dir, document) = super::super::test_document();
+    let base = Form::from_settings(document.read().settings());
+    let mut state = State {
+        base: Some(base.clone()),
+        ..State::default()
+    };
+    let mut form = base.clone();
+    form.hold = "0".into();
+    assert_eq!(
+        persist(&document, &mut state, &form),
+        (false, Msg::SettingsTimingInvalid)
+    );
+    assert!(state.base == Some(base.clone()));
+    document
+        .edit(View::Settings, |config| {
+            config.update_settings(|settings| {
+                settings.reduce_motion = !settings.reduce_motion;
+            })
+        })
+        .unwrap();
+    let reduce_motion = document.read().settings().reduce_motion;
+    form.hold = "350".into();
+    assert_eq!(persist(&document, &mut state, &form), (true, Msg::None));
+    assert!(state.base.is_none());
+    assert_eq!(document.read().settings().default_hold_timeout_ms, 350);
+    assert_eq!(document.read().settings().reduce_motion, reduce_motion);
+}
+
+#[test]
+fn write_failure_keeps_the_form_baseline_and_allows_retry() {
+    let (dir, document) = super::super::test_document();
+    let base = Form::from_settings(document.read().settings());
+    let mut state = State {
+        base: Some(base.clone()),
+        ..State::default()
+    };
+    let mut form = base.clone();
+    form.hold = "350".into();
+    std::fs::remove_dir_all(dir.path().join("settings")).unwrap();
+    std::fs::write(dir.path().join("settings"), "blocks directory creation").unwrap();
+    assert!(!persist(&document, &mut state, &form).0);
+    assert!(state.base == Some(base));
+    assert_ne!(document.read().settings().default_hold_timeout_ms, 350);
+    std::fs::remove_file(dir.path().join("settings")).unwrap();
+    assert_eq!(persist(&document, &mut state, &form), (true, Msg::None));
+    assert!(state.base.is_none());
+    assert_eq!(document.read().settings().default_hold_timeout_ms, 350);
+}

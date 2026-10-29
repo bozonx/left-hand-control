@@ -194,10 +194,14 @@ fn annotate(ui: &SettingsWindow, document: &Document, draft: &[Entry]) {
     }
 }
 
-/// Save the draft when every macro is valid.
-fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
-    state.autosave.cancel();
-    let editor = ui.global::<MacroEditor>();
+enum SaveResult {
+    Invalid,
+    Unchanged,
+    Saved(crate::document::Saved<()>),
+}
+
+/// Persist the draft without reading or updating presentation state.
+fn persist(document: &Document, state: &mut State) -> Result<SaveResult, ConfigError> {
     for entry in &mut state.draft {
         entry.commands.retain(|command| {
             entry.item.steps.iter().any(|step| {
@@ -207,11 +211,8 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
     }
     let config = candidate(document, &state.draft);
     let valid = state.draft.iter().all(|e| issue(&config, e).is_none());
-    editor.set_has_errors(!valid);
-    editor.set_has_unsaved_changes(state.draft != state.baseline);
     if !valid {
-        editor.set_status(Msg::None.to_ui());
-        return;
+        return Ok(SaveResult::Invalid);
     }
     let items: Vec<Macro> = state.draft.iter().filter_map(Entry::saved).collect();
     let commands: Vec<_> = state
@@ -221,9 +222,7 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
         .collect();
     if commands.is_empty() && document.read().layout().macros == items {
         state.baseline = state.draft.clone();
-        editor.set_has_unsaved_changes(false);
-        editor.set_status(Msg::None.to_ui());
-        return;
+        return Ok(SaveResult::Unchanged);
     }
     let renames: Vec<(String, String)> = state
         .draft
@@ -240,8 +239,21 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
         }
         state.baseline = state.draft.clone();
     }
+    edit.map(SaveResult::Saved)
+}
+
+/// Save the draft when every macro is valid, then display the result.
+fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
+    state.autosave.cancel();
+    let result = persist(document, state);
+    let editor = ui.global::<MacroEditor>();
+    editor.set_has_errors(matches!(result, Ok(SaveResult::Invalid)));
     editor.set_has_unsaved_changes(state.draft != state.baseline);
-    let message = super::outcome(&edit, Msg::None);
+    let message = match result {
+        Ok(SaveResult::Saved(saved)) => saved.message(Msg::None),
+        Ok(_) => Msg::None,
+        Err(error) => Msg::from(&error),
+    };
     editor.set_status(crate::notifications::report(ui, &message));
 }
 
@@ -316,11 +328,26 @@ pub(super) fn choose(
     command: Option<Command>,
 ) -> Result<(), Msg> {
     let mut state = state.borrow_mut();
-    let at = index(
+    choose_step(
+        &mut state,
         ui.global::<MacroEditor>().get_picker_macro(),
-        state.draft.len(),
-    )
-    .ok_or(Msg::from(&ConfigError::EditConflict))?;
+        step_index,
+        action,
+        command,
+    )?;
+    save(ui, document, &mut state);
+    render(ui, document, &state.draft);
+    Ok(())
+}
+
+fn choose_step(
+    state: &mut State,
+    at: i32,
+    step_index: i32,
+    action: &str,
+    command: Option<Command>,
+) -> Result<(), Msg> {
+    let at = index(at, state.draft.len()).ok_or(Msg::from(&ConfigError::EditConflict))?;
     let entry = &mut state.draft[at];
     if step_index == -1 {
         entry.item.steps.push(step(action));
@@ -332,8 +359,6 @@ pub(super) fn choose(
     if let Some(command) = command {
         super::stage_command(&mut entry.commands, command);
     }
-    save(ui, document, &mut state);
-    render(ui, document, &state.draft);
     Ok(())
 }
 
@@ -553,31 +578,5 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn delays_parse_within_range() {
-        assert_eq!(parse_delay(""), Ok(None));
-        assert_eq!(parse_delay(" 25 "), Ok(Some(25)));
-        assert!(parse_delay("2001").is_err());
-        assert!(parse_delay("x").is_err());
-        let entry = Entry {
-            step_pause: "abc".into(),
-            ..Entry::new(Macro {
-                id: "m".into(),
-                name: String::new(),
-                steps: vec![],
-                step_pause_ms: None,
-                modifier_delay_ms: None,
-            })
-        };
-        assert!(entry.saved().is_none());
-    }
-
-    #[test]
-    fn ids_allow_builtin_macro_names() {
-        let builtin = BUILTIN_MACROS[0].id;
-        assert_eq!(unique_id(&[], builtin), builtin);
-    }
-}
+#[path = "macros/tests.rs"]
+mod tests;

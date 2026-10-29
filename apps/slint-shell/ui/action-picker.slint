@@ -1,3 +1,4 @@
+import { Timing } from "timing.slint";
 import { AppState } from "app-state.slint";
 import { DialogFrame, IconButton, NumericInput, SearchField, TextField } from "controls.slint";
 import { ScrollView } from "scroll.slint";
@@ -286,7 +287,7 @@ export component PickerOverlay inherits DialogFrame {
                     }
                     if ActionPicker.query == "" && ActionPicker.category == PickerCategory.pause: VerticalLayout { spacing: Theme.space-m; padding: 0px;
                         Text { text: @tr("Pause in milliseconds (1–10000)"); color: Theme.muted; }
-                        NumericInput { text: ActionPicker.pause-content; minimum: 1; maximum: 10000; label: @tr("Pause (ms)"); edited(value) => { ActionPicker.touched = true; ActionPicker.value = "pause:" + value; ActionPicker.refresh(); } }
+                        NumericInput { text: ActionPicker.pause-content; minimum: Timing.pause.minimum; maximum: Timing.pause.maximum; label: @tr("Pause (ms)"); edited(value) => { ActionPicker.touched = true; ActionPicker.value = "pause:" + value; ActionPicker.refresh(); } }
                     }
                     if (ActionPicker.query != "" || ActionPicker.is-listed(ActionPicker.category)) && ActionPicker.items.length > 0: catalog-list := ScrollView { viewport-width: self.visible-width;
                         // A new category or search starts at the top. The scroll offset stays local:

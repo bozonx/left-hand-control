@@ -1,3 +1,4 @@
+import { Timing } from "timing.slint";
 import { NotificationCenter } from "notifications.slint";
 import { PageContent, ScrollView } from "scroll.slint";
 import { DragDrop, DragGroups, DragHandle, DropMarker } from "reorder.slint";
@@ -72,8 +73,8 @@ component StepRow inherits HorizontalLayout {
             Text { text: @tr("Pause"); color: Theme.text; vertical-alignment: center; }
             NumericInput {
                 text: root.step.pause-ms;
-                minimum: 1;
-                maximum: 10000;
+                minimum: Timing.pause.minimum;
+                maximum: Timing.pause.maximum;
                 label: @tr("Pause (ms)");
                 edited(value) => { MacroEditor.set-pause(root.macro-index, root.index, value); }
             }
@@ -166,7 +167,7 @@ component MacroCard inherits Card {
                         NumericInput {
                             text: root.item.step-pause;
                             placeholder-text: MacroEditor.default-step-pause;
-                            maximum: 2000;
+                            minimum: Timing.macro-delay.minimum; maximum: Timing.macro-delay.maximum;
                             label: @tr("Pause between steps");
                             edited(value) => { MacroEditor.set-field(root.index, MacroField.step-pause, value); }
                         }
@@ -187,7 +188,7 @@ component MacroCard inherits Card {
                         NumericInput {
                             text: root.item.modifier-delay;
                             placeholder-text: MacroEditor.default-modifier-delay;
-                            maximum: 2000;
+                            minimum: Timing.macro-delay.minimum; maximum: Timing.macro-delay.maximum;
                             step: 1;
                             label: @tr("Modifier delay");
                             edited(value) => { MacroEditor.set-field(root.index, MacroField.modifier-delay, value); }

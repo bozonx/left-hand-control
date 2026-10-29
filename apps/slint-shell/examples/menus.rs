@@ -1,26 +1,20 @@
-use lhc_core::storage::StoragePaths;
+mod support;
 use slint::{ComponentHandle, Model};
-use slint_shell::{
-    Document, bind_document,
-    ui::{
-        ActionPicker, DragDrop, MenuEditor, MenuKind, Page, PickerBehavior, PickerCategory,
-        PickerTarget, SettingsEditor, SettingsWindow, Theme,
-    },
+use slint_shell::ui::{
+    ActionPicker, DragDrop, MenuEditor, MenuKind, Page, PickerBehavior, PickerCategory,
+    PickerTarget, SettingsEditor, Theme,
 };
 use std::time::Duration;
-
-/// Let the delayed save of typed fields run.
-fn settle() {
-    std::thread::sleep(Duration::from_millis(450));
-    slint::platform::update_timers_and_animations();
-}
+use support::quick_action;
+use support::{Fixture, wait_until};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let dir = tempfile::tempdir()?;
-    let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
-    let document = Document::load(paths.clone())?;
-    let ui = SettingsWindow::new()?;
-    bind_document(&ui, &document);
+    let Fixture {
+        dir: _dir,
+        paths,
+        document,
+        ui,
+    } = Fixture::new()?;
     let development = ui.global::<slint_shell::ui::SettingsEditor>();
     development.set_in_development(true);
     development.invoke_save();
@@ -44,7 +38,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     e.invoke_set_cell();
     e.set_page_name("Мои эмоджи".into());
     e.invoke_rename_page();
-    settle();
+    wait_until("menu autosave", || !e.get_has_unsaved_changes());
     assert_eq!(loaded().layout().emoji_pages[0].cells["KeyQ"], "Привет 👋");
     assert_eq!(loaded().layout().emoji_pages[0].name, "Мои эмоджи");
     e.invoke_add_page("Страница 2".into());
@@ -113,7 +107,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(e.get_name().as_str(), "Привет");
     e.set_name("Запуск".into());
     e.invoke_set_name();
-    settle();
+    wait_until("menu autosave", || !e.get_has_unsaved_changes());
     e.invoke_set_action(1, "text:Здравствуйте".into(), "".into());
     e.invoke_move_cell(1, 2);
     e.invoke_add_page("Second".into());
@@ -152,7 +146,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     paths.save_config(r#"{"schemaVersion":1}"#)?;
     e.set_name("Updated".into());
     e.invoke_set_name();
-    settle();
+    wait_until("menu autosave", || !e.get_has_unsaved_changes());
     // Manual config changes do not prevent edits in the running application.
     assert_eq!(e.get_status().id.as_str(), "");
     assert_eq!(e.get_name().as_str(), "Updated");
@@ -262,10 +256,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 3 => {
                     assert_eq!(e.get_selected_page(), 1); move_to(230.0, 285.0);
                     if let Ok(path) = std::env::var("LHC_MENUS_DND_SNAPSHOT") {
-                        let pixels = ui.window().take_snapshot().unwrap();
-                        let mut data = format!("P6\n{} {}\n255\n", pixels.width(), pixels.height()).into_bytes();
-                        for p in pixels.as_slice() { data.extend([p.r, p.g, p.b]); }
-                        std::fs::write(path, data).unwrap();
+                        support::write_snapshot(&ui, std::path::Path::new(&path));
                     }
                     release(230.0, 285.0);
                 }
@@ -316,23 +307,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             });
         }
         if let Ok(path) = std::env::var("LHC_MENUS_SNAPSHOT") {
-            let pixels = ui.window().take_snapshot().unwrap();
-            let mut data = format!("P6\n{} {}\n255\n",pixels.width(),pixels.height()).into_bytes();
-            for p in pixels.as_slice() { data.extend([p.r,p.g,p.b]); }
-            std::fs::write(path,data).unwrap();
+            support::write_snapshot(&ui, std::path::Path::new(&path));
         }
         println!("Menus smoke passed: pages, cells, drag moves, command picker, auto-save, validation and conflicts");
         slint::quit_event_loop().unwrap();
     });
     slint::run_event_loop()?;
     Ok(())
-}
-
-/// Action of quick action cell `key` on `page`, empty when the cell is empty.
-fn quick_action(layout: &lhc_core::profile::model::LayoutPreset, page: usize, key: &str) -> String {
-    layout.quick_action_pages[page]
-        .cells
-        .get(key)
-        .map(|item| item.action.clone())
-        .unwrap_or_default()
 }

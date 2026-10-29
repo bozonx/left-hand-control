@@ -1,5 +1,6 @@
 //! Dragging a key of the layer keyboard onto another key swaps their assignments;
 //! keys that keep their modifiers held are marked.
+mod support;
 use lhc_core::{config_document::KeyAssignment, storage::StoragePaths};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, Model};
@@ -9,21 +10,7 @@ use slint_shell::{
     ui::{DragDrop, LayerDialog, LayersEditor, MenuKind, Page, SettingsWindow},
 };
 use std::{cell::Cell, rc::Rc, time::Duration};
-
-fn snapshot(ui: &SettingsWindow, name: &str) {
-    if let Some(dir) = std::env::var_os("LHC_EDITOR_SNAPSHOTS") {
-        let pixels = ui.window().take_snapshot().unwrap();
-        let mut bytes = format!("P6\n{} {}\n255\n", pixels.width(), pixels.height()).into_bytes();
-        for pixel in pixels.as_slice() {
-            bytes.extend_from_slice(&[pixel.r, pixel.g, pixel.b]);
-        }
-        std::fs::write(
-            std::path::PathBuf::from(dir).join(format!("{name}.ppm")),
-            bytes,
-        )
-        .unwrap();
-    }
-}
+use support::snapshot;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir()?;

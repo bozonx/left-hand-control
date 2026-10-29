@@ -1,3 +1,4 @@
+import { Timing } from "timing.slint";
 import { ResettableField, TextField } from "controls.slint";
 import { NotificationCenter } from "notifications.slint";
 import { PageContent, ScrollView } from "scroll.slint";
@@ -605,7 +606,7 @@ export component SettingsPage inherits PageLayout {
                                 info: @tr("For rules triggered by several keys pressed together, such as KeyJ+KeyK. All keys must go down within this time, in any order. Until then the first key is held back; if the combination does not complete, it is typed as usual. Modifiers are never held back.")
                                     + "\n\n" + @tr("Higher: the combination is easier to hit, but typing with these keys lags slightly. Applies to all rules; a rule cannot override it.")
                                     + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-trigger-chord-timeout);
-                                minimum: 10; maximum: 500;
+                                minimum: Timing.trigger-chord.minimum; maximum: Timing.trigger-chord.maximum;
                                 value <=> SettingsEditor.trigger-chord-timeout;
                                 standard: SettingsEditor.default-trigger-chord-timeout;
                                 edited => { SettingsEditor.schedule-save(); }
@@ -615,7 +616,7 @@ export component SettingsPage inherits PageLayout {
                                 label: @tr("Macro time limit");
                                 info: @tr("A macro still running after this time is stopped and counts as finished. A macro started while another one runs waits for it; up to 3 runs can wait, further presses are ignored.")
                                     + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-macro-timeout);
-                                minimum: 1000; maximum: 600000; step: 1000;
+                                minimum: Timing.macro-timeout.minimum; maximum: Timing.macro-timeout.maximum; step: 1000;
                                 value <=> SettingsEditor.macro-timeout;
                                 standard: SettingsEditor.default-macro-timeout;
                                 edited => { SettingsEditor.schedule-save(); }
@@ -633,7 +634,7 @@ export component SettingsPage inherits PageLayout {
                             info: @tr("A second tap within this time after the first release counts as a double tap.")
                                 + "\n\n" + @tr("A single tap on a key with a double-tap action runs only after this window ends, so a large value makes such keys feel slow. Keys without a double-tap action are not delayed.")
                                 + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-double-tap-timeout);
-                            minimum: 50; maximum: 1000;
+                            minimum: Timing.tap-hold.minimum; maximum: Timing.tap-hold.maximum;
                             value <=> SettingsEditor.double-tap-timeout;
                             standard: SettingsEditor.default-double-tap-timeout;
                             edited => { SettingsEditor.schedule-save(); }
@@ -658,7 +659,7 @@ export component SettingsPage inherits PageLayout {
                                 info: @tr("How long to hold a rule key before it counts as a hold: its layer or hold action. Released earlier, the key runs its tap action.")
                                     + "\n\n" + @tr("Lower: layers turn on faster, but fast typing may trigger them by mistake. Higher: fewer false holds, but a longer wait. Usually 150–250 ms.")
                                     + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-hold-timeout);
-                                minimum: 50; maximum: 1000;
+                                minimum: Timing.tap-hold.minimum; maximum: Timing.tap-hold.maximum;
                                 value <=> SettingsEditor.hold-timeout;
                                 standard: SettingsEditor.default-hold-timeout;
                                 edited => { SettingsEditor.schedule-save(); }
@@ -668,7 +669,7 @@ export component SettingsPage inherits PageLayout {
                                 label: @tr("Long hold");
                                 info: @tr("How long to keep holding a rule key before its long-hold action runs once. Applies to rules whose hold runs an action instead of a layer.")
                                     + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-long-hold-timeout);
-                                minimum: 100; maximum: 60000; step: 100;
+                                minimum: Timing.long-hold.minimum; maximum: Timing.long-hold.maximum; step: 100;
                                 value <=> SettingsEditor.long-hold-timeout;
                                 standard: SettingsEditor.default-long-hold-timeout;
                                 edited => { SettingsEditor.schedule-save(); }
@@ -682,7 +683,7 @@ export component SettingsPage inherits PageLayout {
                                 label: @tr("Pause between steps");
                                 info: @tr("Pause between consecutive steps of a macro. Increase it if an application misses keystrokes.")
                                     + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-macro-pause);
-                                maximum: 2000;
+                                minimum: Timing.macro-delay.minimum; maximum: Timing.macro-delay.maximum;
                                 value <=> SettingsEditor.macro-pause;
                                 standard: SettingsEditor.default-macro-pause;
                                 edited => { SettingsEditor.schedule-save(); }
@@ -692,7 +693,7 @@ export component SettingsPage inherits PageLayout {
                                 label: @tr("Modifier delay");
                                 info: @tr("Wait between pressing modifiers (Shift, Ctrl, …) and the main key of a macro step. Increase it if an application receives the shortcut without its modifier. Default for macros that leave the field empty.")
                                     + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-modifier-delay);
-                                maximum: 2000; step: 1;
+                                minimum: Timing.macro-delay.minimum; maximum: Timing.macro-delay.maximum; step: 1;
                                 value <=> SettingsEditor.modifier-delay;
                                 standard: SettingsEditor.default-modifier-delay;
                                 edited => { SettingsEditor.schedule-save(); }
