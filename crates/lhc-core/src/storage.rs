@@ -627,9 +627,14 @@ mod tests {
         let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
         storage.save_user_layout("A", "{}", false).expect("save A");
         // Only a case-sensitive file system can hold both names.
-        if storage.save_user_layout("a", "{\"x\":1}", false).is_err() {
+        let probe = temp.path().join("case-probe");
+        fs::write(&probe, "probe").unwrap();
+        if temp.path().join("CASE-PROBE").exists() {
             return;
         }
+        storage
+            .save_user_layout("a", "{\"x\":1}", false)
+            .expect("save a");
         assert!(storage.rename_user_layout("A", "a", "{}", false).is_err());
         assert_eq!(storage.load_user_layout("a").unwrap(), "{\"x\":1}");
     }

@@ -210,9 +210,23 @@ fn space_audit_presses(
     results.remove(0)
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum TraceEvent {
+    Raw(KeyCode, bool),
+    Tap(KeyCode, Vec<KeyCode>),
+    Press(KeyCode, Vec<KeyCode>),
+    Release(KeyCode, Vec<KeyCode>),
+    ReleaseMods(Vec<KeyCode>),
+    Text(String),
+}
+
 /// Feed timed events and ticks in time order (events before a tick at the
-/// same millisecond) and describe the output compactly.
-fn timeline(cfg: serde_json::Value, events: &[(KeyCode, bool, u64)], ticks: &[u64]) -> Vec<String> {
+/// same millisecond) and retain key transitions and chord modifiers.
+fn timeline(
+    cfg: serde_json::Value,
+    events: &[(KeyCode, bool, u64)],
+    ticks: &[u64],
+) -> Vec<TraceEvent> {
     let cfg: MapperConfig = serde_json::from_value(cfg).unwrap();
     let mut engine = Engine::new(&cfg);
     let start = Instant::now();
@@ -232,17 +246,16 @@ fn timeline(cfg: serde_json::Value, events: &[(KeyCode, bool, u64)], ticks: &[u6
     }
     engine.tick(start + Duration::from_secs(5), &mut out);
     assert!(engine.pending.is_empty() && engine.virt.emitted.is_empty());
-    out.iter()
+    out.into_iter()
         .map(|event| match event {
-            EngineOutput::KeyRaw { key, down } => {
-                format!("{key:?}{}", if *down { "+" } else { "-" })
-            }
-            EngineOutput::Stroke { ks, .. } => format!("tap {:?}", ks.key),
-            EngineOutput::ChordPress { ks, .. } => format!("press {:?}", ks.key),
-            EngineOutput::ChordRelease { key, .. } => format!("release {key:?}"),
-            EngineOutput::ReleaseMods(mods) => format!("release {mods:?}"),
-            EngineOutput::Literal(text) => format!("text {text}"),
-            _ => "other".into(),
+            EngineOutput::KeyRaw { key, down } => TraceEvent::Raw(key, down),
+            EngineOutput::Stroke { ks, .. } => TraceEvent::Tap(ks.key, ks.mods),
+            EngineOutput::ChordPress { ks, .. } => TraceEvent::Press(ks.key, ks.mods),
+            EngineOutput::ChordRelease { key, mods, .. } => TraceEvent::Release(key, mods),
+            EngineOutput::ReleaseMods(mods) => TraceEvent::ReleaseMods(mods),
+            EngineOutput::Literal(text) => TraceEvent::Text(text),
+            EngineOutput::RunSystem(_) => panic!("unexpected system action"),
+            EngineOutput::RunCommand(_) => panic!("unexpected command"),
         })
         .collect()
 }

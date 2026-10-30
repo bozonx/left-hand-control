@@ -1351,7 +1351,15 @@ fn release_waiting_in_decision_buffer_decides_long_hold_tap() {
         ],
         &[0, 10, 20, 50, 100, 150, 200, 210],
     );
-    assert_eq!(out, ["tap KEY_D", "KEY_X+", "text tap", "KEY_X-"]);
+    assert_eq!(
+        out,
+        [
+            TraceEvent::Tap(KeyCode::KEY_D, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_X, true),
+            TraceEvent::Text("tap".into()),
+            TraceEvent::Raw(KeyCode::KEY_X, false)
+        ]
+    );
 }
 
 #[test]
@@ -1368,7 +1376,14 @@ fn deferred_double_tap_tap_keeps_a_modifier_released_in_the_window() {
         ],
         &[20, 60, 80, 400],
     );
-    assert_eq!(out, ["KEY_LEFTCTRL+", "tap KEY_A", "KEY_LEFTCTRL-"]);
+    assert_eq!(
+        out,
+        [
+            TraceEvent::Raw(KeyCode::KEY_LEFTCTRL, true),
+            TraceEvent::Tap(KeyCode::KEY_A, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_LEFTCTRL, false)
+        ]
+    );
 }
 
 #[test]
@@ -1390,7 +1405,11 @@ fn tap_hold_tap_keeps_a_modifier_released_before_the_key() {
         );
         assert_eq!(
             out,
-            ["KEY_LEFTSHIFT+", "tap KEY_A", "KEY_LEFTSHIFT-"],
+            [
+                TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, true),
+                TraceEvent::Tap(KeyCode::KEY_A, vec![]),
+                TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, false)
+            ],
             "{mode}"
         );
         // Hold by timeout: the deferred release follows the committed hold.
@@ -1407,10 +1426,10 @@ fn tap_hold_tap_keeps_a_modifier_released_before_the_key() {
         assert_eq!(
             out,
             [
-                "KEY_LEFTSHIFT+",
-                "press KEY_LEFTCTRL",
-                "KEY_LEFTSHIFT-",
-                "KEY_LEFTCTRL-"
+                TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, true),
+                TraceEvent::Press(KeyCode::KEY_LEFTCTRL, vec![]),
+                TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, false),
+                TraceEvent::Raw(KeyCode::KEY_LEFTCTRL, false)
             ],
             "{mode}"
         );
@@ -1434,12 +1453,12 @@ fn tap_hold_tap_keeps_a_modifier_released_before_the_key() {
     assert_eq!(
         out,
         [
-            "KEY_LEFTSHIFT+",
-            "press KEY_LEFTCTRL",
-            "KEY_LEFTSHIFT-",
-            "KEY_X+",
-            "KEY_X-",
-            "KEY_LEFTCTRL-"
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, true),
+            TraceEvent::Press(KeyCode::KEY_LEFTCTRL, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, false),
+            TraceEvent::Raw(KeyCode::KEY_X, true),
+            TraceEvent::Raw(KeyCode::KEY_X, false),
+            TraceEvent::Raw(KeyCode::KEY_LEFTCTRL, false)
         ]
     );
 }
@@ -1462,7 +1481,13 @@ fn tap_then_hold_activates_the_layer_and_quick_second_tap_is_double_tap() {
         ],
         &[0, 30, 100, 400, 600, 650, 700],
     );
-    assert_eq!(held, ["press KEY_LEFT", "KEY_LEFT-"]);
+    assert_eq!(
+        held,
+        [
+            TraceEvent::Press(KeyCode::KEY_LEFT, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_LEFT, false)
+        ]
+    );
     let tapped = timeline(
         cfg,
         &[
@@ -1473,5 +1498,142 @@ fn tap_then_hold_activates_the_layer_and_quick_second_tap_is_double_tap() {
         ],
         &[0, 30, 100, 130],
     );
-    assert_eq!(tapped, ["tap KEY_ESC"]);
+    assert_eq!(tapped, [TraceEvent::Tap(KeyCode::KEY_ESC, vec![])]);
+}
+
+#[test]
+fn hold_deadline_boundary_is_identical_for_ticks_and_release_events() {
+    for mode in ["permissiveHold", "holdOnOtherKeyPress"] {
+        for elapsed in [199, 200, 201] {
+            for tick_first in [false, true] {
+                let cfg = serde_json::json!({"rules": [{
+                    "key": "KeyA", "tapAction": "Escape", "holdAction": "ControlLeft",
+                    "holdTimeoutMs": 200, "tapDecision": mode
+                }]});
+                let cfg: MapperConfig = serde_json::from_value(cfg).unwrap();
+                let mut engine = Engine::new(&cfg);
+                let start = Instant::now();
+                let mut out = vec![];
+                engine.handle_key_event(KeyCode::KEY_A, true, start, &mut out);
+                engine.tick(start + Duration::from_millis(199.min(elapsed)), &mut out);
+                assert!(out.is_empty(), "hold fired before deadline");
+                if tick_first {
+                    engine.tick(start + Duration::from_millis(elapsed), &mut out);
+                    assert_eq!(out.len(), usize::from(elapsed >= 200));
+                }
+                engine.handle_key_event(
+                    KeyCode::KEY_A,
+                    false,
+                    start + Duration::from_millis(elapsed),
+                    &mut out,
+                );
+                if elapsed < 200 {
+                    assert!(matches!(out.as_slice(), [EngineOutput::Stroke { ks, .. }]
+                        if ks.key == KeyCode::KEY_ESC && ks.mods.is_empty()));
+                } else {
+                    assert!(
+                        matches!(out.as_slice(), [
+                        EngineOutput::ChordPress { ks, .. },
+                        EngineOutput::KeyRaw { key: KeyCode::KEY_LEFTCTRL, down: false }
+                    ] if ks.key == KeyCode::KEY_LEFTCTRL && ks.mods.is_empty()),
+                        "{mode}, {elapsed}, tick_first={tick_first}"
+                    );
+                }
+                let count = out.len();
+                engine.tick(start + Duration::from_secs(2), &mut out);
+                assert_eq!(out.len(), count, "action fired again after release");
+                assert!(engine.pending.is_empty() && engine.virt.emitted.is_empty());
+            }
+        }
+    }
+}
+
+#[test]
+fn double_tap_deadline_uses_event_time_before_or_after_timer_delivery() {
+    for second_press in [259, 260, 261] {
+        for tick_before_press in [false, true] {
+            let cfg = config_with_rule(serde_json::json!({
+                "key": "KeyA", "tapAction": "Escape", "doubleTapAction": "Tab",
+                "doubleTapTimeoutMs": 250
+            }));
+            let mut engine = Engine::new(&cfg);
+            let start = Instant::now();
+            let mut out = vec![];
+            engine.handle_key_event(KeyCode::KEY_A, true, start, &mut out);
+            engine.handle_key_event(
+                KeyCode::KEY_A,
+                false,
+                start + Duration::from_millis(10),
+                &mut out,
+            );
+            engine.tick(start + Duration::from_millis(259), &mut out);
+            assert!(out.is_empty(), "single tap fired before deadline");
+            if tick_before_press {
+                engine.tick(start + Duration::from_millis(second_press), &mut out);
+                assert_eq!(out.len(), usize::from(second_press >= 260));
+            }
+            engine.handle_key_event(
+                KeyCode::KEY_A,
+                true,
+                start + Duration::from_millis(second_press),
+                &mut out,
+            );
+            engine.handle_key_event(
+                KeyCode::KEY_A,
+                false,
+                start + Duration::from_millis(second_press + 10),
+                &mut out,
+            );
+            engine.tick(start + Duration::from_secs(2), &mut out);
+            // A timer delivered at the exact deadline expires the first tap;
+            // an event delivered first at that instant is still in the window.
+            let double = second_press < 260 || (second_press == 260 && !tick_before_press);
+            let expected = if double {
+                vec![KeyCode::KEY_TAB]
+            } else {
+                vec![KeyCode::KEY_ESC, KeyCode::KEY_ESC]
+            };
+            let keys: Vec<_> = out
+                .iter()
+                .map(|event| match event {
+                    EngineOutput::Stroke { ks, .. } if ks.mods.is_empty() => ks.key,
+                    _ => panic!("unexpected non-tap output"),
+                })
+                .collect();
+            assert_eq!(
+                keys, expected,
+                "second_press={second_press}, tick_before_press={tick_before_press}"
+            );
+            assert!(engine.pending.is_empty() && engine.virt.emitted.is_empty());
+        }
+    }
+}
+
+#[test]
+fn mapped_tap_and_hold_keep_their_own_modifiers() {
+    let cfg = serde_json::json!({"rules": [{
+        "key": "KeyA", "tapAction": "Ctrl+KeyC", "holdAction": "Alt+Tab",
+        "holdTimeoutMs": 200
+    }]});
+    let tapped = timeline(
+        cfg.clone(),
+        &[(KeyCode::KEY_A, true, 0), (KeyCode::KEY_A, false, 50)],
+        &[],
+    );
+    assert_eq!(
+        tapped,
+        [TraceEvent::Tap(KeyCode::KEY_C, vec![KeyCode::KEY_LEFTCTRL])]
+    );
+    let held = timeline(
+        cfg,
+        &[(KeyCode::KEY_A, true, 0), (KeyCode::KEY_A, false, 250)],
+        &[200],
+    );
+    assert_eq!(
+        held,
+        [
+            TraceEvent::Press(KeyCode::KEY_TAB, vec![KeyCode::KEY_LEFTALT]),
+            TraceEvent::Release(KeyCode::KEY_TAB, vec![KeyCode::KEY_LEFTALT]),
+        ]
+    );
 }

@@ -251,20 +251,27 @@ mod tests {
             .unwrap();
         bus.emit(CoreEvent::LayerKeyPressed);
         entry.recv_timeout(Duration::from_secs(1)).unwrap();
-        // Even filling the slow subscriber's queue must return.
-        for _ in 0..2048 {
-            bus.emit(CoreEvent::LayerKeyPressed);
-        }
         let (tx, rx) = mpsc::channel();
         let _fast = bus
             .subscribe(move |_| {
                 tx.send(()).unwrap();
             })
             .unwrap();
-        bus.emit(CoreEvent::LayerKeyPressed);
-        rx.recv_timeout(Duration::from_secs(1)).unwrap();
+        let producer_bus = bus.clone();
+        let (done_tx, done_rx) = mpsc::channel();
+        let producer = std::thread::spawn(move || {
+            for _ in 0..2048 {
+                producer_bus.emit(CoreEvent::LayerKeyPressed);
+            }
+            let _ = done_tx.send(());
+        });
+        let delivered = rx.recv_timeout(Duration::from_secs(2));
+        let completed = done_rx.recv_timeout(Duration::from_secs(2));
         drop(slow);
-        release.send(()).unwrap();
+        let _ = release.send(());
+        delivered.expect("slow subscriber blocked another subscriber");
+        completed.expect("slow subscriber blocked the producer");
+        producer.join().unwrap();
     }
 
     #[test]

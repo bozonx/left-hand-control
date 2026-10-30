@@ -71,10 +71,17 @@ impl<C: SignalConnection> SignalWatcher<C> {
     }
 
     fn wait(&self, delay: Duration) {
+        self.wait_with_ready(delay, || {});
+    }
+
+    fn wait_with_ready(&self, delay: Duration, mut ready: impl FnMut()) {
         let state = self.state.lock().unwrap_or_else(|e| e.into_inner());
         drop(
             self.wake
-                .wait_timeout_while(state, delay, |state| !state.stopped)
+                .wait_timeout_while(state, delay, |state| {
+                    ready();
+                    !state.stopped
+                })
                 .unwrap_or_else(|e| e.into_inner()),
         );
     }
@@ -172,11 +179,34 @@ mod tests {
         let watcher = Arc::new(SignalWatcher::<Connection>::new());
         let other = watcher.clone();
         let (tx, rx) = std::sync::mpsc::channel();
+        let (ready_tx, ready_rx) = std::sync::mpsc::channel();
         let thread = std::thread::spawn(move || {
-            other.wait(Duration::from_secs(60));
+            other.wait_with_ready(Duration::from_secs(60), || {
+                let _ = ready_tx.send(());
+            });
             tx.send(()).unwrap();
         });
+        ready_rx.recv_timeout(Duration::from_secs(2)).unwrap();
+        // The predicate holds the mutex: stop can acquire it only once the
+        // condition-variable wait has atomically released it.
         watcher.stop();
+        let result = rx.recv_timeout(Duration::from_secs(2));
+        // Wake and join the worker even when the notification is broken.
+        watcher.wake.notify_all();
+        thread.join().unwrap();
+        result.unwrap();
+    }
+
+    #[test]
+    fn stop_before_reconnect_wait_returns_without_waiting() {
+        let watcher = Arc::new(SignalWatcher::<Connection>::new());
+        watcher.stop();
+        let other = watcher.clone();
+        let (tx, rx) = std::sync::mpsc::channel();
+        let thread = std::thread::spawn(move || {
+            other.wait(Duration::from_secs(60));
+            let _ = tx.send(());
+        });
         rx.recv_timeout(Duration::from_secs(1)).unwrap();
         thread.join().unwrap();
     }

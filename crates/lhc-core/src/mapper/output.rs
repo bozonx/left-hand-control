@@ -468,10 +468,14 @@ mod tests {
     #[derive(Default)]
     struct FakeSink {
         batches: Vec<Vec<(u16, i32)>>,
+        fail_after: Option<usize>,
     }
 
     impl EventSink for FakeSink {
         fn emit(&mut self, events: &[(KeyCode, bool)]) -> Result<(), String> {
+            if self.fail_after == Some(self.batches.len()) {
+                return Err("output disconnected".into());
+            }
             self.batches.push(
                 events
                     .iter()
@@ -576,6 +580,98 @@ mod tests {
             macros: Vec::new(),
             commands: Vec::new(),
             settings: Settings::default(),
+        }
+    }
+
+    #[test]
+    fn output_failure_stops_before_later_side_effects() {
+        for successful_batches in [0, 1] {
+            let mut sink = FakeSink {
+                fail_after: Some(successful_batches),
+                ..Default::default()
+            };
+            let mut effects = FakeEffects::default();
+            // Repeated codes force separate output batches.
+            let mut buf = vec![
+                EngineOutput::KeyRaw {
+                    key: KeyCode::KEY_A,
+                    down: true,
+                },
+                EngineOutput::KeyRaw {
+                    key: KeyCode::KEY_A,
+                    down: false,
+                },
+                EngineOutput::Literal("must not type".into()),
+                EngineOutput::RunSystem(SystemAction::AppEvent(
+                    crate::profile::app_action::AppAction::parse("showSettings").unwrap(),
+                )),
+                EngineOutput::RunCommand(ProcessInvocation {
+                    program: "unused".into(),
+                    args: vec![],
+                    working_directory: None,
+                }),
+            ];
+            assert_eq!(
+                flush_out_with(&mut sink, &mut effects, &mut buf),
+                Err("output disconnected".into())
+            );
+            assert_eq!(sink.batches.len(), successful_batches);
+            if successful_batches == 1 {
+                assert_eq!(sink.batches[0], [(KeyCode::KEY_A.code(), 1)]);
+            }
+            assert!(effects.texts.is_empty());
+            assert!(effects.systems.is_empty());
+            assert!(effects.commands.is_empty());
+            assert!(buf.is_empty());
+        }
+    }
+
+    #[test]
+    fn iteration_propagates_input_and_output_failures_without_side_effects() {
+        for failure in ["wait", "fetch", "emit"] {
+            let now = Instant::now();
+            let mut driver = FakeDriver::new(
+                vec![now, now, now],
+                vec![if failure == "wait" {
+                    Err("wait failed".into())
+                } else {
+                    Ok(true)
+                }],
+                vec![if failure == "fetch" {
+                    Err("fetch failed".into())
+                } else {
+                    Ok(vec![(KeyCode::KEY_A, true)])
+                }],
+            );
+            let mut engine = Engine::new(&empty_cfg());
+            let mut hold = OutputHold::default();
+            let mut sink = FakeSink {
+                fail_after: Some(0),
+                ..Default::default()
+            };
+            let mut effects = FakeEffects::default();
+            let mut buf = vec![];
+            let result = process_iteration_with(
+                &mut driver,
+                &mut engine,
+                &mut hold,
+                &mut sink,
+                &mut effects,
+                &mut buf,
+            );
+            let expected = match failure {
+                "wait" => "wait failed",
+                "fetch" => "fetch failed",
+                _ => "output disconnected",
+            };
+            assert_eq!(result, Err(expected.into()), "{failure}");
+            assert!(sink.batches.is_empty());
+            assert!(effects.texts.is_empty());
+            assert!(effects.systems.is_empty());
+            assert!(effects.commands.is_empty());
+            if failure == "wait" {
+                assert_eq!(driver.fetches.len(), 1, "fetched after wait failed");
+            }
         }
     }
 

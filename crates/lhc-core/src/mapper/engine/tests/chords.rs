@@ -780,7 +780,14 @@ fn release_waiting_in_combo_buffer_decides_permissive_tap() {
         ],
         &[180, 190, 200, 210, 230, 240, 400],
     );
-    assert_eq!(out, ["tap KEY_D", "KEY_X+", "KEY_X-"]);
+    assert_eq!(
+        out,
+        [
+            TraceEvent::Tap(KeyCode::KEY_D, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_X, true),
+            TraceEvent::Raw(KeyCode::KEY_X, false)
+        ]
+    );
 }
 
 #[test]
@@ -801,7 +808,7 @@ fn second_press_waiting_in_combo_buffer_is_a_double_tap() {
         ],
         &[10, 240, 260, 265, 290, 300],
     );
-    assert_eq!(out, ["text double"]);
+    assert_eq!(out, [TraceEvent::Text("double".into())]);
 }
 
 #[test]
@@ -824,7 +831,13 @@ fn chord_with_an_undecided_member_needs_the_combo_window() {
         ],
         &[0, 50, 60, 120, 150, 200, 400],
     );
-    assert_eq!(late, ["press KEY_LEFT", "KEY_LEFT-"]);
+    assert_eq!(
+        late,
+        [
+            TraceEvent::Press(KeyCode::KEY_LEFT, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_LEFT, false)
+        ]
+    );
     let together = timeline(
         cfg,
         &[
@@ -835,7 +848,7 @@ fn chord_with_an_undecided_member_needs_the_combo_window() {
         ],
         &[0, 30, 80, 90],
     );
-    assert_eq!(together, ["text chord"]);
+    assert_eq!(together, [TraceEvent::Text("chord".into())]);
 }
 
 #[test]
@@ -861,7 +874,12 @@ fn chord_nested_in_undecided_tap_hold_key_does_not_overtake_it() {
     );
     assert_eq!(
         out,
-        ["press KEY_LEFT", "press KEY_RIGHT", "KEY_LEFT-", "KEY_RIGHT-"]
+        [
+            TraceEvent::Press(KeyCode::KEY_LEFT, vec![]),
+            TraceEvent::Press(KeyCode::KEY_RIGHT, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_LEFT, false),
+            TraceEvent::Raw(KeyCode::KEY_RIGHT, false)
+        ]
     );
 }
 
@@ -890,6 +908,12 @@ fn chord_rolled_under_undecided_tap_hold_key_types_its_keys_in_order() {
     );
     assert_eq!(
         out,
-        ["tap KEY_SPACE", "KEY_J+", "KEY_K+", "KEY_J-", "KEY_K-"]
+        [
+            TraceEvent::Tap(KeyCode::KEY_SPACE, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_J, true),
+            TraceEvent::Raw(KeyCode::KEY_K, true),
+            TraceEvent::Raw(KeyCode::KEY_J, false),
+            TraceEvent::Raw(KeyCode::KEY_K, false)
+        ]
     );
 }
