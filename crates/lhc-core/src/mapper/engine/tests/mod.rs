@@ -102,7 +102,6 @@ fn transitions(out: &[EngineOutput]) -> Vec<(KeyCode, bool)> {
 fn rule_with_apps(whitelist: Option<Vec<String>>, blacklist: Option<Vec<String>>) -> RuleEntry {
     RuleEntry {
         tap_decision: TapDecision::PermissiveHold,
-        trigger_keys: vec![],
         tap: TapMode::Native,
         layer_id: None,
         hold: HoldOutputMode::Swallow,

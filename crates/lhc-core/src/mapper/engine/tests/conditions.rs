@@ -58,7 +58,6 @@ fn undetected_game_mode_counts_as_off() {
     let ctx = AutoSwitchContext::default();
     let mut rule = RuleEntry {
         tap_decision: TapDecision::PermissiveHold,
-        trigger_keys: vec![],
         tap: TapMode::Native,
         layer_id: None,
         hold: HoldOutputMode::Swallow,
@@ -93,7 +92,6 @@ fn game_mode_condition_passes_when_cached_state_matches() {
     };
     let rule = RuleEntry {
         tap_decision: TapDecision::PermissiveHold,
-        trigger_keys: vec![],
         tap: TapMode::Native,
         layer_id: None,
         hold: HoldOutputMode::Swallow,

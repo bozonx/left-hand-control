@@ -837,3 +837,59 @@ fn chord_with_an_undecided_member_needs_the_combo_window() {
     );
     assert_eq!(together, ["text chord"]);
 }
+
+#[test]
+fn chord_nested_in_undecided_tap_hold_key_does_not_overtake_it() {
+    let out = timeline(
+        serde_json::json!({
+            "rules": [
+                {"key":"Space", "layerId":"nav"},
+                {"key":"KeyJ+KeyK", "tapAction":"text:chord"}
+            ],
+            "layerKeymaps": {"nav": {"keys": {"KeyJ": "ArrowLeft", "KeyK": "ArrowRight"}}},
+            "settings": {"comboTimeoutMs": 50}
+        }),
+        &[
+            (KeyCode::KEY_SPACE, true, 0),
+            (KeyCode::KEY_J, true, 20),
+            (KeyCode::KEY_K, true, 30),
+            (KeyCode::KEY_J, false, 80),
+            (KeyCode::KEY_K, false, 90),
+            (KeyCode::KEY_SPACE, false, 120),
+        ],
+        &[0, 20, 30, 80, 90, 120],
+    );
+    assert_eq!(
+        out,
+        ["press KEY_LEFT", "press KEY_RIGHT", "KEY_LEFT-", "KEY_RIGHT-"]
+    );
+}
+
+#[test]
+fn chord_rolled_under_undecided_tap_hold_key_types_its_keys_in_order() {
+    // Members deferred behind the decision replay as typing, like other
+    // keys buffered behind a tap-hold key: the chord never overtakes it.
+    let out = timeline(
+        serde_json::json!({
+            "rules": [
+                {"key":"Space", "layerId":"nav"},
+                {"key":"KeyJ+KeyK", "tapAction":"text:chord"}
+            ],
+            "layerKeymaps": {"nav": {"keys": {"KeyJ": "ArrowLeft"}}},
+            "settings": {"comboTimeoutMs": 50}
+        }),
+        &[
+            (KeyCode::KEY_SPACE, true, 0),
+            (KeyCode::KEY_J, true, 20),
+            (KeyCode::KEY_K, true, 30),
+            (KeyCode::KEY_SPACE, false, 60),
+            (KeyCode::KEY_J, false, 80),
+            (KeyCode::KEY_K, false, 90),
+        ],
+        &[0, 20, 30, 60, 80, 90],
+    );
+    assert_eq!(
+        out,
+        ["tap KEY_SPACE", "KEY_J+", "KEY_K+", "KEY_J-", "KEY_K-"]
+    );
+}

@@ -8,6 +8,9 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- A key chord pressed while a tap-hold key is still undecided no longer fires ahead of it: a chord nested inside the held key now uses that key's layer, and a chord rolled after it types in physical order.
+- A rule with a hold (layer or held key) and a double-tap action supports tap, then press and hold: the second press activates the hold when held, and fires the double-tap only when released quickly.
+
 - Notifications no longer hide new problems behind older warnings or replay background successes. Popup worker failures are grouped, distinct diagnostics remain separate, repeated rule warnings stay inline, and deleting an automatic switching rule has a confirmation.
 
 - Emoji and Quick actions no longer activate cells or switch pages for Ctrl/Alt/Meta shortcuts, in both winit and Spell popups. Unhandled popup keys are no longer unconditionally consumed.

@@ -46,7 +46,6 @@ pub(super) enum HoldOutputMode {
 #[derive(Clone)]
 pub(super) struct RuleEntry {
     pub(super) tap_decision: crate::mapper::config::TapDecision,
-    pub(super) trigger_keys: Vec<KeyCode>,
     pub(super) tap: TapMode,
     pub(super) layer_id: Option<String>,
     pub(super) hold: HoldOutputMode,
@@ -104,6 +103,16 @@ pub(super) enum RulePhase {
 pub(super) struct RuleExecution {
     pub(super) rule: RuleEntry,
     pub(super) phase: RulePhase,
+    /// Second press inside the double-tap window of a rule with a hold:
+    /// a short press fires the double-tap, a long one the hold.
+    pub(super) second_press: bool,
+}
+
+impl RuleEntry {
+    /// True when holding the key does something beyond the native key.
+    pub(super) fn has_hold(&self) -> bool {
+        self.layer_id.is_some() || matches!(self.hold, HoldOutputMode::Keystroke(_))
+    }
 }
 
 /// A key event deferred while a rule key is in `WaitingDecision`

@@ -1443,3 +1443,35 @@ fn tap_hold_tap_keeps_a_modifier_released_before_the_key() {
         ]
     );
 }
+
+#[test]
+fn tap_then_hold_activates_the_layer_and_quick_second_tap_is_double_tap() {
+    let cfg = serde_json::json!({
+        "rules": [{"key":"Space", "layerId":"nav", "doubleTapAction":"Escape"}],
+        "layerKeymaps": {"nav": {"keys": {"KeyJ": "ArrowLeft"}}}
+    });
+    let held = timeline(
+        cfg.clone(),
+        &[
+            (KeyCode::KEY_SPACE, true, 0),
+            (KeyCode::KEY_SPACE, false, 30),
+            (KeyCode::KEY_SPACE, true, 100),
+            (KeyCode::KEY_J, true, 600),
+            (KeyCode::KEY_J, false, 650),
+            (KeyCode::KEY_SPACE, false, 700),
+        ],
+        &[0, 30, 100, 400, 600, 650, 700],
+    );
+    assert_eq!(held, ["press KEY_LEFT", "KEY_LEFT-"]);
+    let tapped = timeline(
+        cfg,
+        &[
+            (KeyCode::KEY_SPACE, true, 0),
+            (KeyCode::KEY_SPACE, false, 30),
+            (KeyCode::KEY_SPACE, true, 100),
+            (KeyCode::KEY_SPACE, false, 130),
+        ],
+        &[0, 30, 100, 130],
+    );
+    assert_eq!(tapped, ["tap KEY_ESC"]);
+}

@@ -110,6 +110,10 @@ impl Engine {
                 .decision_buffer
                 .iter()
                 .any(|event| event.down && !keys.contains(&event.key))
+            // A tap-hold key outside the chord is still undecided: its
+            // decision owns the following presses (a nested chord makes it a
+            // hold), and firing the chord now would overtake its tap.
+            && self.deciding_key().is_none_or(|key| keys.contains(&key))
             && {
                 let ctx = (self.context)();
                 rule_passes_apps(rule, &ctx) && rule_passes_conditions(rule, &ctx)

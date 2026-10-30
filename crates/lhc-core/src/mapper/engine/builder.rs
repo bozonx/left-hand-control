@@ -358,7 +358,6 @@ impl Engine {
 
             let entry = RuleEntry {
                 tap_decision: r.tap_decision.unwrap_or(cfg.settings.tap_decision),
-                trigger_keys: keys.clone(),
                 long_hold,
                 long_hold_timeout,
                 tap,

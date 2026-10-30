@@ -44,7 +44,9 @@
 //!   * HoldActive — hold has been committed (layer pushed, native key or
 //!     keystroke held). On release: undo the hold.
 //!   * WaitingSecond — short press finished; waiting for a possible
-//!     second press within `double_tap_window`.
+//!     second press within `double_tap_window`. The second press fires the
+//!     double-tap at once, unless the rule has a hold (layer or keystroke):
+//!     then it decides again — short is the double-tap, long is the hold.
 //!
 //! Fast path: a rule with `tap == Swallow` and no `double_tap` skips
 //! WaitingDecision and commits the hold immediately on key-down.
@@ -381,11 +383,7 @@ impl Engine {
         // permissive-hold replay carries an old timestamp. Only a press that
         // actually lands inside the window is a double-tap.
         let waiting_second_deadline = match self.pending.get(&key).map(|p| &p.phase) {
-            Some(RulePhase::WaitingSecond { deadline })
-                if self.pending[&key].rule.trigger_keys.len() <= 1 =>
-            {
-                Some(*deadline)
-            }
+            Some(RulePhase::WaitingSecond { deadline }) => Some(*deadline),
             _ => None,
         };
         if let Some(deadline) = waiting_second_deadline {
@@ -396,6 +394,18 @@ impl Engine {
                 self.flush_waiting_second(now, out);
                 // Permissive rules already intercepted this event above.
                 self.commit_waiting_decisions(out);
+                // A rule with a hold (layer or held keystroke) lets the second
+                // press decide too: released early it is the double-tap,
+                // held it is the hold (tap, then press and hold).
+                if let Some(pending) = pending.as_ref().filter(|p| p.rule.has_hold())
+                {
+                    let rule = pending.rule.clone();
+                    self.start_rule(key, rule, now, out);
+                    if let Some(p) = self.pending.get_mut(&key) {
+                        p.second_press = true;
+                    }
+                    return;
+                }
                 let dtap = pending.and_then(|p| p.rule.double_tap);
                 self.fire_action(dtap.as_ref(), self.layout.default_mod_delay, now, out);
                 // The matching release must not emit anything (fire-and-forget).
@@ -521,6 +531,16 @@ impl Engine {
                 RulePhase::HoldActive => {
                     self.pending.remove(&key);
                     self.release_hold_with(&pending.rule, key, out);
+                }
+                RulePhase::WaitingDecision { .. } if pending.second_press => {
+                    // Short second press of a tap-then-hold rule.
+                    self.pending.remove(&key);
+                    self.fire_action(
+                        pending.rule.double_tap.as_ref(),
+                        self.layout.default_mod_delay,
+                        now,
+                        out,
+                    );
                 }
                 RulePhase::WaitingDecision { .. } => {
                     // Short press. If double-tap is configured, delay the
@@ -699,6 +719,7 @@ impl Engine {
                 RuleExecution {
                     rule: rule.clone(),
                     phase: RulePhase::HoldActive,
+                    second_press: false,
                 },
             );
             self.commit_hold_with(&rule, key, out);
@@ -709,6 +730,7 @@ impl Engine {
                 RuleExecution {
                     rule,
                     phase: RulePhase::WaitingDecision { deadline },
+                    second_press: false,
                 },
             );
         }
@@ -826,7 +848,7 @@ impl Engine {
         let keys: Vec<KeyCode> = self
             .pending
             .iter()
-            .filter(|(_, p)| matches!(p.phase, RulePhase::WaitingSecond { deadline } if deadline <= now || p.rule.trigger_keys.len() <= 1 || !p.rule.trigger_keys.iter().any(|key| self.physical_down.contains(key))))
+            .filter(|(_, p)| matches!(p.phase, RulePhase::WaitingSecond { .. }))
             .map(|(k, _)| *k)
             .collect();
         for k in keys {
