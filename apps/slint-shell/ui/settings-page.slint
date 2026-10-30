@@ -316,14 +316,33 @@ export component SettingsPage inherits PageLayout {
                         border-radius: Theme.radius-small;
                         background: SettingsEditor.tab == tab-id ? Theme.accent : transparent;
                     }
-                    Text {
-                        x: 14px;
-                        width: parent.width - 26px;
-                        text: label;
-                        color: SettingsEditor.tab == tab-id ? Theme.text : Theme.muted;
-                        font-weight: Theme.weight-semibold;
-                        vertical-alignment: center;
-                        overflow: elide;
+                    HorizontalLayout {
+                        padding-left: 12px;
+                        padding-right: 12px;
+                        spacing: Theme.space-s;
+                        alignment: start;
+                        VerticalLayout {
+                            alignment: center;
+                            Image {
+                                width: 16px;
+                                height: 16px;
+                                source: tab-id == SettingsTab.general ? @image-url("icons/settings-2.svg")
+                                    : tab-id == SettingsTab.mapper ? @image-url("icons/keyboard.svg")
+                                    : tab-id == SettingsTab.key-behavior ? @image-url("icons/clock.svg")
+                                    : tab-id == SettingsTab.game-mode ? @image-url("icons/gamepad-2.svg")
+                                    : tab-id == SettingsTab.commands ? @image-url("icons/terminal.svg")
+                                    : @image-url("icons/accessibility.svg");
+                                colorize: SettingsEditor.tab == tab-id ? Theme.accent : Theme.muted;
+                            }
+                        }
+                        Text {
+                            horizontal-stretch: 1;
+                            text: label;
+                            color: SettingsEditor.tab == tab-id ? Theme.text : Theme.muted;
+                            font-weight: Theme.weight-semibold;
+                            vertical-alignment: center;
+                            overflow: elide;
+                        }
                     }
                     focus := FocusScope {
                         key-pressed(event) => {

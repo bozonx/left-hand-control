@@ -65,6 +65,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.show()?;
     // Cold renderer/font initialization must not consume the short toast's lifetime.
     let _ = ui.window().take_snapshot()?;
+    // Hover pauses expiry only in the active window; the compositor may not focus a test window.
+    ui.window()
+        .dispatch_event(slint::platform::WindowEvent::WindowActiveChanged(true));
     let center = ui.global::<NotificationCenter>();
     // Time before the first arrival must not count against its lifetime.
     std::thread::sleep(Duration::from_millis(2100));
@@ -200,9 +203,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     slint::Timer::single_shot(Duration::from_millis(17000), move || {
         let ui = weak.unwrap();
         let center = ui.global::<NotificationCenter>();
-        support::wait_until("success notifications to expire", || {
+        support::wait_until("success and warning notifications to expire", || {
             let items = center.get_items();
-            items.row_count() == 2 && items.row_data(0).unwrap().message.id == "error"
+            items.row_count() == 1 && items.row_data(0).unwrap().message.id == "error"
         });
         assert_eq!(
             center
@@ -210,7 +213,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .iter()
                 .map(|item| item.message.id)
                 .collect::<Vec<_>>(),
-            ["error", "config-edit-conflict"]
+            ["error"]
         );
         assert_eq!(center.get_items().row_data(0).unwrap().message.id, "error");
         for item in center.get_items().iter().collect::<Vec<_>>() {

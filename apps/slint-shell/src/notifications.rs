@@ -19,7 +19,7 @@ const EXPIRY_TICK: Duration = Duration::from_millis(100);
 const VISIBLE: usize = 4;
 const CAPACITY: usize = 32;
 
-/// Success lifetimes; warning/error durations are retained for policy metadata.
+/// Success and warning lifetimes; errors stay until dismissed.
 const SHORT: Duration = Duration::from_secs(2);
 const SUCCESS: Duration = Duration::from_secs(3);
 const WARNING: Duration = Duration::from_secs(6);
@@ -192,7 +192,7 @@ impl Queue {
             return false;
         }
         for entry in self.entries.iter_mut().take(VISIBLE) {
-            if entry.item.kind == ToastKind::Success {
+            if entry.item.kind != ToastKind::Error {
                 entry.remaining = entry.remaining.saturating_sub(elapsed);
             }
         }
@@ -246,6 +246,27 @@ struct State {
     queue: Queue,
     last_tick: Instant,
     timer: slint::Timer,
+    hovered: bool,
+}
+
+impl State {
+    /// Charges the time since the last call to visible rows unless the user holds
+    /// the stack with the pointer or keyboard focus in the active window.
+    fn advance(&mut self, ui: &SettingsWindow) -> bool {
+        let now = Instant::now();
+        let elapsed = now.saturating_duration_since(self.last_tick);
+        self.last_tick = now;
+        let center = ui.global::<NotificationCenter>();
+        let active = i_slint_core::window::WindowInner::from_pub(ui.window()).active();
+        self.queue.paused = active && (self.hovered || center.get_focused());
+        let changed = self.queue.advance(elapsed);
+        // An emptied stack collapses to zero height under a still pointer, and
+        // Slint then never reports the hover end.
+        if self.queue.entries.is_empty() {
+            self.hovered = false;
+        }
+        changed
+    }
 }
 
 fn worker_message(message: &Message) -> bool {
@@ -291,6 +312,7 @@ pub(crate) fn bind(ui: &SettingsWindow) {
         queue: Queue::default(),
         last_tick: Instant::now(),
         timer: slint::Timer::default(),
+        hovered: false,
     }));
     for backend in [false, true] {
         let state = state.clone();
@@ -306,11 +328,7 @@ pub(crate) fn bind(ui: &SettingsWindow) {
                 let mut state = state.borrow_mut();
                 // Charge elapsed time to existing rows before adding a new one. Cold
                 // renderer initialization can delay the timer's very first tick.
-                let now = Instant::now();
-                let elapsed = now.saturating_duration_since(state.last_tick);
-                state.last_tick = now;
-                let expired = !ui.global::<NotificationCenter>().get_focused()
-                    && state.queue.advance(elapsed);
+                let expired = state.advance(&ui);
                 let added = state.queue.add(message, backend);
                 (expired || added).then(|| state.queue.items())
             };
@@ -354,7 +372,7 @@ pub(crate) fn bind(ui: &SettingsWindow) {
     });
     let shared = state.clone();
     center.on_hover(move |hovered| {
-        shared.borrow_mut().queue.paused = hovered;
+        shared.borrow_mut().hovered = hovered;
     });
     let weak_state = Rc::downgrade(&state);
     let weak = ui.as_weak();
@@ -367,12 +385,10 @@ pub(crate) fn bind(ui: &SettingsWindow) {
             };
             let items = {
                 let mut state = state.borrow_mut();
-                let now = Instant::now();
-                let elapsed = now.saturating_duration_since(state.last_tick);
-                state.last_tick = now;
                 let changed = if ui.window().is_visible() {
-                    !ui.global::<NotificationCenter>().get_focused() && state.queue.advance(elapsed)
+                    state.advance(&ui)
                 } else {
+                    state.last_tick = Instant::now();
                     let old = state.queue.entries.len();
                     state
                         .queue
@@ -442,12 +458,11 @@ mod tests {
     }
 
     #[test]
-    fn warnings_require_dismissal() {
+    fn warnings_expire() {
         let mut queue = Queue::default();
         queue.add(Msg::ConfigEditConflict.to_ui(), false);
-        assert!(!queue.advance(Duration::from_secs(3600)));
-        assert_eq!(queue.entries.len(), 1);
-        queue.dismiss(queue.entries[0].item.token);
+        assert!(!queue.advance(Duration::from_secs(5)));
+        assert!(queue.advance(Duration::from_secs(1)));
         assert!(queue.entries.is_empty());
     }
 

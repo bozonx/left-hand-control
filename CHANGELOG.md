@@ -13,6 +13,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - A rule with a hold (layer or held key) and a double-tap action supports tap, then press and hold: the second press activates the hold when held, and fires the double-tap only when released quickly.
 
 - Notifications no longer hide new problems behind older warnings or replay background successes. Popup worker failures are grouped, distinct diagnostics remain separate, repeated rule warnings stay inline, and deleting an automatic switching rule has a confirmation.
+- Success and warning notifications disappear on their timeout again; only errors stay until dismissed. Hovering a notification pauses the timeout only while the window is active, and an emptied notification stack no longer leaves the next notifications paused.
 
 - Emoji and Quick actions no longer activate cells or switch pages for Ctrl/Alt/Meta shortcuts, in both winit and Spell popups. Unhandled popup keys are no longer unconditionally consumed.
 - Screen readers announce Emoji and Quick actions popup cells as buttons named by their hotkey and content, and the close button as "Close" (winit popups; Spell popups still expose no accessibility tree).
