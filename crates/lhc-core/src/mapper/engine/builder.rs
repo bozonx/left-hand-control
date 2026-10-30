@@ -299,6 +299,9 @@ impl Engine {
                 ActionSpec::Native if layer_id.is_some() || long_hold.is_some() => {
                     HoldOutputMode::Swallow
                 }
+                // A swallowed tap with "nothing" on hold must swallow the whole
+                // press; a native hold would leak the key through the fast path.
+                ActionSpec::Native if matches!(tap, TapMode::Swallow) => HoldOutputMode::Swallow,
                 ActionSpec::Native if keys.len() > 1 => {
                     HoldOutputMode::Keystroke(crate::mapper::action::Keystroke {
                         mods: keys[..keys.len() - 1].to_vec(),

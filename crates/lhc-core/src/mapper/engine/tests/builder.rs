@@ -294,3 +294,38 @@ fn development_gate_disables_user_macros_popups_and_long_hold() {
         );
     }
 }
+
+#[test]
+fn swallowed_tap_with_native_hold_emits_nothing() {
+    let mut cfg = empty_cfg();
+    cfg.rules.push(Rule {
+        enabled: true,
+        condition_game_mode: None,
+        condition_keyboard_layouts: None,
+        condition_window_patterns: None,
+        condition_excluded_window_patterns: None,
+        key: "Enter".into(),
+        layer_id: String::new(),
+        tap_action: ActionSpec::Swallow,
+        hold_behavior: None,
+        long_hold_action: String::new(),
+        long_hold_timeout_ms: None,
+        hold_action: ActionSpec::Native,
+        hold_timeout_ms: None,
+        tap_decision: None,
+        double_tap_action: String::new(),
+        double_tap_timeout_ms: None,
+    });
+    let mut engine = Engine::new(&cfg);
+    let mut out = Vec::new();
+    let now = Instant::now();
+
+    engine.handle_key_event(KeyCode::KEY_ENTER, true, now, &mut out);
+    engine.handle_key_event(
+        KeyCode::KEY_ENTER,
+        false,
+        now + Duration::from_millis(500),
+        &mut out,
+    );
+    assert!(out.is_empty());
+}
