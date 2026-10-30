@@ -191,6 +191,54 @@ fn is_key_change(event: &InputEvent) -> bool {
     event.event_type() == EventType::KEY && event.value() != 2
 }
 
+/// Start the reader before triggering teardown and bound its lifetime even if
+/// a regression leaves the virtual device connected.
+fn read_until_disconnected(mut output: Device) -> thread::JoinHandle<Vec<(KeyCode, bool)>> {
+    use std::os::fd::AsRawFd;
+    let (ready_tx, ready_rx) = std::sync::mpsc::sync_channel(0);
+    output.set_nonblocking(true).unwrap();
+    let reader = thread::spawn(move || {
+        let deadline = Instant::now() + Duration::from_secs(3);
+        let mut keys = Vec::new();
+        ready_tx.send(()).unwrap();
+        loop {
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            assert!(
+                !remaining.is_zero(),
+                "timed out waiting for output device disconnect"
+            );
+            let mut fd = libc::pollfd {
+                fd: output.as_raw_fd(),
+                events: libc::POLLIN,
+                revents: 0,
+            };
+            // SAFETY: fd points to one valid pollfd and output owns its descriptor.
+            let result = unsafe { libc::poll(&mut fd, 1, remaining.as_millis() as i32) };
+            if result < 0 {
+                let error = std::io::Error::last_os_error();
+                if error.kind() == std::io::ErrorKind::Interrupted {
+                    continue;
+                }
+                panic!("poll output device: {error}");
+            }
+            match output.fetch_events() {
+                Ok(events) => keys.extend(
+                    events
+                        .filter(is_key_change)
+                        .map(|event| (KeyCode::new(event.code()), event.value() == 1)),
+                ),
+                Err(error) if error.raw_os_error() == Some(libc::ENODEV) => return keys,
+                Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
+                Err(error) => panic!("read output device: {error}"),
+            }
+        }
+    });
+    ready_rx
+        .recv_timeout(Duration::from_secs(3))
+        .expect("output reader ready");
+    reader
+}
+
 #[test]
 #[ignore = "requires /dev/uinput and readable /dev/input"]
 fn mapper_e2e_passthrough_keeps_unmapped_keys() {
@@ -373,22 +421,7 @@ fn mapper_e2e_stop_releases_held_keys() {
         mapper.keys(),
         [down(KeyCode::KEY_LEFTSHIFT), down(KeyCode::KEY_A)]
     );
-    // The mapper destroys its device right after emitting the releases, and
-    // unread events go with it: a blocking reader must already be waiting.
-    let mut output = mapper.output.take().unwrap();
-    output.set_nonblocking(false).unwrap();
-    let reader = thread::spawn(move || {
-        let mut keys = Vec::new();
-        while let Ok(events) = output.fetch_events() {
-            keys.extend(
-                events
-                    .filter(is_key_change)
-                    .map(|event| (KeyCode::new(event.code()), event.value() == 1)),
-            );
-        }
-        keys
-    });
-    thread::sleep(Duration::from_millis(50));
+    let reader = read_until_disconnected(mapper.output.take().unwrap());
     runtime::stop().unwrap();
     let mut released = reader.join().unwrap();
     released.sort_by_key(|(code, _)| code.code());
@@ -433,21 +466,7 @@ fn mapper_e2e_replug_recovers_latest_config_and_releases_held_keys() {
     .unwrap();
     keyboard.send(KeyCode::KEY_LEFTCTRL, true);
     assert_eq!(mapper.keys(), [down(KeyCode::KEY_LEFTCTRL)]);
-    // Read releases before the disconnected virtual device is destroyed.
-    let mut output = mapper.output.take().unwrap();
-    output.set_nonblocking(false).unwrap();
-    let reader = thread::spawn(move || {
-        let mut released = Vec::new();
-        while let Ok(events) = output.fetch_events() {
-            released.extend(
-                events
-                    .filter(is_key_change)
-                    .map(|event| (KeyCode::new(event.code()), event.value() == 1)),
-            );
-        }
-        released
-    });
-    thread::sleep(Duration::from_millis(50));
+    let reader = read_until_disconnected(mapper.output.take().unwrap());
     drop(keyboard);
     assert_eq!(reader.join().unwrap(), [up(KeyCode::KEY_LEFTCTRL)]);
     assert!(

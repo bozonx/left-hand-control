@@ -9,8 +9,13 @@ root = Path(__file__).resolve().parents[2]
 binary = Path(os.environ.get('LHC_BIN', root.parents[1] / 'target/debug/left-hand-control')).resolve()
 output = Path(sys.argv[1] if len(sys.argv) > 1 else tempfile.mkdtemp(prefix='lhc-3b-ipc-'))
 output.mkdir(parents=True, exist_ok=True)
+config = tempfile.TemporaryDirectory(prefix="lhc-preferences-config-")
+config_path = Path(config.name) / "linux/.config/dev.bozonx.left-hand-control/config.json"
+config_path.parent.mkdir(parents=True)
+config_path.write_text('{"schemaVersion":1,"settings":{"inDevelopment":true}}', encoding="utf-8")
 env = dict(
     os.environ,
+    LHC_DEV_DIR=config.name,
     LHC_SOCKET=f'lhc-3b-{os.getpid()}.sock',
     LHC_METRICS=str(output / 'parent.csv'),
     LHC_POPUPS='spell',
@@ -52,7 +57,12 @@ with (output / 'preferences.log').open('w') as log:
     finally:
         if process.poll() is None:
             process.terminate()
-            process.wait(timeout=5)
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+        config.cleanup()
 
 lines = (output / 'preferences.log').read_text()
 for expected in [

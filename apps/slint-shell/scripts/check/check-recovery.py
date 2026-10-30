@@ -61,7 +61,7 @@ with tempfile.TemporaryDirectory(prefix="lhc-slint-recovery-") as directory:
         try:
             wait_for(lambda: "ready; backend=" in log_text(), "IPC readiness")
             assert "configuration unavailable" in log_text()
-            config.write_text('{"schemaVersion":1,"settings":{}}', encoding="utf-8")
+            config.write_text('{"schemaVersion":1,"settings":{"inDevelopment":true}}', encoding="utf-8")
             # Manual config edits are loaded at startup, including repairs.
             send("quit")
             process.wait(timeout=10)

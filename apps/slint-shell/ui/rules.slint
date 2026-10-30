@@ -293,9 +293,10 @@ export component RulesPage inherits PageLayout {
     /// Advanced options of `rule` that differ from the defaults, as one line.
     pure function summary(rule: RuleRow) -> string {
         return join(join(join(join(held-text(rule),
-            rule.hold-detection == HoldDetection.release ? @tr("Hold on other key release")
+            rule.hold-mode == HoldBehavior.action ? ""
+                : rule.hold-detection == HoldDetection.release ? @tr("Hold on other key release")
                 : rule.hold-detection == HoldDetection.press ? @tr("Hold on other key press") : ""),
-            rule.hold-timeout != "" ? @tr("Hold after {} ms", rule.hold-timeout) : ""),
+            rule.hold-mode != HoldBehavior.action && rule.hold-timeout != "" ? @tr("Hold after {} ms", rule.hold-timeout) : ""),
             AppState.in-development && rule.hold-mode == HoldBehavior.action && rule.long-hold-timeout != "" ? @tr("Long hold after {} ms", rule.long-hold-timeout) : ""),
             rule.double-timeout != "" ? @tr("Double tap: {} ms", rule.double-timeout) : "");
     }

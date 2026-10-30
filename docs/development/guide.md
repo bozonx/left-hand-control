@@ -320,7 +320,11 @@ apps/slint-shell/scripts/e2e-local.sh            # --no-mapper пропуска�
 `check-recovery.py`, `check-preferences.py`, `check-worker-crash.py`,
 `check-linux-install.py` и L1, печатает сводку и пишет
 `docs/testing/results/linux/<дата>.txt`. Во время прогона не пользуйтесь
-клавиатурой и мышью.
+клавиатурой и мышью. В прогон входят также `accessibility`, `keyboard-navigation`,
+`contrast-scaling` и `layer-keys`. Каждый сценарий ограничен 180 секундами;
+через 5 секунд после SIGTERM оставшаяся группа процессов получает SIGKILL.
+Таймаут записывается как ошибка, остальные сценарии продолжаются. Нужен
+GNU `timeout` из coreutils. IPC-проверки используют отдельную временную конфигурацию.
 
 ### L4: e2e в виртуальных машинах
 

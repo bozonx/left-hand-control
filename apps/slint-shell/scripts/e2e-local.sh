@@ -4,6 +4,11 @@
 # docs/testing/results/linux/<date>.txt. Usage: e2e-local.sh [--no-mapper]
 set -u
 
+command -v timeout >/dev/null 2>&1 || {
+    echo "GNU timeout (coreutils) is required." >&2
+    exit 1
+}
+
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/../../.." && pwd)
 cd -- "$repo_dir" || exit 1
 if [ -z "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ]; then
@@ -23,11 +28,15 @@ run() {
     name=$1
     shift
     printf '%-28s ' "$name"
-    if "$@" > "$logs/$name.log" 2>&1; then
+    if timeout --kill-after=5s 180s "$@" > "$logs/$name.log" 2>&1; then
         result=passed
         passed=$((passed + 1))
     else
-        result="FAILED (log: $logs/$name.log)"
+        status=$?
+        result="FAILED (exit $status; log: $logs/$name.log)"
+        if [ "$status" -eq 124 ] || [ "$status" -eq 137 ]; then
+            result="TIMEOUT (180s; log: $logs/$name.log)"
+        fi
         failed=$((failed + 1))
     fi
     echo "$result"
@@ -54,7 +63,8 @@ plasma=$(plasmashell --version 2>/dev/null || echo 'not detected')
 } > "$summary"
 
 for example in 'editor --smoke' interactions library action-picker macros menus conditions popup-grid \
-    undo-redo inline-edit drag-scroll notifications; do
+    undo-redo inline-edit drag-scroll notifications accessibility keyboard-navigation \
+    contrast-scaling layer-keys; do
     # shellcheck disable=SC2086 # split the example name from its arguments
     set -- $example
     name=$1

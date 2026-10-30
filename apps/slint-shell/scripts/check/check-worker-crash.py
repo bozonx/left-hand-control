@@ -25,9 +25,14 @@ def workers(pid):
 
 socket = f"lhc-worker-crash-{os.getpid()}.sock"
 with tempfile.TemporaryDirectory() as directory:
+    config = Path(directory) / "linux/.config/dev.bozonx.left-hand-control/config.json"
+    config.parent.mkdir(parents=True)
+    config.write_text('{"schemaVersion":1,"settings":{"inDevelopment":true}}', encoding="utf-8")
     log_path = Path(directory) / "server.log"
     with log_path.open("w+") as log:
         env = os.environ | {
+            "LHC_DEV_DIR": directory,
+            "LHC_HOTKEYS": "off",
             "LHC_POPUPS": "spell",
             "LHC_SOCKET": socket,
             "SLINT_BACKEND": "winit-software",
@@ -84,7 +89,10 @@ with tempfile.TemporaryDirectory() as directory:
                 raise RuntimeError("worker failure was not reported")
             print("worker crash reported; replacement started; parent remained responsive")
         finally:
-            subprocess.run([binary, "quit"], env=env, timeout=5, check=False)
+            try:
+                subprocess.run([binary, "quit"], env=env, timeout=5, check=False)
+            except subprocess.TimeoutExpired:
+                pass
             try:
                 server.wait(timeout=5)
             except subprocess.TimeoutExpired:
