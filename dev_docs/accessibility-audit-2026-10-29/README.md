@@ -321,7 +321,9 @@ HC меняет собственные токены Theme, но стандарт
 
 В рамках возможностей Slint 1.18.1 добавить именованный контейнер и управление доступным деревом верхнего диалога; если подходящая modal-role недоступна, предусмотреть корректное эквивалентное представление, не выдумывая неподдерживаемое значение enum.
 
-### A04 · P1 · Д/К — поля и списки без доступных имён
+### A04 · ✅ P1 · Д/К — поля и списки без доступных имён
+
+**✅ Исправлено:** Все поля из таблицы получили постоянные переведённые accessible-label, включая ComboBox, TextEdit и read-only команду. Имя не зависит от введённого значения или видимости placeholder.
 
 `TextField` задаёт value/placeholder, но по умолчанию **не задаёт label**. Наличие подписи соседним Text не создаёт связь с полем. FormField и многие NumericInput уже задают label — они не включены в эту проблему.
 
@@ -350,7 +352,7 @@ HC меняет собственные токены Theme, но стандарт
 
 ### A05 · ✅ P1 · Д/К — inline-редактор имеет кнопку в дереве, но фокус у безымянного предка
 
-**✅ Исправлено:** Сам фокусируемый InlineEditor получил роль кнопки, label, value и accessible action; после явного Save/Cancel фокус возвращается ему.
+**✅ Исправлено и перепроверено:** Сам фокусируемый InlineEditor имеет роль кнопки, label, value и accessible action; после явного Save/Cancel фокус возвращается ему. Удалены дублирующие display-кнопки в потомках; во время ввода фокус имеет именованный текстовый редактор. Постоянный сценарий проверяет состояния до открытия, после Save и после Cancel.
 
 **Где:** [controls-inline.slint](../../apps/slint-shell/ui/controls-inline.slint):33–76, 96–102, 165–174.
 
@@ -358,7 +360,9 @@ HC меняет собственные токены Theme, но стандарт
 
 Дать фокусируемому элементу собственную доступную семантику или правильно делегировать фокус. Проверять до открытия, во время ввода и после Save/Cancel, а не только наличие кнопки в дереве.
 
-### A06 · P1 · Д/К — выбранные вкладки и варианты не объявляют своё состояние
+### A06 · ✅ P1 · Д/К — выбранные вкладки и варианты не объявляют своё состояние
+
+**✅ Исправлено:** Вкладки и варианты передают selectable/selected; переключатели — checkable/checked. Выбор ячейки picker, слоя и поведения действия теперь представлен состоянием, а не только цветом.
 
 **Где:** [controls-navigation.slint](../../apps/slint-shell/ui/controls-navigation.slint):14–17, 67–70; [settings-page.slint](../../apps/slint-shell/ui/settings-page.slint):302–305; [controls-base.slint](../../apps/slint-shell/ui/controls-base.slint):54–58; [layers.slint](../../apps/slint-shell/ui/layers.slint):275–277; [action-picker.slint](../../apps/slint-shell/ui/action-picker.slint):120–128; [mapper-controls.slint](../../apps/slint-shell/ui/mapper-controls.slint):23–27; [controls-dialogs.slint](../../apps/slint-shell/ui/controls-dialogs.slint):37–41.
 
@@ -366,7 +370,9 @@ HC меняет собственные токены Theme, но стандарт
 
 Список слоёв и PickerCell показывают выбор лишь цветом; primary-кнопки поведения (`Inherit`/`Suppress`/`Perform action`) тоже не передают выбор как состояние. Device row и MenuItem имеют такую же checked-проблему. Использовать подходящий тип и соответствующие свойства состояния. Game mode radio menu с явным `accessible-checkable: true` — полезное существующее исключение.
 
-### A07 · P1 · К — перемещение по устройствам и меню не переносит доступный фокус
+### A07 · ✅ P1 · К — перемещение по устройствам и меню не переносит доступный фокус
+
+**✅ Исправлено:** Проверено фактическое перемещение фокуса через KeyboardFocus.step в списке устройств и меню. Подсветка и прокрутка устройства синхронизированы с фокусируемой строкой; selected указывает текущую строку, checked — сохранённое устройство. Сценарий проверяет две строки, Up/Down и меню Game mode.
 
 **Где:** [device-picker.slint](../../apps/slint-shell/ui/device-picker.slint):121, 152–167, 202–234; [rules.slint](../../apps/slint-shell/ui/rules.slint):235–256; [game-mode.slint](../../apps/slint-shell/ui/game-mode.slint):42–65.
 
@@ -374,7 +380,9 @@ HC меняет собственные токены Theme, но стандарт
 
 Не следует ждать, что скринридер сам озвучит изменение локального int. Синхронизировать реальный фокус и выделение либо использовать поддерживаемое делегирование доступного фокуса.
 
-### A08 · P1 · К — динамические сообщения не объявляются
+### A08 · ✅ P1 · К — динамические сообщения не объявляются
+
+**✅ Исправлено:** Добавлены polite live regions для результатов, состояния mapper, поиска, загрузки и валидации; существенные ошибки уведомлений объявляются assertive. Очередь подавляет повтор сообщения, сохраняя узлы неизменившихся уведомлений.
 
 **Где:** [notifications.slint](../../apps/slint-shell/ui/notifications.slint):22–44; `settings.slint:43–49`; статусы picker, условий и mapper; вся UI-инвентаризация.
 
@@ -382,7 +390,9 @@ HC меняет собственные токены Theme, но стандарт
 
 Добавить polite-объявления обычных результатов/состояний и приоритетное сообщение существенных ошибок с контролем повторов. Slint предоставляет соответствующие [accessibility-свойства](https://docs.slint.dev/latest/docs/slint/reference/common/).
 
-### A09 · P2 · К — уведомления исчезают, пауза доступна только мыши
+### A09 · ✅ P2 · К — уведомления исчезают, пауза доступна только мыши
+
+**✅ Исправлено:** Предупреждения и ошибки сохраняются до явного закрытия. Фокус на уведомлении, как и hover, приостанавливает срок обычных сообщений. Полный текст переносится без elide, стек ограничен высотой окна и прокручивается; обновление очереди сохраняет фокус существующей строки.
 
 **Где:** [notifications.rs](../../apps/slint-shell/src/notifications.rs):23–27, 110–160, 233–259; [notifications.slint](../../apps/slint-shell/ui/notifications.slint):39–55.
 
@@ -390,7 +400,9 @@ HC меняет собственные токены Theme, но стандарт
 
 Приостанавливать при фокусе/взаимодействии, дать доступный журнал или сохранять существенные ошибки до подтверждения, позволить прочитать полный текст.
 
-### A10 · P2 · К — повторяющиеся кнопки не сообщают, к какому объекту относятся
+### A10 · ✅ P2 · К — повторяющиеся кнопки не сообщают, к какому объекту относятся
+
+**✅ Исправлено:** Повторяющиеся действия удаления/копирования и кнопки «…» получили имя или путь владельца. DragHandle передаёт индекс, размер списка и Alt+↑/Alt+↓; строки и карточки имеют именованные группы.
 
 **Где:** `reorder.slint:145–148`; `layers.slint:135–145`; `macros.slint:79–80,102–104,127,273`; `conditions.slint:411,426–429`; `settings-page.slint:407,412`; `layers.slint:333–337`; `library.slint:607–611`.
 
@@ -398,7 +410,9 @@ HC меняет собственные токены Theme, но стандарт
 
 Добавить контекст в accessible-label/description и именованные группы строк. Не обязательно удлинять видимую подпись или tooltip.
 
-### A11 · P1 · Д/К — левая и правая клавиши-модификаторы имеют одинаковые имена
+### A11 · ✅ P1 · Д/К — левая и правая клавиши-модификаторы имеют одинаковые имена
+
+**✅ Исправлено:** Доступное имя каждой клавиши включает физический код независимо от визуального режима: ShiftLeft и ShiftRight, ControlLeft и ControlRight и т. д. Контекст руки представлен отдельной именованной группой.
 
 **Где:** [keyboard.rs](../../apps/slint-shell/src/keyboard.rs):163–167; [layers.slint](../../apps/slint-shell/ui/layers.slint):166–169.
 
@@ -406,7 +420,9 @@ HC меняет собственные токены Theme, но стандарт
 
 Передавать полный код/сторону в доступном имени или описании, независимо от краткой визуальной подписи. Для остальных кратких US-подписей (`↑`, `;`, `☰`) также предпочтительны понятные переведённые имена с техническим кодом.
 
-### A12 · P2 · Д/К — NumericInput имеет два конкурирующих доступных контрола
+### A12 · ✅ P2 · Д/К — NumericInput имеет два конкурирующих доступных контрола
+
+**✅ Исправлено:** Остался один доступный Spinbox на TextField, ближайшем к реальному TextInput. Он передаёт границы, шаг, enabled/read-only, поддерживает Up/Down и accessibility actions; native text/cursor/selection interface сохранён.
 
 **Где:** [controls-base.slint](../../apps/slint-shell/ui/controls-base.slint):351–414.
 
@@ -414,7 +430,9 @@ HC меняет собственные токены Theme, но стандарт
 
 Сделать один согласованный доступный числовой контрол с правильным фокусом/текстовым интерфейсом и передачей enabled/read-only. Не удалять текстовый интерфейс вслепую: ввод, курсор и выделение тоже должны остаться доступны.
 
-### A13 · P2 · К — большие страницы практически не имеют доступной структуры
+### A13 · ✅ P2 · К — большие страницы практически не имеют доступной структуры
+
+**✅ Исправлено:** Добавлены main, именованные tab-list/tab-panel, регионы настроек, группы раскладок/правил/макросов/рук и форма условий. Каталоги и ячейки передают позиции; scrollbar сохраняет клавиатурные действия и получил enabled/set-value. Использованы только роли Slint 1.18.1.
 
 **Где:** [controls-layout.slint](../../apps/slint-shell/ui/controls-layout.slint), [controls-navigation.slint](../../apps/slint-shell/ui/controls-navigation.slint), ScrollView/HandGrid/HotkeyGrid, карточки library/rules/macros и ConditionsForm.
 
@@ -422,7 +440,9 @@ HC меняет собственные токены Theme, но стандарт
 
 Создать структуру navigation/main/region/group в рамках поддерживаемых Slint-ролей, связать текущую панель с вкладкой, давать контекст строкам и положение в списках. Это позволяет обходить страницу по смысловым частям вместо сотен одинаковых кнопок.
 
-### A14 · P2 · К — визуальные ошибки полей не всегда связаны с самими полями
+### A14 · ✅ P2 · К — визуальные ошибки полей не всегда связаны с самими полями
+
+**✅ Исправлено:** Причина дубликата связана с полем приложения, ошибка picker — с полем действия. NumericInput проверяет собственный диапазон/тип и пустые обязательные значения (пустое значение с наследуемым default допустимо), передаёт описание ошибки и запрашивает объявление; поля правил также описывают неприменимость. Существующие сообщения FormField и InlineTextField сохранены.
 
 **Где:** [conditions.slint](../../apps/slint-shell/ui/conditions.slint):253–280; [action-picker.slint](../../apps/slint-shell/ui/action-picker.slint):202–206; [settings-page.slint](../../apps/slint-shell/ui/settings-page.slint):283; [controls-base.slint](../../apps/slint-shell/ui/controls-base.slint):146–152.
 
@@ -586,7 +606,7 @@ done
 
 ## 9. Проверка исправлений
 
-Закрыты **22 пункта**: ✅ K01–K16, ✅ C01–C04, ✅ C08 и ✅ A05. C05, C06, C07 и C09 по указанию владельца в этой работе пропущены и не отмечены исправленными. K17 снят с дефектов по решению владельца продукта; скрытый вход мышью сохранён. Остальные замечания по доступности не объявляются исправленными.
+После первого этапа были закрыты **22 пункта**: ✅ K01–K16, ✅ C01–C04, ✅ C08 и ✅ A05. C05, C06, C07 и C09 по указанию владельца в этой работе пропущены и не отмечены исправленными. K17 снят с дефектов по решению владельца продукта; скрытый вход мышью сохранён. Остальные замечания по доступности не объявляются исправленными.
 
 Добавлен постоянный сценарий [keyboard-navigation.rs](../../apps/slint-shell/examples/keyboard-navigation.rs). Он отправляет реальные Slint KeyPressed/KeyReleased, проверяет фактический `ItemRc` фокуса и результат действия. Четыре диалога, включая вложенный, получают по 180 Tab и 180 Shift+Tab: **1440 событий**, с проверкой принадлежности фокуса верхнему диалогу. Перед каждым обходом фокус намеренно очищается, чтобы проверить восстановление обхода после удаления динамического контрола. Также проверены Refresh+Enter без выбора устройства, стрелки+Enter в ButtonGroup, возврат к инициатору, InfoTip+Enter/Escape, F1, Home/End для прокрутки, Tab+Enter в меню, выбор категории «Текст» и закрытие picker, перенос ячейки Ctrl+X/Ctrl+V, Alt+Right для страницы и открытие селектора активной раскладки. Начальные состояния задаются UI globals; это не заявление о сквозном прохождении каждого экрана только клавиатурой.
 
@@ -711,3 +731,71 @@ cargo deny check
 | `cargo deny check` | Не выполнена: `cargo-deny` не установлен, exit 101, [лог](evidence/contrast-fixes/deny.log) |
 
 [Точные аргументы и exit codes](evidence/contrast-fixes/cargo-results.json). Игнорируемые mapper/uinput, clipboard и GNOME portal tests не засчитаны как пройденные. Проверка новых исправлений не является проверкой системной речи Orca или сертификацией доступности.
+
+### Поддержка незрячих — 30 октября 2026 года
+
+✅ Выполнены **A04, A06, A07, A08, A09, A10, A11, A12, A13 и A14**. ✅ **A05 перепроверен и дополнен**: убраны дублирующие display-кнопки, проверен доступный фокус до ввода и после Save/Cancel. A01–A03 в эту работу не входят и остаются открытыми. Вместе с предыдущими исправлениями закрыты **32 пункта**; C05/C06/C07/C09 по прежнему указанию владельца не исправлялись.
+
+Постоянный сценарий [accessibility.rs](../../apps/slint-shell/examples/accessibility.rs) проверяет единственный именованный Spinbox, ближайший к реальному TextInput, наличие его native text interface, Up/Down, increment/set-value, disabled/read-only, описание ошибки конкретного поля, различие пустого обязательного и наследуемого значения, отсутствие дублирующей inline-кнопки и фокус после Save/Cancel. Также проверены состояние выбранной вкладки и озвучиваемое имя текущего radio-варианта. [Лог](evidence/blind-support/accessibility.log).
+
+Сценарий [keyboard-navigation.rs](../../apps/slint-shell/examples/keyboard-navigation.rs) сохранён и дополнен проверками доступного фокуса при Up/Down между двумя fixture-устройствами и в меню Game mode. Прежние **1440 Tab/Shift+Tab**, вложенные диалоги и остальные проверки продолжают выполняться. [Лог](evidence/blind-support/keyboard-navigation.log).
+
+[notifications.rs](../../apps/slint-shell/examples/notifications.rs) дополнительно проверяет достижимость закрытия через реальные Tab, паузу таймера на клавиатурном фокусе и сохранение фактического ItemRc фокуса при приходе ещё одного сообщения. После выхода фокуса обычные сообщения истекают, предупреждения/ошибки остаются до закрытия. Полный текст находится в ограниченном высотой окна ScrollView. [Лог](evidence/blind-support/notifications.log), [снимок](evidence/blind-support/notifications.png).
+
+[check-accessibility.py](tools/check-accessibility.py) подключается внешним AT-SPI-клиентом к неподвижному fixture-окну: подтверждены **ровно один** `spin button` с именем `Fixture number`, интерфейс Text, текст `20` и длина **2**, а также `selected` у `Fixture tab`. [Результат](evidence/blind-support/atspi-fixture.json), [лог](evidence/blind-support/atspi-fixture.log). Это проверка системного экспорта, а не прослушивание речи Orca.
+
+Повтор исходного read-only probe сохранил **27 состояний**. Во всех проверенных доступных узлах TextInput/Combobox/Spinbox есть имена; это **104 вхождения полей**, включая повторяющиеся поля фона и диалогов, а не 104 уникальных контрола. [Сводка](evidence/blind-support/runtime-summary.json). Снимки Slint фиксируются перед переключением состояния. Внешний исходный AT-SPI watcher обходит дерево асинхронно, поэтому его дамп может захватывать следующий экран; точные системные утверждения выше основаны на отдельном неподвижном fixture. Речь Orca, braille и полнота всех возможных событий live region не проверялись.
+
+Итоговые команды сборки и UI-проверки из корня репозитория:
+
+```sh
+mkdir -p /tmp/lhc-blind-validation
+cp dev_docs/accessibility-audit-2026-10-29/evidence/blind-support/run-ui.sh /tmp/lhc-blind-validation/run-ui.sh
+sed 's|/examples/a11y_probe|/examples/a11y-probe|g' \
+  dev_docs/accessibility-audit-2026-10-29/tools/atspi_watch.py \
+  > /tmp/lhc-blind-validation/atspi-watch.py
+# Временный entry point для уже сохранённого исходного диагностического стенда.
+cp dev_docs/accessibility-audit-2026-10-29/tools/a11y_probe.rs apps/slint-shell/examples/a11y-probe.rs
+cargo build --locked -p slint-shell --features spell \
+  --example accessibility --example a11y-probe --example keyboard-navigation \
+  --example editor --example interactions --example action-picker \
+  --example conditions --example library --example macros --example menus \
+  --example layer-keys --example inline-edit --example drag-scroll \
+  --example notifications --example undo-redo --example popup-grid
+
+LHC_AUDIT_OUT=/tmp/lhc-blind-validation \
+LHC_AUDIT_SUFFIX=-final \
+LHC_AUDIT_COMMAND='bash /tmp/lhc-blind-validation/run-ui.sh' \
+bash dev_docs/accessibility-audit-2026-10-29/tools/run-isolated.sh
+
+rm apps/slint-shell/examples/a11y-probe.rs
+```
+
+Точные команды внутри runner сохранены в [run-ui.sh](evidence/blind-support/run-ui.sh). Для исходного AT-SPI watcher использовалась временная копия с единственной заменой имени бинарника `a11y_probe` → `a11y-probe`; код диагностических проверок не менялся. Временный Rust entry point удалён после прогона. Новых зависимостей и новых строк переводов нет: доступные подписи используют существующие `@tr` и сообщения каталога; build-time проверки переводов выполнены при сборке.
+
+Сборка — exit 0 ([лог](evidence/blind-support/build-final.log)). Все четыре проверки runner — exit 0 ([коды](evidence/blind-support/ui-results.tsv)); все **13 штатных сценариев — exit 0** ([таблица](evidence/blind-support/scenario-results.tsv)). Первая итерация обнаружила ошибку компоновки нового viewport уведомлений: сценарий не находил видимую кнопку закрытия и завершился 101 ([лог](evidence/blind-support/notifications-first.log), [таблица](evidence/blind-support/scenario-results-first.tsv)). Размеры содержимого и viewport явно связаны, после исправления и отдельный повтор уведомлений, и общий итоговый прогон прошли. Эта ошибка не скрыта успешным повтором.
+
+Среда: Linux, отдельный KDE/KWin Wayland, winit-software, приватный D-Bus, временные XDG-каталоги, LHC_DEV_DIR и IPC. Пользовательский конфиг, пользовательский экземпляр и физический mapper не использовались. Наличие feature spell проверяется сборкой, а системный экспорт Spell остаётся открытым A01. GNOME, Windows, macOS, физический evdev/uinput, речь Orca и braille не проверялись.
+
+### Cargo — итог поддержки незрячих
+
+Команды выполнялись последовательно ([runner](evidence/blind-support/run-cargo.sh), [exit codes](evidence/blind-support/cargo-results.tsv)):
+
+```sh
+cargo fmt -p lhc-core -p slint-shell --check
+cargo clippy --locked -p lhc-core -p slint-shell \
+  --features slint-shell/spell --all-targets --no-deps -- -D warnings
+cargo test --locked --workspace --features slint-shell/spell
+cargo check --locked -p slint-shell --all-targets
+cargo deny check
+```
+
+| Проверка | Результат |
+| --- | --- |
+| fmt | ✅ exit 0 |
+| clippy с `-D warnings` | ✅ exit 0, [лог](evidence/blind-support/clippy.log) |
+| workspace tests с Spell | ✅ exit 0: **678 passed, 0 failed, 14 ignored**, [лог](evidence/blind-support/workspace-tests.log) |
+| все targets без Spell | ✅ exit 0, [лог](evidence/blind-support/non-spell.log) |
+| cargo deny | Не выполнена: `cargo-deny` не установлен, exit 101, [лог](evidence/blind-support/deny.log) |
+
+14 ignored не засчитаны как пройденные: это штатные проверки физического mapper/uinput, изолированного clipboard и GNOME portal. Ревизия-основание и SHA-256 проверенных исходников сохранены в [source-inventory.json](evidence/blind-support/source-inventory.json). Новые исправления представлены незакоммиченным diff к этой ревизии. Сборка с Spell не закрывает A01; поддержка речи Orca/braille и остальные открытые пункты не объявляются проверенными.

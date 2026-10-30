@@ -1,3 +1,4 @@
+import { ScrollView } from "scroll.slint";
 import { IconButton } from "controls.slint";
 import { Locale, Message } from "i18n.slint";
 import { Theme } from "theme.slint";
@@ -17,6 +18,8 @@ export global NotificationCenter {
     callback backend(Message);
     callback dismiss(int);
     callback hover(bool);
+    in-out property <int> focused-token;
+    out property <bool> focused: root.focused-token != 0;
 }
 
 component ToastCard inherits Rectangle {
@@ -29,6 +32,7 @@ component ToastCard inherits Rectangle {
     border-radius: Theme.radius-large;
     accessible-role: AccessibleRole.groupbox;
     accessible-label: Locale.text(root.item.message);
+    accessible-live-region: root.item.kind == ToastKind.error ? AccessibleLiveness.assertive : AccessibleLiveness.polite;
     content := HorizontalLayout {
         padding: Theme.space-l-plus;
         spacing: Theme.space-l;
@@ -37,21 +41,34 @@ component ToastCard inherits Rectangle {
             spacing: Theme.space-xs;
             horizontal-stretch: 1;
             if root.item.kind == ToastKind.error: Text { text: @tr("Could not complete the action"); color: Theme.error; font-weight: Theme.weight-semibold; wrap: word-wrap; }
-            Text { text: Locale.text(root.item.message); color: Theme.text; wrap: word-wrap; max-height: 72px; overflow: elide; }
+            Text { text: Locale.text(root.item.message); color: Theme.text; wrap: word-wrap; }
         }
         VerticalLayout {
             alignment: start;
-            IconButton { size: 24px; icon: @image-url("icons/x.svg"); label: @tr("Dismiss notification"); clicked => { NotificationCenter.dismiss(root.item.token); } }
+            IconButton { size: 24px; icon: @image-url("icons/x.svg"); label: @tr("Dismiss notification");
+                changed has-focus => {
+                    if self.has-focus { NotificationCenter.focused-token = root.item.token; }
+                    else if NotificationCenter.focused-token == root.item.token { NotificationCenter.focused-token = 0; }
+                }
+                clicked => { NotificationCenter.dismiss(root.item.token); } }
         }
     }
 }
 
 export component ToastStack inherits TouchArea {
-    height: content.preferred-height;
+    in property <length> stack-height-limit: 480px;
+    height: min(toast-content.preferred-height, root.stack-height-limit);
     changed has-hover => { NotificationCenter.hover(self.has-hover); }
-    content := VerticalLayout {
-        spacing: Theme.space-m;
-        padding: 0px;
-        for item in NotificationCenter.items: ToastCard { item: item; }
+    toast-list := ScrollView {
+        width: root.width;
+        height: root.height;
+        viewport-width: self.visible-width;
+        viewport-height: toast-content.preferred-height;
+        toast-content := VerticalLayout {
+            width: toast-list.visible-width;
+            spacing: Theme.space-m;
+            padding: 0px;
+            for item in NotificationCenter.items: ToastCard { item: item; }
+        }
     }
 }

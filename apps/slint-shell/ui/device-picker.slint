@@ -174,11 +174,14 @@ export component DeviceDialogOverlay inherits DialogFrame {
             if root.all: SearchField {
                 init => { self.focus(); }
                 text <=> root.query;
-                placeholder-text: @tr("Search devices");
+                placeholder-text: @tr("Search devices"); accessible-label: @tr("Search devices");
             }
             // List, its empty state and the manual path share the space left by the controls above.
             Rectangle { vertical-stretch: 1;
                 list := ScrollView {
+                    accessible-role: AccessibleRole.list;
+                    accessible-label: (root.mouse ? @tr("Mice") : @tr("Keyboards")) + ": " + root.filtered.length;
+                    accessible-live-region: polite;
                     width: parent.width; height: parent.height;
                     visible: root.tab != 2 && root.filtered.length > 0;
                     viewport-width: self.visible-width;
@@ -205,7 +208,12 @@ export component DeviceDialogOverlay inherits DialogFrame {
                                 accessible-role: button;
                                 accessible-label: choice.label;
                                 accessible-description: choice.group == DeviceGroup.missing ? @tr("Not connected · {}", choice.path) : choice.path;
+                                accessible-checkable: true;
                                 accessible-checked: self.current;
+                                accessible-item-selectable: true;
+                                accessible-item-selected: row-focus.has-focus;
+                                accessible-item-index: index;
+                                accessible-item-count: root.filtered.length;
                                 accessible-action-default => { root.choose(index); }
                                 if row.current: Rectangle { x: 0px; y: 8px; width: 3px; height: parent.height - 16px; border-radius: self.width / 2; background: Theme.accent; }
                                 HorizontalLayout { padding-left: Theme.space-m + 4px; padding-right: Theme.space-m; spacing: Theme.space-m;
@@ -227,6 +235,7 @@ export component DeviceDialogOverlay inherits DialogFrame {
                                     if row.current: VerticalLayout { alignment: center; Image { width: 16px; height: 16px; source: @image-url("icons/check.svg"); colorize: Theme.accent; } }
                                 }
                                 row-focus := FocusScope {
+                                    changed has-focus => { if self.has-focus { root.highlighted = index; root.scroll-to-highlight(); } }
                                     key-pressed(event) => {
                                         if event.text == Key.Return || event.text == " " { root.choose(index); return accept; }
                                         if event.text == Key.DownArrow { KeyboardFocus.step(false); return accept; }
@@ -253,7 +262,7 @@ export component DeviceDialogOverlay inherits DialogFrame {
                     TextField {
                         init => { self.focus(); }
                         text <=> root.manual-path;
-                        placeholder-text: @tr("Device path, e.g. /dev/input/by-id/…");
+                        placeholder-text: @tr("Device path, e.g. /dev/input/by-id/…"); accessible-label: @tr("Device path, e.g. /dev/input/by-id/…");
                         accepted => { root.apply-manual(); }
                     }
                     // What the typed path opens right now; a missing device can still be saved.
@@ -267,6 +276,7 @@ export component DeviceDialogOverlay inherits DialogFrame {
                         }
                         Text {
                             min-width: 0px; horizontal-stretch: 1; overflow: elide; vertical-alignment: center;
+                            accessible-live-region: polite;
                             text: root.manual-connected ? @tr("Connected: {}", root.choices[root.manual-match.index].label) : @tr("Not connected");
                             color: root.manual-connected ? Theme.text : Theme.warning;
                         }

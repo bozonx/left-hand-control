@@ -280,7 +280,7 @@ component HoldField inherits VerticalLayout {
                             highlighted: RulesEditor.layer-highlight == root.count + 1;
                             clicked => { root.choose(root.count + 1); }
                         }
-                        if RulesEditor.status.id != "": Text { text: Locale.text(RulesEditor.status); color: Theme.error; wrap: word-wrap; }
+                        if RulesEditor.status.id != "": Text { accessible-live-region: polite; text: Locale.text(RulesEditor.status); color: Theme.error; wrap: word-wrap; }
                 }
             }
         }
@@ -288,6 +288,7 @@ component HoldField inherits VerticalLayout {
 }
 
 export component RulesPage inherits PageLayout {
+    accessible-label: @tr("Triggers");
     /// Advanced options of `rule` that differ from the defaults, as one line.
     pure function summary(rule: RuleRow) -> string {
         return join(join(join(join(held-text(rule),
@@ -315,6 +316,10 @@ export component RulesPage inherits PageLayout {
     rule-scroll := ScrollView { viewport-width: self.visible-width; drag-scroll: true; vertical-stretch: 1;
         PageContent { width: rule-scroll.visible-width; spacing: Theme.space-m-plus; alignment: start;
             for rule[index] in RulesEditor.rows: Rectangle {
+                accessible-role: groupbox;
+                accessible-label: @tr("Rule {}", index + 1) + ": " + rule.key;
+                accessible-item-index: index;
+                accessible-item-count: RulesEditor.rows.length;
                 vertical-stretch: 0;
                 min-height: rule-content.preferred-height;
                 min-width: 0px;
@@ -415,7 +420,7 @@ export component RuleDialogOverlay inherits FocusScope {
                     active: !RulesEditor.is-chord && RulesEditor.hold-mode != HoldBehavior.action;
                     inactive-reason: @tr("Used for single-key triggers without a long-hold action.");
                     resettable: false;
-                    ComboBox { enabled: detection-form.active; height: Theme.control-height; model: [@tr("Default from Settings: {}", RulesEditor.default-hold-detection == HoldDetection.press ? @tr("as soon as another key is pressed") : @tr("after another key is released")), @tr("After another key is released (better for typing)"), @tr("As soon as another key is pressed")]; current-index: RulesEditor.hold-detection == HoldDetection.release ? 1 : RulesEditor.hold-detection == HoldDetection.press ? 2 : 0; selected(value) => { RulesEditor.hold-detection = self.current-index == 1 ? HoldDetection.release : self.current-index == 2 ? HoldDetection.press : HoldDetection.inherit; } }
+                    ComboBox { accessible-label: detection-form.label; accessible-description: detection-form.inactive-reason; enabled: detection-form.active; height: Theme.control-height; model: [@tr("Default from Settings: {}", RulesEditor.default-hold-detection == HoldDetection.press ? @tr("as soon as another key is pressed") : @tr("after another key is released")), @tr("After another key is released (better for typing)"), @tr("As soon as another key is pressed")]; current-index: RulesEditor.hold-detection == HoldDetection.release ? 1 : RulesEditor.hold-detection == HoldDetection.press ? 2 : 0; selected(value) => { RulesEditor.hold-detection = self.current-index == 1 ? HoldDetection.release : self.current-index == 2 ? HoldDetection.press : HoldDetection.inherit; } }
                 }
                 hold-form := ResettableField {
                     label: @tr("Hold threshold, ms");
@@ -425,7 +430,7 @@ export component RuleDialogOverlay inherits FocusScope {
                     modified: RulesEditor.hold-timeout != "";
                     reset-tooltip: @tr("Use the default from Settings: {} ms", RulesEditor.default-hold-timeout);
                     reset => { RulesEditor.hold-timeout = ""; }
-                    HorizontalLayout { alignment: start; NumericInput { enabled: hold-form.active; text <=> RulesEditor.hold-timeout; placeholder-text: RulesEditor.default-hold-timeout; label: hold-form.label; minimum: Timing.tap-hold.minimum; maximum: Timing.tap-hold.maximum; } }
+                    HorizontalLayout { alignment: start; NumericInput { description: hold-form.info + (hold-form.active ? "" : "\n" + hold-form.inactive-reason); enabled: hold-form.active; text <=> RulesEditor.hold-timeout; placeholder-text: RulesEditor.default-hold-timeout; label: hold-form.label; minimum: Timing.tap-hold.minimum; maximum: Timing.tap-hold.maximum; } }
                 }
                 long-form := ResettableField {
                     visible: AppState.in-development;
@@ -436,7 +441,7 @@ export component RuleDialogOverlay inherits FocusScope {
                     modified: RulesEditor.long-hold-timeout != "";
                     reset-tooltip: @tr("Use the default from Settings: {} ms", RulesEditor.default-long-hold-timeout);
                     reset => { RulesEditor.long-hold-timeout = ""; }
-                    HorizontalLayout { alignment: start; NumericInput { enabled: long-form.active; text <=> RulesEditor.long-hold-timeout; placeholder-text: RulesEditor.default-long-hold-timeout; minimum: Timing.long-hold.minimum; maximum: Timing.long-hold.maximum; step: 100; label: long-form.label; } }
+                    HorizontalLayout { alignment: start; NumericInput { description: long-form.info + (long-form.active ? "" : "\n" + long-form.inactive-reason); enabled: long-form.active; text <=> RulesEditor.long-hold-timeout; placeholder-text: RulesEditor.default-long-hold-timeout; minimum: Timing.long-hold.minimum; maximum: Timing.long-hold.maximum; step: 100; label: long-form.label; } }
                 }
                 double-form := ResettableField {
                     label: @tr("Double-tap interval, ms");
@@ -447,7 +452,7 @@ export component RuleDialogOverlay inherits FocusScope {
                     modified: RulesEditor.double-timeout != "";
                     reset-tooltip: @tr("Use the default from Settings: {} ms", RulesEditor.default-double-timeout);
                     reset => { RulesEditor.double-timeout = ""; }
-                    HorizontalLayout { alignment: start; NumericInput { enabled: double-form.active; text <=> RulesEditor.double-timeout; placeholder-text: RulesEditor.default-double-timeout; label: double-form.label; minimum: Timing.tap-hold.minimum; maximum: Timing.tap-hold.maximum; } }
+                    HorizontalLayout { alignment: start; NumericInput { description: double-form.info + (double-form.active ? "" : "\n" + double-form.inactive-reason); enabled: double-form.active; text <=> RulesEditor.double-timeout; placeholder-text: RulesEditor.default-double-timeout; label: double-form.label; minimum: Timing.tap-hold.minimum; maximum: Timing.tap-hold.maximum; } }
                 }
             }
         }
@@ -459,7 +464,7 @@ export component RuleDialogOverlay inherits FocusScope {
             label: RulesEditor.dialog == RuleDialog.hold-timeout ? @tr("Hold threshold, ms") : @tr("Double-tap window, ms");
             accepted => { RulesEditor.choose(RulesEditor.dialog-value); }
         }
-        if RulesEditor.status.id != "": Text { text: Locale.text(RulesEditor.status); color: Theme.error; wrap: word-wrap; }
+        if RulesEditor.status.id != "": Text { accessible-live-region: polite; text: Locale.text(RulesEditor.status); color: Theme.error; wrap: word-wrap; }
         if RulesEditor.dialog != RuleDialog.conditions && RulesEditor.dialog != RuleDialog.advanced: Rectangle { vertical-stretch: 1; }
         HorizontalLayout { padding: Theme.space-m; vertical-stretch: 0; spacing: Theme.space-m;
             if RulesEditor.dialog != RuleDialog.advanced && RulesEditor.dialog != RuleDialog.conditions: Button {

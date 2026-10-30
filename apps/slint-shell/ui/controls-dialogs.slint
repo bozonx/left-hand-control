@@ -38,6 +38,7 @@ export component MenuItem inherits Rectangle {
     accessible-role: button;
     accessible-label: root.text;
     accessible-enabled: root.enabled;
+    accessible-checkable: true;
     accessible-checked: root.checked;
     accessible-action-default => { if root.enabled { root.clicked(); } }
     HorizontalLayout {
@@ -50,6 +51,7 @@ export component MenuItem inherits Rectangle {
         Text { min-width: 0px; horizontal-stretch: 1; text: root.text; overflow: elide; color: root.danger ? Theme.error : Theme.text; vertical-alignment: center; }
         if root.checked: Text { text: "✓"; color: Theme.accent; vertical-alignment: center; }
     }
+    forward-focus: focus;
     focus := FocusScope {
         enabled: root.enabled;
         key-pressed(event) => {

@@ -13,7 +13,7 @@ export component NavTab inherits Rectangle {
     background: touch.has-hover && !root.selected ? Theme.hover : transparent;
     accessible-role: tab;
     accessible-label: root.text;
-    accessible-checked: root.selected;
+    accessible-item-selectable: true; accessible-item-selected: root.selected;
     accessible-action-default => { root.clicked(); }
     row := HorizontalLayout {
         padding-left: Theme.space-l; padding-right: Theme.space-l; padding-bottom: Theme.space-xs;
@@ -67,7 +67,7 @@ export component NavButton inherits Rectangle {
     border-color: Theme.focus;
     accessible-role: tab;
     accessible-label: root.text;
-    accessible-checked: root.selected;
+    accessible-item-selectable: true; accessible-item-selected: root.selected;
     accessible-action-default => { root.clicked(); }
     row := HorizontalLayout {
         padding-left: Theme.space-l; padding-right: Theme.space-l;

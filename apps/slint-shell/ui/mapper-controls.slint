@@ -22,6 +22,7 @@ export component MapperToggle inherits Rectangle {
     opacity: !root.enabled ? 0.5 : root.busy ? 0.7 : 1;
     accessible-role: button;
     accessible-label: root.text;
+    accessible-checkable: true;
     accessible-checked: root.running;
     accessible-enabled: root.enabled && !root.busy;
     accessible-action-default => { if root.enabled && !root.busy { root.toggled(); } }

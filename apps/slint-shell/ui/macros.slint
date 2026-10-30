@@ -76,11 +76,15 @@ component StepRow inherits HorizontalLayout {
             }
         }
     }
-    DragHandle { group: DragGroups.macro-steps + root.macro-index; index: root.index; count: root.count; dropped(from, to) => { MacroEditor.move-step(root.macro-index, from, to); } }
-    IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete step"); clicked => { root.remove(); } }
+    DragHandle { accessible-description: root.step.action + ". Alt+↑ / Alt+↓"; group: DragGroups.macro-steps + root.macro-index; index: root.index; count: root.count; dropped(from, to) => { MacroEditor.move-step(root.macro-index, from, to); } }
+    IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete step") + " " + (root.index + 1) + ": " + root.step.action; clicked => { root.remove(); } }
 }
 
 component MacroCard inherits Card {
+    accessible-role: groupbox;
+    accessible-label: root.item.name;
+    accessible-item-index: root.index;
+    accessible-item-count: root.count;
     in property <int> index;
     in property <int> count;
     in property <MacroRow> item;
@@ -99,9 +103,9 @@ component MacroCard inherits Card {
             alignment: start;
             HorizontalLayout {
                 spacing: Theme.space-2xs;
-                DragHandle { group: DragGroups.macros; index: root.index; count: MacroEditor.macros.length; dropped(from, to) => { MacroEditor.move(from, to); } }
+                DragHandle { accessible-description: root.item.name + ". Alt+↑ / Alt+↓"; group: DragGroups.macros; index: root.index; count: MacroEditor.macros.length; dropped(from, to) => { MacroEditor.move(from, to); } }
                 Rectangle { horizontal-stretch: 1; }
-                IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete macro"); clicked => { root.remove(); } }
+                IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete macro") + ": " + root.item.name; clicked => { root.remove(); } }
             }
             HorizontalLayout {
                 spacing: Theme.space-l;
@@ -124,7 +128,7 @@ component MacroCard inherits Card {
                             label: @tr("Macro ID");
                             saved(value) => { MacroEditor.set-field(root.index, MacroField.id, value); return true; }
                         }
-                        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/copy.svg"); label: @tr("Copy ID"); enabled: root.item.id != ""; clicked => { root.copy(root.item.id); } } }
+                        VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/copy.svg"); label: @tr("Copy ID") + ": " + root.item.id; enabled: root.item.id != ""; clicked => { root.copy(root.item.id); } } }
                     }
                 }
                 VerticalLayout {
@@ -273,7 +277,7 @@ component BuiltinMacroLine inherits TouchArea {
                 width: 190px;
                 spacing: Theme.space-xs;
                 Text { text: root.item.id; color: Theme.text; font-family: "monospace"; font-size: Theme.font-body; vertical-alignment: center; overflow: elide; }
-                VerticalLayout { alignment: center; IconButton { size: 24px; icon: @image-url("icons/copy.svg"); label: @tr("Copy ID"); clicked => { root.copy(root.item.id); } } }
+                VerticalLayout { alignment: center; IconButton { size: 24px; icon: @image-url("icons/copy.svg"); label: @tr("Copy ID") + ": " + root.item.id; clicked => { root.copy(root.item.id); } } }
             }
             Text { width: 200px; text: Locale.text(root.item.name); color: Theme.text; vertical-alignment: center; wrap: word-wrap; }
             Text {
@@ -338,6 +342,7 @@ export component MacrosPage inherits Rectangle {
     clipboard := TextInput { visible: false; width: 0px; height: 0px; }
     function copy(value: string) { clipboard.text = value; clipboard.select-all(); clipboard.copy(); NotificationCenter.send({ id: "copied" }); }
     PageLayout {
+        accessible-label: @tr("Macros");
         PageHeader {
             title: @tr("User macros");
             info: @tr("Build reusable sequences of key chords, text, commands and system actions. Use a unique ID in macro:<id> references and a readable name in action lists. Assign macros on the Layers or Triggers tab; change an ID only when it is unused.\n\nThe step pause applies between steps of this macro. Modifier delay is the time between pressing a modifier and the main key. Leave delays empty to use Settings defaults.") + "\n" + @tr("Global defaults: step pause {} ms; modifier delay {} ms.", MacroEditor.default-step-pause, MacroEditor.default-modifier-delay);

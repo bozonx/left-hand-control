@@ -1,0 +1,2160 @@
+{
+  "advanced": {
+    "fields": 9,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "RadioButton",
+        "label": "Don't press",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "RadioButton",
+        "label": "Don't press",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Tab",
+        "label": "Triggers",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "Groupbox",
+        "label": "Advanced rule options"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Triggers"
+      },
+      {
+        "role": "Main",
+        "label": "Triggers"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 5: MetaLeft"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 4: ControlLeft"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 3: ShiftLeft"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 2: CapsLock"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 1: Tab"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Spinbox",
+        "label": "Double-tap interval, ms",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Long-hold threshold, ms",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Hold threshold, ms",
+        "live": "polite"
+      },
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "auto-rule-dialog": {
+    "fields": 3,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "RadioButton",
+        "label": "Does not matter",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "RadioButton",
+        "label": "Does not matter",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "RadioButton",
+        "label": "Auto",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "RadioButton",
+        "label": "Auto",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Tab",
+        "label": "Layouts",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "Groupbox",
+        "label": "New rule"
+      },
+      {
+        "role": "Form",
+        "label": "Conditions"
+      },
+      {
+        "role": "List",
+        "label": "Except applications"
+      },
+      {
+        "role": "List",
+        "label": "Only in applications"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Layouts"
+      },
+      {
+        "role": "Main",
+        "label": "Layouts"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Audit"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "conditions": {
+    "fields": 5,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "RadioButton",
+        "label": "Does not matter",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "RadioButton",
+        "label": "Does not matter",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Tab",
+        "label": "Triggers",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "Groupbox",
+        "label": "Trigger conditions"
+      },
+      {
+        "role": "Form",
+        "label": "Conditions"
+      },
+      {
+        "role": "List",
+        "label": "Except applications"
+      },
+      {
+        "role": "List",
+        "label": "Only in applications"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Triggers"
+      },
+      {
+        "role": "Main",
+        "label": "Triggers"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 5: MetaLeft"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 4: ControlLeft"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 3: ShiftLeft"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 2: CapsLock"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 1: Tab"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "dark-hc-940": {
+    "fields": 7,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "Tab",
+        "label": "Key behavior",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Tab",
+        "label": "Settings",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "TabPanel",
+        "label": "Settings"
+      },
+      {
+        "role": "Main",
+        "label": "Settings"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Key behavior"
+      },
+      {
+        "role": "Region",
+        "label": "Defaults"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Defaults"
+      },
+      {
+        "role": "Region",
+        "label": "Key behavior"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Key behavior"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Spinbox",
+        "label": "Long hold",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Hold threshold",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Double-tap window",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Macro time limit",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Simultaneous presses",
+        "live": "polite"
+      },
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "device-dialog": {
+    "fields": 5,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "RadioButton",
+        "label": "Keyboards",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "RadioButton",
+        "label": "Keyboards",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Tab",
+        "label": "Mapper",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Tab",
+        "label": "Settings",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "Groupbox",
+        "label": "Choose a keyboard"
+      },
+      {
+        "role": "List",
+        "label": "Keyboards: 3"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Settings"
+      },
+      {
+        "role": "Main",
+        "label": "Settings"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Mapper"
+      },
+      {
+        "role": "Region",
+        "label": "Text input"
+      },
+      {
+        "role": "Region",
+        "label": "Mapper"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "List",
+        "label": "Keyboards: 3",
+        "live": "polite"
+      },
+      {
+        "role": "Text",
+        "label": "Stopped",
+        "live": "polite"
+      },
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "device-with-fixture": {
+    "fields": 4,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "RadioButton",
+        "label": "Keyboards",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "RadioButton",
+        "label": "Keyboards",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Tab",
+        "label": "Mapper",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Tab",
+        "label": "Settings",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "Groupbox",
+        "label": "Choose a keyboard"
+      },
+      {
+        "role": "List",
+        "label": "Keyboards: 1"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Settings"
+      },
+      {
+        "role": "Main",
+        "label": "Settings"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Mapper"
+      },
+      {
+        "role": "Region",
+        "label": "Text input"
+      },
+      {
+        "role": "Region",
+        "label": "Mapper"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "List",
+        "label": "Keyboards: 1",
+        "live": "polite"
+      },
+      {
+        "role": "Text",
+        "label": "Stopped",
+        "live": "polite"
+      },
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "eink-940": {
+    "fields": 7,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "Tab",
+        "label": "Key behavior",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Tab",
+        "label": "Settings",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "TabPanel",
+        "label": "Settings"
+      },
+      {
+        "role": "Main",
+        "label": "Settings"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Key behavior"
+      },
+      {
+        "role": "Region",
+        "label": "Defaults"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Defaults"
+      },
+      {
+        "role": "Region",
+        "label": "Key behavior"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Key behavior"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Spinbox",
+        "label": "Long hold",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Hold threshold",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Double-tap window",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Macro time limit",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Simultaneous presses",
+        "live": "polite"
+      },
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "emoji-editor": {
+    "fields": 2,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "Button",
+        "label": "Q 🤦",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Tab",
+        "label": "1 · Texts and lists",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Tab",
+        "label": "Emoji",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "TabPanel",
+        "label": "Emoji"
+      },
+      {
+        "role": "Main",
+        "label": "Emoji"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Emoji"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "emoji-popup": {
+    "fields": 0,
+    "main_regions": 0,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [],
+    "structure": [],
+    "live_regions": []
+  },
+  "extra-keys": {
+    "fields": 1,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "RadioButton",
+        "label": "US layout",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "RadioButton",
+        "label": "US layout",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Tab",
+        "label": "Audit layer",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Tab",
+        "label": "Layers •",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "TabPanel",
+        "label": "Layers"
+      },
+      {
+        "role": "Main",
+        "label": "Layers"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Right hand"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Left hand"
+      },
+      {
+        "role": "TabList",
+        "label": "Layers"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "layers": {
+    "fields": 1,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "RadioButton",
+        "label": "US layout",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "RadioButton",
+        "label": "US layout",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Tab",
+        "label": "navigation",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Tab",
+        "label": "Layers •",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "TabPanel",
+        "label": "Layers"
+      },
+      {
+        "role": "Main",
+        "label": "Layers"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Right hand"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Left hand"
+      },
+      {
+        "role": "TabList",
+        "label": "Layers"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "library": {
+    "fields": 1,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "RadioButton",
+        "label": "Single",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "RadioButton",
+        "label": "Single",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Tab",
+        "label": "Layouts",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "Groupbox",
+        "label": "Layout “Audit” created"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Layouts"
+      },
+      {
+        "role": "Main",
+        "label": "Layouts"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Audit"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Groupbox",
+        "label": "Layout “Audit” created",
+        "live": "polite"
+      },
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "light-940": {
+    "fields": 7,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "Tab",
+        "label": "Key behavior",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Tab",
+        "label": "Settings",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "TabPanel",
+        "label": "Settings"
+      },
+      {
+        "role": "Main",
+        "label": "Settings"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Key behavior"
+      },
+      {
+        "role": "Region",
+        "label": "Defaults"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Defaults"
+      },
+      {
+        "role": "Region",
+        "label": "Key behavior"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Key behavior"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Spinbox",
+        "label": "Long hold",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Hold threshold",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Double-tap window",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Macro time limit",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Simultaneous presses",
+        "live": "polite"
+      },
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "light-hc-940": {
+    "fields": 7,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "Tab",
+        "label": "Key behavior",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Tab",
+        "label": "Settings",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "TabPanel",
+        "label": "Settings"
+      },
+      {
+        "role": "Main",
+        "label": "Settings"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Key behavior"
+      },
+      {
+        "role": "Region",
+        "label": "Defaults"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Defaults"
+      },
+      {
+        "role": "Region",
+        "label": "Key behavior"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Key behavior"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Spinbox",
+        "label": "Long hold",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Hold threshold",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Double-tap window",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Macro time limit",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Simultaneous presses",
+        "live": "polite"
+      },
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "macros": {
+    "fields": 3,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "Tab",
+        "label": "Macros •",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "TabPanel",
+        "label": "Macros"
+      },
+      {
+        "role": "Main",
+        "label": "Macros"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Audit macro"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Spinbox",
+        "label": "Modifier delay",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Pause between steps",
+        "live": "polite"
+      },
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "nested-app-dialog": {
+    "fields": 6,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "RadioButton",
+        "label": "Application",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "RadioButton",
+        "label": "Application",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "RadioButton",
+        "label": "Does not matter",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "RadioButton",
+        "label": "Does not matter",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Tab",
+        "label": "Triggers",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "Groupbox",
+        "label": "Edit application"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Trigger conditions"
+      },
+      {
+        "role": "Form",
+        "label": "Conditions"
+      },
+      {
+        "role": "List",
+        "label": "Except applications"
+      },
+      {
+        "role": "List",
+        "label": "Only in applications"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Triggers"
+      },
+      {
+        "role": "Main",
+        "label": "Triggers"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 5: MetaLeft"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 4: ControlLeft"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 3: ShiftLeft"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 2: CapsLock"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 1: Tab"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Text",
+        "label": "Matches no open window",
+        "live": "polite"
+      },
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "new-layer-dialog": {
+    "fields": 3,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "RadioButton",
+        "label": "US layout",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "RadioButton",
+        "label": "US layout",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Tab",
+        "label": "navigation",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Tab",
+        "label": "Layers •",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "Groupbox",
+        "label": "New layer"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Layers"
+      },
+      {
+        "role": "Main",
+        "label": "Layers"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Right hand"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Left hand"
+      },
+      {
+        "role": "TabList",
+        "label": "Layers"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Text",
+        "label": "",
+        "live": "polite"
+      },
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "picker": {
+    "fields": 7,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "Button",
+        "label": "KeyA",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Button",
+        "label": "Letters, digits and symbols",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Tab",
+        "label": "Triggers",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "Groupbox",
+        "label": "Choose action"
+      },
+      {
+        "role": "List",
+        "label": "Actions: 48"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Triggers"
+      },
+      {
+        "role": "Main",
+        "label": "Triggers"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 5: MetaLeft"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 4: ControlLeft"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 3: ShiftLeft"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 2: CapsLock"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 1: Tab"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "List",
+        "label": "Actions: 48",
+        "live": "polite"
+      },
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "quick-editor": {
+    "fields": 2,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "Button",
+        "label": "Q Sleep",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Tab",
+        "label": "1 · System",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Tab",
+        "label": "Quick actions",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "TabPanel",
+        "label": "Quick actions"
+      },
+      {
+        "role": "Main",
+        "label": "Quick actions"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Quick actions"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "quick-popup": {
+    "fields": 0,
+    "main_regions": 0,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [],
+    "structure": [],
+    "live_regions": []
+  },
+  "rules": {
+    "fields": 5,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Enabled",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Tab",
+        "label": "Triggers",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "TabPanel",
+        "label": "Triggers"
+      },
+      {
+        "role": "Main",
+        "label": "Triggers"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 5: MetaLeft"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 4: ControlLeft"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 3: ShiftLeft"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 2: CapsLock"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Rule 1: Tab"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "settings-accessibility": {
+    "fields": 1,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "Tab",
+        "label": "Accessibility",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Tab",
+        "label": "Settings",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "TabPanel",
+        "label": "Settings"
+      },
+      {
+        "role": "Main",
+        "label": "Settings"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Accessibility"
+      },
+      {
+        "role": "Region",
+        "label": "Accessibility"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "settings-behavior": {
+    "fields": 9,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "Tab",
+        "label": "Key behavior",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Tab",
+        "label": "Settings",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "TabPanel",
+        "label": "Settings"
+      },
+      {
+        "role": "Main",
+        "label": "Settings"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Key behavior"
+      },
+      {
+        "role": "Region",
+        "label": "Defaults"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Defaults"
+      },
+      {
+        "role": "Region",
+        "label": "Key behavior"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Key behavior"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Spinbox",
+        "label": "Modifier delay",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Pause between steps",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Long hold",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Hold threshold",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Double-tap window",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Macro time limit",
+        "live": "polite"
+      },
+      {
+        "role": "Spinbox",
+        "label": "Simultaneous presses",
+        "live": "polite"
+      },
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "settings-commands": {
+    "fields": 1,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "Tab",
+        "label": "Commands",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Tab",
+        "label": "Settings",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "TabPanel",
+        "label": "Settings"
+      },
+      {
+        "role": "Main",
+        "label": "Settings"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Commands"
+      },
+      {
+        "role": "Region",
+        "label": "Commands"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "settings-game": {
+    "fields": 1,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "Checkbox",
+        "label": "Only while the game is in front",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Games run through umu-launcher",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Heroic games",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Lutris games",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Steam games",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Gamescope sessions",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Checkbox",
+        "label": "Use GameMode daemon",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "RadioButton",
+        "label": "Auto",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "RadioButton",
+        "label": "Auto",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Tab",
+        "label": "Game mode",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Tab",
+        "label": "Settings",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "TabPanel",
+        "label": "Settings"
+      },
+      {
+        "role": "Main",
+        "label": "Settings"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Game mode"
+      },
+      {
+        "role": "Region",
+        "label": "Game mode"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Your rules"
+      },
+      {
+        "role": "Groupbox",
+        "label": "Automatic game detection"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "settings-general": {
+    "fields": 2,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "Checkbox",
+        "label": "In development features",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "RadioButton",
+        "label": "System",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "RadioButton",
+        "label": "System",
+        "selected": null,
+        "checked": "true"
+      },
+      {
+        "role": "Tab",
+        "label": "Main",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Tab",
+        "label": "Settings",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "TabPanel",
+        "label": "Settings"
+      },
+      {
+        "role": "Main",
+        "label": "Settings"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Main"
+      },
+      {
+        "role": "Region",
+        "label": "Main"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  },
+  "settings-mapper": {
+    "fields": 5,
+    "main_regions": 1,
+    "unnamed_regions": [],
+    "unnamed_fields": [],
+    "selected_nodes": [
+      {
+        "role": "Tab",
+        "label": "Mapper",
+        "selected": "true",
+        "checked": null
+      },
+      {
+        "role": "Tab",
+        "label": "Settings",
+        "selected": "true",
+        "checked": null
+      }
+    ],
+    "structure": [
+      {
+        "role": "TabPanel",
+        "label": "Settings"
+      },
+      {
+        "role": "Main",
+        "label": "Settings"
+      },
+      {
+        "role": "TabPanel",
+        "label": "Mapper"
+      },
+      {
+        "role": "Region",
+        "label": "Text input"
+      },
+      {
+        "role": "Region",
+        "label": "Mapper"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      },
+      {
+        "role": "TabList",
+        "label": "Layout"
+      },
+      {
+        "role": "TabList",
+        "label": "Settings"
+      }
+    ],
+    "live_regions": [
+      {
+        "role": "Text",
+        "label": "Stopped",
+        "live": "polite"
+      },
+      {
+        "role": "Text",
+        "label": "Active: Audit",
+        "live": "polite"
+      }
+    ]
+  }
+}

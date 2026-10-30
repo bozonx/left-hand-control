@@ -168,6 +168,8 @@ export component TextField inherits Rectangle {
     callback accepted(string);
     /// Keys the text input does not handle; the default rejects them.
     callback key-pressed(KeyEvent) -> EventResult;
+    /// Optional interception before native cursor movement (e.g. spinbox steps).
+    callback filter-key(KeyEvent) -> EventResult;
     public function select-all() { input.select-all(); }
     public function clear() { input.text = ""; root.edited(""); input.focus(); }
     min-width: 160px;
@@ -221,6 +223,7 @@ export component TextField inherits Rectangle {
                 }
                 FocusScope {
                     focus-on-tab-navigation: false;
+                    capture-key-pressed(event) => { return root.filter-key(event); }
                     key-pressed(event) => { return root.key-pressed(event); }
                     input := TextInput {
                         private property <length> scroll-x;
@@ -397,6 +400,9 @@ export component NumericInput inherits TouchArea {
     in property <float> maximum: 2147483647;
     in property <float> step: 10;
     in property <bool> fractional: false;
+    in property <bool> read-only;
+    in property <string> description;
+    private property <bool> invalid: root.text == "" ? root.placeholder-text == "" : (!root.text.is-float() || root.text.to-float() < root.minimum || root.text.to-float() > root.maximum || (!root.fractional && root.text.to-float() != round(root.text.to-float())));
     callback edited(string);
     callback accepted(string);
     private property <length> wheel;
@@ -406,19 +412,11 @@ export component NumericInput inherits TouchArea {
     height: Theme.control-height;
     horizontal-stretch: 0;
     vertical-stretch: 0;
-    accessible-role: spinbox;
-    accessible-label: root.label;
-    accessible-value: root.current-value();
-    accessible-value-minimum: root.minimum;
-    accessible-value-maximum: root.maximum;
-    accessible-value-step: root.step;
-    accessible-action-increment => { root.apply(root.current-value() + root.step); }
-    accessible-action-decrement => { root.apply(root.current-value() - root.step); }
-    accessible-action-set-value(value) => { if value.is-float() { root.apply(value.to-float()); } }
     function current-value() -> float {
         return root.text.is-float() ? root.text.to-float() : root.placeholder-text.is-float() ? root.placeholder-text.to-float() : root.minimum * 1.0;
     }
     function apply(next: float) {
+        if !root.enabled || root.read-only { return; }
         root.text = clamp(root.fractional ? round(next * 1000) / 1000 : round(next), root.minimum, root.maximum);
         root.edited(root.text);
     }
@@ -434,6 +432,24 @@ export component NumericInput inherits TouchArea {
         accept
     }
     edit := TextField {
+        accessible-role: spinbox;
+        accessible-live-region: polite;
+        read-only: root.read-only;
+        invalid: root.invalid;
+        accessible-description: root.invalid ? Locale.text({id: "settings-timing-invalid"}) + " " + root.minimum + "…" + root.maximum : root.description;
+
+        accessible-value: root.current-value();
+        accessible-value-minimum: root.minimum;
+        accessible-value-maximum: root.maximum;
+        accessible-value-step: root.step;
+        accessible-action-increment => { root.apply(root.current-value() + root.step); }
+        accessible-action-decrement => { root.apply(root.current-value() - root.step); }
+        accessible-action-set-value(value) => { if value.is-float() { root.apply(value.to-float()); } }
+        filter-key(event) => {
+            if event.text == Key.UpArrow { root.apply(root.current-value() + root.step); return accept; }
+            if event.text == Key.DownArrow { root.apply(root.current-value() - root.step); return accept; }
+            return reject;
+        }
         x: 0px;
         enabled: root.enabled;
         width: root.field-width;

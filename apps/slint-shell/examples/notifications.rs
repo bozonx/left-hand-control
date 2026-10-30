@@ -77,6 +77,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         center.invoke_send(message(id, arg));
     }
     assert_eq!(center.get_items().row_count(), 4);
+    support::snapshot(&ui, "notifications-initial");
     ui.window()
         .dispatch_event(slint::platform::WindowEvent::PointerMoved {
             position: last_dismiss_position(&ui),
@@ -135,14 +136,70 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(center.get_items().row_count(), 4);
         center.invoke_send(message("error", "Проверьте доступ к устройству ввода."));
         assert_eq!(center.get_items().row_count(), 4);
+        for _ in 0..400 {
+            ui.window()
+                .dispatch_event(slint::platform::WindowEvent::KeyPressed {
+                    text: slint::platform::Key::Tab.into(),
+                });
+            ui.window()
+                .dispatch_event(slint::platform::WindowEvent::KeyReleased {
+                    text: slint::platform::Key::Tab.into(),
+                });
+            if center.get_focused() {
+                break;
+            }
+        }
+        assert!(
+            center.get_focused(),
+            "notification dismissal must be reachable by Tab"
+        );
+        let focused = i_slint_core::window::WindowInner::from_pub(ui.window())
+            .focus_item
+            .borrow()
+            .upgrade()
+            .expect("notification focus");
+        center.invoke_send(message("layout-created", "Queued while reading"));
+        let _ = ui.window().take_snapshot().unwrap();
+        assert_eq!(
+            i_slint_core::window::WindowInner::from_pub(ui.window())
+                .focus_item
+                .borrow()
+                .upgrade(),
+            Some(focused),
+            "arriving notification preserves focus"
+        );
     });
     let weak = ui.as_weak();
     slint::Timer::single_shot(Duration::from_millis(9500), move || {
         let ui = weak.unwrap();
         let center = ui.global::<NotificationCenter>();
-        support::wait_until("non-error notifications to expire", || {
+        assert_eq!(
+            center.get_items().row_count(),
+            4,
+            "keyboard focus pauses expiry"
+        );
+        for _ in 0..20 {
+            ui.window()
+                .dispatch_event(slint::platform::WindowEvent::KeyPressed {
+                    text: slint::platform::Key::Tab.into(),
+                });
+            ui.window()
+                .dispatch_event(slint::platform::WindowEvent::KeyReleased {
+                    text: slint::platform::Key::Tab.into(),
+                });
+            if !center.get_focused() {
+                break;
+            }
+        }
+        assert!(!center.get_focused());
+    });
+    let weak = ui.as_weak();
+    slint::Timer::single_shot(Duration::from_millis(17000), move || {
+        let ui = weak.unwrap();
+        let center = ui.global::<NotificationCenter>();
+        support::wait_until("success notifications to expire", || {
             let items = center.get_items();
-            items.row_count() == 1 && items.row_data(0).unwrap().message.id == "error"
+            items.row_count() == 2 && items.row_data(1).unwrap().message.id == "error"
         });
         assert_eq!(
             center
@@ -150,9 +207,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .iter()
                 .map(|item| item.message.id)
                 .collect::<Vec<_>>(),
-            ["error"]
+            ["config-edit-conflict", "error"]
         );
-        assert_eq!(center.get_items().row_data(0).unwrap().message.id, "error");
+        assert_eq!(center.get_items().row_data(1).unwrap().message.id, "error");
         println!(
             "Notifications passed: stack, field validation, independent expiry, hover pause, dismissal and repeated errors"
         );

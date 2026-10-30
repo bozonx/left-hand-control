@@ -32,6 +32,7 @@ export global InlineEditors {
 /// keeps the draft open; only the owner can acknowledge a persisted edit.
 component InlineEditor inherits FocusScope {
     accessible-role: button;
+    accessible-enabled: !root.editing;
     accessible-label: root.label;
     accessible-value: root.text;
     accessible-action-default => { if !root.editing { root.begin(); } }
@@ -100,9 +101,7 @@ export component InlineTextField inherits InlineEditor {
             if !root.editing: display-touch := TouchArea {
                 height: max(28px, measure.preferred-height + 8px);
                 mouse-cursor: MouseCursor.text;
-                accessible-role: button;
-                accessible-label: root.label;
-                accessible-action-default => { root.begin(); }
+                accessible-role: none;
                 clicked => { root.begin(); }
                 Rectangle {
                     border-radius: Theme.radius-small;
@@ -149,7 +148,7 @@ export component InlineTextField inherits InlineEditor {
             if root.editing: IconButton { icon: @image-url("icons/check.svg"); label: @tr("Save (Enter)"); enabled: root.can-save; clicked => { if root.save() { root.focus(); } } }
             if root.editing: IconButton { icon: @image-url("icons/x.svg"); label: @tr("Cancel (Esc)"); clicked => { root.cancel(); root.focus(); } }
         }
-        if root.editing && root.issue.id != "": Text {
+        if root.editing && root.issue.id != "": Text { accessible-live-region: polite;
             text: Locale.text(root.issue);
             color: Theme.error;
             font-size: Theme.font-body;
@@ -173,9 +172,7 @@ export component InlineTextArea inherits InlineEditor {
             background: edit-touch.has-hover ? Theme.hover : transparent;
             border-width: 1px;
             border-color: root.has-focus ? Theme.focus : edit-touch.has-hover ? Theme.border : transparent;
-            accessible-role: button;
-            accessible-label: root.label;
-            accessible-action-default => { root.begin(); }
+            accessible-role: none;
             line := Text { text: "Ag"; font-size: root.text-size; font-weight: root.text-weight; visible: false; }
             measure := Text {
                 width: parent.width - 8px;
@@ -207,6 +204,7 @@ export component InlineTextArea inherits InlineEditor {
             height: root.expanded ? 240px : 80px;
             text <=> root.draft;
             accessible-label: root.label;
+            accessible-description: Locale.text(root.issue);
             init => { self.focus(); }
             changed has-focus => { if !self.has-focus { root.blurred(); } }
         }

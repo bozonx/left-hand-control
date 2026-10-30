@@ -13,11 +13,13 @@ component ScrollBar inherits Rectangle {
     private property <length> thumb-size: min(root.track, max(24px, root.track * root.page-size / (root.maximum + root.page-size)));
     private property <length> travel: root.track - root.thumb-size;
     accessible-role: slider;
+    accessible-enabled: root.enabled;
     accessible-label: Locale.text({ id: root.horizontal ? "scroll-horizontal" : "scroll-vertical" });
     accessible-value: (-root.value / 1px);
     accessible-value-minimum: 0;
     accessible-value-maximum: root.maximum / 1px;
     accessible-value-step: 40;
+    accessible-action-set-value(value) => { if root.enabled && value.is-float() { root.value = -clamp(value.to-float() * 1px, 0px, root.maximum); root.scrolled(); } }
     accessible-action-increment => { root.value = max(-root.maximum, root.value - 40px); root.scrolled(); }
     accessible-action-decrement => { root.value = min(0px, root.value + 40px); root.scrolled(); }
     border-width: scroll-focus.has-focus ? 2px : 0px;

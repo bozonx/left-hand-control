@@ -18,6 +18,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Improve screen reader names, selection states, page and row structure, status announcements and left/right key identification. Numeric fields expose one editable spinbox with arrow-key steps; inline editors avoid duplicate display buttons. Warnings and errors remain until dismissed, notifications show their full text and pause expiry while focused.
+
 - Improve placeholder contrast and keep disabled mapper/automatic rules readable while editing. High contrast and E-ink now cover Fluent controls, popup choices, text selection and focus; theme and game-mode choices use the shared keyboard-accessible button group. The held-layer hint follows the output width and stacks hands on narrow screens without reducing text size.
 
 - Shell/core commands use typed mapper configuration and application actions. IPC rejects commands sent to the wrong process and reports UI queue failures; popup worker communication no longer blocks the settings interface. Compound settings/layout edits roll back on failure, and core state notifications are coalesced without discarding application requests.

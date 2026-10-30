@@ -178,7 +178,7 @@ component TimingField inherits VerticalLayout {
         reset-tooltip: @tr("Reset to {} ms", root.standard);
         reset => { root.value = root.standard; root.reset(); }
         HorizontalLayout { spacing: Theme.space-s; alignment: start;
-            DurationInput { field-width: 100px; label: root.label; minimum: root.minimum; maximum: root.maximum; step: root.step; text <=> root.value; edited => { root.edited(); } }
+            DurationInput { field-width: 100px; description: root.info; label: root.label; minimum: root.minimum; maximum: root.maximum; step: root.step; text <=> root.value; edited => { root.edited(); } }
         }
     }
 }
@@ -235,6 +235,7 @@ component MapperStatusCard inherits Rectangle {
         }
         VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: Theme.space-xs; alignment: center;
             Text {
+                accessible-live-region: polite;
                 text: root.busy ? @tr("Please wait…") : root.running ? @tr("Running") : root.crashed ? @tr("Stopped unexpectedly") : root.failed ? @tr("Failed to start") : @tr("Stopped");
                 color: Theme.text; font-weight: Theme.weight-bold;
             }
@@ -253,6 +254,7 @@ component MapperStatusCard inherits Rectangle {
             }
             // Directly in this layout: a nested one would size wrapped lines for the unwrapped width.
             for issue in (root.has-issues ? SettingsEditor.input-issues : []): Text {
+                accessible-live-region: assertive;
                 text: "⚠ " + Locale.text(issue);
                 color: Theme.warning; font-size: Theme.font-body; wrap: word-wrap;
             }
@@ -271,6 +273,7 @@ component MapperStatusCard inherits Rectangle {
 }
 
 export component SettingsPage inherits PageLayout {
+    accessible-label: @tr("Settings");
     init => { SettingsEditor.refresh-commands(); }
     private property <SettingsTab> commands-tab: SettingsEditor.tab;
     changed commands-tab => { SettingsEditor.refresh-commands(); }
@@ -280,12 +283,14 @@ export component SettingsPage inherits PageLayout {
     /// A running mapper keeps the devices it started with: restart it once the new ones are saved.
     function apply-devices() { if SettingsEditor.message.id == "" { AppState.devices-changed(); } }
     function copy-path(value: string) { path-clipboard.text = value; path-clipboard.select-all(); path-clipboard.copy(); NotificationCenter.send({ id: "copied" }); }
-    if SettingsEditor.message.id != "": Text { text: Locale.text(SettingsEditor.message); color: Theme.error; wrap: word-wrap; }
+    if SettingsEditor.message.id != "": Text { accessible-live-region: assertive; text: Locale.text(SettingsEditor.message); color: Theme.error; wrap: word-wrap; }
     HorizontalLayout {
         padding: 0px;
         spacing: Theme.space-xl;
         vertical-stretch: 1;
         VerticalLayout {
+            accessible-role: tab-list;
+            accessible-label: @tr("Settings");
             padding: 0px;
             spacing: Theme.space-s;
             width: 180px;
@@ -301,7 +306,7 @@ export component SettingsPage inherits PageLayout {
                 background: SettingsEditor.tab == tab-id ? Theme.selected : touch.has-hover ? Theme.hover : transparent;
                 accessible-role: tab;
                 accessible-label: label;
-                accessible-checked: SettingsEditor.tab == tab-id;
+                accessible-item-selectable: true; accessible-item-selected: SettingsEditor.tab == tab-id;
                 accessible-action-default => { SettingsEditor.tab = tab-id; content.viewport-y = 0px; }
                 Rectangle {
                     x: 0px; y: 8px; width: 3px; height: parent.height - 16px;
@@ -335,6 +340,8 @@ export component SettingsPage inherits PageLayout {
         }
         Rectangle { width: 1px; horizontal-stretch: 0; background: Theme.divider; }
         content := ScrollView {
+            accessible-role: tab-panel;
+            accessible-label: [@tr("Main"), @tr("Mapper"), @tr("Key behavior"), @tr("Game mode"), @tr("Commands"), @tr("Accessibility")][SettingsEditor.tab == SettingsTab.general ? 0 : SettingsEditor.tab == SettingsTab.mapper ? 1 : SettingsEditor.tab == SettingsTab.key-behavior ? 2 : SettingsEditor.tab == SettingsTab.game-mode ? 3 : SettingsEditor.tab == SettingsTab.commands ? 4 : 5];
             viewport-width: self.visible-width;
             viewport-height: settings-content.preferred-height;
             viewport-x: 0px;
@@ -350,6 +357,7 @@ export component SettingsPage inherits PageLayout {
                 max-width: Theme.unbounded;
                 spacing: 0px;
                 if SettingsEditor.tab == SettingsTab.general: Section {
+                    accessible-label: @tr("Main");
                     Card {
                         vertical-stretch: 0;
                         VerticalLayout {
@@ -360,7 +368,7 @@ export component SettingsPage inherits PageLayout {
                                     VerticalLayout { alignment: center; Image { width: 16px; height: 16px; colorize: Theme.text; source: @image-url("icons/globe.svg"); } }
                                     Text { text: @tr("Language"); color: Theme.text; vertical-alignment: center; }
                                 }
-                                SelectField { width: 280px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("Automatic"), "English", "Русский", "Deutsch", "Français", "Español", "Italiano", "Português", "Polski", "Türkçe", "Українська", "Čeština", "Magyar", "Română", "Ελληνικά", "Hrvatski", "ქართული", "Қазақша", "简体中文", "繁體中文", "日本語", "한국어"]; current-index: SettingsEditor.locale-index; selected(value) => { SettingsEditor.locale-index = self.current-index; SettingsEditor.save(); } }
+                                SelectField { accessible-label: @tr("Language"); width: 280px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("Automatic"), "English", "Русский", "Deutsch", "Français", "Español", "Italiano", "Português", "Polski", "Türkçe", "Українська", "Čeština", "Magyar", "Română", "Ελληνικά", "Hrvatski", "ქართული", "Қазақша", "简体中文", "繁體中文", "日本語", "한국어"]; current-index: SettingsEditor.locale-index; selected(value) => { SettingsEditor.locale-index = self.current-index; SettingsEditor.save(); } }
                             }
                             VerticalLayout { vertical-stretch: 0; spacing: Theme.space-m;
                                 Text { vertical-stretch: 0; text: @tr("Theme"); color: Theme.text; }
@@ -395,12 +403,12 @@ export component SettingsPage inherits PageLayout {
                             CardHeader { vertical-stretch: 0; title: @tr("Paths"); }
                             HorizontalLayout { spacing: Theme.space-m; padding: 0px; vertical-stretch: 0;
                                 Text { vertical-stretch: 0; text: @tr("Settings directory: {}", SettingsEditor.settings-dir); color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
-                                Button { text: @tr("Copy path"); clicked => { root.copy-path(SettingsEditor.settings-dir); } }
+                                Button { text: @tr("Copy path"); accessible-description: SettingsEditor.settings-dir; clicked => { root.copy-path(SettingsEditor.settings-dir); } }
                             }
                             Divider {}
                             HorizontalLayout { spacing: Theme.space-m; padding: 0px; vertical-stretch: 0;
                                 Text { vertical-stretch: 0; text: @tr("Layouts directory: {}", SettingsEditor.layouts-dir); color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
-                                Button { text: @tr("Copy path"); clicked => { root.copy-path(SettingsEditor.layouts-dir); } }
+                                Button { text: @tr("Copy path"); accessible-description: SettingsEditor.layouts-dir; clicked => { root.copy-path(SettingsEditor.layouts-dir); } }
                             }
                         }
                     }
@@ -419,6 +427,7 @@ export component SettingsPage inherits PageLayout {
                     }
                 }
                 if SettingsEditor.tab == SettingsTab.accessibility: Section {
+                    accessible-label: @tr("Accessibility");
                     VerticalLayout { vertical-stretch: 0; spacing: Theme.space-m;
                         CheckBox { text: @tr("High contrast"); enabled: SettingsEditor.appearance != AppearanceChoice.e-ink; checked <=> SettingsEditor.high-contrast; toggled => { SettingsEditor.save(); } }
                     }
@@ -427,13 +436,14 @@ export component SettingsPage inherits PageLayout {
                     }
                 }
                 if AppState.in-development && SettingsEditor.tab == SettingsTab.commands: Section {
+                    accessible-label: @tr("Commands");
                     title: "";
                     HorizontalLayout { alignment: start; spacing: Theme.space-s;
                         CheckBox { horizontal-stretch: 0; text: @tr("Allow command execution"); checked <=> SettingsEditor.commands-enabled; toggled => { SettingsEditor.save(); } }
                         VerticalLayout { alignment: center; InfoTip { text: (AppState.is-windows ? @tr("Commands run with PowerShell in the background and are not awaited.") : @tr("Commands run with sh -lc in the background and are not awaited.")) + "\n" + @tr("Commands stay off until you allow execution. Review below what your layouts would run."); } }
                     }
                     VerticalLayout { padding: 0px; spacing: Theme.space-xl;
-                        if SettingsEditor.commands-loading: Text { text: @tr("Please wait…"); color: Theme.muted; }
+                        if SettingsEditor.commands-loading: Text { accessible-live-region: polite; text: @tr("Please wait…"); color: Theme.muted; }
                         if SettingsEditor.commands-error.id != "": HorizontalLayout {
                             Text { text: Locale.text(SettingsEditor.commands-error); color: Theme.error; wrap: word-wrap; horizontal-stretch: 1; }
                             Button { text: @tr("Refresh"); enabled: !SettingsEditor.commands-loading; clicked => { SettingsEditor.refresh-commands(); } }
@@ -509,6 +519,7 @@ export component SettingsPage inherits PageLayout {
                     }
                 }
                 if SettingsEditor.tab == SettingsTab.mapper: Section {
+                    accessible-label: @tr("Mapper");
                     title: "";
                     VerticalLayout { padding: 0px; spacing: Theme.space-xl;
                         HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
@@ -553,7 +564,7 @@ export component SettingsPage inherits PageLayout {
                         padding: 0px; spacing: Theme.space-m;
                         FormLabel { text: @tr("Typing method"); }
                         // Same order as TextMode::ALL in lhc-core.
-                        SelectField { width: 320px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("libei + clipboard fallback (recommended)"), "libei", "NotifyKeyboardKeycode", @tr("Paste from clipboard"), @tr("ydotool"), @tr("xdotool")]; current-index: SettingsEditor.text-mode-index; selected(value) => { SettingsEditor.text-mode-index = self.current-index; SettingsEditor.save(); } }
+                        SelectField { accessible-label: @tr("Typing method"); width: 320px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("libei + clipboard fallback (recommended)"), "libei", "NotifyKeyboardKeycode", @tr("Paste from clipboard"), @tr("ydotool"), @tr("xdotool")]; current-index: SettingsEditor.text-mode-index; selected(value) => { SettingsEditor.text-mode-index = self.current-index; SettingsEditor.save(); } }
                         Text {
                             vertical-stretch: 0; max-width: Theme.text-column; color: Theme.muted; wrap: word-wrap;
                             text: [
@@ -570,13 +581,13 @@ export component SettingsPage inherits PageLayout {
                         padding: 0px; spacing: Theme.space-m;
                         FormLabel { text: @tr("Paste shortcut"); info: @tr("Sent to the focused app to paste the text."); }
                         // Same order as PasteShortcut::ALL in lhc-core.
-                        SelectField { width: 320px; height: Theme.control-height; vertical-stretch: 0; model: ["Shift+Insert", "Ctrl+V", "Ctrl+Shift+V"]; current-index: SettingsEditor.paste-shortcut-index; selected(value) => { SettingsEditor.paste-shortcut-index = self.current-index; SettingsEditor.save(); } }
+                        SelectField { accessible-label: @tr("Paste shortcut"); width: 320px; height: Theme.control-height; vertical-stretch: 0; model: ["Shift+Insert", "Ctrl+V", "Ctrl+Shift+V"]; current-index: SettingsEditor.paste-shortcut-index; selected(value) => { SettingsEditor.paste-shortcut-index = self.current-index; SettingsEditor.save(); } }
                     }
                     if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "libei" || SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "clipboard": VerticalLayout {
                         padding: 0px; spacing: Theme.space-m;
                         FormLabel { text: @tr("Paste shortcut in terminals"); info: @tr("Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."); }
                         // The main shortcut, then the order of PasteShortcut::ALL in lhc-core.
-                        SelectField { width: 320px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("Same as in other apps"), "Shift+Insert", "Ctrl+V", "Ctrl+Shift+V"]; current-index: SettingsEditor.terminal-paste-shortcut-index; selected(value) => { SettingsEditor.terminal-paste-shortcut-index = self.current-index; SettingsEditor.save(); } }
+                        SelectField { accessible-label: @tr("Paste shortcut in terminals"); width: 320px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("Same as in other apps"), "Shift+Insert", "Ctrl+V", "Ctrl+Shift+V"]; current-index: SettingsEditor.terminal-paste-shortcut-index; selected(value) => { SettingsEditor.terminal-paste-shortcut-index = self.current-index; SettingsEditor.save(); } }
                     }
                     if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "ydotool": VerticalLayout {
                         padding: 0px; spacing: Theme.space-m;
@@ -590,7 +601,9 @@ export component SettingsPage inherits PageLayout {
                     }
                 }
                 if SettingsEditor.tab == SettingsTab.key-behavior: Section {
+                    accessible-label: @tr("Key behavior");
                     TitledCard {
+                        accessible-name: @tr("Key behavior");
                         HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-xl; alignment: start;
                             TimingField {
                                 label: @tr("Simultaneous presses");
@@ -619,6 +632,7 @@ export component SettingsPage inherits PageLayout {
                 if SettingsEditor.tab == SettingsTab.key-behavior: Section {
                     title: @tr("Defaults");
                     TitledCard {
+                        accessible-name: @tr("Defaults");
                         SubsectionTitle { text: @tr("Tap"); }
                         TimingField {
                             label: @tr("Double-tap window");
@@ -641,7 +655,7 @@ export component SettingsPage inherits PageLayout {
                                     + "\n\n" + @tr("As soon as another key is pressed: useful for dedicated layer or modifier keys. Reacts faster, but overlapping letters while typing can trigger the hold by mistake.");
                             }
                             HorizontalLayout { alignment: start;
-                                SelectField { width: 500px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("After another key is released (better for typing)"), @tr("As soon as another key is pressed")]; current-index: SettingsEditor.tap-decision-index; selected(value) => { SettingsEditor.tap-decision-index = self.current-index; SettingsEditor.save(); } }
+                                SelectField { accessible-label: @tr("Hold detection"); width: 500px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("After another key is released (better for typing)"), @tr("As soon as another key is pressed")]; current-index: SettingsEditor.tap-decision-index; selected(value) => { SettingsEditor.tap-decision-index = self.current-index; SettingsEditor.save(); } }
                             }
                         }
                         HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-xl; alignment: start;
@@ -694,6 +708,7 @@ export component SettingsPage inherits PageLayout {
                     }
                 }
                 if AppState.in-development && SettingsEditor.tab == SettingsTab.game-mode: Section {
+                    accessible-label: @tr("Game mode");
                     HorizontalLayout {
                         vertical-stretch: 0; spacing: Theme.space-m;
                         ButtonGroup {
@@ -848,6 +863,7 @@ export component CommandDialogOverlay inherits FocusScope {
             preferred-height: full-layout.preferred-height;
             full-layout := VerticalLayout {
                 full-text := TextInput {
+                    accessible-label: @tr("Command");
                     text: SettingsEditor.full-command;
                     read-only: true; single-line: false; wrap: word-wrap;
                     color: Theme.text; font-family: "monospace"; font-size: Theme.font-body;

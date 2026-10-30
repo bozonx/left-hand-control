@@ -145,7 +145,10 @@ export component DragHandle inherits Rectangle {
     border-color: Theme.focus;
     background: area.has-hover ? Theme.hover : transparent;
     accessible-role: button;
-    accessible-label: @tr("Drag");
+    accessible-label: @tr("Drag") + " " + (root.index + 1) + "/" + root.count;
+    accessible-description: "Alt+↑ / Alt+↓";
+    accessible-item-index: root.index;
+    accessible-item-count: root.count;
     accessible-action-increment => { root.step(1); }
     accessible-action-decrement => { root.step(-1); }
     function step(delta: int) {

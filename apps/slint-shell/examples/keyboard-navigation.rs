@@ -149,6 +149,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 *initiator.borrow_mut() = Some(focused(&ui).downgrade());
                 ui.global::<SettingsEditor>().set_input_devices(slint::ModelRc::new(slint::VecModel::from(vec![DeviceChoice {
                     label: "Regression keyboard".into(), path: "/dev/input/regression-not-real".into(), group: DeviceGroup::Suggested, ..Default::default()
+                }, DeviceChoice {
+                    label: "Second regression keyboard".into(), path: "/dev/input/regression-second-not-real".into(), group: DeviceGroup::Suggested, ..Default::default()
                 }])));
                 ui.global::<DeviceDialog>().set_open(true);
             }
@@ -160,6 +162,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 assert_eq!(refreshes.get(), before + 1);
                 assert!(ui.global::<DeviceDialog>().get_open());
                 assert!(ui.global::<SettingsEditor>().get_keyboard_device_path().is_empty());
+                tab_to(&ui, "Regression keyboard");
+                key(&ui, Key::DownArrow);
+                assert_eq!(label(&ui), "Second regression keyboard");
+                assert_eq!(nearest_accessible_item(focused(&ui)).accessible_string_property(AccessibleStringProperty::ItemSelected).as_deref(), Some("true"));
+                key(&ui, Key::UpArrow);
+                assert_eq!(label(&ui), "Regression keyboard");
                 key(&ui, Key::Escape);
             }
             3 => {
@@ -229,7 +237,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 key(&ui, Key::Return);
             }
             16 => {
-                key(&ui, Key::Tab);
+                key(&ui, Key::DownArrow);
+                assert!(label(&ui).starts_with("On"), "menu arrows move accessible focus");
                 key(&ui, Key::Return);
                 assert_eq!(game_choice.get(), Some(GameModeControl::On), "menu Enter activates the Tab-focused row");
                 ui.global::<ActionPicker>().invoke_open(PickerTarget::LayerAction, 0, "".into(), false);

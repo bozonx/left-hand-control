@@ -51,6 +51,8 @@ export component SubsectionTitle inherits Text {
 
 /// Group of settings under a large title.
 export component Section inherits Rectangle {
+    accessible-role: region;
+    accessible-label: root.title;
     in property <string> title;
     vertical-stretch: 0;
     horizontal-stretch: 1;
@@ -72,10 +74,13 @@ export component Section inherits Rectangle {
 /// A card of settings with an optional title.
 export component TitledCard inherits VerticalLayout {
     in property <string> title;
+    in property <string> accessible-name: root.title;
     vertical-stretch: 0;
     horizontal-stretch: 1;
     max-width: Theme.unbounded;
     Card {
+        accessible-role: groupbox;
+        accessible-label: root.accessible-name;
         VerticalLayout {
             padding: Theme.space-xl;
             spacing: Theme.space-l;
@@ -108,6 +113,7 @@ export component CardHeader inherits HorizontalLayout {
 
 /// Root layout of a settings page; the window provides the outer padding.
 export component PageLayout inherits VerticalLayout {
+    accessible-role: main;
     padding: 0px;
     spacing: Theme.page-gap;
     vertical-stretch: 1;

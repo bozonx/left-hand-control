@@ -5,7 +5,7 @@ use crate::{
     i18n::Msg,
     ui::{Message, NotificationCenter, SettingsWindow, ToastItem, ToastKind},
 };
-use slint::{ComponentHandle, ModelRc, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{
     cell::RefCell,
     collections::VecDeque,
@@ -18,7 +18,7 @@ const EXPIRY_TICK: Duration = Duration::from_millis(100);
 
 const VISIBLE: usize = 4;
 
-/// How long each kind of notification stays on screen.
+/// Success expiry and deduplication windows; problems require dismissal.
 const SHORT: Duration = Duration::from_secs(2);
 const SUCCESS: Duration = Duration::from_secs(3);
 const WARNING: Duration = Duration::from_secs(6);
@@ -142,7 +142,9 @@ impl Queue {
             return false;
         }
         for entry in self.entries.iter_mut().take(VISIBLE) {
-            entry.remaining = entry.remaining.saturating_sub(elapsed);
+            if entry.item.kind == ToastKind::Success {
+                entry.remaining = entry.remaining.saturating_sub(elapsed);
+            }
         }
         let old = self.entries.len();
         self.entries.retain(|entry| !entry.remaining.is_zero());
@@ -161,6 +163,28 @@ impl Queue {
                 .map(|entry| entry.item.clone())
                 .collect::<Vec<_>>(),
         ))
+    }
+}
+
+// Keep surviving rows alive so an arriving/expired toast cannot destroy keyboard focus.
+fn publish_items(ui: &SettingsWindow, items: ModelRc<ToastItem>) {
+    let center = ui.global::<NotificationCenter>();
+    let current = center.get_items();
+    let Some(model) = current.as_any().downcast_ref::<VecModel<ToastItem>>() else {
+        center.set_items(items);
+        return;
+    };
+    for index in (0..model.row_count()).rev() {
+        if let Some(old) = model.row_data(index)
+            && !items.iter().any(|item| item.token == old.token)
+        {
+            model.remove(index);
+        }
+    }
+    for item in items.iter() {
+        if !model.iter().any(|old| old.token == item.token) {
+            model.push(item);
+        }
     }
 }
 
@@ -219,7 +243,7 @@ pub(crate) fn bind(ui: &SettingsWindow) {
                     .then(|| state.queue.items())
             };
             if let Some(items) = items {
-                ui.global::<NotificationCenter>().set_items(items);
+                publish_items(&ui, items);
             }
         };
         if backend {
@@ -237,7 +261,8 @@ pub(crate) fn bind(ui: &SettingsWindow) {
             state.queue.dismiss(token);
             state.queue.items()
         };
-        ui.global::<NotificationCenter>().set_items(items);
+        ui.global::<NotificationCenter>().set_focused_token(0);
+        publish_items(&ui, items);
     });
     let shared = state.clone();
     center.on_hover(move |hovered| {
@@ -257,11 +282,13 @@ pub(crate) fn bind(ui: &SettingsWindow) {
                 let now = Instant::now();
                 let elapsed = now.saturating_duration_since(state.last_tick);
                 state.last_tick = now;
-                (ui.window().is_visible() && state.queue.advance(elapsed))
-                    .then(|| state.queue.items())
+                (ui.window().is_visible()
+                    && !ui.global::<NotificationCenter>().get_focused()
+                    && state.queue.advance(elapsed))
+                .then(|| state.queue.items())
             };
             if let Some(items) = items {
-                ui.global::<NotificationCenter>().set_items(items);
+                publish_items(&ui, items);
             }
         });
 }
@@ -313,7 +340,19 @@ mod tests {
         queue.paused = false;
         assert!(queue.advance(Duration::from_secs(2)));
         assert_eq!(queue.entries.len(), 1);
-        assert!(queue.advance(Duration::from_secs(8)));
+        assert!(!queue.advance(Duration::from_secs(80)));
+        assert_eq!(queue.entries.len(), 1);
+        queue.dismiss(queue.entries[0].item.token);
+        assert!(queue.entries.is_empty());
+    }
+
+    #[test]
+    fn warnings_require_dismissal() {
+        let mut queue = Queue::default();
+        queue.add(Msg::ConfigEditConflict.to_ui(), false);
+        assert!(!queue.advance(Duration::from_secs(3600)));
+        assert_eq!(queue.entries.len(), 1);
+        queue.dismiss(queue.entries[0].item.token);
         assert!(queue.entries.is_empty());
     }
 

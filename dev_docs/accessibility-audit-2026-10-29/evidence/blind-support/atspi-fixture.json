@@ -1,0 +1,160 @@
+{
+  "spinbox": {
+    "name": "Fixture number",
+    "role": "spin button",
+    "text": "20",
+    "characters": 2
+  },
+  "tab": {
+    "name": "Fixture tab",
+    "selected": true
+  },
+  "nodes": [
+    {
+      "role": "frame",
+      "name": "LHC accessibility fixture",
+      "states": [
+        "active",
+        "enabled",
+        "focusable",
+        "focused",
+        "sensitive",
+        "showing",
+        "visible"
+      ]
+    },
+    {
+      "role": "landmark",
+      "name": "Fixture section",
+      "states": [
+        "enabled",
+        "sensitive",
+        "showing",
+        "visible"
+      ]
+    },
+    {
+      "role": "label",
+      "name": "Fixture section",
+      "states": [
+        "enabled",
+        "sensitive",
+        "showing",
+        "visible"
+      ]
+    },
+    {
+      "role": "spin button",
+      "name": "Fixture number",
+      "states": [
+        "editable",
+        "enabled",
+        "focusable",
+        "sensitive",
+        "showing",
+        "single-line",
+        "visible",
+        "selectable-text"
+      ]
+    },
+    {
+      "role": "button",
+      "name": "Fixture name",
+      "states": [
+        "enabled",
+        "focusable",
+        "sensitive",
+        "showing",
+        "visible"
+      ]
+    },
+    {
+      "role": "label",
+      "name": "Original",
+      "states": [
+        "enabled",
+        "sensitive",
+        "showing",
+        "visible"
+      ]
+    },
+    {
+      "role": "radio button",
+      "name": "First",
+      "states": [
+        "checked",
+        "enabled",
+        "sensitive",
+        "showing",
+        "visible",
+        "checkable"
+      ]
+    },
+    {
+      "role": "radio button",
+      "name": "First",
+      "states": [
+        "checked",
+        "enabled",
+        "sensitive",
+        "showing",
+        "visible",
+        "checkable"
+      ]
+    },
+    {
+      "role": "label",
+      "name": "First",
+      "states": [
+        "enabled",
+        "sensitive",
+        "showing",
+        "visible"
+      ]
+    },
+    {
+      "role": "radio button",
+      "name": "Second",
+      "states": [
+        "enabled",
+        "sensitive",
+        "showing",
+        "visible",
+        "checkable"
+      ]
+    },
+    {
+      "role": "label",
+      "name": "Second",
+      "states": [
+        "enabled",
+        "sensitive",
+        "showing",
+        "visible"
+      ]
+    },
+    {
+      "role": "page tab",
+      "name": "Fixture tab",
+      "states": [
+        "enabled",
+        "focusable",
+        "selectable",
+        "selected",
+        "sensitive",
+        "showing",
+        "visible"
+      ]
+    },
+    {
+      "role": "label",
+      "name": "Fixture tab",
+      "states": [
+        "enabled",
+        "sensitive",
+        "showing",
+        "visible"
+      ]
+    }
+  ]
+}

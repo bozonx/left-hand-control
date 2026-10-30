@@ -487,6 +487,7 @@ component SetupStep inherits HorizontalLayout {
 }
 
 export component LibraryPage inherits PageLayout {
+    accessible-label: @tr("Layouts");
     // The first-run card covers the missing keyboard itself; the warning is for an
     // existing setup that lost its device.
     if !AppState.keyboard-selected && LayoutLibrary.names.length > 0: Rectangle {
@@ -566,6 +567,10 @@ export component LibraryPage inherits PageLayout {
                 vertical-stretch: 1;
                 PageContent { spacing: 0px;
                     for row[index] in LayoutLibrary.rows: card := Rectangle {
+                        accessible-role: groupbox;
+                        accessible-label: row.name;
+                        accessible-item-index: index;
+                        accessible-item-count: LayoutLibrary.rows.length;
                         property <string> name: row.name;
                         property <bool> active: LayoutLibrary.active-label == name;
                         property <bool> current: LayoutLibrary.editor-open && LayoutLibrary.current-label == name;
@@ -620,7 +625,7 @@ export component LibraryPage inherits PageLayout {
                                     Rectangle {
                                         width: 44px; height: Theme.control-height-l;
                                         Button {
-                                            width: parent.width; height: parent.height; text: "…";
+                                            width: parent.width; height: parent.height; text: "…"; accessible-label: @tr("Actions") + ": " + name;
                                             clicked => { LayoutLibrary.select(index); more-menu.show(); }
                                         }
                                         more-menu := PopupWindow {
@@ -676,7 +681,7 @@ export component LibraryDialogOverlay inherits Rectangle {
                 accepted => { LayoutLibrary.submit-create(); }
             }
             Text { text: @tr("Description (optional)"); color: Theme.text; }
-            TextEdit { text <=> LayoutLibrary.create-description; height: 120px; }
+            TextEdit { text <=> LayoutLibrary.create-description; accessible-label: @tr("Description"); height: 120px; }
         }
         if LayoutLibrary.dialog == LibraryDialog.rule: ScrollView {
             viewport-width: self.visible-width;
@@ -702,7 +707,7 @@ export component LibraryDialogOverlay inherits Rectangle {
                 : @tr("“{}” has unsaved changes. Save them before switching?", LayoutLibrary.current-label);
             color: Theme.text; wrap: word-wrap;
         }
-        if LayoutLibrary.status.id != "" && LayoutLibrary.status.id != "library-saved": Text { text: Locale.text(LayoutLibrary.status); color: Theme.error; wrap: word-wrap; }
+        if LayoutLibrary.status.id != "" && LayoutLibrary.status.id != "library-saved": Text { accessible-live-region: polite; text: Locale.text(LayoutLibrary.status); color: Theme.error; wrap: word-wrap; }
         if LayoutLibrary.dialog != LibraryDialog.rule: Rectangle { vertical-stretch: 1; }
         HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m;
             if LayoutLibrary.dialog == LibraryDialog.rule && LayoutLibrary.rule-index >= 0: Button {
@@ -750,7 +755,7 @@ export component LibraryDialogOverlay inherits Rectangle {
             error: LayoutLibrary.name-error(LayoutLibrary.save-as-name, "");
             accepted => { if LayoutLibrary.name-error(LayoutLibrary.save-as-name, "").id == "" { LayoutLibrary.save-as(LayoutLibrary.save-as-name); } }
         }
-        Text { text: Locale.text(LayoutLibrary.status); color: Theme.error; wrap: word-wrap; }
+        Text { accessible-live-region: polite; text: Locale.text(LayoutLibrary.status); color: Theme.error; wrap: word-wrap; }
         HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m; vertical-stretch: 0;
             Rectangle { horizontal-stretch: 1; }
             Button { text: @tr("Cancel"); clicked => { LayoutLibrary.save-as-open = false; } }

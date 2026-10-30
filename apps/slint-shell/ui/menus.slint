@@ -57,6 +57,8 @@ export global MenuEditor {
 
 /// 5×3 grid of the left-hand hotkeys; click selects, drag moves a cell.
 component HotkeyGrid inherits Rectangle {
+    accessible-role: groupbox;
+    accessible-label: root.emoji ? @tr("Emoji") : @tr("Quick actions");
     in property <bool> emoji;
     in property <length> cell-height: 96px;
     callback activate(int);
@@ -136,6 +138,10 @@ component HotkeyGrid inherits Rectangle {
         opacity: root.dragging && root.source-page == MenuEditor.selected-page && index == root.drag-from ? Theme.dragged-opacity : 1.0;
         accessible-role: button;
         accessible-label: cell.key + " " + (root.emoji ? cell.value : cell.name);
+        accessible-item-index: index;
+        accessible-item-count: MenuEditor.cells.length;
+        accessible-item-selectable: true;
+        accessible-item-selected: index == MenuEditor.selected-cell;
         accessible-value: cell.value;
         accessible-action-default => { root.activate(index); }
         VerticalLayout {
@@ -377,6 +383,8 @@ component EmojiButton inherits Rectangle {
 }
 
 export component EmojiPage inherits Rectangle {
+    accessible-role: main;
+    accessible-label: @tr("Emoji");
     vertical-stretch: 1;
     private property <bool> confirming;
     // Library snippets are literal insertion text, independent of the UI language.
@@ -424,13 +432,13 @@ export component EmojiPage inherits Rectangle {
                         spacing: Theme.space-xs;
                         TextField {
                             text <=> MenuEditor.value;
-                            placeholder-text: @tr("Emoji, symbol, or any text");
+                            placeholder-text: @tr("Emoji, symbol, or any text"); accessible-label: @tr("Emoji, symbol, or any text");
                             edited => { MenuEditor.set-cell(); }
                         }
                         VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/eraser.svg"); label: @tr("Clear cell"); clicked => { MenuEditor.clear-cell(); } } }
                         InfoTip { text: @tr("You can enter emoji, any text, or Unicode symbols here. Drag an item from the palette onto a key to assign it."); }
                     }
-                    if MenuEditor.status.id != "": Text { text: Locale.text(MenuEditor.status); color: Theme.error; wrap: word-wrap; }
+                    if MenuEditor.status.id != "": Text { accessible-live-region: polite; text: Locale.text(MenuEditor.status); color: Theme.error; wrap: word-wrap; }
                     FieldLabel { text: @tr("Examples"); }
                     ScrollView {
                         min-height: 0px;
@@ -499,6 +507,7 @@ export component QuickActionsPage inherits Rectangle {
     private property <bool> confirming;
     private property <bool> filled: MenuEditor.selected-cell >= 0 && MenuEditor.cells[MenuEditor.selected-cell].value != "";
     PageLayout {
+        accessible-label: @tr("Quick actions");
         PageHeader {
             title: @tr("Quick Actions");
             info: @tr("Opened by the app:showQuickMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold any action: a shortcut, macro, shell command or system action.") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number.");
@@ -541,7 +550,7 @@ export component QuickActionsPage inherits Rectangle {
                                     alignment: start;
                                     PageEditor { remove => { root.confirming = true; } }
                                     Divider {}
-                                    if MenuEditor.status.id != "": Text { text: Locale.text(MenuEditor.status); color: Theme.error; wrap: word-wrap; }
+                                    if MenuEditor.status.id != "": Text { accessible-live-region: polite; text: Locale.text(MenuEditor.status); color: Theme.error; wrap: word-wrap; }
                                     if MenuEditor.selected-cell >= 0: HorizontalLayout {
                                         FieldLabel { text: @tr("Button {}", MenuEditor.cells[MenuEditor.selected-cell].key); vertical-alignment: center; }
                                         Rectangle { horizontal-stretch: 1; }
@@ -550,7 +559,7 @@ export component QuickActionsPage inherits Rectangle {
                                     if root.filled: VerticalLayout {
                                         spacing: Theme.space-xs;
                                         FieldLabel { text: @tr("Label"); }
-                                        TextField { text <=> MenuEditor.name; placeholder-text: @tr("e.g. Next Track"); edited => { MenuEditor.set-name(); } }
+                                        TextField { text <=> MenuEditor.name; placeholder-text: @tr("e.g. Next Track"); accessible-label: @tr("Name"); edited => { MenuEditor.set-name(); } }
                                     }
                                     if MenuEditor.selected-cell >= 0: VerticalLayout {
                                         spacing: Theme.space-xs;

@@ -128,6 +128,7 @@ component ExtraKeyLine inherits TouchArea {
                 alignment: center;
                 DragHandle {
                     opacity: root.has-hover || self.has-focus || (DragDrop.group == DragGroups.extra-keys && DragDrop.source == root.index) ? 1 : 0;
+                    accessible-description: root.item.key + ". Alt+↑ / Alt+↓";
                     group: DragGroups.extra-keys; index: root.index; count: LayersEditor.extras.length;
                     dropped(from, to) => { LayersEditor.reorder-extra(from, to); }
                 }
@@ -140,6 +141,7 @@ component ExtraKeyLine inherits TouchArea {
                     opacity: root.has-hover || self.has-focus ? 1 : 0;
                     icon: @image-url("icons/trash-2.svg");
                     tooltip: @tr("Remove trigger");
+                    accessible-label: @tr("Remove trigger") + ": " + root.item.key;
                     clicked => { LayersEditor.delete-extra = root.index; }
                 }
             }
@@ -164,7 +166,7 @@ component KeyCap inherits Rectangle {
     background: root.drop-over ? Theme.hover : Theme.surface;
     opacity: root.dragged ? Theme.dragged-opacity : 1;
     accessible-role: button;
-    accessible-label: root.cell.label;
+    accessible-label: root.cell.label + " (" + root.cell.code + ")";
     accessible-value: root.cell.code;
     accessible-description: root.cell.kind == Assignment.transparent ? @tr("Inherit") : root.cell.kind == Assignment.swallow ? @tr("Suppress") : root.cell.holds ? root.cell.action + ". " + @tr("Keep modifiers held until the layer is released") : root.cell.action;
     accessible-action-default => { root.clicked(); }
@@ -213,6 +215,8 @@ component KeyCap inherits Rectangle {
 }
 
 component HandGrid inherits VerticalLayout {
+    accessible-role: groupbox;
+    accessible-label: root.title;
     in property <string> title;
     in property <[LayerKeyCell]> cells;
     in property <int> columns;
@@ -252,6 +256,8 @@ component HandGrid inherits VerticalLayout {
             if root.cells[row * root.columns + col].index >= 0: KeyCap {
                 width: parent.width;
                 height: parent.height;
+                accessible-item-index: row * root.columns + col;
+                accessible-item-count: root.cells.length;
                 cell: root.cells[row * root.columns + col];
                 label-mode: root.label-mode;
                 drop-target: root.drop-target;
@@ -263,18 +269,21 @@ component HandGrid inherits VerticalLayout {
 }
 
 export component LayersPage inherits PageLayout {
+    accessible-label: @tr("Layers");
     in-out property <LabelMode> label-mode <=> LayersEditor.label-mode;
     HorizontalLayout {
         padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
-        ScrollView { height: 52px; viewport-height: self.visible-height; vertical-scrollbar-policy: always-off; horizontal-scrollbar-policy: as-needed; drag-scroll: true;
+        ScrollView { accessible-role: tab-list; accessible-label: @tr("Layers"); height: 52px; viewport-height: self.visible-height; vertical-scrollbar-policy: always-off; horizontal-scrollbar-policy: as-needed; drag-scroll: true;
             HorizontalLayout { spacing: Theme.space-s; alignment: start;
                 for name[index] in LayersEditor.names: Rectangle {
                     height: Theme.control-height-l; border-radius: Theme.radius; border-width: 1px;
                     border-color: layer-focus.has-focus ? Theme.focus : Theme.border;
                     background: index == LayersEditor.selected ? Theme.selected : layer-drag.has-hover ? Theme.hover : Theme.card;
                     opacity: layer-drag.dragged ? Theme.dragged-opacity : 1;
-                    accessible-role: button;
+                    accessible-role: tab;
                     accessible-label: name;
+                    accessible-item-selectable: true;
+                    accessible-item-selected: LayersEditor.selected == index;
                     accessible-action-default => { LayersEditor.choose(index); }
                     HorizontalLayout {
                         padding-left: Theme.space-l; padding-right: Theme.space-l;
@@ -333,7 +342,7 @@ export component LayersPage inherits PageLayout {
                         Rectangle {
                             width: 36px; height: Theme.control-height;
                             Button {
-                                width: parent.width; height: parent.height; text: "…";
+                                width: parent.width; height: parent.height; text: "…"; accessible-label: @tr("Actions") + ": " + (LayersEditor.selected >= 0 ? LayersEditor.names[LayersEditor.selected] : "");
                                 enabled: LayersEditor.selected >= 0;
                                 clicked => { layer-menu.show(); }
                             }
@@ -490,7 +499,7 @@ export component LayerDialogOverlay inherits FocusScope {
                 accepted => { if LayersEditor.name-error(LayersEditor.dialog-name, false).id == "" { LayersEditor.apply-dialog(); } }
             }
             Text { text: @tr("Description"); color: Theme.text; }
-            TextEdit { text <=> LayersEditor.dialog-description; height: 100px; }
+            TextEdit { text <=> LayersEditor.dialog-description; accessible-label: @tr("Layer description"); height: 100px; }
         }
         if LayersEditor.dialog == LayerDialog.edit-key: VerticalLayout { padding: Theme.space-m; spacing: Theme.space-m;
             Text { text: @tr("Behavior"); color: Theme.muted; }
@@ -506,12 +515,12 @@ export component LayerDialogOverlay inherits FocusScope {
                 padding: 0px; spacing: Theme.space-xs; vertical-stretch: 0;
                 Text { text: @tr("Action"); color: Theme.text; }
                 HorizontalLayout { padding: Theme.space-m; vertical-stretch: 0; spacing: Theme.space-m;
-                    TextField { text <=> LayersEditor.dialog-action; placeholder-text: @tr("Action code"); horizontal-stretch: 1; }
+                    TextField { text <=> LayersEditor.dialog-action; placeholder-text: @tr("Action code"); accessible-label: @tr("Action code"); horizontal-stretch: 1; }
                     Button { text: @tr("Choose action"); clicked => { ActionPicker.open(PickerTarget.layer-action, 0, LayersEditor.dialog-action, false); } }
                 }
             }
         }
-        Text { text: Locale.text(LayersEditor.status); color: Theme.error; wrap: word-wrap; }
+        Text { accessible-live-region: polite; text: Locale.text(LayersEditor.status); color: Theme.error; wrap: word-wrap; }
         Rectangle { vertical-stretch: 1; }
         HorizontalLayout { padding: Theme.space-m; vertical-stretch: 0; spacing: Theme.space-m;
             Rectangle { horizontal-stretch: 1; }
