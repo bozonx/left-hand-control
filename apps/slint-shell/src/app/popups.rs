@@ -257,6 +257,9 @@ impl App {
                     if let Err(error) = app.focus.borrow_mut().activate(&native, token.as_deref()) {
                         log::warn!("activation: {error}");
                     }
+                    if window == Window::Settings {
+                        app.fit_settings();
+                    }
                 }
                 Err(error) => log::warn!("native window: {error}"),
             }
@@ -457,6 +460,10 @@ fn observe(app: &Rc<App>, window: Window) {
                 }
                 WindowEvent::ThemeChanged(_) if window == Window::Settings => {
                     app.apply_preferences()
+                }
+                // Slint keeps the logical size, so a larger scale can push the window off screen.
+                WindowEvent::ScaleFactorChanged { .. } if window == Window::Settings => {
+                    super::post(|app| app.fit_settings())
                 }
                 _ => {}
             }

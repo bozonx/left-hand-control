@@ -1,0 +1,7 @@
+editor exit=0
+layer-keys exit=0
+library exit=0
+small-window exit=0
+small-window (release UI) exit=0
+interactions exit=0
+first run: interactions exit=101 (hard-coded header click at x=170 after compact header; test switched to accessible names)

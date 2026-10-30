@@ -32,6 +32,13 @@ export component SettingsWindow inherits Window {
     min-width: root.min-window-width;
     max-width: Theme.unbounded;
     min-height: root.min-window-height;
+    /// Header buttons show icons only in a narrow window; development builds have extra header controls.
+    /// Set on resize rather than bound: the header's size feeds back into the window's layout.
+    property <length> compact-below: AppState.in-development ? 1000px : 860px;
+    property <bool> compact-header;
+    init => { root.compact-header = root.width < root.compact-below; }
+    changed width => { root.compact-header = root.width < root.compact-below; }
+    changed compact-below => { root.compact-header = root.width < root.compact-below; }
     in-out property <Page> page: Page.layouts;
     forward-focus: shortcut-focus;
     private property <string> test-text;
@@ -134,15 +141,15 @@ export component SettingsWindow inherits Window {
                 HorizontalLayout {
                     accessible-role: tab-list; accessible-label: @tr("Settings");
                     padding-left: Theme.space-xl; padding-right: Theme.space-xl; padding-top: Theme.space-m; padding-bottom: Theme.space-m; spacing: Theme.space-m;
-                    VerticalLayout { alignment: center; layouts-navigation := NavButton { icon: @image-url("icons/keyboard.svg"); text: @tr("Layouts"); selected: root.page == Page.layouts; clicked => { root.navigate(Page.layouts, MenuKind.emoji); } } }
-                    VerticalLayout { alignment: center; settings-navigation := NavButton { icon: @image-url("icons/settings-2.svg"); text: @tr("Settings"); selected: root.page == Page.settings; clicked => { root.navigate(Page.settings, MenuKind.emoji); } } }
+                    VerticalLayout { alignment: center; layouts-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/keyboard.svg"); text: @tr("Layouts"); selected: root.page == Page.layouts; clicked => { root.navigate(Page.layouts, MenuKind.emoji); } } }
+                    VerticalLayout { alignment: center; settings-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/settings-2.svg"); text: @tr("Settings"); selected: root.page == Page.settings; clicked => { root.navigate(Page.settings, MenuKind.emoji); } } }
                     Rectangle {
                         horizontal-stretch: 1;
-                        min-width: 120px;
+                        min-width: root.compact-header ? 0px : 120px;
                         HorizontalLayout {
                             alignment: center;
                             spacing: Theme.space-xs;
-                            if AppState.in-development: TextField { clearable: true; preferred-width: 200px; min-width: 120px; max-width: 200px; horizontal-stretch: 1; text <=> root.test-text; placeholder-text: @tr("Type to test..."); accessible-label: @tr("Type to test..."); }
+                            if AppState.in-development && !root.compact-header: TextField { clearable: true; preferred-width: 200px; min-width: 120px; max-width: 200px; horizontal-stretch: 1; text <=> root.test-text; placeholder-text: @tr("Type to test..."); accessible-label: @tr("Type to test..."); }
                         }
                     }
                     if AppState.in-development: VerticalLayout { alignment: center; Badge {
@@ -166,7 +173,7 @@ export component SettingsWindow inherits Window {
                             }
                         }
                         Rectangle { border-width: active-focus.has-focus ? 2px : 0px; border-color: Theme.focus; border-radius: Theme.radius; }
-                        width: 180px; height: Theme.control-height-l; border-radius: Theme.radius; background: Theme.surface; border-width: 1px; border-color: Theme.border;
+                        width: root.compact-header ? 150px : 180px; height: Theme.control-height-l; border-radius: Theme.radius; background: Theme.surface; border-width: 1px; border-color: Theme.border;
                         HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-s;
                             Image { width: 14px; source: @image-url("icons/keyboard.svg"); colorize: Theme.muted; }
                             Text { accessible-live-region: polite; text: LayoutLibrary.active-label == "" ? @tr("No active layout") : @tr("Active: {}", LayoutLibrary.active-label); color: Theme.text; overflow: elide; vertical-alignment: center; }
@@ -177,6 +184,7 @@ export component SettingsWindow inherits Window {
                     }
                     Rectangle { width: 1px; background: Theme.divider; }
                     VerticalLayout { alignment: center; MapperToggle {
+                        compact: root.compact-header;
                         text: AppState.mapper-busy ? @tr("Please wait…") : AppState.mapper-running ? @tr("Stop") : @tr("Start");
                         running: AppState.mapper-running;
                         busy: AppState.mapper-busy;

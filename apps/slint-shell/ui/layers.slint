@@ -491,37 +491,42 @@ export component LayerDialogOverlay inherits FocusScope {
             : @tr("Edit layer key");
         card-height: 500px;
         close => { LayersEditor.dialog = LayerDialog.none; }
-        if LayersEditor.dialog == LayerDialog.create || LayersEditor.dialog == LayerDialog.duplicate: VerticalLayout { padding: Theme.space-m; spacing: Theme.space-m;
-            FormField {
-                label: @tr("Name"); autofocus: true;
-                text <=> LayersEditor.dialog-name;
-                error: LayersEditor.name-error(LayersEditor.dialog-name, false);
-                accepted => { if LayersEditor.name-error(LayersEditor.dialog-name, false).id == "" { LayersEditor.apply-dialog(); } }
-            }
-            Text { text: @tr("Description"); color: Theme.text; }
-            TextEdit { text <=> LayersEditor.dialog-description; accessible-label: @tr("Layer description"); height: 100px; }
-        }
-        if LayersEditor.dialog == LayerDialog.edit-key: VerticalLayout { padding: Theme.space-m; spacing: Theme.space-m;
-            Text { text: @tr("Behavior"); color: Theme.muted; }
-            HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m;
-                Button { text: @tr("Inherit"); primary: LayersEditor.assignment == Assignment.transparent; clicked => { LayersEditor.assignment = Assignment.transparent; } }
-                Button { text: @tr("Suppress"); primary: LayersEditor.assignment == Assignment.swallow; clicked => { LayersEditor.assignment = Assignment.swallow; } }
-                Button { text: @tr("Perform action"); primary: LayersEditor.assignment == Assignment.action; clicked => { LayersEditor.assignment = Assignment.action; } }
-            }
-            if LayersEditor.assignment != Assignment.action: Text {
-                text: LayersEditor.assignment == Assignment.swallow ? @tr("The key will not reach the application.") : @tr("Use the assignment from the lower layer or base layout."); color: Theme.muted; wrap: word-wrap;
-            }
-            if LayersEditor.assignment == Assignment.action: VerticalLayout {
-                padding: 0px; spacing: Theme.space-xs; vertical-stretch: 0;
-                Text { text: @tr("Action"); color: Theme.text; }
-                HorizontalLayout { padding: Theme.space-m; vertical-stretch: 0; spacing: Theme.space-m;
-                    TextField { text <=> LayersEditor.dialog-action; placeholder-text: @tr("Action code"); accessible-label: @tr("Action code"); horizontal-stretch: 1; }
-                    Button { text: @tr("Choose action"); clicked => { ActionPicker.open(PickerTarget.layer-action, 0, LayersEditor.dialog-action, false); } }
+        // The form scrolls in a short window; the buttons stay visible.
+        ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
+            preferred-height: layer-form.preferred-height;
+            layer-form := VerticalLayout { alignment: start;
+                if LayersEditor.dialog == LayerDialog.create || LayersEditor.dialog == LayerDialog.duplicate: VerticalLayout { padding: Theme.space-m; spacing: Theme.space-m;
+                    FormField {
+                        label: @tr("Name"); autofocus: true;
+                        text <=> LayersEditor.dialog-name;
+                        error: LayersEditor.name-error(LayersEditor.dialog-name, false);
+                        accepted => { if LayersEditor.name-error(LayersEditor.dialog-name, false).id == "" { LayersEditor.apply-dialog(); } }
+                    }
+                    Text { text: @tr("Description"); color: Theme.text; }
+                    TextEdit { text <=> LayersEditor.dialog-description; accessible-label: @tr("Layer description"); height: 100px; }
                 }
+                if LayersEditor.dialog == LayerDialog.edit-key: VerticalLayout { padding: Theme.space-m; spacing: Theme.space-m;
+                    Text { text: @tr("Behavior"); color: Theme.muted; }
+                    HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m;
+                        Button { text: @tr("Inherit"); primary: LayersEditor.assignment == Assignment.transparent; clicked => { LayersEditor.assignment = Assignment.transparent; } }
+                        Button { text: @tr("Suppress"); primary: LayersEditor.assignment == Assignment.swallow; clicked => { LayersEditor.assignment = Assignment.swallow; } }
+                        Button { text: @tr("Perform action"); primary: LayersEditor.assignment == Assignment.action; clicked => { LayersEditor.assignment = Assignment.action; } }
+                    }
+                    if LayersEditor.assignment != Assignment.action: Text {
+                        text: LayersEditor.assignment == Assignment.swallow ? @tr("The key will not reach the application.") : @tr("Use the assignment from the lower layer or base layout."); color: Theme.muted; wrap: word-wrap;
+                    }
+                    if LayersEditor.assignment == Assignment.action: VerticalLayout {
+                        padding: 0px; spacing: Theme.space-xs; vertical-stretch: 0;
+                        Text { text: @tr("Action"); color: Theme.text; }
+                        HorizontalLayout { padding: Theme.space-m; vertical-stretch: 0; spacing: Theme.space-m;
+                            TextField { text <=> LayersEditor.dialog-action; placeholder-text: @tr("Action code"); accessible-label: @tr("Action code"); horizontal-stretch: 1; }
+                            Button { text: @tr("Choose action"); clicked => { ActionPicker.open(PickerTarget.layer-action, 0, LayersEditor.dialog-action, false); } }
+                        }
+                    }
+                }
+                Text { accessible-live-region: polite; text: Locale.text(LayersEditor.status); color: Theme.error; wrap: word-wrap; }
             }
         }
-        Text { accessible-live-region: polite; text: Locale.text(LayersEditor.status); color: Theme.error; wrap: word-wrap; }
-        Rectangle { vertical-stretch: 1; }
         HorizontalLayout { padding: Theme.space-m; vertical-stretch: 0; spacing: Theme.space-m;
             Rectangle { horizontal-stretch: 1; }
             Button { text: @tr("Cancel"); clicked => { LayersEditor.dialog = LayerDialog.none; } }

@@ -8,6 +8,7 @@
 mod layer_hint;
 mod mapper;
 mod popups;
+mod window_fit;
 mod worker;
 
 use crate::{
@@ -87,6 +88,15 @@ fn unsupported_on_macos(action: &str) -> bool {
 }
 
 impl App {
+    /// Shrink the settings window when it is larger than its screen.
+    fn fit_settings(&self) {
+        let min = slint::LogicalSize::new(
+            self.settings.get_min_window_width(),
+            self.settings.get_min_window_height(),
+        );
+        window_fit::fit_to_screen(self.settings.window(), min);
+    }
+
     fn document(&self) -> Option<Rc<Document>> {
         self.document.borrow().clone()
     }

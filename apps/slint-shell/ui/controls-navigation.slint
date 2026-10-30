@@ -1,4 +1,5 @@
 import { Theme } from "theme.slint";
+import { TooltipText } from "controls-base.slint";
 
 /// Document tab with an accent underline; `icon` is optional.
 export component NavTab inherits Rectangle {
@@ -57,6 +58,8 @@ export component NavButton inherits Rectangle {
     in property <image> icon;
     in property <string> text;
     in property <bool> selected;
+    /// Icon only; the text moves to the tooltip. Used when the window is narrow.
+    in property <bool> compact;
     callback clicked();
     height: 34px;
     horizontal-stretch: 0;
@@ -77,7 +80,7 @@ export component NavButton inherits Rectangle {
             alignment: center;
             Image { width: 16px; height: 16px; source: root.icon; colorize: root.selected ? Theme.accent : Theme.muted; }
         }
-        Text { text: root.text; color: root.selected ? Theme.text : Theme.muted; font-weight: Theme.weight-semibold; vertical-alignment: center; }
+        if !root.compact: Text { text: root.text; color: root.selected ? Theme.text : Theme.muted; font-weight: Theme.weight-semibold; vertical-alignment: center; }
     }
     focus := FocusScope {
         key-pressed(event) => {
@@ -86,4 +89,5 @@ export component NavButton inherits Rectangle {
         }
     }
     touch := TouchArea { mouse-cursor: pointer; clicked => { focus.focus(); root.clicked(); } }
+    if root.compact: Tooltip { TooltipText { text: root.text; } }
 }

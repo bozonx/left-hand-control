@@ -54,7 +54,7 @@ cargo run --locked -p slint-shell --example editor -- --smoke   # key editor, la
 cargo run --locked -p slint-shell --example interactions        # settings, save, navigation, theme, language
 ```
 
-Page examples: `action-picker`, `conditions`, `library`, `macros`, `menus`, `undo-redo`, `inline-edit`, `drag-scroll`, `notifications`, `layer-keys`. Benchmarks and diagnostic stands (`bench-*`, `probes` feature, `scripts/bench`, `scripts/check`) are described in `apps/slint-shell/README.md`.
+Page examples: `action-picker`, `conditions`, `library`, `macros`, `menus`, `undo-redo`, `inline-edit`, `drag-scroll`, `notifications`, `layer-keys`, `small-window` (pages and dialogs at the minimum window size). Benchmarks and diagnostic stands (`bench-*`, `probes` feature, `scripts/bench`, `scripts/check`) are described in `apps/slint-shell/README.md`.
 
 ### Mapper e2e and releases
 

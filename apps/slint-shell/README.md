@@ -287,7 +287,7 @@ SLINT_BACKEND=winit-software \
 | Назначение | Примеры |
 | --- | --- |
 | Общая проверка UI | `editor -- --smoke`, `interactions` |
-| Страницы и диалоги | `action-picker`, `library`, `macros`, `menus`, `conditions`, `layer-keys` |
+| Страницы и диалоги | `action-picker`, `library`, `macros`, `menus`, `conditions`, `layer-keys`, `small-window` |
 | Общие контролы | `undo-redo`, `inline-edit`, `drag-scroll`, `notifications` |
 | Измерение ввода и возврата фокуса | `bench-evdev` (feature `spell`), `bench-return` (feature `probes`) |
 | Вспомогательные окна и диагностика | `window-fixture`, `panel-fixture` (feature `spell`), `focus-window`, `inspect-geometry` (feature `probes`) |

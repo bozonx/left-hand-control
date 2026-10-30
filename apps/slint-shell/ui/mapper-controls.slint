@@ -9,10 +9,12 @@ export component MapperToggle inherits Rectangle {
     in property <string> text;
     in property <string> tooltip;
     in property <bool> enabled: true;
+    /// Round puck only; the text moves to the tooltip. Used when the window is narrow.
+    in property <bool> compact;
     callback toggled();
     height: Theme.control-height-l;
     horizontal-stretch: 0;
-    min-width: max(132px, row.preferred-width);
+    min-width: root.compact ? row.preferred-width : max(132px, row.preferred-width);
     border-radius: self.height / 2;
     background: root.running
         ? Theme.success.transparentize(touch.has-hover ? 0.78 : 0.86)
@@ -27,7 +29,7 @@ export component MapperToggle inherits Rectangle {
     accessible-enabled: root.enabled && !root.busy;
     accessible-action-default => { if root.enabled && !root.busy { root.toggled(); } }
     row := HorizontalLayout {
-        padding-left: Theme.space-xs; padding-right: Theme.space-xl;
+        padding-left: Theme.space-xs; padding-right: root.compact ? Theme.space-xs : Theme.space-xl;
         spacing: Theme.space-m;
         VerticalLayout {
             alignment: center;
@@ -44,7 +46,7 @@ export component MapperToggle inherits Rectangle {
                 }
             }
         }
-        Text { text: root.text; color: Theme.text; font-weight: Theme.weight-semibold; vertical-alignment: center; }
+        if !root.compact: Text { text: root.text; color: Theme.text; font-weight: Theme.weight-semibold; vertical-alignment: center; }
     }
     focus := FocusScope {
         enabled: root.enabled && !root.busy;
@@ -58,5 +60,5 @@ export component MapperToggle inherits Rectangle {
         mouse-cursor: root.enabled && !root.busy ? pointer : default;
         clicked => { root.toggled(); }
     }
-    if root.tooltip != "": Tooltip { TooltipText { text: root.tooltip; } }
+    if root.tooltip != "" || root.compact: Tooltip { TooltipText { text: root.compact ? root.text + "\n" + root.tooltip : root.tooltip; } }
 }

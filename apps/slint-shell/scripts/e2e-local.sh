@@ -64,7 +64,7 @@ plasma=$(plasmashell --version 2>/dev/null || echo 'not detected')
 
 for example in 'editor --smoke' interactions library action-picker macros menus conditions popup-grid \
     undo-redo inline-edit drag-scroll notifications accessibility keyboard-navigation \
-    contrast-scaling layer-keys; do
+    contrast-scaling layer-keys small-window; do
     # shellcheck disable=SC2086 # split the example name from its arguments
     set -- $example
     name=$1

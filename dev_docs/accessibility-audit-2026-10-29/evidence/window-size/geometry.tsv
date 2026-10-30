@@ -1,0 +1,8 @@
+# Real settings window in a private virtual KWin without a panel, logical units (tools/window-geometry.sh).
+# "before" = revision without window fitting (min 940x700); "after" = final code. KWin reports minSize 150x150 in both.
+screen	scale	work_area	client_before	client_after	resizes_after
+1920x1080	2	960x540	1120x760	928x440	1
+1920x1080	1.5	1280x720	1120x760	1120x620	1
+1366x768	1.5	910.67x512	1120x760	879.33x412	1
+1920x1080	1.25	1536x864	1120x760	1120x760	0
+1920x1080	1	1920x1080	1120x760	1120x760	0

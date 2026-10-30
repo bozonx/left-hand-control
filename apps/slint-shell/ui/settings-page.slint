@@ -288,53 +288,57 @@ export component SettingsPage inherits PageLayout {
         padding: 0px;
         spacing: Theme.space-xl;
         vertical-stretch: 1;
-        VerticalLayout {
-            accessible-role: tab-list;
-            accessible-label: @tr("Settings");
-            padding: 0px;
-            spacing: Theme.space-s;
+        // Scrolls only when the window is too short for every tab.
+        ScrollView {
             width: 180px;
             horizontal-stretch: 0;
-            alignment: start;
-            for label[index] in [@tr("Main"), @tr("Mapper"), @tr("Key behavior"), @tr("Game mode"), @tr("Commands"), @tr("Accessibility")]: Rectangle {
-                property <SettingsTab> tab-id: [SettingsTab.general, SettingsTab.mapper, SettingsTab.key-behavior, SettingsTab.game-mode, SettingsTab.commands, SettingsTab.accessibility][index];
-                visible: (tab-id != SettingsTab.game-mode && tab-id != SettingsTab.commands) || AppState.in-development;
-                height: self.visible ? 38px : 0px;
-                border-radius: Theme.radius;
-                border-width: focus.has-focus ? 2px : 0px;
-                border-color: Theme.focus;
-                background: SettingsEditor.tab == tab-id ? Theme.selected : touch.has-hover ? Theme.hover : transparent;
-                accessible-role: tab;
-                accessible-label: label;
-                accessible-item-selectable: true; accessible-item-selected: SettingsEditor.tab == tab-id;
-                accessible-action-default => { SettingsEditor.tab = tab-id; content.viewport-y = 0px; }
-                Rectangle {
-                    x: 0px; y: 8px; width: 3px; height: parent.height - 16px;
-                    border-radius: Theme.radius-small;
-                    background: SettingsEditor.tab == tab-id ? Theme.accent : transparent;
-                }
-                Text {
-                    x: 14px;
-                    width: parent.width - 26px;
-                    text: label;
-                    color: SettingsEditor.tab == tab-id ? Theme.text : Theme.muted;
-                    font-weight: Theme.weight-semibold;
-                    vertical-alignment: center;
-                    overflow: elide;
-                }
-                focus := FocusScope {
-                    key-pressed(event) => {
-                        if event.text == " " || event.text == "\n" {
-                            SettingsEditor.tab = tab-id;
-                            content.viewport-y = 0px;
-                            return accept;
-                        }
-                        return reject;
+            viewport-width: self.visible-width;
+            VerticalLayout {
+                accessible-role: tab-list;
+                accessible-label: @tr("Settings");
+                padding: 0px;
+                spacing: Theme.space-s;
+                alignment: start;
+                for label[index] in [@tr("Main"), @tr("Mapper"), @tr("Key behavior"), @tr("Game mode"), @tr("Commands"), @tr("Accessibility")]: Rectangle {
+                    property <SettingsTab> tab-id: [SettingsTab.general, SettingsTab.mapper, SettingsTab.key-behavior, SettingsTab.game-mode, SettingsTab.commands, SettingsTab.accessibility][index];
+                    visible: (tab-id != SettingsTab.game-mode && tab-id != SettingsTab.commands) || AppState.in-development;
+                    height: self.visible ? 38px : 0px;
+                    border-radius: Theme.radius;
+                    border-width: focus.has-focus ? 2px : 0px;
+                    border-color: Theme.focus;
+                    background: SettingsEditor.tab == tab-id ? Theme.selected : touch.has-hover ? Theme.hover : transparent;
+                    accessible-role: tab;
+                    accessible-label: label;
+                    accessible-item-selectable: true; accessible-item-selected: SettingsEditor.tab == tab-id;
+                    accessible-action-default => { SettingsEditor.tab = tab-id; content.viewport-y = 0px; }
+                    Rectangle {
+                        x: 0px; y: 8px; width: 3px; height: parent.height - 16px;
+                        border-radius: Theme.radius-small;
+                        background: SettingsEditor.tab == tab-id ? Theme.accent : transparent;
                     }
-                }
-                touch := TouchArea {
-                    mouse-cursor: pointer;
-                    clicked => { focus.focus(); SettingsEditor.tab = tab-id; content.viewport-y = 0px; }
+                    Text {
+                        x: 14px;
+                        width: parent.width - 26px;
+                        text: label;
+                        color: SettingsEditor.tab == tab-id ? Theme.text : Theme.muted;
+                        font-weight: Theme.weight-semibold;
+                        vertical-alignment: center;
+                        overflow: elide;
+                    }
+                    focus := FocusScope {
+                        key-pressed(event) => {
+                            if event.text == " " || event.text == "\n" {
+                                SettingsEditor.tab = tab-id;
+                                content.viewport-y = 0px;
+                                return accept;
+                            }
+                            return reject;
+                        }
+                    }
+                    touch := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { focus.focus(); SettingsEditor.tab = tab-id; content.viewport-y = 0px; }
+                    }
                 }
             }
         }

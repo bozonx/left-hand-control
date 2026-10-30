@@ -240,6 +240,7 @@ flush черновиков и debounce без графической сесси�
 | `undo-redo`, `inline-edit` | История текстовых полей и inline-редакторы |
 | `drag-scroll`, `notifications` | Перетаскивание с автопрокруткой, тосты |
 | `conditions`, `layer-keys` | Добавление, дубликаты, изменение, удаление и сохранение условий (`SNAP=/tmp/x.ppm` — необязательный снимок), дополнительные клавиши слоёв |
+| `small-window` | Все страницы и диалоги при минимальном размере окна: кнопки шапки и диалогов внутри окна (`LHC_WINDOW_SIZE=WxH`, `LHC_SMALL_LANGUAGE`, `LHC_SMALL_RELEASE=1`; проверка только на английском) |
 
 С `LHC_EDITOR_SNAPSHOTS=<каталог>` пример `interactions` сохраняет снимки экранов.
 Те же сценарии работают в Live Preview: добавьте `SLINT_LIVE_PREVIEW=1` и
@@ -322,7 +323,7 @@ apps/slint-shell/scripts/e2e-local.sh            # --no-mapper пропуска�
 `check-linux-install.py` и L1, печатает сводку и пишет
 `docs/testing/results/linux/<дата>.txt`. Во время прогона не пользуйтесь
 клавиатурой и мышью. В прогон входят также `accessibility`, `keyboard-navigation`,
-`contrast-scaling` и `layer-keys`. Каждый сценарий ограничен 180 секундами;
+`contrast-scaling`, `layer-keys` и `small-window`. Каждый сценарий ограничен 180 секундами;
 через 5 секунд после SIGTERM оставшаяся группа процессов получает SIGKILL.
 Таймаут записывается как ошибка, остальные сценарии продолжаются. Нужен
 GNU `timeout` из coreutils. IPC-проверки используют отдельную временную конфигурацию.

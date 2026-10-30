@@ -719,8 +719,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             8 => { snapshot(&ui, "quick-ru"); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); }
             9 => { snapshot(&ui, "settings-commands-ru"); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); ui.global::<SettingsEditor>().set_appearance(AppearanceChoice::Light); ui.global::<SettingsEditor>().set_locale_index(1); ui.global::<SettingsEditor>().invoke_save(); slint_shell::select_ui_language("en").unwrap(); ui.global::<Theme>().set_dark(false); ui.global::<Theme>().invoke_apply(); ui.window().set_size(slint::LogicalSize::new(940.0, 700.0)); }
             10 => { snapshot(&ui, "settings-light-en-small");
-                for (x, expected) in [(60.0, Page::Layouts), (170.0, Page::Settings)] {
-                    let position = slint::LogicalPosition::new(x, 27.0);
+                // The narrow header shows icons only, so locate the buttons by name.
+                for (label, expected) in [("Layouts", Page::Layouts), ("Settings", Page::Settings)] {
+                    let position = accessible_position(&ui, i_slint_core::items::AccessibleRole::Tab, label, false);
                     for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
                     assert_eq!(ui.get_page(), expected);
                 }
