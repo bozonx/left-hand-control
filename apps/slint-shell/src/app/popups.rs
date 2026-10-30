@@ -421,6 +421,11 @@ fn observe(app: &Rc<App>, window: Window) {
                 && let WindowEvent::KeyboardInput { event, .. } = event
                 && let slint::winit_030::winit::keyboard::PhysicalKey::Code(code) =
                     event.physical_key
+                && !modifiers.get().intersects(
+                    slint::winit_030::winit::keyboard::ModifiersState::CONTROL
+                        | slint::winit_030::winit::keyboard::ModifiersState::ALT
+                        | slint::winit_030::winit::keyboard::ModifiersState::SUPER,
+                )
                 && let Some(shortcut) =
                     popup_model::shortcut(&format!("{code:?}"), modifiers.get().shift_key())
             {
@@ -482,14 +487,24 @@ pub(super) fn bind(app: &Rc<App>) {
                 }
             });
         });
-    app.emoji
-        .on_key(|key| with_app(|app| app.popup_key(Popup::Emoji, &key)));
+    app.emoji.on_key(|key| {
+        if !popup_model::handles_key(&key) {
+            return false;
+        }
+        with_app(|app| app.popup_key(Popup::Emoji, &key));
+        true
+    });
     app.emoji
         .on_choose(|index| with_app(|app| app.choose(Popup::Emoji, index)));
     app.emoji
         .on_dismiss(|| with_app(|app| app.defer_hide(Window::EMOJI)));
-    app.quick
-        .on_key(|key| with_app(|app| app.popup_key(Popup::Quick, &key)));
+    app.quick.on_key(|key| {
+        if !popup_model::handles_key(&key) {
+            return false;
+        }
+        with_app(|app| app.popup_key(Popup::Quick, &key));
+        true
+    });
     app.quick
         .on_choose(|index| with_app(|app| app.choose(Popup::Quick, index)));
     app.quick

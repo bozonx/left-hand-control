@@ -162,6 +162,11 @@ fn popup_key(page: i32, pages: usize, key: &str) -> (Option<i32>, KeyOutcome) {
     }
 }
 
+/// Whether the text fallback recognizes a popup command, regardless of page count.
+pub(crate) fn handles_key(key: &str) -> bool {
+    popup_key(0, 10, key).1 != KeyOutcome::Ignored
+}
+
 pub fn emoji_key(ui: &EmojiPopup, key: &str) -> KeyOutcome {
     let (page, outcome) = popup_key(ui.get_page(), ui.get_page_names().row_count(), key);
     if let Some(page) = page {

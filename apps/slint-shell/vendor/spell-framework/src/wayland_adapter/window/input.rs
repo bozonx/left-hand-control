@@ -309,10 +309,13 @@ impl KeyboardHandler for SpellWin {
         event: smithay_client_toolkit::seat::keyboard::KeyEvent,
     ) {
         let code = event.raw_code;
-        if self
-            .key_handler
-            .as_mut()
-            .is_some_and(|handler| handler(code, self.modifiers.shift, self.modifiers.ctrl))
+        if !self.modifiers.ctrl
+            && !self.modifiers.alt
+            && !self.modifiers.logo
+            && self
+                .key_handler
+                .as_mut()
+                .is_some_and(|handler| handler(code, self.modifiers.shift, self.modifiers.ctrl))
         {
             self.consumed_keys.insert(code);
             return;

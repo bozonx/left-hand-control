@@ -14,7 +14,7 @@ export component EmojiPopup inherits Window {
     in property <[string]> page-names;
     in-out property <int> page: 0;
     in property <bool> presented: true;
-    callback key(string);
+    callback key(string) -> bool;
     callback choose(int);
     callback dismiss();
     public function prepare() { body.prepare(); }
@@ -27,7 +27,7 @@ export component EmojiPopup inherits Window {
         items: root.emojis;
         item-offset: root.page * 15;
         emoji: true;
-        key(text) => { root.key(text); }
+        key(text) => { return root.key(text); }
         choose(index) => { root.choose(index); }
         dismiss => { root.dismiss(); }
     }

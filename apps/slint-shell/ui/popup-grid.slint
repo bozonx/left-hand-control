@@ -86,11 +86,15 @@ export component PopupGridBody inherits FocusScope {
     in property <[string]> items;
     in property <int> item-offset;
     in property <bool> emoji;
-    callback key(string);
+    callback key(string) -> bool;
     callback choose(int);
     callback dismiss();
     public function prepare() { self.focus(); }
-    key-pressed(event) => { root.key(event.text); return accept; }
+    key-pressed(event) => {
+        if event.modifiers.control || event.modifiers.alt || event.modifiers.meta { return reject; }
+        if root.key(event.text) { return accept; }
+        return reject;
+    }
     Rectangle {
         visible: root.presented;
         x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px;

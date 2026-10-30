@@ -635,9 +635,13 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
 
 fn bind_callbacks(layers: &Layers, waker: &Waker) {
     let w = waker.clone();
-    layers
-        .emoji
-        .on_key(move |key| w.send(Event::Key(Popup::Emoji, key.into())));
+    layers.emoji.on_key(move |key| {
+        if !popup_model::handles_key(&key) {
+            return false;
+        }
+        w.send(Event::Key(Popup::Emoji, key.into()));
+        true
+    });
     let w = waker.clone();
     layers
         .emoji
@@ -647,9 +651,13 @@ fn bind_callbacks(layers: &Layers, waker: &Waker) {
         .emoji
         .on_dismiss(move || w.send(Event::Hide(Popup::Emoji)));
     let w = waker.clone();
-    layers
-        .quick
-        .on_key(move |key| w.send(Event::Key(Popup::Quick, key.into())));
+    layers.quick.on_key(move |key| {
+        if !popup_model::handles_key(&key) {
+            return false;
+        }
+        w.send(Event::Key(Popup::Quick, key.into()));
+        true
+    });
     let w = waker.clone();
     layers
         .quick

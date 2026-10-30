@@ -12,7 +12,7 @@ export component QuickPopup inherits Window {
     in property <[string]> page-names;
     in-out property <int> page;
     in property <bool> presented: true;
-    callback key(string);
+    callback key(string) -> bool;
     callback choose(int);
     callback dismiss();
     public function prepare() { body.prepare(); }
@@ -23,7 +23,7 @@ export component QuickPopup inherits Window {
         page-names: root.page-names;
         page: root.page;
         items: root.items;
-        key(text) => { root.key(text); }
+        key(text) => { return root.key(text); }
         choose(index) => { root.choose(index); }
         dismiss => { root.dismiss(); }
     }
