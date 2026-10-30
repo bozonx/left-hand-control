@@ -3344,9 +3344,8 @@ msgid ""
 msgstr ""
 "Text nebyl zadán: nástroj pro zadávání textu selhal. Viz protokol aplikace."
 
-msgid "Changes applied, but the mapper was not updated. Restart the mapper."
-msgstr ""
-"Změny byly použity, ale mapovač nebyl aktualizován. Restartujte mapovač."
+msgid "Changes saved, but the mapper is still using the previous settings. Restart the mapper."
+msgstr "Změny byly uloženy, ale mapper stále používá předchozí nastavení. Restartujte mapper."
 
 msgid "The operation failed. See the application log."
 msgstr "Operace se nezdařila. Viz protokol aplikace."
@@ -3613,3 +3612,6 @@ msgstr "Vodorovné posouvání"
 
 msgid "Scroll vertically"
 msgstr "Svislé posouvání"
+
+msgid "Action “{}” is unavailable on this platform or desktop."
+msgstr "Akce „{}“ není na této platformě nebo v tomto pracovním prostředí dostupná."

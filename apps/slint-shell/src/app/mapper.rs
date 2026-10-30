@@ -29,8 +29,6 @@ const LAUNCH_RETRIES: u32 = 15;
 const LAUNCH_RETRY_DELAY: Duration = Duration::from_secs(2);
 /// How often the shown uptime is updated.
 const UPTIME_TICK: Duration = Duration::from_secs(20);
-/// Longest command label shown in the "command started" notification.
-const COMMAND_LABEL_CHARS: usize = 80;
 
 /// Forward core events to the UI thread. Subscribed once at startup.
 pub(super) fn forward_core_events() -> Result<lhc_core::events::Subscription, String> {
@@ -56,19 +54,11 @@ pub(super) fn forward_core_events() -> Result<lhc_core::events::Subscription, St
                 app.refresh_mapper_status();
             });
         }
-        CoreEvent::CommandLaunchResult { script, result } => {
-            let label = script
-                .lines()
-                .next()
-                .unwrap_or_default()
-                .chars()
-                .take(COMMAND_LABEL_CHARS)
-                .collect::<String>();
-            let result = result.clone();
-            post(move |app| match result {
-                Ok(()) => crate::notifications::send(&app.settings, Msg::CommandStarted(label)),
-                Err(error) => app.set_error(Msg::ActionFailed(error)),
-            });
+        CoreEvent::CommandLaunchResult { result, .. } => {
+            if let Err(error) = result {
+                let error = error.clone();
+                post(move |app| app.set_error(Msg::ActionFailed(error)));
+            }
         }
         CoreEvent::AppAction(action) => {
             let action = *action;
@@ -97,7 +87,10 @@ pub(super) fn forward_core_events() -> Result<lhc_core::events::Subscription, St
         }
         CoreEvent::ActionUnavailable(action) => {
             log::info!("[mapper] skipped unavailable action {action:?}");
-            post(|app| crate::notifications::send(&app.settings, Msg::ActionUnavailable));
+            let action = action.clone();
+            post(move |app| {
+                crate::notifications::send(&app.settings, Msg::ActionUnavailableNamed(action))
+            });
         }
         CoreEvent::LayoutChanged(_) | CoreEvent::ActiveWindowChanged(_) => {
             post(|app| app.context_changed())

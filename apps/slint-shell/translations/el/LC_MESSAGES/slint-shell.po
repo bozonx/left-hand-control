@@ -3457,10 +3457,8 @@ msgstr ""
 "Το κείμενο δεν πληκτρολογήθηκε: το εργαλείο εισαγωγής απέτυχε. Δείτε το "
 "αρχείο καταγραφής της εφαρμογής."
 
-msgid "Changes applied, but the mapper was not updated. Restart the mapper."
-msgstr ""
-"Εφαρμόστηκαν αλλαγές, αλλά ο χάρτης δεν ενημερώθηκε. Επανεκκινήστε τον "
-"χαρτογράφο."
+msgid "Changes saved, but the mapper is still using the previous settings. Restart the mapper."
+msgstr "Οι αλλαγές αποθηκεύτηκαν, αλλά ο αντιστοιχιστής εξακολουθεί να χρησιμοποιεί τις προηγούμενες ρυθμίσεις. Επανεκκινήστε τον αντιστοιχιστή."
 
 msgid "The operation failed. See the application log."
 msgstr "Η επέμβαση απέτυχε. Δείτε το αρχείο καταγραφής της εφαρμογής."
@@ -3738,3 +3736,6 @@ msgstr "Οριζόντια κύλιση"
 
 msgid "Scroll vertically"
 msgstr "Κατακόρυφη κύλιση"
+
+msgid "Action “{}” is unavailable on this platform or desktop."
+msgstr "Η ενέργεια «{}» δεν είναι διαθέσιμη σε αυτήν την πλατφόρμα ή το περιβάλλον επιφάνειας εργασίας."

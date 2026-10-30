@@ -17,8 +17,9 @@ use std::{
 const EXPIRY_TICK: Duration = Duration::from_millis(100);
 
 const VISIBLE: usize = 4;
+const CAPACITY: usize = 32;
 
-/// Success expiry and deduplication windows; problems require dismissal.
+/// Success lifetimes; warning/error durations are retained for policy metadata.
 const SHORT: Duration = Duration::from_secs(2);
 const SUCCESS: Duration = Duration::from_secs(3);
 const WARNING: Duration = Duration::from_secs(6);
@@ -33,9 +34,9 @@ const POLICY: &[(&[&str], ToastKind, Duration)] = &[
             "layout-created",
             "layout-saved",
             "layout-deleted",
+            "auto-rule-deleted",
             "layout-activated",
             "layout-discarded",
-            "command-started",
             "mapper-running",
             "mapper-stopped",
         ],
@@ -52,6 +53,7 @@ const POLICY: &[(&[&str], ToastKind, Duration)] = &[
             "worker-restarting",
             "commands-disabled",
             "action-unavailable",
+            "action-unavailable-named",
             "save-layout-first",
             "layout-slot-empty",
             "select-input-device",
@@ -114,26 +116,74 @@ impl Queue {
         let Some((kind, remaining)) = policy(&message, backend) else {
             return false;
         };
-        if let Some(entry) = self.entries.iter_mut().find(|entry| {
+        if let Some(index) = self.entries.iter().position(|entry| {
             let old = &entry.item.message;
-            (old.id == message.id && old.arg == message.arg && old.count == message.count)
+            old == &message
                 || (kind == ToastKind::Error
                     && entry.item.kind == kind
-                    && !message.arg.is_empty()
-                    && old.arg == message.arg)
+                    && matches!(message.id.as_str(), "error" | "action-failed")
+                    && matches!(old.id.as_str(), "error" | "action-failed")
+                    && !message.diagnostic_key.is_empty()
+                    && old.diagnostic_key == message.diagnostic_key)
         }) {
-            entry.remaining = remaining;
+            self.entries[index].remaining = remaining;
+            if index >= VISIBLE && kind == ToastKind::Error {
+                if let Some(entry) = self.entries.remove(index) {
+                    self.entries.push_front(entry);
+                }
+                return true;
+            }
             return false;
         }
+        // A worker incident has one evolving notification, including its final failure.
+        if worker_message(&message) {
+            if self
+                .entries
+                .iter()
+                .any(|entry| entry.item.message.id == "worker-restart-limit")
+            {
+                return false;
+            }
+            self.entries
+                .retain(|entry| !worker_message(&entry.item.message));
+        }
+        // New problems must be visible even when older problems await dismissal.
+        if self.entries.len() == CAPACITY {
+            if kind == ToastKind::Success
+                || (kind == ToastKind::Warning
+                    && self
+                        .entries
+                        .back()
+                        .is_some_and(|entry| entry.item.kind == ToastKind::Error))
+            {
+                return false;
+            }
+            self.entries.pop_back();
+        }
         self.token = self.token.wrapping_add(1);
-        self.entries.push_back(Entry {
+        let entry = Entry {
             item: ToastItem {
                 token: self.token,
                 message,
                 kind,
             },
             remaining,
-        });
+        };
+        if kind == ToastKind::Success {
+            self.entries.push_back(entry);
+        } else {
+            let rank = |kind| match kind {
+                ToastKind::Error => 2,
+                ToastKind::Warning => 1,
+                _ => 0,
+            };
+            let index = self
+                .entries
+                .iter()
+                .position(|old| rank(old.item.kind) <= rank(kind))
+                .unwrap_or(self.entries.len());
+            self.entries.insert(index, entry);
+        }
         true
     }
 
@@ -181,10 +231,14 @@ fn publish_items(ui: &SettingsWindow, items: ModelRc<ToastItem>) {
             model.remove(index);
         }
     }
-    for item in items.iter() {
-        if !model.iter().any(|old| old.token == item.token) {
-            model.push(item);
+    for (index, item) in items.iter().enumerate() {
+        if model
+            .row_data(index)
+            .is_some_and(|old| old.token == item.token)
+        {
+            continue;
         }
+        model.insert(index, item);
     }
 }
 
@@ -192,6 +246,14 @@ struct State {
     queue: Queue,
     last_tick: Instant,
     timer: slint::Timer,
+}
+
+fn worker_message(message: &Message) -> bool {
+    message.id.starts_with("worker-")
+}
+
+pub(crate) fn clear_worker(ui: &SettingsWindow) {
+    ui.global::<NotificationCenter>().invoke_worker_recovered();
 }
 
 pub(crate) fn report(ui: &SettingsWindow, message: &Msg) -> Message {
@@ -235,12 +297,22 @@ pub(crate) fn bind(ui: &SettingsWindow) {
         let weak = ui.as_weak();
         let callback = move |message| {
             let Some(ui) = weak.upgrade() else { return };
+            if !ui.window().is_visible()
+                && policy(&message, backend).is_some_and(|(kind, _)| kind == ToastKind::Success)
+            {
+                return;
+            }
             let items = {
                 let mut state = state.borrow_mut();
-                state
-                    .queue
-                    .add(message, backend)
-                    .then(|| state.queue.items())
+                // Charge elapsed time to existing rows before adding a new one. Cold
+                // renderer initialization can delay the timer's very first tick.
+                let now = Instant::now();
+                let elapsed = now.saturating_duration_since(state.last_tick);
+                state.last_tick = now;
+                let expired = !ui.global::<NotificationCenter>().get_focused()
+                    && state.queue.advance(elapsed);
+                let added = state.queue.add(message, backend);
+                (expired || added).then(|| state.queue.items())
             };
             if let Some(items) = items {
                 publish_items(&ui, items);
@@ -254,6 +326,20 @@ pub(crate) fn bind(ui: &SettingsWindow) {
     }
     let shared = state.clone();
     let weak = ui.as_weak();
+    center.on_worker_recovered(move || {
+        let Some(ui) = weak.upgrade() else { return };
+        let items = {
+            let mut state = shared.borrow_mut();
+            state
+                .queue
+                .entries
+                .retain(|entry| !worker_message(&entry.item.message));
+            state.queue.items()
+        };
+        publish_items(&ui, items);
+    });
+    let shared = state.clone();
+    let weak = ui.as_weak();
     center.on_dismiss(move |token| {
         let Some(ui) = weak.upgrade() else { return };
         let items = {
@@ -261,7 +347,9 @@ pub(crate) fn bind(ui: &SettingsWindow) {
             state.queue.dismiss(token);
             state.queue.items()
         };
-        ui.global::<NotificationCenter>().set_focused_token(0);
+        if ui.global::<NotificationCenter>().get_focused_token() == token {
+            ui.global::<NotificationCenter>().set_focused_token(0);
+        }
         publish_items(&ui, items);
     });
     let shared = state.clone();
@@ -282,10 +370,17 @@ pub(crate) fn bind(ui: &SettingsWindow) {
                 let now = Instant::now();
                 let elapsed = now.saturating_duration_since(state.last_tick);
                 state.last_tick = now;
-                (ui.window().is_visible()
-                    && !ui.global::<NotificationCenter>().get_focused()
-                    && state.queue.advance(elapsed))
-                .then(|| state.queue.items())
+                let changed = if ui.window().is_visible() {
+                    !ui.global::<NotificationCenter>().get_focused() && state.queue.advance(elapsed)
+                } else {
+                    let old = state.queue.entries.len();
+                    state
+                        .queue
+                        .entries
+                        .retain(|entry| entry.item.kind != ToastKind::Success);
+                    old != state.queue.entries.len()
+                };
+                changed.then(|| state.queue.items())
             };
             if let Some(items) = items {
                 publish_items(&ui, items);
@@ -336,7 +431,7 @@ mod tests {
         queue.add(Msg::Error("failure".into()).to_ui(), false);
         queue.paused = true;
         assert!(!queue.advance(Duration::from_secs(3)));
-        assert_eq!(queue.entries[0].remaining, Duration::from_secs(2));
+        assert_eq!(queue.entries[1].remaining, Duration::from_secs(2));
         queue.paused = false;
         assert!(queue.advance(Duration::from_secs(2)));
         assert_eq!(queue.entries.len(), 1);
@@ -382,6 +477,80 @@ mod tests {
         assert!(queue.advance(Duration::from_secs(3)));
         assert_eq!(queue.entries.len(), 1);
         assert_eq!(queue.entries[0].remaining, Duration::from_secs(3));
+    }
+
+    #[test]
+    fn new_errors_preempt_warnings_and_the_queue_is_bounded() {
+        let mut queue = Queue::default();
+        for slot in 0..(CAPACITY + 10) {
+            queue.add(Msg::LayoutSlotEmpty(slot as u32).to_ui(), false);
+        }
+        assert_eq!(queue.entries.len(), CAPACITY);
+        queue.add(Msg::Error("first failure".into()).to_ui(), false);
+        assert_eq!(queue.items().row_data(0).unwrap().kind, ToastKind::Error);
+        for index in 0..CAPACITY {
+            queue.add(Msg::Error(format!("failure {index}")).to_ui(), false);
+        }
+        assert_eq!(queue.entries.len(), CAPACITY);
+        assert!(!queue.add(Msg::Copied.to_ui(), false));
+        assert!(!queue.add(Msg::SelectInputDevice.to_ui(), false));
+        assert!(
+            queue
+                .entries
+                .iter()
+                .all(|entry| entry.item.kind == ToastKind::Error)
+        );
+    }
+
+    #[test]
+    fn worker_incidents_replace_each_other_and_final_failure_is_not_downgraded() {
+        let mut queue = Queue::default();
+        for message in [
+            Msg::WorkerError("send failed".into()),
+            Msg::WorkerUnavailable("exited".into()),
+            Msg::WorkerRestarting,
+            Msg::WorkerRestartLimit,
+        ] {
+            assert!(queue.add(message.to_ui(), true));
+            assert_eq!(queue.entries.len(), 1);
+        }
+        assert!(!queue.add(Msg::WorkerError("late failure".into()).to_ui(), true));
+        assert_eq!(queue.entries[0].item.message.id, "worker-restart-limit");
+    }
+
+    #[test]
+    fn distinct_diagnostics_remain_separate_and_identical_failures_coalesce() {
+        let mut queue = Queue::default();
+        assert!(queue.add(Msg::Error("first".into()).to_ui(), false));
+        assert!(queue.add(Msg::Error("second".into()).to_ui(), false));
+        assert!(!queue.add(Msg::ActionFailed("first".into()).to_ui(), false));
+        assert_eq!(queue.entries.len(), 2);
+        assert!(
+            queue
+                .entries
+                .iter()
+                .all(|entry| entry.item.message.arg.is_empty())
+        );
+    }
+
+    #[test]
+    fn a_repeated_error_waiting_out_of_view_becomes_visible() {
+        let mut queue = Queue::default();
+        for index in 0..=VISIBLE {
+            queue.add(Msg::Error(index.to_string()).to_ui(), false);
+        }
+        assert!(queue.add(Msg::Error("0".into()).to_ui(), false));
+        assert_eq!(queue.entries.len(), VISIBLE + 1);
+        assert_eq!(
+            queue.entries[0].item.message,
+            Msg::Error("0".into()).to_ui()
+        );
+    }
+
+    #[test]
+    fn automatic_rule_deletion_is_confirmed_and_command_success_is_silent() {
+        assert!(policy(&Msg::AutoRuleDeleted.to_ui(), false).is_some());
+        assert!(policy(&Msg::CommandStarted("script".into()).to_ui(), false).is_none());
     }
 
     #[test]

@@ -3363,10 +3363,8 @@ msgstr ""
 "Metin yazılmadı: Harf çevirme aracı başarısız oldu. Uygulama günlüğüne "
 "bakın."
 
-msgid "Changes applied, but the mapper was not updated. Restart the mapper."
-msgstr ""
-"Değişiklikler uygulandı ancak eşleyici güncellenmedi. Haritalayıcıyı yeniden"
-" başlatın."
+msgid "Changes saved, but the mapper is still using the previous settings. Restart the mapper."
+msgstr "Değişiklikler kaydedildi ancak eşleyici önceki ayarları kullanmaya devam ediyor. Eşleyiciyi yeniden başlatın."
 
 msgid "The operation failed. See the application log."
 msgstr "İşlem başarısız oldu. Uygulama günlüğüne bakın."
@@ -3635,3 +3633,6 @@ msgstr "Yatay kaydır"
 
 msgid "Scroll vertically"
 msgstr "Dikey kaydır"
+
+msgid "Action “{}” is unavailable on this platform or desktop."
+msgstr "“{}” eylemi bu platformda veya masaüstü ortamında kullanılamıyor."

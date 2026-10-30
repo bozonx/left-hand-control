@@ -3371,10 +3371,8 @@ msgid ""
 msgstr ""
 "Мәтін терілмеді: енгізу құралы сәтсіз аяқталды. Қолданба журналын қараңыз."
 
-msgid "Changes applied, but the mapper was not updated. Restart the mapper."
-msgstr ""
-"Өзгерістер қолданылды, бірақ салыстырушы жаңартылмады. Мапперді қайта іске "
-"қосыңыз."
+msgid "Changes saved, but the mapper is still using the previous settings. Restart the mapper."
+msgstr "Өзгерістер сақталды, бірақ сәйкестендіргіш бұрынғы параметрлерді пайдаланып жатыр. Сәйкестендіргішті қайта іске қосыңыз."
 
 msgid "The operation failed. See the application log."
 msgstr "Операция сәтсіз аяқталды. Қолданба журналын қараңыз."
@@ -3643,3 +3641,6 @@ msgstr "Көлденең айналдыру"
 
 msgid "Scroll vertically"
 msgstr "Тігінен айналдыру"
+
+msgid "Action “{}” is unavailable on this platform or desktop."
+msgstr "«{}» әрекеті бұл платформада немесе жұмыс үстелі ортасында қолжетімсіз."

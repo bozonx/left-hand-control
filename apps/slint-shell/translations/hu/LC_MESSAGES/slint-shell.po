@@ -3401,10 +3401,8 @@ msgstr ""
 "A szöveget nem gépelték be: a beviteli eszköz meghibásodott. Lásd az "
 "alkalmazásnaplót."
 
-msgid "Changes applied, but the mapper was not updated. Restart the mapper."
-msgstr ""
-"A változtatások érvénybe léptek, de a térképező nem frissült. Indítsa újra a"
-" térképezőt."
+msgid "Changes saved, but the mapper is still using the previous settings. Restart the mapper."
+msgstr "A módosítások mentve, de a leképező továbbra is a korábbi beállításokat használja. Indítsa újra a leképezőt."
 
 msgid "The operation failed. See the application log."
 msgstr "A művelet meghiúsult. Lásd az alkalmazásnaplót."
@@ -3675,3 +3673,6 @@ msgstr "Vízszintes görgetés"
 
 msgid "Scroll vertically"
 msgstr "Függőleges görgetés"
+
+msgid "Action “{}” is unavailable on this platform or desktop."
+msgstr "A(z) „{}” művelet nem érhető el ezen a platformon vagy asztali környezetben."

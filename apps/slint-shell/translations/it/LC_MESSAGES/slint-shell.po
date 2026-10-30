@@ -3429,10 +3429,8 @@ msgstr ""
 "Il testo non è stato digitato: lo strumento di immissione non è riuscito. "
 "Consulta il registro dell'applicazione."
 
-msgid "Changes applied, but the mapper was not updated. Restart the mapper."
-msgstr ""
-"Sono state applicate modifiche, ma il mappatore non è stato aggiornato. "
-"Riavvia il mappatore."
+msgid "Changes saved, but the mapper is still using the previous settings. Restart the mapper."
+msgstr "Modifiche salvate, ma il mapper usa ancora le impostazioni precedenti. Riavvia il mapper."
 
 msgid "The operation failed. See the application log."
 msgstr "L'operazione è fallita. Consulta il registro dell'applicazione."
@@ -3710,3 +3708,6 @@ msgstr "Scorrimento orizzontale"
 
 msgid "Scroll vertically"
 msgstr "Scorrimento verticale"
+
+msgid "Action “{}” is unavailable on this platform or desktop."
+msgstr "L’azione «{}» non è disponibile su questa piattaforma o ambiente desktop."

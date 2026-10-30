@@ -3402,10 +3402,8 @@ msgstr ""
 "Textul nu a fost introdus: instrumentul de introducere a eșuat. Vedeți "
 "jurnalul aplicației."
 
-msgid "Changes applied, but the mapper was not updated. Restart the mapper."
-msgstr ""
-"S-au aplicat modificări, dar mapatorul nu a fost actualizat. Reporniți "
-"mapper-ul."
+msgid "Changes saved, but the mapper is still using the previous settings. Restart the mapper."
+msgstr "Modificările au fost salvate, dar mapatorul folosește în continuare setările anterioare. Reporniți mapatorul."
 
 msgid "The operation failed. See the application log."
 msgstr "Operația a eșuat. Vedeți jurnalul aplicației."
@@ -3676,3 +3674,6 @@ msgstr "Derulare orizontală"
 
 msgid "Scroll vertically"
 msgstr "Derulare verticală"
+
+msgid "Action “{}” is unavailable on this platform or desktop."
+msgstr "Acțiunea „{}” nu este disponibilă pe această platformă sau în acest mediu desktop."

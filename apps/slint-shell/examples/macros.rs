@@ -38,6 +38,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         id: "copy-name".into(),
         arg: name,
         count: 0,
+        diagnostic_key: Default::default(),
     });
     editor.invoke_clone_builtin(0, copy_name);
     let first = |document: &Rc<Document>| document.read().layout().macros[0].clone();

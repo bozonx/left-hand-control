@@ -3398,10 +3398,8 @@ msgstr ""
 "Tekst nie został wpisany: narzędzie do wprowadzania tekstu uległo awarii. "
 "Zobacz dziennik aplikacji."
 
-msgid "Changes applied, but the mapper was not updated. Restart the mapper."
-msgstr ""
-"Zmiany zostały zastosowane, ale maper nie został zaktualizowany. Uruchom "
-"ponownie program mapujący."
+msgid "Changes saved, but the mapper is still using the previous settings. Restart the mapper."
+msgstr "Zmiany zapisano, ale mapper nadal używa poprzednich ustawień. Uruchom mapper ponownie."
 
 msgid "The operation failed. See the application log."
 msgstr "Operacja nie powiodła się. Zobacz dziennik aplikacji."
@@ -3675,3 +3673,6 @@ msgstr "Przewijanie w poziomie"
 
 msgid "Scroll vertically"
 msgstr "Przewijanie w pionie"
+
+msgid "Action “{}” is unavailable on this platform or desktop."
+msgstr "Działanie „{}” jest niedostępne na tej platformie lub w tym środowisku graficznym."

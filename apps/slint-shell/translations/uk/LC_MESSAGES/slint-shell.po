@@ -3371,10 +3371,8 @@ msgstr ""
 "Текст не було набрано: не вдалося ввести інструмент. Перегляньте журнал "
 "заявок."
 
-msgid "Changes applied, but the mapper was not updated. Restart the mapper."
-msgstr ""
-"Зміни застосовано, але картограф не оновлено. Перезапустіть програму "
-"відображення."
+msgid "Changes saved, but the mapper is still using the previous settings. Restart the mapper."
+msgstr "Зміни збережено, але мапер продовжує використовувати попередні налаштування. Перезапустіть мапер."
 
 msgid "The operation failed. See the application log."
 msgstr "Операція не вдалася. Перегляньте журнал заявок."
@@ -3642,3 +3640,6 @@ msgstr "Прокручування по горизонталі"
 
 msgid "Scroll vertically"
 msgstr "Прокручування по вертикалі"
+
+msgid "Action “{}” is unavailable on this platform or desktop."
+msgstr "Дія «{}» недоступна на цій платформі або в цьому середовищі стільниці."

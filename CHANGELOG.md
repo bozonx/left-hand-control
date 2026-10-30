@@ -8,6 +8,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Notifications no longer hide new problems behind older warnings or replay background successes. Popup worker failures are grouped, distinct diagnostics remain separate, repeated rule warnings stay inline, and deleting an automatic switching rule has a confirmation.
+
 - Emoji and Quick actions no longer activate cells or switch pages for Ctrl/Alt/Meta shortcuts, in both winit and Spell popups. Unhandled popup keys are no longer unconditionally consumed.
 
 ### Added

@@ -285,6 +285,7 @@ impl App {
         self.supervisor.borrow_mut().starting = false;
         match result {
             Ok(worker) => {
+                crate::notifications::clear_worker(&self.settings);
                 {
                     let mut supervisor = self.supervisor.borrow_mut();
                     supervisor.start_error_shown = false;

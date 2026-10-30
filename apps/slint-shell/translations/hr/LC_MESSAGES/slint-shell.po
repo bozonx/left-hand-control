@@ -3352,9 +3352,8 @@ msgid ""
 msgstr ""
 "Tekst nije upisan: alat za unos nije uspio. Pogledajte dnevnik prijave."
 
-msgid "Changes applied, but the mapper was not updated. Restart the mapper."
-msgstr ""
-"Promjene su primijenjene, ali maper nije ažuriran. Ponovno pokrenite mapper."
+msgid "Changes saved, but the mapper is still using the previous settings. Restart the mapper."
+msgstr "Promjene su spremljene, ali preslikavač i dalje koristi prethodne postavke. Ponovno pokrenite preslikavač."
 
 msgid "The operation failed. See the application log."
 msgstr "Operacija nije uspjela. Pogledajte dnevnik prijave."
@@ -3625,3 +3624,6 @@ msgstr "Vodoravno pomicanje"
 
 msgid "Scroll vertically"
 msgstr "Okomito pomicanje"
+
+msgid "Action “{}” is unavailable on this platform or desktop."
+msgstr "Radnja „{}” nije dostupna na ovoj platformi ili u ovom radnom okruženju."

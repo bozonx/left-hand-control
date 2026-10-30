@@ -3127,8 +3127,8 @@ msgid ""
 "The text was not typed: the input tool failed. See the application log."
 msgstr "テキストが入力されませんでした。入力ツールが失敗しました。アプリケーションログを参照してください。"
 
-msgid "Changes applied, but the mapper was not updated. Restart the mapper."
-msgstr "変更は適用されましたが、マッパーは更新されませんでした。マッパーを再起動します。"
+msgid "Changes saved, but the mapper is still using the previous settings. Restart the mapper."
+msgstr "変更は保存されましたが、マッパーは以前の設定を使用しています。マッパーを再起動してください。"
 
 msgid "The operation failed. See the application log."
 msgstr "操作は失敗しました。アプリケーションログを参照してください。"
@@ -3392,3 +3392,6 @@ msgstr "横にスクロール"
 
 msgid "Scroll vertically"
 msgstr "縦にスクロール"
+
+msgid "Action “{}” is unavailable on this platform or desktop."
+msgstr "操作「{}」は、このプラットフォームまたはデスクトップ環境では利用できません。"

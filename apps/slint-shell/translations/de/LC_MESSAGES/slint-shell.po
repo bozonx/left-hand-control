@@ -3436,10 +3436,8 @@ msgstr ""
 "Der Text wurde nicht eingegeben: Das Eingabetool ist fehlgeschlagen. Siehe "
 "Anwendungsprotokoll."
 
-msgid "Changes applied, but the mapper was not updated. Restart the mapper."
-msgstr ""
-"Änderungen wurden übernommen, aber der Mapper wurde nicht aktualisiert. "
-"Starten Sie den Mapper neu."
+msgid "Changes saved, but the mapper is still using the previous settings. Restart the mapper."
+msgstr "Änderungen gespeichert, aber der Mapper verwendet noch die vorherigen Einstellungen. Starten Sie den Mapper neu."
 
 msgid "The operation failed. See the application log."
 msgstr "Der Vorgang ist fehlgeschlagen. Siehe Anwendungsprotokoll."
@@ -3714,3 +3712,6 @@ msgstr "Horizontal scrollen"
 
 msgid "Scroll vertically"
 msgstr "Vertikal scrollen"
+
+msgid "Action “{}” is unavailable on this platform or desktop."
+msgstr "Die Aktion „{}“ ist auf dieser Plattform oder Desktop-Umgebung nicht verfügbar."

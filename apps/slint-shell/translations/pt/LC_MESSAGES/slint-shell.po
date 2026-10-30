@@ -3371,10 +3371,8 @@ msgstr ""
 "O texto não foi digitado: a ferramenta de entrada falhou. Consulte o log do "
 "aplicativo."
 
-msgid "Changes applied, but the mapper was not updated. Restart the mapper."
-msgstr ""
-"As alterações foram aplicadas, mas o mapeador não foi atualizado. Reinicie o"
-" mapeador."
+msgid "Changes saved, but the mapper is still using the previous settings. Restart the mapper."
+msgstr "Alterações guardadas, mas o mapeador continua a usar as definições anteriores. Reinicie o mapeador."
 
 msgid "The operation failed. See the application log."
 msgstr "A operação falhou. Consulte o log do aplicativo."
@@ -3648,3 +3646,6 @@ msgstr "Rolar horizontalmente"
 
 msgid "Scroll vertically"
 msgstr "Rolar verticalmente"
+
+msgid "Action “{}” is unavailable on this platform or desktop."
+msgstr "A ação «{}» não está disponível nesta plataforma ou ambiente de trabalho."

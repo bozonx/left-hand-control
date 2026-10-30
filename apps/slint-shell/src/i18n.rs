@@ -336,6 +336,7 @@ pub enum Msg {
     ChooseCommandScript,
     ChooseCommandDirectory,
     ActionUnavailable,
+    ActionUnavailableNamed(String),
     /// A `sys:` action macOS has no API for was ignored.
     ActionUnsupportedMacos,
     CommandsDisabled,
@@ -372,6 +373,32 @@ pub enum Msg {
 impl Msg {
     pub fn is_none(&self) -> bool {
         *self == Self::None
+    }
+
+    fn diagnostic_key(&self) -> String {
+        let detail = match self {
+            Self::Error(detail)
+            | Self::ActionFailed(detail)
+            | Self::MapperFailed(detail)
+            | Self::ConfigUnavailable(detail)
+            | Self::InputDiscoveryFailed(detail)
+            | Self::WorkerUnavailable(detail)
+            | Self::WorkerError(detail)
+            | Self::SavedMapperNotUpdated(detail)
+            | Self::LayoutLoadFailed(detail)
+            | Self::MapperRunning(Some(detail))
+            | Self::MapperStopped(Some(detail)) => detail,
+            Self::TextInputFailed(
+                lhc_core::events::TextInputFailure::BackendUnavailable(detail)
+                | lhc_core::events::TextInputFailure::Clipboard(detail)
+                | lhc_core::events::TextInputFailure::Tool(detail),
+            ) => detail,
+            _ => return String::new(),
+        };
+        use std::hash::{Hash, Hasher};
+        let mut hash = std::collections::hash_map::DefaultHasher::new();
+        detail.hash(&mut hash);
+        format!("{:x}", hash.finish())
     }
 
     pub fn to_ui(&self) -> Message {
@@ -486,6 +513,7 @@ impl Msg {
             Self::ScriptNotExecutable => ("script-not-executable", empty(), 0),
             Self::ChooseCommandScript => ("choose-command-script", empty(), 0),
             Self::ChooseCommandDirectory => ("choose-command-directory", empty(), 0),
+            Self::ActionUnavailableNamed(action) => ("action-unavailable-named", action.clone(), 0),
             Self::ActionUnavailable => ("action-unavailable", empty(), 0),
             Self::ActionUnsupportedMacos => ("action-unsupported-macos", empty(), 0),
             Self::SaveLayoutFirst => ("save-layout-first", empty(), 0),
@@ -578,6 +606,7 @@ impl Msg {
             id: id.into(),
             arg: arg.into(),
             count: i32::try_from(count).unwrap_or(i32::MAX),
+            diagnostic_key: self.diagnostic_key().into(),
         }
     }
 }

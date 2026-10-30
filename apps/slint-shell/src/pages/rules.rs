@@ -159,10 +159,17 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
             .to_string()
             .into(),
     );
+    let issues = diagnostics::analyze_rules(&config.config());
     let rows = layout
         .rules
         .iter()
         .map(|rule| RuleRow {
+            diagnostic: issues
+                .iter()
+                .filter(|issue| issue.rule_id == rule.id)
+                .max_by_key(|issue| issue.code.is_error())
+                .map(|issue| Msg::Rule(issue.clone()).to_ui())
+                .unwrap_or_default(),
             key: rule.key.clone().into(),
             tap: super::one_line(rule.tap_action.as_deref().unwrap_or_default()).into(),
             hold: rule.hold_action.clone().unwrap_or_default().into(),
@@ -250,17 +257,27 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
 }
 
 /// Status after a saved change: mapper problems first, then rule warnings.
-fn report<T>(ui: &SettingsWindow, document: &Document, saved: &Saved<T>, ok: Msg) -> Msg {
+fn report<T>(
+    ui: &SettingsWindow,
+    document: &Document,
+    saved: &Saved<T>,
+    ok: Msg,
+    previous: &[diagnostics::RuleIssue],
+) -> Msg {
     let issue = diagnostics::analyze(&document.read().config())
         .into_iter()
-        .max_by_key(|issue| issue.code.is_error());
+        .max_by_key(|issue| (issue.code.is_error(), !previous.contains(issue)));
     let message = match (&saved.runtime, issue) {
         (Err(_), _) => saved.message(ok),
         (Ok(()), Some(issue)) => Msg::Rule(issue),
         (Ok(()), None) => ok,
     };
-    ui.global::<RulesEditor>()
-        .set_status(crate::notifications::report(ui, &message));
+    let status = if matches!(&message, Msg::Rule(issue) if previous.contains(issue)) {
+        message.to_ui()
+    } else {
+        crate::notifications::report(ui, &message)
+    };
+    ui.global::<RulesEditor>().set_status(status);
     message
 }
 
@@ -271,10 +288,11 @@ fn change(
     fields: bool,
     edit: impl FnOnce(&mut LayoutPreset),
 ) -> Result<(), Msg> {
+    let previous = diagnostics::analyze(&document.read().config());
     match document.edit(View::Rules, |config| config.update_layout(edit)) {
         Ok(saved) => {
             refresh(ui, document, fields);
-            report(ui, document, &saved, Msg::None);
+            report(ui, document, &saved, Msg::None, &previous);
             Ok(())
         }
         Err(error) => {
@@ -393,6 +411,7 @@ pub(super) fn choose(
     set_property(&mut KeyRule::new(String::new(), ""), property, value).inspect_err(|error| {
         editor.set_status(crate::notifications::report(ui, error));
     })?;
+    let previous = diagnostics::analyze(&document.read().config());
     let saved = document
         .edit(View::Rules, |config| {
             config.edit_layout_with_commands(command, |config| {
@@ -411,7 +430,7 @@ pub(super) fn choose(
         })
         .map_err(|error| Msg::from(&error))?;
     refresh(ui, document, true);
-    report(ui, document, &saved, Msg::None);
+    report(ui, document, &saved, Msg::None, &previous);
     editor.set_dialog(RuleDialog::None);
     editor.set_field(RuleDialog::None);
     Ok(())

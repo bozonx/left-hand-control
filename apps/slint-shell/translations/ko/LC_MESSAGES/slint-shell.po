@@ -3118,8 +3118,8 @@ msgid ""
 "The text was not typed: the input tool failed. See the application log."
 msgstr "텍스트가 입력되지 않았습니다. 입력 도구가 작동하지 않습니다. 응용 프로그램 로그를 참조하세요."
 
-msgid "Changes applied, but the mapper was not updated. Restart the mapper."
-msgstr "변경 사항이 적용되었지만 매퍼가 업데이트되지 않았습니다. 매퍼를 다시 시작하십시오."
+msgid "Changes saved, but the mapper is still using the previous settings. Restart the mapper."
+msgstr "변경 사항이 저장되었지만 매퍼가 이전 설정을 계속 사용하고 있습니다. 매퍼를 다시 시작하세요."
 
 msgid "The operation failed. See the application log."
 msgstr "작업이 실패했습니다. 응용 프로그램 로그를 참조하세요."
@@ -3382,3 +3382,6 @@ msgstr "가로 스크롤"
 
 msgid "Scroll vertically"
 msgstr "세로 스크롤"
+
+msgid "Action “{}” is unavailable on this platform or desktop."
+msgstr "이 플랫폼 또는 데스크톱 환경에서는 “{}” 동작을 사용할 수 없습니다."

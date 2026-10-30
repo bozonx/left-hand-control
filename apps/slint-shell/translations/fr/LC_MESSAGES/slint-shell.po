@@ -3457,10 +3457,8 @@ msgstr ""
 "Le texte n'a pas été saisi : l'outil de saisie a échoué. Voir le journal des"
 " applications."
 
-msgid "Changes applied, but the mapper was not updated. Restart the mapper."
-msgstr ""
-"Les modifications ont été appliquées, mais le mappeur n'a pas été mis à "
-"jour. Redémarrez le mappeur."
+msgid "Changes saved, but the mapper is still using the previous settings. Restart the mapper."
+msgstr "Modifications enregistrées, mais le mappeur utilise toujours les anciens paramètres. Redémarrez le mappeur."
 
 msgid "The operation failed. See the application log."
 msgstr "L'opération a échoué. Voir le journal des applications."
@@ -3738,3 +3736,6 @@ msgstr "Défilement horizontal"
 
 msgid "Scroll vertically"
 msgstr "Défilement vertical"
+
+msgid "Action “{}” is unavailable on this platform or desktop."
+msgstr "L’action « {} » est indisponible sur cette plateforme ou cet environnement de bureau."

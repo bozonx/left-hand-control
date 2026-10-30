@@ -3351,10 +3351,8 @@ msgstr ""
 "ტექსტი არ იყო აკრეფილი: შეყვანის ინსტრუმენტი ვერ მოხერხდა. იხილეთ განაცხადის"
 " ჟურნალი."
 
-msgid "Changes applied, but the mapper was not updated. Restart the mapper."
-msgstr ""
-"ცვლილებები განხორციელდა, მაგრამ რუქა არ განახლებულა. გადატვირთეთ რუკების "
-"გადატვირთვა."
+msgid "Changes saved, but the mapper is still using the previous settings. Restart the mapper."
+msgstr "ცვლილებები შენახულია, მაგრამ გადამმისამართებელი კვლავ წინა პარამეტრებს იყენებს. გადატვირთეთ გადამმისამართებელი."
 
 msgid "The operation failed. See the application log."
 msgstr "ოპერაცია ჩაიშალა. იხილეთ განაცხადის ჟურნალი."
@@ -3625,3 +3623,6 @@ msgstr "ჰორიზონტალური გადახვევა"
 
 msgid "Scroll vertically"
 msgstr "ვერტიკალური გადახვევა"
+
+msgid "Action “{}” is unavailable on this platform or desktop."
+msgstr "მოქმედება „{}“ მიუწვდომელია ამ პლატფორმაზე ან სამუშაო გარემოში."

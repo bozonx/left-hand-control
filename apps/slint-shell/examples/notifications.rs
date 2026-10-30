@@ -12,7 +12,7 @@ fn message(id: &str, arg: &str) -> Message {
     }
 }
 
-fn last_dismiss_position(ui: &SettingsWindow) -> slint::LogicalPosition {
+fn first_dismiss_position(ui: &SettingsWindow) -> slint::LogicalPosition {
     use i_slint_core::{
         accessibility::AccessibleStringProperty, item_tree::ItemRc, items::AccessibleRole,
         window::WindowInner,
@@ -42,7 +42,7 @@ fn last_dismiss_position(ui: &SettingsWindow) -> slint::LogicalPosition {
     }
     positions
         .into_iter()
-        .max_by(|a, b| a.y.total_cmp(&b.y))
+        .min_by(|a, b| a.y.total_cmp(&b.y))
         .expect("visible notification dismiss button")
 }
 
@@ -66,6 +66,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Cold renderer/font initialization must not consume the short toast's lifetime.
     let _ = ui.window().take_snapshot()?;
     let center = ui.global::<NotificationCenter>();
+    // Time before the first arrival must not count against its lifetime.
+    std::thread::sleep(Duration::from_millis(2100));
     center.invoke_send(message("timeout-invalid", ""));
     assert_eq!(center.get_items().row_count(), 0);
     for (id, arg) in [
@@ -80,24 +82,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     support::snapshot(&ui, "notifications-initial");
     ui.window()
         .dispatch_event(slint::platform::WindowEvent::PointerMoved {
-            position: last_dismiss_position(&ui),
+            position: first_dismiss_position(&ui),
         });
     slint::platform::update_timers_and_animations();
     let weak = ui.as_weak();
+    let snapshot_appearance = appearance.clone();
     slint::Timer::single_shot(Duration::from_millis(500), move || {
         let ui = weak.unwrap();
         ui.window()
             .dispatch_event(slint::platform::WindowEvent::PointerMoved {
-                position: last_dismiss_position(&ui),
+                position: first_dismiss_position(&ui),
             });
-        support::snapshot(&ui, &format!("notifications-{appearance}"));
+        support::snapshot(&ui, &format!("notifications-{snapshot_appearance}"));
     });
     let weak = ui.as_weak();
     slint::Timer::single_shot(Duration::from_millis(1500), move || {
         let ui = weak.unwrap();
         ui.window()
             .dispatch_event(slint::platform::WindowEvent::PointerMoved {
-                position: last_dismiss_position(&ui),
+                position: first_dismiss_position(&ui),
             });
     });
     let weak = ui.as_weak();
@@ -111,9 +114,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .collect::<Vec<_>>();
         assert_eq!(
             ids,
-            ["copied", "layout-saved", "config-edit-conflict", "error"]
+            ["error", "config-edit-conflict", "copied", "layout-saved"]
         );
-        let position = last_dismiss_position(&ui);
+        let position = first_dismiss_position(&ui);
         for event in [
             slint::platform::WindowEvent::PointerMoved { position },
             slint::platform::WindowEvent::PointerPressed {
@@ -199,7 +202,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let center = ui.global::<NotificationCenter>();
         support::wait_until("success notifications to expire", || {
             let items = center.get_items();
-            items.row_count() == 2 && items.row_data(1).unwrap().message.id == "error"
+            items.row_count() == 2 && items.row_data(0).unwrap().message.id == "error"
         });
         assert_eq!(
             center
@@ -207,9 +210,94 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .iter()
                 .map(|item| item.message.id)
                 .collect::<Vec<_>>(),
-            ["config-edit-conflict", "error"]
+            ["error", "config-edit-conflict"]
         );
-        assert_eq!(center.get_items().row_data(1).unwrap().message.id, "error");
+        assert_eq!(center.get_items().row_data(0).unwrap().message.id, "error");
+        for item in center.get_items().iter().collect::<Vec<_>>() {
+            center.invoke_dismiss(item.token);
+        }
+        for slot in 1..=4 {
+            center.invoke_send(Message {
+                id: "layout-slot-empty".into(),
+                count: slot,
+                ..Default::default()
+            });
+        }
+        center.invoke_backend(message("mapper-failed", ""));
+        assert_eq!(
+            center.get_items().row_data(0).unwrap().message.id,
+            "mapper-failed"
+        );
+        for id in ["worker-error", "worker-unavailable", "worker-restart-limit"] {
+            center.invoke_backend(message(id, ""));
+            assert_eq!(
+                center
+                    .get_items()
+                    .iter()
+                    .filter(|item| item.message.id.starts_with("worker-"))
+                    .count(),
+                1
+            );
+        }
+        center.invoke_worker_recovered();
+        assert!(
+            !center
+                .get_items()
+                .iter()
+                .any(|item| item.message.id.starts_with("worker-"))
+        );
+        ui.hide().unwrap();
+        center.invoke_send(message("layout-created", "Hidden success"));
+        assert!(
+            !center
+                .get_items()
+                .iter()
+                .any(|item| item.message.arg == "Hidden success")
+        );
+        ui.show().unwrap();
+        while let Some(item) = center.get_items().row_data(0) {
+            center.invoke_dismiss(item.token);
+        }
+        document
+            .edit(slint_shell::document::View::Library, |config| {
+                config.update_layout(|layout| {
+                    layout.rules = vec![
+                        lhc_core::profile::model::KeyRule::new("draft".into(), ""),
+                        lhc_core::profile::model::KeyRule::new("other".into(), "F13"),
+                    ];
+                })
+            })
+            .unwrap();
+        let rules = ui.global::<RulesEditor>();
+        assert_eq!(
+            rules.get_rows().row_data(0).unwrap().diagnostic.id,
+            "rule-missing-trigger"
+        );
+        rules.invoke_select(1);
+        rules.invoke_set_enabled(false);
+        assert_eq!(
+            center.get_items().row_count(),
+            0,
+            "an unrelated edit must not repeat an existing rule warning"
+        );
+        assert_eq!(
+            rules.get_rows().row_data(0).unwrap().diagnostic.id,
+            "rule-missing-trigger"
+        );
+        ui.set_page(Page::Rules);
+        support::snapshot(&ui, &format!("notifications-rule-diagnostic-{appearance}"));
+        rules.invoke_select(0);
+        rules.set_field(RuleDialog::Key);
+        rules.invoke_choose("F14".into());
+        assert!(
+            rules
+                .get_rows()
+                .row_data(0)
+                .unwrap()
+                .diagnostic
+                .id
+                .is_empty()
+        );
         println!(
             "Notifications passed: stack, field validation, independent expiry, hover pause, dismissal and repeated errors"
         );

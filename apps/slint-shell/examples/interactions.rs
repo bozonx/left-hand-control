@@ -265,7 +265,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!library.get_macros_dirty());
     library.invoke_save_current();
     assert!(
-        ui.global::<NotificationCenter>()
+        !ui.global::<NotificationCenter>()
             .get_items()
             .iter()
             .any(|item| item.message.id == "layout-saved" && item.message.arg == "Test layout")
@@ -621,6 +621,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.global::<AppState>().set_keyboard_language("EN".into());
     slint_shell::select_ui_language("ru")?;
     ui.show()?;
+    let saved_label = library.get_current_label();
+    library.invoke_save_current();
+    assert!(
+        ui.global::<NotificationCenter>()
+            .get_items()
+            .iter()
+            .any(|item| item.message.id == "layout-saved" && item.message.arg == saved_label)
+    );
     ui.window().set_size(slint::LogicalSize::new(1120.0, 760.0));
     let timer = slint::Timer::default();
     let weak = ui.as_weak();
@@ -741,7 +749,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y: 900.0 });
                 ui.global::<SettingsEditor>().set_tab(SettingsTab::General); assert_eq!(document.read().settings().default_hold_timeout_ms, 321); ui.global::<SettingsEditor>().set_appearance(AppearanceChoice::EInk); ui.global::<SettingsEditor>().invoke_save(); assert_eq!(ConfigDocument::load(paths.clone()).unwrap().settings().appearance, lhc_core::profile::model::Appearance::EInk); ui.global::<Theme>().set_eink(true); ui.global::<Theme>().set_dark(false); slint_shell::ui::apply_theme(&ui.global::<Theme>()); }
             19 => { snapshot(&ui, "settings-eink"); ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: slint::LogicalPosition::new(500.0, 450.0), delta_x: 0.0, delta_y: -450.0 }); }
-            20 => { snapshot(&ui, "settings-behavior-eink"); ui.global::<SettingsEditor>().set_message(Message { id: "settings-timing-invalid".into(), arg: "".into(), count: 0 }); }
+            20 => { snapshot(&ui, "settings-behavior-eink"); ui.global::<SettingsEditor>().set_message(Message { id: "settings-timing-invalid".into(), arg: "".into(), count: 0, ..Default::default() }); }
             21 => {
                 snapshot(&ui, "settings-validation");
                 ui.global::<SettingsEditor>().set_message(Message::default());

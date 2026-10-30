@@ -2745,8 +2745,8 @@ msgstr "Текст не введён: ошибка безопасного дос
 msgid "The text was not typed: the input tool failed. See the application log."
 msgstr "Текст не введён: ошибка инструмента ввода. Подробности в журнале приложения."
 
-msgid "Changes applied, but the mapper was not updated. Restart the mapper."
-msgstr "Изменения применены, но маппер не обновлён. Перезапустите маппер."
+msgid "Changes saved, but the mapper is still using the previous settings. Restart the mapper."
+msgstr "Изменения сохранены, но маппер продолжает использовать прежние настройки. Перезапустите маппер."
 
 msgid "The operation failed. See the application log."
 msgstr "Не удалось выполнить операцию. Подробности в журнале приложения."
@@ -2997,3 +2997,6 @@ msgstr "Прокрутка по горизонтали"
 
 msgid "Scroll vertically"
 msgstr "Прокрутка по вертикали"
+
+msgid "Action “{}” is unavailable on this platform or desktop."
+msgstr "Действие «{}» недоступно на этой платформе или в этом окружении рабочего стола."

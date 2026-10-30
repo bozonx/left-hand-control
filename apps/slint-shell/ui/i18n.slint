@@ -5,6 +5,8 @@ export struct Message {
     id: string,
     arg: string,
     count: int,
+    // Opaque identity for distinct diagnostics; never rendered.
+    diagnostic-key: string,
 }
 
 export global Locale {
@@ -135,6 +137,7 @@ export global Locale {
         if m.id == "script-not-executable" { return @tr("The script file is not executable: run chmod +x on it or prefix the path with sh."); }
         if m.id == "choose-command-script" { return @tr("Choose a script"); }
         if m.id == "choose-command-directory" { return @tr("Choose a working directory"); }
+        if m.id == "action-unavailable-named" { return @tr("Action “{}” is unavailable on this platform or desktop.", m.arg); }
         if m.id == "action-unavailable" { return @tr("Unavailable on this platform or desktop"); }
         if m.id == "action-unsupported-macos" { return @tr("This action is not supported on macOS"); }
         if m.id == "save-layout-first" { return @tr("Save layout changes before opening another layout."); }
@@ -184,7 +187,7 @@ export global Locale {
         if m.id == "long-hold-invalid" { return @tr("Enter a long hold from 100 to 60000 ms."); }
         if m.id == "settings-timing-invalid" { return @tr("A timing value is outside the range shown in Settings."); }
         if m.id == "timeout-invalid" { return @tr("Enter a timeout from 50 to 1000 milliseconds"); }
-        if m.id == "saved-mapper-not-updated" { return @tr("Changes applied, but the mapper was not updated. Restart the mapper."); }
+        if m.id == "saved-mapper-not-updated" { return @tr("Changes saved, but the mapper is still using the previous settings. Restart the mapper."); }
         if m.id == "text-empty" { return @tr("Enter non-empty text"); }
         if m.id == "delay-range" { return @tr("Delay: an integer from 1 to 10000 ms"); }
         if m.id == "system-action-required" { return @tr("Select a system action"); }

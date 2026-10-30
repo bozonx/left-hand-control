@@ -21,6 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             id: "config-loaded".into(),
             arg: "".into(),
             count,
+            diagnostic_key: Default::default(),
         };
         let locale = ui.global::<Locale>();
         // Exercise every bundled language through Slint before the detailed RU/EN assertions.
@@ -80,6 +81,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 id: id.into(),
                 arg: "untranslated technical detail".into(),
                 count: 0,
+                diagnostic_key: Default::default(),
             };
             let russian = locale.invoke_text(message.clone());
             assert!(!russian.is_empty(), "missing Russian message: {id}");
@@ -106,6 +108,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         id: id.into(),
                         arg: arg.into(),
                         count: i32::try_from(count).unwrap(),
+                        diagnostic_key: Default::default(),
                     })
                 })
                 .collect();
@@ -127,7 +130,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             locale.invoke_text(Message {
                 id: "unknown-id".into(),
                 arg: "untranslated technical detail".into(),
-                count: 0
+                count: 0,
+                diagnostic_key: Default::default(),
             }),
             ""
         );

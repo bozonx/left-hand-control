@@ -12,12 +12,13 @@ export global NotificationCenter {
         return id == "config-io" || id == "config-parse" || id == "config-invalid" || id == "mapper-failed" || id == "mapper-running-error" || id == "mapper-stopped-error" || id == "error" || id == "action-failed" || id == "saved-mapper-not-updated" || id == "config-unavailable" || id == "library-changed" || id == "config-edit-conflict";
     }
     public pure function is-warning(id: string) -> bool {
-        return id == "saved-mapper-not-updated" || id == "library-changed" || id == "config-edit-conflict" || id == "worker-restarting" || id == "commands-disabled" || id == "action-unavailable" || id == "save-layout-first" || id == "select-input-device";
+        return id == "rule-duplicate-trigger" || id == "rule-shadowed-trigger" || id == "rule-missing-trigger" || id == "action-unavailable-named" || id == "layout-slot-empty" || id == "saved-mapper-not-updated" || id == "library-changed" || id == "config-edit-conflict" || id == "worker-restarting" || id == "commands-disabled" || id == "action-unavailable" || id == "save-layout-first" || id == "select-input-device";
     }
     callback send(Message);
     callback backend(Message);
     callback dismiss(int);
     callback hover(bool);
+    callback worker-recovered();
     in-out property <int> focused-token;
     out property <bool> focused: root.focused-token != 0;
 }
@@ -40,7 +41,6 @@ component ToastCard inherits Rectangle {
         VerticalLayout {
             spacing: Theme.space-xs;
             horizontal-stretch: 1;
-            if root.item.kind == ToastKind.error: Text { text: @tr("Could not complete the action"); color: Theme.error; font-weight: Theme.weight-semibold; wrap: word-wrap; }
             Text { text: Locale.text(root.item.message); color: Theme.text; wrap: word-wrap; }
         }
         VerticalLayout {

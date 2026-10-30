@@ -3050,8 +3050,8 @@ msgid ""
 "The text was not typed: the input tool failed. See the application log."
 msgstr "未輸入文字：輸入工具失敗。請參閱應用程式日誌。"
 
-msgid "Changes applied, but the mapper was not updated. Restart the mapper."
-msgstr "變更已套用，但映射器未更新。重新啟動映射器。"
+msgid "Changes saved, but the mapper is still using the previous settings. Restart the mapper."
+msgstr "變更已儲存，但映射器仍在使用先前的設定。請重新啟動映射器。"
 
 msgid "The operation failed. See the application log."
 msgstr "操作失敗。請參閱應用程式日誌。"
@@ -3312,3 +3312,6 @@ msgstr "水平捲動"
 
 msgid "Scroll vertically"
 msgstr "垂直捲動"
+
+msgid "Action “{}” is unavailable on this platform or desktop."
+msgstr "操作「{}」在此平台或桌面環境中無法使用。"

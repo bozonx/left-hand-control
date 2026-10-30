@@ -1,3 +1,4 @@
+import { NotificationCenter } from "notifications.slint";
 import { KeyboardFocus } from "focus.slint";
 import { ActionField } from "action-controls.slint";
 import { Timing } from "timing.slint";
@@ -14,7 +15,7 @@ import { Locale, Message } from "i18n.slint";
 import { RuleDialog, HoldBehavior, GameCondition, PickerCategory, HoldDetection } from "types.slint";
 import { Button, CheckBox, ComboBox } from "std-widgets.slint";
 
-export struct RuleRow { key: string, is-chord: bool, tap: string, hold: string, long-hold: string, long-hold-timeout: string, hold-mode: HoldBehavior, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, hold-detection: HoldDetection, double-timeout: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool, key-category: PickerCategory, tap-category: PickerCategory, hold-category: PickerCategory, double-category: PickerCategory, long-hold-category: PickerCategory }
+export struct RuleRow { diagnostic: Message, key: string, is-chord: bool, tap: string, hold: string, long-hold: string, long-hold-timeout: string, hold-mode: HoldBehavior, double-tap: string, layer: string, has-conditions: bool, game: GameCondition, languages: string, applications: string, excluded: string, hold-timeout: string, hold-detection: HoldDetection, double-timeout: string, enabled: bool, swallow-tap: bool, swallow-hold: bool, advanced: bool, key-category: PickerCategory, tap-category: PickerCategory, hold-category: PickerCategory, double-category: PickerCategory, long-hold-category: PickerCategory }
 export struct RuleLayerChoice { id: string, label: string }
 
 /// Rules of the layout being edited.
@@ -280,7 +281,7 @@ component HoldField inherits VerticalLayout {
                             highlighted: RulesEditor.layer-highlight == root.count + 1;
                             clicked => { root.choose(root.count + 1); }
                         }
-                        if RulesEditor.status.id != "": Text { accessible-live-region: polite; text: Locale.text(RulesEditor.status); color: Theme.error; wrap: word-wrap; }
+                        if RulesEditor.status.id != "": Text { accessible-live-region: polite; text: Locale.text(RulesEditor.status); color: NotificationCenter.is-warning(RulesEditor.status.id) ? Theme.warning : Theme.error; wrap: word-wrap; }
                 }
             }
         }
@@ -359,6 +360,11 @@ export component RulesPage inherits PageLayout {
                         HoldField { enabled: rule.key != ""; rule-index: index; rule: rule; }
                         if !rule.is-chord: RuleCell { title: @tr("Double-tap action"); info: @tr("Action performed when the trigger is pressed twice quickly within the double-tap timeout."); value: rule.double-tap; category: rule.double-category; empty-text: @tr("No separate action"); clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
                         if rule.is-chord: Rectangle { horizontal-stretch: 1; min-width: 0px; preferred-width: 0px; }
+                    }
+                    if rule.diagnostic.id != "": Text {
+                        text: Locale.text(rule.diagnostic);
+                        color: NotificationCenter.is-warning(rule.diagnostic.id) ? Theme.warning : Theme.error;
+                        wrap: word-wrap;
                     }
                 }
                 DropMarker { cross-size: parent.width; group: DragGroups.rules; index: index; row-start: parent.y; row-size: parent.height; }
@@ -464,7 +470,7 @@ export component RuleDialogOverlay inherits FocusScope {
             label: RulesEditor.dialog == RuleDialog.hold-timeout ? @tr("Hold threshold, ms") : @tr("Double-tap window, ms");
             accepted => { RulesEditor.choose(RulesEditor.dialog-value); }
         }
-        if RulesEditor.status.id != "": Text { accessible-live-region: polite; text: Locale.text(RulesEditor.status); color: Theme.error; wrap: word-wrap; }
+        if RulesEditor.status.id != "": Text { accessible-live-region: polite; text: Locale.text(RulesEditor.status); color: NotificationCenter.is-warning(RulesEditor.status.id) ? Theme.warning : Theme.error; wrap: word-wrap; }
         if RulesEditor.dialog != RuleDialog.conditions && RulesEditor.dialog != RuleDialog.advanced: Rectangle { vertical-stretch: 1; }
         HorizontalLayout { padding: Theme.space-m; vertical-stretch: 0; spacing: Theme.space-m;
             if RulesEditor.dialog != RuleDialog.advanced && RulesEditor.dialog != RuleDialog.conditions: Button {
