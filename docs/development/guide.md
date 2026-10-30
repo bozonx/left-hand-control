@@ -279,9 +279,13 @@ cargo test --locked -p slint-shell --lib game_mode
 
 ### Уровни
 
+L0–L5 описывают окружения и объём приёмки, а не ступени пирамиды тестирования.
+Границы unit, интеграционных, компонентных и системных тестов, существующие
+примеры и правила выбора — в [классификации тестов](../testing/test-boundaries.md).
+
 | Уровень | Что проверяет | Где | Когда |
 | --- | --- | --- | --- |
-| L0. Unit/integration | Ядро, конфиг, движок, IPC, i18n | GitHub CI (`ci.yml`) | Каждый push/PR |
+| L0. Unit/component/integration | Ядро, конфиг, движок, IPC, i18n, Slint с тестовой platform | GitHub CI (`ci.yml`) | Каждый push/PR |
 | L1. Headless e2e маппера | Путь evdev → engine → uinput без рабочего стола | Хост; GitHub CI, если на раннере есть `uinput` | Каждый PR |
 | L2. Smoke пакетов | Зависимости, файлы, установка и удаление в контейнерах | GitHub CI (`release.yml`), локально в Docker | Тег релиза |
 | L3. Desktop-сценарии | UI, попапы, Spell worker, настройки + L1 | Машина разработчика (KDE Wayland) | Перед релизом и после изменений UI |
