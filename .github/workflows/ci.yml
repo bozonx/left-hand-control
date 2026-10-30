@@ -44,7 +44,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build libfontconfig1-dev libwayland-dev libxkbcommon-dev
+          sudo apt-get install -y clang cmake ninja-build libfontconfig1-dev libwayland-dev libxkbcommon-dev weston
 
       - name: Check formatting
         run: cargo fmt -p lhc-core -p slint-shell --check
@@ -60,6 +60,45 @@ jobs:
       - name: Test Linux shell (Spell)
         if: matrix.os == 'ubuntu-latest'
         run: cargo test --locked --workspace --features slint-shell/spell --all-targets
+
+      - name: Build UI scenarios
+        if: matrix.os == 'ubuntu-latest'
+        run: >-
+          cargo build --locked --profile test -p slint-shell --features spell
+          --example editor --example interactions --example macros --example menus
+
+      - name: Run UI scenarios (headless Wayland)
+        if: matrix.os == 'ubuntu-latest'
+        timeout-minutes: 10
+        shell: bash
+        env:
+          SLINT_BACKEND: winit-software
+          WINIT_UNIX_BACKEND: wayland
+        run: |
+          export XDG_RUNTIME_DIR="$(mktemp -d)"
+          export WAYLAND_DISPLAY=wayland-ci
+          export LHC_DEV_DIR="$XDG_RUNTIME_DIR/lhc"
+          weston --backend=headless --renderer=pixman --socket="$WAYLAND_DISPLAY" \
+            --width=1600 --height=1000 --idle-time=0 --no-config \
+            --log="$XDG_RUNTIME_DIR/weston.log" &
+          weston_pid=$!
+          cleanup() {
+            kill "$weston_pid" 2>/dev/null || true
+            wait "$weston_pid" 2>/dev/null || true
+            cat "$XDG_RUNTIME_DIR/weston.log"
+            rm -rf -- "$XDG_RUNTIME_DIR"
+          }
+          trap cleanup EXIT
+          for attempt in {1..100}; do
+            [ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ] && break
+            kill -0 "$weston_pid"
+            sleep 0.1
+          done
+          test -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY"
+          timeout --kill-after=5s 90s target/debug/examples/editor --smoke
+          for example in interactions macros menus; do
+            timeout --kill-after=5s 90s "target/debug/examples/$example"
+          done
 
       - name: Clippy Linux shell (Spell)
         if: matrix.os == 'ubuntu-latest'

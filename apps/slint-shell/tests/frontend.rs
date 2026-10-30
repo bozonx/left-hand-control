@@ -87,7 +87,10 @@ fn editor_callbacks_save_flush_and_debounce_without_a_desktop() {
     clock.set(Duration::from_millis(401));
     slint::platform::update_timers_and_animations();
     assert_eq!(document.read().layout().macros[0].name, "Draft");
-    clock.set(Duration::from_millis(800));
+    clock.set(Duration::from_millis(798));
+    slint::platform::update_timers_and_animations();
+    assert_eq!(document.read().layout().macros[0].name, "Draft");
+    clock.set(Duration::from_millis(799));
     slint::platform::update_timers_and_animations();
     assert_eq!(document.read().layout().macros[0].name, "Latest");
     assert!(!editor.get_has_unsaved_changes());
@@ -105,6 +108,12 @@ fn editor_callbacks_save_flush_and_debounce_without_a_desktop() {
         "Saved without waiting"
     );
     let revision = document.revision();
+    assert!(library.invoke_flush_drafts());
+    assert_eq!(
+        document.revision(),
+        revision,
+        "flushing an idle draft is a no-op"
+    );
     clock.set(Duration::from_millis(1300));
     slint::platform::update_timers_and_animations();
     assert_eq!(

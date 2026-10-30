@@ -128,24 +128,45 @@ fn picker_modes_restrict_values() {
 }
 
 #[test]
-fn listed_values_are_the_accepted_ones() {
+fn picker_restrictions_accept_valid_values_and_reject_invalid_ones() {
     let trigger = Filter {
         key_only: true,
         trigger: true,
         ..Filter::default()
     };
-    assert!(trigger.admits("ShiftLeft+KeyA") == trigger.accepts("ShiftLeft+KeyA", None));
+    for (value, expected) in [("ShiftLeft+KeyA", true), ("NotAKey", false), ("", false)] {
+        assert_eq!(trigger.admits(value), expected, "listed trigger: {value}");
+        assert_eq!(
+            trigger.accepts(value, None),
+            expected,
+            "accepted trigger: {value}"
+        );
+    }
     let extra = Filter {
         unavailable_keys: vec!["KeyA".into()],
         key_only: true,
         ..Filter::default()
     };
-    assert!(!extra.admits("KeyA") && !extra.accepts("KeyA", None));
+    for (value, expected) in [("KeyA", false), ("KeyB", true)] {
+        assert_eq!(extra.admits(value), expected, "listed extra key: {value}");
+        assert_eq!(
+            extra.accepts(value, None),
+            expected,
+            "accepted extra key: {value}"
+        );
+    }
     let held = Filter {
         held_key: true,
         ..Filter::default()
     };
-    assert!(!held.admits("text:hi") && !held.accepts("text:hi", None));
+    for (value, expected) in [("text:hi", false), ("ControlLeft", true)] {
+        assert_eq!(held.admits(value), expected, "listed held key: {value}");
+        assert_eq!(
+            held.accepts(value, None),
+            expected,
+            "accepted held key: {value}"
+        );
+    }
 }
 
 #[test]
@@ -225,4 +246,47 @@ fn categories_follow_the_key_catalog() {
         category_for_value("cmd:Ctrl+KeyV"),
         PickerCategory::Commands
     );
+}
+
+#[test]
+fn applying_actions_validates_references_against_the_document() {
+    use lhc_core::profile::model::{Command, Macro};
+
+    let (_dir, document) = super::super::test_document();
+    document
+        .edit(crate::document::View::Macros, |config| {
+            config.update_layout(|layout| {
+                layout.macros.push(Macro {
+                    id: "pickerMacro".into(),
+                    name: "Picker macro".into(),
+                    steps: vec![],
+                    step_pause_ms: None,
+                    modifier_delay_ms: None,
+                });
+                layout.commands.push(Command {
+                    id: "pickerCommand".into(),
+                    name: "Picker command".into(),
+                    posix_script: "true".into(),
+                    powershell_script: "exit 0".into(),
+                    working_directory: None,
+                });
+            })
+        })
+        .unwrap();
+    let filter = Filter::default();
+    let config = document.read();
+    for (value, expected) in [
+        ("macro:pickerMacro", true),
+        ("macro:missingMacro", false),
+        ("cmd:pickerCommand", true),
+        ("cmd:missingCommand", false),
+    ] {
+        assert_eq!(filter.accepts(value, Some(&config)), expected, "{value}");
+    }
+    let recursive = Filter {
+        macro_step: true,
+        excluded_macro: "pickerMacro".into(),
+        ..Filter::default()
+    };
+    assert!(!recursive.accepts("macro:pickerMacro", Some(&config)));
 }

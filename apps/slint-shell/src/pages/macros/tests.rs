@@ -87,7 +87,16 @@ fn failed_commit_keeps_the_baseline_and_draft_for_retry() {
     item.item.steps.push(item.item.steps[0].clone());
     state.draft.insert(0, item);
     let saved = document.read().layout().macros.clone();
-    assert!(persist(&document, &mut state).is_err());
+    let baseline = state.baseline.clone();
+    let draft = state.draft.clone();
+    let revision = document.revision();
+    assert!(matches!(
+        persist(&document, &mut state),
+        Err(ConfigError::Invalid(_))
+    ));
+    assert!(state.baseline == baseline);
+    assert!(state.draft == draft);
+    assert_eq!(document.revision(), revision);
     assert!(state.draft != state.baseline);
     assert_eq!(state.draft[0].saved_id, None);
     assert_eq!(document.read().layout().macros, saved);

@@ -687,6 +687,48 @@ mod tests {
     }
 
     #[test]
+    fn session_timeout_returns_the_pending_action_only_once() {
+        let mut session = PopupSession::default();
+        session.choose(Popup::Emoji, "text:timeout".into());
+        // Backdate the choice instead of depending on scheduler timing.
+        session.pending.as_mut().unwrap().chosen = std::time::Instant::now() - FOCUS_RETURN_TIMEOUT;
+        let action = session.timed_out().unwrap();
+        assert_eq!(action.popup, Popup::Emoji);
+        assert_eq!(action.action, "text:timeout");
+        assert!(!session.has_pending());
+        assert!(session.timed_out().is_none());
+        assert!(session.focus(Popup::Emoji, false).0.is_none());
+    }
+
+    #[test]
+    fn focus_return_consumes_the_action_before_the_timeout() {
+        let mut session = PopupSession::default();
+        session.choose(Popup::Quick, "text:focused".into());
+        session.pending.as_mut().unwrap().chosen = std::time::Instant::now() - FOCUS_RETURN_TIMEOUT;
+        assert_eq!(
+            session.focus(Popup::Quick, false).0.unwrap().action,
+            "text:focused"
+        );
+        assert!(session.timed_out().is_none());
+        assert!(session.focus(Popup::Quick, false).0.is_none());
+    }
+
+    #[test]
+    fn taking_another_popups_action_keeps_the_pending_choice() {
+        let mut session = PopupSession::default();
+        session.choose(Popup::Emoji, "text:pending".into());
+        assert!(session.take_pending(Popup::Quick).is_none());
+        assert!(session.has_pending());
+        assert_eq!(
+            session.take_pending(Popup::Emoji).unwrap().action,
+            "text:pending"
+        );
+        assert!(!session.has_pending());
+        assert!(session.take_pending(Popup::Emoji).is_none());
+        assert!(session.timed_out().is_none());
+    }
+
+    #[test]
     fn session_hides_a_popup_only_after_it_had_the_focus() {
         let mut session = PopupSession::default();
         session.shown(Popup::Quick);

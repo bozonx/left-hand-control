@@ -706,15 +706,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn bundled_additional_keys_preserve_actions_and_suppression() {
-        let layout = lhc_core::profile::bundled::BUNDLED[0].layout().unwrap();
-        for id in ["navigation", "select", "symbols", "f-keys"] {
-            assert!(extra_entries(&layout.layer_keymaps[id]).is_empty());
-        }
-        assert_eq!(
-            extra_entries(&layout.layer_keymaps["desktop"]),
-            vec![("Backspace".into(), Some("sys:screenOff".into()))]
-        );
+    fn additional_keys_exclude_grid_keys_and_preserve_assignments() {
+        let map = lhc_core::profile::model::LayerKeymap {
+            keys: [
+                ("KeyQ".into(), Some("KeyA".into())),
+                ("KeyW".into(), None),
+                ("Backspace".into(), Some("sys:screenOff".into())),
+                ("F4".into(), None),
+            ]
+            .into_iter()
+            .collect(),
+            ..Default::default()
+        };
+        let entries = extra_entries(&map);
+        assert_eq!(entries.len(), 2);
+        assert!(entries.contains(&("Backspace".into(), Some("sys:screenOff".into()))));
+        assert!(entries.contains(&("F4".into(), None)));
     }
 
     #[test]

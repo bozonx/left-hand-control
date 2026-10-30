@@ -7,6 +7,11 @@ Linux job проверяет workspace со Spell, clippy и сборку без
 проверяют portable core/shell, clippy и компиляцию release. Во всех трёх job
 проверяется форматирование. Linux job также запускает Python-тесты Windows VM-контроллера;
 Windows job проверяет синтаксис PowerShell без запуска GUI.
+Linux job отдельно собирает и исполняет `editor --smoke`, `interactions`, `macros`
+и `menus` под headless Weston (Wayland, software renderer), последовательно,
+с временной конфигурацией и таймаутом каждого сценария. Обычный
+`cargo test --all-targets` не исполняет `main` этих examples. Этот smoke проверяет
+связь Slint и Rust, но не заменяет desktop-приёмку KDE Wayland.
 
 Unit/integration покрывают модель и валидацию конфигурации, парсер действий,
 движок, журнал клавиш, IPC, хранение и переводы в пределах `cfg` текущей ОС.

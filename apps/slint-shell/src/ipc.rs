@@ -487,7 +487,38 @@ fn forwarded_start(trigger_ns: Option<u128>, fallback: Instant) -> Instant {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::{Arc, Mutex};
+    use std::sync::{Arc, Mutex, mpsc};
+
+    struct ObservedReader<R> {
+        inner: R,
+        first_read: Option<mpsc::Sender<()>>,
+    }
+
+    impl<R: Read> Read for ObservedReader<R> {
+        fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+            let read = self.inner.read(buf)?;
+            if read > 0
+                && let Some(ready) = self.first_read.take()
+            {
+                ready.send(()).unwrap();
+            }
+            Ok(read)
+        }
+    }
+
+    fn connection_pair() -> (Connection, Connection) {
+        #[cfg(unix)]
+        {
+            UnixStream::pair().unwrap()
+        }
+        #[cfg(windows)]
+        {
+            let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).unwrap();
+            let writer = TcpStream::connect(listener.local_addr().unwrap()).unwrap();
+            let (reader, _) = listener.accept().unwrap();
+            (reader, writer)
+        }
+    }
 
     fn dispatch() -> (Dispatch, Arc<Mutex<Vec<Command>>>) {
         let seen = Arc::new(Mutex::new(Vec::new()));
@@ -629,22 +660,90 @@ mod tests {
         assert!(seen.lock().unwrap().is_empty());
     }
 
-    #[cfg(unix)]
     #[test]
     fn stopping_interrupts_an_incomplete_request() {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("ipc.sock");
-        let server = Server::bind_path(path.clone()).unwrap();
+        let (reader, mut writer) = connection_pair();
         let (dispatch, seen) = dispatch();
-        server.start(Endpoint::Settings, dispatch).unwrap();
-        let mut stream = UnixStream::connect(&path).unwrap();
-        stream.write_all(b"{").unwrap();
-        std::thread::sleep(Duration::from_millis(100));
-        let start = Instant::now();
-        server.stop();
-        let elapsed = start.elapsed();
-        assert!(elapsed < Duration::from_millis(700), "{elapsed:?}");
+        let stopped = Arc::new(AtomicBool::new(false));
+        let stop = stopped.clone();
+        let (ready, reading) = mpsc::channel();
+        let (done, finished) = mpsc::channel();
+        let receiving = std::thread::spawn(move || {
+            let result = receive(
+                ObservedReader {
+                    inner: RequestReader {
+                        stream: &reader,
+                        deadline: Instant::now() + Duration::from_secs(5),
+                        stopped: &stop,
+                    },
+                    first_read: Some(ready),
+                },
+                &dispatch,
+                Endpoint::Settings,
+                None,
+            );
+            let kind = result
+                .unwrap_err()
+                .downcast::<std::io::Error>()
+                .unwrap()
+                .kind();
+            done.send(kind).unwrap();
+        });
+        writer.write_all(b"{").unwrap();
+        // Stop only once the reader has consumed the incomplete request.
+        reading.recv_timeout(CLIENT_TIMEOUT).unwrap();
+        stopped.store(true, Ordering::Release);
+        assert_eq!(
+            finished.recv_timeout(Duration::from_millis(700)).unwrap(),
+            std::io::ErrorKind::ConnectionAborted
+        );
+        receiving.join().unwrap();
         assert!(seen.lock().unwrap().is_empty());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn stopping_the_server_joins_its_thread_and_is_repeatable() {
+        let dir = tempfile::tempdir().unwrap();
+        let server = Server::bind_path(dir.path().join("ipc.sock")).unwrap();
+        server.start(Endpoint::Settings, dispatch().0).unwrap();
+        assert!(server.thread.lock().unwrap().is_some());
+        server.stop();
+        assert!(server.stopped.load(Ordering::Acquire));
+        assert!(server.thread.lock().unwrap().is_none());
+        server.stop();
+    }
+
+    #[test]
+    fn fragmented_requests_are_not_dispatched_before_the_line_is_complete() {
+        let (reader, mut writer) = connection_pair();
+        let (dispatch, seen) = dispatch();
+        let (ready, reading) = mpsc::channel();
+        let receiving = std::thread::spawn(move || {
+            let stopped = AtomicBool::new(false);
+            receive(
+                ObservedReader {
+                    inner: RequestReader {
+                        stream: &reader,
+                        deadline: Instant::now() + CLIENT_TIMEOUT,
+                        stopped: &stopped,
+                    },
+                    first_read: Some(ready),
+                },
+                &dispatch,
+                Endpoint::Settings,
+                None,
+            )
+            .map_err(|error| error.to_string())
+        });
+        let payload = line("hide", None);
+        let middle = payload.len() / 2;
+        writer.write_all(&payload[..middle]).unwrap();
+        reading.recv_timeout(CLIENT_TIMEOUT).unwrap();
+        assert!(seen.lock().unwrap().is_empty());
+        writer.write_all(&payload[middle..]).unwrap();
+        receiving.join().unwrap().unwrap();
+        assert_eq!(*seen.lock().unwrap(), [Command::Hide]);
     }
 
     #[test]
@@ -675,14 +774,11 @@ mod tests {
         stream
             .set_read_timeout(Some(Duration::from_secs(2)))
             .unwrap();
-        // Let the server accept before bytes arrive, then split the JSON line
-        // across two writes. Neither accept nor the first fragment is a request.
-        std::thread::sleep(Duration::from_millis(100));
+        // Exercise the full server path; the reader test above synchronizes
+        // on the first fragment to check that partial lines are not dispatched.
         let payload = line("hide", Some("secret"));
         let middle = payload.len() / 2;
         stream.write_all(&payload[..middle]).unwrap();
-        std::thread::sleep(Duration::from_millis(100));
-        assert!(seen.lock().unwrap().is_empty());
         stream.write_all(&payload[middle..]).unwrap();
         let mut response = String::new();
         BufReader::new(stream).read_line(&mut response).unwrap();

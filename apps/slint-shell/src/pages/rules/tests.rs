@@ -12,7 +12,10 @@ fn chip_text_shows_three_items_and_counts_the_rest() {
 
 #[test]
 fn long_hold_accepts_milliseconds_in_range_and_rejects_the_rest() {
-    assert_eq!(parse_long_hold(" 1500 "), Ok(1500));
+    for value in [100, 1500, 60000] {
+        assert_eq!(parse_long_hold(&format!(" {value} ")), Ok(value));
+        assert_eq!(optional_long_hold(&value.to_string()), Ok(Some(value)));
+    }
     assert_eq!(optional_long_hold(""), Ok(None));
     for value in ["0", "99", "-1", "1.5", "60001", "invalid"] {
         assert_eq!(parse_long_hold(value), Err(Msg::LongHoldInvalid));

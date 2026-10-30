@@ -121,6 +121,83 @@ pub(super) fn subscribe<S: 'static>(
 mod tests {
     use super::*;
 
+    use slint::platform::{
+        Platform, PlatformError, WindowAdapter,
+        software_renderer::{MinimalSoftwareWindow, RepaintBufferType},
+    };
+
+    struct Clock(Rc<Cell<Duration>>);
+
+    impl Clock {
+        fn new() -> Self {
+            let clock = Self(Rc::new(Cell::new(Duration::ZERO)));
+            slint::platform::set_platform(Box::new(Self(clock.0.clone()))).unwrap();
+            clock
+        }
+
+        fn advance(&self, elapsed: Duration) {
+            self.0.set(self.0.get() + elapsed);
+            slint::platform::update_timers_and_animations();
+        }
+    }
+
+    impl Platform for Clock {
+        fn create_window_adapter(&self) -> Result<Rc<dyn WindowAdapter>, PlatformError> {
+            Ok(MinimalSoftwareWindow::new(RepaintBufferType::ReusedBuffer))
+        }
+
+        fn duration_since_start(&self) -> Duration {
+            self.0.get()
+        }
+    }
+
+    #[derive(Default)]
+    struct TestDraft {
+        autosave: Autosave,
+        text: String,
+        saved: Vec<String>,
+    }
+
+    impl Draft for TestDraft {
+        fn autosave(&self) -> &Autosave {
+            &self.autosave
+        }
+
+        fn save(&mut self, _ui: &SettingsWindow, _document: &Document) {
+            self.saved.push(self.text.clone());
+        }
+    }
+
+    #[test]
+    fn cancel_prevents_saving_and_allows_scheduling_again() {
+        let clock = Clock::new();
+        let (_dir, document) = super::super::test_document();
+        let ui = SettingsWindow::new().unwrap();
+        let state = Rc::new(RefCell::new(TestDraft::default()));
+        schedule(&ui, &document, &state);
+        state.borrow().autosave.cancel();
+        assert!(!state.borrow().autosave.pending());
+        clock.advance(TYPING_DELAY);
+        assert!(state.borrow().saved.is_empty());
+        state.borrow_mut().text = "retry".into();
+        schedule(&ui, &document, &state);
+        clock.advance(TYPING_DELAY);
+        assert_eq!(state.borrow().saved, ["retry"]);
+    }
+
+    #[test]
+    fn destroying_the_window_discards_the_pending_save() {
+        let clock = Clock::new();
+        let (_dir, document) = super::super::test_document();
+        let ui = SettingsWindow::new().unwrap();
+        let state = Rc::new(RefCell::new(TestDraft::default()));
+        schedule(&ui, &document, &state);
+        drop(ui);
+        clock.advance(TYPING_DELAY);
+        assert!(state.borrow().saved.is_empty());
+        assert!(!state.borrow().autosave.pending());
+    }
+
     #[test]
     fn reentrant_refreshes_coalesce_and_retry_until_state_is_available() {
         let state = Rc::new(RefCell::new(0));
