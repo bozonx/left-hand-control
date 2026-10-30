@@ -58,7 +58,7 @@ Page examples: `action-picker`, `conditions`, `library`, `macros`, `menus`, `und
 
 ### Mapper e2e and releases
 
-Desktop e2e and VM runs are local only; CI runs just the mapper e2e when the runner has `/dev/uinput`.
+Desktop e2e and VM runs are local only; CI requires the mapper e2e and fails if `/dev/uinput` cannot be enabled.
 
 ```sh
 cargo test --locked -p lhc-core --test mapper_e2e -- --ignored  # real evdev → engine → uinput; needs /dev/uinput, /dev/input

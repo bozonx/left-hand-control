@@ -17,16 +17,30 @@ import platform
 from pathlib import Path
 import shlex
 import subprocess
+import sys
 import time
 
 from text_corpus import TEXT_CORPUS, TEXT_UNICODE
 
-from vmlib import Report, StepFailed, Vm, commit, environment_ok, result_path, wait_for
+from vmlib import Report, StepFailed, Vm, commit, environment_ok, receiver_text, result_path, wait_for
 
 # scp paths are relative to the guest home; shell commands use ~.
 GUEST = "~/lhc-e2e"
 GUEST_PY = f"python3 {GUEST}/linux-guest.py"
 CONFIG = "~/.config/dev.bozonx.left-hand-control/config.json"
+
+
+def validate_acceptance(args, suspend_exclusion=None):
+    if not args.acceptance:
+        return
+    if args.stress_seconds < 180:
+        raise StepFailed("acceptance requires --stress-seconds >= 180")
+    if not args.previous and not args.first_release:
+        raise StepFailed("acceptance requires --previous or explicit --first-release")
+    if args.previous and args.first_release:
+        raise StepFailed("--first-release excludes --previous")
+    if suspend_exclusion:
+        raise StepFailed("acceptance requires suspend; use an S3-capable VM")
 
 
 def main():
@@ -39,6 +53,8 @@ def main():
     parser.add_argument("--popup-mode", choices=("winit", "auto", "spell"), default="winit")
     parser.add_argument("--text-backend", choices=("libei", "clipboard"), default="libei")
     parser.add_argument("--stress-seconds", type=int, default=0, help="optional sustained input/lifecycle/resource check")
+    parser.add_argument("--acceptance", action="store_true", help="require every scenario for this backend/VM, including stress and suspend")
+    parser.add_argument("--first-release", action="store_true", help="explicit N/A for previous-version upgrade of the first public release")
     parser.add_argument("--show", action="store_true", help="show the VM display")
     parser.add_argument("--keep", action="store_true", help="keep the overlay disk")
     args = parser.parse_args()
@@ -60,7 +76,26 @@ def main():
         raise SystemExit("suspend_skip_reason must be a nonempty explanation or omitted")
     if previous and (package.name.endswith(".tar.gz") or not vm.get("install")):
         raise SystemExit("--previous needs a .deb or .rpm and `install` in vm.json")
+    try:
+        validate_acceptance(args, suspend_exclusion)
+    except StepFailed as error:
+        parser.error(str(error))
     report = Report()
+    required = set("""boot upload plasma-session install installed-files keyboard-probe test-config
+        start-without-input profile-loaded tray-item no-mapper-without-input autostart-entry reboot-with-input
+        autostart-launch tray-after-login mapper-running portal-deny portal-consent
+        mapper-keys-and-text text-unicode text-unicode-corpus layer-tap-hold macro command
+        system-actions russian-layout popups emoji-ipc quick-menu-rule emoji-hotkey game-mode
+        screen-lock suspend-resume cli second-instance text-after-second-instance keyboard-replug
+        mapper-stop mapper-start stuck-keys-on-stop stuck-keys-on-kill sustained-input-lifecycle
+        upgrade-over-running quit remove""".split())
+    if previous:
+        required.remove("install")
+        required.update(("install-previous", "previous-release", "upgrade-from-previous"))
+    if args.text_backend == "clipboard":
+        required.add("clipboard-preservation")
+    if args.acceptance:
+        report.require(required)
     guest_package = f"{GUEST}/{package.name}"
     state = {}
 
@@ -160,7 +195,7 @@ def main():
         time.sleep(settle)
         vm.qmp.screendump(vm.logs / f"{name}.png")
         vm.qmp.tap("ret")
-        return guest(f"receiver-result --name {name}", check=False)
+        return receiver_text(guest(f"receiver-result --name {name}"))
 
     def expect(name, expected, keys=(), action=None, settle=3):
         text = typed(name, keys, action, settle)
@@ -191,7 +226,7 @@ def main():
         before = failures("user cancelled")
         def deny():
             vm.qmp.tap("t")
-            time.sleep(3.5)
+            wait_for("portal consent dialog", 20, lambda: guest("portal-visible") == "yes")
             vm.qmp.screendump(vm.logs / "portal-deny-dialog.png")
             # A click, not keys: key presses during a pending text job cancel
             # the job instead of recording the declined dialog.
@@ -205,9 +240,14 @@ def main():
                     click_point(position["x"], position["y"])
                 else:
                     vm.qmp.click(*point)
-                time.sleep(3)
+                if index + 1 < len(points if isinstance(points[0], list) else [points]):
+                    time.sleep(0.3)
+                    wait_for("next portal consent dialog", 15, lambda: guest("portal-visible") == "yes")
+            wait_for("declined text job", 15, lambda: failures("user cancelled") > before)
             vm.qmp.tap("t")
-            time.sleep(3)
+            wait_for("cached consent refusal", 15, lambda: failures("user cancelled") >= before + 2)
+            if guest("portal-visible") == "yes":
+                raise StepFailed("portal asked again after cancellation")
             vm.qmp.screendump(vm.logs / "portal-deny-again.png")
         text = typed("portal-deny", action=deny)
         cancelled = failures("user cancelled") - before
@@ -223,11 +263,10 @@ def main():
         set_mapper(True)
         def approve():
             vm.qmp.tap("t")
-            time.sleep(4)
+            wait_for("portal consent dialog", 20, lambda: guest("portal-visible") == "yes")
             vm.qmp.screendump(vm.logs / "portal-consent.png")
-            if guest("portal-visible") == "yes":
-                vm.qmp.tap(*vm.get("portal_keys", ["ret"]))
-                time.sleep(3)
+            vm.qmp.tap(*vm.get("portal_keys", ["ret"]))
+            wait_for("portal consent dismissed", 15, lambda: guest("portal-visible") == "no")
         return expect("portal-consent", "lhc-ok", action=approve)
 
     def layer():
@@ -282,8 +321,9 @@ def main():
     def emoji_hotkey():
         original_vt = foreground_vt()
         def hotkey():
+            before = int(guest("popup-count emoji t4_focused"))
             vm.qmp.tap("ctrl-alt-f11")
-            time.sleep(2.5)
+            guest(f"popup-wait emoji t4_focused --after {before}")
             vm.qmp.screendump(vm.logs / "emoji-hotkey.png")
             state["vt"] = foreground_vt()
             vm.qmp.tap("q")
@@ -300,18 +340,26 @@ def main():
             raise StepFailed(f"expected '🙂', received {text!r}; see emoji-hotkey.png")
         return text
 
+    def popup_hide_focus():
+        def show_hide():
+            guest("popups")
+            vm.qmp.tap("c")
+        return expect("popup-hide-focus", "c", action=show_hide)
+
     def emoji_ipc():
         def show():
+            before = int(guest("popup-count emoji t4_focused"))
             vm.ssh(f"{binary} show emoji")
-            time.sleep(2.5)
+            guest(f"popup-wait emoji t4_focused --after {before}")
             vm.qmp.tap("q")
             time.sleep(3)
         return expect("emoji-ipc", "🙂", action=show)
 
     def quick_rule():
         def show():
+            before = int(guest("popup-count quick t4_focused"))
             vm.qmp.tap("e")   # app:showQuickMenu1
-            time.sleep(2.5)
+            guest(f"popup-wait quick t4_focused --after {before}")
             vm.qmp.tap("q")
             time.sleep(3)
         return expect("quick-rule", "quick-ok", action=show)
@@ -387,7 +435,7 @@ def main():
         recovery = "mapper still running"
         try:
             guest("mapper --timeout 1")
-        except StepFailed:
+        except (StepFailed, subprocess.SubprocessError, OSError):
             set_mapper(True)
             guest("mapper --timeout 20")
             recovery = "mapper restarted"
@@ -496,9 +544,29 @@ def main():
                     raise StepFailed(f"unbounded {field} growth: {samples}")
         return f"{cycles} exact input/popup/stop/start cycles over at least {args.stress_seconds}s; resources bounded; portal grants={grants}"
 
+    def isolated(name, scenario):
+        def prepare():
+            vm.qmp.release_all()
+            if guest("screen-locked") == "yes":
+                vm.ssh("sudo loginctl unlock-sessions")
+                wait_for("baseline unlocked desktop", 15, lambda: guest("screen-locked") == "no")
+            guest("wait-app")
+            guest("fake-game stop")
+            guest("game off")
+            guest("popups")
+            set_mapper(True)
+            vm.qmp.tap("2", "4")
+            wait_for("baseline desktop/layout", 10,
+                     lambda: kde_state() == {"desktop": "1", "layout": "0"})
+            expect(name + "-baseline", "bXc", ["a", "d", "c"])
+        ready = "prepare-" + name
+        report.step(ready, prepare)
+        return report.step(name, scenario, requires=(ready,))
+
     def collect():
-        vm.copy_from("lhc-e2e/app.log", vm.logs / "app.log")
-        vm.copy_from("lhc-e2e/receiver.log", vm.logs / "receiver.log")
+        for name in ("app.log", "receiver.log", "metrics.csv", "metrics.csv.spell.csv"):
+            if not vm.copy_from("lhc-e2e/" + name, vm.logs / name):
+                report.skip("collect-" + name, "file unavailable")
         (vm.logs / "journal.txt").write_text(
             vm.ssh("journalctl --user -b --no-pager -n 2000", check=False, timeout=30), encoding="utf-8")
 
@@ -511,13 +579,16 @@ def main():
                         f"{GUEST}/{previous.name}", fatal=True)
         else:
             report.step("install", install, fatal=True)
-        report.step("installed-files", check_install)
+        report.step("installed-files", check_install, fatal=True)
         report.step("keyboard-probe", probe_keyboard, fatal=True)
         report.step("test-config", write_config, fatal=True)
+        if not previous:
+            report.skip("upgrade-from-previous", "N/A: first public release" if args.first_release else "NOT RUN: no --previous")
         if previous:
             report.step("previous-release", previous_release, fatal=True)
             report.step("upgrade-from-previous", upgrade_from_previous, fatal=True)
         report.step("start-without-input", start_without_permissions)
+        report.step("profile-loaded", guest, f"check-profile --device {shlex.quote(state['device'])}", fatal=True, requires=("start-without-input",))
         report.step("tray-item", guest, "tray")
         report.step("no-mapper-without-input", guest, "mapper --absent --timeout 8")
         report.step("autostart-entry", guest, "autostart")
@@ -538,64 +609,70 @@ def main():
         report.step("command", command)
         report.step("system-actions", system_actions)
         report.step("russian-layout", russian_layout)
-        report.step("popups", guest, "popups")
+        report.step("popups", popup_hide_focus)
         report.step("emoji-ipc", emoji_ipc)
         report.step("quick-menu-rule", quick_rule)
         report.step("emoji-hotkey", emoji_hotkey)
         report.step("game-mode", game_mode)
-        report.step("screen-lock", screen_lock)
+        isolated("screen-lock", screen_lock)
         if suspend_exclusion:
             report.skip("suspend-resume", suspend_exclusion)
         else:
-            report.step("suspend-resume", suspend)
+            isolated("suspend-resume", suspend)
         report.step("cli", guest, "cli")
         report.step("second-instance", guest, "second-instance")
         report.step("text-after-second-instance", expect, "after-second-instance",
                     TEXT_UNICODE, ["y"], None, 5)
-        report.step("keyboard-replug", keyboard_replug)
+        isolated("keyboard-replug", keyboard_replug)
         report.step("mapper-stop", set_mapper, False)
-        report.step("mapper-start", set_mapper, True)
-        report.step("stuck-keys-on-stop", stuck_on_stop)
-        report.step("stuck-keys-on-kill", stuck_on_kill)
+        report.step("mapper-start", set_mapper, True, requires=("mapper-stop",))
+        isolated("stuck-keys-on-stop", stuck_on_stop)
+        isolated("stuck-keys-on-kill", stuck_on_kill)
         if args.stress_seconds:
-            report.step("sustained-input-lifecycle", stress)
+            isolated("sustained-input-lifecycle", stress)
+        else:
+            report.skip("sustained-input-lifecycle", "not requested; use --stress-seconds >= 180")
         if archive or vm.get("reinstall"):
             report.step("upgrade-over-running", upgrade)
         else:
             report.skip("upgrade-over-running", "no `reinstall` in vm.json")
         report.step("quit", guest, "quit-app")
         report.step("remove", remove)
-    except StepFailed:
+    except (StepFailed, subprocess.SubprocessError, OSError):
         print("A required step failed; later steps were not run.")
+    except KeyboardInterrupt:
+        report.steps.append(("controller", "FAILED", "interrupted"))
     finally:
         try:
             if vm.qemu and vm.qemu.poll() is None:
                 vm.qmp.screendump(vm.logs / "final.png")
                 collect()
-        except (StepFailed, OSError):
-            pass
-        vm.stop(keep=args.keep)
+        except (StepFailed, subprocess.SubprocessError, OSError, ValueError) as error:
+            report.skip("collect-diagnostics", str(error))
+        vm.stop(keep=args.keep or report.unsuccessful)
 
     header = [
         f"Date: {time.strftime('%F %T %z')}",
         f"Commit: {commit()}",
+        f"Command: {shlex.join(sys.argv)}",
         f"VM: {vm.name} ({vm.base})",
         f"Memory: {vm.get('memory', 6144)} MiB",
         f"CPU: {vm.get('cpu', 'host')}",
         f"Machine: {vm.machine}",
+        f"Acceptance requested: {args.acceptance}; scope: this VM/backend combination only",
         f"Text backend: {args.text_backend}; stress seconds: {args.stress_seconds}",
         f"Suspend exclusion: {suspend_exclusion or 'none'}",
         f"Package: {package.name}" + (f" (upgraded from {previous.name})" if previous else ""),
         f"Package SHA256: {package_sha256}",
         f"Popup mode: {args.popup_mode} (startup environment and worker processes recorded in resources)",
         f"Portal deny clicks: {vm.get('portal_deny_click', [0.738, 0.659])}; relative: {vm.get('portal_deny_relative')}",
-        f"Previous-version upgrade: {previous.name if previous else 'NOT RUN (no --previous)'}",
+        f"Previous-version upgrade: {previous.name if previous else 'N/A: first public release' if args.first_release else 'NOT RUN (no --previous)'}",
         f"Keyboard: {state.get('device', 'not detected')}",
         f"Host: {platform.node()}, {platform.release()}",
         f"Logs and screenshots: {vm.logs}",
     ]
     report.write(header, result_path("linux", vm.name))
-    raise SystemExit(1 if report.failed else 0)
+    raise SystemExit(1 if report.unsuccessful else 0)
 
 
 if __name__ == "__main__":

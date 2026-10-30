@@ -92,3 +92,78 @@ VirtIO GPU DOD при 4 GiB прошёл 3 S3/wakeup с работающим map
 поэтому один повтор не доказывает длительную стабильность. Release-прогон принят
 при 4 GiB; целевой debug PASS не расширяет его объём до 6 GiB.
 `powercfg /a`, QMP events, boot time и ограничения сохраняются; hibernation не считается S3.
+
+## Строгий профиль VM-приёмки
+
+Обычный запуск остаётся диагностическим: нулевой exit code подтверждает только
+выполненные шаги. `--acceptance` дополнительно требует PASS всех обязательных
+сценариев. SKIP, BLOCKED и NOT RUN обязательного шага дают ненулевой exit code;
+сводка явно пишет `Acceptance: INCOMPLETE`. Непройденные предусловия блокируют
+зависимый сценарий, а независимые проверки могут продолжаться. При ошибке Linux
+сохраняет overlay для разбора, как Windows.
+
+Одна ячейка KDE:
+
+```sh
+python3 apps/slint-shell/scripts/vm/run-linux.py --vm /path/to/kde-vm --package /path/to/current.deb --previous /path/to/previous.deb --popup-mode spell --text-backend clipboard --stress-seconds 180 --acceptance
+```
+
+Профиль требует suspend без исключения в `vm.json`, нагрузку минимум 180 секунд,
+переустановку поверх работающего приложения и обновление с предыдущей версии.
+Только для первого публичного выпуска вместо `--previous` явно передать
+`--first-release`: обновление будет записано как N/A, а не PASS.
+
+Полная обязательная Linux-матрица состоит из 12 ячеек: два разных KDE-стенда
+(DEB и RPM), `winit`/`auto`/`spell`, `libei`/`clipboard`. Каждый запуск создаёт
+новый overlay, поэтому consent и состояние предыдущей ячейки не переиспользуются.
+Контроллер выполняет ячейки последовательно и требует успеха каждой:
+
+```sh
+python3 apps/slint-shell/scripts/vm/run-linux-matrix.py --deb-vm /path/to/debian-kde --deb-package /path/to/current.deb --rpm-vm /path/to/fedora-kde --rpm-package /path/to/current.rpm --previous-deb /path/to/previous.deb --previous-rpm /path/to/previous.rpm
+```
+
+`--list` печатает точные команды без запуска и без отчёта о приёмке. Для первого
+выпуска обе опции previous заменяются одной `--first-release`. Это длительная
+предрелизная проверка; во время разработки достаточно затронутой ячейки.
+Матрица принимает Linux desktop в указанном объёме, не публикацию релиза.
+
+Строгая Windows-приёмка developer VM:
+
+```sh
+python3 apps/slint-shell/scripts/vm/run-windows.py --vm /path/to/windows-s3-vm --suite full --extended --stress-seconds 180 --previous-package /path/to/previous.zip --acceptance
+```
+
+Рядом с предыдущим ZIP нужен его `WINDOWS-SHA256SUMS`. Upgrade выполняется в
+интерактивной сессии против нового ZIP, собранного полным набором; одинаковые
+версии отклоняются. Для первого выпуска явно указать `--first-release`.
+Диагностические фильтры и smoke/release без полного набора не могут получить
+строгий PASS. Проверка через настоящий executable охватывает профиль → mapper →
+WinForms receiver, сохранение game mode через штатную команду/Document и
+повторный ввод после перезапуска того же профиля. Специальный core stand остаётся
+для расширенной матрицы backend. Это не проверка редактирования правил мышью.
+
+Чистый Windows ZIP по-прежнему проверяется отдельно командой
+`run-windows-package.py`: developer VM не заменяет чистую ОС. Аналогично зелёная
+Linux-матрица не подтверждает Windows, GNOME, физические клавиатуры или hosted
+release workflow. Отчёты новых профилей до их фактического запуска не считаются
+свидетельством приёмки.
+
+Linux receiver передаёт атомарный JSON-результат с exit status диалога и точным
+текстом. Пустая подтверждённая строка отличается от таймаута/отмены/отсутствующего
+файла/ошибки SSH; из данных удаляется только один завершающий newline протокола
+kdialog/zenity. Popup smoke требует новый первый кадр, событие получения фокуса
+и скрытие; отдельный сценарий проверяет возврат ввода в receiver после hide.
+
+CI job mapper e2e теперь завершается ошибкой, если `/dev/uinput` недоступен:
+неисполненная обязательная проверка не становится зелёной сборкой.
+
+Быстрая отдельная проверка VM receiver без установки приложения:
+
+```sh
+python3 apps/slint-shell/scripts/vm/check-linux-receiver.py --vm /path/to/kde-vm
+```
+
+Это компонентная проверка инфраструктуры в настоящем desktop: обычный и пустой
+подтверждённый ввод, отмена, таймаут и следующий ввод после cleanup. Ошибка SSH не
+засчитывается за ожидаемую отмену/таймаут. Она полезна при изменениях fixture и
+не заменяет ни mapper e2e, ни приёмку установленного приложения.

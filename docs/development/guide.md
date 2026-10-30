@@ -286,7 +286,7 @@ L0–L5 описывают окружения и объём приёмки, а �
 | Уровень | Что проверяет | Где | Когда |
 | --- | --- | --- | --- |
 | L0. Unit/component/integration | Ядро, конфиг, движок, IPC, i18n, Slint с тестовой platform | GitHub CI (`ci.yml`) | Каждый push/PR |
-| L1. Headless e2e маппера | Путь evdev → engine → uinput без рабочего стола | Хост; GitHub CI, если на раннере есть `uinput` | Каждый PR |
+| L1. Headless e2e маппера | Путь evdev → engine → uinput без рабочего стола | Хост; GitHub CI (отсутствие `uinput` — ошибка job) | Каждый PR |
 | L2. Smoke пакетов | Зависимости, файлы, установка и удаление в контейнерах | GitHub CI (`release.yml`), локально в Docker | Тег релиза |
 | L3. Desktop-сценарии | UI, попапы, Spell worker, настройки + L1 | Машина разработчика (KDE Wayland) | Перед релизом и после изменений UI |
 | L4. VM-матрица | Установка пакета с нуля, права, перелогин, автозапуск, трей, mapper на клавишах QEMU, `text:` через portal, обновление, удаление; Windows-оболочка | Локальные KVM/QEMU VM | Перед релизом, после изменений упаковки, прав, трея, portal |
@@ -790,8 +790,7 @@ docker run --rm -v "$PWD":/src -w /src fedora:latest \
 cargo-release, см. чек-лист); ручной запуск (`gh workflow run release.yml` или
 «Run workflow» в Actions) собирает и проверяет артефакты без создания релиза.
 
-1. **verify** — вызывает `ci.yml`: fmt, clippy, тесты, сборка без Spell, L1 (если на
-   раннере есть `uinput`).
+1. **verify** — вызывает `ci.yml`: fmt, clippy, тесты, сборка без Spell, L1 (отсутствие `uinput` завершает job ошибкой).
 2. **metadata** (`release-metadata.py`) — тег совпадает с `workspace.package.version`,
    в `CHANGELOG.md` есть секция `## [<версия>] - <дата>`, первый `<release>` в metainfo — эта версия.
 3. **build-linux** (`ubuntu:22.04`) — `release-linux.sh`, проверка `ldd`, lintian, `SHA256SUMS`.

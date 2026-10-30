@@ -674,6 +674,8 @@ class WindowsMapper:
                 ("mapper-elevated-uipi", self.elevated_uipi),
                 ("mapper-process-tree-crash", self.process_tree_crash),
             )
+            if self.report.required:
+                self.report.require(name for name, _ in scenarios + extended_scenarios)
             if only and only not in dict(scenarios + (extended_scenarios if extended else ())):
                 raise StepFailed(f"Unknown mapper scenario: {only}")
             if start_at and start_at not in dict(scenarios + (extended_scenarios if extended else ())):

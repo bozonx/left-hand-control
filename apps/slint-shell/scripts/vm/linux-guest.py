@@ -5,6 +5,8 @@ Only the Python standard library and tools of a KDE Plasma install are used.
 """
 
 import argparse
+import ast
+import csv
 import glob
 import grp
 import json
@@ -25,7 +27,7 @@ TRAY_ID = "lhc-slint-shell"
 HOME = Path.home()
 WORK = HOME / "lhc-e2e"
 APP_LOG = WORK / "app.log"
-RECEIVER_OUT = WORK / "receiver.txt"
+METRICS = WORK / "metrics.csv"
 CONFIG_DIR = HOME / ".config" / APP_ID
 DATA_DIR = HOME / ".local/share" / APP_ID
 
@@ -319,8 +321,9 @@ def cmd_write_config(args):
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     environment = HOME / '.config/environment.d'
     environment.mkdir(parents=True, exist_ok=True)
-    (environment / '90-lhc-e2e.conf').write_text(f'LHC_POPUPS={args.popup_mode}\nRUST_LOG=info\n')
+    (environment / '90-lhc-e2e.conf').write_text(f'LHC_POPUPS={args.popup_mode}\nLHC_METRICS={METRICS}\nRUST_LOG=info\n')
     settings = {
+        "inDevelopment": True,
         "linux": {"textMode": args.text_backend},
         "devices": {"keyboards": [args.device]},
         "layoutMode": "manual",
@@ -358,9 +361,18 @@ def cmd_write_config(args):
                     "--key", "Rows", "1"], check=True)
 
 
+def cmd_check_profile(args):
+    settings = json.loads((CONFIG_DIR / "config.json").read_text(encoding="utf-8")).get("settings", {})
+    if (settings.get("devices", {}).get("keyboards") != [args.device]
+            or settings.get("activeLayoutId") != "user:E2E"
+            or settings.get("layoutMode") != "manual"):
+        fail("application did not retain the test device/layout; package and fixture may use different config formats")
+    print("test keyboard and active layout retained by the application")
+
+
 def cmd_start_app(args):
     WORK.mkdir(exist_ok=True)
-    env = ["RUST_LOG=info", f"LHC_POPUPS={args.popups}"]
+    env = ["RUST_LOG=info", f"LHC_POPUPS={args.popups}", f"LHC_METRICS={METRICS}"]
     systemd_run("lhc-e2e-app", [binary()], APP_LOG, env)
     cmd_wait_app(args)
 
@@ -444,46 +456,111 @@ def cmd_autostart(args):
     print(exec_line)
 
 
-def cmd_start_receiver(args):
-    RECEIVER_OUT.unlink(missing_ok=True)
-    unit = f"lhc-e2e-receiver-{args.name}"
+def receiver_path(name):
+    return WORK / f"receiver-{name}.json"
+
+
+def cmd_receive(args):
+    """Capture the dialog's exit status and text atomically, including empty input."""
     command = (["zenity", "--entry", "--title=LHC e2e receiver", "--text=Mapper output"]
                if "GNOME" in user_environment().get("XDG_CURRENT_DESKTOP", "").upper()
                else ["kdialog", "--title", "LHC e2e receiver", "--inputbox", "Mapper output"])
-    systemd_run(unit, command, RECEIVER_OUT,
-                errors=WORK / "receiver.log")
-    # Let KWin map and focus the dialog before the host types.
-    time.sleep(args.settle)
+    result = subprocess.run(command, capture_output=True)
+    # kdialog/zenity append one framing newline; preserve all user data before it.
+    text = result.stdout.decode("utf-8").removesuffix("\n")
+    value = {"status": "accepted" if result.returncode == 0 else "failed",
+             "text": text, "exit_code": result.returncode}
+    path = receiver_path(args.name)
+    pending = path.with_suffix(".tmp")
+    pending.write_text(json.dumps(value, ensure_ascii=False), encoding="utf-8")
+    pending.replace(path)
+
+
+def receiver_focused():
+    if "GNOME" in user_environment().get("XDG_CURRENT_DESKTOP", "").upper():
+        result = subprocess.run([
+            "gdbus", "call", "--session", "--dest", "org.gnome.Shell",
+            "--object-path", "/dev/bozonx/LeftHandControl/Gnome", "--method",
+            "dev.bozonx.LeftHandControl.Gnome.Snapshot", "true"],
+            capture_output=True, text=True, check=True, env={**os.environ, **user_environment()})
+        window = json.loads(ast.literal_eval(result.stdout.strip())[0])["window"]
+        return bool(window and window["title"] == "LHC e2e receiver")
+    return kwin_value("receiver-focus", """
+var w = workspace.activeWindow;
+console.warn(MARKER + JSON.stringify(Boolean(w && String(w.caption) === 'LHC e2e receiver')));
+""")
+
+
+def cmd_start_receiver(args):
+    subprocess.run(["systemctl", "--user", "kill", "--signal=KILL", "lhc-e2e-receiver-*.service"],
+                   capture_output=True, timeout=5)
+    subprocess.run(["systemctl", "--user", "stop", "lhc-e2e-receiver-*.service"],
+                   capture_output=True, check=True, timeout=10)
+    receiver_path(args.name).unlink(missing_ok=True)
+    systemd_run(f"lhc-e2e-receiver-{args.name}",
+                [sys.executable, str(Path(__file__).resolve()), "receive", "--name", args.name],
+                WORK / "receiver.log")
+    wait("receiver window focus", 15, receiver_focused)
 
 
 def cmd_receiver_result(args):
-    unit = f"lhc-e2e-receiver-{args.name}"
-    finished = True
+    path = receiver_path(args.name)
     deadline = time.monotonic() + args.timeout
-    while unit_active(unit):
+    while not path.exists():
         if time.monotonic() >= deadline:
-            finished = False
-            subprocess.run(["systemctl", "--user", "stop", unit], capture_output=True)
-            break
-        time.sleep(0.3)
-    text = RECEIVER_OUT.read_text(errors="replace").strip("\n") if RECEIVER_OUT.exists() else ""
-    if args.expect is None:
-        print(text)
-        return
-    if not finished:
-        fail(f"the receiver was not accepted; text so far unknown, output {text!r}")
-    if text != args.expect:
-        fail(f"expected {args.expect!r}, received {text!r}")
-    print(text)
+            subprocess.run(["systemctl", "--user", "stop", "--no-block", f"lhc-e2e-receiver-{args.name}"],
+                           capture_output=True, timeout=5)
+            fail("receiver timed out without an accepted result")
+        if not unit_active(f"lhc-e2e-receiver-{args.name}"):
+            # A completed wrapper has already renamed its result before exiting.
+            if not path.exists():
+                fail("receiver exited without a result")
+        time.sleep(0.1)
+    result = json.loads(path.read_text(encoding="utf-8"))
+    if (not isinstance(result, dict) or result.get("status") != "accepted"
+            or type(result.get("exit_code")) is not int or result["exit_code"] != 0
+            or not isinstance(result.get("text"), str)):
+        fail(f"receiver failed: {result!r}")
+    if args.expect is not None and result["text"] != args.expect:
+        fail(f"expected {args.expect!r}, received {result['text']!r}")
+    print(json.dumps(result, ensure_ascii=False))
+
+
+def metric_count(popup, event):
+    count = 0
+    for path in (METRICS, Path(str(METRICS) + ".spell.csv")):
+        if path.exists():
+            with path.open() as stream:
+                count += sum(row.get("window") == popup and row.get("event") == event
+                             for row in csv.DictReader(stream))
+    return count
+
+
+def cmd_popup_count(args):
+    print(metric_count(args.popup, args.event))
+
+
+def cmd_popup_wait(args):
+    wait(f"{args.popup} {args.event}", args.timeout,
+         lambda: metric_count(args.popup, args.event) > args.after)
 
 
 def cmd_popups(args):
     for popup in ("quick", "emoji"):
-        for command in (("show", popup), ("hide",)):
-            result = app(*command)
+        before = {event: metric_count(popup, event)
+                  for event in ("t3_first_frame", "t4_focused", "hidden")}
+        try:
+            result = app("show", popup)
             if result.returncode:
-                fail(f"{' '.join(command)}: {result.stdout}{result.stderr}")
-            time.sleep(1)
+                fail(f"show {popup}: {result.stdout}{result.stderr}")
+            for event in ("t3_first_frame", "t4_focused"):
+                wait(f"{popup} {event}", 15,
+                     lambda: metric_count(popup, event) > before[event])
+        finally:
+            result = app("hide")
+            if result.returncode:
+                fail(f"hide: {result.stdout}{result.stderr}")
+        wait(f"{popup} hidden", 15, lambda: metric_count(popup, "hidden") > before["hidden"])
     if app("ping").returncode:
         fail("the instance stopped answering after the popups")
 
@@ -508,6 +585,17 @@ def run_kwin_test_script(name, body):
     finally:
         busctl("call", "org.kde.KWin", "/Scripting", "org.kde.kwin.Scripting",
                "unloadScript", "s", name)
+
+
+def kwin_value(name, body):
+    marker = f"LHC_E2E_{time.time_ns()}="
+    run_kwin_test_script("lhc-e2e-" + name, body.replace("MARKER", json.dumps(marker)))
+    log = subprocess.run(["journalctl", "--user", "-b", "--no-pager", "-o", "cat", "-n", "300"],
+                         capture_output=True, text=True, check=True).stdout
+    values = [line.split(marker, 1)[1] for line in log.splitlines() if marker in line]
+    if len(values) != 1:
+        fail(f"{name} probe did not return one result")
+    return json.loads(values[0])
 
 
 def test_window_point(class_hint, title, x, y, activate=False):
@@ -750,6 +838,8 @@ def main():
     p.add_argument("--device", required=True)
     p.add_argument("--text-backend", choices=("libei", "clipboard"), default="libei")
     p.add_argument("--popup-mode", choices=("winit", "auto", "spell"), default="winit")
+    p = sub.add_parser("check-profile")
+    p.add_argument("--device", required=True)
     p = sub.add_parser("start-app")
     p.add_argument("--popups", default="auto")
     p.add_argument("--timeout", type=float, default=30)
@@ -770,12 +860,21 @@ def main():
     sub.add_parser("autostart")
     p = sub.add_parser("start-receiver")
     p.add_argument("--name", default="main")
-    p.add_argument("--settle", type=float, default=2.5)
+    p = sub.add_parser("receive")
+    p.add_argument("--name", required=True)
     p = sub.add_parser("receiver-result")
     p.add_argument("--name", default="main")
     p.add_argument("--expect")
     p.add_argument("--timeout", type=float, default=10)
     sub.add_parser("popups")
+    p = sub.add_parser("popup-count")
+    p.add_argument("popup", choices=("quick", "emoji"))
+    p.add_argument("event", choices=("t3_first_frame", "t4_focused", "hidden"))
+    p = sub.add_parser("popup-wait")
+    p.add_argument("popup", choices=("quick", "emoji"))
+    p.add_argument("event", choices=("t3_first_frame", "t4_focused", "hidden"))
+    p.add_argument("--after", type=int, required=True)
+    p.add_argument("--timeout", type=float, default=15)
     sub.add_parser("kde-state")
     sub.add_parser("focus-receiver")
     sub.add_parser("portal-visible")

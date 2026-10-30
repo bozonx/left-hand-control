@@ -226,6 +226,7 @@ class Qmp:
         self.process = process
         self.sock = None
         self.buffer = b""
+        self.held = set()
 
     def _connect(self):
         if self.sock:
@@ -275,6 +276,15 @@ class Qmp:
                                            "key": {"type": "qcode", "data": key}}}
                   for key in keys]
         self.execute("input-send-event", events=events)
+        for key in keys:
+            if down:
+                self.held.add(key)
+            else:
+                self.held.discard(key)
+
+    def release_all(self):
+        for key in tuple(self.held):
+            self.release(key)
 
     def press(self, key):
         self._keys([key], True)
@@ -363,25 +373,53 @@ def wait_for(what, timeout, probe, interval=0.5):
         time.sleep(interval)
 
 
+def receiver_text(raw):
+    """Decode a completed receiver; empty text is distinct from missing output."""
+    try:
+        result = json.loads(raw)
+    except (ValueError, TypeError) as error:
+        raise StepFailed("invalid receiver result JSON") from error
+    if (not isinstance(result, dict) or result.get("status") != "accepted"
+            or type(result.get("exit_code")) is not int or result["exit_code"] != 0
+            or not isinstance(result.get("text"), str)):
+        raise StepFailed(f"receiver did not accept input: {result!r}")
+    return result["text"]
+
+
 class Report:
     """Named steps with their outcome; failures do not stop later steps
     unless the caller says so."""
 
     def __init__(self):
         self.steps = []
+        self.required = set()
 
-    def step(self, name, function, *arguments, fatal=False):
+    def require(self, names):
+        self.required.update(names)
+
+    def passed(self, name):
+        return next((status == "passed" for step, status, _ in reversed(self.steps) if step == name), False)
+
+    def step(self, name, function, *arguments, fatal=False, requires=()):
+        missing = [dependency for dependency in requires if not self.passed(dependency)]
+        if missing:
+            detail = "unmet prerequisites: " + ", ".join(missing)
+            self.steps.append((name, "BLOCKED", detail))
+            print(f"{name:<28} BLOCKED ({detail})")
+            if fatal:
+                raise StepFailed(detail)
+            return False
         print(f"{name:<28} ", end="", flush=True)
         try:
             detail = function(*arguments)
             self.steps.append((name, "passed", detail or ""))
-            print("passed" + (f" ({detail})" if detail else ""))
+            print("passed" + (f" ({detail})" if detail else ""), flush=True)
             return True
-        except (StepFailed, subprocess.SubprocessError, OSError) as error:
+        except (StepFailed, subprocess.SubprocessError, OSError, ValueError) as error:
             self.steps.append((name, "FAILED", str(error).strip()))
-            print(f"FAILED\n    {str(error).strip()[:2000]}")
+            print(f"FAILED\n    {str(error).strip()[:2000]}", flush=True)
             if fatal:
-                raise
+                raise StepFailed(str(error)) from error
             return False
 
     def skip(self, name, reason):
@@ -392,15 +430,33 @@ class Report:
     def failed(self):
         return sum(1 for _, result, _ in self.steps if result == "FAILED")
 
+    @property
+    def incomplete(self):
+        return sorted(name for name in self.required if not self.passed(name))
+
+    @property
+    def unsuccessful(self):
+        return bool(self.failed or self.incomplete or
+                    any(status == "BLOCKED" for _, status, _ in self.steps))
+
     def write(self, header, path):
+        recorded = {name for name, _, _ in self.steps}
+        for name in sorted(self.required - recorded):
+            self.steps.append((name, "NOT RUN", "required scenario was not reached"))
         lines = list(header) + [""]
         for name, result, detail in self.steps:
             lines.append(f"- {name}: {result}" + (f" — {detail}" if detail else ""))
         passed = sum(1 for _, result, _ in self.steps if result == "passed")
-        lines += ["", f"Passed: {passed}, failed: {self.failed}"]
+        skipped = sum(1 for _, status, _ in self.steps if status == "skipped")
+        blocked = sum(1 for _, status, _ in self.steps if status in ("BLOCKED", "NOT RUN"))
+        summary = [f"Passed: {passed}, failed: {self.failed}, skipped: {skipped}, blocked/not run: {blocked}"]
+        if self.required:
+            status = "INCOMPLETE — " + ", ".join(self.incomplete) if self.incomplete else "FAILED" if self.failed else "COMPLETE"
+            summary.append("Acceptance: " + status)
+        lines += ["", *summary]
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-        print(f"\nPassed: {passed}, failed: {self.failed}\nSummary: {path}")
+        print("\n" + "\n".join(summary) + f"\nSummary: {path}")
 
 
 def result_path(platform, name):

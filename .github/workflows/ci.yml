@@ -179,7 +179,8 @@ jobs:
             sudo usermod -aG input "$USER"
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::warning::uinput is unavailable on this runner; mapper e2e is local-only"
+            echo "::error::uinput is unavailable; required mapper e2e did not run"
+            exit 1
           fi
 
       - name: Mapper e2e

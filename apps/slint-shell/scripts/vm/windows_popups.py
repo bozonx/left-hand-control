@@ -37,6 +37,46 @@ def check_popups(vm, ps, report):
         probe.text(expected + "a")
         return "physical hotkey and cell key; exact Unicode once; focus restored; modifiers released"
 
+    def profile_remap_restart():
+        metadata = json.loads(probe.read(ready))
+        environment = (f"$env:LHC_DEV_DIR = '{metadata['profile']}'; "
+                       f"$env:LHC_PORT = '{metadata['port']}'; ")
+
+        def command(*arguments):
+            probe.ps(environment + f"& '{metadata['exe']}' " + " ".join(arguments) +
+                     "; if ($LASTEXITCODE -ne 0) { throw 'Shell command failed' }", timeout=30)
+
+        command("game", "off")
+        command("toggle-mapper")
+        probe.reset()
+        vm.qmp.tap("a")
+        probe.text("b")
+        command("game", "on")
+        probe.reset()
+        vm.qmp.tap("a")
+        probe.text("c")
+        old_pid = metadata["pid"]
+        probe.ps(f"Set-Content '{WORK}\\popups\\restart-request' -Value 1", timeout=30)
+
+        def restarted():
+            current = json.loads(probe.read(ready))
+            return current if current["pid"] != old_pid else None
+
+        metadata = wait_for("same-profile shell restart", 45, restarted)
+        command("toggle-mapper")
+        probe.reset()
+        vm.qmp.tap("a")
+        probe.text("c")
+        command("game", "off")
+        probe.reset()
+        vm.qmp.tap("a")
+        probe.text("b")
+        command("toggle-mapper")
+        probe.reset()
+        vm.qmp.tap("a")
+        probe.text("a")
+        return "application profile -> mapper -> receiver: b; persisted game setting -> c across restart; off -> b; stopped -> a"
+
     app_crashed = False
 
     def crash_owner():
@@ -72,6 +112,7 @@ def check_popups(vm, ps, report):
 
     completed = False
     try:
+        report.step("shell-profile-remap-restart", profile_remap_restart, fatal=True)
         for name, popup, key, text in (
             ("popup-bmp-focus", "emoji", "q", "☕"),
             ("popup-surrogate-focus", "emoji", "w", "😀"),

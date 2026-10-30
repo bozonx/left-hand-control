@@ -132,6 +132,17 @@ try {
         $ErrorActionPreference = 'Stop'
         if ($code -ne 0) { throw "Full native/release checks failed (exit $code, see full.log)" }
         Add-Line '- full-native-release: passed'
+        if (Test-Path 'D:\lhc-e2e\previous-package.txt') {
+            $previousPackage = (Get-Content 'D:\lhc-e2e\previous-package.txt' -Raw).Trim()
+            $currentPackages = @(Get-ChildItem (Join-Path $root 'target\release-artifacts-windows') -Filter '*.zip')
+            if ($currentPackages.Count -ne 1) { throw 'Expected one current ZIP for upgrade acceptance' }
+            & powershell -NoProfile -ExecutionPolicy Bypass -File `
+                (Join-Path $root 'apps\slint-shell\scripts\windows\check-windows-upgrade.ps1') `
+                -PreviousArchive $previousPackage -Archive $currentPackages[0].FullName *>&1 |
+                Out-File -FilePath (Join-Path $out 'upgrade.log') -Encoding utf8
+            if ($LASTEXITCODE -ne 0) { throw 'Previous-version ZIP upgrade failed; see upgrade.log' }
+            Add-Line '- previous-version-upgrade: passed'
+        } else { Add-Line '- previous-version-upgrade: NOT RUN (no previous ZIP supplied)' }
         $packages = Join-Path $root 'target\release-artifacts-windows'
         if (Test-Path $packages) { Copy-Item $packages (Join-Path $out 'packages') -Recurse -Force }
     }

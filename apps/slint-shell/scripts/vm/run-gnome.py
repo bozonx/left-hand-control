@@ -12,7 +12,7 @@ import shlex
 import subprocess
 import time
 
-from vmlib import Report, StepFailed, Vm, commit, environment_ok, result_path
+from vmlib import Report, StepFailed, Vm, commit, environment_ok, receiver_text, result_path
 
 GUEST = "~/lhc-e2e"
 PY = f"python3 {GUEST}/linux-guest.py"
@@ -49,6 +49,7 @@ def main():
         vm.wait_ssh()
         vm.ssh(f"mkdir -p {GUEST}")
         vm.copy_to(Path(__file__).with_name("linux-guest.py"), "lhc-e2e/")
+        vm.copy_to(Path(__file__).with_name("text_corpus.py"), "lhc-e2e/")
         guest("wait-session --timeout 180")
         info = vm.ssh("cat /etc/os-release; gnome-shell --version; "
                       "systemctl --user show-environment | grep -E 'XDG_CURRENT_DESKTOP|XDG_SESSION_TYPE'; "
@@ -168,7 +169,7 @@ def main():
         time.sleep(3)
         vm.qmp.screendump(vm.logs / f"{name}.png")
         vm.qmp.tap("ret")
-        result = guest(f"receiver-result --name {name}")
+        result = receiver_text(guest(f"receiver-result --name {name}"))
         if result != expected:
             raise StepFailed(f"expected {expected!r}, received {result!r}; see {name}.png and app.log")
         return repr(result)

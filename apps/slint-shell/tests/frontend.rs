@@ -62,11 +62,83 @@ impl Platform for TestPlatform {
     }
 }
 
+fn check_first_layout_activation() -> Result<(), Box<dyn std::error::Error>> {
+    for automatic in [false, true] {
+        let dir = tempfile::tempdir()?;
+        let paths = StoragePaths::new(dir.path().join("settings"), dir.path().join("data"));
+        let document = Document::load(paths)?;
+        let ui = SettingsWindow::new()?;
+        bind_document(&ui, &document);
+        let library = ui.global::<LayoutLibrary>();
+        library.invoke_set_automatic(automatic);
+        library.invoke_create("First".into(), "".into(), LayoutSource::Empty, 0);
+        assert_eq!(
+            document.read().settings().manual_layout_id.as_deref(),
+            if automatic { None } else { Some("user:First") }
+        );
+        library.invoke_create("Second".into(), "".into(), LayoutSource::Empty, 0);
+        assert_eq!(
+            document.read().settings().manual_layout_id.as_deref(),
+            if automatic { None } else { Some("user:First") }
+        );
+    }
+    Ok(())
+}
+
+fn game_and_drag_callbacks() -> Result<(), Box<dyn std::error::Error>> {
+    let dir = tempfile::tempdir()?;
+    let paths = StoragePaths::new(dir.path().join("settings"), dir.path().join("data"));
+    let document = Document::load(paths.clone())?;
+    let ui = SettingsWindow::new()?;
+    bind_document(&ui, &document);
+    slint_shell::bind_game_mode(&ui);
+    let game_mode_config = paths.load_config()?;
+    let game_state = ui.global::<AppState>();
+    // Game mode is an in-development feature: without the setting On does nothing.
+    game_state.invoke_set_game_control(GameModeControl::On);
+    assert!(!game_state.get_game_active());
+    assert!(!lhc_core::runtime_state::game_mode_active());
+    lhc_core::gamemode::set_settings(&document.read().settings().game_mode, true);
+    for (control, active) in [(GameModeControl::On, true), (GameModeControl::Off, false)] {
+        game_state.invoke_set_game_control(control);
+        assert_eq!(game_state.get_game_control(), control);
+        assert_eq!(game_state.get_game_active(), active);
+        assert!(game_state.get_game_state_available());
+        assert_eq!(lhc_core::runtime_state::game_mode_active(), active);
+    }
+    game_state.invoke_set_game_control(GameModeControl::Auto);
+    assert_eq!(game_state.get_game_control(), GameModeControl::Auto);
+    assert_eq!(paths.load_config()?, game_mode_config);
+    let drag = ui.global::<DragDrop>();
+    for (index, y, height) in [(0, 0.0, 80.0), (1, 90.0, 240.0), (2, 340.0, 80.0)] {
+        drag.invoke_row(99, index, y, height);
+    }
+    assert_eq!(drag.invoke_locate(99, 0, 340.0, 3), 2);
+    assert_eq!(drag.invoke_locate(99, 2, -340.0, 3), 0);
+    assert_eq!(drag.invoke_locate(99, 0, 6.0, 3), 0);
+    // Scrolling the list under a stationary pointer moves the drop target too.
+    drag.set_group(99);
+    drag.set_source(0);
+    drag.set_target(0);
+    drag.set_count(3);
+    drag.set_dragging(true);
+    drag.invoke_scrolled(340.0);
+    assert_eq!(drag.get_target(), 2);
+    drag.invoke_scrolled(-340.0);
+    assert_eq!(drag.get_target(), 0);
+    drag.invoke_reset();
+    // A shorter list ignores (and forgets) rows past its end.
+    assert_eq!(drag.invoke_locate(99, 0, 340.0, 2), 1);
+    Ok(())
+}
+
 #[test]
 fn editor_callbacks_save_flush_and_debounce_without_a_desktop() {
     let clock = Rc::new(Cell::new(Duration::ZERO));
     let tasks = Tasks::default();
     slint::platform::set_platform(Box::new(TestPlatform(clock.clone(), tasks.clone()))).unwrap();
+    check_first_layout_activation().unwrap();
+    game_and_drag_callbacks().unwrap();
     let dir = tempfile::tempdir().unwrap();
     let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
     let document = Document::load(paths).unwrap();

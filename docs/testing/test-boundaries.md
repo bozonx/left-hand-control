@@ -77,3 +77,9 @@ cargo test --locked -p slint-shell --test frontend --test ipc
 общего фильтра Cargo по семантическому типу теста нет. `--tests` также выбирает
 targets, а не ступень пирамиды. Полные команды CI и отдельный запуск ignored
 mapper e2e приведены в [общих проверках](common.md).
+
+Чистые callback-проверки первоначального выбора layout, game-mode binding и
+расчёта drag target перенесены из `examples/interactions.rs` в headless
+`tests/frontend.rs`. Графический сценарий сохраняет проверки фактических
+pointer/key events, геометрии, навигации и оформления. Для VM-матрицы и строгих
+профилей см. [автоматическую приёмку](automation-acceptance.md#строгий-профиль-vm-приёмки).

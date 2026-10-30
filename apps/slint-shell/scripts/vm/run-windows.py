@@ -16,8 +16,11 @@ import argparse
 import hashlib
 import io
 import json
+from pathlib import Path
 import http.server
 import secrets
+import shlex
+import sys
 import subprocess
 import tarfile
 import threading
@@ -187,6 +190,14 @@ def signal_input_result(ps, report, passed):
         report.skip("signal-guest-input-failure", "SSH unavailable; original input failure preserved")
 
 
+def validate_acceptance(args):
+    if args.acceptance and (args.suite != "full" or not args.extended
+                            or args.mapper_from or args.mapper_only or args.stress_seconds < 180):
+        raise StepFailed("acceptance requires --suite full --extended --stress-seconds >= 180 without diagnostic filters")
+    if args.acceptance and bool(args.previous_package) == bool(args.first_release):
+        raise StepFailed("acceptance requires --previous-package or explicit --first-release")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--vm", required=True, help="VM directory with vm.json")
@@ -197,6 +208,9 @@ def main():
     parser.add_argument("--mapper-only", help="mapper-only diagnostics: run just this named scenario")
     parser.add_argument("--extended", action="store_true", help="also check lock/unlock, S3, sustained mapper load and whole-tree termination")
     parser.add_argument("--stress-seconds", type=int, default=180, help="extended mapper load duration")
+    parser.add_argument("--previous-package", type=Path, help="previous released ZIP; WINDOWS-SHA256SUMS must be alongside it")
+    parser.add_argument("--first-release", action="store_true", help="explicit N/A for previous-version upgrade")
+    parser.add_argument("--acceptance", action="store_true", help="require full release desktop coverage on this VM")
     parser.add_argument("--show", action="store_true", help="show the VM display")
     parser.add_argument("--keep", action="store_true", help="keep the overlay disk")
     parser.add_argument("--timeout", type=float, default=150,
@@ -208,6 +222,13 @@ def main():
         parser.error("--mapper-only requires --suite mapper and excludes --mapper-from")
     if args.stress_seconds < 1:
         parser.error("--stress-seconds must be positive")
+    try:
+        validate_acceptance(args)
+    except StepFailed as error:
+        parser.error(str(error))
+    if args.previous_package:
+        if args.suite != "full" or not args.previous_package.is_file() or not args.previous_package.with_name("WINDOWS-SHA256SUMS").is_file():
+            parser.error("--previous-package requires --suite full, an existing ZIP and adjacent WINDOWS-SHA256SUMS")
     environment_ok()
     vm = Vm(args.vm)
     # A stalled Windows OpenSSH multiplexed connection also blocks log collection.
@@ -218,6 +239,11 @@ def main():
             parser.error("Windows acceptance needs at least 4096 MiB")
         vm.config["memory"] = args.memory
     report = Report()
+    if args.acceptance:
+        report.require(("boot", "preflight", "upload-source", "windows-full", "hardware-keyboard",
+                        "shell-profile-remap-restart", "shell-mapper-crash-held",
+                        "popup-bmp-focus", "popup-surrogate-focus", "popup-zwj-focus",
+                        "popup-mixed-text-focus", "popup-reopen-focus"))
     summary = io.StringIO()
     completion = None
 
@@ -248,6 +274,14 @@ def main():
         ).strip()
 
     def upload():
+        if args.previous_package:
+            ps(f"New-Item -ItemType Directory -Force -Path {WORK}\\previous | Out-Null")
+            # Keep the release manifest filename and ZIP name unchanged.
+            vm.copy_to(args.previous_package, "D:/lhc-e2e/previous/" + args.previous_package.name)
+            vm.copy_to(args.previous_package.with_name("WINDOWS-SHA256SUMS"), "D:/lhc-e2e/previous/")
+            ps(f"Set-Content {WORK}\\previous-package.txt -Value '{WORK}\\previous\\{args.previous_package.name}'")
+        else:
+            ps(f"Remove-Item {WORK}\\previous-package.txt -ErrorAction SilentlyContinue; 'No previous package'")
         archive = vm.run_dir / "src.tar.gz"
         count, digest = source_archive(archive)
         ps(f"$ErrorActionPreference = 'Stop'; New-Item -ItemType Directory -Force -Path {WORK}\\src, {WORK}\\out | Out-Null")
@@ -388,6 +422,13 @@ Remove-Item $stage -Recurse -Force
             summary.write(ps(f"Get-Content -Raw -Encoding utf8 {WORK}\\out\\summary.txt"))
             status = ps(f"Get-Content -Raw {WORK}\\out\\done.txt").strip()
         validate_guest_result(status, summary.getvalue(), input_checked)
+        if args.acceptance and "- full-native-release: passed" not in summary.getvalue():
+            raise StepFailed("full native/package acceptance verdict is missing")
+        if args.previous_package:
+            if "- previous-version-upgrade: passed" not in summary.getvalue():
+                raise StepFailed("previous-version upgrade verdict is missing")
+        else:
+            report.skip("previous-version-upgrade", "N/A: first public release" if args.first_release else "no previous ZIP supplied")
 
     try:
         report.step("boot", boot, fatal=True)
@@ -408,15 +449,18 @@ Remove-Item $stage -Recurse -Force
                 if not vm.copy_from("D:/lhc-e2e/out", vm.logs / "guest"):
                     report.skip("collect-guest-logs", "SSH export failed; logs remain on the persistent cache disk")
                 vm.qmp.screendump(vm.logs / "final.png")
-        except (StepFailed, OSError):
-            pass
-        vm.stop(keep=args.keep or bool(report.failed))
+        except (StepFailed, subprocess.SubprocessError, OSError, ValueError) as error:
+            report.skip("collect-diagnostics", str(error))
+        vm.stop(keep=args.keep or report.unsuccessful)
 
     header = [
         f"Date: {time.strftime('%F %T %z')}",
         f"Commit: {commit()}",
+        f"Command: {shlex.join(sys.argv)}",
         f"VM: {vm.name} ({vm.base})",
-        f"Suite: {args.suite}",
+        f"Suite: {args.suite}; acceptance requested: {args.acceptance}",
+        f"Previous-version upgrade: {args.previous_package or ('N/A: first public release' if args.first_release else 'NOT RUN')}",
+        "Scope: Windows developer VM; clean-package and previous-version upgrade require separate acceptance",
         f"Mapper build: {'release' if args.suite in ('full', 'release') else 'debug'}",
         f"Popup shell build: {'none' if args.suite == 'mapper' else 'release' if args.suite in ('full', 'release') else 'debug'}",
         f"Native tests/clippy/package lifecycle: {'included' if args.suite == 'full' else 'not included in this suite'}",
@@ -429,7 +473,7 @@ Remove-Item $stage -Recurse -Force
         summary.getvalue().strip(),
     ]
     report.write(header, result_path("windows", vm.name))
-    raise SystemExit(1 if report.failed else 0)
+    raise SystemExit(1 if report.unsuccessful else 0)
 
 
 if __name__ == "__main__":
