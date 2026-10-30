@@ -26,9 +26,12 @@ export component SettingsWindow inherits Window {
     title: @tr("Left Hand Control");
     preferred-width: 1120px;
     preferred-height: 760px;
-    min-width: 940px;
+    /// Small enough for 1366×768 at 150% and 1920×1080 at 200% with a panel and title bar.
+    out property <length> min-window-width: 640px;
+    out property <length> min-window-height: 400px;
+    min-width: root.min-window-width;
     max-width: Theme.unbounded;
-    min-height: 700px;
+    min-height: root.min-window-height;
     in-out property <Page> page: Page.layouts;
     forward-focus: shortcut-focus;
     private property <string> test-text;
