@@ -14,7 +14,13 @@ export component PopupCell inherits Rectangle {
     border-radius: Theme.radius-panel;
     border-width: 1px;
     border-color: Theme.divider;
+    // Screen readers get one button per cell, named by its hotkey and content.
+    accessible-role: button;
+    accessible-label: root.hotkey + ": " + (root.empty ? @tr("Empty cell") : root.content);
+    accessible-enabled: !root.empty;
+    accessible-action-default => { if !root.empty { root.clicked(); } }
     Text {
+        accessible-role: none;
         x: 8px; y: 5px;
         text: root.hotkey;
         color: root.empty ? Theme.divider : Theme.accent;
@@ -22,6 +28,7 @@ export component PopupCell inherits Rectangle {
         font-weight: Theme.weight-bold;
     }
     Text {
+        accessible-role: none;
         x: 8px; y: 18px;
         width: parent.width - 16px; height: parent.height - 22px;
         text: root.content;
@@ -68,7 +75,10 @@ export component PopupHeader inherits HorizontalLayout {
         width: 28px;
         border-radius: Theme.radius;
         background: close.has-hover ? Theme.hover : transparent;
-        Text { text: "×"; color: Theme.muted; font-size: Theme.font-heading; }
+        accessible-role: button;
+        accessible-label: @tr("Close");
+        accessible-action-default => { root.dismiss(); }
+        Text { accessible-role: none; text: "×"; color: Theme.muted; font-size: Theme.font-heading; }
         close := TouchArea { clicked => { root.dismiss(); } }
     }
 }
