@@ -82,7 +82,7 @@ const EMOJI_WIDTH: u32 = 480;
 const QUICK_WIDTH: u32 = 780;
 const MENU_HEIGHT: u32 = 350;
 const HINT_WIDTH: u32 = 1290;
-const HINT_HEIGHT: u32 = 330;
+const HINT_HEIGHT: u32 = 480;
 /// Gap between the popups and the bottom screen edge.
 const BOTTOM_MARGIN: i32 = 24;
 
@@ -97,7 +97,11 @@ fn height(_popup: Popup) -> u32 {
     MENU_HEIGHT
 }
 
-fn configuration(width: u32, height: u32) -> Result<WindowConf, Box<dyn std::error::Error>> {
+fn configuration(
+    width: u32,
+    height: u32,
+    stretch_width: bool,
+) -> Result<WindowConf, Box<dyn std::error::Error>> {
     let mut builder = WindowConf::builder();
     builder
         .width(width)
@@ -109,6 +113,12 @@ fn configuration(width: u32, height: u32) -> Result<WindowConf, Box<dyn std::err
         .board_interactivity(BoardType::None);
     if let Ok(monitor) = std::env::var(crate::env::OUTPUT) {
         builder.monitor(monitor);
+    }
+    if stretch_width {
+        builder
+            .stretch_width(true)
+            .anchor_2(LayerAnchor::LEFT)
+            .anchor_3(LayerAnchor::RIGHT);
     }
     builder.build()
 }
@@ -332,7 +342,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         pipe: Arc::new(wake_write),
     };
     let mut metrics = metrics::Metrics::from_env(start)?;
-    let popup_configuration = |popup| configuration(width(popup), height(popup));
+    let popup_configuration = |popup| configuration(width(popup), height(popup), false);
     let mut emoji_way =
         SpellWin::invoke_spell("lhc-slint-emoji", popup_configuration(Popup::Emoji)?);
     let emoji = EmojiPopup::new()?;
@@ -354,7 +364,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     // never asks for the keyboard focus.
     let mut hint_way = SpellWin::invoke_spell(
         "lhc-slint-layer-hint",
-        configuration(HINT_WIDTH, HINT_HEIGHT)?,
+        configuration(HINT_WIDTH, HINT_HEIGHT, true)?,
     );
     let hint = LayerHintPopup::new()?;
     hint.set_presented(false);
@@ -673,7 +683,12 @@ mod tests {
                 HINT_HEIGHT,
             ),
         ] {
-            let size = format!("    width: {width}px;\n    height: {height}px;\n");
+            let prefix = if width == HINT_WIDTH {
+                "preferred-"
+            } else {
+                ""
+            };
+            let size = format!("    {prefix}width: {width}px;\n    {prefix}height: {height}px;\n");
             assert!(source.contains(&size), "missing {size:?}");
         }
     }

@@ -199,7 +199,14 @@ fn set_config(
     input_region: Option<&WlRegion>,
     opaque_region: Option<&WlRegion>,
 ) {
-    layer.set_size(window_conf.evaluated_width, window_conf.evaluated_height);
+    layer.set_size(
+        if window_conf.stretch_width {
+            0
+        } else {
+            window_conf.evaluated_width
+        },
+        window_conf.evaluated_height,
+    );
     layer.set_margin(
         window_conf.margin.0,
         window_conf.margin.1,

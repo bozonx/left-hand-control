@@ -1,0 +1,70 @@
+[
+  {
+    "name": "fmt",
+    "command": [
+      "cargo",
+      "fmt",
+      "-p",
+      "lhc-core",
+      "-p",
+      "slint-shell",
+      "-p",
+      "spell-framework",
+      "--check"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "clippy",
+    "command": [
+      "cargo",
+      "clippy",
+      "--locked",
+      "-p",
+      "lhc-core",
+      "-p",
+      "slint-shell",
+      "--features",
+      "slint-shell/spell",
+      "--all-targets",
+      "--no-deps",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "workspace-tests",
+    "command": [
+      "cargo",
+      "test",
+      "--locked",
+      "--workspace",
+      "--features",
+      "slint-shell/spell"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "non-spell",
+    "command": [
+      "cargo",
+      "check",
+      "--locked",
+      "-p",
+      "slint-shell",
+      "--all-targets"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "deny",
+    "command": [
+      "cargo",
+      "deny",
+      "check"
+    ],
+    "exit": 101
+  }
+]

@@ -314,11 +314,40 @@ impl LayerShellHandler for SpellWin {
         _conn: &Connection,
         qh: &QueueHandle<Self>,
         _layer: &LayerSurface,
-        _configure: LayerSurfaceConfigure,
+        configure: LayerSurfaceConfigure,
         _serial: u32,
     ) {
         if Some(_layer) != self.layer.as_ref() {
             return;
+        }
+        if self.config.stretch_width
+            && configure.new_size.0 > 0
+            && let Some(adapter) = &self.adapter
+        {
+            let logical =
+                slint::PhysicalSize::new(configure.new_size.0, self.config.evaluated_height);
+            if adapter.size_original.get() != logical {
+                adapter.size_original.set(logical);
+                let scale = (adapter.scale_factor.get() * 120.0).round() as u32;
+                let (buffer, _, _, _) = adapter.changed_scale_factor(scale);
+                self.buffer = Some(buffer);
+                adapter
+                    .window()
+                    .dispatch_event(slint::platform::WindowEvent::Resized {
+                        size: slint::LogicalSize::new(logical.width as f32, logical.height as f32),
+                    });
+                if let Some(viewport) = &self.viewport {
+                    viewport.set_source(
+                        0.,
+                        0.,
+                        adapter.size.get().width as f64,
+                        adapter.size.get().height as f64,
+                    );
+                    viewport.set_destination(logical.width as i32, logical.height as i32);
+                }
+                adapter.request_redraw();
+                self.first_configure.set(true);
+            }
         }
         self.configured.set(true);
         self.converter(qh);

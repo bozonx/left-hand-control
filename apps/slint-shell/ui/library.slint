@@ -1,6 +1,6 @@
 import { DragGroups, DragHandle, DropMarker } from "reorder.slint";
 import { PageContent, ScrollView } from "scroll.slint";
-import { ButtonGroup, FormField, InfoTip, InlineTextField, InlineTextArea, ItemStyle, IconButton, ConfirmDialog, Divider, MenuSurface, MenuItem, DialogFrame, PageLayout, TooltipText, Card, CardTitle } from "controls.slint";
+import { ButtonGroup, FormField, InfoTip, InlineTextField, InlineTextArea, IconButton, ConfirmDialog, Divider, MenuSurface, MenuItem, DialogFrame, PageLayout, TooltipText, Card, CardTitle } from "controls.slint";
 import { ConditionChoices, ConditionsForm } from "conditions.slint";
 import { AppState } from "app-state.slint";
 import { Theme } from "theme.slint";
@@ -361,7 +361,6 @@ component AutoRuleRow inherits Rectangle {
             DragHandle { group: DragGroups.library-rules; index: root.index; count: root.count; dropped(from, to) => { LayoutLibrary.move-rule(from, to); } }
         }
         VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: Theme.space-2xs;
-            opacity: root.rule.enabled ? 1 : 0.5;
             HorizontalLayout { spacing: Theme.space-xs; alignment: start;
                 Text {
                     text: root.rule.missing ? @tr("Layout not found") : LayoutLibrary.target-text(root.rule.target);

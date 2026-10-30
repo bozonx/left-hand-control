@@ -25,3 +25,5 @@ licensed GPL-3.0-or-later, compatible with this crate's license.
 Frame events mean rendering and buffer commit, not compositor presentation.
 
 - Normalize text editing shortcuts with the patched Slint core, preserving Latin layouts and using physical keys for non-Latin layouts; preserve AltGr input and normalized press/release/repeat events.
+
+- Optional compositor-sized horizontal layers: request width zero with opposite anchors and resize the Slint buffer/viewport on configure, including later output width changes. Used by the responsive held-layer hint.

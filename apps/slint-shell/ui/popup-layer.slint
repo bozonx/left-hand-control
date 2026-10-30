@@ -5,14 +5,15 @@ import { Assignment } from "types.slint";
 /// One read-only key of the hint: its label and what it does in the layer.
 component HintKey inherits Rectangle {
     in property <LayerKeyCell> cell;
+    in property <bool> compact;
     border-radius: Theme.radius;
     border-width: 1px;
     border-color: Theme.border;
     background: Theme.card;
     opacity: root.cell.kind == Assignment.action ? 1 : 0.55;
     VerticalLayout {
-        padding: Theme.space-xs;
-        spacing: Theme.space-2xs;
+        padding: root.compact ? 0px : Theme.space-xs;
+        spacing: root.compact ? 0px : Theme.space-2xs;
         alignment: center;
         Text {
             min-width: 0px;
@@ -41,17 +42,25 @@ component HintKey inherits Rectangle {
     }
 }
 
-component HintHand inherits VerticalLayout {
+component HintHand inherits Rectangle {
     in property <[LayerKeyCell]> cells;
     in property <int> columns: 6;
-    spacing: Theme.space-s;
-    for row in root.cells.length / root.columns: HorizontalLayout {
+    in property <length> key-height: 44px;
+    min-width: 0px;
+    horizontal-stretch: 1;
+    height: (root.cells.length / root.columns) * root.key-height + max(0, root.cells.length / root.columns - 1) * Theme.space-s;
+    VerticalLayout {
         spacing: Theme.space-s;
-        for col in root.columns: Rectangle {
-            width: 90px;
-            height: 44px;
-            if root.cells[row * root.columns + col].index >= 0: HintKey {
-                cell: root.cells[row * root.columns + col];
+        for row in root.cells.length / root.columns: HorizontalLayout {
+            spacing: Theme.space-s;
+            for col in root.columns: Rectangle {
+                min-width: 0px;
+                horizontal-stretch: 1;
+                height: root.key-height;
+                if root.cells[row * root.columns + col].index >= 0: HintKey {
+                    cell: root.cells[row * root.columns + col];
+                    compact: root.key-height < 44px;
+                }
             }
         }
     }
@@ -62,8 +71,9 @@ component HintHand inherits VerticalLayout {
 export component LayerHintPopup inherits Window {
     title: @tr("Layer");
     // The Spell surface repeats this size (`spell.rs`).
-    width: 1290px;
-    height: 330px;
+    preferred-width: 1290px;
+    preferred-height: 480px;
+    min-width: 0px;
     no-frame: true;
     always-on-top: true;
     background: transparent;
@@ -71,9 +81,9 @@ export component LayerHintPopup inherits Window {
     in property <[LayerKeyCell]> left-cells;
     in property <[LayerKeyCell]> right-cells;
     in property <bool> presented: true;
-    Rectangle {
+    panel := Rectangle {
         visible: root.presented;
-        x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px;
+        x: (parent.width - self.width) / 2; y: 8px; width: min(1274px, parent.width - 16px); height: parent.height - 16px;
         background: Theme.surface; border-radius: Theme.radius-popup;
         border-width: 1px; border-color: Theme.divider;
         VerticalLayout {
@@ -88,11 +98,10 @@ export component LayerHintPopup inherits Window {
                 horizontal-alignment: center;
                 overflow: clip;
             }
-            HorizontalLayout {
-                alignment: center;
-                spacing: Theme.space-4xl;
-                HintHand { cells: root.left-cells; }
-                HintHand { cells: root.right-cells; }
+            GridLayout {
+                spacing: Theme.space-l;
+                HintHand { row: 0; col: 0; cells: root.left-cells; key-height: panel.width < 1200px ? 34px : 44px; }
+                HintHand { row: panel.width < 1200px ? 1 : 0; col: panel.width < 1200px ? 0 : 1; cells: root.right-cells; key-height: panel.width < 1200px ? 34px : 44px; }
             }
         }
     }

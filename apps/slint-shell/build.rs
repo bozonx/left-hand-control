@@ -107,6 +107,8 @@ fn build() {
     generated.push_str("} }\n");
     std::fs::write(output.join("rust_translations.rs"), generated).unwrap();
     let config = slint_build::CompilerConfiguration::new()
+        .with_include_paths(vec!["ui/widgets".into(), "ui/widgets/lhc".into()])
+        .with_style("lhc".into())
         .with_bundled_translations("translations")
         .with_default_translation_context(slint_build::DefaultTranslationContext::None);
     slint_build::compile_with_config("ui/app.slint", config).unwrap();

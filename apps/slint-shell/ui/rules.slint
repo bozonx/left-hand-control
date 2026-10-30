@@ -8,7 +8,7 @@ import { ActionPicker } from "action-picker.slint";
 import { CategoryIcon } from "action-controls.slint";
 import { ConditionsForm, ConditionChoices } from "conditions.slint";
 import { DragDrop, DragGroups, DragHandle, DropMarker } from "reorder.slint";
-import { CardHeader, ResettableField, IconButton, ConfirmDialog, DialogFrame, ItemStyle, InfoTip, Badge, SelectField, NumericInput, FormLabel, FormField, ButtonGroup, Divider, MenuSurface, MenuItem, MenuLabel, PageLayout, PageHeader, FieldButton } from "controls.slint";
+import { CardHeader, ResettableField, IconButton, ConfirmDialog, DialogFrame, InfoTip, Badge, SelectField, NumericInput, FormLabel, FormField, ButtonGroup, Divider, MenuSurface, MenuItem, MenuLabel, PageLayout, PageHeader, FieldButton } from "controls.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 import { RuleDialog, HoldBehavior, GameCondition, PickerCategory, HoldDetection } from "types.slint";
@@ -323,7 +323,7 @@ export component RulesPage inherits PageLayout {
                 border-color: (DragDrop.dragging && DragDrop.group == DragGroups.rules && DragDrop.source == index) ? Theme.focus : Theme.divider;
                 border-width: 1px;
                 border-radius: Theme.radius-panel;
-                opacity: ItemStyle.opacity(rule.enabled) * (DragDrop.dragging && DragDrop.group == DragGroups.rules && DragDrop.source == index ? Theme.dragged-opacity : 1);
+                opacity: (DragDrop.dragging && DragDrop.group == DragGroups.rules && DragDrop.source == index ? Theme.dragged-opacity : 1);
 
                 rule-content := VerticalLayout { min-width: 0px; padding: Theme.space-l-plus; spacing: Theme.space-m-plus;
                     rule-header := HorizontalLayout { spacing: Theme.space-s;

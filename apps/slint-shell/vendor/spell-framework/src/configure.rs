@@ -72,6 +72,7 @@ pub struct WindowConf {
     pub(super) height: Dimension,
     /// width calculated from provided Dimension of width. Not intended for external use.
     pub(super) evaluated_width: u32,
+    pub(super) stretch_width: bool,
     /// height provided from evaluated Dimension of height. Not intended for external use.
     pub(super) evaluated_height: u32,
     pub(super) anchor: [Option<Anchor>; 4],
@@ -95,6 +96,7 @@ impl WindowConf {
 #[derive(Default)]
 pub struct WindowConfBuilder {
     max_width: Dimension,
+    stretch_width: bool,
     max_height: Dimension,
     anchor: [Option<Anchor>; 4],
     margin: (i32, i32, i32, i32),
@@ -128,6 +130,13 @@ impl WindowConfBuilder {
         let x = self;
         x.max_height = height.into();
         x
+    }
+
+    /// Let the compositor choose the output width between left/right margins.
+    /// `width` remains the initial buffer size until the first configure event.
+    pub fn stretch_width(&mut self, stretch: bool) -> &mut Self {
+        self.stretch_width = stretch;
+        self
     }
 
     /// Defines the first anchor to which the window needs to be attached. View
@@ -248,6 +257,7 @@ impl WindowConfBuilder {
                 self.max_height.clone()
             },
             evaluated_width: 0,
+            stretch_width: self.stretch_width,
             evaluated_height: 0,
             anchor: self.anchor,
             margin: self.margin,

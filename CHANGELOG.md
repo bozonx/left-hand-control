@@ -18,6 +18,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Improve placeholder contrast and keep disabled mapper/automatic rules readable while editing. High contrast and E-ink now cover Fluent controls, popup choices, text selection and focus; theme and game-mode choices use the shared keyboard-accessible button group. The held-layer hint follows the output width and stacks hands on narrow screens without reducing text size.
+
 - Shell/core commands use typed mapper configuration and application actions. IPC rejects commands sent to the wrong process and reports UI queue failures; popup worker communication no longer blocks the settings interface. Compound settings/layout edits roll back on failure, and core state notifications are coalesced without discarding application requests.
 
 - Search fields share the text-field clear button, with consistent availability for disabled and read-only fields.

@@ -202,7 +202,9 @@
 
 ## 2. Контраст и масштабирование
 
-### C01 · P2 · Д/К — placeholder не достигает 4,5:1 в обычных темах
+### C01 · ✅ P2 · Д/К — placeholder не достигает 4,5:1 в обычных темах
+
+**✅ Исправлено:** Placeholder использует читаемый токен `Theme.muted` во всех темах, включая inline-поля. Постоянный сценарий `contrast-scaling` проверяет 4,5:1 на surface/card/hover/selected.
 
 **Где:** [theme.slint](../../apps/slint-shell/ui/theme.slint):78–84; [controls-base.slint](../../apps/slint-shell/ui/controls-base.slint):163–176; placeholder inline-полей в [controls-inline.slint](../../apps/slint-shell/ui/controls-inline.slint):111–118, 188–198.
 
@@ -217,7 +219,9 @@
 
 Это текст 11–14px, а не крупный заголовок. Особенно заметны «Добавить описание», поиск и примеры значений. HC исправляет базовую пару, но обычные темы тоже должны оставаться читаемыми. [Расчёты](evidence/contrast.csv), [light-940](evidence/skia/light-940.png).
 
-### C02 · P2 · К — отключённое правило затемняется вместе с доступным редактированием
+### C02 · ✅ P2 · К — отключённое правило затемняется вместе с доступным редактированием
+
+**✅ Исправлено:** Убрана прозрачность всей карточки отключённого триггера и редактируемого текста автоматического правила. Состояние применения по-прежнему показывает checkbox; подписи и доступное редактирование сохраняют контраст.
 
 **Где:** [controls-base.slint](../../apps/slint-shell/ui/controls-base.slint):447–449; [rules.slint](../../apps/slint-shell/ui/rules.slint):319–348; также [library.slint](../../apps/slint-shell/ui/library.slint):357–383.
 
@@ -233,7 +237,9 @@
 
 При `pill=true` border-width всегда 0. У выбранной кнопки background не зависит от `focus.has-focus`; фокус на ней вообще не меняет внешний вид. На невыбранной остаётся слабое hover-подобное заполнение без явной рамки. Исправить независимо от логики K12; проверять normal/HC/E-ink и фокус на выбранном пункте.
 
-### C04 · P2 · Д/К — высокий контраст не распространяется на стандартные виджеты
+### C04 · ✅ P2 · Д/К — высокий контраст не распространяется на стандартные виджеты
+
+**✅ Исправлено:** Используемые Fluent-виджеты Slint 1.18.1 подключены как локальный стиль с HC/E-ink палитрой поверхностей, текста, обводок, состояний, выделения и фокуса. Это распространяется на Button, CheckBox, ComboBox и его popup, TextEdit, scrollbar и текстовые контекстные меню. Выбор темы и game condition переведён на общий ButtonGroup, включая вертикальную компоновку и стрелки.
 
 **Где:** [theme.slint](../../apps/slint-shell/ui/theme.slint):73–98, 102–104; [theme.rs](../../apps/slint-shell/src/theme.rs):31–56.
 
@@ -273,7 +279,9 @@ HC меняет собственные токены Theme, но стандарт
 
 Предоставить полный текст при клавиатурном фокусе, разворачиваемый просмотр или адаптивные размеры. Не всякое многоточие — дефект: список команд уже имеет «Показать всё», InlineTextArea — режим редактирования; улучшать прежде всего места без эквивалентного просмотра.
 
-### C08 · P2 · К — подсказка удерживаемого слоя не адаптируется к ширине экрана
+### C08 · ✅ P2 · К — подсказка удерживаемого слоя не адаптируется к ширине экрана
+
+**✅ Исправлено:** Spell запрашивает ширину подсказки у композитора через противоположные anchors; configure обновляет Slint buffer и viewport, в том числе после смены масштаба вывода. В узком окне руки стоят друг под другом, ширина клеток гибкая; текст не уменьшается. Высота 480 логических единиц помещается с нижним отступом 24 при 1920×1080/200%.
 
 **Где:** [popup-layer.slint](../../apps/slint-shell/ui/popup-layer.slint):47–66, 88–94; [spell.rs](../../apps/slint-shell/src/spell.rs):84–85, 357–361.
 
@@ -578,7 +586,7 @@ done
 
 ## 9. Проверка исправлений
 
-Закрыты **18 пунктов**: ✅ K01–K16, ✅ C03 и ✅ A05. K17 снят с дефектов по решению владельца продукта; скрытый вход мышью сохранён. Остальные замечания по доступности не объявляются исправленными.
+Закрыты **22 пункта**: ✅ K01–K16, ✅ C01–C04, ✅ C08 и ✅ A05. C05, C06, C07 и C09 по указанию владельца в этой работе пропущены и не отмечены исправленными. K17 снят с дефектов по решению владельца продукта; скрытый вход мышью сохранён. Остальные замечания по доступности не объявляются исправленными.
 
 Добавлен постоянный сценарий [keyboard-navigation.rs](../../apps/slint-shell/examples/keyboard-navigation.rs). Он отправляет реальные Slint KeyPressed/KeyReleased, проверяет фактический `ItemRc` фокуса и результат действия. Четыре диалога, включая вложенный, получают по 180 Tab и 180 Shift+Tab: **1440 событий**, с проверкой принадлежности фокуса верхнему диалогу. Перед каждым обходом фокус намеренно очищается, чтобы проверить восстановление обхода после удаления динамического контрола. Также проверены Refresh+Enter без выбора устройства, стрелки+Enter в ButtonGroup, возврат к инициатору, InfoTip+Enter/Escape, F1, Home/End для прокрутки, Tab+Enter в меню, выбор категории «Текст» и закрытие picker, перенос ячейки Ctrl+X/Ctrl+V, Alt+Right для страницы и открытие селектора активной раскладки. Начальные состояния задаются UI globals; это не заявление о сквозном прохождении каждого экрана только клавиатурой.
 
@@ -626,3 +634,80 @@ cargo deny check
 | `cargo deny check` | не выполнена: **cargo-deny не установлен**, команда возвращает exit 101, [лог](evidence/fixes/deny.log) |
 
 14 ignored — штатные тесты физического mapper/uinput, изолированного clipboard и GNOME portal; они не засчитаны как пройденные. Во время разработки ранние прогоны выявили потерю фокуса при замене моделей, регрессию Ctrl+S и растянутую панель справки; эти проблемы исправлены до перечисленных здесь повторных UI-прогонов. Первую попытку clippy остановили до завершения после визуальной проверки подсказки; в таблице приведён завершённый повторный прогон актуального кода. Новые зависимости не добавлялись.
+
+### Контраст и масштабирование — 30 октября 2026 года
+
+✅ Исправлены **C01, C02, C04 и C08**. ✅ C03 был исправлен ранее. **C05, C06, C07 и C09 пропущены по указанию владельца**; они остаются открытыми.
+
+Placeholder теперь использует `Theme.muted`: расчёт исходных четырёх проблемных пар даёт **7,1788:1** (dark field), **6,6333:1** (dark inline), **7,0324:1** (light field), **7,7298:1** (light inline). У отключённого правила убрана общая прозрачность; checkbox продолжает показывать состояние применения правила, а доступное редактирование остаётся читаемым.
+
+Для C04 добавлен локальный стиль используемых Fluent-виджетов из уже закреплённого Slint 1.18.1, без изменения Cargo-зависимостей. Причина и отличия от исходников описаны в [widgets/README.md](../../apps/slint-shell/ui/widgets/README.md). Палитра распространяется на обводки, состояния, focus, selection, popup ComboBox и текстовые контекстные меню. Нельзя ограничиться записью в публичный `Palette`: внутренние Fluent-цвета из него не настраиваются. Выбор темы и game condition использует общий `ButtonGroup`, поддерживающий горизонтальное и вертикальное расположение и четыре стрелки.
+
+Постоянный сценарий [contrast-scaling.rs](../../apps/slint-shell/examples/contrast-scaling.rs) завершил все этапы: **30 сочетаний страницы/темы/языка** (Settings, Rules, Library; dark/light/dark HC/light HC/E-ink; EN/RU), проверку placeholder ≥4,5:1 на четырёх фоновых токенах, **480 проверок границ текста** (60 подписей клавиш + 60 назначений при четырёх ширинах) и popup/выделение текста в HC/E-ink. В проверке компоновки подсказке передаётся логический `Resized`, как в обработчике configure Spell; это отдельно от изменения масштаба реального выхода. Завершение всех этапов проверяется явно, закрытие последнего окна не засчитывается как успех. [Лог](evidence/contrast-fixes/contrast-scaling.log).
+
+Визуально проверены [отключённый триггер dark](evidence/contrast-fixes/contrast-1.png), [light](evidence/contrast-fixes/contrast-4.png), [dark HC настройки](evidence/contrast-fixes/contrast-6.png), [light HC настройки](evidence/contrast-fixes/contrast-9.png), подсказка при [1290](evidence/contrast-fixes/hint-1290.png), [960](evidence/contrast-fixes/hint-960.png), [640](evidence/contrast-fixes/hint-640.png) логических единицах. В узкой подсказке руки расположены вертикально, размеры шрифта сохранены; компактные отступы не обрезают строку назначения. Для C08 фиксированные width/height заменены предпочтительным размером: один resize буфера при сохранённом фиксированном width не менял ширину содержимого.
+
+Отдельно проверены раскрытые ComboBox в [dark HC](evidence/contrast-fixes/widgets-0.png), [light HC](evidence/contrast-fixes/widgets-1.png), [E-ink](evidence/contrast-fixes/widgets-2.png) и фокус/выделение TextEdit в [dark HC](evidence/contrast-fixes/widgets-3.png), [light HC](evidence/contrast-fixes/widgets-4.png), [E-ink](evidence/contrast-fixes/widgets-5.png). Это визуальная проверка перечисленных состояний, а не заявление о ручной проверке каждого hover/pressed-состояния каждого виджета на всех платформах.
+
+[check-contrast-spell.py](tools/check-contrast-spell.py) запустил настоящий Spell worker и отправил ему только fixture подсказки, hide и quit. В отдельном виртуальном KWin масштаб выхода менялся **125% → 150% → 200% → 100%**; подтверждены viewport **1536×480, 1280×480, 960×480, 1920×480**, worker завершился с exit 0. [Лог проверки](evidence/contrast-fixes/spell-check.log), [выдержка Wayland configure/viewport](evidence/contrast-fixes/spell-geometry.log). Это проверка поверхности и смены масштаба, не снимок композиции рабочего стола. Полная ширина компонента и отсутствие обрезания текста проверены отдельным сценарием выше.
+
+Окончательные команды сборки и UI-проверки:
+
+```sh
+cargo build --locked -p slint-shell --features spell \
+  --example contrast-scaling --example keyboard-navigation \
+  --example editor --example interactions --example action-picker \
+  --example conditions --example library --example macros --example menus \
+  --example layer-keys --example inline-edit --example drag-scroll \
+  --example notifications --example undo-redo --example popup-grid \
+  --bin left-hand-control
+
+LHC_AUDIT_OUT=/tmp/lhc-contrast-validation \
+LHC_AUDIT_SUFFIX=-final \
+LHC_EDITOR_SNAPSHOTS=/tmp/lhc-contrast-validation/snapshots \
+LHC_AUDIT_COMMAND='timeout 60 target/debug/examples/contrast-scaling > /tmp/lhc-contrast-validation/contrast-scaling.log 2>&1 && timeout 60 target/debug/examples/keyboard-navigation > /tmp/lhc-contrast-validation/keyboard-navigation.log 2>&1 && python3 dev_docs/accessibility-audit-2026-10-29/tools/check-contrast-spell.py > /tmp/lhc-contrast-validation/spell-check.log 2>&1 && bash dev_docs/accessibility-audit-2026-10-29/tools/run-scenarios.sh' \
+bash dev_docs/accessibility-audit-2026-10-29/tools/run-isolated.sh
+```
+
+Сборка — exit 0 ([лог](evidence/contrast-fixes/build.log)). `contrast-scaling`, `keyboard-navigation` (1440 Tab/Shift+Tab и прежние функциональные проверки) и Spell — exit 0. В одном общем прогоне `drag-scroll` вернул 101 на `assert!(drag.get_dragging())` после wheel; остальные 12 штатных сценариев вернули 0. Этот отказ сохранён отдельно: [исходная таблица](evidence/contrast-fixes/scenario-results-first.tsv), [лог](evidence/contrast-fixes/drag-scroll-first.log). Код scroll/reorder этим изменением не редактировался.
+
+Среда: Linux, отдельный KDE/KWin Wayland, winit-software для UI-снимков и настоящий Spell worker с его Skia renderer; временные XDG-каталоги, `LHC_DEV_DIR`, приватные IPC и D-Bus. Реальный конфиг, пользовательский экземпляр, физический mapper и настройки выхода хостового композитора не изменялись. GNOME, Windows, macOS, речь Orca и braille в этой работе не проверялись.
+
+Повтор `drag-scroll` в отдельном KWin дал **0, 0, 101** ([1](evidence/contrast-fixes/drag-scroll-repeat-1.log), [2](evidence/contrast-fixes/drag-scroll-repeat-2.log), [3](evidence/contrast-fixes/drag-scroll-repeat-3.log)). Для сравнения был собран временный `drag-scroll-baseline`: неизменённый исходный пример с копиями `theme.slint`, `scroll.slint`, `reorder.slint`, `i18n.slint` и `icons/grip.svg` из **12a860a4ca473ccfd5eedb4e5c9fa0647ff4456f**; менялись только два пути импорта к этим копиям. Пять запусков дали **101, 0, 0, 0, 101**, с тем же отказом `drag.get_dragging()` после wheel. [Ревизия и SHA-256 исходников](evidence/contrast-fixes/drag-baseline-source.json), [baseline 1](evidence/contrast-fixes/drag-scroll-baseline-1.log), [baseline 5](evidence/contrast-fixes/drag-scroll-baseline-5.log), [лог KWin и все пять кодов](evidence/contrast-fixes/kwin-session-baseline.log). Это воспроизводимая нестабильность исходного стенда; она не объявляется исправленной и не скрывается за успешными повторами. Временные исходники baseline удалены после проверки.
+
+Команды сравнения после создания временных копий:
+
+```sh
+cargo build --locked -p slint-shell --features spell --example drag-scroll-baseline
+
+LHC_AUDIT_OUT=/tmp/lhc-contrast-validation LHC_AUDIT_SUFFIX=-recheck \
+LHC_AUDIT_COMMAND='set -e; for n in 1 2 3; do timeout 60 target/debug/examples/drag-scroll > /tmp/lhc-contrast-validation/drag-scroll-repeat-$n.log 2>&1; done; python3 dev_docs/accessibility-audit-2026-10-29/tools/check-contrast-spell.py > /tmp/lhc-contrast-validation/spell-check.log 2>&1' \
+bash dev_docs/accessibility-audit-2026-10-29/tools/run-isolated.sh
+
+LHC_AUDIT_OUT=/tmp/lhc-contrast-validation LHC_AUDIT_SUFFIX=-baseline \
+LHC_AUDIT_COMMAND='for n in 1 2 3 4 5; do timeout 60 target/debug/examples/drag-scroll-baseline > /tmp/lhc-contrast-validation/drag-scroll-baseline-$n.log 2>&1; result=$?; printf "%s\t%s\n" "$n" "$result"; done; python3 dev_docs/accessibility-audit-2026-10-29/tools/check-contrast-spell.py > /tmp/lhc-contrast-validation/spell-check.log 2>&1' \
+bash dev_docs/accessibility-audit-2026-10-29/tools/run-isolated.sh
+```
+
+Сборка baseline — exit 0. Первый runner — exit 101 на третьем `drag-scroll`, до Spell; второй — exit 0 после всех пяти baseline-запусков и отдельной повторной проверки Spell. Проверка Spell требует появления нужного viewport **в новой части Wayland trace после каждой смены масштаба**, поэтому начальный viewport 1920 не подменяет подтверждение возврата к 100%.
+
+Окончательные Cargo-проверки выполнялись последовательно:
+
+```sh
+cargo fmt -p lhc-core -p slint-shell -p spell-framework --check
+cargo clippy --locked -p lhc-core -p slint-shell \
+  --features slint-shell/spell --all-targets --no-deps -- -D warnings
+cargo test --locked --workspace --features slint-shell/spell
+cargo check --locked -p slint-shell --all-targets
+cargo deny check
+```
+
+| Команда | Результат |
+| --- | --- |
+| `cargo fmt -p lhc-core -p slint-shell -p spell-framework --check` | ✅ exit 0 |
+| clippy с `--features slint-shell/spell --all-targets --no-deps -- -D warnings` | ✅ exit 0, [лог](evidence/contrast-fixes/clippy.log) |
+| `cargo test --locked --workspace --features slint-shell/spell` | ✅ exit 0: **677 passed, 0 failed, 14 ignored**, [лог](evidence/contrast-fixes/workspace-tests.log) |
+| `cargo check --locked -p slint-shell --all-targets` без Spell | ✅ exit 0, [лог](evidence/contrast-fixes/non-spell.log) |
+| `cargo deny check` | Не выполнена: `cargo-deny` не установлен, exit 101, [лог](evidence/contrast-fixes/deny.log) |
+
+[Точные аргументы и exit codes](evidence/contrast-fixes/cargo-results.json). Игнорируемые mapper/uinput, clipboard и GNOME portal tests не засчитаны как пройденные. Проверка новых исправлений не является проверкой системной речи Orca или сертификацией доступности.

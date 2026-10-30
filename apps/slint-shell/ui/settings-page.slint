@@ -8,7 +8,7 @@ import { LayoutLibrary } from "library.slint";
 import { DeviceChoice, DeviceDialog, DevicePicker } from "device-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
-import { Button, CheckBox, RadioGroup } from "std-widgets.slint";
+import { Button, CheckBox } from "std-widgets.slint";
 import { DialogFrame, FormLabel, DurationInput, SelectField, PageLayout, Section, SubsectionTitle, TitledCard, SectionTitle } from "controls.slint";
 import { GameAppEntry, GameAppsField } from "conditions.slint";
 import { AppearanceChoice, CommandPlace, GameModeControl, SettingsTab } from "types.slint";
@@ -365,19 +365,10 @@ export component SettingsPage inherits PageLayout {
                             VerticalLayout { vertical-stretch: 0; spacing: Theme.space-m;
                                 Text { vertical-stretch: 0; text: @tr("Theme"); color: Theme.text; }
                                 HorizontalLayout { alignment: start;
-                                    RadioGroup {
-                                        // RadioGroup reports only the label, so each label is defined once.
-                                        property <string> system-label: @tr("System");
-                                        property <string> light-label: @tr("Light");
-                                        property <string> dark-label: @tr("Dark");
-                                        vertical-stretch: 0;
-                                        horizontal-stretch: 0;
-                                        orientation: horizontal;
-                                        selected(value) => { SettingsEditor.appearance = value == self.system-label ? AppearanceChoice.system : value == self.light-label ? AppearanceChoice.light : value == self.dark-label ? AppearanceChoice.dark : AppearanceChoice.e-ink; SettingsEditor.save(); }
-                                        RadioButton { text: parent.system-label; checked: SettingsEditor.appearance == AppearanceChoice.system; }
-                                        RadioButton { text: parent.light-label; checked: SettingsEditor.appearance == AppearanceChoice.light; }
-                                        RadioButton { text: parent.dark-label; checked: SettingsEditor.appearance == AppearanceChoice.dark; }
-                                        RadioButton { visible: AppState.in-development; text: @tr("E-ink"); checked: SettingsEditor.appearance == AppearanceChoice.e-ink; }
+                                    ButtonGroup {
+                                        labels: AppState.in-development ? [@tr("System"), @tr("Light"), @tr("Dark"), @tr("E-ink")] : [@tr("System"), @tr("Light"), @tr("Dark")];
+                                        selected-index: SettingsEditor.appearance == AppearanceChoice.system ? 0 : SettingsEditor.appearance == AppearanceChoice.light ? 1 : SettingsEditor.appearance == AppearanceChoice.dark ? 2 : 3;
+                                        selected(index) => { SettingsEditor.appearance = index == 0 ? AppearanceChoice.system : index == 1 ? AppearanceChoice.light : index == 2 ? AppearanceChoice.dark : AppearanceChoice.e-ink; SettingsEditor.save(); }
                                     }
                                 }
                             }

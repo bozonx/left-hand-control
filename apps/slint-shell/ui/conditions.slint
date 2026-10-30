@@ -4,7 +4,7 @@ import { Theme } from "theme.slint";
 import { AppEntryKind, GameCondition } from "types.slint";
 import { AppState } from "app-state.slint";
 import { Badge, ButtonGroup, ConfirmDialog, DialogFrame, IconButton, InfoTip, Card, EmptyState } from "controls.slint";
-import { Button, CheckBox, RadioGroup } from "std-widgets.slint";
+import { Button, CheckBox } from "std-widgets.slint";
 
 export struct LanguageChoice { code: string, label: string }
 
@@ -523,15 +523,11 @@ export component ConditionsForm inherits VerticalLayout {
             }
             if AppState.in-development: VerticalLayout { spacing: Theme.space-m-plus; alignment: start; horizontal-stretch: 1; preferred-width: 0px; min-width: 0px;
                 Text { text: @tr("Game mode"); color: Theme.text; }
-                RadioGroup {
-                    // RadioGroup reports only the label, so each label is defined once.
-                    property <string> on-label: @tr("Game mode on");
-                    property <string> off-label: @tr("Game mode off");
-                    orientation: vertical;
-                    selected(value) => { root.game = value == self.on-label ? GameCondition.on : value == self.off-label ? GameCondition.off : GameCondition.any; }
-                    RadioButton { text: @tr("Does not matter"); checked: root.game == GameCondition.any; }
-                    RadioButton { text: parent.on-label; checked: root.game == GameCondition.on; }
-                    RadioButton { text: parent.off-label; checked: root.game == GameCondition.off; }
+                ButtonGroup {
+                    vertical: true;
+                    labels: [@tr("Does not matter"), @tr("Game mode on"), @tr("Game mode off")];
+                    selected-index: root.game == GameCondition.any ? 0 : root.game == GameCondition.on ? 1 : 2;
+                    selected(index) => { root.game = index == 1 ? GameCondition.on : index == 2 ? GameCondition.off : GameCondition.any; }
                 }
             }
         }

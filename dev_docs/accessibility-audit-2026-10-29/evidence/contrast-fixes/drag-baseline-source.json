@@ -1,0 +1,12 @@
+{
+  "revision": "12a860a4ca473ccfd5eedb4e5c9fa0647ff4456f",
+  "sha256": {
+    "apps/slint-shell/ui/theme.slint": "1bc7027820458eb1aa9ca3ed30de0c9a94f984b0d2eeb7745031f885ee76632f",
+    "apps/slint-shell/ui/scroll.slint": "dd9dc9fde3da9f605c012a963c275d3da1ed6d0ed98631b8349d75968dea25fe",
+    "apps/slint-shell/ui/reorder.slint": "a1b24da042193fdd3b9b346af9d8cdc8a7cc9af09818ed5106122fe8fdfe2dce",
+    "apps/slint-shell/ui/i18n.slint": "71cfffff879706a08f78f100e832816b6905db380d42be574606b4258b292133",
+    "apps/slint-shell/ui/icons/grip.svg": "77c2b89feafb15e7c7c411f402a78cc302c535749e9f38ca475f45d8d241b592",
+    "apps/slint-shell/examples/drag-scroll.rs": "74ddd6d23ba35888fb5c4e6193164db943cccdb7b1e626f3a72a42ddd03fee26"
+  },
+  "adaptation": "Only the two Slint import paths in the temporary example point to copies of the original UI files; no behavioral changes."
+}

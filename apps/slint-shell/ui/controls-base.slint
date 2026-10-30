@@ -29,6 +29,7 @@ export component ButtonGroup inherits Rectangle {
     in property <int> selected-index;
     in property <bool> enabled: true;
     in property <bool> pill;
+    in property <bool> vertical;
     callback selected(int);
     vertical-stretch: 0;
     background: root.pill ? Theme.surface : transparent;
@@ -43,14 +44,16 @@ export component ButtonGroup inherits Rectangle {
         key-pressed(event) => {
             if event.text == Key.Return || event.text == " " { root.selected(root.selected-index); return accept; }
             if root.labels.length == 0 { return reject; }
-            if event.text == Key.RightArrow { root.selected(mod(root.selected-index + 1, root.labels.length)); return accept; }
-            if event.text == Key.LeftArrow { root.selected(mod(root.selected-index + root.labels.length - 1, root.labels.length)); return accept; }
+            if (event.text == Key.RightArrow || event.text == Key.DownArrow) { root.selected(mod(root.selected-index + 1, root.labels.length)); return accept; }
+            if (event.text == Key.LeftArrow || event.text == Key.UpArrow) { root.selected(mod(root.selected-index + root.labels.length - 1, root.labels.length)); return accept; }
             return reject;
         }
-        HorizontalLayout {
+        GridLayout {
             padding: root.pill ? Theme.space-2xs : 0px;
             spacing: root.pill ? Theme.space-2xs : 0px;
             for label[index] in root.labels: button := Rectangle {
+                row: root.vertical ? index : 0;
+                col: root.vertical ? 0 : index;
                 property <bool> current: root.selected-index == index;
                 private property <bool> first: index == 0;
                 private property <bool> last: index == root.labels.length - 1;
@@ -477,10 +480,6 @@ export component FormField inherits VerticalLayout {
         accepted => { root.accepted(); }
     }
     if root.show-error: Text { text: Locale.text(root.error); color: Theme.error; font-size: Theme.font-body; wrap: word-wrap; }
-}
-
-export global ItemStyle {
-    public pure function opacity(enabled: bool) -> float { return enabled ? 1.0 : 0.35; }
 }
 
 export component Alert inherits Rectangle {
