@@ -108,6 +108,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let timer = slint::Timer::default();
     let step = Rc::new(Cell::new(0));
     timer.start(slint::TimerMode::Repeated, Duration::from_millis(100), move || {
+        // A timer can run before the next frame processes the previous step's bindings.
+        i_slint_core::window::WindowInner::from_pub(ui.window()).ensure_tree_instantiated();
         match step.get() {
             0 => { snapshot(&ui, "inline-view"); ui.invoke_edit(); },
             1 => { snapshot(&ui, "inline-edit"); key(&ui, Key::End); key(&ui, "Draft"); shortcut(&ui, "z"); key(&ui, Key::Return); assert_eq!(ui.get_value(), "Original"); }

@@ -367,20 +367,13 @@ fn observe(app: &Rc<App>, window: Window) {
         slint::CloseRequestResponse::KeepWindowShown
     });
     let weak = Rc::downgrade(app);
-    if let Err(error) = app.window(window).set_rendering_notifier(move |state, _| {
-        if matches!(state, slint::RenderingState::AfterRendering)
-            && let Some(app) = weak.upgrade()
-        {
+    i_slint_core::window::WindowInner::from_pub(app.window(window)).on_scene_rendered(move || {
+        if let Some(app) = weak.upgrade() {
             app.metrics
                 .borrow_mut()
                 .mark(window.name(), "t3_first_frame");
         }
-    }) {
-        log::warn!(
-            "{} rendering notifier unavailable: {error:?}",
-            window.name()
-        );
-    }
+    });
     let weak = Rc::downgrade(app);
     let modifiers =
         std::cell::Cell::new(slint::winit_030::winit::keyboard::ModifiersState::empty());

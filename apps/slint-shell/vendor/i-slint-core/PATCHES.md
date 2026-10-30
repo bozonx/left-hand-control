@@ -1,5 +1,7 @@
 # Local patches
 
+- Expose `WindowInner::on_scene_rendered` after scene drawing, before flushing/presentation. Popup frame metrics use it because rendering notifiers require graphics API access and silently emit no events on Skia software/Vulkan surfaces. This observes real drawing rather than treating IPC acknowledgement or focus as a frame.
+
 Source: Slint 1.18.1, https://github.com/slint-ui/slint/tree/372cf0ee5577c3dfec309a45e7b778ba4e81b734/internal/core
 The published crate's Cargo.toml and license files are preserved. Patched files keep upstream formatting (`rustfmt.toml` of the Slint repository: `use_small_heuristics = "Max"`), so the patch can be ported with a three-way merge. The root Cargo.toml applies this copy through `[patch.crates-io]`.
 

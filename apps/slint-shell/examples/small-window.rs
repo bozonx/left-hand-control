@@ -31,6 +31,7 @@ fn inside(ui: &SettingsWindow, label: &str) -> bool {
     use i_slint_core::{
         accessibility::AccessibleStringProperty, item_tree::ItemRc, window::WindowInner,
     };
+    WindowInner::from_pub(ui.window()).ensure_tree_instantiated();
     let size = ui.window().size().to_logical(ui.window().scale_factor());
     let mut pending = vec![ItemRc::new_root(
         WindowInner::from_pub(ui.window()).component(),

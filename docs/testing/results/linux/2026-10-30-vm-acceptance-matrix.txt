@@ -1,0 +1,21 @@
+Date: 2026-10-30 19:32:12 -0300
+Commit: c3369a1e (with uncommitted changes)
+Scope: KDE Linux DEB/RPM × winit/auto/spell × libei/clipboard (12 required cells)
+Windows, clean Windows ZIP and hosted release pipeline are outside this matrix.
+
+- controller: FAILED — matrix interrupted
+- deb-auto-clipboard: NOT RUN — required scenario was not reached
+- deb-auto-libei: NOT RUN — required scenario was not reached
+- deb-spell-clipboard: NOT RUN — required scenario was not reached
+- deb-spell-libei: NOT RUN — required scenario was not reached
+- deb-winit-clipboard: NOT RUN — required scenario was not reached
+- deb-winit-libei: NOT RUN — required scenario was not reached
+- rpm-auto-clipboard: NOT RUN — required scenario was not reached
+- rpm-auto-libei: NOT RUN — required scenario was not reached
+- rpm-spell-clipboard: NOT RUN — required scenario was not reached
+- rpm-spell-libei: NOT RUN — required scenario was not reached
+- rpm-winit-clipboard: NOT RUN — required scenario was not reached
+- rpm-winit-libei: NOT RUN — required scenario was not reached
+
+Passed: 0, failed: 1, skipped: 0, blocked/not run: 12
+Acceptance: INCOMPLETE — deb-auto-clipboard, deb-auto-libei, deb-spell-clipboard, deb-spell-libei, deb-winit-clipboard, deb-winit-libei, rpm-auto-clipboard, rpm-auto-libei, rpm-spell-clipboard, rpm-spell-libei, rpm-winit-clipboard, rpm-winit-libei

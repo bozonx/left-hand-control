@@ -30,6 +30,19 @@ GUEST_PY = f"python3 {GUEST}/linux-guest.py"
 CONFIG = "~/.config/dev.bozonx.left-hand-control/config.json"
 
 
+def decline_portal_dialogs(points, click, cancelled, visible):
+    """Some portal versions finish after one Cancel, others show another dialog."""
+    for index, point in enumerate(points):
+        click(index, point)
+        if index + 1 < len(points):
+            time.sleep(0.3)
+            wait_for("portal cancellation or next consent dialog", 15,
+                     lambda: cancelled() or visible())
+            if cancelled():
+                break
+    wait_for("declined text job", 15, cancelled)
+
+
 def validate_acceptance(args, suspend_exclusion=None):
     if not args.acceptance:
         return
@@ -232,18 +245,17 @@ def main():
             # the job instead of recording the declined dialog.
             relative = vm.get("portal_deny_relative")
             points = relative or vm.get("portal_deny_click", [0.738, 0.659])
-            # Plasma 6.3 asks a second time after the first Cancel.
-            for index, point in enumerate(points if isinstance(points[0], list) else [points]):
+            def click_cancel(index, point):
                 if relative:
                     position = json.loads(guest(f"portal-deny-point --x {float(point[0])} --y {float(point[1])}"))
                     vm.qmp.screendump(vm.logs / f"portal-deny-positioned-{index}.png")
                     click_point(position["x"], position["y"])
                 else:
                     vm.qmp.click(*point)
-                if index + 1 < len(points if isinstance(points[0], list) else [points]):
-                    time.sleep(0.3)
-                    wait_for("next portal consent dialog", 15, lambda: guest("portal-visible") == "yes")
-            wait_for("declined text job", 15, lambda: failures("user cancelled") > before)
+            decline_portal_dialogs(
+                points if isinstance(points[0], list) else [points], click_cancel,
+                lambda: failures("user cancelled") > before,
+                lambda: guest("portal-visible") == "yes")
             vm.qmp.tap("t")
             wait_for("cached consent refusal", 15, lambda: failures("user cancelled") >= before + 2)
             if guest("portal-visible") == "yes":

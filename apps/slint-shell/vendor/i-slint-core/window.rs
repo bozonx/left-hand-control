@@ -686,6 +686,7 @@ pub struct WindowInner {
     click_state: ClickState,
     ctx: core::cell::OnceCell<crate::SlintContext>,
     xdg_app_id: RefCell<Option<SharedString>>,
+    scene_rendered: RefCell<Option<Box<dyn Fn()>>>,
     /// The native drag we started, if one is in flight.
     /// It holds the source and seed position to report completion and to arm the in-window
     /// fallback, and lets a drop back onto this same window restore the source's `DataTransfer`:
@@ -756,6 +757,7 @@ impl WindowInner {
             prevent_focus_change: Default::default(),
             ctx: Default::default(),
             xdg_app_id: Default::default(),
+            scene_rendered: Default::default(),
             menubar: Default::default(),
             native_drag: Default::default(),
         }
@@ -1876,6 +1878,12 @@ impl WindowInner {
         }
     }
 
+    /// Observe completed scene drawing independently of the renderer's graphics API.
+    /// The renderer may still need to flush or present the frame after this callback.
+    pub fn on_scene_rendered(&self, callback: impl Fn() + 'static) {
+        *self.scene_rendered.borrow_mut() = Some(Box::new(callback));
+    }
+
     /// Calls the render_components to render the main component and any sub-window components, tracked by a
     /// property dependency tracker.
     ///
@@ -1901,7 +1909,7 @@ impl WindowInner {
         let post_render = |renderer: &mut dyn crate::item_rendering::ItemRenderer| {
             self.render_drag_image_overlay(renderer);
         };
-        Some(self.pinned_fields.as_ref().project_ref().redraw_tracker.evaluate_as_dependency_root(
+        let result = self.pinned_fields.as_ref().project_ref().redraw_tracker.evaluate_as_dependency_root(
             || {
                 if !self
                     .active_popups
@@ -1926,7 +1934,11 @@ impl WindowInner {
                     render_components(&item_trees, &post_render)
                 }
             },
-        ))
+        );
+        if let Some(callback) = self.scene_rendered.borrow().as_ref() {
+            crate::properties::evaluate_no_tracking(callback);
+        }
+        Some(result)
     }
 
     /// Draws the source `DragArea`'s `drag-image` under the cursor when a drag is in flight.

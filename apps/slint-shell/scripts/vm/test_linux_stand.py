@@ -29,6 +29,31 @@ receiver_probe = module("receiver_probe", "check-linux-receiver.py")
 
 
 class LinuxStandTests(unittest.TestCase):
+    def test_portal_denial_stops_after_the_job_is_cancelled(self):
+        click = Mock()
+        visible = Mock(return_value=False)
+        with patch.object(linux.time, "sleep"):
+            linux.decline_portal_dialogs([[0.7, 0.6], [0.6, 0.6]], click,
+                                         lambda: click.call_count == 1, visible)
+        self.assertEqual(click.call_count, 1)
+        visible.assert_not_called()
+
+    def test_portal_denial_handles_a_second_dialog(self):
+        click = Mock()
+        with patch.object(linux.time, "sleep"):
+            linux.decline_portal_dialogs([[0.7, 0.6], [0.6, 0.6]], click,
+                                         lambda: click.call_count == 2, lambda: True)
+        self.assertEqual(click.call_count, 2)
+
+    def test_portal_denial_still_requires_a_cancelled_job(self):
+        with patch.object(linux.time, "sleep"), patch.object(linux, "wait_for") as wait:
+            def probe(what, timeout, callback):
+                if not callback():
+                    raise StepFailed("timed out: " + what)
+            wait.side_effect = probe
+            with self.assertRaisesRegex(StepFailed, "declined text job"):
+                linux.decline_portal_dialogs([[0.7, 0.6]], Mock(), lambda: False, lambda: False)
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)

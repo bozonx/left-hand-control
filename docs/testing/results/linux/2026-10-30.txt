@@ -1,0 +1,32 @@
+Date: 2026-10-30 19:00:49 -0300
+Commit: c3369a1e
+Version: left-hand-control 0.4.0
+Session: wayland, KDE; plasmashell 6.7.5
+Kernel: Linux 7.2.9-1-MANJARO
+
+- example-editor: passed
+- example-interactions: passed
+- example-library: passed
+- example-action-picker: passed
+- example-macros: passed
+- example-menus: passed
+- example-conditions: passed
+- example-popup-grid: passed
+- example-undo-redo: passed
+- example-inline-edit: passed
+- example-drag-scroll: passed
+- example-notifications: passed
+- example-accessibility: passed
+- example-keyboard-navigation: passed
+- example-contrast-scaling: passed
+- example-layer-keys: passed
+- example-small-window: passed
+- check-recovery: passed
+- check-preferences: passed
+- check-worker-crash: passed
+- check-linux-install: passed
+- mapper-e2e: passed
+Passed: 22, failed: 0
+
+Manual smoke on the installed package (section 3 of
+docs/testing/manual-acceptance.md): not recorded yet.
