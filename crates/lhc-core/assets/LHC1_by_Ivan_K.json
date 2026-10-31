@@ -259,17 +259,16 @@
     },
     {
       "key": "ControlLeft",
-      "tap": "app:showQuickMenu1",
       "hold": {
-        "keys": "AltLeft",
-        "timeoutMs": 350
+        "keys": "AltLeft"
       }
     },
     {
       "key": "MetaLeft",
-      "tap": "Escape",
+      "tap": "app:showQuickMenu1",
       "hold": {
-        "keys": "ControlLeft"
+        "keys": "ControlLeft",
+        "timeoutMs": 350
       }
     },
     {
