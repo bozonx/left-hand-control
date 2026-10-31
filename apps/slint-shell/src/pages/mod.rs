@@ -47,7 +47,7 @@ use std::rc::Rc;
 /// the pointer position for inline editors and the action picker's key capture.
 #[derive(Default)]
 pub struct WindowInput {
-    cursor: std::cell::Cell<(f64, f64)>,
+    pointer: inline::Pointer,
     capture: std::cell::RefCell<picker::CaptureState>,
 }
 
@@ -59,7 +59,7 @@ impl WindowInput {
         ui: &SettingsWindow,
         event: &slint::winit_030::winit::event::WindowEvent,
     ) -> bool {
-        inline::observe(ui, event, &self.cursor);
+        inline::observe(ui, event, &self.pointer);
         picker::capture(ui, event, &self.capture)
     }
 
