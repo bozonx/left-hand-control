@@ -295,72 +295,6 @@
   ],
   "quickActionPages": [
     {
-      "id": "system",
-      "name": "System",
-      "cells": {
-        "KeyQ": {
-          "name": "Sleep",
-          "action": "Sleep"
-        },
-        "KeyW": {
-          "name": "Screen off",
-          "action": "sys:screenOff"
-        },
-        "KeyE": {
-          "name": "Mute",
-          "action": "AudioVolumeMute"
-        },
-        "KeyR": {
-          "name": "Mute microphone",
-          "action": "MicrophoneMuteToggle"
-        },
-        "KeyT": {
-          "name": "Airplane Mode",
-          "action": "AirplaneMode"
-        },
-        "KeyA": {
-          "name": "Play / pause",
-          "action": "MediaPlayPause"
-        },
-        "KeyS": {
-          "name": "PrintScreen",
-          "action": "PrintScreen"
-        },
-        "KeyD": {
-          "name": "Overview",
-          "action": "sys:overview"
-        },
-        "KeyF": {
-          "name": "Fullscreen",
-          "action": "F11"
-        },
-        "KeyG": {
-          "name": "Touchpad Toggle",
-          "action": "TouchpadToggle"
-        },
-        "KeyZ": {
-          "name": "Brightness Down",
-          "action": "BrightnessDown"
-        },
-        "KeyX": {
-          "name": "Brightness Up",
-          "action": "BrightnessUp"
-        },
-        "KeyC": {
-          "name": "Volume Down",
-          "action": "AudioVolumeDown"
-        },
-        "KeyV": {
-          "name": "Volume Up",
-          "action": "AudioVolumeUp"
-        },
-        "KeyB": {
-          "name": "Keyboard Backlight Toggle",
-          "action": "KeyboardBacklightToggle"
-        }
-      }
-    },
-    {
       "id": "texts",
       "name": "Texts",
       "cells": {
@@ -423,6 +357,72 @@
         "KeyB": {
           "name": "I'll be back",
           "action": "text:Give me a few minutes, I'll get back to you."
+        }
+      }
+    },
+    {
+      "id": "system",
+      "name": "System",
+      "cells": {
+        "KeyQ": {
+          "name": "Sleep",
+          "action": "Sleep"
+        },
+        "KeyW": {
+          "name": "Screen off",
+          "action": "sys:screenOff"
+        },
+        "KeyE": {
+          "name": "Mute",
+          "action": "AudioVolumeMute"
+        },
+        "KeyR": {
+          "name": "Mute microphone",
+          "action": "MicrophoneMuteToggle"
+        },
+        "KeyT": {
+          "name": "Airplane Mode",
+          "action": "AirplaneMode"
+        },
+        "KeyA": {
+          "name": "Play / pause",
+          "action": "MediaPlayPause"
+        },
+        "KeyS": {
+          "name": "PrintScreen",
+          "action": "PrintScreen"
+        },
+        "KeyD": {
+          "name": "Overview",
+          "action": "sys:overview"
+        },
+        "KeyF": {
+          "name": "Fullscreen",
+          "action": "F11"
+        },
+        "KeyG": {
+          "name": "Touchpad Toggle",
+          "action": "TouchpadToggle"
+        },
+        "KeyZ": {
+          "name": "Brightness Down",
+          "action": "BrightnessDown"
+        },
+        "KeyX": {
+          "name": "Brightness Up",
+          "action": "BrightnessUp"
+        },
+        "KeyC": {
+          "name": "Volume Down",
+          "action": "AudioVolumeDown"
+        },
+        "KeyV": {
+          "name": "Volume Up",
+          "action": "AudioVolumeUp"
+        },
+        "KeyB": {
+          "name": "Keyboard Backlight Toggle",
+          "action": "KeyboardBacklightToggle"
         }
       }
     }
