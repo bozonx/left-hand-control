@@ -257,9 +257,12 @@ pub(super) unsafe fn table_from_keymap(
             .collect();
         combinations.sort_by_key(Vec::len);
         for mods in combinations {
+            // Keycodes above 255 (e.g. KEY_DOLLAR, KEY_EURO from `inet(evdev)`)
+            // are dropped by X11 clients and Chromium/Electron, so a character
+            // found only there must count as missing.
             for key in keys
                 .clone()
-                .filter(|key| *key >= 9 && !modifiers.contains(key))
+                .filter(|key| (9..=255).contains(key) && !modifiers.contains(key))
             {
                 xkb_state_update_mask(state, 0, 0, locked, 0, 0, group);
                 let baseline_locked = xkb_state_serialize_mods(state, 1 << 2);

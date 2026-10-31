@@ -311,6 +311,18 @@ mod tests {
     }
 
     #[test]
+    fn high_keycodes_are_not_used_for_typing() {
+        // `inet(evdev)` puts dollar and EuroSign on KEY_DOLLAR/KEY_EURO in every
+        // layout; Electron and X11 clients ignore those keycodes.
+        let us = table_from_names("us", None).expect("us layout");
+        let ru = table_from_names("ru", None).expect("ru layout");
+        assert_eq!(us[&text_keysym('$')].evdev, 5);
+        assert_eq!(us[&text_keysym('$')].mods, vec![KEY_LEFTSHIFT_EVDEV]);
+        assert!(!has(&us, '€'));
+        assert!(!has(&ru, '$') && !has(&ru, '€'));
+    }
+
+    #[test]
     fn keymap_tables_use_the_requested_group() {
         let layout = CString::new("us,ru").expect("layout");
         let names = XkbRuleNames {
