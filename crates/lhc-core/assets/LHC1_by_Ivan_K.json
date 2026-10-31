@@ -302,8 +302,8 @@
   ],
   "quickActionPages": [
     {
-      "id": "texts",
-      "name": "Texts",
+      "id": "snippets",
+      "name": "Snippets",
       "cells": {
         "KeyQ": {
           "name": "Works on my machine",
