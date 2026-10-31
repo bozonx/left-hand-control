@@ -229,6 +229,14 @@
   ],
   "rules": [
     {
+      "key": "Escape",
+      "tap": "Escape",
+      "hold": {
+        "keys": "Ctrl+Alt+Shift+KeyV",
+        "timeoutMs": 250
+      }
+    },
+    {
       "key": "Tab",
       "hold": {
         "layer": "select"
