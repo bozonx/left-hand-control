@@ -1,4 +1,4 @@
-import { SearchField, TextField } from "controls.slint";
+import { FocusRing, SearchField, TextField } from "controls.slint";
 import { ScrollView } from "scroll.slint";
 import { Theme } from "theme.slint";
 import { AppEntryKind, GameCondition } from "types.slint";
@@ -186,7 +186,7 @@ component WindowRow inherits Rectangle {
             return reject;
         }
     }
-    Rectangle { border-width: action-focus.has-focus ? 2px : 0px; border-color: Theme.focus; border-radius: Theme.radius; }
+    FocusRing { focused: action-focus.has-focus; border-radius: Theme.radius; }
     in property <string> text;
     in property <string> detail;
     in property <string> badge;
@@ -407,7 +407,7 @@ component AppItemRow inherits Rectangle {
             return reject;
         }
     }
-    Rectangle { border-width: action-focus.has-focus ? 2px : 0px; border-color: Theme.focus; border-radius: Theme.radius; }
+    FocusRing { focused: action-focus.has-focus; border-radius: Theme.radius; }
     in property <string> pattern;
     in property <string> kind;
     in property <bool> show-count;

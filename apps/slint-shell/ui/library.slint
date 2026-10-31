@@ -1,6 +1,6 @@
 import { DragGroups, DragHandle, DropMarker } from "reorder.slint";
 import { PageContent, ScrollView } from "scroll.slint";
-import { ButtonGroup, FormField, InfoTip, InlineTextField, InlineTextArea, IconButton, ConfirmDialog, Divider, MenuSurface, MenuItem, DialogFrame, PageLayout, TooltipText, Card, CardTitle } from "controls.slint";
+import { FocusRing, ButtonGroup, FormField, InfoTip, InlineTextField, InlineTextArea, IconButton, ConfirmDialog, Divider, MenuSurface, MenuItem, DialogFrame, PageLayout, TooltipText, Card, CardTitle } from "controls.slint";
 import { ConditionChoices, ConditionsForm } from "conditions.slint";
 import { AppState } from "app-state.slint";
 import { Theme } from "theme.slint";
@@ -212,7 +212,7 @@ export component SaveSplitButton inherits Rectangle {
                 horizontal-stretch: 1;
                 height: parent.height;
                 background: root.enabled ? Theme.accent.transparentize(touch-save.has-hover ? 0.7 : 0.85) : transparent;
-                border-width: focus-save.has-focus ? 2px : 0px;
+                border-width: Theme.focus-ring(focus-save.has-focus) ? 2px : 0px;
                 border-color: Theme.focus;
                 accessible-role: button;
                 accessible-label: @tr("Save (Ctrl+S)");
@@ -244,8 +244,8 @@ export component SaveSplitButton inherits Rectangle {
             chevron-btn := Rectangle {
                 width: 26px;
                 height: parent.height;
-                background: touch-chevron.has-hover || focus-chevron.has-focus ? Theme.hover : transparent;
-                border-width: focus-chevron.has-focus ? 2px : 0px;
+                background: touch-chevron.has-hover || Theme.focus-ring(focus-chevron.has-focus) ? Theme.hover : transparent;
+                border-width: Theme.focus-ring(focus-chevron.has-focus) ? 2px : 0px;
                 border-color: Theme.focus;
                 accessible-role: button;
                 accessible-label: @tr("Save as or reset changes");
@@ -297,9 +297,9 @@ component TargetPicker inherits Rectangle {
     }
     height: Theme.control-height;
     border-radius: Theme.radius;
-    border-width: focus.has-focus ? 2px : 1px;
-    border-color: focus.has-focus ? Theme.focus : Theme.border;
-    background: touch.has-hover || focus.has-focus ? Theme.hover : Theme.surface;
+    border-width: Theme.focus-ring(focus.has-focus) ? 2px : 1px;
+    border-color: Theme.focus-ring(focus.has-focus) ? Theme.focus : Theme.border;
+    background: touch.has-hover || Theme.focus-ring(focus.has-focus) ? Theme.hover : Theme.surface;
     accessible-role: combobox;
     accessible-label: @tr("Layout");
     accessible-value: label.text;
@@ -341,7 +341,7 @@ component AutoRuleRow inherits Rectangle {
             return reject;
         }
     }
-    Rectangle { border-width: action-focus.has-focus ? 2px : 0px; border-color: Theme.focus; border-radius: Theme.radius; }
+    FocusRing { focused: action-focus.has-focus; border-radius: Theme.radius; }
     in property <AutoRuleView> rule;
     in property <int> index;
     in property <int> count;
@@ -608,7 +608,7 @@ export component LibraryPage inherits PageLayout {
                                                 return reject;
                                             }
                                         }
-                                        Rectangle { border-width: badge-focus.has-focus ? 2px : 0px; border-color: Theme.focus; border-radius: Theme.radius-small; }
+                                        FocusRing { focused: badge-focus.has-focus; border-radius: Theme.radius-small; }
                                         badge-touch := TouchArea { mouse-cursor: pointer; clicked => { LayoutLibrary.highlight-target = parent.on ? -1 : index; } }
                                     }
                                 }

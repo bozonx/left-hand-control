@@ -9,6 +9,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 ### Changed
 
 - The tabs of the Settings page show icons next to their names.
+- Focus rings appear only while navigating with the keyboard (Tab, arrow keys) and disappear on the next mouse click, as in web browsers. Text fields keep their focus outline, and the high-contrast and E-ink themes always show focus rings.
 
 ### Fixed
 

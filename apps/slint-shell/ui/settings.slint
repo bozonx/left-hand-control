@@ -1,5 +1,5 @@
 import { KeyboardFocus } from "focus.slint";
-import { TextField } from "controls.slint";
+import { FocusRing, TextField } from "controls.slint";
 import { NotificationCenter, ToastStack } from "notifications.slint";
 import { ScrollView } from "scroll.slint";
 import { ActionPicker, PickerOverlay } from "action-picker.slint";
@@ -172,7 +172,7 @@ export component SettingsWindow inherits Window {
                                 return reject;
                             }
                         }
-                        Rectangle { border-width: active-focus.has-focus ? 2px : 0px; border-color: Theme.focus; border-radius: Theme.radius; }
+                        FocusRing { focused: active-focus.has-focus; border-radius: Theme.radius; }
                         width: root.compact-header ? 150px : 180px; height: Theme.control-height-l; border-radius: Theme.radius; background: Theme.surface; border-width: 1px; border-color: Theme.border;
                         HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-s;
                             Image { width: 14px; source: @image-url("icons/library-big.svg"); colorize: Theme.muted; }

@@ -1,6 +1,6 @@
 import { KeyboardFocus } from "focus.slint";
 import { Button } from "std-widgets.slint";
-import { IconButton, ButtonGroup, DialogFrame, SearchField, TextField } from "controls.slint";
+import { FocusRing, IconButton, ButtonGroup, DialogFrame, SearchField, TextField } from "controls.slint";
 import { ScrollView } from "scroll.slint";
 import { Theme } from "theme.slint";
 
@@ -49,8 +49,8 @@ export component DevicePicker inherits Rectangle {
     height: Theme.control-height-l;
     horizontal-stretch: 1;
     border-radius: Theme.radius;
-    border-width: focus.has-focus ? 2px : 1px;
-    border-color: focus.has-focus ? Theme.focus : Theme.border;
+    border-width: Theme.focus-ring(focus.has-focus) ? 2px : 1px;
+    border-color: Theme.focus-ring(focus.has-focus) ? Theme.focus : Theme.border;
     background: root.enabled && touch.has-hover ? Theme.hover : Theme.surface;
     opacity: root.enabled ? 1.0 : 0.45;
     accessible-role: combobox;
@@ -243,7 +243,7 @@ export component DeviceDialogOverlay inherits DialogFrame {
                                         return reject;
                                     }
                                 }
-                                Rectangle { border-width: row-focus.has-focus ? 2px : 0px; border-color: Theme.focus; border-radius: Theme.radius-small; }
+                                FocusRing { focused: row-focus.has-focus; border-radius: Theme.radius-small; }
                                 row-touch := TouchArea { mouse-cursor: pointer; clicked => { root.choose(index); } }
                             }
                         }

@@ -2,6 +2,15 @@ import { ComboBox } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
 
+/// Focus ring drawn over its parent while `focused`; shown only after keyboard
+/// navigation or in accessible themes (see `Theme.focus-ring()`).
+export component FocusRing inherits Rectangle {
+    in property <bool> focused;
+    border-width: Theme.focus-ring(root.focused) ? 2px : 0px;
+    border-color: Theme.focus;
+    border-radius: Theme.radius;
+}
+
 /// Bubble shown inside a `Tooltip`; `TooltipText` covers the plain-text case.
 export component TooltipSurface inherits Rectangle {
     background: Theme.card;
@@ -66,8 +75,8 @@ export component ButtonGroup inherits Rectangle {
                     ? (self.current ? Theme.text : touch.has-hover || (group-focus.has-focus && button.current) ? Theme.hover : transparent)
                     : (self.current ? Theme.selected : touch.has-hover ? Theme.hover : Theme.card);
                 opacity: root.enabled ? 1 : 0.5;
-                border-width: (group-focus.has-focus && button.current) ? 2px : root.pill ? 0px : 1px;
-                border-color: (group-focus.has-focus && button.current) ? Theme.focus : self.current ? Theme.accent : Theme.border;
+                border-width: (Theme.focus-ring(group-focus.has-focus) && button.current) ? 2px : root.pill ? 0px : 1px;
+                border-color: (Theme.focus-ring(group-focus.has-focus) && button.current) ? Theme.focus : self.current ? Theme.accent : Theme.border;
                 accessible-role: radio-button;
                 accessible-label: label;
                 accessible-checkable: true;
@@ -100,7 +109,7 @@ export component InfoTip inherits Rectangle {
     border-width: 1px;
     accessible-role: button;
     accessible-action-default => { help.show(); }
-    border-color: help-focus.has-focus ? Theme.focus : Theme.muted;
+    border-color: Theme.focus-ring(help-focus.has-focus) ? Theme.focus : Theme.muted;
     forward-focus: help-focus;
     help-focus := FocusScope {
         key-pressed(event) => {
@@ -292,8 +301,8 @@ export component FieldButton inherits Rectangle {
     min-width: 0px;
     height: Theme.control-height;
     border-radius: Theme.radius;
-    border-width: focus.has-focus || root.active ? 2px : 1px;
-    border-color: focus.has-focus ? Theme.focus : root.active ? Theme.accent : Theme.border;
+    border-width: Theme.focus-ring(focus.has-focus) || root.active ? 2px : 1px;
+    border-color: Theme.focus-ring(focus.has-focus) ? Theme.focus : root.active ? Theme.accent : Theme.border;
     background: root.enabled && touch.has-hover ? Theme.hover : Theme.surface;
     opacity: root.enabled ? 1.0 : 0.45;
     accessible-role: button;
@@ -339,7 +348,7 @@ export component IconButton inherits Rectangle {
     background: root.primary
         ? (touch.has-hover && root.enabled ? (Theme.dark ? Theme.accent.darker(0.15) : Theme.accent.brighter(0.2)) : Theme.accent)
         : root.enabled && (touch.has-hover || focus.has-focus) ? Theme.hover : transparent;
-    border-width: focus.has-focus ? 2px : 0px;
+    border-width: Theme.focus-ring(focus.has-focus) ? 2px : 0px;
     border-color: root.primary ? Theme.text : Theme.focus;
     opacity: root.enabled || root.text == "" ? 1.0 : 0.45;
     accessible-role: button;

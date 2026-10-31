@@ -67,7 +67,7 @@ export component ListItem {
         }
     ]
 
-    if (root.has-focus) : FocusBorder {
+    if (root.has-focus && FluentPalette.focus-visible) : FocusBorder {
         border-radius: 4px;
     }
 

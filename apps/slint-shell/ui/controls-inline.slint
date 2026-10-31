@@ -106,7 +106,7 @@ export component InlineTextField inherits InlineEditor {
                 Rectangle {
                     border-radius: Theme.radius-small;
                     background: display-touch.has-hover ? Theme.hover : transparent;
-                    border-width: root.has-focus ? 2px : 0px;
+                    border-width: Theme.focus-ring(root.has-focus) ? 2px : 0px;
                     border-color: Theme.focus;
                     HorizontalLayout {
                         padding-left: Theme.space-xs;
@@ -123,7 +123,7 @@ export component InlineTextField inherits InlineEditor {
                         Rectangle {
                             width: 28px;
                             IconButton {
-                                visible: display-touch.has-hover || root.has-focus;
+                                visible: display-touch.has-hover || Theme.focus-ring(root.has-focus);
                                 icon: @image-url("icons/pencil.svg");
                                 label: @tr("Edit: {}", root.label);
                                 clicked => { root.begin(); }
@@ -171,7 +171,7 @@ export component InlineTextArea inherits InlineEditor {
             border-radius: Theme.radius-small;
             background: edit-touch.has-hover ? Theme.hover : transparent;
             border-width: 1px;
-            border-color: root.has-focus ? Theme.focus : edit-touch.has-hover ? Theme.border : transparent;
+            border-color: Theme.focus-ring(root.has-focus) ? Theme.focus : edit-touch.has-hover ? Theme.border : transparent;
             accessible-role: none;
             line := Text { text: "Ag"; font-size: root.text-size; font-weight: root.text-weight; visible: false; }
             measure := Text {

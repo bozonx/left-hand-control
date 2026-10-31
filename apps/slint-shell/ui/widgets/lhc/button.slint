@@ -119,7 +119,7 @@ export component Button {
     }
 
     // focus border
-    if (root.has-focus && root.enabled) : FocusBorder {
+    if (root.has-focus && root.enabled && FluentPalette.focus-visible) : FocusBorder {
         border-radius: i-background.border-radius;
     }
 }

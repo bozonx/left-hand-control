@@ -1,6 +1,6 @@
 //! Modal keyboard traversal and restoration of each dialog's initiator.
 
-use crate::ui::{KeyboardFocus, SettingsWindow};
+use crate::ui::{KeyboardFocus, SettingsWindow, Theme};
 use i_slint_core::{
     accessibility::{AccessibleStringProperty, nearest_accessible_item},
     input::FocusReason,
@@ -8,7 +8,48 @@ use i_slint_core::{
     window::{PopupWindowLocation, WindowInner},
 };
 use slint::ComponentHandle;
+use slint::winit_030::winit::{
+    event::{ElementState, TouchPhase, WindowEvent},
+    keyboard::{Key, NamedKey},
+};
 use std::{cell::RefCell, rc::Rc, time::Duration};
+
+/// Remember whether the last input was keyboard navigation or the pointer, so
+/// focus rings appear only for keyboard users (like CSS `:focus-visible`).
+/// Typing text does not count: it keeps the current mode.
+pub(super) fn track_input_mode(ui: &SettingsWindow, event: &WindowEvent) {
+    let keyboard = match event {
+        WindowEvent::KeyboardInput { event, .. } if event.state == ElementState::Pressed => {
+            if !matches!(
+                event.logical_key,
+                Key::Named(
+                    NamedKey::Tab
+                        | NamedKey::ArrowUp
+                        | NamedKey::ArrowDown
+                        | NamedKey::ArrowLeft
+                        | NamedKey::ArrowRight
+                        | NamedKey::Home
+                        | NamedKey::End
+                        | NamedKey::PageUp
+                        | NamedKey::PageDown
+                )
+            ) {
+                return;
+            }
+            true
+        }
+        WindowEvent::MouseInput {
+            state: ElementState::Pressed,
+            ..
+        } => false,
+        WindowEvent::Touch(touch) if touch.phase == TouchPhase::Started => false,
+        _ => return,
+    };
+    let theme = ui.global::<Theme>();
+    if theme.get_keyboard_navigation() != keyboard {
+        theme.set_keyboard_navigation(keyboard);
+    }
+}
 
 struct Dialog {
     token: i32,

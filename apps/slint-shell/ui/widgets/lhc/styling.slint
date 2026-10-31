@@ -17,7 +17,11 @@ export global FluentPalette {
     in-out property <color> accent-color: #0ea5e9;
     in-out property <bool> high-contrast: false;
     in-out property <bool> eink: false;
+    /// The last input was keyboard navigation; the shell sets it from window events.
+    in-out property <bool> keyboard-navigation: false;
     private property <bool> accessible-palette: high-contrast || eink;
+    /// Focus rings show after keyboard navigation, and always in accessible palettes.
+    out property <bool> focus-visible: keyboard-navigation || accessible-palette;
     private property <color> ink: dark-color-scheme ? #ffffff : #000000;
     private property <color> paper: dark-color-scheme ? #000000 : #ffffff;
     private property <color> active: eink ? ink : dark-color-scheme ? #4dccff : #0069a9;

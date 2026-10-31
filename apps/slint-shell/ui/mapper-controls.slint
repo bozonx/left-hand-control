@@ -19,8 +19,8 @@ export component MapperToggle inherits Rectangle {
     background: root.running
         ? Theme.success.transparentize(touch.has-hover ? 0.78 : 0.86)
         : touch.has-hover ? Theme.hover : Theme.card;
-    border-width: focus.has-focus ? 2px : 1px;
-    border-color: focus.has-focus ? Theme.focus : root.running ? Theme.success : Theme.border;
+    border-width: Theme.focus-ring(focus.has-focus) ? 2px : 1px;
+    border-color: Theme.focus-ring(focus.has-focus) ? Theme.focus : root.running ? Theme.success : Theme.border;
     opacity: !root.enabled ? 0.5 : root.busy ? 0.7 : 1;
     accessible-role: button;
     accessible-label: root.text;

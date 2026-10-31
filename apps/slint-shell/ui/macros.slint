@@ -232,7 +232,7 @@ component MacroCard inherits Card {
 }
 
 component BuiltinMacrosHeader inherits Rectangle {
-    border-width: header-focus.has-focus ? 2px : 0px;
+    border-width: Theme.focus-ring(header-focus.has-focus) ? 2px : 0px;
     border-color: Theme.focus;
     border-radius: Theme.radius;
     in-out property <bool> open;
@@ -295,7 +295,7 @@ component BuiltinMacroLine inherits TouchArea {
                 alignment: center;
                 Button {
                     // Opacity instead of `visible`: the button stays focusable from the keyboard.
-                    opacity: root.has-hover || self.has-focus ? 1 : 0;
+                    opacity: root.has-hover || Theme.focus-ring(self.has-focus) ? 1 : 0;
                     text: @tr("Create based on");
                     icon: @image-url("icons/copy-plus.svg");
                     colorize-icon: true;

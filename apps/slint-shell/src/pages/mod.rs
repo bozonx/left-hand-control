@@ -52,13 +52,14 @@ pub struct WindowInput {
 }
 
 impl WindowInput {
-    /// Route a settings-window event to inline editors and key capture;
-    /// returns `true` to withhold the event from Slint.
+    /// Route a settings-window event to the focus-ring mode, inline editors
+    /// and key capture; returns `true` to withhold the event from Slint.
     pub fn observe(
         &self,
         ui: &SettingsWindow,
         event: &slint::winit_030::winit::event::WindowEvent,
     ) -> bool {
+        focus::track_input_mode(ui, event);
         inline::observe(ui, event, &self.pointer);
         picker::capture(ui, event, &self.capture)
     }

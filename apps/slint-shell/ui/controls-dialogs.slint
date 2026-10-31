@@ -32,8 +32,8 @@ export component MenuItem inherits Rectangle {
     callback clicked();
     height: Theme.control-height-l;
     border-radius: Theme.radius-small;
-    background: root.enabled && (touch.has-hover || focus.has-focus || root.highlighted) ? Theme.hover : transparent;
-    border-width: focus.has-focus ? 2px : 0px;
+    background: root.enabled && (touch.has-hover || Theme.focus-ring(focus.has-focus) || root.highlighted) ? Theme.hover : transparent;
+    border-width: Theme.focus-ring(focus.has-focus) ? 2px : 0px;
     border-color: Theme.focus;
     accessible-role: button;
     accessible-label: root.text;

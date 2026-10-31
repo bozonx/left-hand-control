@@ -3,7 +3,7 @@ import { KeyboardFocus } from "focus.slint";
 import { ActionField } from "action-controls.slint";
 import { Timing } from "timing.slint";
 import { AppState } from "app-state.slint";
-import { SearchField, TextField } from "controls.slint";
+import { FocusRing, SearchField, TextField } from "controls.slint";
 import { PageContent, ScrollView } from "scroll.slint";
 import { ActionPicker } from "action-picker.slint";
 import { CategoryIcon } from "action-controls.slint";
@@ -114,7 +114,7 @@ component ConditionsCell inherits Rectangle {
             return reject;
         }
     }
-    Rectangle { border-width: action-focus.has-focus ? 2px : 0px; border-color: Theme.focus; border-radius: Theme.radius; }
+    FocusRing { focused: action-focus.has-focus; border-radius: Theme.radius; }
     in property <RuleRow> rule;
     in property <bool> enabled: true;
     callback clicked();
@@ -214,8 +214,8 @@ component HoldField inherits VerticalLayout {
     FormLabel { text: @tr("When held"); info: @tr("Choose a layer active until release, or an action performed once after the hold duration."); }
     field := Rectangle {
         min-width: 0px; height: Theme.control-height; border-radius: Theme.radius;
-        border-width: field-focus.has-focus || menu.is-open ? 2px : 1px;
-        border-color: field-focus.has-focus ? Theme.focus : menu.is-open ? Theme.accent : Theme.border;
+        border-width: Theme.focus-ring(field-focus.has-focus) || menu.is-open ? 2px : 1px;
+        border-color: Theme.focus-ring(field-focus.has-focus) ? Theme.focus : menu.is-open ? Theme.accent : Theme.border;
         background: touch.has-hover ? Theme.hover : Theme.surface;
         opacity: root.enabled ? 1 : 0.5;
         accessible-role: combobox; accessible-label: @tr("When held");

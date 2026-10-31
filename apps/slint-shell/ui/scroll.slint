@@ -22,7 +22,7 @@ component ScrollBar inherits Rectangle {
     accessible-action-set-value(value) => { if root.enabled && value.is-float() { root.value = -clamp(value.to-float() * 1px, 0px, root.maximum); root.scrolled(); } }
     accessible-action-increment => { root.value = max(-root.maximum, root.value - 40px); root.scrolled(); }
     accessible-action-decrement => { root.value = min(0px, root.value + 40px); root.scrolled(); }
-    border-width: scroll-focus.has-focus ? 2px : 0px;
+    border-width: Theme.focus-ring(scroll-focus.has-focus) ? 2px : 0px;
     border-color: Theme.focus;
     scroll-focus := FocusScope {
         enabled: root.enabled;

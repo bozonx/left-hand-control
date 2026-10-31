@@ -304,7 +304,7 @@ export component SettingsPage inherits PageLayout {
                     visible: (tab-id != SettingsTab.game-mode && tab-id != SettingsTab.commands) || AppState.in-development;
                     height: self.visible ? 38px : 0px;
                     border-radius: Theme.radius;
-                    border-width: focus.has-focus ? 2px : 0px;
+                    border-width: Theme.focus-ring(focus.has-focus) ? 2px : 0px;
                     border-color: Theme.focus;
                     background: SettingsEditor.tab == tab-id ? Theme.selected : touch.has-hover ? Theme.hover : transparent;
                     accessible-role: tab;

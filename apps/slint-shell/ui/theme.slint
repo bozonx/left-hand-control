@@ -74,6 +74,10 @@ export global Theme {
     in-out property <bool> high-contrast: false;
     in-out property <bool> reduce-motion: false;
     property <bool> hc: high-contrast && !eink;
+    /// The last input was keyboard navigation (Tab, arrows), not the pointer.
+    in-out property <bool> keyboard-navigation <=> WidgetPalette.keyboard-navigation;
+    /// Whether focused controls draw a focus ring; see `focus-ring()`.
+    out property <bool> focus-visible: WidgetPalette.focus-visible;
     /// Window background.
     out property <color> surface: eink ? #ffffff : hc ? (dark ? #000000 : #ffffff) : dark ? #141416 : #f4f4f5;
     /// Cards, bars, dialogs.
@@ -100,6 +104,10 @@ export global Theme {
     out property <color> scrim: #00000099;
     out property <duration> motion: reduce-motion ? 0ms : 150ms;
     out property <duration> highlight-motion: reduce-motion ? 0ms : highlight-duration;
+    /// A control with keyboard focus shows its ring only when focus is visible.
+    public pure function focus-ring(focused: bool) -> bool {
+        focused && focus-visible
+    }
     public function apply() {
         WidgetPalette.high-contrast = high-contrast;
         WidgetPalette.eink = eink;

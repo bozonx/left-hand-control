@@ -117,7 +117,7 @@ export component CheckBox {
     }
 
     // focus border
-    if root.has-focus && root.enabled : FocusBorder {
+    if root.has-focus && root.enabled && FluentPalette.focus-visible : FocusBorder {
         border-radius: 4px;
     }
 }

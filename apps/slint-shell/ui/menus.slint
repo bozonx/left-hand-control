@@ -132,8 +132,8 @@ component HotkeyGrid inherits Rectangle {
         height: root.cell-height;
         clip: true;
         border-radius: Theme.radius;
-        border-width: grid-focus.has-focus && root.keyboard-cell == index ? 3px : (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? 2px : 1px;
-        border-color: grid-focus.has-focus && root.keyboard-cell == index ? Theme.focus : (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.accent : Theme.border;
+        border-width: Theme.focus-ring(grid-focus.has-focus) && root.keyboard-cell == index ? 3px : (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? 2px : 1px;
+        border-color: Theme.focus-ring(grid-focus.has-focus) && root.keyboard-cell == index ? Theme.focus : (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.accent : Theme.border;
         background: (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.hover : Theme.card;
         opacity: root.dragging && root.source-page == MenuEditor.selected-page && index == root.drag-from ? Theme.dragged-opacity : 1.0;
         accessible-role: button;
@@ -333,8 +333,8 @@ component EmojiButton inherits Rectangle {
     min-width: 0px;
     preferred-width: 40px;
     border-radius: Theme.radius;
-    border-width: focus.has-focus ? 2px : 1px;
-    border-color: focus.has-focus ? Theme.focus : touch.has-hover ? Theme.accent : Theme.border;
+    border-width: Theme.focus-ring(focus.has-focus) ? 2px : 1px;
+    border-color: Theme.focus-ring(focus.has-focus) ? Theme.focus : touch.has-hover ? Theme.accent : Theme.border;
     background: touch.has-hover ? Theme.hover : Theme.surface;
     accessible-role: button;
     accessible-label: root.item == "\u{a0}" ? @tr("Non-breaking space") : root.item;

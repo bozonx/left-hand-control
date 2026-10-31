@@ -120,8 +120,8 @@ component PickerCell inherits Rectangle {
     in property <bool> compact;
     private property <bool> selected: ActionPicker.value != "" && ActionPicker.value == root.item.value;
     min-width: 0px; preferred-width: 0px; horizontal-stretch: 1; height: compact ? (root.item.notice.id != "" || ActionPicker.key-hint(root.item.value) != "" ? 54px : 38px) : 76px;
-    border-width: root.selected || item-focus.has-focus ? 2px : 1px; border-radius: Theme.radius-small;
-    border-color: item-focus.has-focus ? Theme.focus : root.selected ? Theme.accent : Theme.border;
+    border-width: root.selected || Theme.focus-ring(item-focus.has-focus) ? 2px : 1px; border-radius: Theme.radius-small;
+    border-color: Theme.focus-ring(item-focus.has-focus) ? Theme.focus : root.selected ? Theme.accent : Theme.border;
     background: root.selected ? Theme.selected : item-touch.has-hover ? Theme.hover : Theme.card;
     accessible-role: button;
     accessible-label: item.label;
@@ -150,7 +150,7 @@ component CategoryButton inherits Rectangle {
     accessible-checkable: true;
     accessible-checked: ActionPicker.category == root.category;
     accessible-action-default => { root.choose(); }
-    border-width: category-focus.has-focus ? 2px : 0px;
+    border-width: Theme.focus-ring(category-focus.has-focus) ? 2px : 0px;
     border-color: Theme.focus;
     function choose() { ActionPicker.category = root.category; ActionPicker.query = ""; ActionPicker.refresh(); }
     category-focus := FocusScope {

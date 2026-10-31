@@ -40,7 +40,7 @@ export component NavTab inherits Rectangle {
     }
     Rectangle {
         border-radius: Theme.radius;
-        border-width: focus.has-focus ? 2px : 0px;
+        border-width: Theme.focus-ring(focus.has-focus) ? 2px : 0px;
         border-color: Theme.focus;
     }
     focus := FocusScope {
@@ -66,7 +66,7 @@ export component NavButton inherits Rectangle {
     min-width: row.preferred-width;
     border-radius: Theme.radius;
     background: root.selected ? Theme.selected : touch.has-hover ? Theme.hover : transparent;
-    border-width: focus.has-focus ? 2px : 0px;
+    border-width: Theme.focus-ring(focus.has-focus) ? 2px : 0px;
     border-color: Theme.focus;
     accessible-role: tab;
     accessible-label: root.text;

@@ -98,7 +98,7 @@ export component ComboBox {
     }
 
     // focus border
-    if root.has-focus && root.enabled : FocusBorder {
+    if root.has-focus && root.enabled && FluentPalette.focus-visible : FocusBorder {
         border-radius: background.border-radius;
     }
 

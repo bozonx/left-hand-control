@@ -127,7 +127,7 @@ component ExtraKeyLine inherits TouchArea {
                 width: 28px;
                 alignment: center;
                 DragHandle {
-                    opacity: root.has-hover || self.has-focus || (DragDrop.group == DragGroups.extra-keys && DragDrop.source == root.index) ? 1 : 0;
+                    opacity: root.has-hover || Theme.focus-ring(self.has-focus) || (DragDrop.group == DragGroups.extra-keys && DragDrop.source == root.index) ? 1 : 0;
                     accessible-description: root.item.key + ". Alt+↑ / Alt+↓";
                     group: DragGroups.extra-keys; index: root.index; count: LayersEditor.extras.length;
                     dropped(from, to) => { LayersEditor.reorder-extra(from, to); }
@@ -138,7 +138,7 @@ component ExtraKeyLine inherits TouchArea {
                 alignment: center;
                 IconButton {
                     // Opacity instead of `visible`: the button stays focusable from the keyboard.
-                    opacity: root.has-hover || self.has-focus ? 1 : 0;
+                    opacity: root.has-hover || Theme.focus-ring(self.has-focus) ? 1 : 0;
                     icon: @image-url("icons/trash-2.svg");
                     tooltip: @tr("Remove trigger");
                     accessible-label: @tr("Remove trigger") + ": " + root.item.key;
@@ -161,8 +161,8 @@ component KeyCap inherits Rectangle {
     private property <bool> dragged: touch.dragged;
     private property <bool> drop-over: DragDrop.dragging && DragDrop.group == DragGroups.keys && root.drop-target == root.cell.index && !root.dragged;
     border-radius: Theme.radius;
-    border-width: root.drop-over || focus.has-focus ? 2px : 1px;
-    border-color: root.drop-over ? Theme.accent : focus.has-focus ? Theme.focus : touch.has-hover && !DragDrop.dragging ? Theme.muted : Theme.border;
+    border-width: root.drop-over || Theme.focus-ring(focus.has-focus) ? 2px : 1px;
+    border-color: root.drop-over ? Theme.accent : Theme.focus-ring(focus.has-focus) ? Theme.focus : touch.has-hover && !DragDrop.dragging ? Theme.muted : Theme.border;
     background: root.drop-over ? Theme.hover : Theme.surface;
     opacity: root.dragged ? Theme.dragged-opacity : 1;
     accessible-role: button;
@@ -277,7 +277,7 @@ export component LayersPage inherits PageLayout {
             HorizontalLayout { spacing: Theme.space-s; alignment: start;
                 for name[index] in LayersEditor.names: Rectangle {
                     height: Theme.control-height-l; border-radius: Theme.radius; border-width: 1px;
-                    border-color: layer-focus.has-focus ? Theme.focus : Theme.border;
+                    border-color: Theme.focus-ring(layer-focus.has-focus) ? Theme.focus : Theme.border;
                     background: index == LayersEditor.selected ? Theme.selected : layer-drag.has-hover ? Theme.hover : Theme.card;
                     opacity: layer-drag.dragged ? Theme.dragged-opacity : 1;
                     accessible-role: tab;
