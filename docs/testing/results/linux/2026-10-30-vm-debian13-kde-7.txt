@@ -1,0 +1,76 @@
+Date: 2026-10-30 21:06:23 -0300
+Commit: 917bbc89 (with uncommitted changes)
+Command: /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-debian13-kde --package /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/release-artifacts/left-hand-control_0.4.0_amd64.deb --acceptance --popup-mode spell --text-backend clipboard --stress-seconds 180 --previous /mnt/disk2/vm/lhc-release-20261021/prior-linux-packages/left-hand-control_0.3.0_amd64.deb
+VM: debian13-kde (/mnt/disk2/vm/lhc-debian13-kde/base.qcow2)
+Memory: 6144 MiB
+CPU: host
+Machine: pc-i440fx-11.1
+Acceptance requested: True; scope: this VM/backend combination only
+Text backend: clipboard; stress seconds: 180
+Suspend exclusion: none
+Package: left-hand-control_0.4.0_amd64.deb (upgraded from left-hand-control_0.3.0_amd64.deb)
+Package SHA256: 320227a10847720354194a5f408a51b7d56db8da3abc1cc25414d62ed77d220a
+Popup mode: spell (startup environment and worker processes recorded in resources)
+Portal deny clicks: [[0.678, 0.655], [0.61, 0.655]]; relative: None
+Previous-version upgrade: left-hand-control_0.3.0_amd64.deb
+Keyboard: /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:02.0-2-event-kbd
+Host: ivan, 7.2.9-1-MANJARO
+Logs and screenshots: /mnt/disk2/vm/lhc-debian13-kde/runs/20261030-205347/logs
+
+- boot: passed
+- upload: passed
+- plasma-session: passed — wayland
+- install-previous: passed
+- installed-files: passed — /usr/bin/left-hand-control: left-hand-control 0.3.0
+- keyboard-probe: passed — /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:02.0-2-event-kbd
+- test-config: passed
+- previous-release: passed — left-hand-control 0.3.0
+- upgrade-from-previous: passed — left-hand-control 0.3.0 → left-hand-control 0.4.0, configuration kept
+- start-without-input: passed
+- profile-loaded: passed — test keyboard and active layout retained by the application
+- tray-item: passed — org.kde.StatusNotifierItem-2319-1/StatusNotifierItem
+- no-mapper-without-input: passed
+- autostart-entry: passed — Exec="/usr/bin/left-hand-control"
+- reboot-with-input: passed
+- autostart-launch: passed
+- tray-after-login: passed — org.kde.StatusNotifierItem-1518-1/StatusNotifierItem
+- mapper-running: passed
+- portal-deny: passed — declined; the next text: failed without a new dialog
+- portal-consent: passed — lhc-ok
+- clipboard-preservation: passed — exact Unicode; previous clipboard text restored after paste
+- mapper-keys-and-text: passed — bXclhc-ok
+- text-unicode: passed — Привет, ёж 😀
+- text-unicode-corpus: passed — Hello, мир! ёЁ № á é ñ ö | []{}();:'"\,./<>? 🙂 👍🏽 👨‍💻 é é
+- layer-tap-hold: passed — gkkgjj
+- macro: passed — nmacO
+- command: passed
+- system-actions: passed — desktop 1→2→1, layout us→ru→us
+- russian-layout: passed — исlhc-okПривет, ёж 😀
+- popups: passed — c
+- emoji-ipc: passed — 🙂
+- quick-menu-rule: passed — quick-ok
+- emoji-hotkey: passed — 🙂
+- game-mode: passed — off, on, auto without and with a game process
+- prepare-screen-lock: passed
+- screen-lock: passed — c
+- prepare-suspend-resume: passed
+- suspend-resume: passed — bXclhc-ok
+- cli: passed — left-hand-control 0.4.0
+- second-instance: passed
+- text-after-second-instance: passed — Привет, ёж 😀
+- prepare-keyboard-replug: passed
+- keyboard-replug: passed — bXcПривет, ёж 😀
+- mapper-stop: passed — off
+- mapper-start: passed — on
+- prepare-stuck-keys-on-stop: passed
+- stuck-keys-on-stop: passed — abc
+- prepare-stuck-keys-on-kill: passed
+- stuck-keys-on-kill: passed — abc
+- prepare-sustained-input-lifecycle: passed
+- sustained-input-lifecycle: passed — 9 exact input/popup/stop/start cycles over at least 180s; resources bounded; portal grants=1
+- upgrade-over-running: passed — reinstalled over the running instance
+- quit: passed
+- remove: passed
+
+Passed: 54, failed: 0, skipped: 0, blocked/not run: 0
+Acceptance: COMPLETE

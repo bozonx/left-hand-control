@@ -6,6 +6,10 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ## [Unreleased]
 
+### Changed
+
+- The tabs of the Settings page show icons next to their names.
+
 ### Fixed
 
 - A rule whose tap is set to "Suppress" with nothing on hold now swallows the key completely; before, the original key (for example Enter) still went through.
