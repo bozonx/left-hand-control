@@ -348,7 +348,7 @@ export component RulesPage inherits PageLayout {
                             color: Theme.muted;
                             TouchArea { enabled: rule.key != ""; mouse-cursor: pointer; clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); } }
                         }
-                        rule-options := IconButton { enabled: rule.key != ""; icon: @image-url("icons/settings-2.svg"); tooltip: @tr("Advanced rule options"); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); }
+                        rule-options := IconButton { enabled: rule.key != ""; icon: @image-url("icons/sliders-horizontal.svg"); tooltip: @tr("Advanced rule options"); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); }
                             if RulesEditor.dialog == RuleDialog.advanced && RulesEditor.selected == index && RulesEditor.advanced-dirty: Rectangle {
                                 x: parent.width - 5px; y: 3px; width: 7px; height: 7px; border-radius: Theme.radius-small; background: Theme.accent;
                             }

@@ -18,11 +18,11 @@ export component CategoryIcon inherits VerticalLayout {
             : root.category == PickerCategory.system-keys ? @image-url("icons/laptop.svg")
             : root.category == PickerCategory.mouse ? @image-url("icons/mouse.svg")
             : root.category == PickerCategory.other-keys ? @image-url("icons/ellipsis.svg")
-            : root.category == PickerCategory.macros || root.category == PickerCategory.builtin-macros ? @image-url("icons/zap.svg")
+            : root.category == PickerCategory.macros || root.category == PickerCategory.builtin-macros ? @image-url("icons/list-ordered.svg")
             : root.category == PickerCategory.commands ? @image-url("icons/terminal.svg")
             : root.category == PickerCategory.app ? @image-url("icons/hand.svg")
-            : root.category == PickerCategory.system-actions ? @image-url("icons/settings-2.svg")
-            : root.category == PickerCategory.desktop-shortcuts ? @image-url("icons/square-function.svg")
+            : root.category == PickerCategory.system-actions ? @image-url("icons/monitor-cog.svg")
+            : root.category == PickerCategory.desktop-shortcuts ? @image-url("icons/command.svg")
             : root.category == PickerCategory.pause ? @image-url("icons/clock.svg")
             : @image-url("icons/keyboard.svg");
     }

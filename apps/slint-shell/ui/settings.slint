@@ -141,8 +141,8 @@ export component SettingsWindow inherits Window {
                 HorizontalLayout {
                     accessible-role: tab-list; accessible-label: @tr("Settings");
                     padding-left: Theme.space-xl; padding-right: Theme.space-xl; padding-top: Theme.space-m; padding-bottom: Theme.space-m; spacing: Theme.space-m;
-                    VerticalLayout { alignment: center; layouts-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/keyboard.svg"); text: @tr("Layouts"); selected: root.page == Page.layouts; clicked => { root.navigate(Page.layouts, MenuKind.emoji); } } }
-                    VerticalLayout { alignment: center; settings-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/settings-2.svg"); text: @tr("Settings"); selected: root.page == Page.settings; clicked => { root.navigate(Page.settings, MenuKind.emoji); } } }
+                    VerticalLayout { alignment: center; layouts-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/library-big.svg"); text: @tr("Layouts"); selected: root.page == Page.layouts; clicked => { root.navigate(Page.layouts, MenuKind.emoji); } } }
+                    VerticalLayout { alignment: center; settings-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/settings.svg"); text: @tr("Settings"); selected: root.page == Page.settings; clicked => { root.navigate(Page.settings, MenuKind.emoji); } } }
                     Rectangle {
                         horizontal-stretch: 1;
                         min-width: root.compact-header ? 0px : 120px;
@@ -175,7 +175,7 @@ export component SettingsWindow inherits Window {
                         Rectangle { border-width: active-focus.has-focus ? 2px : 0px; border-color: Theme.focus; border-radius: Theme.radius; }
                         width: root.compact-header ? 150px : 180px; height: Theme.control-height-l; border-radius: Theme.radius; background: Theme.surface; border-width: 1px; border-color: Theme.border;
                         HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-s;
-                            Image { width: 14px; source: @image-url("icons/keyboard.svg"); colorize: Theme.muted; }
+                            Image { width: 14px; source: @image-url("icons/library-big.svg"); colorize: Theme.muted; }
                             Text { accessible-live-region: polite; text: LayoutLibrary.active-label == "" ? @tr("No active layout") : @tr("Active: {}", LayoutLibrary.active-label); color: Theme.text; overflow: elide; vertical-alignment: center; }
                             if !LayoutLibrary.automatic: Image { width: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; }
                         }
@@ -223,11 +223,11 @@ export component SettingsWindow inherits Window {
                         viewport-height: self.visible-height;
                         HorizontalLayout {
                             spacing: Theme.space-2xs; alignment: start;
-                            NavTab { icon: @image-url("icons/settings-2.svg"); text: @tr("Triggers") + (LayoutLibrary.rules-dirty ? " •" : ""); selected: root.page == Page.rules; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
-                            NavTab { icon: @image-url("icons/keyboard.svg"); text: @tr("Layers") + (LayoutLibrary.layers-dirty ? " •" : ""); selected: root.page == Page.keyboard || root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
+                            NavTab { icon: @image-url("icons/keyboard.svg"); text: @tr("Triggers") + (LayoutLibrary.rules-dirty ? " •" : ""); selected: root.page == Page.rules; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
+                            NavTab { icon: @image-url("icons/layers.svg"); text: @tr("Layers") + (LayoutLibrary.layers-dirty ? " •" : ""); selected: root.page == Page.keyboard || root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
                             if AppState.in-development: NavTab { icon: @image-url("icons/smile.svg"); text: @tr("Emoji") + (LayoutLibrary.emoji-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
                             if AppState.in-development: NavTab { icon: @image-url("icons/zap.svg"); text: @tr("Quick actions") + (LayoutLibrary.quick-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }
-                            if AppState.in-development: NavTab { icon: @image-url("icons/clock.svg"); text: @tr("Macros") + ((LayoutLibrary.macros-dirty || MacroEditor.has-errors) ? " •" : ""); selected: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
+                            if AppState.in-development: NavTab { icon: @image-url("icons/list-ordered.svg"); text: @tr("Macros") + ((LayoutLibrary.macros-dirty || MacroEditor.has-errors) ? " •" : ""); selected: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
                         }
                     }
                     VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/x.svg"); label: @tr("Close layout"); clicked => { root.close-layout(); } } }
