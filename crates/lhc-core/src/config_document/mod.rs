@@ -1215,8 +1215,9 @@ mod tests {
         let quick = &document.layout().quick_action_pages;
         assert!(!quick.is_empty());
         assert!(quick.iter().all(|page| page.cells.len() == 15));
-        assert_eq!(quick[0].cells["KeyQ"].action, "Sleep");
-        assert_eq!(quick[0].cells["KeyS"].action, "PrintScreen");
+        let system = quick.iter().find(|page| page.id == "system").unwrap();
+        assert_eq!(system.cells["KeyQ"].action, "Sleep");
+        assert_eq!(system.cells["KeyS"].action, "PrintScreen");
         assert_eq!(reparsed.quick_action_pages, *quick);
     }
 

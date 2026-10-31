@@ -1,0 +1,72 @@
+Date: 2026-10-31 07:34:07 -0300
+Commit: 11fc40df
+Command: apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-fedora-kde --package target/ubuntu-22.04/release-artifacts/left-hand-control-0.4.0-1.x86_64.rpm --previous /mnt/disk2/vm/lhc-release-20261021/prior-linux-packages/left-hand-control-0.3.0-1.x86_64.rpm --popup-mode spell --text-backend clipboard --stress-seconds 180 --acceptance
+VM: fedora44-kde (/mnt/disk2/vm/lhc-fedora-kde/base.qcow2)
+Memory: 6144 MiB
+CPU: host
+Machine: q35
+Acceptance requested: True; scope: this VM/backend combination only
+Text backend: clipboard; stress seconds: 180
+Suspend exclusion: none
+Package: left-hand-control-0.4.0-1.x86_64.rpm (upgraded from left-hand-control-0.3.0-1.x86_64.rpm)
+Package SHA256: 77696947b7db5614716e3e29884cacc425974677af30c481f0d4d7a9a4dc31c2
+Popup mode: spell (startup environment and worker processes recorded in resources)
+Portal deny clicks: [0.738, 0.659]; relative: [0.87, 0.86]
+Previous-version upgrade: left-hand-control-0.3.0-1.x86_64.rpm
+Keyboard: not detected
+Host: ivan, 7.2.9-1-MANJARO
+Logs and screenshots: /mnt/disk2/vm/lhc-fedora-kde/runs/20261031-073339/logs
+
+- boot: passed
+- upload: passed
+- plasma-session: passed — wayland
+- controller: FAILED — interrupted
+- collect-diagnostics: skipped — [Errno 104] Connection reset by peer
+- autostart-entry: NOT RUN — required scenario was not reached
+- autostart-launch: NOT RUN — required scenario was not reached
+- cli: NOT RUN — required scenario was not reached
+- clipboard-preservation: NOT RUN — required scenario was not reached
+- command: NOT RUN — required scenario was not reached
+- emoji-hotkey: NOT RUN — required scenario was not reached
+- emoji-ipc: NOT RUN — required scenario was not reached
+- game-mode: NOT RUN — required scenario was not reached
+- install-previous: NOT RUN — required scenario was not reached
+- installed-files: NOT RUN — required scenario was not reached
+- keyboard-probe: NOT RUN — required scenario was not reached
+- keyboard-replug: NOT RUN — required scenario was not reached
+- layer-tap-hold: NOT RUN — required scenario was not reached
+- macro: NOT RUN — required scenario was not reached
+- mapper-keys-and-text: NOT RUN — required scenario was not reached
+- mapper-running: NOT RUN — required scenario was not reached
+- mapper-start: NOT RUN — required scenario was not reached
+- mapper-stop: NOT RUN — required scenario was not reached
+- no-mapper-without-input: NOT RUN — required scenario was not reached
+- popups: NOT RUN — required scenario was not reached
+- portal-consent: NOT RUN — required scenario was not reached
+- portal-deny: NOT RUN — required scenario was not reached
+- previous-release: NOT RUN — required scenario was not reached
+- profile-loaded: NOT RUN — required scenario was not reached
+- quick-menu-rule: NOT RUN — required scenario was not reached
+- quit: NOT RUN — required scenario was not reached
+- reboot-with-input: NOT RUN — required scenario was not reached
+- remove: NOT RUN — required scenario was not reached
+- russian-layout: NOT RUN — required scenario was not reached
+- screen-lock: NOT RUN — required scenario was not reached
+- second-instance: NOT RUN — required scenario was not reached
+- start-without-input: NOT RUN — required scenario was not reached
+- stuck-keys-on-kill: NOT RUN — required scenario was not reached
+- stuck-keys-on-stop: NOT RUN — required scenario was not reached
+- suspend-resume: NOT RUN — required scenario was not reached
+- sustained-input-lifecycle: NOT RUN — required scenario was not reached
+- system-actions: NOT RUN — required scenario was not reached
+- test-config: NOT RUN — required scenario was not reached
+- text-after-second-instance: NOT RUN — required scenario was not reached
+- text-unicode: NOT RUN — required scenario was not reached
+- text-unicode-corpus: NOT RUN — required scenario was not reached
+- tray-after-login: NOT RUN — required scenario was not reached
+- tray-item: NOT RUN — required scenario was not reached
+- upgrade-from-previous: NOT RUN — required scenario was not reached
+- upgrade-over-running: NOT RUN — required scenario was not reached
+
+Passed: 3, failed: 1, skipped: 1, blocked/not run: 45
+Acceptance: INCOMPLETE — autostart-entry, autostart-launch, cli, clipboard-preservation, command, emoji-hotkey, emoji-ipc, game-mode, install-previous, installed-files, keyboard-probe, keyboard-replug, layer-tap-hold, macro, mapper-keys-and-text, mapper-running, mapper-start, mapper-stop, no-mapper-without-input, popups, portal-consent, portal-deny, previous-release, profile-loaded, quick-menu-rule, quit, reboot-with-input, remove, russian-layout, screen-lock, second-instance, start-without-input, stuck-keys-on-kill, stuck-keys-on-stop, suspend-resume, sustained-input-lifecycle, system-actions, test-config, text-after-second-instance, text-unicode, text-unicode-corpus, tray-after-login, tray-item, upgrade-from-previous, upgrade-over-running

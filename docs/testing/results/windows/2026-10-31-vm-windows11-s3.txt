@@ -1,0 +1,33 @@
+Date: 2026-10-31 08:29:59 -0300
+Commit: 84a30548 (with uncommitted changes)
+Command: apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/lhc-windows-s3 --suite full --extended --stress-seconds 180 --previous-package /mnt/disk2/vm/lhc-release-20261022-windows-fixes/packages/left-hand-control-0.3.0-windows-x86_64.zip --acceptance --timeout 180
+VM: windows11-s3 (/mnt/disk2/vm/lhc-windows-s3/runs/20261022-101307/run.qcow2)
+Suite: full; acceptance requested: True
+Previous-version upgrade: /mnt/disk2/vm/lhc-release-20261022-windows-fixes/packages/left-hand-control-0.3.0-windows-x86_64.zip
+Scope: Windows developer VM; clean-package and previous-version upgrade require separate acceptance
+Mapper build: release
+Popup shell build: release
+Native tests/clippy/package lifecycle: included
+Mapper from: beginning
+Mapper only: all
+Extended: True; stress seconds: 180
+Memory: 4096 MiB
+Logs: /mnt/disk2/vm/lhc-windows-s3/runs/20261031-082958/logs
+
+
+
+- boot: FAILED — [Errno 104] Connection reset by peer
+- hardware-keyboard: NOT RUN — required scenario was not reached
+- popup-bmp-focus: NOT RUN — required scenario was not reached
+- popup-mixed-text-focus: NOT RUN — required scenario was not reached
+- popup-reopen-focus: NOT RUN — required scenario was not reached
+- popup-surrogate-focus: NOT RUN — required scenario was not reached
+- popup-zwj-focus: NOT RUN — required scenario was not reached
+- preflight: NOT RUN — required scenario was not reached
+- shell-mapper-crash-held: NOT RUN — required scenario was not reached
+- shell-profile-remap-restart: NOT RUN — required scenario was not reached
+- upload-source: NOT RUN — required scenario was not reached
+- windows-full: NOT RUN — required scenario was not reached
+
+Passed: 0, failed: 1, skipped: 0, blocked/not run: 11
+Acceptance: INCOMPLETE — boot, hardware-keyboard, popup-bmp-focus, popup-mixed-text-focus, popup-reopen-focus, popup-surrogate-focus, popup-zwj-focus, preflight, shell-mapper-crash-held, shell-profile-remap-restart, upload-source, windows-full
