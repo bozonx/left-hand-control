@@ -84,7 +84,14 @@ impl Changes {
 
 struct LibrarySnapshot {
     name: String,
-    layout: Option<LayoutPreset>,
+    layout: Option<SavedLayout>,
+}
+
+/// A library layout as saved, with its normalized serialization cached so
+/// dirty checks do not re-serialize it on every edit.
+pub(crate) struct SavedLayout {
+    pub(crate) layout: LayoutPreset,
+    pub(crate) text: String,
 }
 
 type Listener = Rc<dyn Fn(&Document)>;
@@ -212,23 +219,37 @@ impl Document {
     }
 
     /// Saved library layout used by dirty indicators; disk reads happen once per refresh.
-    pub(crate) fn saved_layout(&self, name: &str) -> Option<LayoutPreset> {
+    pub(crate) fn with_saved_layout<R>(
+        &self,
+        name: &str,
+        f: impl FnOnce(Option<&SavedLayout>) -> R,
+    ) -> R {
         let mut snapshot = self.library_snapshot.borrow_mut();
         if snapshot
             .as_ref()
             .is_none_or(|snapshot| snapshot.name != name)
         {
+            let layout = self
+                .read()
+                .load_layout(&lhc_core::profile::model::user_layout_id(name))
+                .ok()
+                .map(|layout| SavedLayout {
+                    text: lhc_core::profile::layout_file::serialize(&layout),
+                    layout,
+                });
             *snapshot = Some(LibrarySnapshot {
                 name: name.to_owned(),
-                layout: self
-                    .read()
-                    .load_layout(&lhc_core::profile::model::user_layout_id(name))
-                    .ok(),
+                layout,
             });
         }
-        snapshot
+        f(snapshot
             .as_ref()
-            .and_then(|snapshot| snapshot.layout.clone())
+            .and_then(|snapshot| snapshot.layout.as_ref()))
+    }
+
+    #[cfg(test)]
+    fn saved_layout(&self, name: &str) -> Option<LayoutPreset> {
+        self.with_saved_layout(name, |saved| saved.map(|saved| saved.layout.clone()))
     }
 
     pub(crate) fn command_revision(&self) -> u64 {

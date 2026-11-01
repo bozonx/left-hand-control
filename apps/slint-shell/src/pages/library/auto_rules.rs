@@ -2,16 +2,32 @@
 
 use super::*;
 
-fn target_id(ui: &SettingsWindow, index: i32) -> Option<String> {
+/// Layout id at `index` in `names`; out of range means no layout.
+fn target_id(names: &[String], index: i32) -> Option<String> {
     usize::try_from(index)
         .ok()
-        .and_then(|index| slint::Model::row_data(&ui.global::<LayoutLibrary>().get_names(), index))
-        .map(|name| user_layout_id(&name))
+        .and_then(|index| names.get(index))
+        .map(|name| user_layout_id(name))
+}
+
+fn shown_names(ui: &SettingsWindow) -> Vec<String> {
+    slint::Model::iter(&ui.global::<LayoutLibrary>().get_names())
+        .map(|name| name.to_string())
+        .collect()
 }
 
 /// Fill the rule dialog with rule `index`, or a new rule for `target`.
-pub(super) fn load_rule(ui: &SettingsWindow, document: &Document, index: i32, target: i32) {
+/// The names the dialog's target index refers to are kept until it is
+/// saved, so a list refresh meanwhile cannot retarget the rule.
+pub(super) fn load_rule(
+    ui: &SettingsWindow,
+    document: &Document,
+    state: &Shared,
+    index: i32,
+    target: i32,
+) {
     let library = ui.global::<LayoutLibrary>();
+    state.borrow_mut().rule_names = shown_names(ui);
     let rule = usize::try_from(index)
         .ok()
         .and_then(|index| document.read().settings().auto_rules.get(index).cloned());
@@ -40,7 +56,7 @@ pub(super) fn save_rule(
     state: &Shared,
 ) -> Result<Msg, Msg> {
     let library = ui.global::<LayoutLibrary>();
-    let layout_id = target_id(ui, library.get_rule_target());
+    let layout_id = target_id(&state.borrow().rule_names, library.get_rule_target());
     let conditions = condition(
         library.get_rule_game(),
         &library.get_rule_layouts(),
@@ -75,11 +91,12 @@ pub(super) fn delete_rule(
     state: &Shared,
     index: i32,
 ) -> Result<Msg, Msg> {
-    let index = usize::try_from(index).map_err(|_| Msg::LibrarySelect)?;
+    let index = usize::try_from(index)
+        .ok()
+        .filter(|index| *index < document.read().settings().auto_rules.len())
+        .ok_or(Msg::LibrarySelect)?;
     let message = edit_auto(ui, document, state, |settings| {
-        if index < settings.auto_rules.len() {
-            settings.auto_rules.remove(index);
-        }
+        settings.auto_rules.remove(index);
     })?;
     ui.global::<LayoutLibrary>().set_dialog(LibraryDialog::None);
     Ok(if matches!(message, Msg::None) {
@@ -148,8 +165,21 @@ pub(super) fn set_auto_default(
     state: &Shared,
     index: i32,
 ) -> Result<Msg, Msg> {
-    let id = target_id(ui, index);
+    let id = target_id(&shown_names(ui), index);
     edit_auto(ui, document, state, |settings| {
         settings.auto_default_layout_id = id
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn target_index_maps_to_id() {
+        let names = vec!["A".to_owned(), "B".to_owned()];
+        assert_eq!(target_id(&names, 1), Some(user_layout_id("B")));
+        assert_eq!(target_id(&names, -1), None);
+        assert_eq!(target_id(&names, 2), None);
+    }
 }

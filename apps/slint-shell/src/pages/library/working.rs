@@ -7,44 +7,85 @@ pub(super) fn refresh_context(ui: &SettingsWindow, document: &Document) {
     let library = ui.global::<LayoutLibrary>();
     let name = current_name(&config);
     library.set_current_label(name.clone().unwrap_or_default().into());
-    let named = name.is_some();
-    let saved = name
-        .and_then(|name| document.saved_layout(&name))
-        .or_else(|| (!named).then(LayoutPreset::initial));
     let current = config.layout();
-    let normalized = layout_file::parse(&layout_file::serialize(current))
-        .ok()
-        .flatten();
-    let current = normalized.as_ref().unwrap_or(current);
-    let dirty = saved
-        .as_ref()
-        .is_none_or(|saved| layout_file::serialize(saved) != layout_file::serialize(current));
-    library.set_dirty(dirty);
-    let changed = |section: fn(&LayoutPreset, &LayoutPreset) -> bool| {
-        saved
-            .as_ref()
-            .map_or(dirty, |saved| section(saved, current))
+    let flags = match &name {
+        Some(name) => document.with_saved_layout(name, |saved| {
+            DirtyFlags::compare(
+                saved.map(|saved| (&saved.layout, saved.text.as_str())),
+                current,
+            )
+        }),
+        None => {
+            let initial = LayoutPreset::initial();
+            let text = layout_file::serialize(&initial);
+            DirtyFlags::compare(Some((&initial, &text)), current)
+        }
     };
-    library.set_rules_dirty(changed(|saved, current| saved.rules != current.rules));
-    let base_dirty = saved.as_ref().map_or(dirty, |saved| {
-        crate::keyboard::BASE
+    drop(config);
+    library.set_dirty(flags.any);
+    library.set_rules_dirty(flags.rules);
+    library.set_layers_dirty(flags.layers);
+    library.set_macros_dirty(flags.macros);
+    library.set_quick_dirty(flags.quick);
+    library.set_emoji_dirty(flags.emoji);
+    library.set_commands_dirty(flags.commands);
+}
+
+/// Which parts of the working copy differ from its saved library file.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub(super) struct DirtyFlags {
+    pub any: bool,
+    pub rules: bool,
+    pub layers: bool,
+    pub macros: bool,
+    pub quick: bool,
+    pub emoji: bool,
+    pub commands: bool,
+}
+
+impl DirtyFlags {
+    /// Compare the working copy with the saved layout and its serialized
+    /// text. Both sides go through the same parser, so formatting
+    /// differences in the file do not count as changes.
+    pub(super) fn compare(saved: Option<(&LayoutPreset, &str)>, current: &LayoutPreset) -> Self {
+        let Some((saved, saved_text)) = saved else {
+            // No saved file: everything counts as unsaved.
+            return Self {
+                any: true,
+                rules: true,
+                layers: true,
+                macros: true,
+                quick: true,
+                emoji: true,
+                commands: true,
+            };
+        };
+        // Fast path for the common clean state: no serialization at all.
+        if saved == current {
+            return Self::default();
+        }
+        let text = layout_file::serialize(current);
+        let normalized = layout_file::parse(&text).ok().flatten();
+        let current = normalized.as_ref().unwrap_or(current);
+        let any = match &normalized {
+            Some(normalized) => layout_file::serialize(normalized) != saved_text,
+            None => text != saved_text,
+        };
+        let base = crate::keyboard::BASE
             .iter()
-            .any(|key| saved.base_tap_action(key) != current.base_tap_action(key))
-    });
-    library.set_layers_dirty(
-        base_dirty
-            || changed(|saved, current| {
-                saved.layers != current.layers || saved.layer_keymaps != current.layer_keymaps
-            }),
-    );
-    library.set_macros_dirty(changed(|saved, current| saved.macros != current.macros));
-    library.set_quick_dirty(changed(|saved, current| {
-        saved.quick_action_pages != current.quick_action_pages
-    }));
-    library.set_emoji_dirty(changed(|saved, current| {
-        saved.emoji_pages != current.emoji_pages
-    }));
-    library.set_commands_dirty(changed(|saved, current| saved.commands != current.commands));
+            .any(|key| saved.base_tap_action(key) != current.base_tap_action(key));
+        Self {
+            any,
+            rules: saved.rules != current.rules,
+            layers: base
+                || saved.layers != current.layers
+                || saved.layer_keymaps != current.layer_keymaps,
+            macros: saved.macros != current.macros,
+            quick: saved.quick_action_pages != current.quick_action_pages,
+            emoji: saved.emoji_pages != current.emoji_pages,
+            commands: saved.commands != current.commands,
+        }
+    }
 }
 
 /// Name of the layout the mapper uses now and the automatic rule that
@@ -133,6 +174,7 @@ fn write_current(
     let text = edit(ui, document, state, |config| {
         config.overwrite_library_layout(&name)
     })?;
+    metadata::remember(&name, Some(text.clone()));
     state.borrow_mut().baseline = Some((name.clone(), text));
     refresh_context(ui, document);
     Ok(Msg::LayoutSaved(name))
@@ -148,8 +190,40 @@ pub(super) fn save_as(
     let (saved, text) = edit(ui, document, state, |config| {
         config.save_working_layout_as(name)
     })?;
+    metadata::remember(&saved, Some(text.clone()));
     state.borrow_mut().baseline = Some((saved.clone(), text));
     ui.global::<LayoutLibrary>().set_save_as_open(false);
     refresh(ui, document, &mut state.borrow_mut())?;
     Ok(Msg::LayoutSaved(saved))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn flags(saved: &LayoutPreset, current: &LayoutPreset) -> DirtyFlags {
+        DirtyFlags::compare(Some((saved, &layout_file::serialize(saved))), current)
+    }
+
+    #[test]
+    fn dirty_flags_follow_changed_sections() {
+        let saved = LayoutPreset::initial();
+        assert_eq!(flags(&saved, &saved), DirtyFlags::default());
+
+        let mut described = saved.clone();
+        described.description = Some("changed".into());
+        let result = flags(&saved, &described);
+        assert!(result.any);
+        assert!(!result.rules && !result.layers && !result.macros);
+
+        let mut no_rules = saved.clone();
+        no_rules.rules.clear();
+        if no_rules != saved {
+            let result = flags(&saved, &no_rules);
+            assert!(result.any && result.rules && !result.emoji);
+        }
+
+        let missing = DirtyFlags::compare(None, &saved);
+        assert!(missing.any && missing.rules && missing.commands);
+    }
 }

@@ -19,6 +19,9 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - A rule whose tap is set to "Suppress" with nothing on hold now swallows the key completely; before, the original key (for example Enter) still went through.
 - A key chord pressed while a tap-hold key is still undecided no longer fires ahead of it: a chord nested inside the held key now uses that key's layer, and a chord rolled after it types in physical order.
 - A rule with a hold (layer or held key) and a double-tap action supports tap, then press and hold: the second press activates the hold when held, and fires the double-tap only when released quickly.
+- Layouts page: Activate, Edit and Delete on a layout whose file cannot be read no longer act on a previously selected layout, and such a layout can now be renamed and deleted.
+- Layouts page: creating a layout no longer asks about unsaved changes twice, and "Save and continue" finishes the switch after resolving a conflict with the file on disk (overwrite, reload or save as new).
+- Layouts page: renaming, describing or deleting a layout changed on disk by another program since the page showed it reports the conflict instead of overwriting the file; dialogs no longer show the error of an earlier action; a success notice is no longer replaced by a warning.
 
 - Notifications no longer hide new problems behind older warnings or replay background successes. Popup worker failures are grouped, distinct diagnostics remain separate, repeated rule warnings stay inline, and deleting an automatic switching rule has a confirmation.
 - Success and warning notifications disappear on their timeout again; only errors stay until dismissed. Hovering a notification pauses the timeout only while the window is active, and an emptied notification stack no longer leaves the next notifications paused.

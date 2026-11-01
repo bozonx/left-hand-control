@@ -209,7 +209,7 @@ export component SettingsWindow inherits Window {
                         enabled: LayoutLibrary.dirty || MacroEditor.has-unsaved-changes || MenuEditor.has-unsaved-changes;
                         save => { LayoutLibrary.save-current(); }
                         discard => { root.confirm-discard = true; }
-                        save-as => { LayoutLibrary.save-as-name = ""; LayoutLibrary.save-as-open = true; }
+                        save-as => { LayoutLibrary.open-save-as(""); }
                     } }
                     Rectangle { width: 16px; }
                     editor-tabs := ScrollView {
@@ -287,7 +287,7 @@ export component SettingsWindow inherits Window {
         MenuSurface {
             for name[index] in LayoutLibrary.names: MenuItem {
                 text: name; checked: name == LayoutLibrary.active-label;
-                clicked => { active-menu.close(); LayoutLibrary.select(index); LayoutLibrary.action(LibraryAction.activate); }
+                clicked => { active-menu.close(); LayoutLibrary.action(index, LibraryAction.activate); }
             }
         }
     }
@@ -317,19 +317,21 @@ export component SettingsWindow inherits Window {
             Button {
                 text: @tr("Load from disk");
                 clicked => {
-                    LayoutLibrary.cancel-dialog();
+                    // Reloading drops the edits, so a pending switch may proceed.
+                    LayoutLibrary.dialog = LibraryDialog.none;
                     InlineEditors.revision += 1; LayoutLibrary.discard-current();
+                    LayoutLibrary.finish-save();
                 }
             }
             Button {
                 text: @tr("Save as new…");
                 clicked => {
-                    LayoutLibrary.cancel-dialog();
-                    LayoutLibrary.save-as-name = LayoutLibrary.suggest-name(LayoutLibrary.current-label);
-                    LayoutLibrary.save-as-open = true;
+                    // Keep a pending switch: it continues once the copy is saved.
+                    LayoutLibrary.dialog = LibraryDialog.none;
+                    LayoutLibrary.open-save-as(LayoutLibrary.suggest-name(LayoutLibrary.current-label));
                 }
             }
-            Button { text: @tr("Overwrite"); primary: true; clicked => { LayoutLibrary.overwrite-current(); } }
+            Button { text: @tr("Overwrite"); primary: true; clicked => { LayoutLibrary.overwrite-current(); LayoutLibrary.finish-save(); } }
         }
     }
     LibraryDialogOverlay {}

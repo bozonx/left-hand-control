@@ -40,12 +40,15 @@ use std::{cell::RefCell, rc::Rc};
 
 #[derive(Default)]
 struct State {
-    /// Selected library layout and its file contents when it was selected.
+    /// Library layout whose menu or dialog is open.
     selected: Option<String>,
-    known: Option<String>,
     /// Library layout the working copy came from and its saved contents.
     baseline: Option<(String, String)>,
     warning: Option<Msg>,
+    /// System languages for rule warnings; re-read when the page is opened.
+    languages: Option<Vec<String>>,
+    /// Names the open rule dialog's target index refers to.
+    rule_names: Vec<String>,
 }
 
 type Shared = Rc<RefCell<State>>;
@@ -126,17 +129,16 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State) -> Resul
     library.set_selected(selected.map_or(-1, |index| index as i32));
     if selected.is_none() {
         state.selected = None;
-        state.known = None;
     }
     drop(config);
-    refresh_auto(ui, document);
+    refresh_auto(ui, document, state);
     refresh_context(ui, document);
     Ok(())
 }
 
 /// Automatic mode: the rules, the default and rules per layout. Targets
 /// index the `names` already shown.
-fn refresh_auto(ui: &SettingsWindow, document: &Document) {
+fn refresh_auto(ui: &SettingsWindow, document: &Document, state: &mut State) {
     let config = document.read();
     let library = ui.global::<LayoutLibrary>();
     let settings = config.settings();
@@ -155,12 +157,15 @@ fn refresh_auto(ui: &SettingsWindow, document: &Document) {
     };
     let rules = &settings.auto_rules;
     // Without layout detection every language would look unknown.
-    let languages: Vec<String> = if rules.iter().any(|rule| !rule.conditions.layouts.is_empty()) {
-        lhc_core::keyboard_layout::available_layouts()
-            .map(|layouts| layouts.into_iter().map(|layout| layout.code).collect())
-            .unwrap_or_default()
+    // Querying the system is slow, so it happens once per page visit.
+    let languages: &[String] = if rules.iter().any(|rule| !rule.conditions.layouts.is_empty()) {
+        state.languages.get_or_insert_with(|| {
+            lhc_core::keyboard_layout::available_layouts()
+                .map(|layouts| layouts.into_iter().map(|layout| layout.code).collect())
+                .unwrap_or_default()
+        })
     } else {
-        Vec::new()
+        &[]
     };
     library.set_auto_rules(ModelRc::new(VecModel::from(
         rules
@@ -210,20 +215,23 @@ fn refresh_auto(ui: &SettingsWindow, document: &Document) {
     refresh_active(ui, document);
 }
 
-/// Label and dirty flag of the working copy: it differs from its library
-/// file. Both sides go through the same parser, so formatting differences
-/// in the file do not count as changes.
+/// Combine an action result with a warning raised along the way: returns
+/// an extra notification, if any, and the message to report.
+fn merge_warning(result: Result<Msg, Msg>, warning: Option<Msg>) -> (Option<Msg>, Msg) {
+    match (result, warning) {
+        (Ok(message), Some(warning)) if message.is_none() => (None, warning),
+        (Ok(message) | Err(message), warning) => (warning, message),
+    }
+}
+
+/// Show an action result: success notices as notifications, anything else
+/// in the page status.
 fn report(ui: &SettingsWindow, state: &Shared, result: Result<Msg, Msg>) {
     let warning = state.borrow_mut().warning.take();
-    let message = match result {
-        Ok(message) => warning.unwrap_or(message),
-        Err(error) => {
-            if let Some(warning) = warning {
-                crate::notifications::send(ui, warning);
-            }
-            error
-        }
-    };
+    let (extra, message) = merge_warning(result, warning);
+    if let Some(extra) = extra {
+        crate::notifications::send(ui, extra);
+    }
     if matches!(
         message,
         Msg::LayoutCreated(_)
@@ -241,8 +249,39 @@ fn report(ui: &SettingsWindow, state: &Shared, result: Result<Msg, Msg>) {
     }
 }
 
-fn selected_name(state: &Shared) -> Result<String, Msg> {
-    state.borrow().selected.clone().ok_or(Msg::LibrarySelect)
+/// Library name shown at `index`.
+fn name_at(ui: &SettingsWindow, index: i32) -> Result<String, Msg> {
+    usize::try_from(index)
+        .ok()
+        .and_then(|index| slint::Model::row_data(&ui.global::<LayoutLibrary>().get_names(), index))
+        .map(|name| name.to_string())
+        .ok_or(Msg::LibrarySelect)
+}
+
+/// File text of `name` as the user last saw it; read now if the card's
+/// metadata has not arrived yet.
+fn expected_text(document: &Document, name: &str) -> Result<String, Msg> {
+    match metadata::known(name) {
+        Some(text) => Ok(text),
+        None => document.read().paths().load_user_layout(name).map_err(io),
+    }
+}
+
+/// Re-read a file this page has just written and remember it.
+fn remember_saved(document: &Document, name: &str) {
+    match document.read().paths().load_user_layout(name) {
+        Ok(text) => metadata::remember(name, Some(text)),
+        Err(error) => {
+            log::warn!("re-reading layout {name}: {error}");
+            metadata::remember(name, None);
+        }
+    }
+}
+
+fn refresh_logged(ui: &SettingsWindow, document: &Document, state: &Shared) {
+    if let Err(error) = refresh(ui, document, &mut state.borrow_mut()) {
+        log::warn!("refreshing the layout library: {error:?}");
+    }
 }
 
 /// Run a library change and refresh the page.
@@ -253,7 +292,7 @@ fn edit<T>(
     change: impl FnOnce(&mut ConfigDocument) -> Result<T, ConfigError>,
 ) -> Result<T, Msg> {
     let saved = document.edit_library(change).map_err(|error| {
-        let _ = refresh(ui, document, &mut state.borrow_mut());
+        refresh_logged(ui, document, state);
         match error {
             ConfigError::EditConflict => Msg::LibraryChanged,
             other => config_error(other),
@@ -277,36 +316,22 @@ fn edit_auto(
     let saved = document
         .edit(View::Library, |config| config.update_settings(change))
         .map_err(|error| {
-            let _ = refresh(ui, document, &mut state.borrow_mut());
+            refresh_logged(ui, document, state);
             match error {
                 ConfigError::EditConflict => Msg::LibraryChanged,
                 other => config_error(other),
             }
         })?;
-    refresh_auto(ui, document);
+    refresh_auto(ui, document, &mut state.borrow_mut());
     Ok(saved.message(Msg::None))
 }
 
-fn select(ui: &SettingsWindow, document: &Document, state: &Shared, index: i32) -> Result<(), Msg> {
-    let library = ui.global::<LayoutLibrary>();
-    let name = usize::try_from(index)
-        .ok()
-        .and_then(|index| slint::Model::row_data(&library.get_names(), index))
-        .ok_or(Msg::LibrarySelect)?
-        .to_string();
-    let config = document.read();
-    let text = config.paths().load_user_layout(&name).map_err(io)?;
-    let layout = layout_file::parse(&text)
-        .map_err(io)?
-        .ok_or(Msg::LayoutEmpty)?;
-    {
-        let mut state = state.borrow_mut();
-        state.selected = Some(name.clone());
-        state.known = Some(text);
-    }
-    library.set_selected(index);
-    library.set_name(name.into());
-    library.set_description(layout.description.unwrap_or_default().into());
+/// Remember which layout a menu or dialog acts on. Reads no file, so a
+/// broken layout can be selected (and deleted) like any other.
+fn select(ui: &SettingsWindow, state: &Shared, index: i32) -> Result<(), Msg> {
+    let name = name_at(ui, index)?;
+    state.borrow_mut().selected = Some(name);
+    ui.global::<LayoutLibrary>().set_selected(index);
     Ok(())
 }
 
@@ -323,29 +348,21 @@ fn condition_fields(set: Option<LayoutConditionSet>) -> (GameCondition, String, 
     .unwrap_or_default()
 }
 
-/// Selected file must still be what we read when it was selected.
-fn check_unchanged(document: &Document, state: &Shared, name: &str) -> Result<String, Msg> {
-    let current = document.read().paths().load_user_layout(name).map_err(io)?;
-    if Some(&current) != state.borrow().known.as_ref() {
-        return Err(Msg::LibraryChanged);
-    }
-    Ok(current)
-}
-
 fn library_action(
     ui: &SettingsWindow,
     document: &Document,
     state: &Shared,
+    index: i32,
     action: LibraryAction,
 ) -> Result<Msg, Msg> {
-    let library = ui.global::<LayoutLibrary>();
-    let name = selected_name(state)?;
+    let name = name_at(ui, index)?;
     let id = user_layout_id(&name);
     match action {
         LibraryAction::Activate => {
             edit(ui, document, state, |config| {
                 config.update_settings(|settings| settings.manual_layout_id = Some(id))
             })?;
+            Ok(Msg::LayoutActivated(name))
         }
         LibraryAction::MoveUp | LibraryAction::MoveDown => {
             let delta = if action == LibraryAction::MoveUp {
@@ -356,45 +373,18 @@ fn library_action(
             edit(ui, document, state, |config| {
                 config.move_library_layout(&id, delta)
             })?;
-        }
-        LibraryAction::SaveDetails => {
-            let expected = state.borrow().known.clone().ok_or(Msg::LibrarySelect)?;
-            let new_name = library.get_name().to_string();
-            let description = library.get_description().to_string();
-            let saved = edit(ui, document, state, |config| {
-                config.edit_library_metadata(&name, &new_name, &description, &expected)
-            })?;
-            let text = document
-                .read()
-                .paths()
-                .load_user_layout(&saved)
-                .map_err(io)?;
-            {
-                let mut state = state.borrow_mut();
-                state.selected = Some(saved);
-                state.known = Some(text);
-            }
-            refresh(ui, document, &mut state.borrow_mut())?;
-            reset_context(ui, document, &mut state.borrow_mut());
+            Ok(Msg::None)
         }
     }
-    if action == LibraryAction::SaveDetails {
-        library.set_dialog(LibraryDialog::None);
-    }
-    Ok(if action == LibraryAction::Activate {
-        Msg::LayoutActivated(name)
-    } else {
-        Msg::None
-    })
 }
 
-/// Replace the working copy with the selected layout and open its rules.
-fn load(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result<Msg, Msg> {
-    let name = selected_name(state)?;
-    let is_current = current_name(&document.read()).as_deref() == Some(name.as_str());
+/// Replace the working copy with layout `name` and open its rules. The
+/// caller has already asked about unsaved changes.
+fn load(ui: &SettingsWindow, document: &Document, state: &Shared, name: &str) -> Result<Msg, Msg> {
+    let is_current = current_name(&document.read()).as_deref() == Some(name);
     if !is_current {
         edit(ui, document, state, |config| {
-            config.load_library_for_editing(&name)
+            config.load_library_for_editing(name)
         })?;
         reset_context(ui, document, &mut state.borrow_mut());
     }
@@ -412,9 +402,7 @@ fn create(
     copy_index: i32,
 ) -> Result<Msg, Msg> {
     let library = ui.global::<LayoutLibrary>();
-    let copy_from = usize::try_from(copy_index)
-        .ok()
-        .and_then(|index| slint::Model::row_data(&library.get_names(), index));
+    let copy_from = name_at(ui, copy_index).ok();
     let source = match source {
         LayoutSource::Bundled => LibrarySource::Bundled(
             usize::try_from(copy_index)
@@ -425,29 +413,69 @@ fn create(
         LayoutSource::Copy => LibrarySource::Copy(copy_from.as_deref().ok_or(Msg::LibrarySelect)?),
         LayoutSource::Empty => LibrarySource::Empty,
     };
-    let activate_first =
-        slint::Model::row_count(&library.get_names()) == 0 && !library.get_automatic();
     let created = edit(ui, document, state, |config| {
-        config.create_and_select_library_layout(name, description, source, activate_first)
+        // The very first layout becomes active in single mode.
+        let first = config.ordered_layout_ids()?.is_empty()
+            && config.settings().layout_mode == LayoutMode::Manual;
+        config.create_and_select_library_layout(name, description, source, first)
     })?;
-    let index = slint::Model::iter(&library.get_names())
-        .position(|item| item == created)
-        .ok_or(Msg::LibrarySelect)?;
+    remember_saved(document, &created);
     library.set_dialog(LibraryDialog::None);
-    select(ui, document, state, index as i32)?;
-    library.invoke_edit(index as i32);
+    // The layout exists now: a failure to open it is a warning, not a
+    // failed creation. Unsaved changes were confirmed before the dialog.
+    let opened = slint::Model::iter(&library.get_names())
+        .position(|item| item == created)
+        .ok_or(Msg::LibrarySelect)
+        .and_then(|index| select(ui, state, index as i32))
+        .and_then(|()| load(ui, document, state, &created));
+    if let Err(error) = opened {
+        let mut state = state.borrow_mut();
+        state.warning = state.warning.take().or(Some(error));
+    }
     Ok(Msg::LayoutCreated(created))
 }
 
-fn delete(ui: &SettingsWindow, document: &Document, state: &Shared) -> Result<Msg, Msg> {
-    let name = selected_name(state)?;
-    let current = check_unchanged(document, state, &name)?;
+fn delete(
+    ui: &SettingsWindow,
+    document: &Document,
+    state: &Shared,
+    index: i32,
+) -> Result<Msg, Msg> {
+    let name = name_at(ui, index)?;
+    let expected = expected_text(document, &name)?;
     edit(ui, document, state, |config| {
-        config.remove_library_layout(&name, &current)
+        config.remove_library_layout(&name, &expected)
     })?;
+    metadata::remember(&name, None);
     reset_context(ui, document, &mut state.borrow_mut());
     ui.global::<LayoutLibrary>().set_dialog(LibraryDialog::None);
     Ok(Msg::LayoutDeleted(name))
+}
+
+/// Rename a layout; its file is kept byte-for-byte, so broken files too.
+fn rename(
+    ui: &SettingsWindow,
+    document: &Document,
+    state: &Shared,
+    index: i32,
+    new_name: &str,
+) -> Result<Msg, Msg> {
+    let name = name_at(ui, index)?;
+    let expected = expected_text(document, &name)?;
+    let was_selected = state.borrow().selected.as_deref() == Some(name.as_str());
+    let saved = edit(ui, document, state, |config| {
+        config.edit_library_metadata(&name, new_name, None, &expected)
+    })?;
+    metadata::remember(&name, None);
+    metadata::remember(&saved, Some(expected));
+    if was_selected
+        && let Some(index) = slint::Model::iter(&ui.global::<LayoutLibrary>().get_names())
+            .position(|item| item == saved)
+    {
+        select(ui, state, index as i32)?;
+    }
+    reset_context(ui, document, &mut state.borrow_mut());
+    Ok(Msg::None)
 }
 
 fn set_description(
@@ -457,29 +485,12 @@ fn set_description(
     index: i32,
     description: &str,
 ) -> Result<Msg, Msg> {
-    let library = ui.global::<LayoutLibrary>();
-    let name = usize::try_from(index)
-        .ok()
-        .and_then(|index| slint::Model::row_data(&library.get_names(), index))
-        .ok_or(Msg::LibrarySelect)?
-        .to_string();
-    let text = document
-        .read()
-        .paths()
-        .load_user_layout(&name)
-        .map_err(io)?;
+    let name = name_at(ui, index)?;
+    let expected = expected_text(document, &name)?;
     edit(ui, document, state, |config| {
-        config.edit_library_metadata(&name, &name, description, &text)
+        config.edit_library_metadata(&name, &name, Some(description), &expected)
     })?;
-    if state.borrow().selected.as_deref() == Some(name.as_str()) {
-        let text = document
-            .read()
-            .paths()
-            .load_user_layout(&name)
-            .map_err(io)?;
-        state.borrow_mut().known = Some(text);
-        library.set_description(description.trim().into());
-    }
+    remember_saved(document, &name);
     reset_context(ui, document, &mut state.borrow_mut());
     Ok(Msg::None)
 }
@@ -507,35 +518,31 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
 
     on!(ui, library.on_refresh, doc = document, state = state => |ui| {
-        let result = refresh(&ui, &doc, &mut state.borrow_mut()).map(|()| Msg::None);
+        let mut current = state.borrow_mut();
+        current.languages = None;
+        let result = refresh(&ui, &doc, &mut current).map(|()| Msg::None);
+        drop(current);
         report(&ui, &state, result);
     });
-    on!(ui, library.on_select, doc = document, state = state => |ui, index| {
-        let (doc, state) = (&doc, &state);
-        if let Err(error) = select(&ui, doc, state, index) {
-            report(&ui, state, Err(error));
+    on!(ui, library.on_select, state = state => |ui, index| {
+        if let Err(error) = select(&ui, &state, index) {
+            report(&ui, &state, Err(error));
         }
     });
     on!(ui, library.on_set_automatic, doc = document, state = state => |ui, automatic| {
-        let (doc, state) = (&doc, &state);
         let mode = if automatic {
             LayoutMode::Auto
         } else {
             LayoutMode::Manual
         };
-        report(
-            &ui, state,
-            edit_auto(&ui, doc, state, |settings| {
-                auto_switch::set_mode(settings, mode)
-            }),
-        );
+        let result = edit_auto(&ui, &doc, &state, |settings| {
+            auto_switch::set_mode(settings, mode)
+        });
+        report(&ui, &state, result);
     });
-    on!(ui, library.on_action, doc = document, state = state => |ui, action| {
-        let (doc, state) = (&doc, &state);
-        report(
-        &ui, state,
-        library_action(&ui, doc, state, action)
-    )
+    on!(ui, library.on_action, doc = document, state = state => |ui, index, action| {
+        let result = library_action(&ui, &doc, &state, index, action);
+        report(&ui, &state, result);
     });
     library.on_suggest_name_value(|base, names| {
         let names: Vec<String> = slint::Model::iter(&names)
@@ -558,29 +565,22 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         super::name_error(result)
     });
     on!(ui, library.on_create, doc = document, state = state => |ui, name, description, source, copy_index| {
-        let (doc, state) = (&doc, &state);
-        let result = create(&ui, doc, state, &name, &description, source, copy_index);
-        report(&ui, state, result);
+        let result = create(&ui, &doc, &state, &name, &description, source, copy_index);
+        report(&ui, &state, result);
     });
     on!(ui, library.on_set_description, doc = document, state = state => |ui, index, description| {
-        let (doc, state) = (&doc, &state);
-        let result = set_description(&ui, doc, state, index, &description);
+        let result = set_description(&ui, &doc, &state, index, &description);
         let applied = result.is_ok();
-        report(&ui, state, result);
+        report(&ui, &state, result);
         applied
     });
     on!(ui, library.on_rename, doc = document, state = state => |ui, index, name| {
-        let (doc, state) = (&doc, &state);
-        let result = select(&ui, doc, state, index).and_then(|()| {
-            ui.global::<LayoutLibrary>().set_name(name);
-            library_action(&ui, doc, state, LibraryAction::SaveDetails)
-        });
+        let result = rename(&ui, &doc, &state, index, &name);
         let applied = result.is_ok();
-        report(&ui, state, result);
+        report(&ui, &state, result);
         applied
     });
     on!(ui, library.on_reorder, doc = document, state = state => |ui, from, to| {
-        let (doc, state) = (&doc, &state);
         // Moving a card must not select or load it: take the name from the list.
         let names = ui.global::<LayoutLibrary>().get_names();
         let result = match super::move_indices(from, to, slint::Model::row_count(&names))
@@ -588,133 +588,95 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         {
             Some(name) => {
                 let id = user_layout_id(&name);
-                edit(&ui, doc, state, |config| config.move_library_layout(&id, to - from))
+                edit(&ui, &doc, &state, |config| config.move_library_layout(&id, to - from))
                     .map(|()| Msg::None)
             }
             None => Ok(Msg::None),
         };
-        report(&ui, state, result);
+        report(&ui, &state, result);
     });
     on!(ui, library.on_discard_current, doc = document, state = state => |ui| {
-        let (doc, state) = (&doc, &state);
-        let name = current_name(&doc.read()).ok_or(Msg::LibrarySelect);
-        let result = name.and_then(|name| {
-            edit(&ui, doc, state, |config| {
-                config.load_library_for_editing(&name)
-            })?;
-            reset_context(&ui, doc, &mut state.borrow_mut());
-            ui.global::<LayoutLibrary>().invoke_discard_drafts();
-            Ok(Msg::LayoutDiscarded(name))
-        });
-        report(&ui, state, result);
+        // Bind the name first: a `read()` borrow must not outlive this line.
+        let name = current_name(&doc.read());
+        let result = name.ok_or(Msg::LibrarySelect).and_then(|name| {
+                edit(&ui, &doc, &state, |config| config.load_library_for_editing(&name))?;
+                reset_context(&ui, &doc, &mut state.borrow_mut());
+                ui.global::<LayoutLibrary>().invoke_discard_drafts();
+                Ok(Msg::LayoutDiscarded(name))
+            });
+        report(&ui, &state, result);
     });
     on!(ui, library.on_activate_current, doc = document, state = state => |ui| {
-        let (doc, state) = (&doc, &state);
         let id = doc.read().settings().editing_layout_id.clone();
         let result = id.ok_or(Msg::LibrarySelect).and_then(|id| {
-                edit(&ui, doc, state, |config| {
-                    config.update_settings(|settings| settings.manual_layout_id = Some(id))
-                })
-            });
+            edit(&ui, &doc, &state, |config| {
+                config.update_settings(|settings| settings.manual_layout_id = Some(id))
+            })
+        });
         let name = current_name(&doc.read()).unwrap_or_default();
-        report(&ui, state, result.map(|()| Msg::LayoutActivated(name)));
+        report(&ui, &state, result.map(|()| Msg::LayoutActivated(name)));
     });
-    on!(ui, library.on_load, doc = document, state = state => |ui| {
-        let (doc, state) = (&doc, &state);
-        report(&ui, state, load(&ui, doc, state))
+    on!(ui, library.on_load, doc = document, state = state => |ui, index| {
+        let result = name_at(&ui, index).and_then(|name| load(&ui, &doc, &state, &name));
+        report(&ui, &state, result);
     });
-    on!(ui, library.on_load_rule, doc = document => |ui, index, target| {
-        let (doc,) = (&doc,);
-        load_rule(
-        &ui, doc, index, target
-    )
+    on!(ui, library.on_load_rule, doc = document, state = state => |ui, index, target| {
+        load_rule(&ui, &doc, &state, index, target);
     });
     on!(ui, library.on_save_rule, doc = document, state = state => |ui| {
-        let (doc, state) = (&doc, &state);
-        report(
-        &ui, state,
-        save_rule(&ui, doc, state)
-    )
+        let result = save_rule(&ui, &doc, &state);
+        report(&ui, &state, result);
     });
     on!(ui, library.on_delete_rule, doc = document, state = state => |ui, index| {
-        let (doc, state) = (&doc, &state);
-        report(
-        &ui, state,
-        delete_rule(&ui, doc, state, index)
-    )
+        let result = delete_rule(&ui, &doc, &state, index);
+        report(&ui, &state, result);
     });
     on!(ui, library.on_move_rule, doc = document, state = state => |ui, from, to| {
-        let (doc, state) = (&doc, &state);
-        report(
-        &ui, state,
-        move_rule(&ui, doc, state, from, to)
-    )
+        let result = move_rule(&ui, &doc, &state, from, to);
+        report(&ui, &state, result);
     });
     on!(ui, library.on_set_rule_enabled, doc = document, state = state => |ui, index, enabled| {
-        let (doc, state) = (&doc, &state);
-        report(
-            &ui, state,
-            set_rule_enabled(&ui, doc, state, index, enabled)
-        )
+        let result = set_rule_enabled(&ui, &doc, &state, index, enabled);
+        report(&ui, &state, result);
     });
     on!(ui, library.on_add_game_rule, doc = document, state = state => |ui| {
-        let (doc, state) = (&doc, &state);
-        report(
-        &ui, state,
-        add_game_rule(&ui, doc, state)
-    )
+        let result = add_game_rule(&ui, &doc, &state);
+        report(&ui, &state, result);
     });
     on!(ui, library.on_set_auto_default, doc = document, state = state => |ui, index| {
-        let (doc, state) = (&doc, &state);
-        report(
-        &ui, state,
-        set_auto_default(&ui, doc, state, index)
-    )
+        let result = set_auto_default(&ui, &doc, &state, index);
+        report(&ui, &state, result);
     });
-    on!(ui, library.on_delete, doc = document, state = state => |ui| {
-        let (doc, state) = (&doc, &state);
-        report(
-        &ui, state,
-        delete(&ui, doc, state)
-    )
+    on!(ui, library.on_delete, doc = document, state = state => |ui, index| {
+        let result = delete(&ui, &doc, &state, index);
+        report(&ui, &state, result);
     });
     on!(ui, library.on_reset_context, doc = document, state = state => |ui| {
-        let (doc, state) = (&doc, &state);
-        reset_context(
-        &ui,
-        doc,
-        &mut state.borrow_mut()
-    )
+        reset_context(&ui, &doc, &mut state.borrow_mut());
     });
     on!(ui, library.on_refresh_context, doc = document => |ui| {
-        let (doc,) = (&doc,);
-        refresh_context(
-        &ui, doc
-    )
+        refresh_context(&ui, &doc);
     });
     on!(ui, library.on_save_current, doc = document, state = state => |ui| {
-        if !ui.global::<LayoutLibrary>().invoke_flush_drafts() { return; }
-        let (doc, state) = (&doc, &state);
-        report(
-        &ui, state,
-        save_current(&ui, doc, state)
-    )
+        if !ui.global::<LayoutLibrary>().invoke_flush_drafts() {
+            return;
+        }
+        let result = save_current(&ui, &doc, &state);
+        report(&ui, &state, result);
     });
     on!(ui, library.on_overwrite_current, doc = document, state = state => |ui| {
-        if !ui.global::<LayoutLibrary>().invoke_flush_drafts() { return; }
-        let (doc, state) = (&doc, &state);
-        report(
-        &ui, state,
-        overwrite_current(&ui, doc, state)
-    )
+        if !ui.global::<LayoutLibrary>().invoke_flush_drafts() {
+            return;
+        }
+        let result = overwrite_current(&ui, &doc, &state);
+        report(&ui, &state, result);
     });
     on!(ui, library.on_save_as, doc = document, state = state => |ui, name| {
-        if !ui.global::<LayoutLibrary>().invoke_flush_drafts() { return; }
-        let (doc, state) = (&doc, &state);
-        report(
-        &ui, state,
-        save_as(&ui, doc, state, &name)
-    )
+        if !ui.global::<LayoutLibrary>().invoke_flush_drafts() {
+            return;
+        }
+        let result = save_as(&ui, &doc, &state, &name);
+        report(&ui, &state, result);
     });
 }
 
@@ -738,5 +700,23 @@ mod tests {
         );
         assert_eq!(summary(&set), (GameCondition::On, "us, ru".into()));
         assert!(condition(GameCondition::Any, " ", "", " ").is_empty());
+    }
+
+    #[test]
+    fn warnings_never_hide_the_result() {
+        let saved = || Msg::LayoutSaved("A".into());
+        assert_eq!(merge_warning(Ok(saved()), None), (None, saved()));
+        assert_eq!(
+            merge_warning(Ok(saved()), Some(Msg::LibraryChanged)),
+            (Some(Msg::LibraryChanged), saved())
+        );
+        assert_eq!(
+            merge_warning(Ok(Msg::None), Some(Msg::LibraryChanged)),
+            (None, Msg::LibraryChanged)
+        );
+        assert_eq!(
+            merge_warning(Err(Msg::LibrarySelect), Some(Msg::LibraryChanged)),
+            (Some(Msg::LibraryChanged), Msg::LibrarySelect)
+        );
     }
 }

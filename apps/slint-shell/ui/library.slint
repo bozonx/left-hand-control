@@ -36,11 +36,8 @@ export global LayoutLibrary {
     /// Layout whose rules are highlighted in the rules panel, or -1.
     in-out property <int> highlight-target: -1;
     in-out property <int> selected: -1;
-    in property <Message> status;
+    in-out property <Message> status;
     in-out property <bool> automatic;
-    /// Fields of the selected layout (details dialog).
-    in-out property <string> name;
-    in-out property <string> description;
     /// Rule being edited in the rule dialog; `rule-index` -1 is a new rule.
     in-out property <int> rule-index: -1;
     in-out property <int> rule-target: -1;
@@ -77,7 +74,9 @@ export global LayoutLibrary {
     callback refresh();
     callback select(int);
     callback set-automatic(bool);
-    callback action(LibraryAction);
+    /// Act on the layout at an index; the index is explicit so a stale
+    /// selection can never redirect the action.
+    callback action(int, LibraryAction);
     pure callback suggest-name-value(string, [string]) -> string;
     public pure function suggest-name(base: string) -> string { return self.suggest-name-value(base, self.names); }
     /// Why `name` cannot be used for a layout; `except` is the layout being renamed, or "".
@@ -89,9 +88,9 @@ export global LayoutLibrary {
     callback reorder(int, int);
     callback discard-current();
     callback activate-current();
-    /// Replace the working copy with the selected layout.
-    callback load();
-    callback delete();
+    /// Replace the working copy with the layout at an index.
+    callback load(int);
+    callback delete(int);
     /// Remember the library file of the working copy as its saved state.
     callback reset-context();
     /// Recompute `current-label` and `dirty`.
@@ -121,7 +120,11 @@ export global LayoutLibrary {
         }
         return @tr("New layout");
     }
+    public function clear-status() {
+        self.status = { id: "", arg: "", count: 0, diagnostic-key: "" };
+    }
     function proceed-open-create(source: LayoutSource, copy-index: int) {
+        self.clear-status();
         self.create-source = source;
         self.create-copy-index = max(0, copy-index);
         self.create-description = "";
@@ -141,7 +144,7 @@ export global LayoutLibrary {
         let action = self.pending-action;
         self.pending-action = PendingLayoutAction.none;
         if action != PendingLayoutAction.none { self.discard-drafts(); }
-        if action == PendingLayoutAction.edit { self.dialog = LibraryDialog.none; self.load(); }
+        if action == PendingLayoutAction.edit { self.dialog = LibraryDialog.none; self.load(self.selected); }
         if action == PendingLayoutAction.create {
             self.proceed-open-create(self.pending-create-source, self.pending-create-copy-index);
         }
@@ -151,6 +154,7 @@ export global LayoutLibrary {
         let drafts-saved = self.flush-drafts();
         self.pending-action = action;
         if !drafts-saved || (self.dirty && !(action == PendingLayoutAction.edit && self.names[self.selected] == self.current-label)) {
+            self.clear-status();
             self.dialog = LibraryDialog.unsaved;
         } else {
             self.continue-pending();
@@ -159,7 +163,32 @@ export global LayoutLibrary {
     public function save-and-continue() {
         if !self.flush-drafts() { return; }
         self.save-current();
-        if !self.dirty { self.continue-pending(); }
+        self.finish-save();
+    }
+    /// After a save step: continue the pending switch once the working copy
+    /// is saved. While a conflict or "save as" dialog is still open the
+    /// decision is pending; a save that ended unsaved drops the switch.
+    public function finish-save() {
+        if self.dialog == LibraryDialog.conflict || self.save-as-open { return; }
+        if self.dirty {
+            if self.dialog == LibraryDialog.none { self.pending-action = PendingLayoutAction.none; }
+            return;
+        }
+        self.continue-pending();
+    }
+    public function cancel-save-as() {
+        self.save-as-open = false;
+        self.pending-action = PendingLayoutAction.none;
+    }
+    public function open-save-as(name: string) {
+        self.clear-status();
+        self.save-as-name = name;
+        self.save-as-open = true;
+    }
+    public function open-delete(index: int) {
+        self.select(index);
+        self.clear-status();
+        self.dialog = LibraryDialog.delete;
     }
     public function edit(index: int) {
         self.select(index);
@@ -619,7 +648,7 @@ export component LibraryPage inherits PageLayout {
                                 HorizontalLayout { spacing: Theme.space-m; alignment: start; vertical-stretch: 0;
                                     DragHandle { group: DragGroups.layouts; index: index; count: LayoutLibrary.names.length; dropped(from, to) => { LayoutLibrary.reorder(from, to); } }
                                     if card.active: Text { text: @tr("Active"); color: Theme.accent; font-weight: Theme.weight-semibold; vertical-alignment: center; }
-                                    if !card.auto && !card.active: Button { text: @tr("Activate"); icon: @image-url("icons/play.svg"); colorize-icon: true; clicked => { LayoutLibrary.select(index); LayoutLibrary.action(LibraryAction.activate); } }
+                                    if !card.auto && !card.active: Button { text: @tr("Activate"); icon: @image-url("icons/play.svg"); colorize-icon: true; clicked => { LayoutLibrary.action(index, LibraryAction.activate); } }
                                     if card.current: Text { text: LayoutLibrary.dirty ? @tr("Open for editing (unsaved)") : @tr("Open for editing"); color: Theme.text; vertical-alignment: center; }
                                     if !card.current: Button { text: @tr("Edit layout"); icon: @image-url("icons/pencil.svg"); colorize-icon: true; clicked => { LayoutLibrary.edit(index); } }
                                     Rectangle {
@@ -634,7 +663,7 @@ export component LibraryPage inherits PageLayout {
                                             MenuSurface {
                                                 MenuItem { text: @tr("Duplicate…"); has-icon: true; icon: @image-url("icons/copy.svg"); clicked => { more-menu.close(); LayoutLibrary.open-create(LayoutSource.copy, index); } }
                                                 Divider {}
-                                                MenuItem { text: @tr("Delete…"); has-icon: true; icon: @image-url("icons/trash-2.svg"); danger: true; clicked => { more-menu.close(); LayoutLibrary.dialog = LibraryDialog.delete; } }
+                                                MenuItem { text: @tr("Delete…"); has-icon: true; icon: @image-url("icons/trash-2.svg"); danger: true; clicked => { more-menu.close(); LayoutLibrary.open-delete(index); } }
                                             }
                                         }
                                     }
@@ -735,7 +764,7 @@ export component LibraryDialogOverlay inherits Rectangle {
             + (LayoutLibrary.auto-default == LayoutLibrary.selected ? " " + @tr("Automatic mode will use no layout by default.") : "");
         confirm-text: @tr("Delete");
         cancel => { LayoutLibrary.cancel-dialog(); }
-        confirm => { LayoutLibrary.delete(); }
+        confirm => { LayoutLibrary.delete(LayoutLibrary.selected); }
     }
     if LayoutLibrary.dialog == LibraryDialog.delete-rule: ConfirmDialog {
         title: @tr("Delete rule {}?", LayoutLibrary.rule-index + 1);
@@ -748,18 +777,18 @@ export component LibraryDialogOverlay inherits Rectangle {
     if LayoutLibrary.save-as-open: DialogFrame {
         title: @tr("Save layout as…");
         card-width: 480px;
-        close => { LayoutLibrary.save-as-open = false; }
+        close => { LayoutLibrary.cancel-save-as(); }
         FormField {
             label: @tr("Layout name"); autofocus: true;
             text <=> LayoutLibrary.save-as-name;
             error: LayoutLibrary.name-error(LayoutLibrary.save-as-name, "");
-            accepted => { if LayoutLibrary.name-error(LayoutLibrary.save-as-name, "").id == "" { LayoutLibrary.save-as(LayoutLibrary.save-as-name); } }
+            accepted => { if LayoutLibrary.name-error(LayoutLibrary.save-as-name, "").id == "" { LayoutLibrary.save-as(LayoutLibrary.save-as-name); LayoutLibrary.finish-save(); } }
         }
         Text { accessible-live-region: polite; text: Locale.text(LayoutLibrary.status); color: Theme.error; wrap: word-wrap; }
         HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m; vertical-stretch: 0;
             Rectangle { horizontal-stretch: 1; }
-            Button { text: @tr("Cancel"); clicked => { LayoutLibrary.save-as-open = false; } }
-            Button { text: @tr("Save"); enabled: LayoutLibrary.name-error(LayoutLibrary.save-as-name, "").id == ""; clicked => { LayoutLibrary.save-as(LayoutLibrary.save-as-name); } }
+            Button { text: @tr("Cancel"); clicked => { LayoutLibrary.cancel-save-as(); } }
+            Button { text: @tr("Save"); enabled: LayoutLibrary.name-error(LayoutLibrary.save-as-name, "").id == ""; clicked => { LayoutLibrary.save-as(LayoutLibrary.save-as-name); LayoutLibrary.finish-save(); } }
         }
     }
 }

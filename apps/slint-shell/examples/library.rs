@@ -48,10 +48,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(error(" ", ""), "layout-name-required");
     library.invoke_create("B".into(), "".into(), LayoutSource::Empty, 0);
     assert_eq!(library.get_names().row_count(), 2);
-    library.invoke_select(0);
-    library.invoke_action(LibraryAction::Activate);
+    // A stale selection must not redirect an action on another card.
     library.invoke_select(1);
-    library.invoke_load();
+    library.invoke_action(0, LibraryAction::Activate);
+    library.invoke_load(1);
     assert_eq!(
         document.read().settings().editing_layout_id.as_deref(),
         Some("user:B")
@@ -60,9 +60,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         document.read().settings().manual_layout_id.as_deref(),
         Some("user:A")
     );
-    library.set_name("Профиль".into());
-    library.set_description("Описание профиля".into());
-    library.invoke_action(LibraryAction::SaveDetails);
+    assert!(library.invoke_rename(1, "Профиль".into()));
+    assert!(library.invoke_set_description(1, "Описание профиля".into()));
     assert_eq!(library.get_status().id, "");
     assert!(paths.load_user_layout("B").is_err());
     assert!(paths.load_user_layout("Профиль")?.contains("Описание"));
@@ -147,20 +146,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     library.invoke_delete_rule(2);
     library.invoke_delete_rule(1);
     assert_eq!(library.get_auto_rules().row_count(), 1);
-    library.invoke_select(1);
-    library.invoke_action(LibraryAction::MoveUp);
+    library.invoke_action(1, LibraryAction::MoveUp);
     assert_eq!(library.get_names().row_data(0).unwrap(), "Профиль");
     library.invoke_set_automatic(true);
     assert_eq!(document.read().settings().layout_mode, LayoutMode::Auto);
     assert!(library.get_automatic());
-    library.invoke_select(0);
-    library.invoke_delete();
+    library.invoke_delete(0);
     assert!(document.read().settings().auto_rules.is_empty());
     assert_eq!(library.get_names().row_count(), 1);
+    // Creating opens the new layout without asking again: unsaved changes
+    // are confirmed before the create dialog opens.
     library.invoke_create("Copy".into(), "".into(), LayoutSource::Copy, 0);
-    assert_eq!(library.get_dialog(), LibraryDialog::Unsaved);
-    library.invoke_continue_pending();
     assert_eq!(library.get_dialog(), LibraryDialog::None);
+    assert_eq!(library.get_current_label(), "Copy");
     assert_eq!(
         paths.load_user_layout("A")?,
         paths.load_user_layout("Copy")?
@@ -281,6 +279,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(library.get_dialog(), LibraryDialog::Create);
     library.set_create_name("Empty".into());
     library.invoke_submit_create();
+    assert_eq!(library.get_dialog(), LibraryDialog::None);
     assert!(paths.load_user_layout("Empty").is_ok());
     assert_eq!(
         document.read().settings().editing_layout_id.as_deref(),
@@ -295,6 +294,43 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap();
     library.invoke_edit(ivan as i32);
     assert_eq!(library.get_current_label(), "Ivan K");
+    let position = |name: &str| {
+        library
+            .get_names()
+            .iter()
+            .position(|item| item == name)
+            .unwrap() as i32
+    };
+    // A conflict during "save and continue" still finishes the switch.
+    document.edit(slint_shell::document::View::Rules, |config| {
+        config.update_layout(|layout| layout.description = Some("Pending".into()))
+    })?;
+    let mut theirs = document.read().load_layout("user:Ivan K")?;
+    theirs.description = Some("Changed elsewhere".into());
+    paths.save_user_layout("Ivan K", &layout_file::serialize(&theirs), true)?;
+    library.invoke_edit(position("Empty"));
+    assert_eq!(library.get_dialog(), LibraryDialog::Unsaved);
+    library.invoke_save_and_continue();
+    assert_eq!(library.get_dialog(), LibraryDialog::Conflict);
+    library.invoke_overwrite_current();
+    library.invoke_finish_save();
+    assert_eq!(library.get_current_label(), "Empty");
+    assert!(paths.load_user_layout("Ivan K")?.contains("Pending"));
+    // A layout file that does not parse can still be renamed and deleted,
+    // and a dialog never shows the error of an earlier action.
+    std::fs::write(paths.layout_path("Broken")?, "not json")?;
+    library.invoke_refresh();
+    assert!(!library.invoke_rename(position("Broken"), "a/b".into()));
+    assert_ne!(library.get_status().id, "");
+    assert!(library.invoke_rename(position("Broken"), "Still broken".into()));
+    assert_eq!(paths.load_user_layout("Still broken")?, "not json");
+    assert!(!library.invoke_rename(position("Still broken"), "a/b".into()));
+    library.invoke_open_delete(position("Still broken"));
+    assert_eq!(library.get_dialog(), LibraryDialog::Delete);
+    assert_eq!(library.get_status().id, "");
+    library.invoke_delete(library.get_selected());
+    assert!(paths.load_user_layout("Still broken").is_err());
+    assert_eq!(library.get_dialog(), LibraryDialog::None);
     let emoji = EmojiPopup::new()?;
     let quick = QuickPopup::new()?;
     let mut menus = popup_model::ConfiguredMenus::default();

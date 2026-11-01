@@ -11,20 +11,39 @@ use crate::{
     },
 };
 
+/// One library file as last read: its raw text (kept even when it does
+/// not parse, so a broken file can still be renamed or deleted safely)
+/// and the parsed layout.
+#[derive(Debug)]
+pub struct LibraryEntry {
+    pub text: Option<String>,
+    pub layout: Result<LayoutPreset, ConfigError>,
+}
+
 /// Read one metadata snapshot per listed layout, preserving failures per file.
 /// Callers may load this snapshot on a worker without sharing a document.
 pub fn load_library_entries(
     paths: &crate::storage::StoragePaths,
     names: &[String],
-) -> Vec<Result<super::model::LayoutPreset, crate::config_document::ConfigError>> {
-    use crate::config_document::ConfigError;
+) -> Vec<LibraryEntry> {
     names
         .iter()
-        .map(|name| {
-            let text = paths.load_user_layout(name).map_err(ConfigError::Io)?;
-            super::layout_file::parse(&text)
-                .map_err(ConfigError::Parse)?
-                .ok_or_else(|| ConfigError::Parse("empty layout file".into()))
+        .map(|name| match paths.load_user_layout(name) {
+            Err(error) => LibraryEntry {
+                text: None,
+                layout: Err(ConfigError::Io(error)),
+            },
+            Ok(text) => {
+                let layout = layout_file::parse(&text)
+                    .map_err(ConfigError::Parse)
+                    .and_then(|layout| {
+                        layout.ok_or_else(|| ConfigError::Parse("empty layout file".into()))
+                    });
+                LibraryEntry {
+                    text: Some(text),
+                    layout,
+                }
+            }
         })
         .collect()
 }
@@ -243,11 +262,15 @@ impl ConfigDocument {
         self.update_settings(|settings| settings.layout_order = ids)
     }
 
+    /// Rename `name` and set its description. `None` keeps the file
+    /// byte-for-byte, so even a file that does not parse can be renamed.
+    /// `expected` is the file text the user saw; a different file on disk
+    /// is an edit conflict.
     pub fn edit_library_metadata(
         &mut self,
         name: &str,
         new_name: &str,
-        description: &str,
+        description: Option<&str>,
         expected: &str,
     ) -> Result<String, ConfigError> {
         self.require_external_operation()?;
@@ -260,12 +283,17 @@ impl ConfigDocument {
         {
             return Err(ConfigError::EditConflict);
         }
-        let mut preset = layout_file::parse(expected)
-            .map_err(ConfigError::Parse)?
-            .unwrap_or_default();
-        preset.description =
-            (!description.trim().is_empty()).then(|| description.trim().to_owned());
-        let text = layout_file::serialize(&preset);
+        let (text, new_description) = match description {
+            None => (expected.to_owned(), None),
+            Some(description) => {
+                let mut preset = layout_file::parse(expected)
+                    .map_err(ConfigError::Parse)?
+                    .unwrap_or_default();
+                preset.description =
+                    (!description.trim().is_empty()).then(|| description.trim().to_owned());
+                (layout_file::serialize(&preset), Some(preset.description))
+            }
+        };
         let saved = self
             .paths()
             .rename_user_layout(name, new_name, &text, false)
@@ -301,8 +329,10 @@ impl ConfigDocument {
                 .map_err(ConfigError::Io)?;
             return Err(error);
         }
-        if self.settings().editing_layout_id.as_ref() == Some(&new) {
-            self.update_layout(|layout| layout.description = preset.description)?;
+        if let Some(description) = new_description
+            && self.settings().editing_layout_id.as_ref() == Some(&new)
+        {
+            self.update_layout(|layout| layout.description = description)?;
         }
         Ok(saved)
     }
@@ -378,9 +408,39 @@ mod tests {
         std::fs::write(paths.layout_path("Broken").unwrap(), "not json").unwrap();
         let names = vec!["Valid".into(), "Broken".into(), "Missing".into()];
         let loaded = load_library_entries(&paths, &names);
-        assert!(loaded[0].is_ok());
-        assert!(matches!(&loaded[1], Err(ConfigError::Parse(_))));
-        assert!(matches!(&loaded[2], Err(ConfigError::Io(_))));
+        assert!(loaded[0].layout.is_ok());
+        assert!(matches!(&loaded[1].layout, Err(ConfigError::Parse(_))));
+        assert_eq!(loaded[1].text.as_deref(), Some("not json"));
+        assert!(matches!(&loaded[2].layout, Err(ConfigError::Io(_))));
+        assert!(loaded[2].text.is_none());
+    }
+
+    #[test]
+    fn broken_layout_can_be_renamed_and_removed() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        std::fs::create_dir_all(paths.layouts_dir()).unwrap();
+        std::fs::write(paths.layout_path("Broken").unwrap(), "not json").unwrap();
+        let mut doc = ConfigDocument::load(paths.clone()).unwrap();
+
+        assert!(matches!(
+            doc.edit_library_metadata("Broken", "Fixed", Some("x"), "not json"),
+            Err(ConfigError::Parse(_))
+        ));
+        assert!(matches!(
+            doc.edit_library_metadata("Broken", "Fixed", None, "stale"),
+            Err(ConfigError::EditConflict)
+        ));
+        assert_eq!(
+            doc.edit_library_metadata("Broken", "Fixed", None, "not json")
+                .unwrap(),
+            "Fixed"
+        );
+        assert_eq!(paths.load_user_layout("Fixed").unwrap(), "not json");
+        assert!(paths.load_user_layout("Broken").is_err());
+
+        doc.remove_library_layout("Fixed", "not json").unwrap();
+        assert!(paths.load_user_layout("Fixed").is_err());
     }
 
     #[test]
@@ -547,7 +607,7 @@ mod tests {
         doc.create_library_layout("Copy", "New description", LibrarySource::Copy("Saved"))
             .unwrap();
         let expected = paths.load_user_layout("Copy").unwrap();
-        doc.edit_library_metadata("Copy", "Renamed", "Edited description", &expected)
+        doc.edit_library_metadata("Copy", "Renamed", Some("Edited description"), &expected)
             .unwrap();
         let original = layout_file::parse(text).unwrap().unwrap();
         for name in ["Saved", "Renamed"] {
@@ -581,7 +641,7 @@ mod tests {
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
         doc.save_current_layout_as("Hello").unwrap();
         let text = paths.load_user_layout("Hello").unwrap();
-        doc.edit_library_metadata("Hello", "Renamed", "", &text)
+        doc.edit_library_metadata("Hello", "Renamed", Some(""), &text)
             .unwrap();
         let text = paths.load_user_layout("Renamed").unwrap();
         doc.remove_library_layout("Renamed", &text).unwrap();
@@ -714,7 +774,7 @@ mod tests {
         );
         let original = paths.load_user_layout("B").unwrap();
         document
-            .edit_library_metadata("B", "C", "Описание", &original)
+            .edit_library_metadata("B", "C", Some("Описание"), &original)
             .unwrap();
         assert_eq!(
             document
@@ -869,7 +929,7 @@ mod tests {
             .save_config(r#"{"schemaVersion":1,"settings":{"appearance":"light"}}"#)
             .unwrap();
         document
-            .edit_library_metadata("A", "B", "changed", original)
+            .edit_library_metadata("A", "B", Some("changed"), original)
             .unwrap();
         assert!(paths.load_user_layout("A").is_err());
         assert!(paths.load_user_layout("B").unwrap().contains("changed"));

@@ -273,5 +273,8 @@ fn editor_callbacks_save_flush_and_debounce_without_a_desktop() {
     std::fs::remove_file(&path).unwrap();
     assert!(!library.invoke_rename(0, "Cannot rename".into()));
     std::fs::write(&path, original).unwrap();
-    assert!(library.invoke_rename(0, "Renamed".into()));
+    // The failed rename re-read the library without the file: show it again.
+    library.invoke_refresh();
+    let ok = library.invoke_rename(0, "Renamed".into());
+    assert!(ok, "{:?}", library.get_status());
 }
