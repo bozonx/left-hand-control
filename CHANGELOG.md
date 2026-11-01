@@ -18,6 +18,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 ### Fixed
 
 - Bundled layout "LHC1 by Ivan K": ShiftLeft and ShiftRight use hold detection "Press", so a fast capital letter (Shift released before the letter) types the capital instead of Ctrl+C or "-" followed by a lowercase letter, and the letter appears without waiting for Shift to resolve.
+- A rule with a double-tap action whose hold is the key itself (for example Shift with a tap action) treats a second press inside the double-tap window as tap-or-hold, like rules with a layer or a held keystroke: holding it, or pressing another key with hold detection "Press", holds the key (Shift+H types "H" instead of firing the double-tap and a lowercase "h"). The double-tap of such rules now fires when the second press is released.
 - Layers reject stale modal edits, preserve keyboard focus when refreshing rows, and reset layer hold mode when its layer is deleted. The page shows activating triggers, explains how extra keys inherit, and displays full key codes in tooltips; empty layouts no longer offer a name editor.
 
 - Triggers reject a switch to a chord while a double-tap action is assigned, show all blocking rule diagnostics, report layer assignment errors, and load the selected rule’s hold options. Existing conditions and long-hold actions remain visible outside development mode.

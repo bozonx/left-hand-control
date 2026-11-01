@@ -109,9 +109,11 @@ pub(super) struct RuleExecution {
 }
 
 impl RuleEntry {
-    /// True when holding the key does something beyond the native key.
+    /// True when holding the key does something: a layer, a held keystroke
+    /// or the native key itself (a Shift with a tap action is still a Shift
+    /// when held). Only a swallowed hold with no layer does nothing.
     pub(super) fn has_hold(&self) -> bool {
-        self.layer_id.is_some() || matches!(self.hold, HoldOutputMode::Keystroke(_))
+        self.layer_id.is_some() || !matches!(self.hold, HoldOutputMode::Swallow)
     }
 }
 

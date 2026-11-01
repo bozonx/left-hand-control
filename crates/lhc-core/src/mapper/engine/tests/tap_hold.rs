@@ -208,7 +208,48 @@ fn double_tap_fires_double_tap_action() {
     );
     assert!(out.is_empty()); // WaitingSecond
 
-    // Second tap within window
+    // Second press within window: the native hold makes it decide again,
+    // so nothing fires until it turns out short.
+    engine.handle_key_event(
+        KeyCode::KEY_Q,
+        true,
+        now + Duration::from_millis(20),
+        &mut out,
+    );
+    assert!(out.is_empty());
+
+    // Short second press fires the double-tap on release
+    engine.handle_key_event(
+        KeyCode::KEY_Q,
+        false,
+        now + Duration::from_millis(30),
+        &mut out,
+    );
+    assert!(matches!(
+        out.as_slice(),
+        [EngineOutput::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_B
+    ));
+}
+
+#[test]
+fn double_tap_without_hold_fires_on_second_press() {
+    // A swallowed hold does nothing, so the second press is the double-tap
+    // at once and its release stays silent.
+    let mut cfg = empty_cfg();
+    let mut rule = tap_hold_rule("KeyQ", ActionSpec::Action("KeyA".into()), ActionSpec::Swallow);
+    rule.double_tap_action = "KeyB".into();
+    cfg.rules.push(rule);
+    let mut engine = Engine::new(&cfg);
+    let mut out = Vec::new();
+    let now = Instant::now();
+
+    engine.handle_key_event(KeyCode::KEY_Q, true, now, &mut out);
+    engine.handle_key_event(
+        KeyCode::KEY_Q,
+        false,
+        now + Duration::from_millis(10),
+        &mut out,
+    );
     engine.handle_key_event(
         KeyCode::KEY_Q,
         true,
@@ -220,7 +261,6 @@ fn double_tap_fires_double_tap_action() {
         [EngineOutput::Stroke { ks, .. }] if ks.mods.is_empty() && ks.key == KeyCode::KEY_B
     ));
 
-    // Release of second tap must be silent
     out.clear();
     engine.handle_key_event(
         KeyCode::KEY_Q,
@@ -229,6 +269,70 @@ fn double_tap_fires_double_tap_action() {
         &mut out,
     );
     assert!(out.is_empty());
+}
+
+#[test]
+fn shift_tap_then_quick_capital_holds_shift_instead_of_double_tap() {
+    // ShiftLeft: tap Ctrl+C, double-tap Ctrl+X, native hold, "Press"
+    // detection. A Shift tap followed within the double-tap window by
+    // Shift+H must type a capital H, not fire Ctrl+X and a lowercase h.
+    let mut cfg = empty_cfg();
+    let mut rule = tap_hold_rule(
+        "ShiftLeft",
+        ActionSpec::Action("Ctrl+KeyC".into()),
+        ActionSpec::Native,
+    );
+    rule.double_tap_action = "Ctrl+KeyX".into();
+    rule.tap_decision = Some(TapDecision::HoldOnOtherKeyPress);
+    cfg.rules.push(rule);
+    let mut engine = Engine::new(&cfg);
+    let mut out = Vec::new();
+    let now = Instant::now();
+
+    engine.handle_key_event(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
+    engine.handle_key_event(
+        KeyCode::KEY_LEFTSHIFT,
+        false,
+        now + Duration::from_millis(30),
+        &mut out,
+    );
+    engine.handle_key_event(
+        KeyCode::KEY_LEFTSHIFT,
+        true,
+        now + Duration::from_millis(100),
+        &mut out,
+    );
+    engine.handle_key_event(
+        KeyCode::KEY_H,
+        true,
+        now + Duration::from_millis(120),
+        &mut out,
+    );
+    assert!(
+        matches!(
+            out.as_slice(),
+            [
+                EngineOutput::KeyRaw { key: shift, down: true },
+                EngineOutput::KeyRaw { key: h, down: true },
+            ] if *shift == KeyCode::KEY_LEFTSHIFT && *h == KeyCode::KEY_H
+        ),
+        "expected Shift held, then H"
+    );
+
+    out.clear();
+    engine.handle_key_event(
+        KeyCode::KEY_LEFTSHIFT,
+        false,
+        now + Duration::from_millis(140),
+        &mut out,
+    );
+    assert!(
+        matches!(
+            out.as_slice(),
+            [EngineOutput::KeyRaw { key, down: false }] if *key == KeyCode::KEY_LEFTSHIFT
+        ),
+        "expected only the Shift release, no Ctrl+X"
+    );
 }
 
 #[test]

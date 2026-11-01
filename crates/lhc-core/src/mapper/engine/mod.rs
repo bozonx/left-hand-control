@@ -45,7 +45,8 @@
 //!     keystroke held). On release: undo the hold.
 //!   * WaitingSecond — short press finished; waiting for a possible
 //!     second press within `double_tap_window`. The second press fires the
-//!     double-tap at once, unless the rule has a hold (layer or keystroke):
+//!     double-tap at once, unless the rule has a hold (layer, keystroke or
+//!     the native key, i.e. anything but a swallowed hold):
 //!     then it decides again — short is the double-tap, long is the hold.
 //!
 //! Fast path: a rule with `tap == Swallow` and no `double_tap` skips
@@ -399,7 +400,7 @@ impl Engine {
                 self.flush_waiting_second(now, out);
                 // Permissive rules already intercepted this event above.
                 self.commit_waiting_decisions(out);
-                // A rule with a hold (layer or held keystroke) lets the second
+                // A rule with a hold (layer, held keystroke or native key) lets the second
                 // press decide too: released early it is the double-tap,
                 // held it is the hold (tap, then press and hold).
                 if let Some(pending) = pending.as_ref().filter(|p| p.rule.has_hold())
