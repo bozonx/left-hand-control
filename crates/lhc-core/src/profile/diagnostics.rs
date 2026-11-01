@@ -97,6 +97,15 @@ impl std::fmt::Display for RuleIssue {
     }
 }
 
+/// Combinations cannot distinguish a double tap. Used by editors before saving.
+pub fn chord_double_tap_issue(rule: &KeyRule) -> Option<RuleIssue> {
+    (rule.key.contains('+') && !rule.double_tap_action.is_empty()).then(|| RuleIssue {
+        code: RuleIssueCode::InvalidRuleConfiguration,
+        rule_id: rule.id.clone(),
+        trigger: Some(rule.key.clone()),
+    })
+}
+
 pub fn analyze_rules(config: &ResolvedAppConfig) -> Vec<RuleIssue> {
     let layer_ids: HashSet<&str> = config
         .layers
@@ -146,6 +155,53 @@ pub fn analyze_rules(config: &ResolvedAppConfig) -> Vec<RuleIssue> {
             ));
         }
     }
+    let invalid_pattern = |pattern: &String| super::app_match::AppMatcher::parse(pattern).is_none();
+    for (index, rule) in config
+        .rules
+        .iter()
+        .enumerate()
+        .filter(|(_, rule)| rule.is_enabled() && rule.has_trigger())
+    {
+        for (field, value, range) in [
+            (
+                "hold.timeoutMs",
+                rule.hold_timeout_ms,
+                super::timing::TAP_HOLD,
+            ),
+            (
+                "doubleTap.timeoutMs",
+                rule.double_tap_timeout_ms,
+                super::timing::TAP_HOLD,
+            ),
+            (
+                "longHold.timeoutMs",
+                rule.long_hold_timeout_ms,
+                super::timing::LONG_HOLD,
+            ),
+        ] {
+            if value.is_some_and(|value| !range.contains(value)) {
+                issues.push(issue(
+                    RuleIssueCode::InvalidTiming,
+                    rule,
+                    Some(&format!("rules[{index}].{field}")),
+                ));
+            }
+        }
+        if list(&rule.condition_window_patterns)
+            .iter()
+            .chain(list(&rule.condition_excluded_window_patterns))
+            .any(invalid_pattern)
+        {
+            issues.push(issue(
+                RuleIssueCode::InvalidCondition,
+                rule,
+                Some(&format!("rules[{index}].when")),
+            ));
+        }
+        if let Some(problem) = chord_double_tap_issue(rule) {
+            issues.push(problem);
+        }
+    }
     for (trigger, rules) in by_trigger.into_iter().filter(|(_, rules)| rules.len() > 1) {
         for (index, rule) in rules.iter().enumerate().skip(1) {
             let earlier = &rules[..index];
@@ -172,6 +228,7 @@ pub fn analyze_rules(config: &ResolvedAppConfig) -> Vec<RuleIssue> {
 /// Check the complete active configuration, including actions outside rules.
 /// `trigger` carries the document path for issues outside a rule.
 pub fn analyze(config: &ResolvedAppConfig) -> Vec<RuleIssue> {
+    let invalid_pattern = |pattern: &String| super::app_match::AppMatcher::parse(pattern).is_none();
     let mut issues = analyze_rules(config);
     let mut add = |code, path: String| {
         issues.push(RuleIssue {
@@ -182,54 +239,6 @@ pub fn analyze(config: &ResolvedAppConfig) -> Vec<RuleIssue> {
     };
     if super::timing::validate_settings(&config.settings).is_err() {
         add(RuleIssueCode::InvalidTiming, "settings.timing".into());
-    }
-    let invalid_pattern = |pattern: &String| super::app_match::AppMatcher::parse(pattern).is_none();
-    for (index, rule) in config
-        .rules
-        .iter()
-        .enumerate()
-        .filter(|(_, rule)| rule.is_enabled() && rule.has_trigger())
-    {
-        for (field, value, range) in [
-            (
-                "hold.timeoutMs",
-                rule.hold_timeout_ms,
-                super::timing::TAP_HOLD,
-            ),
-            (
-                "doubleTap.timeoutMs",
-                rule.double_tap_timeout_ms,
-                super::timing::TAP_HOLD,
-            ),
-            (
-                "longHold.timeoutMs",
-                rule.long_hold_timeout_ms,
-                super::timing::LONG_HOLD,
-            ),
-        ] {
-            if value.is_some_and(|value| !range.contains(value)) {
-                add(
-                    RuleIssueCode::InvalidTiming,
-                    format!("rules[{index}].{field}"),
-                );
-            }
-        }
-        if list(&rule.condition_window_patterns)
-            .iter()
-            .chain(list(&rule.condition_excluded_window_patterns))
-            .any(invalid_pattern)
-        {
-            add(
-                RuleIssueCode::InvalidCondition,
-                format!("rules[{index}].when"),
-            );
-        }
-        if rule.key.contains('+') && !rule.double_tap_action.is_empty() {
-            add(
-                RuleIssueCode::InvalidRuleConfiguration,
-                format!("rules[{index}].doubleTap"),
-            );
-        }
     }
     for (layer, map) in &config.layer_keymaps {
         for (key, action) in &map.keys {
@@ -412,6 +421,27 @@ mod tests {
 
     fn rule(id: &str, key: &str) -> KeyRule {
         KeyRule::new(id.into(), key)
+    }
+
+    #[test]
+    fn rule_cards_receive_all_blocking_rule_issues_with_stable_ids() {
+        let mut bad = rule("bad", "KeyA+KeyB");
+        bad.hold_timeout_ms = Some(0);
+        bad.double_tap_timeout_ms = Some(0);
+        bad.long_hold_timeout_ms = Some(0);
+        bad.double_tap_action = "KeyC".into();
+        bad.condition_window_patterns = Some(vec!["title:".into()]);
+        let config = config(vec![bad.clone()]);
+        let issues = analyze_rules(&config);
+        assert_eq!(issues.len(), 5);
+        assert!(
+            issues
+                .iter()
+                .all(|issue| issue.rule_id == "bad" && issue.code.is_error())
+        );
+        assert_eq!(analyze(&config), issues);
+        bad.enabled = Some(false);
+        assert!(analyze_rules(&self::config(vec![bad])).is_empty());
     }
 
     #[test]

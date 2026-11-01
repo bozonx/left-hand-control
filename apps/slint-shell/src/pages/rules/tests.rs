@@ -98,3 +98,103 @@ fn tap_hold_timeouts_share_the_file_contract() {
         assert_eq!(parse_timeout(value), Err(Msg::TimeoutInvalid));
     }
 }
+
+#[test]
+fn incompatible_trigger_change_preserves_the_entire_rule() {
+    let mut rule = KeyRule::new("r".into(), "KeyA");
+    rule.double_tap_action = "KeyB".into();
+    rule.double_tap_timeout_ms = Some(300);
+    let original = rule.clone();
+    assert!(matches!(
+        set_property(&mut rule, RuleDialog::Key, "KeyA+KeyC"),
+        Err(Msg::Rule(_))
+    ));
+    assert_eq!(rule, original);
+    set_property(&mut rule, RuleDialog::Key, "KeyD").unwrap();
+    assert_eq!(rule.double_tap_action, "KeyB");
+    set_property(&mut rule, RuleDialog::DoubleTap, "").unwrap();
+    set_property(&mut rule, RuleDialog::Key, "KeyA+KeyC").unwrap();
+    let chord = rule.clone();
+    assert!(set_property(&mut rule, RuleDialog::DoubleTap, "KeyB").is_err());
+    assert_eq!(rule, chord);
+    rule.double_tap_action = "KeyB".into();
+    set_property(&mut rule, RuleDialog::DoubleTap, "").unwrap();
+    assert!(rule.double_tap_action.is_empty());
+}
+
+#[test]
+fn advanced_draft_validates_every_field_before_changing_the_rule() {
+    let mut rule = KeyRule::new("r".into(), "KeyA");
+    let original = rule.clone();
+    let mut draft = AdvancedDraft {
+        hold_timeout: "250".into(),
+        double_timeout: "300".into(),
+        long_hold_timeout: "invalid".into(),
+        hold: Some("Ctrl+KeyC".into()),
+        detection: HoldDetection::Press,
+    };
+    assert_eq!(draft.apply(&mut rule), Err(Msg::LongHoldInvalid));
+    assert_eq!(rule, original);
+    draft.long_hold_timeout = "1500".into();
+    draft.hold = Some("cmd:invalid-held-action".into());
+    assert_eq!(draft.apply(&mut rule), Err(Msg::ActionRequired));
+    assert_eq!(rule, original);
+    draft.hold = None;
+    draft.apply(&mut rule).unwrap();
+    assert_eq!(rule.hold_action, None);
+    assert_eq!(rule.hold_timeout_ms, Some(250));
+    assert_eq!(rule.double_tap_timeout_ms, Some(300));
+    assert_eq!(rule.long_hold_timeout_ms, Some(1500));
+    assert_eq!(rule.tap_decision, Some(TapDecision::HoldOnOtherKeyPress));
+}
+
+#[test]
+fn layer_dialog_loads_its_rule_and_reports_a_vanished_selection() {
+    use slint::platform::software_renderer::{MinimalSoftwareWindow, RepaintBufferType};
+    struct Platform;
+    impl slint::platform::Platform for Platform {
+        fn create_window_adapter(
+            &self,
+        ) -> Result<Rc<dyn slint::platform::WindowAdapter>, slint::PlatformError> {
+            Ok(MinimalSoftwareWindow::new(RepaintBufferType::ReusedBuffer))
+        }
+    }
+    slint::platform::set_platform(Box::new(Platform)).unwrap();
+    let (_dir, document) = super::super::test_document();
+    document
+        .edit(View::Rules, |config| {
+            config.update_layout(|layout| {
+                layout.layers = vec![Layer {
+                    id: "nav".into(),
+                    name: "Navigation".into(),
+                    description: None,
+                }];
+                layout.rules = vec![
+                    KeyRule::new("first".into(), "KeyA"),
+                    KeyRule::new("second".into(), "KeyB"),
+                ];
+                layout.rules[0].long_hold_timeout_ms = Some(1000);
+                layout.rules[1].long_hold_timeout_ms = Some(2000);
+            })
+        })
+        .unwrap();
+    let ui = SettingsWindow::new().unwrap();
+    bind(&ui, &document);
+    let editor = ui.global::<RulesEditor>();
+    editor.invoke_select(0);
+    editor.invoke_open_dialog(1, RuleDialog::Layer);
+    assert_eq!(editor.get_key(), "KeyB");
+    assert_eq!(editor.get_long_hold_timeout(), "2000");
+    let layer = document.read().layout().layers[0].id.clone();
+    let original = document.read().layout().rules[1].clone();
+    editor.set_selected(-1);
+    editor.invoke_choose(layer.clone().into());
+    assert_ne!(editor.get_status().id, "");
+    assert_eq!(editor.get_dialog(), RuleDialog::Layer);
+    assert_eq!(editor.get_selected(), -1);
+    assert_eq!(document.read().layout().rules[1], original);
+    editor.invoke_open_dialog(1, RuleDialog::Layer);
+    editor.invoke_choose(layer.clone().into());
+    assert_eq!(editor.get_dialog(), RuleDialog::None);
+    assert_eq!(document.read().layout().rules[1].layer_id, layer);
+}

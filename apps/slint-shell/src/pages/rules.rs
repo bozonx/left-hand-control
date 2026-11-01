@@ -84,6 +84,41 @@ fn optional_long_hold(value: &str) -> Result<Option<u64>, Msg> {
     }
 }
 
+/// Editable text stays separate from the saved rule until all fields validate.
+struct AdvancedDraft {
+    hold_timeout: String,
+    double_timeout: String,
+    long_hold_timeout: String,
+    hold: Option<String>,
+    detection: HoldDetection,
+}
+
+impl AdvancedDraft {
+    fn apply(&self, rule: &mut KeyRule) -> Result<(), Msg> {
+        let hold = parse_timeout(&self.hold_timeout)?;
+        let double = parse_timeout(&self.double_timeout)?;
+        let long_hold = optional_long_hold(&self.long_hold_timeout)?;
+        if let Some(held) = &self.hold
+            && !held.is_empty()
+            && !lhc_core::profile::actions::valid_held_key(held)
+        {
+            return Err(Msg::ActionRequired);
+        }
+        rule.hold_timeout_ms = hold;
+        rule.double_tap_timeout_ms = double;
+        rule.long_hold_timeout_ms = long_hold;
+        rule.tap_decision = match self.detection {
+            HoldDetection::Release => Some(TapDecision::PermissiveHold),
+            HoldDetection::Press => Some(TapDecision::HoldOnOtherKeyPress),
+            HoldDetection::Inherit => None,
+        };
+        if rule.hold_behavior() != HoldBehavior::Action {
+            rule.hold_action = self.hold.clone();
+        }
+        Ok(())
+    }
+}
+
 fn hold_mode(rule: &KeyRule) -> UiHoldBehavior {
     match rule.hold_behavior() {
         HoldBehavior::None => UiHoldBehavior::None,
@@ -323,7 +358,18 @@ fn change_rule(
 /// Set the property a dialog (or the picker) edits.
 fn set_property(rule: &mut KeyRule, property: RuleDialog, value: &str) -> Result<(), Msg> {
     match property {
-        RuleDialog::Key => rule.key = value.into(),
+        RuleDialog::Key | RuleDialog::DoubleTap => {
+            let mut candidate = rule.clone();
+            if property == RuleDialog::Key {
+                candidate.key = value.into();
+            } else {
+                candidate.double_tap_action = value.into();
+            }
+            if let Some(issue) = diagnostics::chord_double_tap_issue(&candidate) {
+                return Err(Msg::Rule(issue));
+            }
+            *rule = candidate;
+        }
         RuleDialog::Layer => {
             if !value.is_empty() {
                 set_hold_behavior(rule, HoldBehavior::Layer);
@@ -338,7 +384,6 @@ fn set_property(rule: &mut KeyRule, property: RuleDialog, value: &str) -> Result
             }
             rule.long_hold_action = value.into();
         }
-        RuleDialog::DoubleTap => rule.double_tap_action = value.into(),
         RuleDialog::HoldTimeout => rule.hold_timeout_ms = parse_timeout(value)?,
         RuleDialog::DoubleTimeout => rule.double_tap_timeout_ms = parse_timeout(value)?,
         RuleDialog::None | RuleDialog::Conditions | RuleDialog::Advanced | RuleDialog::Remove => {}
@@ -408,16 +453,15 @@ pub(super) fn choose(
     let index = selected(ui, document)
         .ok_or_else(|| Msg::from(&lhc_core::config_document::ConfigError::EditConflict))?;
     // Validate before saving so a bad value leaves the rule untouched.
-    set_property(&mut KeyRule::new(String::new(), ""), property, value).inspect_err(|error| {
-        editor.set_status(crate::notifications::report(ui, error));
-    })?;
+    let mut candidate = document.read().layout().rules[index].clone();
+    set_property(&mut candidate, property, value)?;
     let previous = diagnostics::analyze(&document.read().config());
     let saved = document
         .edit(View::Rules, |config| {
             config.edit_layout_with_commands(command, |config| {
                 config.update_layout(|layout| {
                     let rule = &mut layout.rules[index];
-                    let _ = set_property(rule, property, value);
+                    *rule = candidate;
                     if ui.global::<ActionPicker>().get_ignore_key() && value.is_empty() {
                         match property {
                             RuleDialog::Tap => rule.tap_action = None,
@@ -600,7 +644,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         // A key picked for the advanced dialog must not reload its draft.
         let draft = editor.get_dialog() == RuleDialog::Advanced && dialog == RuleDialog::Hold;
         editor.set_selected(index);
-        if dialog != RuleDialog::Layer && !draft {
+        if !draft {
             refresh(&ui, &doc, true);
         }
         if selected(&ui, &doc).is_none() {
@@ -667,7 +711,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
 
     on!(ui, editor.on_choose, doc = document => |ui, value| {
-        let _ = choose(&ui, &doc, &value, None);
+        if let Err(error) = choose(&ui, &doc, &value, None) {
+            ui.global::<RulesEditor>().set_status(crate::notifications::report(&ui, &error));
+        }
     });
 
     on!(ui, editor.on_apply_conditions, doc = document => |ui| {
@@ -695,38 +741,19 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             return;
         };
         let editor = ui.global::<RulesEditor>();
-        let timeouts = parse_timeout(&editor.get_hold_timeout()).and_then(|hold| {
-            parse_timeout(&editor.get_double_timeout()).map(|double| (hold, double))
-        });
-        let (hold, double) = match timeouts {
-            Ok(values) => values,
-            Err(error) => {
-                editor.set_status(crate::notifications::report(&ui, &error));
-                return;
-            }
+        let draft = AdvancedDraft {
+            hold_timeout: editor.get_hold_timeout().to_string(),
+            double_timeout: editor.get_double_timeout().to_string(),
+            long_hold_timeout: editor.get_long_hold_timeout().to_string(),
+            hold: (!editor.get_swallow_hold()).then(|| editor.get_hold().to_string()),
+            detection: editor.get_hold_detection(),
         };
-        let long_hold_timeout = optional_long_hold(&editor.get_long_hold_timeout());
-        let long_hold_timeout = match long_hold_timeout {
-            Ok(value) => value,
-            Err(error) => {
-                editor.set_status(crate::notifications::report(&ui, &error));
-                return;
-            }
-        };
-        let held = (!editor.get_swallow_hold()).then(|| editor.get_hold().to_string());
-        if change_rule(&ui, &doc, index, true, |rule| {
-            rule.long_hold_timeout_ms = long_hold_timeout;
-            rule.hold_timeout_ms = hold;
-            rule.tap_decision = match editor.get_hold_detection() {
-                HoldDetection::Release => Some(TapDecision::PermissiveHold),
-                HoldDetection::Press => Some(TapDecision::HoldOnOtherKeyPress),
-                HoldDetection::Inherit => None,
-            };
-            rule.double_tap_timeout_ms = double;
-            if rule.hold_behavior() != HoldBehavior::Action {
-                rule.hold_action = held;
-            }
-        })
+        let mut candidate = doc.read().layout().rules[index].clone();
+        if let Err(error) = draft.apply(&mut candidate) {
+            editor.set_status(crate::notifications::report(&ui, &error));
+            return;
+        }
+        if change_rule(&ui, &doc, index, true, |rule| *rule = candidate)
         .is_ok()
         {
             editor.set_dialog(RuleDialog::None);
