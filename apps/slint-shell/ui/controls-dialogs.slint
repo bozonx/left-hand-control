@@ -1,3 +1,4 @@
+import { NavigationFocus } from "focus.slint";
 import { KeyboardFocus } from "focus.slint";
 import { Button } from "std-widgets.slint";
 import { Theme } from "theme.slint";
@@ -12,10 +13,14 @@ export component MenuSurface inherits Rectangle {
     border-width: 1px;
     border-color: Theme.border;
     border-radius: Theme.radius-large;
+    FocusScope {
+        accessible-role: list;
+        focus-on-tab-navigation: false;
     VerticalLayout {
         padding: root.inset;
         spacing: root.gap;
         @children
+    }
     }
 }
 
@@ -52,11 +57,12 @@ export component MenuItem inherits Rectangle {
         if root.checked: Text { text: "✓"; color: Theme.accent; vertical-alignment: center; }
     }
     forward-focus: focus;
-    focus := FocusScope {
+    focus := NavigationFocus {
+        kind: menu;
         enabled: root.enabled;
         key-pressed(event) => {
             if event.text == "\n" || event.text == " " { root.clicked(); return accept; }
-            return reject;
+            return self.navigate(event);
         }
     }
     touch := TouchArea {
@@ -99,9 +105,11 @@ export component DialogFrame inherits Rectangle {
         accessible-label: root.title;
         focus-on-tab-navigation: false;
         init => { KeyboardFocus.save(); self.focus(); root.focus-token = KeyboardFocus.enter(); root.focus-content(); }
-        capture-key-pressed(event) => {
+        key-pressed(event) => {
             if !KeyboardFocus.is-top(root.focus-token) { return reject; }
-            if event.text == Key.Tab { KeyboardFocus.cycle(event.modifiers.shift); return accept; }
+            if !event.modifiers.control && !event.modifiers.alt && !event.modifiers.meta && (event.text == Key.Tab || event.text == Key.Backtab) {
+                KeyboardFocus.cycle(event.modifiers.shift || event.text == Key.Backtab); return accept;
+            }
             if root.close-on-escape && event.text == Key.Escape { root.close(); return accept; }
             return reject;
         }
@@ -141,14 +149,14 @@ export component ConfirmDialog inherits DialogFrame {
     callback cancel();
     card-width: 440px;
     close => { root.cancel(); }
-    focus-content => { confirm-button.focus(); }
+    focus-content => { cancel-button.focus(); }
     Text { vertical-stretch: 0; text: root.body; color: Theme.text; wrap: word-wrap; }
     if root.error != "": Text { vertical-stretch: 0; text: root.error; color: Theme.error; wrap: word-wrap; }
     HorizontalLayout {
         vertical-stretch: 0;
         spacing: Theme.space-m;
         alignment: end;
-        Button { text: @tr("Cancel"); clicked => { root.cancel(); } }
+        cancel-button := Button { text: @tr("Cancel"); clicked => { root.cancel(); } }
         confirm-button := Button { enabled: root.confirm-enabled; text: root.confirm-text; primary: true; icon: root.confirm-icon; colorize-icon: true; clicked => { root.confirm(); } }
     }
 }

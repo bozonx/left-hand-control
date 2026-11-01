@@ -51,8 +51,6 @@ export component GameModeButton inherits Rectangle {
         forward-focus: menu-focus;
         menu-focus := FocusScope {
             capture-key-pressed(event) => {
-                if event.text == Key.DownArrow { KeyboardFocus.step(false); return accept; }
-                if event.text == Key.UpArrow { KeyboardFocus.step(true); return accept; }
                 if event.text == Key.Escape { focus.focus(); menu.close(); return accept; }
                 return reject;
             }

@@ -1,3 +1,4 @@
+import { NavigationFocus } from "focus.slint";
 import { Timing } from "timing.slint";
 import { ResettableField, TextField } from "controls.slint";
 import { NotificationCenter } from "notifications.slint";
@@ -342,14 +343,16 @@ export component SettingsPage inherits PageLayout {
                             overflow: elide;
                         }
                     }
-                    focus := FocusScope {
+                    focus := NavigationFocus {
+                        kind: vertical-tabs;
+                        tab-stop: SettingsEditor.tab == tab-id;
                         key-pressed(event) => {
                             if event.text == " " || event.text == "\n" {
                                 SettingsEditor.tab = tab-id;
                                 content.viewport-y = 0px;
                                 return accept;
                             }
-                            return reject;
+                            return self.navigate(event);
                         }
                     }
                     touch := TouchArea {

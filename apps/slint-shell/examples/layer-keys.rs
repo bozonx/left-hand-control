@@ -139,7 +139,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let _ = window.take_snapshot().unwrap();
                 assert_eq!(inner.focus_item.borrow().upgrade(), Some(expected), "refresh keeps key focus");
                 assert_eq!(key("KeyK"), KeyAssignment::Action("ArrowDown".into()));
-                println!("Layer keys passed: held-modifier marks, drag swaps, cancel, click, keyboard assignment and focus restoration");
+                send_key(&ui, slint::platform::Key::LeftArrow);
+                let focused = inner.focus_item.borrow().upgrade().unwrap();
+                let focused_value = i_slint_core::accessibility::nearest_accessible_item(focused).accessible_string_property(i_slint_core::accessibility::AccessibleStringProperty::Value).unwrap();
+                assert_eq!(focused_value.as_str(), "KeyJ");
+                let control = slint::platform::Key::Control;
+                window.dispatch_event(WindowEvent::KeyPressed { text: control.into() });
+                for text in ["x"] { window.dispatch_event(WindowEvent::KeyPressed { text: text.into() }); window.dispatch_event(WindowEvent::KeyReleased { text: text.into() }); }
+                window.dispatch_event(WindowEvent::KeyReleased { text: control.into() });
+                send_key(&ui, slint::platform::Key::RightArrow);
+                window.dispatch_event(WindowEvent::KeyPressed { text: control.into() });
+                window.dispatch_event(WindowEvent::KeyPressed { text: "v".into() });
+                window.dispatch_event(WindowEvent::KeyReleased { text: "v".into() });
+                window.dispatch_event(WindowEvent::KeyReleased { text: control.into() });
+                assert_eq!(key("KeyJ"), KeyAssignment::Action("ArrowDown".into()));
+                assert_eq!(key("KeyK"), KeyAssignment::Transparent);
+                println!("Layer keys passed: arrows and keyboard swaps; held-modifier marks, drag swaps, cancel, click, keyboard assignment and focus restoration");
                 slint::quit_event_loop().unwrap();
             }
             _ => {}

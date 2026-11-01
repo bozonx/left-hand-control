@@ -39,6 +39,8 @@ export component SettingsWindow inherits Window {
     init => { root.compact-header = root.width < root.compact-below; }
     changed width => { root.compact-header = root.width < root.compact-below; }
     changed compact-below => { root.compact-header = root.width < root.compact-below; }
+    private property <bool> editor-open: LayoutLibrary.editor-open;
+    changed editor-open => { KeyboardFocus.ensure-focus(); }
     in-out property <Page> page: Page.layouts;
     forward-focus: shortcut-focus;
     private property <string> test-text;
@@ -88,6 +90,7 @@ export component SettingsWindow inherits Window {
         if page == Page.menus { MenuEditor.open(kind); }
         if page != Page.layouts && page != Page.settings { LayoutLibrary.editor-open = true; }
         root.page = page;
+        KeyboardFocus.ensure-focus();
         if !KeyboardFocus.has-focus() {
             if page == Page.settings { settings-navigation.focus(); }
             else { layouts-navigation.focus(); }
@@ -108,21 +111,6 @@ export component SettingsWindow inherits Window {
             if event.text == Key.F1 { root.focus-help = KeyboardFocus.describe(); if root.focus-help != "" { focus-help-popup.show(); } return accept; }
             if focus-help-popup.is-open && event.text == Key.Escape { focus-help-popup.close(); return accept; }
             if event.text == Key.Escape && (DragDrop.dragging || PaletteDrag.active) { DragDrop.cancel(); return accept; }
-            if InlineEditors.window-active && event.text == Key.Escape {
-                if ActionPicker.opened {
-                    if ActionPicker.capturing { return reject; }
-                    ActionPicker.dismiss-picker(); return accept;
-                }
-                if DeviceDialog.open { DeviceDialog.open = false; return accept; }
-                if SettingsEditor.full-command != "" { SettingsEditor.full-command = ""; return accept; }
-                if AppEntryDialog.editing || AppEntryDialog.removing { AppEntryDialog.close(); return accept; }
-                if LayersEditor.delete-extra >= 0 { LayersEditor.delete-extra = -1; return accept; }
-                if LayersEditor.dialog != LayerDialog.none { LayersEditor.dialog = LayerDialog.none; return accept; }
-                if RulesEditor.dialog != RuleDialog.none { RulesEditor.dialog = RuleDialog.none; return accept; }
-                if LayoutLibrary.save-as-open { LayoutLibrary.save-as-open = false; return accept; }
-                if LayoutLibrary.dialog != LibraryDialog.none { LayoutLibrary.cancel-dialog(); return accept; }
-                if root.confirm-discard || root.confirm-close { root.confirm-discard = false; root.confirm-close = false; return accept; }
-            }
             if InlineEditors.window-active && !root.modal-open && event.modifiers.control && event.text.to-lowercase() == "s" && LayoutLibrary.editor-open {
                 if LayoutLibrary.flush-drafts() && LayoutLibrary.dirty { LayoutLibrary.save-current(); }
                 return accept;
@@ -139,10 +127,12 @@ export component SettingsWindow inherits Window {
                 height: 54px;
                 background: Theme.card;
                 HorizontalLayout {
-                    accessible-role: tab-list; accessible-label: @tr("Settings");
                     padding-left: Theme.space-xl; padding-right: Theme.space-xl; padding-top: Theme.space-m; padding-bottom: Theme.space-m; spacing: Theme.space-m;
-                    VerticalLayout { alignment: center; layouts-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/library-big.svg"); text: @tr("Layouts"); selected: root.page == Page.layouts; clicked => { root.navigate(Page.layouts, MenuKind.emoji); } } }
+                    HorizontalLayout {
+                        accessible-role: tab-list; accessible-label: @tr("Settings"); spacing: Theme.space-m;
+                    VerticalLayout { alignment: center; layouts-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/library-big.svg"); text: @tr("Layouts"); selected: root.page == Page.layouts; tab-stop: root.page != Page.settings; clicked => { root.navigate(Page.layouts, MenuKind.emoji); } } }
                     VerticalLayout { alignment: center; settings-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/settings.svg"); text: @tr("Settings"); selected: root.page == Page.settings; clicked => { root.navigate(Page.settings, MenuKind.emoji); } } }
+                    }
                     Rectangle {
                         horizontal-stretch: 1;
                         min-width: root.compact-header ? 0px : 120px;
@@ -164,11 +154,11 @@ export component SettingsWindow inherits Window {
                         accessible-label: LayoutLibrary.active-label == "" ? @tr("No active layout") : @tr("Active: {}", LayoutLibrary.active-label);
                         accessible-expandable: !LayoutLibrary.automatic;
                         accessible-expanded: active-menu.is-open;
-                        accessible-action-default => { if !LayoutLibrary.automatic { LayoutLibrary.refresh(); active-menu.show(); } }
+                        accessible-action-default => { if !LayoutLibrary.automatic { LayoutLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); } }
                         active-focus := FocusScope {
                             enabled: !LayoutLibrary.automatic;
                             key-pressed(event) => {
-                                if event.text == Key.Return || event.text == " " || event.text == Key.DownArrow { LayoutLibrary.refresh(); active-menu.show(); return accept; }
+                                if event.text == Key.Return || event.text == " " || event.text == Key.DownArrow { LayoutLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); return accept; }
                                 return reject;
                             }
                         }
@@ -179,7 +169,7 @@ export component SettingsWindow inherits Window {
                             Text { accessible-live-region: polite; text: LayoutLibrary.active-label == "" ? @tr("No active layout") : @tr("Active: {}", LayoutLibrary.active-label); color: Theme.text; overflow: elide; vertical-alignment: center; }
                             if !LayoutLibrary.automatic: Image { width: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; }
                         }
-                        TouchArea { enabled: !LayoutLibrary.automatic; mouse-cursor: pointer; clicked => { active-focus.focus(); LayoutLibrary.refresh(); active-menu.show(); } }
+                        TouchArea { enabled: !LayoutLibrary.automatic; mouse-cursor: pointer; clicked => { active-focus.focus(); LayoutLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); } }
                         Tooltip { TooltipText { text: LayoutLibrary.automatic ? @tr("Current active layout (selected automatically by switching rules)") : @tr("Current active layout — click to switch"); } }
                     }
                     Rectangle { width: 1px; background: Theme.divider; }
@@ -223,7 +213,7 @@ export component SettingsWindow inherits Window {
                         viewport-height: self.visible-height;
                         HorizontalLayout {
                             spacing: Theme.space-2xs; alignment: start;
-                            NavTab { icon: @image-url("icons/keyboard.svg"); text: @tr("Triggers") + (LayoutLibrary.rules-dirty ? " •" : ""); selected: root.page == Page.rules; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
+                            NavTab { icon: @image-url("icons/keyboard.svg"); text: @tr("Triggers") + (LayoutLibrary.rules-dirty ? " •" : ""); selected: root.page == Page.rules; tab-stop: root.page == Page.rules || root.page == Page.layouts || root.page == Page.settings; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
                             NavTab { icon: @image-url("icons/layers.svg"); text: @tr("Layers") + (LayoutLibrary.layers-dirty ? " •" : ""); selected: root.page == Page.keyboard || root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
                             if AppState.in-development: NavTab { icon: @image-url("icons/smile.svg"); text: @tr("Emoji") + (LayoutLibrary.emoji-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
                             if AppState.in-development: NavTab { icon: @image-url("icons/zap.svg"); text: @tr("Quick actions") + (LayoutLibrary.quick-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }

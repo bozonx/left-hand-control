@@ -8,6 +8,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Emoji and Quick action popups use Tab/Shift+Tab to move between the grid and Close; PageUp/PageDown switch pages. Letter and number shortcuts remain available.
+
 - Triggers: unassigned "When held" and "Double-tap action" fields are shown as a quiet "+ Assign action" button without a frame (it appears on hover and keyboard focus), and their labels are dimmed, so assigned actions stand out. E-ink and high-contrast themes keep a thin frame.
 - Rules: the "Enabled" checkbox moved from the rule card into "Advanced rule options". A disabled rule is shown dimmed but stays fully editable; the options button keeps full contrast.
 - Layouts page: the unsaved-changes question always offers to save; a working copy not yet in the library asks for a name first and then continues. In the "Layout changed on disk" dialog the safe "Save as new…" is now the primary button instead of "Overwrite".
@@ -18,6 +20,9 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Game mode (in development): toggling returns to Auto when the opposite state is what detection reports, so a toggle key no longer leaves automatic detection for good; a toggle from a key binding or the CLI shows the new state on screen. The top-bar button always reads Auto/On/Off in English to keep its fixed width, and its tooltip says that popup hotkeys are off in game mode. Terminals, code editors, image viewers and music players no longer count as fullscreen games; the running-process list is read every 2 seconds instead of every second while no game runs.
 
 ### Fixed
+
+- Keyboard navigation: tab lists, menus, device lists, action catalogs and key grids move real focus with arrow keys and leave each group with Tab. Enter acts on the focused action; Escape clears searches before closing dialogs.
+- Keyboard focus is retained while editing menu cells and reordering rows, returns after dialogs and page changes, and follows mouse activation consistently. ComboBox options remain provisional until confirmed, and destructive confirmations initially focus Cancel.
 
 - Macros: editor and runtime share expansion-limit checks; renaming carries nested references before validation, and referenced macros cannot be deleted. Step errors and unapplied drafts are visible, with a discard action. Macro cards stack their fields and steps in narrow windows so action buttons remain reachable.
 - Macro playback honours trailing pauses and nested timing overrides. Command steps wait for successful completion, abort the sequence on failure, and are cancelled on shutdown, reconfiguration or timeout. Queue overflow and timeout now notify the user. Updated macro documentation and all interface translations.

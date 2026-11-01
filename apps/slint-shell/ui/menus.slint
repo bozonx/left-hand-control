@@ -1,3 +1,4 @@
+import { KeyboardFocus, NavigationFocus } from "focus.slint";
 import { ActionField, CategoryIcon } from "action-controls.slint";
 import { TextField } from "controls.slint";
 import { PageContent, ScrollView } from "scroll.slint";
@@ -66,7 +67,7 @@ export global MenuEditor {
 
 /// 5×3 grid of the left-hand hotkeys; click selects, drag moves a cell.
 component HotkeyGrid inherits Rectangle {
-    accessible-role: groupbox;
+    accessible-role: list;
     accessible-label: root.emoji ? @tr("Emoji") : @tr("Quick actions");
     in property <bool> emoji;
     in property <length> cell-height: 96px;
@@ -74,25 +75,7 @@ component HotkeyGrid inherits Rectangle {
     private property <int> keyboard-cell: 0;
     private property <int> selected-cell: MenuEditor.selected-cell;
     changed selected-cell => { if root.selected-cell >= 0 { root.keyboard-cell = root.selected-cell; } }
-    forward-focus: grid-focus;
-    grid-focus := FocusScope {
-        accessible-role: button;
-        accessible-label: MenuEditor.cells.length > root.keyboard-cell ? root.cell-label(MenuEditor.cells[root.keyboard-cell]) : "";
-        accessible-value: MenuEditor.cells.length > root.keyboard-cell ? MenuEditor.cells[root.keyboard-cell].value : "";
-        key-pressed(event) => {
-            if MenuEditor.cells.length == 0 { return reject; }
-            if event.modifiers.control && event.text.to-lowercase() == "x" { MenuEditor.mark-cell(root.keyboard-cell); return accept; }
-            if event.modifiers.control && event.text.to-lowercase() == "v" { MenuEditor.drop-cell(root.keyboard-cell); return accept; }
-            if event.text == Key.Escape && MenuEditor.keyboard-source-cell >= 0 { MenuEditor.cancel-mark(); return accept; }
-            if event.text == Key.Delete || event.text == Key.Backspace { MenuEditor.select-cell(root.keyboard-cell); MenuEditor.clear-cell(); return accept; }
-            if event.text == Key.Return || event.text == " " { root.activate(root.keyboard-cell); return accept; }
-            let step = event.text == Key.RightArrow ? 1 : event.text == Key.LeftArrow ? -1 : event.text == Key.DownArrow ? 5 : event.text == Key.UpArrow ? -5 : 0;
-            if step != 0 { root.keyboard-cell = mod(root.keyboard-cell + MenuEditor.cells.length + step, MenuEditor.cells.length); return accept; }
-            if event.text == Key.Home { root.keyboard-cell = 0; return accept; }
-            if event.text == Key.End { root.keyboard-cell = MenuEditor.cells.length - 1; return accept; }
-            return reject;
-        }
-    }
+    grid-focus := FocusScope { focus-on-tab-navigation: false; }
     private property <length> pad: 12px;
     private property <length> gap: 8px;
     private property <length> cell-width: (self.width - 2 * self.pad - 4 * self.gap) / 5;
@@ -146,8 +129,8 @@ component HotkeyGrid inherits Rectangle {
         height: root.cell-height;
         clip: true;
         border-radius: Theme.radius;
-        border-width: Theme.focus-ring(grid-focus.has-focus) && root.keyboard-cell == index ? 3px : (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? 2px : 1px;
-        border-color: Theme.focus-ring(grid-focus.has-focus) && root.keyboard-cell == index ? Theme.focus : (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.accent : Theme.border;
+        border-width: Theme.focus-ring(cell-focus.has-focus) ? 3px : (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? 2px : 1px;
+        border-color: Theme.focus-ring(cell-focus.has-focus) ? Theme.focus : (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.accent : Theme.border;
         background: (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.hover : Theme.card;
         opacity: (root.dragging && root.source-page == MenuEditor.selected-page && index == root.drag-from) || MenuEditor.is-marked(index) ? Theme.dragged-opacity : 1.0;
         accessible-role: button;
@@ -158,6 +141,20 @@ component HotkeyGrid inherits Rectangle {
         accessible-item-selected: index == MenuEditor.selected-cell;
         accessible-value: cell.value;
         accessible-action-default => { root.activate(index); }
+        cell-focus := NavigationFocus {
+            tab-stop: root.keyboard-cell == index;
+            focus-changed-event => { if self.has-focus { root.keyboard-cell = index; } }
+        key-pressed(event) => {
+            if MenuEditor.cells.length == 0 { return reject; }
+            if event.modifiers.control && event.text.to-lowercase() == "x" { MenuEditor.mark-cell(index); return accept; }
+            if event.modifiers.control && event.text.to-lowercase() == "v" { MenuEditor.drop-cell(index); return accept; }
+            if event.text == Key.Escape && MenuEditor.keyboard-source-cell >= 0 { MenuEditor.cancel-mark(); return accept; }
+            if event.text == Key.Delete || event.text == Key.Backspace { MenuEditor.select-cell(index); MenuEditor.clear-cell(); return accept; }
+            if event.text == Key.Return || event.text == " " { root.activate(index); return accept; }
+            return self.navigate(event);
+        }
+        }
+
         VerticalLayout {
             padding: Theme.space-m;
             spacing: Theme.space-xs;
@@ -215,7 +212,7 @@ component HotkeyGrid inherits Rectangle {
                 if root.dragging { root.drag-over = root.drop-at(self.mouse-x, self.mouse-y); }
                 if !root.dragging {
                     root.keyboard-cell = root.drag-from;
-                    grid-focus.focus();
+                    grid-focus.focus(); KeyboardFocus.focus-index(root.drag-from);
                     root.activate(root.drag-from);
                 } else if root.drag-over >= 0 {
                     MenuEditor.move-cell(root.source-page, root.drag-from, root.drag-over);
@@ -267,6 +264,8 @@ component DragPreview inherits Rectangle {
 }
 
 component MenuTabs inherits ScrollView {
+    accessible-role: tab-list;
+    accessible-label: @tr("Page:");
     in property <[string]> labels;
     in property <int> selected;
     callback select(int);
@@ -303,8 +302,8 @@ component MenuTabs inherits ScrollView {
             FocusScope {
                 focus-on-tab-navigation: false;
                 capture-key-pressed(event) => {
-                    if event.modifiers.alt && event.text == Key.LeftArrow && index > 0 { MenuEditor.reorder-page(index, index - 1); return accept; }
-                    if event.modifiers.alt && event.text == Key.RightArrow && index + 1 < root.labels.length { MenuEditor.reorder-page(index, index + 1); return accept; }
+                    if event.modifiers.alt && event.text == Key.LeftArrow && index > 0 { KeyboardFocus.remember-reorder(index, index - 1); MenuEditor.reorder-page(index, index - 1); return accept; }
+                    if event.modifiers.alt && event.text == Key.RightArrow && index + 1 < root.labels.length { KeyboardFocus.remember-reorder(index, index + 1); MenuEditor.reorder-page(index, index + 1); return accept; }
                     return reject;
                 }
             tab := NavTab { text: label == "" ? index + 1 : (index + 1) + " · " + label; selected: index == root.selected; clicked => { root.select(index); } opacity: tab-drag.dragged ? Theme.dragged-opacity : 1; }
@@ -314,7 +313,7 @@ component MenuTabs inherits ScrollView {
                 group: DragGroups.menu-tabs; index: index; count: root.labels.length;
                 axis: DragAxis.horizontal;
                 cursor: MouseCursor.pointer;
-                clicked => { root.select(index); }
+                clicked => { tab.focus(); root.select(index); }
                 dropped(from, to) => { MenuEditor.reorder-page(from, to); }
             }
             DropMarker { cross-size: parent.height; group: DragGroups.menu-tabs; index: index; horizontal: true; row-start: parent.x; row-size: parent.width; }
@@ -369,6 +368,8 @@ component RemovePageDialog inherits ConfirmDialog {
 }
 
 component EmojiButton inherits Rectangle {
+    in property <bool> tab-stop;
+    callback focused();
     in property <string> item;
     // Text snippets: wider buttons with a smaller, left-aligned label.
     in property <bool> wide;
@@ -395,10 +396,12 @@ component EmojiButton inherits Rectangle {
         vertical-alignment: center;
         overflow: elide;
     }
-    focus := FocusScope {
+    focus := NavigationFocus {
+        tab-stop: root.tab-stop;
+        focus-changed-event => { if self.has-focus { root.focused(); } }
         key-pressed(event) => {
             if event.text == " " || event.text == "\n" { root.pick(); return accept; }
-            return reject;
+            return self.navigate(event);
         }
     }
     touch := TouchArea {
@@ -418,7 +421,7 @@ component EmojiButton inherits Rectangle {
                 if PaletteDrag.active {
                     let target = PaletteDrag.cell;
                     if target >= 0 { MenuEditor.select-cell(target); root.pick(); }
-                } else if !PaletteDrag.cancelled { root.pick(); }
+                } else if !PaletteDrag.cancelled { focus.focus(); root.pick(); }
                 PaletteDrag.reset();
             }
             if event.kind == PointerEventKind.cancel { PaletteDrag.reset(); }
@@ -448,7 +451,7 @@ export component EmojiPage inherits Rectangle {
         accessible-label: @tr("Emoji");
         PageHeader {
             title: @tr("Emoji & Symbols");
-            info: @tr("Opened by the app:showEmojiMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. \"// TODO: \").") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number.");
+            info: @tr("Opened by the app:showEmojiMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. \"// TODO: \").") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number.");
         }
         HorizontalLayout {
             padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
@@ -492,7 +495,9 @@ export component EmojiPage inherits Rectangle {
                         VerticalLayout {
                             padding-right: Theme.space-m-plus;
                             spacing: Theme.space-s;
-                            for category in MenuEditor.catalog: VerticalLayout {
+                            for category in MenuEditor.catalog: palette-category := VerticalLayout {
+                                accessible-role: list; accessible-label: @tr("Examples");
+                                property <int> keyboard-item: 0;
                                 spacing: Theme.space-s;
                                 padding-bottom: Theme.space-m;
                                 Text {
@@ -512,12 +517,16 @@ export component EmojiPage inherits Rectangle {
                                 for row in ceil(category.items.length / 6): HorizontalLayout {
                                     spacing: Theme.space-s;
                                     for col in 6: EmojiButton {
+                                        tab-stop: row * 6 + col == palette-category.keyboard-item;
+                                        focused => { palette-category.keyboard-item = row * 6 + col; }
                                         item: category.items[row * 6 + col];
                                         visible: row * 6 + col < category.items.length;
                                     }
                                 }
                             }
-                            VerticalLayout {
+                            kaomoji-palette := VerticalLayout {
+                                accessible-role: list; accessible-label: @tr("Kaomoji");
+                                property <int> keyboard-item: 0;
                                 spacing: Theme.space-s;
                                 padding-bottom: Theme.space-m;
                                 Text { text: @tr("Kaomoji"); color: Theme.muted; font-size: Theme.font-caption; font-weight: Theme.weight-bold; }
@@ -525,12 +534,16 @@ export component EmojiPage inherits Rectangle {
                                     spacing: Theme.space-s;
                                     for col in 2: EmojiButton {
                                         wide: true;
+                                        tab-stop: row * 2 + col == kaomoji-palette.keyboard-item;
+                                        focused => { kaomoji-palette.keyboard-item = row * 2 + col; }
                                         item: root.kaomoji[row * 2 + col];
                                         visible: row * 2 + col < root.kaomoji.length;
                                     }
                                 }
                             }
-                            VerticalLayout {
+                            texts-palette := VerticalLayout {
+                                accessible-role: list; accessible-label: @tr("Texts");
+                                property <int> keyboard-item: 0;
                                 spacing: Theme.space-s;
                                 padding-bottom: Theme.space-m;
                                 Text { text: @tr("Texts"); color: Theme.muted; font-size: Theme.font-caption; font-weight: Theme.weight-bold; }
@@ -538,6 +551,8 @@ export component EmojiPage inherits Rectangle {
                                     spacing: Theme.space-s;
                                     for col in 2: EmojiButton {
                                         wide: true;
+                                        tab-stop: row * 2 + col == texts-palette.keyboard-item;
+                                        focused => { texts-palette.keyboard-item = row * 2 + col; }
                                         item: root.texts[row * 2 + col];
                                         visible: row * 2 + col < root.texts.length;
                                     }
@@ -564,7 +579,7 @@ export component QuickActionsPage inherits Rectangle {
         accessible-label: @tr("Quick actions");
         PageHeader {
             title: @tr("Quick Actions");
-            info: @tr("Opened by the app:showQuickMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold any action: a shortcut, macro, shell command or system action.") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number.");
+            info: @tr("Opened by the app:showQuickMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold any action: a shortcut, macro, shell command or system action.") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number.");
         }
         HorizontalLayout {
             padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;

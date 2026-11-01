@@ -634,6 +634,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn bind_callbacks(layers: &Layers, waker: &Waker) {
+    popup_model::bind_navigation(&layers.emoji, &layers.quick);
     let w = waker.clone();
     layers.emoji.on_key(move |key| {
         if !popup_model::handles_key(&key) {

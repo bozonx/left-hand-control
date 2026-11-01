@@ -406,6 +406,20 @@ fn observe(app: &Rc<App>, window: Window) {
             let Some(app) = weak.upgrade() else {
                 return EventResult::Propagate;
             };
+            if let Some(popup) = window.popup()
+                && let Some(keyboard) = crate::pages::navigation_input_mode(event)
+            {
+                match popup {
+                    Popup::Emoji => app
+                        .emoji
+                        .global::<crate::ui::Theme>()
+                        .set_keyboard_navigation(keyboard),
+                    Popup::Quick => app
+                        .quick
+                        .global::<crate::ui::Theme>()
+                        .set_keyboard_navigation(keyboard),
+                }
+            }
             if window == Window::Settings && app.input.observe(&app.settings, event) {
                 return EventResult::PreventDefault;
             }
@@ -465,6 +479,7 @@ fn observe(app: &Rc<App>, window: Window) {
 }
 
 pub(super) fn bind(app: &Rc<App>) {
+    popup_model::bind_navigation(&app.emoji, &app.quick);
     for window in Window::ALL {
         observe(app, window);
     }

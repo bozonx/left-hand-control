@@ -46,8 +46,8 @@ msgstr "Устройство сохранено: {}"
 msgid "Emoji"
 msgstr "Эмодзи"
 
-msgid "Tab · {}/{}"
-msgstr "Tab · {}/{}"
+msgid "PgUp/PgDn · {}/{}"
+msgstr "PgUp/PgDn · {}/{}"
 
 msgid "Enter non-empty text"
 msgstr "Введите непустой текст"
@@ -2922,8 +2922,8 @@ msgstr "Использовать значение из настроек: {} мс
 msgid "Opened by the app:showQuickMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold any action: a shortcut, macro, shell command or system action."
 msgstr "Открывается действиями app:showQuickMenuN, где N — позиция страницы: перестановка страниц меняет, какую страницу открывает клавиша. В каждой ячейке можно настроить любое действие: сочетание клавиш, макрос, команду оболочки или системное действие."
 
-msgid "In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number."
-msgstr "Во всплывающем окне кликните по ячейке или нажмите её клавишу: ячейки повторяют ряды клавиатуры Q–T, A–G и Z–B. Tab переключает страницы, цифры открывают страницу по номеру."
+msgid "In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number."
+msgstr "Во всплывающем окне кликните по ячейке или нажмите её клавишу: ячейки повторяют ряды клавиатуры Q–T, A–G и Z–B. PgUp/PgDn переключает страницы, цифры открывают страницу по номеру."
 
 msgid "Waiting for keyboard"
 msgstr "Ожидание клавиатуры"

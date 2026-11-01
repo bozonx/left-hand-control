@@ -385,6 +385,11 @@ pub(super) fn refresh(ui: &SettingsWindow, doc: &Document, state: &RefCell<Sessi
             .cloned()
             .collect::<Vec<_>>(),
     ));
+    if picker.get_keyboard_item() < 0
+        || picker.get_keyboard_item() as usize >= picker.get_items().row_count()
+    {
+        picker.set_keyboard_item(0);
+    }
     let config = doc.read();
     picker.set_notice(execution_notice(&action, &config.config()).to_ui());
     let valid = match picker.get_behavior() {

@@ -30,6 +30,7 @@ mod rules;
 mod settings;
 mod timing;
 
+pub(crate) use focus::{bind_navigation, navigation_input_mode};
 pub use library::refresh_active;
 pub(crate) use settings::check_input_access;
 

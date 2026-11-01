@@ -58,7 +58,7 @@ export component MapperToggle inherits Rectangle {
     touch := TouchArea {
         enabled: root.enabled && !root.busy;
         mouse-cursor: root.enabled && !root.busy ? pointer : default;
-        clicked => { root.toggled(); }
+        clicked => { focus.focus(); root.toggled(); }
     }
     if root.tooltip != "" || root.compact: Tooltip { TooltipText { text: root.compact ? root.text + "\n" + root.tooltip : root.tooltip; } }
 }

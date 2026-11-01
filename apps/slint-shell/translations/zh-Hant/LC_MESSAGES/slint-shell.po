@@ -43,8 +43,8 @@ msgstr "已儲存設備：{}"
 msgid "Emoji"
 msgstr "表情符號"
 
-msgid "Tab · {}/{}"
-msgstr "Tab · {}/{}"
+msgid "PgUp/PgDn · {}/{}"
+msgstr "PgUp/PgDn · {}/{}"
 
 msgid "Enter non-empty text"
 msgstr "輸入非空文本"
@@ -3235,10 +3235,8 @@ msgstr ""
 "由應用程式開啟：showQuickMenuN 操作，其中 N "
 "是頁面位置：重新排序頁面會變更按鍵開啟的頁面。每個單元格可以保存任何操作：快捷方式、巨集、shell 命令或系統操作。"
 
-msgid ""
-"In the popup, click a cell or press its key: the cells follow the keyboard "
-"rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number."
-msgstr "在彈出視窗中，按一下儲存格或按其鍵：儲存格遵循鍵盤行 Q–T、A–G 和 Z–B。 Tab切換頁面；數字透過頁碼開啟一頁。"
+msgid "In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number."
+msgstr "在彈出視窗中，按一下儲存格或按其鍵：儲存格遵循鍵盤行 Q–T、A–G 和 Z–B。 PgUp/PgDn切換頁面；數字透過頁碼開啟一頁。"
 
 msgid "Waiting for keyboard"
 msgstr "等待鍵盤"

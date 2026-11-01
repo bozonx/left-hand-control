@@ -1,11 +1,14 @@
+import { NavigationFocus } from "focus.slint";
 import { Theme } from "theme.slint";
 import { TooltipText } from "controls-base.slint";
 
 /// Document tab with an accent underline; `icon` is optional.
 export component NavTab inherits Rectangle {
+    forward-focus: focus;
     in property <image> icon;
     in property <string> text;
     in property <bool> selected;
+    in property <bool> tab-stop: root.selected;
     callback clicked();
     horizontal-stretch: 0;
     min-width: row.preferred-width;
@@ -43,10 +46,12 @@ export component NavTab inherits Rectangle {
         border-width: Theme.focus-ring(focus.has-focus) ? 2px : 0px;
         border-color: Theme.focus;
     }
-    focus := FocusScope {
+    focus := NavigationFocus {
+        kind: horizontal-tabs;
+        tab-stop: root.tab-stop;
         key-pressed(event) => {
             if event.text == " " || event.text == "\n" { root.clicked(); return accept; }
-            return reject;
+            return self.navigate(event);
         }
     }
     touch := TouchArea { mouse-cursor: pointer; clicked => { focus.focus(); root.clicked(); } }
@@ -58,6 +63,7 @@ export component NavButton inherits Rectangle {
     in property <image> icon;
     in property <string> text;
     in property <bool> selected;
+    in property <bool> tab-stop: root.selected;
     /// Icon only; the text moves to the tooltip. Used when the window is narrow.
     in property <bool> compact;
     callback clicked();
@@ -82,10 +88,12 @@ export component NavButton inherits Rectangle {
         }
         if !root.compact: Text { text: root.text; color: root.selected ? Theme.text : Theme.muted; font-weight: Theme.weight-semibold; vertical-alignment: center; }
     }
-    focus := FocusScope {
+    focus := NavigationFocus {
+        kind: horizontal-tabs;
+        tab-stop: root.tab-stop;
         key-pressed(event) => {
             if event.text == " " || event.text == "\n" { root.clicked(); return accept; }
-            return reject;
+            return self.navigate(event);
         }
     }
     touch := TouchArea { mouse-cursor: pointer; clicked => { focus.focus(); root.clicked(); } }

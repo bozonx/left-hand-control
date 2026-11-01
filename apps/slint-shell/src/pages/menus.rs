@@ -177,7 +177,18 @@ fn refresh(ui: &SettingsWindow, layout: &LayoutPreset, fields: bool) {
     e.set_only_page_empty(
         names.len() == 1 && names[0].is_empty() && cells.iter().all(|cell| cell.value.is_empty()),
     );
-    e.set_cells(ModelRc::new(VecModel::from(cells)));
+    let model = e.get_cells();
+    if let Some(existing) = model.as_any().downcast_ref::<VecModel<MenuCell>>()
+        && existing.row_count() == cells.len()
+    {
+        for (index, cell) in cells.into_iter().enumerate() {
+            if existing.row_data(index).as_ref() != Some(&cell) {
+                existing.set_row_data(index, cell);
+            }
+        }
+    } else {
+        e.set_cells(ModelRc::new(VecModel::from(cells)));
+    }
 }
 
 fn menu_changed(state: &State) -> bool {

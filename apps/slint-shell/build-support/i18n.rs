@@ -214,7 +214,7 @@ pub fn validate_catalog(
                 && entry.source.chars().any(char::is_alphabetic)
                 && !matches!(
                     entry.source.as_str(),
-                    "Tab · {}/{}"
+                    "PgUp/PgDn · {}/{}"
                         | "Left Hand Control"
                         | "F1–F24"
                         | "ID"

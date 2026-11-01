@@ -1,3 +1,7 @@
+import { Theme } from "theme.slint";
+export enum NavigationKind { horizontal-tabs, vertical-tabs, list, grid, menu, radio }
+export enum NavigationMove { previous, next, up, down, first, last }
+
 /// Per-window modal focus stack, implemented by the shell.
 export global KeyboardFocus {
     callback has-focus() -> bool;
@@ -9,4 +13,43 @@ export global KeyboardFocus {
     callback cycle(bool);
     callback step(bool);
     callback focus-checked();
+    callback find-option(string);
+    callback focus-grid();
+    callback focus-index(int);
+    callback remember-reorder(int, int);
+    callback ensure-focus();
+    callback navigate(NavigationKind, NavigationMove);
+    callback leave-group(NavigationKind, bool);
+}
+
+/// One real focus target in a composite. Tab leaves the group; arrows stay inside.
+export component NavigationFocus inherits FocusScope {
+    in property <NavigationKind> kind: NavigationKind.grid;
+    in property <bool> tab-stop: true;
+    focus-on-tab-navigation: root.tab-stop;
+    public function navigate(event: KeyEvent) -> EventResult {
+        if event.modifiers.control || event.modifiers.alt || event.modifiers.meta { return reject; }
+        if event.text == Key.Tab || event.text == Key.Backtab {
+            KeyboardFocus.leave-group(root.kind, event.modifiers.shift || event.text == Key.Backtab);
+            return accept;
+        }
+        if event.text == Key.Home { KeyboardFocus.navigate(root.kind, NavigationMove.first); return accept; }
+        if event.text == Key.End { KeyboardFocus.navigate(root.kind, NavigationMove.last); return accept; }
+        if root.kind != NavigationKind.vertical-tabs && root.kind != NavigationKind.list && root.kind != NavigationKind.menu {
+            if event.text == Key.LeftArrow { KeyboardFocus.navigate(root.kind, NavigationMove.previous); return accept; }
+            if event.text == Key.RightArrow { KeyboardFocus.navigate(root.kind, NavigationMove.next); return accept; }
+        }
+        if root.kind != NavigationKind.horizontal-tabs {
+            if event.text == Key.UpArrow { KeyboardFocus.navigate(root.kind, NavigationMove.up); return accept; }
+            if event.text == Key.DownArrow { KeyboardFocus.navigate(root.kind, NavigationMove.down); return accept; }
+        }
+        return reject;
+    }
+    capture-key-pressed(event) => {
+        if event.text == Key.Tab || event.text == Key.Backtab || event.text == Key.LeftArrow || event.text == Key.RightArrow || event.text == Key.UpArrow || event.text == Key.DownArrow || event.text == Key.Home || event.text == Key.End || event.text == Key.Return || event.text == " " {
+            Theme.keyboard-navigation = true;
+        }
+        return reject;
+    }
+    key-pressed(event) => { return root.navigate(event); }
 }

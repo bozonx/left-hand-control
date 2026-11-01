@@ -1679,6 +1679,28 @@ impl WindowInner {
         }
     }
 
+    /// Leave a composite widget without focusing its skipped descendants.
+    pub fn focus_outside(&self, boundary: &ItemRc, backwards: bool) {
+        let old = self.take_focus_item(&FocusEvent::FocusOut(FocusReason::TabNavigation));
+        let start = if backwards {
+            previous_focus_item(boundary.clone())
+        } else {
+            let mut last = boundary.clone();
+            while let Some(child) = last.last_child() {
+                last = child;
+            }
+            next_focus_item(last)
+        };
+        let end = if backwards {
+            self.move_focus(start, previous_focus_item, FocusReason::TabNavigation)
+        } else {
+            self.move_focus(start, next_focus_item, FocusReason::TabNavigation)
+        };
+        if let Some(adapter) = self.window_adapter().internal(crate::InternalToken) {
+            adapter.handle_focus_change(old, end);
+        }
+    }
+
     /// Move keyboard focus to the next item
     pub fn focus_next_item(&self) {
         let start_item = self

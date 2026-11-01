@@ -23,3 +23,6 @@ The history implementation is exercised by `slint-shell` unit tests through the 
 - Text inputs accept the CUA clipboard keys Shift+Insert (paste), Ctrl+Insert (copy) and Shift+Delete (cut) (`input.rs`, `items/text.rs`). Upstream handles only Ctrl+C/X/V, so text input with the Shift+Insert paste shortcut failed in the application's own fields.
 
 - Add `WindowInner::focus_within` and weak modal boundaries to constrain Tab/Shift+Tab even when a dynamic control loses focus, including Flickable reveal and native focus notifications. Dead upper roots fall back to the remaining modal boundary. The shell owns the modal stack and restores weak initiator references when conditional dialogs disappear.
+
+- Expose modal-aware `WindowInner::focus_outside` so composite widgets leave their entire subtree on Tab/Shift+Tab without transiently focusing skipped children.
+- Expose the existing `ItemRc::is_visible_or_clipped_by_flickable` predicate for shell composite navigation, so offscreen targets can receive focus and reveal themselves.

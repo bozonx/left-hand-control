@@ -23,6 +23,11 @@ Local adaptations:
 - `common/menus.slint`: flat text-editing context menus only; the application
   does not use a menubar or nested standard context menus. `MenuBarImpl` is
   present because the compiler requires that symbol for context-menu lowering.
+- `lhc/button.slint` and `lhc/checkbox.slint`: pointer activation focuses the
+  control, matching the application's custom controls.
+- `common/combobox-base.slint` and `lhc/combobox.slint`: opening consumes its
+  key event; popup options have real roving focus, provisional selection,
+  Escape cancellation, Home/End and prefix search. Tab closes the popup.
 - Removed compiler-private `@shadowable` and `@deprecated` annotations.
 
 When upgrading Slint, compare these files with that release and reapply or remove

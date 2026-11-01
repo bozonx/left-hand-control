@@ -1,3 +1,4 @@
+import { KeyboardFocus } from "focus.slint";
 import { DragGroups, DragHandle, DropMarker } from "reorder.slint";
 import { PageContent, ScrollView } from "scroll.slint";
 import { FocusRing, ButtonGroup, FormField, InfoTip, InlineTextField, InlineTextArea, IconButton, ConfirmDialog, Divider, MenuSurface, MenuItem, DialogFrame, PageLayout, TooltipText, Card, CardTitle } from "controls.slint";
@@ -264,7 +265,7 @@ export component SaveSplitButton inherits Rectangle {
                 touch-save := TouchArea {
                     enabled: root.enabled;
                     mouse-cursor: root.enabled ? pointer : default;
-                    clicked => { root.save(); }
+                    clicked => { focus-save.focus(); root.save(); }
                 }
             }
             Rectangle {
@@ -292,13 +293,13 @@ export component SaveSplitButton inherits Rectangle {
                 }
                 focus-chevron := FocusScope {
                     key-pressed(event) => {
-                        if event.text == "\n" || event.text == " " { save-menu.show(); return accept; }
+                        if event.text == "\n" || event.text == " " || event.text == Key.DownArrow || event.text == Key.UpArrow { save-menu.show(); KeyboardFocus.focus-checked(); return accept; }
                         return reject;
                     }
                 }
                 touch-chevron := TouchArea {
                     mouse-cursor: pointer;
-                    clicked => { save-menu.show(); }
+                    clicked => { focus-chevron.focus(); save-menu.show(); KeyboardFocus.focus-checked(); }
                 }
             }
         }
@@ -349,18 +350,18 @@ component TargetPicker inherits Rectangle {
     }
     focus := FocusScope {
         key-pressed(event) => {
-            if event.text == "\n" || event.text == " " { menu.show(); return accept; }
+            if event.text == "\n" || event.text == " " || event.text == Key.DownArrow || event.text == Key.UpArrow { menu.show(); KeyboardFocus.focus-checked(); return accept; }
             return reject;
         }
     }
-    touch := TouchArea { mouse-cursor: pointer; clicked => { menu.show(); } }
+    touch := TouchArea { mouse-cursor: pointer; clicked => { focus.focus(); menu.show(); KeyboardFocus.focus-checked(); } }
     menu := PopupWindow {
         y: root.height + Theme.menu-offset;
         width: max(root.width, 220px);
         MenuSurface {
-            MenuItem { text: @tr("No layout (keys as is)"); clicked => { root.choose(-1); } }
+            MenuItem { checked: root.target < 0; text: @tr("No layout (keys as is)"); clicked => { root.choose(-1); } }
             Divider {}
-            for name[index] in LayoutLibrary.names: MenuItem { text: name; clicked => { root.choose(index); } }
+            for name[index] in LayoutLibrary.names: MenuItem { text: name; checked: root.target == index; clicked => { root.choose(index); } }
         }
     }
 }

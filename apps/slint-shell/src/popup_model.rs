@@ -9,7 +9,14 @@ use lhc_core::profile::{
     actions::Action,
     model::{LEFT_HAND_HOTKEYS, LayoutPreset, QuickAction},
 };
-use slint::{Model, ModelRc, SharedString, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
+
+/// Bind composite keyboard navigation for both popup windows.
+/// Standalone UI fixtures use the same bindings as the application and Spell.
+pub fn bind_navigation(emoji: &EmojiPopup, quick: &QuickPopup) {
+    crate::pages::bind_navigation(&emoji.global::<crate::ui::KeyboardFocus>(), emoji.window());
+    crate::pages::bind_navigation(&quick.global::<crate::ui::KeyboardFocus>(), quick.window());
+}
 
 /// Cells per menu page: one per left-hand hotkey, 3 rows × 5 columns.
 pub const PAGE_CELLS: usize = LEFT_HAND_HOTKEYS.len();
@@ -50,10 +57,14 @@ pub(crate) fn typed_text(action: &str) -> Option<String> {
     }
 }
 
-/// Tab cycles pages, digits open one; the left-hand hotkeys pick a cell.
+/// PageUp/PageDown cycle pages, digits open one; the left-hand hotkeys pick a cell.
 pub(crate) fn shortcut(code: &str, shift: bool) -> Option<Shortcut> {
-    if code == "Tab" {
-        return Some(Shortcut::ChangePage(if shift { -1 } else { 1 }));
+    let _ = shift;
+    if code == "PageUp" {
+        return Some(Shortcut::ChangePage(-1));
+    }
+    if code == "PageDown" {
+        return Some(Shortcut::ChangePage(1));
     }
     if let Some(page) = code.strip_prefix("Digit").and_then(digit_page) {
         return Some(Shortcut::OpenPage(page));
@@ -71,7 +82,7 @@ pub(crate) fn evdev_shortcut(code: u32, shift: bool) -> Option<Shortcut> {
         "Digit1", "Digit2", "Digit3", "Digit4", "Digit5", "Digit6", "Digit7", "Digit8", "Digit9",
         "Digit0",
     ];
-    let name = ["Tab"]
+    let name = ["PageUp", "PageDown"]
         .iter()
         .chain(&DIGITS)
         .chain(&LEFT_HAND_HOTKEYS)
@@ -137,16 +148,16 @@ fn hotkey_index(key: &str) -> Option<usize> {
 }
 
 /// Fallback for typed text when the physical shortcut was not seen:
-/// Escape closes, Tab and digits switch pages, hotkey letters pick a cell.
+/// Escape closes, PageUp/PageDown and digits switch pages, hotkey letters pick a cell.
 fn popup_key(page: i32, pages: usize, key: &str) -> (Option<i32>, KeyOutcome) {
     use slint::platform::Key;
     if key == SharedString::from(Key::Escape).as_str() {
         return (None, KeyOutcome::Dismiss);
     }
-    if key == SharedString::from(Key::Tab).as_str() {
+    if key == SharedString::from(Key::PageDown).as_str() {
         return (Some(advance(page, 1, pages)), KeyOutcome::PageChanged);
     }
-    if key == SharedString::from(Key::Backtab).as_str() {
+    if key == SharedString::from(Key::PageUp).as_str() {
         return (Some(advance(page, -1, pages)), KeyOutcome::PageChanged);
     }
     if let Some(page) = digit_page(key) {
@@ -363,7 +374,7 @@ fn moved_page(previous: &[String], page: i32, current: &[String]) -> Option<i32>
 
 /// Open command for an already visible popup. Repeating the command that
 /// opened it (`last` is its page) or a command without a page turns to the
-/// next page like Tab; a command for another page opens that page directly.
+/// next page like PageDown; a command for another page opens that page directly.
 pub fn repeat_open(
     popup: Popup,
     page: Option<u32>,
@@ -563,8 +574,9 @@ mod tests {
                 Some(Shortcut::ChooseCell(index as i32))
             );
         }
-        assert_eq!(shortcut("Tab", false), Some(Shortcut::ChangePage(1)));
-        assert_eq!(shortcut("Tab", true), Some(Shortcut::ChangePage(-1)));
+        assert_eq!(shortcut("Tab", false), None);
+        assert_eq!(shortcut("PageDown", false), Some(Shortcut::ChangePage(1)));
+        assert_eq!(shortcut("PageUp", true), Some(Shortcut::ChangePage(-1)));
         assert_eq!(shortcut("Digit1", false), Some(Shortcut::OpenPage(0)));
         assert_eq!(shortcut("Digit0", false), Some(Shortcut::OpenPage(9)));
         assert_eq!(shortcut("Enter", false), None);
@@ -583,7 +595,9 @@ mod tests {
                 Some(Shortcut::ChooseCell(index as i32))
             );
         }
-        assert_eq!(evdev_shortcut(15, true), Some(Shortcut::ChangePage(-1)));
+        assert_eq!(evdev_shortcut(15, true), None);
+        assert_eq!(evdev_shortcut(104, true), Some(Shortcut::ChangePage(-1)));
+        assert_eq!(evdev_shortcut(109, false), Some(Shortcut::ChangePage(1)));
         assert_eq!(evdev_shortcut(2, false), Some(Shortcut::OpenPage(0)));
         assert_eq!(evdev_shortcut(11, false), Some(Shortcut::OpenPage(9)));
     }
@@ -593,7 +607,7 @@ mod tests {
         assert_eq!(advance(0, -1, 3), 2);
         assert_eq!(advance(2, 1, 3), 0);
         assert_eq!(advance(3, 1, 0), 0);
-        let tab = SharedString::from(slint::platform::Key::Tab);
+        let tab = SharedString::from(slint::platform::Key::PageDown);
         assert_eq!(popup_key(1, 2, &tab), (Some(0), KeyOutcome::PageChanged));
         let enter = SharedString::from(slint::platform::Key::Return);
         assert_eq!(popup_key(0, 2, &enter), (None, KeyOutcome::Ignored));

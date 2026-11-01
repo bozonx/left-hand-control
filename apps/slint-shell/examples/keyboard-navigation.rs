@@ -166,8 +166,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 key(&ui, Key::DownArrow);
                 assert_eq!(label(&ui), "Second regression keyboard");
                 assert_eq!(nearest_accessible_item(focused(&ui)).accessible_string_property(AccessibleStringProperty::ItemSelected).as_deref(), Some("true"));
+                key(&ui, Key::DownArrow);
+                assert_eq!(label(&ui), "Second regression keyboard", "Down stays inside the device list");
                 key(&ui, Key::UpArrow);
                 assert_eq!(label(&ui), "Regression keyboard");
+                key(&ui, Key::UpArrow);
+                assert_eq!(label(&ui), "Regression keyboard", "Up stays inside the device list");
                 key(&ui, Key::Escape);
             }
             3 => {
@@ -284,11 +288,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let menu = ui.global::<MenuEditor>();
                 let first = menu.get_pages().row_data(0).unwrap();
                 let tab = if first.is_empty() { "1".to_string() } else { format!("1 · {first}") };
-                tab_to(&ui, &tab);
+                let last = menu.get_pages().row_data(menu.get_selected_page() as usize).unwrap();
+                let selected_tab = format!("{} · {}", menu.get_selected_page() + 1, last);
+                tab_to(&ui, &selected_tab);
+                key(&ui, Key::Home);
+                assert_eq!(label(&ui), tab);
                 ui.window().dispatch_event(slint::platform::WindowEvent::KeyPressed { text: Key::Alt.into() });
                 key(&ui, Key::RightArrow);
                 ui.window().dispatch_event(slint::platform::WindowEvent::KeyReleased { text: Key::Alt.into() });
                 assert_eq!(menu.get_pages().row_data(1).unwrap(), first);
+            }
+            21 => {
+                let first = ui.global::<MenuEditor>().get_pages().row_data(1).unwrap();
+                let expected = if first.is_empty() { "2".to_string() } else { format!("2 · {first}") };
+                assert_eq!(label(&ui), expected, "keyboard reorder follows the moved page");
                 let name = ui.global::<LayoutLibrary>().get_active_label();
                 let label = if name.is_empty() { "No active layout".to_string() } else { format!("Active: {name}") };
                 tab_to(&ui, &label);
@@ -296,10 +309,80 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 key(&ui, Key::Return);
                 assert!(!WindowInner::from_pub(ui.window()).active_popups.borrow().is_empty());
             }
-            21 => { key(&ui, Key::Escape); }
-            22 => {
+            22 => { key(&ui, Key::Escape); }
+            23 => {
                 assert_eq!(focused(&ui), initiator.borrow().as_ref().unwrap().upgrade().unwrap());
-                println!("PASS: 1440 Tab/Shift+Tab events; device/menu Enter; segmented arrows; modal restoration; InfoTip/F1; scrolling; action categories; menu cell transfer and page reorder; active layout selector");
+                ui.invoke_navigate(Page::Layers, MenuKind::Emoji);
+            }
+            24 => {
+                tab_to(&ui, "Layers");
+                key(&ui, Key::LeftArrow);
+                assert!(label(&ui).starts_with("Triggers"));
+                assert_eq!(ui.get_page(), Page::Layers, "tabs use manual activation");
+                key(&ui, Key::Return);
+                assert_eq!(ui.get_page(), Page::Rules);
+                key(&ui, Key::Tab);
+                assert_eq!(label(&ui), "Close layout", "Tab exits the entire tab list");
+                ui.window().dispatch_event(slint::platform::WindowEvent::KeyPressed { text: Key::Shift.into() });
+                key(&ui, Key::Tab);
+                ui.window().dispatch_event(slint::platform::WindowEvent::KeyReleased { text: Key::Shift.into() });
+                assert!(label(&ui).starts_with("Triggers"));
+                key(&ui, Key::RightArrow);
+                key(&ui, Key::Return);
+                assert_eq!(ui.get_page(), Page::Layers);
+                ui.invoke_navigate(Page::Settings, MenuKind::Emoji);
+            }
+            25 => {
+                tab_to(&ui, "Key behavior");
+                key(&ui, Key::End); assert_eq!(label(&ui), "Accessibility");
+                key(&ui, Key::Home); assert_eq!(label(&ui), "Main");
+                key(&ui, Key::DownArrow); assert_eq!(label(&ui), "Mapper");
+                key(&ui, Key::UpArrow); assert_eq!(label(&ui), "Main");
+                key(&ui, Key::Return);
+                assert_eq!(ui.global::<SettingsEditor>().get_tab(), SettingsTab::General);
+            }
+            26 => { tab_to(&ui, "Language"); key(&ui, Key::Return); }
+            27 => {
+                let before = ui.global::<SettingsEditor>().get_locale_index();
+                key(&ui, Key::Home); key(&ui, Key::DownArrow);
+                assert_eq!(label(&ui), "English");
+                assert_eq!(ui.global::<SettingsEditor>().get_locale_index(), before, "provisional combo navigation does not save");
+                key(&ui, Key::Escape);
+                assert_eq!(label(&ui), "Language");
+                assert_eq!(ui.global::<SettingsEditor>().get_locale_index(), before);
+                let picker = ui.global::<ActionPicker>();
+                picker.invoke_open(PickerTarget::LayerAction, 0, "KeyA".into(), false);
+                picker.invoke_select_behavior(PickerBehavior::Action);
+                picker.invoke_select_category(PickerCategory::Letters);
+                picker.set_query("keyboard-query".into()); picker.invoke_refresh();
+            }
+            28 => {
+                tab_to(&ui, "Search keys and actions");
+                key(&ui, Key::Escape);
+                assert!(ui.global::<ActionPicker>().get_opened());
+                assert!(ui.global::<ActionPicker>().get_query().is_empty());
+                key(&ui, Key::Escape);
+                assert!(!ui.global::<ActionPicker>().get_opened());
+            }
+            29 => {
+                let picker = ui.global::<ActionPicker>();
+                picker.invoke_open(PickerTarget::LayerAction, 0, "KeyA".into(), false);
+                picker.invoke_select_behavior(PickerBehavior::Action);
+                picker.invoke_select_category(PickerCategory::Letters);
+            }
+            30 => {
+                let picker = ui.global::<ActionPicker>();
+                let first = picker.get_items().row_data(0).unwrap();
+                let second = picker.get_items().row_data(1).unwrap();
+                tab_to(&ui, &first.label);
+                let before = focused(&ui);
+                key(&ui, Key::RightArrow);
+                assert_ne!(focused(&ui), before);
+                assert_eq!(label(&ui), second.label.as_str());
+                key(&ui, Key::Return);
+                assert_eq!(picker.get_value(), second.value);
+                assert!(!picker.get_opened(), "Enter applies the focused item");
+                println!("PASS: tab-list arrows/Home/End/exit; device edges; ComboBox cancel; Search Escape; picker real focus+Enter; 1440 Tab/Shift+Tab events; device/menu Enter; segmented arrows; modal restoration; InfoTip/F1; scrolling; action categories; menu cell transfer and page reorder; active layout selector");
                 slint::quit_event_loop().unwrap();
             }
             _ => unreachable!(),

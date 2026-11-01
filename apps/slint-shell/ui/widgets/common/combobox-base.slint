@@ -8,6 +8,10 @@ export component ComboBoxBase {
     out property <bool> pressed <=> i-touch-area.pressed;
     out property <bool> has-hover: i-touch-area.has-hover;
     in-out property <int> current-index: 0;
+    in-out property <int> highlighted-index: 0;
+    private property <string> search-prefix;
+    public function open() { root.highlighted-index = root.current-index; root.search-prefix = ""; root.show-popup(); }
+    Timer { interval: 1000ms; running: root.search-prefix != ""; triggered => { root.search-prefix = ""; } }
     out property <string> current-value: root.model[root.current-index];
 
     // Set from the ComboBox when the popup has the focus
@@ -39,19 +43,20 @@ export component ComboBoxBase {
     }
 
     public function popup-key-handler(event: KeyEvent) -> EventResult {
-        if (event.text == Key.UpArrow) {
-            root.move-selection-up();
-            return accept;
-        } else if (event.text == Key.DownArrow) {
-            root.move-selection-down();
-            return accept;
-        } else if (event.text == Key.Return || event.text == Key.Escape) {
-            root.close-popup();
+        if event.modifiers.control || event.modifiers.meta { return reject; }
+        if event.text == Key.Escape { root.close-popup(); return accept; }
+        if event.text == Key.Return || event.text == " " {
+            root.select(root.highlighted-index); root.close-popup(); return accept;
+        }
+        // Search by typed prefix without applying a provisional option.
+        if event.text.character-count == 1 && !event.modifiers.alt {
+            root.search-prefix += event.text.to-lowercase();
+            root.search(root.search-prefix);
             return accept;
         }
         return reject;
-
     }
+    callback search(string);
 
     function reset-current() {
         if (root.model.length == 0) {
@@ -96,14 +101,16 @@ export component ComboBoxBase {
             if (!self.enabled) {
                 return reject;
             }
-            if (event.text == Key.UpArrow) {
-                root.move-selection-up();
+            if event.modifiers.control || event.modifiers.meta { return reject; }
+            if event.text == Key.Return || event.text == " " || event.text == Key.DownArrow || event.text == Key.UpArrow {
+                root.open(); return accept;
+            }
+            if (event.text == Key.Home) {
+                root.select(0);
                 return accept;
-            } else if (event.text == Key.DownArrow) {
-                root.move-selection-down();
+            } else if (event.text == Key.End) {
+                root.select(root.model.length - 1);
                 return accept;
-            } else if (event.text == Key.Return) {
-                root.show-popup();
             }
             return reject;
         }
@@ -113,7 +120,7 @@ export component ComboBoxBase {
 
             clicked => {
                 root.focus();
-                root.show-popup();
+                root.open();
             }
 
             scroll-event(event) => {

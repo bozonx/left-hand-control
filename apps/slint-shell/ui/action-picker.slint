@@ -1,3 +1,4 @@
+import { NavigationFocus } from "focus.slint";
 import { CategoryIcon } from "action-controls.slint";
 import { Timing } from "timing.slint";
 import { AppState } from "app-state.slint";
@@ -14,6 +15,7 @@ export struct PickerItem { value: string, label: string, category: PickerCategor
 export struct PickerSidebarEntry { category: PickerCategory, key: bool, heading: bool, visible: bool }
 export global ActionPicker {
     in-out property <bool> opened;
+    in-out property <int> keyboard-item: 0;
     in-out property <bool> layer-action;
     /// A layer key's keystroke keeps its modifiers pressed until the layer is released.
     in-out property <bool> hold-modifiers;
@@ -135,6 +137,7 @@ export global ActionPicker {
 
 component PickerCell inherits Rectangle {
     in property <PickerItem> item;
+    in property <int> index;
     in property <bool> compact;
     private property <bool> selected: ActionPicker.value != "" && ActionPicker.value == root.item.value;
     min-width: 0px; preferred-width: 0px; horizontal-stretch: 1; min-height: compact ? 38px : 76px;
@@ -159,11 +162,15 @@ component PickerCell inherits Rectangle {
         }
     }
     // Enter on the chosen item applies it.
-    item-focus := FocusScope { key-pressed(event) => {
-        if event.text == Key.Return && root.selected && ActionPicker.valid { ActionPicker.apply(); return accept; }
-        if event.text == Key.Return || event.text == " " { root.pick(); return accept; }
-        return reject;
-    } }
+    item-focus := NavigationFocus {
+        tab-stop: root.index == ActionPicker.keyboard-item;
+        focus-changed-event => { if self.has-focus { ActionPicker.keyboard-item = root.index; } }
+        key-pressed(event) => {
+            if event.text == Key.Return { root.pick(); if ActionPicker.valid { ActionPicker.apply(); } return accept; }
+            if event.text == " " { root.pick(); return accept; }
+            return self.navigate(event);
+        }
+    }
     item-touch := TouchArea { clicked => { root.pick(); item-focus.focus(); } }
 }
 
@@ -207,12 +214,6 @@ export component PickerOverlay inherits DialogFrame {
         init => { self.focus(); }
         key-pressed(event) => {
             if ActionPicker.capturing { return accept; }
-            if ActionPicker.behavior == PickerBehavior.action && (ActionPicker.query != "" || ActionPicker.category-listed) {
-                if event.text == Key.LeftArrow { ActionPicker.step-selection(-1); return accept; }
-                if event.text == Key.RightArrow { ActionPicker.step-selection(1); return accept; }
-                if event.text == Key.UpArrow { ActionPicker.step-selection(-ActionPicker.columns()); return accept; }
-                if event.text == Key.DownArrow { ActionPicker.step-selection(ActionPicker.columns()); return accept; }
-            }
             if event.text == Key.Return && ActionPicker.valid { ActionPicker.apply(); return accept; }
             return reject;
         }
@@ -321,11 +322,12 @@ export component PickerOverlay inherits DialogFrame {
                         // binding it two-way to a global property left the list unpainted on wheel scroll.
                         private property <PickerCategory> shown-category: ActionPicker.category;
                         private property <string> shown-query: ActionPicker.query;
-                        changed shown-category => { self.viewport-y = 0px; }
-                        changed shown-query => { self.viewport-y = 0px; }
+                        changed shown-category => { self.viewport-y = 0px; ActionPicker.keyboard-item = 0; }
+                        changed shown-query => { self.viewport-y = 0px; ActionPicker.keyboard-item = 0; }
                         VerticalLayout { spacing: 0px;
                             for row in ceil(ActionPicker.items.length * 1.0 / catalog.columns): HorizontalLayout { padding: 0px; padding-bottom: Theme.space-s; spacing: Theme.space-s;
                                 for col in catalog.columns: PickerCell {
+                                    index: row * catalog.columns + col;
                                     accessible-item-index: row * catalog.columns + col;
                                     accessible-item-count: ActionPicker.items.length;
                                     item: ActionPicker.items[row * catalog.columns + col];

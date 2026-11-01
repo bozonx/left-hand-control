@@ -96,6 +96,7 @@ export component Button {
 
     i-touch-area := TouchArea {
         clicked => {
+            i-focus-scope.focus();
             if (root.checkable) {
                 root.checked = !root.checked;
             }

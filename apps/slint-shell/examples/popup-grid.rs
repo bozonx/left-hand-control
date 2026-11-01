@@ -38,7 +38,7 @@ fn check_modifiers(ui: &impl ComponentHandle, count: impl Fn() -> usize) {
         for text in [
             slint::SharedString::from("q"),
             "1".into(),
-            Key::Tab.into(),
+            Key::PageDown.into(),
             Key::Escape.into(),
         ] {
             press(text.clone());
@@ -49,7 +49,7 @@ fn check_modifiers(ui: &impl ComponentHandle, count: impl Fn() -> usize) {
     assert_eq!(count(), before);
     for text in [
         slint::SharedString::from("q"),
-        Key::Tab.into(),
+        Key::PageDown.into(),
         Key::Escape.into(),
     ] {
         press(text.clone());
@@ -88,6 +88,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .collect::<Vec<slint::SharedString>>(),
     )));
     quick.set_page_names(ModelRc::new(VecModel::from(vec!["Current page".into()])));
+    slint_shell::popup_model::bind_navigation(&emoji, &quick);
     let keys = Rc::new(RefCell::new(Vec::new()));
     let cells = Rc::new(RefCell::new(Vec::new()));
     let observed = keys.clone();
@@ -130,6 +131,54 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
         check_modifiers(&emoji, || keys.borrow().len());
         check_modifiers(&quick, || keys.borrow().len());
+        use slint::platform::Key;
+        let key = |text: Key| {
+            emoji
+                .window()
+                .dispatch_event(WindowEvent::KeyPressed { text: text.into() });
+            emoji
+                .window()
+                .dispatch_event(WindowEvent::KeyReleased { text: text.into() });
+        };
+        let label = || {
+            use i_slint_core::{
+                accessibility::{AccessibleStringProperty, nearest_accessible_item},
+                window::WindowInner,
+            };
+            let item = WindowInner::from_pub(emoji.window())
+                .focus_item
+                .borrow()
+                .upgrade()
+                .unwrap();
+            nearest_accessible_item(item)
+                .accessible_string_property(AccessibleStringProperty::Label)
+                .unwrap()
+                .to_string()
+        };
+        emoji.invoke_prepare();
+        key(Key::Home);
+        assert_eq!(label(), "Q: 🙂");
+        key(Key::UpArrow);
+        key(Key::LeftArrow);
+        assert_eq!(label(), "Q: 🙂");
+        key(Key::RightArrow);
+        assert_eq!(label(), "W: 🙂");
+        key(Key::Return);
+        assert_eq!(cells.borrow().last(), Some(&("emoji", 1)));
+        key(Key::Tab);
+        assert_eq!(label(), "Close");
+        emoji.window().dispatch_event(WindowEvent::KeyPressed {
+            text: Key::Shift.into(),
+        });
+        key(Key::Tab);
+        emoji.window().dispatch_event(WindowEvent::KeyReleased {
+            text: Key::Shift.into(),
+        });
+        assert_eq!(label(), "W: 🙂");
+        key(Key::End);
+        key(Key::RightArrow);
+        assert_eq!(label(), "B: 🙂");
+        cells.borrow_mut().clear();
         click(&emoji, 65.0, 110.0);
         click(&quick, 100.0, 110.0);
         assert_eq!(*cells.borrow(), [("emoji", 0), ("quick", 0)]);

@@ -1,3 +1,4 @@
+import { KeyboardFocus } from "focus.slint";
 import { Theme } from "theme.slint";
 
 /// Drag groups: every reorderable list has its own id, because `DragDrop`
@@ -152,7 +153,7 @@ export component DragHandle inherits Rectangle {
     accessible-action-increment => { root.step(1); }
     accessible-action-decrement => { root.step(-1); }
     function step(delta: int) {
-        if root.index + delta >= 0 && root.index + delta < root.count { root.dropped(root.index, root.index + delta); }
+        if root.index + delta >= 0 && root.index + delta < root.count { KeyboardFocus.remember-reorder(root.index, root.index + delta); root.dropped(root.index, root.index + delta); }
     }
     Image { x: 6px; y: 6px; width: 16px; height: 16px; source: @image-url("icons/grip.svg"); colorize: Theme.muted; }
     focus := FocusScope {
