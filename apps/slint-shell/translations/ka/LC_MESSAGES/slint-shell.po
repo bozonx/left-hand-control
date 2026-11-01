@@ -1055,6 +1055,9 @@ msgstr "მოგზაურობა და ადგილები"
 msgid "UTF Symbols"
 msgstr "UTF სიმბოლოები"
 
+msgid "Kaomoji"
+msgstr "კაომოჯი"
+
 msgid "Texts"
 msgstr "ტექსტები"
 

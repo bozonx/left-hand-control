@@ -1052,6 +1052,9 @@ msgstr "Seyahat ve Yerler"
 msgid "UTF Symbols"
 msgstr "UTF Sembolleri"
 
+msgid "Kaomoji"
+msgstr "Kaomoji"
+
 msgid "Texts"
 msgstr "Metinler"
 

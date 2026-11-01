@@ -1044,6 +1044,9 @@ msgstr "Cestování a místa"
 msgid "UTF Symbols"
 msgstr "Symboly UTF"
 
+msgid "Kaomoji"
+msgstr "Kaomoji"
+
 msgid "Texts"
 msgstr "Texty"
 

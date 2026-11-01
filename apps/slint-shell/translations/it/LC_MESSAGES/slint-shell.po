@@ -1064,6 +1064,9 @@ msgstr "Viaggi e luoghi"
 msgid "UTF Symbols"
 msgstr "Simboli UTF"
 
+msgid "Kaomoji"
+msgstr "Kaomoji"
+
 msgid "Texts"
 msgstr "Testi"
 

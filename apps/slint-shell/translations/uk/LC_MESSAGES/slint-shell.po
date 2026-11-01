@@ -1050,6 +1050,9 @@ msgstr "Подорожі та місця"
 msgid "UTF Symbols"
 msgstr "Символи UTF"
 
+msgid "Kaomoji"
+msgstr "Каомодзі"
+
 msgid "Texts"
 msgstr "Тексти"
 

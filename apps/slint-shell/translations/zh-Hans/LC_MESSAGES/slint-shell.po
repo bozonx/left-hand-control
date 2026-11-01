@@ -1014,6 +1014,9 @@ msgstr "旅行与地点"
 msgid "UTF Symbols"
 msgstr "UTF 符号"
 
+msgid "Kaomoji"
+msgstr "颜文字"
+
 msgid "Texts"
 msgstr "文本"
 

@@ -984,6 +984,9 @@ msgstr "Места и транспорт"
 msgid "UTF Symbols"
 msgstr "UTF-символы"
 
+msgid "Kaomoji"
+msgstr "Каомодзи"
+
 msgid "Texts"
 msgstr "Тексты"
 

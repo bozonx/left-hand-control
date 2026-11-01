@@ -1057,6 +1057,9 @@ msgstr "Călătorii și Locuri"
 msgid "UTF Symbols"
 msgstr "Simboluri UTF"
 
+msgid "Kaomoji"
+msgstr "Kaomoji"
+
 msgid "Texts"
 msgstr "Texte"
 

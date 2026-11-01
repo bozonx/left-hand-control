@@ -1062,6 +1062,9 @@ msgstr "Utazás és helyek"
 msgid "UTF Symbols"
 msgstr "UTF szimbólumok"
 
+msgid "Kaomoji"
+msgstr "Kaomoji"
+
 msgid "Texts"
 msgstr "Szövegek"
 

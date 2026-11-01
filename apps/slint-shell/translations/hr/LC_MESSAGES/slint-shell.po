@@ -1045,6 +1045,9 @@ msgstr "Putovanja i mjesta"
 msgid "UTF Symbols"
 msgstr "UTF simboli"
 
+msgid "Kaomoji"
+msgstr "Kaomoji"
+
 msgid "Texts"
 msgstr "Tekstovi"
 

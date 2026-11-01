@@ -1069,6 +1069,9 @@ msgstr "Ταξίδια & Μέρη"
 msgid "UTF Symbols"
 msgstr "Σύμβολα UTF"
 
+msgid "Kaomoji"
+msgstr "Kaomoji"
+
 msgid "Texts"
 msgstr "Κείμενα"
 

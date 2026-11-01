@@ -49,6 +49,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Interface language choices and machine-translated catalogs for German, French, international Spanish, Italian, Portuguese, Polish, Turkish, Ukrainian, Czech, Hungarian, Romanian, Greek, Croatian, Georgian, Kazakh, Simplified and Traditional Chinese, Japanese, and Korean.
 - Escape cancels a drag in progress. Reorder handles respond to Alt+Up/Down and layer tabs to Alt+Left/Right, so lists can be reordered from the keyboard.
 - Dragging a layer tab or a menu page tab scrolls the tab strip at its edges.
+- Emoji page: a "Kaomoji" section with Japanese-style text emoticons in the palette.
 
 ### Changed
 

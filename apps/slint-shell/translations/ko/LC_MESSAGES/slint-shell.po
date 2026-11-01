@@ -1020,6 +1020,9 @@ msgstr "여행 및 장소"
 msgid "UTF Symbols"
 msgstr "UTF 기호"
 
+msgid "Kaomoji"
+msgstr "카오모지"
+
 msgid "Texts"
 msgstr "텍스트"
 

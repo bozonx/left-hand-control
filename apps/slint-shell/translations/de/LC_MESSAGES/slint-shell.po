@@ -1060,6 +1060,9 @@ msgstr "Reisen & Orte"
 msgid "UTF Symbols"
 msgstr "UTF-Symbole"
 
+msgid "Kaomoji"
+msgstr "Kaomoji"
+
 msgid "Texts"
 msgstr "Texte"
 

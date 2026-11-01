@@ -1054,6 +1054,9 @@ msgstr "Саяхат және орындар"
 msgid "UTF Symbols"
 msgstr "UTF таңбалары"
 
+msgid "Kaomoji"
+msgstr "Каомодзи"
+
 msgid "Texts"
 msgstr "Мәтіндер"
 

@@ -430,6 +430,14 @@ export component EmojiPage inherits Rectangle {
     vertical-stretch: 1;
     private property <bool> confirming;
     // Library snippets are literal insertion text, independent of the UI language.
+    private property <[string]> kaomoji: [
+        "(=^･ω･^=)",
+        "(づ｡◕‿‿◕｡)づ",
+        "(◕‿◕✿)",
+        "(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧",
+        "( ˘ ³˘)♥",
+        "¯\\_(ツ)_/¯",
+    ];
     private property <[string]> texts: [
         "TODO: ",
         "FIXME: ",
@@ -506,6 +514,19 @@ export component EmojiPage inherits Rectangle {
                                     for col in 6: EmojiButton {
                                         item: category.items[row * 6 + col];
                                         visible: row * 6 + col < category.items.length;
+                                    }
+                                }
+                            }
+                            VerticalLayout {
+                                spacing: Theme.space-s;
+                                padding-bottom: Theme.space-m;
+                                Text { text: @tr("Kaomoji"); color: Theme.muted; font-size: Theme.font-caption; font-weight: Theme.weight-bold; }
+                                for row in ceil(root.kaomoji.length / 2): HorizontalLayout {
+                                    spacing: Theme.space-s;
+                                    for col in 2: EmojiButton {
+                                        wide: true;
+                                        item: root.kaomoji[row * 2 + col];
+                                        visible: row * 2 + col < root.kaomoji.length;
                                     }
                                 }
                             }
