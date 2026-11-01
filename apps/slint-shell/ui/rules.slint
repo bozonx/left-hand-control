@@ -146,18 +146,22 @@ component RuleCell inherits VerticalLayout {
     in property <string> empty-text: @tr("Not set");
     in property <bool> enabled: true;
     in property <PickerCategory> category;
+    /// Show an empty value as a quiet "Assign action" button.
+    in property <bool> ghost-empty: false;
+    private property <bool> ghost: root.ghost-empty && root.value == "";
     callback clicked();
     opacity: root.enabled ? 1 : 0.5;
     spacing: Theme.space-xs;
     horizontal-stretch: 1;
     min-width: 0px;
     preferred-width: 0px;
-    FormLabel { text: root.title; info: root.info; }
+    FormLabel { text: root.title; info: root.info; muted: root.ghost; }
     ActionField {
         enabled: root.enabled;
+        ghost: root.ghost;
         label: root.title;
         value: root.value;
-        empty-text: root.empty-text;
+        empty-text: root.ghost ? @tr("Assign action") : root.empty-text;
         category: root.category;
         clicked => { root.clicked(); }
     }
@@ -210,28 +214,32 @@ component HoldField inherits VerticalLayout {
         KeyboardFocus.focus-checked();
         root.reveal();
     }
-    FormLabel { text: @tr("When held"); info: @tr("Choose a layer active until release, or an action performed once after the hold duration."); }
+    private property <bool> unassigned: root.rule.hold-mode == HoldBehavior.none;
+    FormLabel { muted: root.unassigned; text: @tr("When held"); info: @tr("Choose a layer active until release, or an action performed once after the hold duration."); }
     field := Rectangle {
         min-width: 0px; height: Theme.control-height; border-radius: Theme.radius;
-        border-width: Theme.focus-ring(field-focus.has-focus) || menu.is-open ? 2px : 1px;
-        border-color: Theme.focus-ring(field-focus.has-focus) ? Theme.focus : menu.is-open ? Theme.accent : Theme.border;
-        background: touch.has-hover ? Theme.hover : Theme.surface;
+        // Unassigned: quiet button without a frame, like FieldButton's `ghost`.
+        property <bool> bare: root.unassigned && !menu.is-open && !touch.has-hover && !Theme.focus-ring(field-focus.has-focus);
+        border-width: Theme.focus-ring(field-focus.has-focus) || menu.is-open ? 2px : self.bare && !Theme.eink && !Theme.high-contrast ? 0px : 1px;
+        border-color: Theme.focus-ring(field-focus.has-focus) ? Theme.focus : menu.is-open ? Theme.accent : self.bare ? Theme.divider : Theme.border;
+        background: touch.has-hover ? Theme.hover : root.unassigned ? transparent : Theme.surface;
         opacity: root.enabled ? 1 : 0.5;
         accessible-role: combobox; accessible-label: @tr("When held");
-        accessible-value: value-text.text; accessible-expandable: true; accessible-expanded: menu.is-open;
+        accessible-value: root.unassigned ? @tr("Nothing") : value-text.text; accessible-expandable: true; accessible-expanded: menu.is-open;
         accessible-action-expand => { root.open-menu(); }
         forward-focus: field-focus;
         HorizontalLayout { padding-left: Theme.space-m-plus; padding-right: Theme.space-m-plus; spacing: Theme.space-s;
+            if root.unassigned: VerticalLayout { alignment: center; Image { width: 14px; height: 14px; source: @image-url("icons/plus.svg"); colorize: Theme.muted; } }
             if root.rule.hold-mode == HoldBehavior.layer: VerticalLayout { alignment: center; Image { width: 16px; height: 16px; source: @image-url("icons/layers.svg"); colorize: Theme.muted; } }
             if root.rule.hold-mode == HoldBehavior.action && root.rule.long-hold != "": CategoryIcon { category: root.rule.long-hold-category; }
             value-text := Text {
                 min-width: 0px; horizontal-stretch: 1; vertical-alignment: center; overflow: elide;
                 text: root.rule.hold-mode == HoldBehavior.layer ? (root.rule.layer != "" ? root.rule.layer : @tr("Choose layer"))
                     : root.rule.hold-mode == HoldBehavior.action ? (root.rule.long-hold != "" ? root.rule.long-hold : @tr("Choose action"))
-                    : @tr("Nothing");
+                    : @tr("Assign action");
                 color: (root.rule.hold-mode == HoldBehavior.layer && root.rule.layer != "") || (root.rule.hold-mode == HoldBehavior.action && root.rule.long-hold != "") ? Theme.text : Theme.muted;
             }
-            VerticalLayout { alignment: center; Image { width: 12px; height: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; } }
+            if !root.unassigned: VerticalLayout { alignment: center; Image { width: 12px; height: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; } }
         }
         field-focus := FocusScope { enabled: root.enabled; key-pressed(event) => {
             if event.text == Key.Return || event.text == " " || event.text == Key.DownArrow || event.text == Key.UpArrow { root.open-menu(); return accept; }
@@ -360,7 +368,7 @@ export component RulesPage inherits PageLayout {
                         Rectangle { width: 1px; background: Theme.divider; }
                         RuleCell { title: @tr("Tap action"); info: @tr("Action performed when the trigger is pressed and released quickly without holding."); value: rule.tap; category: rule.tap-category; empty-text: rule.swallow-tap ? @tr("Suppress") : @tr("Do not process"); clicked => { RulesEditor.open-dialog(index, RuleDialog.tap); } }
                         HoldField { enabled: rule.key != ""; rule-index: index; rule: rule; }
-                        if !rule.is-chord || rule.double-tap != "": RuleCell { title: @tr("Double-tap action"); info: @tr("Action performed when the trigger is pressed twice quickly within the double-tap timeout."); value: rule.double-tap; category: rule.double-category; empty-text: @tr("No separate action"); clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
+                        if !rule.is-chord || rule.double-tap != "": RuleCell { title: @tr("Double-tap action"); info: @tr("Action performed when the trigger is pressed twice quickly within the double-tap timeout."); value: rule.double-tap; category: rule.double-category; ghost-empty: true; clicked => { RulesEditor.open-dialog(index, RuleDialog.double-tap); } }
                         if rule.is-chord && rule.double-tap == "": Rectangle { horizontal-stretch: 1; min-width: 0px; preferred-width: 0px; }
                     }
                     if rule.diagnostic.id != "": Text {

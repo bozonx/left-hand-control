@@ -37,6 +37,7 @@ export component ActionField inherits FieldButton {
     in property <length> text-size: Theme.font-default;
     accessible-label: root.label;
     accessible-value: root.value;
+    if root.ghost && root.value == "": VerticalLayout { alignment: center; Image { width: 14px; height: 14px; source: @image-url("icons/plus.svg"); colorize: Theme.muted; } }
     if root.value != "" && root.category != PickerCategory.none: CategoryIcon { category: root.category; }
     Text {
         min-width: 0px;

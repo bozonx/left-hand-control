@@ -8,6 +8,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Triggers: unassigned "When held" and "Double-tap action" fields are shown as a quiet "+ Assign action" button without a frame (it appears on hover and keyboard focus), and their labels are dimmed, so assigned actions stand out. E-ink and high-contrast themes keep a thin frame.
 - Rules: the "Enabled" checkbox moved from the rule card into "Advanced rule options". A disabled rule is shown dimmed but stays fully editable; the options button keeps full contrast.
 - Layouts page: the unsaved-changes question always offers to save; a working copy not yet in the library asks for a name first and then continues. In the "Layout changed on disk" dialog the safe "Save as new…" is now the primary button instead of "Overwrite".
 - Quick actions no longer have icons. Layout files that still contain an `icon` field load as before; the field is dropped on the next save.

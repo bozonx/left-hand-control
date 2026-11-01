@@ -297,13 +297,17 @@ export component FieldButton inherits Rectangle {
     in property <bool> enabled: true;
     /// The picker this field opened is showing.
     in property <bool> active: false;
+    /// Unassigned value: no frame until hover or focus, so assigned fields stand out.
+    /// E-ink and high contrast keep a thin divider frame because they have no faint tones.
+    in property <bool> ghost: false;
+    private property <bool> bare: root.ghost && !root.active && !touch.has-hover && !Theme.focus-ring(focus.has-focus);
     callback clicked();
     min-width: 0px;
     height: Theme.control-height;
     border-radius: Theme.radius;
-    border-width: Theme.focus-ring(focus.has-focus) || root.active ? 2px : 1px;
-    border-color: Theme.focus-ring(focus.has-focus) ? Theme.focus : root.active ? Theme.accent : Theme.border;
-    background: root.enabled && touch.has-hover ? Theme.hover : Theme.surface;
+    border-width: Theme.focus-ring(focus.has-focus) || root.active ? 2px : root.bare && !Theme.eink && !Theme.high-contrast ? 0px : 1px;
+    border-color: Theme.focus-ring(focus.has-focus) ? Theme.focus : root.active ? Theme.accent : root.bare ? Theme.divider : Theme.border;
+    background: root.enabled && touch.has-hover ? Theme.hover : root.ghost ? transparent : Theme.surface;
     opacity: root.enabled ? 1.0 : 0.45;
     accessible-role: button;
     accessible-enabled: root.enabled;
@@ -548,12 +552,14 @@ component FieldResetSlot inherits Rectangle {
 export component FormLabel inherits HorizontalLayout {
     in property <string> text;
     in property <string> info;
+    /// Secondary label, e.g. for a field that is not assigned.
+    in property <bool> muted: false;
     spacing: Theme.space-s;
     alignment: start;
     vertical-stretch: 0;
     Text {
         text: root.text;
-        color: Theme.text;
+        color: root.muted ? Theme.muted : Theme.text;
         horizontal-stretch: 0;
         min-width: 0px;
         wrap: word-wrap;
