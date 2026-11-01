@@ -53,8 +53,9 @@ export global RulesEditor {
     in property <bool> original-swallow-hold;
     in-out property <string> original-hold-timeout;
     in-out property <string> original-double-timeout;
-    out property <bool> advanced-dirty: hold-detection != original-hold-detection || long-hold-timeout != original-long-hold-timeout || hold != original-hold || swallow-hold != original-swallow-hold || hold-timeout != original-hold-timeout || double-timeout != original-double-timeout;
+    out property <bool> advanced-dirty: hold-detection != original-hold-detection || long-hold-timeout != original-long-hold-timeout || hold != original-hold || swallow-hold != original-swallow-hold || enabled != original-enabled || hold-timeout != original-hold-timeout || double-timeout != original-double-timeout;
     in-out property <bool> enabled: true;
+    in-out property <bool> original-enabled: true;
     in-out property <bool> swallow-tap;
     in-out property <bool> swallow-hold;
     /// Open dialog; `none` while the action picker edits `field`.
@@ -72,8 +73,6 @@ export global RulesEditor {
     callback remove();
     callback move(int, int);
     /// Change a property of the selected rule in place.
-    /// Enable or disable the selected rule.
-    callback set-enabled(bool);
     /// Change what holding the selected rule's trigger does.
     callback set-hold-mode(HoldBehavior);
     /// Open `dialog` for rule `index`.
@@ -335,10 +334,10 @@ export component RulesPage inherits PageLayout {
                 rule-content := VerticalLayout { min-width: 0px; padding: Theme.space-l-plus; spacing: Theme.space-m-plus;
                     rule-header := HorizontalLayout { spacing: Theme.space-s;
                         rule-drag := DragHandle { group: DragGroups.rules; index: index; count: RulesEditor.rows.length; dropped(from, to) => { RulesEditor.move(from, to); } }
-                        rule-enabled := CheckBox { accessible-label: @tr("Enabled"); checked: rule.enabled; toggled => { RulesEditor.select(index); RulesEditor.set-enabled(self.checked); } }
                         if AppState.in-development || rule.has-conditions: ConditionsCell {
                             // Reserve conditions before allocating space to the optional summary.
-                            min-width: min(self.preferred-width, max(0px, rule-header.width - rule-drag.preferred-width - rule-enabled.preferred-width - rule-options.preferred-width - 5 * Theme.space-s - 12px));
+                            min-width: min(self.preferred-width, max(0px, rule-header.width - rule-drag.preferred-width - rule-options.preferred-width - 4 * Theme.space-s - 12px));
+                            opacity: rule.enabled ? 1 : Theme.disabled-rule-opacity;
                             enabled: rule.key != ""; rule: rule; clicked => { ConditionChoices.refresh(); RulesEditor.open-dialog(index, RuleDialog.conditions); }
                         }
                         Rectangle { horizontal-stretch: 1; min-width: 12px; }
@@ -346,6 +345,7 @@ export component RulesPage inherits PageLayout {
                             horizontal-stretch: 0; min-width: 0px; max-width: 640px; overflow: elide; vertical-alignment: center;
                             text: root.summary(rule);
                             color: Theme.muted;
+                            opacity: rule.enabled ? 1 : Theme.disabled-rule-opacity;
                             TouchArea { enabled: rule.key != ""; mouse-cursor: pointer; clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); } }
                         }
                         rule-options := IconButton { enabled: rule.key != ""; icon: @image-url("icons/sliders-horizontal.svg"); tooltip: @tr("Advanced rule options"); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); }
@@ -354,7 +354,8 @@ export component RulesPage inherits PageLayout {
                             }
                         }
                     }
-                    HorizontalLayout { min-width: 0px; spacing: Theme.space-l;
+                    // A disabled rule is dimmed but stays editable; only the options button keeps full contrast.
+                    HorizontalLayout { min-width: 0px; spacing: Theme.space-l; opacity: rule.enabled ? 1 : Theme.disabled-rule-opacity;
                         RuleCell { width: 180px; horizontal-stretch: 0; title: @tr("Trigger"); info: @tr("A trigger can be a single key or a combination, such as ShiftLeft+ControlLeft. The combination works in either press order and ends when any key is released."); value: rule.key; category: rule.key-category; clicked => { RulesEditor.open-dialog(index, RuleDialog.key); } }
                         Rectangle { width: 1px; background: Theme.divider; }
                         RuleCell { title: @tr("Tap action"); info: @tr("Action performed when the trigger is pressed and released quickly without holding."); value: rule.tap; category: rule.tap-category; empty-text: rule.swallow-tap ? @tr("Suppress") : @tr("Do not process"); clicked => { RulesEditor.open-dialog(index, RuleDialog.tap); } }
@@ -364,6 +365,7 @@ export component RulesPage inherits PageLayout {
                     }
                     if rule.diagnostic.id != "": Text {
                         text: Locale.text(rule.diagnostic);
+                        opacity: rule.enabled ? 1 : Theme.disabled-rule-opacity;
                         color: NotificationCenter.is-warning(rule.diagnostic.id) ? Theme.warning : Theme.error;
                         wrap: word-wrap;
                     }
@@ -399,6 +401,7 @@ export component RuleDialogOverlay inherits FocusScope {
         if RulesEditor.dialog == RuleDialog.advanced: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
             preferred-height: advanced-form.preferred-height;
             advanced-form := VerticalLayout { spacing: Theme.space-3xl; alignment: start;
+                CheckBox { text: @tr("Enabled"); checked <=> RulesEditor.enabled; }
                 held-form := ResettableField {
                     label: @tr("Hold key or combination");
                     info: @tr("The key or combination stays pressed until you release the trigger. Choose modifiers plus one main key, for example Ctrl+KeyC.");

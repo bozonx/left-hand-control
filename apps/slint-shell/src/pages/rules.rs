@@ -263,6 +263,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
         return;
     };
     editor.set_enabled(rule.is_enabled());
+    editor.set_original_enabled(rule.is_enabled());
     editor.set_key(rule.key.clone().into());
     editor.set_layer(rule.layer_id.clone().into());
     editor.set_tap(rule.tap_action.clone().unwrap_or_default().into());
@@ -753,18 +754,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             editor.set_status(crate::notifications::report(&ui, &error));
             return;
         }
+        candidate.enabled = (!editor.get_enabled()).then_some(false);
         if change_rule(&ui, &doc, index, true, |rule| *rule = candidate)
         .is_ok()
         {
             editor.set_dialog(RuleDialog::None);
-        }
-    });
-
-    on!(ui, editor.on_set_enabled, doc = document => |ui, enabled| {
-        if let Some(index) = selected(&ui, &doc) {
-            let _ = change_rule(&ui, &doc, index, false, |rule| {
-                rule.enabled = (!enabled).then_some(false);
-            });
         }
     });
 

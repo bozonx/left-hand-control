@@ -277,7 +277,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "rule-missing-trigger"
         );
         rules.invoke_select(1);
-        rules.invoke_set_enabled(false);
+        rules.set_enabled(false);
+        rules.invoke_apply_advanced();
         assert_eq!(
             center.get_items().row_count(),
             0,
