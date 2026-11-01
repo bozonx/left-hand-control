@@ -1273,7 +1273,16 @@ mod tests {
         );
         document.clear_layer_keys(&copy).unwrap();
         assert!(document.layout().layer_keymaps[&copy].keys.is_empty());
+        document
+            .update_layout(|layout| {
+                layout.rules[0].hold_behavior = Some(crate::profile::model::HoldBehavior::Layer);
+            })
+            .unwrap();
         document.delete_layer("nav").unwrap();
+        assert_eq!(
+            document.layout().rules[0].hold_behavior(),
+            crate::profile::model::HoldBehavior::None
+        );
         assert!(document.layout().rules[0].layer_id.is_empty());
         assert!(!document.layout().layer_keymaps.contains_key("nav"));
         let loaded = ConfigDocument::load(document.paths().clone()).unwrap();

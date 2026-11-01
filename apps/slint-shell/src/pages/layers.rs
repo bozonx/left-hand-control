@@ -11,56 +11,55 @@ use crate::{
         SettingsWindow,
     },
 };
-use lhc_core::{
-    config_document::{ConfigDocument, ConfigError, KeyAssignment},
-    profile::actions,
-};
+use lhc_core::config_document::{ConfigDocument, ConfigError, KeyAssignment};
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
 
-/// A command chosen inside a layer-key dialog, pending its Apply button.
-#[derive(Default)]
-pub(super) struct Draft {
-    command: Option<lhc_core::profile::model::Command>,
-    target: Option<(String, i32)>,
+/// Identity of a modal edit. A document change invalidates the draft rather
+/// than letting its row index address a different layer or key.
+#[derive(Clone)]
+pub(super) struct EditTarget {
+    revision: u64,
+    layer_id: String,
 }
 
-pub(super) fn command(
-    ui: &SettingsWindow,
-    state: &RefCell<Draft>,
-    id: &str,
-) -> Option<lhc_core::profile::model::Command> {
-    let editor = ui.global::<LayersEditor>();
-    let state = state.borrow();
-    let target = (
-        editor.get_selected_id().to_string(),
-        editor.get_dialog_index(),
-    );
-    state
-        .command
-        .as_ref()
-        .filter(|command| {
-            editor.get_dialog() == LayerDialog::EditKey
-                && state.target.as_ref() == Some(&target)
-                && command.id == id
-        })
-        .cloned()
+impl EditTarget {
+    fn new(document: &Document, layer_id: String) -> Self {
+        Self {
+            revision: document.revision(),
+            layer_id,
+        }
+    }
+
+    pub(super) fn check(&self, document: &Document, selected_id: &str) -> Result<(), Msg> {
+        if self.revision != document.revision() || self.layer_id != selected_id {
+            return Err(Msg::from(&ConfigError::EditConflict));
+        }
+        Ok(())
+    }
 }
 
-pub(super) fn choose_dialog_action(
-    ui: &SettingsWindow,
-    state: &RefCell<Draft>,
-    action: slint::SharedString,
-    command: Option<lhc_core::profile::model::Command>,
-) {
-    let editor = ui.global::<LayersEditor>();
-    let mut state = state.borrow_mut();
-    state.command = command;
-    state.target = Some((
-        editor.get_selected_id().to_string(),
-        editor.get_dialog_index(),
-    ));
-    editor.set_dialog_action(action);
+pub(super) fn picker_target(ui: &SettingsWindow, document: &Document) -> EditTarget {
+    EditTarget::new(
+        document,
+        ui.global::<LayersEditor>().get_selected_id().to_string(),
+    )
+}
+
+/// Preserve repeater instances and their focus when the row count is unchanged.
+fn update_model<T: Clone + PartialEq + 'static>(model: ModelRc<T>, rows: Vec<T>) -> ModelRc<T> {
+    if let Some(existing) = model.as_any().downcast_ref::<VecModel<T>>()
+        && existing.row_count() == rows.len()
+    {
+        for (index, row) in rows.into_iter().enumerate() {
+            if existing.row_data(index).as_ref() != Some(&row) {
+                existing.set_row_data(index, row);
+            }
+        }
+        model
+    } else {
+        ModelRc::new(VecModel::from(rows))
+    }
 }
 
 /// Index of the selected layer, if it exists.
@@ -93,8 +92,13 @@ fn refresh(ui: &SettingsWindow, document: &Document) {
     let config = document.read();
     let layout = config.layout();
     let editor = ui.global::<LayersEditor>();
-    editor.set_names(super::strings(
-        layout.layers.iter().map(|layer| layer.name.clone()),
+    editor.set_names(update_model(
+        editor.get_names(),
+        layout
+            .layers
+            .iter()
+            .map(|layer| layer.name.clone().into())
+            .collect(),
     ));
     let saved = editor.get_selected_id();
     let index = layout
@@ -119,9 +123,10 @@ fn refresh(ui: &SettingsWindow, document: &Document) {
     let keymap = layer.and_then(|layer| layout.layer_keymaps.get(&layer.id));
     let names = action_names(ui, &config.config());
     let (left, right) = hands(keymap, &names);
-    editor.set_left_cells(ModelRc::new(VecModel::from(left)));
-    editor.set_right_cells(ModelRc::new(VecModel::from(right)));
-    editor.set_extras(ModelRc::new(VecModel::from(
+    editor.set_left_cells(update_model(editor.get_left_cells(), left));
+    editor.set_right_cells(update_model(editor.get_right_cells(), right));
+    editor.set_extras(update_model(
+        editor.get_extras(),
         layer
             .and_then(|layer| layout.layer_keymaps.get(&layer.id))
             .map(|map| {
@@ -141,7 +146,18 @@ fn refresh(ui: &SettingsWindow, document: &Document) {
                     .collect::<Vec<_>>()
             })
             .unwrap_or_default(),
-    )));
+    ));
+    let triggers = layer
+        .map(|layer| layout.layer_triggers(&layer.id))
+        .unwrap_or_default();
+    editor.set_activation(
+        if triggers.is_empty() {
+            Msg::LayerUnused
+        } else {
+            Msg::LayerTriggers(triggers.join(", "))
+        }
+        .to_ui(),
+    );
 }
 
 /// Save `edit`, then refresh and report.
@@ -163,15 +179,16 @@ fn change<T>(
 /// Fill the dialog for `dialog` on key `index`.
 fn open_dialog(ui: &SettingsWindow, document: &Document, dialog: LayerDialog, index: i32) {
     let editor = ui.global::<LayersEditor>();
-    let config = document.read();
-    let layer = selected(ui, &config).map(|i| &config.layout().layers[i]);
+    let layer = {
+        let config = document.read();
+        selected(ui, &config).map(|i| config.layout().layers[i].clone())
+    };
+    let layer = layer.as_ref();
     if layer.is_none() && dialog != LayerDialog::Create {
         return;
     }
     editor.set_status(Msg::None.to_ui());
-    editor.set_dialog_index(index);
     let name = match (dialog, layer) {
-        (LayerDialog::Rename, Some(layer)) => layer.name.clone(),
         (LayerDialog::Duplicate, Some(layer)) => ui
             .global::<Locale>()
             .invoke_text(Msg::CopyName(layer.name.clone()).to_ui())
@@ -181,27 +198,25 @@ fn open_dialog(ui: &SettingsWindow, document: &Document, dialog: LayerDialog, in
     editor.set_dialog_name(name.into());
     editor.set_dialog_description(
         match dialog {
-            LayerDialog::Rename | LayerDialog::Duplicate => {
-                layer.and_then(|layer| layer.description.clone())
-            }
+            LayerDialog::Duplicate => layer.and_then(|layer| layer.description.clone()),
             _ => None,
         }
         .unwrap_or_default()
         .into(),
     );
     editor.set_dialog_key("".into());
-    editor.set_dialog_action("".into());
+    let mut action = String::new();
     editor.set_assignment(Assignment::Transparent);
     if let (LayerDialog::EditKey, Some(layer)) = (dialog, layer) {
         let Some(key) = keyboard::layer_key(index) else {
             return;
         };
-        match config.layer_key(&layer.id, key) {
+        match document.read().layer_key(&layer.id, key) {
             KeyAssignment::Transparent => {}
             KeyAssignment::Swallow => editor.set_assignment(Assignment::Swallow),
-            KeyAssignment::Action(action) => {
+            KeyAssignment::Action(action_value) => {
                 editor.set_assignment(Assignment::Action);
-                editor.set_dialog_action(action.into());
+                action = action_value;
             }
         }
     }
@@ -210,7 +225,7 @@ fn open_dialog(ui: &SettingsWindow, document: &Document, dialog: LayerDialog, in
         ui.global::<ActionPicker>().invoke_open(
             PickerTarget::LayerAction,
             index,
-            editor.get_dialog_action(),
+            action.into(),
             false,
         );
     } else {
@@ -222,66 +237,38 @@ fn open_dialog(ui: &SettingsWindow, document: &Document, dialog: LayerDialog, in
 fn apply_dialog(
     ui: &SettingsWindow,
     document: &Document,
-    command: Option<lhc_core::profile::model::Command>,
+    target: Option<&EditTarget>,
 ) -> Result<(), Msg> {
     let editor = ui.global::<LayersEditor>();
-    let dialog = editor.get_dialog();
-    let index = editor.get_dialog_index();
+    let target = target.ok_or_else(|| Msg::from(&ConfigError::EditConflict))?;
+    target.check(document, &editor.get_selected_id())?;
     let name = editor.get_dialog_name().trim().to_owned();
     let description = editor.get_dialog_description().trim().to_owned();
-    let action = editor.get_dialog_action().to_string();
-    let assignment = editor.get_assignment();
-    if dialog == LayerDialog::EditKey && assignment == Assignment::Action {
-        if action.trim().is_empty() {
-            return Err(Msg::ActionRequired);
-        }
-        let parsed = actions::Action::parse(Some(&action));
-        if matches!(&parsed, actions::Action::Text(text) if text.is_empty()) {
-            return Err(Msg::TextEmpty);
-        }
-        let mut candidate = document.read().config();
-        if let Some(command) = command.as_ref() {
-            super::stage_command(&mut candidate.commands, command.clone());
-        }
-        if let Some(issue) = actions::validate(&parsed, &candidate) {
-            return Err(Msg::InvalidAction(issue));
-        }
-    }
-    if dialog == LayerDialog::Create {
-        change(ui, document, |config| {
-            config.create_layer(&name, &description)
-        })?;
-        let last = document.read().layout().layers.len() as i32 - 1;
-        select_layer(ui, document, last);
-        return Ok(());
-    }
-    let id = selected_id(ui, document).ok_or(Msg::None)?;
-    match dialog {
-        LayerDialog::Rename => change(ui, document, |config| {
-            config.rename_layer(&id, &name, &description)
-        })?,
-        LayerDialog::Duplicate => {
-            change(ui, document, |config| {
-                config.clone_layer(&id, &name, &description)
+    match editor.get_dialog() {
+        LayerDialog::Create | LayerDialog::Duplicate => {
+            let id = change(ui, document, |config| {
+                if editor.get_dialog() == LayerDialog::Create {
+                    config.create_layer(&name, &description)
+                } else {
+                    config.clone_layer(&target.layer_id, &name, &description)
+                }
             })?;
-            let last = document.read().layout().layers.len() as i32 - 1;
-            select_layer(ui, document, last);
+            let index = document
+                .read()
+                .layout()
+                .layers
+                .iter()
+                .position(|layer| layer.id == id);
+            if let Some(index) = index {
+                select_layer(ui, document, index as i32);
+            }
         }
-        LayerDialog::Delete => change(ui, document, |config| config.delete_layer(&id))?,
-        LayerDialog::EditKey => {
-            let key = keyboard::layer_key(index).ok_or(Msg::None)?;
-            let value = match assignment {
-                Assignment::Transparent => KeyAssignment::Transparent,
-                Assignment::Swallow => KeyAssignment::Swallow,
-                Assignment::Action => KeyAssignment::Action(action),
-            };
-            change(ui, document, |config| {
-                config.edit_layout_with_commands(command, |config| {
-                    config.set_layer_key(&id, key, value)
-                })
-            })?
+        LayerDialog::Delete => {
+            change(ui, document, |config| config.delete_layer(&target.layer_id))?
         }
-        LayerDialog::Create | LayerDialog::None => {}
+        LayerDialog::EditKey | LayerDialog::None => {
+            return Err(Msg::from(&ConfigError::EditConflict));
+        }
     }
     Ok(())
 }
@@ -333,8 +320,9 @@ fn extra_at(document: &Document, id: &str, index: i32) -> Option<(String, Option
         .and_then(|map| ordered_extra_entries(map).into_iter().nth(index))
 }
 
-pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Rc<RefCell<Draft>> {
-    let draft = Rc::new(RefCell::new(Draft::default()));
+pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
+    let draft = Rc::new(RefCell::new(None));
+    let remove_target = Rc::new(RefCell::new(None));
     let weak = ui.as_weak();
     let doc = document.clone();
     ui.global::<LayersEditor>().on_reorder(move |from, to| {
@@ -453,19 +441,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Rc<RefCell<D
     });
 
     on!(ui, editor.on_open_dialog, doc = document, draft = draft => |ui, dialog, index| {
-        *draft.borrow_mut() = Draft::default();
+        *draft.borrow_mut() = Some(picker_target(&ui, &doc));
         open_dialog(&ui, &doc, dialog, index);
     });
 
     on!(ui, editor.on_apply_dialog, doc = document, draft = draft => |ui| {
         let editor = ui.global::<LayersEditor>();
-        let pending = match actions::Action::parse(Some(&editor.get_dialog_action())) {
-            actions::Action::Command(id) if editor.get_assignment() == Assignment::Action => command(&ui, &draft, &id),
-            _ => None,
-        };
-        match apply_dialog(&ui, &doc, pending) {
+        match apply_dialog(&ui, &doc, draft.borrow().as_ref()) {
             Ok(()) => {
-                *draft.borrow_mut() = Draft::default();
                 editor.set_dialog(LayerDialog::None);
             },
             Err(error) => editor.set_status(crate::notifications::report(&ui, &error)),
@@ -491,21 +474,26 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Rc<RefCell<D
         }).is_ok()
     });
 
-    on!(ui, editor.on_remove_extra, doc = document => |ui, index| {
-        let Some(id) = selected_id(&ui, &doc) else {
-            return;
-        };
-        if let Some((key, _)) = extra_at(&doc, &id, index) {
-            let _ = change(&ui, &doc, |config| {
-                config.set_layer_key(&id, &key, KeyAssignment::Transparent)
-            });
+    on!(ui, editor.on_request_remove_extra, doc = document, target = remove_target => |ui, index| {
+        let Some(id) = selected_id(&ui, &doc) else { return; };
+        let Some((key, _)) = extra_at(&doc, &id, index) else { return; };
+        *target.borrow_mut() = Some((EditTarget::new(&doc, id), key));
+        ui.global::<LayersEditor>().set_delete_extra(index);
+    });
+    on!(ui, editor.on_remove_extra, doc = document, target = remove_target => |ui, _index| {
+        let result = (|| {
+            let target = target.borrow();
+            let (target, key) = target.as_ref().ok_or_else(|| Msg::from(&ConfigError::EditConflict))?;
+            target.check(&doc, &ui.global::<LayersEditor>().get_selected_id())?;
+            change(&ui, &doc, |config| config.set_layer_key(&target.layer_id, key, KeyAssignment::Transparent))
+        })();
+        match result {
+            Ok(()) => { *target.borrow_mut() = None; true }
+            Err(error) => { ui.global::<LayersEditor>().set_status(crate::notifications::report(&ui, &error)); false }
         }
     });
-    draft
 }
 
-/// Whether the layer key `index` of picker `target` keeps its modifiers
-/// held until the layer is released.
 /// What the picker may assign to a layer key or extra row.
 pub(super) fn picker_request(
     ui: &SettingsWindow,
@@ -514,11 +502,10 @@ pub(super) fn picker_request(
     index: i32,
 ) -> super::picker::PickerRequest {
     let editor = ui.global::<LayersEditor>();
-    // Inside a layer dialog the picker only fills the dialog's draft.
     let direct = matches!(
         target,
         PickerTarget::LayerAction | PickerTarget::ExtraAction
-    ) && editor.get_dialog() == LayerDialog::None;
+    );
     if !direct {
         return super::picker::PickerRequest::default();
     }
@@ -734,5 +721,96 @@ mod tests {
         assert!(entries.contains(&("BracketRight".into(), None)));
         assert!(entries.contains(&("Backslash".into(), None)));
         assert!(entries.contains(&("F4".into(), Some("F4".into()))));
+    }
+
+    #[test]
+    fn modal_target_rejects_selection_changes_and_document_edits() {
+        let (_dir, document) = super::super::test_document();
+        let layer = document
+            .edit(View::Layers, |config| config.create_layer("First", ""))
+            .unwrap()
+            .value;
+        let target = EditTarget::new(&document, layer.clone());
+        assert!(target.check(&document, &layer).is_ok());
+        assert_eq!(
+            target.check(&document, "other").unwrap_err(),
+            Msg::from(&ConfigError::EditConflict)
+        );
+        document
+            .edit(View::Layers, |config| {
+                config.set_extra_key(&layer, None, "F13", KeyAssignment::Swallow)
+            })
+            .unwrap();
+        assert_eq!(
+            target.check(&document, &layer).unwrap_err(),
+            Msg::from(&ConfigError::EditConflict)
+        );
+        let target = EditTarget::new(&document, layer.clone());
+        document
+            .edit(View::Layers, |config| config.delete_layer(&layer))
+            .unwrap();
+        assert!(target.check(&document, &layer).is_err());
+    }
+
+    #[test]
+    fn failed_edit_keeps_the_modal_target_valid_for_retry() {
+        let (_dir, document) = super::super::test_document();
+        let layer = document
+            .edit(View::Layers, |config| config.create_layer("First", ""))
+            .unwrap()
+            .value;
+        let target = EditTarget::new(&document, layer.clone());
+        let before = document.read().layout().clone();
+        assert!(
+            document
+                .edit(View::Layers, |config| {
+                    config.set_layer_key(&layer, "KeyQ", KeyAssignment::Swallow)?;
+                    config.set_layer_key(&layer, "KeyW", KeyAssignment::Action("bad-action".into()))
+                })
+                .is_err()
+        );
+        assert_eq!(*document.read().layout(), before);
+        assert!(target.check(&document, &layer).is_ok());
+    }
+
+    #[test]
+    fn same_size_refresh_reuses_models_and_updates_reordered_rows() {
+        let original = Rc::new(VecModel::from(vec![
+            "First".to_owned(),
+            "Second".to_owned(),
+        ]));
+        let model = update_model(
+            ModelRc::from(original.clone()),
+            vec!["Second".into(), "Renamed".into()],
+        );
+        assert!(std::ptr::eq(
+            model.as_any().downcast_ref::<VecModel<String>>().unwrap(),
+            original.as_ref()
+        ));
+        assert_eq!(original.row_data(0).as_deref(), Some("Second"));
+        assert_eq!(original.row_data(1).as_deref(), Some("Renamed"));
+    }
+
+    #[test]
+    fn extra_order_is_stable_after_renaming_and_removal() {
+        let mut layout = lhc_core::profile::model::LayoutPreset::default();
+        layout.add_layer("extra", "Extra".into(), None);
+        for key in ["F13", "F14", "F15"] {
+            layout.set_extra_key("extra", None, key, KeyAssignment::Swallow);
+        }
+        layout
+            .layer_keymaps
+            .get_mut("extra")
+            .unwrap()
+            .extra_key_order = vec!["F15".into(), "F13".into(), "F14".into()];
+        layout.set_extra_key("extra", Some("F15"), "F16", KeyAssignment::Swallow);
+        layout.set_layer_key("extra", "F13", KeyAssignment::Transparent);
+        assert_eq!(
+            ordered_extra_entries(&layout.layer_keymaps["extra"])
+                .into_iter()
+                .map(|(key, _)| key)
+                .collect::<Vec<_>>(),
+            ["F16", "F14"]
+        );
     }
 }

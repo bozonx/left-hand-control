@@ -3655,3 +3655,15 @@ msgstr "¿Vaciar la página?"
 
 msgid "All cells on the page will be cleared."
 msgstr "Se vaciarán todas las celdas de la página."
+
+msgid "Not activated by any trigger."
+msgstr "Ningún disparador lo activa."
+
+msgid "Activated by: {}"
+msgstr "Activado por: {}"
+
+msgid "Configure triggers"
+msgstr "Configurar disparadores"
+
+msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
+msgstr "Botones del ratón, teclas multimedia y otros disparadores fuera de la cuadrícula principal. Añade un disparador y elige su acción o su supresión. Elimina su fila para heredar la asignación de la capa inferior o de la distribución base."

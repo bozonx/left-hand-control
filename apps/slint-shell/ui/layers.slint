@@ -26,13 +26,12 @@ export global LayersEditor {
     in property <[LayerKeyCell]> right-cells;
     in property <[LayerExtraRow]> extras;
     in property <Message> status;
+    in property <Message> activation;
     in-out property <LayerDialog> dialog: LayerDialog.none;
-    in-out property <int> dialog-index: -1;
     in-out property <Assignment> assignment: Assignment.transparent;
     in-out property <string> dialog-name;
     in-out property <string> dialog-description;
     in-out property <string> dialog-key;
-    in-out property <string> dialog-action;
     in-out property <int> delete-extra: -1;
     callback refresh();
     callback choose(int);
@@ -43,7 +42,8 @@ export global LayersEditor {
     callback reorder-extra(int, int);
     /// Exchange the assignments of layer keys `from` and `to`.
     callback swap-keys(int, int);
-    callback remove-extra(int);
+    callback request-remove-extra(int);
+    callback remove-extra(int) -> bool;
     callback update-description(string) -> bool;
     callback update-name(string) -> bool;
     /// Why `name` cannot be used for a new layer or, when `renaming`, for the selected one.
@@ -142,7 +142,7 @@ component ExtraKeyLine inherits TouchArea {
                     icon: @image-url("icons/trash-2.svg");
                     tooltip: @tr("Remove trigger");
                     accessible-label: @tr("Remove trigger") + ": " + root.item.key;
-                    clicked => { LayersEditor.delete-extra = root.index; }
+                    clicked => { LayersEditor.request-remove-extra(root.index); }
                 }
             }
         }
@@ -204,10 +204,11 @@ component KeyCap inherits Rectangle {
         clicked => { root.clicked(); }
         dropped(from, to) => { root.dropped(from, to); }
     }
-    if root.cell.kind == Assignment.action: Tooltip {
+    Tooltip {
         TooltipSurface {
             VerticalLayout { spacing: Theme.space-s;
-                HorizontalLayout { spacing: Theme.space-s; CategoryIcon { category: root.cell.category; } Text { text: root.cell.action; color: Theme.text; } }
+                Text { text: root.cell.code; color: Theme.text; }
+                if root.cell.kind != Assignment.transparent: HorizontalLayout { spacing: Theme.space-s; CategoryIcon { category: root.cell.category; } Text { text: root.cell.kind == Assignment.swallow ? @tr("Suppress") : root.cell.action; color: Theme.text; } }
                 if root.cell.holds: HorizontalLayout { spacing: Theme.space-s; VerticalLayout { alignment: center; HoldsMarker { } } Text { text: @tr("Keep modifiers held until the layer is released"); color: Theme.muted; } }
             }
         }
@@ -269,6 +270,7 @@ component HandGrid inherits VerticalLayout {
 }
 
 export component LayersPage inherits PageLayout {
+    callback configure-triggers();
     accessible-label: @tr("Layers");
     in-out property <LabelMode> label-mode <=> LayersEditor.label-mode;
     HorizontalLayout {
@@ -330,9 +332,9 @@ export component LayersPage inherits PageLayout {
                         Text { horizontal-stretch: 0; text: @tr("Layer") + ":"; color: Theme.text; font-size: Theme.font-medium; vertical-alignment: center; }
                         VerticalLayout {
                             alignment: center;
-                            InlineTextField {
+                            if LayersEditor.selected >= 0: InlineTextField {
                                 horizontal-stretch: 1; min-width: 0px;
-                                text: LayersEditor.selected >= 0 ? LayersEditor.names[LayersEditor.selected] : @tr("No layers yet");
+                                text: LayersEditor.names[LayersEditor.selected];
                                 label: @tr("Name"); text-size: Theme.font-medium; text-weight: Theme.weight-semibold;
                                 validate(value) => { return LayersEditor.name-error(value, true); }
                                 saved(value) => { return LayersEditor.update-name(value); }
@@ -360,6 +362,11 @@ export component LayersPage inherits PageLayout {
                         text: LayersEditor.description; placeholder: @tr("Add description"); label: @tr("Layer description");
                         text-color: Theme.muted;
                         saved(value) => { return LayersEditor.update-description(value); }
+                    }
+                    if LayersEditor.selected >= 0: HorizontalLayout {
+                        spacing: Theme.space-m;
+                        Text { horizontal-stretch: 1; min-width: 0px; text: Locale.text(LayersEditor.activation); color: Theme.muted; wrap: word-wrap; vertical-alignment: center; }
+                        Button { text: @tr("Configure triggers"); horizontal-stretch: 0; clicked => { root.configure-triggers(); } }
                     }
 
                 }
@@ -443,7 +450,7 @@ export component LayersPage inherits PageLayout {
                             spacing: Theme.space-2xs;
                             HorizontalLayout { spacing: Theme.space-m; alignment: start;
                                 CardTitle { text: @tr("Extra keys"); }
-                                InfoTip { text: @tr("Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger, then choose its action, suppress it, or inherit its assignment from the lower layer."); }
+                                InfoTip { text: @tr("Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."); }
                             }
                         }
                         VerticalLayout {
@@ -485,10 +492,8 @@ export component LayerDialogOverlay inherits FocusScope {
     focus-on-tab-navigation: false;
     enabled: (LayersEditor.dialog != LayerDialog.none || LayersEditor.delete-extra >= 0) && !ActionPicker.opened;
     key-pressed(event) => { if event.text == Key.Escape { LayersEditor.dialog = LayerDialog.none; LayersEditor.delete-extra = -1; return accept; } return reject; }
-    if LayersEditor.dialog != LayerDialog.none && LayersEditor.dialog != LayerDialog.delete: DialogFrame {
-        title: LayersEditor.dialog == LayerDialog.create ? @tr("New layer")
-            : LayersEditor.dialog == LayerDialog.duplicate ? @tr("Duplicate layer")
-            : @tr("Edit layer key");
+    if LayersEditor.dialog == LayerDialog.create || LayersEditor.dialog == LayerDialog.duplicate: DialogFrame {
+        title: LayersEditor.dialog == LayerDialog.create ? @tr("New layer") : @tr("Duplicate layer");
         card-height: 500px;
         close => { LayersEditor.dialog = LayerDialog.none; }
         // The form scrolls in a short window; the buttons stay visible.
@@ -505,32 +510,13 @@ export component LayerDialogOverlay inherits FocusScope {
                     Text { text: @tr("Description"); color: Theme.text; }
                     TextEdit { text <=> LayersEditor.dialog-description; accessible-label: @tr("Layer description"); height: 100px; }
                 }
-                if LayersEditor.dialog == LayerDialog.edit-key: VerticalLayout { padding: Theme.space-m; spacing: Theme.space-m;
-                    Text { text: @tr("Behavior"); color: Theme.muted; }
-                    HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m;
-                        Button { text: @tr("Inherit"); primary: LayersEditor.assignment == Assignment.transparent; clicked => { LayersEditor.assignment = Assignment.transparent; } }
-                        Button { text: @tr("Suppress"); primary: LayersEditor.assignment == Assignment.swallow; clicked => { LayersEditor.assignment = Assignment.swallow; } }
-                        Button { text: @tr("Perform action"); primary: LayersEditor.assignment == Assignment.action; clicked => { LayersEditor.assignment = Assignment.action; } }
-                    }
-                    if LayersEditor.assignment != Assignment.action: Text {
-                        text: LayersEditor.assignment == Assignment.swallow ? @tr("The key will not reach the application.") : @tr("Use the assignment from the lower layer or base layout."); color: Theme.muted; wrap: word-wrap;
-                    }
-                    if LayersEditor.assignment == Assignment.action: VerticalLayout {
-                        padding: 0px; spacing: Theme.space-xs; vertical-stretch: 0;
-                        Text { text: @tr("Action"); color: Theme.text; }
-                        HorizontalLayout { padding: Theme.space-m; vertical-stretch: 0; spacing: Theme.space-m;
-                            TextField { text <=> LayersEditor.dialog-action; placeholder-text: @tr("Action code"); accessible-label: @tr("Action code"); horizontal-stretch: 1; }
-                            Button { text: @tr("Choose action"); clicked => { ActionPicker.open(PickerTarget.layer-action, 0, LayersEditor.dialog-action, false); } }
-                        }
-                    }
-                }
                 Text { accessible-live-region: polite; text: Locale.text(LayersEditor.status); color: Theme.error; wrap: word-wrap; }
             }
         }
         HorizontalLayout { padding: Theme.space-m; vertical-stretch: 0; spacing: Theme.space-m;
             Rectangle { horizontal-stretch: 1; }
             Button { text: @tr("Cancel"); clicked => { LayersEditor.dialog = LayerDialog.none; } }
-            Button { text: @tr("Apply"); primary: true; enabled: ((LayersEditor.dialog != LayerDialog.create && LayersEditor.dialog != LayerDialog.duplicate) || LayersEditor.name-error(LayersEditor.dialog-name, false).id == "") && (LayersEditor.dialog != LayerDialog.edit-key || LayersEditor.assignment != Assignment.action || LayersEditor.dialog-action != ""); clicked => { LayersEditor.apply-dialog(); } }
+            Button { text: @tr("Apply"); primary: true; enabled: LayersEditor.name-error(LayersEditor.dialog-name, false).id == ""; clicked => { LayersEditor.apply-dialog(); } }
         }
     }
     if LayersEditor.dialog == LayerDialog.delete: ConfirmDialog {
@@ -540,7 +526,7 @@ export component LayerDialogOverlay inherits FocusScope {
 
     if LayersEditor.delete-extra >= 0: ConfirmDialog {
         title: @tr("Delete extra key?"); body: @tr("This key assignment will be removed from the layer."); confirm-text: @tr("Delete");
-        confirm => { LayersEditor.remove-extra(LayersEditor.delete-extra); LayersEditor.delete-extra = -1; }
+        confirm => { if LayersEditor.remove-extra(LayersEditor.delete-extra) { LayersEditor.delete-extra = -1; } }
         cancel => { LayersEditor.delete-extra = -1; }
     }
 

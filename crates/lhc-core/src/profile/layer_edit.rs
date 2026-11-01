@@ -3,7 +3,7 @@
 //! These operations change the layout only; validation of action strings
 //! and saving belong to [`crate::config_document::ConfigDocument`].
 
-use super::model::{KeyRule, Layer, LayoutPreset};
+use super::model::{HoldBehavior, KeyRule, Layer, LayoutPreset};
 
 /// What a key does inside a layer keymap.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -110,9 +110,27 @@ impl LayoutPreset {
         self.layer_keymaps.remove(id);
         for rule in &mut self.rules {
             if rule.layer_id == id {
+                if rule.hold_behavior() == HoldBehavior::Layer {
+                    rule.hold_behavior = Some(HoldBehavior::None);
+                }
                 rule.layer_id.clear();
             }
         }
+    }
+
+    /// Enabled triggers that activate this layer when held, in rule order.
+    pub fn layer_triggers(&self, id: &str) -> Vec<String> {
+        let mut keys = Vec::new();
+        for rule in &self.rules {
+            if rule.is_enabled()
+                && rule.layer_id == id
+                && rule.hold_behavior() == HoldBehavior::Layer
+                && !keys.contains(&rule.key)
+            {
+                keys.push(rule.key.clone());
+            }
+        }
+        keys
     }
 
     pub fn clear_layer_keys(&mut self, id: &str) {
@@ -219,5 +237,31 @@ impl LayoutPreset {
         if held_b {
             map.hold_modifiers.insert(a.into());
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn activating_triggers_exclude_disabled_and_other_hold_modes_and_deduplicate() {
+        let mut layout = LayoutPreset::default();
+        for (key, layer, enabled, mode) in [
+            ("CapsLock", "nav", true, HoldBehavior::Layer),
+            ("CapsLock", "nav", true, HoldBehavior::Layer),
+            ("KeyQ", "nav", false, HoldBehavior::Layer),
+            ("KeyW", "other", true, HoldBehavior::Layer),
+            ("KeyE", "nav", true, HoldBehavior::None),
+            ("ShiftLeft+KeyA", "nav", true, HoldBehavior::Layer),
+        ] {
+            let mut rule = KeyRule::new(format!("rule-{}", layout.rules.len()), key);
+            rule.layer_id = layer.into();
+            rule.enabled = Some(enabled);
+            rule.hold_behavior = Some(mode);
+            layout.rules.push(rule);
+        }
+        assert_eq!(layout.layer_triggers("nav"), ["CapsLock", "ShiftLeft+KeyA"]);
+        assert!(layout.layer_triggers("missing").is_empty());
     }
 }

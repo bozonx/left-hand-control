@@ -557,7 +557,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         None
     );
     assert_eq!(layers.get_extras().row_data(0).unwrap().key, "F17");
-    layers.invoke_remove_extra(0);
+    layers.invoke_request_remove_extra(0);
+    assert!(layers.invoke_remove_extra(0));
+    layers.set_delete_extra(-1);
     layers.invoke_open_dialog(LayerDialog::EditKey, 0);
     let picker = ui.global::<ActionPicker>();
     assert!(picker.get_opened());

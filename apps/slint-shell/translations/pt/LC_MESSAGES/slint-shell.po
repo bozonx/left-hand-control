@@ -3664,3 +3664,15 @@ msgstr "Limpar a página?"
 
 msgid "All cells on the page will be cleared."
 msgstr "Todas as células da página serão limpas."
+
+msgid "Not activated by any trigger."
+msgstr "Nenhum acionador o ativa."
+
+msgid "Activated by: {}"
+msgstr "Ativado por: {}"
+
+msgid "Configure triggers"
+msgstr "Configurar acionadores"
+
+msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
+msgstr "Botões do mouse, teclas de mídia e outros acionadores fora da grade principal. Adicione um acionador e escolha sua ação ou supressão. Exclua a linha para herdar a atribuição da camada inferior ou do layout base."

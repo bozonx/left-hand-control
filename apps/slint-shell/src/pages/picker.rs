@@ -38,19 +38,17 @@ struct Session {
     target: Option<(PickerTarget, i32)>,
     catalog: Vec<PickerItem>,
     command: Option<lhc_core::profile::model::Command>,
+    layer_target: Option<super::layers::EditTarget>,
 }
 
 pub(super) struct Drafts {
-    pub layers: Rc<RefCell<super::layers::Draft>>,
     pub macros: Rc<RefCell<super::macros::State>>,
     pub menus: Rc<RefCell<super::menus::State>>,
 }
 
 impl Drafts {
-    fn command(&self, ui: &SettingsWindow, id: &str) -> Option<lhc_core::profile::model::Command> {
-        super::macros::command(&self.macros, id)
-            .or_else(|| super::menus::command(&self.menus, id))
-            .or_else(|| super::layers::command(ui, &self.layers, id))
+    fn command(&self, id: &str) -> Option<lhc_core::profile::model::Command> {
+        super::macros::command(&self.macros, id).or_else(|| super::menus::command(&self.menus, id))
     }
 }
 
@@ -119,6 +117,7 @@ pub(super) fn bind(
         {
             let mut state = state.borrow_mut();
             state.target = None;
+            state.layer_target = None;
             state.identity = std::sync::Arc::new(());
         }
         if let Some(ui) = weak.upgrade() {

@@ -94,19 +94,10 @@ pub fn bind_document_with_input(
     keys::bind(ui, document);
     library::bind(ui, document);
     rules::bind(ui, document);
-    let layers = layers::bind(ui, document);
+    layers::bind(ui, document);
     let macros = macros::bind(ui, document);
     let menus = menus::bind(ui, document);
-    picker::bind(
-        ui,
-        document,
-        input,
-        picker::Drafts {
-            layers,
-            macros,
-            menus,
-        },
-    );
+    picker::bind(ui, document, input, picker::Drafts { macros, menus });
     settings::bind(ui, document);
     let library = ui.global::<crate::ui::LayoutLibrary>();
     on!(ui, library.on_discard_drafts => |ui| {

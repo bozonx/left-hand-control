@@ -67,7 +67,7 @@ pub(super) fn bind(
             _ => lhc_core::profile::ids::generate("cmd-"),
         };
         // Keep the script of the other operating systems.
-        let mut command = drafts.command(&ui, &id).or_else(|| doc
+        let mut command = drafts.command(&id).or_else(|| doc
             .read()
             .layout()
             .commands

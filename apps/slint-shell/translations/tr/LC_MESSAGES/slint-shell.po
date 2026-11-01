@@ -3651,3 +3651,15 @@ msgstr "Sayfa temizlensin mi?"
 
 msgid "All cells on the page will be cleared."
 msgstr "Sayfadaki tüm hücreler temizlenecek."
+
+msgid "Not activated by any trigger."
+msgstr "Hiçbir tetikleyici tarafından etkinleştirilmiyor."
+
+msgid "Activated by: {}"
+msgstr "Etkinleştiren: {}"
+
+msgid "Configure triggers"
+msgstr "Tetikleyicileri yapılandır"
+
+msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
+msgstr "Ana klavye ızgarasının dışındaki fare düğmeleri, medya tuşları ve diğer tetikleyiciler. Bir tetikleyici ekleyip eylemini veya bastırmayı seçin. Alt katmandaki veya temel düzendeki atamayı devralmak için satırını silin."

@@ -3329,3 +3329,15 @@ msgstr "清空页面？"
 
 msgid "All cells on the page will be cleared."
 msgstr "页面上的所有单元格都将被清空。"
+
+msgid "Not activated by any trigger."
+msgstr "没有触发器激活此层。"
+
+msgid "Activated by: {}"
+msgstr "激活此层的触发器：{}"
+
+msgid "Configure triggers"
+msgstr "配置触发器"
+
+msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
+msgstr "主键盘网格之外的鼠标按钮、媒体键及其他触发器。添加触发器并选择动作或屏蔽。删除该行可继承下层或基本布局的分配。"

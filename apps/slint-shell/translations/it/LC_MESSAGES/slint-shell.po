@@ -3726,3 +3726,15 @@ msgstr "Svuotare la pagina?"
 
 msgid "All cells on the page will be cleared."
 msgstr "Tutte le celle della pagina verranno svuotate."
+
+msgid "Not activated by any trigger."
+msgstr "Nessun trigger lo attiva."
+
+msgid "Activated by: {}"
+msgstr "Attivato da: {}"
+
+msgid "Configure triggers"
+msgstr "Configura trigger"
+
+msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
+msgstr "Pulsanti del mouse, tasti multimediali e altri trigger fuori dalla griglia principale. Aggiungi un trigger e scegli la sua azione o la soppressione. Elimina la riga per ereditare l’assegnazione dal livello inferiore o dal layout di base."

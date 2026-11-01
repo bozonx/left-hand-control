@@ -3400,3 +3400,15 @@ msgstr "페이지를 비울까요?"
 
 msgid "All cells on the page will be cleared."
 msgstr "페이지의 모든 셀이 비워집니다."
+
+msgid "Not activated by any trigger."
+msgstr "이 레이어를 활성화하는 트리거가 없습니다."
+
+msgid "Activated by: {}"
+msgstr "활성화 트리거: {}"
+
+msgid "Configure triggers"
+msgstr "트리거 설정"
+
+msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
+msgstr "기본 키보드 격자 밖의 마우스 버튼, 미디어 키 및 기타 트리거입니다. 트리거를 추가하고 동작 또는 억제를 선택하세요. 아래 레이어나 기본 레이아웃의 할당을 상속하려면 해당 행을 삭제하세요."

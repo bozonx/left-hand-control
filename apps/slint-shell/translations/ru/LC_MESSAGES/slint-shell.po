@@ -3015,3 +3015,15 @@ msgstr "Очистить страницу?"
 
 msgid "All cells on the page will be cleared."
 msgstr "Все ячейки страницы будут очищены."
+
+msgid "Not activated by any trigger."
+msgstr "Не активируется ни одним триггером."
+
+msgid "Activated by: {}"
+msgstr "Активируется: {}"
+
+msgid "Configure triggers"
+msgstr "Настроить триггеры"
+
+msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
+msgstr "Кнопки мыши, мультимедийные клавиши и другие триггеры вне основной сетки клавиатуры. Добавьте триггер и назначьте действие или подавление. Чтобы наследовать назначение из нижнего слоя или базовой раскладки, удалите строку."

@@ -9,7 +9,11 @@ use slint_shell::{
     document::View,
     ui::{DragDrop, LayerDialog, LayersEditor, MenuKind, Page, SettingsWindow},
 };
-use std::{cell::Cell, rc::Rc, time::Duration};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+    time::Duration,
+};
 use support::snapshot;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -37,6 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let weak = ui.as_weak();
     let step = Rc::new(Cell::new(0u32));
+    let focused_key = RefCell::new(None);
     let timer = slint::Timer::default();
     timer.start(slint::TimerMode::Repeated, Duration::from_millis(100), move || {
         let ui = weak.unwrap();
@@ -50,7 +55,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let release = |at: LogicalPosition| {
             window.dispatch_event(WindowEvent::PointerReleased { position: at, button: PointerEventButton::Left });
         };
-        let (q, j) = (cell_center(true, 1, 1), cell_center(false, 2, 1));
+        let (q, j) = (cell_center(&ui, true, 1, 1), cell_center(&ui, false, 2, 1));
         match step.get() {
             0..=4 => {}
             5 => {
@@ -80,7 +85,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             7 => {
                 // Onto an unassigned key: the action moves, the source becomes transparent.
-                let empty = cell_center(false, 2, 2);
+                let empty = cell_center(&ui, false, 2, 2);
                 press(j);
                 window.dispatch_event(WindowEvent::PointerMoved { position: empty });
                 release(empty);
@@ -100,11 +105,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             8 => {
                 // A plain click still opens the action picker.
-                let k = cell_center(false, 2, 2);
+                let k = cell_center(&ui, false, 2, 2);
                 press(k);
                 release(k);
                 assert!(ui.global::<slint_shell::ui::ActionPicker>().get_opened());
-                println!("Layer keys passed: held-modifier marks, drag swaps assignments across hands, drop on empty key, cancel, click");
+                ui.global::<slint_shell::ui::ActionPicker>().invoke_dismiss_picker();
+            }
+            9 => {
+                use i_slint_core::{accessibility::{nearest_accessible_item, AccessibleStringProperty}, window::WindowInner};
+                let inner = WindowInner::from_pub(window);
+                for _ in 0..300 {
+                    let focus = inner.focus_item.borrow().upgrade();
+                    if focus.as_ref().is_some_and(|item| nearest_accessible_item(item.clone()).accessible_string_property(AccessibleStringProperty::Value).as_deref() == Some("KeyK")) {
+                        *focused_key.borrow_mut() = focus.map(|item| item.downgrade());
+                        break;
+                    }
+                    send_key(&ui, slint::platform::Key::Tab);
+                }
+                assert!(focused_key.borrow().is_some(), "Tab reaches a layer key");
+                send_key(&ui, slint::platform::Key::Return);
+                let picker = ui.global::<slint_shell::ui::ActionPicker>();
+                assert!(picker.get_opened());
+                picker.invoke_select_behavior(slint_shell::ui::PickerBehavior::Action);
+                picker.set_value("ArrowDown".into());
+                picker.invoke_apply();
+                assert!(!picker.get_opened());
+            }
+            10 => {
+                let inner = i_slint_core::window::WindowInner::from_pub(window);
+                let expected = focused_key.borrow().as_ref().unwrap().upgrade().expect("key repeater survives assignment");
+                assert_eq!(inner.focus_item.borrow().upgrade(), Some(expected.clone()), "picker restores its keyboard initiator");
+                document.refresh_all();
+                let _ = window.take_snapshot().unwrap();
+                assert_eq!(inner.focus_item.borrow().upgrade(), Some(expected), "refresh keeps key focus");
+                assert_eq!(key("KeyK"), KeyAssignment::Action("ArrowDown".into()));
+                println!("Layer keys passed: held-modifier marks, drag swaps, cancel, click, keyboard assignment and focus restoration");
                 slint::quit_event_loop().unwrap();
             }
             _ => {}
@@ -115,16 +150,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// Window position of grid cell (`row`, `col`) of one hand at the 1120×760 window size.
-fn cell_center(left: bool, row: usize, col: usize) -> LogicalPosition {
-    let (x, y, cell) = (if left { LEFT_X } else { RIGHT_X }, TOP_Y, CELL);
-    LogicalPosition::new(
-        x + col as f32 * (cell + 6.0) + cell / 2.0,
-        y + row as f32 * 52.0 + 23.0,
+/// Resolve the actual key position so toolbar height, fonts and scale may change.
+fn cell_center(ui: &SettingsWindow, left: bool, row: usize, col: usize) -> LogicalPosition {
+    let editor = ui.global::<LayersEditor>();
+    let cells = if left {
+        editor.get_left_cells()
+    } else {
+        editor.get_right_cells()
+    };
+    let cell = cells.row_data(row * 6 + col).unwrap();
+    support::accessible_position(
+        ui,
+        i_slint_core::items::AccessibleRole::Button,
+        &format!("{} ({})", cell.label, cell.code),
+        false,
     )
 }
 
-const LEFT_X: f32 = 40.0;
-const RIGHT_X: f32 = 564.0;
-const TOP_Y: f32 = 452.0;
-const CELL: f32 = 78.0;
+fn send_key(ui: &SettingsWindow, key: slint::platform::Key) {
+    let text: slint::SharedString = key.into();
+    ui.window()
+        .dispatch_event(WindowEvent::KeyPressed { text: text.clone() });
+    ui.window()
+        .dispatch_event(WindowEvent::KeyReleased { text });
+}

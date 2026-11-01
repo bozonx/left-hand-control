@@ -3730,3 +3730,15 @@ msgstr "Seite leeren?"
 
 msgid "All cells on the page will be cleared."
 msgstr "Alle Zellen der Seite werden geleert."
+
+msgid "Not activated by any trigger."
+msgstr "Wird von keinem Auslöser aktiviert."
+
+msgid "Activated by: {}"
+msgstr "Aktiviert durch: {}"
+
+msgid "Configure triggers"
+msgstr "Auslöser konfigurieren"
+
+msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
+msgstr "Maustasten, Medientasten und andere Auslöser außerhalb des Hauptrasters. Fügen Sie einen Auslöser hinzu und weisen Sie eine Aktion oder Unterdrückung zu. Löschen Sie die Zeile, um die Belegung der unteren Ebene oder des Basislayouts zu erben."

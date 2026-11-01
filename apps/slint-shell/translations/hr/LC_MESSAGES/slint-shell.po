@@ -3642,3 +3642,15 @@ msgstr "Isprazniti stranicu?"
 
 msgid "All cells on the page will be cleared."
 msgstr "Sve ćelije na stranici bit će ispražnjene."
+
+msgid "Not activated by any trigger."
+msgstr "Ne aktivira ga nijedan okidač."
+
+msgid "Activated by: {}"
+msgstr "Aktivira: {}"
+
+msgid "Configure triggers"
+msgstr "Postavi okidače"
+
+msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
+msgstr "Gumbi miša, medijske tipke i drugi okidači izvan glavne mreže. Dodajte okidač i odaberite radnju ili potiskivanje. Izbrišite redak kako biste naslijedili dodjelu iz nižeg sloja ili osnovnog rasporeda."

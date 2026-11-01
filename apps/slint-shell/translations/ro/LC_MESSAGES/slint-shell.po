@@ -3692,3 +3692,15 @@ msgstr "Goliți pagina?"
 
 msgid "All cells on the page will be cleared."
 msgstr "Toate celulele paginii vor fi golite."
+
+msgid "Not activated by any trigger."
+msgstr "Nu este activat de niciun declanșator."
+
+msgid "Activated by: {}"
+msgstr "Activat de: {}"
+
+msgid "Configure triggers"
+msgstr "Configurează declanșatoarele"
+
+msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
+msgstr "Butoane de mouse, taste media și alte declanșatoare din afara grilei principale. Adaugă un declanșator și alege acțiunea sau suprimarea lui. Șterge rândul pentru a moșteni atribuirea din stratul inferior sau din aranjamentul de bază."

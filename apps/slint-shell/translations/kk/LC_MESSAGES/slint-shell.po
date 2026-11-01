@@ -3659,3 +3659,15 @@ msgstr "Бетті тазалау керек пе?"
 
 msgid "All cells on the page will be cleared."
 msgstr "Беттегі барлық ұяшықтар тазаланады."
+
+msgid "Not activated by any trigger."
+msgstr "Ешбір триггер белсендірмейді."
+
+msgid "Activated by: {}"
+msgstr "Белсендіретін: {}"
+
+msgid "Configure triggers"
+msgstr "Триггерлерді баптау"
+
+msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
+msgstr "Негізгі пернетақта торынан тыс тінтуір түймелері, медиа пернелер және басқа триггерлер. Триггер қосып, әрекетті не басуды таңдаңыз. Төменгі қабаттың немесе негізгі жайманың тағайындауын мұралау үшін оның жолын жойыңыз."

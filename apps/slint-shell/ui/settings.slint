@@ -260,7 +260,7 @@ export component SettingsWindow inherits Window {
                 if root.page == Page.layouts: LibraryPage {}
                 if root.page == Page.settings: SettingsPage {}
                 if root.page == Page.rules: RulesPage {}
-                if root.page == Page.layers || root.page == Page.keyboard: LayersPage {}
+                if root.page == Page.layers || root.page == Page.keyboard: LayersPage { configure-triggers => { root.navigate(Page.rules, MenuKind.emoji); } }
                 if AppState.in-development && root.page == Page.macros: MacrosPage {}
                 if AppState.in-development && root.page == Page.menus: MenusPage {}
             }

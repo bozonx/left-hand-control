@@ -6,7 +6,7 @@
 #[path = "../examples/support/mod.rs"]
 mod support;
 
-use lhc_core::storage::StoragePaths;
+use lhc_core::{config_document::KeyAssignment, storage::StoragePaths};
 use slint::{
     ComponentHandle, Model, ModelRc, VecModel,
     platform::{Platform, WindowAdapter, software_renderer::MinimalSoftwareWindow},
@@ -33,6 +33,7 @@ fn page_callbacks_without_a_desktop() {
     conditions_dialog().unwrap();
     check_atomic_commands().unwrap();
     action_picker().unwrap();
+    layer_editor_regressions().unwrap();
 }
 
 /// Key editor, translations of every bundled language and picker assignment.
@@ -507,13 +508,21 @@ fn action_picker() -> Result<(), Box<dyn std::error::Error>> {
         quick_action(document.read().layout(), 0, "KeyW"),
         "text:Привет\nмир"
     );
+    document.edit(slint_shell::document::View::Layers, |config| {
+        config.create_layer("Layer", "")
+    })?;
     let layers = ui.global::<LayersEditor>();
-    layers.set_dialog(LayerDialog::EditKey);
-    picker.invoke_open(PickerTarget::LayerAction, 0, "".into(), false);
+    layers.invoke_choose(0);
+    layers.invoke_open_dialog(LayerDialog::EditKey, 0);
     picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("Ctrl+KeyC".into());
     picker.invoke_apply();
-    assert_eq!(layers.get_dialog_action(), "Ctrl+KeyC");
+    assert_eq!(
+        document
+            .read()
+            .layer_key(&layers.get_selected_id(), "Backquote"),
+        KeyAssignment::Action("Ctrl+KeyC".into())
+    );
     layers.set_dialog(LayerDialog::None);
     ui.global::<KeyEditor>().invoke_edit(33);
     picker.invoke_select_behavior(PickerBehavior::Action);
@@ -636,33 +645,180 @@ fn check_atomic_commands() -> Result<(), Box<dyn std::error::Error>> {
     settings.set_hold_timeout(settings.get_default_hold_timeout());
     assert!(ui.invoke_flush_drafts());
 
-    // The layer-key dialog keeps its command until its own Apply button.
-    document.edit(slint_shell::document::View::Shell, |config| {
+    // Layer commands are committed atomically with the picker assignment.
+    document.edit(slint_shell::document::View::Layers, |config| {
         config.create_layer("Layer", "")
     })?;
     let layers = ui.global::<LayersEditor>();
     layers.invoke_choose(0);
-    layers.set_dialog_index(0);
-    layers.set_assignment(Assignment::Action);
-    layers.set_dialog(LayerDialog::EditKey);
-    picker.invoke_open(PickerTarget::LayerAction, 0, "".into(), false);
-    edit_command("echo layer-draft");
+    layers.invoke_open_dialog(LayerDialog::EditKey, 0);
+    edit_command("echo cancelled-layer-command");
+    picker.invoke_dismiss_picker();
+    assert_eq!(document.read().layout().commands.len(), 2);
+    assert_eq!(
+        document
+            .read()
+            .layer_key(&layers.get_selected_id(), "Backquote"),
+        KeyAssignment::Transparent
+    );
+    layers.invoke_open_dialog(LayerDialog::EditKey, 0);
+    edit_command("echo layer-command");
     let action = picker.get_value();
     picker.invoke_apply();
-    assert_eq!(document.read().layout().commands.len(), 2);
-    assert_eq!(layers.get_dialog_action(), action);
-    picker.invoke_open(PickerTarget::LayerAction, 0, action.clone(), false);
-    assert_eq!(picker.get_command_script(), "echo layer-draft");
-    picker.invoke_dismiss_picker();
-    layers.invoke_apply_dialog();
+    assert!(!picker.get_opened());
     assert_eq!(layers.get_dialog(), LayerDialog::None);
     assert_eq!(document.read().layout().commands.len(), 3);
     assert_eq!(
-        document.read().layer_key(
-            &layers.get_selected_id(),
-            slint_shell::keyboard::layer_key(0).unwrap()
-        ),
-        lhc_core::config_document::KeyAssignment::Action(action.to_string())
+        document
+            .read()
+            .layer_key(&layers.get_selected_id(), "Backquote"),
+        KeyAssignment::Action(action.to_string())
+    );
+    layers.invoke_open_dialog(LayerDialog::EditKey, 0);
+    picker.invoke_edit_command();
+    assert_eq!(picker.get_command_script(), "echo layer-command");
+    picker.invoke_dismiss_picker();
+    // A stale target must not leave an orphan command in the layout.
+    layers.invoke_open_dialog(LayerDialog::EditKey, 1);
+    edit_command("echo stale-command");
+    document.edit(slint_shell::document::View::Layers, |config| {
+        config.rename_layer(&layers.get_selected_id(), "Renamed", "")
+    })?;
+    picker.invoke_apply();
+    assert!(picker.get_opened());
+    assert_eq!(picker.get_error().id, "config-edit-conflict");
+    assert_eq!(document.read().layout().commands.len(), 3);
+    picker.invoke_dismiss_picker();
+    Ok(())
+}
+
+fn layer_editor_regressions() -> Result<(), Box<dyn std::error::Error>> {
+    use slint_shell::document::View;
+    let fixture = support::Fixture::new()?;
+    let (ui, document) = (&fixture.ui, &fixture.document);
+    let (first, second) = document
+        .edit(View::Layers, |config| {
+            let first = config.create_layer("First", "")?;
+            let second = config.create_layer("Second", "")?;
+            config.set_extra_key(&first, None, "F13", KeyAssignment::Action("Alt+Tab".into()))?;
+            config.set_layer_key_holds_modifiers(&first, "F13", true)?;
+            config.set_extra_key(&first, None, "F14", KeyAssignment::Swallow)?;
+            Ok((first, second))
+        })?
+        .value;
+    let layers = ui.global::<LayersEditor>();
+    let picker = ui.global::<ActionPicker>();
+    layers.invoke_choose(0);
+    assert_eq!(layers.get_activation().id, "layer-unused");
+    document.edit(View::Rules, |config| {
+        config.update_layout(|layout| {
+            let mut rule = lhc_core::profile::model::KeyRule::new("activate".into(), "CapsLock");
+            rule.layer_id = first.clone();
+            rule.hold_behavior = Some(lhc_core::profile::model::HoldBehavior::Layer);
+            layout.rules.push(rule);
+        })
+    })?;
+    assert_eq!(layers.get_activation().id, "layer-triggers");
+    assert_eq!(layers.get_activation().arg, "CapsLock");
+
+    // A selection change cannot redirect an already-open key editor.
+    layers.invoke_open_dialog(LayerDialog::EditKey, 0);
+    picker.invoke_select_behavior(PickerBehavior::Action);
+    picker.set_value("KeyZ".into());
+    layers.invoke_choose(1);
+    picker.invoke_apply();
+    assert!(picker.get_opened());
+    assert_eq!(picker.get_error().id, "config-edit-conflict");
+    assert_eq!(
+        document.read().layer_key(&second, "Backquote"),
+        KeyAssignment::Transparent
+    );
+    picker.invoke_dismiss_picker();
+    layers.invoke_choose(0);
+
+    // Reordering extras invalidates the old row index before any mutation.
+    layers.invoke_pick_extra(0, false);
+    picker.invoke_select_behavior(PickerBehavior::Swallow);
+    layers.invoke_reorder_extra(0, 1);
+    picker.invoke_apply();
+    assert_eq!(picker.get_error().id, "config-edit-conflict");
+    assert!(document.read().layer_key_holds_modifiers(&first, "F13"));
+    assert_eq!(
+        document.read().layer_key(&first, "F13"),
+        KeyAssignment::Action("Alt+Tab".into())
+    );
+    picker.invoke_dismiss_picker();
+
+    // Deletion confirmations also bind their target, and remain open on failure.
+    layers.invoke_request_remove_extra(0);
+    layers.invoke_reorder_extra(0, 1);
+    assert!(!layers.invoke_remove_extra(0));
+    assert!(layers.get_delete_extra() >= 0);
+    assert_eq!(document.read().layout().layer_keymaps[&first].keys.len(), 2);
+    layers.set_delete_extra(-1);
+    layers.invoke_open_dialog(LayerDialog::Delete, -1);
+    layers.invoke_choose(1);
+    layers.invoke_apply_dialog();
+    assert_eq!(layers.get_dialog(), LayerDialog::Delete);
+    assert_eq!(layers.get_status().id, "config-edit-conflict");
+    assert_eq!(document.read().layout().layers.len(), 2);
+    layers.set_dialog(LayerDialog::None);
+    layers.invoke_choose(0);
+
+    // Invalid names preserve the draft and allow a corrected retry.
+    layers.invoke_open_dialog(LayerDialog::Duplicate, -1);
+    layers.set_dialog_name("Second".into());
+    layers.invoke_apply_dialog();
+    assert_eq!(layers.get_dialog(), LayerDialog::Duplicate);
+    assert_eq!(layers.get_dialog_name(), "Second");
+    layers.set_dialog_name("Copy".into());
+    layers.invoke_apply_dialog();
+    assert_eq!(layers.get_dialog(), LayerDialog::None);
+    assert_eq!(document.read().layout().layers.len(), 3);
+    layers.invoke_choose(0);
+
+    // A failed settings write must not invalidate a pending layer edit.
+    layers.invoke_open_dialog(LayerDialog::EditKey, 0);
+    picker.invoke_select_behavior(PickerBehavior::Action);
+    picker.set_value("KeyZ".into());
+    let revision = document.revision();
+    let config_path = fixture.paths.config_path();
+    let backup = config_path.with_extension("saved");
+    let existed = config_path.exists();
+    if existed {
+        std::fs::rename(&config_path, &backup)?;
+    }
+    std::fs::create_dir(&config_path)?;
+    assert!(
+        document
+            .edit(View::Settings, |config| config.update_settings(
+                |settings| {
+                    settings.default_hold_timeout_ms += 1;
+                }
+            ))
+            .is_err()
+    );
+    assert_eq!(document.revision(), revision);
+    std::fs::remove_dir(&config_path)?;
+    if existed {
+        std::fs::rename(&backup, &config_path)?;
+    }
+    picker.invoke_apply();
+    assert!(!picker.get_opened());
+    assert_eq!(
+        document.read().layer_key(&first, "Backquote"),
+        KeyAssignment::Action("KeyZ".into())
+    );
+
+    layers.invoke_open_dialog(LayerDialog::Delete, -1);
+    layers.invoke_apply_dialog();
+    assert_eq!(
+        document.read().layout().rules[0].hold_behavior(),
+        lhc_core::profile::model::HoldBehavior::None
+    );
+    assert!(document.read().layout().rules[0].layer_id.is_empty());
+    println!(
+        "Layer regressions passed: activation, stale pickers and confirmations, invalid names, failed write and retry"
     );
     Ok(())
 }

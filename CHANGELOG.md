@@ -15,6 +15,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Layers reject stale modal edits, preserve keyboard focus when refreshing rows, and reset layer hold mode when its layer is deleted. The page shows activating triggers, explains how extra keys inherit, and displays full key codes in tooltips; empty layouts no longer offer a name editor.
+
 - Triggers reject a switch to a chord while a double-tap action is assigned, show all blocking rule diagnostics, report layer assignment errors, and load the selected rule’s hold options. Existing conditions and long-hold actions remain visible outside development mode.
 
 - Settings save valid fields independently of invalid timing drafts, merge updates to untouched fields, and select the key behavior tab when invalid timings prevent exit. Device choices stay open on write errors and restart the mapper only after a saved device change. Ordinary settings saves no longer scan input devices; hold detection fits narrow windows.

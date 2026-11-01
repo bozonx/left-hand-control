@@ -68,7 +68,7 @@ pub(super) fn open(
             .unwrap_or_else(|| value.clone()),
     };
     let command = match Action::parse(Some(value.as_str())) {
-        Action::Command(id) => drafts.command(ui, &id),
+        Action::Command(id) => drafts.command(&id),
         _ => None,
     };
     *state.borrow_mut() = Session {
@@ -76,6 +76,11 @@ pub(super) fn open(
         target: Some((target, index)),
         catalog,
         command: command.clone(),
+        layer_target: matches!(
+            target,
+            PickerTarget::LayerAction | PickerTarget::ExtraKey | PickerTarget::ExtraAction
+        )
+        .then(|| layers::picker_target(ui, doc)),
     };
     let picker = ui.global::<ActionPicker>();
     picker.set_command_help(if cfg!(target_os = "windows") {
@@ -284,6 +289,15 @@ pub(super) fn apply(
     drafts: &Drafts,
 ) {
     let picker = ui.global::<ActionPicker>();
+    if let Some(target) = &session.borrow().layer_target
+        && let Err(error) = target.check(
+            doc,
+            &ui.global::<crate::ui::LayersEditor>().get_selected_id(),
+        )
+    {
+        picker.set_error(error.to_ui());
+        return;
+    }
     picker.invoke_refresh();
     if !picker.get_valid() || picker.get_capturing() {
         return;
@@ -345,22 +359,18 @@ pub(super) fn apply(
             }
         }
         PickerTarget::LayerAction => {
-            if picker.get_layer_action() {
-                if let Err(error) = layers::assign(
-                    ui,
-                    doc,
-                    index,
-                    &value,
-                    layers::Choice {
-                        ignore: picker.get_ignore_key() && value.is_empty(),
-                        hold_modifiers: picker.get_hold_modifiers(),
-                        command,
-                    },
-                ) {
-                    picker.set_error(error.to_ui());
-                }
-            } else {
-                layers::choose_dialog_action(ui, &drafts.layers, value, command);
+            if let Err(error) = layers::assign(
+                ui,
+                doc,
+                index,
+                &value,
+                layers::Choice {
+                    ignore: picker.get_ignore_key() && value.is_empty(),
+                    hold_modifiers: picker.get_hold_modifiers(),
+                    command,
+                },
+            ) {
+                picker.set_error(error.to_ui());
             }
         }
         PickerTarget::ExtraKey | PickerTarget::ExtraAction => {
