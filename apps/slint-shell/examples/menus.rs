@@ -114,6 +114,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     settings.invoke_save();
     e.invoke_open(MenuKind::Quick);
     assert_eq!(e.get_selected_cell(), 0);
+    assert_eq!(
+        e.get_cells().row_data(0).unwrap().category,
+        PickerCategory::Commands,
+        "a quick action cell shows the icon of its action's category"
+    );
     e.invoke_set_action(0, reference.clone().into(), "Привет".into());
     assert_eq!(e.get_name().as_str(), "Привет");
     e.set_name("Запуск".into());

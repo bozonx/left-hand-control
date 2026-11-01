@@ -126,7 +126,6 @@ mod tests {
             QuickAction {
                 action: "cmd:quick".into(),
                 name: "cmd:metadata".into(),
-                ..Default::default()
             },
         );
         let mut before = Vec::new();

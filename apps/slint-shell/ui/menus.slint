@@ -1,4 +1,4 @@
-import { ActionField } from "action-controls.slint";
+import { ActionField, CategoryIcon } from "action-controls.slint";
 import { TextField } from "controls.slint";
 import { PageContent, ScrollView } from "scroll.slint";
 import { DragArea, DragAxis, DragGroups, DropMarker, PaletteDrag } from "reorder.slint";
@@ -6,11 +6,12 @@ import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Message } from "i18n.slint";
 import { StatusText } from "notifications.slint";
-import { MenuKind, PickerTarget } from "types.slint";
+import { MenuKind, PickerCategory, PickerTarget } from "types.slint";
 import { InlineTextField, Card, ConfirmDialog, Divider, FieldLabel, IconButton, InfoTip, NavTab, PageLayout, PageHeader } from "controls.slint";
 import { Button } from "std-widgets.slint";
 
-export struct MenuCell { key: string, value: string, name: string }
+/// A grid cell; `category` picks the icon of a quick action.
+export struct MenuCell { key: string, value: string, name: string, category: PickerCategory }
 export struct EmojiCategory { id: string, items: [string] }
 export global MenuEditor {
     in-out property <MenuKind> kind;
@@ -177,7 +178,7 @@ component HotkeyGrid inherits Rectangle {
             }
             if !root.emoji && cell.value != "": HorizontalLayout {
                 spacing: Theme.space-s;
-                Image { width: 16px; source: @image-url("icons/zap.svg"); colorize: Theme.muted; }
+                CategoryIcon { category: cell.category; }
                 Text {
                     horizontal-stretch: 1;
                     text: cell.name;

@@ -646,7 +646,6 @@ mod tests {
             QuickAction {
                 name: "Имя".into(),
                 action: "text:first".into(),
-                icon: None,
             },
         );
         layout.quick_action_pages[1].cells.insert(

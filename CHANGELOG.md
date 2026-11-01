@@ -8,6 +8,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Quick actions no longer have icons. Layout files that still contain an `icon` field load as before; the field is dropped on the next save.
 - The tabs of the Settings page show icons next to their names.
 - Focus rings appear only while navigating with the keyboard (Tab, arrow keys) and disappear on the next mouse click, as in web browsers. Text fields keep their focus outline, and the high-contrast and E-ink themes always show focus rings.
 
@@ -32,6 +33,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Quick actions page: a cell moved to another key or page is validated again, so a cell pointing at a deleted macro or command can no longer be saved by moving it. Labels and page names drop surrounding spaces.
 - Emoji and Quick actions pages: deleting the only page is offered as "Clear page", keeps its position, and is disabled when the page is already empty. A save conflict offers "Discard changes"; a warning such as "the mapper still uses the previous settings" is no longer shown as an error, and repeated autosave errors no longer flood the notifications.
 - Emoji and Quick actions pages: a cut cell is dimmed until pasted; Escape cancels the cut, and Delete or Backspace clears the focused cell. Screen readers announce empty cells as empty.
+- Quick actions page: each assigned cell shows the icon of its action's category (shortcut, macro, command, system action…) instead of the same icon for all.
 
 ### Added
 

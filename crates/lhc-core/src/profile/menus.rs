@@ -17,7 +17,7 @@ use super::{
 use crate::config_document::{ConfigDocument, ConfigError};
 use std::collections::BTreeMap;
 
-/// Set or clear a quick action, preserving a custom name and existing icon.
+/// Set or clear a quick action, preserving a custom name.
 pub fn set_quick_action(
     layout: &mut LayoutPreset,
     page: i32,
@@ -46,7 +46,6 @@ pub fn set_quick_action(
         *item = QuickAction {
             name: display_name(label, action).into(),
             action: action.to_string(),
-            icon: None,
         };
     } else {
         item.action = action.to_string();
@@ -394,7 +393,7 @@ mod tests {
     use crate::storage::StoragePaths;
 
     #[test]
-    fn quick_action_edits_preserve_custom_names_and_icons_and_clear_cells() {
+    fn quick_action_edits_preserve_custom_names_and_clear_cells() {
         let mut layout = LayoutPreset {
             quick_action_pages: vec![QuickActionPage::new("page".into(), "".into())],
             ..LayoutPreset::default()
@@ -403,11 +402,9 @@ mod tests {
         assert_eq!(layout.quick_action_pages[0].cells["KeyQ"].name, "First");
         let item = layout.quick_action_pages[0].cells.get_mut("KeyQ").unwrap();
         item.name = "Custom".into();
-        item.icon = Some("icon".into());
         set_quick_action(&mut layout, 0, 0, "KeyB", "Second").unwrap();
         let item = &layout.quick_action_pages[0].cells["KeyQ"];
         assert_eq!(item.name, "Custom");
-        assert_eq!(item.icon.as_deref(), Some("icon"));
         set_quick_action(&mut layout, 0, 0, "", "").unwrap();
         assert!(layout.quick_action_pages[0].cells.is_empty());
         set_quick_action(&mut layout, 0, 0, "KeyA", "").unwrap();
@@ -457,7 +454,6 @@ mod tests {
         let source = QuickAction {
             name: "Label".into(),
             action: "text:hello".into(),
-            icon: Some("icon".into()),
         };
         let previous = QuickAction {
             action: "text:previous".into(),

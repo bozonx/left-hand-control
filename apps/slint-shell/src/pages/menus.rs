@@ -146,6 +146,7 @@ fn refresh(ui: &SettingsWindow, layout: &LayoutPreset, fields: bool) {
                     key: key_label(key),
                     value: page.cells.get(*key).cloned().unwrap_or_default().into(),
                     name: SharedString::new(),
+                    category: Default::default(),
                 })
                 .collect()
         }
@@ -163,6 +164,7 @@ fn refresh(ui: &SettingsWindow, layout: &LayoutPreset, fields: bool) {
                     MenuCell {
                         key: key_label(key),
                         name: display_name(&item.name, &item.action).into(),
+                        category: super::picker::category_for_value(&item.action),
                         value: item.action.into(),
                     }
                 })

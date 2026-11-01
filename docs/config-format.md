@@ -303,7 +303,7 @@ Id раскладок библиотеки имеют вид `user:<имя фа�
       "id": "system",
       "name": "System",
       "cells": {
-        "KeyQ": { "name": "Lock", "action": "kde:ksmserver/Lock Session", "icon": "lock" },
+        "KeyQ": { "name": "Lock", "action": "kde:ksmserver/Lock Session" },
         "KeyW": "sys:showDesktop"
       }
     }
@@ -352,7 +352,7 @@ Id раскладок библиотеки имеют вид `user:<имя фа�
 
 ### Страницы меню
 
-`quickActionPages` и `emojiPages` — страницы меню быстрых действий и эмодзи. Ключи `cells` — клавиши сетки `KeyQ KeyW KeyE KeyR KeyT / KeyA KeyS KeyD KeyF KeyG / KeyZ KeyX KeyC KeyV KeyB`. Ячейка быстрого действия — строка с действием или объект `{ "name"?, "action", "icon"? }`, ячейка эмодзи — вставляемый текст. Если списка страниц нет, приложение показывает одну пустую страницу.
+`quickActionPages` и `emojiPages` — страницы меню быстрых действий и эмодзи. Ключи `cells` — клавиши сетки `KeyQ KeyW KeyE KeyR KeyT / KeyA KeyS KeyD KeyF KeyG / KeyZ KeyX KeyC KeyV KeyB`. Ячейка быстрого действия — строка с действием или объект `{ "name"?, "action" }` (устаревшее поле `icon` читается и игнорируется, при сохранении не пишется), ячейка эмодзи — вставляемый текст. Если списка страниц нет, приложение показывает одну пустую страницу.
 
 `settings.inDevelopment` — скрытый флаг экспериментальных возможностей интерфейса.
 При включении записывается `true`, при выключении поле удаляется. Без него

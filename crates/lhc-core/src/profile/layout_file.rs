@@ -304,8 +304,10 @@ struct QuickActionDoc {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     name: Option<String>,
     action: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    icon: Option<String>,
+    /// Icons were dropped; files that still have one load, and saving
+    /// omits it.
+    #[serde(default, rename = "icon", skip_serializing)]
+    _icon: Option<serde::de::IgnoredAny>,
 }
 
 fn yes() -> bool {
@@ -533,7 +535,6 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
                 QuickCellDoc::Full(item) => QuickAction {
                     name: item.name.unwrap_or_default(),
                     action: item.action,
-                    icon: item.icon.filter(|icon| !icon.is_empty()),
                 },
             };
             non_empty(&item.action, &format!("quick action {key}"))?;
@@ -732,14 +733,13 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
                     LEFT_HAND_HOTKEYS.contains(&key.as_str()) && !item.action.trim().is_empty()
                 })
                 .map(|(key, item)| {
-                    let icon = item.icon.clone().filter(|icon| !icon.is_empty());
-                    let cell = if item.name.is_empty() && icon.is_none() {
+                    let cell = if item.name.is_empty() {
                         QuickCellDoc::Action(item.action.clone())
                     } else {
                         QuickCellDoc::Full(QuickActionDoc {
                             name: text(&item.name),
                             action: item.action.clone(),
-                            icon,
+                            _icon: None,
                         })
                     };
                     (key.clone(), cell)
@@ -1099,7 +1099,8 @@ mod tests {
         assert_eq!(preset.commands[0].posix_script, "playerctl play-pause");
         assert_eq!(preset.commands[0].powershell_script, "Start-Process x");
         let quick = &preset.quick_action_pages[0];
-        assert_eq!(quick.cells["KeyQ"].icon.as_deref(), Some("lock"));
+        assert_eq!(quick.cells["KeyQ"].name, "Lock", "a legacy icon is ignored");
+        assert!(!serialize(&preset).contains("\"icon\""), "saving drops the icon");
         assert_eq!(quick.cells["KeyW"].name, "");
         let again = round_trip(&preset);
         assert_eq!(again.layers, preset.layers);
