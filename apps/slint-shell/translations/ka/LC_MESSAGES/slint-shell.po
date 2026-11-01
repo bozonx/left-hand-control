@@ -3668,3 +3668,27 @@ msgstr "სათამაშო რეჟიმი ჯერ მიუწვდ
 
 msgid "Popup hotkeys are off while game mode is on."
 msgstr "ამომხტარი ფანჯრების მალსახმობები გამორთულია, სანამ სათამაშო რეჟიმი ჩართულია."
+
+msgid "Macro expansion exceeds 1000 entries or 10 nesting levels"
+msgstr "მაკროს გაშლა აჭარბებს 1000 ჩანაწერს ან ჩადგმის 10 დონეს"
+
+msgid "Remove macro references before deleting it."
+msgstr "მაკროს წაშლამდე წაშალეთ მასზე მითითებები."
+
+msgid "Macro queue is full. The new run was skipped."
+msgstr "მაკროების რიგი სავსეა. ახალი გაშვება გამოტოვებულია."
+
+msgid "Macro timed out and was stopped."
+msgstr "მაკრო შეჩერდა დროის ლიმიტის ამოწურვის გამო."
+
+msgid "Macro stopped because a command failed."
+msgstr "მაკრო შეჩერდა ბრძანების შეცდომის გამო."
+
+msgid "Macro changes are not applied until all errors are fixed."
+msgstr "მაკროების ცვლილებები არ გამოიყენება ყველა შეცდომის გასწორებამდე."
+
+msgid "Discard unapplied macro changes?"
+msgstr "გაუქმდეს მაკროების გამოუყენებელი ცვლილებები?"
+
+msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
+msgstr "ID-ის ცვლილება ავტომატურად აახლებს მითითებებს. ჩადგმული მაკროები ინარჩუნებენ საკუთარ დაყოვნებებს. შემდეგ ნაბიჯამდე ბრძანებები წარმატებით უნდა დასრულდეს. პაუზები, ტექსტი და ბრძანებები ითვლება მაკროს დროის ლიმიტში."

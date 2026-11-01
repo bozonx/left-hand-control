@@ -3669,3 +3669,27 @@ msgstr "Način igre još nije dostupan."
 
 msgid "Popup hotkeys are off while game mode is on."
 msgstr "Prečaci skočnih prozora isključeni su dok je način igre uključen."
+
+msgid "Macro expansion exceeds 1000 entries or 10 nesting levels"
+msgstr "Proširenje makronaredbe prelazi 1000 stavki ili 10 razina ugnježđivanja"
+
+msgid "Remove macro references before deleting it."
+msgstr "Prije brisanja uklonite reference na makronaredbu."
+
+msgid "Macro queue is full. The new run was skipped."
+msgstr "Red makronaredbi je pun. Novo pokretanje je preskočeno."
+
+msgid "Macro timed out and was stopped."
+msgstr "Makronaredba je zaustavljena zbog isteka vremena."
+
+msgid "Macro stopped because a command failed."
+msgstr "Makronaredba je zaustavljena jer naredba nije uspjela."
+
+msgid "Macro changes are not applied until all errors are fixed."
+msgstr "Promjene makronaredbi primjenjuju se tek nakon ispravljanja svih pogrešaka."
+
+msgid "Discard unapplied macro changes?"
+msgstr "Odbaciti neprimijenjene promjene makronaredbi?"
+
+msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
+msgstr "Promjene ID-a automatski ažuriraju reference. Ugniježđene makronaredbe zadržavaju svoje odgode. Naredbe moraju uspješno završiti prije sljedećeg koraka. Pauze, tekst i naredbe računaju se u vremensko ograničenje makronaredbe."

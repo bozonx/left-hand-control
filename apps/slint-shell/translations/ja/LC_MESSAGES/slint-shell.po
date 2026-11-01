@@ -3437,3 +3437,27 @@ msgstr "ゲームモードはまだ利用できません。"
 
 msgid "Popup hotkeys are off while game mode is on."
 msgstr "ゲームモードがオンの間、ポップアップのホットキーは無効になります。"
+
+msgid "Macro expansion exceeds 1000 entries or 10 nesting levels"
+msgstr "マクロの展開が1000項目または10階層を超えています"
+
+msgid "Remove macro references before deleting it."
+msgstr "削除する前にマクロへの参照を削除してください。"
+
+msgid "Macro queue is full. The new run was skipped."
+msgstr "マクロのキューが満杯です。新しい実行をスキップしました。"
+
+msgid "Macro timed out and was stopped."
+msgstr "マクロはタイムアウトして停止しました。"
+
+msgid "Macro stopped because a command failed."
+msgstr "コマンドの失敗によりマクロが停止しました。"
+
+msgid "Macro changes are not applied until all errors are fixed."
+msgstr "すべてのエラーを修正するまでマクロの変更は適用されません。"
+
+msgid "Discard unapplied macro changes?"
+msgstr "未適用のマクロの変更を破棄しますか？"
+
+msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
+msgstr "IDを変更すると参照が自動更新されます。入れ子のマクロは独自の遅延を保持します。コマンドが正常終了してから次のステップを開始します。一時停止、テキスト入力、コマンドはマクロのタイムアウトに含まれます。"

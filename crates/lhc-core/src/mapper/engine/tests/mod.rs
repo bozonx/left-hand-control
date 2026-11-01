@@ -255,7 +255,9 @@ fn timeline(
             EngineOutput::ReleaseMods(mods) => TraceEvent::ReleaseMods(mods),
             EngineOutput::Literal(text) => TraceEvent::Text(text),
             EngineOutput::RunSystem(_) => panic!("unexpected system action"),
-            EngineOutput::RunCommand(_) => panic!("unexpected command"),
+            EngineOutput::RunCommand(_) | EngineOutput::RunMacroCommand(_, _) => {
+                panic!("unexpected command")
+            }
         })
         .collect()
 }

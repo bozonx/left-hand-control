@@ -270,7 +270,7 @@ fn macro_pause_step_delays_following_steps() {
 }
 
 #[test]
-fn disabled_commands_are_skipped_in_macros_and_preserve_other_keys() {
+fn disabled_commands_reject_the_whole_macro_before_emitting_keys() {
     let mut cfg = empty_cfg();
     cfg.commands.push(Command {
         id: "blocked".into(),
@@ -300,13 +300,7 @@ fn disabled_commands_are_skipped_in_macros_and_preserve_other_keys() {
         out.iter()
             .all(|item| !matches!(item, EngineOutput::RunCommand(_)))
     );
-    assert!(out.iter().any(|item| matches!(
-        item,
-        EngineOutput::KeyRaw {
-            key: KeyCode::KEY_A,
-            ..
-        }
-    )));
+    assert!(out.is_empty());
     out.clear();
     engine.execute_remote("cmd:blocked", &mut out);
     assert!(out.is_empty());
@@ -788,13 +782,15 @@ fn layer_key_bound_to_an_empty_macro_swallows_the_key() {
 #[test]
 fn bindings_to_commands_that_cannot_run_report_instead_of_doing_nothing() {
     let (record, seen) = std::sync::mpsc::channel();
-    let _events = crate::events::bus().subscribe(move |event| {
-        if matches!(event, crate::events::CoreEvent::ActionUnavailable(action)
+    let _events = crate::events::bus()
+        .subscribe(move |event| {
+            if matches!(event, crate::events::CoreEvent::ActionUnavailable(action)
             if action == "cmd:disabledHere" || action == "cmd:")
-        {
-            record.send(()).unwrap();
-        }
-    }).unwrap();
+            {
+                record.send(()).unwrap();
+            }
+        })
+        .unwrap();
     let cfg: MapperConfig = serde_json::from_value(serde_json::json!({
         "settings": {"commandsEnabled": false},
         "commands": [{"id": "disabledHere", "linux": "true", "windows": "dir"}],
@@ -808,7 +804,9 @@ fn bindings_to_commands_that_cannot_run_report_instead_of_doing_nothing() {
     engine.handle_key_event(KeyCode::KEY_Q, false, now, &mut out);
     engine.execute_remote("cmd:disabledHere", &mut out);
     assert!(out.is_empty());
-    for _ in 0..2 { seen.recv_timeout(Duration::from_secs(1)).unwrap(); }
+    for _ in 0..2 {
+        seen.recv_timeout(Duration::from_secs(1)).unwrap();
+    }
 
     // A tap still waiting for its decision when commands are switched off
     // reports at release instead of silently doing nothing.
@@ -824,4 +822,153 @@ fn bindings_to_commands_that_cannot_run_report_instead_of_doing_nothing() {
     engine.handle_key_event(KeyCode::KEY_Q, false, now, &mut out);
     assert!(out.is_empty());
     seen.recv_timeout(Duration::from_secs(1)).unwrap();
+}
+
+#[test]
+fn final_pause_delays_completion_and_queued_runs() {
+    for actions in [
+        serde_json::json!([{"action":"pause:5000"}]),
+        serde_json::json!([{"action":"KeyA"},{"action":"pause:5000"}]),
+    ] {
+        let cfg: MapperConfig = serde_json::from_value(serde_json::json!({
+            "macros":[{"id":"m","stepPauseMs":0,"steps":actions}]
+        }))
+        .unwrap();
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        engine.execute_remote("macro:m", &mut out);
+        engine.execute_remote("macro:m", &mut out);
+        let now = Instant::now();
+        engine.tick(now, &mut out);
+        engine.tick(now, &mut out);
+        assert!(engine.macro_running());
+        out.clear();
+        engine.tick(now + Duration::from_millis(4999), &mut out);
+        assert!(out.is_empty());
+        assert_eq!(engine.runner.queue.len(), 1);
+        engine.tick(now + Duration::from_millis(5000), &mut out);
+        assert!(engine.runner.queue.is_empty());
+        assert!(engine.macro_running());
+    }
+}
+
+#[test]
+fn nested_macro_uses_its_own_step_and_modifier_delays() {
+    let cfg: MapperConfig = serde_json::from_value(serde_json::json!({
+        "macros":[
+            {"id":"inner","stepPauseMs":100,"modifierDelayMs":30,
+             "steps":[{"action":"KeyA"},{"action":"Ctrl+KeyB"}]},
+            {"id":"outer","stepPauseMs":0,"modifierDelayMs":0,
+             "steps":[{"action":"macro:inner"},{"action":"KeyC"}]}
+        ]
+    }))
+    .unwrap();
+    let mut engine = Engine::new(&cfg);
+    let mut out = Vec::new();
+    engine.execute_remote("macro:outer", &mut out);
+    let now = Instant::now();
+    engine.tick(now, &mut out);
+    out.clear();
+    engine.tick(now + Duration::from_millis(99), &mut out);
+    assert!(out.is_empty());
+    engine.tick(now + Duration::from_millis(100), &mut out);
+    assert_eq!(raw_keys(&out), [(KeyCode::KEY_LEFTCTRL, true)]);
+    out.clear();
+    engine.tick(now + Duration::from_millis(129), &mut out);
+    assert!(out.is_empty());
+    engine.tick(now + Duration::from_millis(130), &mut out);
+    assert_eq!(
+        raw_keys(&out),
+        [(KeyCode::KEY_B, true), (KeyCode::KEY_B, false)]
+    );
+    out.clear();
+    engine.tick(now + Duration::from_millis(160), &mut out);
+    engine.tick(now + Duration::from_millis(160), &mut out);
+    assert_eq!(
+        raw_keys(&out),
+        [
+            (KeyCode::KEY_LEFTCTRL, false),
+            (KeyCode::KEY_C, true),
+            (KeyCode::KEY_C, false)
+        ]
+    );
+}
+
+fn command_macro_cfg() -> MapperConfig {
+    serde_json::from_value(serde_json::json!({
+        "settings":{"commandsEnabled":true},
+        "commands":[{"id":"test","linux":"true","windows":"exit 0"}],
+        "macros":[{"id":"m","stepPauseMs":20,
+            "steps":[{"action":"cmd:test"},{"action":"Enter"}]}]
+    }))
+    .unwrap()
+}
+
+#[test]
+fn macro_waits_for_command_success_and_then_starts_the_step_delay() {
+    let mut engine = Engine::new(&command_macro_cfg());
+    let mut out = Vec::new();
+    engine.execute_remote("macro:m", &mut out);
+    let now = Instant::now();
+    engine.tick(now, &mut out);
+    let [EngineOutput::RunMacroCommand(_, job)] = out.as_slice() else {
+        panic!("command expected")
+    };
+    let job = job.clone();
+    out.clear();
+    engine.tick(now + Duration::from_secs(1), &mut out);
+    assert!(out.is_empty());
+    job.complete(Ok(()));
+    engine.tick(now + Duration::from_secs(1), &mut out);
+    engine.tick(now + Duration::from_millis(1019), &mut out);
+    assert!(out.is_empty());
+    engine.tick(now + Duration::from_millis(1020), &mut out);
+    assert_eq!(
+        raw_keys(&out),
+        [(KeyCode::KEY_ENTER, true), (KeyCode::KEY_ENTER, false)]
+    );
+}
+
+#[test]
+fn command_failure_cancels_following_steps_and_queued_runs() {
+    let mut engine = Engine::new(&command_macro_cfg());
+    let mut out = Vec::new();
+    engine.execute_remote("macro:m", &mut out);
+    engine.execute_remote("macro:m", &mut out);
+    let now = Instant::now();
+    engine.tick(now, &mut out);
+    let [EngineOutput::RunMacroCommand(_, job)] = out.as_slice() else {
+        panic!("command expected")
+    };
+    job.complete(Err("command failed".into()));
+    out.clear();
+    engine.tick(now, &mut out);
+    assert!(out.is_empty());
+    assert!(!engine.macro_running());
+}
+
+#[test]
+fn shutdown_and_timeout_revoke_a_command_even_before_output_is_flushed() {
+    for timeout in [false, true] {
+        let mut cfg = command_macro_cfg();
+        cfg.settings.macro_timeout_ms = 1000;
+        let mut engine = Engine::new(&cfg);
+        let mut out = Vec::new();
+        engine.execute_remote("macro:m", &mut out);
+        let now = Instant::now();
+        engine.tick(now, &mut out);
+        let [EngineOutput::RunMacroCommand(_, job)] = out.as_slice() else {
+            panic!("command expected")
+        };
+        let job = job.clone();
+        out.clear();
+        if timeout {
+            engine.tick(now + Duration::from_secs(2), &mut out);
+        } else {
+            engine.shutdown(&mut out);
+        }
+        assert!(job.cancelled());
+        assert!(out.is_empty());
+        assert!(!engine.macro_running());
+    }
 }

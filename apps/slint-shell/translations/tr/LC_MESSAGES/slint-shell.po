@@ -3678,3 +3678,27 @@ msgstr "Oyun modu henüz kullanılamıyor."
 
 msgid "Popup hotkeys are off while game mode is on."
 msgstr "Oyun modu açıkken açılır pencere kısayolları devre dışıdır."
+
+msgid "Macro expansion exceeds 1000 entries or 10 nesting levels"
+msgstr "Makro açılımı 1000 girdiyi veya 10 iç içe geçme düzeyini aşıyor"
+
+msgid "Remove macro references before deleting it."
+msgstr "Makroyu silmeden önce başvurularını kaldırın."
+
+msgid "Macro queue is full. The new run was skipped."
+msgstr "Makro kuyruğu dolu. Yeni çalıştırma atlandı."
+
+msgid "Macro timed out and was stopped."
+msgstr "Makro zaman aşımı nedeniyle durduruldu."
+
+msgid "Macro stopped because a command failed."
+msgstr "Bir komut başarısız olduğu için makro durduruldu."
+
+msgid "Macro changes are not applied until all errors are fixed."
+msgstr "Tüm hatalar düzeltilene kadar makro değişiklikleri uygulanmaz."
+
+msgid "Discard unapplied macro changes?"
+msgstr "Uygulanmamış makro değişiklikleri atılsın mı?"
+
+msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
+msgstr "Kimlik değişiklikleri başvuruları otomatik günceller. İç içe makrolar kendi gecikmelerini korur. Sonraki adımdan önce komutlar başarıyla tamamlanmalıdır. Duraklamalar, metin ve komutlar makro zaman aşımına dahildir."

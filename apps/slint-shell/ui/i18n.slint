@@ -130,6 +130,11 @@ export global Locale {
         if m.id == "macro-delay-range" { return @tr("Macro delays must be between 0 and 2000 ms"); }
         if m.id == "macro-pause-range" { return @tr("Pause must be between 1 and 10000 ms"); }
         if m.id == "macro-unknown-key" { return @tr("Unknown key or shortcut in macro step"); }
+        if m.id == "macro-expansion-limit" { return @tr("Macro expansion exceeds 1000 entries or 10 nesting levels"); }
+        if m.id == "macro-in-use" { return @tr("Remove macro references before deleting it."); }
+        if m.id == "macro-queue-full" { return @tr("Macro queue is full. The new run was skipped."); }
+        if m.id == "macro-timeout" { return @tr("Macro timed out and was stopped."); }
+        if m.id == "macro-command-failed" { return @tr("Macro stopped because a command failed."); }
         if m.id == "macro-cycle" { return @tr("Macro references cannot form a cycle"); }
         if m.id == "menu-emoji-cell" { return @tr("Emoji cells accept at most 100 characters."); }
         if m.id == "menu-command-id" { return @tr("Command ID: 1–64 letters, digits, underscores or hyphens."); }

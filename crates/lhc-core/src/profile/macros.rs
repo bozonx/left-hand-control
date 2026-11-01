@@ -6,7 +6,7 @@ use super::{
     model::{LayoutPreset, Macro, ResolvedAppConfig},
 };
 use crate::config_document::{ConfigDocument, ConfigError};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MacroIssue {
@@ -16,6 +16,84 @@ pub enum MacroIssue {
     PauseRange,
     UnknownKey,
     Cycle,
+    ExpansionLimit,
+    InUse,
+}
+
+/// A single analysis shared by all rows of the editor and diagnostics.
+pub struct MacroAnalysis {
+    pub errors: Vec<Option<ConfigError>>,
+    pub step_errors: Vec<Vec<Option<ConfigError>>>,
+    pub usage: HashMap<String, Vec<String>>,
+}
+
+pub fn analyze(config: &ResolvedAppConfig) -> MacroAnalysis {
+    let graph = MacroGraph::new(config.macros.iter().map(|item| {
+        (
+            item.id.as_str(),
+            item.steps.iter().map(|step| step.action.as_str()).collect(),
+        )
+    }));
+    let expansions = graph.expansion_issues();
+    let cycles = graph.cycle_members();
+    let mut counts = HashMap::new();
+    for item in &config.macros {
+        *counts.entry(item.id.as_str()).or_insert(0usize) += 1;
+    }
+    let step_errors: Vec<Vec<_>> = config
+        .macros
+        .iter()
+        .map(|item| {
+            item.steps
+                .iter()
+                .map(|step| validate_step(config, &step.action).err())
+                .collect()
+        })
+        .collect();
+    let errors = config
+        .macros
+        .iter()
+        .zip(&step_errors)
+        .map(|(item, steps)| {
+            let issue = if !super::ids::valid(&item.id) {
+                Some(MacroIssue::InvalidId)
+            } else if counts[item.id.as_str()] > 1 {
+                Some(MacroIssue::DuplicateId)
+            } else if item
+                .step_pause_ms
+                .is_some_and(|v| !super::timing::MACRO_DELAY.contains(v))
+                || item
+                    .modifier_delay_ms
+                    .is_some_and(|v| !super::timing::MACRO_DELAY.contains(v))
+            {
+                Some(MacroIssue::DelayRange)
+            } else if cycles.contains(&MacroRef::User(item.id.clone())) {
+                Some(MacroIssue::Cycle)
+            } else if expansions.contains_key(&MacroRef::User(item.id.clone())) {
+                Some(MacroIssue::ExpansionLimit)
+            } else {
+                None
+            };
+            issue
+                .map(ConfigError::Macro)
+                .or_else(|| steps.iter().flatten().next().cloned())
+        })
+        .collect();
+    let mut usage: HashMap<String, Vec<String>> = HashMap::new();
+    let mut visited = HashSet::new();
+    config.for_each_action(|location, raw| {
+        if let Action::Macro(id) = Action::parse(Some(raw))
+            && !matches!(location, super::action_walk::ActionLocation::Macro { index, .. } if config.macros[index].id == id)
+            && let Some(place) = usage_place(config, location, &mut visited, &id)
+        {
+            usage.entry(id).or_default().push(place);
+        }
+    });
+    MacroAnalysis {
+        errors,
+        step_errors,
+        usage,
+    }
 }
 
 pub fn validate(config: &ResolvedAppConfig, item: &Macro) -> Result<(), ConfigError> {
@@ -47,74 +125,75 @@ pub(crate) fn validate_step(config: &ResolvedAppConfig, raw: &str) -> Result<(),
 }
 
 pub(crate) fn validate_loaded(config: &ResolvedAppConfig, item: &Macro) -> Result<(), ConfigError> {
-    if !super::ids::valid(&item.id) {
-        return Err(ConfigError::Macro(MacroIssue::InvalidId));
-    }
-    if config.macros.iter().filter(|m| m.id == item.id).count() > 1 {
-        return Err(ConfigError::Macro(MacroIssue::DuplicateId));
-    }
-    if item
-        .step_pause_ms
-        .is_some_and(|v| !super::timing::MACRO_DELAY.contains(v))
-        || item
-            .modifier_delay_ms
-            .is_some_and(|v| !super::timing::MACRO_DELAY.contains(v))
-    {
-        return Err(ConfigError::Macro(MacroIssue::DelayRange));
-    }
-    for step in &item.steps {
-        validate_step(config, &step.action)?;
-    }
-    let graph = MacroGraph::new(config.macros.iter().map(|item| {
-        (
-            item.id.as_str(),
-            item.steps.iter().map(|step| step.action.as_str()).collect(),
-        )
-    }));
-    if graph.has_cycle(&MacroRef::User(item.id.clone())) {
-        return Err(ConfigError::Macro(MacroIssue::Cycle));
-    }
-    Ok(())
+    let mut candidate = config.clone();
+    let index = candidate.macros.iter().position(|m| m.id == item.id);
+    let index = if let Some(index) = index {
+        candidate.macros[index] = item.clone();
+        index
+    } else {
+        candidate.macros.push(item.clone());
+        candidate.macros.len() - 1
+    };
+    analyze(&candidate).errors[index]
+        .clone()
+        .map_or(Ok(()), Err)
+}
+
+fn usage_place(
+    config: &ResolvedAppConfig,
+    location: super::action_walk::ActionLocation<'_>,
+    visited: &mut HashSet<(String, u8, usize)>,
+    id: &str,
+) -> Option<String> {
+    use super::action_walk::ActionLocation;
+    Some(match location {
+        ActionLocation::Rule { index, .. } => {
+            if !visited.insert((id.into(), 0, index)) {
+                return None;
+            }
+            config.rules[index].key.clone()
+        }
+        ActionLocation::Layer { layer, key } => format!("{layer}: {key}"),
+        ActionLocation::Macro { index, .. } => {
+            if !visited.insert((id.into(), 1, index)) {
+                return None;
+            }
+            format!("macro:{}", config.macros[index].id)
+        }
+        ActionLocation::QuickAction { page, key } => {
+            let cell = &config.quick_action_pages[page].cells[key];
+            let name = if cell.name.is_empty() {
+                key
+            } else {
+                &cell.name
+            };
+            format!("quick:{name}")
+        }
+    })
 }
 
 pub fn usage(config: &ResolvedAppConfig, id: &str) -> Vec<String> {
     action_usage(config, &format!("macro:{id}"))
 }
 
+/// References that would remain after deleting this macro. Its own steps
+/// disappear with it, so a self-reference must not prevent recovery by deletion.
+pub fn deletion_usage(config: &ResolvedAppConfig, id: &str) -> Vec<String> {
+    let mut remaining = config.clone();
+    remaining.macros.retain(|item| item.id != id);
+    usage(&remaining, id)
+}
+
 pub fn action_usage(config: &ResolvedAppConfig, action: &str) -> Vec<String> {
-    use super::action_walk::ActionLocation;
     let mut places = Vec::new();
     let mut visited = HashSet::new();
     let action = Action::parse(Some(action));
     config.for_each_action(|location, raw| {
-        if Action::parse(Some(raw)) != action {
-            return;
+        if Action::parse(Some(raw)) == action
+            && let Some(place) = usage_place(config, location, &mut visited, "")
+        {
+            places.push(place);
         }
-        let place = match location {
-            ActionLocation::Rule { index, .. } => {
-                if !visited.insert((0, index)) {
-                    return;
-                }
-                config.rules[index].key.clone()
-            }
-            ActionLocation::Layer { layer, key } => format!("{layer}: {key}"),
-            ActionLocation::Macro { index, .. } => {
-                if !visited.insert((1, index)) {
-                    return;
-                }
-                format!("macro:{}", config.macros[index].id)
-            }
-            ActionLocation::QuickAction { page, key } => {
-                let cell = &config.quick_action_pages[page].cells[key];
-                let name = if cell.name.is_empty() {
-                    key
-                } else {
-                    &cell.name
-                };
-                format!("quick:{name}")
-            }
-        };
-        places.push(place);
     });
     places
 }
@@ -122,30 +201,43 @@ pub fn action_usage(config: &ResolvedAppConfig, action: &str) -> Vec<String> {
 /// Point `macro:<old>` actions at the new ids. All renames apply at once, so
 /// swapping two ids works.
 fn rename_references(layout: &mut LayoutPreset, renames: &[(String, String)]) {
-    layout.for_each_action_mut(|raw| {
-        if let Action::Macro(id) = Action::parse(Some(raw))
-            && let Some((_, new)) = renames.iter().find(|(old, new)| old != new && *old == id)
-            && let Some(renamed) = Action::Macro(new.clone()).format()
-        {
-            *raw = renamed;
+    layout.for_each_action_mut(|raw| rename_action(raw, renames));
+}
+
+fn rename_action(raw: &mut String, renames: &[(String, String)]) {
+    if let Action::Macro(id) = Action::parse(Some(raw))
+        && let Some((_, new)) = renames.iter().find(|(old, new)| old != new && *old == id)
+        && let Some(renamed) = Action::Macro(new.clone()).format()
+    {
+        *raw = renamed;
+    }
+}
+
+/// Preview the final step references before validating a rename transaction.
+pub fn renamed_items(mut items: Vec<Macro>, renames: &[(String, String)]) -> Vec<Macro> {
+    for item in &mut items {
+        for step in &mut item.steps {
+            rename_action(&mut step.action, renames);
         }
-    });
+    }
+    items
 }
 
 impl ConfigDocument {
     pub fn save_macro(&mut self, index: Option<usize>, item: Macro) -> Result<(), ConfigError> {
-        let mut candidate = self.config();
-        if let Some(index) = index {
-            let old = candidate
-                .macros
+        let mut items = self.layout().macros.clone();
+        let renames = if let Some(index) = index {
+            let old = items
                 .get_mut(index)
                 .ok_or_else(|| ConfigError::Invalid("Unknown macro".into()))?;
-            *old = item.clone();
+            let rename = (old.id.clone(), item.id.clone());
+            *old = item;
+            vec![rename]
         } else {
-            candidate.macros.insert(0, item.clone());
-        }
-        validate(&candidate, &item)?;
-        self.update_layout(|layout| layout.macros = candidate.macros)
+            items.insert(0, item);
+            Vec::new()
+        };
+        self.save_macros(items, &renames)
     }
 
     /// Replace all user macros at once; every macro must be valid.
@@ -157,9 +249,9 @@ impl ConfigDocument {
         renames: &[(String, String)],
     ) -> Result<(), ConfigError> {
         let mut candidate = self.config();
-        candidate.macros = items.clone();
-        for item in &items {
-            validate(&candidate, item)?;
+        candidate.macros = renamed_items(items.clone(), renames);
+        if let Some(error) = analyze(&candidate).errors.into_iter().flatten().next() {
+            return Err(error);
         }
         self.update_layout(|layout| {
             layout.macros = items;
@@ -170,6 +262,9 @@ impl ConfigDocument {
     pub fn remove_macro(&mut self, index: usize) -> Result<(), ConfigError> {
         if index >= self.layout().macros.len() {
             return Err(ConfigError::Invalid("Unknown macro".into()));
+        }
+        if !deletion_usage(&self.config(), &self.layout().macros[index].id).is_empty() {
+            return Err(ConfigError::Macro(MacroIssue::InUse));
         }
         self.update_layout(|layout| {
             layout.macros.remove(index);
@@ -267,6 +362,13 @@ mod tests {
             loaded.layout().rules[0].tap_action.as_deref(),
             Some("macro:outer")
         );
+        assert_eq!(
+            document.remove_macro(1),
+            Err(ConfigError::Macro(MacroIssue::InUse))
+        );
+        document
+            .update_layout(|layout| layout.rules.clear())
+            .unwrap();
         document.remove_macro(1).unwrap();
         assert_eq!(document.layout().macros.len(), 1);
     }
@@ -351,5 +453,90 @@ mod tests {
             .map(|s| &s.action[..])
             .collect();
         assert_eq!(steps, ["macro:b", "macro:other"]);
+    }
+    #[test]
+    fn save_transaction_renames_nested_references_before_validation_and_supports_swaps() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let mut document = ConfigDocument::load(paths).unwrap();
+        document
+            .save_macros(vec![item("a", &["KeyA"]), item("b", &["macro:a"])], &[])
+            .unwrap();
+        document
+            .save_macros(
+                vec![item("c", &["KeyA"]), item("b", &["macro:a"])],
+                &[("a".into(), "c".into())],
+            )
+            .unwrap();
+        assert_eq!(document.layout().macros[1].steps[0].action, "macro:c");
+        document
+            .save_macros(
+                vec![item("b", &["KeyA"]), item("c", &["macro:c"])],
+                &[("c".into(), "b".into()), ("b".into(), "c".into())],
+            )
+            .unwrap();
+        assert_eq!(document.layout().macros[1].steps[0].action, "macro:b");
+        assert!(
+            analyze(&document.config())
+                .errors
+                .iter()
+                .all(Option::is_none)
+        );
+    }
+
+    #[test]
+    #[cfg(any(target_os = "linux", target_os = "windows"))]
+    fn editor_mapper_and_diagnostics_agree_on_expansion_limits() {
+        let mut layout = LayoutPreset::default();
+        for count in [1000, 1001] {
+            layout.macros = vec![item("large", &vec!["KeyA"; count])];
+            let config = ResolvedAppConfig::from_parts(Default::default(), layout.clone(), None);
+            let accepted = validate(&config, &config.macros[0]).is_ok();
+            let mapper = crate::mapper::config::MapperConfig::try_from(&config).unwrap();
+            assert_eq!(accepted, count == 1000);
+            assert_eq!(
+                crate::mapper::validation::validate_config(&mapper).is_ok(),
+                accepted
+            );
+            assert_eq!(
+                super::super::diagnostics::analyze(&config)
+                    .iter()
+                    .all(|i| !i.code.is_error()),
+                accepted
+            );
+        }
+        layout.macros = (0..12)
+            .map(|i| {
+                item(
+                    &format!("m{i}"),
+                    &[if i == 11 {
+                        "KeyA".into()
+                    } else {
+                        format!("macro:m{}", i + 1)
+                    }]
+                    .iter()
+                    .map(String::as_str)
+                    .collect::<Vec<_>>(),
+                )
+            })
+            .collect();
+        let config = ResolvedAppConfig::from_parts(Default::default(), layout, None);
+        assert_eq!(
+            analyze(&config).errors[0],
+            Some(ConfigError::Macro(MacroIssue::ExpansionLimit))
+        );
+    }
+    #[test]
+    fn self_references_do_not_prevent_deleting_an_invalid_macro() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let mut document = ConfigDocument::load(paths).unwrap();
+        document
+            .update_layout(|layout| layout.macros = vec![item("self", &["macro:self"])])
+            .unwrap();
+        assert!(deletion_usage(&document.config(), "self").is_empty());
+        assert!(!analyze(&document.config()).usage.contains_key("self"));
+        document.remove_macro(0).unwrap();
+        assert!(document.layout().macros.is_empty());
     }
 }

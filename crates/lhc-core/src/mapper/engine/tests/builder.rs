@@ -213,19 +213,20 @@ fn builtin_and_user_macros_resolve_independently_at_every_depth() {
     let user = &engine.layout.macros["macro:copyLine"];
     let builtin = &engine.layout.macros["builtin:copyLineText"];
     let outer = &engine.layout.macros["macro:outer"];
-    assert!(matches!(&user.steps[..], [MacroStepItem::Literal(text)] if text == "user"));
+    assert_eq!(user.steps.len(), 1);
+    assert!(matches!(&user.steps[0].item, MacroStepItem::Literal(text) if text == "user"));
     assert!(
         builtin
             .steps
             .iter()
-            .all(|step| matches!(step, MacroStepItem::Stroke(_)))
+            .all(|step| matches!(step.item, MacroStepItem::Stroke(_)))
     );
     assert_eq!(outer.steps.len(), 1 + builtin.steps.len());
-    assert!(matches!(&outer.steps[0], MacroStepItem::Literal(text) if text == "user"));
+    assert!(matches!(&outer.steps[0].item, MacroStepItem::Literal(text) if text == "user"));
     assert!(
         outer.steps[1..]
             .iter()
-            .all(|step| matches!(step, MacroStepItem::Stroke(_)))
+            .all(|step| matches!(step.item, MacroStepItem::Stroke(_)))
     );
     for reference in ["macro:copyLine", "builtin:copyLineText"] {
         assert!(matches!(

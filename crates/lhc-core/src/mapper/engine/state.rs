@@ -185,3 +185,13 @@ impl MacroRunner {
         }
     }
 }
+
+impl Drop for MacroRunner {
+    fn drop(&mut self) {
+        if let Some(super::model::MacroPhase::Command(job)) =
+            self.active.as_ref().map(|am| &am.phase)
+        {
+            job.cancel();
+        }
+    }
+}

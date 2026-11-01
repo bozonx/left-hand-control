@@ -134,6 +134,7 @@ export component DialogFrame inherits Rectangle {
 export component ConfirmDialog inherits DialogFrame {
     in property <string> body;
     in property <string> confirm-text;
+    in property <bool> confirm-enabled: true;
     in property <image> confirm-icon: @image-url("icons/trash-2.svg");
     in property <string> error;
     callback confirm();
@@ -148,6 +149,6 @@ export component ConfirmDialog inherits DialogFrame {
         spacing: Theme.space-m;
         alignment: end;
         Button { text: @tr("Cancel"); clicked => { root.cancel(); } }
-        confirm-button := Button { text: root.confirm-text; primary: true; icon: root.confirm-icon; colorize-icon: true; clicked => { root.confirm(); } }
+        confirm-button := Button { enabled: root.confirm-enabled; text: root.confirm-text; primary: true; icon: root.confirm-icon; colorize-icon: true; clicked => { root.confirm(); } }
     }
 }

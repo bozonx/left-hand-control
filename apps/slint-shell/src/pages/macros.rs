@@ -100,31 +100,50 @@ impl super::autosave::Draft for State {
 /// The configuration with the draft macros, used for validation and usage.
 fn candidate(document: &Document, draft: &[Entry]) -> ResolvedAppConfig {
     let mut config = document.read().config();
-    config.macros = draft.iter().map(|e| e.item.clone()).collect();
+    config.macros = macros::renamed_items(
+        draft
+            .iter()
+            .map(|e| e.saved().unwrap_or_else(|| e.item.clone()))
+            .collect(),
+        &renames(draft),
+    );
     for command in draft.iter().flat_map(|entry| &entry.commands) {
         super::stage_command(&mut config.commands, command.clone());
     }
     config
 }
 
-fn issue(config: &ResolvedAppConfig, entry: &Entry) -> Option<ConfigError> {
-    let Some(item) = entry.saved() else {
-        return Some(ConfigError::Macro(macros::MacroIssue::DelayRange));
-    };
-    macros::validate(config, &item).err()
+fn renames(draft: &[Entry]) -> Vec<(String, String)> {
+    draft
+        .iter()
+        .filter_map(|e| Some((e.saved_id.clone()?, e.item.id.clone())))
+        .collect()
 }
 
-fn steps(item: &Macro) -> ModelRc<MacroStepRow> {
+fn analysis(document: &Document, draft: &[Entry]) -> macros::MacroAnalysis {
+    let config = candidate(document, draft);
+    let mut analysis = macros::analyze(&config);
+    for (index, entry) in draft.iter().enumerate() {
+        if entry.saved().is_none() {
+            analysis.errors[index] = Some(ConfigError::Macro(macros::MacroIssue::DelayRange));
+        }
+    }
+    analysis
+}
+
+fn steps(item: &Macro, errors: &[Option<ConfigError>]) -> ModelRc<MacroStepRow> {
     ModelRc::new(VecModel::from(
         item.steps
             .iter()
-            .map(|step| {
+            .enumerate()
+            .map(|(index, step)| {
                 let pause = match Action::parse(Some(&step.action)) {
                     Action::Pause(ms) => Some(ms),
                     _ => None,
                 };
                 MacroStepRow {
                     action: step.action.clone().into(),
+                    error: errors[index].as_ref().map_or(Msg::None, Msg::from).to_ui(),
                     pause: pause.is_some(),
                     pause_ms: pause.unwrap_or_default().into(),
                     category: super::picker::category_for_value(&step.action),
@@ -134,15 +153,27 @@ fn steps(item: &Macro) -> ModelRc<MacroStepRow> {
     ))
 }
 
-fn row(config: &ResolvedAppConfig, entry: &Entry, steps: ModelRc<MacroStepRow>) -> MacroRow {
+fn row(
+    entry: &Entry,
+    analysis: &macros::MacroAnalysis,
+    index: usize,
+    steps: ModelRc<MacroStepRow>,
+) -> MacroRow {
     MacroRow {
         id: entry.item.id.clone().into(),
         name: entry.item.name.clone().into(),
         step_pause: entry.step_pause.clone().into(),
         modifier_delay: entry.modifier_delay.clone().into(),
-        usage: super::strings(macros::usage(config, &entry.item.id)),
-        error: issue(config, entry)
-            .map_or(Msg::None, |e| Msg::from(&e))
+        usage: super::strings(
+            analysis
+                .usage
+                .get(&entry.item.id)
+                .cloned()
+                .unwrap_or_default(),
+        ),
+        error: analysis.errors[index]
+            .as_ref()
+            .map_or(Msg::None, Msg::from)
             .to_ui(),
         steps,
     }
@@ -151,11 +182,20 @@ fn row(config: &ResolvedAppConfig, entry: &Entry, steps: ModelRc<MacroStepRow>) 
 /// Rebuild every row. Used after structural changes and reloads.
 fn render(ui: &SettingsWindow, document: &Document, draft: &[Entry]) {
     let editor = ui.global::<MacroEditor>();
-    let config = candidate(document, draft);
+    let analysis = analysis(document, draft);
+    editor.set_has_errors(analysis.errors.iter().any(Option::is_some));
     editor.set_macros(ModelRc::new(VecModel::from(
         draft
             .iter()
-            .map(|e| row(&config, e, steps(&e.item)))
+            .enumerate()
+            .map(|(index, e)| {
+                row(
+                    e,
+                    &analysis,
+                    index,
+                    steps(&e.item, &analysis.step_errors[index]),
+                )
+            })
             .collect::<Vec<_>>(),
     )));
     let settings = document.read();
@@ -167,12 +207,25 @@ fn render(ui: &SettingsWindow, document: &Document, draft: &[Entry]) {
 /// Refresh rows in place, keeping their step models, so fields keep focus
 /// while typing.
 fn annotate(ui: &SettingsWindow, document: &Document, draft: &[Entry]) {
-    let config = candidate(document, draft);
+    let analysis = analysis(document, draft);
     let rows = ui.global::<MacroEditor>().get_macros();
     let mut has_errors = false;
     for (index, entry) in draft.iter().enumerate() {
         if let Some(current) = rows.row_data(index) {
-            let next = row(&config, entry, current.steps.clone());
+            for (step_index, item) in entry.item.steps.iter().enumerate() {
+                if let Some(mut step) = current.steps.row_data(step_index) {
+                    let error = analysis.step_errors[index][step_index]
+                        .as_ref()
+                        .map_or(Msg::None, Msg::from)
+                        .to_ui();
+                    if step.action.as_str() != item.action || step.error != error {
+                        step.action = item.action.clone().into();
+                        step.error = error;
+                        current.steps.set_row_data(step_index, step);
+                    }
+                }
+            }
+            let next = row(entry, &analysis, index, current.steps.clone());
             has_errors |= !next.error.id.is_empty();
             // Models compare by identity, so compare usage by content. Skipping
             // unchanged rows matters for the interpreter (live preview): it wraps
@@ -213,8 +266,10 @@ fn persist(document: &Document, state: &mut State) -> Result<SaveResult, ConfigE
             })
         });
     }
-    let config = candidate(document, &state.draft);
-    let valid = state.draft.iter().all(|e| issue(&config, e).is_none());
+    let valid = analysis(document, &state.draft)
+        .errors
+        .iter()
+        .all(Option::is_none);
     if !valid {
         return Ok(SaveResult::Invalid);
     }
@@ -228,16 +283,14 @@ fn persist(document: &Document, state: &mut State) -> Result<SaveResult, ConfigE
         state.baseline = state.draft.clone();
         return Ok(SaveResult::Unchanged);
     }
-    let renames: Vec<(String, String)> = state
-        .draft
-        .iter()
-        .filter_map(|e| Some((e.saved_id.clone()?, e.item.id.clone())))
-        .collect();
+    let renames = renames(&state.draft);
     let edit = document.edit(View::Macros, |config| {
         config.edit_layout_with_commands(commands, |config| config.save_macros(items, &renames))
     });
     if edit.is_ok() {
-        for entry in &mut state.draft {
+        let saved = document.read().layout().macros.clone();
+        for (entry, item) in state.draft.iter_mut().zip(saved) {
+            entry.item = item;
             entry.saved_id = Some(entry.item.id.clone());
             entry.commands.clear();
         }
@@ -468,13 +521,17 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
             );
         });
     });
-    let s = structural.clone();
-    editor.on_remove(move |at| {
-        s(&|draft| {
-            if let Some(at) = index(at, draft.len()) {
-                draft.remove(at);
-            }
-        });
+    on!(ui, editor.on_remove, doc = document, shared = state => |ui, at| {
+        let mut state = shared.borrow_mut();
+        let Some(at) = index(at, state.draft.len()) else { return; };
+        if !macros::deletion_usage(&candidate(&doc, &state.draft), &state.draft[at].item.id).is_empty() {
+            let message = Msg::MacroIssue(macros::MacroIssue::InUse);
+            ui.global::<MacroEditor>().set_status(crate::notifications::report(&ui, &message));
+            return;
+        }
+        state.draft.remove(at);
+        save(&ui, &doc, &mut state);
+        render(&ui, &doc, &state.draft);
     });
     let s = structural.clone();
     editor.on_move(move |at, target| {

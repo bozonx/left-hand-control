@@ -259,26 +259,29 @@ pub fn analyze(config: &ResolvedAppConfig) -> Vec<RuleIssue> {
             }
         }
     }
-    for item in &config.macros {
-        for (index, step) in item.steps.iter().enumerate() {
-            if super::macros::validate_step(config, &step.action).is_err() {
+    let macro_analysis = super::macros::analyze(config);
+    for (macro_index, item) in config.macros.iter().enumerate() {
+        for (index, error) in macro_analysis.step_errors[macro_index].iter().enumerate() {
+            if error.is_some() {
                 add(
                     RuleIssueCode::InvalidMacroStep,
                     format!("macros[{}].steps[{index}]", item.id),
                 );
             }
         }
-        match super::macros::validate_loaded(config, item) {
-            Err(crate::config_document::ConfigError::Macro(super::macros::MacroIssue::Cycle)) => {
+        match macro_analysis.errors[macro_index].as_ref() {
+            Some(crate::config_document::ConfigError::Macro(super::macros::MacroIssue::Cycle)) => {
                 add(RuleIssueCode::MacroCycle, format!("macros[{}]", item.id))
             }
-            Err(crate::config_document::ConfigError::Macro(
-                super::macros::MacroIssue::InvalidId | super::macros::MacroIssue::DuplicateId,
+            Some(crate::config_document::ConfigError::Macro(
+                super::macros::MacroIssue::InvalidId
+                | super::macros::MacroIssue::DuplicateId
+                | super::macros::MacroIssue::ExpansionLimit,
             )) => add(
                 RuleIssueCode::InvalidMacro,
                 format!("macros[{}].id", item.id),
             ),
-            Err(crate::config_document::ConfigError::Macro(
+            Some(crate::config_document::ConfigError::Macro(
                 super::macros::MacroIssue::DelayRange,
             )) => add(RuleIssueCode::InvalidTiming, format!("macros[{}]", item.id)),
             _ => {}

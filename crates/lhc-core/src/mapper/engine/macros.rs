@@ -22,7 +22,30 @@ impl MacroRunner {
                 "[mapper] macro exceeded {} ms, aborting",
                 self.timeout.as_millis()
             );
+            crate::events::emit(crate::events::CoreEvent::MacroRunFailed(
+                crate::events::MacroRunFailure::Timeout,
+            ));
             self.abort(virt, out);
+        }
+        if let Some(MacroPhase::Command(job)) = self.active.as_ref().map(|am| &am.phase) {
+            match job.result() {
+                None => return,
+                Some(Err(error)) => {
+                    log::warn!("[mapper] {error}");
+                    crate::events::emit(crate::events::CoreEvent::MacroRunFailed(
+                        crate::events::MacroRunFailure::Command,
+                    ));
+                    self.cancel(virt, out);
+                    return;
+                }
+                Some(Ok(())) => {
+                    if let Some(am) = self.active.as_mut() {
+                        am.phase = MacroPhase::NextStep;
+                        am.current_step += 1;
+                        am.next_wake = next_macro_wake(now, am);
+                    }
+                }
+            }
         }
         self.start_queued(now);
         if let Some(mut am) = self.active.take() {
@@ -30,8 +53,8 @@ impl MacroRunner {
                 && (!self.text_pending || !matches!(am.phase, MacroPhase::NextStep))
             {
                 use crate::mapper::action::MacroStepItem;
+                use crate::profile::actions::MAX_MACRO_STEPS;
                 use MacroPhase;
-                const MAX_MACRO_STEPS: usize = 1000;
 
                 loop {
                     if am.current_step >= am.steps.len() {
@@ -60,7 +83,8 @@ impl MacroRunner {
                     match am.phase {
                         MacroPhase::NextStep => {
                             let step = &am.steps[am.current_step];
-                            match step {
+                            am.mod_delay = step.mod_delay;
+                            match &step.item {
                                 MacroStepItem::Stroke(ks) => {
                                     // Skip modifiers something else already
                                     // holds down (a `hold:` rule, a chord, a
@@ -107,14 +131,15 @@ impl MacroRunner {
                                     }
                                 }
                                 MacroStepItem::Command(command) => {
-                                    out.push(EngineOutput::RunCommand(command.clone()));
+                                    let job = crate::mapper::commands::MacroCommand::default();
+                                    out.push(EngineOutput::RunMacroCommand(
+                                        command.clone(),
+                                        job.clone(),
+                                    ));
+                                    am.phase = MacroPhase::Command(job);
                                     am.steps_emitted += 1;
-                                    am.current_step += 1;
-                                    if am.current_step < am.steps.len() {
-                                        am.next_wake = next_macro_wake(now, &am);
-                                        self.active = Some(am);
-                                        break;
-                                    }
+                                    self.active = Some(am);
+                                    break;
                                 }
                                 MacroStepItem::Literal(text) => {
                                     out.push(EngineOutput::Literal(text.clone()));
@@ -134,14 +159,16 @@ impl MacroRunner {
                                 MacroStepItem::Pause(duration) => {
                                     am.steps_emitted += 1;
                                     am.current_step += 1;
-                                    if am.current_step < am.steps.len() {
-                                        am.next_wake = now + *duration;
-                                        self.active = Some(am);
-                                        break;
+                                    am.next_wake = now + *duration;
+                                    if am.current_step == am.steps.len() {
+                                        am.phase = MacroPhase::FinalPause;
                                     }
+                                    self.active = Some(am);
+                                    break;
                                 }
                             }
                         }
+                        MacroPhase::FinalPause | MacroPhase::Command(_) => break,
                         MacroPhase::StrokeModDelayPress(ref ks) => {
                             let ks = ks.clone();
                             virt.tap_unless_held(ks.key, out);
@@ -182,7 +209,13 @@ impl MacroRunner {
             .active
             .as_ref()
             .filter(|am| !self.text_pending || !matches!(am.phase, MacroPhase::NextStep))
-            .map(|am| am.next_wake.saturating_duration_since(now));
+            .map(|am| {
+                if matches!(am.phase, MacroPhase::Command(_)) {
+                    Duration::from_millis(5)
+                } else {
+                    am.next_wake.saturating_duration_since(now)
+                }
+            });
         let timeout = self
             .active
             .as_ref()
@@ -202,7 +235,10 @@ impl MacroRunner {
             if matches!(am.phase, MacroPhase::NextStep)
                 && matches!(
                     previous,
-                    Some(crate::mapper::action::MacroStepItem::Literal(_))
+                    Some(super::model::CompiledMacroStep {
+                        item: crate::mapper::action::MacroStepItem::Literal(_),
+                        ..
+                    })
                 )
             {
                 am.next_wake = next_macro_wake(now, am);
@@ -227,7 +263,8 @@ impl MacroRunner {
                     });
                 }
             }
-            MacroPhase::NextStep => {}
+            MacroPhase::Command(job) => job.cancel(),
+            MacroPhase::NextStep | MacroPhase::FinalPause => {}
         }
     }
 
@@ -244,7 +281,7 @@ impl MacroRunner {
             return;
         }
         // A step this system cannot run would leave the macro half done.
-        if let Some(action) = md.steps.iter().find_map(|step| match step {
+        if let Some(action) = md.steps.iter().find_map(|step| match &step.item {
             crate::mapper::action::MacroStepItem::Unavailable(action) => Some(action),
             _ => None,
         }) {
@@ -256,7 +293,9 @@ impl MacroRunner {
         } else if self.queue.len() < MACRO_QUEUE_LIMIT {
             self.queue.push_back(md);
         } else {
-            log::debug!("[mapper] macro queue is full, dropping the run");
+            crate::events::emit(crate::events::CoreEvent::MacroRunFailed(
+                crate::events::MacroRunFailure::QueueFull,
+            ));
         }
     }
 
@@ -271,8 +310,7 @@ impl MacroRunner {
     fn begin(&self, md: CompiledMacro, now: Instant) -> ActiveMacro {
         ActiveMacro {
             steps: md.steps,
-            step_pause: md.step_pause,
-            mod_delay: md.mod_delay,
+            mod_delay: Duration::ZERO,
             current_step: 0,
             steps_emitted: 0,
             phase: MacroPhase::NextStep,
@@ -283,11 +321,10 @@ impl MacroRunner {
 }
 
 fn next_macro_wake(now: Instant, am: &ActiveMacro) -> Instant {
-    use crate::mapper::action::MacroStepItem;
-
-    if matches!(am.steps.get(am.current_step), Some(MacroStepItem::Pause(_))) {
-        now
-    } else {
-        now + am.step_pause
+    match am.steps.get(am.current_step) {
+        Some(step) if !matches!(step.item, crate::mapper::action::MacroStepItem::Pause(_)) => {
+            now + step.step_pause
+        }
+        _ => now,
     }
 }

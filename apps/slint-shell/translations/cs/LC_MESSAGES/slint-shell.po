@@ -3657,3 +3657,27 @@ msgstr "Herní režim zatím není k dispozici."
 
 msgid "Popup hotkeys are off while game mode is on."
 msgstr "Klávesové zkratky vyskakovacích oken jsou vypnuté, dokud je zapnutý herní režim."
+
+msgid "Macro expansion exceeds 1000 entries or 10 nesting levels"
+msgstr "Rozbalení makra přesahuje 1000 položek nebo 10 úrovní vnoření"
+
+msgid "Remove macro references before deleting it."
+msgstr "Před odstraněním makra odstraňte odkazy na něj."
+
+msgid "Macro queue is full. The new run was skipped."
+msgstr "Fronta maker je plná. Nové spuštění bylo přeskočeno."
+
+msgid "Macro timed out and was stopped."
+msgstr "Makro bylo zastaveno po vypršení časového limitu."
+
+msgid "Macro stopped because a command failed."
+msgstr "Makro bylo zastaveno kvůli selhání příkazu."
+
+msgid "Macro changes are not applied until all errors are fixed."
+msgstr "Změny maker se použijí až po opravě všech chyb."
+
+msgid "Discard unapplied macro changes?"
+msgstr "Zahodit nepoužité změny maker?"
+
+msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
+msgstr "Změny ID automaticky aktualizují odkazy. Vnořená makra zachovávají vlastní prodlevy. Příkazy musí úspěšně skončit před dalším krokem. Pauzy, text a příkazy se počítají do časového limitu makra."

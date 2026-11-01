@@ -3685,3 +3685,27 @@ msgstr "Ігровий режим поки що недоступний."
 
 msgid "Popup hotkeys are off while game mode is on."
 msgstr "Гарячі клавіші спливних вікон вимкнені, поки ввімкнено ігровий режим."
+
+msgid "Macro expansion exceeds 1000 entries or 10 nesting levels"
+msgstr "Розгорнутий макрос перевищує 1000 елементів або 10 рівнів вкладеності"
+
+msgid "Remove macro references before deleting it."
+msgstr "Перед видаленням макросу видаліть посилання на нього."
+
+msgid "Macro queue is full. The new run was skipped."
+msgstr "Черга макросів заповнена. Новий запуск пропущено."
+
+msgid "Macro timed out and was stopped."
+msgstr "Макрос зупинено через перевищення часу."
+
+msgid "Macro stopped because a command failed."
+msgstr "Макрос зупинено через помилку команди."
+
+msgid "Macro changes are not applied until all errors are fixed."
+msgstr "Зміни макросів не застосовуються, доки не виправлено всі помилки."
+
+msgid "Discard unapplied macro changes?"
+msgstr "Відкинути незастосовані зміни макросів?"
+
+msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
+msgstr "Зміна ID автоматично оновлює посилання. Вкладені макроси зберігають власні затримки. Наступний крок починається після успішного завершення команди. Паузи, текст і команди враховуються в обмеженні часу макросу."

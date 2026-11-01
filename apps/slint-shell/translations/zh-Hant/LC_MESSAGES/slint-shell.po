@@ -3357,3 +3357,27 @@ msgstr "遊戲模式暫不可用。"
 
 msgid "Popup hotkeys are off while game mode is on."
 msgstr "遊戲模式開啟時，彈出視窗快捷鍵處於關閉狀態。"
+
+msgid "Macro expansion exceeds 1000 entries or 10 nesting levels"
+msgstr "巨集展開超過1000個項目或10層巢狀結構"
+
+msgid "Remove macro references before deleting it."
+msgstr "刪除巨集前請先移除對它的參照。"
+
+msgid "Macro queue is full. The new run was skipped."
+msgstr "巨集佇列已滿，已略過新的執行要求。"
+
+msgid "Macro timed out and was stopped."
+msgstr "巨集已逾時並停止。"
+
+msgid "Macro stopped because a command failed."
+msgstr "巨集因命令失敗而停止。"
+
+msgid "Macro changes are not applied until all errors are fixed."
+msgstr "修正所有錯誤後才會套用巨集的變更。"
+
+msgid "Discard unapplied macro changes?"
+msgstr "捨棄尚未套用的巨集變更？"
+
+msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
+msgstr "變更ID會自動更新參照。巢狀巨集保留各自的延遲。命令必須成功完成後才會開始下一步。暫停、文字輸入與命令皆計入巨集的逾時時間。"

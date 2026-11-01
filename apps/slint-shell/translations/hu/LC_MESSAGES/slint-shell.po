@@ -3718,3 +3718,27 @@ msgstr "A játékmód még nem érhető el."
 
 msgid "Popup hotkeys are off while game mode is on."
 msgstr "A felugró ablakok gyorsbillentyűi ki vannak kapcsolva, amíg a játékmód be van kapcsolva."
+
+msgid "Macro expansion exceeds 1000 entries or 10 nesting levels"
+msgstr "A makró kibontása meghaladja az 1000 bejegyzést vagy a 10 beágyazási szintet"
+
+msgid "Remove macro references before deleting it."
+msgstr "Törlés előtt távolítsa el a makróra mutató hivatkozásokat."
+
+msgid "Macro queue is full. The new run was skipped."
+msgstr "A makrók várólistája megtelt. Az új futtatás kimaradt."
+
+msgid "Macro timed out and was stopped."
+msgstr "A makró időtúllépés miatt leállt."
+
+msgid "Macro stopped because a command failed."
+msgstr "A makró egy parancs hibája miatt leállt."
+
+msgid "Macro changes are not applied until all errors are fixed."
+msgstr "A makrók módosításai csak az összes hiba javítása után lépnek érvénybe."
+
+msgid "Discard unapplied macro changes?"
+msgstr "Elveti a makrók nem alkalmazott módosításait?"
+
+msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
+msgstr "Az ID módosítása automatikusan frissíti a hivatkozásokat. A beágyazott makrók megőrzik késleltetéseiket. A parancsoknak sikeresen be kell fejeződniük a következő lépés előtt. A szünetek, szövegek és parancsok beleszámítanak a makró időkorlátjába."

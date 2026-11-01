@@ -23,7 +23,12 @@ pub(super) enum CompiledAction {
 
 #[derive(Clone)]
 pub(super) struct CompiledMacro {
-    pub(super) steps: Vec<MacroStepItem>,
+    pub(super) steps: Vec<CompiledMacroStep>,
+}
+
+#[derive(Clone)]
+pub(super) struct CompiledMacroStep {
+    pub(super) item: MacroStepItem,
     pub(super) step_pause: Duration,
     pub(super) mod_delay: Duration,
 }
@@ -70,8 +75,7 @@ pub(super) struct LayerTrigger {
 
 #[derive(Clone)]
 pub(super) struct ActiveMacro {
-    pub(super) steps: Vec<MacroStepItem>,
-    pub(super) step_pause: Duration,
+    pub(super) steps: Vec<CompiledMacroStep>,
     pub(super) mod_delay: Duration,
     pub(super) current_step: usize,
     pub(super) steps_emitted: usize,
@@ -84,6 +88,8 @@ pub(super) struct ActiveMacro {
 #[derive(Clone)]
 pub(super) enum MacroPhase {
     NextStep,
+    FinalPause,
+    Command(crate::mapper::commands::MacroCommand),
     StrokeModDelayPress(Keystroke),
     StrokeModDelayRelease(Keystroke),
 }
@@ -147,6 +153,8 @@ pub enum EngineOutput {
     RunSystem(SystemAction),
     /// Execute a shell command defined by the current layout.
     RunCommand(ProcessInvocation),
+    /// A macro command whose completion gates subsequent steps.
+    RunMacroCommand(ProcessInvocation, crate::mapper::commands::MacroCommand),
     /// Type a single Unicode character via the Wayland virtual-keyboard
     /// backend. Fire-and-forget on key press; no release event is needed.
     Literal(String),

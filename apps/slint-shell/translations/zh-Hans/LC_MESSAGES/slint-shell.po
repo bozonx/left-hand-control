@@ -3356,3 +3356,27 @@ msgstr "游戏模式暂不可用。"
 
 msgid "Popup hotkeys are off while game mode is on."
 msgstr "游戏模式开启时，弹出窗口快捷键处于关闭状态。"
+
+msgid "Macro expansion exceeds 1000 entries or 10 nesting levels"
+msgstr "宏展开超过1000个条目或10层嵌套"
+
+msgid "Remove macro references before deleting it."
+msgstr "删除宏之前请先移除对它的引用。"
+
+msgid "Macro queue is full. The new run was skipped."
+msgstr "宏队列已满，已跳过新的运行请求。"
+
+msgid "Macro timed out and was stopped."
+msgstr "宏已超时并停止。"
+
+msgid "Macro stopped because a command failed."
+msgstr "宏因命令失败而停止。"
+
+msgid "Macro changes are not applied until all errors are fixed."
+msgstr "修复所有错误后才会应用宏的更改。"
+
+msgid "Discard unapplied macro changes?"
+msgstr "放弃尚未应用的宏更改？"
+
+msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
+msgstr "更改ID会自动更新引用。嵌套宏保留各自的延迟。命令必须成功完成后才会开始下一步。暂停、文本输入和命令均计入宏的超时时间。"

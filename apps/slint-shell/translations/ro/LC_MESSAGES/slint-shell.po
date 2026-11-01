@@ -3719,3 +3719,27 @@ msgstr "Modul joc nu este încă disponibil."
 
 msgid "Popup hotkeys are off while game mode is on."
 msgstr "Comenzile rapide ale ferestrelor pop-up sunt dezactivate cât timp modul joc este activ."
+
+msgid "Macro expansion exceeds 1000 entries or 10 nesting levels"
+msgstr "Extinderea macrocomenzii depășește 1000 de intrări sau 10 niveluri de imbricare"
+
+msgid "Remove macro references before deleting it."
+msgstr "Eliminați referințele la macrocomandă înainte de a o șterge."
+
+msgid "Macro queue is full. The new run was skipped."
+msgstr "Coada de macrocomenzi este plină. Noua execuție a fost omisă."
+
+msgid "Macro timed out and was stopped."
+msgstr "Macrocomanda a fost oprită la expirarea timpului."
+
+msgid "Macro stopped because a command failed."
+msgstr "Macrocomanda a fost oprită deoarece o comandă a eșuat."
+
+msgid "Macro changes are not applied until all errors are fixed."
+msgstr "Modificările macrocomenzilor se aplică doar după corectarea tuturor erorilor."
+
+msgid "Discard unapplied macro changes?"
+msgstr "Renunțați la modificările neaplicate ale macrocomenzilor?"
+
+msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
+msgstr "Schimbările de ID actualizează automat referințele. Macrocomenzile imbricate își păstrează întârzierile. Comenzile trebuie să se încheie cu succes înainte de pasul următor. Pauzele, textul și comenzile sunt incluse în limita de timp a macrocomenzii."

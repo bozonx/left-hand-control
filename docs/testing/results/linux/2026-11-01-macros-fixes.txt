@@ -1,0 +1,65 @@
+Macro editor and playback fixes — 2026-11-01
+
+Sources: 4e74d61ea7a7c68b0bdfe7c165fbf1270fe6a8c9 plus the uncommitted macro fixes in this working tree.
+Environment: Manjaro Linux 7.2.9-1-MANJARO, KDE Plasma 6.7.5, Wayland.
+UI scenarios use disposable StoragePaths; mapper e2e uses synthetic keyboards
+and its private runtime directory.
+
+Final acceptance commands (all exit 0):
+
+PASS cargo fmt -p lhc-core -p slint-shell --check
+PASS git diff --check
+PASS cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+PASS cargo test --locked --workspace --features slint-shell/spell
+     777 passed, 0 failed, 11 ignored across test targets.
+     Includes 9 macro draft tests and all new core regressions.
+PASS cargo check --locked -p slint-shell --all-targets
+     Non-Spell configuration.
+PASS cargo deny check
+     advisories, bans, licenses and sources OK; warnings include duplicate
+     versions of transitive crates. Dependencies were not changed.
+PASS cargo run --locked -p slint-shell --features spell --example editor -- --smoke
+PASS cargo run --locked -p slint-shell --features spell --example interactions
+PASS LHC_MACROS_SNAPSHOT=/tmp/lhc-macros.ppm cargo run --locked -p slint-shell --features spell --example macros
+PASS LHC_EDITOR_SNAPSHOTS=/tmp/lhc-macros-small cargo run --locked -p slint-shell --features spell --example small-window
+     20 states at 640x400. The macro state scrolls to the step controls and
+     checks New macro, Add pause and Add step against the window bounds.
+PASS cargo test --locked -p lhc-core --test mapper_e2e -- --ignored
+     8 passed, including real evdev -> engine -> uinput macro pauses.
+     These are the 8 mapper tests ignored in the workspace command above;
+     the other 3 environment-dependent unit tests remain ignored.
+
+Intermediate targeted commands also run:
+PASS cargo test --locked -p lhc-core --lib macro
+     65 passed before the final self-reference deletion regression was added;
+     that additional regression passed in the final workspace run.
+PASS cargo test --locked -p slint-shell --lib pages::macros::tests
+     6 passed at that stage; the final workspace run passes all 9 draft tests.
+
+Resolved findings:
+- Shared expansion/depth validation, one graph analysis and usage pass per refresh.
+- Transactional rename validation after reference updates, including swaps;
+  the editor draft follows the committed references and cannot restore old IDs.
+- A trailing pause remains active and delays queued macro runs.
+- Nested macros preserve their own timing overrides and inherit global defaults.
+- Macro commands wait for successful completion without blocking keyboard input;
+  launch/exit failures stop the sequence and clear queued runs.
+- Stop, reconfiguration and timeout revoke command jobs; Linux cancellation kills
+  the command process group. Disabled commands reject the whole macro before output.
+- Queue overflow and timeout reach the shell as typed events and translated notices.
+- Step-local errors, visible unapplied draft, confirmed discard, New macro remains
+  available while correcting errors, and referenced macro deletion is guarded.
+- Self-references do not block deletion: they disappear with their macro.
+- Documentation, changelog and all 20 non-English PO catalogs updated.
+
+Visual finding and verification:
+The original small-window smoke passed but its screenshot showed the right-hand
+macro controls clipped. Macro cards now stack metadata and steps below 900 px;
+the strengthened scenario verifies the controls after scrolling. Reviewed final
+1120x760 Russian and 640x400 English screenshots, including before/after scrolling.
+Screenshots and full logs are local /tmp artifacts, not checked into Git.
+
+Limits: Windows, macOS and VM acceptance were not run. Full manual theme,
+accessibility and physical-device acceptance is not claimed. System actions are
+submitted to their backend; application/window completion is not acknowledged.
+Regression instructions: docs/testing/macros.md.

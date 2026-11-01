@@ -19,6 +19,9 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Macros: editor and runtime share expansion-limit checks; renaming carries nested references before validation, and referenced macros cannot be deleted. Step errors and unapplied drafts are visible, with a discard action. Macro cards stack their fields and steps in narrow windows so action buttons remain reachable.
+- Macro playback honours trailing pauses and nested timing overrides. Command steps wait for successful completion, abort the sequence on failure, and are cancelled on shutdown, reconfiguration or timeout. Queue overflow and timeout now notify the user. Updated macro documentation and all interface translations.
+
 - Game mode (in development): the toggle key, the CLI and the tray no longer change or save the mode while in-development features are off; a toggle reads and flips the state at once. Steam Big Picture and other launchers in fullscreen no longer turn game mode on, and Auto no longer reports itself unavailable where fullscreen detection is unsupported. The process picker no longer lists truncated duplicate names or freezes the window while it reads processes.
 - Action picker: capturing a combination for a plain-key slot now takes the last key instead of producing an invalid value; capturing only modifiers gives an assignable chord.
 - Action picker: opens on the category of the current value (for example Navigation for `Ctrl+ArrowUp`), an apply error disappears once the value is edited, and file-chooser errors are shown next to the command fields.

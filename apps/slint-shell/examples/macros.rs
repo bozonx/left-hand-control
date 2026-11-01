@@ -121,6 +121,48 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     editor.invoke_refresh();
     assert!(!editor.get_has_errors());
     assert!(!editor.get_has_unsaved_changes());
+    editor.invoke_add("Caller".into());
+    editor.invoke_add_step(0, "macro:testMacro".into());
+    editor.invoke_set_field(1, MacroField::Id, "renamedMacro".into());
+    assert!(editor.invoke_flush_pending());
+    assert_eq!(
+        document.read().layout().macros[0].steps[0].action,
+        "macro:renamedMacro"
+    );
+    assert_eq!(
+        editor
+            .get_macros()
+            .row_data(0)
+            .unwrap()
+            .steps
+            .row_data(0)
+            .unwrap()
+            .action,
+        "macro:renamedMacro"
+    );
+    editor.invoke_remove(1);
+    assert_eq!(document.read().layout().macros.len(), 2);
+    assert_eq!(editor.get_status().id, "macro-in-use");
+    editor.invoke_remove(0);
+    editor.invoke_set_step(0, 0, "pause:0".into());
+    assert!(editor.get_has_unsaved_changes());
+    assert_eq!(
+        editor
+            .get_macros()
+            .row_data(0)
+            .unwrap()
+            .steps
+            .row_data(0)
+            .unwrap()
+            .error
+            .id,
+        "macro-pause-range"
+    );
+    editor.invoke_add("Allowed while invalid".into());
+    assert_eq!(editor.get_macros().row_count(), 2);
+    editor.invoke_refresh();
+    assert_eq!(editor.get_macros().row_count(), 1);
+    assert!(!editor.get_has_unsaved_changes());
     ui.show()?;
     ui.window().set_size(slint::LogicalSize::new(1120.0, 760.0));
     let timer = slint::Timer::default();

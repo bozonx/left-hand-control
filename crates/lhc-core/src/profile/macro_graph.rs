@@ -45,18 +45,72 @@ impl<'a> MacroGraph<'a> {
         Self { definitions }
     }
 
+    #[cfg(test)]
     pub(crate) fn has_cycle(&self, source: &MacroRef) -> bool {
-        let mut visited = HashSet::new();
-        let mut pending = self.references(source);
-        while let Some(current) = pending.pop() {
-            if &current == source {
-                return true;
-            }
-            if visited.insert(current.clone()) {
-                pending.extend(self.references(&current));
+        self.cycle_members().contains(source)
+    }
+
+    /// Iterative strongly connected components: analyze all cycles once,
+    /// without recursion or a separate graph traversal for every macro.
+    pub(crate) fn cycle_members(&self) -> HashSet<MacroRef> {
+        let edges: HashMap<_, _> = self
+            .definitions
+            .keys()
+            .map(|id| {
+                (
+                    id.clone(),
+                    self.references(id)
+                        .into_iter()
+                        .filter(|id| self.definitions.contains_key(id))
+                        .collect::<Vec<_>>(),
+                )
+            })
+            .collect();
+        let mut reverse: HashMap<MacroRef, Vec<MacroRef>> = HashMap::new();
+        for (source, targets) in &edges {
+            for target in targets {
+                reverse
+                    .entry(target.clone())
+                    .or_default()
+                    .push(source.clone());
             }
         }
-        false
+        let mut seen = HashSet::new();
+        let mut order = Vec::new();
+        for root in edges.keys() {
+            let mut stack = vec![(root.clone(), false)];
+            while let Some((node, leaving)) = stack.pop() {
+                if leaving {
+                    order.push(node);
+                } else if seen.insert(node.clone()) {
+                    stack.push((node.clone(), true));
+                    stack.extend(edges[&node].iter().map(|next| (next.clone(), false)));
+                }
+            }
+        }
+        seen.clear();
+        let mut cyclic = HashSet::new();
+        for root in order.into_iter().rev() {
+            if seen.contains(&root) {
+                continue;
+            }
+            let mut component = Vec::new();
+            let mut stack = vec![root];
+            while let Some(node) = stack.pop() {
+                if seen.insert(node.clone()) {
+                    stack.extend(reverse.get(&node).into_iter().flatten().cloned());
+                    component.push(node);
+                }
+            }
+            if component.len() > 1
+                || component
+                    .first()
+                    .is_some_and(|node| edges[node].contains(node))
+            {
+                cyclic.extend(component);
+            }
+        }
+        cyclic
     }
 
     fn references(&self, source: &MacroRef) -> Vec<MacroRef> {
@@ -180,5 +234,21 @@ mod tests {
             graph.expansion_issue(&MacroRef::User("repeated".into())),
             Some(ExpansionIssue::Steps)
         );
+    }
+    #[test]
+    fn cycle_analysis_excludes_callers_and_bridges_between_cycles() {
+        let graph = MacroGraph::new([
+            ("a", vec!["macro:a", "macro:bridge"]),
+            ("bridge", vec!["macro:b"]),
+            ("b", vec!["macro:c"]),
+            ("c", vec!["macro:b"]),
+            ("caller", vec!["macro:a"]),
+            ("leaf", vec!["KeyA"]),
+        ]);
+        let expected: HashSet<_> = ["a", "b", "c"]
+            .into_iter()
+            .map(|id| MacroRef::User(id.into()))
+            .collect();
+        assert_eq!(graph.cycle_members(), expected);
     }
 }

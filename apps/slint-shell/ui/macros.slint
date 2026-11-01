@@ -11,7 +11,7 @@ import { MacroField, PickerCategory, PickerTarget } from "types.slint";
 import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, Divider, FieldLabel, IconButton, DurationInput, PageLayout, PageHeader, CardTitle, EmptyState } from "controls.slint";
 import { Button } from "std-widgets.slint";
 
-export struct MacroStepRow { action: string, pause: bool, pause-ms: string, category: PickerCategory }
+export struct MacroStepRow { action: string, pause: bool, pause-ms: string, category: PickerCategory, error: Message }
 export struct MacroRow { id: string, name: string, step-pause: string, modifier-delay: string, usage: [string], error: Message, steps: [MacroStepRow] }
 export struct BuiltinMacroRow { id: string, name: Message, steps: string }
 export global MacroEditor {
@@ -75,12 +75,14 @@ component StepRow inherits HorizontalLayout {
                 edited(value) => { MacroEditor.set-pause(root.macro-index, root.index, value); }
             }
         }
+        if root.step.error.id != "": Text { accessible-live-region: polite; text: Locale.text(root.step.error); color: Theme.error; wrap: word-wrap; }
     }
     DragHandle { accessible-description: root.step.action + ". Alt+↑ / Alt+↓"; group: DragGroups.macro-steps + root.macro-index; index: root.index; count: root.count; dropped(from, to) => { MacroEditor.move-step(root.macro-index, from, to); } }
     IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete step") + " " + (root.index + 1) + ": " + root.step.action; clicked => { root.remove(); } }
 }
 
 component MacroCard inherits Card {
+    min-width: 0px;
     accessible-role: groupbox;
     accessible-label: root.item.name;
     accessible-item-index: root.index;
@@ -88,16 +90,18 @@ component MacroCard inherits Card {
     in property <int> index;
     in property <int> count;
     in property <MacroRow> item;
+    private property <bool> compact: root.width < 900px;
     opacity: DragDrop.dragging && DragDrop.group == DragGroups.macros && DragDrop.source == root.index ? Theme.dragged-opacity : 1;
 
     callback remove();
     callback remove-step(int);
     callback copy(string);
-    HorizontalLayout {
+    GridLayout {
         padding: Theme.space-xl;
         spacing: Theme.space-2xl;
         VerticalLayout {
-            width: 400px;
+            row: 0; col: 0;
+            width: root.compact ? root.width - 2 * Theme.space-xl : 400px;
             horizontal-stretch: 0;
             spacing: Theme.space-l-plus;
             alignment: start;
@@ -202,8 +206,15 @@ component MacroCard inherits Card {
                 for place in root.item.usage: Badge { text: place; }
             }
         }
-        Rectangle { width: 1px; background: Theme.divider; }
-        VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: Theme.space-l; alignment: start;
+        Rectangle {
+            row: root.compact ? 1 : 0; col: root.compact ? 0 : 1;
+            min-width: root.compact ? 0px : 1px;
+            max-width: root.compact ? Theme.unbounded : 1px;
+            min-height: root.compact ? 1px : 0px;
+            max-height: root.compact ? 1px : Theme.unbounded;
+            background: Theme.divider;
+        }
+        VerticalLayout { row: root.compact ? 2 : 0; col: root.compact ? 0 : 2; horizontal-stretch: 1; min-width: 0px; spacing: Theme.space-l; alignment: start;
             HorizontalLayout {
                 spacing: Theme.space-s;
                 FieldLabel { text: @tr("Steps"); vertical-alignment: center; horizontal-stretch: 1; }
@@ -339,13 +350,14 @@ export component MacrosPage inherits Rectangle {
     private property <bool> builtin-open: false;
     private property <int> delete-macro: -1;
     private property <int> delete-step: -1;
+    private property <bool> discard-draft: false;
     clipboard := TextInput { visible: false; width: 0px; height: 0px; }
     function copy(value: string) { clipboard.text = value; clipboard.select-all(); clipboard.copy(); NotificationCenter.send({ id: "copied" }); }
     PageLayout {
         accessible-label: @tr("Macros");
         PageHeader {
             title: @tr("User macros");
-            info: @tr("Build reusable sequences of key chords, text, commands and system actions. Use a unique ID in macro:<id> references and a readable name in action lists. Assign macros on the Layers or Triggers tab; change an ID only when it is unused.\n\nThe step pause applies between steps of this macro. Modifier delay is the time between pressing a modifier and the main key. Leave delays empty to use Settings defaults.") + "\n" + @tr("Global defaults: step pause {} ms; modifier delay {} ms.", MacroEditor.default-step-pause, MacroEditor.default-modifier-delay);
+            info: @tr("ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout.") + "\n" + @tr("Global defaults: step pause {} ms; modifier delay {} ms.", MacroEditor.default-step-pause, MacroEditor.default-modifier-delay);
             VerticalLayout {
                 alignment: center;
                 Button {
@@ -353,7 +365,6 @@ export component MacrosPage inherits Rectangle {
                     primary: true;
                     icon: @image-url("icons/plus.svg");
                     colorize-icon: true;
-                    enabled: !MacroEditor.has-errors;
                     clicked => { MacroEditor.add(@tr("New macro")); }
                 }
             }
@@ -363,9 +374,16 @@ export component MacrosPage inherits Rectangle {
             viewport-width: self.visible-width;
             vertical-stretch: 1;
             PageContent {
+                min-width: 0px;
                 alignment: start;
                 spacing: Theme.space-xl;
-                if MacroEditor.has-errors: Text { text: @tr("Fix the existing macro errors first"); color: Theme.muted; font-size: Theme.font-body; }
+                if MacroEditor.has-unsaved-changes: Card {
+                    HorizontalLayout {
+                        padding: Theme.space-l; spacing: Theme.space-l;
+                        Text { horizontal-stretch: 1; text: @tr("Macro changes are not applied until all errors are fixed."); color: Theme.muted; wrap: word-wrap; }
+                        Button { text: @tr("Discard changes"); clicked => { root.discard-draft = true; } }
+                    }
+                }
                 if MacroEditor.macros.length == 0: EmptyState { text: @tr("No macros yet. Click \"New macro\" to create the first one."); }
                 for item[index] in MacroEditor.macros: MacroCard {
                     index: index;
@@ -379,11 +397,20 @@ export component MacrosPage inherits Rectangle {
             }
         }
     }
+    if root.discard-draft: ConfirmDialog {
+        width: 100%; height: 100%;
+        title: @tr("Unsaved changes");
+        body: @tr("Discard unapplied macro changes?");
+        confirm-text: @tr("Discard changes");
+        cancel => { root.discard-draft = false; }
+        confirm => { MacroEditor.refresh(); root.discard-draft = false; }
+    }
     if root.delete-macro >= 0 && root.delete-step < 0: ConfirmDialog {
         width: 100%;
         height: 100%;
         title: @tr("Delete macro?");
-        body: @tr("The macro will be deleted. References macro:{} will stop working.", MacroEditor.macros[root.delete-macro].id);
+        confirm-enabled: MacroEditor.macros[root.delete-macro].usage.length == 0;
+        body: MacroEditor.macros[root.delete-macro].usage.length > 0 ? @tr("Remove macro references before deleting it.") : @tr("The macro will be deleted. References macro:{} will stop working.", MacroEditor.macros[root.delete-macro].id);
         confirm-text: @tr("Delete");
         cancel => { root.delete-macro = -1; }
         confirm => { MacroEditor.remove(root.delete-macro); root.delete-macro = -1; }

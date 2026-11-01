@@ -3686,3 +3686,27 @@ msgstr "Ойын режимі әзірге қолжетімсіз."
 
 msgid "Popup hotkeys are off while game mode is on."
 msgstr "Ойын режимі қосулы кезде қалқымалы терезелердің жылдам пернелері өшірулі."
+
+msgid "Macro expansion exceeds 1000 entries or 10 nesting levels"
+msgstr "Макросты кеңейту 1000 жазбадан немесе 10 кірістірілу деңгейінен асады"
+
+msgid "Remove macro references before deleting it."
+msgstr "Макросты жоймас бұрын оған сілтемелерді жойыңыз."
+
+msgid "Macro queue is full. The new run was skipped."
+msgstr "Макростар кезегі толы. Жаңа іске қосу өткізіліп жіберілді."
+
+msgid "Macro timed out and was stopped."
+msgstr "Макрос уақыт шегі асқандықтан тоқтатылды."
+
+msgid "Macro stopped because a command failed."
+msgstr "Макрос пәрмен қатесіне байланысты тоқтатылды."
+
+msgid "Macro changes are not applied until all errors are fixed."
+msgstr "Барлық қателер түзетілмейінше макрос өзгерістері қолданылмайды."
+
+msgid "Discard unapplied macro changes?"
+msgstr "Макростардың қолданылмаған өзгерістерін болдырмау керек пе?"
+
+msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
+msgstr "ID өзгерістері сілтемелерді автоматты түрде жаңартады. Кірістірілген макростар өз кідірістерін сақтайды. Келесі қадамға дейін пәрмендер сәтті аяқталуы керек. Үзілістер, мәтін және пәрмендер макростың уақыт шегіне кіреді."

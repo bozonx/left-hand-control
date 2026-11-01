@@ -3718,3 +3718,27 @@ msgstr "Tryb gry nie jest jeszcze dostępny."
 
 msgid "Popup hotkeys are off while game mode is on."
 msgstr "Skróty okienek są wyłączone, gdy tryb gry jest włączony."
+
+msgid "Macro expansion exceeds 1000 entries or 10 nesting levels"
+msgstr "Rozwinięcie makra przekracza 1000 wpisów lub 10 poziomów zagnieżdżenia"
+
+msgid "Remove macro references before deleting it."
+msgstr "Przed usunięciem makra usuń odwołania do niego."
+
+msgid "Macro queue is full. The new run was skipped."
+msgstr "Kolejka makr jest pełna. Pominięto nowe uruchomienie."
+
+msgid "Macro timed out and was stopped."
+msgstr "Makro zatrzymano po przekroczeniu limitu czasu."
+
+msgid "Macro stopped because a command failed."
+msgstr "Makro zatrzymano z powodu błędu polecenia."
+
+msgid "Macro changes are not applied until all errors are fixed."
+msgstr "Zmiany makr zostaną zastosowane po naprawieniu wszystkich błędów."
+
+msgid "Discard unapplied macro changes?"
+msgstr "Odrzucić niezastosowane zmiany makr?"
+
+msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
+msgstr "Zmiany ID automatycznie aktualizują odwołania. Zagnieżdżone makra zachowują własne opóźnienia. Polecenia muszą zakończyć się pomyślnie przed następnym krokiem. Przerwy, tekst i polecenia wliczają się do limitu czasu makra."

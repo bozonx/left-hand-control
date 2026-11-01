@@ -43,6 +43,15 @@ pub enum CoreEvent {
     /// A bound action cannot run on this OS or desktop and was skipped;
     /// the payload is the action string.
     ActionUnavailable(String),
+    /// A macro run was rejected or stopped before completing.
+    MacroRunFailed(MacroRunFailure),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MacroRunFailure {
+    QueueFull,
+    Timeout,
+    Command,
 }
 
 /// Why a `text:` action was not typed. Details are untranslated.

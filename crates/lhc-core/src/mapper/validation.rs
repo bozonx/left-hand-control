@@ -324,9 +324,10 @@ fn validate_action(
 }
 
 fn validate_macro_cycles(cfg: &MapperConfig, graph: &MacroGraph<'_>, errors: &mut Vec<String>) {
+    let cycles = graph.cycle_members();
     for item in &cfg.macros {
         let id = item.id.trim();
-        if !id.is_empty() && graph.has_cycle(&MacroRef::User(id.into())) {
+        if !id.is_empty() && cycles.contains(&MacroRef::User(id.into())) {
             errors.push(format!(
                 "Macro \"macro:{id}\": macro references cannot form a cycle"
             ));

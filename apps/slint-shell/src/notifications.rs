@@ -52,6 +52,8 @@ const POLICY: &[(&[&str], ToastKind, Duration)] = &[
             "library-changed",
             "worker-restarting",
             "commands-disabled",
+            "macro-queue-full",
+            "macro-in-use",
             "action-unavailable",
             "action-unavailable-named",
             "save-layout-first",
@@ -71,6 +73,8 @@ const POLICY: &[(&[&str], ToastKind, Duration)] = &[
         &[
             "error",
             "action-failed",
+            "macro-timeout",
+            "macro-command-failed",
             "config-unavailable",
             "worker-unavailable",
             "worker-restart-limit",

@@ -3682,3 +3682,27 @@ msgstr "El modo de juego aún no está disponible."
 
 msgid "Popup hotkeys are off while game mode is on."
 msgstr "Los atajos de las ventanas emergentes están desactivados mientras el modo de juego está activo."
+
+msgid "Macro expansion exceeds 1000 entries or 10 nesting levels"
+msgstr "La expansión de la macro supera 1000 entradas o 10 niveles de anidamiento"
+
+msgid "Remove macro references before deleting it."
+msgstr "Elimina las referencias a la macro antes de borrarla."
+
+msgid "Macro queue is full. The new run was skipped."
+msgstr "La cola de macros está llena. Se omitió la nueva ejecución."
+
+msgid "Macro timed out and was stopped."
+msgstr "La macro se detuvo al superar el tiempo límite."
+
+msgid "Macro stopped because a command failed."
+msgstr "La macro se detuvo porque falló un comando."
+
+msgid "Macro changes are not applied until all errors are fixed."
+msgstr "Los cambios de macros no se aplican hasta corregir todos los errores."
+
+msgid "Discard unapplied macro changes?"
+msgstr "¿Descartar los cambios de macros sin aplicar?"
+
+msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
+msgstr "Los cambios de ID actualizan las referencias automáticamente. Las macros anidadas conservan sus retardos. Los comandos deben finalizar correctamente antes del siguiente paso. Las pausas, el texto y los comandos cuentan para el tiempo límite de la macro."

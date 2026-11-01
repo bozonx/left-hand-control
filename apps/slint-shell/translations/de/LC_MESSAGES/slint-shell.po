@@ -3757,3 +3757,27 @@ msgstr "Der Spielmodus ist noch nicht verfügbar."
 
 msgid "Popup hotkeys are off while game mode is on."
 msgstr "Popup-Tastenkürzel sind deaktiviert, solange der Spielmodus aktiv ist."
+
+msgid "Macro expansion exceeds 1000 entries or 10 nesting levels"
+msgstr "Die Makroerweiterung überschreitet 1000 Einträge oder 10 Verschachtelungsebenen"
+
+msgid "Remove macro references before deleting it."
+msgstr "Entfernen Sie vor dem Löschen die Makroverweise."
+
+msgid "Macro queue is full. The new run was skipped."
+msgstr "Die Makrowarteschlange ist voll. Der neue Aufruf wurde übersprungen."
+
+msgid "Macro timed out and was stopped."
+msgstr "Das Makro wurde wegen Zeitüberschreitung gestoppt."
+
+msgid "Macro stopped because a command failed."
+msgstr "Das Makro wurde wegen eines fehlgeschlagenen Befehls gestoppt."
+
+msgid "Macro changes are not applied until all errors are fixed."
+msgstr "Makroänderungen werden erst angewendet, wenn alle Fehler behoben sind."
+
+msgid "Discard unapplied macro changes?"
+msgstr "Nicht angewendete Makroänderungen verwerfen?"
+
+msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
+msgstr "ID-Änderungen aktualisieren Verweise automatisch. Verschachtelte Makros behalten ihre Verzögerungen. Befehle müssen vor dem nächsten Schritt erfolgreich enden. Pausen, Text und Befehle zählen zum Makrozeitlimit."

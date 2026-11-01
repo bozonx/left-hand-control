@@ -3781,3 +3781,27 @@ msgstr "Η λειτουργία παιχνιδιού δεν είναι ακόμ�
 
 msgid "Popup hotkeys are off while game mode is on."
 msgstr "Οι συντομεύσεις των αναδυόμενων παραθύρων είναι απενεργοποιημένες όσο η λειτουργία παιχνιδιού είναι ενεργή."
+
+msgid "Macro expansion exceeds 1000 entries or 10 nesting levels"
+msgstr "Η επέκταση της μακροεντολής υπερβαίνει τις 1000 εγγραφές ή τα 10 επίπεδα εμφώλευσης"
+
+msgid "Remove macro references before deleting it."
+msgstr "Αφαιρέστε τις αναφορές στη μακροεντολή πριν τη διαγράψετε."
+
+msgid "Macro queue is full. The new run was skipped."
+msgstr "Η ουρά μακροεντολών είναι πλήρης. Η νέα εκτέλεση παραλείφθηκε."
+
+msgid "Macro timed out and was stopped."
+msgstr "Η μακροεντολή σταμάτησε λόγω υπέρβασης χρόνου."
+
+msgid "Macro stopped because a command failed."
+msgstr "Η μακροεντολή σταμάτησε επειδή απέτυχε μια εντολή."
+
+msgid "Macro changes are not applied until all errors are fixed."
+msgstr "Οι αλλαγές μακροεντολών εφαρμόζονται αφού διορθωθούν όλα τα σφάλματα."
+
+msgid "Discard unapplied macro changes?"
+msgstr "Απόρριψη μη εφαρμοσμένων αλλαγών μακροεντολών;"
+
+msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
+msgstr "Οι αλλαγές ID ενημερώνουν αυτόματα τις αναφορές. Οι εμφωλευμένες μακροεντολές διατηρούν τις καθυστερήσεις τους. Οι εντολές πρέπει να ολοκληρωθούν επιτυχώς πριν το επόμενο βήμα. Παύσεις, κείμενο και εντολές υπολογίζονται στο χρονικό όριο της μακροεντολής."

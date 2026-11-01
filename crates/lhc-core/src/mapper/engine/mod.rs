@@ -121,9 +121,13 @@ impl Engine {
                                 .unwrap_or_default(),
                         )
                     }
-                    CompiledAction::Macro(m) => m.steps.retain(|step| {
-                        !matches!(step, crate::mapper::action::MacroStepItem::Command(_))
-                    }),
+                    CompiledAction::Macro(m)
+                        if m.steps.iter().any(|step| {
+                            matches!(step.item, crate::mapper::action::MacroStepItem::Command(_))
+                        }) =>
+                    {
+                        *action = CompiledAction::Unavailable("cmd:".into());
+                    }
                     _ => {}
                 }
             }

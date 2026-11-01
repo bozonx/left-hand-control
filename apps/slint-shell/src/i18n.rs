@@ -346,6 +346,7 @@ pub enum Msg {
     SaveLayoutFirst,
     MenuIssue(lhc_core::profile::menus::MenuIssue),
     MacroIssue(lhc_core::profile::macros::MacroIssue),
+    MacroRunFailure(lhc_core::events::MacroRunFailure),
     Name(NameKind, NameIssue),
     KeyCodeRequired,
     ActionRequired,
@@ -478,6 +479,15 @@ impl Msg {
             Self::GameModeManualOff => ("game-mode-manual-off", empty(), 0),
             Self::GameModeInDevelopment => ("game-mode-in-development", empty(), 0),
             Self::SettingsSaved => ("settings-saved", empty(), 0),
+            Self::MacroRunFailure(reason) => (
+                match reason {
+                    lhc_core::events::MacroRunFailure::QueueFull => "macro-queue-full",
+                    lhc_core::events::MacroRunFailure::Timeout => "macro-timeout",
+                    lhc_core::events::MacroRunFailure::Command => "macro-command-failed",
+                },
+                empty(),
+                0,
+            ),
             Self::MacroIssue(issue) => (
                 match issue {
                     lhc_core::profile::macros::MacroIssue::InvalidId => "macro-invalid-id",
@@ -486,6 +496,10 @@ impl Msg {
                     lhc_core::profile::macros::MacroIssue::PauseRange => "macro-pause-range",
                     lhc_core::profile::macros::MacroIssue::UnknownKey => "macro-unknown-key",
                     lhc_core::profile::macros::MacroIssue::Cycle => "macro-cycle",
+                    lhc_core::profile::macros::MacroIssue::ExpansionLimit => {
+                        "macro-expansion-limit"
+                    }
+                    lhc_core::profile::macros::MacroIssue::InUse => "macro-in-use",
                 },
                 empty(),
                 0,

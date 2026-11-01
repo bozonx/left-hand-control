@@ -1,7 +1,9 @@
 //! Compiles an `MapperConfig` into the engine's rule, layer and macro tables.
 
 use super::Engine;
-use super::model::{CompiledAction, CompiledMacro, HoldOutputMode, RuleEntry, TapMode};
+use super::model::{
+    CompiledAction, CompiledMacro, CompiledMacroStep, HoldOutputMode, RuleEntry, TapMode,
+};
 use super::state::{ChordState, CompiledLayout, LayerStack, MacroRunner, VirtualKeys};
 use crate::mapper::action::{MacroStepItem, parse_action, pause_duration};
 use crate::mapper::builtin_macros::BUILTIN_MACROS;
@@ -26,8 +28,6 @@ impl Engine {
         // macros by their fully qualified action strings.
         let mut macros: HashMap<String, CompiledMacro> = HashMap::new();
         let mut commands: HashMap<String, ProcessInvocation> = HashMap::new();
-        // Commands of the layout without a script for this OS.
-        let mut foreign_commands: HashSet<String> = HashSet::new();
 
         if cfg.settings.commands_enabled {
             for c in &cfg.commands {
@@ -40,7 +40,6 @@ impl Engine {
                     crate::mapper::commands::shell_command(c, c.working_directory.clone())
                 else {
                     log::debug!("[mapper] command {id} has no script for this OS — skipped");
-                    foreign_commands.insert(id.to_string());
                     continue;
                 };
                 commands.insert(id.to_string(), command);
@@ -58,166 +57,124 @@ impl Engine {
             raw_user_macros.insert(m.id.clone(), m);
         }
 
-        fn resolve_macro_steps(
-            id: &str,
-            raw_steps: Vec<&str>,
-            raw_user_macros: &HashMap<String, &crate::mapper::config::Macro>,
-            commands: &HashMap<String, ProcessInvocation>,
-            foreign_commands: &HashSet<String>,
-            depth: usize,
-            remaining: &mut usize,
-        ) -> Vec<MacroStepItem> {
-            let mut steps: Vec<MacroStepItem> = Vec::new();
-            if depth > MAX_MACRO_DEPTH {
-                log::debug!("[mapper] macro {} exceeded max nesting depth", id);
-                return steps;
-            }
-            for raw in raw_steps {
-                if *remaining == 0 {
-                    break;
+        struct MacroCompiler<'a> {
+            users: &'a HashMap<String, &'a crate::mapper::config::Macro>,
+            commands: &'a HashMap<String, ProcessInvocation>,
+            defaults: (Duration, Duration),
+        }
+        impl MacroCompiler<'_> {
+            fn resolve(
+                &self,
+                raw_steps: Vec<&str>,
+                timing: (Duration, Duration),
+                depth: usize,
+                remaining: &mut usize,
+            ) -> Vec<CompiledMacroStep> {
+                let mut steps = Vec::new();
+                if depth > MAX_MACRO_DEPTH {
+                    return steps;
                 }
-                let raw = raw.trim_start();
-                if raw.is_empty() {
-                    continue;
-                }
-                *remaining -= 1;
-                let unavailable = || MacroStepItem::Unavailable(raw.trim().into());
-                match Action::parse(Some(raw)) {
-                    Action::Native | Action::Swallow => {}
-                    Action::System(name) => steps.push(
-                        system::resolve(&name).map_or_else(unavailable, MacroStepItem::System),
-                    ),
-                    Action::KdeShortcut(shortcut) => steps.push(
-                        system::resolve_kde_shortcut(&shortcut)
-                            .map_or_else(unavailable, MacroStepItem::System),
-                    ),
-                    // Like `sys:`: a step that cannot run here makes the
-                    // whole macro unavailable instead of silently shorter.
-                    Action::App(name) => steps.push(
-                        system::resolve_app(&name).map_or_else(unavailable, MacroStepItem::System),
-                    ),
-                    action @ (Action::Macro(_) | Action::BuiltinMacro(_)) => {
-                        let (nested_id, nested_raw): (_, Option<Vec<&str>>) = match action {
-                            Action::Macro(id) => {
-                                let steps = raw_user_macros
-                                    .get(id.as_str())
-                                    .map(|m| m.steps.iter().map(|s| s.action.as_str()).collect());
-                                (id, steps)
-                            }
-                            Action::BuiltinMacro(id) => {
-                                let steps = BUILTIN_MACROS
-                                    .iter()
-                                    .find(|m| m.id == id)
-                                    .map(|m| m.steps.to_vec());
-                                (id, steps)
-                            }
-                            _ => unreachable!(),
-                        };
-                        match nested_raw {
-                            Some(nested_raw) => steps.extend(resolve_macro_steps(
-                                &nested_id,
-                                nested_raw,
-                                raw_user_macros,
-                                commands,
-                                foreign_commands,
-                                depth + 1,
-                                remaining,
-                            )),
-                            None => log::debug!(
-                                "[mapper] macro {}: unknown nested macro ref {:?}",
-                                id,
-                                nested_id
-                            ),
-                        }
+                for raw in raw_steps {
+                    if *remaining == 0 {
+                        break;
                     }
-                    Action::Command(cmd_id) => match commands.get(&cmd_id) {
-                        Some(cmd) => steps.push(MacroStepItem::Command(cmd.clone())),
-                        None if foreign_commands.contains(&cmd_id) => steps.push(unavailable()),
-                        // Disabled commands are skipped; the other steps still run.
-                        None => log::debug!(
-                            "[mapper] macro {} step: command {:?} disabled or unknown — skipped",
-                            id,
-                            cmd_id
-                        ),
-                    },
-                    Action::Text(text) => steps.push(MacroStepItem::Literal(text)),
-                    Action::Unknown(_) => steps.push(unavailable()),
-                    Action::Pause(ms) => match pause_duration(&ms) {
-                        Some(duration) => steps.push(MacroStepItem::Pause(duration)),
-                        None => log::debug!("[mapper] macro {} step: invalid pause {:?}", id, raw),
-                    },
-                    Action::Keys(keys) => match parse_action(&keys) {
-                        Some(ks) => steps.push(MacroStepItem::Stroke(ks)),
-                        None => {
-                            log::debug!("[mapper] macro {} step: unknown keystroke {:?}", id, raw)
+                    if raw.trim().is_empty() {
+                        continue;
+                    }
+                    *remaining -= 1;
+                    let unavailable = || MacroStepItem::Unavailable(raw.trim().into());
+                    let item = match Action::parse(Some(raw)) {
+                        Action::Native | Action::Swallow => continue,
+                        Action::System(name) => {
+                            system::resolve(&name).map_or_else(unavailable, MacroStepItem::System)
                         }
-                    },
+                        Action::KdeShortcut(id) => system::resolve_kde_shortcut(&id)
+                            .map_or_else(unavailable, MacroStepItem::System),
+                        Action::App(name) => system::resolve_app(&name)
+                            .map_or_else(unavailable, MacroStepItem::System),
+                        Action::Macro(id) => {
+                            if let Some(m) = self.users.get(&id) {
+                                steps.extend(self.resolve(
+                                    m.steps.iter().map(|s| s.action.as_str()).collect(),
+                                    self.timing(m),
+                                    depth + 1,
+                                    remaining,
+                                ));
+                                continue;
+                            }
+                            unavailable()
+                        }
+                        Action::BuiltinMacro(id) => {
+                            if let Some(m) = BUILTIN_MACROS.iter().find(|m| m.id == id) {
+                                steps.extend(self.resolve(
+                                    m.steps.to_vec(),
+                                    self.defaults,
+                                    depth + 1,
+                                    remaining,
+                                ));
+                                continue;
+                            }
+                            unavailable()
+                        }
+                        Action::Command(id) => self
+                            .commands
+                            .get(&id)
+                            .cloned()
+                            .map_or_else(unavailable, MacroStepItem::Command),
+                        Action::Text(text) => MacroStepItem::Literal(text),
+                        Action::Pause(ms) => {
+                            pause_duration(&ms).map_or_else(unavailable, MacroStepItem::Pause)
+                        }
+                        Action::Keys(keys) => {
+                            parse_action(&keys).map_or_else(unavailable, MacroStepItem::Stroke)
+                        }
+                        Action::Unknown(_) => unavailable(),
+                    };
+                    steps.push(CompiledMacroStep {
+                        item,
+                        step_pause: timing.0,
+                        mod_delay: timing.1,
+                    });
                 }
+                steps
             }
-            steps
+            fn timing(&self, m: &crate::mapper::config::Macro) -> (Duration, Duration) {
+                (
+                    m.step_pause_ms
+                        .map(Duration::from_millis)
+                        .unwrap_or(self.defaults.0),
+                    m.modifier_delay_ms
+                        .map(Duration::from_millis)
+                        .unwrap_or(self.defaults.1),
+                )
+            }
         }
-
+        let compiler = MacroCompiler {
+            users: &raw_user_macros,
+            commands: &commands,
+            defaults: (default_step_pause, default_mod_delay),
+        };
         for sys in BUILTIN_MACROS {
-            let steps = resolve_macro_steps(
-                sys.id,
-                sys.steps.to_vec(),
-                &raw_user_macros,
-                &commands,
-                &foreign_commands,
-                0,
-                &mut { MAX_MACRO_STEPS },
-            );
-            if steps.is_empty() {
-                log::debug!(
-                    "[mapper] built-in macro {} has no usable steps — skipped",
-                    sys.id
-                );
-                continue;
+            let steps = compiler.resolve(sys.steps.to_vec(), compiler.defaults, 0, &mut {
+                MAX_MACRO_STEPS
+            });
+            if !steps.is_empty() {
+                macros.insert(format!("builtin:{}", sys.id), CompiledMacro { steps });
             }
-            macros.insert(
-                format!("builtin:{}", sys.id),
-                CompiledMacro {
-                    steps,
-                    step_pause: default_step_pause,
-                    mod_delay: default_mod_delay,
-                },
-            );
         }
-
         for m in cfg.macros.iter().filter(|_| in_development) {
             if m.id.is_empty() {
                 continue;
             }
-            let raw_steps: Vec<&str> = m.steps.iter().map(|s| s.action.as_str()).collect();
-            let steps = resolve_macro_steps(
-                &m.id,
-                raw_steps,
-                &raw_user_macros,
-                &commands,
-                &foreign_commands,
+            let steps = compiler.resolve(
+                m.steps.iter().map(|s| s.action.as_str()).collect(),
+                compiler.timing(m),
                 0,
                 &mut { MAX_MACRO_STEPS },
             );
-            if steps.is_empty() {
-                log::debug!("[mapper] macro {} has no usable steps — skipped", m.id);
-                continue;
+            if !steps.is_empty() {
+                macros.insert(format!("macro:{}", m.id), CompiledMacro { steps });
             }
-            let step_pause = m
-                .step_pause_ms
-                .map(Duration::from_millis)
-                .unwrap_or(default_step_pause);
-            let mod_delay = m
-                .modifier_delay_ms
-                .map(Duration::from_millis)
-                .unwrap_or(default_mod_delay);
-            macros.insert(
-                format!("macro:{}", m.id),
-                CompiledMacro {
-                    steps,
-                    step_pause,
-                    mod_delay,
-                },
-            );
         }
 
         let resolve = |action: &str, where_: &str| {

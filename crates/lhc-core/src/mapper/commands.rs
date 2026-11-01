@@ -1,6 +1,5 @@
-//! Fire-and-forget shell commands: each one starts in its own process
-//! group and is never waited on by the mapper. Only a failure to start
-//! is reported; exit status and output are not collected. Linux runs the
+//! Shell commands: direct actions run independently; macro steps report
+//! completion and can be cancelled without blocking keyboard input. Linux runs the
 //! `posix_script` with `sh`, Windows the `powershell_script` with PowerShell
 //! and no console window. Draft validation and quoting are also available
 //! to portable shells.
@@ -56,6 +55,83 @@ fn report(command: &ProcessInvocation, result: Result<(), String>) {
             .unwrap_or_else(|| command.program.clone()),
         result,
     });
+}
+
+/// Completion token for one command step. Cancellation also revokes a job
+/// that is still waiting for popup focus and has not been submitted yet.
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+#[derive(Clone, Debug, Default)]
+pub struct MacroCommand(std::sync::Arc<CommandState>);
+
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+#[derive(Debug, Default)]
+struct CommandState {
+    result: std::sync::Mutex<Option<Result<(), String>>>,
+    cancelled: std::sync::atomic::AtomicBool,
+}
+
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+impl MacroCommand {
+    pub(crate) fn cancel(&self) {
+        self.0
+            .cancelled
+            .store(true, std::sync::atomic::Ordering::Release);
+    }
+    pub(crate) fn cancelled(&self) -> bool {
+        self.0.cancelled.load(std::sync::atomic::Ordering::Acquire)
+    }
+    pub(crate) fn result(&self) -> Option<Result<(), String>> {
+        self.0
+            .result
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
+    }
+    pub(crate) fn complete(&self, result: Result<(), String>) {
+        *self.0.result.lock().unwrap_or_else(|e| e.into_inner()) = Some(result);
+    }
+    pub(crate) fn spawn(&self, command: ProcessInvocation) {
+        let job = self.clone();
+        let failed = self.clone();
+        if let Err(error) = std::thread::Builder::new()
+            .name("lhc-macro-command".into())
+            .spawn(move || {
+                if job.cancelled() {
+                    return;
+                }
+                let result = (|| {
+                    let mut child = start(&command)?;
+                    loop {
+                        if job.cancelled() {
+                            #[cfg(target_os = "linux")]
+                            // Each command owns its process group, including shell children.
+                            unsafe {
+                                libc::kill(-(child.id() as i32), libc::SIGKILL);
+                            }
+                            let _ = child.kill();
+                            let _ = child.wait();
+                            return Err("Macro command cancelled".into());
+                        }
+                        match child.try_wait() {
+                            Ok(Some(status)) if status.success() => return Ok(()),
+                            Ok(Some(status)) => {
+                                return Err(format!("Macro command exited with {status}"));
+                            }
+                            Ok(None) => std::thread::sleep(std::time::Duration::from_millis(5)),
+                            Err(error) => {
+                                let _ = child.kill();
+                                let _ = child.wait();
+                                return Err(format!("Cannot wait for macro command: {error}"));
+                            }
+                        }
+                    }
+                })();
+                job.complete(result);
+            })
+        {
+            failed.complete(Err(format!("Cannot start macro command worker: {error}")));
+        }
+    }
 }
 
 /// Starts `command` and returns at once; a reaper thread collects the
@@ -271,6 +347,66 @@ mod tests {
         assert!(begun.elapsed() < Duration::from_millis(200));
         assert!(!marker.exists());
         assert!(wait_for(&marker));
+    }
+    fn wait_job(job: &MacroCommand) -> Result<(), String> {
+        let until = Instant::now() + Duration::from_secs(3);
+        loop {
+            if let Some(result) = job.result() {
+                return result;
+            }
+            assert!(Instant::now() < until, "command completion was lost");
+            std::thread::sleep(Duration::from_millis(5));
+        }
+    }
+
+    #[test]
+    fn macro_command_reports_exit_status_and_launch_failure() {
+        let dir = tempfile::tempdir().unwrap();
+        for (script, expected) in [("exit 0", true), ("exit 7", false)] {
+            let job = MacroCommand::default();
+            job.spawn(shell(
+                script.into(),
+                Some(dir.path().to_string_lossy().into()),
+            ));
+            assert_eq!(wait_job(&job).is_ok(), expected);
+        }
+        let job = MacroCommand::default();
+        job.spawn(shell(
+            "true".into(),
+            Some(dir.path().join("missing").to_string_lossy().into()),
+        ));
+        assert!(wait_job(&job).is_err());
+    }
+
+    #[test]
+    fn cancelling_macro_command_terminates_its_process_group() {
+        let dir = tempfile::tempdir().unwrap();
+        let started = dir.path().join("started");
+        let late = dir.path().join("late");
+        let job = MacroCommand::default();
+        job.spawn(shell(
+            "printf started > started; (sleep 0.3; printf late > late) & wait".into(),
+            Some(dir.path().to_string_lossy().into()),
+        ));
+        assert!(wait_for(&started));
+        job.cancel();
+        assert!(wait_job(&job).is_err());
+        std::thread::sleep(Duration::from_millis(400));
+        assert!(!late.exists(), "cancelled command left its child running");
+    }
+
+    #[test]
+    fn cancelled_macro_command_cannot_start_a_process() {
+        let dir = tempfile::tempdir().unwrap();
+        let marker = dir.path().join("marker");
+        let job = MacroCommand::default();
+        job.cancel();
+        job.spawn(shell(
+            "printf bad > marker".into(),
+            Some(dir.path().to_string_lossy().into()),
+        ));
+        std::thread::sleep(Duration::from_millis(30));
+        assert!(!marker.exists());
     }
 }
 

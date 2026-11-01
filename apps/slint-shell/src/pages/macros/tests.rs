@@ -153,3 +153,66 @@ fn ids_allow_builtin_macro_names() {
     let builtin = BUILTIN_MACROS[0].id;
     assert_eq!(unique_id(&[], builtin), builtin);
 }
+
+#[test]
+fn rename_commits_nested_references_and_keeps_the_draft_in_sync() {
+    let (_dir, document) = super::super::test_document();
+    let mut state = state(&document);
+    let inner = entry();
+    let mut outer = entry();
+    outer.item.id = "outer".into();
+    outer.item.steps = vec![step("macro:testMacro")];
+    state.draft = vec![inner, outer];
+    persist(&document, &mut state).unwrap();
+    state.draft[0].item.id = "renamed".into();
+    assert!(matches!(
+        persist(&document, &mut state),
+        Ok(SaveResult::Saved(_))
+    ));
+    assert_eq!(
+        document.read().layout().macros[1].steps[0].action,
+        "macro:renamed"
+    );
+    assert_eq!(state.draft[1].item.steps[0].action, "macro:renamed");
+    assert!(state.draft == state.baseline);
+    state.draft[1].item.name = "Other edit".into();
+    assert!(matches!(
+        persist(&document, &mut state),
+        Ok(SaveResult::Saved(_))
+    ));
+    assert_eq!(
+        document.read().layout().macros[1].steps[0].action,
+        "macro:renamed"
+    );
+}
+
+#[test]
+fn expansion_limit_is_an_inline_error_and_does_not_commit() {
+    let (_dir, document) = super::super::test_document();
+    let mut state = state(&document);
+    state.draft = vec![entry()];
+    state.draft[0].item.steps = (0..1001).map(|_| step("KeyA")).collect();
+    assert_eq!(
+        analysis(&document, &state.draft).errors[0],
+        Some(ConfigError::Macro(macros::MacroIssue::ExpansionLimit))
+    );
+    let before = document.read().layout().macros.clone();
+    assert!(matches!(
+        persist(&document, &mut state),
+        Ok(SaveResult::Invalid)
+    ));
+    assert_eq!(document.read().layout().macros, before);
+}
+
+#[test]
+fn analysis_identifies_each_invalid_step_and_normalized_usage() {
+    let (_dir, document) = super::super::test_document();
+    let mut state = state(&document);
+    let mut bad = entry();
+    bad.item.steps = vec![step("pause:0"), step("KeyA"), step("macro:missing")];
+    state.draft = vec![bad];
+    let result = analysis(&document, &state.draft);
+    assert!(result.step_errors[0][0].is_some());
+    assert!(result.step_errors[0][1].is_none());
+    assert!(result.step_errors[0][2].is_some());
+}

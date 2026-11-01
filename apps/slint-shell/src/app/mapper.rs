@@ -85,6 +85,12 @@ pub(super) fn forward_core_events() -> Result<lhc_core::events::Subscription, St
             let error = error.clone();
             post(move |app| app.set_error(Msg::ActionFailed(error)));
         }
+        CoreEvent::MacroRunFailed(reason) => {
+            let reason = *reason;
+            post(move |app| {
+                crate::notifications::send(&app.settings, Msg::MacroRunFailure(reason))
+            });
+        }
         CoreEvent::ActionUnavailable(action) => {
             log::info!("[mapper] skipped unavailable action {action:?}");
             let action = action.clone();

@@ -21,6 +21,7 @@ fn dialog_buttons(state: &str) -> &'static [&'static str] {
     match state {
         "auto-rule-dialog" | "nested-app-dialog" => &["Cancel", "Save"],
         "device-dialog" => &["Refresh", "Close"],
+        "macros" => &["New macro", "Add pause", "Add step"],
         "new-layer-dialog" | "conditions" | "advanced" | "picker" => &["Cancel", "Apply"],
         _ => &[],
     }
@@ -259,6 +260,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     "window must accept {size:?}, got {logical:?}"
                 );
                 let state = STEPS[n / 2].0;
+                if state == "macros" {
+                    snapshot(&ui, "macros-top");
+                    ui.window()
+                        .dispatch_event(slint::platform::WindowEvent::PointerScrolled {
+                            position: slint::LogicalPosition::new(320.0, 300.0),
+                            delta_x: 0.0,
+                            delta_y: -600.0,
+                        });
+                }
                 snapshot(&ui, state);
                 settings_inputs_fit(&ui, state);
                 if english {
