@@ -15,6 +15,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Settings save valid fields independently of invalid timing drafts, merge updates to untouched fields, and select the key behavior tab when invalid timings prevent exit. Device choices stay open on write errors and restart the mapper only after a saved device change. Ordinary settings saves no longer scan input devices; hold detection fits narrow windows.
+
 - `text:` actions with `$` or `€` type in Electron apps (Obsidian, VS Code) and X11 apps again: LHC no longer sends them through the special Dollar and Euro keys of the keymap, which these apps ignore. It now uses a regular key of the active layout (Shift+4 for `$` in English) or, when the layout lacks the character, the clipboard fallback.
 - `text:` types `*`, `+`, `(`, `)` and `/` with the main keyboard keys (for example Shift+8) instead of keypad keys, which terminals and some apps treat as commands. The keypad is used only for characters missing from the main keys.
 - A click on a button or tab while an inline editor was open no longer gets lost: the editor now commits after the click instead of on the press, so the page no longer shifts under the pointer.

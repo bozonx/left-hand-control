@@ -2,6 +2,7 @@ import { KeyboardFocus } from "focus.slint";
 import { Button } from "std-widgets.slint";
 import { FocusRing, IconButton, ButtonGroup, DialogFrame, SearchField, TextField } from "controls.slint";
 import { ScrollView } from "scroll.slint";
+import { Locale, Message } from "i18n.slint";
 import { Theme } from "theme.slint";
 
 /// `missing`: the saved device, not connected now. `suggested` passes the
@@ -98,6 +99,8 @@ component LinkText inherits Text {
 /// Modal device list with three tabs: the devices that look like a keyboard
 /// (or mouse), every device, and a manual path.
 export component DeviceDialogOverlay inherits DialogFrame {
+    in property <Message> error;
+    if root.error.id != "": Text { accessible-live-region: assertive; text: Locale.text(root.error); color: Theme.error; wrap: word-wrap; }
     in property <[DeviceChoice]> choices;
     in property <string> current;
     in property <bool> mouse;

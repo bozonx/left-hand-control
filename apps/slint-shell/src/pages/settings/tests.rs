@@ -268,3 +268,123 @@ fn write_failure_keeps_the_form_baseline_and_allows_retry() {
     assert!(state.base.is_none());
     assert_eq!(document.read().settings().default_hold_timeout_ms, 350);
 }
+
+#[test]
+fn invalid_timing_does_not_block_independent_settings_and_can_be_retried() {
+    let (_dir, document) = super::super::test_document();
+    let base = Form::from_settings(document.read().settings());
+    let mut state = State {
+        base: Some(base.clone()),
+        ..State::default()
+    };
+    let mut form = base.clone();
+    form.hold = String::new();
+    form.high_contrast = !base.high_contrast;
+    form.keyboard = "/dev/input/new".into();
+    assert_eq!(
+        persist(&document, &mut state, &form),
+        (true, Msg::SettingsTimingInvalid)
+    );
+    let loaded = Form::from_settings(document.read().settings());
+    assert_eq!(loaded.high_contrast, form.high_contrast);
+    assert_eq!(loaded.keyboard, form.keyboard);
+    assert_eq!(loaded.hold, base.hold);
+    let mut rebased = form.rebase(&base, &loaded);
+    assert!(rebased.hold.is_empty());
+    state.base = Some(loaded);
+    rebased.hold = "350".into();
+    assert_eq!(persist(&document, &mut state, &rebased), (true, Msg::None));
+    assert_eq!(document.read().settings().default_hold_timeout_ms, 350);
+}
+
+#[test]
+fn document_updates_merge_into_untouched_fields_while_typing() {
+    let base = Form::from_settings(&AppSettings::default());
+    let mut draft = base.clone();
+    draft.hold = String::new();
+    let mut loaded = base.clone();
+    loaded.double_tap = "999".into();
+    loaded.reduce_motion = !base.reduce_motion;
+    let merged = draft.rebase(&base, &loaded);
+    assert!(merged.hold.is_empty());
+    assert_eq!(merged.double_tap, "999");
+    assert_eq!(merged.reduce_motion, loaded.reduce_motion);
+    let mut cancelled = merged;
+    cancelled.hold = base.hold.clone();
+    assert_eq!(cancelled.rebase(&loaded, &loaded), loaded);
+}
+
+#[test]
+fn equivalent_numeric_input_is_normalized_without_a_write() {
+    let (_dir, document) = super::super::test_document();
+    let base = Form::from_settings(document.read().settings());
+    let mut form = base.clone();
+    form.hold = format!(" {} ", base.hold);
+    let mut state = State {
+        base: Some(base),
+        ..State::default()
+    };
+    assert_eq!(persist(&document, &mut state, &form), (false, Msg::None));
+    assert!(state.base.is_none());
+}
+
+#[test]
+fn device_selection_retries_write_errors_and_applies_only_saved_changes() {
+    use slint::platform::software_renderer::{MinimalSoftwareWindow, RepaintBufferType};
+    struct Platform;
+    impl slint::platform::Platform for Platform {
+        fn create_window_adapter(
+            &self,
+        ) -> Result<Rc<dyn slint::platform::WindowAdapter>, slint::PlatformError> {
+            Ok(MinimalSoftwareWindow::new(RepaintBufferType::ReusedBuffer))
+        }
+    }
+    slint::platform::set_platform(Box::new(Platform)).unwrap();
+    let (dir, document) = super::super::test_document();
+    let ui = SettingsWindow::new().unwrap();
+    let e = ui.global::<SettingsEditor>();
+    // Keep this test independent of the host's input devices and worker scheduling.
+    e.set_devices_loading(true);
+    bind(&ui, &document);
+    discover_devices(&ui, || {
+        panic!("a second discovery must not run while loading")
+    });
+    publish_devices(&ui, Err("discovery failed".into()));
+    assert!(!e.get_devices_loading());
+    assert_ne!(e.get_device_discovery_error().id, "");
+    publish_devices(&ui, Ok(input_devices()));
+    assert_eq!(e.get_device_discovery_error().id, "");
+    assert_eq!(e.get_input_devices().row_count(), 3);
+    e.set_devices_loading(true);
+    let changes = Rc::new(std::cell::Cell::new(0));
+    let observed = changes.clone();
+    ui.global::<AppState>()
+        .on_devices_changed(move || observed.set(observed.get() + 1));
+    e.set_hold_timeout(String::new().into());
+    std::fs::remove_dir_all(dir.path().join("settings")).unwrap();
+    std::fs::write(dir.path().join("settings"), "blocks saving").unwrap();
+    assert!(!e.invoke_select_device("/dev/input/new".into()));
+    assert_eq!(changes.get(), 0);
+    assert_eq!(e.get_keyboard_device_path(), "");
+    std::fs::remove_file(dir.path().join("settings")).unwrap();
+    assert!(e.invoke_select_device("/dev/input/new".into()));
+    assert_eq!(changes.get(), 1);
+    assert_eq!(
+        document.read().settings().input_device_path.as_deref(),
+        Some("/dev/input/new")
+    );
+    e.set_hold_timeout("350".into());
+    e.invoke_save();
+    assert_eq!(changes.get(), 1);
+    e.set_devices_loading(false);
+    e.set_reduce_motion(!e.get_reduce_motion());
+    e.invoke_save();
+    assert!(
+        !e.get_devices_loading(),
+        "unrelated saves must not enumerate devices"
+    );
+    e.set_hold_timeout(String::new().into());
+    e.set_tab(crate::ui::SettingsTab::General);
+    assert!(!e.invoke_flush_pending());
+    assert_eq!(e.get_tab(), crate::ui::SettingsTab::KeyBehavior);
+}

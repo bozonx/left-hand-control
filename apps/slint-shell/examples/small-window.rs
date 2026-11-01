@@ -63,6 +63,53 @@ fn inside(ui: &SettingsWindow, label: &str) -> bool {
     false
 }
 
+/// Check input widths even below the fold; vertical scrolling cannot repair clipping on the right.
+fn settings_inputs_fit(ui: &SettingsWindow, state: &str) {
+    use i_slint_core::{
+        accessibility::AccessibleStringProperty, item_tree::ItemRc, items::AccessibleRole,
+        window::WindowInner,
+    };
+    if !state.starts_with("settings-") {
+        return;
+    }
+    let window = WindowInner::from_pub(ui.window());
+    window.ensure_tree_instantiated();
+    let width = ui
+        .window()
+        .size()
+        .to_logical(ui.window().scale_factor())
+        .width;
+    let mut pending = vec![ItemRc::new_root(window.component())];
+    let mut checked = 0;
+    while let Some(item) = pending.pop() {
+        if item.is_visible()
+            && matches!(
+                item.accessible_role(),
+                AccessibleRole::Combobox | AccessibleRole::Spinbox
+            )
+        {
+            let origin = item.map_to_window(item.geometry().origin);
+            let geometry = item.geometry();
+            assert!(
+                origin.x >= -0.5 && origin.x + geometry.width() <= width + 0.5,
+                "{state}: {:?} clips horizontally: x={}, width={}, window={width}",
+                item.accessible_string_property(AccessibleStringProperty::Label),
+                origin.x,
+                geometry.width()
+            );
+            checked += 1;
+        }
+        let mut child = item.first_child();
+        while let Some(next) = child {
+            child = next.next_sibling();
+            pending.push(next);
+        }
+    }
+    if matches!(state, "settings-general" | "settings-behavior") {
+        assert!(checked > 0, "{state}: no inputs were checked");
+    }
+}
+
 const STEPS: &[Step] = &[
     ("library", |ui| {
         ui.invoke_navigate(Page::Layouts, MenuKind::Emoji)
@@ -213,6 +260,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 );
                 let state = STEPS[n / 2].0;
                 snapshot(&ui, state);
+                settings_inputs_fit(&ui, state);
                 if english {
                     for label in HEADER.iter().chain(dialog_buttons(state)) {
                         assert!(

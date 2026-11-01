@@ -1100,7 +1100,10 @@ mod tests {
         assert_eq!(preset.commands[0].powershell_script, "Start-Process x");
         let quick = &preset.quick_action_pages[0];
         assert_eq!(quick.cells["KeyQ"].name, "Lock", "a legacy icon is ignored");
-        assert!(!serialize(&preset).contains("\"icon\""), "saving drops the icon");
+        assert!(
+            !serialize(&preset).contains("\"icon\""),
+            "saving drops the icon"
+        );
         assert_eq!(quick.cells["KeyW"].name, "");
         let again = round_trip(&preset);
         assert_eq!(again.layers, preset.layers);

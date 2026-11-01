@@ -5,8 +5,9 @@ use crate::{
     document::{Document, View},
     i18n::Msg,
     ui::{
-        AppearanceChoice, CommandAssignmentRow, CommandPlace, CommandPlaceRow, DeviceChoice,
-        DeviceChoices, DeviceGroup, DeviceMatch, GameAppEntry, SettingsEditor, SettingsWindow,
+        AppState, AppearanceChoice, CommandAssignmentRow, CommandPlace, CommandPlaceRow,
+        DeviceChoice, DeviceChoices, DeviceGroup, DeviceMatch, GameAppEntry, SettingsEditor,
+        SettingsWindow,
     },
 };
 use lhc_core::mapper::devices;
@@ -91,17 +92,40 @@ macro_rules! form {
                 show_matchers(&e, &self.matchers);
             }
 
-            /// Write the fields that differ from `base` into `settings`.
-            /// On an error `settings` may be partly changed and is dropped.
+            /// Keep locally edited fields while accepting changes to the other fields.
+            fn rebase(&self, base: &Form, loaded: &Form) -> Self {
+                Self {
+                    $($field: if self.$field == base.$field {
+                        loaded.$field.clone()
+                    } else {
+                        self.$field.clone()
+                    },)*
+                    matchers: if self.matchers == base.matchers {
+                        loaded.matchers.clone()
+                    } else {
+                        self.matchers.clone()
+                    },
+                }
+            }
+
+            /// Apply independent valid fields; leave invalid fields in the draft.
+            /// Return the first validation problem after checking every field.
             fn apply(&self, base: &Form, settings: &mut AppSettings) -> Result<(), Msg> {
+                let mut error = None;
                 $(if self.$field != base.$field {
-                    let ($t, $v) = (&mut *settings, &self.$field);
-                    $store;
+                    let mut store_field = || -> Result<(), Msg> {
+                        let ($t, $v) = (&mut *settings, &self.$field);
+                        $store;
+                        Ok(())
+                    };
+                    if let Err(problem) = store_field() {
+                        error.get_or_insert(problem);
+                    }
                 })*
                 if self.matchers != base.matchers {
                     settings.game_mode.process_matchers = self.matchers.clone();
                 }
-                Ok(())
+                error.map_or(Ok(()), Err)
             }
         }
     };
@@ -314,21 +338,18 @@ fn game_usage(ui: &SettingsWindow, document: &Document) {
     e.set_game_auto_rule_count(auto as i32);
 }
 
-/// Load the form unless the user has unsaved edits in it.
+/// Merge saved settings into untouched fields, preserving local drafts.
 fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State, force: bool) {
     game_usage(ui, document);
     refresh_commands(ui, document, state);
     let loaded = Form::from_settings(document.read().settings());
-    if let Some(base) = &state.base {
-        let pending = Form::read(ui, &state.matchers) != *base;
-        if (pending && !force) || *base == loaded {
-            return;
-        }
-    }
-    loaded.show(ui);
-    state.matchers = loaded.matchers.clone();
+    let form = match &state.base {
+        Some(base) if !force => Form::read(ui, &state.matchers).rebase(base, &loaded),
+        _ => loaded.clone(),
+    };
+    form.show(ui);
+    state.matchers = form.matchers.clone();
     state.base = Some(loaded);
-    refresh_devices(ui);
 }
 
 fn show_command_assignments(
@@ -560,6 +581,13 @@ fn device_offset(choices: ModelRc<DeviceChoice>, index: i32, row: i32, heading: 
 }
 
 fn refresh_devices(ui: &SettingsWindow) {
+    discover_devices(ui, lhc_core::mapper::runtime::list_input_devices);
+}
+
+fn discover_devices(
+    ui: &SettingsWindow,
+    load: impl FnOnce() -> Result<Vec<devices::InputDevice>, String> + Send + 'static,
+) {
     let e = ui.global::<SettingsEditor>();
     for (rows, saved, mouse) in [
         (e.get_input_devices(), e.get_keyboard_device_path(), false),
@@ -582,32 +610,36 @@ fn refresh_devices(ui: &SettingsWindow) {
     e.set_devices_loading(true);
     let weak = ui.as_weak();
     std::thread::spawn(move || {
-        let result = lhc_core::mapper::runtime::list_input_devices();
+        let result = load();
         let _ = weak.upgrade_in_event_loop(move |ui| {
-            let e = ui.global::<SettingsEditor>();
-            e.set_devices_loading(false);
-            let (devices, error) = match result {
-                Ok(devices) => (devices, Msg::None),
-                Err(error) => {
-                    log::warn!("input device discovery: {error}");
-                    (
-                        Vec::new(),
-                        if cfg!(target_os = "linux") {
-                            Msg::InputDiscoveryFailed(error)
-                        } else {
-                            Msg::MapperUnsupported
-                        },
-                    )
-                }
-            };
-            e.set_device_discovery_error(error.to_ui());
-            let keyboards = device_choices(&devices, false, &e.get_keyboard_device_path());
-            e.set_input_devices(ModelRc::new(VecModel::from(keyboards)));
-            let mice = device_choices(&devices, true, &e.get_mouse_device_path());
-            e.set_mouse_devices(ModelRc::new(VecModel::from(mice)));
-            check_input_access(&ui);
+            publish_devices(&ui, result);
         });
     });
+}
+
+fn publish_devices(ui: &SettingsWindow, result: Result<Vec<devices::InputDevice>, String>) {
+    let e = ui.global::<SettingsEditor>();
+    e.set_devices_loading(false);
+    let (devices, error) = match result {
+        Ok(devices) => (devices, Msg::None),
+        Err(error) => {
+            log::warn!("input device discovery: {error}");
+            (
+                Vec::new(),
+                if cfg!(target_os = "linux") {
+                    Msg::InputDiscoveryFailed(error)
+                } else {
+                    Msg::MapperUnsupported
+                },
+            )
+        }
+    };
+    e.set_device_discovery_error(error.to_ui());
+    let keyboards = device_choices(&devices, false, &e.get_keyboard_device_path());
+    e.set_input_devices(ModelRc::new(VecModel::from(keyboards)));
+    let mice = device_choices(&devices, true, &e.get_mouse_device_path());
+    e.set_mouse_devices(ModelRc::new(VecModel::from(mice)));
+    check_input_access(ui);
 }
 
 fn persist(document: &Document, state: &mut State, form: &Form) -> (bool, Msg) {
@@ -618,24 +650,35 @@ fn persist(document: &Document, state: &mut State, form: &Form) -> (bool, Msg) {
         return (false, Msg::None);
     }
     let mut settings = document.read().settings().clone();
-    if let Err(error) = form.apply(base, &mut settings) {
-        return (false, error);
+    let validation = form.apply(base, &mut settings).err();
+    if settings == *document.read().settings() {
+        if validation.is_none() {
+            state.base = None;
+        }
+        return (false, validation.unwrap_or(Msg::None));
     }
     let saved = document.edit(View::Settings, |config| {
         config.update_settings(|current| *current = settings)
     });
     let applied = saved.is_ok();
-    if applied {
+    if applied && validation.is_none() {
         state.base = None;
     }
-    (applied, super::outcome(&saved, Msg::None))
+    (
+        applied,
+        super::outcome(&saved, validation.unwrap_or(Msg::None)),
+    )
 }
 
 fn save(ui: &SettingsWindow, document: &Document, state: &mut State) -> Msg {
     let form = Form::read(ui, &state.matchers);
-    let (applied, message) = persist(document, state, &form);
-    if applied {
-        refresh(ui, document, state, true);
+    let before = Form::from_settings(document.read().settings());
+    let (_, message) = persist(document, state, &form);
+    refresh(ui, document, state, false);
+    let after = Form::from_settings(document.read().settings());
+    if before.keyboard != after.keyboard || before.mouse != after.mouse {
+        refresh_devices(ui);
+        ui.global::<AppState>().invoke_devices_changed();
     }
     message
 }
@@ -687,6 +730,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         e.set_layouts_dir(config.paths().layouts_dir().display().to_string().into());
     }
     refresh(ui, document, &mut state.borrow_mut(), true);
+    refresh_devices(ui);
 
     super::autosave::subscribe(
         ui,
@@ -703,7 +747,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     on!(ui, e.on_flush_pending, doc = document, shared = state => |ui| {
         let mut state = shared.borrow_mut();
         super::autosave::Draft::save(&mut *state, &ui, &doc);
-        state.base.as_ref().is_some_and(|base| Form::read(&ui, &state.matchers) == *base)
+        let clean = state.base.as_ref().is_some_and(|base| Form::read(&ui, &state.matchers) == *base);
+        if !clean && ui.global::<SettingsEditor>().get_message().id == "settings-timing-invalid" {
+            ui.global::<SettingsEditor>().set_tab(crate::ui::SettingsTab::KeyBehavior);
+        }
+        clean
     });
 
     on!(ui, e.on_schedule_save, doc = document, shared = state => |ui| {
@@ -718,18 +766,28 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         refresh_devices(&ui);
     });
 
-    on!(ui, e.on_select_device => |ui, path| {
+    on!(ui, e.on_select_device, doc = document => |ui, value| {
         let e = ui.global::<SettingsEditor>();
-        e.set_keyboard_device_path(path.trim().into());
-        // Saving reloads the form, which rebuilds both device lists.
+        e.set_keyboard_device_path(value.trim().into());
         e.invoke_save();
+        let saved = doc.read().settings().input_device_path.clone();
+        let applied = saved == path(&value);
+        if !applied {
+            e.set_keyboard_device_path(saved.unwrap_or_default().into());
+        }
+        applied
     });
 
-    on!(ui, e.on_select_mouse => |ui, path| {
+    on!(ui, e.on_select_mouse, doc = document => |ui, value| {
         let e = ui.global::<SettingsEditor>();
-        e.set_mouse_device_path(path.trim().into());
-        // Saving reloads the form, which rebuilds both device lists.
+        e.set_mouse_device_path(value.trim().into());
         e.invoke_save();
+        let saved = doc.read().settings().input_mouse_device_path.clone();
+        let applied = saved == path(&value);
+        if !applied {
+            e.set_mouse_device_path(saved.unwrap_or_default().into());
+        }
+        applied
     });
 
     on!(ui, e.on_save_process, shared = state => |ui, index, name, window_only, blacklist| {

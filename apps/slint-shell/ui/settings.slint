@@ -341,6 +341,7 @@ export component SettingsWindow inherits Window {
     AppEntryOverlay { width: 100%; height: 100%; }
     CommandDialogOverlay {}
     if DeviceDialog.open: DeviceDialogOverlay {
+        error: SettingsEditor.message;
         mouse: DeviceDialog.mouse;
         choices: DeviceDialog.mouse ? SettingsEditor.mouse-devices : SettingsEditor.input-devices;
         current: DeviceDialog.mouse ? SettingsEditor.mouse-device-path : SettingsEditor.keyboard-device-path;
@@ -350,10 +351,11 @@ export component SettingsWindow inherits Window {
         close => { DeviceDialog.open = false; }
         chosen(path) => {
             if path != self.current {
-                if DeviceDialog.mouse { SettingsEditor.select-mouse(path); } else { SettingsEditor.select-device(path); }
-                if SettingsEditor.message.id == "" { AppState.devices-changed(); }
+                let saved = DeviceDialog.mouse ? SettingsEditor.select-mouse(path) : SettingsEditor.select-device(path);
+                DeviceDialog.open = !saved;
+            } else {
+                DeviceDialog.open = false;
             }
-            DeviceDialog.open = false;
         }
     }
     if ActionPicker.opened: PickerOverlay {}

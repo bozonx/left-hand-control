@@ -107,8 +107,8 @@ export global SettingsEditor {
     in property <bool> commands-loaded;
     in property <Message> commands-error;
     /// Choose the keyboard or mouse by device path; empty clears it.
-    callback select-device(string);
-    callback select-mouse(string);
+    callback select-device(string) -> bool;
+    callback select-mouse(string) -> bool;
     /// Add (`index` -1) or change a matcher.
     callback save-process(index: int, pattern: string, window-only: bool, blacklist: bool);
     callback delete-process(int);
@@ -280,8 +280,6 @@ export component SettingsPage inherits PageLayout {
     horizontal-stretch: 1;
     max-width: Theme.unbounded;
     path-clipboard := TextInput { visible: false; width: 0px; height: 0px; }
-    /// A running mapper keeps the devices it started with: restart it once the new ones are saved.
-    function apply-devices() { if SettingsEditor.message.id == "" { AppState.devices-changed(); } }
     function copy-path(value: string) { path-clipboard.text = value; path-clipboard.select-all(); path-clipboard.copy(); NotificationCenter.send({ id: "copied" }); }
     if SettingsEditor.message.id != "": Text { accessible-live-region: assertive; text: Locale.text(SettingsEditor.message); color: Theme.error; wrap: word-wrap; }
     HorizontalLayout {
@@ -567,7 +565,7 @@ export component SettingsPage inherits PageLayout {
                             if !AppState.is-windows: DevicePicker { label: @tr("Keyboard device"); placeholder: @tr("Not selected"); enabled: AppState.mapper-supported && !AppState.mapper-busy; choices: SettingsEditor.input-devices; path: SettingsEditor.keyboard-device-path; open => { DeviceDialog.mouse = false; DeviceDialog.open = true; } }
                             if !AppState.is-windows && SettingsEditor.keyboard-device-path != "": Text { text: SettingsEditor.keyboard-device-path; color: Theme.muted; font-size: Theme.font-body; overflow: elide; }
                             // Windows hooks see the whole session, not single devices.
-                            if AppState.is-windows: CheckBox { text: @tr("Intercept all keyboards"); enabled: AppState.mapper-supported && !AppState.mapper-busy; checked: SettingsEditor.keyboard-device-path == "windows:keyboard"; toggled => { SettingsEditor.select-device(self.checked ? "windows:keyboard" : ""); apply-devices(); } }
+                            if AppState.is-windows: CheckBox { text: @tr("Intercept all keyboards"); enabled: AppState.mapper-supported && !AppState.mapper-busy; checked: SettingsEditor.keyboard-device-path == "windows:keyboard"; toggled => { SettingsEditor.select-device(self.checked ? "windows:keyboard" : ""); } }
                             if AppState.is-windows: Text { text: @tr("Windows does not tell input devices apart, so all of them are intercepted."); color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap; }
                         }
                         if AppState.in-development: DeviceField {
@@ -576,7 +574,7 @@ export component SettingsPage inherits PageLayout {
                             note: @tr("Optional");
                             if !AppState.is-windows: DevicePicker { label: @tr("Mouse (optional)"); placeholder: @tr("Not selected (no mouse support)"); enabled: AppState.mapper-supported && !AppState.mapper-busy; choices: SettingsEditor.mouse-devices; path: SettingsEditor.mouse-device-path; open => { DeviceDialog.mouse = true; DeviceDialog.open = true; } }
                             if !AppState.is-windows && SettingsEditor.mouse-device-path != "": Text { text: SettingsEditor.mouse-device-path; color: Theme.muted; font-size: Theme.font-body; overflow: elide; }
-                            if AppState.is-windows: CheckBox { text: @tr("Intercept buttons of all mice"); enabled: AppState.mapper-supported && !AppState.mapper-busy; checked: SettingsEditor.mouse-device-path == "windows:mouse"; toggled => { SettingsEditor.select-mouse(self.checked ? "windows:mouse" : ""); apply-devices(); } }
+                            if AppState.is-windows: CheckBox { text: @tr("Intercept buttons of all mice"); enabled: AppState.mapper-supported && !AppState.mapper-busy; checked: SettingsEditor.mouse-device-path == "windows:mouse"; toggled => { SettingsEditor.select-mouse(self.checked ? "windows:mouse" : ""); } }
                         }
                     }
                 }
@@ -678,7 +676,7 @@ export component SettingsPage inherits PageLayout {
                                     + "\n\n" + @tr("As soon as another key is pressed: useful for dedicated layer or modifier keys. Reacts faster, but overlapping letters while typing can trigger the hold by mistake.");
                             }
                             HorizontalLayout { alignment: start;
-                                SelectField { accessible-label: @tr("Hold detection"); width: 500px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("After another key is released (better for typing)"), @tr("As soon as another key is pressed")]; current-index: SettingsEditor.tap-decision-index; selected(value) => { SettingsEditor.tap-decision-index = self.current-index; SettingsEditor.save(); } }
+                                SelectField { accessible-label: @tr("Hold detection"); min-width: 0px; max-width: 500px; horizontal-stretch: 1; height: Theme.control-height; vertical-stretch: 0; model: [@tr("After another key is released (better for typing)"), @tr("As soon as another key is pressed")]; current-index: SettingsEditor.tap-decision-index; selected(value) => { SettingsEditor.tap-decision-index = self.current-index; SettingsEditor.save(); } }
                             }
                         }
                         HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-xl; alignment: start;
