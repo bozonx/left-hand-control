@@ -28,6 +28,10 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 - Emoji and Quick actions no longer activate cells or switch pages for Ctrl/Alt/Meta shortcuts, in both winit and Spell popups. Unhandled popup keys are no longer unconditionally consumed.
 - Screen readers announce Emoji and Quick actions popup cells as buttons named by their hotkey and content, and the close button as "Close" (winit popups; Spell popups still expose no accessibility tree).
+- Emoji page: the "Non-breaking space" palette item works, and leading or trailing spaces of a cell (snippets like `TODO: `) are kept instead of being trimmed.
+- Quick actions page: a cell moved to another key or page is validated again, so a cell pointing at a deleted macro or command can no longer be saved by moving it. Labels and page names drop surrounding spaces.
+- Emoji and Quick actions pages: deleting the only page is offered as "Clear page", keeps its position, and is disabled when the page is already empty. A save conflict offers "Discard changes"; a warning such as "the mapper still uses the previous settings" is no longer shown as an error, and repeated autosave errors no longer flood the notifications.
+- Emoji and Quick actions pages: a cut cell is dimmed until pasted; Escape cancels the cut, and Delete or Backspace clears the focused cell. Screen readers announce empty cells as empty.
 
 ### Added
 

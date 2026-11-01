@@ -3739,3 +3739,12 @@ msgstr "Κατακόρυφη κύλιση"
 
 msgid "Action “{}” is unavailable on this platform or desktop."
 msgstr "Η ενέργεια «{}» δεν είναι διαθέσιμη σε αυτήν την πλατφόρμα ή το περιβάλλον επιφάνειας εργασίας."
+
+msgid "Clear page"
+msgstr "Εκκαθάριση σελίδας"
+
+msgid "Clear page?"
+msgstr "Εκκαθάριση σελίδας;"
+
+msgid "All cells on the page will be cleared."
+msgstr "Όλα τα κελιά της σελίδας θα εκκαθαριστούν."

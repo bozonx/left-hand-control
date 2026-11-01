@@ -3739,3 +3739,12 @@ msgstr "Défilement vertical"
 
 msgid "Action “{}” is unavailable on this platform or desktop."
 msgstr "L’action « {} » est indisponible sur cette plateforme ou cet environnement de bureau."
+
+msgid "Clear page"
+msgstr "Vider la page"
+
+msgid "Clear page?"
+msgstr "Vider la page ?"
+
+msgid "All cells on the page will be cleared."
+msgstr "Toutes les cellules de la page seront vidées."

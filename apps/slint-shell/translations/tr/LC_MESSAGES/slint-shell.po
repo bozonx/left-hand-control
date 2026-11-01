@@ -3636,3 +3636,12 @@ msgstr "Dikey kaydır"
 
 msgid "Action “{}” is unavailable on this platform or desktop."
 msgstr "“{}” eylemi bu platformda veya masaüstü ortamında kullanılamıyor."
+
+msgid "Clear page"
+msgstr "Sayfayı temizle"
+
+msgid "Clear page?"
+msgstr "Sayfa temizlensin mi?"
+
+msgid "All cells on the page will be cleared."
+msgstr "Sayfadaki tüm hücreler temizlenecek."

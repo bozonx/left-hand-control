@@ -3676,3 +3676,12 @@ msgstr "Przewijanie w pionie"
 
 msgid "Action “{}” is unavailable on this platform or desktop."
 msgstr "Działanie „{}” jest niedostępne na tej platformie lub w tym środowisku graficznym."
+
+msgid "Clear page"
+msgstr "Wyczyść stronę"
+
+msgid "Clear page?"
+msgstr "Wyczyścić stronę?"
+
+msgid "All cells on the page will be cleared."
+msgstr "Wszystkie komórki strony zostaną wyczyszczone."

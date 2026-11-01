@@ -3640,3 +3640,12 @@ msgstr "Desplazar verticalmente"
 
 msgid "Action “{}” is unavailable on this platform or desktop."
 msgstr "La acción «{}» no está disponible en esta plataforma o entorno de escritorio."
+
+msgid "Clear page"
+msgstr "Vaciar página"
+
+msgid "Clear page?"
+msgstr "¿Vaciar la página?"
+
+msgid "All cells on the page will be cleared."
+msgstr "Se vaciarán todas las celdas de la página."

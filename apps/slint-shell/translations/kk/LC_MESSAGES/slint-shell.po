@@ -3644,3 +3644,12 @@ msgstr "Тігінен айналдыру"
 
 msgid "Action “{}” is unavailable on this platform or desktop."
 msgstr "«{}» әрекеті бұл платформада немесе жұмыс үстелі ортасында қолжетімсіз."
+
+msgid "Clear page"
+msgstr "Бетті тазалау"
+
+msgid "Clear page?"
+msgstr "Бетті тазалау керек пе?"
+
+msgid "All cells on the page will be cleared."
+msgstr "Беттегі барлық ұяшықтар тазаланады."

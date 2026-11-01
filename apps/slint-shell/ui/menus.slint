@@ -1,14 +1,14 @@
 import { ActionField } from "action-controls.slint";
 import { TextField } from "controls.slint";
-import { InlineTextArea } from "controls.slint";
 import { PageContent, ScrollView } from "scroll.slint";
 import { DragArea, DragAxis, DragGroups, DropMarker, PaletteDrag } from "reorder.slint";
 import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
-import { Locale, Message } from "i18n.slint";
+import { Message } from "i18n.slint";
+import { StatusText } from "notifications.slint";
 import { MenuKind, PickerTarget } from "types.slint";
-import { InlineTextField, Badge, Card, CardHeader, ConfirmDialog, Divider, FieldLabel, IconButton, InfoTip, NavTab, PageLayout, PageHeader } from "controls.slint";
-import { Button, TextEdit } from "std-widgets.slint";
+import { InlineTextField, Card, ConfirmDialog, Divider, FieldLabel, IconButton, InfoTip, NavTab, PageLayout, PageHeader } from "controls.slint";
+import { Button } from "std-widgets.slint";
 
 export struct MenuCell { key: string, value: string, name: string }
 export struct EmojiCategory { id: string, items: [string] }
@@ -17,12 +17,20 @@ export global MenuEditor {
     changed kind => { self.keyboard-source-page = -1; self.keyboard-source-cell = -1; }
     in-out property <int> keyboard-source-page: -1;
     in-out property <int> keyboard-source-cell: -1;
-    public function mark-cell(cell: int) { self.keyboard-source-page = self.selected-page; self.keyboard-source-cell = cell; }
+    /// Cut: remember a cell to move; Paste (`drop-cell`) moves it, Escape forgets it.
+    public function mark-cell(cell: int) {
+        if cell < 0 { return; }
+        self.keyboard-source-page = self.selected-page; self.keyboard-source-cell = cell;
+    }
+    public function cancel-mark() { self.keyboard-source-page = -1; self.keyboard-source-cell = -1; }
     public function drop-cell(cell: int) {
-        if self.keyboard-source-cell < 0 { return; }
-        if self.keyboard-source-page == self.selected-page { self.move-cell(self.keyboard-source-cell, cell); }
-        else { self.transfer-cell(self.keyboard-source-page, self.keyboard-source-cell, cell); }
-        self.keyboard-source-page = -1; self.keyboard-source-cell = -1;
+        if self.keyboard-source-cell < 0 || cell < 0 { return; }
+        self.move-cell(self.keyboard-source-page, self.keyboard-source-cell, cell);
+        self.cancel-mark();
+    }
+    /// Whether the cell at `index` of the shown page is cut and waits for Paste.
+    public pure function is-marked(index: int) -> bool {
+        return self.keyboard-source-cell == index && self.keyboard-source-page == self.selected-page;
     }
     in property <[string]> pages;
     in property <[MenuCell]> cells;
@@ -32,9 +40,10 @@ export global MenuEditor {
     in-out property <string> page-name;
     in-out property <string> value;
     in-out property <string> name;
-    in-out property <int> editing-count: 0;
     in property <Message> status;
     in property <bool> has-unsaved-changes;
+    /// The menu has one page with no name and no cells: removing it does nothing.
+    in property <bool> only-page-empty;
     callback open(MenuKind);
     callback flush-pending() -> bool;
     callback refresh();
@@ -43,15 +52,14 @@ export global MenuEditor {
     callback add-page(string);
     callback remove-page();
     callback show-page();
-    callback move-page(int);
     /// Read `page-name`, `value` and `name` into the selected page and cell.
     callback rename-page();
     callback set-cell();
     callback set-name();
     callback set-action(int, string, string);
     callback clear-cell();
-    callback move-cell(int, int);
-    callback transfer-cell(int, int, int);
+    /// Move a cell (source page, source cell) onto a cell of the shown page.
+    callback move-cell(int, int, int);
     callback reorder-page(int, int);
 }
 
@@ -68,12 +76,14 @@ component HotkeyGrid inherits Rectangle {
     forward-focus: grid-focus;
     grid-focus := FocusScope {
         accessible-role: button;
-        accessible-label: MenuEditor.cells.length > root.keyboard-cell ? MenuEditor.cells[root.keyboard-cell].key + " " + (root.emoji ? MenuEditor.cells[root.keyboard-cell].value : MenuEditor.cells[root.keyboard-cell].name) : "";
+        accessible-label: MenuEditor.cells.length > root.keyboard-cell ? root.cell-label(MenuEditor.cells[root.keyboard-cell]) : "";
         accessible-value: MenuEditor.cells.length > root.keyboard-cell ? MenuEditor.cells[root.keyboard-cell].value : "";
         key-pressed(event) => {
             if MenuEditor.cells.length == 0 { return reject; }
             if event.modifiers.control && event.text.to-lowercase() == "x" { MenuEditor.mark-cell(root.keyboard-cell); return accept; }
             if event.modifiers.control && event.text.to-lowercase() == "v" { MenuEditor.drop-cell(root.keyboard-cell); return accept; }
+            if event.text == Key.Escape && MenuEditor.keyboard-source-cell >= 0 { MenuEditor.cancel-mark(); return accept; }
+            if event.text == Key.Delete || event.text == Key.Backspace { MenuEditor.select-cell(root.keyboard-cell); MenuEditor.clear-cell(); return accept; }
             if event.text == Key.Return || event.text == " " { root.activate(root.keyboard-cell); return accept; }
             let step = event.text == Key.RightArrow ? 1 : event.text == Key.LeftArrow ? -1 : event.text == Key.DownArrow ? 5 : event.text == Key.UpArrow ? -5 : 0;
             if step != 0 { root.keyboard-cell = mod(root.keyboard-cell + MenuEditor.cells.length + step, MenuEditor.cells.length); return accept; }
@@ -102,6 +112,9 @@ component HotkeyGrid inherits Rectangle {
     /// Cell under a palette item dragged over this grid; the palette drops onto it.
     private property <int> palette-cell: PaletteDrag.active ? root.drop-at(PaletteDrag.x - root.absolute-position.x, PaletteDrag.y - root.absolute-position.y) : -1;
     changed palette-cell => { PaletteDrag.cell = self.palette-cell; }
+    pure function cell-label(cell: MenuCell) -> string {
+        return cell.key + " " + (cell.value == "" ? @tr("Empty") : root.emoji ? cell.value : cell.name);
+    }
     pure function index-at(x: length, y: length) -> int {
         return max(0, min(2, floor((y - self.pad) / (self.cell-height + self.gap)))) * 5
             + max(0, min(4, floor((x - self.pad) / (self.cell-width + self.gap))));
@@ -135,9 +148,9 @@ component HotkeyGrid inherits Rectangle {
         border-width: Theme.focus-ring(grid-focus.has-focus) && root.keyboard-cell == index ? 3px : (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? 2px : 1px;
         border-color: Theme.focus-ring(grid-focus.has-focus) && root.keyboard-cell == index ? Theme.focus : (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (index == MenuEditor.selected-cell && !PaletteDrag.active) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.accent : Theme.border;
         background: (root.palette-cell >= 0 && root.palette-cell == root.preview(index)) || (root.dragging && root.preview(index) == root.drag-over) ? Theme.hover : Theme.card;
-        opacity: root.dragging && root.source-page == MenuEditor.selected-page && index == root.drag-from ? Theme.dragged-opacity : 1.0;
+        opacity: (root.dragging && root.source-page == MenuEditor.selected-page && index == root.drag-from) || MenuEditor.is-marked(index) ? Theme.dragged-opacity : 1.0;
         accessible-role: button;
-        accessible-label: cell.key + " " + (root.emoji ? cell.value : cell.name);
+        accessible-label: root.cell-label(cell);
         accessible-item-index: index;
         accessible-item-count: MenuEditor.cells.length;
         accessible-item-selectable: true;
@@ -152,7 +165,7 @@ component HotkeyGrid inherits Rectangle {
                 Image { width: 14px; height: 14px; source: @image-url("icons/grip.svg"); colorize: Theme.muted; accessible-label: @tr("Drag"); }
             }
             if root.emoji || cell.value == "": Text {
-                font-family: "Noto Color Emoji";
+                font-family: cell.value == "" ? "" : "Noto Color Emoji";
                 vertical-stretch: 1;
                 text: cell.value == "" ? "＋" : cell.value;
                 color: cell.value == "" ? Theme.muted : Theme.text;
@@ -164,17 +177,17 @@ component HotkeyGrid inherits Rectangle {
             }
             if !root.emoji && cell.value != "": HorizontalLayout {
                 spacing: Theme.space-s;
-                if cell.value != "": Image { width: 16px; source: @image-url("icons/zap.svg"); colorize: Theme.muted; }
+                Image { width: 16px; source: @image-url("icons/zap.svg"); colorize: Theme.muted; }
                 Text {
                     horizontal-stretch: 1;
-                    text: cell.value == "" ? @tr("Empty") : cell.name;
-                    color: cell.value == "" ? Theme.muted : Theme.text;
+                    text: cell.name;
+                    color: Theme.text;
                     font-weight: Theme.weight-semibold;
                     overflow: elide;
                     vertical-alignment: center;
                 }
             }
-            if !root.emoji && cell.value != "": Text { text: cell.value == "" ? "—" : cell.value; color: Theme.muted; font-family: "monospace"; font-size: Theme.font-caption; overflow: elide; }
+            if !root.emoji && cell.value != "": Text { text: cell.value; color: Theme.muted; font-family: "monospace"; font-size: Theme.font-caption; overflow: elide; }
             if !root.emoji && cell.value != "": Rectangle { vertical-stretch: 1; }
         }
     }
@@ -204,11 +217,7 @@ component HotkeyGrid inherits Rectangle {
                     grid-focus.focus();
                     root.activate(root.drag-from);
                 } else if root.drag-over >= 0 {
-                    if root.source-page == MenuEditor.selected-page {
-                        MenuEditor.move-cell(root.drag-from, root.drag-over);
-                    } else {
-                        MenuEditor.transfer-cell(root.source-page, root.drag-from, root.drag-over);
-                    }
+                    MenuEditor.move-cell(root.source-page, root.drag-from, root.drag-over);
                 }
                 PaletteDrag.reset();
                 root.dragging = false;
@@ -321,7 +330,41 @@ component PageEditor inherits HorizontalLayout {
     page-name := InlineTextField { text: MenuEditor.page-name; label: @tr("Page name"); placeholder: @tr("Page name"); saved(value) => { MenuEditor.page-name = value; MenuEditor.rename-page(); return true; } }
     Rectangle { min-width: 0px; preferred-width: 0px; horizontal-stretch: page-name.editing ? 0 : 1; }
     VerticalLayout { horizontal-stretch: 0; alignment: center; IconButton { icon: @image-url("icons/app-window.svg"); label: @tr("Open page in popup"); clicked => { MenuEditor.show-page(); } } }
-    VerticalLayout { horizontal-stretch: 0; alignment: center; IconButton { icon: @image-url("icons/trash-2.svg"); label: @tr("Delete page"); clicked => { root.remove(); } } }
+    VerticalLayout { horizontal-stretch: 0; alignment: center; IconButton {
+        icon: @image-url("icons/trash-2.svg");
+        // The only page cannot go away: removing it clears it.
+        label: MenuEditor.pages.length <= 1 ? @tr("Clear page") : @tr("Delete page");
+        enabled: !MenuEditor.only-page-empty;
+        clicked => { root.remove(); }
+    } }
+}
+
+/// Cut and Paste buttons above the grid; the grid has the same keys.
+component CutPasteBar inherits HorizontalLayout {
+    alignment: start;
+    spacing: Theme.space-s;
+    Button { text: @tr("Cut") + " (Ctrl+X)"; enabled: MenuEditor.selected-cell >= 0; clicked => { MenuEditor.mark-cell(MenuEditor.selected-cell); } }
+    Button { text: @tr("Paste") + " (Ctrl+V)"; enabled: MenuEditor.keyboard-source-cell >= 0 && MenuEditor.selected-cell >= 0; clicked => { MenuEditor.drop-cell(MenuEditor.selected-cell); } }
+}
+
+/// Save status of the menus; an edit conflict offers to drop the draft.
+component MenuStatus inherits VerticalLayout {
+    spacing: Theme.space-xs;
+    StatusText { status: MenuEditor.status; }
+    if MenuEditor.status.id == "config-edit-conflict": HorizontalLayout {
+        alignment: start;
+        Button { text: @tr("Discard changes"); clicked => { MenuEditor.refresh(); } }
+    }
+}
+
+/// Confirms removing the selected page, or clearing the only one.
+component RemovePageDialog inherits ConfirmDialog {
+    private property <bool> only: MenuEditor.pages.length <= 1;
+    width: 100%;
+    height: 100%;
+    title: root.only ? @tr("Clear page?") : @tr("Delete page?");
+    body: root.only ? @tr("All cells on the page will be cleared.") : @tr("The page and all assigned cells on it will be deleted.");
+    confirm-text: root.only ? @tr("Clear") : @tr("Delete");
 }
 
 component EmojiButton inherits Rectangle {
@@ -383,8 +426,6 @@ component EmojiButton inherits Rectangle {
 }
 
 export component EmojiPage inherits Rectangle {
-    accessible-role: main;
-    accessible-label: @tr("Emoji");
     vertical-stretch: 1;
     private property <bool> confirming;
     // Library snippets are literal insertion text, independent of the UI language.
@@ -394,34 +435,29 @@ export component EmojiPage inherits Rectangle {
         "Continue.",
         "Thanks!",
     ];
-    VerticalLayout {
-        width: 100%;
-        height: 100%;
-        padding: 0px;
-        padding-left: Theme.space-m;
-        padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
-        padding-bottom: Theme.page-padding;
-        spacing: Theme.space-xl;
-        CardHeader {
+    PageLayout {
+        accessible-label: @tr("Emoji");
+        PageHeader {
             title: @tr("Emoji & Symbols");
             info: @tr("Opened by the app:showEmojiMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. \"// TODO: \").") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. Tab switches pages; digits open a page by its number.");
         }
         HorizontalLayout {
+            padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
+            MenuTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } add => { MenuEditor.add-page(""); } }
+        }
+        HorizontalLayout {
+            vertical-stretch: 1;
+            padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
             spacing: Theme.space-xl;
             VerticalLayout {
                 horizontal-stretch: 1;
                 spacing: Theme.space-xl;
                 alignment: start;
-                    MenuTabs { labels: MenuEditor.pages; selected: MenuEditor.selected-page; select(index) => { MenuEditor.select-page(index); } add => { MenuEditor.add-page(""); } }
-                HorizontalLayout { alignment: start; spacing: Theme.space-s;
-                    Button { text: @tr("Cut") + " (Ctrl+X)"; clicked => { MenuEditor.mark-cell(MenuEditor.selected-cell); } }
-                    Button { text: @tr("Paste") + " (Ctrl+V)"; enabled: MenuEditor.keyboard-source-cell >= 0; clicked => { MenuEditor.drop-cell(MenuEditor.selected-cell); } }
-                }
+                CutPasteBar {}
                 HotkeyGrid { emoji: true; activate(index) => { MenuEditor.select-cell(index); } }
             }
             Card {
                 width: 360px;
-                vertical-stretch: 1;
                 VerticalLayout {
                     padding: Theme.space-l-plus;
                     spacing: Theme.space-l;
@@ -438,7 +474,7 @@ export component EmojiPage inherits Rectangle {
                         VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/eraser.svg"); label: @tr("Clear cell"); clicked => { MenuEditor.clear-cell(); } } }
                         InfoTip { text: @tr("You can enter emoji, any text, or Unicode symbols here. Drag an item from the palette onto a key to assign it."); }
                     }
-                    if MenuEditor.status.id != "": Text { accessible-live-region: polite; text: Locale.text(MenuEditor.status); color: Theme.error; wrap: word-wrap; }
+                    if MenuEditor.status.id != "": MenuStatus {}
                     FieldLabel { text: @tr("Examples"); }
                     ScrollView {
                         min-height: 0px;
@@ -451,6 +487,7 @@ export component EmojiPage inherits Rectangle {
                                 spacing: Theme.space-s;
                                 padding-bottom: Theme.space-m;
                                 Text {
+                                    // Ids are checked against CATEGORY_IDS in src/pages/menus.rs.
                                     text: category.id == "smileys" ? @tr("Smileys & Emotion")
                                         : category.id == "people" ? @tr("People & Gestures")
                                         : category.id == "symbols" ? @tr("Emoji Symbols")
@@ -491,12 +528,7 @@ export component EmojiPage inherits Rectangle {
         }
     }
     DragPreview { origin: root.absolute-position; }
-    if root.confirming: ConfirmDialog {
-        width: 100%;
-        height: 100%;
-        title: @tr("Delete page?");
-        body: @tr("The page and all assigned cells on it will be deleted.");
-        confirm-text: @tr("Delete");
+    if root.confirming: RemovePageDialog {
         cancel => { root.confirming = false; }
         confirm => { MenuEditor.remove-page(); root.confirming = false; }
     }
@@ -531,10 +563,7 @@ export component QuickActionsPage inherits Rectangle {
                                 horizontal-stretch: 1;
                                 spacing: Theme.space-xl;
                                 alignment: start;
-                                HorizontalLayout { alignment: start; spacing: Theme.space-s;
-                                    Button { text: @tr("Cut") + " (Ctrl+X)"; enabled: MenuEditor.selected-cell >= 0; clicked => { MenuEditor.mark-cell(MenuEditor.selected-cell); } }
-                                    Button { text: @tr("Paste") + " (Ctrl+V)"; enabled: MenuEditor.keyboard-source-cell >= 0 && MenuEditor.selected-cell >= 0; clicked => { MenuEditor.drop-cell(MenuEditor.selected-cell); } }
-                                }
+                                CutPasteBar {}
                                 HotkeyGrid {
                                     emoji: false;
                                     activate(index) => {
@@ -550,7 +579,7 @@ export component QuickActionsPage inherits Rectangle {
                                     alignment: start;
                                     PageEditor { remove => { root.confirming = true; } }
                                     Divider {}
-                                    if MenuEditor.status.id != "": Text { accessible-live-region: polite; text: Locale.text(MenuEditor.status); color: Theme.error; wrap: word-wrap; }
+                                    if MenuEditor.status.id != "": MenuStatus {}
                                     if MenuEditor.selected-cell >= 0: HorizontalLayout {
                                         FieldLabel { text: @tr("Button {}", MenuEditor.cells[MenuEditor.selected-cell].key); vertical-alignment: center; }
                                         Rectangle { horizontal-stretch: 1; }
@@ -585,12 +614,7 @@ export component QuickActionsPage inherits Rectangle {
         }
     }
     DragPreview { origin: root.absolute-position; }
-    if root.confirming: ConfirmDialog {
-        width: 100%;
-        height: 100%;
-        title: @tr("Delete page?");
-        body: @tr("The page and all assigned cells on it will be deleted.");
-        confirm-text: @tr("Delete");
+    if root.confirming: RemovePageDialog {
         cancel => { root.confirming = false; }
         confirm => { MenuEditor.remove-page(); root.confirming = false; }
     }

@@ -3627,3 +3627,12 @@ msgstr "Okomito pomicanje"
 
 msgid "Action “{}” is unavailable on this platform or desktop."
 msgstr "Radnja „{}” nije dostupna na ovoj platformi ili u ovom radnom okruženju."
+
+msgid "Clear page"
+msgstr "Isprazni stranicu"
+
+msgid "Clear page?"
+msgstr "Isprazniti stranicu?"
+
+msgid "All cells on the page will be cleared."
+msgstr "Sve ćelije na stranici bit će ispražnjene."

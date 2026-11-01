@@ -3643,3 +3643,12 @@ msgstr "Прокручування по вертикалі"
 
 msgid "Action “{}” is unavailable on this platform or desktop."
 msgstr "Дія «{}» недоступна на цій платформі або в цьому середовищі стільниці."
+
+msgid "Clear page"
+msgstr "Очистити сторінку"
+
+msgid "Clear page?"
+msgstr "Очистити сторінку?"
+
+msgid "All cells on the page will be cleared."
+msgstr "Усі комірки сторінки буде очищено."

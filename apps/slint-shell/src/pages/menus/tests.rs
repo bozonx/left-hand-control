@@ -4,11 +4,9 @@ use super::*;
 
 fn state(document: &Document) -> State {
     let baseline = document.read().layout().clone();
-    let mut layout = baseline.clone();
-    normalize(&mut layout);
     State {
+        layout: draft(&baseline),
         baseline,
-        layout,
         autosave: Autosave::default(),
         commands: Vec::new(),
     }
@@ -75,26 +73,63 @@ fn invalid_menu_does_not_overwrite_saved_pages_and_can_be_corrected() {
 }
 
 #[test]
-fn normalize_fills_pages() {
-    let mut layout = LayoutPreset::default();
-    normalize(&mut layout);
+fn draft_has_pages_and_quick_pages_start_without_a_selection() {
+    let layout = draft(&LayoutPreset::default());
     assert_eq!(layout.emoji_pages.len(), 1);
     assert_eq!(layout.quick_action_pages.len(), 1);
-    assert_eq!(first_filled(&layout, 0), -1);
-    assert_eq!(first_filled(&layout, 5), -1, "missing pages are empty");
+    assert_eq!(initial_cell(MenuKind::Emoji, &layout, 0), 0);
+    assert_eq!(initial_cell(MenuKind::Quick, &layout, 0), -1);
+    assert_eq!(
+        initial_cell(MenuKind::Quick, &layout, 5),
+        -1,
+        "missing pages are empty"
+    );
+    assert_eq!(initial_cell(MenuKind::Quick, &layout, -1), -1);
 }
 
 #[test]
-fn move_cell_swaps_without_shifting() {
-    let mut cells: BTreeMap<String, &str> = [("KeyQ", "q"), ("KeyW", "w"), ("KeyE", "e")]
-        .into_iter()
-        .map(|(k, v)| (k.into(), v))
-        .collect();
-    move_cell(&mut cells, 0, 2);
-    assert_eq!(cells["KeyQ"], "e");
-    assert_eq!(cells["KeyW"], "w", "cells between stay in place");
-    assert_eq!(cells["KeyE"], "q");
-    move_cell(&mut cells, 1, 4);
-    assert!(!cells.contains_key("KeyW"), "an empty target moves back");
-    assert_eq!(cells["KeyT"], "w");
+fn first_filled_skips_blank_actions() {
+    let mut layout = draft(&LayoutPreset::default());
+    let cells = &mut layout.quick_action_pages[0].cells;
+    cells.insert(
+        "KeyQ".into(),
+        QuickAction {
+            action: " ".into(),
+            ..Default::default()
+        },
+    );
+    cells.insert(
+        "KeyE".into(),
+        QuickAction {
+            action: "KeyA".into(),
+            ..Default::default()
+        },
+    );
+    assert_eq!(first_filled(&layout, 0), 2);
+}
+
+#[test]
+fn no_break_space_survives_saving() {
+    let (_dir, document) = super::super::test_document();
+    let mut state = state(&document);
+    menus::set_emoji(&mut state.layout, 0, 0, "\u{a0}");
+    menus::set_emoji(&mut state.layout, 0, 1, "TODO: ");
+    assert!(persist(&document, &mut state).unwrap().is_some());
+    let cells = document.read().layout().emoji_pages[0].cells.clone();
+    assert_eq!(cells["KeyQ"], "\u{a0}");
+    assert_eq!(cells["KeyW"], "TODO: ");
+}
+
+#[test]
+fn bundled_catalog_parses_and_every_category_has_a_title() {
+    let categories = catalog().unwrap();
+    assert!(!categories.is_empty());
+    for category in &categories {
+        assert!(
+            CATEGORY_IDS.contains(&category.id.as_str()),
+            "{}",
+            category.id
+        );
+        assert!(!category.items.is_empty(), "{}", category.id);
+    }
 }

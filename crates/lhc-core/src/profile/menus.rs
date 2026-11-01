@@ -25,14 +25,16 @@ pub fn set_quick_action(
     action: &str,
     label: &str,
 ) -> Result<(), ConfigError> {
-    let (Ok(page), Ok(cell_index)) = (usize::try_from(page), usize::try_from(cell)) else {
-        return Err(ConfigError::EditConflict);
+    let out_of_range =
+        || ConfigError::Invalid(format!("no quick action cell {cell} on page {page}"));
+    let (Ok(page_index), Ok(cell_index)) = (usize::try_from(page), usize::try_from(cell)) else {
+        return Err(out_of_range());
     };
     let (Some(page), Some(key)) = (
-        layout.quick_action_pages.get_mut(page),
+        layout.quick_action_pages.get_mut(page_index),
         LEFT_HAND_HOTKEYS.get(cell_index),
     ) else {
-        return Err(ConfigError::EditConflict);
+        return Err(out_of_range());
     };
     if action.is_empty() {
         page.cells.remove(*key);
@@ -99,20 +101,23 @@ impl ConfigDocument {
                 return Err(ConfigError::Menu(MenuIssue::UnknownKey));
             }
         }
-        let unchanged = |action: &str| {
+        // A cell kept as saved (same page, key and action) is not checked
+        // again, so an action that became unavailable elsewhere does not block
+        // unrelated edits. A moved or edited cell is checked.
+        let unchanged = |page_id: &str, key: &str, action: &str| {
             baseline
                 .quick_action_pages
                 .iter()
-                .flat_map(|page| page.cells.values())
-                .any(|old| old.action == action)
+                .find(|page| page.id == page_id)
+                .and_then(|page| page.cells.get(key))
+                .is_some_and(|old| old.action == action)
         };
-        for item in candidate
-            .quick_action_pages
-            .iter()
-            .flat_map(|page| page.cells.values())
-        {
-            // Actions kept from the saved menus are not checked again.
-            if unchanged(&item.action) {
+        for (page, key, item) in candidate.quick_action_pages.iter().flat_map(|page| {
+            page.cells
+                .iter()
+                .map(move |(key, item)| (page.id.as_str(), key.as_str(), item))
+        }) {
+            if unchanged(page, key, &item.action) {
                 continue;
             }
             if item.action.trim().is_empty() {
@@ -175,81 +180,211 @@ pub fn command_issue(commands: &[Command], index: usize) -> Option<MenuIssue> {
     None
 }
 
+/// Which of the two layout menus an operation applies to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MenuKind {
+    Emoji,
+    Quick,
+}
+
+/// A menu page: an id, an optional caption and cells keyed by hotkey.
+trait MenuPage {
+    type Cell;
+    fn empty() -> Self;
+    fn name_mut(&mut self) -> &mut String;
+    fn cells_mut(&mut self) -> &mut BTreeMap<String, Self::Cell>;
+}
+
+impl MenuPage for EmojiPage {
+    type Cell = String;
+    fn empty() -> Self {
+        EmojiPage {
+            id: super::ids::generate("emoji-"),
+            name: String::new(),
+            cells: BTreeMap::new(),
+        }
+    }
+    fn name_mut(&mut self) -> &mut String {
+        &mut self.name
+    }
+    fn cells_mut(&mut self) -> &mut BTreeMap<String, String> {
+        &mut self.cells
+    }
+}
+
+impl MenuPage for QuickActionPage {
+    type Cell = QuickAction;
+    fn empty() -> Self {
+        QuickActionPage::new(super::ids::generate("page-"), String::new())
+    }
+    fn name_mut(&mut self) -> &mut String {
+        &mut self.name
+    }
+    fn cells_mut(&mut self) -> &mut BTreeMap<String, QuickAction> {
+        &mut self.cells
+    }
+}
+
+/// Run a generic page operation on the pages of `kind`.
+macro_rules! on_pages {
+    ($layout:expr, $kind:expr, $op:ident($($arg:expr),*)) => {
+        match $kind {
+            MenuKind::Emoji => $op(&mut $layout.emoji_pages $(, $arg)*),
+            MenuKind::Quick => $op(&mut $layout.quick_action_pages $(, $arg)*),
+        }
+    };
+}
+
+/// Each menu has at least one page: the editor and `app:show*Menu1` need it.
+pub fn ensure_pages(layout: &mut LayoutPreset) {
+    fn ensure<P: MenuPage>(pages: &mut Vec<P>) {
+        if pages.is_empty() {
+            pages.push(P::empty());
+        }
+    }
+    ensure(&mut layout.emoji_pages);
+    ensure(&mut layout.quick_action_pages);
+}
+
+pub fn page_count(layout: &LayoutPreset, kind: MenuKind) -> usize {
+    match kind {
+        MenuKind::Emoji => layout.emoji_pages.len(),
+        MenuKind::Quick => layout.quick_action_pages.len(),
+    }
+}
+
 /// Move a page and its cells together, preserving the order of other pages.
+/// Returns whether anything moved.
 ///
 /// `app:showQuickMenuN` / `app:showEmojiMenuN` open a page by position and
 /// are deliberately left as they are: moving a page changes what those keys
 /// open. See [`actions::MENU_PAGE_PICKER_COUNT`].
-pub fn reorder_page(layout: &mut LayoutPreset, emoji: bool, from: usize, to: usize) {
-    fn reorder<T>(pages: &mut Vec<T>, from: usize, to: usize) {
-        if from < pages.len() && to < pages.len() {
-            let page = pages.remove(from);
-            pages.insert(to, page);
+pub fn reorder_page(layout: &mut LayoutPreset, kind: MenuKind, from: usize, to: usize) -> bool {
+    fn reorder<P>(pages: &mut Vec<P>, from: usize, to: usize) -> bool {
+        if from == to || from >= pages.len() || to >= pages.len() {
+            return false;
         }
+        let page = pages.remove(from);
+        pages.insert(to, page);
+        true
     }
-    if emoji {
-        reorder(&mut layout.emoji_pages, from, to);
+    on_pages!(layout, kind, reorder(from, to))
+}
+
+/// Where the page at `selected` ends up after moving `from` to `to`.
+pub fn selection_after_reorder(selected: usize, from: usize, to: usize) -> usize {
+    if selected == from {
+        to
+    } else if from < selected && selected <= to {
+        selected - 1
+    } else if to <= selected && selected < from {
+        selected + 1
     } else {
-        reorder(&mut layout.quick_action_pages, from, to);
+        selected
     }
 }
 
 /// Remove a page; numbered `app:` menu actions keep their numbers, so the
-/// following pages move into the freed positions.
-pub fn remove_page(layout: &mut LayoutPreset, emoji: bool, index: usize) {
-    if emoji {
-        if index < layout.emoji_pages.len() {
-            layout.emoji_pages.remove(index);
+/// following pages move into the freed positions. The only page is cleared
+/// instead (name and cells), keeping its id. Returns the page to select.
+pub fn remove_page(layout: &mut LayoutPreset, kind: MenuKind, index: usize) -> usize {
+    fn remove<P: MenuPage>(pages: &mut Vec<P>, index: usize) -> usize {
+        if pages.len() <= 1 {
+            if let Some(page) = pages.first_mut() {
+                page.name_mut().clear();
+                page.cells_mut().clear();
+            }
+            return 0;
         }
-    } else if index < layout.quick_action_pages.len() {
-        layout.quick_action_pages.remove(index);
+        if index < pages.len() {
+            pages.remove(index);
+        }
+        index.saturating_sub(1).min(pages.len() - 1)
+    }
+    on_pages!(layout, kind, remove(index))
+}
+
+/// Set a page caption; surrounding whitespace is dropped.
+pub fn rename_page(layout: &mut LayoutPreset, kind: MenuKind, page: usize, name: &str) {
+    fn rename<P: MenuPage>(pages: &mut [P], page: usize, name: &str) {
+        if let Some(page) = pages.get_mut(page) {
+            *page.name_mut() = name.trim().to_owned();
+        }
+    }
+    on_pages!(layout, kind, rename(page, name))
+}
+
+pub fn clear_cell(layout: &mut LayoutPreset, kind: MenuKind, page: usize, cell: usize) {
+    fn clear<P: MenuPage>(pages: &mut [P], page: usize, cell: usize) {
+        if let (Some(page), Some(key)) = (pages.get_mut(page), LEFT_HAND_HOTKEYS.get(cell)) {
+            page.cells_mut().remove(*key);
+        }
+    }
+    on_pages!(layout, kind, clear(page, cell))
+}
+
+/// Move the cell at `(page, cell)` `from` onto `to`, on the same or another
+/// page; the target's previous contents move to the source. Other cells keep
+/// their places.
+pub fn move_cell(
+    layout: &mut LayoutPreset,
+    kind: MenuKind,
+    from: (usize, usize),
+    to: (usize, usize),
+) {
+    fn swap<P: MenuPage>(pages: &mut [P], from: (usize, usize), to: (usize, usize)) {
+        let (Some(source), Some(target)) =
+            (LEFT_HAND_HOTKEYS.get(from.1), LEFT_HAND_HOTKEYS.get(to.1))
+        else {
+            return;
+        };
+        if from == to || from.0 >= pages.len() || to.0 >= pages.len() {
+            return;
+        }
+        let value = pages[from.0].cells_mut().remove(*source);
+        let previous = pages[to.0].cells_mut().remove(*target);
+        if let Some(previous) = previous {
+            pages[from.0].cells_mut().insert((*source).into(), previous);
+        }
+        if let Some(value) = value {
+            pages[to.0].cells_mut().insert((*target).into(), value);
+        }
+    }
+    on_pages!(layout, kind, swap(from, to))
+}
+
+/// Whether emoji cell text counts as empty. Only ordinary whitespace does:
+/// a no-break space or other spacing characters are valid insertions.
+pub fn emoji_text_is_blank(text: &str) -> bool {
+    text.chars().all(|c| matches!(c, ' ' | '\t' | '\n' | '\r'))
+}
+
+/// Set an emoji cell to `text` as typed, or clear it when the text is blank.
+/// Leading and trailing spaces are kept: snippets like `"TODO: "` need them.
+pub fn set_emoji(layout: &mut LayoutPreset, page: usize, cell: usize, text: &str) {
+    let (Some(page), Some(key)) = (
+        layout.emoji_pages.get_mut(page),
+        LEFT_HAND_HOTKEYS.get(cell),
+    ) else {
+        return;
+    };
+    if emoji_text_is_blank(text) {
+        page.cells.remove(*key);
+    } else {
+        page.cells.insert((*key).into(), text.to_owned());
     }
 }
 
-/// Transfer a cell between pages, returning the destination's contents to its source.
-pub fn transfer_cell(
-    layout: &mut LayoutPreset,
-    emoji: bool,
-    source_page: usize,
-    source: usize,
-    target_page: usize,
-    target: usize,
-) {
-    fn transfer<T, V>(
-        pages: &mut [T],
-        cells: impl Fn(&mut T) -> &mut BTreeMap<String, V>,
-        (source_page, source): (usize, &str),
-        (target_page, target): (usize, &str),
-    ) {
-        if source_page >= pages.len() || target_page >= pages.len() {
-            return;
-        }
-        let Some(value) = cells(&mut pages[source_page]).remove(source) else {
-            return;
-        };
-        if let Some(previous) = cells(&mut pages[target_page]).insert(target.into(), value) {
-            cells(&mut pages[source_page]).insert(source.into(), previous);
-        }
-    }
-    if source_page == target_page {
-        return;
-    }
-    let (Some(source), Some(target)) =
-        (LEFT_HAND_HOTKEYS.get(source), LEFT_HAND_HOTKEYS.get(target))
-    else {
-        return;
-    };
-    let source = (source_page, *source);
-    let target = (target_page, *target);
-    if emoji {
-        transfer(&mut layout.emoji_pages, |p| &mut p.cells, source, target);
-    } else {
-        transfer(
-            &mut layout.quick_action_pages,
-            |p| &mut p.cells,
-            source,
-            target,
-        );
+/// Set the caption of an assigned quick action; surrounding whitespace is
+/// dropped, and an empty caption shows the action.
+pub fn set_quick_action_name(layout: &mut LayoutPreset, page: usize, cell: usize, name: &str) {
+    if let Some(item) = layout
+        .quick_action_pages
+        .get_mut(page)
+        .zip(LEFT_HAND_HOTKEYS.get(cell))
+        .and_then(|(page, key)| page.cells.get_mut(*key))
+    {
+        item.name = name.trim().to_owned();
     }
 }
 
@@ -282,7 +417,7 @@ mod tests {
         for (page, cell) in [(-1, 0), (1, 0), (0, -1), (0, 15)] {
             assert!(matches!(
                 set_quick_action(&mut layout, page, cell, "KeyC", ""),
-                Err(ConfigError::EditConflict)
+                Err(ConfigError::Invalid(_))
             ));
             assert_eq!(layout, saved);
         }
@@ -309,13 +444,13 @@ mod tests {
             ],
             ..LayoutPreset::default()
         };
-        transfer_cell(&mut layout, true, 0, 0, 1, 1);
+        move_cell(&mut layout, MenuKind::Emoji, (0, 0), (1, 1));
         assert_eq!(layout.emoji_pages[0].cells["KeyQ"], "✨");
         assert_eq!(layout.emoji_pages[1].cells["KeyW"], "😀");
-        transfer_cell(&mut layout, true, 1, 1, 0, 2);
+        move_cell(&mut layout, MenuKind::Emoji, (1, 1), (0, 2));
         assert!(!layout.emoji_pages[1].cells.contains_key("KeyW"));
         assert_eq!(layout.emoji_pages[0].cells["KeyE"], "😀");
-        reorder_page(&mut layout, true, 0, 1);
+        reorder_page(&mut layout, MenuKind::Emoji, 0, 1);
         assert_eq!(layout.emoji_pages[1].id, "a");
         assert_eq!(layout.emoji_pages[1].cells["KeyE"], "😀");
 
@@ -334,18 +469,116 @@ mod tests {
         layout.quick_action_pages[1]
             .cells
             .insert("KeyW".into(), previous.clone());
-        transfer_cell(&mut layout, false, 0, 0, 1, 1);
+        move_cell(&mut layout, MenuKind::Quick, (0, 0), (1, 1));
         assert_eq!(layout.quick_action_pages[1].cells["KeyW"], source);
         assert_eq!(layout.quick_action_pages[0].cells["KeyQ"], previous);
-        reorder_page(&mut layout, false, 1, 0);
+        reorder_page(&mut layout, MenuKind::Quick, 1, 0);
         assert_eq!(layout.quick_action_pages[0].id, "b");
         assert_eq!(layout.quick_action_pages[0].cells["KeyW"], source);
         assert_eq!(layout.quick_action_pages[1].cells["KeyQ"], previous);
         let unchanged = layout.clone();
-        transfer_cell(&mut layout, false, 99, 0, 0, 1);
-        transfer_cell(&mut layout, true, 0, 15, 1, 0);
-        reorder_page(&mut layout, false, 0, 99);
+        move_cell(&mut layout, MenuKind::Quick, (99, 0), (0, 1));
+        move_cell(&mut layout, MenuKind::Emoji, (0, 15), (1, 0));
+        reorder_page(&mut layout, MenuKind::Quick, 0, 99);
         assert_eq!(layout, unchanged);
+    }
+
+    #[test]
+    fn moving_within_a_page_swaps_without_shifting() {
+        let mut layout = LayoutPreset {
+            emoji_pages: vec![EmojiPage {
+                id: "a".into(),
+                name: String::new(),
+                cells: [("KeyQ", "q"), ("KeyW", "w"), ("KeyE", "e")]
+                    .map(|(k, v)| (k.to_owned(), v.to_owned()))
+                    .into(),
+            }],
+            ..LayoutPreset::default()
+        };
+        move_cell(&mut layout, MenuKind::Emoji, (0, 0), (0, 2));
+        let cells = &layout.emoji_pages[0].cells;
+        assert_eq!(cells["KeyQ"], "e");
+        assert_eq!(cells["KeyW"], "w", "cells between stay in place");
+        assert_eq!(cells["KeyE"], "q");
+        move_cell(&mut layout, MenuKind::Emoji, (0, 1), (0, 4));
+        let cells = &layout.emoji_pages[0].cells;
+        assert!(!cells.contains_key("KeyW"), "an empty target moves back");
+        assert_eq!(cells["KeyT"], "w");
+    }
+
+    #[test]
+    fn removing_the_only_page_clears_it_and_keeps_its_id() {
+        let mut layout = LayoutPreset::default();
+        ensure_pages(&mut layout);
+        let id = layout.emoji_pages[0].id.clone();
+        layout.emoji_pages[0].name = "Mine".into();
+        set_emoji(&mut layout, 0, 0, "🙂");
+        assert_eq!(remove_page(&mut layout, MenuKind::Emoji, 0), 0);
+        assert_eq!(layout.emoji_pages.len(), 1);
+        assert_eq!(layout.emoji_pages[0].id, id);
+        assert!(layout.emoji_pages[0].name.is_empty());
+        assert!(layout.emoji_pages[0].cells.is_empty());
+
+        layout.emoji_pages.push(EmojiPage::empty());
+        layout.emoji_pages.push(EmojiPage::empty());
+        assert_eq!(remove_page(&mut layout, MenuKind::Emoji, 2), 1);
+        assert_eq!(remove_page(&mut layout, MenuKind::Emoji, 0), 0);
+        assert_eq!(layout.emoji_pages.len(), 1);
+    }
+
+    #[test]
+    fn selection_follows_the_moved_page() {
+        // Pages a b c d; selected index after moving `from` to `to`.
+        for (selected, from, to, expected) in [
+            (1, 1, 3, 3),
+            (2, 1, 3, 1),
+            (3, 1, 3, 2),
+            (0, 1, 3, 0),
+            (1, 3, 1, 2),
+            (2, 3, 0, 3),
+            (3, 3, 0, 0),
+        ] {
+            assert_eq!(
+                selection_after_reorder(selected, from, to),
+                expected,
+                "{selected} {from}->{to}"
+            );
+        }
+    }
+
+    #[test]
+    fn emoji_text_keeps_spaces_and_no_break_space() {
+        let mut layout = LayoutPreset::default();
+        ensure_pages(&mut layout);
+        set_emoji(&mut layout, 0, 0, "TODO: ");
+        set_emoji(&mut layout, 0, 1, "\u{a0}");
+        set_emoji(&mut layout, 0, 2, "x");
+        set_emoji(&mut layout, 0, 2, "  \t");
+        let cells = &layout.emoji_pages[0].cells;
+        assert_eq!(cells["KeyQ"], "TODO: ");
+        assert_eq!(cells["KeyW"], "\u{a0}");
+        assert!(
+            !cells.contains_key("KeyE"),
+            "ordinary whitespace clears the cell"
+        );
+        set_emoji(&mut layout, 5, 0, "out of range");
+        set_emoji(&mut layout, 0, 15, "out of range");
+        assert_eq!(layout.emoji_pages[0].cells.len(), 2);
+    }
+
+    #[test]
+    fn names_are_trimmed_and_only_set_on_assigned_cells() {
+        let mut layout = LayoutPreset::default();
+        ensure_pages(&mut layout);
+        rename_page(&mut layout, MenuKind::Quick, 0, "  Media  ");
+        assert_eq!(layout.quick_action_pages[0].name, "Media");
+        set_quick_action_name(&mut layout, 0, 0, "Nothing here");
+        assert!(layout.quick_action_pages[0].cells.is_empty());
+        set_quick_action(&mut layout, 0, 0, "KeyA", "").unwrap();
+        set_quick_action_name(&mut layout, 0, 0, "   ");
+        assert_eq!(layout.quick_action_pages[0].cells["KeyQ"].name, "");
+        clear_cell(&mut layout, MenuKind::Quick, 0, 0);
+        assert!(layout.quick_action_pages[0].cells.is_empty());
     }
 
     #[test]
@@ -359,9 +592,9 @@ mod tests {
         let mut rule = KeyRule::new("r".into(), "KeyA");
         rule.tap_action = Some("app:showQuickMenu1".into());
         layout.rules.push(rule);
-        reorder_page(&mut layout, false, 0, 2);
+        reorder_page(&mut layout, MenuKind::Quick, 0, 2);
         assert_eq!(layout.quick_action_pages[0].id, "b");
-        remove_page(&mut layout, false, 0);
+        assert_eq!(remove_page(&mut layout, MenuKind::Quick, 0), 0);
         assert_eq!(layout.quick_action_pages[0].id, "c");
         assert_eq!(
             layout.rules[0].tap_action.as_deref(),
@@ -506,6 +739,40 @@ mod tests {
             doc.layout().quick_action_pages[0].cells["KeyQ"].action,
             "macro:newMacro"
         );
+    }
+
+    #[test]
+    fn menu_save_rechecks_moved_cells_but_not_untouched_ones() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let mut doc = ConfigDocument::load(paths).unwrap();
+        // A saved cell whose macro no longer exists.
+        doc.update_layout(|layout| {
+            layout.quick_action_pages[0].cells.insert(
+                "KeyQ".into(),
+                QuickAction {
+                    action: "macro:gone".into(),
+                    ..Default::default()
+                },
+            );
+        })
+        .unwrap();
+        let baseline = doc.layout().clone();
+
+        let mut renamed = baseline.clone();
+        renamed.quick_action_pages[0].name = "Renamed".into();
+        doc.save_menu_pages(&baseline, &renamed).unwrap();
+
+        let baseline = doc.layout().clone();
+        let mut moved = baseline.clone();
+        let cell = moved.quick_action_pages[0].cells.remove("KeyQ").unwrap();
+        moved.quick_action_pages[0]
+            .cells
+            .insert("KeyW".into(), cell);
+        assert!(matches!(
+            doc.save_menu_pages(&baseline, &moved),
+            Err(ConfigError::InvalidAction(_))
+        ));
     }
 
     #[test]

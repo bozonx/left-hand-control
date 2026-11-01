@@ -3676,3 +3676,12 @@ msgstr "Függőleges görgetés"
 
 msgid "Action “{}” is unavailable on this platform or desktop."
 msgstr "A(z) „{}” művelet nem érhető el ezen a platformon vagy asztali környezetben."
+
+msgid "Clear page"
+msgstr "Oldal ürítése"
+
+msgid "Clear page?"
+msgstr "Üríti az oldalt?"
+
+msgid "All cells on the page will be cleared."
+msgstr "Az oldal összes cellája ki lesz ürítve."

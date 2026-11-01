@@ -1,4 +1,4 @@
-import { NotificationCenter } from "notifications.slint";
+import { NotificationCenter, StatusText } from "notifications.slint";
 import { KeyboardFocus } from "focus.slint";
 import { ActionField } from "action-controls.slint";
 import { Timing } from "timing.slint";
@@ -281,7 +281,7 @@ component HoldField inherits VerticalLayout {
                             highlighted: RulesEditor.layer-highlight == root.count + 1;
                             clicked => { root.choose(root.count + 1); }
                         }
-                        if RulesEditor.status.id != "": Text { accessible-live-region: polite; text: Locale.text(RulesEditor.status); color: NotificationCenter.is-warning(RulesEditor.status.id) ? Theme.warning : Theme.error; wrap: word-wrap; }
+                        if RulesEditor.status.id != "": StatusText { status: RulesEditor.status; }
                 }
             }
         }
@@ -471,7 +471,7 @@ export component RuleDialogOverlay inherits FocusScope {
             label: RulesEditor.dialog == RuleDialog.hold-timeout ? @tr("Hold threshold, ms") : @tr("Double-tap window, ms");
             accepted => { RulesEditor.choose(RulesEditor.dialog-value); }
         }
-        if RulesEditor.status.id != "": Text { accessible-live-region: polite; text: Locale.text(RulesEditor.status); color: NotificationCenter.is-warning(RulesEditor.status.id) ? Theme.warning : Theme.error; wrap: word-wrap; }
+        if RulesEditor.status.id != "": StatusText { status: RulesEditor.status; }
         if RulesEditor.dialog != RuleDialog.conditions && RulesEditor.dialog != RuleDialog.advanced: Rectangle { vertical-stretch: 1; }
         HorizontalLayout { padding: Theme.space-m; vertical-stretch: 0; spacing: Theme.space-m;
             if RulesEditor.dialog != RuleDialog.advanced && RulesEditor.dialog != RuleDialog.conditions: Button {

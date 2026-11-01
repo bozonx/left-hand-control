@@ -3649,3 +3649,12 @@ msgstr "Rolar verticalmente"
 
 msgid "Action “{}” is unavailable on this platform or desktop."
 msgstr "A ação «{}» não está disponível nesta plataforma ou ambiente de trabalho."
+
+msgid "Clear page"
+msgstr "Limpar página"
+
+msgid "Clear page?"
+msgstr "Limpar a página?"
+
+msgid "All cells on the page will be cleared."
+msgstr "Todas as células da página serão limpas."

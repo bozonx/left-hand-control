@@ -3626,3 +3626,12 @@ msgstr "ვერტიკალური გადახვევა"
 
 msgid "Action “{}” is unavailable on this platform or desktop."
 msgstr "მოქმედება „{}“ მიუწვდომელია ამ პლატფორმაზე ან სამუშაო გარემოში."
+
+msgid "Clear page"
+msgstr "გვერდის გასუფთავება"
+
+msgid "Clear page?"
+msgstr "გავასუფთავოთ გვერდი?"
+
+msgid "All cells on the page will be cleared."
+msgstr "გვერდის ყველა უჯრა გასუფთავდება."

@@ -3395,3 +3395,12 @@ msgstr "縦にスクロール"
 
 msgid "Action “{}” is unavailable on this platform or desktop."
 msgstr "操作「{}」は、このプラットフォームまたはデスクトップ環境では利用できません。"
+
+msgid "Clear page"
+msgstr "ページをクリア"
+
+msgid "Clear page?"
+msgstr "ページをクリアしますか？"
+
+msgid "All cells on the page will be cleared."
+msgstr "ページのすべてのセルがクリアされます。"

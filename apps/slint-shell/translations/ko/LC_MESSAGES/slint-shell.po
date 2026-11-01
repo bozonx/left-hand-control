@@ -3385,3 +3385,12 @@ msgstr "세로 스크롤"
 
 msgid "Action “{}” is unavailable on this platform or desktop."
 msgstr "이 플랫폼 또는 데스크톱 환경에서는 “{}” 동작을 사용할 수 없습니다."
+
+msgid "Clear page"
+msgstr "페이지 비우기"
+
+msgid "Clear page?"
+msgstr "페이지를 비울까요?"
+
+msgid "All cells on the page will be cleared."
+msgstr "페이지의 모든 셀이 비워집니다."

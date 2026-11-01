@@ -9,11 +9,16 @@ use crate::{
     i18n::Msg,
     ui::{EmojiCategory, MenuCell, MenuEditor, MenuKind, SettingsWindow},
 };
-use lhc_core::profile::{ids, model::*};
+use lhc_core::profile::{menus, model::*};
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
-use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 const PAGE: usize = LEFT_HAND_HOTKEYS.len();
+
+/// Palette categories that `ui/menus.slint` has titles for.
+const CATEGORY_IDS: [&str; 8] = [
+    "smileys", "people", "symbols", "work", "nature", "food", "travel", "utf",
+];
 
 #[derive(serde::Deserialize)]
 struct Category {
@@ -41,33 +46,30 @@ impl super::autosave::Draft for State {
     }
 }
 
+/// The bundled emoji palette; a unit test keeps it parseable.
+fn catalog() -> Result<Vec<Category>, serde_json::Error> {
+    serde_json::from_str(include_str!("../../assets/emoji-catalog.json"))
+}
+
 fn key_label(key: &str) -> SharedString {
     key.trim_start_matches("Key").into()
 }
 
-/// There is at least one page of each menu.
-fn normalize(layout: &mut LayoutPreset) {
-    if layout.emoji_pages.is_empty() {
-        layout.emoji_pages.push(EmojiPage {
-            id: ids::generate("emoji-"),
-            name: String::new(),
-            cells: Default::default(),
-        });
-    }
-    if layout.quick_action_pages.is_empty() {
-        layout
-            .quick_action_pages
-            .push(QuickActionPage::new(ids::generate("page-"), String::new()));
-    }
-}
-
-fn page_count(kind: MenuKind, layout: &LayoutPreset) -> usize {
+fn core_kind(kind: MenuKind) -> menus::MenuKind {
     match kind {
-        MenuKind::Emoji => layout.emoji_pages.len(),
-        MenuKind::Quick => layout.quick_action_pages.len(),
+        MenuKind::Emoji => menus::MenuKind::Emoji,
+        MenuKind::Quick => menus::MenuKind::Quick,
     }
 }
 
+/// The draft of a layout: both menus always have a page.
+fn draft(layout: &LayoutPreset) -> LayoutPreset {
+    let mut layout = layout.clone();
+    menus::ensure_pages(&mut layout);
+    layout
+}
+
+/// Index of the first assigned quick action on `page`, or -1.
 fn first_filled(layout: &LayoutPreset, page: usize) -> i32 {
     layout
         .quick_action_pages
@@ -82,19 +84,21 @@ fn first_filled(layout: &LayoutPreset, page: usize) -> i32 {
         .map_or(-1, |i| i as i32)
 }
 
-/// Swap the cells at hotkey indexes `from` and `to`; the other keys keep
-/// their cells, as with a transfer between pages.
-fn move_cell<V>(cells: &mut BTreeMap<String, V>, from: usize, to: usize) {
-    let (Some(from), Some(to)) = (LEFT_HAND_HOTKEYS.get(from), LEFT_HAND_HOTKEYS.get(to)) else {
-        return;
-    };
-    let source = cells.remove(*from);
-    if let Some(target) = cells.remove(*to) {
-        cells.insert((*from).into(), target);
+/// The cell to select when a page opens: emoji pages always edit a cell,
+/// quick action pages start on the first assigned one.
+fn initial_cell(kind: MenuKind, layout: &LayoutPreset, page: i32) -> i32 {
+    match kind {
+        MenuKind::Emoji => 0,
+        MenuKind::Quick => usize::try_from(page).map_or(-1, |page| first_filled(layout, page)),
     }
-    if let Some(source) = source {
-        cells.insert((*to).into(), source);
-    }
+}
+
+/// Selected page and cell as indexes, if they point into the draft.
+fn selection(e: &MenuEditor, layout: &LayoutPreset) -> Option<(usize, usize)> {
+    let page = usize::try_from(e.get_selected_page()).ok()?;
+    let cell = usize::try_from(e.get_selected_cell()).ok()?;
+    (page < menus::page_count(layout, core_kind(e.get_kind())) && cell < PAGE)
+        .then_some((page, cell))
 }
 
 /// Push the draft to the UI. `fields` also resets the bound text fields,
@@ -102,77 +106,75 @@ fn move_cell<V>(cells: &mut BTreeMap<String, V>, from: usize, to: usize) {
 fn refresh(ui: &SettingsWindow, layout: &LayoutPreset, fields: bool) {
     let e = ui.global::<MenuEditor>();
     let kind = e.get_kind();
-    let names: Vec<String> = if kind == MenuKind::Emoji {
-        layout.emoji_pages.iter().map(|p| p.name.clone()).collect()
-    } else {
-        layout
+    let names: Vec<String> = match kind {
+        MenuKind::Emoji => layout.emoji_pages.iter().map(|p| p.name.clone()).collect(),
+        MenuKind::Quick => layout
             .quick_action_pages
             .iter()
             .map(|p| p.name.clone())
-            .collect()
+            .collect(),
     };
-    let p = (e.get_selected_page().max(0) as usize).min(names.len().saturating_sub(1));
+    if names.is_empty() {
+        log::error!("menu draft has no {kind:?} pages");
+        return;
+    }
+    let p = (e.get_selected_page().max(0) as usize).min(names.len() - 1);
     e.set_selected_page(p as i32);
-    if e.get_pages()
+    if !e
+        .get_pages()
         .iter()
         .map(|name| name.to_string())
-        .collect::<Vec<_>>()
-        != names
+        .eq(names.iter().cloned())
     {
         e.set_pages(super::strings(names.clone()));
     }
-    let c = e.get_selected_cell().clamp(-1, PAGE as i32 - 1);
-    let cells: Vec<MenuCell> = if kind == MenuKind::Emoji {
-        let c = c.max(0);
-        e.set_selected_cell(c);
-        let page = &layout.emoji_pages[p];
-        if fields {
-            e.set_value(
-                page.cells
-                    .get(LEFT_HAND_HOTKEYS[c as usize])
-                    .cloned()
-                    .unwrap_or_default()
-                    .into(),
-            );
-        }
-        LEFT_HAND_HOTKEYS
-            .iter()
-            .map(|key| MenuCell {
-                key: key_label(key),
-                value: page.cells.get(*key).cloned().unwrap_or_default().into(),
-                name: SharedString::new(),
-            })
-            .collect()
-    } else {
-        e.set_selected_cell(c);
-        let page = &layout.quick_action_pages[p];
-        if fields {
-            let item = usize::try_from(c)
-                .ok()
-                .and_then(|c| page.cells.get(LEFT_HAND_HOTKEYS[c]));
-            e.set_value(item.map(|i| i.action.clone()).unwrap_or_default().into());
-            e.set_name(item.map(|i| i.name.clone()).unwrap_or_default().into());
-        }
-        LEFT_HAND_HOTKEYS
-            .iter()
-            .map(|key| {
-                let item = page.cells.get(*key).cloned().unwrap_or_default();
-                MenuCell {
+    // Emoji pages always edit a cell; quick action pages may have none selected.
+    let min = if kind == MenuKind::Emoji { 0 } else { -1 };
+    let c = e.get_selected_cell().clamp(min, PAGE as i32 - 1);
+    e.set_selected_cell(c);
+    let selected = usize::try_from(c).ok().map(|c| LEFT_HAND_HOTKEYS[c]);
+    let cells: Vec<MenuCell> = match kind {
+        MenuKind::Emoji => {
+            let page = &layout.emoji_pages[p];
+            if fields {
+                let value = selected.and_then(|key| page.cells.get(key));
+                e.set_value(value.cloned().unwrap_or_default().into());
+            }
+            LEFT_HAND_HOTKEYS
+                .iter()
+                .map(|key| MenuCell {
                     key: key_label(key),
-                    value: item.action.clone().into(),
-                    name: if item.name.is_empty() {
-                        item.action.clone()
-                    } else {
-                        item.name.clone()
+                    value: page.cells.get(*key).cloned().unwrap_or_default().into(),
+                    name: SharedString::new(),
+                })
+                .collect()
+        }
+        MenuKind::Quick => {
+            let page = &layout.quick_action_pages[p];
+            if fields {
+                let item = selected.and_then(|key| page.cells.get(key));
+                e.set_value(item.map(|i| i.action.clone()).unwrap_or_default().into());
+                e.set_name(item.map(|i| i.name.clone()).unwrap_or_default().into());
+            }
+            LEFT_HAND_HOTKEYS
+                .iter()
+                .map(|key| {
+                    let item = page.cells.get(*key).cloned().unwrap_or_default();
+                    MenuCell {
+                        key: key_label(key),
+                        name: display_name(&item.name, &item.action).into(),
+                        value: item.action.into(),
                     }
-                    .into(),
-                }
-            })
-            .collect()
+                })
+                .collect()
+        }
     };
     if fields {
         e.set_page_name(names[p].clone().into());
     }
+    e.set_only_page_empty(
+        names.len() == 1 && names[0].is_empty() && cells.iter().all(|cell| cell.value.is_empty()),
+    );
     e.set_cells(ModelRc::new(VecModel::from(cells)));
 }
 
@@ -211,8 +213,7 @@ fn persist(
     if result.is_ok() {
         state.commands.clear();
         state.baseline = document.read().layout().clone();
-        state.layout = state.baseline.clone();
-        normalize(&mut state.layout);
+        state.layout = draft(&state.baseline);
     }
     result.map(Some)
 }
@@ -227,15 +228,19 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
         Ok(None) => Msg::None,
         Err(error) => Msg::from(&error),
     };
-    e.set_status(crate::notifications::report(ui, &message));
+    // Autosave repeats while the user types: notify only when the status changes.
+    e.set_status(crate::notifications::report_changed(
+        ui,
+        &message,
+        e.get_status(),
+    ));
 }
 
 fn reload(ui: &SettingsWindow, document: &Document, state: &mut State) {
     state.autosave.cancel();
     state.commands.clear();
     state.baseline = document.read().layout().clone();
-    state.layout = state.baseline.clone();
-    normalize(&mut state.layout);
+    state.layout = draft(&state.baseline);
     ui.global::<MenuEditor>().set_has_unsaved_changes(false);
     refresh(ui, &state.layout, true);
 }
@@ -279,8 +284,7 @@ pub(super) fn choose(
 
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
     let baseline = document.read().layout().clone();
-    let mut layout = baseline.clone();
-    normalize(&mut layout);
+    let layout = draft(&baseline);
     let state: Shared = Rc::new(RefCell::new(State {
         baseline,
         layout,
@@ -293,10 +297,18 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
         save(&ui, &doc, &mut state);
         !menu_changed(&state)
     });
-    match serde_json::from_str::<Vec<Category>>(include_str!("../../assets/emoji-catalog.json")) {
+    match catalog() {
         Ok(categories) => e.set_catalog(ModelRc::new(VecModel::from(
             categories
                 .into_iter()
+                .filter(|c| {
+                    // The page has no title for other categories.
+                    let known = CATEGORY_IDS.contains(&c.id.as_str());
+                    if !known {
+                        log::error!("emoji catalog: unknown category {}", c.id);
+                    }
+                    known
+                })
                 .map(|c| EmojiCategory {
                     id: c.id.into(),
                     items: super::strings(c.items),
@@ -308,16 +320,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
 
     // Reload when the menus changed elsewhere and no edit is pending.
     super::autosave::subscribe(ui, document, View::Menus, &state, |ui, document, state| {
-        let mut saved = state.baseline.clone();
-        normalize(&mut saved);
         if !state.autosave.pending()
             && state.commands.is_empty()
-            && state.layout == saved
+            && state.layout == draft(&state.baseline)
             && state.baseline != *document.read().layout()
         {
             let baseline = document.read().layout().clone();
-            let mut layout = baseline.clone();
-            normalize(&mut layout);
+            let layout = draft(&baseline);
             let changed = state.layout.emoji_pages != layout.emoji_pages
                 || state.layout.quick_action_pages != layout.quick_action_pages;
             state.baseline = baseline;
@@ -338,10 +347,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
                 {
                     let mut state = shared.borrow_mut();
                     edit(&ui.global::<MenuEditor>(), &mut state.layout);
+                    menus::ensure_pages(&mut state.layout);
                     ui.global::<MenuEditor>()
                         .set_has_unsaved_changes(menu_changed(&state));
-                    normalize(&mut state.layout);
-                    ui.global::<MenuEditor>().set_editing_count(0);
                     if !typing {
                         save(&ui, &doc, &mut state);
                     }
@@ -358,18 +366,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
         let mut state = shared.borrow_mut();
         super::autosave::flush(&ui, &doc, &mut *state);
         let e = ui.global::<MenuEditor>();
-        e.set_editing_count(0);
         e.set_kind(kind);
         e.set_selected_page(0);
         if !menu_changed(&state) {
             reload(&ui, &doc, &mut state);
             e.set_status(Msg::None.to_ui());
         }
-        e.set_selected_cell(if kind == MenuKind::Quick {
-            first_filled(&state.layout, 0)
-        } else {
-            0
-        });
+        e.set_selected_cell(initial_cell(kind, &state.layout, 0));
         refresh(&ui, &state.layout, true);
     });
 
@@ -385,11 +388,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
         let state = shared.borrow();
         let e = ui.global::<MenuEditor>();
         e.set_selected_page(index);
-        e.set_selected_cell(if e.get_kind() == MenuKind::Quick {
-            first_filled(&state.layout, index.max(0) as usize)
-        } else {
-            0
-        });
+        e.set_selected_cell(initial_cell(e.get_kind(), &state.layout, index));
         refresh(&ui, &state.layout, true);
     });
     on!(ui, e.on_select_cell, shared = state => |ui, index| {
@@ -400,85 +399,54 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
     let c = change.clone();
     e.on_add_page(move |name| {
         c(false, &|e, layout| {
-            let index = if e.get_kind() == MenuKind::Emoji {
-                layout.emoji_pages.push(EmojiPage {
-                    id: ids::generate("emoji-"),
-                    name: name.to_string(),
-                    cells: Default::default(),
-                });
-                layout.emoji_pages.len() - 1
-            } else {
-                layout.quick_action_pages.push(QuickActionPage::new(
-                    ids::generate("page-"),
-                    name.to_string(),
-                ));
-                layout.quick_action_pages.len() - 1
+            let kind = e.get_kind();
+            let index = match kind {
+                MenuKind::Emoji => {
+                    layout.emoji_pages.push(EmojiPage {
+                        id: lhc_core::profile::ids::generate("emoji-"),
+                        name: name.trim().to_owned(),
+                        cells: Default::default(),
+                    });
+                    layout.emoji_pages.len() - 1
+                }
+                MenuKind::Quick => {
+                    layout.quick_action_pages.push(QuickActionPage::new(
+                        lhc_core::profile::ids::generate("page-"),
+                        name.trim().to_owned(),
+                    ));
+                    layout.quick_action_pages.len() - 1
+                }
             };
             e.set_selected_page(index as i32);
-            e.set_selected_cell(if e.get_kind() == MenuKind::Quick {
-                -1
-            } else {
-                0
-            });
+            e.set_selected_cell(initial_cell(kind, layout, index as i32));
         });
     });
     let c = change.clone();
     e.on_remove_page(move || {
         c(false, &|e, layout| {
-            let p = e.get_selected_page().max(0) as usize;
-            lhc_core::profile::menus::remove_page(layout, e.get_kind() == MenuKind::Emoji, p);
-            e.set_selected_page(p.saturating_sub(1) as i32);
-            e.set_selected_cell(if e.get_kind() == MenuKind::Quick {
-                -1
-            } else {
-                0
-            });
-        });
-    });
-    let c = change.clone();
-    e.on_move_page(move |delta| {
-        c(false, &|e, layout| {
-            let p = e.get_selected_page();
-            let n = p + delta;
-            if p < 0 || n < 0 || n as usize >= page_count(e.get_kind(), layout) {
+            let Ok(page) = usize::try_from(e.get_selected_page()) else {
                 return;
-            }
-            lhc_core::profile::menus::reorder_page(
-                layout,
-                e.get_kind() == MenuKind::Emoji,
-                p as usize,
-                n as usize,
-            );
-            e.set_selected_page(n);
+            };
+            let kind = e.get_kind();
+            let selected = menus::remove_page(layout, core_kind(kind), page);
+            e.set_selected_page(selected as i32);
+            e.set_selected_cell(initial_cell(kind, layout, selected as i32));
         });
     });
     let c = change.clone();
     e.on_reorder_page(move |from, to| {
         c(false, &|e, layout| {
-            let count = page_count(e.get_kind(), layout) as i32;
-            if !(0..count).contains(&from) || !(0..count).contains(&to) || from == to {
+            let (Ok(from), Ok(to)) = (usize::try_from(from), usize::try_from(to)) else {
                 return;
+            };
+            if menus::reorder_page(layout, core_kind(e.get_kind()), from, to) {
+                let selected = e.get_selected_page().max(0) as usize;
+                e.set_selected_page(menus::selection_after_reorder(selected, from, to) as i32);
             }
-            lhc_core::profile::menus::reorder_page(
-                layout,
-                e.get_kind() == MenuKind::Emoji,
-                from as usize,
-                to as usize,
-            );
-            let selected = e.get_selected_page();
-            e.set_selected_page(if selected == from {
-                to
-            } else if from < selected && selected <= to {
-                selected - 1
-            } else if to <= selected && selected < from {
-                selected + 1
-            } else {
-                selected
-            });
         });
     });
     let c = change.clone();
-    e.on_transfer_cell(move |source_page, source, target| {
+    e.on_move_cell(move |source_page, source, target| {
         c(false, &|e, layout| {
             let (Ok(source_page), Ok(source), Ok(target), Ok(target_page)) = (
                 usize::try_from(source_page),
@@ -488,13 +456,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
             ) else {
                 return;
             };
-            lhc_core::profile::menus::transfer_cell(
+            if target >= PAGE {
+                return;
+            }
+            menus::move_cell(
                 layout,
-                e.get_kind() == MenuKind::Emoji,
-                source_page,
-                source,
-                target_page,
-                target,
+                core_kind(e.get_kind()),
+                (source_page, source),
+                (target_page, target),
             );
             e.set_selected_cell(target as i32);
         });
@@ -502,48 +471,30 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
     let c = change.clone();
     e.on_rename_page(move || {
         c(true, &|e, layout| {
-            let p = e.get_selected_page().max(0) as usize;
-            let name = e.get_page_name().trim().to_owned();
-            if e.get_kind() == MenuKind::Emoji {
-                if let Some(page) = layout.emoji_pages.get_mut(p) {
-                    page.name = name;
-                }
-            } else if let Some(page) = layout.quick_action_pages.get_mut(p) {
-                page.name = name;
+            if let Ok(page) = usize::try_from(e.get_selected_page()) {
+                menus::rename_page(layout, core_kind(e.get_kind()), page, &e.get_page_name());
             }
         });
     });
     let c = change.clone();
     e.on_set_cell(move || {
         c(true, &|e, layout| {
-            let p = e.get_selected_page().max(0) as usize;
-            let key = LEFT_HAND_HOTKEYS[e.get_selected_cell().clamp(0, PAGE as i32 - 1) as usize];
-            let value = e.get_value().trim().to_owned();
-            if let Some(page) = layout.emoji_pages.get_mut(p) {
-                if value.is_empty() {
-                    page.cells.remove(key);
-                } else {
-                    page.cells.insert(key.into(), value);
-                }
+            if e.get_kind() != MenuKind::Emoji {
+                return;
+            }
+            if let Some((page, cell)) = selection(e, layout) {
+                menus::set_emoji(layout, page, cell, &e.get_value());
             }
         });
     });
     let c = change.clone();
     e.on_set_name(move || {
         c(true, &|e, layout| {
-            let (Ok(page), Ok(cell)) = (
-                usize::try_from(e.get_selected_page()),
-                usize::try_from(e.get_selected_cell()),
-            ) else {
+            if e.get_kind() != MenuKind::Quick {
                 return;
-            };
-            if let Some(item) = layout
-                .quick_action_pages
-                .get_mut(page)
-                .zip(LEFT_HAND_HOTKEYS.get(cell))
-                .and_then(|(page, key)| page.cells.get_mut(*key))
-            {
-                item.name = e.get_name().to_string();
+            }
+            if let Some((page, cell)) = selection(e, layout) {
+                menus::set_quick_action_name(layout, page, cell, &e.get_name());
             }
         });
     });
@@ -555,34 +506,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
     let c = change.clone();
     e.on_clear_cell(move || {
         c(false, &|e, layout| {
-            let p = e.get_selected_page().max(0) as usize;
-            let cell = e.get_selected_cell().clamp(0, PAGE as i32 - 1) as usize;
-            if e.get_kind() == MenuKind::Emoji {
-                if let Some(page) = layout.emoji_pages.get_mut(p) {
-                    page.cells.remove(LEFT_HAND_HOTKEYS[cell]);
+            let kind = e.get_kind();
+            if let Some((page, cell)) = selection(e, layout) {
+                menus::clear_cell(layout, core_kind(kind), page, cell);
+                if kind == MenuKind::Quick {
+                    e.set_selected_cell(-1);
                 }
-            } else if let Some(page) = layout.quick_action_pages.get_mut(p) {
-                page.cells.remove(LEFT_HAND_HOTKEYS[cell]);
-                e.set_selected_cell(-1);
             }
-        });
-    });
-    let c = change.clone();
-    e.on_move_cell(move |from, to| {
-        c(false, &|e, layout| {
-            if !(0..PAGE as i32).contains(&from) || !(0..PAGE as i32).contains(&to) || from == to {
-                return;
-            }
-            let (from, to) = (from as usize, to as usize);
-            let p = e.get_selected_page().max(0) as usize;
-            if e.get_kind() == MenuKind::Emoji {
-                if let Some(page) = layout.emoji_pages.get_mut(p) {
-                    move_cell(&mut page.cells, from, to);
-                }
-            } else if let Some(page) = layout.quick_action_pages.get_mut(p) {
-                move_cell(&mut page.cells, from, to);
-            }
-            e.set_selected_cell(to as i32);
         });
     });
     state

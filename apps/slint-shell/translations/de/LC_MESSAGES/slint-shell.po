@@ -3715,3 +3715,12 @@ msgstr "Vertikal scrollen"
 
 msgid "Action “{}” is unavailable on this platform or desktop."
 msgstr "Die Aktion „{}“ ist auf dieser Plattform oder Desktop-Umgebung nicht verfügbar."
+
+msgid "Clear page"
+msgstr "Seite leeren"
+
+msgid "Clear page?"
+msgstr "Seite leeren?"
+
+msgid "All cells on the page will be cleared."
+msgstr "Alle Zellen der Seite werden geleert."

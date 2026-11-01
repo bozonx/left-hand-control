@@ -3000,3 +3000,12 @@ msgstr "Прокрутка по вертикали"
 
 msgid "Action “{}” is unavailable on this platform or desktop."
 msgstr "Действие «{}» недоступно на этой платформе или в этом окружении рабочего стола."
+
+msgid "Clear page"
+msgstr "Очистить страницу"
+
+msgid "Clear page?"
+msgstr "Очистить страницу?"
+
+msgid "All cells on the page will be cleared."
+msgstr "Все ячейки страницы будут очищены."

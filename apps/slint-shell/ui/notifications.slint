@@ -55,6 +55,15 @@ component ToastCard inherits Rectangle {
     }
 }
 
+/// Inline page status: warnings in the warning colour, other problems as errors.
+export component StatusText inherits Text {
+    in property <Message> status;
+    accessible-live-region: polite;
+    text: Locale.text(root.status);
+    color: NotificationCenter.is-warning(root.status.id) ? Theme.warning : Theme.error;
+    wrap: word-wrap;
+}
+
 export component ToastStack inherits TouchArea {
     in property <length> stack-height-limit: 480px;
     height: min(toast-content.preferred-height, root.stack-height-limit);

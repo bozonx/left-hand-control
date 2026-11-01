@@ -45,24 +45,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(e.get_selected_page(), 1);
     e.set_value("✨".into());
     e.invoke_set_cell();
-    e.invoke_move_cell(0, 2);
+    e.invoke_move_cell(1, 0, 2);
     assert_eq!(loaded().layout().emoji_pages[1].cells["KeyE"], "✨");
     e.invoke_select_page(0);
-    e.invoke_transfer_cell(1, 2, 0);
+    e.invoke_move_cell(1, 2, 0);
     assert_eq!(loaded().layout().emoji_pages[0].cells["KeyQ"], "✨");
     assert_eq!(loaded().layout().emoji_pages[1].cells["KeyE"], "Привет 👋");
-    e.invoke_transfer_cell(1, 2, 0);
+    e.invoke_move_cell(1, 2, 0);
     e.invoke_reorder_page(1, 0);
     assert_eq!(e.get_selected_page(), 1);
     e.invoke_reorder_page(0, 1);
     e.invoke_select_page(1);
-    e.invoke_move_page(-1);
+    e.invoke_reorder_page(1, 0);
     assert_eq!(loaded().layout().emoji_pages[0].cells["KeyE"], "✨");
     e.invoke_select_cell(2);
     e.invoke_clear_cell();
     assert!(!loaded().layout().emoji_pages[0].cells.contains_key("KeyE"));
     e.invoke_remove_page();
     assert_eq!(loaded().layout().emoji_pages.len(), 1);
+    // The only page is cleared instead of removed, and keeps its id.
+    let id = loaded().layout().emoji_pages[0].id.clone();
+    e.set_value("\u{a0}".into());
+    e.invoke_set_cell();
+    wait_until("menu autosave", || !e.get_has_unsaved_changes());
+    assert_eq!(loaded().layout().emoji_pages[0].cells["KeyQ"], "\u{a0}");
+    assert!(!e.get_only_page_empty());
+    e.invoke_remove_page();
+    assert_eq!(loaded().layout().emoji_pages[0].id, id);
+    assert!(loaded().layout().emoji_pages[0].cells.is_empty());
+    assert!(e.get_only_page_empty());
 
     let settings = ui.global::<SettingsEditor>();
     assert!(!settings.get_commands_enabled());
@@ -109,9 +120,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     e.invoke_set_name();
     wait_until("menu autosave", || !e.get_has_unsaved_changes());
     e.invoke_set_action(1, "text:Здравствуйте".into(), "".into());
-    e.invoke_move_cell(1, 2);
+    e.invoke_move_cell(0, 1, 2);
     e.invoke_add_page("Second".into());
-    e.invoke_transfer_cell(0, 2, 4);
+    e.invoke_move_cell(0, 2, 4);
     assert_eq!(
         quick_action(loaded().layout(), 1, "KeyT"),
         "text:Здравствуйте"
@@ -120,7 +131,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     e.invoke_reorder_page(1, 0);
     assert_eq!(e.get_selected_page(), 0);
     e.invoke_select_page(1);
-    e.invoke_transfer_cell(0, 4, 2);
+    e.invoke_move_cell(0, 4, 2);
     e.invoke_reorder_page(1, 0);
     let layout = loaded().layout().clone();
     assert_eq!(quick_action(&layout, 0, "KeyE"), "text:Здравствуйте");

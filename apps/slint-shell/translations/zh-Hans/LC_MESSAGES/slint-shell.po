@@ -3314,3 +3314,12 @@ msgstr "垂直滚动"
 
 msgid "Action “{}” is unavailable on this platform or desktop."
 msgstr "操作“{}”在此平台或桌面环境中不可用。"
+
+msgid "Clear page"
+msgstr "清空页面"
+
+msgid "Clear page?"
+msgstr "清空页面？"
+
+msgid "All cells on the page will be cleared."
+msgstr "页面上的所有单元格都将被清空。"

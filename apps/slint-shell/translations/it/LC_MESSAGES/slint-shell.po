@@ -3711,3 +3711,12 @@ msgstr "Scorrimento verticale"
 
 msgid "Action “{}” is unavailable on this platform or desktop."
 msgstr "L’azione «{}» non è disponibile su questa piattaforma o ambiente desktop."
+
+msgid "Clear page"
+msgstr "Svuota pagina"
+
+msgid "Clear page?"
+msgstr "Svuotare la pagina?"
+
+msgid "All cells on the page will be cleared."
+msgstr "Tutte le celle della pagina verranno svuotate."

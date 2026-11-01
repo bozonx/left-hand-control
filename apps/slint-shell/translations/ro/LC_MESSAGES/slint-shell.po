@@ -3677,3 +3677,12 @@ msgstr "Derulare verticală"
 
 msgid "Action “{}” is unavailable on this platform or desktop."
 msgstr "Acțiunea „{}” nu este disponibilă pe această platformă sau în acest mediu desktop."
+
+msgid "Clear page"
+msgstr "Golește pagina"
+
+msgid "Clear page?"
+msgstr "Goliți pagina?"
+
+msgid "All cells on the page will be cleared."
+msgstr "Toate celulele paginii vor fi golite."

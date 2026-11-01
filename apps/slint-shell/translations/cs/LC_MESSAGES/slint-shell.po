@@ -3615,3 +3615,12 @@ msgstr "Svislé posouvání"
 
 msgid "Action “{}” is unavailable on this platform or desktop."
 msgstr "Akce „{}“ není na této platformě nebo v tomto pracovním prostředí dostupná."
+
+msgid "Clear page"
+msgstr "Vyprázdnit stránku"
+
+msgid "Clear page?"
+msgstr "Vyprázdnit stránku?"
+
+msgid "All cells on the page will be cleared."
+msgstr "Všechny buňky stránky budou vyprázdněny."
