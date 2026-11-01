@@ -1,9 +1,8 @@
 //! Typed picker requests and value restrictions.
 
-use super::catalog::valid_pause;
+use super::catalog::{development_only, valid_pause};
 use crate::{
     document::Document,
-    i18n::Msg,
     pages::{layers, macros, rules},
     ui::{
         ActionPicker, DefaultAssignmentBehavior, PickerBehavior, PickerTarget, PickerTitle,
@@ -84,17 +83,6 @@ impl PickerRequest {
             PickerBehavior::Action
         }
     }
-
-    /// Label of the "default" behavior.
-    pub(super) fn native_label(&self) -> Msg {
-        match self.default_behavior {
-            DefaultAssignmentBehavior::Inherit => Msg::PickerInherit,
-            DefaultAssignmentBehavior::EmptyCell => Msg::PickerEmptyCell,
-            DefaultAssignmentBehavior::NoAction => Msg::PickerNoAction,
-            DefaultAssignmentBehavior::LayerOnly => Msg::PickerLayerOnly,
-            DefaultAssignmentBehavior::Passthrough => Msg::PickerNative,
-        }
-    }
 }
 
 /// Ask the page owning `target` what the picker may assign.
@@ -133,12 +121,20 @@ pub(super) struct Filter {
     pub(super) excluded_macro: String,
     /// Keys that already have an extra row.
     pub(super) unavailable_keys: Vec<String>,
+    /// Development mode: its features may be chosen.
+    pub(super) development: bool,
+    /// Value the picker opened with; it stays acceptable even when its
+    /// feature is hidden, so an unchanged assignment can be applied.
+    pub(super) initial: String,
 }
 
 impl Filter {
     /// Restrictions of the open picker; list items are checked with it.
     pub(super) fn admits(&self, value: &str) -> bool {
         if self.unavailable_keys.iter().any(|key| key == value) {
+            return false;
+        }
+        if !self.development && value != self.initial && development_only(value) {
             return false;
         }
         if self.trigger {
@@ -173,12 +169,13 @@ impl Filter {
     }
 }
 
-/// Filter of the open picker.
+/// Filter of the open picker; `initial` is the value it opened with.
 pub(super) fn filter(
     ui: &SettingsWindow,
     document: &Document,
     picker: &ActionPicker,
     target: Option<(PickerTarget, i32)>,
+    initial: &str,
 ) -> Filter {
     let target = target.map(|(target, _)| target);
     let key_only = picker.get_key_only();
@@ -197,5 +194,7 @@ pub(super) fn filter(
         } else {
             Vec::new()
         },
+        development: document.read().settings().in_development,
+        initial: initial.to_owned(),
     }
 }

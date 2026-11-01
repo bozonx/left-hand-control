@@ -574,7 +574,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         lhc_core::config_document::KeyAssignment::Swallow
     );
     layers.invoke_open_dialog(LayerDialog::EditKey, 0);
-    assert!(picker.get_ignore_key());
+    assert_eq!(picker.get_behavior(), PickerBehavior::Swallow);
     picker.invoke_select_behavior(PickerBehavior::Native);
     picker.invoke_apply();
     assert_eq!(

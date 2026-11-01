@@ -9,6 +9,7 @@ use crate::{
 };
 use lhc_core::profile::actions::Action;
 use slint::ComponentHandle;
+use slint::SharedString;
 use std::{cell::RefCell, rc::Rc};
 
 mod capture;
@@ -20,8 +21,8 @@ mod session;
 pub(super) use capture::{CaptureState, capture};
 #[cfg(test)]
 use capture::{key_name, physical_key_name};
+use catalog::shortcut_desktop;
 pub(crate) use catalog::{DESKTOP_SHORTCUTS, action_label, category_for_value};
-use catalog::{load_desktop_shortcuts, shortcut_desktop};
 #[cfg(test)]
 use request::Filter;
 pub(super) use request::{PickerMode, PickerRequest};
@@ -34,11 +35,32 @@ fn assigns_command(value: &str, id: &str) -> bool {
 /// The open picker: who receives the value and the catalog built on open.
 #[derive(Default)]
 struct Session {
-    identity: std::sync::Arc<()>,
+    /// Changes on every open and close, so late background results of a
+    /// previous session are ignored.
+    generation: std::sync::Arc<std::sync::atomic::AtomicU64>,
     target: Option<(PickerTarget, i32)>,
+    /// Value the picker opened with.
+    initial: SharedString,
     catalog: Vec<PickerItem>,
+    /// [`catalog::SHORTCUTS_GENERATION`] the catalog was built with.
+    catalog_shortcuts: u64,
+    /// Value an apply error refers to; editing the value clears the error.
+    error_value: Option<SharedString>,
     command: Option<lhc_core::profile::model::Command>,
     layer_target: Option<super::layers::EditTarget>,
+}
+
+impl Session {
+    /// Start a new generation; returns the shared counter for the next session.
+    fn next_generation(&self) -> std::sync::Arc<std::sync::atomic::AtomicU64> {
+        self.generation
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.generation.clone()
+    }
+
+    fn current_generation(&self) -> u64 {
+        self.generation.load(std::sync::atomic::Ordering::Relaxed)
+    }
 }
 
 pub(super) struct Drafts {
@@ -62,16 +84,23 @@ pub(super) fn bind(
     let session = Rc::new(RefCell::new(Session::default()));
     let picker = ui.global::<ActionPicker>();
     picker.set_shortcut_desktop(shortcut_desktop());
-    load_desktop_shortcuts(ui.as_weak());
 
     let weak = ui.as_weak();
     let input = input.clone();
     picker.on_begin_capture(move || {
-        input.reset_capture();
-        if let Some(ui) = weak.upgrade() {
-            let picker = ui.global::<ActionPicker>();
-            picker.set_capturing(!picker.get_capturing());
-            picker.set_capture_keys("".into());
+        let Some(ui) = weak.upgrade() else { return };
+        let picker = ui.global::<ActionPicker>();
+        picker.set_capture_keys("".into());
+        picker.set_capture_unsupported(false);
+        if !picker.get_capturing() {
+            input.reset_capture();
+            picker.set_capturing(true);
+            return;
+        }
+        // Stop keeps the keys pressed so far instead of dropping them.
+        match input.stop_capture(picker.get_trigger_chords(), picker.get_key_only()) {
+            Some(value) => capture::finish(&picker, value),
+            None => picker.set_capturing(false),
         }
     });
 
@@ -83,10 +112,17 @@ pub(super) fn bind(
             return;
         }
         picker.set_behavior(behavior);
-        picker.set_ignore_key(behavior == PickerBehavior::Swallow);
         picker.set_capturing(false);
         picker.set_error(Msg::None.to_ui());
         picker.invoke_refresh();
+    });
+
+    on!(ui, picker.on_select_category, doc = document => |ui, category| {
+        session::select_category(&ui, &doc, category);
+    });
+
+    on!(ui, picker.on_step_selection => |ui, delta| {
+        session::step_selection(&ui, delta);
     });
 
     let weak = ui.as_weak();
@@ -116,13 +152,16 @@ pub(super) fn bind(
     picker.on_dismiss_picker(move || {
         {
             let mut state = state.borrow_mut();
-            state.target = None;
-            state.layer_target = None;
-            state.identity = std::sync::Arc::new(());
+            let generation = state.next_generation();
+            *state = Session {
+                generation,
+                ..Session::default()
+            };
         }
         if let Some(ui) = weak.upgrade() {
             let picker = ui.global::<ActionPicker>();
             picker.set_capturing(false);
+            picker.set_choosing_file(false);
             picker.set_opened(false);
         }
     });

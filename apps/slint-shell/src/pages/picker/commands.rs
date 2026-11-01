@@ -10,21 +10,18 @@ use lhc_core::profile::actions::Action;
 use slint::ComponentHandle;
 use std::{cell::RefCell, rc::Rc};
 
-/// The session and command fields a file chooser is allowed to update.
+/// The picker session a file chooser belongs to and the action it edits.
 struct ChoiceRequest {
-    session: std::sync::Weak<()>,
+    session: u64,
     value: String,
-    script: String,
-    directory: String,
 }
 
 impl ChoiceRequest {
-    fn accepts(&self, opened: bool, value: &str, script: &str, directory: &str) -> bool {
-        opened
-            && self.session.upgrade().is_some()
-            && self.value == value
-            && self.script == script
-            && self.directory == directory
+    /// The chosen path still applies: same open session, same command.
+    /// Edits of the script or folder meanwhile keep it, the path is added
+    /// to what is there now.
+    fn accepts(&self, opened: bool, session: u64, value: &str) -> bool {
+        opened && self.session == session && self.value == value
     }
 }
 
@@ -81,6 +78,7 @@ pub(super) fn bind(
                 powershell_script: String::new(),
                 working_directory: None,
             });
+        picker.set_command_error(Msg::None.to_ui());
         command.name = picker.get_command_name().to_string();
         command.set_script(picker.get_command_script().to_string());
         command.working_directory = (!picker.get_command_directory().trim().is_empty())
@@ -107,28 +105,29 @@ pub(super) fn bind(
                     .to_ui(),
                 )
                 .to_string();
-            if session.borrow().target.is_none() {
+            let picker = ui.global::<ActionPicker>();
+            if session.borrow().target.is_none() || picker.get_choosing_file() {
                 return;
             }
-            let picker = ui.global::<ActionPicker>();
+            picker.set_choosing_file(true);
+            picker.set_command_error(Msg::None.to_ui());
             let request = ChoiceRequest {
-                session: std::sync::Arc::downgrade(&session.borrow().identity),
+                session: session.borrow().current_generation(),
                 value: picker.get_value().to_string(),
-                script: picker.get_command_script().to_string(),
-                directory: picker.get_command_directory().to_string(),
             };
             let weak = ui.as_weak();
+            let generation = session.borrow().generation.clone();
             std::thread::spawn(move || {
                 let picked = lhc_core::platform::file_chooser::pick(&title, directory);
                 let _ = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
                     let picker = ui.global::<ActionPicker>();
-                    if !request.accepts(
-                        picker.get_opened(),
-                        &picker.get_value(),
-                        &picker.get_command_script(),
-                        &picker.get_command_directory(),
-                    ) {
+                    let generation = generation.load(std::sync::atomic::Ordering::Relaxed);
+                    if generation != request.session {
+                        return;
+                    }
+                    picker.set_choosing_file(false);
+                    if !request.accepts(picker.get_opened(), generation, &picker.get_value()) {
                         return;
                     }
                     match picked {
@@ -148,7 +147,7 @@ pub(super) fn bind(
                             picker.invoke_edit_command();
                         }
                         Ok(None) => {}
-                        Err(error) => picker.set_error(Msg::ActionFailed(error).to_ui()),
+                        Err(error) => picker.set_command_error(Msg::ActionFailed(error).to_ui()),
                     }
                 });
             });
@@ -173,20 +172,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn file_choice_ignores_closed_reopened_and_changed_editors() {
-        let mut session = Session::default();
+    fn file_choice_ignores_closed_reopened_and_changed_actions() {
         let request = ChoiceRequest {
-            session: std::sync::Arc::downgrade(&session.identity),
+            session: 3,
             value: "cmd:test".into(),
-            script: "printf".into(),
-            directory: "/tmp".into(),
         };
-        assert!(request.accepts(true, "cmd:test", "printf", "/tmp"));
-        assert!(!request.accepts(false, "cmd:test", "printf", "/tmp"));
-        assert!(!request.accepts(true, "cmd:other", "printf", "/tmp"));
-        assert!(!request.accepts(true, "cmd:test", "edited", "/tmp"));
-        assert!(!request.accepts(true, "cmd:test", "printf", "/other"));
-        session.identity = std::sync::Arc::new(());
-        assert!(!request.accepts(true, "cmd:test", "printf", "/tmp"));
+        assert!(request.accepts(true, 3, "cmd:test"));
+        assert!(!request.accepts(false, 3, "cmd:test"));
+        assert!(!request.accepts(true, 3, "cmd:other"));
+        assert!(!request.accepts(true, 4, "cmd:test"));
     }
 }

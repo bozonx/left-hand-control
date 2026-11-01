@@ -463,7 +463,9 @@ pub(super) fn choose(
                 config.update_layout(|layout| {
                     let rule = &mut layout.rules[index];
                     *rule = candidate;
-                    if ui.global::<ActionPicker>().get_ignore_key() && value.is_empty() {
+                    if ui.global::<ActionPicker>().get_behavior()
+                        == crate::ui::PickerBehavior::Swallow
+                    {
                         match property {
                             RuleDialog::Tap => rule.tap_action = None,
                             RuleDialog::Hold => rule.hold_action = None,

@@ -283,8 +283,8 @@ msgstr "預設"
 msgid "Advanced"
 msgstr "進階"
 
-msgid "Choose trigger key"
-msgstr "選擇觸發鍵"
+msgid "Choose key"
+msgstr "選擇按鍵"
 
 msgid "Choose layer"
 msgstr "選擇圖層"
@@ -722,8 +722,8 @@ msgstr "暫停"
 msgid "Literal text (text: prefix is added automatically)"
 msgstr "文字文字（文字：自動加上前綴）"
 
-msgid "Pause in milliseconds (1–10000)"
-msgstr "暫停以毫秒為單位 (1–10000)"
+msgid "Pause in milliseconds ({}–{})"
+msgstr "暫停以毫秒為單位 ({0}–{1})"
 
 msgid "No matching items"
 msgstr "沒有匹配的項目"
@@ -3342,3 +3342,12 @@ msgstr "設定觸發器"
 
 msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
 msgstr "主鍵盤網格之外的滑鼠按鈕、媒體鍵及其他觸發器。新增觸發器並選擇動作或抑制。刪除該列可繼承下層或基本配置的指派。"
+
+msgid "Choose one key. Some keys depend on keyboard hardware and may be ignored by the system."
+msgstr "請選擇一個按鍵。某些按鍵取決於鍵盤硬體，可能會被系統忽略。"
+
+msgid "This key is not supported."
+msgstr "不支援此按鍵。"
+
+msgid "Cannot read KDE global shortcuts. See the log for details."
+msgstr "無法讀取 KDE 全域快捷鍵。詳情請查看日誌。"

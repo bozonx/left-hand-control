@@ -14,9 +14,14 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Quick actions no longer have icons. Layout files that still contain an `icon` field load as before; the field is dropped on the next save.
 - The tabs of the Settings page show icons next to their names.
 - Focus rings appear only while navigating with the keyboard (Tab, arrow keys) and disappear on the next mouse click, as in web browsers. Text fields keep their focus outline, and the high-contrast and E-ink themes always show focus rings.
+- Action picker: arrow keys move the selection in the item list and Enter applies it; Stop during key capture keeps the keys pressed so far; an unsupported key and a failed read of KDE shortcuts are reported.
 
 ### Fixed
 
+- Action picker: capturing a combination for a plain-key slot now takes the last key instead of producing an invalid value; capturing only modifiers gives an assignable chord.
+- Action picker: opens on the category of the current value (for example Navigation for `Ctrl+ArrowUp`), an apply error disappears once the value is edited, and file-chooser errors are shown next to the command fields.
+- Action picker: macros, commands, KDE shortcuts and mouse buttons can no longer be typed in by hand while they are hidden outside development mode.
+- Action picker: the title of the extra-key picker says "Choose key", and long labels or large fonts no longer get clipped in the item grid and buttons.
 - Bundled layout "LHC1 by Ivan K": ShiftLeft and ShiftRight use hold detection "Press", so a fast capital letter (Shift released before the letter) types the capital instead of Ctrl+C or "-" followed by a lowercase letter, and the letter appears without waiting for Shift to resolve.
 - A rule with a double-tap action whose hold is the key itself (for example Shift with a tap action) treats a second press inside the double-tap window as tap-or-hold, like rules with a layer or a held keystroke: holding it, or pressing another key with hold detection "Press", holds the key (Shift+H types "H" instead of firing the double-tap and a lowercase "h"). The double-tap of such rules now fires when the second press is released.
 - Layers reject stale modal edits, preserve keyboard focus when refreshing rows, and reset layer hold mode when its layer is deleted. The page shows activating triggers, explains how extra keys inherit, and displays full key codes in tooltips; empty layouts no longer offer a name editor.

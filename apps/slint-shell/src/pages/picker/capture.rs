@@ -23,13 +23,15 @@ pub(in crate::pages) fn capture(
         return false;
     };
     let Some(key) = physical_key_name(event.physical_key) else {
+        picker.set_capture_unsupported(true);
         return true;
     };
     if event.repeat {
         return true;
     }
-    let value = {
+    let (known, value) = {
         let mut state = capture.borrow_mut();
+        let known = state.known(&key, picker.get_trigger_chords());
         let value = state.update(
             &key,
             event.state,
@@ -37,13 +39,13 @@ pub(in crate::pages) fn capture(
             picker.get_key_only(),
         );
         picker.set_capture_keys(state.held.join("+").into());
-        value
+        (known, value)
     };
+    if event.state == slint::winit_030::winit::event::ElementState::Pressed {
+        picker.set_capture_unsupported(!known);
+    }
     if let Some(value) = value {
-        picker.set_touched(true);
-        picker.set_value(value.into());
-        picker.set_capturing(false);
-        picker.invoke_refresh();
+        finish(&picker, value);
     }
     // Slint tracks modifiers from key events, not ModifiersChanged. Swallowing
     // a release here can leave Ctrl/Shift stuck when capture ends and block typing.
@@ -81,6 +83,15 @@ pub(super) fn key_name(code: slint::winit_030::winit::keyboard::KeyCode) -> Stri
     }
 }
 
+/// Put a captured value into the picker and stop capturing.
+pub(super) fn finish(picker: &ActionPicker, value: String) {
+    picker.set_touched(true);
+    picker.set_value(value.into());
+    picker.set_capturing(false);
+    picker.set_capture_unsupported(false);
+    picker.invoke_refresh();
+}
+
 #[derive(Default)]
 pub(in crate::pages) struct CaptureState {
     pub(super) held: Vec<String>,
@@ -88,6 +99,15 @@ pub(in crate::pages) struct CaptureState {
 }
 
 impl CaptureState {
+    /// Whether capture accepts `key`.
+    pub(super) fn known(&self, key: &str, trigger: bool) -> bool {
+        if trigger {
+            lhc_core::profile::key_catalog::valid_trigger(key)
+        } else {
+            lhc_core::profile::key_catalog::valid_key(key)
+        }
+    }
+
     pub(super) fn update(
         &mut self,
         key: &str,
@@ -96,12 +116,7 @@ impl CaptureState {
         key_only: bool,
     ) -> Option<String> {
         use slint::winit_030::winit::event::ElementState;
-        let known = if trigger {
-            lhc_core::profile::key_catalog::valid_trigger(key)
-        } else {
-            lhc_core::profile::key_catalog::valid_key(key)
-        };
-        if !known {
+        if !self.known(key, trigger) {
             return None;
         }
         if state == ElementState::Pressed {
@@ -118,9 +133,22 @@ impl CaptureState {
         if !self.held.is_empty() {
             return None;
         }
+        self.finish(trigger, key_only)
+    }
+
+    /// Value of the keys pressed so far; ends the capture.
+    pub(in crate::pages) fn finish(&mut self, trigger: bool, key_only: bool) -> Option<String> {
+        self.held.clear();
         let keys = std::mem::take(&mut self.keys);
-        if trigger || key_only || keys.len() == 1 {
+        if keys.is_empty() {
+            return None;
+        }
+        if trigger || keys.len() == 1 {
             return Some(keys.join("+"));
+        }
+        // A plain key slot takes one key: the last one pressed.
+        if key_only {
+            return keys.last().cloned();
         }
         let mut modifiers = Vec::new();
         let mut ordinary = Vec::new();
@@ -139,6 +167,10 @@ impl CaptureState {
             } else {
                 ordinary.push(key.as_str());
             }
+        }
+        // Only modifiers: keep the physical keys, the last one is the main key.
+        if ordinary.is_empty() {
+            return Some(keys.join("+"));
         }
         Some(
             ["Ctrl", "Alt", "Shift", "Meta"]

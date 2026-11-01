@@ -67,6 +67,11 @@ impl WindowInput {
     fn reset_capture(&self) {
         *self.capture.borrow_mut() = picker::CaptureState::default();
     }
+
+    /// End key capture early with the keys pressed so far.
+    fn stop_capture(&self, trigger: bool, key_only: bool) -> Option<String> {
+        self.capture.borrow_mut().finish(trigger, key_only)
+    }
 }
 
 /// Bind every page of `ui` to `document`.

@@ -292,8 +292,8 @@ msgstr "Domyślny"
 msgid "Advanced"
 msgstr "Zaawansowany"
 
-msgid "Choose trigger key"
-msgstr "Wybierz klawisz spustowy"
+msgid "Choose key"
+msgstr "Wybierz klawisz"
 
 msgid "Choose layer"
 msgstr "Wybierz warstwę"
@@ -744,8 +744,8 @@ msgstr "Pauza"
 msgid "Literal text (text: prefix is added automatically)"
 msgstr "Tekst dosłowny (tekst: przedrostek jest dodawany automatycznie)"
 
-msgid "Pause in milliseconds (1–10000)"
-msgstr "Pauza w milisekundach (1–10000)"
+msgid "Pause in milliseconds ({}–{})"
+msgstr "Pauza w milisekundach ({0}–{1})"
 
 msgid "No matching items"
 msgstr "Brak pasujących elementów"
@@ -3703,3 +3703,12 @@ msgstr "Konfiguruj wyzwalacze"
 
 msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
 msgstr "Przyciski myszy, klawisze multimedialne i inne wyzwalacze poza główną siatką. Dodaj wyzwalacz i wybierz jego działanie lub tłumienie. Usuń jego wiersz, aby odziedziczyć przypisanie z niższej warstwy lub układu bazowego."
+
+msgid "Choose one key. Some keys depend on keyboard hardware and may be ignored by the system."
+msgstr "Wybierz jeden klawisz. Niektóre klawisze zależą od sprzętu klawiatury i mogą być ignorowane przez system."
+
+msgid "This key is not supported."
+msgstr "Ten klawisz nie jest obsługiwany."
+
+msgid "Cannot read KDE global shortcuts. See the log for details."
+msgstr "Nie można odczytać globalnych skrótów KDE. Szczegóły znajdziesz w dzienniku."

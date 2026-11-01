@@ -283,8 +283,8 @@ msgstr "默认"
 msgid "Advanced"
 msgstr "高级"
 
-msgid "Choose trigger key"
-msgstr "选择触发键"
+msgid "Choose key"
+msgstr "选择按键"
 
 msgid "Choose layer"
 msgstr "选择图层"
@@ -722,8 +722,8 @@ msgstr "暂停"
 msgid "Literal text (text: prefix is added automatically)"
 msgstr "文字文本（文本：自动添加前缀）"
 
-msgid "Pause in milliseconds (1–10000)"
-msgstr "暂停以毫秒为单位 (1–10000)"
+msgid "Pause in milliseconds ({}–{})"
+msgstr "暂停以毫秒为单位 ({0}–{1})"
 
 msgid "No matching items"
 msgstr "没有匹配的项目"
@@ -3341,3 +3341,12 @@ msgstr "配置触发器"
 
 msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
 msgstr "主键盘网格之外的鼠标按钮、媒体键及其他触发器。添加触发器并选择动作或屏蔽。删除该行可继承下层或基本布局的分配。"
+
+msgid "Choose one key. Some keys depend on keyboard hardware and may be ignored by the system."
+msgstr "请选择一个按键。某些按键取决于键盘硬件，可能会被系统忽略。"
+
+msgid "This key is not supported."
+msgstr "不支持此按键。"
+
+msgid "Cannot read KDE global shortcuts. See the log for details."
+msgstr "无法读取 KDE 全局快捷键。详情请查看日志。"

@@ -288,8 +288,8 @@ msgstr "Standard"
 msgid "Advanced"
 msgstr "Erweitert"
 
-msgid "Choose trigger key"
-msgstr "Auslösetaste wählen"
+msgid "Choose key"
+msgstr "Taste wählen"
 
 msgid "Choose layer"
 msgstr "Wählen Sie eine Ebene"
@@ -744,8 +744,8 @@ msgstr "Pause"
 msgid "Literal text (text: prefix is added automatically)"
 msgstr "Literaler Text (Text: Präfix wird automatisch hinzugefügt)"
 
-msgid "Pause in milliseconds (1–10000)"
-msgstr "Pause in Millisekunden (1–10000)"
+msgid "Pause in milliseconds ({}–{})"
+msgstr "Pause in Millisekunden ({0}–{1})"
 
 msgid "No matching items"
 msgstr "Keine passenden Artikel"
@@ -3742,3 +3742,12 @@ msgstr "Auslöser konfigurieren"
 
 msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
 msgstr "Maustasten, Medientasten und andere Auslöser außerhalb des Hauptrasters. Fügen Sie einen Auslöser hinzu und weisen Sie eine Aktion oder Unterdrückung zu. Löschen Sie die Zeile, um die Belegung der unteren Ebene oder des Basislayouts zu erben."
+
+msgid "Choose one key. Some keys depend on keyboard hardware and may be ignored by the system."
+msgstr "Wählen Sie eine Taste. Manche Tasten hängen von der Tastatur-Hardware ab und werden vom System möglicherweise ignoriert."
+
+msgid "This key is not supported."
+msgstr "Diese Taste wird nicht unterstützt."
+
+msgid "Cannot read KDE global shortcuts. See the log for details."
+msgstr "Die globalen KDE-Kurzbefehle können nicht gelesen werden. Details stehen im Protokoll."

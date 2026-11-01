@@ -354,11 +354,12 @@ fn action_picker() -> Result<(), Box<dyn std::error::Error>> {
     );
     assert_eq!(
         picker
-            .get_categories()
+            .get_sidebar()
             .iter()
-            .map(|entry| entry.count)
+            .map(|entry| entry.visible)
             .collect::<Vec<_>>(),
-        [48, 9, 35, 29, 36, 44, 5, 69, 0, 0, 0, 0, 0, 0, 0, 0]
+        [[true; 8], [false; 8]].concat(),
+        "a trigger offers only key categories"
     );
     picker.set_category(PickerCategory::Modifiers);
     picker.invoke_refresh();
@@ -459,15 +460,13 @@ fn action_picker() -> Result<(), Box<dyn std::error::Error>> {
     picker.invoke_apply();
     assert!(picker.get_opened(), "a macro cannot call itself");
     picker.invoke_select_behavior(PickerBehavior::Action);
-    picker.set_category(PickerCategory::Pause);
-    picker.invoke_refresh();
+    picker.invoke_select_category(PickerCategory::Pause);
     assert_eq!(picker.get_value(), "pause:20");
     macros.invoke_set_field(0, MacroField::StepPause, "75".into());
     picker.set_category(PickerCategory::Modifiers);
     picker.set_value("KeyA".into());
     picker.invoke_refresh();
-    picker.set_category(PickerCategory::Pause);
-    picker.invoke_refresh();
+    picker.invoke_select_category(PickerCategory::Pause);
     assert_eq!(picker.get_value(), "pause:75");
     picker.set_value("pause:250".into());
     picker.invoke_refresh();

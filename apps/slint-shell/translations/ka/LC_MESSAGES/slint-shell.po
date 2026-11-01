@@ -290,8 +290,8 @@ msgstr "ნაგულისხმევი"
 msgid "Advanced"
 msgstr "გაფართოებული"
 
-msgid "Choose trigger key"
-msgstr "აირჩიეთ ტრიგერის გასაღები"
+msgid "Choose key"
+msgstr "აირჩიეთ კლავიში"
 
 msgid "Choose layer"
 msgstr "აირჩიეთ ფენა"
@@ -742,8 +742,8 @@ msgstr "პაუზა"
 msgid "Literal text (text: prefix is added automatically)"
 msgstr "ლიტერალური ტექსტი (ტექსტი: პრეფიქსი ემატება ავტომატურად)"
 
-msgid "Pause in milliseconds (1–10000)"
-msgstr "პაუზა მილიწამებში (1-10000)"
+msgid "Pause in milliseconds ({}–{})"
+msgstr "პაუზა მილიწამებში ({0}-{1})"
 
 msgid "No matching items"
 msgstr "შესატყვისი ელემენტი არ არის"
@@ -3653,3 +3653,12 @@ msgstr "ტრიგერების გამართვა"
 
 msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
 msgstr "მაუსის ღილაკები, მედიის კლავიშები და სხვა ტრიგერები ძირითადი ბადის გარეთ. დაამატეთ ტრიგერი და აირჩიეთ მოქმედება ან ჩახშობა. წაშალეთ მისი მწკრივი ქვედა ფენის ან საბაზო განლაგების მინიჭების მისაღებად."
+
+msgid "Choose one key. Some keys depend on keyboard hardware and may be ignored by the system."
+msgstr "აირჩიეთ ერთი კლავიში. ზოგიერთი კლავიში დამოკიდებულია კლავიატურის აპარატურაზე და სისტემამ შეიძლება უგულებელყოს."
+
+msgid "This key is not supported."
+msgstr "ეს კლავიში არ არის მხარდაჭერილი."
+
+msgid "Cannot read KDE global shortcuts. See the log for details."
+msgstr "KDE-ის გლობალური მალსახმობების წაკითხვა ვერ მოხერხდა. დეტალები იხილეთ ჟურნალში."

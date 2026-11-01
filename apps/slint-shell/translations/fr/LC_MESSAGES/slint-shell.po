@@ -291,8 +291,8 @@ msgstr "Défaut"
 msgid "Advanced"
 msgstr "Avancé"
 
-msgid "Choose trigger key"
-msgstr "Choisissez la touche de déclenchement"
+msgid "Choose key"
+msgstr "Choisissez une touche"
 
 msgid "Choose layer"
 msgstr "Choisir un calque"
@@ -749,8 +749,8 @@ msgstr "Pause"
 msgid "Literal text (text: prefix is added automatically)"
 msgstr "Texte littéral (texte : le préfixe est ajouté automatiquement)"
 
-msgid "Pause in milliseconds (1–10000)"
-msgstr "Pause en millisecondes (1 à 10 000)"
+msgid "Pause in milliseconds ({}–{})"
+msgstr "Pause en millisecondes ({0} à {1})"
 
 msgid "No matching items"
 msgstr "Aucun élément correspondant"
@@ -3766,3 +3766,12 @@ msgstr "Configurer les déclencheurs"
 
 msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
 msgstr "Boutons de souris, touches multimédias et autres déclencheurs hors de la grille principale. Ajoutez un déclencheur et choisissez une action ou sa suppression. Supprimez sa ligne pour hériter de l’affectation de la couche inférieure ou de la disposition de base."
+
+msgid "Choose one key. Some keys depend on keyboard hardware and may be ignored by the system."
+msgstr "Choisissez une seule touche. Certaines touches dépendent du matériel du clavier et peuvent être ignorées par le système."
+
+msgid "This key is not supported."
+msgstr "Cette touche n’est pas prise en charge."
+
+msgid "Cannot read KDE global shortcuts. See the log for details."
+msgstr "Impossible de lire les raccourcis globaux de KDE. Consultez le journal pour plus de détails."

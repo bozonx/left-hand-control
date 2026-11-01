@@ -187,22 +187,8 @@ fn requests_choose_the_initial_behavior() {
 }
 
 #[test]
-fn unassigned_behavior_keeps_each_context_label() {
+fn quick_actions_default_to_an_empty_cell() {
     use crate::ui::DefaultAssignmentBehavior;
-
-    for (behavior, label) in [
-        (DefaultAssignmentBehavior::Passthrough, Msg::PickerNative),
-        (DefaultAssignmentBehavior::Inherit, Msg::PickerInherit),
-        (DefaultAssignmentBehavior::NoAction, Msg::PickerNoAction),
-        (DefaultAssignmentBehavior::EmptyCell, Msg::PickerEmptyCell),
-        (DefaultAssignmentBehavior::LayerOnly, Msg::PickerLayerOnly),
-    ] {
-        let request = PickerRequest {
-            default_behavior: behavior,
-            ..PickerRequest::default()
-        };
-        assert_eq!(request.native_label(), label);
-    }
     assert_eq!(
         PickerRequest::plain(PickerTarget::QuickAction, false).default_behavior,
         DefaultAssignmentBehavior::EmptyCell
@@ -273,7 +259,10 @@ fn applying_actions_validates_references_against_the_document() {
             })
         })
         .unwrap();
-    let filter = Filter::default();
+    let filter = Filter {
+        development: true,
+        ..Filter::default()
+    };
     let config = document.read();
     for (value, expected) in [
         ("macro:pickerMacro", true),
@@ -284,9 +273,176 @@ fn applying_actions_validates_references_against_the_document() {
         assert_eq!(filter.accepts(value, Some(&config)), expected, "{value}");
     }
     let recursive = Filter {
+        development: true,
         macro_step: true,
         excluded_macro: "pickerMacro".into(),
         ..Filter::default()
     };
     assert!(!recursive.accepts("macro:pickerMacro", Some(&config)));
+}
+
+#[test]
+fn capture_in_a_plain_key_slot_keeps_the_last_key() {
+    use slint::winit_030::winit::event::ElementState::{Pressed, Released};
+    let mut capture = CaptureState::default();
+    for key in ["ShiftLeft", "KeyA"] {
+        assert_eq!(capture.update(key, Pressed, false, true), None);
+    }
+    assert_eq!(capture.update("KeyA", Released, false, true), None);
+    let value = capture.update("ShiftLeft", Released, false, true);
+    assert_eq!(value.as_deref(), Some("KeyA"));
+    let keys = Filter {
+        key_only: true,
+        ..Filter::default()
+    };
+    assert!(keys.accepts("KeyA", None));
+}
+
+#[test]
+fn capture_of_modifiers_only_gives_an_assignable_chord() {
+    use slint::winit_030::winit::event::ElementState::{Pressed, Released};
+    let mut capture = CaptureState::default();
+    for key in ["ControlLeft", "ShiftLeft"] {
+        capture.update(key, Pressed, false, false);
+    }
+    capture.update("ControlLeft", Released, false, false);
+    let value = capture.update("ShiftLeft", Released, false, false).unwrap();
+    assert_eq!(value, "ControlLeft+ShiftLeft");
+    assert!(Filter::default().accepts(&value, None), "{value}");
+}
+
+#[test]
+fn stopping_capture_keeps_pressed_keys() {
+    use slint::winit_030::winit::event::ElementState::Pressed;
+    let mut capture = CaptureState::default();
+    assert_eq!(capture.finish(false, false), None);
+    capture.update("ControlLeft", Pressed, false, false);
+    capture.update("KeyC", Pressed, false, false);
+    assert_eq!(capture.finish(false, false).as_deref(), Some("Ctrl+KeyC"));
+    assert!(capture.held.is_empty() && capture.keys.is_empty());
+}
+
+#[test]
+fn hidden_features_cannot_be_typed_outside_development_mode() {
+    let filter = Filter {
+        initial: "macro:kept".into(),
+        ..Filter::default()
+    };
+    for value in [
+        "macro:other",
+        "cmd:x",
+        "kde:kwin/Close",
+        "Mouse6",
+        "app:showQuickMenu",
+    ] {
+        assert!(!filter.admits(value), "{value}");
+    }
+    assert!(filter.admits("macro:kept"));
+    assert!(filter.admits("builtin:copyLineText"));
+    let development = Filter {
+        development: true,
+        ..Filter::default()
+    };
+    assert!(development.admits("Mouse6"));
+}
+
+#[test]
+fn opening_picks_the_category_of_the_value() {
+    use session::initial_category;
+    let catalog = vec![PickerItem {
+        value: "KeyA".into(),
+        label: "KeyA".into(),
+        category: PickerCategory::Letters,
+        notice: Msg::None.to_ui(),
+    }];
+    for (value, target, expected) in [
+        ("KeyA", PickerTarget::BaseKey, PickerCategory::Letters),
+        ("", PickerTarget::BaseKey, PickerCategory::Modifiers),
+        (
+            "Ctrl+ArrowUp",
+            PickerTarget::BaseKey,
+            PickerCategory::Navigation,
+        ),
+        ("cmd:x", PickerTarget::BaseKey, PickerCategory::Commands),
+        ("pause:10", PickerTarget::MacroStep, PickerCategory::Pause),
+        ("pause:10", PickerTarget::BaseKey, PickerCategory::Modifiers),
+    ] {
+        assert_eq!(
+            initial_category(value, &catalog, target),
+            expected,
+            "{value}"
+        );
+    }
+}
+
+#[test]
+fn sidebar_offers_categories_by_target() {
+    use session::{SidebarOptions, sidebar};
+    let shown = |options: SidebarOptions, count: usize| {
+        sidebar(options, |_| count)
+            .into_iter()
+            .filter(|entry| entry.visible)
+            .map(|entry| entry.category)
+            .collect::<Vec<_>>()
+    };
+    let release = shown(SidebarOptions::default(), 1);
+    for hidden in [
+        PickerCategory::Macros,
+        PickerCategory::Mouse,
+        PickerCategory::Commands,
+        PickerCategory::Pause,
+    ] {
+        assert!(!release.contains(&hidden), "{hidden:?}");
+    }
+    assert!(release.contains(&PickerCategory::Text));
+    let keys = shown(
+        SidebarOptions {
+            key_only: true,
+            ..SidebarOptions::default()
+        },
+        1,
+    );
+    assert!(keys.iter().all(|category| session::is_listed(*category)));
+    let empty = shown(
+        SidebarOptions {
+            development: true,
+            shortcuts_failed: true,
+            ..SidebarOptions::default()
+        },
+        0,
+    );
+    assert!(empty.contains(&PickerCategory::DesktopShortcuts));
+    assert!(!empty.contains(&PickerCategory::Letters));
+}
+
+#[test]
+fn selection_steps_stay_inside_the_list() {
+    use session::step_index;
+    assert_eq!(step_index(None, 0, 1), None);
+    assert_eq!(step_index(None, 5, 4), Some(0));
+    assert_eq!(step_index(Some(1), 5, 4), Some(4));
+    assert_eq!(step_index(Some(1), 5, -4), Some(0));
+}
+
+#[test]
+fn labels_prefer_the_command_then_the_catalog() {
+    use lhc_core::profile::model::Command;
+    use session::label_for;
+    let command = Command {
+        id: "c1".into(),
+        name: "Play".into(),
+        posix_script: "true".into(),
+        powershell_script: String::new(),
+        working_directory: None,
+    };
+    let catalog = vec![PickerItem {
+        value: "builtin:x".into(),
+        label: "Built-in X".into(),
+        category: PickerCategory::BuiltinMacros,
+        notice: Msg::None.to_ui(),
+    }];
+    assert_eq!(label_for("cmd:c1", &catalog, Some(&command), &[]), "Play");
+    assert_eq!(label_for("cmd:c1", &catalog, None, &[command]), "Play");
+    assert_eq!(label_for("builtin:x", &catalog, None, &[]), "Built-in X");
+    assert_eq!(label_for("KeyA", &catalog, None, &[]), "");
 }

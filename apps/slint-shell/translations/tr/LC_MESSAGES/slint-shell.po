@@ -290,8 +290,8 @@ msgstr "Varsayılan"
 msgid "Advanced"
 msgstr "Gelişmiş"
 
-msgid "Choose trigger key"
-msgstr "Tetikleyici anahtarı seçin"
+msgid "Choose key"
+msgstr "Tuş seçin"
 
 msgid "Choose layer"
 msgstr "Katman seç"
@@ -738,8 +738,8 @@ msgstr "Duraklat"
 msgid "Literal text (text: prefix is added automatically)"
 msgstr "Değişmez metin (metin: önek otomatik olarak eklenir)"
 
-msgid "Pause in milliseconds (1–10000)"
-msgstr "Milisaniye cinsinden duraklatma (1–10.000)"
+msgid "Pause in milliseconds ({}–{})"
+msgstr "Milisaniye cinsinden duraklatma ({0}–{1})"
 
 msgid "No matching items"
 msgstr "Eşleşen öğe yok"
@@ -3663,3 +3663,12 @@ msgstr "Tetikleyicileri yapılandır"
 
 msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
 msgstr "Ana klavye ızgarasının dışındaki fare düğmeleri, medya tuşları ve diğer tetikleyiciler. Bir tetikleyici ekleyip eylemini veya bastırmayı seçin. Alt katmandaki veya temel düzendeki atamayı devralmak için satırını silin."
+
+msgid "Choose one key. Some keys depend on keyboard hardware and may be ignored by the system."
+msgstr "Tek bir tuş seçin. Bazı tuşlar klavye donanımına bağlıdır ve sistem tarafından yok sayılabilir."
+
+msgid "This key is not supported."
+msgstr "Bu tuş desteklenmiyor."
+
+msgid "Cannot read KDE global shortcuts. See the log for details."
+msgstr "KDE genel kısayolları okunamıyor. Ayrıntılar için günlüğe bakın."

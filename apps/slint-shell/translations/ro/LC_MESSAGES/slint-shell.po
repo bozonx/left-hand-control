@@ -290,8 +290,8 @@ msgstr "Implicit"
 msgid "Advanced"
 msgstr "Avansat"
 
-msgid "Choose trigger key"
-msgstr "Alegeți cheia de declanșare"
+msgid "Choose key"
+msgstr "Alegeți o tastă"
 
 msgid "Choose layer"
 msgstr "Alegeți stratul"
@@ -741,8 +741,8 @@ msgstr "Pauză"
 msgid "Literal text (text: prefix is added automatically)"
 msgstr "Text literal (text: prefixul este adăugat automat)"
 
-msgid "Pause in milliseconds (1–10000)"
-msgstr "Pauză în milisecunde (1–10000)"
+msgid "Pause in milliseconds ({}–{})"
+msgstr "Pauză în milisecunde ({0}–{1})"
 
 msgid "No matching items"
 msgstr "Nu există articole care se potrivesc"
@@ -3704,3 +3704,12 @@ msgstr "Configurează declanșatoarele"
 
 msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
 msgstr "Butoane de mouse, taste media și alte declanșatoare din afara grilei principale. Adaugă un declanșator și alege acțiunea sau suprimarea lui. Șterge rândul pentru a moșteni atribuirea din stratul inferior sau din aranjamentul de bază."
+
+msgid "Choose one key. Some keys depend on keyboard hardware and may be ignored by the system."
+msgstr "Alegeți o singură tastă. Unele taste depind de hardware-ul tastaturii și pot fi ignorate de sistem."
+
+msgid "This key is not supported."
+msgstr "Această tastă nu este acceptată."
+
+msgid "Cannot read KDE global shortcuts. See the log for details."
+msgstr "Comenzile rapide globale KDE nu pot fi citite. Consultați jurnalul pentru detalii."

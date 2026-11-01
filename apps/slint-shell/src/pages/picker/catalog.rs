@@ -12,7 +12,10 @@ use lhc_core::{
     },
 };
 use slint::ComponentHandle;
-use std::cell::RefCell;
+use std::{
+    cell::{Cell, RefCell},
+    sync::atomic::{AtomicBool, Ordering},
+};
 
 /// Picker category of each group of [`CATEGORIES`], in the same order.
 pub(super) const KEY_CATEGORIES: [PickerCategory; CATEGORIES.len()] = [
@@ -64,6 +67,21 @@ pub(crate) fn category_for_value(value: &str) -> PickerCategory {
     PickerCategory::OtherKeys
 }
 
+/// Whether `value` belongs to a feature shown only in development mode:
+/// macros, commands, desktop shortcuts, mouse buttons and some app actions.
+pub(super) fn development_only(value: &str) -> bool {
+    match Action::parse(Some(value)) {
+        Action::Macro(_) | Action::Command(_) | Action::KdeShortcut(_) => true,
+        Action::App(id) => {
+            id.starts_with("gameMode")
+                || id.starts_with("showQuickMenu")
+                || id.starts_with("showEmojiMenu")
+        }
+        Action::Keys(_) | Action::Unknown(_) => category_for_value(value) == PickerCategory::Mouse,
+        _ => false,
+    }
+}
+
 /// Whether `ms` is a valid macro pause.
 pub fn valid_pause(ms: &str) -> bool {
     lhc_core::profile::timing::PAUSE.parse(ms).is_some()
@@ -100,7 +118,13 @@ thread_local! {
     /// Global shortcuts of the running desktop session; empty until read
     /// and on desktops without a shortcut backend.
     pub(crate) static DESKTOP_SHORTCUTS: RefCell<Vec<DesktopShortcutItem>> = const { RefCell::new(Vec::new()) };
+    /// Bumped whenever [`DESKTOP_SHORTCUTS`] changes, so an open picker
+    /// knows to rebuild its catalog.
+    pub(super) static SHORTCUTS_GENERATION: Cell<u64> = const { Cell::new(0) };
 }
+
+/// A read of the desktop shortcuts is running; later requests wait for it.
+static SHORTCUTS_LOADING: AtomicBool = AtomicBool::new(false);
 
 /// Desktop environment whose native shortcuts this session can list.
 pub(super) fn shortcut_desktop() -> ShortcutDesktop {
@@ -115,26 +139,34 @@ pub(super) fn shortcut_desktop() -> ShortcutDesktop {
 }
 
 /// Re-read the desktop's global shortcuts in the background and refresh
-/// an open picker when they arrive.
+/// an open picker when they arrive. Only one read runs at a time, so an
+/// older result never overwrites a newer one.
 pub(super) fn load_desktop_shortcuts(ui: slint::Weak<SettingsWindow>) {
     let read: fn() -> Result<Vec<DesktopShortcutItem>, String> = match shortcut_desktop() {
         ShortcutDesktop::None => return,
         ShortcutDesktop::Kde => read_kde_shortcuts,
     };
+    if SHORTCUTS_LOADING.swap(true, Ordering::AcqRel) {
+        return;
+    }
     std::thread::spawn(move || {
-        let shortcuts = match read() {
-            Ok(shortcuts) => shortcuts,
-            Err(error) => {
-                log::warn!("[picker] cannot read desktop global shortcuts: {error}");
-                return;
-            }
-        };
+        let result = read();
+        SHORTCUTS_LOADING.store(false, Ordering::Release);
+        if let Err(error) = &result {
+            log::warn!("[picker] cannot read desktop global shortcuts: {error}");
+        }
         let _ = slint::invoke_from_event_loop(move || {
-            DESKTOP_SHORTCUTS.with(|cache| *cache.borrow_mut() = shortcuts);
-            if let Some(ui) = ui.upgrade()
-                && ui.global::<ActionPicker>().get_opened()
-            {
-                ui.global::<ActionPicker>().invoke_refresh();
+            let failed = result.is_err();
+            if let Ok(shortcuts) = result {
+                DESKTOP_SHORTCUTS.with(|cache| *cache.borrow_mut() = shortcuts);
+                SHORTCUTS_GENERATION.with(|generation| generation.set(generation.get() + 1));
+            }
+            if let Some(ui) = ui.upgrade() {
+                let picker = ui.global::<ActionPicker>();
+                picker.set_shortcuts_failed(failed);
+                if picker.get_opened() {
+                    picker.invoke_refresh();
+                }
             }
         });
     });
@@ -184,20 +216,15 @@ pub(super) fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<Picke
             Action::BuiltinMacro(_) => PickerCategory::BuiltinMacros,
             Action::Command(_) if enabled && in_development => PickerCategory::Commands,
             Action::Command(_) => return None,
-            Action::App(id)
-                if !in_development
-                    && (id.starts_with("gameMode")
-                        || id.starts_with("showQuickMenu")
-                        || id.starts_with("showEmojiMenu")) =>
-            {
-                return None;
-            }
             Action::App(_) => PickerCategory::App,
             Action::System(_) => PickerCategory::SystemActions,
             _ => return None,
         };
-        let notice = execution_notice(&entry.action, &config);
         let value = entry.action.format()?;
+        if !in_development && development_only(&value) {
+            return None;
+        }
+        let notice = execution_notice(&entry.action, &config);
         let label = action_label(ui, entry.name).unwrap_or_else(|| value.clone());
         Some(PickerItem {
             value: value.into(),

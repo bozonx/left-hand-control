@@ -291,8 +291,8 @@ msgstr "Αθέτηση"
 msgid "Advanced"
 msgstr "Προχωρημένος"
 
-msgid "Choose trigger key"
-msgstr "Επιλέξτε κλειδί ενεργοποίησης"
+msgid "Choose key"
+msgstr "Επιλέξτε πλήκτρο"
 
 msgid "Choose layer"
 msgstr "Επιλέξτε στρώμα"
@@ -749,8 +749,8 @@ msgstr "Παύση"
 msgid "Literal text (text: prefix is added automatically)"
 msgstr "Κυριολεκτικό κείμενο (κείμενο: το πρόθεμα προστίθεται αυτόματα)"
 
-msgid "Pause in milliseconds (1–10000)"
-msgstr "Παύση σε χιλιοστά του δευτερολέπτου (1–10000)"
+msgid "Pause in milliseconds ({}–{})"
+msgstr "Παύση σε χιλιοστά του δευτερολέπτου ({0}–{1})"
 
 msgid "No matching items"
 msgstr "Δεν υπάρχουν στοιχεία που να ταιριάζουν"
@@ -3766,3 +3766,12 @@ msgstr "Ρύθμιση εναυσμάτων"
 
 msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
 msgstr "Κουμπιά ποντικιού, πλήκτρα πολυμέσων και άλλα εναύσματα εκτός του κύριου πλέγματος. Προσθέστε ένα έναυσμα και επιλέξτε την ενέργεια ή την καταστολή του. Διαγράψτε τη γραμμή του για να κληρονομήσετε την ανάθεση από το κατώτερο επίπεδο ή τη βασική διάταξη."
+
+msgid "Choose one key. Some keys depend on keyboard hardware and may be ignored by the system."
+msgstr "Επιλέξτε ένα πλήκτρο. Ορισμένα πλήκτρα εξαρτώνται από το υλικό του πληκτρολογίου και μπορεί να αγνοούνται από το σύστημα."
+
+msgid "This key is not supported."
+msgstr "Αυτό το πλήκτρο δεν υποστηρίζεται."
+
+msgid "Cannot read KDE global shortcuts. See the log for details."
+msgstr "Δεν είναι δυνατή η ανάγνωση των καθολικών συντομεύσεων του KDE. Δείτε το αρχείο καταγραφής για λεπτομέρειες."

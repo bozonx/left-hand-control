@@ -286,8 +286,8 @@ msgstr "Por defecto"
 msgid "Advanced"
 msgstr "Avanzado"
 
-msgid "Choose trigger key"
-msgstr "Elija la tecla de activación"
+msgid "Choose key"
+msgstr "Elija una tecla"
 
 msgid "Choose layer"
 msgstr "Elige capa"
@@ -737,8 +737,8 @@ msgstr "Pausa"
 msgid "Literal text (text: prefix is added automatically)"
 msgstr "Texto literal (texto: el prefijo se agrega automáticamente)"
 
-msgid "Pause in milliseconds (1–10000)"
-msgstr "Pausa en milisegundos (1–10000)"
+msgid "Pause in milliseconds ({}–{})"
+msgstr "Pausa en milisegundos ({0}–{1})"
 
 msgid "No matching items"
 msgstr "No hay elementos coincidentes"
@@ -3667,3 +3667,12 @@ msgstr "Configurar disparadores"
 
 msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
 msgstr "Botones del ratón, teclas multimedia y otros disparadores fuera de la cuadrícula principal. Añade un disparador y elige su acción o su supresión. Elimina su fila para heredar la asignación de la capa inferior o de la distribución base."
+
+msgid "Choose one key. Some keys depend on keyboard hardware and may be ignored by the system."
+msgstr "Elija una sola tecla. Algunas teclas dependen del hardware del teclado y el sistema puede ignorarlas."
+
+msgid "This key is not supported."
+msgstr "Esta tecla no es compatible."
+
+msgid "Cannot read KDE global shortcuts. See the log for details."
+msgstr "No se pueden leer los atajos globales de KDE. Consulte el registro para más detalles."

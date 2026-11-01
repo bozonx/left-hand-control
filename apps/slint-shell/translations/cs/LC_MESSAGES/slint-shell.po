@@ -287,8 +287,8 @@ msgstr "Výchozí"
 msgid "Advanced"
 msgstr "Moderní"
 
-msgid "Choose trigger key"
-msgstr "Vyberte spouštěcí klíč"
+msgid "Choose key"
+msgstr "Vyberte klávesu"
 
 msgid "Choose layer"
 msgstr "Vyberte vrstvu"
@@ -734,8 +734,8 @@ msgstr "Pauza"
 msgid "Literal text (text: prefix is added automatically)"
 msgstr "Doslovný text (text: předpona je přidána automaticky)"
 
-msgid "Pause in milliseconds (1–10000)"
-msgstr "Pauza v milisekundách (1–10 000)"
+msgid "Pause in milliseconds ({}–{})"
+msgstr "Pauza v milisekundách ({0}–{1})"
 
 msgid "No matching items"
 msgstr "Žádné odpovídající položky"
@@ -3642,3 +3642,12 @@ msgstr "Nastavit spouštěče"
 
 msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
 msgstr "Tlačítka myši, multimediální klávesy a další spouštěče mimo hlavní mřížku. Přidejte spouštěč a zvolte jeho akci nebo potlačení. Smazáním řádku zdědíte přiřazení z nižší vrstvy nebo základního rozložení."
+
+msgid "Choose one key. Some keys depend on keyboard hardware and may be ignored by the system."
+msgstr "Vyberte jednu klávesu. Některé klávesy závisí na hardwaru klávesnice a systém je může ignorovat."
+
+msgid "This key is not supported."
+msgstr "Tato klávesa není podporována."
+
+msgid "Cannot read KDE global shortcuts. See the log for details."
+msgstr "Nelze načíst globální zkratky KDE. Podrobnosti najdete v protokolu."

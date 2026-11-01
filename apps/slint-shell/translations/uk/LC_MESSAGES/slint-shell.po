@@ -287,8 +287,8 @@ msgstr "За замовчуванням"
 msgid "Advanced"
 msgstr "Додатково"
 
-msgid "Choose trigger key"
-msgstr "Виберіть клавішу запуску"
+msgid "Choose key"
+msgstr "Виберіть клавішу"
 
 msgid "Choose layer"
 msgstr "Виберіть шар"
@@ -738,8 +738,8 @@ msgstr "Пауза"
 msgid "Literal text (text: prefix is added automatically)"
 msgstr "Дослівний текст (текст: префікс додається автоматично)"
 
-msgid "Pause in milliseconds (1–10000)"
-msgstr "Пауза в мілісекундах (1–10000)"
+msgid "Pause in milliseconds ({}–{})"
+msgstr "Пауза в мілісекундах ({0}–{1})"
 
 msgid "No matching items"
 msgstr "Немає відповідних елементів"
@@ -3670,3 +3670,12 @@ msgstr "Налаштувати тригери"
 
 msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
 msgstr "Кнопки миші, мультимедійні клавіші та інші тригери поза основною сіткою клавіатури. Додайте тригер і призначте дію або пригнічення. Видаліть рядок, щоб успадкувати призначення з нижнього шару або базової розкладки."
+
+msgid "Choose one key. Some keys depend on keyboard hardware and may be ignored by the system."
+msgstr "Виберіть одну клавішу. Деякі клавіші залежать від обладнання клавіатури й можуть ігноруватися системою."
+
+msgid "This key is not supported."
+msgstr "Ця клавіша не підтримується."
+
+msgid "Cannot read KDE global shortcuts. See the log for details."
+msgstr "Не вдалося прочитати глобальні комбінації клавіш KDE. Подробиці — в журналі."

@@ -283,8 +283,8 @@ msgstr "기본"
 msgid "Advanced"
 msgstr "고급"
 
-msgid "Choose trigger key"
-msgstr "트리거 키 선택"
+msgid "Choose key"
+msgstr "키 선택"
 
 msgid "Choose layer"
 msgstr "레이어 선택"
@@ -724,8 +724,8 @@ msgstr "정지시키다"
 msgid "Literal text (text: prefix is added automatically)"
 msgstr "리터럴 텍스트(텍스트: 접두사가 자동으로 추가됨)"
 
-msgid "Pause in milliseconds (1–10000)"
-msgstr "밀리초 단위로 일시 중지(1~10000)"
+msgid "Pause in milliseconds ({}–{})"
+msgstr "밀리초 단위로 일시 중지({0}~{1})"
 
 msgid "No matching items"
 msgstr "일치하는 항목이 없습니다."
@@ -3412,3 +3412,12 @@ msgstr "트리거 설정"
 
 msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."
 msgstr "기본 키보드 격자 밖의 마우스 버튼, 미디어 키 및 기타 트리거입니다. 트리거를 추가하고 동작 또는 억제를 선택하세요. 아래 레이어나 기본 레이아웃의 할당을 상속하려면 해당 행을 삭제하세요."
+
+msgid "Choose one key. Some keys depend on keyboard hardware and may be ignored by the system."
+msgstr "키를 하나 선택하세요. 일부 키는 키보드 하드웨어에 따라 다르며 시스템에서 무시될 수 있습니다."
+
+msgid "This key is not supported."
+msgstr "이 키는 지원되지 않습니다."
+
+msgid "Cannot read KDE global shortcuts. See the log for details."
+msgstr "KDE 전역 단축키를 읽을 수 없습니다. 자세한 내용은 로그를 확인하세요."

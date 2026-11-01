@@ -9,15 +9,15 @@ import { InfoTip, TooltipText } from "controls.slint";
 import { DefaultAssignmentBehavior, PickerBehavior, PickerCategory, PickerTarget, PickerTitle, ShortcutDesktop } from "types.slint";
 import { Button, CheckBox, TextEdit } from "std-widgets.slint";
 export struct PickerItem { value: string, label: string, category: PickerCategory, notice: Message }
-/// Picker category in sidebar order with the number of its catalog items.
-export struct PickerCategoryCount { category: PickerCategory, count: int }
+/// Picker category in sidebar order: whether it lists keys, starts a
+/// section ("Keys" or "Actions") and is offered for the current target.
+export struct PickerSidebarEntry { category: PickerCategory, key: bool, heading: bool, visible: bool }
 export global ActionPicker {
     in-out property <bool> opened;
     in-out property <bool> layer-action;
     /// A layer key's keystroke keeps its modifiers pressed until the layer is released.
     in-out property <bool> hold-modifiers;
     in-out property <bool> rule-action;
-    in-out property <bool> ignore-key;
     in property <bool> allow-default;
     in property <bool> allow-swallow;
     in property <DefaultAssignmentBehavior> default-behavior;
@@ -35,10 +35,11 @@ export global ActionPicker {
     in property <bool> trigger-chords;
     in-out property <bool> capturing;
     in-out property <string> capture-keys;
+    /// The last key pressed during capture cannot be assigned.
+    in property <bool> capture-unsupported;
     in-out property <bool> valid;
     in-out property <string> value;
     in property <PickerCategory> value-category;
-    in-out property <string> original;
     in-out property <string> text-content;
     /// `text-content` on one line, and its number of lines when it has
     /// several (0 otherwise): the action field then shows the preview.
@@ -50,6 +51,10 @@ export global ActionPicker {
     in-out property <string> command-script;
     in-out property <string> command-directory;
     callback edit-command();
+    /// Error of the script or folder chooser.
+    in property <Message> command-error;
+    /// A script or folder chooser is open.
+    in property <bool> choosing-file;
     /// Warning about the command draft, such as a script file that cannot run.
     in property <Message> command-notice;
     in property <Message> command-help;
@@ -62,10 +67,18 @@ export global ActionPicker {
     in-out property <PickerCategory> category: PickerCategory.modifiers;
     /// Source of the desktop-shortcuts category in this session.
     in property <ShortcutDesktop> shortcut-desktop;
+    /// The desktop shortcuts could not be read.
+    in property <bool> shortcuts-failed;
     in-out property <[PickerItem]> items;
-    /// Every category in sidebar order; the Slint side hides those the
-    /// current target does not accept.
-    in-out property <[PickerCategoryCount]> categories;
+    /// Every category in sidebar order with its visibility.
+    in property <[PickerSidebarEntry]> sidebar;
+    /// The shown category lists keys / lists items rather than an editor.
+    in property <bool> category-is-key;
+    in property <bool> category-listed;
+    /// Show a category; leaves the search.
+    callback select-category(PickerCategory);
+    /// Move the selection by `delta` items through the shown list.
+    callback step-selection(int);
     in-out property <bool> macro-step;
     in-out property <PickerTitle> dialog-title;
     /// Open for `target`; `index` is the row it edits, `value` the current
@@ -75,18 +88,23 @@ export global ActionPicker {
     callback apply();
     callback dismiss-picker();
 
-    public pure function is-key(category: PickerCategory) -> bool {
-        return category == PickerCategory.modifiers || category == PickerCategory.letters
-            || category == PickerCategory.control-keys || category == PickerCategory.navigation
-            || category == PickerCategory.media
-            || category == PickerCategory.system-keys || category == PickerCategory.mouse
-            || category == PickerCategory.other-keys;
+    /// Columns of the item grid.
+    public pure function columns() -> int {
+        return self.query == "" && self.category-is-key ? 4 : 2;
     }
-    /// Whether the category is a list of catalog items rather than an editor.
-    public pure function is-listed(category: PickerCategory) -> bool {
-        return self.is-key(category) || category == PickerCategory.macros
-            || category == PickerCategory.builtin-macros || category == PickerCategory.app
-            || category == PickerCategory.system-actions || category == PickerCategory.desktop-shortcuts;
+    public pure function dialog-title-text() -> string {
+        if self.key-only {
+            if self.trigger-chords { return @tr("Choose a key or key combination"); }
+            if self.dialog-title == PickerTitle.hold { return @tr("Hold another key / combination"); }
+            return @tr("Choose key");
+        }
+        if self.dialog-title == PickerTitle.double-tap { return @tr("Double-tap action"); }
+        if self.dialog-title == PickerTitle.tap { return @tr("Tap action"); }
+        if self.dialog-title == PickerTitle.hold { return @tr("Hold another key / combination"); }
+        if self.dialog-title == PickerTitle.macro-step { return @tr("Macro step"); }
+        if self.dialog-title == PickerTitle.long-hold { return @tr("Long-hold action"); }
+        if self.allow-default || self.allow-swallow { return @tr("Edit assignment"); }
+        return @tr("Choose action");
     }
     public pure function title(category: PickerCategory) -> string {
         return category == PickerCategory.modifiers ? @tr("Modifiers")
@@ -119,7 +137,7 @@ component PickerCell inherits Rectangle {
     in property <PickerItem> item;
     in property <bool> compact;
     private property <bool> selected: ActionPicker.value != "" && ActionPicker.value == root.item.value;
-    min-width: 0px; preferred-width: 0px; horizontal-stretch: 1; height: compact ? (root.item.notice.id != "" || ActionPicker.key-hint(root.item.value) != "" ? 54px : 38px) : 76px;
+    min-width: 0px; preferred-width: 0px; horizontal-stretch: 1; min-height: compact ? 38px : 76px;
     border-width: root.selected || Theme.focus-ring(item-focus.has-focus) ? 2px : 1px; border-radius: Theme.radius-small;
     border-color: Theme.focus-ring(item-focus.has-focus) ? Theme.focus : root.selected ? Theme.accent : Theme.border;
     background: root.selected ? Theme.selected : item-touch.has-hover ? Theme.hover : Theme.card;
@@ -140,7 +158,12 @@ component PickerCell inherits Rectangle {
             if !root.compact && root.item.category != PickerCategory.commands && root.item.label != root.item.value: Text { text: root.item.value; color: Theme.muted; font-size: Theme.font-caption; overflow: elide; }
         }
     }
-    item-focus := FocusScope { key-pressed(event) => { if event.text == Key.Return || event.text == " " { root.pick(); return accept; } return reject; } }
+    // Enter on the chosen item applies it.
+    item-focus := FocusScope { key-pressed(event) => {
+        if event.text == Key.Return && root.selected && ActionPicker.valid { ActionPicker.apply(); return accept; }
+        if event.text == Key.Return || event.text == " " { root.pick(); return accept; }
+        return reject;
+    } }
     item-touch := TouchArea { clicked => { root.pick(); item-focus.focus(); } }
 }
 
@@ -152,7 +175,7 @@ component CategoryButton inherits Rectangle {
     accessible-action-default => { root.choose(); }
     border-width: Theme.focus-ring(category-focus.has-focus) ? 2px : 0px;
     border-color: Theme.focus;
-    function choose() { ActionPicker.category = root.category; ActionPicker.query = ""; ActionPicker.refresh(); }
+    function choose() { ActionPicker.select-category(root.category); }
     category-focus := FocusScope {
         key-pressed(event) => {
             if event.text == Key.Return || event.text == " " { root.choose(); return accept; }
@@ -160,7 +183,6 @@ component CategoryButton inherits Rectangle {
         }
     }
     in property <PickerCategory> category;
-    in property <int> count;
     private property <string> title: ActionPicker.title(root.category);
     height: Theme.control-height; border-radius: Theme.radius-small;
     background: ActionPicker.query == "" && ActionPicker.category == root.category ? Theme.selected : category-touch.has-hover && ActionPicker.query == "" ? Theme.hover : Theme.card;
@@ -175,7 +197,7 @@ component CategoryButton inherits Rectangle {
 }
 
 export component PickerOverlay inherits DialogFrame {
-    title: ActionPicker.key-only ? (ActionPicker.trigger-chords ? @tr("Choose a key or key combination") : @tr("Choose trigger key")) : ActionPicker.dialog-title == PickerTitle.double-tap ? @tr("Double-tap action") : ActionPicker.dialog-title == PickerTitle.tap ? @tr("Tap action") : ActionPicker.dialog-title == PickerTitle.hold ? @tr("Hold another key / combination") : ActionPicker.dialog-title == PickerTitle.macro-step ? @tr("Macro step") : ActionPicker.dialog-title == PickerTitle.long-hold ? @tr("Long-hold action") : ActionPicker.allow-default || ActionPicker.allow-swallow ? @tr("Edit assignment") : @tr("Choose action");
+    title: ActionPicker.dialog-title-text();
     subtitle: ActionPicker.subject;
     fill: true;
     // While capturing, Escape is a key to capture.
@@ -185,6 +207,13 @@ export component PickerOverlay inherits DialogFrame {
         init => { self.focus(); }
         key-pressed(event) => {
             if ActionPicker.capturing { return accept; }
+            if ActionPicker.behavior == PickerBehavior.action && (ActionPicker.query != "" || ActionPicker.category-listed) {
+                if event.text == Key.LeftArrow { ActionPicker.step-selection(-1); return accept; }
+                if event.text == Key.RightArrow { ActionPicker.step-selection(1); return accept; }
+                if event.text == Key.UpArrow { ActionPicker.step-selection(-ActionPicker.columns()); return accept; }
+                if event.text == Key.DownArrow { ActionPicker.step-selection(ActionPicker.columns()); return accept; }
+            }
+            if event.text == Key.Return && ActionPicker.valid { ActionPicker.apply(); return accept; }
             return reject;
         }
         VerticalLayout { spacing: Theme.space-m;
@@ -208,7 +237,7 @@ export component PickerOverlay inherits DialogFrame {
             if ActionPicker.behavior == PickerBehavior.action && ActionPicker.value-category != PickerCategory.commands: HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m; vertical-stretch: 0;
                 HorizontalLayout { padding: 0px; spacing: Theme.space-xs; horizontal-stretch: 0;
                     Text { text: ActionPicker.key-only ? @tr("Trigger key:") : @tr("Action:"); color: Theme.muted; vertical-alignment: center; }
-                    InfoTip { text: ActionPicker.key-only ? @tr("You can enter a key combination using + between keys. Some keys depend on keyboard hardware and may be ignored by the system.") : @tr("You can assign a key combination using + between keys. Availability of special keys depends on the keyboard and desktop environment."); }
+                    InfoTip { text: ActionPicker.key-only && !ActionPicker.trigger-chords ? @tr("Choose one key. Some keys depend on keyboard hardware and may be ignored by the system.") : ActionPicker.key-only ? @tr("You can enter a key combination using + between keys. Some keys depend on keyboard hardware and may be ignored by the system.") : @tr("You can assign a key combination using + between keys. Availability of special keys depends on the keyboard and desktop environment."); }
                 }
                 if ActionPicker.value != "": CategoryIcon { category: ActionPicker.value-category; }
                 if ActionPicker.text-lines > 0: TextField { accessible-label: @tr("Action:"); read-only: true; text: "text:" + ActionPicker.text-preview; }
@@ -226,6 +255,7 @@ export component PickerOverlay inherits DialogFrame {
             }
             if ActionPicker.behavior == PickerBehavior.action && ActionPicker.value-category == PickerCategory.commands && !ActionPicker.commands-enabled: Text { text: ActionPicker.command-name != "" ? ActionPicker.command-name : ActionPicker.command-script; color: Theme.text; wrap: word-wrap; }
             if ActionPicker.capturing && ActionPicker.capture-keys != "": Text { text: ActionPicker.capture-keys; color: Theme.accent; wrap: word-wrap; }
+            if ActionPicker.capturing && ActionPicker.capture-unsupported: Text { accessible-live-region: polite; text: @tr("This key is not supported."); color: Theme.warning; wrap: word-wrap; }
             if ActionPicker.capturing: Text { text: ActionPicker.trigger-chords ? @tr("Press a key or combination, then release all keys to finish capture.") : ActionPicker.key-only ? @tr("Press and release a key (including modifiers or Escape).") : @tr("Press a key or shortcut, then release all keys to finish capture."); color: Theme.accent; wrap: word-wrap; }
             if ActionPicker.behavior == PickerBehavior.action && ActionPicker.notice.id != "": Text { accessible-live-region: polite; text: Locale.text(ActionPicker.notice); color: Theme.warning; wrap: word-wrap; }
             if ActionPicker.error.id != "": Text { accessible-live-region: polite; text: Locale.text(ActionPicker.error); color: Theme.error; wrap: word-wrap; }
@@ -236,26 +266,19 @@ export component PickerOverlay inherits DialogFrame {
                     SearchField { text <=> ActionPicker.query; placeholder-text: ActionPicker.key-only ? @tr("Search keys") : @tr("Search keys and actions"); accessible-label: ActionPicker.key-only ? @tr("Search keys") : @tr("Search keys and actions"); edited => { ActionPicker.refresh(); } }
                     ScrollView { viewport-width: self.visible-width;
                         VerticalLayout { spacing: 0px;
-                            for entry in ActionPicker.categories: VerticalLayout { spacing: Theme.space-m;
-                                private property <bool> commands: entry.category == PickerCategory.commands;
-                                padding: 0px; padding-bottom: Theme.space-xs;
-                                if (AppState.in-development || (entry.category != PickerCategory.macros && entry.category != PickerCategory.mouse && entry.category != PickerCategory.desktop-shortcuts)) && (!commands || (AppState.in-development && ActionPicker.commands-enabled)): VerticalLayout { spacing: Theme.space-m; padding: 0px;
-                                // Section headings only when keys and actions share the sidebar.
-                                if !ActionPicker.key-only && !ActionPicker.hold-action && (entry.category == PickerCategory.letters || entry.category == (AppState.in-development ? PickerCategory.macros : PickerCategory.builtin-macros)): Text {
-                                    text: entry.category == PickerCategory.letters ? @tr("Keys") : @tr("Actions");
+                            for entry in ActionPicker.sidebar: VerticalLayout { spacing: Theme.space-m;
+                                padding: 0px; padding-bottom: entry.visible || entry.heading ? Theme.space-xs : 0px;
+                                if entry.heading: Text {
+                                    text: entry.key ? @tr("Keys") : @tr("Actions");
                                     color: Theme.muted; font-size: Theme.font-caption; font-weight: Theme.weight-bold;
                                 }
-                                // Desktop shortcuts exist only where the session has a shortcut backend.
-                                if (ActionPicker.is-key(entry.category) && entry.count > 0) || (!ActionPicker.is-key(entry.category) && !ActionPicker.key-only && !ActionPicker.hold-action && (entry.category != PickerCategory.pause || ActionPicker.macro-step) && (entry.category != PickerCategory.desktop-shortcuts || entry.count > 0)): CategoryButton {
-                                    category: entry.category; count: entry.count;
-                                }
-                                }
+                                if entry.visible: CategoryButton { category: entry.category; }
                             }
                         }
                     }
                 }
                 catalog := VerticalLayout { spacing: Theme.space-m; padding: 0px; min-width: 0px; horizontal-stretch: 1;
-                    private property <int> columns: ActionPicker.query == "" && ActionPicker.is-key(ActionPicker.category) ? 4 : 2;
+                    private property <int> columns: ActionPicker.columns();
                     if ActionPicker.query == "" && ActionPicker.category == PickerCategory.text: VerticalLayout { spacing: Theme.space-m; padding: 0px;
                         HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m; vertical-stretch: 0;
                             Text { text: @tr("Text to type when the action is invoked:"); color: Theme.muted; wrap: word-wrap; vertical-alignment: center; }
@@ -263,6 +286,7 @@ export component PickerOverlay inherits DialogFrame {
                         }
                         TextEdit { text: ActionPicker.text-content; accessible-label: @tr("Text"); edited => { ActionPicker.touched = true; ActionPicker.value = "text:" + self.text; ActionPicker.refresh(); } }
                     }
+                    if ActionPicker.query == "" && ActionPicker.category == PickerCategory.desktop-shortcuts && ActionPicker.shortcuts-failed: Text { text: @tr("Cannot read KDE global shortcuts. See the log for details."); color: Theme.warning; wrap: word-wrap; }
                     if ActionPicker.query == "" && ActionPicker.category == PickerCategory.desktop-shortcuts: HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m; vertical-stretch: 0;
                         Text { text: @tr("Global shortcuts registered in this KDE session:"); color: Theme.muted; wrap: word-wrap; vertical-alignment: center; }
                         InfoTip { text: @tr("The list is read from the KDE global shortcut service (kglobalaccel): KWin, Plasma and applications register their actions there. The chosen action is invoked as is, as if its shortcut were pressed, even when no keys are assigned to it. Which actions exist and how they behave depends on the Plasma version and installed applications, so Left Hand Control does not guarantee them. Common window and desktop actions that also work on other platforms are in System actions."); }
@@ -271,13 +295,14 @@ export component PickerOverlay inherits DialogFrame {
                         HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m; vertical-stretch: 0;
                             TextField { text <=> ActionPicker.command-name; placeholder-text: @tr("Command name (optional)"); accessible-label: @tr("Command name (optional)"); edited => { ActionPicker.edit-command(); } }
                             InfoTip { text: Locale.text(ActionPicker.command-help); }
-                            Button { horizontal-stretch: 0; text: @tr("Choose script…"); clicked => { ActionPicker.choose-command-file(); } }
+                            Button { horizontal-stretch: 0; text: @tr("Choose script…"); enabled: !ActionPicker.choosing-file; clicked => { ActionPicker.choose-command-file(); } }
                         }
                         TextEdit { preferred-height: 130px; text <=> ActionPicker.command-script; placeholder-text: @tr("Shell command or path to a script, e.g. playerctl play-pause"); accessible-label: @tr("Shell command or path to a script, e.g. playerctl play-pause"); edited => { ActionPicker.edit-command(); } }
+                        if ActionPicker.command-error.id != "": Text { accessible-live-region: polite; text: Locale.text(ActionPicker.command-error); color: Theme.error; wrap: word-wrap; }
                         if ActionPicker.command-notice.id != "": Text { accessible-live-region: polite; text: Locale.text(ActionPicker.command-notice); color: Theme.warning; wrap: word-wrap; }
                         HorizontalLayout { padding: 0px; spacing: Theme.space-m;
                             TextField { text <=> ActionPicker.command-directory; placeholder-text: @tr("Working directory (home by default)"); accessible-label: @tr("Working directory (home by default)"); edited => { ActionPicker.edit-command(); } }
-                            Button { horizontal-stretch: 0; text: @tr("Choose folder…"); clicked => { ActionPicker.choose-command-directory(); } }
+                            Button { horizontal-stretch: 0; text: @tr("Choose folder…"); enabled: !ActionPicker.choosing-file; clicked => { ActionPicker.choose-command-directory(); } }
                         }
                     }
                     if AppState.in-development && ActionPicker.query == "" && ActionPicker.category == PickerCategory.commands && !ActionPicker.commands-enabled: VerticalLayout { padding: 0px; spacing: Theme.space-m; vertical-stretch: 0;
@@ -288,10 +313,10 @@ export component PickerOverlay inherits DialogFrame {
                         }
                     }
                     if ActionPicker.query == "" && ActionPicker.category == PickerCategory.pause: VerticalLayout { spacing: Theme.space-m; padding: 0px;
-                        Text { text: @tr("Pause in milliseconds (1–10000)"); color: Theme.muted; }
+                        Text { text: @tr("Pause in milliseconds ({}–{})", Timing.pause.minimum, Timing.pause.maximum); color: Theme.muted; }
                         NumericInput { text: ActionPicker.pause-content; minimum: Timing.pause.minimum; maximum: Timing.pause.maximum; label: @tr("Pause (ms)"); edited(value) => { ActionPicker.touched = true; ActionPicker.value = "pause:" + value; ActionPicker.refresh(); } }
                     }
-                    if (ActionPicker.query != "" || ActionPicker.is-listed(ActionPicker.category)) && ActionPicker.items.length > 0: catalog-list := ScrollView { accessible-role: list; accessible-live-region: polite; accessible-label: @tr("Actions") + ": " + ActionPicker.items.length; viewport-width: self.visible-width;
+                    if (ActionPicker.query != "" || ActionPicker.category-listed) && ActionPicker.items.length > 0: catalog-list := ScrollView { accessible-role: list; accessible-live-region: polite; accessible-label: @tr("Actions") + ": " + ActionPicker.items.length; viewport-width: self.visible-width;
                         // A new category or search starts at the top. The scroll offset stays local:
                         // binding it two-way to a global property left the list unpainted on wheel scroll.
                         private property <PickerCategory> shown-category: ActionPicker.category;
@@ -305,12 +330,12 @@ export component PickerOverlay inherits DialogFrame {
                                     accessible-item-count: ActionPicker.items.length;
                                     item: ActionPicker.items[row * catalog.columns + col];
                                     visible: row * catalog.columns + col < ActionPicker.items.length;
-                                    compact: ActionPicker.query != "" || ActionPicker.is-key(ActionPicker.category);
+                                    compact: ActionPicker.query != "" || ActionPicker.category-is-key;
                                 }
                             }
                         }
                     }
-                    if (ActionPicker.query != "" || ActionPicker.is-listed(ActionPicker.category)) && ActionPicker.items.length == 0: Rectangle {
+                    if (ActionPicker.query != "" || ActionPicker.category-listed) && ActionPicker.items.length == 0: Rectangle {
                         vertical-stretch: 1;
                         Text { x: 12px; y: 12px; width: parent.width - 24px; accessible-live-region: polite; text: @tr("No matching items"); color: Theme.muted; horizontal-alignment: center; }
                     }
@@ -318,8 +343,8 @@ export component PickerOverlay inherits DialogFrame {
             }
             HorizontalLayout { padding: 0px; vertical-stretch: 0; spacing: Theme.space-m;
                 Rectangle { background: transparent; horizontal-stretch: 1; }
-                Button { width: 110px; height: 34px; horizontal-stretch: 0; text: @tr("Cancel"); clicked => { ActionPicker.dismiss-picker(); } }
-                Button { width: 125px; height: 34px; horizontal-stretch: 0; primary: true; text: @tr("Apply"); enabled: ActionPicker.valid && !ActionPicker.capturing; clicked => { ActionPicker.apply(); } }
+                Button { min-width: 110px; height: 34px; horizontal-stretch: 0; text: @tr("Cancel"); clicked => { ActionPicker.dismiss-picker(); } }
+                Button { min-width: 125px; height: 34px; horizontal-stretch: 0; primary: true; text: @tr("Apply"); enabled: ActionPicker.valid && !ActionPicker.capturing; clicked => { ActionPicker.apply(); } }
             }
         }
     }

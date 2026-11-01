@@ -3,8 +3,8 @@
 use super::{
     Drafts, Session, assigns_command,
     catalog::{
-        ACTION_CATEGORIES, KEY_CATEGORIES, catalog, category_for_value, execution_notice,
-        is_key_category, load_desktop_shortcuts,
+        ACTION_CATEGORIES, KEY_CATEGORIES, SHORTCUTS_GENERATION, catalog, category_for_value,
+        execution_notice, is_key_category, load_desktop_shortcuts,
     },
     commands::command_notice,
     request::{PickerMode, filter, request},
@@ -14,13 +14,146 @@ use crate::{
     i18n::Msg,
     pages::{keys, layers, macros, menus, one_line, rules},
     ui::{
-        ActionPicker, Locale, PickerBehavior, PickerCategory, PickerCategoryCount, PickerItem,
-        PickerTarget, SettingsWindow,
+        ActionPicker, PickerBehavior, PickerCategory, PickerItem, PickerSidebarEntry, PickerTarget,
+        SettingsWindow,
     },
 };
-use lhc_core::profile::actions::Action;
-use slint::{ComponentHandle, Model, ModelRc, VecModel};
+use lhc_core::profile::{actions::Action, model::Command};
+use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::cell::RefCell;
+
+/// Category shown when the picker opens with `value`.
+pub(super) fn initial_category(
+    value: &str,
+    catalog: &[PickerItem],
+    target: PickerTarget,
+) -> PickerCategory {
+    if let Some(item) = catalog.iter().find(|item| item.value == value) {
+        return item.category;
+    }
+    if value.is_empty() {
+        return PickerCategory::Modifiers;
+    }
+    match category_for_value(value) {
+        PickerCategory::Pause if target != PickerTarget::MacroStep => PickerCategory::Modifiers,
+        category => category,
+    }
+}
+
+/// Whether the category is a list of catalog items rather than an editor.
+pub(super) fn is_listed(category: PickerCategory) -> bool {
+    is_key_category(category)
+        || matches!(
+            category,
+            PickerCategory::Macros
+                | PickerCategory::BuiltinMacros
+                | PickerCategory::App
+                | PickerCategory::SystemActions
+                | PickerCategory::DesktopShortcuts
+        )
+}
+
+/// What decides which sidebar categories the open picker shows.
+#[derive(Clone, Copy, Debug, Default)]
+pub(super) struct SidebarOptions {
+    pub development: bool,
+    pub commands_enabled: bool,
+    pub key_only: bool,
+    pub hold_action: bool,
+    pub macro_step: bool,
+    pub shortcuts_failed: bool,
+}
+
+/// Every category in sidebar order with its visibility; `count` gives the
+/// number of listed items of a category.
+pub(super) fn sidebar(
+    options: SidebarOptions,
+    count: impl Fn(PickerCategory) -> usize,
+) -> Vec<PickerSidebarEntry> {
+    let actions = !options.key_only && !options.hold_action;
+    KEY_CATEGORIES
+        .into_iter()
+        .chain(ACTION_CATEGORIES)
+        .map(|category| {
+            let key = is_key_category(category);
+            let allowed = match category {
+                PickerCategory::Macros
+                | PickerCategory::Mouse
+                | PickerCategory::DesktopShortcuts => options.development,
+                PickerCategory::Commands => options.development && options.commands_enabled,
+                _ => true,
+            };
+            let shown = if key {
+                count(category) > 0
+            } else {
+                actions
+                    && match category {
+                        PickerCategory::Pause => options.macro_step,
+                        PickerCategory::DesktopShortcuts => {
+                            count(category) > 0 || options.shortcuts_failed
+                        }
+                        _ => true,
+                    }
+            };
+            let first_action = if options.development {
+                PickerCategory::Macros
+            } else {
+                PickerCategory::BuiltinMacros
+            };
+            PickerSidebarEntry {
+                category,
+                key,
+                heading: allowed
+                    && actions
+                    && (category == PickerCategory::Letters || category == first_action),
+                visible: allowed && shown,
+            }
+        })
+        .collect()
+}
+
+/// Index of the item `delta` steps from `current`, kept inside the list.
+pub(super) fn step_index(current: Option<usize>, len: usize, delta: i32) -> Option<usize> {
+    if len == 0 {
+        return None;
+    }
+    let Some(current) = current else {
+        return Some(0);
+    };
+    let next = (current as i64 + i64::from(delta)).clamp(0, len as i64 - 1);
+    Some(next as usize)
+}
+
+/// Display name of `value`: its command, catalog item or saved command.
+pub(super) fn label_for(
+    value: &str,
+    catalog: &[PickerItem],
+    draft: Option<&Command>,
+    commands: &[Command],
+) -> SharedString {
+    draft
+        .filter(|command| assigns_command(value, &command.id))
+        .map(|command| command.display_name().into())
+        .or_else(|| {
+            catalog
+                .iter()
+                .find(|item| item.value == value)
+                .map(|item| item.label.clone())
+        })
+        .or_else(|| {
+            commands
+                .iter()
+                .find(|command| assigns_command(value, &command.id))
+                .map(|command| command.display_name().into())
+        })
+        .unwrap_or_default()
+}
+
+/// Show `error` for the current value; editing the value clears it.
+fn fail(picker: &ActionPicker, state: &RefCell<Session>, error: Msg) {
+    picker.set_error(error.to_ui());
+    state.borrow_mut().error_value = Some(picker.get_value());
+}
 
 pub(super) fn open(
     ui: &SettingsWindow,
@@ -34,47 +167,23 @@ pub(super) fn open(
     let (target, index) = selection;
     load_desktop_shortcuts(ui.as_weak());
     let catalog = catalog(ui, &doc.read());
-    let category = catalog
-        .iter()
-        .find(|item| item.value == value)
-        .map(|item| item.category)
-        .unwrap_or(match Action::parse(Some(value.as_str())) {
-            Action::Text(_) => PickerCategory::Text,
-            Action::KdeShortcut(_) => PickerCategory::DesktopShortcuts,
-            Action::Pause(_) if target == PickerTarget::MacroStep => PickerCategory::Pause,
-            _ => PickerCategory::Modifiers,
-        });
+    // The catalog generation is read after building, so shortcuts arriving
+    // later still trigger a rebuild.
+    let category = initial_category(&value, &catalog, target);
     let request = request(ui, doc, target, index, key_only);
     let behavior = request.behavior(value.is_empty());
-    let original = match behavior {
-        PickerBehavior::Swallow => ui
-            .global::<Locale>()
-            .invoke_text(Msg::PickerSuppress.to_ui()),
-        PickerBehavior::Native => ui
-            .global::<Locale>()
-            .invoke_text(request.native_label().to_ui()),
-        PickerBehavior::Action => catalog
-            .iter()
-            .find(|item| item.value == value)
-            .map(|item| item.label.clone())
-            .or_else(|| {
-                let Action::Command(id) = Action::parse(Some(value.as_str())) else {
-                    return None;
-                };
-                let config = doc.read();
-                let command = config.layout().commands.iter().find(|c| c.id == id)?;
-                Some(command.display_name().into())
-            })
-            .unwrap_or_else(|| value.clone()),
-    };
     let command = match Action::parse(Some(value.as_str())) {
         Action::Command(id) => drafts.command(&id),
         _ => None,
     };
+    let generation = state.borrow().next_generation();
     *state.borrow_mut() = Session {
-        identity: std::sync::Arc::new(()),
+        generation,
         target: Some((target, index)),
+        initial: value.clone(),
         catalog,
+        catalog_shortcuts: SHORTCUTS_GENERATION.with(std::cell::Cell::get),
+        error_value: None,
         command: command.clone(),
         layer_target: matches!(
             target,
@@ -113,6 +222,9 @@ pub(super) fn open(
             .into(),
     );
     picker.set_command_notice(Msg::None.to_ui());
+    picker.set_command_error(Msg::None.to_ui());
+    picker.set_choosing_file(false);
+    picker.set_capture_unsupported(false);
     picker.set_dialog_title(request.title);
     picker.set_layer_action(request.mode == PickerMode::LayerAction);
     picker.set_rule_action(matches!(
@@ -126,13 +238,11 @@ pub(super) fn open(
     picker.set_hold_action(request.mode == PickerMode::RuleHold);
     picker.set_hold_layer(request.hold_layer);
     picker.set_behavior(behavior);
-    picker.set_ignore_key(behavior == PickerBehavior::Swallow);
     picker.set_touched(false);
     picker.set_error(Msg::None.to_ui());
     picker.set_key_only(request.key_only);
     picker.set_trigger_chords(request.mode == PickerMode::Trigger);
     picker.set_macro_step(request.mode == PickerMode::MacroStep);
-    picker.set_original(original);
     picker.set_value(value);
     picker.set_query("".into());
     picker.set_capturing(false);
@@ -159,54 +269,55 @@ fn update_model<T: Clone + PartialEq + 'static>(model: ModelRc<T>, rows: Vec<T>)
 
 pub(super) fn refresh(ui: &SettingsWindow, doc: &Document, state: &RefCell<Session>) {
     let picker = ui.global::<ActionPicker>();
-    state.borrow_mut().catalog = catalog(ui, &doc.read());
+    {
+        let mut state = state.borrow_mut();
+        let shortcuts = SHORTCUTS_GENERATION.with(std::cell::Cell::get);
+        if state.catalog_shortcuts != shortcuts {
+            state.catalog = catalog(ui, &doc.read());
+            state.catalog_shortcuts = shortcuts;
+        }
+        if state
+            .error_value
+            .as_ref()
+            .is_some_and(|value| *value != picker.get_value())
+        {
+            picker.set_error(Msg::None.to_ui());
+            state.error_value = None;
+        }
+    }
     let state = state.borrow();
-    let filter = filter(ui, doc, &picker, state.target);
+    let (development, commands_enabled) = {
+        let config = doc.read();
+        let settings = config.settings();
+        (settings.in_development, settings.commands_enabled)
+    };
+    let filter = filter(ui, doc, &picker, state.target, &state.initial);
     let entries: Vec<&PickerItem> = state
         .catalog
         .iter()
         // Each action owns its command; existing ones are not offered.
         .filter(|entry| entry.category != PickerCategory::Commands && filter.admits(&entry.value))
         .collect();
-    picker.set_categories(update_model(
-        picker.get_categories(),
-        KEY_CATEGORIES
-            .into_iter()
-            .chain(ACTION_CATEGORIES)
-            .map(|category| PickerCategoryCount {
-                category,
-                count: entries.iter().filter(|e| e.category == category).count() as i32,
-            })
-            .collect::<Vec<_>>(),
-    ));
-    if picker.get_macro_step()
-        && picker.get_category() == PickerCategory::Pause
-        && !matches!(
-            Action::parse(Some(picker.get_value().as_str())),
-            Action::Pause(_)
-        )
-    {
-        let pause = macros::picker_macro_pause(ui)
-            .unwrap_or_else(|| doc.read().settings().default_macro_step_pause_ms)
-            .clamp(
-                lhc_core::profile::timing::PAUSE.min,
-                lhc_core::profile::timing::PAUSE.max,
-            );
-        picker.set_value(
-            Action::Pause(pause.to_string())
-                .format()
-                .unwrap_or_default()
-                .into(),
-        );
-        picker.set_touched(true);
-    }
+    let sidebar = sidebar(
+        SidebarOptions {
+            development,
+            commands_enabled,
+            key_only: picker.get_key_only(),
+            hold_action: picker.get_hold_action(),
+            macro_step: picker.get_macro_step(),
+            shortcuts_failed: picker.get_shortcuts_failed(),
+        },
+        |category| entries.iter().filter(|e| e.category == category).count(),
+    );
     let value = picker.get_value();
-    if let Some(command) = doc
+    let command = doc
         .read()
         .layout()
         .commands
         .iter()
         .find(|command| assigns_command(&value, &command.id))
+        .cloned();
+    if let Some(command) = command
         && state
             .command
             .as_ref()
@@ -237,16 +348,28 @@ pub(super) fn refresh(ui: &SettingsWindow, doc: &Document, state: &RefCell<Sessi
         }
         .into(),
     );
-    let query = picker.get_query().to_lowercase();
+    let query = picker.get_query().trim().to_lowercase();
     let mut category = picker.get_category();
+    let visible = |category: PickerCategory| {
+        sidebar
+            .iter()
+            .any(|entry| entry.category == category && entry.visible)
+    };
+    // A category the target does not offer falls back to the first one it does.
     if query.is_empty()
-        && is_key_category(category)
-        && !entries.iter().any(|entry| entry.category == category)
-        && let Some(entry) = entries.iter().find(|entry| is_key_category(entry.category))
+        && !visible(category)
+        && let Some(entry) = sidebar
+            .iter()
+            .filter(|entry| entry.visible)
+            .find(|entry| entry.key)
+            .or_else(|| sidebar.iter().find(|entry| entry.visible))
     {
         category = entry.category;
         picker.set_category(category);
     }
+    picker.set_category_is_key(is_key_category(category));
+    picker.set_category_listed(is_listed(category));
+    picker.set_sidebar(update_model(picker.get_sidebar(), sidebar));
     picker.set_items(update_model(
         picker.get_items(),
         entries
@@ -262,7 +385,8 @@ pub(super) fn refresh(ui: &SettingsWindow, doc: &Document, state: &RefCell<Sessi
             .cloned()
             .collect::<Vec<_>>(),
     ));
-    picker.set_notice(execution_notice(&action, &doc.read().config()).to_ui());
+    let config = doc.read();
+    picker.set_notice(execution_notice(&action, &config.config()).to_ui());
     let valid = match picker.get_behavior() {
         PickerBehavior::Native => picker.get_allow_default(),
         PickerBehavior::Swallow => picker.get_allow_swallow(),
@@ -272,14 +396,58 @@ pub(super) fn refresh(ui: &SettingsWindow, doc: &Document, state: &RefCell<Sessi
             .filter(|command| assigns_command(&value, &command.id))
         {
             Some(command) => {
-                filter.admits(&value)
-                    && doc.read().settings().commands_enabled
-                    && !command.script().trim().is_empty()
+                filter.admits(&value) && commands_enabled && !command.script().trim().is_empty()
             }
-            None => filter.accepts(&value, Some(&doc.read())),
+            None => filter.accepts(&value, Some(&config)),
         },
     };
     picker.set_valid(valid);
+}
+
+/// Show `category`; entering Pause in a macro step starts with the
+/// macro's step pause.
+pub(super) fn select_category(ui: &SettingsWindow, doc: &Document, category: PickerCategory) {
+    let picker = ui.global::<ActionPicker>();
+    picker.set_category(category);
+    picker.set_query("".into());
+    if picker.get_macro_step()
+        && category == PickerCategory::Pause
+        && !matches!(
+            Action::parse(Some(picker.get_value().as_str())),
+            Action::Pause(_)
+        )
+    {
+        let default = doc.read().settings().default_macro_step_pause_ms;
+        let pause = macros::picker_macro_pause(ui).unwrap_or(default).clamp(
+            lhc_core::profile::timing::PAUSE.min,
+            lhc_core::profile::timing::PAUSE.max,
+        );
+        picker.set_value(
+            Action::Pause(pause.to_string())
+                .format()
+                .unwrap_or_default()
+                .into(),
+        );
+        picker.set_touched(true);
+    }
+    picker.invoke_refresh();
+}
+
+/// Move the selection `delta` items through the shown list.
+pub(super) fn step_selection(ui: &SettingsWindow, delta: i32) {
+    let picker = ui.global::<ActionPicker>();
+    let items = picker.get_items();
+    let value = picker.get_value();
+    let current = items.iter().position(|item| item.value == value);
+    let Some(next) = step_index(current, items.row_count(), delta) else {
+        return;
+    };
+    let Some(item) = items.row_data(next) else {
+        return;
+    };
+    picker.set_touched(true);
+    picker.set_value(item.value);
+    picker.invoke_refresh();
 }
 
 pub(super) fn apply(
@@ -289,13 +457,14 @@ pub(super) fn apply(
     drafts: &Drafts,
 ) {
     let picker = ui.global::<ActionPicker>();
-    if let Some(target) = &session.borrow().layer_target
-        && let Err(error) = target.check(
+    let layer_check = session.borrow().layer_target.as_ref().map(|target| {
+        target.check(
             doc,
             &ui.global::<crate::ui::LayersEditor>().get_selected_id(),
         )
-    {
-        picker.set_error(error.to_ui());
+    });
+    if let Some(Err(error)) = layer_check {
+        fail(&picker, session, error);
         return;
     }
     picker.invoke_refresh();
@@ -303,103 +472,71 @@ pub(super) fn apply(
         return;
     }
     picker.set_error(Msg::None.to_ui());
+    let swallow = picker.get_behavior() == PickerBehavior::Swallow;
     let value = if picker.get_behavior() == PickerBehavior::Action {
         picker.get_value()
     } else {
         "".into()
     };
-    let command = session
-        .borrow()
-        .command
-        .clone()
-        .filter(|command| assigns_command(&value, &command.id));
-    let (target, label) = {
+    let (target, command, label) = {
         let state = session.borrow();
-        let label = command
-            .as_ref()
-            .map(|command| command.display_name().into())
-            .or_else(|| {
-                state
-                    .catalog
-                    .iter()
-                    .find(|item| item.value == value)
-                    .map(|item| item.label.clone())
-            })
-            .or_else(|| {
-                doc.read()
-                    .layout()
-                    .commands
-                    .iter()
-                    .find(|command| assigns_command(&value, &command.id))
-                    .map(|command| command.name.clone().into())
-            })
-            .unwrap_or_default();
-        (state.target, label)
+        let command = state
+            .command
+            .clone()
+            .filter(|command| assigns_command(&value, &command.id));
+        let label = label_for(
+            &value,
+            &state.catalog,
+            command.as_ref(),
+            &doc.read().layout().commands,
+        );
+        (state.target, command, label)
     };
     let Some((target, index)) = target else {
         return;
     };
-    let mut next_step = false;
-    match target {
-        PickerTarget::Rule => {
-            if let Err(error) = rules::choose(ui, doc, &value, command) {
-                picker.set_error(error.to_ui());
-            }
-        }
+    let choice = || layers::Choice {
+        ignore: swallow,
+        hold_modifiers: picker.get_hold_modifiers(),
+        command: command.clone(),
+    };
+    let result = match target {
+        PickerTarget::Rule => rules::choose(ui, doc, &value, command.clone()).map(|()| false),
         PickerTarget::MacroStep => {
-            if let Err(error) = macros::choose(ui, doc, &drafts.macros, index, &value, command) {
-                picker.set_error(error.to_ui());
-            }
+            macros::choose(ui, doc, &drafts.macros, index, &value, command.clone()).map(|()| false)
         }
-        PickerTarget::QuickAction => {
-            if let Err(error) =
-                menus::choose(ui, doc, &drafts.menus, index, &value, &label, command)
-            {
-                picker.set_error(error.to_ui());
-            }
-        }
+        PickerTarget::QuickAction => menus::choose(
+            ui,
+            doc,
+            &drafts.menus,
+            index,
+            &value,
+            &label,
+            command.clone(),
+        )
+        .map(|()| false),
         PickerTarget::LayerAction => {
-            if let Err(error) = layers::assign(
-                ui,
-                doc,
-                index,
-                &value,
-                layers::Choice {
-                    ignore: picker.get_ignore_key() && value.is_empty(),
-                    hold_modifiers: picker.get_hold_modifiers(),
-                    command,
-                },
-            ) {
-                picker.set_error(error.to_ui());
-            }
+            layers::assign(ui, doc, index, &value, choice()).map(|()| false)
         }
-        PickerTarget::ExtraKey | PickerTarget::ExtraAction => {
-            match layers::assign_extra(
-                ui,
-                doc,
-                index,
-                &value,
-                target == PickerTarget::ExtraKey,
-                layers::Choice {
-                    ignore: picker.get_ignore_key() && value.is_empty(),
-                    hold_modifiers: picker.get_hold_modifiers(),
-                    command,
-                },
-            ) {
-                Ok(next) => next_step = next,
-                Err(error) => picker.set_error(error.to_ui()),
-            }
-        }
+        PickerTarget::ExtraKey | PickerTarget::ExtraAction => layers::assign_extra(
+            ui,
+            doc,
+            index,
+            &value,
+            target == PickerTarget::ExtraKey,
+            choice(),
+        ),
         PickerTarget::BaseKey => {
-            if let Err(error) = keys::assign(ui, doc, index, &value, command) {
-                picker.set_error(error.to_ui());
+            keys::assign(ui, doc, index, &value, command.clone()).map(|()| false)
+        }
+    };
+    match result {
+        Ok(next_step) => {
+            picker.invoke_dismiss_picker();
+            if next_step {
+                layers::pick_new_extra_action(ui);
             }
         }
-    }
-    if picker.get_error().id.is_empty() {
-        picker.invoke_dismiss_picker();
-        if next_step {
-            layers::pick_new_extra_action(ui);
-        }
+        Err(error) => fail(&picker, session, error),
     }
 }
