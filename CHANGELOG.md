@@ -17,6 +17,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Bundled layout "LHC1 by Ivan K": ShiftLeft and ShiftRight use hold detection "Press", so a fast capital letter (Shift released before the letter) types the capital instead of Ctrl+C or "-" followed by a lowercase letter, and the letter appears without waiting for Shift to resolve.
 - Layers reject stale modal edits, preserve keyboard focus when refreshing rows, and reset layer hold mode when its layer is deleted. The page shows activating triggers, explains how extra keys inherit, and displays full key codes in tooltips; empty layouts no longer offer a name editor.
 
 - Triggers reject a switch to a chord while a double-tap action is assigned, show all blocking rule diagnostics, report layer assignment errors, and load the selected rule’s hold options. Existing conditions and long-hold actions remain visible outside development mode.
@@ -28,6 +29,9 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - A click on a button or tab while an inline editor was open no longer gets lost: the editor now commits after the click instead of on the press, so the page no longer shifts under the pointer.
 - A rule whose tap is set to "Suppress" with nothing on hold now swallows the key completely; before, the original key (for example Enter) still went through.
 - A key chord pressed while a tap-hold key is still undecided no longer fires ahead of it: a chord nested inside the held key now uses that key's layer, and a chord rolled after it types in physical order.
+- A key with a long-hold action no longer lets the next key overtake it: pressing another key while it is held fires its tap at once (or its long hold, if already due), so for example a space stays in front of the following letter.
+- Keys typed while a macro plays no longer land between its steps: they are typed right after the macro (at most 2 s later; a longer macro then lets typing through). Releasing a key pressed before the macro still passes at once.
+- A press and release of the same key replayed together (after a tap-hold decision or a chord window) get a 1 ms gap, as synthetic taps already do, so apps that drop zero-length presses no longer lose letters.
 - A rule with a hold (layer or held key) and a double-tap action supports tap, then press and hold: the second press activates the hold when held, and fires the double-tap only when released quickly.
 - Layouts page: Activate, Edit and Delete on a layout whose file cannot be read no longer act on a previously selected layout, and such a layout can now be renamed and deleted.
 - Layouts page: creating a layout no longer asks about unsaved changes twice, and "Save and continue" finishes the switch after resolving a conflict with the file on disk (overwrite, reload or save as new).

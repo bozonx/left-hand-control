@@ -196,6 +196,11 @@ impl Engine {
             .min()
     }
 
+    /// True while a macro plays or runs wait behind it.
+    pub fn macro_running(&self) -> bool {
+        self.runner.active.is_some() || !self.runner.queue.is_empty()
+    }
+
     /// A failed text step must not submit incomplete input with subsequent keys.
     pub fn text_input_failed(&mut self, out: &mut Vec<EngineOutput>) {
         self.runner.abort(&mut self.virt, out);
@@ -424,6 +429,7 @@ impl Engine {
         // emitted events stay in natural press order (the deferred tap's
         // press happened before everything below).
         self.flush_waiting_second(now, out);
+        self.resolve_long_hold_decisions(key, now, out);
 
         // Interrupt-on-other-key-press: any pending rule still in
         // WaitingDecision must resolve as hold before we let this new

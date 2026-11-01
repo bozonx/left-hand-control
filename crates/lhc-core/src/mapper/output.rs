@@ -27,6 +27,10 @@ const POPUP_HOLD_MAX: Duration = Duration::from_millis(1000);
 /// a slower backend then lets the keys through rather than lose them.
 const TEXT_HOLD_MAX: Duration = Duration::from_millis(2000);
 
+/// Longest time keys typed during a macro wait for it to finish; a macro
+/// with long pauses then lets typing through rather than stall it.
+const MACRO_TYPING_HOLD_MAX: Duration = Duration::from_millis(2000);
+
 /// How often the mapper loop checks whether held text has been typed.
 const TEXT_HOLD_POLL: Duration = Duration::from_millis(5);
 
@@ -36,6 +40,9 @@ const TEXT_HOLD_POLL: Duration = Duration::from_millis(5);
 ///
 /// Output that follows text is held until the text worker has typed it, so
 /// keys typed meanwhile land after the text instead of before it.
+///
+/// Output of keys typed while a macro plays is held until the macro ends,
+/// so typing does not land between its steps.
 #[derive(Default)]
 pub(super) struct OutputHold {
     held: Vec<EngineOutput>,
@@ -43,6 +50,10 @@ pub(super) struct OutputHold {
     released: bool,
     after_text: Vec<EngineOutput>,
     text_until: Option<Instant>,
+    typed: Vec<EngineOutput>,
+    /// Set by the first key held during the current macro run; once it has
+    /// passed, typing flows freely until the macro ends.
+    typed_until: Option<Instant>,
 }
 
 impl OutputHold {
@@ -68,6 +79,8 @@ impl OutputHold {
         self.released = false;
         self.after_text.clear();
         self.text_until = None;
+        self.typed.clear();
+        self.typed_until = None;
     }
 
     /// Config changes revoke pending side effects, while key transitions
@@ -81,16 +94,48 @@ impl OutputHold {
         };
         self.held.retain(key_transition);
         self.after_text.retain(key_transition);
+        self.typed.retain(key_transition);
         buf.retain(key_transition);
     }
 
     fn deadline(&self, now: Instant) -> Option<Instant> {
         // Text completion does not wake the loop, so poll for it.
         let text = self.text_until.map(|until| until.min(now + TEXT_HOLD_POLL));
-        match (self.until, text) {
-            (Some(a), Some(b)) => Some(a.min(b)),
-            (a, b) => a.or(b),
+        let typed = self.typed_until.filter(|_| !self.typed.is_empty());
+        [self.until, text, typed].into_iter().flatten().min()
+    }
+
+    /// Hold the output of a key event handled while a macro plays (everything
+    /// in `buf` from `start` on). Releases of keys pressed before the macro
+    /// pass, so a modifier lifted meanwhile does not stay down under it.
+    pub(super) fn hold_typed(&mut self, buf: &mut Vec<EngineOutput>, start: usize, now: Instant) {
+        let until = *self.typed_until.get_or_insert(now + MACRO_TYPING_HOLD_MAX);
+        if now >= until {
+            return;
         }
+        for out in buf.split_off(start) {
+            if is_release(&out) && !releases_held_press(&self.typed, &out) {
+                buf.push(out);
+            } else {
+                self.typed.push(out);
+            }
+        }
+    }
+
+    /// Append typing held behind a macro once it has finished (or the hold
+    /// timed out), after the macro's last output in `buf`.
+    pub(super) fn release_typed(
+        &mut self,
+        buf: &mut Vec<EngineOutput>,
+        now: Instant,
+        macro_running: bool,
+    ) {
+        if !macro_running {
+            self.typed_until = None;
+        } else if !self.typed_until.is_some_and(|until| now >= until) {
+            return;
+        }
+        buf.append(&mut self.typed);
     }
 
     /// Leave in `buf` only what may be emitted now. `text_pending` tells
@@ -276,6 +321,8 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
 
     if driver.wait(wait)? {
         for input in driver.fetch_inputs()? {
+            let during_macro = engine.macro_running();
+            let start = out_buf.len();
             match input {
                 DriverInput::Key { key, down, at } => {
                     match driver.app_hotkey(key, down) {
@@ -287,11 +334,15 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
                 }
                 DriverInput::Repeat(key) => engine.repeat(key, out_buf),
             }
+            if during_macro {
+                hold.hold_typed(out_buf, start, now);
+            }
         }
     }
 
     let now = driver.now();
     engine.tick(now, out_buf);
+    hold.release_typed(out_buf, now, engine.macro_running());
     effects.held_layer_changed(engine.held_layer_state());
     hold.gate(out_buf, now, effects.text_pending());
     flush_out_with(sink, effects, out_buf)?;
@@ -409,9 +460,12 @@ pub(super) fn flush_out_with<S: EventSink, E: SideEffects>(
                 }
                 // Two transitions of the same key must not share one
                 // `EV_SYN` frame — some apps coalesce them and lose the
-                // first transition (a press+release becomes a no-op).
+                // first transition (a press+release becomes a no-op). A
+                // replayed buffer emits both at once, so give them the same
+                // gap as a synthetic tap.
                 if events.iter().any(|ev| ev.0.code() == code) {
                     flush_events(sink, &mut events)?;
+                    effects.sleep(KEY_TAP_GAP);
                 }
                 events.push((key, down));
             }
@@ -438,6 +492,7 @@ pub(super) fn flush_out_with<S: EventSink, E: SideEffects>(
                     // not share an `EV_SYN` frame or they may coalesce.
                     if events.iter().any(|ev| ev.0.code() == code) {
                         flush_events(sink, &mut events)?;
+                        effects.sleep(KEY_TAP_GAP);
                     }
                     events.push((m, false));
                 }
@@ -871,6 +926,8 @@ mod tests {
             key_events(&sink.batches[1]),
             vec![(KeyCode::KEY_A.code(), 0)]
         );
+        // Press and release delivered together still get a tap's gap.
+        assert_eq!(effects.sleeps, vec![KEY_TAP_GAP]);
         assert!(effects.texts.is_empty());
         assert!(out_buf.is_empty());
     }
@@ -1295,5 +1352,104 @@ mod tests {
         hold.discard();
         hold.take(&mut out);
         assert!(out.is_empty());
+    }
+
+    /// Delivers scripted batches at a clock the test advances.
+    struct ClockDriver {
+        now: Instant,
+        batches: VecDeque<Vec<(KeyCode, bool)>>,
+    }
+
+    impl LoopDriver for ClockDriver {
+        fn now(&mut self) -> Instant {
+            self.now
+        }
+
+        fn wait(&mut self, _timeout: Duration) -> Result<bool, String> {
+            Ok(self.batches.front().is_some_and(|batch| !batch.is_empty()))
+        }
+
+        fn fetch_key_events(&mut self) -> Result<Vec<(KeyCode, bool)>, String> {
+            Ok(self.batches.pop_front().unwrap_or_default())
+        }
+    }
+
+    #[test]
+    fn typing_during_a_macro_lands_after_it_and_releases_still_pass() {
+        let cfg: MapperConfig = serde_json::from_value(serde_json::json!({
+            "rules": [{"key": "F1", "tapAction": "macro:m"}],
+            "macros": [{"id": "m", "steps": [
+                {"action": "KeyX"}, {"action": "pause:100"}, {"action": "KeyY"}
+            ]}],
+        }))
+        .unwrap();
+        let mut engine = Engine::new(&cfg);
+        let mut hold = OutputHold::default();
+        let mut sink = FakeSink::default();
+        let mut effects = FakeEffects::default();
+        let mut buf = Vec::new();
+        let start = Instant::now();
+        let mut driver = ClockDriver {
+            now: start,
+            batches: VecDeque::from([
+                // Shift is down before the macro and lifted during it.
+                vec![(KeyCode::KEY_LEFTSHIFT, true)],
+                vec![(KeyCode::KEY_F1, true), (KeyCode::KEY_F1, false)],
+                vec![
+                    (KeyCode::KEY_A, true),
+                    (KeyCode::KEY_A, false),
+                    (KeyCode::KEY_LEFTSHIFT, false),
+                ],
+                vec![],
+            ]),
+        };
+        for at in [0, 1, 10, 300] {
+            driver.now = start + Duration::from_millis(at);
+            process_iteration_with(
+                &mut driver,
+                &mut engine,
+                &mut hold,
+                &mut sink,
+                &mut effects,
+                &mut buf,
+            )
+            .expect("iteration");
+        }
+        let events: Vec<_> = sink.batches.iter().flat_map(|b| key_events(b)).collect();
+        let code = |key: KeyCode| key.code();
+        assert_eq!(
+            events,
+            vec![
+                (code(KeyCode::KEY_LEFTSHIFT), 1),
+                (code(KeyCode::KEY_X), 1),
+                (code(KeyCode::KEY_X), 0),
+                (code(KeyCode::KEY_LEFTSHIFT), 0),
+                (code(KeyCode::KEY_Y), 1),
+                (code(KeyCode::KEY_Y), 0),
+                (code(KeyCode::KEY_A), 1),
+                (code(KeyCode::KEY_A), 0),
+            ]
+        );
+    }
+
+    #[test]
+    fn typing_held_behind_a_long_macro_flows_after_the_limit() {
+        let mut hold = OutputHold::default();
+        let start = Instant::now();
+        let key_a = |down| EngineOutput::KeyRaw {
+            key: KeyCode::KEY_A,
+            down,
+        };
+        let mut buf = vec![key_a(true)];
+        hold.hold_typed(&mut buf, 0, start);
+        hold.release_typed(&mut buf, start, true);
+        assert!(buf.is_empty());
+        let late = start + MACRO_TYPING_HOLD_MAX;
+        hold.release_typed(&mut buf, late, true);
+        assert!(matches!(buf.as_slice(), [EngineOutput::KeyRaw { down: true, .. }]));
+        // Still the same macro: later typing is no longer held.
+        buf = vec![key_a(false)];
+        hold.hold_typed(&mut buf, 0, late);
+        assert_eq!(buf.len(), 1);
     }
 }

@@ -20,6 +20,47 @@ impl Engine {
         }
     }
 
+    /// Resolve every undecided long-hold rule when another key is pressed.
+    /// Such rules do not buffer other keys, so waiting for the release
+    /// would let the new key overtake the rule key's tap ("b " instead of
+    /// " b"). The rule key was pressed first, so its tap — or its long hold,
+    /// if that was already due at `now` — is emitted before the new key.
+    pub(super) fn resolve_long_hold_decisions(
+        &mut self,
+        pressed: KeyCode,
+        now: Instant,
+        out: &mut Vec<EngineOutput>,
+    ) {
+        let keys: Vec<KeyCode> = self
+            .pending
+            .iter()
+            .filter(|(k, p)| {
+                **k != pressed
+                    && p.rule.long_hold.is_some()
+                    && matches!(p.phase, RulePhase::WaitingDecision { .. })
+            })
+            .map(|(k, _)| *k)
+            .collect();
+        for key in keys {
+            if self
+                .long_holds
+                .get(&key)
+                .is_some_and(|(deadline, _)| now >= *deadline)
+                && let Some((_, action)) = self.long_holds.remove(&key)
+            {
+                self.commit_hold(key, out);
+                self.fire_action(Some(&action), self.layout.default_mod_delay, now, out);
+                continue;
+            }
+            self.long_holds.remove(&key);
+            if let Some(pending) = self.pending.remove(&key) {
+                self.fire_tap(key, &pending.rule.tap, now, out);
+                // The tap is done; the physical release must emit nothing.
+                self.virt.oneshot.insert(key);
+            }
+        }
+    }
+
     /// The rule key currently in `WaitingDecision`, if any. In permissive
     /// mode there is at most one (further rule keys are buffered).
     pub(super) fn deciding_key(&self) -> Option<KeyCode> {

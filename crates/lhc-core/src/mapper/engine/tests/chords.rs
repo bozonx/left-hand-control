@@ -575,9 +575,9 @@ fn space_audit_nested_letter_selects_layer_without_space() {
 }
 
 #[test]
-fn space_audit_long_hold_action_allows_letter_to_overtake_space() {
-    // Long-action rules deliberately do not buffer other keys. A native
-    // tap therefore appears at release, after a later physical key press.
+fn space_audit_long_hold_action_taps_before_next_letter() {
+    // Long-action rules do not buffer other keys; the next press resolves
+    // the rule as a tap so the space stays ahead of the letter.
     assert_eq!(
         space_audit_presses(
             Some(serde_json::json!({"key": "Space", "longHoldAction": "Escape"})),
@@ -588,7 +588,38 @@ fn space_audit_long_hold_action_allows_letter_to_overtake_space() {
                 (KeyCode::KEY_B, false, 30),
             ]
         ),
-        vec![KeyCode::KEY_B, KeyCode::KEY_SPACE]
+        vec![KeyCode::KEY_SPACE, KeyCode::KEY_B]
+    );
+    // A letter typed entirely while the space is still held stays behind it too.
+    assert_eq!(
+        space_audit_presses(
+            Some(serde_json::json!({"key": "Space", "longHoldAction": "Escape"})),
+            &[
+                (KeyCode::KEY_SPACE, true, 0),
+                (KeyCode::KEY_B, true, 10),
+                (KeyCode::KEY_B, false, 20),
+                (KeyCode::KEY_SPACE, false, 30),
+            ]
+        ),
+        vec![KeyCode::KEY_SPACE, KeyCode::KEY_B]
+    );
+}
+
+#[test]
+fn long_hold_already_due_at_next_press_fires_before_letter() {
+    // The press arrives after the long-hold timeout but before the tick:
+    // the long hold wins and still comes before the letter.
+    assert_eq!(
+        space_audit_presses(
+            Some(serde_json::json!({"key": "Space", "longHoldAction": "Escape", "longHoldTimeoutMs": 100})),
+            &[
+                (KeyCode::KEY_SPACE, true, 0),
+                (KeyCode::KEY_B, true, 150),
+                (KeyCode::KEY_B, false, 160),
+                (KeyCode::KEY_SPACE, false, 170),
+            ]
+        ),
+        vec![KeyCode::KEY_ESC, KeyCode::KEY_B]
     );
 }
 

@@ -255,7 +255,8 @@
       "tap": "Ctrl+KeyC",
       "doubleTap": {
         "action": "Ctrl+KeyX"
-      }
+      },
+      "tapDecision": "holdOnOtherKeyPress"
     },
     {
       "key": "ControlLeft",
@@ -297,7 +298,8 @@
     },
     {
       "key": "ShiftRight",
-      "tap": "text:-"
+      "tap": "text:-",
+      "tapDecision": "holdOnOtherKeyPress"
     }
   ],
   "quickActionPages": [

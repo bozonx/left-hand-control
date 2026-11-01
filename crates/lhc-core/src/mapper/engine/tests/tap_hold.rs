@@ -26,7 +26,7 @@ fn long_hold_runs_once_at_default_deadline_without_native_key() {
 }
 
 #[test]
-fn long_hold_early_release_taps_and_other_keys_do_not_commit_it() {
+fn long_hold_other_key_press_taps_first_and_cancels_long_hold() {
     for mode in ["permissiveHold", "holdOnOtherKeyPress"] {
         let mut cfg = config_with_rule(
             serde_json::json!({"key": "KeyA", "tapAction": "Escape", "longHoldAction": "text:done", "longHoldTimeoutMs": 600}),
@@ -48,9 +48,11 @@ fn long_hold_early_release_taps_and_other_keys_do_not_commit_it() {
             now + Duration::from_millis(100),
             &mut out,
         );
+        // A was pressed first, so its tap comes before B.
         assert!(matches!(
             out.as_slice(),
             [
+                EngineOutput::Stroke { ks, .. },
                 EngineOutput::KeyRaw {
                     key: KeyCode::KEY_B,
                     down: true
@@ -59,19 +61,20 @@ fn long_hold_early_release_taps_and_other_keys_do_not_commit_it() {
                     key: KeyCode::KEY_B,
                     down: false
                 }
-            ]
+            ] if ks.key == KeyCode::KEY_ESC
         ));
         out.clear();
+        // Neither the release nor the old deadline fire anything more.
+        engine.tick(now + Duration::from_millis(700), &mut out);
         engine.handle_key_event(
             KeyCode::KEY_A,
             false,
-            now + Duration::from_millis(500),
+            now + Duration::from_millis(800),
             &mut out,
         );
         engine.tick(now + Duration::from_secs(2), &mut out);
-        assert!(
-            matches!(out.as_slice(), [EngineOutput::Stroke {ks, ..}] if ks.key == KeyCode::KEY_ESC)
-        );
+        assert!(out.is_empty(), "{mode}");
+        assert!(engine.pending.is_empty() && engine.virt.oneshot.is_empty());
     }
 }
 
@@ -910,6 +913,56 @@ fn permissive_native_hold_shift_roll_still_taps() {
 }
 
 #[test]
+fn press_detection_shift_roll_types_capital() {
+    // Same rule with hold detection "Press": the overlapping letter makes
+    // Shift a modifier at once, so a fast roll types a capital, not Ctrl+C.
+    let mut cfg = empty_cfg();
+    let mut rule = tap_hold_rule(
+        "ShiftLeft",
+        ActionSpec::Action("Ctrl+KeyC".into()),
+        ActionSpec::Native,
+    );
+    rule.tap_decision = Some(TapDecision::HoldOnOtherKeyPress);
+    cfg.rules.push(rule);
+    let mut engine = Engine::new(&cfg);
+    let mut out = Vec::new();
+    let now = Instant::now();
+
+    engine.handle_key_event(KeyCode::KEY_LEFTSHIFT, true, now, &mut out);
+    engine.handle_key_event(
+        KeyCode::KEY_A,
+        true,
+        now + Duration::from_millis(30),
+        &mut out,
+    );
+    assert!(
+        matches!(
+            out.as_slice(),
+            [
+                EngineOutput::KeyRaw { key: shift, down: true },
+                EngineOutput::KeyRaw { key: a, down: true },
+            ] if *shift == KeyCode::KEY_LEFTSHIFT && *a == KeyCode::KEY_A
+        ),
+        "expected Shift held, then A without delay"
+    );
+
+    out.clear();
+    engine.handle_key_event(
+        KeyCode::KEY_LEFTSHIFT,
+        false,
+        now + Duration::from_millis(60),
+        &mut out,
+    );
+    assert!(
+        matches!(
+            out.as_slice(),
+            [EngineOutput::KeyRaw { key, down: false }] if *key == KeyCode::KEY_LEFTSHIFT
+        ),
+        "expected only the Shift release, no Ctrl+C"
+    );
+}
+
+#[test]
 fn rule_hold_detection_overrides_default_and_can_mix_in_one_layout() {
     for default in [
         TapDecision::PermissiveHold,
@@ -1335,7 +1388,7 @@ fn left_and_right_modifier_taps_remain_distinct() {
 }
 
 #[test]
-fn release_waiting_in_decision_buffer_decides_long_hold_tap() {
+fn next_press_decides_long_hold_tap_before_later_keys() {
     let out = timeline(
         serde_json::json!({"rules": [
             {"key":"KeyL", "tapAction":"text:tap", "longHoldAction":"text:long", "longHoldTimeoutMs":100},
@@ -1354,9 +1407,9 @@ fn release_waiting_in_decision_buffer_decides_long_hold_tap() {
     assert_eq!(
         out,
         [
+            TraceEvent::Text("tap".into()),
             TraceEvent::Tap(KeyCode::KEY_D, vec![]),
             TraceEvent::Raw(KeyCode::KEY_X, true),
-            TraceEvent::Text("tap".into()),
             TraceEvent::Raw(KeyCode::KEY_X, false)
         ]
     );
