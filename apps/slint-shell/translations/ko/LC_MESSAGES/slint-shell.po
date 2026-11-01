@@ -3421,3 +3421,9 @@ msgstr "이 키는 지원되지 않습니다."
 
 msgid "Cannot read KDE global shortcuts. See the log for details."
 msgstr "KDE 전역 단축키를 읽을 수 없습니다. 자세한 내용은 로그를 확인하세요."
+
+msgid "Game mode is not available yet."
+msgstr "게임 모드는 아직 사용할 수 없습니다."
+
+msgid "Popup hotkeys are off while game mode is on."
+msgstr "게임 모드가 켜져 있는 동안 팝업 단축키는 꺼집니다."

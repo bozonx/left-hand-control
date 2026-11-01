@@ -3676,3 +3676,9 @@ msgstr "Esta tecla no es compatible."
 
 msgid "Cannot read KDE global shortcuts. See the log for details."
 msgstr "No se pueden leer los atajos globales de KDE. Consulte el registro para más detalles."
+
+msgid "Game mode is not available yet."
+msgstr "El modo de juego aún no está disponible."
+
+msgid "Popup hotkeys are off while game mode is on."
+msgstr "Los atajos de las ventanas emergentes están desactivados mientras el modo de juego está activo."

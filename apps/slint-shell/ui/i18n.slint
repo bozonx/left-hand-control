@@ -48,6 +48,7 @@ export global Locale {
         if m.id == "game-mode-window-skipped" { return @tr("Auto: {} is not counted as a game (built-in list)", m.arg); }
         if m.id == "game-mode-manual-on" { return @tr("Game mode is on (set manually)"); }
         if m.id == "game-mode-manual-off" { return @tr("Game mode is off (set manually)"); }
+        if m.id == "game-mode-in-development" { return @tr("Game mode is not available yet."); }
         if m.id == "builtin-macro" && m.arg == "emptyLineAbove" { return @tr("Empty line above"); }
         if m.id == "builtin-macro" && m.arg == "nextLineEnd" { return @tr("End of next line"); }
         if m.id == "builtin-macro" && m.arg == "prevLineEnd" { return @tr("End of previous line"); }

@@ -3431,3 +3431,9 @@ msgstr "このキーはサポートされていません。"
 
 msgid "Cannot read KDE global shortcuts. See the log for details."
 msgstr "KDE のグローバルショートカットを読み取れません。詳細はログを確認してください。"
+
+msgid "Game mode is not available yet."
+msgstr "ゲームモードはまだ利用できません。"
+
+msgid "Popup hotkeys are off while game mode is on."
+msgstr "ゲームモードがオンの間、ポップアップのホットキーは無効になります。"

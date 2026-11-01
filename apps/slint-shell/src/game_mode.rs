@@ -32,26 +32,55 @@ pub(crate) fn from_ui(control: GameModeControl) -> GameMode {
 }
 
 /// Apply `mode` and, when the user asked for it, remember the choice.
+/// Game mode is an in-development feature: without the setting nothing
+/// changes or is saved.
 pub(crate) fn apply(mode: GameMode, document: Option<&Document>) -> Result<GameModeStatus, Msg> {
+    if !gamemode::feature_enabled() {
+        return Err(Msg::GameModeInDevelopment);
+    }
     let control = match mode {
         GameMode::Auto => gamemode::GameModeControl::Auto,
         GameMode::On => gamemode::GameModeControl::On,
         GameMode::Off => gamemode::GameModeControl::Off,
-        GameMode::Toggle if gamemode::status().active => gamemode::GameModeControl::Off,
-        GameMode::Toggle => gamemode::GameModeControl::On,
-    };
-    if let Some(document) = document {
-        let persist = document.read().settings().game_mode.control != control;
-        if persist {
-            document
-                .edit(View::Shell, |config| {
-                    config.update_settings(|settings| settings.game_mode.control = control)
-                })
-                .map_err(|error| Msg::from(&error))?;
+        GameMode::Toggle => {
+            // The core reads and flips the state under one lock; a failed
+            // save restores the previous choice.
+            let before = gamemode::status().control;
+            let status = gamemode::toggle();
+            if let Err(error) = persist(status.control, document) {
+                gamemode::set_control(before);
+                return Err(error);
+            }
+            return Ok(status);
         }
+    };
+    persist(control, document)?;
+    Ok(gamemode::set_control(control))
+}
+
+fn persist(control: gamemode::GameModeControl, document: Option<&Document>) -> Result<(), Msg> {
+    let Some(document) = document else {
+        return Ok(());
+    };
+    if document.read().settings().game_mode.control == control {
+        return Ok(());
     }
-    let status = gamemode::set_control(control);
-    Ok(status)
+    document
+        .edit(View::Shell, |config| {
+            config.update_settings(|settings| settings.game_mode.control = control)
+        })
+        .map(|_| ())
+        .map_err(|error| Msg::from(&error))
+}
+
+/// What the effective state is now, for a notification after a change
+/// the user cannot see in the window (a key binding, the CLI).
+pub(crate) fn status_message(status: &GameModeStatus) -> Msg {
+    match status.control {
+        gamemode::GameModeControl::Auto => automatic_message(status),
+        gamemode::GameModeControl::On => Msg::GameModeManualOn,
+        gamemode::GameModeControl::Off => Msg::GameModeManualOff,
+    }
 }
 
 pub(crate) fn refresh(ui: &SettingsWindow, status: &GameModeStatus) {
@@ -63,16 +92,8 @@ pub(crate) fn refresh(ui: &SettingsWindow, status: &GameModeStatus) {
         gamemode::GameModeControl::On => GameModeControl::On,
         gamemode::GameModeControl::Off => GameModeControl::Off,
     });
-    let automatic = automatic_message(status);
-    state.set_game_auto_status(automatic.to_ui());
-    state.set_game_status(
-        match status.control {
-            gamemode::GameModeControl::Auto => automatic,
-            gamemode::GameModeControl::On => Msg::GameModeManualOn,
-            gamemode::GameModeControl::Off => Msg::GameModeManualOff,
-        }
-        .to_ui(),
-    );
+    state.set_game_auto_status(automatic_message(status).to_ui());
+    state.set_game_status(status_message(status).to_ui());
     state.set_game_daemon_availability(availability_message(status.detectors.gamemoded).to_ui());
     state.set_game_fullscreen_availability(
         availability_message(status.detectors.fullscreen).to_ui(),
@@ -159,7 +180,33 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths =
             lhc_core::StoragePaths::new(dir.path().join("settings"), dir.path().join("data"));
+        // Without the in-development setting nothing changes or is saved.
         let document = Document::load(paths.clone()).unwrap();
+        assert!(matches!(
+            apply(GameMode::Toggle, Some(&document)),
+            Err(Msg::GameModeInDevelopment)
+        ));
+        assert_eq!(
+            document.read().settings().game_mode.control,
+            gamemode::GameModeControl::Auto
+        );
+        document
+            .edit(View::Shell, |config| {
+                config.update_settings(|settings| settings.in_development = true)
+            })
+            .unwrap();
+        // Toggle is saved. Without a watcher detection is unknown, so the
+        // second toggle stays manual (the return to Auto is a core test).
+        apply(GameMode::Toggle, Some(&document)).unwrap();
+        assert_eq!(
+            document.read().settings().game_mode.control,
+            gamemode::GameModeControl::On
+        );
+        apply(GameMode::Toggle, Some(&document)).unwrap();
+        assert_eq!(
+            document.read().settings().game_mode.control,
+            gamemode::GameModeControl::Off
+        );
         apply(GameMode::On, Some(&document)).unwrap();
         assert_eq!(gamemode::status().control, gamemode::GameModeControl::On);
         let mut raw: serde_json::Value =

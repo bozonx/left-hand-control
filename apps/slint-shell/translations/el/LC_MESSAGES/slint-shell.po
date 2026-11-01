@@ -3775,3 +3775,9 @@ msgstr "Αυτό το πλήκτρο δεν υποστηρίζεται."
 
 msgid "Cannot read KDE global shortcuts. See the log for details."
 msgstr "Δεν είναι δυνατή η ανάγνωση των καθολικών συντομεύσεων του KDE. Δείτε το αρχείο καταγραφής για λεπτομέρειες."
+
+msgid "Game mode is not available yet."
+msgstr "Η λειτουργία παιχνιδιού δεν είναι ακόμη διαθέσιμη."
+
+msgid "Popup hotkeys are off while game mode is on."
+msgstr "Οι συντομεύσεις των αναδυόμενων παραθύρων είναι απενεργοποιημένες όσο η λειτουργία παιχνιδιού είναι ενεργή."

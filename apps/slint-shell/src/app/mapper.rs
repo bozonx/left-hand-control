@@ -284,6 +284,16 @@ impl App {
         });
     }
 
+    /// Show the effective game-mode state on screen.
+    pub(super) fn announce_game_mode(&self, active: bool) {
+        let text = crate::i18n::tray_game_title(self.preferences.get().language, active);
+        std::thread::spawn(move || {
+            if let Err(error) = lhc_core::platform::osd::show(&text) {
+                log::warn!("[osd] {error}");
+            }
+        });
+    }
+
     /// The system context (layout, game mode, window) changed: the active
     /// layout may differ now.
     pub(super) fn context_changed(&self) {

@@ -3747,3 +3747,9 @@ msgstr "Questo tasto non è supportato."
 
 msgid "Cannot read KDE global shortcuts. See the log for details."
 msgstr "Impossibile leggere le scorciatoie globali di KDE. Consulta il registro per i dettagli."
+
+msgid "Game mode is not available yet."
+msgstr "La modalità gioco non è ancora disponibile."
+
+msgid "Popup hotkeys are off while game mode is on."
+msgstr "Le scorciatoie dei popup sono disattivate mentre la modalità gioco è attiva."

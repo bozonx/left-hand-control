@@ -59,6 +59,26 @@ pub const FULLSCREEN_NON_GAMES: &[&str] = &[
     "powerpoint",
     "microsoft powerpoint",
     "com.microsoft.powerpoint",
+    // Terminals, editors and viewers that users often keep fullscreen.
+    "konsole",
+    "yakuake",
+    "kitty",
+    "alacritty",
+    "wezterm",
+    "foot",
+    "ghostty",
+    "gnome-terminal",
+    "ptyxis",
+    "windowsterminal",
+    "code",
+    "codium",
+    "jetbrains",
+    "gwenview",
+    "eog",
+    "loupe",
+    "spotify",
+    "jellyfin",
+    "stremio",
 ];
 
 /// Launchers and game tools: they are tagged as games or start them, but
@@ -167,6 +187,22 @@ pub(crate) fn known_game_window(window: &ActiveWindow) -> Option<(GameSource, St
     } else {
         (app_id == "gamescope").then_some((GameSource::Gamescope, app_id))
     }
+}
+
+/// The kernel truncates `comm` to this many bytes.
+const COMM_LEN: usize = 15;
+
+/// Remove names that are only a truncated `comm` of another listed name
+/// (`xdg-desktop-por` next to `xdg-desktop-portal-kde`), so a picker
+/// does not offer them twice.
+pub(crate) fn drop_truncated_comm(names: &mut Vec<String>) {
+    let all = names.clone();
+    names.retain(|name| {
+        name.len() != COMM_LEN
+            || !all
+                .iter()
+                .any(|other| other.len() > COMM_LEN && other.starts_with(name.as_str()))
+    });
 }
 
 /// Last component of a Unix or Windows path: Wine and Proton games show
@@ -351,6 +387,32 @@ pub(super) fn matches_process(matcher: &GameModeProcessMatcher, name: &str) -> b
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn truncated_comm_is_dropped_only_next_to_its_full_name() {
+        let mut names = vec![
+            "xdg-desktop-por".to_owned(),
+            "xdg-desktop-portal-kde".into(),
+            "kwin_wayland_wr".into(),
+            "steam".into(),
+        ];
+        drop_truncated_comm(&mut names);
+        assert_eq!(
+            names,
+            ["xdg-desktop-portal-kde", "kwin_wayland_wr", "steam"]
+        );
+    }
+
+    #[test]
+    fn terminals_and_editors_are_not_fullscreen_games() {
+        for app_id in ["org.kde.konsole", "kitty", "code", "jetbrains-idea"] {
+            let window = ActiveWindow {
+                app_id: app_id.into(),
+                ..ActiveWindow::default()
+            };
+            assert!(fullscreen_non_game(&window), "{app_id}");
+        }
+    }
 
     fn matcher(name: &str) -> GameModeProcessMatcher {
         GameModeProcessMatcher {

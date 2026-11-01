@@ -12,6 +12,9 @@ fn matchers_are_added_changed_and_kept_unique() {
     assert!(!save_matcher(&mut items, 0, "Steam", false, false));
     assert!(save_matcher(&mut items, 0, "game.exe", true, false));
     assert!(!save_matcher(&mut items, 5, "other", true, false));
+    assert!(save_matcher(&mut items, -1, "Игра", false, false));
+    assert!(!save_matcher(&mut items, -1, "игра", false, true));
+    items.pop();
     assert_eq!(items.len(), 2);
     assert_eq!(items[0].name, "game.exe");
     assert!(items[0].only_active_window && !items[0].is_blacklist);

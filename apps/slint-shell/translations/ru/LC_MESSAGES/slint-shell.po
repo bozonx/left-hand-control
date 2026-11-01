@@ -3036,3 +3036,9 @@ msgstr "Эта клавиша не поддерживается."
 
 msgid "Cannot read KDE global shortcuts. See the log for details."
 msgstr "Не удалось прочитать глобальные комбинации клавиш KDE. Подробности — в журнале."
+
+msgid "Game mode is not available yet."
+msgstr "Игровой режим пока недоступен."
+
+msgid "Popup hotkeys are off while game mode is on."
+msgstr "Горячие клавиши попапов отключены, пока включён игровой режим."

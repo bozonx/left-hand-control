@@ -3672,3 +3672,9 @@ msgstr "Bu tuş desteklenmiyor."
 
 msgid "Cannot read KDE global shortcuts. See the log for details."
 msgstr "KDE genel kısayolları okunamıyor. Ayrıntılar için günlüğe bakın."
+
+msgid "Game mode is not available yet."
+msgstr "Oyun modu henüz kullanılamıyor."
+
+msgid "Popup hotkeys are off while game mode is on."
+msgstr "Oyun modu açıkken açılır pencere kısayolları devre dışıdır."

@@ -274,7 +274,7 @@ fn save_matcher(
     let duplicate = items
         .iter()
         .enumerate()
-        .any(|(at, item)| Some(at) != index && item.name.eq_ignore_ascii_case(name));
+        .any(|(at, item)| Some(at) != index && same_name(&item.name, name));
     if name.is_empty() || duplicate {
         return false;
     }
@@ -294,6 +294,11 @@ fn save_matcher(
     item.only_active_window = window_only;
     item.is_blacklist = blacklist;
     true
+}
+
+/// Names compare ignoring case like matching does, also beyond ASCII.
+fn same_name(a: &str, b: &str) -> bool {
+    a.to_lowercase() == b.to_lowercase()
 }
 
 /// The form as last loaded from the document, and the draft process list.

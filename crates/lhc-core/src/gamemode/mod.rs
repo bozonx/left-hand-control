@@ -8,9 +8,10 @@
 //! cannot be detected counts as off.
 //!
 //! Game mode is an in-development feature: while the setting is off it is
-//! always off, the watcher does not poll and manual On is ignored.
+//! always off, the watcher does not poll and manual changes are refused
+//! ([`set_control`] and [`toggle`] leave the state as it is).
 
-use std::sync::{Arc, Condvar, Mutex, OnceLock};
+use std::sync::{Arc, Condvar, Mutex, MutexGuard, OnceLock, PoisonError};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
@@ -30,8 +31,12 @@ mod windows;
 
 pub use process::{FULLSCREEN_NON_GAMES, GAME_LAUNCHERS};
 
-/// Poll interval while running processes are watched or game mode is on.
+/// Poll interval while Auto holds game mode on, so the grace period
+/// ends on time.
 const WATCH_INTERVAL: Duration = Duration::from_secs(1);
+/// Poll interval while running processes are watched and no game runs:
+/// a full `/proc` scan every second costs battery for no benefit.
+const SCAN_INTERVAL: Duration = Duration::from_secs(2);
 /// Safety re-check otherwise: window and daemon changes wake the watcher.
 const IDLE_INTERVAL: Duration = Duration::from_secs(30);
 /// How long Auto keeps game mode on after the last detection.
@@ -291,6 +296,17 @@ fn state() -> &'static Mutex<State> {
     STATE.get_or_init(|| Mutex::new(State::default()))
 }
 
+/// Lock `mutex`, recovering from a panic in another holder: the guarded
+/// values stay consistent between statements, and losing game mode for
+/// the rest of the session would be worse.
+fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
+    mutex.lock().unwrap_or_else(|error| {
+        log::error!("[gamemode] recovered a poisoned lock");
+        mutex.clear_poison();
+        PoisonError::into_inner(error)
+    })
+}
+
 // Update the shared cache while holding the same state lock. Publication may
 // happen later, but concurrent settings changes must not regress the cache.
 fn update_state(state: &mut State, change: impl FnOnce(&mut State)) -> (GameModeStatus, bool) {
@@ -308,39 +324,53 @@ fn publish((status, changed): (GameModeStatus, bool)) -> GameModeStatus {
 }
 
 pub fn status() -> GameModeStatus {
-    state()
-        .lock()
-        .map(|state| state.status())
-        .unwrap_or_default()
+    lock(state()).status()
 }
 
+/// Whether the in-development setting allows game mode at all.
+pub fn feature_enabled() -> bool {
+    lock(state()).enabled
+}
+
+/// Set Auto/On/Off. Refused (the status is returned unchanged) while the
+/// in-development setting is off.
 pub fn set_control(control: GameModeControl) -> GameModeStatus {
-    let Ok(mut state) = state().lock() else {
-        return GameModeStatus::default();
-    };
+    let mut state = lock(state());
+    if !state.enabled {
+        return state.status();
+    }
     let result = update_state(&mut state, |state| state.control = control);
     drop(state);
-    // Auto polls faster than a manual state.
     wake();
     publish(result)
 }
 
-/// Flip the effective state: a manual override to the opposite of what
-/// is active now, read and changed under one lock.
+/// Flip the effective state, read and changed under one lock; see
+/// [`toggled_control`]. Refused while the in-development setting is off.
 pub fn toggle() -> GameModeStatus {
-    let Ok(mut state) = state().lock() else {
-        return GameModeStatus::default();
-    };
-    let result = update_state(&mut state, |state| {
-        state.control = if state.status().active {
-            GameModeControl::Off
-        } else {
-            GameModeControl::On
-        }
-    });
+    let mut state = lock(state());
+    if !state.enabled {
+        return state.status();
+    }
+    let result = update_state(&mut state, |state| state.control = toggled_control(state));
     drop(state);
     wake();
     publish(result)
+}
+
+/// The control that flips the effective state. A manual override whose
+/// opposite is what detection reports returns to Auto, so repeated
+/// toggling never loses automatic detection.
+fn toggled_control(state: &State) -> GameModeControl {
+    let target = !state.status().active;
+    let detected = state.detection.available && state.detection.active == target;
+    if state.control != GameModeControl::Auto && detected {
+        GameModeControl::Auto
+    } else if target {
+        GameModeControl::On
+    } else {
+        GameModeControl::Off
+    }
 }
 
 impl SettingsCache {
@@ -373,49 +403,45 @@ impl SettingsCache {
 /// whether the in-development feature is `enabled`.
 pub fn set_settings(settings: &GameModeSettings, enabled: bool) {
     let (result, changed) = {
-        let Ok(mut cache) = CACHED_SETTINGS.lock() else {
-            return;
-        };
+        let mut cache = lock(&CACHED_SETTINGS);
         let (apply_control, changed) = cache.update(settings, enabled);
         // Serialize persisted choices with cache updates, including startup.
-        let result = state().lock().ok().map(|mut state| {
-            update_state(&mut state, |state| {
-                state.enabled = enabled;
-                if apply_control {
-                    state.control = settings.control;
-                }
-            })
+        let result = update_state(&mut lock(state()), |state| {
+            state.enabled = enabled;
+            if apply_control {
+                state.control = settings.control;
+            }
         });
         (result, changed)
     };
-    if let Some(result) = result {
-        publish(result);
-    }
+    publish(result);
     if changed {
-        crate::active_window::set_titles_needed_by_game_mode(
-            crate::profile::app_match::uses_title(
-                settings
-                    .process_matchers
-                    .iter()
-                    .map(|matcher| &matcher.name),
-            ),
-        );
+        update_title_need(settings);
         wake();
     }
 }
 
+/// Tell the window watcher whether game-mode rules match window titles.
+fn update_title_need(settings: &GameModeSettings) {
+    crate::active_window::set_titles_needed_by_game_mode(crate::profile::app_match::uses_title(
+        settings
+            .process_matchers
+            .iter()
+            .map(|matcher| &matcher.name),
+    ));
+}
+
 /// Re-run detection now, e.g. after the focused window changed.
 pub(crate) fn wake() {
-    if let Ok(watcher) = WATCHER.lock()
-        && let Some(watcher) = watcher.as_ref()
-        && let Ok(mut control) = watcher.control.0.lock()
-    {
-        control.refresh = true;
+    if let Some(watcher) = lock(&WATCHER).as_ref() {
+        lock(&watcher.control.0).refresh = true;
         watcher.control.1.notify_one();
     }
 }
 
 /// Names of the user's running processes, sorted, for picking a rule.
+/// Scans every process, so callers on a UI thread should run it in the
+/// background.
 pub fn running_processes() -> Vec<String> {
     #[cfg(target_os = "linux")]
     let names = linux::running_process_names();
@@ -428,34 +454,30 @@ pub fn running_processes() -> Vec<String> {
     let mut names = names.unwrap_or_default();
     names.sort_by_key(|name| name.to_lowercase());
     names.dedup();
+    process::drop_truncated_comm(&mut names);
     names
 }
 
 pub fn stop_watcher() {
-    let watcher = WATCHER.lock().ok().and_then(|mut watcher| watcher.take());
+    let watcher = lock(&WATCHER).take();
     if let Some(watcher) = watcher {
-        if let Ok(mut control) = watcher.control.0.lock() {
-            control.stop = true;
-            watcher.control.1.notify_one();
-        }
+        lock(&watcher.control.0).stop = true;
+        watcher.control.1.notify_one();
         if let Err(error) = watcher.thread.join() {
             log::error!("[gamemode] watcher panicked: {error:?}");
         }
         // Nothing keeps a detected game alive without the watcher.
-        if let Ok(mut state) = state().lock() {
-            let result = update_state(&mut state, |state| state.detection = Detection::default());
-            drop(state);
-            publish(result);
-        }
+        let result = update_state(&mut lock(state()), |state| {
+            state.detection = Detection::default()
+        });
+        publish(result);
     }
     #[cfg(target_os = "linux")]
     linux::stop();
 }
 
 pub fn start_watcher(storage: Option<StoragePaths>) {
-    let Ok(mut watcher) = WATCHER.lock() else {
-        return;
-    };
+    let mut watcher = lock(&WATCHER);
     if watcher
         .as_ref()
         .is_some_and(|watcher| !watcher.thread.is_finished())
@@ -470,35 +492,29 @@ pub fn start_watcher(storage: Option<StoragePaths>) {
             let mut history = DetectionHistory::default();
             loop {
                 {
-                    let Ok(mut control) = thread_control.0.lock() else {
-                        break;
-                    };
+                    let mut control = lock(&thread_control.0);
                     if control.stop {
                         break;
                     }
                     control.refresh = false;
                 }
                 let (settings, enabled, revision) = load_game_mode_settings(storage.as_ref());
-                let auto = state()
-                    .lock()
-                    .map_or(true, |state| state.control == GameModeControl::Auto);
                 let window = crate::active_window::cached_active_window();
                 let detection = detect_with(&settings, enabled, window.as_ref(), observe);
                 let now = Instant::now();
                 // Processes have no change events, and a held state must
                 // expire on time; everything else wakes the watcher. A
-                // manual state only shows detection, so it is not polled.
-                let mut interval = if enabled && auto && needs_polling(&settings) {
-                    WATCH_INTERVAL
+                // manual state is polled too: toggling decides from the
+                // detected state whether to return to Auto.
+                let mut interval = if enabled && needs_polling(&settings) {
+                    SCAN_INTERVAL
                 } else {
                     IDLE_INTERVAL
                 };
-                if let Ok(cache) = CACHED_SETTINGS.lock()
-                    && cache.revision == revision
-                    && let Ok(control) = thread_control.0.lock()
-                    && !control.stop
-                    && let Ok(mut state) = state().lock()
-                {
+                let cache = lock(&CACHED_SETTINGS);
+                let control = lock(&thread_control.0);
+                if cache.revision == revision && !control.stop {
+                    let mut state = lock(state());
                     let detection =
                         history.apply(&state.detection, detection, enabled, revision, now);
                     let result = update_state(&mut state, |state| state.detection = detection);
@@ -509,19 +525,17 @@ pub fn start_watcher(storage: Option<StoragePaths>) {
                     drop(control);
                     drop(cache);
                     publish(result);
+                } else {
+                    drop(control);
+                    drop(cache);
                 }
-                let Ok(control) = thread_control.0.lock() else {
-                    break;
-                };
-                let Ok((control, _)) =
-                    thread_control
-                        .1
-                        .wait_timeout_while(control, interval, |control| {
-                            !control.stop && !control.refresh
-                        })
-                else {
-                    break;
-                };
+                let control = lock(&thread_control.0);
+                let (control, _) = thread_control
+                    .1
+                    .wait_timeout_while(control, interval, |control| {
+                        !control.stop && !control.refresh
+                    })
+                    .unwrap_or_else(PoisonError::into_inner);
                 if control.stop {
                     break;
                 }
@@ -708,7 +722,7 @@ fn skipped_window(
     let fullscreen = settings.use_fullscreen
         && detectors.fullscreen == DetectorAvailability::Available
         && window.fullscreen == Some(true)
-        && process::fullscreen_non_game(window);
+        && (process::fullscreen_non_game(window) || process::launcher_window(window));
     (category || fullscreen)
         .then(|| process::window_name(window))
         .filter(|name| !name.is_empty())
@@ -757,9 +771,11 @@ fn evaluate(
         .filter(|matcher| !matcher.is_blacklist && !matcher.name.trim().is_empty())
         .collect();
     let known_games = enabled_sources(settings).next().is_some();
+    // A source this session cannot have is not "enabled": otherwise Auto
+    // would report itself unavailable forever.
     let enabled = (settings.use_gamemoded
         && detectors.gamemoded != DetectorAvailability::Unsupported)
-        || settings.use_fullscreen
+        || (settings.use_fullscreen && detectors.fullscreen != DetectorAvailability::Unsupported)
         || known_games
         || !whitelist.is_empty();
     let mut detection = Detection {
@@ -786,8 +802,11 @@ fn evaluate(
         detection.available = true;
         return detection;
     }
+    // Launchers go fullscreen too (Steam Big Picture) without being games.
     let fullscreen_game = window.is_some_and(|window| {
-        window.fullscreen == Some(true) && !process::fullscreen_non_game(window)
+        window.fullscreen == Some(true)
+            && !process::fullscreen_non_game(window)
+            && !process::launcher_window(window)
     });
     detection.method = if settings.use_gamemoded
         && observation.daemon
@@ -817,53 +836,47 @@ fn evaluate(
     detection
 }
 
+/// The cached settings; before the shell sends any, they are read from
+/// `config.json` once and applied like [`set_settings`].
 fn load_game_mode_settings(storage: Option<&StoragePaths>) -> (GameModeSettings, bool, u64) {
-    if let Ok(cache) = CACHED_SETTINGS.lock()
-        && let Some(settings) = &cache.settings
     {
-        return (settings.clone(), cache.enabled, cache.revision);
+        let cache = lock(&CACHED_SETTINGS);
+        if let Some(settings) = &cache.settings {
+            return (settings.clone(), cache.enabled, cache.revision);
+        }
     }
     let (settings, enabled) = storage
-        .and_then(|storage| storage.load_config().ok())
-        .and_then(|raw| parse_game_mode_settings(&raw))
+        .and_then(|storage| match storage.load_config() {
+            Ok(raw) => parse_game_mode_settings(&raw),
+            Err(error) => {
+                log::warn!("[gamemode] config not readable, using defaults: {error}");
+                None
+            }
+        })
         .unwrap_or_else(|| {
             let defaults = crate::profile::model::AppSettings::default();
             (defaults.game_mode, defaults.in_development)
         });
-    if let Ok(mut cache) = CACHED_SETTINGS.lock() {
+    {
+        // The shell may have sent settings meanwhile; they win.
+        let cache = lock(&CACHED_SETTINGS);
         if let Some(settings) = &cache.settings {
             return (settings.clone(), cache.enabled, cache.revision);
         }
-        cache.update(&settings, enabled);
-        let revision = cache.revision;
-        let result = state().lock().ok().map(|mut state| {
-            update_state(&mut state, |state| {
-                state.enabled = enabled;
-                state.control = settings.control;
-            })
-        });
-        drop(cache);
-        if let Some(result) = result {
-            publish(result);
-        }
-        crate::active_window::set_titles_needed_by_game_mode(
-            crate::profile::app_match::uses_title(
-                settings
-                    .process_matchers
-                    .iter()
-                    .map(|matcher| &matcher.name),
-            ),
-        );
-        return (settings, enabled, revision);
     }
-    (settings, enabled, 0)
+    set_settings(&settings, enabled);
+    let cache = lock(&CACHED_SETTINGS);
+    let settings = cache.settings.clone().unwrap_or(settings);
+    (settings, cache.enabled, cache.revision)
 }
 
 /// Game-mode settings of `config.json` and the in-development setting;
 /// `None` when the file is invalid.
 fn parse_game_mode_settings(raw: &str) -> Option<(GameModeSettings, bool)> {
-    let settings = crate::profile::settings::parse(raw).ok()?;
-    Some((settings.game_mode, settings.in_development))
+    crate::profile::settings::parse(raw)
+        .inspect_err(|error| log::warn!("[gamemode] invalid config, using defaults: {error}"))
+        .ok()
+        .map(|settings| (settings.game_mode, settings.in_development))
 }
 
 #[cfg(test)]
@@ -1187,6 +1200,60 @@ mod tests {
         settings.foreground_only = false;
         observed.known_games = vec![known("Witcher", Some(&["witcher3.exe"]))];
         assert!(evaluate(&settings, &observed, Some(&browser)).active);
+    }
+
+    #[test]
+    fn toggling_flips_the_state_and_returns_to_auto() {
+        let detected = |active| Detection {
+            enabled: true,
+            available: true,
+            active,
+            method: active.then_some(GameModeMethod::Fullscreen),
+            ..Detection::default()
+        };
+        let mut state = State {
+            enabled: true,
+            detection: detected(false),
+            ..State::default()
+        };
+        // Auto, no game: On; again: back to Auto, which is off.
+        state.control = toggled_control(&state);
+        assert_eq!(state.control, GameModeControl::On);
+        state.control = toggled_control(&state);
+        assert_eq!(state.control, GameModeControl::Auto);
+        assert!(!state.status().active);
+        // Auto with a game: Off; again: back to Auto, which is on.
+        state.detection = detected(true);
+        state.control = toggled_control(&state);
+        assert_eq!(state.control, GameModeControl::Off);
+        state.control = toggled_control(&state);
+        assert_eq!(state.control, GameModeControl::Auto);
+        assert!(state.status().active);
+        // Unknown detection: stay manual rather than guess.
+        state.control = GameModeControl::Off;
+        state.detection.available = false;
+        assert_eq!(toggled_control(&state), GameModeControl::On);
+    }
+
+    #[test]
+    fn launchers_in_fullscreen_are_not_games() {
+        let mut settings = settings(Vec::new());
+        settings.use_fullscreen = true;
+        let observed = observation(&[], false);
+        let big_picture = evaluate(&settings, &observed, Some(&fullscreen("steam")));
+        assert!(!big_picture.active);
+        assert_eq!(big_picture.skipped_window.as_deref(), Some("steam"));
+    }
+
+    #[test]
+    fn unsupported_fullscreen_does_not_make_auto_unavailable() {
+        let mut settings = settings(Vec::new());
+        settings.use_fullscreen = true;
+        let mut observed = observation(&[], false);
+        observed.detectors.fullscreen = DetectorAvailability::Unsupported;
+        let detection = evaluate(&settings, &observed, None);
+        assert!(!detection.enabled);
+        assert!(detection.available);
     }
 
     #[test]

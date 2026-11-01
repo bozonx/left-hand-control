@@ -57,6 +57,7 @@ const POLICY: &[(&[&str], ToastKind, Duration)] = &[
             "save-layout-first",
             "layout-slot-empty",
             "select-input-device",
+            "game-mode-in-development",
         ],
         ToastKind::Warning,
         WARNING,

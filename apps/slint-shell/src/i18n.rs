@@ -315,6 +315,7 @@ pub enum Msg {
     GameModeWindowSkipped(String),
     GameModeManualOn,
     GameModeManualOff,
+    GameModeInDevelopment,
     LibrarySaved,
     LibrarySelect,
     LibraryChanged,
@@ -475,6 +476,7 @@ impl Msg {
             Self::GameModeWindowSkipped(name) => ("game-mode-window-skipped", name.clone(), 0),
             Self::GameModeManualOn => ("game-mode-manual-on", empty(), 0),
             Self::GameModeManualOff => ("game-mode-manual-off", empty(), 0),
+            Self::GameModeInDevelopment => ("game-mode-in-development", empty(), 0),
             Self::SettingsSaved => ("settings-saved", empty(), 0),
             Self::MacroIssue(issue) => (
                 match issue {

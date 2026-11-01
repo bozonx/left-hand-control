@@ -3712,3 +3712,9 @@ msgstr "Ten klawisz nie jest obsługiwany."
 
 msgid "Cannot read KDE global shortcuts. See the log for details."
 msgstr "Nie można odczytać globalnych skrótów KDE. Szczegóły znajdziesz w dzienniku."
+
+msgid "Game mode is not available yet."
+msgstr "Tryb gry nie jest jeszcze dostępny."
+
+msgid "Popup hotkeys are off while game mode is on."
+msgstr "Skróty okienek są wyłączone, gdy tryb gry jest włączony."

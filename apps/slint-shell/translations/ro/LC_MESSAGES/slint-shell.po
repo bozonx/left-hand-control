@@ -3713,3 +3713,9 @@ msgstr "Această tastă nu este acceptată."
 
 msgid "Cannot read KDE global shortcuts. See the log for details."
 msgstr "Comenzile rapide globale KDE nu pot fi citite. Consultați jurnalul pentru detalii."
+
+msgid "Game mode is not available yet."
+msgstr "Modul joc nu este încă disponibil."
+
+msgid "Popup hotkeys are off while game mode is on."
+msgstr "Comenzile rapide ale ferestrelor pop-up sunt dezactivate cât timp modul joc este activ."

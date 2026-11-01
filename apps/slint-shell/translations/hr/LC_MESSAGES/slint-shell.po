@@ -3663,3 +3663,9 @@ msgstr "Ova tipka nije podržana."
 
 msgid "Cannot read KDE global shortcuts. See the log for details."
 msgstr "Nije moguće pročitati globalne prečace KDE-a. Pojedinosti potražite u zapisniku."
+
+msgid "Game mode is not available yet."
+msgstr "Način igre još nije dostupan."
+
+msgid "Popup hotkeys are off while game mode is on."
+msgstr "Prečaci skočnih prozora isključeni su dok je način igre uključen."

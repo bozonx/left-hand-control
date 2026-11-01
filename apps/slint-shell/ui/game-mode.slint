@@ -8,13 +8,17 @@ import { GameModeControl } from "types.slint";
 export component GameModeButton inherits Rectangle {
     private property <int> highlighted: 0;
     private property <color> state-color: !AppState.game-state-available ? Theme.warning : AppState.game-active ? Theme.success : Theme.muted;
-    private property <string> label: AppState.game-control == GameModeControl.auto ? @tr("Game mode control" => "Auto") : AppState.game-control == GameModeControl.on ? @tr("Game mode control" => "On") : @tr("Game mode control" => "Off");
+    // Auto/On/Off stay in English on purpose: the button has a fixed width
+    // and translations would not fit. The menu and the tooltip are translated.
+    private property <string> label: AppState.game-control == GameModeControl.auto ? "Auto" : AppState.game-control == GameModeControl.on ? "On" : "Off";
+    // Screen readers have no width limit and get the translated name.
+    private property <string> spoken-label: AppState.game-control == GameModeControl.auto ? @tr("Game mode control" => "Auto") : AppState.game-control == GameModeControl.on ? @tr("Game mode control" => "On") : @tr("Game mode control" => "Off");
     width: 98px; height: Theme.control-height-l; border-radius: Theme.radius;
     background: AppState.game-active ? Theme.success.transparentize(0.85) : !AppState.game-state-available ? Theme.warning.transparentize(0.9) : touch.has-hover || Theme.focus-ring(focus.has-focus) || menu.is-open ? Theme.hover : Theme.surface;
     border-width: Theme.focus-ring(focus.has-focus) ? 2px : 1px;
     border-color: Theme.focus-ring(focus.has-focus) ? Theme.focus : root.state-color.transparentize(0.35);
     accessible-role: button;
-    accessible-label: @tr("Game mode") + ": " + root.label + ". " + Locale.text(AppState.game-status);
+    accessible-label: @tr("Game mode") + ": " + root.spoken-label + ". " + Locale.text(AppState.game-status);
     accessible-expandable: true;
     accessible-expanded: menu.is-open;
     accessible-action-default => { root.open-menu(); }
@@ -40,7 +44,7 @@ export component GameModeButton inherits Rectangle {
         }
     }
     touch := TouchArea { mouse-cursor: pointer; clicked => { focus.focus(); root.open-menu(); } }
-    Tooltip { TooltipText { text: Locale.text(AppState.game-status) + "\n" + @tr("Click to change mode (Auto / On / Off)"); } }
+    Tooltip { TooltipText { text: Locale.text(AppState.game-status) + (AppState.game-active ? "\n" + @tr("Popup hotkeys are off while game mode is on.") : "") + "\n" + @tr("Click to change mode (Auto / On / Off)"); } }
     menu := PopupWindow {
         x: root.width - self.width; y: root.height + Theme.menu-offset; width: 280px;
         close-policy: close-on-click-outside;

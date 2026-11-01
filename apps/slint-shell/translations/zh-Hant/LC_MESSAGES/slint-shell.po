@@ -3351,3 +3351,9 @@ msgstr "不支援此按鍵。"
 
 msgid "Cannot read KDE global shortcuts. See the log for details."
 msgstr "無法讀取 KDE 全域快捷鍵。詳情請查看日誌。"
+
+msgid "Game mode is not available yet."
+msgstr "遊戲模式暫不可用。"
+
+msgid "Popup hotkeys are off while game mode is on."
+msgstr "遊戲模式開啟時，彈出視窗快捷鍵處於關閉狀態。"

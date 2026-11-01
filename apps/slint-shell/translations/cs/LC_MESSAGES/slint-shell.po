@@ -3651,3 +3651,9 @@ msgstr "Tato klávesa není podporována."
 
 msgid "Cannot read KDE global shortcuts. See the log for details."
 msgstr "Nelze načíst globální zkratky KDE. Podrobnosti najdete v protokolu."
+
+msgid "Game mode is not available yet."
+msgstr "Herní režim zatím není k dispozici."
+
+msgid "Popup hotkeys are off while game mode is on."
+msgstr "Klávesové zkratky vyskakovacích oken jsou vypnuté, dokud je zapnutý herní režim."

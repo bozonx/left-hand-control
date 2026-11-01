@@ -6,7 +6,7 @@ use crate::ui::{ConditionChoices, LanguageChoice, SettingsWindow, WindowChoice};
 use lhc_core::active_window::{ActiveWindow, OpenWindow};
 use lhc_core::profile::app_match;
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
-use std::cell::RefCell;
+use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 /// How long the running-process list stays fresh.
@@ -15,23 +15,43 @@ const PROCESS_CACHE_TTL: Duration = Duration::from_secs(2);
 /// How many running processes the picker lists.
 const PROCESSES: usize = 8;
 
-/// Running processes, re-read when older than [`PROCESS_CACHE_TTL`].
+/// Running processes, re-read in the background when older than
+/// [`PROCESS_CACHE_TTL`]: a scan reads every `/proc` entry and must not
+/// block the UI. Until it finishes callers get the previous list.
+#[derive(Default, Clone)]
+struct ProcessCache(Arc<Mutex<ProcessList>>);
+
 #[derive(Default)]
-struct ProcessCache(RefCell<Option<(Instant, Vec<String>)>>);
+struct ProcessList {
+    at: Option<Instant>,
+    names: Vec<String>,
+    scanning: bool,
+}
 
 impl ProcessCache {
     fn get(&self) -> Vec<String> {
-        let mut cache = self.0.borrow_mut();
-        let stale = cache
-            .as_ref()
-            .is_none_or(|(at, _)| at.elapsed() > PROCESS_CACHE_TTL);
-        if stale {
-            *cache = Some((Instant::now(), lhc_core::gamemode::running_processes()));
+        let mut list = self.0.lock().unwrap_or_else(PoisonError::into_inner);
+        let stale = list.at.is_none_or(|at| at.elapsed() > PROCESS_CACHE_TTL);
+        if stale && !list.scanning {
+            list.scanning = true;
+            let cache = self.0.clone();
+            let spawned = std::thread::Builder::new()
+                .name("process-list".into())
+                .spawn(move || {
+                    let names = lhc_core::gamemode::running_processes();
+                    let mut list = cache.lock().unwrap_or_else(PoisonError::into_inner);
+                    *list = ProcessList {
+                        at: Some(Instant::now()),
+                        names,
+                        scanning: false,
+                    };
+                });
+            if let Err(error) = spawned {
+                log::warn!("[conditions] process scan thread: {error}");
+                list.scanning = false;
+            }
         }
-        cache
-            .as_ref()
-            .map(|(_, names)| names.clone())
-            .unwrap_or_default()
+        list.names.clone()
     }
 }
 
@@ -213,11 +233,13 @@ fn window_pattern(app_id: &str, process: Option<&str>) -> String {
 
 pub(super) fn bind(ui: &SettingsWindow) {
     let choices = ui.global::<ConditionChoices>();
-    let processes = std::rc::Rc::new(ProcessCache::default());
+    let processes = ProcessCache::default();
+    // Start the first scan now, so the picker has names when it opens.
+    processes.get();
     choices.on_has(|patterns, pattern| {
         patterns
             .iter()
-            .any(|item| item.eq_ignore_ascii_case(&pattern))
+            .any(|item| item.to_lowercase() == pattern.to_lowercase())
     });
     choices.on_matching(|windows, query| {
         let query = query.trim().to_lowercase();

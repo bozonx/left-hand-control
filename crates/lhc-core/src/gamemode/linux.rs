@@ -147,7 +147,14 @@ fn daemon_state() -> Option<Daemon> {
         .as_ref()
         .and_then(|listener| *listener.state.lock().ok()?)
     {
-        if matches!(state, Daemon::Unknown) {
+        // A synchronous read can block on a stuck bus, which would also
+        // delay `stop_watcher`; retry it only now and then.
+        static UNKNOWN_READ: Mutex<Option<Instant>> = Mutex::new(None);
+        let mut last_read = UNKNOWN_READ.lock().ok()?;
+        if matches!(state, Daemon::Unknown)
+            && last_read.is_none_or(|at| at.elapsed() >= LISTEN_RETRY)
+        {
+            *last_read = Some(Instant::now());
             let listener = listener.as_ref()?;
             let state = read_daemon(&listener.connection);
             *listener.state.lock().ok()? = Some(state);

@@ -3680,3 +3680,9 @@ msgstr "Бұл перне қолдау көрсетілмейді."
 
 msgid "Cannot read KDE global shortcuts. See the log for details."
 msgstr "KDE жаһандық пернелер тіркесімдерін оқу мүмкін емес. Мәліметтерді журналдан қараңыз."
+
+msgid "Game mode is not available yet."
+msgstr "Ойын режимі әзірге қолжетімсіз."
+
+msgid "Popup hotkeys are off while game mode is on."
+msgstr "Ойын режимі қосулы кезде қалқымалы терезелердің жылдам пернелері өшірулі."

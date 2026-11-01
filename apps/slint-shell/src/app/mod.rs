@@ -162,8 +162,19 @@ impl App {
             ShellCommand::ToggleMapper => self.toggle_mapper(),
             ShellCommand::GameMode(mode) => {
                 match crate::game_mode::apply(mode, self.document().as_deref()) {
-                    Ok(status) => self.game_mode_changed(&status),
-                    Err(error) => self.set_error(error),
+                    Ok(status) => {
+                        self.game_mode_changed(&status);
+                        // A key binding or the CLI has no visible control;
+                        // game mode also turns popup hotkeys off.
+                        if !matches!(source, Source::Button | Source::Tray) {
+                            self.announce_game_mode(status.active);
+                        }
+                    }
+                    Err(error) => {
+                        // The tray marks a choice before it is applied.
+                        self.game_mode_changed(&lhc_core::gamemode::status());
+                        self.set_error(error);
+                    }
                 }
             }
             ShellCommand::Preferences(preferences) => self.set_preferences(preferences),

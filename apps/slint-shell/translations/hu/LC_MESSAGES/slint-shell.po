@@ -3712,3 +3712,9 @@ msgstr "Ez a billentyű nem támogatott."
 
 msgid "Cannot read KDE global shortcuts. See the log for details."
 msgstr "A KDE globális gyorsbillentyűi nem olvashatók be. A részleteket a naplóban találja."
+
+msgid "Game mode is not available yet."
+msgstr "A játékmód még nem érhető el."
+
+msgid "Popup hotkeys are off while game mode is on."
+msgstr "A felugró ablakok gyorsbillentyűi ki vannak kapcsolva, amíg a játékmód be van kapcsolva."

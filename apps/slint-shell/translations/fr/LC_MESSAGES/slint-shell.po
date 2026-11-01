@@ -3775,3 +3775,9 @@ msgstr "Cette touche n’est pas prise en charge."
 
 msgid "Cannot read KDE global shortcuts. See the log for details."
 msgstr "Impossible de lire les raccourcis globaux de KDE. Consultez le journal pour plus de détails."
+
+msgid "Game mode is not available yet."
+msgstr "Le mode jeu n’est pas encore disponible."
+
+msgid "Popup hotkeys are off while game mode is on."
+msgstr "Les raccourcis des fenêtres contextuelles sont désactivés tant que le mode jeu est actif."

@@ -15,9 +15,11 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - The tabs of the Settings page show icons next to their names.
 - Focus rings appear only while navigating with the keyboard (Tab, arrow keys) and disappear on the next mouse click, as in web browsers. Text fields keep their focus outline, and the high-contrast and E-ink themes always show focus rings.
 - Action picker: arrow keys move the selection in the item list and Enter applies it; Stop during key capture keeps the keys pressed so far; an unsupported key and a failed read of KDE shortcuts are reported.
+- Game mode (in development): toggling returns to Auto when the opposite state is what detection reports, so a toggle key no longer leaves automatic detection for good; a toggle from a key binding or the CLI shows the new state on screen. The top-bar button always reads Auto/On/Off in English to keep its fixed width, and its tooltip says that popup hotkeys are off in game mode. Terminals, code editors, image viewers and music players no longer count as fullscreen games; the running-process list is read every 2 seconds instead of every second while no game runs.
 
 ### Fixed
 
+- Game mode (in development): the toggle key, the CLI and the tray no longer change or save the mode while in-development features are off; a toggle reads and flips the state at once. Steam Big Picture and other launchers in fullscreen no longer turn game mode on, and Auto no longer reports itself unavailable where fullscreen detection is unsupported. The process picker no longer lists truncated duplicate names or freezes the window while it reads processes.
 - Action picker: capturing a combination for a plain-key slot now takes the last key instead of producing an invalid value; capturing only modifiers gives an assignable chord.
 - Action picker: opens on the category of the current value (for example Navigation for `Ctrl+ArrowUp`), an apply error disappears once the value is edited, and file-chooser errors are shown next to the command fields.
 - Action picker: macros, commands, KDE shortcuts and mouse buttons can no longer be typed in by hand while they are hidden outside development mode.
