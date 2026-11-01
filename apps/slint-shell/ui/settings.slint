@@ -323,15 +323,16 @@ export component SettingsWindow inherits Window {
                     LayoutLibrary.finish-save();
                 }
             }
+            // Overwriting discards the changes made on disk, so the safe choice is the primary one.
+            Button { text: @tr("Overwrite"); clicked => { LayoutLibrary.overwrite-current(); LayoutLibrary.finish-save(); } }
             Button {
-                text: @tr("Save as new…");
+                text: @tr("Save as new…"); primary: true;
                 clicked => {
                     // Keep a pending switch: it continues once the copy is saved.
                     LayoutLibrary.dialog = LibraryDialog.none;
                     LayoutLibrary.open-save-as(LayoutLibrary.suggest-name(LayoutLibrary.current-label));
                 }
             }
-            Button { text: @tr("Overwrite"); primary: true; clicked => { LayoutLibrary.overwrite-current(); LayoutLibrary.finish-save(); } }
         }
     }
     LibraryDialogOverlay {}

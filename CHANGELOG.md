@@ -8,6 +8,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Layouts page: the unsaved-changes question always offers to save; a working copy not yet in the library asks for a name first and then continues. In the "Layout changed on disk" dialog the safe "Save as new…" is now the primary button instead of "Overwrite".
 - Quick actions no longer have icons. Layout files that still contain an `icon` field load as before; the field is dropped on the next save.
 - The tabs of the Settings page show icons next to their names.
 - Focus rings appear only while navigating with the keyboard (Tab, arrow keys) and disappear on the next mouse click, as in web browsers. Text fields keep their focus outline, and the high-contrast and E-ink themes always show focus rings.

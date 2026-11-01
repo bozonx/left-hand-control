@@ -591,6 +591,9 @@ msgstr "Μετονομάζω…"
 msgid "Save and continue"
 msgstr "Αποθήκευση και συνέχεια"
 
+msgid "Save…"
+msgstr "Αποθήκευση…"
+
 msgid ""
 "The layout you are editing has not been saved to the library. Its changes "
 "will be lost."

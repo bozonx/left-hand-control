@@ -176,9 +176,11 @@ export global LayoutLibrary {
         }
         self.continue-pending();
     }
+    /// Closing the name dialog returns to the unsaved-changes question if
+    /// it asked for the name; otherwise the pending switch is dropped.
     public function cancel-save-as() {
         self.save-as-open = false;
-        self.pending-action = PendingLayoutAction.none;
+        if self.dialog != LibraryDialog.unsaved { self.pending-action = PendingLayoutAction.none; }
     }
     public function open-save-as(name: string) {
         self.clear-status();
@@ -748,8 +750,9 @@ export component LibraryDialogOverlay inherits Rectangle {
             if LayoutLibrary.dialog == LibraryDialog.create: Button { text: @tr("Create"); primary: true; enabled: LayoutLibrary.name-error(LayoutLibrary.create-name, "").id == ""; clicked => { LayoutLibrary.submit-create(); } }
             if LayoutLibrary.dialog == LibraryDialog.rule: Button { text: @tr("Save"); primary: true; clicked => { LayoutLibrary.save-rule(); } }
             if LayoutLibrary.dialog == LibraryDialog.unsaved: Button { text: @tr("Discard changes"); clicked => { LayoutLibrary.continue-pending(); } }
-            if LayoutLibrary.dialog == LibraryDialog.unsaved && LayoutLibrary.current-label != "": Button {
-                text: @tr("Save and continue"); primary: true;
+            // Without a library file the save asks for a name first.
+            if LayoutLibrary.dialog == LibraryDialog.unsaved: Button {
+                text: LayoutLibrary.current-label != "" ? @tr("Save and continue") : @tr("Save…"); primary: true;
                 clicked => { LayoutLibrary.save-and-continue(); }
             }
         }

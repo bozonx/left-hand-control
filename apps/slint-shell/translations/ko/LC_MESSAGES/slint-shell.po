@@ -577,6 +577,9 @@ msgstr "이름 바꾸기…"
 msgid "Save and continue"
 msgstr "저장하고 계속하세요"
 
+msgid "Save…"
+msgstr "저장…"
+
 msgid ""
 "The layout you are editing has not been saved to the library. Its changes "
 "will be lost."

@@ -587,6 +587,9 @@ msgstr "Атын өзгерту…"
 msgid "Save and continue"
 msgstr "Сақтау және жалғастыру"
 
+msgid "Save…"
+msgstr "Сақтау…"
+
 msgid ""
 "The layout you are editing has not been saved to the library. Its changes "
 "will be lost."

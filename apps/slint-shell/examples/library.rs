@@ -331,6 +331,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     library.invoke_delete(library.get_selected());
     assert!(paths.load_user_layout("Still broken").is_err());
     assert_eq!(library.get_dialog(), LibraryDialog::None);
+    // A working copy without a library file can be saved from the
+    // unsaved-changes question: it asks for a name, then switches.
+    library.invoke_open_delete(position("Empty"));
+    library.invoke_delete(library.get_selected());
+    assert_eq!(library.get_current_label(), "");
+    document.edit(slint_shell::document::View::Rules, |config| {
+        config.update_layout(|layout| layout.description = Some("Orphan".into()))
+    })?;
+    library.invoke_edit(position("Ivan K"));
+    assert_eq!(library.get_dialog(), LibraryDialog::Unsaved);
+    library.invoke_save_and_continue();
+    assert!(library.get_save_as_open());
+    library.invoke_cancel_save_as();
+    assert_eq!(library.get_dialog(), LibraryDialog::Unsaved);
+    library.invoke_save_and_continue();
+    library.set_save_as_name("Orphan".into());
+    library.invoke_save_as("Orphan".into());
+    library.invoke_finish_save();
+    assert!(paths.load_user_layout("Orphan")?.contains("Orphan"));
+    assert_eq!(library.get_current_label(), "Ivan K");
+    assert_eq!(library.get_dialog(), LibraryDialog::None);
     let emoji = EmojiPopup::new()?;
     let quick = QuickPopup::new()?;
     let mut menus = popup_model::ConfiguredMenus::default();

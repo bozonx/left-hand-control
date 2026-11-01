@@ -582,6 +582,9 @@ msgstr "Переименовать…"
 msgid "Save and continue"
 msgstr "Сохранить и продолжить"
 
+msgid "Save…"
+msgstr "Сохранить…"
+
 msgid "The layout you are editing has not been saved to the library. Its changes will be lost."
 msgstr "Редактируемая раскладка не сохранена в библиотеку. Изменения будут потеряны."
 

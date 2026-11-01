@@ -582,6 +582,9 @@ msgstr "Rebautizar…"
 msgid "Save and continue"
 msgstr "Guardar y continuar"
 
+msgid "Save…"
+msgstr "Guardar…"
+
 msgid ""
 "The layout you are editing has not been saved to the library. Its changes "
 "will be lost."

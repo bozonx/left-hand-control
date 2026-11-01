@@ -585,6 +585,9 @@ msgstr "Перейменувати…"
 msgid "Save and continue"
 msgstr "Зберегти та продовжити"
 
+msgid "Save…"
+msgstr "Зберегти…"
+
 msgid ""
 "The layout you are editing has not been saved to the library. Its changes "
 "will be lost."

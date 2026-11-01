@@ -590,6 +590,9 @@ msgstr "Przemianować…"
 msgid "Save and continue"
 msgstr "Zapisz i kontynuuj"
 
+msgid "Save…"
+msgstr "Zapisz…"
+
 msgid ""
 "The layout you are editing has not been saved to the library. Its changes "
 "will be lost."

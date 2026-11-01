@@ -587,6 +587,9 @@ msgstr "Umbenennen…"
 msgid "Save and continue"
 msgstr "Speichern und fortfahren"
 
+msgid "Save…"
+msgstr "Speichern…"
+
 msgid ""
 "The layout you are editing has not been saved to the library. Its changes "
 "will be lost."

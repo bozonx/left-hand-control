@@ -586,6 +586,9 @@ msgstr "გადარქმევა…"
 msgid "Save and continue"
 msgstr "შეინახეთ და გააგრძელეთ"
 
+msgid "Save…"
+msgstr "შენახვა…"
+
 msgid ""
 "The layout you are editing has not been saved to the library. Its changes "
 "will be lost."

@@ -577,6 +577,9 @@ msgstr "重命名..."
 msgid "Save and continue"
 msgstr "保存并继续"
 
+msgid "Save…"
+msgstr "保存…"
+
 msgid ""
 "The layout you are editing has not been saved to the library. Its changes "
 "will be lost."

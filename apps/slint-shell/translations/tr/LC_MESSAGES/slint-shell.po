@@ -585,6 +585,9 @@ msgstr "Yeniden isimlendirmek…"
 msgid "Save and continue"
 msgstr "Kaydet ve devam et"
 
+msgid "Save…"
+msgstr "Kaydet…"
+
 msgid ""
 "The layout you are editing has not been saved to the library. Its changes "
 "will be lost."
