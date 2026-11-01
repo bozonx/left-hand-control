@@ -50,11 +50,11 @@ Builds are heavy (generated Slint UI is ~28 MB of Rust; `cargo test --workspace`
 Need a graphical session, use a temporary config and exit on their own:
 
 ```sh
-cargo run --locked -p slint-shell --example editor -- --smoke   # key editor, language switching
+cargo run --locked -p slint-shell --example editor -- --smoke   # keyboard page renders in a real window
 cargo run --locked -p slint-shell --example interactions        # settings, save, navigation, theme, language
 ```
 
-Page examples: `action-picker`, `conditions`, `library`, `macros`, `menus`, `undo-redo`, `inline-edit`, `drag-scroll`, `notifications`, `layer-keys`, `small-window` (pages and dialogs at the minimum window size). Benchmarks and diagnostic stands (`bench-*`, `probes` feature, `scripts/bench`, `scripts/check`) are described in `apps/slint-shell/README.md`.
+Page examples: `library`, `macros`, `menus`, `undo-redo`, `inline-edit`, `drag-scroll`, `notifications`, `layer-keys`, `small-window` (pages and dialogs at the minimum window size). Benchmarks and diagnostic stands (`bench-*`, `probes` feature, `scripts/bench`, `scripts/check`) are described in `apps/slint-shell/README.md`.
 
 ### Mapper e2e and releases
 

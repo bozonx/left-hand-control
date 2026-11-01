@@ -42,7 +42,7 @@ apps/slint-shell/scripts/e2e-local.sh
 ```
 
 Набор собирает оболочку со Spell и выполняет editor smoke, interactions, library,
-action-picker, macros, menus, undo-redo, inline-edit, drag-scroll, notifications;
+macros, menus, undo-redo, inline-edit, drag-scroll, notifications;
 проверяет восстановление, настройки, падение Spell worker, Linux install-скрипты
 и headless mapper e2e. `--no-mapper` явно исключает последний набор.
 Полные логи сохраняются во временный каталог, который выводится при запуске.

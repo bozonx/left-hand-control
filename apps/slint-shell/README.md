@@ -287,13 +287,14 @@ SLINT_BACKEND=winit-software \
 | Назначение | Примеры |
 | --- | --- |
 | Общая проверка UI | `editor -- --smoke`, `interactions` |
-| Страницы и диалоги | `action-picker`, `library`, `macros`, `menus`, `conditions`, `layer-keys`, `small-window` |
+| Страницы и диалоги | `library`, `macros`, `menus`, `layer-keys`, `small-window` |
 | Общие контролы | `undo-redo`, `inline-edit`, `drag-scroll`, `notifications` |
 | Измерение ввода и возврата фокуса | `bench-evdev` (feature `spell`), `bench-return` (feature `probes`) |
 | Вспомогательные окна и диагностика | `window-fixture`, `panel-fixture` (feature `spell`), `focus-window`, `inspect-geometry` (feature `probes`) |
 
-`conditions` дополнительно требует путь для снимка:
-`SNAP=/tmp/lhc-conditions.ppm cargo run --locked -p slint-shell --example conditions`.
+Проверки callbacks без реального ввода (редактор клавиш, переводы, диалог условий,
+выбор действий) — headless-тест `cargo test --locked -p slint-shell --test page_callbacks`.
+Снимок диалога условий даёт `LHC_EDITOR_SNAPSHOTS=<каталог>` с примером `small-window`.
 
 `bench-*` остаются исполняемыми примерами: они работают с реальными окнами и
 устройствами и не используют стандартный Cargo benchmark harness.

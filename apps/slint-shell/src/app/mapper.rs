@@ -507,3 +507,63 @@ impl App {
         });
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use lhc_core::mapper::runtime::MapperPhase as Core;
+
+    #[test]
+    fn shell_operations_override_the_core_phase() {
+        assert_eq!(
+            mapper_phase(MapperOperation::Idle, Core::Running),
+            MapperPhase::Running
+        );
+        assert_eq!(
+            mapper_phase(MapperOperation::Retrying, Core::Stopped),
+            MapperPhase::Retrying
+        );
+        assert_eq!(
+            mapper_phase(MapperOperation::Stopping, Core::Running),
+            MapperPhase::Stopping
+        );
+    }
+
+    #[test]
+    fn repeated_notifications_are_suppressed() {
+        let controller = MapperController::default();
+        let running = (MapperPhase::Running, false, None);
+        assert!(controller.status_changed(running.clone()));
+        assert!(!controller.status_changed(running.clone()));
+        controller.reset_status();
+        assert!(controller.status_changed(running));
+
+        assert!(controller.game_changed(true));
+        assert!(!controller.game_changed(true));
+        assert!(controller.game_changed(false));
+
+        // The first layout is the starting point, not a change to announce.
+        let main = Some("user:Main".to_string());
+        assert!(!controller.layout_changed(&main));
+        assert!(!controller.layout_changed(&main));
+        assert!(controller.layout_changed(&None));
+    }
+
+    #[test]
+    fn uptime_survives_a_crash_but_not_a_requested_stop() {
+        let controller = MapperController::default();
+        let start = Instant::now();
+        let minute = Duration::from_secs(60);
+        assert!(!controller.track(false, false, start));
+        assert!(controller.track(true, false, start));
+        assert_eq!(controller.minutes(start + 5 * minute), (5, -1, -1));
+        // Still running: the start time is kept.
+        assert!(controller.track(true, false, start + minute));
+        assert!(controller.track(false, true, start + 5 * minute));
+        assert_eq!(controller.minutes(start + 7 * minute), (-1, 5, 2));
+
+        assert!(controller.track(true, false, start + 8 * minute));
+        assert!(!controller.track(false, false, start + 9 * minute));
+        assert_eq!(controller.minutes(start + 9 * minute), (-1, -1, -1));
+    }
+}

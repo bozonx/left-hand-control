@@ -1,12 +1,314 @@
-mod support;
-use lhc_core::storage::StoragePaths;
-use slint::{ComponentHandle, Model};
-use slint_shell::{Document, bind_document, ui::*};
-use std::time::Duration;
-use support::quick_action;
+//! Settings-page callback regressions that need no real input or compositor:
+//! Slint bindings → page modules → `Document` → temporary config files, on the
+//! software test platform. Pointer, keyboard, geometry and theme checks stay in
+//! the graphical `examples/`.
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    check_atomic_commands()?;
+#[path = "../examples/support/mod.rs"]
+mod support;
+
+use lhc_core::storage::StoragePaths;
+use slint::{
+    ComponentHandle, Model, ModelRc, VecModel,
+    platform::{Platform, WindowAdapter, software_renderer::MinimalSoftwareWindow},
+};
+use slint_shell::{Document, bind_document, ui::*};
+use std::{rc::Rc, time::Instant};
+use support::{Fixture, quick_action, wait_until};
+
+struct TestPlatform(Instant);
+impl Platform for TestPlatform {
+    fn create_window_adapter(&self) -> Result<Rc<dyn WindowAdapter>, slint::PlatformError> {
+        Ok(MinimalSoftwareWindow::new(Default::default()))
+    }
+    fn duration_since_start(&self) -> std::time::Duration {
+        self.0.elapsed()
+    }
+}
+
+/// One test: the Slint platform and the UI language are process-global.
+#[test]
+fn page_callbacks_without_a_desktop() {
+    slint::platform::set_platform(Box::new(TestPlatform(Instant::now()))).unwrap();
+    key_editor().unwrap();
+    conditions_dialog().unwrap();
+    check_atomic_commands().unwrap();
+    action_picker().unwrap();
+}
+
+/// Key editor, translations of every bundled language and picker assignment.
+fn key_editor() -> Result<(), Box<dyn std::error::Error>> {
+    let Fixture {
+        dir: _dir,
+        paths: _,
+        document,
+        ui,
+    } = Fixture::new()?;
+    ui.set_page(Page::Keyboard);
+    let keys = ui.global::<KeyEditor>();
+    assert_eq!(keys.get_keys().row_count(), 80);
+    assert_eq!(keys.get_keys().row_data(33).unwrap().label, "Q");
+    let loaded = |count| Message {
+        id: "config-loaded".into(),
+        arg: "".into(),
+        count,
+        diagnostic_key: Default::default(),
+    };
+    let locale = ui.global::<Locale>();
+    // Exercise every bundled language through Slint before the detailed RU/EN assertions.
+    for code in [
+        "en", "ru", "de", "fr", "es", "it", "pt", "pl", "tr", "uk", "cs", "hu", "ro", "el", "hr",
+        "ka", "kk", "zh-Hans", "zh-Hant", "ja", "ko",
+    ] {
+        slint_shell::select_ui_language(code)?;
+        for count in [0, 1, 2, 5, 11, 21] {
+            let text = locale.invoke_text(loaded(count));
+            assert!(!text.is_empty(), "{code}: missing translation");
+            assert!(
+                text.contains(&count.to_string()),
+                "{code}: missing count: {text}"
+            );
+        }
+    }
+    slint_shell::select_ui_language("ru")?;
+    assert_eq!(
+        locale.invoke_text(loaded(1)),
+        "Конфигурация загружена: 1 правило"
+    );
+    assert_eq!(
+        locale.invoke_text(loaded(5)),
+        "Конфигурация загружена: 5 правил"
+    );
+    assert_eq!(
+        locale.invoke_text(loaded(2)),
+        "Конфигурация загружена: 2 правила"
+    );
+    slint_shell::select_ui_language("en")?;
+    assert_eq!(
+        locale.invoke_text(loaded(1)),
+        "Configuration loaded: 1 rule"
+    );
+    slint_shell::select_ui_language("ru")?;
+    assert_eq!(
+        locale.invoke_text(loaded(21)),
+        "Конфигурация загружена: 21 правило"
+    );
+    for id in [
+        "action-invalid-syntax",
+        "action-pause-outside-macro",
+        "action-unknown-macro",
+        "action-unknown-command",
+        "action-unknown-system",
+        "action-unknown-app",
+        "action-unknown-type",
+        "action-failed",
+        "error",
+        "mapper-failed",
+        "config-io",
+        "config-parse",
+        "config-invalid",
+    ] {
+        let message = Message {
+            id: id.into(),
+            arg: "untranslated technical detail".into(),
+            count: 0,
+            diagnostic_key: Default::default(),
+        };
+        let russian = locale.invoke_text(message.clone());
+        assert!(!russian.is_empty(), "missing Russian message: {id}");
+        assert!(!russian.contains("untranslated technical detail"));
+        slint_shell::select_ui_language("en")?;
+        let english = locale.invoke_text(message);
+        assert!(!english.is_empty(), "missing English message: {id}");
+        assert_ne!(russian, english, "untranslated message: {id}");
+        slint_shell::select_ui_language("ru")?;
+    }
+    let action_messages: Vec<_> = lhc_core::profile::actions::catalog(&document.read().config())
+        .into_iter()
+        .filter_map(|entry| {
+            use lhc_core::profile::actions::ActionName;
+            let (id, arg, count) = match entry.name {
+                ActionName::BuiltinMacro { id } => ("builtin-macro", id, 0),
+                ActionName::System { id, n } | ActionName::App { id, n } => {
+                    ("picker-action", id, n)
+                }
+                ActionName::Verbatim(_) => return None,
+            };
+            Some(Message {
+                id: id.into(),
+                arg: arg.into(),
+                count: i32::try_from(count).unwrap(),
+                diagnostic_key: Default::default(),
+            })
+        })
+        .collect();
+    let russian: Vec<_> = action_messages
+        .iter()
+        .map(|message| locale.invoke_text(message.clone()))
+        .collect();
+    slint_shell::select_ui_language("en")?;
+    for (message, russian) in action_messages.into_iter().zip(russian) {
+        let english = locale.invoke_text(message.clone());
+        assert!(
+            !russian.is_empty() && !english.is_empty(),
+            "missing catalog label: {message:?}"
+        );
+        assert_ne!(russian, english, "untranslated catalog label: {message:?}");
+    }
+    slint_shell::select_ui_language("ru")?;
+    assert_eq!(
+        locale.invoke_text(Message {
+            id: "unknown-id".into(),
+            arg: "untranslated technical detail".into(),
+            count: 0,
+            diagnostic_key: Default::default(),
+        }),
+        ""
+    );
+    slint_shell::select_ui_language("en")?;
+
+    // Editing a key opens the picker; applying saves the tap action.
+    let picker = ui.global::<ActionPicker>();
+    keys.invoke_edit(33);
+    assert!(picker.get_opened());
+    assert_eq!(keys.get_selected(), 33);
+    picker.invoke_select_behavior(PickerBehavior::Action);
+    picker.set_value("text:Привет 👋".into());
+    picker.invoke_apply();
+    assert!(!picker.get_opened());
+    assert_eq!(
+        document.read().base_tap_action("KeyQ"),
+        Some("text:Привет 👋")
+    );
+    assert_eq!(
+        keys.get_keys().row_data(33).unwrap().action,
+        "text:Привет 👋"
+    );
+    assert_eq!(ui.global::<AppState>().get_status().id, "");
+
+    // Cancel keeps the saved value.
+    keys.invoke_edit(33);
+    assert_eq!(picker.get_value(), "text:Привет 👋");
+    picker.invoke_select_behavior(PickerBehavior::Action);
+    picker.set_value("Ctrl+KeyC".into());
+    picker.invoke_dismiss_picker();
+    assert_eq!(
+        document.read().base_tap_action("KeyQ"),
+        Some("text:Привет 👋")
+    );
+
+    // Pauses are only valid inside macros.
+    keys.invoke_edit(33);
+    picker.invoke_select_behavior(PickerBehavior::Action);
+    picker.set_value("pause:250".into());
+    picker.invoke_apply();
+    assert!(picker.get_opened());
+    assert!(!picker.get_valid());
+    picker.invoke_select_behavior(PickerBehavior::Action);
+    picker.set_value("Ctrl+Shift+KeyK".into());
+    picker.invoke_apply();
+    assert_eq!(
+        document.read().base_tap_action("KeyQ"),
+        Some("Ctrl+Shift+KeyK")
+    );
+    Ok(())
+}
+
+/// Conditions dialog: add, reject duplicates, edit, remove and save.
+fn items(choices: &ConditionChoices<'_>, value: slint::SharedString) -> Vec<String> {
+    choices
+        .invoke_items(value)
+        .iter()
+        .map(|item| item.to_string())
+        .collect()
+}
+
+fn conditions_dialog() -> Result<(), Box<dyn std::error::Error>> {
+    let Fixture {
+        dir: _dir,
+        paths: _,
+        document,
+        ui,
+    } = Fixture::new()?;
+    document.edit(slint_shell::document::View::Library, |config| {
+        config.update_layout(|layout| {
+            layout.rules = vec![lhc_core::profile::model::KeyRule::new("r".into(), "F13")];
+        })
+    })?;
+    ui.set_page(Page::Rules);
+    let choices = ui.global::<ConditionChoices>();
+    // Supply stable window choices; the scenario does not query the compositor.
+    choices.on_refresh_open_windows(|| {});
+    choices.set_open_windows(ModelRc::new(VecModel::from(vec![WindowChoice {
+        pattern: "org.kde.konsole".into(),
+        app_id: "org.kde.konsole".into(),
+        count: 1,
+        titles: ModelRc::new(VecModel::from(vec!["Terminal".into()])),
+        ..Default::default()
+    }])));
+    choices.set_open_windows_ready(true);
+    let rules = ui.global::<RulesEditor>();
+    rules.invoke_open_dialog(0, RuleDialog::Conditions);
+    ui.window().set_size(slint::LogicalSize::new(1100., 800.));
+    // Instantiate the visible condition-list bindings before editing its dialog.
+    let _ = ui.window().take_snapshot()?;
+    let dialog = ui.global::<AppEntryDialog>();
+    let names = [
+        "org.kde.konsole",
+        "firefox",
+        "a-very-long-application-identifier.with.many.parts",
+    ];
+    for (index, name) in names.iter().enumerate() {
+        dialog.invoke_open(rules.get_apps_include(), false, -1);
+        dialog.set_text((*name).into());
+        assert!(dialog.invoke_valid());
+        dialog.invoke_save();
+        wait_until("added application condition", || {
+            items(&choices, rules.get_apps_include()).len() == index + 1
+        });
+        assert_eq!(items(&choices, rules.get_apps_include()), names[..=index]);
+    }
+    dialog.invoke_open(rules.get_apps_include(), false, -1);
+    dialog.set_text("FIREFOX".into());
+    assert!(!dialog.invoke_valid(), "duplicates are case insensitive");
+    let revision = dialog.get_revision();
+    dialog.invoke_save();
+    assert_eq!(dialog.get_revision(), revision);
+    dialog.invoke_close();
+
+    dialog.invoke_open(rules.get_apps_include(), false, 1);
+    dialog.set_text("org.mozilla.firefox".into());
+    assert!(dialog.invoke_valid());
+    dialog.invoke_save();
+    wait_until("edited application condition", || {
+        items(&choices, rules.get_apps_include())[1] == "org.mozilla.firefox"
+    });
+    dialog.invoke_confirm_remove(rules.get_apps_include(), false, 2);
+    dialog.invoke_remove();
+    wait_until("removed application condition", || {
+        items(&choices, rules.get_apps_include()).len() == 2
+    });
+    assert_eq!(
+        items(&choices, rules.get_apps_include()),
+        ["org.kde.konsole", "org.mozilla.firefox"]
+    );
+    rules.invoke_apply_conditions();
+    assert_eq!(
+        document.read().layout().rules[0]
+            .condition_window_patterns
+            .as_deref(),
+        Some(
+            [
+                "org.kde.konsole".to_string(),
+                "org.mozilla.firefox".to_string()
+            ]
+            .as_slice()
+        )
+    );
+    Ok(())
+}
+
+/// Picker catalog, trigger validation, cancel, rule actions, macro steps and quick actions.
+fn action_picker() -> Result<(), Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir()?;
     let document = Document::load(StoragePaths::new(
         dir.path().join("settings"),
@@ -222,64 +524,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         document.read().base_tap_action("KeyQ"),
         Some("text:example")
     );
-    rules.invoke_open_dialog(index, RuleDialog::Key);
-    if let Ok(category) = std::env::var("LHC_PICKER_CATEGORY") {
-        rules.invoke_open_dialog(index, RuleDialog::Tap);
-        picker.set_category(parse_category(&category)?);
-        picker.invoke_refresh();
-    }
-    if let Ok(query) = std::env::var("LHC_PICKER_QUERY") {
-        picker.set_query(query.into());
-        picker.invoke_refresh();
-    }
-    if let Ok(value) = std::env::var("LHC_PICKER_VALUE") {
-        picker.invoke_select_behavior(PickerBehavior::Action);
-        picker.set_value(value.into());
-        picker.invoke_refresh();
-    }
-    if std::env::var_os("LHC_RULE_ADVANCED_PREVIEW").is_some() {
-        ui.invoke_navigate(Page::Rules, MenuKind::Emoji);
-        picker.invoke_dismiss_picker();
-        rules.invoke_open_dialog(index, RuleDialog::Advanced);
-    }
-    ui.show()?;
-    ui.window().set_size(slint::LogicalSize::new(954.0, 700.0));
-    let timer = slint::Timer::default();
-    let weak = ui.as_weak();
-    timer.start(slint::TimerMode::SingleShot, Duration::from_millis(600), move || {
-        let ui = weak.unwrap();
-        if let Some(path) = std::env::var_os("LHC_PICKER_SNAPSHOT") {
-            support::write_snapshot(&ui, std::path::Path::new(&path));
-        }
-        println!("Picker passed: catalog, trigger validation, cancel, rule actions, macro steps and quick actions");
-        slint::quit_event_loop().unwrap();
-    });
-    slint::run_event_loop()?;
     Ok(())
-}
-
-/// `LHC_PICKER_CATEGORY` value: the kebab-case name of a `PickerCategory`.
-fn parse_category(name: &str) -> Result<PickerCategory, String> {
-    use PickerCategory as C;
-    Ok(match name {
-        "modifiers" => C::Modifiers,
-        "letters" => C::Letters,
-        "control-keys" => C::ControlKeys,
-        "navigation" => C::Navigation,
-        "media" => C::Media,
-        "system-keys" => C::SystemKeys,
-        "mouse" => C::Mouse,
-        "other-keys" => C::OtherKeys,
-        "macros" => C::Macros,
-        "builtin-macros" => C::BuiltinMacros,
-        "commands" => C::Commands,
-        "app" => C::App,
-        "system-actions" => C::SystemActions,
-        "desktop-shortcuts" => C::DesktopShortcuts,
-        "text" => C::Text,
-        "pause" => C::Pause,
-        other => return Err(format!("unknown picker category: {other}")),
-    })
 }
 
 /// Command edits stay with their target, including invalid page drafts.
