@@ -409,7 +409,6 @@ export component RuleDialogOverlay inherits FocusScope {
         if RulesEditor.dialog == RuleDialog.advanced: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
             preferred-height: advanced-form.preferred-height;
             advanced-form := VerticalLayout { spacing: Theme.space-3xl; alignment: start;
-                CheckBox { text: @tr("Enabled"); checked <=> RulesEditor.enabled; }
                 held-form := ResettableField {
                     label: @tr("Hold key or combination");
                     info: @tr("The key or combination stays pressed until you release the trigger. Choose modifiers plus one main key, for example Ctrl+KeyC.");
@@ -490,6 +489,7 @@ export component RuleDialogOverlay inherits FocusScope {
                 clicked => { RulesEditor.choose(""); }
             }
             if RulesEditor.dialog == RuleDialog.advanced: VerticalLayout { alignment: center; IconButton { text: @tr("Delete trigger"); icon: @image-url("icons/trash-2.svg"); clicked => { RulesEditor.dialog = RuleDialog.remove; } } }
+            if RulesEditor.dialog == RuleDialog.advanced: CheckBox { text: @tr("Enabled"); checked <=> RulesEditor.enabled; }
             Rectangle { horizontal-stretch: 1; }
             Button { text: @tr("Cancel"); clicked => { RulesEditor.dialog = RuleDialog.none; RulesEditor.refresh(); } }
             Button {
