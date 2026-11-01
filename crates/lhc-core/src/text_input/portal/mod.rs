@@ -311,14 +311,20 @@ mod tests {
     }
 
     #[test]
-    fn high_keycodes_are_not_used_for_typing() {
-        // `inet(evdev)` puts dollar and EuroSign on KEY_DOLLAR/KEY_EURO in every
-        // layout; Electron and X11 clients ignore those keycodes.
+    fn main_block_keys_are_preferred_for_typing() {
+        // `inet(evdev)` puts `$` and `€` on KEY_DOLLAR/KEY_EURO and the keypad
+        // has `*`, `+`, `(`, `)` and `±` without modifiers; Electron and X11
+        // clients ignore the special keys, and keypad keys may act as commands.
         let us = table_from_names("us", None).expect("us layout");
         let ru = table_from_names("ru", None).expect("ru layout");
-        assert_eq!(us[&text_keysym('$')].evdev, 5);
-        assert_eq!(us[&text_keysym('$')].mods, vec![KEY_LEFTSHIFT_EVDEV]);
-        assert!(!has(&us, '€'));
+        let shift = vec![KEY_LEFTSHIFT_EVDEV];
+        for (ch, key) in [('$', 5), ('*', 9), ('(', 10), (')', 11), ('+', 13)] {
+            assert_eq!(us[&text_keysym(ch)].evdev, key, "{ch}");
+            assert_eq!(us[&text_keysym(ch)].mods, shift, "{ch}");
+        }
+        // Russian `/` is on the main block (LSGT), not KEY_KPSLASH.
+        assert_eq!(ru[&text_keysym('/')].evdev, 86);
+        assert!(!has(&us, '€') && !has(&us, '±'));
         assert!(!has(&ru, '$') && !has(&ru, '€'));
     }
 

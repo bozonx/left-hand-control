@@ -14,6 +14,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 ### Fixed
 
 - `text:` actions with `$` or `€` type in Electron apps (Obsidian, VS Code) and X11 apps again: LHC no longer sends them through the special Dollar and Euro keys of the keymap, which these apps ignore. It now uses a regular key of the active layout (Shift+4 for `$` in English) or, when the layout lacks the character, the clipboard fallback.
+- `text:` types `*`, `+`, `(`, `)` and `/` with the main keyboard keys (for example Shift+8) instead of keypad keys, which terminals and some apps treat as commands. The keypad is used only for characters missing from the main keys.
 - A click on a button or tab while an inline editor was open no longer gets lost: the editor now commits after the click instead of on the press, so the page no longer shifts under the pointer.
 - A rule whose tap is set to "Suppress" with nothing on hold now swallows the key completely; before, the original key (for example Enter) still went through.
 - A key chord pressed while a tap-hold key is still undecided no longer fires ahead of it: a chord nested inside the held key now uses that key's layer, and a chord rolled after it types in physical order.

@@ -37,6 +37,7 @@ unsafe extern "C" {
     pub(super) fn xkb_keymap_unref(keymap: *mut XkbKeymap);
     pub(super) fn xkb_keymap_min_keycode(keymap: *mut XkbKeymap) -> u32;
     pub(super) fn xkb_keymap_max_keycode(keymap: *mut XkbKeymap) -> u32;
+    pub(super) fn xkb_keymap_key_get_name(keymap: *mut XkbKeymap, key: u32) -> *const c_char;
     pub(super) fn xkb_state_new(keymap: *mut XkbKeymap) -> *mut XkbState;
     pub(super) fn xkb_state_unref(state: *mut XkbState);
     pub(super) fn xkb_state_update_mask(
@@ -256,39 +257,85 @@ pub(super) unsafe fn table_from_keymap(
             })
             .collect();
         combinations.sort_by_key(Vec::len);
-        for mods in combinations {
-            // Keycodes above 255 (e.g. KEY_DOLLAR, KEY_EURO from `inet(evdev)`)
-            // are dropped by X11 clients and Chromium/Electron, so a character
-            // found only there must count as missing.
-            for key in keys
-                .clone()
-                .filter(|key| (9..=255).contains(key) && !modifiers.contains(key))
-            {
-                xkb_state_update_mask(state, 0, 0, locked, 0, 0, group);
-                let baseline_locked = xkb_state_serialize_mods(state, 1 << 2);
-                let baseline_group = xkb_state_serialize_layout(state, 1 << 7);
-                for modifier in &mods {
-                    xkb_state_update_key(state, *modifier, 1);
-                }
-                let sym = xkb_state_key_get_one_sym(state, key);
-                for modifier in mods.iter().rev() {
-                    xkb_state_update_key(state, *modifier, 0);
-                }
-                // A typing chord must not toggle a lock or leave another group active.
-                if sym != 0
-                    && xkb_state_serialize_mods(state, 1 << 2) == baseline_locked
-                    && xkb_state_serialize_layout(state, 1 << 7) == baseline_group
-                {
-                    map.entry(sym).or_insert_with(|| KeycodeEntry {
-                        evdev: key - 8,
-                        mods: mods.iter().map(|key| key - 8).collect(),
-                    });
+        // Main-block keys win over the keypad even when they need a modifier:
+        // keypad keys may send escape sequences in terminals or trigger
+        // commands (zoom, view) instead of text. Other keys, such as
+        // KEY_DOLLAR/KEY_EURO from `inet(evdev)` or keycodes above 255, are
+        // ignored by X11 clients and Chromium/Electron, so a character found
+        // only there counts as missing.
+        let typing_keys = |class: KeyClass| {
+            keys.clone()
+                .filter(|key| !modifiers.contains(key))
+                .filter(move |key| key_class(keymap, *key) == Some(class))
+                .collect::<Vec<_>>()
+        };
+        for keys in [typing_keys(KeyClass::Main), typing_keys(KeyClass::Keypad)] {
+            for mods in &combinations {
+                for &key in &keys {
+                    xkb_state_update_mask(state, 0, 0, locked, 0, 0, group);
+                    let baseline_locked = xkb_state_serialize_mods(state, 1 << 2);
+                    let baseline_group = xkb_state_serialize_layout(state, 1 << 7);
+                    for modifier in mods {
+                        xkb_state_update_key(state, *modifier, 1);
+                    }
+                    let sym = xkb_state_key_get_one_sym(state, key);
+                    for modifier in mods.iter().rev() {
+                        xkb_state_update_key(state, *modifier, 0);
+                    }
+                    // A typing chord must not toggle a lock or leave another group active.
+                    if sym != 0
+                        && xkb_state_serialize_mods(state, 1 << 2) == baseline_locked
+                        && xkb_state_serialize_layout(state, 1 << 7) == baseline_group
+                    {
+                        map.entry(sym).or_insert_with(|| KeycodeEntry {
+                            evdev: key - 8,
+                            mods: mods.iter().map(|key| key - 8).collect(),
+                        });
+                    }
                 }
             }
         }
         xkb_state_unref(state);
     }
     map
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum KeyClass {
+    Main,
+    Keypad,
+}
+
+/// Block of a key by its XKB name; `None` for keys not used to type text.
+///
+/// # Safety
+/// `keymap` must be a valid keymap.
+unsafe fn key_class(keymap: *mut XkbKeymap, key: u32) -> Option<KeyClass> {
+    // X11 keycodes stop at 255; higher ones never reach X11 clients.
+    if !(9..=255).contains(&key) {
+        return None;
+    }
+    // SAFETY: the caller owns a live keymap; the name it returns is owned by
+    // the keymap and only read within this call.
+    let name = unsafe {
+        let name = xkb_keymap_key_get_name(keymap, key);
+        if name.is_null() {
+            return None;
+        }
+        std::ffi::CStr::from_ptr(name).to_bytes()
+    };
+    let row = |prefix: &[u8]| {
+        name.strip_prefix(prefix)
+            .is_some_and(|rest| !rest.is_empty() && rest.iter().all(u8::is_ascii_digit))
+    };
+    if row(b"AE") || row(b"AD") || row(b"AC") || row(b"AB") {
+        return Some(KeyClass::Main);
+    }
+    match name {
+        b"TLDE" | b"BKSL" | b"LSGT" | b"SPCE" | b"RTRN" | b"TAB" => Some(KeyClass::Main),
+        _ if name.starts_with(b"KP") => Some(KeyClass::Keypad),
+        _ => None,
+    }
 }
 
 // Text control characters need keyboard keysyms, not Unicode keysyms.
