@@ -44,8 +44,11 @@ pub mod linux;
 pub mod locale;
 #[cfg(target_os = "linux")]
 pub mod osd;
+mod osd_queue;
 #[cfg(not(target_os = "linux"))]
 pub mod osd {
+    pub use super::osd_queue::enqueue;
+
     pub fn show(_text: &str) -> Result<(), String> {
         Err("on-screen display is not implemented on this platform".into())
     }

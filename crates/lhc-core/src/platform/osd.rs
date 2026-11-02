@@ -2,15 +2,20 @@
 //! just became active. KDE Plasma shows them in its own OSD; other
 //! desktops get a transient desktop notification.
 
+pub use super::osd_queue::enqueue;
+
 use super::dbus;
 use super::linux::{self, Desktop};
 use std::collections::HashMap;
 use std::sync::Mutex;
+use std::time::Duration;
 use zbus::blocking::{Connection, Proxy};
 use zbus::zvariant::Value;
 
 /// How long a notification stays on screen.
 const NOTIFICATION_TIMEOUT_MS: i32 = 1500;
+/// A stalled desktop service must not hold up newer OSD messages for seconds.
+const METHOD_TIMEOUT: Duration = Duration::from_millis(750);
 
 /// Notification the next message replaces, so quick switches do not
 /// stack up.
@@ -18,7 +23,9 @@ static LAST_NOTIFICATION: Mutex<u32> = Mutex::new(0);
 
 /// Show `text` on screen. Blocks on D-Bus; call it off the UI thread.
 pub fn show(text: &str) -> Result<(), String> {
-    let conn = Connection::session().map_err(|e| format!("session bus: {e}"))?;
+    let conn = zbus::blocking::connection::Builder::session()
+        .and_then(|builder| builder.method_timeout(METHOD_TIMEOUT).build())
+        .map_err(|e| format!("session bus: {e}"))?;
     if matches!(linux::detect().desktop, Desktop::Kde) {
         match show_plasma(&conn, text) {
             Ok(()) => return Ok(()),

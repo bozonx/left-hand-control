@@ -16,6 +16,7 @@ pub mod commands;
 pub mod config;
 pub mod devices;
 pub mod key_code;
+pub mod layer_hint;
 pub mod layer_state;
 pub mod runtime;
 

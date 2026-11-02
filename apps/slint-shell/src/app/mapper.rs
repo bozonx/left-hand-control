@@ -11,10 +11,7 @@ use crate::{
 };
 use lhc_core::{
     CoreEvent,
-    profile::{
-        auto_switch::{self, AutoSwitchContext},
-        model::LayoutMode,
-    },
+    profile::{auto_switch, model::LayoutMode},
 };
 use slint::ComponentHandle;
 use std::{
@@ -268,36 +265,31 @@ impl App {
         let Some(document) = self.document() else {
             return;
         };
-        let (id, enabled) = {
-            let config = document.read();
-            let Ok(id) = config.active_layout_id(&AutoSwitchContext::current()) else {
-                return;
-            };
-            (id, config.settings().layout_osd)
+        if !lhc_core::mapper::runtime::status().running {
+            return;
+        }
+        let Some(id) = document.applied_layout_id() else {
+            return;
         };
         let changed = self.mapper.layout_changed(&id);
-        if !enabled || !changed || !lhc_core::mapper::runtime::status().running {
+        if !document.read().settings().layout_osd || !changed {
             return;
         }
         let name = id
             .as_deref()
             .and_then(lhc_core::profile::model::user_layout_name);
         let text = crate::i18n::layout_osd(self.preferences.get().language, name);
-        std::thread::spawn(move || {
-            if let Err(error) = lhc_core::platform::osd::show(&text) {
-                log::warn!("[osd] {error}");
-            }
-        });
+        if let Err(error) = lhc_core::platform::osd::enqueue(text) {
+            log::warn!("[osd] {error}");
+        }
     }
 
     /// Show the effective game-mode state on screen.
     pub(super) fn announce_game_mode(&self, active: bool) {
         let text = crate::i18n::tray_game_title(self.preferences.get().language, active);
-        std::thread::spawn(move || {
-            if let Err(error) = lhc_core::platform::osd::show(&text) {
-                log::warn!("[osd] {error}");
-            }
-        });
+        if let Err(error) = lhc_core::platform::osd::enqueue(text) {
+            log::warn!("[osd] {error}");
+        }
     }
 
     /// The system context (layout, game mode, window) changed: the active
@@ -333,6 +325,7 @@ impl App {
         self.refresh_mapper_status();
         pages::refresh_active(&self.settings, &document);
         self.invalidate_menus();
+        self.sync_held_layer();
         self.announce_layout();
     }
 
@@ -492,10 +485,12 @@ impl App {
                         crate::notifications::send(&app.settings, Msg::MapperRunning(None));
                         if let Some(document) = app.document() {
                             document.mapper_started(revision, runtime.layout_id);
+                            app.announce_layout();
                             // Both the document and context may have changed while starting.
                             if let Err(error) = document.sync_runtime(false) {
                                 app.set_error(Msg::SavedMapperNotUpdated(error));
                             }
+                            app.announce_layout();
                         }
                     }
                     Err(error) if retries > 0 => {

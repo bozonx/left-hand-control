@@ -285,12 +285,11 @@ impl Document {
         let result = (|| {
             let runtime = self.runtime_config().map_err(|error| error.to_string())?;
             lhc_core::active_window::set_titles_needed(runtime.uses_titles);
-            if !force && self.runtime_is_current(&runtime.layout_id) {
-                return Ok(());
-            }
-            lhc_core::mapper::runtime::update_config_if_running(runtime.mapper)?;
-            *self.pushed_layout.borrow_mut() = Some((self.revision.get(), runtime.layout_id));
-            Ok(())
+            self.push_runtime(
+                runtime,
+                force,
+                lhc_core::mapper::runtime::update_config_if_running,
+            )
         })();
         if result.is_err() && (force || document_changed) {
             self.pushed_layout.borrow_mut().take();
@@ -301,11 +300,34 @@ impl Document {
         result
     }
 
+    fn push_runtime(
+        &self,
+        runtime: RuntimeConfig,
+        force: bool,
+        update: impl FnOnce(lhc_core::mapper::config::MapperConfig) -> Result<(), String>,
+    ) -> Result<(), String> {
+        if !force && self.runtime_is_current(&runtime.layout_id) {
+            return Ok(());
+        }
+        update(runtime.mapper)?;
+        *self.pushed_layout.borrow_mut() = Some((self.revision.get(), runtime.layout_id));
+        Ok(())
+    }
+
     fn runtime_is_current(&self, layout_id: &Option<String>) -> bool {
         self.pushed_layout
             .borrow()
             .as_ref()
             .is_some_and(|(revision, id)| *revision == self.revision.get() && id == layout_id)
+    }
+
+    /// Last layout successfully submitted to the mapper, including native passthrough.
+    /// Unlike the selected layout, this stays unchanged after a failed context switch.
+    pub(crate) fn applied_layout_id(&self) -> Option<Option<String>> {
+        self.pushed_layout
+            .borrow()
+            .as_ref()
+            .map(|(_, id)| id.clone())
     }
 
     /// Record the layout a freshly started mapper runs.
@@ -377,6 +399,34 @@ mod tests {
         );
         assert_eq!(document.revision(), revision);
         assert!(document.runtime_is_current(&layout_id));
+    }
+
+    #[test]
+    fn failed_context_push_keeps_the_applied_layout_and_retries_the_new_one() {
+        let (_dir, document) = document();
+        let previous = Some("user:Previous".to_owned());
+        document.mapper_started(document.revision(), previous.clone());
+        let mut runtime = document.runtime_config().unwrap();
+        runtime.layout_id = Some("user:Next".to_owned());
+        assert!(
+            document
+                .push_runtime(runtime, false, |_| Err("queue full".into()))
+                .is_err()
+        );
+        assert_eq!(document.applied_layout_id(), Some(previous));
+        let mut runtime = document.runtime_config().unwrap();
+        runtime.layout_id = Some("user:Next".to_owned());
+        document.push_runtime(runtime, false, |_| Ok(())).unwrap();
+        assert_eq!(document.applied_layout_id(), Some(Some("user:Next".into())));
+        let mut runtime = document.runtime_config().unwrap();
+        runtime.layout_id = Some("user:Next".to_owned());
+        document
+            .push_runtime(runtime, false, |_| panic!("already applied"))
+            .unwrap();
+        let mut runtime = document.runtime_config().unwrap();
+        runtime.layout_id = None;
+        document.push_runtime(runtime, false, |_| Ok(())).unwrap();
+        assert_eq!(document.applied_layout_id(), Some(None));
     }
 
     #[test]

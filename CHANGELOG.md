@@ -21,6 +21,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Held-layer hints refresh after layout edits and language changes without restarting their delay. Layout OSDs describe the last successfully applied layout, and rapid OSD requests are delivered in order with only the latest waiting message retained.
+
 - Saving and discarding layouts: quitting asks about unsaved changes; unrelated library edits preserve external-change conflicts; unavailable saved layouts can be reset; failed layout switches keep page drafts; failed renames remove the newly published copy.
 
 - Settings toolbars: layout menus scroll in long libraries, full layout names are available in tooltips, automatic switching retains the editing-context warning, and failures determining the active layout are shown explicitly. Small-window geometry checks cover translated toolbars and overlapping controls.

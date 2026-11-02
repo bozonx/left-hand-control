@@ -283,6 +283,11 @@ impl App {
 
     fn worker_started(&self, result: Result<Worker, String>) {
         self.supervisor.borrow_mut().starting = false;
+        // The hint can be disabled while spawn is in flight. Dropping a worker
+        // here shuts it down, and an obsolete start failure needs no retry.
+        if !self.supervisor.borrow().wanted() {
+            return;
+        }
         match result {
             Ok(worker) => {
                 crate::notifications::clear_worker(&self.settings);
