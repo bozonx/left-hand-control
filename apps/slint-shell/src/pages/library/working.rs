@@ -92,26 +92,37 @@ impl DirtyFlags {
 /// chose it.
 pub fn refresh_active(ui: &SettingsWindow, document: &Document) {
     let config = document.read();
-    let context = AutoSwitchContext::current();
-    let label = config
-        .active_layout_id(&context)
-        .ok()
-        .flatten()
-        .and_then(|id| user_layout_name(&id).map(str::to_owned))
-        .unwrap_or_default();
-    let matched = config
-        .auto_choice(&context)
-        .ok()
-        .and_then(|choice| choice.matched_rule_index)
-        .map_or(-1, |index| index as i32);
+    let (label, matched, message) = active_context(&config, &AutoSwitchContext::current());
     drop(config);
     let library = ui.global::<LayoutLibrary>();
+    library.set_active_error(message.to_ui());
     library.set_active_label(label.into());
     library.set_auto_matched(matched);
     let game = lhc_core::gamemode::status();
     library.set_game_detection(
         game.detection_enabled || game.control != lhc_core::gamemode::GameModeControl::Auto,
     );
+}
+
+/// Presentation state keeps a failed lookup distinct from intentional passthrough.
+fn active_context(config: &ConfigDocument, context: &AutoSwitchContext) -> (String, i32, Msg) {
+    let active = config.active_layout_id(context);
+    let choice = config.auto_choice(context);
+    let error = active.as_ref().err().or_else(|| choice.as_ref().err());
+    let message = error.map_or(Msg::None, |error| {
+        log::warn!("determining the active layout: {error}");
+        Msg::LayoutLoadFailed(error.to_string())
+    });
+    let label = active
+        .ok()
+        .flatten()
+        .and_then(|id| user_layout_name(&id).map(str::to_owned))
+        .unwrap_or_default();
+    let matched = choice
+        .ok()
+        .and_then(|choice| choice.matched_rule_index)
+        .map_or(-1, |index| index as i32);
+    (label, matched, message)
 }
 
 /// Remember the library file of the working copy as its saved state.
@@ -200,6 +211,33 @@ pub(super) fn save_as(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn active_context_reports_library_failure_and_recovers() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = lhc_core::storage::StoragePaths::new(
+            dir.path().join("config"),
+            dir.path().join("data"),
+        );
+        let mut config = ConfigDocument::load(paths.clone()).unwrap();
+        config
+            .update_settings(|settings| settings.layout_mode = LayoutMode::Auto)
+            .unwrap();
+        let context = AutoSwitchContext::default();
+        let (label, matched, message) = active_context(&config, &context);
+        assert!(label.is_empty() && matched == -1 && message.is_none());
+        let layouts = paths.layouts_dir();
+        let backup = dir.path().join("layouts-backup");
+        std::fs::create_dir_all(&layouts).unwrap();
+        std::fs::rename(&layouts, &backup).unwrap();
+        std::fs::write(&layouts, "not a directory").unwrap();
+        let (label, matched, message) = active_context(&config, &context);
+        assert!(label.is_empty() && matched == -1);
+        assert!(matches!(message, Msg::LayoutLoadFailed(_)));
+        std::fs::remove_file(&layouts).unwrap();
+        std::fs::rename(&backup, &layouts).unwrap();
+        assert!(active_context(&config, &context).2.is_none());
+    }
 
     fn flags(saved: &LayoutPreset, current: &LayoutPreset) -> DirtyFlags {
         DirtyFlags::compare(Some((saved, &layout_file::serialize(saved))), current)

@@ -124,6 +124,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         LayoutSource::Bundled,
         0,
     );
+    // Enough entries to exceed the menu viewport even on a large screen.
+    let layout_text = lhc_core::profile::layout_file::serialize(
+        &lhc_core::profile::model::LayoutPreset::initial(),
+    );
+    for index in 0..40 {
+        document.read().paths().save_user_layout(
+            &format!("Menu regression {index:02}"),
+            &layout_text,
+            false,
+        )?;
+    }
     let refreshes = Rc::new(Cell::new(0));
     let counter = refreshes.clone();
     ui.global::<SettingsEditor>()
@@ -316,7 +327,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 key(&ui, Key::Return);
                 assert!(!WindowInner::from_pub(ui.window()).active_popups.borrow().is_empty());
             }
-            22 => { key(&ui, Key::Escape); }
+            22 => {
+                snapshot(&ui, "active-menu");
+                key(&ui, Key::End);
+                assert_eq!(label(&ui), "Menu regression 39");
+                let item = focused(&ui);
+                let origin = item.map_to_window(item.geometry().origin);
+                let size = ui.window().size().to_logical(ui.window().scale_factor());
+                assert!(origin.y >= 0. && origin.y + item.geometry().height() <= size.height,
+                    "last menu entry must scroll into view");
+                let mut ancestor = item.parent_item(ParentItemTraversalMode::StopAtPopups);
+                let mut checked_viewport = false;
+                while let Some(parent) = ancestor {
+                    if parent.downcast::<i_slint_core::items::Flickable>().is_some() {
+                        let viewport = parent.map_to_window(parent.geometry().origin);
+                        assert!(parent.geometry().height() <= 320., "menu viewport must be bounded");
+                        assert!(origin.y >= viewport.y - 0.5
+                            && origin.y + item.geometry().height() <= viewport.y + parent.geometry().height() + 0.5,
+                            "last entry must be visible inside the scrolled menu");
+                        checked_viewport = true;
+                        break;
+                    }
+                    ancestor = parent.parent_item(ParentItemTraversalMode::StopAtPopups);
+                }
+                assert!(checked_viewport, "layout menu must scroll");
+                snapshot(&ui, "active-menu-end");
+                key(&ui, Key::Return);
+                assert_eq!(ui.global::<LayoutLibrary>().get_active_label(), "Menu regression 39");
+            }
             23 => {
                 assert_eq!(focused(&ui), initiator.borrow().as_ref().unwrap().upgrade().unwrap());
                 ui.invoke_navigate(Page::Layers, MenuKind::Emoji);

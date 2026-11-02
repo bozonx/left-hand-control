@@ -62,6 +62,7 @@ export global LayoutLibrary {
     /// Working copy: the library layout it came from and whether it changed.
     in property <string> current-label;
     in-out property <string> active-label;
+    in property <Message> active-error;
     in property <bool> dirty;
     in property <bool> rules-dirty;
     in property <bool> layers-dirty;
@@ -316,6 +317,22 @@ export component SaveSplitButton inherits Rectangle {
     }
 }
 
+/// Bounded library menu; focus navigation also scrolls its Flickable.
+export component LayoutMenu inherits MenuSurface {
+    in property <length> height-limit: 240px;
+    preferred-height: min(entries.preferred-height, root.height-limit) + 2 * root.inset;
+    max-height: self.preferred-height;
+    min-height: self.preferred-height;
+    ScrollView {
+        min-height: 0px;
+        viewport-width: self.visible-width;
+        entries := VerticalLayout {
+            spacing: 0px;
+            @children
+        }
+    }
+}
+
 /// Button choosing a library layout or "Off" (-1).
 component TargetPicker inherits Rectangle {
     in property <int> target: -1;
@@ -358,7 +375,7 @@ component TargetPicker inherits Rectangle {
     menu := PopupWindow {
         y: root.height + Theme.menu-offset;
         width: max(root.width, 220px);
-        MenuSurface {
+        LayoutMenu {
             MenuItem { checked: root.target < 0; text: @tr("No layout (keys as is)"); clicked => { root.choose(-1); } }
             Divider {}
             for name[index] in LayoutLibrary.names: MenuItem { text: name; checked: root.target == index; clicked => { root.choose(index); } }

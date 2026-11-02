@@ -3,7 +3,7 @@
 //! `LHC_WINDOW_SIZE=WxH` overrides the size (default: the window minimum),
 //! `LHC_SMALL_LANGUAGE=<code>` the UI language, `LHC_SMALL_RELEASE=1` hides development-only UI;
 //! `LHC_EDITOR_SNAPSHOTS=<dir>` saves a snapshot of every state.
-//! In English, every state checks that the header and dialog buttons lie inside the window.
+//! Every language checks toolbar bounds, overlaps and non-scrolling dialog actions.
 mod support;
 use lhc_core::config_document::KeyAssignment;
 use slint::ComponentHandle;
@@ -13,55 +13,107 @@ use support::{Fixture, snapshot};
 
 type Step = (&'static str, fn(&SettingsWindow));
 
-/// Header controls present in every state; `Active:` is a label prefix.
-const HEADER: &[&str] = &["Layouts", "Settings", "Active:", "Start"];
-
-/// Dialog buttons that must stay reachable in each state.
-fn dialog_buttons(state: &str) -> &'static [&'static str] {
-    match state {
-        "auto-rule-dialog" | "nested-app-dialog" => &["Cancel", "Save"],
-        "device-dialog" => &["Refresh", "Close"],
-        "macros" => &["New macro", "Add pause", "Add step"],
-        "new-layer-dialog" | "conditions" | "advanced" | "picker" => &["Cancel", "Apply"],
-        _ => &[],
-    }
+/// Debug element identities are independent of translated accessibility labels.
+fn element_matches(item: &i_slint_core::item_tree::ItemRc, name: &str) -> bool {
+    (0..item.element_count().unwrap_or(0)).any(|index| {
+        item.element_type_names_and_ids(index)
+            .is_some_and(|entries| {
+                entries.iter().any(|(kind, id)| {
+                    kind == name || id.as_str().split("::").any(|part| part == name)
+                })
+            })
+    })
 }
 
-/// Whether a visible control named `label` lies entirely inside the window.
-fn inside(ui: &SettingsWindow, label: &str) -> bool {
-    use i_slint_core::{
-        accessibility::AccessibleStringProperty, item_tree::ItemRc, window::WindowInner,
-    };
-    WindowInner::from_pub(ui.window()).ensure_tree_instantiated();
+/// Check toolbar controls against their container and each other. Dialog actions
+/// outside scrolling bodies must also remain reachable in every language.
+fn controls_fit(ui: &SettingsWindow, state: &str) {
+    use i_slint_core::{item_tree::ItemRc, items::AccessibleRole, window::WindowInner};
+    let window = WindowInner::from_pub(ui.window());
+    window.ensure_tree_instantiated();
     let size = ui.window().size().to_logical(ui.window().scale_factor());
-    let mut pending = vec![ItemRc::new_root(
-        WindowInner::from_pub(ui.window()).component(),
-    )];
-    while let Some(item) = pending.pop() {
-        let named = item
-            .accessible_string_property(AccessibleStringProperty::Label)
-            .is_some_and(|value| match label.strip_suffix(':') {
-                Some(prefix) => value.starts_with(prefix),
-                None => value == label,
-            });
-        if named && item.is_visible() {
-            let origin = item.map_to_window(item.geometry().origin);
-            let geometry = item.geometry();
-            if origin.x >= -0.5
-                && origin.y >= -0.5
-                && origin.x + geometry.width() <= size.width + 0.5
-                && origin.y + geometry.height() <= size.height + 0.5
-            {
-                return true;
+    let mut pending = vec![(ItemRc::new_root(window.component()), None, false, None)];
+    let mut toolbar_controls = Vec::new();
+    let mut toolbars = 0;
+    while let Some((item, mut toolbar, mut dialog, mut scrolling)) = pending.pop() {
+        if !item.is_visible() {
+            continue;
+        }
+        let origin = item.map_to_window(item.geometry().origin);
+        let geometry = item.geometry();
+        let rect = (origin.x, origin.y, geometry.width(), geometry.height());
+        if element_matches(&item, "main-toolbar") || element_matches(&item, "editor-toolbar") {
+            toolbar = Some(rect);
+            toolbars += 1;
+        }
+        dialog |= element_matches(&item, "DialogFrame");
+        if element_matches(&item, "Flickable") {
+            scrolling = Some(rect);
+        }
+        if matches!(
+            item.accessible_role(),
+            AccessibleRole::Button | AccessibleRole::Tab
+        ) && (toolbar.is_some() || (dialog && scrolling.is_none()))
+        {
+            let rect = if let Some((cx, cy, cw, ch)) = scrolling {
+                let (x, y, w, h) = rect;
+                let left = x.max(cx);
+                let top = y.max(cy);
+                (
+                    left,
+                    top,
+                    (x + w).min(cx + cw) - left,
+                    (y + h).min(cy + ch) - top,
+                )
+            } else {
+                rect
+            };
+            let (x, y, w, h) = rect;
+            if scrolling.is_some() && (w <= 0. || h <= 0.) {
+                continue;
+            }
+            assert!(
+                w > 0.
+                    && h > 0.
+                    && x >= -0.5
+                    && y >= -0.5
+                    && x + w <= size.width + 0.5
+                    && y + h <= size.height + 0.5,
+                "{state}: control outside window: {rect:?}"
+            );
+            if let Some((bx, by, bw, bh)) = toolbar {
+                assert!(
+                    x >= bx - 0.5
+                        && y >= by - 0.5
+                        && x + w <= bx + bw + 0.5
+                        && y + h <= by + bh + 0.5,
+                    "{state}: control clipped by toolbar: {rect:?}"
+                );
+                for &(px, py, pw, ph) in &toolbar_controls {
+                    assert!(
+                        (x + w).min(px + pw) - x.max(px) <= 0.5
+                            || (y + h).min(py + ph) - y.max(py) <= 0.5,
+                        "{state}: overlapping toolbar controls: {rect:?} and {:?}",
+                        (px, py, pw, ph)
+                    );
+                }
+                toolbar_controls.push(rect);
             }
         }
         let mut child = item.first_child();
         while let Some(next) = child {
             child = next.next_sibling();
-            pending.push(next);
+            pending.push((next, toolbar, dialog, scrolling));
         }
     }
-    false
+    assert!(
+        toolbars > 0,
+        "{state}: toolbar identities missing; enable Slint debug info"
+    );
+    assert!(
+        toolbar_controls.len() >= 4,
+        "{state}: toolbar controls were not checked"
+    );
 }
 
 /// Check input widths even below the fold; vertical scrolling cannot repair clipping on the right.
@@ -112,6 +164,17 @@ fn settings_inputs_fit(ui: &SettingsWindow, state: &str) {
 }
 
 const STEPS: &[Step] = &[
+    ("long-layout-names", |ui| {
+        let library = ui.global::<LayoutLibrary>();
+        library.set_active_label(
+            "A very long active layout name with an identical prefix — active".into(),
+        );
+        library.set_current_label(
+            "A very long active layout name with an identical prefix — editing".into(),
+        );
+        library.set_automatic(true);
+        ui.invoke_navigate(Page::Layers, MenuKind::Emoji);
+    }),
     ("library", |ui| {
         ui.invoke_navigate(Page::Layouts, MenuKind::Emoji)
     }),
@@ -218,7 +281,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.global::<MacroEditor>().invoke_add("Small macro".into());
     let language = std::env::var("LHC_SMALL_LANGUAGE").unwrap_or_else(|_| "en".into());
     slint_shell::select_ui_language(&language)?;
-    let english = language == "en";
     let size = std::env::var("LHC_WINDOW_SIZE")
         .ok()
         .and_then(|s| {
@@ -271,14 +333,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 snapshot(&ui, state);
                 settings_inputs_fit(&ui, state);
-                if english {
-                    for label in HEADER.iter().chain(dialog_buttons(state)) {
-                        assert!(
-                            inside(&ui, label),
-                            "{state}: {label:?} is outside the window"
-                        );
-                    }
-                }
+                controls_fit(&ui, state);
             }
             step.set(n + 1);
         },

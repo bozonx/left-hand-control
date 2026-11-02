@@ -107,6 +107,8 @@ fn build() {
     generated.push_str("} }\n");
     std::fs::write(output.join("rust_translations.rs"), generated).unwrap();
     let config = slint_build::CompilerConfiguration::new()
+        // Desktop geometry scenarios identify controls independently of translations.
+        .with_debug_info(std::env::var("PROFILE").is_ok_and(|profile| profile == "debug"))
         .with_include_paths(vec!["ui/widgets".into(), "ui/widgets/lhc".into()])
         .with_style("lhc".into())
         .with_bundled_translations("translations")

@@ -21,6 +21,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Settings toolbars: layout menus scroll in long libraries, full layout names are available in tooltips, automatic switching retains the editing-context warning, and failures determining the active layout are shown explicitly. Small-window geometry checks cover translated toolbars and overlapping controls.
+
 - Keyboard navigation: tab lists, menus, device lists, action catalogs and key grids move real focus with arrow keys and leave each group with Tab. Enter acts on the focused action; Escape clears searches before closing dialogs.
 - Keyboard focus is retained while editing menu cells and reordering rows, returns after dialogs and page changes, and follows mouse activation consistently. ComboBox options remain provisional until confirmed, and destructive confirmations initially focus Cancel.
 
