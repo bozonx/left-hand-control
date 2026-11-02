@@ -26,3 +26,4 @@ The history implementation is exercised by `slint-shell` unit tests through the 
 
 - Expose modal-aware `WindowInner::focus_outside` so composite widgets leave their entire subtree on Tab/Shift+Tab without transiently focusing skipped children.
 - Expose the existing `ItemRc::is_visible_or_clipped_by_flickable` predicate for shell composite navigation, so offscreen targets can receive focus and reveal themselves.
+- Retain a bounded weak focus history and expose `WindowInner::recent_focus`. Modal frames can recover their external initiator when a child autofocuses during construction, while preserving that child as the preferred initial focus.

@@ -106,6 +106,7 @@ fn check_modal(ui: &SettingsWindow) {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    support::log_navigation();
     let dir = tempfile::tempdir()?;
     let document = Document::load(StoragePaths::new(
         dir.path().join("settings"),
@@ -247,9 +248,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 assert_eq!(game_choice.get(), Some(GameModeControl::On), "menu Enter activates the Tab-focused row");
                 ui.global::<ActionPicker>().invoke_open(PickerTarget::LayerAction, 0, "".into(), false);
                 ui.global::<ActionPicker>().invoke_select_behavior(PickerBehavior::Action);
+                ui.global::<ActionPicker>().invoke_select_category(PickerCategory::Modifiers);
             }
             17 => {
-                tab_to(&ui, "Text");
+                tab_to(&ui, "Modifiers");
+                for _ in 0..30 {
+                    if label(&ui) == "Text" { break; }
+                    key(&ui, Key::DownArrow);
+                }
+                assert_eq!(label(&ui), "Text");
                 key(&ui, Key::Return);
                 assert_eq!(ui.global::<ActionPicker>().get_category(), PickerCategory::Text);
                 key(&ui, Key::Escape);

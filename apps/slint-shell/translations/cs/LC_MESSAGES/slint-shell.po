@@ -3533,7 +3533,7 @@ msgstr ""
 "jakoukoli akci: zkratku, makro, příkaz shellu nebo systémovou akci."
 
 msgid "In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number."
-msgstr "Ve vyskakovacím okně klikněte na buňku nebo stiskněte její klávesu: buňky následují řádky klávesnice Q–T, A–G a Z–B. Karta přepíná stránky; číslice otevírají stránku podle jejího čísla."
+msgstr "Ve vyskakovacím okně klikněte na buňku nebo stiskněte její klávesu: buňky následují řádky klávesnice Q–T, A–G a Z–B. PgUp/PgDn přepínají stránky; číslice otevírají stránku podle jejího čísla."
 
 msgid "Waiting for keyboard"
 msgstr "Čekání na klávesnici"

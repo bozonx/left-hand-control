@@ -144,6 +144,7 @@ export component ComboBox {
                                 tab-stop: index == base.highlighted-index;
                                 focus-changed-event => { if self.has-focus { base.highlighted-index = index; } }
                                 key-pressed(event) => {
+                                    if !event.modifiers.control && !event.modifiers.alt && !event.modifiers.meta && (event.text == Key.Tab || event.text == Key.Backtab) { base.select(index); return self.navigate(event); }
                                     if event.text == Key.Return || event.text == " " { base.select(index); popup.close(); return accept; }
                                     return self.navigate(event);
                                 }

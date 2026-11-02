@@ -296,6 +296,7 @@ export component LayersPage inherits PageLayout {
                     background: index == LayersEditor.selected ? Theme.selected : layer-drag.has-hover ? Theme.hover : Theme.card;
                     opacity: layer-drag.dragged ? Theme.dragged-opacity : 1;
                     accessible-role: tab;
+                    accessible-id: "lhc-layer-tab-" + index;
                     accessible-label: name;
                     accessible-item-selectable: true;
                     accessible-item-selected: LayersEditor.selected == index;
@@ -310,8 +311,8 @@ export component LayersPage inherits PageLayout {
                         key-pressed(event) => {
                             if event.text == " " || event.text == "\n" { LayersEditor.choose(index); return accept; }
                             // Alt+Left/Right: keyboard alternative to dragging the tab.
-                            if event.modifiers.alt && event.text == Key.LeftArrow && index > 0 { KeyboardFocus.remember-reorder(index, index - 1); LayersEditor.reorder(index, index - 1); return accept; }
-                            if event.modifiers.alt && event.text == Key.RightArrow && index + 1 < LayersEditor.names.length { KeyboardFocus.remember-reorder(index, index + 1); LayersEditor.reorder(index, index + 1); return accept; }
+                            if event.modifiers.alt && event.text == Key.LeftArrow && index > 0 { KeyboardFocus.remember-reorder(index, index - 1); LayersEditor.reorder(index, index - 1); KeyboardFocus.restore-reorder(); return accept; }
+                            if event.modifiers.alt && event.text == Key.RightArrow && index + 1 < LayersEditor.names.length { KeyboardFocus.remember-reorder(index, index + 1); LayersEditor.reorder(index, index + 1); KeyboardFocus.restore-reorder(); return accept; }
                             return self.navigate(event);
                         }
                     }

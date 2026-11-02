@@ -3657,7 +3657,7 @@ msgstr ""
 "φλοιού ή ενέργεια συστήματος."
 
 msgid "In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number."
-msgstr "Στο αναδυόμενο παράθυρο, κάντε κλικ σε ένα κελί ή πατήστε το πλήκτρο του: τα κελιά ακολουθούν τις σειρές του πληκτρολογίου Q–T, A–G και Z–B. Η καρτέλα αλλάζει σελίδες. ψηφία ανοίγουν μια σελίδα με τον αριθμό της."
+msgstr "Στο αναδυόμενο παράθυρο, κάντε κλικ σε ένα κελί ή πατήστε το πλήκτρο του: τα κελιά ακολουθούν τις σειρές του πληκτρολογίου Q–T, A–G και Z–B. Τα PgUp/PgDn αλλάζουν σελίδες. ψηφία ανοίγουν μια σελίδα με τον αριθμό της."
 
 msgid "Waiting for keyboard"
 msgstr "Αναμονή για πληκτρολόγιο"

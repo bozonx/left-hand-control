@@ -3304,7 +3304,7 @@ msgstr ""
 "변경됩니다. 각 셀에는 바로가기, 매크로, 셸 명령, 시스템 작업 등 모든 작업이 포함될 수 있습니다."
 
 msgid "In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number."
-msgstr "팝업에서 셀을 클릭하거나 해당 키를 누릅니다. 셀은 키보드 행 Q–T, A–G 및 Z–B를 따릅니다. 탭은 페이지를 전환합니다. 숫자는 해당 번호로 페이지를 엽니다."
+msgstr "팝업에서 셀을 클릭하거나 해당 키를 누릅니다. 셀은 키보드 행 Q–T, A–G 및 Z–B를 따릅니다. PgUp/PgDn은 페이지를 전환합니다. 숫자는 해당 번호로 페이지를 엽니다."
 
 msgid "Waiting for keyboard"
 msgstr "키보드를 기다리는 중"

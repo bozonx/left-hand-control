@@ -663,6 +663,7 @@ pub struct WindowInner {
     /// ItemRC that currently have the focus (possibly an instance of TextInput)
     pub focus_item: RefCell<crate::item_tree::ItemWeak>,
     modal_focus_boundaries: RefCell<Vec<ItemWeak>>,
+    focus_history: RefCell<Vec<ItemWeak>>,
     focus_item_visibility_tracker: ChangeTracker,
     focus_item_position_tracker: ChangeTracker,
     /// The last text that was sent to the input method
@@ -745,6 +746,7 @@ impl WindowInner {
             }),
             focus_item: Default::default(),
             modal_focus_boundaries: Default::default(),
+            focus_history: Default::default(),
             focus_item_visibility_tracker: Default::default(),
             focus_item_position_tracker: Default::default(),
             last_ime_text: Default::default(),
@@ -1515,6 +1517,13 @@ impl WindowInner {
         assert!(matches!(event, FocusEvent::FocusOut(_)));
 
         if let Some(focus_item_rc) = focus_item.upgrade() {
+            {
+                let mut history = self.focus_history.borrow_mut();
+                if history.last().and_then(ItemWeak::upgrade).as_ref() != Some(&focus_item_rc) {
+                    if history.len() == 32 { history.remove(0); }
+                    history.push(focus_item_rc.downgrade());
+                }
+            }
             focus_item_rc.borrow().as_ref().focus_event(
                 event,
                 &self.window_adapter(),
@@ -1677,6 +1686,14 @@ impl WindowInner {
         if let Some(adapter) = self.window_adapter().internal(crate::InternalToken) {
             adapter.handle_focus_change(old, end);
         }
+    }
+
+    /// Most recent visible focus target inside or outside a subtree.
+    /// This recovers the initiator when a dialog child autofocuses before its frame initializes.
+    pub fn recent_focus(&self, boundary: &ItemRc, within: bool) -> Option<ItemRc> {
+        self.focus_history.borrow().iter().rev().filter_map(ItemWeak::upgrade)
+            .find(|item| item.is_visible_or_clipped_by_flickable()
+                && item_is_within(item, boundary) == within)
     }
 
     /// Leave a composite widget without focusing its skipped descendants.

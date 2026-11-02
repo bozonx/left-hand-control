@@ -120,11 +120,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             6 => ui.invoke_edit_description(),
             7 => { shortcut(&ui, "a"); key(&ui, "Line one"); key(&ui, Key::Return); key(&ui, "Line two"); shortcut(&ui, "z"); shortcut(&ui, "z"); redo(&ui); redo(&ui); shortcut(&ui, "z"); key(&ui, "Replacement"); redo(&ui); shortcut(&ui, "\n"); assert_eq!(ui.get_description(), "Line one\nReplacement"); }
             8 => ui.set_confirming(true),
-            9 => { snapshot(&ui, "confirm"); key(&ui, Key::Return); assert!(ui.get_confirmed()); println!("Inline editing passed: native undo/redo, save, cancel, multiline, confirmation focus"); }
+            9 => { snapshot(&ui, "confirm"); key(&ui, Key::Return); assert!(!ui.get_confirmed()); assert!(!ui.get_confirming()); }
             10 => ui.window().dispatch_event(WindowEvent::PointerMoved {
                 position: slint::LogicalPosition::new(29.0, 120.0),
             }),
-            11..=17 => {},
+            11 => ui.set_confirming(true),
+            12 => { key(&ui, Key::Tab); key(&ui, Key::Return); assert!(ui.get_confirmed()); println!("Inline editing passed: native undo/redo, save, cancel, multiline, safe confirmation focus"); }
+            13..=17 => {},
             18 => { snapshot(&ui, "info-tip"); ui.invoke_edit(); },
             19 => { key(&ui, "Blurred"); click(&ui, 120.0, 300.0); }
             20 => { assert_eq!(ui.get_value(), "Blurred"); assert!(!ui.get_editing()); ui.invoke_edit(); }

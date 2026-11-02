@@ -3567,7 +3567,7 @@ msgstr ""
 "conter qualquer ação: um atalho, macro, comando shell ou ação do sistema."
 
 msgid "In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number."
-msgstr "No pop-up, clique em uma célula ou pressione sua tecla: as células seguem as linhas do teclado Q – T, A – G e Z – B. Guia alterna páginas; dígitos abrem uma página pelo seu número."
+msgstr "No pop-up, clique em uma célula ou pressione sua tecla: as células seguem as linhas do teclado Q – T, A – G e Z – B. PgUp/PgDn alternam páginas; dígitos abrem uma página pelo seu número."
 
 msgid "Waiting for keyboard"
 msgstr "Esperando pelo teclado"

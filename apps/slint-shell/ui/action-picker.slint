@@ -175,18 +175,20 @@ component PickerCell inherits Rectangle {
 }
 
 component CategoryButton inherits Rectangle {
-    accessible-role: button;
+    accessible-role: tab;
     accessible-label: root.title;
-    accessible-checkable: true;
-    accessible-checked: ActionPicker.category == root.category;
+    accessible-item-selectable: true;
+    accessible-item-selected: ActionPicker.category == root.category;
     accessible-action-default => { root.choose(); }
     border-width: Theme.focus-ring(category-focus.has-focus) ? 2px : 0px;
     border-color: Theme.focus;
     function choose() { ActionPicker.select-category(root.category); }
-    category-focus := FocusScope {
+    category-focus := NavigationFocus {
+        kind: vertical-tabs;
+        tab-stop: ActionPicker.category == root.category;
         key-pressed(event) => {
             if event.text == Key.Return || event.text == " " { root.choose(); return accept; }
-            return reject;
+            return self.navigate(event);
         }
     }
     in property <PickerCategory> category;
@@ -211,6 +213,7 @@ export component PickerOverlay inherits DialogFrame {
     close-on-escape: !ActionPicker.capturing;
     close => { ActionPicker.dismiss-picker(); }
     focus := FocusScope {
+        focus-on-tab-navigation: false;
         init => { self.focus(); }
         key-pressed(event) => {
             if ActionPicker.capturing { return accept; }
@@ -265,7 +268,7 @@ export component PickerOverlay inherits DialogFrame {
             if ActionPicker.behavior == PickerBehavior.action: HorizontalLayout { padding: 0px; spacing: Theme.space-l; vertical-stretch: 1;
                 VerticalLayout { padding: 0px; spacing: Theme.space-m; width: min(250px, parent.width * 0.35); horizontal-stretch: 0;
                     SearchField { text <=> ActionPicker.query; placeholder-text: ActionPicker.key-only ? @tr("Search keys") : @tr("Search keys and actions"); accessible-label: ActionPicker.key-only ? @tr("Search keys") : @tr("Search keys and actions"); edited => { ActionPicker.refresh(); } }
-                    ScrollView { viewport-width: self.visible-width;
+                    ScrollView { accessible-role: tab-list; accessible-label: @tr("Actions"); viewport-width: self.visible-width;
                         VerticalLayout { spacing: 0px;
                             for entry in ActionPicker.sidebar: VerticalLayout { spacing: Theme.space-m;
                                 padding: 0px; padding-bottom: entry.visible || entry.heading ? Theme.space-xs : 0px;

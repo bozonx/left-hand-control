@@ -3544,7 +3544,7 @@ msgstr ""
 "ან სისტემის მოქმედება."
 
 msgid "In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number."
-msgstr "ამომხტარ ფანჯარაში დააწკაპუნეთ უჯრედზე ან დააჭირეთ მის ღილაკს: უჯრედები მიჰყვება კლავიატურის რიგებს Q–T, A–G და Z–B. ჩანართი ცვლის გვერდებს; ციფრები ხსნის გვერდს მისი ნომრის მიხედვით."
+msgstr "ამომხტარ ფანჯარაში დააწკაპუნეთ უჯრედზე ან დააჭირეთ მის ღილაკს: უჯრედები მიჰყვება კლავიატურის რიგებს Q–T, A–G და Z–B. PgUp/PgDn ცვლის გვერდებს; ციფრები ხსნის გვერდს მისი ნომრის მიხედვით."
 
 msgid "Waiting for keyboard"
 msgstr "კლავიატურას ველოდები"

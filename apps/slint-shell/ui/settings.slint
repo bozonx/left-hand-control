@@ -130,7 +130,7 @@ export component SettingsWindow inherits Window {
                     padding-left: Theme.space-xl; padding-right: Theme.space-xl; padding-top: Theme.space-m; padding-bottom: Theme.space-m; spacing: Theme.space-m;
                     HorizontalLayout {
                         accessible-role: tab-list; accessible-label: @tr("Settings"); spacing: Theme.space-m;
-                    VerticalLayout { alignment: center; layouts-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/library-big.svg"); text: @tr("Layouts"); selected: root.page == Page.layouts; tab-stop: root.page != Page.settings; clicked => { root.navigate(Page.layouts, MenuKind.emoji); } } }
+                    VerticalLayout { alignment: center; layouts-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/library-big.svg"); text: @tr("Layouts"); selected: root.page != Page.settings; clicked => { root.navigate(Page.layouts, MenuKind.emoji); } } }
                     VerticalLayout { alignment: center; settings-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/settings.svg"); text: @tr("Settings"); selected: root.page == Page.settings; clicked => { root.navigate(Page.settings, MenuKind.emoji); } } }
                     }
                     Rectangle {

@@ -3554,7 +3554,7 @@ msgstr ""
 "makro, kabuk komutu veya sistem eylemi."
 
 msgid "In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number."
-msgstr "Açılan pencerede bir hücreyi tıklayın veya tuşuna basın: hücreler Q–T, A–G ve Z–B klavye satırlarını takip eder. Sekme sayfaları değiştirir; rakamlar bir sayfayı numarasına göre açar."
+msgstr "Açılan pencerede bir hücreyi tıklayın veya tuşuna basın: hücreler Q–T, A–G ve Z–B klavye satırlarını takip eder. PgUp/PgDn sayfaları değiştirir; rakamlar bir sayfayı numarasına göre açar."
 
 msgid "Waiting for keyboard"
 msgstr "Klavye bekleniyor"

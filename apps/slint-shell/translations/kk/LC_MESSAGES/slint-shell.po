@@ -3562,7 +3562,7 @@ msgstr ""
 "әрекеті."
 
 msgid "In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number."
-msgstr "Қалқымалы терезеде ұяшықты нұқыңыз немесе оның пернесін басыңыз: ұяшықтар Q–T, A–G және Z–B пернетақта жолдарының артынан жүреді. қойындысы беттерді ауыстырады; сандар бетті оның нөмірі бойынша ашады."
+msgstr "Қалқымалы терезеде ұяшықты нұқыңыз немесе оның пернесін басыңыз: ұяшықтар Q–T, A–G және Z–B пернетақта жолдарының артынан жүреді. PgUp/PgDn беттерді ауыстырады; сандар бетті оның нөмірі бойынша ашады."
 
 msgid "Waiting for keyboard"
 msgstr "Пернетақтаны күтуде"

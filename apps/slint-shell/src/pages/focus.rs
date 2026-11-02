@@ -4,10 +4,10 @@ use crate::ui::{KeyboardFocus, NavigationKind, NavigationMove, SettingsWindow, T
 use i_slint_core::{
     accessibility::{AccessibleStringProperty, nearest_accessible_item},
     input::FocusReason,
-    item_tree::{ItemRc, ItemTreeRc, ItemWeak, ParentItemTraversalMode},
+    item_tree::{ItemRc, ItemWeak, ParentItemTraversalMode},
     items::{AccessibleRole, FocusScope},
     window::WindowAdapter,
-    window::{PopupWindowLocation, WindowInner},
+    window::{PopupWindowLocation, WindowInner, WindowKind},
 };
 use slint::ComponentHandle;
 use slint::winit_030::winit::{
@@ -77,14 +77,16 @@ struct State {
     timer: slint::Timer,
 }
 
-fn restore(ui: &SettingsWindow, state: &mut State) {
+fn restore(ui: &SettingsWindow, state: &mut State, detached: &[i32]) {
+    let previous_count = state.dialogs.len();
     let mut target = None;
     let mut neighbors = None;
     while state.dialogs.last().is_some_and(|dialog| {
-        dialog
-            .boundary
-            .upgrade()
-            .is_none_or(|item| !item.is_visible())
+        detached.contains(&dialog.token)
+            || dialog
+                .boundary
+                .upgrade()
+                .is_none_or(|item| !item.is_visible())
     }) {
         if let Some(dialog) = state.dialogs.pop() {
             target = Some(dialog.initiator);
@@ -101,9 +103,21 @@ fn restore(ui: &SettingsWindow, state: &mut State) {
             .map(|dialog| dialog.boundary.clone())
             .collect(),
     );
+    if previous_count != state.dialogs.len() {
+        log::debug!(
+            "modal restore: {} -> {} dialogs; initiator eligible={}",
+            previous_count,
+            state.dialogs.len(),
+            target
+                .as_ref()
+                .and_then(ItemWeak::upgrade)
+                .is_some_and(|item| item.is_visible_or_clipped_by_flickable())
+        );
+    }
+    let root = ItemRc::new_root(window.component());
     if let Some(item) = target
         .and_then(|item| item.upgrade())
-        .filter(ItemRc::is_visible)
+        .filter(|item| item.is_visible_or_clipped_by_flickable() && attached_to(&root, item))
     {
         window.set_focus_item(&item, true, FocusReason::Programmatic);
     } else if let Some(neighbors) = neighbors {
@@ -114,7 +128,7 @@ fn restore(ui: &SettingsWindow, state: &mut State) {
         for item in neighbors
             .into_iter()
             .filter_map(|item| item.upgrade())
-            .filter(ItemRc::is_visible)
+            .filter(|item| item.is_visible_or_clipped_by_flickable() && attached_to(&root, item))
         {
             let mut parent = Some(item.clone());
             while let Some(current) = parent {
@@ -166,6 +180,40 @@ fn group_boundary(item: &ItemRc, kind: NavigationKind) -> Option<ItemRc> {
     None
 }
 
+fn within(boundary: &ItemRc, item: &ItemRc) -> bool {
+    let mut current = Some(item.clone());
+    while let Some(item) = current {
+        if item == *boundary {
+            return true;
+        }
+        current = item.parent_item(ParentItemTraversalMode::FindAllParents);
+    }
+    false
+}
+
+fn attached_to(root: &ItemRc, item: &ItemRc) -> bool {
+    let mut current = item.clone();
+    while current != *root {
+        let Some(parent) = current.parent_item(ParentItemTraversalMode::FindAllParents) else {
+            return false;
+        };
+        let mut child = parent.first_child();
+        let mut found = false;
+        while let Some(item) = child {
+            if item == current {
+                found = true;
+                break;
+            }
+            child = item.next_sibling();
+        }
+        if !found {
+            return false;
+        }
+        current = parent;
+    }
+    true
+}
+
 fn descendants(root: &ItemRc) -> Vec<ItemRc> {
     let mut result = Vec::new();
     let mut next = root.first_child();
@@ -204,8 +252,9 @@ fn group_targets(boundary: &ItemRc, kind: NavigationKind) -> Vec<ItemRc> {
 
 fn center(item: &ItemRc) -> (f32, f32) {
     let item = nearest_accessible_item(item.clone());
-    let position = item.map_to_window(Default::default());
-    let size = item.geometry().size;
+    let geometry = item.geometry();
+    let position = item.map_to_window(geometry.origin);
+    let size = geometry.size;
     (position.x + size.width / 2., position.y + size.height / 2.)
 }
 
@@ -227,6 +276,7 @@ fn navigate(adapter: Rc<dyn WindowAdapter>, kind: NavigationKind, movement: Navi
         return;
     };
     let targets = group_targets(&boundary, kind);
+    log::debug!("navigate {kind:?} {movement:?}: {} targets", targets.len());
     let Some(index) = targets.iter().position(|item| *item == current) else {
         return;
     };
@@ -277,6 +327,11 @@ fn navigate(adapter: Rc<dyn WindowAdapter>, kind: NavigationKind, movement: Navi
             targets.get(next)
         }
     };
+    log::debug!(
+        "navigate: current center={:?}, target center={:?}",
+        center(&current),
+        target.map(center)
+    );
     if let Some(target) = target {
         window.set_focus_item(target, true, FocusReason::Programmatic);
     }
@@ -294,24 +349,29 @@ pub(crate) fn bind_navigation(focus: &KeyboardFocus<'_>, window: &slint::Window)
     });
     let weak = Rc::downgrade(&window);
     focus.on_leave_group(move |kind, backwards| {
-        let Some(window) = weak.upgrade() else { return };
+        let Some(window) = weak.upgrade() else {
+            return false;
+        };
         if kind == NavigationKind::Menu {
             let window = WindowInner::from_pub(window.window());
+            if window.active_popups.borrow().is_empty() {
+                return false;
+            }
             window.close_top_popup();
             if backwards {
                 window.focus_previous_item();
             } else {
                 window.focus_next_item();
             }
-            return;
+            return true;
         }
         let adapter = focus_window(window);
         let window = WindowInner::from_pub(adapter.window());
         let Some(current) = window.focus_item.borrow().upgrade() else {
-            return;
+            return false;
         };
         let Some(boundary) = group_boundary(&current, kind) else {
-            return;
+            return false;
         };
         let targets = group_targets(&boundary, kind);
         if let Some(edge) = if backwards {
@@ -320,27 +380,37 @@ pub(crate) fn bind_navigation(focus: &KeyboardFocus<'_>, window: &slint::Window)
             targets.last()
         } {
             window.focus_outside(edge, backwards);
+            true
+        } else {
+            false
         }
     });
     let weak = Rc::downgrade(&window);
     focus.on_ensure_focus(move || {
+        let Some(adapter) = weak.upgrade() else {
+            return;
+        };
         let weak = weak.clone();
-        slint::Timer::single_shot(Duration::ZERO, move || {
-            let Some(adapter) = weak.upgrade() else {
-                return;
-            };
-            let window = WindowInner::from_pub(adapter.window());
-            window.ensure_tree_instantiated();
-            if window
-                .focus_item
-                .borrow()
-                .upgrade()
-                .is_none_or(|item| !item.is_visible())
-            {
-                window.focus_next_item();
-            }
-        });
+        WindowInner::from_pub(adapter.window())
+            .context()
+            .single_shot(Duration::ZERO, move || {
+                let Some(adapter) = weak.upgrade() else {
+                    return;
+                };
+                let window = WindowInner::from_pub(adapter.window());
+                window.ensure_tree_instantiated();
+                if window
+                    .focus_item
+                    .borrow()
+                    .upgrade()
+                    .is_none_or(|item| !item.is_visible())
+                {
+                    window.focus_next_item();
+                }
+            });
     });
+    let reordered = Rc::new(RefCell::new(None::<String>));
+    let pending = reordered.clone();
     let weak = Rc::downgrade(&window);
     focus.on_remember_reorder(move |from, to| {
         let Some(adapter) = weak.upgrade() else {
@@ -350,74 +420,57 @@ pub(crate) fn bind_navigation(focus: &KeyboardFocus<'_>, window: &slint::Window)
         let Some(current) = window.focus_item.borrow().upgrade() else {
             return;
         };
-        // Rebuild the path from the window root: replacing an outer model can
-        // destroy every delegate, including the moved row's former parent.
-        let row = ItemRc::new_root(current.item_tree().clone());
-        let index_count = ItemTreeRc::borrow_pin(current.item_tree())
-            .as_ref()
-            .get_item_tree()
-            .len();
-        let role = nearest_accessible_item(current.clone()).accessible_role();
-        let old_focus = current.downgrade();
-        let mut path = Vec::new();
-        let mut item = current;
-        while let Some(parent) = item.parent_item(ParentItemTraversalMode::FindAllParents) {
-            let mut sibling = parent.first_child();
-            let mut ordinal = 0i32;
-            while let Some(candidate) = sibling {
-                if candidate == item {
-                    break;
-                }
-                ordinal += 1;
-                sibling = candidate.next_sibling();
-            }
-            if item == row {
-                ordinal += to - from;
-            }
-            let Ok(ordinal) = usize::try_from(ordinal) else {
-                return;
-            };
-            path.push(ordinal);
-            item = parent;
+        let Some(id) = nearest_accessible_item(current)
+            .accessible_string_property(AccessibleStringProperty::Id)
+        else {
+            return;
+        };
+        let Some((group, index)) = id.rsplit_once('-') else {
+            return;
+        };
+        if index.parse::<i32>().ok() == Some(from) {
+            *pending.borrow_mut() = Some(format!("{group}-{to}"));
         }
-        let weak = weak.clone();
-        slint::Timer::single_shot(Duration::ZERO, move || {
-            let Some(adapter) = weak.upgrade() else {
-                return;
-            };
-            let window = WindowInner::from_pub(adapter.window());
-            window.ensure_tree_instantiated();
-            if !window.active_popups.borrow().is_empty() {
-                return;
-            }
-            if let Some(current) = window.focus_item.borrow().upgrade()
-                && old_focus.upgrade().as_ref() != Some(&current)
-            {
-                return;
-            }
-            let mut target = Some(ItemRc::new_root(window.component()));
-            for ordinal in path.into_iter().rev() {
-                target = target.and_then(|item| item.first_child());
-                for _ in 0..ordinal {
-                    target = target.and_then(|item| item.next_sibling());
-                }
-            }
-            let Some(target) = target else { return };
-            if ItemTreeRc::borrow_pin(target.item_tree())
-                .as_ref()
-                .get_item_tree()
-                .len()
-                != index_count
-            {
-                return;
-            }
-            if target.is_visible_or_clipped_by_flickable()
-                && target.downcast::<FocusScope>().is_some()
-                && nearest_accessible_item(target.clone()).accessible_role() == role
-            {
-                window.set_focus_item(&target, true, FocusReason::Programmatic);
-            }
+    });
+    let weak = Rc::downgrade(&window);
+    focus.on_restore_reorder(move || {
+        let Some(target_id) = reordered.borrow_mut().take() else {
+            return;
+        };
+        let Some(adapter) = weak.upgrade() else {
+            return;
+        };
+        let window = WindowInner::from_pub(adapter.window());
+        window.ensure_tree_instantiated();
+        if window
+            .active_popups
+            .borrow()
+            .iter()
+            .any(|popup| !matches!(popup.window_kind, WindowKind::ToolTip))
+        {
+            return;
+        }
+        // Resolve the new delegate after the model mutation, while its caller
+        // still owns the interaction. An outer model may have replaced all rows.
+        let root = ItemRc::new_root(window.component());
+        let target = descendants(&root).into_iter().find(|item| {
+            item.accessible_string_property(AccessibleStringProperty::Id)
+                .as_deref()
+                == Some(target_id.as_str())
         });
+        log::debug!("reorder target {target_id}: present={}", target.is_some());
+        if let Some(target) = target {
+            let scope = descendants(&target).into_iter().find(|item| {
+                item.is_visible_or_clipped_by_flickable()
+                    && item
+                        .downcast::<FocusScope>()
+                        .is_some_and(|scope| scope.as_pin_ref().enabled())
+            });
+            log::debug!("reorder focus scope present={}", scope.is_some());
+            if let Some(scope) = scope {
+                window.set_focus_item(&scope, true, FocusReason::Programmatic);
+            }
+        }
     });
     let weak = Rc::downgrade(&window);
     focus.on_focus_grid(move || {
@@ -489,13 +542,16 @@ pub(crate) fn bind_navigation(focus: &KeyboardFocus<'_>, window: &slint::Window)
 }
 
 pub(super) fn bind(ui: &SettingsWindow) {
-    let state = Rc::new(RefCell::new(State::default()));
+    let state = Rc::new(RefCell::new(State {
+        timer: WindowInner::from_pub(ui.window()).context().new_timer(),
+        ..State::default()
+    }));
     let focus = ui.global::<KeyboardFocus>();
     bind_navigation(&focus, ui.window());
     on!(ui, focus.on_has_focus => |ui| {
         let window = WindowInner::from_pub(ui.window());
         window.ensure_tree_instantiated();
-        window.focus_item.borrow().upgrade().is_some_and(|item| item.is_visible())
+        window.focus_item.borrow().upgrade().is_some_and(|item| item.is_visible_or_clipped_by_flickable())
     });
     on!(ui, focus.on_describe => |ui| {
         let Some(item) = WindowInner::from_pub(ui.window()).focus_item.borrow().upgrade() else {
@@ -513,21 +569,30 @@ pub(super) fn bind(ui: &SettingsWindow) {
     });
     on!(ui, focus.on_save, state = state => |ui| {
         let mut state = state.borrow_mut();
-        restore(&ui, &mut state);
+        restore(&ui, &mut state, &[]);
         state.pending = WindowInner::from_pub(ui.window()).focus_item.borrow().clone();
+        log::debug!("modal save: initiator present={}", state.pending.upgrade().is_some());
         state.neighbors = state.pending.upgrade().map(|item| [item.next_focus_item().downgrade(), item.previous_focus_item().downgrade()]).unwrap_or_default();
     });
     on!(ui, focus.on_enter, state = state => |ui| {
         let mut focus_state = state.borrow_mut();
         let boundary = WindowInner::from_pub(ui.window()).focus_item.borrow().clone();
-        let initiator = focus_state.pending.clone();
-        let neighbors = focus_state.neighbors.clone();
+        let window = WindowInner::from_pub(ui.window());
+        let pending = focus_state.pending.upgrade();
+        let inside = boundary.upgrade().zip(pending.clone()).is_some_and(|(boundary, pending)| within(&boundary, &pending));
+        let preferred = if inside { pending } else { boundary.upgrade().and_then(|boundary| window.recent_focus(&boundary, true)) };
+        let initiator = if inside {
+            boundary.upgrade().and_then(|boundary| window.recent_focus(&boundary, false)).map(|item| item.downgrade()).unwrap_or_default()
+        } else { focus_state.pending.clone() };
+        let neighbors = initiator.upgrade().map(|item| [item.next_focus_item().downgrade(), item.previous_focus_item().downgrade()]).unwrap_or_else(|| focus_state.neighbors.clone());
         focus_state.next_token += 1;
         let token = focus_state.next_token;
         focus_state.dialogs.push(Dialog { token, boundary, initiator, neighbors });
+        log::debug!("modal enter: token={token}, recovered external initiator={inside}");
         ui.global::<KeyboardFocus>().set_active(true);
         WindowInner::from_pub(ui.window()).set_modal_focus_boundaries(focus_state.dialogs.iter().map(|dialog| dialog.boundary.clone()).collect());
         drop(focus_state);
+        if let Some(preferred) = preferred { window.set_focus_item(&preferred, true, FocusReason::Programmatic); }
         let weak_ui = ui.as_weak();
         let weak_state = Rc::downgrade(&state);
         state.borrow().timer.start(
@@ -535,8 +600,17 @@ pub(super) fn bind(ui: &SettingsWindow) {
             Duration::from_millis(16),
             move || {
                 if let (Some(ui), Some(state)) = (weak_ui.upgrade(), weak_state.upgrade()) {
+                    let window = WindowInner::from_pub(ui.window());
+                    window.ensure_tree_instantiated();
+                    let boundaries: Vec<_> = state.borrow().dialogs.iter().map(|dialog| (dialog.token, dialog.boundary.clone())).collect();
+                    let root = ItemRc::new_root(window.component());
+                    // A removed delegate may stay alive in rendering/accessibility caches.
+                    // Inspect membership before borrowing state: instantiation may enter a dialog.
+                    let detached: Vec<_> = boundaries.into_iter().filter_map(|(token, boundary)| {
+                        boundary.upgrade().filter(|item| !attached_to(&root, item)).map(|_| token)
+                    }).collect();
                     let mut state = state.borrow_mut();
-                    restore(&ui, &mut state);
+                    restore(&ui, &mut state, &detached);
                     if state.dialogs.is_empty() { state.timer.stop(); }
                 }
             },
@@ -548,26 +622,21 @@ pub(super) fn bind(ui: &SettingsWindow) {
     });
     on!(ui, focus.on_cycle, state = state => |ui, backwards| {
         let mut state = state.borrow_mut();
-        restore(&ui, &mut state);
+        restore(&ui, &mut state, &[]);
         if let Some(boundary) = state.dialogs.last().and_then(|dialog| dialog.boundary.upgrade()) {
             WindowInner::from_pub(ui.window()).focus_within(&boundary, backwards);
         }
     });
     on!(ui, focus.on_focus_checked => |ui| {
         let window = WindowInner::from_pub(ui.window());
+        window.ensure_tree_instantiated();
         let root = window.active_popups.borrow().last().map(|popup| ItemRc::new_root(popup.component.clone()));
-        let mut pending: Vec<_> = root.into_iter().collect();
-        while let Some(item) = pending.pop() {
-            if item.accessible_string_property(AccessibleStringProperty::Checked).as_deref() == Some("true") {
-                window.set_focus_item(&item, true, FocusReason::Programmatic);
-                return;
-            }
-            let mut child = item.first_child();
-            while let Some(item) = child {
-                child = item.next_sibling();
-                pending.push(item);
-            }
-        }
+        let Some(root) = root else { return };
+        let targets = group_targets(&root, NavigationKind::Menu);
+        let target = targets.iter().find(|item| {
+            nearest_accessible_item((*item).clone()).accessible_string_property(AccessibleStringProperty::Checked).as_deref() == Some("true")
+        }).or_else(|| targets.first());
+        if let Some(target) = target { window.set_focus_item(target, true, FocusReason::Programmatic); }
     });
     on!(ui, focus.on_step => |ui, backwards| {
         let window = WindowInner::from_pub(ui.window());

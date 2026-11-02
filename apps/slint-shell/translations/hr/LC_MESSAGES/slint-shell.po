@@ -3545,7 +3545,7 @@ msgstr ""
 "sustava."
 
 msgid "In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number."
-msgstr "U skočnom prozoru kliknite ćeliju ili pritisnite njezinu tipku: ćelije slijede redove tipkovnice Q–T, A–G i Z–B. Kartica mijenja stranice; znamenke otvaraju stranicu svojim brojem."
+msgstr "U skočnom prozoru kliknite ćeliju ili pritisnite njezinu tipku: ćelije slijede redove tipkovnice Q–T, A–G i Z–B. PgUp/PgDn mijenjaju stranice; znamenke otvaraju stranicu svojim brojem."
 
 msgid "Waiting for keyboard"
 msgstr "Čeka se tipkovnica"

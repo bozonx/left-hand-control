@@ -281,7 +281,7 @@ export component SaveSplitButton inherits Rectangle {
                 border-color: Theme.focus;
                 accessible-role: button;
                 accessible-label: @tr("Save as or reset changes");
-                accessible-action-default => { save-menu.show(); }
+                accessible-action-default => { focus-chevron.focus(); save-menu.show(); KeyboardFocus.focus-checked(); }
                 Tooltip { TooltipText { text: @tr("Save as or reset changes"); } }
                 Image {
                     x: (parent.width - self.width) / 2;
@@ -335,7 +335,7 @@ component TargetPicker inherits Rectangle {
     accessible-role: combobox;
     accessible-label: @tr("Layout");
     accessible-value: label.text;
-    accessible-action-default => { menu.show(); }
+    accessible-action-default => { focus.focus(); menu.show(); KeyboardFocus.focus-checked(); }
     HorizontalLayout { padding-left: Theme.space-m-plus; padding-right: Theme.space-m; spacing: Theme.space-s;
         label := Text {
             horizontal-stretch: 1;

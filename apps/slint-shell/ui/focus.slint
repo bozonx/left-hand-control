@@ -17,21 +17,24 @@ export global KeyboardFocus {
     callback focus-grid();
     callback focus-index(int);
     callback remember-reorder(int, int);
+    callback restore-reorder();
     callback ensure-focus();
     callback navigate(NavigationKind, NavigationMove);
-    callback leave-group(NavigationKind, bool);
+    callback leave-group(NavigationKind, bool) -> bool;
 }
 
 /// One real focus target in a composite. Tab leaves the group; arrows stay inside.
 export component NavigationFocus inherits FocusScope {
+    width: 100%;
+    height: 100%;
     in property <NavigationKind> kind: NavigationKind.grid;
     in property <bool> tab-stop: true;
     focus-on-tab-navigation: root.tab-stop;
     public function navigate(event: KeyEvent) -> EventResult {
         if event.modifiers.control || event.modifiers.alt || event.modifiers.meta { return reject; }
         if event.text == Key.Tab || event.text == Key.Backtab {
-            KeyboardFocus.leave-group(root.kind, event.modifiers.shift || event.text == Key.Backtab);
-            return accept;
+            if KeyboardFocus.leave-group(root.kind, event.modifiers.shift || event.text == Key.Backtab) { return accept; }
+            return reject;
         }
         if event.text == Key.Home { KeyboardFocus.navigate(root.kind, NavigationMove.first); return accept; }
         if event.text == Key.End { KeyboardFocus.navigate(root.kind, NavigationMove.last); return accept; }

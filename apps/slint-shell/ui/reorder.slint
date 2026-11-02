@@ -146,6 +146,7 @@ export component DragHandle inherits Rectangle {
     border-color: Theme.focus;
     background: area.has-hover ? Theme.hover : transparent;
     accessible-role: button;
+    accessible-id: "lhc-reorder-" + root.group + "-" + root.index;
     accessible-label: @tr("Drag") + " " + (root.index + 1) + "/" + root.count;
     accessible-description: "Alt+↑ / Alt+↓";
     accessible-item-index: root.index;
@@ -153,7 +154,7 @@ export component DragHandle inherits Rectangle {
     accessible-action-increment => { root.step(1); }
     accessible-action-decrement => { root.step(-1); }
     function step(delta: int) {
-        if root.index + delta >= 0 && root.index + delta < root.count { KeyboardFocus.remember-reorder(root.index, root.index + delta); root.dropped(root.index, root.index + delta); }
+        if root.index + delta >= 0 && root.index + delta < root.count { KeyboardFocus.remember-reorder(root.index, root.index + delta); root.dropped(root.index, root.index + delta); KeyboardFocus.restore-reorder(); }
     }
     Image { x: 6px; y: 6px; width: 16px; height: 16px; source: @image-url("icons/grip.svg"); colorize: Theme.muted; }
     focus := FocusScope {

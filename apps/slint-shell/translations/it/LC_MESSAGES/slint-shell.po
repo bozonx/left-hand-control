@@ -3629,7 +3629,7 @@ msgstr ""
 " di shell o un'azione di sistema."
 
 msgid "In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number."
-msgstr "Nel popup, fai clic su una cella o premi il relativo tasto: le celle seguono le righe della tastiera Q–T, A–G e Z–B. La scheda cambia pagina; le cifre aprono una pagina tramite il suo numero."
+msgstr "Nel popup, fai clic su una cella o premi il relativo tasto: le celle seguono le righe della tastiera Q–T, A–G e Z–B. PgUp/PgDn cambiano pagina; le cifre aprono una pagina tramite il suo numero."
 
 msgid "Waiting for keyboard"
 msgstr "In attesa della tastiera"

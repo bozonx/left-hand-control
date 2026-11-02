@@ -121,7 +121,11 @@ export component PopupGridBody inherits FocusScope {
     callback key(string) -> bool;
     callback choose(int);
     callback dismiss();
-    public function prepare() { self.focus(); KeyboardFocus.focus-grid(); }
+    public function prepare() { Theme.keyboard-navigation = true; self.focus(); KeyboardFocus.focus-grid(); }
+    capture-key-pressed(event) => {
+        if event.text == Key.Tab || event.text == Key.Backtab { Theme.keyboard-navigation = true; }
+        return reject;
+    }
     key-pressed(event) => {
         if event.modifiers.control || event.modifiers.alt || event.modifiers.meta { return reject; }
         if root.key(event.text) { return accept; }

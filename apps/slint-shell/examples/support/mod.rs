@@ -119,3 +119,23 @@ pub fn accessible_position(
     assert_eq!(matches.len(), 1, "expected one visible {role:?}: {label}");
     matches[0]
 }
+
+/// Record composite traversal diagnostics without the renderer's verbose logs.
+pub fn log_navigation() {
+    struct Logger;
+    impl log::Log for Logger {
+        fn enabled(&self, metadata: &log::Metadata<'_>) -> bool {
+            metadata.target().ends_with("pages::focus")
+        }
+        fn log(&self, record: &log::Record<'_>) {
+            if self.enabled(record.metadata()) {
+                eprintln!("focus: {}", record.args());
+            }
+        }
+        fn flush(&self) {}
+    }
+    static LOGGER: Logger = Logger;
+    if log::set_logger(&LOGGER).is_ok() {
+        log::set_max_level(log::LevelFilter::Debug);
+    }
+}

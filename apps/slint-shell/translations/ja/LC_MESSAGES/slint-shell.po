@@ -3314,7 +3314,7 @@ msgstr ""
 "アクションなど、あらゆるアクションを保持できます。"
 
 msgid "In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number."
-msgstr "ポップアップでセルをクリックするか、そのキーを押します。セルはキーボードの Q ～ T、A ～ G、Z ～ B の行に続きます。タブでページを切り替えます。数字はその番号によってページを開きます。"
+msgstr "ポップアップでセルをクリックするか、そのキーを押します。セルはキーボードの Q ～ T、A ～ G、Z ～ B の行に続きます。PgUp/PgDnでページを切り替えます。数字はその番号によってページを開きます。"
 
 msgid "Waiting for keyboard"
 msgstr "キーボードを待っています"

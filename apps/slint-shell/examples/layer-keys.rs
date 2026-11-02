@@ -17,6 +17,7 @@ use std::{
 use support::snapshot;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    support::log_navigation();
     let dir = tempfile::tempdir()?;
     let paths = StoragePaths::new(dir.path().join("settings"), dir.path().join("data"));
     let document = Document::load(paths)?;
@@ -145,7 +146,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 assert_eq!(focused_value.as_str(), "KeyJ");
                 let control = slint::platform::Key::Control;
                 window.dispatch_event(WindowEvent::KeyPressed { text: control.into() });
-                for text in ["x"] { window.dispatch_event(WindowEvent::KeyPressed { text: text.into() }); window.dispatch_event(WindowEvent::KeyReleased { text: text.into() }); }
+                window.dispatch_event(WindowEvent::KeyPressed { text: "x".into() });
+                window.dispatch_event(WindowEvent::KeyReleased { text: "x".into() });
                 window.dispatch_event(WindowEvent::KeyReleased { text: control.into() });
                 send_key(&ui, slint::platform::Key::RightArrow);
                 window.dispatch_event(WindowEvent::KeyPressed { text: control.into() });

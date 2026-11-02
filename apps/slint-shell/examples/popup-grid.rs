@@ -64,6 +64,7 @@ fn check_modifiers(ui: &impl ComponentHandle, count: impl Fn() -> usize) {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    support::log_navigation();
     let emoji = EmojiPopup::new()?;
     emoji.set_emojis(ModelRc::new(VecModel::from(
         (0..30)
@@ -93,7 +94,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cells = Rc::new(RefCell::new(Vec::new()));
     let observed = keys.clone();
     emoji.on_key(move |key| {
-        if key == slint::SharedString::from(slint::platform::Key::Shift) {
+        if [
+            slint::platform::Key::Shift,
+            slint::platform::Key::Tab,
+            slint::platform::Key::Backtab,
+        ]
+        .into_iter()
+        .any(|navigation| key == slint::SharedString::from(navigation))
+        {
             return false;
         }
         observed.borrow_mut().push(("emoji", key.to_string()));
@@ -101,7 +109,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     let observed = keys.clone();
     quick.on_key(move |key| {
-        if key == slint::SharedString::from(slint::platform::Key::Shift) {
+        if [
+            slint::platform::Key::Shift,
+            slint::platform::Key::Tab,
+            slint::platform::Key::Backtab,
+        ]
+        .into_iter()
+        .any(|navigation| key == slint::SharedString::from(navigation))
+        {
             return false;
         }
         observed.borrow_mut().push(("quick", key.to_string()));
