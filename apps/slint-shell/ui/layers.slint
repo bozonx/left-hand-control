@@ -339,7 +339,7 @@ export component LayersPage inherits PageLayout {
         PageContent {
             spacing: Theme.space-xl;
             // Layer toolbar
-            Card {
+            if LayersEditor.selected >= 0: Card {
                 VerticalLayout {
                     padding: Theme.space-2xl;
                     spacing: Theme.space-l;
@@ -389,16 +389,14 @@ export component LayersPage inherits PageLayout {
             }
 
             if LayersEditor.selected < 0: Card {
-                HorizontalLayout {
+                vertical-stretch: 0;
+                max-height: empty-content.preferred-height;
+                empty-content := VerticalLayout {
+                    alignment: start;
                     padding: Theme.space-2xl;
-                    spacing: Theme.space-l;
-                    VerticalLayout {
-                        horizontal-stretch: 1;
-                        spacing: Theme.space-xs;
-                        Text { text: @tr("No layers yet"); color: Theme.text; font-size: Theme.font-default; font-weight: Theme.weight-semibold; }
-                        Text { text: @tr("Create a layer to assign its keys."); color: Theme.muted; wrap: word-wrap; }
-                    }
-
+                    spacing: Theme.space-xs;
+                    Text { text: @tr("No layers yet"); color: Theme.text; font-size: Theme.font-default; font-weight: Theme.weight-semibold; }
+                    Text { text: @tr("Create a layer to assign its keys."); color: Theme.muted; wrap: word-wrap; }
                 }
             }
 
