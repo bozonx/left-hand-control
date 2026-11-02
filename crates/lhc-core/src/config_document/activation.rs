@@ -11,6 +11,8 @@ use crate::profile::model::{AppSettings, LayoutMode, LayoutPreset, ResolvedAppCo
 pub struct RuntimeConfig {
     /// Typed input for the mapper lifecycle API.
     pub mapper: crate::mapper::config::MapperConfig,
+    /// Menu contents captured with the mapper configuration.
+    pub layout: LayoutPreset,
     /// Layout the rules come from; `None` means native passthrough.
     pub layout_id: Option<String>,
     /// Whether the rules or the auto-mode choice look at window titles,
@@ -27,7 +29,7 @@ impl RuntimeConfig {
         layout_id: Option<String>,
     ) -> Result<Self, ConfigError> {
         let mut config =
-            ResolvedAppConfig::from_parts(settings.clone(), layout, layout_id.as_deref());
+            ResolvedAppConfig::from_parts(settings.clone(), layout.clone(), layout_id.as_deref());
         let blocking: Vec<RuleIssue> = diagnostics::analyze(&config)
             .into_iter()
             .filter(|issue| issue.code.is_error())
@@ -62,6 +64,7 @@ impl RuntimeConfig {
         crate::mapper::validation::validate_config(&mapper).map_err(ConfigError::Invalid)?;
         Ok(Self {
             mapper,
+            layout,
             layout_id,
             uses_titles,
         })

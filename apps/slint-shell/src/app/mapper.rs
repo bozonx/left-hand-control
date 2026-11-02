@@ -42,7 +42,7 @@ pub(super) fn forward_core_events() -> Result<lhc_core::events::Subscription, St
             let _ = rx.recv();
         }
     }
-    lhc_core::events::bus().subscribe(|event| match event {
+    lhc_core::events::bus().subscribe_with_context(|event, context| match event {
         CoreEvent::MapperDeviceChanged => post(|app| app.refresh_mapper_status()),
         CoreEvent::MapperStopped(error) => {
             let error = error.clone();
@@ -60,6 +60,11 @@ pub(super) fn forward_core_events() -> Result<lhc_core::events::Subscription, St
         CoreEvent::AppAction(action) => {
             let action = *action;
             post(move |app| {
+                if !context.action_is_current(lhc_core::events::bus())
+                    || !lhc_core::mapper::runtime::status().running
+                {
+                    return;
+                }
                 if let lhc_core::profile::app_action::AppAction::ActivateLayout(slot) = action {
                     app.activate_layout(slot.get());
                 } else if let Some(command) = crate::command::Command::from_app_action(action) {
@@ -335,6 +340,11 @@ impl App {
             tray.set_enabled(status.running);
         }
         let phase = mapper_phase(self.mapper.operation.get(), status.phase);
+        if matches!(phase, MapperPhase::Stopped | MapperPhase::Running)
+            && let Some(document) = self.document()
+        {
+            document.sync_title_tracking(status.running);
+        }
         self.settings
             .global::<AppState>()
             .set_mapper_state(MapperState {
@@ -350,6 +360,7 @@ impl App {
         if !self.mapper.status_changed(current) {
             return;
         }
+        self.invalidate_menus();
         let message = if matches!(phase, MapperPhase::Starting | MapperPhase::Retrying) {
             Msg::MapperStarting
         } else if status.waiting_for_device {
@@ -477,14 +488,18 @@ impl App {
         self.set_mapper_operation(MapperOperation::Starting);
         std::thread::spawn(move || {
             let result =
-                lhc_core::mapper::runtime::start(&device, mouse.as_deref(), runtime.mapper);
+                lhc_core::mapper::runtime::start(&device, mouse.as_deref(), runtime.mapper.clone());
             post(move |app| {
+                if result.is_ok()
+                    && let Some(document) = app.document()
+                {
+                    document.mapper_started(revision, runtime);
+                }
                 app.set_mapper_operation(MapperOperation::Idle);
                 match result {
                     Ok(()) => {
                         crate::notifications::send(&app.settings, Msg::MapperRunning(None));
                         if let Some(document) = app.document() {
-                            document.mapper_started(revision, runtime.layout_id);
                             app.announce_layout();
                             // Both the document and context may have changed while starting.
                             if let Err(error) = document.sync_runtime(false) {

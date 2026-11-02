@@ -490,7 +490,9 @@ pub fn start(
     // concurrent status()/stop() calls from the shell.
     let stop = {
         let mut state = lock_state();
-        state.begin_start()?
+        let stop = state.begin_start()?;
+        crate::events::bus().discard_app_actions();
+        stop
     };
     let result = OsBackend::new().spawn(
         device_path.to_string(),
@@ -510,6 +512,7 @@ pub fn start(
 }
 
 pub fn stop() -> Result<(), String> {
+    crate::events::bus().discard_app_actions();
     // Join the worker thread outside the state lock so status polling
     // does not freeze while the mapper shuts down.
     let handle = {
@@ -521,6 +524,7 @@ pub fn stop() -> Result<(), String> {
         state.take_handle()?
     };
     handle.stop();
+    crate::events::bus().discard_app_actions();
     lock_state().finish_stop();
     Ok(())
 }

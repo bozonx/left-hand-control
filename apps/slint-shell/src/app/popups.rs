@@ -60,8 +60,8 @@ impl PopupController {
         let layout = document
             .and_then(|document| {
                 document
-                    .read()
-                    .active_layout(&lhc_core::profile::auto_switch::AutoSwitchContext::current())
+                    .popup_layout(lhc_core::mapper::runtime::status().running)
+                    .map(|(_, layout)| layout)
                     .map_err(|error| log::warn!("popup menus: {error}"))
                     .ok()
             })
@@ -135,8 +135,8 @@ impl App {
     ) -> Result<(), crate::i18n::Msg> {
         let id = self.document().as_ref().and_then(|document| {
             document
-                .read()
-                .active_layout_id(&lhc_core::profile::auto_switch::AutoSwitchContext::current())
+                .popup_layout(lhc_core::mapper::runtime::status().running)
+                .map(|(id, _)| id)
                 .ok()
                 .flatten()
         });

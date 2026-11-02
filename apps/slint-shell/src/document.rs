@@ -103,7 +103,7 @@ pub struct Document {
     library_snapshot: RefCell<Option<LibrarySnapshot>>,
     listeners: RefCell<Vec<(View, Listener)>>,
     /// Document revision and layout last given to the running mapper.
-    pushed_layout: RefCell<Option<(u64, Option<String>)>>,
+    pushed_layout: RefCell<Option<(u64, RuntimeConfig)>>,
 }
 
 /// An applied edit and whether the running mapper took it.
@@ -275,6 +275,7 @@ impl Document {
     pub fn sync_runtime(&self, force: bool) -> Result<(), String> {
         if !lhc_core::mapper::runtime::status().running {
             self.pushed_layout.borrow_mut().take();
+            self.sync_title_tracking(false);
             return Ok(());
         }
         let document_changed = self
@@ -297,6 +298,7 @@ impl Document {
                 log::warn!("stop outdated mapper: {error}");
             }
         }
+        self.sync_title_tracking(lhc_core::mapper::runtime::status().running);
         result
     }
 
@@ -309,8 +311,8 @@ impl Document {
         if !force && self.runtime_is_current(&runtime.layout_id) {
             return Ok(());
         }
-        update(runtime.mapper)?;
-        *self.pushed_layout.borrow_mut() = Some((self.revision.get(), runtime.layout_id));
+        update(runtime.mapper.clone())?;
+        *self.pushed_layout.borrow_mut() = Some((self.revision.get(), runtime));
         Ok(())
     }
 
@@ -318,7 +320,9 @@ impl Document {
         self.pushed_layout
             .borrow()
             .as_ref()
-            .is_some_and(|(revision, id)| *revision == self.revision.get() && id == layout_id)
+            .is_some_and(|(revision, runtime)| {
+                *revision == self.revision.get() && &runtime.layout_id == layout_id
+            })
     }
 
     /// Last layout successfully submitted to the mapper, including native passthrough.
@@ -327,12 +331,46 @@ impl Document {
         self.pushed_layout
             .borrow()
             .as_ref()
-            .map(|(_, id)| id.clone())
+            .map(|(_, runtime)| runtime.layout_id.clone())
+    }
+
+    /// Menus and their layout id from the same snapshot submitted to the mapper.
+    /// Without a running mapper, menus follow the current document context.
+    pub(crate) fn popup_layout(
+        &self,
+        running: bool,
+    ) -> Result<(Option<String>, LayoutPreset), ConfigError> {
+        if running {
+            return Ok(self.pushed_layout.borrow().as_ref().map_or_else(
+                || (None, LayoutPreset::default()),
+                |(_, runtime)| (runtime.layout_id.clone(), runtime.layout.clone()),
+            ));
+        }
+        let config = self.read();
+        let id = config.active_layout_id(&AutoSwitchContext::current())?;
+        let layout = config.layout_for_activation(id.as_deref())?;
+        Ok((id, layout))
+    }
+
+    /// Keep title collection independent of mapper start/stop success.
+    pub(crate) fn sync_title_tracking(&self, running: bool) {
+        lhc_core::active_window::set_titles_needed(self.titles_needed(running));
+    }
+
+    fn titles_needed(&self, running: bool) -> bool {
+        if running {
+            self.pushed_layout
+                .borrow()
+                .as_ref()
+                .is_some_and(|(_, runtime)| runtime.uses_titles)
+        } else {
+            false
+        }
     }
 
     /// Record the layout a freshly started mapper runs.
-    pub fn mapper_started(&self, revision: u64, layout_id: Option<String>) {
-        *self.pushed_layout.borrow_mut() = Some((revision, layout_id));
+    pub fn mapper_started(&self, revision: u64, runtime: RuntimeConfig) {
+        *self.pushed_layout.borrow_mut() = Some((revision, runtime));
     }
 
     /// Refresh every view, for example after the language changed.
@@ -372,21 +410,69 @@ mod tests {
     }
 
     #[test]
+    fn failed_switch_keeps_popup_snapshot_even_after_library_changes() {
+        let (_dir, document) = document();
+        let mut runtime = document.runtime_config().unwrap();
+        runtime.layout_id = Some("user:A".into());
+        runtime.layout.description = Some("snapshot A".into());
+        runtime.uses_titles = true;
+        document.mapper_started(document.revision(), runtime.clone());
+        let mut rejected = runtime.clone();
+        rejected.layout_id = Some("user:B".into());
+        rejected.layout.description = Some("snapshot B".into());
+        assert!(
+            document
+                .push_runtime(rejected, false, |_| Err("rejected".into()))
+                .is_err()
+        );
+        let mut changed_on_disk = runtime.layout.clone();
+        changed_on_disk.description = Some("changed on disk".into());
+        document
+            .read()
+            .paths()
+            .save_user_layout(
+                "A",
+                &lhc_core::profile::layout_file::serialize(&changed_on_disk),
+                true,
+            )
+            .unwrap();
+        assert_eq!(
+            document.popup_layout(true).unwrap(),
+            (runtime.layout_id, runtime.layout)
+        );
+        assert_ne!(
+            document
+                .popup_layout(false)
+                .unwrap()
+                .1
+                .description
+                .as_deref(),
+            Some("snapshot A")
+        );
+        assert!(document.titles_needed(true));
+        assert!(!document.titles_needed(false));
+        let mut without_titles = document.runtime_config().unwrap();
+        without_titles.uses_titles = false;
+        document.mapper_started(document.revision(), without_titles);
+        assert!(!document.titles_needed(true));
+    }
+
+    #[test]
     fn startup_snapshot_does_not_hide_edits_with_the_same_layout_id() {
         let (_dir, document) = document();
         let started_revision = document.revision();
         let layout_id = document.runtime_config().unwrap().layout_id;
-        document.mapper_started(started_revision, layout_id.clone());
+        document.mapper_started(started_revision, document.runtime_config().unwrap());
         assert!(document.runtime_is_current(&layout_id));
         document
             .edit(View::Keys, |config| {
                 config.set_base_tap_action("KeyA", "KeyB")
             })
             .unwrap();
-        document.mapper_started(started_revision, layout_id.clone());
+        document.mapper_started(started_revision, document.runtime_config().unwrap());
         assert!(!document.runtime_is_current(&layout_id));
         assert_eq!(document.runtime_config().unwrap().layout_id, layout_id);
-        document.mapper_started(document.revision(), layout_id.clone());
+        document.mapper_started(document.revision(), document.runtime_config().unwrap());
         assert!(document.runtime_is_current(&layout_id));
         assert!(!document.runtime_is_current(&Some("user:other".into())));
         let revision = document.revision();
@@ -405,7 +491,9 @@ mod tests {
     fn failed_context_push_keeps_the_applied_layout_and_retries_the_new_one() {
         let (_dir, document) = document();
         let previous = Some("user:Previous".to_owned());
-        document.mapper_started(document.revision(), previous.clone());
+        let mut started = document.runtime_config().unwrap();
+        started.layout_id = previous.clone();
+        document.mapper_started(document.revision(), started);
         let mut runtime = document.runtime_config().unwrap();
         runtime.layout_id = Some("user:Next".to_owned());
         assert!(

@@ -80,8 +80,10 @@ impl ControlQueue {
         }
         match &control {
             MapperControl::Config(_) => {
-                self.messages
-                    .retain(|item| !matches!(item, MapperControl::Config(_)));
+                // Execute is a barrier: it must observe the configuration queued before it.
+                while matches!(self.messages.back(), Some(MapperControl::Config(_))) {
+                    self.messages.pop_back();
+                }
             }
             MapperControl::Execute(_) if self.disconnected => {
                 return Err("mapper is waiting for its keyboard".into());
@@ -737,6 +739,33 @@ fn run_loop<D: LoopDriver>(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn configuration_coalescing_preserves_execution_barriers() {
+        let mut queue = super::ControlQueue::default();
+        let config = |delay| {
+            let mut cfg: super::MapperConfig = serde_json::from_str("{}").unwrap();
+            cfg.settings.default_macro_modifier_delay_ms = delay;
+            super::MapperControl::Config(Box::new(cfg))
+        };
+        queue.send(config(1)).unwrap();
+        queue
+            .send(super::MapperControl::Execute("macro:x".into()))
+            .unwrap();
+        queue.send(config(2)).unwrap();
+        queue.send(config(3)).unwrap();
+        assert!(
+            matches!(queue.messages.pop_front(), Some(super::MapperControl::Config(cfg)) if cfg.settings.default_macro_modifier_delay_ms == 1)
+        );
+        assert!(matches!(
+            queue.messages.pop_front(),
+            Some(super::MapperControl::Execute(_))
+        ));
+        assert!(
+            matches!(queue.messages.pop_front(), Some(super::MapperControl::Config(cfg)) if cfg.settings.default_macro_modifier_delay_ms == 3)
+        );
+        assert!(queue.messages.is_empty());
+    }
+
     #[test]
     fn disconnected_control_queue_keeps_only_latest_config_and_rejects_actions() {
         let mut queue = super::ControlQueue::default();

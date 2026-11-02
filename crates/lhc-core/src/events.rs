@@ -11,8 +11,9 @@ use crate::keyboard_layout::KeyboardLayoutInfo;
 use std::collections::VecDeque;
 use std::sync::{
     Arc, Condvar, Mutex, OnceLock, Weak,
-    atomic::{AtomicBool, Ordering},
+    atomic::{AtomicBool, AtomicU64, Ordering},
 };
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CoreEvent {
@@ -71,13 +72,37 @@ pub enum TextInputFailure {
     Tool(String),
 }
 
-/// State notifications may be coalesced; application requests and results
-/// are retained in order. Producers never wait for subscriber callbacks.
+/// States and diagnostics are coalesced. Requests retain order within a bounded
+/// queue; overload evicts the oldest request. Producers never wait for callbacks.
 type Listeners = Mutex<Vec<Arc<Listener>>>;
+
+const PENDING_LIMIT: usize = 256;
+/// Longest useful delay for an interactive mapper request.
+const APP_ACTION_MAX_AGE: Duration = Duration::from_secs(1);
+
+/// Origin of a delivery, retained across a shell's asynchronous UI dispatch.
+#[derive(Clone, Copy)]
+pub struct EventContext {
+    created: Instant,
+    generation: u64,
+}
+
+impl EventContext {
+    /// Application requests expire and cannot outlive their mapper session.
+    pub fn action_is_current(self, bus: &EventBus) -> bool {
+        self.generation == bus.action_generation() && self.created.elapsed() <= APP_ACTION_MAX_AGE
+    }
+}
+
+struct PendingEvent {
+    event: CoreEvent,
+    created: Instant,
+    generation: u64,
+}
 
 #[derive(Default)]
 struct Pending {
-    events: Mutex<VecDeque<CoreEvent>>,
+    events: Mutex<VecDeque<PendingEvent>>,
     ready: Condvar,
 }
 
@@ -90,6 +115,12 @@ impl CoreEvent {
             Self::MapperDeviceChanged => 3,
             Self::ActiveLayerChanged(_) => 4,
             Self::LayerKeyPressed => 5,
+            Self::CommandLaunchResult { result: Ok(()), .. } => 6,
+            Self::CommandLaunchResult { result: Err(_), .. } => 11,
+            Self::TextInputFailed(_) => 7,
+            Self::MapperActionFailed(_) => 8,
+            Self::ActionUnavailable(_) => 9,
+            Self::MacroRunFailed(_) => 10,
             _ => return None,
         })
     }
@@ -132,6 +163,7 @@ impl Drop for Subscription {
 #[derive(Clone, Default)]
 pub struct EventBus {
     listeners: Arc<Listeners>,
+    action_generation: Arc<AtomicU64>,
 }
 
 impl EventBus {
@@ -141,10 +173,19 @@ impl EventBus {
         &self,
         listener: impl Fn(&CoreEvent) + Send + 'static,
     ) -> Result<Subscription, String> {
+        self.subscribe_with_context(move |event, _| listener(event))
+    }
+
+    /// Subscribe with origin metadata for delivery through another asynchronous queue.
+    pub fn subscribe_with_context(
+        &self,
+        listener: impl Fn(&CoreEvent, EventContext) + Send + 'static,
+    ) -> Result<Subscription, String> {
         let pending = Arc::new(Pending::default());
         let receiving = pending.clone();
         let active = Arc::new(AtomicBool::new(true));
         let running = active.clone();
+        let generation = self.action_generation.clone();
         std::thread::Builder::new()
             .name("lhc-events".into())
             .spawn(move || {
@@ -165,8 +206,22 @@ impl EventBus {
                         };
                         event
                     };
-                    if std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| listener(&event)))
-                        .is_err()
+                    if matches!(event.event, CoreEvent::AppAction(_))
+                        && (event.generation != generation.load(Ordering::Acquire)
+                            || event.created.elapsed() > APP_ACTION_MAX_AGE)
+                    {
+                        continue;
+                    }
+                    if std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                        listener(
+                            &event.event,
+                            EventContext {
+                                created: event.created,
+                                generation: event.generation,
+                            },
+                        )
+                    }))
+                    .is_err()
                     {
                         log::error!("core event subscriber panicked");
                     }
@@ -184,7 +239,21 @@ impl EventBus {
         })
     }
 
+    /// Invalidate application requests when their mapper is stopped or restarted.
+    pub(crate) fn discard_app_actions(&self) {
+        self.action_generation.fetch_add(1, Ordering::AcqRel);
+    }
+
+    fn action_generation(&self) -> u64 {
+        self.action_generation.load(Ordering::Acquire)
+    }
+
     pub fn emit(&self, event: CoreEvent) {
+        if matches!(event, CoreEvent::MapperStopped(_)) {
+            self.discard_app_actions();
+        }
+        let generation = self.action_generation();
+        let created = Instant::now();
         let listeners = self
             .listeners
             .lock()
@@ -200,9 +269,21 @@ impl EventBus {
                 if let Some(key) = event.state_key() {
                     // Remove the older notification and append the latest one so
                     // retained requests keep their relative ordering.
-                    events.retain(|queued| queued.state_key() != Some(key));
+                    events.retain(|queued| queued.event.state_key() != Some(key));
                 }
-                events.push_back(event.clone());
+                if events.len() >= PENDING_LIMIT {
+                    // Preserve the latest system state; shed old work first.
+                    let index = events
+                        .iter()
+                        .position(|queued| queued.event.state_key().is_none())
+                        .unwrap_or(0);
+                    events.remove(index);
+                }
+                events.push_back(PendingEvent {
+                    event: event.clone(),
+                    created,
+                    generation,
+                });
                 listener.pending.ready.notify_one();
             }
         }
@@ -223,6 +304,65 @@ pub fn emit(event: CoreEvent) {
 mod tests {
     use super::*;
     use std::{sync::mpsc, time::Duration};
+
+    #[test]
+    fn action_context_expires_and_cannot_cross_mapper_sessions() {
+        let bus = EventBus::default();
+        let context = EventContext {
+            created: Instant::now(),
+            generation: bus.action_generation(),
+        };
+        assert!(context.action_is_current(&bus));
+        let expired = EventContext {
+            created: Instant::now() - APP_ACTION_MAX_AGE - Duration::from_millis(1),
+            ..context
+        };
+        assert!(!expired.action_is_current(&bus));
+        bus.discard_app_actions();
+        assert!(!context.action_is_current(&bus));
+    }
+
+    #[test]
+    fn overload_bounds_requests_and_discards_old_mapper_actions() {
+        let bus = EventBus::default();
+        let (entered, entry) = mpsc::channel();
+        let (release, wait) = mpsc::channel();
+        let (tx, rx) = mpsc::channel();
+        let subscription = bus
+            .subscribe(move |event| {
+                if matches!(event, CoreEvent::LayerKeyPressed) {
+                    entered.send(()).unwrap();
+                    wait.recv().unwrap();
+                } else {
+                    tx.send(event.clone()).unwrap();
+                }
+            })
+            .unwrap();
+        bus.emit(CoreEvent::LayerKeyPressed);
+        entry.recv_timeout(Duration::from_secs(1)).unwrap();
+        for _ in 0..PENDING_LIMIT * 4 {
+            bus.emit(CoreEvent::AppAction(
+                crate::profile::app_action::AppAction::ShowSettings,
+            ));
+            bus.emit(CoreEvent::ActionUnavailable("sys:test".into()));
+        }
+        assert_eq!(
+            subscription.listener.pending.events.lock().unwrap().len(),
+            PENDING_LIMIT
+        );
+        bus.discard_app_actions();
+        bus.emit(CoreEvent::MapperDeviceChanged);
+        release.send(()).unwrap();
+        assert!(matches!(
+            rx.recv_timeout(Duration::from_secs(1)).unwrap(),
+            CoreEvent::ActionUnavailable(_)
+        ));
+        assert_eq!(
+            rx.recv_timeout(Duration::from_secs(1)).unwrap(),
+            CoreEvent::MapperDeviceChanged
+        );
+        assert!(rx.recv_timeout(Duration::from_millis(20)).is_err());
+    }
 
     #[test]
     fn delivers_in_order_and_unsubscribes_on_drop() {
@@ -317,12 +457,12 @@ mod tests {
             .unwrap();
         bus.emit(CoreEvent::LayerKeyPressed);
         entry.recv_timeout(Duration::from_secs(1)).unwrap();
-        for n in 0..2048 {
+        for n in 0..64 {
             bus.emit(CoreEvent::ActiveLayerChanged(Some(n.to_string())));
             bus.emit(CoreEvent::MapperStopped(n.to_string()));
         }
         release.send(()).unwrap();
-        let events: Vec<_> = (0..2049)
+        let events: Vec<_> = (0..65)
             .map(|_| rx.recv_timeout(Duration::from_secs(2)).unwrap())
             .collect();
         let requests: Vec<_> = events
@@ -332,10 +472,7 @@ mod tests {
                 _ => None,
             })
             .collect();
-        assert_eq!(
-            requests,
-            (0..2048).map(|n| n.to_string()).collect::<Vec<_>>()
-        );
+        assert_eq!(requests, (0..64).map(|n| n.to_string()).collect::<Vec<_>>());
         assert_eq!(
             events
                 .iter()

@@ -21,6 +21,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Mapper configuration updates preserve the order of queued actions. Popup menus retain the mapper's accepted layout after a failed automatic switch. Stopping the mapper releases window-title collection, and event overload no longer grows an unbounded backlog or replays actions from a previous mapper session.
+
 - Held-layer hints refresh after layout edits and language changes without restarting their delay. Layout OSDs describe the last successfully applied layout, and rapid OSD requests are delivered in order with only the latest waiting message retained.
 
 - Saving and discarding layouts: quitting asks about unsaved changes; unrelated library edits preserve external-change conflicts; unavailable saved layouts can be reset; failed layout switches keep page drafts; failed renames remove the newly published copy.
