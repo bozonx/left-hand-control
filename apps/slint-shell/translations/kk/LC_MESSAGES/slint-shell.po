@@ -3705,3 +3705,6 @@ msgstr "Макростардың қолданылмаған өзгерістер
 
 msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
 msgstr "ID өзгерістері сілтемелерді автоматты түрде жаңартады. Кірістірілген макростар өз кідірістерін сақтайды. Келесі қадамға дейін пәрмендер сәтті аяқталуы керек. Үзілістер, мәтін және пәрмендер макростың уақыт шегіне кіреді."
+
+msgid "Save layout changes before quitting?"
+msgstr "Шығу алдында жайма өзгерістерін сақтау керек пе?"

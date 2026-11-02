@@ -3697,3 +3697,6 @@ msgstr "Uygulanmamış makro değişiklikleri atılsın mı?"
 
 msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
 msgstr "Kimlik değişiklikleri başvuruları otomatik günceller. İç içe makrolar kendi gecikmelerini korur. Sonraki adımdan önce komutlar başarıyla tamamlanmalıdır. Duraklamalar, metin ve komutlar makro zaman aşımına dahildir."
+
+msgid "Save layout changes before quitting?"
+msgstr "Çıkmadan önce düzen değişiklikleri kaydedilsin mi?"

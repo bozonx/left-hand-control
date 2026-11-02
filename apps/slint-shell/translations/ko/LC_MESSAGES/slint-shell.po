@@ -3447,3 +3447,6 @@ msgstr "적용되지 않은 매크로 변경 사항을 버리시겠습니까?"
 
 msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
 msgstr "ID를 변경하면 참조가 자동으로 갱신됩니다. 중첩된 매크로는 자체 지연을 유지합니다. 명령이 성공적으로 완료된 후 다음 단계가 시작됩니다. 일시 정지, 텍스트 입력 및 명령은 매크로 시간 제한에 포함됩니다."
+
+msgid "Save layout changes before quitting?"
+msgstr "종료하기 전에 레이아웃 변경 사항을 저장할까요?"

@@ -21,6 +21,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Saving and discarding layouts: quitting asks about unsaved changes; unrelated library edits preserve external-change conflicts; unavailable saved layouts can be reset; failed layout switches keep page drafts; failed renames remove the newly published copy.
+
 - Settings toolbars: layout menus scroll in long libraries, full layout names are available in tooltips, automatic switching retains the editing-context warning, and failures determining the active layout are shown explicitly. Small-window geometry checks cover translated toolbars and overlapping controls.
 
 - Keyboard navigation: tab lists, menus, device lists, action catalogs and key grids move real focus with arrow keys and leave each group with Tab. Enter acts on the focused action; Escape clears searches before closing dialogs.

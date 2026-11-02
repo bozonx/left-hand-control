@@ -3457,3 +3457,6 @@ msgstr "未適用のマクロの変更を破棄しますか？"
 
 msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
 msgstr "IDを変更すると参照が自動更新されます。入れ子のマクロは独自の遅延を保持します。コマンドが正常終了してから次のステップを開始します。一時停止、テキスト入力、コマンドはマクロのタイムアウトに含まれます。"
+
+msgid "Save layout changes before quitting?"
+msgstr "終了する前にレイアウトの変更を保存しますか？"

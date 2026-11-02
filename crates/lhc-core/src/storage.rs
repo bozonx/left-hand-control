@@ -183,14 +183,23 @@ impl StoragePaths {
             return Err(format!("Layout \"{new_safe}\" already exists"));
         }
         backup_older_schema(&new_path, LAYOUT_SCHEMA_VERSION)?;
+        let previous_destination = if overwrite && old_path != new_path && new_path.exists() {
+            Some(fs::read(&new_path).map_err(|error| format!("read rename destination: {error}"))?)
+        } else {
+            None
+        };
         write_file(
             &new_path,
             contents.as_bytes(),
             overwrite || old_path == new_path,
         )?;
         if old_path != new_path && old_path.exists() {
-            fs::remove_file(&old_path).map_err(|e| format!("remove_file: {e}"))?;
-            publication_sync(&old_path, sync_parent_dir);
+            remove_rename_source(
+                &old_path,
+                &new_path,
+                previous_destination.as_deref(),
+                |path| fs::remove_file(path),
+            )?;
         }
         Ok(new_safe)
     }
@@ -246,6 +255,33 @@ pub fn validate_layout_name(name: &str) -> Result<String, String> {
         return Err("Layout name cannot end with a dot".into());
     }
     Ok(trimmed.to_string())
+}
+
+/// Undo publication if removing the old name fails, keeping rename failures
+/// from leaving an unexpected second library entry behind.
+fn remove_rename_source(
+    old_path: &Path,
+    new_path: &Path,
+    previous_destination: Option<&[u8]>,
+    remove: impl FnOnce(&Path) -> std::io::Result<()>,
+) -> Result<(), String> {
+    if let Err(error) = remove(old_path)
+        && error.kind() != std::io::ErrorKind::NotFound
+    {
+        let rollback = match previous_destination {
+            Some(contents) => write_atomic(new_path, contents),
+            None => fs::remove_file(new_path).map_err(|error| error.to_string()),
+        };
+        if let Err(rollback) = rollback {
+            return Err(format!(
+                "remove rename source: {error}; restore rename destination: {rollback}"
+            ));
+        }
+        publication_sync(new_path, sync_parent_dir);
+        return Err(format!("remove rename source: {error}"));
+    }
+    publication_sync(old_path, sync_parent_dir);
+    Ok(())
 }
 
 /// Whether two existing paths name one file, e.g. names that differ only in
@@ -444,6 +480,37 @@ fn sync_parent_dir(_path: &Path) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn failed_rename_source_removal_rolls_back_the_published_destination() {
+        for previous in [None, Some(b"previous destination".as_slice())] {
+            let dir = tempfile::tempdir().unwrap();
+            let old = dir.path().join("old.json");
+            let new = dir.path().join("new.json");
+            fs::write(&old, b"original").unwrap();
+            super::write_file(&new, b"updated", false).unwrap();
+            let error = super::remove_rename_source(&old, &new, previous, |_| {
+                Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied))
+            })
+            .unwrap_err();
+            assert!(error.contains("remove rename source"));
+            assert_eq!(fs::read(&old).unwrap(), b"original");
+            match previous {
+                Some(contents) => assert_eq!(fs::read(&new).unwrap(), contents),
+                None => assert!(!new.exists()),
+            }
+        }
+    }
+
+    #[test]
+    fn rename_keeps_the_destination_when_the_source_was_already_removed() {
+        let dir = tempfile::tempdir().unwrap();
+        let old = dir.path().join("missing.json");
+        let new = dir.path().join("published.json");
+        super::write_file(&new, b"complete layout", false).unwrap();
+        super::remove_rename_source(&old, &new, None, |path| fs::remove_file(path)).unwrap();
+        assert_eq!(fs::read(&new).unwrap(), b"complete layout");
+    }
+
     #[test]
     fn publication_is_committed_even_if_directory_sync_fails() {
         let dir = tempfile::tempdir().unwrap();

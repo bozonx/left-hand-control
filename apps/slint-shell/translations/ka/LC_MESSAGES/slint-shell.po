@@ -3687,3 +3687,6 @@ msgstr "გაუქმდეს მაკროების გამოუყ�
 
 msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
 msgstr "ID-ის ცვლილება ავტომატურად აახლებს მითითებებს. ჩადგმული მაკროები ინარჩუნებენ საკუთარ დაყოვნებებს. შემდეგ ნაბიჯამდე ბრძანებები წარმატებით უნდა დასრულდეს. პაუზები, ტექსტი და ბრძანებები ითვლება მაკროს დროის ლიმიტში."
+
+msgid "Save layout changes before quitting?"
+msgstr "შეინახოს განლაგების ცვლილებები გასვლამდე?"

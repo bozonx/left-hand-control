@@ -3776,3 +3776,6 @@ msgstr "Nicht angewendete Makroänderungen verwerfen?"
 
 msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
 msgstr "ID-Änderungen aktualisieren Verweise automatisch. Verschachtelte Makros behalten ihre Verzögerungen. Befehle müssen vor dem nächsten Schritt erfolgreich enden. Pausen, Text und Befehle zählen zum Makrozeitlimit."
+
+msgid "Save layout changes before quitting?"
+msgstr "Änderungen am Layout vor dem Beenden speichern?"

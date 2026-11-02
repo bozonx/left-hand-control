@@ -3737,3 +3737,6 @@ msgstr "Odrzucić niezastosowane zmiany makr?"
 
 msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
 msgstr "Zmiany ID automatycznie aktualizują odwołania. Zagnieżdżone makra zachowują własne opóźnienia. Polecenia muszą zakończyć się pomyślnie przed następnym krokiem. Przerwy, tekst i polecenia wliczają się do limitu czasu makra."
+
+msgid "Save layout changes before quitting?"
+msgstr "Zapisać zmiany układu przed wyjściem?"

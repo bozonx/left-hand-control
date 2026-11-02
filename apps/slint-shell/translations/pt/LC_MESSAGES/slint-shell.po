@@ -3710,3 +3710,6 @@ msgstr "Descartar alterações de macros não aplicadas?"
 
 msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
 msgstr "As alterações de ID atualizam as referências automaticamente. As macros aninhadas mantêm os seus atrasos. Os comandos devem terminar com sucesso antes do passo seguinte. Pausas, texto e comandos contam para o tempo limite da macro."
+
+msgid "Save layout changes before quitting?"
+msgstr "Guardar as alterações do esquema antes de sair?"

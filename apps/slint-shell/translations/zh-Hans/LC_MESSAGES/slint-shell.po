@@ -3378,3 +3378,6 @@ msgstr "放弃尚未应用的宏更改？"
 
 msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
 msgstr "更改ID会自动更新引用。嵌套宏保留各自的延迟。命令必须成功完成后才会开始下一步。暂停、文本输入和命令均计入宏的超时时间。"
+
+msgid "Save layout changes before quitting?"
+msgstr "退出前保存布局更改吗？"

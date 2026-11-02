@@ -3379,3 +3379,6 @@ msgstr "捨棄尚未套用的巨集變更？"
 
 msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
 msgstr "變更ID會自動更新參照。巢狀巨集保留各自的延遲。命令必須成功完成後才會開始下一步。暫停、文字輸入與命令皆計入巨集的逾時時間。"
+
+msgid "Save layout changes before quitting?"
+msgstr "結束前儲存配置變更嗎？"

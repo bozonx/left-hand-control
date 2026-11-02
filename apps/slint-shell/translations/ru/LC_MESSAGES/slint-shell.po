@@ -3066,3 +3066,6 @@ msgstr "Отбросить неприменённые изменения мак�
 
 msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
 msgstr "При изменении ID ссылки обновляются автоматически. Вложенные макросы сохраняют свои задержки. Следующий шаг начинается после успешного завершения команды. Паузы, ввод текста и команды учитываются в таймауте макроса."
+
+msgid "Save layout changes before quitting?"
+msgstr "Сохранить изменения раскладки перед выходом?"

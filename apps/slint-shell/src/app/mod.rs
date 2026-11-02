@@ -314,19 +314,33 @@ impl App {
         if self.shutting_down.get() {
             return true;
         }
-        if self.document().is_some() && !self.settings.invoke_flush_drafts() {
-            log::warn!("shutdown deferred: page drafts could not be saved");
+        if self.document().is_some() && !self.settings.invoke_prepare_quit() {
+            log::warn!("shutdown deferred: unsaved changes require a decision");
             return false;
         }
-        self.shutting_down.set(true);
-        self.supervisor.borrow_mut().shutdown();
+        self.finish_shutdown();
         true
+    }
+
+    fn finish_shutdown(&self) {
+        if self.shutting_down.replace(true) {
+            return;
+        }
+        self.supervisor.borrow_mut().shutdown();
     }
 }
 
 /// Callbacks of the settings window that drive the shell rather than a page.
 fn bind_shell(app: &Rc<App>) {
     crate::game_mode::bind(&app.settings);
+    app.settings
+        .global::<crate::ui::LayoutLibrary>()
+        .on_quit(|| {
+            with_app(|app| {
+                app.finish_shutdown();
+                let _ = slint::quit_event_loop();
+            });
+        });
     app.settings
         .global::<AppState>()
         .on_set_game_control(|control| {
@@ -540,7 +554,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     });
     log::info!("ready; backend={:?}", std::env::var("SLINT_BACKEND"));
     let event_loop_result = slint::run_event_loop_until_quit();
-    app.shutdown();
+    app.finish_shutdown();
     server.stop();
     APP.with(|slot| slot.borrow_mut().take());
     event_loop_result?;

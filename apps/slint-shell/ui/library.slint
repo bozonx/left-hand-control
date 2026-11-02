@@ -100,6 +100,7 @@ export global LayoutLibrary {
     callback save-current();
     callback flush-drafts() -> bool;
     callback discard-drafts();
+    callback quit();
     /// Save the working copy over a library file changed elsewhere.
     callback overwrite-current();
     callback save-as(string);
@@ -145,7 +146,11 @@ export global LayoutLibrary {
     public function continue-pending() {
         let action = self.pending-action;
         self.pending-action = PendingLayoutAction.none;
-        if action != PendingLayoutAction.none { self.discard-drafts(); }
+        if action == PendingLayoutAction.quit {
+            self.dialog = LibraryDialog.none;
+            self.discard-drafts();
+            self.quit();
+        }
         if action == PendingLayoutAction.edit { self.dialog = LibraryDialog.none; self.load(self.selected); }
         if action == PendingLayoutAction.create {
             self.proceed-open-create(self.pending-create-source, self.pending-create-copy-index);
@@ -751,7 +756,9 @@ export component LibraryDialogOverlay inherits Rectangle {
             }
         }
         if LayoutLibrary.dialog == LibraryDialog.unsaved: Text {
-            text: LayoutLibrary.current-label == ""
+            text: LayoutLibrary.pending-action == PendingLayoutAction.quit
+                ? @tr("Save layout changes before quitting?")
+                : LayoutLibrary.current-label == ""
                 ? @tr("The layout you are editing has not been saved to the library. Its changes will be lost.")
                 : @tr("“{}” has unsaved changes. Save them before switching?", LayoutLibrary.current-label);
             color: Theme.text; wrap: word-wrap;

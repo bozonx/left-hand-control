@@ -388,6 +388,7 @@ fn load(ui: &SettingsWindow, document: &Document, state: &Shared, name: &str) ->
         })?;
         reset_context(ui, document, &mut state.borrow_mut());
     }
+    ui.global::<LayoutLibrary>().invoke_discard_drafts();
     ui.invoke_navigate(Page::Rules, MenuKind::Emoji);
     Ok(Msg::None)
 }
@@ -447,7 +448,14 @@ fn delete(
         config.remove_library_layout(&name, &expected)
     })?;
     metadata::remember(&name, None);
-    reset_context(ui, document, &mut state.borrow_mut());
+    if state
+        .borrow()
+        .baseline
+        .as_ref()
+        .is_some_and(|(opened, _)| opened == &name)
+    {
+        state.borrow_mut().baseline = None;
+    }
     ui.global::<LayoutLibrary>().set_dialog(LibraryDialog::None);
     Ok(Msg::LayoutDeleted(name))
 }
@@ -474,8 +482,26 @@ fn rename(
     {
         select(ui, state, index as i32)?;
     }
-    reset_context(ui, document, &mut state.borrow_mut());
+    update_baseline(&mut state.borrow_mut(), &name, &saved, None);
     Ok(Msg::None)
+}
+
+/// Follow our metadata edit without accepting unrelated changes on disk.
+fn update_baseline(state: &mut State, name: &str, new_name: &str, description: Option<&str>) {
+    let Some((opened, text)) = &mut state.baseline else {
+        return;
+    };
+    if opened != name {
+        return;
+    }
+    *opened = new_name.to_owned();
+    if let Some(description) = description
+        && let Ok(Some(mut layout)) = layout_file::parse(text)
+    {
+        layout.description =
+            (!description.trim().is_empty()).then(|| description.trim().to_owned());
+        *text = layout_file::serialize(&layout);
+    }
 }
 
 fn set_description(
@@ -491,7 +517,7 @@ fn set_description(
         config.edit_library_metadata(&name, &name, Some(description), &expected)
     })?;
     remember_saved(document, &name);
-    reset_context(ui, document, &mut state.borrow_mut());
+    update_baseline(&mut state.borrow_mut(), &name, &name, Some(description));
     Ok(Msg::None)
 }
 
@@ -598,12 +624,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     on!(ui, library.on_discard_current, doc = document, state = state => |ui| {
         // Bind the name first: a `read()` borrow must not outlive this line.
         let name = current_name(&doc.read());
-        let result = name.ok_or(Msg::LibrarySelect).and_then(|name| {
-                edit(&ui, &doc, &state, |config| config.load_library_for_editing(&name))?;
-                reset_context(&ui, &doc, &mut state.borrow_mut());
-                ui.global::<LayoutLibrary>().invoke_discard_drafts();
-                Ok(Msg::LayoutDiscarded(name))
-            });
+        let result = edit(&ui, &doc, &state, ConfigDocument::discard_working_layout).map(|()| {
+            reset_context(&ui, &doc, &mut state.borrow_mut());
+            ui.global::<LayoutLibrary>().invoke_discard_drafts();
+            name.map_or(Msg::None, Msg::LayoutDiscarded)
+        });
         report(&ui, &state, result);
     });
     on!(ui, library.on_activate_current, doc = document, state = state => |ui| {
@@ -683,6 +708,220 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use slint::Model;
+
+    fn bound_document() -> (tempfile::TempDir, Rc<Document>, SettingsWindow) {
+        use slint::platform::software_renderer::{MinimalSoftwareWindow, RepaintBufferType};
+        struct Platform;
+        impl slint::platform::Platform for Platform {
+            fn create_window_adapter(
+                &self,
+            ) -> Result<Rc<dyn slint::platform::WindowAdapter>, slint::PlatformError> {
+                Ok(MinimalSoftwareWindow::new(RepaintBufferType::ReusedBuffer))
+            }
+        }
+        slint::platform::set_platform(Box::new(Platform)).unwrap();
+        let (dir, document) = super::super::test_document();
+        document
+            .edit_library(|config| config.save_current_layout_as("A"))
+            .unwrap();
+        document
+            .edit_library(|config| config.save_current_layout_as("B"))
+            .unwrap();
+        document
+            .edit_library(|config| config.load_library_for_editing("A"))
+            .unwrap();
+        let ui = SettingsWindow::new().unwrap();
+        ui.global::<crate::ui::SettingsEditor>()
+            .set_devices_loading(true);
+        super::super::bind_document(&ui, &document);
+        (dir, document, ui)
+    }
+
+    #[test]
+    fn unrelated_metadata_edits_do_not_accept_external_changes_to_the_working_copy() {
+        let (_dir, document, ui) = bound_document();
+        let library = ui.global::<LayoutLibrary>();
+        let paths = document.read().paths().clone();
+        let mut theirs = document.read().layout().clone();
+        theirs.description = Some("external".into());
+        let theirs = layout_file::serialize(&theirs);
+        document
+            .edit(View::Rules, |config| {
+                config.update_layout(|layout| layout.description = Some("mine".into()))
+            })
+            .unwrap();
+        paths.save_user_layout("A", &theirs, true).unwrap();
+        library.invoke_rename(1, "Renamed B".into());
+        library.invoke_set_description(1, "B description".into());
+        library.invoke_delete(1);
+        library.invoke_save_current();
+        assert_eq!(library.get_dialog(), LibraryDialog::Conflict);
+        assert_eq!(paths.load_user_layout("A").unwrap(), theirs);
+    }
+
+    #[test]
+    fn quitting_requires_a_decision_and_continues_after_a_successful_save() {
+        use crate::ui::PendingLayoutAction;
+        use std::cell::Cell;
+        let (_dir, document, ui) = bound_document();
+        let library = ui.global::<LayoutLibrary>();
+        assert!(ui.invoke_prepare_quit());
+        document
+            .edit(View::Rules, |config| config.create_layer("Unsaved", ""))
+            .unwrap();
+        assert!(!ui.invoke_prepare_quit());
+        assert_eq!(library.get_pending_action(), PendingLayoutAction::Quit);
+        assert_eq!(library.get_dialog(), LibraryDialog::Unsaved);
+        let quit = Rc::new(Cell::new(false));
+        let requested = quit.clone();
+        library.on_quit(move || requested.set(true));
+        library.invoke_cancel_dialog();
+        assert!(!quit.get());
+        assert!(!ui.invoke_prepare_quit());
+        library.invoke_save_and_continue();
+        assert!(quit.get());
+        assert!(!library.get_dirty());
+        assert_eq!(
+            document.read().load_layout("user:A").unwrap().layers.len(),
+            1
+        );
+    }
+
+    #[test]
+    fn failed_save_does_not_quit_and_can_be_retried() {
+        use std::cell::Cell;
+        let (_dir, document, ui) = bound_document();
+        let library = ui.global::<LayoutLibrary>();
+        let paths = document.read().paths().clone();
+        document
+            .edit(View::Rules, |config| config.create_layer("Unsaved", ""))
+            .unwrap();
+        let quit = Rc::new(Cell::new(false));
+        let requested = quit.clone();
+        library.on_quit(move || requested.set(true));
+        assert!(!ui.invoke_prepare_quit());
+        std::fs::remove_file(paths.layout_path("A").unwrap()).unwrap();
+        std::fs::create_dir(paths.layout_path("A").unwrap()).unwrap();
+        library.invoke_save_and_continue();
+        assert_eq!(library.get_dialog(), LibraryDialog::Conflict);
+        library.invoke_overwrite_current();
+        library.invoke_finish_save();
+        assert!(!quit.get());
+        assert!(library.get_dirty());
+        std::fs::remove_dir(paths.layout_path("A").unwrap()).unwrap();
+        assert!(!ui.invoke_prepare_quit());
+        library.invoke_save_and_continue();
+        library.invoke_overwrite_current();
+        library.invoke_finish_save();
+        assert!(quit.get());
+        assert!(!library.get_dirty());
+    }
+
+    #[test]
+    fn quitting_can_explicitly_discard_an_invalid_draft_without_saving_it() {
+        use crate::ui::MacroEditor;
+        use std::cell::Cell;
+        let (_dir, document, ui) = bound_document();
+        let library = ui.global::<LayoutLibrary>();
+        let macros = ui.global::<MacroEditor>();
+        let original = document.read().paths().load_user_layout("A").unwrap();
+        macros.invoke_add("Draft".into());
+        macros.invoke_add_step(0, "macro:missing".into());
+        let quit = Rc::new(Cell::new(false));
+        let requested = quit.clone();
+        library.on_quit(move || requested.set(true));
+        assert!(!ui.invoke_prepare_quit());
+        library.invoke_save_and_continue();
+        assert!(!quit.get());
+        library.invoke_continue_pending();
+        assert!(quit.get());
+        assert!(!macros.get_has_unsaved_changes());
+        assert_eq!(
+            document.read().paths().load_user_layout("A").unwrap(),
+            original
+        );
+    }
+
+    #[test]
+    fn opening_or_failing_creation_keeps_the_current_page_drafts() {
+        use crate::ui::MacroEditor;
+        let (_dir, _document, ui) = bound_document();
+        let library = ui.global::<LayoutLibrary>();
+        let macros = ui.global::<MacroEditor>();
+        macros.invoke_add("Draft".into());
+        macros.invoke_add_step(0, "macro:missing".into());
+        library.invoke_open_create(LayoutSource::Empty, 0);
+        library.invoke_continue_pending();
+        assert_eq!(library.get_dialog(), LibraryDialog::Create);
+        assert!(macros.get_has_unsaved_changes());
+        library.invoke_create("A".into(), "".into(), LayoutSource::Empty, 0);
+        assert_eq!(library.get_dialog(), LibraryDialog::Create);
+        assert!(macros.get_has_unsaved_changes());
+        library.invoke_cancel_dialog();
+        assert!(macros.get_has_unsaved_changes());
+    }
+
+    #[test]
+    fn failed_switch_keeps_invalid_macro_drafts_until_a_successful_load() {
+        use crate::ui::MacroEditor;
+        let (_dir, document, ui) = bound_document();
+        let library = ui.global::<LayoutLibrary>();
+        let macros = ui.global::<MacroEditor>();
+        macros.invoke_add("Draft".into());
+        macros.invoke_add_step(0, "macro:missing".into());
+        assert!(macros.get_has_unsaved_changes());
+        library.invoke_edit(1);
+        assert_eq!(library.get_dialog(), LibraryDialog::Unsaved);
+        let paths = document.read().paths().clone();
+        let target = paths.load_user_layout("B").unwrap();
+        std::fs::remove_file(paths.layout_path("B").unwrap()).unwrap();
+        library.invoke_continue_pending();
+        assert!(macros.get_has_unsaved_changes());
+        assert!(macros.get_has_errors());
+        assert_eq!(
+            macros
+                .get_macros()
+                .row_data(0)
+                .unwrap()
+                .steps
+                .row_data(0)
+                .unwrap()
+                .action,
+            "macro:missing"
+        );
+        paths.save_user_layout("B", &target, false).unwrap();
+        library.invoke_refresh();
+        library.invoke_edit(1);
+        library.invoke_continue_pending();
+        assert!(!macros.get_has_unsaved_changes());
+        assert!(!macros.get_has_errors());
+        assert_eq!(macros.get_macros().row_count(), 0);
+    }
+
+    #[test]
+    fn discard_without_a_readable_saved_file_clears_working_copy_and_page_drafts() {
+        use crate::ui::MacroEditor;
+        let (_dir, document, ui) = bound_document();
+        let library = ui.global::<LayoutLibrary>();
+        let macros = ui.global::<MacroEditor>();
+        macros.invoke_add("Draft".into());
+        macros.invoke_add_step(0, "macro:missing".into());
+        let paths = document.read().paths().clone();
+        std::fs::remove_file(paths.layout_path("A").unwrap()).unwrap();
+        library.invoke_discard_current();
+        assert_eq!(library.get_current_label(), "");
+        assert!(!library.get_dirty());
+        assert!(!macros.get_has_unsaved_changes());
+        assert!(!macros.get_has_errors());
+        document
+            .edit(View::Rules, |config| config.create_layer("Unnamed", ""))
+            .unwrap();
+        assert!(library.get_dirty());
+        library.invoke_discard_current();
+        assert!(!library.get_dirty());
+        assert_eq!(document.read().layout(), &LayoutPreset::initial());
+    }
 
     #[test]
     fn conditions_round_trip() {

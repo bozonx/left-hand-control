@@ -3800,3 +3800,6 @@ msgstr "Απόρριψη μη εφαρμοσμένων αλλαγών μακρο
 
 msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
 msgstr "Οι αλλαγές ID ενημερώνουν αυτόματα τις αναφορές. Οι εμφωλευμένες μακροεντολές διατηρούν τις καθυστερήσεις τους. Οι εντολές πρέπει να ολοκληρωθούν επιτυχώς πριν το επόμενο βήμα. Παύσεις, κείμενο και εντολές υπολογίζονται στο χρονικό όριο της μακροεντολής."
+
+msgid "Save layout changes before quitting?"
+msgstr "Αποθήκευση αλλαγών διάταξης πριν από την έξοδο;"

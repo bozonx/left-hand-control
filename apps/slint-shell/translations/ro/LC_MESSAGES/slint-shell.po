@@ -3738,3 +3738,6 @@ msgstr "Renunțați la modificările neaplicate ale macrocomenzilor?"
 
 msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
 msgstr "Schimbările de ID actualizează automat referințele. Macrocomenzile imbricate își păstrează întârzierile. Comenzile trebuie să se încheie cu succes înainte de pasul următor. Pauzele, textul și comenzile sunt incluse în limita de timp a macrocomenzii."
+
+msgid "Save layout changes before quitting?"
+msgstr "Salvați modificările aranjamentului înainte de ieșire?"

@@ -1,3 +1,4 @@
+import { PendingLayoutAction } from "types.slint";
 import { KeyboardFocus } from "focus.slint";
 import { FocusRing, TextField } from "controls.slint";
 import { NotificationCenter, ToastStack } from "notifications.slint";
@@ -62,7 +63,20 @@ export component SettingsWindow inherits Window {
         : root.menus-problem ? MenuEditor.status
         : root.settings-problem ? SettingsEditor.message : {};
 
-    /// Quit is allowed only after all page drafts have been applied.
+    /// Ask before losing the working copy, including invalid page drafts.
+    public function prepare-quit() -> bool {
+        if !SettingsEditor.flush-pending() { root.navigate(Page.settings, MenuKind.emoji); return false; }
+        let drafts-saved = LayoutLibrary.flush-drafts();
+        if LayoutLibrary.dirty || !drafts-saved {
+            LayoutLibrary.pending-action = PendingLayoutAction.quit;
+            LayoutLibrary.clear-status();
+            LayoutLibrary.dialog = LibraryDialog.unsaved;
+            return false;
+        }
+        return true;
+    }
+
+    /// Apply all page drafts without writing the layout to the library.
     public function flush-drafts() -> bool {
         let layout = LayoutLibrary.flush-drafts();
         let settings = SettingsEditor.flush-pending();

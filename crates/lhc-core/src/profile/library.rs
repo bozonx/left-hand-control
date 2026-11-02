@@ -378,6 +378,36 @@ impl ConfigDocument {
         result
     }
 
+    /// Discard the working copy. If its library file is no longer usable,
+    /// start a clean, unnamed layout rather than keeping an unusable identity.
+    pub fn discard_working_layout(&mut self) -> Result<(), ConfigError> {
+        self.transaction(|draft| {
+            let saved = draft
+                .settings()
+                .editing_layout_id
+                .as_deref()
+                .map(|id| draft.load_layout(id))
+                .transpose()
+                .and_then(|layout| {
+                    if let Some(layout) = &layout {
+                        super::ids::validate_layout(layout).map_err(ConfigError::Invalid)?;
+                        super::timing::validate_layout(layout).map_err(ConfigError::Invalid)?;
+                    }
+                    Ok(layout)
+                });
+            let layout = match saved {
+                Ok(Some(layout)) => layout,
+                Ok(None) => LayoutPreset::initial(),
+                Err(error) => {
+                    log::warn!("discarding working copy without a usable library file: {error}");
+                    draft.update_settings(|settings| settings.editing_layout_id = None)?;
+                    LayoutPreset::initial()
+                }
+            };
+            draft.update_layout(|current| *current = layout)
+        })
+    }
+
     pub fn load_library_for_editing(&mut self, name: &str) -> Result<(), ConfigError> {
         let preset: LayoutPreset = self.load_layout(&user_layout_id(name))?;
         // Validate before saving the identity, so a failed open changes neither part.
@@ -392,6 +422,54 @@ impl ConfigDocument {
 mod tests {
     use super::*;
     use crate::profile::names::NameIssue;
+
+    #[test]
+    fn discard_handles_unnamed_missing_and_broken_library_layouts() {
+        for contents in [None, Some("broken")] {
+            let dir = tempfile::tempdir().unwrap();
+            let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+            let mut doc = ConfigDocument::load(paths.clone()).unwrap();
+            doc.update_layout(|layout| layout.description = Some("unsaved".into()))
+                .unwrap();
+            doc.discard_working_layout().unwrap();
+            assert_eq!(doc.layout(), &LayoutPreset::initial());
+            doc.save_current_layout_as("Saved").unwrap();
+            doc.update_layout(|layout| layout.description = Some("unsaved".into()))
+                .unwrap();
+            match contents {
+                None => std::fs::remove_file(paths.layout_path("Saved").unwrap()).unwrap(),
+                Some(text) => std::fs::write(paths.layout_path("Saved").unwrap(), text).unwrap(),
+            }
+            doc.discard_working_layout().unwrap();
+            assert_eq!(doc.layout(), &LayoutPreset::initial());
+            assert!(doc.settings().editing_layout_id.is_none());
+            assert!(
+                ConfigDocument::load(paths)
+                    .unwrap()
+                    .settings()
+                    .editing_layout_id
+                    .is_none()
+            );
+        }
+    }
+
+    #[test]
+    fn failed_discard_preserves_the_working_copy_and_identity() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let mut doc = ConfigDocument::load(paths.clone()).unwrap();
+        doc.save_current_layout_as("Saved").unwrap();
+        doc.update_layout(|layout| layout.description = Some("unsaved".into()))
+            .unwrap();
+        std::fs::remove_file(paths.layout_path("Saved").unwrap()).unwrap();
+        std::fs::remove_file(paths.config_path()).unwrap();
+        std::fs::create_dir(paths.config_path()).unwrap();
+        let before = doc.layout().clone();
+        let settings = doc.settings().clone();
+        assert!(doc.discard_working_layout().is_err());
+        assert_eq!(doc.layout(), &before);
+        assert_eq!(doc.settings(), &settings);
+    }
 
     #[test]
     fn metadata_snapshot_preserves_invalid_and_missing_files() {

@@ -3737,3 +3737,6 @@ msgstr "Elveti a makrók nem alkalmazott módosításait?"
 
 msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
 msgstr "Az ID módosítása automatikusan frissíti a hivatkozásokat. A beágyazott makrók megőrzik késleltetéseiket. A parancsoknak sikeresen be kell fejeződniük a következő lépés előtt. A szünetek, szövegek és parancsok beleszámítanak a makró időkorlátjába."
+
+msgid "Save layout changes before quitting?"
+msgstr "Menti a kiosztás módosításait kilépés előtt?"

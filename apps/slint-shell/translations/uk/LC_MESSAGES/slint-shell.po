@@ -3704,3 +3704,6 @@ msgstr "Відкинути незастосовані зміни макросі�
 
 msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
 msgstr "Зміна ID автоматично оновлює посилання. Вкладені макроси зберігають власні затримки. Наступний крок починається після успішного завершення команди. Паузи, текст і команди враховуються в обмеженні часу макросу."
+
+msgid "Save layout changes before quitting?"
+msgstr "Зберегти зміни розкладки перед виходом?"

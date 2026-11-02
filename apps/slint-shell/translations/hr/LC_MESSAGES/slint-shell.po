@@ -3688,3 +3688,6 @@ msgstr "Odbaciti neprimijenjene promjene makronaredbi?"
 
 msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
 msgstr "Promjene ID-a automatski ažuriraju reference. Ugniježđene makronaredbe zadržavaju svoje odgode. Naredbe moraju uspješno završiti prije sljedećeg koraka. Pauze, tekst i naredbe računaju se u vremensko ograničenje makronaredbe."
+
+msgid "Save layout changes before quitting?"
+msgstr "Spremiti promjene rasporeda prije izlaska?"

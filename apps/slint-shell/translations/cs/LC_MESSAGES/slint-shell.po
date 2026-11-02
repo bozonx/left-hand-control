@@ -3676,3 +3676,6 @@ msgstr "Zahodit nepoužité změny maker?"
 
 msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
 msgstr "Změny ID automaticky aktualizují odkazy. Vnořená makra zachovávají vlastní prodlevy. Příkazy musí úspěšně skončit před dalším krokem. Pauzy, text a příkazy se počítají do časového limitu makra."
+
+msgid "Save layout changes before quitting?"
+msgstr "Uložit změny rozložení před ukončením?"
