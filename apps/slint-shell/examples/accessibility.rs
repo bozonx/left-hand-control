@@ -12,6 +12,7 @@ use slint::ComponentHandle;
 
 slint::slint! {
     import { NumericInput, InlineTextField, ButtonGroup, NavTab, Section } from "../ui/controls.slint";
+    export { KeyboardFocus, NavigationKind, NavigationMove } from "../ui/focus.slint";
     export component Probe inherits Window {
         title: "LHC accessibility fixture";
         width: 640px; height: 400px;
@@ -78,6 +79,29 @@ fn nodes(ui: &Probe) -> Vec<ItemRc> {
 }
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ui = Probe::new()?;
+    let weak = ui.as_weak();
+    ui.global::<KeyboardFocus>()
+        .on_navigate(move |kind, movement| {
+            use slint_shell::ui::{NavigationKind as Kind, NavigationMove as Move};
+            let Some(ui) = weak.upgrade() else { return };
+            let kind = match kind {
+                NavigationKind::HorizontalTabs => Kind::HorizontalTabs,
+                NavigationKind::VerticalTabs => Kind::VerticalTabs,
+                NavigationKind::List => Kind::List,
+                NavigationKind::Grid => Kind::Grid,
+                NavigationKind::Menu => Kind::Menu,
+                NavigationKind::Radio => Kind::Radio,
+            };
+            let movement = match movement {
+                NavigationMove::Previous => Move::Previous,
+                NavigationMove::Next => Move::Next,
+                NavigationMove::Up => Move::Up,
+                NavigationMove::Down => Move::Down,
+                NavigationMove::First => Move::First,
+                NavigationMove::Last => Move::Last,
+            };
+            slint_shell::pages::navigate_focus_group(ui.window(), kind, movement);
+        });
     ui.show()?;
     if std::env::var_os("LHC_A11Y_INSPECT").is_some() {
         slint::Timer::single_shot(std::time::Duration::from_secs(20), || {

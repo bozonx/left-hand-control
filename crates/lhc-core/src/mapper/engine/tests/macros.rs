@@ -781,8 +781,9 @@ fn layer_key_bound_to_an_empty_macro_swallows_the_key() {
 
 #[test]
 fn bindings_to_commands_that_cannot_run_report_instead_of_doing_nothing() {
+    let bus = crate::events::test_support::isolated_bus();
     let (record, seen) = std::sync::mpsc::channel();
-    let _events = crate::events::bus()
+    let _events = bus
         .subscribe(move |event| {
             if matches!(event, crate::events::CoreEvent::ActionUnavailable(action)
             if action == "cmd:disabledHere" || action == "cmd:")
@@ -802,11 +803,11 @@ fn bindings_to_commands_that_cannot_run_report_instead_of_doing_nothing() {
     let mut out = Vec::new();
     engine.handle_key_event(KeyCode::KEY_Q, true, now, &mut out);
     engine.handle_key_event(KeyCode::KEY_Q, false, now, &mut out);
+    assert!(out.is_empty());
+    seen.recv_timeout(Duration::from_secs(1)).unwrap();
     engine.execute_remote("cmd:disabledHere", &mut out);
     assert!(out.is_empty());
-    for _ in 0..2 {
-        seen.recv_timeout(Duration::from_secs(1)).unwrap();
-    }
+    seen.recv_timeout(Duration::from_secs(1)).unwrap();
 
     // A tap still waiting for its decision when commands are switched off
     // reports at release instead of silently doing nothing.

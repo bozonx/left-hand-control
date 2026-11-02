@@ -1321,8 +1321,9 @@ fn buffered_long_hold_must_fire() {
 
 #[test]
 fn actions_unavailable_here_are_skipped_with_a_notice() {
+    let bus = crate::events::test_support::isolated_bus();
     let (record, seen) = std::sync::mpsc::channel();
-    let _events = crate::events::bus().subscribe(move |event| {
+    let _events = bus.subscribe(move |event| {
         if let crate::events::CoreEvent::ActionUnavailable(action) = event
             && action.contains("foreignOnly")
         {
@@ -1367,13 +1368,15 @@ fn actions_unavailable_here_are_skipped_with_a_notice() {
     let mut out = Vec::new();
     engine.handle_key_event(KeyCode::KEY_Q, true, now, &mut out);
     engine.handle_key_event(KeyCode::KEY_Q, false, now, &mut out);
+    assert!(out.is_empty());
+    assert_eq!(seen.recv_timeout(Duration::from_secs(1)).unwrap(), "cmd:foreignOnly");
     engine.execute_remote("macro:mixed", &mut out);
     engine.tick(now + Duration::from_millis(1), &mut out);
     // Neither the trigger key nor a half-run macro reaches the OS.
     assert!(out.is_empty());
     assert_eq!(
-        (0..2).map(|_| seen.recv_timeout(Duration::from_secs(1)).unwrap()).collect::<Vec<_>>(),
-        ["cmd:foreignOnly", "cmd:foreignOnly"]
+        seen.recv_timeout(Duration::from_secs(1)).unwrap(),
+        "cmd:foreignOnly"
     );
 }
 

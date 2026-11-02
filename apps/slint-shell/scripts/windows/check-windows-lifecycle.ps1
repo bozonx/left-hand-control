@@ -17,6 +17,7 @@ if (-not (Test-Path $exe)) {
 New-Item -ItemType Directory -Force -Path $output | Out-Null
 . (Join-Path $PSScriptRoot 'windows-test-lib.ps1')
 $saved = Initialize-WindowsTest $output
+Enable-WindowsTestDevelopment
 $env:SLINT_BACKEND = 'winit-skia'
 $script:processes = [System.Collections.Generic.List[System.Diagnostics.Process]]::new()
 

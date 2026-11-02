@@ -265,7 +265,14 @@ fn grid_distance(along: f32, across: f32, movement: NavigationMove) -> Option<(f
     (along > 1. && (!horizontal || across < 1.)).then_some((along, across))
 }
 
-fn navigate(adapter: Rc<dyn WindowAdapter>, kind: NavigationKind, movement: NavigationMove) {
+/// Move within a composite control in a standalone window, using the same
+/// navigation as settings and popups.
+pub fn navigate_focus_group(
+    window: &slint::Window,
+    kind: NavigationKind,
+    movement: NavigationMove,
+) {
+    let adapter = WindowInner::from_pub(window).window_adapter();
     let adapter = focus_window(adapter);
     let window = WindowInner::from_pub(adapter.window());
     window.ensure_tree_instantiated();
@@ -344,7 +351,7 @@ pub(crate) fn bind_navigation(focus: &KeyboardFocus<'_>, window: &slint::Window)
     let weak = Rc::downgrade(&window);
     focus.on_navigate(move |kind, movement| {
         if let Some(window) = weak.upgrade() {
-            navigate(window, kind, movement);
+            navigate_focus_group(window.window(), kind, movement);
         }
     });
     let weak = Rc::downgrade(&window);

@@ -55,6 +55,7 @@ $env:LHC_METRICS = Join-Path $output 'metrics.csv'
 Remove-Item $env:LHC_METRICS -ErrorAction SilentlyContinue
 Push-Location $root
 try {
+    Enable-WindowsTestDevelopment
     & (Join-Path $PSScriptRoot 'check-windows-syntax.ps1')
     if (-not $SkipBuild) {
         # Resolve the Windows feature union once: separate core/shell builds

@@ -489,6 +489,7 @@ mod tests {
         assert_eq!(events.len(), 2);
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn text_destination_is_independent_of_the_rule_cache() {
         let window = |id: &str| {

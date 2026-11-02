@@ -1174,9 +1174,11 @@ mod tests {
     #[test]
     fn foreground_only_counts_a_launcher_game_only_in_front() {
         let mut settings = settings(Vec::new());
-        settings.use_lutris = true;
+        settings.use_steam = true;
+        settings.use_app_category = true;
         settings.foreground_only = true;
         let mut observed = observation(&[], false);
+        observed.detectors.steam = Some(DetectorAvailability::Available);
         observed.known_games = vec![known("Witcher", Some(&["witcher3.exe", "wine64"]))];
         let browser = ActiveWindow {
             app_id: "org.mozilla.firefox".into(),

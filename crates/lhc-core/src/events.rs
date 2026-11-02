@@ -297,8 +297,15 @@ pub fn bus() -> &'static EventBus {
 }
 
 pub fn emit(event: CoreEvent) {
+    #[cfg(test)]
+    if test_support::route(&event) {
+        return;
+    }
     bus().emit(event);
 }
+
+#[cfg(test)]
+pub(crate) mod test_support;
 
 #[cfg(test)]
 mod tests {
