@@ -2930,7 +2930,7 @@ dependencies = [
  "evdev",
  "libc",
  "log",
- "nix 0.29.0",
+ "nix 0.31.3",
  "objc2-app-kit 0.3.2",
  "objc2-core-foundation",
  "objc2-core-graphics",
