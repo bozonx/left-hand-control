@@ -90,6 +90,7 @@ impl OutputHold {
             !matches!(
                 out,
                 EngineOutput::Literal(_)
+                    | EngineOutput::RunMacroText(_, _)
                     | EngineOutput::RunCommand(_)
                     | EngineOutput::RunMacroCommand(_, _)
                     | EngineOutput::RunSystem(_)
@@ -193,7 +194,7 @@ impl OutputHold {
             std::mem::take(buf)
         } else if let Some(index) = buf
             .iter()
-            .position(|out| matches!(out, EngineOutput::Literal(_)))
+            .position(|out| matches!(out, EngineOutput::Literal(_) | EngineOutput::RunMacroText(_, _)))
         {
             self.text_until = Some(now + TEXT_HOLD_MAX);
             buf.split_off(index + 1)
@@ -248,9 +249,7 @@ pub(super) trait SideEffects {
     fn held_layer_changed(&mut self, _state: super::layer_state::HeldLayerState) {}
     fn sleep(&mut self, duration: Duration);
     fn type_text(&mut self, text: &str);
-    fn text_failed(&mut self) -> bool {
-        false
-    }
+    fn type_macro_text(&mut self, text: &str, job: &crate::text_input::MacroText);
     fn text_pending(&self) -> bool {
         false
     }
@@ -317,9 +316,6 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
 
     let now = driver.now();
     let pending = effects.text_pending();
-    if effects.text_failed() {
-        engine.text_input_failed(out_buf);
-    }
     engine.set_text_pending(pending, now);
     let mut wait = engine
         .next_deadline(now)
@@ -521,6 +517,12 @@ pub(super) fn flush_out_with<S: EventSink, E: SideEffects>(
                     effects.run_macro_command(&command, &job);
                 }
             }
+            EngineOutput::RunMacroText(text, job) => {
+                flush_events(sink, &mut events)?;
+                if !job.cancelled() {
+                    effects.type_macro_text(&text, &job);
+                }
+            }
             EngineOutput::Literal(text) => {
                 flush_events(sink, &mut events)?;
                 effects.type_text(&text);
@@ -584,6 +586,11 @@ mod tests {
 
         fn type_text(&mut self, text: &str) {
             self.texts.push(text.to_string());
+        }
+
+        fn type_macro_text(&mut self, text: &str, job: &crate::text_input::MacroText) {
+            self.type_text(text);
+            job.complete(false);
         }
 
         fn run_system(&mut self, action: &SystemAction) {
@@ -1338,6 +1345,7 @@ mod tests {
                 down: false,
             },
             EngineOutput::Literal("stale".into()),
+            EngineOutput::RunMacroText("stale macro".into(), crate::text_input::MacroText::default()),
             command(),
             EngineOutput::RunSystem(SystemAction::AppEvent(
                 crate::profile::app_action::AppAction::parse("gameModeToggle").unwrap(),
@@ -1484,4 +1492,15 @@ mod tests {
         hold.hold_typed(&mut buf, 0, late);
         assert_eq!(buf.len(), 1);
     }
+    #[test]
+    fn cancelled_macro_text_is_not_submitted_when_buffered_output_is_flushed() {
+        let job = crate::text_input::MacroText::default();
+        let mut out = vec![EngineOutput::RunMacroText("cancelled".into(), job.clone())];
+        job.cancel();
+        let mut effects = FakeEffects::default();
+        flush_out_with(&mut FakeSink::default(), &mut effects, &mut out).unwrap();
+        assert!(effects.texts.is_empty());
+        assert_eq!(job.result(), None);
+    }
+
 }

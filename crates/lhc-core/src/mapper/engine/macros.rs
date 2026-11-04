@@ -31,13 +31,28 @@ impl MacroRunner {
             match job.result() {
                 None => return,
                 Some(Err(error)) => {
-                    log::warn!("[mapper] {error}");
+                    if let Some(am) = &self.active {
+                        log::warn!("[mapper] {}: {error}", am.steps[am.current_step].source);
+                    }
                     crate::events::emit(crate::events::CoreEvent::MacroRunFailed(
                         crate::events::MacroRunFailure::Command,
                     ));
                     self.cancel(virt, out);
                     return;
                 }
+                Some(Ok(())) => {
+                    if let Some(am) = self.active.as_mut() {
+                        am.phase = MacroPhase::NextStep;
+                        am.current_step += 1;
+                        am.next_wake = next_macro_wake(now, am);
+                    }
+                }
+            }
+        }
+        if let Some(MacroPhase::Text(job)) = self.active.as_ref().map(|am| &am.phase) {
+            match job.result() {
+                None => return,
+                Some(Err(())) => self.abort(virt, out),
                 Some(Ok(())) => {
                     if let Some(am) = self.active.as_mut() {
                         am.phase = MacroPhase::NextStep;
@@ -142,15 +157,12 @@ impl MacroRunner {
                                     break;
                                 }
                                 MacroStepItem::Literal(text) => {
-                                    out.push(EngineOutput::Literal(text.clone()));
-                                    self.text_pending = true;
+                                    let job = crate::text_input::MacroText::default();
+                                    out.push(EngineOutput::RunMacroText(text.clone(), job.clone()));
+                                    am.phase = MacroPhase::Text(job);
                                     am.steps_emitted += 1;
-                                    am.current_step += 1;
-                                    if am.current_step < am.steps.len() {
-                                        am.next_wake = next_macro_wake(now, &am);
-                                        self.active = Some(am);
-                                        break;
-                                    }
+                                    self.active = Some(am);
+                                    break;
                                 }
                                 // `run_macro` never starts a run with one.
                                 MacroStepItem::Unavailable(_) => {
@@ -168,7 +180,7 @@ impl MacroRunner {
                                 }
                             }
                         }
-                        MacroPhase::FinalPause | MacroPhase::Command(_) => break,
+                        MacroPhase::FinalPause | MacroPhase::Command(_) | MacroPhase::Text(_) => break,
                         MacroPhase::StrokeModDelayPress(ref ks) => {
                             let ks = ks.clone();
                             virt.tap_unless_held(ks.key, out);
@@ -210,7 +222,7 @@ impl MacroRunner {
             .as_ref()
             .filter(|am| !self.text_pending || !matches!(am.phase, MacroPhase::NextStep))
             .map(|am| {
-                if matches!(am.phase, MacroPhase::Command(_)) {
+                if matches!(am.phase, MacroPhase::Command(_) | MacroPhase::Text(_)) {
                     Duration::from_millis(5)
                 } else {
                     am.next_wake.saturating_duration_since(now)
@@ -226,24 +238,7 @@ impl MacroRunner {
     }
 
     /// Resume macro timing only after the text worker has completed injection.
-    pub(super) fn set_text_pending(&mut self, pending: bool, now: Instant) {
-        if self.text_pending
-            && !pending
-            && let Some(am) = self.active.as_mut()
-        {
-            let previous = am.current_step.checked_sub(1).and_then(|i| am.steps.get(i));
-            if matches!(am.phase, MacroPhase::NextStep)
-                && matches!(
-                    previous,
-                    Some(super::model::CompiledMacroStep {
-                        item: crate::mapper::action::MacroStepItem::Literal(_),
-                        ..
-                    })
-                )
-            {
-                am.next_wake = next_macro_wake(now, am);
-            }
-        }
+    pub(super) fn set_text_pending(&mut self, pending: bool, _now: Instant) {
         self.text_pending = pending;
     }
 
@@ -264,6 +259,7 @@ impl MacroRunner {
                 }
             }
             MacroPhase::Command(job) => job.cancel(),
+            MacroPhase::Text(job) => job.cancel(),
             MacroPhase::NextStep | MacroPhase::FinalPause => {}
         }
     }

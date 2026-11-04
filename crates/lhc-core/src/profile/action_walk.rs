@@ -87,6 +87,13 @@ impl LayoutPreset {
     }
 }
 
+impl ResolvedAppConfig {
+    pub(crate) fn for_each_action_mut(&mut self, mut fix: impl FnMut(&mut String)) {
+        let mut visit = |_, action: &mut String| fix(action);
+        walk!(self, visit, mut);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::profile::model::*;

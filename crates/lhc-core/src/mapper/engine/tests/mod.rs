@@ -253,7 +253,7 @@ fn timeline(
             EngineOutput::ChordPress { ks, .. } => TraceEvent::Press(ks.key, ks.mods),
             EngineOutput::ChordRelease { key, mods, .. } => TraceEvent::Release(key, mods),
             EngineOutput::ReleaseMods(mods) => TraceEvent::ReleaseMods(mods),
-            EngineOutput::Literal(text) => TraceEvent::Text(text),
+            EngineOutput::Literal(text) | EngineOutput::RunMacroText(text, _) => TraceEvent::Text(text),
             EngineOutput::RunSystem(_) => panic!("unexpected system action"),
             EngineOutput::RunCommand(_) | EngineOutput::RunMacroCommand(_, _) => {
                 panic!("unexpected command")

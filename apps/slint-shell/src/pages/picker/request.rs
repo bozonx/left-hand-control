@@ -9,12 +9,10 @@ use crate::{
         SettingsWindow,
     },
 };
-use lhc_core::{
-    config_document::ConfigDocument,
-    profile::{
-        actions::{self, Action},
-        key_catalog::CATEGORIES,
-    },
+use lhc_core::profile::{
+    actions::{self, Action},
+    key_catalog::CATEGORIES,
+    model::ResolvedAppConfig,
 };
 
 /// Mutually exclusive contexts of an action picker session.
@@ -151,7 +149,7 @@ impl Filter {
     }
 
     /// Whether `value` can be applied; `config` validates references.
-    pub(super) fn accepts(&self, value: &str, config: Option<&ConfigDocument>) -> bool {
+    pub(super) fn accepts(&self, value: &str, config: Option<&ResolvedAppConfig>) -> bool {
         if value.trim().is_empty() || !self.admits(value) {
             return false;
         }
@@ -165,7 +163,7 @@ impl Filter {
             Action::Pause(ms) => return self.macro_step && valid_pause(ms),
             _ => {}
         }
-        config.is_none_or(|config| actions::validate(&action, &config.config()).is_none())
+        config.is_none_or(|config| actions::validate(&action, config).is_none())
     }
 }
 

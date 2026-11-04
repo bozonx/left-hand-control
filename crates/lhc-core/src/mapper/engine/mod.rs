@@ -206,11 +206,6 @@ impl Engine {
         self.runner.active.is_some() || !self.runner.queue.is_empty()
     }
 
-    /// A failed text step must not submit incomplete input with subsequent keys.
-    pub fn text_input_failed(&mut self, out: &mut Vec<EngineOutput>) {
-        self.runner.abort(&mut self.virt, out);
-    }
-
     /// Resume macro timing only after the text worker has completed injection.
     pub fn set_text_pending(&mut self, pending: bool, now: Instant) {
         self.runner.set_text_pending(pending, now);

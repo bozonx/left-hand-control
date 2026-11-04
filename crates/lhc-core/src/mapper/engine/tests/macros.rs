@@ -37,7 +37,7 @@ fn text_actions_preserve_whitespace_in_remote_rules_and_macros() {
         out.clear();
         engine.execute_remote("macro:text", &mut out);
         engine.tick(Instant::now(), &mut out);
-        assert!(matches!(out.as_slice(), [EngineOutput::Literal(value)] if value == text));
+        assert!(matches!(out.as_slice(), [EngineOutput::RunMacroText(value, _)] if value == text));
     }
 }
 
@@ -67,17 +67,21 @@ fn macro_waits_for_text_completion_before_next_step_and_pause() {
         engine.execute_remote("macro:text", &mut out);
         let now = Instant::now();
         engine.tick(now, &mut out);
-        assert!(matches!(out.as_slice(), [EngineOutput::Literal(_)]));
+        let job = match out.as_slice() {
+            [EngineOutput::RunMacroText(_, job)] => job.clone(),
+            _ => panic!("expected a macro text request"),
+        };
         out.clear();
         let completed = now + Duration::from_secs(5);
         engine.tick(completed, &mut out);
         assert!(out.is_empty());
-        // Only the run's time limit is left to wake the loop.
+        // Completion is polled independently of unrelated text requests.
         assert!(
             engine
                 .next_deadline(completed)
-                .is_some_and(|wait| wait > Duration::from_secs(4))
+                .is_some_and(|wait| wait <= Duration::from_millis(5))
         );
+        job.complete(false);
         engine.set_text_pending(false, completed);
         engine.tick(completed, &mut out);
         assert!(out.is_empty());
@@ -602,9 +606,12 @@ fn failed_text_aborts_macro_before_enter() {
     engine.execute_remote("macro:text", &mut out);
     let now = Instant::now();
     engine.tick(now, &mut out);
-    assert!(matches!(out.as_slice(), [EngineOutput::Literal(_)]));
+    let job = match out.as_slice() {
+            [EngineOutput::RunMacroText(_, job)] => job.clone(),
+            _ => panic!("expected a macro text request"),
+        };
     out.clear();
-    engine.text_input_failed(&mut out);
+    job.complete(true);
     engine.set_text_pending(false, now);
     engine.tick(now + Duration::from_secs(1), &mut out);
     assert!(out.is_empty());
@@ -970,6 +977,93 @@ fn shutdown_and_timeout_revoke_a_command_even_before_output_is_flushed() {
         }
         assert!(job.cancelled());
         assert!(out.is_empty());
+        assert!(!engine.macro_running());
+    }
+}
+
+fn text_macro_engine() -> Engine {
+    let mut cfg = empty_cfg();
+    cfg.settings.macro_timeout_ms = 1000;
+    cfg.macros.push(Macro {
+        id: "text".into(),
+        steps: vec![MacroStep { action: "text:hello".into() }],
+        step_pause_ms: Some(0),
+        modifier_delay_ms: Some(0),
+    });
+    cfg.macros.push(Macro {
+        id: "next".into(),
+        steps: vec![MacroStep { action: "KeyB".into() }],
+        step_pause_ms: Some(0),
+        modifier_delay_ms: Some(0),
+    });
+    Engine::new(&cfg)
+}
+
+fn take_macro_text(out: &mut Vec<EngineOutput>) -> crate::text_input::MacroText {
+    match out.pop() {
+        Some(EngineOutput::RunMacroText(_, job)) => job,
+        _ => panic!("expected a macro text request"),
+    }
+}
+
+#[test]
+fn final_text_waits_for_its_own_completion_before_starting_queued_run() {
+    let mut engine = text_macro_engine();
+    let mut out = Vec::new();
+    engine.execute_remote("macro:text", &mut out);
+    engine.execute_remote("macro:next", &mut out);
+    let now = Instant::now();
+    engine.tick(now, &mut out);
+    let job = take_macro_text(&mut out);
+    assert!(engine.macro_running());
+    assert_eq!(engine.runner.queue.len(), 1);
+    // A global pending flag cannot acknowledge this particular text step.
+    engine.set_text_pending(false, now);
+    engine.tick(now + Duration::from_millis(500), &mut out);
+    assert!(out.is_empty());
+    job.complete(false);
+    engine.tick(now + Duration::from_millis(500), &mut out);
+    engine.tick(now + Duration::from_millis(501), &mut out);
+    assert_eq!(raw_keys(&out), [(KeyCode::KEY_B, true), (KeyCode::KEY_B, false)]);
+    assert!(!engine.macro_running());
+}
+
+#[test]
+fn failed_final_text_does_not_abort_the_next_run() {
+    let mut engine = text_macro_engine();
+    let mut out = Vec::new();
+    engine.execute_remote("macro:text", &mut out);
+    engine.execute_remote("macro:next", &mut out);
+    let now = Instant::now();
+    engine.tick(now, &mut out);
+    let job = take_macro_text(&mut out);
+    job.complete(true);
+    engine.tick(now, &mut out);
+    assert_eq!(raw_keys(&out), [(KeyCode::KEY_B, true), (KeyCode::KEY_B, false)]);
+    assert!(!engine.macro_running());
+    // Late completion of an old token cannot change the next request.
+    engine.execute_remote("macro:text", &mut out);
+    engine.tick(Instant::now(), &mut out);
+    let next = take_macro_text(&mut out);
+    job.complete(false);
+    assert_eq!(next.result(), None);
+}
+
+#[test]
+fn timeout_shutdown_and_reconfigure_cancel_pending_macro_text() {
+    for cancel in ["timeout", "shutdown", "reconfigure"] {
+        let mut engine = text_macro_engine();
+        let mut out = Vec::new();
+        engine.execute_remote("macro:text", &mut out);
+        let now = Instant::now();
+        engine.tick(now, &mut out);
+        let job = take_macro_text(&mut out);
+        match cancel {
+            "timeout" => engine.tick(now + Duration::from_secs(2), &mut out),
+            "shutdown" => engine.shutdown(&mut out),
+            _ => engine.reconfigure(&empty_cfg(), &mut out),
+        }
+        assert!(job.cancelled(), "{cancel} did not revoke text delivery");
         assert!(!engine.macro_running());
     }
 }

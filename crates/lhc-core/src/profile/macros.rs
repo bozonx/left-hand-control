@@ -213,14 +213,16 @@ fn rename_action(raw: &mut String, renames: &[(String, String)]) {
     }
 }
 
-/// Preview the final step references before validating a rename transaction.
-pub fn renamed_items(mut items: Vec<Macro>, renames: &[(String, String)]) -> Vec<Macro> {
-    for item in &mut items {
-        for step in &mut item.steps {
-            rename_action(&mut step.action, renames);
-        }
-    }
-    items
+/// Preview a macro transaction, including incoming references everywhere in the layout.
+pub fn preview(
+    config: &ResolvedAppConfig,
+    items: Vec<Macro>,
+    renames: &[(String, String)],
+) -> ResolvedAppConfig {
+    let mut candidate = config.clone();
+    candidate.macros = items;
+    candidate.for_each_action_mut(|raw| rename_action(raw, renames));
+    candidate
 }
 
 impl ConfigDocument {
@@ -248,8 +250,7 @@ impl ConfigDocument {
         items: Vec<Macro>,
         renames: &[(String, String)],
     ) -> Result<(), ConfigError> {
-        let mut candidate = self.config();
-        candidate.macros = renamed_items(items.clone(), renames);
+        let candidate = preview(&self.config(), items.clone(), renames);
         if let Some(error) = analyze(&candidate).errors.into_iter().flatten().next() {
             return Err(error);
         }
@@ -538,5 +539,36 @@ mod tests {
         assert!(!analyze(&document.config()).usage.contains_key("self"));
         document.remove_macro(0).unwrap();
         assert!(document.layout().macros.is_empty());
+    }
+    #[test]
+    fn preview_renames_incoming_references_in_every_section_without_mutating_source() {
+        let mut layout = LayoutPreset::initial();
+        let mut rule = crate::profile::model::KeyRule::new("rule".into(), "KeyA");
+        rule.tap_action = Some("macro:a".into());
+        layout.rules.push(rule);
+        layout
+            .layer_keymaps
+            .entry("nav".into())
+            .or_default()
+            .keys
+            .insert("KeyB".into(), Some("macro:a".into()));
+        layout.quick_action_pages[0].cells.insert(
+            "KeyC".into(),
+            crate::profile::model::QuickAction {
+                name: "quick".into(),
+                action: "macro:a".into(),
+            },
+        );
+        layout.macros = vec![item("a", &["KeyA"]), item("outer", &["macro:a"])];
+        let config = ResolvedAppConfig::from_parts(Default::default(), layout, None);
+        let renamed = preview(
+            &config,
+            vec![item("new", &["KeyA"]), item("outer", &["macro:a"])],
+            &[("a".into(), "new".into())],
+        );
+        assert_eq!(deletion_usage(&renamed, "new").len(), 4);
+        assert!(usage(&renamed, "a").is_empty());
+        assert_eq!(usage(&config, "a").len(), 4);
+        assert!(analyze(&renamed).errors.iter().all(Option::is_none));
     }
 }

@@ -538,28 +538,15 @@ impl SideEffects for RuntimeSideEffects {
     }
 
     fn type_text(&mut self, text: &str) {
-        match TextRequest::enqueue(text) {
-            Ok(request) => {
-                if text_tx()
-                    .try_send((text.to_owned(), request.clone()))
-                    .is_err()
-                {
-                    request.complete(true);
-                    report_text(TextInputFailure::BackendUnavailable(
-                        "text input queue is unavailable or full".into(),
-                    ));
-                }
-            }
-            Err(error) => report_text(error),
-        }
+        submit_text(text, TextRequest::enqueue(text));
+    }
+
+    fn type_macro_text(&mut self, text: &str, job: &crate::text_input::MacroText) {
+        submit_text(text, TextRequest::enqueue_macro(text, job.clone()));
     }
 
     fn text_pending(&self) -> bool {
         crate::text_input::job::pending()
-    }
-
-    fn text_failed(&mut self) -> bool {
-        crate::text_input::job::take_failure()
     }
 
     fn run_system(&mut self, action: &SystemAction) {
@@ -584,6 +571,24 @@ impl SideEffects for RuntimeSideEffects {
 
 fn report_action_failure(error: String) {
     crate::events::emit(CoreEvent::MapperActionFailed(error));
+}
+
+// Submission stays on the mapper thread; injection runs on the text worker.
+fn submit_text(text: &str, request: Result<TextRequest, TextInputFailure>) {
+    match request {
+        Ok(request) => {
+            if text_tx()
+                .try_send((text.to_owned(), request.clone()))
+                .is_err()
+            {
+                request.complete(true);
+                report_text(TextInputFailure::BackendUnavailable(
+                    "text input queue is unavailable or full".into(),
+                ));
+            }
+        }
+        Err(error) => report_text(error),
+    }
 }
 
 fn report_text(failure: TextInputFailure) {

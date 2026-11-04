@@ -28,6 +28,7 @@ pub(super) struct CompiledMacro {
 
 #[derive(Clone)]
 pub(super) struct CompiledMacroStep {
+    pub(super) source: String,
     pub(super) item: MacroStepItem,
     pub(super) step_pause: Duration,
     pub(super) mod_delay: Duration,
@@ -90,6 +91,7 @@ pub(super) enum MacroPhase {
     NextStep,
     FinalPause,
     Command(crate::mapper::commands::MacroCommand),
+    Text(crate::text_input::MacroText),
     StrokeModDelayPress(Keystroke),
     StrokeModDelayRelease(Keystroke),
 }
@@ -158,4 +160,6 @@ pub enum EngineOutput {
     /// Type a single Unicode character via the Wayland virtual-keyboard
     /// backend. Fire-and-forget on key press; no release event is needed.
     Literal(String),
+    /// A text step owned by one macro run; cancellation revokes queued delivery.
+    RunMacroText(String, crate::text_input::MacroText),
 }

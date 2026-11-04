@@ -69,6 +69,18 @@ pub(super) struct Drafts {
 }
 
 impl Drafts {
+    fn config(
+        &self,
+        document: &Document,
+        target: Option<PickerTarget>,
+    ) -> lhc_core::profile::model::ResolvedAppConfig {
+        if target == Some(PickerTarget::MacroStep) {
+            super::macros::picker_config(document, &self.macros)
+        } else {
+            document.read().config()
+        }
+    }
+
     fn command(&self, id: &str) -> Option<lhc_core::profile::model::Command> {
         super::macros::command(&self.macros, id).or_else(|| super::menus::command(&self.menus, id))
     }
@@ -143,8 +155,8 @@ pub(super) fn bind(
 
     commands::bind(ui, document, &session, &drafts);
 
-    on!(ui, picker.on_refresh, doc = document, state = session => |ui| {
-        session::refresh(&ui, &doc, &state);
+    on!(ui, picker.on_refresh, doc = document, state = session, drafts = drafts => |ui| {
+        session::refresh(&ui, &doc, &state, &drafts);
     });
 
     let weak = ui.as_weak();

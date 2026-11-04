@@ -166,7 +166,7 @@ pub(super) fn open(
 ) {
     let (target, index) = selection;
     load_desktop_shortcuts(ui.as_weak());
-    let catalog = catalog(ui, &doc.read());
+    let catalog = catalog(ui, &drafts.config(doc, Some(target)));
     // The catalog generation is read after building, so shortcuts arriving
     // later still trigger a rebuild.
     let category = initial_category(&value, &catalog, target);
@@ -267,13 +267,21 @@ fn update_model<T: Clone + PartialEq + 'static>(model: ModelRc<T>, rows: Vec<T>)
     }
 }
 
-pub(super) fn refresh(ui: &SettingsWindow, doc: &Document, state: &RefCell<Session>) {
+pub(super) fn refresh(
+    ui: &SettingsWindow,
+    doc: &Document,
+    state: &RefCell<Session>,
+    drafts: &Drafts,
+) {
     let picker = ui.global::<ActionPicker>();
     {
         let mut state = state.borrow_mut();
         let shortcuts = SHORTCUTS_GENERATION.with(std::cell::Cell::get);
         if state.catalog_shortcuts != shortcuts {
-            state.catalog = catalog(ui, &doc.read());
+            state.catalog = catalog(
+                ui,
+                &drafts.config(doc, state.target.map(|(target, _)| target)),
+            );
             state.catalog_shortcuts = shortcuts;
         }
         if state
@@ -390,8 +398,8 @@ pub(super) fn refresh(ui: &SettingsWindow, doc: &Document, state: &RefCell<Sessi
     {
         picker.set_keyboard_item(0);
     }
-    let config = doc.read();
-    picker.set_notice(execution_notice(&action, &config.config()).to_ui());
+    let config = drafts.config(doc, state.target.map(|(target, _)| target));
+    picker.set_notice(execution_notice(&action, &config).to_ui());
     let valid = match picker.get_behavior() {
         PickerBehavior::Native => picker.get_allow_default(),
         PickerBehavior::Swallow => picker.get_allow_swallow(),

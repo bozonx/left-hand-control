@@ -100,7 +100,15 @@ impl MacroCommand {
                     return;
                 }
                 let result = (|| {
-                    let mut child = start(&command)?;
+                    let mut child = start_with_stderr(&command, Stdio::piped())?;
+                    let mut stderr = match CommandStderr::new(child.stderr.take()) {
+                        Ok(stderr) => stderr,
+                        Err(error) => {
+                            let _ = child.kill();
+                            let _ = child.wait();
+                            return Err(error);
+                        }
+                    };
                     loop {
                         if job.cancelled() {
                             #[cfg(target_os = "linux")]
@@ -112,10 +120,16 @@ impl MacroCommand {
                             let _ = child.wait();
                             return Err("Macro command cancelled".into());
                         }
+                        stderr.drain();
                         match child.try_wait() {
                             Ok(Some(status)) if status.success() => return Ok(()),
                             Ok(Some(status)) => {
-                                return Err(format!("Macro command exited with {status}"));
+                                stderr.drain();
+                                return Err(format!(
+                                    "Macro command {} exited with {status}{}",
+                                    command.program,
+                                    stderr.message()
+                                ));
                             }
                             Ok(None) => std::thread::sleep(std::time::Duration::from_millis(5)),
                             Err(error) => {
@@ -150,12 +164,20 @@ pub(super) fn spawn(command: ProcessInvocation) {
 
 #[cfg(any(target_os = "linux", target_os = "windows"))]
 fn start(command: &ProcessInvocation) -> Result<std::process::Child, String> {
+    start_with_stderr(command, Stdio::null())
+}
+
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+fn start_with_stderr(
+    command: &ProcessInvocation,
+    stderr: Stdio,
+) -> Result<std::process::Child, String> {
     let mut process = Command::new(&command.program);
     process
         .args(&command.args)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        .stderr(stderr)
         .current_dir(working_directory(command.working_directory.as_deref())?);
     #[cfg(target_os = "linux")]
     {
@@ -172,6 +194,134 @@ fn start(command: &ProcessInvocation) -> Result<std::process::Child, String> {
     process
         .spawn()
         .map_err(|error| format!("Cannot start command: {error}"))
+}
+
+/// Drain stderr without blocking cancellation or retaining unbounded output.
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+struct CommandStderr {
+    pipe: Option<std::process::ChildStderr>,
+    bytes: Vec<u8>,
+    truncated: bool,
+}
+
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+impl CommandStderr {
+    const LIMIT: usize = 16 * 1024;
+
+    fn new(pipe: Option<std::process::ChildStderr>) -> Result<Self, String> {
+        #[cfg(target_os = "linux")]
+        if let Some(pipe) = &pipe {
+            use std::os::fd::AsRawFd;
+            // SAFETY: the pipe is live and fcntl does not take ownership.
+            let ready = unsafe {
+                let flags = libc::fcntl(pipe.as_raw_fd(), libc::F_GETFL);
+                flags >= 0
+                    && libc::fcntl(pipe.as_raw_fd(), libc::F_SETFL, flags | libc::O_NONBLOCK) >= 0
+            };
+            if !ready {
+                return Err(format!(
+                    "Cannot capture macro command stderr: {}",
+                    std::io::Error::last_os_error()
+                ));
+            }
+        }
+        Ok(Self {
+            pipe,
+            bytes: Vec::new(),
+            truncated: false,
+        })
+    }
+
+    fn drain(&mut self) {
+        use std::io::Read;
+        let Some(pipe) = self.pipe.as_mut() else {
+            return;
+        };
+        let mut buffer = [0u8; 4096];
+        // Bound each poll as well as storage when a command writes continuously.
+        for _ in 0..16 {
+            #[cfg(target_os = "windows")]
+            let count = match available_stderr(pipe) {
+                Ok(0) => break,
+                Ok(count) => count.min(buffer.len()),
+                Err(_) => {
+                    self.pipe = None;
+                    break;
+                }
+            };
+            #[cfg(target_os = "linux")]
+            let count = buffer.len();
+            match pipe.read(&mut buffer[..count]) {
+                Ok(0) => {
+                    self.pipe = None;
+                    break;
+                }
+                Ok(count) => {
+                    let keep = count.min(Self::LIMIT - self.bytes.len());
+                    self.bytes.extend_from_slice(&buffer[..keep]);
+                    self.truncated |= keep < count;
+                }
+                Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => break,
+                Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
+                Err(_) => {
+                    self.pipe = None;
+                    break;
+                }
+            }
+        }
+    }
+
+    fn message(&self) -> String {
+        let text = String::from_utf8_lossy(&self.bytes);
+        let text = text.trim();
+        if text.is_empty() {
+            String::new()
+        } else {
+            format!(
+                ": {text}{}",
+                if self.truncated {
+                    " [stderr truncated]"
+                } else {
+                    ""
+                }
+            )
+        }
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn available_stderr(pipe: &std::process::ChildStderr) -> std::io::Result<usize> {
+    use std::os::windows::io::AsRawHandle;
+    // PeekNamedPipe only reads the byte count; no blocking ReadFile is issued
+    // while a shell (or a background child inheriting stderr) holds the pipe open.
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn PeekNamedPipe(
+            pipe: *mut std::ffi::c_void,
+            buffer: *mut std::ffi::c_void,
+            size: u32,
+            read: *mut u32,
+            available: *mut u32,
+            left: *mut u32,
+        ) -> i32;
+    }
+    let mut available = 0;
+    // SAFETY: pipe is a live handle; only the valid available pointer is written.
+    let ok = unsafe {
+        PeekNamedPipe(
+            pipe.as_raw_handle(),
+            std::ptr::null_mut(),
+            0,
+            std::ptr::null_mut(),
+            &mut available,
+            std::ptr::null_mut(),
+        )
+    };
+    if ok == 0 {
+        Err(std::io::Error::last_os_error())
+    } else {
+        Ok(available as usize)
+    }
 }
 
 /// Directory a command runs in: home when empty, `~/` and relative paths
@@ -376,6 +526,32 @@ mod tests {
             Some(dir.path().join("missing").to_string_lossy().into()),
         ));
         assert!(wait_job(&job).is_err());
+    }
+
+    #[test]
+    fn macro_command_captures_bounded_stderr_without_blocking_on_background_children() {
+        let job = MacroCommand::default();
+        job.spawn(shell("printf 'permission denied' >&2; exit 7".into(), None));
+        let error = wait_job(&job).unwrap_err();
+        assert!(error.contains("sh"));
+        assert!(error.contains("7"));
+        assert!(error.contains("permission denied"));
+
+        let job = MacroCommand::default();
+        job.spawn(shell("head -c 200000 /dev/zero >&2; exit 9".into(), None));
+        let error = wait_job(&job).unwrap_err();
+        assert!(error.contains("9"));
+        assert!(error.contains("stderr truncated"));
+        assert!(error.len() < CommandStderr::LIMIT + 200);
+
+        let job = MacroCommand::default();
+        let started = Instant::now();
+        job.spawn(shell(
+            "sleep 1 >&2 & printf 'failed' >&2; exit 3".into(),
+            None,
+        ));
+        assert!(wait_job(&job).unwrap_err().contains("failed"));
+        assert!(started.elapsed() < Duration::from_millis(700));
     }
 
     #[test]

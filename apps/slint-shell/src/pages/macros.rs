@@ -99,8 +99,8 @@ impl super::autosave::Draft for State {
 
 /// The configuration with the draft macros, used for validation and usage.
 fn candidate(document: &Document, draft: &[Entry]) -> ResolvedAppConfig {
-    let mut config = document.read().config();
-    config.macros = macros::renamed_items(
+    let mut config = macros::preview(
+        &document.read().config(),
         draft
             .iter()
             .map(|e| e.saved().unwrap_or_else(|| e.item.clone()))
@@ -198,8 +198,13 @@ fn render(ui: &SettingsWindow, document: &Document, draft: &[Entry]) {
             })
             .collect::<Vec<_>>(),
     )));
+    refresh_defaults(ui, document);
+}
+
+fn refresh_defaults(ui: &SettingsWindow, document: &Document) {
     let settings = document.read();
     let settings = settings.settings();
+    let editor = ui.global::<MacroEditor>();
     editor.set_default_step_pause(settings.default_macro_step_pause_ms.to_string().into());
     editor.set_default_modifier_delay(settings.default_macro_modifier_delay_ms.to_string().into());
 }
@@ -207,6 +212,7 @@ fn render(ui: &SettingsWindow, document: &Document, draft: &[Entry]) {
 /// Refresh rows in place, keeping their step models, so fields keep focus
 /// while typing.
 fn annotate(ui: &SettingsWindow, document: &Document, draft: &[Entry]) {
+    refresh_defaults(ui, document);
     let analysis = analysis(document, draft);
     let rows = ui.global::<MacroEditor>().get_macros();
     let mut has_errors = false;
@@ -316,7 +322,9 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
 }
 
 fn taken(draft: &[Entry], id: &str) -> bool {
-    draft.iter().any(|e| e.item.id == id)
+    draft
+        .iter()
+        .any(|e| e.item.id == id || e.saved_id.as_deref() == Some(id))
 }
 
 fn unique_id(draft: &[Entry], base: &str) -> String {
@@ -364,6 +372,11 @@ pub(super) fn picker_macro_id(ui: &SettingsWindow) -> String {
 /// Step pause set on the macro whose step the picker edits.
 pub(super) fn picker_macro_pause(ui: &SettingsWindow) -> Option<u64> {
     picker_macro(ui).and_then(|row| row.step_pause.trim().parse().ok())
+}
+
+/// The same transaction preview used by validation and deletion guards.
+pub(super) fn picker_config(document: &Document, state: &RefCell<State>) -> ResolvedAppConfig {
+    candidate(document, &state.borrow().draft)
 }
 
 pub(super) fn command(state: &RefCell<State>, id: &str) -> Option<Command> {

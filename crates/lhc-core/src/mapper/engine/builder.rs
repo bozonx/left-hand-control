@@ -66,6 +66,7 @@ impl Engine {
             fn resolve(
                 &self,
                 raw_steps: Vec<&str>,
+                source: &str,
                 timing: (Duration, Duration),
                 depth: usize,
                 remaining: &mut usize,
@@ -74,7 +75,7 @@ impl Engine {
                 if depth > MAX_MACRO_DEPTH {
                     return steps;
                 }
-                for raw in raw_steps {
+                for (index, raw) in raw_steps.into_iter().enumerate() {
                     if *remaining == 0 {
                         break;
                     }
@@ -96,6 +97,7 @@ impl Engine {
                             if let Some(m) = self.users.get(&id) {
                                 steps.extend(self.resolve(
                                     m.steps.iter().map(|s| s.action.as_str()).collect(),
+                                    &format!("macro:{id}"),
                                     self.timing(m),
                                     depth + 1,
                                     remaining,
@@ -108,6 +110,7 @@ impl Engine {
                             if let Some(m) = BUILTIN_MACROS.iter().find(|m| m.id == id) {
                                 steps.extend(self.resolve(
                                     m.steps.to_vec(),
+                                    &format!("builtin:{id}"),
                                     self.defaults,
                                     depth + 1,
                                     remaining,
@@ -131,6 +134,7 @@ impl Engine {
                         Action::Unknown(_) => unavailable(),
                     };
                     steps.push(CompiledMacroStep {
+                        source: format!("{source}, step {}", index + 1),
                         item,
                         step_pause: timing.0,
                         mod_delay: timing.1,
@@ -155,7 +159,7 @@ impl Engine {
             defaults: (default_step_pause, default_mod_delay),
         };
         for sys in BUILTIN_MACROS {
-            let steps = compiler.resolve(sys.steps.to_vec(), compiler.defaults, 0, &mut {
+            let steps = compiler.resolve(sys.steps.to_vec(), &format!("builtin:{}", sys.id), compiler.defaults, 0, &mut {
                 MAX_MACRO_STEPS
             });
             if !steps.is_empty() {
@@ -168,6 +172,7 @@ impl Engine {
             }
             let steps = compiler.resolve(
                 m.steps.iter().map(|s| s.action.as_str()).collect(),
+                &format!("macro:{}", m.id),
                 compiler.timing(m),
                 0,
                 &mut { MAX_MACRO_STEPS },

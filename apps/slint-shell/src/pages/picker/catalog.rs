@@ -4,12 +4,10 @@ use crate::{
     i18n::Msg,
     ui::{ActionPicker, Locale, PickerCategory, PickerItem, SettingsWindow, ShortcutDesktop},
 };
-use lhc_core::{
-    config_document::ConfigDocument,
-    profile::{
-        actions::{self, Action, ActionName},
-        key_catalog::CATEGORIES,
-    },
+use lhc_core::profile::{
+    actions::{self, Action, ActionName},
+    key_catalog::CATEGORIES,
+    model::ResolvedAppConfig,
 };
 use slint::ComponentHandle;
 use std::{
@@ -190,8 +188,8 @@ fn read_kde_shortcuts() -> Result<Vec<DesktopShortcutItem>, String> {
     Ok(Vec::new())
 }
 
-pub(super) fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<PickerItem> {
-    let in_development = config.settings().in_development;
+pub(super) fn catalog(ui: &SettingsWindow, config: &ResolvedAppConfig) -> Vec<PickerItem> {
+    let in_development = config.settings.in_development;
     let mut items: Vec<_> = CATEGORIES
         .iter()
         .enumerate()
@@ -207,9 +205,8 @@ pub(super) fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<Picke
             })
         })
         .collect();
-    let enabled = config.settings().commands_enabled;
-    let config = config.config();
-    items.extend(actions::catalog(&config).into_iter().filter_map(|entry| {
+    let enabled = config.settings.commands_enabled;
+    items.extend(actions::catalog(config).into_iter().filter_map(|entry| {
         let category = match &entry.action {
             Action::Macro(_) if in_development => PickerCategory::Macros,
             Action::Macro(_) => return None,
@@ -224,7 +221,7 @@ pub(super) fn catalog(ui: &SettingsWindow, config: &ConfigDocument) -> Vec<Picke
         if !in_development && development_only(&value) {
             return None;
         }
-        let notice = execution_notice(&entry.action, &config);
+        let notice = execution_notice(&entry.action, config);
         let label = action_label(ui, entry.name).unwrap_or_else(|| value.clone());
         Some(PickerItem {
             value: value.into(),

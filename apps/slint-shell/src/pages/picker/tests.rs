@@ -263,7 +263,7 @@ fn applying_actions_validates_references_against_the_document() {
         development: true,
         ..Filter::default()
     };
-    let config = document.read();
+    let config = document.read().config();
     for (value, expected) in [
         ("macro:pickerMacro", true),
         ("macro:missingMacro", false),

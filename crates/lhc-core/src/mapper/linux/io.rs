@@ -70,29 +70,18 @@ impl SideEffects for RuntimeSideEffects {
     }
 
     fn type_text(&mut self, text: &str) {
-        // portal::type_text can block for seconds on its first call (libei
-        // handshake / consent dialog) — never run it on the mapper thread
-        // while the keyboard is grabbed.
-        match crate::text_input::job::TextRequest::enqueue(text) {
-            Ok(request) => {
-                let job = SideEffectJob::Text(text.to_owned(), request.clone());
-                if !enqueue_side_effect(job) {
-                    request.complete(true);
-                    portal::report(crate::events::TextInputFailure::BackendUnavailable(
-                        "text input queue is unavailable or full".into(),
-                    ));
-                }
-            }
-            Err(error) => portal::report(error),
-        }
+        submit_text(text, crate::text_input::job::TextRequest::enqueue(text));
+    }
+
+    fn type_macro_text(&mut self, text: &str, job: &crate::text_input::MacroText) {
+        submit_text(
+            text,
+            crate::text_input::job::TextRequest::enqueue_macro(text, job.clone()),
+        );
     }
 
     fn text_pending(&self) -> bool {
         crate::text_input::job::pending()
-    }
-
-    fn text_failed(&mut self) -> bool {
-        crate::text_input::job::take_failure()
     }
 
     fn run_system(&mut self, action: &SystemAction) {
@@ -101,6 +90,25 @@ impl SideEffects for RuntimeSideEffects {
 
     fn run_command(&mut self, command: &ProcessInvocation) {
         super::super::commands::spawn(command.clone());
+    }
+}
+
+// Submission stays on the mapper thread; injection runs on the text worker.
+fn submit_text(
+    text: &str,
+    request: Result<crate::text_input::job::TextRequest, crate::events::TextInputFailure>,
+) {
+    match request {
+        Ok(request) => {
+            let job = SideEffectJob::Text(text.to_owned(), request.clone());
+            if !enqueue_side_effect(job) {
+                request.complete(true);
+                portal::report(crate::events::TextInputFailure::BackendUnavailable(
+                    "text input queue is unavailable or full".into(),
+                ));
+            }
+        }
+        Err(error) => portal::report(error),
     }
 }
 

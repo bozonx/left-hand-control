@@ -23,6 +23,10 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Macros keep the final text step active until delivery finishes; text cancellation and failures belong to the originating run, including timeout and reconfiguration.
+- The macro editor preserves incoming references while renaming an invalid draft, prevents deleting referenced macros, and lets nested actions use new draft IDs. Global delay hints update when settings change.
+- Failed macro commands log the originating macro and step together with bounded stderr, without blocking input or cancellation.
+
 - Layers page: choosing a key of the layer keyboard as an extra key, or a key that already has a row, now says so instead of reporting an invalid configuration; the rule is also enforced when saving. A layer whose stored name is invalid can have its description edited. Edits elsewhere (settings, other layers) no longer cancel an open layer dialog or picker as a conflict. A failed delete or create is reported once. Deleting the last layer selects the new last one, and "Duplicate" proposes a free name ("Name (copy) 2").
 
 - The layout library wraps its toolbar in narrow windows, keeps layout names readable beside automatic rules, and scrolls the whole automatic-rules panel so its default remains reachable.

@@ -3,6 +3,7 @@
 //! Used by the mapper and by the shell's popups.
 
 pub(crate) mod job;
+pub use job::MacroText;
 
 #[cfg(target_os = "linux")]
 pub mod clipboard;

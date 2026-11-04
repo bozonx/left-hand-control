@@ -1,6 +1,9 @@
 //! Lifetime, destination and completion accounting for asynchronous text input.
 
-use std::sync::Mutex;
+use std::sync::{
+    Arc, Mutex,
+    atomic::{AtomicBool, Ordering},
+};
 use std::time::{Duration, Instant};
 
 use crate::events::TextInputFailure;
@@ -18,18 +21,49 @@ struct Progress {
     generation: u64,
     active: bool,
     pending: usize,
-    failed: bool,
 }
 
 static PROGRESS: Mutex<Progress> = Mutex::new(Progress {
     generation: 0,
     active: false,
     pending: 0,
-    failed: false,
 });
+
+/// Completion and cancellation of one macro text step, independent of other input.
+#[derive(Clone, Debug, Default)]
+pub struct MacroText(Arc<MacroTextState>);
+
+#[derive(Debug, Default)]
+struct MacroTextState {
+    cancelled: AtomicBool,
+    result: Mutex<Option<Result<(), ()>>>,
+}
+
+impl MacroText {
+    pub(crate) fn cancel(&self) {
+        self.0.cancelled.store(true, Ordering::Release);
+    }
+
+    pub(crate) fn cancelled(&self) -> bool {
+        self.0.cancelled.load(Ordering::Acquire)
+    }
+
+    pub(crate) fn result(&self) -> Option<Result<(), ()>> {
+        *self.0.result.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
+    pub(crate) fn complete(&self, failed: bool) {
+        let mut result = self.0.result.lock().unwrap_or_else(|e| e.into_inner());
+        if result.is_none() {
+            *result = Some(if failed { Err(()) } else { Ok(()) });
+        }
+    }
+}
 
 #[derive(Clone)]
 pub(crate) struct TextRequest {
+    macro_job: Option<MacroText>,
+    completed: Arc<AtomicBool>,
     generation: u64,
     deadline: Instant,
     target: crate::active_window::TextTarget,
@@ -44,33 +78,47 @@ impl Progress {
             return Err(unavailable("text input session is stopped"));
         }
         if text_len > MAX_TEXT_BYTES || self.pending >= MAX_QUEUED_TEXTS {
-            self.failed = true;
             return Err(unavailable("text input queue or text size limit exceeded"));
         }
         self.pending += 1;
         Ok(self.generation)
     }
 
-    fn complete(&mut self, generation: u64, failed: bool) {
+    fn complete(&mut self, generation: u64) {
         if self.generation == generation {
             self.pending = self.pending.saturating_sub(1);
-            self.failed |= failed;
         }
     }
 
     fn reset(&mut self, active: bool) {
         self.generation = self.generation.wrapping_add(1);
         self.pending = 0;
-        self.failed = false;
         self.active = active;
     }
 }
 
 impl TextRequest {
     pub(crate) fn enqueue(text: &str) -> Result<Self, TextInputFailure> {
+        Self::enqueue_inner(text, None)
+    }
+
+    pub(crate) fn enqueue_macro(text: &str, job: MacroText) -> Result<Self, TextInputFailure> {
+        if job.cancelled() {
+            return Err(unavailable("macro text input cancelled"));
+        }
+        let result = Self::enqueue_inner(text, Some(job.clone()));
+        if result.is_err() {
+            job.complete(true);
+        }
+        result
+    }
+
+    fn enqueue_inner(text: &str, macro_job: Option<MacroText>) -> Result<Self, TextInputFailure> {
         let mut progress = PROGRESS.lock().unwrap_or_else(|e| e.into_inner());
         let generation = progress.reserve(text.len())?;
         let request = Self {
+            macro_job,
+            completed: Arc::new(AtomicBool::new(false)),
             generation,
             deadline: Instant::now() + MAX_AGE,
             target: crate::active_window::TextTarget::capture(),
@@ -117,6 +165,9 @@ impl TextRequest {
     }
 
     pub(crate) fn check_lifetime(&self) -> Result<(), TextInputFailure> {
+        if self.macro_job.as_ref().is_some_and(MacroText::cancelled) {
+            return Err(unavailable("macro text input cancelled"));
+        }
         let progress = PROGRESS.lock().unwrap_or_else(|e| e.into_inner());
         validate(
             self.generation,
@@ -127,8 +178,14 @@ impl TextRequest {
     }
 
     pub(crate) fn complete(&self, failed: bool) {
+        if self.completed.swap(true, Ordering::AcqRel) {
+            return;
+        }
         let mut progress = PROGRESS.lock().unwrap_or_else(|e| e.into_inner());
-        progress.complete(self.generation, failed);
+        progress.complete(self.generation);
+        if let Some(job) = &self.macro_job {
+            job.complete(failed);
+        }
     }
 }
 
@@ -171,10 +228,6 @@ pub(crate) fn pending() -> bool {
     PROGRESS.lock().unwrap_or_else(|e| e.into_inner()).pending != 0
 }
 
-pub(crate) fn take_failure() -> bool {
-    std::mem::take(&mut PROGRESS.lock().unwrap_or_else(|e| e.into_inner()).failed)
-}
-
 fn unavailable(message: &str) -> TextInputFailure {
     TextInputFailure::BackendUnavailable(message.into())
 }
@@ -202,6 +255,18 @@ mod tests {
         let mut current = Session::start();
         drop(old);
         assert!(PROGRESS.lock().unwrap().active);
+        let job = MacroText::default();
+        let request = TextRequest::enqueue_macro("macro text", job.clone()).unwrap();
+        let unrelated = TextRequest::enqueue("other text").unwrap();
+        job.cancel();
+        assert!(request.check_lifetime().is_err());
+        assert!(unrelated.check_lifetime().is_ok());
+        request.complete(true);
+        request.complete(true);
+        assert_eq!(PROGRESS.lock().unwrap().pending, 1);
+        unrelated.complete(false);
+        assert!(!pending());
+        assert!(TextRequest::enqueue_macro("cancelled", job).is_err());
         current.restart();
         drop(current);
         assert!(!PROGRESS.lock().unwrap().active);
@@ -216,7 +281,7 @@ mod tests {
     }
 
     #[test]
-    fn old_completions_cannot_release_new_jobs_or_abort_new_macros() {
+    fn old_completions_cannot_release_new_jobs() {
         let mut progress = Progress {
             active: true,
             ..Progress::default()
@@ -226,12 +291,10 @@ mod tests {
         assert!(progress.reserve(1).is_err());
         progress.reset(true);
         let new = progress.reserve(10).unwrap();
-        progress.complete(old, true);
+        progress.complete(old);
         assert_eq!(progress.pending, 1);
-        assert!(!progress.failed);
-        progress.complete(new, true);
+        progress.complete(new);
         assert_eq!(progress.pending, 0);
-        assert!(progress.failed);
     }
 
     #[test]
