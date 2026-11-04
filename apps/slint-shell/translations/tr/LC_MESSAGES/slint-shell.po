@@ -3700,3 +3700,6 @@ msgstr "Kimlik değişiklikleri başvuruları otomatik günceller. İç içe mak
 
 msgid "Save layout changes before quitting?"
 msgstr "Çıkmadan önce düzen değişiklikleri kaydedilsin mi?"
+
+msgid "Cannot switch layout. The mapper is still using the previous layout."
+msgstr "Düzen değiştirilemiyor. Eşleyici önceki düzeni kullanmaya devam ediyor."

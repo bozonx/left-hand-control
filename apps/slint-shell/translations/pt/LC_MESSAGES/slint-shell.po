@@ -3713,3 +3713,6 @@ msgstr "As alterações de ID atualizam as referências automaticamente. As macr
 
 msgid "Save layout changes before quitting?"
 msgstr "Guardar as alterações do esquema antes de sair?"
+
+msgid "Cannot switch layout. The mapper is still using the previous layout."
+msgstr "Não foi possível mudar o layout. O remapeador continua a usar o layout anterior."

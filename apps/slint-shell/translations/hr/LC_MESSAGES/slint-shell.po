@@ -3691,3 +3691,6 @@ msgstr "Promjene ID-a automatski ažuriraju reference. Ugniježđene makronaredb
 
 msgid "Save layout changes before quitting?"
 msgstr "Spremiti promjene rasporeda prije izlaska?"
+
+msgid "Cannot switch layout. The mapper is still using the previous layout."
+msgstr "Nije moguće promijeniti raspored. Preslikavanje i dalje koristi prethodni raspored."

@@ -3803,3 +3803,6 @@ msgstr "Les changements d’ID mettent automatiquement à jour les références.
 
 msgid "Save layout changes before quitting?"
 msgstr "Enregistrer les modifications de la disposition avant de quitter ?"
+
+msgid "Cannot switch layout. The mapper is still using the previous layout."
+msgstr "Impossible de changer de disposition. Le remappeur utilise toujours la disposition précédente."

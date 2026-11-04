@@ -323,6 +323,7 @@ pub enum Msg {
     RuleSaved,
     LayoutEmpty,
     LayoutLoadFailed(String),
+    LayoutSwitchFailed(String),
     /// Default name of a copy of the named item.
     CopyName(String),
     LayerUnused,
@@ -384,6 +385,7 @@ impl Msg {
             | Self::WorkerError(detail)
             | Self::SavedMapperNotUpdated(detail)
             | Self::LayoutLoadFailed(detail)
+            | Self::LayoutSwitchFailed(detail)
             | Self::MapperRunning(Some(detail))
             | Self::MapperStopped(Some(detail)) => detail,
             Self::TextInputFailed(
@@ -534,6 +536,7 @@ impl Msg {
             Self::RuleSaved => ("rule-saved", empty(), 0),
             Self::LayoutEmpty => ("layout-empty", empty(), 0),
             Self::LayoutLoadFailed(error) => diagnostic("layout-load-failed", error),
+            Self::LayoutSwitchFailed(error) => diagnostic("layout-switch-failed", error),
             Self::LayerUnused => ("layer-unused", empty(), 0),
             Self::LayerTriggers(keys) => ("layer-triggers", keys.clone(), 0),
             Self::CopyName(name) => ("copy-name", name.clone(), 0),

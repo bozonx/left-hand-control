@@ -17,8 +17,8 @@ use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CoreEvent {
-    /// The OS keyboard layout changed.
-    LayoutChanged(KeyboardLayoutInfo),
+    /// The OS keyboard layout changed; `None` means detection became unavailable.
+    LayoutChanged(Option<KeyboardLayoutInfo>),
     /// Game-mode detection produced a new status.
     GameModeChanged(GameModeStatus),
     /// The focused window changed (`None` when it cannot be detected).

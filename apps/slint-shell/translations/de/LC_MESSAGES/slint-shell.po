@@ -3779,3 +3779,6 @@ msgstr "ID-Änderungen aktualisieren Verweise automatisch. Verschachtelte Makros
 
 msgid "Save layout changes before quitting?"
 msgstr "Änderungen am Layout vor dem Beenden speichern?"
+
+msgid "Cannot switch layout. The mapper is still using the previous layout."
+msgstr "Das Layout kann nicht gewechselt werden. Der Mapper verwendet weiterhin das vorherige Layout."

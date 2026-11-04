@@ -166,7 +166,7 @@ export component SettingsWindow inherits Window {
                     if AppState.in-development: GameModeButton {}
                     active-layout := Rectangle {
                         accessible-role: button;
-                        accessible-label: LayoutLibrary.active-error.id != "" ? Locale.text(LayoutLibrary.active-error) : LayoutLibrary.active-label == "" ? @tr("No active layout") : @tr("Active: {}", LayoutLibrary.active-label);
+                        accessible-label: LayoutLibrary.active-text();
                         accessible-expandable: !LayoutLibrary.automatic;
                         accessible-expanded: active-menu.is-open;
                         accessible-action-default => { if !LayoutLibrary.automatic { LayoutLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); } }
@@ -181,11 +181,11 @@ export component SettingsWindow inherits Window {
                         width: root.compact-header ? 150px : 180px; height: Theme.control-height-l; border-radius: Theme.radius; background: Theme.surface; border-width: 1px; border-color: Theme.border;
                         HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-s;
                             Image { width: 14px; source: @image-url("icons/library-big.svg"); colorize: Theme.muted; }
-                            Text { accessible-live-region: polite; text: LayoutLibrary.active-error.id != "" ? Locale.text(LayoutLibrary.active-error) : LayoutLibrary.active-label == "" ? @tr("No active layout") : @tr("Active: {}", LayoutLibrary.active-label); color: LayoutLibrary.active-error.id != "" ? Theme.error : Theme.text; overflow: elide; vertical-alignment: center; }
+                            Text { accessible-live-region: polite; text: LayoutLibrary.active-text(); color: LayoutLibrary.active-error.id != "" ? Theme.error : Theme.text; overflow: elide; vertical-alignment: center; }
                             if !LayoutLibrary.automatic: Image { width: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; }
                         }
                         TouchArea { enabled: !LayoutLibrary.automatic; mouse-cursor: pointer; clicked => { active-focus.focus(); LayoutLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); } }
-                        Tooltip { TooltipText { text: (LayoutLibrary.active-error.id != "" ? Locale.text(LayoutLibrary.active-error) : LayoutLibrary.active-label) + "\n" + (LayoutLibrary.automatic ? @tr("Current active layout (selected automatically by switching rules)") : @tr("Current active layout — click to switch")); } }
+                        Tooltip { TooltipText { text: LayoutLibrary.active-text() + "\n" + (LayoutLibrary.automatic ? @tr("Current active layout (selected automatically by switching rules)") : @tr("Current active layout — click to switch")); } }
                     }
                     Rectangle { width: 1px; background: Theme.divider; }
                     VerticalLayout { alignment: center; MapperToggle {
@@ -262,7 +262,7 @@ export component SettingsWindow inherits Window {
                 padding-bottom: 0px;
                 spacing: Theme.space-l;
                 if root.problem.id != "": Text { accessible-live-region: assertive; text: Locale.text(root.problem); color: NotificationCenter.is-warning(root.problem.id) ? Theme.warning : Theme.error; wrap: word-wrap; max-height: 96px; overflow: elide; }
-                if root.page == Page.layouts: LibraryPage {}
+                if root.page == Page.layouts: LibraryPage { compact: root.compact-header; }
                 if root.page == Page.settings: SettingsPage {}
                 if root.page == Page.rules: RulesPage {}
                 if root.page == Page.layers || root.page == Page.keyboard: LayersPage { configure-triggers => { root.navigate(Page.rules, MenuKind.emoji); } }

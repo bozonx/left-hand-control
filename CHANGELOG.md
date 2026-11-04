@@ -21,6 +21,10 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- The layout library wraps its toolbar in narrow windows, keeps layout names readable beside automatic rules, and scrolls the whole automatic-rules panel so its default remains reachable.
+- Automatic layout switching preserves explicit passthrough defaults and missing rule targets. Active-layout indicators follow the mapper's accepted configuration after a failed switch; retry and unchanged-layout paths are covered without hardware. Automatic-mode controls stay available when experimental features are hidden, and rule warnings account for missing targets and game-mode Off conditions.
+- KDE keyboard-layout detection clears stale state on errors, unavailable services and invalid groups, announces recovery, and reconnects after service-owner changes.
+
 - Windows: saving settings and layouts retries briefly when another process temporarily locks a file. A failed replacement keeps the original file intact.
 
 - Mapper configuration updates preserve the order of queued actions. Popup menus retain the mapper's accepted layout after a failed automatic switch. Stopping the mapper releases window-title collection, and event overload no longer grows an unbounded backlog or replays actions from a previous mapper session.

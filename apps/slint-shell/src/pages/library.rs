@@ -49,6 +49,8 @@ struct State {
     languages: Option<Vec<String>>,
     /// Names the open rule dialog's target index refers to.
     rule_names: Vec<String>,
+    rule_id: Option<String>,
+    rule_missing_target: Option<String>,
 }
 
 type Shared = Rc<RefCell<State>>;
@@ -188,7 +190,7 @@ fn refresh_auto(ui: &SettingsWindow, document: &Document, state: &mut State) {
                     target,
                     missing,
                     enabled: rule.enabled,
-                    shadowed_by: auto_switch::shadowed_by(rules, index)
+                    shadowed_by: auto_switch::shadowed_by(rules, index, &ids)
                         .map_or(-1, |index| index as i32),
                     unknown_languages: unknown.join(", ").into(),
                 }
@@ -736,6 +738,73 @@ mod tests {
             .set_devices_loading(true);
         super::super::bind_document(&ui, &document);
         (dir, document, ui)
+    }
+
+    #[test]
+    fn editing_missing_rule_targets_preserves_the_reference_until_explicitly_changed() {
+        let (_dir, document, ui) = bound_document();
+        document
+            .edit(View::Library, |config| {
+                config.update_settings(|settings| {
+                    settings.auto_rules = vec![AutoRule {
+                        id: "missing".into(),
+                        enabled: true,
+                        layout_id: Some("user:gone".into()),
+                        conditions: Default::default(),
+                    }];
+                })
+            })
+            .unwrap();
+        let library = ui.global::<LayoutLibrary>();
+        library.invoke_refresh();
+        library.invoke_open_rule(0, -1);
+        assert!(library.get_rule_target_missing());
+        library.set_rule_apps("kate".into());
+        library.invoke_save_rule();
+        assert_eq!(
+            document.read().settings().auto_rules[0]
+                .layout_id
+                .as_deref(),
+            Some("user:gone")
+        );
+        assert_eq!(
+            ConfigDocument::load(document.read().paths().clone())
+                .unwrap()
+                .settings()
+                .auto_rules[0]
+                .layout_id
+                .as_deref(),
+            Some("user:gone")
+        );
+        library.invoke_open_rule(0, -1);
+        library.set_rule_target(-1);
+        library.set_rule_target_missing(false);
+        library.invoke_save_rule();
+        assert!(document.read().settings().auto_rules[0].layout_id.is_none());
+    }
+
+    #[test]
+    fn open_rule_tracks_identity_and_picker_names_across_refreshes() {
+        let (_dir, document, ui) = bound_document();
+        let library = ui.global::<LayoutLibrary>();
+        library.invoke_open_rule(-1, 0);
+        library.invoke_save_rule();
+        library.invoke_open_rule(0, 0);
+        library.invoke_reorder(0, 1);
+        assert_eq!(library.get_rule_names().row_data(0).unwrap(), "A");
+        library.invoke_add_game_rule();
+        library.set_rule_apps("kate".into());
+        library.invoke_save_rule();
+        let config = document.read();
+        assert_eq!(config.settings().auto_rules.len(), 2);
+        assert_eq!(
+            config.settings().auto_rules[1].layout_id.as_deref(),
+            Some("user:A")
+        );
+        assert_eq!(
+            config.settings().auto_rules[1].conditions.window_patterns,
+            ["kate"]
+        );
     }
 
     #[test]

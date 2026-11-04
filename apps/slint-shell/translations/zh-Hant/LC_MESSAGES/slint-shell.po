@@ -3382,3 +3382,6 @@ msgstr "變更ID會自動更新參照。巢狀巨集保留各自的延遲。命�
 
 msgid "Save layout changes before quitting?"
 msgstr "結束前儲存配置變更嗎？"
+
+msgid "Cannot switch layout. The mapper is still using the previous layout."
+msgstr "無法切換配置。映射器仍在使用先前的配置。"

@@ -1141,6 +1141,10 @@ mod tests {
             .update_settings(|settings| settings.layout_mode = LayoutMode::Auto)
             .unwrap();
         assert!(uses_titles(&document));
+        document
+            .update_settings(|settings| settings.auto_rules[0].enabled = false)
+            .unwrap();
+        assert!(!uses_titles(&document));
     }
 
     #[test]

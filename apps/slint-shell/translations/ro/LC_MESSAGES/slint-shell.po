@@ -3741,3 +3741,6 @@ msgstr "Schimbările de ID actualizează automat referințele. Macrocomenzile im
 
 msgid "Save layout changes before quitting?"
 msgstr "Salvați modificările aranjamentului înainte de ieșire?"
+
+msgid "Cannot switch layout. The mapper is still using the previous layout."
+msgstr "Nu se poate schimba aranjamentul. Remaparea folosește în continuare aranjamentul anterior."

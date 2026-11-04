@@ -3381,3 +3381,6 @@ msgstr "更改ID会自动更新引用。嵌套宏保留各自的延迟。命令�
 
 msgid "Save layout changes before quitting?"
 msgstr "退出前保存布局更改吗？"
+
+msgid "Cannot switch layout. The mapper is still using the previous layout."
+msgstr "无法切换布局。映射器仍在使用之前的布局。"

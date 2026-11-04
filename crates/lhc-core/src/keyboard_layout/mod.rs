@@ -19,7 +19,7 @@
 //!
 //! Shell contract:
 //!   * `current()` / `available_layouts()` / `set()` for one-shot calls
-//!   * `CoreEvent::LayoutChanged(KeyboardLayoutInfo)` from the watcher
+//!   * `CoreEvent::LayoutChanged(Option<KeyboardLayoutInfo>)` from the watcher
 //! ```
 
 use serde::Serialize;
@@ -121,7 +121,19 @@ impl LayoutPublisher {
         }));
         if self.last.as_ref() != Some(info) {
             self.last = Some(info.clone());
-            emit(crate::events::CoreEvent::LayoutChanged(info.clone()));
+            emit(crate::events::CoreEvent::LayoutChanged(Some(info.clone())));
+        }
+    }
+
+    #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+    fn clear(
+        &mut self,
+        cache: &crate::runtime_state::RuntimeState,
+        emit: impl FnOnce(crate::events::CoreEvent),
+    ) {
+        cache.set_keyboard_layout(None);
+        if self.last.take().is_some() {
+            emit(crate::events::CoreEvent::LayoutChanged(None));
         }
     }
 }
@@ -134,6 +146,15 @@ pub(crate) fn publish(info: &KeyboardLayoutInfo) {
         .lock()
         .unwrap_or_else(|error| error.into_inner())
         .publish(info, crate::runtime_state::current(), crate::events::emit);
+}
+
+/// Publish detection loss as a context change, without repeating the same error state.
+#[cfg(target_os = "linux")]
+pub(crate) fn clear() {
+    LAST_PUBLISHED
+        .lock()
+        .unwrap_or_else(|error| error.into_inner())
+        .clear(crate::runtime_state::current(), crate::events::emit);
 }
 
 pub fn current() -> Result<Option<KeyboardLayoutInfo>, String> {
@@ -307,5 +328,28 @@ mod tests {
         publisher.last = None;
         publisher.publish(&layout, &cache, |event| events.push(event));
         assert_eq!(events.len(), 5);
+    }
+    #[test]
+    fn detection_loss_clears_the_cache_and_recovery_is_announced() {
+        let cache = crate::runtime_state::RuntimeState::default();
+        let mut publisher = LayoutPublisher::default();
+        let mut events = Vec::new();
+        let layout = info("us", "");
+        publisher.publish(&layout, &cache, |event| events.push(event));
+        publisher.clear(&cache, |event| events.push(event));
+        publisher.clear(&cache, |event| events.push(event));
+        assert!(cache.keyboard_layout().is_none());
+        assert_eq!(events.len(), 2);
+        assert!(matches!(events[1], crate::CoreEvent::LayoutChanged(None)));
+        assert!(!crate::profile::auto_switch::matches_condition_set(
+            &crate::profile::model::LayoutConditionSet {
+                layouts: vec!["us".into()],
+                ..Default::default()
+            },
+            &crate::profile::auto_switch::AutoSwitchContext::from_state(&cache)
+        ));
+        publisher.publish(&layout, &cache, |event| events.push(event));
+        assert_eq!(events.len(), 3);
+        assert_eq!(cache.keyboard_layout().unwrap().code, "us");
     }
 }

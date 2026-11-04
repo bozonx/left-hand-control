@@ -3740,3 +3740,6 @@ msgstr "Az ID módosítása automatikusan frissíti a hivatkozásokat. A beágya
 
 msgid "Save layout changes before quitting?"
 msgstr "Menti a kiosztás módosításait kilépés előtt?"
+
+msgid "Cannot switch layout. The mapper is still using the previous layout."
+msgstr "Nem sikerült váltani a kiosztást. Az átleképező továbbra is az előző kiosztást használja."

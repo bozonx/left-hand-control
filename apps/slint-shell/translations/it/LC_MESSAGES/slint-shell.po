@@ -3775,3 +3775,6 @@ msgstr "Le modifiche agli ID aggiornano automaticamente i riferimenti. Le macro 
 
 msgid "Save layout changes before quitting?"
 msgstr "Salvare le modifiche al layout prima di uscire?"
+
+msgid "Cannot switch layout. The mapper is still using the previous layout."
+msgstr "Impossibile cambiare layout. Il rimappatore continua a usare il layout precedente."

@@ -3069,3 +3069,6 @@ msgstr "При изменении ID ссылки обновляются авт�
 
 msgid "Save layout changes before quitting?"
 msgstr "Сохранить изменения раскладки перед выходом?"
+
+msgid "Cannot switch layout. The mapper is still using the previous layout."
+msgstr "Не удалось переключить раскладку. Маппер продолжает использовать предыдущую раскладку."

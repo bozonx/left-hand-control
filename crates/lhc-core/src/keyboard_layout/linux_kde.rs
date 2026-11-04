@@ -45,7 +45,11 @@ fn keyboard_proxy(conn: &Connection) -> Result<Proxy<'static>, String> {
 }
 
 pub fn current() -> Result<Option<KeyboardLayoutInfo>, String> {
-    current_with_proxy(&keyboard_proxy(session_bus()?)?)
+    let result = (|| current_with_proxy(&keyboard_proxy(session_bus()?)?))();
+    if !matches!(result, Ok(Some(_))) {
+        super::clear();
+    }
+    result
 }
 
 pub fn refresh_cache() -> Result<Option<KeyboardLayoutInfo>, String> {
@@ -108,7 +112,13 @@ static SIGNAL_WATCHER: super::signal_watcher::SignalWatcher =
     super::signal_watcher::SignalWatcher::new();
 
 fn run_signal_watcher() {
-    SIGNAL_WATCHER.run("kde", RECONNECT_DELAY, signal_watch_once);
+    SIGNAL_WATCHER.run("kde", RECONNECT_DELAY, || {
+        let result = signal_watch_once();
+        if result.is_err() {
+            super::clear();
+        }
+        result
+    });
 }
 
 pub(super) fn interrupt_signal_watcher() {
@@ -120,46 +130,101 @@ fn signal_watch_once() -> Result<(), String> {
     if !SIGNAL_WATCHER.connected(conn.clone()) {
         return Ok(());
     }
+    watch_connection(conn, emit_current, super::clear)
+}
+
+// OwnerChangedIterator lacks the runtime-aware destruction of SignalIterator.
+// zbus can use Tokio when the shell's dependency features are unified.
+struct OwnerChanges<'a>(Option<zbus::blocking::proxy::OwnerChangedIterator<'a>>);
+
+impl OwnerChanges<'_> {
+    fn changed(&mut self) -> bool {
+        self.0
+            .as_mut()
+            .is_some_and(|owners| owners.next().is_some())
+    }
+}
+
+impl Drop for OwnerChanges<'_> {
+    fn drop(&mut self) {
+        let owners = self.0.take();
+        zbus::block_on(async move {
+            drop(owners);
+        });
+    }
+}
+
+fn watch_connection(
+    conn: Connection,
+    observe: impl Fn(&Proxy<'_>) -> Result<(), String>,
+    unavailable: impl FnOnce() + Send,
+) -> Result<(), String> {
     // A stop requested before the connection was published.
     if super::watcher_stop_requested() {
         return Ok(());
     }
     let proxy = keyboard_proxy(&conn)?;
-    // Both a switch and an edited layout list can change the result.
-    let signals = proxy
-        .receive_all_signals()
-        .map_err(|e| format!("subscribe to keyboard signals: {e}"))?;
-    // Read once after subscribing, so a change in between is not lost.
-    emit_current(&proxy);
-    for _msg in signals {
-        if super::watcher_stop_requested() {
-            return Ok(());
-        }
-        emit_current(&proxy);
-    }
-    if super::watcher_stop_requested() {
-        return Ok(());
-    }
-    Err("keyboard signal stream ended".to_string())
+    thread::scope(|scope| {
+        let mut owners =
+            OwnerChanges(Some(proxy.receive_owner_changed().map_err(|error| {
+                format!("subscribe to keyboard service owner: {error}")
+            })?));
+        let owner_connection = conn.clone();
+        thread::Builder::new()
+            .name("layout-kde-owner".into())
+            .spawn_scoped(scope, move || {
+                if owners.changed() {
+                    unavailable();
+                    // Interrupt the signal iterator so it reconnects to the new service.
+                    let _ = owner_connection.close();
+                }
+            })
+            .map_err(|error| format!("watch keyboard service owner: {error}"))?;
+        let result = (|| {
+            let signals = proxy
+                .receive_all_signals()
+                .map_err(|error| format!("subscribe to keyboard signals: {error}"))?;
+            observe(&proxy)?;
+            for _msg in signals {
+                if super::watcher_stop_requested() {
+                    return Ok(());
+                }
+                observe(&proxy)?;
+            }
+            if super::watcher_stop_requested() {
+                return Ok(());
+            }
+            Err("keyboard signal stream ended".to_string())
+        })();
+        // Also release the owner iterator when a read fails or shutdown interrupts us.
+        let _ = conn.close();
+        result
+    })
 }
 
-fn emit_current(proxy: &Proxy<'_>) {
-    if let Err(e) = current_with_proxy(proxy) {
-        log::debug!("[layout/kde] read error: {e}");
+fn emit_current(proxy: &Proxy<'_>) -> Result<(), String> {
+    match current_with_proxy(proxy)? {
+        Some(_) => Ok(()),
+        None => Err("KDE keyboard layout service is unavailable".into()),
     }
 }
 
 fn current_with_proxy(proxy: &Proxy<'_>) -> Result<Option<KeyboardLayoutInfo>, String> {
+    let result = read_current(proxy);
+    match &result {
+        Ok(Some(info)) => super::publish(info),
+        _ => super::clear(),
+    }
+    result
+}
+
+fn read_current(proxy: &Proxy<'_>) -> Result<Option<KeyboardLayoutInfo>, String> {
     let list = match call_list(proxy)? {
         Some(v) => v,
         None => return Ok(None),
     };
-    let idx = call_index(proxy)?.unwrap_or(0);
-    let position = if (idx as usize) < list.len() {
-        idx as usize
-    } else {
-        0
-    };
+    let idx = call_index(proxy)?.ok_or("KDE keyboard layout index is unavailable")?;
+    let position = checked_position(&list, idx)?;
     let entry = list
         .get(position)
         .cloned()
@@ -176,8 +241,16 @@ fn current_with_proxy(proxy: &Proxy<'_>) -> Result<Option<KeyboardLayoutInfo>, S
         index: idx,
         backend: "linux-kde",
     };
-    super::publish(&info);
     Ok(Some(info))
+}
+
+fn checked_position(list: &LayoutList, index: u32) -> Result<usize, String> {
+    let position =
+        usize::try_from(index).map_err(|_| "KDE keyboard layout index is out of range")?;
+    if position >= list.len() {
+        return Err("KDE keyboard layout index is out of range".into());
+    }
+    Ok(position)
 }
 
 /// XKB variants of the configured layouts, by index. The DBus API only
@@ -305,5 +378,122 @@ mod tests {
         assert!(variants_from_kxkbrc(text, &list(&["ru", "us"])).is_empty());
         let other_section = "[Other]\nLayoutList=us\nVariantList=dvorak\n";
         assert!(variants_from_kxkbrc(other_section, &list(&["us"])).is_empty());
+    }
+}
+
+#[cfg(test)]
+mod detection_tests {
+    use super::*;
+
+    struct Bus(std::process::Child);
+    impl Drop for Bus {
+        fn drop(&mut self) {
+            let _ = self.0.kill();
+            let _ = self.0.wait();
+        }
+    }
+
+    struct Keyboard;
+    #[zbus::interface(name = "org.kde.KeyboardLayouts")]
+    impl Keyboard {
+        #[zbus(name = "getLayoutsList")]
+        fn layouts(&self) -> LayoutList {
+            vec![("lhc-test".into(), String::new(), "Test".into())]
+        }
+        #[zbus(name = "getLayout")]
+        fn layout(&self) -> u32 {
+            0
+        }
+    }
+
+    #[test]
+    fn private_bus_owner_loss_clears_detection_and_watchers_exit() {
+        use std::io::{BufRead, BufReader};
+        use std::process::{Command, Stdio};
+        use std::time::Instant;
+        let mut bus = Bus(Command::new("dbus-daemon")
+            .args(["--session", "--nofork", "--print-address=1"])
+            .stdout(Stdio::piped())
+            .spawn()
+            .expect("dbus-daemon is required for private bus tests"));
+        let mut address = String::new();
+        BufReader::new(bus.0.stdout.take().unwrap())
+            .read_line(&mut address)
+            .unwrap();
+        let address = address.trim();
+        let server = || {
+            zbus::blocking::connection::Builder::address(address)
+                .unwrap()
+                .name(SERVICE)
+                .unwrap()
+                .serve_at(OBJECT, Keyboard)
+                .unwrap()
+                .build()
+                .unwrap()
+        };
+        let state = std::sync::Arc::new(crate::runtime_state::RuntimeState::default());
+        let publisher = std::sync::Arc::new(std::sync::Mutex::new(
+            super::super::LayoutPublisher::default(),
+        ));
+        for restart in [false, true] {
+            let service = server();
+            let client = zbus::blocking::connection::Builder::address(address)
+                .unwrap()
+                .build()
+                .unwrap();
+            let worker_client = client.clone();
+            let (tx, rx) = std::sync::mpsc::channel();
+            let observed_state = state.clone();
+            let lost_state = state.clone();
+            let observed_publisher = publisher.clone();
+            let lost_publisher = publisher.clone();
+            let worker = thread::spawn(move || {
+                let _ = tx.send(watch_connection(
+                    worker_client,
+                    |proxy| {
+                        let info = read_current(proxy)?.ok_or("private service unavailable")?;
+                        observed_publisher
+                            .lock()
+                            .unwrap()
+                            .publish(&info, &observed_state, |_| {});
+                        Ok(())
+                    },
+                    move || lost_publisher.lock().unwrap().clear(&lost_state, |_| {}),
+                ));
+            });
+            let deadline = Instant::now() + Duration::from_secs(3);
+            while state
+                .keyboard_layout()
+                .is_none_or(|layout| layout.code != "lhc-test")
+            {
+                if Instant::now() >= deadline {
+                    let _ = client.clone().close();
+                    panic!("watcher did not publish the private service layout");
+                }
+                thread::sleep(Duration::from_millis(5));
+            }
+            if restart {
+                // Shutdown with a live owner must also release the owner iterator.
+                client.clone().close().unwrap();
+            } else {
+                service.clone().close().unwrap();
+            }
+            let result = rx.recv_timeout(Duration::from_secs(3));
+            let _ = client.close();
+            assert!(result.expect("watcher remained blocked").is_err());
+            worker.join().unwrap();
+            if !restart {
+                assert!(state.keyboard_layout().is_none());
+            }
+        }
+    }
+
+    #[test]
+    fn invalid_group_does_not_fall_back_to_first_language() {
+        let list = vec![("us".into(), String::new(), String::new())];
+        assert_eq!(checked_position(&list, 0).unwrap(), 0);
+        assert!(checked_position(&list, 1).is_err());
+        assert!(checked_position(&list, u32::MAX).is_err());
+        assert!(checked_position(&vec![], 0).is_err());
     }
 }

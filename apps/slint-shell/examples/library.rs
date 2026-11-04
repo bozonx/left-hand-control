@@ -12,6 +12,44 @@ use slint_shell::{
     ui::*,
 };
 
+/// Grip point and row center in window coordinates.
+fn reorder_handle(ui: &SettingsWindow, group: i32, index: i32) -> (slint::LogicalPosition, f32) {
+    use i_slint_core::{
+        accessibility::AccessibleStringProperty, item_tree::ItemRc, window::WindowInner,
+    };
+    let window = WindowInner::from_pub(ui.window());
+    window.ensure_tree_instantiated();
+    let id = format!("lhc-reorder-{group}-{index}");
+    let mut pending = vec![(ItemRc::new_root(window.component()), None)];
+    while let Some((item, mut center)) = pending.pop() {
+        let origin = item.map_to_window(item.geometry().origin);
+        if (0..item.element_count().unwrap_or(0)).any(|index| {
+            item.element_type_names_and_ids(index)
+                .is_some_and(|entries| entries.iter().any(|(kind, _)| kind == "AutoRuleRow"))
+        }) {
+            center = Some(origin.y + item.geometry().height() / 2.);
+        }
+        if item
+            .accessible_string_property(AccessibleStringProperty::Id)
+            .is_some_and(|value| value.as_str() == id)
+        {
+            return (
+                slint::LogicalPosition::new(
+                    origin.x + item.geometry().width() / 2.,
+                    origin.y + item.geometry().height() / 2.,
+                ),
+                center.expect("automatic-rule handle must belong to a row"),
+            );
+        }
+        let mut child = item.first_child();
+        while let Some(next) = child {
+            child = next.next_sibling();
+            pending.push((next, center));
+        }
+    }
+    panic!("reorder handle {id} not found");
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir()?;
     let paths = StoragePaths::new(dir.path().join("settings"), dir.path().join("data"));
@@ -66,13 +104,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(paths.load_user_layout("B").is_err());
     assert!(paths.load_user_layout("Профиль")?.contains("Описание"));
     assert_eq!(library.get_current_label(), "Профиль");
-    // Entering auto mode without rules keeps the single-mode layout.
+    // Entering Auto preserves an explicit passthrough default.
     library.invoke_set_automatic(true);
     assert_eq!(
         document.read().settings().auto_default_layout_id.as_deref(),
-        Some("user:A")
+        None
     );
-    assert_eq!(library.get_auto_default(), 0);
+    assert_eq!(library.get_auto_default(), -1);
     assert_eq!(library.invoke_new_rule_target(), 0);
     library.invoke_set_automatic(false);
     // "Профиль" is the second row: a rule for it, then an "off" rule above it.
@@ -435,8 +473,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         if std::env::var_os("LHC_LIBRARY_RULE_DRAG").is_some() {
             let first = document.read().settings().auto_rules[0].id.clone();
-            let start = slint::LogicalPosition::new(796.0, 278.0);
-            let end = slint::LogicalPosition::new(796.0, 460.0);
+            let group = ui.global::<DragGroups>().get_library_rules();
+            let (start, source_center) = reorder_handle(&ui, group, 0);
+            let (target, target_center) = reorder_handle(&ui, group, 2);
+            // Rows with warnings have different heights: align row centers, not grips.
+            let end =
+                slint::LogicalPosition::new(target.x, start.y + target_center - source_center + 1.);
             let window = ui.window();
             window.dispatch_event(slint::platform::WindowEvent::PointerMoved { position: start });
             window.dispatch_event(slint::platform::WindowEvent::PointerPressed {

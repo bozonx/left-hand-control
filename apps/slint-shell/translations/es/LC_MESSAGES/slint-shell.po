@@ -3704,3 +3704,6 @@ msgstr "Los cambios de ID actualizan las referencias automáticamente. Las macro
 
 msgid "Save layout changes before quitting?"
 msgstr "¿Guardar los cambios de la distribución antes de salir?"
+
+msgid "Cannot switch layout. The mapper is still using the previous layout."
+msgstr "No se puede cambiar la distribución. El asignador sigue usando la distribución anterior."

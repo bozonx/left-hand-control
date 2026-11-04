@@ -3708,3 +3708,6 @@ msgstr "ID өзгерістері сілтемелерді автоматты т
 
 msgid "Save layout changes before quitting?"
 msgstr "Шығу алдында жайма өзгерістерін сақтау керек пе?"
+
+msgid "Cannot switch layout. The mapper is still using the previous layout."
+msgstr "Жайманы ауыстыру мүмкін емес. Пернелерді қайта тағайындау бұрынғы жайманы қолдануды жалғастыруда."

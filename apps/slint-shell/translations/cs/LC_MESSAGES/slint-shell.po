@@ -3679,3 +3679,6 @@ msgstr "Změny ID automaticky aktualizují odkazy. Vnořená makra zachovávají
 
 msgid "Save layout changes before quitting?"
 msgstr "Uložit změny rozložení před ukončením?"
+
+msgid "Cannot switch layout. The mapper is still using the previous layout."
+msgstr "Nelze přepnout rozložení. Mapovač stále používá předchozí rozložení."

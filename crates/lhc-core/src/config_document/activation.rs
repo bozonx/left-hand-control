@@ -50,7 +50,7 @@ impl RuntimeConfig {
         let auto_patterns = settings
             .auto_rules
             .iter()
-            .filter(|_| settings.layout_mode == LayoutMode::Auto)
+            .filter(|rule| settings.layout_mode == LayoutMode::Auto && rule.enabled)
             .flat_map(|rule| {
                 rule.conditions
                     .window_patterns
@@ -75,10 +75,21 @@ impl ConfigDocument {
     /// Layout whose rules should run now: the manual choice, or in auto
     /// mode the first matching rule's layout or the default.
     pub fn active_layout_id(&self, ctx: &AutoSwitchContext) -> Result<Option<String>, ConfigError> {
-        Ok(match self.settings.layout_mode {
-            LayoutMode::Manual => self.settings.manual_layout_id.clone(),
-            LayoutMode::Auto => self.auto_choice(ctx)?.layout_id,
-        })
+        Ok(self.layout_choice(ctx)?.layout_id)
+    }
+
+    /// Selected layout and matching rule from one evaluation of the context.
+    pub fn layout_choice(
+        &self,
+        ctx: &AutoSwitchContext,
+    ) -> Result<auto_switch::AutoChoice, ConfigError> {
+        match self.settings.layout_mode {
+            LayoutMode::Manual => Ok(auto_switch::AutoChoice {
+                layout_id: self.settings.manual_layout_id.clone(),
+                matched_rule_index: None,
+            }),
+            LayoutMode::Auto => self.auto_choice(ctx),
+        }
     }
 
     /// Which automatic rule applies under `ctx`, whatever the current mode.
@@ -97,7 +108,14 @@ impl ConfigDocument {
     /// refuses blocking rule problems and drops disabled or draft rules.
     pub fn runtime_config(&self, ctx: &AutoSwitchContext) -> Result<RuntimeConfig, ConfigError> {
         let layout_id = self.active_layout_id(ctx)?;
-        // In auto mode "no match" means passthrough, never the current layout.
+        self.runtime_config_for_layout(layout_id)
+    }
+
+    /// Build an already selected layout without evaluating the context again.
+    pub fn runtime_config_for_layout(
+        &self,
+        layout_id: Option<String>,
+    ) -> Result<RuntimeConfig, ConfigError> {
         let layout = self.layout_for_activation(layout_id.as_deref())?;
         RuntimeConfig::build(&self.settings, layout, layout_id)
     }

@@ -83,13 +83,12 @@ pub struct AutoChoice {
 /// First rule whose conditions match `ctx`, or the default. Rules and the
 /// default pointing at a layout missing from `available` are skipped.
 pub fn choose(available: &[String], settings: &AppSettings, ctx: &AutoSwitchContext) -> AutoChoice {
-    let usable = |id: &Option<String>| id.as_ref().is_none_or(|id| available.contains(id));
     settings
         .auto_rules
         .iter()
         .enumerate()
         .find(|(_, rule)| {
-            rule.enabled && usable(&rule.layout_id) && matches_condition_set(&rule.conditions, ctx)
+            usable_rule(rule, available) && matches_condition_set(&rule.conditions, ctx)
         })
         .map(|(index, rule)| AutoChoice {
             matched_rule_index: Some(index),
@@ -138,23 +137,23 @@ pub fn covers(outer: &LayoutConditionSet, inner: &LayoutConditionSet) -> bool {
 
 /// Index of the first enabled rule before `index` that always matches
 /// when rule `index` would, so rule `index` never applies.
-pub fn shadowed_by(rules: &[AutoRule], index: usize) -> Option<usize> {
+pub fn shadowed_by(rules: &[AutoRule], index: usize, available: &[String]) -> Option<usize> {
     let rule = rules.get(index)?;
-    rules[..index]
-        .iter()
-        .position(|earlier| earlier.enabled && covers(&earlier.conditions, &rule.conditions))
+    rules[..index].iter().position(|earlier| {
+        usable_rule(earlier, available) && covers(&earlier.conditions, &rule.conditions)
+    })
 }
 
-/// Switch the layout mode. Entering auto mode for the first time, with no
-/// rules and no default, keeps the single-mode layout as the default so
-/// nothing changes until rules are added.
+fn usable_rule(rule: &AutoRule, available: &[String]) -> bool {
+    rule.enabled
+        && rule
+            .layout_id
+            .as_ref()
+            .is_none_or(|id| available.contains(id))
+}
+
+/// Switch modes without changing the user's automatic default, including passthrough.
 pub fn set_mode(settings: &mut AppSettings, mode: LayoutMode) {
-    if mode == LayoutMode::Auto
-        && settings.auto_rules.is_empty()
-        && settings.auto_default_layout_id.is_none()
-    {
-        settings.auto_default_layout_id = settings.manual_layout_id.clone();
-    }
     settings.layout_mode = mode;
 }
 
@@ -325,12 +324,12 @@ mod tests {
             rule(false, set(None, &[], &[])),
             rule(true, set(Some("off"), &[], &[])),
         ];
-        assert_eq!(shadowed_by(&rules, 0), None);
-        assert_eq!(shadowed_by(&rules, 1), Some(0));
-        assert_eq!(shadowed_by(&rules, 2), None);
-        assert_eq!(shadowed_by(&rules, 3), Some(2));
+        assert_eq!(shadowed_by(&rules, 0, &[]), None);
+        assert_eq!(shadowed_by(&rules, 1, &[]), Some(0));
+        assert_eq!(shadowed_by(&rules, 2, &[]), None);
+        assert_eq!(shadowed_by(&rules, 3, &[]), Some(2));
         // A disabled catch-all shadows nothing.
-        assert_eq!(shadowed_by(&rules, 5), None);
+        assert_eq!(shadowed_by(&rules, 5, &[]), None);
         assert!(!covers(&set(None, &["ru"], &[]), &set(None, &[], &[])));
         let all = set(None, &[], &[]);
         assert!(!covers(&except(all.clone(), &["kate"]), &all));
@@ -342,24 +341,38 @@ mod tests {
     }
 
     #[test]
-    fn first_switch_to_auto_keeps_the_single_layout() {
+    fn mode_changes_preserve_explicit_defaults_without_rules() {
         let mut settings = AppSettings {
             manual_layout_id: Some("user:A".into()),
             ..AppSettings::default()
         };
-        set_mode(&mut settings, LayoutMode::Auto);
-        assert_eq!(settings.auto_default_layout_id.as_deref(), Some("user:A"));
-        // A deliberate "off" default with rules is left alone.
-        settings.auto_default_layout_id = None;
-        settings.auto_rules.push(AutoRule {
-            id: "r".into(),
-            enabled: true,
-            layout_id: Some("user:A".into()),
-            conditions: LayoutConditionSet::default(),
-        });
-        set_mode(&mut settings, LayoutMode::Manual);
-        set_mode(&mut settings, LayoutMode::Auto);
-        assert_eq!(settings.auto_default_layout_id, None);
-        assert_eq!(settings.layout_mode, LayoutMode::Auto);
+        for default in [None, Some("user:B".to_owned())] {
+            settings.auto_default_layout_id = default.clone();
+            for mode in [LayoutMode::Auto, LayoutMode::Manual, LayoutMode::Auto] {
+                set_mode(&mut settings, mode);
+                assert_eq!(settings.auto_default_layout_id, default);
+            }
+        }
+    }
+
+    #[test]
+    fn missing_targets_do_not_shadow_rules_that_are_actually_chosen() {
+        let available = vec!["user:A".into()];
+        let mut settings = AppSettings::default();
+        for (id, target) in [("missing", Some("user:gone")), ("valid", Some("user:A"))] {
+            settings.auto_rules.push(AutoRule {
+                id: id.into(),
+                enabled: true,
+                layout_id: target.map(str::to_owned),
+                conditions: LayoutConditionSet::default(),
+            });
+        }
+        assert_eq!(
+            choose(&available, &settings, &AutoSwitchContext::default()).matched_rule_index,
+            Some(1)
+        );
+        assert_eq!(shadowed_by(&settings.auto_rules, 1, &available), None);
+        settings.auto_rules[0].layout_id = None;
+        assert_eq!(shadowed_by(&settings.auto_rules, 1, &available), Some(0));
     }
 }

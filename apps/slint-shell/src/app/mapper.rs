@@ -325,7 +325,7 @@ impl App {
             return;
         };
         if let Err(error) = document.sync_runtime(false) {
-            self.set_error(Msg::SavedMapperNotUpdated(error));
+            self.set_error(Msg::LayoutSwitchFailed(error));
         }
         self.refresh_mapper_status();
         pages::refresh_active(&self.settings, &document);

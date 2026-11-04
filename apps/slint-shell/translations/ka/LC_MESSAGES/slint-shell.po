@@ -3690,3 +3690,6 @@ msgstr "ID-ის ცვლილება ავტომატურად ა
 
 msgid "Save layout changes before quitting?"
 msgstr "შეინახოს განლაგების ცვლილებები გასვლამდე?"
+
+msgid "Cannot switch layout. The mapper is still using the previous layout."
+msgstr "განლაგების გადართვა ვერ მოხერხდა. კლავიშების გადამნაწილებელი კვლავ წინა განლაგებას იყენებს."

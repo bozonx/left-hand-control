@@ -3460,3 +3460,6 @@ msgstr "IDを変更すると参照が自動更新されます。入れ子のマ�
 
 msgid "Save layout changes before quitting?"
 msgstr "終了する前にレイアウトの変更を保存しますか？"
+
+msgid "Cannot switch layout. The mapper is still using the previous layout."
+msgstr "レイアウトを切り替えられません。マッパーは引き続き前のレイアウトを使用しています。"

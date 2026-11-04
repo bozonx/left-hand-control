@@ -3803,3 +3803,6 @@ msgstr "Οι αλλαγές ID ενημερώνουν αυτόματα τις α
 
 msgid "Save layout changes before quitting?"
 msgstr "Αποθήκευση αλλαγών διάταξης πριν από την έξοδο;"
+
+msgid "Cannot switch layout. The mapper is still using the previous layout."
+msgstr "Δεν είναι δυνατή η αλλαγή διάταξης. Η αντιστοίχιση εξακολουθεί να χρησιμοποιεί την προηγούμενη διάταξη."

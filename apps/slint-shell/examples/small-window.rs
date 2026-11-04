@@ -25,6 +25,42 @@ fn element_matches(item: &i_slint_core::item_tree::ItemRc, name: &str) -> bool {
     })
 }
 
+/// Scroll the actual automatic-default picker into the small panel's viewport.
+fn scroll_auto_default(ui: &SettingsWindow) {
+    use i_slint_core::{item_tree::ItemRc, window::WindowInner};
+    let window = WindowInner::from_pub(ui.window());
+    window.ensure_tree_instantiated();
+    let mut pending = vec![(ItemRc::new_root(window.component()), None)];
+    while let Some((item, mut viewport)) = pending.pop() {
+        let origin = item.map_to_window(item.geometry().origin);
+        let rect = (
+            origin.x,
+            origin.y,
+            item.geometry().width(),
+            item.geometry().height(),
+        );
+        if element_matches(&item, "Flickable") {
+            viewport = Some(rect);
+        }
+        if element_matches(&item, "auto-default-picker") {
+            let (x, y, width, height) = viewport.expect("default picker must scroll");
+            ui.window()
+                .dispatch_event(slint::platform::WindowEvent::PointerScrolled {
+                    position: slint::LogicalPosition::new(x + width / 2., y + height / 2.),
+                    delta_x: 0.,
+                    delta_y: y + height / 2. - (rect.1 + rect.3 / 2.),
+                });
+            return;
+        }
+        let mut child = item.first_child();
+        while let Some(next) = child {
+            child = next.next_sibling();
+            pending.push((next, viewport));
+        }
+    }
+    panic!("automatic default picker not found");
+}
+
 /// Check toolbar controls against their container and each other. Dialog actions
 /// outside scrolling bodies must also remain reachable in every language.
 fn controls_fit(ui: &SettingsWindow, state: &str) {
@@ -35,20 +71,36 @@ fn controls_fit(ui: &SettingsWindow, state: &str) {
     let mut pending = vec![(ItemRc::new_root(window.component()), None, false, None)];
     let mut toolbar_controls = Vec::new();
     let mut toolbars = 0;
+    let mut auto_controls = false;
+    let mut auto_rules = false;
+    let mut auto_default_visible = false;
     while let Some((item, mut toolbar, mut dialog, mut scrolling)) = pending.pop() {
         if !item.is_visible() {
             continue;
         }
+        auto_controls |= element_matches(&item, "auto-mode-controls");
+        auto_rules |= element_matches(&item, "auto-rules-panel");
         let origin = item.map_to_window(item.geometry().origin);
         let geometry = item.geometry();
         let rect = (origin.x, origin.y, geometry.width(), geometry.height());
-        if element_matches(&item, "main-toolbar") || element_matches(&item, "editor-toolbar") {
+        if element_matches(&item, "main-toolbar")
+            || element_matches(&item, "editor-toolbar")
+            || element_matches(&item, "library-toolbar")
+        {
             toolbar = Some(rect);
             toolbars += 1;
         }
         dialog |= element_matches(&item, "DialogFrame");
         if element_matches(&item, "Flickable") {
             scrolling = Some(rect);
+        }
+        if element_matches(&item, "auto-default-picker")
+            && let Some((x, y, width, height)) = scrolling
+        {
+            auto_default_visible = rect.0 >= x - 0.5
+                && rect.1 >= y - 0.5
+                && rect.0 + rect.2 <= x + width + 0.5
+                && rect.1 + rect.3 <= y + height + 0.5;
         }
         if matches!(
             item.accessible_role(),
@@ -105,6 +157,18 @@ fn controls_fit(ui: &SettingsWindow, state: &str) {
             child = next.next_sibling();
             pending.push((next, toolbar, dialog, scrolling));
         }
+    }
+    if state == "auto-default-scroll" {
+        assert!(
+            auto_default_visible,
+            "automatic default picker must remain reachable"
+        );
+    }
+    if state == "auto-without-development" {
+        assert!(
+            auto_controls && auto_rules,
+            "automatic-mode controls disappeared"
+        );
     }
     assert!(
         toolbars > 0,
@@ -182,7 +246,14 @@ const STEPS: &[Step] = &[
         ui.global::<LayoutLibrary>().invoke_set_automatic(true);
         ui.global::<LayoutLibrary>().invoke_open_rule(-1, 0);
     }),
+    ("auto-without-development", |ui| {
+        ui.global::<LayoutLibrary>().invoke_cancel_dialog();
+        ui.global::<AppState>().set_in_development(false);
+        ui.invoke_navigate(Page::Layouts, MenuKind::Emoji);
+    }),
+    ("auto-default-scroll", scroll_auto_default),
     ("settings-general", |ui| {
+        ui.global::<AppState>().set_in_development(true);
         ui.global::<LayoutLibrary>().invoke_cancel_dialog();
         ui.invoke_navigate(Page::Settings, MenuKind::Emoji);
         ui.global::<SettingsEditor>().set_tab(SettingsTab::General);

@@ -39,10 +39,7 @@ pub fn current() -> Result<Option<KeyboardLayoutInfo>, String> {
 }
 
 fn clear_layout() {
-    crate::runtime_state::set_keyboard_layout(None);
-    if let Ok(mut last) = super::LAST_PUBLISHED.lock() {
-        last.last = None;
-    }
+    super::clear();
 }
 
 pub fn available_layouts() -> Result<Vec<KeyboardLayoutInfo>, String> {

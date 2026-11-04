@@ -1,0 +1,66 @@
+Automatic layout switching — 2026-11-04
+
+Environment: Linux, KDE Plasma / Wayland; graphical session available.
+Configuration: disposable StoragePaths/temp directories supplied by tests/examples.
+UI example binaries were built by the workspace run with slint-shell/spell.
+
+Final checks (all exited 0):
+
+cargo fmt -p lhc-core -p slint-shell --check
+  PASS
+cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+  PASS, no warnings
+cargo test --locked --workspace --features slint-shell/spell
+  PASS: 812 passed, 11 ignored, 0 failed
+  Includes 589 lhc-core unit tests and 201 slint-shell unit tests.
+cargo check --locked -p slint-shell --all-targets
+  PASS, build without Spell
+cargo deny check
+  PASS: advisories, bans, licenses and sources; duplicate-version warnings remain.
+cargo test --locked -p lhc-core --test mapper_e2e -- --ignored
+  PASS: 8 passed, 0 failed, 0 ignored (grabbed synthetic input/output devices).
+cargo test --locked -p lhc-core --lib keyboard_layout::linux_kde::detection_tests -- --nocapture
+  PASS: 2 passed using zbus's normal executor.
+cargo test --locked -p lhc-core --features zbus/tokio --lib keyboard_layout::linux_kde::detection_tests -- --nocapture
+  PASS: 2 passed with Tokio explicitly enabled.
+
+target/debug/examples/editor --smoke
+  PASS: keyboard page rendered in a real window.
+target/debug/examples/interactions
+  PASS: settings, rules, persistence, navigation, command overview, caching and recovery.
+target/debug/examples/library
+  PASS: library operations and automatic-rule editing.
+target/debug/examples/small-window
+  PASS: 23 states at 640x400 (English).
+LHC_SMALL_LANGUAGE=ru LHC_EDITOR_SNAPSHOTS=/tmp/lhc-auto-ui-ru target/debug/examples/small-window
+  PASS: 23 states at 640x400 (Russian).
+  Asserts automatic-mode controls remain visible with development features hidden,
+  library toolbar controls fit, and the default picker is reachable after scrolling.
+LHC_LIBRARY_RULE_DRAG=1 target/debug/examples/library
+  PASS: automatic-rule drag-and-drop, persisted order verified.
+
+Additional build commands used for focused UI iteration:
+cargo check --locked -p slint-shell --example small-window
+cargo build --locked -p slint-shell --profile test --features spell --example small-window
+cargo build --locked -p slint-shell --profile test --features spell --example library
+
+Regressions covered:
+- Failed context switches preserve the applied layout and expose errors; retries recover.
+- Unchanged choices skip file loading/validation; forced updates still validate and stop stale state.
+- Missing targets survive editing/reload and change to passthrough only on explicit selection.
+- An open rule retains its identity and picker names across list refresh/reordering.
+- Single/Auto changes retain explicit empty and nonempty defaults without automatic seeding.
+- Unavailable earlier targets do not produce false shadowing warnings.
+- Keyboard detection loss clears cached conditions and recovery republishes the state.
+- A private D-Bus service-owner restart and watcher shutdown do not block or panic.
+
+Validation found and fixed a Tokio-specific destruction panic in zbus's owner iterator.
+Its lifetime is now guarded inside the matching zbus runtime, and both executor modes pass.
+Visual QA of Russian 640x400 snapshots additionally found and fixed toolbar clipping,
+collapsed layout names and the inaccessible default area. Drag tests now use actual
+handle/row geometry instead of fixed coordinates.
+
+The 8 mapper scenarios ignored by the workspace command were run separately above.
+The other 3 ignored clipboard/portal tests require isolated compositor/GNOME guests.
+Real KDE service restart, GNOME, Windows, macOS and X11 acceptance were not run.
+No VM acceptance was run.

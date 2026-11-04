@@ -42,6 +42,8 @@ export global LayoutLibrary {
     /// Rule being edited in the rule dialog; `rule-index` -1 is a new rule.
     in-out property <int> rule-index: -1;
     in-out property <int> rule-target: -1;
+    in property <[string]> rule-names;
+    in-out property <bool> rule-target-missing;
     in-out property <GameCondition> rule-game;
     in-out property <string> rule-layouts;
     in-out property <string> rule-apps;
@@ -72,6 +74,11 @@ export global LayoutLibrary {
     in property <bool> commands-dirty;
     in-out property <bool> save-as-open;
     in-out property <string> save-as-name;
+
+    public pure function active-text() -> string {
+        return (self.active-label == "" ? @tr("No active layout") : @tr("Active: {}", self.active-label))
+            + (self.active-error.id == "" ? "" : " — " + Locale.text(self.active-error));
+    }
 
     callback refresh();
     callback select(int);
@@ -216,7 +223,6 @@ export global LayoutLibrary {
         return self.auto-default >= 0 ? self.auto-default : self.names.length > 0 ? 0 : -1;
     }
     pure function game-text(game: GameCondition) -> string {
-        if !AppState.in-development { return ""; }
         return game == GameCondition.on ? @tr("game mode on") : game == GameCondition.off ? @tr("game mode off") : "";
     }
     public pure function rule-text(game: GameCondition, list: string) -> string {
@@ -342,6 +348,7 @@ export component LayoutMenu inherits MenuSurface {
 component TargetPicker inherits Rectangle {
     in property <int> target: -1;
     in property <bool> missing;
+    in property <[string]> names: LayoutLibrary.names;
     callback picked(int);
     // Closing the popup destroys the repeated item's parent in Live Preview.
     // Continue in the surviving picker's context instead (Slint issue #6426).
@@ -361,7 +368,7 @@ component TargetPicker inherits Rectangle {
     HorizontalLayout { padding-left: Theme.space-m-plus; padding-right: Theme.space-m; spacing: Theme.space-s;
         label := Text {
             horizontal-stretch: 1;
-            text: root.missing ? @tr("Layout not found") : LayoutLibrary.target-text(root.target);
+            text: root.missing ? @tr("Layout not found") : root.target >= 0 && root.target < root.names.length ? root.names[root.target] : @tr("No layout");
             color: root.missing ? Theme.error : root.target < 0 ? Theme.muted : Theme.text;
             font-weight: root.target >= 0 ? 600 : 400;
             overflow: elide; vertical-alignment: center;
@@ -381,9 +388,9 @@ component TargetPicker inherits Rectangle {
         y: root.height + Theme.menu-offset;
         width: max(root.width, 220px);
         LayoutMenu {
-            MenuItem { checked: root.target < 0; text: @tr("No layout (keys as is)"); clicked => { root.choose(-1); } }
+            MenuItem { checked: root.target == -1 && !root.missing; text: @tr("No layout (keys as is)"); clicked => { root.choose(-1); } }
             Divider {}
-            for name[index] in LayoutLibrary.names: MenuItem { text: name; checked: root.target == index; clicked => { root.choose(index); } }
+            for name[index] in root.names: MenuItem { text: name; checked: root.target == index; clicked => { root.choose(index); } }
         }
     }
 }
@@ -407,7 +414,7 @@ component AutoRuleRow inherits Rectangle {
     background: root.matched ? Theme.accent.transparentize(0.88) : touch.has-hover ? Theme.hover : transparent;
     height: row.preferred-height;
     accessible-role: button;
-    accessible-label: @tr("Rule {}", root.index + 1) + ": " + LayoutLibrary.rule-text(root.rule.game, root.rule.list) + " → " + LayoutLibrary.target-text(root.rule.target);
+    accessible-label: @tr("Rule {}", root.index + 1) + ": " + LayoutLibrary.rule-text(root.rule.game, root.rule.list) + " → " + (root.rule.missing ? @tr("Layout not found") : LayoutLibrary.target-text(root.rule.target));
     accessible-action-default => { LayoutLibrary.open-rule(root.index, root.rule.target); }
     touch := TouchArea { mouse-cursor: pointer; clicked => { LayoutLibrary.open-rule(root.index, root.rule.target); } }
     row := HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-s;
@@ -434,7 +441,7 @@ component AutoRuleRow inherits Rectangle {
                 text: @tr("Never applies: rule {} always matches first.", root.rule.shadowed-by + 1);
                 color: Theme.warning; font-size: Theme.font-body; wrap: word-wrap;
             }
-            if AppState.in-development && root.rule.enabled && root.rule.game != GameCondition.any && !LayoutLibrary.game-detection: Text {
+            if root.rule.enabled && root.rule.game == GameCondition.on && !LayoutLibrary.game-detection: Text {
                 text: @tr("Game mode detection is off, so this rule never matches.");
                 color: Theme.warning; font-size: Theme.font-body; wrap: word-wrap;
             }
@@ -469,17 +476,17 @@ component AddRuleButton inherits Rectangle {
 
 /// Automatic mode rules shown next to the library.
 component AutoRulesPanel inherits Card {
-    VerticalLayout { padding: Theme.space-l-plus; spacing: Theme.space-m-plus;
-        HorizontalLayout { spacing: Theme.space-s; vertical-stretch: 0;
-            CardTitle { text: @tr("Automatic switching rules"); min-width: 0px; wrap: word-wrap; vertical-alignment: center; }
-            VerticalLayout { alignment: center;
-                InfoTip { text: @tr("Rules are checked from top to bottom; the first enabled one whose conditions match chooses the layout. If none matches, the default is used. “No layout” leaves the keyboard unprocessed, for example in an application where the layout gets in the way."); }
+    min-height: 0px;
+    ScrollView { width: parent.width; height: parent.height; viewport-width: self.visible-width; drag-scroll: true;
+        PageContent { padding: Theme.space-l-plus; spacing: Theme.space-m-plus;
+            HorizontalLayout { spacing: Theme.space-s; vertical-stretch: 0;
+                CardTitle { text: @tr("Automatic switching rules"); min-width: 0px; wrap: word-wrap; vertical-alignment: center; }
+                VerticalLayout { alignment: center;
+                    InfoTip { text: @tr("Rules are checked from top to bottom; the first enabled one whose conditions match chooses the layout. If none matches, the default is used. “No layout” leaves the keyboard unprocessed, for example in an application where the layout gets in the way."); }
+                }
+                Rectangle { horizontal-stretch: 1; }
+                AddRuleButton { compact: true; }
             }
-            Rectangle { horizontal-stretch: 1; }
-            AddRuleButton { compact: true; }
-        }
-        ScrollView { viewport-width: self.visible-width; drag-scroll: true;
-            vertical-stretch: 1;
             VerticalLayout { spacing: Theme.space-s; alignment: start;
                 if LayoutLibrary.auto-rules.length == 0: VerticalLayout { spacing: Theme.space-m;
                     Text { text: @tr("No rules"); color: Theme.text; font-weight: Theme.weight-semibold; }
@@ -496,25 +503,25 @@ component AutoRulesPanel inherits Card {
                     matched: LayoutLibrary.auto-matched == index;
                 }
             }
-        }
-        Rectangle { height: 1px; background: Theme.divider; vertical-stretch: 0; }
-        Rectangle {
-            vertical-stretch: 0;
-            border-radius: Theme.radius;
-            height: default-row.preferred-height;
-            border-width: 1px;
-            border-color: transparent;
-            background: transparent;
-            default-row := VerticalLayout { padding: Theme.space-m; spacing: Theme.space-s;
-                Text { text: @tr("Otherwise (default)"); color: Theme.text; font-weight: Theme.weight-semibold; }
-                TargetPicker {
-                    target: LayoutLibrary.auto-default;
-                    missing: LayoutLibrary.auto-default-missing;
-                    picked(index) => { LayoutLibrary.set-auto-default(index); }
-                }
-                if LayoutLibrary.auto-default < 0 && !LayoutLibrary.auto-default-missing: Text {
-                    text: @tr("When no rule matches, the keyboard works without processing.");
-                    color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap;
+            Rectangle { height: 1px; background: Theme.divider; vertical-stretch: 0; }
+            Rectangle {
+                vertical-stretch: 0;
+                border-radius: Theme.radius;
+                height: default-row.preferred-height;
+                border-width: 1px;
+                border-color: transparent;
+                background: transparent;
+                default-row := VerticalLayout { padding: Theme.space-m; spacing: Theme.space-s;
+                    Text { text: @tr("Otherwise (default)"); color: Theme.text; font-weight: Theme.weight-semibold; }
+                    auto-default-picker := TargetPicker {
+                        target: LayoutLibrary.auto-default;
+                        missing: LayoutLibrary.auto-default-missing;
+                        picked(index) => { LayoutLibrary.set-auto-default(index); }
+                    }
+                    if LayoutLibrary.auto-default < 0 && !LayoutLibrary.auto-default-missing: Text {
+                        text: @tr("When no rule matches, the keyboard works without processing.");
+                        color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap;
+                    }
                 }
             }
         }
@@ -541,6 +548,7 @@ component SetupStep inherits HorizontalLayout {
 }
 
 export component LibraryPage inherits PageLayout {
+    in property <bool> compact;
     accessible-label: @tr("Layouts");
     // The first-run card covers the missing keyboard itself; the warning is for an
     // existing setup that lost its device.
@@ -556,34 +564,44 @@ export component LibraryPage inherits PageLayout {
             VerticalLayout { alignment: center; Button { text: @tr("Choose a keyboard"); clicked => { AppState.open-keyboard-settings(); } } }
         }
     }
-    if LayoutLibrary.names.length > 0: HorizontalLayout {
+    if LayoutLibrary.names.length > 0 || LayoutLibrary.automatic: library-toolbar := Rectangle {
         vertical-stretch: 0;
-        spacing: Theme.space-4xl;
-        if AppState.in-development: HorizontalLayout {
-            spacing: Theme.space-s;
-            Text { text: @tr("Mode"); color: Theme.text; vertical-alignment: center; }
-            VerticalLayout {
-                alignment: center;
-                InfoTip {
-                    text: @tr("Single: the layout you make active works everywhere.") + "\n\n"
-                        + (AppState.in-development ? @tr("Automatic: the layout is chosen by switching rules for the application, system language or game mode.") : "") + "\n\n"
-                        + @tr("The app:activateLayout1…5 actions activate the layout at that position in this list: reordering the list changes which layout a key activates. In Auto mode they switch to Single mode.");
+        height: toolbar-content.preferred-height;
+        toolbar-content := GridLayout {
+            spacing: Theme.space-m;
+            if AppState.in-development || LayoutLibrary.automatic: HorizontalLayout {
+                row: 0; col: 0;
+                horizontal-stretch: 1;
+                alignment: start;
+                spacing: Theme.space-s;
+                Text { text: @tr("Mode"); color: Theme.text; vertical-alignment: center; }
+                VerticalLayout {
+                    alignment: center;
+                    InfoTip {
+                        text: @tr("Single: the layout you make active works everywhere.") + "\n\n"
+                            + @tr("Automatic: the layout is chosen by switching rules for the application, system language or game mode.") + "\n\n"
+                            + @tr("The app:activateLayout1…5 actions activate the layout at that position in this list: reordering the list changes which layout a key activates. In Auto mode they switch to Single mode.");
+                    }
+                }
+                auto-mode-controls := ButtonGroup {
+                    labels: [@tr("Single"), @tr("Auto")];
+                    selected-index: LayoutLibrary.automatic ? 1 : 0;
+                    selected(index) => { if (index == 1) != LayoutLibrary.automatic { LayoutLibrary.set-automatic(index == 1); } }
                 }
             }
-            ButtonGroup {
-                labels: [@tr("Single"), @tr("Auto")];
-                selected-index: LayoutLibrary.automatic ? 1 : 0;
-                selected(index) => { if (index == 1) != LayoutLibrary.automatic { LayoutLibrary.set-automatic(index == 1); } }
+            HorizontalLayout {
+                row: root.compact ? 1 : 0;
+                col: root.compact ? 0 : 1;
+                horizontal-stretch: 0;
+                alignment: start;
+                spacing: Theme.space-m;
+                Text { text: @tr("Add layout: "); color: Theme.text; vertical-alignment: center; }
+                Button { text: @tr("Blank"); primary: false; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } }
+                for name[index] in LayoutLibrary.bundled-names: Button { text: name; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.bundled, index); } }
             }
         }
-        Rectangle { horizontal-stretch: 1; }
-        HorizontalLayout {
-            spacing: Theme.space-m;
-            Text { text: @tr("Add layout: "); color: Theme.text; vertical-alignment: center; }
-            Button { text: @tr("Blank"); primary: false; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } }
-            for name[index] in LayoutLibrary.bundled-names: Button { text: name; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.bundled, index); } }
-        }
     }
+
     HorizontalLayout {
         vertical-stretch: 1;
         spacing: Theme.space-l;
@@ -694,7 +712,7 @@ export component LibraryPage inherits PageLayout {
                                     }
                                 }
                             }
-                            VerticalLayout { width: 220px; spacing: Theme.space-m; alignment: start;
+                            if !root.compact: VerticalLayout { width: 220px; spacing: Theme.space-m; alignment: start;
                                 visible: row.loaded && row.error.id == "";
                                 property <LayoutSummary> summary: row.summary;
                                 if summary.rules + summary.layers + (AppState.in-development ? summary.emoji-pages + summary.action-pages + summary.macros + summary.commands : 0) == 0: Text { text: @tr("Empty layout"); color: Theme.muted; font-size: Theme.font-medium; }
@@ -715,7 +733,7 @@ export component LibraryPage inherits PageLayout {
                 }
             }
         }
-        if AppState.in-development && LayoutLibrary.automatic: VerticalLayout { width: 340px; padding-bottom: Theme.page-padding; AutoRulesPanel {} }
+        if LayoutLibrary.automatic: VerticalLayout { width: 340px; padding-bottom: Theme.page-padding; auto-rules-panel := AutoRulesPanel {} }
     }
 }
 
@@ -746,7 +764,7 @@ export component LibraryDialogOverlay inherits Rectangle {
             rule-form := VerticalLayout { spacing: Theme.space-xl; alignment: start;
                 VerticalLayout { spacing: Theme.space-m;
                     Text { text: @tr("Use layout"); color: Theme.text; font-weight: Theme.weight-semibold; }
-                    TargetPicker { target: LayoutLibrary.rule-target; picked(index) => { LayoutLibrary.rule-target = index; } }
+                    TargetPicker { names: LayoutLibrary.rule-names; missing: LayoutLibrary.rule-target-missing; target: LayoutLibrary.rule-target; picked(index) => { LayoutLibrary.rule-target-missing = false; LayoutLibrary.rule-target = index; } }
                 }
                 VerticalLayout { spacing: Theme.space-xs;
                     Text { text: @tr("When"); color: Theme.text; font-weight: Theme.weight-semibold; }

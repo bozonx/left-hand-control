@@ -104,6 +104,7 @@ pub struct Document {
     listeners: RefCell<Vec<(View, Listener)>>,
     /// Document revision and layout last given to the running mapper.
     pushed_layout: RefCell<Option<(u64, RuntimeConfig)>>,
+    runtime_error: RefCell<Option<String>>,
 }
 
 /// An applied edit and whether the running mapper took it.
@@ -139,6 +140,7 @@ impl Document {
             library_snapshot: RefCell::default(),
             listeners: RefCell::default(),
             pushed_layout: RefCell::default(),
+            runtime_error: RefCell::default(),
         })
     }
 
@@ -273,9 +275,28 @@ impl Document {
     /// switch (e.g. a game started) keeps the current layout running and
     /// is retried on the next change.
     pub fn sync_runtime(&self, force: bool) -> Result<(), String> {
-        if !lhc_core::mapper::runtime::status().running {
+        let result = self.sync_runtime_with(
+            lhc_core::mapper::runtime::status().running,
+            &AutoSwitchContext::current(),
+            force,
+            lhc_core::mapper::runtime::update_config_if_running,
+            lhc_core::mapper::runtime::stop,
+        );
+        self.sync_title_tracking(lhc_core::mapper::runtime::status().running);
+        result
+    }
+
+    fn sync_runtime_with(
+        &self,
+        running: bool,
+        context: &AutoSwitchContext,
+        force: bool,
+        update: impl FnOnce(lhc_core::mapper::config::MapperConfig) -> Result<(), String>,
+        stop: impl FnOnce() -> Result<(), String>,
+    ) -> Result<(), String> {
+        if !running {
             self.pushed_layout.borrow_mut().take();
-            self.sync_title_tracking(false);
+            self.runtime_error.borrow_mut().take();
             return Ok(());
         }
         let document_changed = self
@@ -284,22 +305,59 @@ impl Document {
             .as_ref()
             .is_some_and(|(revision, _)| *revision != self.revision.get());
         let result = (|| {
-            let runtime = self.runtime_config().map_err(|error| error.to_string())?;
-            lhc_core::active_window::set_titles_needed(runtime.uses_titles);
-            self.push_runtime(
-                runtime,
-                force,
-                lhc_core::mapper::runtime::update_config_if_running,
-            )
+            let config = self.read();
+            let id = config
+                .active_layout_id(context)
+                .map_err(|error| error.to_string())?;
+            // Most context events keep the same layout. Avoid reading and validating
+            // that layout again on the UI thread.
+            if !force && self.runtime_is_current(&id) {
+                return Ok(());
+            }
+            let runtime = config
+                .runtime_config_for_layout(id)
+                .map_err(|error| error.to_string())?;
+            drop(config);
+            self.push_runtime(runtime, force, update)
         })();
+        *self.runtime_error.borrow_mut() = result.as_ref().err().cloned();
         if result.is_err() && (force || document_changed) {
             self.pushed_layout.borrow_mut().take();
-            if let Err(error) = lhc_core::mapper::runtime::stop() {
+            if let Err(error) = stop() {
                 log::warn!("stop outdated mapper: {error}");
             }
         }
-        self.sync_title_tracking(lhc_core::mapper::runtime::status().running);
         result
+    }
+
+    /// Applied layout while running; stopped previews validate the selected file.
+    pub(crate) fn activation_status(
+        &self,
+        context: &AutoSwitchContext,
+        running: bool,
+    ) -> (Option<String>, Option<usize>, Option<String>) {
+        let choice = self.read().layout_choice(context);
+        if running {
+            let applied = self.applied_layout_id().flatten();
+            let error = self
+                .runtime_error
+                .borrow()
+                .clone()
+                .or_else(|| choice.as_ref().err().map(ToString::to_string));
+            let matched = choice
+                .ok()
+                .filter(|choice| error.is_none() && choice.layout_id == applied)
+                .and_then(|choice| choice.matched_rule_index);
+            return (applied, matched, error);
+        }
+        match choice.and_then(|choice| {
+            self.read()
+                .layout_for_activation(choice.layout_id.as_deref())?;
+            Ok(choice)
+        }) {
+            Ok(choice) => (choice.layout_id, choice.matched_rule_index, None),
+            Err(error) => (None, None, Some(error.to_string())),
+        }
     }
 
     fn push_runtime(
@@ -371,6 +429,7 @@ impl Document {
     /// Record the layout a freshly started mapper runs.
     pub fn mapper_started(&self, revision: u64, runtime: RuntimeConfig) {
         *self.pushed_layout.borrow_mut() = Some((revision, runtime));
+        self.runtime_error.borrow_mut().take();
     }
 
     /// Refresh every view, for example after the language changed.
@@ -407,6 +466,154 @@ mod tests {
         let paths = StoragePaths::new(dir.path().join("settings"), dir.path().join("data"));
         let document = Document::load(paths).unwrap();
         (dir, document)
+    }
+
+    fn auto_document() -> (tempfile::TempDir, Rc<Document>, AutoSwitchContext) {
+        use lhc_core::profile::model::{AutoRule, LayoutConditionSet, LayoutMode};
+        let (dir, document) = document();
+        let paths = document.read().paths().clone();
+        for name in ["A", "B"] {
+            paths
+                .save_user_layout(
+                    name,
+                    &lhc_core::profile::layout_file::serialize(&LayoutPreset::default()),
+                    false,
+                )
+                .unwrap();
+        }
+        document
+            .edit(View::Library, |config| {
+                config.update_settings(|settings| {
+                    settings.layout_mode = LayoutMode::Auto;
+                    settings.auto_default_layout_id = Some("user:A".into());
+                    settings.auto_rules = vec![AutoRule {
+                        id: "b".into(),
+                        enabled: true,
+                        layout_id: Some("user:B".into()),
+                        conditions: LayoutConditionSet {
+                            window_patterns: vec!["b".into()],
+                            ..Default::default()
+                        },
+                    }];
+                })
+            })
+            .unwrap();
+        let runtime = document
+            .read()
+            .runtime_config(&AutoSwitchContext::default())
+            .unwrap();
+        document.mapper_started(document.revision(), runtime);
+        let context = AutoSwitchContext {
+            window: Some(lhc_core::runtime_state::ActiveWindow {
+                app_id: "b".into(),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        (dir, document, context)
+    }
+
+    #[test]
+    fn context_switch_errors_keep_actual_status_and_retry_without_hardware() {
+        let (_dir, document, context) = auto_document();
+        let fail_stop = || panic!("a failed context switch must keep the mapper");
+        assert!(
+            document
+                .sync_runtime_with(
+                    true,
+                    &context,
+                    false,
+                    |_| Err("queue full".into()),
+                    fail_stop
+                )
+                .is_err()
+        );
+        let (id, matched, error) = document.activation_status(&context, true);
+        assert_eq!(id.as_deref(), Some("user:A"));
+        assert_eq!(matched, None);
+        assert_eq!(error.as_deref(), Some("queue full"));
+        document
+            .sync_runtime_with(true, &context, false, |_| Ok(()), fail_stop)
+            .unwrap();
+        assert_eq!(
+            document.activation_status(&context, true),
+            (Some("user:B".into()), Some(0), None)
+        );
+        document
+            .sync_runtime_with(
+                true,
+                &context,
+                false,
+                |_| panic!("already applied"),
+                fail_stop,
+            )
+            .unwrap();
+    }
+
+    #[test]
+    fn broken_target_keeps_actual_layout_and_reports_load_error() {
+        let (_dir, document, context) = auto_document();
+        let path = document.read().paths().layout_path("B").unwrap();
+        std::fs::write(&path, "broken").unwrap();
+        assert!(
+            document
+                .sync_runtime_with(
+                    true,
+                    &context,
+                    false,
+                    |_| panic!("invalid layout sent"),
+                    || panic!("context switch stopped mapper")
+                )
+                .is_err()
+        );
+        let (id, matched, error) = document.activation_status(&context, true);
+        assert_eq!(id.as_deref(), Some("user:A"));
+        assert!(matched.is_none() && error.is_some());
+        std::fs::write(
+            &path,
+            lhc_core::profile::layout_file::serialize(&LayoutPreset::default()),
+        )
+        .unwrap();
+        document
+            .sync_runtime_with(true, &context, false, |_| Ok(()), || panic!("stopped"))
+            .unwrap();
+        assert_eq!(
+            document.activation_status(&context, true),
+            (Some("user:B".into()), Some(0), None)
+        );
+    }
+
+    #[test]
+    fn unchanged_choice_skips_loading_and_forced_updates_still_validate() {
+        let (_dir, document, _) = auto_document();
+        std::fs::write(document.read().paths().layout_path("A").unwrap(), "broken").unwrap();
+        let context = AutoSwitchContext::default();
+        document
+            .sync_runtime_with(
+                true,
+                &context,
+                false,
+                |_| panic!("unchanged"),
+                || panic!("stopped"),
+            )
+            .unwrap();
+        let stopped = Cell::new(false);
+        assert!(
+            document
+                .sync_runtime_with(
+                    true,
+                    &context,
+                    true,
+                    |_| panic!("invalid"),
+                    || {
+                        stopped.set(true);
+                        Ok(())
+                    }
+                )
+                .is_err()
+        );
+        assert!(stopped.get());
+        assert!(document.applied_layout_id().is_none());
     }
 
     #[test]
