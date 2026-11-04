@@ -1164,7 +1164,6 @@ mod tests {
         let value: Value = serde_json::to_value(&runtime.mapper).unwrap();
         assert_eq!(value["rules"].as_array().unwrap().len(), 1);
         assert_eq!(value["rules"][0]["key"], "KeyA");
-        assert_eq!(value["settings"]["currentLayoutId"], "user:Other");
 
         document
             .update_settings(|settings| settings.manual_layout_id = Some("user:Main".into()))

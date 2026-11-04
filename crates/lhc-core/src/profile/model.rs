@@ -776,9 +776,6 @@ impl Default for AppSettings {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResolvedAppConfig {
-    pub version: u32,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub layout_description: Option<String>,
     pub layers: Vec<Layer>,
     pub rules: Vec<KeyRule>,
     pub layer_keymaps: BTreeMap<String, LayerKeymap>,
@@ -802,8 +799,6 @@ impl ResolvedAppConfig {
             layer_keymaps.entry(layer.id.clone()).or_default();
         }
         Self {
-            version: 1,
-            layout_description: preset.description,
             layers: preset.layers,
             rules: preset.rules,
             layer_keymaps,
@@ -863,10 +858,6 @@ mod tests {
         assert_eq!(
             mapper,
             crate::mapper::config::MapperConfig::try_from(&config).unwrap()
-        );
-        assert_eq!(
-            mapper.settings.editing_layout_id.as_deref(),
-            Some("user:Editing")
         );
         assert_eq!(mapper.settings.trigger_chord_timeout_ms, 80);
         assert_eq!(

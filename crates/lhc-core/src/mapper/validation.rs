@@ -508,7 +508,6 @@ mod tests {
             powershell_script: "playerctl play-pause".into(),
             working_directory: None,
         });
-        cfg.settings.editing_layout_id = Some("custom".into());
         cfg.settings.commands_enabled = true;
         cfg.macros.push(Macro {
             id: "m".into(),

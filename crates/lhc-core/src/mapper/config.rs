@@ -174,9 +174,6 @@ pub struct Settings {
     #[serde(rename = "comboTimeoutMs")]
     pub trigger_chord_timeout_ms: u64,
     #[serde(default)]
-    #[serde(rename = "currentLayoutId")]
-    pub editing_layout_id: Option<String>,
-    #[serde(default)]
     pub commands_enabled: bool,
     #[serde(default)]
     pub linux_wayland_text_mode: TextMode,
@@ -290,7 +287,6 @@ impl TryFrom<&crate::profile::model::ResolvedAppConfig> for MapperConfig {
                 macro_timeout_ms: value.settings.macro_timeout_ms,
                 default_double_tap_timeout_ms: value.settings.default_double_tap_timeout_ms,
                 trigger_chord_timeout_ms: value.settings.trigger_chord_timeout_ms,
-                editing_layout_id: value.settings.editing_layout_id.clone(),
                 commands_enabled: value.settings.commands_enabled,
                 linux_wayland_text_mode: value.settings.linux_wayland_text_mode,
                 linux_paste_shortcut: value.settings.linux_paste_shortcut,
@@ -329,7 +325,6 @@ impl Default for Settings {
             macro_timeout_ms: default_macro_timeout(),
             default_double_tap_timeout_ms: default_double_tap(),
             trigger_chord_timeout_ms: default_trigger_chord_timeout(),
-            editing_layout_id: None,
             commands_enabled: false,
             linux_wayland_text_mode: TextMode::Libei,
             linux_paste_shortcut: PasteShortcut::ShiftInsert,

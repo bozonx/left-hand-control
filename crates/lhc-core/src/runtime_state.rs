@@ -88,9 +88,6 @@ pub fn game_mode_active() -> bool {
 pub fn set_game_mode_active(active: bool) {
     CURRENT.set_game_mode_active(active);
 }
-pub fn keyboard_layout_code() -> Option<String> {
-    keyboard_layout().map(|value| value.code)
-}
 pub fn keyboard_layout() -> Option<KeyboardLayoutSelection> {
     CURRENT.keyboard_layout()
 }
