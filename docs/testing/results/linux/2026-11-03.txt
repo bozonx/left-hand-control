@@ -1,0 +1,30 @@
+Date: 2026-11-03 07:28:15 -0300
+Commit: 644436bd (with uncommitted changes)
+Version: left-hand-control 0.4.0
+Session: wayland, KDE; not detected
+Kernel: Linux 7.2.9-1-MANJARO
+
+- example-editor: passed
+- example-interactions: passed
+- example-library: passed
+- example-macros: passed
+- example-menus: passed
+- example-popup-grid: passed
+- example-undo-redo: passed
+- example-inline-edit: passed
+- example-drag-scroll: passed
+- example-notifications: passed
+- example-accessibility: passed
+- example-keyboard-navigation: passed
+- example-contrast-scaling: passed
+- example-layer-keys: passed
+- example-small-window: passed
+- check-recovery: passed
+- check-preferences: passed
+- check-worker-crash: passed
+- check-linux-install: passed
+- mapper-e2e: passed
+Passed: 20, failed: 0
+
+Manual smoke on the installed package (section 3 of
+docs/testing/manual-acceptance.md): not recorded yet.

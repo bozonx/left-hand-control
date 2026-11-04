@@ -21,6 +21,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Windows: saving settings and layouts retries briefly when another process temporarily locks a file. A failed replacement keeps the original file intact.
+
 - Mapper configuration updates preserve the order of queued actions. Popup menus retain the mapper's accepted layout after a failed automatic switch. Stopping the mapper releases window-title collection, and event overload no longer grows an unbounded backlog or replays actions from a previous mapper session.
 
 - Held-layer hints refresh after layout edits and language changes without restarting their delay. Layout OSDs describe the last successfully applied layout, and rapid OSD requests are delivered in order with only the latest waiting message retained.

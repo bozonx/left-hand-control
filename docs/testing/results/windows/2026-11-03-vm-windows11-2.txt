@@ -1,0 +1,76 @@
+Date: 2026-11-03 09:32:48 -0300
+Commit: 644436bd (with uncommitted changes)
+Command: /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows --memory 8192 --suite full --stress-seconds 180 --previous-package /mnt/disk2/vm/lhc-release-20261022-windows-fixes/packages/left-hand-control-0.3.0-windows-x86_64.zip --timeout 180
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: full; acceptance requested: False
+Previous-version upgrade: /mnt/disk2/vm/lhc-release-20261022-windows-fixes/packages/left-hand-control-0.3.0-windows-x86_64.zip
+Scope: Windows developer VM; clean-package and previous-version upgrade require separate acceptance
+Mapper build: release
+Popup shell build: release
+Native tests/clippy/package lifecycle: included
+Mapper from: beginning
+Mapper only: all
+Extended: False; stress seconds: 180
+Memory: 8192 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261103-085431/logs
+
+Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: full
+- shell-smoke: passed
+- release-mapper-driver-build: passed
+- release-shell-build: passed
+- hardware-keyboard and mapper scenarios: passed (see named host steps)
+- harness: FAILED (Full native/release checks failed (exit 1, see full.log))
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 1750 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261103-085431/src.tar.gz; SHA256 3d073de2ad9d20e05ce2fcaf0f0f03cc6f0596f6a16894ec9fa4d6505bed10ba; Source sync: 3 updated, 42 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- shell-profile-remap-restart: passed — application profile -> mapper -> receiver: b; persisted game setting -> c across restart; off -> b; stopped -> a
+- popup-bmp-focus: passed — physical hotkey and cell key; exact Unicode once; focus restored; modifiers released
+- popup-surrogate-focus: passed — physical hotkey and cell key; exact Unicode once; focus restored; modifiers released
+- popup-zwj-focus: passed — physical hotkey and cell key; exact Unicode once; focus restored; modifiers released
+- popup-mixed-text-focus: passed — physical hotkey and cell key; exact Unicode once; focus restored; modifiers released
+- popup-reopen-focus: passed — physical hotkey and cell key; exact Unicode once; focus restored; modifiers released
+- shell-mapper-crash-held: passed — real application forced termination; guard releases Ctrl before physical release; native input works
+- mapper-passthrough: passed
+- mapper-remap-swallow-recursion: passed — A->B, B->C: injected B is not remapped; S swallowed; D passes through
+- mapper-modifiers-extended: passed — left/right Shift, Ctrl and Alt distinguished; Shift+X, Ctrl+Home, Shift+End
+- mapper-repeat: passed
+- mapper-tap-hold-layer: passed
+- mapper-chord-double-tap: passed
+- mapper-live-config-held: passed
+- mapper-macro-live-config-cancel: passed — ordered steps and >=500ms pause; live config cancels remaining macro
+- mapper-unicode-us-ru: passed
+- mapper-focus-cancel: passed — receiver changes foreground mid-text; worker reports cancellation and does not resume
+- mapper-stop-held-restart: passed — stop releases virtual Ctrl before physical release; native input and restart work
+- mapper-replug: passed
+- mapper-lock-unavailable: passed — second process rejected by session mutex; unsupported system action reports notice
+- mapper-secure-desktop-held: passed — layer and modifiers released on the secure desktop do not stay held
+- mapper-crash-held: passed — forced owner termination releases Ctrl/Shift/Alt/Win before physical release; native input and mapper restart work
+- mapper-guard-failure: passed — guard death stops mapper, fallback releases Ctrl, native input and restart work
+- mapper-lock-unlock: skipped — run with --extended
+- mapper-suspend-resume: skipped — run with --extended
+- mapper-stress: skipped — run with --extended
+- mapper-unicode-corpus: skipped — run with --extended
+- mapper-notepad-unicode: skipped — run with --extended
+- mapper-elevated-uipi: skipped — run with --extended
+- mapper-process-tree-crash: skipped — run with --extended
+- mapper-physical-hardware: skipped — VM input does not accept physical Windows hardware
+- windows-full: FAILED — Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: full
+- shell-smoke: passed
+- release-mapper-driver-build: passed
+- release-shell-build: passed
+- hardware-keyboard and mapper scenarios: passed (see named host steps)
+- harness: FAILED (Full native/release checks failed (exit 1, see full.log))
+
+Passed: 27, failed: 1, skipped: 8, blocked/not run: 0

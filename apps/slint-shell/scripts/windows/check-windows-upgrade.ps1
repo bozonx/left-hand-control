@@ -44,20 +44,25 @@ try {
         Assert-WindowsTestOwner $process
         if ($index -eq 0) {
             & $exe preferences dark ru | Out-Null
-            if ($LASTEXITCODE) { throw 'Previous version did not save preferences' }
+            if ($LASTEXITCODE) { throw 'Previous version did not apply preferences' }
+            & $exe game on | Out-Null
+            if ($LASTEXITCODE) { throw 'Previous version did not save game mode' }
         }
         & $exe quit | Out-Null
         if ($LASTEXITCODE -or -not $process.WaitForExit(10000) -or $process.ExitCode) { throw 'Upgrade shutdown failed' }
         $profile = Join-Path $env:LHC_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.left-hand-control'
         if ($index -eq 0) {
             $before = @{}
-            foreach ($file in Get-ChildItem $profile -Recurse -File) {
+            # IPC credentials rotate on each start; only durable user data is retained.
+            foreach ($file in Get-ChildItem $profile -Recurse -File | Where-Object Name -ne 'ipc-token') {
                 $before[$file.FullName] = (Get-FileHash $file.FullName).Hash
             }
+            if (-not $before.ContainsKey((Join-Path $profile 'config.json'))) { throw 'Previous version saved no configuration file' }
+            Copy-Item (Join-Path $profile 'config.json') (Join-Path $output 'before-config.json')
             if (-not $before.Count) { throw 'Previous version saved no isolated configuration' }
         } else {
             foreach ($path in $before.Keys) {
-                if (-not (Test-Path $path) -or (Get-FileHash $path).Hash -ne $before[$path]) { throw "Upgrade changed configuration: $path" }
+                if (-not (Test-Path $path) -or (Get-FileHash $path).Hash -ne $before[$path]) { throw "Upgrade changed configuration: $(Split-Path $path -Leaf)" }
             }
         }
     }

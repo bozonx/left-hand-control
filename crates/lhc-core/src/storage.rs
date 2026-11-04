@@ -2,6 +2,8 @@
 //! validation.
 
 use crate::profile::schema::{self, CONFIG_SCHEMA_VERSION, LAYOUT_SCHEMA_VERSION};
+#[cfg(not(target_os = "windows"))]
+use std::fs::rename as rename_file;
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -175,7 +177,7 @@ impl StoragePaths {
             // Only the case changes on a case-insensitive file system
             // (Windows, macOS): the "existing" target is this very file.
             write_file(&old_path, contents.as_bytes(), true)?;
-            fs::rename(&old_path, &new_path).map_err(|e| format!("rename: {e}"))?;
+            rename_file(&old_path, &new_path).map_err(|e| format!("rename: {e}"))?;
             publication_sync(&new_path, sync_parent_dir);
             return Ok(new_safe);
         }
@@ -373,6 +375,28 @@ pub(crate) fn write_atomic(path: &Path, contents: &[u8]) -> Result<(), String> {
     write_file(path, contents, true)
 }
 
+/// Keep replacement atomic while allowing transient Windows scanner handles to close.
+#[cfg(target_os = "windows")]
+fn rename_file(from: &Path, to: &Path) -> std::io::Result<()> {
+    use windows::Win32::Foundation::{ERROR_ACCESS_DENIED, ERROR_SHARING_VIOLATION};
+
+    let mut retries = 0;
+    loop {
+        let result = fs::rename(from, to);
+        if let Err(error) = &result
+            && retries < 10
+            && matches!(error.raw_os_error(), Some(code)
+                if code == ERROR_ACCESS_DENIED.0 as i32
+                    || code == ERROR_SHARING_VIOLATION.0 as i32)
+        {
+            retries += 1;
+            std::thread::sleep(std::time::Duration::from_millis(50));
+            continue;
+        }
+        return result;
+    }
+}
+
 fn write_file(path: &Path, contents: &[u8], overwrite: bool) -> Result<(), String> {
     write_file_with_sync(path, contents, overwrite, sync_parent_dir)
 }
@@ -386,7 +410,7 @@ fn write_file_with_sync(
     let mut tmp = TemporaryWrite::create(path)?;
     tmp.write(contents)?;
     if overwrite {
-        fs::rename(&tmp.path, path).map_err(|e| format!("rename: {e}"))?;
+        rename_file(&tmp.path, path).map_err(|e| format!("rename: {e}"))?;
     } else {
         // A hard link publishes the completed file without replacing a destination
         // created after the caller's existence check.
@@ -637,6 +661,49 @@ mod tests {
             storage.load_user_layout("My layout").expect("load layout"),
             r#"{"description":"test"}"#
         );
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn atomic_replace_retries_a_temporary_windows_reader_lock() {
+        use std::os::windows::fs::OpenOptionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("layout.json");
+        fs::write(&path, "old").unwrap();
+        let reader = fs::OpenOptions::new()
+            .read(true)
+            .share_mode(1) // FILE_SHARE_READ permits readers, but blocks replacement.
+            .open(&path)
+            .unwrap();
+        assert!(fs::rename(&path, dir.path().join("blocked.json")).is_err());
+        let release = std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            drop(reader);
+        });
+        let result = super::write_atomic(&path, b"new");
+        release.join().unwrap();
+        result.unwrap();
+        assert_eq!(fs::read_to_string(&path).unwrap(), "new");
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn atomic_replace_keeps_the_original_when_a_windows_reader_stays_open() {
+        use std::os::windows::fs::OpenOptionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("layout.json");
+        fs::write(&path, "old").unwrap();
+        let reader = fs::OpenOptions::new()
+            .read(true)
+            .share_mode(1)
+            .open(&path)
+            .unwrap();
+        assert!(super::write_atomic(&path, b"new").is_err());
+        assert_eq!(fs::read_to_string(&path).unwrap(), "old");
+        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+        drop(reader);
     }
 
     #[test]

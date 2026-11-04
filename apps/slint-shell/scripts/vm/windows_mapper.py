@@ -83,7 +83,18 @@ class WindowsMapper:
         return result
 
     def state(self):
-        return json.loads(self.read(f"{WORK}\\receiver\\snapshot.json"))
+        def snapshot():
+            try:
+                return json.loads(self.read(f"{WORK}\\receiver\\snapshot.json"))
+            except ValueError:
+                return None
+            except StepFailed as error:
+                if "FileNotFoundException" in str(error):
+                    return None
+                raise
+
+        # Windows replacement can briefly hide the name while the receiver publishes.
+        return wait_for("receiver snapshot publication", 5, snapshot, interval=0.1)
 
     def events(self):
         lines = self.read(f"{WORK}\\receiver\\events.jsonl").splitlines()
@@ -303,8 +314,18 @@ class WindowsMapper:
         self.press("f")
         wait_for("virtual Ctrl down", 10, lambda: (17, True) in self.transitions(since))
         self.mapper("stop")
-        wait_for("shutdown releases Ctrl", 10, lambda: (17, False) in self.transitions(since))
+        # Reading the trace over SSH while F remains held floods the receiver
+        # with native repeats after stop, starving its mailbox timer.
         self.release("f")
+
+        def released():
+            transitions = self.transitions(since)
+            return transitions if (70, False) in transitions else None
+
+        transitions = wait_for("physical F release", 10, released)
+        if ((17, False) not in transitions
+                or transitions.index((17, False)) >= transitions.index((70, False))):
+            raise StepFailed("Shutdown did not release virtual Ctrl before physical F release")
         # Once hooks stop, the still-held physical F legitimately repeats natively.
         # Clear that text after releasing it; reset does not change keyboard state.
         self.reset()

@@ -1,0 +1,43 @@
+Date: 2026-11-03 10:32:41 -0300
+Commit: 644436bd (with uncommitted changes)
+Command: /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows --memory 8192 --suite full --stress-seconds 180 --previous-package /mnt/disk2/vm/lhc-release-20261022-windows-fixes/packages/left-hand-control-0.3.0-windows-x86_64.zip --timeout 180
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: full; acceptance requested: False
+Previous-version upgrade: /mnt/disk2/vm/lhc-release-20261022-windows-fixes/packages/left-hand-control-0.3.0-windows-x86_64.zip
+Scope: Windows developer VM; clean-package and previous-version upgrade require separate acceptance
+Mapper build: release
+Popup shell build: release
+Native tests/clippy/package lifecycle: included
+Mapper from: beginning
+Mapper only: all
+Extended: False; stress seconds: 180
+Memory: 8192 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261103-093600/logs
+
+Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: full
+- shell-smoke: passed
+- release-mapper-driver-build: passed
+- release-shell-build: passed
+- harness: FAILED (Mapper stand exited before host checks)
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 1751 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261103-093600/src.tar.gz; SHA256 006e6eea7fa04d1945a8bfb1630d149ce5e5de67ff2a1f03c008fb95b44ab34c; Source sync: 3 updated, 42 removed
+- windows-full: FAILED — Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: full
+- shell-smoke: passed
+- release-mapper-driver-build: passed
+- release-shell-build: passed
+- harness: FAILED (Mapper stand exited before host checks)
+- collect-guest-logs: skipped — SSH export failed; logs remain on the persistent cache disk
+
+Passed: 3, failed: 1, skipped: 1, blocked/not run: 0

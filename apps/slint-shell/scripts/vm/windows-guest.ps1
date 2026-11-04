@@ -134,11 +134,15 @@ try {
         Add-Line '- full-native-release: passed'
         if (Test-Path 'D:\lhc-e2e\previous-package.txt') {
             $previousPackage = (Get-Content 'D:\lhc-e2e\previous-package.txt' -Raw).Trim()
-            $currentPackages = @(Get-ChildItem (Join-Path $root 'target\release-artifacts-windows') -Filter '*.zip')
-            if ($currentPackages.Count -ne 1) { throw 'Expected one current ZIP for upgrade acceptance' }
+            $metadataJson = & cargo metadata --locked --format-version 1 --no-deps --manifest-path (Join-Path $root 'Cargo.toml')
+            if ($LASTEXITCODE -ne 0) { throw 'Could not resolve the current package version' }
+            $metadata = $metadataJson | ConvertFrom-Json
+            $version = ($metadata.packages | Where-Object name -eq 'slint-shell').version
+            $currentPackage = Join-Path $metadata.target_directory "release-artifacts-windows\left-hand-control-$version-windows-x86_64.zip"
+            if (-not (Test-Path -LiteralPath $currentPackage -PathType Leaf)) { throw "Current ZIP is missing: $currentPackage" }
             & powershell -NoProfile -ExecutionPolicy Bypass -File `
                 (Join-Path $root 'apps\slint-shell\scripts\windows\check-windows-upgrade.ps1') `
-                -PreviousArchive $previousPackage -Archive $currentPackages[0].FullName *>&1 |
+                -PreviousArchive $previousPackage -Archive $currentPackage *>&1 |
                 Out-File -FilePath (Join-Path $out 'upgrade.log') -Encoding utf8
             if ($LASTEXITCODE -ne 0) { throw 'Previous-version ZIP upgrade failed; see upgrade.log' }
             Add-Line '- previous-version-upgrade: passed'

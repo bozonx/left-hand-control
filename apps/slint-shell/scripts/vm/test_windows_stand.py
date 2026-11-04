@@ -24,6 +24,43 @@ spec.loader.exec_module(run_windows)
 
 
 class WindowsStandTests(unittest.TestCase):
+    def test_stop_releases_physical_key_before_remote_trace_reads_and_checks_event_order(self):
+        for transitions, succeeds in (([(17, False), (70, False)], True),
+                                     ([(70, False)], False),
+                                     ([(70, False), (17, False)], False)):
+            with self.subTest(transitions=transitions):
+                probe = Mock()
+                probe.reset.return_value = 0
+                order = []
+                probe.mapper.side_effect = lambda op, **kwargs: order.append(op)
+                probe.release.side_effect = lambda key: order.append("release " + key)
+
+                def trace(_):
+                    order.append("trace")
+                    return [(17, True)] if order == ["trace"] else transitions
+
+                probe.transitions.side_effect = trace
+                if succeeds:
+                    WindowsMapper.stop_held(probe)
+                else:
+                    with self.assertRaisesRegex(StepFailed, "before physical F release"):
+                        WindowsMapper.stop_held(probe)
+                self.assertEqual(order[:4], ["trace", "stop", "release f", "trace"])
+
+    def test_receiver_snapshot_waits_for_publication_but_preserves_guest_errors(self):
+        for transient in (StepFailed("FileNotFoundException"), "{"):
+            with self.subTest(transient=transient):
+                probe = WindowsMapper(Mock(), Mock(), Mock())
+                probe.read = Mock(side_effect=[transient, '{"text":"ready"}'])
+                with patch('windows_mapper.time.sleep'):
+                    self.assertEqual(probe.state(), {"text": "ready"})
+                self.assertEqual(probe.read.call_count, 2)
+        probe = WindowsMapper(Mock(), Mock(), Mock())
+        probe.read = Mock(side_effect=StepFailed("Access denied"))
+        with self.assertRaisesRegex(StepFailed, "Access denied"):
+            probe.state()
+        self.assertEqual(probe.read.call_count, 1)
+
     def test_completion_callback_requires_token_and_valid_result(self):
         callback = run_windows.GuestCompletion()
         url = callback.url.replace('10.0.2.2', '127.0.0.1')

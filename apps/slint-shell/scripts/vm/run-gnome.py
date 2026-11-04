@@ -16,7 +16,8 @@ from vmlib import Report, StepFailed, Vm, commit, environment_ok, receiver_text,
 
 GUEST = "~/lhc-e2e"
 PY = f"python3 {GUEST}/linux-guest.py"
-INSTALL = "~/.local/lib/dev.bozonx.left-hand-control"
+APP_ID = "dev.bozonx.left-hand-control"
+INSTALL = f"~/.local/lib/{APP_ID}"
 UUID = "left-hand-control@bozonx.dev"
 BRIDGE = "gdbus call --session --dest org.gnome.Shell --object-path /dev/bozonx/LeftHandControl/Gnome --method dev.bozonx.LeftHandControl.Gnome."
 
@@ -84,6 +85,9 @@ def main():
             raise StepFailed(err.strip())
         state["device"] = out.strip()
         guest(f"write-config --device {shlex.quote(state['device'])}")
+        # Startup registration is authoritative; a JSON flag alone does not enable it.
+        vm.ssh(f"mkdir -p ~/.config/autostart && "
+               f"cp ~/.local/share/applications/{APP_ID}.desktop ~/.config/autostart/{APP_ID}.desktop")
         return state["device"]
 
     def permissions():
@@ -294,6 +298,7 @@ def main():
         step("no-permissions-start", guest, "start-app --popups auto")
         step("no-permissions-no-grab", guest, "mapper --absent --timeout 5")
         step("quit-before-permissions", guest, "quit-app")
+        step("autostart-entry", guest, "autostart")
         step("permissions-and-extension", permissions)
         # Autostart is expected to launch the app after the fresh login.
         step("autostart", guest, "wait-app --timeout 90")

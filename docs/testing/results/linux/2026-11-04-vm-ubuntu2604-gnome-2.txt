@@ -1,0 +1,55 @@
+Date: 2026-11-04 08:11:11 -0300
+Commit: 644436bd (with uncommitted changes)
+VM: ubuntu2604-gnome
+Package: /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/release-artifacts/left-hand-control-0.4.0-linux-x86_64.tar.gz
+Keyboard: /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
+Logs and screenshots: /mnt/disk2/vm/lhc-ubuntu2604-gnome/runs/20261104-080831/logs
+Scope: GNOME smoke only; lock/suspend/replug, other receivers and upgrade not covered.
+
+- boot-session: passed — PRETTY_NAME="Ubuntu 26.04.1 LTS"
+NAME="Ubuntu"
+VERSION_ID="26.04"
+VERSION="26.04.1 LTS (Resolute Raccoon)"
+VERSION_CODENAME=resolute
+ID=ubuntu
+ID_LIKE=debian
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=resolute
+LOGO=ubuntu-logo
+GNOME Shell 50.1
+XDG_CURRENT_DESKTOP=ubuntu:GNOME
+XDG_SESSION_TYPE=wayland
+xdg-desktop-portal	1.21.1+ds-1ubuntu3.1
+xdg-desktop-portal-gnome	50.0-0ubuntu1
+- install: passed — /home/tester/.local/bin/left-hand-control: left-hand-control 0.4.0
+- keyboard-and-config: passed — /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
+- no-permissions-start: passed
+- no-permissions-no-grab: passed
+- quit-before-permissions: passed
+- autostart-entry: passed — Exec="/home/tester/.local/lib/dev.bozonx.left-hand-control/left-hand-control"
+- permissions-and-extension: passed — ('{"version":1,"window":{"windowId":"a03809d7-3ee2-4d17-9cd2-0e462581ae75:1","appId":"gjs","pid":5021,"title":"","fullscreen":false},"externalWindow":null,"layouts":[{"short":"us","variant":"","index":0,"display":"en","long":"English (US)"},{"short":"ru","variant":"","index":1,"display":"ru","long":"Russian"}],"current":0,"workspace":0}',)
+- autostart: passed
+- mapper-start: passed
+- tray: passed — org.kde.StatusNotifierItem-4704-1
+- tray-host-lifecycle: passed — host loss/reappearance and startup without host: settings reachable; same-process registration recovered
+- passthrough: passed — 'c'
+- remap: passed — 'b'
+- chord: passed — 'X'
+- layer-tap-hold: passed — 'gk'
+- stop-restart-native: passed — 'b'
+- system-layout-workspace: passed — us→ru→us; workspace 1→2→1 via mapper sys: actions
+- command: passed
+- game-mode-on-off: passed — 'j'
+- clipboard-seed: passed — original text and binary MIME data preserved
+- native-portal-core-test: passed — ignored core test passed; exact Unicode and original text/binary MIME restored
+- text-portal-ascii: passed — 'lhc-ok'
+- quick-popup-focus-delivery: passed — 'quick-ok'
+- text-unicode: passed — 'Привет, ёж 😀'
+- clipboard-restored: FAILED — `bash -o pipefail -c 'wl-paste --no-newline --type application/x-lhc-e2e | base64 -w0'` exited with 1:
+Clipboard content is not available as requested type "application/x-lhc-e2e"
+Use "wl-paste --list-types" to view available types.
+
+Passed: 25, failed: 1, skipped: 0, blocked/not run: 0
