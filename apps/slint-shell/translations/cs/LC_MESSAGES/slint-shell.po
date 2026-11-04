@@ -443,8 +443,8 @@ msgstr "Vymazat buňku"
 msgid "Page name"
 msgstr "Název stránky"
 
-msgid "Emoji cells accept at most 100 characters."
-msgstr "Emoji buňky přijímají maximálně 100 znaků."
+msgid "Emoji cells accept at most 100 Unicode code points."
+msgstr "Buňky emoji přijímají nejvýše 100 kódových bodů Unicode."
 
 msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
 msgstr "ID příkazu: 1–64 písmen, číslic, podtržítek nebo pomlček."
@@ -1623,8 +1623,8 @@ msgstr "Jazyky"
 msgid "Excluded applications"
 msgstr "Vyloučené aplikace"
 
-msgid "Open page in popup"
-msgstr "Otevřít stránku ve vyskakovacím okně"
+msgid "Preview page"
+msgstr "Náhled stránky"
 
 msgid "Page:"
 msgstr "Strana:"
@@ -3695,3 +3695,9 @@ msgstr "Vrstva:"
 
 msgid "Actions: {}"
 msgstr "Akce: {}"
+
+msgid "Preview only; actions are not executed."
+msgstr "Pouze náhled; akce se neprovádějí."
+
+msgid "Retry"
+msgstr "Zkusit znovu"

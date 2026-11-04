@@ -23,6 +23,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Emoji and Quick actions: cut operations are cancelled when pages are reordered, deleted or reloaded; previews save pending edits and show the edited layout without executing actions. Failed assignments keep the action picker open, catalog labels follow replacement actions while custom labels are preserved, and emoji limits count Unicode code points instead of UTF-16 units.
+
 - Macros keep the final text step active until delivery finishes; text cancellation and failures belong to the originating run, including timeout and reconfiguration.
 - The macro editor preserves incoming references while renaming an invalid draft, prevents deleting referenced macros, and lets nested actions use new draft IDs. Global delay hints update when settings change.
 - Failed macro commands log the originating macro and step together with bounded stderr, without blocking input or cancellation.

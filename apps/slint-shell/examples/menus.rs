@@ -8,6 +8,37 @@ use std::time::Duration;
 use support::quick_action;
 use support::{Fixture, wait_until};
 
+/// Locate the actual control after layout, independent of toolbars and translations.
+fn control_center(
+    ui: &slint_shell::ui::SettingsWindow,
+    property: i_slint_core::accessibility::AccessibleStringProperty,
+    value: &str,
+) -> (f32, f32) {
+    use i_slint_core::{item_tree::ItemRc, window::WindowInner};
+    let window = WindowInner::from_pub(ui.window());
+    window.ensure_tree_instantiated();
+    let mut pending = vec![ItemRc::new_root(window.component())];
+    while let Some(item) = pending.pop() {
+        if !item.is_visible() {
+            continue;
+        }
+        if item.accessible_string_property(property).as_deref() == Some(value) {
+            let geometry = item.geometry();
+            let origin = item.map_to_window(geometry.origin);
+            return (
+                origin.x + geometry.width() / 2.,
+                origin.y + geometry.height() / 2.,
+            );
+        }
+        let mut child = item.first_child();
+        while let Some(next) = child {
+            child = next.next_sibling();
+            pending.push(next);
+        }
+    }
+    panic!("menu control not found: {value}");
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let Fixture {
         dir: _dir,
@@ -235,6 +266,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok("1") => MenuKind::Quick,
         _ => MenuKind::Emoji,
     });
+    // Preview flushes the edited layout immediately; validation blocks opening.
+    if e.get_kind() == MenuKind::Emoji {
+        e.set_value("Preview 🙂".into());
+        e.invoke_set_cell();
+        assert!(e.invoke_show_page());
+        assert!(!e.get_has_unsaved_changes());
+        assert_eq!(loaded().layout().emoji_pages[0].cells["KeyQ"], "Preview 🙂");
+        e.set_value("🙂".repeat(101).into());
+        e.invoke_set_cell();
+        assert!(!e.invoke_show_page());
+        e.invoke_refresh();
+    }
+    if std::env::var_os("LHC_MENUS_PREVIEW").is_some() {
+        assert!(e.invoke_show_page());
+        e.set_preview_visible(true);
+    }
     slint::select_bundled_translation("ru")?;
     ui.window().set_size(slint::LogicalSize::new(1120.0, 760.0));
     ui.show()?;
@@ -257,24 +304,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let press = |x, y| ui.window().dispatch_event(WindowEvent::PointerPressed { position: at(x, y), button: PointerEventButton::Left });
             let move_to = |x, y| ui.window().dispatch_event(WindowEvent::PointerMoved { position: at(x, y) });
             let release = |x, y| ui.window().dispatch_event(WindowEvent::PointerReleased { position: at(x, y), button: PointerEventButton::Left });
+            use i_slint_core::accessibility::AccessibleStringProperty::{Id, ItemIndex, Label};
+            let tab = |index| control_center(&ui, Id, &format!("lhc-menu-tab-{index}"));
+            let cell = |index| control_center(&ui, ItemIndex, &format!("{index}"));
             match stage.get() {
                 0 => {
-                    press(80.0, 184.0); move_to(200.0, 184.0);
+                    let (x, y) = tab(0); press(x, y);
+                    let (x, y) = tab(1); move_to(x, y);
                     assert_eq!(ui.global::<DragDrop>().get_target(), 1);
-                    release(200.0, 184.0);
+                    release(x, y);
                 }
                 1 => {
                     assert_eq!(document.read().layout().emoji_pages[0].name, "Target");
                     e.invoke_reorder_page(1, 0);
                     e.invoke_select_page(0);
                 }
-                2 => { press(100.0, 285.0); move_to(200.0, 184.0); }
+                2 => { let (x, y) = cell(0); press(x, y); let (x, y) = tab(1); move_to(x, y); }
                 3 => {
-                    assert_eq!(e.get_selected_page(), 1); move_to(230.0, 285.0);
+                    assert_eq!(e.get_selected_page(), 1); let (x, y) = cell(1); move_to(x, y);
                     if let Ok(path) = std::env::var("LHC_MENUS_DND_SNAPSHOT") {
                         support::write_snapshot(&ui, std::path::Path::new(&path));
                     }
-                    release(230.0, 285.0);
+                    release(x, y);
                 }
                 4 => {
                     assert_eq!(document.read().layout().emoji_pages[1].cells["KeyW"], "сделай всё, что ты рекомендовал");
@@ -282,7 +333,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     e.invoke_select_page(0);
                     e.invoke_select_cell(4);
                 }
-                5 => { press(760.0, 345.0); move_to(500.0, 285.0); release(500.0, 285.0); e.invoke_flush_pending(); }
+                5 => {
+                    let (x, y) = control_center(&ui, Label, "😀"); press(x, y);
+                    let (x, y) = cell(3); move_to(x, y); release(x, y);
+                    e.invoke_flush_pending();
+                }
                 6 => {
                     assert_eq!(document.read().layout().emoji_pages[0].cells["KeyR"], "😀");
                     e.invoke_open(MenuKind::Quick);
@@ -291,8 +346,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     e.invoke_select_page(0);
                     e.set_page_name("Source".into()); e.invoke_rename_page(); e.invoke_flush_pending();
                 }
-                7 => { press(100.0, 285.0); move_to(140.0, 184.0); }
-                8 => { assert_eq!(e.get_selected_page(), 1); move_to(230.0, 285.0); release(230.0, 285.0); }
+                7 => { let (x, y) = cell(0); press(x, y); let (x, y) = tab(1); move_to(x, y); }
+                8 => { assert_eq!(e.get_selected_page(), 1); let (x, y) = cell(1); move_to(x, y); release(x, y); }
                 9 => {
                     assert_eq!(quick_action(document.read().layout(), 1, "KeyW"), "text:drag");
                     assert!(quick_action(document.read().layout(), 0, "KeyQ").is_empty());

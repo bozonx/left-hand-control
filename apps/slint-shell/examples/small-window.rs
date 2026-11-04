@@ -317,10 +317,22 @@ const STEPS: &[Step] = &[
     ("emoji-editor", |ui| {
         ui.invoke_navigate(Page::Menus, MenuKind::Emoji)
     }),
+    ("emoji-preview", |ui| {
+        let e = ui.global::<MenuEditor>();
+        assert!(e.invoke_show_page());
+        e.set_preview_visible(true);
+    }),
     ("quick-editor", |ui| {
+        ui.global::<MenuEditor>().set_preview_visible(false);
         ui.invoke_navigate(Page::Menus, MenuKind::Quick)
     }),
+    ("quick-preview", |ui| {
+        let e = ui.global::<MenuEditor>();
+        assert!(e.invoke_show_page());
+        e.set_preview_visible(true);
+    }),
     ("extra-keys", |ui| {
+        ui.global::<MenuEditor>().set_preview_visible(false);
         ui.invoke_navigate(Page::Layers, MenuKind::Emoji);
         ui.global::<LayersEditor>().invoke_choose(5);
     }),

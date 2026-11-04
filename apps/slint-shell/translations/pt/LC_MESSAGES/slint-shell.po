@@ -444,8 +444,8 @@ msgstr "Limpar célula"
 msgid "Page name"
 msgstr "Nome da página"
 
-msgid "Emoji cells accept at most 100 characters."
-msgstr "As células Emoji aceitam no máximo 100 caracteres."
+msgid "Emoji cells accept at most 100 Unicode code points."
+msgstr "As células de emoji aceitam no máximo 100 pontos de código Unicode."
 
 msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
 msgstr "ID do comando: 1 a 64 letras, dígitos, sublinhados ou hifens."
@@ -1627,8 +1627,8 @@ msgstr "Idiomas"
 msgid "Excluded applications"
 msgstr "Aplicativos excluídos"
 
-msgid "Open page in popup"
-msgstr "Abrir página em pop-up"
+msgid "Preview page"
+msgstr "Pré-visualizar página"
 
 msgid "Page:"
 msgstr "Página:"
@@ -3729,3 +3729,9 @@ msgstr "Camada:"
 
 msgid "Actions: {}"
 msgstr "Ações: {}"
+
+msgid "Preview only; actions are not executed."
+msgstr "Apenas pré-visualização; as ações não são executadas."
+
+msgid "Retry"
+msgstr "Tentar novamente"

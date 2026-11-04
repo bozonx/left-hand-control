@@ -449,8 +449,8 @@ msgstr "Cella törlése"
 msgid "Page name"
 msgstr "Az oldal neve"
 
-msgid "Emoji cells accept at most 100 characters."
-msgstr "Az emoji cellák legfeljebb 100 karaktert fogadnak el."
+msgid "Emoji cells accept at most 100 Unicode code points."
+msgstr "Az emoji cellák legfeljebb 100 Unicode-kódpontot fogadnak el."
 
 msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
 msgstr "Parancsazonosító: 1–64 betű, számjegy, aláhúzás vagy kötőjel."
@@ -1642,8 +1642,8 @@ msgstr "Nyelvek"
 msgid "Excluded applications"
 msgstr "Kizárt alkalmazások"
 
-msgid "Open page in popup"
-msgstr "Nyissa meg az oldalt a felugró ablakban"
+msgid "Preview page"
+msgstr "Oldal előnézete"
 
 msgid "Page:"
 msgstr "Oldal:"
@@ -3756,3 +3756,9 @@ msgstr "Réteg:"
 
 msgid "Actions: {}"
 msgstr "Műveletek: {}"
+
+msgid "Preview only; actions are not executed."
+msgstr "Csak előnézet; a műveletek nem hajtódnak végre."
+
+msgid "Retry"
+msgstr "Újrapróbálás"

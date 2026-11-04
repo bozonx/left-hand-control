@@ -446,8 +446,8 @@ msgstr "Hücreyi temizle"
 msgid "Page name"
 msgstr "Sayfa adı"
 
-msgid "Emoji cells accept at most 100 characters."
-msgstr "Emoji hücreleri en fazla 100 karakter kabul eder."
+msgid "Emoji cells accept at most 100 Unicode code points."
+msgstr "Emoji hücreleri en fazla 100 Unicode kod noktası kabul eder."
 
 msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
 msgstr "Komut Kimliği: 1-64 harf, rakam, alt çizgi veya kısa çizgi."
@@ -1625,8 +1625,8 @@ msgstr "Diller"
 msgid "Excluded applications"
 msgstr "Hariç tutulan uygulamalar"
 
-msgid "Open page in popup"
-msgstr "Sayfayı açılır pencerede aç"
+msgid "Preview page"
+msgstr "Sayfa önizlemesi"
 
 msgid "Page:"
 msgstr "Sayfa:"
@@ -3716,3 +3716,9 @@ msgstr "Katman:"
 
 msgid "Actions: {}"
 msgstr "Eylemler: {}"
+
+msgid "Preview only; actions are not executed."
+msgstr "Yalnızca önizleme; eylemler yürütülmez."
+
+msgid "Retry"
+msgstr "Yeniden dene"

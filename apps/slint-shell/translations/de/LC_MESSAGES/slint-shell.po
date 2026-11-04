@@ -446,8 +446,8 @@ msgstr "Zelle leeren"
 msgid "Page name"
 msgstr "Seitenname"
 
-msgid "Emoji cells accept at most 100 characters."
-msgstr "Emoji-Zellen akzeptieren maximal 100 Zeichen."
+msgid "Emoji cells accept at most 100 Unicode code points."
+msgstr "Emoji-Zellen erlauben höchstens 100 Unicode-Codepunkte."
 
 msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
 msgstr "Befehls-ID: 1–64 Buchstaben, Ziffern, Unterstriche oder Bindestriche."
@@ -1650,8 +1650,8 @@ msgstr "Sprachen"
 msgid "Excluded applications"
 msgstr "Ausgeschlossene Anwendungen"
 
-msgid "Open page in popup"
-msgstr "Seite im Popup öffnen"
+msgid "Preview page"
+msgstr "Seitenvorschau"
 
 msgid "Page:"
 msgstr "Seite:"
@@ -3795,3 +3795,9 @@ msgstr "Ebene:"
 
 msgid "Actions: {}"
 msgstr "Aktionen: {}"
+
+msgid "Preview only; actions are not executed."
+msgstr "Nur Vorschau; Aktionen werden nicht ausgeführt."
+
+msgid "Retry"
+msgstr "Erneut versuchen"

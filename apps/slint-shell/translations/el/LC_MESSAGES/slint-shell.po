@@ -451,8 +451,8 @@ msgstr "Εκκαθάριση κελιού"
 msgid "Page name"
 msgstr "Όνομα σελίδας"
 
-msgid "Emoji cells accept at most 100 characters."
-msgstr "Τα κελιά emoji δέχονται το πολύ 100 χαρακτήρες."
+msgid "Emoji cells accept at most 100 Unicode code points."
+msgstr "Τα κελιά emoji δέχονται έως 100 σημεία κώδικα Unicode."
 
 msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
 msgstr "Αναγνωριστικό εντολής: 1–64 γράμματα, ψηφία, κάτω παύλες ή παύλες."
@@ -1658,8 +1658,8 @@ msgstr "Γλώσσες"
 msgid "Excluded applications"
 msgstr "Εξαιρούμενες εφαρμογές"
 
-msgid "Open page in popup"
-msgstr "Άνοιγμα σελίδας σε αναδυόμενο παράθυρο"
+msgid "Preview page"
+msgstr "Προεπισκόπηση σελίδας"
 
 msgid "Page:"
 msgstr "Σελίδα:"
@@ -3819,3 +3819,9 @@ msgstr "Επίπεδο:"
 
 msgid "Actions: {}"
 msgstr "Ενέργειες: {}"
+
+msgid "Preview only; actions are not executed."
+msgstr "Μόνο προεπισκόπηση· οι ενέργειες δεν εκτελούνται."
+
+msgid "Retry"
+msgstr "Επανάληψη"

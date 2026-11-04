@@ -3,12 +3,13 @@ import { ActionField, CategoryIcon } from "action-controls.slint";
 import { TextField } from "controls.slint";
 import { PageContent, ScrollView } from "scroll.slint";
 import { DragArea, DragAxis, DragGroups, DropMarker, PaletteDrag } from "reorder.slint";
+import { PopupCell } from "popup-grid.slint";
 import { ActionPicker } from "action-picker.slint";
 import { Theme } from "theme.slint";
 import { Message } from "i18n.slint";
 import { StatusText } from "notifications.slint";
 import { MenuKind, PickerCategory, PickerTarget } from "types.slint";
-import { InlineTextField, Card, ConfirmDialog, Divider, FieldLabel, IconButton, InfoTip, NavTab, PageLayout, PageHeader } from "controls.slint";
+import { InlineTextField, Card, ConfirmDialog, DialogFrame, Divider, FieldLabel, IconButton, InfoTip, NavTab, PageLayout, PageHeader } from "controls.slint";
 import { Button } from "std-widgets.slint";
 
 /// A grid cell; `category` picks the icon of a quick action.
@@ -53,7 +54,9 @@ export global MenuEditor {
     callback select-cell(int);
     callback add-page(string);
     callback remove-page();
-    callback show-page();
+    in-out property <bool> preview-visible;
+    /// Save before opening a preview of the edited layout.
+    callback show-page() -> bool;
     /// Read `page-name`, `value` and `name` into the selected page and cell.
     callback rename-page();
     callback set-cell();
@@ -329,7 +332,7 @@ component PageEditor inherits HorizontalLayout {
     FieldLabel { text: @tr("Page:"); horizontal-stretch: 0; max-width: self.preferred-width; vertical-alignment: center; }
     page-name := InlineTextField { text: MenuEditor.page-name; label: @tr("Page name"); placeholder: @tr("Page name"); saved(value) => { MenuEditor.page-name = value; MenuEditor.rename-page(); return true; } }
     Rectangle { min-width: 0px; preferred-width: 0px; horizontal-stretch: page-name.editing ? 0 : 1; }
-    VerticalLayout { horizontal-stretch: 0; alignment: center; IconButton { icon: @image-url("icons/app-window.svg"); label: @tr("Open page in popup"); clicked => { MenuEditor.show-page(); } } }
+    VerticalLayout { horizontal-stretch: 0; alignment: center; IconButton { icon: @image-url("icons/app-window.svg"); label: @tr("Preview page"); clicked => { if MenuEditor.show-page() { MenuEditor.preview-visible = true; } } } }
     VerticalLayout { horizontal-stretch: 0; alignment: center; IconButton {
         icon: @image-url("icons/trash-2.svg");
         // The only page cannot go away: removing it clears it.
@@ -351,8 +354,9 @@ component CutPasteBar inherits HorizontalLayout {
 component MenuStatus inherits VerticalLayout {
     spacing: Theme.space-xs;
     StatusText { status: MenuEditor.status; }
-    if MenuEditor.status.id == "config-edit-conflict": HorizontalLayout {
+    if MenuEditor.has-unsaved-changes: HorizontalLayout {
         alignment: start;
+        if MenuEditor.status.id != "config-edit-conflict": Button { text: @tr("Retry"); clicked => { MenuEditor.flush-pending(); } }
         Button { text: @tr("Discard changes"); clicked => { MenuEditor.refresh(); } }
     }
 }
@@ -654,6 +658,35 @@ export component QuickActionsPage inherits Rectangle {
     if root.confirming: RemovePageDialog {
         cancel => { root.confirming = false; }
         confirm => { MenuEditor.remove-page(); root.confirming = false; }
+    }
+}
+
+export component MenuPreview inherits DialogFrame {
+    title: @tr("Preview page");
+    subtitle: @tr("Preview only; actions are not executed.");
+    card-width: MenuEditor.kind == MenuKind.emoji ? 520px : 820px;
+    close => { MenuEditor.preview-visible = false; }
+    if MenuEditor.page-name != "": FieldLabel { text: MenuEditor.page-name; }
+    ScrollView {
+        min-height: 0px;
+        preferred-height: 3 * 80px + 2 * Theme.space-l;
+        viewport-width: self.visible-width;
+        VerticalLayout {
+            padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
+            spacing: Theme.space-l;
+            for row in 3: HorizontalLayout {
+                spacing: Theme.space-m;
+                for col in 5: PopupCell {
+                    interactive: false;
+                    height: 80px;
+                    hotkey: MenuEditor.cells[row * 5 + col].key;
+                    content: MenuEditor.kind == MenuKind.emoji
+                        ? MenuEditor.cells[row * 5 + col].value
+                        : MenuEditor.cells[row * 5 + col].name;
+                    emoji: MenuEditor.kind == MenuKind.emoji;
+                }
+            }
+        }
     }
 }
 

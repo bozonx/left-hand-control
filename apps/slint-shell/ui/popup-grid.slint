@@ -10,6 +10,7 @@ export component PopupCell inherits Rectangle {
     callback focused();
     in property <string> content;
     in property <bool> emoji;
+    in property <bool> interactive: true;
     callback clicked();
     property <bool> empty: root.content == "";
     property <int> length: root.content.character-count;
@@ -20,8 +21,8 @@ export component PopupCell inherits Rectangle {
     // Screen readers get one button per cell, named by its hotkey and content.
     accessible-role: button;
     accessible-label: root.hotkey + ": " + (root.empty ? @tr("Empty cell") : root.content);
-    accessible-enabled: !root.empty;
-    accessible-action-default => { if !root.empty { root.clicked(); } }
+    accessible-enabled: root.interactive && !root.empty;
+    accessible-action-default => { if root.interactive && !root.empty { root.clicked(); } }
     Text {
         accessible-role: none;
         x: 8px; y: 5px;
@@ -49,6 +50,7 @@ export component PopupCell inherits Rectangle {
         vertical-alignment: center;
     }
     focus := NavigationFocus {
+        enabled: root.interactive;
         tab-stop: root.tab-stop;
         focus-changed-event => { if self.has-focus { root.focused(); } }
         key-pressed(event) => {
@@ -58,7 +60,7 @@ export component PopupCell inherits Rectangle {
         }
     }
     area := TouchArea {
-        enabled: !root.empty;
+        enabled: root.interactive && !root.empty;
         mouse-cursor: root.empty ? default : pointer;
         clicked => { Theme.keyboard-navigation = false; focus.focus(); root.clicked(); }
     }

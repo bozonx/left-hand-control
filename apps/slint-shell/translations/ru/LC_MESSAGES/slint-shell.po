@@ -444,8 +444,8 @@ msgstr "Очистить ячейку"
 msgid "Page name"
 msgstr "Название страницы"
 
-msgid "Emoji cells accept at most 100 characters."
-msgstr "Ячейка эмоджи вмещает не более 100 символов."
+msgid "Emoji cells accept at most 100 Unicode code points."
+msgstr "Ячейка эмоджи вмещает не более 100 кодовых точек Unicode."
 
 msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
 msgstr "ID команды: 1–64 латинских буквы, цифры, подчёркивания или дефисы."
@@ -1506,8 +1506,8 @@ msgstr "Языки"
 msgid "Excluded applications"
 msgstr "Исключённые приложения"
 
-msgid "Open page in popup"
-msgstr "Открыть страницу во всплывающем окне"
+msgid "Preview page"
+msgstr "Предпросмотр страницы"
 
 msgid "Page:"
 msgstr "Страница:"
@@ -3085,3 +3085,9 @@ msgstr "Слой:"
 
 msgid "Actions: {}"
 msgstr "Действия: {}"
+
+msgid "Preview only; actions are not executed."
+msgstr "Только просмотр; действия не выполняются."
+
+msgid "Retry"
+msgstr "Повторить"

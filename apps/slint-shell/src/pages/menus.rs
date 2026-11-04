@@ -42,7 +42,7 @@ impl super::autosave::Draft for State {
     }
 
     fn save(&mut self, ui: &SettingsWindow, document: &Document) {
-        save(ui, document, self);
+        let _ = save(ui, document, self);
     }
 }
 
@@ -231,11 +231,12 @@ fn persist(
     result.map(Some)
 }
 
-fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
+fn save(ui: &SettingsWindow, document: &Document, state: &mut State) -> Result<(), Msg> {
     state.autosave.cancel();
     let result = persist(document, state);
     let e = ui.global::<MenuEditor>();
     e.set_has_unsaved_changes(menu_changed(state));
+    let outcome = result.as_ref().map(|_| ()).map_err(Msg::from);
     let message = match result {
         Ok(Some(saved)) => saved.message(Msg::None),
         Ok(None) => Msg::None,
@@ -247,11 +248,14 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) {
         &message,
         e.get_status(),
     ));
+    outcome
 }
 
 fn reload(ui: &SettingsWindow, document: &Document, state: &mut State) {
     state.autosave.cancel();
     state.commands.clear();
+    ui.global::<MenuEditor>().set_preview_visible(false);
+    ui.global::<MenuEditor>().invoke_cancel_mark();
     state.baseline = document.read().layout().clone();
     state.layout = draft(&state.baseline);
     ui.global::<MenuEditor>().set_has_unsaved_changes(false);
@@ -267,6 +271,14 @@ pub(super) fn command(state: &RefCell<State>, id: &str) -> Option<Command> {
         .cloned()
 }
 
+fn selection_for_quick(layout: &LayoutPreset, page: i32, cell: i32) -> Option<&QuickAction> {
+    layout
+        .quick_action_pages
+        .get(usize::try_from(page).ok()?)?
+        .cells
+        .get(*LEFT_HAND_HOTKEYS.get(usize::try_from(cell).ok()?)?)
+}
+
 pub(super) fn choose(
     ui: &SettingsWindow,
     document: &Document,
@@ -278,21 +290,36 @@ pub(super) fn choose(
 ) -> Result<(), Msg> {
     let mut state = state.borrow_mut();
     let e = ui.global::<MenuEditor>();
+    let previous_label = selection_for_quick(&state.layout, e.get_selected_page(), cell)
+        .map(|item| {
+            let settings = document.read().settings().clone();
+            let mut config = ResolvedAppConfig::from_parts(
+                settings.clone(),
+                state.layout.clone(),
+                settings.editing_layout_id.as_deref(),
+            );
+            for command in &state.commands {
+                super::stage_command(&mut config.commands, command.clone());
+            }
+            super::picker::menu_label(ui, &config, &item.action)
+        })
+        .unwrap_or_default();
     lhc_core::profile::menus::set_quick_action(
         &mut state.layout,
         e.get_selected_page(),
         cell,
         action,
         label,
+        &previous_label,
     )
     .map_err(|error| Msg::from(&error))?;
     e.set_selected_cell(if action.is_empty() { -1 } else { cell });
     if let Some(command) = command {
         super::stage_command(&mut state.commands, command);
     }
-    save(ui, document, &mut state);
+    let result = save(ui, document, &mut state);
     refresh(ui, &state.layout, true);
-    Ok(())
+    result
 }
 
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
@@ -307,8 +334,16 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
     let e = ui.global::<MenuEditor>();
     on!(ui, e.on_flush_pending, doc = document, shared = state => |ui| {
         let mut state = shared.borrow_mut();
-        save(&ui, &doc, &mut state);
+        let _ = save(&ui, &doc, &mut state);
         !menu_changed(&state)
+    });
+    on!(ui, e.on_show_page, doc = document, shared = state => |ui| {
+        let mut state = shared.borrow_mut();
+        if save(&ui, &doc, &mut state).is_err() {
+            return false;
+        }
+        refresh(&ui, &state.layout, true);
+        true
     });
     match catalog() {
         Ok(categories) => e.set_catalog(ModelRc::new(VecModel::from(
@@ -345,6 +380,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
             state.baseline = baseline;
             state.layout = layout;
             if changed {
+                ui.global::<MenuEditor>().invoke_cancel_mark();
                 refresh(ui, &state.layout, true);
             }
         }
@@ -364,7 +400,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
                     ui.global::<MenuEditor>()
                         .set_has_unsaved_changes(menu_changed(&state));
                     if !typing {
-                        save(&ui, &doc, &mut state);
+                        let _ = save(&ui, &doc, &mut state);
                     }
                     refresh(&ui, &state.layout, !typing);
                 }
@@ -379,6 +415,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
         let mut state = shared.borrow_mut();
         super::autosave::flush(&ui, &doc, &mut *state);
         let e = ui.global::<MenuEditor>();
+        e.set_preview_visible(false);
         e.set_kind(kind);
         e.set_selected_page(0);
         if !menu_changed(&state) {
@@ -441,6 +478,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
                 return;
             };
             let kind = e.get_kind();
+            e.invoke_cancel_mark();
             let selected = menus::remove_page(layout, core_kind(kind), page);
             e.set_selected_page(selected as i32);
             e.set_selected_cell(initial_cell(kind, layout, selected as i32));
@@ -453,6 +491,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
                 return;
             };
             if menus::reorder_page(layout, core_kind(e.get_kind()), from, to) {
+                e.invoke_cancel_mark();
                 let selected = e.get_selected_page().max(0) as usize;
                 e.set_selected_page(menus::selection_after_reorder(selected, from, to) as i32);
             }
@@ -513,7 +552,8 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
     });
     on!(ui, e.on_set_action, doc = document, shared = state => |ui, cell, action, label| {
         if let Err(error) = choose(&ui, &doc, &shared, cell, &action, &label, None) {
-            ui.global::<MenuEditor>().set_status(crate::notifications::report(&ui, &error));
+            let e = ui.global::<MenuEditor>();
+            e.set_status(crate::notifications::report_changed(&ui, &error, e.get_status()));
         }
     });
     let c = change.clone();

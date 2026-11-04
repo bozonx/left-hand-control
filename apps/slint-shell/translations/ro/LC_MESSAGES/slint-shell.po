@@ -448,8 +448,8 @@ msgstr "Șterge celula"
 msgid "Page name"
 msgstr "Numele paginii"
 
-msgid "Emoji cells accept at most 100 characters."
-msgstr "Celulele emoji acceptă cel mult 100 de caractere."
+msgid "Emoji cells accept at most 100 Unicode code points."
+msgstr "Celulele emoji acceptă cel mult 100 de puncte de cod Unicode."
 
 msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
 msgstr "ID comandă: 1–64 de litere, cifre, litere de subliniere sau cratime."
@@ -1642,8 +1642,8 @@ msgstr "Limbi"
 msgid "Excluded applications"
 msgstr "Aplicații excluse"
 
-msgid "Open page in popup"
-msgstr "Deschideți pagina în pop-up"
+msgid "Preview page"
+msgstr "Previzualizare pagină"
 
 msgid "Page:"
 msgstr "Pagină:"
@@ -3757,3 +3757,9 @@ msgstr "Strat:"
 
 msgid "Actions: {}"
 msgstr "Acțiuni: {}"
+
+msgid "Preview only; actions are not executed."
+msgstr "Doar previzualizare; acțiunile nu sunt executate."
+
+msgid "Retry"
+msgstr "Reîncearcă"

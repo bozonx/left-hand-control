@@ -439,8 +439,8 @@ msgstr "セルをクリア"
 msgid "Page name"
 msgstr "ページ名"
 
-msgid "Emoji cells accept at most 100 characters."
-msgstr "絵文字セルには最大 100 文字を入力できます。"
+msgid "Emoji cells accept at most 100 Unicode code points."
+msgstr "絵文字セルには最大 100 個の Unicode コードポイントを入力できます。"
 
 msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
 msgstr "コマンド ID: 1 ～ 64 の文字、数字、アンダースコア、またはハイフン。"
@@ -1564,8 +1564,8 @@ msgstr "言語"
 msgid "Excluded applications"
 msgstr "除外されるアプリケーション"
 
-msgid "Open page in popup"
-msgstr "ポップアップでページを開く"
+msgid "Preview page"
+msgstr "ページのプレビュー"
 
 msgid "Page:"
 msgstr "ページ："
@@ -3476,3 +3476,9 @@ msgstr "レイヤー:"
 
 msgid "Actions: {}"
 msgstr "操作: {}"
+
+msgid "Preview only; actions are not executed."
+msgstr "プレビューのみです。アクションは実行されません。"
+
+msgid "Retry"
+msgstr "再試行"

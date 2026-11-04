@@ -439,8 +439,8 @@ msgstr "清除單元格"
 msgid "Page name"
 msgstr "頁面名稱"
 
-msgid "Emoji cells accept at most 100 characters."
-msgstr "表情符號單元格最多接受 100 個字元。"
+msgid "Emoji cells accept at most 100 Unicode code points."
+msgstr "表情符號儲存格最多接受 100 個 Unicode 碼位。"
 
 msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
 msgstr "指令 ID：1–64 個字母、數字、底線或連字號。"
@@ -1553,8 +1553,8 @@ msgstr "語言"
 msgid "Excluded applications"
 msgstr "排除的應用程式"
 
-msgid "Open page in popup"
-msgstr "在彈出視窗中開啟頁面"
+msgid "Preview page"
+msgstr "預覽頁面"
 
 msgid "Page:"
 msgstr "頁："
@@ -3398,3 +3398,9 @@ msgstr "層："
 
 msgid "Actions: {}"
 msgstr "動作：{}"
+
+msgid "Preview only; actions are not executed."
+msgstr "僅供預覽；不會執行動作。"
+
+msgid "Retry"
+msgstr "重試"

@@ -18,12 +18,14 @@ use crate::config_document::{ConfigDocument, ConfigError};
 use std::collections::BTreeMap;
 
 /// Set or clear a quick action, preserving a custom name.
+/// `previous_label` is the old action's catalog label in the current UI language.
 pub fn set_quick_action(
     layout: &mut LayoutPreset,
     page: i32,
     cell: i32,
     action: &str,
     label: &str,
+    previous_label: &str,
 ) -> Result<(), ConfigError> {
     let out_of_range =
         || ConfigError::Invalid(format!("no quick action cell {cell} on page {page}"));
@@ -41,7 +43,9 @@ pub fn set_quick_action(
         return Ok(());
     }
     let item = page.cells.entry((*key).into()).or_default();
-    let automatic = item.name.trim().is_empty() || item.name == item.action;
+    let automatic = item.name.trim().is_empty()
+        || item.name == item.action
+        || (!previous_label.is_empty() && item.name == previous_label);
     if item.action.trim().is_empty() {
         *item = QuickAction {
             name: display_name(label, action).into(),
@@ -81,7 +85,7 @@ impl ConfigDocument {
         let candidate = &merged;
         for page in &candidate.emoji_pages {
             if page.cells.iter().any(|(key, value)| {
-                !LEFT_HAND_HOTKEYS.contains(&key.as_str()) || value.encode_utf16().count() > 100
+                !LEFT_HAND_HOTKEYS.contains(&key.as_str()) || value.chars().take(101).count() > 100
             }) {
                 return Err(ConfigError::Menu(MenuIssue::EmojiCell));
             }
@@ -398,25 +402,69 @@ mod tests {
             quick_action_pages: vec![QuickActionPage::new("page".into(), "".into())],
             ..LayoutPreset::default()
         };
-        set_quick_action(&mut layout, 0, 0, "KeyA", "First").unwrap();
+        set_quick_action(&mut layout, 0, 0, "KeyA", "First", "").unwrap();
         assert_eq!(layout.quick_action_pages[0].cells["KeyQ"].name, "First");
         let item = layout.quick_action_pages[0].cells.get_mut("KeyQ").unwrap();
         item.name = "Custom".into();
-        set_quick_action(&mut layout, 0, 0, "KeyB", "Second").unwrap();
+        set_quick_action(&mut layout, 0, 0, "KeyB", "Second", "").unwrap();
         let item = &layout.quick_action_pages[0].cells["KeyQ"];
         assert_eq!(item.name, "Custom");
-        set_quick_action(&mut layout, 0, 0, "", "").unwrap();
+        set_quick_action(&mut layout, 0, 0, "", "", "").unwrap();
         assert!(layout.quick_action_pages[0].cells.is_empty());
-        set_quick_action(&mut layout, 0, 0, "KeyA", "").unwrap();
-        set_quick_action(&mut layout, 0, 0, "KeyB", "Second").unwrap();
+        set_quick_action(&mut layout, 0, 0, "KeyA", "", "").unwrap();
+        set_quick_action(&mut layout, 0, 0, "KeyB", "Second", "").unwrap();
         assert_eq!(layout.quick_action_pages[0].cells["KeyQ"].name, "Second");
         let saved = layout.clone();
         for (page, cell) in [(-1, 0), (1, 0), (0, -1), (0, 15)] {
             assert!(matches!(
-                set_quick_action(&mut layout, page, cell, "KeyC", ""),
+                set_quick_action(&mut layout, page, cell, "KeyC", "", ""),
                 Err(ConfigError::Invalid(_))
             ));
             assert_eq!(layout, saved);
+        }
+    }
+
+    #[test]
+    fn replacement_updates_catalog_labels_but_preserves_custom_labels() {
+        let mut layout = LayoutPreset::default();
+        ensure_pages(&mut layout);
+        set_quick_action(&mut layout, 0, 0, "macro:first", "First", "").unwrap();
+        set_quick_action(&mut layout, 0, 0, "macro:second", "Second", "First").unwrap();
+        assert_eq!(layout.quick_action_pages[0].cells["KeyQ"].name, "Second");
+        set_quick_action_name(&mut layout, 0, 0, "My shortcut");
+        set_quick_action(&mut layout, 0, 0, "macro:first", "First", "Second").unwrap();
+        assert_eq!(
+            layout.quick_action_pages[0].cells["KeyQ"].name,
+            "My shortcut"
+        );
+    }
+
+    #[test]
+    fn emoji_limit_counts_unicode_code_points_and_preserves_rejected_edits() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let mut doc = ConfigDocument::load(paths).unwrap();
+        // Supplementary-plane emoji use two UTF-16 units, but one code point.
+        // Combining marks and ZWJ are separate code points, as the UI explains.
+        for text in [
+            "a".repeat(100),
+            "🙂".repeat(100),
+            "e\u{301}".repeat(50),
+            "👩\u{200d}💻".repeat(33) + "!",
+        ] {
+            let baseline = doc.layout().clone();
+            let mut candidate = baseline.clone();
+            ensure_pages(&mut candidate);
+            set_emoji(&mut candidate, 0, 0, &text);
+            doc.save_menu_pages(&baseline, &candidate).unwrap();
+            assert_eq!(doc.layout().emoji_pages[0].cells["KeyQ"], text);
+            let baseline = doc.layout().clone();
+            set_emoji(&mut candidate, 0, 0, &(text + "!"));
+            assert!(matches!(
+                doc.save_menu_pages(&baseline, &candidate),
+                Err(ConfigError::Menu(MenuIssue::EmojiCell))
+            ));
+            assert_eq!(doc.layout(), &baseline);
         }
     }
 
@@ -570,7 +618,7 @@ mod tests {
         assert_eq!(layout.quick_action_pages[0].name, "Media");
         set_quick_action_name(&mut layout, 0, 0, "Nothing here");
         assert!(layout.quick_action_pages[0].cells.is_empty());
-        set_quick_action(&mut layout, 0, 0, "KeyA", "").unwrap();
+        set_quick_action(&mut layout, 0, 0, "KeyA", "", "").unwrap();
         set_quick_action_name(&mut layout, 0, 0, "   ");
         assert_eq!(layout.quick_action_pages[0].cells["KeyQ"].name, "");
         clear_cell(&mut layout, MenuKind::Quick, 0, 0);

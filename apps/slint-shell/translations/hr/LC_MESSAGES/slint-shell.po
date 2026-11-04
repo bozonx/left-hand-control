@@ -444,8 +444,8 @@ msgstr "Očisti ćeliju"
 msgid "Page name"
 msgstr "Naziv stranice"
 
-msgid "Emoji cells accept at most 100 characters."
-msgstr "Emoji ćelije prihvaćaju najviše 100 znakova."
+msgid "Emoji cells accept at most 100 Unicode code points."
+msgstr "Ćelije emotikona prihvaćaju najviše 100 kodnih točaka Unicodea."
 
 msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
 msgstr "ID naredbe: 1–64 slova, znamenke, podvlake ili crtice."
@@ -1625,8 +1625,8 @@ msgstr "jezici"
 msgid "Excluded applications"
 msgstr "Isključene prijave"
 
-msgid "Open page in popup"
-msgstr "Otvaranje stranice u skočnom prozoru"
+msgid "Preview page"
+msgstr "Pregled stranice"
 
 msgid "Page:"
 msgstr "Stranica:"
@@ -3707,3 +3707,9 @@ msgstr "Sloj:"
 
 msgid "Actions: {}"
 msgstr "Radnje: {}"
+
+msgid "Preview only; actions are not executed."
+msgstr "Samo pregled; radnje se ne izvršavaju."
+
+msgid "Retry"
+msgstr "Pokušaj ponovno"

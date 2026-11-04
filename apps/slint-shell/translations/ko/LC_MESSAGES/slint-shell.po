@@ -439,8 +439,8 @@ msgstr "셀 지우기"
 msgid "Page name"
 msgstr "페이지 이름"
 
-msgid "Emoji cells accept at most 100 characters."
-msgstr "이모티콘 셀에는 최대 100자까지 허용됩니다."
+msgid "Emoji cells accept at most 100 Unicode code points."
+msgstr "이모지 셀에는 최대 100개의 유니코드 코드 포인트를 입력할 수 있습니다."
 
 msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
 msgstr "명령 ID: 1~64자의 문자, 숫자, 밑줄 또는 하이픈."
@@ -1564,8 +1564,8 @@ msgstr "언어"
 msgid "Excluded applications"
 msgstr "제외된 애플리케이션"
 
-msgid "Open page in popup"
-msgstr "팝업으로 페이지 열기"
+msgid "Preview page"
+msgstr "페이지 미리 보기"
 
 msgid "Page:"
 msgstr "페이지:"
@@ -3466,3 +3466,9 @@ msgstr "레이어:"
 
 msgid "Actions: {}"
 msgstr "작업: {}"
+
+msgid "Preview only; actions are not executed."
+msgstr "미리 보기만 제공되며 동작은 실행되지 않습니다."
+
+msgid "Retry"
+msgstr "다시 시도"

@@ -446,8 +446,8 @@ msgstr "უჯრის გასუფთავება"
 msgid "Page name"
 msgstr "გვერდის სახელი"
 
-msgid "Emoji cells accept at most 100 characters."
-msgstr "Emoji უჯრედები იღებს მაქსიმუმ 100 სიმბოლოს."
+msgid "Emoji cells accept at most 100 Unicode code points."
+msgstr "ემოჯის უჯრები იღებს მაქსიმუმ 100 Unicode კოდურ წერტილს."
 
 msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
 msgstr "ბრძანების ID: 1–64 ასო, ციფრი, ქვედა ხაზი ან დეფისი."
@@ -1628,8 +1628,8 @@ msgstr "ენები"
 msgid "Excluded applications"
 msgstr "გამორიცხული აპლიკაციები"
 
-msgid "Open page in popup"
-msgstr "გახსენით გვერდი ამომხტარ ფანჯარაში"
+msgid "Preview page"
+msgstr "გვერდის წინასწარი ნახვა"
 
 msgid "Page:"
 msgstr "გვერდი:"
@@ -3706,3 +3706,9 @@ msgstr "ფენა:"
 
 msgid "Actions: {}"
 msgstr "მოქმედებები: {}"
+
+msgid "Preview only; actions are not executed."
+msgstr "მხოლოდ წინასწარი ნახვა; მოქმედებები არ სრულდება."
+
+msgid "Retry"
+msgstr "ხელახლა ცდა"

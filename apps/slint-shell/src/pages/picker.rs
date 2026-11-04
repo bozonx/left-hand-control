@@ -27,6 +27,15 @@ pub(crate) use catalog::{DESKTOP_SHORTCUTS, action_label, category_for_value};
 use request::Filter;
 pub(super) use request::{PickerMode, PickerRequest};
 
+/// Catalog label of an existing menu action, including staged commands.
+pub(super) fn menu_label(
+    ui: &SettingsWindow,
+    config: &lhc_core::profile::model::ResolvedAppConfig,
+    value: &str,
+) -> SharedString {
+    session::label_for(value, &catalog::catalog(ui, config), None, &config.commands)
+}
+
 /// Whether `value` is the `cmd:` action of the command `id`.
 fn assigns_command(value: &str, id: &str) -> bool {
     matches!(Action::parse(Some(value)), Action::Command(command) if command == id)

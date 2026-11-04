@@ -447,8 +447,8 @@ msgstr "Ұяшықты тазалау"
 msgid "Page name"
 msgstr "Бет атауы"
 
-msgid "Emoji cells accept at most 100 characters."
-msgstr "Эмодзи ұяшықтары ең көбі 100 таңбаны қабылдайды."
+msgid "Emoji cells accept at most 100 Unicode code points."
+msgstr "Эмодзи ұяшықтары ең көбі 100 Unicode код нүктесін қабылдайды."
 
 msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
 msgstr "Пәрмен идентификаторы: 1–64 әріп, сандар, астын сызу немесе сызықша."
@@ -1628,8 +1628,8 @@ msgstr "Тілдер"
 msgid "Excluded applications"
 msgstr "Шығарылған қолданбалар"
 
-msgid "Open page in popup"
-msgstr "Қалқымалы терезеде бетті ашыңыз"
+msgid "Preview page"
+msgstr "Бетті алдын ала қарау"
 
 msgid "Page:"
 msgstr "Бет:"
@@ -3724,3 +3724,9 @@ msgstr "Қабат:"
 
 msgid "Actions: {}"
 msgstr "Әрекеттер: {}"
+
+msgid "Preview only; actions are not executed."
+msgstr "Тек алдын ала қарау; әрекеттер орындалмайды."
+
+msgid "Retry"
+msgstr "Қайталау"

@@ -9,7 +9,7 @@ import { GameModeButton } from "game-mode.slint";
 import { LayerDialogOverlay, LayersEditor, LayersPage } from "layers.slint";
 import { LayoutLibrary, LibraryDialogOverlay, LibraryPage, SaveSplitButton, LayoutMenu } from "library.slint";
 import { MacroEditor, MacrosPage } from "macros.slint";
-import { MenuEditor, MenusPage } from "menus.slint";
+import { MenuEditor, MenusPage, MenuPreview } from "menus.slint";
 import { RuleDialogOverlay, RulesEditor, RulesPage } from "rules.slint";
 import { AppEntryDialog, AppEntryOverlay } from "conditions.slint";
 import { DragDrop, PaletteDrag } from "reorder.slint";
@@ -364,6 +364,7 @@ export component SettingsWindow inherits Window {
             }
         }
     }
+    if root.page == Page.menus && MenuEditor.preview-visible: MenuPreview { width: 100%; height: 100%; }
     if ActionPicker.opened: PickerOverlay {}
     ToastStack {
         stack-height-limit: parent.height - 40px;

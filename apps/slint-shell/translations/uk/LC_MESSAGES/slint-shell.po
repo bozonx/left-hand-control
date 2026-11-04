@@ -445,8 +445,8 @@ msgstr "Очистити клітинку"
 msgid "Page name"
 msgstr "Назва сторінки"
 
-msgid "Emoji cells accept at most 100 characters."
-msgstr "Комірки Emoji можуть містити щонайбільше 100 символів."
+msgid "Emoji cells accept at most 100 Unicode code points."
+msgstr "Комірка емодзі вміщує не більше 100 кодових точок Unicode."
 
 msgid "Command ID: 1–64 letters, digits, underscores or hyphens."
 msgstr "Ідентифікатор команди: 1–64 літери, цифри, підкреслення або дефіси."
@@ -1633,8 +1633,8 @@ msgstr "Мови"
 msgid "Excluded applications"
 msgstr "Виключені програми"
 
-msgid "Open page in popup"
-msgstr "Відкрити сторінку у спливаючому вікні"
+msgid "Preview page"
+msgstr "Попередній перегляд сторінки"
 
 msgid "Page:"
 msgstr "сторінка:"
@@ -3723,3 +3723,9 @@ msgstr "Шар:"
 
 msgid "Actions: {}"
 msgstr "Дії: {}"
+
+msgid "Preview only; actions are not executed."
+msgstr "Лише перегляд; дії не виконуються."
+
+msgid "Retry"
+msgstr "Повторити"

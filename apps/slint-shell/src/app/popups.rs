@@ -483,25 +483,6 @@ pub(super) fn bind(app: &Rc<App>) {
     for window in Window::ALL {
         observe(app, window);
     }
-    app.settings
-        .global::<crate::ui::MenuEditor>()
-        .on_show_page(|| {
-            with_app(|app| {
-                let editor = app.settings.global::<crate::ui::MenuEditor>();
-                let popup = match editor.get_kind() {
-                    crate::ui::MenuKind::Emoji => Popup::Emoji,
-                    crate::ui::MenuKind::Quick => Popup::Quick,
-                };
-                if let Ok(page) = u32::try_from(editor.get_selected_page() + 1) {
-                    app.command(
-                        ShellCommand::ShowPage(popup, page),
-                        Source::Button,
-                        Instant::now(),
-                        None,
-                    );
-                }
-            });
-        });
     app.emoji.on_key(|key| {
         if !popup_model::handles_key(&key) {
             return false;
