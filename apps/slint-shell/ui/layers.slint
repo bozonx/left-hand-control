@@ -11,7 +11,7 @@ import { ActionKind, Assignment, LabelMode, LayerDialog, PickerCategory, PickerT
 import { Button, TextEdit, Palette } from "std-widgets.slint";
 
 /// One slot of a hand grid. `index < 0` is an empty slot; otherwise it is the
-/// layer key index passed back with `LayerDialog.edit-key`.
+/// layer key index passed back with `LayersEditor.edit-key`.
 /// `holds`: the keystroke keeps its modifiers held until the layer is released.
 export struct LayerKeyCell { index: int, label: string, code: string, kind: Assignment, action: string, icon: ActionKind, category: PickerCategory, emoji: bool, holds: bool }
 export struct LayerExtraRow { key: string, kind: Assignment, action: string, icon: ActionKind, category: PickerCategory, holds: bool }
@@ -32,22 +32,26 @@ export global LayersEditor {
     in property <Message> status;
     in property <Message> activation;
     in-out property <LayerDialog> dialog: LayerDialog.none;
-    in-out property <Assignment> assignment: Assignment.transparent;
     in-out property <string> dialog-name;
     in-out property <string> dialog-description;
+    /// Key of the extra row being edited or added.
     in-out property <string> dialog-key;
     in-out property <int> delete-extra: -1;
     callback refresh();
     callback choose(int);
-    /// Open `dialog`; `index` is the key or extra row it edits, or -1.
-    callback open-dialog(LayerDialog, int);
+    /// Open `dialog` for the selected layer (or a new one).
+    callback open-dialog(LayerDialog);
+    /// Choose the assignment of layer key `index`.
+    callback edit-key(int);
     callback apply-dialog();
-    callback reorder(int, int);
+    /// Move layer `from` to `to`; false when nothing moved.
+    callback reorder(int, int) -> bool;
     callback reorder-extra(int, int);
     /// Exchange the assignments of layer keys `from` and `to`.
     callback swap-keys(int, int);
     callback request-remove-extra(int);
-    callback remove-extra(int) -> bool;
+    /// Remove the extra row confirmed in `delete-extra`.
+    callback remove-extra() -> bool;
     callback update-description(string) -> bool;
     callback update-name(string) -> bool;
     /// Why `name` cannot be used for a new layer or, when `renaming`, for the selected one.
@@ -124,7 +128,8 @@ component ExtraKeyLine inherits TouchArea {
                 horizontal-stretch: 1;
                 min-width: 0px;
                 holds: root.item.holds && root.item.kind == Assignment.action;
-                text: root.item.kind == Assignment.transparent ? @tr("Normal key behavior") : root.item.kind == Assignment.swallow ? @tr("Suppress") : root.item.action;
+                // A row always has an assignment: removing it inherits.
+                text: root.item.kind == Assignment.swallow ? @tr("Suppress") : root.item.action;
                 clicked => { LayersEditor.pick-extra(root.index, false); }
             }
             VerticalLayout {
@@ -145,7 +150,7 @@ component ExtraKeyLine inherits TouchArea {
                     opacity: root.has-hover || Theme.focus-ring(self.has-focus) ? 1 : 0;
                     icon: @image-url("icons/trash-2.svg");
                     tooltip: @tr("Remove trigger");
-                    accessible-label: @tr("Remove trigger") + ": " + root.item.key;
+                    accessible-label: @tr("Remove trigger: {}", root.item.key);
                     clicked => { LayersEditor.request-remove-extra(root.index); }
                 }
             }
@@ -311,8 +316,8 @@ export component LayersPage inherits PageLayout {
                         key-pressed(event) => {
                             if event.text == " " || event.text == "\n" { LayersEditor.choose(index); return accept; }
                             // Alt+Left/Right: keyboard alternative to dragging the tab.
-                            if event.modifiers.alt && event.text == Key.LeftArrow && index > 0 { KeyboardFocus.remember-reorder(index, index - 1); LayersEditor.reorder(index, index - 1); KeyboardFocus.restore-reorder(); return accept; }
-                            if event.modifiers.alt && event.text == Key.RightArrow && index + 1 < LayersEditor.names.length { KeyboardFocus.remember-reorder(index, index + 1); LayersEditor.reorder(index, index + 1); KeyboardFocus.restore-reorder(); return accept; }
+                            if event.modifiers.alt && event.text == Key.LeftArrow && index > 0 { KeyboardFocus.remember-reorder(index, index - 1); if !LayersEditor.reorder(index, index - 1) { KeyboardFocus.remember-reorder(index, index); } KeyboardFocus.restore-reorder(); return accept; }
+                            if event.modifiers.alt && event.text == Key.RightArrow && index + 1 < LayersEditor.names.length { KeyboardFocus.remember-reorder(index, index + 1); if !LayersEditor.reorder(index, index + 1) { KeyboardFocus.remember-reorder(index, index); } KeyboardFocus.restore-reorder(); return accept; }
                             return self.navigate(event);
                         }
                     }
@@ -327,7 +332,7 @@ export component LayersPage inherits PageLayout {
                     DropMarker { cross-size: parent.height; group: DragGroups.layer-tabs; index: index; horizontal: true; row-start: parent.x; row-size: parent.width; }
                 }
                 VerticalLayout { height: Theme.control-height-l; alignment: center;
-                    IconButton { icon: @image-url("icons/plus.svg"); tooltip: @tr("Create new layer"); primary: true; clicked => { LayersEditor.open-dialog(LayerDialog.create, -1); } }
+                    IconButton { icon: @image-url("icons/plus.svg"); tooltip: @tr("Create new layer"); primary: true; clicked => { LayersEditor.open-dialog(LayerDialog.create); } }
                 }
             }
         }
@@ -345,10 +350,10 @@ export component LayersPage inherits PageLayout {
                     spacing: Theme.space-l;
                     HorizontalLayout {
                         spacing: Theme.space-l;
-                        Text { horizontal-stretch: 0; text: @tr("Layer") + ":"; color: Theme.text; font-size: Theme.font-medium; vertical-alignment: center; }
+                        Text { horizontal-stretch: 0; text: @tr("Layer:"); color: Theme.text; font-size: Theme.font-medium; vertical-alignment: center; }
                         VerticalLayout {
                             alignment: center;
-                            if LayersEditor.selected >= 0: InlineTextField {
+                            InlineTextField {
                                 horizontal-stretch: 1; min-width: 0px;
                                 text: LayersEditor.names[LayersEditor.selected];
                                 label: @tr("Name"); text-size: Theme.font-medium; text-weight: Theme.weight-semibold;
@@ -360,26 +365,25 @@ export component LayersPage inherits PageLayout {
                         Rectangle {
                             width: 36px; height: Theme.control-height;
                             Button {
-                                width: parent.width; height: parent.height; text: "…"; accessible-label: @tr("Actions") + ": " + (LayersEditor.selected >= 0 ? LayersEditor.names[LayersEditor.selected] : "");
-                                enabled: LayersEditor.selected >= 0;
+                                width: parent.width; height: parent.height; text: "…"; accessible-label: @tr("Actions: {}", LayersEditor.names[LayersEditor.selected]);
                                 clicked => { layer-menu.show(); }
                             }
                             layer-menu := PopupWindow {
                                 x: parent.width - self.width; y: parent.height + Theme.menu-offset;
                                 width: 200px;
                                 MenuSurface {
-                                    MenuItem { has-icon: true; icon: @image-url("icons/copy.svg"); text: @tr("Duplicate"); clicked => { layer-menu.close(); LayersEditor.open-dialog(LayerDialog.duplicate, -1); } }
-                                    MenuItem { has-icon: true; icon: @image-url("icons/trash-2.svg"); text: @tr("Delete layer"); danger: true; clicked => { layer-menu.close(); LayersEditor.open-dialog(LayerDialog.delete, -1); } }
+                                    MenuItem { has-icon: true; icon: @image-url("icons/copy.svg"); text: @tr("Duplicate"); clicked => { layer-menu.close(); LayersEditor.open-dialog(LayerDialog.duplicate); } }
+                                    MenuItem { has-icon: true; icon: @image-url("icons/trash-2.svg"); text: @tr("Delete layer"); danger: true; clicked => { layer-menu.close(); LayersEditor.open-dialog(LayerDialog.delete); } }
                                 }
                             }
                         }
                     }
-                    if LayersEditor.selected >= 0: InlineTextArea {
+                    InlineTextArea {
                         text: LayersEditor.description; placeholder: @tr("Add description"); label: @tr("Layer description");
                         text-color: Theme.muted;
                         saved(value) => { return LayersEditor.update-description(value); }
                     }
-                    if LayersEditor.selected >= 0: HorizontalLayout {
+                    HorizontalLayout {
                         spacing: Theme.space-m;
                         Text { horizontal-stretch: 1; min-width: 0px; text: Locale.text(LayersEditor.activation); color: Theme.muted; wrap: word-wrap; vertical-alignment: center; }
                         Button { text: @tr("Configure triggers"); horizontal-stretch: 0; clicked => { root.configure-triggers(); } }
@@ -428,26 +432,28 @@ export component LayersPage inherits PageLayout {
                             : max(left-hand.key-at(DragDrop.pointer-x, DragDrop.pointer-y), right-hand.key-at(DragDrop.pointer-x, DragDrop.pointer-y));
                         padding: Theme.space-2xl;
                         spacing: Theme.space-3xl;
+                        // From the page width rather than this layout's, which would depend on the grids.
+                        property <length> hand-width: (root.width - Theme.scrollbar-size - Theme.scrollbar-gap - 2 * Theme.space-2xl - Theme.space-3xl) / 2;
                         left-hand := HandGrid {
-                            width: (root.width - 16px - 40px - 24px) / 2;
+                            width: hands.hand-width;
                             horizontal-stretch: 0;
                             title: @tr("Left hand");
                             cells: LayersEditor.left-cells;
                             columns: 6;
                             label-mode: root.label-mode;
                             drop-target: hands.key-target;
-                            edit(index) => { LayersEditor.open-dialog(LayerDialog.edit-key, index); }
+                            edit(index) => { LayersEditor.edit-key(index); }
                             dropped(from, to) => { LayersEditor.swap-keys(from, to); }
                         }
                         right-hand := HandGrid {
-                            width: (root.width - 16px - 40px - 24px) / 2;
+                            width: hands.hand-width;
                             horizontal-stretch: 0;
                             title: @tr("Right hand");
                             cells: LayersEditor.right-cells;
                             columns: 6;
                             label-mode: root.label-mode;
                             drop-target: hands.key-target;
-                            edit(index) => { LayersEditor.open-dialog(LayerDialog.edit-key, index); }
+                            edit(index) => { LayersEditor.edit-key(index); }
                             dropped(from, to) => { LayersEditor.swap-keys(from, to); }
                         }
                     }
@@ -541,7 +547,7 @@ export component LayerDialogOverlay inherits FocusScope {
 
     if LayersEditor.delete-extra >= 0: ConfirmDialog {
         title: @tr("Delete extra key?"); body: @tr("This key assignment will be removed from the layer."); confirm-text: @tr("Delete");
-        confirm => { if LayersEditor.remove-extra(LayersEditor.delete-extra) { LayersEditor.delete-extra = -1; } }
+        confirm => { if LayersEditor.remove-extra() { LayersEditor.delete-extra = -1; } }
         cancel => { LayersEditor.delete-extra = -1; }
     }
 

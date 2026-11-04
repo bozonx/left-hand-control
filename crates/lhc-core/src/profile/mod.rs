@@ -11,6 +11,7 @@ pub mod bundled;
 pub mod diagnostics;
 pub mod ids;
 pub mod layer_edit;
+pub mod layer_grid;
 pub mod layout_file;
 pub(crate) mod macro_graph;
 pub mod macros;

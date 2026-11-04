@@ -23,6 +23,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Layers page: choosing a key of the layer keyboard as an extra key, or a key that already has a row, now says so instead of reporting an invalid configuration; the rule is also enforced when saving. A layer whose stored name is invalid can have its description edited. Edits elsewhere (settings, other layers) no longer cancel an open layer dialog or picker as a conflict. A failed delete or create is reported once. Deleting the last layer selects the new last one, and "Duplicate" proposes a free name ("Name (copy) 2").
+
 - The layout library wraps its toolbar in narrow windows, keeps layout names readable beside automatic rules, and scrolls the whole automatic-rules panel so its default remains reachable.
 - Automatic layout switching preserves explicit passthrough defaults and missing rule targets. Active-layout indicators follow the mapper's accepted configuration after a failed switch; retry and unchanged-layout paths are covered without hardware. Automatic-mode controls stay available when experimental features are hidden, and rule warnings account for missing targets and game-mode Off conditions.
 - KDE keyboard-layout detection clears stale state on errors, unavailable services and invalid groups, announces recovery, and reconnects after service-owner changes.

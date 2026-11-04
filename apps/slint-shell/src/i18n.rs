@@ -8,7 +8,7 @@
 //! from the same PO catalogs. Missing translations fail the build.
 
 use crate::ui::Message;
-use lhc_core::config_document::ConfigError;
+use lhc_core::config_document::{ConfigError, ExtraKeyIssue};
 use lhc_core::platform::InputAccessIssue;
 use lhc_core::profile::actions::ActionIssue;
 use lhc_core::profile::diagnostics::{RuleIssue, RuleIssueCode};
@@ -350,6 +350,10 @@ pub enum Msg {
     MacroRunFailure(lhc_core::events::MacroRunFailure),
     Name(NameKind, NameIssue),
     KeyCodeRequired,
+    /// A layer keyboard key was chosen for an extra key row.
+    ExtraKeyOnGrid,
+    /// The layer already has a row for the chosen extra key.
+    ExtraKeyTaken,
     ActionRequired,
     TimeoutInvalid,
     SettingsTimingInvalid,
@@ -554,6 +558,8 @@ impl Msg {
             ),
             Self::ActionRequired => ("action-required", empty(), 0),
             Self::KeyCodeRequired => ("key-code-required", empty(), 0),
+            Self::ExtraKeyOnGrid => ("extra-key-on-grid", empty(), 0),
+            Self::ExtraKeyTaken => ("extra-key-taken", empty(), 0),
             Self::LongHoldInvalid => ("long-hold-invalid", empty(), 0),
             Self::SettingsTimingInvalid => ("settings-timing-invalid", empty(), 0),
             Self::TimeoutInvalid => ("timeout-invalid", empty(), 0),
@@ -652,6 +658,9 @@ impl From<&ConfigError> for Msg {
                 Self::ConfigInvalid
             }
             ConfigError::Rules(_) => Self::ConfigInvalid,
+            ConfigError::ExtraKey(ExtraKeyIssue::Invalid) => Self::KeyCodeRequired,
+            ConfigError::ExtraKey(ExtraKeyIssue::OnGrid) => Self::ExtraKeyOnGrid,
+            ConfigError::ExtraKey(ExtraKeyIssue::Taken) => Self::ExtraKeyTaken,
         }
     }
 }

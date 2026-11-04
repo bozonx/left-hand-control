@@ -558,9 +558,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     assert_eq!(layers.get_extras().row_data(0).unwrap().key, "F17");
     layers.invoke_request_remove_extra(0);
-    assert!(layers.invoke_remove_extra(0));
+    assert!(layers.invoke_remove_extra());
     layers.set_delete_extra(-1);
-    layers.invoke_open_dialog(LayerDialog::EditKey, 0);
+    layers.invoke_edit_key(0);
     let picker = ui.global::<ActionPicker>();
     assert!(picker.get_opened());
     assert!(picker.get_layer_action());
@@ -573,7 +573,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         document.read().layer_key(&second, "Backquote"),
         lhc_core::config_document::KeyAssignment::Swallow
     );
-    layers.invoke_open_dialog(LayerDialog::EditKey, 0);
+    layers.invoke_edit_key(0);
     assert_eq!(picker.get_behavior(), PickerBehavior::Swallow);
     picker.invoke_select_behavior(PickerBehavior::Native);
     picker.invoke_apply();
@@ -699,7 +699,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ui.window().dispatch_event(slint::platform::WindowEvent::KeyPressed { text: slint::platform::Key::Escape.into() });
                 ui.window().dispatch_event(slint::platform::WindowEvent::KeyReleased { text: slint::platform::Key::Escape.into() });
                 assert!(!ui.global::<LayoutLibrary>().get_save_as_open());
-                ui.global::<LayersEditor>().invoke_open_dialog(slint_shell::ui::LayerDialog::Create, -1);
+                ui.global::<LayersEditor>().invoke_open_dialog(slint_shell::ui::LayerDialog::Create);
                 ui.window().dispatch_event(slint::platform::WindowEvent::KeyPressed { text: slint::platform::Key::Escape.into() });
                 ui.window().dispatch_event(slint::platform::WindowEvent::KeyReleased { text: slint::platform::Key::Escape.into() });
                 assert_eq!(ui.global::<LayersEditor>().get_dialog(), slint_shell::ui::LayerDialog::None);

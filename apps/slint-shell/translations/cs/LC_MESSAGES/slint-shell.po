@@ -1475,8 +1475,6 @@ msgstr "Žádná samostatná akce"
 msgid "Activate layer only"
 msgstr "Aktivovat pouze vrstvu"
 
-msgid "Normal key behavior"
-msgstr "Normální chování kláves"
 
 msgid "Suppress"
 msgstr "Potlačit"
@@ -3682,3 +3680,18 @@ msgstr "Uložit změny rozložení před ukončením?"
 
 msgid "Cannot switch layout. The mapper is still using the previous layout."
 msgstr "Nelze přepnout rozložení. Mapovač stále používá předchozí rozložení."
+
+msgid "This key is on the layer keyboard. Assign it there."
+msgstr "Tato klávesa je na klávesnici vrstvy. Přiřaďte ji tam."
+
+msgid "This layer already has a row for this key."
+msgstr "Tato vrstva už má řádek pro tuto klávesu."
+
+msgid "Remove trigger: {}"
+msgstr "Odebrat spouštěč: {}"
+
+msgid "Layer:"
+msgstr "Vrstva:"
+
+msgid "Actions: {}"
+msgstr "Akce: {}"

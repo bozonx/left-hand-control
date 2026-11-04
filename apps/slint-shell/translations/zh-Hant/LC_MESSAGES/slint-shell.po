@@ -1412,8 +1412,6 @@ msgstr "沒有單獨的行動"
 msgid "Activate layer only"
 msgstr "僅啟動圖層"
 
-msgid "Normal key behavior"
-msgstr "正常按鍵行為"
 
 msgid "Suppress"
 msgstr "壓制"
@@ -3385,3 +3383,18 @@ msgstr "結束前儲存配置變更嗎？"
 
 msgid "Cannot switch layout. The mapper is still using the previous layout."
 msgstr "無法切換配置。映射器仍在使用先前的配置。"
+
+msgid "This key is on the layer keyboard. Assign it there."
+msgstr "此鍵位於層鍵盤上，請在那裡指派。"
+
+msgid "This layer already has a row for this key."
+msgstr "此層已有該鍵的列。"
+
+msgid "Remove trigger: {}"
+msgstr "移除觸發器：{}"
+
+msgid "Layer:"
+msgstr "層："
+
+msgid "Actions: {}"
+msgstr "動作：{}"

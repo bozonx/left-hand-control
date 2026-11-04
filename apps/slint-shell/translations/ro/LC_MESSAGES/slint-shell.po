@@ -1493,8 +1493,6 @@ msgstr "Nicio acțiune separată"
 msgid "Activate layer only"
 msgstr "Activați numai stratul"
 
-msgid "Normal key behavior"
-msgstr "Comportament normal cheie"
 
 msgid "Suppress"
 msgstr "Suprima"
@@ -3744,3 +3742,18 @@ msgstr "Salvați modificările aranjamentului înainte de ieșire?"
 
 msgid "Cannot switch layout. The mapper is still using the previous layout."
 msgstr "Nu se poate schimba aranjamentul. Remaparea folosește în continuare aranjamentul anterior."
+
+msgid "This key is on the layer keyboard. Assign it there."
+msgstr "Această tastă este pe tastatura stratului. Atribuiți-o acolo."
+
+msgid "This layer already has a row for this key."
+msgstr "Acest strat are deja un rând pentru această tastă."
+
+msgid "Remove trigger: {}"
+msgstr "Eliminați declanșatorul: {}"
+
+msgid "Layer:"
+msgstr "Strat:"
+
+msgid "Actions: {}"
+msgstr "Acțiuni: {}"

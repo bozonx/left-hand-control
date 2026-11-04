@@ -1491,8 +1491,6 @@ msgstr "Nincs külön akció"
 msgid "Activate layer only"
 msgstr "Csak a réteg aktiválása"
 
-msgid "Normal key behavior"
-msgstr "Normál kulcsviselkedés"
 
 msgid "Suppress"
 msgstr "Elnyomni"
@@ -3743,3 +3741,18 @@ msgstr "Menti a kiosztás módosításait kilépés előtt?"
 
 msgid "Cannot switch layout. The mapper is still using the previous layout."
 msgstr "Nem sikerült váltani a kiosztást. Az átleképező továbbra is az előző kiosztást használja."
+
+msgid "This key is on the layer keyboard. Assign it there."
+msgstr "Ez a billentyű a réteg billentyűzetén van. Ott rendelje hozzá."
+
+msgid "This layer already has a row for this key."
+msgstr "Ebben a rétegben már van sor ehhez a billentyűhöz."
+
+msgid "Remove trigger: {}"
+msgstr "Eseményindító eltávolítása: {}"
+
+msgid "Layer:"
+msgstr "Réteg:"
+
+msgid "Actions: {}"
+msgstr "Műveletek: {}"

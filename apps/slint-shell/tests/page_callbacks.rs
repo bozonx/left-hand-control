@@ -512,7 +512,7 @@ fn action_picker() -> Result<(), Box<dyn std::error::Error>> {
     })?;
     let layers = ui.global::<LayersEditor>();
     layers.invoke_choose(0);
-    layers.invoke_open_dialog(LayerDialog::EditKey, 0);
+    layers.invoke_edit_key(0);
     picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("Ctrl+KeyC".into());
     picker.invoke_apply();
@@ -650,7 +650,7 @@ fn check_atomic_commands() -> Result<(), Box<dyn std::error::Error>> {
     })?;
     let layers = ui.global::<LayersEditor>();
     layers.invoke_choose(0);
-    layers.invoke_open_dialog(LayerDialog::EditKey, 0);
+    layers.invoke_edit_key(0);
     edit_command("echo cancelled-layer-command");
     picker.invoke_dismiss_picker();
     assert_eq!(document.read().layout().commands.len(), 2);
@@ -660,7 +660,7 @@ fn check_atomic_commands() -> Result<(), Box<dyn std::error::Error>> {
             .layer_key(&layers.get_selected_id(), "Backquote"),
         KeyAssignment::Transparent
     );
-    layers.invoke_open_dialog(LayerDialog::EditKey, 0);
+    layers.invoke_edit_key(0);
     edit_command("echo layer-command");
     let action = picker.get_value();
     picker.invoke_apply();
@@ -673,12 +673,12 @@ fn check_atomic_commands() -> Result<(), Box<dyn std::error::Error>> {
             .layer_key(&layers.get_selected_id(), "Backquote"),
         KeyAssignment::Action(action.to_string())
     );
-    layers.invoke_open_dialog(LayerDialog::EditKey, 0);
+    layers.invoke_edit_key(0);
     picker.invoke_edit_command();
     assert_eq!(picker.get_command_script(), "echo layer-command");
     picker.invoke_dismiss_picker();
     // A stale target must not leave an orphan command in the layout.
-    layers.invoke_open_dialog(LayerDialog::EditKey, 1);
+    layers.invoke_edit_key(1);
     edit_command("echo stale-command");
     document.edit(slint_shell::document::View::Layers, |config| {
         config.rename_layer(&layers.get_selected_id(), "Renamed", "")
@@ -721,7 +721,7 @@ fn layer_editor_regressions() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(layers.get_activation().arg, "CapsLock");
 
     // A selection change cannot redirect an already-open key editor.
-    layers.invoke_open_dialog(LayerDialog::EditKey, 0);
+    layers.invoke_edit_key(0);
     picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("KeyZ".into());
     layers.invoke_choose(1);
@@ -751,11 +751,11 @@ fn layer_editor_regressions() -> Result<(), Box<dyn std::error::Error>> {
     // Deletion confirmations also bind their target, and remain open on failure.
     layers.invoke_request_remove_extra(0);
     layers.invoke_reorder_extra(0, 1);
-    assert!(!layers.invoke_remove_extra(0));
+    assert!(!layers.invoke_remove_extra());
     assert!(layers.get_delete_extra() >= 0);
     assert_eq!(document.read().layout().layer_keymaps[&first].keys.len(), 2);
     layers.set_delete_extra(-1);
-    layers.invoke_open_dialog(LayerDialog::Delete, -1);
+    layers.invoke_open_dialog(LayerDialog::Delete);
     layers.invoke_choose(1);
     layers.invoke_apply_dialog();
     assert_eq!(layers.get_dialog(), LayerDialog::Delete);
@@ -765,7 +765,7 @@ fn layer_editor_regressions() -> Result<(), Box<dyn std::error::Error>> {
     layers.invoke_choose(0);
 
     // Invalid names preserve the draft and allow a corrected retry.
-    layers.invoke_open_dialog(LayerDialog::Duplicate, -1);
+    layers.invoke_open_dialog(LayerDialog::Duplicate);
     layers.set_dialog_name("Second".into());
     layers.invoke_apply_dialog();
     assert_eq!(layers.get_dialog(), LayerDialog::Duplicate);
@@ -777,7 +777,7 @@ fn layer_editor_regressions() -> Result<(), Box<dyn std::error::Error>> {
     layers.invoke_choose(0);
 
     // A failed settings write must not invalidate a pending layer edit.
-    layers.invoke_open_dialog(LayerDialog::EditKey, 0);
+    layers.invoke_edit_key(0);
     picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("KeyZ".into());
     let revision = document.revision();
@@ -809,7 +809,7 @@ fn layer_editor_regressions() -> Result<(), Box<dyn std::error::Error>> {
         KeyAssignment::Action("KeyZ".into())
     );
 
-    layers.invoke_open_dialog(LayerDialog::Delete, -1);
+    layers.invoke_open_dialog(LayerDialog::Delete);
     layers.invoke_apply_dialog();
     assert_eq!(
         document.read().layout().rules[0].hold_behavior(),

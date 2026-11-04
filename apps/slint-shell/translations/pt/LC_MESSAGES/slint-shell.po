@@ -1477,8 +1477,6 @@ msgstr "Nenhuma ação separada"
 msgid "Activate layer only"
 msgstr "Ativar apenas camada"
 
-msgid "Normal key behavior"
-msgstr "Comportamento normal da chave"
 
 msgid "Suppress"
 msgstr "Suprimir"
@@ -3716,3 +3714,18 @@ msgstr "Guardar as alterações do esquema antes de sair?"
 
 msgid "Cannot switch layout. The mapper is still using the previous layout."
 msgstr "Não foi possível mudar o layout. O remapeador continua a usar o layout anterior."
+
+msgid "This key is on the layer keyboard. Assign it there."
+msgstr "Esta tecla está no teclado da camada. Atribua-a lá."
+
+msgid "This layer already has a row for this key."
+msgstr "Esta camada já tem uma linha para esta tecla."
+
+msgid "Remove trigger: {}"
+msgstr "Remover gatilho: {}"
+
+msgid "Layer:"
+msgstr "Camada:"
+
+msgid "Actions: {}"
+msgstr "Ações: {}"

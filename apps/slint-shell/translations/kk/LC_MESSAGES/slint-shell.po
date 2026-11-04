@@ -1480,8 +1480,6 @@ msgstr "Бөлек әрекет жоқ"
 msgid "Activate layer only"
 msgstr "Тек қабатты белсендіріңіз"
 
-msgid "Normal key behavior"
-msgstr "Қалыпты кілт әрекеті"
 
 msgid "Suppress"
 msgstr "Басу"
@@ -3711,3 +3709,18 @@ msgstr "Шығу алдында жайма өзгерістерін сақтау
 
 msgid "Cannot switch layout. The mapper is still using the previous layout."
 msgstr "Жайманы ауыстыру мүмкін емес. Пернелерді қайта тағайындау бұрынғы жайманы қолдануды жалғастыруда."
+
+msgid "This key is on the layer keyboard. Assign it there."
+msgstr "Бұл перне қабат пернетақтасында бар. Оны сонда тағайындаңыз."
+
+msgid "This layer already has a row for this key."
+msgstr "Бұл қабатта осы перне үшін жол бар."
+
+msgid "Remove trigger: {}"
+msgstr "Триггерді жою: {}"
+
+msgid "Layer:"
+msgstr "Қабат:"
+
+msgid "Actions: {}"
+msgstr "Әрекеттер: {}"

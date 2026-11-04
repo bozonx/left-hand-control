@@ -1467,8 +1467,6 @@ msgstr "Ninguna acción separada"
 msgid "Activate layer only"
 msgstr "Activar solo capa"
 
-msgid "Normal key behavior"
-msgstr "Comportamiento tecla normal"
 
 msgid "Suppress"
 msgstr "Reprimir"
@@ -3707,3 +3705,18 @@ msgstr "¿Guardar los cambios de la distribución antes de salir?"
 
 msgid "Cannot switch layout. The mapper is still using the previous layout."
 msgstr "No se puede cambiar la distribución. El asignador sigue usando la distribución anterior."
+
+msgid "This key is on the layer keyboard. Assign it there."
+msgstr "Esta tecla está en el teclado de la capa. Asígnala allí."
+
+msgid "This layer already has a row for this key."
+msgstr "Esta capa ya tiene una fila para esta tecla."
+
+msgid "Remove trigger: {}"
+msgstr "Quitar disparador: {}"
+
+msgid "Layer:"
+msgstr "Capa:"
+
+msgid "Actions: {}"
+msgstr "Acciones: {}"

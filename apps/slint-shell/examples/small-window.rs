@@ -286,7 +286,7 @@ const STEPS: &[Step] = &[
     }),
     ("new-layer-dialog", |ui| {
         ui.global::<LayersEditor>()
-            .invoke_open_dialog(LayerDialog::Create, -1)
+            .invoke_open_dialog(LayerDialog::Create)
     }),
     ("rules", |ui| {
         ui.global::<LayersEditor>().set_dialog(LayerDialog::None);

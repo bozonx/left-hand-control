@@ -198,7 +198,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 snapshot(&ui, "keyboard-button-group");
                 key(&ui, Key::Return);
                 assert_eq!(ui.global::<LayersEditor>().get_label_mode(), LabelMode::Code);
-                ui.global::<LayersEditor>().invoke_open_dialog(LayerDialog::Create, -1);
+                ui.global::<LayersEditor>().invoke_open_dialog(LayerDialog::Create);
             }
             5 => { check_modal(&ui); key(&ui, Key::Escape); }
             6 => { ui.invoke_navigate(Page::Rules, MenuKind::Emoji); ui.global::<RulesEditor>().invoke_open_dialog(0, RuleDialog::Conditions); }

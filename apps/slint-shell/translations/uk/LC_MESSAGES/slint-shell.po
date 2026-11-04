@@ -1483,8 +1483,6 @@ msgstr "Немає окремої дії"
 msgid "Activate layer only"
 msgstr "Активувати лише шар"
 
-msgid "Normal key behavior"
-msgstr "Нормальна поведінка клавіш"
 
 msgid "Suppress"
 msgstr "Придушити"
@@ -3710,3 +3708,18 @@ msgstr "Зберегти зміни розкладки перед виходом
 
 msgid "Cannot switch layout. The mapper is still using the previous layout."
 msgstr "Не вдалося перемкнути розкладку. Мапер продовжує використовувати попередню розкладку."
+
+msgid "This key is on the layer keyboard. Assign it there."
+msgstr "Ця клавіша є на клавіатурі шару. Призначте її там."
+
+msgid "This layer already has a row for this key."
+msgstr "У цьому шарі вже є рядок для цієї клавіші."
+
+msgid "Remove trigger: {}"
+msgstr "Видалити тригер: {}"
+
+msgid "Layer:"
+msgstr "Шар:"
+
+msgid "Actions: {}"
+msgstr "Дії: {}"

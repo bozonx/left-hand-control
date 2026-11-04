@@ -15,7 +15,7 @@ use crate::profile::model::{
     AppSettings, Appearance, LayoutPreset, LocalePreference, ResolvedAppConfig,
 };
 use crate::profile::names::{self, NameIssue, NameKind};
-use crate::profile::{key_catalog, layout_file, settings};
+use crate::profile::{key_catalog, layer_grid, layout_file, settings};
 use crate::storage::StoragePaths;
 use std::fmt;
 
@@ -35,8 +35,21 @@ pub enum ConfigError {
     Name(NameKind, NameIssue),
     /// Rules have blocking problems; the mapper cannot start.
     Rules(Vec<RuleIssue>),
+    /// An extra key of a layer cannot be used.
+    ExtraKey(ExtraKeyIssue),
     /// The edited data no longer matches the editor snapshot.
     EditConflict,
+}
+
+/// Why a key cannot become an extra key row of a layer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExtraKeyIssue {
+    /// Not a key code of the key catalog.
+    Invalid,
+    /// The key is on the layer keyboard grid and is edited there.
+    OnGrid,
+    /// The layer already has a row for this key.
+    Taken,
 }
 
 impl fmt::Display for ConfigError {
@@ -53,6 +66,7 @@ impl fmt::Display for ConfigError {
                 Some(issue) => write!(f, "{issue}"),
                 None => write!(f, "invalid rules"),
             },
+            Self::ExtraKey(issue) => write!(f, "invalid extra key: {issue:?}"),
             Self::EditConflict => write!(f, "configuration changed since editing started"),
         }
     }
@@ -269,6 +283,17 @@ impl ConfigDocument {
             .map_err(|issue| ConfigError::Name(NameKind::Layer, issue))
     }
 
+    /// `name` when a new layer can use it, else the first free `name N`.
+    pub fn free_layer_name(&self, name: &str) -> String {
+        if self.layer_name(name, None).is_ok() {
+            return name.to_owned();
+        }
+        (2..1000)
+            .map(|number| format!("{name} {number}"))
+            .find(|candidate| self.layer_name(candidate, None).is_ok())
+            .unwrap_or_else(|| name.to_owned())
+    }
+
     pub fn create_layer(&mut self, name: &str, description: &str) -> Result<String, ConfigError> {
         let name = self.layer_name(name, None)?;
         let id = crate::profile::ids::generate("layer-");
@@ -285,6 +310,22 @@ impl ConfigDocument {
         let name = self.layer_name(name, Some(id))?;
         self.require_layer(id)?;
         self.update_layout(|layout| layout.rename_layer(id, name, optional_text(description)))
+    }
+
+    /// Change only the description, so a layer whose stored name no longer
+    /// passes validation can still be described.
+    pub fn set_layer_description(
+        &mut self,
+        id: &str,
+        description: &str,
+    ) -> Result<(), ConfigError> {
+        self.require_layer(id)?;
+        let description = optional_text(description);
+        self.update_layout(|layout| {
+            if let Some(layer) = layout.layers.iter_mut().find(|layer| layer.id == id) {
+                layer.description = description;
+            }
+        })
     }
 
     pub fn clone_layer(
@@ -366,15 +407,30 @@ impl ConfigDocument {
         key: &str,
         assignment: KeyAssignment,
     ) -> Result<(), ConfigError> {
-        self.require_layer(layer_id)?;
-        if !key_catalog::valid_key(key) {
-            return Err(ConfigError::Invalid("invalid additional key".into()));
-        }
-        if previous != Some(key) && self.layout.layer_has_key(layer_id, key) {
-            return Err(ConfigError::Invalid("key already assigned".into()));
-        }
+        self.check_extra_key(layer_id, previous, key)?;
         self.check_assignment(&assignment)?;
         self.update_layout(|layout| layout.set_extra_key(layer_id, previous, key, assignment))
+    }
+
+    /// Whether `key` can be the extra key row of `layer_id` that replaces
+    /// the row of `previous` (or a new row when it is `None`).
+    pub fn check_extra_key(
+        &self,
+        layer_id: &str,
+        previous: Option<&str>,
+        key: &str,
+    ) -> Result<(), ConfigError> {
+        self.require_layer(layer_id)?;
+        if !key_catalog::valid_key(key) {
+            return Err(ConfigError::ExtraKey(ExtraKeyIssue::Invalid));
+        }
+        if layer_grid::contains(key) {
+            return Err(ConfigError::ExtraKey(ExtraKeyIssue::OnGrid));
+        }
+        if previous != Some(key) && self.layout.layer_has_key(layer_id, key) {
+            return Err(ConfigError::ExtraKey(ExtraKeyIssue::Taken));
+        }
+        Ok(())
     }
 
     /// Whether `key` of `layer_id` keeps its modifiers pressed until the
@@ -920,6 +976,58 @@ mod tests {
         let map = &document.layout().layer_keymaps["nav"];
         assert_eq!(map.extra_key_order, ["F14"]);
         assert!(!map.keys.contains_key("F16"));
+    }
+
+    #[test]
+    fn extra_key_errors_name_the_problem() {
+        let (_dir, mut document) = document(json!({}), LAYOUT);
+        document
+            .set_extra_key("nav", None, "F13", KeyAssignment::Swallow)
+            .unwrap();
+        let issue = |result: Result<(), ConfigError>| match result {
+            Err(ConfigError::ExtraKey(issue)) => Some(issue),
+            _ => None,
+        };
+        assert_eq!(
+            issue(document.set_extra_key("nav", None, "F13", KeyAssignment::Swallow)),
+            Some(ExtraKeyIssue::Taken)
+        );
+        assert_eq!(
+            issue(document.set_extra_key("nav", None, "KeyQ", KeyAssignment::Swallow)),
+            Some(ExtraKeyIssue::OnGrid)
+        );
+        assert_eq!(
+            issue(document.check_extra_key("nav", Some("F13"), "NoSuchKey")),
+            Some(ExtraKeyIssue::Invalid)
+        );
+        assert!(document.check_extra_key("nav", Some("F13"), "F13").is_ok());
+        assert!(document.check_extra_key("missing", None, "F14").is_err());
+    }
+
+    #[test]
+    fn free_layer_names_get_a_number() {
+        let (_dir, mut document) = document(json!({}), LAYOUT);
+        assert_eq!(document.free_layer_name("Copy"), "Copy");
+        assert_eq!(document.free_layer_name("Navigation"), "Navigation 2");
+        document.create_layer("Navigation 2", "").unwrap();
+        assert_eq!(document.free_layer_name("Navigation"), "Navigation 3");
+    }
+
+    #[test]
+    fn description_is_saved_even_when_the_stored_name_is_invalid() {
+        let (_dir, mut document) = document(json!({}), LAYOUT);
+        document
+            .update_layout(|layout| layout.layers[0].name = String::new())
+            .unwrap();
+        assert!(document.rename_layer("nav", "", "Arrows").is_err());
+        document.set_layer_description("nav", " Arrows ").unwrap();
+        assert_eq!(
+            document.layout().layers[0].description.as_deref(),
+            Some("Arrows")
+        );
+        document.set_layer_description("nav", "  ").unwrap();
+        assert_eq!(document.layout().layers[0].description, None);
+        assert!(document.set_layer_description("missing", "x").is_err());
     }
 
     #[test]

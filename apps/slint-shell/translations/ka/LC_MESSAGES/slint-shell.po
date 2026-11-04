@@ -1479,8 +1479,6 @@ msgstr "არ არის ცალკე მოქმედება"
 msgid "Activate layer only"
 msgstr "მხოლოდ ფენის გააქტიურება"
 
-msgid "Normal key behavior"
-msgstr "ნორმალური ღილაკის ქცევა"
 
 msgid "Suppress"
 msgstr "ჩახშობა"
@@ -3693,3 +3691,18 @@ msgstr "შეინახოს განლაგების ცვლილ�
 
 msgid "Cannot switch layout. The mapper is still using the previous layout."
 msgstr "განლაგების გადართვა ვერ მოხერხდა. კლავიშების გადამნაწილებელი კვლავ წინა განლაგებას იყენებს."
+
+msgid "This key is on the layer keyboard. Assign it there."
+msgstr "ეს კლავიში ფენის კლავიატურაზეა. მიანიჭეთ იქ."
+
+msgid "This layer already has a row for this key."
+msgstr "ამ ფენას ამ კლავიშისთვის უკვე აქვს სტრიქონი."
+
+msgid "Remove trigger: {}"
+msgstr "ტრიგერის წაშლა: {}"
+
+msgid "Layer:"
+msgstr "ფენა:"
+
+msgid "Actions: {}"
+msgstr "მოქმედებები: {}"

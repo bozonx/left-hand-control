@@ -1477,8 +1477,6 @@ msgstr "Nema zasebne radnje"
 msgid "Activate layer only"
 msgstr "Aktiviraj samo sloj"
 
-msgid "Normal key behavior"
-msgstr "Normalno ponašanje tipke"
 
 msgid "Suppress"
 msgstr "Potisnuti"
@@ -3694,3 +3692,18 @@ msgstr "Spremiti promjene rasporeda prije izlaska?"
 
 msgid "Cannot switch layout. The mapper is still using the previous layout."
 msgstr "Nije moguće promijeniti raspored. Preslikavanje i dalje koristi prethodni raspored."
+
+msgid "This key is on the layer keyboard. Assign it there."
+msgstr "Ova je tipka na tipkovnici sloja. Dodijelite je tamo."
+
+msgid "This layer already has a row for this key."
+msgstr "Ovaj sloj već ima redak za ovu tipku."
+
+msgid "Remove trigger: {}"
+msgstr "Ukloni okidač: {}"
+
+msgid "Layer:"
+msgstr "Sloj:"
+
+msgid "Actions: {}"
+msgstr "Radnje: {}"

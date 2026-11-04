@@ -89,37 +89,10 @@ pub const BASE: [&str; 80] = [
 ];
 
 /// Layer grids, split by hand; the last row of each hand is the thumb row.
-pub const LEFT_COLUMNS: usize = 6;
-pub const LEFT_HAND: [&[&str]; 5] = [
-    &[
-        "Backquote",
-        "Digit1",
-        "Digit2",
-        "Digit3",
-        "Digit4",
-        "Digit5",
-    ],
-    &["Tab", "KeyQ", "KeyW", "KeyE", "KeyR", "KeyT"],
-    &["CapsLock", "KeyA", "KeyS", "KeyD", "KeyF", "KeyG"],
-    &["ShiftLeft", "KeyZ", "KeyX", "KeyC", "KeyV", "KeyB"],
-    &["ControlLeft", "MetaLeft", "AltLeft", "Space"],
-];
-pub const RIGHT_COLUMNS: usize = 6;
-pub const RIGHT_HAND: [&[&str]; 5] = [
-    &["Digit6", "Digit7", "Digit8", "Digit9", "Digit0", "Minus"],
-    &["KeyY", "KeyU", "KeyI", "KeyO", "KeyP", "BracketLeft"],
-    &["KeyH", "KeyJ", "KeyK", "KeyL", "Semicolon", "Quote"],
-    &["KeyN", "KeyM", "Comma", "Period", "Slash", "ShiftRight"],
-    &["AltRight", "MetaRight", "ContextMenu", "ControlRight"],
-];
+pub use lhc_core::profile::layer_grid::{LEFT_COLUMNS, LEFT_HAND, RIGHT_COLUMNS, RIGHT_HAND};
 
 /// Every layer key in index order: left hand rows, then right hand rows.
-pub fn layer_keys() -> impl Iterator<Item = &'static str> {
-    LEFT_HAND
-        .iter()
-        .chain(RIGHT_HAND.iter())
-        .flat_map(|row| row.iter().copied())
-}
+pub use lhc_core::profile::layer_grid::keys as layer_keys;
 
 pub fn layer_key(index: i32) -> Option<&'static str> {
     usize::try_from(index)

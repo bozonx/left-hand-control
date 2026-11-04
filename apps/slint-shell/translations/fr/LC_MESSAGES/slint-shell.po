@@ -1504,8 +1504,6 @@ msgstr "Pas d'action distincte"
 msgid "Activate layer only"
 msgstr "Activer le calque uniquement"
 
-msgid "Normal key behavior"
-msgstr "Comportement normal des touches"
 
 msgid "Suppress"
 msgstr "Réprimer"
@@ -3806,3 +3804,18 @@ msgstr "Enregistrer les modifications de la disposition avant de quitter ?"
 
 msgid "Cannot switch layout. The mapper is still using the previous layout."
 msgstr "Impossible de changer de disposition. Le remappeur utilise toujours la disposition précédente."
+
+msgid "This key is on the layer keyboard. Assign it there."
+msgstr "Cette touche fait partie du clavier du calque. Attribuez-la à cet endroit."
+
+msgid "This layer already has a row for this key."
+msgstr "Ce calque a déjà une ligne pour cette touche."
+
+msgid "Remove trigger: {}"
+msgstr "Supprimer le déclencheur : {}"
+
+msgid "Layer:"
+msgstr "Calque :"
+
+msgid "Actions: {}"
+msgstr "Actions : {}"

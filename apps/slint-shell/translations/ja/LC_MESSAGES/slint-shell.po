@@ -1421,8 +1421,6 @@ msgstr "個別のアクションはありません"
 msgid "Activate layer only"
 msgstr "レイヤーのみをアクティブにする"
 
-msgid "Normal key behavior"
-msgstr "通常のキーの動作"
 
 msgid "Suppress"
 msgstr "抑制する"
@@ -3463,3 +3461,18 @@ msgstr "終了する前にレイアウトの変更を保存しますか？"
 
 msgid "Cannot switch layout. The mapper is still using the previous layout."
 msgstr "レイアウトを切り替えられません。マッパーは引き続き前のレイアウトを使用しています。"
+
+msgid "This key is on the layer keyboard. Assign it there."
+msgstr "このキーはレイヤーキーボード上にあります。そちらで割り当ててください。"
+
+msgid "This layer already has a row for this key."
+msgstr "このレイヤーにはこのキーの行がすでにあります。"
+
+msgid "Remove trigger: {}"
+msgstr "トリガーを削除: {}"
+
+msgid "Layer:"
+msgstr "レイヤー:"
+
+msgid "Actions: {}"
+msgstr "操作: {}"

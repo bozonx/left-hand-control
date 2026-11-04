@@ -1372,8 +1372,6 @@ msgstr "Без отдельного действия"
 msgid "Activate layer only"
 msgstr "Только активировать слой"
 
-msgid "Normal key behavior"
-msgstr "Обычное поведение"
 
 msgid "Suppress"
 msgstr "Подавлять"
@@ -3072,3 +3070,18 @@ msgstr "Сохранить изменения раскладки перед вы
 
 msgid "Cannot switch layout. The mapper is still using the previous layout."
 msgstr "Не удалось переключить раскладку. Маппер продолжает использовать предыдущую раскладку."
+
+msgid "This key is on the layer keyboard. Assign it there."
+msgstr "Эта клавиша есть на клавиатуре слоя. Назначьте её там."
+
+msgid "This layer already has a row for this key."
+msgstr "В этом слое уже есть строка для этой клавиши."
+
+msgid "Remove trigger: {}"
+msgstr "Удалить триггер: {}"
+
+msgid "Layer:"
+msgstr "Слой:"
+
+msgid "Actions: {}"
+msgstr "Действия: {}"

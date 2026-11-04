@@ -1477,8 +1477,6 @@ msgstr "Ayrı bir işlem yok"
 msgid "Activate layer only"
 msgstr "Yalnızca katmanı etkinleştir"
 
-msgid "Normal key behavior"
-msgstr "Normal tuş davranışı"
 
 msgid "Suppress"
 msgstr "Bastır"
@@ -3703,3 +3701,18 @@ msgstr "Çıkmadan önce düzen değişiklikleri kaydedilsin mi?"
 
 msgid "Cannot switch layout. The mapper is still using the previous layout."
 msgstr "Düzen değiştirilemiyor. Eşleyici önceki düzeni kullanmaya devam ediyor."
+
+msgid "This key is on the layer keyboard. Assign it there."
+msgstr "Bu tuş katman klavyesinde bulunuyor. Orada atayın."
+
+msgid "This layer already has a row for this key."
+msgstr "Bu katmanda bu tuş için zaten bir satır var."
+
+msgid "Remove trigger: {}"
+msgstr "Tetikleyiciyi kaldır: {}"
+
+msgid "Layer:"
+msgstr "Katman:"
+
+msgid "Actions: {}"
+msgstr "Eylemler: {}"

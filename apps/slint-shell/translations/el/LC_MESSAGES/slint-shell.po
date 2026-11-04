@@ -1507,8 +1507,6 @@ msgstr "Καμία ξεχωριστή ενέργεια"
 msgid "Activate layer only"
 msgstr "Ενεργοποίηση μόνο στρώματος"
 
-msgid "Normal key behavior"
-msgstr "Κανονική συμπεριφορά κλειδιού"
 
 msgid "Suppress"
 msgstr "Καταστέλλω"
@@ -3806,3 +3804,18 @@ msgstr "Αποθήκευση αλλαγών διάταξης πριν από τ�
 
 msgid "Cannot switch layout. The mapper is still using the previous layout."
 msgstr "Δεν είναι δυνατή η αλλαγή διάταξης. Η αντιστοίχιση εξακολουθεί να χρησιμοποιεί την προηγούμενη διάταξη."
+
+msgid "This key is on the layer keyboard. Assign it there."
+msgstr "Αυτό το πλήκτρο βρίσκεται στο πληκτρολόγιο του επιπέδου. Αντιστοιχίστε το εκεί."
+
+msgid "This layer already has a row for this key."
+msgstr "Αυτό το επίπεδο έχει ήδη γραμμή για αυτό το πλήκτρο."
+
+msgid "Remove trigger: {}"
+msgstr "Αφαίρεση ενεργοποιητή: {}"
+
+msgid "Layer:"
+msgstr "Επίπεδο:"
+
+msgid "Actions: {}"
+msgstr "Ενέργειες: {}"

@@ -1497,8 +1497,6 @@ msgstr "Nessuna azione separata"
 msgid "Activate layer only"
 msgstr "Attiva solo il livello"
 
-msgid "Normal key behavior"
-msgstr "Comportamento normale dei tasti"
 
 msgid "Suppress"
 msgstr "Sopprimi"
@@ -3778,3 +3776,18 @@ msgstr "Salvare le modifiche al layout prima di uscire?"
 
 msgid "Cannot switch layout. The mapper is still using the previous layout."
 msgstr "Impossibile cambiare layout. Il rimappatore continua a usare il layout precedente."
+
+msgid "This key is on the layer keyboard. Assign it there."
+msgstr "Questo tasto è sulla tastiera del livello. Assegnalo lì."
+
+msgid "This layer already has a row for this key."
+msgstr "Questo livello ha già una riga per questo tasto."
+
+msgid "Remove trigger: {}"
+msgstr "Rimuovi attivatore: {}"
+
+msgid "Layer:"
+msgstr "Livello:"
+
+msgid "Actions: {}"
+msgstr "Azioni: {}"

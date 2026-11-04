@@ -1493,8 +1493,6 @@ msgstr "Żadnego osobnego działania"
 msgid "Activate layer only"
 msgstr "Aktywuj tylko warstwę"
 
-msgid "Normal key behavior"
-msgstr "Normalne zachowanie klawiszy"
 
 msgid "Suppress"
 msgstr "Stłumić"
@@ -3743,3 +3741,18 @@ msgstr "Zapisać zmiany układu przed wyjściem?"
 
 msgid "Cannot switch layout. The mapper is still using the previous layout."
 msgstr "Nie można przełączyć układu. Mapowanie nadal używa poprzedniego układu."
+
+msgid "This key is on the layer keyboard. Assign it there."
+msgstr "Ten klawisz jest na klawiaturze warstwy. Przypisz go tam."
+
+msgid "This layer already has a row for this key."
+msgstr "Ta warstwa ma już wiersz dla tego klawisza."
+
+msgid "Remove trigger: {}"
+msgstr "Usuń wyzwalacz: {}"
+
+msgid "Layer:"
+msgstr "Warstwa:"
+
+msgid "Actions: {}"
+msgstr "Akcje: {}"
