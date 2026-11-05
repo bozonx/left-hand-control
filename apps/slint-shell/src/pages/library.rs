@@ -51,6 +51,7 @@ struct State {
     rule_names: Vec<String>,
     rule_id: Option<String>,
     rule_missing_target: Option<String>,
+    metadata: metadata::Loader,
 }
 
 type Shared = Rc<RefCell<State>>;
@@ -123,7 +124,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State) -> Resul
         )));
     }
     let paths = config.paths().clone();
-    metadata::load(ui, paths, names.clone());
+    state.metadata.load(ui, paths, names.clone());
     let selected = state
         .selected
         .as_ref()
@@ -260,22 +261,31 @@ fn name_at(ui: &SettingsWindow, index: i32) -> Result<String, Msg> {
         .ok_or(Msg::LibrarySelect)
 }
 
-/// File text of `name` as the user last saw it; read now if the card's
+/// File bytes of `name` as the user last saw it; read now if the card's
 /// metadata has not arrived yet.
-fn expected_text(document: &Document, name: &str) -> Result<String, Msg> {
-    match metadata::known(name) {
-        Some(text) => Ok(text),
-        None => document.read().paths().load_user_layout(name).map_err(io),
+fn expected_bytes(document: &Document, state: &Shared, name: &str) -> Result<Vec<u8>, Msg> {
+    match state.borrow().metadata.known(name) {
+        Some(bytes) => Ok(bytes),
+        None => document
+            .read()
+            .paths()
+            .load_user_layout_bytes(name)
+            .map_err(io),
     }
 }
 
+fn expected_text(document: &Document, state: &Shared, name: &str) -> Result<String, Msg> {
+    String::from_utf8(expected_bytes(document, state, name)?)
+        .map_err(|error| io(format!("layout UTF-8: {error}")))
+}
+
 /// Re-read a file this page has just written and remember it.
-fn remember_saved(document: &Document, name: &str) {
-    match document.read().paths().load_user_layout(name) {
-        Ok(text) => metadata::remember(name, Some(text)),
+fn remember_saved(document: &Document, state: &Shared, name: &str) {
+    match document.read().paths().load_user_layout_bytes(name) {
+        Ok(bytes) => state.borrow().metadata.remember(name, Some(bytes)),
         Err(error) => {
             log::warn!("re-reading layout {name}: {error}");
-            metadata::remember(name, None);
+            state.borrow().metadata.remember(name, None);
         }
     }
 }
@@ -422,7 +432,7 @@ fn create(
             && config.settings().layout_mode == LayoutMode::Manual;
         config.create_and_select_library_layout(name, description, source, first)
     })?;
-    remember_saved(document, &created);
+    remember_saved(document, state, &created);
     library.set_dialog(LibraryDialog::None);
     // The layout exists now: a failure to open it is a warning, not a
     // failed creation. Unsaved changes were confirmed before the dialog.
@@ -445,11 +455,11 @@ fn delete(
     index: i32,
 ) -> Result<Msg, Msg> {
     let name = name_at(ui, index)?;
-    let expected = expected_text(document, &name)?;
+    let expected = expected_bytes(document, state, &name)?;
     edit(ui, document, state, |config| {
         config.remove_library_layout(&name, &expected)
     })?;
-    metadata::remember(&name, None);
+    state.borrow().metadata.remember(&name, None);
     if state
         .borrow()
         .baseline
@@ -471,13 +481,16 @@ fn rename(
     new_name: &str,
 ) -> Result<Msg, Msg> {
     let name = name_at(ui, index)?;
-    let expected = expected_text(document, &name)?;
+    let expected = expected_text(document, state, &name)?;
     let was_selected = state.borrow().selected.as_deref() == Some(name.as_str());
     let saved = edit(ui, document, state, |config| {
         config.edit_library_metadata(&name, new_name, None, &expected)
     })?;
-    metadata::remember(&name, None);
-    metadata::remember(&saved, Some(expected));
+    state.borrow().metadata.remember(&name, None);
+    state
+        .borrow()
+        .metadata
+        .remember(&saved, Some(expected.into_bytes()));
     if was_selected
         && let Some(index) = slint::Model::iter(&ui.global::<LayoutLibrary>().get_names())
             .position(|item| item == saved)
@@ -514,11 +527,11 @@ fn set_description(
     description: &str,
 ) -> Result<Msg, Msg> {
     let name = name_at(ui, index)?;
-    let expected = expected_text(document, &name)?;
+    let expected = expected_text(document, state, &name)?;
     edit(ui, document, state, |config| {
         config.edit_library_metadata(&name, &name, Some(description), &expected)
     })?;
-    remember_saved(document, &name);
+    remember_saved(document, state, &name);
     update_baseline(&mut state.borrow_mut(), &name, &name, Some(description));
     Ok(Msg::None)
 }
@@ -528,6 +541,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     reset_context(ui, document, &mut state.borrow_mut());
     let library = ui.global::<LayoutLibrary>();
     library.on_row_names(|rows| super::strings(slint::Model::iter(&rows).map(|row| row.name)));
+    library.on_copy_index_value(|name, names| {
+        slint::Model::iter(&names)
+            .position(|item| item == name)
+            .map_or(-1, |index| index as i32)
+    });
     library.set_bundled_names(super::strings(
         BUNDLED.iter().map(|bundled| bundled.display_name()),
     ));
@@ -738,6 +756,103 @@ mod tests {
             .set_devices_loading(true);
         super::super::bind_document(&ui, &document);
         (dir, document, ui)
+    }
+
+    #[test]
+    fn duplicate_keeps_its_source_after_save_as_reorders_the_library() {
+        let (_dir, document, ui) = bound_document();
+        let library = ui.global::<LayoutLibrary>();
+        let paths = document.read().paths().clone();
+        assert!(library.invoke_set_description(1, "source B".into()));
+        document
+            .edit(View::Rules, |config| {
+                config.update_layout(|layout| layout.description = Some("mine A".into()))
+            })
+            .unwrap();
+        library.invoke_open_create(LayoutSource::Copy, 1);
+        assert_eq!(library.get_dialog(), LibraryDialog::Unsaved);
+        paths
+            .save_user_layout(
+                "A",
+                r#"{"schemaVersion":1,"description":"external A"}"#,
+                true,
+            )
+            .unwrap();
+        library.invoke_save_and_continue();
+        assert_eq!(library.get_dialog(), LibraryDialog::Conflict);
+        library.set_dialog(LibraryDialog::None);
+        library.invoke_open_save_as("0".into());
+        library.invoke_save_as("0".into());
+        library.invoke_finish_save();
+        assert_eq!(library.get_names().row_data(1).unwrap(), "A");
+        assert_eq!(library.get_create_name(), "B (copy)");
+        library.invoke_submit_create();
+        assert_eq!(
+            document.read().layout().description.as_deref(),
+            Some("source B")
+        );
+        assert_eq!(library.get_current_label(), "B (copy)");
+    }
+
+    #[test]
+    fn duplicate_reports_a_missing_source_instead_of_copying_its_old_neighbour() {
+        let (_dir, document, ui) = bound_document();
+        let library = ui.global::<LayoutLibrary>();
+        library.invoke_open_create(LayoutSource::Copy, 1);
+        assert_eq!(library.get_dialog(), LibraryDialog::Create);
+        document.read().paths().delete_user_layout("B").unwrap();
+        library.invoke_refresh();
+        library.invoke_submit_create();
+        assert_eq!(library.get_dialog(), LibraryDialog::Create);
+        assert_ne!(library.get_status().id, "");
+        assert!(
+            !document
+                .read()
+                .paths()
+                .layout_path("B (copy)")
+                .unwrap()
+                .exists()
+        );
+    }
+
+    #[test]
+    fn delete_invalid_utf8_works_from_the_library_dialog() {
+        let (_dir, document, ui) = bound_document();
+        let paths = document.read().paths().clone();
+        std::fs::write(paths.layout_path("Broken").unwrap(), [0xff, 0xfe]).unwrap();
+        let library = ui.global::<LayoutLibrary>();
+        library.invoke_refresh();
+        let index = slint::Model::iter(&library.get_names())
+            .position(|name| name == "Broken")
+            .unwrap() as i32;
+        library.invoke_open_delete(index);
+        library.invoke_delete(library.get_selected());
+        assert_eq!(library.get_dialog(), LibraryDialog::None);
+        assert!(!paths.layout_path("Broken").unwrap().exists());
+    }
+
+    #[test]
+    fn stale_metadata_does_not_replace_rows_or_conflict_baselines() {
+        let (_dir, document, ui) = bound_document();
+        let library = ui.global::<LayoutLibrary>();
+        let loader = metadata::Loader::default();
+        let paths = document.read().paths().clone();
+        let names = vec!["A".into(), "B".into()];
+        library.set_metadata_revision(20);
+        let old = lhc_core::profile::library::load_library_entries(&paths, &names);
+        paths
+            .save_user_layout("A", r#"{"schemaVersion":1,"description":"new"}"#, true)
+            .unwrap();
+        loader.publish(
+            &ui,
+            20,
+            &names,
+            lhc_core::profile::library::load_library_entries(&paths, &names),
+        );
+        let expected = loader.known("A").unwrap();
+        loader.publish(&ui, 19, &names, old);
+        assert_eq!(library.get_rows().row_data(0).unwrap().description, "new");
+        assert_eq!(loader.known("A").unwrap(), expected);
     }
 
     #[test]

@@ -19,12 +19,25 @@ slint::slint! {
         public function pointer-pressed(x: length, y: length) { EditorState.pointer-pressed(x, y); }
         in-out property <bool> touched;
         out property <bool> editing: field.editing;
+        out property <bool> editing-description: description-field.editing;
+        out property <string> description-draft: description-field.draft;
+        in-out property <bool> description-save-ok: true;
+        in-out property <string> description-owner: "A";
         out property <int> number: numeric.text.to-float();
         // Stands in for the settings window's root FocusScope that takes focus on empty clicks.
         FocusScope { }
         VerticalLayout { padding: 20px; spacing: 12px; alignment: start;
             field := InlineTextField { text: root.value; saved(value) => { root.value = value; return true; } }
-            description-field := InlineTextArea { text: root.description; saved(value) => { root.description = value; return true; } }
+            description-field := InlineTextArea {
+                preserve-draft-on-refresh: true;
+                draft-owner: root.description-owner;
+                text: root.description;
+                saved(value) => {
+                    if !root.description-save-ok { return false; }
+                    root.description = value;
+                    return true;
+                }
+            }
             InfoTip { text: "First line\nSecond line\nA longer explanation that should wrap onto several lines without extending beyond the tooltip."; }
         }
         // Stands in for a card's touch area: it takes the press without moving focus.
@@ -139,7 +152,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             27 => { assert!(ui.get_editing()); key(&ui, Key::Escape); assert_eq!(ui.get_value(), "Touched"); }
             28 => { wheel(&ui, 320.0, 276.0, 60.0); assert_eq!(ui.get_number(), 100); click(&ui, 320.0, 276.0); }
             29 => { wheel(&ui, 320.0, 276.0, 60.0); assert_eq!(ui.get_number(), 110); wheel(&ui, 320.0, 276.0, -60.0); wheel(&ui, 320.0, 276.0, -60.0); assert_eq!(ui.get_number(), 90); }
-            30 => { println!("Focus loss passed: blur saves, press outside saves, cancel button, window switch, focused wheel steps"); slint::quit_event_loop().unwrap(); }
+            30 => { ui.invoke_edit_description(); ui.set_description_save_ok(false); }
+            31 => {
+                shortcut(&ui, "a"); key(&ui, "Unapplied description"); shortcut(&ui, "\n");
+                assert!(ui.get_editing_description());
+                ui.set_description("External description".into());
+            }
+            32 => {
+                assert!(ui.get_editing_description());
+                assert_eq!(ui.get_description_draft(), "Unapplied description");
+                ui.set_description_save_ok(true); shortcut(&ui, "\n");
+            }
+            33 => {
+                assert!(!ui.get_editing_description());
+                assert_eq!(ui.get_description(), "Unapplied description");
+                ui.invoke_edit_description();
+            }
+            34 => {
+                shortcut(&ui, "a"); key(&ui, "Draft for A");
+                ui.set_description_owner("B".into());
+                ui.set_description("Description of B".into());
+            }
+            35 => {
+                assert!(!ui.get_editing_description());
+                assert_eq!(ui.get_description(), "Description of B");
+                println!("Focus loss and refresh passed: blur saves, press outside saves, cancel button, window switch, focused wheel steps, failed description save retains its draft after an external refresh, drafts never follow another layout");
+                slint::quit_event_loop().unwrap();
+            }
             _ => unreachable!(),
         }
         step.set(step.get() + 1);

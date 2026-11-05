@@ -23,6 +23,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Layouts: duplication keeps its source after Save As or a library refresh; damaged UTF-8 files can be deleted with byte-preserving rollback. Empty library files are consistently rejected. Description drafts survive background refreshes after a failed save, and normal saves recheck the disk snapshot after staging the replacement file. Metadata loaders are isolated per library page.
+
 - Settings keep invalid advanced timing fields reachable, identify their validation failures, and let quitting retry or discard unsaved settings before deciding about layout changes. Both mapper start controls save and validate the same draft. Device discovery keeps the last successful list on failure and displays loading and errors in the picker. Optional mouse failures and reconnection are reported without stopping keyboard mapping.
 
 - Emoji and Quick actions: cut operations are cancelled when pages are reordered, deleted or reloaded; previews save pending edits and show the edited layout without executing actions. Failed assignments keep the action picker open, catalog labels follow replacement actions while custom labels are preserved, and emoji limits count Unicode code points instead of UTF-16 units.

@@ -58,6 +58,7 @@ export global LayoutLibrary {
     in-out property <int> create-copy-index: 0;
     in-out property <LayoutSource> pending-create-source: LayoutSource.empty;
     in-out property <int> pending-create-copy-index: 0;
+    in-out property <string> create-copy-name;
     in-out property <PendingLayoutAction> pending-action: PendingLayoutAction.none;
     /// Whether the working copy is currently open in the editor.
     in-out property <bool> editor-open: false;
@@ -92,6 +93,7 @@ export global LayoutLibrary {
     pure callback name-error-value(name: string, except: string, names: [string]) -> Message;
     public pure function name-error(name: string, except: string) -> Message { return self.name-error-value(name, except, self.names); }
     callback create(string, string, LayoutSource, int);
+    pure callback copy-index-value(string, [string]) -> int;
     callback set-description(int, string) -> bool;
     callback rename(int, string) -> bool;
     callback reorder(int, int);
@@ -125,8 +127,8 @@ export global LayoutLibrary {
         if source == LayoutSource.bundled && self.create-copy-index < self.bundled-names.length {
             return self.bundled-names[self.create-copy-index];
         }
-        if source == LayoutSource.copy && self.create-copy-index < self.names.length {
-            return @tr("{} (copy)", self.names[self.create-copy-index]);
+        if source == LayoutSource.copy && self.create-copy-name != "" {
+            return @tr("{} (copy)", self.create-copy-name);
         }
         return @tr("New layout");
     }
@@ -144,11 +146,13 @@ export global LayoutLibrary {
     public function open-create(source: LayoutSource, copy-index: int) {
         self.pending-create-source = source;
         self.pending-create-copy-index = copy-index;
+        self.create-copy-name = source == LayoutSource.copy && copy-index >= 0 && copy-index < self.names.length ? self.names[copy-index] : "";
         self.guard-switch(PendingLayoutAction.create);
     }
     public function submit-create() {
         if self.name-error(self.create-name, "").id != "" { return; }
-        self.create(self.create-name, self.create-description, self.create-source, self.create-copy-index);
+        self.create(self.create-name, self.create-description, self.create-source,
+            self.create-source == LayoutSource.copy ? self.copy-index-value(self.create-copy-name, self.names) : self.create-copy-index);
     }
     public function continue-pending() {
         let action = self.pending-action;
@@ -686,7 +690,7 @@ export component LibraryPage inherits PageLayout {
                                 }
                                 if !row.loaded: Text { text: @tr("Please wait…"); color: Theme.muted; }
                                 if row.error.id != "": Text { text: Locale.text(row.error); color: Theme.error; wrap: word-wrap; }
-                                if row.loaded: InlineTextArea { text: row.description; placeholder: @tr("Add a description…"); label: @tr("Description"); text-color: Theme.muted; saved(value) => { return LayoutLibrary.set-description(index, value); } }
+                                if row.loaded: InlineTextArea { preserve-draft-on-refresh: true; draft-owner: row.id; text: row.description; placeholder: @tr("Add a description…"); label: @tr("Description"); text-color: Theme.muted; saved(value) => { return LayoutLibrary.set-description(index, value); } }
                                 Rectangle { vertical-stretch: 1; }
                                 HorizontalLayout { spacing: Theme.space-m; alignment: start; vertical-stretch: 0;
                                     DragHandle { group: DragGroups.layouts; index: index; count: LayoutLibrary.names.length; dropped(from, to) => { LayoutLibrary.reorder(from, to); } }

@@ -129,18 +129,33 @@ impl StoragePaths {
     }
 
     pub fn load_user_layout(&self, name: &str) -> Result<String, String> {
+        String::from_utf8(self.load_user_layout_bytes(name)?)
+            .map_err(|e| format!("read layout UTF-8: {e}"))
+    }
+
+    /// Read a snapshot even when a damaged layout is not UTF-8.
+    pub fn load_user_layout_bytes(&self, name: &str) -> Result<Vec<u8>, String> {
         self.ensure()?;
         let path = self.layout_path(name)?;
         if !path.exists() {
             return Err(format!("Layout \"{name}\" not found"));
         }
-        fs::read_to_string(&path).map_err(|e| format!("read_to_string: {e}"))
+        fs::read(&path).map_err(|e| format!("read layout: {e}"))
     }
 
     pub fn save_user_layout(
         &self,
         name: &str,
         contents: &str,
+        overwrite: bool,
+    ) -> Result<String, String> {
+        self.save_user_layout_bytes(name, contents.as_bytes(), overwrite)
+    }
+
+    pub(crate) fn save_user_layout_bytes(
+        &self,
+        name: &str,
+        contents: &[u8],
         overwrite: bool,
     ) -> Result<String, String> {
         self.ensure()?;
@@ -152,8 +167,26 @@ impl StoragePaths {
             return Err(format!("Layout \"{safe}\" already exists"));
         }
         backup_older_schema(&path, LAYOUT_SCHEMA_VERSION)?;
-        write_file(&path, contents.as_bytes(), overwrite)?;
+        write_file(&path, contents, overwrite)?;
         Ok(safe)
+    }
+
+    /// Stage the write before checking the snapshot, so changes made while
+    /// serializing or syncing the temporary file are reported as conflicts.
+    /// Returns false when the destination no longer contains `expected`.
+    pub(crate) fn replace_user_layout(
+        &self,
+        name: &str,
+        contents: &str,
+        expected: &[u8],
+    ) -> Result<bool, String> {
+        let path = self.layout_path(name)?;
+        backup_older_schema(&path, LAYOUT_SCHEMA_VERSION)?;
+        replace_file_checked(&path, contents.as_bytes(), || match fs::read(&path) {
+            Ok(bytes) => Ok(bytes == expected),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
+            Err(error) => Err(format!("read before layout replacement: {error}")),
+        })
     }
 
     pub fn rename_user_layout(
@@ -401,6 +434,23 @@ fn write_file(path: &Path, contents: &[u8], overwrite: bool) -> Result<(), Strin
     write_file_with_sync(path, contents, overwrite, sync_parent_dir)
 }
 
+fn replace_file_checked(
+    path: &Path,
+    contents: &[u8],
+    unchanged: impl FnOnce() -> Result<bool, String>,
+) -> Result<bool, String> {
+    let mut tmp = TemporaryWrite::create(path)?;
+    tmp.write(contents)?;
+    if !unchanged()? {
+        return Ok(false);
+    }
+    // This is an optimistic check: an unrelated program which does not share
+    // our protocol can still write between this check and the atomic rename.
+    rename_file(&tmp.path, path).map_err(|e| format!("rename: {e}"))?;
+    publication_sync(path, sync_parent_dir);
+    Ok(true)
+}
+
 fn write_file_with_sync(
     path: &Path,
     contents: &[u8],
@@ -504,6 +554,25 @@ fn sync_parent_dir(_path: &Path) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn checked_replacement_preserves_a_change_made_while_staging_and_cleans_up() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("layout.json");
+        std::fs::write(&path, b"baseline").unwrap();
+        let applied = super::replace_file_checked(&path, b"mine", || {
+            // This callback runs only after the new file has been synced.
+            std::fs::write(&path, b"external").unwrap();
+            Ok(std::fs::read(&path).unwrap() == b"baseline")
+        })
+        .unwrap();
+        assert!(!applied);
+        assert_eq!(std::fs::read(&path).unwrap(), b"external");
+        assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 1);
+
+        assert!(super::replace_file_checked(&path, b"mine", || Ok(true)).unwrap());
+        assert_eq!(std::fs::read(&path).unwrap(), b"mine");
+        assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 1);
+    }
     #[test]
     fn failed_rename_source_removal_rolls_back_the_published_destination() {
         for previous in [None, Some(b"previous destination".as_slice())] {

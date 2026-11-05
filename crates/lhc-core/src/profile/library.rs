@@ -11,12 +11,12 @@ use crate::{
     },
 };
 
-/// One library file as last read: its raw text (kept even when it does
-/// not parse, so a broken file can still be renamed or deleted safely)
+/// One library file as last read: its raw bytes (kept even when it does
+/// not parse, so a broken file can still be deleted safely)
 /// and the parsed layout.
 #[derive(Debug)]
 pub struct LibraryEntry {
-    pub text: Option<String>,
+    pub bytes: Option<Vec<u8>>,
     pub layout: Result<LayoutPreset, ConfigError>,
 }
 
@@ -28,19 +28,17 @@ pub fn load_library_entries(
 ) -> Vec<LibraryEntry> {
     names
         .iter()
-        .map(|name| match paths.load_user_layout(name) {
+        .map(|name| match paths.load_user_layout_bytes(name) {
             Err(error) => LibraryEntry {
-                text: None,
+                bytes: None,
                 layout: Err(ConfigError::Io(error)),
             },
-            Ok(text) => {
-                let layout = layout_file::parse(&text)
-                    .map_err(ConfigError::Parse)
-                    .and_then(|layout| {
-                        layout.ok_or_else(|| ConfigError::Parse("empty layout file".into()))
-                    });
+            Ok(bytes) => {
+                let layout = std::str::from_utf8(&bytes)
+                    .map_err(|error| ConfigError::Parse(format!("layout UTF-8: {error}")))
+                    .and_then(crate::config_document::parse_layout);
                 LibraryEntry {
-                    text: Some(text),
+                    bytes: Some(bytes),
                     layout,
                 }
             }
@@ -94,11 +92,19 @@ impl ConfigDocument {
     /// Whether saving the working copy as `name` loses nothing on disk: the
     /// file is what the working copy was opened from, or already holds it.
     fn can_save_library_layout(&self, name: &str, baseline: Option<(&str, &str)>) -> bool {
-        let config = self;
-        let Ok(disk) = config.paths().load_user_layout(name) else {
+        let Ok(disk) = self.paths().load_user_layout(name) else {
             return false;
         };
-        let Some(disk_layout) = normalized(&disk) else {
+        self.library_snapshot_matches(name, baseline, &disk)
+    }
+
+    fn library_snapshot_matches(
+        &self,
+        name: &str,
+        baseline: Option<(&str, &str)>,
+        disk: &str,
+    ) -> bool {
+        let Some(disk_layout) = normalized(disk) else {
             return false;
         };
         let opened = baseline
@@ -109,9 +115,38 @@ impl ConfigDocument {
         {
             return true;
         }
-        let mut current = config.layout().clone();
+        let mut current = self.layout().clone();
         current.remove_unused_commands();
         normalized(&layout_file::serialize(&current)).as_ref() == Some(&disk_layout)
+    }
+
+    /// Normal save rechecks the opened snapshot inside the operation and
+    /// checks its bytes again after staging the new file for publication.
+    pub fn save_library_layout(
+        &mut self,
+        name: &str,
+        baseline: Option<(&str, &str)>,
+    ) -> Result<String, ConfigError> {
+        self.require_external_operation()?;
+        let disk = self
+            .paths()
+            .load_user_layout(name)
+            .map_err(ConfigError::Io)?;
+        if !self.library_snapshot_matches(name, baseline, &disk) {
+            return Err(ConfigError::EditConflict);
+        }
+        let mut draft = self.clone();
+        draft.update_layout(LayoutPreset::remove_unused_commands)?;
+        let text = layout_file::serialize(draft.layout());
+        if !draft
+            .paths()
+            .replace_user_layout(name, &text, disk.as_bytes())
+            .map_err(ConfigError::Io)?
+        {
+            return Err(ConfigError::EditConflict);
+        }
+        *self = draft;
+        Ok(text)
     }
 
     /// Save the working copy over an existing library file, returning its contents.
@@ -337,11 +372,16 @@ impl ConfigDocument {
         Ok(saved)
     }
 
-    pub fn remove_library_layout(&mut self, name: &str, expected: &str) -> Result<(), ConfigError> {
+    pub fn remove_library_layout(
+        &mut self,
+        name: &str,
+        expected: impl AsRef<[u8]>,
+    ) -> Result<(), ConfigError> {
+        let expected = expected.as_ref();
         self.require_external_operation()?;
         if self
             .paths()
-            .load_user_layout(name)
+            .load_user_layout_bytes(name)
             .map_err(ConfigError::Io)?
             != expected
         {
@@ -372,7 +412,7 @@ impl ConfigDocument {
         });
         if result.is_err() {
             self.paths()
-                .save_user_layout(name, expected, false)
+                .save_user_layout_bytes(name, expected, false)
                 .map_err(ConfigError::Io)?;
         }
         result
@@ -422,6 +462,92 @@ impl ConfigDocument {
 mod tests {
     use super::*;
     use crate::profile::names::NameIssue;
+
+    #[test]
+    fn empty_library_files_are_rejected_without_changing_the_working_copy() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let mut doc = ConfigDocument::load(paths.clone()).unwrap();
+        doc.save_current_layout_as("Working").unwrap();
+        let before = doc.layout().clone();
+        let settings = doc.settings().clone();
+        for text in ["", " \n\t"] {
+            paths.save_user_layout("Empty", text, true).unwrap();
+            let entries = load_library_entries(&paths, &["Empty".into()]);
+            assert!(matches!(&entries[0].layout, Err(ConfigError::Parse(_))));
+            assert!(matches!(
+                doc.load_layout("user:Empty"),
+                Err(ConfigError::Parse(_))
+            ));
+            assert!(doc.load_library_for_editing("Empty").is_err());
+            assert_eq!(doc.layout(), &before);
+            assert_eq!(doc.settings(), &settings);
+        }
+    }
+
+    #[test]
+    fn invalid_utf8_can_be_deleted_and_is_restored_byte_for_byte_on_failure() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let mut doc = ConfigDocument::load(paths.clone()).unwrap();
+        doc.save_current_layout_as("Working").unwrap();
+        let bytes = [0xff, 0xfe, 0x00];
+        paths
+            .save_user_layout_bytes("Broken", &bytes, false)
+            .unwrap();
+        let entries = load_library_entries(&paths, &["Broken".into()]);
+        assert_eq!(entries[0].bytes.as_deref(), Some(bytes.as_slice()));
+        assert!(matches!(&entries[0].layout, Err(ConfigError::Parse(_))));
+        assert_eq!(
+            doc.remove_library_layout("Broken", b"stale"),
+            Err(ConfigError::EditConflict)
+        );
+
+        std::fs::remove_file(paths.config_path()).unwrap();
+        std::fs::create_dir(paths.config_path()).unwrap();
+        assert!(doc.remove_library_layout("Broken", bytes).is_err());
+        assert_eq!(paths.load_user_layout_bytes("Broken").unwrap(), bytes);
+        std::fs::remove_dir(paths.config_path()).unwrap();
+        doc.remove_library_layout("Broken", bytes).unwrap();
+        assert!(!paths.layout_path("Broken").unwrap().exists());
+    }
+
+    #[test]
+    fn normal_save_rechecks_after_the_ui_decision_and_keeps_external_changes() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let mut doc = ConfigDocument::load(paths.clone()).unwrap();
+        doc.save_current_layout_as("Saved").unwrap();
+        let baseline = paths.load_user_layout("Saved").unwrap();
+        doc.update_layout(|layout| layout.description = Some("mine".into()))
+            .unwrap();
+        let before = doc.layout().clone();
+        assert_eq!(
+            doc.library_save_target(Some(("Saved", &baseline))),
+            LibrarySaveTarget::Existing("Saved".into())
+        );
+        let theirs = r#"{"schemaVersion":1,"description":"external"}"#;
+        paths.save_user_layout("Saved", theirs, true).unwrap();
+        assert_eq!(
+            doc.save_library_layout("Saved", Some(("Saved", &baseline))),
+            Err(ConfigError::EditConflict)
+        );
+        assert_eq!(paths.load_user_layout("Saved").unwrap(), theirs);
+        assert_eq!(doc.layout(), &before);
+
+        paths
+            .save_user_layout("Saved", &format!("\n{baseline}\n"), true)
+            .unwrap();
+        doc.save_library_layout("Saved", Some(("Saved", &baseline)))
+            .unwrap();
+        assert_eq!(
+            doc.load_layout("user:Saved")
+                .unwrap()
+                .description
+                .as_deref(),
+            Some("mine")
+        );
+    }
 
     #[test]
     fn discard_handles_unnamed_missing_and_broken_library_layouts() {
@@ -488,9 +614,9 @@ mod tests {
         let loaded = load_library_entries(&paths, &names);
         assert!(loaded[0].layout.is_ok());
         assert!(matches!(&loaded[1].layout, Err(ConfigError::Parse(_))));
-        assert_eq!(loaded[1].text.as_deref(), Some("not json"));
+        assert_eq!(loaded[1].bytes.as_deref(), Some(b"not json".as_slice()));
         assert!(matches!(&loaded[2].layout, Err(ConfigError::Io(_))));
-        assert!(loaded[2].text.is_none());
+        assert!(loaded[2].bytes.is_none());
     }
 
     #[test]
@@ -882,7 +1008,7 @@ mod tests {
             Err(ConfigError::EditConflict)
         );
         document
-            .remove_library_layout("C", &paths.load_user_layout("C").unwrap())
+            .remove_library_layout("C", paths.load_user_layout("C").unwrap())
             .unwrap();
         let reloaded = ConfigDocument::load(paths).unwrap();
         assert!(reloaded.settings().editing_layout_id.is_none());
@@ -912,21 +1038,21 @@ mod tests {
             })
             .unwrap();
         document
-            .remove_library_layout("A", &paths.load_user_layout("A").unwrap())
+            .remove_library_layout("A", paths.load_user_layout("A").unwrap())
             .unwrap();
         assert_eq!(
             document.settings().manual_layout_id.as_deref(),
             Some("user:B")
         );
         document
-            .remove_library_layout("B", &paths.load_user_layout("B").unwrap())
+            .remove_library_layout("B", paths.load_user_layout("B").unwrap())
             .unwrap();
         assert_eq!(
             document.settings().manual_layout_id.as_deref(),
             Some("user:C")
         );
         document
-            .remove_library_layout("C", &paths.load_user_layout("C").unwrap())
+            .remove_library_layout("C", paths.load_user_layout("C").unwrap())
             .unwrap();
         assert!(document.settings().manual_layout_id.is_none());
     }

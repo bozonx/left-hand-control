@@ -1,8 +1,8 @@
 //! Background metadata snapshots for the library cards.
 //!
-//! The file text read for each card is remembered: edits from a card
+//! The file bytes read for each card are remembered: edits from a card
 //! (rename, description, delete) pass it as the expected contents, so a
-//! file changed elsewhere since the card was shown is never overwritten.
+//! changes detected since the card was shown are reported as conflicts.
 
 use crate::{
     i18n::Msg,
@@ -16,36 +16,65 @@ use lhc_core::{
     storage::StoragePaths,
 };
 use slint::{ComponentHandle, Model};
-use std::{cell::RefCell, collections::HashMap, sync::Mutex};
-
-thread_local! {
-    // File text per layout name as last read or written by this page.
-    // Only touched from the UI thread.
-    static KNOWN: RefCell<HashMap<String, String>> = RefCell::default();
-}
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 type Request = (slint::Weak<SettingsWindow>, i32, StoragePaths, Vec<String>);
 
-/// Worker state: whether a reader thread runs, and the newest request
-/// that arrived meanwhile. Kept off the UI thread so a window closed
-/// before its result arrives cannot leave the reader marked busy.
-static QUEUE: Mutex<(bool, Option<Request>)> = Mutex::new((false, None));
-
-/// Text of `name` as the user last saw it, if it was read.
-pub(super) fn known(name: &str) -> Option<String> {
-    KNOWN.with_borrow(|known| known.get(name).cloned())
+/// A loader belongs to one library page, including its remembered snapshots
+/// and pending work. Separate documents never share baselines or requests.
+#[derive(Clone, Default)]
+pub(super) struct Loader {
+    known: Arc<Mutex<HashMap<String, Vec<u8>>>>,
+    queue: Arc<Mutex<Requests>>,
 }
 
-/// Record the file text after this page wrote or deleted (`None`) it.
-pub(super) fn remember(name: &str, text: Option<String>) {
-    KNOWN.with_borrow_mut(|known| match text {
-        Some(text) => {
-            known.insert(name.to_owned(), text);
+#[derive(Default)]
+struct Requests {
+    busy: bool,
+    pending: Option<Request>,
+}
+
+impl Requests {
+    fn push(&mut self, request: Request) -> Option<Request> {
+        if self.busy {
+            self.pending = Some(request);
+            None
+        } else {
+            self.busy = true;
+            Some(request)
         }
-        None => {
-            known.remove(name);
+    }
+
+    fn next(&mut self) -> Option<Request> {
+        let next = self.pending.take();
+        self.busy = next.is_some();
+        next
+    }
+}
+
+impl Loader {
+    pub(super) fn known(&self, name: &str) -> Option<Vec<u8>> {
+        self.known
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .get(name)
+            .cloned()
+    }
+
+    pub(super) fn remember(&self, name: &str, bytes: Option<Vec<u8>>) {
+        let mut known = self.known.lock().unwrap_or_else(|e| e.into_inner());
+        match bytes {
+            Some(bytes) => {
+                known.insert(name.to_owned(), bytes);
+            }
+            None => {
+                known.remove(name);
+            }
         }
-    });
+    }
 }
 
 fn layout_summary(preset: &LayoutPreset) -> LayoutSummary {
@@ -78,65 +107,112 @@ fn layout_summary(preset: &LayoutPreset) -> LayoutSummary {
 /// Only the latest request may publish metadata. Rows keep their models
 /// while files load, including an inline draft after a failed save. At most
 /// one read runs at a time; requests arriving meanwhile collapse into one.
-pub(super) fn load(ui: &SettingsWindow, paths: StoragePaths, names: Vec<String>) {
-    let library = ui.global::<LayoutLibrary>();
-    let request = library.get_metadata_revision().wrapping_add(1);
-    library.set_metadata_revision(request);
-    let request = (ui.as_weak(), request, paths, names);
-    let mut queue = QUEUE
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner());
-    if queue.0 {
-        queue.1 = Some(request);
-        return;
+impl Loader {
+    pub(super) fn load(&self, ui: &SettingsWindow, paths: StoragePaths, names: Vec<String>) {
+        let library = ui.global::<LayoutLibrary>();
+        let revision = library.get_metadata_revision().wrapping_add(1);
+        library.set_metadata_revision(revision);
+        let request = (ui.as_weak(), revision, paths, names);
+        let request = self
+            .queue
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .push(request);
+        let Some(request) = request else {
+            return;
+        };
+        let loader = self.clone();
+        std::thread::spawn(move || {
+            let mut next = Some(request);
+            while let Some((weak, revision, paths, names)) = next {
+                let loaded = load_library_entries(&paths, &names);
+                let publisher = loader.clone();
+                let _ = weak.upgrade_in_event_loop(move |ui| {
+                    publisher.publish(&ui, revision, &names, loaded)
+                });
+                next = loader
+                    .queue
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .next();
+            }
+        });
     }
-    queue.0 = true;
-    drop(queue);
-    std::thread::spawn(move || {
-        let mut next = Some(request);
-        while let Some((weak, request, paths, names)) = next {
-            let loaded = load_library_entries(&paths, &names);
-            let _ = weak.upgrade_in_event_loop(move |ui| publish(&ui, request, &names, loaded));
-            let mut queue = QUEUE
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner());
-            next = queue.1.take();
-            queue.0 = next.is_some();
+
+    pub(super) fn publish(
+        &self,
+        ui: &SettingsWindow,
+        request: i32,
+        names: &[String],
+        loaded: Vec<LibraryEntry>,
+    ) {
+        let library = ui.global::<LayoutLibrary>();
+        if library.get_metadata_revision() != request {
+            return;
         }
-    });
+        {
+            let mut known = self.known.lock().unwrap_or_else(|e| e.into_inner());
+            known.clear();
+            for (name, entry) in names.iter().zip(&loaded) {
+                if let Some(bytes) = &entry.bytes {
+                    known.insert(name.clone(), bytes.clone());
+                }
+            }
+        }
+        let rows = library.get_rows();
+        for (index, entry) in loaded.into_iter().enumerate() {
+            let Some(mut row) = rows.row_data(index) else {
+                continue;
+            };
+            row.loaded = true;
+            match entry.layout {
+                Ok(preset) => {
+                    row.summary = layout_summary(&preset);
+                    row.description = preset.description.unwrap_or_default().into();
+                    row.error = Msg::None.to_ui();
+                }
+                Err(error) => {
+                    row.error = Msg::LayoutLoadFailed(format!("{}: {error}", row.name)).to_ui();
+                }
+            }
+            if rows.row_data(index).as_ref() != Some(&row) {
+                rows.set_row_data(index, row);
+            }
+        }
+    }
 }
 
-fn publish(ui: &SettingsWindow, request: i32, names: &[String], loaded: Vec<LibraryEntry>) {
-    let library = ui.global::<LayoutLibrary>();
-    if library.get_metadata_revision() != request {
-        return;
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn snapshots_are_isolated_between_library_pages() {
+        let first = Loader::default();
+        let second = Loader::default();
+        first.remember("A", Some(vec![0xff]));
+        second.remember("A", Some(b"another document".to_vec()));
+        first.remember("A", None);
+        assert_eq!(first.known("A"), None);
+        assert_eq!(second.known("A"), Some(b"another document".to_vec()));
     }
-    KNOWN.with_borrow_mut(|known| {
-        known.clear();
-        for (name, entry) in names.iter().zip(&loaded) {
-            if let Some(text) = &entry.text {
-                known.insert(name.clone(), text.clone());
-            }
-        }
-    });
-    let rows = library.get_rows();
-    for (index, entry) in loaded.into_iter().enumerate() {
-        let Some(mut row) = rows.row_data(index) else {
-            continue;
+
+    #[test]
+    fn requests_coalesce_without_leaving_the_loader_busy() {
+        let request = |revision| {
+            (
+                slint::Weak::default(),
+                revision,
+                StoragePaths::new("config".into(), "data".into()),
+                Vec::new(),
+            )
         };
-        row.loaded = true;
-        match entry.layout {
-            Ok(preset) => {
-                row.summary = layout_summary(&preset);
-                row.description = preset.description.unwrap_or_default().into();
-                row.error = Msg::None.to_ui();
-            }
-            Err(error) => {
-                row.error = Msg::LayoutLoadFailed(format!("{}: {error}", row.name)).to_ui();
-            }
-        }
-        if rows.row_data(index).as_ref() != Some(&row) {
-            rows.set_row_data(index, row);
-        }
+        let mut queue = Requests::default();
+        assert_eq!(queue.push(request(1)).unwrap().1, 1);
+        assert!(queue.push(request(2)).is_none());
+        assert!(queue.push(request(3)).is_none());
+        assert_eq!(queue.next().unwrap().1, 3);
+        assert!(queue.next().is_none());
+        assert_eq!(queue.push(request(4)).unwrap().1, 4);
     }
 }

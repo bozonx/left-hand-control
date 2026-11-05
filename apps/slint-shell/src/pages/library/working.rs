@@ -165,7 +165,14 @@ pub(super) fn save_current(
             library.set_dialog(LibraryDialog::Conflict);
             Ok(Msg::None)
         }
-        LibrarySaveTarget::Existing(name) => write_current(ui, document, state, name),
+        LibrarySaveTarget::Existing(name) => {
+            let result = write_current(ui, document, state, name, false);
+            if matches!(result, Err(Msg::LibraryChanged)) {
+                library.set_dialog(LibraryDialog::Conflict);
+                return Ok(Msg::None);
+            }
+            result
+        }
     }
 }
 
@@ -177,7 +184,7 @@ pub(super) fn overwrite_current(
 ) -> Result<Msg, Msg> {
     let name = current_name(&document.read()).ok_or(Msg::LibrarySelect)?;
     ui.global::<LayoutLibrary>().set_dialog(LibraryDialog::None);
-    write_current(ui, document, state, name)
+    write_current(ui, document, state, name, true)
 }
 
 fn write_current(
@@ -185,11 +192,25 @@ fn write_current(
     document: &Document,
     state: &Shared,
     name: String,
+    overwrite: bool,
 ) -> Result<Msg, Msg> {
+    let baseline = state.borrow().baseline.clone();
     let text = edit(ui, document, state, |config| {
-        config.overwrite_library_layout(&name)
+        if overwrite {
+            config.overwrite_library_layout(&name)
+        } else {
+            config.save_library_layout(
+                &name,
+                baseline
+                    .as_ref()
+                    .map(|(name, text)| (name.as_str(), text.as_str())),
+            )
+        }
     })?;
-    metadata::remember(&name, Some(text.clone()));
+    state
+        .borrow()
+        .metadata
+        .remember(&name, Some(text.as_bytes().to_vec()));
     state.borrow_mut().baseline = Some((name.clone(), text));
     refresh_context(ui, document);
     Ok(Msg::LayoutSaved(name))
@@ -205,7 +226,10 @@ pub(super) fn save_as(
     let (saved, text) = edit(ui, document, state, |config| {
         config.save_working_layout_as(name)
     })?;
-    metadata::remember(&saved, Some(text.clone()));
+    state
+        .borrow()
+        .metadata
+        .remember(&saved, Some(text.as_bytes().to_vec()));
     state.borrow_mut().baseline = Some((saved.clone(), text));
     ui.global::<LayoutLibrary>().set_save_as_open(false);
     refresh(ui, document, &mut state.borrow_mut())?;

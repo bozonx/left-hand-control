@@ -41,6 +41,9 @@ component InlineEditor inherits FocusScope {
     in property <string> placeholder;
     in property <string> label;
     in property <bool> allow-empty: true;
+    /// Background snapshots must not replace an unapplied library description.
+    in property <bool> preserve-draft-on-refresh: false;
+    in property <string> draft-owner;
     in property <length> text-size: Theme.font-default;
     in property <int> text-weight: Theme.weight-regular;
     in property <color> text-color: Theme.text;
@@ -57,7 +60,8 @@ component InlineEditor inherits FocusScope {
         if InlineEditors.pressed-outside(root.absolute-position.x, root.absolute-position.y, root.width, root.height) { root.blurred(); }
     }
     changed revision => { root.editing = false; }
-    changed text => { root.editing = false; }
+    changed text => { if !root.preserve-draft-on-refresh { root.editing = false; } }
+    changed draft-owner => { root.editing = false; }
     callback saved(string) -> bool;
     /// Why the draft cannot be saved; an empty id accepts it.
     pure callback validate(string) -> Message;

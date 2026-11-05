@@ -547,10 +547,10 @@ fn optional_text(value: &str) -> Option<String> {
     (!value.trim().is_empty()).then(|| value.trim().to_owned())
 }
 
-fn parse_layout(text: &str) -> Result<LayoutPreset, ConfigError> {
-    Ok(layout_file::parse(text)
+pub(crate) fn parse_layout(text: &str) -> Result<LayoutPreset, ConfigError> {
+    layout_file::parse(text)
         .map_err(ConfigError::Parse)?
-        .unwrap_or_else(LayoutPreset::initial))
+        .ok_or_else(|| ConfigError::Parse("empty layout file".into()))
 }
 
 #[cfg(test)]
