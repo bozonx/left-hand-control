@@ -7,7 +7,7 @@ use crate::{
     ui::{
         AppState, AppearanceChoice, CommandAssignmentRow, CommandPlace, CommandPlaceRow,
         DeviceChoice, DeviceChoices, DeviceGroup, DeviceMatch, GameAppEntry, SettingsEditor,
-        SettingsWindow,
+        SettingsField, SettingsWindow,
     },
 };
 use lhc_core::mapper::devices;
@@ -19,7 +19,13 @@ use lhc_core::profile::model::{
 };
 use lhc_core::profile::timing;
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
+
+mod loading;
 
 /// Order of the tap decision choices in the settings page.
 const TAP_DECISIONS: [TapDecision; 2] = [
@@ -53,11 +59,25 @@ fn appearance(choice: AppearanceChoice) -> Appearance {
     }
 }
 
-/// Declares [`Form`] from one table. Each row names a field, its type,
-/// the `SettingsEditor` getter and setter, how it is loaded from the
-/// settings and how a changed value is stored back (`?` rejects it).
+/// A validation failure and the field that the user can correct.
+#[derive(Clone, Debug, PartialEq)]
+struct Validation {
+    field: SettingsField,
+    message: Msg,
+}
+
+macro_rules! problem_field {
+    () => {
+        SettingsField::None
+    };
+    ($field:ident) => {
+        SettingsField::$field
+    };
+}
+
+/// Declare the form and its loading, merging and validation from one table.
 macro_rules! form {
-    ($($field:ident: $ty:ty = $get:ident / $set:ident,
+    ($($field:ident $(=> $problem:ident)?: $ty:ty = $get:ident / $set:ident,
         load |$s:ident| $load:expr,
         store |$t:ident, $v:ident| $store:expr;)*) => {
         /// The form as the user sees it. Numbers stay text until saved.
@@ -110,7 +130,7 @@ macro_rules! form {
 
             /// Apply independent valid fields; leave invalid fields in the draft.
             /// Return the first validation problem after checking every field.
-            fn apply(&self, base: &Form, settings: &mut AppSettings) -> Result<(), Msg> {
+            fn apply(&self, base: &Form, settings: &mut AppSettings) -> Result<(), Validation> {
                 let mut error = None;
                 $(if self.$field != base.$field {
                     let mut store_field = || -> Result<(), Msg> {
@@ -119,7 +139,7 @@ macro_rules! form {
                         Ok(())
                     };
                     if let Err(problem) = store_field() {
-                        error.get_or_insert(problem);
+                        error.get_or_insert(Validation { field: problem_field!($($problem)?), message: problem });
                     }
                 })*
                 if self.matchers != base.matchers {
@@ -163,25 +183,25 @@ form! {
     tap_decision: i32 = get_tap_decision_index / set_tap_decision_index,
         load |s| choice_index(&TAP_DECISIONS, &s.tap_decision),
         store |t, v| t.tap_decision = choice(&TAP_DECISIONS, *v);
-    hold: String = get_hold_timeout / set_hold_timeout,
+    hold => Hold: String = get_hold_timeout / set_hold_timeout,
         load |s| s.default_hold_timeout_ms.to_string(),
         store |t, v| t.default_hold_timeout_ms = ms(v, timing::TAP_HOLD)?;
-    long_hold: String = get_long_hold_timeout / set_long_hold_timeout,
+    long_hold => LongHold: String = get_long_hold_timeout / set_long_hold_timeout,
         load |s| s.default_long_hold_timeout_ms.to_string(),
         store |t, v| t.default_long_hold_timeout_ms = super::rules::parse_long_hold(v)?;
-    double_tap: String = get_double_tap_timeout / set_double_tap_timeout,
+    double_tap => DoubleTap: String = get_double_tap_timeout / set_double_tap_timeout,
         load |s| s.default_double_tap_timeout_ms.to_string(),
         store |t, v| t.default_double_tap_timeout_ms = ms(v, timing::TAP_HOLD)?;
-    trigger_chord: String = get_trigger_chord_timeout / set_trigger_chord_timeout,
+    trigger_chord => TriggerChord: String = get_trigger_chord_timeout / set_trigger_chord_timeout,
         load |s| s.trigger_chord_timeout_ms.to_string(),
         store |t, v| t.trigger_chord_timeout_ms = ms(v, timing::TRIGGER_CHORD)?;
-    macro_pause: String = get_macro_pause / set_macro_pause,
+    macro_pause => MacroPause: String = get_macro_pause / set_macro_pause,
         load |s| s.default_macro_step_pause_ms.to_string(),
         store |t, v| t.default_macro_step_pause_ms = ms(v, timing::MACRO_DELAY)?;
-    modifier_delay: String = get_modifier_delay / set_modifier_delay,
+    modifier_delay => ModifierDelay: String = get_modifier_delay / set_modifier_delay,
         load |s| s.default_macro_modifier_delay_ms.to_string(),
         store |t, v| t.default_macro_modifier_delay_ms = ms(v, timing::MACRO_DELAY)?;
-    macro_timeout: String = get_macro_timeout / set_macro_timeout,
+    macro_timeout => MacroTimeout: String = get_macro_timeout / set_macro_timeout,
         load |s| s.macro_timeout_ms.to_string(),
         store |t, v| t.macro_timeout_ms = ms(v, timing::MACRO_TIMEOUT)?;
     commands_enabled: bool = get_commands_enabled / set_commands_enabled,
@@ -307,7 +327,8 @@ struct State {
     base: Option<Form>,
     matchers: Vec<GameModeProcessMatcher>,
     autosave: super::autosave::Autosave,
-    command_revision: Option<u64>,
+    commands: Arc<Mutex<loading::LoadState>>,
+    problem: Option<Validation>,
 }
 
 impl super::autosave::Draft for State {
@@ -415,22 +436,28 @@ fn show_command_assignments(
 
 fn refresh_commands(ui: &SettingsWindow, document: &Document, state: &mut State) {
     let e = ui.global::<SettingsEditor>();
-    let revision = document.command_revision();
-    if state.command_revision != Some(revision) {
-        state.command_revision = Some(revision);
-        e.set_commands_revision(e.get_commands_revision().wrapping_add(1));
+    let invalidated = state
+        .commands
+        .lock()
+        .unwrap_or_else(|error| error.into_inner())
+        .invalidate(document.command_revision());
+    if invalidated {
         e.set_commands_loaded(false);
         e.set_command_assignments(ModelRc::default());
     }
-    if ui.get_page() != crate::ui::Page::Settings
-        || e.get_tab() != crate::ui::SettingsTab::Commands
-        || e.get_commands_loaded()
-        || e.get_commands_loading()
+    if ui.get_page() != crate::ui::Page::Settings || e.get_tab() != crate::ui::SettingsTab::Commands
     {
         return;
     }
+    let commands = state.commands.clone();
+    let Some(generation) = commands
+        .lock()
+        .unwrap_or_else(|error| error.into_inner())
+        .begin()
+    else {
+        return;
+    };
     let snapshot = document.read().command_assignment_snapshot();
-    let revision = e.get_commands_revision();
     e.set_commands_loading(true);
     e.set_commands_error(Msg::None.to_ui());
     let weak = ui.as_weak();
@@ -440,7 +467,11 @@ fn refresh_commands(ui: &SettingsWindow, document: &Document, state: &mut State)
             let Some(ui) = weak.upgrade() else { return };
             let e = ui.global::<SettingsEditor>();
             e.set_commands_loading(false);
-            if revision != e.get_commands_revision() {
+            let current = commands
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .complete(generation, assignments.is_ok());
+            if !current {
                 e.invoke_refresh_commands();
                 return;
             }
@@ -625,21 +656,25 @@ fn discover_devices(
 fn publish_devices(ui: &SettingsWindow, result: Result<Vec<devices::InputDevice>, String>) {
     let e = ui.global::<SettingsEditor>();
     e.set_devices_loading(false);
-    let (devices, error) = match result {
-        Ok(devices) => (devices, Msg::None),
+    let devices = match result {
+        Ok(devices) => {
+            e.set_device_discovery_error(Msg::None.to_ui());
+            devices
+        }
         Err(error) => {
             log::warn!("input device discovery: {error}");
-            (
-                Vec::new(),
+            e.set_device_discovery_error(
                 if cfg!(target_os = "linux") {
                     Msg::InputDiscoveryFailed(error)
                 } else {
                     Msg::MapperUnsupported
-                },
-            )
+                }
+                .to_ui(),
+            );
+            check_input_access(ui);
+            return;
         }
     };
-    e.set_device_discovery_error(error.to_ui());
     let keyboards = device_choices(&devices, false, &e.get_keyboard_device_path());
     e.set_input_devices(ModelRc::new(VecModel::from(keyboards)));
     let mice = device_choices(&devices, true, &e.get_mouse_device_path());
@@ -648,6 +683,7 @@ fn publish_devices(ui: &SettingsWindow, result: Result<Vec<devices::InputDevice>
 }
 
 fn persist(document: &Document, state: &mut State, form: &Form) -> (bool, Msg) {
+    state.problem = None;
     let Some(base) = state.base.as_ref() else {
         return (false, Msg::LoadConfigFirst);
     };
@@ -655,7 +691,11 @@ fn persist(document: &Document, state: &mut State, form: &Form) -> (bool, Msg) {
         return (false, Msg::None);
     }
     let mut settings = document.read().settings().clone();
-    let validation = form.apply(base, &mut settings).err();
+    state.problem = form.apply(base, &mut settings).err();
+    let validation = state
+        .problem
+        .as_ref()
+        .map(|problem| problem.message.clone());
     if settings == *document.read().settings() {
         if validation.is_none() {
             state.base = None;
@@ -679,6 +719,12 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) -> Msg {
     let form = Form::read(ui, &state.matchers);
     let before = Form::from_settings(document.read().settings());
     let (_, message) = persist(document, state, &form);
+    ui.global::<SettingsEditor>().set_problem_field(
+        state
+            .problem
+            .as_ref()
+            .map_or(SettingsField::None, |problem| problem.field),
+    );
     refresh(ui, document, state, false);
     let after = Form::from_settings(document.read().settings());
     if before.keyboard != after.keyboard || before.mouse != after.mouse {
@@ -691,6 +737,14 @@ fn save(ui: &SettingsWindow, document: &Document, state: &mut State) -> Msg {
 /// Show and return what keeps the mapper from using the input devices.
 pub(crate) fn check_input_access(ui: &SettingsWindow) -> Vec<InputAccessIssue> {
     let e = ui.global::<SettingsEditor>();
+    if !ui.global::<AppState>().get_mapper_running() {
+        e.set_mouse_status(
+            Msg::MouseStatus(lhc_core::mapper::mouse::probe(
+                path(&e.get_mouse_device_path()).as_deref(),
+            ))
+            .to_ui(),
+        );
+    }
     let keyboard = e.get_keyboard_device_path();
     let keyboard = keyboard.trim();
     let issues =
@@ -701,6 +755,15 @@ pub(crate) fn check_input_access(ui: &SettingsWindow) -> Vec<InputAccessIssue> {
         .collect();
     e.set_input_issues(ModelRc::new(VecModel::from(messages)));
     issues
+}
+
+/// Prepare a user-requested start without opening devices; shared by all start controls.
+pub(crate) fn prepare_mapper_start(ui: &SettingsWindow) -> bool {
+    if ui.global::<SettingsEditor>().invoke_flush_pending() {
+        return true;
+    }
+    ui.invoke_navigate(crate::ui::Page::Settings, crate::ui::MenuKind::Emoji);
+    false
 }
 
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
@@ -753,10 +816,20 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let mut state = shared.borrow_mut();
         super::autosave::Draft::save(&mut *state, &ui, &doc);
         let clean = state.base.as_ref().is_some_and(|base| Form::read(&ui, &state.matchers) == *base);
-        if !clean && ui.global::<SettingsEditor>().get_message().id == "settings-timing-invalid" {
+        if !clean && state.problem.is_some() {
             ui.global::<SettingsEditor>().set_tab(crate::ui::SettingsTab::KeyBehavior);
         }
         clean
+    });
+
+    on!(ui, e.on_discard_pending, doc = document, shared = state => |ui| {
+        let mut state = shared.borrow_mut();
+        state.autosave.cancel();
+        state.problem = None;
+        refresh(&ui, &doc, &mut state, true);
+        let e = ui.global::<SettingsEditor>();
+        e.set_problem_field(SettingsField::None);
+        e.set_message(Msg::None.to_ui());
     });
 
     on!(ui, e.on_schedule_save, doc = document, shared = state => |ui| {

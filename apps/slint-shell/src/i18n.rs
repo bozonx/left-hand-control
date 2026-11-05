@@ -304,6 +304,7 @@ pub enum Msg {
     CapabilityUnsupported,
     /// Why the mapper cannot use the input devices.
     InputAccess(InputAccessIssue),
+    MouseStatus(lhc_core::mapper::mouse::MouseStatus),
     GameModeAutoDisabled,
     GameModeAutoUnavailable,
     GameModeAutoInactive,
@@ -461,6 +462,20 @@ impl Msg {
             Self::CapabilityAvailable => ("capability-available", empty(), 0),
             Self::CapabilityUnavailable => ("capability-unavailable", empty(), 0),
             Self::CapabilityUnsupported => ("capability-unsupported", empty(), 0),
+            Self::MouseStatus(status) => (
+                match status {
+                    lhc_core::mapper::mouse::MouseStatus::NotSelected => "",
+                    lhc_core::mapper::mouse::MouseStatus::Ready => "mouse-ready",
+                    lhc_core::mapper::mouse::MouseStatus::Connected => "mouse-connected",
+                    lhc_core::mapper::mouse::MouseStatus::Missing => "mouse-missing",
+                    lhc_core::mapper::mouse::MouseStatus::AccessDenied => "mouse-access-denied",
+                    lhc_core::mapper::mouse::MouseStatus::DeviceChanged => "mouse-device-changed",
+                    lhc_core::mapper::mouse::MouseStatus::InUse => "mouse-in-use",
+                    lhc_core::mapper::mouse::MouseStatus::Unavailable => "mouse-unavailable",
+                },
+                empty(),
+                0,
+            ),
             Self::InputAccess(issue) => (
                 match issue {
                     InputAccessIssue::NoInputDevices => "input-access-no-devices",

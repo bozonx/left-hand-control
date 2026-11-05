@@ -3722,3 +3722,33 @@ msgstr "Yalnızca önizleme; eylemler yürütülmez."
 
 msgid "Retry"
 msgstr "Yeniden dene"
+
+msgid "Settings could not be saved"
+msgstr "Ayarlar kaydedilemedi"
+
+msgid "Retry saving, or discard unsaved settings and continue quitting."
+msgstr "Kaydetmeyi yeniden deneyin veya kaydedilmemiş ayarları atıp çıkmaya devam edin."
+
+msgid "Discard settings and continue"
+msgstr "Ayarları at ve devam et"
+
+msgid "The mouse is available."
+msgstr "Fare kullanılabilir."
+
+msgid "Mouse input is active."
+msgstr "Fare girişi etkin."
+
+msgid "The selected mouse is disconnected."
+msgstr "Seçilen farenin bağlantısı kesildi."
+
+msgid "Cannot read the selected mouse. Check input device permissions."
+msgstr "Seçilen fare okunamıyor. Giriş aygıtı izinlerini kontrol edin."
+
+msgid "A different device appeared at the mouse path. Select the mouse again."
+msgstr "Fare yolunda farklı bir aygıt belirdi. Fareyi yeniden seçin."
+
+msgid "The selected mouse is being intercepted as a keyboard. Select a different device."
+msgstr "Seçilen fare klavye olarak yakalanıyor. Başka bir aygıt seçin."
+
+msgid "Mouse input is unavailable. See the application log."
+msgstr "Fare girişi kullanılamıyor. Uygulama günlüğüne bakın."

@@ -3713,3 +3713,33 @@ msgstr "Samo pregled; radnje se ne izvršavaju."
 
 msgid "Retry"
 msgstr "Pokušaj ponovno"
+
+msgid "Settings could not be saved"
+msgstr "Postavke nije moguće spremiti"
+
+msgid "Retry saving, or discard unsaved settings and continue quitting."
+msgstr "Pokušajte ponovno spremiti ili odbacite nespremljene postavke i nastavite s izlaskom."
+
+msgid "Discard settings and continue"
+msgstr "Odbaci postavke i nastavi"
+
+msgid "The mouse is available."
+msgstr "Miš je dostupan."
+
+msgid "Mouse input is active."
+msgstr "Unos miša je aktivan."
+
+msgid "The selected mouse is disconnected."
+msgstr "Odabrani miš je odspojen."
+
+msgid "Cannot read the selected mouse. Check input device permissions."
+msgstr "Nije moguće čitati odabrani miš. Provjerite dozvole ulaznih uređaja."
+
+msgid "A different device appeared at the mouse path. Select the mouse again."
+msgstr "Na putanji miša pojavio se drugi uređaj. Ponovno odaberite miš."
+
+msgid "The selected mouse is being intercepted as a keyboard. Select a different device."
+msgstr "Odabrani miš presreće se kao tipkovnica. Odaberite drugi uređaj."
+
+msgid "Mouse input is unavailable. See the application log."
+msgstr "Unos miša nije dostupan. Pogledajte zapisnik aplikacije."

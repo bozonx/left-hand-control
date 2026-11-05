@@ -3801,3 +3801,33 @@ msgstr "Nur Vorschau; Aktionen werden nicht ausgeführt."
 
 msgid "Retry"
 msgstr "Erneut versuchen"
+
+msgid "Settings could not be saved"
+msgstr "Die Einstellungen konnten nicht gespeichert werden"
+
+msgid "Retry saving, or discard unsaved settings and continue quitting."
+msgstr "Versuchen Sie das Speichern erneut oder verwerfen Sie ungespeicherte Einstellungen und fahren Sie mit dem Beenden fort."
+
+msgid "Discard settings and continue"
+msgstr "Einstellungen verwerfen und fortfahren"
+
+msgid "The mouse is available."
+msgstr "Die Maus ist verfügbar."
+
+msgid "Mouse input is active."
+msgstr "Mauseingabe ist aktiv."
+
+msgid "The selected mouse is disconnected."
+msgstr "Die ausgewählte Maus ist nicht verbunden."
+
+msgid "Cannot read the selected mouse. Check input device permissions."
+msgstr "Die ausgewählte Maus kann nicht gelesen werden. Prüfen Sie die Zugriffsrechte für Eingabegeräte."
+
+msgid "A different device appeared at the mouse path. Select the mouse again."
+msgstr "Unter dem Mauspfad wurde ein anderes Gerät gefunden. Wählen Sie die Maus erneut aus."
+
+msgid "The selected mouse is being intercepted as a keyboard. Select a different device."
+msgstr "Die ausgewählte Maus wird als Tastatur abgefangen. Wählen Sie ein anderes Gerät."
+
+msgid "Mouse input is unavailable. See the application log."
+msgstr "Mauseingabe ist nicht verfügbar. Siehe Anwendungsprotokoll."

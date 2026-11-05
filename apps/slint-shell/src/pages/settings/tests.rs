@@ -176,7 +176,8 @@ fn invalid_numbers_are_rejected() {
     let mut form = base.clone();
     form.macro_pause = "-5".into();
     assert_eq!(
-        form.apply(&base, &mut settings),
+        form.apply(&base, &mut settings)
+            .map_err(|problem| problem.message),
         Err(Msg::SettingsTimingInvalid)
     );
 }
@@ -214,7 +215,8 @@ fn out_of_range_timings_do_not_modify_settings() {
             _ => form.macro_timeout = value.into(),
         }
         assert_eq!(
-            form.apply(&base, &mut settings),
+            form.apply(&base, &mut settings)
+                .map_err(|problem| problem.message),
             Err(Msg::SettingsTimingInvalid)
         );
         assert_eq!(settings, original);
@@ -390,4 +392,146 @@ fn device_selection_retries_write_errors_and_applies_only_saved_changes() {
     e.set_tab(crate::ui::SettingsTab::General);
     assert!(!e.invoke_flush_pending());
     assert_eq!(e.get_tab(), crate::ui::SettingsTab::KeyBehavior);
+}
+
+fn bound_settings() -> (tempfile::TempDir, Rc<Document>, SettingsWindow) {
+    use slint::platform::software_renderer::{MinimalSoftwareWindow, RepaintBufferType};
+    struct Platform;
+    impl slint::platform::Platform for Platform {
+        fn create_window_adapter(
+            &self,
+        ) -> Result<Rc<dyn slint::platform::WindowAdapter>, slint::PlatformError> {
+            Ok(MinimalSoftwareWindow::new(RepaintBufferType::ReusedBuffer))
+        }
+    }
+    slint::platform::set_platform(Box::new(Platform)).unwrap();
+    let (dir, document) = super::super::test_document();
+    let ui = SettingsWindow::new().unwrap();
+    ui.global::<SettingsEditor>().set_devices_loading(true);
+    super::super::bind_document(&ui, &document);
+    (dir, document, ui)
+}
+
+#[test]
+fn hidden_long_hold_draft_routes_to_its_field_and_can_be_discarded() {
+    let (_dir, document, ui) = bound_settings();
+    let e = ui.global::<SettingsEditor>();
+    let original = e.get_long_hold_timeout();
+    e.set_in_development(true);
+    e.invoke_save();
+    e.set_long_hold_timeout("".into());
+    e.invoke_save();
+    assert_eq!(e.get_problem_field(), SettingsField::LongHold);
+    e.set_in_development(false);
+    e.invoke_save();
+    assert!(!document.read().settings().in_development);
+    e.set_tab(crate::ui::SettingsTab::General);
+    assert!(!e.invoke_flush_pending());
+    assert_eq!(e.get_tab(), crate::ui::SettingsTab::KeyBehavior);
+    assert_eq!(e.get_problem_field(), SettingsField::LongHold);
+    assert!(e.get_long_hold_timeout().is_empty());
+    e.invoke_discard_pending();
+    assert_eq!(e.get_long_hold_timeout(), original);
+    assert_eq!(e.get_problem_field(), SettingsField::None);
+    assert_eq!(e.get_message().id, "");
+    assert!(e.invoke_flush_pending());
+}
+
+#[test]
+fn returning_an_invalid_field_to_the_saved_value_clears_its_problem() {
+    let (_dir, _document, ui) = bound_settings();
+    let e = ui.global::<SettingsEditor>();
+    let saved = e.get_hold_timeout();
+    e.set_hold_timeout("".into());
+    assert!(!e.invoke_flush_pending());
+    assert_eq!(e.get_problem_field(), SettingsField::Hold);
+    e.set_hold_timeout(saved);
+    assert!(e.invoke_flush_pending());
+    assert_eq!(e.get_problem_field(), SettingsField::None);
+}
+
+#[test]
+fn quitting_can_retry_a_write_failure_or_discard_only_unsaved_settings() {
+    use crate::ui::{LayoutLibrary, LibraryDialog, PendingLayoutAction};
+    use std::cell::Cell;
+    let (dir, document, ui) = bound_settings();
+    let e = ui.global::<SettingsEditor>();
+    let original = e.get_hold_timeout();
+    let quit = Rc::new(Cell::new(false));
+    let requested = quit.clone();
+    ui.global::<LayoutLibrary>()
+        .on_quit(move || requested.set(true));
+    std::fs::remove_dir_all(dir.path().join("settings")).unwrap();
+    std::fs::write(dir.path().join("settings"), "blocks saving").unwrap();
+    e.set_hold_timeout("350".into());
+    assert!(!ui.invoke_prepare_quit());
+    assert!(ui.get_settings_quit_dialog());
+    ui.invoke_continue_settings_quit(false);
+    assert!(!quit.get());
+    assert!(ui.get_settings_quit_dialog());
+    std::fs::remove_file(dir.path().join("settings")).unwrap();
+    ui.invoke_continue_settings_quit(false);
+    assert!(quit.get());
+    assert_eq!(document.read().settings().default_hold_timeout_ms, 350);
+    quit.set(false);
+
+    // Discarding settings must still ask about independent layout changes.
+    document
+        .edit(View::Rules, |config| config.create_layer("Keep me", ""))
+        .unwrap();
+    e.set_hold_timeout("".into());
+    assert!(!ui.invoke_prepare_quit());
+    ui.invoke_continue_settings_quit(true);
+    assert!(!quit.get());
+    assert_eq!(e.get_hold_timeout(), "350");
+    assert_ne!(e.get_hold_timeout(), original);
+    let library = ui.global::<LayoutLibrary>();
+    assert_eq!(library.get_dialog(), LibraryDialog::Unsaved);
+    assert_eq!(library.get_pending_action(), PendingLayoutAction::Quit);
+    assert!(
+        document
+            .read()
+            .layout()
+            .layers
+            .iter()
+            .any(|layer| layer.name == "Keep me")
+    );
+}
+
+#[test]
+fn discovery_failure_preserves_last_success_and_recovery_clears_the_error() {
+    let (_dir, _document, ui) = bound_settings();
+    let e = ui.global::<SettingsEditor>();
+    publish_devices(&ui, Ok(input_devices()));
+    let previous: Vec<_> = e.get_input_devices().iter().collect();
+    e.set_devices_loading(true);
+    publish_devices(&ui, Err("access denied".into()));
+    assert!(!e.get_devices_loading());
+    assert_eq!(e.get_input_devices().iter().collect::<Vec<_>>(), previous);
+    assert_eq!(
+        e.get_device_discovery_error().id,
+        if cfg!(target_os = "linux") {
+            "input-discovery-failed"
+        } else {
+            "mapper-unsupported"
+        }
+    );
+    publish_devices(&ui, Ok(Vec::new()));
+    assert_eq!(e.get_input_devices().row_count(), 0);
+    assert_eq!(e.get_device_discovery_error().id, "");
+}
+
+#[test]
+fn mapper_start_saves_valid_drafts_and_routes_invalid_drafts_to_settings() {
+    let (_dir, document, ui) = bound_settings();
+    let e = ui.global::<SettingsEditor>();
+    e.set_hold_timeout("350".into());
+    assert!(super::super::prepare_mapper_start(&ui));
+    assert_eq!(document.read().settings().default_hold_timeout_ms, 350);
+    e.set_hold_timeout("".into());
+    ui.set_page(crate::ui::Page::Layouts);
+    assert!(!super::super::prepare_mapper_start(&ui));
+    assert_eq!(ui.get_page(), crate::ui::Page::Settings);
+    assert_eq!(e.get_tab(), crate::ui::SettingsTab::KeyBehavior);
+    assert_eq!(document.read().settings().default_hold_timeout_ms, 350);
 }

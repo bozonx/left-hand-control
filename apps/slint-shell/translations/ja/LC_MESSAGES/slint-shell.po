@@ -3482,3 +3482,33 @@ msgstr "プレビューのみです。アクションは実行されません。
 
 msgid "Retry"
 msgstr "再試行"
+
+msgid "Settings could not be saved"
+msgstr "設定を保存できませんでした"
+
+msgid "Retry saving, or discard unsaved settings and continue quitting."
+msgstr "保存を再試行するか、未保存の設定を破棄して終了を続行してください。"
+
+msgid "Discard settings and continue"
+msgstr "設定を破棄して続行"
+
+msgid "The mouse is available."
+msgstr "マウスを利用できます。"
+
+msgid "Mouse input is active."
+msgstr "マウス入力は有効です。"
+
+msgid "The selected mouse is disconnected."
+msgstr "選択したマウスは切断されています。"
+
+msgid "Cannot read the selected mouse. Check input device permissions."
+msgstr "選択したマウスを読み取れません。入力デバイスの権限を確認してください。"
+
+msgid "A different device appeared at the mouse path. Select the mouse again."
+msgstr "マウスのパスに別のデバイスが現れました。マウスを選択し直してください。"
+
+msgid "The selected mouse is being intercepted as a keyboard. Select a different device."
+msgstr "選択したマウスはキーボードとしてインターセプトされています。別のデバイスを選択してください。"
+
+msgid "Mouse input is unavailable. See the application log."
+msgstr "マウス入力を利用できません。アプリケーションログを確認してください。"

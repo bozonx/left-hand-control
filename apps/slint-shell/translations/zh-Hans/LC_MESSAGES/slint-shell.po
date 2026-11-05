@@ -3403,3 +3403,33 @@ msgstr "仅供预览；不会执行操作。"
 
 msgid "Retry"
 msgstr "重试"
+
+msgid "Settings could not be saved"
+msgstr "无法保存设置"
+
+msgid "Retry saving, or discard unsaved settings and continue quitting."
+msgstr "请重试保存，或放弃未保存的设置并继续退出。"
+
+msgid "Discard settings and continue"
+msgstr "放弃设置并继续"
+
+msgid "The mouse is available."
+msgstr "鼠标可用。"
+
+msgid "Mouse input is active."
+msgstr "鼠标输入已启用。"
+
+msgid "The selected mouse is disconnected."
+msgstr "所选鼠标已断开连接。"
+
+msgid "Cannot read the selected mouse. Check input device permissions."
+msgstr "无法读取所选鼠标。请检查输入设备权限。"
+
+msgid "A different device appeared at the mouse path. Select the mouse again."
+msgstr "鼠标路径上出现了其他设备。请重新选择鼠标。"
+
+msgid "The selected mouse is being intercepted as a keyboard. Select a different device."
+msgstr "所选鼠标正被作为键盘拦截。请选择其他设备。"
+
+msgid "Mouse input is unavailable. See the application log."
+msgstr "鼠标输入不可用。请查看应用日志。"

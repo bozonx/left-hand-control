@@ -24,6 +24,9 @@ pub struct MapperStatus {
     pub waiting_for_device: bool,
     pub device_path: Option<String>,
     pub mouse_device_path: Option<String>,
+    /// Live UI diagnostics; kept out of the CLI status wire format.
+    #[serde(skip)]
+    pub mouse_status: super::mouse::MouseStatus,
     pub last_error: Option<String>,
 }
 
@@ -40,6 +43,9 @@ trait BackendHandle: Send {
     fn popup_focused(&self) -> Result<(), String>;
     fn waiting_for_device(&self) -> bool {
         false
+    }
+    fn mouse_status(&self) -> super::mouse::MouseStatus {
+        super::mouse::MouseStatus::NotSelected
     }
     fn last_error(&self) -> Option<String>;
     fn reap_if_finished(&mut self) -> bool;
@@ -267,6 +273,12 @@ impl<B: MapperBackend> MapperRuntime<B> {
                 .is_some_and(|handle| handle.waiting_for_device()),
             device_path: self.details.device_path.clone(),
             mouse_device_path: self.details.mouse_device_path.clone(),
+            mouse_status: self
+                .handle
+                .as_ref()
+                .map_or(super::mouse::MouseStatus::NotSelected, |handle| {
+                    handle.mouse_status()
+                }),
             last_error: self.details.last_error.clone(),
         }
     }
@@ -274,6 +286,9 @@ impl<B: MapperBackend> MapperRuntime<B> {
 
 #[cfg(target_os = "linux")]
 impl BackendHandle for linux::Handle {
+    fn mouse_status(&self) -> super::mouse::MouseStatus {
+        self.mouse_status()
+    }
     fn waiting_for_device(&self) -> bool {
         self.waiting_for_device()
     }

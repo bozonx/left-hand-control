@@ -100,7 +100,11 @@ component LinkText inherits Text {
 /// Modal device list with three tabs: the devices that look like a keyboard
 /// (or mouse), every device, and a manual path.
 export component DeviceDialogOverlay inherits DialogFrame {
+    in property <bool> loading;
     in property <Message> error;
+    in property <Message> discovery-error;
+    if root.discovery-error.id != "": Text { accessible-live-region: assertive; text: Locale.text(root.discovery-error); color: Theme.warning; wrap: word-wrap; }
+    if root.loading: Text { accessible-live-region: polite; text: @tr("Please wait…"); color: Theme.muted; }
     if root.error.id != "": Text { accessible-live-region: assertive; text: Locale.text(root.error); color: Theme.error; wrap: word-wrap; }
     in property <[DeviceChoice]> choices;
     in property <string> current;
@@ -312,7 +316,7 @@ export component DeviceDialogOverlay inherits DialogFrame {
             }
             HorizontalLayout { spacing: Theme.space-m; vertical-stretch: 0;
                 // The manual path does not depend on the device list.
-                if root.tab != 2: Button { text: @tr("Refresh"); enabled: root.enabled; clicked => { root.refresh(); } }
+                if root.tab != 2: Button { text: @tr("Refresh"); enabled: root.enabled && !root.loading; clicked => { root.refresh(); } }
                 Rectangle { horizontal-stretch: 1; }
                 Button { text: @tr("Reset"); enabled: root.enabled && root.current != ""; clicked => { root.chosen(""); } }
                 if root.tab != 2: Button { text: @tr("Close"); clicked => { root.close(); } }

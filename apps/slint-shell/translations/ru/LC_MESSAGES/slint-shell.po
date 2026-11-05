@@ -3091,3 +3091,33 @@ msgstr "Только просмотр; действия не выполняют�
 
 msgid "Retry"
 msgstr "Повторить"
+
+msgid "Settings could not be saved"
+msgstr "Не удалось сохранить настройки"
+
+msgid "Retry saving, or discard unsaved settings and continue quitting."
+msgstr "Повторите сохранение или отбросьте несохранённые настройки и продолжите выход."
+
+msgid "Discard settings and continue"
+msgstr "Отбросить настройки и продолжить"
+
+msgid "The mouse is available."
+msgstr "Мышь доступна."
+
+msgid "Mouse input is active."
+msgstr "Ввод с мыши активен."
+
+msgid "The selected mouse is disconnected."
+msgstr "Выбранная мышь отключена."
+
+msgid "Cannot read the selected mouse. Check input device permissions."
+msgstr "Не удалось прочитать выбранную мышь. Проверьте права доступа к устройствам ввода."
+
+msgid "A different device appeared at the mouse path. Select the mouse again."
+msgstr "По пути мыши появилось другое устройство. Выберите мышь заново."
+
+msgid "The selected mouse is being intercepted as a keyboard. Select a different device."
+msgstr "Выбранная мышь перехватывается как клавиатура. Выберите другое устройство."
+
+msgid "Mouse input is unavailable. See the application log."
+msgstr "Ввод с мыши недоступен. Подробности — в журнале приложения."

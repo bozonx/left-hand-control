@@ -3763,3 +3763,33 @@ msgstr "Doar previzualizare; acțiunile nu sunt executate."
 
 msgid "Retry"
 msgstr "Reîncearcă"
+
+msgid "Settings could not be saved"
+msgstr "Setările nu au putut fi salvate"
+
+msgid "Retry saving, or discard unsaved settings and continue quitting."
+msgstr "Încercați din nou salvarea sau renunțați la setările nesalvate și continuați închiderea."
+
+msgid "Discard settings and continue"
+msgstr "Renunță la setări și continuă"
+
+msgid "The mouse is available."
+msgstr "Mouse-ul este disponibil."
+
+msgid "Mouse input is active."
+msgstr "Intrarea mouse-ului este activă."
+
+msgid "The selected mouse is disconnected."
+msgstr "Mouse-ul selectat este deconectat."
+
+msgid "Cannot read the selected mouse. Check input device permissions."
+msgstr "Mouse-ul selectat nu poate fi citit. Verificați permisiunile dispozitivelor de intrare."
+
+msgid "A different device appeared at the mouse path. Select the mouse again."
+msgstr "La calea mouse-ului a apărut un alt dispozitiv. Selectați din nou mouse-ul."
+
+msgid "The selected mouse is being intercepted as a keyboard. Select a different device."
+msgstr "Mouse-ul selectat este interceptat ca tastatură. Selectați un alt dispozitiv."
+
+msgid "Mouse input is unavailable. See the application log."
+msgstr "Intrarea mouse-ului nu este disponibilă. Consultați jurnalul aplicației."

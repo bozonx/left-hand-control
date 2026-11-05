@@ -25,7 +25,7 @@ pub enum CoreEvent {
     ActiveWindowChanged(Option<ActiveWindow>),
     /// The mapper thread stopped on its own; the payload is the reason.
     MapperStopped(String),
-    /// Keyboard availability changed while the mapper thread remains alive.
+    /// Keyboard or mouse availability changed while the mapper thread remains alive.
     MapperDeviceChanged,
     /// The topmost held mapper layer changed; `None` when no layer is held.
     ActiveLayerChanged(Option<String>),

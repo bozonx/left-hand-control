@@ -3797,3 +3797,33 @@ msgstr "Solo anteprima; le azioni non vengono eseguite."
 
 msgid "Retry"
 msgstr "Riprova"
+
+msgid "Settings could not be saved"
+msgstr "Impossibile salvare le impostazioni"
+
+msgid "Retry saving, or discard unsaved settings and continue quitting."
+msgstr "Riprova a salvare oppure scarta le impostazioni non salvate e continua con la chiusura."
+
+msgid "Discard settings and continue"
+msgstr "Scarta le impostazioni e continua"
+
+msgid "The mouse is available."
+msgstr "Il mouse è disponibile."
+
+msgid "Mouse input is active."
+msgstr "L’ingresso del mouse è attivo."
+
+msgid "The selected mouse is disconnected."
+msgstr "Il mouse selezionato è disconnesso."
+
+msgid "Cannot read the selected mouse. Check input device permissions."
+msgstr "Impossibile leggere il mouse selezionato. Controlla i permessi dei dispositivi di ingresso."
+
+msgid "A different device appeared at the mouse path. Select the mouse again."
+msgstr "È apparso un altro dispositivo al percorso del mouse. Seleziona nuovamente il mouse."
+
+msgid "The selected mouse is being intercepted as a keyboard. Select a different device."
+msgstr "Il mouse selezionato viene intercettato come tastiera. Seleziona un altro dispositivo."
+
+msgid "Mouse input is unavailable. See the application log."
+msgstr "L’ingresso del mouse non è disponibile. Consulta il registro dell’applicazione."

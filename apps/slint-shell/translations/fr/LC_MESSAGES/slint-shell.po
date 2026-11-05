@@ -3825,3 +3825,33 @@ msgstr "Aperçu uniquement ; les actions ne sont pas exécutées."
 
 msgid "Retry"
 msgstr "Réessayer"
+
+msgid "Settings could not be saved"
+msgstr "Impossible d’enregistrer les paramètres"
+
+msgid "Retry saving, or discard unsaved settings and continue quitting."
+msgstr "Réessayez l’enregistrement ou abandonnez les paramètres non enregistrés pour continuer à quitter."
+
+msgid "Discard settings and continue"
+msgstr "Abandonner les paramètres et continuer"
+
+msgid "The mouse is available."
+msgstr "La souris est disponible."
+
+msgid "Mouse input is active."
+msgstr "La saisie de la souris est active."
+
+msgid "The selected mouse is disconnected."
+msgstr "La souris sélectionnée est déconnectée."
+
+msgid "Cannot read the selected mouse. Check input device permissions."
+msgstr "Impossible de lire la souris sélectionnée. Vérifiez les permissions des périphériques d’entrée."
+
+msgid "A different device appeared at the mouse path. Select the mouse again."
+msgstr "Un autre périphérique est apparu au chemin de la souris. Sélectionnez à nouveau la souris."
+
+msgid "The selected mouse is being intercepted as a keyboard. Select a different device."
+msgstr "La souris sélectionnée est interceptée comme clavier. Sélectionnez un autre périphérique."
+
+msgid "Mouse input is unavailable. See the application log."
+msgstr "La saisie de la souris est indisponible. Consultez le journal de l’application."

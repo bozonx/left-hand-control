@@ -3726,3 +3726,33 @@ msgstr "Solo vista previa; las acciones no se ejecutan."
 
 msgid "Retry"
 msgstr "Reintentar"
+
+msgid "Settings could not be saved"
+msgstr "No se pudieron guardar los ajustes"
+
+msgid "Retry saving, or discard unsaved settings and continue quitting."
+msgstr "Vuelve a intentar guardarlos o descarta los ajustes sin guardar y continúa saliendo."
+
+msgid "Discard settings and continue"
+msgstr "Descartar ajustes y continuar"
+
+msgid "The mouse is available."
+msgstr "El ratón está disponible."
+
+msgid "Mouse input is active."
+msgstr "La entrada del ratón está activa."
+
+msgid "The selected mouse is disconnected."
+msgstr "El ratón seleccionado está desconectado."
+
+msgid "Cannot read the selected mouse. Check input device permissions."
+msgstr "No se puede leer el ratón seleccionado. Comprueba los permisos de los dispositivos de entrada."
+
+msgid "A different device appeared at the mouse path. Select the mouse again."
+msgstr "Ha aparecido otro dispositivo en la ruta del ratón. Selecciona el ratón de nuevo."
+
+msgid "The selected mouse is being intercepted as a keyboard. Select a different device."
+msgstr "El ratón seleccionado se está interceptando como teclado. Selecciona otro dispositivo."
+
+msgid "Mouse input is unavailable. See the application log."
+msgstr "La entrada del ratón no está disponible. Consulta el registro de la aplicación."

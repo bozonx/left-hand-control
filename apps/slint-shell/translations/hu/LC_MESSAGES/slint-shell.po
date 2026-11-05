@@ -3762,3 +3762,33 @@ msgstr "Csak előnézet; a műveletek nem hajtódnak végre."
 
 msgid "Retry"
 msgstr "Újrapróbálás"
+
+msgid "Settings could not be saved"
+msgstr "A beállítások mentése sikertelen"
+
+msgid "Retry saving, or discard unsaved settings and continue quitting."
+msgstr "Próbálja újra a mentést, vagy vesse el a nem mentett beállításokat, és folytassa a kilépést."
+
+msgid "Discard settings and continue"
+msgstr "Beállítások elvetése és folytatás"
+
+msgid "The mouse is available."
+msgstr "Az egér elérhető."
+
+msgid "Mouse input is active."
+msgstr "Az egérbemenet aktív."
+
+msgid "The selected mouse is disconnected."
+msgstr "A kiválasztott egér le van választva."
+
+msgid "Cannot read the selected mouse. Check input device permissions."
+msgstr "A kiválasztott egér nem olvasható. Ellenőrizze a bemeneti eszközök jogosultságait."
+
+msgid "A different device appeared at the mouse path. Select the mouse again."
+msgstr "Az egér elérési útján másik eszköz jelent meg. Válassza ki újra az egeret."
+
+msgid "The selected mouse is being intercepted as a keyboard. Select a different device."
+msgstr "A kiválasztott egér billentyűzetként van elfogva. Válasszon másik eszközt."
+
+msgid "Mouse input is unavailable. See the application log."
+msgstr "Az egérbemenet nem érhető el. Lásd az alkalmazás naplóját."

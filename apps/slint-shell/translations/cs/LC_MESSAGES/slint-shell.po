@@ -3701,3 +3701,33 @@ msgstr "Pouze náhled; akce se neprovádějí."
 
 msgid "Retry"
 msgstr "Zkusit znovu"
+
+msgid "Settings could not be saved"
+msgstr "Nastavení se nepodařilo uložit"
+
+msgid "Retry saving, or discard unsaved settings and continue quitting."
+msgstr "Zkuste uložení znovu, nebo zahoďte neuložená nastavení a pokračujte v ukončení."
+
+msgid "Discard settings and continue"
+msgstr "Zahodit nastavení a pokračovat"
+
+msgid "The mouse is available."
+msgstr "Myš je dostupná."
+
+msgid "Mouse input is active."
+msgstr "Vstup myši je aktivní."
+
+msgid "The selected mouse is disconnected."
+msgstr "Vybraná myš je odpojena."
+
+msgid "Cannot read the selected mouse. Check input device permissions."
+msgstr "Vybranou myš nelze číst. Zkontrolujte oprávnění vstupních zařízení."
+
+msgid "A different device appeared at the mouse path. Select the mouse again."
+msgstr "Na cestě myši se objevilo jiné zařízení. Vyberte myš znovu."
+
+msgid "The selected mouse is being intercepted as a keyboard. Select a different device."
+msgstr "Vybraná myš je zachytávána jako klávesnice. Vyberte jiné zařízení."
+
+msgid "Mouse input is unavailable. See the application log."
+msgstr "Vstup myši není dostupný. Podrobnosti najdete v protokolu aplikace."

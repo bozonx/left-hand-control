@@ -28,6 +28,9 @@ export enum RuleDialog { none, key, layer, tap, hold, long-hold, double-tap, con
 /// What holding a rule's trigger does: nothing extra, activate a layer, or run an action.
 export enum HoldBehavior { none, layer, action }
 
+/// A settings field with a validation problem.
+export enum SettingsField { none, hold, long-hold, double-tap, trigger-chord, macro-pause, modifier-delay, macro-timeout }
+
 /// What key caps on the layers page show: the US-layout label or the internal key code.
 export enum LabelMode { label, code }
 

@@ -3825,3 +3825,33 @@ msgstr "Μόνο προεπισκόπηση· οι ενέργειες δεν ε�
 
 msgid "Retry"
 msgstr "Επανάληψη"
+
+msgid "Settings could not be saved"
+msgstr "Δεν ήταν δυνατή η αποθήκευση των ρυθμίσεων"
+
+msgid "Retry saving, or discard unsaved settings and continue quitting."
+msgstr "Δοκιμάστε ξανά την αποθήκευση ή απορρίψτε τις μη αποθηκευμένες ρυθμίσεις και συνεχίστε την έξοδο."
+
+msgid "Discard settings and continue"
+msgstr "Απόρριψη ρυθμίσεων και συνέχεια"
+
+msgid "The mouse is available."
+msgstr "Το ποντίκι είναι διαθέσιμο."
+
+msgid "Mouse input is active."
+msgstr "Η είσοδος του ποντικιού είναι ενεργή."
+
+msgid "The selected mouse is disconnected."
+msgstr "Το επιλεγμένο ποντίκι αποσυνδέθηκε."
+
+msgid "Cannot read the selected mouse. Check input device permissions."
+msgstr "Δεν είναι δυνατή η ανάγνωση του επιλεγμένου ποντικιού. Ελέγξτε τα δικαιώματα των συσκευών εισόδου."
+
+msgid "A different device appeared at the mouse path. Select the mouse again."
+msgstr "Εμφανίστηκε διαφορετική συσκευή στη διαδρομή του ποντικιού. Επιλέξτε ξανά το ποντίκι."
+
+msgid "The selected mouse is being intercepted as a keyboard. Select a different device."
+msgstr "Το επιλεγμένο ποντίκι δεσμεύεται ως πληκτρολόγιο. Επιλέξτε άλλη συσκευή."
+
+msgid "Mouse input is unavailable. See the application log."
+msgstr "Η είσοδος του ποντικιού δεν είναι διαθέσιμη. Δείτε το αρχείο καταγραφής της εφαρμογής."

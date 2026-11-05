@@ -3472,3 +3472,33 @@ msgstr "미리 보기만 제공되며 동작은 실행되지 않습니다."
 
 msgid "Retry"
 msgstr "다시 시도"
+
+msgid "Settings could not be saved"
+msgstr "설정을 저장할 수 없습니다"
+
+msgid "Retry saving, or discard unsaved settings and continue quitting."
+msgstr "저장을 다시 시도하거나 저장되지 않은 설정을 버리고 종료를 계속하세요."
+
+msgid "Discard settings and continue"
+msgstr "설정 버리고 계속"
+
+msgid "The mouse is available."
+msgstr "마우스를 사용할 수 있습니다."
+
+msgid "Mouse input is active."
+msgstr "마우스 입력이 활성화되었습니다."
+
+msgid "The selected mouse is disconnected."
+msgstr "선택한 마우스의 연결이 끊겼습니다."
+
+msgid "Cannot read the selected mouse. Check input device permissions."
+msgstr "선택한 마우스를 읽을 수 없습니다. 입력 장치 권한을 확인하세요."
+
+msgid "A different device appeared at the mouse path. Select the mouse again."
+msgstr "마우스 경로에 다른 장치가 나타났습니다. 마우스를 다시 선택하세요."
+
+msgid "The selected mouse is being intercepted as a keyboard. Select a different device."
+msgstr "선택한 마우스가 키보드로 가로채지고 있습니다. 다른 장치를 선택하세요."
+
+msgid "Mouse input is unavailable. See the application log."
+msgstr "마우스 입력을 사용할 수 없습니다. 애플리케이션 로그를 확인하세요."

@@ -3404,3 +3404,33 @@ msgstr "僅供預覽；不會執行動作。"
 
 msgid "Retry"
 msgstr "重試"
+
+msgid "Settings could not be saved"
+msgstr "無法儲存設定"
+
+msgid "Retry saving, or discard unsaved settings and continue quitting."
+msgstr "請重試儲存，或捨棄未儲存的設定並繼續結束。"
+
+msgid "Discard settings and continue"
+msgstr "捨棄設定並繼續"
+
+msgid "The mouse is available."
+msgstr "滑鼠可用。"
+
+msgid "Mouse input is active."
+msgstr "滑鼠輸入已啟用。"
+
+msgid "The selected mouse is disconnected."
+msgstr "所選滑鼠已中斷連線。"
+
+msgid "Cannot read the selected mouse. Check input device permissions."
+msgstr "無法讀取所選滑鼠。請檢查輸入裝置權限。"
+
+msgid "A different device appeared at the mouse path. Select the mouse again."
+msgstr "滑鼠路徑上出現了其他裝置。請重新選取滑鼠。"
+
+msgid "The selected mouse is being intercepted as a keyboard. Select a different device."
+msgstr "所選滑鼠正被當作鍵盤攔截。請選取其他裝置。"
+
+msgid "Mouse input is unavailable. See the application log."
+msgstr "滑鼠輸入無法使用。請查看應用程式記錄。"

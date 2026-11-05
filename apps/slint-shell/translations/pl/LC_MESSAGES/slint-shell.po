@@ -3762,3 +3762,33 @@ msgstr "Tylko podgląd; działania nie są wykonywane."
 
 msgid "Retry"
 msgstr "Ponów"
+
+msgid "Settings could not be saved"
+msgstr "Nie udało się zapisać ustawień"
+
+msgid "Retry saving, or discard unsaved settings and continue quitting."
+msgstr "Spróbuj zapisać ponownie lub odrzuć niezapisane ustawienia i kontynuuj zamykanie."
+
+msgid "Discard settings and continue"
+msgstr "Odrzuć ustawienia i kontynuuj"
+
+msgid "The mouse is available."
+msgstr "Mysz jest dostępna."
+
+msgid "Mouse input is active."
+msgstr "Wejście myszy jest aktywne."
+
+msgid "The selected mouse is disconnected."
+msgstr "Wybrana mysz jest odłączona."
+
+msgid "Cannot read the selected mouse. Check input device permissions."
+msgstr "Nie można odczytać wybranej myszy. Sprawdź uprawnienia urządzeń wejściowych."
+
+msgid "A different device appeared at the mouse path. Select the mouse again."
+msgstr "Pod ścieżką myszy pojawiło się inne urządzenie. Wybierz mysz ponownie."
+
+msgid "The selected mouse is being intercepted as a keyboard. Select a different device."
+msgstr "Wybrana mysz jest przechwytywana jako klawiatura. Wybierz inne urządzenie."
+
+msgid "Mouse input is unavailable. See the application log."
+msgstr "Wejście myszy jest niedostępne. Sprawdź dziennik aplikacji."

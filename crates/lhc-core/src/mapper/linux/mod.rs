@@ -144,6 +144,7 @@ pub struct Handle {
     join: Option<thread::JoinHandle<()>>,
     error: Arc<Mutex<Option<String>>>,
     waiting: Arc<AtomicBool>,
+    mouse: super::mouse::Monitor,
 }
 
 impl Handle {
@@ -172,6 +173,10 @@ impl Handle {
             .as_ref()
             .map(|j| !j.is_finished())
             .unwrap_or(false)
+    }
+
+    pub fn mouse_status(&self) -> super::mouse::MouseStatus {
+        self.mouse.get()
     }
 
     pub fn waiting_for_device(&self) -> bool {
@@ -257,6 +262,8 @@ pub fn spawn(
     let error: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
     let waiting = Arc::new(AtomicBool::new(false));
     let waiting_thread = waiting.clone();
+    let mouse = super::mouse::Monitor::default();
+    let mouse_thread = mouse.clone();
     // Set once the worker reports readiness: an earlier failure is returned
     // by `spawn`, so it must not also be announced as a stopped mapper.
     let ready = Arc::new(AtomicBool::new(false));
@@ -284,6 +291,7 @@ pub fn spawn(
                     wake_rx,
                     waiting_thread,
                     &ready_thread,
+                    mouse_thread,
                 )
             }));
             if stop_thread.load(Ordering::SeqCst) {
@@ -357,6 +365,7 @@ pub fn spawn(
         join: Some(join),
         error,
         waiting,
+        mouse,
     })
 }
 
@@ -413,6 +422,7 @@ fn run(
     wake_rx: OwnedFd,
     waiting: Arc<AtomicBool>,
     ready: &AtomicBool,
+    mouse: super::mouse::Monitor,
 ) -> Result<(), String> {
     if stop.load(Ordering::SeqCst) {
         return Err("mapper start cancelled".into());
@@ -435,6 +445,7 @@ fn run(
                 device,
                 &device_path,
                 mouse_path.as_deref(),
+                mouse.clone(),
                 &mut cfg,
                 stop.clone(),
                 &ready_tx,
@@ -552,6 +563,7 @@ fn run_device(
     mut device: Device,
     device_path: &str,
     mouse_path: Option<&str>,
+    mouse_status: super::mouse::Monitor,
     cfg: &mut MapperConfig,
     stop: Arc<AtomicBool>,
     ready_tx: &mpsc::Sender<Result<(), String>>,
@@ -575,20 +587,24 @@ fn run_device(
     // Declared before the loop driver, so it is cleared after the grab ends.
     let _grabbed = GrabbedKeyboard::register(keyboard.rdev());
 
+    // Mouse is opened without grab: only KEY events are read to interact
+    // with modifier tap-hold decisions. REL/ABS (movement) stays
+    // untouched so the cursor continues to work.
+    //
+    // Known limitation: because the mouse is not grabbed, the physical
+    // button event always reaches the OS. Layer remaps of mouse buttons
+    // emit the mapped action *in addition to* the physical click, and
+    // `Swallow` cannot suppress the physical click. Fixing this would
+    // require grabbing the mouse and re-emitting REL/ABS ourselves.
     let mut devices = vec![device];
-    if let Some(mp) = mouse_path
-        && let Ok(mouse) = Device::open(mp)
-    {
-        // Mouse is opened without grab: only KEY events are read to interact
-        // with modifier tap-hold decisions. REL/ABS (movement) stays
-        // untouched so the cursor continues to work.
-        //
-        // Known limitation: because the mouse is not grabbed, the physical
-        // button event always reaches the OS. Layer remaps of mouse buttons
-        // emit the mapped action *in addition to* the physical click, and
-        // `Swallow` cannot suppress the physical click. Fixing this would
-        // require grabbing the mouse and re-emitting REL/ABS ourselves.
-        devices.push(mouse);
+    if let Some(mp) = mouse_path {
+        match Device::open(mp) {
+            Ok(mouse) => devices.push(mouse),
+            Err(error) => {
+                log::warn!("[mapper] open mouse {mp}: {error}");
+                mouse_status.set(super::mouse::MouseStatus::from_error(&error));
+            }
+        }
     }
 
     let mut all_keys = AttributeSet::<KeyCode>::new();
@@ -640,7 +656,8 @@ fn run_device(
         cfg.settings.linux_ydotool_path.as_deref(),
         cfg.settings.linux_xdotool_path.as_deref(),
     );
-    let driver = MultiDeviceLoopDriver::new(devices, mouse_path, Some(wake_rx))?;
+    let mut driver = MultiDeviceLoopDriver::new(devices, mouse_path, Some(wake_rx))?;
+    driver.monitor_mouse(mouse_status);
     let mut text_session = crate::text_input::job::Session::start();
     control_rx
         .lock()

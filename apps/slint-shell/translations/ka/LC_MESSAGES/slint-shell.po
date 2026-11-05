@@ -3712,3 +3712,33 @@ msgstr "მხოლოდ წინასწარი ნახვა; მო�
 
 msgid "Retry"
 msgstr "ხელახლა ცდა"
+
+msgid "Settings could not be saved"
+msgstr "პარამეტრების შენახვა ვერ მოხერხდა"
+
+msgid "Retry saving, or discard unsaved settings and continue quitting."
+msgstr "ხელახლა სცადეთ შენახვა ან გააუქმეთ შეუნახავი პარამეტრები და გააგრძელეთ გამოსვლა."
+
+msgid "Discard settings and continue"
+msgstr "პარამეტრების გაუქმება და გაგრძელება"
+
+msgid "The mouse is available."
+msgstr "მაუსი ხელმისაწვდომია."
+
+msgid "Mouse input is active."
+msgstr "მაუსის შეყვანა აქტიურია."
+
+msgid "The selected mouse is disconnected."
+msgstr "არჩეული მაუსი გათიშულია."
+
+msgid "Cannot read the selected mouse. Check input device permissions."
+msgstr "არჩეული მაუსის წაკითხვა შეუძლებელია. შეამოწმეთ შეყვანის მოწყობილობების წვდომის უფლებები."
+
+msgid "A different device appeared at the mouse path. Select the mouse again."
+msgstr "მაუსის მისამართზე სხვა მოწყობილობა გამოჩნდა. ხელახლა აირჩიეთ მაუსი."
+
+msgid "The selected mouse is being intercepted as a keyboard. Select a different device."
+msgstr "არჩეული მაუსი კლავიატურად არის ჩაჭერილი. აირჩიეთ სხვა მოწყობილობა."
+
+msgid "Mouse input is unavailable. See the application log."
+msgstr "მაუსის შეყვანა მიუწვდომელია. იხილეთ აპლიკაციის ჟურნალი."

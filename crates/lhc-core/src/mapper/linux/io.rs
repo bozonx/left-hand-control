@@ -160,6 +160,7 @@ pub(super) struct MultiDeviceLoopDriver {
     mouse_path: Option<String>,
     mouse_identity: Option<super::DeviceIdentity>,
     next_mouse_retry: Instant,
+    mouse_status: Option<super::super::mouse::Monitor>,
     hotkeys: PopupHotkeys,
     /// `LHC_HOTKEYS=off` disables the popup hotkeys; read once per start
     /// rather than on every key event.
@@ -189,10 +190,10 @@ impl MultiDeviceLoopDriver {
     ) -> Result<Self, String> {
         let mut devices = devices;
         Self::prepare_device(&devices[0])?;
-        if devices
-            .get(1)
-            .is_some_and(|mouse| Self::prepare_device(mouse).is_err())
+        if let Some(mouse) = devices.get(1)
+            && let Err(error) = Self::prepare_device(mouse)
         {
+            log::warn!("[mapper] prepare mouse: {error}");
             devices.truncate(1);
         }
         Ok(Self {
@@ -204,6 +205,7 @@ impl MultiDeviceLoopDriver {
             },
             mouse_path: mouse_path.map(str::to_owned),
             next_mouse_retry: Instant::now() + MOUSE_RETRY,
+            mouse_status: None,
             hotkeys: PopupHotkeys::default(),
             hotkeys_enabled: crate::env::popup_hotkeys_enabled(),
             wake_rx,
@@ -234,7 +236,25 @@ impl MultiDeviceLoopDriver {
         Ok(())
     }
 
+    pub(super) fn monitor_mouse(&mut self, monitor: super::super::mouse::Monitor) {
+        if self.devices[1].is_some() {
+            monitor.set(super::super::mouse::MouseStatus::Connected);
+        } else if self.mouse_path.is_some()
+            && monitor.get() == super::super::mouse::MouseStatus::NotSelected
+        {
+            monitor.set(super::super::mouse::MouseStatus::Unavailable);
+        }
+        self.mouse_status = Some(monitor);
+    }
+
+    fn set_mouse_status(&self, status: super::super::mouse::MouseStatus) {
+        if let Some(monitor) = &self.mouse_status {
+            monitor.set(status);
+        }
+    }
+
     fn reconnect_mouse(&mut self) {
+        use super::super::mouse::MouseStatus;
         if self.devices[1].is_some() || Instant::now() < self.next_mouse_retry {
             return;
         }
@@ -242,8 +262,12 @@ impl MultiDeviceLoopDriver {
         let Some(path) = self.mouse_path.as_deref() else {
             return;
         };
-        let Ok(mouse) = Device::open(path) else {
-            return;
+        let mouse = match Device::open(path) {
+            Ok(mouse) => mouse,
+            Err(error) => {
+                self.set_mouse_status(MouseStatus::from_error(&error));
+                return;
+            }
         };
         let identity = super::DeviceIdentity::of(&mouse);
         if self
@@ -251,17 +275,23 @@ impl MultiDeviceLoopDriver {
             .as_ref()
             .is_some_and(|expected| !expected.matches(&identity, path))
         {
+            self.set_mouse_status(MouseStatus::DeviceChanged);
             return;
         }
         let Some(rdev) = device_rdev(&mouse) else {
+            self.set_mouse_status(MouseStatus::Unavailable);
             return;
         };
         if super::is_grabbed_keyboard(rdev) {
+            self.set_mouse_status(MouseStatus::InUse);
             return;
         }
-        if Self::prepare_device(&mouse).is_err() {
+        if let Err(error) = Self::prepare_device(&mouse) {
+            log::debug!("[mapper] prepare mouse on reconnect: {error}");
+            self.set_mouse_status(MouseStatus::Unavailable);
             return;
         };
+        self.set_mouse_status(MouseStatus::Connected);
         self.devices[1] = Some(mouse);
         self.mouse_identity = Some(identity);
     }
@@ -361,7 +391,7 @@ impl LoopDriver for MultiDeviceLoopDriver {
             let Some(device) = slot.as_mut() else {
                 continue;
             };
-            let mut disconnected = false;
+            let mut disconnected = None;
             match device.fetch_events() {
                 Ok(iter) => {
                     for ev in iter {
@@ -380,15 +410,25 @@ impl LoopDriver for MultiDeviceLoopDriver {
                     if source == 0 {
                         return Err(super::DEVICE_DISCONNECTED.into());
                     }
-                    disconnected = true;
+                    disconnected = Some(super::super::mouse::MouseStatus::Missing);
+                    self.keys
+                        .release_source(source, &mut events, event_clock_now()?);
+                    self.next_mouse_retry = Instant::now() + MOUSE_RETRY;
+                }
+                Err(e) if source == 1 => {
+                    log::warn!("[mapper] read mouse: {e}");
+                    disconnected = Some(super::super::mouse::MouseStatus::from_error(&e));
                     self.keys
                         .release_source(source, &mut events, event_clock_now()?);
                     self.next_mouse_retry = Instant::now() + MOUSE_RETRY;
                 }
                 Err(e) => return Err(format!("fetch_events: {e}")),
             };
-            if disconnected {
+            if let Some(status) = disconnected {
                 *slot = None;
+                if let Some(monitor) = &self.mouse_status {
+                    monitor.set(status);
+                }
             }
         }
         Ok(self.keys.merge(
@@ -733,6 +773,12 @@ mod tests {
         let (mut second, second_input) = synthetic();
         let mut driver =
             MultiDeviceLoopDriver::new(vec![first_input, second_input], None, None).unwrap();
+        let mouse_status = super::super::super::mouse::Monitor::default();
+        driver.monitor_mouse(mouse_status.clone());
+        assert_eq!(
+            mouse_status.get(),
+            super::super::super::mouse::MouseStatus::Connected
+        );
         second.emit(&[*KeyEvent::new(KeyCode::KEY_B, 1)]).unwrap();
         thread::sleep(Duration::from_millis(2));
         first.emit(&[*KeyEvent::new(KeyCode::KEY_A, 1)]).unwrap();
@@ -769,6 +815,10 @@ mod tests {
                 .any(|&(key, down, _)| key == KeyCode::KEY_B && !down)
         );
         assert!(driver.devices[1].is_none());
+        assert_eq!(
+            mouse_status.get(),
+            super::super::super::mouse::MouseStatus::Missing
+        );
         let (mut replacement, replacement_input) = synthetic();
         let replacement_path = replacement
             .enumerate_dev_nodes_blocking()
@@ -783,6 +833,10 @@ mod tests {
         driver.mouse_path = Some(mouse_path.to_str().unwrap().into());
         driver.next_mouse_retry = Instant::now();
         driver.wait(Duration::ZERO).unwrap();
+        assert_eq!(
+            mouse_status.get(),
+            super::super::super::mouse::MouseStatus::Connected
+        );
         driver.devices[1]
             .as_mut()
             .expect("mouse reconnected without keyboard input")

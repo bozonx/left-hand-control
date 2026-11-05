@@ -189,6 +189,13 @@ export global Locale {
         if m.id == "key-code-required" { return @tr("Enter a key code"); }
         if m.id == "extra-key-on-grid" { return @tr("This key is on the layer keyboard. Assign it there."); }
         if m.id == "extra-key-taken" { return @tr("This layer already has a row for this key."); }
+        if m.id == "mouse-ready" { return @tr("The mouse is available."); }
+        if m.id == "mouse-connected" { return @tr("Mouse input is active."); }
+        if m.id == "mouse-missing" { return @tr("The selected mouse is disconnected."); }
+        if m.id == "mouse-access-denied" { return @tr("Cannot read the selected mouse. Check input device permissions."); }
+        if m.id == "mouse-device-changed" { return @tr("A different device appeared at the mouse path. Select the mouse again."); }
+        if m.id == "mouse-in-use" { return @tr("The selected mouse is being intercepted as a keyboard. Select a different device."); }
+        if m.id == "mouse-unavailable" { return @tr("Mouse input is unavailable. See the application log."); }
         if m.id == "long-hold-invalid" { return @tr("Enter a long hold from 100 to 60000 ms."); }
         if m.id == "settings-timing-invalid" { return @tr("A timing value is outside the range shown in Settings."); }
         if m.id == "timeout-invalid" { return @tr("Enter a timeout from 50 to 1000 milliseconds"); }

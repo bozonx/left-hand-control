@@ -33,7 +33,7 @@ mod timing;
 pub use focus::navigate_focus_group;
 pub(crate) use focus::{bind_navigation, navigation_input_mode};
 pub use library::refresh_active;
-pub(crate) use settings::check_input_access;
+pub(crate) use settings::{check_input_access, prepare_mapper_start};
 
 use crate::{
     document::{Document, Saved, View},

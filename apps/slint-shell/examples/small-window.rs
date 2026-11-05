@@ -275,9 +275,37 @@ const STEPS: &[Step] = &[
         ui.global::<SettingsEditor>()
             .set_tab(SettingsTab::Accessibility)
     }),
+    ("settings-invalid-advanced", |ui| {
+        ui.global::<AppState>().set_in_development(false);
+        let e = ui.global::<SettingsEditor>();
+        e.set_tab(SettingsTab::KeyBehavior);
+        e.set_long_hold_timeout("".into());
+        e.set_problem_field(SettingsField::LongHold);
+    }),
+    ("settings-quit-dialog", |ui| {
+        ui.global::<SettingsEditor>().invoke_discard_pending();
+        ui.global::<AppState>().set_in_development(true);
+        ui.global::<SettingsEditor>().set_message(Message {
+            id: "config-io".into(),
+            ..Default::default()
+        });
+        ui.set_settings_quit_dialog(true);
+    }),
     ("device-dialog", |ui| {
+        ui.set_settings_quit_dialog(false);
         ui.global::<SettingsEditor>().set_tab(SettingsTab::Mapper);
         ui.global::<DeviceDialog>().set_open(true);
+    }),
+    ("device-dialog-loading", |ui| {
+        ui.global::<SettingsEditor>().set_devices_loading(true);
+    }),
+    ("device-dialog-error", |ui| {
+        ui.global::<SettingsEditor>().set_devices_loading(false);
+        ui.global::<SettingsEditor>()
+            .set_device_discovery_error(Message {
+                id: "input-discovery-failed".into(),
+                ..Default::default()
+            });
     }),
     ("layers", |ui| {
         ui.global::<DeviceDialog>().set_open(false);

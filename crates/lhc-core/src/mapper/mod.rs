@@ -18,6 +18,7 @@ pub mod devices;
 pub mod key_code;
 pub mod layer_hint;
 pub mod layer_state;
+pub mod mouse;
 pub mod runtime;
 
 with_backend! {

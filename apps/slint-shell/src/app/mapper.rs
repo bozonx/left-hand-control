@@ -355,6 +355,18 @@ impl App {
                     .map_or(Msg::None, |error| Msg::MapperFailed(error.clone()))
                     .to_ui(),
             });
+        let mouse = if status.running && !status.waiting_for_device {
+            status.mouse_status
+        } else {
+            let path = self
+                .settings
+                .global::<crate::ui::SettingsEditor>()
+                .get_mouse_device_path();
+            lhc_core::mapper::mouse::probe(Some(path.as_str()))
+        };
+        self.settings
+            .global::<crate::ui::SettingsEditor>()
+            .set_mouse_status(Msg::MouseStatus(mouse).to_ui());
         self.track_uptime(status.running, status.last_error.is_some());
         let current = (phase, status.waiting_for_device, status.last_error.clone());
         if !self.mapper.status_changed(current) {
@@ -409,7 +421,7 @@ impl App {
         }
         if lhc_core::mapper::runtime::status().running {
             self.stop_mapper(false);
-        } else {
+        } else if pages::prepare_mapper_start(&self.settings) {
             self.start_mapper(0);
         }
     }

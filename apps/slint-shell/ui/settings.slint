@@ -48,6 +48,7 @@ export component SettingsWindow inherits Window {
     private property <string> focus-help;
     private property <bool> confirm-discard: false;
     private property <bool> confirm-close: false;
+    in-out property <bool> settings-quit-dialog;
     property <bool> library-problem: NotificationCenter.is-problem(LayoutLibrary.status.id);
     property <bool> layers-problem: NotificationCenter.is-problem(LayersEditor.status.id);
     property <bool> rules-problem: NotificationCenter.is-problem(RulesEditor.status.id);
@@ -65,7 +66,7 @@ export component SettingsWindow inherits Window {
 
     /// Ask before losing the working copy, including invalid page drafts.
     public function prepare-quit() -> bool {
-        if !SettingsEditor.flush-pending() { root.navigate(Page.settings, MenuKind.emoji); return false; }
+        if !SettingsEditor.flush-pending() { root.navigate(Page.settings, MenuKind.emoji); root.settings-quit-dialog = true; return false; }
         let drafts-saved = LayoutLibrary.flush-drafts();
         if LayoutLibrary.dirty || !drafts-saved {
             LayoutLibrary.pending-action = PendingLayoutAction.quit;
@@ -74,6 +75,12 @@ export component SettingsWindow inherits Window {
             return false;
         }
         return true;
+    }
+
+    public function continue-settings-quit(discard: bool) {
+        root.settings-quit-dialog = false;
+        if discard { SettingsEditor.discard-pending(); }
+        if root.prepare-quit() { LayoutLibrary.quit(); }
     }
 
     /// Apply all page drafts without writing the layout to the library.
@@ -111,7 +118,7 @@ export component SettingsWindow inherits Window {
         }
     }
 
-    property <bool> modal-open: KeyboardFocus.active || root.confirm-discard || root.confirm-close || ActionPicker.opened || RulesEditor.dialog != RuleDialog.none || LayersEditor.dialog != LayerDialog.none || LayersEditor.delete-extra >= 0
+    property <bool> modal-open: root.settings-quit-dialog || KeyboardFocus.active || root.confirm-discard || root.confirm-close || ActionPicker.opened || RulesEditor.dialog != RuleDialog.none || LayersEditor.dialog != LayerDialog.none || LayersEditor.delete-extra >= 0
         || LayoutLibrary.save-as-open || LayoutLibrary.dialog != LibraryDialog.none
         || AppEntryDialog.editing || AppEntryDialog.removing || DeviceDialog.open || SettingsEditor.full-command != "";
     property <bool> show-active-banner: root.page != Page.layouts && root.page != Page.settings
@@ -341,6 +348,32 @@ export component SettingsWindow inherits Window {
             }
         }
     }
+    if root.settings-quit-dialog: DialogFrame {
+        card-width: 760px;
+        card-height: 340px;
+        title: @tr("Settings could not be saved");
+        close => { root.settings-quit-dialog = false; }
+        quit-body := ScrollView {
+            min-height: 0px; vertical-stretch: 1;
+            viewport-width: self.visible-width;
+            viewport-height: quit-text.preferred-height;
+            quit-text := VerticalLayout {
+                width: quit-body.visible-width;
+                spacing: Theme.space-m;
+                Text { text: @tr("Retry saving, or discard unsaved settings and continue quitting."); color: Theme.text; wrap: word-wrap; }
+                Text { text: Locale.text(SettingsEditor.message); color: Theme.error; wrap: word-wrap; }
+            }
+        }
+        GridLayout { spacing: Theme.space-m;
+            Button { row: 0; col: 0; text: @tr("Cancel"); clicked => { root.settings-quit-dialog = false; } }
+            Button { row: root.width < 760px ? 1 : 0; col: root.width < 760px ? 0 : 1; text: @tr("Discard settings and continue"); clicked => {
+                root.continue-settings-quit(true);
+            } }
+            Button { row: root.width < 760px ? 2 : 0; col: root.width < 760px ? 0 : 2; text: @tr("Retry"); primary: true; clicked => {
+                root.continue-settings-quit(false);
+            } }
+        }
+    }
     LibraryDialogOverlay {}
     RuleDialogOverlay {}
     LayerDialogOverlay {}
@@ -348,6 +381,8 @@ export component SettingsWindow inherits Window {
     CommandDialogOverlay {}
     if DeviceDialog.open: DeviceDialogOverlay {
         error: SettingsEditor.message;
+        discovery-error: SettingsEditor.device-discovery-error;
+        loading: SettingsEditor.devices-loading;
         mouse: DeviceDialog.mouse;
         choices: DeviceDialog.mouse ? SettingsEditor.mouse-devices : SettingsEditor.input-devices;
         current: DeviceDialog.mouse ? SettingsEditor.mouse-device-path : SettingsEditor.keyboard-device-path;

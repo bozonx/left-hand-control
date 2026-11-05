@@ -12,7 +12,7 @@ import { Locale, Message } from "i18n.slint";
 import { Button, CheckBox } from "std-widgets.slint";
 import { DialogFrame, FormLabel, DurationInput, SelectField, PageLayout, Section, SubsectionTitle, TitledCard, SectionTitle } from "controls.slint";
 import { GameAppEntry, GameAppsField } from "conditions.slint";
-import { AppearanceChoice, CommandPlace, GameModeControl, SettingsTab } from "types.slint";
+import { AppearanceChoice, CommandPlace, GameModeControl, SettingsTab, SettingsField } from "types.slint";
 
 /// `enabled` is false for a disabled rule.
 export struct CommandPlaceRow { kind: CommandPlace, layer: string, name: string, enabled: bool }
@@ -95,14 +95,16 @@ export global SettingsEditor {
     /// Why the mapper cannot use the input devices; empty when it can.
     in property <[Message]> input-issues;
     in property <Message> device-discovery-error;
+    in property <Message> mouse-status;
     in property <Message> message;
+    in property <SettingsField> problem-field;
+    callback discard-pending();
     callback save();
     /// Save typed settings and report whether the form has no pending edits.
     callback flush-pending() -> bool;
     callback schedule-save();
     callback refresh-devices();
     callback refresh-commands();
-    in property <int> commands-revision;
     in-out property <bool> devices-loading;
     in property <bool> commands-loading;
     in property <bool> commands-loaded;
@@ -267,7 +269,7 @@ component MapperStatusCard inherits Rectangle {
                 icon: root.running ? @image-url("icons/square.svg") : @image-url("icons/play.svg");
                 colorize-icon: true;
                 enabled: !root.busy && (root.running || root.ready);
-                clicked => { if root.running { AppState.toggle-mapper(); } else { SettingsEditor.save(); if SettingsEditor.message.id == "" { AppState.toggle-mapper(); } } }
+                clicked => { AppState.toggle-mapper(); }
             }
         }
     }
@@ -577,6 +579,12 @@ export component SettingsPage inherits PageLayout {
                             note: @tr("Optional");
                             if !AppState.is-windows: DevicePicker { label: @tr("Mouse (optional)"); placeholder: @tr("Not selected (no mouse support)"); enabled: AppState.mapper-supported && !AppState.mapper-busy; choices: SettingsEditor.mouse-devices; path: SettingsEditor.mouse-device-path; open => { DeviceDialog.mouse = true; DeviceDialog.open = true; } }
                             if !AppState.is-windows && SettingsEditor.mouse-device-path != "": Text { text: SettingsEditor.mouse-device-path; color: Theme.muted; font-size: Theme.font-body; overflow: elide; }
+                            if SettingsEditor.mouse-status.id != "": Text {
+                                accessible-live-region: polite;
+                                text: Locale.text(SettingsEditor.mouse-status);
+                                color: SettingsEditor.mouse-status.id == "mouse-ready" || SettingsEditor.mouse-status.id == "mouse-connected" ? Theme.muted : Theme.warning;
+                                wrap: word-wrap;
+                            }
                             if AppState.is-windows: CheckBox { text: @tr("Intercept buttons of all mice"); enabled: AppState.mapper-supported && !AppState.mapper-busy; checked: SettingsEditor.mouse-device-path == "windows:mouse"; toggled => { SettingsEditor.select-mouse(self.checked ? "windows:mouse" : ""); } }
                         }
                     }
@@ -694,7 +702,7 @@ export component SettingsPage inherits PageLayout {
                                 edited => { SettingsEditor.schedule-save(); }
                                 reset => { SettingsEditor.save(); }
                             }
-                            if AppState.in-development: TimingField {
+                            if AppState.in-development || SettingsEditor.problem-field == SettingsField.long-hold: TimingField {
                                 label: @tr("Long hold");
                                 info: @tr("How long to keep holding a rule key before its long-hold action runs once. Applies to rules whose hold runs an action instead of a layer.")
                                     + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-long-hold-timeout);
