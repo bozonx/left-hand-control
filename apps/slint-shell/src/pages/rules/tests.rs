@@ -150,16 +150,7 @@ fn advanced_draft_validates_every_field_before_changing_the_rule() {
 
 #[test]
 fn layer_dialog_loads_its_rule_and_reports_a_vanished_selection() {
-    use slint::platform::software_renderer::{MinimalSoftwareWindow, RepaintBufferType};
-    struct Platform;
-    impl slint::platform::Platform for Platform {
-        fn create_window_adapter(
-            &self,
-        ) -> Result<Rc<dyn slint::platform::WindowAdapter>, slint::PlatformError> {
-            Ok(MinimalSoftwareWindow::new(RepaintBufferType::ReusedBuffer))
-        }
-    }
-    slint::platform::set_platform(Box::new(Platform)).unwrap();
+    init_platform();
     let (_dir, document) = super::super::test_document();
     document
         .edit(View::Rules, |config| {
@@ -197,4 +188,219 @@ fn layer_dialog_loads_its_rule_and_reports_a_vanished_selection() {
     editor.invoke_choose(layer.clone().into());
     assert_eq!(editor.get_dialog(), RuleDialog::None);
     assert_eq!(document.read().layout().rules[1].layer_id, layer);
+}
+
+fn init_platform() {
+    use slint::platform::software_renderer::{MinimalSoftwareWindow, RepaintBufferType};
+    struct Platform;
+    impl slint::platform::Platform for Platform {
+        fn create_window_adapter(
+            &self,
+        ) -> Result<Rc<dyn slint::platform::WindowAdapter>, slint::PlatformError> {
+            Ok(MinimalSoftwareWindow::new(RepaintBufferType::ReusedBuffer))
+        }
+    }
+    slint::platform::set_platform(Box::new(Platform)).unwrap();
+}
+
+fn editor_fixture() -> (tempfile::TempDir, Rc<Document>, SettingsWindow) {
+    init_platform();
+    let (dir, document) = super::super::test_document();
+    document
+        .edit(View::Rules, |config| {
+            config.update_layout(|layout| {
+                layout.rules = vec![
+                    KeyRule::new("first".into(), "KeyA"),
+                    KeyRule::new("second".into(), "KeyB"),
+                ];
+            })
+        })
+        .unwrap();
+    let ui = SettingsWindow::new().unwrap();
+    bind(&ui, &document);
+    (dir, document, ui)
+}
+
+#[test]
+fn background_updates_preserve_drafts_and_reject_all_stale_operations() {
+    let (_dir, document, ui) = editor_fixture();
+    let editor = ui.global::<RulesEditor>();
+    editor.invoke_open_dialog(0, RuleDialog::Advanced);
+    editor.set_hold_timeout("333".into());
+    editor.set_apps_include("firefox".into());
+    editor.set_enabled(false);
+    document
+        .edit(View::Library, |config| {
+            config.update_layout(|layout| {
+                layout.rules.swap(0, 1);
+            })
+        })
+        .unwrap();
+    let original = document.read().layout().clone();
+    assert_eq!(editor.get_hold_timeout(), "333");
+    assert_eq!(editor.get_apps_include(), "firefox");
+    assert!(!editor.get_enabled());
+    editor.invoke_apply_advanced();
+    editor.invoke_apply_conditions();
+    editor.invoke_remove();
+    editor.invoke_set_hold_mode(UiHoldBehavior::Layer);
+    editor.invoke_create_layer("Stale layer".into());
+    assert_eq!(*document.read().layout(), original);
+    assert_eq!(editor.get_status().id, "config-edit-conflict");
+    assert_eq!(editor.get_dialog(), RuleDialog::Advanced);
+    editor.set_field(RuleDialog::Tap);
+    assert_eq!(
+        choose(&ui, &document, "KeyC", None),
+        Err(Msg::from(
+            &lhc_core::config_document::ConfigError::EditConflict
+        ))
+    );
+    // Reopening starts a new edit of the current rule.
+    editor.invoke_open_dialog(0, RuleDialog::Advanced);
+    editor.set_hold_timeout("333".into());
+    editor.invoke_apply_advanced();
+    assert_eq!(document.read().layout().rules[0].hold_timeout_ms, Some(333));
+}
+
+#[test]
+fn vanished_picker_target_cannot_turn_into_a_new_rule() {
+    let (_dir, document, ui) = editor_fixture();
+    let editor = ui.global::<RulesEditor>();
+    editor.invoke_open_dialog(1, RuleDialog::Key);
+    ui.global::<ActionPicker>().set_opened(true);
+    document
+        .edit(View::Library, |config| {
+            config.update_layout(|layout| {
+                layout.rules.pop();
+            })
+        })
+        .unwrap();
+    assert_eq!(editor.get_selected(), -1);
+    assert!(choose(&ui, &document, "KeyC", None).is_err());
+    assert_eq!(document.read().layout().rules.len(), 1);
+    ui.global::<ActionPicker>().set_opened(false);
+    editor.invoke_add();
+    choose(&ui, &document, "KeyC", None).unwrap();
+    assert_eq!(document.read().layout().rules[0].key, "KeyC");
+}
+
+#[test]
+fn failed_edit_keeps_draft_and_allows_retry() {
+    let (_dir, document, ui) = editor_fixture();
+    let editor = ui.global::<RulesEditor>();
+    editor.invoke_open_dialog(0, RuleDialog::Advanced);
+    editor.set_hold_timeout("333".into());
+    editor.set_double_timeout("444".into());
+    editor.set_hold("Ctrl+KeyC".into());
+    editor.set_enabled(false);
+    let before = document.read().layout().clone();
+    let revision = document.revision();
+    assert!(
+        change(&ui, &document, true, |layout| {
+            layout.rules[0].hold_timeout_ms = Some(1);
+        })
+        .is_err()
+    );
+    assert_eq!(*document.read().layout(), before);
+    assert_eq!(editor.get_hold_timeout(), "333");
+    assert_eq!(editor.get_double_timeout(), "444");
+    assert_eq!(editor.get_hold(), "Ctrl+KeyC");
+    assert!(!editor.get_enabled());
+    assert_eq!(document.revision(), revision);
+    assert_eq!(editor.get_dialog(), RuleDialog::Advanced);
+    editor.invoke_apply_advanced();
+    assert_eq!(document.read().layout().rules[0].hold_timeout_ms, Some(333));
+    assert!(!document.read().layout().rules[0].is_enabled());
+}
+
+#[test]
+fn diagnostics_refresh_when_macro_and_command_dependencies_change() {
+    use lhc_core::profile::model::{Command, Macro, MacroStep};
+    let (_dir, document, ui) = editor_fixture();
+    document
+        .edit(View::Library, |config| {
+            config.update_layout(|layout| {
+                layout.rules[0].tap_action = Some("macro:m".into());
+                layout.rules[1].tap_action = Some("cmd:c".into());
+            })
+        })
+        .unwrap();
+    let editor = ui.global::<RulesEditor>();
+    let issues = || {
+        editor
+            .get_rows()
+            .iter()
+            .map(|row| row.diagnostic.id.to_string())
+            .collect::<Vec<_>>()
+    };
+    assert!(issues().iter().all(|id| !id.is_empty()));
+    document
+        .edit(View::Macros, |config| {
+            config.update_layout(|layout| {
+                layout.macros.push(Macro {
+                    id: "m".into(),
+                    name: "Macro".into(),
+                    steps: vec![MacroStep {
+                        id: "step".into(),
+                        action: "KeyC".into(),
+                    }],
+                    step_pause_ms: None,
+                    modifier_delay_ms: None,
+                });
+            })
+        })
+        .unwrap();
+    assert!(issues()[0].is_empty());
+    document
+        .edit(View::Menus, |config| {
+            config.update_layout(|layout| {
+                layout.commands.push(Command {
+                    id: "c".into(),
+                    name: "Command".into(),
+                    posix_script: "true".into(),
+                    powershell_script: "exit 0".into(),
+                    working_directory: None,
+                });
+            })
+        })
+        .unwrap();
+    assert!(issues().iter().all(String::is_empty));
+    document
+        .edit(View::Macros, |config| {
+            config.update_layout(|layout| {
+                layout.macros.clear();
+            })
+        })
+        .unwrap();
+    assert!(!issues()[0].is_empty());
+    document
+        .edit(View::Menus, |config| {
+            config.update_layout(|layout| {
+                layout.commands.clear();
+            })
+        })
+        .unwrap();
+    assert!(!issues()[1].is_empty());
+}
+
+#[test]
+fn empty_trigger_draft_can_be_disabled_and_deleted() {
+    let (_dir, document, ui) = editor_fixture();
+    document
+        .edit(View::Library, |config| {
+            config.update_layout(|layout| {
+                layout.rules[0].key.clear();
+            })
+        })
+        .unwrap();
+    let editor = ui.global::<RulesEditor>();
+    editor.invoke_open_dialog(0, RuleDialog::Advanced);
+    editor.set_enabled(false);
+    editor.invoke_apply_advanced();
+    assert!(!document.read().layout().rules[0].is_enabled());
+    editor.invoke_open_dialog(0, RuleDialog::Advanced);
+    editor.set_dialog(RuleDialog::Remove);
+    editor.invoke_remove();
+    assert_eq!(document.read().layout().rules.len(), 1);
+    assert_eq!(document.read().layout().rules[0].id, "second");
 }

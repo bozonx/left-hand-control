@@ -72,7 +72,7 @@ impl Changes {
         }
         match view {
             View::Keys => self.rules,
-            View::Rules => self.rules || self.layers,
+            View::Rules => self.rules || self.layers || self.macros || self.commands,
             View::Layers => self.layers || self.rules || self.macros || self.commands,
             View::Settings => {
                 self.rules || self.layers || self.macros || self.commands || self.quick

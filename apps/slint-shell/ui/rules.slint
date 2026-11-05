@@ -23,6 +23,9 @@ export global RulesEditor {
     in property <[RuleRow]> rows;
     in property <int> created: -1;
     in-out property <int> selected: -1;
+    in property <string> edit-revision;
+    in property <int> edit-selected: -1;
+    in property <bool> adding;
     in property <Message> status;
     in property <string> default-hold-timeout;
     in property <string> default-long-hold-timeout;
@@ -175,6 +178,12 @@ component HoldField inherits VerticalLayout {
     in property <RuleRow> rule;
     in property <bool> enabled: true;
     private property <bool> creating;
+    private property <bool> menu-open: menu.is-open;
+    changed menu-open => {
+        if !root.menu-open && RulesEditor.dialog == RuleDialog.layer && RulesEditor.selected == root.rule-index {
+            RulesEditor.dialog = RuleDialog.none;
+        }
+    }
     private property <length> scroll-y;
     private property <int> count: RulesEditor.layer-items.length;
     private property <bool> action-available: AppState.in-development || root.rule.hold-mode == HoldBehavior.action;
@@ -354,7 +363,7 @@ export component RulesPage inherits PageLayout {
                             opacity: rule.enabled ? 1 : Theme.disabled-rule-opacity;
                             TouchArea { enabled: rule.key != ""; mouse-cursor: pointer; clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); } }
                         }
-                        rule-options := IconButton { enabled: rule.key != ""; icon: @image-url("icons/sliders-horizontal.svg"); tooltip: @tr("Advanced rule options"); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); }
+                        rule-options := IconButton { icon: @image-url("icons/sliders-horizontal.svg"); tooltip: @tr("Advanced rule options"); clicked => { RulesEditor.open-dialog(index, RuleDialog.advanced); }
                             if RulesEditor.dialog == RuleDialog.advanced && RulesEditor.selected == index && RulesEditor.advanced-dirty: Rectangle {
                                 x: parent.width - 5px; y: 3px; width: 7px; height: 7px; border-radius: Theme.radius-small; background: Theme.accent;
                             }
@@ -414,17 +423,18 @@ export component RuleDialogOverlay inherits FocusScope {
                     inactive-reason: @tr("Not used when holding performs a long-hold action.");
                     resettable: false;
                     ButtonGroup {
+                        private property <bool> native-hold: RulesEditor.hold-mode == HoldBehavior.none && !RulesEditor.swallow-tap;
                         enabled: held-form.active;
-                        labels: RulesEditor.hold-mode == HoldBehavior.none
+                        labels: self.native-hold
                             ? [@tr("Trigger itself"), @tr("Don't press"), RulesEditor.hold != "" ? @tr("{} — change…", RulesEditor.hold) : @tr("Other key or combination…")]
                             : [@tr("Don't press"), RulesEditor.hold != "" ? @tr("{} — change…", RulesEditor.hold) : @tr("Other key or combination…")];
-                        selected-index: RulesEditor.hold != "" ? (RulesEditor.hold-mode == HoldBehavior.none ? 2 : 1) : RulesEditor.hold-mode == HoldBehavior.none && RulesEditor.swallow-hold ? 1 : 0;
+                        selected-index: RulesEditor.hold != "" ? (self.native-hold ? 2 : 1) : self.native-hold && RulesEditor.swallow-hold ? 1 : 0;
                         selected(index) => {
-                            if index == (RulesEditor.hold-mode == HoldBehavior.none ? 2 : 1) {
+                            if index == (self.native-hold ? 2 : 1) {
                                 RulesEditor.open-dialog(RulesEditor.selected, RuleDialog.hold);
                             } else {
                                 RulesEditor.hold = "";
-                                RulesEditor.swallow-hold = RulesEditor.hold-mode == HoldBehavior.none && index == 1;
+                                RulesEditor.swallow-hold = !self.native-hold || index == 1;
                             }
                         }
                     }

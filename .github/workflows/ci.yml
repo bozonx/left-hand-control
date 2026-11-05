@@ -65,7 +65,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: >-
           cargo build --locked --profile test -p slint-shell --features spell
-          --example editor --example interactions --example library --example macros --example menus --example popup-grid --example undo-redo --example inline-edit --example drag-scroll --example notifications --example accessibility --example keyboard-navigation --example contrast-scaling --example layer-keys --example small-window
+          --example editor --example interactions --example rules --example library --example macros --example menus --example popup-grid --example undo-redo --example inline-edit --example drag-scroll --example notifications --example accessibility --example keyboard-navigation --example contrast-scaling --example layer-keys --example small-window
 
       - name: Run UI scenarios (headless Wayland)
         if: matrix.os == 'ubuntu-latest'
@@ -97,7 +97,7 @@ jobs:
           test -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY"
           timeout --kill-after=5s 90s target/debug/examples/editor --smoke
           # Keep in sync with apps/slint-shell/scripts/e2e-local.sh.
-          for example in interactions library macros menus popup-grid undo-redo inline-edit drag-scroll notifications accessibility keyboard-navigation contrast-scaling layer-keys small-window; do
+          for example in interactions rules library macros menus popup-grid undo-redo inline-edit drag-scroll notifications accessibility keyboard-navigation contrast-scaling layer-keys small-window; do
             timeout --kill-after=5s 90s "target/debug/examples/$example"
           done
 

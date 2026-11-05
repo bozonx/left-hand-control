@@ -17,6 +17,7 @@ pub(crate) mod macro_graph;
 pub mod macros;
 pub mod model;
 pub mod names;
+pub mod rule_edit;
 pub mod schema;
 pub mod settings;
 pub mod timing;

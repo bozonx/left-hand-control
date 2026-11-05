@@ -23,6 +23,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Triggers: dismissing the hold menu releases the modal state; stale dialogs and pickers reject edits after document changes. Advanced and condition drafts survive failed edits and background refreshes. Diagnostics follow macro and command changes, empty-trigger drafts remain removable, and suppressed taps no longer offer a misleading native hold option.
+
 - Layouts: duplication keeps its source after Save As or a library refresh; damaged UTF-8 files can be deleted with byte-preserving rollback. Empty library files are consistently rejected. Description drafts survive background refreshes after a failed save, and normal saves recheck the disk snapshot after staging the replacement file. Metadata loaders are isolated per library page.
 
 - Settings keep invalid advanced timing fields reachable, identify their validation failures, and let quitting retry or discard unsaved settings before deciding about layout changes. Both mapper start controls save and validate the same draft. Device discovery keeps the last successful list on failure and displays loading and errors in the picker. Optional mouse failures and reconnection are reported without stopping keyboard mapping.

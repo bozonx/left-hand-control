@@ -62,7 +62,7 @@ plasma=$(plasmashell --version 2>/dev/null || echo 'not detected')
     echo
 } > "$summary"
 
-for example in 'editor --smoke' interactions library macros menus popup-grid \
+for example in 'editor --smoke' interactions rules library macros menus popup-grid \
     undo-redo inline-edit drag-scroll notifications accessibility keyboard-navigation \
     contrast-scaling layer-keys small-window; do
     # shellcheck disable=SC2086 # split the example name from its arguments

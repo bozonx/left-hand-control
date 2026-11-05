@@ -12,6 +12,7 @@ use crate::{
 use lhc_core::profile::{
     diagnostics, ids,
     model::{HoldBehavior, KeyRule, Layer, LayoutPreset, TapDecision},
+    rule_edit::{RuleOptions, RuleOptionsError},
 };
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::rc::Rc;
@@ -98,23 +99,23 @@ impl AdvancedDraft {
         let hold = parse_timeout(&self.hold_timeout)?;
         let double = parse_timeout(&self.double_timeout)?;
         let long_hold = optional_long_hold(&self.long_hold_timeout)?;
-        if let Some(held) = &self.hold
-            && !held.is_empty()
-            && !lhc_core::profile::actions::valid_held_key(held)
-        {
-            return Err(Msg::ActionRequired);
+        RuleOptions {
+            hold_timeout_ms: hold,
+            double_tap_timeout_ms: double,
+            long_hold_timeout_ms: long_hold,
+            hold_action: self.hold.clone(),
+            tap_decision: match self.detection {
+                HoldDetection::Release => Some(TapDecision::PermissiveHold),
+                HoldDetection::Press => Some(TapDecision::HoldOnOtherKeyPress),
+                HoldDetection::Inherit => None,
+            },
         }
-        rule.hold_timeout_ms = hold;
-        rule.double_tap_timeout_ms = double;
-        rule.long_hold_timeout_ms = long_hold;
-        rule.tap_decision = match self.detection {
-            HoldDetection::Release => Some(TapDecision::PermissiveHold),
-            HoldDetection::Press => Some(TapDecision::HoldOnOtherKeyPress),
-            HoldDetection::Inherit => None,
-        };
-        if rule.hold_behavior() != HoldBehavior::Action {
-            rule.hold_action = self.hold.clone();
-        }
+        .apply(rule)
+        .map_err(|error| match error {
+            RuleOptionsError::Timeout => Msg::TimeoutInvalid,
+            RuleOptionsError::LongHold => Msg::LongHoldInvalid,
+            RuleOptionsError::HeldKey => Msg::ActionRequired,
+        })?;
         Ok(())
     }
 }
@@ -164,6 +165,41 @@ fn selected(ui: &SettingsWindow, document: &Document) -> Option<usize> {
         ui.global::<RulesEditor>().get_selected(),
         document.read().layout().rules.len(),
     )
+}
+
+/// The document revision is opaque to Slint; keep the full u64 as text.
+fn remember_edit(ui: &SettingsWindow, document: &Document) {
+    let editor = ui.global::<RulesEditor>();
+    editor.set_edit_revision(document.revision().to_string().into());
+    editor.set_edit_selected(editor.get_selected());
+    editor.set_adding(false);
+}
+
+fn check_edit(ui: &SettingsWindow, document: &Document) -> Result<(), Msg> {
+    let editor = ui.global::<RulesEditor>();
+    if editor.get_edit_revision() != document.revision().to_string()
+        || editor.get_edit_selected() != editor.get_selected()
+    {
+        return Err(Msg::from(
+            &lhc_core::config_document::ConfigError::EditConflict,
+        ));
+    }
+    Ok(())
+}
+
+fn editable(ui: &SettingsWindow, document: &Document) -> Option<usize> {
+    let result = check_edit(ui, document).and_then(|()| {
+        selected(ui, document)
+            .ok_or_else(|| Msg::from(&lhc_core::config_document::ConfigError::EditConflict))
+    });
+    match result {
+        Ok(index) => Some(index),
+        Err(error) => {
+            ui.global::<RulesEditor>()
+                .set_status(crate::notifications::report(ui, &error));
+            None
+        }
+    }
 }
 
 /// Show the rules; with `fields` also load the selected rule into the
@@ -259,6 +295,9 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
     }
     let index = super::index(editor.get_selected(), layout.rules.len());
     editor.set_selected(index.map_or(-1, |index| index as i32));
+    if fields {
+        remember_edit(ui, document);
+    }
     let (true, Some(rule)) = (fields, index.and_then(|index| layout.rules.get(index))) else {
         return;
     };
@@ -332,7 +371,7 @@ fn change(
             Ok(())
         }
         Err(error) => {
-            refresh(ui, document, true);
+            refresh(ui, document, false);
             let message = Msg::from(&error);
             ui.global::<RulesEditor>()
                 .set_status(crate::notifications::report(ui, &message));
@@ -394,16 +433,7 @@ fn set_property(rule: &mut KeyRule, property: RuleDialog, value: &str) -> Result
 
 /// Switch what holding the trigger does, dropping options of the other modes.
 fn set_hold_behavior(rule: &mut KeyRule, behavior: HoldBehavior) {
-    rule.hold_behavior = Some(behavior);
-    if behavior != HoldBehavior::Layer {
-        rule.layer_id.clear();
-    }
-    if behavior != HoldBehavior::Action {
-        rule.long_hold_action.clear();
-    }
-    if behavior != HoldBehavior::Layer {
-        rule.hold_action = Some(String::new());
-    }
+    rule.set_hold_behavior(behavior);
 }
 
 /// Apply `value` to the property `RulesEditor.field` of the selected rule.
@@ -415,10 +445,11 @@ pub(super) fn choose(
 ) -> Result<(), Msg> {
     let editor = ui.global::<RulesEditor>();
     let property = editor.get_field();
+    check_edit(ui, document)?;
     if property == RuleDialog::Key && !lhc_core::profile::key_catalog::valid_trigger(value) {
         return Err(Msg::KeyCodeRequired);
     }
-    if property == RuleDialog::Key && editor.get_selected() == -1 {
+    if property == RuleDialog::Key && editor.get_adding() && editor.get_selected() == -1 {
         change(ui, document, true, |layout| {
             let id = unique_rule_id(&layout.rules);
             layout.rules.insert(0, KeyRule::new(id, value));
@@ -547,7 +578,15 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let weak = ui.as_weak();
     document.subscribe(View::Rules, move |document| {
         if let Some(ui) = weak.upgrade() {
-            refresh(&ui, document, true);
+            let editor = ui.global::<RulesEditor>();
+            let editing =
+                editor.get_dialog() != RuleDialog::None || ui.global::<ActionPicker>().get_opened();
+            refresh(&ui, document, !editing);
+            if editing && check_edit(&ui, document).is_err() {
+                editor.set_status(
+                    Msg::from(&lhc_core::config_document::ConfigError::EditConflict).to_ui(),
+                );
+            }
         }
     });
     let editor = ui.global::<RulesEditor>();
@@ -561,9 +600,11 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         refresh(&ui, &doc, true);
     });
 
-    on!(ui, editor.on_add => |ui| {
+    on!(ui, editor.on_add, doc = document => |ui| {
         let editor = ui.global::<RulesEditor>();
         editor.set_selected(-1);
+        remember_edit(&ui, &doc);
+        editor.set_adding(true);
         editor.set_field(RuleDialog::Key);
         editor.set_dialog(RuleDialog::None);
         ui.global::<ActionPicker>()
@@ -571,7 +612,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
 
     on!(ui, editor.on_remove, doc = document => |ui| {
-        let Some(index) = selected(&ui, &doc) else {
+        let Some(index) = editable(&ui, &doc) else {
             return;
         };
         let result = change(&ui, &doc, true, |layout| {
@@ -622,7 +663,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 return;
             }
         };
-        let index = selected(&ui, &doc);
+        let Some(index) = editable(&ui, &doc) else { return; };
         let id = ids::generate("layer-");
         let result = change(&ui, &doc, true, |layout| {
             layout.layers.push(Layer {
@@ -630,7 +671,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
                 name,
                 description: None,
             });
-            if let Some(rule) = index.and_then(|index| layout.rules.get_mut(index)) {
+            if let Some(rule) = layout.rules.get_mut(index) {
                 set_hold_behavior(rule, HoldBehavior::Layer);
                 rule.layer_id = id.clone();
             }
@@ -646,6 +687,10 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let editor = ui.global::<RulesEditor>();
         // A key picked for the advanced dialog must not reload its draft.
         let draft = editor.get_dialog() == RuleDialog::Advanced && dialog == RuleDialog::Hold;
+        if draft && (editor.get_selected() != index || check_edit(&ui, &doc).is_err()) {
+            editor.set_status(crate::notifications::report(&ui, &Msg::from(&lhc_core::config_document::ConfigError::EditConflict)));
+            return;
+        }
         editor.set_selected(index);
         if !draft {
             refresh(&ui, &doc, true);
@@ -720,7 +765,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
 
     on!(ui, editor.on_apply_conditions, doc = document => |ui| {
-        let Some(index) = selected(&ui, &doc) else {
+        let Some(index) = editable(&ui, &doc) else {
             return;
         };
         let editor = ui.global::<RulesEditor>();
@@ -740,7 +785,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
 
     on!(ui, editor.on_apply_advanced, doc = document => |ui| {
-        let Some(index) = selected(&ui, &doc) else {
+        let Some(index) = editable(&ui, &doc) else {
             return;
         };
         let editor = ui.global::<RulesEditor>();
@@ -765,7 +810,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
 
     on!(ui, editor.on_set_hold_mode, doc = document => |ui, mode| {
-        if let Some(index) = selected(&ui, &doc) {
+        if let Some(index) = editable(&ui, &doc) {
             let _ = change_rule(&ui, &doc, index, true, |rule| {
                 set_hold_behavior(rule, hold_behavior(mode));
             });
