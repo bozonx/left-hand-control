@@ -44,7 +44,7 @@ as `kde:` if its key or chord does not work.
 | `lockSession` | `ksmserver` | `Lock Session` | Key `LockScreen` or chord `Meta+KeyL` |
 | `logout` | `ksmserver` | `Log Out` | Chord `Ctrl+Alt+Delete` |
 | `logoutWithoutConfirmation` | `ksmserver` | `Log Out Without Confirmation` | `kde:ksmserver/Log Out Without Confirmation` |
-| `windowClose` | `kwin` | `Window Close` | Chord `Alt+F4` |
+| `closeWindow` | `kwin` | `Window Close` | Chord `Alt+F4` |
 | `quickTileWindowTop` | `kwin` | `Window Quick Tile Top` | Chord `Meta+ArrowUp` |
 | `quickTileWindowBottom` | `kwin` | `Window Quick Tile Bottom` | Chord `Meta+ArrowDown` |
 | `quickTileWindowLeft` | `kwin` | `Window Quick Tile Left` | Chord `Meta+ArrowLeft` |
@@ -71,16 +71,16 @@ as `kde:` if its key or chord does not work.
 | `nextActivity` | `plasmashell` | `next activity` | `kde:plasmashell/next activity` |
 | `previousActivity` | `plasmashell` | `previous activity` | `kde:plasmashell/previous activity` |
 | `walkThroughWindowsAlternative` | `kwin` | `Walk Through Windows Alternative` | `kde:kwin/Walk Through Windows Alternative` |
-| `windowToNextDesktop` | `kwin` | `Window to Next Desktop` | `kde:kwin/Window to Next Desktop` |
+| `moveWindowToNextDesktop` | `kwin` | `Window to Next Desktop` | `kde:kwin/Window to Next Desktop` |
 | `windowToPreviousDesktop` | `kwin` | `Window to Previous Desktop` | `kde:kwin/Window to Previous Desktop` |
-| `windowKeepAbove` | `kwin` | `Window Above Other Windows` | `kde:kwin/Window Above Other Windows` |
-| `windowMaximizeVertical` | `kwin` | `Window Maximize Vertical` | `kde:kwin/Window Maximize Vertical` |
+| `toggleWindowKeepAbove` | `kwin` | `Window Above Other Windows` | `kde:kwin/Window Above Other Windows` |
+| `maximizeWindowVertically` | `kwin` | `Window Maximize Vertical` | `kde:kwin/Window Maximize Vertical` |
 | `windowMaximizeHorizontal` | `kwin` | `Window Maximize Horizontal` | `kde:kwin/Window Maximize Horizontal` |
 | `windowFullscreen` | `kwin` | `Window Fullscreen` | `kde:kwin/Window Fullscreen` |
 | `windowOnAllDesktops` | `kwin` | `Window On All Desktops` | `kde:kwin/Window On All Desktops` |
 | `moveWindow` | `kwin` | `Window Move` | `kde:kwin/Window Move` |
 | `toggleNightColor` | `kwin` | `Toggle Night Color` | `kde:kwin/Toggle Night Color` |
-| `screenOff` | `org_kde_powerdevil` | `Turn Off Screen` | `kde:org_kde_powerdevil/Turn Off Screen` |
+| `turnOffScreen` | `org_kde_powerdevil` | `Turn Off Screen` | `kde:org_kde_powerdevil/Turn Off Screen` |
 
 ## Kept or added
 
@@ -89,19 +89,19 @@ as `kde:` if its key or chord does not work.
 | `switchDesktopN` (1–10) | `org.kde.KWin /KWin org.kde.KWin.setCurrentDesktop(i32 N)` |
 | `switchLayoutN` (1–10) | `org.kde.keyboard /Layouts org.kde.KeyboardLayouts.setLayout(u32 N-1)` |
 | `windowToDesktopN` (1–10) | `kde:kwin/Window to Desktop N` |
-| `windowClose` | `kde:kwin/Window Close` |
-| `windowMinimize` | `kde:kwin/Window Minimize` |
-| `windowMaximize` | `kde:kwin/Window Maximize` |
-| `windowMaximizeVertical` | `kde:kwin/Window Maximize Vertical` |
-| `windowKeepAbove` | `kde:kwin/Window Above Other Windows` |
-| `windowToNextDesktop` | `kde:kwin/Window to Next Desktop` |
+| `closeWindow` | `kde:kwin/Window Close` |
+| `minimizeWindow` | `kde:kwin/Window Minimize` |
+| `maximizeWindow` | `kde:kwin/Window Maximize` |
+| `maximizeWindowVertically` | `kde:kwin/Window Maximize Vertical` |
+| `toggleWindowKeepAbove` | `kde:kwin/Window Above Other Windows` |
+| `moveWindowToNextDesktop` | `kde:kwin/Window to Next Desktop` |
 | `showDesktop` | `kde:kwin/Show Desktop` |
-| `overview` | `kde:kwin/Overview` |
-| `appLauncher` | `kde:plasmashell/activate application launcher` |
-| `screenOff` | `kde:org_kde_powerdevil/Turn Off Screen` |
+| `showOverview` | `kde:kwin/Overview` |
+| `showAppLauncher` | `kde:plasmashell/activate application launcher` |
+| `turnOffScreen` | `kde:org_kde_powerdevil/Turn Off Screen` |
 
-On macOS, `switchDesktopN`, `windowToDesktopN`, `windowToNextDesktop`,
-`windowMaximizeVertical`, `windowKeepAbove`, `showDesktop` and `appLauncher`
+On macOS, `switchDesktopN`, `windowToDesktopN`, `moveWindowToNextDesktop`,
+`maximizeWindowVertically`, `toggleWindowKeepAbove`, `showDesktop` and `showAppLauncher`
 have no public API; running them there is
 ignored with a notification.
 
@@ -113,7 +113,7 @@ ignored with a notification.
   through kglobalaccel (`XF86AudioRaiseVolume`, `XF86MonBrightnessUp`,
   `XF86ScreenSaver`, `XF86Display`, …). The mapper emits them through
   uinput like any other key.
-- `DisplayOff` (`KEY_DISPLAY_OFF`) is not handled by KDE, so `screenOff`
+- `DisplayOff` (`KEY_DISPLAY_OFF`) is not handled by KDE, so `turnOffScreen`
   moved to `kde:` rather than a key.
 - To list every kglobalaccel action on the running system:
   `busctl --user call org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component allShortcutInfos`

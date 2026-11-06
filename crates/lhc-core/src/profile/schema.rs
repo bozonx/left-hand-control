@@ -21,7 +21,7 @@ pub const CONFIG_SCHEMA_VERSION: u64 = 1;
 /// Version of layout files this build reads and writes.
 pub const LAYOUT_SCHEMA_VERSION: u64 = 1;
 
-/// The `schemaVersion` of a parsed document, checked before the rest is
+/// The `version` of a parsed document, checked before the rest is
 /// read, so a file from a newer build is reported as such rather than as a
 /// list of unknown fields. Returns a version in `1..=current`.
 pub(crate) fn read_version(
@@ -32,8 +32,8 @@ pub(crate) fn read_version(
     let object = value
         .as_object()
         .ok_or_else(|| format!("{what} must be a JSON object"))?;
-    let Some(version) = object.get("schemaVersion") else {
-        return Err(format!("{what}: missing \"schemaVersion\" field"));
+    let Some(version) = object.get("version") else {
+        return Err(format!("{what}: missing \"version\" field"));
     };
     match version.as_u64() {
         Some(version) if (1..=current).contains(&version) => Ok(version),
@@ -44,11 +44,11 @@ pub(crate) fn read_version(
     }
 }
 
-/// `schemaVersion` of a file's text, if it is a JSON object with one.
+/// `version` of a file's text, if it is a JSON object with one.
 pub(crate) fn version_of(text: &str) -> Option<u64> {
     serde_json::from_str::<serde_json::Value>(text)
         .ok()?
-        .get("schemaVersion")?
+        .get("version")?
         .as_u64()
 }
 
@@ -96,27 +96,27 @@ mod tests {
     #[test]
     fn accepts_every_version_up_to_the_current_one() {
         let read = |value, current| read_version(&value, "file", current);
-        assert_eq!(read(json!({"schemaVersion": 1}), 1), Ok(1));
-        assert_eq!(read(json!({"schemaVersion": 1}), 3), Ok(1));
-        assert_eq!(read(json!({"schemaVersion": 3}), 3), Ok(3));
+        assert_eq!(read(json!({"version": 1}), 1), Ok(1));
+        assert_eq!(read(json!({"version": 1}), 3), Ok(1));
+        assert_eq!(read(json!({"version": 3}), 3), Ok(3));
         assert!(
-            read(json!({"schemaVersion": 2}), 1)
+            read(json!({"version": 2}), 1)
                 .unwrap_err()
                 .contains("newer")
         );
         assert!(
-            read(json!({"schemaVersion": 0}), 1)
+            read(json!({"version": 0}), 1)
                 .unwrap_err()
                 .contains("unsupported")
         );
-        assert!(read(json!({"schemaVersion": "1"}), 1).is_err());
+        assert!(read(json!({"version": "1"}), 1).is_err());
         assert!(read(json!({}), 1).unwrap_err().contains("missing"));
         assert!(read(json!([]), 1).unwrap_err().contains("JSON object"));
     }
 
     #[test]
     fn reads_the_version_of_raw_text() {
-        assert_eq!(version_of(r#"{"schemaVersion": 4, "x": 1}"#), Some(4));
+        assert_eq!(version_of(r#"{"version": 4, "x": 1}"#), Some(4));
         assert_eq!(version_of(r#"{"x": 1}"#), None);
         assert_eq!(version_of("not json"), None);
     }

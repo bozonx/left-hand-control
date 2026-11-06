@@ -54,8 +54,7 @@
 {
   "key": "KeyD+KeyF",
   "triggerMode": "chord",
-  "tapAction": "text:1",
-  "holdBehavior": "none"
+  "tap": "text:1"
 }
 ```
 

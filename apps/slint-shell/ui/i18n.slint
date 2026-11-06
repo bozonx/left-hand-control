@@ -51,7 +51,7 @@ export global Locale {
         if m.id == "game-mode-in-development" { return @tr("Game mode is not available yet."); }
         if m.id == "builtin-macro" && m.arg == "emptyLineAbove" { return @tr("Empty line above"); }
         if m.id == "builtin-macro" && m.arg == "nextLineEnd" { return @tr("End of next line"); }
-        if m.id == "builtin-macro" && m.arg == "prevLineEnd" { return @tr("End of previous line"); }
+        if m.id == "builtin-macro" && m.arg == "previousLineEnd" { return @tr("End of previous line"); }
         if m.id == "builtin-macro" && m.arg == "move5LinesUp" { return @tr("Move 5 lines up"); }
         if m.id == "builtin-macro" && m.arg == "duplicateLine" { return @tr("Duplicate line"); }
         if m.id == "builtin-macro" && m.arg == "spaceAfterNextChar" { return @tr("Space after next character"); }
@@ -61,7 +61,7 @@ export global Locale {
         if m.id == "builtin-macro" && m.arg == "pasteOnNewLineAbove" { return @tr("Paste on new line above"); }
         if m.id == "builtin-macro" && m.arg == "replaceWordWithClipboard" { return @tr("Replace word with clipboard"); }
         if m.id == "builtin-macro" && m.arg == "nextLineStart" { return @tr("Start of next line"); }
-        if m.id == "builtin-macro" && m.arg == "prevLineStart" { return @tr("Start of previous line"); }
+        if m.id == "builtin-macro" && m.arg == "previousLineStart" { return @tr("Start of previous line"); }
         if m.id == "builtin-macro" && m.arg == "move5LinesDown" { return @tr("Move 5 lines down"); }
         if m.id == "builtin-macro" && m.arg == "pasteOnNewLineBelow" { return @tr("Paste on new line below"); }
         if m.id == "builtin-macro" && m.arg == "cutToLineStart" { return @tr("Cut to line start"); }
@@ -84,23 +84,23 @@ export global Locale {
         if m.id == "picker-action" && m.arg == "showEmojiMenuLast" { return @tr("Show Emoji & Symbols menu on the last used page"); }
         if m.id == "picker-action" && m.arg == "showSettings" { return @tr("Show the settings window"); }
         if m.id == "picker-action" && m.arg == "activateLayout" { return @tr("Activate layout {} (switches to Single mode)", m.count); }
-        if m.id == "picker-action" && m.arg == "gameModeToggle" { return @tr("Toggle game mode"); }
-        if m.id == "picker-action" && m.arg == "gameModeAuto" { return @tr("Game mode: detect automatically"); }
-        if m.id == "picker-action" && m.arg == "gameModeOn" { return @tr("Game mode: always on"); }
-        if m.id == "picker-action" && m.arg == "gameModeOff" { return @tr("Game mode: always off"); }
-        if m.id == "picker-action" && m.arg == "windowClose" { return @tr("Close window"); }
-        if m.id == "picker-action" && m.arg == "windowMinimize" { return @tr("Minimize window"); }
-        if m.id == "picker-action" && m.arg == "windowMaximize" { return @tr("Maximize window"); }
-        if m.id == "picker-action" && m.arg == "windowMaximizeVertical" { return @tr("Maximize window vertically"); }
-        if m.id == "picker-action" && m.arg == "windowKeepAbove" { return @tr("Keep window above others"); }
-        if m.id == "picker-action" && m.arg == "windowToNextDesktop" { return @tr("Move window to next desktop"); }
+        if m.id == "picker-action" && m.arg == "toggleGameMode" { return @tr("Toggle game mode"); }
+        if m.id == "picker-action" && m.arg == "setGameModeAuto" { return @tr("Game mode: detect automatically"); }
+        if m.id == "picker-action" && m.arg == "setGameModeOn" { return @tr("Game mode: always on"); }
+        if m.id == "picker-action" && m.arg == "setGameModeOff" { return @tr("Game mode: always off"); }
+        if m.id == "picker-action" && m.arg == "closeWindow" { return @tr("Close window"); }
+        if m.id == "picker-action" && m.arg == "minimizeWindow" { return @tr("Minimize window"); }
+        if m.id == "picker-action" && m.arg == "maximizeWindow" { return @tr("Maximize window"); }
+        if m.id == "picker-action" && m.arg == "maximizeWindowVertically" { return @tr("Maximize window vertically"); }
+        if m.id == "picker-action" && m.arg == "toggleWindowKeepAbove" { return @tr("Keep window above others"); }
+        if m.id == "picker-action" && m.arg == "moveWindowToNextDesktop" { return @tr("Move window to next desktop"); }
         if m.id == "picker-action" && m.arg == "showDesktop" { return @tr("Show desktop"); }
-        if m.id == "picker-action" && m.arg == "overview" { return @tr("Window overview"); }
-        if m.id == "picker-action" && m.arg == "appLauncher" { return @tr("Open application launcher"); }
-        if m.id == "picker-action" && m.arg == "screenOff" { return @tr("Turn off screen"); }
+        if m.id == "picker-action" && m.arg == "showOverview" { return @tr("Window overview"); }
+        if m.id == "picker-action" && m.arg == "showAppLauncher" { return @tr("Open application launcher"); }
+        if m.id == "picker-action" && m.arg == "turnOffScreen" { return @tr("Turn off screen"); }
         if m.id == "picker-action" && m.arg == "switchDesktop" { return @tr("Switch to desktop {}", m.count); }
-        if m.id == "picker-action" && m.arg == "switchLayout" { return @tr("Switch to layout {}", m.count); }
-        if m.id == "picker-action" && m.arg == "windowToDesktop" { return @tr("Move window to desktop {}", m.count); }
+        if m.id == "picker-action" && m.arg == "switchKeyboardLayout" { return @tr("Switch to layout {}", m.count); }
+        if m.id == "picker-action" && m.arg == "moveWindowToDesktop" { return @tr("Move window to desktop {}", m.count); }
         if m.id == "layout-slot-empty" { return @tr("There is no layout number {}", m.count); }
         if m.id == "library-saved" { return @tr("Layout library updated"); }
         if m.id == "library-select" { return @tr("Select a layout"); }

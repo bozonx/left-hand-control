@@ -54,7 +54,7 @@ pub fn set_layout(index: u32) -> Result<(), String> {
     if index >= crate::profile::actions::SYSTEM_NUMBERED_COUNT {
         return Err("GNOME input source index is out of range".into());
     }
-    gnome::action(&format!("switchLayout{}", index + 1))?;
+    gnome::action(&format!("switchKeyboardLayout{}", index + 1))?;
     let _ = current();
     Ok(())
 }

@@ -1,4 +1,4 @@
-//! `config.json`: `{ "schemaVersion": 1, "settings": { … }, "state": { … } }`.
+//! `config.json`: `{ "version": 1, "settings": { … }, "state": { … } }`.
 //!
 //! `settings` holds the user's choices, `state` what the application
 //! remembers between runs (the layout open in the editor, the game-mode
@@ -82,7 +82,7 @@ fn prune_defaults(value: &mut serde_json::Value, default: &serde_json::Value) {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ConfigDoc {
-    schema_version: u64,
+    version: u64,
     #[serde(
         rename = "$schema",
         default,
@@ -223,12 +223,39 @@ struct AutoRuleDoc {
     /// Required; an explicit `null` turns the mapper off, so a forgotten
     /// field is an error rather than a silent "off".
     #[serde(deserialize_with = "nullable")]
-    layout_id: Option<String>,
+    layout: Option<String>,
     #[serde(default = "yes", skip_serializing_if = "is_true")]
     enabled: bool,
     /// Empty conditions always match.
     #[serde(default, skip_serializing_if = "WhenDoc::is_empty")]
     when: WhenDoc,
+}
+
+/// `linux.terminalPasteShortcut`: a paste chord, or `"sameAsPaste"` (`None`)
+/// to use `linux.pasteShortcut`.
+#[derive(PartialEq)]
+struct TerminalPasteDoc(Option<PasteShortcut>);
+
+const SAME_AS_PASTE: &str = "sameAsPaste";
+
+impl Serialize for TerminalPasteDoc {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self.0 {
+            Some(shortcut) => shortcut.serialize(serializer),
+            None => serializer.serialize_str(SAME_AS_PASTE),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for TerminalPasteDoc {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let value = String::deserialize(deserializer)?;
+        if value == SAME_AS_PASTE {
+            return Ok(Self(None));
+        }
+        PasteShortcut::deserialize(serde::de::value::StrDeserializer::<D::Error>::new(&value))
+            .map(|shortcut| Self(Some(shortcut)))
+    }
 }
 
 /// A required field that may be `null`.
@@ -281,7 +308,7 @@ struct ProcessDoc {
     id: Option<String>,
     name: String,
     #[serde(default = "yes", skip_serializing_if = "is_true")]
-    only_active_window: bool,
+    foreground_only: bool,
     #[serde(default, skip_serializing_if = "is_false")]
     exclude: bool,
 }
@@ -293,8 +320,8 @@ struct LinuxDoc {
     text_mode: TextMode,
     /// Shortcut the clipboard text modes send to paste, as a key chord.
     paste_shortcut: PasteShortcut,
-    /// Paste shortcut for terminal windows; `null` uses `paste_shortcut`.
-    terminal_paste_shortcut: Option<PasteShortcut>,
+    /// Paste shortcut for terminal windows, or `sameAsPaste`.
+    terminal_paste_shortcut: TerminalPasteDoc,
     /// Empty: looked up in `PATH`.
     ydotool_path: String,
     xdotool_path: String,
@@ -311,7 +338,7 @@ impl Default for LinuxDoc {
 struct StateDoc {
     /// Library layout open in the editor.
     #[serde(skip_serializing_if = "Option::is_none")]
-    edited_layout_id: Option<String>,
+    edited_layout: Option<String>,
     /// Auto / On / Off choice of the game-mode switch.
     game_mode_switch: GameModeControl,
 }
@@ -393,7 +420,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
         auto_rules.push(AutoRule {
             id: rule.id.unwrap_or_default(),
             layout_id: layout_ref(
-                rule.layout_id,
+                rule.layout,
                 &format!("settings.layouts.auto.rules[{index}]"),
             )?,
             enabled: rule.enabled,
@@ -421,7 +448,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
         macro_timeout_ms: timing.macro_timeout_ms,
         input_device_path: Some(keyboard_device.unwrap_or_default()),
         input_mouse_device_path: mouse_device,
-        editing_layout_id: non_empty(state.edited_layout_id),
+        editing_layout_id: non_empty(state.edited_layout),
         layout_mode: layouts.mode,
         manual_layout_id: non_empty(layouts.manual),
         layout_order: layouts.order,
@@ -449,7 +476,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
                 .map(|process| GameModeProcessMatcher {
                     id: process.id.unwrap_or_default(),
                     name: process.name.trim().into(),
-                    only_active_window: process.only_active_window,
+                    only_active_window: process.foreground_only,
                     is_blacklist: process.exclude,
                 })
                 .collect(),
@@ -457,7 +484,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
         },
         linux_wayland_text_mode: settings.linux.text_mode,
         linux_paste_shortcut: settings.linux.paste_shortcut,
-        linux_terminal_paste_shortcut: settings.linux.terminal_paste_shortcut,
+        linux_terminal_paste_shortcut: settings.linux.terminal_paste_shortcut.0,
         linux_ydotool_path: settings.linux.ydotool_path,
         linux_xdotool_path: settings.linux.xdotool_path,
     })
@@ -467,7 +494,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
     let game_mode = &settings.game_mode;
     let filled = |value: &Option<String>| value.clone().filter(|value| !value.is_empty());
     ConfigDoc {
-        schema_version: CONFIG_SCHEMA_VERSION,
+        version: CONFIG_SCHEMA_VERSION,
         schema: settings.schema.clone(),
         settings: SettingsDoc {
             experimental: settings.in_development,
@@ -505,7 +532,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
                         .iter()
                         .map(|rule| AutoRuleDoc {
                             id: Some(rule.id.clone()).filter(|id| !id.is_empty()),
-                            layout_id: filled(&rule.layout_id),
+                            layout: filled(&rule.layout_id),
                             enabled: rule.enabled,
                             when: WhenDoc::from_set(&rule.conditions),
                         })
@@ -533,7 +560,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
                     .map(|process| ProcessDoc {
                         id: Some(process.id.clone()).filter(|id| !id.is_empty()),
                         name: process.name.clone(),
-                        only_active_window: process.only_active_window,
+                        foreground_only: process.only_active_window,
                         exclude: process.is_blacklist,
                     })
                     .collect(),
@@ -541,13 +568,13 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
             linux: LinuxDoc {
                 text_mode: settings.linux_wayland_text_mode,
                 paste_shortcut: settings.linux_paste_shortcut,
-                terminal_paste_shortcut: settings.linux_terminal_paste_shortcut,
+                terminal_paste_shortcut: TerminalPasteDoc(settings.linux_terminal_paste_shortcut),
                 ydotool_path: settings.linux_ydotool_path.clone(),
                 xdotool_path: settings.linux_xdotool_path.clone(),
             },
         },
         state: StateDoc {
-            edited_layout_id: filled(&settings.editing_layout_id),
+            edited_layout: filled(&settings.editing_layout_id),
             game_mode_switch: game_mode.control,
         },
     }
@@ -559,7 +586,7 @@ mod tests {
     use serde_json::{Value, json};
 
     fn config(settings: Value) -> String {
-        json!({"schemaVersion": 1, "settings": settings}).to_string()
+        json!({"version": 1, "settings": settings}).to_string()
     }
 
     #[test]
@@ -572,7 +599,7 @@ mod tests {
             assert_eq!(settings.locale.as_str(), code);
             let saved = serialize(&settings);
             let raw: Value = serde_json::from_str(&saved).unwrap();
-            assert_eq!(raw["schemaVersion"], 1);
+            assert_eq!(raw["version"], 1);
             // The default is not written.
             let expected = if code == "auto" {
                 Value::Null
@@ -586,7 +613,7 @@ mod tests {
 
     #[test]
     fn editor_schema_is_preserved_and_strictly_typed() {
-        let text = r#"{"schemaVersion":1,"$schema":"https://example.com/config.schema.json"}"#;
+        let text = r#"{"version":1,"$schema":"https://example.com/config.schema.json"}"#;
         let mut settings = parse(text).unwrap();
         settings.high_contrast = true;
         let saved = serialize(&settings);
@@ -594,7 +621,7 @@ mod tests {
         let raw: serde_json::Value = serde_json::from_str(&saved).unwrap();
         assert_eq!(raw["$schema"], "https://example.com/config.schema.json");
         for value in ["null", "1", "{}"] {
-            assert!(parse(&format!(r#"{{"schemaVersion":1,"$schema":{value}}}"#)).is_err());
+            assert!(parse(&format!(r#"{{"version":1,"$schema":{value}}}"#)).is_err());
         }
     }
 
@@ -615,7 +642,7 @@ mod tests {
     #[test]
     fn only_values_differing_from_defaults_are_written() {
         let raw: Value = serde_json::from_str(&serialize(&AppSettings::default())).unwrap();
-        assert_eq!(raw, json!({"schemaVersion": 1}));
+        assert_eq!(raw, json!({"version": 1}));
         let settings = AppSettings {
             default_hold_timeout_ms: 300,
             linux_terminal_paste_shortcut: None,
@@ -625,9 +652,9 @@ mod tests {
         let raw: Value = serde_json::from_str(&text).unwrap();
         assert_eq!(
             raw,
-            json!({"schemaVersion": 1, "settings": {
+            json!({"version": 1, "settings": {
                 "timing": {"holdMs": 300},
-                "linux": {"terminalPasteShortcut": null},
+                "linux": {"terminalPasteShortcut": "sameAsPaste"},
             }})
         );
         assert_eq!(parse(&text).unwrap(), settings);
@@ -637,7 +664,7 @@ mod tests {
     fn ids_are_unique_and_generated_without_collisions() {
         for field in ["autoRules", "processes"] {
             let items = if field == "autoRules" {
-                serde_json::json!([{"id":"x","layoutId":null},{"id":"x","layoutId":null}])
+                serde_json::json!([{"id":"x","layout":null},{"id":"x","layout":null}])
             } else {
                 serde_json::json!([{"id":"x","name":"a"},{"id":"x","name":"b"}])
             };
@@ -653,7 +680,7 @@ mod tests {
             );
         }
         let settings = parse(&config(serde_json::json!({
-            "layouts":{"auto":{"rules":[{"layoutId":null}, {"id":"rule-1","layoutId":null}]}},
+            "layouts":{"auto":{"rules":[{"layout":null}, {"id":"rule-1","layout":null}]}},
             "gameMode":{"processes":[{"name":"a"},{"id":"process-1","name":"b"}]}
         })))
         .unwrap();
@@ -688,10 +715,7 @@ mod tests {
     #[test]
     fn missing_settings_use_defaults() {
         assert_eq!(parse("").unwrap(), AppSettings::default());
-        assert_eq!(
-            parse(r#"{"schemaVersion": 1}"#).unwrap(),
-            AppSettings::default()
-        );
+        assert_eq!(parse(r#"{"version": 1}"#).unwrap(), AppSettings::default());
         assert_eq!(parse(&config(json!({}))).unwrap(), AppSettings::default());
     }
 
@@ -700,13 +724,9 @@ mod tests {
         assert!(
             parse(r#"{"settings": {}}"#)
                 .unwrap_err()
-                .contains("schemaVersion")
+                .contains("version")
         );
-        assert!(
-            parse(r#"{"schemaVersion": 2}"#)
-                .unwrap_err()
-                .contains("newer")
-        );
+        assert!(parse(r#"{"version": 2}"#).unwrap_err().contains("newer"));
         assert!(parse(r#"[]"#).is_err());
     }
 
@@ -728,11 +748,11 @@ mod tests {
             json!({"linux": {"textMode": "magic"}}),
             json!({"gameMode": {"detectors": {"origin": true}}}),
             json!({"gameMode": {"processes": [{"name": "steam", "isBlacklist": true}]}}),
-            json!({"layouts": {"auto": {"rules": [{"layoutId": "user:A", "window_patterns": ["kate"]}]}}}),
+            json!({"layouts": {"auto": {"rules": [{"layout": "user:A", "window_patterns": ["kate"]}]}}}),
             json!({"layouts": {"auto": {"rules": [{"when": {"gameMode": "on"}}]}}}),
-            json!({"layouts": {"auto": {"rules": [{"layoutId": ""}]}}}),
+            json!({"layouts": {"auto": {"rules": [{"layout": ""}]}}}),
             json!({"layouts": {"auto": {"fallback": " "}}}),
-            json!({"layouts": {"auto": {"rules": [{"id": "a b", "layoutId": null}]}}}),
+            json!({"layouts": {"auto": {"rules": [{"id": "a b", "layout": null}]}}}),
             json!({"layouts": {"active": "user:A"}}),
             json!({"keyboardDevice": "/dev/input/event1"}),
             json!({"devices": {"keyboards": ["/dev/a", "/dev/b"]}}),
@@ -744,9 +764,9 @@ mod tests {
                 "accepted {settings}"
             );
         }
-        assert!(parse(r#"{"schemaVersion": 1, "extra": true}"#).is_err());
-        assert!(parse(r#"{"schemaVersion": 1, "state": {"gameModeSwitch": "maybe"}}"#).is_err());
-        assert!(parse(r#"{"schemaVersion": 1, "state": {"gameMode": "on"}}"#).is_err());
+        assert!(parse(r#"{"version": 1, "extra": true}"#).is_err());
+        assert!(parse(r#"{"version": 1, "state": {"gameModeSwitch": "maybe"}}"#).is_err());
+        assert!(parse(r#"{"version": 1, "state": {"gameMode": "on"}}"#).is_err());
     }
 
     #[test]
@@ -797,7 +817,7 @@ mod tests {
         let text = serialize(&settings);
         assert_eq!(parse(&text).unwrap(), settings);
         let raw: Value = serde_json::from_str(&text).unwrap();
-        assert_eq!(raw["schemaVersion"], 1);
+        assert_eq!(raw["version"], 1);
         assert_eq!(raw["settings"]["timing"]["holdMs"], 180);
         assert_eq!(raw["settings"]["linux"]["pasteShortcut"], "Ctrl+Shift+KeyV");
         assert_eq!(raw["settings"]["appearance"], "eInk");
@@ -805,10 +825,10 @@ mod tests {
         assert_eq!(raw["settings"]["linux"]["textMode"], "clipboard");
         assert_eq!(
             raw["settings"]["linux"]["terminalPasteShortcut"],
-            Value::Null
+            "sameAsPaste"
         );
         assert_eq!(raw["settings"]["gameMode"]["processes"][0]["exclude"], true);
-        assert_eq!(raw["state"]["editedLayoutId"], "user:Main");
+        assert_eq!(raw["state"]["editedLayout"], "user:Main");
         assert_eq!(raw["state"]["gameModeSwitch"], "on");
         let layouts = &raw["settings"]["layouts"];
         assert_eq!(layouts["mode"], "auto");
@@ -818,7 +838,7 @@ mod tests {
             layouts["auto"]["rules"][0]["when"]["excludeWindows"],
             json!(["title:Preferences"])
         );
-        assert_eq!(layouts["auto"]["rules"][0]["layoutId"], Value::Null);
+        assert_eq!(layouts["auto"]["rules"][0]["layout"], Value::Null);
         assert_eq!(layouts["auto"]["fallback"], "user:Main");
         assert_eq!(
             raw["settings"]["devices"],
@@ -860,7 +880,10 @@ mod tests {
             shortcut(json!({"pasteShortcut": "Ctrl+KeyV"})),
             Some(PasteShortcut::CtrlShiftV)
         );
-        assert_eq!(shortcut(json!({"terminalPasteShortcut": null})), None);
+        assert_eq!(
+            shortcut(json!({"terminalPasteShortcut": "sameAsPaste"})),
+            None
+        );
         assert_eq!(
             shortcut(json!({"terminalPasteShortcut": "Shift+Insert"})),
             Some(PasteShortcut::ShiftInsert)
@@ -870,6 +893,8 @@ mod tests {
             shortcut(json!({"terminalPasteShortcut": "ShiftLeft+Ctrl+KeyV"})),
             Some(PasteShortcut::CtrlShiftV)
         );
+        let null = config(json!({"linux": {"terminalPasteShortcut": null}}));
+        assert!(parse(&null).is_err());
     }
 
     #[test]
@@ -881,8 +906,7 @@ mod tests {
 
     #[test]
     fn manual_activation_is_independent_of_the_edited_layout() {
-        let settings =
-            parse(r#"{"schemaVersion": 1, "state": {"editedLayoutId": "user:Main"}}"#).unwrap();
+        let settings = parse(r#"{"version": 1, "state": {"editedLayout": "user:Main"}}"#).unwrap();
         assert_eq!(settings.editing_layout_id.as_deref(), Some("user:Main"));
         assert_eq!(settings.manual_layout_id, None);
     }
@@ -891,8 +915,8 @@ mod tests {
     fn auto_rules_without_ids_get_deterministic_ids() {
         let settings = parse(&config(json!({"layouts": {"auto": {
             "rules": [
-                {"id": "a", "layoutId": "user:A", "when": {"windows": ["blender"]}},
-                {"layoutId": null, "enabled": false},
+                {"id": "a", "layout": "user:A", "when": {"windows": ["blender"]}},
+                {"layout": null, "enabled": false},
             ],
             "fallback": "user:B",
         }}})))

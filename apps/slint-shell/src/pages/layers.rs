@@ -735,19 +735,19 @@ mod tests {
         let map = keymap(&[
             ("KeyQ", Some("KeyA")),
             ("KeyW", None),
-            ("Backspace", Some("sys:screenOff")),
+            ("Backspace", Some("sys:turnOffScreen")),
             ("F4", None),
         ]);
         let entries = ordered_extra_entries(&map);
         assert_eq!(entries.len(), 2);
-        assert!(entries.contains(&("Backspace".into(), Some("sys:screenOff".into()))));
+        assert!(entries.contains(&("Backspace".into(), Some("sys:turnOffScreen".into()))));
         assert!(entries.contains(&("F4".into(), None)));
     }
 
     #[test]
     fn extra_key_suppression_is_preserved() {
         let layout = lhc_core::profile::layout_file::parse(
-            r#"{"schemaVersion": 1, "layers": [{"id": "extra", "keys": {"BracketRight": null, "Backslash": null, "F4": "F4"}}]}"#
+            r#"{"version": 1, "layers": [{"id": "extra", "keys": {"BracketRight": null, "Backslash": null, "F4": "F4"}}]}"#
         ).unwrap().unwrap();
         let entries = ordered_extra_entries(&layout.layer_keymaps["extra"]);
         assert_eq!(entries.len(), 3);

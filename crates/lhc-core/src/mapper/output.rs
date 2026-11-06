@@ -1348,7 +1348,7 @@ mod tests {
             EngineOutput::RunMacroText("stale macro".into(), crate::text_input::MacroText::default()),
             command(),
             EngineOutput::RunSystem(SystemAction::AppEvent(
-                crate::profile::app_action::AppAction::parse("gameModeToggle").unwrap(),
+                crate::profile::app_action::AppAction::parse("toggleGameMode").unwrap(),
             )),
         ];
         let now = Instant::now();

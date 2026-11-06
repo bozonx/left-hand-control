@@ -114,35 +114,39 @@ pub struct CatalogEntry {
     pub name: ActionName,
 }
 
-const NUMBERED_SYSTEM_ACTIONS: [&str; 3] = ["switchDesktop", "switchLayout", "windowToDesktop"];
+const NUMBERED_SYSTEM_ACTIONS: [&str; 3] = [
+    "switchDesktop",
+    "switchKeyboardLayout",
+    "moveWindowToDesktop",
+];
 
 /// System actions without a number. Each has a documented counterpart on
-/// Linux desktops and Windows, except `windowToNextDesktop`: like
+/// Linux desktops and Windows, except `moveWindowToNextDesktop`: like
 /// `windowToDesktopN`, Windows has no public API to move another app's
 /// window between virtual desktops. See [`unsupported_on_macos`] for macOS.
 pub const PLAIN_SYSTEM_ACTIONS: [&str; 10] = [
-    "windowClose",
-    "windowMinimize",
-    "windowMaximize",
-    "windowMaximizeVertical",
-    "windowKeepAbove",
-    "windowToNextDesktop",
+    "closeWindow",
+    "minimizeWindow",
+    "maximizeWindow",
+    "maximizeWindowVertically",
+    "toggleWindowKeepAbove",
+    "moveWindowToNextDesktop",
     "showDesktop",
-    "overview",
-    "appLauncher",
-    "screenOff",
+    "showOverview",
+    "showAppLauncher",
+    "turnOffScreen",
 ];
 
 /// `sys:` ids (numbered ones without their number) that macOS has no
 /// public API for. Running one there is ignored with a notice.
 const MACOS_UNSUPPORTED_SYSTEM_ACTIONS: [&str; 7] = [
     "switchDesktop",
-    "windowToDesktop",
-    "windowToNextDesktop",
-    "windowMaximizeVertical",
-    "windowKeepAbove",
+    "moveWindowToDesktop",
+    "moveWindowToNextDesktop",
+    "maximizeWindowVertically",
+    "toggleWindowKeepAbove",
     "showDesktop",
-    "appLauncher",
+    "showAppLauncher",
 ];
 
 /// Numbered actions have ids 1…10 (system), 1… without an upper bound
@@ -201,10 +205,10 @@ pub fn kde_shortcut_parts(id: &str) -> Option<(&str, &str)> {
 
 /// Game-mode control actions: flip the effective state, or set the mode.
 pub const GAME_MODE_APP_ACTIONS: [&str; 4] = [
-    "gameModeToggle",
-    "gameModeAuto",
-    "gameModeOn",
-    "gameModeOff",
+    "toggleGameMode",
+    "setGameModeAuto",
+    "setGameModeOn",
+    "setGameModeOff",
 ];
 
 /// App actions without a number: the menus on their last used page and
@@ -504,18 +508,18 @@ mod tests {
         assert_eq!(system_action_name("switchDesktop11"), None);
         assert_eq!(system_action_name("lockSession"), None);
         assert_eq!(
-            system_action_name("screenOff"),
+            system_action_name("turnOffScreen"),
             Some(ActionName::System {
-                id: "screenOff",
+                id: "turnOffScreen",
                 n: 0
             })
         );
         assert!(unsupported_on_macos("switchDesktop3"));
-        assert!(unsupported_on_macos("windowKeepAbove"));
-        assert!(unsupported_on_macos("windowMaximizeVertical"));
-        assert!(unsupported_on_macos("windowToNextDesktop"));
-        assert!(!unsupported_on_macos("switchLayout2"));
-        assert!(!unsupported_on_macos("windowClose"));
+        assert!(unsupported_on_macos("toggleWindowKeepAbove"));
+        assert!(unsupported_on_macos("maximizeWindowVertically"));
+        assert!(unsupported_on_macos("moveWindowToNextDesktop"));
+        assert!(!unsupported_on_macos("switchKeyboardLayout2"));
+        assert!(!unsupported_on_macos("closeWindow"));
         assert!(!unsupported_on_macos("lockSession"));
         assert_eq!(
             kde_shortcut_parts("org_kde_powerdevil/Turn Off Screen"),
@@ -527,13 +531,13 @@ mod tests {
         assert_eq!(menu_page("showEmojiMenu3"), Some((true, 3)));
         assert_eq!(menu_page("showQuickMenu42"), Some((false, 42)));
         assert_eq!(menu_page("showQuickMenu0"), None);
-        assert_eq!(menu_page("gameModeToggle"), None);
+        assert_eq!(menu_page("toggleGameMode"), None);
         assert_eq!(menu_page("activateLayout2"), None);
         assert_eq!(menu_page("showEmojiMenuLast"), None);
         assert_eq!(
-            app_action_name("gameModeOff"),
+            app_action_name("setGameModeOff"),
             Some(ActionName::App {
-                id: "gameModeOff",
+                id: "setGameModeOff",
                 n: 0
             })
         );
@@ -613,11 +617,11 @@ mod tests {
         );
         // Windows runs system actions through its own backend.
         if cfg!(target_os = "windows") {
-            assert_eq!(issue(&config, "sys:windowClose"), None);
+            assert_eq!(issue(&config, "sys:closeWindow"), None);
         }
         if !crate::mapper::runtime::SUPPORTED {
             assert_eq!(
-                issue(&config, "sys:windowClose"),
+                issue(&config, "sys:closeWindow"),
                 Some(ExecutionIssue::Unavailable)
             );
         }
@@ -642,7 +646,7 @@ mod tests {
         assert_eq!(check("builtin:nope"), Some(ActionIssue::UnknownMacro));
         assert_eq!(check("macro:nope"), Some(ActionIssue::UnknownMacro));
         assert_eq!(check("cmd:nope"), Some(ActionIssue::UnknownCommand));
-        assert_eq!(check("sys:windowToDesktop2"), None);
+        assert_eq!(check("sys:moveWindowToDesktop2"), None);
         assert_eq!(
             check("sys:lockSession"),
             Some(ActionIssue::UnknownSystemAction)

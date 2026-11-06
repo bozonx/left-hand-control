@@ -546,7 +546,7 @@ mod tests {
             );
         }
         assert_eq!(
-            Command::from_app_action(AppAction::parse("gameModeToggle").unwrap()),
+            Command::from_app_action(AppAction::parse("toggleGameMode").unwrap()),
             Some(ShellCommand::GameMode(GameMode::Toggle))
         );
         assert_eq!(

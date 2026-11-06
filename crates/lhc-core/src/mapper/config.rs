@@ -74,10 +74,8 @@ pub struct MapperConfig {
 pub struct Command {
     pub id: String,
     #[serde(default)]
-    #[serde(rename = "linux")]
     pub posix_script: String,
     #[serde(default)]
-    #[serde(rename = "windows")]
     pub powershell_script: String,
     #[serde(default)]
     pub working_directory: Option<String>,
@@ -110,13 +108,10 @@ pub struct Rule {
     #[serde(default)]
     pub condition_game_mode: Option<GameModeCondition>,
     #[serde(default)]
-    #[serde(rename = "conditionLayouts")]
     pub condition_keyboard_layouts: Option<Vec<String>>,
     #[serde(default)]
-    #[serde(rename = "conditionAppsWhitelist")]
     pub condition_window_patterns: Option<Vec<String>>,
     #[serde(default)]
-    #[serde(rename = "conditionAppsBlacklist")]
     pub condition_excluded_window_patterns: Option<Vec<String>>,
     pub key: String,
     #[serde(default)]

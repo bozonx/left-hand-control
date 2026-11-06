@@ -52,11 +52,11 @@ mod tests {
     fn display_name_uses_metadata_or_filename() {
         for (text, expected) in [
             (
-                r#"{"schemaVersion":1,"meta":{"name":"Friendly name"}}"#,
+                r#"{"version":1,"meta":{"name":"Friendly name"}}"#,
                 "Friendly name",
             ),
-            (r#"{"schemaVersion":1}"#, "asset_name"),
-            (r#"{"schemaVersion":1,"meta":{"name":"  "}}"#, "asset_name"),
+            (r#"{"version":1}"#, "asset_name"),
+            (r#"{"version":1,"meta":{"name":"  "}}"#, "asset_name"),
         ] {
             let bundled = BundledLayout {
                 name: "asset_name",

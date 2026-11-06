@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "version": 1,
   "meta": {
     "name": "LHC1 by Ivan K",
     "author": "Ivan K"
@@ -18,7 +18,7 @@
         "KeyT": "Ctrl+Home",
         "KeyY": "Home",
         "KeyU": "builtin:nextLineEnd",
-        "KeyI": "builtin:prevLineEnd",
+        "KeyI": "builtin:previousLineEnd",
         "KeyO": "End",
         "KeyP": "builtin:move5LinesUp",
         "BracketLeft": null,
@@ -40,7 +40,7 @@
         "KeyB": "Ctrl+End",
         "KeyN": "Ctrl+ArrowLeft",
         "KeyM": "builtin:nextLineStart",
-        "Comma": "builtin:prevLineStart",
+        "Comma": "builtin:previousLineStart",
         "Period": "Ctrl+ArrowRight",
         "Slash": "builtin:move5LinesDown"
       }
@@ -50,16 +50,16 @@
       "keys": {
         "CapsLock": "CapsLock",
         "AltLeft": "Ctrl+Enter",
-        "Digit1": "sys:switchLayout1",
-        "Digit2": "sys:switchLayout2",
-        "Digit3": "sys:switchLayout3",
-        "Digit4": "sys:switchLayout4",
-        "Digit5": "sys:switchLayout5",
-        "Digit6": "sys:switchLayout6",
-        "Digit7": "sys:switchLayout7",
-        "Digit8": "sys:switchLayout8",
-        "Digit9": "sys:switchLayout9",
-        "Digit0": "sys:switchLayout10",
+        "Digit1": "sys:switchKeyboardLayout1",
+        "Digit2": "sys:switchKeyboardLayout2",
+        "Digit3": "sys:switchKeyboardLayout3",
+        "Digit4": "sys:switchKeyboardLayout4",
+        "Digit5": "sys:switchKeyboardLayout5",
+        "Digit6": "sys:switchKeyboardLayout6",
+        "Digit7": "sys:switchKeyboardLayout7",
+        "Digit8": "sys:switchKeyboardLayout8",
+        "Digit9": "sys:switchKeyboardLayout9",
+        "Digit0": "sys:switchKeyboardLayout10",
         "KeyQ": "Ctrl+KeyZ",
         "KeyW": "builtin:cutToLineStart",
         "KeyE": "builtin:cutToLineEnd",
@@ -171,16 +171,12 @@
     },
     {
       "id": "desktop",
-      "holdModifiers": [
-        "Tab",
-        "CapsLock"
-      ],
       "keys": {
-        "Tab": "Alt+Tab",
-        "CapsLock": "Meta+Tab",
-        "Backspace": "sys:screenOff",
+        "Tab": { "action": "Alt+Tab", "holdModifiers": true },
+        "CapsLock": { "action": "Meta+Tab", "holdModifiers": true },
+        "Backspace": "sys:turnOffScreen",
         "Space": "Ctrl+Alt+Shift+KeyV",
-        "ShiftLeft": "sys:switchLayout4",
+        "ShiftLeft": "sys:switchKeyboardLayout4",
         "Digit1": "Meta+Digit1",
         "Digit2": "Meta+Digit2",
         "Digit3": "Meta+Digit3",
@@ -195,27 +191,27 @@
         "KeyW": "Ctrl+KeyA",
         "KeyE": "Ctrl+Alt+Shift+KeyS",
         "KeyR": "Ctrl+Alt+Shift+KeyW",
-        "KeyT": "sys:windowKeepAbove",
-        "KeyY": "sys:windowClose",
-        "KeyU": "sys:windowMaximize",
-        "KeyI": "sys:windowMinimize",
+        "KeyT": "sys:toggleWindowKeepAbove",
+        "KeyY": "sys:closeWindow",
+        "KeyU": "sys:maximizeWindow",
+        "KeyI": "sys:minimizeWindow",
         "KeyO": "ZoomIn",
         "KeyP": "ZoomOut",
-        "BracketLeft": "sys:appLauncher",
+        "BracketLeft": "sys:showAppLauncher",
         "KeyA": "sys:switchDesktop4",
         "KeyS": "sys:switchDesktop3",
         "KeyD": "sys:switchDesktop2",
         "KeyF": "sys:switchDesktop1",
-        "KeyG": "sys:windowToNextDesktop",
+        "KeyG": "sys:moveWindowToNextDesktop",
         "KeyH": "Meta+ArrowLeft",
         "KeyJ": "Meta+ArrowUp",
         "KeyK": "Meta+ArrowDown",
         "KeyL": "Meta+ArrowRight",
-        "Semicolon": "sys:windowMaximizeVertical",
+        "Semicolon": "sys:maximizeWindowVertically",
         "Quote": "kde:kwin/Window Maximize Horizontal",
-        "KeyZ": "sys:switchLayout3",
-        "KeyX": "sys:switchLayout2",
-        "KeyC": "sys:switchLayout1",
+        "KeyZ": "sys:switchKeyboardLayout3",
+        "KeyX": "sys:switchKeyboardLayout2",
+        "KeyC": "sys:switchKeyboardLayout1",
         "KeyV": "Meta+KeyV",
         "KeyB": "PrintScreen",
         "KeyN": "BrightnessDown",
@@ -253,14 +249,14 @@
     {
       "key": "ControlLeft",
       "hold": {
-        "keys": "AltLeft"
+        "action": "AltLeft"
       }
     },
     {
       "key": "MetaLeft",
       "tap": "app:showQuickMenu1",
       "hold": {
-        "keys": "ControlLeft",
+        "action": "ControlLeft",
         "timeoutMs": 350
       }
     },
@@ -292,7 +288,7 @@
       "key": "ControlRight",
       "tap": "MetaLeft",
       "hold": {
-        "keys": "MetaLeft"
+        "action": "MetaLeft"
       }
     },
     {
@@ -301,7 +297,7 @@
       "tapDecision": "holdOnOtherKeyPress"
     }
   ],
-  "quickActionPages": [
+  "quickMenuPages": [
     {
       "id": "snippets",
       "name": "Snippets",
@@ -378,7 +374,7 @@
         },
         "KeyW": {
           "name": "Screen off",
-          "action": "sys:screenOff"
+          "action": "sys:turnOffScreen"
         },
         "KeyE": {
           "name": "Mute",
@@ -402,7 +398,7 @@
         },
         "KeyD": {
           "name": "Overview",
-          "action": "sys:overview"
+          "action": "sys:showOverview"
         },
         "KeyF": {
           "name": "Fullscreen",
@@ -435,7 +431,7 @@
       }
     }
   ],
-  "emojiPages": [
+  "emojiMenuPages": [
     {
       "id": "text",
       "name": "Texts and lists",

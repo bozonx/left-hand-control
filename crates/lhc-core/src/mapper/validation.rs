@@ -410,7 +410,7 @@ mod tests {
         );
         for (tap, step) in [
             ("sys:switchDesktop11", "KeyA"),
-            ("sys:windowToDesktop20", "KeyA"),
+            ("sys:moveWindowToDesktop20", "KeyA"),
             ("KeyA", "pause:0"),
             ("KeyA", "pause:+5"),
             ("pause:10", "KeyA"),

@@ -526,7 +526,7 @@ mod tests {
             doc.library_save_target(Some(("Saved", &baseline))),
             LibrarySaveTarget::Existing("Saved".into())
         );
-        let theirs = r#"{"schemaVersion":1,"meta":{"description":"external"}}"#;
+        let theirs = r#"{"version":1,"meta":{"description":"external"}}"#;
         paths.save_user_layout("Saved", theirs, true).unwrap();
         assert_eq!(
             doc.save_library_layout("Saved", Some(("Saved", &baseline))),
@@ -654,12 +654,12 @@ mod tests {
         paths
             .save_user_layout(
                 "Original",
-                r#"{"schemaVersion":1,"commands":[{"id":"unused","unix":"true"}]}"#,
+                r#"{"version":1,"commands":[{"id":"unused","sh":"true"}]}"#,
                 false,
             )
             .unwrap();
         paths
-            .save_config(r#"{"schemaVersion":1,"state":{"editedLayoutId":"user:Original"}}"#)
+            .save_config(r#"{"version":1,"state":{"editedLayout":"user:Original"}}"#)
             .unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
         let before = doc.layout().clone();
@@ -697,14 +697,14 @@ mod tests {
         let doc = ConfigDocument::load(paths.clone()).unwrap();
         for base in ["a".repeat(128), "я".repeat(125), "界".repeat(83)] {
             paths
-                .save_user_layout(&base, r#"{"schemaVersion":1}"#, false)
+                .save_user_layout(&base, r#"{"version":1}"#, false)
                 .unwrap();
             for suffix in 2..=12 {
                 let name = doc.unique_library_name(&base).unwrap();
                 assert!(name.ends_with(&format!(" ({suffix})")));
                 assert!(crate::storage::validate_layout_name(&name).is_ok());
                 paths
-                    .save_user_layout(&name, r#"{"schemaVersion":1}"#, false)
+                    .save_user_layout(&name, r#"{"version":1}"#, false)
                     .unwrap();
             }
         }
@@ -727,11 +727,7 @@ mod tests {
             .unwrap();
         doc.save_current_layout_as("A").unwrap();
         paths
-            .save_user_layout(
-                "B",
-                r#"{"schemaVersion":1,"meta":{"description":"B"}}"#,
-                false,
-            )
+            .save_user_layout("B", r#"{"version":1,"meta":{"description":"B"}}"#, false)
             .unwrap();
         let before = doc.layout().clone();
         std::fs::remove_file(paths.config_path()).unwrap();
@@ -799,15 +795,15 @@ mod tests {
     fn portable_metadata_survives_library_operations() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
-        let text = r#"{"schemaVersion":1,"$schema":"https://example.com/layout.json",
+        let text = r#"{"version":1,"$schema":"https://example.com/layout.json",
             "meta":{"name":"Original","author":"Ivan K","version":"1.0"}}"#;
         paths
             .save_user_layout("Downloaded (2)", text, false)
             .unwrap();
         paths
             .save_config(
-                r#"{"schemaVersion":1,"$schema":"https://example.com/config.json",
-            "state":{"editedLayoutId":"user:Downloaded (2)"}}"#,
+                r#"{"version":1,"$schema":"https://example.com/config.json",
+            "state":{"editedLayout":"user:Downloaded (2)"}}"#,
             )
             .unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
@@ -837,13 +833,13 @@ mod tests {
         paths
             .save_user_layout(
                 "Test",
-                r#"{"schemaVersion": 1, "commands": [{"id": "hello", "unix": "printf hello"}]}"#,
+                r#"{"version": 1, "commands": [{"id": "hello", "sh": "printf hello"}]}"#,
                 true,
             )
             .unwrap();
         paths
             .save_config(
-                r#"{"schemaVersion":1,"settings":{"commandsEnabled":true},"state":{"editedLayoutId":"user:Test"}}"#,
+                r#"{"version":1,"settings":{"commandsEnabled":true},"state":{"editedLayout":"user:Test"}}"#,
             )
             .unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
@@ -911,7 +907,7 @@ mod tests {
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         for name in ["A", "B", "C", "D"] {
             paths
-                .save_user_layout(name, r#"{"schemaVersion": 1}"#, false)
+                .save_user_layout(name, r#"{"version": 1}"#, false)
                 .unwrap();
         }
         document.move_library_layout("user:A", 3).unwrap();
@@ -954,7 +950,7 @@ mod tests {
             paths
                 .save_user_layout(
                     name,
-                    r#"{"schemaVersion": 1, "meta": {"description": "original"}}"#,
+                    r#"{"version": 1, "meta": {"description": "original"}}"#,
                     false,
                 )
                 .unwrap();
@@ -1032,7 +1028,7 @@ mod tests {
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         for name in ["A", "B", "C"] {
             paths
-                .save_user_layout(name, r#"{"schemaVersion": 1}"#, false)
+                .save_user_layout(name, r#"{"version": 1}"#, false)
                 .unwrap();
         }
         document
@@ -1069,7 +1065,7 @@ mod tests {
         paths
             .save_user_layout(
                 "Editor",
-                r#"{"schemaVersion": 1, "rules": [{"key": "KeyA", "tap": "KeyB"}]}"#,
+                r#"{"version": 1, "rules": [{"key": "KeyA", "tap": "KeyB"}]}"#,
                 false,
             )
             .unwrap();
@@ -1131,10 +1127,10 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
-        let original = r#"{"schemaVersion": 1, "meta": {"description": "original"}}"#;
+        let original = r#"{"version": 1, "meta": {"description": "original"}}"#;
         paths.save_user_layout("A", original, false).unwrap();
         paths
-            .save_config(r#"{"schemaVersion":1,"settings":{"appearance":"light"}}"#)
+            .save_config(r#"{"version":1,"settings":{"appearance":"light"}}"#)
             .unwrap();
         document
             .edit_library_metadata("A", "B", Some("changed"), original)

@@ -1,6 +1,6 @@
 //! Saved layout JSON files in the user library.
 //!
-//! The format is versioned (`"schemaVersion": 1`) and read strictly: unknown
+//! The format is versioned (`"version": 1`) and read strictly: unknown
 //! fields, wrong types and unknown enum values are errors, so a file is
 //! never silently rewritten with parts of it dropped. Semantic checks
 //! (unknown macros, invalid key names in actions) are left to the
@@ -39,7 +39,7 @@ pub fn serialize(preset: &LayoutPreset) -> String {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct LayoutDoc {
-    schema_version: u64,
+    version: u64,
     #[serde(
         rename = "$schema",
         default,
@@ -62,9 +62,9 @@ struct LayoutDoc {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     commands: Vec<CommandDoc>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    quick_action_pages: Vec<PageDoc<QuickCellDoc>>,
+    quick_menu_pages: Vec<PageDoc<QuickCellDoc>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    emoji_pages: Vec<PageDoc<String>>,
+    emoji_menu_pages: Vec<PageDoc<String>>,
 }
 
 /// Portable information about the layout from its author. Every field is
@@ -84,7 +84,7 @@ struct MetaDoc {
         deserialize_with = "schema::non_null"
     )]
     author: Option<String>,
-    /// The author's version of the layout, unrelated to `schemaVersion`.
+    /// The author's version of the layout, unrelated to the format `version`.
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
@@ -120,13 +120,31 @@ struct LayerDoc {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     extra_key_order: Vec<String>,
     /// Key code → action; `null` swallows the key, a missing key is
-    /// transparent.
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    keys: BTreeMap<String, Option<String>>,
-    /// Keys of `keys` whose keystroke modifiers stay pressed until the
-    /// layer is released.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    hold_modifiers: Vec<String>,
+    /// transparent. Written in keyboard order.
+    #[serde(
+        default,
+        skip_serializing_if = "BTreeMap::is_empty",
+        serialize_with = "keyboard_order"
+    )]
+    keys: BTreeMap<String, LayerKeyDoc>,
+}
+
+/// A layer key: a bare action (`null` swallows) or an action with options.
+#[derive(Serialize, Deserialize)]
+#[serde(untagged)]
+enum LayerKeyDoc {
+    Action(Option<String>),
+    Full(LayerKeyFullDoc),
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct LayerKeyFullDoc {
+    action: String,
+    /// The chord's modifiers stay pressed until the key holding the layer
+    /// is released.
+    #[serde(default, skip_serializing_if = "is_false")]
+    hold_modifiers: bool,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -256,14 +274,14 @@ struct TimedActionDoc {
 struct HoldDoc {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     layer: Option<String>,
-    /// Keys held down while the key is held. Missing: the key itself (or
-    /// nothing while a layer is active), `null`: nothing.
+    /// Key or chord held down while the key is held. Missing: the key
+    /// itself (or nothing while a layer is active), `null`: nothing.
     #[serde(
         default,
         deserialize_with = "present",
         skip_serializing_if = "Option::is_none"
     )]
-    keys: Option<Option<String>>,
+    action: Option<Option<String>>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
@@ -274,7 +292,7 @@ struct HoldDoc {
 
 impl HoldDoc {
     fn is_empty(&self) -> bool {
-        self.layer.is_none() && self.keys.is_none() && self.timeout_ms.is_none()
+        self.layer.is_none() && self.action.is_none() && self.timeout_ms.is_none()
     }
 }
 
@@ -308,10 +326,10 @@ struct CommandDoc {
     name: Option<String>,
     /// POSIX `sh` script, run on Linux and macOS.
     #[serde(default, skip_serializing_if = "String::is_empty")]
-    unix: String,
+    sh: String,
     /// PowerShell script, run on Windows.
     #[serde(default, skip_serializing_if = "String::is_empty")]
-    windows: String,
+    powershell: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     working_directory: Option<String>,
 }
@@ -353,6 +371,10 @@ fn is_true(value: &bool) -> bool {
     *value
 }
 
+fn is_false(value: &bool) -> bool {
+    !*value
+}
+
 /// Distinguish a missing field (`None`) from an explicit `null`
 /// (`Some(None)`).
 fn present<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Option<String>>, D::Error> {
@@ -368,6 +390,35 @@ fn grid_order<S: Serializer, T: Serialize>(
             .iter()
             .filter_map(|key| cells.get(*key).map(|cell| (*key, cell))),
     )
+}
+
+/// Layer keys in keyboard order: grid rows from left to right, then the key
+/// catalog, then anything else alphabetically.
+fn keyboard_order<S: Serializer>(
+    keys: &BTreeMap<String, LayerKeyDoc>,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    let mut order: Vec<&str> = Vec::new();
+    let grid = super::layer_grid::LEFT_HAND
+        .iter()
+        .zip(super::layer_grid::RIGHT_HAND.iter())
+        .flat_map(|(left, right)| left.iter().chain(right.iter()).copied());
+    for key in grid.chain(
+        super::key_catalog::CATEGORIES
+            .iter()
+            .flat_map(|keys| keys.iter().copied()),
+    ) {
+        if keys.contains_key(key) && !order.contains(&key) {
+            order.push(key);
+        }
+    }
+    let rest = keys.keys().filter(|key| !order.contains(&key.as_str()));
+    let order: Vec<&str> = order
+        .iter()
+        .copied()
+        .chain(rest.map(String::as_str))
+        .collect();
+    serializer.collect_map(order.into_iter().filter_map(|key| keys.get_key_value(key)))
 }
 
 fn non_empty(value: &str, what: &str) -> Result<(), String> {
@@ -427,8 +478,8 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
         }};
     }
     complete!(doc.rules, "rule-", "rules");
-    complete!(doc.quick_action_pages, "page-", "quickActionPages");
-    complete!(doc.emoji_pages, "emoji-", "emojiPages");
+    complete!(doc.quick_menu_pages, "quick-", "quickMenuPages");
+    complete!(doc.emoji_menu_pages, "emoji-", "emojiMenuPages");
     // Step ids live only in memory, for the editor.
     let mut step_counter = 0u32;
 
@@ -436,25 +487,22 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
     let mut layer_keymaps = BTreeMap::new();
     for layer in doc.layers {
         non_empty(&layer.id, "layer id")?;
-        for (code, action) in &layer.keys {
-            if let Some(action) = action {
+        let mut keys = BTreeMap::new();
+        let mut hold_modifiers = BTreeSet::new();
+        for (code, key) in layer.keys {
+            let action = match key {
+                LayerKeyDoc::Action(action) => action,
+                LayerKeyDoc::Full(full) => {
+                    if full.hold_modifiers {
+                        hold_modifiers.insert(code.clone());
+                    }
+                    Some(full.action)
+                }
+            };
+            if let Some(action) = &action {
                 non_empty(action, &format!("action of {code} in layer {}", layer.id))?;
             }
-        }
-        let mut hold_modifiers = BTreeSet::new();
-        for code in layer.hold_modifiers {
-            if !matches!(layer.keys.get(&code), Some(Some(_))) {
-                return Err(format!(
-                    "holdModifiers of layer {}: {code} has no action in the layer",
-                    layer.id
-                ));
-            }
-            if !hold_modifiers.insert(code.clone()) {
-                return Err(format!(
-                    "holdModifiers of layer {}: duplicate key {code}",
-                    layer.id
-                ));
-            }
+            keys.insert(code, action);
         }
         layers.push(Layer {
             name: layer.name.unwrap_or_else(|| layer.id.clone()),
@@ -464,7 +512,7 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
         layer_keymaps.insert(
             layer.id,
             LayerKeymap {
-                keys: layer.keys,
+                keys,
                 extra_key_order: layer.extra_key_order,
                 hold_modifiers,
             },
@@ -516,7 +564,7 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
             hold_behavior: None,
             long_hold_action,
             long_hold_timeout_ms,
-            hold_action: three_state(hold.keys, &what("hold keys"))?,
+            hold_action: three_state(hold.action, &what("hold action"))?,
             double_tap_action,
             hold_timeout_ms: hold.timeout_ms,
             tap_decision: rule.tap_decision,
@@ -551,14 +599,14 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
         commands.push(Command {
             name: command.name.unwrap_or_else(|| command.id.clone()),
             id: command.id,
-            posix_script: command.unix,
-            powershell_script: command.windows,
+            posix_script: command.sh,
+            powershell_script: command.powershell,
             working_directory: command.working_directory.filter(|dir| !dir.is_empty()),
         });
     }
 
     let mut quick_action_pages = Vec::new();
-    for page in doc.quick_action_pages {
+    for page in doc.quick_menu_pages {
         check_cells(page.cells.keys(), "quick action")?;
         let mut cells = BTreeMap::new();
         for (key, cell) in page.cells {
@@ -586,7 +634,7 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
     }
 
     let mut emoji_pages = Vec::new();
-    for page in doc.emoji_pages {
+    for page in doc.emoji_menu_pages {
         check_cells(page.cells.keys(), "emoji")?;
         for (key, text) in &page.cells {
             non_empty(text, &format!("emoji {key}"))?;
@@ -665,22 +713,20 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
                             .filter(|(_, action)| {
                                 action.as_ref().is_none_or(|a| !a.trim().is_empty())
                             })
-                            .map(|(code, action)| (code.clone(), action.clone()))
-                            .collect()
-                    })
-                    .unwrap_or_default(),
-                // Only keys that still carry an action, so the file loads again.
-                hold_modifiers: keymap
-                    .map(|keymap| {
-                        keymap
-                            .hold_modifiers
-                            .iter()
-                            .filter(|code| {
-                                keymap.keys.get(*code).is_some_and(|action| {
-                                    action.as_ref().is_some_and(|a| !a.trim().is_empty())
-                                })
+                            .map(|(code, action)| {
+                                // Only a key that carries an action can hold
+                                // modifiers, so the file loads again.
+                                let key = match action {
+                                    Some(action) if keymap.hold_modifiers.contains(code) => {
+                                        LayerKeyDoc::Full(LayerKeyFullDoc {
+                                            action: action.clone(),
+                                            hold_modifiers: true,
+                                        })
+                                    }
+                                    action => LayerKeyDoc::Action(action.clone()),
+                                };
+                                (code.clone(), key)
                             })
-                            .cloned()
                             .collect()
                     })
                     .unwrap_or_default(),
@@ -707,7 +753,7 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
                     layer: (behavior == HoldBehavior::Layer)
                         .then(|| text(&rule.layer_id))
                         .flatten(),
-                    keys: three_state(&rule.hold_action),
+                    action: three_state(&rule.hold_action),
                     timeout_ms: rule.hold_timeout_ms,
                 }
             };
@@ -758,8 +804,8 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
         .map(|command| CommandDoc {
             id: command.id.clone(),
             name: (command.name != command.id).then(|| command.name.clone()),
-            unix: command.posix_script.clone(),
-            windows: command.powershell_script.clone(),
+            sh: command.posix_script.clone(),
+            powershell: command.powershell_script.clone(),
             working_directory: command.working_directory.clone().filter(|d| !d.is_empty()),
         })
         .collect();
@@ -813,7 +859,7 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
         matches!(pages, [page] if page.name.is_none() && page.cells.is_empty())
     }
     LayoutDoc {
-        schema_version: LAYOUT_SCHEMA_VERSION,
+        version: LAYOUT_SCHEMA_VERSION,
         schema: preset.schema.clone(),
         meta: {
             let meta = preset.meta.clone().unwrap_or_default();
@@ -829,12 +875,12 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
         rules,
         macros,
         commands,
-        quick_action_pages: if only_default(&quick_action_pages) {
+        quick_menu_pages: if only_default(&quick_action_pages) {
             Vec::new()
         } else {
             quick_action_pages
         },
-        emoji_pages: if only_default(&emoji_pages) {
+        emoji_menu_pages: if only_default(&emoji_pages) {
             Vec::new()
         } else {
             emoji_pages
@@ -849,7 +895,7 @@ mod tests {
 
     fn layout(body: Value) -> String {
         let mut body = body;
-        body["schemaVersion"] = json!(1);
+        body["version"] = json!(1);
         body.to_string()
     }
 
@@ -864,12 +910,7 @@ mod tests {
     #[test]
     fn timing_inherits_only_when_absent() {
         for kind in ["hold", "longHold", "doubleTap"] {
-            let action = if kind == "hold" {
-                json!({"keys": "KeyB"})
-            } else {
-                json!({"action": "KeyB"})
-            };
-            let mut rule = json!({"key": "KeyA", kind: action});
+            let mut rule = json!({"key": "KeyA", kind: {"action": "KeyB"}});
             assert!(parse(&layout(json!({"rules": [rule.clone()]}))).is_ok());
             rule[kind]["timeoutMs"] = Value::Null;
             assert!(parse(&layout(json!({"rules": [rule]}))).is_err());
@@ -900,7 +941,7 @@ mod tests {
             json!({"meta": {"version": 1}}),
             json!({"meta": {"description": null}}),
             json!({"description": "moved into meta"}),
-            json!({"quickActionPages": [{"cells": {"KeyQ": {"action": "KeyA", "icon": "x"}}}]}),
+            json!({"quickMenuPages": [{"cells": {"KeyQ": {"action": "KeyA", "icon": "x"}}}]}),
         ] {
             assert!(parse(&layout(invalid)).is_err());
         }
@@ -913,16 +954,15 @@ mod tests {
             "rules",
             "macros",
             "commands",
-            "quickActionPages",
-            "emojiPages",
+            "quickMenuPages",
+            "emojiMenuPages",
         ] {
             let item = if field == "rules" {
                 serde_json::json!({"id": "same", "key": "KeyA"})
             } else {
                 serde_json::json!({"id": "same"})
             };
-            let text =
-                serde_json::json!({"schemaVersion": 1, field: [item.clone(), item]}).to_string();
+            let text = serde_json::json!({"version": 1, field: [item.clone(), item]}).to_string();
             let error = parse(&text).unwrap_err();
             assert!(error.contains("duplicate id"), "{field}: {error}");
         }
@@ -930,12 +970,12 @@ mod tests {
 
     #[test]
     fn generated_ids_reserve_explicit_ids_including_later_entries() {
-        let text = r#"{"schemaVersion":1,"rules":[{"key":"KeyA"},{"id":"rule-1","key":"KeyB"}],
-            "quickActionPages":[{}, {"id":"page-1"}],"emojiPages":[{}, {"id":"emoji-1"}]}"#;
+        let text = r#"{"version":1,"rules":[{"key":"KeyA"},{"id":"rule-1","key":"KeyB"}],
+            "quickMenuPages":[{}, {"id":"quick-1"}],"emojiMenuPages":[{}, {"id":"emoji-1"}]}"#;
         let layout = parse(text).unwrap().unwrap();
         super::super::ids::validate_layout(&layout).unwrap();
         assert_eq!(layout.rules[0].id, "rule-2");
-        assert_eq!(layout.quick_action_pages[0].id, "page-2");
+        assert_eq!(layout.quick_action_pages[0].id, "quick-2");
         assert_eq!(layout.emoji_pages[0].id, "emoji-2");
         assert_eq!(parse(&serialize(&layout)).unwrap().unwrap(), layout);
         assert_eq!(parse(text).unwrap().unwrap(), layout);
@@ -945,7 +985,7 @@ mod tests {
     fn explicit_invalid_ids_are_not_replaced() {
         for id in ["", " ", " x", "x ", "a b", "a.b"] {
             let text =
-                serde_json::json!({"schemaVersion":1,"rules":[{"id":id,"key":"KeyA"}]}).to_string();
+                serde_json::json!({"version":1,"rules":[{"id":id,"key":"KeyA"}]}).to_string();
             assert!(parse(&text).is_err(), "{id:?}");
         }
     }
@@ -970,9 +1010,8 @@ mod tests {
                 } else {
                     serde_json::json!({"action":"KeyB", "timeoutMs":value})
                 };
-                let text =
-                    serde_json::json!({"schemaVersion":1,"rules":[{"key":"KeyA",field:timed}]})
-                        .to_string();
+                let text = serde_json::json!({"version":1,"rules":[{"key":"KeyA",field:timed}]})
+                    .to_string();
                 assert_eq!(
                     parse(&text).is_ok(),
                     range.contains(value),
@@ -982,8 +1021,8 @@ mod tests {
         }
         for field in ["stepPauseMs", "modifierDelayMs"] {
             for value in [0, 2000, 2001, u64::MAX] {
-                let text = serde_json::json!({"schemaVersion":1,"macros":[{"id":"m",field:value}]})
-                    .to_string();
+                let text =
+                    serde_json::json!({"version":1,"macros":[{"id":"m",field:value}]}).to_string();
                 assert_eq!(parse(&text).is_ok(), value <= 2000);
             }
         }
@@ -991,21 +1030,17 @@ mod tests {
 
     #[test]
     fn version_is_required_and_checked() {
+        assert!(parse(r#"{"rules": []}"#).unwrap_err().contains("version"));
+        assert!(parse(r#"{"schemaVersion": 1}"#).is_err());
         assert!(
-            parse(r#"{"rules": []}"#)
-                .unwrap_err()
-                .contains("schemaVersion")
-        );
-        assert!(parse(r#"{"version": 1}"#).is_err());
-        assert!(
-            parse(r#"{"schemaVersion": 2, "rules": []}"#)
+            parse(r#"{"version": 2, "rules": []}"#)
                 .unwrap_err()
                 .contains("newer")
         );
-        assert!(parse(r#"{"schemaVersion": "1"}"#).is_err());
-        assert!(parse(r#"{"schemaVersion": 1}"#).unwrap().is_some());
+        assert!(parse(r#"{"version": "1"}"#).is_err());
+        assert!(parse(r#"{"version": 1}"#).unwrap().is_some());
         assert_eq!(
-            serde_json::from_str::<Value>(&serialize(&LayoutPreset::default())).unwrap()["schemaVersion"],
+            serde_json::from_str::<Value>(&serialize(&LayoutPreset::default())).unwrap()["version"],
             1
         );
     }
@@ -1024,17 +1059,21 @@ mod tests {
             json!({"rules": [{"key": ""}]}),
             json!({"rules": [{"key": "KeyA", "hold": {"layer": "x"}, "longHold": {"action": "KeyB"}}]}),
             json!({"layers": [{"id": "nav", "keys": {"KeyA": ""}}]}),
-            json!({"rules": [{"key": "KeyA", "hold": {"layer": "x", "keys": "AltLeft", "keysOnlyFor": ["Tab"]}}]}),
-            json!({"rules": [{"key": "KeyA", "hold": {"layer": "x", "keys": "AltLeft", "keysExceptFor": ["Tab"]}}]}),
-            json!({"layers": [{"id": "nav", "holdModifiers": ["Tab"]}]}),
-            json!({"layers": [{"id": "nav", "keys": {"Tab": null}, "holdModifiers": ["Tab"]}]}),
-            json!({"layers": [{"id": "nav", "keys": {"Tab": "Alt+Tab"}, "holdModifiers": ["Tab", "Tab"]}]}),
+            json!({"rules": [{"key": "KeyA", "hold": {"layer": "x", "action": "AltLeft", "keysOnlyFor": ["Tab"]}}]}),
+            json!({"rules": [{"key": "KeyA", "hold": {"layer": "x", "keys": "AltLeft"}}]}),
+            json!({"layers": [{"id": "nav", "keys": {"Tab": "Alt+Tab"}, "holdModifiers": ["Tab"]}]}),
+            json!({"layers": [{"id": "nav", "keys": {"Tab": {"holdModifiers": true}}}]}),
+            json!({"layers": [{"id": "nav", "keys": {"Tab": {"action": null, "holdModifiers": true}}}]}),
+            json!({"layers": [{"id": "nav", "keys": {"Tab": {"action": " "}}}]}),
+            json!({"layers": [{"id": "nav", "keys": {"Tab": {"action": "Alt+Tab", "repeat": true}}}]}),
+            json!({"commands": [{"id": "c", "unix": "ls"}]}),
+            json!({"commands": [{"id": "c", "windows": "dir"}]}),
             json!({"macros": [{"id": "m", "steps": [{"action": "KeyA"}]}]}),
             json!({"macros": [{"id": "m", "steps": [" "]}]}),
             json!({"commands": [{"id": "c", "linux": "ls"}]}),
-            json!({"quickActionPages": [{"cells": {"KeyP": "KeyA"}}]}),
-            json!({"quickActionPages": [{"cells": {"KeyQ": {"name": "No action"}}}]}),
-            json!({"emojiPages": [{"cells": {"KeyQ": 5}}]}),
+            json!({"quickMenuPages": [{"cells": {"KeyP": "KeyA"}}]}),
+            json!({"quickMenuPages": [{"cells": {"KeyQ": {"name": "No action"}}}]}),
+            json!({"emojiMenuPages": [{"cells": {"KeyQ": 5}}]}),
         ] {
             assert!(parse(&layout(body.clone())).is_err(), "accepted {body}");
         }
@@ -1058,10 +1097,10 @@ mod tests {
     fn rule_fields_map_to_the_model() {
         let preset = parsed(json!({"rules": [
             {"id": "r1", "key": "CapsLock", "tap": "Escape",
-             "hold": {"layer": "nav", "keys": "AltLeft", "timeoutMs": 180},
+             "hold": {"layer": "nav", "action": "AltLeft", "timeoutMs": 180},
              "doubleTap": {"action": "Enter", "timeoutMs": 150},
              "tapDecision": "holdOnOtherKeyPress"},
-            {"id": "r2", "key": "Space", "enabled": false, "tap": null, "hold": {"keys": null},
+            {"id": "r2", "key": "Space", "enabled": false, "tap": null, "hold": {"action": null},
              "when": {"gameMode": "on", "keyboardLayouts": ["us"], "windows": ["code"], "excludeWindows": ["title:x"]}},
             {"id": "r3", "key": "ShiftLeft+ControlRight", "longHold": {"action": "text:hello", "timeoutMs": 1500}},
         ]}));
@@ -1146,19 +1185,19 @@ mod tests {
             "layers": [
                 {"id": "nav", "name": "Navigation", "description": "Arrows",
                  "extraKeyOrder": ["F15", "F13"],
-                 "keys": {"KeyH": "ArrowLeft", "KeyQ": null, "Tab": "Alt+Tab"},
-                 "holdModifiers": ["Tab"]},
+                 "keys": {"KeyH": "ArrowLeft", "KeyQ": null,
+                          "Tab": {"action": "Alt+Tab", "holdModifiers": true}}},
                 {"id": "sym"}
             ],
             "macros": [{"id": "copyLine", "name": "Copy line", "stepPauseMs": 10,
                         "steps": ["Home", "Shift+End", "Ctrl+KeyC"]}],
-            "commands": [{"id": "music", "unix": "playerctl play-pause", "windows": "Start-Process x",
+            "commands": [{"id": "music", "sh": "playerctl play-pause", "powershell": "Start-Process x",
                           "workingDirectory": "/tmp"}],
-            "quickActionPages": [{"id": "qap1", "name": "First", "cells": {
+            "quickMenuPages": [{"id": "qap1", "name": "First", "cells": {
                 "KeyW": "Ctrl+KeyC",
                 "KeyQ": {"name": "Lock", "action": "kde:ksmserver/Lock Session"}
             }}, {"id": "qap2"}],
-            "emojiPages": [{"id": "e1", "name": "Faces", "cells": {"KeyQ": "😀"}}]
+            "emojiMenuPages": [{"id": "e1", "name": "Faces", "cells": {"KeyQ": "😀"}}]
         }));
         assert_eq!(preset.description.as_deref(), Some("Sample"));
         assert_eq!(preset.layers[1].name, "sym");
@@ -1188,6 +1227,11 @@ mod tests {
             text.find("\"KeyQ\": {").unwrap() < text.find("\"KeyW\": \"Ctrl+KeyC\"").unwrap(),
             "cells are written in grid order"
         );
+        assert!(
+            text.find("\"Tab\": {").unwrap() < text.find("\"KeyQ\": null").unwrap()
+                && text.find("\"KeyQ\": null").unwrap() < text.find("\"KeyH\"").unwrap(),
+            "layer keys are written in keyboard order"
+        );
     }
 
     #[test]
@@ -1206,7 +1250,7 @@ mod tests {
             step_pause_ms: None,
             modifier_delay_ms: None,
         });
-        // A key that lost its action keeps no holdModifiers entry.
+        // A key that lost its action is not saved with holdModifiers.
         preset.layers.push(Layer {
             id: "nav".into(),
             name: "nav".into(),
@@ -1230,14 +1274,14 @@ mod tests {
             preset.quick_action_pages,
             vec![QuickActionPage::default_page()]
         );
-        assert_eq!(serialize(&preset), "{\n  \"schemaVersion\": 1\n}");
-        assert_eq!(parsed(json!({"emojiPages": []})), preset);
+        assert_eq!(serialize(&preset), "{\n  \"version\": 1\n}");
+        assert_eq!(parsed(json!({"emojiMenuPages": []})), preset);
     }
 
     #[test]
     fn parsing_is_deterministic_without_ids() {
         let text = layout(
-            json!({"rules": [{"key": "CapsLock"}], "quickActionPages": [{"cells": {"KeyQ": "KeyA"}}]}),
+            json!({"rules": [{"key": "CapsLock"}], "quickMenuPages": [{"cells": {"KeyQ": "KeyA"}}]}),
         );
         assert_eq!(parse(&text), parse(&text));
     }

@@ -36,7 +36,7 @@ FAKE_GAME = "lhc-fake-game"
 # Every rule maps a physical key to a result the host can read back from the
 # receiver window. Keys not listed here (c, h, j, k, o, q, s...) pass through.
 E2E_LAYOUT = f'''{{
-  "schemaVersion": 1,
+  "version": 1,
   "meta": {{"description": "VM e2e"}},
   "layers": [
     {{
@@ -106,11 +106,11 @@ E2E_LAYOUT = f'''{{
     }},
     {{
       "key": "Digit3",
-      "tap": "sys:switchLayout2"
+      "tap": "sys:switchKeyboardLayout2"
     }},
     {{
       "key": "Digit4",
-      "tap": "sys:switchLayout1"
+      "tap": "sys:switchKeyboardLayout1"
     }}
   ],
   "macros": [
@@ -127,10 +127,10 @@ E2E_LAYOUT = f'''{{
   "commands": [
     {{
       "id": "touch",
-      "unix": "touch lhc-e2e/cmd-ran"
+      "sh": "touch lhc-e2e/cmd-ran"
     }}
   ],
-  "emojiPages": [
+  "emojiMenuPages": [
     {{
       "id": "e2e",
       "name": "E2E",
@@ -139,7 +139,7 @@ E2E_LAYOUT = f'''{{
       }}
     }}
   ],
-  "quickActionPages": [
+  "quickMenuPages": [
     {{
       "id": "e2e",
       "name": "E2E",
@@ -332,12 +332,12 @@ def cmd_write_config(args):
         "locale": "en",
         "commandsEnabled": True,
         "gameMode": {
-            "processes": [{"name": FAKE_GAME, "onlyActiveWindow": False}],
+            "processes": [{"name": FAKE_GAME, "foregroundOnly": False}],
         },
     }
-    state = {"editedLayoutId": "user:E2E", "gameModeSwitch": "off"}
+    state = {"editedLayout": "user:E2E", "gameModeSwitch": "off"}
     (CONFIG_DIR / "config.json").write_text(
-        json.dumps({"schemaVersion": 1, "settings": settings, "state": state}, indent=2),
+        json.dumps({"version": 1, "settings": settings, "state": state}, indent=2),
         encoding="utf-8")
     if "GNOME" in user_environment().get("XDG_CURRENT_DESKTOP", "").upper():
         env = dict(os.environ, **user_environment())

@@ -53,10 +53,10 @@ impl AppAction {
             },
             "showSettings" => Self::ShowSettings,
             "activateLayout" => Self::ActivateLayout(NonZeroU32::new(n)?),
-            "gameModeAuto" => Self::GameMode(GameModeRequest::Auto),
-            "gameModeOn" => Self::GameMode(GameModeRequest::On),
-            "gameModeOff" => Self::GameMode(GameModeRequest::Off),
-            "gameModeToggle" => Self::GameMode(GameModeRequest::Toggle),
+            "setGameModeAuto" => Self::GameMode(GameModeRequest::Auto),
+            "setGameModeOn" => Self::GameMode(GameModeRequest::On),
+            "setGameModeOff" => Self::GameMode(GameModeRequest::Off),
+            "toggleGameMode" => Self::GameMode(GameModeRequest::Toggle),
             _ => return None,
         })
     }

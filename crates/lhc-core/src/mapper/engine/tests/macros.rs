@@ -743,7 +743,7 @@ fn cancelling_a_macro_keeps_a_new_physical_modifier_owner() {
 fn disabling_commands_revokes_a_pending_tap_without_releasing_other_keys() {
     let cfg: MapperConfig = serde_json::from_value(serde_json::json!({
         "settings": {"commandsEnabled": true},
-        "commands": [{"id": "test", "linux": "true"}],
+        "commands": [{"id": "test", "posixScript": "true"}],
         "rules": [{"key": "KeyA", "tapAction": "cmd:test"}]
     }))
     .unwrap();
@@ -801,7 +801,7 @@ fn bindings_to_commands_that_cannot_run_report_instead_of_doing_nothing() {
         .unwrap();
     let cfg: MapperConfig = serde_json::from_value(serde_json::json!({
         "settings": {"commandsEnabled": false},
-        "commands": [{"id": "disabledHere", "linux": "true", "windows": "dir"}],
+        "commands": [{"id": "disabledHere", "posixScript": "true", "powershellScript": "dir"}],
         "rules": [{"key": "KeyQ", "tapAction": "cmd:disabledHere"}]
     }))
     .unwrap();
@@ -820,7 +820,7 @@ fn bindings_to_commands_that_cannot_run_report_instead_of_doing_nothing() {
     // reports at release instead of silently doing nothing.
     let enabled: MapperConfig = serde_json::from_value(serde_json::json!({
         "settings": {"commandsEnabled": true},
-        "commands": [{"id": "disabledHere", "linux": "true", "windows": "dir"}],
+        "commands": [{"id": "disabledHere", "posixScript": "true", "powershellScript": "dir"}],
         "rules": [{"key": "KeyQ", "tapAction": "cmd:disabledHere"}]
     }))
     .unwrap();
@@ -905,7 +905,7 @@ fn nested_macro_uses_its_own_step_and_modifier_delays() {
 fn command_macro_cfg() -> MapperConfig {
     serde_json::from_value(serde_json::json!({
         "settings":{"commandsEnabled":true},
-        "commands":[{"id":"test","linux":"true","windows":"exit 0"}],
+        "commands":[{"id":"test","posixScript": "true","powershellScript": "exit 0"}],
         "macros":[{"id":"m","stepPauseMs":20,
             "steps":[{"action":"cmd:test"},{"action":"Enter"}]}]
     }))

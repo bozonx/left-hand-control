@@ -330,12 +330,12 @@ mod tests {
         paths
             .save_user_layout(
                 "Test",
-                r#"{"schemaVersion": 1, "rules": [{"key": "KeyA", "tap": "macro:outer"}]}"#,
+                r#"{"version": 1, "rules": [{"key": "KeyA", "tap": "macro:outer"}]}"#,
                 true,
             )
             .unwrap();
         paths
-            .save_config(r#"{"schemaVersion":1,"state":{"editedLayoutId":"user:Test"}}"#)
+            .save_config(r#"{"version":1,"state":{"editedLayout":"user:Test"}}"#)
             .unwrap();
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         let rules = document.layout().rules.clone();
@@ -432,7 +432,7 @@ mod tests {
             super::super::layout_file::serialize(document.layout()),
             super::super::layout_file::serialize(&before)
         );
-        paths.save_config(r#"{"schemaVersion":1}"#).unwrap();
+        paths.save_config(r#"{"version":1}"#).unwrap();
         document.save_macro(None, item("new", &[])).unwrap();
     }
 

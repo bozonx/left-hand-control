@@ -190,7 +190,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(e.get_has_unsaved_changes());
     assert!(!e.invoke_flush_pending());
     e.invoke_refresh();
-    paths.save_config(r#"{"schemaVersion":1}"#)?;
+    paths.save_config(r#"{"version":1}"#)?;
     e.set_name("Updated".into());
     e.invoke_set_name();
     wait_until("menu autosave", || !e.get_has_unsaved_changes());

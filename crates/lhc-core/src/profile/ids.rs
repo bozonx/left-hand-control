@@ -86,11 +86,11 @@ pub(crate) fn validate_layout(layout: &super::model::LayoutPreset) -> Result<(),
             .quick_action_pages
             .iter()
             .map(|item| item.id.as_str()),
-        "quickActionPages",
+        "quickMenuPages",
     )?;
     unique(
         layout.emoji_pages.iter().map(|item| item.id.as_str()),
-        "emojiPages",
+        "emojiMenuPages",
     )?;
     for item in &layout.macros {
         unique(

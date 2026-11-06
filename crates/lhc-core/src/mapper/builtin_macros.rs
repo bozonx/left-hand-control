@@ -23,7 +23,7 @@ pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
         steps: &["ArrowDown", "End"],
     },
     BuiltinMacro {
-        id: "prevLineEnd",
+        id: "previousLineEnd",
         name: "End of previous line",
         steps: &["ArrowUp", "End"],
     },
@@ -85,7 +85,7 @@ pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
         steps: &["ArrowDown", "Home"],
     },
     BuiltinMacro {
-        id: "prevLineStart",
+        id: "previousLineStart",
         name: "Start of previous line",
         steps: &["ArrowUp", "Home"],
     },

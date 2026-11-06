@@ -562,21 +562,21 @@ mod tests {
     use serde_json::{Value, json};
     use std::fs;
 
-    const LAYOUT: &str = r#"{"schemaVersion": 1, "layers": [{"id": "nav", "name": "Navigation", "keys": {"KeyH": "ArrowLeft"}}], "rules": [{"key": "CapsLock", "hold": {"layer": "nav"}, "tap": "Escape"}]}"#;
+    const LAYOUT: &str = r#"{"version": 1, "layers": [{"id": "nav", "name": "Navigation", "keys": {"KeyH": "ArrowLeft"}}], "rules": [{"key": "CapsLock", "hold": {"layer": "nav"}, "tap": "Escape"}]}"#;
 
     /// A document whose edited and active layout is `layout`, saved as
-    /// `Test` unless `state.editedLayoutId` names another one.
+    /// `Test` unless `state.editedLayout` names another one.
     fn document(mut settings: Value, layout: &str) -> (tempfile::TempDir, ConfigDocument) {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
-        settings["schemaVersion"] = json!(1);
-        if settings["state"]["editedLayoutId"].is_null() {
-            settings["state"]["editedLayoutId"] = json!("user:Test");
+        settings["version"] = json!(1);
+        if settings["state"]["editedLayout"].is_null() {
+            settings["state"]["editedLayout"] = json!("user:Test");
         }
         if settings["settings"]["layouts"]["manual"].is_null() {
-            settings["settings"]["layouts"]["manual"] = settings["state"]["editedLayoutId"].clone();
+            settings["settings"]["layouts"]["manual"] = settings["state"]["editedLayout"].clone();
         }
-        let name = settings["state"]["editedLayoutId"]
+        let name = settings["state"]["editedLayout"]
             .as_str()
             .unwrap()
             .strip_prefix("user:")
@@ -648,8 +648,8 @@ mod tests {
             paths
                 .save_config(
                     &serde_json::to_string(&json!({
-                        "schemaVersion": 1,
-                        "state": {"editedLayoutId": "user:Test"},
+                        "version": 1,
+                        "state": {"editedLayout": "user:Test"},
                         "settings": {"layouts": {"manual": "user:Test"}, "appearance": "dark"}
                     }))
                     .unwrap(),
@@ -725,9 +725,9 @@ mod tests {
     #[test]
     fn non_rule_errors_block_runtime_without_rewriting_the_layout() {
         for content in [
-            r#"{"schemaVersion":1,"layers":[{"id":"nav","keys":{"KeyA":"macro:missing"}}]}"#,
-            r#"{"schemaVersion":1,"macros":[{"id":"m","steps":["macro:m"]}]}"#,
-            r#"{"schemaVersion":1,"quickActionPages":[{"cells":{"KeyQ":"cmd:missing"}}]}"#,
+            r#"{"version":1,"layers":[{"id":"nav","keys":{"KeyA":"macro:missing"}}]}"#,
+            r#"{"version":1,"macros":[{"id":"m","steps":["macro:m"]}]}"#,
+            r#"{"version":1,"quickMenuPages":[{"cells":{"KeyQ":"cmd:missing"}}]}"#,
         ] {
             let (_dir, document) = document(
                 json!({"settings":{"layouts":{"manual":"user:Test"}}}),
@@ -799,7 +799,7 @@ mod tests {
         let saved: Value =
             serde_json::from_str(&fs::read_to_string(document.paths.config_path()).unwrap())
                 .unwrap();
-        assert_eq!(saved["schemaVersion"], 1);
+        assert_eq!(saved["version"], 1);
         assert_eq!(
             saved["settings"]["devices"]["keyboards"],
             json!(["/dev/input/by-id/other"])
@@ -815,9 +815,9 @@ mod tests {
     #[test]
     fn invalid_settings_are_rejected_without_rewriting_the_file() {
         for text in [
-            json!({"schemaVersion": 1, "settings": {"futureOption": 7}}).to_string(),
-            json!({"schemaVersion": 1, "settings": {"appearance": "blue"}}).to_string(),
-            json!({"schemaVersion": 2, "settings": {}}).to_string(),
+            json!({"version": 1, "settings": {"futureOption": 7}}).to_string(),
+            json!({"version": 1, "settings": {"appearance": "blue"}}).to_string(),
+            json!({"version": 2, "settings": {}}).to_string(),
             json!({"settings": {}}).to_string(),
         ] {
             let dir = tempfile::tempdir().unwrap();
@@ -835,14 +835,14 @@ mod tests {
     fn commands_require_explicit_permission_on_load() {
         let (_dir, mut document) = document(
             json!({}),
-            r#"{"schemaVersion": 1, "commands": [{"id": "hello", "unix": "printf hello"}]}"#,
+            r#"{"version": 1, "commands": [{"id": "hello", "sh": "printf hello"}]}"#,
         );
         assert!(!document.settings().commands_enabled);
         document
             .paths
             .save_config(
-                &json!({"schemaVersion": 1, "settings": {"appearance": "dark"},
-                    "state": {"editedLayoutId": "user:Test"}})
+                &json!({"version": 1, "settings": {"appearance": "dark"},
+                    "state": {"editedLayout": "user:Test"}})
                 .to_string(),
             )
             .unwrap();
@@ -867,7 +867,7 @@ mod tests {
             saved["settings"]["gameMode"]["detectors"]["fullscreen"],
             true
         );
-        fs::write(document.paths.config_path(), r#"{"schemaVersion": 1}"#).unwrap();
+        fs::write(document.paths.config_path(), r#"{"version": 1}"#).unwrap();
         document
             .update_settings(|settings| settings.default_hold_timeout_ms = 400)
             .unwrap();
@@ -1156,7 +1156,7 @@ mod tests {
         document
             .paths
             .save_config(
-                r#"{"schemaVersion":1,"settings":{"appearance":"light"},"state":{"editedLayoutId":"user:Test"}}"#,
+                r#"{"version":1,"settings":{"appearance":"light"},"state":{"editedLayout":"user:Test"}}"#,
             )
             .unwrap();
         document
@@ -1200,7 +1200,7 @@ mod tests {
     #[test]
     fn runtime_config_reports_whether_titles_are_needed() {
         let (_dir, mut document) = document(
-            json!({"settings": {"layouts": {"manual": "user:Other"}}, "state": {"editedLayoutId": "user:Main"}}),
+            json!({"settings": {"layouts": {"manual": "user:Other"}}, "state": {"editedLayout": "user:Main"}}),
             LAYOUT,
         );
         let save = |document: &ConfigDocument, rules: &str| {
@@ -1208,7 +1208,7 @@ mod tests {
                 .paths
                 .save_user_layout(
                     "Other",
-                    &format!("{{\"schemaVersion\":1,\"rules\":{rules}}}"),
+                    &format!("{{\"version\":1,\"rules\":{rules}}}"),
                     true,
                 )
                 .unwrap();
@@ -1263,12 +1263,12 @@ mod tests {
     #[test]
     fn runtime_config_uses_the_active_library_layout() {
         let (_dir, mut document) = document(
-            json!({"settings": {"layouts": {"manual": "user:Other"}}, "state": {"editedLayoutId": "user:Main"}}),
+            json!({"settings": {"layouts": {"manual": "user:Other"}}, "state": {"editedLayout": "user:Main"}}),
             LAYOUT,
         );
         document
             .paths
-            .save_user_layout("Other", r#"{"schemaVersion": 1, "rules": [{"key": "KeyA", "tap": "KeyB"}, {"key": "KeyC", "enabled": false, "tap": "KeyD"}]}"#, true)
+            .save_user_layout("Other", r#"{"version": 1, "rules": [{"key": "KeyA", "tap": "KeyB"}, {"key": "KeyC", "enabled": false, "tap": "KeyD"}]}"#, true)
             .unwrap();
         let runtime = document
             .runtime_config(&AutoSwitchContext::default())
@@ -1341,7 +1341,7 @@ mod tests {
     fn blocking_rule_issues_refuse_runtime_config() {
         let (_dir, document) = document(
             json!({}),
-            r#"{"schemaVersion": 1, "rules": [{"key": "UnknownKey", "tap": "KeyB"}]}"#,
+            r#"{"version": 1, "rules": [{"key": "UnknownKey", "tap": "KeyB"}]}"#,
         );
         match document.runtime_config(&AutoSwitchContext::default()) {
             Err(ConfigError::Rules(issues)) => {
@@ -1359,7 +1359,7 @@ mod tests {
     fn repeated_triggers_keep_both_rules_in_runtime_order() {
         let (_dir, document) = document(
             json!({}),
-            r#"{"schemaVersion": 1, "rules": [{"key": "KeyA", "tap": "KeyB"}, {"key": "KeyA", "tap": "KeyC"}]}"#,
+            r#"{"version": 1, "rules": [{"key": "KeyA", "tap": "KeyB"}, {"key": "KeyA", "tap": "KeyC"}]}"#,
         );
         let runtime = document
             .runtime_config(&AutoSwitchContext::default())
@@ -1410,7 +1410,7 @@ mod tests {
     }
     #[test]
     fn compound_transaction_rolls_back_memory_disk_and_runtime_settings() {
-        let (_dir, mut document) = document(json!({}), r#"{"schemaVersion":1}"#);
+        let (_dir, mut document) = document(json!({}), r#"{"version":1}"#);
         let before_settings = document.settings().clone();
         let before_layout = document.layout().clone();
         let disk = std::fs::read(document.paths().config_path()).ok();
@@ -1439,7 +1439,7 @@ mod tests {
 
     #[test]
     fn staged_edits_reject_external_writes_and_layout_callbacks_reject_settings() {
-        let (_dir, mut document) = document(json!({}), r#"{"schemaVersion":1}"#);
+        let (_dir, mut document) = document(json!({}), r#"{"version":1}"#);
         assert!(
             document
                 .transaction(|draft| draft.save_current_layout_as("Forbidden"))

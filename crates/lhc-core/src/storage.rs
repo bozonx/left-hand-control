@@ -871,7 +871,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("config.json");
         let backup = dir.path().join("config.json.v1.bak");
-        let original = r#"{"schemaVersion": 1, "settings": {}}"#;
+        let original = r#"{"version": 1, "settings": {}}"#;
         fs::write(&path, original).unwrap();
 
         // The current version is not backed up.
@@ -881,7 +881,7 @@ mod tests {
         super::backup_older_schema(&path, 2).unwrap();
         assert_eq!(fs::read_to_string(&backup).unwrap(), original);
 
-        fs::write(&path, r#"{"schemaVersion": 1, "changed": true}"#).unwrap();
+        fs::write(&path, r#"{"version": 1, "changed": true}"#).unwrap();
         super::backup_older_schema(&path, 2).unwrap();
         assert_eq!(fs::read_to_string(&backup).unwrap(), original);
 

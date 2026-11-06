@@ -16,7 +16,7 @@ use lhc_core::{
 use std::time::{Duration, Instant};
 
 const LAYOUT: &str = r#"{
-  "schemaVersion": 1,
+  "version": 1,
   "layers": [{ "id": "nav", "keys": { "KeyH": "ArrowLeft", "KeyJ": "macro:copyLine" } }],
   "rules": [
     { "key": "CapsLock", "tap": "Escape", "hold": { "layer": "nav", "timeoutMs": 200 } },
@@ -38,7 +38,7 @@ fn document(config: &str) -> (tempfile::TempDir, ConfigDocument) {
     (directory, document)
 }
 
-const MANUAL: &str = r#"{"schemaVersion":1,"settings":{"layouts":{"manual":"user:Main"}}}"#;
+const MANUAL: &str = r#"{"version":1,"settings":{"layouts":{"manual":"user:Main"}}}"#;
 
 fn manual_engine() -> (tempfile::TempDir, Engine) {
     engine_for(MANUAL)
@@ -133,7 +133,7 @@ fn layer_key_runs_the_macro_steps_in_order() {
     assert_eq!(pressed(&run(&mut engine, &press_j_in_layer)), []);
 
     let (_dir, mut engine) = engine_for(
-        r#"{"schemaVersion":1,"settings":{"experimental":true,"layouts":{"manual":"user:Main"}}}"#,
+        r#"{"version":1,"settings":{"experimental":true,"layouts":{"manual":"user:Main"}}}"#,
     );
     let out = run(&mut engine, &press_j_in_layer);
     assert_eq!(
@@ -176,8 +176,7 @@ fn rule_conditions_follow_the_system_context() {
 
 #[test]
 fn auto_mode_without_a_match_passes_keys_through() {
-    let (_dir, document) =
-        document(r#"{"schemaVersion":1,"settings":{"layouts":{"mode":"auto"}}}"#);
+    let (_dir, document) = document(r#"{"version":1,"settings":{"layouts":{"mode":"auto"}}}"#);
     let runtime = document
         .runtime_config(&AutoSwitchContext::default())
         .unwrap();

@@ -161,11 +161,11 @@ export default class Bridge extends Extension {
     }
 
     _action(action) {
-        const match = /^(switchDesktop|windowToDesktop|switchLayout)([1-9][0-9]*)$/.exec(action);
+        const match = /^(switchDesktop|moveWindowToDesktop|switchKeyboardLayout)([1-9][0-9]*)$/.exec(action);
         const window = global.display.focus_window;
         if (match) {
             const index = Number(match[2]) - 1;
-            if (match[1] === 'switchLayout') {
+            if (match[1] === 'switchKeyboardLayout') {
                 const source = this._sources.inputSources[index];
                 if (!source || index >= 10)
                     throw new Error('Input source is unavailable');
@@ -184,21 +184,21 @@ export default class Bridge extends Extension {
             return;
         }
         switch (action) {
-        case 'overview': Main.overview.toggle(); return;
-        case 'appLauncher': Main.overview.showApps(); return;
+        case 'showOverview': Main.overview.toggle(); return;
+        case 'showAppLauncher': Main.overview.showApps(); return;
         }
         if (!window)
             throw new Error('No focused window');
         switch (action) {
-        case 'windowClose': window.delete(global.get_current_time()); return;
-        case 'windowMinimize': window.minimize(); return;
-        case 'windowMaximize':
+        case 'closeWindow': window.delete(global.get_current_time()); return;
+        case 'minimizeWindow': window.minimize(); return;
+        case 'maximizeWindow':
             if (window.is_maximized())
                 window.unmaximize();
             else
                 window.maximize();
             return;
-        case 'windowMaximizeVertical': {
+        case 'maximizeWindowVertically': {
             // Partial maximization is public again only in some Mutter
             // releases; without it the action reports itself unsupported.
             const vertical = Meta.MaximizeFlags.VERTICAL;
@@ -211,7 +211,7 @@ export default class Bridge extends Extension {
                 window.set_maximize_flags(vertical);
             return;
         }
-        case 'windowToNextDesktop': {
+        case 'moveWindowToNextDesktop': {
             // Like KWin, the view follows the window. GNOME's dynamic
             // workspaces always keep an empty last one to move into.
             const current = window.get_workspace();
@@ -224,7 +224,7 @@ export default class Bridge extends Extension {
             next.activate_with_focus(window, global.get_current_time());
             return;
         }
-        case 'windowKeepAbove':
+        case 'toggleWindowKeepAbove':
             if (window.is_above()) window.unmake_above(); else window.make_above();
             return;
         default: throw new Error('Unsupported action');

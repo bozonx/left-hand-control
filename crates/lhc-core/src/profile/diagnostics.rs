@@ -294,7 +294,7 @@ pub fn analyze(config: &ResolvedAppConfig) -> Vec<RuleIssue> {
             {
                 add(
                     RuleIssueCode::InvalidMenuAction,
-                    format!("quickActionPages[{}].cells[{key}]", page.id),
+                    format!("quickMenuPages[{}].cells[{key}]", page.id),
                 );
             }
         }
@@ -460,7 +460,7 @@ mod tests {
     #[test]
     fn invalid_conditions_and_ignored_rule_combinations_are_visible() {
         let layout = super::super::layout_file::parse(
-            r#"{"schemaVersion":1,"rules":[
+            r#"{"version":1,"rules":[
             {"id":"bad-condition","key":"KeyA","when":{"windows":["title:"]}},
             {"id":"bad-double","key":"KeyC+KeyD","doubleTap":{"action":"KeyE"}}
         ]}"#,
@@ -491,10 +491,10 @@ mod tests {
     #[test]
     fn complete_diagnostics_cover_non_rule_actions_and_cycles() {
         let layout = super::super::layout_file::parse(
-            r#"{"schemaVersion":1,
+            r#"{"version":1,
             "layers":[{"id":"nav","keys":{"NoSuchKey":"KeyA","KeyA":"macro:missing"}}],
             "macros":[{"id":"a","steps":["macro:b"]},{"id":"b","steps":["macro:a"]}],
-            "quickActionPages":[{"id":"q","cells":{"KeyQ":"cmd:missing"}}]}"#,
+            "quickMenuPages":[{"id":"q","cells":{"KeyQ":"cmd:missing"}}]}"#,
         )
         .unwrap()
         .unwrap();
@@ -525,8 +525,8 @@ mod tests {
             "pause:10001",
             "pause:18446744073709551615",
         ] {
-            let text = serde_json::json!({"schemaVersion":1,"macros":[{"id":"m","steps":[step]}]})
-                .to_string();
+            let text =
+                serde_json::json!({"version":1,"macros":[{"id":"m","steps":[step]}]}).to_string();
             let layout = super::super::layout_file::parse(&text).unwrap().unwrap();
             let config = ResolvedAppConfig::from_parts(AppSettings::default(), layout, None);
             assert!(
@@ -537,8 +537,8 @@ mod tests {
             );
         }
         for step in ["pause:1", "pause:10000"] {
-            let text = serde_json::json!({"schemaVersion":1,"macros":[{"id":"m","steps":[step]}]})
-                .to_string();
+            let text =
+                serde_json::json!({"version":1,"macros":[{"id":"m","steps":[step]}]}).to_string();
             let layout = super::super::layout_file::parse(&text).unwrap().unwrap();
             assert!(
                 analyze(&ResolvedAppConfig::from_parts(

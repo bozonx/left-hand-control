@@ -523,7 +523,7 @@ USB-клавиатура) и сравнивает полученный текс�
 | `text-unicode` | `text:Привет, ёж 😀` в раскладке us (символов нет в keymap) |
 | `layer-tap-hold` | Слой на `F`: tap → `g`, hold + `j` → `k`, быстрый вложенный набор → `k`, «перекат» (F отпущена раньше J) → `gj`, `j` вне слоя → `j` (permissive hold, 200 мс) |
 | `macro`, `command` | Макрос `KeyN, pause:300, text:mac, Shift+KeyO` → `nmacO`; `cmd:` создаёт файл-маркер |
-| `system-actions` | `sys:switchDesktop2`, `kde:kwin/Switch to Desktop 1`, `sys:switchLayout2/1` — по состоянию KWin и `org.kde.keyboard` |
+| `system-actions` | `sys:switchDesktop2`, `kde:kwin/Switch to Desktop 1`, `sys:switchKeyboardLayout2/1` — по состоянию KWin и `org.kde.keyboard` |
 | `russian-layout` | В раскладке ru физические клавиши дают кириллицу (`a`→KeyB→`и`, `c`→`с`), `text:` вводится без искажений |
 | `popups`, `emoji-ipc`, `quick-menu-rule` | IPC show/hide; эмодзи из `show emoji` + `Q` и быстрое действие из `app:showQuickMenu1` + `Q` вставляются в окно, бывшее активным до попапа |
 | `emoji-hotkey` | Ctrl+Alt+F11 открывает Emoji, `Q` вставляет эмодзи, консоль не переключается на VT11 |

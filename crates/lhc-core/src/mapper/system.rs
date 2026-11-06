@@ -195,7 +195,7 @@ mod kde {
                 args: vec![DbusArg::I32(n as i32)],
             }));
         }
-        if let Some(rest) = name.strip_prefix("switchLayout")
+        if let Some(rest) = name.strip_prefix("switchKeyboardLayout")
             && let Ok(n) = rest.parse::<u32>()
             && (1..=SYSTEM_NUMBERED_COUNT).contains(&n)
         {
@@ -207,23 +207,23 @@ mod kde {
                 args: vec![DbusArg::U32(n - 1)],
             }));
         }
-        if let Some(rest) = name.strip_prefix("windowToDesktop")
+        if let Some(rest) = name.strip_prefix("moveWindowToDesktop")
             && let Ok(n) = rest.parse::<u32>()
             && (1..=KWIN_MAX_DESKTOPS).contains(&n)
         {
             return Some(invoke_shortcut("kwin", &format!("Window to Desktop {n}")));
         }
         let (component, shortcut) = match name {
-            "windowClose" => ("kwin", "Window Close"),
-            "windowMinimize" => ("kwin", "Window Minimize"),
-            "windowMaximize" => ("kwin", "Window Maximize"),
-            "windowMaximizeVertical" => ("kwin", "Window Maximize Vertical"),
-            "windowKeepAbove" => ("kwin", "Window Above Other Windows"),
-            "windowToNextDesktop" => ("kwin", "Window to Next Desktop"),
+            "closeWindow" => ("kwin", "Window Close"),
+            "minimizeWindow" => ("kwin", "Window Minimize"),
+            "maximizeWindow" => ("kwin", "Window Maximize"),
+            "maximizeWindowVertically" => ("kwin", "Window Maximize Vertical"),
+            "toggleWindowKeepAbove" => ("kwin", "Window Above Other Windows"),
+            "moveWindowToNextDesktop" => ("kwin", "Window to Next Desktop"),
             "showDesktop" => ("kwin", "Show Desktop"),
-            "overview" => ("kwin", "Overview"),
-            "appLauncher" => ("plasmashell", "activate application launcher"),
-            "screenOff" => ("org_kde_powerdevil", "Turn Off Screen"),
+            "showOverview" => ("kwin", "Overview"),
+            "showAppLauncher" => ("plasmashell", "activate application launcher"),
+            "turnOffScreen" => ("org_kde_powerdevil", "Turn Off Screen"),
             _ => return None,
         };
         Some(invoke_shortcut(component, shortcut))
@@ -256,10 +256,10 @@ mod tests {
     #[test]
     fn resolve_game_mode_actions() {
         for (name, event) in [
-            ("gameModeToggle", AppAction::GameMode(GameModeRequest::Toggle)),
-            ("gameModeAuto", AppAction::GameMode(GameModeRequest::Auto)),
-            ("gameModeOn", AppAction::GameMode(GameModeRequest::On)),
-            ("gameModeOff", AppAction::GameMode(GameModeRequest::Off)),
+            ("toggleGameMode", AppAction::GameMode(GameModeRequest::Toggle)),
+            ("setGameModeAuto", AppAction::GameMode(GameModeRequest::Auto)),
+            ("setGameModeOn", AppAction::GameMode(GameModeRequest::On)),
+            ("setGameModeOff", AppAction::GameMode(GameModeRequest::Off)),
         ] {
             let Some(SystemAction::AppEvent(resolved)) = resolve_app(name) else {
                 panic!("{name} did not resolve to an AppEvent");
@@ -298,9 +298,9 @@ mod tests {
         ] {
             assert!(!is_known(id), "{id}");
         }
-        assert!(is_known("switchDesktop10") && is_known("screenOff"));
+        assert!(is_known("switchDesktop10") && is_known("turnOffScreen"));
         // The same numbered range as the action picker.
-        assert!(!is_known("switchDesktop11") && !is_known("windowToDesktop11"));
+        assert!(!is_known("switchDesktop11") && !is_known("moveWindowToDesktop11"));
         for entry in crate::profile::actions::system_actions() {
             let crate::profile::actions::Action::System(id) = entry.action else {
                 panic!("system catalog holds only sys: actions");
@@ -323,12 +323,12 @@ mod linux_tests {
     fn known_ids_match_the_kde_catalog() {
         for prefix in [
             "switchDesktop",
-            "windowToDesktop",
-            "switchLayout",
-            "windowClose",
+            "moveWindowToDesktop",
+            "switchKeyboardLayout",
+            "closeWindow",
         ] {
             for n in 0..=25 {
-                let id = if prefix == "windowClose" {
+                let id = if prefix == "closeWindow" {
                     prefix.to_string()
                 } else {
                     format!("{prefix}{n}")
@@ -344,13 +344,13 @@ mod linux_tests {
     #[test]
     fn gnome_actions_use_only_the_fixed_bridge_api() {
         for name in [
-            "switchLayout1",
+            "switchKeyboardLayout1",
             "switchDesktop2",
-            "windowToDesktop3",
-            "windowClose",
-            "windowMaximizeVertical",
-            "windowToNextDesktop",
-            "overview",
+            "moveWindowToDesktop3",
+            "closeWindow",
+            "maximizeWindowVertically",
+            "moveWindowToNextDesktop",
+            "showOverview",
         ] {
             let Some(SystemAction::Dbus(call)) = resolve_for_desktop(name, &Desktop::Gnome) else {
                 panic!("{name} did not resolve");
@@ -362,9 +362,9 @@ mod linux_tests {
         }
         for name in [
             "showDesktop",
-            "screenOff",
-            "switchLayout0",
-            "switchLayout11",
+            "turnOffScreen",
+            "switchKeyboardLayout0",
+            "switchKeyboardLayout11",
             "switchDesktop21",
             "Eval",
             "global.display.focus_window.delete(0)",
@@ -375,25 +375,25 @@ mod linux_tests {
 
     #[test]
     fn switch_layout_uses_zero_based_kde_index() {
-        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("switchLayout1", &Desktop::Kde)
+        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("switchKeyboardLayout1", &Desktop::Kde)
         else {
-            panic!("switchLayout1 did not resolve to a DBus action");
+            panic!("switchKeyboardLayout1 did not resolve to a DBus action");
         };
         assert_eq!(call.method, "setLayout");
         assert!(matches!(call.args.as_slice(), [DbusArg::U32(0)]));
 
-        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("switchLayout3", &Desktop::Kde)
+        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("switchKeyboardLayout3", &Desktop::Kde)
         else {
-            panic!("switchLayout3 did not resolve to a DBus action");
+            panic!("switchKeyboardLayout3 did not resolve to a DBus action");
         };
         assert!(matches!(call.args.as_slice(), [DbusArg::U32(2)]));
     }
 
     #[test]
     fn window_to_desktop_and_kde_shortcuts_use_kglobalaccel() {
-        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("windowToDesktop3", &Desktop::Kde)
+        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("moveWindowToDesktop3", &Desktop::Kde)
         else {
-            panic!("windowToDesktop3 did not resolve to a DBus action");
+            panic!("moveWindowToDesktop3 did not resolve to a DBus action");
         };
         assert_eq!(call.destination, "org.kde.kglobalaccel");
         assert_eq!(call.path, "/component/kwin");
@@ -428,8 +428,8 @@ mod linux_tests {
                 "{id} has no KDE implementation"
             );
         }
-        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("screenOff", &Desktop::Kde) else {
-            panic!("screenOff did not resolve to a DBus action");
+        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("turnOffScreen", &Desktop::Kde) else {
+            panic!("turnOffScreen did not resolve to a DBus action");
         };
         assert_eq!(call.path, "/component/org_kde_powerdevil");
         assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Turn Off Screen"));
@@ -443,7 +443,7 @@ mod gnome {
     use super::{DbusArg, DbusCall, SystemAction};
 
     pub fn resolve(name: &str) -> Option<SystemAction> {
-        if !super::is_known(name) || matches!(name, "showDesktop" | "screenOff") {
+        if !super::is_known(name) || matches!(name, "showDesktop" | "turnOffScreen") {
             return None;
         }
         Some(SystemAction::Dbus(DbusCall {

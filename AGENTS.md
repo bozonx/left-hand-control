@@ -172,7 +172,7 @@ Report the exact commands you ran and their results. If something could not be r
 **Always**
 - Put domain and platform logic in `lhc-core`; keep the shell thin.
 - Edit config through `Document` (`edit` for transactions, `edit_library` for one core library operation); resolve paths through `StoragePaths::resolve()`.
-- Support the current `config.json` and layout formats plus older `schemaVersion`s via the readers in `profile/`; no fallbacks for formats predating `schemaVersion`.
+- Support the current `config.json` and layout formats plus older format `version`s via the readers in `profile/`; no fallbacks for files without `version`.
 
 **Ask first**
 - Adding a dependency or bumping Slint / `spell-framework` / `i-slint-core`.

@@ -69,13 +69,10 @@ pub struct KeyRule {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub condition_game_mode: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "conditionLayouts")]
     pub condition_keyboard_layouts: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "conditionAppsWhitelist")]
     pub condition_window_patterns: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "conditionAppsBlacklist")]
     pub condition_excluded_window_patterns: Option<Vec<String>>,
     pub key: String,
     pub layer_id: String,
@@ -180,11 +177,9 @@ pub struct Command {
     pub id: String,
     pub name: String,
     /// POSIX `sh` script, run on Linux and macOS.
-    #[serde(rename = "linux")]
     pub posix_script: String,
     /// PowerShell script, run on Windows.
     #[serde(skip_serializing_if = "String::is_empty")]
-    #[serde(rename = "windows")]
     pub powershell_script: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub working_directory: Option<String>,
@@ -876,14 +871,17 @@ mod tests {
         assert_eq!(value["settings"]["currentLayoutId"], "user:Editing");
         assert_eq!(value["settings"]["manualActiveLayoutId"], "user:Manual");
         assert_eq!(value["settings"]["comboTimeoutMs"], 80);
-        assert_eq!(value["rules"][0]["conditionLayouts"][0], "us");
-        assert_eq!(value["rules"][0]["conditionAppsWhitelist"][0], "konsole");
+        assert_eq!(value["rules"][0]["conditionKeyboardLayouts"][0], "us");
+        assert_eq!(value["rules"][0]["conditionWindowPatterns"][0], "konsole");
         assert_eq!(
-            value["rules"][0]["conditionAppsBlacklist"][0],
+            value["rules"][0]["conditionExcludedWindowPatterns"][0],
             "title:private"
         );
-        assert_eq!(value["commands"][0]["linux"], "printf test");
-        assert_eq!(value["commands"][0]["windows"], "Write-Output test");
+        assert_eq!(value["commands"][0]["posixScript"], "printf test");
+        assert_eq!(
+            value["commands"][0]["powershellScript"],
+            "Write-Output test"
+        );
 
         let mapper: crate::mapper::config::MapperConfig = serde_json::from_value(value).unwrap();
         assert_eq!(

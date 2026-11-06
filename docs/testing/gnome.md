@@ -54,7 +54,7 @@ Emoji selection, многократный возврат фокуса, друг�
 lock/unlock, suspend, replug, физическое железо и полное обновление deb/rpm между
 версиями не закрыты этим smoke. Точечная проверка обновления архива не заменяет
 полный package upgrade. Не заявлена матрица других версий GNOME/дистрибутивов.
-`showDesktop` и `screenOff` на GNOME недоступны; это граница backend, а не PASS теста.
+`showDesktop` и `turnOffScreen` на GNOME недоступны; это граница backend, а не PASS теста.
 
 ### Результаты
 
@@ -116,12 +116,12 @@ session or a missing bridge cannot authorize delivery to an unknown target.
 Titles are absent unless requested; source changes update the existing core cache
 and `CoreEvent` bus. The active-window watcher also has its normal safety reread.
 
-The bridge implements `switchDesktop1..20`, `windowToDesktop1..20`,
-`switchLayout1..10`, `windowClose`, `windowMinimize`, `windowMaximize`,
-`windowMaximizeVertical`, `windowKeepAbove`, `windowToNextDesktop`, `overview`, and
-`appLauncher`. A numbered
-workspace/source must already exist. `windowMaximizeVertical` needs Mutter's public
-`get/set_maximize_flags`; without them the extension reports it unsupported. `showDesktop` and `screenOff` remain unavailable on GNOME.
+The bridge implements `switchDesktop1..20`, `moveWindowToDesktop1..20`,
+`switchKeyboardLayout1..10`, `closeWindow`, `minimizeWindow`, `maximizeWindow`,
+`maximizeWindowVertically`, `toggleWindowKeepAbove`, `moveWindowToNextDesktop`, `showOverview`, and
+`showAppLauncher`. A numbered
+workspace/source must already exist. `maximizeWindowVertically` needs Mutter's public
+`get/set_maximize_flags`; without them the extension reports it unsupported. `showDesktop` and `turnOffScreen` remain unavailable on GNOME.
 The extension does not provide a clipboard/data-control protocol or remove portal
 permission requirements. In GNOME Wayland, the `libei + clipboard` and clipboard
 modes request `org.freedesktop.portal.Clipboard` access on their RemoteDesktop

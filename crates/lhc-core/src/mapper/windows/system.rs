@@ -34,22 +34,22 @@ pub enum WindowsAction {
 
 pub fn resolve(name: &str) -> Option<WindowsAction> {
     if let Some(n) = name
-        .strip_prefix("switchLayout")
+        .strip_prefix("switchKeyboardLayout")
         .and_then(|rest| rest.parse::<u32>().ok())
         .filter(|n| (1..=crate::profile::actions::SYSTEM_NUMBERED_COUNT).contains(n))
     {
         return Some(WindowsAction::SwitchLayout(n));
     }
     Some(match name {
-        "windowClose" => WindowsAction::WindowClose,
-        "windowMinimize" => WindowsAction::WindowMinimize,
-        "windowMaximize" => WindowsAction::WindowMaximize,
-        "windowMaximizeVertical" => WindowsAction::WindowMaximizeVertical,
-        "windowKeepAbove" => WindowsAction::WindowKeepAbove,
+        "closeWindow" => WindowsAction::WindowClose,
+        "minimizeWindow" => WindowsAction::WindowMinimize,
+        "maximizeWindow" => WindowsAction::WindowMaximize,
+        "maximizeWindowVertically" => WindowsAction::WindowMaximizeVertical,
+        "toggleWindowKeepAbove" => WindowsAction::WindowKeepAbove,
         "showDesktop" => WindowsAction::ShowDesktop,
-        "overview" => WindowsAction::Overview,
-        "appLauncher" => WindowsAction::AppLauncher,
-        "screenOff" => WindowsAction::ScreenOff,
+        "showOverview" => WindowsAction::Overview,
+        "showAppLauncher" => WindowsAction::AppLauncher,
+        "turnOffScreen" => WindowsAction::ScreenOff,
         _ => return None,
     })
 }
@@ -181,17 +181,21 @@ mod tests {
     #[test]
     fn resolves_every_plain_action_but_not_virtual_desktops() {
         for id in crate::profile::actions::PLAIN_SYSTEM_ACTIONS {
-            assert_eq!(resolve(id).is_some(), id != "windowToNextDesktop", "{id}");
+            assert_eq!(
+                resolve(id).is_some(),
+                id != "moveWindowToNextDesktop",
+                "{id}"
+            );
         }
         assert_eq!(
-            resolve("switchLayout3"),
+            resolve("switchKeyboardLayout3"),
             Some(WindowsAction::SwitchLayout(3))
         );
         for id in [
-            "switchLayout0",
-            "switchLayout11",
+            "switchKeyboardLayout0",
+            "switchKeyboardLayout11",
             "switchDesktop1",
-            "windowToDesktop2",
+            "moveWindowToDesktop2",
         ] {
             assert!(resolve(id).is_none(), "{id}");
         }
