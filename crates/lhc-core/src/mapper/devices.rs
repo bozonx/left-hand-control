@@ -18,6 +18,32 @@ pub struct InputDevice {
     pub is_virtual: bool,
 }
 
+/// An input device that exists but could not be opened.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnavailableDevice {
+    pub path: String,
+    /// Technical reason, for logs.
+    pub error: String,
+    /// Opening was refused for lack of permissions.
+    pub denied: bool,
+}
+
+/// Result of device discovery: the devices that could be opened together
+/// with those that could not, so a partial failure is not mistaken for an
+/// absent device.
+#[derive(Debug, Clone, Default)]
+pub struct DeviceDiscovery {
+    pub devices: Vec<InputDevice>,
+    pub unavailable: Vec<UnavailableDevice>,
+}
+
+impl DeviceDiscovery {
+    /// Whether some device was hidden because access to it was denied.
+    pub fn access_denied(&self) -> bool {
+        self.unavailable.iter().any(|device| device.denied)
+    }
+}
+
 /// Whether two device paths open the same device: equal, or symlinks such
 /// as `/dev/input/by-id/…` resolving to the same `/dev/input/eventN`.
 pub fn same_device(a: &str, b: &str) -> bool {

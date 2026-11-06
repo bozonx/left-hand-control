@@ -11,7 +11,7 @@ use i_slint_core::{
 use slint::ComponentHandle;
 
 slint::slint! {
-    import { NumericInput, InlineTextField, ButtonGroup, NavTab, Section } from "../ui/controls.slint";
+    import { NumericInput, InlineTextField, ButtonGroup, NavTab, Section, LinkButton } from "../ui/controls.slint";
     export { KeyboardFocus, NavigationKind, NavigationMove } from "../ui/focus.slint";
     export component Probe inherits Window {
         title: "LHC accessibility fixture";
@@ -22,12 +22,14 @@ slint::slint! {
         in-out property <bool> numeric-enabled: true;
         in-out property <string> name: "Original";
         in-out property <int> selection: 0;
+        in-out property <int> link-clicks: 0;
         VerticalLayout {
             Section { title: "Fixture section";
                 NumericInput { placeholder-text: root.numeric-placeholder; read-only: root.numeric-read-only; enabled: root.numeric-enabled; label: "Fixture number"; text <=> root.number; minimum: 10; maximum: 30; step: 5; }
                 InlineTextField { label: "Fixture name"; text: root.name; saved(value) => { root.name = value; return true; } }
                 ButtonGroup { labels: ["First", "Second"]; selected-index: root.selection; selected(index) => { root.selection = index; } }
                 NavTab { text: "Fixture tab"; selected: true; }
+                LinkButton { text: "Fixture link"; clicked => { root.link-clicks += 1; } }
             }
         }
     }
@@ -214,8 +216,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             tab.accessible_string_property(P::ItemSelected).as_deref(),
             Some("true")
         );
+        let link = tab_to(&ui, "Fixture link");
+        assert_eq!(link.accessible_role(), AccessibleRole::Button);
+        key(&ui, slint::platform::Key::Return);
+        assert_eq!(ui.get_link_clicks(), 1);
+        key(&ui, " ");
+        assert_eq!(ui.get_link_clicks(), 2);
         println!(
-            "PASS accessible numeric focus/text interface, inline edit/save/cancel, radio and tab selection"
+            "PASS accessible numeric focus/text interface, inline edit/save/cancel, radio and tab selection, link activation"
         );
         slint::quit_event_loop().unwrap();
     });

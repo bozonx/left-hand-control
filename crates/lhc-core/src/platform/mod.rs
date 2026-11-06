@@ -91,7 +91,8 @@ pub enum InputAccessIssue {
 }
 
 /// Check the device access the mapper needs before it is started. With a
-/// `keyboard` the check opens that device, otherwise any input device.
+/// `keyboard` the check opens that device, otherwise every input device:
+/// one readable mouse must not hide a denied keyboard.
 /// Empty on platforms without key interception.
 pub fn input_access_issues(keyboard: Option<&str>) -> Vec<InputAccessIssue> {
     #[cfg(target_os = "linux")]
@@ -139,13 +140,15 @@ fn input_access_issues_at(
                 .collect();
             if events.is_empty() {
                 Err(InputAccessIssue::NoInputDevices)
-            } else if events
-                .iter()
-                .any(|path| OpenOptions::new().read(true).open(path).is_ok())
-            {
-                Ok(())
-            } else {
+            } else if events.iter().any(|path| {
+                OpenOptions::new()
+                    .read(true)
+                    .open(path)
+                    .is_err_and(|error| error.kind() == ErrorKind::PermissionDenied)
+            }) {
                 Err(InputAccessIssue::InputDenied)
+            } else {
+                Ok(())
             }
         }
     };
@@ -213,6 +216,23 @@ mod tests {
         assert!(input_access_issues_at(&temp.path, &uinput, None).is_empty());
         let keyboard = temp.path.join("event0");
         assert!(input_access_issues_at(&temp.path, &uinput, Some(&keyboard)).is_empty());
+    }
+
+    #[test]
+    fn one_denied_device_is_reported_even_if_another_is_readable() {
+        use std::os::unix::fs::PermissionsExt;
+        // SAFETY: geteuid has no preconditions.
+        if unsafe { libc::geteuid() } == 0 {
+            return; // root opens any file
+        }
+        let temp = TempDir::new("probe-partial");
+        fs::write(temp.path.join("event0"), "").expect("mouse");
+        let keyboard = temp.path.join("event1");
+        fs::write(&keyboard, "").expect("keyboard");
+        fs::set_permissions(&keyboard, fs::Permissions::from_mode(0o000)).expect("chmod");
+        fs::write(temp.path.join("uinput"), "").expect("uinput");
+        let issues = input_access_issues_at(&temp.path, &temp.path.join("uinput"), None);
+        assert_eq!(issues, [InputAccessIssue::InputDenied]);
     }
 
     #[test]

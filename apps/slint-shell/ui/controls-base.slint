@@ -12,6 +12,45 @@ export component FocusRing inherits Rectangle {
     border-radius: Theme.radius;
 }
 
+/// Text in the link colour that acts as a button: a Tab stop with a focus
+/// ring, activated by click, Enter or Space.
+export component LinkButton inherits Rectangle {
+    in property <string> text;
+    in property <length> font-size <=> label.font-size;
+    in property <bool> enabled: true;
+    out property <bool> has-focus: focus.has-focus;
+    callback clicked();
+    border-radius: Theme.radius-small;
+    border-width: Theme.focus-ring(focus.has-focus) ? 2px : 0px;
+    border-color: Theme.focus;
+    accessible-role: button;
+    accessible-label: root.text;
+    accessible-enabled: root.enabled;
+    accessible-action-default => { if root.enabled { root.clicked(); } }
+    HorizontalLayout {
+        padding-left: 3px;
+        padding-right: 3px;
+        label := Text {
+            text: root.text;
+            color: root.enabled ? Theme.accent : Theme.muted;
+            vertical-alignment: center;
+            accessible-role: none;
+        }
+    }
+    focus := FocusScope {
+        enabled: root.enabled;
+        key-pressed(event) => {
+            if event.text == " " || event.text == Key.Return { root.clicked(); return accept; }
+            return reject;
+        }
+    }
+    TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { focus.focus(); root.clicked(); }
+    }
+}
+
 /// Bubble shown inside a `Tooltip`; `TooltipText` covers the plain-text case.
 export component TooltipSurface inherits Rectangle {
     background: Theme.card;

@@ -99,47 +99,8 @@ impl MacroCommand {
                 if job.cancelled() {
                     return;
                 }
-                let result = (|| {
-                    let mut child = start_with_stderr(&command, Stdio::piped())?;
-                    let mut stderr = match CommandStderr::new(child.stderr.take()) {
-                        Ok(stderr) => stderr,
-                        Err(error) => {
-                            let _ = child.kill();
-                            let _ = child.wait();
-                            return Err(error);
-                        }
-                    };
-                    loop {
-                        if job.cancelled() {
-                            #[cfg(target_os = "linux")]
-                            // Each command owns its process group, including shell children.
-                            unsafe {
-                                libc::kill(-(child.id() as i32), libc::SIGKILL);
-                            }
-                            let _ = child.kill();
-                            let _ = child.wait();
-                            return Err("Macro command cancelled".into());
-                        }
-                        stderr.drain();
-                        match child.try_wait() {
-                            Ok(Some(status)) if status.success() => return Ok(()),
-                            Ok(Some(status)) => {
-                                stderr.drain();
-                                return Err(format!(
-                                    "Macro command {} exited with {status}{}",
-                                    command.program,
-                                    stderr.message()
-                                ));
-                            }
-                            Ok(None) => std::thread::sleep(std::time::Duration::from_millis(5)),
-                            Err(error) => {
-                                let _ = child.kill();
-                                let _ = child.wait();
-                                return Err(format!("Cannot wait for macro command: {error}"));
-                            }
-                        }
-                    }
-                })();
+                let result = start_with_stderr(&command, Stdio::piped())
+                    .and_then(|child| wait_child(child, &command, "Macro command", &job));
                 job.complete(result);
             })
         {
@@ -148,23 +109,121 @@ impl MacroCommand {
     }
 }
 
-/// Starts `command` and returns at once; a reaper thread collects the
-/// exit status so finished commands do not linger as zombies.
+/// Starts `command` and returns at once, reporting the launch. A reaper
+/// thread collects the exit status, so finished commands do not linger as
+/// zombies, and reports a failed exit together with bounded stderr.
 #[cfg(any(target_os = "linux", target_os = "windows"))]
 pub(super) fn spawn(command: ProcessInvocation) {
-    let result = start(&command).map(|mut child| {
-        let _ = std::thread::Builder::new()
+    spawn_reporting(command, report);
+}
+
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+fn spawn_reporting(
+    command: ProcessInvocation,
+    report: impl Fn(&ProcessInvocation, Result<(), String>) + Clone + Send + 'static,
+) {
+    let reporter = report.clone();
+    let result = start_with_stderr(&command, Stdio::piped()).and_then(|child| {
+        let reaped = command.clone();
+        std::thread::Builder::new()
             .name("lhc-command".into())
             .spawn(move || {
-                let _ = child.wait();
-            });
+                if let Err(error) = wait_child(child, &reaped, "Command", &Uncancellable) {
+                    log::warn!("[mapper] {error}");
+                    reporter(&reaped, Err(error));
+                }
+            })
+            .map(|_| ())
+            .map_err(|error| format!("Cannot start command reaper: {error}"))
     });
     report(&command, result);
 }
 
+/// Cancellation source of a running child.
 #[cfg(any(target_os = "linux", target_os = "windows"))]
-fn start(command: &ProcessInvocation) -> Result<std::process::Child, String> {
-    start_with_stderr(command, Stdio::null())
+trait Cancellation {
+    fn cancelled(&self) -> bool;
+    /// Upper bound of the status poll interval; it grows from 5 ms.
+    fn max_poll(&self) -> std::time::Duration;
+}
+
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+impl Cancellation for MacroCommand {
+    fn cancelled(&self) -> bool {
+        MacroCommand::cancelled(self)
+    }
+    fn max_poll(&self) -> std::time::Duration {
+        // A macro waits for this step; keep its latency low.
+        std::time::Duration::from_millis(5)
+    }
+}
+
+/// Direct commands are never cancelled and may run for hours (an app
+/// started from a script), so their poll backs off.
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+struct Uncancellable;
+
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+impl Cancellation for Uncancellable {
+    fn cancelled(&self) -> bool {
+        false
+    }
+    fn max_poll(&self) -> std::time::Duration {
+        std::time::Duration::from_millis(250)
+    }
+}
+
+/// Waits for `child` while draining its stderr; a non-zero exit becomes an
+/// error carrying the captured stderr.
+#[cfg(any(target_os = "linux", target_os = "windows"))]
+fn wait_child(
+    mut child: std::process::Child,
+    command: &ProcessInvocation,
+    label: &str,
+    cancel: &dyn Cancellation,
+) -> Result<(), String> {
+    let mut stderr = match CommandStderr::new(child.stderr.take()) {
+        Ok(stderr) => stderr,
+        Err(error) => {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(error);
+        }
+    };
+    let mut poll = std::time::Duration::from_millis(5);
+    loop {
+        if cancel.cancelled() {
+            #[cfg(target_os = "linux")]
+            // Each command owns its process group, including shell children.
+            unsafe {
+                libc::kill(-(child.id() as i32), libc::SIGKILL);
+            }
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(format!("{label} cancelled"));
+        }
+        stderr.drain();
+        match child.try_wait() {
+            Ok(Some(status)) if status.success() => return Ok(()),
+            Ok(Some(status)) => {
+                stderr.drain();
+                return Err(format!(
+                    "{label} {} exited with {status}{}",
+                    command.program,
+                    stderr.message()
+                ));
+            }
+            Ok(None) => {
+                std::thread::sleep(poll);
+                poll = (poll * 2).min(cancel.max_poll());
+            }
+            Err(error) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err(format!("Cannot wait for {label}: {error}"));
+            }
+        }
+    }
 }
 
 #[cfg(any(target_os = "linux", target_os = "windows"))]
@@ -220,7 +279,7 @@ impl CommandStderr {
             };
             if !ready {
                 return Err(format!(
-                    "Cannot capture macro command stderr: {}",
+                    "Cannot capture command stderr: {}",
                     std::io::Error::last_os_error()
                 ));
             }
@@ -445,7 +504,10 @@ mod tests {
             "printf hello > marker".into(),
             Some(folder.to_string_lossy().into()),
         );
-        start(&command).unwrap().wait().unwrap();
+        start_with_stderr(&command, Stdio::null())
+            .unwrap()
+            .wait()
+            .unwrap();
         assert_eq!(
             std::fs::read_to_string(folder.join("marker")).unwrap(),
             "hello"
@@ -461,7 +523,7 @@ mod tests {
         );
         command.working_directory = Some(dir.path().join("missing").to_string_lossy().into());
         assert!(
-            start(&command)
+            start_with_stderr(&command, Stdio::null())
                 .unwrap_err()
                 .contains("Working directory does not exist")
         );
@@ -498,6 +560,72 @@ mod tests {
         assert!(!marker.exists());
         assert!(wait_for(&marker));
     }
+    /// Every report of a direct command, in order.
+    fn direct(script: &str) -> std::sync::mpsc::Receiver<Result<(), String>> {
+        let (tx, rx) = std::sync::mpsc::channel();
+        spawn_reporting(shell(script.into(), None), move |_, result| {
+            let _ = tx.send(result);
+        });
+        rx
+    }
+
+    #[test]
+    fn direct_command_reports_failed_exit_with_stderr() {
+        let reports = direct("printf failure >&2; exit 7");
+        assert_eq!(
+            reports.recv_timeout(Duration::from_secs(1)).unwrap(),
+            Ok(())
+        );
+        let error = reports
+            .recv_timeout(Duration::from_secs(3))
+            .unwrap()
+            .unwrap_err();
+        assert!(error.contains("7"), "{error}");
+        assert!(error.contains("failure"), "{error}");
+
+        for (script, needle) in [
+            ("definitely-missing-lhc-program", "not found"),
+            ("if then", "syntax"),
+            ("/etc/passwd", "ermission denied"),
+        ] {
+            let reports = direct(script);
+            assert_eq!(
+                reports.recv_timeout(Duration::from_secs(1)).unwrap(),
+                Ok(())
+            );
+            let error = reports
+                .recv_timeout(Duration::from_secs(3))
+                .unwrap()
+                .unwrap_err();
+            assert!(error.contains(needle), "{script}: {error}");
+        }
+
+        let reports = direct("head -c 200000 /dev/zero >&2; exit 9");
+        reports
+            .recv_timeout(Duration::from_secs(1))
+            .unwrap()
+            .unwrap();
+        let error = reports
+            .recv_timeout(Duration::from_secs(3))
+            .unwrap()
+            .unwrap_err();
+        assert!(error.contains("stderr truncated"));
+        assert!(error.len() < CommandStderr::LIMIT + 200);
+    }
+
+    #[test]
+    fn direct_command_success_reports_only_the_launch() {
+        let reports = direct("printf noise >&2; exit 0");
+        assert_eq!(
+            reports.recv_timeout(Duration::from_secs(1)).unwrap(),
+            Ok(())
+        );
+        assert!(matches!(
+            reports.recv_timeout(Duration::from_millis(500)),
+            Err(std::sync::mpsc::RecvTimeoutError::Disconnected)
+        ));
+    }
+
     fn wait_job(job: &MacroCommand) -> Result<(), String> {
         let until = Instant::now() + Duration::from_secs(3);
         loop {

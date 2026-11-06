@@ -475,6 +475,21 @@ pub fn list_input_devices() -> Result<Vec<InputDevice>, String> {
     lock_state().list_input_devices()
 }
 
+/// Input devices together with those that exist but could not be opened.
+pub fn discover_input_devices() -> Result<super::devices::DeviceDiscovery, String> {
+    #[cfg(target_os = "linux")]
+    {
+        linux::discover_input_devices()
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        list_input_devices().map(|devices| super::devices::DeviceDiscovery {
+            devices,
+            unavailable: Vec::new(),
+        })
+    }
+}
+
 pub fn list_mice() -> Result<Vec<KeyboardDevice>, String> {
     lock_state().list_mice()
 }

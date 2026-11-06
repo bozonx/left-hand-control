@@ -23,6 +23,12 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Linux mapper: keys of the physical keyboard outside the standard ranges (such as macro keys `KEY_MACRO1`) are passed through instead of being dropped by the virtual keyboard.
+- Commands: a command that exits with an error (syntax error, missing program, permission denied) is reported with its exit status and the start of its error output instead of failing silently.
+- Linux mapper: system actions still queued when the mapper stops, or queued for more than 2 seconds behind a slow one, no longer run later; a hung D-Bus call ends after 5 seconds.
+- Device selection: when some input devices cannot be opened, the accessible devices are still listed together with a "No access" message, and the access check reports the denied keyboard even if another device is readable.
+- Device selection: "Show all devices" and "Use the stable path" can be reached with Tab and activated with Enter or Space, with a visible focus ring.
+
 - Triggers: dismissing the hold menu releases the modal state; stale dialogs and pickers reject edits after document changes. Advanced and condition drafts survive failed edits and background refreshes. Diagnostics follow macro and command changes, empty-trigger drafts remain removable, and suppressed taps no longer offer a misleading native hold option.
 
 - Layouts: duplication keeps its source after Save As or a library refresh; damaged UTF-8 files can be deleted with byte-preserving rollback. Empty library files are consistently rejected. Description drafts survive background refreshes after a failed save, and normal saves recheck the disk snapshot after staging the replacement file. Metadata loaders are isolated per library page.

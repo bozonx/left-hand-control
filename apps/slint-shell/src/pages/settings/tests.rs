@@ -21,6 +21,15 @@ fn matchers_are_added_changed_and_kept_unique() {
     assert!(items[1].only_active_window && items[1].is_blacklist);
 }
 
+fn found(
+    devices: Vec<lhc_core::mapper::devices::InputDevice>,
+) -> lhc_core::mapper::devices::DeviceDiscovery {
+    lhc_core::mapper::devices::DeviceDiscovery {
+        devices,
+        unavailable: Vec::new(),
+    }
+}
+
 fn input_devices() -> Vec<lhc_core::mapper::devices::InputDevice> {
     [
         ("Power button", "/dev/input/event0", false, false),
@@ -357,7 +366,7 @@ fn device_selection_retries_write_errors_and_applies_only_saved_changes() {
     publish_devices(&ui, Err("discovery failed".into()));
     assert!(!e.get_devices_loading());
     assert_ne!(e.get_device_discovery_error().id, "");
-    publish_devices(&ui, Ok(input_devices()));
+    publish_devices(&ui, Ok(found(input_devices())));
     assert_eq!(e.get_device_discovery_error().id, "");
     assert_eq!(e.get_input_devices().row_count(), 3);
     e.set_devices_loading(true);
@@ -502,7 +511,7 @@ fn quitting_can_retry_a_write_failure_or_discard_only_unsaved_settings() {
 fn discovery_failure_preserves_last_success_and_recovery_clears_the_error() {
     let (_dir, _document, ui) = bound_settings();
     let e = ui.global::<SettingsEditor>();
-    publish_devices(&ui, Ok(input_devices()));
+    publish_devices(&ui, Ok(found(input_devices())));
     let previous: Vec<_> = e.get_input_devices().iter().collect();
     e.set_devices_loading(true);
     publish_devices(&ui, Err("access denied".into()));
@@ -516,9 +525,29 @@ fn discovery_failure_preserves_last_success_and_recovery_clears_the_error() {
             "mapper-unsupported"
         }
     );
-    publish_devices(&ui, Ok(Vec::new()));
+    publish_devices(&ui, Ok(found(Vec::new())));
     assert_eq!(e.get_input_devices().row_count(), 0);
     assert_eq!(e.get_device_discovery_error().id, "");
+}
+
+#[test]
+fn partially_denied_discovery_lists_open_devices_and_reports_access() {
+    let (_dir, _document, ui) = bound_settings();
+    let e = ui.global::<SettingsEditor>();
+    let mut discovery = found(input_devices());
+    discovery
+        .unavailable
+        .push(lhc_core::mapper::devices::UnavailableDevice {
+            path: "/dev/input/event3".into(),
+            error: "open /dev/input/event3: Permission denied".into(),
+            denied: true,
+        });
+    publish_devices(&ui, Ok(discovery));
+    assert_eq!(e.get_input_devices().row_count(), 3);
+    assert_eq!(
+        e.get_device_discovery_error().id,
+        "input-access-input-denied"
+    );
 }
 
 #[test]

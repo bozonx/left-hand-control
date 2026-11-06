@@ -4,7 +4,7 @@
 mod devices;
 mod io;
 
-pub use devices::{list_input_devices, list_keyboards, list_mice};
+pub use devices::{discover_input_devices, list_input_devices, list_keyboards, list_mice};
 
 use super::config::MapperConfig;
 use super::engine::{Engine, EngineOutput};
@@ -29,6 +29,8 @@ const VIRTUAL_VERSION: u16 = 1;
 const KEYBOARD_KEY_CODES: std::ops::RangeInclusive<u16> = 1..=248;
 /// Extended `KEY_*` block above the `BTN_*` range (256..=351).
 const EXTENDED_KEY_CODES: std::ops::RangeInclusive<u16> = 352..=511;
+/// `BTN_*` block: mouse, joystick and gamepad buttons.
+const NON_KEYBOARD_BUTTON_CODES: std::ops::RangeInclusive<u16> = 256..=351;
 const DEVICE_DISCONNECTED: &str = "mapper input device disconnected";
 const START_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -161,6 +163,7 @@ impl Handle {
 
     pub fn stop(mut self) {
         crate::text_input::job::cancel();
+        io::invalidate_pending_dbus_calls();
         self.stop.store(true, Ordering::SeqCst);
         self.wake();
         if let Some(j) = self.join.take() {
@@ -428,6 +431,8 @@ fn run(
         return Err("mapper start cancelled".into());
     }
     let _mapper_lock = acquire_mapper_lock()?;
+    // However the mapper ends, its queued system actions must not run later.
+    let _dbus_calls = DbusCallsOwner;
     let mut cfg = cfg;
     reconnect_loop(
         &stop,
@@ -472,6 +477,15 @@ fn run(
         },
         || thread::sleep(RECONNECT_RETRY),
     )
+}
+
+/// Invalidates the mapper's queued D-Bus calls when it ends.
+struct DbusCallsOwner;
+
+impl Drop for DbusCallsOwner {
+    fn drop(&mut self) {
+        io::invalidate_pending_dbus_calls();
+    }
 }
 
 /// How long to wait before looking for a disconnected keyboard again.
@@ -596,6 +610,7 @@ fn run_device(
     // emit the mapped action *in addition to* the physical click, and
     // `Swallow` cannot suppress the physical click. Fixing this would
     // require grabbing the mouse and re-emitting REL/ABS ourselves.
+    let all_keys = virtual_keyboard_keys(device.supported_keys());
     let mut devices = vec![device];
     if let Some(mp) = mouse_path {
         match Device::open(mp) {
@@ -607,24 +622,6 @@ fn run_device(
         }
     }
 
-    let mut all_keys = AttributeSet::<KeyCode>::new();
-    // Keyboard block (1..=248) plus the extended KEY_* block above the
-    // BTN_* range: keys.rs maps e.g. KEY_SELECT (353) and KEY_FN (464),
-    // which the virtual device must register or their emits are silently
-    // dropped by uinput. The BTN_* block (256..=351) is skipped on purpose
-    // so the device is not classified as a mouse/joystick.
-    for code in KEYBOARD_KEY_CODES.chain(EXTENDED_KEY_CODES) {
-        all_keys.insert(KeyCode::new(code));
-    }
-    // Catalog keys beyond that block, such as KEY_TOUCHPAD_TOGGLE (0x212).
-    for key in crate::profile::key_catalog::CATEGORIES
-        .iter()
-        .flat_map(|keys| keys.iter())
-        .filter_map(|name| super::keys::code_to_key(name))
-        .filter(|key| key.code() > *EXTENDED_KEY_CODES.end())
-    {
-        all_keys.insert(key);
-    }
     let virt = VirtualDevice::builder()
         .map_err(|e| format!("uinput builder (need /dev/uinput access?): {e}"))?
         .name(VIRTUAL_DEVICE_NAME)
@@ -669,13 +666,52 @@ fn run_device(
     run_loop(driver, virt, cfg, stop, control_rx, &mut text_session)
 }
 
+/// Key codes the virtual keyboard registers. uinput silently drops emits of
+/// unregistered codes, so this covers every key the engine may produce plus
+/// every keyboard key of the physical device (e.g. `KEY_MACRO1`), which
+/// unmapped passthrough re-emits verbatim.
+fn virtual_keyboard_keys(
+    physical: Option<&evdev::AttributeSetRef<KeyCode>>,
+) -> AttributeSet<KeyCode> {
+    let mut all_keys = AttributeSet::<KeyCode>::new();
+    // Keyboard block (1..=248) plus the extended KEY_* block above the
+    // BTN_* range: keys.rs maps e.g. KEY_SELECT (353) and KEY_FN (464).
+    // The BTN_* block (256..=351) is skipped on purpose so the device is
+    // not classified as a mouse/joystick.
+    for code in KEYBOARD_KEY_CODES.chain(EXTENDED_KEY_CODES) {
+        all_keys.insert(KeyCode::new(code));
+    }
+    // Catalog keys beyond that block, such as KEY_TOUCHPAD_TOGGLE (0x212).
+    for key in crate::profile::key_catalog::CATEGORIES
+        .iter()
+        .flat_map(|keys| keys.iter())
+        .filter_map(|name| super::keys::code_to_key(name))
+        .filter(|key| key.code() > *EXTENDED_KEY_CODES.end())
+    {
+        all_keys.insert(key);
+    }
+    // Physical keys outside both blocks. BTN_* codes were already rejected by
+    // `validate_keyboard_capabilities`; the filter keeps that guarantee here.
+    for key in physical
+        .into_iter()
+        .flat_map(|keys| keys.iter())
+        .filter(|key| !NON_KEYBOARD_BUTTON_CODES.contains(&key.code()))
+    {
+        all_keys.insert(key);
+    }
+    all_keys
+}
+
 fn validate_keyboard_capabilities(
     events: &evdev::AttributeSetRef<evdev::EventType>,
     keys: Option<&evdev::AttributeSetRef<KeyCode>>,
 ) -> Result<(), String> {
     if events.contains(evdev::EventType::RELATIVE)
         || events.contains(evdev::EventType::ABSOLUTE)
-        || keys.is_some_and(|keys| keys.iter().any(|key| (256..=351).contains(&key.code())))
+        || keys.is_some_and(|keys| {
+            keys.iter()
+                .any(|key| NON_KEYBOARD_BUTTON_CODES.contains(&key.code()))
+        })
     {
         return Err("This input device also provides pointer movement or non-keyboard buttons; select its separate keyboard interface to avoid blocking those inputs".into());
     }
@@ -843,6 +879,28 @@ mod tests {
         assert!(original.matches(&moved, "/dev/input/by-id/keyboard"));
         assert!(!original.matches(&moved, "/dev/input/event3"));
         assert!(!original.matches(&identity("port-2", "serial-2"), "/dev/input/by-id/keyboard"));
+    }
+
+    #[test]
+    fn virtual_keyboard_carries_extended_physical_keys() {
+        use super::{NON_KEYBOARD_BUTTON_CODES, virtual_keyboard_keys};
+        use evdev::{AttributeSet, KeyCode};
+        // evdev has no constants for these: KEY_MACRO1, KEY_KBD_LCD_MENU1.
+        let (macro1, lcd_menu1) = (KeyCode::new(0x290), KeyCode::new(0x2b8));
+        let mut physical = AttributeSet::<KeyCode>::new();
+        physical.insert(KeyCode::KEY_A);
+        physical.insert(macro1);
+        physical.insert(lcd_menu1);
+        let keys = virtual_keyboard_keys(Some(&physical));
+        assert!(keys.contains(macro1));
+        assert!(keys.contains(lcd_menu1));
+        assert!(keys.contains(KeyCode::KEY_FN));
+        assert!(
+            !keys
+                .iter()
+                .any(|key| NON_KEYBOARD_BUTTON_CODES.contains(&key.code()))
+        );
+        assert!(!virtual_keyboard_keys(None).contains(macro1));
     }
 
     #[test]

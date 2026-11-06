@@ -2,6 +2,7 @@
 //! `/dev/input/by-id` paths.
 
 use super::VIRTUAL_DEVICE_NAME;
+use crate::mapper::devices::{DeviceDiscovery, UnavailableDevice};
 use crate::mapper::{InputDevice, KeyboardDevice};
 use crate::platform::INPUT_DIR;
 use evdev::{Device, KeyCode};
@@ -48,69 +49,111 @@ fn stable_path(event: &Path, stable: &HashMap<PathBuf, PathBuf>) -> String {
         .into_owned()
 }
 
-pub fn list_input_devices() -> Result<Vec<InputDevice>, String> {
-    let mut out = Vec::new();
-    let dir = std::fs::read_dir(INPUT_DIR).map_err(|e| format!("read {INPUT_DIR}: {e}"))?;
-    let mut paths: Vec<PathBuf> = dir
+/// What discovery needs from an opened event device.
+struct ProbedDevice {
+    name: String,
+    is_keyboard: bool,
+    is_mouse: bool,
+    bus_virtual: bool,
+    has_physical_path: bool,
+}
+
+fn probe(path: &Path) -> std::io::Result<ProbedDevice> {
+    let dev = Device::open(path)?;
+    Ok(ProbedDevice {
+        name: dev.name().unwrap_or("(unknown)").to_string(),
+        is_keyboard: is_keyboard(&dev),
+        is_mouse: is_mouse(&dev),
+        bus_virtual: dev.input_id().bus_type() == evdev::BusType::BUS_VIRTUAL,
+        has_physical_path: dev.physical_path().is_some_and(|path| !path.is_empty()),
+    })
+}
+
+/// `event*` nodes of `dir`, sorted.
+fn event_paths(dir: &Path) -> Result<Vec<PathBuf>, String> {
+    let entries = std::fs::read_dir(dir).map_err(|e| format!("read {}: {e}", dir.display()))?;
+    let mut paths: Vec<PathBuf> = entries
         .filter_map(|e| e.ok())
         .map(|e| e.path())
         .filter(|p| {
             p.file_name()
                 .and_then(|n| n.to_str())
-                .map(|n| n.starts_with("event"))
-                .unwrap_or(false)
+                .is_some_and(|n| n.starts_with("event"))
         })
         .collect();
     paths.sort();
+    Ok(paths)
+}
+
+/// Every input device with the ones that could not be opened. Fails only
+/// when the directory is unreadable or no device at all could be opened.
+pub fn discover_input_devices() -> Result<DeviceDiscovery, String> {
+    discover_in(event_paths(Path::new(INPUT_DIR))?, &stable_paths(), probe)
+}
+
+fn discover_in(
+    paths: Vec<PathBuf>,
+    stable: &HashMap<PathBuf, PathBuf>,
+    mut open: impl FnMut(&Path) -> std::io::Result<ProbedDevice>,
+) -> Result<DeviceDiscovery, String> {
     log::debug!(
-        "[mapper] list_input_devices: found {} event* paths",
+        "[mapper] discover_input_devices: found {} event* paths",
         paths.len()
     );
-
-    let stable = stable_paths();
-    let mut first_error = None;
+    let mut out = DeviceDiscovery::default();
     for path in paths {
-        let dev = match Device::open(&path) {
+        let dev = match open(&path) {
             Ok(dev) => dev,
             Err(error) => {
                 log::debug!("[mapper]   {}: open failed: {error}", path.display());
-                first_error.get_or_insert_with(|| format!("open {}: {error}", path.display()));
+                out.unavailable.push(UnavailableDevice {
+                    path: stable_path(&path, stable),
+                    error: format!("open {}: {error}", path.display()),
+                    denied: error.kind() == std::io::ErrorKind::PermissionDenied,
+                });
                 continue;
             }
         };
-        let name = dev.name().unwrap_or("(unknown)").to_string();
-        let is_keyboard = is_keyboard(&dev);
-        let is_mouse = is_mouse(&dev);
         log::debug!(
             "[mapper]   {}: name='{}' is_keyboard={} is_mouse={}",
             path.display(),
-            name,
-            is_keyboard,
-            is_mouse
+            dev.name,
+            dev.is_keyboard,
+            dev.is_mouse
         );
-        if name == VIRTUAL_DEVICE_NAME {
+        if dev.name == VIRTUAL_DEVICE_NAME {
             continue;
         }
-        let path_to_store = stable_path(&path, &stable);
+        let path_to_store = stable_path(&path, stable);
         // uinput devices get no udev links and usually no physical location.
-        let is_virtual = dev.input_id().bus_type() == evdev::BusType::BUS_VIRTUAL
-            || (path_to_store == path.to_string_lossy()
-                && dev.physical_path().is_none_or(str::is_empty));
-        out.push(InputDevice {
+        let is_virtual =
+            dev.bus_virtual || (path_to_store == path.to_string_lossy() && !dev.has_physical_path);
+        out.devices.push(InputDevice {
             path: path_to_store,
-            name,
-            is_keyboard,
-            is_mouse,
+            name: dev.name,
+            is_keyboard: dev.is_keyboard,
+            is_mouse: dev.is_mouse,
             is_virtual,
         });
     }
-    if out.is_empty()
-        && let Some(error) = first_error
+    if out.devices.is_empty()
+        && let Some(first) = out.unavailable.first()
     {
-        return Err(error);
+        return Err(first.error.clone());
     }
-    log::debug!("[mapper] list_input_devices -> {} devices", out.len());
+    for device in &out.unavailable {
+        log::warn!("[mapper] input device unavailable: {}", device.error);
+    }
+    log::debug!(
+        "[mapper] discover_input_devices -> {} devices, {} unavailable",
+        out.devices.len(),
+        out.unavailable.len()
+    );
     Ok(out)
+}
+
+pub fn list_input_devices() -> Result<Vec<InputDevice>, String> {
+    discover_input_devices().map(|discovery| discovery.devices)
 }
 
 pub fn list_keyboards() -> Result<Vec<KeyboardDevice>, String> {
@@ -164,8 +207,61 @@ fn is_mouse(dev: &Device) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{stable_path, stable_paths_in};
+    use super::{ProbedDevice, discover_in, stable_path, stable_paths_in};
+    use std::collections::HashMap;
+    use std::io::{Error, ErrorKind};
     use std::os::unix::fs::symlink;
+    use std::path::PathBuf;
+
+    fn device(name: &str, is_keyboard: bool) -> ProbedDevice {
+        ProbedDevice {
+            name: name.into(),
+            is_keyboard,
+            is_mouse: !is_keyboard,
+            bus_virtual: false,
+            has_physical_path: true,
+        }
+    }
+
+    #[test]
+    fn denied_keyboard_is_reported_next_to_the_accessible_mouse() {
+        let paths = vec![PathBuf::from("/x/event0"), PathBuf::from("/x/event1")];
+        let discovery = discover_in(paths.clone(), &HashMap::new(), |path| {
+            if path.ends_with("event0") {
+                Ok(device("Mouse", false))
+            } else {
+                Err(Error::from(ErrorKind::PermissionDenied))
+            }
+        })
+        .unwrap();
+        assert_eq!(discovery.devices.len(), 1);
+        assert_eq!(discovery.devices[0].name, "Mouse");
+        assert_eq!(discovery.unavailable.len(), 1);
+        assert_eq!(discovery.unavailable[0].path, "/x/event1");
+        assert!(discovery.access_denied());
+
+        // Nothing accessible keeps failing as a whole.
+        let error = discover_in(paths, &HashMap::new(), |_| {
+            Err(Error::from(ErrorKind::PermissionDenied))
+        })
+        .unwrap_err();
+        assert!(error.contains("event0"), "{error}");
+
+        // A vanished node is no access problem.
+        let discovery = discover_in(
+            vec![PathBuf::from("/x/event0"), PathBuf::from("/x/event1")],
+            &HashMap::new(),
+            |path| {
+                if path.ends_with("event0") {
+                    Ok(device("Keyboard", true))
+                } else {
+                    Err(Error::from(ErrorKind::NotFound))
+                }
+            },
+        )
+        .unwrap();
+        assert!(!discovery.access_denied());
+    }
 
     #[test]
     fn devices_are_stored_by_their_most_stable_name() {

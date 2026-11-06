@@ -617,12 +617,12 @@ fn device_offset(choices: ModelRc<DeviceChoice>, index: i32, row: i32, heading: 
 }
 
 fn refresh_devices(ui: &SettingsWindow) {
-    discover_devices(ui, lhc_core::mapper::runtime::list_input_devices);
+    discover_devices(ui, lhc_core::mapper::runtime::discover_input_devices);
 }
 
 fn discover_devices(
     ui: &SettingsWindow,
-    load: impl FnOnce() -> Result<Vec<devices::InputDevice>, String> + Send + 'static,
+    load: impl FnOnce() -> Result<devices::DeviceDiscovery, String> + Send + 'static,
 ) {
     let e = ui.global::<SettingsEditor>();
     for (rows, saved, mouse) in [
@@ -653,13 +653,22 @@ fn discover_devices(
     });
 }
 
-fn publish_devices(ui: &SettingsWindow, result: Result<Vec<devices::InputDevice>, String>) {
+fn publish_devices(ui: &SettingsWindow, result: Result<devices::DeviceDiscovery, String>) {
     let e = ui.global::<SettingsEditor>();
     e.set_devices_loading(false);
     let devices = match result {
-        Ok(devices) => {
-            e.set_device_discovery_error(Msg::None.to_ui());
-            devices
+        Ok(discovery) => {
+            // Listed devices stay usable; the hidden ones are explained by
+            // their real cause instead of looking disconnected.
+            e.set_device_discovery_error(
+                if discovery.access_denied() {
+                    Msg::InputAccess(InputAccessIssue::InputDenied)
+                } else {
+                    Msg::None
+                }
+                .to_ui(),
+            );
+            discovery.devices
         }
         Err(error) => {
             log::warn!("input device discovery: {error}");

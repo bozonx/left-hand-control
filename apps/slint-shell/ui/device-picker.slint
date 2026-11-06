@@ -1,7 +1,7 @@
 import { NavigationFocus, NavigationKind } from "focus.slint";
 import { KeyboardFocus } from "focus.slint";
 import { Button } from "std-widgets.slint";
-import { FocusRing, IconButton, ButtonGroup, DialogFrame, SearchField, TextField } from "controls.slint";
+import { FocusRing, IconButton, LinkButton, ButtonGroup, DialogFrame, SearchField, TextField } from "controls.slint";
 import { ScrollView } from "scroll.slint";
 import { Locale, Message } from "i18n.slint";
 import { Theme } from "theme.slint";
@@ -85,16 +85,6 @@ export component DevicePicker inherits Rectangle {
         }
     }
     touch := TouchArea { enabled: root.enabled; mouse-cursor: pointer; clicked => { focus.focus(); root.open(); } }
-}
-
-/// Clickable text in the link colour.
-component LinkText inherits Text {
-    callback clicked();
-    color: link-touch.has-hover ? Theme.accent : Theme.accent;
-    vertical-alignment: center;
-    accessible-role: button;
-    accessible-action-default => { root.clicked(); }
-    link-touch := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
 }
 
 /// Modal device list with three tabs: the devices that look like a keyboard
@@ -263,7 +253,7 @@ export component DeviceDialogOverlay inherits DialogFrame {
                         text: root.all && root.query != "" ? @tr("No matching items") : @tr("No devices found");
                     }
                     if !root.all: HorizontalLayout { alignment: center;
-                        LinkText { text: @tr("Show all devices"); clicked => { root.show-tab(1); } }
+                        LinkButton { text: @tr("Show all devices"); clicked => { root.show-tab(1); } }
                     }
                 }
                 if root.tab == 2: VerticalLayout { width: parent.width; height: parent.height; alignment: start; spacing: Theme.space-m;
@@ -295,7 +285,7 @@ export component DeviceDialogOverlay inherits DialogFrame {
                             text: @tr("This path may change after reconnecting.");
                             color: Theme.muted; font-size: Theme.font-body;
                         }
-                        LinkText {
+                        LinkButton {
                             horizontal-stretch: 0;
                             text: @tr("Use the stable path");
                             font-size: Theme.font-body;

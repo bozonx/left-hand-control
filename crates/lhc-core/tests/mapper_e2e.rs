@@ -76,8 +76,12 @@ impl Keyboard {
     }
 
     fn named(name: &str) -> Self {
+        Self::with_keys(name, 1..=127)
+    }
+
+    fn with_keys(name: &str, codes: impl IntoIterator<Item = u16>) -> Self {
         let mut keys = AttributeSet::<KeyCode>::new();
-        for code in 1..=127 {
+        for code in codes {
             keys.insert(KeyCode::new(code));
         }
         let mut device = VirtualDevice::builder()
@@ -274,6 +278,29 @@ fn mapper_e2e_passthrough_keeps_unmapped_keys() {
             down(KeyCode::KEY_S),
             up(KeyCode::KEY_S)
         ]
+    );
+}
+
+#[test]
+#[ignore = "requires /dev/uinput and readable /dev/input"]
+fn mapper_e2e_passthrough_keeps_extended_keys() {
+    let _serial = serial();
+    // Codes above the fixed blocks of the virtual keyboard, as on keyboards
+    // with macro or LCD keys.
+    // KEY_MACRO1, KEY_KBD_LCD_MENU1 (evdev has no constants for them).
+    let (macro1, lcd_menu1) = (KeyCode::new(0x290), KeyCode::new(0x2b8));
+    let extended = [macro1, lcd_menu1];
+    let mut keyboard = Keyboard::with_keys(
+        "LHC e2e extended keyboard",
+        (1..=127).chain(extended.iter().map(|key| key.code())),
+    );
+    let mut mapper = Mapper::start(&keyboard, json!({}));
+    for key in extended {
+        keyboard.tap(key);
+    }
+    assert_eq!(
+        mapper.keys(),
+        [down(macro1), up(macro1), down(lcd_menu1), up(lcd_menu1)]
     );
 }
 

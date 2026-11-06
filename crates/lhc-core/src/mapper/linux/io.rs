@@ -17,6 +17,7 @@ use evdev::{Device, EventType, InputEvent, KeyCode, KeyEvent};
 use std::collections::{HashMap, HashSet};
 use std::os::unix::io::{AsRawFd, BorrowedFd};
 use std::sync::OnceLock;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant, SystemTime};
@@ -572,12 +573,36 @@ fn run_sys_action(action: &SystemAction) {
     }
 }
 
+/// Mapper generation of D-Bus jobs. Stopping the mapper bumps it, so calls
+/// queued by that mapper never run after remapping is off.
+static DBUS_GENERATION: AtomicU64 = AtomicU64::new(0);
+/// A queued call older than this is dropped: it waited behind a slow call
+/// and would fire long after the key press that requested it.
+const DBUS_JOB_MAX_AGE: Duration = Duration::from_secs(2);
+
+/// Drop every D-Bus call that has been queued but not started yet.
+pub(super) fn invalidate_pending_dbus_calls() {
+    DBUS_GENERATION.fetch_add(1, Ordering::SeqCst);
+}
+
+/// One queued D-Bus call with the generation and time it was queued at.
+struct DbusJob {
+    call: DbusCall,
+    generation: u64,
+    queued: Instant,
+}
+
 /// Enqueue a DBus call on the dedicated `lhc-dbus` worker. Calls stay
 /// ordered among themselves (macros rely on that) but never block the
 /// side-effect worker, so a hung DBus service cannot stall text
 /// injection or shell commands queued after it.
 fn call_dbus(call: &DbusCall) {
-    if dbus_tx().try_send(call.clone()).is_err() {
+    let job = DbusJob {
+        call: call.clone(),
+        generation: DBUS_GENERATION.load(Ordering::SeqCst),
+        queued: Instant::now(),
+    };
+    if dbus_tx().try_send(job).is_err() {
         report_action_failure(format!(
             "System action queue unavailable or full: {}.{}",
             call.destination, call.method
@@ -590,14 +615,17 @@ fn call_dbus(call: &DbusCall) {
     }
 }
 
-fn dbus_tx() -> &'static mpsc::SyncSender<DbusCall> {
-    static TX: OnceLock<mpsc::SyncSender<DbusCall>> = OnceLock::new();
+fn dbus_tx() -> &'static mpsc::SyncSender<DbusJob> {
+    static TX: OnceLock<mpsc::SyncSender<DbusJob>> = OnceLock::new();
     TX.get_or_init(|| {
         let (tx, rx) = mpsc::sync_channel(WORKER_QUEUE);
         match thread::Builder::new()
             .name("lhc-dbus".into())
-            .spawn(move || run_dbus_worker(rx))
-        {
+            .spawn(move || {
+                run_dbus_worker(rx, &mut SessionBus::default(), &DBUS_GENERATION, |error| {
+                    report_action_failure(error)
+                })
+            }) {
             Ok(_) => {}
             Err(e) => log::debug!("[mapper] could not spawn dbus worker: {e}"),
         }
@@ -605,32 +633,81 @@ fn dbus_tx() -> &'static mpsc::SyncSender<DbusCall> {
     })
 }
 
-fn run_dbus_worker(rx: mpsc::Receiver<DbusCall>) {
-    // One long-lived session connection instead of a connection per call.
-    let mut conn: Option<zbus::blocking::Connection> = None;
-    for call in rx {
-        let c = match &conn {
-            Some(c) => c.clone(),
-            None => match zbus::blocking::Connection::session() {
-                Ok(c) => {
-                    conn = Some(c.clone());
-                    c
-                }
-                Err(e) => {
-                    log::debug!("[mapper] dbus connect session bus failed: {e}");
-                    report_action_failure(format!("Cannot connect to session bus: {e}"));
-                    continue;
-                }
-            },
-        };
-        let (tx, done) = mpsc::channel();
-        let call_clone = call.clone();
-        thread::spawn(move || {
-            let _ = tx.send(dispatch_dbus_call(&c, &call_clone));
-        });
+/// Failure of one D-Bus call.
+#[derive(Debug)]
+struct DbusFailure {
+    message: String,
+    /// The connection is unusable; the next call reconnects.
+    reconnect: bool,
+}
 
-        match done.recv_timeout(DBUS_CALL_TIMEOUT) {
-            Ok(Ok(())) => {
+/// Where the worker sends calls; a test substitutes a delayed transport.
+trait DbusTransport {
+    fn call(&mut self, call: &DbusCall) -> Result<(), DbusFailure>;
+}
+
+/// The session bus. The connection's method timeout ends a hung call in
+/// the worker itself, so no abandoned call thread keeps running.
+#[derive(Default)]
+struct SessionBus(Option<zbus::blocking::Connection>);
+
+impl DbusTransport for SessionBus {
+    fn call(&mut self, call: &DbusCall) -> Result<(), DbusFailure> {
+        // One long-lived session connection instead of a connection per call.
+        let conn = match &self.0 {
+            Some(conn) => conn.clone(),
+            None => {
+                let conn = zbus::blocking::connection::Builder::session()
+                    .map(|builder| builder.method_timeout(DBUS_CALL_TIMEOUT))
+                    .and_then(|builder| builder.build())
+                    .map_err(|e| DbusFailure {
+                        message: format!("Cannot connect to session bus: {e}"),
+                        reconnect: true,
+                    })?;
+                self.0 = Some(conn.clone());
+                conn
+            }
+        };
+        dispatch_dbus_call(&conn, call).map_err(|e| {
+            // Method-level errors keep the connection; anything else
+            // (transport, serialization, timeout) forces a reconnect.
+            let reconnect = !matches!(e, zbus::Error::MethodError(..));
+            if reconnect {
+                self.0 = None;
+            }
+            DbusFailure {
+                message: format!("{}.{} failed: {e}", call.destination, call.method),
+                reconnect,
+            }
+        })
+    }
+}
+
+fn run_dbus_worker(
+    rx: mpsc::Receiver<DbusJob>,
+    transport: &mut dyn DbusTransport,
+    generation: &AtomicU64,
+    report: impl Fn(String),
+) {
+    for job in rx {
+        let call = &job.call;
+        if job.generation != generation.load(Ordering::SeqCst) {
+            log::debug!(
+                "[mapper] dbus {}.{} skipped: mapper stopped",
+                call.destination,
+                call.method
+            );
+            continue;
+        }
+        if job.queued.elapsed() > DBUS_JOB_MAX_AGE {
+            report(format!(
+                "{}.{} skipped: queued too long behind a slow system action",
+                call.destination, call.method
+            ));
+            continue;
+        }
+        match transport.call(call) {
+            Ok(()) => {
                 if call.switches_layout() {
                     super::super::refresh_layout();
                 }
@@ -642,28 +719,13 @@ fn run_dbus_worker(rx: mpsc::Receiver<DbusCall>) {
                     call.method,
                 );
             }
-            Ok(Err(e)) => {
-                report_action_failure(format!("{}.{} failed: {e}", call.destination, call.method));
+            Err(failure) => {
                 log::debug!(
-                    "[mapper] dbus {}.{} failed: {}",
-                    call.destination,
-                    call.method,
-                    e
+                    "[mapper] dbus {} (reconnect: {})",
+                    failure.message,
+                    failure.reconnect
                 );
-                // Method-level errors keep the connection; anything else
-                // (transport, serialization) forces a reconnect next call.
-                if !matches!(e, zbus::Error::MethodError(..)) {
-                    conn = None;
-                }
-            }
-            Err(_) => {
-                report_action_failure(format!("{}.{} timed out", call.destination, call.method));
-                log::debug!(
-                    "[mapper] dbus {}.{} timed out after 5s",
-                    call.destination,
-                    call.method
-                );
-                conn = None;
+                report(failure.message);
             }
         }
     }
@@ -708,6 +770,122 @@ fn dispatch_dbus_call(conn: &zbus::blocking::Connection, call: &DbusCall) -> zbu
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Records calls; the first one blocks until released, like a hung
+    /// D-Bus service.
+    struct DelayedTransport {
+        started: mpsc::Sender<String>,
+        release: mpsc::Receiver<()>,
+        first: bool,
+    }
+
+    impl DbusTransport for DelayedTransport {
+        fn call(&mut self, call: &DbusCall) -> Result<(), DbusFailure> {
+            let _ = self.started.send(call.method.clone());
+            if std::mem::take(&mut self.first) {
+                let _ = self.release.recv();
+            }
+            Ok(())
+        }
+    }
+
+    fn dbus_job(method: &str, generation: &AtomicU64) -> DbusJob {
+        DbusJob {
+            call: DbusCall {
+                destination: "org.example".into(),
+                path: "/".into(),
+                interface: None,
+                method: method.into(),
+                args: Vec::new(),
+            },
+            generation: generation.load(Ordering::SeqCst),
+            queued: Instant::now(),
+        }
+    }
+
+    /// A D-Bus worker on a [`DelayedTransport`] and its observation ends.
+    struct DelayedWorker {
+        jobs: mpsc::SyncSender<DbusJob>,
+        started: mpsc::Receiver<String>,
+        release: mpsc::Sender<()>,
+        reports: mpsc::Receiver<String>,
+        generation: &'static AtomicU64,
+        worker: thread::JoinHandle<()>,
+    }
+
+    fn delayed_worker() -> DelayedWorker {
+        let generation: &'static AtomicU64 = Box::leak(Box::new(AtomicU64::new(0)));
+        let (jobs, rx) = mpsc::sync_channel(WORKER_QUEUE);
+        let (started_tx, started) = mpsc::channel();
+        let (release, release_rx) = mpsc::channel();
+        let (report_tx, reports) = mpsc::channel();
+        let worker = thread::spawn(move || {
+            let mut transport = DelayedTransport {
+                started: started_tx,
+                release: release_rx,
+                first: true,
+            };
+            run_dbus_worker(rx, &mut transport, generation, |error| {
+                let _ = report_tx.send(error);
+            });
+        });
+        DelayedWorker {
+            jobs,
+            started,
+            release,
+            reports,
+            generation,
+            worker,
+        }
+    }
+
+    #[test]
+    fn stopping_the_mapper_drops_dbus_calls_queued_behind_a_delayed_one() {
+        let DelayedWorker {
+            jobs,
+            started,
+            release,
+            reports,
+            generation,
+            worker,
+        } = delayed_worker();
+        jobs.send(dbus_job("Slow", generation)).unwrap();
+        assert_eq!(
+            started.recv_timeout(Duration::from_secs(1)).unwrap(),
+            "Slow"
+        );
+        jobs.send(dbus_job("Queued", generation)).unwrap();
+        // The mapper stops while the first call is still in the transport.
+        generation.fetch_add(1, Ordering::SeqCst);
+        jobs.send(dbus_job("NextMapper", generation)).unwrap();
+        release.send(()).unwrap();
+        drop(jobs);
+        worker.join().unwrap();
+        assert_eq!(started.try_iter().collect::<Vec<_>>(), ["NextMapper"]);
+        assert!(reports.try_recv().is_err());
+    }
+
+    #[test]
+    fn stale_dbus_calls_are_reported_instead_of_run_late() {
+        let DelayedWorker {
+            jobs,
+            started,
+            release,
+            reports,
+            generation,
+            worker,
+        } = delayed_worker();
+        jobs.send(dbus_job("Slow", generation)).unwrap();
+        started.recv_timeout(Duration::from_secs(1)).unwrap();
+        let mut stale = dbus_job("Stale", generation);
+        stale.queued -= DBUS_JOB_MAX_AGE + Duration::from_millis(1);
+        jobs.send(stale).unwrap();
+        release.send(()).unwrap();
+        drop(jobs);
+        worker.join().unwrap();
+        assert!(started.try_recv().is_err());
+        assert!(reports.try_recv().unwrap().contains("Stale"));
+    }
 
     #[test]
     fn disconnect_releases_only_mouse_ownership_and_pending_presses() {
