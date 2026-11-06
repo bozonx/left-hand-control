@@ -22,7 +22,7 @@ export XDG_DATA_HOME="$run_root/data"
 export LHC_DEV_DIR="$run_root/lhc"
 export LHC_SOCKET="$run_root/lhc.sock"
 export LHC_HOTKEYS=off
-export SLINT_BACKEND=${SLINT_BACKEND:-winit-software}
+export SLINT_BACKEND=${SLINT_BACKEND:-winit-skia-software}
 unset NO_AT_BRIDGE
 export QT_ACCESSIBILITY=1
 export ATSPI_DBUS_IMPLEMENTATION=dbus-daemon

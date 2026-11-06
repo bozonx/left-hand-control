@@ -20,7 +20,7 @@ env = dict(
     LHC_METRICS=str(output / 'parent.csv'),
     LHC_POPUPS='spell',
     LHC_HOTKEYS='off',
-    SLINT_BACKEND='winit-software',
+    SLINT_BACKEND='winit-skia-software',
     RUST_LOG='info',
 )
 socket = Path(env['XDG_RUNTIME_DIR']) / 'lhc-slint-shell' / env['LHC_SOCKET']

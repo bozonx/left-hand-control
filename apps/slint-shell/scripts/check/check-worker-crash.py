@@ -35,7 +35,7 @@ with tempfile.TemporaryDirectory() as directory:
             "LHC_HOTKEYS": "off",
             "LHC_POPUPS": "spell",
             "LHC_SOCKET": socket,
-            "SLINT_BACKEND": "winit-software",
+            "SLINT_BACKEND": "winit-skia-software",
             "LHC_METRICS": str(Path(directory) / "crash.csv"),
         }
         server = subprocess.Popen([binary], env=env, stdout=log, stderr=log)

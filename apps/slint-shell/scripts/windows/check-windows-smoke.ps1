@@ -43,7 +43,7 @@ New-Item -ItemType Directory -Force -Path $output | Out-Null
 $env:LHC_DEV_DIR = Join-Path $output ([guid]::NewGuid().ToString())
 $env:LHC_HOTKEYS = 'off'
 $env:LHC_POPUPS = 'winit'
-$env:SLINT_BACKEND = 'winit-software'
+$env:SLINT_BACKEND = 'winit-skia-software'
 # Select an unused loopback port so another running instance cannot satisfy ping.
 $listener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Loopback, 0)
 $listener.Start()

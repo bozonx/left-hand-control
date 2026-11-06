@@ -24,7 +24,7 @@ path = "src/main.rs"
 
 [dependencies]
 lhc-core = { path = "../../crates/lhc-core" }
-slint = { version = "=1.18.1", default-features = false, features = ["std", "accessibility", "compat-1-2", "backend-winit", "renderer-software", "renderer-skia", "unstable-winit-030"] }
+slint = { version = "=1.18.1", default-features = false, features = ["std", "accessibility", "compat-1-2", "backend-winit", "renderer-skia", "unstable-winit-030"] }
 i-slint-core = { version = "=1.18.1", default-features = false, features = ["tr"] }
 tr = { version = "0.1.11", default-features = false, features = ["mo-translator"] }
 serde.workspace = true
@@ -104,4 +104,6 @@ features = ["client"]
 optional = true
 
 [dev-dependencies]
+# Tests render through MinimalSoftwareWindow; the app itself uses Skia only.
+slint = { version = "=1.18.1", default-features = false, features = ["renderer-software"] }
 tempfile.workspace = true

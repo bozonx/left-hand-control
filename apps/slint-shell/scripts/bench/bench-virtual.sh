@@ -40,7 +40,7 @@ if [[ "$LHC_VIRTUAL_TASK" == geometry ]]; then
 elif [[ "$LHC_VIRTUAL_TASK" == input ]]; then
     mkdir -p "$LHC_PROTOTYPE_RESULTS"
     export LHC_ISOLATED_INPUT=1
-    export SLINT_BACKEND=winit-software
+    export SLINT_BACKEND=winit-skia-software
     exec "$LHC_BENCH_RETURN_BIN" "$LHC_SLINT_SHELL_BIN" "$LHC_PROTOTYPE_RESULTS/parent.csv"
 else
     exec python3 "$LHC_PROTOTYPE_ROOT/scripts/bench/bench-lifecycle.py" "$LHC_PROTOTYPE_RESULTS" 500

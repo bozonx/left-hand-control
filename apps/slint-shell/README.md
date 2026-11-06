@@ -28,13 +28,14 @@ target dependencies и `cfg`; переносимый слой используе
 
 ```sh
 cargo build --locked -p slint-shell
-SLINT_BACKEND=winit-software LHC_METRICS=/tmp/slint-software.csv target/debug/left-hand-control
+SLINT_BACKEND=winit-skia-software LHC_METRICS=/tmp/slint-skia-software.csv target/debug/left-hand-control
 ```
 
 CSV метрик пишется только при заданном `LHC_METRICS`; Spell worker
 пишет рядом файл с суффиксом `.spell.csv`.
 
-Для сравнения замените backend на `winit-skia` (рендерер по умолчанию).
+Для сравнения замените backend на `winit-skia` (рендерер по умолчанию, GPU).
+Software-рендерер Slint (`winit-software`) не собирается: он не рисует цветные emoji.
 Одновременно запускается только один экземпляр на `XDG_RUNTIME_DIR`.
 Окна изначально скрыты. Процесс остаётся в трее до команды «Выход».
 Индикатор mapper в трее отражает реальный статус. Quick и Emoji используют сохранённые данные; действия выполняются через mapper.
@@ -128,7 +129,7 @@ t5 первая обработанная клавиша, navigation_handled, hid
 
 ```sh
 apps/slint-shell/scripts/bench/bench-open.sh emoji 20
-python3 apps/slint-shell/scripts/bench/summarize.py /tmp/slint-software.csv
+python3 apps/slint-shell/scripts/bench/summarize.py /tmp/slint-skia-software.csv
 ```
 
 Скрипт проверяет только IPC без activation token при обычном запуске из shell.
@@ -162,7 +163,7 @@ python3 apps/slint-shell/scripts/check/check-worker-crash.py \
 
 ```sh
 cargo build --locked -p slint-shell --features probes --examples
-SLINT_BACKEND=winit-software target/debug/examples/bench-evdev \
+SLINT_BACKEND=winit-skia-software target/debug/examples/bench-evdev \
   target/debug/left-hand-control /tmp/slint-evdev.csv
 python3 apps/slint-shell/scripts/bench/summarize.py /tmp/slint-evdev.csv
 ```
@@ -181,7 +182,7 @@ python3 apps/slint-shell/scripts/bench/summarize.py /tmp/slint-evdev.csv
 
 ```sh
 cargo build --locked -p slint-shell --features probes --examples --bin left-hand-control
-LHC_POPUPS=auto SLINT_BACKEND=winit-software \
+LHC_POPUPS=auto SLINT_BACKEND=winit-skia-software \
   LHC_METRICS=/tmp/slint-stage3a.csv \
   target/debug/left-hand-control
 ```
@@ -251,10 +252,10 @@ apps/slint-shell/scripts/bench/bench-virtual.sh /tmp/slint-lifecycle lifecycle
 python3 apps/slint-shell/scripts/bench/summarize.py /tmp/slint-lifecycle/parent.csv.spell.csv
 
 # Реальная KDE Wayland-сессия: на время теста не пользоваться клавиатурой.
-LHC_POPUPS=spell SLINT_BACKEND=winit-software \
+LHC_POPUPS=spell SLINT_BACKEND=winit-skia-software \
   target/debug/examples/bench-evdev \
   target/debug/left-hand-control /tmp/slint-evdev.csv
-SLINT_BACKEND=winit-software \
+SLINT_BACKEND=winit-skia-software \
   target/debug/examples/bench-return \
   target/debug/left-hand-control /tmp/slint-return.csv
 ```

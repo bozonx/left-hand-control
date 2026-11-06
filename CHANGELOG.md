@@ -18,6 +18,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Rules: the "Enabled" checkbox moved from the rule card into "Advanced rule options". A disabled rule is shown dimmed but stays fully editable; the options button keeps full contrast.
 - Layouts page: the unsaved-changes question always offers to save; a working copy not yet in the library asks for a name first and then continues. In the "Layout changed on disk" dialog the safe "Save as new…" is now the primary button instead of "Overwrite".
 - Quick actions no longer have icons.
+- The Slint software renderer is no longer built: `SLINT_BACKEND` accepts `winit-skia` (the default) and `winit-skia-software` for machines without a GPU. `winit-software` drew emoji as empty cells or monochrome outlines.
 - Config and layout formats were finalized before the first release (`version` stays 1; files written by earlier development builds must be recreated or edited by hand). See `docs/config-format.md`:
   - `config.json`: layout selection is grouped under `settings.layouts` (`mode`, `manual`, `order`, `auto.rules`, `auto.fallback`) instead of `layoutMode`, `activeLayoutId`, `layoutOrder`, `autoRules` and `autoDefaultLayoutId`; `inDevelopment` is renamed to `experimental`.
   - Enum values use camelCase (`eInk`, `libeiPure`), interface languages are plain language codes (`en`, `ru`), and paste shortcuts are key chords (`Shift+Insert`, `Ctrl+KeyV`, `Ctrl+Shift+KeyV`).

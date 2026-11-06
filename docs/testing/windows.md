@@ -354,7 +354,7 @@ $env:RUST_LOG = 'debug'
 & C:\lhc\target\release\left-hand-control.exe
 ```
 
-`winit-software` built and rendered the UI, but Windows showed monochrome outline emoji. `winit-skia` rendered the normal color Windows emoji and is the Windows candidate renderer. Some squares on the stress page were caused by the prototype generating contiguous Unicode code-point ranges that include unassigned or non-emoji symbols; they are test-data defects unless the same known-valid emoji also fails.
+`winit-software` (the Slint software renderer, no longer built) rendered the UI, but Windows showed monochrome outline emoji; use `winit-skia-software` in guests without a GPU. `winit-skia` rendered the normal color Windows emoji and is the Windows candidate renderer. Some squares on the stress page were caused by the prototype generating contiguous Unicode code-point ranges that include unassigned or non-emoji symbols; they are test-data defects unless the same known-valid emoji also fails.
 
 Use explicit, known strings for renderer acceptance. Bare `☺` requests text presentation,
 `☺️` remained an outline, and `❤️` rendered as tofu in the tested Slint/Skia font fallback,
@@ -459,7 +459,7 @@ the guest runs Cargo with one job.
 The portable `interactions` example exercises clipboard, keyboard input, modal behavior, DnD, cancellation, edge scrolling, theme, locale, and hidden popups:
 
 ```powershell
-$env:SLINT_BACKEND = 'winit-software'
+$env:SLINT_BACKEND = 'winit-skia-software'
 cargo run --locked --manifest-path apps/slint-shell/Cargo.toml --example interactions
 if ($LASTEXITCODE -ne 0) { throw 'interaction scenario failed' }
 ```

@@ -28,7 +28,7 @@ with tempfile.TemporaryDirectory(prefix="lhc-slint-recovery-") as directory:
     env = dict(os.environ, LHC_DEV_DIR=directory,
                LHC_SOCKET=f"lhc-recovery-{os.getpid()}.sock",
                LHC_HOTKEYS="off", LHC_POPUPS=args.popups,
-               LHC_METRICS=str(metrics), SLINT_BACKEND="winit-software")
+               LHC_METRICS=str(metrics), SLINT_BACKEND="winit-skia-software")
 
     def log_text():
         return log_path.read_text(encoding="utf-8", errors="replace")

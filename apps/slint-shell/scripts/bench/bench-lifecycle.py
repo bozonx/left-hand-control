@@ -17,7 +17,7 @@ output.mkdir(parents=True, exist_ok=True)
 env = dict(os.environ, LHC_SOCKET=f'lhc-lifecycle-{os.getpid()}.sock',
            LHC_METRICS=str(output / 'parent.csv'))
 env.setdefault('LHC_POPUPS', 'spell')
-env.setdefault('SLINT_BACKEND', 'winit-software')
+env.setdefault('SLINT_BACKEND', 'winit-skia-software')
 env.pop('XDG_ACTIVATION_TOKEN', None)
 socket = Path(env['XDG_RUNTIME_DIR']) / 'lhc-slint-shell' / env['LHC_SOCKET']
 samples = []

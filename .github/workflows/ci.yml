@@ -72,7 +72,7 @@ jobs:
         timeout-minutes: 25
         shell: bash
         env:
-          SLINT_BACKEND: winit-software
+          SLINT_BACKEND: winit-skia-software
           WINIT_UNIX_BACKEND: wayland
         run: |
           export XDG_RUNTIME_DIR="$(mktemp -d)"

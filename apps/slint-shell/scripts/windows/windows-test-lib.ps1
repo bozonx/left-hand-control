@@ -15,7 +15,7 @@ function Initialize-WindowsTest([string]$Output) {
     $env:LHC_DEV_DIR = Join-Path $Output ([guid]::NewGuid().ToString())
     $env:LHC_HOTKEYS = 'off'
     $env:LHC_POPUPS = 'winit'
-    $env:SLINT_BACKEND = 'winit-software'
+    $env:SLINT_BACKEND = 'winit-skia-software'
     Remove-Item Env:LHC_METRICS -ErrorAction SilentlyContinue
     $listener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Loopback, 0)
     $listener.Start()

@@ -88,8 +88,8 @@ cargo build -p slint-shell --release --features spell       # release-сборк
 | `spell` | Только layer-shell; без протокола запуск завершается ошибкой |
 
 `auto` и `spell` требуют сборки с `--features spell`. Рендерер окна настроек задаёт
-`SLINT_BACKEND`: `winit-skia` (по умолчанию) или `winit-software`; цветные emoji в
-окнах winit рисует только `winit-skia`. Spell-попапы всегда используют Skia software.
+`SLINT_BACKEND`: `winit-skia` (по умолчанию) или `winit-skia-software` (Skia без GPU);
+software-рендерер Slint не собирается, так как не рисует цветные emoji. Spell-попапы всегда используют Skia software.
 
 ### Hot reload интерфейса
 

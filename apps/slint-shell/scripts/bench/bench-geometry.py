@@ -19,7 +19,7 @@ if len(names) < 2:
     raise RuntimeError('two virtual outputs required')
 rows = []
 fixtures = []
-env = dict(os.environ, LHC_POPUPS='spell', SLINT_BACKEND='winit-software',
+env = dict(os.environ, LHC_POPUPS='spell', SLINT_BACKEND='winit-skia-software',
            LHC_OUTPUT=names[-1], LHC_HOTKEYS='off', LHC_SOCKET=f'lhc-geometry-{os.getpid()}.sock',
            LHC_METRICS=str(output / 'parent.csv'))
 with (output / 'server.log').open('w') as log:
@@ -88,7 +88,7 @@ with (output / 'server.log').open('w') as log:
         time.sleep(.3)
         for mode in ('normal', 'maximized', 'fullscreen'):
             fixture = subprocess.Popen([root.parents[1] / 'target/debug/examples/window-fixture'],
-                                       env=dict(os.environ, SLINT_BACKEND='winit-software', SLINT_FIXTURE_MODE=mode), stdout=log, stderr=log)
+                                       env=dict(os.environ, SLINT_BACKEND='winit-skia-software', SLINT_FIXTURE_MODE=mode), stdout=log, stderr=log)
             fixtures.append(fixture)
             time.sleep(.5)
             before = next(r for r in observe() if r['pid'] == fixture.pid)
