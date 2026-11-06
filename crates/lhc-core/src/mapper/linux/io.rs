@@ -9,6 +9,7 @@ const DBUS_CALL_TIMEOUT: Duration = Duration::from_secs(5);
 const WORKER_QUEUE: usize = 32;
 pub(super) use super::super::output::{
     EventSink, LoopDriver, OutputHold, SideEffects, flush_out_with, process_iteration_with,
+    resolve_literals,
 };
 use super::super::system::{DbusArg, DbusCall, ProcessInvocation, SystemAction};
 use crate::text_input::portal;
@@ -72,6 +73,18 @@ impl SideEffects for RuntimeSideEffects {
 
     fn type_text(&mut self, text: &str) {
         submit_text(text, crate::text_input::job::TextRequest::enqueue(text));
+    }
+
+    fn literal_stroke(&self, text: &str) -> Option<super::super::action::Keystroke> {
+        let mut chars = text.chars();
+        let (ch, None) = (chars.next()?, chars.next()) else {
+            return None;
+        };
+        let (key, mods) = portal::key_for_char(ch)?;
+        Some(super::super::action::Keystroke {
+            mods: mods.into_iter().map(KeyCode::new).collect(),
+            key: KeyCode::new(key),
+        })
     }
 
     fn type_macro_text(&mut self, text: &str, job: &crate::text_input::MacroText) {

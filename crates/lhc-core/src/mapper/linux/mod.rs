@@ -771,6 +771,7 @@ fn run_loop<D: LoopDriver>(
                     MapperControl::PopupFocused => hold.release(),
                 }
             }
+            io::resolve_literals(&io::RuntimeSideEffects, &mut out_buf);
             hold.gate(
                 &mut out_buf,
                 std::time::Instant::now(),

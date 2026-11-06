@@ -249,6 +249,11 @@ pub(super) trait SideEffects {
     fn held_layer_changed(&mut self, _state: super::layer_state::HeldLayerState) {}
     fn sleep(&mut self, duration: Duration);
     fn type_text(&mut self, text: &str);
+    /// Keystroke that types a one-character `text`, if the OS can send it as
+    /// a plain key press in the active layout.
+    fn literal_stroke(&self, _text: &str) -> Option<Keystroke> {
+        None
+    }
     fn type_macro_text(&mut self, text: &str, job: &crate::text_input::MacroText);
     fn text_pending(&self) -> bool {
         false
@@ -350,9 +355,48 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
     engine.tick(now, out_buf);
     hold.release_typed(out_buf, now, engine.macro_running());
     effects.held_layer_changed(engine.held_layer_state());
+    resolve_literals(effects, out_buf);
     hold.gate(out_buf, now, effects.text_pending());
     flush_out_with(sink, effects, out_buf)?;
     Ok(())
+}
+
+/// Turn one-character texts into key presses where the layout has the
+/// character. They then go out in order with the surrounding keys instead
+/// of through the text worker, which may be slow, fail or drop them.
+/// Skipped after a modifier press in the same batch: it would change the
+/// character.
+pub(super) fn resolve_literals<E: SideEffects>(effects: &E, buf: &mut [EngineOutput]) {
+    let mut mod_pressed = false;
+    for out in buf.iter_mut() {
+        match out {
+            EngineOutput::KeyRaw { key, down: true } if is_modifier(*key) => mod_pressed = true,
+            EngineOutput::ChordPress { .. } => mod_pressed = true,
+            EngineOutput::Literal(text) if !mod_pressed => {
+                if let Some(ks) = effects.literal_stroke(text) {
+                    *out = EngineOutput::Stroke {
+                        ks,
+                        mod_delay: Duration::ZERO,
+                    };
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+fn is_modifier(key: KeyCode) -> bool {
+    matches!(
+        key,
+        KeyCode::KEY_LEFTCTRL
+            | KeyCode::KEY_RIGHTCTRL
+            | KeyCode::KEY_LEFTSHIFT
+            | KeyCode::KEY_RIGHTSHIFT
+            | KeyCode::KEY_LEFTALT
+            | KeyCode::KEY_RIGHTALT
+            | KeyCode::KEY_LEFTMETA
+            | KeyCode::KEY_RIGHTMETA
+    )
 }
 
 fn emit_stroke_tap<S: EventSink, E: SideEffects>(
@@ -567,6 +611,8 @@ mod tests {
         commands: Vec<String>,
         held_layers: Vec<crate::mapper::layer_state::HeldLayerState>,
         text_pending: bool,
+        /// Characters the fake layout types as a plain key.
+        layout_keys: HashMap<char, KeyCode>,
     }
 
     impl SideEffects for FakeEffects {
@@ -586,6 +632,12 @@ mod tests {
 
         fn type_text(&mut self, text: &str) {
             self.texts.push(text.to_string());
+        }
+
+        fn literal_stroke(&self, text: &str) -> Option<Keystroke> {
+            let mut chars = text.chars();
+            let key = *self.layout_keys.get(&chars.next()?)?;
+            chars.next().is_none().then(|| Keystroke { mods: vec![], key })
         }
 
         fn type_macro_text(&mut self, text: &str, job: &crate::text_input::MacroText) {
@@ -1172,6 +1224,49 @@ mod tests {
         assert_eq!(sink.batches.len(), 3);
         iterate!(start + Duration::from_secs(2), Vec::new(),);
         assert_eq!(sink.batches.len(), 4, "released after the timeout");
+    }
+
+    #[test]
+    fn one_character_text_in_layout_is_sent_as_key_in_order() {
+        let mut sink = FakeSink::default();
+        let mut effects = FakeEffects {
+            layout_keys: HashMap::from([(',', KeyCode::KEY_COMMA)]),
+            ..Default::default()
+        };
+        let mut hold = OutputHold::default();
+        let mut buf = vec![
+            EngineOutput::Literal(",".into()),
+            EngineOutput::KeyRaw { key: KeyCode::KEY_B, down: true },
+            EngineOutput::Literal("ab".into()),
+        ];
+        resolve_literals(&effects, &mut buf);
+        hold.gate(&mut buf, Instant::now(), false);
+        flush_out_with(&mut sink, &mut effects, &mut buf).unwrap();
+        let comma = KeyCode::KEY_COMMA.code();
+        assert_eq!(
+            sink.batches,
+            vec![
+                vec![(comma, 1)],
+                vec![(comma, 0)],
+                vec![(KeyCode::KEY_B.code(), 1)],
+            ]
+        );
+        // Longer text still goes through the text backend.
+        assert_eq!(effects.texts, vec!["ab".to_string()]);
+    }
+
+    #[test]
+    fn one_character_text_after_modifier_press_stays_text() {
+        let effects = FakeEffects {
+            layout_keys: HashMap::from([(',', KeyCode::KEY_COMMA)]),
+            ..Default::default()
+        };
+        let mut buf = vec![
+            EngineOutput::KeyRaw { key: KeyCode::KEY_LEFTSHIFT, down: true },
+            EngineOutput::Literal(",".into()),
+        ];
+        resolve_literals(&effects, &mut buf);
+        assert!(matches!(&buf[1], EngineOutput::Literal(text) if text == ","));
     }
 
     #[test]

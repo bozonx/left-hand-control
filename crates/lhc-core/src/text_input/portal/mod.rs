@@ -202,6 +202,24 @@ pub fn prepare_text_input() {
     }
 }
 
+/// Key and modifiers (evdev codes) that type `ch` in the active layout, for
+/// sending a one-character text as a plain key press. `None` when the layout
+/// is unknown, has no such character, or a modifier is held: the character
+/// then goes through the text backend, which handles all three.
+pub(crate) fn key_for_char(ch: char) -> Option<(u16, Vec<u16>)> {
+    if ch.is_control() {
+        return None;
+    }
+    modifiers_released().ok()?;
+    let table = layout_key_table().ok()?;
+    let entry = table.get(&text_keysym(ch))?;
+    let code = |key: u32| u16::try_from(key).ok();
+    Some((
+        code(entry.evdev)?,
+        entry.mods.iter().map(|m| code(*m)).collect::<Option<_>>()?,
+    ))
+}
+
 /// Path of the directory where we persist the restore token.
 static TOKEN_DIR: OnceLock<PathBuf> = OnceLock::new();
 

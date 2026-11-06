@@ -8,6 +8,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Linux: a one-character `text:` action (such as `text:,` on a tap key) is sent as an ordinary key press when the active keyboard layout has that character and no modifier is held. It no longer waits for the text backend, so it cannot land after the next letters, be lost on a window change or a full text queue, or wait for the first portal consent. Longer text, macro text steps, characters missing from the layout and desktops that do not report the layout use the text backend as before.
+
 - Hyprland active-window events use the runtime socket directory; support for the pre-0.40 `/tmp/hypr` socket location was removed.
 
 - Emoji and Quick action popups use Tab/Shift+Tab to move between the grid and Close; PageUp/PageDown switch pages. Letter and number shortcuts remain available.
