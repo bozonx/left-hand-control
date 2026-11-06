@@ -282,10 +282,17 @@
       }
     },
     {
-      "key": "ControlRight",
+      "key": "ContextMenu",
       "tap": "text:.",
       "hold": {
         "layer": "f-keys"
+      }
+    },
+    {
+      "key": "ControlRight",
+      "tap": "MetaLeft",
+      "hold": {
+        "keys": "MetaLeft"
       }
     },
     {
