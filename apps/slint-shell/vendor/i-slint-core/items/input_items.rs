@@ -774,12 +774,13 @@ impl Item for FocusScope {
         _window_adapter: &Rc<dyn WindowAdapter>,
         _self_rc: &ItemRc,
     ) -> FocusEventResult {
-        if !self.enabled() {
-            return FocusEventResult::FocusIgnored;
-        }
-
         match event {
             FocusEvent::FocusIn(reason) => {
+                // A disabled scope refuses focus, but must still accept losing it:
+                // a scope disabled while focused otherwise keeps `has-focus` forever.
+                if !self.enabled() {
+                    return FocusEventResult::FocusIgnored;
+                }
                 match reason {
                     FocusReason::TabNavigation if !self.focus_on_tab_navigation() => {
                         return FocusEventResult::FocusIgnored;

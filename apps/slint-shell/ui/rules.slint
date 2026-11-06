@@ -1,3 +1,4 @@
+import { ActionFocus } from "focus.slint";
 import { NotificationCenter, StatusText } from "notifications.slint";
 import { KeyboardFocus } from "focus.slint";
 import { ActionField } from "action-controls.slint";
@@ -109,13 +110,7 @@ component ConditionChip inherits VerticalLayout {
 
 /// Rule conditions as one chip per kind; the whole group opens the editor.
 component ConditionsCell inherits Rectangle {
-    action-focus := FocusScope {
-        enabled: root.enabled;
-        key-pressed(event) => {
-            if event.text == Key.Return || event.text == " " { root.clicked(); return accept; }
-            return reject;
-        }
-    }
+    action-focus := ActionFocus { enabled: root.enabled; activated => { root.clicked(); } }
     FocusRing { focused: action-focus.has-focus; border-radius: Theme.radius; }
     in property <RuleRow> rule;
     in property <bool> enabled: true;
@@ -250,10 +245,7 @@ component HoldField inherits VerticalLayout {
             }
             if !root.unassigned: VerticalLayout { alignment: center; Image { width: 12px; height: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; } }
         }
-        field-focus := FocusScope { enabled: root.enabled; key-pressed(event) => {
-            if event.text == Key.Return || event.text == " " || event.text == Key.DownArrow || event.text == Key.UpArrow { root.open-menu(); return accept; }
-            return reject;
-        } }
+        field-focus := ActionFocus { enabled: root.enabled; opens-menu: true; activated => { root.open-menu(); } }
         touch := TouchArea { enabled: root.enabled; mouse-cursor: pointer; clicked => { root.open-menu(); } }
         menu := PopupWindow {
             x: 0px; y: field.height + Theme.menu-offset; width: max(field.width, 300px);

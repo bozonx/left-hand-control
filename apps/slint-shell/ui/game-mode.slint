@@ -1,3 +1,4 @@
+import { ActionFocus } from "focus.slint";
 import { KeyboardFocus } from "focus.slint";
 import { MenuSurface, MenuItem, MenuLabel, TooltipText } from "controls.slint";
 import { AppState } from "app-state.slint";
@@ -35,14 +36,7 @@ export component GameModeButton inherits Rectangle {
         VerticalLayout { alignment: center; Image { width: 12px; height: 12px; source: @image-url("icons/chevron-down.svg"); colorize: root.state-color; transform-rotation: menu.is-open ? 180deg : 0deg; } }
     }
     forward-focus: focus;
-    focus := FocusScope {
-        key-pressed(event) => {
-            if event.text == " " || event.text == "\n" || event.text == Key.DownArrow {
-                root.open-menu(); return accept;
-            }
-            return reject;
-        }
-    }
+    focus := ActionFocus { opens-menu: true; activated => { root.open-menu(); } }
     touch := TouchArea { mouse-cursor: pointer; clicked => { focus.focus(); root.open-menu(); } }
     Tooltip { TooltipText { text: Locale.text(AppState.game-status) + (AppState.game-active ? "\n" + @tr("Popup hotkeys are off while game mode is on.") : "") + "\n" + @tr("Click to change mode (Auto / On / Off)"); } }
     menu := PopupWindow {

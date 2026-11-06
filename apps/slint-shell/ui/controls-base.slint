@@ -1,4 +1,4 @@
-import { NavigationFocus } from "focus.slint";
+import { ActionFocus, NavigationFocus } from "focus.slint";
 import { ComboBox } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
@@ -37,13 +37,7 @@ export component LinkButton inherits Rectangle {
             accessible-role: none;
         }
     }
-    focus := FocusScope {
-        enabled: root.enabled;
-        key-pressed(event) => {
-            if event.text == " " || event.text == Key.Return { root.clicked(); return accept; }
-            return reject;
-        }
-    }
+    focus := ActionFocus { enabled: root.enabled; activated => { root.clicked(); } }
     TouchArea {
         enabled: root.enabled;
         mouse-cursor: root.enabled ? pointer : default;
@@ -245,13 +239,7 @@ export component IconButton inherits Rectangle {
             vertical-alignment: center;
         }
     }
-    focus := FocusScope {
-        enabled: root.enabled;
-        key-pressed(event) => {
-            if event.text == " " || event.text == "\n" { root.clicked(); return accept; }
-            return reject;
-        }
-    }
+    focus := ActionFocus { enabled: root.enabled; activated => { root.clicked(); } }
     touch := TouchArea {
         enabled: root.enabled;
         mouse-cursor: root.enabled ? pointer : default;
@@ -410,13 +398,7 @@ export component FieldButton inherits Rectangle {
     accessible-enabled: root.enabled;
     accessible-action-default => { if root.enabled { root.clicked(); } }
     forward-focus: focus;
-    focus := FocusScope {
-        enabled: root.enabled;
-        key-pressed(event) => {
-            if event.text == " " || event.text == "\n" { root.clicked(); return accept; }
-            return reject;
-        }
-    }
+    focus := ActionFocus { enabled: root.enabled; activated => { root.clicked(); } }
     touch := TouchArea {
         enabled: root.enabled;
         mouse-cursor: root.enabled ? pointer : default;

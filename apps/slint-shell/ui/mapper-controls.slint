@@ -1,3 +1,4 @@
+import { ActionFocus } from "focus.slint";
 import { Theme } from "theme.slint";
 import { TooltipText } from "controls-base.slint";
 
@@ -48,13 +49,7 @@ export component MapperToggle inherits Rectangle {
         }
         if !root.compact: Text { text: root.text; color: Theme.text; font-weight: Theme.weight-semibold; vertical-alignment: center; }
     }
-    focus := FocusScope {
-        enabled: root.enabled && !root.busy;
-        key-pressed(event) => {
-            if event.text == " " || event.text == "\n" { root.toggled(); return accept; }
-            return reject;
-        }
-    }
+    focus := ActionFocus { enabled: root.enabled && !root.busy; activated => { root.toggled(); } }
     touch := TouchArea {
         enabled: root.enabled && !root.busy;
         mouse-cursor: root.enabled && !root.busy ? pointer : default;

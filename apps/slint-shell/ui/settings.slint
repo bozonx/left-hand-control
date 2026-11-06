@@ -1,3 +1,4 @@
+import { ActionFocus } from "focus.slint";
 import { PendingLayoutAction } from "types.slint";
 import { KeyboardFocus } from "focus.slint";
 import { FocusRing, TextField } from "controls.slint";
@@ -177,13 +178,7 @@ export component SettingsWindow inherits Window {
                         accessible-expandable: !LayoutLibrary.automatic;
                         accessible-expanded: active-menu.is-open;
                         accessible-action-default => { if !LayoutLibrary.automatic { LayoutLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); } }
-                        active-focus := FocusScope {
-                            enabled: !LayoutLibrary.automatic;
-                            key-pressed(event) => {
-                                if event.text == Key.Return || event.text == " " || event.text == Key.DownArrow { LayoutLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); return accept; }
-                                return reject;
-                            }
-                        }
+                        active-focus := ActionFocus { enabled: !LayoutLibrary.automatic; opens-menu: true; activated => { LayoutLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); } }
                         FocusRing { focused: active-focus.has-focus; border-radius: Theme.radius; }
                         width: root.compact-header ? 150px : 180px; height: Theme.control-height-l; border-radius: Theme.radius; background: Theme.surface; border-width: 1px; border-color: Theme.border;
                         HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-s;

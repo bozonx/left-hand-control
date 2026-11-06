@@ -35,6 +35,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- A control that became unavailable while focused (for example the Save button right after saving) no longer keeps its focus ring after focus moves elsewhere. Buttons, menu triggers and clickable rows react to the same keys: Enter and Space activate them, and Up/Down also open menus (now including the game mode button).
+
 - Linux mapper: keys of the physical keyboard outside the standard ranges (such as macro keys `KEY_MACRO1`) are passed through instead of being dropped by the virtual keyboard.
 - Commands: a command that exits with an error (syntax error, missing program, permission denied) is reported with its exit status and the start of its error output instead of failing silently.
 - Linux mapper: system actions still queued when the mapper stops, or queued for more than 2 seconds behind a slow one, no longer run later; a hung D-Bus call ends after 5 seconds.

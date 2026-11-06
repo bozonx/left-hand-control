@@ -1,3 +1,4 @@
+import { ActionFocus } from "focus.slint";
 import { NavigationFocus, NavigationKind } from "focus.slint";
 import { KeyboardFocus } from "focus.slint";
 import { Button } from "std-widgets.slint";
@@ -75,15 +76,7 @@ export component DevicePicker inherits Rectangle {
             Image { width: 12px; height: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; }
         }
     }
-    focus := FocusScope {
-        enabled: root.enabled;
-        key-pressed(event) => {
-            if event.text == " " || event.text == "\n" || event.text == Key.DownArrow || event.text == Key.UpArrow {
-                root.open(); return accept;
-            }
-            return reject;
-        }
-    }
+    focus := ActionFocus { enabled: root.enabled; opens-menu: true; activated => { root.open(); } }
     touch := TouchArea { enabled: root.enabled; mouse-cursor: pointer; clicked => { focus.focus(); root.open(); } }
 }
 

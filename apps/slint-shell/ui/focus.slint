@@ -56,3 +56,21 @@ export component NavigationFocus inherits FocusScope {
     }
     key-pressed(event) => { return root.navigate(event); }
 }
+
+/// Keyboard target of a custom button-like control (buttons, menu triggers,
+/// clickable rows): Return and Space activate it; with `opens-menu`, Up and
+/// Down open the menu too. Use it instead of a hand-written `FocusScope` so
+/// every control reacts to the same keys.
+export component ActionFocus inherits FocusScope {
+    in property <bool> opens-menu;
+    callback activated();
+    key-pressed(event) => {
+        if event.modifiers.control || event.modifiers.alt || event.modifiers.meta { return reject; }
+        if event.text == Key.Return || event.text == " "
+            || (root.opens-menu && (event.text == Key.DownArrow || event.text == Key.UpArrow)) {
+            root.activated();
+            return accept;
+        }
+        return reject;
+    }
+}

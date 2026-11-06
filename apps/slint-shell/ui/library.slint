@@ -1,3 +1,4 @@
+import { ActionFocus } from "focus.slint";
 import { KeyboardFocus } from "focus.slint";
 import { DragGroups, DragHandle, DropMarker } from "reorder.slint";
 import { PageContent, ScrollView } from "scroll.slint";
@@ -271,13 +272,7 @@ export component SaveSplitButton inherits Rectangle {
                     VerticalLayout { alignment: center; Image { width: 18px; height: 18px; source: @image-url("icons/save.svg"); colorize: root.enabled ? Theme.accent : Theme.muted; } }
                     VerticalLayout { alignment: center; Rectangle { width: 6px; height: 6px; border-radius: self.height / 2; background: root.enabled ? Theme.accent : transparent; } }
                 }
-                focus-save := FocusScope {
-                    enabled: root.enabled;
-                    key-pressed(event) => {
-                        if event.text == "\n" || event.text == " " { root.save(); return accept; }
-                        return reject;
-                    }
-                }
+                focus-save := ActionFocus { enabled: root.enabled; activated => { root.save(); } }
                 touch-save := TouchArea {
                     enabled: root.enabled;
                     mouse-cursor: root.enabled ? pointer : default;
@@ -307,12 +302,7 @@ export component SaveSplitButton inherits Rectangle {
                     source: @image-url("icons/chevron-down.svg");
                     colorize: Theme.text;
                 }
-                focus-chevron := FocusScope {
-                    key-pressed(event) => {
-                        if event.text == "\n" || event.text == " " || event.text == Key.DownArrow || event.text == Key.UpArrow { save-menu.show(); KeyboardFocus.focus-checked(); return accept; }
-                        return reject;
-                    }
-                }
+                focus-chevron := ActionFocus { opens-menu: true; activated => { save-menu.show(); KeyboardFocus.focus-checked(); } }
                 touch-chevron := TouchArea {
                     mouse-cursor: pointer;
                     clicked => { focus-chevron.focus(); save-menu.show(); KeyboardFocus.focus-checked(); }
@@ -381,12 +371,7 @@ component TargetPicker inherits Rectangle {
             Image { width: 12px; height: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.text; }
         }
     }
-    focus := FocusScope {
-        key-pressed(event) => {
-            if event.text == "\n" || event.text == " " || event.text == Key.DownArrow || event.text == Key.UpArrow { menu.show(); KeyboardFocus.focus-checked(); return accept; }
-            return reject;
-        }
-    }
+    focus := ActionFocus { opens-menu: true; activated => { menu.show(); KeyboardFocus.focus-checked(); } }
     touch := TouchArea { mouse-cursor: pointer; clicked => { focus.focus(); menu.show(); KeyboardFocus.focus-checked(); } }
     menu := PopupWindow {
         y: root.height + Theme.menu-offset;
@@ -400,12 +385,7 @@ component TargetPicker inherits Rectangle {
 }
 
 component AutoRuleRow inherits Rectangle {
-    action-focus := FocusScope {
-        key-pressed(event) => {
-            if event.text == Key.Return || event.text == " " { LayoutLibrary.open-rule(root.index, root.rule.target); return accept; }
-            return reject;
-        }
-    }
+    action-focus := ActionFocus { activated => { LayoutLibrary.open-rule(root.index, root.rule.target); } }
     FocusRing { focused: action-focus.has-focus; border-radius: Theme.radius; }
     in property <AutoRuleView> rule;
     in property <int> index;
@@ -678,12 +658,7 @@ export component LibraryPage inherits PageLayout {
                                             text: @tr("In {n} rule" | "In {n} rules" % row.rule-count);
                                             color: parent.on ? Theme.accent : Theme.muted; font-size: Theme.font-medium; vertical-alignment: center;
                                         }
-                                        badge-focus := FocusScope {
-                                            key-pressed(event) => {
-                                                if event.text == Key.Return || event.text == " " { LayoutLibrary.highlight-target = LayoutLibrary.highlight-target == index ? -1 : index; return accept; }
-                                                return reject;
-                                            }
-                                        }
+                                        badge-focus := ActionFocus { activated => { LayoutLibrary.highlight-target = LayoutLibrary.highlight-target == index ? -1 : index; } }
                                         FocusRing { focused: badge-focus.has-focus; border-radius: Theme.radius-small; }
                                         badge-touch := TouchArea { mouse-cursor: pointer; clicked => { LayoutLibrary.highlight-target = parent.on ? -1 : index; } }
                                     }

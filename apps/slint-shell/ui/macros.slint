@@ -1,3 +1,4 @@
+import { ActionFocus } from "focus.slint";
 import { ActionField } from "action-controls.slint";
 import { Timing } from "timing.slint";
 import { NotificationCenter } from "notifications.slint";
@@ -264,12 +265,7 @@ component BuiltinMacrosHeader inherits Rectangle {
             }
         }
     }
-    header-focus := FocusScope {
-        key-pressed(event) => {
-            if event.text == " " || event.text == "\n" { root.open = !root.open; return accept; }
-            return reject;
-        }
-    }
+    header-focus := ActionFocus { activated => { root.open = !root.open; } }
     TouchArea { mouse-cursor: pointer; clicked => { root.open = !root.open; header-focus.focus(); } }
 }
 
