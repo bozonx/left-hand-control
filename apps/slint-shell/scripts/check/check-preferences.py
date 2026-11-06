@@ -12,7 +12,7 @@ output.mkdir(parents=True, exist_ok=True)
 config = tempfile.TemporaryDirectory(prefix="lhc-preferences-config-")
 config_path = Path(config.name) / "linux/.config/dev.bozonx.left-hand-control/config.json"
 config_path.parent.mkdir(parents=True)
-config_path.write_text('{"schemaVersion":1,"settings":{"inDevelopment":true}}', encoding="utf-8")
+config_path.write_text('{"schemaVersion":1,"settings":{"experimental":true}}', encoding="utf-8")
 env = dict(
     os.environ,
     LHC_DEV_DIR=config.name,

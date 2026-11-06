@@ -37,7 +37,7 @@ FAKE_GAME = "lhc-fake-game"
 # receiver window. Keys not listed here (c, h, j, k, o, q, s...) pass through.
 E2E_LAYOUT = f'''{{
   "schemaVersion": 1,
-  "description": "VM e2e",
+  "meta": {{"description": "VM e2e"}},
   "layers": [
     {{
       "id": "nav",
@@ -323,14 +323,13 @@ def cmd_write_config(args):
     environment.mkdir(parents=True, exist_ok=True)
     (environment / '90-lhc-e2e.conf').write_text(f'LHC_POPUPS={args.popup_mode}\nLHC_METRICS={METRICS}\nRUST_LOG=info\n')
     settings = {
-        "inDevelopment": True,
+        "experimental": True,
         "linux": {"textMode": args.text_backend},
         "devices": {"keyboards": [args.device]},
-        "layoutMode": "manual",
-        "activeLayoutId": "user:E2E",
+        "layouts": {"mode": "manual", "manual": "user:E2E"},
         "startMapperOnLaunch": True,
         "launchOnStartup": True,
-        "locale": "en-US",
+        "locale": "en",
         "commandsEnabled": True,
         "gameMode": {
             "processes": [{"name": FAKE_GAME, "onlyActiveWindow": False}],
@@ -364,8 +363,9 @@ def cmd_write_config(args):
 def cmd_check_profile(args):
     settings = json.loads((CONFIG_DIR / "config.json").read_text(encoding="utf-8")).get("settings", {})
     if (settings.get("devices", {}).get("keyboards") != [args.device]
-            or settings.get("activeLayoutId") != "user:E2E"
-            or settings.get("layoutMode") != "manual"):
+            or settings.get("layouts", {}).get("manual") != "user:E2E"
+            # Defaults are not written: a missing mode is manual.
+            or settings.get("layouts", {}).get("mode", "manual") != "manual"):
         fail("application did not retain the test device/layout; package and fixture may use different config formats")
     print("test keyboard and active layout retained by the application")
 

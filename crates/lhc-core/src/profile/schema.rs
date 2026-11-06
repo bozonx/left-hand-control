@@ -57,7 +57,10 @@ pub(crate) fn version_of(text: &str) -> Option<u64> {
 /// the likely cause.
 pub(crate) fn read_error(what: &str, error: &serde_json::Error) -> String {
     let text = error.to_string();
-    if text.starts_with("unknown field") || text.starts_with("unknown variant") {
+    if text.starts_with("unknown field")
+        || text.starts_with("unknown variant")
+        || text.starts_with("unsupported paste shortcut")
+    {
         format!("{what}: {text} (the file may come from a newer version of the application)")
     } else {
         format!("{what}: {text}")

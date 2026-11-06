@@ -309,7 +309,7 @@ pub fn analyze(config: &ResolvedAppConfig) -> Vec<RuleIssue> {
         if rule.conditions.window_patterns.iter().any(invalid_pattern) {
             add(
                 RuleIssueCode::InvalidCondition,
-                format!("settings.autoRules[{index}].when.windows"),
+                format!("settings.layouts.auto.rules[{index}].when.windows"),
             );
         }
         if rule
@@ -320,7 +320,7 @@ pub fn analyze(config: &ResolvedAppConfig) -> Vec<RuleIssue> {
         {
             add(
                 RuleIssueCode::InvalidCondition,
-                format!("settings.autoRules[{index}].when.excludeWindows"),
+                format!("settings.layouts.auto.rules[{index}].when.excludeWindows"),
             );
         }
     }

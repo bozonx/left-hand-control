@@ -52,9 +52,7 @@ struct LayoutDoc {
         skip_serializing_if = "Option::is_none",
         deserialize_with = "schema::non_null"
     )]
-    meta: Option<super::model::LayoutMetadata>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    description: Option<String>,
+    meta: Option<MetaDoc>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     layers: Vec<LayerDoc>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -67,6 +65,47 @@ struct LayoutDoc {
     quick_action_pages: Vec<PageDoc<QuickCellDoc>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     emoji_pages: Vec<PageDoc<String>>,
+}
+
+/// Portable information about the layout from its author. Every field is
+/// optional; `null` is not allowed.
+#[derive(Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct MetaDoc {
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "schema::non_null"
+    )]
+    name: Option<String>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "schema::non_null"
+    )]
+    author: Option<String>,
+    /// The author's version of the layout, unrelated to `schemaVersion`.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "schema::non_null"
+    )]
+    version: Option<String>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "schema::non_null"
+    )]
+    description: Option<String>,
+}
+
+impl MetaDoc {
+    fn is_empty(&self) -> bool {
+        self.name.is_none()
+            && self.author.is_none()
+            && self.version.is_none()
+            && self.description.is_none()
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -290,7 +329,7 @@ struct PageDoc<T> {
     cells: BTreeMap<String, T>,
 }
 
-/// A quick-action cell: a bare action or an action with a caption/icon.
+/// A quick-action cell: a bare action or an action with a caption.
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 enum QuickCellDoc {
@@ -304,10 +343,6 @@ struct QuickActionDoc {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     name: Option<String>,
     action: String,
-    /// Icons were dropped; files that still have one load, and saving
-    /// omits it.
-    #[serde(default, rename = "icon", skip_serializing)]
-    _icon: Option<serde::de::IgnoredAny>,
 }
 
 fn yes() -> bool {
@@ -566,10 +601,17 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
         emoji_pages.push(EmojiPage::default_page());
     }
 
+    let meta = doc.meta.unwrap_or_default();
+    let description = meta.description.filter(|d| !d.trim().is_empty());
+    let meta = super::model::LayoutMetadata {
+        name: meta.name,
+        author: meta.author,
+        version: meta.version,
+    };
     Ok(LayoutPreset {
         schema: doc.schema,
-        meta: doc.meta,
-        description: doc.description.filter(|d| !d.trim().is_empty()),
+        meta: (meta != super::model::LayoutMetadata::default()).then_some(meta),
+        description,
         layers,
         rules,
         layer_keymaps,
@@ -608,7 +650,7 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
             let keymap = preset.layer_keymaps.get(&layer.id);
             LayerDoc {
                 id: layer.id.clone(),
-                name: Some(layer.name.clone()),
+                name: (layer.name != layer.id).then(|| layer.name.clone()),
                 description: layer.description.clone().filter(|d| !d.is_empty()),
                 extra_key_order: keymap
                     .map(|keymap| keymap.extra_key_order.clone())
@@ -618,10 +660,12 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
                         keymap
                             .keys
                             .iter()
-                            .map(|(code, action)| {
-                                let action = action.clone().filter(|a| !a.trim().is_empty());
-                                (code.clone(), action)
+                            // An empty entry is transparent, as the mapper
+                            // treats it; `null` would swallow the key.
+                            .filter(|(_, action)| {
+                                action.as_ref().is_none_or(|a| !a.trim().is_empty())
                             })
+                            .map(|(code, action)| (code.clone(), action.clone()))
                             .collect()
                     })
                     .unwrap_or_default(),
@@ -695,7 +739,7 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
         .filter(|item| !item.id.is_empty())
         .map(|item| MacroDoc {
             id: item.id.clone(),
-            name: Some(item.name.clone()),
+            name: (item.name != item.id).then(|| item.name.clone()),
             step_pause_ms: item.step_pause_ms,
             modifier_delay_ms: item.modifier_delay_ms,
             steps: item
@@ -713,7 +757,7 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
         .filter(|command| !command.id.is_empty())
         .map(|command| CommandDoc {
             id: command.id.clone(),
-            name: Some(command.name.clone()),
+            name: (command.name != command.id).then(|| command.name.clone()),
             unix: command.posix_script.clone(),
             windows: command.powershell_script.clone(),
             working_directory: command.working_directory.clone().filter(|d| !d.is_empty()),
@@ -739,7 +783,6 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
                         QuickCellDoc::Full(QuickActionDoc {
                             name: text(&item.name),
                             action: item.action.clone(),
-                            _icon: None,
                         })
                     };
                     (key.clone(), cell)
@@ -772,8 +815,16 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
     LayoutDoc {
         schema_version: LAYOUT_SCHEMA_VERSION,
         schema: preset.schema.clone(),
-        meta: preset.meta.clone(),
-        description: preset.description.clone().filter(|d| !d.trim().is_empty()),
+        meta: {
+            let meta = preset.meta.clone().unwrap_or_default();
+            let meta = MetaDoc {
+                name: meta.name,
+                author: meta.author,
+                version: meta.version,
+                description: preset.description.clone().filter(|d| !d.trim().is_empty()),
+            };
+            (!meta.is_empty()).then_some(meta)
+        },
         layers,
         rules,
         macros,
@@ -833,7 +884,8 @@ mod tests {
     #[test]
     fn portable_metadata_and_schema_survive_round_trip() {
         let body = json!({"$schema": "https://example.com/layout.schema.json",
-            "meta": {"name": "Original", "author": "Ivan K", "version": "1.0"}});
+            "meta": {"name": "Original", "author": "Ivan K", "version": "1.0",
+                     "description": "Portable"}});
         let preset = parsed(body.clone());
         assert_eq!(round_trip(&preset), preset);
         let saved: Value = serde_json::from_str(&serialize(&preset)).unwrap();
@@ -846,6 +898,9 @@ mod tests {
             json!({"meta": {"author": null}}),
             json!({"meta": {"future": true}}),
             json!({"meta": {"version": 1}}),
+            json!({"meta": {"description": null}}),
+            json!({"description": "moved into meta"}),
+            json!({"quickActionPages": [{"cells": {"KeyQ": {"action": "KeyA", "icon": "x"}}}]}),
         ] {
             assert!(parse(&layout(invalid)).is_err());
         }
@@ -1050,6 +1105,23 @@ mod tests {
     }
 
     #[test]
+    fn empty_layer_entry_is_saved_as_transparent_and_names_equal_to_ids_are_omitted() {
+        let mut preset = parsed(
+            json!({"layers": [{"id": "nav", "keys": {"KeyH": "ArrowLeft"}}],
+            "macros": [{"id": "m", "steps": ["KeyA"]}]}),
+        );
+        let keymap = preset.layer_keymaps.get_mut("nav").unwrap();
+        keymap.keys.insert("KeyJ".into(), Some(String::new()));
+        keymap.keys.insert("KeyK".into(), None);
+        let saved: Value = serde_json::from_str(&serialize(&preset)).unwrap();
+        assert_eq!(
+            saved["layers"][0],
+            json!({"id": "nav", "keys": {"KeyH": "ArrowLeft", "KeyK": null}})
+        );
+        assert_eq!(saved["macros"][0], json!({"id": "m", "steps": ["KeyA"]}));
+    }
+
+    #[test]
     fn only_the_selected_hold_behaviour_is_saved() {
         let mut rule = KeyRule::new("r1".into(), "KeyA");
         rule.layer_id = "nav".into();
@@ -1070,7 +1142,7 @@ mod tests {
     #[test]
     fn layers_macros_commands_and_menus_round_trip() {
         let preset = parsed(json!({
-            "description": "Sample",
+            "meta": {"description": "Sample"},
             "layers": [
                 {"id": "nav", "name": "Navigation", "description": "Arrows",
                  "extraKeyOrder": ["F15", "F13"],
@@ -1084,7 +1156,7 @@ mod tests {
                           "workingDirectory": "/tmp"}],
             "quickActionPages": [{"id": "qap1", "name": "First", "cells": {
                 "KeyW": "Ctrl+KeyC",
-                "KeyQ": {"name": "Lock", "action": "kde:ksmserver/Lock Session", "icon": "lock"}
+                "KeyQ": {"name": "Lock", "action": "kde:ksmserver/Lock Session"}
             }}, {"id": "qap2"}],
             "emojiPages": [{"id": "e1", "name": "Faces", "cells": {"KeyQ": "😀"}}]
         }));

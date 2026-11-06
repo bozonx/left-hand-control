@@ -27,7 +27,7 @@ function Initialize-WindowsTest([string]$Output) {
 function Enable-WindowsTestDevelopment {
     $profileRoot = Join-Path $env:LHC_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.left-hand-control'
     New-Item -ItemType Directory -Force -Path $profileRoot | Out-Null
-    [IO.File]::WriteAllText((Join-Path $profileRoot 'config.json'), '{"schemaVersion":1,"settings":{"inDevelopment":true,"startMapperOnLaunch":false},"state":{"gameModeSwitch":"off"}}', [Text.UTF8Encoding]::new($false))
+    [IO.File]::WriteAllText((Join-Path $profileRoot 'config.json'), '{"schemaVersion":1,"settings":{"experimental":true,"startMapperOnLaunch":false},"state":{"gameModeSwitch":"off"}}', [Text.UTF8Encoding]::new($false))
 }
 
 function Restore-WindowsTest($Saved) {

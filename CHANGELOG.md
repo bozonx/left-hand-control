@@ -15,7 +15,12 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Triggers: unassigned "When held" and "Double-tap action" fields are shown as a quiet "+ Assign action" button without a frame (it appears on hover and keyboard focus), and their labels are dimmed, so assigned actions stand out. E-ink and high-contrast themes keep a thin frame.
 - Rules: the "Enabled" checkbox moved from the rule card into "Advanced rule options". A disabled rule is shown dimmed but stays fully editable; the options button keeps full contrast.
 - Layouts page: the unsaved-changes question always offers to save; a working copy not yet in the library asks for a name first and then continues. In the "Layout changed on disk" dialog the safe "Save as new…" is now the primary button instead of "Overwrite".
-- Quick actions no longer have icons. Layout files that still contain an `icon` field load as before; the field is dropped on the next save.
+- Quick actions no longer have icons.
+- Config and layout formats were finalized before the first release (`schemaVersion` stays 1; files written by earlier development builds must be recreated or edited by hand). See `docs/config-format.md`:
+  - `config.json`: layout selection is grouped under `settings.layouts` (`mode`, `manual`, `order`, `auto.rules`, `auto.fallback`) instead of `layoutMode`, `activeLayoutId`, `layoutOrder`, `autoRules` and `autoDefaultLayoutId`; `inDevelopment` is renamed to `experimental`.
+  - Enum values use camelCase (`eInk`, `libeiPure`), interface languages are plain language codes (`en`, `ru`), and paste shortcuts are key chords (`Shift+Insert`, `Ctrl+KeyV`, `Ctrl+Shift+KeyV`).
+  - `config.json` stores only settings that differ from the defaults, so later releases can improve defaults.
+  - Layout files: `description` moved into `meta`; the obsolete quick-action `icon` field is rejected; layer, macro and command names equal to their id are not written.
 - The tabs of the Settings page show icons next to their names.
 - Focus rings appear only while navigating with the keyboard (Tab, arrow keys) and disappear on the next mouse click, as in web browsers. Text fields keep their focus outline, and the high-contrast and E-ink themes always show focus rings.
 - Action picker: arrow keys move the selection in the item list and Enter applies it; Stop during key capture keeps the keys pressed so far; an unsupported key and a failed read of KDE shortcuts are reported.

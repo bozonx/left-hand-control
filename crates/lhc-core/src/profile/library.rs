@@ -526,7 +526,7 @@ mod tests {
             doc.library_save_target(Some(("Saved", &baseline))),
             LibrarySaveTarget::Existing("Saved".into())
         );
-        let theirs = r#"{"schemaVersion":1,"description":"external"}"#;
+        let theirs = r#"{"schemaVersion":1,"meta":{"description":"external"}}"#;
         paths.save_user_layout("Saved", theirs, true).unwrap();
         assert_eq!(
             doc.save_library_layout("Saved", Some(("Saved", &baseline))),
@@ -727,7 +727,11 @@ mod tests {
             .unwrap();
         doc.save_current_layout_as("A").unwrap();
         paths
-            .save_user_layout("B", r#"{"schemaVersion":1,"description":"B"}"#, false)
+            .save_user_layout(
+                "B",
+                r#"{"schemaVersion":1,"meta":{"description":"B"}}"#,
+                false,
+            )
             .unwrap();
         let before = doc.layout().clone();
         std::fs::remove_file(paths.config_path()).unwrap();
@@ -950,7 +954,7 @@ mod tests {
             paths
                 .save_user_layout(
                     name,
-                    r#"{"schemaVersion": 1, "description": "original"}"#,
+                    r#"{"schemaVersion": 1, "meta": {"description": "original"}}"#,
                     false,
                 )
                 .unwrap();
@@ -1127,7 +1131,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
-        let original = r#"{"schemaVersion": 1, "description": "original"}"#;
+        let original = r#"{"schemaVersion": 1, "meta": {"description": "original"}}"#;
         paths.save_user_layout("A", original, false).unwrap();
         paths
             .save_config(r#"{"schemaVersion":1,"settings":{"appearance":"light"}}"#)

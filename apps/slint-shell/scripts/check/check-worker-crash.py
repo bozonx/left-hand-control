@@ -27,7 +27,7 @@ socket = f"lhc-worker-crash-{os.getpid()}.sock"
 with tempfile.TemporaryDirectory() as directory:
     config = Path(directory) / "linux/.config/dev.bozonx.left-hand-control/config.json"
     config.parent.mkdir(parents=True)
-    config.write_text('{"schemaVersion":1,"settings":{"inDevelopment":true}}', encoding="utf-8")
+    config.write_text('{"schemaVersion":1,"settings":{"experimental":true}}', encoding="utf-8")
     log_path = Path(directory) / "server.log"
     with log_path.open("w+") as log:
         env = os.environ | {

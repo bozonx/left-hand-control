@@ -573,8 +573,8 @@ mod tests {
         if settings["state"]["editedLayoutId"].is_null() {
             settings["state"]["editedLayoutId"] = json!("user:Test");
         }
-        if settings["settings"]["activeLayoutId"].is_null() {
-            settings["settings"]["activeLayoutId"] = settings["state"]["editedLayoutId"].clone();
+        if settings["settings"]["layouts"]["manual"].is_null() {
+            settings["settings"]["layouts"]["manual"] = settings["state"]["editedLayoutId"].clone();
         }
         let name = settings["state"]["editedLayoutId"]
             .as_str()
@@ -650,7 +650,7 @@ mod tests {
                     &serde_json::to_string(&json!({
                         "schemaVersion": 1,
                         "state": {"editedLayoutId": "user:Test"},
-                        "settings": {"activeLayoutId": "user:Test", "appearance": "dark"}
+                        "settings": {"layouts": {"manual": "user:Test"}, "appearance": "dark"}
                     }))
                     .unwrap(),
                 )
@@ -729,8 +729,10 @@ mod tests {
             r#"{"schemaVersion":1,"macros":[{"id":"m","steps":["macro:m"]}]}"#,
             r#"{"schemaVersion":1,"quickActionPages":[{"cells":{"KeyQ":"cmd:missing"}}]}"#,
         ] {
-            let (_dir, document) =
-                document(json!({"settings":{"activeLayoutId":"user:Test"}}), content);
+            let (_dir, document) = document(
+                json!({"settings":{"layouts":{"manual":"user:Test"}}}),
+                content,
+            );
             let before = document.paths().load_user_layout("Test").unwrap();
             assert!(matches!(
                 document.runtime_config(&AutoSwitchContext::default()),
@@ -775,7 +777,10 @@ mod tests {
         assert!(!document.settings().launch_on_startup);
         assert!(entry.exists(), "a disabled entry stays for the desktop");
         let saved = fs::read_to_string(document.paths.config_path()).unwrap();
-        assert!(saved.contains("\"launchOnStartup\": false"));
+        assert!(
+            !saved.contains("launchOnStartup"),
+            "the default is not written"
+        );
 
         // Added outside the application: adopted and pointed at this binary.
         fs::write(&entry, "[Desktop Entry]\nExec=old\n").unwrap();
@@ -799,7 +804,7 @@ mod tests {
             saved["settings"]["devices"]["keyboards"],
             json!(["/dev/input/by-id/other"])
         );
-        assert_eq!(saved["settings"]["locale"], "en-US");
+        assert_eq!(saved["settings"]["locale"], "en");
         assert!(saved.get("rules").is_none());
         assert_eq!(
             fs::read_to_string(document.paths.layouts_dir().join("Test.json")).unwrap(),
@@ -1195,7 +1200,7 @@ mod tests {
     #[test]
     fn runtime_config_reports_whether_titles_are_needed() {
         let (_dir, mut document) = document(
-            json!({"settings": {"activeLayoutId": "user:Other"}, "state": {"editedLayoutId": "user:Main"}}),
+            json!({"settings": {"layouts": {"manual": "user:Other"}}, "state": {"editedLayoutId": "user:Main"}}),
             LAYOUT,
         );
         let save = |document: &ConfigDocument, rules: &str| {
@@ -1258,7 +1263,7 @@ mod tests {
     #[test]
     fn runtime_config_uses_the_active_library_layout() {
         let (_dir, mut document) = document(
-            json!({"settings": {"activeLayoutId": "user:Other"}, "state": {"editedLayoutId": "user:Main"}}),
+            json!({"settings": {"layouts": {"manual": "user:Other"}}, "state": {"editedLayoutId": "user:Main"}}),
             LAYOUT,
         );
         document
@@ -1287,7 +1292,7 @@ mod tests {
 
     #[test]
     fn auto_mode_without_a_match_is_passthrough() {
-        let (_dir, document) = document(json!({"settings": {"layoutMode": "auto"}}), LAYOUT);
+        let (_dir, document) = document(json!({"settings": {"layouts": {"mode": "auto"}}}), LAYOUT);
         let runtime = document
             .runtime_config(&AutoSwitchContext::default())
             .unwrap();

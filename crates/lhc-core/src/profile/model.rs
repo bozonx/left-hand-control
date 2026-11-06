@@ -454,7 +454,7 @@ pub enum GameModeControl {
 
 /// Theme preference; `System` follows the desktop.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "camelCase")]
 pub enum Appearance {
     #[default]
     System,
@@ -469,7 +469,7 @@ impl Appearance {
             Self::System => "system",
             Self::Light => "light",
             Self::Dark => "dark",
-            Self::EInk => "eink",
+            Self::EInk => "eInk",
         }
     }
 }
@@ -480,9 +480,9 @@ pub enum LocalePreference {
     #[default]
     #[serde(rename = "auto")]
     Auto,
-    #[serde(rename = "en-US")]
+    #[serde(rename = "en")]
     English,
-    #[serde(rename = "ru-RU")]
+    #[serde(rename = "ru")]
     Russian,
     #[serde(rename = "de")]
     German,
@@ -554,8 +554,8 @@ impl LocalePreference {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Auto => "auto",
-            Self::English => "en-US",
-            Self::Russian => "ru-RU",
+            Self::English => "en",
+            Self::Russian => "ru",
             Self::German => "de",
             Self::French => "fr",
             Self::Spanish => "es",
@@ -581,7 +581,7 @@ impl LocalePreference {
 
 /// How `text:` actions reach the focused application on Linux.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "camelCase")]
 pub enum TextMode {
     /// libei; pastes through the clipboard when the layout lacks a character.
     #[default]
@@ -610,7 +610,7 @@ impl TextMode {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Libei => "libei",
-            Self::LibeiPure => "libei-pure",
+            Self::LibeiPure => "libeiPure",
             Self::Keycode => "keycode",
             Self::Clipboard => "clipboard",
             Self::Ydotool => "ydotool",
@@ -624,8 +624,11 @@ impl TextMode {
 }
 
 /// Shortcut that pastes clipboard text into the focused application.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
+///
+/// Stored as a key chord in action syntax (`Shift+Insert`), so the file
+/// format does not limit which shortcuts a later version may offer; this
+/// version accepts the chords listed in [`Self::ALL`].
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum PasteShortcut {
     /// Common in GUI apps and terminals; some terminals paste the primary selection.
     #[default]
@@ -639,18 +642,46 @@ impl PasteShortcut {
     /// Every shortcut, in the order the settings page lists them.
     pub const ALL: [Self; 3] = [Self::ShiftInsert, Self::CtrlV, Self::CtrlShiftV];
 
+    /// Canonical chord: modifiers first, then the key.
     pub fn as_str(self) -> &'static str {
         match self {
-            Self::ShiftInsert => "shift-insert",
-            Self::CtrlV => "ctrl-v",
-            Self::CtrlShiftV => "ctrl-shift-v",
+            Self::ShiftInsert => "Shift+Insert",
+            Self::CtrlV => "Ctrl+KeyV",
+            Self::CtrlShiftV => "Ctrl+Shift+KeyV",
         }
     }
 
+    /// The shortcut a chord names, in any modifier order or spelling
+    /// (`Shift+Ctrl+KeyV`, `ControlLeft+ShiftLeft+KeyV`).
     pub fn parse(value: &str) -> Option<Self> {
+        let keys = |chord: &str| {
+            super::key_catalog::trigger_keys(chord).map(|mut keys| {
+                keys.sort_unstable();
+                keys.into_iter().map(str::to_owned).collect::<Vec<_>>()
+            })
+        };
+        let wanted = keys(value)?;
         Self::ALL
             .into_iter()
-            .find(|shortcut| shortcut.as_str() == value)
+            .find(|shortcut| keys(shortcut.as_str()).as_ref() == Some(&wanted))
+    }
+}
+
+impl Serialize for PasteShortcut {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for PasteShortcut {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let chord = String::deserialize(deserializer)?;
+        Self::parse(&chord).ok_or_else(|| {
+            serde::de::Error::custom(format!(
+                "unsupported paste shortcut \"{chord}\", expected one of: {}",
+                Self::ALL.map(Self::as_str).join(", ")
+            ))
+        })
     }
 }
 

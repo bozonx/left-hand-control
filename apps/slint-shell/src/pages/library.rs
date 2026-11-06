@@ -774,7 +774,7 @@ mod tests {
         paths
             .save_user_layout(
                 "A",
-                r#"{"schemaVersion":1,"description":"external A"}"#,
+                r#"{"schemaVersion":1,"meta":{"description":"external A"}}"#,
                 true,
             )
             .unwrap();
@@ -841,7 +841,11 @@ mod tests {
         library.set_metadata_revision(20);
         let old = lhc_core::profile::library::load_library_entries(&paths, &names);
         paths
-            .save_user_layout("A", r#"{"schemaVersion":1,"description":"new"}"#, true)
+            .save_user_layout(
+                "A",
+                r#"{"schemaVersion":1,"meta":{"description":"new"}}"#,
+                true,
+            )
             .unwrap();
         loader.publish(
             &ui,
