@@ -1,6 +1,10 @@
 //! Global shortcuts registered with KDE's kglobalaccel, offered as
 //! `kde:component/shortcut` actions. The list is read from the running
 //! session, so it covers KWin, Plasma and third-party applications alike.
+//! The list leaves out what cannot run or is offered elsewhere: components
+//! of applications that are not running (stale entries in
+//! `kglobalshortcutsrc`), shortcuts a plain `sys:` action already runs, and
+//! desktop-numbered shortcuts above the `sys:` range.
 
 use super::dbus;
 use zbus::blocking::{Connection, Proxy};
@@ -39,8 +43,9 @@ type ShortcutInfo = (
     Vec<i32>,
 );
 
-/// Every global shortcut of the running KDE session, sorted by component
-/// and label. Components that fail to answer are skipped.
+/// Every usable global shortcut of the running KDE session, sorted by
+/// component and label; unnamed shortcuts go last within a component.
+/// Components that fail to answer are skipped.
 pub fn list() -> Result<Vec<KdeShortcut>, String> {
     let conn = Connection::session().map_err(|e| format!("session bus: {e}"))?;
     let accel = Proxy::new(
@@ -58,13 +63,28 @@ pub fn list() -> Result<Vec<KdeShortcut>, String> {
         let Some(component) = path.as_str().rsplit('/').next().map(str::to_owned) else {
             continue;
         };
-        let infos: Result<Vec<ShortcutInfo>, _> = Proxy::new(
+        let proxy = match Proxy::new(
             &conn,
             dbus::KGLOBALACCEL_SERVICE,
             path.as_str(),
             dbus::KGLOBALACCEL_COMPONENT_INTERFACE,
-        )
-        .and_then(|proxy| proxy.call("allShortcutInfos", &()));
+        ) {
+            Ok(proxy) => proxy,
+            Err(e) => {
+                log::debug!("[kde-shortcuts] {component}: {e}");
+                continue;
+            }
+        };
+        // kglobalaccel starts `.desktop` components on demand, so they
+        // run even when inactive; any other inactive component belongs to
+        // an application that is not running and ignores the call.
+        if !launched_on_demand(&component)
+            && !proxy.call::<_, _, bool>("isActive", &()).unwrap_or(false)
+        {
+            log::debug!("[kde-shortcuts] {component}: inactive, skipped");
+            continue;
+        }
+        let infos: Result<Vec<ShortcutInfo>, _> = proxy.call("allShortcutInfos", &());
         let infos = match infos {
             Ok(infos) => infos,
             Err(e) => {
@@ -73,27 +93,78 @@ pub fn list() -> Result<Vec<KdeShortcut>, String> {
             }
         };
         out.extend(
-            infos.into_iter().map(
-                |(name, label, _, component_label, _, _, _, _)| KdeShortcut {
-                    component: component.clone(),
-                    label: if label.is_empty() {
-                        name.clone()
-                    } else {
-                        label
-                    },
-                    component_label: if component_label.is_empty() {
-                        component.clone()
-                    } else {
-                        component_label
-                    },
-                    name,
-                },
-            ),
+            infos
+                .into_iter()
+                .filter(|(name, ..)| offered(&component, name))
+                .map(|(name, label, _, component_label, _, _, _, _)| {
+                    (
+                        label.is_empty(),
+                        KdeShortcut {
+                            component: component.clone(),
+                            label: if label.is_empty() {
+                                name.clone()
+                            } else {
+                                label
+                            },
+                            component_label: if component_label.is_empty() {
+                                component.clone()
+                            } else {
+                                component_label
+                            },
+                            name,
+                        },
+                    )
+                }),
         );
     }
-    out.sort_by(|a, b| {
-        (a.component_label.to_lowercase(), a.label.to_lowercase())
-            .cmp(&(b.component_label.to_lowercase(), b.label.to_lowercase()))
+    // A shortcut without a friendly name shows its technical one; those
+    // go after the named ones of their component.
+    out.sort_by_cached_key(|(unnamed, s)| {
+        (
+            s.component_label.to_lowercase(),
+            *unnamed,
+            s.label.to_lowercase(),
+        )
     });
-    Ok(out)
+    Ok(out.into_iter().map(|(_, shortcut)| shortcut).collect())
+}
+
+/// Components named after a `.desktop` file (`org_kde_konsole_desktop`).
+fn launched_on_demand(component: &str) -> bool {
+    component.ends_with("_desktop")
+}
+
+/// Whether the shortcut belongs in the `kde:` list.
+fn offered(component: &str, name: &str) -> bool {
+    if crate::mapper::system::kde_runs_as_system_action(component, name) {
+        return false;
+    }
+    if component != "kwin" {
+        return true;
+    }
+    // KWin registers these for up to 20+ desktops; `sys:` covers 1…10.
+    ["Switch to Desktop ", "Window to Desktop "]
+        .iter()
+        .find_map(|prefix| name.strip_prefix(prefix))
+        .and_then(|n| n.parse::<u32>().ok())
+        .is_none_or(|n| n <= crate::profile::actions::SYSTEM_NUMBERED_COUNT)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn filters_duplicates_and_desktops_above_ten() {
+        assert!(!offered("kwin", "Window Close"));
+        assert!(!offered("ksmserver", "Lock Session"));
+        assert!(!offered("org_kde_powerdevil", "Turn Off Screen"));
+        assert!(offered("kwin", "Switch to Desktop 10"));
+        assert!(!offered("kwin", "Switch to Desktop 11"));
+        assert!(!offered("kwin", "Window to Desktop 20"));
+        assert!(offered("kwin", "Window Fullscreen"));
+        assert!(offered("plasmashell", "activate task manager entry 10"));
+        assert!(launched_on_demand("org_kde_konsole_desktop"));
+        assert!(!launched_on_demand("kmix"));
+    }
 }

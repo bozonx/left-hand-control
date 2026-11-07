@@ -3764,3 +3764,27 @@ msgstr "Tuş atamaları silinecek. Bu katmanı basılı tutan kurallar artık on
 
 msgid "Delete extra key “{}”?"
 msgstr "“{}” ek tuşu silinsin mi?"
+
+msgid "Move window to previous desktop"
+msgstr "Pencereyi önceki masaüstüne taşı"
+
+msgid "Move window to next screen"
+msgstr "Pencereyi sonraki ekrana taşı"
+
+msgid "Switch to next desktop"
+msgstr "Sonraki masaüstüne geç"
+
+msgid "Switch to previous desktop"
+msgstr "Önceki masaüstüne geç"
+
+msgid "Lock screen"
+msgstr "Ekranı kilitle"
+
+msgid "Application actions"
+msgstr "Uygulama eylemleri"
+
+msgid "Actions of installed applications:"
+msgstr "Yüklü uygulamaların eylemleri:"
+
+msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
+msgstr "Liste, yüklü uygulamaların masaüstü girdilerinden, yani Linux masaüstlerinin ortak freedesktop standardından okunur: uygulamalar burada yeni bir gizli pencere açmak gibi ek eylemler bildirir. Seçilen eylem, uygulama menüsünden çalıştırıldığı gibi çalıştırılır. Hangi eylemlerin bulunduğu yüklü uygulamalara bağlıdır."

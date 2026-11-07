@@ -3771,3 +3771,27 @@ msgstr "Призначення його клавіш буде видалено. 
 
 msgid "Delete extra key “{}”?"
 msgstr "Видалити додаткову клавішу «{}»?"
+
+msgid "Move window to previous desktop"
+msgstr "Перемістити вікно на попередній робочий стіл"
+
+msgid "Move window to next screen"
+msgstr "Перемістити вікно на наступний екран"
+
+msgid "Switch to next desktop"
+msgstr "Перейти на наступний робочий стіл"
+
+msgid "Switch to previous desktop"
+msgstr "Перейти на попередній робочий стіл"
+
+msgid "Lock screen"
+msgstr "Заблокувати екран"
+
+msgid "Application actions"
+msgstr "Дії застосунків"
+
+msgid "Actions of installed applications:"
+msgstr "Дії встановлених застосунків:"
+
+msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
+msgstr "Список береться з файлів .desktop встановлених застосунків — спільного для робочих середовищ Linux стандарту freedesktop: застосунки оголошують у них додаткові дії, наприклад відкриття нового приватного вікна. Вибрана дія запускається так само, як із меню застосунку. Які дії доступні, залежить від установлених застосунків."

@@ -114,6 +114,7 @@ ID раскладок библиотеки устроены иначе: `user:<�
 | системное действие | `sys:switchDesktop2`, `sys:showDesktop` |
 | действие приложения | `app:showQuickMenu1`, `app:toggleGameMode` |
 | глобальное сочетание KDE | `kde:kwin/Window Maximize` |
+| действие установленного приложения (Linux, freedesktop `Actions=`) | `xdg:firefox/new-private-window` |
 | ввод текста | `text:Привет` |
 | пауза (только в макросах) | `pause:200` |
 
@@ -125,7 +126,9 @@ ID раскладок библиотеки устроены иначе: `user:<�
 
 Встроенные макросы используют ссылки `builtin:<id>`, пользовательские — `macro:<id>`. Их ID могут совпадать: ссылки разрешаются независимо.
 
-Системные действия (`sys:`): `closeWindow`, `minimizeWindow`, `maximizeWindow`, `maximizeWindowVertically`, `toggleWindowKeepAbove`, `moveWindowToNextDesktop`, `showDesktop`, `showOverview`, `showAppLauncher`, `turnOffScreen` и нумерованные `switchDesktopN`, `moveWindowToDesktopN`, `switchKeyboardLayoutN` (N от 1 до 10). Поддержка по платформам — в [platforms.md](development/platforms.md).
+Системные действия (`sys:`): `closeWindow`, `minimizeWindow`, `maximizeWindow`, `maximizeWindowVertically`, `toggleWindowKeepAbove`, `moveWindowToNextDesktop`, `moveWindowToPreviousDesktop`, `moveWindowToNextScreen`, `switchToNextDesktop`, `switchToPreviousDesktop`, `showDesktop`, `showOverview`, `showAppLauncher`, `turnOffScreen`, `lockSession` и нумерованные `switchDesktopN`, `moveWindowToDesktopN`, `switchKeyboardLayoutN` (N от 1 до 10). Поддержка по платформам — в [platforms.md](development/platforms.md).
+
+Действия установленных приложений (`xdg:<desktop-id>/<action>`): `desktop-id` — имя файла `.desktop` без расширения (для файла из подкаталога `kde4/foo.desktop` — `kde4-foo`), `action` — идентификатор из его ключа `Actions=`. Приложения с `DBusActivatable=true` получают вызов `org.freedesktop.Application.ActivateAction`, остальные запускаются по `Exec` действия. Если приложение не установлено, действие пропускается с предупреждением. Только Linux.
 
 Действия приложения (`app:`): `showQuickMenuN`, `showEmojiMenuN`, `showQuickMenuLast`, `showEmojiMenuLast`, `showSettings`, `activateLayoutN`, `toggleGameMode`, `setGameModeAuto`, `setGameModeOn`, `setGameModeOff`. Имена действий начинаются с глагола.
 

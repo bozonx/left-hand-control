@@ -3754,3 +3754,27 @@ msgstr "მისი კლავიშების მინიჭებებ�
 
 msgid "Delete extra key “{}”?"
 msgstr "წაშალოთ დამატებითი კლავიში „{}“?"
+
+msgid "Move window to previous desktop"
+msgstr "ფანჯრის გადატანა წინა სამუშაო მაგიდაზე"
+
+msgid "Move window to next screen"
+msgstr "ფანჯრის გადატანა შემდეგ ეკრანზე"
+
+msgid "Switch to next desktop"
+msgstr "შემდეგ სამუშაო მაგიდაზე გადასვლა"
+
+msgid "Switch to previous desktop"
+msgstr "წინა სამუშაო მაგიდაზე გადასვლა"
+
+msgid "Lock screen"
+msgstr "ეკრანის ჩაკეტვა"
+
+msgid "Application actions"
+msgstr "აპლიკაციების მოქმედებები"
+
+msgid "Actions of installed applications:"
+msgstr "დაყენებული აპლიკაციების მოქმედებები:"
+
+msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
+msgstr "სია იკითხება დაყენებული აპლიკაციების .desktop ფაილებიდან — Linux-ის გარემოებისთვის საერთო freedesktop სტანდარტიდან: აპლიკაციები იქ აცხადებენ დამატებით მოქმედებებს, მაგალითად ახალი პირადი ფანჯრის გახსნას. არჩეული მოქმედება ეშვება ისე, როგორც აპლიკაციების მენიუდან. ხელმისაწვდომი მოქმედებები დამოკიდებულია დაყენებულ აპლიკაციებზე."

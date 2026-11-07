@@ -3445,3 +3445,27 @@ msgstr "其按键分配将被删除。按住此图层的规则将不再激活它
 
 msgid "Delete extra key “{}”?"
 msgstr "删除额外按键“{}”？"
+
+msgid "Move window to previous desktop"
+msgstr "将窗口移到上一个桌面"
+
+msgid "Move window to next screen"
+msgstr "将窗口移到下一个屏幕"
+
+msgid "Switch to next desktop"
+msgstr "切换到下一个桌面"
+
+msgid "Switch to previous desktop"
+msgstr "切换到上一个桌面"
+
+msgid "Lock screen"
+msgstr "锁定屏幕"
+
+msgid "Application actions"
+msgstr "应用程序操作"
+
+msgid "Actions of installed applications:"
+msgstr "已安装应用程序的操作："
+
+msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
+msgstr "此列表读取自已安装应用程序的桌面条目，即 Linux 桌面通用的 freedesktop 标准：应用程序在其中声明额外的操作，例如打开新的隐私窗口。所选操作的运行方式与从应用程序菜单运行相同。可用的操作取决于已安装的应用程序。"

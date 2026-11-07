@@ -3843,3 +3843,27 @@ msgstr "Ihre Tastenbelegungen werden gelöscht. Regeln, die diese Ebene halten, 
 
 msgid "Delete extra key “{}”?"
 msgstr "Zusatztaste „{}“ löschen?"
+
+msgid "Move window to previous desktop"
+msgstr "Fenster auf vorherige Arbeitsfläche verschieben"
+
+msgid "Move window to next screen"
+msgstr "Fenster auf nächsten Bildschirm verschieben"
+
+msgid "Switch to next desktop"
+msgstr "Zur nächsten Arbeitsfläche wechseln"
+
+msgid "Switch to previous desktop"
+msgstr "Zur vorherigen Arbeitsfläche wechseln"
+
+msgid "Lock screen"
+msgstr "Bildschirm sperren"
+
+msgid "Application actions"
+msgstr "Anwendungsaktionen"
+
+msgid "Actions of installed applications:"
+msgstr "Aktionen installierter Anwendungen:"
+
+msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
+msgstr "Die Liste stammt aus den Desktop-Einträgen installierter Anwendungen, dem gemeinsamen freedesktop-Standard der Linux-Desktops: Anwendungen deklarieren dort zusätzliche Aktionen, etwa das Öffnen eines neuen privaten Fensters. Die gewählte Aktion wird so ausgeführt wie aus dem Anwendungsmenü. Welche Aktionen es gibt, hängt von den installierten Anwendungen ab."

@@ -134,6 +134,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ui.window().dispatch_event(event);
         }
         assert_eq!(center.get_items().row_count(), 3);
+        assert!(
+            !center.get_focused(),
+            "mouse dismissal must not leave a stale focused token"
+        );
         ui.window()
             .dispatch_event(slint::platform::WindowEvent::PointerMoved {
                 position: slint::LogicalPosition::new(0.0, 0.0),

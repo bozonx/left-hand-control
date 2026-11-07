@@ -3804,3 +3804,27 @@ msgstr "Przypisania jej klawiszy zostaną usunięte. Reguły przytrzymujące tę
 
 msgid "Delete extra key “{}”?"
 msgstr "Usunąć dodatkowy klawisz „{}”?"
+
+msgid "Move window to previous desktop"
+msgstr "Przenieś okno na poprzedni pulpit"
+
+msgid "Move window to next screen"
+msgstr "Przenieś okno na następny ekran"
+
+msgid "Switch to next desktop"
+msgstr "Przełącz na następny pulpit"
+
+msgid "Switch to previous desktop"
+msgstr "Przełącz na poprzedni pulpit"
+
+msgid "Lock screen"
+msgstr "Zablokuj ekran"
+
+msgid "Application actions"
+msgstr "Akcje aplikacji"
+
+msgid "Actions of installed applications:"
+msgstr "Akcje zainstalowanych aplikacji:"
+
+msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
+msgstr "Lista jest odczytywana z plików .desktop zainstalowanych aplikacji, wspólnego dla środowisk Linux standardu freedesktop: aplikacje deklarują w nich dodatkowe akcje, na przykład otwarcie nowego okna prywatnego. Wybrana akcja jest uruchamiana tak jak z menu aplikacji. Dostępne akcje zależą od zainstalowanych aplikacji."

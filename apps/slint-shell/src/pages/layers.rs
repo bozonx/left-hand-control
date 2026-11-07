@@ -103,6 +103,10 @@ fn selected_id(ui: &SettingsWindow, document: &Document) -> Option<String> {
 }
 
 fn select_layer(ui: &SettingsWindow, document: &Document, index: i32) {
+    let editor = ui.global::<LayersEditor>();
+    if editor.get_dialog() == LayerDialog::None && editor.get_delete_extra() < 0 {
+        editor.set_status(Msg::None.to_ui());
+    }
     let id = usize::try_from(index).ok().and_then(|index| {
         document
             .read()
@@ -112,7 +116,7 @@ fn select_layer(ui: &SettingsWindow, document: &Document, index: i32) {
             .map(|layer| layer.id.clone())
     });
     if let Some(id) = id {
-        ui.global::<LayersEditor>().set_selected_id(id.into());
+        editor.set_selected_id(id.into());
     }
     refresh(ui, document);
 }
@@ -256,6 +260,7 @@ fn edit_key(ui: &SettingsWindow, document: &Document, index: i32) {
     let (Some(id), Some(key)) = (selected_id(ui, document), keyboard::layer_key(index)) else {
         return;
     };
+    ui.global::<LayersEditor>().set_status(Msg::None.to_ui());
     let action = match document.read().layer_key(&id, key) {
         KeyAssignment::Action(action) => action,
         KeyAssignment::Transparent | KeyAssignment::Swallow => String::new(),
@@ -407,7 +412,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         if selected_id(&ui, &doc).is_none() {
             return;
         }
-        ui.global::<LayersEditor>().set_dialog_key("".into());
+        let editor = ui.global::<LayersEditor>();
+        editor.set_status(Msg::None.to_ui());
+        editor.set_dialog_key("".into());
         ui.global::<ActionPicker>()
             .invoke_open(PickerTarget::ExtraKey, -1, "".into(), true);
     });
@@ -418,7 +425,9 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let Some((key, value)) = extra_at(&doc, &id, index) else {
             return;
         };
-        ui.global::<LayersEditor>().set_dialog_key(key.clone().into());
+        let editor = ui.global::<LayersEditor>();
+        editor.set_status(Msg::None.to_ui());
+        editor.set_dialog_key(key.clone().into());
         let picker = ui.global::<ActionPicker>();
         if key_only {
             picker.invoke_open(PickerTarget::ExtraKey, index, key.into(), true);
@@ -433,6 +442,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
     });
     on!(ui, editor.on_refresh, doc = document => |ui| {
+        ui.global::<LayersEditor>().set_status(Msg::None.to_ui());
         refresh(&ui, &doc);
     });
     on!(ui, editor.on_choose, doc = document => |ui, index| {
@@ -444,6 +454,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
     });
     on!(ui, editor.on_close_dialog, modals = modals => |ui| {
+        ui.global::<LayersEditor>().set_status(Msg::None.to_ui());
         close_dialogs(&ui, &modals);
     });
     on!(ui, editor.on_edit_key, doc = document => |ui, index| {

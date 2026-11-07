@@ -177,6 +177,7 @@ component HoldField inherits VerticalLayout {
     changed menu-open => {
         if !root.menu-open && RulesEditor.dialog == RuleDialog.layer && RulesEditor.selected == root.rule-index {
             RulesEditor.dialog = RuleDialog.none;
+            RulesEditor.refresh();
         }
     }
     private property <length> scroll-y;
@@ -187,7 +188,7 @@ component HoldField inherits VerticalLayout {
     preferred-width: 0px;
     horizontal-stretch: 1;
     spacing: Theme.space-xs;
-    function close-menu() { menu.close(); RulesEditor.dialog = RuleDialog.none; field-focus.focus(); }
+    function close-menu() { menu.close(); RulesEditor.dialog = RuleDialog.none; RulesEditor.refresh(); field-focus.focus(); }
     // Menu entries: 0 = nothing, 1..count = layers, count + 1 = action.
     function choose(index: int) {
         if index == 0 {
@@ -386,7 +387,7 @@ export component RulesPage inherits PageLayout {
 export component RuleDialogOverlay inherits FocusScope {
     focus-on-tab-navigation: false;
     enabled: RulesEditor.dialog != RuleDialog.none && !ActionPicker.opened;
-    key-pressed(event) => { if event.text == Key.Escape { RulesEditor.dialog = RuleDialog.none; return accept; } return reject; }
+    key-pressed(event) => { if event.text == Key.Escape { RulesEditor.dialog = RuleDialog.none; RulesEditor.refresh(); return accept; } return reject; }
     if RulesEditor.dialog != RuleDialog.none && RulesEditor.dialog != RuleDialog.remove && RulesEditor.dialog != RuleDialog.layer: DialogFrame {
         title: RulesEditor.dialog == RuleDialog.key ? @tr("Choose a key or combination for the trigger")
             : RulesEditor.dialog == RuleDialog.conditions ? @tr("Trigger conditions")
@@ -395,7 +396,7 @@ export component RuleDialogOverlay inherits FocusScope {
         card-width: RulesEditor.dialog == RuleDialog.conditions ? 680px : 560px;
         // Conditions and advanced options fit their content; the other dialogs keep a fixed height.
         card-height: RulesEditor.dialog == RuleDialog.conditions || RulesEditor.dialog == RuleDialog.advanced ? 0px : 620px;
-        close => { RulesEditor.dialog = RuleDialog.none; }
+        close => { RulesEditor.dialog = RuleDialog.none; RulesEditor.refresh(); }
         if RulesEditor.dialog == RuleDialog.conditions: ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
             preferred-height: conditions-form.preferred-height;
             conditions-form := ConditionsForm {
@@ -509,7 +510,7 @@ export component RuleDialogOverlay inherits FocusScope {
     }
     if RulesEditor.dialog == RuleDialog.remove: ConfirmDialog {
         title: @tr("Delete trigger?"); body: @tr("The trigger and all its assigned actions will be removed from the current layout."); confirm-text: @tr("Delete");
-        confirm => { RulesEditor.remove(); } cancel => { RulesEditor.dialog = RuleDialog.none; }
+        confirm => { RulesEditor.remove(); } cancel => { RulesEditor.dialog = RuleDialog.none; RulesEditor.refresh(); }
     }
 
 }

@@ -229,7 +229,7 @@ pub(crate) fn action_kind(action: &str) -> ActionKind {
         Action::Keys(_) => ActionKind::Keys,
         Action::Macro(_) | Action::BuiltinMacro(_) => ActionKind::Macro,
         Action::Command(_) => ActionKind::Command,
-        Action::System(_) | Action::KdeShortcut(_) => ActionKind::System,
+        Action::System(_) | Action::KdeShortcut(_) | Action::DesktopEntry(_) => ActionKind::System,
         Action::App(_) => ActionKind::App,
         Action::Text(_) => ActionKind::Text,
         Action::Native | Action::Swallow | Action::Pause(_) | Action::Unknown(_) => {

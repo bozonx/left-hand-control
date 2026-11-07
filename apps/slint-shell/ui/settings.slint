@@ -50,12 +50,12 @@ export component SettingsWindow inherits Window {
     private property <bool> confirm-discard: false;
     private property <bool> confirm-close: false;
     in-out property <bool> settings-quit-dialog;
-    property <bool> library-problem: NotificationCenter.is-problem(LayoutLibrary.status.id);
-    property <bool> layers-problem: NotificationCenter.is-problem(LayersEditor.status.id);
-    property <bool> rules-problem: NotificationCenter.is-problem(RulesEditor.status.id);
-    property <bool> macros-problem: NotificationCenter.is-problem(MacroEditor.status.id);
-    property <bool> menus-problem: NotificationCenter.is-problem(MenuEditor.status.id);
-    property <bool> settings-problem: NotificationCenter.is-problem(SettingsEditor.message.id);
+    property <bool> library-problem: (root.page == Page.layouts || LayoutLibrary.editor-open) && NotificationCenter.is-problem(LayoutLibrary.status.id);
+    property <bool> layers-problem: (root.page == Page.layers || root.page == Page.keyboard) && NotificationCenter.is-problem(LayersEditor.status.id);
+    property <bool> rules-problem: root.page == Page.rules && NotificationCenter.is-problem(RulesEditor.status.id);
+    property <bool> macros-problem: root.page == Page.macros && NotificationCenter.is-problem(MacroEditor.status.id);
+    property <bool> menus-problem: root.page == Page.menus && NotificationCenter.is-problem(MenuEditor.status.id);
+    property <bool> settings-problem: root.page == Page.settings && NotificationCenter.is-problem(SettingsEditor.message.id);
     /// Lasting problems only: one-off errors are toasts, mapper state is on its card.
     property <Message> problem: AppState.config-status.id == "config-unavailable" ? AppState.config-status
         : root.library-problem ? LayoutLibrary.status
@@ -109,6 +109,8 @@ export component SettingsWindow inherits Window {
         if !InlineEditors.flush() { return; }
         DragDrop.cancel();
         if page == Page.layouts { LayoutLibrary.refresh(); }
+        if page == Page.rules { RulesEditor.refresh(); }
+        if page == Page.layers || page == Page.keyboard { LayersEditor.refresh(); }
         if page == Page.menus { MenuEditor.open(kind); }
         if page != Page.layouts && page != Page.settings { LayoutLibrary.editor-open = true; }
         root.page = page;

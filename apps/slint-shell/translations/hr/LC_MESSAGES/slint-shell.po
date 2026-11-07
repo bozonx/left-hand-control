@@ -3755,3 +3755,27 @@ msgstr "Dodjele njegovih tipki bit će izbrisane. Pravila koja drže ovaj sloj p
 
 msgid "Delete extra key “{}”?"
 msgstr "Izbrisati dodatnu tipku „{}”?"
+
+msgid "Move window to previous desktop"
+msgstr "Premjesti prozor na prethodnu radnu površinu"
+
+msgid "Move window to next screen"
+msgstr "Premjesti prozor na sljedeći zaslon"
+
+msgid "Switch to next desktop"
+msgstr "Prijeđi na sljedeću radnu površinu"
+
+msgid "Switch to previous desktop"
+msgstr "Prijeđi na prethodnu radnu površinu"
+
+msgid "Lock screen"
+msgstr "Zaključaj zaslon"
+
+msgid "Application actions"
+msgstr "Radnje aplikacija"
+
+msgid "Actions of installed applications:"
+msgstr "Radnje instaliranih aplikacija:"
+
+msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
+msgstr "Popis se čita iz .desktop datoteka instaliranih aplikacija, zajedničkog freedesktop standarda Linux okruženja: aplikacije u njima navode dodatne radnje, poput otvaranja novog privatnog prozora. Odabrana radnja pokreće se kao iz izbornika aplikacija. Dostupne radnje ovise o instaliranim aplikacijama."

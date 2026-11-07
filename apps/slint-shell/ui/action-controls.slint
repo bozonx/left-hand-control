@@ -23,6 +23,7 @@ export component CategoryIcon inherits VerticalLayout {
             : root.category == PickerCategory.app ? @image-url("icons/hand.svg")
             : root.category == PickerCategory.system-actions ? @image-url("icons/monitor-cog.svg")
             : root.category == PickerCategory.desktop-shortcuts ? @image-url("icons/command.svg")
+            : root.category == PickerCategory.app-actions ? @image-url("icons/app-window.svg")
             : root.category == PickerCategory.pause ? @image-url("icons/clock.svg")
             : @image-url("icons/keyboard.svg");
     }

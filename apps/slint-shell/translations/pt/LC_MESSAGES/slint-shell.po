@@ -3777,3 +3777,27 @@ msgstr "As atribuições de teclas serão excluídas. As regras que mantêm esta
 
 msgid "Delete extra key “{}”?"
 msgstr "Excluir a tecla extra “{}”?"
+
+msgid "Move window to previous desktop"
+msgstr "Mover janela para a área de trabalho anterior"
+
+msgid "Move window to next screen"
+msgstr "Mover janela para o próximo ecrã"
+
+msgid "Switch to next desktop"
+msgstr "Mudar para a próxima área de trabalho"
+
+msgid "Switch to previous desktop"
+msgstr "Mudar para a área de trabalho anterior"
+
+msgid "Lock screen"
+msgstr "Bloquear ecrã"
+
+msgid "Application actions"
+msgstr "Ações de aplicações"
+
+msgid "Actions of installed applications:"
+msgstr "Ações das aplicações instaladas:"
+
+msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
+msgstr "A lista é lida das entradas de ambiente de trabalho das aplicações instaladas, o padrão freedesktop comum aos ambientes Linux: as aplicações declaram ali ações adicionais, como abrir uma nova janela privada. A ação escolhida é executada tal como a partir do menu de aplicações. As ações disponíveis dependem das aplicações instaladas."

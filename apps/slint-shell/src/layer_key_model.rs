@@ -24,12 +24,15 @@ pub(crate) fn action_names(
         .filter_map(|entry| Some((entry.action.format()?, action_label(ui, entry.name)?)))
         .collect();
     crate::pages::picker::DESKTOP_SHORTCUTS.with(|cache| {
-        names.extend(
-            cache
-                .borrow()
-                .iter()
-                .map(|shortcut| (shortcut.value.clone(), shortcut.label.clone())),
-        );
+        names.extend(cache.borrow().iter().map(|shortcut| {
+            // "New window" alone does not say which application.
+            let label = if shortcut.category == PickerCategory::AppActions {
+                format!("{}: {}", shortcut.component, shortcut.label)
+            } else {
+                shortcut.label.clone()
+            };
+            (shortcut.value.clone(), label)
+        }));
     });
     names
 }
@@ -66,6 +69,12 @@ pub(crate) fn assignment(
                     names.get(action).cloned().unwrap_or_else(|| {
                         actions::kde_shortcut_parts(&id)
                             .map_or(id.clone(), |(_, shortcut)| shortcut.to_owned())
+                    })
+                }
+                actions::Action::DesktopEntry(id) => {
+                    names.get(action).cloned().unwrap_or_else(|| {
+                        actions::desktop_entry_parts(&id)
+                            .map_or(id.clone(), |(app, action)| format!("{app}: {action}"))
                     })
                 }
                 _ => names.get(action).cloned().unwrap_or_else(|| action.clone()),

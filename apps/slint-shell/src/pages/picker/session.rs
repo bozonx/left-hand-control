@@ -66,6 +66,7 @@ pub(super) fn is_listed(category: PickerCategory) -> bool {
                 | PickerCategory::App
                 | PickerCategory::SystemActions
                 | PickerCategory::DesktopShortcuts
+                | PickerCategory::AppActions
         )
 }
 
@@ -95,7 +96,8 @@ pub(super) fn sidebar(
             let allowed = match category {
                 PickerCategory::Macros
                 | PickerCategory::Mouse
-                | PickerCategory::DesktopShortcuts => options.development,
+                | PickerCategory::DesktopShortcuts
+                | PickerCategory::AppActions => options.development,
                 PickerCategory::Commands => options.development && options.commands_enabled,
                 _ => true,
             };
@@ -108,6 +110,7 @@ pub(super) fn sidebar(
                         PickerCategory::DesktopShortcuts => {
                             count(category) > 0 || options.shortcuts_failed
                         }
+                        PickerCategory::AppActions => count(category) > 0,
                         _ => true,
                     }
             };
@@ -181,6 +184,11 @@ pub(super) fn open(
     key_only: bool,
 ) {
     let (target, index) = selection;
+    if target != PickerTarget::Rule {
+        let rules = ui.global::<crate::ui::RulesEditor>();
+        rules.set_field(crate::ui::RuleDialog::None);
+        rules.set_adding(false);
+    }
     load_desktop_shortcuts(ui.as_weak());
     let catalog = catalog(ui, &drafts.config(doc, Some(target)));
     // The catalog generation is read after building, so shortcuts arriving

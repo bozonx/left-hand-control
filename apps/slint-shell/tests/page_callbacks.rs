@@ -358,7 +358,7 @@ fn action_picker() -> Result<(), Box<dyn std::error::Error>> {
             .iter()
             .map(|entry| entry.visible)
             .collect::<Vec<_>>(),
-        [[true; 8], [false; 8]].concat(),
+        [&[true; 8][..], &[false; 9][..]].concat(),
         "a trigger offers only key categories"
     );
     picker.set_category(PickerCategory::Modifiers);
@@ -762,6 +762,7 @@ fn layer_editor_regressions() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(layers.get_status().id, "config-edit-conflict");
     assert_eq!(document.read().layout().layers.len(), 2);
     layers.invoke_choose(0);
+    assert_eq!(layers.get_status().id, "");
 
     // Invalid names preserve the draft and allow a corrected retry.
     layers.invoke_open_dialog(LayerDialog::Duplicate);
@@ -803,6 +804,7 @@ fn layer_editor_regressions() -> Result<(), Box<dyn std::error::Error>> {
     }
     picker.invoke_apply();
     assert!(!picker.get_opened());
+    assert_eq!(ui.global::<RulesEditor>().get_status().id, "");
     assert_eq!(
         document.read().layer_key(&first, "Backquote"),
         KeyAssignment::Action("KeyZ".into())

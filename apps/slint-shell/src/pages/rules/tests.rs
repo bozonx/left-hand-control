@@ -404,3 +404,42 @@ fn empty_trigger_draft_can_be_disabled_and_deleted() {
     assert_eq!(document.read().layout().rules.len(), 1);
     assert_eq!(document.read().layout().rules[0].id, "second");
 }
+
+#[test]
+fn refresh_and_external_edits_clear_stale_conflict_status() {
+    let (_dir, document, ui) = editor_fixture();
+    let editor = ui.global::<RulesEditor>();
+    editor.invoke_open_dialog(0, RuleDialog::Conditions);
+    document
+        .edit(View::Layers, |config| {
+            config.create_layer("Extra", "").map(|_| ())
+        })
+        .unwrap();
+    assert_eq!(editor.get_status().id, "config-edit-conflict");
+    editor.set_dialog(RuleDialog::None);
+    editor.invoke_refresh();
+    assert_eq!(editor.get_status().id, "");
+
+    editor.invoke_open_dialog(0, RuleDialog::Tap);
+    let picker = ui.global::<ActionPicker>();
+    picker.set_opened(true);
+    document
+        .edit(View::Layers, |config| {
+            config.create_layer("Another", "").map(|_| ())
+        })
+        .unwrap();
+    assert_eq!(
+        choose(&ui, &document, "KeyC", None),
+        Err(Msg::from(
+            &lhc_core::config_document::ConfigError::EditConflict
+        ))
+    );
+    picker.set_opened(false);
+    editor.set_field(RuleDialog::None);
+    editor.invoke_open_dialog(0, RuleDialog::Tap);
+    choose(&ui, &document, "KeyC", None).unwrap();
+    assert_eq!(
+        document.read().layout().rules[0].tap_action.as_deref(),
+        Some("KeyC")
+    );
+}

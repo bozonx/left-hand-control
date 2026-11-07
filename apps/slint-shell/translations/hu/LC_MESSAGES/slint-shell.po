@@ -3804,3 +3804,27 @@ msgstr "A billentyű-hozzárendelései törlődnek. A réteget nyomva tartó sza
 
 msgid "Delete extra key “{}”?"
 msgstr "Törli a(z) „{}” extra billentyűt?"
+
+msgid "Move window to previous desktop"
+msgstr "Ablak áthelyezése az előző asztalra"
+
+msgid "Move window to next screen"
+msgstr "Ablak áthelyezése a következő képernyőre"
+
+msgid "Switch to next desktop"
+msgstr "Váltás a következő asztalra"
+
+msgid "Switch to previous desktop"
+msgstr "Váltás az előző asztalra"
+
+msgid "Lock screen"
+msgstr "Képernyő zárolása"
+
+msgid "Application actions"
+msgstr "Alkalmazásműveletek"
+
+msgid "Actions of installed applications:"
+msgstr "Telepített alkalmazások műveletei:"
+
+msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
+msgstr "A lista a telepített alkalmazások .desktop fájljaiból származik, amely a Linux asztali környezetek közös freedesktop szabványa: az alkalmazások itt adnak meg további műveleteket, például új privát ablak nyitását. A kiválasztott művelet ugyanúgy fut, mint az alkalmazásmenüből. Az elérhető műveletek a telepített alkalmazásoktól függenek."

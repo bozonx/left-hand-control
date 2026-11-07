@@ -6,7 +6,17 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ## [Unreleased]
 
+### Added
+
+- System actions: lock screen (`sys:lockSession`), switch to the next or previous desktop (`sys:switchToNextDesktop`, `sys:switchToPreviousDesktop`), move the window to the previous desktop (`sys:moveWindowToPreviousDesktop`) and to the next screen (`sys:moveWindowToNextScreen`). They run on KDE, GNOME (with the bundled extension, updated for them) and Windows, except moving a window between desktops on Windows.
+- GNOME: "Turn off screen" now works through the extension.
+- Action picker (development mode, Linux): an "Application actions" category with the extra actions installed applications declare in their desktop entries (freedesktop `Actions=`, e.g. Firefox "New Private Window"), stored as `xdg:<desktop-id>/<action>`. D-Bus activatable applications get `ActivateAction`, others run the action's command line.
+
 ### Changed
+
+- KDE shortcuts category in the action picker: shortcuts of applications that are not running (stale entries) are hidden, as are shortcuts that a system action already runs and KWin's "Switch to Desktop N" / "Window to Desktop N" above 10. Shortcuts without a readable name go last.
+- KDE: switching to desktop N uses KWin's global shortcut like the other window actions instead of the legacy `org.kde.KWin.setCurrentDesktop`.
+- Windows: "Show desktop" uses the Shell's `ToggleDesktop` instead of pressing Win+D; "Turn off screen" waits half a second so that releasing the key does not wake the display again.
 
 - Automatic layouts (experimental):
   - Keyboard languages in rules match regardless of case (`US` matches `us`); blank list items are dropped when a rule is saved, so a rule behaves the same before and after a restart.
@@ -65,7 +75,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Device selection: when some input devices cannot be opened, the accessible devices are still listed together with a "No access" message, and the access check reports the denied keyboard even if another device is readable.
 - Device selection: "Show all devices" and "Use the stable path" can be reached with Tab and activated with Enter or Space, with a visible focus ring.
 
-- Triggers: dismissing the hold menu releases the modal state; stale dialogs and pickers reject edits after document changes. Advanced and condition drafts survive failed edits and background refreshes. Diagnostics follow macro and command changes, empty-trigger drafts remain removable, and suppressed taps no longer offer a misleading native hold option.
+- Triggers: dismissing the hold menu releases the modal state; stale dialogs and pickers reject edits after document changes. Action picker saves from other pages no longer report a conflict on the Triggers page, and page status warnings stay on their own page and clear when closing or refreshing. Advanced and condition drafts survive failed edits and background refreshes. Diagnostics follow macro and command changes, empty-trigger drafts remain removable, and suppressed taps no longer offer a misleading native hold option.
 
 - Layouts: duplication keeps its source after Save As or a library refresh; damaged UTF-8 files can be deleted with byte-preserving rollback. Empty library files are consistently rejected. Description drafts survive background refreshes after a failed save, and normal saves recheck the disk snapshot after staging the replacement file. Metadata loaders are isolated per library page.
 
@@ -126,7 +136,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Layouts page: renaming, describing or deleting a layout changed on disk by another program since the page showed it reports the conflict instead of overwriting the file; dialogs no longer show the error of an earlier action; a success notice is no longer replaced by a warning.
 
 - Notifications no longer hide new problems behind older warnings or replay background successes. Popup worker failures are grouped, distinct diagnostics remain separate, repeated rule warnings stay inline, and deleting an automatic switching rule has a confirmation.
-- Success and warning notifications disappear on their timeout again; only errors stay until dismissed. Hovering a notification pauses the timeout only while the window is active, and an emptied notification stack no longer leaves the next notifications paused.
+- Success and warning notifications disappear on their timeout again; only errors stay until dismissed. Hovering a notification pauses the timeout only while the window is active, and an emptied notification stack or dismissing a notification with the mouse no longer leaves the next notifications paused.
 
 - Emoji and Quick actions no longer activate cells or switch pages for Ctrl/Alt/Meta shortcuts, in both winit and Spell popups. Unhandled popup keys are no longer unconditionally consumed.
 - Screen readers announce Emoji and Quick actions popup cells as buttons named by their hotkey and content, and the close button as "Close" (winit popups; Spell popups still expose no accessibility tree).

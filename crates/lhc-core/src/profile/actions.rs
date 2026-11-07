@@ -1,5 +1,6 @@
 //! Action strings (`KeyA`, `Ctrl+KeyC`, `macro:id`, `builtin:id`, `cmd:id`, `sys:id`,
-//! `app:id`, `kde:component/shortcut`, `text:…`, `pause:ms`) and the
+//! `app:id`, `kde:component/shortcut`, `xdg:app-id/action`, `text:…`,
+//! `pause:ms`) and the
 //! catalogs of built-in actions.
 
 use super::model::ResolvedAppConfig;
@@ -23,6 +24,9 @@ pub enum Action {
     App(String),
     /// KDE global shortcut, `component/shortcut` as named by kglobalaccel.
     KdeShortcut(String),
+    /// Action of an installed application from its freedesktop desktop
+    /// entry, `desktop-id/action` (`Actions=` key; Linux only).
+    DesktopEntry(String),
     Text(String),
     /// Macro-only delay in milliseconds.
     Pause(String),
@@ -43,13 +47,14 @@ impl Action {
         }
         let value = value.trim();
         type Constructor = fn(String) -> Action;
-        let prefixed: [(&str, Constructor); 7] = [
+        let prefixed: [(&str, Constructor); 8] = [
             ("macro:", Self::Macro),
             ("builtin:", Self::BuiltinMacro),
             ("cmd:", Self::Command),
             ("sys:", Self::System),
             ("app:", Self::App),
             ("kde:", Self::KdeShortcut),
+            ("xdg:", Self::DesktopEntry),
             ("pause:", Self::Pause),
         ];
         for (prefix, build) in prefixed {
@@ -78,6 +83,7 @@ impl Action {
             Self::System(id) => format!("sys:{id}"),
             Self::App(id) => format!("app:{id}"),
             Self::KdeShortcut(id) => format!("kde:{id}"),
+            Self::DesktopEntry(id) => format!("xdg:{id}"),
             Self::Text(text) => format!("text:{text}"),
             Self::Pause(ms) => format!("pause:{ms}"),
             Self::Unknown(value) => value.clone(),
@@ -120,29 +126,40 @@ const NUMBERED_SYSTEM_ACTIONS: [&str; 3] = [
     "moveWindowToDesktop",
 ];
 
-/// System actions without a number. Each has a documented counterpart on
-/// Linux desktops and Windows, except `moveWindowToNextDesktop`: like
-/// `windowToDesktopN`, Windows has no public API to move another app's
-/// window between virtual desktops. See [`unsupported_on_macos`] for macOS.
-pub const PLAIN_SYSTEM_ACTIONS: [&str; 10] = [
+/// System actions without a number. Each runs on at least two platforms;
+/// on Windows `moveWindowToNextDesktop` and `moveWindowToPreviousDesktop`
+/// do not, since like `windowToDesktopN` there is no public API to move
+/// another app's window between virtual desktops, and on GNOME
+/// `showDesktop` has no counterpart. See [`unsupported_on_macos`] for macOS.
+pub const PLAIN_SYSTEM_ACTIONS: [&str; 15] = [
     "closeWindow",
     "minimizeWindow",
     "maximizeWindow",
     "maximizeWindowVertically",
     "toggleWindowKeepAbove",
     "moveWindowToNextDesktop",
+    "moveWindowToPreviousDesktop",
+    "moveWindowToNextScreen",
+    "switchToNextDesktop",
+    "switchToPreviousDesktop",
     "showDesktop",
     "showOverview",
     "showAppLauncher",
     "turnOffScreen",
+    "lockSession",
 ];
 
 /// `sys:` ids (numbered ones without their number) that macOS has no
 /// public API for. Running one there is ignored with a notice.
-const MACOS_UNSUPPORTED_SYSTEM_ACTIONS: [&str; 7] = [
+const MACOS_UNSUPPORTED_SYSTEM_ACTIONS: [&str; 12] = [
     "switchDesktop",
     "moveWindowToDesktop",
     "moveWindowToNextDesktop",
+    "moveWindowToPreviousDesktop",
+    "moveWindowToNextScreen",
+    "switchToNextDesktop",
+    "switchToPreviousDesktop",
+    "lockSession",
     "maximizeWindowVertically",
     "toggleWindowKeepAbove",
     "showDesktop",
@@ -201,6 +218,20 @@ pub fn kde_shortcut_parts(id: &str) -> Option<(&str, &str)> {
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || c == '_');
     (valid_component && !shortcut.trim().is_empty()).then_some((component, shortcut))
+}
+
+/// Split an `xdg:` id into its desktop-file id (without `.desktop`) and
+/// action id. Desktop ids may hold `.`, `-` and `_`; action ids are the
+/// names listed in the entry's `Actions=` key.
+pub fn desktop_entry_parts(id: &str) -> Option<(&str, &str)> {
+    let (app, action) = id.split_once('/')?;
+    let valid = |part: &str, extra: &[char]| {
+        !part.is_empty()
+            && part
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || extra.contains(&c))
+    };
+    (valid(app, &['.', '-', '_']) && valid(action, &['-', '_'])).then_some((app, action))
 }
 
 /// Game-mode control actions: flip the effective state, or set the mode.
@@ -348,6 +379,9 @@ pub fn validate(action: &Action, config: &ResolvedAppConfig) -> Option<ActionIss
         Action::KdeShortcut(id) => kde_shortcut_parts(id)
             .is_none()
             .then_some(ActionIssue::InvalidSyntax),
+        Action::DesktopEntry(id) => desktop_entry_parts(id)
+            .is_none()
+            .then_some(ActionIssue::InvalidSyntax),
     }
 }
 
@@ -392,6 +426,15 @@ pub fn execution_issue(action: &Action, config: &ResolvedAppConfig) -> Option<Ex
             Action::KdeShortcut(id) => {
                 #[cfg(target_os = "linux")]
                 if crate::mapper::system::resolve_kde_shortcut(id).is_some() {
+                    return None;
+                }
+                #[cfg(not(target_os = "linux"))]
+                let _ = id;
+                Some(ExecutionIssue::Unavailable)
+            }
+            Action::DesktopEntry(id) => {
+                #[cfg(target_os = "linux")]
+                if crate::mapper::system::resolve_desktop_entry(id).is_some() {
                     return None;
                 }
                 #[cfg(not(target_os = "linux"))]
@@ -457,6 +500,7 @@ mod tests {
             "sys:switchDesktop2",
             "app:showQuickMenu1",
             "kde:kwin/Window Quick Tile Top",
+            "xdg:org.mozilla.firefox/new-private-window",
             "text:  keep spaces ",
             "text:   ",
             "text:first\nsecond\n",
@@ -474,6 +518,17 @@ mod tests {
             Action::parse(Some("  text: hi ")),
             Action::Text(" hi ".into())
         );
+    }
+
+    #[test]
+    fn desktop_entry_ids_need_an_app_and_an_action() {
+        assert_eq!(
+            desktop_entry_parts("org.mozilla.firefox/new-private-window"),
+            Some(("org.mozilla.firefox", "new-private-window"))
+        );
+        for bad in ["firefox", "/x", "firefox/", "a b/c", "a/b c", "a/b/c"] {
+            assert_eq!(desktop_entry_parts(bad), None, "{bad}");
+        }
     }
 
     #[test]
@@ -496,7 +551,7 @@ mod tests {
 
     #[test]
     fn catalogs_preserve_builtin_action_ids() {
-        assert_eq!(system_actions().len(), 40);
+        assert_eq!(system_actions().len(), 45);
         assert_eq!(app_actions().len(), 32);
         assert_eq!(
             system_action_name("switchDesktop10"),
@@ -506,7 +561,7 @@ mod tests {
             })
         );
         assert_eq!(system_action_name("switchDesktop11"), None);
-        assert_eq!(system_action_name("lockSession"), None);
+        assert_eq!(system_action_name("lockScreen"), None);
         assert_eq!(
             system_action_name("turnOffScreen"),
             Some(ActionName::System {
@@ -520,7 +575,7 @@ mod tests {
         assert!(unsupported_on_macos("moveWindowToNextDesktop"));
         assert!(!unsupported_on_macos("switchKeyboardLayout2"));
         assert!(!unsupported_on_macos("closeWindow"));
-        assert!(!unsupported_on_macos("lockSession"));
+        assert!(unsupported_on_macos("lockSession"));
         assert_eq!(
             kde_shortcut_parts("org_kde_powerdevil/Turn Off Screen"),
             Some(("org_kde_powerdevil", "Turn Off Screen"))
@@ -647,10 +702,13 @@ mod tests {
         assert_eq!(check("macro:nope"), Some(ActionIssue::UnknownMacro));
         assert_eq!(check("cmd:nope"), Some(ActionIssue::UnknownCommand));
         assert_eq!(check("sys:moveWindowToDesktop2"), None);
+        assert_eq!(check("sys:lockSession"), None);
         assert_eq!(
-            check("sys:lockSession"),
+            check("sys:lockScreen"),
             Some(ActionIssue::UnknownSystemAction)
         );
+        assert_eq!(check("xdg:org.kde.konsole/NewWindow"), None);
+        assert_eq!(check("xdg:konsole"), Some(ActionIssue::InvalidSyntax));
         assert_eq!(check("kde:ksmserver/Lock Session"), None);
         assert_eq!(check("kde:Lock Session"), Some(ActionIssue::InvalidSyntax));
         assert_eq!(check("app:showEmojiMenu42"), None);

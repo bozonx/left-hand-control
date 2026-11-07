@@ -25,6 +25,7 @@ export global NotificationCenter {
 
 component ToastCard inherits Rectangle {
     in property <ToastItem> item;
+    private property <bool> dismissed;
     property <color> accent: item.kind == ToastKind.error ? Theme.error : item.kind == ToastKind.warning ? Theme.warning : Theme.success;
     height: content.preferred-height;
     background: Theme.card;
@@ -47,10 +48,14 @@ component ToastCard inherits Rectangle {
             alignment: start;
             IconButton { size: 24px; icon: @image-url("icons/x.svg"); label: @tr("Dismiss notification");
                 changed has-focus => {
-                    if self.has-focus { NotificationCenter.focused-token = root.item.token; }
+                    if self.has-focus && !root.dismissed { NotificationCenter.focused-token = root.item.token; }
                     else if NotificationCenter.focused-token == root.item.token { NotificationCenter.focused-token = 0; }
                 }
-                clicked => { NotificationCenter.dismiss(root.item.token); } }
+                clicked => {
+                    root.dismissed = true;
+                    if NotificationCenter.focused-token == root.item.token { NotificationCenter.focused-token = 0; }
+                    NotificationCenter.dismiss(root.item.token);
+                } }
         }
     }
 }
@@ -67,7 +72,7 @@ export component StatusText inherits Text {
 export component ToastStack inherits TouchArea {
     in property <length> stack-height-limit: 480px;
     height: min(toast-content.preferred-height, root.stack-height-limit);
-    changed has-hover => { NotificationCenter.hover(self.has-hover); }
+    changed has-hover => { NotificationCenter.hover(self.has-hover && NotificationCenter.items.length > 0); }
     toast-list := ScrollView {
         width: root.width;
         height: root.height;

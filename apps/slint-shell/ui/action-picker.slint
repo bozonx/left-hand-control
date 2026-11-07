@@ -127,6 +127,7 @@ export global ActionPicker {
             : category == PickerCategory.app ? @tr("Left Hand Control")
             : category == PickerCategory.system-actions ? @tr("System actions")
             : category == PickerCategory.desktop-shortcuts ? (self.shortcut-desktop == ShortcutDesktop.kde ? @tr("KDE shortcuts") : "")
+            : category == PickerCategory.app-actions ? @tr("Application actions")
             : category == PickerCategory.text ? @tr("Text")
             : category == PickerCategory.pause ? @tr("Pause")
             : "";
@@ -313,6 +314,10 @@ export component PickerOverlay inherits DialogFrame {
                     if ActionPicker.query == "" && ActionPicker.category == PickerCategory.desktop-shortcuts: HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m; vertical-stretch: 0;
                         Text { text: @tr("Global shortcuts registered in this KDE session:"); color: Theme.muted; wrap: word-wrap; vertical-alignment: center; }
                         InfoTip { text: @tr("The list is read from the KDE global shortcut service (kglobalaccel): KWin, Plasma and applications register their actions there. The chosen action is invoked as is, as if its shortcut were pressed, even when no keys are assigned to it. Which actions exist and how they behave depends on the Plasma version and installed applications, so Left Hand Control does not guarantee them. Common window and desktop actions that also work on other platforms are in System actions."); }
+                    }
+                    if ActionPicker.query == "" && ActionPicker.category == PickerCategory.app-actions: HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m; vertical-stretch: 0;
+                        Text { text: @tr("Actions of installed applications:"); color: Theme.muted; wrap: word-wrap; vertical-alignment: center; }
+                        InfoTip { text: @tr("The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."); }
                     }
                     if AppState.in-development && ActionPicker.query == "" && ActionPicker.category == PickerCategory.commands && ActionPicker.commands-enabled: VerticalLayout { padding: 0px; spacing: Theme.space-m; vertical-stretch: 0;
                         HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m; vertical-stretch: 0;

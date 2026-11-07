@@ -579,10 +579,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     document.subscribe(View::Rules, move |document| {
         if let Some(ui) = weak.upgrade() {
             let editor = ui.global::<RulesEditor>();
-            let editing =
-                editor.get_dialog() != RuleDialog::None || ui.global::<ActionPicker>().get_opened();
+            let picker_editing =
+                editor.get_field() != RuleDialog::None && ui.global::<ActionPicker>().get_opened();
+            let editing = editor.get_dialog() != RuleDialog::None || picker_editing;
             refresh(&ui, document, !editing);
-            if editing && check_edit(&ui, document).is_err() {
+            if !editing && editor.get_status().id == "config-edit-conflict" {
+                editor.set_status(Msg::None.to_ui());
+            } else if editor.get_dialog() != RuleDialog::None && check_edit(&ui, document).is_err()
+            {
                 editor.set_status(
                     Msg::from(&lhc_core::config_document::ConfigError::EditConflict).to_ui(),
                 );
@@ -592,16 +596,20 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let editor = ui.global::<RulesEditor>();
 
     on!(ui, editor.on_refresh, doc = document => |ui| {
+        ui.global::<RulesEditor>().set_status(Msg::None.to_ui());
         refresh(&ui, &doc, true);
     });
 
     on!(ui, editor.on_select, doc = document => |ui, index| {
-        ui.global::<RulesEditor>().set_selected(index);
+        let editor = ui.global::<RulesEditor>();
+        editor.set_status(Msg::None.to_ui());
+        editor.set_selected(index);
         refresh(&ui, &doc, true);
     });
 
     on!(ui, editor.on_add, doc = document => |ui| {
         let editor = ui.global::<RulesEditor>();
+        editor.set_status(Msg::None.to_ui());
         editor.set_selected(-1);
         remember_edit(&ui, &doc);
         editor.set_adding(true);

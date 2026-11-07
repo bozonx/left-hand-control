@@ -3772,3 +3772,27 @@ msgstr "Оның пернелер тағайындаулары жойылады.
 
 msgid "Delete extra key “{}”?"
 msgstr "«{}» қосымша пернесін жою керек пе?"
+
+msgid "Move window to previous desktop"
+msgstr "Терезені алдыңғы жұмыс үстеліне жылжыту"
+
+msgid "Move window to next screen"
+msgstr "Терезені келесі экранға жылжыту"
+
+msgid "Switch to next desktop"
+msgstr "Келесі жұмыс үстеліне ауысу"
+
+msgid "Switch to previous desktop"
+msgstr "Алдыңғы жұмыс үстеліне ауысу"
+
+msgid "Lock screen"
+msgstr "Экранды құлыптау"
+
+msgid "Application actions"
+msgstr "Қолданба әрекеттері"
+
+msgid "Actions of installed applications:"
+msgstr "Орнатылған қолданбалардың әрекеттері:"
+
+msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
+msgstr "Тізім орнатылған қолданбалардың .desktop файлдарынан, яғни Linux орталарына ортақ freedesktop стандартынан оқылады: қолданбалар онда қосымша әрекеттерді жариялайды, мысалы жаңа жеке терезе ашу. Таңдалған әрекет қолданбалар мәзірінен іске қосылғандай орындалады. Қандай әрекеттер бар екені орнатылған қолданбаларға байланысты."

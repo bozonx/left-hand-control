@@ -1,4 +1,5 @@
-//! Action catalog, labels and desktop shortcut discovery.
+//! Action catalog, labels, and discovery of desktop shortcuts and
+//! application actions.
 
 use crate::{
     i18n::Msg,
@@ -29,12 +30,13 @@ pub(super) const KEY_CATEGORIES: [PickerCategory; CATEGORIES.len()] = [
 
 /// Sidebar order of the non-key categories. Commands go last: one
 /// command per action, not a catalog.
-pub(super) const ACTION_CATEGORIES: [PickerCategory; 8] = [
+pub(super) const ACTION_CATEGORIES: [PickerCategory; 9] = [
     PickerCategory::Macros,
     PickerCategory::BuiltinMacros,
     PickerCategory::App,
     PickerCategory::SystemActions,
     PickerCategory::DesktopShortcuts,
+    PickerCategory::AppActions,
     PickerCategory::Text,
     PickerCategory::Pause,
     PickerCategory::Commands,
@@ -52,6 +54,7 @@ pub(crate) fn category_for_value(value: &str) -> PickerCategory {
         Action::App(_) => return PickerCategory::App,
         Action::System(_) => return PickerCategory::SystemActions,
         Action::KdeShortcut(_) => return PickerCategory::DesktopShortcuts,
+        Action::DesktopEntry(_) => return PickerCategory::AppActions,
         Action::Text(_) => return PickerCategory::Text,
         Action::Pause(_) => return PickerCategory::Pause,
         Action::Native | Action::Swallow | Action::Keys(_) | Action::Unknown(_) => {}
@@ -66,10 +69,14 @@ pub(crate) fn category_for_value(value: &str) -> PickerCategory {
 }
 
 /// Whether `value` belongs to a feature shown only in development mode:
-/// macros, commands, desktop shortcuts, mouse buttons and some app actions.
+/// macros, commands, desktop shortcuts, application actions, mouse
+/// buttons and some app actions.
 pub(super) fn development_only(value: &str) -> bool {
     match Action::parse(Some(value)) {
-        Action::Macro(_) | Action::Command(_) | Action::KdeShortcut(_) => true,
+        Action::Macro(_)
+        | Action::Command(_)
+        | Action::KdeShortcut(_)
+        | Action::DesktopEntry(_) => true,
         Action::App(id) => {
             id.starts_with("gameMode")
                 || id.starts_with("showQuickMenu")
@@ -103,18 +110,23 @@ pub(crate) fn action_label(ui: &SettingsWindow, name: ActionName) -> Option<Stri
     }
 }
 
-/// A native global shortcut of the desktop environment as the picker and
-/// key caps show it.
+/// A native global shortcut of the desktop environment or an action of an
+/// installed application, as the picker and key caps show it.
+#[derive(Clone)]
 pub(crate) struct DesktopShortcutItem {
-    /// Backend-prefixed id, e.g. `kde:component/shortcut`.
+    /// Backend-prefixed id, e.g. `kde:component/shortcut` or
+    /// `xdg:desktop-id/action`.
     pub value: String,
+    /// Component or application name.
     pub component: String,
     pub label: String,
+    /// `DesktopShortcuts` or `AppActions`.
+    pub category: PickerCategory,
 }
 
 thread_local! {
-    /// Global shortcuts of the running desktop session; empty until read
-    /// and on desktops without a shortcut backend.
+    /// Global shortcuts of the running desktop session and application
+    /// actions; empty until read and off Linux.
     pub(crate) static DESKTOP_SHORTCUTS: RefCell<Vec<DesktopShortcutItem>> = const { RefCell::new(Vec::new()) };
     /// Bumped whenever [`DESKTOP_SHORTCUTS`] changes, so an open picker
     /// knows to rebuild its catalog.
@@ -150,29 +162,42 @@ pub(super) fn shortcut_desktop() -> ShortcutDesktop {
     ShortcutDesktop::None
 }
 
-/// Re-read the desktop's global shortcuts in the background and refresh
-/// an open picker when they arrive. Only one read runs at a time, so an
-/// older result never overwrites a newer one.
+/// Re-read the desktop's global shortcuts and the application actions in
+/// the background and refresh an open picker when they arrive. Only one
+/// read runs at a time, so an older result never overwrites a newer one.
 pub(super) fn load_desktop_shortcuts(ui: slint::Weak<SettingsWindow>) {
-    let read: fn() -> Result<Vec<DesktopShortcutItem>, String> = match shortcut_desktop() {
-        ShortcutDesktop::None => return,
-        ShortcutDesktop::Kde => read_kde_shortcuts,
-    };
+    if !cfg!(target_os = "linux") {
+        return;
+    }
+    let desktop = shortcut_desktop();
     if shortcuts_fresh(SHORTCUTS_READ_AT.with(Cell::get), std::time::Instant::now())
         || SHORTCUTS_LOADING.swap(true, Ordering::AcqRel)
     {
         return;
     }
     std::thread::spawn(move || {
-        let result = read();
+        let (mut shortcuts, result) = read_desktop_items(desktop);
         SHORTCUTS_LOADING.store(false, Ordering::Release);
         if let Err(error) = &result {
             log::warn!("[picker] cannot read desktop global shortcuts: {error}");
         }
         if let Err(error) = slint::invoke_from_event_loop(move || {
             let failed = result.is_err();
-            if let Ok(shortcuts) = result {
-                SHORTCUTS_READ_AT.with(|at| at.set(Some(std::time::Instant::now())));
+            {
+                if failed {
+                    // Keep the shortcuts of the last successful read.
+                    DESKTOP_SHORTCUTS.with(|cache| {
+                        let kept = cache
+                            .borrow()
+                            .iter()
+                            .filter(|item| item.category == PickerCategory::DesktopShortcuts)
+                            .cloned()
+                            .collect::<Vec<_>>();
+                        shortcuts.splice(0..0, kept);
+                    });
+                } else {
+                    SHORTCUTS_READ_AT.with(|at| at.set(Some(std::time::Instant::now())));
+                }
                 let changed = DESKTOP_SHORTCUTS.with(|cache| {
                     let mut cache = cache.borrow_mut();
                     let changed = cache.len() != shortcuts.len()
@@ -201,22 +226,47 @@ pub(super) fn load_desktop_shortcuts(ui: slint::Weak<SettingsWindow>) {
     });
 }
 
-fn read_kde_shortcuts() -> Result<Vec<DesktopShortcutItem>, String> {
+/// KDE shortcuts (on KDE) followed by application actions; the result
+/// reports whether the desktop's shortcut service answered.
+fn read_desktop_items(desktop: ShortcutDesktop) -> (Vec<DesktopShortcutItem>, Result<(), String>) {
     #[cfg(target_os = "linux")]
     {
-        Ok(lhc_core::platform::kde_shortcuts::list()?
-            .into_iter()
-            .map(|shortcut| DesktopShortcutItem {
-                value: Action::KdeShortcut(shortcut.id())
-                    .format()
-                    .unwrap_or_default(),
-                component: shortcut.component_label,
-                label: shortcut.label,
-            })
-            .collect())
+        let mut items = Vec::new();
+        let mut result = Ok(());
+        if desktop == ShortcutDesktop::Kde {
+            match lhc_core::platform::kde_shortcuts::list() {
+                Ok(shortcuts) => items.extend(shortcuts.into_iter().map(|shortcut| {
+                    DesktopShortcutItem {
+                        value: Action::KdeShortcut(shortcut.id())
+                            .format()
+                            .unwrap_or_default(),
+                        component: shortcut.component_label,
+                        label: shortcut.label,
+                        category: PickerCategory::DesktopShortcuts,
+                    }
+                })),
+                Err(error) => result = Err(error),
+            }
+        }
+        items.extend(
+            lhc_core::platform::desktop_entries::list()
+                .into_iter()
+                .map(|action| DesktopShortcutItem {
+                    value: Action::DesktopEntry(action.id())
+                        .format()
+                        .unwrap_or_default(),
+                    component: action.app_name,
+                    label: action.label,
+                    category: PickerCategory::AppActions,
+                }),
+        );
+        (items, result)
     }
     #[cfg(not(target_os = "linux"))]
-    Ok(Vec::new())
+    {
+        let _ = desktop;
+        (Vec::new(), Ok(()))
+    }
 }
 
 pub(super) fn catalog(ui: &SettingsWindow, config: &ResolvedAppConfig) -> Vec<PickerItem> {
@@ -266,7 +316,7 @@ pub(super) fn catalog(ui: &SettingsWindow, config: &ResolvedAppConfig) -> Vec<Pi
             items.extend(cache.borrow().iter().map(|shortcut| PickerItem {
                 value: shortcut.value.as_str().into(),
                 label: format!("{}: {}", shortcut.component, shortcut.label).into(),
-                category: PickerCategory::DesktopShortcuts,
+                category: shortcut.category,
                 notice: Msg::None.to_ui(),
             }));
         });

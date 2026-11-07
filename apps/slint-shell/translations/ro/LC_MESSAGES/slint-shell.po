@@ -3805,3 +3805,27 @@ msgstr "Atribuirile tastelor sale vor fi șterse. Regulile care țin acest strat
 
 msgid "Delete extra key “{}”?"
 msgstr "Ștergeți tasta suplimentară „{}”?"
+
+msgid "Move window to previous desktop"
+msgstr "Mutați fereastra pe desktopul anterior"
+
+msgid "Move window to next screen"
+msgstr "Mutați fereastra pe ecranul următor"
+
+msgid "Switch to next desktop"
+msgstr "Comutați la desktopul următor"
+
+msgid "Switch to previous desktop"
+msgstr "Comutați la desktopul anterior"
+
+msgid "Lock screen"
+msgstr "Blocați ecranul"
+
+msgid "Application actions"
+msgstr "Acțiuni ale aplicațiilor"
+
+msgid "Actions of installed applications:"
+msgstr "Acțiunile aplicațiilor instalate:"
+
+msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
+msgstr "Lista este citită din fișierele desktop ale aplicațiilor instalate, standardul freedesktop comun mediilor Linux: aplicațiile declară acolo acțiuni suplimentare, cum ar fi deschiderea unei ferestre private noi. Acțiunea aleasă este rulată la fel ca din meniul de aplicații. Acțiunile disponibile depind de aplicațiile instalate."

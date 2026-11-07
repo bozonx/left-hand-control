@@ -224,6 +224,10 @@ impl Queue {
 // Keep surviving rows alive so an arriving/expired toast cannot destroy keyboard focus.
 fn publish_items(ui: &SettingsWindow, items: ModelRc<ToastItem>) {
     let center = ui.global::<NotificationCenter>();
+    let focused_token = center.get_focused_token();
+    if focused_token != 0 && !items.iter().any(|item| item.token == focused_token) {
+        center.set_focused_token(0);
+    }
     let current = center.get_items();
     let Some(model) = current.as_any().downcast_ref::<VecModel<ToastItem>>() else {
         center.set_items(items);
@@ -262,8 +266,19 @@ impl State {
         let elapsed = now.saturating_duration_since(self.last_tick);
         self.last_tick = now;
         let center = ui.global::<NotificationCenter>();
+        let focused_token = center.get_focused_token();
+        let focused = focused_token != 0
+            && self
+                .queue
+                .entries
+                .iter()
+                .take(VISIBLE)
+                .any(|entry| entry.item.token == focused_token);
+        if focused_token != 0 && !focused {
+            center.set_focused_token(0);
+        }
         let active = i_slint_core::window::WindowInner::from_pub(ui.window()).active();
-        self.queue.paused = active && (self.hovered || center.get_focused());
+        self.queue.paused = active && (self.hovered || focused);
         let changed = self.queue.advance(elapsed);
         // An emptied stack collapses to zero height under a still pointer, and
         // Slint then never reports the hover end.
@@ -357,6 +372,9 @@ pub(crate) fn bind(ui: &SettingsWindow) {
                 .queue
                 .entries
                 .retain(|entry| !worker_message(&entry.item.message));
+            if state.queue.entries.is_empty() {
+                state.hovered = false;
+            }
             state.queue.items()
         };
         publish_items(&ui, items);
@@ -368,6 +386,9 @@ pub(crate) fn bind(ui: &SettingsWindow) {
         let items = {
             let mut state = shared.borrow_mut();
             state.queue.dismiss(token);
+            if state.queue.entries.is_empty() {
+                state.hovered = false;
+            }
             state.queue.items()
         };
         if ui.global::<NotificationCenter>().get_focused_token() == token {

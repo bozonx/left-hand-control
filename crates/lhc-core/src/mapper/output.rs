@@ -649,6 +649,8 @@ mod tests {
             let label = match action {
                 #[cfg(target_os = "linux")]
                 SystemAction::Dbus(call) => format!("dbus:{}:{}", call.destination, call.method),
+                #[cfg(target_os = "linux")]
+                SystemAction::Process(process) => format!("process:{}", process.program),
                 #[cfg(target_os = "windows")]
                 SystemAction::Windows(action) => format!("windows:{action:?}"),
                 SystemAction::AppEvent(event) => format!("app:{event:?}"),

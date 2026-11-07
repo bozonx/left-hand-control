@@ -3743,3 +3743,27 @@ msgstr "Přiřazení jejích kláves budou smazána. Pravidla, která drží tut
 
 msgid "Delete extra key “{}”?"
 msgstr "Smazat doplňkovou klávesu „{}“?"
+
+msgid "Move window to previous desktop"
+msgstr "Přesunout okno na předchozí plochu"
+
+msgid "Move window to next screen"
+msgstr "Přesunout okno na další obrazovku"
+
+msgid "Switch to next desktop"
+msgstr "Přepnout na další plochu"
+
+msgid "Switch to previous desktop"
+msgstr "Přepnout na předchozí plochu"
+
+msgid "Lock screen"
+msgstr "Zamknout obrazovku"
+
+msgid "Application actions"
+msgstr "Akce aplikací"
+
+msgid "Actions of installed applications:"
+msgstr "Akce nainstalovaných aplikací:"
+
+msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
+msgstr "Seznam se načítá ze souborů .desktop nainstalovaných aplikací, společného standardu freedesktop linuxových prostředí: aplikace v nich deklarují další akce, například otevření nového anonymního okna. Zvolená akce se spustí stejně jako z nabídky aplikací. Dostupné akce závisí na nainstalovaných aplikacích."

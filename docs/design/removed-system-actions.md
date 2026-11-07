@@ -84,26 +84,39 @@ as `kde:` if its key or chord does not work.
 
 ## Kept or added
 
-| Id | KDE implementation |
-| --- | --- |
-| `switchDesktopN` (1–10) | `org.kde.KWin /KWin org.kde.KWin.setCurrentDesktop(i32 N)` |
-| `switchLayoutN` (1–10) | `org.kde.keyboard /Layouts org.kde.KeyboardLayouts.setLayout(u32 N-1)` |
-| `windowToDesktopN` (1–10) | `kde:kwin/Window to Desktop N` |
-| `closeWindow` | `kde:kwin/Window Close` |
-| `minimizeWindow` | `kde:kwin/Window Minimize` |
-| `maximizeWindow` | `kde:kwin/Window Maximize` |
-| `maximizeWindowVertically` | `kde:kwin/Window Maximize Vertical` |
-| `toggleWindowKeepAbove` | `kde:kwin/Window Above Other Windows` |
-| `moveWindowToNextDesktop` | `kde:kwin/Window to Next Desktop` |
-| `showDesktop` | `kde:kwin/Show Desktop` |
-| `showOverview` | `kde:kwin/Overview` |
-| `showAppLauncher` | `kde:plasmashell/activate application launcher` |
-| `turnOffScreen` | `kde:org_kde_powerdevil/Turn Off Screen` |
+Several ids above came back later as cross-platform `sys:` actions; their
+rows above are history. A `sys:` id needs a documented API on at least two
+platforms.
 
-On macOS, `switchDesktopN`, `windowToDesktopN`, `moveWindowToNextDesktop`,
-`maximizeWindowVertically`, `toggleWindowKeepAbove`, `showDesktop` and `showAppLauncher`
-have no public API; running them there is
-ignored with a notification.
+| Id | KDE | GNOME (extension) | Windows |
+| --- | --- | --- | --- |
+| `switchDesktopN` (1–10) | `kde:kwin/Switch to Desktop N` | `workspace.activate` | — |
+| `switchKeyboardLayoutN` (1–10) | `org.kde.keyboard /Layouts setLayout(u32 N-1)` | input source `activate` | `WM_INPUTLANGCHANGEREQUEST` |
+| `moveWindowToDesktopN` (1–10) | `kde:kwin/Window to Desktop N` | `change_workspace` | — |
+| `closeWindow` | `kde:kwin/Window Close` | `delete` | `SC_CLOSE` |
+| `minimizeWindow` | `kde:kwin/Window Minimize` | `minimize` | `SC_MINIMIZE` |
+| `maximizeWindow` | `kde:kwin/Window Maximize` | `maximize` / `unmaximize` | `SC_MAXIMIZE` / `SC_RESTORE` |
+| `maximizeWindowVertically` | `kde:kwin/Window Maximize Vertical` | maximize flags (some Mutter versions) | Win+Shift+Up/Down |
+| `toggleWindowKeepAbove` | `kde:kwin/Window Above Other Windows` | `make_above` | `HWND_TOPMOST` |
+| `moveWindowToNextDesktop` | `kde:kwin/Window to Next Desktop` | `change_workspace` | — |
+| `moveWindowToPreviousDesktop` | `kde:kwin/Window to Previous Desktop` | `change_workspace` | — |
+| `moveWindowToNextScreen` | `kde:kwin/Window to Next Screen` | `move_to_monitor` | Win+Shift+Right |
+| `switchToNextDesktop` | `kde:kwin/Switch to Next Desktop` | `workspace.activate` | Ctrl+Win+Right |
+| `switchToPreviousDesktop` | `kde:kwin/Switch to Previous Desktop` | `workspace.activate` | Ctrl+Win+Left |
+| `showDesktop` | `kde:kwin/Show Desktop` | — | `IShellDispatch4::ToggleDesktop` |
+| `showOverview` | `kde:kwin/Overview` | `overview.toggle` | Win+Tab |
+| `showAppLauncher` | `kde:plasmashell/activate application launcher` | `overview.showApps` | Ctrl+Esc |
+| `turnOffScreen` | `kde:org_kde_powerdevil/Turn Off Screen` | `DisplayConfig.PowerSaveMode = 3` | `SC_MONITORPOWER` after 0.5 s |
+| `lockSession` | `org.freedesktop.ScreenSaver.Lock` | `screenShield.lock` | `LockWorkStation` |
+
+The `kde:` list in the action picker hides the KDE shortcuts these ids
+already run, and the KWin `Switch to Desktop N` / `Window to Desktop N`
+shortcuts above 10.
+
+On macOS, `switchDesktopN`, `windowToDesktopN`, the next/previous desktop and
+next screen actions, `maximizeWindowVertically`, `toggleWindowKeepAbove`,
+`showDesktop`, `showAppLauncher` and `lockSession` have no implementation; running
+them there is ignored with a notification.
 
 ## Notes
 

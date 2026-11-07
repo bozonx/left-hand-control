@@ -186,6 +186,29 @@ export default class Bridge extends Extension {
         switch (action) {
         case 'showOverview': Main.overview.toggle(); return;
         case 'showAppLauncher': Main.overview.showApps(); return;
+        case 'switchToNextDesktop':
+        case 'switchToPreviousDesktop': {
+            const manager = global.workspace_manager;
+            const step = action === 'switchToNextDesktop' ? 1 : -1;
+            const target = manager.get_workspace_by_index(manager.get_active_workspace_index() + step);
+            if (!target)
+                throw new Error('Workspace is unavailable');
+            target.activate(global.get_current_time());
+            return;
+        }
+        case 'lockSession':
+            if (!Main.screenShield)
+                throw new Error('Screen locking is unavailable');
+            Main.screenShield.lock(true);
+            return;
+        case 'turnOffScreen':
+            // Mutter's display power-save mode 3 (off); any input wakes it.
+            Gio.DBus.session.call('org.gnome.Mutter.DisplayConfig', '/org/gnome/Mutter/DisplayConfig',
+                'org.freedesktop.DBus.Properties', 'Set',
+                new GLib.Variant('(ssv)', ['org.gnome.Mutter.DisplayConfig', 'PowerSaveMode',
+                    new GLib.Variant('i', 3)]),
+                null, Gio.DBusCallFlags.NONE, -1, null, null);
+            return;
         }
         if (!window)
             throw new Error('No focused window');
@@ -211,17 +234,26 @@ export default class Bridge extends Extension {
                 window.set_maximize_flags(vertical);
             return;
         }
-        case 'moveWindowToNextDesktop': {
+        case 'moveWindowToNextDesktop':
+        case 'moveWindowToPreviousDesktop': {
             // Like KWin, the view follows the window. GNOME's dynamic
             // workspaces always keep an empty last one to move into.
             const current = window.get_workspace();
             if (!current || window.is_on_all_workspaces())
                 throw new Error('Window is on all workspaces');
-            const next = global.workspace_manager.get_workspace_by_index(current.index() + 1);
+            const step = action === 'moveWindowToNextDesktop' ? 1 : -1;
+            const next = global.workspace_manager.get_workspace_by_index(current.index() + step);
             if (!next)
                 throw new Error('Workspace is unavailable');
             window.change_workspace(next);
             next.activate_with_focus(window, global.get_current_time());
+            return;
+        }
+        case 'moveWindowToNextScreen': {
+            const count = global.display.get_n_monitors();
+            if (count < 2)
+                throw new Error('There is only one screen');
+            window.move_to_monitor((window.get_monitor() + 1) % count);
             return;
         }
         case 'toggleWindowKeepAbove':

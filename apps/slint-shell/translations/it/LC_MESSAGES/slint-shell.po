@@ -3838,3 +3838,27 @@ msgstr "Le assegnazioni dei suoi tasti verranno eliminate. Le regole che tengono
 
 msgid "Delete extra key “{}”?"
 msgstr "Eliminare il tasto aggiuntivo «{}»?"
+
+msgid "Move window to previous desktop"
+msgstr "Sposta la finestra sul desktop precedente"
+
+msgid "Move window to next screen"
+msgstr "Sposta la finestra sullo schermo successivo"
+
+msgid "Switch to next desktop"
+msgstr "Passa al desktop successivo"
+
+msgid "Switch to previous desktop"
+msgstr "Passa al desktop precedente"
+
+msgid "Lock screen"
+msgstr "Blocca lo schermo"
+
+msgid "Application actions"
+msgstr "Azioni delle applicazioni"
+
+msgid "Actions of installed applications:"
+msgstr "Azioni delle applicazioni installate:"
+
+msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
+msgstr "L’elenco viene letto dai file desktop delle applicazioni installate, lo standard freedesktop comune ai desktop Linux: le applicazioni vi dichiarano azioni aggiuntive, come l’apertura di una nuova finestra privata. L’azione scelta viene eseguita come dal menu delle applicazioni. Le azioni disponibili dipendono dalle applicazioni installate."

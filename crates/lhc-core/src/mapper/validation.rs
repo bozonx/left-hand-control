@@ -307,6 +307,13 @@ fn validate_action(
                 ));
             }
         }
+        Action::DesktopEntry(id) => {
+            if crate::profile::actions::desktop_entry_parts(&id).is_none() {
+                errors.push(format!(
+                    "{where_}: invalid application action \"{id}\", expected desktop-id/action"
+                ));
+            }
+        }
         Action::Pause(_) => {
             errors.push(format!("{where_}: pause is only allowed inside macros"));
         }

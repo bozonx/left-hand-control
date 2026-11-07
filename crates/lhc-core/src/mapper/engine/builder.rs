@@ -91,6 +91,8 @@ impl Engine {
                         }
                         Action::KdeShortcut(id) => system::resolve_kde_shortcut(&id)
                             .map_or_else(unavailable, MacroStepItem::System),
+                        Action::DesktopEntry(id) => system::resolve_desktop_entry(&id)
+                            .map_or_else(unavailable, MacroStepItem::System),
                         Action::App(name) => system::resolve_app(&name)
                             .map_or_else(unavailable, MacroStepItem::System),
                         Action::Macro(id) => {
@@ -450,6 +452,13 @@ pub(super) fn resolve_action(
             Some(cmd) => Some(CompiledAction::System(cmd)),
             None => {
                 log::debug!("[mapper] KDE shortcut {shortcut:?} not available ({where_})");
+                unavailable()
+            }
+        },
+        Action::DesktopEntry(id) => match system::resolve_desktop_entry(&id) {
+            Some(cmd) => Some(CompiledAction::System(cmd)),
+            None => {
+                log::debug!("[mapper] application action {id:?} not installed ({where_})");
                 unavailable()
             }
         },

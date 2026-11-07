@@ -3446,3 +3446,27 @@ msgstr "其按鍵指派將被刪除。按住此圖層的規則將不再啟用它
 
 msgid "Delete extra key “{}”?"
 msgstr "刪除額外按鍵「{}」？"
+
+msgid "Move window to previous desktop"
+msgstr "將視窗移到上一個桌面"
+
+msgid "Move window to next screen"
+msgstr "將視窗移到下一個螢幕"
+
+msgid "Switch to next desktop"
+msgstr "切換到下一個桌面"
+
+msgid "Switch to previous desktop"
+msgstr "切換到上一個桌面"
+
+msgid "Lock screen"
+msgstr "鎖定螢幕"
+
+msgid "Application actions"
+msgstr "應用程式動作"
+
+msgid "Actions of installed applications:"
+msgstr "已安裝應用程式的動作："
+
+msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
+msgstr "此清單讀取自已安裝應用程式的桌面項目，即 Linux 桌面通用的 freedesktop 標準：應用程式在其中宣告額外的動作，例如開啟新的私密視窗。所選動作的執行方式與從應用程式選單執行相同。可用的動作取決於已安裝的應用程式。"

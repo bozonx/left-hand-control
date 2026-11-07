@@ -580,6 +580,7 @@ pub(super) fn flush_out(
 fn run_sys_action(action: &SystemAction) {
     match action {
         SystemAction::Dbus(call) => call_dbus(call),
+        SystemAction::Process(process) => super::super::commands::spawn(process.clone()),
         SystemAction::AppEvent(event) => {
             super::super::emit_app_event(event);
         }
@@ -767,6 +768,11 @@ fn dispatch_dbus_call(conn: &zbus::blocking::Connection, call: &DbusCall) -> zbu
             DbusArg::U32(v) => b.add_field(*v),
             DbusArg::I32(v) => b.add_field(*v),
             DbusArg::Str(s) => b.add_field(s.clone()),
+            DbusArg::EmptyVariants => b.add_field(Vec::<zbus::zvariant::OwnedValue>::new()),
+            DbusArg::EmptyVariantDict => b.add_field(std::collections::HashMap::<
+                String,
+                zbus::zvariant::OwnedValue,
+            >::new()),
         };
     }
     let body = b.build()?;

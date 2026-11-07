@@ -5,8 +5,9 @@
 | Key interception | ✅ evdev+uinput | ✅ | ✅ | ✅ | ✅ session-wide `WH_KEYBOARD_LL` + `SendInput` (untested on hardware) | ❌ stub |
 | Literal text (xdg-desktop-portal) | ✅ | ⚠ requires bundled Shell extension; acceptance pending | ⚠ backend/protocol dependent | ⚠ portal and focus detection required | ✅ Unicode `SendInput` (mapper and popups) | ❌ mapper; popup Unicode only |
 | Layout detection | ✅ DBus `org.kde.keyboard` | ⚠ Shell extension | 🚧 | 🚧 | ✅ input language of the foreground window | 🚧 |
-| System actions (`switchDesktopN`, `switchLayoutN`, `windowToDesktopN`, window/shell actions) | ✅ KWin DBus, kglobalaccel | ⚠ Shell extension; subset | 🚧 | 🚧 | ✅ Win32 messages and fixed shortcuts; no public API for `switchDesktopN` / `windowToDesktopN` / `moveWindowToNextDesktop` | ❌; ids without a macOS API are ignored with a notification |
+| System actions (`switchDesktopN`, `switchLayoutN`, `windowToDesktopN`, window/shell actions) | ✅ kglobalaccel, `org.kde.keyboard`, `org.freedesktop.ScreenSaver` | ⚠ Shell extension; all but `showDesktop` | 🚧 | 🚧 | ✅ Win32 messages and fixed shortcuts; no public API for `switchDesktopN` / `windowToDesktopN` / `moveWindowToNextDesktop` / `moveWindowToPreviousDesktop` | ❌; ids without a macOS API are ignored with a notification |
 | KDE global shortcuts (`kde:`) | ✅ kglobalaccel | — | — | — | — | — |
+| Application actions (`xdg:`, freedesktop desktop entries) | ✅ | ✅ | ✅ | ✅ | — | — |
 | Layer-shell popups (Spell) | ✅ | ❌ winit fallback | ✅ not accepted | ❌ winit | — | — |
 | Game mode: GameMode daemon | ✅ D-Bus | ✅ | ✅ | ✅ | — | — |
 | Game mode: fullscreen / active window | ✅ KWin script | ⚠ Shell extension | ✅ IPC (Hyprland too); other wlroots compositors via `wlr-foreign-toplevel` | ⚠ `xprop` (+ `xdotool`, `xrandr` for borderless) | ✅ Win32 | ⚠ untested (`NSWorkspace`, `CGWindowList`) |
@@ -20,7 +21,7 @@ GNOME bridge installation, security model, supported actions and VM smoke: [GNOM
 
 **Adding a Linux DE backend:** add a variant to `platform::linux::Desktop` and `classify_desktop()`; create `keyboard_layout/linux_<de>.rs` with `current()` and `start_watcher()` that report through `super::publish(&info)`; wire it into `keyboard_layout/mod.rs`; add `mod <de>` with `resolve(name) -> Option<SystemAction>` in `mapper/system.rs` and wire it into the dispatcher.
 
-**Adding a system action:** a `sys:` id must have a documented API (or a fixed system shortcut) on Linux desktops and Windows; undocumented APIs are not used. The only exceptions are virtual-desktop actions (`switchDesktopN`, `windowToDesktopN`, `moveWindowToNextDesktop`), which Windows cannot run and skips with a notice. Add it to `PLAIN_SYSTEM_ACTIONS` in `profile/actions.rs`, list it in `MACOS_UNSUPPORTED_SYSTEM_ACTIONS` when macOS has no public API for it, implement it in every backend of `mapper/system.rs` that can, and add its picker label (`picker-action` in `ui/i18n.slint` plus the Russian PO). Desktop-specific actions stay in `kde:` and similar backend categories.
+**Adding a system action:** a `sys:` id must have a documented API (or a fixed system shortcut) on at least two platforms; undocumented APIs are not used. Today the gaps are the virtual-desktop actions Windows cannot run (`switchDesktopN`, `windowToDesktopN`, `moveWindowToNextDesktop`, `moveWindowToPreviousDesktop`) and `showDesktop` on GNOME; they are skipped with a notice. Add it to `PLAIN_SYSTEM_ACTIONS` in `profile/actions.rs`, list it in `MACOS_UNSUPPORTED_SYSTEM_ACTIONS` when macOS has no public API for it, implement it in every backend of `mapper/system.rs` that can, and add its picker label (`picker-action` in `ui/i18n.slint` plus the Russian PO). Desktop-specific actions stay in `kde:` and similar backend categories.
 
 **Windows mapper preparation:** see [implementation stages and VM acceptance matrix](windows-mapper.md).
 
@@ -54,8 +55,8 @@ until a virtual modifier reaches the compositor.
 Macro expansion is limited to 1000 entries (including nested references) and ten
 nesting levels, before execution. Portable file validation accepts known system
 actions of every platform, so a layout made on KDE also starts on GNOME or Windows.
-An action this OS or desktop cannot run (`kde:` outside KDE, `sys:switchDesktopN`
-on Windows, a command without a script for this OS) is skipped when triggered and
+An action this OS or desktop cannot run (`kde:` outside KDE, `xdg:` off Linux or
+for an application that is not installed, `sys:switchDesktopN` on Windows, a command without a script for this OS) is skipped when triggered and
 reported with an "unavailable" notice; a macro containing such a step is skipped
 as a whole rather than run halfway.
 System-action failures reach the shell through core events. Popup actions bypass

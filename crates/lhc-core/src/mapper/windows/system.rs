@@ -1,9 +1,12 @@
 //! `sys:` actions on Windows. Window actions post documented window
 //! messages to the foreground window, layouts use `WM_INPUTLANGCHANGEREQUEST`,
-//! and shell actions and vertical maximization press their fixed system
-//! shortcuts. Windows has no
-//! public API to switch to or move a window to virtual desktop N, or to the
-//! next one, so those ids do not resolve. Every call returns without waiting for the target.
+//! show desktop uses the Shell's `ToggleDesktop`, lock uses
+//! `LockWorkStation`, and the remaining shell and window actions press their
+//! fixed system shortcuts (Win+Tab, Ctrl+Esc, Ctrl+Win+Arrow, …). Windows
+//! has no public API to switch to virtual desktop N or to move a window to
+//! another desktop, so those ids do not resolve. Windows of elevated
+//! applications ignore all of this (UIPI) unless this app runs elevated
+//! too. Every call returns without waiting for the target.
 
 use super::super::key_code::KeyCode;
 use windows::Win32::Foundation::{HWND, LPARAM, RECT, WPARAM};
@@ -26,10 +29,14 @@ pub enum WindowsAction {
     WindowMaximize,
     WindowMaximizeVertical,
     WindowKeepAbove,
+    WindowToNextScreen,
+    NextDesktop,
+    PreviousDesktop,
     ShowDesktop,
     Overview,
     AppLauncher,
     ScreenOff,
+    Lock,
 }
 
 pub fn resolve(name: &str) -> Option<WindowsAction> {
@@ -46,10 +53,14 @@ pub fn resolve(name: &str) -> Option<WindowsAction> {
         "maximizeWindow" => WindowsAction::WindowMaximize,
         "maximizeWindowVertically" => WindowsAction::WindowMaximizeVertical,
         "toggleWindowKeepAbove" => WindowsAction::WindowKeepAbove,
+        "moveWindowToNextScreen" => WindowsAction::WindowToNextScreen,
+        "switchToNextDesktop" => WindowsAction::NextDesktop,
+        "switchToPreviousDesktop" => WindowsAction::PreviousDesktop,
         "showDesktop" => WindowsAction::ShowDesktop,
         "showOverview" => WindowsAction::Overview,
         "showAppLauncher" => WindowsAction::AppLauncher,
         "turnOffScreen" => WindowsAction::ScreenOff,
+        "lockSession" => WindowsAction::Lock,
         _ => return None,
     })
 }
@@ -137,6 +148,57 @@ fn toggle_maximize_vertical() -> Result<(), String> {
     super::input::shortcut(&[KeyCode::KEY_LEFTMETA, KeyCode::KEY_LEFTSHIFT], key)
 }
 
+/// Minimize or restore every window through the Shell, the documented
+/// counterpart of Win+D.
+fn toggle_desktop() -> Result<(), String> {
+    use windows::Win32::System::Com::{
+        CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx,
+        CoUninitialize,
+    };
+    use windows::Win32::UI::Shell::{IShellDispatch4, Shell};
+    let error = |error: windows::core::Error| format!("Show desktop failed: {}", error.message());
+    // An apartment this thread already has is fine too.
+    let initialized = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) }.is_ok();
+    let result =
+        unsafe { CoCreateInstance::<_, IShellDispatch4>(&Shell, None, CLSCTX_INPROC_SERVER) }
+            .and_then(|shell| unsafe { shell.ToggleDesktop() })
+            .map_err(error);
+    if initialized {
+        unsafe { CoUninitialize() };
+    }
+    result
+}
+
+/// Delay before the display goes off, so releasing the bound key does not
+/// wake it again at once.
+const SCREEN_OFF_DELAY: std::time::Duration = std::time::Duration::from_millis(500);
+
+fn turn_off_screen() -> Result<(), String> {
+    std::thread::Builder::new()
+        .name("lhc-screen-off".into())
+        .spawn(|| {
+            std::thread::sleep(SCREEN_OFF_DELAY);
+            // 2 = the display is being shut off.
+            let posted = unsafe {
+                PostMessageW(
+                    Some(HWND_BROADCAST),
+                    WM_SYSCOMMAND,
+                    WPARAM(SC_MONITORPOWER as usize),
+                    LPARAM(2),
+                )
+            };
+            if let Err(error) = posted {
+                report_failure(format!("Screen off failed: {error}"));
+            }
+        })
+        .map(|_| ())
+        .map_err(|error| format!("Screen off failed: {error}"))
+}
+
+fn report_failure(error: String) {
+    crate::events::emit(crate::events::CoreEvent::MapperActionFailed(error));
+}
+
 pub(super) fn run(action: WindowsAction) -> Result<(), String> {
     match action {
         WindowsAction::SwitchLayout(n) => crate::keyboard_layout::set(n - 1),
@@ -152,25 +214,31 @@ pub(super) fn run(action: WindowsAction) -> Result<(), String> {
         }
         WindowsAction::WindowMaximizeVertical => toggle_maximize_vertical(),
         WindowsAction::WindowKeepAbove => toggle_keep_above(),
-        WindowsAction::ShowDesktop => {
-            super::input::shortcut(&[KeyCode::KEY_LEFTMETA], KeyCode::KEY_D)
+        WindowsAction::WindowToNextScreen => {
+            app_window()?;
+            super::input::shortcut(
+                &[KeyCode::KEY_LEFTMETA, KeyCode::KEY_LEFTSHIFT],
+                KeyCode::KEY_RIGHT,
+            )
         }
+        WindowsAction::NextDesktop => super::input::shortcut(
+            &[KeyCode::KEY_LEFTCTRL, KeyCode::KEY_LEFTMETA],
+            KeyCode::KEY_RIGHT,
+        ),
+        WindowsAction::PreviousDesktop => super::input::shortcut(
+            &[KeyCode::KEY_LEFTCTRL, KeyCode::KEY_LEFTMETA],
+            KeyCode::KEY_LEFT,
+        ),
+        WindowsAction::ShowDesktop => toggle_desktop(),
+        WindowsAction::Lock => unsafe { windows::Win32::System::Shutdown::LockWorkStation() }
+            .map_err(|error| format!("Lock failed: {error}")),
         WindowsAction::Overview => {
             super::input::shortcut(&[KeyCode::KEY_LEFTMETA], KeyCode::KEY_TAB)
         }
         WindowsAction::AppLauncher => {
             super::input::shortcut(&[KeyCode::KEY_LEFTCTRL], KeyCode::KEY_ESC)
         }
-        // 2 = the display is being shut off.
-        WindowsAction::ScreenOff => unsafe {
-            PostMessageW(
-                Some(HWND_BROADCAST),
-                WM_SYSCOMMAND,
-                WPARAM(SC_MONITORPOWER as usize),
-                LPARAM(2),
-            )
-        }
-        .map_err(|error| format!("Screen off failed: {error}")),
+        WindowsAction::ScreenOff => turn_off_screen(),
     }
 }
 
@@ -183,7 +251,10 @@ mod tests {
         for id in crate::profile::actions::PLAIN_SYSTEM_ACTIONS {
             assert_eq!(
                 resolve(id).is_some(),
-                id != "moveWindowToNextDesktop",
+                !matches!(
+                    id,
+                    "moveWindowToNextDesktop" | "moveWindowToPreviousDesktop"
+                ),
                 "{id}"
             );
         }

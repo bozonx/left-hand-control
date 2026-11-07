@@ -182,6 +182,9 @@ pub(super) fn bind(
             };
         }
         if let Some(ui) = weak.upgrade() {
+            let rules = ui.global::<crate::ui::RulesEditor>();
+            rules.set_field(crate::ui::RuleDialog::None);
+            rules.set_adding(false);
             let picker = ui.global::<ActionPicker>();
             picker.set_capturing(false);
             picker.set_choosing_file(false);

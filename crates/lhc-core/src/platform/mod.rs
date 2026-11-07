@@ -36,6 +36,8 @@ pub mod file_chooser {
     }
 }
 #[cfg(target_os = "linux")]
+pub mod desktop_entries;
+#[cfg(target_os = "linux")]
 pub mod gnome;
 #[cfg(target_os = "linux")]
 pub mod kde_shortcuts;

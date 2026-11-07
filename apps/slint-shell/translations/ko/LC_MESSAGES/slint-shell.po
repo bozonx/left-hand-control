@@ -3514,3 +3514,27 @@ msgstr "키 할당이 삭제됩니다. 이 레이어를 유지하는 규칙은 �
 
 msgid "Delete extra key “{}”?"
 msgstr "추가 키 “{}”을(를) 삭제하시겠습니까?"
+
+msgid "Move window to previous desktop"
+msgstr "창을 이전 데스크톱으로 이동"
+
+msgid "Move window to next screen"
+msgstr "창을 다음 화면으로 이동"
+
+msgid "Switch to next desktop"
+msgstr "다음 데스크톱으로 전환"
+
+msgid "Switch to previous desktop"
+msgstr "이전 데스크톱으로 전환"
+
+msgid "Lock screen"
+msgstr "화면 잠금"
+
+msgid "Application actions"
+msgstr "애플리케이션 동작"
+
+msgid "Actions of installed applications:"
+msgstr "설치된 애플리케이션의 동작:"
+
+msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
+msgstr "이 목록은 Linux 데스크톱 공통의 freedesktop 표준인 설치된 애플리케이션의 데스크톱 항목에서 읽습니다. 애플리케이션은 새 비공개 창 열기와 같은 추가 동작을 여기에 선언합니다. 선택한 동작은 애플리케이션 메뉴에서와 같은 방식으로 실행됩니다. 사용 가능한 동작은 설치된 애플리케이션에 따라 다릅니다."

@@ -3524,3 +3524,27 @@ msgstr "キーの割り当ては削除されます。このレイヤーを保持
 
 msgid "Delete extra key “{}”?"
 msgstr "追加キー「{}」を削除しますか?"
+
+msgid "Move window to previous desktop"
+msgstr "ウィンドウを前のデスクトップに移動する"
+
+msgid "Move window to next screen"
+msgstr "ウィンドウを次の画面に移動する"
+
+msgid "Switch to next desktop"
+msgstr "次のデスクトップに切り替える"
+
+msgid "Switch to previous desktop"
+msgstr "前のデスクトップに切り替える"
+
+msgid "Lock screen"
+msgstr "画面をロックする"
+
+msgid "Application actions"
+msgstr "アプリケーションのアクション"
+
+msgid "Actions of installed applications:"
+msgstr "インストール済みアプリケーションのアクション:"
+
+msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
+msgstr "この一覧は、Linux デスクトップ共通の freedesktop 標準であるインストール済みアプリケーションのデスクトップエントリから読み込まれます。アプリケーションはそこに新しいプライベートウィンドウを開くなどの追加アクションを宣言します。選択したアクションはアプリケーションメニューと同じ方法で実行されます。利用できるアクションはインストールされているアプリケーションによって異なります。"

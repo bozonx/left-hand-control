@@ -5,10 +5,11 @@
 //!
 //! ```text
 //! Only actions a key cannot express live here: switch to desktop / layout N,
-//! move window to desktop N, and window/shell actions that every supported
-//! platform documents (close, minimize, maximize, keep above, show desktop,
-//! overview, application launcher, screen off). Everything else is a
-//! standard key, a chord or a `kde:` global shortcut. See
+//! move window to desktop N, and window/shell actions that at least two
+//! platforms document (close, minimize, maximize, keep above, next/previous
+//! desktop, next screen, show desktop, overview, application launcher,
+//! screen off, lock). Everything else is a standard key, a chord, a `kde:`
+//! global shortcut or an `xdg:` application action. See
 //! `docs/design/removed-system-actions.md`.
 //!
 //! Action shapes:
@@ -16,6 +17,8 @@
 //!                            the target DE exposes a DBus service: avoids
 //!                            `fork+exec` of helper binaries (qdbus, gdbus)
 //!                            and gives sub-millisecond latency.
+//!   * `SystemAction::Process` — a Linux child process (`xdg:` actions of
+//!                            applications that are not D-Bus activatable).
 //!   * `SystemAction::Windows` — a Win32 call (`mapper::windows::system`).
 //!   * `SystemAction::AppEvent` — handled by the shell on every OS.
 //!
@@ -43,6 +46,10 @@ pub enum DbusArg {
     U32(u32),
     I32(i32),
     Str(String),
+    /// An empty `av`.
+    EmptyVariants,
+    /// An empty `a{sv}`.
+    EmptyVariantDict,
 }
 
 /// A direct session-bus method invocation.
@@ -70,6 +77,8 @@ impl DbusCall {
 pub enum SystemAction {
     #[cfg(target_os = "linux")]
     Dbus(DbusCall),
+    #[cfg(target_os = "linux")]
+    Process(ProcessInvocation),
     #[cfg(target_os = "windows")]
     Windows(super::windows::system::WindowsAction),
     AppEvent(crate::profile::app_action::AppAction),
@@ -132,6 +141,60 @@ pub fn resolve_kde_shortcut(id: &str) -> Option<SystemAction> {
     }
 }
 
+/// Resolve an `xdg:` id (`desktop-id/action`) into a D-Bus activation or
+/// a process, or `None` off Linux or when the application or action is
+/// not installed.
+pub fn resolve_desktop_entry(id: &str) -> Option<SystemAction> {
+    #[cfg(target_os = "linux")]
+    {
+        use crate::platform::desktop_entries::{self, Launch};
+        let (app, action) = crate::profile::actions::desktop_entry_parts(id.trim())?;
+        Some(match desktop_entries::resolve(app, action)? {
+            Launch::Activate {
+                bus_name,
+                path,
+                action,
+            } => SystemAction::Dbus(DbusCall {
+                destination: bus_name,
+                path,
+                interface: Some("org.freedesktop.Application".into()),
+                method: "ActivateAction".into(),
+                args: vec![
+                    DbusArg::Str(action),
+                    DbusArg::EmptyVariants,
+                    DbusArg::EmptyVariantDict,
+                ],
+            }),
+            Launch::Exec(mut argv) => {
+                if argv.is_empty() {
+                    return None;
+                }
+                let program = argv.remove(0);
+                SystemAction::Process(ProcessInvocation {
+                    program,
+                    args: argv,
+                    working_directory: None,
+                })
+            }
+        })
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = id;
+        None
+    }
+}
+
+/// Whether the KDE global shortcut `component/name` is what a plain `sys:`
+/// action already runs on KDE; the `kde:` list hides these duplicates.
+#[cfg(target_os = "linux")]
+pub(crate) fn kde_runs_as_system_action(component: &str, name: &str) -> bool {
+    kde::SHORTCUT_ACTIONS
+        .iter()
+        .any(|(_, c, n)| *c == component && *n == name)
+        || (component == "ksmserver" && name == "Lock Session")
+}
+
 #[cfg(target_os = "linux")]
 fn kde_shortcut(id: &str) -> Option<SystemAction> {
     let (component, shortcut) = crate::profile::actions::kde_shortcut_parts(id.trim())?;
@@ -168,8 +231,24 @@ mod kde {
     use crate::platform::dbus;
     use crate::profile::actions::SYSTEM_NUMBERED_COUNT;
 
-    /// Most virtual desktops KWin can have.
-    const KWIN_MAX_DESKTOPS: u32 = 20;
+    /// Plain `sys:` actions KWin, Plasma and PowerDevil register as
+    /// kglobalaccel shortcuts: (id, component, shortcut name).
+    pub(super) const SHORTCUT_ACTIONS: [(&str, &str, &str); 14] = [
+        ("closeWindow", "kwin", "Window Close"),
+        ("minimizeWindow", "kwin", "Window Minimize"),
+        ("maximizeWindow", "kwin", "Window Maximize"),
+        ("maximizeWindowVertically", "kwin", "Window Maximize Vertical"),
+        ("toggleWindowKeepAbove", "kwin", "Window Above Other Windows"),
+        ("moveWindowToNextDesktop", "kwin", "Window to Next Desktop"),
+        ("moveWindowToPreviousDesktop", "kwin", "Window to Previous Desktop"),
+        ("moveWindowToNextScreen", "kwin", "Window to Next Screen"),
+        ("switchToNextDesktop", "kwin", "Switch to Next Desktop"),
+        ("switchToPreviousDesktop", "kwin", "Switch to Previous Desktop"),
+        ("showDesktop", "kwin", "Show Desktop"),
+        ("showOverview", "kwin", "Overview"),
+        ("showAppLauncher", "plasmashell", "activate application launcher"),
+        ("turnOffScreen", "org_kde_powerdevil", "Turn Off Screen"),
+    ];
 
     pub(super) fn invoke_shortcut(component: &str, shortcut: &str) -> SystemAction {
         SystemAction::Dbus(DbusCall {
@@ -182,23 +261,21 @@ mod kde {
     }
 
     pub fn resolve(name: &str) -> Option<SystemAction> {
-        if let Some(rest) = name.strip_prefix("switchDesktop")
-            && let Ok(n) = rest.parse::<u32>()
-            && (1..=KWIN_MAX_DESKTOPS).contains(&n)
-        {
-            // org.kde.KWin /KWin setCurrentDesktop(i)
-            return Some(SystemAction::Dbus(DbusCall {
-                destination: dbus::KWIN_SERVICE.into(),
-                path: dbus::KWIN_PATH.into(),
-                interface: Some(dbus::KWIN_INTERFACE.into()),
-                method: "setCurrentDesktop".into(),
-                args: vec![DbusArg::I32(n as i32)],
-            }));
+        let numbered = |prefix: &str| {
+            name.strip_prefix(prefix)
+                .and_then(|rest| rest.parse::<u32>().ok())
+                .filter(|n| (1..=SYSTEM_NUMBERED_COUNT).contains(n))
+        };
+        // KWin registers both families as global shortcuts; the same path
+        // as every other window action, instead of the legacy
+        // org.kde.KWin.setCurrentDesktop.
+        if let Some(n) = numbered("switchDesktop") {
+            return Some(invoke_shortcut("kwin", &format!("Switch to Desktop {n}")));
         }
-        if let Some(rest) = name.strip_prefix("switchKeyboardLayout")
-            && let Ok(n) = rest.parse::<u32>()
-            && (1..=SYSTEM_NUMBERED_COUNT).contains(&n)
-        {
+        if let Some(n) = numbered("moveWindowToDesktop") {
+            return Some(invoke_shortcut("kwin", &format!("Window to Desktop {n}")));
+        }
+        if let Some(n) = numbered("switchKeyboardLayout") {
             return Some(SystemAction::Dbus(DbusCall {
                 destination: dbus::KEYBOARD_SERVICE.into(),
                 path: dbus::KEYBOARD_LAYOUTS_PATH.into(),
@@ -207,26 +284,20 @@ mod kde {
                 args: vec![DbusArg::U32(n - 1)],
             }));
         }
-        if let Some(rest) = name.strip_prefix("moveWindowToDesktop")
-            && let Ok(n) = rest.parse::<u32>()
-            && (1..=KWIN_MAX_DESKTOPS).contains(&n)
-        {
-            return Some(invoke_shortcut("kwin", &format!("Window to Desktop {n}")));
+        if name == "lockSession" {
+            // The freedesktop screen saver API, served by KScreenLocker.
+            return Some(SystemAction::Dbus(DbusCall {
+                destination: "org.freedesktop.ScreenSaver".into(),
+                path: "/ScreenSaver".into(),
+                interface: Some("org.freedesktop.ScreenSaver".into()),
+                method: "Lock".into(),
+                args: vec![],
+            }));
         }
-        let (component, shortcut) = match name {
-            "closeWindow" => ("kwin", "Window Close"),
-            "minimizeWindow" => ("kwin", "Window Minimize"),
-            "maximizeWindow" => ("kwin", "Window Maximize"),
-            "maximizeWindowVertically" => ("kwin", "Window Maximize Vertical"),
-            "toggleWindowKeepAbove" => ("kwin", "Window Above Other Windows"),
-            "moveWindowToNextDesktop" => ("kwin", "Window to Next Desktop"),
-            "showDesktop" => ("kwin", "Show Desktop"),
-            "showOverview" => ("kwin", "Overview"),
-            "showAppLauncher" => ("plasmashell", "activate application launcher"),
-            "turnOffScreen" => ("org_kde_powerdevil", "Turn Off Screen"),
-            _ => return None,
-        };
-        Some(invoke_shortcut(component, shortcut))
+        SHORTCUT_ACTIONS
+            .iter()
+            .find(|(id, _, _)| *id == name)
+            .map(|(_, component, shortcut)| invoke_shortcut(component, shortcut))
     }
 }
 
@@ -293,7 +364,7 @@ mod tests {
             "showQuickMenu3",
             "showEmojiMenu5",
             "taskEntry1",
-            "lockSession",
+            "lockScreen",
             "volumeUp",
         ] {
             assert!(!is_known(id), "{id}");
@@ -350,7 +421,12 @@ mod linux_tests {
             "closeWindow",
             "maximizeWindowVertically",
             "moveWindowToNextDesktop",
+            "moveWindowToPreviousDesktop",
+            "moveWindowToNextScreen",
+            "switchToNextDesktop",
             "showOverview",
+            "turnOffScreen",
+            "lockSession",
         ] {
             let Some(SystemAction::Dbus(call)) = resolve_for_desktop(name, &Desktop::Gnome) else {
                 panic!("{name} did not resolve");
@@ -362,7 +438,6 @@ mod linux_tests {
         }
         for name in [
             "showDesktop",
-            "turnOffScreen",
             "switchKeyboardLayout0",
             "switchKeyboardLayout11",
             "switchDesktop21",
@@ -412,7 +487,21 @@ mod linux_tests {
         assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Turn Off Screen"));
         assert!(kde_shortcut("Turn Off Screen").is_none());
 
-        for removed in ["taskEntry1", "lockSession", "volumeUp", "toggleOverview"] {
+        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("switchDesktop2", &Desktop::Kde)
+        else {
+            panic!("switchDesktop2 did not resolve to a DBus action");
+        };
+        assert_eq!(call.path, "/component/kwin");
+        assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Switch to Desktop 2"));
+
+        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("lockSession", &Desktop::Kde)
+        else {
+            panic!("lockSession did not resolve to a DBus action");
+        };
+        assert_eq!(call.destination, "org.freedesktop.ScreenSaver");
+        assert_eq!(call.method, "Lock");
+
+        for removed in ["taskEntry1", "volumeUp", "toggleOverview"] {
             assert!(resolve_for_desktop(removed, &Desktop::Kde).is_none());
         }
     }
@@ -443,7 +532,8 @@ mod gnome {
     use super::{DbusArg, DbusCall, SystemAction};
 
     pub fn resolve(name: &str) -> Option<SystemAction> {
-        if !super::is_known(name) || matches!(name, "showDesktop" | "turnOffScreen") {
+        // GNOME has no "show desktop" mode.
+        if !super::is_known(name) || name == "showDesktop" {
             return None;
         }
         Some(SystemAction::Dbus(DbusCall {

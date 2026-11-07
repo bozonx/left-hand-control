@@ -54,7 +54,7 @@ Emoji selection, многократный возврат фокуса, друг�
 lock/unlock, suspend, replug, физическое железо и полное обновление deb/rpm между
 версиями не закрыты этим smoke. Точечная проверка обновления архива не заменяет
 полный package upgrade. Не заявлена матрица других версий GNOME/дистрибутивов.
-`showDesktop` и `turnOffScreen` на GNOME недоступны; это граница backend, а не PASS теста.
+`showDesktop` на GNOME недоступен; это граница backend, а не PASS теста. `turnOffScreen`, `lockSession`, `switchToNextDesktop`/`switchToPreviousDesktop`, `moveWindowToPreviousDesktop` и `moveWindowToNextScreen` в этом smoke ещё не проверялись.
 
 ### Результаты
 
@@ -118,10 +118,12 @@ and `CoreEvent` bus. The active-window watcher also has its normal safety reread
 
 The bridge implements `switchDesktop1..20`, `moveWindowToDesktop1..20`,
 `switchKeyboardLayout1..10`, `closeWindow`, `minimizeWindow`, `maximizeWindow`,
-`maximizeWindowVertically`, `toggleWindowKeepAbove`, `moveWindowToNextDesktop`, `showOverview`, and
-`showAppLauncher`. A numbered
+`maximizeWindowVertically`, `toggleWindowKeepAbove`, `moveWindowToNextDesktop`,
+`moveWindowToPreviousDesktop`, `moveWindowToNextScreen`, `switchToNextDesktop`,
+`switchToPreviousDesktop`, `showOverview`, `showAppLauncher`, `lockSession`
+(`Main.screenShield.lock`) and `turnOffScreen` (Mutter `DisplayConfig.PowerSaveMode = 3`). A numbered
 workspace/source must already exist. `maximizeWindowVertically` needs Mutter's public
-`get/set_maximize_flags`; without them the extension reports it unsupported. `showDesktop` and `turnOffScreen` remain unavailable on GNOME.
+`get/set_maximize_flags`; without them the extension reports it unsupported. `showDesktop` remains unavailable on GNOME.
 The extension does not provide a clipboard/data-control protocol or remove portal
 permission requirements. In GNOME Wayland, the `libei + clipboard` and clipboard
 modes request `org.freedesktop.portal.Clipboard` access on their RemoteDesktop
