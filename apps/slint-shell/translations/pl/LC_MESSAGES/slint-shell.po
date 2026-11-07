@@ -352,9 +352,6 @@ msgstr "Zmień nazwę warstwy"
 msgid "Duplicate layer"
 msgstr "Zduplikuj warstwę"
 
-msgid "Delete layer?"
-msgstr "Usunąć warstwę?"
-
 msgid "Edit layer key"
 msgstr "Edytuj klucz warstwy"
 
@@ -363,9 +360,6 @@ msgstr "Nazwa"
 
 msgid "Description"
 msgstr "Opis"
-
-msgid "Rules using this layer will return to the base layer."
-msgstr "Reguły korzystające z tej warstwy powrócą do warstwy bazowej."
 
 msgid "Transparent"
 msgstr "Przezroczysty"
@@ -1374,9 +1368,6 @@ msgstr "Nowy"
 
 msgid "Auto"
 msgstr "Automatycznie"
-
-msgid "Delete extra key?"
-msgstr "Usunąć dodatkowy klucz?"
 
 msgid "This key assignment will be removed from the layer."
 msgstr "To przypisanie klawisza zostanie usunięte z warstwy."
@@ -3688,9 +3679,6 @@ msgstr "Wszystkie komórki strony zostaną wyczyszczone."
 msgid "Not activated by any trigger."
 msgstr "Nie jest aktywowana przez żaden wyzwalacz."
 
-msgid "Activated by: {}"
-msgstr "Aktywowana przez: {}"
-
 msgid "Configure triggers"
 msgstr "Konfiguruj wyzwalacze"
 
@@ -3801,3 +3789,18 @@ msgstr "Przechwytywanie anulowane."
 
 msgid "Captured: {}"
 msgstr "Przechwycono: {}"
+
+msgid "Ctrl+X, then Ctrl+V on another key: swap their assignments"
+msgstr "Ctrl+X, a potem Ctrl+V na innym klawiszu: zamień ich przypisania"
+
+msgid "Activated by:"
+msgstr "Aktywowana przez:"
+
+msgid "Delete layer “{}”?"
+msgstr "Usunąć warstwę „{}”?"
+
+msgid "Its key assignments will be deleted. Rules that hold this layer will stop activating it."
+msgstr "Przypisania jej klawiszy zostaną usunięte. Reguły przytrzymujące tę warstwę przestaną ją aktywować."
+
+msgid "Delete extra key “{}”?"
+msgstr "Usunąć dodatkowy klawisz „{}”?"

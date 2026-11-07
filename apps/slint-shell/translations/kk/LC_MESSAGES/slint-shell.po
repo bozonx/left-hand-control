@@ -349,9 +349,6 @@ msgstr "Қабат атын өзгерту"
 msgid "Duplicate layer"
 msgstr "Қабатты көшіру"
 
-msgid "Delete layer?"
-msgstr "Қабатты жою керек пе?"
-
 msgid "Edit layer key"
 msgstr "Қабат пернесін өңдеу"
 
@@ -360,9 +357,6 @@ msgstr "Аты"
 
 msgid "Description"
 msgstr "Сипаттама"
-
-msgid "Rules using this layer will return to the base layer."
-msgstr "Бұл қабатты пайдаланатын ережелер негізгі қабатқа оралады."
 
 msgid "Transparent"
 msgstr "Мөлдір"
@@ -1367,9 +1361,6 @@ msgstr "Жаңа"
 
 msgid "Auto"
 msgstr "Автоматты"
-
-msgid "Delete extra key?"
-msgstr "Қосымша кілт жойылсын ба?"
 
 msgid "This key assignment will be removed from the layer."
 msgstr "Бұл кілт тағайындау қабаттан жойылады."
@@ -3656,9 +3647,6 @@ msgstr "Беттегі барлық ұяшықтар тазаланады."
 msgid "Not activated by any trigger."
 msgstr "Ешбір триггер белсендірмейді."
 
-msgid "Activated by: {}"
-msgstr "Белсендіретін: {}"
-
 msgid "Configure triggers"
 msgstr "Триггерлерді баптау"
 
@@ -3769,3 +3757,18 @@ msgstr "Түсіру тоқтатылды."
 
 msgid "Captured: {}"
 msgstr "Түсірілді: {}"
+
+msgid "Ctrl+X, then Ctrl+V on another key: swap their assignments"
+msgstr "Ctrl+X, содан кейін басқа пернеде Ctrl+V: тағайындауларды ауыстыру"
+
+msgid "Activated by:"
+msgstr "Белсендіретін:"
+
+msgid "Delete layer “{}”?"
+msgstr "«{}» қабатын жою керек пе?"
+
+msgid "Its key assignments will be deleted. Rules that hold this layer will stop activating it."
+msgstr "Оның пернелер тағайындаулары жойылады. Осы қабатты ұстайтын ережелер оны енді белсендірмейді."
+
+msgid "Delete extra key “{}”?"
+msgstr "«{}» қосымша пернесін жою керек пе?"

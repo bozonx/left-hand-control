@@ -558,7 +558,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     assert_eq!(layers.get_extras().row_data(0).unwrap().key, "F17");
     layers.invoke_request_remove_extra(0);
-    assert!(layers.invoke_remove_extra());
+    layers.invoke_remove_extra();
+    assert_eq!(layers.get_delete_extra(), -1);
     layers.set_delete_extra(-1);
     layers.invoke_edit_key(0);
     let picker = ui.global::<ActionPicker>();

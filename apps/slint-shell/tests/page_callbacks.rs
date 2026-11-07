@@ -708,7 +708,7 @@ fn layer_editor_regressions() -> Result<(), Box<dyn std::error::Error>> {
     let layers = ui.global::<LayersEditor>();
     let picker = ui.global::<ActionPicker>();
     layers.invoke_choose(0);
-    assert_eq!(layers.get_activation().id, "layer-unused");
+    assert_eq!(layers.get_triggers().row_count(), 0);
     document.edit(View::Rules, |config| {
         config.update_layout(|layout| {
             let mut rule = lhc_core::profile::model::KeyRule::new("activate".into(), "CapsLock");
@@ -717,8 +717,8 @@ fn layer_editor_regressions() -> Result<(), Box<dyn std::error::Error>> {
             layout.rules.push(rule);
         })
     })?;
-    assert_eq!(layers.get_activation().id, "layer-triggers");
-    assert_eq!(layers.get_activation().arg, "CapsLock");
+    assert_eq!(layers.get_triggers().row_count(), 1);
+    assert_eq!(layers.get_triggers().row_data(0).unwrap().code, "CapsLock");
 
     // A selection change cannot redirect an already-open key editor.
     layers.invoke_edit_key(0);
@@ -748,20 +748,19 @@ fn layer_editor_regressions() -> Result<(), Box<dyn std::error::Error>> {
     );
     picker.invoke_dismiss_picker();
 
-    // Deletion confirmations also bind their target, and remain open on failure.
+    // Deletion confirmations also bind their target; a changed target closes
+    // them unapplied, since a retry would fail the same way.
     layers.invoke_request_remove_extra(0);
     layers.invoke_reorder_extra(0, 1);
-    assert!(!layers.invoke_remove_extra());
-    assert!(layers.get_delete_extra() >= 0);
+    layers.invoke_remove_extra();
+    assert_eq!(layers.get_delete_extra(), -1);
     assert_eq!(document.read().layout().layer_keymaps[&first].keys.len(), 2);
-    layers.set_delete_extra(-1);
     layers.invoke_open_dialog(LayerDialog::Delete);
     layers.invoke_choose(1);
     layers.invoke_apply_dialog();
-    assert_eq!(layers.get_dialog(), LayerDialog::Delete);
+    assert_eq!(layers.get_dialog(), LayerDialog::None);
     assert_eq!(layers.get_status().id, "config-edit-conflict");
     assert_eq!(document.read().layout().layers.len(), 2);
-    layers.set_dialog(LayerDialog::None);
     layers.invoke_choose(0);
 
     // Invalid names preserve the draft and allow a corrected retry.

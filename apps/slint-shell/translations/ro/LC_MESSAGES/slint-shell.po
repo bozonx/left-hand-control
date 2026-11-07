@@ -350,9 +350,6 @@ msgstr "Redenumiți stratul"
 msgid "Duplicate layer"
 msgstr "Duplică stratul"
 
-msgid "Delete layer?"
-msgstr "Ștergeți stratul?"
-
 msgid "Edit layer key"
 msgstr "Editați cheia stratului"
 
@@ -361,9 +358,6 @@ msgstr "Nume"
 
 msgid "Description"
 msgstr "Descriere"
-
-msgid "Rules using this layer will return to the base layer."
-msgstr "Regulile care folosesc acest strat vor reveni la stratul de bază."
 
 msgid "Transparent"
 msgstr "Transparent"
@@ -1372,9 +1366,6 @@ msgstr "Nou"
 
 msgid "Auto"
 msgstr "Automat"
-
-msgid "Delete extra key?"
-msgstr "Ștergeți cheia suplimentară?"
 
 msgid "This key assignment will be removed from the layer."
 msgstr "Această atribuire a tastelor va fi eliminată din strat."
@@ -3689,9 +3680,6 @@ msgstr "Toate celulele paginii vor fi golite."
 msgid "Not activated by any trigger."
 msgstr "Nu este activat de niciun declanșator."
 
-msgid "Activated by: {}"
-msgstr "Activat de: {}"
-
 msgid "Configure triggers"
 msgstr "Configurează declanșatoarele"
 
@@ -3802,3 +3790,18 @@ msgstr "Captură anulată."
 
 msgid "Captured: {}"
 msgstr "Capturat: {}"
+
+msgid "Ctrl+X, then Ctrl+V on another key: swap their assignments"
+msgstr "Ctrl+X, apoi Ctrl+V pe altă tastă: schimbă atribuirile între ele"
+
+msgid "Activated by:"
+msgstr "Activat de:"
+
+msgid "Delete layer “{}”?"
+msgstr "Ștergeți stratul „{}”?"
+
+msgid "Its key assignments will be deleted. Rules that hold this layer will stop activating it."
+msgstr "Atribuirile tastelor sale vor fi șterse. Regulile care țin acest strat nu îl vor mai activa."
+
+msgid "Delete extra key “{}”?"
+msgstr "Ștergeți tasta suplimentară „{}”?"

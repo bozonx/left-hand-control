@@ -348,9 +348,6 @@ msgstr "Переименовать слой"
 msgid "Duplicate layer"
 msgstr "Дублировать слой"
 
-msgid "Delete layer?"
-msgstr "Удалить слой?"
-
 msgid "Edit layer key"
 msgstr "Изменить клавишу слоя"
 
@@ -359,9 +356,6 @@ msgstr "Имя"
 
 msgid "Description"
 msgstr "Описание"
-
-msgid "Rules using this layer will return to the base layer."
-msgstr "Правила этого слоя вернутся к базовому слою."
 
 msgid "Transparent"
 msgstr "Прозрачное действие"
@@ -1266,9 +1260,6 @@ msgstr "Новая"
 
 msgid "Auto"
 msgstr "Авто"
-
-msgid "Delete extra key?"
-msgstr "Удалить дополнительную клавишу?"
 
 msgid "This key assignment will be removed from the layer."
 msgstr "Назначение этой клавиши будет удалено из слоя."
@@ -3017,9 +3008,6 @@ msgstr "Все ячейки страницы будут очищены."
 msgid "Not activated by any trigger."
 msgstr "Не активируется ни одним триггером."
 
-msgid "Activated by: {}"
-msgstr "Активируется: {}"
-
 msgid "Configure triggers"
 msgstr "Настроить триггеры"
 
@@ -3130,3 +3118,18 @@ msgstr "Захват отменён."
 
 msgid "Captured: {}"
 msgstr "Захвачено: {}"
+
+msgid "Ctrl+X, then Ctrl+V on another key: swap their assignments"
+msgstr "Ctrl+X, затем Ctrl+V на другой клавише: поменять назначения местами"
+
+msgid "Activated by:"
+msgstr "Активируется:"
+
+msgid "Delete layer “{}”?"
+msgstr "Удалить слой «{}»?"
+
+msgid "Its key assignments will be deleted. Rules that hold this layer will stop activating it."
+msgstr "Назначения его клавиш будут удалены. Правила, удерживающие этот слой, перестанут его активировать."
+
+msgid "Delete extra key “{}”?"
+msgstr "Удалить дополнительную клавишу «{}»?"

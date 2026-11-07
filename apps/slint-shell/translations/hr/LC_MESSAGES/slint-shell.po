@@ -348,9 +348,6 @@ msgstr "Preimenuj sloj"
 msgid "Duplicate layer"
 msgstr "Dupliciraj sloj"
 
-msgid "Delete layer?"
-msgstr "Izbrisati sloj?"
-
 msgid "Edit layer key"
 msgstr "Uredi ključ sloja"
 
@@ -359,9 +356,6 @@ msgstr "Ime"
 
 msgid "Description"
 msgstr "Opis"
-
-msgid "Rules using this layer will return to the base layer."
-msgstr "Pravila koja koriste ovaj sloj vratit će se na osnovni sloj."
 
 msgid "Transparent"
 msgstr "Transparentan"
@@ -1359,9 +1353,6 @@ msgstr "Novi"
 
 msgid "Auto"
 msgstr "Automatski"
-
-msgid "Delete extra key?"
-msgstr "Izbrisati dodatni ključ?"
 
 msgid "This key assignment will be removed from the layer."
 msgstr "Ova dodjela ključa bit će uklonjena iz sloja."
@@ -3639,9 +3630,6 @@ msgstr "Sve ćelije na stranici bit će ispražnjene."
 msgid "Not activated by any trigger."
 msgstr "Ne aktivira ga nijedan okidač."
 
-msgid "Activated by: {}"
-msgstr "Aktivira: {}"
-
 msgid "Configure triggers"
 msgstr "Postavi okidače"
 
@@ -3752,3 +3740,18 @@ msgstr "Snimanje otkazano."
 
 msgid "Captured: {}"
 msgstr "Snimljeno: {}"
+
+msgid "Ctrl+X, then Ctrl+V on another key: swap their assignments"
+msgstr "Ctrl+X, zatim Ctrl+V na drugoj tipki: zamijeni dodjele"
+
+msgid "Activated by:"
+msgstr "Aktivira:"
+
+msgid "Delete layer “{}”?"
+msgstr "Izbrisati sloj „{}”?"
+
+msgid "Its key assignments will be deleted. Rules that hold this layer will stop activating it."
+msgstr "Dodjele njegovih tipki bit će izbrisane. Pravila koja drže ovaj sloj prestat će ga aktivirati."
+
+msgid "Delete extra key “{}”?"
+msgstr "Izbrisati dodatnu tipku „{}”?"

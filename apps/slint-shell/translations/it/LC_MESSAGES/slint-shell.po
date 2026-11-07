@@ -352,9 +352,6 @@ msgstr "Rinominare il livello"
 msgid "Duplicate layer"
 msgstr "Duplica livello"
 
-msgid "Delete layer?"
-msgstr "Eliminare il livello?"
-
 msgid "Edit layer key"
 msgstr "Modifica chiave livello"
 
@@ -363,10 +360,6 @@ msgstr "Nome"
 
 msgid "Description"
 msgstr "Descrizione"
-
-msgid "Rules using this layer will return to the base layer."
-msgstr ""
-"Le regole che utilizzano questo livello torneranno al livello di base."
 
 msgid "Transparent"
 msgstr "Trasparente"
@@ -1383,9 +1376,6 @@ msgstr "Nuovo"
 
 msgid "Auto"
 msgstr "Automatico"
-
-msgid "Delete extra key?"
-msgstr "Eliminare la chiave aggiuntiva?"
 
 msgid "This key assignment will be removed from the layer."
 msgstr "Questa assegnazione di tasti verrà rimossa dal livello."
@@ -3723,9 +3713,6 @@ msgstr "Tutte le celle della pagina verranno svuotate."
 msgid "Not activated by any trigger."
 msgstr "Nessun trigger lo attiva."
 
-msgid "Activated by: {}"
-msgstr "Attivato da: {}"
-
 msgid "Configure triggers"
 msgstr "Configura trigger"
 
@@ -3836,3 +3823,18 @@ msgstr "Acquisizione annullata."
 
 msgid "Captured: {}"
 msgstr "Acquisito: {}"
+
+msgid "Ctrl+X, then Ctrl+V on another key: swap their assignments"
+msgstr "Ctrl+X, poi Ctrl+V su un altro tasto: scambia le assegnazioni"
+
+msgid "Activated by:"
+msgstr "Attivato da:"
+
+msgid "Delete layer “{}”?"
+msgstr "Eliminare il livello «{}»?"
+
+msgid "Its key assignments will be deleted. Rules that hold this layer will stop activating it."
+msgstr "Le assegnazioni dei suoi tasti verranno eliminate. Le regole che tengono questo livello smetteranno di attivarlo."
+
+msgid "Delete extra key “{}”?"
+msgstr "Eliminare il tasto aggiuntivo «{}»?"

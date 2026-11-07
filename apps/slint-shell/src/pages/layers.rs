@@ -10,14 +10,14 @@ use crate::{
     i18n::Msg,
     keyboard,
     ui::{
-        ActionPicker, LayerDialog, LayerExtraRow, LayersEditor, Locale, PickerTarget,
+        ActionPicker, LayerDialog, LayerExtraRow, LayerTrigger, LayersEditor, Locale, PickerTarget,
         SettingsWindow,
     },
 };
 use lhc_core::config_document::{ConfigDocument, ConfigError, KeyAssignment};
 use lhc_core::profile::model::{Command, Layer, LayerKeymap};
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 fn conflict() -> Msg {
     Msg::from(&ConfigError::EditConflict)
@@ -153,7 +153,7 @@ fn refresh(ui: &SettingsWindow, document: &Document) {
     editor.set_left_cells(update_model(editor.get_left_cells(), left));
     editor.set_right_cells(update_model(editor.get_right_cells(), right));
     let extras = keymap.map_or_else(Vec::new, |map| {
-        ordered_extra_entries(map)
+        map.extra_entries()
             .into_iter()
             .map(|(key, value)| {
                 let (kind, action, icon, category) = assignment(Some(&value), &names);
@@ -172,14 +172,24 @@ fn refresh(ui: &SettingsWindow, document: &Document) {
     let triggers = layer
         .map(|layer| layout.layer_triggers(&layer.id))
         .unwrap_or_default();
-    editor.set_activation(
-        if triggers.is_empty() {
-            Msg::LayerUnused
-        } else {
-            Msg::LayerTriggers(triggers.join(", "))
-        }
-        .to_ui(),
-    );
+    editor.set_triggers(update_model(
+        editor.get_triggers(),
+        triggers
+            .into_iter()
+            .map(|code| LayerTrigger {
+                label: trigger_label(&code).into(),
+                code: code.into(),
+            })
+            .collect(),
+    ));
+}
+
+/// US-layout label of a trigger such as `CapsLock` or `ShiftLeft+KeyA`.
+fn trigger_label(code: &str) -> String {
+    code.split('+')
+        .map(keyboard::label)
+        .collect::<Vec<_>>()
+        .join("+")
 }
 
 /// Save `edit`, then refresh and report.
@@ -291,38 +301,6 @@ fn apply_dialog(
     }
 }
 
-/// Extra keys of a layer (every key off the grid) in display order: the
-/// saved order first, then the rest in key catalog order.
-fn ordered_extra_entries(map: &LayerKeymap) -> Vec<(String, Option<String>)> {
-    let mut entries: Vec<_> = map
-        .keys
-        .iter()
-        .filter(|(key, _)| !lhc_core::profile::layer_grid::contains(key))
-        .map(|(key, value)| (key.clone(), value.clone()))
-        .collect();
-    if entries.is_empty() {
-        return entries;
-    }
-    let catalog: HashMap<&str, usize> = lhc_core::profile::key_catalog::CATEGORIES
-        .iter()
-        .flat_map(|keys| keys.iter().copied())
-        .enumerate()
-        .map(|(index, key)| (key, index))
-        .collect();
-    let order = &map.extra_key_order;
-    entries.sort_by_cached_key(|(key, _)| {
-        (
-            order
-                .iter()
-                .position(|code| code == key)
-                .unwrap_or(usize::MAX),
-            catalog.get(key.as_str()).copied().unwrap_or(usize::MAX),
-            key.clone(),
-        )
-    });
-    entries
-}
-
 fn extra_at(document: &Document, id: &str, index: i32) -> Option<(String, Option<String>)> {
     let index = usize::try_from(index).ok()?;
     document
@@ -330,12 +308,34 @@ fn extra_at(document: &Document, id: &str, index: i32) -> Option<(String, Option
         .layout()
         .layer_keymaps
         .get(id)
-        .and_then(|map| ordered_extra_entries(map).into_iter().nth(index))
+        .and_then(|map| map.extra_entries().into_iter().nth(index))
+}
+
+/// Sources of the open modal dialogs, checked again when they are applied.
+#[derive(Default)]
+struct Modals {
+    /// Layer behind the open create/duplicate/delete dialog.
+    layer: Option<EditTarget>,
+    /// Layer and key of the extra row whose removal awaits confirmation.
+    remove_extra: Option<(EditTarget, String)>,
+}
+
+/// Close every page dialog and forget what it was opened for.
+fn close_dialogs(ui: &SettingsWindow, modals: &RefCell<Modals>) {
+    let editor = ui.global::<LayersEditor>();
+    editor.set_dialog(LayerDialog::None);
+    editor.set_delete_extra(-1);
+    *modals.borrow_mut() = Modals::default();
+}
+
+/// Whether a failed dialog should close: its source changed, so a retry
+/// would fail the same way and the page already shows the new state.
+fn closes_on(error: &Msg) -> bool {
+    *error == conflict()
 }
 
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
-    let draft = Rc::new(RefCell::new(None));
-    let remove_target = Rc::new(RefCell::new(None));
+    let modals = Rc::new(RefCell::new(Modals::default()));
     let editor = ui.global::<LayersEditor>();
     on!(ui, editor.on_reorder, doc = document => |ui, from, to| {
         let len = doc.read().layout().layers.len();
@@ -357,12 +357,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let (Ok(from), Ok(to)) = (usize::try_from(from), usize::try_from(to)) else {
             return;
         };
-        let keys = ui
-            .global::<LayersEditor>()
-            .get_extras()
-            .iter()
-            .map(|row| row.key.to_string())
-            .collect();
+        // The stored order, not the page model, which may lag behind it.
+        let keys = doc
+            .read()
+            .layout()
+            .layer_keymaps
+            .get(&id)
+            .map(|map| map.extra_entries().into_iter().map(|(key, _)| key).collect())
+            .unwrap_or_default();
         // Failures are reported by `change`; the row stays where it was.
         let _ = change(&ui, &doc, |config| {
             config.reorder_extra_keys(&id, keys, from, to)
@@ -393,10 +395,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let Some(id) = selected_id(&ui, &doc) else {
             return false;
         };
-        let description = ui.global::<LayersEditor>().get_description();
-        change(&ui, &doc, |config| {
-            config.rename_layer(&id, name.trim(), &description)
-        }).is_ok()
+        change(&ui, &doc, |config| config.set_layer_name(&id, name.trim())).is_ok()
     });
     on!(ui, editor.on_update_description, doc = document => |ui, description| {
         let Some(id) = selected_id(&ui, &doc) else {
@@ -404,7 +403,10 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         };
         change(&ui, &doc, |config| config.set_layer_description(&id, &description)).is_ok()
     });
-    on!(ui, editor.on_add_extra => |ui| {
+    on!(ui, editor.on_add_extra, doc = document => |ui| {
+        if selected_id(&ui, &doc).is_none() {
+            return;
+        }
         ui.global::<LayersEditor>().set_dialog_key("".into());
         ui.global::<ActionPicker>()
             .invoke_open(PickerTarget::ExtraKey, -1, "".into(), true);
@@ -436,39 +438,45 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     on!(ui, editor.on_choose, doc = document => |ui, index| {
         select_layer(&ui, &doc, index);
     });
-    on!(ui, editor.on_open_dialog, doc = document, draft = draft => |ui, dialog| {
+    on!(ui, editor.on_open_dialog, doc = document, modals = modals => |ui, dialog| {
         if open_dialog(&ui, &doc, dialog) {
-            *draft.borrow_mut() = Some(picker_target(&ui, &doc));
+            modals.borrow_mut().layer = Some(picker_target(&ui, &doc));
         }
+    });
+    on!(ui, editor.on_close_dialog, modals = modals => |ui| {
+        close_dialogs(&ui, &modals);
     });
     on!(ui, editor.on_edit_key, doc = document => |ui, index| {
         edit_key(&ui, &doc, index);
     });
-    on!(ui, editor.on_apply_dialog, doc = document, draft = draft => |ui| {
-        if apply_dialog(&ui, &doc, draft.borrow().as_ref()).is_ok() {
-            ui.global::<LayersEditor>().set_dialog(LayerDialog::None);
-            *draft.borrow_mut() = None;
+    on!(ui, editor.on_apply_dialog, doc = document, modals = modals => |ui| {
+        let target = modals.borrow().layer.clone();
+        match apply_dialog(&ui, &doc, target.as_ref()) {
+            Err(error) if !closes_on(&error) => {}
+            _ => close_dialogs(&ui, &modals),
         }
     });
-    on!(ui, editor.on_request_remove_extra, doc = document, target = remove_target => |ui, index| {
+    on!(ui, editor.on_request_remove_extra, doc = document, modals = modals => |ui, index| {
         let Some(id) = selected_id(&ui, &doc) else { return; };
         let Some((key, _)) = extra_at(&doc, &id, index) else { return; };
-        *target.borrow_mut() = Some((EditTarget::new(&doc, id), key));
-        ui.global::<LayersEditor>().set_delete_extra(index);
+        modals.borrow_mut().remove_extra = Some((EditTarget::new(&doc, id), key));
+        let editor = ui.global::<LayersEditor>();
+        editor.set_status(Msg::None.to_ui());
+        editor.set_delete_extra(index);
     });
-    on!(ui, editor.on_remove_extra, doc = document, target = remove_target => |ui| {
+    on!(ui, editor.on_remove_extra, doc = document, modals = modals => |ui| {
+        let pending = modals.borrow().remove_extra.clone();
         let result = (|| {
-            let target = target.borrow();
-            let (target, key) = target.as_ref().ok_or_else(|| fail(&ui, conflict()))?;
+            let (target, key) = pending.as_ref().ok_or_else(|| fail(&ui, conflict()))?;
             target
                 .check(&doc, &ui.global::<LayersEditor>().get_selected_id())
                 .map_err(|error| fail(&ui, error))?;
             change(&ui, &doc, |config| config.set_layer_key(&target.layer_id, key, KeyAssignment::Transparent))
         })();
-        if result.is_ok() {
-            *target.borrow_mut() = None;
+        match result {
+            Err(error) if !closes_on(&error) => {}
+            _ => close_dialogs(&ui, &modals),
         }
-        result.is_ok()
     });
 }
 
@@ -670,21 +678,6 @@ pub(super) fn pick_new_extra_action(ui: &SettingsWindow) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lhc_core::profile::model::LayoutPreset;
-
-    fn keymap(keys: &[(&str, Option<&str>)]) -> LayerKeymap {
-        LayerKeymap {
-            keys: keys
-                .iter()
-                .map(|(key, value)| ((*key).into(), value.map(str::to_owned)))
-                .collect(),
-            ..Default::default()
-        }
-    }
-
-    fn keys(entries: Vec<(String, Option<String>)>) -> Vec<String> {
-        entries.into_iter().map(|(key, _)| key).collect()
-    }
 
     /// A bound layers page with layers `First` and `Second`, `Second` selected.
     fn page() -> (
@@ -728,61 +721,6 @@ mod tests {
             hold_modifiers,
             command: None,
         }
-    }
-
-    #[test]
-    fn extra_keys_exclude_grid_keys_and_preserve_assignments() {
-        let map = keymap(&[
-            ("KeyQ", Some("KeyA")),
-            ("KeyW", None),
-            ("Backspace", Some("sys:turnOffScreen")),
-            ("F4", None),
-        ]);
-        let entries = ordered_extra_entries(&map);
-        assert_eq!(entries.len(), 2);
-        assert!(entries.contains(&("Backspace".into(), Some("sys:turnOffScreen".into()))));
-        assert!(entries.contains(&("F4".into(), None)));
-    }
-
-    #[test]
-    fn extra_key_suppression_is_preserved() {
-        let layout = lhc_core::profile::layout_file::parse(
-            r#"{"version": 1, "layers": [{"id": "extra", "keys": {"BracketRight": null, "Backslash": null, "F4": "F4"}}]}"#
-        ).unwrap().unwrap();
-        let entries = ordered_extra_entries(&layout.layer_keymaps["extra"]);
-        assert_eq!(entries.len(), 3);
-        assert!(entries.contains(&("BracketRight".into(), None)));
-        assert!(entries.contains(&("F4".into(), Some("F4".into()))));
-    }
-
-    #[test]
-    fn unordered_extra_keys_follow_the_saved_order_then_the_catalog() {
-        let mut map = keymap(&[("F2", None), ("F14", None), ("F1", None), ("F13", None)]);
-        map.extra_key_order = vec!["F14".into(), "F13".into()];
-        assert_eq!(
-            keys(ordered_extra_entries(&map)),
-            ["F14", "F13", "F1", "F2"]
-        );
-    }
-
-    #[test]
-    fn extra_order_is_stable_after_renaming_and_removal() {
-        let mut layout = LayoutPreset::default();
-        layout.add_layer("extra", "Extra".into(), None);
-        for key in ["F13", "F14", "F15"] {
-            layout.set_extra_key("extra", None, key, KeyAssignment::Swallow);
-        }
-        layout
-            .layer_keymaps
-            .get_mut("extra")
-            .unwrap()
-            .extra_key_order = vec!["F15".into(), "F13".into(), "F14".into()];
-        layout.set_extra_key("extra", Some("F15"), "F16", KeyAssignment::Swallow);
-        layout.set_layer_key("extra", "F13", KeyAssignment::Transparent);
-        assert_eq!(
-            keys(ordered_extra_entries(&layout.layer_keymaps["extra"])),
-            ["F16", "F14"]
-        );
     }
 
     #[test]
@@ -1013,7 +951,8 @@ mod tests {
         assert_eq!(document.read().layout().layers.len(), 2);
         assert_eq!(editor.get_selected_id(), second.as_str());
 
-        // An edit of the layer behind an open dialog cancels it.
+        // An edit of the layer behind an open dialog closes it unapplied:
+        // confirming again would fail the same way.
         editor.invoke_open_dialog(LayerDialog::Delete);
         document
             .edit(View::Layers, |config| {
@@ -1021,8 +960,15 @@ mod tests {
             })
             .unwrap();
         editor.invoke_apply_dialog();
-        assert_eq!(editor.get_dialog(), LayerDialog::Delete);
+        assert_eq!(editor.get_dialog(), LayerDialog::None);
         assert_eq!(editor.get_status().id, "config-edit-conflict");
+        assert_eq!(document.read().layout().layers.len(), 2);
+
+        // Closing forgets the source: a stray apply cannot delete anything.
+        editor.invoke_open_dialog(LayerDialog::Delete);
+        editor.invoke_close_dialog();
+        editor.set_dialog(LayerDialog::Delete);
+        editor.invoke_apply_dialog();
         assert_eq!(document.read().layout().layers.len(), 2);
 
         editor.invoke_open_dialog(LayerDialog::Create);
@@ -1066,7 +1012,9 @@ mod tests {
             })
             .unwrap();
         let editor = ui.global::<LayersEditor>();
-        assert!(!editor.invoke_remove_extra(), "nothing requested");
+        editor.invoke_refresh();
+        editor.invoke_remove_extra();
+        assert_eq!(editor.get_extras().row_count(), 1, "nothing requested");
         editor.invoke_request_remove_extra(0);
         assert_eq!(editor.get_delete_extra(), 0);
         document
@@ -1074,9 +1022,19 @@ mod tests {
                 config.set_extra_key(&second, None, "F14", KeyAssignment::Swallow)
             })
             .unwrap();
-        assert!(!editor.invoke_remove_extra());
+        editor.invoke_remove_extra();
+        assert_eq!(
+            editor.get_delete_extra(),
+            -1,
+            "a changed layer closes the confirmation"
+        );
+        assert_eq!(
+            document.read().layer_key(&second, "F13"),
+            KeyAssignment::Swallow
+        );
         editor.invoke_request_remove_extra(0);
-        assert!(editor.invoke_remove_extra());
+        editor.invoke_remove_extra();
+        assert_eq!(editor.get_delete_extra(), -1);
         assert_eq!(editor.get_extras().row_count(), 1);
     }
 
@@ -1097,5 +1055,168 @@ mod tests {
             Some("New")
         );
         assert_eq!(document.read().layout().layers[1].id, second);
+    }
+
+    fn key_index(code: &str) -> i32 {
+        keyboard::layer_keys().position(|key| key == code).unwrap() as i32
+    }
+
+    #[test]
+    fn swapping_keys_exchanges_assignments_and_ignores_bad_indices() {
+        let (_dir, document, ui, _, second) = page();
+        let editor = ui.global::<LayersEditor>();
+        let (q, w) = (key_index("KeyQ"), key_index("KeyW"));
+        assign(&ui, &document, q, "F1", choice(false, false)).unwrap();
+        editor.invoke_swap_keys(q, w);
+        assert_eq!(
+            document.read().layer_key(&second, "KeyQ"),
+            KeyAssignment::Transparent
+        );
+        assert_eq!(
+            document.read().layer_key(&second, "KeyW"),
+            KeyAssignment::Action("F1".into())
+        );
+        let before = document.read().layout().clone();
+        editor.invoke_swap_keys(-1, q);
+        editor.invoke_swap_keys(q, 10_000);
+        assert_eq!(*document.read().layout(), before);
+    }
+
+    #[test]
+    fn reordering_extra_rows_uses_the_stored_order() {
+        let (_dir, document, ui, _, second) = page();
+        document
+            .edit(View::Layers, |config| {
+                for key in ["F13", "F14", "F15"] {
+                    config.set_extra_key(&second, None, key, KeyAssignment::Swallow)?;
+                }
+                Ok(())
+            })
+            .unwrap();
+        // The page model is stale (own-view edits do not notify it); the
+        // stored order still decides what moves.
+        let editor = ui.global::<LayersEditor>();
+        editor.invoke_reorder_extra(2, 0);
+        assert_eq!(
+            document.read().layout().layer_keymaps[&second].extra_key_order,
+            ["F15", "F13", "F14"]
+        );
+        let rows: Vec<_> = editor
+            .get_extras()
+            .iter()
+            .map(|row| row.key.to_string())
+            .collect();
+        assert_eq!(rows, ["F15", "F13", "F14"]);
+        editor.invoke_reorder_extra(-1, 0);
+        editor.invoke_reorder_extra(0, 9);
+        assert_eq!(
+            document.read().layout().layer_keymaps[&second].extra_key_order,
+            ["F15", "F13", "F14"]
+        );
+    }
+
+    #[test]
+    fn renaming_keeps_the_stored_description() {
+        let (_dir, document, ui, first, second) = page();
+        let editor = ui.global::<LayersEditor>();
+        // A description the page has not shown yet must survive a rename.
+        editor.set_description("stale".into());
+        assert!(editor.invoke_update_name("  Renamed ".into()));
+        let layer = document.read().layout().layers[1].clone();
+        assert_eq!(layer.name, "Renamed");
+        assert_eq!(layer.description.as_deref(), Some("About"));
+        assert!(!editor.invoke_update_name("First".into()), "taken");
+        assert!(!editor.invoke_update_name("  ".into()), "empty");
+        assert_eq!(document.read().layout().layers[1].name, "Renamed");
+        assert_eq!(document.read().layout().layers[0].id, first);
+        assert_eq!(layer.id, second);
+    }
+
+    #[test]
+    fn taken_extra_keys_cover_the_grid_and_other_rows() {
+        let (_dir, document, ui, _, second) = page();
+        document
+            .edit(View::Layers, |config| {
+                config.set_extra_key(&second, None, "F13", KeyAssignment::Swallow)?;
+                config.set_extra_key(&second, None, "F14", KeyAssignment::Swallow)
+            })
+            .unwrap();
+        let editor = ui.global::<LayersEditor>();
+        let taken = taken_extra_keys(&ui, &document);
+        assert!(taken.iter().any(|key| key == "KeyQ"));
+        assert!(taken.iter().any(|key| key == "F13") && taken.iter().any(|key| key == "F14"));
+        editor.set_dialog_key("F13".into());
+        let taken = taken_extra_keys(&ui, &document);
+        assert!(
+            !taken.iter().any(|key| key == "F13"),
+            "the edited row may keep its key"
+        );
+        editor.set_selected_id("missing".into());
+        assert!(
+            !taken_extra_keys(&ui, &document)
+                .iter()
+                .any(|key| key == "F14")
+        );
+    }
+
+    #[test]
+    fn extra_rows_cannot_inherit_in_the_picker() {
+        let (_dir, document, ui, _, second) = page();
+        document
+            .edit(View::Layers, |config| {
+                config.set_extra_key(&second, None, "F13", KeyAssignment::Swallow)
+            })
+            .unwrap();
+        ui.global::<LayersEditor>().invoke_refresh();
+        let request = picker_request(&ui, &document, PickerTarget::ExtraAction, 0);
+        assert!(!request.allow_default && request.swallowed);
+        let request = picker_request(&ui, &document, PickerTarget::ExtraAction, -1);
+        assert!(!request.allow_default && !request.swallowed, "a new row");
+        let request = picker_request(&ui, &document, PickerTarget::LayerAction, key_index("KeyQ"));
+        assert!(request.allow_default);
+    }
+
+    #[test]
+    fn triggers_list_enabled_hold_rules_with_labels() {
+        let (_dir, document, ui, _, second) = page();
+        let editor = ui.global::<LayersEditor>();
+        assert_eq!(editor.get_triggers().row_count(), 0);
+        document
+            .edit(View::Rules, |config| {
+                config.update_layout(|layout| {
+                    for key in ["CapsLock", "ShiftLeft+KeyA", "CapsLock"] {
+                        let mut rule = lhc_core::profile::model::KeyRule::new(
+                            format!("rule-{}", layout.rules.len()),
+                            key,
+                        );
+                        rule.layer_id = second.clone();
+                        rule.hold_behavior = Some(lhc_core::profile::model::HoldBehavior::Layer);
+                        layout.rules.push(rule);
+                    }
+                })
+            })
+            .unwrap();
+        let triggers: Vec<_> = editor
+            .get_triggers()
+            .iter()
+            .map(|trigger| (trigger.code.to_string(), trigger.label.to_string()))
+            .collect();
+        assert_eq!(triggers.len(), 2, "duplicates are listed once");
+        assert_eq!(triggers[1].0, "ShiftLeft+KeyA");
+        assert!(triggers[1].1.ends_with("+A"), "{:?}", triggers[1]);
+    }
+
+    #[test]
+    fn adding_an_extra_row_needs_a_layer() {
+        let (_dir, document, ui, first, second) = page();
+        for id in [first, second] {
+            document
+                .edit(View::Rules, |config| config.delete_layer(&id))
+                .unwrap();
+        }
+        let editor = ui.global::<LayersEditor>();
+        editor.set_dialog_key("F13".into());
+        editor.invoke_add_extra();
+        assert_eq!(editor.get_dialog_key(), "F13", "the picker was not opened");
     }
 }

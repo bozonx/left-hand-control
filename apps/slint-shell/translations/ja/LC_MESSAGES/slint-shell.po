@@ -343,9 +343,6 @@ msgstr "レイヤー名の変更"
 msgid "Duplicate layer"
 msgstr "レイヤーの複製"
 
-msgid "Delete layer?"
-msgstr "レイヤーを削除しますか?"
-
 msgid "Edit layer key"
 msgstr "レイヤキーの編集"
 
@@ -354,9 +351,6 @@ msgstr "名前"
 
 msgid "Description"
 msgstr "説明"
-
-msgid "Rules using this layer will return to the base layer."
-msgstr "このレイヤーを使用するルールは基本レイヤーに戻ります。"
 
 msgid "Transparent"
 msgstr "透明"
@@ -1318,9 +1312,6 @@ msgstr "新しい"
 
 msgid "Auto"
 msgstr "自動"
-
-msgid "Delete extra key?"
-msgstr "余分なキーを削除しますか?"
 
 msgid "This key assignment will be removed from the layer."
 msgstr "このキー割り当てはレイヤーから削除されます。"
@@ -3408,9 +3399,6 @@ msgstr "ページのすべてのセルがクリアされます。"
 msgid "Not activated by any trigger."
 msgstr "このレイヤーを有効にするトリガーがありません。"
 
-msgid "Activated by: {}"
-msgstr "有効にするトリガー: {}"
-
 msgid "Configure triggers"
 msgstr "トリガーを設定"
 
@@ -3521,3 +3509,18 @@ msgstr "キャプチャをキャンセルしました。"
 
 msgid "Captured: {}"
 msgstr "キャプチャ済み: {}"
+
+msgid "Ctrl+X, then Ctrl+V on another key: swap their assignments"
+msgstr "Ctrl+X の後、別のキーで Ctrl+V：割り当てを入れ替え"
+
+msgid "Activated by:"
+msgstr "有効にするトリガー:"
+
+msgid "Delete layer “{}”?"
+msgstr "レイヤー「{}」を削除しますか?"
+
+msgid "Its key assignments will be deleted. Rules that hold this layer will stop activating it."
+msgstr "キーの割り当ては削除されます。このレイヤーを保持するルールは、このレイヤーを有効にしなくなります。"
+
+msgid "Delete extra key “{}”?"
+msgstr "追加キー「{}」を削除しますか?"

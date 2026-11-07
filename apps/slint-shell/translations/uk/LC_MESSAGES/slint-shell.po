@@ -347,9 +347,6 @@ msgstr "Перейменувати шар"
 msgid "Duplicate layer"
 msgstr "Дублювати шар"
 
-msgid "Delete layer?"
-msgstr "Видалити шар?"
-
 msgid "Edit layer key"
 msgstr "Редагувати клавішу шару"
 
@@ -358,9 +355,6 @@ msgstr "Ім'я"
 
 msgid "Description"
 msgstr "опис"
-
-msgid "Rules using this layer will return to the base layer."
-msgstr "Правила, які використовують цей шар, повернуться до базового рівня."
 
 msgid "Transparent"
 msgstr "Прозорий"
@@ -1365,9 +1359,6 @@ msgstr "новий"
 
 msgid "Auto"
 msgstr "Автоматично"
-
-msgid "Delete extra key?"
-msgstr "Видалити додатковий ключ?"
 
 msgid "This key assignment will be removed from the layer."
 msgstr "Це призначення клавіші буде видалено з шару."
@@ -3655,9 +3646,6 @@ msgstr "Усі комірки сторінки буде очищено."
 msgid "Not activated by any trigger."
 msgstr "Не активується жодним тригером."
 
-msgid "Activated by: {}"
-msgstr "Активується: {}"
-
 msgid "Configure triggers"
 msgstr "Налаштувати тригери"
 
@@ -3768,3 +3756,18 @@ msgstr "Захоплення скасовано."
 
 msgid "Captured: {}"
 msgstr "Захоплено: {}"
+
+msgid "Ctrl+X, then Ctrl+V on another key: swap their assignments"
+msgstr "Ctrl+X, потім Ctrl+V на іншій клавіші: поміняти призначення місцями"
+
+msgid "Activated by:"
+msgstr "Активується:"
+
+msgid "Delete layer “{}”?"
+msgstr "Видалити шар «{}»?"
+
+msgid "Its key assignments will be deleted. Rules that hold this layer will stop activating it."
+msgstr "Призначення його клавіш буде видалено. Правила, що утримують цей шар, перестануть його активувати."
+
+msgid "Delete extra key “{}”?"
+msgstr "Видалити додаткову клавішу «{}»?"

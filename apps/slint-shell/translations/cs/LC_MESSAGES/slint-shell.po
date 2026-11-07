@@ -347,9 +347,6 @@ msgstr "Přejmenovat vrstvu"
 msgid "Duplicate layer"
 msgstr "Duplikovat vrstvu"
 
-msgid "Delete layer?"
-msgstr "Smazat vrstvu?"
-
 msgid "Edit layer key"
 msgstr "Upravit klíč vrstvy"
 
@@ -358,9 +355,6 @@ msgstr "Jméno"
 
 msgid "Description"
 msgstr "Popis"
-
-msgid "Rules using this layer will return to the base layer."
-msgstr "Pravidla používající tuto vrstvu se vrátí do základní vrstvy."
 
 msgid "Transparent"
 msgstr "Průhledný"
@@ -1357,9 +1351,6 @@ msgstr "Nový"
 
 msgid "Auto"
 msgstr "Automaticky"
-
-msgid "Delete extra key?"
-msgstr "Smazat nadbytečný klíč?"
 
 msgid "This key assignment will be removed from the layer."
 msgstr "Toto přiřazení klíče bude z vrstvy odstraněno."
@@ -3627,9 +3618,6 @@ msgstr "Všechny buňky stránky budou vyprázdněny."
 msgid "Not activated by any trigger."
 msgstr "Není aktivována žádným spouštěčem."
 
-msgid "Activated by: {}"
-msgstr "Aktivována pomocí: {}"
-
 msgid "Configure triggers"
 msgstr "Nastavit spouštěče"
 
@@ -3740,3 +3728,18 @@ msgstr "Zachytávání zrušeno."
 
 msgid "Captured: {}"
 msgstr "Zachyceno: {}"
+
+msgid "Ctrl+X, then Ctrl+V on another key: swap their assignments"
+msgstr "Ctrl+X, pak Ctrl+V na jiné klávese: prohodit přiřazení"
+
+msgid "Activated by:"
+msgstr "Aktivována pomocí:"
+
+msgid "Delete layer “{}”?"
+msgstr "Smazat vrstvu „{}“?"
+
+msgid "Its key assignments will be deleted. Rules that hold this layer will stop activating it."
+msgstr "Přiřazení jejích kláves budou smazána. Pravidla, která drží tuto vrstvu, ji přestanou aktivovat."
+
+msgid "Delete extra key “{}”?"
+msgstr "Smazat doplňkovou klávesu „{}“?"

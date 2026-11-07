@@ -343,9 +343,6 @@ msgstr "레이어 이름 바꾸기"
 msgid "Duplicate layer"
 msgstr "레이어 복제"
 
-msgid "Delete layer?"
-msgstr "레이어를 삭제하시겠습니까?"
-
 msgid "Edit layer key"
 msgstr "레이어 키 수정"
 
@@ -354,9 +351,6 @@ msgstr "이름"
 
 msgid "Description"
 msgstr "설명"
-
-msgid "Rules using this layer will return to the base layer."
-msgstr "이 레이어를 사용하는 규칙은 기본 레이어로 돌아갑니다."
 
 msgid "Transparent"
 msgstr "투명한"
@@ -1319,9 +1313,6 @@ msgstr "새로운"
 
 msgid "Auto"
 msgstr "자동"
-
-msgid "Delete extra key?"
-msgstr "추가 키를 삭제하시겠습니까?"
 
 msgid "This key assignment will be removed from the layer."
 msgstr "이 키 할당은 레이어에서 제거됩니다."
@@ -3398,9 +3389,6 @@ msgstr "페이지의 모든 셀이 비워집니다."
 msgid "Not activated by any trigger."
 msgstr "이 레이어를 활성화하는 트리거가 없습니다."
 
-msgid "Activated by: {}"
-msgstr "활성화 트리거: {}"
-
 msgid "Configure triggers"
 msgstr "트리거 설정"
 
@@ -3511,3 +3499,18 @@ msgstr "캡처가 취소되었습니다."
 
 msgid "Captured: {}"
 msgstr "캡처됨: {}"
+
+msgid "Ctrl+X, then Ctrl+V on another key: swap their assignments"
+msgstr "Ctrl+X 후 다른 키에서 Ctrl+V: 할당 교환"
+
+msgid "Activated by:"
+msgstr "활성화 트리거:"
+
+msgid "Delete layer “{}”?"
+msgstr "레이어 “{}”을(를) 삭제하시겠습니까?"
+
+msgid "Its key assignments will be deleted. Rules that hold this layer will stop activating it."
+msgstr "키 할당이 삭제됩니다. 이 레이어를 유지하는 규칙은 더 이상 이 레이어를 활성화하지 않습니다."
+
+msgid "Delete extra key “{}”?"
+msgstr "추가 키 “{}”을(를) 삭제하시겠습니까?"

@@ -351,9 +351,6 @@ msgstr "Réteg átnevezése"
 msgid "Duplicate layer"
 msgstr "Réteg másolása"
 
-msgid "Delete layer?"
-msgstr "Törli a réteget?"
-
 msgid "Edit layer key"
 msgstr "Rétegkulcs szerkesztése"
 
@@ -362,9 +359,6 @@ msgstr "Név"
 
 msgid "Description"
 msgstr "Leírás"
-
-msgid "Rules using this layer will return to the base layer."
-msgstr "Az ezt a réteget használó szabályok visszatérnek az alapréteghez."
 
 msgid "Transparent"
 msgstr "Átlátszó"
@@ -1377,9 +1371,6 @@ msgstr "Új"
 
 msgid "Auto"
 msgstr "Automatikus"
-
-msgid "Delete extra key?"
-msgstr "Törli az extra kulcsot?"
 
 msgid "This key assignment will be removed from the layer."
 msgstr "Ez a kulcs-hozzárendelés el lesz távolítva a rétegből."
@@ -3688,9 +3679,6 @@ msgstr "Az oldal összes cellája ki lesz ürítve."
 msgid "Not activated by any trigger."
 msgstr "Egyetlen indító sem aktiválja."
 
-msgid "Activated by: {}"
-msgstr "Aktiválja: {}"
-
 msgid "Configure triggers"
 msgstr "Indítók beállítása"
 
@@ -3801,3 +3789,18 @@ msgstr "Rögzítés megszakítva."
 
 msgid "Captured: {}"
 msgstr "Rögzítve: {}"
+
+msgid "Ctrl+X, then Ctrl+V on another key: swap their assignments"
+msgstr "Ctrl+X, majd Ctrl+V egy másik billentyűn: a hozzárendelések cseréje"
+
+msgid "Activated by:"
+msgstr "Aktiválja:"
+
+msgid "Delete layer “{}”?"
+msgstr "Törli a(z) „{}” réteget?"
+
+msgid "Its key assignments will be deleted. Rules that hold this layer will stop activating it."
+msgstr "A billentyű-hozzárendelései törlődnek. A réteget nyomva tartó szabályok többé nem aktiválják."
+
+msgid "Delete extra key “{}”?"
+msgstr "Törli a(z) „{}” extra billentyűt?"

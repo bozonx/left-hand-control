@@ -14,6 +14,8 @@ import { Button, TextEdit, Palette } from "std-widgets.slint";
 /// layer key index passed back with `LayersEditor.edit-key`.
 /// `holds`: the keystroke keeps its modifiers held until the layer is released.
 export struct LayerKeyCell { index: int, label: string, code: string, kind: Assignment, action: string, icon: ActionKind, category: PickerCategory, emoji: bool, holds: bool }
+/// A key that activates the layer while held: its code and US-layout label.
+export struct LayerTrigger { code: string, label: string }
 export struct LayerExtraRow { key: string, kind: Assignment, action: string, icon: ActionKind, category: PickerCategory, holds: bool }
 
 /// Layers of the layout being edited and their keymaps.
@@ -30,7 +32,8 @@ export global LayersEditor {
     in property <[LayerKeyCell]> right-cells;
     in property <[LayerExtraRow]> extras;
     in property <Message> status;
-    in property <Message> activation;
+    /// Enabled rule triggers that hold this layer, in rule order.
+    in property <[LayerTrigger]> triggers;
     in-out property <LayerDialog> dialog: LayerDialog.none;
     in-out property <string> dialog-name;
     in-out property <string> dialog-description;
@@ -44,14 +47,17 @@ export global LayersEditor {
     /// Choose the assignment of layer key `index`.
     callback edit-key(int);
     callback apply-dialog();
+    /// Close the open dialog or confirmation without applying it.
+    callback close-dialog();
     /// Move layer `from` to `to`; false when nothing moved.
     callback reorder(int, int) -> bool;
     callback reorder-extra(int, int);
     /// Exchange the assignments of layer keys `from` and `to`.
     callback swap-keys(int, int);
     callback request-remove-extra(int);
-    /// Remove the extra row confirmed in `delete-extra`.
-    callback remove-extra() -> bool;
+    /// Remove the extra row confirmed in `delete-extra`; closes the
+    /// confirmation unless the removal failed and can be retried.
+    callback remove-extra();
     callback update-description(string) -> bool;
     callback update-name(string) -> bool;
     /// Why `name` cannot be used for a new layer or, when `renaming`, for the selected one.
@@ -177,7 +183,7 @@ component KeyCap inherits Rectangle {
     accessible-role: button;
     accessible-label: root.cell.label + " (" + root.cell.code + ")";
     accessible-value: root.cell.code;
-    accessible-description: root.cell.kind == Assignment.transparent ? @tr("Inherit") : root.cell.kind == Assignment.swallow ? @tr("Suppress") : root.cell.holds ? root.cell.action + ". " + @tr("Keep modifiers held until the layer is released") : root.cell.action;
+    accessible-description: (root.cell.kind == Assignment.transparent ? @tr("Inherit") : root.cell.kind == Assignment.swallow ? @tr("Suppress") : root.cell.holds ? root.cell.action + ". " + @tr("Keep modifiers held until the layer is released") : root.cell.action) + ". " + @tr("Ctrl+X, then Ctrl+V on another key: swap their assignments");
     accessible-action-default => { root.clicked(); }
     VerticalLayout {
         padding: Theme.space-xs;
@@ -228,6 +234,7 @@ component KeyCap inherits Rectangle {
                 Text { text: root.cell.code; color: Theme.text; }
                 if root.cell.kind != Assignment.transparent: HorizontalLayout { spacing: Theme.space-s; CategoryIcon { category: root.cell.category; } Text { text: root.cell.kind == Assignment.swallow ? @tr("Suppress") : root.cell.action; color: Theme.text; } }
                 if root.cell.holds: HorizontalLayout { spacing: Theme.space-s; VerticalLayout { alignment: center; HoldsMarker { } } Text { text: @tr("Keep modifiers held until the layer is released"); color: Theme.muted; } }
+                Text { text: @tr("Ctrl+X, then Ctrl+V on another key: swap their assignments"); color: Theme.muted; font-size: Theme.font-caption; }
             }
         }
     }
@@ -253,7 +260,7 @@ component HandGrid inherits VerticalLayout {
         // Gaps belong to the cell before them, so the target does not flicker between keys.
         let col = floor(local-x / (root.cell-width + root.spacing));
         let row = floor(local-y / (root.cell-height + root.spacing));
-        if row >= root.cells.length / root.columns { return -1; }
+        if col >= root.columns || row >= root.cells.length / root.columns { return -1; }
         return root.cells[row * root.columns + col].index;
     }
     horizontal-stretch: root.columns;
@@ -303,12 +310,14 @@ export component LayersPage inherits PageLayout {
                     accessible-role: tab;
                     accessible-id: "lhc-layer-tab-" + index;
                     accessible-label: name;
+                    accessible-description: "Alt+← / Alt+→";
                     accessible-item-selectable: true;
                     accessible-item-selected: LayersEditor.selected == index;
                     accessible-action-default => { LayersEditor.choose(index); }
                     HorizontalLayout {
                         padding-left: Theme.space-l; padding-right: Theme.space-l;
-                        Text { text: name; color: Theme.text; font-size: Theme.font-medium; font-weight: Theme.weight-semibold; vertical-alignment: center; }
+                        // Long names are cut so one tab cannot push the others out of view.
+                        Text { max-width: 240px; text: name; color: Theme.text; font-size: Theme.font-medium; font-weight: Theme.weight-semibold; vertical-alignment: center; overflow: elide; }
                     }
                     layer-focus := NavigationFocus {
                         kind: horizontal-tabs;
@@ -385,7 +394,18 @@ export component LayersPage inherits PageLayout {
                     }
                     HorizontalLayout {
                         spacing: Theme.space-m;
-                        Text { horizontal-stretch: 1; min-width: 0px; text: Locale.text(LayersEditor.activation); color: Theme.muted; wrap: word-wrap; vertical-alignment: center; }
+                        if LayersEditor.triggers.length == 0: Text { horizontal-stretch: 1; min-width: 0px; text: @tr("Not activated by any trigger."); color: Theme.muted; wrap: word-wrap; vertical-alignment: center; }
+                        if LayersEditor.triggers.length > 0: HorizontalLayout {
+                            horizontal-stretch: 1; min-width: 0px; spacing: Theme.space-s; alignment: start;
+                            Text { text: @tr("Activated by:"); color: Theme.muted; vertical-alignment: center; }
+                            for trigger in LayersEditor.triggers: Rectangle {
+                                border-radius: Theme.radius-small; border-width: 1px; border-color: Theme.border; background: Theme.surface;
+                                accessible-role: text; accessible-label: trigger.code;
+                                HorizontalLayout { padding-left: Theme.space-s; padding-right: Theme.space-s;
+                                    Text { text: root.label-mode == LabelMode.label ? trigger.label : trigger.code; color: Theme.text; font-size: Theme.font-caption; vertical-alignment: center; overflow: elide; }
+                                }
+                            }
+                        }
                         Button { text: @tr("Configure triggers"); horizontal-stretch: 0; clicked => { root.configure-triggers(); } }
                     }
 
@@ -512,11 +532,11 @@ export component LayersPage inherits PageLayout {
 export component LayerDialogOverlay inherits FocusScope {
     focus-on-tab-navigation: false;
     enabled: (LayersEditor.dialog != LayerDialog.none || LayersEditor.delete-extra >= 0) && !ActionPicker.opened;
-    key-pressed(event) => { if event.text == Key.Escape { LayersEditor.dialog = LayerDialog.none; LayersEditor.delete-extra = -1; return accept; } return reject; }
+    key-pressed(event) => { if event.text == Key.Escape { LayersEditor.close-dialog(); return accept; } return reject; }
     if LayersEditor.dialog == LayerDialog.create || LayersEditor.dialog == LayerDialog.duplicate: DialogFrame {
         title: LayersEditor.dialog == LayerDialog.create ? @tr("New layer") : @tr("Duplicate layer");
         card-height: 500px;
-        close => { LayersEditor.dialog = LayerDialog.none; }
+        close => { LayersEditor.close-dialog(); }
         // The form scrolls in a short window; the buttons stay visible.
         ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
             preferred-height: layer-form.preferred-height;
@@ -536,19 +556,23 @@ export component LayerDialogOverlay inherits FocusScope {
         }
         HorizontalLayout { padding: Theme.space-m; vertical-stretch: 0; spacing: Theme.space-m;
             Rectangle { horizontal-stretch: 1; }
-            Button { text: @tr("Cancel"); clicked => { LayersEditor.dialog = LayerDialog.none; } }
+            Button { text: @tr("Cancel"); clicked => { LayersEditor.close-dialog(); } }
             Button { text: @tr("Apply"); primary: true; enabled: LayersEditor.name-error(LayersEditor.dialog-name, false).id == ""; clicked => { LayersEditor.apply-dialog(); } }
         }
     }
     if LayersEditor.dialog == LayerDialog.delete: ConfirmDialog {
-        title: @tr("Delete layer?"); body: @tr("Rules using this layer will return to the base layer."); confirm-text: @tr("Delete");
-        confirm => { LayersEditor.apply-dialog(); } cancel => { LayersEditor.dialog = LayerDialog.none; }
+        title: @tr("Delete layer “{}”?", LayersEditor.names[LayersEditor.selected]);
+        body: @tr("Its key assignments will be deleted. Rules that hold this layer will stop activating it."); confirm-text: @tr("Delete");
+        error: Locale.text(LayersEditor.status);
+        confirm => { LayersEditor.apply-dialog(); } cancel => { LayersEditor.close-dialog(); }
     }
 
     if LayersEditor.delete-extra >= 0: ConfirmDialog {
-        title: @tr("Delete extra key?"); body: @tr("This key assignment will be removed from the layer."); confirm-text: @tr("Delete");
-        confirm => { if LayersEditor.remove-extra() { LayersEditor.delete-extra = -1; } }
-        cancel => { LayersEditor.delete-extra = -1; }
+        title: @tr("Delete extra key “{}”?", LayersEditor.extras[LayersEditor.delete-extra].key);
+        body: @tr("This key assignment will be removed from the layer."); confirm-text: @tr("Delete");
+        error: Locale.text(LayersEditor.status);
+        confirm => { LayersEditor.remove-extra(); }
+        cancel => { LayersEditor.close-dialog(); }
     }
 
 }

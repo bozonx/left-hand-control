@@ -350,9 +350,6 @@ msgstr "ფენის გადარქმევა"
 msgid "Duplicate layer"
 msgstr "ფენის დუბლირება"
 
-msgid "Delete layer?"
-msgstr "წაშალოთ ფენა?"
-
 msgid "Edit layer key"
 msgstr "ფენის კლავიშის რედაქტირება"
 
@@ -361,9 +358,6 @@ msgstr "სახელი"
 
 msgid "Description"
 msgstr "აღწერა"
-
-msgid "Rules using this layer will return to the base layer."
-msgstr "ამ ფენის გამოყენების წესები დაუბრუნდება საბაზისო ფენას."
 
 msgid "Transparent"
 msgstr "გამჭვირვალე"
@@ -1367,9 +1361,6 @@ msgstr "ახალი"
 
 msgid "Auto"
 msgstr "ავტომატური"
-
-msgid "Delete extra key?"
-msgstr "წაშალოთ დამატებითი გასაღები?"
 
 msgid "This key assignment will be removed from the layer."
 msgstr "გასაღების ეს მინიჭება წაიშლება ფენიდან."
@@ -3638,9 +3629,6 @@ msgstr "გვერდის ყველა უჯრა გასუფთა
 msgid "Not activated by any trigger."
 msgstr "არცერთი ტრიგერი არ ააქტიურებს."
 
-msgid "Activated by: {}"
-msgstr "ააქტიურებს: {}"
-
 msgid "Configure triggers"
 msgstr "ტრიგერების გამართვა"
 
@@ -3751,3 +3739,18 @@ msgstr "ჩაწერა გაუქმდა."
 
 msgid "Captured: {}"
 msgstr "ჩაწერილია: {}"
+
+msgid "Ctrl+X, then Ctrl+V on another key: swap their assignments"
+msgstr "Ctrl+X, შემდეგ Ctrl+V სხვა კლავიშზე: მინიჭებების გაცვლა"
+
+msgid "Activated by:"
+msgstr "ააქტიურებს:"
+
+msgid "Delete layer “{}”?"
+msgstr "წაშალოთ ფენა „{}“?"
+
+msgid "Its key assignments will be deleted. Rules that hold this layer will stop activating it."
+msgstr "მისი კლავიშების მინიჭებები წაიშლება. წესები, რომლებიც ამ ფენას იჭერენ, აღარ გაააქტიურებენ მას."
+
+msgid "Delete extra key “{}”?"
+msgstr "წაშალოთ დამატებითი კლავიში „{}“?"

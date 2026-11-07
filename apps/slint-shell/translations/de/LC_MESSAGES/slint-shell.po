@@ -348,9 +348,6 @@ msgstr "Ebene umbenennen"
 msgid "Duplicate layer"
 msgstr "Ebene duplizieren"
 
-msgid "Delete layer?"
-msgstr "Ebene löschen?"
-
 msgid "Edit layer key"
 msgstr "Ebenenschlüssel bearbeiten"
 
@@ -359,9 +356,6 @@ msgstr "Name"
 
 msgid "Description"
 msgstr "Beschreibung"
-
-msgid "Rules using this layer will return to the base layer."
-msgstr "Regeln, die diese Ebene verwenden, kehren zur Basisebene zurück."
 
 msgid "Transparent"
 msgstr "Transparent"
@@ -1379,9 +1373,6 @@ msgstr "Neu"
 
 msgid "Auto"
 msgstr "Automatisch"
-
-msgid "Delete extra key?"
-msgstr "Zusatzschlüssel löschen?"
 
 msgid "This key assignment will be removed from the layer."
 msgstr "Diese Tastenbelegung wird aus der Ebene entfernt."
@@ -3727,9 +3718,6 @@ msgstr "Alle Zellen der Seite werden geleert."
 msgid "Not activated by any trigger."
 msgstr "Wird von keinem Auslöser aktiviert."
 
-msgid "Activated by: {}"
-msgstr "Aktiviert durch: {}"
-
 msgid "Configure triggers"
 msgstr "Auslöser konfigurieren"
 
@@ -3840,3 +3828,18 @@ msgstr "Aufnahme abgebrochen."
 
 msgid "Captured: {}"
 msgstr "Aufgenommen: {}"
+
+msgid "Ctrl+X, then Ctrl+V on another key: swap their assignments"
+msgstr "Strg+X, dann Strg+V auf einer anderen Taste: Belegungen tauschen"
+
+msgid "Activated by:"
+msgstr "Aktiviert durch:"
+
+msgid "Delete layer “{}”?"
+msgstr "Ebene „{}“ löschen?"
+
+msgid "Its key assignments will be deleted. Rules that hold this layer will stop activating it."
+msgstr "Ihre Tastenbelegungen werden gelöscht. Regeln, die diese Ebene halten, aktivieren sie nicht mehr."
+
+msgid "Delete extra key “{}”?"
+msgstr "Zusatztaste „{}“ löschen?"

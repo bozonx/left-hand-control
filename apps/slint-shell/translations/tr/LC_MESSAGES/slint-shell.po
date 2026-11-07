@@ -350,9 +350,6 @@ msgstr "Katmanı yeniden adlandır"
 msgid "Duplicate layer"
 msgstr "Katmanı çoğalt"
 
-msgid "Delete layer?"
-msgstr "Katman silinsin mi?"
-
 msgid "Edit layer key"
 msgstr "Katman anahtarını düzenle"
 
@@ -361,9 +358,6 @@ msgstr "İsim"
 
 msgid "Description"
 msgstr "Tanım"
-
-msgid "Rules using this layer will return to the base layer."
-msgstr "Bu katmanı kullanan kurallar temel katmana geri dönecektir."
 
 msgid "Transparent"
 msgstr "Şeffaf"
@@ -1364,9 +1358,6 @@ msgstr "Yeni"
 
 msgid "Auto"
 msgstr "Otomatik"
-
-msgid "Delete extra key?"
-msgstr "Ekstra anahtar silinsin mi?"
 
 msgid "This key assignment will be removed from the layer."
 msgstr "Bu anahtar ataması katmandan kaldırılacak."
@@ -3648,9 +3639,6 @@ msgstr "Sayfadaki tüm hücreler temizlenecek."
 msgid "Not activated by any trigger."
 msgstr "Hiçbir tetikleyici tarafından etkinleştirilmiyor."
 
-msgid "Activated by: {}"
-msgstr "Etkinleştiren: {}"
-
 msgid "Configure triggers"
 msgstr "Tetikleyicileri yapılandır"
 
@@ -3761,3 +3749,18 @@ msgstr "Yakalama iptal edildi."
 
 msgid "Captured: {}"
 msgstr "Yakalandı: {}"
+
+msgid "Ctrl+X, then Ctrl+V on another key: swap their assignments"
+msgstr "Ctrl+X, ardından başka bir tuşta Ctrl+V: atamalarını değiştir"
+
+msgid "Activated by:"
+msgstr "Etkinleştiren:"
+
+msgid "Delete layer “{}”?"
+msgstr "“{}” katmanı silinsin mi?"
+
+msgid "Its key assignments will be deleted. Rules that hold this layer will stop activating it."
+msgstr "Tuş atamaları silinecek. Bu katmanı basılı tutan kurallar artık onu etkinleştirmeyecek."
+
+msgid "Delete extra key “{}”?"
+msgstr "“{}” ek tuşu silinsin mi?"

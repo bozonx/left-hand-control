@@ -347,9 +347,6 @@ msgstr "Renomear camada"
 msgid "Duplicate layer"
 msgstr "Duplicar camada"
 
-msgid "Delete layer?"
-msgstr "Excluir camada?"
-
 msgid "Edit layer key"
 msgstr "Editar chave da camada"
 
@@ -358,9 +355,6 @@ msgstr "Nome"
 
 msgid "Description"
 msgstr "Descrição"
-
-msgid "Rules using this layer will return to the base layer."
-msgstr "As regras que usam esta camada retornarão à camada base."
 
 msgid "Transparent"
 msgstr "Transparente"
@@ -1365,9 +1359,6 @@ msgstr "Novo"
 
 msgid "Auto"
 msgstr "Automático"
-
-msgid "Delete extra key?"
-msgstr "Excluir chave extra?"
 
 msgid "This key assignment will be removed from the layer."
 msgstr "Esta atribuição de chave será removida da camada."
@@ -3661,9 +3652,6 @@ msgstr "Todas as células da página serão limpas."
 msgid "Not activated by any trigger."
 msgstr "Nenhum acionador o ativa."
 
-msgid "Activated by: {}"
-msgstr "Ativado por: {}"
-
 msgid "Configure triggers"
 msgstr "Configurar acionadores"
 
@@ -3774,3 +3762,18 @@ msgstr "Captura cancelada."
 
 msgid "Captured: {}"
 msgstr "Capturado: {}"
+
+msgid "Ctrl+X, then Ctrl+V on another key: swap their assignments"
+msgstr "Ctrl+X e depois Ctrl+V em outra tecla: trocar as atribuições"
+
+msgid "Activated by:"
+msgstr "Ativado por:"
+
+msgid "Delete layer “{}”?"
+msgstr "Excluir a camada “{}”?"
+
+msgid "Its key assignments will be deleted. Rules that hold this layer will stop activating it."
+msgstr "As atribuições de teclas serão excluídas. As regras que mantêm esta camada deixarão de ativá-la."
+
+msgid "Delete extra key “{}”?"
+msgstr "Excluir a tecla extra “{}”?"

@@ -343,9 +343,6 @@ msgstr "重命名图层"
 msgid "Duplicate layer"
 msgstr "复制图层"
 
-msgid "Delete layer?"
-msgstr "删除图层？"
-
 msgid "Edit layer key"
 msgstr "编辑图层键"
 
@@ -354,9 +351,6 @@ msgstr "姓名"
 
 msgid "Description"
 msgstr "描述"
-
-msgid "Rules using this layer will return to the base layer."
-msgstr "使用该层的规则将返回到基础层。"
 
 msgid "Transparent"
 msgstr "透明的"
@@ -1311,9 +1305,6 @@ msgstr "新的"
 
 msgid "Auto"
 msgstr "自动"
-
-msgid "Delete extra key?"
-msgstr "删除多余的密钥？"
 
 msgid "This key assignment will be removed from the layer."
 msgstr "该键分配将从层中删除。"
@@ -3329,9 +3320,6 @@ msgstr "页面上的所有单元格都将被清空。"
 msgid "Not activated by any trigger."
 msgstr "没有触发器激活此层。"
 
-msgid "Activated by: {}"
-msgstr "激活此层的触发器：{}"
-
 msgid "Configure triggers"
 msgstr "配置触发器"
 
@@ -3442,3 +3430,18 @@ msgstr "已取消捕获。"
 
 msgid "Captured: {}"
 msgstr "已捕获：{}"
+
+msgid "Ctrl+X, then Ctrl+V on another key: swap their assignments"
+msgstr "Ctrl+X，然后在另一个键上按 Ctrl+V：交换两者的分配"
+
+msgid "Activated by:"
+msgstr "激活此层的触发器："
+
+msgid "Delete layer “{}”?"
+msgstr "删除图层“{}”？"
+
+msgid "Its key assignments will be deleted. Rules that hold this layer will stop activating it."
+msgstr "其按键分配将被删除。按住此图层的规则将不再激活它。"
+
+msgid "Delete extra key “{}”?"
+msgstr "删除额外按键“{}”？"

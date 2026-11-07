@@ -312,6 +312,17 @@ impl ConfigDocument {
         self.update_layout(|layout| layout.rename_layer(id, name, optional_text(description)))
     }
 
+    /// Change only the name, keeping the stored description.
+    pub fn set_layer_name(&mut self, id: &str, name: &str) -> Result<(), ConfigError> {
+        let name = self.layer_name(name, Some(id))?;
+        self.require_layer(id)?;
+        self.update_layout(|layout| {
+            if let Some(layer) = layout.layers.iter_mut().find(|layer| layer.id == id) {
+                layer.name = name;
+            }
+        })
+    }
+
     /// Change only the description, so a layer whose stored name no longer
     /// passes validation can still be described.
     pub fn set_layer_description(
@@ -1033,6 +1044,21 @@ mod tests {
         document.set_layer_description("nav", "  ").unwrap();
         assert_eq!(document.layout().layers[0].description, None);
         assert!(document.set_layer_description("missing", "x").is_err());
+    }
+
+    #[test]
+    fn renaming_keeps_the_description_and_validates_the_name() {
+        let (_dir, mut document) = document(json!({}), LAYOUT);
+        document.set_layer_description("nav", "Arrows").unwrap();
+        document.set_layer_name("nav", " Moves ").unwrap();
+        assert_eq!(document.layout().layers[0].name, "Moves");
+        assert_eq!(
+            document.layout().layers[0].description.as_deref(),
+            Some("Arrows")
+        );
+        assert!(document.set_layer_name("nav", " ").is_err());
+        assert!(document.set_layer_name("missing", "Other").is_err());
+        assert_eq!(document.layout().layers[0].name, "Moves");
     }
 
     #[test]

@@ -351,9 +351,6 @@ msgstr "Renommer le calque"
 msgid "Duplicate layer"
 msgstr "Dupliquer le calque"
 
-msgid "Delete layer?"
-msgstr "Supprimer le calque ?"
-
 msgid "Edit layer key"
 msgstr "Modifier l'identificateur de calque"
 
@@ -362,9 +359,6 @@ msgstr "Nom"
 
 msgid "Description"
 msgstr "Description"
-
-msgid "Rules using this layer will return to the base layer."
-msgstr "Les règles utilisant cette couche reviendront à la couche de base."
 
 msgid "Transparent"
 msgstr "Transparent"
@@ -1388,9 +1382,6 @@ msgstr "Nouveau"
 
 msgid "Auto"
 msgstr "Auto"
-
-msgid "Delete extra key?"
-msgstr "Supprimer la clé supplémentaire ?"
 
 msgid "This key assignment will be removed from the layer."
 msgstr "Cette affectation de clé sera supprimée du calque."
@@ -3751,9 +3742,6 @@ msgstr "Toutes les cellules de la page seront vidées."
 msgid "Not activated by any trigger."
 msgstr "Aucun déclencheur ne l’active."
 
-msgid "Activated by: {}"
-msgstr "Activé par : {}"
-
 msgid "Configure triggers"
 msgstr "Configurer les déclencheurs"
 
@@ -3864,3 +3852,18 @@ msgstr "Capture annulée."
 
 msgid "Captured: {}"
 msgstr "Capturé : {}"
+
+msgid "Ctrl+X, then Ctrl+V on another key: swap their assignments"
+msgstr "Ctrl+X, puis Ctrl+V sur une autre touche : échanger leurs affectations"
+
+msgid "Activated by:"
+msgstr "Activé par :"
+
+msgid "Delete layer “{}”?"
+msgstr "Supprimer le calque « {} » ?"
+
+msgid "Its key assignments will be deleted. Rules that hold this layer will stop activating it."
+msgstr "Ses affectations de touches seront supprimées. Les règles qui maintiennent ce calque ne l’activeront plus."
+
+msgid "Delete extra key “{}”?"
+msgstr "Supprimer la touche supplémentaire « {} » ?"

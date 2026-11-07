@@ -351,9 +351,6 @@ msgstr "Μετονομασία επιπέδου"
 msgid "Duplicate layer"
 msgstr "Αντιγραφή επιπέδου"
 
-msgid "Delete layer?"
-msgstr "Διαγραφή επιπέδου;"
-
 msgid "Edit layer key"
 msgstr "Επεξεργασία κλειδιού επιπέδου"
 
@@ -362,11 +359,6 @@ msgstr "Ονομα"
 
 msgid "Description"
 msgstr "Περιγραφή"
-
-msgid "Rules using this layer will return to the base layer."
-msgstr ""
-"Οι κανόνες που χρησιμοποιούν αυτό το επίπεδο θα επιστρέψουν στο βασικό "
-"επίπεδο."
 
 msgid "Transparent"
 msgstr "Διαφανής"
@@ -1391,9 +1383,6 @@ msgstr "Νέος"
 
 msgid "Auto"
 msgstr "Αυτόματο"
-
-msgid "Delete extra key?"
-msgstr "Διαγραφή επιπλέον κλειδιού;"
 
 msgid "This key assignment will be removed from the layer."
 msgstr "Αυτή η εκχώρηση κλειδιού θα αφαιρεθεί από το επίπεδο."
@@ -3751,9 +3740,6 @@ msgstr "Όλα τα κελιά της σελίδας θα εκκαθαριστο
 msgid "Not activated by any trigger."
 msgstr "Δεν ενεργοποιείται από κανένα έναυσμα."
 
-msgid "Activated by: {}"
-msgstr "Ενεργοποιείται από: {}"
-
 msgid "Configure triggers"
 msgstr "Ρύθμιση εναυσμάτων"
 
@@ -3864,3 +3850,18 @@ msgstr "Η καταγραφή ακυρώθηκε."
 
 msgid "Captured: {}"
 msgstr "Καταγράφηκε: {}"
+
+msgid "Ctrl+X, then Ctrl+V on another key: swap their assignments"
+msgstr "Ctrl+X και μετά Ctrl+V σε άλλο πλήκτρο: ανταλλαγή αντιστοιχίσεων"
+
+msgid "Activated by:"
+msgstr "Ενεργοποιείται από:"
+
+msgid "Delete layer “{}”?"
+msgstr "Διαγραφή επιπέδου «{}»;"
+
+msgid "Its key assignments will be deleted. Rules that hold this layer will stop activating it."
+msgstr "Οι αντιστοιχίσεις πλήκτρων του θα διαγραφούν. Οι κανόνες που κρατούν αυτό το επίπεδο θα πάψουν να το ενεργοποιούν."
+
+msgid "Delete extra key “{}”?"
+msgstr "Διαγραφή επιπλέον πλήκτρου «{}»;"

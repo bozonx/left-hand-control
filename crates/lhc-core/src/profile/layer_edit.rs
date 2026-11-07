@@ -3,7 +3,48 @@
 //! These operations change the layout only; validation of action strings
 //! and saving belong to [`crate::config_document::ConfigDocument`].
 
-use super::model::{HoldBehavior, KeyRule, Layer, LayoutPreset};
+use super::model::{HoldBehavior, KeyRule, Layer, LayerKeymap, LayoutPreset};
+use std::{collections::HashMap, sync::LazyLock};
+
+/// Position of every key in the key catalog, for ordering extra keys.
+static CATALOG_ORDER: LazyLock<HashMap<&'static str, usize>> = LazyLock::new(|| {
+    super::key_catalog::CATEGORIES
+        .iter()
+        .flat_map(|keys| keys.iter().copied())
+        .enumerate()
+        .map(|(index, key)| (key, index))
+        .collect()
+});
+
+impl LayerKeymap {
+    /// Extra keys (every key off the layer grid) with their entries in
+    /// display order: the saved order first, then the rest in key catalog
+    /// order.
+    pub fn extra_entries(&self) -> Vec<(String, Option<String>)> {
+        let order: HashMap<&str, usize> = self
+            .extra_key_order
+            .iter()
+            .enumerate()
+            .map(|(index, key)| (key.as_str(), index))
+            .collect();
+        let mut entries: Vec<_> = self
+            .keys
+            .iter()
+            .filter(|(key, _)| !super::layer_grid::contains(key))
+            .map(|(key, value)| (key.clone(), value.clone()))
+            .collect();
+        entries.sort_by(|(a, _), (b, _)| {
+            let rank = |key: &str| {
+                (
+                    order.get(key).copied().unwrap_or(usize::MAX),
+                    CATALOG_ORDER.get(key).copied().unwrap_or(usize::MAX),
+                )
+            };
+            rank(a).cmp(&rank(b)).then_with(|| a.cmp(b))
+        });
+        entries
+    }
+}
 
 /// What a key does inside a layer keymap.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -263,5 +304,71 @@ mod tests {
         }
         assert_eq!(layout.layer_triggers("nav"), ["CapsLock", "ShiftLeft+KeyA"]);
         assert!(layout.layer_triggers("missing").is_empty());
+    }
+
+    fn keymap(keys: &[(&str, Option<&str>)]) -> LayerKeymap {
+        LayerKeymap {
+            keys: keys
+                .iter()
+                .map(|(key, value)| ((*key).into(), value.map(str::to_owned)))
+                .collect(),
+            ..Default::default()
+        }
+    }
+
+    fn keys(entries: Vec<(String, Option<String>)>) -> Vec<String> {
+        entries.into_iter().map(|(key, _)| key).collect()
+    }
+
+    #[test]
+    fn extra_keys_exclude_grid_keys_and_preserve_assignments() {
+        let map = keymap(&[
+            ("KeyQ", Some("KeyA")),
+            ("KeyW", None),
+            ("Backspace", Some("sys:turnOffScreen")),
+            ("F4", None),
+        ]);
+        let entries = map.extra_entries();
+        assert_eq!(entries.len(), 2);
+        assert!(entries.contains(&("Backspace".into(), Some("sys:turnOffScreen".into()))));
+        assert!(entries.contains(&("F4".into(), None)));
+    }
+
+    #[test]
+    fn extra_key_suppression_is_preserved() {
+        let layout = crate::profile::layout_file::parse(
+            r#"{"version": 1, "layers": [{"id": "extra", "keys": {"BracketRight": null, "Backslash": null, "F4": "F4"}}]}"#
+        ).unwrap().unwrap();
+        let entries = layout.layer_keymaps["extra"].extra_entries();
+        assert_eq!(entries.len(), 3);
+        assert!(entries.contains(&("BracketRight".into(), None)));
+        assert!(entries.contains(&("F4".into(), Some("F4".into()))));
+    }
+
+    #[test]
+    fn unordered_extra_keys_follow_the_saved_order_then_the_catalog() {
+        let mut map = keymap(&[("F2", None), ("F14", None), ("F1", None), ("F13", None)]);
+        map.extra_key_order = vec!["F14".into(), "F13".into()];
+        assert_eq!(keys(map.extra_entries()), ["F14", "F13", "F1", "F2"]);
+    }
+
+    #[test]
+    fn extra_order_is_stable_after_renaming_and_removal() {
+        let mut layout = LayoutPreset::default();
+        layout.add_layer("extra", "Extra".into(), None);
+        for key in ["F13", "F14", "F15"] {
+            layout.set_extra_key("extra", None, key, KeyAssignment::Swallow);
+        }
+        layout
+            .layer_keymaps
+            .get_mut("extra")
+            .unwrap()
+            .extra_key_order = vec!["F15".into(), "F13".into(), "F14".into()];
+        layout.set_extra_key("extra", Some("F15"), "F16", KeyAssignment::Swallow);
+        layout.set_layer_key("extra", "F13", KeyAssignment::Transparent);
+        assert_eq!(
+            keys(layout.layer_keymaps["extra"].extra_entries()),
+            ["F16", "F14"]
+        );
     }
 }
