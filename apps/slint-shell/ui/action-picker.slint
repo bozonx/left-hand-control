@@ -41,6 +41,8 @@ export global ActionPicker {
     in property <bool> capture-unsupported;
     /// How the last capture ended; cleared when a new capture starts.
     in-out property <CaptureStatus> capture-status;
+    /// Escape is held alone: capture is cancelled when it stays held.
+    in property <bool> cancel-armed;
     in-out property <bool> valid;
     in-out property <string> value;
     in property <PickerCategory> value-category;
@@ -151,7 +153,9 @@ component PickerCell inherits Rectangle {
     accessible-item-selectable: true;
     accessible-item-selected: root.selected;
     accessible-value: item.value;
-    accessible-description: Locale.text(root.item.notice) + "\n" + ActionPicker.key-hint(root.item.value);
+    accessible-description: root.item.notice.id == "" ? ActionPicker.key-hint(root.item.value)
+        : ActionPicker.key-hint(root.item.value) == "" ? Locale.text(root.item.notice)
+        : Locale.text(root.item.notice) + "\n" + ActionPicker.key-hint(root.item.value);
     accessible-action-default => { root.pick(); }
     function pick() { ActionPicker.touched = true; ActionPicker.value = root.item.value; ActionPicker.refresh(); }
     HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-s;
@@ -264,6 +268,13 @@ export component PickerOverlay inherits DialogFrame {
             if ActionPicker.capturing && ActionPicker.capture-unsupported: Text { accessible-live-region: polite; text: @tr("This key is not supported."); color: Theme.warning; wrap: word-wrap; }
             if ActionPicker.capturing: Text { accessible-live-region: polite; text: ActionPicker.trigger-chords ? @tr("Press a key or combination, then release all keys to finish capture.") : ActionPicker.key-only ? @tr("Press and release a key (including modifiers or Escape).") : @tr("Press a key or shortcut, then release all keys to finish capture."); color: Theme.accent; wrap: word-wrap; }
             if ActionPicker.capturing: Text { accessible-live-region: polite; text: @tr("Hold Escape for 2 seconds to cancel capture."); color: Theme.muted; wrap: word-wrap; }
+            // Fills while Escape is held, so releasing too early is visible.
+            if ActionPicker.capturing: Rectangle { height: 3px; background: Theme.border; border-radius: 1.5px;
+                Rectangle { x: 0px; height: parent.height; border-radius: parent.border-radius; background: Theme.accent;
+                    width: ActionPicker.cancel-armed ? parent.width : 0px;
+                    animate width { duration: ActionPicker.cancel-armed && !Theme.reduce-motion ? 2s : 0ms; }
+                }
+            }
             if !ActionPicker.capturing && ActionPicker.capture-status != CaptureStatus.none: Text {
                 accessible-live-region: polite;
                 text: ActionPicker.capture-status == CaptureStatus.cancelled ? @tr("Capture cancelled.") : @tr("Captured: {}", ActionPicker.value);
@@ -350,7 +361,12 @@ export component PickerOverlay inherits DialogFrame {
                     }
                     if (ActionPicker.query != "" || ActionPicker.category-listed) && ActionPicker.items.length == 0: Rectangle {
                         vertical-stretch: 1;
-                        Text { x: 12px; y: 12px; width: parent.width - 24px; accessible-live-region: polite; text: @tr("No matching items"); color: Theme.muted; horizontal-alignment: center; }
+                        VerticalLayout { y: 12px; height: self.preferred-height; spacing: Theme.space-m; alignment: start;
+                            Text { accessible-live-region: polite; text: @tr("No matching items"); color: Theme.muted; horizontal-alignment: center; wrap: word-wrap; }
+                            if ActionPicker.query != "": HorizontalLayout { alignment: center;
+                                Button { text: @tr("Clear search"); clicked => { ActionPicker.query = ""; ActionPicker.refresh(); } }
+                            }
+                        }
                     }
                 }
             }

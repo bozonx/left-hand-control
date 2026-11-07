@@ -114,6 +114,7 @@ pub(super) fn bind(
         picker.set_capture_keys("".into());
         picker.set_capture_unsupported(false);
         picker.set_capture_status(CaptureStatus::None);
+        picker.set_cancel_armed(false);
         if !picker.get_capturing() {
             input.reset_capture();
             picker.set_capturing(true);

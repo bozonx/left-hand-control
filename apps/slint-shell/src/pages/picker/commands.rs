@@ -119,7 +119,7 @@ pub(super) fn bind(
             let generation = session.borrow().generation.clone();
             std::thread::spawn(move || {
                 let picked = lhc_core::platform::file_chooser::pick(&title, directory);
-                let _ = slint::invoke_from_event_loop(move || {
+                if let Err(error) = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
                     let picker = ui.global::<ActionPicker>();
                     let generation = generation.load(std::sync::atomic::Ordering::Relaxed);
@@ -149,7 +149,9 @@ pub(super) fn bind(
                         Ok(None) => {}
                         Err(error) => picker.set_command_error(Msg::ActionFailed(error).to_ui()),
                     }
-                });
+                }) {
+                    log::warn!("[picker] file choice arrived after the event loop ended: {error}");
+                }
             });
         };
         if directory {

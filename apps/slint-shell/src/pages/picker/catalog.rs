@@ -119,6 +119,20 @@ thread_local! {
     /// Bumped whenever [`DESKTOP_SHORTCUTS`] changes, so an open picker
     /// knows to rebuild its catalog.
     pub(super) static SHORTCUTS_GENERATION: Cell<u64> = const { Cell::new(0) };
+    /// When the shortcuts were last read successfully.
+    static SHORTCUTS_READ_AT: Cell<Option<std::time::Instant>> = const { Cell::new(None) };
+}
+
+/// How long a successful read stays fresh; opening the picker again within
+/// it does not query the desktop. A failed read is retried on every open.
+const SHORTCUTS_FRESH: std::time::Duration = std::time::Duration::from_secs(30);
+
+/// Whether a read made at `read_at` is still fresh at `now`.
+pub(super) fn shortcuts_fresh(
+    read_at: Option<std::time::Instant>,
+    now: std::time::Instant,
+) -> bool {
+    read_at.is_some_and(|at| now.saturating_duration_since(at) < SHORTCUTS_FRESH)
 }
 
 /// A read of the desktop shortcuts is running; later requests wait for it.
@@ -144,7 +158,9 @@ pub(super) fn load_desktop_shortcuts(ui: slint::Weak<SettingsWindow>) {
         ShortcutDesktop::None => return,
         ShortcutDesktop::Kde => read_kde_shortcuts,
     };
-    if SHORTCUTS_LOADING.swap(true, Ordering::AcqRel) {
+    if shortcuts_fresh(SHORTCUTS_READ_AT.with(Cell::get), std::time::Instant::now())
+        || SHORTCUTS_LOADING.swap(true, Ordering::AcqRel)
+    {
         return;
     }
     std::thread::spawn(move || {
@@ -153,11 +169,24 @@ pub(super) fn load_desktop_shortcuts(ui: slint::Weak<SettingsWindow>) {
         if let Err(error) = &result {
             log::warn!("[picker] cannot read desktop global shortcuts: {error}");
         }
-        let _ = slint::invoke_from_event_loop(move || {
+        if let Err(error) = slint::invoke_from_event_loop(move || {
             let failed = result.is_err();
             if let Ok(shortcuts) = result {
-                DESKTOP_SHORTCUTS.with(|cache| *cache.borrow_mut() = shortcuts);
-                SHORTCUTS_GENERATION.with(|generation| generation.set(generation.get() + 1));
+                SHORTCUTS_READ_AT.with(|at| at.set(Some(std::time::Instant::now())));
+                let changed = DESKTOP_SHORTCUTS.with(|cache| {
+                    let mut cache = cache.borrow_mut();
+                    let changed = cache.len() != shortcuts.len()
+                        || cache.iter().zip(&shortcuts).any(|(old, new)| {
+                            old.value != new.value
+                                || old.label != new.label
+                                || old.component != new.component
+                        });
+                    *cache = shortcuts;
+                    changed
+                });
+                if changed {
+                    SHORTCUTS_GENERATION.with(|generation| generation.set(generation.get() + 1));
+                }
             }
             if let Some(ui) = ui.upgrade() {
                 let picker = ui.global::<ActionPicker>();
@@ -166,7 +195,9 @@ pub(super) fn load_desktop_shortcuts(ui: slint::Weak<SettingsWindow>) {
                     picker.invoke_refresh();
                 }
             }
-        });
+        }) {
+            log::warn!("[picker] desktop shortcuts arrived after the event loop ended: {error}");
+        }
     });
 }
 

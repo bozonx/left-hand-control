@@ -16,22 +16,29 @@ pub(in crate::pages) fn capture(
         return false;
     }
     if let WindowEvent::Focused(false) = event {
-        picker.set_capturing(false);
+        // Releases while unfocused never arrive: drop the half-pressed keys.
+        abort(&picker, capture);
         return false;
     }
     let WindowEvent::KeyboardInput { event, .. } = event else {
         return false;
     };
-    let Some(key) = physical_key_name(event.physical_key) else {
-        picker.set_capture_unsupported(true);
-        return true;
-    };
     if event.repeat {
         return true;
     }
-    if key == "Escape" && event.state == slint::winit_030::winit::event::ElementState::Pressed {
+    let pressed = event.state == slint::winit_030::winit::event::ElementState::Pressed;
+    let Some(key) = physical_key_name(event.physical_key) else {
+        if pressed {
+            capture.borrow().cancel_timer.stop();
+            picker.set_cancel_armed(false);
+            picker.set_capture_unsupported(true);
+        }
+        return true;
+    };
+    if key == "Escape" && pressed {
         arm_cancel(ui, capture);
-    } else if event.state == slint::winit_030::winit::event::ElementState::Pressed {
+    } else if pressed || key == "Escape" {
+        // Another key or an early Escape release: this is not a cancel.
         capture.borrow().cancel_timer.stop();
     }
     let (known, value) = {
@@ -49,6 +56,7 @@ pub(in crate::pages) fn capture(
     if event.state == slint::winit_030::winit::event::ElementState::Pressed {
         picker.set_capture_unsupported(!known);
     }
+    picker.set_cancel_armed(capture.borrow().cancel_timer.running());
     if let Some(value) = value {
         finish(&picker, value);
     }
@@ -62,10 +70,10 @@ pub(in crate::pages) fn capture(
 /// user could leave capture only by recording some key.
 pub(super) const CANCEL_HOLD: std::time::Duration = std::time::Duration::from_secs(2);
 
-/// Start the cancel timer when Escape is the only key pressed so far.
-fn arm_cancel(ui: &SettingsWindow, capture: &RefCell<CaptureState>) {
+/// Start the cancel timer when Escape is the only key of this capture.
+pub(super) fn arm_cancel(ui: &SettingsWindow, capture: &RefCell<CaptureState>) {
     let state = capture.borrow();
-    if state.keys.iter().any(|k| k != "Escape") {
+    if state.held.iter().chain(&state.keys).any(|k| k != "Escape") {
         state.cancel_timer.stop();
         return;
     }
@@ -85,9 +93,17 @@ pub(super) fn cancel(picker: &ActionPicker) {
         return;
     }
     picker.set_capturing(false);
+    picker.set_cancel_armed(false);
     picker.set_capture_unsupported(false);
     picker.set_capture_keys("".into());
     picker.set_capture_status(CaptureStatus::Cancelled);
+}
+
+/// Leave capture because the window lost focus: forget the keys pressed
+/// so far and report the capture as cancelled.
+pub(super) fn abort(picker: &ActionPicker, capture: &RefCell<CaptureState>) {
+    capture.borrow_mut().reset();
+    cancel(picker);
 }
 
 /// Config key code of a physical key. Keys winit cannot name on Linux
@@ -126,6 +142,7 @@ pub(super) fn finish(picker: &ActionPicker, value: String) {
     picker.set_touched(true);
     picker.set_value(value.into());
     picker.set_capturing(false);
+    picker.set_cancel_armed(false);
     picker.set_capture_unsupported(false);
     picker.set_capture_status(CaptureStatus::Captured);
     picker.invoke_refresh();
@@ -140,6 +157,19 @@ pub(in crate::pages) struct CaptureState {
 }
 
 impl CaptureState {
+    /// Forget the pressed keys and stop the cancel timer.
+    pub(in crate::pages) fn reset(&mut self) {
+        self.cancel_timer.stop();
+        self.held.clear();
+        self.keys.clear();
+    }
+
+    /// Whether the Escape-hold cancel timer is armed.
+    #[cfg(test)]
+    pub(super) fn cancel_armed(&self) -> bool {
+        self.cancel_timer.running()
+    }
+
     /// Whether capture accepts `key`.
     pub(super) fn known(&self, key: &str, trigger: bool) -> bool {
         if trigger {
@@ -195,13 +225,7 @@ impl CaptureState {
         let mut modifiers = Vec::new();
         let mut ordinary = Vec::new();
         for key in &keys {
-            let modifier = match key.as_str() {
-                "ControlLeft" | "ControlRight" => Some("Ctrl"),
-                "AltLeft" | "AltRight" => Some("Alt"),
-                "ShiftLeft" | "ShiftRight" => Some("Shift"),
-                "MetaLeft" | "MetaRight" => Some("Meta"),
-                _ => None,
-            };
+            let modifier = lhc_core::profile::key_catalog::modifier_name(key);
             if let Some(modifier) = modifier {
                 if !modifiers.contains(&modifier) {
                     modifiers.push(modifier);
@@ -215,7 +239,7 @@ impl CaptureState {
             return Some(keys.join("+"));
         }
         Some(
-            ["Ctrl", "Alt", "Shift", "Meta"]
+            lhc_core::profile::key_catalog::MODIFIER_ORDER
                 .into_iter()
                 .filter(|m| modifiers.contains(m))
                 .chain(ordinary)

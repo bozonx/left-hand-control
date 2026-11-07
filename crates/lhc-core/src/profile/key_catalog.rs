@@ -331,6 +331,21 @@ pub fn modifier_key(token: &str) -> Option<&'static str> {
     })
 }
 
+/// Canonical chord order of the generic modifier names.
+pub const MODIFIER_ORDER: [&str; 4] = ["Ctrl", "Alt", "Shift", "Meta"];
+
+/// Generic chord name (`Ctrl`, `Alt`, `Shift`, `Meta`) of a physical
+/// modifier key code; `None` for other keys.
+pub fn modifier_name(key: &str) -> Option<&'static str> {
+    Some(match key {
+        "ControlLeft" | "ControlRight" => "Ctrl",
+        "AltLeft" | "AltRight" => "Alt",
+        "ShiftLeft" | "ShiftRight" => "Shift",
+        "MetaLeft" | "MetaRight" => "Meta",
+        _ => return None,
+    })
+}
+
 pub fn valid_trigger(value: &str) -> bool {
     trigger_keys(value).is_some()
 }

@@ -40,6 +40,22 @@ pub(super) fn initial_category(
     }
 }
 
+/// Lines of a `text:` action when it has several, 0 otherwise. A single
+/// trailing line break does not start a new line; `\r\n` counts once.
+pub(super) fn text_lines(text: &str) -> i32 {
+    let lines = text.lines().count();
+    if lines > 1 { lines as i32 } else { 0 }
+}
+
+/// Whether every word of a lowercase search matches the label or value of
+/// an item, so `ctrl c` finds `Ctrl+KeyC`.
+pub(super) fn matches_query(words: &[&str], label: &str, value: &str) -> bool {
+    let (label, value) = (label.to_lowercase(), value.to_lowercase());
+    words
+        .iter()
+        .all(|word| label.contains(word) || value.contains(word))
+}
+
 /// Whether the category is a list of catalog items rather than an editor.
 pub(super) fn is_listed(category: PickerCategory) -> bool {
     is_key_category(category)
@@ -345,11 +361,7 @@ pub(super) fn refresh(
     };
     picker.set_text_content(text.into());
     picker.set_text_preview(one_line(text).into());
-    picker.set_text_lines(if text.contains('\n') {
-        text.split('\n').count() as i32
-    } else {
-        0
-    });
+    picker.set_text_lines(text_lines(text));
     picker.set_pause_content(
         match &action {
             Action::Pause(ms) => ms.as_str(),
@@ -358,6 +370,7 @@ pub(super) fn refresh(
         .into(),
     );
     let query = picker.get_query().trim().to_lowercase();
+    let words: Vec<&str> = query.split_whitespace().collect();
     let mut category = picker.get_category();
     let visible = |category: PickerCategory| {
         sidebar
@@ -387,8 +400,7 @@ pub(super) fn refresh(
                 if query.is_empty() {
                     entry.category == category
                 } else {
-                    entry.label.to_lowercase().contains(&query)
-                        || entry.value.to_lowercase().contains(&query)
+                    matches_query(&words, &entry.label, &entry.value)
                 }
             })
             .cloned()

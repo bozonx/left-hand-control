@@ -450,18 +450,7 @@ fn labels_prefer_the_command_then_the_catalog() {
 #[test]
 fn cancelling_capture_keeps_the_value_and_reports_the_outcome() {
     use crate::ui::CaptureStatus;
-    use slint::platform::software_renderer::{MinimalSoftwareWindow, RepaintBufferType};
-    struct Platform;
-    impl slint::platform::Platform for Platform {
-        fn create_window_adapter(
-            &self,
-        ) -> Result<Rc<dyn slint::platform::WindowAdapter>, slint::PlatformError> {
-            Ok(MinimalSoftwareWindow::new(RepaintBufferType::ReusedBuffer))
-        }
-    }
-    // Each test thread needs its own platform; a reused thread already has one.
-    let _ = slint::platform::set_platform(Box::new(Platform));
-    let ui = SettingsWindow::new().unwrap();
+    let ui = test_window();
     let picker = ui.global::<ActionPicker>();
     picker.set_value("KeyA".into());
     picker.set_capturing(true);
@@ -483,4 +472,114 @@ fn cancelling_capture_keeps_the_value_and_reports_the_outcome() {
     assert!(!picker.get_capturing());
     assert_eq!(picker.get_value(), "Escape");
     assert_eq!(picker.get_capture_status(), CaptureStatus::Captured);
+}
+
+/// A settings window on a headless platform for tests that need Slint state.
+fn test_window() -> SettingsWindow {
+    use slint::platform::software_renderer::{MinimalSoftwareWindow, RepaintBufferType};
+    struct Platform;
+    impl slint::platform::Platform for Platform {
+        fn create_window_adapter(
+            &self,
+        ) -> Result<Rc<dyn slint::platform::WindowAdapter>, slint::PlatformError> {
+            Ok(MinimalSoftwareWindow::new(RepaintBufferType::ReusedBuffer))
+        }
+    }
+    // Each test thread needs its own platform; a reused thread already has one.
+    let _ = slint::platform::set_platform(Box::new(Platform));
+    SettingsWindow::new().unwrap()
+}
+
+#[test]
+fn escape_arms_cancel_only_when_it_is_the_only_key() {
+    use slint::winit_030::winit::event::ElementState::{Pressed, Released};
+    let ui = test_window();
+    let capture = RefCell::new(CaptureState::default());
+    capture::arm_cancel(&ui, &capture);
+    assert!(capture.borrow().cancel_armed());
+
+    // Escape after another key, even one already released, is recorded.
+    let capture = RefCell::new(CaptureState::default());
+    {
+        let mut state = capture.borrow_mut();
+        state.update("ShiftLeft", Pressed, false, false);
+        state.update("KeyK", Pressed, false, false);
+        state.update("ShiftLeft", Released, false, false);
+    }
+    capture::arm_cancel(&ui, &capture);
+    assert!(!capture.borrow().cancel_armed());
+
+    // Finishing the capture disarms the timer.
+    let capture = RefCell::new(CaptureState::default());
+    capture::arm_cancel(&ui, &capture);
+    capture.borrow_mut().update("Escape", Pressed, false, false);
+    assert_eq!(
+        capture
+            .borrow_mut()
+            .update("Escape", Released, false, false)
+            .as_deref(),
+        Some("Escape")
+    );
+    assert!(!capture.borrow().cancel_armed());
+}
+
+#[test]
+fn losing_focus_aborts_capture_and_forgets_pressed_keys() {
+    use crate::ui::CaptureStatus;
+    use slint::winit_030::winit::event::ElementState::Pressed;
+    let ui = test_window();
+    let picker = ui.global::<ActionPicker>();
+    picker.set_value("KeyA".into());
+    picker.set_capturing(true);
+    picker.set_cancel_armed(true);
+    let capture = RefCell::new(CaptureState::default());
+    capture
+        .borrow_mut()
+        .update("ControlLeft", Pressed, false, false);
+    capture::arm_cancel(&ui, &capture);
+
+    capture::abort(&picker, &capture);
+    assert!(!picker.get_capturing());
+    assert!(!picker.get_cancel_armed());
+    assert_eq!(picker.get_value(), "KeyA");
+    assert_eq!(picker.get_capture_status(), CaptureStatus::Cancelled);
+    let state = capture.borrow();
+    assert!(state.held.is_empty() && state.keys.is_empty());
+    assert!(!state.cancel_armed());
+}
+
+#[test]
+fn text_lines_ignore_a_trailing_break() {
+    use session::text_lines;
+    assert_eq!(text_lines(""), 0);
+    assert_eq!(text_lines("one"), 0);
+    assert_eq!(text_lines("one\n"), 0);
+    assert_eq!(text_lines("one\r\ntwo"), 2);
+    assert_eq!(text_lines("one\ntwo\n"), 2);
+    assert_eq!(text_lines("one\n\nthree"), 3);
+}
+
+#[test]
+fn search_matches_every_word_in_label_or_value() {
+    use session::matches_query;
+    assert!(matches_query(&["ctrl", "c"], "Copy", "Ctrl+KeyC"));
+    assert!(matches_query(&["copy"], "Copy", "Ctrl+KeyC"));
+    assert!(matches_query(&["copy", "keyc"], "Copy", "Ctrl+KeyC"));
+    assert!(!matches_query(&["copy", "alt"], "Copy", "Ctrl+KeyC"));
+    assert!(matches_query(&[], "Copy", "Ctrl+KeyC"));
+}
+
+#[test]
+fn desktop_shortcuts_stay_fresh_for_a_while() {
+    use std::time::{Duration, Instant};
+    let now = Instant::now();
+    assert!(!catalog::shortcuts_fresh(None, now));
+    assert!(catalog::shortcuts_fresh(
+        Some(now),
+        now + Duration::from_secs(5)
+    ));
+    assert!(!catalog::shortcuts_fresh(
+        Some(now),
+        now + Duration::from_secs(60)
+    ));
 }

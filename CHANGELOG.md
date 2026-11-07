@@ -36,7 +36,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
-- Action picker: key capture can be cancelled without the mouse by holding Escape alone for 2 seconds; the value stays unchanged. A short Escape press is still captured as a key. The capture instructions, the cancel hint and the result ("Captured: …" or "Capture cancelled.") are announced to screen readers.
+- Action picker: key capture can be cancelled without the mouse by holding Escape alone for 2 seconds; the value stays unchanged. A short Escape press is still captured as a key. The capture instructions, the cancel hint and the result ("Captured: …" or "Capture cancelled.") are announced to screen readers. A bar under the hint fills while Escape is held. Switching to another window during capture ends it as cancelled instead of keeping half-pressed keys.
+- Action picker: search matches every word separately, so "ctrl c" finds Ctrl+KeyC; an empty result offers "Clear search". Text with a single trailing line break is no longer shown as two lines. KDE global shortcuts are re-read at most every 30 seconds instead of on every open.
 
 - A control that became unavailable while focused (for example the Save button right after saving) no longer keeps its focus ring after focus moves elsewhere. Buttons, menu triggers and clickable rows react to the same keys: Enter and Space activate them, and Up/Down also open menus (now including the game mode button).
 
