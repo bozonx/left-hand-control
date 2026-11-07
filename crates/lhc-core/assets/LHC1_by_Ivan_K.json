@@ -248,6 +248,7 @@
     },
     {
       "key": "ControlLeft",
+      "tap": "Ctrl+Alt+Shift+KeyQ",
       "hold": {
         "action": "AltLeft"
       }
