@@ -19,7 +19,7 @@ export struct LayoutRow { id: string, name: string, description: string, summary
 /// `shadowed-by` is the earlier rule that always matches first, or -1;
 /// `unknown-languages` lists languages the system does not have;
 /// `excluded` lists the window patterns that block the rule.
-export struct AutoRuleView { game: GameCondition, list: string, excluded: string, target: int, missing: bool, enabled: bool, shadowed-by: int, unknown-languages: string }
+export struct AutoRuleView { game: GameCondition, list: string, excluded: string, target: int, missing: bool, enabled: bool, shadowed-by: int, unknown-languages: string, uses-windows: bool }
 
 /// The layout library and the working copy being edited.
 export global LayoutLibrary {
@@ -427,6 +427,10 @@ component AutoRuleRow inherits Rectangle {
             }
             if root.rule.enabled && root.rule.game == GameCondition.on && !LayoutLibrary.game-detection: Text {
                 text: @tr("Game mode detection is off, so this rule never matches.");
+                color: Theme.warning; font-size: Theme.font-body; wrap: word-wrap;
+            }
+            if root.rule.enabled && root.rule.uses-windows && AppState.game-window-availability.id == "capability-unavailable": Text {
+                text: @tr("Active window detection is unavailable in this session, so application conditions do not match.");
                 color: Theme.warning; font-size: Theme.font-body; wrap: word-wrap;
             }
             if root.rule.enabled && root.rule.unknown-languages != "": Text {

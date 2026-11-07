@@ -47,16 +47,7 @@ impl RuntimeConfig {
             .flatten()
             .flatten()
         });
-        let auto_patterns = settings
-            .auto_rules
-            .iter()
-            .filter(|rule| settings.layout_mode == LayoutMode::Auto && rule.enabled)
-            .flat_map(|rule| {
-                rule.conditions
-                    .window_patterns
-                    .iter()
-                    .chain(&rule.conditions.excluded_window_patterns)
-            });
+        let auto_patterns = auto_switch::window_patterns(settings);
         let uses_titles = app_match::uses_title(rule_patterns.chain(auto_patterns));
         let mapper =
             crate::mapper::config::MapperConfig::try_from(&config).map_err(ConfigError::Invalid)?;
@@ -124,6 +115,10 @@ impl ConfigDocument {
         self.layout_for_activation(self.active_layout_id(ctx)?.as_deref())
     }
 
+    /// Rules of layout `id` as they would run. The layout being edited runs
+    /// its working copy, unsaved changes included, so edits apply live. A
+    /// `None` id means passthrough, except in manual mode where an unnamed
+    /// working copy is the active layout itself.
     pub fn layout_for_activation(&self, id: Option<&str>) -> Result<LayoutPreset, ConfigError> {
         if id == self.settings.editing_layout_id.as_deref()
             && (id.is_some() || self.settings.layout_mode == LayoutMode::Manual)

@@ -6,6 +6,7 @@
 //! (unknown macros, invalid key names in actions) are left to the
 //! diagnostics, which report them without refusing the file.
 
+use super::model::GameModeCondition as OnOff;
 use super::model::{
     Command, EmojiPage, HoldBehavior, KeyRule, LEFT_HAND_HOTKEYS, Layer, LayerKeymap,
     LayoutConditionSet, LayoutPreset, Macro, MacroStep, QuickAction, QuickActionPage, TapDecision,
@@ -208,7 +209,7 @@ impl WhenDoc {
     pub(crate) fn into_set(self) -> Result<LayoutConditionSet, String> {
         self.check()?;
         Ok(LayoutConditionSet {
-            game_mode: self.game_mode.map(|mode| mode.as_str().to_owned()),
+            game_mode: self.game_mode,
             layouts: self.keyboard_layouts,
             window_patterns: self.windows,
             excluded_window_patterns: self.exclude_windows,
@@ -224,34 +225,10 @@ impl WhenDoc {
                 .collect()
         };
         Self {
-            game_mode: OnOff::parse(set.game_mode.as_deref()),
+            game_mode: set.game_mode,
             keyboard_layouts: list(&set.layouts),
             windows: list(&set.window_patterns),
             exclude_windows: list(&set.excluded_window_patterns),
-        }
-    }
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub(crate) enum OnOff {
-    On,
-    Off,
-}
-
-impl OnOff {
-    pub(crate) fn parse(value: Option<&str>) -> Option<Self> {
-        match value {
-            Some("on") => Some(Self::On),
-            Some("off") => Some(Self::Off),
-            _ => None,
-        }
-    }
-
-    pub(crate) fn as_str(self) -> &'static str {
-        match self {
-            Self::On => "on",
-            Self::Off => "off",
         }
     }
 }
@@ -552,7 +529,7 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
         rules.push(KeyRule {
             id: rule.id.unwrap_or_default(),
             enabled: (!rule.enabled).then_some(false),
-            condition_game_mode: when.game_mode,
+            condition_game_mode: when.game_mode.map(|mode| mode.as_str().to_owned()),
             condition_keyboard_layouts: (!when.layouts.is_empty()).then_some(when.layouts),
             condition_window_patterns: (!when.window_patterns.is_empty())
                 .then_some(when.window_patterns),

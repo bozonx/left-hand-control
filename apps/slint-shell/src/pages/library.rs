@@ -30,8 +30,8 @@ use lhc_core::{
         ids, layout_file,
         library::{LibrarySaveTarget, LibrarySource},
         model::{
-            AppSettings, AutoRule, LayoutConditionSet, LayoutMode, LayoutPreset, user_layout_id,
-            user_layout_name,
+            AppSettings, AutoRule, GameModeCondition, LayoutConditionSet, LayoutMode, LayoutPreset,
+            user_layout_id, user_layout_name,
         },
     },
 };
@@ -80,16 +80,20 @@ fn summary(set: &LayoutConditionSet) -> (GameCondition, String) {
         .filter(|part| !part.is_empty())
         .collect::<Vec<_>>()
         .join(" · ");
-    (game_condition(set.game_mode.as_deref()), list)
+    (
+        game_condition(set.game_mode.map(GameModeCondition::as_str)),
+        list,
+    )
 }
 
 fn condition(game: GameCondition, layouts: &str, apps: &str, excluded: &str) -> LayoutConditionSet {
     LayoutConditionSet {
-        game_mode: game_condition_value(game),
+        game_mode: GameModeCondition::parse(game_condition_value(game).as_deref()),
         layouts: parse_list(layouts),
         window_patterns: parse_list(apps),
         excluded_window_patterns: parse_list(excluded),
     }
+    .normalized()
 }
 
 /// Publish the ordered names immediately; file metadata arrives in the background.
@@ -194,6 +198,8 @@ fn refresh_auto(ui: &SettingsWindow, document: &Document, state: &mut State) {
                     shadowed_by: auto_switch::shadowed_by(rules, index, &ids)
                         .map_or(-1, |index| index as i32),
                     unknown_languages: unknown.join(", ").into(),
+                    uses_windows: !(rule.conditions.window_patterns.is_empty()
+                        && rule.conditions.excluded_window_patterns.is_empty()),
                 }
             })
             .collect::<Vec<_>>(),
@@ -351,7 +357,7 @@ fn select(ui: &SettingsWindow, state: &Shared, index: i32) -> Result<(), Msg> {
 fn condition_fields(set: Option<LayoutConditionSet>) -> (GameCondition, String, String, String) {
     set.map(|set| {
         (
-            game_condition(set.game_mode.as_deref()),
+            game_condition(set.game_mode.map(GameModeCondition::as_str)),
             super::condition_list(&set.layouts),
             super::condition_list(&set.window_patterns),
             super::condition_list(&set.excluded_window_patterns),
@@ -582,7 +588,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             LayoutMode::Manual
         };
         let result = edit_auto(&ui, &doc, &state, |settings| {
-            auto_switch::set_mode(settings, mode)
+            settings.layout_mode = mode
         });
         report(&ui, &state, result);
     });

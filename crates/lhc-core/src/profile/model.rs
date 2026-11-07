@@ -367,7 +367,7 @@ impl LayoutPreset {
 #[serde(rename_all = "camelCase")]
 pub struct LayoutConditionSet {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub game_mode: Option<String>,
+    pub game_mode: Option<GameModeCondition>,
     pub layouts: Vec<String>,
     /// Window patterns, see [`super::app_match`].
     #[serde(rename = "windows", skip_serializing_if = "Vec::is_empty")]
@@ -377,7 +377,63 @@ pub struct LayoutConditionSet {
     pub excluded_window_patterns: Vec<String>,
 }
 
+/// Required game-mode state of a condition.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum GameModeCondition {
+    On,
+    Off,
+}
+
+impl GameModeCondition {
+    /// Parse the stored form (`"on"` / `"off"`); anything else is none.
+    pub fn parse(value: Option<&str>) -> Option<Self> {
+        match value {
+            Some("on") => Some(Self::On),
+            Some("off") => Some(Self::Off),
+            _ => None,
+        }
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::On => "on",
+            Self::Off => "off",
+        }
+    }
+
+    /// Whether the effective game-mode state satisfies the condition.
+    pub fn matches(self, active: bool) -> bool {
+        active == (self == Self::On)
+    }
+}
+
 impl LayoutConditionSet {
+    /// The same conditions with list items trimmed, blank and duplicate
+    /// items dropped and keyboard layout codes lowercased, so the set
+    /// behaves the same before and after a save/load round trip.
+    pub fn normalized(mut self) -> Self {
+        fn clean(items: &mut Vec<String>, lowercase: bool) {
+            let mut out: Vec<String> = Vec::with_capacity(items.len());
+            for item in items.drain(..) {
+                let item = item.trim();
+                let item = if lowercase {
+                    item.to_lowercase()
+                } else {
+                    item.to_owned()
+                };
+                if !item.is_empty() && !out.contains(&item) {
+                    out.push(item);
+                }
+            }
+            *items = out;
+        }
+        clean(&mut self.layouts, true);
+        clean(&mut self.window_patterns, false);
+        clean(&mut self.excluded_window_patterns, false);
+        self
+    }
+
     pub fn is_empty(&self) -> bool {
         self.game_mode.is_none()
             && self.layouts.is_empty()

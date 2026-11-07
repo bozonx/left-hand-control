@@ -1462,7 +1462,11 @@ mod tests {
             assert_eq!(status.method, Some(GameModeMethod::Manual));
             assert!(matches_condition_set(
                 &LayoutConditionSet {
-                    game_mode: Some(if active { "on" } else { "off" }.into()),
+                    game_mode: Some(if active {
+                        crate::profile::model::GameModeCondition::On
+                    } else {
+                        crate::profile::model::GameModeCondition::Off
+                    }),
                     layouts: vec![],
                     ..LayoutConditionSet::default()
                 },

@@ -8,6 +8,14 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Automatic layouts (experimental):
+  - Keyboard languages in rules match regardless of case (`US` matches `us`); blank list items are dropped when a rule is saved, so a rule behaves the same before and after a restart.
+  - The rule dialog refuses window patterns that can never match, such as `title:` without text; previously such a rule stopped the mapper from starting with any layout.
+  - The "never applies" warning no longer appears on disabled rules or because of an earlier rule whose window patterns can never match.
+  - A broken target layout is reported once instead of on every window focus change; focus changes no longer re-read the layout library unless a rule has window conditions.
+  - Rules with application conditions warn when active window detection is unavailable; `title:` conditions are previewed correctly while the mapper is stopped.
+  - "Add game rule" no longer adds a duplicate when the same rule exists.
+
 - Game mode (experimental):
   - If the detection thread crashes, game mode no longer stays on until restart; detection reports off.
   - Rules with a blank name or a bare `title:` are ignored: they no longer count as an enabled source or make the app scan processes every 2 seconds.

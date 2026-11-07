@@ -393,6 +393,7 @@ impl ConfigDocument {
         let id = user_layout_id(name);
         // Deleting the single-mode layout hands activation to the first
         // remaining one; auto mode re-chooses when the mapper is updated.
+        // The confirmation names the automatic rules deleted with it.
         let result = self.ordered_layout_ids().and_then(|remaining| {
             self.update_settings(|settings| {
                 settings.layout_order.retain(|item| item != &id);
@@ -1078,7 +1079,7 @@ mod tests {
                         enabled: true,
                         layout_id: None,
                         conditions: LayoutConditionSet {
-                            game_mode: Some("on".into()),
+                            game_mode: Some(crate::profile::model::GameModeCondition::On),
                             ..Default::default()
                         },
                     },

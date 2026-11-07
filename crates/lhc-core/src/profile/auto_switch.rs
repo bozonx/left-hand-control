@@ -4,6 +4,7 @@
 use super::app_match;
 use super::model::{AppSettings, AutoRule, LayoutConditionSet, LayoutMode};
 use crate::runtime_state::ActiveWindow;
+use app_match::AppMatcher;
 
 /// Observed system state the layout conditions are evaluated against.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -33,16 +34,20 @@ impl AutoSwitchContext {
 }
 
 pub fn matches_condition_set(set: &LayoutConditionSet, ctx: &AutoSwitchContext) -> bool {
-    match set.game_mode.as_deref() {
-        Some("on") if !ctx.game_mode_active => return false,
-        Some("off") if ctx.game_mode_active => return false,
-        _ => {}
+    if set
+        .game_mode
+        .is_some_and(|mode| !mode.matches(ctx.game_mode_active))
+    {
+        return false;
     }
-    if !set.layouts.is_empty() {
-        match &ctx.system_layout {
-            Some(layout) if set.layouts.contains(layout) => {}
-            _ => return false,
-        }
+    if !set.layouts.is_empty()
+        && !ctx.system_layout.as_ref().is_some_and(|layout| {
+            set.layouts
+                .iter()
+                .any(|item| item.trim().eq_ignore_ascii_case(layout.trim()))
+        })
+    {
+        return false;
     }
     // Fail closed like rule conditions: an unknown window counts as excluded.
     if !set.excluded_window_patterns.is_empty()
@@ -104,41 +109,60 @@ pub fn choose(available: &[String], settings: &AppSettings, ctx: &AutoSwitchCont
 }
 
 /// Whether `outer` matches whenever `inner` does, so a rule with `inner`
-/// placed after `outer` can never apply.
+/// placed after `outer` can never apply. Lists are compared the way
+/// [`matches_condition_set`] reads them: an unusable pattern never matches.
 pub fn covers(outer: &LayoutConditionSet, inner: &LayoutConditionSet) -> bool {
     let game = outer.game_mode.is_none() || outer.game_mode == inner.game_mode;
+    let same_layout = |a: &String, b: &String| a.trim().eq_ignore_ascii_case(b.trim());
     let layouts = outer.layouts.is_empty()
         || (!inner.layouts.is_empty()
             && inner
                 .layouts
                 .iter()
-                .all(|item| outer.layouts.contains(item)));
-    // Every window pattern of `inner` must be covered by one of `outer`.
-    let window_patterns = outer
-        .window_patterns
-        .iter()
-        .all(|app| app.trim().is_empty())
-        || (!inner.window_patterns.is_empty()
-            && inner.window_patterns.iter().all(|app| {
-                outer
-                    .window_patterns
+                .all(|item| outer.layouts.iter().any(|outer| same_layout(outer, item))));
+    let usable = |patterns: &[String]| -> Vec<String> {
+        patterns
+            .iter()
+            .filter(|pattern| AppMatcher::parse(pattern).is_some())
+            .cloned()
+            .collect()
+    };
+    // A non-empty list without usable patterns never matches at runtime.
+    let outer_windows = usable(&outer.window_patterns);
+    let inner_windows = usable(&inner.window_patterns);
+    if !inner.window_patterns.is_empty() && inner_windows.is_empty() {
+        // `inner` never matches, so nothing it could select is lost; it is
+        // reported by diagnostics instead.
+        return false;
+    }
+    let window_patterns = outer.window_patterns.is_empty()
+        || (!outer_windows.is_empty()
+            && !inner_windows.is_empty()
+            && inner_windows.iter().all(|app| {
+                outer_windows
                     .iter()
                     .any(|outer| app_match::covers(outer, app))
             }));
-    // Every exclusion of `outer` must also be excluded by `inner`.
-    let excluded = outer.excluded_window_patterns.iter().all(|pattern| {
-        inner
-            .excluded_window_patterns
-            .iter()
-            .any(|inner| app_match::covers(inner, pattern))
-    });
+    // Every usable exclusion of `outer` must also be excluded by `inner`;
+    // a non-empty exclusion list also fails closed on an unknown window,
+    // which `inner` then must do as well.
+    let outer_excluded = usable(&outer.excluded_window_patterns);
+    let excluded = (outer.excluded_window_patterns.is_empty()
+        || !inner.excluded_window_patterns.is_empty()
+        || !inner.window_patterns.is_empty())
+        && outer_excluded.iter().all(|pattern| {
+            inner
+                .excluded_window_patterns
+                .iter()
+                .any(|inner| app_match::covers(inner, pattern))
+        });
     game && layouts && window_patterns && excluded
 }
 
 /// Index of the first enabled rule before `index` that always matches
 /// when rule `index` would, so rule `index` never applies.
 pub fn shadowed_by(rules: &[AutoRule], index: usize, available: &[String]) -> Option<usize> {
-    let rule = rules.get(index)?;
+    let rule = rules.get(index).filter(|rule| rule.enabled)?;
     rules[..index].iter().position(|earlier| {
         usable_rule(earlier, available) && covers(&earlier.conditions, &rule.conditions)
     })
@@ -152,14 +176,35 @@ fn usable_rule(rule: &AutoRule, available: &[String]) -> bool {
             .is_none_or(|id| available.contains(id))
 }
 
-/// Switch modes without changing the user's automatic default, including passthrough.
-pub fn set_mode(settings: &mut AppSettings, mode: LayoutMode) {
-    settings.layout_mode = mode;
+/// Whether the automatic choice can depend on the focused window, so a
+/// window change may switch the layout.
+pub fn depends_on_window(settings: &AppSettings) -> bool {
+    settings.layout_mode == LayoutMode::Auto
+        && settings.auto_rules.iter().any(|rule| {
+            rule.enabled
+                && !(rule.conditions.window_patterns.is_empty()
+                    && rule.conditions.excluded_window_patterns.is_empty())
+        })
+}
+
+/// Window patterns the automatic choice reads; empty outside auto mode.
+pub fn window_patterns(settings: &AppSettings) -> impl Iterator<Item = &String> {
+    settings
+        .auto_rules
+        .iter()
+        .filter(move |rule| settings.layout_mode == LayoutMode::Auto && rule.enabled)
+        .flat_map(|rule| {
+            rule.conditions
+                .window_patterns
+                .iter()
+                .chain(&rule.conditions.excluded_window_patterns)
+        })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::profile::model::GameModeCondition;
 
     fn set(
         game_mode: Option<&str>,
@@ -167,7 +212,7 @@ mod tests {
         window_patterns: &[&str],
     ) -> LayoutConditionSet {
         LayoutConditionSet {
-            game_mode: game_mode.map(str::to_owned),
+            game_mode: GameModeCondition::parse(game_mode),
             layouts: layouts.iter().map(|s| s.to_string()).collect(),
             window_patterns: window_patterns.iter().map(|s| s.to_string()).collect(),
             excluded_window_patterns: Vec::new(),
@@ -341,21 +386,6 @@ mod tests {
     }
 
     #[test]
-    fn mode_changes_preserve_explicit_defaults_without_rules() {
-        let mut settings = AppSettings {
-            manual_layout_id: Some("user:A".into()),
-            ..AppSettings::default()
-        };
-        for default in [None, Some("user:B".to_owned())] {
-            settings.auto_default_layout_id = default.clone();
-            for mode in [LayoutMode::Auto, LayoutMode::Manual, LayoutMode::Auto] {
-                set_mode(&mut settings, mode);
-                assert_eq!(settings.auto_default_layout_id, default);
-            }
-        }
-    }
-
-    #[test]
     fn missing_targets_do_not_shadow_rules_that_are_actually_chosen() {
         let available = vec!["user:A".into()];
         let mut settings = AppSettings::default();
@@ -374,5 +404,87 @@ mod tests {
         assert_eq!(shadowed_by(&settings.auto_rules, 1, &available), None);
         settings.auto_rules[0].layout_id = None;
         assert_eq!(shadowed_by(&settings.auto_rules, 1, &available), Some(0));
+    }
+
+    #[test]
+    fn layout_codes_match_without_case() {
+        assert!(matches_condition_set(
+            &set(None, &["US"], &[]),
+            &ctx(Some("us"), false, "")
+        ));
+        assert!(covers(
+            &set(None, &["Ru", "us"], &[]),
+            &set(None, &["RU"], &[])
+        ));
+    }
+
+    #[test]
+    fn normalization_matches_the_saved_form() {
+        let raw = LayoutConditionSet {
+            game_mode: None,
+            layouts: vec![" US ".into(), "".into(), "us".into()],
+            window_patterns: vec!["  ".into(), " kate ".into()],
+            excluded_window_patterns: vec!["".into()],
+        };
+        let normalized = raw.normalized();
+        assert_eq!(normalized.layouts, ["us"]);
+        assert_eq!(normalized.window_patterns, ["kate"]);
+        assert!(normalized.excluded_window_patterns.is_empty());
+        // Only blanks left: the set is empty and matches everything, as after reload.
+        let blanks = set(None, &[" "], &[""]).normalized();
+        assert!(blanks.is_empty());
+        assert!(matches_condition_set(&blanks, &ctx(None, false, "kate")));
+    }
+
+    #[test]
+    fn unusable_patterns_do_not_cover_anything() {
+        // `title:` never matches at runtime, so it is no catch-all.
+        let never = set(None, &[], &["title:"]);
+        assert!(!matches_condition_set(&never, &ctx(None, false, "kate")));
+        assert!(!covers(&never, &set(None, &[], &["kate"])));
+        assert!(!covers(&never, &set(None, &[], &[])));
+        // An inner rule with only unusable patterns is not reported as shadowed.
+        assert!(!covers(&set(None, &[], &[]), &never));
+        // Exclusions fail closed on unknown windows; `inner` must as well.
+        let blocked = except(set(None, &[], &[]), &["title:"]);
+        assert!(!covers(&blocked, &set(None, &[], &[])));
+        assert!(covers(&blocked, &set(None, &[], &["kate"])));
+    }
+
+    #[test]
+    fn disabled_rules_are_not_reported_as_shadowed() {
+        let rule = |enabled| AutoRule {
+            id: String::new(),
+            enabled,
+            layout_id: None,
+            conditions: LayoutConditionSet::default(),
+        };
+        let rules = [rule(true), rule(false), rule(true)];
+        assert_eq!(shadowed_by(&rules, 1, &[]), None);
+        assert_eq!(shadowed_by(&rules, 2, &[]), Some(0));
+    }
+
+    #[test]
+    fn window_dependency_follows_mode_and_enabled_rules() {
+        let mut settings = AppSettings {
+            layout_mode: LayoutMode::Auto,
+            auto_rules: vec![AutoRule {
+                id: "a".into(),
+                enabled: true,
+                layout_id: None,
+                conditions: set(Some("on"), &["us"], &[]),
+            }],
+            ..AppSettings::default()
+        };
+        assert!(!depends_on_window(&settings));
+        settings.auto_rules[0].conditions = except(set(None, &[], &[]), &["kate"]);
+        assert!(depends_on_window(&settings));
+        assert_eq!(window_patterns(&settings).count(), 1);
+        settings.auto_rules[0].enabled = false;
+        assert!(!depends_on_window(&settings));
+        settings.auto_rules[0].enabled = true;
+        settings.layout_mode = LayoutMode::Manual;
+        assert!(!depends_on_window(&settings));
+        assert_eq!(window_patterns(&settings).count(), 0);
     }
 }

@@ -144,8 +144,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(settings.auto_rules.len(), 2);
         assert_eq!(settings.auto_rules[0].layout_id, None);
         assert_eq!(
-            settings.auto_rules[0].conditions.game_mode.as_deref(),
-            Some("on")
+            settings.auto_rules[0].conditions.game_mode,
+            Some(lhc_core::profile::model::GameModeCondition::On)
         );
         assert_eq!(
             settings.auto_rules[1].layout_id.as_deref(),

@@ -424,7 +424,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
                 &format!("settings.layouts.auto.rules[{index}]"),
             )?,
             enabled: rule.enabled,
-            conditions: rule.when.into_set()?,
+            conditions: rule.when.into_set()?.normalized(),
         });
     }
     Ok(AppSettings {
@@ -789,7 +789,7 @@ mod tests {
                 layout_id: None,
                 enabled: false,
                 conditions: super::super::model::LayoutConditionSet {
-                    game_mode: Some("on".into()),
+                    game_mode: Some(crate::profile::model::GameModeCondition::On),
                     layouts: vec!["us".into()],
                     window_patterns: vec!["blender".into()],
                     excluded_window_patterns: vec!["title:Preferences".into()],

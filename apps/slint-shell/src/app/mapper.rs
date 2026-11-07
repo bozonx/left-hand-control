@@ -100,9 +100,8 @@ pub(super) fn forward_core_events() -> Result<lhc_core::events::Subscription, St
                 crate::notifications::send(&app.settings, Msg::ActionUnavailableNamed(action))
             });
         }
-        CoreEvent::LayoutChanged(_) | CoreEvent::ActiveWindowChanged(_) => {
-            post(|app| app.context_changed())
-        }
+        CoreEvent::LayoutChanged(_) => post(|app| app.context_changed()),
+        CoreEvent::ActiveWindowChanged(_) => post(|app| app.window_changed()),
     })
 }
 
@@ -140,6 +139,9 @@ pub(super) struct MapperController {
     operation: Cell<MapperOperation>,
     game_active: Cell<Option<bool>>,
     announced_layout: RefCell<Option<Option<String>>>,
+    /// Last layout switch error reported, so retries on every context
+    /// event do not repeat the same notification.
+    switch_error: RefCell<Option<String>>,
     /// Lifecycle, device wait and error last shown.
     last: RefCell<Option<(MapperPhase, bool, Option<String>)>>,
     /// When the running mapper started.
@@ -163,6 +165,15 @@ impl MapperController {
         self.announced_layout
             .replace(Some(id.clone()))
             .is_some_and(|previous| previous != *id)
+    }
+
+    /// Whether `error` (or its absence) differs from the last switch result.
+    fn switch_error_changed(&self, error: Option<&String>) -> bool {
+        let changed = self.switch_error.borrow().as_ref() != error;
+        if changed {
+            *self.switch_error.borrow_mut() = error.cloned();
+        }
+        changed
     }
 
     fn status_changed(&self, current: (MapperPhase, bool, Option<String>)) -> bool {
@@ -249,7 +260,7 @@ impl App {
         };
         let result = document.edit(View::Shell, |config| {
             config.update_settings(|settings| {
-                auto_switch::set_mode(settings, LayoutMode::Manual);
+                settings.layout_mode = LayoutMode::Manual;
                 settings.manual_layout_id = Some(id);
             })
         });
@@ -297,6 +308,23 @@ impl App {
         }
     }
 
+    /// The focused window changed. Only automatic rules with window
+    /// conditions can switch the layout, so other configurations skip the
+    /// library scan and page refresh on every focus change.
+    pub(super) fn window_changed(&self) {
+        let depends = self
+            .document()
+            .is_some_and(|document| auto_switch::depends_on_window(document.read().settings()));
+        if depends {
+            self.context_changed();
+        } else {
+            pages::conditions::show_active_window(
+                &self.settings,
+                lhc_core::active_window::cached_active_window().as_ref(),
+            );
+        }
+    }
+
     /// The system context (layout, game mode, window) changed: the active
     /// layout may differ now.
     pub(super) fn context_changed(&self) {
@@ -324,7 +352,10 @@ impl App {
         let Some(document) = self.document() else {
             return;
         };
-        if let Err(error) = document.sync_runtime(false) {
+        let result = document.sync_runtime(false);
+        if self.mapper.switch_error_changed(result.as_ref().err())
+            && let Err(error) = result
+        {
             self.set_error(Msg::LayoutSwitchFailed(error));
         }
         self.refresh_mapper_status();
@@ -585,6 +616,17 @@ mod tests {
         assert!(!controller.layout_changed(&main));
         assert!(!controller.layout_changed(&main));
         assert!(controller.layout_changed(&None));
+    }
+
+    #[test]
+    fn repeated_switch_errors_are_reported_once() {
+        let controller = MapperController::default();
+        let error = "broken".to_owned();
+        assert!(!controller.switch_error_changed(None));
+        assert!(controller.switch_error_changed(Some(&error)));
+        assert!(!controller.switch_error_changed(Some(&error)));
+        assert!(controller.switch_error_changed(None));
+        assert!(controller.switch_error_changed(Some(&error)));
     }
 
     #[test]

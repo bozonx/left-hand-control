@@ -422,7 +422,11 @@ impl Document {
                 .as_ref()
                 .is_some_and(|(_, runtime)| runtime.uses_titles)
         } else {
-            false
+            // The library preview still shows which automatic rule would
+            // apply, and `title:` conditions cannot match without titles.
+            lhc_core::profile::app_match::uses_title(
+                lhc_core::profile::auto_switch::window_patterns(self.read().settings()),
+            )
         }
     }
 
@@ -662,6 +666,24 @@ mod tests {
         without_titles.uses_titles = false;
         document.mapper_started(document.revision(), without_titles);
         assert!(!document.titles_needed(true));
+        // A stopped preview still needs titles for `title:` auto rules.
+        document
+            .edit(View::Library, |config| {
+                config.update_settings(|settings| {
+                    settings.layout_mode = lhc_core::profile::model::LayoutMode::Auto;
+                    settings.auto_rules = vec![lhc_core::profile::model::AutoRule {
+                        id: "t".into(),
+                        enabled: true,
+                        layout_id: None,
+                        conditions: lhc_core::profile::model::LayoutConditionSet {
+                            window_patterns: vec!["title:b".into()],
+                            ..Default::default()
+                        },
+                    }];
+                })
+            })
+            .unwrap();
+        assert!(document.titles_needed(false));
     }
 
     #[test]

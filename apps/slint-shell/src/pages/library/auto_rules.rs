@@ -95,6 +95,7 @@ pub(super) fn save_rule(
         &library.get_rule_apps(),
         &library.get_rule_excluded(),
     );
+    check_patterns(&conditions)?;
     let index = state
         .borrow()
         .rule_id
@@ -128,6 +129,24 @@ pub(super) fn save_rule(
     })?;
     library.set_dialog(LibraryDialog::None);
     Ok(message)
+}
+
+/// Refuse patterns that can never match (e.g. `title:` without text):
+/// stored, they would block every layout from starting.
+fn check_patterns(conditions: &LayoutConditionSet) -> Result<(), Msg> {
+    let invalid = conditions
+        .window_patterns
+        .iter()
+        .chain(&conditions.excluded_window_patterns)
+        .find(|pattern| lhc_core::profile::app_match::AppMatcher::parse(pattern).is_none());
+    match invalid {
+        Some(pattern) => Err(Msg::Rule(lhc_core::profile::diagnostics::RuleIssue {
+            code: lhc_core::profile::diagnostics::RuleIssueCode::InvalidCondition,
+            rule_id: String::new(),
+            trigger: Some(pattern.clone()),
+        })),
+        None => Ok(()),
+    }
 }
 
 pub(super) fn delete_rule(
@@ -209,6 +228,20 @@ pub(super) fn add_game_rule(
     document: &Document,
     state: &Shared,
 ) -> Result<Msg, Msg> {
+    let conditions = LayoutConditionSet {
+        game_mode: Some(GameModeCondition::On),
+        ..LayoutConditionSet::default()
+    };
+    // A second click must not stack identical rules.
+    let exists = document
+        .read()
+        .settings()
+        .auto_rules
+        .iter()
+        .any(|rule| rule.enabled && rule.layout_id.is_none() && rule.conditions == conditions);
+    if exists {
+        return Ok(Msg::None);
+    }
     edit_auto(ui, document, state, |settings| {
         settings.auto_rules.insert(
             0,
@@ -216,10 +249,7 @@ pub(super) fn add_game_rule(
                 id: ids::generate("rule-"),
                 enabled: true,
                 layout_id: None,
-                conditions: LayoutConditionSet {
-                    game_mode: Some("on".into()),
-                    ..LayoutConditionSet::default()
-                },
+                conditions,
             },
         );
     })
@@ -248,5 +278,20 @@ mod tests {
         assert_eq!(target_id(&names, -1).unwrap(), None);
         assert!(target_id(&names, 2).is_err());
         assert!(target_id(&names, -2).is_err());
+    }
+
+    #[test]
+    fn unusable_window_patterns_are_refused() {
+        let set = |windows: &[&str]| LayoutConditionSet {
+            window_patterns: windows.iter().map(|item| item.to_string()).collect(),
+            ..LayoutConditionSet::default()
+        };
+        assert!(check_patterns(&set(&["kate", "title:YouTube"])).is_ok());
+        assert!(check_patterns(&set(&["title:"])).is_err());
+        let excluded = LayoutConditionSet {
+            excluded_window_patterns: vec!["title:  ".into()],
+            ..LayoutConditionSet::default()
+        };
+        assert!(check_patterns(&excluded).is_err());
     }
 }
