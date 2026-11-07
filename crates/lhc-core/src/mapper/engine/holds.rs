@@ -59,6 +59,19 @@ impl Engine {
                 self.virt.oneshot.insert(key);
             }
         }
+        // Modifier releases deferred behind the resolved taps.
+        if self.deciding_key().is_none() && !self.long_hold_undecided(pressed) {
+            self.drain_decision_buffer(out);
+        }
+    }
+
+    /// True while a long-hold rule key other than `key` is undecided.
+    pub(super) fn long_hold_undecided(&self, key: KeyCode) -> bool {
+        self.pending.iter().any(|(k, p)| {
+            *k != key
+                && p.rule.long_hold.is_some()
+                && matches!(p.phase, RulePhase::WaitingDecision { .. })
+        })
     }
 
     /// The rule key currently in `WaitingDecision`, if any. In permissive
@@ -87,6 +100,11 @@ impl Engine {
         out: &mut Vec<EngineOutput>,
     ) -> bool {
         let Some(deciding) = self.deciding_key() else {
+            // An undecided long-hold key taps at its release; like any tap it
+            // must still see the modifiers held when it was pressed.
+            if !down && self.releases_modifier(key) && self.long_hold_undecided(key) {
+                return self.defer_release(key, now);
+            }
             return false;
         };
         // The deciding key's own events (its release / repeat) flow normally.
@@ -96,8 +114,15 @@ impl Engine {
         if !self.pending.get(&deciding).is_some_and(|p| {
             p.rule.tap_decision == crate::mapper::config::TapDecision::PermissiveHold
         }) {
-            // Hold on other key press: a press commits the hold in
-            // `on_press`, after the releases deferred before it.
+            // Hold on other key press: a modifier press is deferred, as it
+            // only prepares the next key (Space, Shift, A is a space and "A").
+            // Any other press commits the hold in `on_press`, after the
+            // events deferred before it.
+            if down && is_modifier_key(key) {
+                self.decision_buffer
+                    .push(BufferedEvent { key, down, at: now });
+                return true;
+            }
             if down {
                 if !self.decision_buffer.is_empty() {
                     self.resolve_deciding_as_hold(out);

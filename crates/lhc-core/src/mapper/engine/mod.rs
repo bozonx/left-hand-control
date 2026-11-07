@@ -234,6 +234,10 @@ impl Engine {
                 self.fire_action(Some(&action), self.layout.default_mod_delay, now, out);
             }
         }
+        if self.deciding_key().is_none() && !self.long_hold_undecided(KeyCode::KEY_RESERVED) {
+            // Modifier releases deferred behind a long hold that just fired.
+            self.drain_decision_buffer(out);
+        }
         self.runner.tick(&mut self.virt, now, out);
 
         let mut expired_hold: Vec<KeyCode> = Vec::new();
@@ -346,6 +350,7 @@ impl Engine {
                 // only), so any deferred presses are flushed here too, before
                 // the click, preserving press order.
                 self.flush_waiting_second(now, out);
+                self.resolve_long_hold_decisions(key, now, out);
                 self.commit_waiting_decisions(out);
                 self.drain_decision_buffer(out);
             }
@@ -593,13 +598,17 @@ impl Engine {
     /// release event (on physical key up) can emit the correct virtual
     /// key-up + mod-release.
     fn emit_stroke_press(&mut self, physical: KeyCode, ks: Keystroke, out: &mut Vec<EngineOutput>) {
-        if !ks.mods.is_empty() {
-            for m in &ks.mods {
-                *self.virt.mod_refs.entry(*m).or_insert(0) += 1;
-            }
+        // Modifiers already down are not pressed again (and skip the delay);
+        // the refcount still covers them so the release stays balanced.
+        let press = Keystroke {
+            mods: self.virt.mods_not_held(&ks.mods),
+            key: ks.key,
+        };
+        for m in &ks.mods {
+            *self.virt.mod_refs.entry(*m).or_insert(0) += 1;
         }
         out.push(EngineOutput::ChordPress {
-            ks: ks.clone(),
+            ks: press,
             mod_delay: self.layout.default_mod_delay,
         });
         self.virt.emitted.insert(physical, ks);
@@ -778,7 +787,16 @@ impl Engine {
         match action {
             Some(CompiledAction::Stroke(ks)) => {
                 if self.virt.is_held(ks.key) {
-                    return;
+                    // A held modifier stays held: releasing it would break
+                    // the hold. A held ordinary key is lifted and tapped
+                    // again, so the tap is not lost.
+                    if is_modifier_key(ks.key) {
+                        return;
+                    }
+                    out.push(EngineOutput::KeyRaw {
+                        key: ks.key,
+                        down: false,
+                    });
                 }
                 // Don't press — and above all don't release — modifiers that
                 // are already virtually held (hold rules, active chords):

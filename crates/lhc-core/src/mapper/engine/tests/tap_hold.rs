@@ -1797,3 +1797,185 @@ fn mapped_tap_and_hold_keep_their_own_modifiers() {
         ]
     );
 }
+
+#[test]
+fn long_hold_tap_keeps_a_modifier_released_before_it() {
+    let out = timeline(
+        serde_json::json!({
+            "rules": [{"key":"KeyQ", "longHoldAction":"Escape"}],
+            "settings": {"inDevelopment": true}
+        }),
+        &[
+            (KeyCode::KEY_LEFTSHIFT, true, 0),
+            (KeyCode::KEY_Q, true, 10),
+            (KeyCode::KEY_LEFTSHIFT, false, 20),
+            (KeyCode::KEY_Q, false, 30),
+        ],
+        &[0, 10, 20, 30],
+    );
+    assert_eq!(
+        out,
+        [
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, true),
+            TraceEvent::Tap(KeyCode::KEY_Q, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, false),
+        ]
+    );
+}
+
+#[test]
+fn long_hold_tap_resolved_by_another_key_replays_the_modifier_release_first() {
+    let out = timeline(
+        serde_json::json!({
+            "rules": [{"key":"KeyQ", "longHoldAction":"Escape"}],
+            "settings": {"inDevelopment": true}
+        }),
+        &[
+            (KeyCode::KEY_LEFTSHIFT, true, 0),
+            (KeyCode::KEY_Q, true, 10),
+            (KeyCode::KEY_LEFTSHIFT, false, 20),
+            (KeyCode::KEY_A, true, 30),
+            (KeyCode::KEY_A, false, 40),
+            (KeyCode::KEY_Q, false, 50),
+        ],
+        &[0, 10, 20, 30, 40, 50],
+    );
+    assert_eq!(
+        out,
+        [
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, true),
+            TraceEvent::Tap(KeyCode::KEY_Q, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, false),
+            TraceEvent::Raw(KeyCode::KEY_A, true),
+            TraceEvent::Raw(KeyCode::KEY_A, false),
+        ]
+    );
+}
+
+#[test]
+fn long_hold_firing_on_timeout_replays_a_deferred_modifier_release() {
+    let out = timeline(
+        serde_json::json!({
+            "rules": [{"key":"KeyQ", "longHoldAction":"Escape", "longHoldTimeoutMs": 300}],
+            "settings": {"inDevelopment": true}
+        }),
+        &[
+            (KeyCode::KEY_LEFTSHIFT, true, 0),
+            (KeyCode::KEY_Q, true, 10),
+            (KeyCode::KEY_LEFTSHIFT, false, 20),
+            (KeyCode::KEY_Q, false, 500),
+        ],
+        &[0, 10, 20, 310, 500],
+    );
+    assert_eq!(
+        out,
+        [
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, true),
+            TraceEvent::Tap(KeyCode::KEY_ESC, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, false),
+        ]
+    );
+}
+
+#[test]
+fn mouse_click_resolves_an_undecided_long_hold_key_first() {
+    let out = timeline(
+        serde_json::json!({
+            "rules": [{"key":"KeyQ", "longHoldAction":"Escape"}],
+            "settings": {"inDevelopment": true}
+        }),
+        &[
+            (KeyCode::KEY_Q, true, 0),
+            (KeyCode::BTN_LEFT, true, 20),
+            (KeyCode::BTN_LEFT, false, 30),
+            (KeyCode::KEY_Q, false, 40),
+        ],
+        &[0, 20, 30, 40],
+    );
+    assert_eq!(
+        out,
+        [
+            TraceEvent::Tap(KeyCode::KEY_Q, vec![]),
+            TraceEvent::Raw(KeyCode::BTN_LEFT, true),
+            TraceEvent::Raw(KeyCode::BTN_LEFT, false),
+        ]
+    );
+}
+
+#[test]
+fn tap_of_a_key_that_is_already_held_is_not_lost() {
+    let out = timeline(
+        serde_json::json!({"rules": [
+            {"key":"KeyQ", "tapAction":"KeyA", "holdAction":"ControlLeft", "holdTimeoutMs": 200}
+        ]}),
+        &[
+            (KeyCode::KEY_A, true, 0),
+            (KeyCode::KEY_Q, true, 10),
+            (KeyCode::KEY_Q, false, 20),
+            (KeyCode::KEY_A, false, 30),
+        ],
+        &[0, 10, 20, 30],
+    );
+    assert_eq!(
+        out,
+        [
+            TraceEvent::Raw(KeyCode::KEY_A, true),
+            TraceEvent::Raw(KeyCode::KEY_A, false),
+            TraceEvent::Tap(KeyCode::KEY_A, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_A, false),
+        ]
+    );
+}
+
+#[test]
+fn hold_on_other_key_press_defers_a_modifier_press_instead_of_committing() {
+    let cfg = serde_json::json!({
+        "rules": [{"key":"Space", "layerId":"nav", "tapDecision":"holdOnOtherKeyPress"}],
+        "layerKeymaps": {"nav": {"keys": {"KeyA": "ArrowLeft"}}}
+    });
+    // Space, Shift rolled over, then A: a space and a capital A.
+    let typed = timeline(
+        cfg.clone(),
+        &[
+            (KeyCode::KEY_SPACE, true, 0),
+            (KeyCode::KEY_LEFTSHIFT, true, 20),
+            (KeyCode::KEY_SPACE, false, 40),
+            (KeyCode::KEY_A, true, 60),
+            (KeyCode::KEY_A, false, 70),
+            (KeyCode::KEY_LEFTSHIFT, false, 90),
+        ],
+        &[0, 20, 40, 60, 70, 90],
+    );
+    assert_eq!(
+        typed,
+        [
+            TraceEvent::Tap(KeyCode::KEY_SPACE, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, true),
+            TraceEvent::Raw(KeyCode::KEY_A, true),
+            TraceEvent::Raw(KeyCode::KEY_A, false),
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, false),
+        ]
+    );
+    // Shift then a layer key while Space is held: Shift+ArrowLeft.
+    let held = timeline(
+        cfg,
+        &[
+            (KeyCode::KEY_SPACE, true, 0),
+            (KeyCode::KEY_LEFTSHIFT, true, 20),
+            (KeyCode::KEY_A, true, 40),
+            (KeyCode::KEY_A, false, 50),
+            (KeyCode::KEY_LEFTSHIFT, false, 60),
+            (KeyCode::KEY_SPACE, false, 70),
+        ],
+        &[0, 20, 40, 50, 60, 70],
+    );
+    assert_eq!(
+        held,
+        [
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, true),
+            TraceEvent::Press(KeyCode::KEY_LEFT, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_LEFT, false),
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, false),
+        ]
+    );
+}

@@ -595,6 +595,7 @@ fn run_device(
     {
         return Err("Keyboard and mouse must use different input devices".into());
     }
+    wait_for_released_keys(&device, &stop);
     device
         .grab()
         .map_err(|e| format!("grab {device_path} (need perms? add user to input group): {e}"))?;
@@ -664,6 +665,26 @@ fn run_device(
     ready.store(true, Ordering::SeqCst);
     let _ = ready_tx.send(Ok(()));
     run_loop(driver, virt, cfg, stop, control_rx, &mut text_session)
+}
+
+/// Wait (bounded) until no key of `device` is down. A key held while the
+/// grab starts stays pressed in the compositor: its release goes to the
+/// grabbed handle only, so it would repeat until the mapper stops.
+fn wait_for_released_keys(device: &Device, stop: &AtomicBool) {
+    const POLL: std::time::Duration = std::time::Duration::from_millis(10);
+    const LIMIT: std::time::Duration = std::time::Duration::from_secs(3);
+    let started = std::time::Instant::now();
+    while !stop.load(Ordering::SeqCst) && started.elapsed() < LIMIT {
+        match device.get_key_state() {
+            Ok(keys) if keys.iter().next().is_some() => std::thread::sleep(POLL),
+            Ok(_) => return,
+            Err(error) => {
+                log::debug!("[mapper] read key state before grab: {error}");
+                return;
+            }
+        }
+    }
+    log::debug!("[mapper] keys still held after {LIMIT:?}; grabbing anyway");
 }
 
 /// Key codes the virtual keyboard registers. uinput silently drops emits of

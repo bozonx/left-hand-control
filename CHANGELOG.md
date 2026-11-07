@@ -68,6 +68,11 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Mapper: a key with a long-hold action keeps the modifier that was held when it was pressed (Shift, Q, release Shift, release Q types "Q", not "q"); a mouse click resolves such a key before the click.
+- Mapper: a tap action whose key is already held (tap `KeyA` while A is down) is no longer dropped.
+- Mapper: with "Hold on other key press", pressing a modifier no longer activates the hold: Space, Shift, release Space, A types a space and "A".
+- Mapper: keystrokes bound in layers do not press modifiers that are already held again.
+- Linux: the mapper waits (up to 3 s) until all keys are released before grabbing the keyboard, so a key held at that moment no longer stays pressed and repeats.
 - Action picker: key capture can be cancelled without the mouse by holding Escape alone for 2 seconds; the value stays unchanged. A short Escape press is still captured as a key. The capture instructions, the cancel hint and the result ("Captured: …" or "Capture cancelled.") are announced to screen readers. A bar under the hint fills while Escape is held. Switching to another window during capture ends it as cancelled instead of keeping half-pressed keys.
 - Action picker: search matches every word separately, so "ctrl c" finds Ctrl+KeyC; an empty result offers "Clear search". Text with a single trailing line break is no longer shown as two lines. KDE global shortcuts are re-read at most every 30 seconds instead of on every open.
 

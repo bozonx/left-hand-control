@@ -332,6 +332,12 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
 
     if driver.wait(wait)? {
         for input in driver.fetch_inputs()? {
+            // The hold behind a macro is measured from when the input
+            // arrived, not from before the wait.
+            let arrived = match &input {
+                DriverInput::Key { at, .. } => (*at).max(now),
+                DriverInput::Repeat(_) => now,
+            };
             let during_macro = engine.macro_running();
             let start = out_buf.len();
             match input {
@@ -346,7 +352,7 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
                 DriverInput::Repeat(key) => engine.repeat(key, out_buf),
             }
             if during_macro {
-                hold.hold_typed(out_buf, start, now);
+                hold.hold_typed(out_buf, start, arrived);
             }
         }
     }
