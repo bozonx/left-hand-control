@@ -13,22 +13,22 @@ pub struct BuiltinMacro {
 pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
     // nav layer
     BuiltinMacro {
-        id: "emptyLineAbove",
+        id: "insertEmptyLineAbove",
         name: "Empty line above",
         steps: &["Home", "Enter", "ArrowUp"],
     },
     BuiltinMacro {
-        id: "nextLineEnd",
+        id: "goToNextLineEnd",
         name: "End of next line",
         steps: &["ArrowDown", "End"],
     },
     BuiltinMacro {
-        id: "previousLineEnd",
+        id: "goToPreviousLineEnd",
         name: "End of previous line",
         steps: &["ArrowUp", "End"],
     },
     BuiltinMacro {
-        id: "move5LinesUp",
+        id: "go5LinesUp",
         name: "Move 5 lines up",
         steps: &["ArrowUp", "ArrowUp", "ArrowUp", "ArrowUp", "ArrowUp"],
     },
@@ -45,22 +45,22 @@ pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
         ],
     },
     BuiltinMacro {
-        id: "spaceAfterNextChar",
+        id: "insertSpaceAfterNextChar",
         name: "Space after next character",
         steps: &["ArrowRight", "Space"],
     },
     BuiltinMacro {
-        id: "emptyLineBelow",
+        id: "insertEmptyLineBelow",
         name: "Empty line below",
         steps: &["End", "Enter"],
     },
     BuiltinMacro {
-        id: "cutWordUnderCursor",
+        id: "cutWord",
         name: "Cut word under cursor",
         steps: &["Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft", "Ctrl+KeyX"],
     },
     BuiltinMacro {
-        id: "copyWordUnderCursor",
+        id: "copyWord",
         name: "Copy word under cursor",
         steps: &[
             "Ctrl+ArrowRight",
@@ -80,17 +80,17 @@ pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
         steps: &["Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft", "Ctrl+KeyV"],
     },
     BuiltinMacro {
-        id: "nextLineStart",
+        id: "goToNextLineStart",
         name: "Start of next line",
         steps: &["ArrowDown", "Home"],
     },
     BuiltinMacro {
-        id: "previousLineStart",
+        id: "goToPreviousLineStart",
         name: "Start of previous line",
         steps: &["ArrowUp", "Home"],
     },
     BuiltinMacro {
-        id: "move5LinesDown",
+        id: "go5LinesDown",
         name: "Move 5 lines down",
         steps: &[
             "ArrowDown",
@@ -122,7 +122,7 @@ pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
         steps: &["Home", "Shift+End", "Ctrl+KeyX"],
     },
     BuiltinMacro {
-        id: "cutWholeLine",
+        id: "cutLine",
         name: "Cut whole line",
         steps: &["Home", "Shift+End", "Ctrl+KeyX", "Delete"],
     },
@@ -158,7 +158,7 @@ pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
         steps: &["Home", "Shift+End"],
     },
     BuiltinMacro {
-        id: "selectWordUnderCursor",
+        id: "selectWord",
         name: "Select word under cursor",
         steps: &["Ctrl+ArrowRight", "Ctrl+Shift+ArrowLeft"],
     },

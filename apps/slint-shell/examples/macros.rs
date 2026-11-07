@@ -44,11 +44,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let first = |document: &Rc<Document>| document.read().layout().macros[0].clone();
     assert_eq!(first(&document).steps.len(), 3);
     assert_eq!(first(&document).name, "Пустая строка выше (копия)");
-    assert_eq!(first(&document).id, "emptyLineAboveCopy");
-    editor.invoke_set_field(0, MacroField::Id, "emptyLineAbove".into());
+    assert_eq!(first(&document).id, "insertEmptyLineAboveCopy");
+    editor.invoke_set_field(0, MacroField::Id, "insertEmptyLineAbove".into());
     wait_until("macro autosave", || !editor.get_has_unsaved_changes());
     assert!(!editor.get_has_errors());
-    assert_eq!(first(&document).id, "emptyLineAbove");
+    assert_eq!(first(&document).id, "insertEmptyLineAbove");
     editor.invoke_set_field(0, MacroField::Id, "testMacro".into());
     editor.invoke_set_field(0, MacroField::Name, "Тестовый макрос".into());
     editor.invoke_add_step(0, "pause:100".into());

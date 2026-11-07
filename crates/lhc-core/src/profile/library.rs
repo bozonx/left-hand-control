@@ -797,7 +797,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let text = r#"{"version":1,"$schema":"https://example.com/layout.json",
-            "meta":{"name":"Original","author":"Ivan K","version":"1.0"}}"#;
+            "meta":{"name":"Original","author":"Ivan K","layoutVersion":"1.0"}}"#;
         paths
             .save_user_layout("Downloaded (2)", text, false)
             .unwrap();

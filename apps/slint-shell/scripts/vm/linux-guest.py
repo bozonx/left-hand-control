@@ -80,7 +80,7 @@ E2E_LAYOUT = f'''{{
     }},
     {{
       "key": "KeyE",
-      "tap": "app:showQuickMenu1"
+      "tap": "lhc:showQuickMenu1"
     }},
     {{
       "key": "KeyG",

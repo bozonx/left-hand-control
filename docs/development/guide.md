@@ -119,6 +119,16 @@ Release-сборки используют `~/.config/dev.bozonx.left-hand-contro
 может перезаписать ручные изменения. Файлы пишутся атомарно через временный
 файл с правами `0600`.
 
+JSON Schema обоих форматов лежат в `schemas/` и генерируются из `*Doc`-структур
+читателей (`profile/settings.rs`, `profile/layout_file.rs`). После изменения формата
+обновите их и закоммитьте вместе с кодом:
+
+```sh
+LHC_UPDATE_SCHEMAS=1 cargo test --locked -p lhc-core --lib published_schemas
+```
+
+Без переменной тест сравнивает файлы с кодом и падает, если они устарели.
+
 ### Управление запущенным экземпляром
 
 Одновременно работает один экземпляр на `XDG_RUNTIME_DIR`. Бинарник с аргументами —
@@ -525,7 +535,7 @@ USB-клавиатура) и сравнивает полученный текс�
 | `macro`, `command` | Макрос `KeyN, pause:300, text:mac, Shift+KeyO` → `nmacO`; `cmd:` создаёт файл-маркер |
 | `system-actions` | `sys:switchDesktop2`, `kde:kwin/Switch to Desktop 1`, `sys:switchKeyboardLayout2/1` — по состоянию KWin и `org.kde.keyboard` |
 | `russian-layout` | В раскладке ru физические клавиши дают кириллицу (`a`→KeyB→`и`, `c`→`с`), `text:` вводится без искажений |
-| `popups`, `emoji-ipc`, `quick-menu-rule` | IPC show/hide; эмодзи из `show emoji` + `Q` и быстрое действие из `app:showQuickMenu1` + `Q` вставляются в окно, бывшее активным до попапа |
+| `popups`, `emoji-ipc`, `quick-menu-rule` | IPC show/hide; эмодзи из `show emoji` + `Q` и быстрое действие из `lhc:showQuickMenu1` + `Q` вставляются в окно, бывшее активным до попапа |
 | `emoji-hotkey` | Ctrl+Alt+F11 открывает Emoji, `Q` вставляет эмодзи, консоль не переключается на VT11 |
 | `game-mode` | Правило с `when.gameMode`: Off, On (`game on`), Auto без игры и с процессом из `gameMode.processes` |
 | `screen-lock` | Пароль `qbXc` набирается только через mapper (`q a d c`) и разблокирует экран; набранное на экране блокировки не попадает в окно за ним |

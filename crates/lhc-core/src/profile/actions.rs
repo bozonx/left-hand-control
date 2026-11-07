@@ -1,5 +1,5 @@
 //! Action strings (`KeyA`, `Ctrl+KeyC`, `macro:id`, `builtin:id`, `cmd:id`, `sys:id`,
-//! `app:id`, `kde:component/shortcut`, `xdg:app-id/action`, `text:…`,
+//! `lhc:id`, `kde:component/shortcut`, `xdg:app-id/action`, `text:…`,
 //! `pause:ms`) and the
 //! catalogs of built-in actions.
 
@@ -52,7 +52,7 @@ impl Action {
             ("builtin:", Self::BuiltinMacro),
             ("cmd:", Self::Command),
             ("sys:", Self::System),
-            ("app:", Self::App),
+            ("lhc:", Self::App),
             ("kde:", Self::KdeShortcut),
             ("xdg:", Self::DesktopEntry),
             ("pause:", Self::Pause),
@@ -81,7 +81,7 @@ impl Action {
             Self::BuiltinMacro(id) => format!("builtin:{id}"),
             Self::Command(id) => format!("cmd:{id}"),
             Self::System(id) => format!("sys:{id}"),
-            Self::App(id) => format!("app:{id}"),
+            Self::App(id) => format!("lhc:{id}"),
             Self::KdeShortcut(id) => format!("kde:{id}"),
             Self::DesktopEntry(id) => format!("xdg:{id}"),
             Self::Text(text) => format!("text:{text}"),
@@ -248,8 +248,8 @@ pub const WINDOW_APP_ACTIONS: [&str; 3] =
     ["showQuickMenuLast", "showEmojiMenuLast", "showSettings"];
 
 /// Actions of the built-in popup hotkeys Ctrl+Alt+F11 and Ctrl+Alt+F12.
-pub const SHOW_EMOJI_MENU_LAST: &str = "app:showEmojiMenuLast";
-pub const SHOW_QUICK_MENU_LAST: &str = "app:showQuickMenuLast";
+pub const SHOW_EMOJI_MENU_LAST: &str = "lhc:showEmojiMenuLast";
+pub const SHOW_QUICK_MENU_LAST: &str = "lhc:showQuickMenuLast";
 
 pub fn app_action_name(id: &str) -> Option<ActionName> {
     numbered(id, &["showQuickMenu", "showEmojiMenu"], u32::MAX)
@@ -264,7 +264,7 @@ pub fn app_action_name(id: &str) -> Option<ActionName> {
         })
 }
 
-/// Page of an `app:` menu action, e.g. `showEmojiMenu2` → (Emoji, 2).
+/// Page of an `lhc:` menu action, e.g. `showEmojiMenu2` → (Emoji, 2).
 pub fn menu_page(app_id: &str) -> Option<(bool, u32)> {
     match app_action_name(app_id)? {
         ActionName::App {
@@ -498,7 +498,7 @@ mod tests {
             "builtin:copyLineText",
             "cmd:music",
             "sys:switchDesktop2",
-            "app:showQuickMenu1",
+            "lhc:showQuickMenu1",
             "kde:kwin/Window Quick Tile Top",
             "xdg:org.mozilla.firefox/new-private-window",
             "text:  keep spaces ",
@@ -711,9 +711,9 @@ mod tests {
         assert_eq!(check("xdg:konsole"), Some(ActionIssue::InvalidSyntax));
         assert_eq!(check("kde:ksmserver/Lock Session"), None);
         assert_eq!(check("kde:Lock Session"), Some(ActionIssue::InvalidSyntax));
-        assert_eq!(check("app:showEmojiMenu42"), None);
+        assert_eq!(check("lhc:showEmojiMenu42"), None);
         assert_eq!(
-            check("app:showEmojiMenu0"),
+            check("lhc:showEmojiMenu0"),
             Some(ActionIssue::UnknownAppAction)
         );
         assert_eq!(check("pause:10"), Some(ActionIssue::PauseOutsideMacro));

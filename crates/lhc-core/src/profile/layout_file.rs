@@ -15,6 +15,12 @@ use super::schema::{self, LAYOUT_SCHEMA_VERSION};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::{BTreeMap, BTreeSet};
 
+/// JSON Schema of the layout file, published under `schemas/`.
+#[cfg(test)]
+pub(crate) fn json_schema() -> schemars::Schema {
+    schemars::schema_for!(LayoutDoc)
+}
+
 /// Parse a layout file. Returns `Ok(None)` for an empty document.
 pub fn parse(text: &str) -> Result<Option<LayoutPreset>, String> {
     if text.trim().is_empty() {
@@ -37,9 +43,11 @@ pub fn serialize(preset: &LayoutPreset) -> String {
     serde_json::to_string_pretty(&to_doc(preset)).unwrap_or_default()
 }
 
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct LayoutDoc {
+    #[cfg_attr(test, schemars(extend("const" = LAYOUT_SCHEMA_VERSION)))]
     version: u64,
     #[serde(
         rename = "$schema",
@@ -47,12 +55,14 @@ struct LayoutDoc {
         skip_serializing_if = "Option::is_none",
         deserialize_with = "schema::non_null"
     )]
+    #[cfg_attr(test, schemars(with = "String"))]
     schema: Option<String>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         deserialize_with = "schema::non_null"
     )]
+    #[cfg_attr(test, schemars(with = "MetaDoc"))]
     meta: Option<MetaDoc>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     layers: Vec<LayerDoc>,
@@ -70,6 +80,7 @@ struct LayoutDoc {
 
 /// Portable information about the layout from its author. Every field is
 /// optional; `null` is not allowed.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct MetaDoc {
@@ -78,12 +89,14 @@ struct MetaDoc {
         skip_serializing_if = "Option::is_none",
         deserialize_with = "schema::non_null"
     )]
+    #[cfg_attr(test, schemars(with = "String"))]
     name: Option<String>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         deserialize_with = "schema::non_null"
     )]
+    #[cfg_attr(test, schemars(with = "String"))]
     author: Option<String>,
     /// The author's version of the layout, unrelated to the format `version`.
     #[serde(
@@ -91,12 +104,14 @@ struct MetaDoc {
         skip_serializing_if = "Option::is_none",
         deserialize_with = "schema::non_null"
     )]
-    version: Option<String>,
+    #[cfg_attr(test, schemars(with = "String"))]
+    layout_version: Option<String>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         deserialize_with = "schema::non_null"
     )]
+    #[cfg_attr(test, schemars(with = "String"))]
     description: Option<String>,
 }
 
@@ -104,14 +119,16 @@ impl MetaDoc {
     fn is_empty(&self) -> bool {
         self.name.is_none()
             && self.author.is_none()
-            && self.version.is_none()
+            && self.layout_version.is_none()
             && self.description.is_none()
     }
 }
 
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct LayerDoc {
+    #[cfg_attr(test, schemars(regex(pattern = super::schema::ID_PATTERN)))]
     id: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     name: Option<String>,
@@ -131,6 +148,7 @@ struct LayerDoc {
 }
 
 /// A layer key: a bare action (`null` swallows) or an action with options.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 enum LayerKeyDoc {
@@ -138,6 +156,7 @@ enum LayerKeyDoc {
     Full(LayerKeyFullDoc),
 }
 
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct LayerKeyFullDoc {
@@ -148,10 +167,12 @@ struct LayerKeyFullDoc {
     hold_modifiers: bool,
 }
 
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct RuleDoc {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(test, schemars(regex(pattern = super::schema::ID_PATTERN)))]
     id: Option<String>,
     key: String,
     #[serde(default = "yes", skip_serializing_if = "is_true")]
@@ -177,6 +198,7 @@ struct RuleDoc {
 
 /// Conditions of a layout rule or an auto-mode rule; every present
 /// condition must hold. Both places share this one object.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct WhenDoc {
@@ -233,6 +255,7 @@ impl WhenDoc {
     }
 }
 
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct TimedActionDoc {
@@ -242,10 +265,12 @@ struct TimedActionDoc {
         skip_serializing_if = "Option::is_none",
         deserialize_with = "schema::non_null"
     )]
+    #[cfg_attr(test, schemars(with = "u64"))]
     timeout_ms: Option<u64>,
 }
 
 /// What holding the key does: activate a layer and/or hold other keys.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct HoldDoc {
@@ -259,11 +284,13 @@ struct HoldDoc {
         skip_serializing_if = "Option::is_none"
     )]
     action: Option<Option<String>>,
+    #[cfg_attr(test, schemars(range(min = super::timing::TAP_HOLD.min, max = super::timing::TAP_HOLD.max)))]
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         deserialize_with = "schema::non_null"
     )]
+    #[cfg_attr(test, schemars(with = "u64"))]
     timeout_ms: Option<u64>,
 }
 
@@ -273,31 +300,39 @@ impl HoldDoc {
     }
 }
 
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct MacroDoc {
+    #[cfg_attr(test, schemars(regex(pattern = super::schema::ID_PATTERN)))]
     id: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     name: Option<String>,
+    #[cfg_attr(test, schemars(range(min = super::timing::MACRO_DELAY.min, max = super::timing::MACRO_DELAY.max)))]
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         deserialize_with = "schema::non_null"
     )]
+    #[cfg_attr(test, schemars(with = "u64"))]
     step_pause_ms: Option<u64>,
+    #[cfg_attr(test, schemars(range(min = super::timing::MACRO_DELAY.min, max = super::timing::MACRO_DELAY.max)))]
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         deserialize_with = "schema::non_null"
     )]
+    #[cfg_attr(test, schemars(with = "u64"))]
     modifier_delay_ms: Option<u64>,
     #[serde(default)]
     steps: Vec<String>,
 }
 
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct CommandDoc {
+    #[cfg_attr(test, schemars(regex(pattern = super::schema::ID_PATTERN)))]
     id: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     name: Option<String>,
@@ -311,20 +346,52 @@ struct CommandDoc {
     working_directory: Option<String>,
 }
 
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 #[serde(bound(serialize = "T: Serialize", deserialize = "T: Deserialize<'de>"))]
+#[cfg_attr(test, schemars(bound = "T: schemars::JsonSchema", inline))]
 struct PageDoc<T> {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(test, schemars(regex(pattern = super::schema::ID_PATTERN)))]
     id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     name: Option<String>,
-    /// Hotkey from [`LEFT_HAND_HOTKEYS`] → cell, written in grid order.
-    #[serde(default, serialize_with = "grid_order")]
-    cells: BTreeMap<String, T>,
+    #[serde(default)]
+    cells: GridCells<T>,
+}
+
+/// Menu cells keyed by grid hotkey (`KeyQ`…`KeyB`), written in grid order.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
+#[cfg_attr(test, schemars(transparent, inline, extend("propertyNames" = { "enum": LEFT_HAND_HOTKEYS })))]
+#[derive(Deserialize)]
+#[serde(transparent)]
+struct GridCells<T>(BTreeMap<String, T>);
+
+impl<T> Default for GridCells<T> {
+    fn default() -> Self {
+        Self(BTreeMap::new())
+    }
+}
+
+impl<T> FromIterator<(String, T)> for GridCells<T> {
+    fn from_iter<I: IntoIterator<Item = (String, T)>>(items: I) -> Self {
+        Self(items.into_iter().collect())
+    }
+}
+
+impl<T: Serialize> Serialize for GridCells<T> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.collect_map(
+            LEFT_HAND_HOTKEYS
+                .iter()
+                .filter_map(|key| self.0.get(*key).map(|cell| (*key, cell))),
+        )
+    }
 }
 
 /// A quick-action cell: a bare action or an action with a caption.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 enum QuickCellDoc {
@@ -332,6 +399,7 @@ enum QuickCellDoc {
     Full(QuickActionDoc),
 }
 
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct QuickActionDoc {
@@ -356,17 +424,6 @@ fn is_false(value: &bool) -> bool {
 /// (`Some(None)`).
 fn present<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Option<String>>, D::Error> {
     Option::<String>::deserialize(deserializer).map(Some)
-}
-
-fn grid_order<S: Serializer, T: Serialize>(
-    cells: &BTreeMap<String, T>,
-    serializer: S,
-) -> Result<S::Ok, S::Error> {
-    serializer.collect_map(
-        LEFT_HAND_HOTKEYS
-            .iter()
-            .filter_map(|key| cells.get(*key).map(|cell| (*key, cell))),
-    )
 }
 
 /// Layer keys in keyboard order: grid rows from left to right, then the key
@@ -584,9 +641,9 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
 
     let mut quick_action_pages = Vec::new();
     for page in doc.quick_menu_pages {
-        check_cells(page.cells.keys(), "quick action")?;
+        check_cells(page.cells.0.keys(), "quick action")?;
         let mut cells = BTreeMap::new();
-        for (key, cell) in page.cells {
+        for (key, cell) in page.cells.0 {
             let item = match cell {
                 QuickCellDoc::Action(action) => QuickAction {
                     action,
@@ -612,14 +669,14 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
 
     let mut emoji_pages = Vec::new();
     for page in doc.emoji_menu_pages {
-        check_cells(page.cells.keys(), "emoji")?;
-        for (key, text) in &page.cells {
+        check_cells(page.cells.0.keys(), "emoji")?;
+        for (key, text) in &page.cells.0 {
             non_empty(text, &format!("emoji {key}"))?;
         }
         emoji_pages.push(EmojiPage {
             id: page.id.unwrap_or_default(),
             name: page.name.unwrap_or_default(),
-            cells: page.cells,
+            cells: page.cells.0,
         });
     }
     if emoji_pages.is_empty() {
@@ -631,7 +688,7 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
     let meta = super::model::LayoutMetadata {
         name: meta.name,
         author: meta.author,
-        version: meta.version,
+        version: meta.layout_version,
     };
     Ok(LayoutPreset {
         schema: doc.schema,
@@ -833,7 +890,7 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
 
     // A single unnamed empty page is what a missing list loads as.
     fn only_default<T>(pages: &[PageDoc<T>]) -> bool {
-        matches!(pages, [page] if page.name.is_none() && page.cells.is_empty())
+        matches!(pages, [page] if page.name.is_none() && page.cells.0.is_empty())
     }
     LayoutDoc {
         version: LAYOUT_SCHEMA_VERSION,
@@ -843,7 +900,7 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
             let meta = MetaDoc {
                 name: meta.name,
                 author: meta.author,
-                version: meta.version,
+                layout_version: meta.version,
                 description: preset.description.clone().filter(|d| !d.trim().is_empty()),
             };
             (!meta.is_empty()).then_some(meta)
@@ -902,7 +959,7 @@ mod tests {
     #[test]
     fn portable_metadata_and_schema_survive_round_trip() {
         let body = json!({"$schema": "https://example.com/layout.schema.json",
-            "meta": {"name": "Original", "author": "Ivan K", "version": "1.0",
+            "meta": {"name": "Original", "author": "Ivan K", "layoutVersion": "1.0",
                      "description": "Portable"}});
         let preset = parsed(body.clone());
         assert_eq!(round_trip(&preset), preset);
@@ -915,7 +972,8 @@ mod tests {
             json!({"meta": null}),
             json!({"meta": {"author": null}}),
             json!({"meta": {"future": true}}),
-            json!({"meta": {"version": 1}}),
+            json!({"meta": {"layoutVersion": 1}}),
+            json!({"meta": {"version": "1.0"}}),
             json!({"meta": {"description": null}}),
             json!({"description": "moved into meta"}),
             json!({"quickMenuPages": [{"cells": {"KeyQ": {"action": "KeyA", "icon": "x"}}}]}),

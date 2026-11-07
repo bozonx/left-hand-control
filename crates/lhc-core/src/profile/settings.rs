@@ -39,6 +39,12 @@ pub fn parse(text: &str) -> Result<AppSettings, String> {
     Ok(settings)
 }
 
+/// JSON Schema of `config.json`, published under `schemas/`.
+#[cfg(test)]
+pub(crate) fn json_schema() -> schemars::Schema {
+    schemars::schema_for!(ConfigDoc)
+}
+
 pub fn serialize(settings: &AppSettings) -> String {
     let defaults = serde_json::to_value(to_doc(&AppSettings::default())).unwrap_or_default();
     let mut value = serde_json::to_value(to_doc(settings)).unwrap_or_default();
@@ -79,9 +85,11 @@ fn prune_defaults(value: &mut serde_json::Value, default: &serde_json::Value) {
     });
 }
 
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ConfigDoc {
+    #[cfg_attr(test, schemars(extend("const" = CONFIG_SCHEMA_VERSION)))]
     version: u64,
     #[serde(
         rename = "$schema",
@@ -89,6 +97,7 @@ struct ConfigDoc {
         skip_serializing_if = "Option::is_none",
         deserialize_with = "schema::non_null"
     )]
+    #[cfg_attr(test, schemars(with = "String"))]
     schema: Option<String>,
     #[serde(default)]
     settings: SettingsDoc,
@@ -96,6 +105,7 @@ struct ConfigDoc {
     state: StateDoc,
 }
 
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields, default)]
 struct SettingsDoc {
@@ -128,6 +138,7 @@ impl Default for SettingsDoc {
 /// Devices the mapper grabs, as stable paths such as `/dev/input/by-id/…`
 /// on Linux. Lists leave room for several devices; this version grabs at
 /// most one of each kind.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields, default)]
 struct DevicesDoc {
@@ -159,6 +170,7 @@ impl DevicesDoc {
 }
 
 /// Which library layout the mapper uses.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields, default)]
 struct LayoutsDoc {
@@ -179,6 +191,7 @@ impl Default for LayoutsDoc {
 }
 
 /// Automatic mode: the first matching rule wins, else `fallback`.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields, default)]
 struct AutoDoc {
@@ -194,18 +207,26 @@ impl Default for AutoDoc {
 }
 
 /// Defaults for rules and macros; a rule or macro may override each.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields, default)]
 struct TimingDoc {
+    #[cfg_attr(test, schemars(range(min = super::timing::TAP_HOLD.min, max = super::timing::TAP_HOLD.max)))]
     hold_ms: u64,
+    #[cfg_attr(test, schemars(range(min = super::timing::LONG_HOLD.min, max = super::timing::LONG_HOLD.max)))]
     long_hold_ms: u64,
+    #[cfg_attr(test, schemars(range(min = super::timing::TAP_HOLD.min, max = super::timing::TAP_HOLD.max)))]
     double_tap_ms: u64,
     /// Window in which all keys of a multi-key rule must be pressed.
+    #[cfg_attr(test, schemars(range(min = super::timing::TRIGGER_CHORD.min, max = super::timing::TRIGGER_CHORD.max)))]
     combo_ms: u64,
     tap_decision: TapDecision,
+    #[cfg_attr(test, schemars(range(min = super::timing::MACRO_DELAY.min, max = super::timing::MACRO_DELAY.max)))]
     macro_step_pause_ms: u64,
+    #[cfg_attr(test, schemars(range(min = super::timing::MACRO_DELAY.min, max = super::timing::MACRO_DELAY.max)))]
     macro_modifier_delay_ms: u64,
     /// A macro run still going after this time is aborted.
+    #[cfg_attr(test, schemars(range(min = super::timing::MACRO_TIMEOUT.min, max = super::timing::MACRO_TIMEOUT.max)))]
     macro_timeout_ms: u64,
 }
 
@@ -215,10 +236,12 @@ impl Default for TimingDoc {
     }
 }
 
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct AutoRuleDoc {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(test, schemars(regex(pattern = super::schema::ID_PATTERN)))]
     id: Option<String>,
     /// Required; an explicit `null` turns the mapper off, so a forgotten
     /// field is an error rather than a silent "off".
@@ -258,11 +281,25 @@ impl<'de> Deserialize<'de> for TerminalPasteDoc {
     }
 }
 
+#[cfg(test)]
+impl schemars::JsonSchema for TerminalPasteDoc {
+    fn schema_name() -> std::borrow::Cow<'static, str> {
+        "TerminalPasteShortcut".into()
+    }
+
+    fn json_schema(_: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        let mut values: Vec<&str> = PasteShortcut::ALL.map(PasteShortcut::as_str).into();
+        values.push(SAME_AS_PASTE);
+        schemars::json_schema!({ "type": "string", "enum": values })
+    }
+}
+
 /// A required field that may be `null`.
 fn nullable<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<String>, D::Error> {
     Option::<String>::deserialize(deserializer)
 }
 
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields, default)]
 struct GameModeDoc {
@@ -280,6 +317,7 @@ impl Default for GameModeDoc {
 }
 
 /// Game detection sources; each platform uses only the ones it supports.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields, default)]
 struct DetectorsDoc {
@@ -301,10 +339,12 @@ impl Default for DetectorsDoc {
 }
 
 /// A process that marks game mode, or with `exclude` one that never does.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct ProcessDoc {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(test, schemars(regex(pattern = super::schema::ID_PATTERN)))]
     id: Option<String>,
     name: String,
     #[serde(default = "yes", skip_serializing_if = "is_true")]
@@ -313,6 +353,7 @@ struct ProcessDoc {
     exclude: bool,
 }
 
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields, default)]
 struct LinuxDoc {
@@ -322,9 +363,33 @@ struct LinuxDoc {
     paste_shortcut: PasteShortcut,
     /// Paste shortcut for terminal windows, or `sameAsPaste`.
     terminal_paste_shortcut: TerminalPasteDoc,
-    /// Empty: looked up in `PATH`.
-    ydotool_path: String,
-    xdotool_path: String,
+    /// Missing: looked up in `PATH`. An empty string is an error, so
+    /// "no value" has one spelling.
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "program_path"
+    )]
+    #[cfg_attr(test, schemars(with = "String", length(min = 1)))]
+    ydotool_path: Option<String>,
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "program_path"
+    )]
+    #[cfg_attr(test, schemars(with = "String", length(min = 1)))]
+    xdotool_path: Option<String>,
+}
+
+/// A program path: absent or a non-blank string; `null` and `""` are errors.
+fn program_path<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<String>, D::Error> {
+    let path = String::deserialize(deserializer)?;
+    if path.trim().is_empty() {
+        return Err(serde::de::Error::custom(
+            "program path must not be empty; omit the field to search PATH",
+        ));
+    }
+    Ok(Some(path))
 }
 
 impl Default for LinuxDoc {
@@ -333,6 +398,7 @@ impl Default for LinuxDoc {
     }
 }
 
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields, default)]
 struct StateDoc {
@@ -485,8 +551,8 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
         linux_wayland_text_mode: settings.linux.text_mode,
         linux_paste_shortcut: settings.linux.paste_shortcut,
         linux_terminal_paste_shortcut: settings.linux.terminal_paste_shortcut.0,
-        linux_ydotool_path: settings.linux.ydotool_path,
-        linux_xdotool_path: settings.linux.xdotool_path,
+        linux_ydotool_path: settings.linux.ydotool_path.unwrap_or_default(),
+        linux_xdotool_path: settings.linux.xdotool_path.unwrap_or_default(),
     })
 }
 
@@ -569,8 +635,10 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
                 text_mode: settings.linux_wayland_text_mode,
                 paste_shortcut: settings.linux_paste_shortcut,
                 terminal_paste_shortcut: TerminalPasteDoc(settings.linux_terminal_paste_shortcut),
-                ydotool_path: settings.linux_ydotool_path.clone(),
-                xdotool_path: settings.linux_xdotool_path.clone(),
+                ydotool_path: Some(settings.linux_ydotool_path.clone())
+                    .filter(|path| !path.trim().is_empty()),
+                xdotool_path: Some(settings.linux_xdotool_path.clone())
+                    .filter(|path| !path.trim().is_empty()),
             },
         },
         state: StateDoc {
@@ -895,6 +963,18 @@ mod tests {
         );
         let null = config(json!({"linux": {"terminalPasteShortcut": null}}));
         assert!(parse(&null).is_err());
+    }
+
+    #[test]
+    fn program_paths_are_omitted_rather_than_empty() {
+        for bad in [json!(""), json!("  "), Value::Null] {
+            assert!(parse(&config(json!({"linux": {"ydotoolPath": bad}}))).is_err());
+        }
+        let settings = parse(&config(json!({"linux": {"xdotoolPath": "/opt/xdotool"}}))).unwrap();
+        assert_eq!(settings.linux_xdotool_path, "/opt/xdotool");
+        assert_eq!(settings.linux_ydotool_path, "");
+        let raw: Value = serde_json::from_str(&serialize(&AppSettings::default())).unwrap();
+        assert!(raw.get("settings").is_none());
     }
 
     #[test]

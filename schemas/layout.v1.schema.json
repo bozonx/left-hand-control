@@ -1,0 +1,510 @@
+{
+  "$defs": {
+    "CommandDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_-]{1,64}$",
+          "type": "string"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "powershell": {
+          "description": "PowerShell script, run on Windows.",
+          "type": "string"
+        },
+        "sh": {
+          "description": "POSIX `sh` script, run on Linux and macOS.",
+          "type": "string"
+        },
+        "workingDirectory": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "GameModeCondition": {
+      "description": "Required game-mode state of a condition.",
+      "enum": [
+        "on",
+        "off"
+      ],
+      "type": "string"
+    },
+    "HoldDoc": {
+      "additionalProperties": false,
+      "description": "What holding the key does: activate a layer and/or hold other keys.",
+      "properties": {
+        "action": {
+          "description": "Key or chord held down while the key is held. Missing: the key\nitself (or nothing while a layer is active), `null`: nothing.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "layer": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "timeoutMs": {
+          "format": "uint64",
+          "maximum": 1000,
+          "minimum": 50,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "LayerDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "extraKeyOrder": {
+          "description": "Saved display order of additional keys.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "id": {
+          "pattern": "^[A-Za-z0-9_-]{1,64}$",
+          "type": "string"
+        },
+        "keys": {
+          "additionalProperties": {
+            "$ref": "#/$defs/LayerKeyDoc"
+          },
+          "description": "Key code → action; `null` swallows the key, a missing key is\ntransparent. Written in keyboard order.",
+          "type": "object"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "LayerKeyDoc": {
+      "anyOf": [
+        {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        {
+          "$ref": "#/$defs/LayerKeyFullDoc"
+        }
+      ],
+      "description": "A layer key: a bare action (`null` swallows) or an action with options."
+    },
+    "LayerKeyFullDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "holdModifiers": {
+          "description": "The chord's modifiers stay pressed until the key holding the layer\nis released.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "type": "object"
+    },
+    "MacroDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_-]{1,64}$",
+          "type": "string"
+        },
+        "modifierDelayMs": {
+          "format": "uint64",
+          "maximum": 2000,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "stepPauseMs": {
+          "format": "uint64",
+          "maximum": 2000,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "steps": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "MetaDoc": {
+      "additionalProperties": false,
+      "description": "Portable information about the layout from its author. Every field is\noptional; `null` is not allowed.",
+      "properties": {
+        "author": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "layoutVersion": {
+          "description": "The author's version of the layout, unrelated to the format `version`.",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "QuickActionDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "type": "object"
+    },
+    "QuickCellDoc": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/QuickActionDoc"
+        }
+      ],
+      "description": "A quick-action cell: a bare action or an action with a caption."
+    },
+    "RuleDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "doubleTap": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimedActionDoc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "hold": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HoldDoc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "id": {
+          "pattern": "^[A-Za-z0-9_-]{1,64}$",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "key": {
+          "type": "string"
+        },
+        "longHold": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimedActionDoc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tap": {
+          "description": "Missing: native key, `null`: swallowed, string: action.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tapDecision": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TapDecision"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "when": {
+          "$ref": "#/$defs/WhenDoc"
+        }
+      },
+      "required": [
+        "key"
+      ],
+      "type": "object"
+    },
+    "TapDecision": {
+      "description": "How the mapper resolves tap vs hold when another key is pressed while a\ntap/hold rule key is still held and undecided.",
+      "oneOf": [
+        {
+          "const": "permissiveHold",
+          "description": "QMK-style permissive hold: buffer the interrupting key and only\ncommit the hold on a nested release or timeout.",
+          "type": "string"
+        },
+        {
+          "const": "holdOnOtherKeyPress",
+          "description": "Behaviour: any other key press commits the hold immediately.",
+          "type": "string"
+        }
+      ]
+    },
+    "TimedActionDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "timeoutMs": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "type": "object"
+    },
+    "WhenDoc": {
+      "additionalProperties": false,
+      "description": "Conditions of a layout rule or an auto-mode rule; every present\ncondition must hold. Both places share this one object.",
+      "properties": {
+        "excludeWindows": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "gameMode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GameModeCondition"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "keyboardLayouts": {
+          "description": "Short ids of the system keyboard layout, e.g. `us`.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "windows": {
+          "description": "Window patterns, see [`super::app_match`].",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/layout.v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "commands": {
+      "items": {
+        "$ref": "#/$defs/CommandDoc"
+      },
+      "type": "array"
+    },
+    "emojiMenuPages": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "cells": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Menu cells keyed by grid hotkey (`KeyQ`…`KeyB`), written in grid order.",
+            "propertyNames": {
+              "enum": [
+                "KeyQ",
+                "KeyW",
+                "KeyE",
+                "KeyR",
+                "KeyT",
+                "KeyA",
+                "KeyS",
+                "KeyD",
+                "KeyF",
+                "KeyG",
+                "KeyZ",
+                "KeyX",
+                "KeyC",
+                "KeyV",
+                "KeyB"
+              ]
+            },
+            "type": "object"
+          },
+          "id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "layers": {
+      "items": {
+        "$ref": "#/$defs/LayerDoc"
+      },
+      "type": "array"
+    },
+    "macros": {
+      "items": {
+        "$ref": "#/$defs/MacroDoc"
+      },
+      "type": "array"
+    },
+    "meta": {
+      "$ref": "#/$defs/MetaDoc"
+    },
+    "quickMenuPages": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "cells": {
+            "additionalProperties": {
+              "$ref": "#/$defs/QuickCellDoc"
+            },
+            "description": "Menu cells keyed by grid hotkey (`KeyQ`…`KeyB`), written in grid order.",
+            "propertyNames": {
+              "enum": [
+                "KeyQ",
+                "KeyW",
+                "KeyE",
+                "KeyR",
+                "KeyT",
+                "KeyA",
+                "KeyS",
+                "KeyD",
+                "KeyF",
+                "KeyG",
+                "KeyZ",
+                "KeyX",
+                "KeyC",
+                "KeyV",
+                "KeyB"
+              ]
+            },
+            "type": "object"
+          },
+          "id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "rules": {
+      "items": {
+        "$ref": "#/$defs/RuleDoc"
+      },
+      "type": "array"
+    },
+    "version": {
+      "const": 1,
+      "format": "uint64",
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version"
+  ],
+  "title": "Left Hand Control layout",
+  "type": "object"
+}

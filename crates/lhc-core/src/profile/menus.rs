@@ -238,7 +238,7 @@ macro_rules! on_pages {
     };
 }
 
-/// Each menu has at least one page: the editor and `app:show*Menu1` need it.
+/// Each menu has at least one page: the editor and `lhc:show*Menu1` need it.
 pub fn ensure_pages(layout: &mut LayoutPreset) {
     fn ensure<P: MenuPage>(pages: &mut Vec<P>) {
         if pages.is_empty() {
@@ -259,7 +259,7 @@ pub fn page_count(layout: &LayoutPreset, kind: MenuKind) -> usize {
 /// Move a page and its cells together, preserving the order of other pages.
 /// Returns whether anything moved.
 ///
-/// `app:showQuickMenuN` / `app:showEmojiMenuN` open a page by position and
+/// `lhc:showQuickMenuN` / `lhc:showEmojiMenuN` open a page by position and
 /// are deliberately left as they are: moving a page changes what those keys
 /// open. See [`actions::MENU_PAGE_PICKER_COUNT`].
 pub fn reorder_page(layout: &mut LayoutPreset, kind: MenuKind, from: usize, to: usize) -> bool {
@@ -287,7 +287,7 @@ pub fn selection_after_reorder(selected: usize, from: usize, to: usize) -> usize
     }
 }
 
-/// Remove a page; numbered `app:` menu actions keep their numbers, so the
+/// Remove a page; numbered `lhc:` menu actions keep their numbers, so the
 /// following pages move into the freed positions. The only page is cleared
 /// instead (name and cells), keeping its id. Returns the page to select.
 pub fn remove_page(layout: &mut LayoutPreset, kind: MenuKind, index: usize) -> usize {
@@ -634,7 +634,7 @@ mod tests {
             ..LayoutPreset::default()
         };
         let mut rule = KeyRule::new("r".into(), "KeyA");
-        rule.tap_action = Some("app:showQuickMenu1".into());
+        rule.tap_action = Some("lhc:showQuickMenu1".into());
         layout.rules.push(rule);
         reorder_page(&mut layout, MenuKind::Quick, 0, 2);
         assert_eq!(layout.quick_action_pages[0].id, "b");
@@ -642,7 +642,7 @@ mod tests {
         assert_eq!(layout.quick_action_pages[0].id, "c");
         assert_eq!(
             layout.rules[0].tap_action.as_deref(),
-            Some("app:showQuickMenu1")
+            Some("lhc:showQuickMenu1")
         );
     }
 

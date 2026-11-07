@@ -333,7 +333,7 @@ fn hidden_features_cannot_be_typed_outside_development_mode() {
         "cmd:x",
         "kde:kwin/Close",
         "Mouse6",
-        "app:showQuickMenu",
+        "lhc:showQuickMenu",
     ] {
         assert!(!filter.admits(value), "{value}");
     }

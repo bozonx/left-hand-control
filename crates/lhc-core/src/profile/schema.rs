@@ -9,7 +9,12 @@
 //! 2. bump the constant below;
 //! 3. add a `N => …` arm to the reader's version `match` that parses the
 //!    old structs and converts them to the domain model (or to the new
-//!    structs).
+//!    structs);
+//! 4. publish `schemas/<format>.v<N+1>.schema.json` next to the old one and
+//!    point the URL constant below at it.
+//!
+//! Within a version, regenerate the published schemas after adding a field
+//! (see `published_schemas_match_the_readers`).
 //!
 //! The application always writes the current version. Before a file with
 //! an older version is first overwritten, the storage keeps a copy of it
@@ -20,6 +25,20 @@ pub const CONFIG_SCHEMA_VERSION: u64 = 1;
 
 /// Version of layout files this build reads and writes.
 pub const LAYOUT_SCHEMA_VERSION: u64 = 1;
+
+/// Stable address of the `config.json` JSON Schema for editors (`$schema`).
+/// The file lives in the repository's `schemas/` directory; within a format
+/// version it only gains optional fields and enum values.
+pub const CONFIG_SCHEMA_URL: &str =
+    "https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/config.v1.schema.json";
+
+/// Stable address of the layout file JSON Schema, see [`CONFIG_SCHEMA_URL`].
+pub const LAYOUT_SCHEMA_URL: &str =
+    "https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/layout.v1.schema.json";
+
+/// Grammar of collection IDs (layers, rules, macros, commands, pages,
+/// auto rules, game-mode processes), see [`super::ids`].
+pub const ID_PATTERN: &str = "^[A-Za-z0-9_-]{1,64}$";
 
 /// The `version` of a parsed document, checked before the rest is
 /// read, so a file from a newer build is reported as such rather than as a
@@ -119,6 +138,46 @@ mod tests {
         assert_eq!(version_of(r#"{"version": 4, "x": 1}"#), Some(4));
         assert_eq!(version_of(r#"{"x": 1}"#), None);
         assert_eq!(version_of("not json"), None);
+    }
+
+    /// The published schemas match the readers. After a format change run
+    /// `LHC_UPDATE_SCHEMAS=1 cargo test -p lhc-core published_schemas` and
+    /// commit the files.
+    #[test]
+    fn published_schemas_match_the_readers() {
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../schemas");
+        let update = std::env::var_os("LHC_UPDATE_SCHEMAS").is_some();
+        for (file, url, title, schema) in [
+            (
+                "config.v1.schema.json",
+                CONFIG_SCHEMA_URL,
+                "Left Hand Control config.json",
+                super::super::settings::json_schema(),
+            ),
+            (
+                "layout.v1.schema.json",
+                LAYOUT_SCHEMA_URL,
+                "Left Hand Control layout",
+                super::super::layout_file::json_schema(),
+            ),
+        ] {
+            assert!(url.ends_with(file));
+            let mut value = schema.to_value();
+            let object = value.as_object_mut().unwrap();
+            object.insert("$id".into(), url.into());
+            object.insert("title".into(), title.into());
+            let text = serde_json::to_string_pretty(&value).unwrap() + "\n";
+            let path = dir.join(file);
+            if update {
+                std::fs::create_dir_all(&dir).unwrap();
+                std::fs::write(&path, &text).unwrap();
+            }
+            let published = std::fs::read_to_string(&path).unwrap_or_default();
+            assert!(
+                published == text,
+                "{file} is out of date; regenerate it with LHC_UPDATE_SCHEMAS=1"
+            );
+        }
     }
 
     #[test]

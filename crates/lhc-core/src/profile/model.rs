@@ -10,6 +10,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 /// How the mapper resolves tap vs hold when another key is pressed while a
 /// tap/hold rule key is still held and undecided.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq, Default)]
 #[serde(rename_all = "camelCase")]
 pub enum TapDecision {
@@ -378,6 +379,7 @@ pub struct LayoutConditionSet {
 }
 
 /// Required game-mode state of a condition.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum GameModeCondition {
@@ -494,6 +496,7 @@ pub struct GameModeSettings {
 }
 
 /// Who decides whether game mode is active: detection or the user.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum GameModeControl {
@@ -504,6 +507,7 @@ pub enum GameModeControl {
 }
 
 /// Theme preference; `System` follows the desktop.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Appearance {
@@ -526,6 +530,7 @@ impl Appearance {
 }
 
 /// UI language preference; `Auto` follows the OS language.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LocalePreference {
     #[default]
@@ -631,6 +636,7 @@ impl LocalePreference {
 }
 
 /// How `text:` actions reach the focused application on Linux.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum TextMode {
@@ -718,6 +724,19 @@ impl PasteShortcut {
     }
 }
 
+/// Lists the canonical spellings; the reader also accepts other modifier
+/// orders and spellings of the same chord.
+#[cfg(test)]
+impl schemars::JsonSchema for PasteShortcut {
+    fn schema_name() -> std::borrow::Cow<'static, str> {
+        "PasteShortcut".into()
+    }
+
+    fn json_schema(_: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        schemars::json_schema!({ "type": "string", "enum": Self::ALL.map(Self::as_str) })
+    }
+}
+
 impl Serialize for PasteShortcut {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_str(self.as_str())
@@ -736,6 +755,7 @@ impl<'de> Deserialize<'de> for PasteShortcut {
     }
 }
 
+#[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LayoutMode {

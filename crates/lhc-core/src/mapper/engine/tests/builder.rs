@@ -260,8 +260,8 @@ fn development_gate_disables_user_macros_popups_and_long_hold() {
             "rules": [
                 {"key": "KeyA", "longHoldAction": "text:hold"},
                 {"key": "KeyB", "tapAction": "macro:user"},
-                {"key": "KeyC", "tapAction": "app:showEmojiMenuLast"},
-                {"key": "KeyD", "tapAction": "app:showQuickMenu1"}
+                {"key": "KeyC", "tapAction": "lhc:showEmojiMenuLast"},
+                {"key": "KeyD", "tapAction": "lhc:showQuickMenu1"}
             ]
         }))
         .unwrap();

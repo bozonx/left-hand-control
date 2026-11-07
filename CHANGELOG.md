@@ -10,6 +10,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 - System actions: lock screen (`sys:lockSession`), switch to the next or previous desktop (`sys:switchToNextDesktop`, `sys:switchToPreviousDesktop`), move the window to the previous desktop (`sys:moveWindowToPreviousDesktop`) and to the next screen (`sys:moveWindowToNextScreen`). They run on KDE, GNOME (with the bundled extension, updated for them) and Windows, except moving a window between desktops on Windows.
 - GNOME: "Turn off screen" now works through the extension.
+- JSON Schemas of `config.json` and layout files in `schemas/` (`config.v1.schema.json`, `layout.v1.schema.json`), published at a stable address for the `$schema` field: editors complete field names and enum values and flag typos and out-of-range timings.
 - Action picker (development mode, Linux): an "Application actions" category with the extra actions installed applications declare in their desktop entries (freedesktop `Actions=`, e.g. Firefox "New Private Window"), stored as `xdg:<desktop-id>/<action>`. D-Bus activatable applications get `ActivateAction`, others run the action's command line.
 
 ### Changed
@@ -53,8 +54,11 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
   - Enum values use camelCase (`eInk`, `libeiPure`), interface languages are plain language codes (`en`, `ru`), and paste shortcuts are key chords (`Shift+Insert`, `Ctrl+KeyV`, `Ctrl+Shift+KeyV`).
   - `config.json` stores only settings that differ from the defaults, so later releases can improve defaults.
   - Layout files: `description` moved into `meta`; the obsolete quick-action `icon` field is rejected; layer, macro and command names equal to their id are not written.
-  - Both files: `schemaVersion` is renamed to `version`; the author's version of a layout stays in `meta.version`.
-  - Action ids name the verb first: `sys:closeWindow`, `minimizeWindow`, `maximizeWindow`, `maximizeWindowVertically`, `toggleWindowKeepAbove`, `moveWindowToNextDesktop`, `moveWindowToDesktopN`, `showOverview`, `showAppLauncher`, `turnOffScreen`; `app:toggleGameMode`, `setGameModeAuto`, `setGameModeOn`, `setGameModeOff`. `sys:switchLayoutN` is `sys:switchKeyboardLayoutN`, so it is not confused with the application's layouts. Built-in macros `prevLineEnd` and `prevLineStart` are `previousLineEnd` and `previousLineStart`.
+  - Both files: `schemaVersion` is renamed to `version`; the author's version of a layout is `meta.layoutVersion` instead of `meta.version`, so it is not confused with the format `version`.
+  - Action ids name the verb first: `sys:closeWindow`, `minimizeWindow`, `maximizeWindow`, `maximizeWindowVertically`, `toggleWindowKeepAbove`, `moveWindowToNextDesktop`, `moveWindowToDesktopN`, `showOverview`, `showAppLauncher`, `turnOffScreen`; `lhc:toggleGameMode`, `setGameModeAuto`, `setGameModeOn`, `setGameModeOff`. `sys:switchLayoutN` is `sys:switchKeyboardLayoutN`, so it is not confused with the application's layouts.
+  - Actions of Left Hand Control itself use the `lhc:` prefix instead of `app:` (`lhc:showQuickMenu1`, `lhc:activateLayout2`, `lhc:toggleGameMode`), so they are not confused with actions of installed applications (`xdg:`). `app:` actions are not migrated.
+  - Built-in macro ids name the verb first and use one word per object: `Line` is the whole line with its line break, `LineText` its text, `Word` the word under the cursor. Renamed: `emptyLineAbove`/`Below` → `insertEmptyLineAbove`/`Below`, `nextLineEnd`, `previousLineEnd`, `nextLineStart`, `previousLineStart` → `goToNextLineEnd`, `goToPreviousLineEnd`, `goToNextLineStart`, `goToPreviousLineStart`, `move5LinesUp`/`Down` → `go5LinesUp`/`Down`, `spaceAfterNextChar` → `insertSpaceAfterNextChar`, `cutWordUnderCursor`, `copyWordUnderCursor`, `selectWordUnderCursor` → `cutWord`, `copyWord`, `selectWord`, `cutWholeLine` → `cutLine`. Old ids are not migrated: such bindings show as unknown macros.
+  - `config.json`: `linux.ydotoolPath` and `linux.xdotoolPath` are omitted to search `PATH`; an empty string is an error.
   - Layout files: `quickActionPages` and `emojiPages` are `quickMenuPages` and `emojiMenuPages` (generated page ids `quick-N` and `emoji-N`); command scripts are `sh` and `powershell` instead of `unix` and `windows`; `hold.keys` is `hold.action`; the layer list `holdModifiers` is replaced by the key form `{ "action": "Alt+Tab", "holdModifiers": true }`. Layer keys are written in keyboard order.
   - `config.json`: `layouts.auto.rules[].layoutId` is `layout`, `state.editedLayoutId` is `editedLayout`, `gameMode.processes[].onlyActiveWindow` is `foregroundOnly`, and `linux.terminalPasteShortcut` uses `"sameAsPaste"` instead of `null`.
 - The tabs of the Settings page show icons next to their names.
@@ -182,7 +186,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Macro pause editing follows the same numeric validation as saved layouts. A successful library save completes even when updating the running mapper fails, with a separate warning.
 
 - The settings window looks the same on every page: dropdown menus share one style with a check mark for the current choice and arrow-key highlighting, value fields and pickers use one outline and background, every focusable control shows the same focus ring, and page spacing, tooltips, card titles and empty-list hints are consistent.
-- Built-in macros have consistent, accurate names and IDs: for example “Move line down” is now “Empty line above” (`builtin:emptyLineAbove`), “Paste at line bottom” is “Paste on new line below”, “Move up 5 times” is “Move 5 lines up” (`builtin:move5LinesUp`), and “buffer” is “clipboard”. Old `builtin:` IDs are not migrated: bindings that use them show as unknown macros and need to be reassigned.
+- Built-in macros have consistent, accurate names and IDs: for example “Move line down” is now “Empty line above” (`builtin:insertEmptyLineAbove`), “Paste at line bottom” is “Paste on new line below”, “Move up 5 times” is “Move 5 lines up” (`builtin:go5LinesUp`), and “buffer” is “clipboard”. Old `builtin:` IDs are not migrated: bindings that use them show as unknown macros and need to be reassigned.
 
 - All dialogs share one frame: the same width rules, padding, rounded corners, bold title and close button, centred in the window; Escape and a click outside close each of them. The layer view switch on the Layers page uses the shared button group.
 
@@ -231,7 +235,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Game mode controls are available only after enabling the hidden “In development features” checkbox below the general settings paths.
 
 - Keystrokes outside macros wait at most 50 ms between modifiers and key, so a long macro modifier delay no longer freezes the keyboard; macros still use the full setting.
-- `app:showQuickMenuN` and `app:showEmojiMenuN` open a page by its position with no upper limit (the action picker offers pages 1–10). Moving or deleting a page no longer rewrites these actions, so reordering pages changes what a key opens, like reordering the library does for `app:activateLayoutN`.
+- `lhc:showQuickMenuN` and `lhc:showEmojiMenuN` open a page by its position with no upper limit (the action picker offers pages 1–10). Moving or deleting a page no longer rewrites these actions, so reordering pages changes what a key opens, like reordering the library does for `lhc:activateLayoutN`.
 - The library order moved from `state.layoutOrder` to `settings.layoutOrder` in `config.json`. A config that still has `state.layoutOrder` is rejected: move the field into `settings` by hand.
 - The mapper accepts the same numbered system actions as the action picker (1–10), and `pause:` steps follow the macro editor's 1–10000 ms range.
 - The FemtoVG renderer is no longer built: `SLINT_BACKEND` accepts `winit-skia` (the default, unchanged) and `winit-software`.
@@ -275,7 +279,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Restored `text:` input into the settings typing test by tracking text destinations separately from rule conditions and identifying popup windows explicitly. Focus cancellation now reports a destination error instead of suggesting a mapper restart.
 - Repeated presses of a layer key that keeps its modifiers held (Tab for Alt+Tab) no longer press the held modifier again or wait for the modifier delay, so fast window switching keeps up.
 - The “Command started” notification is shown again when a command action runs.
-- Pressing a page-bound popup hotkey (`app:showQuickMenuN`, `app:showEmojiMenuN`) again while the popup is open turns through all pages like Tab instead of switching only between the first two.
+- Pressing a page-bound popup hotkey (`lhc:showQuickMenuN`, `lhc:showEmojiMenuN`) again while the popup is open turns through all pages like Tab instead of switching only between the first two.
 - Unplugging the optional mouse no longer stops keyboard mapping; the mouse reconnects independently with balanced button releases.
 - A tap that waits for a decision or for a possible double tap keeps the modifier that was held when the key was pressed: Ctrl+A on a key with a double-tap action, or Shift+A on a tap-hold key, released after the modifier, no longer types a plain “a”.
 - Tap, hold, long-hold and double-tap timers no longer expire while the key's own release or second press is still held back behind another undecided key or a possible chord: a layer key released in time stays a tap, a long-hold key released in time does not run its long action, and a quick second press stays a double tap.
@@ -284,7 +288,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Keyboards selected through `/dev/input/by-id` reconnect after changing USB ports, and the shell shows when the mapper is waiting for its keyboard.
 
 - A layer key bound to an empty macro or to an action that does nothing on this system no longer types the physical key.
-- Keys bound to a command that cannot run (commands disabled, no script for this OS) now show the "action unavailable" notice instead of silently doing nothing; an `app:` step that cannot run makes its macro unavailable like a `sys:` step.
+- Keys bound to a command that cannot run (commands disabled, no script for this OS) now show the "action unavailable" notice instead of silently doing nothing; an `lhc:` step that cannot run makes its macro unavailable like a `sys:` step.
 - While a popup is opening, releases of keys pressed before it pass through, so the popup no longer opens with a modifier still held.
 - The action picker on Windows no longer marks commands and system actions as unavailable, and marks commands without a script for the current OS.
 - A deleted or damaged layout file that was open for editing no longer makes the whole configuration unavailable; the editor starts from a fresh layout and the file is left untouched.

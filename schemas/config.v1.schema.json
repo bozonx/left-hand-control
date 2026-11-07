@@ -1,0 +1,658 @@
+{
+  "$defs": {
+    "Appearance": {
+      "description": "Theme preference; `System` follows the desktop.",
+      "enum": [
+        "system",
+        "light",
+        "dark",
+        "eInk"
+      ],
+      "type": "string"
+    },
+    "AutoDoc": {
+      "additionalProperties": false,
+      "description": "Automatic mode: the first matching rule wins, else `fallback`.",
+      "properties": {
+        "fallback": {
+          "default": null,
+          "description": "Layout used when no rule matches; `null` turns the mapper off.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rules": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AutoRuleDoc"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "AutoRuleDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "id": {
+          "pattern": "^[A-Za-z0-9_-]{1,64}$",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "layout": {
+          "description": "Required; an explicit `null` turns the mapper off, so a forgotten\nfield is an error rather than a silent \"off\".",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "when": {
+          "$ref": "#/$defs/WhenDoc",
+          "description": "Empty conditions always match."
+        }
+      },
+      "type": "object"
+    },
+    "DetectorsDoc": {
+      "additionalProperties": false,
+      "description": "Game detection sources; each platform uses only the ones it supports.",
+      "properties": {
+        "appCategory": {
+          "default": false,
+          "type": "boolean"
+        },
+        "fullscreen": {
+          "default": false,
+          "type": "boolean"
+        },
+        "gameBar": {
+          "default": false,
+          "type": "boolean"
+        },
+        "gamemoded": {
+          "default": true,
+          "type": "boolean"
+        },
+        "gamescope": {
+          "default": true,
+          "type": "boolean"
+        },
+        "heroic": {
+          "default": true,
+          "type": "boolean"
+        },
+        "lutris": {
+          "default": true,
+          "type": "boolean"
+        },
+        "steam": {
+          "default": true,
+          "type": "boolean"
+        },
+        "umu": {
+          "default": true,
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "DevicesDoc": {
+      "additionalProperties": false,
+      "description": "Devices the mapper grabs, as stable paths such as `/dev/input/by-id/…`\non Linux. Lists leave room for several devices; this version grabs at\nmost one of each kind.",
+      "properties": {
+        "keyboards": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "mice": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GameModeCondition": {
+      "description": "Required game-mode state of a condition.",
+      "enum": [
+        "on",
+        "off"
+      ],
+      "type": "string"
+    },
+    "GameModeControl": {
+      "description": "Who decides whether game mode is active: detection or the user.",
+      "enum": [
+        "auto",
+        "on",
+        "off"
+      ],
+      "type": "string"
+    },
+    "GameModeDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "detectors": {
+          "$ref": "#/$defs/DetectorsDoc",
+          "default": {
+            "appCategory": false,
+            "fullscreen": false,
+            "gameBar": false,
+            "gamemoded": true,
+            "gamescope": true,
+            "heroic": true,
+            "lutris": true,
+            "steam": true,
+            "umu": true
+          }
+        },
+        "foregroundOnly": {
+          "default": true,
+          "description": "Games a launcher or the system reports count only while their\nwindow is active.",
+          "type": "boolean"
+        },
+        "processes": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ProcessDoc"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "LayoutMode": {
+      "enum": [
+        "manual",
+        "auto"
+      ],
+      "type": "string"
+    },
+    "LayoutsDoc": {
+      "additionalProperties": false,
+      "description": "Which library layout the mapper uses.",
+      "properties": {
+        "auto": {
+          "$ref": "#/$defs/AutoDoc",
+          "default": {
+            "fallback": null,
+            "rules": []
+          }
+        },
+        "manual": {
+          "description": "Layout used in manual mode.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mode": {
+          "$ref": "#/$defs/LayoutMode",
+          "default": "manual"
+        },
+        "order": {
+          "default": [],
+          "description": "Library order: the slots of `activateLayoutN` and the order of the\nlist. Behaviour, not remembered state, so it lives in settings.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "LinuxDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "pasteShortcut": {
+          "$ref": "#/$defs/PasteShortcut",
+          "default": "Shift+Insert",
+          "description": "Shortcut the clipboard text modes send to paste, as a key chord."
+        },
+        "terminalPasteShortcut": {
+          "$ref": "#/$defs/TerminalPasteShortcut",
+          "default": "Ctrl+Shift+KeyV",
+          "description": "Paste shortcut for terminal windows, or `sameAsPaste`."
+        },
+        "textMode": {
+          "$ref": "#/$defs/TextMode",
+          "default": "libei",
+          "description": "How `text:` actions reach the focused application."
+        },
+        "xdotoolPath": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "ydotoolPath": {
+          "description": "Missing: looked up in `PATH`. An empty string is an error, so\n\"no value\" has one spelling.",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "LocalePreference": {
+      "description": "UI language preference; `Auto` follows the OS language.",
+      "enum": [
+        "auto",
+        "en",
+        "ru",
+        "de",
+        "fr",
+        "es",
+        "it",
+        "pt",
+        "pl",
+        "tr",
+        "uk",
+        "cs",
+        "hu",
+        "ro",
+        "el",
+        "hr",
+        "ka",
+        "kk",
+        "zh-Hans",
+        "zh-Hant",
+        "ja",
+        "ko"
+      ],
+      "type": "string"
+    },
+    "PasteShortcut": {
+      "enum": [
+        "Shift+Insert",
+        "Ctrl+KeyV",
+        "Ctrl+Shift+KeyV"
+      ],
+      "type": "string"
+    },
+    "ProcessDoc": {
+      "additionalProperties": false,
+      "description": "A process that marks game mode, or with `exclude` one that never does.",
+      "properties": {
+        "exclude": {
+          "type": "boolean"
+        },
+        "foregroundOnly": {
+          "type": "boolean"
+        },
+        "id": {
+          "pattern": "^[A-Za-z0-9_-]{1,64}$",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "SettingsDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "appearance": {
+          "$ref": "#/$defs/Appearance",
+          "default": "system"
+        },
+        "commandsEnabled": {
+          "default": false,
+          "type": "boolean"
+        },
+        "devices": {
+          "$ref": "#/$defs/DevicesDoc"
+        },
+        "experimental": {
+          "default": false,
+          "description": "Shows interface features that are still in development.",
+          "type": "boolean"
+        },
+        "gameMode": {
+          "$ref": "#/$defs/GameModeDoc",
+          "default": {
+            "detectors": {
+              "appCategory": false,
+              "fullscreen": false,
+              "gameBar": false,
+              "gamemoded": true,
+              "gamescope": true,
+              "heroic": true,
+              "lutris": true,
+              "steam": true,
+              "umu": true
+            },
+            "foregroundOnly": true,
+            "processes": []
+          }
+        },
+        "highContrast": {
+          "default": false,
+          "type": "boolean"
+        },
+        "launchOnStartup": {
+          "default": false,
+          "type": "boolean"
+        },
+        "layerHint": {
+          "default": false,
+          "type": "boolean"
+        },
+        "layoutOsd": {
+          "default": false,
+          "type": "boolean"
+        },
+        "layouts": {
+          "$ref": "#/$defs/LayoutsDoc",
+          "default": {
+            "auto": {
+              "fallback": null,
+              "rules": []
+            },
+            "mode": "manual",
+            "order": []
+          }
+        },
+        "linux": {
+          "$ref": "#/$defs/LinuxDoc",
+          "default": {
+            "pasteShortcut": "Shift+Insert",
+            "terminalPasteShortcut": "Ctrl+Shift+KeyV",
+            "textMode": "libei"
+          }
+        },
+        "locale": {
+          "$ref": "#/$defs/LocalePreference",
+          "default": "auto"
+        },
+        "reduceMotion": {
+          "default": false,
+          "type": "boolean"
+        },
+        "startMapperOnLaunch": {
+          "default": false,
+          "description": "Start the mapper when the app launches.",
+          "type": "boolean"
+        },
+        "timing": {
+          "$ref": "#/$defs/TimingDoc",
+          "default": {
+            "comboMs": 50,
+            "doubleTapMs": 200,
+            "holdMs": 200,
+            "longHoldMs": 1000,
+            "macroModifierDelayMs": 5,
+            "macroStepPauseMs": 20,
+            "macroTimeoutMs": 10000,
+            "tapDecision": "permissiveHold"
+          }
+        }
+      },
+      "type": "object"
+    },
+    "StateDoc": {
+      "additionalProperties": false,
+      "properties": {
+        "editedLayout": {
+          "description": "Library layout open in the editor.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "gameModeSwitch": {
+          "$ref": "#/$defs/GameModeControl",
+          "default": "auto",
+          "description": "Auto / On / Off choice of the game-mode switch."
+        }
+      },
+      "type": "object"
+    },
+    "TapDecision": {
+      "description": "How the mapper resolves tap vs hold when another key is pressed while a\ntap/hold rule key is still held and undecided.",
+      "oneOf": [
+        {
+          "const": "permissiveHold",
+          "description": "QMK-style permissive hold: buffer the interrupting key and only\ncommit the hold on a nested release or timeout.",
+          "type": "string"
+        },
+        {
+          "const": "holdOnOtherKeyPress",
+          "description": "Behaviour: any other key press commits the hold immediately.",
+          "type": "string"
+        }
+      ]
+    },
+    "TerminalPasteShortcut": {
+      "enum": [
+        "Shift+Insert",
+        "Ctrl+KeyV",
+        "Ctrl+Shift+KeyV",
+        "sameAsPaste"
+      ],
+      "type": "string"
+    },
+    "TextMode": {
+      "description": "How `text:` actions reach the focused application on Linux.",
+      "oneOf": [
+        {
+          "enum": [
+            "ydotool",
+            "xdotool"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "libei",
+          "description": "libei; pastes through the clipboard when the layout lacks a character.",
+          "type": "string"
+        },
+        {
+          "const": "libeiPure",
+          "description": "libei only.",
+          "type": "string"
+        },
+        {
+          "const": "keycode",
+          "description": "RemoteDesktop portal `NotifyKeyboardKeycode`.",
+          "type": "string"
+        },
+        {
+          "const": "clipboard",
+          "description": "MIME-preserving clipboard ownership and Shift+Insert through the portal.",
+          "type": "string"
+        }
+      ]
+    },
+    "TimingDoc": {
+      "additionalProperties": false,
+      "description": "Defaults for rules and macros; a rule or macro may override each.",
+      "properties": {
+        "comboMs": {
+          "default": 50,
+          "description": "Window in which all keys of a multi-key rule must be pressed.",
+          "format": "uint64",
+          "maximum": 500,
+          "minimum": 10,
+          "type": "integer"
+        },
+        "doubleTapMs": {
+          "default": 200,
+          "format": "uint64",
+          "maximum": 1000,
+          "minimum": 50,
+          "type": "integer"
+        },
+        "holdMs": {
+          "default": 200,
+          "format": "uint64",
+          "maximum": 1000,
+          "minimum": 50,
+          "type": "integer"
+        },
+        "longHoldMs": {
+          "default": 1000,
+          "format": "uint64",
+          "maximum": 60000,
+          "minimum": 100,
+          "type": "integer"
+        },
+        "macroModifierDelayMs": {
+          "default": 5,
+          "format": "uint64",
+          "maximum": 2000,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "macroStepPauseMs": {
+          "default": 20,
+          "format": "uint64",
+          "maximum": 2000,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "macroTimeoutMs": {
+          "default": 10000,
+          "description": "A macro run still going after this time is aborted.",
+          "format": "uint64",
+          "maximum": 600000,
+          "minimum": 1000,
+          "type": "integer"
+        },
+        "tapDecision": {
+          "$ref": "#/$defs/TapDecision",
+          "default": "permissiveHold"
+        }
+      },
+      "type": "object"
+    },
+    "WhenDoc": {
+      "additionalProperties": false,
+      "description": "Conditions of a layout rule or an auto-mode rule; every present\ncondition must hold. Both places share this one object.",
+      "properties": {
+        "excludeWindows": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "gameMode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GameModeCondition"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "keyboardLayouts": {
+          "description": "Short ids of the system keyboard layout, e.g. `us`.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "windows": {
+          "description": "Window patterns, see [`super::app_match`].",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/config.v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "settings": {
+      "$ref": "#/$defs/SettingsDoc",
+      "default": {
+        "appearance": "system",
+        "commandsEnabled": false,
+        "experimental": false,
+        "gameMode": {
+          "detectors": {
+            "appCategory": false,
+            "fullscreen": false,
+            "gameBar": false,
+            "gamemoded": true,
+            "gamescope": true,
+            "heroic": true,
+            "lutris": true,
+            "steam": true,
+            "umu": true
+          },
+          "foregroundOnly": true,
+          "processes": []
+        },
+        "highContrast": false,
+        "launchOnStartup": false,
+        "layerHint": false,
+        "layoutOsd": false,
+        "layouts": {
+          "auto": {
+            "fallback": null,
+            "rules": []
+          },
+          "mode": "manual",
+          "order": []
+        },
+        "linux": {
+          "pasteShortcut": "Shift+Insert",
+          "terminalPasteShortcut": "Ctrl+Shift+KeyV",
+          "textMode": "libei"
+        },
+        "locale": "auto",
+        "reduceMotion": false,
+        "startMapperOnLaunch": false,
+        "timing": {
+          "comboMs": 50,
+          "doubleTapMs": 200,
+          "holdMs": 200,
+          "longHoldMs": 1000,
+          "macroModifierDelayMs": 5,
+          "macroStepPauseMs": 20,
+          "macroTimeoutMs": 10000,
+          "tapDecision": "permissiveHold"
+        }
+      }
+    },
+    "state": {
+      "$ref": "#/$defs/StateDoc",
+      "default": {
+        "gameModeSwitch": "auto"
+      }
+    },
+    "version": {
+      "const": 1,
+      "format": "uint64",
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "version"
+  ],
+  "title": "Left Hand Control config.json",
+  "type": "object"
+}
