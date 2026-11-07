@@ -369,19 +369,37 @@ pub(crate) fn proc_display_name(pid: u64) -> Option<String> {
     }
 }
 
-/// Whether `matcher` looks at the active window only: by choice, or
-/// because a title pattern has no process to match.
-pub(super) fn window_only(matcher: &GameModeProcessMatcher) -> bool {
-    matcher.only_active_window
-        || matches!(AppMatcher::parse(&matcher.name), Some(AppMatcher::Title(_)))
+/// A process rule with its pattern parsed once per evaluation.
+pub(super) struct Rule<'a> {
+    pub matcher: &'a GameModeProcessMatcher,
+    pattern: AppMatcher,
 }
 
-pub(super) fn matches_window(matcher: &GameModeProcessMatcher, window: &ActiveWindow) -> bool {
-    AppMatcher::parse(&matcher.name).is_some_and(|parsed| parsed.matches_window(window))
+impl<'a> Rule<'a> {
+    /// `None` for a rule that can never match: a blank name or a bare
+    /// `title:` prefix.
+    pub fn parse(matcher: &'a GameModeProcessMatcher) -> Option<Self> {
+        AppMatcher::parse(&matcher.name).map(|pattern| Self { matcher, pattern })
+    }
+
+    /// Whether the rule looks at the active window only: by choice, or
+    /// because a title pattern has no process to match.
+    pub fn window_only(&self) -> bool {
+        self.matcher.only_active_window || matches!(self.pattern, AppMatcher::Title(_))
+    }
+
+    pub fn matches_window(&self, window: &ActiveWindow) -> bool {
+        self.pattern.matches_window(window)
+    }
+
+    pub fn matches_process(&self, name: &str) -> bool {
+        self.pattern.matches_process(name)
+    }
 }
 
-pub(super) fn matches_process(matcher: &GameModeProcessMatcher, name: &str) -> bool {
-    AppMatcher::parse(&matcher.name).is_some_and(|parsed| parsed.matches_process(name))
+/// The rules of `matchers` that can match.
+pub(super) fn rules(matchers: &[GameModeProcessMatcher]) -> Vec<Rule<'_>> {
+    matchers.iter().filter_map(Rule::parse).collect()
 }
 
 #[cfg(test)]
@@ -427,6 +445,20 @@ mod tests {
     fn replaced_executables_keep_their_name() {
         assert_eq!(without_deleted("slint-shell (deleted)"), "slint-shell");
         assert_eq!(without_deleted("kate"), "kate");
+    }
+
+    fn matches_process(matcher: &GameModeProcessMatcher, name: &str) -> bool {
+        Rule::parse(matcher).is_some_and(|rule| rule.matches_process(name))
+    }
+
+    #[test]
+    fn blank_and_bare_title_rules_cannot_match() {
+        for name in ["", "  ", "title:", "Title:  "] {
+            assert!(Rule::parse(&matcher(name)).is_none(), "{name:?}");
+        }
+        let title = matcher("title:Witcher");
+        assert!(Rule::parse(&title).unwrap().window_only());
+        assert!(!Rule::parse(&matcher("game")).unwrap().window_only());
     }
 
     #[test]

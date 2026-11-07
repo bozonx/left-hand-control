@@ -33,7 +33,11 @@ pub(super) fn observe(settings: &GameModeSettings, window: Option<&ActiveWindow>
     let daemon = if settings.use_gamemoded {
         gamemoded_active()
     } else {
-        daemon_installed().then_some(false)
+        // Only for the settings page: asked once, not on every poll.
+        match daemon_installed(None) {
+            true => DaemonRead::Active(false),
+            false => DaemonRead::NotInstalled,
+        }
     };
     let need_running = super::needs_polling(settings);
     let scan = need_running.then(scan_processes).flatten();
@@ -60,7 +64,7 @@ pub(super) fn observe(settings: &GameModeSettings, window: Option<&ActiveWindow>
         .collect();
     Observation {
         detectors: GameModeDetectors {
-            gamemoded: availability(daemon.is_some()),
+            gamemoded: daemon.availability(),
             fullscreen: active_window,
             processes: availability(processes_available),
             active_window,
@@ -70,7 +74,7 @@ pub(super) fn observe(settings: &GameModeSettings, window: Option<&ActiveWindow>
         running,
         known_games,
         window_game,
-        daemon: daemon.unwrap_or(false),
+        daemon: matches!(daemon, DaemonRead::Active(true)),
     }
 }
 
@@ -88,13 +92,34 @@ fn session_bus() -> Option<Connection> {
         .ok()
 }
 
+/// What detection learned about GameMode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DaemonRead {
+    /// Whether a game is registered.
+    Active(bool),
+    /// No D-Bus service: this system has no such source.
+    NotInstalled,
+    /// The bus or the daemon did not answer.
+    Unknown,
+}
+
+impl DaemonRead {
+    fn availability(self) -> DetectorAvailability {
+        match self {
+            Self::Active(_) => DetectorAvailability::Available,
+            Self::NotInstalled => DetectorAvailability::Unsupported,
+            Self::Unknown => DetectorAvailability::Unavailable,
+        }
+    }
+}
+
 /// Whether the session bus can start GameMode, i.e. its D-Bus service is
-/// installed. The answer is cached for [`INSTALLED_TTL`].
-fn daemon_installed() -> bool {
+/// installed. The answer is reused for `ttl`, forever with `None`.
+fn daemon_installed(ttl: Option<Duration>) -> bool {
     static CACHE: Mutex<Option<(Instant, bool)>> = Mutex::new(None);
     if let Ok(cache) = CACHE.lock()
         && let Some((at, installed)) = *cache
-        && at.elapsed() < INSTALLED_TTL
+        && ttl.is_none_or(|ttl| at.elapsed() < ttl)
     {
         return installed;
     }
@@ -130,13 +155,13 @@ static LISTENER: Mutex<Option<Listener>> = Mutex::new(None);
 /// Whether a game registered with GameMode. A listener follows the
 /// daemon's signals, so polling costs no D-Bus calls and never
 /// D-Bus-activates it; an absent daemon that is installed simply means
-/// "no game". `None` when GameMode is not installed or the bus does not
-/// answer.
-fn gamemoded_active() -> Option<bool> {
-    match daemon_state()? {
-        Daemon::Stopped => daemon_installed().then_some(false),
-        Daemon::Running { clients } => Some(clients),
-        Daemon::Unknown => None,
+/// "no game".
+fn gamemoded_active() -> DaemonRead {
+    match daemon_state() {
+        Some(Daemon::Stopped) if daemon_installed(Some(INSTALLED_TTL)) => DaemonRead::Active(false),
+        Some(Daemon::Stopped) => DaemonRead::NotInstalled,
+        Some(Daemon::Running { clients }) => DaemonRead::Active(clients),
+        Some(Daemon::Unknown) | None => DaemonRead::Unknown,
     }
 }
 
@@ -282,8 +307,42 @@ struct ProcInfo {
     executable: Option<PathBuf>,
     refreshed: Instant,
     names: Vec<String>,
-    games: Vec<(GameSource, String)>,
+    /// The game a launcher runs, from the command line.
+    launched: Option<(GameSource, String)>,
+    /// The Heroic game, from `environ`, which only changes on exec.
+    heroic: Option<(GameSource, String)>,
 }
+
+impl ProcInfo {
+    fn games(&self) -> impl Iterator<Item = &(GameSource, String)> {
+        self.launched.iter().chain(&self.heroic)
+    }
+
+    /// Wine services outlive the game by seconds and inherit its
+    /// environment; they alone do not keep a game running.
+    fn wine_service(&self) -> bool {
+        self.names.iter().any(|name| {
+            WINE_SERVICES
+                .iter()
+                .any(|service| name.eq_ignore_ascii_case(service))
+        })
+    }
+}
+
+/// Processes Wine starts next to every program.
+const WINE_SERVICES: &[&str] = &[
+    "wineserver",
+    "services.exe",
+    "winedevice.exe",
+    "plugplay.exe",
+    "explorer.exe",
+    "rpcss.exe",
+    "svchost.exe",
+    "tabtip.exe",
+    "conhost.exe",
+    "start.exe",
+    "winedbg",
+];
 
 /// The current user's processes.
 #[derive(Default)]
@@ -313,19 +372,37 @@ struct ProcessCache {
     processes: HashMap<u32, ProcInfo>,
 }
 
-/// Also refresh argv/environ: applications may rewrite them without exec.
+/// Also refresh argv: applications may rewrite it without exec.
 const PROCESS_REFRESH: Duration = Duration::from_secs(5);
 
+/// The watcher's cache; the picker scans with its own.
 static PROCESSES: Mutex<Option<ProcessCache>> = Mutex::new(None);
 
+const PROC: &str = "/proc";
+
 /// Scan the current user's processes, detecting exec and periodically
-/// refreshing mutable argv/environ metadata.
+/// refreshing the mutable argv.
 pub(super) fn scan_processes() -> Option<Scan> {
-    let entries = std::fs::read_dir("/proc").ok()?;
-    let uid = unsafe { libc::geteuid() };
     let mut cache = PROCESSES.lock().ok()?;
     let previous = cache.take().unwrap_or_default();
-    let now = Instant::now();
+    let (scan, current) = scan_at(Path::new(PROC), own_uid(), previous, Instant::now())?;
+    *cache = Some(current);
+    Some(scan)
+}
+
+fn own_uid() -> u32 {
+    // SAFETY: geteuid has no preconditions and cannot fail.
+    unsafe { libc::geteuid() }
+}
+
+/// Scan the processes of `uid` under `root` (`/proc` outside tests).
+fn scan_at(
+    root: &Path,
+    uid: u32,
+    previous: ProcessCache,
+    now: Instant,
+) -> Option<(Scan, ProcessCache)> {
+    let entries = std::fs::read_dir(root).ok()?;
     let mut previous = previous.processes;
     let mut current = HashMap::with_capacity(previous.len());
     for entry in entries.flatten() {
@@ -345,38 +422,41 @@ pub(super) fn scan_processes() -> Option<Scan> {
     let mut names = HashSet::new();
     for info in current.values() {
         names.extend(info.names.iter().cloned());
-        for (source, game) in &info.games {
+        for (source, game) in info.games() {
             if *source == GameSource::Steam {
                 names.insert(game.clone());
             }
         }
     }
     let games = group_games(&current);
-    *cache = Some(ProcessCache { processes: current });
-    Some(Scan {
-        names: names.into_iter().collect(),
-        games,
-    })
+    Some((
+        Scan {
+            names: names.into_iter().collect(),
+            games,
+        },
+        ProcessCache { processes: current },
+    ))
 }
 
-/// Running games with the names of their processes, sorted.
+/// Running games with the names of their processes, sorted. A game whose
+/// processes are all Wine services has ended.
 fn group_games(current: &HashMap<u32, ProcInfo>) -> Vec<ScannedGame> {
-    let mut games: std::collections::BTreeMap<(GameSource, String), HashSet<String>> =
+    let mut games: std::collections::BTreeMap<(GameSource, String), (HashSet<String>, bool)> =
         std::collections::BTreeMap::new();
     for info in current.values() {
         // The process belongs to its own games and to those of its
         // ancestors: the game runs below `reaper` or `lutris-wrapper`.
         let lower: Vec<String> = info.names.iter().map(|name| name.to_lowercase()).collect();
+        let alive = !info.wine_service();
         let mut owner = Some(info);
         for _ in 0..MAX_TREE_DEPTH {
             let Some(process) = owner else {
                 break;
             };
-            for game in &process.games {
-                games
-                    .entry(game.clone())
-                    .or_default()
-                    .extend(lower.iter().cloned());
+            for game in process.games() {
+                let (processes, running) = games.entry(game.clone()).or_default();
+                processes.extend(lower.iter().cloned());
+                *running |= alive;
             }
             owner = (process.parent > 1)
                 .then(|| current.get(&process.parent))
@@ -385,7 +465,8 @@ fn group_games(current: &HashMap<u32, ProcInfo>) -> Vec<ScannedGame> {
     }
     let mut games: Vec<ScannedGame> = games
         .into_iter()
-        .map(|((source, name), processes)| {
+        .filter(|(_, (_, running))| *running)
+        .map(|((source, name), (processes, _))| {
             let mut processes: Vec<String> = processes.into_iter().collect();
             processes.sort();
             ScannedGame {
@@ -408,10 +489,15 @@ fn cached_process(dir: &Path, uid: u32, known: Option<ProcInfo>, now: Instant) -
     if let Some(mut info) = known
         && info.start == start
         && info.executable == executable
-        && now.duration_since(info.refreshed) < PROCESS_REFRESH
     {
         // Orphans move to a new parent without exec.
         info.parent = parent;
+        if now.duration_since(info.refreshed) >= PROCESS_REFRESH {
+            let args = super::process::proc_args(dir);
+            info.names = super::process::proc_names(dir, &args);
+            info.launched = super::process::launched_game(&args);
+            info.refreshed = now;
+        }
         return Some(info);
     }
     let args = super::process::proc_args(dir);
@@ -421,14 +507,10 @@ fn cached_process(dir: &Path, uid: u32, known: Option<ProcInfo>, now: Instant) -
         executable,
         refreshed: now,
         names: super::process::proc_names(dir, &args),
-        games: super::process::launched_game(&args)
-            .into_iter()
-            .chain(
-                std::fs::read(dir.join("environ"))
-                    .ok()
-                    .and_then(|environ| super::process::heroic_game(&environ)),
-            )
-            .collect(),
+        launched: super::process::launched_game(&args),
+        heroic: std::fs::read(dir.join("environ"))
+            .ok()
+            .and_then(|environ| super::process::heroic_game(&environ)),
     })
 }
 
@@ -459,69 +541,108 @@ fn stat_field<T: std::str::FromStr>(stat: &str, field: usize) -> Option<T> {
 }
 
 /// Names of the current user's processes, for picking a rule.
+/// Uses its own cache, so a picker scan never blocks or resets the
+/// watcher's.
 pub(super) fn running_process_names() -> Option<Vec<String>> {
-    scan_processes().map(|scan| scan.names)
+    scan_at(
+        Path::new(PROC),
+        own_uid(),
+        ProcessCache::default(),
+        Instant::now(),
+    )
+    .map(|(scan, _)| scan.names)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    /// A `/proc/<pid>` entry with a `stat` naming `parent` and `start`.
+    fn fake_process(
+        root: &Path,
+        pid: u32,
+        parent: u32,
+        start: u64,
+        exe: &str,
+        cmdline: &[u8],
+        environ: &[u8],
+    ) {
+        use std::os::unix::fs::symlink;
+        let dir = root.join(pid.to_string());
+        std::fs::create_dir_all(&dir).unwrap();
+        let stat =
+            format!("{pid} (p) S {parent} 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 {start} 20");
+        std::fs::write(dir.join("stat"), stat).unwrap();
+        std::fs::write(dir.join("cmdline"), cmdline).unwrap();
+        std::fs::write(dir.join("environ"), environ).unwrap();
+        let _ = std::fs::remove_file(dir.join("exe"));
+        symlink(exe, dir.join("exe")).unwrap();
+    }
+
     #[test]
     fn process_cache_detects_exec_and_refreshes_mutable_metadata() {
-        use std::os::unix::fs::symlink;
         let dir = tempfile::tempdir().unwrap();
         let root = dir.path();
-        let stat = "42 (game) S 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 999 20";
-        std::fs::write(root.join("stat"), stat).unwrap();
-        std::fs::write(root.join("cmdline"), b"/bin/sh\0").unwrap();
-        std::fs::write(root.join("environ"), b"").unwrap();
-        symlink("/bin/sh", root.join("exe")).unwrap();
-        let uid = unsafe { libc::geteuid() };
+        fake_process(root, 42, 1, 999, "/bin/sh", b"/bin/sh\0", b"");
+        let root = root.join("42");
+        let uid = own_uid();
         let now = Instant::now();
-        let first = cached_process(root, uid, None, now).unwrap();
-        std::fs::remove_file(root.join("exe")).unwrap();
-        symlink("/games/Game.exe", root.join("exe")).unwrap();
-        std::fs::write(root.join("cmdline"), b"/games/Game.exe\0").unwrap();
-        let next = cached_process(root, uid, Some(first), now).unwrap();
+        let first = cached_process(&root, uid, None, now).unwrap();
+        // An exec replaces the executable: everything is read again.
+        fake_process(
+            dir.path(),
+            42,
+            1,
+            999,
+            "/games/Game.exe",
+            b"/games/Game.exe\0",
+            b"HEROIC_APP_NAME=NewGame\0",
+        );
+        let next = cached_process(&root, uid, Some(first), now).unwrap();
         assert!(next.names.iter().any(|name| name == "Game.exe"));
-        std::fs::write(root.join("environ"), b"HEROIC_APP_NAME=NewGame\0").unwrap();
-        let next = cached_process(root, uid, Some(next), now + PROCESS_REFRESH).unwrap();
-        assert_eq!(next.games, vec![(GameSource::Heroic, "NewGame".into())]);
-        // Heroic and umu are independent toggles even on the same process.
+        assert_eq!(next.heroic, Some((GameSource::Heroic, "NewGame".into())));
+        // Argv is refreshed without exec; environ is not read again.
         std::fs::write(root.join("cmdline"), b"umu-run\0Game.exe\0").unwrap();
-        let next = cached_process(root, uid, Some(next), now + PROCESS_REFRESH * 2).unwrap();
+        std::fs::write(root.join("environ"), b"").unwrap();
+        let next = cached_process(&root, uid, Some(next), now + PROCESS_REFRESH / 2).unwrap();
+        assert_eq!(next.launched, None);
+        let next = cached_process(&root, uid, Some(next), now + PROCESS_REFRESH).unwrap();
+        // Heroic and umu are independent toggles even on the same process.
         assert_eq!(
-            next.games,
+            next.games().cloned().collect::<Vec<_>>(),
             vec![
                 (GameSource::Umu, "Game.exe".into()),
                 (GameSource::Heroic, "NewGame".into())
             ]
         );
-        assert!(cached_process(root, uid.wrapping_add(1), Some(next), now).is_none());
+        assert!(cached_process(&root, uid.wrapping_add(1), Some(next), now).is_none());
     }
 
-    #[test]
-    fn games_own_the_processes_below_their_launcher() {
-        let info = |parent, names: &[&str], games: Vec<(GameSource, String)>| ProcInfo {
+    fn info(parent: u32, names: &[&str], launched: Option<(GameSource, String)>) -> ProcInfo {
+        ProcInfo {
             start: 0,
             parent,
             executable: None,
             refreshed: Instant::now(),
             names: names.iter().map(|name| name.to_string()).collect(),
-            games,
-        };
+            launched,
+            heroic: None,
+        }
+    }
+
+    #[test]
+    fn games_own_the_processes_below_their_launcher() {
         let current = HashMap::from([
             (
                 10,
                 info(
                     1,
                     &["reaper"],
-                    vec![(GameSource::Steam, "steam_app_7".into())],
+                    Some((GameSource::Steam, "steam_app_7".into())),
                 ),
             ),
-            (11, info(10, &["wine64-preload", "Game.exe"], Vec::new())),
-            (12, info(1, &["firefox"], Vec::new())),
+            (11, info(10, &["wine64-preload", "Game.exe"], None)),
+            (12, info(1, &["firefox"], None)),
         ]);
         assert_eq!(
             group_games(&current),
@@ -530,6 +651,83 @@ mod tests {
                 name: "steam_app_7".into(),
                 processes: vec!["game.exe".into(), "reaper".into(), "wine64-preload".into()],
             }]
+        );
+    }
+
+    #[test]
+    fn lingering_wine_services_do_not_keep_a_game_running() {
+        let heroic = |names: &[&str]| ProcInfo {
+            heroic: Some((GameSource::Heroic, "Sugar".into())),
+            ..info(1, names, None)
+        };
+        let ended = HashMap::from([
+            (20, heroic(&["wineserver"])),
+            (21, heroic(&["wine64-preload", "services.exe"])),
+        ]);
+        assert!(group_games(&ended).is_empty());
+        let mut running = ended;
+        running.insert(22, heroic(&["wine64-preload", "Sugar.exe"]));
+        assert_eq!(group_games(&running).len(), 1);
+    }
+
+    #[test]
+    fn scans_a_process_tree_from_any_root() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        fake_process(
+            root,
+            10,
+            1,
+            1,
+            "/steam/reaper",
+            b"/steam/reaper\0SteamLaunch\0AppId=7\0",
+            b"",
+        );
+        fake_process(
+            root,
+            11,
+            10,
+            2,
+            "/wine/wine64-preloader",
+            b"Z:\\g\\Game.exe\0",
+            b"",
+        );
+        std::fs::create_dir(root.join("self")).unwrap();
+        let (scan, cache) =
+            scan_at(root, own_uid(), ProcessCache::default(), Instant::now()).unwrap();
+        assert_eq!(cache.processes.len(), 2);
+        assert!(scan.names.iter().any(|name| name == "Game.exe"));
+        assert!(scan.names.iter().any(|name| name == "steam_app_7"));
+        assert_eq!(scan.games.len(), 1);
+        assert!(scan.games[0].processes.contains(&"game.exe".to_owned()));
+        // A pid reused by another process is read anew.
+        fake_process(root, 11, 1, 3, "/usr/bin/vim", b"vim\0", b"");
+        let (scan, _) = scan_at(root, own_uid(), cache, Instant::now()).unwrap();
+        assert!(!scan.names.iter().any(|name| name == "Game.exe"));
+        assert!(
+            scan_at(
+                &root.join("missing"),
+                own_uid(),
+                ProcessCache::default(),
+                Instant::now()
+            )
+            .is_none()
+        );
+    }
+
+    #[test]
+    fn daemon_reads_map_to_availability() {
+        assert_eq!(
+            DaemonRead::Active(false).availability(),
+            DetectorAvailability::Available
+        );
+        assert_eq!(
+            DaemonRead::NotInstalled.availability(),
+            DetectorAvailability::Unsupported
+        );
+        assert_eq!(
+            DaemonRead::Unknown.availability(),
+            DetectorAvailability::Unavailable
         );
     }
 

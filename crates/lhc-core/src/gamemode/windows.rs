@@ -33,27 +33,33 @@ pub(super) fn observe(settings: &GameModeSettings) -> Observation {
     let running = need_running
         .then(crate::platform::windows::running_process_names)
         .flatten();
-    let steam = steam_running_app();
-    let catalog = catalog();
+    // A source the user turned off is read once, for the settings page.
+    static STEAM_PROBE: Mutex<Option<bool>> = Mutex::new(None);
+    static CATALOG_PROBE: Mutex<Option<bool>> = Mutex::new(None);
+    let steam = settings.use_steam.then(steam_running_app);
+    let steam_ok = match &steam {
+        Some(read) => read.is_ok(),
+        None => probed_once(&STEAM_PROBE, || steam_running_app().is_ok()),
+    };
+    let catalog = settings.use_game_bar.then(catalog);
+    let catalog_ok = match &catalog {
+        Some(read) => read.is_ok(),
+        None => probed_once(&CATALOG_PROBE, || self::catalog().is_ok()),
+    };
     let mut known_games = Vec::new();
     let steam_alive = running.as_ref().is_some_and(|running| {
         running
             .iter()
             .any(|name| name.eq_ignore_ascii_case("steam.exe"))
     });
-    if settings.use_steam
-        && steam_alive
-        && let Ok(Some(id)) = steam
-    {
+    if steam_alive && let Some(Ok(Some(id))) = steam {
         known_games.push(KnownGame {
             name: format!("steam_app_{id}"),
             // Steam does not say which executable the game runs.
             processes: None,
         });
     }
-    if settings.use_game_bar
-        && let (Some(running), Ok(catalog)) = (&running, &catalog)
-    {
+    if let (Some(running), Some(Ok(catalog))) = (&running, &catalog) {
         known_games.extend(
             running
                 .iter()
@@ -74,9 +80,9 @@ pub(super) fn observe(settings: &GameModeSettings) -> Observation {
             fullscreen: DetectorAvailability::Available,
             processes: availability(!need_running || running.is_some()),
             active_window: crate::active_window::availability(),
-            steam: Some(availability(steam.is_ok())),
+            steam: Some(availability(steam_ok)),
             game_bar: Some(availability(
-                catalog.is_ok() && (!need_running || running.is_some()),
+                catalog_ok && (!need_running || running.is_some()),
             )),
             missing_window_tool: None,
         },
@@ -84,6 +90,14 @@ pub(super) fn observe(settings: &GameModeSettings) -> Observation {
         known_games,
         window_game: None,
         daemon: false,
+    }
+}
+
+/// The answer of `probe`, asked only the first time.
+fn probed_once(slot: &Mutex<Option<bool>>, probe: impl FnOnce() -> bool) -> bool {
+    match slot.lock() {
+        Ok(mut slot) => *slot.get_or_insert_with(probe),
+        Err(_) => false,
     }
 }
 

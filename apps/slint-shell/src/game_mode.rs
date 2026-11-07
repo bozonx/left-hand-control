@@ -44,11 +44,10 @@ pub(crate) fn apply(mode: GameMode, document: Option<&Document>) -> Result<GameM
         GameMode::Off => gamemode::GameModeControl::Off,
         GameMode::Toggle => {
             // The core reads and flips the state under one lock; a failed
-            // save restores the previous choice.
-            let before = gamemode::status().control;
-            let status = gamemode::toggle();
+            // save restores the previous choice unless another one came since.
+            let (before, status) = gamemode::toggle();
             if let Err(error) = persist(status.control, document) {
-                gamemode::set_control(before);
+                gamemode::restore_control(status.control, before);
                 return Err(error);
             }
             return Ok(status);
@@ -155,7 +154,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn persisted_control_is_atomic() {
+    fn persisted_control_follows_every_change() {
         // ConfigDocument/game mode are process globals; isolate the regression
         // from other document tests rather than depending on test ordering.
         const CHILD: &str = "LHC_GAME_MODE_ATOMIC_TEST";
@@ -163,7 +162,7 @@ mod tests {
             let output = std::process::Command::new(std::env::current_exe().unwrap())
                 .args([
                     "--exact",
-                    "game_mode::tests::persisted_control_is_atomic",
+                    "game_mode::tests::persisted_control_follows_every_change",
                     "--nocapture",
                 ])
                 .env(CHILD, "1")
@@ -226,5 +225,15 @@ mod tests {
         std::fs::create_dir(paths.config_path()).unwrap();
         assert!(apply(GameMode::On, Some(&document)).is_err());
         assert_eq!(gamemode::status().control, gamemode::GameModeControl::Auto);
+        // A failed toggle is rolled back too.
+        assert!(apply(GameMode::Toggle, Some(&document)).is_err());
+        assert_eq!(gamemode::status().control, gamemode::GameModeControl::Auto);
+        // A rollback never overwrites a choice made after the failed change.
+        gamemode::set_control(gamemode::GameModeControl::Off);
+        gamemode::restore_control(
+            gamemode::GameModeControl::On,
+            gamemode::GameModeControl::Auto,
+        );
+        assert_eq!(gamemode::status().control, gamemode::GameModeControl::Off);
     }
 }

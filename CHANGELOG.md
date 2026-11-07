@@ -8,6 +8,16 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Game mode (experimental):
+  - If the detection thread crashes, game mode no longer stays on until restart; detection reports off.
+  - Rules with a blank name or a bare `title:` are ignored: they no longer count as an enabled source or make the app scan processes every 2 seconds.
+  - An exclusion rule is reported only when it actually suppressed a detected game, not whenever the excluded program runs.
+  - Changing an unrelated game-mode setting while the game is in the background no longer switches layouts at once; removing the source that found the game still does.
+  - Linux: a game whose only remaining processes are Wine services (`wineserver`, `services.exe`…) counts as ended, so game mode turns off sooner after Heroic, Lutris and umu games exit. Process environments are read once per process instead of every 5 seconds.
+  - Linux: when GameMode is not installed, the GameMode source no longer makes Auto unavailable; the settings page still shows the warning. With the source off, D-Bus is no longer queried every minute. Steam games count as detectable when either processes or the active window can be read.
+  - Windows: Steam and Game Bar data are no longer read on every poll while those sources are off.
+  - A failed save after toggling game mode no longer overwrites a choice made meanwhile from the tray or the CLI.
+
 - Linux: a one-character `text:` action (such as `text:,` on a tap key) is sent as an ordinary key press when the active keyboard layout has that character and no modifier is held. It no longer waits for the text backend, so it cannot land after the next letters, be lost on a window change or a full text queue, or wait for the first portal consent. Longer text, macro text steps, characters missing from the layout and desktops that do not report the layout use the text backend as before.
 
 - Hyprland active-window events use the runtime socket directory; support for the pre-0.40 `/tmp/hypr` socket location was removed.

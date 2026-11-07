@@ -135,6 +135,14 @@ impl GameSource {
             Self::GameBar if cfg!(target_os = "windows") => detectors
                 .game_bar
                 .unwrap_or(DetectorAvailability::Unavailable),
+            // Linux finds Steam games by process and by `steam_app_<id>`
+            // window; either one is enough.
+            Self::Steam
+                if detectors.active_window == DetectorAvailability::Available
+                    || detectors.processes == DetectorAvailability::Available =>
+            {
+                DetectorAvailability::Available
+            }
             Self::Steam | Self::Lutris | Self::Heroic | Self::Umu | Self::GameBar => {
                 detectors.processes
             }
@@ -206,6 +214,8 @@ struct Detection {
     available: bool,
     excluded_by: Option<String>,
     skipped_window: Option<String>,
+    /// An exclusion rule matches, whether or not it suppressed anything.
+    blocked: bool,
     detectors: GameModeDetectors,
 }
 
@@ -283,6 +293,8 @@ struct Watcher {
     thread: JoinHandle<()>,
 }
 
+// Lock order, outer first: `CACHED_SETTINGS`, `WATCHER`, the watcher's
+// control, `STATE`. Events are published only after every lock is released.
 static STATE: OnceLock<Mutex<State>> = OnceLock::new();
 static CACHED_SETTINGS: Mutex<SettingsCache> = Mutex::new(SettingsCache {
     control_restored: false,
@@ -346,13 +358,28 @@ pub fn set_control(control: GameModeControl) -> GameModeStatus {
 }
 
 /// Flip the effective state, read and changed under one lock; see
-/// [`toggled_control`]. Refused while the in-development setting is off.
-pub fn toggle() -> GameModeStatus {
+/// [`toggled_control`]. Returns the control before the flip, for
+/// [`restore_control`]. Refused while the in-development setting is off.
+pub fn toggle() -> (GameModeControl, GameModeStatus) {
     let mut state = lock(state());
+    let previous = state.control;
     if !state.enabled {
-        return state.status();
+        return (previous, state.status());
     }
     let result = update_state(&mut state, |state| state.control = toggled_control(state));
+    drop(state);
+    wake();
+    (previous, publish(result))
+}
+
+/// Undo a change to `applied` by setting `previous`, unless the control
+/// changed again meanwhile (the tray, the CLI): that newer choice wins.
+pub fn restore_control(applied: GameModeControl, previous: GameModeControl) -> GameModeStatus {
+    let mut state = lock(state());
+    if !state.enabled || state.control != applied {
+        return state.status();
+    }
+    let result = update_state(&mut state, |state| state.control = previous);
     drop(state);
     wake();
     publish(result)
@@ -463,17 +490,39 @@ pub fn stop_watcher() {
     if let Some(watcher) = watcher {
         lock(&watcher.control.0).stop = true;
         watcher.control.1.notify_one();
-        if let Err(error) = watcher.thread.join() {
-            log::error!("[gamemode] watcher panicked: {error:?}");
-        }
-        // Nothing keeps a detected game alive without the watcher.
-        let result = update_state(&mut lock(state()), |state| {
-            state.detection = Detection::default()
-        });
-        publish(result);
+        join(watcher);
     }
     #[cfg(target_os = "linux")]
     linux::stop();
+}
+
+/// Wait for a stopped or crashed watcher and forget what it detected.
+fn join(watcher: Watcher) {
+    if let Err(error) = watcher.thread.join() {
+        log::error!("[gamemode] watcher panicked: {error:?}");
+    }
+    clear_detection();
+}
+
+/// Nothing keeps a detected game alive without the watcher.
+fn clear_detection() {
+    let result = update_state(&mut lock(state()), |state| {
+        state.detection = Detection::default()
+    });
+    publish(result);
+}
+
+/// Clears detection when the watcher thread panics, so a game detected
+/// before the crash does not keep game mode on for the rest of the session.
+struct ClearOnPanic;
+
+impl Drop for ClearOnPanic {
+    fn drop(&mut self) {
+        if thread::panicking() {
+            log::error!("[gamemode] watcher crashed; detection is off until it restarts");
+            clear_detection();
+        }
+    }
 }
 
 pub fn start_watcher(storage: Option<StoragePaths>) {
@@ -484,11 +533,15 @@ pub fn start_watcher(storage: Option<StoragePaths>) {
     {
         return;
     }
+    if let Some(finished) = watcher.take() {
+        join(finished);
+    }
     let control = Arc::new((Mutex::new(WatchControl::default()), Condvar::new()));
     let thread_control = control.clone();
     let thread = thread::Builder::new()
         .name("gamemode-watcher".into())
         .spawn(move || {
+            let _clear_on_panic = ClearOnPanic;
             let mut history = DetectionHistory::default();
             loop {
                 {
@@ -515,8 +568,14 @@ pub fn start_watcher(storage: Option<StoragePaths>) {
                 let control = lock(&thread_control.0);
                 if cache.revision == revision && !control.stop {
                     let mut state = lock(state());
-                    let detection =
-                        history.apply(&state.detection, detection, enabled, revision, now);
+                    let detection = history.apply(
+                        &state.detection,
+                        detection,
+                        &settings,
+                        enabled,
+                        revision,
+                        now,
+                    );
                     let result = update_state(&mut state, |state| state.detection = detection);
                     if state.detection.active && state.control == GameModeControl::Auto {
                         interval = WATCH_INTERVAL;
@@ -560,6 +619,7 @@ impl DetectionHistory {
         &mut self,
         previous: &Detection,
         next: Detection,
+        settings: &GameModeSettings,
         enabled: bool,
         revision: u64,
         now: Instant,
@@ -570,11 +630,32 @@ impl DetectionHistory {
         if next.active {
             self.last_match = Some(now);
         }
-        if self.revision.replace(revision) != Some(revision) {
+        // New settings keep the grace period only while the source that
+        // found the game is still on: editing an unrelated option during
+        // Alt+Tab must not flip layouts, removing the rule must.
+        let settings_changed = self.revision.replace(revision) != Some(revision);
+        let kept = previous
+            .method
+            .as_ref()
+            .is_some_and(|method| method_enabled(settings, method));
+        if settings_changed && !kept {
             next
         } else {
             hold_active(previous, next, self.last_match, now)
         }
+    }
+}
+
+/// Whether `method` can still report a game under `settings`.
+fn method_enabled(settings: &GameModeSettings, method: &GameModeMethod) -> bool {
+    match method {
+        GameModeMethod::Manual => false,
+        GameModeMethod::Daemon => settings.use_gamemoded,
+        GameModeMethod::Fullscreen => settings.use_fullscreen,
+        GameModeMethod::KnownGame(_) => enabled_sources(settings).next().is_some(),
+        GameModeMethod::Process(name) => process::rules(&settings.process_matchers)
+            .iter()
+            .any(|rule| !rule.matcher.is_blacklist && rule.matcher.name.trim() == name),
     }
 }
 
@@ -603,7 +684,7 @@ fn hold_active(
     now: Instant,
 ) -> Detection {
     let recent = last_match.is_some_and(|at| now.duration_since(at) < OFF_DELAY);
-    if !next.active && next.enabled && next.excluded_by.is_none() && previous.active && recent {
+    if !next.active && next.enabled && !next.blocked && previous.active && recent {
         Detection {
             active: true,
             method: previous.method.clone(),
@@ -735,10 +816,9 @@ fn needs_polling(settings: &GameModeSettings) -> bool {
 }
 
 fn needs_running_processes(settings: &GameModeSettings) -> bool {
-    settings
-        .process_matchers
+    process::rules(&settings.process_matchers)
         .iter()
-        .any(|matcher| !process::window_only(matcher) && !matcher.name.trim().is_empty())
+        .any(|rule| !rule.window_only())
 }
 
 fn evaluate(
@@ -747,29 +827,28 @@ fn evaluate(
     window: Option<&ActiveWindow>,
 ) -> Detection {
     let detectors = &observation.detectors;
-    let source_available = |matcher: &crate::profile::model::GameModeProcessMatcher| {
-        if process::window_only(matcher) {
+    let source_available = |rule: &process::Rule| {
+        if rule.window_only() {
             detectors.active_window == DetectorAvailability::Available
         } else {
             detectors.processes == DetectorAvailability::Available
         }
     };
-    let matches = |matcher: &crate::profile::model::GameModeProcessMatcher| {
-        source_available(matcher)
-            && if process::window_only(matcher) {
-                window.is_some_and(|window| process::matches_window(matcher, window))
+    let matches = |rule: &process::Rule| {
+        source_available(rule)
+            && if rule.window_only() {
+                window.is_some_and(|window| rule.matches_window(window))
             } else {
                 observation
                     .running
                     .iter()
-                    .any(|name| process::matches_process(matcher, name))
+                    .any(|name| rule.matches_process(name))
             }
     };
-    let whitelist: Vec<_> = settings
-        .process_matchers
-        .iter()
-        .filter(|matcher| !matcher.is_blacklist && !matcher.name.trim().is_empty())
-        .collect();
+    // Rules that can never match (blank, bare `title:`) are ignored.
+    let (blacklist, whitelist): (Vec<_>, Vec<_>) = process::rules(&settings.process_matchers)
+        .into_iter()
+        .partition(|rule| rule.matcher.is_blacklist);
     let known_games = enabled_sources(settings).next().is_some();
     // A source this session cannot have is not "enabled": otherwise Auto
     // would report itself unavailable forever.
@@ -786,21 +865,20 @@ fn evaluate(
             || (settings.use_fullscreen && detectors.fullscreen == DetectorAvailability::Available)
             || enabled_sources(settings)
                 .any(|source| source.availability(detectors) == DetectorAvailability::Available)
-            || whitelist.iter().any(|matcher| source_available(matcher)),
+            || whitelist.iter().any(source_available),
         detectors: detectors.clone(),
         ..Detection::default()
     };
     if !enabled {
         return detection;
     }
-    if let Some(matcher) = settings
-        .process_matchers
+    let blocked_by = blacklist
         .iter()
-        .find(|matcher| matcher.is_blacklist && matches(matcher))
-    {
-        detection.excluded_by = Some(matcher.name.trim().into());
+        .find(|rule| matches(rule))
+        .map(|rule| rule.matcher.name.trim().to_owned());
+    if blocked_by.is_some() {
+        // A matching exclusion is a known answer even without other sources.
         detection.available = true;
-        return detection;
     }
     // Launchers go fullscreen too (Steam Big Picture) without being games.
     let fullscreen_game = window.is_some_and(|window| {
@@ -808,7 +886,7 @@ fn evaluate(
             && !process::fullscreen_non_game(window)
             && !process::launcher_window(window)
     });
-    detection.method = if settings.use_gamemoded
+    let method = if settings.use_gamemoded
         && observation.daemon
         && detectors.gamemoded == DetectorAvailability::Available
     {
@@ -818,8 +896,8 @@ fn evaluate(
         .flatten()
     {
         Some(GameModeMethod::KnownGame(name))
-    } else if let Some(matcher) = whitelist.into_iter().find(|matcher| matches(matcher)) {
-        Some(GameModeMethod::Process(matcher.name.trim().into()))
+    } else if let Some(rule) = whitelist.iter().find(|rule| matches(rule)) {
+        Some(GameModeMethod::Process(rule.matcher.name.trim().into()))
     } else if settings.use_fullscreen
         && fullscreen_game
         && detectors.fullscreen == DetectorAvailability::Available
@@ -828,8 +906,16 @@ fn evaluate(
     } else {
         None
     };
-    detection.active = detection.method.is_some();
-    if !detection.active {
+    // An exclusion is shown only when it suppressed a detection; it still
+    // ends a grace period at once.
+    detection.blocked = blocked_by.is_some();
+    if method.is_some() && blocked_by.is_some() {
+        detection.excluded_by = blocked_by;
+        return detection;
+    }
+    detection.active = method.is_some();
+    detection.method = method;
+    if !detection.active && !detection.blocked {
         detection.skipped_window =
             window.and_then(|window| skipped_window(settings, detectors, window));
     }
@@ -950,27 +1036,102 @@ mod tests {
         let active = detect_with(&settings, true, None, |_, _| observation(&["game"], false));
         let gap = detect_with(&settings, true, None, |_, _| observation(&[], false));
         let mut history = DetectionHistory::default();
-        let first = history.apply(&Detection::default(), active, true, 1, now);
+        let first = history.apply(&Detection::default(), active, &settings, true, 1, now);
         assert!(first.active);
-        let held = history.apply(&first, gap.clone(), true, 1, now + OFF_DELAY / 2);
+        let held = history.apply(&first, gap.clone(), &settings, true, 1, now + OFF_DELAY / 2);
         assert!(held.active);
         assert!(
             !history
-                .apply(&held, gap.clone(), true, 1, now + OFF_DELAY)
+                .apply(&held, gap.clone(), &settings, true, 1, now + OFF_DELAY)
                 .active
         );
         // A new worker never inherits the old worker's grace period.
         assert!(
             !DetectionHistory::default()
-                .apply(&held, gap.clone(), true, 1, now)
+                .apply(&held, gap.clone(), &settings, true, 1, now)
                 .active
         );
-        assert!(!history.apply(&held, gap, true, 2, now).active);
+        let mut history = DetectionHistory::default();
+        history.apply(
+            &Detection::default(),
+            first.clone(),
+            &settings,
+            true,
+            1,
+            now,
+        );
+        // Unrelated new settings keep the grace period; removing the rule
+        // that found the game ends it.
+        let mut unrelated = settings.clone();
+        unrelated.use_lutris = true;
+        assert!(
+            history
+                .apply(&first, gap.clone(), &unrelated, true, 2, now)
+                .active
+        );
+        let removed = self::settings(vec![matcher("other", false, false)]);
+        assert!(!history.apply(&first, gap, &removed, true, 3, now).active);
         let disabled = detect_with(&settings, false, None, |_, _| {
             panic!("disabled source was read")
         });
-        assert!(!history.apply(&held, disabled, false, 3, now).active);
+        assert!(
+            !history
+                .apply(&held, disabled, &settings, false, 4, now)
+                .active
+        );
         assert!(history.last_match.is_none());
+    }
+
+    #[test]
+    fn rules_that_cannot_match_are_ignored() {
+        let settings = settings(vec![
+            matcher("title:", false, false),
+            matcher("  ", false, true),
+        ]);
+        assert!(!needs_running_processes(&settings));
+        let detection = evaluate(&settings, &observation(&["game"], false), None);
+        assert!(!detection.enabled);
+        assert!(detection.available);
+        assert!(detection.excluded_by.is_none());
+    }
+
+    #[test]
+    fn exclusion_is_shown_only_when_it_suppresses_a_game() {
+        let mut settings = settings(vec![matcher("obs", false, true)]);
+        settings.use_fullscreen = true;
+        let idle = evaluate(&settings, &observation(&["obs"], false), None);
+        assert!(!idle.active);
+        assert!(idle.excluded_by.is_none());
+        assert!(idle.blocked);
+        let suppressed = evaluate(
+            &settings,
+            &observation(&["obs"], false),
+            Some(&fullscreen("game")),
+        );
+        assert!(!suppressed.active);
+        assert_eq!(suppressed.excluded_by.as_deref(), Some("obs"));
+        // It still ends a grace period at once.
+        let active = evaluate(
+            &settings,
+            &observation(&[], false),
+            Some(&fullscreen("game")),
+        );
+        let now = Instant::now();
+        assert!(!hold_active(&active, idle, Some(now), now).active);
+    }
+
+    #[test]
+    fn linux_steam_works_with_either_processes_or_windows() {
+        let mut detectors = observation(&[], false).detectors;
+        detectors.processes = DetectorAvailability::Unavailable;
+        let expected = if cfg!(target_os = "linux") {
+            DetectorAvailability::Available
+        } else if cfg!(target_os = "windows") {
+            DetectorAvailability::Unavailable
+        } else {
+            DetectorAvailability::Unsupported
+        };
+        assert_eq!(GameSource::Steam.availability(&detectors), expected);
     }
 
     #[test]
@@ -1362,7 +1523,7 @@ mod tests {
         assert_eq!(held.method, Some(GameModeMethod::Fullscreen));
         assert!(!hold_active(&active, gap.clone(), Some(now), now + OFF_DELAY).active);
         let excluded = Detection {
-            excluded_by: Some("editor".into()),
+            blocked: true,
             ..gap
         };
         assert!(!hold_active(&active, excluded, Some(now), now).active);
