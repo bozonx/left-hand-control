@@ -175,7 +175,7 @@
         "Tab": { "action": "Alt+Tab", "holdModifiers": true },
         "CapsLock": { "action": "Meta+Tab", "holdModifiers": true },
         "Backspace": "sys:turnOffScreen",
-        "Space": "Ctrl+Alt+Shift+KeyV",
+        "MetaLeft": "Ctrl+Alt+Shift+KeyV",
         "ShiftLeft": "sys:switchKeyboardLayout4",
         "Digit1": "Meta+Digit1",
         "Digit2": "Meta+Digit2",
