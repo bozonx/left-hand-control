@@ -225,6 +225,7 @@ pub(super) fn open(
     picker.set_command_error(Msg::None.to_ui());
     picker.set_choosing_file(false);
     picker.set_capture_unsupported(false);
+    picker.set_capture_status(crate::ui::CaptureStatus::None);
     picker.set_dialog_title(request.title);
     picker.set_layer_action(request.mode == PickerMode::LayerAction);
     picker.set_rule_action(matches!(

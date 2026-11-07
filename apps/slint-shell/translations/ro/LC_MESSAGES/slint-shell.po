@@ -3793,3 +3793,12 @@ msgstr "Mouse-ul selectat este interceptat ca tastatură. Selectați un alt disp
 
 msgid "Mouse input is unavailable. See the application log."
 msgstr "Intrarea mouse-ului nu este disponibilă. Consultați jurnalul aplicației."
+
+msgid "Hold Escape for 2 seconds to cancel capture."
+msgstr "Țineți apăsat Escape timp de 2 secunde pentru a anula captura."
+
+msgid "Capture cancelled."
+msgstr "Captură anulată."
+
+msgid "Captured: {}"
+msgstr "Capturat: {}"

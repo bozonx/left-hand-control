@@ -3731,3 +3731,12 @@ msgstr "Vybraná myš je zachytávána jako klávesnice. Vyberte jiné zařízen
 
 msgid "Mouse input is unavailable. See the application log."
 msgstr "Vstup myši není dostupný. Podrobnosti najdete v protokolu aplikace."
+
+msgid "Hold Escape for 2 seconds to cancel capture."
+msgstr "Podržením klávesy Escape na 2 sekundy zrušíte zachytávání."
+
+msgid "Capture cancelled."
+msgstr "Zachytávání zrušeno."
+
+msgid "Captured: {}"
+msgstr "Zachyceno: {}"

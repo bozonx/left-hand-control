@@ -3433,3 +3433,12 @@ msgstr "所选鼠标正被作为键盘拦截。请选择其他设备。"
 
 msgid "Mouse input is unavailable. See the application log."
 msgstr "鼠标输入不可用。请查看应用日志。"
+
+msgid "Hold Escape for 2 seconds to cancel capture."
+msgstr "按住 Escape 2 秒可取消捕获。"
+
+msgid "Capture cancelled."
+msgstr "已取消捕获。"
+
+msgid "Captured: {}"
+msgstr "已捕获：{}"

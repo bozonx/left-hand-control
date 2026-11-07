@@ -3759,3 +3759,12 @@ msgstr "Вибрана миша перехоплюється як клавіат
 
 msgid "Mouse input is unavailable. See the application log."
 msgstr "Введення з миші недоступне. Подробиці — у журналі програми."
+
+msgid "Hold Escape for 2 seconds to cancel capture."
+msgstr "Утримуйте Escape 2 секунди, щоб скасувати захоплення."
+
+msgid "Capture cancelled."
+msgstr "Захоплення скасовано."
+
+msgid "Captured: {}"
+msgstr "Захоплено: {}"

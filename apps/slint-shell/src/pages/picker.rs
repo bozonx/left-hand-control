@@ -5,7 +5,7 @@ use super::WindowInput;
 use crate::{
     document::Document,
     i18n::Msg,
-    ui::{ActionPicker, PickerBehavior, PickerItem, PickerTarget, SettingsWindow},
+    ui::{ActionPicker, CaptureStatus, PickerBehavior, PickerItem, PickerTarget, SettingsWindow},
 };
 use lhc_core::profile::actions::Action;
 use slint::ComponentHandle;
@@ -113,6 +113,7 @@ pub(super) fn bind(
         let picker = ui.global::<ActionPicker>();
         picker.set_capture_keys("".into());
         picker.set_capture_unsupported(false);
+        picker.set_capture_status(CaptureStatus::None);
         if !picker.get_capturing() {
             input.reset_capture();
             picker.set_capturing(true);

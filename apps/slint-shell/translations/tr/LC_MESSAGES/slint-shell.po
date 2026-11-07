@@ -3752,3 +3752,12 @@ msgstr "Seçilen fare klavye olarak yakalanıyor. Başka bir aygıt seçin."
 
 msgid "Mouse input is unavailable. See the application log."
 msgstr "Fare girişi kullanılamıyor. Uygulama günlüğüne bakın."
+
+msgid "Hold Escape for 2 seconds to cancel capture."
+msgstr "Yakalamayı iptal etmek için Escape tuşunu 2 saniye basılı tutun."
+
+msgid "Capture cancelled."
+msgstr "Yakalama iptal edildi."
+
+msgid "Captured: {}"
+msgstr "Yakalandı: {}"

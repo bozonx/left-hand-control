@@ -446,3 +446,41 @@ fn labels_prefer_the_command_then_the_catalog() {
     assert_eq!(label_for("builtin:x", &catalog, None, &[]), "Built-in X");
     assert_eq!(label_for("KeyA", &catalog, None, &[]), "");
 }
+
+#[test]
+fn cancelling_capture_keeps_the_value_and_reports_the_outcome() {
+    use crate::ui::CaptureStatus;
+    use slint::platform::software_renderer::{MinimalSoftwareWindow, RepaintBufferType};
+    struct Platform;
+    impl slint::platform::Platform for Platform {
+        fn create_window_adapter(
+            &self,
+        ) -> Result<Rc<dyn slint::platform::WindowAdapter>, slint::PlatformError> {
+            Ok(MinimalSoftwareWindow::new(RepaintBufferType::ReusedBuffer))
+        }
+    }
+    // Each test thread needs its own platform; a reused thread already has one.
+    let _ = slint::platform::set_platform(Box::new(Platform));
+    let ui = SettingsWindow::new().unwrap();
+    let picker = ui.global::<ActionPicker>();
+    picker.set_value("KeyA".into());
+    picker.set_capturing(true);
+    picker.set_capture_keys("Escape".into());
+
+    capture::cancel(&picker);
+    assert!(!picker.get_capturing());
+    assert_eq!(picker.get_value(), "KeyA");
+    assert_eq!(picker.get_capture_keys(), "");
+    assert_eq!(picker.get_capture_status(), CaptureStatus::Cancelled);
+
+    // A late timer after capture ended changes nothing.
+    picker.set_capture_status(CaptureStatus::None);
+    capture::cancel(&picker);
+    assert_eq!(picker.get_capture_status(), CaptureStatus::None);
+
+    picker.set_capturing(true);
+    capture::finish(&picker, "Escape".into());
+    assert!(!picker.get_capturing());
+    assert_eq!(picker.get_value(), "Escape");
+    assert_eq!(picker.get_capture_status(), CaptureStatus::Captured);
+}

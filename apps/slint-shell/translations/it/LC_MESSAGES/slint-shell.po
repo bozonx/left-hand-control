@@ -3827,3 +3827,12 @@ msgstr "Il mouse selezionato viene intercettato come tastiera. Seleziona un altr
 
 msgid "Mouse input is unavailable. See the application log."
 msgstr "L’ingresso del mouse non è disponibile. Consulta il registro dell’applicazione."
+
+msgid "Hold Escape for 2 seconds to cancel capture."
+msgstr "Tieni premuto Esc per 2 secondi per annullare l'acquisizione."
+
+msgid "Capture cancelled."
+msgstr "Acquisizione annullata."
+
+msgid "Captured: {}"
+msgstr "Acquisito: {}"

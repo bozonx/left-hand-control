@@ -3434,3 +3434,12 @@ msgstr "所選滑鼠正被當作鍵盤攔截。請選取其他裝置。"
 
 msgid "Mouse input is unavailable. See the application log."
 msgstr "滑鼠輸入無法使用。請查看應用程式記錄。"
+
+msgid "Hold Escape for 2 seconds to cancel capture."
+msgstr "按住 Escape 2 秒可取消擷取。"
+
+msgid "Capture cancelled."
+msgstr "已取消擷取。"
+
+msgid "Captured: {}"
+msgstr "已擷取：{}"

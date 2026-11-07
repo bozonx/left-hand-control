@@ -3855,3 +3855,12 @@ msgstr "Το επιλεγμένο ποντίκι δεσμεύεται ως πλ�
 
 msgid "Mouse input is unavailable. See the application log."
 msgstr "Η είσοδος του ποντικιού δεν είναι διαθέσιμη. Δείτε το αρχείο καταγραφής της εφαρμογής."
+
+msgid "Hold Escape for 2 seconds to cancel capture."
+msgstr "Κρατήστε πατημένο το Escape για 2 δευτερόλεπτα για ακύρωση της καταγραφής."
+
+msgid "Capture cancelled."
+msgstr "Η καταγραφή ακυρώθηκε."
+
+msgid "Captured: {}"
+msgstr "Καταγράφηκε: {}"

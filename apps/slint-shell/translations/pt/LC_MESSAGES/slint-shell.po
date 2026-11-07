@@ -3765,3 +3765,12 @@ msgstr "O rato selecionado está a ser intercetado como teclado. Selecione outro
 
 msgid "Mouse input is unavailable. See the application log."
 msgstr "A entrada do rato não está disponível. Consulte o registo da aplicação."
+
+msgid "Hold Escape for 2 seconds to cancel capture."
+msgstr "Mantenha Escape pressionado por 2 segundos para cancelar a captura."
+
+msgid "Capture cancelled."
+msgstr "Captura cancelada."
+
+msgid "Captured: {}"
+msgstr "Capturado: {}"

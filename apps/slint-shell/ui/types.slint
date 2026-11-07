@@ -81,6 +81,9 @@ export enum PickerTitle { auto, double-tap, tap, hold, macro-step, long-hold }
 /// What the action picker assigns: the native key, a blocked key, or the chosen action.
 export enum PickerBehavior { native, swallow, action }
 
+/// How the last key capture in the action picker ended, for its announcement.
+export enum CaptureStatus { none, captured, cancelled }
+
 /// Where a command is assigned, listed on the commands settings tab.
 export enum CommandPlace { rule-tap, rule-hold, rule-long-hold, rule-double-tap, layer-key, macro, quick-action }
 

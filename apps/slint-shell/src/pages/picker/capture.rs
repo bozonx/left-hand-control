@@ -1,6 +1,6 @@
 //! Physical keyboard capture for the action picker.
 
-use crate::ui::{ActionPicker, SettingsWindow};
+use crate::ui::{ActionPicker, CaptureStatus, SettingsWindow};
 use slint::ComponentHandle;
 use std::cell::RefCell;
 
@@ -29,6 +29,11 @@ pub(in crate::pages) fn capture(
     if event.repeat {
         return true;
     }
+    if key == "Escape" && event.state == slint::winit_030::winit::event::ElementState::Pressed {
+        arm_cancel(ui, capture);
+    } else if event.state == slint::winit_030::winit::event::ElementState::Pressed {
+        capture.borrow().cancel_timer.stop();
+    }
     let (known, value) = {
         let mut state = capture.borrow_mut();
         let known = state.known(&key, picker.get_trigger_chords());
@@ -50,6 +55,39 @@ pub(in crate::pages) fn capture(
     // Slint tracks modifiers from key events, not ModifiersChanged. Swallowing
     // a release here can leave Ctrl/Shift stuck when capture ends and block typing.
     lhc_core::profile::key_catalog::modifier_key(&key).is_none()
+}
+
+/// How long Escape must be held alone to cancel capture. Escape itself is
+/// assignable, so a plain press cannot cancel; without this a keyboard-only
+/// user could leave capture only by recording some key.
+pub(super) const CANCEL_HOLD: std::time::Duration = std::time::Duration::from_secs(2);
+
+/// Start the cancel timer when Escape is the only key pressed so far.
+fn arm_cancel(ui: &SettingsWindow, capture: &RefCell<CaptureState>) {
+    let state = capture.borrow();
+    if state.keys.iter().any(|k| k != "Escape") {
+        state.cancel_timer.stop();
+        return;
+    }
+    let weak = ui.as_weak();
+    state
+        .cancel_timer
+        .start(slint::TimerMode::SingleShot, CANCEL_HOLD, move || {
+            let Some(ui) = weak.upgrade() else { return };
+            cancel(&ui.global::<ActionPicker>());
+        });
+}
+
+/// Leave capture without changing the value. The keys pressed so far are
+/// dropped by the next `begin-capture`, which resets the state.
+pub(super) fn cancel(picker: &ActionPicker) {
+    if !picker.get_capturing() {
+        return;
+    }
+    picker.set_capturing(false);
+    picker.set_capture_unsupported(false);
+    picker.set_capture_keys("".into());
+    picker.set_capture_status(CaptureStatus::Cancelled);
 }
 
 /// Config key code of a physical key. Keys winit cannot name on Linux
@@ -89,6 +127,7 @@ pub(super) fn finish(picker: &ActionPicker, value: String) {
     picker.set_value(value.into());
     picker.set_capturing(false);
     picker.set_capture_unsupported(false);
+    picker.set_capture_status(CaptureStatus::Captured);
     picker.invoke_refresh();
 }
 
@@ -96,6 +135,8 @@ pub(super) fn finish(picker: &ActionPicker, value: String) {
 pub(in crate::pages) struct CaptureState {
     pub(super) held: Vec<String>,
     pub(super) keys: Vec<String>,
+    /// Fires when Escape is held alone for [`CANCEL_HOLD`].
+    cancel_timer: slint::Timer,
 }
 
 impl CaptureState {
@@ -138,6 +179,7 @@ impl CaptureState {
 
     /// Value of the keys pressed so far; ends the capture.
     pub(in crate::pages) fn finish(&mut self, trigger: bool, key_only: bool) -> Option<String> {
+        self.cancel_timer.stop();
         self.held.clear();
         let keys = std::mem::take(&mut self.keys);
         if keys.is_empty() {

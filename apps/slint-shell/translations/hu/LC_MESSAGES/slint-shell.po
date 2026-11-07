@@ -3792,3 +3792,12 @@ msgstr "A kiválasztott egér billentyűzetként van elfogva. Válasszon másik 
 
 msgid "Mouse input is unavailable. See the application log."
 msgstr "Az egérbemenet nem érhető el. Lásd az alkalmazás naplóját."
+
+msgid "Hold Escape for 2 seconds to cancel capture."
+msgstr "A rögzítés megszakításához tartsa lenyomva az Escape billentyűt 2 másodpercig."
+
+msgid "Capture cancelled."
+msgstr "Rögzítés megszakítva."
+
+msgid "Captured: {}"
+msgstr "Rögzítve: {}"

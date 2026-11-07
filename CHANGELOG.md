@@ -35,6 +35,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Action picker: key capture can be cancelled without the mouse by holding Escape alone for 2 seconds; the value stays unchanged. A short Escape press is still captured as a key. The capture instructions, the cancel hint and the result ("Captured: …" or "Capture cancelled.") are announced to screen readers.
+
 - A control that became unavailable while focused (for example the Save button right after saving) no longer keeps its focus ring after focus moves elsewhere. Buttons, menu triggers and clickable rows react to the same keys: Enter and Space activate them, and Up/Down also open menus (now including the game mode button).
 
 - Linux mapper: keys of the physical keyboard outside the standard ranges (such as macro keys `KEY_MACRO1`) are passed through instead of being dropped by the virtual keyboard.

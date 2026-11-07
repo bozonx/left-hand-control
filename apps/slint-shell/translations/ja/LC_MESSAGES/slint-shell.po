@@ -3512,3 +3512,12 @@ msgstr "選択したマウスはキーボードとしてインターセプトさ
 
 msgid "Mouse input is unavailable. See the application log."
 msgstr "マウス入力を利用できません。アプリケーションログを確認してください。"
+
+msgid "Hold Escape for 2 seconds to cancel capture."
+msgstr "Escape を 2 秒間押し続けるとキャプチャをキャンセルします。"
+
+msgid "Capture cancelled."
+msgstr "キャプチャをキャンセルしました。"
+
+msgid "Captured: {}"
+msgstr "キャプチャ済み: {}"

@@ -3743,3 +3743,12 @@ msgstr "Odabrani miš presreće se kao tipkovnica. Odaberite drugi uređaj."
 
 msgid "Mouse input is unavailable. See the application log."
 msgstr "Unos miša nije dostupan. Pogledajte zapisnik aplikacije."
+
+msgid "Hold Escape for 2 seconds to cancel capture."
+msgstr "Držite Escape 2 sekunde da biste otkazali snimanje."
+
+msgid "Capture cancelled."
+msgstr "Snimanje otkazano."
+
+msgid "Captured: {}"
+msgstr "Snimljeno: {}"

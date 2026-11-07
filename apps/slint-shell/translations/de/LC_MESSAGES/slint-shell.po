@@ -3831,3 +3831,12 @@ msgstr "Die ausgewählte Maus wird als Tastatur abgefangen. Wählen Sie ein ande
 
 msgid "Mouse input is unavailable. See the application log."
 msgstr "Mauseingabe ist nicht verfügbar. Siehe Anwendungsprotokoll."
+
+msgid "Hold Escape for 2 seconds to cancel capture."
+msgstr "Escape 2 Sekunden lang gedrückt halten, um die Aufnahme abzubrechen."
+
+msgid "Capture cancelled."
+msgstr "Aufnahme abgebrochen."
+
+msgid "Captured: {}"
+msgstr "Aufgenommen: {}"

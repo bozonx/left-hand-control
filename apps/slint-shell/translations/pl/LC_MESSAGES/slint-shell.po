@@ -3792,3 +3792,12 @@ msgstr "Wybrana mysz jest przechwytywana jako klawiatura. Wybierz inne urządzen
 
 msgid "Mouse input is unavailable. See the application log."
 msgstr "Wejście myszy jest niedostępne. Sprawdź dziennik aplikacji."
+
+msgid "Hold Escape for 2 seconds to cancel capture."
+msgstr "Przytrzymaj Escape przez 2 sekundy, aby anulować przechwytywanie."
+
+msgid "Capture cancelled."
+msgstr "Przechwytywanie anulowane."
+
+msgid "Captured: {}"
+msgstr "Przechwycono: {}"

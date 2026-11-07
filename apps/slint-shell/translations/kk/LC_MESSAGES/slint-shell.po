@@ -3760,3 +3760,12 @@ msgstr "Таңдалған тінтуір пернетақта ретінде ұ
 
 msgid "Mouse input is unavailable. See the application log."
 msgstr "Тінтуір енгізуі қолжетімсіз. Қолданба журналын қараңыз."
+
+msgid "Hold Escape for 2 seconds to cancel capture."
+msgstr "Түсіруден бас тарту үшін Escape пернесін 2 секунд басып тұрыңыз."
+
+msgid "Capture cancelled."
+msgstr "Түсіру тоқтатылды."
+
+msgid "Captured: {}"
+msgstr "Түсірілді: {}"

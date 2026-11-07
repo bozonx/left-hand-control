@@ -3502,3 +3502,12 @@ msgstr "선택한 마우스가 키보드로 가로채지고 있습니다. 다른
 
 msgid "Mouse input is unavailable. See the application log."
 msgstr "마우스 입력을 사용할 수 없습니다. 애플리케이션 로그를 확인하세요."
+
+msgid "Hold Escape for 2 seconds to cancel capture."
+msgstr "캡처를 취소하려면 Escape 키를 2초 동안 누르세요."
+
+msgid "Capture cancelled."
+msgstr "캡처가 취소되었습니다."
+
+msgid "Captured: {}"
+msgstr "캡처됨: {}"
