@@ -37,6 +37,7 @@ unsafe extern "C" {
     pub(super) fn xkb_keymap_unref(keymap: *mut XkbKeymap);
     pub(super) fn xkb_keymap_min_keycode(keymap: *mut XkbKeymap) -> u32;
     pub(super) fn xkb_keymap_max_keycode(keymap: *mut XkbKeymap) -> u32;
+    pub(super) fn xkb_keymap_num_layouts(keymap: *mut XkbKeymap) -> u32;
     pub(super) fn xkb_keymap_key_get_name(keymap: *mut XkbKeymap, key: u32) -> *const c_char;
     pub(super) fn xkb_state_new(keymap: *mut XkbKeymap) -> *mut XkbState;
     pub(super) fn xkb_state_unref(state: *mut XkbState);
@@ -63,13 +64,138 @@ pub(super) const KEY_LEFTSHIFT_EVDEV: u32 = evdev::KeyCode::KEY_LEFTSHIFT.code()
 pub(super) const KEY_V_EVDEV: u32 = evdev::KeyCode::KEY_V.code() as u32;
 pub(super) const KEY_INSERT_EVDEV: u32 = evdev::KeyCode::KEY_INSERT.code() as u32;
 
-/// Modifiers and key of a paste shortcut as evdev codes.
-pub(super) fn paste_keys(shortcut: PasteShortcut) -> (&'static [u32], u32) {
+/// Modifiers and key of a paste shortcut as evdev codes. `v_key` is the
+/// key applications read as `v` (see [`paste_v_key`]); without it the
+/// physical `KEY_V` is sent, which is right for QWERTY-like layouts.
+pub(super) fn paste_keys(shortcut: PasteShortcut, v_key: Option<u32>) -> (&'static [u32], u32) {
+    let v = v_key.unwrap_or(KEY_V_EVDEV);
     match shortcut {
         PasteShortcut::ShiftInsert => (&[KEY_LEFTSHIFT_EVDEV], KEY_INSERT_EVDEV),
-        PasteShortcut::CtrlV => (&[KEY_LEFTCTRL_EVDEV], KEY_V_EVDEV),
-        PasteShortcut::CtrlShiftV => (&[KEY_LEFTCTRL_EVDEV, KEY_LEFTSHIFT_EVDEV], KEY_V_EVDEV),
+        PasteShortcut::CtrlV => (&[KEY_LEFTCTRL_EVDEV], v),
+        PasteShortcut::CtrlShiftV => (&[KEY_LEFTCTRL_EVDEV, KEY_LEFTSHIFT_EVDEV], v),
     }
+}
+
+const XKB_KEY_V_LOWER: u32 = 0x76;
+
+/// evdev key that types `v` without modifiers, the way Qt and GTK match a
+/// Ctrl+V shortcut: in the active `group` first, then in the other groups
+/// in order (a Cyrillic layout borrows the shortcut from the Latin one).
+/// On Dvorak this is the physical `KEY_DOT`; `KEY_V` there types `k`.
+///
+/// # Safety
+/// `keymap` must be a valid keymap.
+pub(super) unsafe fn paste_v_key(keymap: *mut XkbKeymap, group: u32) -> Option<u32> {
+    // SAFETY: the caller owns a live keymap. The state is released before return.
+    unsafe {
+        let groups = xkb_keymap_num_layouts(keymap);
+        let state = xkb_state_new(keymap);
+        if state.is_null() {
+            return None;
+        }
+        let keys = xkb_keymap_min_keycode(keymap)..=xkb_keymap_max_keycode(keymap);
+        let found = std::iter::once(group)
+            .chain((0..groups).filter(|g| *g != group))
+            .filter(|g| *g < groups)
+            .find_map(|g| {
+                xkb_state_update_mask(state, 0, 0, 0, 0, 0, g);
+                keys.clone().find(|key| {
+                    key_class(keymap, *key) == Some(KeyClass::Main)
+                        && xkb_state_key_get_one_sym(state, *key) == XKB_KEY_V_LOWER
+                })
+            });
+        xkb_state_unref(state);
+        found.map(|key| key - 8)
+    }
+}
+
+/// [`paste_v_key`] for a keymap the compositor sent as XKB text.
+pub(super) fn paste_v_key_from_keymap_text(text: &[u8], group: u32) -> Option<u32> {
+    let text = text.split(|byte| *byte == 0).next().unwrap_or_default();
+    // SAFETY: `text` outlives the call; context and keymap are checked for
+    // null and released before returning.
+    unsafe {
+        let ctx = xkb_context_new(0);
+        if ctx.is_null() {
+            return None;
+        }
+        let keymap = xkb_keymap_new_from_buffer(
+            ctx,
+            text.as_ptr().cast(),
+            text.len(),
+            XKB_KEYMAP_FORMAT_TEXT_V1,
+            0,
+        );
+        xkb_context_unref(ctx);
+        if keymap.is_null() {
+            return None;
+        }
+        let key = paste_v_key(keymap, group);
+        xkb_keymap_unref(keymap);
+        key
+    }
+}
+
+/// [`paste_v_key`] for layouts given by XKB names, e.g. `["ru", "us"]`
+/// with variants `["", "dvorak"]`.
+pub(super) fn paste_v_key_from_names(
+    layouts: &[(&str, &str)],
+    group: u32,
+    options: &str,
+) -> Option<u32> {
+    if layouts.is_empty() {
+        return None;
+    }
+    let codes: Vec<&str> = layouts.iter().map(|l| l.0).collect();
+    let variants: Vec<&str> = layouts.iter().map(|l| l.1).collect();
+    let layout = CString::new(codes.join(",")).ok()?;
+    let variant = CString::new(variants.join(",")).ok()?;
+    let options = CString::new(options).ok()?;
+    let names = XkbRuleNames {
+        rules: std::ptr::null(),
+        model: std::ptr::null(),
+        layout: layout.as_ptr(),
+        variant: variant.as_ptr(),
+        options: options.as_ptr(),
+    };
+    // SAFETY: the context and keymap are checked for null and released
+    // before returning; `names` points to strings that outlive the call.
+    unsafe {
+        let ctx = xkb_context_new(0);
+        if ctx.is_null() {
+            return None;
+        }
+        let keymap = xkb_keymap_new_from_names(ctx, &names, 0);
+        xkb_context_unref(ctx);
+        if keymap.is_null() {
+            return None;
+        }
+        let key = paste_v_key(keymap, group);
+        xkb_keymap_unref(keymap);
+        key
+    }
+}
+
+/// [`paste_v_key`] for the layouts the desktop reports (keycode and
+/// clipboard modes, which have no compositor keymap). `None` when the
+/// layouts are unknown; the caller then sends `KEY_V`.
+pub(super) fn desktop_paste_v_key() -> Option<u32> {
+    let active = crate::runtime_state::keyboard_layout();
+    let listed = crate::keyboard_layout::available_layouts().unwrap_or_default();
+    let mut names: Vec<(&str, &str)> = listed
+        .iter()
+        .map(|l| (l.code.as_str(), l.variant.trim()))
+        .collect();
+    let mut group = active
+        .as_ref()
+        .and_then(|active| listed.iter().position(|l| l.index == active.index))
+        .unwrap_or(0);
+    if names.is_empty() {
+        let active = active.as_ref()?;
+        names.push((active.code.as_str(), active.variant.trim()));
+        group = 0;
+    }
+    paste_v_key_from_names(&names, group as u32, &crate::keyboard_layout::xkb_options())
 }
 
 #[derive(Clone)]

@@ -380,6 +380,30 @@ mod tests {
     }
 
     #[test]
+    fn paste_v_key_follows_the_layout() {
+        // Dvorak types `v` on the physical `.` key; the physical V types `k`.
+        const KEY_DOT: u32 = 52;
+        let v = |layouts: &[(&str, &str)], group| paste_v_key_from_names(layouts, group, "");
+        assert_eq!(v(&[("us", "")], 0), Some(KEY_V_EVDEV));
+        assert_eq!(v(&[("us", "dvorak")], 0), Some(KEY_DOT));
+        // A Cyrillic layout borrows the shortcut from the Latin group.
+        assert_eq!(v(&[("ru", ""), ("us", "dvorak")], 0), Some(KEY_DOT));
+        assert_eq!(v(&[("ru", ""), ("us", "")], 0), Some(KEY_V_EVDEV));
+        assert_eq!(v(&[("us", "dvorak"), ("ru", "")], 1), Some(KEY_DOT));
+        assert_eq!(v(&[("ru", "")], 0), None);
+        assert_eq!(v(&[], 0), None);
+        assert_eq!(
+            paste_keys(PasteShortcut::CtrlV, Some(KEY_DOT)),
+            (&[KEY_LEFTCTRL_EVDEV][..], KEY_DOT)
+        );
+        assert_eq!(paste_keys(PasteShortcut::CtrlShiftV, None).1, KEY_V_EVDEV);
+        assert_eq!(
+            paste_keys(PasteShortcut::ShiftInsert, Some(KEY_DOT)).1,
+            KEY_INSERT_EVDEV
+        );
+    }
+
+    #[test]
     fn caps_lock_uses_shift_to_type_lowercase() {
         let table = table_from_names_with_caps("us", None, true).expect("us layout");
         assert_eq!(table[&text_keysym('a')].mods, vec![KEY_LEFTSHIFT_EVDEV]);

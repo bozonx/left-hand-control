@@ -68,6 +68,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Linux text input: the Ctrl+V and Ctrl+Shift+V paste shortcuts press the key that types `v` in the current layout (taken from the Latin layout when the current one has none), so pasting works on Dvorak and similar layouts instead of sending Ctrl+K. Shift+Insert is unchanged.
 - Mapper: a key that a held layer leaves out keeps its base-layer rule, as documented (CapsLock with tap Escape inside a layer no longer toggles Caps Lock). A layer trigger pressed inside another layer now activates its layer on top; keys it leaves out fall through to the layer below.
 - Mapper: chords also work inside a layer that maps none of their keys.
 - Mapper: a longer chord fires whatever the press order; a shorter chord it contains waits for the rest within the combo window (A+S no longer pre-empts A+S+D pressed in that order).

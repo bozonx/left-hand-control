@@ -76,11 +76,15 @@ pub(super) fn paste_text(
     shortcut: PasteShortcut,
     request: &TextRequest,
 ) -> Result<(), TextInputFailure> {
+    let v_key = match shortcut {
+        PasteShortcut::ShiftInsert => None,
+        _ => desktop_paste_v_key(),
+    };
     let clipboard = prepare_clipboard(portal_clipboard, text, request)?;
     request.check()?;
     modifiers_released()?;
     clipboard.arm().map_err(TextInputFailure::Clipboard)?;
-    let (mods, key) = paste_keys(shortcut);
+    let (mods, key) = paste_keys(shortcut, v_key);
     let result = inject_keycode_combo(portal, session, mods, key)
         .map_err(|e| TextInputFailure::BackendUnavailable(format!("NotifyKeyboardKeycode: {e}")));
     let transfer = clipboard
