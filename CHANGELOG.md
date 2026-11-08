@@ -50,7 +50,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 - Hyprland active-window events use the runtime socket directory; support for the pre-0.40 `/tmp/hypr` socket location was removed.
 
-- Emoji and Quick action popups use Tab/Shift+Tab to move between the grid and Close; PageUp/PageDown switch pages. Letter and number shortcuts remain available.
+- Emoji and Quick action popups no longer show a focus ring when they open and have no arrow-key navigation: cells are picked with the left-hand hotkeys (Q…B) or the mouse, Tab/Shift+Tab and PageUp/PageDown turn pages, digits open a page, Escape closes.
 
 - Triggers: unassigned "When held" and "Double-tap action" fields are shown as a quiet "+ Assign action" button without a frame (it appears on hover and keyboard focus), and their labels are dimmed, so assigned actions stand out. E-ink and high-contrast themes keep a thin frame.
 - Rules: the "Enabled" checkbox moved from the rule card into "Advanced rule options". A disabled rule is shown dimmed but stays fully editable; the options button keeps full contrast.

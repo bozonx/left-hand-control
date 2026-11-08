@@ -63,6 +63,15 @@ export component TooltipText inherits TooltipSurface {
     Text { text: root.text; color: Theme.text; font-size: Theme.font-body; }
 }
 
+/// Single-line text that elides when it does not fit. Only then a tooltip
+/// with the full text appears, so the layout is unchanged when it fits.
+/// The full text is also the accessible label (default for `Text`).
+export component ElidedText inherits Text {
+    overflow: elide;
+    min-width: 0px;
+    if root.preferred-width > root.width + 0.5px: Tooltip { TooltipText { text: root.text; } }
+}
+
 /// One choice out of several buttons, with arrow-key navigation.
 /// `pill` draws the compact segmented style used in toolbars.
 export component ButtonGroup inherits Rectangle {
