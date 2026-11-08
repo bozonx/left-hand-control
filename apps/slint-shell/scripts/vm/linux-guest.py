@@ -311,13 +311,13 @@ def cmd_probe_keyboard(args):
 
 
 def cmd_write_config(args):
-    (DATA_DIR / "layouts").mkdir(parents=True, exist_ok=True)
+    (DATA_DIR / "profiles").mkdir(parents=True, exist_ok=True)
     layout = E2E_LAYOUT
     if "GNOME" in user_environment().get("XDG_CURRENT_DESKTOP", "").upper():
         layout = layout.replace("kde:kwin/Switch to Desktop 1", "sys:switchToDesktop1")
     parsed = json.loads(layout)
     parsed["rules"].append({"key": "KeyU", "tap": "text:" + TEXT_CORPUS})
-    (DATA_DIR / "layouts/E2E.json").write_text(json.dumps(parsed, ensure_ascii=False), encoding="utf-8")
+    (DATA_DIR / "profiles/E2E.json").write_text(json.dumps(parsed, ensure_ascii=False), encoding="utf-8")
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     environment = HOME / '.config/environment.d'
     environment.mkdir(parents=True, exist_ok=True)
@@ -326,7 +326,7 @@ def cmd_write_config(args):
         "experimental": True,
         "linux": {"textMode": args.text_backend},
         "devices": {"keyboards": [args.device]},
-        "layouts": {"mode": "manual", "manual": "user:E2E"},
+        "profiles": {"mode": "manual", "manualProfile": "user:E2E"},
         "startMapperOnLaunch": True,
         "launchOnStartup": True,
         "locale": "en",
@@ -335,7 +335,7 @@ def cmd_write_config(args):
             "processes": [{"name": FAKE_GAME, "foregroundOnly": False}],
         },
     }
-    state = {"editedLayout": "user:E2E", "gameModeSwitch": "off"}
+    state = {"editedProfile": "user:E2E", "gameModeSwitch": "off"}
     (CONFIG_DIR / "config.json").write_text(
         json.dumps({"version": 1, "settings": settings, "state": state}, indent=2),
         encoding="utf-8")
@@ -363,11 +363,11 @@ def cmd_write_config(args):
 def cmd_check_profile(args):
     settings = json.loads((CONFIG_DIR / "config.json").read_text(encoding="utf-8")).get("settings", {})
     if (settings.get("devices", {}).get("keyboards") != [args.device]
-            or settings.get("layouts", {}).get("manual") != "user:E2E"
+            or settings.get("profiles", {}).get("manualProfile") != "user:E2E"
             # Defaults are not written: a missing mode is manual.
-            or settings.get("layouts", {}).get("mode", "manual") != "manual"):
-        fail("application did not retain the test device/layout; package and fixture may use different config formats")
-    print("test keyboard and active layout retained by the application")
+            or settings.get("profiles", {}).get("mode", "manual") != "manual"):
+        fail("application did not retain the test device/profile; package and fixture may use different config formats")
+    print("test keyboard and active profile retained by the application")
 
 
 def cmd_start_app(args):

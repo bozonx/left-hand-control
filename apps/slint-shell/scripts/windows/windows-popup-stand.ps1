@@ -13,11 +13,11 @@ try {
     $env:SLINT_BACKEND = 'winit-skia'
     $env:LHC_METRICS = Join-Path $Output 'metrics.csv'
     $profileRoot = Join-Path $env:LHC_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.left-hand-control'
-    New-Item -ItemType Directory -Force -Path (Join-Path $profileRoot 'layouts') | Out-Null
+    New-Item -ItemType Directory -Force -Path (Join-Path $profileRoot 'profiles') | Out-Null
     $encoding = [Text.UTF8Encoding]::new($false)
-    [IO.File]::WriteAllText((Join-Path $profileRoot 'config.json'), '{"version":1,"settings":{"experimental":true,"layouts":{"manual":"user:Popup acceptance"},"locale":"en","devices":{"keyboards":["windows:keyboard"]},"startMapperOnLaunch":false},"state":{"editedLayout":"user:Popup acceptance","gameModeSwitch":"off"}}', $encoding)
-    $layout = '{"version":1,"rules":[{"id":"remap-off","key":"KeyA","when":{"gameMode":"off"},"tap":"KeyB"},{"id":"remap-on","key":"KeyA","when":{"gameMode":"on"},"tap":"KeyC"},{"id":"guard-probe","key":"KeyF","tap":"ControlLeft","hold":{"keys":"ControlLeft"}}],"emojiMenuPages":[{"id":"emoji","name":"Unicode","cells":{"KeyQ":"\u2615","KeyW":"\ud83d\ude00","KeyE":"\ud83d\udc69\u200d\ud83d\udcbb"}}],"quickMenuPages":[{"id":"quick","name":"Text","cells":{"KeyQ":{"name":"Mixed text","action":"text:\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435 02 \ud83d\ude00"}}}]}'
-    [IO.File]::WriteAllText((Join-Path $profileRoot 'layouts\Popup acceptance.json'), $layout, $encoding)
+    [IO.File]::WriteAllText((Join-Path $profileRoot 'config.json'), '{"version":1,"settings":{"experimental":true,"profiles":{"manualProfile":"user:Popup acceptance"},"locale":"en","devices":{"keyboards":["windows:keyboard"]},"startMapperOnLaunch":false},"state":{"editedProfile":"user:Popup acceptance","gameModeSwitch":"off"}}', $encoding)
+    $layout = '{"version":1,"rules":[{"id":"remap-off","key":"KeyA","when":{"gameMode":"off"},"tap":"KeyB"},{"id":"remap-on","key":"KeyA","when":{"gameMode":"on"},"tap":"KeyC"},{"id":"guard-probe","key":"KeyF","tap":"ControlLeft","hold":{"action":"ControlLeft"}}],"emojiMenuPages":[{"id":"emoji","name":"Unicode","cells":{"KeyQ":"\u2615","KeyW":"\ud83d\ude00","KeyE":"\ud83d\udc69\u200d\ud83d\udcbb"}}],"quickMenuPages":[{"id":"quick","name":"Text","cells":{"KeyQ":{"name":"Mixed text","action":"text:\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435 02 \ud83d\ude00"}}}]}'
+    [IO.File]::WriteAllText((Join-Path $profileRoot 'profiles\Popup acceptance.json'), $layout, $encoding)
     $exe = Join-Path $root "target\$BuildProfile\left-hand-control.exe"
     function Start-Shell {
         $process = Start-Process $exe -WorkingDirectory $root -PassThru -WindowStyle Hidden `

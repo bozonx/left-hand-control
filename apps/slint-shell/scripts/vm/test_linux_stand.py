@@ -112,7 +112,7 @@ class LinuxStandTests(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 guest.cmd_check_profile(SimpleNamespace(device="/dev/test"))
             config.write_text(json.dumps({"settings": {"devices": {"keyboards": ["/dev/test"]},
-                                                       "layouts": {"manual": "user:E2E"}}}))
+                                                       "profiles": {"manualProfile": "user:E2E"}}}))
             with contextlib.redirect_stdout(io.StringIO()):
                 guest.cmd_check_profile(SimpleNamespace(device="/dev/test"))
 

@@ -318,11 +318,12 @@ fn action_picker() -> Result<(), Box<dyn std::error::Error>> {
     let ui = SettingsWindow::new()?;
     slint::select_bundled_translation("ru")?;
     bind_document(&ui, &document);
-    // Hidden pages and action categories stay unavailable outside development mode.
+    // Macros and action categories stay unavailable outside development mode.
     ui.invoke_navigate(Page::Macros, MenuKind::Emoji);
     assert_eq!(ui.get_page(), Page::Profiles);
+    // The menu pages no longer need development mode.
     ui.invoke_navigate(Page::Menus, MenuKind::Emoji);
-    assert_eq!(ui.get_page(), Page::Profiles);
+    assert_eq!(ui.get_page(), Page::Menus);
     ui.invoke_navigate(Page::Rules, MenuKind::Emoji);
     ui.global::<RulesEditor>().invoke_add();
     let restricted = ui.global::<ActionPicker>();
