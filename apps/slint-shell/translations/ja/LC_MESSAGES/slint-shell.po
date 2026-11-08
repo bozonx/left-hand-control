@@ -2884,9 +2884,6 @@ msgstr "{} ミリ秒にリセット"
 msgid "Automatic game detection"
 msgstr "自動ゲーム検出"
 
-msgid "Works only in Auto mode."
-msgstr "自動モードでのみ動作します。"
-
 msgid "System signals"
 msgstr "システム信号"
 
@@ -3568,3 +3565,19 @@ msgstr "オン"
 msgctxt "Accessibility option"
 msgid "Off"
 msgstr "オフ"
+
+msgid "Game mode turns on automatically according to the rules below."
+msgstr "ゲームモードは下のルールに従って自動的にオンになります。"
+
+msgid "Game mode is on manually. The rules below are not applied now."
+msgstr "ゲームモードは手動でオンになっています。下のルールは現在適用されません。"
+
+msgid "Game mode is off. The rules below are not applied now."
+msgstr "ゲームモードはオフです。下のルールは現在適用されません。"
+
+msgid "Auto mode rules"
+msgstr "自動モードのルール"
+
+msgctxt "Game mode rules"
+msgid "Inactive"
+msgstr "無効"

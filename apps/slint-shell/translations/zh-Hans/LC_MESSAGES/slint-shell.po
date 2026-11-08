@@ -2812,9 +2812,6 @@ msgstr "重置为 {} 毫秒"
 msgid "Automatic game detection"
 msgstr "自动游戏检测"
 
-msgid "Works only in Auto mode."
-msgstr "仅适用于自动模式。"
-
 msgid "System signals"
 msgstr "系统信号"
 
@@ -3489,3 +3486,19 @@ msgstr "开"
 msgctxt "Accessibility option"
 msgid "Off"
 msgstr "关"
+
+msgid "Game mode turns on automatically according to the rules below."
+msgstr "游戏模式会根据下方规则自动开启。"
+
+msgid "Game mode is on manually. The rules below are not applied now."
+msgstr "游戏模式已手动开启。下方规则当前不生效。"
+
+msgid "Game mode is off. The rules below are not applied now."
+msgstr "游戏模式已关闭。下方规则当前不生效。"
+
+msgid "Auto mode rules"
+msgstr "自动模式规则"
+
+msgctxt "Game mode rules"
+msgid "Inactive"
+msgstr "未生效"

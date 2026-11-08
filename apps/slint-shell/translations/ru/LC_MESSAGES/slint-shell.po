@@ -2547,9 +2547,6 @@ msgstr "Вернуть {} мс"
 msgid "Automatic game detection"
 msgstr "Автоопределение игр"
 
-msgid "Works only in Auto mode."
-msgstr "Работает только в режиме «Авто»."
-
 msgid "System signals"
 msgstr "Системные сигналы"
 
@@ -3177,3 +3174,19 @@ msgstr "Включено"
 msgctxt "Accessibility option"
 msgid "Off"
 msgstr "Выключено"
+
+msgid "Game mode turns on automatically according to the rules below."
+msgstr "Игровой режим включается автоматически по правилам ниже."
+
+msgid "Game mode is on manually. The rules below are not applied now."
+msgstr "Игровой режим включён вручную. Правила ниже сейчас не применяются."
+
+msgid "Game mode is off. The rules below are not applied now."
+msgstr "Игровой режим выключен. Правила ниже сейчас не применяются."
+
+msgid "Auto mode rules"
+msgstr "Правила авторежима"
+
+msgctxt "Game mode rules"
+msgid "Inactive"
+msgstr "Не активны"

@@ -3105,9 +3105,6 @@ msgstr "Скинути до {} мс"
 msgid "Automatic game detection"
 msgstr "Автоматичне визначення гри"
 
-msgid "Works only in Auto mode."
-msgstr "Працює тільки в режимі Auto."
-
 msgid "System signals"
 msgstr "Системні сигнали"
 
@@ -3815,3 +3812,19 @@ msgstr "Увімкнено"
 msgctxt "Accessibility option"
 msgid "Off"
 msgstr "Вимкнено"
+
+msgid "Game mode turns on automatically according to the rules below."
+msgstr "Ігровий режим вмикається автоматично за правилами нижче."
+
+msgid "Game mode is on manually. The rules below are not applied now."
+msgstr "Ігровий режим увімкнено вручну. Правила нижче зараз не застосовуються."
+
+msgid "Game mode is off. The rules below are not applied now."
+msgstr "Ігровий режим вимкнено. Правила нижче зараз не застосовуються."
+
+msgid "Auto mode rules"
+msgstr "Правила авторежиму"
+
+msgctxt "Game mode rules"
+msgid "Inactive"
+msgstr "Неактивні"

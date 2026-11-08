@@ -3085,9 +3085,6 @@ msgstr "გადატვირთეთ {} ms"
 msgid "Automatic game detection"
 msgstr "თამაშის ავტომატური გამოვლენა"
 
-msgid "Works only in Auto mode."
-msgstr "მუშაობს მხოლოდ ავტო რეჟიმში."
-
 msgid "System signals"
 msgstr "სისტემის სიგნალები"
 
@@ -3798,3 +3795,19 @@ msgstr "ჩართული"
 msgctxt "Accessibility option"
 msgid "Off"
 msgstr "გამორთული"
+
+msgid "Game mode turns on automatically according to the rules below."
+msgstr "თამაშის რეჟიმი ავტომატურად ირთვება ქვემოთ მოცემული წესების მიხედვით."
+
+msgid "Game mode is on manually. The rules below are not applied now."
+msgstr "თამაშის რეჟიმი ხელით არის ჩართული. ქვემოთ მოცემული წესები ახლა არ გამოიყენება."
+
+msgid "Game mode is off. The rules below are not applied now."
+msgstr "თამაშის რეჟიმი გამორთულია. ქვემოთ მოცემული წესები ახლა არ გამოიყენება."
+
+msgid "Auto mode rules"
+msgstr "ავტორეჟიმის წესები"
+
+msgctxt "Game mode rules"
+msgid "Inactive"
+msgstr "არააქტიური"

@@ -3105,9 +3105,6 @@ msgstr "Redefinir para {} ms"
 msgid "Automatic game detection"
 msgstr "Detecção automática de jogo"
 
-msgid "Works only in Auto mode."
-msgstr "Funciona apenas no modo Automático."
-
 msgid "System signals"
 msgstr "Sinais do sistema"
 
@@ -3821,3 +3818,19 @@ msgstr "Ativado"
 msgctxt "Accessibility option"
 msgid "Off"
 msgstr "Desativado"
+
+msgid "Game mode turns on automatically according to the rules below."
+msgstr "O modo de jogo é ativado automaticamente de acordo com as regras abaixo."
+
+msgid "Game mode is on manually. The rules below are not applied now."
+msgstr "O modo de jogo está ativado manualmente. As regras abaixo não estão a ser aplicadas."
+
+msgid "Game mode is off. The rules below are not applied now."
+msgstr "O modo de jogo está desativado. As regras abaixo não estão a ser aplicadas."
+
+msgid "Auto mode rules"
+msgstr "Regras do modo automático"
+
+msgctxt "Game mode rules"
+msgid "Inactive"
+msgstr "Inativas"

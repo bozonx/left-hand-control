@@ -3127,9 +3127,6 @@ msgstr "Visszaállítás {} ms-ra"
 msgid "Automatic game detection"
 msgstr "Automatikus játékfelismerés"
 
-msgid "Works only in Auto mode."
-msgstr "Csak Auto módban működik."
-
 msgid "System signals"
 msgstr "Rendszerjelek"
 
@@ -3848,3 +3845,19 @@ msgstr "Be"
 msgctxt "Accessibility option"
 msgid "Off"
 msgstr "Ki"
+
+msgid "Game mode turns on automatically according to the rules below."
+msgstr "A játékmód automatikusan bekapcsol az alábbi szabályok szerint."
+
+msgid "Game mode is on manually. The rules below are not applied now."
+msgstr "A játékmód kézzel be van kapcsolva. Az alábbi szabályok most nem érvényesek."
+
+msgid "Game mode is off. The rules below are not applied now."
+msgstr "A játékmód ki van kapcsolva. Az alábbi szabályok most nem érvényesek."
+
+msgid "Auto mode rules"
+msgstr "Automatikus mód szabályai"
+
+msgctxt "Game mode rules"
+msgid "Inactive"
+msgstr "Inaktív"

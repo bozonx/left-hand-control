@@ -3169,9 +3169,6 @@ msgstr "Επαναφορά σε {} ms"
 msgid "Automatic game detection"
 msgstr "Αυτόματη ανίχνευση παιχνιδιού"
 
-msgid "Works only in Auto mode."
-msgstr "Λειτουργεί μόνο σε αυτόματη λειτουργία."
-
 msgid "System signals"
 msgstr "Σήματα συστήματος"
 
@@ -3909,3 +3906,19 @@ msgstr "Ενεργό"
 msgctxt "Accessibility option"
 msgid "Off"
 msgstr "Ανενεργό"
+
+msgid "Game mode turns on automatically according to the rules below."
+msgstr "Η λειτουργία παιχνιδιού ενεργοποιείται αυτόματα σύμφωνα με τους παρακάτω κανόνες."
+
+msgid "Game mode is on manually. The rules below are not applied now."
+msgstr "Η λειτουργία παιχνιδιού είναι ενεργή χειροκίνητα. Οι παρακάτω κανόνες δεν εφαρμόζονται τώρα."
+
+msgid "Game mode is off. The rules below are not applied now."
+msgstr "Η λειτουργία παιχνιδιού είναι ανενεργή. Οι παρακάτω κανόνες δεν εφαρμόζονται τώρα."
+
+msgid "Auto mode rules"
+msgstr "Κανόνες αυτόματης λειτουργίας"
+
+msgctxt "Game mode rules"
+msgid "Inactive"
+msgstr "Ανενεργοί"

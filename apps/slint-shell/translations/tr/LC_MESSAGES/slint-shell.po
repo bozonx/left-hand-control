@@ -3092,9 +3092,6 @@ msgstr "{} ms'ye sıfırla"
 msgid "Automatic game detection"
 msgstr "Otomatik oyun algılama"
 
-msgid "Works only in Auto mode."
-msgstr "Yalnızca Otomatik modda çalışır."
-
 msgid "System signals"
 msgstr "Sistem sinyalleri"
 
@@ -3808,3 +3805,19 @@ msgstr "Açık"
 msgctxt "Accessibility option"
 msgid "Off"
 msgstr "Kapalı"
+
+msgid "Game mode turns on automatically according to the rules below."
+msgstr "Oyun modu aşağıdaki kurallara göre otomatik olarak açılır."
+
+msgid "Game mode is on manually. The rules below are not applied now."
+msgstr "Oyun modu elle açıldı. Aşağıdaki kurallar şu anda uygulanmıyor."
+
+msgid "Game mode is off. The rules below are not applied now."
+msgstr "Oyun modu kapalı. Aşağıdaki kurallar şu anda uygulanmıyor."
+
+msgid "Auto mode rules"
+msgstr "Otomatik mod kuralları"
+
+msgctxt "Game mode rules"
+msgid "Inactive"
+msgstr "Etkin değil"

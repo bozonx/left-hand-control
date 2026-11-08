@@ -3126,9 +3126,6 @@ msgstr "Resetați la {} ms"
 msgid "Automatic game detection"
 msgstr "Detectare automată a jocului"
 
-msgid "Works only in Auto mode."
-msgstr "Funcționează numai în modul automat."
-
 msgid "System signals"
 msgstr "Semnale de sistem"
 
@@ -3849,3 +3846,19 @@ msgstr "Activat"
 msgctxt "Accessibility option"
 msgid "Off"
 msgstr "Dezactivat"
+
+msgid "Game mode turns on automatically according to the rules below."
+msgstr "Modul joc pornește automat conform regulilor de mai jos."
+
+msgid "Game mode is on manually. The rules below are not applied now."
+msgstr "Modul joc este pornit manual. Regulile de mai jos nu se aplică acum."
+
+msgid "Game mode is off. The rules below are not applied now."
+msgstr "Modul joc este oprit. Regulile de mai jos nu se aplică acum."
+
+msgid "Auto mode rules"
+msgstr "Regulile modului automat"
+
+msgctxt "Game mode rules"
+msgid "Inactive"
+msgstr "Inactive"

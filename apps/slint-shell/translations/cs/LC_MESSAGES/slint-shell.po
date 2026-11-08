@@ -3077,9 +3077,6 @@ msgstr "Resetovat na {} ms"
 msgid "Automatic game detection"
 msgstr "Automatická detekce hry"
 
-msgid "Works only in Auto mode."
-msgstr "Funguje pouze v automatickém režimu."
-
 msgid "System signals"
 msgstr "Systémové signály"
 
@@ -3787,3 +3784,19 @@ msgstr "Zapnuto"
 msgctxt "Accessibility option"
 msgid "Off"
 msgstr "Vypnuto"
+
+msgid "Game mode turns on automatically according to the rules below."
+msgstr "Herní režim se zapíná automaticky podle pravidel níže."
+
+msgid "Game mode is on manually. The rules below are not applied now."
+msgstr "Herní režim je zapnut ručně. Pravidla níže se nyní nepoužívají."
+
+msgid "Game mode is off. The rules below are not applied now."
+msgstr "Herní režim je vypnut. Pravidla níže se nyní nepoužívají."
+
+msgid "Auto mode rules"
+msgstr "Pravidla automatického režimu"
+
+msgctxt "Game mode rules"
+msgid "Inactive"
+msgstr "Neaktivní"

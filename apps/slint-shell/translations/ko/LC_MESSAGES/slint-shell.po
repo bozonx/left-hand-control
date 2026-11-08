@@ -2875,9 +2875,6 @@ msgstr "{} ms로 재설정"
 msgid "Automatic game detection"
 msgstr "자동 게임 감지"
 
-msgid "Works only in Auto mode."
-msgstr "자동 모드에서만 작동합니다."
-
 msgid "System signals"
 msgstr "시스템 신호"
 
@@ -3558,3 +3555,19 @@ msgstr "켜기"
 msgctxt "Accessibility option"
 msgid "Off"
 msgstr "끄기"
+
+msgid "Game mode turns on automatically according to the rules below."
+msgstr "게임 모드는 아래 규칙에 따라 자동으로 켜집니다."
+
+msgid "Game mode is on manually. The rules below are not applied now."
+msgstr "게임 모드가 수동으로 켜져 있습니다. 아래 규칙은 현재 적용되지 않습니다."
+
+msgid "Game mode is off. The rules below are not applied now."
+msgstr "게임 모드가 꺼져 있습니다. 아래 규칙은 현재 적용되지 않습니다."
+
+msgid "Auto mode rules"
+msgstr "자동 모드 규칙"
+
+msgctxt "Game mode rules"
+msgid "Inactive"
+msgstr "비활성"

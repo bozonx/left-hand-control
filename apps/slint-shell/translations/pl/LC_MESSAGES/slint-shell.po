@@ -3128,9 +3128,6 @@ msgstr "Zresetuj do {} ms"
 msgid "Automatic game detection"
 msgstr "Automatyczne wykrywanie gry"
 
-msgid "Works only in Auto mode."
-msgstr "Działa tylko w trybie automatycznym."
-
 msgid "System signals"
 msgstr "Sygnały systemowe"
 
@@ -3848,3 +3845,19 @@ msgstr "Włączone"
 msgctxt "Accessibility option"
 msgid "Off"
 msgstr "Wyłączone"
+
+msgid "Game mode turns on automatically according to the rules below."
+msgstr "Tryb gry włącza się automatycznie według poniższych reguł."
+
+msgid "Game mode is on manually. The rules below are not applied now."
+msgstr "Tryb gry jest włączony ręcznie. Poniższe reguły nie są teraz stosowane."
+
+msgid "Game mode is off. The rules below are not applied now."
+msgstr "Tryb gry jest wyłączony. Poniższe reguły nie są teraz stosowane."
+
+msgid "Auto mode rules"
+msgstr "Reguły trybu automatycznego"
+
+msgctxt "Game mode rules"
+msgid "Inactive"
+msgstr "Nieaktywne"

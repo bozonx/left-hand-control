@@ -3089,9 +3089,6 @@ msgstr "Vrati na {} ms"
 msgid "Automatic game detection"
 msgstr "Automatsko otkrivanje igre"
 
-msgid "Works only in Auto mode."
-msgstr "Radi samo u automatskom načinu rada."
-
 msgid "System signals"
 msgstr "Signali sustava"
 
@@ -3799,3 +3796,19 @@ msgstr "Uključeno"
 msgctxt "Accessibility option"
 msgid "Off"
 msgstr "Isključeno"
+
+msgid "Game mode turns on automatically according to the rules below."
+msgstr "Način igre uključuje se automatski prema pravilima u nastavku."
+
+msgid "Game mode is on manually. The rules below are not applied now."
+msgstr "Način igre uključen je ručno. Pravila u nastavku trenutačno se ne primjenjuju."
+
+msgid "Game mode is off. The rules below are not applied now."
+msgstr "Način igre je isključen. Pravila u nastavku trenutačno se ne primjenjuju."
+
+msgid "Auto mode rules"
+msgstr "Pravila automatskog načina"
+
+msgctxt "Game mode rules"
+msgid "Inactive"
+msgstr "Neaktivna"

@@ -3103,9 +3103,6 @@ msgstr "{} мс қалпына келтіріңіз"
 msgid "Automatic game detection"
 msgstr "Ойынды автоматты түрде анықтау"
 
-msgid "Works only in Auto mode."
-msgstr "Автоматты режимде ғана жұмыс істейді."
-
 msgid "System signals"
 msgstr "Жүйелік сигналдар"
 
@@ -3816,3 +3813,19 @@ msgstr "Қосулы"
 msgctxt "Accessibility option"
 msgid "Off"
 msgstr "Өшірулі"
+
+msgid "Game mode turns on automatically according to the rules below."
+msgstr "Ойын режимі төмендегі ережелер бойынша автоматты түрде қосылады."
+
+msgid "Game mode is on manually. The rules below are not applied now."
+msgstr "Ойын режимі қолмен қосылған. Төмендегі ережелер қазір қолданылмайды."
+
+msgid "Game mode is off. The rules below are not applied now."
+msgstr "Ойын режимі өшірулі. Төмендегі ережелер қазір қолданылмайды."
+
+msgid "Auto mode rules"
+msgstr "Авторежим ережелері"
+
+msgctxt "Game mode rules"
+msgid "Inactive"
+msgstr "Белсенді емес"

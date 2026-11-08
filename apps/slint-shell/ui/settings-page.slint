@@ -757,10 +757,23 @@ export component SettingsPage inherits PageLayout {
                         Rectangle { horizontal-stretch: 1; }
                         VerticalLayout { alignment: center; InfoTip { text: @tr("Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Never a game” takes priority over automatic detection and “Always a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."); } }
                     }
+                    Text {
+                        vertical-stretch: 0; wrap: word-wrap; color: Theme.muted;
+                        text: AppState.game-control == GameModeControl.auto ? @tr("Game mode turns on automatically according to the rules below.")
+                            : AppState.game-control == GameModeControl.on ? @tr("Game mode is on manually. The rules below are not applied now.")
+                            : @tr("Game mode is off. The rules below are not applied now.");
+                    }
+
+                    // The rules stay editable outside Auto; the badge and the
+                    // muted title mark them as not applied right now.
+                    HorizontalLayout {
+                        vertical-stretch: 0; spacing: Theme.space-m; alignment: start;
+                        SectionTitle { text: @tr("Auto mode rules"); color: AppState.game-control == GameModeControl.auto ? Theme.text : Theme.muted; vertical-alignment: center; }
+                        if AppState.game-control != GameModeControl.auto: VerticalLayout { alignment: center; Badge { text: @tr("Game mode rules" => "Inactive"); } }
+                    }
 
                     TitledCard {
                         title: @tr("Automatic game detection");
-                        if AppState.game-control != GameModeControl.auto: Text { vertical-stretch: 0; text: @tr("Works only in Auto mode."); color: Theme.muted; wrap: word-wrap; }
                         // Exact sources: the system or a launcher reports the running game; no built-in list applies.
                         if AppState.is-linux || AppState.game-gamescope-availability.id != "capability-unsupported": FieldLabel { text: @tr("System signals"); }
                         if AppState.is-linux: VerticalLayout {
