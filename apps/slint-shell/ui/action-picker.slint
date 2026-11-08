@@ -1,4 +1,5 @@
 import { NavigationFocus } from "focus.slint";
+import { ElidedText } from "controls.slint";
 import { CategoryIcon } from "action-controls.slint";
 import { Timing } from "timing.slint";
 import { AppState } from "app-state.slint";
@@ -163,9 +164,9 @@ component PickerCell inherits Rectangle {
         if ActionPicker.query != "": CategoryIcon { category: root.item.category; }
         VerticalLayout { spacing: Theme.space-2xs; alignment: center;
             Text { min-width: 0px; text: root.item.label; color: Theme.text; font-weight: root.selected ? 700 : 400; wrap: root.compact ? no-wrap : word-wrap; overflow: elide; vertical-alignment: center; }
-            if root.item.notice.id != "": Text { text: Locale.text(root.item.notice); color: Theme.warning; font-size: Theme.font-caption; overflow: elide; }
-            if ActionPicker.key-hint(root.item.value) != "": Text { text: ActionPicker.key-hint(root.item.value); color: Theme.muted; font-size: Theme.font-caption; overflow: elide; }
-            if !root.compact && root.item.category != PickerCategory.commands && root.item.label != root.item.value: Text { text: root.item.value; color: Theme.muted; font-size: Theme.font-caption; overflow: elide; }
+            if root.item.notice.id != "": ElidedText { text: Locale.text(root.item.notice); color: Theme.warning; font-size: Theme.font-caption; }
+            if ActionPicker.key-hint(root.item.value) != "": ElidedText { text: ActionPicker.key-hint(root.item.value); color: Theme.muted; font-size: Theme.font-caption; }
+            if !root.compact && root.item.category != PickerCategory.commands && root.item.label != root.item.value: ElidedText { text: root.item.value; color: Theme.muted; font-size: Theme.font-caption; }
         }
     }
     // Enter on the chosen item applies it.

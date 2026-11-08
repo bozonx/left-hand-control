@@ -1,4 +1,5 @@
 import { KeyboardFocus, NavigationFocus } from "focus.slint";
+import { ElidedText } from "controls.slint";
 import { ActionField, CategoryIcon } from "action-controls.slint";
 import { TextField } from "controls.slint";
 import { PageContent, ScrollView } from "scroll.slint";
@@ -188,7 +189,7 @@ component HotkeyGrid inherits Rectangle {
                     vertical-alignment: center;
                 }
             }
-            if !root.emoji && cell.value != "": Text { text: cell.value; color: Theme.muted; font-family: "monospace"; font-size: Theme.font-caption; overflow: elide; }
+            if !root.emoji && cell.value != "": ElidedText { text: cell.value; color: Theme.muted; font-family: "monospace"; font-size: Theme.font-caption; }
             if !root.emoji && cell.value != "": Rectangle { vertical-stretch: 1; }
         }
     }

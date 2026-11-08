@@ -1,4 +1,5 @@
 import { KeyboardFocus, NavigationFocus } from "focus.slint";
+import { ElidedText } from "controls.slint";
 import { TextField } from "controls.slint";
 import { PageContent, ScrollView } from "scroll.slint";
 import { DragArea, DragAxis, DragDrop, DragGroups, DragHandle, DropMarker } from "reorder.slint";
@@ -108,7 +109,7 @@ component ExtraFieldButton inherits Rectangle {
         accessible-label: root.text;
         accessible-description: root.holds ? @tr("Keep modifiers held until the layer is released") : "";
         clicked => { root.clicked(); }
-        Text { min-width: 0px; horizontal-stretch: 1; text: root.text; color: Theme.text; font-size: Theme.font-medium; vertical-alignment: center; overflow: elide; }
+        ElidedText { min-width: 0px; horizontal-stretch: 1; text: root.text; color: Theme.text; font-size: Theme.font-medium; vertical-alignment: center; }
         if root.holds: VerticalLayout { alignment: center; HoldsMarker { } }
     }
     if root.holds: Tooltip {
@@ -317,7 +318,7 @@ export component LayersPage inherits PageLayout {
                     HorizontalLayout {
                         padding-left: Theme.space-l; padding-right: Theme.space-l;
                         // Long names are cut so one tab cannot push the others out of view.
-                        Text { max-width: 240px; text: name; color: Theme.text; font-size: Theme.font-medium; font-weight: Theme.weight-semibold; vertical-alignment: center; overflow: elide; }
+                        ElidedText { max-width: 240px; text: name; color: Theme.text; font-size: Theme.font-medium; font-weight: Theme.weight-semibold; vertical-alignment: center; }
                     }
                     layer-focus := NavigationFocus {
                         kind: horizontal-tabs;
@@ -402,7 +403,7 @@ export component LayersPage inherits PageLayout {
                                 border-radius: Theme.radius-small; border-width: 1px; border-color: Theme.border; background: Theme.surface;
                                 accessible-role: text; accessible-label: trigger.code;
                                 HorizontalLayout { padding-left: Theme.space-s; padding-right: Theme.space-s;
-                                    Text { text: root.label-mode == LabelMode.label ? trigger.label : trigger.code; color: Theme.text; font-size: Theme.font-caption; vertical-alignment: center; overflow: elide; }
+                                    ElidedText { text: root.label-mode == LabelMode.label ? trigger.label : trigger.code; color: Theme.text; font-size: Theme.font-caption; vertical-alignment: center; }
                                 }
                             }
                         }

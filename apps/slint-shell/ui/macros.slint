@@ -1,4 +1,5 @@
 import { ActionFocus } from "focus.slint";
+import { ElidedText } from "controls.slint";
 import { ActionField } from "action-controls.slint";
 import { Timing } from "timing.slint";
 import { NotificationCenter } from "notifications.slint";
@@ -283,7 +284,7 @@ component BuiltinMacroLine inherits TouchArea {
             HorizontalLayout {
                 width: 190px;
                 spacing: Theme.space-xs;
-                Text { text: root.item.id; color: Theme.text; font-family: "monospace"; font-size: Theme.font-body; vertical-alignment: center; overflow: elide; }
+                ElidedText { text: root.item.id; color: Theme.text; font-family: "monospace"; font-size: Theme.font-body; vertical-alignment: center; }
                 VerticalLayout { alignment: center; IconButton { size: 24px; icon: @image-url("icons/copy.svg"); label: @tr("Copy ID") + ": " + root.item.id; clicked => { root.copy(root.item.id); } } }
             }
             Text { width: 200px; text: Locale.text(root.item.name); color: Theme.text; vertical-alignment: center; wrap: word-wrap; }

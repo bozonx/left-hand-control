@@ -1,4 +1,5 @@
 import { ActionFocus } from "focus.slint";
+import { ElidedText } from "controls.slint";
 import { FocusRing, SearchField, TextField } from "controls.slint";
 import { ScrollView } from "scroll.slint";
 import { Theme } from "theme.slint";
@@ -204,10 +205,10 @@ component WindowRow inherits Rectangle {
         }
         VerticalLayout { horizontal-stretch: 1; min-width: 0px; alignment: center; spacing: Theme.space-2xs;
             HorizontalLayout { spacing: Theme.space-s;
-                Text { text: root.text; color: Theme.text; overflow: elide; min-width: 0px; horizontal-stretch: 1; vertical-alignment: center; }
+                ElidedText { text: root.text; color: Theme.text; min-width: 0px; horizontal-stretch: 1; vertical-alignment: center; }
                 if root.badge != "": Badge { text: root.badge; fill: root.warning ? Theme.warning.transparentize(0.75) : Theme.accent.transparentize(0.75); }
             }
-            if root.detail != "": Text { text: root.detail; color: Theme.muted; font-size: Theme.font-body; overflow: elide; min-width: 0px; }
+            if root.detail != "": ElidedText { text: root.detail; color: Theme.muted; font-size: Theme.font-body; min-width: 0px; }
         }
         if root.selected: VerticalLayout { alignment: center;
             Image { width: 16px; height: 16px; colorize: Theme.accent; source: @image-url("icons/check.svg"); }
@@ -414,9 +415,9 @@ component AppItemRow inherits Rectangle {
             Image { width: 16px; height: 16px; colorize: Theme.muted; source: root.icon; }
         }
         VerticalLayout { horizontal-stretch: 1; min-width: 0px; alignment: center; spacing: Theme.space-2xs;
-            Text { text: ConditionChoices.text(root.pattern); color: Theme.text; overflow: elide; min-width: 0px; }
+            ElidedText { text: ConditionChoices.text(root.pattern); color: Theme.text; min-width: 0px; }
             HorizontalLayout { spacing: Theme.space-s;
-                if root.kind != "": Text { text: root.kind; color: Theme.muted; font-size: Theme.font-body; overflow: elide; min-width: 0px; }
+                if root.kind != "": ElidedText { text: root.kind; color: Theme.muted; font-size: Theme.font-body; min-width: 0px; }
                 if root.show-count: OpenCount { pattern: root.pattern; horizontal-stretch: 1; }
             }
         }
@@ -434,7 +435,7 @@ component ApplicationsList inherits VerticalLayout {
     spacing: Theme.space-m;
     alignment: start;
     HorizontalLayout { spacing: Theme.space-s;
-        Text { text: root.label; color: Theme.text; vertical-alignment: center; overflow: elide; min-width: 0px; }
+        ElidedText { text: root.label; color: Theme.text; vertical-alignment: center; min-width: 0px; }
         if root.info != "": VerticalLayout { alignment: center; InfoTip { text: root.info; } }
         Rectangle { horizontal-stretch: 1; }
         IconButton {

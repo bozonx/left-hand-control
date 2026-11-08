@@ -1,4 +1,5 @@
 import { NavigationFocus } from "focus.slint";
+import { ElidedText } from "controls.slint";
 import { Timing } from "timing.slint";
 import { ResettableField, TextField } from "controls.slint";
 import { NotificationCenter } from "notifications.slint";
@@ -568,7 +569,7 @@ export component SettingsPage inherits PageLayout {
                             icon: @image-url("icons/keyboard.svg");
                             label: @tr("Keyboard");
                             if !AppState.is-windows: DevicePicker { label: @tr("Keyboard device"); placeholder: @tr("Not selected"); enabled: AppState.mapper-supported && !AppState.mapper-busy; choices: SettingsEditor.input-devices; path: SettingsEditor.keyboard-device-path; open => { DeviceDialog.mouse = false; DeviceDialog.open = true; } }
-                            if !AppState.is-windows && SettingsEditor.keyboard-device-path != "": Text { text: SettingsEditor.keyboard-device-path; color: Theme.muted; font-size: Theme.font-body; overflow: elide; }
+                            if !AppState.is-windows && SettingsEditor.keyboard-device-path != "": ElidedText { text: SettingsEditor.keyboard-device-path; color: Theme.muted; font-size: Theme.font-body; }
                             // Windows hooks see the whole session, not single devices.
                             if AppState.is-windows: CheckBox { text: @tr("Intercept all keyboards"); enabled: AppState.mapper-supported && !AppState.mapper-busy; checked: SettingsEditor.keyboard-device-path == "windows:keyboard"; toggled => { SettingsEditor.select-device(self.checked ? "windows:keyboard" : ""); } }
                             if AppState.is-windows: Text { text: @tr("Windows does not tell input devices apart, so all of them are intercepted."); color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap; }
@@ -578,7 +579,7 @@ export component SettingsPage inherits PageLayout {
                             label: @tr("Mouse");
                             note: @tr("Optional");
                             if !AppState.is-windows: DevicePicker { label: @tr("Mouse (optional)"); placeholder: @tr("Not selected (no mouse support)"); enabled: AppState.mapper-supported && !AppState.mapper-busy; choices: SettingsEditor.mouse-devices; path: SettingsEditor.mouse-device-path; open => { DeviceDialog.mouse = true; DeviceDialog.open = true; } }
-                            if !AppState.is-windows && SettingsEditor.mouse-device-path != "": Text { text: SettingsEditor.mouse-device-path; color: Theme.muted; font-size: Theme.font-body; overflow: elide; }
+                            if !AppState.is-windows && SettingsEditor.mouse-device-path != "": ElidedText { text: SettingsEditor.mouse-device-path; color: Theme.muted; font-size: Theme.font-body; }
                             if SettingsEditor.mouse-status.id != "": Text {
                                 accessible-live-region: polite;
                                 text: Locale.text(SettingsEditor.mouse-status);

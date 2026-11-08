@@ -15,6 +15,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Accessibility: text that is cut off with an ellipsis in lists, badges, menus and pickers now shows its full text in a tooltip (only when it is actually cut off).
+
 - Renamed "layout" to "profile" across configuration, library files, actions and UI:
   - Library files live in `profiles/` instead of `layouts/`.
   - App actions: `lhc:activateProfile1`…`5` (previously `lhc:activateLayout1`…`5`).

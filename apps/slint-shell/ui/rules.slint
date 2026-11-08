@@ -1,4 +1,5 @@
 import { ActionFocus } from "focus.slint";
+import { ElidedText } from "controls.slint";
 import { NotificationCenter, StatusText } from "notifications.slint";
 import { KeyboardFocus } from "focus.slint";
 import { ActionField } from "action-controls.slint";
@@ -103,7 +104,7 @@ component ConditionChip inherits VerticalLayout {
         background: Theme.selected; border-width: Theme.eink ? 1px : 0px; border-color: Theme.divider;
         HorizontalLayout { padding-left: Theme.space-m; padding-right: Theme.space-m-plus; spacing: Theme.space-xs; min-width: 0px;
             VerticalLayout { alignment: center; Image { width: 14px; height: 14px; source: root.icon; colorize: root.tint; } }
-            Text { min-width: 0px; text: root.text; color: Theme.text; font-size: Theme.font-body; vertical-alignment: center; overflow: elide; }
+            ElidedText { min-width: 0px; text: root.text; color: Theme.text; font-size: Theme.font-body; vertical-alignment: center; }
         }
     }
 }
