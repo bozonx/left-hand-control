@@ -5,7 +5,7 @@ use i_slint_core::{
     accessibility::AccessibleStringProperty, item_tree::ItemRc, items::AccessibleRole,
     window::WindowInner,
 };
-use lhc_core::profile::model::{KeyRule, Layer};
+use lhc_core::config::model::{KeyRule, Layer};
 use slint::{ComponentHandle, LogicalPosition, platform::WindowEvent};
 use slint_shell::{document::View, ui::*};
 use support::{Fixture, accessible_position};
@@ -62,9 +62,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let fixture = Fixture::new()?;
     slint_shell::select_ui_language("en")?;
     fixture.document.edit(View::Library, |config| {
-        config.update_layout(|layout| {
-            layout.rules = vec![KeyRule::new("rule".into(), "KeyA")];
-            layout.layers = vec![Layer {
+        config.update_profile(|profile| {
+            profile.rules = vec![KeyRule::new("rule".into(), "KeyA")];
+            profile.layers = vec![Layer {
                 id: "nav".into(),
                 name: "Navigation".into(),
                 description: None,
@@ -115,9 +115,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         document
             .edit(View::Library, |config| {
-                config.update_layout(|layout| {
-                    layout.rules[0].tap_action = None;
-                    layout.rules[0].hold_action = Some(String::new());
+                config.update_profile(|profile| {
+                    profile.rules[0].tap_action = None;
+                    profile.rules[0].hold_action = Some(String::new());
                 })
             })
             .unwrap();
@@ -127,8 +127,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         click_control(&ui, AccessibleRole::Button, "Cancel");
         document
             .edit(View::Library, |config| {
-                config.update_layout(|layout| {
-                    layout.rules[0].key.clear();
+                config.update_profile(|profile| {
+                    profile.rules[0].key.clear();
                 })
             })
             .unwrap();
@@ -140,11 +140,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
         click_control(&ui, AccessibleRole::Checkbox, "Enabled");
         click_control(&ui, AccessibleRole::Button, "Apply");
-        assert!(!document.read().layout().rules[0].is_enabled());
+        assert!(!document.read().profile().rules[0].is_enabled());
         click_control(&ui, AccessibleRole::Button, "Advanced rule options");
         click_control(&ui, AccessibleRole::Button, "Delete trigger");
         click_control(&ui, AccessibleRole::Button, "Delete");
-        assert!(document.read().layout().rules.is_empty());
+        assert!(document.read().profile().rules.is_empty());
         println!(
             "Triggers passed: popup outside/Escape dismissal in four themes, effective suppressed hold, empty draft disable/delete"
         );

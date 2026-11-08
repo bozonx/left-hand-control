@@ -15,6 +15,15 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Renamed "layout" to "profile" across configuration, library files, actions and UI:
+  - Library files live in `profiles/` instead of `layouts/`.
+  - App actions: `lhc:activateProfile1`…`5` (previously `lhc:activateLayout1`…`5`).
+  - Setting `settings.profileOsd` (previously `settings.layoutOsd`).
+  - Interface terminology: "Layout" / "Раскладка" is now "Profile" / "Профиль", reserving "layout" exclusively for system keyboard layouts (XKB / OS input languages).
+  - Renamed internal core module `profile` to `config` to reflect that it holds configuration and settings models.
+- Rule trigger key validation (`rules[].key`):
+  - Requires exact physical key codes (e.g. `ControlLeft+KeyA`).
+  - Generic modifier names (`Ctrl`, `Shift`, `Alt`, `Meta`) are rejected with a helpful validation error explaining that `+` joins the keys of a chord rather than adding a modifier, instead of silently rewriting them on load.
 - KDE shortcuts category in the action picker: shortcuts of applications that are not running (stale entries) are hidden, as are shortcuts that a system action already runs and KWin's "Switch to Desktop N" / "Window to Desktop N" above 10. Shortcuts without a readable name go last.
 - KDE: switching to desktop N uses KWin's global shortcut like the other window actions instead of the legacy `org.kde.KWin.setCurrentDesktop`.
 - Windows: "Show desktop" uses the Shell's `ToggleDesktop` instead of pressing Win+D; "Turn off screen" waits half a second so that releasing the key does not wake the display again.

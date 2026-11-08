@@ -1,5 +1,5 @@
 import { ActionFocus } from "focus.slint";
-import { PendingLayoutAction } from "types.slint";
+import { PendingProfileAction } from "types.slint";
 import { KeyboardFocus } from "focus.slint";
 import { FocusRing, TextField } from "controls.slint";
 import { NotificationCenter, ToastStack } from "notifications.slint";
@@ -8,7 +8,7 @@ import { ActionPicker, PickerOverlay } from "action-picker.slint";
 import { AppState } from "app-state.slint";
 import { GameModeButton } from "game-mode.slint";
 import { LayerDialogOverlay, LayersEditor, LayersPage } from "layers.slint";
-import { LayoutLibrary, LibraryDialogOverlay, LibraryPage, SaveSplitButton, LayoutMenu } from "library.slint";
+import { ProfileLibrary, LibraryDialogOverlay, LibraryPage, SaveSplitButton, ProfileMenu } from "library.slint";
 import { MacroEditor, MacrosPage } from "macros.slint";
 import { MenuEditor, MenusPage, MenuPreview } from "menus.slint";
 import { RuleDialogOverlay, RulesEditor, RulesPage } from "rules.slint";
@@ -35,22 +35,22 @@ export component SettingsWindow inherits Window {
     max-width: Theme.unbounded;
     min-height: root.min-window-height;
     /// Header buttons show icons only in a narrow window; development builds have extra header controls.
-    /// Set on resize rather than bound: the header's size feeds back into the window's layout.
+    /// Set on resize rather than bound: the header's size feeds back into the window's profile.
     property <length> compact-below: AppState.in-development ? 1000px : 860px;
     property <bool> compact-header;
     init => { root.compact-header = root.width < root.compact-below; }
     changed width => { root.compact-header = root.width < root.compact-below; }
     changed compact-below => { root.compact-header = root.width < root.compact-below; }
-    private property <bool> editor-open: LayoutLibrary.editor-open;
+    private property <bool> editor-open: ProfileLibrary.editor-open;
     changed editor-open => { KeyboardFocus.ensure-focus(); }
-    in-out property <Page> page: Page.layouts;
+    in-out property <Page> page: Page.profiles;
     forward-focus: shortcut-focus;
     private property <string> test-text;
     private property <string> focus-help;
     private property <bool> confirm-discard: false;
     private property <bool> confirm-close: false;
     in-out property <bool> settings-quit-dialog;
-    property <bool> library-problem: (root.page == Page.layouts || LayoutLibrary.editor-open) && NotificationCenter.is-problem(LayoutLibrary.status.id);
+    property <bool> library-problem: (root.page == Page.profiles || ProfileLibrary.editor-open) && NotificationCenter.is-problem(ProfileLibrary.status.id);
     property <bool> layers-problem: (root.page == Page.layers || root.page == Page.keyboard) && NotificationCenter.is-problem(LayersEditor.status.id);
     property <bool> rules-problem: root.page == Page.rules && NotificationCenter.is-problem(RulesEditor.status.id);
     property <bool> macros-problem: root.page == Page.macros && NotificationCenter.is-problem(MacroEditor.status.id);
@@ -58,7 +58,7 @@ export component SettingsWindow inherits Window {
     property <bool> settings-problem: root.page == Page.settings && NotificationCenter.is-problem(SettingsEditor.message.id);
     /// Lasting problems only: one-off errors are toasts, mapper state is on its card.
     property <Message> problem: AppState.config-status.id == "config-unavailable" ? AppState.config-status
-        : root.library-problem ? LayoutLibrary.status
+        : root.library-problem ? ProfileLibrary.status
         : root.layers-problem ? LayersEditor.status
         : root.rules-problem ? RulesEditor.status
         : root.macros-problem ? MacroEditor.status
@@ -68,11 +68,11 @@ export component SettingsWindow inherits Window {
     /// Ask before losing the working copy, including invalid page drafts.
     public function prepare-quit() -> bool {
         if !SettingsEditor.flush-pending() { root.navigate(Page.settings, MenuKind.emoji); root.settings-quit-dialog = true; return false; }
-        let drafts-saved = LayoutLibrary.flush-drafts();
-        if LayoutLibrary.dirty || !drafts-saved {
-            LayoutLibrary.pending-action = PendingLayoutAction.quit;
-            LayoutLibrary.clear-status();
-            LayoutLibrary.dialog = LibraryDialog.unsaved;
+        let drafts-saved = ProfileLibrary.flush-drafts();
+        if ProfileLibrary.dirty || !drafts-saved {
+            ProfileLibrary.pending-action = PendingProfileAction.quit;
+            ProfileLibrary.clear-status();
+            ProfileLibrary.dialog = LibraryDialog.unsaved;
             return false;
         }
         return true;
@@ -81,26 +81,26 @@ export component SettingsWindow inherits Window {
     public function continue-settings-quit(discard: bool) {
         root.settings-quit-dialog = false;
         if discard { SettingsEditor.discard-pending(); }
-        if root.prepare-quit() { LayoutLibrary.quit(); }
+        if root.prepare-quit() { ProfileLibrary.quit(); }
     }
 
-    /// Apply all page drafts without writing the layout to the library.
+    /// Apply all page drafts without writing the profile to the library.
     public function flush-drafts() -> bool {
-        let layout = LayoutLibrary.flush-drafts();
+        let profile = ProfileLibrary.flush-drafts();
         let settings = SettingsEditor.flush-pending();
         if !settings { root.navigate(Page.settings, MenuKind.emoji); }
         else if MacroEditor.has-unsaved-changes || MacroEditor.has-errors { root.navigate(Page.macros, MenuKind.emoji); }
         else if MenuEditor.has-unsaved-changes { root.navigate(Page.menus, MenuEditor.kind); }
-        return layout && settings;
+        return profile && settings;
     }
 
-    public function close-layout() {
-        let drafts-saved = LayoutLibrary.flush-drafts();
-        if LayoutLibrary.dirty || !drafts-saved {
+    public function close-profile() {
+        let drafts-saved = ProfileLibrary.flush-drafts();
+        if ProfileLibrary.dirty || !drafts-saved {
             root.confirm-close = true;
         } else {
-            LayoutLibrary.editor-open = false;
-            if root.page != Page.settings && root.page != Page.layouts { root.navigate(Page.layouts, MenuKind.emoji); }
+            ProfileLibrary.editor-open = false;
+            if root.page != Page.settings && root.page != Page.profiles { root.navigate(Page.profiles, MenuKind.emoji); }
         }
     }
 
@@ -108,25 +108,25 @@ export component SettingsWindow inherits Window {
         if !AppState.in-development && (page == Page.menus || page == Page.macros) { return; }
         if !InlineEditors.flush() { return; }
         DragDrop.cancel();
-        if page == Page.layouts { LayoutLibrary.refresh(); }
+        if page == Page.profiles { ProfileLibrary.refresh(); }
         if page == Page.rules { RulesEditor.refresh(); }
         if page == Page.layers || page == Page.keyboard { LayersEditor.refresh(); }
         if page == Page.menus { MenuEditor.open(kind); }
-        if page != Page.layouts && page != Page.settings { LayoutLibrary.editor-open = true; }
+        if page != Page.profiles && page != Page.settings { ProfileLibrary.editor-open = true; }
         root.page = page;
         KeyboardFocus.ensure-focus();
         if !KeyboardFocus.has-focus() {
             if page == Page.settings { settings-navigation.focus(); }
-            else { layouts-navigation.focus(); }
+            else { profiles-navigation.focus(); }
         }
     }
 
     property <bool> modal-open: root.settings-quit-dialog || KeyboardFocus.active || root.confirm-discard || root.confirm-close || ActionPicker.opened || RulesEditor.dialog != RuleDialog.none || LayersEditor.dialog != LayerDialog.none || LayersEditor.delete-extra >= 0
-        || LayoutLibrary.save-as-open || LayoutLibrary.dialog != LibraryDialog.none
+        || ProfileLibrary.save-as-open || ProfileLibrary.dialog != LibraryDialog.none
         || AppEntryDialog.editing || AppEntryDialog.removing || DeviceDialog.open || SettingsEditor.full-command != "";
-    property <bool> show-active-banner: root.page != Page.layouts && root.page != Page.settings
-        && LayoutLibrary.active-error.id == ""
-        && LayoutLibrary.current-label != "" && LayoutLibrary.current-label != LayoutLibrary.active-label;
+    property <bool> show-active-banner: root.page != Page.profiles && root.page != Page.settings
+        && ProfileLibrary.active-error.id == ""
+        && ProfileLibrary.current-label != "" && ProfileLibrary.current-label != ProfileLibrary.active-label;
 
 
     shortcut-focus := FocusScope {
@@ -136,8 +136,8 @@ export component SettingsWindow inherits Window {
             if event.text == Key.F1 { root.focus-help = KeyboardFocus.describe(); if root.focus-help != "" { focus-help-popup.show(); } return accept; }
             if focus-help-popup.is-open && event.text == Key.Escape { focus-help-popup.close(); return accept; }
             if event.text == Key.Escape && (DragDrop.dragging || PaletteDrag.active) { DragDrop.cancel(); return accept; }
-            if InlineEditors.window-active && !root.modal-open && event.modifiers.control && event.text.to-lowercase() == "s" && LayoutLibrary.editor-open {
-                if LayoutLibrary.flush-drafts() && LayoutLibrary.dirty { LayoutLibrary.save-current(); }
+            if InlineEditors.window-active && !root.modal-open && event.modifiers.control && event.text.to-lowercase() == "s" && ProfileLibrary.editor-open {
+                if ProfileLibrary.flush-drafts() && ProfileLibrary.dirty { ProfileLibrary.save-current(); }
                 return accept;
             }
             return reject;
@@ -155,7 +155,7 @@ export component SettingsWindow inherits Window {
                     padding-left: Theme.space-xl; padding-right: Theme.space-xl; padding-top: Theme.space-m; padding-bottom: Theme.space-m; spacing: Theme.space-m;
                     HorizontalLayout {
                         accessible-role: tab-list; accessible-label: @tr("Settings"); spacing: Theme.space-m;
-                    VerticalLayout { alignment: center; layouts-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/library-big.svg"); text: @tr("Layouts"); selected: root.page != Page.settings; clicked => { root.navigate(Page.layouts, MenuKind.emoji); } } }
+                    VerticalLayout { alignment: center; profiles-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/library-big.svg"); text: @tr("Profiles"); selected: root.page != Page.settings; clicked => { root.navigate(Page.profiles, MenuKind.emoji); } } }
                     VerticalLayout { alignment: center; settings-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/settings.svg"); text: @tr("Settings"); selected: root.page == Page.settings; clicked => { root.navigate(Page.settings, MenuKind.emoji); } } }
                     }
                     Rectangle {
@@ -174,22 +174,22 @@ export component SettingsWindow inherits Window {
                     }
                     }
                     if AppState.in-development: GameModeButton {}
-                    active-layout := Rectangle {
+                    active-profile := Rectangle {
                         accessible-role: button;
-                        accessible-label: LayoutLibrary.active-text();
-                        accessible-expandable: !LayoutLibrary.automatic;
+                        accessible-label: ProfileLibrary.active-text();
+                        accessible-expandable: !ProfileLibrary.automatic;
                         accessible-expanded: active-menu.is-open;
-                        accessible-action-default => { if !LayoutLibrary.automatic { LayoutLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); } }
-                        active-focus := ActionFocus { enabled: !LayoutLibrary.automatic; opens-menu: true; activated => { LayoutLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); } }
+                        accessible-action-default => { if !ProfileLibrary.automatic { ProfileLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); } }
+                        active-focus := ActionFocus { enabled: !ProfileLibrary.automatic; opens-menu: true; activated => { ProfileLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); } }
                         FocusRing { focused: active-focus.has-focus; border-radius: Theme.radius; }
                         width: root.compact-header ? 150px : 180px; height: Theme.control-height-l; border-radius: Theme.radius; background: Theme.surface; border-width: 1px; border-color: Theme.border;
                         HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-s;
                             Image { width: 14px; source: @image-url("icons/library-big.svg"); colorize: Theme.muted; }
-                            Text { accessible-live-region: polite; text: LayoutLibrary.active-text(); color: LayoutLibrary.active-error.id != "" ? Theme.error : Theme.text; overflow: elide; vertical-alignment: center; }
-                            if !LayoutLibrary.automatic: Image { width: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; }
+                            Text { accessible-live-region: polite; text: ProfileLibrary.active-text(); color: ProfileLibrary.active-error.id != "" ? Theme.error : Theme.text; overflow: elide; vertical-alignment: center; }
+                            if !ProfileLibrary.automatic: Image { width: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; }
                         }
-                        TouchArea { enabled: !LayoutLibrary.automatic; mouse-cursor: pointer; clicked => { active-focus.focus(); LayoutLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); } }
-                        Tooltip { TooltipText { text: LayoutLibrary.active-text() + "\n" + (LayoutLibrary.automatic ? @tr("Current active layout (selected automatically by switching rules)") : @tr("Current active layout — click to switch")); } }
+                        TouchArea { enabled: !ProfileLibrary.automatic; mouse-cursor: pointer; clicked => { active-focus.focus(); ProfileLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); } }
+                        Tooltip { TooltipText { text: ProfileLibrary.active-text() + "\n" + (ProfileLibrary.automatic ? @tr("Current active profile (selected automatically by switching rules)") : @tr("Current active profile — click to switch")); } }
                     }
                     Rectangle { width: 1px; background: Theme.divider; }
                     VerticalLayout { alignment: center; MapperToggle {
@@ -202,28 +202,28 @@ export component SettingsWindow inherits Window {
                             ? @tr("Stop mapper (restore native keyboard behavior)")
                             : !AppState.keyboard-selected
                             ? @tr("Select a keyboard device in the settings to start the mapper")
-                            : @tr("Start mapper to intercept keys and apply layouts");
+                            : @tr("Start mapper to intercept keys and apply profiles");
                         toggled => { AppState.toggle-mapper(); }
                     } }
                 }
             }
             Divider {}
-            if LayoutLibrary.editor-open: editor-toolbar := Rectangle {
+            if ProfileLibrary.editor-open: editor-toolbar := Rectangle {
                 height: 50px + (editor-tabs.viewport-width > editor-tabs.visible-width ? Theme.scrollbar-size + Theme.scrollbar-gap : 0px);
                 background: Theme.card;
                 HorizontalLayout {
                     padding-left: Theme.space-xl; padding-right: Theme.space-xl; spacing: Theme.space-m;
-                    Text { text: LayoutLibrary.current-label == "" ? @tr("Custom layout") : LayoutLibrary.current-label; color: Theme.text; max-width: 200px; overflow: elide; vertical-alignment: center; Tooltip { TooltipText { text: LayoutLibrary.current-label == "" ? @tr("Custom layout") : LayoutLibrary.current-label; } } }
+                    Text { text: ProfileLibrary.current-label == "" ? @tr("Custom profile") : ProfileLibrary.current-label; color: Theme.text; max-width: 200px; overflow: elide; vertical-alignment: center; Tooltip { TooltipText { text: ProfileLibrary.current-label == "" ? @tr("Custom profile") : ProfileLibrary.current-label; } } }
                     VerticalLayout { alignment: center; SaveSplitButton {
-                        enabled: LayoutLibrary.dirty || MacroEditor.has-unsaved-changes || MenuEditor.has-unsaved-changes;
-                        save => { LayoutLibrary.save-current(); }
+                        enabled: ProfileLibrary.dirty || MacroEditor.has-unsaved-changes || MenuEditor.has-unsaved-changes;
+                        save => { ProfileLibrary.save-current(); }
                         discard => { root.confirm-discard = true; }
-                        save-as => { LayoutLibrary.open-save-as(""); }
+                        save-as => { ProfileLibrary.open-save-as(""); }
                     } }
                     Rectangle { width: 16px; }
                     editor-tabs := ScrollView {
                         accessible-role: tab-list;
-                        accessible-label: @tr("Layout");
+                        accessible-label: @tr("Profile");
                         vertical-scrollbar-policy: always-off;
                         horizontal-scrollbar-policy: as-needed;
                         horizontal-stretch: 1;
@@ -232,41 +232,41 @@ export component SettingsWindow inherits Window {
                         viewport-height: self.visible-height;
                         HorizontalLayout {
                             spacing: Theme.space-2xs; alignment: start;
-                            NavTab { icon: @image-url("icons/keyboard.svg"); text: @tr("Triggers") + (LayoutLibrary.rules-dirty ? " •" : ""); selected: root.page == Page.rules; tab-stop: root.page == Page.rules || root.page == Page.layouts || root.page == Page.settings; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
-                            NavTab { icon: @image-url("icons/layers.svg"); text: @tr("Layers") + (LayoutLibrary.layers-dirty ? " •" : ""); selected: root.page == Page.keyboard || root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
-                            if AppState.in-development: NavTab { icon: @image-url("icons/smile.svg"); text: @tr("Emoji") + (LayoutLibrary.emoji-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
-                            if AppState.in-development: NavTab { icon: @image-url("icons/zap.svg"); text: @tr("Quick actions") + (LayoutLibrary.quick-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }
-                            if AppState.in-development: NavTab { icon: @image-url("icons/list-ordered.svg"); text: @tr("Macros") + ((LayoutLibrary.macros-dirty || MacroEditor.has-errors) ? " •" : ""); selected: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
+                            NavTab { icon: @image-url("icons/keyboard.svg"); text: @tr("Triggers") + (ProfileLibrary.rules-dirty ? " •" : ""); selected: root.page == Page.rules; tab-stop: root.page == Page.rules || root.page == Page.profiles || root.page == Page.settings; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
+                            NavTab { icon: @image-url("icons/layers.svg"); text: @tr("Layers") + (ProfileLibrary.layers-dirty ? " •" : ""); selected: root.page == Page.keyboard || root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
+                            if AppState.in-development: NavTab { icon: @image-url("icons/smile.svg"); text: @tr("Emoji") + (ProfileLibrary.emoji-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
+                            if AppState.in-development: NavTab { icon: @image-url("icons/zap.svg"); text: @tr("Quick actions") + (ProfileLibrary.quick-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }
+                            if AppState.in-development: NavTab { icon: @image-url("icons/list-ordered.svg"); text: @tr("Macros") + ((ProfileLibrary.macros-dirty || MacroEditor.has-errors) ? " •" : ""); selected: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
                         }
                     }
-                    VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/x.svg"); label: @tr("Close layout"); clicked => { root.close-layout(); } } }
+                    VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/x.svg"); label: @tr("Close profile"); clicked => { root.close-profile(); } } }
                 }
             }
-            if LayoutLibrary.editor-open: Divider {}
+            if ProfileLibrary.editor-open: Divider {}
             if root.show-active-banner: Rectangle {
                 background: Theme.card;
                 HorizontalLayout {
                     padding-left: Theme.space-xl; padding-right: Theme.space-xl; padding-top: Theme.space-s; padding-bottom: Theme.space-s; spacing: Theme.space-m;
                     Text {
-                        text: LayoutLibrary.active-label == ""
-                            ? @tr("You are editing “{}”; no layout is active.", LayoutLibrary.current-label)
-                            : @tr("You are editing “{}”, but “{}” is active.", LayoutLibrary.current-label, LayoutLibrary.active-label);
+                        text: ProfileLibrary.active-label == ""
+                            ? @tr("You are editing “{}”; no profile is active.", ProfileLibrary.current-label)
+                            : @tr("You are editing “{}”, but “{}” is active.", ProfileLibrary.current-label, ProfileLibrary.active-label);
                         color: Theme.muted; vertical-alignment: center; overflow: elide; horizontal-stretch: 1;
                     }
-                    if !LayoutLibrary.automatic: Button { text: @tr("Make active"); clicked => { LayoutLibrary.activate-current(); } }
+                    if !ProfileLibrary.automatic: Button { text: @tr("Make active"); clicked => { ProfileLibrary.activate-current(); } }
                 }
             }
             if root.show-active-banner: Divider {}
             VerticalLayout {
                 accessible-role: tab-panel;
-                accessible-label: root.page == Page.layouts ? @tr("Layouts") : root.page == Page.settings ? @tr("Settings") : root.page == Page.rules ? @tr("Triggers") : root.page == Page.macros ? @tr("Macros") : root.page == Page.menus ? (MenuEditor.kind == MenuKind.emoji ? @tr("Emoji") : @tr("Quick actions")) : @tr("Layers");
+                accessible-label: root.page == Page.profiles ? @tr("Profiles") : root.page == Page.settings ? @tr("Settings") : root.page == Page.rules ? @tr("Triggers") : root.page == Page.macros ? @tr("Macros") : root.page == Page.menus ? (MenuEditor.kind == MenuKind.emoji ? @tr("Emoji") : @tr("Quick actions")) : @tr("Layers");
                 vertical-stretch: 1;
                 padding: Theme.page-padding;
                 // Pages scroll to the window edge; their content keeps the bottom gap (PageContent).
                 padding-bottom: 0px;
                 spacing: Theme.space-l;
                 if root.problem.id != "": Text { accessible-live-region: assertive; text: Locale.text(root.problem); color: NotificationCenter.is-warning(root.problem.id) ? Theme.warning : Theme.error; wrap: word-wrap; max-height: 96px; overflow: elide; }
-                if root.page == Page.layouts: LibraryPage { compact: root.compact-header; }
+                if root.page == Page.profiles: LibraryPage { compact: root.compact-header; }
                 if root.page == Page.settings: SettingsPage {}
                 if root.page == Page.rules: RulesPage {}
                 if root.page == Page.layers || root.page == Page.keyboard: LayersPage { configure-triggers => { root.navigate(Page.rules, MenuKind.emoji); } }
@@ -292,55 +292,55 @@ export component SettingsWindow inherits Window {
         }
     }
     active-menu := PopupWindow {
-        x: active-layout.absolute-position.x; y: active-layout.absolute-position.y + active-layout.height + Theme.menu-offset; width: 240px;
-        LayoutMenu {
-            height-limit: max(50px, min(320px, root.height - active-layout.height - active-layout.absolute-position.y - 24px));
-            for name[index] in LayoutLibrary.names: MenuItem {
-                text: name; checked: name == LayoutLibrary.active-label;
-                clicked => { active-menu.close(); LayoutLibrary.action(index, LibraryAction.activate); }
+        x: active-profile.absolute-position.x; y: active-profile.absolute-position.y + active-profile.height + Theme.menu-offset; width: 240px;
+        ProfileMenu {
+            height-limit: max(50px, min(320px, root.height - active-profile.height - active-profile.absolute-position.y - 24px));
+            for name[index] in ProfileLibrary.names: MenuItem {
+                text: name; checked: name == ProfileLibrary.active-label;
+                clicked => { active-menu.close(); ProfileLibrary.action(index, LibraryAction.activate); }
             }
         }
     }
     if root.confirm-discard || root.confirm-close: ConfirmDialog {
         width: 100%; height: 100%;
-        title: @tr("Discard layout changes?");
-        body: @tr("Unsaved changes to this layout will be lost.");
+        title: @tr("Discard profile changes?");
+        body: @tr("Unsaved changes to this profile will be lost.");
         confirm-text: @tr("Discard");
         cancel => { root.confirm-discard = false; root.confirm-close = false; }
         confirm => {
-            InlineEditors.revision += 1; LayoutLibrary.discard-current();
-            if root.confirm-close && !LayoutLibrary.dirty { LayoutLibrary.editor-open = false; if root.page != Page.settings && root.page != Page.layouts { root.navigate(Page.layouts, MenuKind.emoji); } }
+            InlineEditors.revision += 1; ProfileLibrary.discard-current();
+            if root.confirm-close && !ProfileLibrary.dirty { ProfileLibrary.editor-open = false; if root.page != Page.settings && root.page != Page.profiles { root.navigate(Page.profiles, MenuKind.emoji); } }
             root.confirm-discard = false; root.confirm-close = false;
         }
     }
-    if LayoutLibrary.dialog == LibraryDialog.conflict: DialogFrame {
-        title: @tr("Layout changed on disk");
-        close => { LayoutLibrary.cancel-dialog(); }
+    if ProfileLibrary.dialog == LibraryDialog.conflict: DialogFrame {
+        title: @tr("Profile changed on disk");
+        close => { ProfileLibrary.cancel-dialog(); }
         Text {
-            text: @tr("The file of “{}” was changed by another program after you opened it. Your edits are kept until you choose what to do.", LayoutLibrary.current-label);
+            text: @tr("The file of “{}” was changed by another program after you opened it. Your edits are kept until you choose what to do.", ProfileLibrary.current-label);
             color: Theme.text; wrap: word-wrap;
         }
         HorizontalLayout {
             spacing: Theme.space-m;
             alignment: end;
-            Button { text: @tr("Cancel"); clicked => { LayoutLibrary.cancel-dialog(); } }
+            Button { text: @tr("Cancel"); clicked => { ProfileLibrary.cancel-dialog(); } }
             Button {
                 text: @tr("Load from disk");
                 clicked => {
                     // Reloading drops the edits, so a pending switch may proceed.
-                    LayoutLibrary.dialog = LibraryDialog.none;
-                    InlineEditors.revision += 1; LayoutLibrary.discard-current();
-                    LayoutLibrary.finish-save();
+                    ProfileLibrary.dialog = LibraryDialog.none;
+                    InlineEditors.revision += 1; ProfileLibrary.discard-current();
+                    ProfileLibrary.finish-save();
                 }
             }
             // Overwriting discards the changes made on disk, so the safe choice is the primary one.
-            Button { text: @tr("Overwrite"); clicked => { LayoutLibrary.overwrite-current(); LayoutLibrary.finish-save(); } }
+            Button { text: @tr("Overwrite"); clicked => { ProfileLibrary.overwrite-current(); ProfileLibrary.finish-save(); } }
             Button {
                 text: @tr("Save as new…"); primary: true;
                 clicked => {
                     // Keep a pending switch: it continues once the copy is saved.
-                    LayoutLibrary.dialog = LibraryDialog.none;
-                    LayoutLibrary.open-save-as(LayoutLibrary.suggest-name(LayoutLibrary.current-label));
+                    ProfileLibrary.dialog = LibraryDialog.none;
+                    ProfileLibrary.open-save-as(ProfileLibrary.suggest-name(ProfileLibrary.current-label));
                 }
             }
         }

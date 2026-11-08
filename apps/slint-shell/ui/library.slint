@@ -7,35 +7,35 @@ import { ConditionChoices, ConditionsForm } from "conditions.slint";
 import { AppState } from "app-state.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
-import { GameCondition, LayoutSource, LibraryAction, LibraryDialog, PendingLayoutAction } from "types.slint";
+import { GameCondition, Profilesource, LibraryAction, LibraryDialog, PendingProfileAction } from "types.slint";
 import { Button, CheckBox, ComboBox, Palette, TextEdit } from "std-widgets.slint";
 
 
-export struct LayoutSummary { rules: int, layers: int, emoji-pages: int, action-pages: int, macros: int, commands: int }
+export struct Profilesummary { rules: int, layers: int, emoji-pages: int, action-pages: int, macros: int, commands: int }
 
-export struct LayoutRow { id: string, name: string, description: string, summary: LayoutSummary, rule-count: int, loaded: bool, error: Message }
+export struct ProfileRow { id: string, name: string, description: string, summary: Profilesummary, rule-count: int, loaded: bool, error: Message }
 
-/// One automatic-mode rule. `target` indexes `names`; -1 means no layout.
+/// One automatic-mode rule. `target` indexes `names`; -1 means no profile.
 /// `shadowed-by` is the earlier rule that always matches first, or -1;
 /// `unknown-languages` lists languages the system does not have;
 /// `excluded` lists the window patterns that block the rule.
 export struct AutoRuleView { game: GameCondition, list: string, excluded: string, target: int, missing: bool, enabled: bool, shadowed-by: int, unknown-languages: string, uses-windows: bool }
 
-/// The layout library and the working copy being edited.
-export global LayoutLibrary {
-    in property <[LayoutRow]> rows;
+/// The profile library and the working copy being edited.
+export global ProfileLibrary {
+    in property <[ProfileRow]> rows;
     in-out property <int> metadata-revision;
     out property <[string]> names: self.row-names(self.rows);
-    pure callback row-names([LayoutRow]) -> [string];
+    pure callback row-names([ProfileRow]) -> [string];
     /// Automatic mode: ordered rules, the default (-1 is off), the rule
-    /// that applies now (-1 is the default) and rules per layout.
+    /// that applies now (-1 is the default) and rules per profile.
     in property <[AutoRuleView]> auto-rules;
     in property <int> auto-default: -1;
     in property <bool> auto-default-missing;
     in property <int> auto-matched: -1;
     /// Game mode detection works, so game-mode conditions can match.
     in property <bool> game-detection: true;
-    /// Layout whose rules are highlighted in the rules panel, or -1.
+    /// Profile whose rules are highlighted in the rules panel, or -1.
     in-out property <int> highlight-target: -1;
     in-out property <int> selected: -1;
     in-out property <Message> status;
@@ -46,24 +46,24 @@ export global LayoutLibrary {
     in property <[string]> rule-names;
     in-out property <bool> rule-target-missing;
     in-out property <GameCondition> rule-game;
-    in-out property <string> rule-layouts;
+    in-out property <string> rule-profiles;
     in-out property <string> rule-apps;
     in-out property <string> rule-excluded;
     in-out property <LibraryDialog> dialog: LibraryDialog.none;
     in-out property <string> create-name;
     in-out property <string> create-description;
-    /// Layouts shipped with the application, offered as templates.
+    /// Profiles shipped with the application, offered as templates.
     in property <[string]> bundled-names;
-    in-out property <LayoutSource> create-source: LayoutSource.empty;
+    in-out property <Profilesource> create-source: Profilesource.empty;
     /// Index of the source in `names` (copy) or `bundled-names` (bundled).
     in-out property <int> create-copy-index: 0;
-    in-out property <LayoutSource> pending-create-source: LayoutSource.empty;
+    in-out property <Profilesource> pending-create-source: Profilesource.empty;
     in-out property <int> pending-create-copy-index: 0;
     in-out property <string> create-copy-name;
-    in-out property <PendingLayoutAction> pending-action: PendingLayoutAction.none;
+    in-out property <PendingProfileAction> pending-action: PendingProfileAction.none;
     /// Whether the working copy is currently open in the editor.
     in-out property <bool> editor-open: false;
-    /// Working copy: the library layout it came from and whether it changed.
+    /// Working copy: the library profile it came from and whether it changed.
     in property <string> current-label;
     in-out property <string> active-label;
     in property <Message> active-error;
@@ -78,29 +78,29 @@ export global LayoutLibrary {
     in-out property <string> save-as-name;
 
     public pure function active-text() -> string {
-        return (self.active-label == "" ? @tr("No active layout") : @tr("Active: {}", self.active-label))
+        return (self.active-label == "" ? @tr("No active profile") : @tr("Active: {}", self.active-label))
             + (self.active-error.id == "" ? "" : " — " + Locale.text(self.active-error));
     }
 
     callback refresh();
     callback select(int);
     callback set-automatic(bool);
-    /// Act on the layout at an index; the index is explicit so a stale
+    /// Act on the profile at an index; the index is explicit so a stale
     /// selection can never redirect the action.
     callback action(int, LibraryAction);
     pure callback suggest-name-value(string, [string]) -> string;
     public pure function suggest-name(base: string) -> string { return self.suggest-name-value(base, self.names); }
-    /// Why `name` cannot be used for a layout; `except` is the layout being renamed, or "".
+    /// Why `name` cannot be used for a profile; `except` is the profile being renamed, or "".
     pure callback name-error-value(name: string, except: string, names: [string]) -> Message;
     public pure function name-error(name: string, except: string) -> Message { return self.name-error-value(name, except, self.names); }
-    callback create(string, string, LayoutSource, int);
+    callback create(string, string, Profilesource, int);
     pure callback copy-index-value(string, [string]) -> int;
     callback set-description(int, string) -> bool;
     callback rename(int, string) -> bool;
     callback reorder(int, int);
     callback discard-current();
     callback activate-current();
-    /// Replace the working copy with the layout at an index.
+    /// Replace the working copy with the profile at an index.
     callback load(int);
     callback delete(int);
     /// Remember the library file of the working copy as its saved state.
@@ -121,22 +121,22 @@ export global LayoutLibrary {
     callback move-rule(int, int);
     callback set-auto-default(int);
     callback set-rule-enabled(int, bool);
-    /// Add the ready-made rule "no layout while game mode is on".
+    /// Add the ready-made rule "no profile while game mode is on".
     callback add-game-rule();
 
-    pure function create-base(source: LayoutSource) -> string {
-        if source == LayoutSource.bundled && self.create-copy-index < self.bundled-names.length {
+    pure function create-base(source: Profilesource) -> string {
+        if source == Profilesource.bundled && self.create-copy-index < self.bundled-names.length {
             return self.bundled-names[self.create-copy-index];
         }
-        if source == LayoutSource.copy && self.create-copy-name != "" {
+        if source == Profilesource.copy && self.create-copy-name != "" {
             return @tr("{} (copy)", self.create-copy-name);
         }
-        return @tr("New layout");
+        return @tr("New profile");
     }
     public function clear-status() {
         self.status = { id: "", arg: "", count: 0, diagnostic-key: "" };
     }
-    function proceed-open-create(source: LayoutSource, copy-index: int) {
+    function proceed-open-create(source: Profilesource, copy-index: int) {
         self.clear-status();
         self.create-source = source;
         self.create-copy-index = max(0, copy-index);
@@ -144,35 +144,35 @@ export global LayoutLibrary {
         self.create-name = self.suggest-name(self.create-base(source));
         self.dialog = LibraryDialog.create;
     }
-    public function open-create(source: LayoutSource, copy-index: int) {
+    public function open-create(source: Profilesource, copy-index: int) {
         self.pending-create-source = source;
         self.pending-create-copy-index = copy-index;
-        self.create-copy-name = source == LayoutSource.copy && copy-index >= 0 && copy-index < self.names.length ? self.names[copy-index] : "";
-        self.guard-switch(PendingLayoutAction.create);
+        self.create-copy-name = source == Profilesource.copy && copy-index >= 0 && copy-index < self.names.length ? self.names[copy-index] : "";
+        self.guard-switch(PendingProfileAction.create);
     }
     public function submit-create() {
         if self.name-error(self.create-name, "").id != "" { return; }
         self.create(self.create-name, self.create-description, self.create-source,
-            self.create-source == LayoutSource.copy ? self.copy-index-value(self.create-copy-name, self.names) : self.create-copy-index);
+            self.create-source == Profilesource.copy ? self.copy-index-value(self.create-copy-name, self.names) : self.create-copy-index);
     }
     public function continue-pending() {
         let action = self.pending-action;
-        self.pending-action = PendingLayoutAction.none;
-        if action == PendingLayoutAction.quit {
+        self.pending-action = PendingProfileAction.none;
+        if action == PendingProfileAction.quit {
             self.dialog = LibraryDialog.none;
             self.discard-drafts();
             self.quit();
         }
-        if action == PendingLayoutAction.edit { self.dialog = LibraryDialog.none; self.load(self.selected); }
-        if action == PendingLayoutAction.create {
+        if action == PendingProfileAction.edit { self.dialog = LibraryDialog.none; self.load(self.selected); }
+        if action == PendingProfileAction.create {
             self.proceed-open-create(self.pending-create-source, self.pending-create-copy-index);
         }
     }
     // Replacing the working copy discards its unsaved edits, so ask first.
-    function guard-switch(action: PendingLayoutAction) {
+    function guard-switch(action: PendingProfileAction) {
         let drafts-saved = self.flush-drafts();
         self.pending-action = action;
-        if !drafts-saved || (self.dirty && !(action == PendingLayoutAction.edit && self.names[self.selected] == self.current-label)) {
+        if !drafts-saved || (self.dirty && !(action == PendingProfileAction.edit && self.names[self.selected] == self.current-label)) {
             self.clear-status();
             self.dialog = LibraryDialog.unsaved;
         } else {
@@ -190,7 +190,7 @@ export global LayoutLibrary {
     public function finish-save() {
         if self.dialog == LibraryDialog.conflict || self.save-as-open { return; }
         if self.dirty {
-            if self.dialog == LibraryDialog.none { self.pending-action = PendingLayoutAction.none; }
+            if self.dialog == LibraryDialog.none { self.pending-action = PendingProfileAction.none; }
             return;
         }
         self.continue-pending();
@@ -199,7 +199,7 @@ export global LayoutLibrary {
     /// it asked for the name; otherwise the pending switch is dropped.
     public function cancel-save-as() {
         self.save-as-open = false;
-        if self.dialog != LibraryDialog.unsaved { self.pending-action = PendingLayoutAction.none; }
+        if self.dialog != LibraryDialog.unsaved { self.pending-action = PendingProfileAction.none; }
     }
     public function open-save-as(name: string) {
         self.clear-status();
@@ -213,17 +213,17 @@ export global LayoutLibrary {
     }
     public function edit(index: int) {
         self.select(index);
-        self.guard-switch(PendingLayoutAction.edit);
+        self.guard-switch(PendingProfileAction.edit);
     }
     public function cancel-dialog() {
         self.dialog = LibraryDialog.none;
-        self.pending-action = PendingLayoutAction.none;
+        self.pending-action = PendingProfileAction.none;
     }
     public function open-rule(index: int, target: int) {
         ConditionChoices.refresh();
         self.load-rule(index, target);
     }
-    /// Layout a new rule starts with: the default, else the first layout.
+    /// Profile a new rule starts with: the default, else the first profile.
     public pure function new-rule-target() -> int {
         return self.auto-default >= 0 ? self.auto-default : self.names.length > 0 ? 0 : -1;
     }
@@ -235,7 +235,7 @@ export global LayoutLibrary {
         return self.game-text(game) != "" && list != "" ? self.game-text(game) + " · " + list : self.game-text(game) + list;
     }
     public pure function target-text(target: int) -> string {
-        return target >= 0 && target < self.names.length ? self.names[target] : @tr("No layout");
+        return target >= 0 && target < self.names.length ? self.names[target] : @tr("No profile");
     }
 }
 
@@ -323,7 +323,7 @@ export component SaveSplitButton inherits Rectangle {
 }
 
 /// Bounded library menu; focus navigation also scrolls its Flickable.
-export component LayoutMenu inherits MenuSurface {
+export component ProfileMenu inherits MenuSurface {
     in property <length> height-limit: 240px;
     preferred-height: min(entries.preferred-height, root.height-limit) + 2 * root.inset;
     max-height: self.preferred-height;
@@ -338,11 +338,11 @@ export component LayoutMenu inherits MenuSurface {
     }
 }
 
-/// Button choosing a library layout or "Off" (-1).
+/// Button choosing a library profile or "Off" (-1).
 component TargetPicker inherits Rectangle {
     in property <int> target: -1;
     in property <bool> missing;
-    in property <[string]> names: LayoutLibrary.names;
+    in property <[string]> names: ProfileLibrary.names;
     callback picked(int);
     // Closing the popup destroys the repeated item's parent in Live Preview.
     // Continue in the surviving picker's context instead (Slint issue #6426).
@@ -356,13 +356,13 @@ component TargetPicker inherits Rectangle {
     border-color: Theme.focus-ring(focus.has-focus) ? Theme.focus : Theme.border;
     background: touch.has-hover || Theme.focus-ring(focus.has-focus) ? Theme.hover : Theme.surface;
     accessible-role: combobox;
-    accessible-label: @tr("Layout");
+    accessible-label: @tr("Profile");
     accessible-value: label.text;
     accessible-action-default => { focus.focus(); menu.show(); KeyboardFocus.focus-checked(); }
     HorizontalLayout { padding-left: Theme.space-m-plus; padding-right: Theme.space-m; spacing: Theme.space-s;
         label := Text {
             horizontal-stretch: 1;
-            text: root.missing ? @tr("Layout not found") : root.target >= 0 && root.target < root.names.length ? root.names[root.target] : @tr("No layout");
+            text: root.missing ? @tr("Profile not found") : root.target >= 0 && root.target < root.names.length ? root.names[root.target] : @tr("No profile");
             color: root.missing ? Theme.error : root.target < 0 ? Theme.muted : Theme.text;
             font-weight: root.target >= 0 ? 600 : 400;
             overflow: elide; vertical-alignment: center;
@@ -376,8 +376,8 @@ component TargetPicker inherits Rectangle {
     menu := PopupWindow {
         y: root.height + Theme.menu-offset;
         width: max(root.width, 220px);
-        LayoutMenu {
-            MenuItem { checked: root.target == -1 && !root.missing; text: @tr("No layout (keys as is)"); clicked => { root.choose(-1); } }
+        ProfileMenu {
+            MenuItem { checked: root.target == -1 && !root.missing; text: @tr("No profile (keys as is)"); clicked => { root.choose(-1); } }
             Divider {}
             for name[index] in root.names: MenuItem { text: name; checked: root.target == index; clicked => { root.choose(index); } }
         }
@@ -385,36 +385,36 @@ component TargetPicker inherits Rectangle {
 }
 
 component AutoRuleRow inherits Rectangle {
-    action-focus := ActionFocus { activated => { LayoutLibrary.open-rule(root.index, root.rule.target); } }
+    action-focus := ActionFocus { activated => { ProfileLibrary.open-rule(root.index, root.rule.target); } }
     FocusRing { focused: action-focus.has-focus; border-radius: Theme.radius; }
     in property <AutoRuleView> rule;
     in property <int> index;
     in property <int> count;
     in property <bool> matched;
-    property <bool> highlighted: LayoutLibrary.highlight-target >= 0 && LayoutLibrary.highlight-target == root.rule.target;
+    property <bool> highlighted: ProfileLibrary.highlight-target >= 0 && ProfileLibrary.highlight-target == root.rule.target;
     border-radius: Theme.radius;
     border-width: root.highlighted ? 2px : 1px;
     border-color: root.matched ? Theme.accent : root.highlighted ? Theme.accent : Theme.divider;
     background: root.matched ? Theme.accent.transparentize(0.88) : touch.has-hover ? Theme.hover : transparent;
     height: row.preferred-height;
     accessible-role: button;
-    accessible-label: @tr("Rule {}", root.index + 1) + ": " + LayoutLibrary.rule-text(root.rule.game, root.rule.list) + " → " + (root.rule.missing ? @tr("Layout not found") : LayoutLibrary.target-text(root.rule.target));
-    accessible-action-default => { LayoutLibrary.open-rule(root.index, root.rule.target); }
-    touch := TouchArea { mouse-cursor: pointer; clicked => { LayoutLibrary.open-rule(root.index, root.rule.target); } }
+    accessible-label: @tr("Rule {}", root.index + 1) + ": " + ProfileLibrary.rule-text(root.rule.game, root.rule.list) + " → " + (root.rule.missing ? @tr("Profile not found") : ProfileLibrary.target-text(root.rule.target));
+    accessible-action-default => { ProfileLibrary.open-rule(root.index, root.rule.target); }
+    touch := TouchArea { mouse-cursor: pointer; clicked => { ProfileLibrary.open-rule(root.index, root.rule.target); } }
     row := HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-s;
         VerticalLayout { alignment: start;
-            DragHandle { group: DragGroups.library-rules; index: root.index; count: root.count; dropped(from, to) => { LayoutLibrary.move-rule(from, to); } }
+            DragHandle { group: DragGroups.library-rules; index: root.index; count: root.count; dropped(from, to) => { ProfileLibrary.move-rule(from, to); } }
         }
         VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: Theme.space-2xs;
             HorizontalLayout { spacing: Theme.space-xs; alignment: start;
                 Text {
-                    text: root.rule.missing ? @tr("Layout not found") : LayoutLibrary.target-text(root.rule.target);
+                    text: root.rule.missing ? @tr("Profile not found") : ProfileLibrary.target-text(root.rule.target);
                     color: root.rule.missing ? Theme.error : root.rule.target < 0 ? Theme.muted : Theme.text;
                     font-weight: root.rule.target >= 0 ? 600 : 400;
                     overflow: elide;
                 }
             }
-            Text { text: LayoutLibrary.rule-text(root.rule.game, root.rule.list); color: Theme.muted; wrap: word-wrap; }
+            Text { text: ProfileLibrary.rule-text(root.rule.game, root.rule.list); color: Theme.muted; wrap: word-wrap; }
             if root.rule.excluded != "": HorizontalLayout { spacing: Theme.space-xs; alignment: start;
                 VerticalLayout { alignment: center;
                     Image { width: 14px; height: 14px; source: @image-url("icons/ban.svg"); colorize: Theme.error; }
@@ -425,7 +425,7 @@ component AutoRuleRow inherits Rectangle {
                 text: @tr("Never applies: rule {} always matches first.", root.rule.shadowed-by + 1);
                 color: Theme.warning; font-size: Theme.font-body; wrap: word-wrap;
             }
-            if root.rule.enabled && root.rule.game == GameCondition.on && !LayoutLibrary.game-detection: Text {
+            if root.rule.enabled && root.rule.game == GameCondition.on && !ProfileLibrary.game-detection: Text {
                 text: @tr("Game mode detection is off, so this rule never matches.");
                 color: Theme.warning; font-size: Theme.font-body; wrap: word-wrap;
             }
@@ -442,7 +442,7 @@ component AutoRuleRow inherits Rectangle {
             CheckBox {
                 accessible-label: @tr("Rule enabled");
                 checked: root.rule.enabled;
-                toggled => { LayoutLibrary.set-rule-enabled(root.index, self.checked); }
+                toggled => { ProfileLibrary.set-rule-enabled(root.index, self.checked); }
             }
         }
     }
@@ -458,7 +458,7 @@ component AddRuleButton inherits Rectangle {
         text: root.compact ? "" : @tr("Add rule");
         icon: @image-url("icons/plus.svg");
         accessible-label: @tr("Add rule");
-        clicked => { LayoutLibrary.open-rule(-1, LayoutLibrary.new-rule-target()); }
+        clicked => { ProfileLibrary.open-rule(-1, ProfileLibrary.new-rule-target()); }
     }
 }
 
@@ -470,25 +470,25 @@ component AutoRulesPanel inherits Card {
             HorizontalLayout { spacing: Theme.space-s; vertical-stretch: 0;
                 CardTitle { text: @tr("Automatic switching rules"); min-width: 0px; wrap: word-wrap; vertical-alignment: center; }
                 VerticalLayout { alignment: center;
-                    InfoTip { text: @tr("Rules are checked from top to bottom; the first enabled one whose conditions match chooses the layout. If none matches, the default is used. “No layout” leaves the keyboard unprocessed, for example in an application where the layout gets in the way."); }
+                    InfoTip { text: @tr("Rules are checked from top to bottom; the first enabled one whose conditions match chooses the profile. If none matches, the default is used. “No profile” leaves the keyboard unprocessed, for example in an application where the profile gets in the way."); }
                 }
                 Rectangle { horizontal-stretch: 1; }
                 AddRuleButton { compact: true; }
             }
             VerticalLayout { spacing: Theme.space-s; alignment: start;
-                if LayoutLibrary.auto-rules.length == 0: VerticalLayout { spacing: Theme.space-m;
+                if ProfileLibrary.auto-rules.length == 0: VerticalLayout { spacing: Theme.space-m;
                     Text { text: @tr("No rules"); color: Theme.text; font-weight: Theme.weight-semibold; }
                     Text {
-                        text: @tr("The default layout is always used.");
+                        text: @tr("The default profile is always used.");
                         color: Theme.muted; wrap: word-wrap;
                     }
                     HorizontalLayout { alignment: start;
                         AddRuleButton {}
                     }
                 }
-                for rule[index] in LayoutLibrary.auto-rules: AutoRuleRow {
-                    rule: rule; index: index; count: LayoutLibrary.auto-rules.length;
-                    matched: LayoutLibrary.auto-matched == index;
+                for rule[index] in ProfileLibrary.auto-rules: AutoRuleRow {
+                    rule: rule; index: index; count: ProfileLibrary.auto-rules.length;
+                    matched: ProfileLibrary.auto-matched == index;
                 }
             }
             Rectangle { height: 1px; background: Theme.divider; vertical-stretch: 0; }
@@ -502,11 +502,11 @@ component AutoRulesPanel inherits Card {
                 default-row := VerticalLayout { padding: Theme.space-m; spacing: Theme.space-s;
                     Text { text: @tr("Otherwise (default)"); color: Theme.text; font-weight: Theme.weight-semibold; }
                     auto-default-picker := TargetPicker {
-                        target: LayoutLibrary.auto-default;
-                        missing: LayoutLibrary.auto-default-missing;
-                        picked(index) => { LayoutLibrary.set-auto-default(index); }
+                        target: ProfileLibrary.auto-default;
+                        missing: ProfileLibrary.auto-default-missing;
+                        picked(index) => { ProfileLibrary.set-auto-default(index); }
                     }
-                    if LayoutLibrary.auto-default < 0 && !LayoutLibrary.auto-default-missing: Text {
+                    if ProfileLibrary.auto-default < 0 && !ProfileLibrary.auto-default-missing: Text {
                         text: @tr("When no rule matches, the keyboard works without processing.");
                         color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap;
                     }
@@ -537,10 +537,10 @@ component SetupStep inherits HorizontalLayout {
 
 export component LibraryPage inherits PageLayout {
     in property <bool> compact;
-    accessible-label: @tr("Layouts");
+    accessible-label: @tr("Profiles");
     // The first-run card covers the missing keyboard itself; the warning is for an
     // existing setup that lost its device.
-    if !AppState.keyboard-selected && LayoutLibrary.names.length > 0: Rectangle {
+    if !AppState.keyboard-selected && ProfileLibrary.names.length > 0: Rectangle {
         vertical-stretch: 0;
         background: Theme.warning.transparentize(0.88);
         border-radius: Theme.radius-large;
@@ -552,12 +552,12 @@ export component LibraryPage inherits PageLayout {
             VerticalLayout { alignment: center; Button { text: @tr("Choose a keyboard"); clicked => { AppState.open-keyboard-settings(); } } }
         }
     }
-    if LayoutLibrary.names.length > 0 || LayoutLibrary.automatic: library-toolbar := Rectangle {
+    if ProfileLibrary.names.length > 0 || ProfileLibrary.automatic: library-toolbar := Rectangle {
         vertical-stretch: 0;
         height: toolbar-content.preferred-height;
         toolbar-content := GridLayout {
             spacing: Theme.space-m;
-            if AppState.in-development || LayoutLibrary.automatic: HorizontalLayout {
+            if AppState.in-development || ProfileLibrary.automatic: HorizontalLayout {
                 row: 0; col: 0;
                 horizontal-stretch: 1;
                 alignment: start;
@@ -566,15 +566,15 @@ export component LibraryPage inherits PageLayout {
                 VerticalLayout {
                     alignment: center;
                     InfoTip {
-                        text: @tr("Single: the layout you make active works everywhere.") + "\n\n"
-                            + @tr("Automatic: the layout is chosen by switching rules for the application, system language or game mode.") + "\n\n"
-                            + @tr("The lhc:activateLayout1…5 actions activate the layout at that position in this list: reordering the list changes which layout a key activates. In Auto mode they switch to Single mode.");
+                        text: @tr("Single: the profile you make active works everywhere.") + "\n\n"
+                            + @tr("Automatic: the profile is chosen by switching rules for the application, system language or game mode.") + "\n\n"
+                            + @tr("The lhc:activateProfile1…5 actions activate the profile at that position in this list: reordering the list changes which profile a key activates. In Auto mode they switch to Single mode.");
                     }
                 }
                 auto-mode-controls := ButtonGroup {
                     labels: [@tr("Single"), @tr("Auto")];
-                    selected-index: LayoutLibrary.automatic ? 1 : 0;
-                    selected(index) => { if (index == 1) != LayoutLibrary.automatic { LayoutLibrary.set-automatic(index == 1); } }
+                    selected-index: ProfileLibrary.automatic ? 1 : 0;
+                    selected(index) => { if (index == 1) != ProfileLibrary.automatic { ProfileLibrary.set-automatic(index == 1); } }
                 }
             }
             HorizontalLayout {
@@ -583,9 +583,9 @@ export component LibraryPage inherits PageLayout {
                 horizontal-stretch: 0;
                 alignment: start;
                 spacing: Theme.space-m;
-                Text { text: @tr("Add layout: "); color: Theme.text; vertical-alignment: center; }
-                Button { text: @tr("Blank"); primary: false; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } }
-                for name[index] in LayoutLibrary.bundled-names: Button { text: name; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.bundled, index); } }
+                Text { text: @tr("Add profile: "); color: Theme.text; vertical-alignment: center; }
+                Button { text: @tr("Blank"); primary: false; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { ProfileLibrary.open-create(Profilesource.empty, 0); } }
+                for name[index] in ProfileLibrary.bundled-names: Button { text: name; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { ProfileLibrary.open-create(Profilesource.bundled, index); } }
             }
         }
     }
@@ -596,7 +596,7 @@ export component LibraryPage inherits PageLayout {
         VerticalLayout {
             horizontal-stretch: 1;
             min-width: 0px;
-            if LayoutLibrary.names.length == 0: Rectangle {
+            if ProfileLibrary.names.length == 0: Rectangle {
                 vertical-stretch: 1;
                 VerticalLayout {
                     alignment: center;
@@ -611,10 +611,10 @@ export component LibraryPage inherits PageLayout {
                                     VerticalLayout { alignment: center; Button { text: AppState.keyboard-selected ? @tr("Change") : @tr("Choose a keyboard"); primary: !AppState.keyboard-selected; clicked => { AppState.open-keyboard-settings(); } } }
                                 }
                                 SetupStep {
-                                    number: 2; title: @tr("Add a layout");
+                                    number: 2; title: @tr("Add a profile");
                                     HorizontalLayout { spacing: Theme.space-m; alignment: end;
-                                        for name[index] in LayoutLibrary.bundled-names: VerticalLayout { alignment: center; Button { text: name; primary: AppState.keyboard-selected; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.bundled, index); } } }
-                                        VerticalLayout { alignment: center; Button { text: @tr("Blank"); icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { LayoutLibrary.open-create(LayoutSource.empty, 0); } } }
+                                        for name[index] in ProfileLibrary.bundled-names: VerticalLayout { alignment: center; Button { text: name; primary: AppState.keyboard-selected; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { ProfileLibrary.open-create(Profilesource.bundled, index); } } }
+                                        VerticalLayout { alignment: center; Button { text: @tr("Blank"); icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { ProfileLibrary.open-create(Profilesource.empty, 0); } } }
                                     }
                                 }
                                 SetupStep { number: 3; title: @tr("Press Start at the top to apply it"); }
@@ -623,18 +623,18 @@ export component LibraryPage inherits PageLayout {
                     }
                 }
             }
-            if LayoutLibrary.names.length > 0: ScrollView { viewport-width: self.visible-width; drag-scroll: true;
+            if ProfileLibrary.names.length > 0: ScrollView { viewport-width: self.visible-width; drag-scroll: true;
                 vertical-stretch: 1;
                 PageContent { spacing: 0px;
-                    for row[index] in LayoutLibrary.rows: card := Rectangle {
+                    for row[index] in ProfileLibrary.rows: card := Rectangle {
                         accessible-role: groupbox;
                         accessible-label: row.name;
                         accessible-item-index: index;
-                        accessible-item-count: LayoutLibrary.rows.length;
+                        accessible-item-count: ProfileLibrary.rows.length;
                         property <string> name: row.name;
-                        property <bool> active: LayoutLibrary.active-label == name;
-                        property <bool> current: LayoutLibrary.editor-open && LayoutLibrary.current-label == name;
-                        property <bool> auto: LayoutLibrary.automatic;
+                        property <bool> active: ProfileLibrary.active-label == name;
+                        property <bool> current: ProfileLibrary.editor-open && ProfileLibrary.current-label == name;
+                        property <bool> auto: ProfileLibrary.automatic;
                         height: max(132px, card-content.preferred-height + 10px);
                         Rectangle {
                         height: parent.height - 10px; width: parent.width;
@@ -642,54 +642,54 @@ export component LibraryPage inherits PageLayout {
                         border-radius: Theme.radius-large;
                         border-width: card.active ? 2px : 1px;
                         border-color: card.active ? Theme.accent : Theme.divider;
-                        TouchArea { double-clicked => { LayoutLibrary.edit(index); } }
+                        TouchArea { double-clicked => { ProfileLibrary.edit(index); } }
                         card-content := HorizontalLayout { padding: Theme.space-xl; spacing: Theme.space-2xl;
                             VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: Theme.space-m-plus;
                                 HorizontalLayout { spacing: Theme.space-m; vertical-stretch: 0;
                                     Text { text: (index + 1) + "."; color: Theme.muted; font-size: Theme.font-subtitle; font-weight: Theme.weight-semibold; vertical-alignment: center; accessible-role: none; }
-                                    InlineTextField { min-width: 0px; text: name; text-size: Theme.font-subtitle; text-weight: Theme.weight-semibold; label: @tr("Layout name"); validate(value) => { return LayoutLibrary.name-error(value, name); } saved(value) => { return LayoutLibrary.rename(index, value); } }
+                                    InlineTextField { min-width: 0px; text: name; text-size: Theme.font-subtitle; text-weight: Theme.weight-semibold; label: @tr("Profile name"); validate(value) => { return ProfileLibrary.name-error(value, name); } saved(value) => { return ProfileLibrary.rename(index, value); } }
                                     Rectangle { horizontal-stretch: 1; }
-                                    if card.auto && LayoutLibrary.auto-default == index: Text { text: @tr("Default"); color: Theme.accent; font-size: Theme.font-medium; font-weight: Theme.weight-semibold; vertical-alignment: center; }
+                                    if card.auto && ProfileLibrary.auto-default == index: Text { text: @tr("Default"); color: Theme.accent; font-size: Theme.font-medium; font-weight: Theme.weight-semibold; vertical-alignment: center; }
                                     if card.auto && row.rule-count > 0: Rectangle {
-                                        property <bool> on: LayoutLibrary.highlight-target == index;
+                                        property <bool> on: ProfileLibrary.highlight-target == index;
                                         width: badge.preferred-width + 12px;
                                         border-radius: Theme.radius-small;
                                         background: self.on ? Theme.accent.transparentize(0.85) : badge-touch.has-hover ? Theme.hover : transparent;
                                         accessible-role: button;
                                         accessible-label: badge.text;
-                                        accessible-action-default => { LayoutLibrary.highlight-target = self.on ? -1 : index; }
+                                        accessible-action-default => { ProfileLibrary.highlight-target = self.on ? -1 : index; }
                                         badge := Text {
                                             text: @tr("In {n} rule" | "In {n} rules" % row.rule-count);
                                             color: parent.on ? Theme.accent : Theme.muted; font-size: Theme.font-medium; vertical-alignment: center;
                                         }
-                                        badge-focus := ActionFocus { activated => { LayoutLibrary.highlight-target = LayoutLibrary.highlight-target == index ? -1 : index; } }
+                                        badge-focus := ActionFocus { activated => { ProfileLibrary.highlight-target = ProfileLibrary.highlight-target == index ? -1 : index; } }
                                         FocusRing { focused: badge-focus.has-focus; border-radius: Theme.radius-small; }
-                                        badge-touch := TouchArea { mouse-cursor: pointer; clicked => { LayoutLibrary.highlight-target = parent.on ? -1 : index; } }
+                                        badge-touch := TouchArea { mouse-cursor: pointer; clicked => { ProfileLibrary.highlight-target = parent.on ? -1 : index; } }
                                     }
                                 }
                                 if !row.loaded: Text { text: @tr("Please wait…"); color: Theme.muted; }
                                 if row.error.id != "": Text { text: Locale.text(row.error); color: Theme.error; wrap: word-wrap; }
-                                if row.loaded: InlineTextArea { preserve-draft-on-refresh: true; draft-owner: row.id; text: row.description; placeholder: @tr("Add a description…"); label: @tr("Description"); text-color: Theme.muted; saved(value) => { return LayoutLibrary.set-description(index, value); } }
+                                if row.loaded: InlineTextArea { preserve-draft-on-refresh: true; draft-owner: row.id; text: row.description; placeholder: @tr("Add a description…"); label: @tr("Description"); text-color: Theme.muted; saved(value) => { return ProfileLibrary.set-description(index, value); } }
                                 Rectangle { vertical-stretch: 1; }
                                 HorizontalLayout { spacing: Theme.space-m; alignment: start; vertical-stretch: 0;
-                                    DragHandle { group: DragGroups.layouts; index: index; count: LayoutLibrary.names.length; dropped(from, to) => { LayoutLibrary.reorder(from, to); } }
+                                    DragHandle { group: DragGroups.profiles; index: index; count: ProfileLibrary.names.length; dropped(from, to) => { ProfileLibrary.reorder(from, to); } }
                                     if card.active: Text { text: @tr("Active"); color: Theme.accent; font-weight: Theme.weight-semibold; vertical-alignment: center; }
-                                    if !card.auto && !card.active: Button { text: @tr("Activate"); icon: @image-url("icons/play.svg"); colorize-icon: true; clicked => { LayoutLibrary.action(index, LibraryAction.activate); } }
-                                    if card.current: Text { text: LayoutLibrary.dirty ? @tr("Open for editing (unsaved)") : @tr("Open for editing"); color: Theme.text; vertical-alignment: center; }
-                                    if !card.current: Button { text: @tr("Edit layout"); icon: @image-url("icons/pencil.svg"); colorize-icon: true; clicked => { LayoutLibrary.edit(index); } }
+                                    if !card.auto && !card.active: Button { text: @tr("Activate"); icon: @image-url("icons/play.svg"); colorize-icon: true; clicked => { ProfileLibrary.action(index, LibraryAction.activate); } }
+                                    if card.current: Text { text: ProfileLibrary.dirty ? @tr("Open for editing (unsaved)") : @tr("Open for editing"); color: Theme.text; vertical-alignment: center; }
+                                    if !card.current: Button { text: @tr("Edit profile"); icon: @image-url("icons/pencil.svg"); colorize-icon: true; clicked => { ProfileLibrary.edit(index); } }
                                     Rectangle {
                                         width: 44px; height: Theme.control-height-l;
                                         Button {
                                             width: parent.width; height: parent.height; text: "…"; accessible-label: @tr("Actions") + ": " + name;
-                                            clicked => { LayoutLibrary.select(index); more-menu.show(); }
+                                            clicked => { ProfileLibrary.select(index); more-menu.show(); }
                                         }
                                         more-menu := PopupWindow {
                                             x: parent.width - self.width; y: parent.height + Theme.menu-offset;
                                             width: 240px;
                                             MenuSurface {
-                                                MenuItem { text: @tr("Duplicate…"); has-icon: true; icon: @image-url("icons/copy.svg"); clicked => { more-menu.close(); LayoutLibrary.open-create(LayoutSource.copy, index); } }
+                                                MenuItem { text: @tr("Duplicate…"); has-icon: true; icon: @image-url("icons/copy.svg"); clicked => { more-menu.close(); ProfileLibrary.open-create(Profilesource.copy, index); } }
                                                 Divider {}
-                                                MenuItem { text: @tr("Delete…"); has-icon: true; icon: @image-url("icons/trash-2.svg"); danger: true; clicked => { more-menu.close(); LayoutLibrary.open-delete(index); } }
+                                                MenuItem { text: @tr("Delete…"); has-icon: true; icon: @image-url("icons/trash-2.svg"); danger: true; clicked => { more-menu.close(); ProfileLibrary.open-delete(index); } }
                                             }
                                         }
                                     }
@@ -697,48 +697,48 @@ export component LibraryPage inherits PageLayout {
                             }
                             if !root.compact: VerticalLayout { width: 220px; spacing: Theme.space-m; alignment: start;
                                 visible: row.loaded && row.error.id == "";
-                                property <LayoutSummary> summary: row.summary;
-                                if summary.rules + summary.layers + (AppState.in-development ? summary.emoji-pages + summary.action-pages + summary.macros + summary.commands : 0) == 0: Text { text: @tr("Empty layout"); color: Theme.muted; font-size: Theme.font-medium; }
+                                property <Profilesummary> summary: row.summary;
+                                if summary.rules + summary.layers + (AppState.in-development ? summary.emoji-pages + summary.action-pages + summary.macros + summary.commands : 0) == 0: Text { text: @tr("Empty profile"); color: Theme.muted; font-size: Theme.font-medium; }
                                 if summary.rules > 0: Text { text: @tr("{n} rule" | "{n} rules" % summary.rules); color: Theme.muted; font-size: Theme.font-medium; }
                                 if summary.layers > 0: Text { text: @tr("{n} layer" | "{n} layers" % summary.layers); color: Theme.muted; font-size: Theme.font-medium; }
                                 if AppState.in-development && summary.emoji-pages > 0: Text { text: @tr("{n} emoji page" | "{n} emoji pages" % summary.emoji-pages); color: Theme.muted; font-size: Theme.font-medium; }
                                 if AppState.in-development && summary.action-pages > 0: Text { text: @tr("{n} action page" | "{n} action pages" % summary.action-pages); color: Theme.muted; font-size: Theme.font-medium; }
                                 if AppState.in-development && summary.macros > 0: Text { text: @tr("{n} macro" | "{n} macros" % summary.macros); color: Theme.muted; font-size: Theme.font-medium; }
-                                // Commands run shell scripts, so they stand out when reviewing a layout.
+                                // Commands run shell scripts, so they stand out when reviewing a profile.
                                 if AppState.in-development && summary.commands > 0: HorizontalLayout { spacing: Theme.space-s; alignment: start;
                                     Text { text: @tr("{n} command" | "{n} commands" % summary.commands); color: Theme.warning; font-size: Theme.font-medium; font-weight: Theme.weight-semibold; }
                                 }
                             }
                         }
                         }
-                        DropMarker { cross-size: parent.width; group: DragGroups.layouts; index: index; row-start: card.y; row-size: card.height; }
+                        DropMarker { cross-size: parent.width; group: DragGroups.profiles; index: index; row-start: card.y; row-size: card.height; }
                     }
                 }
             }
         }
-        if LayoutLibrary.automatic: VerticalLayout { width: 340px; padding-bottom: Theme.page-padding; auto-rules-panel := AutoRulesPanel {} }
+        if ProfileLibrary.automatic: VerticalLayout { width: 340px; padding-bottom: Theme.page-padding; auto-rules-panel := AutoRulesPanel {} }
     }
 }
 
 export component LibraryDialogOverlay inherits Rectangle {
-    if LayoutLibrary.dialog != LibraryDialog.none && LayoutLibrary.dialog != LibraryDialog.delete && LayoutLibrary.dialog != LibraryDialog.delete-rule && LayoutLibrary.dialog != LibraryDialog.conflict: DialogFrame {
-        title: LayoutLibrary.dialog == LibraryDialog.create ? @tr("New layout")
-            : LayoutLibrary.dialog == LibraryDialog.rule ? (LayoutLibrary.rule-index < 0 ? @tr("New rule") : @tr("Rule {}", LayoutLibrary.rule-index + 1))
+    if ProfileLibrary.dialog != LibraryDialog.none && ProfileLibrary.dialog != LibraryDialog.delete && ProfileLibrary.dialog != LibraryDialog.delete-rule && ProfileLibrary.dialog != LibraryDialog.conflict: DialogFrame {
+        title: ProfileLibrary.dialog == LibraryDialog.create ? @tr("New profile")
+            : ProfileLibrary.dialog == LibraryDialog.rule ? (ProfileLibrary.rule-index < 0 ? @tr("New rule") : @tr("Rule {}", ProfileLibrary.rule-index + 1))
             : @tr("Unsaved changes");
         card-width: 620px;
-        card-height: LayoutLibrary.dialog == LibraryDialog.create ? 420px : 0px;
-        close => { LayoutLibrary.cancel-dialog(); }
-        if LayoutLibrary.dialog == LibraryDialog.create: VerticalLayout { padding: 0px; spacing: Theme.space-m-plus;
+        card-height: ProfileLibrary.dialog == LibraryDialog.create ? 420px : 0px;
+        close => { ProfileLibrary.cancel-dialog(); }
+        if ProfileLibrary.dialog == LibraryDialog.create: VerticalLayout { padding: 0px; spacing: Theme.space-m-plus;
             FormField {
-                label: @tr("Name"); placeholder: @tr("New layout name"); autofocus: true;
-                text <=> LayoutLibrary.create-name;
-                error: LayoutLibrary.name-error(LayoutLibrary.create-name, "");
-                accepted => { LayoutLibrary.submit-create(); }
+                label: @tr("Name"); placeholder: @tr("New profile name"); autofocus: true;
+                text <=> ProfileLibrary.create-name;
+                error: ProfileLibrary.name-error(ProfileLibrary.create-name, "");
+                accepted => { ProfileLibrary.submit-create(); }
             }
             Text { text: @tr("Description (optional)"); color: Theme.text; }
-            TextEdit { text <=> LayoutLibrary.create-description; accessible-label: @tr("Description"); height: 120px; }
+            TextEdit { text <=> ProfileLibrary.create-description; accessible-label: @tr("Description"); height: 120px; }
         }
-        if LayoutLibrary.dialog == LibraryDialog.rule: ScrollView {
+        if ProfileLibrary.dialog == LibraryDialog.rule: ScrollView {
             viewport-width: self.visible-width;
             vertical-stretch: 1;
             // The dialog grows with the form up to the window height, then scrolls.
@@ -746,78 +746,78 @@ export component LibraryDialogOverlay inherits Rectangle {
             min-height: 120px;
             rule-form := VerticalLayout { spacing: Theme.space-xl; alignment: start;
                 VerticalLayout { spacing: Theme.space-m;
-                    Text { text: @tr("Use layout"); color: Theme.text; font-weight: Theme.weight-semibold; }
-                    TargetPicker { names: LayoutLibrary.rule-names; missing: LayoutLibrary.rule-target-missing; target: LayoutLibrary.rule-target; picked(index) => { LayoutLibrary.rule-target-missing = false; LayoutLibrary.rule-target = index; } }
+                    Text { text: @tr("Use profile"); color: Theme.text; font-weight: Theme.weight-semibold; }
+                    TargetPicker { names: ProfileLibrary.rule-names; missing: ProfileLibrary.rule-target-missing; target: ProfileLibrary.rule-target; picked(index) => { ProfileLibrary.rule-target-missing = false; ProfileLibrary.rule-target = index; } }
                 }
                 VerticalLayout { spacing: Theme.space-xs;
                     Text { text: @tr("When"); color: Theme.text; font-weight: Theme.weight-semibold; }
                     Text { text: @tr("All filled conditions must match. A rule without conditions always matches."); color: Theme.muted; wrap: word-wrap; }
                 }
-                ConditionsForm { game <=> LayoutLibrary.rule-game; languages <=> LayoutLibrary.rule-layouts; applications <=> LayoutLibrary.rule-apps; show-exclusions: true; excluded <=> LayoutLibrary.rule-excluded; }
+                ConditionsForm { game <=> ProfileLibrary.rule-game; languages <=> ProfileLibrary.rule-profiles; applications <=> ProfileLibrary.rule-apps; show-exclusions: true; excluded <=> ProfileLibrary.rule-excluded; }
             }
         }
-        if LayoutLibrary.dialog == LibraryDialog.unsaved: Text {
-            text: LayoutLibrary.pending-action == PendingLayoutAction.quit
-                ? @tr("Save layout changes before quitting?")
-                : LayoutLibrary.current-label == ""
-                ? @tr("The layout you are editing has not been saved to the library. Its changes will be lost.")
-                : @tr("“{}” has unsaved changes. Save them before switching?", LayoutLibrary.current-label);
+        if ProfileLibrary.dialog == LibraryDialog.unsaved: Text {
+            text: ProfileLibrary.pending-action == PendingProfileAction.quit
+                ? @tr("Save profile changes before quitting?")
+                : ProfileLibrary.current-label == ""
+                ? @tr("The profile you are editing has not been saved to the library. Its changes will be lost.")
+                : @tr("“{}” has unsaved changes. Save them before switching?", ProfileLibrary.current-label);
             color: Theme.text; wrap: word-wrap;
         }
-        if LayoutLibrary.status.id != "" && LayoutLibrary.status.id != "library-saved": Text { accessible-live-region: polite; text: Locale.text(LayoutLibrary.status); color: Theme.error; wrap: word-wrap; }
-        if LayoutLibrary.dialog != LibraryDialog.rule: Rectangle { vertical-stretch: 1; }
+        if ProfileLibrary.status.id != "" && ProfileLibrary.status.id != "library-saved": Text { accessible-live-region: polite; text: Locale.text(ProfileLibrary.status); color: Theme.error; wrap: word-wrap; }
+        if ProfileLibrary.dialog != LibraryDialog.rule: Rectangle { vertical-stretch: 1; }
         HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m;
-            if LayoutLibrary.dialog == LibraryDialog.rule && LayoutLibrary.rule-index >= 0: Button {
+            if ProfileLibrary.dialog == LibraryDialog.rule && ProfileLibrary.rule-index >= 0: Button {
                 text: @tr("Delete rule"); icon: @image-url("icons/trash-2.svg"); colorize-icon: true;
-                clicked => { LayoutLibrary.dialog = LibraryDialog.delete-rule; }
+                clicked => { ProfileLibrary.dialog = LibraryDialog.delete-rule; }
             }
             Rectangle { horizontal-stretch: 1; }
-            Button { text: @tr("Cancel"); clicked => { LayoutLibrary.cancel-dialog(); } }
-            if LayoutLibrary.dialog == LibraryDialog.create: Button { text: @tr("Create"); primary: true; enabled: LayoutLibrary.name-error(LayoutLibrary.create-name, "").id == ""; clicked => { LayoutLibrary.submit-create(); } }
-            if LayoutLibrary.dialog == LibraryDialog.rule: Button { text: @tr("Save"); primary: true; clicked => { LayoutLibrary.save-rule(); } }
-            if LayoutLibrary.dialog == LibraryDialog.unsaved: Button { text: @tr("Discard changes"); clicked => { LayoutLibrary.continue-pending(); } }
+            Button { text: @tr("Cancel"); clicked => { ProfileLibrary.cancel-dialog(); } }
+            if ProfileLibrary.dialog == LibraryDialog.create: Button { text: @tr("Create"); primary: true; enabled: ProfileLibrary.name-error(ProfileLibrary.create-name, "").id == ""; clicked => { ProfileLibrary.submit-create(); } }
+            if ProfileLibrary.dialog == LibraryDialog.rule: Button { text: @tr("Save"); primary: true; clicked => { ProfileLibrary.save-rule(); } }
+            if ProfileLibrary.dialog == LibraryDialog.unsaved: Button { text: @tr("Discard changes"); clicked => { ProfileLibrary.continue-pending(); } }
             // Without a library file the save asks for a name first.
-            if LayoutLibrary.dialog == LibraryDialog.unsaved: Button {
-                text: LayoutLibrary.current-label != "" ? @tr("Save and continue") : @tr("Save…"); primary: true;
-                clicked => { LayoutLibrary.save-and-continue(); }
+            if ProfileLibrary.dialog == LibraryDialog.unsaved: Button {
+                text: ProfileLibrary.current-label != "" ? @tr("Save and continue") : @tr("Save…"); primary: true;
+                clicked => { ProfileLibrary.save-and-continue(); }
             }
         }
     }
-    if LayoutLibrary.dialog == LibraryDialog.delete: ConfirmDialog {
-        title: @tr("Delete layout?");
-        error: LayoutLibrary.status.id == "library-saved" ? "" : Locale.text(LayoutLibrary.status);
-        body: @tr("“{}” will be deleted. This cannot be undone.", LayoutLibrary.names[LayoutLibrary.selected])
-            + (LayoutLibrary.rows[LayoutLibrary.selected].rule-count > 0
-                ? " " + @tr("Its {n} automatic rule will be deleted too." | "Its {n} automatic rules will be deleted too." % LayoutLibrary.rows[LayoutLibrary.selected].rule-count)
+    if ProfileLibrary.dialog == LibraryDialog.delete: ConfirmDialog {
+        title: @tr("Delete profile?");
+        error: ProfileLibrary.status.id == "library-saved" ? "" : Locale.text(ProfileLibrary.status);
+        body: @tr("“{}” will be deleted. This cannot be undone.", ProfileLibrary.names[ProfileLibrary.selected])
+            + (ProfileLibrary.rows[ProfileLibrary.selected].rule-count > 0
+                ? " " + @tr("Its {n} automatic rule will be deleted too." | "Its {n} automatic rules will be deleted too." % ProfileLibrary.rows[ProfileLibrary.selected].rule-count)
                 : "")
-            + (LayoutLibrary.auto-default == LayoutLibrary.selected ? " " + @tr("Automatic mode will use no layout by default.") : "");
+            + (ProfileLibrary.auto-default == ProfileLibrary.selected ? " " + @tr("Automatic mode will use no profile by default.") : "");
         confirm-text: @tr("Delete");
-        cancel => { LayoutLibrary.cancel-dialog(); }
-        confirm => { LayoutLibrary.delete(LayoutLibrary.selected); }
+        cancel => { ProfileLibrary.cancel-dialog(); }
+        confirm => { ProfileLibrary.delete(ProfileLibrary.selected); }
     }
-    if LayoutLibrary.dialog == LibraryDialog.delete-rule: ConfirmDialog {
-        title: @tr("Delete rule {}?", LayoutLibrary.rule-index + 1);
-        error: LayoutLibrary.status.id == "library-saved" ? "" : Locale.text(LayoutLibrary.status);
+    if ProfileLibrary.dialog == LibraryDialog.delete-rule: ConfirmDialog {
+        title: @tr("Delete rule {}?", ProfileLibrary.rule-index + 1);
+        error: ProfileLibrary.status.id == "library-saved" ? "" : Locale.text(ProfileLibrary.status);
         body: @tr("The rule will be deleted. This cannot be undone.");
         confirm-text: @tr("Delete");
-        cancel => { LayoutLibrary.dialog = LibraryDialog.rule; }
-        confirm => { LayoutLibrary.delete-rule(LayoutLibrary.rule-index); }
+        cancel => { ProfileLibrary.dialog = LibraryDialog.rule; }
+        confirm => { ProfileLibrary.delete-rule(ProfileLibrary.rule-index); }
     }
-    if LayoutLibrary.save-as-open: DialogFrame {
-        title: @tr("Save layout as…");
+    if ProfileLibrary.save-as-open: DialogFrame {
+        title: @tr("Save profile as…");
         card-width: 480px;
-        close => { LayoutLibrary.cancel-save-as(); }
+        close => { ProfileLibrary.cancel-save-as(); }
         FormField {
-            label: @tr("Layout name"); autofocus: true;
-            text <=> LayoutLibrary.save-as-name;
-            error: LayoutLibrary.name-error(LayoutLibrary.save-as-name, "");
-            accepted => { if LayoutLibrary.name-error(LayoutLibrary.save-as-name, "").id == "" { LayoutLibrary.save-as(LayoutLibrary.save-as-name); LayoutLibrary.finish-save(); } }
+            label: @tr("Profile name"); autofocus: true;
+            text <=> ProfileLibrary.save-as-name;
+            error: ProfileLibrary.name-error(ProfileLibrary.save-as-name, "");
+            accepted => { if ProfileLibrary.name-error(ProfileLibrary.save-as-name, "").id == "" { ProfileLibrary.save-as(ProfileLibrary.save-as-name); ProfileLibrary.finish-save(); } }
         }
-        Text { accessible-live-region: polite; text: Locale.text(LayoutLibrary.status); color: Theme.error; wrap: word-wrap; }
+        Text { accessible-live-region: polite; text: Locale.text(ProfileLibrary.status); color: Theme.error; wrap: word-wrap; }
         HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m; vertical-stretch: 0;
             Rectangle { horizontal-stretch: 1; }
-            Button { text: @tr("Cancel"); clicked => { LayoutLibrary.cancel-save-as(); } }
-            Button { text: @tr("Save"); enabled: LayoutLibrary.name-error(LayoutLibrary.save-as-name, "").id == ""; clicked => { LayoutLibrary.save-as(LayoutLibrary.save-as-name); LayoutLibrary.finish-save(); } }
+            Button { text: @tr("Cancel"); clicked => { ProfileLibrary.cancel-save-as(); } }
+            Button { text: @tr("Save"); enabled: ProfileLibrary.name-error(ProfileLibrary.save-as-name, "").id == ""; clicked => { ProfileLibrary.save-as(ProfileLibrary.save-as-name); ProfileLibrary.finish-save(); } }
         }
     }
 }

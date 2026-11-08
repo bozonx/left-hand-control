@@ -341,12 +341,12 @@ mod tests {
         assert!(cache.keyboard_layout().is_none());
         assert_eq!(events.len(), 2);
         assert!(matches!(events[1], crate::CoreEvent::LayoutChanged(None)));
-        assert!(!crate::profile::auto_switch::matches_condition_set(
-            &crate::profile::model::LayoutConditionSet {
-                layouts: vec!["us".into()],
+        assert!(!crate::config::auto_switch::matches_condition_set(
+            &crate::config::model::ProfileConditionSet {
+                keyboard_layouts: vec!["us".into()],
                 ..Default::default()
             },
-            &crate::profile::auto_switch::AutoSwitchContext::from_state(&cache)
+            &crate::config::auto_switch::AutoSwitchContext::from_state(&cache)
         ));
         publisher.publish(&layout, &cache, |event| events.push(event));
         assert_eq!(events.len(), 3);

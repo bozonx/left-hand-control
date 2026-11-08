@@ -703,7 +703,7 @@ fn virtual_keyboard_keys(
         all_keys.insert(KeyCode::new(code));
     }
     // Catalog keys beyond that block, such as KEY_TOUCHPAD_TOGGLE (0x212).
-    for key in crate::profile::key_catalog::CATEGORIES
+    for key in crate::config::key_catalog::CATEGORIES
         .iter()
         .flat_map(|keys| keys.iter())
         .filter_map(|name| super::keys::code_to_key(name))

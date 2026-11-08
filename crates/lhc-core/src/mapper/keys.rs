@@ -327,7 +327,7 @@ pub fn code_to_key(code: &str) -> Option<KeyCode> {
 
 /// Config key code of an evdev key code, if the catalog has one.
 pub fn evdev_to_code(code: u16) -> Option<&'static str> {
-    crate::profile::key_catalog::CATEGORIES
+    crate::config::key_catalog::CATEGORIES
         .iter()
         .flat_map(|keys| keys.iter().copied())
         .find(|name| code_to_key(name).is_some_and(|key| key.code() == code))
@@ -446,7 +446,7 @@ mod tests {
     #[test]
     fn every_catalog_key_maps_to_a_distinct_evdev_key_and_round_trips() {
         let mut codes = std::collections::HashSet::new();
-        for name in crate::profile::key_catalog::CATEGORIES
+        for name in crate::config::key_catalog::CATEGORIES
             .iter()
             .flat_map(|keys| keys.iter())
         {

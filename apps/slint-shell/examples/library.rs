@@ -1,7 +1,7 @@
 mod support;
 use lhc_core::{
+    config::{bundled::BUNDLED, model::ProfileMode, profile_file},
     config_document::ConfigDocument,
-    profile::{bundled::BUNDLED, layout_file, model::LayoutMode},
     storage::StoragePaths,
 };
 use slint::{ComponentHandle, Model};
@@ -61,11 +61,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     development.invoke_save();
     ui.global::<slint_shell::ui::AppState>()
         .set_in_development(true);
-    let library = ui.global::<LayoutLibrary>();
-    library.invoke_open_create(LayoutSource::Empty, 0);
+    let library = ui.global::<ProfileLibrary>();
+    library.invoke_open_create(Profilesource::Empty, 0);
     assert_eq!(library.get_dialog(), LibraryDialog::Create);
     assert!(!library.get_create_name().is_empty());
-    library.invoke_create("A".into(), "".into(), LayoutSource::Empty, 0);
+    library.invoke_create("A".into(), "".into(), Profilesource::Empty, 0);
     assert_eq!(library.get_dialog(), LibraryDialog::None);
     let summary = library.get_rows().row_data(0).unwrap().summary;
     assert_eq!(summary.emoji_pages, 0);
@@ -73,41 +73,45 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(
         document
             .read()
-            .load_layout("user:A")
+            .load_profile("user:A")
             .unwrap()
             .emoji_pages
             .iter()
             .all(|page| page.cells.is_empty())
     );
     let error = |name: &str, except: &str| library.invoke_name_error(name.into(), except.into()).id;
-    assert_eq!(error("a", ""), "layout-name-taken");
+    assert_eq!(error("a", ""), "profile-name-taken");
     assert_eq!(error("a", "A"), "");
     assert_eq!(error("a/b", ""), "name-invalid");
-    assert_eq!(error(" ", ""), "layout-name-required");
-    library.invoke_create("B".into(), "".into(), LayoutSource::Empty, 0);
+    assert_eq!(error(" ", ""), "profile-name-required");
+    library.invoke_create("B".into(), "".into(), Profilesource::Empty, 0);
     assert_eq!(library.get_names().row_count(), 2);
     // A stale selection must not redirect an action on another card.
     library.invoke_select(1);
     library.invoke_action(0, LibraryAction::Activate);
     library.invoke_load(1);
     assert_eq!(
-        document.read().settings().editing_layout_id.as_deref(),
+        document.read().settings().editing_profile_id.as_deref(),
         Some("user:B")
     );
     assert_eq!(
-        document.read().settings().manual_layout_id.as_deref(),
+        document.read().settings().manual_profile_id.as_deref(),
         Some("user:A")
     );
     assert!(library.invoke_rename(1, "Профиль".into()));
     assert!(library.invoke_set_description(1, "Описание профиля".into()));
     assert_eq!(library.get_status().id, "");
-    assert!(paths.load_user_layout("B").is_err());
-    assert!(paths.load_user_layout("Профиль")?.contains("Описание"));
+    assert!(paths.load_user_profile("B").is_err());
+    assert!(paths.load_user_profile("Профиль")?.contains("Описание"));
     assert_eq!(library.get_current_label(), "Профиль");
     // Entering Auto preserves an explicit passthrough default.
     library.invoke_set_automatic(true);
     assert_eq!(
-        document.read().settings().auto_default_layout_id.as_deref(),
+        document
+            .read()
+            .settings()
+            .auto_default_profile_id
+            .as_deref(),
         None
     );
     assert_eq!(library.get_auto_default(), -1);
@@ -116,7 +120,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // "Профиль" is the second row: a rule for it, then an "off" rule above it.
     library.invoke_open_rule(-1, 1);
     assert_eq!(library.get_dialog(), LibraryDialog::Rule);
-    library.set_rule_layouts("us, ru".into());
+    library.set_rule_profiles("us, ru".into());
     library.set_rule_apps("kate, terminal".into());
     library.invoke_save_rule();
     assert_eq!(library.get_dialog(), LibraryDialog::None);
@@ -142,16 +146,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let config = document.read();
         let settings = config.settings();
         assert_eq!(settings.auto_rules.len(), 2);
-        assert_eq!(settings.auto_rules[0].layout_id, None);
+        assert_eq!(settings.auto_rules[0].profile_id, None);
         assert_eq!(
             settings.auto_rules[0].conditions.game_mode,
-            Some(lhc_core::profile::model::GameModeCondition::On)
+            Some(lhc_core::config::model::GameModeCondition::On)
         );
         assert_eq!(
-            settings.auto_rules[1].layout_id.as_deref(),
+            settings.auto_rules[1].profile_id.as_deref(),
             Some("user:Профиль")
         );
-        assert_eq!(settings.auto_default_layout_id.as_deref(), Some("user:A"));
+        assert_eq!(settings.auto_default_profile_id.as_deref(), Some("user:A"));
     }
     assert_eq!(library.get_auto_rules().row_data(1).unwrap().target, 1);
     assert_eq!(library.get_rows().row_data(1).unwrap().rule_count, 1);
@@ -187,76 +191,76 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     library.invoke_action(1, LibraryAction::MoveUp);
     assert_eq!(library.get_names().row_data(0).unwrap(), "Профиль");
     library.invoke_set_automatic(true);
-    assert_eq!(document.read().settings().layout_mode, LayoutMode::Auto);
+    assert_eq!(document.read().settings().profile_mode, ProfileMode::Auto);
     assert!(library.get_automatic());
     library.invoke_delete(0);
     assert!(document.read().settings().auto_rules.is_empty());
     assert_eq!(library.get_names().row_count(), 1);
-    // Creating opens the new layout without asking again: unsaved changes
+    // Creating opens the new profile without asking again: unsaved changes
     // are confirmed before the create dialog opens.
-    library.invoke_create("Copy".into(), "".into(), LayoutSource::Copy, 0);
+    library.invoke_create("Copy".into(), "".into(), Profilesource::Copy, 0);
     assert_eq!(library.get_dialog(), LibraryDialog::None);
     assert_eq!(library.get_current_label(), "Copy");
     assert_eq!(
-        paths.load_user_layout("A")?,
-        paths.load_user_layout("Copy")?
+        paths.load_user_profile("A")?,
+        paths.load_user_profile("Copy")?
     );
     library.invoke_set_description(0, "Inline".into());
-    assert!(paths.load_user_layout("A")?.contains("Inline"));
+    assert!(paths.load_user_profile("A")?.contains("Inline"));
     assert_eq!(library.get_names().row_count(), 2);
     library.invoke_rename(0, "Renamed".into());
-    assert!(paths.load_user_layout("A").is_err());
-    assert!(paths.load_user_layout("Renamed")?.contains("Inline"));
+    assert!(paths.load_user_profile("A").is_err());
+    assert!(paths.load_user_profile("Renamed")?.contains("Inline"));
     library.invoke_reorder(0, 1);
     assert_eq!(library.get_names().row_data(1).unwrap(), "Renamed");
     library.invoke_set_automatic(true);
     assert_eq!(library.get_names().row_data(1).unwrap(), "Renamed");
     library.invoke_set_automatic(false);
     assert_eq!(library.get_names().row_data(1).unwrap(), "Renamed");
-    let saved = document.read().layout().clone();
+    let saved = document.read().profile().clone();
     document.edit(slint_shell::document::View::Rules, |config| {
-        config.update_layout(|layout| layout.description = Some("Discard me".into()))
+        config.update_profile(|profile| profile.description = Some("Discard me".into()))
     })?;
     assert!(library.get_dirty());
     library.invoke_discard_current();
     assert!(!library.get_dirty());
-    assert_eq!(document.read().layout(), &saved);
+    assert_eq!(document.read().profile(), &saved);
     // Saving over a file changed elsewhere asks first; formatting alone
     // does not count as a change.
     let describe = |description: &str| {
         document.edit(slint_shell::document::View::Rules, |config| {
-            config.update_layout(|layout| layout.description = Some(description.into()))
+            config.update_profile(|profile| profile.description = Some(description.into()))
         })
     };
     let mut theirs = saved.clone();
     theirs.description = Some("Theirs".into());
-    let theirs = layout_file::serialize(&theirs);
-    let disk = paths.load_user_layout("Copy")?;
-    paths.save_user_layout("Copy", &format!("\n{disk}\n"), true)?;
+    let theirs = profile_file::serialize(&theirs);
+    let disk = paths.load_user_profile("Copy")?;
+    paths.save_user_profile("Copy", &format!("\n{disk}\n"), true)?;
     describe("Formatting")?;
     library.invoke_save_current();
     assert_eq!(library.get_dialog(), LibraryDialog::None);
-    assert!(paths.load_user_layout("Copy")?.contains("Formatting"));
+    assert!(paths.load_user_profile("Copy")?.contains("Formatting"));
     describe("Mine")?;
-    paths.save_user_layout("Copy", &theirs, true)?;
+    paths.save_user_profile("Copy", &theirs, true)?;
     library.invoke_save_current();
     assert_eq!(library.get_dialog(), LibraryDialog::Conflict);
-    assert_eq!(paths.load_user_layout("Copy")?, theirs);
+    assert_eq!(paths.load_user_profile("Copy")?, theirs);
     library.invoke_cancel_dialog();
     assert!(library.get_dirty());
     library.invoke_save_current();
     library.invoke_overwrite_current();
     assert_eq!(library.get_dialog(), LibraryDialog::None);
-    assert!(paths.load_user_layout("Copy")?.contains("Mine"));
+    assert!(paths.load_user_profile("Copy")?.contains("Mine"));
     assert!(!library.get_dirty());
     describe("Lost")?;
-    paths.save_user_layout("Copy", &theirs, true)?;
+    paths.save_user_profile("Copy", &theirs, true)?;
     library.invoke_save_current();
     assert_eq!(library.get_dialog(), LibraryDialog::Conflict);
     library.invoke_cancel_dialog();
     library.invoke_discard_current();
     assert_eq!(
-        document.read().layout().description.as_deref(),
+        document.read().profile().description.as_deref(),
         Some("Theirs")
     );
     assert!(!library.get_dirty());
@@ -276,13 +280,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let reloaded = ConfigDocument::load(paths.clone())?;
     assert!(reloaded.settings().auto_rules.is_empty());
     assert_eq!(
-        reloaded.settings().editing_layout_id.as_deref(),
+        reloaded.settings().editing_profile_id.as_deref(),
         Some("user:Copy")
     );
     document.edit(slint_shell::document::View::Shell, |config| {
         config.update_settings(|settings| {
-            settings.layout_mode = LayoutMode::Manual;
-            settings.manual_layout_id = Some("user:missing".into());
+            settings.profile_mode = ProfileMode::Manual;
+            settings.manual_profile_id = Some("user:missing".into());
         })
     })?;
     let bundled_name = BUNDLED[0].display_name();
@@ -290,13 +294,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         library.get_bundled_names().row_data(0).unwrap().as_str(),
         bundled_name.as_str()
     );
-    library.invoke_open_create(LayoutSource::Bundled, 0);
+    library.invoke_open_create(Profilesource::Bundled, 0);
     assert_eq!(library.get_create_name().as_str(), bundled_name.as_str());
-    library.invoke_create("Ivan K".into(), "".into(), LayoutSource::Bundled, 0);
+    library.invoke_create("Ivan K".into(), "".into(), Profilesource::Bundled, 0);
     assert_eq!(ui.get_page(), Page::Rules);
     assert_eq!(
         ui.global::<RulesEditor>().get_rows().row_count(),
-        document.read().layout().rules.len()
+        document.read().profile().rules.len()
     );
     assert!(ui.global::<RulesEditor>().get_rows().row_count() > 0);
     ui.invoke_navigate(Page::Layers, MenuKind::Emoji);
@@ -306,24 +310,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(library.invoke_suggest_name("Ivan K".into()), "Ivan K (2)");
     // Unsaved edits must survive until the user decides what to do with them.
     document.edit(slint_shell::document::View::Rules, |config| {
-        config.update_layout(|layout| layout.rules.clear())
+        config.update_profile(|profile| profile.rules.clear())
     })?;
     assert!(library.get_dirty());
-    library.invoke_open_create(LayoutSource::Empty, 0);
+    library.invoke_open_create(Profilesource::Empty, 0);
     assert_eq!(library.get_dialog(), LibraryDialog::Unsaved);
     library.invoke_save_and_continue();
     assert!(!library.get_dirty());
-    assert!(document.read().load_layout("user:Ivan K")?.rules.is_empty());
+    assert!(
+        document
+            .read()
+            .load_profile("user:Ivan K")?
+            .rules
+            .is_empty()
+    );
     assert_eq!(library.get_dialog(), LibraryDialog::Create);
     library.set_create_name("Empty".into());
     library.invoke_submit_create();
     assert_eq!(library.get_dialog(), LibraryDialog::None);
-    assert!(paths.load_user_layout("Empty").is_ok());
+    assert!(paths.load_user_profile("Empty").is_ok());
     assert_eq!(
-        document.read().settings().editing_layout_id.as_deref(),
+        document.read().settings().editing_profile_id.as_deref(),
         Some("user:Empty")
     );
-    assert!(document.read().layout().rules.is_empty());
+    assert!(document.read().profile().rules.is_empty());
     assert_eq!(ui.global::<RulesEditor>().get_rows().row_count(), 0);
     let ivan = library
         .get_names()
@@ -341,11 +351,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     // A conflict during "save and continue" still finishes the switch.
     document.edit(slint_shell::document::View::Rules, |config| {
-        config.update_layout(|layout| layout.description = Some("Pending".into()))
+        config.update_profile(|profile| profile.description = Some("Pending".into()))
     })?;
-    let mut theirs = document.read().load_layout("user:Ivan K")?;
+    let mut theirs = document.read().load_profile("user:Ivan K")?;
     theirs.description = Some("Changed elsewhere".into());
-    paths.save_user_layout("Ivan K", &layout_file::serialize(&theirs), true)?;
+    paths.save_user_profile("Ivan K", &profile_file::serialize(&theirs), true)?;
     library.invoke_edit(position("Empty"));
     assert_eq!(library.get_dialog(), LibraryDialog::Unsaved);
     library.invoke_save_and_continue();
@@ -353,21 +363,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     library.invoke_overwrite_current();
     library.invoke_finish_save();
     assert_eq!(library.get_current_label(), "Empty");
-    assert!(paths.load_user_layout("Ivan K")?.contains("Pending"));
-    // A layout file that does not parse can still be renamed and deleted,
+    assert!(paths.load_user_profile("Ivan K")?.contains("Pending"));
+    // A profile file that does not parse can still be renamed and deleted,
     // and a dialog never shows the error of an earlier action.
-    std::fs::write(paths.layout_path("Broken")?, "not json")?;
+    std::fs::write(paths.profile_path("Broken")?, "not json")?;
     library.invoke_refresh();
     assert!(!library.invoke_rename(position("Broken"), "a/b".into()));
     assert_ne!(library.get_status().id, "");
     assert!(library.invoke_rename(position("Broken"), "Still broken".into()));
-    assert_eq!(paths.load_user_layout("Still broken")?, "not json");
+    assert_eq!(paths.load_user_profile("Still broken")?, "not json");
     assert!(!library.invoke_rename(position("Still broken"), "a/b".into()));
     library.invoke_open_delete(position("Still broken"));
     assert_eq!(library.get_dialog(), LibraryDialog::Delete);
     assert_eq!(library.get_status().id, "");
     library.invoke_delete(library.get_selected());
-    assert!(paths.load_user_layout("Still broken").is_err());
+    assert!(paths.load_user_profile("Still broken").is_err());
     assert_eq!(library.get_dialog(), LibraryDialog::None);
     // A working copy without a library file can be saved from the
     // unsaved-changes question: it asks for a name, then switches.
@@ -375,7 +385,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     library.invoke_delete(library.get_selected());
     assert_eq!(library.get_current_label(), "");
     document.edit(slint_shell::document::View::Rules, |config| {
-        config.update_layout(|layout| layout.description = Some("Orphan".into()))
+        config.update_profile(|profile| profile.description = Some("Orphan".into()))
     })?;
     library.invoke_edit(position("Ivan K"));
     assert_eq!(library.get_dialog(), LibraryDialog::Unsaved);
@@ -387,17 +397,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     library.set_save_as_name("Orphan".into());
     library.invoke_save_as("Orphan".into());
     library.invoke_finish_save();
-    assert!(paths.load_user_layout("Orphan")?.contains("Orphan"));
+    assert!(paths.load_user_profile("Orphan")?.contains("Orphan"));
     assert_eq!(library.get_current_label(), "Ivan K");
     assert_eq!(library.get_dialog(), LibraryDialog::None);
     let emoji = EmojiPopup::new()?;
     let quick = QuickPopup::new()?;
     let mut menus = popup_model::ConfiguredMenus::default();
-    menus.layout.emoji_pages = (0..5)
-        .map(|_| lhc_core::profile::model::EmojiPage::default_page())
+    menus.profile.emoji_pages = (0..5)
+        .map(|_| lhc_core::config::model::EmojiPage::default_page())
         .collect();
-    menus.layout.quick_action_pages = (0..5)
-        .map(|i| lhc_core::profile::model::QuickActionPage::new(i.to_string(), format!("Page {i}")))
+    menus.profile.quick_action_pages = (0..5)
+        .map(|i| lhc_core::config::model::QuickActionPage::new(i.to_string(), format!("Page {i}")))
         .collect();
     menus.apply_emoji(&emoji);
     menus.apply_quick(&quick);
@@ -414,7 +424,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::parse("show quick 6")?,
         Command::ShowPage(Popup::Quick, 6)
     );
-    ui.invoke_navigate(Page::Layouts, MenuKind::Emoji);
+    ui.invoke_navigate(Page::Profiles, MenuKind::Emoji);
     if std::env::var_os("LHC_LIBRARY_AUTO").is_some() {
         library.invoke_set_automatic(true);
     }
@@ -441,11 +451,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     ui.show()?;
     slint::Timer::single_shot(std::time::Duration::from_millis(300), move || {
-        let library = ui.global::<LayoutLibrary>();
+        let library = ui.global::<ProfileLibrary>();
         let row_height = if library.get_automatic() { 118.0 } else { 96.0 };
         assert_eq!(
             ui.global::<DragDrop>().invoke_locate(
-                ui.global::<DragGroups>().get_layouts(),
+                ui.global::<DragGroups>().get_profiles(),
                 0,
                 10_000.0,
                 library.get_names().row_count() as i32,

@@ -24,7 +24,7 @@ pub enum AppAction {
         page: Option<NonZeroU32>,
     },
     ShowSettings,
-    ActivateLayout(NonZeroU32),
+    ActivateProfile(NonZeroU32),
     GameMode(GameModeRequest),
 }
 
@@ -52,7 +52,7 @@ impl AppAction {
                 page: None,
             },
             "showSettings" => Self::ShowSettings,
-            "activateLayout" => Self::ActivateLayout(NonZeroU32::new(n)?),
+            "activateProfile" => Self::ActivateProfile(NonZeroU32::new(n)?),
             "setGameModeAuto" => Self::GameMode(GameModeRequest::Auto),
             "setGameModeOn" => Self::GameMode(GameModeRequest::On),
             "setGameModeOff" => Self::GameMode(GameModeRequest::Off),
@@ -87,7 +87,7 @@ mod tests {
         for id in [
             "showQuickMenu0",
             "showEmojiMenu-1",
-            "activateLayout0",
+            "activateProfile0",
             "quit",
         ] {
             assert!(AppAction::parse(id).is_none());

@@ -1,7 +1,7 @@
-//! Config and data paths (`StoragePaths`), file names and layout name
+//! Config and data paths (`StoragePaths`), file names and profile name
 //! validation.
 
-use crate::profile::schema::{self, CONFIG_SCHEMA_VERSION, LAYOUT_SCHEMA_VERSION};
+use crate::config::schema::{self, CONFIG_SCHEMA_VERSION, PROFILE_SCHEMA_VERSION};
 #[cfg(not(target_os = "windows"))]
 use std::fs::rename as rename_file;
 use std::fs::{self, File, OpenOptions};
@@ -49,7 +49,7 @@ impl StoragePaths {
         Ok(Self::new(config_dir, data_dir))
     }
 
-    /// Development layout for `os` under `base`: the per-OS home mirror.
+    /// Development directory layout for `os` under `base`: the per-OS home mirror.
     pub fn dev(base: &Path, os: &str) -> Self {
         let (folder, config, data) = dev_home_layout(os);
         let home = base.join(folder);
@@ -75,8 +75,8 @@ impl StoragePaths {
         &self.data_dir
     }
 
-    pub fn layouts_dir(&self) -> PathBuf {
-        self.data_dir.join("layouts")
+    pub fn profiles_dir(&self) -> PathBuf {
+        self.data_dir.join("profiles")
     }
 
     pub fn ensure(&self) -> Result<(), String> {
@@ -104,9 +104,9 @@ impl StoragePaths {
         write_atomic(&path, contents.as_bytes())
     }
 
-    pub fn list_user_layouts(&self) -> Result<Vec<String>, String> {
+    pub fn list_user_profiles(&self) -> Result<Vec<String>, String> {
         self.ensure()?;
-        let dir = self.layouts_dir();
+        let dir = self.profiles_dir();
         if !dir.exists() {
             return Ok(Vec::new());
         }
@@ -128,45 +128,45 @@ impl StoragePaths {
         Ok(out)
     }
 
-    pub fn load_user_layout(&self, name: &str) -> Result<String, String> {
-        String::from_utf8(self.load_user_layout_bytes(name)?)
-            .map_err(|e| format!("read layout UTF-8: {e}"))
+    pub fn load_user_profile(&self, name: &str) -> Result<String, String> {
+        String::from_utf8(self.load_user_profile_bytes(name)?)
+            .map_err(|e| format!("read profile UTF-8: {e}"))
     }
 
-    /// Read a snapshot even when a damaged layout is not UTF-8.
-    pub fn load_user_layout_bytes(&self, name: &str) -> Result<Vec<u8>, String> {
+    /// Read a snapshot even when a damaged profile is not UTF-8.
+    pub fn load_user_profile_bytes(&self, name: &str) -> Result<Vec<u8>, String> {
         self.ensure()?;
-        let path = self.layout_path(name)?;
+        let path = self.profile_path(name)?;
         if !path.exists() {
-            return Err(format!("Layout \"{name}\" not found"));
+            return Err(format!("Profile \"{name}\" not found"));
         }
-        fs::read(&path).map_err(|e| format!("read layout: {e}"))
+        fs::read(&path).map_err(|e| format!("read profile: {e}"))
     }
 
-    pub fn save_user_layout(
+    pub fn save_user_profile(
         &self,
         name: &str,
         contents: &str,
         overwrite: bool,
     ) -> Result<String, String> {
-        self.save_user_layout_bytes(name, contents.as_bytes(), overwrite)
+        self.save_user_profile_bytes(name, contents.as_bytes(), overwrite)
     }
 
-    pub(crate) fn save_user_layout_bytes(
+    pub(crate) fn save_user_profile_bytes(
         &self,
         name: &str,
         contents: &[u8],
         overwrite: bool,
     ) -> Result<String, String> {
         self.ensure()?;
-        let dir = self.layouts_dir();
+        let dir = self.profiles_dir();
         fs::create_dir_all(&dir).map_err(|e| format!("create_dir_all: {e}"))?;
-        let safe = validate_layout_name(name)?;
+        let safe = validate_profile_name(name)?;
         let path = dir.join(format!("{safe}.json"));
         if path.exists() && !overwrite {
-            return Err(format!("Layout \"{safe}\" already exists"));
+            return Err(format!("Profile \"{safe}\" already exists"));
         }
-        backup_older_schema(&path, LAYOUT_SCHEMA_VERSION)?;
+        backup_older_schema(&path, PROFILE_SCHEMA_VERSION)?;
         write_file(&path, contents, overwrite)?;
         Ok(safe)
     }
@@ -174,22 +174,22 @@ impl StoragePaths {
     /// Stage the write before checking the snapshot, so changes made while
     /// serializing or syncing the temporary file are reported as conflicts.
     /// Returns false when the destination no longer contains `expected`.
-    pub(crate) fn replace_user_layout(
+    pub(crate) fn replace_user_profile(
         &self,
         name: &str,
         contents: &str,
         expected: &[u8],
     ) -> Result<bool, String> {
-        let path = self.layout_path(name)?;
-        backup_older_schema(&path, LAYOUT_SCHEMA_VERSION)?;
+        let path = self.profile_path(name)?;
+        backup_older_schema(&path, PROFILE_SCHEMA_VERSION)?;
         replace_file_checked(&path, contents.as_bytes(), || match fs::read(&path) {
             Ok(bytes) => Ok(bytes == expected),
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
-            Err(error) => Err(format!("read before layout replacement: {error}")),
+            Err(error) => Err(format!("read before profile replacement: {error}")),
         })
     }
 
-    pub fn rename_user_layout(
+    pub fn rename_user_profile(
         &self,
         old_name: &str,
         new_name: &str,
@@ -197,13 +197,13 @@ impl StoragePaths {
         overwrite: bool,
     ) -> Result<String, String> {
         self.ensure()?;
-        let old_path = self.layout_path(old_name)?;
+        let old_path = self.profile_path(old_name)?;
         if !old_path.exists() {
-            return Err(format!("Layout \"{old_name}\" not found"));
+            return Err(format!("Profile \"{old_name}\" not found"));
         }
-        backup_older_schema(&old_path, LAYOUT_SCHEMA_VERSION)?;
-        let new_safe = validate_layout_name(new_name)?;
-        let dir = self.layouts_dir();
+        backup_older_schema(&old_path, PROFILE_SCHEMA_VERSION)?;
+        let new_safe = validate_profile_name(new_name)?;
+        let dir = self.profiles_dir();
         fs::create_dir_all(&dir).map_err(|e| format!("create_dir_all: {e}"))?;
         let new_path = dir.join(format!("{new_safe}.json"));
         if old_path != new_path && same_file(&old_path, &new_path) {
@@ -215,9 +215,9 @@ impl StoragePaths {
             return Ok(new_safe);
         }
         if new_path.exists() && old_path != new_path && !overwrite {
-            return Err(format!("Layout \"{new_safe}\" already exists"));
+            return Err(format!("Profile \"{new_safe}\" already exists"));
         }
-        backup_older_schema(&new_path, LAYOUT_SCHEMA_VERSION)?;
+        backup_older_schema(&new_path, PROFILE_SCHEMA_VERSION)?;
         let previous_destination = if overwrite && old_path != new_path && new_path.exists() {
             Some(fs::read(&new_path).map_err(|error| format!("read rename destination: {error}"))?)
         } else {
@@ -239,55 +239,55 @@ impl StoragePaths {
         Ok(new_safe)
     }
 
-    pub fn delete_user_layout(&self, name: &str) -> Result<(), String> {
+    pub fn delete_user_profile(&self, name: &str) -> Result<(), String> {
         self.ensure()?;
-        let path = self.layout_path(name)?;
+        let path = self.profile_path(name)?;
         if path.exists() {
             fs::remove_file(&path).map_err(|e| format!("remove_file: {e}"))?;
         }
         Ok(())
     }
 
-    pub fn layout_path(&self, name: &str) -> Result<PathBuf, String> {
-        let safe = validate_layout_name(name)?;
-        Ok(self.layouts_dir().join(format!("{safe}.json")))
+    pub fn profile_path(&self, name: &str) -> Result<PathBuf, String> {
+        let safe = validate_profile_name(name)?;
+        Ok(self.profiles_dir().join(format!("{safe}.json")))
     }
 }
 
-/// Longest layout name, in characters.
-pub const MAX_LAYOUT_NAME_CHARS: usize = 128;
+/// Longest profile name, in characters.
+pub const MAX_PROFILE_NAME_CHARS: usize = 128;
 // Common file systems limit a component to 255 bytes; reserve the extension.
-const MAX_LAYOUT_NAME_BYTES: usize = 255 - ".json".len();
+const MAX_PROFILE_NAME_BYTES: usize = 255 - ".json".len();
 
-pub fn validate_layout_name(name: &str) -> Result<String, String> {
+pub fn validate_profile_name(name: &str) -> Result<String, String> {
     let trimmed = name.trim();
     if trimmed.is_empty() {
-        return Err("Layout name cannot be empty".into());
+        return Err("Profile name cannot be empty".into());
     }
-    if trimmed.chars().count() > MAX_LAYOUT_NAME_CHARS {
+    if trimmed.chars().count() > MAX_PROFILE_NAME_CHARS {
         return Err(format!(
-            "Layout name is too long (max {MAX_LAYOUT_NAME_CHARS} characters)"
+            "Profile name is too long (max {MAX_PROFILE_NAME_CHARS} characters)"
         ));
     }
-    if trimmed.len() > MAX_LAYOUT_NAME_BYTES {
+    if trimmed.len() > MAX_PROFILE_NAME_BYTES {
         return Err(format!(
-            "Layout name is too long (max {MAX_LAYOUT_NAME_BYTES} UTF-8 bytes)"
+            "Profile name is too long (max {MAX_PROFILE_NAME_BYTES} UTF-8 bytes)"
         ));
     }
     for ch in trimmed.chars() {
         if ch.is_control() || matches!(ch, '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|') {
-            return Err("layout name contains invalid filename characters".into());
+            return Err("profile name contains invalid filename characters".into());
         }
     }
     if trimmed == "." || trimmed == ".." {
-        return Err("Layout name is reserved".into());
+        return Err("Profile name is reserved".into());
     }
     if trimmed.starts_with('.') {
-        return Err("Layout name cannot start with a dot".into());
+        return Err("Profile name cannot start with a dot".into());
     }
     // Windows rejects file names ending in a dot; keep names portable.
     if trimmed.ends_with('.') {
-        return Err("Layout name cannot end with a dot".into());
+        return Err("Profile name cannot end with a dot".into());
     }
     Ok(trimmed.to_string())
 }
@@ -557,7 +557,7 @@ mod tests {
     #[test]
     fn checked_replacement_preserves_a_change_made_while_staging_and_cleans_up() {
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("layout.json");
+        let path = dir.path().join("profile.json");
         std::fs::write(&path, b"baseline").unwrap();
         let applied = super::replace_file_checked(&path, b"mine", || {
             // This callback runs only after the new file has been synced.
@@ -599,9 +599,9 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let old = dir.path().join("missing.json");
         let new = dir.path().join("published.json");
-        super::write_file(&new, b"complete layout", false).unwrap();
+        super::write_file(&new, b"complete profile", false).unwrap();
         super::remove_rename_source(&old, &new, None, |path| fs::remove_file(path)).unwrap();
-        assert_eq!(fs::read(&new).unwrap(), b"complete layout");
+        assert_eq!(fs::read(&new).unwrap(), b"complete profile");
     }
 
     #[test]
@@ -633,16 +633,16 @@ mod tests {
             PathBuf::from("/repo/dev-files/linux/.config/dev.bozonx.left-hand-control/config.json")
         );
         assert_eq!(
-            linux.layouts_dir().join("Test.json"),
+            linux.profiles_dir().join("Test.json"),
             PathBuf::from(
-                "/repo/dev-files/linux/.local/share/dev.bozonx.left-hand-control/layouts/Test.json"
+                "/repo/dev-files/linux/.local/share/dev.bozonx.left-hand-control/profiles/Test.json"
             )
         );
         let windows = StoragePaths::dev(base, "windows");
         assert_eq!(
-            windows.layouts_dir(),
+            windows.profiles_dir(),
             PathBuf::from(
-                "/repo/dev-files/windows/AppData/Roaming/dev.bozonx.left-hand-control/layouts"
+                "/repo/dev-files/windows/AppData/Roaming/dev.bozonx.left-hand-control/profiles"
             )
         );
         let macos = StoragePaths::dev(base, "macos");
@@ -660,7 +660,7 @@ mod tests {
         assert_eq!(base, absolute);
     }
 
-    use super::{StoragePaths, validate_layout_name};
+    use super::{StoragePaths, validate_profile_name};
     use std::fs;
     use std::path::PathBuf;
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -693,41 +693,43 @@ mod tests {
     }
 
     #[test]
-    fn validate_layout_name_rejects_invalid_names() {
-        assert_eq!(validate_layout_name(" Left hand "), Ok("Left hand".into()));
-        assert!(validate_layout_name("   ").is_err());
-        assert!(validate_layout_name("...").is_err());
-        assert!(validate_layout_name("left/hand").is_err());
+    fn validate_profile_name_rejects_invalid_names() {
+        assert_eq!(validate_profile_name(" Left hand "), Ok("Left hand".into()));
+        assert!(validate_profile_name("   ").is_err());
+        assert!(validate_profile_name("...").is_err());
+        assert!(validate_profile_name("left/hand").is_err());
     }
 
     #[test]
-    fn unicode_layout_names_fit_both_destination_and_temporary_files() {
+    fn unicode_profile_names_fit_both_destination_and_temporary_files() {
         let dir = tempfile::tempdir().unwrap();
         let storage = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let name = "я".repeat(125);
-        assert!(validate_layout_name(&name).is_ok());
-        storage.save_user_layout(&name, "first", false).unwrap();
-        storage.save_user_layout(&name, "second", true).unwrap();
-        assert_eq!(storage.load_user_layout(&name).unwrap(), "second");
-        assert!(validate_layout_name(&"я".repeat(126)).is_err());
-        assert!(validate_layout_name(&"a".repeat(128)).is_ok());
+        assert!(validate_profile_name(&name).is_ok());
+        storage.save_user_profile(&name, "first", false).unwrap();
+        storage.save_user_profile(&name, "second", true).unwrap();
+        assert_eq!(storage.load_user_profile(&name).unwrap(), "second");
+        assert!(validate_profile_name(&"я".repeat(126)).is_err());
+        assert!(validate_profile_name(&"a".repeat(128)).is_ok());
     }
 
     #[test]
-    fn save_and_list_layouts_use_sanitized_names() {
-        let temp = TempDir::new("storage-layouts");
+    fn save_and_list_profiles_use_sanitized_names() {
+        let temp = TempDir::new("storage-profiles");
         let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
 
         let saved = storage
-            .save_user_layout("My layout", r#"{"description":"test"}"#, false)
-            .expect("save layout");
-        assert_eq!(saved, "My layout");
+            .save_user_profile("My profile", r#"{"description":"test"}"#, false)
+            .expect("save profile");
+        assert_eq!(saved, "My profile");
         assert_eq!(
-            storage.list_user_layouts().expect("list layouts"),
-            vec!["My layout".to_string()]
+            storage.list_user_profiles().expect("list profiles"),
+            vec!["My profile".to_string()]
         );
         assert_eq!(
-            storage.load_user_layout("My layout").expect("load layout"),
+            storage
+                .load_user_profile("My profile")
+                .expect("load profile"),
             r#"{"description":"test"}"#
         );
     }
@@ -738,7 +740,7 @@ mod tests {
         use std::os::windows::fs::OpenOptionsExt;
 
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("layout.json");
+        let path = dir.path().join("profile.json");
         fs::write(&path, "old").unwrap();
         let reader = fs::OpenOptions::new()
             .read(true)
@@ -762,7 +764,7 @@ mod tests {
         use std::os::windows::fs::OpenOptionsExt;
 
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("layout.json");
+        let path = dir.path().join("profile.json");
         fs::write(&path, "old").unwrap();
         let reader = fs::OpenOptions::new()
             .read(true)
@@ -776,49 +778,49 @@ mod tests {
     }
 
     #[test]
-    fn rename_layout_overwrites_when_requested() {
-        let temp = TempDir::new("storage-layouts-rename");
+    fn rename_profile_overwrites_when_requested() {
+        let temp = TempDir::new("storage-profiles-rename");
         let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
 
         storage
-            .save_user_layout("Old", r#"{"description":"one"}"#, false)
+            .save_user_profile("Old", r#"{"description":"one"}"#, false)
             .expect("save old");
         storage
-            .save_user_layout("New", r#"{"description":"two"}"#, false)
+            .save_user_profile("New", r#"{"description":"two"}"#, false)
             .expect("save new");
 
         assert!(
             storage
-                .rename_user_layout("Old", "New", r#"{"description":"updated"}"#, false)
+                .rename_user_profile("Old", "New", r#"{"description":"updated"}"#, false)
                 .is_err()
         );
 
         let renamed = storage
-            .rename_user_layout("Old", "New", r#"{"description":"updated"}"#, true)
+            .rename_user_profile("Old", "New", r#"{"description":"updated"}"#, true)
             .expect("rename");
         assert_eq!(renamed, "New");
         assert_eq!(
-            storage.load_user_layout("New").expect("load new"),
+            storage.load_user_profile("New").expect("load new"),
             r#"{"description":"updated"}"#
         );
-        assert!(storage.load_user_layout("Old").is_err());
+        assert!(storage.load_user_profile("Old").is_err());
     }
 
     #[test]
-    fn rename_that_changes_only_case_keeps_the_layout() {
-        let temp = TempDir::new("storage-layouts-case");
+    fn rename_that_changes_only_case_keeps_the_profile() {
+        let temp = TempDir::new("storage-profiles-case");
         let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
         storage
-            .save_user_layout("Work", r#"{"description":"one"}"#, false)
+            .save_user_profile("Work", r#"{"description":"one"}"#, false)
             .expect("save");
 
         let renamed = storage
-            .rename_user_layout("Work", "work", r#"{"description":"two"}"#, false)
+            .rename_user_profile("Work", "work", r#"{"description":"two"}"#, false)
             .expect("rename by case");
         assert_eq!(renamed, "work");
-        assert_eq!(storage.list_user_layouts().unwrap(), ["work"]);
+        assert_eq!(storage.list_user_profiles().unwrap(), ["work"]);
         assert_eq!(
-            storage.load_user_layout("work").unwrap(),
+            storage.load_user_profile("work").unwrap(),
             r#"{"description":"two"}"#
         );
     }
@@ -826,9 +828,9 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn distinct_files_differing_in_case_are_never_merged() {
-        let temp = TempDir::new("storage-layouts-case-distinct");
+        let temp = TempDir::new("storage-profiles-case-distinct");
         let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
-        storage.save_user_layout("A", "{}", false).expect("save A");
+        storage.save_user_profile("A", "{}", false).expect("save A");
         // Only a case-sensitive file system can hold both names.
         let probe = temp.path().join("case-probe");
         fs::write(&probe, "probe").unwrap();
@@ -836,10 +838,10 @@ mod tests {
             return;
         }
         storage
-            .save_user_layout("a", "{\"x\":1}", false)
+            .save_user_profile("a", "{\"x\":1}", false)
             .expect("save a");
-        assert!(storage.rename_user_layout("A", "a", "{}", false).is_err());
-        assert_eq!(storage.load_user_layout("a").unwrap(), "{\"x\":1}");
+        assert!(storage.rename_user_profile("A", "a", "{}", false).is_err());
+        assert_eq!(storage.load_user_profile("a").unwrap(), "{\"x\":1}");
     }
 
     #[test]
@@ -859,7 +861,7 @@ mod tests {
     #[test]
     fn new_file_publication_never_overwrites_an_existing_destination() {
         let dir = tempfile::tempdir().unwrap();
-        let destination = dir.path().join("layout.json");
+        let destination = dir.path().join("profile.json");
         fs::write(&destination, "external").unwrap();
         assert!(super::write_file(&destination, b"replacement", false).is_err());
         assert_eq!(fs::read_to_string(destination).unwrap(), "external");
@@ -914,7 +916,7 @@ mod tests {
     }
 
     #[test]
-    fn concurrent_layout_creations_publish_exactly_one_complete_file() {
+    fn concurrent_profile_creations_publish_exactly_one_complete_file() {
         use std::sync::{Arc, Barrier};
         let dir = tempfile::tempdir().unwrap();
         let storage = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
@@ -927,7 +929,7 @@ mod tests {
                     let contents = format!("writer-{index}").repeat(1024);
                     barrier.wait();
                     storage
-                        .save_user_layout("Shared", &contents, false)
+                        .save_user_profile("Shared", &contents, false)
                         .ok()
                         .map(|_| contents)
                 })
@@ -938,7 +940,7 @@ mod tests {
             .filter_map(|handle| handle.join().unwrap())
             .collect();
         assert_eq!(winners.len(), 1);
-        assert_eq!(storage.load_user_layout("Shared").unwrap(), winners[0]);
-        assert_eq!(fs::read_dir(storage.layouts_dir()).unwrap().count(), 1);
+        assert_eq!(storage.load_user_profile("Shared").unwrap(), winners[0]);
+        assert_eq!(fs::read_dir(storage.profiles_dir()).unwrap().count(), 1);
     }
 }

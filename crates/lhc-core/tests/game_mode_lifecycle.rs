@@ -72,7 +72,7 @@ fn startup_and_watcher_restart_follow_persisted_control() {
 
 #[cfg(target_os = "linux")]
 fn check_grace_period(document: &mut ConfigDocument) {
-    use lhc_core::profile::model::GameModeProcessMatcher;
+    use lhc_core::config::model::GameModeProcessMatcher;
     use std::os::unix::process::CommandExt;
     struct Child(std::process::Child);
     impl Drop for Child {
@@ -106,7 +106,7 @@ fn check_grace_period(document: &mut ConfigDocument) {
     let stopped = Instant::now();
     // A re-evaluation on an unrelated save must preserve the recent match.
     document
-        .set_appearance(lhc_core::profile::model::Appearance::Dark)
+        .set_appearance(lhc_core::config::model::Appearance::Dark)
         .unwrap();
     assert!(gamemode::status().active);
     wait_for(|| !gamemode::status().active);

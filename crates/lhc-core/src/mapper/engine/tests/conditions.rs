@@ -1,5 +1,5 @@
 use super::*;
-use crate::profile::auto_switch::AutoSwitchContext;
+use crate::config::auto_switch::AutoSwitchContext;
 
 fn with_window(title: &str, app_id: &str) -> AutoSwitchContext {
     AutoSwitchContext {

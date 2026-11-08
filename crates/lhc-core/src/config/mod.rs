@@ -1,4 +1,4 @@
-//! The editable configuration model: settings, layouts, actions and the
+//! The editable configuration model: settings, profiles, actions and the
 //! rules that turn them into mapper input. UI-independent; the shell
 //! presents and edits it through [`crate::config_document::ConfigDocument`].
 
@@ -12,11 +12,11 @@ pub mod diagnostics;
 pub mod ids;
 pub mod layer_edit;
 pub mod layer_grid;
-pub mod layout_file;
 pub(crate) mod macro_graph;
 pub mod macros;
 pub mod model;
 pub mod names;
+pub mod profile_file;
 pub mod rule_edit;
 pub mod schema;
 pub mod settings;

@@ -8,7 +8,7 @@
 //! only as a slow fallback.
 //!
 //! Window titles are read only while some condition needs them
-//! (`title:` patterns, see `profile::app_match`): the app id and the
+//! (`title:` patterns, see `config::app_match`): the app id and the
 //! process are enough otherwise, and a title is the most private and the
 //! least stable part of a window.
 

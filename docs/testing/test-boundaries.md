@@ -84,7 +84,7 @@ cargo test --locked -p slint-shell --test frontend --test ipc --test page_callba
 targets, а не ступень пирамиды. Полные команды CI и отдельный запуск ignored
 mapper e2e приведены в [общих проверках](common.md).
 
-Чистые callback-проверки первоначального выбора layout, game-mode binding и
+Чистые callback-проверки первоначального выбора profile, game-mode binding и
 расчёта drag target перенесены из `examples/interactions.rs` в headless
 `tests/frontend.rs`; бывшие примеры `action-picker`, `conditions` и проверки
 `editor --smoke` — в `tests/page_callbacks.rs` (`editor --smoke` теперь только

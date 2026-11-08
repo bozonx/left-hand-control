@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         diagnostic_key: Default::default(),
     });
     editor.invoke_clone_builtin(0, copy_name);
-    let first = |document: &Rc<Document>| document.read().layout().macros[0].clone();
+    let first = |document: &Rc<Document>| document.read().profile().macros[0].clone();
     assert_eq!(first(&document).steps.len(), 3);
     assert_eq!(first(&document).name, "Пустая строка выше (копия)");
     assert_eq!(first(&document).id, "insertEmptyLineAboveCopy");
@@ -79,7 +79,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(editor.get_has_errors());
     assert!(editor.get_has_unsaved_changes());
     assert!(
-        !ui.global::<slint_shell::ui::LayoutLibrary>()
+        !ui.global::<slint_shell::ui::ProfileLibrary>()
             .invoke_flush_drafts()
     );
     editor.invoke_remove_step(0, 5);
@@ -90,22 +90,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     wait_until("macro autosave", || !editor.get_has_unsaved_changes());
     editor.invoke_add("Второй".into());
     editor.invoke_move(0, 1);
-    assert_eq!(document.read().layout().macros[0].id, "testMacro");
+    assert_eq!(document.read().profile().macros[0].id, "testMacro");
     editor.invoke_remove(1);
     let loaded = document.read();
-    assert_eq!(loaded.layout().macros.len(), 1);
-    assert_eq!(loaded.layout().macros[0].name, "Тестовый макрос");
+    assert_eq!(loaded.profile().macros.len(), 1);
+    assert_eq!(loaded.profile().macros[0].name, "Тестовый макрос");
     drop(loaded);
     editor.invoke_add_step(0, "".into());
     let picker = ui.global::<slint_shell::ui::ActionPicker>();
     picker.set_value("KeyA".into());
     picker.invoke_apply();
-    let library = ui.global::<slint_shell::ui::LayoutLibrary>();
+    let library = ui.global::<slint_shell::ui::ProfileLibrary>();
     library.set_save_as_name("Draft regression".into());
     library.invoke_save_as("Draft regression".into());
     editor.invoke_set_field(0, MacroField::Name, "Saved without waiting".into());
     library.invoke_save_current();
-    let saved = document.read().load_layout("user:Draft regression")?;
+    let saved = document.read().load_profile("user:Draft regression")?;
     assert_eq!(saved.macros[0].name, "Saved without waiting");
     editor.invoke_set_field(0, MacroField::Id, "invalid id".into());
     document.edit(slint_shell::document::View::Layers, |config| {
@@ -115,7 +115,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!library.invoke_flush_drafts());
     library.invoke_save_current();
     assert_eq!(
-        document.read().load_layout("user:Draft regression")?.macros[0].id,
+        document
+            .read()
+            .load_profile("user:Draft regression")?
+            .macros[0]
+            .id,
         saved.macros[0].id
     );
     editor.invoke_refresh();
@@ -126,7 +130,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     editor.invoke_set_field(1, MacroField::Id, "renamedMacro".into());
     assert!(editor.invoke_flush_pending());
     assert_eq!(
-        document.read().layout().macros[0].steps[0].action,
+        document.read().profile().macros[0].steps[0].action,
         "macro:renamedMacro"
     );
     assert_eq!(
@@ -141,7 +145,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "macro:renamedMacro"
     );
     editor.invoke_remove(1);
-    assert_eq!(document.read().layout().macros.len(), 2);
+    assert_eq!(document.read().profile().macros.len(), 2);
     assert_eq!(editor.get_status().id, "macro-in-use");
     editor.invoke_remove(0);
     editor.invoke_set_step(0, 0, "pause:0".into());

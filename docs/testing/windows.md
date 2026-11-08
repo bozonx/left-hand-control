@@ -594,7 +594,7 @@ If clipboard paste is used as the Windows fallback, verify all of the following:
 - a user focus change during the operation cannot paste into a different application;
 - Ctrl, Alt, Shift, and Win are not left logically pressed.
 
-Human visual/physical checks are in the [manual acceptance checklist](manual-acceptance.md); automated mapper, layouts, macros and `text:` scenarios are described in [the Windows mapper matrix](../development/windows-mapper.md). Owner crash and guard failure have separate named scenarios; physical hardware remains manual; secure desktop and whole-process-tree termination are explicit automatic scenarios, accepted only by their own PASS reports.
+Human visual/physical checks are in the [manual acceptance checklist](manual-acceptance.md); automated mapper, profiles, macros and `text:` scenarios are described in [the Windows mapper matrix](../development/windows-mapper.md). Owner crash and guard failure have separate named scenarios; physical hardware remains manual; secure desktop and whole-process-tree termination are explicit automatic scenarios, accepted only by their own PASS reports.
 
 ## Snapshots and result recording
 

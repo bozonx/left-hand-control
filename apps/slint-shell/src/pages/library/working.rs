@@ -4,20 +4,20 @@ use super::*;
 
 pub(super) fn refresh_context(ui: &SettingsWindow, document: &Document) {
     let config = document.read();
-    let library = ui.global::<LayoutLibrary>();
+    let library = ui.global::<ProfileLibrary>();
     let name = current_name(&config);
     library.set_current_label(name.clone().unwrap_or_default().into());
-    let current = config.layout();
+    let current = config.profile();
     let flags = match &name {
-        Some(name) => document.with_saved_layout(name, |saved| {
+        Some(name) => document.with_saved_profile(name, |saved| {
             DirtyFlags::compare(
-                saved.map(|saved| (&saved.layout, saved.text.as_str())),
+                saved.map(|saved| (&saved.profile, saved.text.as_str())),
                 current,
             )
         }),
         None => {
-            let initial = LayoutPreset::initial();
-            let text = layout_file::serialize(&initial);
+            let initial = ProfilePreset::initial();
+            let text = profile_file::serialize(&initial);
             DirtyFlags::compare(Some((&initial, &text)), current)
         }
     };
@@ -44,10 +44,10 @@ pub(super) struct DirtyFlags {
 }
 
 impl DirtyFlags {
-    /// Compare the working copy with the saved layout and its serialized
+    /// Compare the working copy with the saved profile and its serialized
     /// text. Both sides go through the same parser, so formatting
     /// differences in the file do not count as changes.
-    pub(super) fn compare(saved: Option<(&LayoutPreset, &str)>, current: &LayoutPreset) -> Self {
+    pub(super) fn compare(saved: Option<(&ProfilePreset, &str)>, current: &ProfilePreset) -> Self {
         let Some((saved, saved_text)) = saved else {
             // No saved file: everything counts as unsaved.
             return Self {
@@ -64,11 +64,11 @@ impl DirtyFlags {
         if saved == current {
             return Self::default();
         }
-        let text = layout_file::serialize(current);
-        let normalized = layout_file::parse(&text).ok().flatten();
+        let text = profile_file::serialize(current);
+        let normalized = profile_file::parse(&text).ok().flatten();
         let current = normalized.as_ref().unwrap_or(current);
         let any = match &normalized {
-            Some(normalized) => layout_file::serialize(normalized) != saved_text,
+            Some(normalized) => profile_file::serialize(normalized) != saved_text,
             None => text != saved_text,
         };
         let base = crate::keyboard::BASE
@@ -88,7 +88,7 @@ impl DirtyFlags {
     }
 }
 
-/// Name of the layout the mapper uses now and the automatic rule that
+/// Name of the profile the mapper uses now and the automatic rule that
 /// chose it.
 pub fn refresh_active(ui: &SettingsWindow, document: &Document) {
     let (label, matched, message) = active_context(
@@ -96,7 +96,7 @@ pub fn refresh_active(ui: &SettingsWindow, document: &Document) {
         &AutoSwitchContext::current(),
         lhc_core::mapper::runtime::status().running,
     );
-    let library = ui.global::<LayoutLibrary>();
+    let library = ui.global::<ProfileLibrary>();
     library.set_active_error(message.to_ui());
     library.set_active_label(label.into());
     library.set_auto_matched(matched);
@@ -114,16 +114,16 @@ fn active_context(
 ) -> (String, i32, Msg) {
     let (id, matched, error) = document.activation_status(context, running);
     let message = error.map_or(Msg::None, |error| {
-        log::warn!("determining the active layout: {error}");
+        log::warn!("determining the active profile: {error}");
         if running {
-            Msg::LayoutSwitchFailed(error)
+            Msg::ProfileSwitchFailed(error)
         } else {
-            Msg::LayoutLoadFailed(error)
+            Msg::ProfileLoadFailed(error)
         }
     });
     let label = id
         .as_deref()
-        .and_then(user_layout_name)
+        .and_then(user_profile_name)
         .unwrap_or_default()
         .to_owned();
     (label, matched.map_or(-1, |index| index as i32), message)
@@ -133,7 +133,7 @@ fn active_context(
 pub(super) fn reset_context(ui: &SettingsWindow, document: &Document, state: &mut State) {
     let config = document.read();
     state.baseline = current_name(&config).and_then(|name| {
-        let text = config.paths().load_user_layout(&name).ok()?;
+        let text = config.paths().load_user_profile(&name).ok()?;
         Some((name, text))
     });
     drop(config);
@@ -147,7 +147,7 @@ pub(super) fn save_current(
     document: &Document,
     state: &Shared,
 ) -> Result<Msg, Msg> {
-    let library = ui.global::<LayoutLibrary>();
+    let library = ui.global::<ProfileLibrary>();
     let target = document.read().library_save_target(
         state
             .borrow()
@@ -183,7 +183,8 @@ pub(super) fn overwrite_current(
     state: &Shared,
 ) -> Result<Msg, Msg> {
     let name = current_name(&document.read()).ok_or(Msg::LibrarySelect)?;
-    ui.global::<LayoutLibrary>().set_dialog(LibraryDialog::None);
+    ui.global::<ProfileLibrary>()
+        .set_dialog(LibraryDialog::None);
     write_current(ui, document, state, name, true)
 }
 
@@ -197,9 +198,9 @@ fn write_current(
     let baseline = state.borrow().baseline.clone();
     let text = edit(ui, document, state, |config| {
         if overwrite {
-            config.overwrite_library_layout(&name)
+            config.overwrite_library_profile(&name)
         } else {
-            config.save_library_layout(
+            config.save_library_profile(
                 &name,
                 baseline
                     .as_ref()
@@ -213,10 +214,10 @@ fn write_current(
         .remember(&name, Some(text.as_bytes().to_vec()));
     state.borrow_mut().baseline = Some((name.clone(), text));
     refresh_context(ui, document);
-    Ok(Msg::LayoutSaved(name))
+    Ok(Msg::ProfileSaved(name))
 }
 
-/// Save the working copy as a new library layout and continue editing it.
+/// Save the working copy as a new library profile and continue editing it.
 pub(super) fn save_as(
     ui: &SettingsWindow,
     document: &Document,
@@ -224,16 +225,16 @@ pub(super) fn save_as(
     name: &str,
 ) -> Result<Msg, Msg> {
     let (saved, text) = edit(ui, document, state, |config| {
-        config.save_working_layout_as(name)
+        config.save_working_profile_as(name)
     })?;
     state
         .borrow()
         .metadata
         .remember(&saved, Some(text.as_bytes().to_vec()));
     state.borrow_mut().baseline = Some((saved.clone(), text));
-    ui.global::<LayoutLibrary>().set_save_as_open(false);
+    ui.global::<ProfileLibrary>().set_save_as_open(false);
     refresh(ui, document, &mut state.borrow_mut())?;
-    Ok(Msg::LayoutSaved(saved))
+    Ok(Msg::ProfileSaved(saved))
 }
 
 #[cfg(test)]
@@ -249,32 +250,32 @@ mod tests {
         );
         let mut config = ConfigDocument::load(paths.clone()).unwrap();
         config
-            .update_settings(|settings| settings.layout_mode = LayoutMode::Auto)
+            .update_settings(|settings| settings.profile_mode = ProfileMode::Auto)
             .unwrap();
         let document = Document::new(config);
         let context = AutoSwitchContext::default();
         let (label, matched, message) = active_context(&document, &context, false);
         assert!(label.is_empty() && matched == -1 && message.is_none());
-        let layouts = paths.layouts_dir();
-        let backup = dir.path().join("layouts-backup");
-        std::fs::create_dir_all(&layouts).unwrap();
-        std::fs::rename(&layouts, &backup).unwrap();
-        std::fs::write(&layouts, "not a directory").unwrap();
+        let profiles = paths.profiles_dir();
+        let backup = dir.path().join("profiles-backup");
+        std::fs::create_dir_all(&profiles).unwrap();
+        std::fs::rename(&profiles, &backup).unwrap();
+        std::fs::write(&profiles, "not a directory").unwrap();
         let (label, matched, message) = active_context(&document, &context, false);
         assert!(label.is_empty() && matched == -1);
-        assert!(matches!(message, Msg::LayoutLoadFailed(_)));
-        std::fs::remove_file(&layouts).unwrap();
-        std::fs::rename(&backup, &layouts).unwrap();
+        assert!(matches!(message, Msg::ProfileLoadFailed(_)));
+        std::fs::remove_file(&profiles).unwrap();
+        std::fs::rename(&backup, &profiles).unwrap();
         assert!(active_context(&document, &context, false).2.is_none());
     }
 
-    fn flags(saved: &LayoutPreset, current: &LayoutPreset) -> DirtyFlags {
-        DirtyFlags::compare(Some((saved, &layout_file::serialize(saved))), current)
+    fn flags(saved: &ProfilePreset, current: &ProfilePreset) -> DirtyFlags {
+        DirtyFlags::compare(Some((saved, &profile_file::serialize(saved))), current)
     }
 
     #[test]
     fn dirty_flags_follow_changed_sections() {
-        let saved = LayoutPreset::initial();
+        let saved = ProfilePreset::initial();
         assert_eq!(flags(&saved, &saved), DirtyFlags::default());
 
         let mut described = saved.clone();

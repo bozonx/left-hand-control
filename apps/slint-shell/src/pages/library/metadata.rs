@@ -6,12 +6,12 @@
 
 use crate::{
     i18n::Msg,
-    ui::{LayoutLibrary, LayoutSummary, SettingsWindow},
+    ui::{ProfileLibrary, Profilesummary, SettingsWindow},
 };
 use lhc_core::{
-    profile::{
+    config::{
         library::{LibraryEntry, load_library_entries},
-        model::LayoutPreset,
+        model::ProfilePreset,
     },
     storage::StoragePaths,
 };
@@ -77,8 +77,8 @@ impl Loader {
     }
 }
 
-fn layout_summary(preset: &LayoutPreset) -> LayoutSummary {
-    LayoutSummary {
+fn profile_summary(preset: &ProfilePreset) -> Profilesummary {
+    Profilesummary {
         rules: preset.rules.len() as i32,
         layers: preset.layers.len() as i32,
         emoji_pages: if preset
@@ -109,7 +109,7 @@ fn layout_summary(preset: &LayoutPreset) -> LayoutSummary {
 /// one read runs at a time; requests arriving meanwhile collapse into one.
 impl Loader {
     pub(super) fn load(&self, ui: &SettingsWindow, paths: StoragePaths, names: Vec<String>) {
-        let library = ui.global::<LayoutLibrary>();
+        let library = ui.global::<ProfileLibrary>();
         let revision = library.get_metadata_revision().wrapping_add(1);
         library.set_metadata_revision(revision);
         let request = (ui.as_weak(), revision, paths, names);
@@ -146,7 +146,7 @@ impl Loader {
         names: &[String],
         loaded: Vec<LibraryEntry>,
     ) {
-        let library = ui.global::<LayoutLibrary>();
+        let library = ui.global::<ProfileLibrary>();
         if library.get_metadata_revision() != request {
             return;
         }
@@ -165,14 +165,14 @@ impl Loader {
                 continue;
             };
             row.loaded = true;
-            match entry.layout {
+            match entry.profile {
                 Ok(preset) => {
-                    row.summary = layout_summary(&preset);
+                    row.summary = profile_summary(&preset);
                     row.description = preset.description.unwrap_or_default().into();
                     row.error = Msg::None.to_ui();
                 }
                 Err(error) => {
-                    row.error = Msg::LayoutLoadFailed(format!("{}: {error}", row.name)).to_ui();
+                    row.error = Msg::ProfileLoadFailed(format!("{}: {error}", row.name)).to_ui();
                 }
             }
             if rows.row_data(index).as_ref() != Some(&row) {

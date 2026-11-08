@@ -147,7 +147,7 @@ fn offered(component: &str, name: &str) -> bool {
         .iter()
         .find_map(|prefix| name.strip_prefix(prefix))
         .and_then(|n| n.parse::<u32>().ok())
-        .is_none_or(|n| n <= crate::profile::actions::SYSTEM_NUMBERED_COUNT)
+        .is_none_or(|n| n <= crate::config::actions::SYSTEM_NUMBERED_COUNT)
 }
 
 #[cfg(test)]

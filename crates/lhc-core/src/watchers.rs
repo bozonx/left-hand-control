@@ -1,5 +1,5 @@
 //! Lifetime of the system watchers (keyboard layout, game mode, active
-//! window) that feed rule conditions and layout auto-switching.
+//! window) that feed rule conditions and profile auto-switching.
 
 use crate::storage::StoragePaths;
 

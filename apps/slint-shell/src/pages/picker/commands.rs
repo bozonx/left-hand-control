@@ -6,7 +6,7 @@ use crate::{
     i18n::Msg,
     ui::{ActionPicker, Locale, SettingsWindow},
 };
-use lhc_core::profile::actions::Action;
+use lhc_core::config::actions::Action;
 use slint::ComponentHandle;
 use std::{cell::RefCell, rc::Rc};
 
@@ -61,17 +61,17 @@ pub(super) fn bind(
         let value = picker.get_value().to_string();
         let id = match Action::parse(Some(value.as_str())) {
             Action::Command(id) => id,
-            _ => lhc_core::profile::ids::generate("cmd-"),
+            _ => lhc_core::config::ids::generate("cmd-"),
         };
         // Keep the script of the other operating systems.
         let mut command = drafts.command(&id).or_else(|| doc
             .read()
-            .layout()
+            .profile()
             .commands
             .iter()
             .find(|command| command.id == id)
             .cloned())
-            .unwrap_or_else(|| lhc_core::profile::model::Command {
+            .unwrap_or_else(|| lhc_core::config::model::Command {
                 id: id.clone(),
                 name: String::new(),
                 posix_script: String::new(),

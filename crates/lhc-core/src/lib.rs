@@ -7,6 +7,7 @@
 
 pub mod active_window;
 pub mod autostart;
+pub mod config;
 pub mod config_document;
 pub mod env;
 pub mod events;
@@ -16,7 +17,6 @@ pub mod gamemode;
 pub mod keyboard_layout;
 pub mod mapper;
 pub mod platform;
-pub mod profile;
 pub mod runtime_state;
 pub mod storage;
 #[cfg(any(target_os = "linux", target_os = "windows"))]

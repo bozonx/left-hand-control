@@ -1,18 +1,18 @@
 //! `config.json`: `{ "version": 1, "settings": { … }, "state": { … } }`.
 //!
 //! `settings` holds the user's choices, `state` what the application
-//! remembers between runs (the layout open in the editor, the game-mode
+//! remembers between runs (the profile open in the editor, the game-mode
 //! switch). Both sections are optional and default field by field; unknown
-//! fields, wrong types and unknown values are errors, the same as in layout
-//! files (see [`super::layout_file`]). Only values that differ from the
+//! fields, wrong types and unknown values are errors, the same as in profile
+//! files (see [`super::profile_file`]). Only values that differ from the
 //! defaults are written, so a later release can change a default for
 //! everyone who never chose otherwise.
 
-use super::layout_file::WhenDoc;
 use super::model::{
     AppSettings, Appearance, AutoRule, GameModeControl, GameModeProcessMatcher, GameModeSettings,
-    LayoutMode, LocalePreference, PasteShortcut, TapDecision, TextMode,
+    LocalePreference, PasteShortcut, ProfileMode, TapDecision, TextMode,
 };
+use super::profile_file::WhenDoc;
 use super::schema::{self, CONFIG_SCHEMA_VERSION};
 use crate::storage::CONFIG_FILE;
 use serde::{Deserialize, Serialize};
@@ -117,13 +117,13 @@ struct SettingsDoc {
     appearance: Appearance,
     high_contrast: bool,
     reduce_motion: bool,
-    layout_osd: bool,
+    profile_osd: bool,
     layer_hint: bool,
     locale: LocalePreference,
     #[serde(skip_serializing_if = "DevicesDoc::is_empty")]
     devices: DevicesDoc,
     timing: TimingDoc,
-    layouts: LayoutsDoc,
+    profiles: ProfilesDoc,
     commands_enabled: bool,
     game_mode: GameModeDoc,
     linux: LinuxDoc,
@@ -169,24 +169,24 @@ impl DevicesDoc {
     }
 }
 
-/// Which library layout the mapper uses.
+/// Which library profile the mapper uses.
 #[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields, default)]
-struct LayoutsDoc {
-    mode: LayoutMode,
-    /// Layout used in manual mode.
+struct ProfilesDoc {
+    mode: ProfileMode,
+    /// Profile used in manual mode.
     #[serde(skip_serializing_if = "Option::is_none")]
     manual: Option<String>,
-    /// Library order: the slots of `activateLayoutN` and the order of the
+    /// Library order: the slots of `activateProfileN` and the order of the
     /// list. Behaviour, not remembered state, so it lives in settings.
     order: Vec<String>,
     auto: AutoDoc,
 }
 
-impl Default for LayoutsDoc {
+impl Default for ProfilesDoc {
     fn default() -> Self {
-        to_doc(&AppSettings::default()).settings.layouts
+        to_doc(&AppSettings::default()).settings.profiles
     }
 }
 
@@ -196,13 +196,13 @@ impl Default for LayoutsDoc {
 #[serde(rename_all = "camelCase", deny_unknown_fields, default)]
 struct AutoDoc {
     rules: Vec<AutoRuleDoc>,
-    /// Layout used when no rule matches; `null` turns the mapper off.
+    /// Profile used when no rule matches; `null` turns the mapper off.
     fallback: Option<String>,
 }
 
 impl Default for AutoDoc {
     fn default() -> Self {
-        to_doc(&AppSettings::default()).settings.layouts.auto
+        to_doc(&AppSettings::default()).settings.profiles.auto
     }
 }
 
@@ -246,7 +246,7 @@ struct AutoRuleDoc {
     /// Required; an explicit `null` turns the mapper off, so a forgotten
     /// field is an error rather than a silent "off".
     #[serde(deserialize_with = "nullable")]
-    layout: Option<String>,
+    profile: Option<String>,
     #[serde(default = "yes", skip_serializing_if = "is_true")]
     enabled: bool,
     /// Empty conditions always match.
@@ -402,9 +402,9 @@ impl Default for LinuxDoc {
 #[derive(Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields, default)]
 struct StateDoc {
-    /// Library layout open in the editor.
+    /// Library profile open in the editor.
     #[serde(skip_serializing_if = "Option::is_none")]
-    edited_layout: Option<String>,
+    edited_profile: Option<String>,
     /// Auto / On / Off choice of the game-mode switch.
     game_mode_switch: GameModeControl,
 }
@@ -425,10 +425,10 @@ fn non_empty(value: Option<String>) -> Option<String> {
     value.filter(|value| !value.trim().is_empty())
 }
 
-/// A layout reference: a layout id or `null`, never an empty string.
-fn layout_ref(value: Option<String>, what: &str) -> Result<Option<String>, String> {
+/// A profile reference: a profile id or `null`, never an empty string.
+fn profile_ref(value: Option<String>, what: &str) -> Result<Option<String>, String> {
     match value {
-        Some(id) if id.trim().is_empty() => Err(format!("{what}: layout id must not be empty")),
+        Some(id) if id.trim().is_empty() => Err(format!("{what}: profile id must not be empty")),
         value => Ok(value),
     }
 }
@@ -436,7 +436,7 @@ fn layout_ref(value: Option<String>, what: &str) -> Result<Option<String>, Strin
 pub fn validate(settings: &AppSettings) -> Result<(), String> {
     super::ids::unique(
         settings.auto_rules.iter().map(|item| item.id.as_str()),
-        "settings.layouts.auto.rules",
+        "settings.profiles.auto.rules",
     )?;
     super::ids::unique(
         settings
@@ -452,14 +452,14 @@ pub fn validate(settings: &AppSettings) -> Result<(), String> {
 fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
     let mut ids: Vec<_> = doc
         .settings
-        .layouts
+        .profiles
         .auto
         .rules
         .iter_mut()
         .map(|item| item.id.take())
         .collect();
-    super::ids::complete(&mut ids, "rule-", "settings.layouts.auto.rules")?;
-    for (item, id) in doc.settings.layouts.auto.rules.iter_mut().zip(ids) {
+    super::ids::complete(&mut ids, "rule-", "settings.profiles.auto.rules")?;
+    for (item, id) in doc.settings.profiles.auto.rules.iter_mut().zip(ids) {
         item.id = id;
     }
     let mut ids: Vec<_> = doc
@@ -480,14 +480,14 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
     let detectors = settings.game_mode.detectors;
     let keyboard_device = DevicesDoc::single(settings.devices.keyboards, "keyboards")?;
     let mouse_device = DevicesDoc::single(settings.devices.mice, "mice")?;
-    let layouts = settings.layouts;
+    let profiles = settings.profiles;
     let mut auto_rules = Vec::new();
-    for (index, rule) in layouts.auto.rules.into_iter().enumerate() {
+    for (index, rule) in profiles.auto.rules.into_iter().enumerate() {
         auto_rules.push(AutoRule {
             id: rule.id.unwrap_or_default(),
-            layout_id: layout_ref(
-                rule.layout,
-                &format!("settings.layouts.auto.rules[{index}]"),
+            profile_id: profile_ref(
+                rule.profile,
+                &format!("settings.profiles.auto.rules[{index}]"),
             )?,
             enabled: rule.enabled,
             conditions: rule.when.into_set()?.normalized(),
@@ -501,7 +501,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
         appearance: settings.appearance,
         high_contrast: settings.high_contrast,
         reduce_motion: settings.reduce_motion,
-        layout_osd: settings.layout_osd,
+        profile_osd: settings.profile_osd,
         layer_hint: settings.layer_hint,
         locale: settings.locale,
         default_hold_timeout_ms: timing.hold_ms,
@@ -514,14 +514,14 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
         macro_timeout_ms: timing.macro_timeout_ms,
         input_device_path: Some(keyboard_device.unwrap_or_default()),
         input_mouse_device_path: mouse_device,
-        editing_layout_id: non_empty(state.edited_layout),
-        layout_mode: layouts.mode,
-        manual_layout_id: non_empty(layouts.manual),
-        layout_order: layouts.order,
+        editing_profile_id: non_empty(state.edited_profile),
+        profile_mode: profiles.mode,
+        manual_profile_id: non_empty(profiles.manual),
+        profile_order: profiles.order,
         auto_rules,
-        auto_default_layout_id: layout_ref(
-            layouts.auto.fallback,
-            "settings.layouts.auto.fallback",
+        auto_default_profile_id: profile_ref(
+            profiles.auto.fallback,
+            "settings.profiles.auto.fallback",
         )?,
         commands_enabled: settings.commands_enabled,
         game_mode: GameModeSettings {
@@ -569,7 +569,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
             appearance: settings.appearance,
             high_contrast: settings.high_contrast,
             reduce_motion: settings.reduce_motion,
-            layout_osd: settings.layout_osd,
+            profile_osd: settings.profile_osd,
             layer_hint: settings.layer_hint,
             locale: settings.locale,
             devices: DevicesDoc {
@@ -588,22 +588,22 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
                 macro_modifier_delay_ms: settings.default_macro_modifier_delay_ms,
                 macro_timeout_ms: settings.macro_timeout_ms,
             },
-            layouts: LayoutsDoc {
-                mode: settings.layout_mode,
-                manual: filled(&settings.manual_layout_id),
-                order: settings.layout_order.clone(),
+            profiles: ProfilesDoc {
+                mode: settings.profile_mode,
+                manual: filled(&settings.manual_profile_id),
+                order: settings.profile_order.clone(),
                 auto: AutoDoc {
                     rules: settings
                         .auto_rules
                         .iter()
                         .map(|rule| AutoRuleDoc {
                             id: Some(rule.id.clone()).filter(|id| !id.is_empty()),
-                            layout: filled(&rule.layout_id),
+                            profile: filled(&rule.profile_id),
                             enabled: rule.enabled,
                             when: WhenDoc::from_set(&rule.conditions),
                         })
                         .collect(),
-                    fallback: filled(&settings.auto_default_layout_id),
+                    fallback: filled(&settings.auto_default_profile_id),
                 },
             },
             commands_enabled: settings.commands_enabled,
@@ -642,7 +642,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
             },
         },
         state: StateDoc {
-            edited_layout: filled(&settings.editing_layout_id),
+            edited_profile: filled(&settings.editing_profile_id),
             game_mode_switch: game_mode.control,
         },
     }
@@ -732,12 +732,12 @@ mod tests {
     fn ids_are_unique_and_generated_without_collisions() {
         for field in ["autoRules", "processes"] {
             let items = if field == "autoRules" {
-                serde_json::json!([{"id":"x","layout":null},{"id":"x","layout":null}])
+                serde_json::json!([{"id":"x","profile":null},{"id":"x","profile":null}])
             } else {
                 serde_json::json!([{"id":"x","name":"a"},{"id":"x","name":"b"}])
             };
             let settings = if field == "autoRules" {
-                serde_json::json!({"layouts":{"auto":{"rules":items}}})
+                serde_json::json!({"profiles":{"auto":{"rules":items}}})
             } else {
                 serde_json::json!({"gameMode":{field:items}})
             };
@@ -748,7 +748,7 @@ mod tests {
             );
         }
         let settings = parse(&config(serde_json::json!({
-            "layouts":{"auto":{"rules":[{"layout":null}, {"id":"rule-1","layout":null}]}},
+            "profiles":{"auto":{"rules":[{"profile":null}, {"id":"rule-1","profile":null}]}},
             "gameMode":{"processes":[{"name":"a"},{"id":"process-1","name":"b"}]}
         })))
         .unwrap();
@@ -809,19 +809,19 @@ mod tests {
             json!({"linux": {"pasteShortcut": "shift-insert"}}),
             json!({"linux": {"pasteShortcut": "Alt+KeyV"}}),
             json!({"inDevelopment": true}),
-            json!({"activeLayoutId": "user:A"}),
+            json!({"activeProfileId": "user:A"}),
             json!({"futureOption": 7}),
             json!({"timing": {"holdMs": "fast"}}),
             json!({"timing": {"tapDecision": "sometimes"}}),
             json!({"linux": {"textMode": "magic"}}),
             json!({"gameMode": {"detectors": {"origin": true}}}),
             json!({"gameMode": {"processes": [{"name": "steam", "isBlacklist": true}]}}),
-            json!({"layouts": {"auto": {"rules": [{"layout": "user:A", "window_patterns": ["kate"]}]}}}),
-            json!({"layouts": {"auto": {"rules": [{"when": {"gameMode": "on"}}]}}}),
-            json!({"layouts": {"auto": {"rules": [{"layout": ""}]}}}),
-            json!({"layouts": {"auto": {"fallback": " "}}}),
-            json!({"layouts": {"auto": {"rules": [{"id": "a b", "layout": null}]}}}),
-            json!({"layouts": {"active": "user:A"}}),
+            json!({"profiles": {"auto": {"rules": [{"profile": "user:A", "window_patterns": ["kate"]}]}}}),
+            json!({"profiles": {"auto": {"rules": [{"when": {"gameMode": "on"}}]}}}),
+            json!({"profiles": {"auto": {"rules": [{"profile": ""}]}}}),
+            json!({"profiles": {"auto": {"fallback": " "}}}),
+            json!({"profiles": {"auto": {"rules": [{"id": "a b", "profile": null}]}}}),
+            json!({"profiles": {"active": "user:A"}}),
             json!({"keyboardDevice": "/dev/input/event1"}),
             json!({"devices": {"keyboards": ["/dev/a", "/dev/b"]}}),
             json!({"devices": {"mice": [""]}}),
@@ -848,22 +848,22 @@ mod tests {
             tap_decision: TapDecision::HoldOnOtherKeyPress,
             input_device_path: Some("/dev/input/by-id/kbd".into()),
             input_mouse_device_path: Some("/dev/input/by-id/mouse".into()),
-            editing_layout_id: Some("user:Main".into()),
-            layout_mode: LayoutMode::Auto,
-            manual_layout_id: Some("user:Other".into()),
-            layout_order: vec!["user:Other".into(), "user:Main".into()],
+            editing_profile_id: Some("user:Main".into()),
+            profile_mode: ProfileMode::Auto,
+            manual_profile_id: Some("user:Other".into()),
+            profile_order: vec!["user:Other".into(), "user:Main".into()],
             auto_rules: vec![AutoRule {
                 id: "a".into(),
-                layout_id: None,
+                profile_id: None,
                 enabled: false,
-                conditions: super::super::model::LayoutConditionSet {
-                    game_mode: Some(crate::profile::model::GameModeCondition::On),
-                    layouts: vec!["us".into()],
+                conditions: super::super::model::ProfileConditionSet {
+                    game_mode: Some(crate::config::model::GameModeCondition::On),
+                    keyboard_layouts: vec!["us".into()],
                     window_patterns: vec!["blender".into()],
                     excluded_window_patterns: vec!["title:Preferences".into()],
                 },
             }],
-            auto_default_layout_id: Some("user:Main".into()),
+            auto_default_profile_id: Some("user:Main".into()),
             commands_enabled: true,
             game_mode: GameModeSettings {
                 use_fullscreen: true,
@@ -896,23 +896,23 @@ mod tests {
             "sameAsPaste"
         );
         assert_eq!(raw["settings"]["gameMode"]["processes"][0]["exclude"], true);
-        assert_eq!(raw["state"]["editedLayout"], "user:Main");
+        assert_eq!(raw["state"]["editedProfile"], "user:Main");
         assert_eq!(raw["state"]["gameModeSwitch"], "on");
-        let layouts = &raw["settings"]["layouts"];
-        assert_eq!(layouts["mode"], "auto");
-        assert_eq!(layouts["order"], json!(["user:Other", "user:Main"]));
-        assert!(raw["state"].get("layoutOrder").is_none());
+        let profiles = &raw["settings"]["profiles"];
+        assert_eq!(profiles["mode"], "auto");
+        assert_eq!(profiles["order"], json!(["user:Other", "user:Main"]));
+        assert!(raw["state"].get("profileOrder").is_none());
         assert_eq!(
-            layouts["auto"]["rules"][0]["when"]["excludeWindows"],
+            profiles["auto"]["rules"][0]["when"]["excludeWindows"],
             json!(["title:Preferences"])
         );
-        assert_eq!(layouts["auto"]["rules"][0]["layout"], Value::Null);
-        assert_eq!(layouts["auto"]["fallback"], "user:Main");
+        assert_eq!(profiles["auto"]["rules"][0]["profile"], Value::Null);
+        assert_eq!(profiles["auto"]["fallback"], "user:Main");
         assert_eq!(
             raw["settings"]["devices"],
             json!({"keyboards": ["/dev/input/by-id/kbd"], "mice": ["/dev/input/by-id/mouse"]})
         );
-        assert_eq!(layouts["manual"], "user:Other");
+        assert_eq!(profiles["manual"], "user:Other");
     }
 
     #[test]
@@ -985,18 +985,18 @@ mod tests {
     }
 
     #[test]
-    fn manual_activation_is_independent_of_the_edited_layout() {
-        let settings = parse(r#"{"version": 1, "state": {"editedLayout": "user:Main"}}"#).unwrap();
-        assert_eq!(settings.editing_layout_id.as_deref(), Some("user:Main"));
-        assert_eq!(settings.manual_layout_id, None);
+    fn manual_activation_is_independent_of_the_edited_profile() {
+        let settings = parse(r#"{"version": 1, "state": {"editedProfile": "user:Main"}}"#).unwrap();
+        assert_eq!(settings.editing_profile_id.as_deref(), Some("user:Main"));
+        assert_eq!(settings.manual_profile_id, None);
     }
 
     #[test]
     fn auto_rules_without_ids_get_deterministic_ids() {
-        let settings = parse(&config(json!({"layouts": {"auto": {
+        let settings = parse(&config(json!({"profiles": {"auto": {
             "rules": [
-                {"id": "a", "layout": "user:A", "when": {"windows": ["blender"]}},
-                {"layout": null, "enabled": false},
+                {"id": "a", "profile": "user:A", "when": {"windows": ["blender"]}},
+                {"profile": null, "enabled": false},
             ],
             "fallback": "user:B",
         }}})))
@@ -1007,9 +1007,9 @@ mod tests {
             ["blender"]
         );
         assert_eq!(settings.auto_rules[1].id, "rule-1");
-        assert_eq!(settings.auto_rules[1].layout_id, None);
+        assert_eq!(settings.auto_rules[1].profile_id, None);
         assert!(!settings.auto_rules[1].enabled);
         assert!(settings.auto_rules[1].conditions.is_empty());
-        assert_eq!(settings.auto_default_layout_id.as_deref(), Some("user:B"));
+        assert_eq!(settings.auto_default_profile_id.as_deref(), Some("user:B"));
     }
 }

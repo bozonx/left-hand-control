@@ -68,7 +68,7 @@ impl MacroRunner {
                 && (!self.text_pending || !matches!(am.phase, MacroPhase::NextStep))
             {
                 use crate::mapper::action::MacroStepItem;
-                use crate::profile::actions::MAX_MACRO_STEPS;
+                use crate::config::actions::MAX_MACRO_STEPS;
                 use MacroPhase;
 
                 loop {

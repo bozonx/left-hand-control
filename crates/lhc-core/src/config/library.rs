@@ -1,26 +1,26 @@
-//! Layout library: creating, copying, renaming and deleting user layouts.
+//! Profile library: creating, copying, renaming and deleting user profiles.
 
 use crate::{
-    config_document::{ConfigDocument, ConfigError},
-    profile::{
+    config::{
         auto_switch,
-        bundled::BundledLayout,
-        layout_file,
-        model::{LayoutPreset, user_layout_id},
+        bundled::BundledProfile,
+        model::{ProfilePreset, user_profile_id},
         names::NameKind,
+        profile_file,
     },
+    config_document::{ConfigDocument, ConfigError},
 };
 
 /// One library file as last read: its raw bytes (kept even when it does
 /// not parse, so a broken file can still be deleted safely)
-/// and the parsed layout.
+/// and the parsed profile.
 #[derive(Debug)]
 pub struct LibraryEntry {
     pub bytes: Option<Vec<u8>>,
-    pub layout: Result<LayoutPreset, ConfigError>,
+    pub profile: Result<ProfilePreset, ConfigError>,
 }
 
-/// Read one metadata snapshot per listed layout, preserving failures per file.
+/// Read one metadata snapshot per listed profile, preserving failures per file.
 /// Callers may load this snapshot on a worker without sharing a document.
 pub fn load_library_entries(
     paths: &crate::storage::StoragePaths,
@@ -28,31 +28,31 @@ pub fn load_library_entries(
 ) -> Vec<LibraryEntry> {
     names
         .iter()
-        .map(|name| match paths.load_user_layout_bytes(name) {
+        .map(|name| match paths.load_user_profile_bytes(name) {
             Err(error) => LibraryEntry {
                 bytes: None,
-                layout: Err(ConfigError::Io(error)),
+                profile: Err(ConfigError::Io(error)),
             },
             Ok(bytes) => {
-                let layout = std::str::from_utf8(&bytes)
-                    .map_err(|error| ConfigError::Parse(format!("layout UTF-8: {error}")))
-                    .and_then(crate::config_document::parse_layout);
+                let profile = std::str::from_utf8(&bytes)
+                    .map_err(|error| ConfigError::Parse(format!("profile UTF-8: {error}")))
+                    .and_then(crate::config_document::parse_profile);
                 LibraryEntry {
                     bytes: Some(bytes),
-                    layout,
+                    profile,
                 }
             }
         })
         .collect()
 }
 
-/// What a new library layout starts from.
+/// What a new library profile starts from.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LibrarySource<'a> {
     Empty,
-    /// A bundled layout.
-    Bundled(&'static BundledLayout),
-    /// An existing library layout, by name.
+    /// A bundled profile.
+    Bundled(&'static BundledProfile),
+    /// An existing library profile, by name.
     Copy(&'a str),
 }
 
@@ -65,10 +65,10 @@ pub enum LibrarySaveTarget {
 }
 
 fn normalized(text: &str) -> Option<String> {
-    layout_file::parse(text)
+    profile_file::parse(text)
         .ok()
         .flatten()
-        .map(|layout| layout_file::serialize(&layout))
+        .map(|profile| profile_file::serialize(&profile))
 }
 
 impl ConfigDocument {
@@ -76,13 +76,13 @@ impl ConfigDocument {
     pub fn library_save_target(&self, baseline: Option<(&str, &str)>) -> LibrarySaveTarget {
         let Some(name) = self
             .settings()
-            .editing_layout_id
+            .editing_profile_id
             .as_deref()
-            .and_then(super::model::user_layout_name)
+            .and_then(super::model::user_profile_name)
         else {
             return LibrarySaveTarget::NeedsName;
         };
-        if self.can_save_library_layout(name, baseline) {
+        if self.can_save_library_profile(name, baseline) {
             LibrarySaveTarget::Existing(name.to_owned())
         } else {
             LibrarySaveTarget::Conflict
@@ -91,8 +91,8 @@ impl ConfigDocument {
 
     /// Whether saving the working copy as `name` loses nothing on disk: the
     /// file is what the working copy was opened from, or already holds it.
-    fn can_save_library_layout(&self, name: &str, baseline: Option<(&str, &str)>) -> bool {
-        let Ok(disk) = self.paths().load_user_layout(name) else {
+    fn can_save_library_profile(&self, name: &str, baseline: Option<(&str, &str)>) -> bool {
+        let Ok(disk) = self.paths().load_user_profile(name) else {
             return false;
         };
         self.library_snapshot_matches(name, baseline, &disk)
@@ -104,25 +104,25 @@ impl ConfigDocument {
         baseline: Option<(&str, &str)>,
         disk: &str,
     ) -> bool {
-        let Some(disk_layout) = normalized(disk) else {
+        let Some(disk_profile) = normalized(disk) else {
             return false;
         };
         let opened = baseline
             .filter(|(baseline, _)| *baseline == name)
             .map(|(_, text)| text);
         if opened
-            .is_some_and(|text| text == disk || normalized(text).as_ref() == Some(&disk_layout))
+            .is_some_and(|text| text == disk || normalized(text).as_ref() == Some(&disk_profile))
         {
             return true;
         }
-        let mut current = self.layout().clone();
+        let mut current = self.profile().clone();
         current.remove_unused_commands();
-        normalized(&layout_file::serialize(&current)).as_ref() == Some(&disk_layout)
+        normalized(&profile_file::serialize(&current)).as_ref() == Some(&disk_profile)
     }
 
     /// Normal save rechecks the opened snapshot inside the operation and
     /// checks its bytes again after staging the new file for publication.
-    pub fn save_library_layout(
+    pub fn save_library_profile(
         &mut self,
         name: &str,
         baseline: Option<(&str, &str)>,
@@ -130,17 +130,17 @@ impl ConfigDocument {
         self.require_external_operation()?;
         let disk = self
             .paths()
-            .load_user_layout(name)
+            .load_user_profile(name)
             .map_err(ConfigError::Io)?;
         if !self.library_snapshot_matches(name, baseline, &disk) {
             return Err(ConfigError::EditConflict);
         }
         let mut draft = self.clone();
-        draft.update_layout(LayoutPreset::remove_unused_commands)?;
-        let text = layout_file::serialize(draft.layout());
+        draft.update_profile(ProfilePreset::remove_unused_commands)?;
+        let text = profile_file::serialize(draft.profile());
         if !draft
             .paths()
-            .replace_user_layout(name, &text, disk.as_bytes())
+            .replace_user_profile(name, &text, disk.as_bytes())
             .map_err(ConfigError::Io)?
         {
             return Err(ConfigError::EditConflict);
@@ -150,14 +150,14 @@ impl ConfigDocument {
     }
 
     /// Save the working copy over an existing library file, returning its contents.
-    pub fn overwrite_library_layout(&mut self, name: &str) -> Result<String, ConfigError> {
+    pub fn overwrite_library_profile(&mut self, name: &str) -> Result<String, ConfigError> {
         self.require_external_operation()?;
         let mut draft = self.clone();
-        draft.update_layout(LayoutPreset::remove_unused_commands)?;
-        let text = layout_file::serialize(draft.layout());
+        draft.update_profile(ProfilePreset::remove_unused_commands)?;
+        let text = profile_file::serialize(draft.profile());
         draft
             .paths()
-            .save_user_layout(name, &text, true)
+            .save_user_profile(name, &text, true)
             .map_err(ConfigError::Io)?;
         *self = draft;
         Ok(text)
@@ -165,37 +165,37 @@ impl ConfigDocument {
 
     /// `base`, or `base (2)`, `base (3)`, … — the first name not taken in the library.
     pub fn unique_library_name(&self, base: &str) -> Result<String, ConfigError> {
-        let names = self.paths().list_user_layouts().map_err(ConfigError::Io)?;
-        super::names::unique_layout_name(base, &names)
-            .map_err(|issue| ConfigError::Name(NameKind::Layout, issue))
+        let names = self.paths().list_user_profiles().map_err(ConfigError::Io)?;
+        super::names::unique_profile_name(base, &names)
+            .map_err(|issue| ConfigError::Name(NameKind::Profile, issue))
     }
 
     /// Creates `name` in the library; fails if it is already taken.
-    pub fn create_library_layout(
+    pub fn create_library_profile(
         &self,
         name: &str,
         description: &str,
         source: LibrarySource,
     ) -> Result<String, ConfigError> {
         self.require_external_operation()?;
-        let name = &self.checked_layout_name(name, None)?;
+        let name = &self.checked_profile_name(name, None)?;
         let description = description.trim();
         let mut preset = match source {
-            LibrarySource::Empty => LayoutPreset::default(),
-            LibrarySource::Bundled(bundled) => bundled.layout().map_err(ConfigError::Parse)?,
+            LibrarySource::Empty => ProfilePreset::default(),
+            LibrarySource::Bundled(bundled) => bundled.profile().map_err(ConfigError::Parse)?,
             LibrarySource::Copy(from) => {
                 let text = self
                     .paths()
-                    .load_user_layout(from)
+                    .load_user_profile(from)
                     .map_err(ConfigError::Io)?;
                 if description.is_empty() {
                     // Byte-for-byte copy keeps whatever the source file holds.
                     return self
                         .paths()
-                        .save_user_layout(name, &text, false)
+                        .save_user_profile(name, &text, false)
                         .map_err(ConfigError::Io);
                 }
-                layout_file::parse(&text)
+                profile_file::parse(&text)
                     .map_err(ConfigError::Parse)?
                     .unwrap_or_default()
             }
@@ -204,13 +204,13 @@ impl ConfigDocument {
             preset.description = Some(description.to_owned());
         }
         self.paths()
-            .save_user_layout(name, &layout_file::serialize(&preset), false)
+            .save_user_profile(name, &profile_file::serialize(&preset), false)
             .map_err(ConfigError::Io)
     }
 
     /// Create a library entry and optionally select it; failed activation
     /// removes the new entry before returning the settings error.
-    pub fn create_and_select_library_layout(
+    pub fn create_and_select_library_profile(
         &mut self,
         name: &str,
         description: &str,
@@ -218,83 +218,83 @@ impl ConfigDocument {
         select: bool,
     ) -> Result<String, ConfigError> {
         self.require_external_operation()?;
-        let created = self.create_library_layout(name, description, source)?;
+        let created = self.create_library_profile(name, description, source)?;
         if select
             && let Err(error) = self.update_settings(|settings| {
-                settings.manual_layout_id = Some(user_layout_id(&created));
+                settings.manual_profile_id = Some(user_profile_id(&created));
             })
         {
             self.paths()
-                .delete_user_layout(&created)
+                .delete_user_profile(&created)
                 .map_err(ConfigError::Io)?;
             return Err(error);
         }
         Ok(created)
     }
 
-    /// Validate a layout name against the current directory before writing.
-    pub fn checked_layout_name(
+    /// Validate a profile name against the current directory before writing.
+    pub fn checked_profile_name(
         &self,
         name: &str,
         except: Option<&str>,
     ) -> Result<String, ConfigError> {
-        let names = self.paths().list_user_layouts().map_err(ConfigError::Io)?;
-        super::names::layout_name(name, except, names.iter().map(String::as_str))
-            .map_err(|issue| ConfigError::Name(NameKind::Layout, issue))
+        let names = self.paths().list_user_profiles().map_err(ConfigError::Io)?;
+        super::names::profile_name(name, except, names.iter().map(String::as_str))
+            .map_err(|issue| ConfigError::Name(NameKind::Profile, issue))
     }
 
     /// Save an edited working copy under a new name, dropping unreferenced commands.
-    pub fn save_working_layout_as(&mut self, name: &str) -> Result<(String, String), ConfigError> {
+    pub fn save_working_profile_as(&mut self, name: &str) -> Result<(String, String), ConfigError> {
         self.require_external_operation()?;
         let mut draft = self.clone();
-        draft.update_layout(LayoutPreset::remove_unused_commands)?;
-        let text = layout_file::serialize(draft.layout());
-        let saved = draft.save_current_layout_as(name)?;
+        draft.update_profile(ProfilePreset::remove_unused_commands)?;
+        let text = profile_file::serialize(draft.profile());
+        let saved = draft.save_current_profile_as(name)?;
         *self = draft;
         Ok((saved, text))
     }
 
-    pub fn save_current_layout_as(&mut self, name: &str) -> Result<String, ConfigError> {
+    pub fn save_current_profile_as(&mut self, name: &str) -> Result<String, ConfigError> {
         self.require_external_operation()?;
-        let name = &self.checked_layout_name(name, None)?;
+        let name = &self.checked_profile_name(name, None)?;
         let saved = self
             .paths()
-            .save_user_layout(name, &layout_file::serialize(self.layout()), false)
+            .save_user_profile(name, &profile_file::serialize(self.profile()), false)
             .map_err(ConfigError::Io)?;
         let result = self.update_settings(|settings| {
-            let old = settings.editing_layout_id.clone();
-            let new = user_layout_id(&saved);
-            settings.editing_layout_id = Some(new);
-            if settings.manual_layout_id == old {
-                settings.manual_layout_id = settings.editing_layout_id.clone();
+            let old = settings.editing_profile_id.clone();
+            let new = user_profile_id(&saved);
+            settings.editing_profile_id = Some(new);
+            if settings.manual_profile_id == old {
+                settings.manual_profile_id = settings.editing_profile_id.clone();
             }
         });
         if let Err(error) = result {
             self.paths()
-                .delete_user_layout(&saved)
+                .delete_user_profile(&saved)
                 .map_err(ConfigError::Io)?;
             return Err(error);
         }
         Ok(saved)
     }
 
-    pub fn ordered_layout_ids(&self) -> Result<Vec<String>, ConfigError> {
-        Ok(auto_switch::order_layout_ids(
-            &self.layout_ids()?,
-            &self.settings().layout_order,
+    pub fn ordered_profile_ids(&self) -> Result<Vec<String>, ConfigError> {
+        Ok(auto_switch::order_profile_ids(
+            &self.profile_ids()?,
+            &self.settings().profile_order,
         ))
     }
 
-    pub fn move_library_layout(&mut self, id: &str, delta: i32) -> Result<(), ConfigError> {
-        let mut ids = self.ordered_layout_ids()?;
+    pub fn move_library_profile(&mut self, id: &str, delta: i32) -> Result<(), ConfigError> {
+        let mut ids = self.ordered_profile_ids()?;
         let index = ids
             .iter()
             .position(|item| item == id)
-            .ok_or_else(|| ConfigError::Invalid("Unknown layout".into()))?;
+            .ok_or_else(|| ConfigError::Invalid("Unknown profile".into()))?;
         let next = (index as i64 + i64::from(delta)).clamp(0, ids.len() as i64 - 1) as usize;
         let moved = ids.remove(index);
         ids.insert(next, moved);
-        self.update_settings(|settings| settings.layout_order = ids)
+        self.update_settings(|settings| settings.profile_order = ids)
     }
 
     /// Rename `name` and set its description. `None` keeps the file
@@ -309,10 +309,10 @@ impl ConfigDocument {
         expected: &str,
     ) -> Result<String, ConfigError> {
         self.require_external_operation()?;
-        let new_name = &self.checked_layout_name(new_name, Some(name))?;
+        let new_name = &self.checked_profile_name(new_name, Some(name))?;
         if self
             .paths()
-            .load_user_layout(name)
+            .load_user_profile(name)
             .map_err(ConfigError::Io)?
             != expected
         {
@@ -321,28 +321,28 @@ impl ConfigDocument {
         let (text, new_description) = match description {
             None => (expected.to_owned(), None),
             Some(description) => {
-                let mut preset = layout_file::parse(expected)
+                let mut preset = profile_file::parse(expected)
                     .map_err(ConfigError::Parse)?
                     .unwrap_or_default();
                 preset.description =
                     (!description.trim().is_empty()).then(|| description.trim().to_owned());
-                (layout_file::serialize(&preset), Some(preset.description))
+                (profile_file::serialize(&preset), Some(preset.description))
             }
         };
         let saved = self
             .paths()
-            .rename_user_layout(name, new_name, &text, false)
+            .rename_user_profile(name, new_name, &text, false)
             .map_err(ConfigError::Io)?;
-        let old = user_layout_id(name);
-        let new = user_layout_id(&saved);
+        let old = user_profile_id(name);
+        let new = user_profile_id(&saved);
         let result = self.update_settings(|settings| {
-            if settings.editing_layout_id.as_ref() == Some(&old) {
-                settings.editing_layout_id = Some(new.clone());
+            if settings.editing_profile_id.as_ref() == Some(&old) {
+                settings.editing_profile_id = Some(new.clone());
             }
-            if settings.manual_layout_id.as_ref() == Some(&old) {
-                settings.manual_layout_id = Some(new.clone());
+            if settings.manual_profile_id.as_ref() == Some(&old) {
+                settings.manual_profile_id = Some(new.clone());
             }
-            for id in &mut settings.layout_order {
+            for id in &mut settings.profile_order {
                 if id == &old {
                     *id = new.clone();
                 }
@@ -350,8 +350,8 @@ impl ConfigDocument {
             for target in settings
                 .auto_rules
                 .iter_mut()
-                .map(|rule| &mut rule.layout_id)
-                .chain([&mut settings.auto_default_layout_id])
+                .map(|rule| &mut rule.profile_id)
+                .chain([&mut settings.auto_default_profile_id])
             {
                 if target.as_ref() == Some(&old) {
                     *target = Some(new.clone());
@@ -360,19 +360,19 @@ impl ConfigDocument {
         });
         if let Err(error) = result {
             self.paths()
-                .rename_user_layout(&saved, name, expected, false)
+                .rename_user_profile(&saved, name, expected, false)
                 .map_err(ConfigError::Io)?;
             return Err(error);
         }
         if let Some(description) = new_description
-            && self.settings().editing_layout_id.as_ref() == Some(&new)
+            && self.settings().editing_profile_id.as_ref() == Some(&new)
         {
-            self.update_layout(|layout| layout.description = description)?;
+            self.update_profile(|profile| profile.description = description)?;
         }
         Ok(saved)
     }
 
-    pub fn remove_library_layout(
+    pub fn remove_library_profile(
         &mut self,
         name: &str,
         expected: impl AsRef<[u8]>,
@@ -381,107 +381,107 @@ impl ConfigDocument {
         self.require_external_operation()?;
         if self
             .paths()
-            .load_user_layout_bytes(name)
+            .load_user_profile_bytes(name)
             .map_err(ConfigError::Io)?
             != expected
         {
             return Err(ConfigError::EditConflict);
         }
         self.paths()
-            .delete_user_layout(name)
+            .delete_user_profile(name)
             .map_err(ConfigError::Io)?;
-        let id = user_layout_id(name);
-        // Deleting the single-mode layout hands activation to the first
+        let id = user_profile_id(name);
+        // Deleting the single-mode profile hands activation to the first
         // remaining one; auto mode re-chooses when the mapper is updated.
         // The confirmation names the automatic rules deleted with it.
-        let result = self.ordered_layout_ids().and_then(|remaining| {
+        let result = self.ordered_profile_ids().and_then(|remaining| {
             self.update_settings(|settings| {
-                settings.layout_order.retain(|item| item != &id);
+                settings.profile_order.retain(|item| item != &id);
                 settings
                     .auto_rules
-                    .retain(|rule| rule.layout_id.as_ref() != Some(&id));
-                if settings.auto_default_layout_id.as_ref() == Some(&id) {
-                    settings.auto_default_layout_id = None;
+                    .retain(|rule| rule.profile_id.as_ref() != Some(&id));
+                if settings.auto_default_profile_id.as_ref() == Some(&id) {
+                    settings.auto_default_profile_id = None;
                 }
-                if settings.editing_layout_id.as_ref() == Some(&id) {
-                    settings.editing_layout_id = None;
+                if settings.editing_profile_id.as_ref() == Some(&id) {
+                    settings.editing_profile_id = None;
                 }
-                if settings.manual_layout_id.as_ref() == Some(&id) {
-                    settings.manual_layout_id = remaining.first().cloned();
+                if settings.manual_profile_id.as_ref() == Some(&id) {
+                    settings.manual_profile_id = remaining.first().cloned();
                 }
             })
         });
         if result.is_err() {
             self.paths()
-                .save_user_layout_bytes(name, expected, false)
+                .save_user_profile_bytes(name, expected, false)
                 .map_err(ConfigError::Io)?;
         }
         result
     }
 
     /// Discard the working copy. If its library file is no longer usable,
-    /// start a clean, unnamed layout rather than keeping an unusable identity.
-    pub fn discard_working_layout(&mut self) -> Result<(), ConfigError> {
+    /// start a clean, unnamed profile rather than keeping an unusable identity.
+    pub fn discard_working_profile(&mut self) -> Result<(), ConfigError> {
         self.transaction(|draft| {
             let saved = draft
                 .settings()
-                .editing_layout_id
+                .editing_profile_id
                 .as_deref()
-                .map(|id| draft.load_layout(id))
+                .map(|id| draft.load_profile(id))
                 .transpose()
-                .and_then(|layout| {
-                    if let Some(layout) = &layout {
-                        super::ids::validate_layout(layout).map_err(ConfigError::Invalid)?;
-                        super::timing::validate_layout(layout).map_err(ConfigError::Invalid)?;
+                .and_then(|profile| {
+                    if let Some(profile) = &profile {
+                        super::ids::validate_profile(profile).map_err(ConfigError::Invalid)?;
+                        super::timing::validate_profile(profile).map_err(ConfigError::Invalid)?;
                     }
-                    Ok(layout)
+                    Ok(profile)
                 });
-            let layout = match saved {
-                Ok(Some(layout)) => layout,
-                Ok(None) => LayoutPreset::initial(),
+            let profile = match saved {
+                Ok(Some(profile)) => profile,
+                Ok(None) => ProfilePreset::initial(),
                 Err(error) => {
                     log::warn!("discarding working copy without a usable library file: {error}");
-                    draft.update_settings(|settings| settings.editing_layout_id = None)?;
-                    LayoutPreset::initial()
+                    draft.update_settings(|settings| settings.editing_profile_id = None)?;
+                    ProfilePreset::initial()
                 }
             };
-            draft.update_layout(|current| *current = layout)
+            draft.update_profile(|current| *current = profile)
         })
     }
 
     pub fn load_library_for_editing(&mut self, name: &str) -> Result<(), ConfigError> {
-        let preset: LayoutPreset = self.load_layout(&user_layout_id(name))?;
+        let preset: ProfilePreset = self.load_profile(&user_profile_id(name))?;
         // Validate before saving the identity, so a failed open changes neither part.
-        super::ids::validate_layout(&preset).map_err(ConfigError::Invalid)?;
-        super::timing::validate_layout(&preset).map_err(ConfigError::Invalid)?;
-        self.update_settings(|settings| settings.editing_layout_id = Some(user_layout_id(name)))?;
-        self.update_layout(|layout| *layout = preset)
+        super::ids::validate_profile(&preset).map_err(ConfigError::Invalid)?;
+        super::timing::validate_profile(&preset).map_err(ConfigError::Invalid)?;
+        self.update_settings(|settings| settings.editing_profile_id = Some(user_profile_id(name)))?;
+        self.update_profile(|profile| *profile = preset)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::profile::names::NameIssue;
+    use crate::config::names::NameIssue;
 
     #[test]
     fn empty_library_files_are_rejected_without_changing_the_working_copy() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
-        doc.save_current_layout_as("Working").unwrap();
-        let before = doc.layout().clone();
+        doc.save_current_profile_as("Working").unwrap();
+        let before = doc.profile().clone();
         let settings = doc.settings().clone();
         for text in ["", " \n\t"] {
-            paths.save_user_layout("Empty", text, true).unwrap();
+            paths.save_user_profile("Empty", text, true).unwrap();
             let entries = load_library_entries(&paths, &["Empty".into()]);
-            assert!(matches!(&entries[0].layout, Err(ConfigError::Parse(_))));
+            assert!(matches!(&entries[0].profile, Err(ConfigError::Parse(_))));
             assert!(matches!(
-                doc.load_layout("user:Empty"),
+                doc.load_profile("user:Empty"),
                 Err(ConfigError::Parse(_))
             ));
             assert!(doc.load_library_for_editing("Empty").is_err());
-            assert_eq!(doc.layout(), &before);
+            assert_eq!(doc.profile(), &before);
             assert_eq!(doc.settings(), &settings);
         }
     }
@@ -491,26 +491,26 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
-        doc.save_current_layout_as("Working").unwrap();
+        doc.save_current_profile_as("Working").unwrap();
         let bytes = [0xff, 0xfe, 0x00];
         paths
-            .save_user_layout_bytes("Broken", &bytes, false)
+            .save_user_profile_bytes("Broken", &bytes, false)
             .unwrap();
         let entries = load_library_entries(&paths, &["Broken".into()]);
         assert_eq!(entries[0].bytes.as_deref(), Some(bytes.as_slice()));
-        assert!(matches!(&entries[0].layout, Err(ConfigError::Parse(_))));
+        assert!(matches!(&entries[0].profile, Err(ConfigError::Parse(_))));
         assert_eq!(
-            doc.remove_library_layout("Broken", b"stale"),
+            doc.remove_library_profile("Broken", b"stale"),
             Err(ConfigError::EditConflict)
         );
 
         std::fs::remove_file(paths.config_path()).unwrap();
         std::fs::create_dir(paths.config_path()).unwrap();
-        assert!(doc.remove_library_layout("Broken", bytes).is_err());
-        assert_eq!(paths.load_user_layout_bytes("Broken").unwrap(), bytes);
+        assert!(doc.remove_library_profile("Broken", bytes).is_err());
+        assert_eq!(paths.load_user_profile_bytes("Broken").unwrap(), bytes);
         std::fs::remove_dir(paths.config_path()).unwrap();
-        doc.remove_library_layout("Broken", bytes).unwrap();
-        assert!(!paths.layout_path("Broken").unwrap().exists());
+        doc.remove_library_profile("Broken", bytes).unwrap();
+        assert!(!paths.profile_path("Broken").unwrap().exists());
     }
 
     #[test]
@@ -518,31 +518,31 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
-        doc.save_current_layout_as("Saved").unwrap();
-        let baseline = paths.load_user_layout("Saved").unwrap();
-        doc.update_layout(|layout| layout.description = Some("mine".into()))
+        doc.save_current_profile_as("Saved").unwrap();
+        let baseline = paths.load_user_profile("Saved").unwrap();
+        doc.update_profile(|profile| profile.description = Some("mine".into()))
             .unwrap();
-        let before = doc.layout().clone();
+        let before = doc.profile().clone();
         assert_eq!(
             doc.library_save_target(Some(("Saved", &baseline))),
             LibrarySaveTarget::Existing("Saved".into())
         );
         let theirs = r#"{"version":1,"meta":{"description":"external"}}"#;
-        paths.save_user_layout("Saved", theirs, true).unwrap();
+        paths.save_user_profile("Saved", theirs, true).unwrap();
         assert_eq!(
-            doc.save_library_layout("Saved", Some(("Saved", &baseline))),
+            doc.save_library_profile("Saved", Some(("Saved", &baseline))),
             Err(ConfigError::EditConflict)
         );
-        assert_eq!(paths.load_user_layout("Saved").unwrap(), theirs);
-        assert_eq!(doc.layout(), &before);
+        assert_eq!(paths.load_user_profile("Saved").unwrap(), theirs);
+        assert_eq!(doc.profile(), &before);
 
         paths
-            .save_user_layout("Saved", &format!("\n{baseline}\n"), true)
+            .save_user_profile("Saved", &format!("\n{baseline}\n"), true)
             .unwrap();
-        doc.save_library_layout("Saved", Some(("Saved", &baseline)))
+        doc.save_library_profile("Saved", Some(("Saved", &baseline)))
             .unwrap();
         assert_eq!(
-            doc.load_layout("user:Saved")
+            doc.load_profile("user:Saved")
                 .unwrap()
                 .description
                 .as_deref(),
@@ -551,30 +551,30 @@ mod tests {
     }
 
     #[test]
-    fn discard_handles_unnamed_missing_and_broken_library_layouts() {
+    fn discard_handles_unnamed_missing_and_broken_library_profiles() {
         for contents in [None, Some("broken")] {
             let dir = tempfile::tempdir().unwrap();
             let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
             let mut doc = ConfigDocument::load(paths.clone()).unwrap();
-            doc.update_layout(|layout| layout.description = Some("unsaved".into()))
+            doc.update_profile(|profile| profile.description = Some("unsaved".into()))
                 .unwrap();
-            doc.discard_working_layout().unwrap();
-            assert_eq!(doc.layout(), &LayoutPreset::initial());
-            doc.save_current_layout_as("Saved").unwrap();
-            doc.update_layout(|layout| layout.description = Some("unsaved".into()))
+            doc.discard_working_profile().unwrap();
+            assert_eq!(doc.profile(), &ProfilePreset::initial());
+            doc.save_current_profile_as("Saved").unwrap();
+            doc.update_profile(|profile| profile.description = Some("unsaved".into()))
                 .unwrap();
             match contents {
-                None => std::fs::remove_file(paths.layout_path("Saved").unwrap()).unwrap(),
-                Some(text) => std::fs::write(paths.layout_path("Saved").unwrap(), text).unwrap(),
+                None => std::fs::remove_file(paths.profile_path("Saved").unwrap()).unwrap(),
+                Some(text) => std::fs::write(paths.profile_path("Saved").unwrap(), text).unwrap(),
             }
-            doc.discard_working_layout().unwrap();
-            assert_eq!(doc.layout(), &LayoutPreset::initial());
-            assert!(doc.settings().editing_layout_id.is_none());
+            doc.discard_working_profile().unwrap();
+            assert_eq!(doc.profile(), &ProfilePreset::initial());
+            assert!(doc.settings().editing_profile_id.is_none());
             assert!(
                 ConfigDocument::load(paths)
                     .unwrap()
                     .settings()
-                    .editing_layout_id
+                    .editing_profile_id
                     .is_none()
             );
         }
@@ -585,16 +585,16 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
-        doc.save_current_layout_as("Saved").unwrap();
-        doc.update_layout(|layout| layout.description = Some("unsaved".into()))
+        doc.save_current_profile_as("Saved").unwrap();
+        doc.update_profile(|profile| profile.description = Some("unsaved".into()))
             .unwrap();
-        std::fs::remove_file(paths.layout_path("Saved").unwrap()).unwrap();
+        std::fs::remove_file(paths.profile_path("Saved").unwrap()).unwrap();
         std::fs::remove_file(paths.config_path()).unwrap();
         std::fs::create_dir(paths.config_path()).unwrap();
-        let before = doc.layout().clone();
+        let before = doc.profile().clone();
         let settings = doc.settings().clone();
-        assert!(doc.discard_working_layout().is_err());
-        assert_eq!(doc.layout(), &before);
+        assert!(doc.discard_working_profile().is_err());
+        assert_eq!(doc.profile(), &before);
         assert_eq!(doc.settings(), &settings);
     }
 
@@ -604,28 +604,28 @@ mod tests {
         let paths =
             crate::storage::StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         paths
-            .save_user_layout(
+            .save_user_profile(
                 "Valid",
-                &layout_file::serialize(&LayoutPreset::initial()),
+                &profile_file::serialize(&ProfilePreset::initial()),
                 false,
             )
             .unwrap();
-        std::fs::write(paths.layout_path("Broken").unwrap(), "not json").unwrap();
+        std::fs::write(paths.profile_path("Broken").unwrap(), "not json").unwrap();
         let names = vec!["Valid".into(), "Broken".into(), "Missing".into()];
         let loaded = load_library_entries(&paths, &names);
-        assert!(loaded[0].layout.is_ok());
-        assert!(matches!(&loaded[1].layout, Err(ConfigError::Parse(_))));
+        assert!(loaded[0].profile.is_ok());
+        assert!(matches!(&loaded[1].profile, Err(ConfigError::Parse(_))));
         assert_eq!(loaded[1].bytes.as_deref(), Some(b"not json".as_slice()));
-        assert!(matches!(&loaded[2].layout, Err(ConfigError::Io(_))));
+        assert!(matches!(&loaded[2].profile, Err(ConfigError::Io(_))));
         assert!(loaded[2].bytes.is_none());
     }
 
     #[test]
-    fn broken_layout_can_be_renamed_and_removed() {
+    fn broken_profile_can_be_renamed_and_removed() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
-        std::fs::create_dir_all(paths.layouts_dir()).unwrap();
-        std::fs::write(paths.layout_path("Broken").unwrap(), "not json").unwrap();
+        std::fs::create_dir_all(paths.profiles_dir()).unwrap();
+        std::fs::write(paths.profile_path("Broken").unwrap(), "not json").unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
 
         assert!(matches!(
@@ -641,11 +641,11 @@ mod tests {
                 .unwrap(),
             "Fixed"
         );
-        assert_eq!(paths.load_user_layout("Fixed").unwrap(), "not json");
-        assert!(paths.load_user_layout("Broken").is_err());
+        assert_eq!(paths.load_user_profile("Fixed").unwrap(), "not json");
+        assert!(paths.load_user_profile("Broken").is_err());
 
-        doc.remove_library_layout("Fixed", "not json").unwrap();
-        assert!(paths.load_user_layout("Fixed").is_err());
+        doc.remove_library_profile("Fixed", "not json").unwrap();
+        assert!(paths.load_user_profile("Fixed").is_err());
     }
 
     #[test]
@@ -653,42 +653,42 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         paths
-            .save_user_layout(
+            .save_user_profile(
                 "Original",
                 r#"{"version":1,"commands":[{"id":"unused","sh":"true"}]}"#,
                 false,
             )
             .unwrap();
         paths
-            .save_config(r#"{"version":1,"state":{"editedLayout":"user:Original"}}"#)
+            .save_config(r#"{"version":1,"state":{"editedProfile":"user:Original"}}"#)
             .unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
-        let before = doc.layout().clone();
+        let before = doc.profile().clone();
         let settings = doc.settings().clone();
-        let original = paths.load_user_layout("Original").unwrap();
+        let original = paths.load_user_profile("Original").unwrap();
 
-        assert!(doc.save_working_layout_as("Original").is_err());
-        assert_eq!(doc.layout(), &before);
-        assert!(doc.save_working_layout_as("invalid/name").is_err());
-        assert_eq!(doc.layout(), &before);
+        assert!(doc.save_working_profile_as("Original").is_err());
+        assert_eq!(doc.profile(), &before);
+        assert!(doc.save_working_profile_as("invalid/name").is_err());
+        assert_eq!(doc.profile(), &before);
 
-        let blocked = paths.layout_path("Blocked").unwrap();
+        let blocked = paths.profile_path("Blocked").unwrap();
         std::fs::create_dir(&blocked).unwrap();
-        assert!(doc.overwrite_library_layout("Blocked").is_err());
-        assert_eq!(doc.layout(), &before);
+        assert!(doc.overwrite_library_profile("Blocked").is_err());
+        assert_eq!(doc.profile(), &before);
 
         std::fs::remove_file(paths.config_path()).unwrap();
         std::fs::create_dir(paths.config_path()).unwrap();
-        assert!(doc.save_working_layout_as("New").is_err());
-        assert_eq!(doc.layout(), &before);
+        assert!(doc.save_working_profile_as("New").is_err());
+        assert_eq!(doc.profile(), &before);
         assert_eq!(doc.settings(), &settings);
-        assert!(!paths.layout_path("New").unwrap().exists());
-        assert_eq!(paths.load_user_layout("Original").unwrap(), original);
+        assert!(!paths.profile_path("New").unwrap().exists());
+        assert_eq!(paths.load_user_profile("Original").unwrap(), original);
 
         std::fs::remove_dir(paths.config_path()).unwrap();
-        doc.save_working_layout_as("New").unwrap();
-        assert!(doc.layout().commands.is_empty());
-        assert!(doc.load_layout("user:New").unwrap().commands.is_empty());
+        doc.save_working_profile_as("New").unwrap();
+        assert!(doc.profile().commands.is_empty());
+        assert!(doc.load_profile("user:New").unwrap().commands.is_empty());
     }
 
     #[test]
@@ -698,24 +698,24 @@ mod tests {
         let doc = ConfigDocument::load(paths.clone()).unwrap();
         for base in ["a".repeat(128), "я".repeat(125), "界".repeat(83)] {
             paths
-                .save_user_layout(&base, r#"{"version":1}"#, false)
+                .save_user_profile(&base, r#"{"version":1}"#, false)
                 .unwrap();
             for suffix in 2..=12 {
                 let name = doc.unique_library_name(&base).unwrap();
                 assert!(name.ends_with(&format!(" ({suffix})")));
-                assert!(crate::storage::validate_layout_name(&name).is_ok());
+                assert!(crate::storage::validate_profile_name(&name).is_ok());
                 paths
-                    .save_user_layout(&name, r#"{"version":1}"#, false)
+                    .save_user_profile(&name, r#"{"version":1}"#, false)
                     .unwrap();
             }
         }
         assert_eq!(
             doc.unique_library_name(" "),
-            Err(ConfigError::Name(NameKind::Layout, NameIssue::Empty))
+            Err(ConfigError::Name(NameKind::Profile, NameIssue::Empty))
         );
         assert_eq!(
             doc.unique_library_name("bad/name"),
-            Err(ConfigError::Name(NameKind::Layout, NameIssue::Invalid))
+            Err(ConfigError::Name(NameKind::Profile, NameIssue::Invalid))
         );
     }
 
@@ -724,24 +724,24 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
-        doc.update_layout(|layout| layout.description = Some("working A".into()))
+        doc.update_profile(|profile| profile.description = Some("working A".into()))
             .unwrap();
-        doc.save_current_layout_as("A").unwrap();
+        doc.save_current_profile_as("A").unwrap();
         paths
-            .save_user_layout("B", r#"{"version":1,"meta":{"description":"B"}}"#, false)
+            .save_user_profile("B", r#"{"version":1,"meta":{"description":"B"}}"#, false)
             .unwrap();
-        let before = doc.layout().clone();
+        let before = doc.profile().clone();
         std::fs::remove_file(paths.config_path()).unwrap();
         std::fs::create_dir(paths.config_path()).unwrap();
 
         assert!(doc.load_library_for_editing("B").is_err());
-        assert_eq!(doc.layout(), &before);
-        assert_eq!(doc.settings().editing_layout_id.as_deref(), Some("user:A"));
+        assert_eq!(doc.profile(), &before);
+        assert_eq!(doc.settings().editing_profile_id.as_deref(), Some("user:A"));
 
         std::fs::remove_dir(paths.config_path()).unwrap();
         doc.load_library_for_editing("B").unwrap();
-        assert_eq!(doc.layout().description.as_deref(), Some("B"));
-        assert_eq!(doc.settings().editing_layout_id.as_deref(), Some("user:B"));
+        assert_eq!(doc.profile().description.as_deref(), Some("B"));
+        assert_eq!(doc.settings().editing_profile_id.as_deref(), Some("user:B"));
     }
 
     fn window(app_id: &str) -> crate::runtime_state::ActiveWindow {
@@ -751,10 +751,10 @@ mod tests {
         }
     }
     use crate::{
-        profile::{
+        config::{
             auto_switch::AutoSwitchContext,
             bundled::BUNDLED,
-            model::{AutoRule, LayoutConditionSet, LayoutMode},
+            model::{AutoRule, ProfileConditionSet, ProfileMode},
         },
         storage::StoragePaths,
     };
@@ -765,27 +765,27 @@ mod tests {
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut doc = ConfigDocument::load(paths).unwrap();
         assert_eq!(doc.library_save_target(None), LibrarySaveTarget::NeedsName);
-        doc.save_current_layout_as("Saved").unwrap();
-        let original = doc.paths().load_user_layout("Saved").unwrap();
-        doc.update_layout(|layout| layout.description = Some("working edit".into()))
+        doc.save_current_profile_as("Saved").unwrap();
+        let original = doc.paths().load_user_profile("Saved").unwrap();
+        doc.update_profile(|profile| profile.description = Some("working edit".into()))
             .unwrap();
         assert_eq!(
             doc.library_save_target(Some(("Saved", &original))),
             LibrarySaveTarget::Existing("Saved".into())
         );
-        let mut external = doc.layout().clone();
+        let mut external = doc.profile().clone();
         external.description = Some("external edit".into());
-        let external = layout_file::serialize(&external);
+        let external = profile_file::serialize(&external);
         doc.paths()
-            .save_user_layout("Saved", &external, true)
+            .save_user_profile("Saved", &external, true)
             .unwrap();
         assert_eq!(
             doc.library_save_target(Some(("Saved", &original))),
             LibrarySaveTarget::Conflict
         );
-        assert_eq!(doc.paths().load_user_layout("Saved").unwrap(), external);
-        let saved = doc.overwrite_library_layout("Saved").unwrap();
-        assert_eq!(doc.paths().load_user_layout("Saved").unwrap(), saved);
+        assert_eq!(doc.paths().load_user_profile("Saved").unwrap(), external);
+        let saved = doc.overwrite_library_profile("Saved").unwrap();
+        assert_eq!(doc.paths().load_user_profile("Saved").unwrap(), saved);
         assert_eq!(
             doc.library_save_target(None),
             LibrarySaveTarget::Existing("Saved".into())
@@ -796,27 +796,27 @@ mod tests {
     fn portable_metadata_survives_library_operations() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
-        let text = r#"{"version":1,"$schema":"https://example.com/layout.json",
-            "meta":{"name":"Original","author":"Ivan K","layoutVersion":"1.0"}}"#;
+        let text = r#"{"version":1,"$schema":"https://example.com/profile.json",
+            "meta":{"name":"Original","author":"Ivan K","profileVersion":"1.0"}}"#;
         paths
-            .save_user_layout("Downloaded (2)", text, false)
+            .save_user_profile("Downloaded (2)", text, false)
             .unwrap();
         paths
             .save_config(
                 r#"{"version":1,"$schema":"https://example.com/config.json",
-            "state":{"editedLayout":"user:Downloaded (2)"}}"#,
+            "state":{"editedProfile":"user:Downloaded (2)"}}"#,
             )
             .unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
-        doc.save_current_layout_as("Saved").unwrap();
-        doc.create_library_layout("Copy", "New description", LibrarySource::Copy("Saved"))
+        doc.save_current_profile_as("Saved").unwrap();
+        doc.create_library_profile("Copy", "New description", LibrarySource::Copy("Saved"))
             .unwrap();
-        let expected = paths.load_user_layout("Copy").unwrap();
+        let expected = paths.load_user_profile("Copy").unwrap();
         doc.edit_library_metadata("Copy", "Renamed", Some("Edited description"), &expected)
             .unwrap();
-        let original = layout_file::parse(text).unwrap().unwrap();
+        let original = profile_file::parse(text).unwrap().unwrap();
         for name in ["Saved", "Renamed"] {
-            let saved = doc.load_layout(&user_layout_id(name)).unwrap();
+            let saved = doc.load_profile(&user_profile_id(name)).unwrap();
             assert_eq!(saved.meta, original.meta);
             assert_eq!(saved.schema, original.schema);
         }
@@ -832,7 +832,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         paths
-            .save_user_layout(
+            .save_user_profile(
                 "Test",
                 r#"{"version": 1, "commands": [{"id": "hello", "sh": "printf hello"}]}"#,
                 true,
@@ -840,16 +840,16 @@ mod tests {
             .unwrap();
         paths
             .save_config(
-                r#"{"version":1,"settings":{"commandsEnabled":true},"state":{"editedLayout":"user:Test"}}"#,
+                r#"{"version":1,"settings":{"commandsEnabled":true},"state":{"editedProfile":"user:Test"}}"#,
             )
             .unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
-        doc.save_current_layout_as("Hello").unwrap();
-        let text = paths.load_user_layout("Hello").unwrap();
+        doc.save_current_profile_as("Hello").unwrap();
+        let text = paths.load_user_profile("Hello").unwrap();
         doc.edit_library_metadata("Hello", "Renamed", Some(""), &text)
             .unwrap();
-        let text = paths.load_user_layout("Renamed").unwrap();
-        doc.remove_library_layout("Renamed", &text).unwrap();
+        let text = paths.load_user_profile("Renamed").unwrap();
+        doc.remove_library_profile("Renamed", &text).unwrap();
         assert!(doc.settings().commands_enabled);
     }
 
@@ -860,37 +860,37 @@ mod tests {
         let document = ConfigDocument::load(paths.clone()).unwrap();
         assert_eq!(document.unique_library_name(" New ").unwrap(), "New");
         let ivan = document
-            .create_library_layout("Ivan", "", LibrarySource::Bundled(&BUNDLED[0]))
+            .create_library_profile("Ivan", "", LibrarySource::Bundled(&BUNDLED[0]))
             .unwrap();
-        assert!(!document.load_layout("user:Ivan").unwrap().rules.is_empty());
+        assert!(!document.load_profile("user:Ivan").unwrap().rules.is_empty());
         assert_eq!(document.unique_library_name("Ivan").unwrap(), "Ivan (2)");
         assert_eq!(document.unique_library_name("ivan").unwrap(), "ivan (2)");
         assert_eq!(
-            document.create_library_layout("IVAN", "", LibrarySource::Empty),
-            Err(ConfigError::Name(NameKind::Layout, NameIssue::Taken))
+            document.create_library_profile("IVAN", "", LibrarySource::Empty),
+            Err(ConfigError::Name(NameKind::Profile, NameIssue::Taken))
         );
         assert_eq!(
-            document.checked_layout_name("IVAN", Some("Ivan")),
+            document.checked_profile_name("IVAN", Some("Ivan")),
             Ok("IVAN".into())
         );
         assert!(
             document
-                .create_library_layout(&ivan, "", LibrarySource::Empty)
+                .create_library_profile(&ivan, "", LibrarySource::Empty)
                 .is_err()
         );
         document
-            .create_library_layout("Copy", " mine ", LibrarySource::Copy("Ivan"))
+            .create_library_profile("Copy", " mine ", LibrarySource::Copy("Ivan"))
             .unwrap();
-        let copy = document.load_layout("user:Copy").unwrap();
+        let copy = document.load_profile("user:Copy").unwrap();
         assert_eq!(copy.description.as_deref(), Some("mine"));
         assert_eq!(
             copy.rules.len(),
-            document.load_layout("user:Ivan").unwrap().rules.len()
+            document.load_profile("user:Ivan").unwrap().rules.len()
         );
         document
-            .create_library_layout("Empty", "", LibrarySource::Empty)
+            .create_library_profile("Empty", "", LibrarySource::Empty)
             .unwrap();
-        let empty = document.load_layout("user:Empty").unwrap();
+        let empty = document.load_profile("user:Empty").unwrap();
         assert!(empty.rules.is_empty());
         assert!(empty.emoji_pages.iter().all(|page| page.cells.is_empty()));
         assert!(
@@ -902,43 +902,43 @@ mod tests {
     }
 
     #[test]
-    fn moving_layout_preserves_other_priorities_in_both_modes() {
+    fn moving_profile_preserves_other_priorities_in_both_modes() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         for name in ["A", "B", "C", "D"] {
             paths
-                .save_user_layout(name, r#"{"version": 1}"#, false)
+                .save_user_profile(name, r#"{"version": 1}"#, false)
                 .unwrap();
         }
-        document.move_library_layout("user:A", 3).unwrap();
+        document.move_library_profile("user:A", 3).unwrap();
         assert_eq!(
-            document.ordered_layout_ids().unwrap(),
+            document.ordered_profile_ids().unwrap(),
             ["user:B", "user:C", "user:D", "user:A"]
         );
         document
-            .update_settings(|settings| settings.layout_mode = LayoutMode::Auto)
+            .update_settings(|settings| settings.profile_mode = ProfileMode::Auto)
             .unwrap();
         assert_eq!(
-            document.ordered_layout_ids().unwrap(),
+            document.ordered_profile_ids().unwrap(),
             ["user:B", "user:C", "user:D", "user:A"]
         );
-        document.move_library_layout("user:A", -2).unwrap();
+        document.move_library_profile("user:A", -2).unwrap();
         assert_eq!(
-            document.ordered_layout_ids().unwrap(),
+            document.ordered_profile_ids().unwrap(),
             ["user:B", "user:A", "user:C", "user:D"]
         );
         document
-            .update_settings(|settings| settings.layout_mode = LayoutMode::Manual)
+            .update_settings(|settings| settings.profile_mode = ProfileMode::Manual)
             .unwrap();
         assert_eq!(
-            document.ordered_layout_ids().unwrap(),
+            document.ordered_profile_ids().unwrap(),
             ["user:B", "user:A", "user:C", "user:D"]
         );
         let reloaded = ConfigDocument::load(paths).unwrap();
         assert_eq!(
-            reloaded.ordered_layout_ids().unwrap(),
-            document.ordered_layout_ids().unwrap()
+            reloaded.ordered_profile_ids().unwrap(),
+            document.ordered_profile_ids().unwrap()
         );
     }
 
@@ -949,7 +949,7 @@ mod tests {
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         for name in ["A", "B"] {
             paths
-                .save_user_layout(
+                .save_user_profile(
                     name,
                     r#"{"version": 1, "meta": {"description": "original"}}"#,
                     false,
@@ -958,104 +958,107 @@ mod tests {
         }
         document
             .update_settings(|settings| {
-                settings.manual_layout_id = Some("user:A".into());
-                settings.layout_order = vec!["user:A".into(), "user:B".into()];
+                settings.manual_profile_id = Some("user:A".into());
+                settings.profile_order = vec!["user:A".into(), "user:B".into()];
                 settings.auto_rules = vec![AutoRule {
                     id: "r".into(),
                     enabled: true,
-                    layout_id: Some("user:B".into()),
-                    conditions: LayoutConditionSet::default(),
+                    profile_id: Some("user:B".into()),
+                    conditions: ProfileConditionSet::default(),
                 }];
-                settings.auto_default_layout_id = Some("user:B".into());
+                settings.auto_default_profile_id = Some("user:B".into());
             })
             .unwrap();
         document.load_library_for_editing("B").unwrap();
         assert_eq!(
             document
-                .active_layout_id(&AutoSwitchContext::default())
+                .active_profile_id(&AutoSwitchContext::default())
                 .unwrap()
                 .as_deref(),
             Some("user:A")
         );
-        let original = paths.load_user_layout("B").unwrap();
+        let original = paths.load_user_profile("B").unwrap();
         document
             .edit_library_metadata("B", "C", Some("Описание"), &original)
             .unwrap();
         assert_eq!(
             document
-                .active_layout(&AutoSwitchContext::default())
+                .active_profile(&AutoSwitchContext::default())
                 .unwrap()
                 .description
                 .as_deref(),
             Some("original")
         );
         assert_eq!(
-            document.settings().editing_layout_id.as_deref(),
+            document.settings().editing_profile_id.as_deref(),
             Some("user:C")
         );
         assert_eq!(
-            document.settings().auto_rules[0].layout_id.as_deref(),
+            document.settings().auto_rules[0].profile_id.as_deref(),
             Some("user:C")
         );
         assert_eq!(
-            document.settings().auto_default_layout_id.as_deref(),
+            document.settings().auto_default_profile_id.as_deref(),
             Some("user:C")
         );
-        assert_eq!(document.layout().description.as_deref(), Some("Описание"));
-        document.move_library_layout("user:C", -1).unwrap();
-        assert_eq!(document.ordered_layout_ids().unwrap(), ["user:C", "user:A"]);
+        assert_eq!(document.profile().description.as_deref(), Some("Описание"));
+        document.move_library_profile("user:C", -1).unwrap();
         assert_eq!(
-            document.remove_library_layout("C", &original),
+            document.ordered_profile_ids().unwrap(),
+            ["user:C", "user:A"]
+        );
+        assert_eq!(
+            document.remove_library_profile("C", &original),
             Err(ConfigError::EditConflict)
         );
         document
-            .remove_library_layout("C", paths.load_user_layout("C").unwrap())
+            .remove_library_profile("C", paths.load_user_profile("C").unwrap())
             .unwrap();
         let reloaded = ConfigDocument::load(paths).unwrap();
-        assert!(reloaded.settings().editing_layout_id.is_none());
+        assert!(reloaded.settings().editing_profile_id.is_none());
         assert_eq!(
-            reloaded.settings().manual_layout_id.as_deref(),
+            reloaded.settings().manual_profile_id.as_deref(),
             Some("user:A")
         );
-        assert_eq!(reloaded.settings().layout_order, ["user:A"]);
+        assert_eq!(reloaded.settings().profile_order, ["user:A"]);
         assert!(reloaded.settings().auto_rules.is_empty());
-        assert!(reloaded.settings().auto_default_layout_id.is_none());
+        assert!(reloaded.settings().auto_default_profile_id.is_none());
     }
 
     #[test]
-    fn deleting_single_mode_layout_activates_first_remaining() {
+    fn deleting_single_mode_profile_activates_first_remaining() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         for name in ["A", "B", "C"] {
             paths
-                .save_user_layout(name, r#"{"version": 1}"#, false)
+                .save_user_profile(name, r#"{"version": 1}"#, false)
                 .unwrap();
         }
         document
             .update_settings(|settings| {
-                settings.manual_layout_id = Some("user:B".into());
-                settings.layout_order = vec!["user:C".into(), "user:B".into(), "user:A".into()];
+                settings.manual_profile_id = Some("user:B".into());
+                settings.profile_order = vec!["user:C".into(), "user:B".into(), "user:A".into()];
             })
             .unwrap();
         document
-            .remove_library_layout("A", paths.load_user_layout("A").unwrap())
+            .remove_library_profile("A", paths.load_user_profile("A").unwrap())
             .unwrap();
         assert_eq!(
-            document.settings().manual_layout_id.as_deref(),
+            document.settings().manual_profile_id.as_deref(),
             Some("user:B")
         );
         document
-            .remove_library_layout("B", paths.load_user_layout("B").unwrap())
+            .remove_library_profile("B", paths.load_user_profile("B").unwrap())
             .unwrap();
         assert_eq!(
-            document.settings().manual_layout_id.as_deref(),
+            document.settings().manual_profile_id.as_deref(),
             Some("user:C")
         );
         document
-            .remove_library_layout("C", paths.load_user_layout("C").unwrap())
+            .remove_library_profile("C", paths.load_user_profile("C").unwrap())
             .unwrap();
-        assert!(document.settings().manual_layout_id.is_none());
+        assert!(document.settings().manual_profile_id.is_none());
     }
 
     #[test]
@@ -1064,7 +1067,7 @@ mod tests {
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         paths
-            .save_user_layout(
+            .save_user_profile(
                 "Editor",
                 r#"{"version": 1, "rules": [{"key": "KeyA", "tap": "KeyB"}]}"#,
                 false,
@@ -1072,24 +1075,24 @@ mod tests {
             .unwrap();
         document
             .update_settings(|settings| {
-                settings.layout_mode = LayoutMode::Auto;
+                settings.profile_mode = ProfileMode::Auto;
                 settings.auto_rules = vec![
                     AutoRule {
                         id: "games".into(),
                         enabled: true,
-                        layout_id: None,
-                        conditions: LayoutConditionSet {
-                            game_mode: Some(crate::profile::model::GameModeCondition::On),
+                        profile_id: None,
+                        conditions: ProfileConditionSet {
+                            game_mode: Some(crate::config::model::GameModeCondition::On),
                             ..Default::default()
                         },
                     },
                     AutoRule {
                         id: "editor".into(),
                         enabled: true,
-                        layout_id: Some("user:Editor".into()),
-                        conditions: LayoutConditionSet {
+                        profile_id: Some("user:Editor".into()),
+                        conditions: ProfileConditionSet {
                             game_mode: None,
-                            layouts: vec!["us".into()],
+                            keyboard_layouts: vec!["us".into()],
                             window_patterns: vec!["*kate".into()],
                             excluded_window_patterns: vec![],
                         },
@@ -1103,7 +1106,7 @@ mod tests {
             ..Default::default()
         };
         let active = document.runtime_config(&context).unwrap();
-        assert_eq!(active.layout_id.as_deref(), Some("user:Editor"));
+        assert_eq!(active.profile_id.as_deref(), Some("user:Editor"));
         for change in 0..3 {
             match change {
                 0 => context.window = Some(window("browser")),
@@ -1117,7 +1120,7 @@ mod tests {
                 }
             }
             let runtime = document.runtime_config(&context).unwrap();
-            assert!(runtime.layout_id.is_none());
+            assert!(runtime.profile_id.is_none());
             let raw: serde_json::Value = serde_json::to_value(&runtime.mapper).unwrap();
             assert!(raw["rules"].as_array().unwrap().is_empty());
         }
@@ -1129,15 +1132,15 @@ mod tests {
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         let original = r#"{"version": 1, "meta": {"description": "original"}}"#;
-        paths.save_user_layout("A", original, false).unwrap();
+        paths.save_user_profile("A", original, false).unwrap();
         paths
             .save_config(r#"{"version":1,"settings":{"appearance":"light"}}"#)
             .unwrap();
         document
             .edit_library_metadata("A", "B", Some("changed"), original)
             .unwrap();
-        assert!(paths.load_user_layout("A").is_err());
-        assert!(paths.load_user_layout("B").unwrap().contains("changed"));
+        assert!(paths.load_user_profile("A").is_err());
+        assert!(paths.load_user_profile("B").unwrap().contains("changed"));
         let restarted = ConfigDocument::load(paths).unwrap();
         assert_eq!(
             restarted.settings().appearance,

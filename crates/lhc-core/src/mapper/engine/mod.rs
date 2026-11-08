@@ -64,19 +64,19 @@ use self::model::{
     BufferedEvent, CompiledAction, HoldOutputMode, LayerTrigger, RuleEntry, RuleExecution,
     RulePhase, TapMode,
 };
-use self::state::{ChordState, CompiledLayout, LayerStack, MacroRunner, VirtualKeys};
+use self::state::{ChordState, CompiledProfile, LayerStack, MacroRunner, VirtualKeys};
 use super::action::Keystroke;
 use super::config::GameModeCondition;
 use crate::mapper::key_code::KeyCode;
-use crate::profile::app_match::any_matches_window;
-use crate::profile::auto_switch::AutoSwitchContext;
+use crate::config::app_match::any_matches_window;
+use crate::config::auto_switch::AutoSwitchContext;
 use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
 
 pub struct Engine {
     /// Bindings compiled from the configuration; replaced as a whole by
     /// `reconfigure`.
-    layout: CompiledLayout,
+    profile: CompiledProfile,
     physical_down: HashSet<KeyCode>,
     /// When each physical key in `physical_down` was pressed.
     press_at: HashMap<KeyCode, Instant>,
@@ -100,7 +100,7 @@ pub struct Engine {
 pub type ContextSource = Box<dyn Fn() -> AutoSwitchContext + Send>;
 
 impl Engine {
-    /// Replace the source of rule-condition state (window, game mode, layout).
+    /// Replace the source of rule-condition state (window, game mode, keyboard layout).
     pub fn set_context_source(&mut self, source: ContextSource) {
         self.context = source;
     }
@@ -116,7 +116,7 @@ impl Engine {
                     // Reported without an id: the command is off as a whole.
                     CompiledAction::Command(_) => {
                         *action = CompiledAction::Unavailable(
-                            crate::profile::actions::Action::Command(String::new())
+                            crate::config::actions::Action::Command(String::new())
                                 .format()
                                 .unwrap_or_default(),
                         )
@@ -147,7 +147,7 @@ impl Engine {
             }
         }
         let next = Self::new(cfg);
-        self.layout = next.layout;
+        self.profile = next.profile;
         self.runner.timeout = next.runner.timeout;
         self.runner.text_pending = false;
     }
@@ -231,7 +231,7 @@ impl Engine {
         for key in expired {
             if let Some((_, action)) = self.long_holds.remove(&key) {
                 self.commit_hold(key, out);
-                self.fire_action(Some(&action), self.layout.default_mod_delay, now, out);
+                self.fire_action(Some(&action), self.profile.default_mod_delay, now, out);
             }
         }
         if self.deciding_key().is_none() && !self.long_hold_undecided(KeyCode::KEY_RESERVED) {
@@ -423,7 +423,7 @@ impl Engine {
                     return;
                 }
                 let dtap = pending.and_then(|p| p.rule.double_tap);
-                self.fire_action(dtap.as_ref(), self.layout.default_mod_delay, now, out);
+                self.fire_action(dtap.as_ref(), self.profile.default_mod_delay, now, out);
                 // The matching release must not emit anything (fire-and-forget).
                 self.virt.oneshot.insert(key);
                 return;
@@ -473,7 +473,7 @@ impl Engine {
                     CompiledAction::Stroke(ks)
                         if !ks.mods.is_empty()
                             && self
-                                .layout
+                                .profile
                                 .layer_hold_mods
                                 .get(&layer_id)
                                 .is_some_and(|keys| keys.contains(&key)) =>
@@ -527,7 +527,7 @@ impl Engine {
             && let Some((_, action)) = self.long_holds.remove(&key)
         {
             self.commit_hold(key, out);
-            self.fire_action(Some(&action), self.layout.default_mod_delay, now, out);
+            self.fire_action(Some(&action), self.profile.default_mod_delay, now, out);
         }
         if self.pending.get(&key).is_some_and(
             |p| matches!(p.phase, RulePhase::WaitingDecision { deadline } if now >= deadline),
@@ -547,7 +547,7 @@ impl Engine {
                     self.pending.remove(&key);
                     self.fire_action(
                         pending.rule.double_tap.as_ref(),
-                        self.layout.default_mod_delay,
+                        self.profile.default_mod_delay,
                         now,
                         out,
                     );
@@ -608,7 +608,7 @@ impl Engine {
         }
         out.push(EngineOutput::ChordPress {
             ks: press,
-            mod_delay: self.layout.default_mod_delay,
+            mod_delay: self.profile.default_mod_delay,
         });
         self.virt.emitted.insert(physical, ks);
     }
@@ -654,7 +654,7 @@ impl Engine {
                 mods: fresh,
                 key: ks.key,
             },
-            mod_delay: self.layout.default_mod_delay,
+            mod_delay: self.profile.default_mod_delay,
         });
         self.virt.emitted.insert(
             physical,
@@ -686,7 +686,7 @@ impl Engine {
         out.push(EngineOutput::ChordRelease {
             key: ks.key,
             mods,
-            mod_delay: self.layout.default_mod_delay,
+            mod_delay: self.profile.default_mod_delay,
         });
     }
 
@@ -713,7 +713,7 @@ impl Engine {
     }
 
     fn lookup_mapping(&self, key: KeyCode) -> Option<(String, CompiledAction)> {
-        self.layers.lookup(&self.layout.layer_maps, key)
+        self.layers.lookup(&self.profile.layer_maps, key)
     }
 
     fn start_rule(
@@ -752,7 +752,7 @@ impl Engine {
 
     fn active_rule_for_key(&self, key: KeyCode) -> Option<RuleEntry> {
         let mut ctx = None;
-        self.layout.rules.get(&key).and_then(|rules| {
+        self.profile.rules.get(&key).and_then(|rules| {
             rules
                 .iter()
                 .find(|rule| {
@@ -787,7 +787,7 @@ impl Engine {
             return true;
         }
 
-        !is_primary_mouse_button(key) && self.layout.rules.contains_key(&key)
+        !is_primary_mouse_button(key) && self.profile.rules.contains_key(&key)
     }
 
     fn fire_action(
@@ -857,7 +857,7 @@ impl Engine {
                         mods: vec![],
                         key: physical,
                     },
-                    mod_delay: self.layout.default_mod_delay,
+                    mod_delay: self.profile.default_mod_delay,
                 });
             }
             TapMode::NativeChord(keys) => {
@@ -881,7 +881,7 @@ impl Engine {
             }
             TapMode::Swallow => {}
             TapMode::Action(a) => {
-                self.fire_action(Some(a), self.layout.default_mod_delay, now, out);
+                self.fire_action(Some(a), self.profile.default_mod_delay, now, out);
             }
         }
     }
@@ -943,10 +943,10 @@ impl Engine {
 
     pub fn execute_remote(&mut self, action: &str, out: &mut Vec<EngineOutput>) {
         let resolved =
-            builder::resolve_action(action, &self.layout.macros, &self.layout.commands, "remote");
+            builder::resolve_action(action, &self.profile.macros, &self.profile.commands, "remote");
         self.fire_action(
             resolved.as_ref(),
-            self.layout.default_mod_delay,
+            self.profile.default_mod_delay,
             Instant::now(),
             out,
         );
@@ -1020,12 +1020,12 @@ fn rule_passes_conditions(rule: &RuleEntry, ctx: &AutoSwitchContext) -> bool {
         .condition_game_mode
         .as_ref()
         .is_some_and(|m| *m != GameModeCondition::Ignore);
-    let has_layout_cond = rule
+    let has_profile_cond = rule
         .condition_keyboard_layouts
         .as_ref()
         .is_some_and(|l| !l.is_empty());
 
-    if !has_gm_cond && !has_layout_cond {
+    if !has_gm_cond && !has_profile_cond {
         return true;
     }
     if has_gm_cond {
@@ -1039,18 +1039,18 @@ fn rule_passes_conditions(rule: &RuleEntry, ctx: &AutoSwitchContext) -> bool {
             return false;
         }
     }
-    if has_layout_cond {
+    if has_profile_cond {
         let Some(current) = &ctx.system_layout else {
             return false;
         };
-        // Same comparison as layout auto-switch conditions.
+        // Same comparison as profile auto-switch conditions.
         if !rule
             .condition_keyboard_layouts
             .as_ref()
-            .is_some_and(|layouts| {
-                layouts
+            .is_some_and(|profiles| {
+                profiles
                     .iter()
-                    .any(|layout| layout.trim().eq_ignore_ascii_case(current.trim()))
+                    .any(|profile| profile.trim().eq_ignore_ascii_case(current.trim()))
             })
         {
             return false;

@@ -18,7 +18,7 @@ use crate::{
         SettingsWindow,
     },
 };
-use lhc_core::profile::{actions::Action, model::Command};
+use lhc_core::config::{actions::Action, model::Command};
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::cell::RefCell;
 
@@ -345,7 +345,7 @@ pub(super) fn refresh(
     let value = picker.get_value();
     let command = doc
         .read()
-        .layout()
+        .profile()
         .commands
         .iter()
         .find(|command| assigns_command(&value, &command.id))
@@ -453,8 +453,8 @@ pub(super) fn select_category(ui: &SettingsWindow, doc: &Document, category: Pic
     {
         let default = doc.read().settings().default_macro_step_pause_ms;
         let pause = macros::picker_macro_pause(ui).unwrap_or(default).clamp(
-            lhc_core::profile::timing::PAUSE.min,
-            lhc_core::profile::timing::PAUSE.max,
+            lhc_core::config::timing::PAUSE.min,
+            lhc_core::config::timing::PAUSE.max,
         );
         picker.set_value(
             Action::Pause(pause.to_string())
@@ -522,7 +522,7 @@ pub(super) fn apply(
             &value,
             &state.catalog,
             command.as_ref(),
-            &doc.read().layout().commands,
+            &doc.read().profile().commands,
         );
         (state.target, command, label)
     };

@@ -480,8 +480,8 @@ impl PopupHotkeys {
             return None;
         }
         let action = match key {
-            KeyCode::KEY_F11 => crate::profile::actions::SHOW_EMOJI_MENU_LAST,
-            KeyCode::KEY_F12 => crate::profile::actions::SHOW_QUICK_MENU_LAST,
+            KeyCode::KEY_F11 => crate::config::actions::SHOW_EMOJI_MENU_LAST,
+            KeyCode::KEY_F12 => crate::config::actions::SHOW_QUICK_MENU_LAST,
             _ => return None,
         };
         self.consumed.insert(key);
@@ -1098,12 +1098,12 @@ mod tests {
     fn app_actions_bypass_the_text_worker() {
         let (sent, received) = std::sync::mpsc::channel();
         let _events = crate::events::bus().subscribe(move |event| {
-            if matches!(event, crate::events::CoreEvent::AppAction(name) if *name == crate::profile::app_action::AppAction::parse("activateLayout5").unwrap()) {
+            if matches!(event, crate::events::CoreEvent::AppAction(name) if *name == crate::config::app_action::AppAction::parse("activateProfile5").unwrap()) {
                 sent.send(()).unwrap();
             }
         }).unwrap();
         RuntimeSideEffects.run_system(&SystemAction::AppEvent(
-            crate::profile::app_action::AppAction::parse("activateLayout5").unwrap(),
+            crate::config::app_action::AppAction::parse("activateProfile5").unwrap(),
         ));
         received.recv_timeout(Duration::from_secs(1)).unwrap();
     }

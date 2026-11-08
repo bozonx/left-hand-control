@@ -73,8 +73,8 @@ use reis::event::{DeviceCapability, EiEvent, EiEventConverter};
 use zbus::blocking::{Connection, Proxy};
 use zbus::zvariant::{OwnedFd, OwnedObjectPath, OwnedValue, Value};
 
+use crate::config::model::{PasteShortcut, TextMode};
 use crate::events::{CoreEvent, TextInputFailure};
-use crate::profile::model::{PasteShortcut, TextMode};
 use crate::text_input::job::TextRequest;
 
 // --- Portal DBus identifiers --------------------------------------------

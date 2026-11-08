@@ -109,7 +109,7 @@ mod tests {
     }
 
     #[test]
-    fn preserves_latin_layouts_and_leaves_typing_altgr_and_other_chords_alone() {
+    fn preserves_latin_profiles_and_leaves_typing_altgr_and_other_chords_alone() {
         assert_eq!(shortcut_text("z", KeyCode::KeyY, primary()), Some("z"));
         assert_eq!(shortcut_text("q", KeyCode::KeyA, primary()), None);
         assert_eq!(shortcut_text("o", KeyCode::KeyS, primary()), None);

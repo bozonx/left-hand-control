@@ -67,11 +67,11 @@ pub fn snapshot(ui: &impl ComponentHandle, name: &str) {
 }
 
 pub fn quick_action(
-    layout: &lhc_core::profile::model::LayoutPreset,
+    profile: &lhc_core::config::model::ProfilePreset,
     page: usize,
     key: &str,
 ) -> String {
-    layout.quick_action_pages[page]
+    profile.quick_action_pages[page]
         .cells
         .get(key)
         .map(|item| item.action.clone())

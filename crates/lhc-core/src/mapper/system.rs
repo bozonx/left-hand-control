@@ -81,14 +81,14 @@ pub enum SystemAction {
     Process(ProcessInvocation),
     #[cfg(target_os = "windows")]
     Windows(super::windows::system::WindowsAction),
-    AppEvent(crate::profile::app_action::AppAction),
+    AppEvent(crate::config::app_action::AppAction),
 }
 
 impl SystemAction {
     /// Whether the shell answers this action by showing a popup that takes
     /// the keyboard focus.
     pub fn opens_popup(&self) -> bool {
-        matches!(self, Self::AppEvent(crate::profile::app_action::AppAction::ShowMenu { .. }))
+        matches!(self, Self::AppEvent(crate::config::app_action::AppAction::ShowMenu { .. }))
     }
 }
 
@@ -112,11 +112,11 @@ pub fn resolve(name: &str) -> Option<SystemAction> {
 /// another desktop or OS; `resolve()` decides what runs there.
 pub fn is_known(name: &str) -> bool {
     // One catalog for the mapper, the editor and the action picker.
-    crate::profile::actions::system_action_name(name.trim()).is_some()
+    crate::config::actions::system_action_name(name.trim()).is_some()
 }
 
 pub fn resolve_app(name: &str) -> Option<SystemAction> {
-    crate::profile::app_action::AppAction::parse(name).map(SystemAction::AppEvent)
+    crate::config::app_action::AppAction::parse(name).map(SystemAction::AppEvent)
 }
 
 pub fn is_known_app(name: &str) -> bool {
@@ -148,7 +148,7 @@ pub fn resolve_desktop_entry(id: &str) -> Option<SystemAction> {
     #[cfg(target_os = "linux")]
     {
         use crate::platform::desktop_entries::{self, Launch};
-        let (app, action) = crate::profile::actions::desktop_entry_parts(id.trim())?;
+        let (app, action) = crate::config::actions::desktop_entry_parts(id.trim())?;
         Some(match desktop_entries::resolve(app, action)? {
             Launch::Activate {
                 bus_name,
@@ -197,7 +197,7 @@ pub(crate) fn kde_runs_as_system_action(component: &str, name: &str) -> bool {
 
 #[cfg(target_os = "linux")]
 fn kde_shortcut(id: &str) -> Option<SystemAction> {
-    let (component, shortcut) = crate::profile::actions::kde_shortcut_parts(id.trim())?;
+    let (component, shortcut) = crate::config::actions::kde_shortcut_parts(id.trim())?;
     Some(kde::invoke_shortcut(component, shortcut))
 }
 
@@ -229,7 +229,7 @@ fn resolve_for_desktop(
 mod kde {
     use super::{DbusArg, DbusCall, SystemAction};
     use crate::platform::dbus;
-    use crate::profile::actions::SYSTEM_NUMBERED_COUNT;
+    use crate::config::actions::SYSTEM_NUMBERED_COUNT;
 
     /// Plain `sys:` actions KWin, Plasma and PowerDevil register as
     /// kglobalaccel shortcuts: (id, component, shortcut name).
@@ -304,24 +304,24 @@ mod kde {
 #[cfg(test)]
 mod tests {
     use super::{SystemAction, is_known, resolve_app};
-    use crate::profile::app_action::{AppAction, GameModeRequest, Menu};
+    use crate::config::app_action::{AppAction, GameModeRequest, Menu};
     use std::num::NonZeroU32;
     #[test]
-    fn resolve_window_and_layout_actions() {
+    fn resolve_window_and_profile_actions() {
         for (name, event) in [
             ("showQuickMenuLast", AppAction::ShowMenu { menu: Menu::Quick, page: None }),
             ("showEmojiMenuLast", AppAction::ShowMenu { menu: Menu::Emoji, page: None }),
             ("showSettings", AppAction::ShowSettings),
-            ("activateLayout1", AppAction::ActivateLayout(NonZeroU32::new(1).unwrap())),
-            ("activateLayout5", AppAction::ActivateLayout(NonZeroU32::new(5).unwrap())),
+            ("activateProfile1", AppAction::ActivateProfile(NonZeroU32::new(1).unwrap())),
+            ("activateProfile5", AppAction::ActivateProfile(NonZeroU32::new(5).unwrap())),
         ] {
             let Some(SystemAction::AppEvent(resolved)) = resolve_app(name) else {
                 panic!("{name} did not resolve to an AppEvent");
             };
             assert_eq!(resolved, event);
-            assert!(crate::profile::actions::app_action_name(name).is_some());
+            assert!(crate::config::actions::app_action_name(name).is_some());
         }
-        assert!(resolve_app("activateLayout6").is_none());
+        assert!(resolve_app("activateProfile6").is_none());
     }
 
     #[test]
@@ -336,7 +336,7 @@ mod tests {
                 panic!("{name} did not resolve to an AppEvent");
             };
             assert_eq!(resolved, event);
-            assert!(crate::profile::actions::app_action_name(name).is_some());
+            assert!(crate::config::actions::app_action_name(name).is_some());
         }
     }
 
@@ -372,8 +372,8 @@ mod tests {
         assert!(is_known("switchDesktop10") && is_known("turnOffScreen"));
         // The same numbered range as the action picker.
         assert!(!is_known("switchDesktop11") && !is_known("moveWindowToDesktop11"));
-        for entry in crate::profile::actions::system_actions() {
-            let crate::profile::actions::Action::System(id) = entry.action else {
+        for entry in crate::config::actions::system_actions() {
+            let crate::config::actions::Action::System(id) = entry.action else {
                 panic!("system catalog holds only sys: actions");
             };
             assert!(is_known(&id), "{id}");
@@ -508,7 +508,7 @@ mod linux_tests {
 
     #[test]
     fn plain_system_actions_resolve_on_kde() {
-        for id in crate::profile::actions::PLAIN_SYSTEM_ACTIONS {
+        for id in crate::config::actions::PLAIN_SYSTEM_ACTIONS {
             assert!(
                 matches!(
                     resolve_for_desktop(id, &Desktop::Kde),

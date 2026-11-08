@@ -1,21 +1,21 @@
-//! Integration: saved config and layout files → `ConfigDocument` → runtime
-//! config → `Engine` → emitted outputs. Real parsing, validation and layout
+//! Integration: saved config and profile files → `ConfigDocument` → runtime
+//! config → `Engine` → emitted outputs. Real parsing, validation and profile
 //! activation; key events and time are synthetic and no evdev/uinput is used,
 //! so the end of the chain is `EngineOutput`, not device events (see `mapper_e2e`).
 #![cfg(any(target_os = "linux", target_os = "windows"))]
 
 use lhc_core::{
     StoragePaths,
+    config::auto_switch::AutoSwitchContext,
     config_document::ConfigDocument,
     mapper::{
         engine::{Engine, EngineOutput},
         key_code::KeyCode,
     },
-    profile::auto_switch::AutoSwitchContext,
 };
 use std::time::{Duration, Instant};
 
-const LAYOUT: &str = r#"{
+const PROFILE: &str = r#"{
   "version": 1,
   "layers": [{ "id": "nav", "keys": { "KeyH": "ArrowLeft", "KeyJ": "macro:copyLine" } }],
   "rules": [
@@ -32,13 +32,13 @@ fn document(config: &str) -> (tempfile::TempDir, ConfigDocument) {
         directory.path().join("settings"),
         directory.path().join("data"),
     );
-    paths.save_user_layout("Main", LAYOUT, true).unwrap();
+    paths.save_user_profile("Main", PROFILE, true).unwrap();
     paths.save_config(config).unwrap();
     let document = ConfigDocument::load(paths).unwrap();
     (directory, document)
 }
 
-const MANUAL: &str = r#"{"version":1,"settings":{"layouts":{"manual":"user:Main"}}}"#;
+const MANUAL: &str = r#"{"version":1,"settings":{"profiles":{"manual":"user:Main"}}}"#;
 
 fn manual_engine() -> (tempfile::TempDir, Engine) {
     engine_for(MANUAL)
@@ -49,7 +49,7 @@ fn engine_for(config: &str) -> (tempfile::TempDir, Engine) {
     let runtime = document
         .runtime_config(&AutoSwitchContext::default())
         .unwrap();
-    assert_eq!(runtime.layout_id.as_deref(), Some("user:Main"));
+    assert_eq!(runtime.profile_id.as_deref(), Some("user:Main"));
     (directory, Engine::new(&runtime.mapper))
 }
 
@@ -133,7 +133,7 @@ fn layer_key_runs_the_macro_steps_in_order() {
     assert_eq!(pressed(&run(&mut engine, &press_j_in_layer)), []);
 
     let (_dir, mut engine) = engine_for(
-        r#"{"version":1,"settings":{"experimental":true,"layouts":{"manual":"user:Main"}}}"#,
+        r#"{"version":1,"settings":{"experimental":true,"profiles":{"manual":"user:Main"}}}"#,
     );
     let out = run(&mut engine, &press_j_in_layer);
     assert_eq!(
@@ -176,11 +176,11 @@ fn rule_conditions_follow_the_system_context() {
 
 #[test]
 fn auto_mode_without_a_match_passes_keys_through() {
-    let (_dir, document) = document(r#"{"version":1,"settings":{"layouts":{"mode":"auto"}}}"#);
+    let (_dir, document) = document(r#"{"version":1,"settings":{"profiles":{"mode":"auto"}}}"#);
     let runtime = document
         .runtime_config(&AutoSwitchContext::default())
         .unwrap();
-    assert_eq!(runtime.layout_id, None);
+    assert_eq!(runtime.profile_id, None);
     let mut engine = Engine::new(&runtime.mapper);
     let out = run(
         &mut engine,

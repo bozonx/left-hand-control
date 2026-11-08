@@ -40,8 +40,8 @@ use crate::{
     i18n::Msg,
     ui::{ActionKind, GameCondition, Message, SettingsWindow},
 };
+use lhc_core::config::actions::Action;
 use lhc_core::config_document::{ConfigDocument, ConfigError};
-use lhc_core::profile::actions::Action;
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use std::rc::Rc;
 
@@ -106,7 +106,7 @@ pub fn bind_document_with_input(
     let menus = menus::bind(ui, document);
     picker::bind(ui, document, input, picker::Drafts { macros, menus });
     settings::bind(ui, document);
-    let library = ui.global::<crate::ui::LayoutLibrary>();
+    let library = ui.global::<crate::ui::ProfileLibrary>();
     on!(ui, library.on_discard_drafts => |ui| {
         ui.global::<crate::ui::MacroEditor>().invoke_refresh();
         ui.global::<crate::ui::MenuEditor>().invoke_refresh();
@@ -122,8 +122,8 @@ pub fn bind_document_with_input(
 
 /// Replace a command draft by identity, preserving the other commands.
 fn stage_command(
-    commands: &mut Vec<lhc_core::profile::model::Command>,
-    command: lhc_core::profile::model::Command,
+    commands: &mut Vec<lhc_core::config::model::Command>,
+    command: lhc_core::config::model::Command,
 ) {
     if let Some(current) = commands.iter_mut().find(|current| current.id == command.id) {
         *current = command;
@@ -288,7 +288,7 @@ fn test_document() -> (tempfile::TempDir, Rc<Document>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lhc_core::profile::model::LocalePreference;
+    use lhc_core::config::model::LocalePreference;
 
     #[test]
     fn move_item_checks_bounds() {

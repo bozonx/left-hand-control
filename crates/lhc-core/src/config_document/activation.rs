@@ -1,10 +1,10 @@
-//! Which layout runs now and the mapper configuration built from it.
+//! Which profile runs now and the mapper configuration built from it.
 
 use super::{ConfigDocument, ConfigError};
-use crate::profile::app_match;
-use crate::profile::auto_switch::{self, AutoSwitchContext};
-use crate::profile::diagnostics::{self, RuleIssue};
-use crate::profile::model::{AppSettings, LayoutMode, LayoutPreset, ResolvedAppConfig};
+use crate::config::app_match;
+use crate::config::auto_switch::{self, AutoSwitchContext};
+use crate::config::diagnostics::{self, RuleIssue};
+use crate::config::model::{AppSettings, ProfileMode, ProfilePreset, ResolvedAppConfig};
 
 /// Mapper input computed from the document for the current system state.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -12,24 +12,24 @@ pub struct RuntimeConfig {
     /// Typed input for the mapper lifecycle API.
     pub mapper: crate::mapper::config::MapperConfig,
     /// Menu contents captured with the mapper configuration.
-    pub layout: LayoutPreset,
-    /// Layout the rules come from; `None` means native passthrough.
-    pub layout_id: Option<String>,
+    pub profile: ProfilePreset,
+    /// Profile the rules come from; `None` means native passthrough.
+    pub profile_id: Option<String>,
     /// Whether the rules or the auto-mode choice look at window titles,
     /// see [`crate::active_window::set_titles_needed`].
     pub uses_titles: bool,
 }
 
 impl RuntimeConfig {
-    /// Combine `settings` with the layout chosen to run, refusing blocking
+    /// Combine `settings` with the profile chosen to run, refusing blocking
     /// rule problems and dropping disabled or draft rules.
     fn build(
         settings: &AppSettings,
-        layout: LayoutPreset,
-        layout_id: Option<String>,
+        profile: ProfilePreset,
+        profile_id: Option<String>,
     ) -> Result<Self, ConfigError> {
         let mut config =
-            ResolvedAppConfig::from_parts(settings.clone(), layout.clone(), layout_id.as_deref());
+            ResolvedAppConfig::from_parts(settings.clone(), profile.clone(), profile_id.as_deref());
         let blocking: Vec<RuleIssue> = diagnostics::analyze(&config)
             .into_iter()
             .filter(|issue| issue.code.is_error())
@@ -55,31 +55,34 @@ impl RuntimeConfig {
         crate::mapper::validation::validate_config(&mapper).map_err(ConfigError::Invalid)?;
         Ok(Self {
             mapper,
-            layout,
-            layout_id,
+            profile,
+            profile_id,
             uses_titles,
         })
     }
 }
 
 impl ConfigDocument {
-    /// Layout whose rules should run now: the manual choice, or in auto
-    /// mode the first matching rule's layout or the default.
-    pub fn active_layout_id(&self, ctx: &AutoSwitchContext) -> Result<Option<String>, ConfigError> {
-        Ok(self.layout_choice(ctx)?.layout_id)
+    /// Profile whose rules should run now: the manual choice, or in auto
+    /// mode the first matching rule's profile or the default.
+    pub fn active_profile_id(
+        &self,
+        ctx: &AutoSwitchContext,
+    ) -> Result<Option<String>, ConfigError> {
+        Ok(self.profile_choice(ctx)?.profile_id)
     }
 
-    /// Selected layout and matching rule from one evaluation of the context.
-    pub fn layout_choice(
+    /// Selected profile and matching rule from one evaluation of the context.
+    pub fn profile_choice(
         &self,
         ctx: &AutoSwitchContext,
     ) -> Result<auto_switch::AutoChoice, ConfigError> {
-        match self.settings.layout_mode {
-            LayoutMode::Manual => Ok(auto_switch::AutoChoice {
-                layout_id: self.settings.manual_layout_id.clone(),
+        match self.settings.profile_mode {
+            ProfileMode::Manual => Ok(auto_switch::AutoChoice {
+                profile_id: self.settings.manual_profile_id.clone(),
                 matched_rule_index: None,
             }),
-            LayoutMode::Auto => self.auto_choice(ctx),
+            ProfileMode::Auto => self.auto_choice(ctx),
         }
     }
 
@@ -89,45 +92,45 @@ impl ConfigDocument {
         ctx: &AutoSwitchContext,
     ) -> Result<auto_switch::AutoChoice, ConfigError> {
         Ok(auto_switch::choose(
-            &self.layout_ids()?,
+            &self.profile_ids()?,
             &self.settings,
             ctx,
         ))
     }
 
-    /// Mapper configuration for the current system state: picks the active layout,
+    /// Mapper configuration for the current system state: picks the active profile,
     /// refuses blocking rule problems and drops disabled or draft rules.
     pub fn runtime_config(&self, ctx: &AutoSwitchContext) -> Result<RuntimeConfig, ConfigError> {
-        let layout_id = self.active_layout_id(ctx)?;
-        self.runtime_config_for_layout(layout_id)
+        let profile_id = self.active_profile_id(ctx)?;
+        self.runtime_config_for_profile(profile_id)
     }
 
-    /// Build an already selected layout without evaluating the context again.
-    pub fn runtime_config_for_layout(
+    /// Build an already selected profile without evaluating the context again.
+    pub fn runtime_config_for_profile(
         &self,
-        layout_id: Option<String>,
+        profile_id: Option<String>,
     ) -> Result<RuntimeConfig, ConfigError> {
-        let layout = self.layout_for_activation(layout_id.as_deref())?;
-        RuntimeConfig::build(&self.settings, layout, layout_id)
+        let profile = self.profile_for_activation(profile_id.as_deref())?;
+        RuntimeConfig::build(&self.settings, profile, profile_id)
     }
 
-    pub fn active_layout(&self, ctx: &AutoSwitchContext) -> Result<LayoutPreset, ConfigError> {
-        self.layout_for_activation(self.active_layout_id(ctx)?.as_deref())
+    pub fn active_profile(&self, ctx: &AutoSwitchContext) -> Result<ProfilePreset, ConfigError> {
+        self.profile_for_activation(self.active_profile_id(ctx)?.as_deref())
     }
 
-    /// Rules of layout `id` as they would run. The layout being edited runs
+    /// Rules of profile `id` as they would run. The profile being edited runs
     /// its working copy, unsaved changes included, so edits apply live. A
     /// `None` id means passthrough, except in manual mode where an unnamed
-    /// working copy is the active layout itself.
-    pub fn layout_for_activation(&self, id: Option<&str>) -> Result<LayoutPreset, ConfigError> {
-        if id == self.settings.editing_layout_id.as_deref()
-            && (id.is_some() || self.settings.layout_mode == LayoutMode::Manual)
+    /// working copy is the active profile itself.
+    pub fn profile_for_activation(&self, id: Option<&str>) -> Result<ProfilePreset, ConfigError> {
+        if id == self.settings.editing_profile_id.as_deref()
+            && (id.is_some() || self.settings.profile_mode == ProfileMode::Manual)
         {
-            return Ok(self.layout.clone());
+            return Ok(self.profile.clone());
         }
         match id {
-            Some(id) => self.load_layout(id),
-            None => Ok(LayoutPreset::default()),
+            Some(id) => self.load_profile(id),
+            None => Ok(ProfilePreset::default()),
         }
     }
 }

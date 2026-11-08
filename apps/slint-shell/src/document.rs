@@ -8,11 +8,11 @@
 
 use crate::i18n::Msg;
 use lhc_core::{
-    config_document::{ConfigDocument, ConfigError, RuntimeConfig},
-    profile::{
+    config::{
         auto_switch::AutoSwitchContext,
-        model::{AppSettings, LayoutPreset},
+        model::{AppSettings, ProfilePreset},
     },
+    config_document::{ConfigDocument, ConfigError, RuntimeConfig},
     storage::StoragePaths,
 };
 use std::{
@@ -48,21 +48,21 @@ struct Changes {
 
 impl Changes {
     fn between(
-        layout: &LayoutPreset,
+        profile: &ProfilePreset,
         settings: &AppSettings,
         next: &ConfigDocument,
         origin: View,
     ) -> Self {
-        let current = next.layout();
+        let current = next.profile();
         Self {
             settings: settings != next.settings(),
-            rules: layout.rules != current.rules,
-            layers: layout.layers != current.layers
-                || layout.layer_keymaps != current.layer_keymaps,
-            macros: layout.macros != current.macros,
-            commands: layout.commands != current.commands,
+            rules: profile.rules != current.rules,
+            layers: profile.layers != current.layers
+                || profile.layer_keymaps != current.layer_keymaps,
+            macros: profile.macros != current.macros,
+            commands: profile.commands != current.commands,
             library: origin == View::Library,
-            quick: layout.quick_action_pages != current.quick_action_pages,
+            quick: profile.quick_action_pages != current.quick_action_pages,
         }
     }
 
@@ -84,13 +84,13 @@ impl Changes {
 
 struct LibrarySnapshot {
     name: String,
-    layout: Option<SavedLayout>,
+    profile: Option<SavedProfile>,
 }
 
-/// A library layout as saved, with its normalized serialization cached so
+/// A library profile as saved, with its normalized serialization cached so
 /// dirty checks do not re-serialize it on every edit.
-pub(crate) struct SavedLayout {
-    pub(crate) layout: LayoutPreset,
+pub(crate) struct SavedProfile {
+    pub(crate) profile: ProfilePreset,
     pub(crate) text: String,
 }
 
@@ -102,8 +102,8 @@ pub struct Document {
     command_revision: Cell<u64>,
     library_snapshot: RefCell<Option<LibrarySnapshot>>,
     listeners: RefCell<Vec<(View, Listener)>>,
-    /// Document revision and layout last given to the running mapper.
-    pushed_layout: RefCell<Option<(u64, RuntimeConfig)>>,
+    /// Document revision and profile last given to the running mapper.
+    pushed_profile: RefCell<Option<(u64, RuntimeConfig)>>,
     runtime_error: RefCell<Option<String>>,
 }
 
@@ -139,7 +139,7 @@ impl Document {
             command_revision: Cell::new(0),
             library_snapshot: RefCell::default(),
             listeners: RefCell::default(),
-            pushed_layout: RefCell::default(),
+            pushed_profile: RefCell::default(),
             runtime_error: RefCell::default(),
         })
     }
@@ -189,16 +189,19 @@ impl Document {
     ) -> Result<Saved<T>, ConfigError> {
         let (value, changes) = {
             let mut config = self.config.borrow_mut();
-            let layout = config.layout().clone();
+            let profile = config.profile().clone();
             let settings = config.settings().clone();
             let value = edit(&mut config);
             if let Err(error) = &value
-                && layout == *config.layout()
+                && profile == *config.profile()
                 && settings == *config.settings()
             {
                 return Err(error.clone());
             }
-            (value, Changes::between(&layout, &settings, &config, origin))
+            (
+                value,
+                Changes::between(&profile, &settings, &config, origin),
+            )
         };
         self.revision.set(self.revision.get().wrapping_add(1));
         if changes.affects(View::Settings) {
@@ -220,38 +223,38 @@ impl Document {
         self.library_snapshot.borrow_mut().take();
     }
 
-    /// Saved library layout used by dirty indicators; disk reads happen once per refresh.
-    pub(crate) fn with_saved_layout<R>(
+    /// Saved library profile used by dirty indicators; disk reads happen once per refresh.
+    pub(crate) fn with_saved_profile<R>(
         &self,
         name: &str,
-        f: impl FnOnce(Option<&SavedLayout>) -> R,
+        f: impl FnOnce(Option<&SavedProfile>) -> R,
     ) -> R {
         let mut snapshot = self.library_snapshot.borrow_mut();
         if snapshot
             .as_ref()
             .is_none_or(|snapshot| snapshot.name != name)
         {
-            let layout = self
+            let profile = self
                 .read()
-                .load_layout(&lhc_core::profile::model::user_layout_id(name))
+                .load_profile(&lhc_core::config::model::user_profile_id(name))
                 .ok()
-                .map(|layout| SavedLayout {
-                    text: lhc_core::profile::layout_file::serialize(&layout),
-                    layout,
+                .map(|profile| SavedProfile {
+                    text: lhc_core::config::profile_file::serialize(&profile),
+                    profile,
                 });
             *snapshot = Some(LibrarySnapshot {
                 name: name.to_owned(),
-                layout,
+                profile,
             });
         }
         f(snapshot
             .as_ref()
-            .and_then(|snapshot| snapshot.layout.as_ref()))
+            .and_then(|snapshot| snapshot.profile.as_ref()))
     }
 
     #[cfg(test)]
-    fn saved_layout(&self, name: &str) -> Option<LayoutPreset> {
-        self.with_saved_layout(name, |saved| saved.map(|saved| saved.layout.clone()))
+    fn saved_profile(&self, name: &str) -> Option<ProfilePreset> {
+        self.with_saved_profile(name, |saved| saved.map(|saved| saved.profile.clone()))
     }
 
     pub(crate) fn command_revision(&self) -> u64 {
@@ -269,10 +272,10 @@ impl Document {
     }
 
     /// Bring a running mapper up to date. With `force` the configuration is
-    /// always sent; otherwise only when the document or active layout changed (system
+    /// always sent; otherwise only when the document or active profile changed (system
     /// context changes). A stopped mapper is left alone. A failed edit
     /// stops the mapper, which would run outdated rules; a failed context
-    /// switch (e.g. a game started) keeps the current layout running and
+    /// switch (e.g. a game started) keeps the current profile running and
     /// is retried on the next change.
     pub fn sync_runtime(&self, force: bool) -> Result<(), String> {
         let result = self.sync_runtime_with(
@@ -295,34 +298,34 @@ impl Document {
         stop: impl FnOnce() -> Result<(), String>,
     ) -> Result<(), String> {
         if !running {
-            self.pushed_layout.borrow_mut().take();
+            self.pushed_profile.borrow_mut().take();
             self.runtime_error.borrow_mut().take();
             return Ok(());
         }
         let document_changed = self
-            .pushed_layout
+            .pushed_profile
             .borrow()
             .as_ref()
             .is_some_and(|(revision, _)| *revision != self.revision.get());
         let result = (|| {
             let config = self.read();
             let id = config
-                .active_layout_id(context)
+                .active_profile_id(context)
                 .map_err(|error| error.to_string())?;
-            // Most context events keep the same layout. Avoid reading and validating
-            // that layout again on the UI thread.
+            // Most context events keep the same profile. Avoid reading and validating
+            // that profile again on the UI thread.
             if !force && self.runtime_is_current(&id) {
                 return Ok(());
             }
             let runtime = config
-                .runtime_config_for_layout(id)
+                .runtime_config_for_profile(id)
                 .map_err(|error| error.to_string())?;
             drop(config);
             self.push_runtime(runtime, force, update)
         })();
         *self.runtime_error.borrow_mut() = result.as_ref().err().cloned();
         if result.is_err() && (force || document_changed) {
-            self.pushed_layout.borrow_mut().take();
+            self.pushed_profile.borrow_mut().take();
             if let Err(error) = stop() {
                 log::warn!("stop outdated mapper: {error}");
             }
@@ -330,15 +333,15 @@ impl Document {
         result
     }
 
-    /// Applied layout while running; stopped previews validate the selected file.
+    /// Applied profile while running; stopped previews validate the selected file.
     pub(crate) fn activation_status(
         &self,
         context: &AutoSwitchContext,
         running: bool,
     ) -> (Option<String>, Option<usize>, Option<String>) {
-        let choice = self.read().layout_choice(context);
+        let choice = self.read().profile_choice(context);
         if running {
-            let applied = self.applied_layout_id().flatten();
+            let applied = self.applied_profile_id().flatten();
             let error = self
                 .runtime_error
                 .borrow()
@@ -346,16 +349,16 @@ impl Document {
                 .or_else(|| choice.as_ref().err().map(ToString::to_string));
             let matched = choice
                 .ok()
-                .filter(|choice| error.is_none() && choice.layout_id == applied)
+                .filter(|choice| error.is_none() && choice.profile_id == applied)
                 .and_then(|choice| choice.matched_rule_index);
             return (applied, matched, error);
         }
         match choice.and_then(|choice| {
             self.read()
-                .layout_for_activation(choice.layout_id.as_deref())?;
+                .profile_for_activation(choice.profile_id.as_deref())?;
             Ok(choice)
         }) {
-            Ok(choice) => (choice.layout_id, choice.matched_rule_index, None),
+            Ok(choice) => (choice.profile_id, choice.matched_rule_index, None),
             Err(error) => (None, None, Some(error.to_string())),
         }
     }
@@ -366,48 +369,48 @@ impl Document {
         force: bool,
         update: impl FnOnce(lhc_core::mapper::config::MapperConfig) -> Result<(), String>,
     ) -> Result<(), String> {
-        if !force && self.runtime_is_current(&runtime.layout_id) {
+        if !force && self.runtime_is_current(&runtime.profile_id) {
             return Ok(());
         }
         update(runtime.mapper.clone())?;
-        *self.pushed_layout.borrow_mut() = Some((self.revision.get(), runtime));
+        *self.pushed_profile.borrow_mut() = Some((self.revision.get(), runtime));
         Ok(())
     }
 
-    fn runtime_is_current(&self, layout_id: &Option<String>) -> bool {
-        self.pushed_layout
+    fn runtime_is_current(&self, profile_id: &Option<String>) -> bool {
+        self.pushed_profile
             .borrow()
             .as_ref()
             .is_some_and(|(revision, runtime)| {
-                *revision == self.revision.get() && &runtime.layout_id == layout_id
+                *revision == self.revision.get() && &runtime.profile_id == profile_id
             })
     }
 
-    /// Last layout successfully submitted to the mapper, including native passthrough.
-    /// Unlike the selected layout, this stays unchanged after a failed context switch.
-    pub(crate) fn applied_layout_id(&self) -> Option<Option<String>> {
-        self.pushed_layout
+    /// Last profile successfully submitted to the mapper, including native passthrough.
+    /// Unlike the selected profile, this stays unchanged after a failed context switch.
+    pub(crate) fn applied_profile_id(&self) -> Option<Option<String>> {
+        self.pushed_profile
             .borrow()
             .as_ref()
-            .map(|(_, runtime)| runtime.layout_id.clone())
+            .map(|(_, runtime)| runtime.profile_id.clone())
     }
 
-    /// Menus and their layout id from the same snapshot submitted to the mapper.
+    /// Menus and their profile id from the same snapshot submitted to the mapper.
     /// Without a running mapper, menus follow the current document context.
     pub(crate) fn popup_layout(
         &self,
         running: bool,
-    ) -> Result<(Option<String>, LayoutPreset), ConfigError> {
+    ) -> Result<(Option<String>, ProfilePreset), ConfigError> {
         if running {
-            return Ok(self.pushed_layout.borrow().as_ref().map_or_else(
-                || (None, LayoutPreset::default()),
-                |(_, runtime)| (runtime.layout_id.clone(), runtime.layout.clone()),
+            return Ok(self.pushed_profile.borrow().as_ref().map_or_else(
+                || (None, ProfilePreset::default()),
+                |(_, runtime)| (runtime.profile_id.clone(), runtime.profile.clone()),
             ));
         }
         let config = self.read();
-        let id = config.active_layout_id(&AutoSwitchContext::current())?;
-        let layout = config.layout_for_activation(id.as_deref())?;
-        Ok((id, layout))
+        let id = config.active_profile_id(&AutoSwitchContext::current())?;
+        let profile = config.profile_for_activation(id.as_deref())?;
+        Ok((id, profile))
     }
 
     /// Keep title collection independent of mapper start/stop success.
@@ -417,22 +420,22 @@ impl Document {
 
     fn titles_needed(&self, running: bool) -> bool {
         if running {
-            self.pushed_layout
+            self.pushed_profile
                 .borrow()
                 .as_ref()
                 .is_some_and(|(_, runtime)| runtime.uses_titles)
         } else {
             // The library preview still shows which automatic rule would
             // apply, and `title:` conditions cannot match without titles.
-            lhc_core::profile::app_match::uses_title(
-                lhc_core::profile::auto_switch::window_patterns(self.read().settings()),
-            )
+            lhc_core::config::app_match::uses_title(lhc_core::config::auto_switch::window_patterns(
+                self.read().settings(),
+            ))
         }
     }
 
-    /// Record the layout a freshly started mapper runs.
+    /// Record the profile a freshly started mapper runs.
     pub fn mapper_started(&self, revision: u64, runtime: RuntimeConfig) {
-        *self.pushed_layout.borrow_mut() = Some((revision, runtime));
+        *self.pushed_profile.borrow_mut() = Some((revision, runtime));
         self.runtime_error.borrow_mut().take();
     }
 
@@ -473,14 +476,14 @@ mod tests {
     }
 
     fn auto_document() -> (tempfile::TempDir, Rc<Document>, AutoSwitchContext) {
-        use lhc_core::profile::model::{AutoRule, LayoutConditionSet, LayoutMode};
+        use lhc_core::config::model::{AutoRule, ProfileConditionSet, ProfileMode};
         let (dir, document) = document();
         let paths = document.read().paths().clone();
         for name in ["A", "B"] {
             paths
-                .save_user_layout(
+                .save_user_profile(
                     name,
-                    &lhc_core::profile::layout_file::serialize(&LayoutPreset::default()),
+                    &lhc_core::config::profile_file::serialize(&ProfilePreset::default()),
                     false,
                 )
                 .unwrap();
@@ -488,13 +491,13 @@ mod tests {
         document
             .edit(View::Library, |config| {
                 config.update_settings(|settings| {
-                    settings.layout_mode = LayoutMode::Auto;
-                    settings.auto_default_layout_id = Some("user:A".into());
+                    settings.profile_mode = ProfileMode::Auto;
+                    settings.auto_default_profile_id = Some("user:A".into());
                     settings.auto_rules = vec![AutoRule {
                         id: "b".into(),
                         enabled: true,
-                        layout_id: Some("user:B".into()),
-                        conditions: LayoutConditionSet {
+                        profile_id: Some("user:B".into()),
+                        conditions: ProfileConditionSet {
                             window_patterns: vec!["b".into()],
                             ..Default::default()
                         },
@@ -555,9 +558,9 @@ mod tests {
     }
 
     #[test]
-    fn broken_target_keeps_actual_layout_and_reports_load_error() {
+    fn broken_target_keeps_actual_profile_and_reports_load_error() {
         let (_dir, document, context) = auto_document();
-        let path = document.read().paths().layout_path("B").unwrap();
+        let path = document.read().paths().profile_path("B").unwrap();
         std::fs::write(&path, "broken").unwrap();
         assert!(
             document
@@ -565,7 +568,7 @@ mod tests {
                     true,
                     &context,
                     false,
-                    |_| panic!("invalid layout sent"),
+                    |_| panic!("invalid profile sent"),
                     || panic!("context switch stopped mapper")
                 )
                 .is_err()
@@ -575,7 +578,7 @@ mod tests {
         assert!(matched.is_none() && error.is_some());
         std::fs::write(
             &path,
-            lhc_core::profile::layout_file::serialize(&LayoutPreset::default()),
+            lhc_core::config::profile_file::serialize(&ProfilePreset::default()),
         )
         .unwrap();
         document
@@ -590,7 +593,7 @@ mod tests {
     #[test]
     fn unchanged_choice_skips_loading_and_forced_updates_still_validate() {
         let (_dir, document, _) = auto_document();
-        std::fs::write(document.read().paths().layout_path("A").unwrap(), "broken").unwrap();
+        std::fs::write(document.read().paths().profile_path("A").unwrap(), "broken").unwrap();
         let context = AutoSwitchContext::default();
         document
             .sync_runtime_with(
@@ -617,39 +620,39 @@ mod tests {
                 .is_err()
         );
         assert!(stopped.get());
-        assert!(document.applied_layout_id().is_none());
+        assert!(document.applied_profile_id().is_none());
     }
 
     #[test]
     fn failed_switch_keeps_popup_snapshot_even_after_library_changes() {
         let (_dir, document) = document();
         let mut runtime = document.runtime_config().unwrap();
-        runtime.layout_id = Some("user:A".into());
-        runtime.layout.description = Some("snapshot A".into());
+        runtime.profile_id = Some("user:A".into());
+        runtime.profile.description = Some("snapshot A".into());
         runtime.uses_titles = true;
         document.mapper_started(document.revision(), runtime.clone());
         let mut rejected = runtime.clone();
-        rejected.layout_id = Some("user:B".into());
-        rejected.layout.description = Some("snapshot B".into());
+        rejected.profile_id = Some("user:B".into());
+        rejected.profile.description = Some("snapshot B".into());
         assert!(
             document
                 .push_runtime(rejected, false, |_| Err("rejected".into()))
                 .is_err()
         );
-        let mut changed_on_disk = runtime.layout.clone();
+        let mut changed_on_disk = runtime.profile.clone();
         changed_on_disk.description = Some("changed on disk".into());
         document
             .read()
             .paths()
-            .save_user_layout(
+            .save_user_profile(
                 "A",
-                &lhc_core::profile::layout_file::serialize(&changed_on_disk),
+                &lhc_core::config::profile_file::serialize(&changed_on_disk),
                 true,
             )
             .unwrap();
         assert_eq!(
             document.popup_layout(true).unwrap(),
-            (runtime.layout_id, runtime.layout)
+            (runtime.profile_id, runtime.profile)
         );
         assert_ne!(
             document
@@ -670,12 +673,12 @@ mod tests {
         document
             .edit(View::Library, |config| {
                 config.update_settings(|settings| {
-                    settings.layout_mode = lhc_core::profile::model::LayoutMode::Auto;
-                    settings.auto_rules = vec![lhc_core::profile::model::AutoRule {
+                    settings.profile_mode = lhc_core::config::model::ProfileMode::Auto;
+                    settings.auto_rules = vec![lhc_core::config::model::AutoRule {
                         id: "t".into(),
                         enabled: true,
-                        layout_id: None,
-                        conditions: lhc_core::profile::model::LayoutConditionSet {
+                        profile_id: None,
+                        conditions: lhc_core::config::model::ProfileConditionSet {
                             window_patterns: vec!["title:b".into()],
                             ..Default::default()
                         },
@@ -687,22 +690,22 @@ mod tests {
     }
 
     #[test]
-    fn startup_snapshot_does_not_hide_edits_with_the_same_layout_id() {
+    fn startup_snapshot_does_not_hide_edits_with_the_same_profile_id() {
         let (_dir, document) = document();
         let started_revision = document.revision();
-        let layout_id = document.runtime_config().unwrap().layout_id;
+        let profile_id = document.runtime_config().unwrap().profile_id;
         document.mapper_started(started_revision, document.runtime_config().unwrap());
-        assert!(document.runtime_is_current(&layout_id));
+        assert!(document.runtime_is_current(&profile_id));
         document
             .edit(View::Keys, |config| {
                 config.set_base_tap_action("KeyA", "KeyB")
             })
             .unwrap();
         document.mapper_started(started_revision, document.runtime_config().unwrap());
-        assert!(!document.runtime_is_current(&layout_id));
-        assert_eq!(document.runtime_config().unwrap().layout_id, layout_id);
+        assert!(!document.runtime_is_current(&profile_id));
+        assert_eq!(document.runtime_config().unwrap().profile_id, profile_id);
         document.mapper_started(document.revision(), document.runtime_config().unwrap());
-        assert!(document.runtime_is_current(&layout_id));
+        assert!(document.runtime_is_current(&profile_id));
         assert!(!document.runtime_is_current(&Some("user:other".into())));
         let revision = document.revision();
         assert!(
@@ -713,37 +716,40 @@ mod tests {
                 .is_err()
         );
         assert_eq!(document.revision(), revision);
-        assert!(document.runtime_is_current(&layout_id));
+        assert!(document.runtime_is_current(&profile_id));
     }
 
     #[test]
-    fn failed_context_push_keeps_the_applied_layout_and_retries_the_new_one() {
+    fn failed_context_push_keeps_the_applied_profile_and_retries_the_new_one() {
         let (_dir, document) = document();
         let previous = Some("user:Previous".to_owned());
         let mut started = document.runtime_config().unwrap();
-        started.layout_id = previous.clone();
+        started.profile_id = previous.clone();
         document.mapper_started(document.revision(), started);
         let mut runtime = document.runtime_config().unwrap();
-        runtime.layout_id = Some("user:Next".to_owned());
+        runtime.profile_id = Some("user:Next".to_owned());
         assert!(
             document
                 .push_runtime(runtime, false, |_| Err("queue full".into()))
                 .is_err()
         );
-        assert_eq!(document.applied_layout_id(), Some(previous));
+        assert_eq!(document.applied_profile_id(), Some(previous));
         let mut runtime = document.runtime_config().unwrap();
-        runtime.layout_id = Some("user:Next".to_owned());
+        runtime.profile_id = Some("user:Next".to_owned());
         document.push_runtime(runtime, false, |_| Ok(())).unwrap();
-        assert_eq!(document.applied_layout_id(), Some(Some("user:Next".into())));
+        assert_eq!(
+            document.applied_profile_id(),
+            Some(Some("user:Next".into()))
+        );
         let mut runtime = document.runtime_config().unwrap();
-        runtime.layout_id = Some("user:Next".to_owned());
+        runtime.profile_id = Some("user:Next".to_owned());
         document
             .push_runtime(runtime, false, |_| panic!("already applied"))
             .unwrap();
         let mut runtime = document.runtime_config().unwrap();
-        runtime.layout_id = None;
+        runtime.profile_id = None;
         document.push_runtime(runtime, false, |_| Ok(())).unwrap();
-        assert_eq!(document.applied_layout_id(), Some(None));
+        assert_eq!(document.applied_profile_id(), Some(None));
     }
 
     #[test]
@@ -765,13 +771,13 @@ mod tests {
         let initial = document.command_revision();
         document
             .edit(View::Menus, |config| {
-                config.update_layout(|layout| layout.emoji_pages[0].name = "Emoji".into())
+                config.update_profile(|profile| profile.emoji_pages[0].name = "Emoji".into())
             })
             .unwrap();
         assert_eq!(document.command_revision(), initial);
         document
             .edit(View::Menus, |config| {
-                config.update_layout(|layout| layout.quick_action_pages[0].name = "Quick".into())
+                config.update_profile(|profile| profile.quick_action_pages[0].name = "Quick".into())
             })
             .unwrap();
         assert_ne!(document.command_revision(), initial);
@@ -800,8 +806,8 @@ mod tests {
         .collect();
         document
             .edit(View::Menus, |config| {
-                config.update_layout(|layout| {
-                    layout.emoji_pages[0].name = "Edited".into();
+                config.update_profile(|profile| {
+                    profile.emoji_pages[0].name = "Edited".into();
                 })
             })
             .unwrap();
@@ -820,34 +826,34 @@ mod tests {
     fn library_snapshot_refreshes_after_library_edits_and_explicit_refresh() {
         let (_dir, document) = document();
         document
-            .edit_library(|config| config.save_current_layout_as("Saved"))
+            .edit_library(|config| config.save_current_profile_as("Saved"))
             .unwrap();
-        let before = document.saved_layout("Saved").unwrap();
+        let before = document.saved_profile("Saved").unwrap();
         document
             .edit(View::Layers, |config| {
-                config.update_layout(|layout| layout.description = Some("working".into()))
+                config.update_profile(|profile| profile.description = Some("working".into()))
             })
             .unwrap();
-        assert_eq!(document.saved_layout("Saved"), Some(before.clone()));
+        assert_eq!(document.saved_profile("Saved"), Some(before.clone()));
         document
-            .edit_library(|config| config.overwrite_library_layout("Saved"))
+            .edit_library(|config| config.overwrite_library_profile("Saved"))
             .unwrap();
         assert_eq!(
             document
-                .saved_layout("Saved")
+                .saved_profile("Saved")
                 .unwrap()
                 .description
                 .as_deref(),
             Some("working")
         );
-        let text = lhc_core::profile::layout_file::serialize(&before);
+        let text = lhc_core::config::profile_file::serialize(&before);
         document
             .read()
             .paths()
-            .save_user_layout("Saved", &text, true)
+            .save_user_profile("Saved", &text, true)
             .unwrap();
         document.refresh_all();
-        assert_eq!(document.saved_layout("Saved"), Some(before));
+        assert_eq!(document.saved_profile("Saved"), Some(before));
     }
 
     #[test]
@@ -864,7 +870,7 @@ mod tests {
             .unwrap();
         assert!(saved.runtime.is_ok());
         assert_eq!((rules.get(), layers.get()), (0, 1));
-        assert_eq!(document.read().layout().layers.len(), 1);
+        assert_eq!(document.read().profile().layers.len(), 1);
     }
 
     #[test]
@@ -882,13 +888,13 @@ mod tests {
         document
             .edit(View::Rules, |config| config.create_layer("First", ""))
             .unwrap();
-        assert_eq!(document.read().layout().layers.len(), 2);
+        assert_eq!(document.read().profile().layers.len(), 2);
     }
     #[test]
     fn failed_compound_edit_does_not_advance_revision_or_notify_views() {
         let (_dir, document) = document();
         let revision = document.revision();
-        let before = document.read().layout().clone();
+        let before = document.read().profile().clone();
         let notified = Rc::new(Cell::new(false));
         let flag = notified.clone();
         document.subscribe(View::Shell, move |_| flag.set(true));
@@ -898,7 +904,7 @@ mod tests {
         });
         assert!(matches!(result, Err(ConfigError::EditConflict)));
         assert_eq!(document.revision(), revision);
-        assert_eq!(document.read().layout(), &before);
+        assert_eq!(document.read().profile(), &before);
         assert!(!notified.get());
     }
 }

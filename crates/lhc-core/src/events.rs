@@ -32,7 +32,7 @@ pub enum CoreEvent {
     /// A key was pressed inside the held layer.
     LayerKeyPressed,
     /// An application action requested by the mapper.
-    AppAction(crate::profile::app_action::AppAction),
+    AppAction(crate::config::app_action::AppAction),
     CommandLaunchResult {
         script: String,
         result: Result<(), String>,
@@ -349,7 +349,7 @@ mod tests {
         entry.recv_timeout(Duration::from_secs(1)).unwrap();
         for _ in 0..PENDING_LIMIT * 4 {
             bus.emit(CoreEvent::AppAction(
-                crate::profile::app_action::AppAction::ShowSettings,
+                crate::config::app_action::AppAction::ShowSettings,
             ));
             bus.emit(CoreEvent::ActionUnavailable("sys:test".into()));
         }

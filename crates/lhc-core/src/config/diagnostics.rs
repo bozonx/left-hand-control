@@ -8,6 +8,8 @@ use std::collections::{BTreeMap, HashSet};
 pub enum RuleIssueCode {
     MissingTrigger,
     InvalidTrigger,
+    /// A generic modifier name (`Ctrl`) where a key code (`ControlLeft`) is needed.
+    ModifierNameTrigger,
     DuplicateTrigger,
     ShadowedTrigger,
     UnknownLayer,
@@ -66,6 +68,10 @@ impl std::fmt::Display for RuleIssue {
             RuleIssueCode::InvalidTrigger => {
                 write!(f, "Trigger \"{trigger}\" cannot be used for a rule.")
             }
+            RuleIssueCode::ModifierNameTrigger => write!(
+                f,
+                "Trigger \"{trigger}\" needs key codes such as ControlLeft; \"+\" joins the keys of a chord and does not add a modifier."
+            ),
             RuleIssueCode::DuplicateTrigger => {
                 write!(
                     f,
@@ -126,7 +132,12 @@ pub fn analyze_rules(config: &ResolvedAppConfig) -> Vec<RuleIssue> {
         }
         let trigger = rule.key.trim();
         if !super::key_catalog::valid_trigger(trigger) {
-            issues.push(issue(RuleIssueCode::InvalidTrigger, rule, Some(trigger)));
+            let code = if super::key_catalog::uses_modifier_name(trigger) {
+                RuleIssueCode::ModifierNameTrigger
+            } else {
+                RuleIssueCode::InvalidTrigger
+            };
+            issues.push(issue(code, rule, Some(trigger)));
         }
         if let Some(mut keys) = super::key_catalog::trigger_keys(trigger) {
             keys.sort_unstable();
@@ -309,7 +320,7 @@ pub fn analyze(config: &ResolvedAppConfig) -> Vec<RuleIssue> {
         if rule.conditions.window_patterns.iter().any(invalid_pattern) {
             add(
                 RuleIssueCode::InvalidCondition,
-                format!("settings.layouts.auto.rules[{index}].when.windows"),
+                format!("settings.profiles.auto.rules[{index}].when.windows"),
             );
         }
         if rule
@@ -320,7 +331,7 @@ pub fn analyze(config: &ResolvedAppConfig) -> Vec<RuleIssue> {
         {
             add(
                 RuleIssueCode::InvalidCondition,
-                format!("settings.layouts.auto.rules[{index}].when.excludeWindows"),
+                format!("settings.profiles.auto.rules[{index}].when.excludeWindows"),
             );
         }
     }
@@ -352,13 +363,15 @@ fn conditions_overlap(a: &KeyRule, b: &KeyRule) -> bool {
     if game(a).is_some() && game(b).is_some() && game(a) != game(b) {
         return false;
     }
-    let (a_layouts, b_layouts) = (
+    let (a_profiles, b_profiles) = (
         list(&a.condition_keyboard_layouts),
         list(&b.condition_keyboard_layouts),
     );
-    if !a_layouts.is_empty()
-        && !b_layouts.is_empty()
-        && !a_layouts.iter().any(|layout| b_layouts.contains(layout))
+    if !a_profiles.is_empty()
+        && !b_profiles.is_empty()
+        && !a_profiles
+            .iter()
+            .any(|profile| b_profiles.contains(profile))
     {
         return false;
     }
@@ -372,17 +385,19 @@ fn conditions_overlap(a: &KeyRule, b: &KeyRule) -> bool {
 }
 
 fn conditions_cover(earlier: &KeyRule, later: &KeyRule) -> bool {
-    let layouts = list(&earlier.condition_keyboard_layouts);
-    let later_layouts = list(&later.condition_keyboard_layouts);
+    let profiles = list(&earlier.condition_keyboard_layouts);
+    let later_profiles = list(&later.condition_keyboard_layouts);
     let window_patterns = list(&earlier.condition_window_patterns);
     let later_apps = list(&later.condition_window_patterns);
     let excluded = list(&earlier.condition_excluded_window_patterns);
     let later_excluded = list(&later.condition_excluded_window_patterns);
     conditions_overlap(earlier, later)
         && (game(earlier).is_none() || game(earlier) == game(later))
-        && (layouts.is_empty()
-            || (!later_layouts.is_empty()
-                && later_layouts.iter().all(|layout| layouts.contains(layout))))
+        && (profiles.is_empty()
+            || (!later_profiles.is_empty()
+                && later_profiles
+                    .iter()
+                    .all(|profile| profiles.contains(profile))))
         && (window_patterns.is_empty()
             || (!later_apps.is_empty()
                 && later_apps.iter().all(|pattern| {
@@ -407,17 +422,17 @@ pub fn retain_runtime_rules(config: &mut ResolvedAppConfig) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::profile::model::{AppSettings, Layer, LayoutPreset};
+    use crate::config::model::{AppSettings, Layer, ProfilePreset};
 
     fn config(rules: Vec<KeyRule>) -> ResolvedAppConfig {
-        let preset = LayoutPreset {
+        let preset = ProfilePreset {
             layers: vec![Layer {
                 id: "nav".into(),
                 name: "Nav".into(),
                 description: None,
             }],
             rules,
-            ..LayoutPreset::initial()
+            ..ProfilePreset::initial()
         };
         ResolvedAppConfig::from_parts(AppSettings::default(), preset, None)
     }
@@ -459,7 +474,7 @@ mod tests {
 
     #[test]
     fn invalid_conditions_and_ignored_rule_combinations_are_visible() {
-        let layout = super::super::layout_file::parse(
+        let profile = super::super::profile_file::parse(
             r#"{"version":1,"rules":[
             {"id":"bad-condition","key":"KeyA","when":{"windows":["title:"]}},
             {"id":"bad-double","key":"KeyC+KeyD","doubleTap":{"action":"KeyE"}}
@@ -469,7 +484,7 @@ mod tests {
         .unwrap();
         let issues = analyze(&ResolvedAppConfig::from_parts(
             AppSettings::default(),
-            layout,
+            profile,
             None,
         ));
         assert_eq!(
@@ -490,7 +505,7 @@ mod tests {
 
     #[test]
     fn complete_diagnostics_cover_non_rule_actions_and_cycles() {
-        let layout = super::super::layout_file::parse(
+        let profile = super::super::profile_file::parse(
             r#"{"version":1,
             "layers":[{"id":"nav","keys":{"NoSuchKey":"KeyA","KeyA":"macro:missing"}}],
             "macros":[{"id":"a","steps":["macro:b"]},{"id":"b","steps":["macro:a"]}],
@@ -498,7 +513,7 @@ mod tests {
         )
         .unwrap()
         .unwrap();
-        let config = ResolvedAppConfig::from_parts(AppSettings::default(), layout, None);
+        let config = ResolvedAppConfig::from_parts(AppSettings::default(), profile, None);
         let issues = analyze(&config);
         for code in [
             RuleIssueCode::InvalidLayerKey,
@@ -527,8 +542,8 @@ mod tests {
         ] {
             let text =
                 serde_json::json!({"version":1,"macros":[{"id":"m","steps":[step]}]}).to_string();
-            let layout = super::super::layout_file::parse(&text).unwrap().unwrap();
-            let config = ResolvedAppConfig::from_parts(AppSettings::default(), layout, None);
+            let profile = super::super::profile_file::parse(&text).unwrap().unwrap();
+            let config = ResolvedAppConfig::from_parts(AppSettings::default(), profile, None);
             assert!(
                 analyze(&config)
                     .iter()
@@ -539,11 +554,11 @@ mod tests {
         for step in ["pause:1", "pause:10000"] {
             let text =
                 serde_json::json!({"version":1,"macros":[{"id":"m","steps":[step]}]}).to_string();
-            let layout = super::super::layout_file::parse(&text).unwrap().unwrap();
+            let profile = super::super::profile_file::parse(&text).unwrap().unwrap();
             assert!(
                 analyze(&ResolvedAppConfig::from_parts(
                     AppSettings::default(),
-                    layout,
+                    profile,
                     None
                 ))
                 .is_empty()
@@ -585,7 +600,7 @@ mod tests {
     #[test]
     fn conflicts_are_warnings_and_equivalent_chords_are_compared() {
         let issues = analyze_rules(&config(vec![
-            rule("a", "Ctrl+ShiftLeft"),
+            rule("a", "ControlLeft+ShiftLeft"),
             rule("b", "ShiftLeft+ControlLeft"),
         ]));
         assert_eq!(issues.len(), 1);
@@ -594,10 +609,31 @@ mod tests {
         assert!(!issues[0].code.is_error());
         assert!(!RuleIssueCode::DuplicateTrigger.is_error());
         assert!(RuleIssueCode::InvalidTrigger.is_error());
+        assert!(RuleIssueCode::ModifierNameTrigger.is_error());
     }
 
     #[test]
-    fn disjoint_game_layout_and_app_exclusions_allow_repeated_triggers() {
+    fn modifier_names_in_a_trigger_get_their_own_issue() {
+        let issues = analyze_rules(&config(vec![
+            rule("a", "Ctrl+KeyA"),
+            rule("b", "ControlLeft+KeyA"),
+            rule("c", "NoSuchKey"),
+        ]));
+        let codes: Vec<_> = issues
+            .iter()
+            .map(|i| (i.rule_id.as_str(), i.code))
+            .collect();
+        assert_eq!(
+            codes,
+            [
+                ("a", RuleIssueCode::ModifierNameTrigger),
+                ("c", RuleIssueCode::InvalidTrigger)
+            ]
+        );
+    }
+
+    #[test]
+    fn disjoint_game_profile_and_app_exclusions_allow_repeated_triggers() {
         let mut a = rule("a", "KeyQ");
         let mut b = rule("b", "KeyQ");
         a.condition_game_mode = Some("on".into());
@@ -630,7 +666,7 @@ mod tests {
     }
 
     #[test]
-    fn partial_layout_overlap_and_title_patterns_are_not_declared_disjoint() {
+    fn partial_profile_overlap_and_title_patterns_are_not_declared_disjoint() {
         let mut a = rule("a", "KeyQ");
         let mut b = rule("b", "KeyQ");
         a.condition_keyboard_layouts = Some(vec!["en".into(), "ru".into()]);

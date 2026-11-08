@@ -88,17 +88,18 @@ impl App {
             }
             let document = self.document()?;
             // A failed context switch keeps the old mapper running. Never describe
-            // the newly selected layout as though it had been applied.
+            // the newly selected profile as though it had been applied.
             let config = document.read();
             let selected = config
-                .active_layout_id(&lhc_core::profile::auto_switch::AutoSwitchContext::current())
-                .map_err(|error| log::warn!("layer hint layout: {error}"))
+                .active_profile_id(&lhc_core::config::auto_switch::AutoSwitchContext::current())
+                .map_err(|error| log::warn!("layer hint profile: {error}"))
                 .ok()?;
-            if document.applied_layout_id()? != selected {
+            if document.applied_profile_id()? != selected {
                 return None;
             }
-            let layout = self.menus();
-            let hint = crate::layer_key_model::hint(&self.settings, &config, &layout.layout, &id)?;
+            let profile = self.menus();
+            let hint =
+                crate::layer_key_model::hint(&self.settings, &config, &profile.profile, &id)?;
             // Caption construction can race with release, usage or re-press.
             layer_state::current()
                 .allows_hint(&id, hold_id)

@@ -74,7 +74,7 @@ impl Engine {
         at: Instant,
         buffered: &HashSet<KeyCode>,
     ) -> Option<(Vec<KeyCode>, RuleEntry)> {
-        self.layout
+        self.profile
             .chord_rules
             .iter()
             .rev()
@@ -111,7 +111,7 @@ impl Engine {
             return false;
         }
         let buffered = self.buffered_chord_presses();
-        self.layout.chord_rules.iter().any(|(longer, rule)| {
+        self.profile.chord_rules.iter().any(|(longer, rule)| {
             longer.len() > keys.len()
                 && keys.iter().all(|key| longer.contains(key))
                 && self.chord_eligible(longer, rule)
@@ -241,12 +241,12 @@ impl Engine {
     /// boundary matches the combo buffer, which expires at the same instant.
     pub(super) fn chord_member_late(&self, member: KeyCode, at: Instant) -> bool {
         self.press_at.get(&member).is_some_and(|pressed| {
-            at.saturating_duration_since(*pressed) >= self.layout.trigger_chord_timeout
+            at.saturating_duration_since(*pressed) >= self.profile.trigger_chord_timeout
         })
     }
 
     pub(super) fn trigger_chord_deadline(&self) -> Option<Instant> {
-        self.chords.deadline(self.layout.trigger_chord_timeout)
+        self.chords.deadline(self.profile.trigger_chord_timeout)
     }
 
     /// A non-modifier key that belongs to an eligible chord starts a combo
@@ -255,7 +255,7 @@ impl Engine {
     pub(super) fn starts_trigger_chord(&self, key: KeyCode) -> bool {
         !is_modifier_key(key)
             && self
-                .layout
+                .profile
                 .chord_rules
                 .iter()
                 .any(|(keys, rule)| keys.contains(&key) && self.chord_eligible(keys, rule))
@@ -264,7 +264,7 @@ impl Engine {
     /// True when `key` together with every buffered press is still part of
     /// some eligible chord.
     pub(super) fn extends_trigger_chord(&self, key: KeyCode) -> bool {
-        self.layout.chord_rules.iter().any(|(keys, rule)| {
+        self.profile.chord_rules.iter().any(|(keys, rule)| {
             keys.contains(&key)
                 && self
                     .chords

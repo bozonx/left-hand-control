@@ -1,12 +1,12 @@
-//! Choosing the active layout in auto mode: an ordered list of rules
-//! (conditions → layout or off), first match wins, otherwise the default.
+//! Choosing the active profile in auto mode: an ordered list of rules
+//! (conditions → profile or off), first match wins, otherwise the default.
 
 use super::app_match;
-use super::model::{AppSettings, AutoRule, LayoutConditionSet, LayoutMode};
+use super::model::{AppSettings, AutoRule, ProfileConditionSet, ProfileMode};
 use crate::runtime_state::ActiveWindow;
 use app_match::AppMatcher;
 
-/// Observed system state the layout conditions are evaluated against.
+/// Observed system state the profile conditions are evaluated against.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct AutoSwitchContext {
     /// Short id of the system keyboard layout; `None` when undetectable.
@@ -33,16 +33,16 @@ impl AutoSwitchContext {
     }
 }
 
-pub fn matches_condition_set(set: &LayoutConditionSet, ctx: &AutoSwitchContext) -> bool {
+pub fn matches_condition_set(set: &ProfileConditionSet, ctx: &AutoSwitchContext) -> bool {
     if set
         .game_mode
         .is_some_and(|mode| !mode.matches(ctx.game_mode_active))
     {
         return false;
     }
-    if !set.layouts.is_empty()
+    if !set.keyboard_layouts.is_empty()
         && !ctx.system_layout.as_ref().is_some_and(|layout| {
-            set.layouts
+            set.keyboard_layouts
                 .iter()
                 .any(|item| item.trim().eq_ignore_ascii_case(layout.trim()))
         })
@@ -66,7 +66,7 @@ pub fn matches_condition_set(set: &LayoutConditionSet, ctx: &AutoSwitchContext) 
 
 /// `available` sorted by `order`; ids missing from `order` keep their
 /// relative position at the end.
-pub fn order_layout_ids(available: &[String], order: &[String]) -> Vec<String> {
+pub fn order_profile_ids(available: &[String], order: &[String]) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for id in order.iter().chain(available) {
         if available.contains(id) && !out.contains(id) {
@@ -81,12 +81,12 @@ pub fn order_layout_ids(available: &[String], order: &[String]) -> Vec<String> {
 pub struct AutoChoice {
     /// Index of the matching rule; `None` means the default applied.
     pub matched_rule_index: Option<usize>,
-    /// Layout to use; `None` means off (native passthrough).
-    pub layout_id: Option<String>,
+    /// Profile to use; `None` means off (native passthrough).
+    pub profile_id: Option<String>,
 }
 
 /// First rule whose conditions match `ctx`, or the default. Rules and the
-/// default pointing at a layout missing from `available` are skipped.
+/// default pointing at a profile missing from `available` are skipped.
 pub fn choose(available: &[String], settings: &AppSettings, ctx: &AutoSwitchContext) -> AutoChoice {
     settings
         .auto_rules
@@ -97,12 +97,12 @@ pub fn choose(available: &[String], settings: &AppSettings, ctx: &AutoSwitchCont
         })
         .map(|(index, rule)| AutoChoice {
             matched_rule_index: Some(index),
-            layout_id: rule.layout_id.clone(),
+            profile_id: rule.profile_id.clone(),
         })
         .unwrap_or_else(|| AutoChoice {
             matched_rule_index: None,
-            layout_id: settings
-                .auto_default_layout_id
+            profile_id: settings
+                .auto_default_profile_id
                 .clone()
                 .filter(|id| available.contains(id)),
         })
@@ -111,15 +111,17 @@ pub fn choose(available: &[String], settings: &AppSettings, ctx: &AutoSwitchCont
 /// Whether `outer` matches whenever `inner` does, so a rule with `inner`
 /// placed after `outer` can never apply. Lists are compared the way
 /// [`matches_condition_set`] reads them: an unusable pattern never matches.
-pub fn covers(outer: &LayoutConditionSet, inner: &LayoutConditionSet) -> bool {
+pub fn covers(outer: &ProfileConditionSet, inner: &ProfileConditionSet) -> bool {
     let game = outer.game_mode.is_none() || outer.game_mode == inner.game_mode;
-    let same_layout = |a: &String, b: &String| a.trim().eq_ignore_ascii_case(b.trim());
-    let layouts = outer.layouts.is_empty()
-        || (!inner.layouts.is_empty()
-            && inner
-                .layouts
-                .iter()
-                .all(|item| outer.layouts.iter().any(|outer| same_layout(outer, item))));
+    let same_keyboard_layout = |a: &String, b: &String| a.trim().eq_ignore_ascii_case(b.trim());
+    let keyboard_layouts = outer.keyboard_layouts.is_empty()
+        || (!inner.keyboard_layouts.is_empty()
+            && inner.keyboard_layouts.iter().all(|item| {
+                outer
+                    .keyboard_layouts
+                    .iter()
+                    .any(|outer| same_keyboard_layout(outer, item))
+            }));
     let usable = |patterns: &[String]| -> Vec<String> {
         patterns
             .iter()
@@ -156,7 +158,7 @@ pub fn covers(outer: &LayoutConditionSet, inner: &LayoutConditionSet) -> bool {
                 .iter()
                 .any(|inner| app_match::covers(inner, pattern))
         });
-    game && layouts && window_patterns && excluded
+    game && keyboard_layouts && window_patterns && excluded
 }
 
 /// Index of the first enabled rule before `index` that always matches
@@ -171,15 +173,15 @@ pub fn shadowed_by(rules: &[AutoRule], index: usize, available: &[String]) -> Op
 fn usable_rule(rule: &AutoRule, available: &[String]) -> bool {
     rule.enabled
         && rule
-            .layout_id
+            .profile_id
             .as_ref()
             .is_none_or(|id| available.contains(id))
 }
 
 /// Whether the automatic choice can depend on the focused window, so a
-/// window change may switch the layout.
+/// window change may switch the profile.
 pub fn depends_on_window(settings: &AppSettings) -> bool {
-    settings.layout_mode == LayoutMode::Auto
+    settings.profile_mode == ProfileMode::Auto
         && settings.auto_rules.iter().any(|rule| {
             rule.enabled
                 && !(rule.conditions.window_patterns.is_empty()
@@ -192,7 +194,7 @@ pub fn window_patterns(settings: &AppSettings) -> impl Iterator<Item = &String> 
     settings
         .auto_rules
         .iter()
-        .filter(move |rule| settings.layout_mode == LayoutMode::Auto && rule.enabled)
+        .filter(move |rule| settings.profile_mode == ProfileMode::Auto && rule.enabled)
         .flat_map(|rule| {
             rule.conditions
                 .window_patterns
@@ -204,22 +206,22 @@ pub fn window_patterns(settings: &AppSettings) -> impl Iterator<Item = &String> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::profile::model::GameModeCondition;
+    use crate::config::model::GameModeCondition;
 
     fn set(
         game_mode: Option<&str>,
-        layouts: &[&str],
+        keyboard_layouts: &[&str],
         window_patterns: &[&str],
-    ) -> LayoutConditionSet {
-        LayoutConditionSet {
+    ) -> ProfileConditionSet {
+        ProfileConditionSet {
             game_mode: GameModeCondition::parse(game_mode),
-            layouts: layouts.iter().map(|s| s.to_string()).collect(),
+            keyboard_layouts: keyboard_layouts.iter().map(|s| s.to_string()).collect(),
             window_patterns: window_patterns.iter().map(|s| s.to_string()).collect(),
             excluded_window_patterns: Vec::new(),
         }
     }
 
-    fn except(mut set: LayoutConditionSet, excluded: &[&str]) -> LayoutConditionSet {
+    fn except(mut set: ProfileConditionSet, excluded: &[&str]) -> ProfileConditionSet {
         set.excluded_window_patterns = excluded.iter().map(|s| s.to_string()).collect();
         set
     }
@@ -281,7 +283,7 @@ mod tests {
         let ids: Vec<String> = ["user:A", "user:B", "user:C"].map(String::from).to_vec();
         let order = ["user:C".to_string(), "user:B".to_string()];
         assert_eq!(
-            order_layout_ids(&ids, &order),
+            order_profile_ids(&ids, &order),
             ["user:C", "user:B", "user:A"]
         );
     }
@@ -289,10 +291,10 @@ mod tests {
     #[test]
     fn first_matching_rule_wins_then_default() {
         let ids: Vec<String> = ["user:A", "user:B"].map(String::from).to_vec();
-        let rule = |id: &str, layout: Option<&str>, conditions| AutoRule {
+        let rule = |id: &str, profile: Option<&str>, conditions| AutoRule {
             id: id.into(),
             enabled: true,
-            layout_id: layout.map(str::to_owned),
+            profile_id: profile.map(str::to_owned),
             conditions,
         };
         let mut settings = AppSettings {
@@ -301,34 +303,34 @@ mod tests {
                 rule("ru", Some("user:B"), set(None, &["ru"], &[])),
                 rule("gone", Some("user:X"), set(None, &[], &[])),
             ],
-            auto_default_layout_id: Some("user:A".into()),
+            auto_default_profile_id: Some("user:A".into()),
             ..AppSettings::default()
         };
-        let pick = |settings: &AppSettings, layout, title| {
-            choose(&ids, settings, &ctx(Some(layout), false, title))
+        let pick = |settings: &AppSettings, profile, title| {
+            choose(&ids, settings, &ctx(Some(profile), false, title))
         };
         assert_eq!(
             pick(&settings, "ru", "Blender"),
             AutoChoice {
                 matched_rule_index: Some(0),
-                layout_id: None
+                profile_id: None
             }
         );
         assert_eq!(
             pick(&settings, "ru", "Kate"),
             AutoChoice {
                 matched_rule_index: Some(1),
-                layout_id: Some("user:B".into())
+                profile_id: Some("user:B".into())
             }
         );
         assert_eq!(
             pick(&settings, "us", "Kate"),
             AutoChoice {
                 matched_rule_index: None,
-                layout_id: Some("user:A".into())
+                profile_id: Some("user:A".into())
             }
         );
-        settings.auto_default_layout_id = Some("user:X".into());
+        settings.auto_default_profile_id = Some("user:X".into());
         assert_eq!(pick(&settings, "us", "Kate"), AutoChoice::default());
     }
 
@@ -339,15 +341,15 @@ mod tests {
             auto_rules: vec![AutoRule {
                 id: "a".into(),
                 enabled: false,
-                layout_id: None,
-                conditions: LayoutConditionSet::default(),
+                profile_id: None,
+                conditions: ProfileConditionSet::default(),
             }],
-            auto_default_layout_id: Some("user:A".into()),
+            auto_default_profile_id: Some("user:A".into()),
             ..AppSettings::default()
         };
         assert_eq!(
             choose(&ids, &settings, &ctx(None, false, ""))
-                .layout_id
+                .profile_id
                 .as_deref(),
             Some("user:A")
         );
@@ -358,7 +360,7 @@ mod tests {
         let rule = |enabled, conditions| AutoRule {
             id: String::new(),
             enabled,
-            layout_id: None,
+            profile_id: None,
             conditions,
         };
         let rules = [
@@ -393,8 +395,8 @@ mod tests {
             settings.auto_rules.push(AutoRule {
                 id: id.into(),
                 enabled: true,
-                layout_id: target.map(str::to_owned),
-                conditions: LayoutConditionSet::default(),
+                profile_id: target.map(str::to_owned),
+                conditions: ProfileConditionSet::default(),
             });
         }
         assert_eq!(
@@ -402,12 +404,12 @@ mod tests {
             Some(1)
         );
         assert_eq!(shadowed_by(&settings.auto_rules, 1, &available), None);
-        settings.auto_rules[0].layout_id = None;
+        settings.auto_rules[0].profile_id = None;
         assert_eq!(shadowed_by(&settings.auto_rules, 1, &available), Some(0));
     }
 
     #[test]
-    fn layout_codes_match_without_case() {
+    fn keyboard_layout_codes_match_without_case() {
         assert!(matches_condition_set(
             &set(None, &["US"], &[]),
             &ctx(Some("us"), false, "")
@@ -420,14 +422,14 @@ mod tests {
 
     #[test]
     fn normalization_matches_the_saved_form() {
-        let raw = LayoutConditionSet {
+        let raw = ProfileConditionSet {
             game_mode: None,
-            layouts: vec![" US ".into(), "".into(), "us".into()],
+            keyboard_layouts: vec![" US ".into(), "".into(), "us".into()],
             window_patterns: vec!["  ".into(), " kate ".into()],
             excluded_window_patterns: vec!["".into()],
         };
         let normalized = raw.normalized();
-        assert_eq!(normalized.layouts, ["us"]);
+        assert_eq!(normalized.keyboard_layouts, ["us"]);
         assert_eq!(normalized.window_patterns, ["kate"]);
         assert!(normalized.excluded_window_patterns.is_empty());
         // Only blanks left: the set is empty and matches everything, as after reload.
@@ -456,8 +458,8 @@ mod tests {
         let rule = |enabled| AutoRule {
             id: String::new(),
             enabled,
-            layout_id: None,
-            conditions: LayoutConditionSet::default(),
+            profile_id: None,
+            conditions: ProfileConditionSet::default(),
         };
         let rules = [rule(true), rule(false), rule(true)];
         assert_eq!(shadowed_by(&rules, 1, &[]), None);
@@ -467,11 +469,11 @@ mod tests {
     #[test]
     fn window_dependency_follows_mode_and_enabled_rules() {
         let mut settings = AppSettings {
-            layout_mode: LayoutMode::Auto,
+            profile_mode: ProfileMode::Auto,
             auto_rules: vec![AutoRule {
                 id: "a".into(),
                 enabled: true,
-                layout_id: None,
+                profile_id: None,
                 conditions: set(Some("on"), &["us"], &[]),
             }],
             ..AppSettings::default()
@@ -483,7 +485,7 @@ mod tests {
         settings.auto_rules[0].enabled = false;
         assert!(!depends_on_window(&settings));
         settings.auto_rules[0].enabled = true;
-        settings.layout_mode = LayoutMode::Manual;
+        settings.profile_mode = ProfileMode::Manual;
         assert!(!depends_on_window(&settings));
         assert_eq!(window_patterns(&settings).count(), 0);
     }

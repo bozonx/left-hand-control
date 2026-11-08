@@ -126,7 +126,7 @@ impl ThemeMode {
 }
 
 /// Game-mode control from the tray, the CLI or a key binding.
-pub use lhc_core::profile::app_action::GameModeRequest as GameMode;
+pub use lhc_core::config::app_action::GameModeRequest as GameMode;
 
 /// Resolved appearance shared with the Spell worker.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -211,7 +211,7 @@ impl TryFrom<Command> for WorkerCommand {
         Ok(match command {
             Command::Show(Window::Popup(popup)) => Self::Show(popup),
             Command::ShowPage(popup, page) => Self::ShowPage(popup, page),
-            Command::PopupLayout(layout) => Self::PopupLayout(layout),
+            Command::PopupLayout(profile) => Self::PopupLayout(profile),
             Command::PopupContents(contents) => Self::PopupContents(contents),
             Command::LayerHint(hint) => Self::LayerHint(hint),
             Command::Hide => Self::Hide,
@@ -228,7 +228,7 @@ impl From<WorkerCommand> for Command {
         match command {
             WorkerCommand::Show(popup) => Self::Show(Window::Popup(popup)),
             WorkerCommand::ShowPage(popup, page) => Self::ShowPage(popup, page),
-            WorkerCommand::PopupLayout(layout) => Self::PopupLayout(layout),
+            WorkerCommand::PopupLayout(profile) => Self::PopupLayout(profile),
             WorkerCommand::PopupContents(contents) => Self::PopupContents(contents),
             WorkerCommand::LayerHint(hint) => Self::LayerHint(hint),
             WorkerCommand::Hide => Self::Hide,
@@ -291,9 +291,9 @@ game auto|on|off|toggle | preferences system|light|dark en|ru|de|fr|es|it|pt|pl|
 
 impl Command {
     pub fn from_app_action(
-        action: lhc_core::profile::app_action::AppAction,
+        action: lhc_core::config::app_action::AppAction,
     ) -> Option<ShellCommand> {
-        use lhc_core::profile::app_action::{AppAction, Menu};
+        use lhc_core::config::app_action::{AppAction, Menu};
         Some(match action {
             AppAction::ShowMenu { menu, page } => {
                 let popup = match menu {
@@ -307,7 +307,7 @@ impl Command {
             }
             AppAction::ShowSettings => ShellCommand::Show(Window::Settings),
             AppAction::GameMode(mode) => ShellCommand::GameMode(mode),
-            AppAction::ActivateLayout(_) => return None,
+            AppAction::ActivateProfile(_) => return None,
         })
     }
 
@@ -328,8 +328,8 @@ impl Command {
                 .map(Self::PopupContents)
                 .map_err(|_| USAGE.into());
         }
-        if let Some(layout) = value.strip_prefix("popup-layout ") {
-            return serde_json::from_str(layout)
+        if let Some(profile) = value.strip_prefix("popup-profile ") {
+            return serde_json::from_str(profile)
                 .map(Self::PopupLayout)
                 .map_err(|_| USAGE.into());
         }
@@ -404,10 +404,10 @@ impl fmt::Display for Command {
         match self {
             Self::Show(window) => write!(f, "show {}", window.name()),
             Self::ShowPage(popup, page) => write!(f, "show {} {page}", popup.name()),
-            Self::PopupLayout(layout) => write!(
+            Self::PopupLayout(profile) => write!(
                 f,
-                "popup-layout {}",
-                serde_json::to_string(layout).map_err(|_| fmt::Error)?
+                "popup-profile {}",
+                serde_json::to_string(profile).map_err(|_| fmt::Error)?
             ),
             Self::PopupContents(contents) => write!(
                 f,
@@ -537,7 +537,7 @@ mod tests {
 
     #[test]
     fn mapper_actions_preserve_pages() {
-        use lhc_core::profile::app_action::AppAction;
+        use lhc_core::config::app_action::AppAction;
         for page in [1, 5, 10, 42] {
             let action = AppAction::parse(&format!("showQuickMenu{page}")).unwrap();
             assert_eq!(

@@ -85,7 +85,7 @@ fn check_modal(ui: &SettingsWindow) {
             assert!(inside, "modal focus escaped its subtree to {name}");
             assert!(
                 ![
-                    "Layouts",
+                    "Profiles",
                     "Settings",
                     "Start",
                     "Stop",
@@ -117,21 +117,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.global::<AppState>().set_mapper_supported(true);
     ui.global::<AppState>().set_in_development(true);
     ui.global::<SettingsEditor>().set_in_development(true);
-    ui.global::<LayoutLibrary>().invoke_set_automatic(false);
-    ui.global::<LayoutLibrary>().invoke_create(
+    ui.global::<ProfileLibrary>().invoke_set_automatic(false);
+    ui.global::<ProfileLibrary>().invoke_create(
         "Keyboard regression".into(),
         "".into(),
-        LayoutSource::Bundled,
+        Profilesource::Bundled,
         0,
     );
     // Enough entries to exceed the menu viewport even on a large screen.
-    let layout_text = lhc_core::profile::layout_file::serialize(
-        &lhc_core::profile::model::LayoutPreset::initial(),
+    let profile_text = lhc_core::config::profile_file::serialize(
+        &lhc_core::config::model::ProfilePreset::initial(),
     );
     for index in 0..40 {
-        document.read().paths().save_user_layout(
+        document.read().paths().save_user_profile(
             &format!("Menu regression {index:02}"),
-            &layout_text,
+            &profile_text,
             false,
         )?;
     }
@@ -320,8 +320,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let first = ui.global::<MenuEditor>().get_pages().row_data(1).unwrap();
                 let expected = if first.is_empty() { "2".to_string() } else { format!("2 · {first}") };
                 assert_eq!(label(&ui), expected, "keyboard reorder follows the moved page");
-                let name = ui.global::<LayoutLibrary>().get_active_label();
-                let label = if name.is_empty() { "No active layout".to_string() } else { format!("Active: {name}") };
+                let name = ui.global::<ProfileLibrary>().get_active_label();
+                let label = if name.is_empty() { "No active profile".to_string() } else { format!("Active: {name}") };
                 tab_to(&ui, &label);
                 *initiator.borrow_mut() = Some(focused(&ui).downgrade());
                 key(&ui, Key::Return);
@@ -350,10 +350,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                     ancestor = parent.parent_item(ParentItemTraversalMode::StopAtPopups);
                 }
-                assert!(checked_viewport, "layout menu must scroll");
+                assert!(checked_viewport, "profile menu must scroll");
                 snapshot(&ui, "active-menu-end");
                 key(&ui, Key::Return);
-                assert_eq!(ui.global::<LayoutLibrary>().get_active_label(), "Menu regression 39");
+                assert_eq!(ui.global::<ProfileLibrary>().get_active_label(), "Menu regression 39");
             }
             23 => {
                 assert_eq!(focused(&ui), initiator.borrow().as_ref().unwrap().upgrade().unwrap());
@@ -367,7 +367,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 key(&ui, Key::Return);
                 assert_eq!(ui.get_page(), Page::Rules);
                 key(&ui, Key::Tab);
-                assert_eq!(label(&ui), "Close layout", "Tab exits the entire tab list");
+                assert_eq!(label(&ui), "Close profile", "Tab exits the entire tab list");
                 ui.window().dispatch_event(slint::platform::WindowEvent::KeyPressed { text: Key::Shift.into() });
                 key(&ui, Key::Tab);
                 ui.window().dispatch_event(slint::platform::WindowEvent::KeyReleased { text: Key::Shift.into() });
@@ -427,7 +427,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 key(&ui, Key::Return);
                 assert_eq!(picker.get_value(), second.value);
                 assert!(!picker.get_opened(), "Enter applies the focused item");
-                println!("PASS: tab-list arrows/Home/End/exit; device edges; ComboBox cancel; Search Escape; picker real focus+Enter; 1440 Tab/Shift+Tab events; device/menu Enter; segmented arrows; modal restoration; InfoTip/F1; scrolling; action categories; menu cell transfer and page reorder; active layout selector");
+                println!("PASS: tab-list arrows/Home/End/exit; device edges; ComboBox cancel; Search Escape; picker real focus+Enter; 1440 Tab/Shift+Tab events; device/menu Enter; segmented arrows; modal restoration; InfoTip/F1; scrolling; action categories; menu cell transfer and page reorder; active profile selector");
                 slint::quit_event_loop().unwrap();
             }
             _ => unreachable!(),

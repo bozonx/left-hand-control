@@ -31,12 +31,12 @@ const POLICY: &[(&[&str], ToastKind, Duration)] = &[
     (&["copied"], ToastKind::Success, SHORT),
     (
         &[
-            "layout-created",
-            "layout-saved",
-            "layout-deleted",
+            "profile-created",
+            "profile-saved",
+            "profile-deleted",
             "auto-rule-deleted",
-            "layout-activated",
-            "layout-discarded",
+            "profile-activated",
+            "profile-discarded",
             "mapper-running",
             "mapper-stopped",
         ],
@@ -56,8 +56,8 @@ const POLICY: &[(&[&str], ToastKind, Duration)] = &[
             "macro-in-use",
             "action-unavailable",
             "action-unavailable-named",
-            "save-layout-first",
-            "layout-slot-empty",
+            "save-profile-first",
+            "profile-slot-empty",
             "select-input-device",
             "game-mode-in-development",
         ],
@@ -513,7 +513,7 @@ mod tests {
     fn waiting_notifications_get_their_full_duration_when_visible() {
         let mut queue = Queue::default();
         for index in 0..=VISIBLE {
-            queue.add(Msg::LayoutSaved(index.to_string()).to_ui(), false);
+            queue.add(Msg::ProfileSaved(index.to_string()).to_ui(), false);
         }
         assert!(queue.advance(Duration::from_secs(3)));
         assert_eq!(queue.entries.len(), 1);
@@ -524,7 +524,7 @@ mod tests {
     fn new_errors_preempt_warnings_and_the_queue_is_bounded() {
         let mut queue = Queue::default();
         for slot in 0..(CAPACITY + 10) {
-            queue.add(Msg::LayoutSlotEmpty(slot as u32).to_ui(), false);
+            queue.add(Msg::ProfileSlotEmpty(slot as u32).to_ui(), false);
         }
         assert_eq!(queue.entries.len(), CAPACITY);
         queue.add(Msg::Error("first failure".into()).to_ui(), false);

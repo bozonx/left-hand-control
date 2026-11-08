@@ -4,7 +4,7 @@
 use super::{condition_list, parse_list, strings};
 use crate::ui::{ConditionChoices, LanguageChoice, SettingsWindow, WindowChoice};
 use lhc_core::active_window::{ActiveWindow, OpenWindow};
-use lhc_core::profile::app_match;
+use lhc_core::config::app_match;
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};

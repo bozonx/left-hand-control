@@ -154,18 +154,18 @@ fn layer_dialog_loads_its_rule_and_reports_a_vanished_selection() {
     let (_dir, document) = super::super::test_document();
     document
         .edit(View::Rules, |config| {
-            config.update_layout(|layout| {
-                layout.layers = vec![Layer {
+            config.update_profile(|profile| {
+                profile.layers = vec![Layer {
                     id: "nav".into(),
                     name: "Navigation".into(),
                     description: None,
                 }];
-                layout.rules = vec![
+                profile.rules = vec![
                     KeyRule::new("first".into(), "KeyA"),
                     KeyRule::new("second".into(), "KeyB"),
                 ];
-                layout.rules[0].long_hold_timeout_ms = Some(1000);
-                layout.rules[1].long_hold_timeout_ms = Some(2000);
+                profile.rules[0].long_hold_timeout_ms = Some(1000);
+                profile.rules[1].long_hold_timeout_ms = Some(2000);
             })
         })
         .unwrap();
@@ -176,18 +176,18 @@ fn layer_dialog_loads_its_rule_and_reports_a_vanished_selection() {
     editor.invoke_open_dialog(1, RuleDialog::Layer);
     assert_eq!(editor.get_key(), "KeyB");
     assert_eq!(editor.get_long_hold_timeout(), "2000");
-    let layer = document.read().layout().layers[0].id.clone();
-    let original = document.read().layout().rules[1].clone();
+    let layer = document.read().profile().layers[0].id.clone();
+    let original = document.read().profile().rules[1].clone();
     editor.set_selected(-1);
     editor.invoke_choose(layer.clone().into());
     assert_ne!(editor.get_status().id, "");
     assert_eq!(editor.get_dialog(), RuleDialog::Layer);
     assert_eq!(editor.get_selected(), -1);
-    assert_eq!(document.read().layout().rules[1], original);
+    assert_eq!(document.read().profile().rules[1], original);
     editor.invoke_open_dialog(1, RuleDialog::Layer);
     editor.invoke_choose(layer.clone().into());
     assert_eq!(editor.get_dialog(), RuleDialog::None);
-    assert_eq!(document.read().layout().rules[1].layer_id, layer);
+    assert_eq!(document.read().profile().rules[1].layer_id, layer);
 }
 
 fn init_platform() {
@@ -208,8 +208,8 @@ fn editor_fixture() -> (tempfile::TempDir, Rc<Document>, SettingsWindow) {
     let (dir, document) = super::super::test_document();
     document
         .edit(View::Rules, |config| {
-            config.update_layout(|layout| {
-                layout.rules = vec![
+            config.update_profile(|profile| {
+                profile.rules = vec![
                     KeyRule::new("first".into(), "KeyA"),
                     KeyRule::new("second".into(), "KeyB"),
                 ];
@@ -231,12 +231,12 @@ fn background_updates_preserve_drafts_and_reject_all_stale_operations() {
     editor.set_enabled(false);
     document
         .edit(View::Library, |config| {
-            config.update_layout(|layout| {
-                layout.rules.swap(0, 1);
+            config.update_profile(|profile| {
+                profile.rules.swap(0, 1);
             })
         })
         .unwrap();
-    let original = document.read().layout().clone();
+    let original = document.read().profile().clone();
     assert_eq!(editor.get_hold_timeout(), "333");
     assert_eq!(editor.get_apps_include(), "firefox");
     assert!(!editor.get_enabled());
@@ -245,7 +245,7 @@ fn background_updates_preserve_drafts_and_reject_all_stale_operations() {
     editor.invoke_remove();
     editor.invoke_set_hold_mode(UiHoldBehavior::Layer);
     editor.invoke_create_layer("Stale layer".into());
-    assert_eq!(*document.read().layout(), original);
+    assert_eq!(*document.read().profile(), original);
     assert_eq!(editor.get_status().id, "config-edit-conflict");
     assert_eq!(editor.get_dialog(), RuleDialog::Advanced);
     editor.set_field(RuleDialog::Tap);
@@ -259,7 +259,10 @@ fn background_updates_preserve_drafts_and_reject_all_stale_operations() {
     editor.invoke_open_dialog(0, RuleDialog::Advanced);
     editor.set_hold_timeout("333".into());
     editor.invoke_apply_advanced();
-    assert_eq!(document.read().layout().rules[0].hold_timeout_ms, Some(333));
+    assert_eq!(
+        document.read().profile().rules[0].hold_timeout_ms,
+        Some(333)
+    );
 }
 
 #[test]
@@ -270,18 +273,18 @@ fn vanished_picker_target_cannot_turn_into_a_new_rule() {
     ui.global::<ActionPicker>().set_opened(true);
     document
         .edit(View::Library, |config| {
-            config.update_layout(|layout| {
-                layout.rules.pop();
+            config.update_profile(|profile| {
+                profile.rules.pop();
             })
         })
         .unwrap();
     assert_eq!(editor.get_selected(), -1);
     assert!(choose(&ui, &document, "KeyC", None).is_err());
-    assert_eq!(document.read().layout().rules.len(), 1);
+    assert_eq!(document.read().profile().rules.len(), 1);
     ui.global::<ActionPicker>().set_opened(false);
     editor.invoke_add();
     choose(&ui, &document, "KeyC", None).unwrap();
-    assert_eq!(document.read().layout().rules[0].key, "KeyC");
+    assert_eq!(document.read().profile().rules[0].key, "KeyC");
 }
 
 #[test]
@@ -293,15 +296,15 @@ fn failed_edit_keeps_draft_and_allows_retry() {
     editor.set_double_timeout("444".into());
     editor.set_hold("Ctrl+KeyC".into());
     editor.set_enabled(false);
-    let before = document.read().layout().clone();
+    let before = document.read().profile().clone();
     let revision = document.revision();
     assert!(
-        change(&ui, &document, true, |layout| {
-            layout.rules[0].hold_timeout_ms = Some(1);
+        change(&ui, &document, true, |profile| {
+            profile.rules[0].hold_timeout_ms = Some(1);
         })
         .is_err()
     );
-    assert_eq!(*document.read().layout(), before);
+    assert_eq!(*document.read().profile(), before);
     assert_eq!(editor.get_hold_timeout(), "333");
     assert_eq!(editor.get_double_timeout(), "444");
     assert_eq!(editor.get_hold(), "Ctrl+KeyC");
@@ -309,19 +312,22 @@ fn failed_edit_keeps_draft_and_allows_retry() {
     assert_eq!(document.revision(), revision);
     assert_eq!(editor.get_dialog(), RuleDialog::Advanced);
     editor.invoke_apply_advanced();
-    assert_eq!(document.read().layout().rules[0].hold_timeout_ms, Some(333));
-    assert!(!document.read().layout().rules[0].is_enabled());
+    assert_eq!(
+        document.read().profile().rules[0].hold_timeout_ms,
+        Some(333)
+    );
+    assert!(!document.read().profile().rules[0].is_enabled());
 }
 
 #[test]
 fn diagnostics_refresh_when_macro_and_command_dependencies_change() {
-    use lhc_core::profile::model::{Command, Macro, MacroStep};
+    use lhc_core::config::model::{Command, Macro, MacroStep};
     let (_dir, document, ui) = editor_fixture();
     document
         .edit(View::Library, |config| {
-            config.update_layout(|layout| {
-                layout.rules[0].tap_action = Some("macro:m".into());
-                layout.rules[1].tap_action = Some("cmd:c".into());
+            config.update_profile(|profile| {
+                profile.rules[0].tap_action = Some("macro:m".into());
+                profile.rules[1].tap_action = Some("cmd:c".into());
             })
         })
         .unwrap();
@@ -336,8 +342,8 @@ fn diagnostics_refresh_when_macro_and_command_dependencies_change() {
     assert!(issues().iter().all(|id| !id.is_empty()));
     document
         .edit(View::Macros, |config| {
-            config.update_layout(|layout| {
-                layout.macros.push(Macro {
+            config.update_profile(|profile| {
+                profile.macros.push(Macro {
                     id: "m".into(),
                     name: "Macro".into(),
                     steps: vec![MacroStep {
@@ -353,8 +359,8 @@ fn diagnostics_refresh_when_macro_and_command_dependencies_change() {
     assert!(issues()[0].is_empty());
     document
         .edit(View::Menus, |config| {
-            config.update_layout(|layout| {
-                layout.commands.push(Command {
+            config.update_profile(|profile| {
+                profile.commands.push(Command {
                     id: "c".into(),
                     name: "Command".into(),
                     posix_script: "true".into(),
@@ -367,16 +373,16 @@ fn diagnostics_refresh_when_macro_and_command_dependencies_change() {
     assert!(issues().iter().all(String::is_empty));
     document
         .edit(View::Macros, |config| {
-            config.update_layout(|layout| {
-                layout.macros.clear();
+            config.update_profile(|profile| {
+                profile.macros.clear();
             })
         })
         .unwrap();
     assert!(!issues()[0].is_empty());
     document
         .edit(View::Menus, |config| {
-            config.update_layout(|layout| {
-                layout.commands.clear();
+            config.update_profile(|profile| {
+                profile.commands.clear();
             })
         })
         .unwrap();
@@ -388,8 +394,8 @@ fn empty_trigger_draft_can_be_disabled_and_deleted() {
     let (_dir, document, ui) = editor_fixture();
     document
         .edit(View::Library, |config| {
-            config.update_layout(|layout| {
-                layout.rules[0].key.clear();
+            config.update_profile(|profile| {
+                profile.rules[0].key.clear();
             })
         })
         .unwrap();
@@ -397,12 +403,12 @@ fn empty_trigger_draft_can_be_disabled_and_deleted() {
     editor.invoke_open_dialog(0, RuleDialog::Advanced);
     editor.set_enabled(false);
     editor.invoke_apply_advanced();
-    assert!(!document.read().layout().rules[0].is_enabled());
+    assert!(!document.read().profile().rules[0].is_enabled());
     editor.invoke_open_dialog(0, RuleDialog::Advanced);
     editor.set_dialog(RuleDialog::Remove);
     editor.invoke_remove();
-    assert_eq!(document.read().layout().rules.len(), 1);
-    assert_eq!(document.read().layout().rules[0].id, "second");
+    assert_eq!(document.read().profile().rules.len(), 1);
+    assert_eq!(document.read().profile().rules[0].id, "second");
 }
 
 #[test]
@@ -439,7 +445,7 @@ fn refresh_and_external_edits_clear_stale_conflict_status() {
     editor.invoke_open_dialog(0, RuleDialog::Tap);
     choose(&ui, &document, "KeyC", None).unwrap();
     assert_eq!(
-        document.read().layout().rules[0].tap_action.as_deref(),
+        document.read().profile().rules[0].tap_action.as_deref(),
         Some("KeyC")
     );
 }

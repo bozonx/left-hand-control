@@ -1067,7 +1067,7 @@ fn press_detection_shift_roll_types_capital() {
 }
 
 #[test]
-fn rule_hold_detection_overrides_default_and_can_mix_in_one_layout() {
+fn rule_hold_detection_overrides_default_and_can_mix_in_one_profile() {
     for default in [
         TapDecision::PermissiveHold,
         TapDecision::HoldOnOtherKeyPress,

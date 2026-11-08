@@ -1,6 +1,6 @@
 //! Callback and debounce regressions run in CI without a desktop or real config.
 
-use lhc_core::{profile::timing, storage::StoragePaths};
+use lhc_core::{config::timing, storage::StoragePaths};
 use slint::{
     ComponentHandle, Model,
     platform::{EventLoopProxy, Platform, WindowAdapter, software_renderer::MinimalSoftwareWindow},
@@ -62,23 +62,23 @@ impl Platform for TestPlatform {
     }
 }
 
-fn check_first_layout_activation() -> Result<(), Box<dyn std::error::Error>> {
+fn check_first_profile_activation() -> Result<(), Box<dyn std::error::Error>> {
     for automatic in [false, true] {
         let dir = tempfile::tempdir()?;
         let paths = StoragePaths::new(dir.path().join("settings"), dir.path().join("data"));
         let document = Document::load(paths)?;
         let ui = SettingsWindow::new()?;
         bind_document(&ui, &document);
-        let library = ui.global::<LayoutLibrary>();
+        let library = ui.global::<ProfileLibrary>();
         library.invoke_set_automatic(automatic);
-        library.invoke_create("First".into(), "".into(), LayoutSource::Empty, 0);
+        library.invoke_create("First".into(), "".into(), Profilesource::Empty, 0);
         assert_eq!(
-            document.read().settings().manual_layout_id.as_deref(),
+            document.read().settings().manual_profile_id.as_deref(),
             if automatic { None } else { Some("user:First") }
         );
-        library.invoke_create("Second".into(), "".into(), LayoutSource::Empty, 0);
+        library.invoke_create("Second".into(), "".into(), Profilesource::Empty, 0);
         assert_eq!(
-            document.read().settings().manual_layout_id.as_deref(),
+            document.read().settings().manual_profile_id.as_deref(),
             if automatic { None } else { Some("user:First") }
         );
     }
@@ -137,7 +137,7 @@ fn editor_callbacks_save_flush_and_debounce_without_a_desktop() {
     let clock = Rc::new(Cell::new(Duration::ZERO));
     let tasks = Tasks::default();
     slint::platform::set_platform(Box::new(TestPlatform(clock.clone(), tasks.clone()))).unwrap();
-    check_first_layout_activation().unwrap();
+    check_first_profile_activation().unwrap();
     game_and_drag_callbacks().unwrap();
     let dir = tempfile::tempdir().unwrap();
     let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
@@ -153,30 +153,30 @@ fn editor_callbacks_save_flush_and_debounce_without_a_desktop() {
     assert!(editor.get_has_unsaved_changes());
     clock.set(Duration::from_millis(399));
     slint::platform::update_timers_and_animations();
-    assert_eq!(document.read().layout().macros[0].name, "Draft");
+    assert_eq!(document.read().profile().macros[0].name, "Draft");
     // A new keystroke restarts the debounce deadline.
     editor.invoke_set_field(0, MacroField::Name, "Latest".into());
     clock.set(Duration::from_millis(401));
     slint::platform::update_timers_and_animations();
-    assert_eq!(document.read().layout().macros[0].name, "Draft");
+    assert_eq!(document.read().profile().macros[0].name, "Draft");
     clock.set(Duration::from_millis(798));
     slint::platform::update_timers_and_animations();
-    assert_eq!(document.read().layout().macros[0].name, "Draft");
+    assert_eq!(document.read().profile().macros[0].name, "Draft");
     clock.set(Duration::from_millis(799));
     slint::platform::update_timers_and_animations();
-    assert_eq!(document.read().layout().macros[0].name, "Latest");
+    assert_eq!(document.read().profile().macros[0].name, "Latest");
     assert!(!editor.get_has_unsaved_changes());
 
     editor.invoke_set_field(0, MacroField::Id, "invalid id".into());
-    let library = ui.global::<LayoutLibrary>();
+    let library = ui.global::<ProfileLibrary>();
     assert!(!library.invoke_flush_drafts());
-    assert_eq!(document.read().layout().macros[0].id, id.as_str());
+    assert_eq!(document.read().profile().macros[0].id, id.as_str());
     assert!(editor.get_has_errors());
     editor.invoke_set_field(0, MacroField::Id, id);
     editor.invoke_set_field(0, MacroField::Name, "Saved without waiting".into());
     assert!(library.invoke_flush_drafts());
     assert_eq!(
-        document.read().layout().macros[0].name,
+        document.read().profile().macros[0].name,
         "Saved without waiting"
     );
     let revision = document.revision();
@@ -201,7 +201,7 @@ fn editor_callbacks_save_flush_and_debounce_without_a_desktop() {
     assert_eq!(
         document
             .read()
-            .load_layout("user:Draft regression")
+            .load_profile("user:Draft regression")
             .unwrap()
             .macros[0]
             .name,
@@ -214,7 +214,7 @@ fn editor_callbacks_save_flush_and_debounce_without_a_desktop() {
     menu.invoke_rename_page();
     assert!(menu.get_has_unsaved_changes());
     assert!(library.invoke_flush_drafts());
-    assert_eq!(document.read().layout().emoji_pages[0].name, "Menu draft");
+    assert_eq!(document.read().profile().emoji_pages[0].name, "Menu draft");
     assert!(!menu.get_has_unsaved_changes());
 
     let bounds = ui.global::<Timing>();
@@ -232,13 +232,13 @@ fn editor_callbacks_save_flush_and_debounce_without_a_desktop() {
     // The activation callback must release its read guard before editing.
     library.invoke_activate_current();
     assert_eq!(
-        document.read().settings().manual_layout_id.as_deref(),
+        document.read().settings().manual_profile_id.as_deref(),
         Some("user:Draft regression")
     );
 
     // A corrupt file is an error row, and an older refresh cannot overwrite
     // the metadata from a newer request.
-    let library_path = document.read().paths().layouts_dir();
+    let library_path = document.read().paths().profiles_dir();
     let path = library_path.join("Draft regression.json");
     let original = std::fs::read_to_string(&path).unwrap();
     std::fs::write(&path, "not json").unwrap();

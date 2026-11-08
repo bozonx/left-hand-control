@@ -16,7 +16,7 @@
       "properties": {
         "fallback": {
           "default": null,
-          "description": "Layout used when no rule matches; `null` turns the mapper off.",
+          "description": "Profile used when no rule matches; `null` turns the mapper off.",
           "type": [
             "string",
             "null"
@@ -45,7 +45,7 @@
             "null"
           ]
         },
-        "layout": {
+        "profile": {
           "description": "Required; an explicit `null` turns the mapper off, so a forgotten\nfield is an error rather than a silent \"off\".",
           "type": [
             "string",
@@ -170,46 +170,6 @@
       },
       "type": "object"
     },
-    "LayoutMode": {
-      "enum": [
-        "manual",
-        "auto"
-      ],
-      "type": "string"
-    },
-    "LayoutsDoc": {
-      "additionalProperties": false,
-      "description": "Which library layout the mapper uses.",
-      "properties": {
-        "auto": {
-          "$ref": "#/$defs/AutoDoc",
-          "default": {
-            "fallback": null,
-            "rules": []
-          }
-        },
-        "manual": {
-          "description": "Layout used in manual mode.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "mode": {
-          "$ref": "#/$defs/LayoutMode",
-          "default": "manual"
-        },
-        "order": {
-          "default": [],
-          "description": "Library order: the slots of `activateLayoutN` and the order of the\nlist. Behaviour, not remembered state, so it lives in settings.",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        }
-      },
-      "type": "object"
-    },
     "LinuxDoc": {
       "additionalProperties": false,
       "properties": {
@@ -302,6 +262,46 @@
       ],
       "type": "object"
     },
+    "ProfileMode": {
+      "enum": [
+        "manual",
+        "auto"
+      ],
+      "type": "string"
+    },
+    "ProfilesDoc": {
+      "additionalProperties": false,
+      "description": "Which library profile the mapper uses.",
+      "properties": {
+        "auto": {
+          "$ref": "#/$defs/AutoDoc",
+          "default": {
+            "fallback": null,
+            "rules": []
+          }
+        },
+        "manual": {
+          "description": "Profile used in manual mode.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mode": {
+          "$ref": "#/$defs/ProfileMode",
+          "default": "manual"
+        },
+        "order": {
+          "default": [],
+          "description": "Library order: the slots of `activateProfileN` and the order of the\nlist. Behaviour, not remembered state, so it lives in settings.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
     "SettingsDoc": {
       "additionalProperties": false,
       "properties": {
@@ -351,21 +351,6 @@
           "default": false,
           "type": "boolean"
         },
-        "layoutOsd": {
-          "default": false,
-          "type": "boolean"
-        },
-        "layouts": {
-          "$ref": "#/$defs/LayoutsDoc",
-          "default": {
-            "auto": {
-              "fallback": null,
-              "rules": []
-            },
-            "mode": "manual",
-            "order": []
-          }
-        },
         "linux": {
           "$ref": "#/$defs/LinuxDoc",
           "default": {
@@ -377,6 +362,21 @@
         "locale": {
           "$ref": "#/$defs/LocalePreference",
           "default": "auto"
+        },
+        "profileOsd": {
+          "default": false,
+          "type": "boolean"
+        },
+        "profiles": {
+          "$ref": "#/$defs/ProfilesDoc",
+          "default": {
+            "auto": {
+              "fallback": null,
+              "rules": []
+            },
+            "mode": "manual",
+            "order": []
+          }
         },
         "reduceMotion": {
           "default": false,
@@ -406,8 +406,8 @@
     "StateDoc": {
       "additionalProperties": false,
       "properties": {
-        "editedLayout": {
-          "description": "Library layout open in the editor.",
+        "editedProfile": {
+          "description": "Library profile open in the editor.",
           "type": [
             "string",
             "null"
@@ -457,7 +457,7 @@
         },
         {
           "const": "libei",
-          "description": "libei; pastes through the clipboard when the layout lacks a character.",
+          "description": "libei; pastes through the clipboard when the profile lacks a character.",
           "type": "string"
         },
         {
@@ -541,7 +541,7 @@
     },
     "WhenDoc": {
       "additionalProperties": false,
-      "description": "Conditions of a layout rule or an auto-mode rule; every present\ncondition must hold. Both places share this one object.",
+      "description": "Conditions of a profile rule or an auto-mode rule; every present\ncondition must hold. Both places share this one object.",
       "properties": {
         "excludeWindows": {
           "items": {
@@ -608,8 +608,14 @@
         "highContrast": false,
         "launchOnStartup": false,
         "layerHint": false,
-        "layoutOsd": false,
-        "layouts": {
+        "linux": {
+          "pasteShortcut": "Shift+Insert",
+          "terminalPasteShortcut": "Ctrl+Shift+KeyV",
+          "textMode": "libei"
+        },
+        "locale": "auto",
+        "profileOsd": false,
+        "profiles": {
           "auto": {
             "fallback": null,
             "rules": []
@@ -617,12 +623,6 @@
           "mode": "manual",
           "order": []
         },
-        "linux": {
-          "pasteShortcut": "Shift+Insert",
-          "terminalPasteShortcut": "Ctrl+Shift+KeyV",
-          "textMode": "libei"
-        },
-        "locale": "auto",
         "reduceMotion": false,
         "startMapperOnLaunch": false,
         "timing": {

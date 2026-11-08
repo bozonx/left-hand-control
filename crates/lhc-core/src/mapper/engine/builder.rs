@@ -4,14 +4,14 @@ use super::Engine;
 use super::model::{
     CompiledAction, CompiledMacro, CompiledMacroStep, HoldOutputMode, RuleEntry, TapMode,
 };
-use super::state::{ChordState, CompiledLayout, LayerStack, MacroRunner, VirtualKeys};
+use super::state::{ChordState, CompiledProfile, LayerStack, MacroRunner, VirtualKeys};
 use crate::mapper::action::{MacroStepItem, parse_action, pause_duration};
 use crate::mapper::builtin_macros::BUILTIN_MACROS;
 use crate::mapper::config::{ActionSpec, MapperConfig};
 use crate::mapper::key_code::KeyCode;
 use crate::mapper::keys::code_to_key;
 use crate::mapper::system::{self, ProcessInvocation};
-use crate::profile::actions::{Action, MAX_MACRO_DEPTH, MAX_MACRO_STEPS};
+use crate::config::actions::{Action, MAX_MACRO_DEPTH, MAX_MACRO_STEPS};
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
@@ -45,7 +45,7 @@ impl Engine {
                 commands.insert(id.to_string(), command);
             }
         } else {
-            log::debug!("[mapper] shell commands are disabled for this layout");
+            log::debug!("[mapper] shell commands are disabled for this profile");
         }
 
         let mut raw_user_macros: HashMap<String, &crate::mapper::config::Macro> = HashMap::new();
@@ -201,7 +201,7 @@ impl Engine {
                 continue;
             }
 
-            let Some(keys) = crate::profile::key_catalog::trigger_keys(&r.key).and_then(|keys| {
+            let Some(keys) = crate::config::key_catalog::trigger_keys(&r.key).and_then(|keys| {
                 keys.into_iter()
                     .map(code_to_key)
                     .collect::<Option<Vec<_>>>()
@@ -209,7 +209,7 @@ impl Engine {
                 continue;
             };
             let key = keys[0];
-            use crate::profile::model::HoldBehavior;
+            use crate::config::model::HoldBehavior;
             let behavior = r.hold_behavior.unwrap_or({
                 if !r.long_hold_action.is_empty() {
                     HoldBehavior::Action
@@ -312,7 +312,7 @@ impl Engine {
             let long_hold_timeout = Duration::from_millis(
                 r.long_hold_timeout_ms
                     .unwrap_or(cfg.settings.default_long_hold_timeout_ms)
-                    .clamp(1, crate::profile::timing::LONG_HOLD.max),
+                    .clamp(1, crate::config::timing::LONG_HOLD.max),
             );
             let hold_timeout = r
                 .hold_timeout_ms
@@ -368,7 +368,7 @@ impl Engine {
                 };
                 let def = match action.as_deref() {
                     None => CompiledAction::Swallow,
-                    // An empty entry leaves the key to the base layout.
+                    // An empty entry leaves the key to the base profile.
                     Some(s) if s.trim().is_empty() => continue,
                     // An entry that does nothing here (an empty macro, a key
                     // this OS lacks) still covers the key, as a tap action
@@ -383,7 +383,7 @@ impl Engine {
         }
 
         Self {
-            layout: CompiledLayout {
+            profile: CompiledProfile {
                 rules,
                 chord_rules,
                 macros,
@@ -403,10 +403,10 @@ impl Engine {
             virt: VirtualKeys::default(),
             // Hand-edited configs may hold 0 or a value that overflows `Instant`.
             runner: MacroRunner::new(Duration::from_millis(cfg.settings.macro_timeout_ms.clamp(
-                crate::profile::timing::MACRO_TIMEOUT.min,
-                crate::profile::timing::MACRO_TIMEOUT.max,
+                crate::config::timing::MACRO_TIMEOUT.min,
+                crate::config::timing::MACRO_TIMEOUT.max,
             ))),
-            context: Box::new(crate::profile::auto_switch::AutoSwitchContext::current),
+            context: Box::new(crate::config::auto_switch::AutoSwitchContext::current),
         }
     }
 }

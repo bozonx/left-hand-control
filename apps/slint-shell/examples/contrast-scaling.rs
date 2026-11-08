@@ -135,10 +135,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     fixture
         .document
         .edit(slint_shell::document::View::Library, |config| {
-            config.update_layout(|layout| {
-                let mut rule = lhc_core::profile::model::KeyRule::new("contrast".into(), "F13");
+            config.update_profile(|profile| {
+                let mut rule = lhc_core::config::model::KeyRule::new("contrast".into(), "F13");
                 rule.enabled = Some(false);
-                layout.rules = vec![rule];
+                profile.rules = vec![rule];
             })
         })?;
     let ui = fixture.ui.clone_strong();
@@ -190,7 +190,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 assert!(ratio >= 4.5, "placeholder contrast {ratio}");
             }
             slint_shell::select_ui_language(if n < 15 { "en" } else { "ru" }).unwrap();
-            ui.set_page([Page::Settings, Page::Rules, Page::Layouts][n % 3]);
+            ui.set_page([Page::Settings, Page::Rules, Page::Profiles][n % 3]);
             ui.global::<SettingsEditor>().set_tab(SettingsTab::General);
         } else if n < 34 {
             let size = slint::LogicalSize::new([1290., 1280., 960., 640.][n - 30], 480.);

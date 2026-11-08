@@ -176,7 +176,7 @@
     },
     "MetaDoc": {
       "additionalProperties": false,
-      "description": "Portable information about the layout from its author. Every field is\noptional; `null` is not allowed.",
+      "description": "Portable information about the profile from its author. Every field is\noptional; `null` is not allowed.",
       "properties": {
         "author": {
           "type": "string"
@@ -184,11 +184,11 @@
         "description": {
           "type": "string"
         },
-        "layoutVersion": {
-          "description": "The author's version of the layout, unrelated to the format `version`.",
+        "name": {
           "type": "string"
         },
-        "name": {
+        "profileVersion": {
+          "description": "The author's version of the profile, unrelated to the format `version`.",
           "type": "string"
         }
       },
@@ -329,7 +329,7 @@
     },
     "WhenDoc": {
       "additionalProperties": false,
-      "description": "Conditions of a layout rule or an auto-mode rule; every present\ncondition must hold. Both places share this one object.",
+      "description": "Conditions of a profile rule or an auto-mode rule; every present\ncondition must hold. Both places share this one object.",
       "properties": {
         "excludeWindows": {
           "items": {
@@ -365,7 +365,7 @@
       "type": "object"
     }
   },
-  "$id": "https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/layout.v1.schema.json",
+  "$id": "https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/profile.v1.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
@@ -505,6 +505,6 @@
   "required": [
     "version"
   ],
-  "title": "Left Hand Control layout",
+  "title": "Left Hand Control profile",
   "type": "object"
 }

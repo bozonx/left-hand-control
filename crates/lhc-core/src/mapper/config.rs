@@ -1,9 +1,9 @@
 //! Mapper configuration: rules, layer keymaps, macros, commands and settings as
 //! the engine receives them.
 
-pub use crate::profile::model::TapDecision;
-use crate::profile::model::{PasteShortcut, TextMode};
-use crate::profile::timing;
+pub use crate::config::model::TapDecision;
+use crate::config::model::{PasteShortcut, TextMode};
+use crate::config::timing;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 
@@ -119,7 +119,7 @@ pub struct Rule {
     #[serde(default)]
     pub tap_action: ActionSpec,
     #[serde(default)]
-    pub hold_behavior: Option<crate::profile::model::HoldBehavior>,
+    pub hold_behavior: Option<crate::config::model::HoldBehavior>,
     #[serde(default)]
     pub long_hold_action: String,
     #[serde(default)]
@@ -182,10 +182,10 @@ pub struct Settings {
     pub linux_xdotool_path: Option<String>,
 }
 
-impl TryFrom<&crate::profile::model::ResolvedAppConfig> for MapperConfig {
+impl TryFrom<&crate::config::model::ResolvedAppConfig> for MapperConfig {
     type Error = String;
 
-    fn try_from(value: &crate::profile::model::ResolvedAppConfig) -> Result<Self, Self::Error> {
+    fn try_from(value: &crate::config::model::ResolvedAppConfig) -> Result<Self, Self::Error> {
         if value.rules.iter().any(|rule| {
             rule.condition_game_mode
                 .as_deref()

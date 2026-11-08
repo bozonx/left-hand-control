@@ -31,7 +31,7 @@ impl Engine {
                     && matches!(p.phase, RulePhase::WaitingDecision { .. })
                     && (!matches!(p.rule.hold, HoldOutputMode::Swallow)
                         || p.rule.layer_id.as_ref().is_some_and(|layer| {
-                            self.layout
+                            self.profile
                                 .layer_maps
                                 .get(layer)
                                 .is_some_and(|keys| keys.contains_key(&button))
@@ -73,7 +73,7 @@ impl Engine {
                 && let Some((_, action)) = self.long_holds.remove(&key)
             {
                 self.commit_hold(key, out);
-                self.fire_action(Some(&action), self.layout.default_mod_delay, now, out);
+                self.fire_action(Some(&action), self.profile.default_mod_delay, now, out);
                 continue;
             }
             self.long_holds.remove(&key);
@@ -110,7 +110,7 @@ impl Engine {
             if let Some((deadline, action)) = self.long_holds.remove(&key)
                 && now >= deadline
             {
-                self.fire_action(Some(&action), self.layout.default_mod_delay, now, out);
+                self.fire_action(Some(&action), self.profile.default_mod_delay, now, out);
             }
         }
         // Modifier releases deferred behind the resolved taps.

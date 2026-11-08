@@ -75,11 +75,11 @@ Releases: `cargo release <minor|patch>` previews; `--execute` bumps the version,
 
 ```
 crates/lhc-core/
-├── assets/                   # bundled layout(s) (templates for new library layouts), GNOME Shell extension
+├── assets/                   # bundled profile(s) (templates for new library profiles), GNOME Shell extension
 ├── tests/                    # integration tests incl. mapper_e2e
 └── src/                      # UI-independent domain + platform code (no UI framework)
-    ├── profile/              # config model: settings, layouts, actions, macros, menus, auto-switch; schema.rs
-    ├── config_document/      # editable config.json: validation, saving, active layout
+    ├── config/               # config model: settings, profiles, actions, macros, menus, auto-switch; schema.rs
+    ├── config_document/      # editable config.json: validation, saving, active profile
     ├── storage.rs            # StoragePaths::resolve(): dev vs release directories
     ├── events.rs             # CoreEvent bus — the only core → shell channel
     ├── mapper/               # engine/, output.rs (shared loop), linux/ (evdev+uinput), windows/ (hooks+SendInput), system.rs, runtime.rs
@@ -108,25 +108,25 @@ apps/slint-shell/
 └── vendor/                   # patched i-slint-core and spell-framework (see PATCHES.md in each)
 
 docs/                         # development/, design/, testing/, config-format.md, features.md
-schemas/                      # published JSON Schemas of config.json and layouts, generated from the readers
+schemas/                      # published JSON Schemas of config.json and profiles, generated from the readers
 ```
 
 ## Architecture
 
 - **Core vs shell.** `lhc-core` owns everything except presentation: config types and `ConfigDocument`, storage paths, platform detection, watchers, mapper lifecycle and engine, device I/O, text injection, validation. The shell displays state and calls core operations. If logic could be reused by another shell or tested without a UI, it belongs in `lhc-core`.
 - **Events.** The core never calls a UI framework. It publishes `CoreEvent`s on `lhc_core::events::bus()`; the shell subscribes once in `apps/slint-shell/src/app/mapper.rs` and posts them to the Slint event loop. Do not add shell-specific callbacks to the core.
-- **Config writes.** Pages change configuration only through `Document` (`src/document.rs`): `edit` stages settings/layout transactions, `edit_library` applies one core library operation with its own file rollback, and `sync_autostart` refreshes system registration. They share the runtime synchronization and view notification path. See [`docs/development/api.md`](docs/development/api.md). Never hold a `Document::read()` borrow across UI calls that may edit (`RefCell` conflicts).
-- **Persistence.** Settings auto-save to `config.json`; layouts go to the library only on explicit save. Both are versioned independently (`CONFIG_SCHEMA_VERSION`, `LAYOUT_SCHEMA_VERSION` in `profile/schema.rs`) and parsed strictly (unknown fields/values are errors); see [`docs/config-format.md`](docs/config-format.md). Within a version only optional fields and enum values may be added; anything else bumps the version and adds a reader arm for the old one (procedure in the `schema.rs` header). Storage backs up an older-version file as `<file>.v<N>.bak` before overwriting. The JSON Schemas in `schemas/` are generated from the `*Doc` structs; after a format change regenerate them with `LHC_UPDATE_SCHEMAS=1 cargo test --locked -p lhc-core --lib published_schemas` (the test fails while they are stale). Manual config editing is unsupported.
+- **Config writes.** Pages change configuration only through `Document` (`src/document.rs`): `edit` stages settings/profile transactions, `edit_library` applies one core library operation with its own file rollback, and `sync_autostart` refreshes system registration. They share the runtime synchronization and view notification path. See [`docs/development/api.md`](docs/development/api.md). Never hold a `Document::read()` borrow across UI calls that may edit (`RefCell` conflicts).
+- **Persistence.** Settings auto-save to `config.json`; profiles go to the library only on explicit save. Both are versioned independently (`CONFIG_SCHEMA_VERSION`, `PROFILE_SCHEMA_VERSION` in `config/schema.rs`) and parsed strictly (unknown fields/values are errors); see [`docs/config-format.md`](docs/config-format.md). Within a version only optional fields and enum values may be added; anything else bumps the version and adds a reader arm for the old one (procedure in the `schema.rs` header). Storage backs up an older-version file as `<file>.v<N>.bak` before overwriting. The JSON Schemas in `schemas/` are generated from the `*Doc` structs; after a format change regenerate them with `LHC_UPDATE_SCHEMAS=1 cargo test --locked -p lhc-core --lib published_schemas` (the test fails while they are stale). Manual config editing is unsupported.
 - **Paths.** From `StoragePaths::resolve()`: `LHC_DEV_DIR` overrides in any build; otherwise debug builds use `<repo>/dev-files/<os>/`, release builds use `~/.config/dev.bozonx.left-hand-control/` and `~/.local/share/dev.bozonx.left-hand-control/`.
 - **Processes.** One binary, three roles: settings process, Spell popup worker (`--spell-worker`), CLI client sending a command over IPC (Unix socket in a private `0700` dir on Linux/macOS, token-authenticated loopback TCP on Windows). The mapper holds a cross-process lock, so only one process grabs keyboards.
 - **Popups.** `LHC_POPUPS=winit` (default) shows borderless in-process winit windows; `auto` uses Spell layer-shell when the compositor has `zwlr_layer_shell_v1`, else winit; `spell` requires layer-shell. Data and key handling live in `popup_model.rs` so both paths behave identically.
-- **Action strings.** Bindable actions are plain strings: a key chord (`Ctrl+KeyC`), `macro:<id>`, `builtin:<id>` (built-in macros, see `mapper/builtin_macros.rs`), `cmd:<id>`, `sys:<id>` (see `PLAIN_SYSTEM_ACTIONS` and the `switchDesktopN`/`switchLayoutN`/`windowToDesktopN` families), `lhc:<id>`, `kde:<component>/<shortcut>`, `xdg:<desktop-id>/<action>` (freedesktop application actions, Linux), `text:<literal>`, `pause:<ms>` (macro steps only); `null` swallows the key, empty means native passthrough. Parse and build them only through `Action` in `lhc_core::profile::actions`.
+- **Action strings.** Bindable actions are plain strings: a key chord (`Ctrl+KeyC`), `macro:<id>`, `builtin:<id>` (built-in macros, see `mapper/builtin_macros.rs`), `cmd:<id>`, `sys:<id>` (see `PLAIN_SYSTEM_ACTIONS` and the `switchDesktopN`/`switchProfileN`/`windowToDesktopN` families), `lhc:<id>`, `kde:<component>/<shortcut>`, `xdg:<desktop-id>/<action>` (freedesktop application actions, Linux), `text:<literal>`, `pause:<ms>` (macro steps only); `null` swallows the key, empty means native passthrough. Parse and build them only through `Action` in `lhc_core::config::actions`.
 
 ### Where does a change go?
 
 | Change | Location |
 | --- | --- |
-| Config field, validation, layout file format | `crates/lhc-core/src/profile/`, `config_document/` |
+| Config field, validation, profile file format | `crates/lhc-core/src/config/`, `config_document/` |
 | Mapper behaviour, key handling, system actions | `crates/lhc-core/src/mapper/` |
 | Text injection (`text:`, popup insertion) | `crates/lhc-core/src/text_input/` |
 | OS/DE detection or watcher | `crates/lhc-core/src/platform/`, `keyboard_layout/`, `gamemode/`, `active_window/` |
@@ -173,11 +173,11 @@ Report the exact commands you ran and their results. If something could not be r
 **Always**
 - Put domain and platform logic in `lhc-core`; keep the shell thin.
 - Edit config through `Document` (`edit` for transactions, `edit_library` for one core library operation); resolve paths through `StoragePaths::resolve()`.
-- Support the current `config.json` and layout formats plus older format `version`s via the readers in `profile/`; no fallbacks for files without `version`.
+- Support the current `config.json` and profile formats plus older format `version`s via the readers in `config/`; no fallbacks for files without `version`.
 
 **Ask first**
 - Adding a dependency or bumping Slint / `spell-framework` / `i-slint-core`.
-- Changing the on-disk config or layout format, the IPC wire format or CLI commands.
+- Changing the on-disk config or profile format, the IPC wire format or CLI commands.
 - Running `cargo release --execute` or pushing `v*` tags (public release).
 - Extending X11 support (best effort only, see platforms.md) or touching `_old/`.
 

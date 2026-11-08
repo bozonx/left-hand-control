@@ -5,7 +5,7 @@ use crate::{
     i18n::Msg,
     ui::{ActionPicker, Locale, PickerCategory, PickerItem, SettingsWindow, ShortcutDesktop},
 };
-use lhc_core::profile::{
+use lhc_core::config::{
     actions::{self, Action, ActionName},
     key_catalog::CATEGORIES,
     model::ResolvedAppConfig,
@@ -89,7 +89,7 @@ pub(super) fn development_only(value: &str) -> bool {
 
 /// Whether `ms` is a valid macro pause.
 pub fn valid_pause(ms: &str) -> bool {
-    lhc_core::profile::timing::PAUSE.parse(ms).is_some()
+    lhc_core::config::timing::PAUSE.parse(ms).is_some()
 }
 
 /// Display name of a catalog action in the current UI language.
@@ -327,7 +327,7 @@ pub(super) fn catalog(ui: &SettingsWindow, config: &ResolvedAppConfig) -> Vec<Pi
 /// Why a valid action may still not run, shown as a notice.
 pub(super) fn execution_notice(
     action: &Action,
-    config: &lhc_core::profile::model::ResolvedAppConfig,
+    config: &lhc_core::config::model::ResolvedAppConfig,
 ) -> Msg {
     match actions::execution_issue(action, config) {
         Some(actions::ExecutionIssue::CommandsDisabled) => Msg::CommandsDisabled,

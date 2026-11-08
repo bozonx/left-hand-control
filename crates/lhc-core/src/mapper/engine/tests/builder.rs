@@ -22,7 +22,7 @@ fn builder_skips_unknown_rule_key() {
         double_tap_timeout_ms: None,
     });
     let engine = Engine::new(&cfg);
-    assert!(!engine.layout.rules.contains_key(&KeyCode::KEY_A));
+    assert!(!engine.profile.rules.contains_key(&KeyCode::KEY_A));
 }
 
 #[test]
@@ -49,9 +49,9 @@ fn builder_skips_primary_mouse_buttons_as_triggers() {
         });
     }
     let engine = Engine::new(&cfg);
-    assert!(!engine.layout.rules.contains_key(&KeyCode::BTN_LEFT));
-    assert!(!engine.layout.rules.contains_key(&KeyCode::BTN_RIGHT));
-    assert!(!engine.layout.rules.contains_key(&KeyCode::BTN_MIDDLE));
+    assert!(!engine.profile.rules.contains_key(&KeyCode::BTN_LEFT));
+    assert!(!engine.profile.rules.contains_key(&KeyCode::BTN_RIGHT));
+    assert!(!engine.profile.rules.contains_key(&KeyCode::BTN_MIDDLE));
 }
 
 #[test]
@@ -210,9 +210,9 @@ fn builtin_and_user_macros_resolve_independently_at_every_depth() {
     ];
     crate::mapper::validation::validate_config(&cfg).unwrap();
     let engine = Engine::new(&cfg);
-    let user = &engine.layout.macros["macro:copyLine"];
-    let builtin = &engine.layout.macros["builtin:copyLineText"];
-    let outer = &engine.layout.macros["macro:outer"];
+    let user = &engine.profile.macros["macro:copyLine"];
+    let builtin = &engine.profile.macros["builtin:copyLineText"];
+    let outer = &engine.profile.macros["macro:outer"];
     assert_eq!(user.steps.len(), 1);
     assert!(matches!(&user.steps[0].item, MacroStepItem::Literal(text) if text == "user"));
     assert!(
@@ -232,7 +232,7 @@ fn builtin_and_user_macros_resolve_independently_at_every_depth() {
         assert!(matches!(
             crate::mapper::engine::builder::resolve_action(
                 reference,
-                &engine.layout.macros,
+                &engine.profile.macros,
                 &HashMap::new(),
                 "test"
             ),
@@ -243,7 +243,7 @@ fn builtin_and_user_macros_resolve_independently_at_every_depth() {
     assert!(
         crate::mapper::engine::builder::resolve_action(
             "macro:copyLine",
-            &engine.layout.macros,
+            &engine.profile.macros,
             &HashMap::new(),
             "test"
         )
@@ -275,7 +275,7 @@ fn development_gate_disables_user_macros_popups_and_long_hold() {
                 .any(|item| matches!(item, EngineOutput::Literal(text) if text == "hold")),
             enabled
         );
-        assert_eq!(engine.layout.macros.contains_key("macro:user"), enabled);
+        assert_eq!(engine.profile.macros.contains_key("macro:user"), enabled);
         for rule in &mut cfg.rules {
             rule.long_hold_action.clear();
         }
@@ -283,14 +283,14 @@ fn development_gate_disables_user_macros_popups_and_long_hold() {
         for key in [KeyCode::KEY_B, KeyCode::KEY_C, KeyCode::KEY_D] {
             assert_eq!(
                 matches!(
-                    engine.layout.rules[&key][0].tap,
+                    engine.profile.rules[&key][0].tap,
                     crate::mapper::engine::model::TapMode::Action(_)
                 ),
                 enabled
             );
         }
         assert!(
-            !engine.layout.macros.is_empty(),
+            !engine.profile.macros.is_empty(),
             "built-in macros stay available"
         );
     }

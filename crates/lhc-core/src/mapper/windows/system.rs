@@ -43,7 +43,7 @@ pub fn resolve(name: &str) -> Option<WindowsAction> {
     if let Some(n) = name
         .strip_prefix("switchKeyboardLayout")
         .and_then(|rest| rest.parse::<u32>().ok())
-        .filter(|n| (1..=crate::profile::actions::SYSTEM_NUMBERED_COUNT).contains(n))
+        .filter(|n| (1..=crate::config::actions::SYSTEM_NUMBERED_COUNT).contains(n))
     {
         return Some(WindowsAction::SwitchLayout(n));
     }
@@ -248,7 +248,7 @@ mod tests {
 
     #[test]
     fn resolves_every_plain_action_but_not_virtual_desktops() {
-        for id in crate::profile::actions::PLAIN_SYSTEM_ACTIONS {
+        for id in crate::config::actions::PLAIN_SYSTEM_ACTIONS {
             assert_eq!(
                 resolve(id).is_some(),
                 !matches!(

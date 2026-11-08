@@ -1,8 +1,8 @@
 //! Process and window names as game-mode rules see them.
 
 use super::GameSource;
-use crate::profile::app_match::AppMatcher;
-use crate::profile::model::GameModeProcessMatcher;
+use crate::config::app_match::AppMatcher;
+use crate::config::model::GameModeProcessMatcher;
 use crate::runtime_state::ActiveWindow;
 
 /// Applications that go fullscreen without being games: browsers, video

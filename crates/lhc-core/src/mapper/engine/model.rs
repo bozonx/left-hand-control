@@ -8,7 +8,7 @@ use crate::mapper::key_code::KeyCode;
 use std::time::{Duration, Instant};
 
 /// Resolved action: single chord, macro, system function, or a
-/// layout-independent Unicode character.
+/// keyboard-layout-independent Unicode character.
 #[derive(Clone)]
 pub(super) enum CompiledAction {
     Stroke(Keystroke),
@@ -153,7 +153,7 @@ pub enum EngineOutput {
     ReleaseMods(Vec<KeyCode>),
     /// Execute a system function (DBus call or fire-and-forget spawn).
     RunSystem(SystemAction),
-    /// Execute a shell command defined by the current layout.
+    /// Execute a shell command defined by the current profile.
     RunCommand(ProcessInvocation),
     /// A macro command whose completion gates subsequent steps.
     RunMacroCommand(ProcessInvocation, crate::mapper::commands::MacroCommand),

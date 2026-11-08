@@ -21,7 +21,7 @@ use crate::{
     platform::{backend, focus, hotkey, tray},
     ui::{AppState, EmojiPopup, QuickPopup, SettingsWindow, Theme},
 };
-use lhc_core::{profile::model::Appearance, storage::StoragePaths};
+use lhc_core::{config::model::Appearance, storage::StoragePaths};
 use slint::ComponentHandle;
 use std::{
     cell::{Cell, RefCell},
@@ -83,7 +83,7 @@ fn system_dark(settings: &SettingsWindow) -> bool {
 
 /// Whether `action` is a `sys:` action macOS cannot run.
 fn unsupported_on_macos(action: &str) -> bool {
-    use lhc_core::profile::actions::{self, Action};
+    use lhc_core::config::actions::{self, Action};
     matches!(Action::parse(Some(action)), Action::System(id) if actions::unsupported_on_macos(&id))
 }
 
@@ -288,7 +288,7 @@ impl App {
         }
         self.invalidate_menus();
         self.apply_preferences();
-        self.announce_layout();
+        self.announce_profile();
         self.sync_layer_hint_setting();
     }
 
@@ -299,8 +299,13 @@ impl App {
             let config = document.read();
             let settings = config.settings();
             let device = config.input_device().is_some();
-            let layouts = config.ordered_layout_ids().is_ok_and(|ids| !ids.is_empty());
-            (device && settings.start_mapper_on_launch, device && layouts)
+            let profiles = config
+                .ordered_profile_ids()
+                .is_ok_and(|ids| !ids.is_empty());
+            (
+                device && settings.start_mapper_on_launch,
+                device && profiles,
+            )
         });
         if start_mapper {
             self.start_mapper_on_launch();
@@ -334,7 +339,7 @@ impl App {
 fn bind_shell(app: &Rc<App>) {
     crate::game_mode::bind(&app.settings);
     app.settings
-        .global::<crate::ui::LayoutLibrary>()
+        .global::<crate::ui::ProfileLibrary>()
         .on_quit(|| {
             with_app(|app| {
                 app.finish_shutdown();
@@ -398,7 +403,7 @@ fn load_document(settings: &SettingsWindow) -> Option<Rc<Document>> {
         .and_then(Document::load)
     {
         Ok(document) => {
-            let rules = document.read().layout().rules.len();
+            let rules = document.read().profile().rules.len();
             state.set_config_status(Msg::ConfigLoaded(rules).to_ui());
             Some(document)
         }

@@ -1,21 +1,21 @@
 //! Editable application configuration.
 //!
 //! Global settings live in `config.json`; the current keyboard layout
-//! stays in memory. Saved layouts live in the user
-//! library (`layouts/<name>.json`, id `user:<name>`).
+//! stays in memory. Saved profiles live in the user
+//! library (`profiles/<name>.json`, id `user:<name>`).
 //!
-//! Both formats are described in [`crate::profile::settings`] and
-//! [`crate::profile::layout_file`].
+//! Both formats are described in [`crate::config::settings`] and
+//! [`crate::config::profile_file`].
 
 mod activation;
 
-use crate::profile::actions::{self, Action, ActionIssue};
-use crate::profile::diagnostics::RuleIssue;
-use crate::profile::model::{
-    AppSettings, Appearance, LayoutPreset, LocalePreference, ResolvedAppConfig,
+use crate::config::actions::{self, Action, ActionIssue};
+use crate::config::diagnostics::RuleIssue;
+use crate::config::model::{
+    AppSettings, Appearance, LocalePreference, ProfilePreset, ResolvedAppConfig,
 };
-use crate::profile::names::{self, NameIssue, NameKind};
-use crate::profile::{key_catalog, layer_grid, layout_file, settings};
+use crate::config::names::{self, NameIssue, NameKind};
+use crate::config::{key_catalog, layer_grid, profile_file, settings};
 use crate::storage::StoragePaths;
 use std::fmt;
 
@@ -29,9 +29,9 @@ pub enum ConfigError {
     Invalid(String),
     /// An action cannot be assigned.
     InvalidAction(ActionIssue),
-    Macro(crate::profile::macros::MacroIssue),
-    Menu(crate::profile::menus::MenuIssue),
-    /// A layer or layout name cannot be used.
+    Macro(crate::config::macros::MacroIssue),
+    Menu(crate::config::menus::MenuIssue),
+    /// A layer or profile name cannot be used.
     Name(NameKind, NameIssue),
     /// Rules have blocking problems; the mapper cannot start.
     Rules(Vec<RuleIssue>),
@@ -75,17 +75,17 @@ impl fmt::Display for ConfigError {
 impl std::error::Error for ConfigError {}
 
 pub use self::activation::RuntimeConfig;
-pub use crate::profile::layer_edit::KeyAssignment;
+pub use crate::config::layer_edit::KeyAssignment;
 
 #[derive(Clone)]
 pub struct ConfigDocument {
     paths: StoragePaths,
     staged: bool,
-    layout_only: bool,
+    profile_only: bool,
     settings: AppSettings,
-    layout: LayoutPreset,
-    /// Why the layout last opened for editing could not be read at load.
-    layout_load_error: Option<ConfigError>,
+    profile: ProfilePreset,
+    /// Why the profile last opened for editing could not be read at load.
+    profile_load_error: Option<ConfigError>,
 }
 
 impl ConfigDocument {
@@ -93,38 +93,38 @@ impl ConfigDocument {
         paths.ensure().map_err(ConfigError::Io)?;
         let settings_text = paths.load_config().map_err(ConfigError::Io)?;
         let mut settings = settings::parse(&settings_text).map_err(ConfigError::Parse)?;
-        let mut layout_load_error = None;
-        let layout = match settings.editing_layout_id.as_deref() {
-            Some(id) => match load_current_layout(&paths, id) {
-                Ok(layout) => layout,
+        let mut profile_load_error = None;
+        let profile = match settings.editing_profile_id.as_deref() {
+            Some(id) => match load_current_profile(&paths, id) {
+                Ok(profile) => profile,
                 Err(error) => {
                     // A deleted or damaged library file must not take the
                     // global settings down with it. The editor starts from
-                    // a fresh layout that is not linked to the broken file,
+                    // a fresh profile that is not linked to the broken file,
                     // so saving it never overwrites that file.
-                    log::warn!("layout {id} cannot be opened for editing: {error}");
-                    settings.editing_layout_id = None;
-                    layout_load_error = Some(error);
-                    LayoutPreset::initial()
+                    log::warn!("profile {id} cannot be opened for editing: {error}");
+                    settings.editing_profile_id = None;
+                    profile_load_error = Some(error);
+                    ProfilePreset::initial()
                 }
             },
-            None => LayoutPreset::initial(),
+            None => ProfilePreset::initial(),
         };
         crate::gamemode::set_settings(&settings.game_mode, settings.in_development);
         Ok(Self {
             staged: false,
-            layout_only: false,
+            profile_only: false,
             settings,
-            layout,
+            profile,
             paths,
-            layout_load_error,
+            profile_load_error,
         })
     }
 
-    /// Why the layout that was open for editing could not be read when the
-    /// configuration loaded; the editor then started from a fresh layout.
-    pub fn layout_load_error(&self) -> Option<&ConfigError> {
-        self.layout_load_error.as_ref()
+    /// Why the profile that was open for editing could not be read when the
+    /// configuration loaded; the editor then started from a fresh profile.
+    pub fn profile_load_error(&self) -> Option<&ConfigError> {
+        self.profile_load_error.as_ref()
     }
 
     pub fn paths(&self) -> &StoragePaths {
@@ -135,16 +135,16 @@ impl ConfigDocument {
         &self.settings
     }
 
-    pub fn layout(&self) -> &LayoutPreset {
-        &self.layout
+    pub fn profile(&self) -> &ProfilePreset {
+        &self.profile
     }
 
-    /// Settings and the current layout combined.
+    /// Settings and the current profile combined.
     pub fn config(&self) -> ResolvedAppConfig {
         ResolvedAppConfig::from_parts(
             self.settings.clone(),
-            self.layout.clone(),
-            self.settings.editing_layout_id.as_deref(),
+            self.profile.clone(),
+            self.settings.editing_profile_id.as_deref(),
         )
     }
 
@@ -174,7 +174,7 @@ impl ConfigDocument {
         self.update_settings(|settings| settings.locale = locale)
     }
 
-    /// Stage settings and layout changes, saving settings only after the
+    /// Stage settings and profile changes, saving settings only after the
     /// entire callback succeeds. Library writes and autostart refresh are
     /// separate operations and are rejected inside a transaction.
     pub fn transaction<T>(
@@ -193,7 +193,7 @@ impl ConfigDocument {
     }
 
     pub(crate) fn require_external_operation(&self) -> Result<(), ConfigError> {
-        if self.staged || self.layout_only {
+        if self.staged || self.profile_only {
             Err(ConfigError::Invalid(
                 "external operation is not allowed inside a document transaction".into(),
             ))
@@ -206,9 +206,9 @@ impl ConfigDocument {
         &mut self,
         edit: impl FnOnce(&mut AppSettings),
     ) -> Result<(), ConfigError> {
-        if self.layout_only {
+        if self.profile_only {
             return Err(ConfigError::Invalid(
-                "settings cannot change inside a layout edit".into(),
+                "settings cannot change inside a profile edit".into(),
             ));
         }
         let mut updated = self.settings.clone();
@@ -262,24 +262,24 @@ impl ConfigDocument {
     }
 
     pub fn base_tap_action(&self, key: &str) -> Option<&str> {
-        self.layout.base_tap_action(key)
+        self.profile.base_tap_action(key)
     }
 
     pub fn set_base_tap_action(&mut self, key: &str, action: &str) -> Result<(), ConfigError> {
         if let Some(issue) = actions::validate(&Action::parse(Some(action)), &self.config()) {
             return Err(ConfigError::InvalidAction(issue));
         }
-        if !self.layout.base_tap_editable(key) {
+        if !self.profile.base_tap_editable(key) {
             return Err(ConfigError::Invalid(format!(
                 "key {key} has a rule that requires the full editor"
             )));
         }
-        self.update_layout(|layout| layout.set_base_tap(key, action))
+        self.update_profile(|profile| profile.set_base_tap(key, action))
     }
 
     /// Trimmed `name` for a new layer or for renaming layer `except`.
     pub fn layer_name(&self, name: &str, except: Option<&str>) -> Result<String, ConfigError> {
-        names::layer_name(&self.layout, name, except)
+        names::layer_name(&self.profile, name, except)
             .map_err(|issue| ConfigError::Name(NameKind::Layer, issue))
     }
 
@@ -296,8 +296,8 @@ impl ConfigDocument {
 
     pub fn create_layer(&mut self, name: &str, description: &str) -> Result<String, ConfigError> {
         let name = self.layer_name(name, None)?;
-        let id = crate::profile::ids::generate("layer-");
-        self.update_layout(|layout| layout.add_layer(&id, name, optional_text(description)))?;
+        let id = crate::config::ids::generate("layer-");
+        self.update_profile(|profile| profile.add_layer(&id, name, optional_text(description)))?;
         Ok(id)
     }
 
@@ -309,15 +309,15 @@ impl ConfigDocument {
     ) -> Result<(), ConfigError> {
         let name = self.layer_name(name, Some(id))?;
         self.require_layer(id)?;
-        self.update_layout(|layout| layout.rename_layer(id, name, optional_text(description)))
+        self.update_profile(|profile| profile.rename_layer(id, name, optional_text(description)))
     }
 
     /// Change only the name, keeping the stored description.
     pub fn set_layer_name(&mut self, id: &str, name: &str) -> Result<(), ConfigError> {
         let name = self.layer_name(name, Some(id))?;
         self.require_layer(id)?;
-        self.update_layout(|layout| {
-            if let Some(layer) = layout.layers.iter_mut().find(|layer| layer.id == id) {
+        self.update_profile(|profile| {
+            if let Some(layer) = profile.layers.iter_mut().find(|layer| layer.id == id) {
                 layer.name = name;
             }
         })
@@ -332,8 +332,8 @@ impl ConfigDocument {
     ) -> Result<(), ConfigError> {
         self.require_layer(id)?;
         let description = optional_text(description);
-        self.update_layout(|layout| {
-            if let Some(layer) = layout.layers.iter_mut().find(|layer| layer.id == id) {
+        self.update_profile(|profile| {
+            if let Some(layer) = profile.layers.iter_mut().find(|layer| layer.id == id) {
                 layer.description = description;
             }
         })
@@ -347,21 +347,21 @@ impl ConfigDocument {
     ) -> Result<String, ConfigError> {
         let name = self.layer_name(name, None)?;
         self.require_layer(source_id)?;
-        let id = crate::profile::ids::generate("layer-");
-        self.update_layout(|layout| {
-            layout.clone_layer(source_id, &id, name, optional_text(description))
+        let id = crate::config::ids::generate("layer-");
+        self.update_profile(|profile| {
+            profile.clone_layer(source_id, &id, name, optional_text(description))
         })?;
         Ok(id)
     }
 
     pub fn delete_layer(&mut self, id: &str) -> Result<(), ConfigError> {
         self.require_layer(id)?;
-        self.update_layout(|layout| layout.remove_layer(id))
+        self.update_profile(|profile| profile.remove_layer(id))
     }
 
     pub fn clear_layer_keys(&mut self, id: &str) -> Result<(), ConfigError> {
         self.require_layer(id)?;
-        self.update_layout(|layout| layout.clear_layer_keys(id))
+        self.update_profile(|profile| profile.clear_layer_keys(id))
     }
 
     /// Save the displayed additional-key order after a drag operation.
@@ -378,11 +378,11 @@ impl ConfigDocument {
         }
         let key = keys.remove(from);
         keys.insert(to, key);
-        self.update_layout(|layout| layout.get_or_create_layer_keymap(id).extra_key_order = keys)
+        self.update_profile(|profile| profile.get_or_create_layer_keymap(id).extra_key_order = keys)
     }
 
     fn require_layer(&self, id: &str) -> Result<(), ConfigError> {
-        if self.layout.has_layer(id) {
+        if self.profile.has_layer(id) {
             Ok(())
         } else {
             Err(ConfigError::Invalid("unknown layer".into()))
@@ -391,7 +391,7 @@ impl ConfigDocument {
 
     /// Entry of `key` in the keymap of `layer_id`.
     pub fn layer_key(&self, layer_id: &str, key: &str) -> KeyAssignment {
-        self.layout.layer_key(layer_id, key)
+        self.profile.layer_key(layer_id, key)
     }
 
     pub fn set_layer_key(
@@ -400,13 +400,13 @@ impl ConfigDocument {
         key: &str,
         assignment: KeyAssignment,
     ) -> Result<(), ConfigError> {
-        if !self.layout.has_layer(layer_id) {
+        if !self.profile.has_layer(layer_id) {
             return Err(ConfigError::Invalid(format!(
                 "unknown layer \"{layer_id}\""
             )));
         }
         self.check_assignment(&assignment)?;
-        self.update_layout(|layout| layout.set_layer_key(layer_id, key, assignment))
+        self.update_profile(|profile| profile.set_layer_key(layer_id, key, assignment))
     }
 
     /// Set an additional key of `layer_id`, replacing the row of `previous`
@@ -420,7 +420,7 @@ impl ConfigDocument {
     ) -> Result<(), ConfigError> {
         self.check_extra_key(layer_id, previous, key)?;
         self.check_assignment(&assignment)?;
-        self.update_layout(|layout| layout.set_extra_key(layer_id, previous, key, assignment))
+        self.update_profile(|profile| profile.set_extra_key(layer_id, previous, key, assignment))
     }
 
     /// Whether `key` can be the extra key row of `layer_id` that replaces
@@ -438,7 +438,7 @@ impl ConfigDocument {
         if layer_grid::contains(key) {
             return Err(ConfigError::ExtraKey(ExtraKeyIssue::OnGrid));
         }
-        if previous != Some(key) && self.layout.layer_has_key(layer_id, key) {
+        if previous != Some(key) && self.profile.layer_has_key(layer_id, key) {
             return Err(ConfigError::ExtraKey(ExtraKeyIssue::Taken));
         }
         Ok(())
@@ -447,7 +447,7 @@ impl ConfigDocument {
     /// Whether `key` of `layer_id` keeps its modifiers pressed until the
     /// layer is released.
     pub fn layer_key_holds_modifiers(&self, layer_id: &str, key: &str) -> bool {
-        self.layout.layer_key_holds_modifiers(layer_id, key)
+        self.profile.layer_key_holds_modifiers(layer_id, key)
     }
 
     /// Keep the modifiers of `key`'s keystroke pressed until the layer is
@@ -467,7 +467,7 @@ impl ConfigDocument {
         if self.layer_key_holds_modifiers(layer_id, key) == hold {
             return Ok(());
         }
-        self.update_layout(|layout| layout.set_layer_key_holds_modifiers(layer_id, key, hold))
+        self.update_profile(|profile| profile.set_layer_key_holds_modifiers(layer_id, key, hold))
     }
 
     fn check_assignment(&self, assignment: &KeyAssignment) -> Result<(), ConfigError> {
@@ -489,105 +489,108 @@ impl ConfigDocument {
         if a == b {
             return Ok(());
         }
-        self.update_layout(|layout| layout.swap_layer_keys(layer_id, a, b))
+        self.update_profile(|profile| profile.swap_layer_keys(layer_id, a, b))
     }
 
-    /// Stage commands and a layout-only edit, committing the working copy only
+    /// Stage commands and a profile-only edit, committing the working copy only
     /// when every operation succeeds. The callback must not change settings or files.
-    pub fn edit_layout_with_commands<T>(
+    pub fn edit_profile_with_commands<T>(
         &mut self,
-        commands: impl IntoIterator<Item = crate::profile::model::Command>,
+        commands: impl IntoIterator<Item = crate::config::model::Command>,
         edit: impl FnOnce(&mut Self) -> Result<T, ConfigError>,
     ) -> Result<T, ConfigError> {
         let mut draft = Self {
             paths: self.paths.clone(),
             staged: self.staged,
-            layout_only: true,
+            profile_only: true,
             settings: self.settings.clone(),
-            layout: self.layout.clone(),
-            layout_load_error: self.layout_load_error.clone(),
+            profile: self.profile.clone(),
+            profile_load_error: self.profile_load_error.clone(),
         };
         for command in commands {
             draft.save_command(command)?;
         }
         let result = edit(&mut draft)?;
-        self.layout = draft.layout;
+        self.profile = draft.profile;
         Ok(result)
     }
 
-    /// Apply `edit` to a copy of the current layout.
-    pub fn update_layout(
+    /// Apply `edit` to a copy of the current profile.
+    pub fn update_profile(
         &mut self,
-        edit: impl FnOnce(&mut LayoutPreset),
+        edit: impl FnOnce(&mut ProfilePreset),
     ) -> Result<(), ConfigError> {
-        let mut candidate = self.layout.clone();
+        let mut candidate = self.profile.clone();
         edit(&mut candidate);
-        crate::profile::ids::validate_layout(&candidate).map_err(ConfigError::Invalid)?;
-        crate::profile::timing::validate_layout(&candidate).map_err(ConfigError::Invalid)?;
+        crate::config::ids::validate_profile(&candidate).map_err(ConfigError::Invalid)?;
+        crate::config::timing::validate_profile(&candidate).map_err(ConfigError::Invalid)?;
 
-        self.layout = candidate;
+        self.profile = candidate;
         Ok(())
     }
 
-    /// Ids (`user:<name>`) of the layouts in the user library.
-    pub fn layout_ids(&self) -> Result<Vec<String>, ConfigError> {
+    /// Ids (`user:<name>`) of the profiles in the user library.
+    pub fn profile_ids(&self) -> Result<Vec<String>, ConfigError> {
         Ok(self
             .paths
-            .list_user_layouts()
+            .list_user_profiles()
             .map_err(ConfigError::Io)?
             .into_iter()
-            .map(|name| crate::profile::model::user_layout_id(&name))
+            .map(|name| crate::config::model::user_profile_id(&name))
             .collect())
     }
 
-    pub fn load_layout(&self, id: &str) -> Result<LayoutPreset, ConfigError> {
-        let name = crate::profile::model::user_layout_name(id)
-            .ok_or_else(|| ConfigError::Invalid(format!("unknown layout id \"{id}\"")))?;
-        let text = self.paths.load_user_layout(name).map_err(ConfigError::Io)?;
-        parse_layout(&text)
+    pub fn load_profile(&self, id: &str) -> Result<ProfilePreset, ConfigError> {
+        let name = crate::config::model::user_profile_name(id)
+            .ok_or_else(|| ConfigError::Invalid(format!("unknown profile id \"{id}\"")))?;
+        let text = self
+            .paths
+            .load_user_profile(name)
+            .map_err(ConfigError::Io)?;
+        parse_profile(&text)
     }
 }
 
-fn load_current_layout(paths: &StoragePaths, id: &str) -> Result<LayoutPreset, ConfigError> {
-    let name = crate::profile::model::user_layout_name(id)
-        .ok_or_else(|| ConfigError::Invalid(format!("unknown layout id \"{id}\"")))?;
-    parse_layout(&paths.load_user_layout(name).map_err(ConfigError::Io)?)
+fn load_current_profile(paths: &StoragePaths, id: &str) -> Result<ProfilePreset, ConfigError> {
+    let name = crate::config::model::user_profile_name(id)
+        .ok_or_else(|| ConfigError::Invalid(format!("unknown profile id \"{id}\"")))?;
+    parse_profile(&paths.load_user_profile(name).map_err(ConfigError::Io)?)
 }
 
 fn optional_text(value: &str) -> Option<String> {
     (!value.trim().is_empty()).then(|| value.trim().to_owned())
 }
 
-pub(crate) fn parse_layout(text: &str) -> Result<LayoutPreset, ConfigError> {
-    layout_file::parse(text)
+pub(crate) fn parse_profile(text: &str) -> Result<ProfilePreset, ConfigError> {
+    profile_file::parse(text)
         .map_err(ConfigError::Parse)?
-        .ok_or_else(|| ConfigError::Parse("empty layout file".into()))
+        .ok_or_else(|| ConfigError::Parse("empty profile file".into()))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::profile::auto_switch::AutoSwitchContext;
-    use crate::profile::diagnostics::RuleIssueCode;
-    use crate::profile::model::LayoutMode;
+    use crate::config::auto_switch::AutoSwitchContext;
+    use crate::config::diagnostics::RuleIssueCode;
+    use crate::config::model::ProfileMode;
     use serde_json::{Value, json};
     use std::fs;
 
-    const LAYOUT: &str = r#"{"version": 1, "layers": [{"id": "nav", "name": "Navigation", "keys": {"KeyH": "ArrowLeft"}}], "rules": [{"key": "CapsLock", "hold": {"layer": "nav"}, "tap": "Escape"}]}"#;
+    const PROFILE: &str = r#"{"version": 1, "layers": [{"id": "nav", "name": "Navigation", "keys": {"KeyH": "ArrowLeft"}}], "rules": [{"key": "CapsLock", "hold": {"layer": "nav"}, "tap": "Escape"}]}"#;
 
-    /// A document whose edited and active layout is `layout`, saved as
-    /// `Test` unless `state.editedLayout` names another one.
-    fn document(mut settings: Value, layout: &str) -> (tempfile::TempDir, ConfigDocument) {
+    /// A document whose edited and active profile is `profile`, saved as
+    /// `Test` unless `state.editedProfile` names another one.
+    fn document(mut settings: Value, profile: &str) -> (tempfile::TempDir, ConfigDocument) {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         settings["version"] = json!(1);
-        if settings["state"]["editedLayout"].is_null() {
-            settings["state"]["editedLayout"] = json!("user:Test");
+        if settings["state"]["editedProfile"].is_null() {
+            settings["state"]["editedProfile"] = json!("user:Test");
         }
-        if settings["settings"]["layouts"]["manual"].is_null() {
-            settings["settings"]["layouts"]["manual"] = settings["state"]["editedLayout"].clone();
+        if settings["settings"]["profiles"]["manual"].is_null() {
+            settings["settings"]["profiles"]["manual"] = settings["state"]["editedProfile"].clone();
         }
-        let name = settings["state"]["editedLayout"]
+        let name = settings["state"]["editedProfile"]
             .as_str()
             .unwrap()
             .strip_prefix("user:")
@@ -595,12 +598,12 @@ mod tests {
         paths
             .save_config(&serde_json::to_string_pretty(&settings).unwrap())
             .unwrap();
-        paths.save_user_layout(name, layout, true).unwrap();
+        paths.save_user_profile(name, profile, true).unwrap();
         (dir, ConfigDocument::load(paths).unwrap())
     }
 
     #[test]
-    fn commands_and_assignments_commit_together_or_leave_the_layout_unchanged() {
+    fn commands_and_assignments_commit_together_or_leave_the_profile_unchanged() {
         let dir = tempfile::tempdir().unwrap();
         let mut document = ConfigDocument::load(StoragePaths::new(
             dir.path().join("config"),
@@ -610,15 +613,15 @@ mod tests {
         document
             .update_settings(|settings| settings.commands_enabled = true)
             .unwrap();
-        let command = crate::profile::model::Command {
+        let command = crate::config::model::Command {
             id: "cmd-test".into(),
             name: "Test".into(),
             posix_script: "true".into(),
             powershell_script: "exit 0".into(),
             working_directory: None,
         };
-        let before = document.layout().clone();
-        let failed = document.edit_layout_with_commands([command.clone()], |config| {
+        let before = document.profile().clone();
+        let failed = document.edit_profile_with_commands([command.clone()], |config| {
             config.set_base_tap_action("KeyA", "cmd:cmd-test")?;
             config.set_layer_key(
                 "missing",
@@ -627,32 +630,32 @@ mod tests {
             )
         });
         assert!(failed.is_err());
-        assert_eq!(document.layout(), &before);
+        assert_eq!(document.profile(), &before);
         document
-            .edit_layout_with_commands([command.clone()], |config| {
+            .edit_profile_with_commands([command.clone()], |config| {
                 config.set_base_tap_action("KeyA", "cmd:cmd-test")
             })
             .unwrap();
         assert_eq!(
-            document.layout().commands.as_slice(),
+            document.profile().commands.as_slice(),
             std::slice::from_ref(&command)
         );
         assert_eq!(document.base_tap_action("KeyA"), Some("cmd:cmd-test"));
-        let before = document.layout().clone();
+        let before = document.profile().clone();
         let mut edited = command;
         edited.posix_script = "false".into();
         assert!(
             document
-                .edit_layout_with_commands([edited], |config| {
+                .edit_profile_with_commands([edited], |config| {
                     config.set_layer_key("missing", "KeyB", KeyAssignment::Swallow)
                 })
                 .is_err()
         );
-        assert_eq!(document.layout(), &before);
+        assert_eq!(document.profile(), &before);
     }
 
     #[test]
-    fn a_missing_or_damaged_edited_layout_keeps_the_settings_usable() {
+    fn a_missing_or_damaged_edited_profile_keeps_the_settings_usable() {
         for damage in ["delete", "corrupt"] {
             let dir = tempfile::tempdir().unwrap();
             let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
@@ -660,41 +663,41 @@ mod tests {
                 .save_config(
                     &serde_json::to_string(&json!({
                         "version": 1,
-                        "state": {"editedLayout": "user:Test"},
-                        "settings": {"layouts": {"manual": "user:Test"}, "appearance": "dark"}
+                        "state": {"editedProfile": "user:Test"},
+                        "settings": {"profiles": {"manual": "user:Test"}, "appearance": "dark"}
                     }))
                     .unwrap(),
                 )
                 .unwrap();
-            paths.save_user_layout("Test", LAYOUT, true).unwrap();
+            paths.save_user_profile("Test", PROFILE, true).unwrap();
             match damage {
-                "delete" => paths.delete_user_layout("Test").unwrap(),
-                _ => fs::write(paths.layout_path("Test").unwrap(), "{ not json").unwrap(),
+                "delete" => paths.delete_user_profile("Test").unwrap(),
+                _ => fs::write(paths.profile_path("Test").unwrap(), "{ not json").unwrap(),
             }
 
             let mut document = ConfigDocument::load(paths.clone()).unwrap();
-            assert!(document.layout_load_error().is_some(), "{damage}");
+            assert!(document.profile_load_error().is_some(), "{damage}");
             assert_eq!(document.settings().appearance, Appearance::Dark);
-            assert_eq!(document.settings().editing_layout_id, None);
-            // Saving settings and the fresh layout never touches the broken file.
+            assert_eq!(document.settings().editing_profile_id, None);
+            // Saving settings and the fresh profile never touches the broken file.
             document
                 .update_settings(|settings| settings.default_hold_timeout_ms = 300)
                 .unwrap();
             if damage == "corrupt" {
                 assert_eq!(
-                    fs::read_to_string(paths.layout_path("Test").unwrap()).unwrap(),
+                    fs::read_to_string(paths.profile_path("Test").unwrap()).unwrap(),
                     "{ not json"
                 );
             }
             let reloaded = ConfigDocument::load(paths).unwrap();
-            assert!(reloaded.layout_load_error().is_none());
+            assert!(reloaded.profile_load_error().is_none());
             assert_eq!(reloaded.settings().default_hold_timeout_ms, 300);
         }
     }
 
     #[test]
     fn invalid_identity_and_timing_edits_are_atomic() {
-        let (_dir, mut document) = document(json!({}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), PROFILE);
         let original = document.config();
         let original_file = document.paths().load_config().unwrap();
         assert!(
@@ -706,22 +709,22 @@ mod tests {
         assert_eq!(document.paths().load_config().unwrap(), original_file);
         assert!(
             document
-                .update_layout(|layout| layout.rules.push(layout.rules[0].clone()))
+                .update_profile(|profile| profile.rules.push(profile.rules[0].clone()))
                 .is_err()
         );
         assert_eq!(document.config(), original);
         assert!(
             document
-                .update_layout(|layout| layout.rules[0].hold_timeout_ms = Some(u64::MAX))
+                .update_profile(|profile| profile.rules[0].hold_timeout_ms = Some(u64::MAX))
                 .is_err()
         );
         assert_eq!(document.config(), original);
         assert!(
             document
                 .update_settings(|settings| {
-                    let item = crate::profile::model::AutoRule {
+                    let item = crate::config::model::AutoRule {
                         id: "duplicate".into(),
-                        layout_id: None,
+                        profile_id: None,
                         enabled: true,
                         conditions: Default::default(),
                     };
@@ -734,34 +737,34 @@ mod tests {
     }
 
     #[test]
-    fn non_rule_errors_block_runtime_without_rewriting_the_layout() {
+    fn non_rule_errors_block_runtime_without_rewriting_the_profile() {
         for content in [
             r#"{"version":1,"layers":[{"id":"nav","keys":{"KeyA":"macro:missing"}}]}"#,
             r#"{"version":1,"macros":[{"id":"m","steps":["macro:m"]}]}"#,
             r#"{"version":1,"quickMenuPages":[{"cells":{"KeyQ":"cmd:missing"}}]}"#,
         ] {
             let (_dir, document) = document(
-                json!({"settings":{"layouts":{"manual":"user:Test"}}}),
+                json!({"settings":{"profiles":{"manual":"user:Test"}}}),
                 content,
             );
-            let before = document.paths().load_user_layout("Test").unwrap();
+            let before = document.paths().load_user_profile("Test").unwrap();
             assert!(matches!(
                 document.runtime_config(&AutoSwitchContext::default()),
                 Err(ConfigError::Rules(_))
             ));
-            assert_eq!(document.paths().load_user_layout("Test").unwrap(), before);
+            assert_eq!(document.paths().load_user_profile("Test").unwrap(), before);
         }
     }
 
     #[test]
-    fn reads_settings_and_layout_from_their_own_files() {
+    fn reads_settings_and_profile_from_their_own_files() {
         let (_dir, document) = document(
             json!({"settings": {"devices": {"keyboards": ["/dev/input/by-id/kbd"]}, "appearance": "dark"}}),
-            LAYOUT,
+            PROFILE,
         );
         assert_eq!(document.input_device(), Some("/dev/input/by-id/kbd"));
         assert_eq!(document.settings().appearance, Appearance::Dark);
-        assert_eq!(document.layout().rules.len(), 1);
+        assert_eq!(document.profile().rules.len(), 1);
         let config = document.config();
         assert_eq!(
             config.layer_keymaps["nav"].keys["KeyH"].as_deref(),
@@ -772,7 +775,7 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn launch_on_startup_follows_the_system_registration() {
-        let (dir, mut document) = document(json!({}), LAYOUT);
+        let (dir, mut document) = document(json!({}), PROFILE);
         let entry = dir
             .path()
             .join("autostart/dev.bozonx.left-hand-control.desktop");
@@ -801,10 +804,10 @@ mod tests {
     }
 
     #[test]
-    fn settings_edit_leaves_layout_alone() {
-        let (_dir, mut document) = document(json!({}), LAYOUT);
-        let layout_before =
-            fs::read_to_string(document.paths.layouts_dir().join("Test.json")).unwrap();
+    fn settings_edit_leaves_profile_alone() {
+        let (_dir, mut document) = document(json!({}), PROFILE);
+        let profile_before =
+            fs::read_to_string(document.paths.profiles_dir().join("Test.json")).unwrap();
         document.set_input_device("/dev/input/by-id/other").unwrap();
         document.set_locale(LocalePreference::English).unwrap();
         let saved: Value =
@@ -818,8 +821,8 @@ mod tests {
         assert_eq!(saved["settings"]["locale"], "en");
         assert!(saved.get("rules").is_none());
         assert_eq!(
-            fs::read_to_string(document.paths.layouts_dir().join("Test.json")).unwrap(),
-            layout_before
+            fs::read_to_string(document.paths.profiles_dir().join("Test.json")).unwrap(),
+            profile_before
         );
     }
 
@@ -853,7 +856,7 @@ mod tests {
             .paths
             .save_config(
                 &json!({"version": 1, "settings": {"appearance": "dark"},
-                    "state": {"editedLayout": "user:Test"}})
+                    "state": {"editedProfile": "user:Test"}})
                 .to_string(),
             )
             .unwrap();
@@ -863,7 +866,7 @@ mod tests {
 
     #[test]
     fn settings_batch_overwrites_external_changes() {
-        let (_dir, mut document) = document(json!({}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), PROFILE);
         document
             .update_settings(|settings| {
                 settings.default_hold_timeout_ms = 350;
@@ -893,22 +896,22 @@ mod tests {
 
     #[test]
     fn base_tap_edit_preserves_other_rules_and_rejects_complex_rules() {
-        let (_dir, mut document) = document(json!({}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), PROFILE);
         document.set_base_tap_action("KeyA", "Ctrl+KeyC").unwrap();
         assert_eq!(document.base_tap_action("KeyA"), Some("Ctrl+KeyC"));
-        assert_eq!(document.layout().rules.len(), 2);
+        assert_eq!(document.profile().rules.len(), 2);
         document.set_base_tap_action("KeyA", "Ctrl+KeyV").unwrap();
         assert_eq!(document.base_tap_action("KeyA"), Some("Ctrl+KeyV"));
-        assert_eq!(document.layout().rules.len(), 2);
+        assert_eq!(document.profile().rules.len(), 2);
         assert!(document.set_base_tap_action("CapsLock", "KeyB").is_err());
-        assert_eq!(document.layout().rules.len(), 2);
+        assert_eq!(document.profile().rules.len(), 2);
         let reloaded = ConfigDocument::load(document.paths().clone()).unwrap();
         assert_eq!(reloaded.base_tap_action("KeyA"), None);
     }
 
     #[test]
-    fn additional_key_order_survives_saved_layout_reload() {
-        let (_dir, mut document) = document(json!({}), LAYOUT);
+    fn additional_key_order_survives_saved_profile_reload() {
+        let (_dir, mut document) = document(json!({}), PROFILE);
         for key in ["F13", "F14", "F15"] {
             document
                 .set_layer_key("nav", key, KeyAssignment::Swallow)
@@ -917,27 +920,27 @@ mod tests {
         document
             .reorder_extra_keys("nav", vec!["F13".into(), "F14".into(), "F15".into()], 0, 2)
             .unwrap();
-        document.save_current_layout_as("Ordered").unwrap();
+        document.save_current_profile_as("Ordered").unwrap();
         let restarted = ConfigDocument::load(document.paths.clone()).unwrap();
         assert_eq!(
-            restarted.layout().layer_keymaps["nav"].extra_key_order,
+            restarted.profile().layer_keymaps["nav"].extra_key_order,
             ["F14", "F15", "F13"]
         );
         document
             .set_layer_key("nav", "F15", KeyAssignment::Transparent)
             .unwrap();
         assert_eq!(
-            document.layout().layer_keymaps["nav"].extra_key_order,
+            document.profile().layer_keymaps["nav"].extra_key_order,
             ["F14", "F13"]
         );
         let copy = document.clone_layer("nav", "Copy", "").unwrap();
         assert_eq!(
-            document.layout().layer_keymaps[&copy].extra_key_order,
+            document.profile().layer_keymaps[&copy].extra_key_order,
             ["F14", "F13"]
         );
         document.clear_layer_keys("nav").unwrap();
         assert!(
-            document.layout().layer_keymaps["nav"]
+            document.profile().layer_keymaps["nav"]
                 .extra_key_order
                 .is_empty()
         );
@@ -945,7 +948,7 @@ mod tests {
 
     #[test]
     fn extra_keys_are_validated_and_keep_their_position() {
-        let (_dir, mut document) = document(json!({}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), PROFILE);
         for key in ["F13", "F14"] {
             document
                 .set_extra_key("nav", None, key, KeyAssignment::Swallow)
@@ -982,21 +985,21 @@ mod tests {
                 KeyAssignment::Action("F1".into()),
             )
             .unwrap();
-        let map = &document.layout().layer_keymaps["nav"];
+        let map = &document.profile().layer_keymaps["nav"];
         assert_eq!(map.extra_key_order, ["F14", "F16"]);
         assert_eq!(map.keys["F16"].as_deref(), Some("F1"));
         assert!(!map.keys.contains_key("F13"));
         document
             .set_extra_key("nav", Some("F16"), "F16", KeyAssignment::Transparent)
             .unwrap();
-        let map = &document.layout().layer_keymaps["nav"];
+        let map = &document.profile().layer_keymaps["nav"];
         assert_eq!(map.extra_key_order, ["F14"]);
         assert!(!map.keys.contains_key("F16"));
     }
 
     #[test]
     fn extra_key_errors_name_the_problem() {
-        let (_dir, mut document) = document(json!({}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), PROFILE);
         document
             .set_extra_key("nav", None, "F13", KeyAssignment::Swallow)
             .unwrap();
@@ -1022,7 +1025,7 @@ mod tests {
 
     #[test]
     fn free_layer_names_get_a_number() {
-        let (_dir, mut document) = document(json!({}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), PROFILE);
         assert_eq!(document.free_layer_name("Copy"), "Copy");
         assert_eq!(document.free_layer_name("Navigation"), "Navigation 2");
         document.create_layer("Navigation 2", "").unwrap();
@@ -1031,39 +1034,39 @@ mod tests {
 
     #[test]
     fn description_is_saved_even_when_the_stored_name_is_invalid() {
-        let (_dir, mut document) = document(json!({}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), PROFILE);
         document
-            .update_layout(|layout| layout.layers[0].name = String::new())
+            .update_profile(|profile| profile.layers[0].name = String::new())
             .unwrap();
         assert!(document.rename_layer("nav", "", "Arrows").is_err());
         document.set_layer_description("nav", " Arrows ").unwrap();
         assert_eq!(
-            document.layout().layers[0].description.as_deref(),
+            document.profile().layers[0].description.as_deref(),
             Some("Arrows")
         );
         document.set_layer_description("nav", "  ").unwrap();
-        assert_eq!(document.layout().layers[0].description, None);
+        assert_eq!(document.profile().layers[0].description, None);
         assert!(document.set_layer_description("missing", "x").is_err());
     }
 
     #[test]
     fn renaming_keeps_the_description_and_validates_the_name() {
-        let (_dir, mut document) = document(json!({}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), PROFILE);
         document.set_layer_description("nav", "Arrows").unwrap();
         document.set_layer_name("nav", " Moves ").unwrap();
-        assert_eq!(document.layout().layers[0].name, "Moves");
+        assert_eq!(document.profile().layers[0].name, "Moves");
         assert_eq!(
-            document.layout().layers[0].description.as_deref(),
+            document.profile().layers[0].description.as_deref(),
             Some("Arrows")
         );
         assert!(document.set_layer_name("nav", " ").is_err());
         assert!(document.set_layer_name("missing", "Other").is_err());
-        assert_eq!(document.layout().layers[0].name, "Moves");
+        assert_eq!(document.profile().layers[0].name, "Moves");
     }
 
     #[test]
     fn swapping_layer_keys_exchanges_actions_and_suppression() {
-        let (_dir, mut document) = document(json!({}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), PROFILE);
         document
             .set_layer_key("nav", "KeyJ", KeyAssignment::Swallow)
             .unwrap();
@@ -1087,7 +1090,7 @@ mod tests {
 
     #[test]
     fn held_modifiers_follow_their_key_and_need_an_action() {
-        let (_dir, mut document) = document(json!({}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), PROFILE);
         let holds = |document: &ConfigDocument, key| document.layer_key_holds_modifiers("nav", key);
         assert!(
             document
@@ -1129,7 +1132,7 @@ mod tests {
 
     #[test]
     fn layer_keys_remain_in_memory_until_explicitly_saved() {
-        let (_dir, mut document) = document(json!({}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), PROFILE);
         document
             .set_layer_key("nav", "KeyJ", KeyAssignment::Action("ArrowDown".into()))
             .unwrap();
@@ -1165,7 +1168,7 @@ mod tests {
             KeyAssignment::Transparent
         );
         assert_eq!(
-            reloaded.layout().rules[0].tap_action.as_deref(),
+            reloaded.profile().rules[0].tap_action.as_deref(),
             Some("Escape")
         );
         assert!(
@@ -1177,12 +1180,12 @@ mod tests {
     }
 
     #[test]
-    fn manual_settings_changes_require_restart_and_do_not_block_layout_edits() {
-        let (_dir, mut document) = document(json!({"settings": {"appearance": "dark"}}), LAYOUT);
+    fn manual_settings_changes_require_restart_and_do_not_block_profile_edits() {
+        let (_dir, mut document) = document(json!({"settings": {"appearance": "dark"}}), PROFILE);
         document
             .paths
             .save_config(
-                r#"{"version":1,"settings":{"appearance":"light"},"state":{"editedLayout":"user:Test"}}"#,
+                r#"{"version":1,"settings":{"appearance":"light"},"state":{"editedProfile":"user:Test"}}"#,
             )
             .unwrap();
         document
@@ -1199,16 +1202,16 @@ mod tests {
 
     #[test]
     fn session_edits_do_not_touch_disk() {
-        let (_dir, mut document) = document(json!({}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), PROFILE);
         let paths = document.paths().clone();
-        let saved = paths.load_user_layout("Test").unwrap();
+        let saved = paths.load_user_profile("Test").unwrap();
         document.set_base_tap_action("KeyA", "Enter").unwrap();
         document.set_locale(LocalePreference::English).unwrap();
-        assert_eq!(paths.load_user_layout("Test").unwrap(), saved);
+        assert_eq!(paths.load_user_profile("Test").unwrap(), saved);
         let restarted = ConfigDocument::load(paths.clone()).unwrap();
         assert_eq!(restarted.base_tap_action("KeyA"), None);
         assert_eq!(restarted.settings().locale, LocalePreference::English);
-        document.save_current_layout_as("Saved").unwrap();
+        document.save_current_profile_as("Saved").unwrap();
         document.set_base_tap_action("KeyA", "Tab").unwrap();
         let restarted = ConfigDocument::load(paths).unwrap();
         assert_eq!(restarted.base_tap_action("KeyA"), Some("Enter"));
@@ -1220,19 +1223,19 @@ mod tests {
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let document = ConfigDocument::load(paths).unwrap();
         assert_eq!(document.input_device(), None);
-        assert_eq!(document.layout(), &LayoutPreset::initial());
+        assert_eq!(document.profile(), &ProfilePreset::initial());
     }
 
     #[test]
     fn runtime_config_reports_whether_titles_are_needed() {
         let (_dir, mut document) = document(
-            json!({"settings": {"layouts": {"manual": "user:Other"}}, "state": {"editedLayout": "user:Main"}}),
-            LAYOUT,
+            json!({"settings": {"profiles": {"manual": "user:Other"}}, "state": {"editedProfile": "user:Main"}}),
+            PROFILE,
         );
         let save = |document: &ConfigDocument, rules: &str| {
             document
                 .paths
-                .save_user_layout(
+                .save_user_profile(
                     "Other",
                     &format!("{{\"version\":1,\"rules\":{rules}}}"),
                     true,
@@ -1264,11 +1267,11 @@ mod tests {
         // Auto rules count only in auto mode.
         document
             .update_settings(|settings| {
-                settings.auto_rules = vec![crate::profile::model::AutoRule {
+                settings.auto_rules = vec![crate::config::model::AutoRule {
                     id: "r".into(),
                     enabled: true,
-                    layout_id: None,
-                    conditions: crate::profile::model::LayoutConditionSet {
+                    profile_id: None,
+                    conditions: crate::config::model::ProfileConditionSet {
                         window_patterns: vec!["title:YouTube".into()],
                         ..Default::default()
                     },
@@ -1277,7 +1280,7 @@ mod tests {
             .unwrap();
         assert!(!uses_titles(&document));
         document
-            .update_settings(|settings| settings.layout_mode = LayoutMode::Auto)
+            .update_settings(|settings| settings.profile_mode = ProfileMode::Auto)
             .unwrap();
         assert!(uses_titles(&document));
         document
@@ -1287,25 +1290,25 @@ mod tests {
     }
 
     #[test]
-    fn runtime_config_uses_the_active_library_layout() {
+    fn runtime_config_uses_the_active_library_profile() {
         let (_dir, mut document) = document(
-            json!({"settings": {"layouts": {"manual": "user:Other"}}, "state": {"editedLayout": "user:Main"}}),
-            LAYOUT,
+            json!({"settings": {"profiles": {"manual": "user:Other"}}, "state": {"editedProfile": "user:Main"}}),
+            PROFILE,
         );
         document
             .paths
-            .save_user_layout("Other", r#"{"version": 1, "rules": [{"key": "KeyA", "tap": "KeyB"}, {"key": "KeyC", "enabled": false, "tap": "KeyD"}]}"#, true)
+            .save_user_profile("Other", r#"{"version": 1, "rules": [{"key": "KeyA", "tap": "KeyB"}, {"key": "KeyC", "enabled": false, "tap": "KeyD"}]}"#, true)
             .unwrap();
         let runtime = document
             .runtime_config(&AutoSwitchContext::default())
             .unwrap();
-        assert_eq!(runtime.layout_id.as_deref(), Some("user:Other"));
+        assert_eq!(runtime.profile_id.as_deref(), Some("user:Other"));
         let value: Value = serde_json::to_value(&runtime.mapper).unwrap();
         assert_eq!(value["rules"].as_array().unwrap().len(), 1);
         assert_eq!(value["rules"][0]["key"], "KeyA");
 
         document
-            .update_settings(|settings| settings.manual_layout_id = Some("user:Main".into()))
+            .update_settings(|settings| settings.manual_profile_id = Some("user:Main".into()))
             .unwrap();
         let runtime = document
             .runtime_config(&AutoSwitchContext::default())
@@ -1318,21 +1321,22 @@ mod tests {
 
     #[test]
     fn auto_mode_without_a_match_is_passthrough() {
-        let (_dir, document) = document(json!({"settings": {"layouts": {"mode": "auto"}}}), LAYOUT);
+        let (_dir, document) =
+            document(json!({"settings": {"profiles": {"mode": "auto"}}}), PROFILE);
         let runtime = document
             .runtime_config(&AutoSwitchContext::default())
             .unwrap();
-        assert_eq!(runtime.layout_id, None);
+        assert_eq!(runtime.profile_id, None);
         let value: Value = serde_json::to_value(&runtime.mapper).unwrap();
         assert!(value["rules"].as_array().unwrap().is_empty());
     }
 
     #[test]
-    fn bundled_layouts_run_in_the_mapper() {
-        for bundled in crate::profile::bundled::BUNDLED {
+    fn bundled_profiles_run_in_the_mapper() {
+        for bundled in crate::config::bundled::BUNDLED {
             let (_dir, document) = document(json!({}), bundled.text());
             assert!(
-                crate::profile::diagnostics::analyze_rules(&document.config()).is_empty(),
+                crate::config::diagnostics::analyze_rules(&document.config()).is_empty(),
                 "{}",
                 bundled.name
             );
@@ -1342,19 +1346,19 @@ mod tests {
             let value: Value = serde_json::to_value(&runtime.mapper).unwrap();
             assert!(!value["rules"].as_array().unwrap().is_empty());
         }
-        let (_dir, document) = document(json!({}), crate::profile::bundled::BUNDLED[0].text());
-        assert!(document.layout().layers.len() > 1);
+        let (_dir, document) = document(json!({}), crate::config::bundled::BUNDLED[0].text());
+        assert!(document.profile().layers.len() > 1);
         let runtime = document
             .runtime_config(&AutoSwitchContext::default())
             .unwrap();
         let value: Value = serde_json::to_value(&runtime.mapper).unwrap();
         assert!(!value["rules"].as_array().unwrap().is_empty());
-        let reparsed = layout_file::parse(&layout_file::serialize(document.layout()))
+        let reparsed = profile_file::parse(&profile_file::serialize(document.profile()))
             .unwrap()
             .unwrap();
-        assert_eq!(reparsed.layer_keymaps, document.layout().layer_keymaps);
-        assert_eq!(reparsed.layers, document.layout().layers);
-        let quick = &document.layout().quick_action_pages;
+        assert_eq!(reparsed.layer_keymaps, document.profile().layer_keymaps);
+        assert_eq!(reparsed.layers, document.profile().layers);
+        let quick = &document.profile().quick_action_pages;
         assert!(!quick.is_empty());
         assert!(quick.iter().all(|page| page.cells.len() == 15));
         let system = quick.iter().find(|page| page.id == "system").unwrap();
@@ -1398,7 +1402,7 @@ mod tests {
 
     #[test]
     fn layer_lifecycle_preserves_keymaps_and_detaches_rules() {
-        let (_dir, mut document) = document(json!({}), LAYOUT);
+        let (_dir, mut document) = document(json!({}), PROFILE);
         document
             .set_layer_key("nav", "F13", KeyAssignment::Action("Escape".into()))
             .unwrap();
@@ -1406,39 +1410,39 @@ mod tests {
             .clone_layer("nav", "Navigation copy", "Copied")
             .unwrap();
         assert_eq!(
-            document.layout().layer_keymaps[&copy].keys["KeyH"].as_deref(),
+            document.profile().layer_keymaps[&copy].keys["KeyH"].as_deref(),
             Some("ArrowLeft")
         );
         assert_eq!(
-            document.layout().layer_keymaps[&copy].keys["F13"].as_deref(),
+            document.profile().layer_keymaps[&copy].keys["F13"].as_deref(),
             Some("Escape")
         );
         document.clear_layer_keys(&copy).unwrap();
-        assert!(document.layout().layer_keymaps[&copy].keys.is_empty());
+        assert!(document.profile().layer_keymaps[&copy].keys.is_empty());
         document
-            .update_layout(|layout| {
-                layout.rules[0].hold_behavior = Some(crate::profile::model::HoldBehavior::Layer);
+            .update_profile(|profile| {
+                profile.rules[0].hold_behavior = Some(crate::config::model::HoldBehavior::Layer);
             })
             .unwrap();
         document.delete_layer("nav").unwrap();
         assert_eq!(
-            document.layout().rules[0].hold_behavior(),
-            crate::profile::model::HoldBehavior::None
+            document.profile().rules[0].hold_behavior(),
+            crate::config::model::HoldBehavior::None
         );
-        assert!(document.layout().rules[0].layer_id.is_empty());
-        assert!(!document.layout().layer_keymaps.contains_key("nav"));
+        assert!(document.profile().rules[0].layer_id.is_empty());
+        assert!(!document.profile().layer_keymaps.contains_key("nav"));
         let loaded = ConfigDocument::load(document.paths().clone()).unwrap();
-        assert_eq!(loaded.layout().layers[0].name, "Navigation");
-        document.save_current_layout_as("Saved").unwrap();
+        assert_eq!(loaded.profile().layers[0].name, "Navigation");
+        document.save_current_profile_as("Saved").unwrap();
         let saved = ConfigDocument::load(document.paths().clone()).unwrap();
-        assert_eq!(saved.layout().layers[0].name, "Navigation copy");
-        assert!(saved.layout().rules[0].layer_id.is_empty());
+        assert_eq!(saved.profile().layers[0].name, "Navigation copy");
+        assert!(saved.profile().rules[0].layer_id.is_empty());
     }
     #[test]
     fn compound_transaction_rolls_back_memory_disk_and_runtime_settings() {
         let (_dir, mut document) = document(json!({}), r#"{"version":1}"#);
         let before_settings = document.settings().clone();
-        let before_layout = document.layout().clone();
+        let before_profile = document.profile().clone();
         let disk = std::fs::read(document.paths().config_path()).ok();
         let result: Result<(), ConfigError> = document.transaction(|draft| {
             draft.update_settings(|settings| settings.high_contrast = !settings.high_contrast)?;
@@ -1447,7 +1451,7 @@ mod tests {
         });
         assert_eq!(result, Err(ConfigError::EditConflict));
         assert_eq!(document.settings(), &before_settings);
-        assert_eq!(document.layout(), &before_layout);
+        assert_eq!(document.profile(), &before_profile);
         assert_eq!(std::fs::read(document.paths().config_path()).ok(), disk);
         document
             .transaction(|draft| {
@@ -1458,29 +1462,29 @@ mod tests {
             .unwrap();
         assert_ne!(document.settings(), &before_settings);
         assert_eq!(
-            document.layout().layers.len(),
-            before_layout.layers.len() + 1
+            document.profile().layers.len(),
+            before_profile.layers.len() + 1
         );
     }
 
     #[test]
-    fn staged_edits_reject_external_writes_and_layout_callbacks_reject_settings() {
+    fn staged_edits_reject_external_writes_and_profile_callbacks_reject_settings() {
         let (_dir, mut document) = document(json!({}), r#"{"version":1}"#);
         assert!(
             document
-                .transaction(|draft| draft.save_current_layout_as("Forbidden"))
+                .transaction(|draft| draft.save_current_profile_as("Forbidden"))
                 .is_err()
         );
         assert!(
             !document
-                .layout_ids()
+                .profile_ids()
                 .unwrap()
                 .contains(&"user:Forbidden".to_owned())
         );
         let before = document.settings().clone();
         assert!(
             document
-                .edit_layout_with_commands([], |draft| draft
+                .edit_profile_with_commands([], |draft| draft
                     .update_settings(|settings| settings.high_contrast = true))
                 .is_err()
         );

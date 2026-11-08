@@ -4,7 +4,7 @@
 use super::keys::code_to_key;
 use super::system::{ProcessInvocation, SystemAction};
 use crate::mapper::key_code::KeyCode;
-use crate::profile::actions::Action;
+use crate::config::actions::Action;
 use std::time::Duration;
 
 /// A keystroke = optional modifiers + one main key.
@@ -43,14 +43,14 @@ pub fn explicit_pause(action: &str) -> Option<Duration> {
 }
 
 /// Duration of a `pause:` payload: plain digits within
-/// [`crate::profile::timing::PAUSE`], the same rule the macro editor applies.
+/// [`crate::config::timing::PAUSE`], the same rule the macro editor applies.
 pub fn pause_duration(ms: &str) -> Option<Duration> {
     let ms = ms.trim();
     if ms.is_empty() || !ms.bytes().all(|c| c.is_ascii_digit()) {
         return None;
     }
     let ms = ms.parse::<u64>().ok()?;
-    crate::profile::timing::PAUSE
+    crate::config::timing::PAUSE
         .contains(ms)
         .then(|| Duration::from_millis(ms))
 }
@@ -86,7 +86,7 @@ pub fn parse_action(action: &str) -> Option<Keystroke> {
 }
 
 fn parse_modifier(token: &str) -> Option<KeyCode> {
-    crate::profile::key_catalog::modifier_key(token).and_then(code_to_key)
+    crate::config::key_catalog::modifier_key(token).and_then(code_to_key)
 }
 
 fn parse_single(token: &str) -> Option<KeyCode> {

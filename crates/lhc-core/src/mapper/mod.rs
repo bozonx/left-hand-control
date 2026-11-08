@@ -47,7 +47,7 @@ with_backend! {
         crate::events::emit(crate::events::CoreEvent::MapperStopped(error.to_string()));
     }
 
-    pub(crate) fn emit_app_event(action: &crate::profile::app_action::AppAction) {
+    pub(crate) fn emit_app_event(action: &crate::config::app_action::AppAction) {
         crate::events::emit(crate::events::CoreEvent::AppAction(*action));
     }
 
@@ -59,7 +59,7 @@ with_backend! {
         crate::events::emit(crate::events::CoreEvent::LayerKeyPressed);
     }
 
-    /// Layout-switching actions refresh the cached layout immediately so the
+    /// Keyboard-layout switching actions refresh the cached layout immediately so the
     /// next key is evaluated against the new layout.
     pub(crate) fn refresh_layout() {
         let _ = crate::keyboard_layout::refresh_cache();

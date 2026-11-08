@@ -8,8 +8,8 @@ use super::builtin_macros::BUILTIN_MACROS;
 use super::config::{ActionSpec, MapperConfig};
 use super::keys::code_to_key;
 use super::system;
-use crate::profile::actions::{Action, MAX_MACRO_DEPTH, MAX_MACRO_STEPS};
-use crate::profile::macro_graph::{MacroGraph, MacroRef};
+use crate::config::actions::{Action, MAX_MACRO_DEPTH, MAX_MACRO_STEPS};
+use crate::config::macro_graph::{MacroGraph, MacroRef};
 use std::collections::HashSet;
 
 pub fn validate_config(cfg: &MapperConfig) -> Result<(), String> {
@@ -52,7 +52,11 @@ pub fn validate_config(cfg: &MapperConfig) -> Result<(), String> {
         } else {
             format!("Rule \"{}\"", r.key)
         };
-        if !crate::profile::key_catalog::valid_trigger(&r.key) {
+        if crate::config::key_catalog::uses_modifier_name(&r.key) {
+            errors.push(format!(
+                "{where_key}: use key codes such as ControlLeft; \"+\" joins the keys of a chord and does not add a modifier"
+            ));
+        } else if !crate::config::key_catalog::valid_trigger(&r.key) {
             errors.push(format!("{where_key}: unknown physical key \"{}\"", r.key));
         }
         if !r.layer_id.is_empty() && !layer_ids.contains(r.layer_id.as_str()) {
@@ -301,14 +305,14 @@ fn validate_action(
             }
         }
         Action::KdeShortcut(id) => {
-            if crate::profile::actions::kde_shortcut_parts(&id).is_none() {
+            if crate::config::actions::kde_shortcut_parts(&id).is_none() {
                 errors.push(format!(
                     "{where_}: invalid KDE shortcut \"{id}\", expected component/shortcut"
                 ));
             }
         }
         Action::DesktopEntry(id) => {
-            if crate::profile::actions::desktop_entry_parts(&id).is_none() {
+            if crate::config::actions::desktop_entry_parts(&id).is_none() {
                 errors.push(format!(
                     "{where_}: invalid application action \"{id}\", expected desktop-id/action"
                 ));
@@ -360,7 +364,7 @@ mod tests {
 
     #[test]
     fn editor_and_mapper_agree_on_macro_cycles_and_missing_references() {
-        use crate::profile::{macros, model};
+        use crate::config::{macros, model};
         for steps in [
             ["macro:b", "macro:a"],
             ["macro:a", "KeyA"],
@@ -368,7 +372,7 @@ mod tests {
             ["macro:missing", "KeyA"],
             ["builtin:copyLineText", "text:macro:a"],
         ] {
-            let layout = model::LayoutPreset {
+            let profile = model::ProfilePreset {
                 macros: ["a", "b"]
                     .into_iter()
                     .zip(steps)
@@ -386,9 +390,9 @@ mod tests {
                 ..Default::default()
             };
             let mapper: MapperConfig =
-                serde_json::from_value(serde_json::to_value(&layout).unwrap()).unwrap();
+                serde_json::from_value(serde_json::to_value(&profile).unwrap()).unwrap();
             let editor =
-                model::ResolvedAppConfig::from_parts(model::AppSettings::default(), layout, None);
+                model::ResolvedAppConfig::from_parts(model::AppSettings::default(), profile, None);
             assert_eq!(
                 editor
                     .macros

@@ -11,6 +11,6 @@ pub const MESSAGES: &[(&str, &str)] = &[
     ("GameAuto", "Auto — detect games"),
     ("GameAlways", "On — always"),
     ("GameNever", "Off — never"),
-    ("Layout", "Layout: {}"),
-    ("NoLayout", "No layout"),
+    ("Profile", "Profile: {}"),
+    ("NoProfile", "No profile"),
 ];

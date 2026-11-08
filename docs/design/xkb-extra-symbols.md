@@ -64,7 +64,7 @@ xkb_symbols "extra" {
 Опцию добавляем к уже настроенным в `~/.config/kxkbrc`:
 
 ```
-[Layout]
+[Profile]
 Options=terminate:ctrl_alt_bksp,lhc:extra
 ```
 
@@ -118,11 +118,11 @@ Wayland-приложениях: X11 (XWayland) их не поддерживае�
    текст уйдёт в буфер.
 4. Найти свободные коды и распределить по ним символы: коды до 255 — частым символам.
 5. Записать `symbols/lhc` и `rules/evdev` во временный каталог и проверить сборку:
-   `xkbcli compile-keymap --include <tmp> --include-defaults --layout … --options …,lhc:extra`.
+   `xkbcli compile-keymap --include <tmp> --include-defaults --profile … --options …,lhc:extra`.
    Если сборка не удалась, ничего не менять.
 6. Атомарно заменить файлы в `~/.config/xkb/`, добавить `lhc:extra` в `Options` в
    `kxkbrc`, если его там нет.
-7. Попросить KWin перечитать раскладку (`dbus-send --session --type=signal /Layouts
+7. Попросить KWin перечитать раскладку (`dbus-send --session --type=signal /Profiles
    org.kde.keyboard.reloadConfig`; не проверено) или попросить пользователя перезайти.
 8. Перезапускать при изменении символов в конфиге.
 

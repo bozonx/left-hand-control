@@ -37,7 +37,7 @@ fn storage_override_probe() {
     let expected = StoragePaths::dev(&base, std::env::consts::OS);
     let paths = StoragePaths::resolve().unwrap();
     assert_eq!(paths.config_path(), expected.config_path());
-    assert_eq!(paths.layouts_dir(), expected.layouts_dir());
+    assert_eq!(paths.profiles_dir(), expected.profiles_dir());
     paths.save_config("isolated").unwrap();
     assert_eq!(paths.load_config().unwrap(), "isolated");
 }

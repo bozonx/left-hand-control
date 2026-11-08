@@ -8,12 +8,12 @@
 //! from the same PO catalogs. Missing translations fail the build.
 
 use crate::ui::Message;
+use lhc_core::config::actions::ActionIssue;
+use lhc_core::config::diagnostics::{RuleIssue, RuleIssueCode};
+use lhc_core::config::model::LocalePreference;
+use lhc_core::config::names::{NameIssue, NameKind};
 use lhc_core::config_document::{ConfigError, ExtraKeyIssue};
 use lhc_core::platform::InputAccessIssue;
-use lhc_core::profile::actions::ActionIssue;
-use lhc_core::profile::diagnostics::{RuleIssue, RuleIssueCode};
-use lhc_core::profile::model::LocalePreference;
-use lhc_core::profile::names::{NameIssue, NameKind};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum Language {
@@ -266,14 +266,14 @@ pub enum Msg {
     Copied,
     ScrollHorizontal,
     ScrollVertical,
-    LayoutCreated(String),
-    LayoutSaved(String),
-    LayoutDeleted(String),
+    ProfileCreated(String),
+    ProfileSaved(String),
+    ProfileDeleted(String),
     AutoRuleDeleted,
-    LayoutActivated(String),
-    /// `activateLayoutN` found no N-th layout in the library.
-    LayoutSlotEmpty(u32),
-    LayoutDiscarded(String),
+    ProfileActivated(String),
+    /// `activateProfileN` found no N-th profile in the library.
+    ProfileSlotEmpty(u32),
+    ProfileDiscarded(String),
     MapperWaiting,
     MapperRunning(Option<String>),
     MapperStopped(Option<String>),
@@ -322,9 +322,9 @@ pub enum Msg {
     LibraryChanged,
     LayerSaved,
     RuleSaved,
-    LayoutEmpty,
-    LayoutLoadFailed(String),
-    LayoutSwitchFailed(String),
+    ProfileEmpty,
+    ProfileLoadFailed(String),
+    ProfileSwitchFailed(String),
     /// Default name of a copy of the named item.
     CopyName(String),
     /// Menu actions run through the mapper, which is stopped.
@@ -343,9 +343,9 @@ pub enum Msg {
     /// A `sys:` action macOS has no API for was ignored.
     ActionUnsupportedMacos,
     CommandsDisabled,
-    SaveLayoutFirst,
-    MenuIssue(lhc_core::profile::menus::MenuIssue),
-    MacroIssue(lhc_core::profile::macros::MacroIssue),
+    SaveProfileFirst,
+    MenuIssue(lhc_core::config::menus::MenuIssue),
+    MacroIssue(lhc_core::config::macros::MacroIssue),
     MacroRunFailure(lhc_core::events::MacroRunFailure),
     Name(NameKind, NameIssue),
     KeyCodeRequired,
@@ -387,8 +387,8 @@ impl Msg {
             | Self::WorkerUnavailable(detail)
             | Self::WorkerError(detail)
             | Self::SavedMapperNotUpdated(detail)
-            | Self::LayoutLoadFailed(detail)
-            | Self::LayoutSwitchFailed(detail)
+            | Self::ProfileLoadFailed(detail)
+            | Self::ProfileSwitchFailed(detail)
             | Self::MapperRunning(Some(detail))
             | Self::MapperStopped(Some(detail)) => detail,
             Self::TextInputFailed(
@@ -411,13 +411,13 @@ impl Msg {
             Self::Copied => ("copied", empty(), 0),
             Self::ScrollHorizontal => ("scroll-horizontal", empty(), 0),
             Self::ScrollVertical => ("scroll-vertical", empty(), 0),
-            Self::LayoutCreated(name) => ("layout-created", name.clone(), 0),
-            Self::LayoutSaved(name) => ("layout-saved", name.clone(), 0),
+            Self::ProfileCreated(name) => ("profile-created", name.clone(), 0),
+            Self::ProfileSaved(name) => ("profile-saved", name.clone(), 0),
             Self::AutoRuleDeleted => ("auto-rule-deleted", String::new(), 0),
-            Self::LayoutDeleted(name) => ("layout-deleted", name.clone(), 0),
-            Self::LayoutActivated(name) => ("layout-activated", name.clone(), 0),
-            Self::LayoutSlotEmpty(n) => ("layout-slot-empty", empty(), *n as usize),
-            Self::LayoutDiscarded(name) => ("layout-discarded", name.clone(), 0),
+            Self::ProfileDeleted(name) => ("profile-deleted", name.clone(), 0),
+            Self::ProfileActivated(name) => ("profile-activated", name.clone(), 0),
+            Self::ProfileSlotEmpty(n) => ("profile-slot-empty", empty(), *n as usize),
+            Self::ProfileDiscarded(name) => ("profile-discarded", name.clone(), 0),
             Self::MapperWaiting => ("mapper-waiting", empty(), 0),
             Self::MapperRunning(error) => {
                 if let Some(error) = error {
@@ -509,29 +509,27 @@ impl Msg {
             ),
             Self::MacroIssue(issue) => (
                 match issue {
-                    lhc_core::profile::macros::MacroIssue::InvalidId => "macro-invalid-id",
-                    lhc_core::profile::macros::MacroIssue::DuplicateId => "macro-duplicate-id",
-                    lhc_core::profile::macros::MacroIssue::DelayRange => "macro-delay-range",
-                    lhc_core::profile::macros::MacroIssue::PauseRange => "macro-pause-range",
-                    lhc_core::profile::macros::MacroIssue::UnknownKey => "macro-unknown-key",
-                    lhc_core::profile::macros::MacroIssue::Cycle => "macro-cycle",
-                    lhc_core::profile::macros::MacroIssue::ExpansionLimit => {
-                        "macro-expansion-limit"
-                    }
-                    lhc_core::profile::macros::MacroIssue::InUse => "macro-in-use",
+                    lhc_core::config::macros::MacroIssue::InvalidId => "macro-invalid-id",
+                    lhc_core::config::macros::MacroIssue::DuplicateId => "macro-duplicate-id",
+                    lhc_core::config::macros::MacroIssue::DelayRange => "macro-delay-range",
+                    lhc_core::config::macros::MacroIssue::PauseRange => "macro-pause-range",
+                    lhc_core::config::macros::MacroIssue::UnknownKey => "macro-unknown-key",
+                    lhc_core::config::macros::MacroIssue::Cycle => "macro-cycle",
+                    lhc_core::config::macros::MacroIssue::ExpansionLimit => "macro-expansion-limit",
+                    lhc_core::config::macros::MacroIssue::InUse => "macro-in-use",
                 },
                 empty(),
                 0,
             ),
             Self::MenuIssue(issue) => (
                 match issue {
-                    lhc_core::profile::menus::MenuIssue::EmojiCell => "menu-emoji-cell",
-                    lhc_core::profile::menus::MenuIssue::UnknownKey => "macro-unknown-key",
-                    lhc_core::profile::menus::MenuIssue::CommandId => "menu-command-id",
-                    lhc_core::profile::menus::MenuIssue::DuplicateCommand => {
+                    lhc_core::config::menus::MenuIssue::EmojiCell => "menu-emoji-cell",
+                    lhc_core::config::menus::MenuIssue::UnknownKey => "macro-unknown-key",
+                    lhc_core::config::menus::MenuIssue::CommandId => "menu-command-id",
+                    lhc_core::config::menus::MenuIssue::DuplicateCommand => {
                         "menu-duplicate-command"
                     }
-                    lhc_core::profile::menus::MenuIssue::EmptyCommand => "menu-empty-command",
+                    lhc_core::config::menus::MenuIssue::EmptyCommand => "menu-empty-command",
                 },
                 empty(),
                 0,
@@ -547,21 +545,21 @@ impl Msg {
             Self::ActionUnavailableNamed(action) => ("action-unavailable-named", action.clone(), 0),
             Self::ActionUnavailable => ("action-unavailable", empty(), 0),
             Self::ActionUnsupportedMacos => ("action-unsupported-macos", empty(), 0),
-            Self::SaveLayoutFirst => ("save-layout-first", empty(), 0),
+            Self::SaveProfileFirst => ("save-profile-first", empty(), 0),
             Self::CommandsDisabled => ("commands-disabled", empty(), 0),
             Self::LayerSaved => ("layer-saved", empty(), 0),
             Self::RuleSaved => ("rule-saved", empty(), 0),
-            Self::LayoutEmpty => ("layout-empty", empty(), 0),
-            Self::LayoutLoadFailed(error) => diagnostic("layout-load-failed", error),
-            Self::LayoutSwitchFailed(error) => diagnostic("layout-switch-failed", error),
+            Self::ProfileEmpty => ("profile-empty", empty(), 0),
+            Self::ProfileLoadFailed(error) => diagnostic("profile-load-failed", error),
+            Self::ProfileSwitchFailed(error) => diagnostic("profile-switch-failed", error),
             Self::CopyName(name) => ("copy-name", name.clone(), 0),
             Self::MapperRequired => ("mapper-required", empty(), 0),
             Self::Name(kind, issue) => (
                 match (kind, issue) {
                     (NameKind::Layer, NameIssue::Empty) => "layer-name-required",
                     (NameKind::Layer, NameIssue::Taken) => "layer-name-taken",
-                    (NameKind::Layout, NameIssue::Empty) => "layout-name-required",
-                    (NameKind::Layout, NameIssue::Taken) => "layout-name-taken",
+                    (NameKind::Profile, NameIssue::Empty) => "profile-name-required",
+                    (NameKind::Profile, NameIssue::Taken) => "profile-name-taken",
                     (_, NameIssue::Invalid) => "name-invalid",
                 },
                 empty(),
@@ -606,6 +604,7 @@ impl Msg {
                     RuleIssueCode::InvalidRuleConfiguration => "config-invalid-hold",
                     RuleIssueCode::MissingTrigger => "rule-missing-trigger",
                     RuleIssueCode::InvalidTrigger => "rule-invalid-trigger",
+                    RuleIssueCode::ModifierNameTrigger => "rule-modifier-name-trigger",
                     RuleIssueCode::DuplicateTrigger => "rule-duplicate-trigger",
                     RuleIssueCode::ShadowedTrigger => "rule-shadowed-trigger",
                     RuleIssueCode::UnknownLayer => "rule-unknown-layer",
@@ -750,14 +749,14 @@ pub fn tray_game_choice(language: Language, mode: crate::command::GameMode) -> S
     .to_owned()
 }
 
-/// On-screen text announcing the active layout; `None` is no layout.
-pub fn layout_osd(language: Language, name: Option<&str>) -> String {
+/// On-screen text announcing the active profile; `None` is no profile.
+pub fn profile_osd(language: Language, name: Option<&str>) -> String {
     match name {
         Some(name) => {
-            let template = RustText::Layout.text(language);
+            let template = RustText::Profile.text(language);
             template.replace(if template.contains("{}") { "{}" } else { "{0}" }, name)
         }
-        None => RustText::NoLayout.text(language).to_owned(),
+        None => RustText::NoProfile.text(language).to_owned(),
     }
 }
 
@@ -996,11 +995,14 @@ mod tests {
         assert_eq!(TrayItem::Quit.label(Language::Russian), "Выход");
         assert_eq!(TrayItem::Quit.label(Language::English), "Quit");
         assert_eq!(
-            layout_osd(Language::Russian, Some("Main")),
-            "Раскладка: Main"
+            profile_osd(Language::Russian, Some("Main")),
+            "Профиль: Main"
         );
-        assert_eq!(layout_osd(Language::English, Some("Main")), "Layout: Main");
-        assert_eq!(layout_osd(Language::Russian, None), "Без раскладки");
+        assert_eq!(
+            profile_osd(Language::English, Some("Main")),
+            "Profile: Main"
+        );
+        assert_eq!(profile_osd(Language::Russian, None), "Без профиля");
     }
 
     #[test]

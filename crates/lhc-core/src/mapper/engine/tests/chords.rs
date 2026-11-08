@@ -7,7 +7,7 @@ fn unassigned_chord_ignores_double_tap_and_preserves_normal_keys() {
             serde_json::json!({"key": "ShiftLeft+ControlLeft", "doubleTapAction": extra}),
         );
         let engine = Engine::new(&cfg);
-        assert!(engine.layout.chord_rules.is_empty());
+        assert!(engine.profile.chord_rules.is_empty());
     }
 }
 
@@ -166,9 +166,9 @@ fn trigger_chord_window_expiry_types_the_member_and_blocks_the_chord() {
     engine.handle_key_event(KeyCode::KEY_J, true, now, &mut out);
     assert_eq!(
         engine.next_deadline(now),
-        Some(engine.layout.trigger_chord_timeout)
+        Some(engine.profile.trigger_chord_timeout)
     );
-    engine.tick(now + engine.layout.trigger_chord_timeout, &mut out);
+    engine.tick(now + engine.profile.trigger_chord_timeout, &mut out);
     assert_eq!(raw_keys(&out), vec![(KeyCode::KEY_J, true)]);
     // `j` is already typed — a late K must not turn it into the chord.
     engine.handle_key_event(

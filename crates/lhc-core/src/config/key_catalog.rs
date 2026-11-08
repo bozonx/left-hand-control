@@ -346,11 +346,38 @@ pub fn modifier_name(key: &str) -> Option<&'static str> {
     })
 }
 
+/// Whether `value` is a rule trigger: exact key codes joined by `+`.
 pub fn valid_trigger(value: &str) -> bool {
     trigger_keys(value).is_some()
 }
 
+/// Key codes of a rule trigger. Only physical key codes are accepted, so a
+/// stored trigger is never reinterpreted: `Ctrl` is not a key code, and `+`
+/// joins the keys of a chord rather than prefixing modifiers.
 pub fn trigger_keys(value: &str) -> Option<Vec<&str>> {
+    let mut keys = Vec::new();
+    for key in value.split('+') {
+        if !valid_key(key)
+            || matches!(key, "MouseLeft" | "MouseRight" | "MouseMiddle")
+            || keys.contains(&key)
+        {
+            return None;
+        }
+        keys.push(key);
+    }
+    Some(keys)
+}
+
+/// Whether `value` is a trigger that is wrong only because it spells a
+/// modifier with a generic name (`Ctrl`, `Shift`, `Alt`, `Meta`), as action
+/// chords do. Editors hint to use a key code such as `ControlLeft` instead.
+pub fn uses_modifier_name(value: &str) -> bool {
+    trigger_keys(value).is_none() && chord_keys(value).is_some()
+}
+
+/// Key codes of an action chord (`Ctrl+Shift+KeyV`): unlike a rule trigger it
+/// also accepts the side-neutral modifier names, which mean the left key.
+pub fn chord_keys(value: &str) -> Option<Vec<&str>> {
     let mut keys = Vec::new();
     for part in value.split('+').map(str::trim) {
         let key = modifier_key(part).unwrap_or(part);
@@ -372,9 +399,11 @@ mod tests {
     fn required_keys_and_rule_triggers() {
         assert!(valid_key("MouseLeft"));
         assert!(valid_trigger("F13"));
-        assert!(valid_trigger("Ctrl+KeyA"));
+        assert!(valid_trigger("ControlLeft+KeyA"));
         assert!(valid_trigger("ShiftLeft+ControlRight"));
+        assert!(!valid_trigger("Ctrl+KeyA"));
         assert!(!valid_trigger("Ctrl+ControlLeft"));
+        assert!(!valid_trigger("ControlLeft + KeyA"));
         assert!(!valid_trigger("KeyA+"));
         for value in [
             "",
@@ -389,6 +418,24 @@ mod tests {
         ] {
             assert!(!valid_trigger(value));
         }
+    }
+
+    #[test]
+    fn modifier_names_are_diagnosed_not_rewritten() {
+        for value in ["Ctrl+KeyA", "Shift", "Alt+Meta", "ControlLeft+Alt"] {
+            assert!(!valid_trigger(value), "{value}");
+            assert!(uses_modifier_name(value), "{value}");
+        }
+        for value in [
+            "ControlLeft+KeyA",
+            "",
+            "NotAKey",
+            "Ctrl+NotAKey",
+            "Control+KeyA",
+        ] {
+            assert!(!uses_modifier_name(value), "{value}");
+        }
+        assert_eq!(chord_keys("Ctrl + KeyA"), Some(vec!["ControlLeft", "KeyA"]));
     }
 
     #[test]

@@ -1,6 +1,6 @@
 //! Macros page. The page edits a draft; the draft is saved whenever every
 //! macro in it is valid. Structural changes save at once, typing is saved
-//! after a short pause so a keystroke does not rewrite the layout file.
+//! after a short pause so a keystroke does not rewrite the profile file.
 
 use crate::{
     document::{Document, View},
@@ -8,13 +8,13 @@ use crate::{
     ui::{BuiltinMacroRow, MacroEditor, MacroField, MacroRow, MacroStepRow, SettingsWindow},
 };
 use lhc_core::{
-    config_document::ConfigError,
-    mapper::builtin_macros::BUILTIN_MACROS,
-    profile::{
+    config::{
         actions::Action,
         ids, macros,
         model::{Command, Macro, MacroStep, ResolvedAppConfig},
     },
+    config_document::ConfigError,
+    mapper::builtin_macros::BUILTIN_MACROS,
 };
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
@@ -57,7 +57,7 @@ fn parse_delay(value: &str) -> Result<Option<u64>, ()> {
     if value.is_empty() {
         return Ok(None);
     }
-    lhc_core::profile::timing::MACRO_DELAY
+    lhc_core::config::timing::MACRO_DELAY
         .parse(value)
         .map(Some)
         .ok_or(())
@@ -66,7 +66,7 @@ fn parse_delay(value: &str) -> Result<Option<u64>, ()> {
 fn load(document: &Document) -> Vec<Entry> {
     document
         .read()
-        .layout()
+        .profile()
         .macros
         .iter()
         .cloned()
@@ -285,16 +285,16 @@ fn persist(document: &Document, state: &mut State) -> Result<SaveResult, ConfigE
         .iter()
         .flat_map(|entry| entry.commands.clone())
         .collect();
-    if commands.is_empty() && document.read().layout().macros == items {
+    if commands.is_empty() && document.read().profile().macros == items {
         state.baseline = state.draft.clone();
         return Ok(SaveResult::Unchanged);
     }
     let renames = renames(&state.draft);
     let edit = document.edit(View::Macros, |config| {
-        config.edit_layout_with_commands(commands, |config| config.save_macros(items, &renames))
+        config.edit_profile_with_commands(commands, |config| config.save_macros(items, &renames))
     });
     if edit.is_ok() {
-        let saved = document.read().layout().macros.clone();
+        let saved = document.read().profile().macros.clone();
         for (entry, item) in state.draft.iter_mut().zip(saved) {
             entry.item = item;
             entry.saved_id = Some(entry.item.id.clone());

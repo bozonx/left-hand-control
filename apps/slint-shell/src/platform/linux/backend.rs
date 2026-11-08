@@ -358,7 +358,7 @@ mod tests {
             .unwrap();
         assert!(completions.try_recv().is_err());
         release.send(()).unwrap();
-        assert_eq!(server.join().unwrap(), ["popup-layout null", "hide"]);
+        assert_eq!(server.join().unwrap(), ["popup-profile null", "hide"]);
         assert_eq!(
             completions.recv_timeout(Duration::from_secs(2)).unwrap(),
             Ok(())

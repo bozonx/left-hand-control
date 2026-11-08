@@ -479,9 +479,9 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     return Ok(());
                 }
                 Event::Command(WorkerCommand::PopupContents(contents), _, _) => {
-                    match lhc_core::profile::layout_file::parse(&contents) {
-                        Ok(layout) => layers.set_menus(ConfiguredMenus {
-                            layout: layout.unwrap_or_default(),
+                    match lhc_core::config::profile_file::parse(&contents) {
+                        Ok(profile) => layers.set_menus(ConfiguredMenus {
+                            profile: profile.unwrap_or_default(),
                         }),
                         Err(error) => log::error!("popup configuration: {error}"),
                     }

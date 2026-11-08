@@ -18,7 +18,7 @@ export struct LayerKeyCell { index: int, label: string, code: string, kind: Assi
 export struct LayerTrigger { code: string, label: string }
 export struct LayerExtraRow { key: string, kind: Assignment, action: string, icon: ActionKind, category: PickerCategory, holds: bool }
 
-/// Layers of the layout being edited and their keymaps.
+/// Layers of the profile being edited and their keymaps.
 export global LayersEditor {
     in-out property <int> keyboard-key: -1;
     in-out property <int> keyboard-source: -1;
@@ -452,7 +452,7 @@ export component LayersPage inherits PageLayout {
                             : max(left-hand.key-at(DragDrop.pointer-x, DragDrop.pointer-y), right-hand.key-at(DragDrop.pointer-x, DragDrop.pointer-y));
                         padding: Theme.space-2xl;
                         spacing: Theme.space-3xl;
-                        // From the page width rather than this layout's, which would depend on the grids.
+                        // From the page width rather than this profile's, which would depend on the grids.
                         property <length> hand-width: (root.width - Theme.scrollbar-size - Theme.scrollbar-gap - 2 * Theme.space-2xl - Theme.space-3xl) / 2;
                         left-hand := HandGrid {
                             width: hands.hand-width;
@@ -491,7 +491,7 @@ export component LayersPage inherits PageLayout {
                             spacing: Theme.space-2xs;
                             HorizontalLayout { spacing: Theme.space-m; alignment: start;
                                 CardTitle { text: @tr("Extra keys"); }
-                                InfoTip { text: @tr("Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base layout."); }
+                                InfoTip { text: @tr("Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base profile."); }
                             }
                         }
                         VerticalLayout {

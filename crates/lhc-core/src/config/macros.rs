@@ -3,7 +3,7 @@
 use super::macro_graph::{MacroGraph, MacroRef};
 use super::{
     actions::{self, Action},
-    model::{LayoutPreset, Macro, ResolvedAppConfig},
+    model::{Macro, ProfilePreset, ResolvedAppConfig},
 };
 use crate::config_document::{ConfigDocument, ConfigError};
 use std::collections::{HashMap, HashSet};
@@ -200,8 +200,8 @@ pub fn action_usage(config: &ResolvedAppConfig, action: &str) -> Vec<String> {
 
 /// Point `macro:<old>` actions at the new ids. All renames apply at once, so
 /// swapping two ids works.
-fn rename_references(layout: &mut LayoutPreset, renames: &[(String, String)]) {
-    layout.for_each_action_mut(|raw| rename_action(raw, renames));
+fn rename_references(profile: &mut ProfilePreset, renames: &[(String, String)]) {
+    profile.for_each_action_mut(|raw| rename_action(raw, renames));
 }
 
 fn rename_action(raw: &mut String, renames: &[(String, String)]) {
@@ -213,7 +213,7 @@ fn rename_action(raw: &mut String, renames: &[(String, String)]) {
     }
 }
 
-/// Preview a macro transaction, including incoming references everywhere in the layout.
+/// Preview a macro transaction, including incoming references everywhere in the profile.
 pub fn preview(
     config: &ResolvedAppConfig,
     items: Vec<Macro>,
@@ -227,7 +227,7 @@ pub fn preview(
 
 impl ConfigDocument {
     pub fn save_macro(&mut self, index: Option<usize>, item: Macro) -> Result<(), ConfigError> {
-        let mut items = self.layout().macros.clone();
+        let mut items = self.profile().macros.clone();
         let renames = if let Some(index) = index {
             let old = items
                 .get_mut(index)
@@ -244,7 +244,7 @@ impl ConfigDocument {
 
     /// Replace all user macros at once; every macro must be valid.
     /// `renames` maps old macro ids to new ones; references `macro:<old>`
-    /// elsewhere in the layout follow the new id.
+    /// elsewhere in the profile follow the new id.
     pub fn save_macros(
         &mut self,
         items: Vec<Macro>,
@@ -254,31 +254,31 @@ impl ConfigDocument {
         if let Some(error) = analyze(&candidate).errors.into_iter().flatten().next() {
             return Err(error);
         }
-        self.update_layout(|layout| {
-            layout.macros = items;
-            rename_references(layout, renames);
+        self.update_profile(|profile| {
+            profile.macros = items;
+            rename_references(profile, renames);
         })
     }
 
     pub fn remove_macro(&mut self, index: usize) -> Result<(), ConfigError> {
-        if index >= self.layout().macros.len() {
+        if index >= self.profile().macros.len() {
             return Err(ConfigError::Invalid("Unknown macro".into()));
         }
-        if !deletion_usage(&self.config(), &self.layout().macros[index].id).is_empty() {
+        if !deletion_usage(&self.config(), &self.profile().macros[index].id).is_empty() {
             return Err(ConfigError::Macro(MacroIssue::InUse));
         }
-        self.update_layout(|layout| {
-            layout.macros.remove(index);
+        self.update_profile(|profile| {
+            profile.macros.remove(index);
         })
     }
 
     pub fn move_macro(&mut self, index: usize, next: usize) -> Result<(), ConfigError> {
-        if index >= self.layout().macros.len() || next >= self.layout().macros.len() {
+        if index >= self.profile().macros.len() || next >= self.profile().macros.len() {
             return Err(ConfigError::Invalid("Unknown macro".into()));
         }
-        self.update_layout(|layout| {
-            let item = layout.macros.remove(index);
-            layout.macros.insert(next, item);
+        self.update_profile(|profile| {
+            let item = profile.macros.remove(index);
+            profile.macros.insert(next, item);
         })
     }
 }
@@ -286,7 +286,7 @@ impl ConfigDocument {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{profile::model::MacroStep, storage::StoragePaths};
+    use crate::{config::model::MacroStep, storage::StoragePaths};
 
     fn item(id: &str, actions: &[&str]) -> Macro {
         Macro {
@@ -307,20 +307,20 @@ mod tests {
 
     #[test]
     fn usage_and_renaming_share_typed_actions_and_preserve_separate_rules() {
-        let mut layout = LayoutPreset::default();
+        let mut profile = ProfilePreset::default();
         for index in 0..2 {
-            let mut rule = crate::profile::model::KeyRule::new(format!("r{index}"), "KeyA");
+            let mut rule = crate::config::model::KeyRule::new(format!("r{index}"), "KeyA");
             rule.tap_action = Some(" macro: a ".into());
             rule.long_hold_action = "macro:a".into();
-            layout.rules.push(rule);
+            profile.rules.push(rule);
         }
-        layout.macros = vec![item("outer", &[" macro: a ", "macro:a", "text:macro:a"])];
-        let config = ResolvedAppConfig::from_parts(Default::default(), layout.clone(), None);
+        profile.macros = vec![item("outer", &[" macro: a ", "macro:a", "text:macro:a"])];
+        let config = ResolvedAppConfig::from_parts(Default::default(), profile.clone(), None);
         assert_eq!(usage(&config, "a"), ["KeyA", "KeyA", "macro:outer"]);
-        rename_references(&mut layout, &[("a".into(), "b".into())]);
-        assert_eq!(layout.rules[0].tap_action.as_deref(), Some("macro:b"));
-        assert_eq!(layout.macros[0].steps[0].action, "macro:b");
-        assert_eq!(layout.macros[0].steps[2].action, "text:macro:a");
+        rename_references(&mut profile, &[("a".into(), "b".into())]);
+        assert_eq!(profile.rules[0].tap_action.as_deref(), Some("macro:b"));
+        assert_eq!(profile.macros[0].steps[0].action, "macro:b");
+        assert_eq!(profile.macros[0].steps[2].action, "text:macro:a");
     }
 
     #[test]
@@ -328,17 +328,17 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         paths
-            .save_user_layout(
+            .save_user_profile(
                 "Test",
                 r#"{"version": 1, "rules": [{"key": "KeyA", "tap": "macro:outer"}]}"#,
                 true,
             )
             .unwrap();
         paths
-            .save_config(r#"{"version":1,"state":{"editedLayout":"user:Test"}}"#)
+            .save_config(r#"{"version":1,"state":{"editedProfile":"user:Test"}}"#)
             .unwrap();
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
-        let rules = document.layout().rules.clone();
+        let rules = document.profile().rules.clone();
         document
             .save_macro(
                 None,
@@ -355,12 +355,12 @@ mod tests {
         assert_eq!(usage(&document.config(), "inner"), ["macro:outer"]);
         document.move_macro(0, 1).unwrap();
         let loaded = &document;
-        assert_eq!(loaded.layout().macros[0].id, "inner");
-        assert_eq!(loaded.layout().macros[0].steps[2].action, "text: hello ");
-        assert_eq!(loaded.layout().macros[0].modifier_delay_ms, Some(0));
-        assert_eq!(document.layout().rules, rules);
+        assert_eq!(loaded.profile().macros[0].id, "inner");
+        assert_eq!(loaded.profile().macros[0].steps[2].action, "text: hello ");
+        assert_eq!(loaded.profile().macros[0].modifier_delay_ms, Some(0));
+        assert_eq!(document.profile().rules, rules);
         assert_eq!(
-            loaded.layout().rules[0].tap_action.as_deref(),
+            loaded.profile().rules[0].tap_action.as_deref(),
             Some("macro:outer")
         );
         assert_eq!(
@@ -368,10 +368,10 @@ mod tests {
             Err(ConfigError::Macro(MacroIssue::InUse))
         );
         document
-            .update_layout(|layout| layout.rules.clear())
+            .update_profile(|profile| profile.rules.clear())
             .unwrap();
         document.remove_macro(1).unwrap();
-        assert_eq!(document.layout().macros.len(), 1);
+        assert_eq!(document.profile().macros.len(), 1);
     }
 
     #[test]
@@ -389,10 +389,10 @@ mod tests {
             )
             .unwrap();
         assert_eq!(usage(&document.config(), "copyLine"), ["macro:outer"]);
-        let mut layout = document.layout().clone();
-        rename_references(&mut layout, &[("copyLine".into(), "custom".into())]);
-        let user = layout.macros.iter().find(|m| m.id == "copyLine").unwrap();
-        let outer = layout.macros.iter().find(|m| m.id == "outer").unwrap();
+        let mut profile = document.profile().clone();
+        rename_references(&mut profile, &[("copyLine".into(), "custom".into())]);
+        let user = profile.macros.iter().find(|m| m.id == "copyLine").unwrap();
+        let outer = profile.macros.iter().find(|m| m.id == "outer").unwrap();
         assert_eq!(user.steps[0].action, "builtin:copyLineText");
         assert_eq!(outer.steps[0].action, "macro:custom");
         assert_eq!(outer.steps[1].action, "builtin:copyLineText");
@@ -407,7 +407,7 @@ mod tests {
         document
             .save_macro(None, item("outer", &["macro:inner"]))
             .unwrap();
-        let before = document.layout().clone();
+        let before = document.profile().clone();
         for invalid in [
             item("", &[]),
             item("bad id", &[]),
@@ -418,7 +418,7 @@ mod tests {
             item("new", &["macro:new"]),
         ] {
             assert!(document.save_macro(None, invalid).is_err());
-            assert_eq!(document.layout(), &before);
+            assert_eq!(document.profile(), &before);
         }
         assert!(
             document
@@ -429,8 +429,8 @@ mod tests {
         delay.step_pause_ms = Some(2001);
         assert!(document.save_macro(None, delay).is_err());
         assert_eq!(
-            super::super::layout_file::serialize(document.layout()),
-            super::super::layout_file::serialize(&before)
+            super::super::profile_file::serialize(document.profile()),
+            super::super::profile_file::serialize(&before)
         );
         paths.save_config(r#"{"version":1}"#).unwrap();
         document.save_macro(None, item("new", &[])).unwrap();
@@ -438,17 +438,17 @@ mod tests {
 
     #[test]
     fn renamed_ids_carry_their_references() {
-        let mut layout = LayoutPreset::initial();
-        let mut rule = crate::profile::model::KeyRule::new("r1".into(), "KeyA");
+        let mut profile = ProfilePreset::initial();
+        let mut rule = crate::config::model::KeyRule::new("r1".into(), "KeyA");
         rule.tap_action = Some("macro:a".into());
         rule.hold_action = Some("macro:b".into());
-        layout.rules.push(rule);
-        layout.macros = vec![item("x", &["macro:a", "macro:other"])];
+        profile.rules.push(rule);
+        profile.macros = vec![item("x", &["macro:a", "macro:other"])];
         let renames = [("a".into(), "b".into()), ("b".into(), "a".into())];
-        rename_references(&mut layout, &renames);
-        assert_eq!(layout.rules[0].tap_action.as_deref(), Some("macro:b"));
-        assert_eq!(layout.rules[0].hold_action.as_deref(), Some("macro:a"));
-        let steps: Vec<_> = layout.macros[0]
+        rename_references(&mut profile, &renames);
+        assert_eq!(profile.rules[0].tap_action.as_deref(), Some("macro:b"));
+        assert_eq!(profile.rules[0].hold_action.as_deref(), Some("macro:a"));
+        let steps: Vec<_> = profile.macros[0]
             .steps
             .iter()
             .map(|s| &s.action[..])
@@ -469,14 +469,14 @@ mod tests {
                 &[("a".into(), "c".into())],
             )
             .unwrap();
-        assert_eq!(document.layout().macros[1].steps[0].action, "macro:c");
+        assert_eq!(document.profile().macros[1].steps[0].action, "macro:c");
         document
             .save_macros(
                 vec![item("b", &["KeyA"]), item("c", &["macro:c"])],
                 &[("c".into(), "b".into()), ("b".into(), "c".into())],
             )
             .unwrap();
-        assert_eq!(document.layout().macros[1].steps[0].action, "macro:b");
+        assert_eq!(document.profile().macros[1].steps[0].action, "macro:b");
         assert!(
             analyze(&document.config())
                 .errors
@@ -488,10 +488,10 @@ mod tests {
     #[test]
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     fn editor_mapper_and_diagnostics_agree_on_expansion_limits() {
-        let mut layout = LayoutPreset::default();
+        let mut profile = ProfilePreset::default();
         for count in [1000, 1001] {
-            layout.macros = vec![item("large", &vec!["KeyA"; count])];
-            let config = ResolvedAppConfig::from_parts(Default::default(), layout.clone(), None);
+            profile.macros = vec![item("large", &vec!["KeyA"; count])];
+            let config = ResolvedAppConfig::from_parts(Default::default(), profile.clone(), None);
             let accepted = validate(&config, &config.macros[0]).is_ok();
             let mapper = crate::mapper::config::MapperConfig::try_from(&config).unwrap();
             assert_eq!(accepted, count == 1000);
@@ -506,7 +506,7 @@ mod tests {
                 accepted
             );
         }
-        layout.macros = (0..12)
+        profile.macros = (0..12)
             .map(|i| {
                 item(
                     &format!("m{i}"),
@@ -521,7 +521,7 @@ mod tests {
                 )
             })
             .collect();
-        let config = ResolvedAppConfig::from_parts(Default::default(), layout, None);
+        let config = ResolvedAppConfig::from_parts(Default::default(), profile, None);
         assert_eq!(
             analyze(&config).errors[0],
             Some(ConfigError::Macro(MacroIssue::ExpansionLimit))
@@ -533,34 +533,34 @@ mod tests {
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths).unwrap();
         document
-            .update_layout(|layout| layout.macros = vec![item("self", &["macro:self"])])
+            .update_profile(|profile| profile.macros = vec![item("self", &["macro:self"])])
             .unwrap();
         assert!(deletion_usage(&document.config(), "self").is_empty());
         assert!(!analyze(&document.config()).usage.contains_key("self"));
         document.remove_macro(0).unwrap();
-        assert!(document.layout().macros.is_empty());
+        assert!(document.profile().macros.is_empty());
     }
     #[test]
     fn preview_renames_incoming_references_in_every_section_without_mutating_source() {
-        let mut layout = LayoutPreset::initial();
-        let mut rule = crate::profile::model::KeyRule::new("rule".into(), "KeyA");
+        let mut profile = ProfilePreset::initial();
+        let mut rule = crate::config::model::KeyRule::new("rule".into(), "KeyA");
         rule.tap_action = Some("macro:a".into());
-        layout.rules.push(rule);
-        layout
+        profile.rules.push(rule);
+        profile
             .layer_keymaps
             .entry("nav".into())
             .or_default()
             .keys
             .insert("KeyB".into(), Some("macro:a".into()));
-        layout.quick_action_pages[0].cells.insert(
+        profile.quick_action_pages[0].cells.insert(
             "KeyC".into(),
-            crate::profile::model::QuickAction {
+            crate::config::model::QuickAction {
                 name: "quick".into(),
                 action: "macro:a".into(),
             },
         );
-        layout.macros = vec![item("a", &["KeyA"]), item("outer", &["macro:a"])];
-        let config = ResolvedAppConfig::from_parts(Default::default(), layout, None);
+        profile.macros = vec![item("a", &["KeyA"]), item("outer", &["macro:a"])];
+        let config = ResolvedAppConfig::from_parts(Default::default(), profile, None);
         let renamed = preview(
             &config,
             vec![item("new", &["KeyA"]), item("outer", &["macro:a"])],

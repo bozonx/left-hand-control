@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 
 /// Bindings compiled from the configuration. Immutable between
 /// reconfigurations.
-pub(super) struct CompiledLayout {
+pub(super) struct CompiledProfile {
     pub(super) rules: HashMap<KeyCode, Vec<RuleEntry>>,
     pub(super) chord_rules: Vec<(Vec<KeyCode>, RuleEntry)>,
     pub(super) macros: HashMap<String, CompiledMacro>,

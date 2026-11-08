@@ -5,7 +5,7 @@ import { NotificationCenter } from "notifications.slint";
 import { PageContent, ScrollView } from "scroll.slint";
 import { AppState } from "app-state.slint";
 import { Alert, Badge, Card, CardHeader, Divider, FieldLabel, IconButton, InfoTip, ButtonGroup } from "controls.slint";
-import { LayoutLibrary } from "library.slint";
+import { ProfileLibrary } from "library.slint";
 import { DeviceChoice, DeviceDialog, DevicePicker } from "device-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
@@ -16,8 +16,8 @@ import { AppearanceChoice, CommandPlace, GameModeControl, SettingsTab, SettingsF
 
 /// `enabled` is false for a disabled rule.
 export struct CommandPlaceRow { kind: CommandPlace, layer: string, name: string, enabled: bool }
-/// `first` marks the first row of a layout, which shows its header.
-export struct CommandAssignmentRow { layout-name: string, first: bool, name: string, script: string, places: [CommandPlaceRow] }
+/// `first` marks the first row of a profile, which shows its header.
+export struct CommandAssignmentRow { profile-name: string, first: bool, name: string, script: string, places: [CommandPlaceRow] }
 
 export global SettingsEditor {
     in-out property <bool> in-development;
@@ -26,7 +26,7 @@ export global SettingsEditor {
     in-out property <AppearanceChoice> appearance;
     in-out property <bool> high-contrast;
     in-out property <bool> reduce-motion;
-    in-out property <bool> layout-osd;
+    in-out property <bool> profile-osd;
     in-out property <bool> layer-hint;
     /// The layer hint can be shown: layer-shell is available.
     in property <bool> layer-hint-available;
@@ -74,9 +74,9 @@ export global SettingsEditor {
     in property <[GameAppEntry]> game-processes;
     in property <[GameAppEntry]> excluded-processes;
     in property <string> process-value;
-    /// Enabled rules of the current layout with a game-mode condition.
+    /// Enabled rules of the current profile with a game-mode condition.
     in property <int> game-rule-count;
-    /// Enabled automatic layout rules with a game-mode condition.
+    /// Enabled automatic profile rules with a game-mode condition.
     in property <int> game-auto-rule-count;
     in property <[string]> text-modes;
     in-out property <int> text-mode-index;
@@ -91,7 +91,7 @@ export global SettingsEditor {
     in-out property <string> mouse-device-path;
     in property <[DeviceChoice]> mouse-devices;
     in property <string> settings-dir;
-    in property <string> layouts-dir;
+    in property <string> profiles-dir;
     /// Why the mapper cannot use the input devices; empty when it can.
     in property <[Message]> input-issues;
     in property <Message> device-discovery-error;
@@ -247,7 +247,7 @@ component MapperStatusCard inherits Rectangle {
                     : root.running ? @tr("Running for {}", root.duration(Math.max(AppState.mapper-uptime, 0)))
                     : root.crashed ? Locale.text({ id: "mapper-stopped-error" })
                     : root.failed ? Locale.text(AppState.mapper-error)
-                    : root.ready ? @tr("Keys work as usual. Start the mapper to apply your layouts.")
+                    : root.ready ? @tr("Keys work as usual. Start the mapper to apply your profiles.")
                     : @tr("Select a keyboard below to start the mapper.");
                 color: root.failed ? Theme.text : Theme.muted; font-size: Theme.font-body; wrap: word-wrap;
             }
@@ -255,7 +255,7 @@ component MapperStatusCard inherits Rectangle {
                 text: @tr("Stopped {} ago after running for {}.", root.duration(AppState.mapper-stopped-ago), root.duration(AppState.mapper-ran));
                 color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap;
             }
-            // Directly in this layout: a nested one would size wrapped lines for the unwrapped width.
+            // Directly in this profile: a nested one would size wrapped lines for the unwrapped width.
             for issue in (root.has-issues ? SettingsEditor.input-issues : []): Text {
                 accessible-live-region: assertive;
                 text: "⚠ " + Locale.text(issue);
@@ -414,7 +414,7 @@ export component SettingsPage inherits PageLayout {
                             padding: Theme.space-xl;
                             spacing: Theme.space-2xl;
                             if AppState.autostart-supported: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; toggled => { SettingsEditor.save(); } }
-                            if AppState.in-development && AppState.is-linux: CheckBox { text: @tr("Show the Left Hand Control layout name when it changes"); checked <=> SettingsEditor.layout-osd; toggled => { SettingsEditor.save(); } }
+                            if AppState.in-development && AppState.is-linux: CheckBox { text: @tr("Show the Left Hand Control profile name when it changes"); checked <=> SettingsEditor.profile-osd; toggled => { SettingsEditor.save(); } }
                             if AppState.in-development && AppState.is-linux: HorizontalLayout { vertical-stretch: 0; alignment: start; spacing: Theme.space-s;
                                 CheckBox { horizontal-stretch: 0; text: @tr("Show the keys of a layer while it is held"); checked <=> SettingsEditor.layer-hint; toggled => { SettingsEditor.save(); } }
                                 VerticalLayout { visible: !SettingsEditor.layer-hint-available || AppState.in-development; alignment: center; InfoTip { text: SettingsEditor.layer-hint-available ? @tr("The hint appears 2 seconds after the layer activates. Pressing a layer key hides or cancels it until the trigger is released, including in game mode.") : @tr("Unavailable: build with the spell feature and use a Wayland compositor with layer-shell (KDE Plasma, Sway, Hyprland)."); } }
@@ -433,8 +433,8 @@ export component SettingsPage inherits PageLayout {
                             }
                             Divider {}
                             HorizontalLayout { spacing: Theme.space-m; padding: 0px; vertical-stretch: 0;
-                                Text { vertical-stretch: 0; text: @tr("Layouts directory: {}", SettingsEditor.layouts-dir); color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
-                                Button { text: @tr("Copy path"); accessible-description: SettingsEditor.layouts-dir; clicked => { root.copy-path(SettingsEditor.layouts-dir); } }
+                                Text { vertical-stretch: 0; text: @tr("Profiles directory: {}", SettingsEditor.profiles-dir); color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
+                                Button { text: @tr("Copy path"); accessible-description: SettingsEditor.profiles-dir; clicked => { root.copy-path(SettingsEditor.profiles-dir); } }
                             }
                         }
                     }
@@ -466,7 +466,7 @@ export component SettingsPage inherits PageLayout {
                     title: "";
                     HorizontalLayout { alignment: start; spacing: Theme.space-s;
                         CheckBox { horizontal-stretch: 0; text: @tr("Allow command execution"); checked <=> SettingsEditor.commands-enabled; toggled => { SettingsEditor.save(); } }
-                        VerticalLayout { alignment: center; InfoTip { text: (AppState.is-windows ? @tr("Commands run with PowerShell in the background and are not awaited.") : @tr("Commands run with sh -lc in the background and are not awaited.")) + "\n" + @tr("Commands stay off until you allow execution. Review below what your layouts would run."); } }
+                        VerticalLayout { alignment: center; InfoTip { text: (AppState.is-windows ? @tr("Commands run with PowerShell in the background and are not awaited.") : @tr("Commands run with sh -lc in the background and are not awaited.")) + "\n" + @tr("Commands stay off until you allow execution. Review below what your profiles would run."); } }
                     }
                     VerticalLayout { padding: 0px; spacing: Theme.space-xl;
                         if SettingsEditor.commands-loading: Text { accessible-live-region: polite; text: @tr("Please wait…"); color: Theme.muted; }
@@ -478,7 +478,7 @@ export component SettingsPage inherits PageLayout {
                         for item in SettingsEditor.command-assignments: VerticalLayout {
                             spacing: Theme.space-m;
                             if item.first: Text {
-                                text: item.layout-name != "" ? item.layout-name : @tr("Custom layout");
+                                text: item.profile-name != "" ? item.profile-name : @tr("Custom profile");
                                 color: Theme.text; font-weight: Theme.weight-semibold; wrap: word-wrap;
                             }
                             if item.first: HorizontalLayout {
@@ -600,9 +600,9 @@ export component SettingsPage inherits PageLayout {
                         Text {
                             vertical-stretch: 0; max-width: Theme.text-column; color: Theme.muted; wrap: word-wrap;
                             text: [
-                                @tr("Types with the current layout, or pastes the whole text when a character is unavailable. Paste requires clipboard access and support for the paste shortcut. Preserves clipboard formats and cancels if the destination changes. Requires portal permission and active-window detection."),
+                                @tr("Types with the current profile, or pastes the whole text when a character is unavailable. Paste requires clipboard access and support for the paste shortcut. Preserves clipboard formats and cancels if the destination changes. Requires portal permission and active-window detection."),
                                 @tr("Types only through libei using the current keyboard layout and Caps Lock state. Skips text with unavailable characters. Requires portal permission and active-window detection. Cancels if the destination changes."),
-                                @tr("Types only through NotifyKeyboardKeycode using the KDE layout and readable keyboard state. Skips text with unavailable characters. Requires portal permission and active-window detection. Cancels if the destination changes."),
+                                @tr("Types only through NotifyKeyboardKeycode using the KDE profile and readable keyboard state. Skips text with unavailable characters. Requires portal permission and active-window detection. Cancels if the destination changes."),
                                 @tr("Pastes with the paste shortcut through the portal. Requires clipboard access, active-window detection and an app supporting that shortcut. Preserves all clipboard formats; a new user copy takes precedence. Reports an error if no text transfer is observed."),
                                 @tr("Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. Reliable for Latin text only. On an error, stops without switching methods."),
                                 @tr("Runs \"xdotool type\" only. Works only in X11 sessions and XWayland windows. On an error, stops without switching methods."),
@@ -750,7 +750,7 @@ export component SettingsPage inherits PageLayout {
                             selected(index) => { AppState.set-game-control(index == 0 ? GameModeControl.auto : index == 1 ? GameModeControl.on : GameModeControl.off); }
                         }
                         Rectangle { horizontal-stretch: 1; }
-                        VerticalLayout { alignment: center; InfoTip { text: @tr("Game mode turns on rules and automatic layout rules that have a game-mode condition. Automatic layout rules apply only when the layout is chosen automatically (Layouts page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Never a game” takes priority over automatic detection and “Always a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."); } }
+                        VerticalLayout { alignment: center; InfoTip { text: @tr("Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Never a game” takes priority over automatic detection and “Always a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."); } }
                     }
 
                     TitledCard {
@@ -892,8 +892,8 @@ export component CommandDialogOverlay inherits FocusScope {
         card-width: 720px;
         close => { SettingsEditor.full-command = ""; }
         ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
-            preferred-height: full-layout.preferred-height;
-            full-layout := VerticalLayout {
+            preferred-height: full-profile.preferred-height;
+            full-profile := VerticalLayout {
                 full-text := TextInput {
                     accessible-label: @tr("Command");
                     text: SettingsEditor.full-command;

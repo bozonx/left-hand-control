@@ -120,7 +120,7 @@ Release-сборки используют `~/.config/dev.bozonx.left-hand-contro
 файл с правами `0600`.
 
 JSON Schema обоих форматов лежат в `schemas/` и генерируются из `*Doc`-структур
-читателей (`profile/settings.rs`, `profile/layout_file.rs`). После изменения формата
+читателей (`config/settings.rs`, `config/profile_file.rs`). После изменения формата
 обновите их и закоммитьте вместе с кодом:
 
 ```sh
@@ -522,7 +522,7 @@ USB-клавиатура) и сравнивает полученный текс�
 | `boot`, `upload`, `plasma-session`, `install` | Загрузка, автологин в Plasma Wayland, установка штатным менеджером или `install-linux.sh` |
 | `installed-files` | `.desktop` (и `desktop-file-validate`), metainfo, иконки hicolor; для пакетов — udev-правило и запись в `/dev/uinput` для сессии через `uaccess` |
 | `keyboard-probe` | Какой узел `/dev/input` получает клавиши QEMU `usb-kbd`; он становится `settings.devices.keyboards` |
-| `test-config` | Тестовый профиль (`E2E_LAYOUT` в `linux-guest.py`), команды разрешены, раскладки `us,ru`, два рабочих стола, автозапуск |
+| `test-config` | Тестовый профиль (`E2E_PROFILE` в `linux-guest.py`), команды разрешены, раскладки `us,ru`, два рабочих стола, автозапуск |
 | `previous-release`, `upgrade-from-previous` | Только с `--previous`: обновление с сохранением конфига |
 | `start-without-input`, `tray-item`, `no-mapper-without-input` | Без группы `input` приложение стартует, регистрирует элемент трея (`StatusNotifierWatcher`, Id `lhc-slint-shell`), а mapper не создаёт виртуальную клавиатуру |
 | `autostart-entry` | XDG Autostart указывает на установленный бинарник |
@@ -534,7 +534,7 @@ USB-клавиатура) и сравнивает полученный текс�
 | `layer-tap-hold` | Слой на `F`: tap → `g`, hold + `j` → `k`, быстрый вложенный набор → `k`, «перекат» (F отпущена раньше J) → `gj`, `j` вне слоя → `j` (permissive hold, 200 мс) |
 | `macro`, `command` | Макрос `KeyN, pause:300, text:mac, Shift+KeyO` → `nmacO`; `cmd:` создаёт файл-маркер |
 | `system-actions` | `sys:switchDesktop2`, `kde:kwin/Switch to Desktop 1`, `sys:switchKeyboardLayout2/1` — по состоянию KWin и `org.kde.keyboard` |
-| `russian-layout` | В раскладке ru физические клавиши дают кириллицу (`a`→KeyB→`и`, `c`→`с`), `text:` вводится без искажений |
+| `russian-profile` | В раскладке ru физические клавиши дают кириллицу (`a`→KeyB→`и`, `c`→`с`), `text:` вводится без искажений |
 | `popups`, `emoji-ipc`, `quick-menu-rule` | IPC show/hide; эмодзи из `show emoji` + `Q` и быстрое действие из `lhc:showQuickMenu1` + `Q` вставляются в окно, бывшее активным до попапа |
 | `emoji-hotkey` | Ctrl+Alt+F11 открывает Emoji, `Q` вставляет эмодзи, консоль не переключается на VT11 |
 | `game-mode` | Правило с `when.gameMode`: Off, On (`game on`), Auto без игры и с процессом из `gameMode.processes` |

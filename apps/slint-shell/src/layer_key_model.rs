@@ -6,11 +6,11 @@ use crate::{
     ui::{ActionKind, Assignment, LayerKeyCell, PickerCategory, SettingsWindow},
 };
 use lhc_core::{
-    config_document::ConfigDocument,
-    profile::{
+    config::{
         actions,
-        model::{LayerKeymap, LayoutPreset, ResolvedAppConfig},
+        model::{LayerKeymap, ProfilePreset, ResolvedAppConfig},
     },
+    config_document::ConfigDocument,
 };
 use std::collections::HashMap;
 
@@ -167,20 +167,20 @@ pub(crate) fn hands(
     )
 }
 
-/// The keys of layer `id` of the running `layout` for the layer hint, or
-/// `None` when the layout has no such layer.
+/// The keys of layer `id` of the running `profile` for the layer hint, or
+/// `None` when the profile has no such layer.
 pub(crate) fn hint(
     ui: &SettingsWindow,
     config: &ConfigDocument,
-    layout: &LayoutPreset,
+    profile: &ProfilePreset,
     id: &str,
 ) -> Option<crate::layer_hint_model::LayerHint> {
-    let layer = layout.layers.iter().find(|layer| layer.id == id)?;
+    let layer = profile.layers.iter().find(|layer| layer.id == id)?;
     let names = action_names(
         ui,
-        &ResolvedAppConfig::from_parts(config.settings().clone(), layout.clone(), None),
+        &ResolvedAppConfig::from_parts(config.settings().clone(), profile.clone(), None),
     );
-    let (left, right) = hands(layout.layer_keymaps.get(id), &names);
+    let (left, right) = hands(profile.layer_keymaps.get(id), &names);
     Some(crate::layer_hint_model::LayerHint::from_cells(
         layer.name.clone(),
         &left,

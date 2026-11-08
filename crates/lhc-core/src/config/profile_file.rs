@@ -1,4 +1,4 @@
-//! Saved layout JSON files in the user library.
+//! Saved profile JSON files in the user library.
 //!
 //! The format is versioned (`"version": 1`) and read strictly: unknown
 //! fields, wrong types and unknown enum values are errors, so a file is
@@ -8,46 +8,46 @@
 
 use super::model::GameModeCondition as OnOff;
 use super::model::{
-    Command, EmojiPage, HoldBehavior, KeyRule, LEFT_HAND_HOTKEYS, Layer, LayerKeymap,
-    LayoutConditionSet, LayoutPreset, Macro, MacroStep, QuickAction, QuickActionPage, TapDecision,
+    Command, EmojiPage, HoldBehavior, KeyRule, LEFT_HAND_HOTKEYS, Layer, LayerKeymap, Macro,
+    MacroStep, ProfileConditionSet, ProfilePreset, QuickAction, QuickActionPage, TapDecision,
 };
-use super::schema::{self, LAYOUT_SCHEMA_VERSION};
+use super::schema::{self, PROFILE_SCHEMA_VERSION};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::{BTreeMap, BTreeSet};
 
-/// JSON Schema of the layout file, published under `schemas/`.
+/// JSON Schema of the profile file, published under `schemas/`.
 #[cfg(test)]
 pub(crate) fn json_schema() -> schemars::Schema {
-    schemars::schema_for!(LayoutDoc)
+    schemars::schema_for!(ProfileDoc)
 }
 
-/// Parse a layout file. Returns `Ok(None)` for an empty document.
-pub fn parse(text: &str) -> Result<Option<LayoutPreset>, String> {
+/// Parse a profile file. Returns `Ok(None)` for an empty document.
+pub fn parse(text: &str) -> Result<Option<ProfilePreset>, String> {
     if text.trim().is_empty() {
         return Ok(None);
     }
     let value: serde_json::Value =
-        serde_json::from_str(text).map_err(|error| format!("parse layout: {error}"))?;
-    let layout = match schema::read_version(&value, "layout", LAYOUT_SCHEMA_VERSION)? {
+        serde_json::from_str(text).map_err(|error| format!("parse profile: {error}"))?;
+    let profile = match schema::read_version(&value, "profile", PROFILE_SCHEMA_VERSION)? {
         1 => from_doc(
-            serde_json::from_str::<LayoutDoc>(text)
-                .map_err(|error| schema::read_error("parse layout", &error))?,
+            serde_json::from_str::<ProfileDoc>(text)
+                .map_err(|error| schema::read_error("parse profile", &error))?,
         )?,
-        version => return Err(format!("layout: no reader for schema version {version}")),
+        version => return Err(format!("profile: no reader for schema version {version}")),
     };
-    super::timing::validate_layout(&layout)?;
-    Ok(Some(layout))
+    super::timing::validate_profile(&profile)?;
+    Ok(Some(profile))
 }
 
-pub fn serialize(preset: &LayoutPreset) -> String {
+pub fn serialize(preset: &ProfilePreset) -> String {
     serde_json::to_string_pretty(&to_doc(preset)).unwrap_or_default()
 }
 
 #[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct LayoutDoc {
-    #[cfg_attr(test, schemars(extend("const" = LAYOUT_SCHEMA_VERSION)))]
+struct ProfileDoc {
+    #[cfg_attr(test, schemars(extend("const" = PROFILE_SCHEMA_VERSION)))]
     version: u64,
     #[serde(
         rename = "$schema",
@@ -78,7 +78,7 @@ struct LayoutDoc {
     emoji_menu_pages: Vec<PageDoc<String>>,
 }
 
-/// Portable information about the layout from its author. Every field is
+/// Portable information about the profile from its author. Every field is
 /// optional; `null` is not allowed.
 #[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Default, Serialize, Deserialize)]
@@ -98,14 +98,14 @@ struct MetaDoc {
     )]
     #[cfg_attr(test, schemars(with = "String"))]
     author: Option<String>,
-    /// The author's version of the layout, unrelated to the format `version`.
+    /// The author's version of the profile, unrelated to the format `version`.
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         deserialize_with = "schema::non_null"
     )]
     #[cfg_attr(test, schemars(with = "String"))]
-    layout_version: Option<String>,
+    profile_version: Option<String>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
@@ -119,7 +119,7 @@ impl MetaDoc {
     fn is_empty(&self) -> bool {
         self.name.is_none()
             && self.author.is_none()
-            && self.layout_version.is_none()
+            && self.profile_version.is_none()
             && self.description.is_none()
     }
 }
@@ -196,7 +196,7 @@ struct RuleDoc {
     tap_decision: Option<TapDecision>,
 }
 
-/// Conditions of a layout rule or an auto-mode rule; every present
+/// Conditions of a profile rule or an auto-mode rule; every present
 /// condition must hold. Both places share this one object.
 #[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Default, Serialize, Deserialize)]
@@ -228,17 +228,17 @@ impl WhenDoc {
         non_empty_items(&self.exclude_windows, "window pattern")
     }
 
-    pub(crate) fn into_set(self) -> Result<LayoutConditionSet, String> {
+    pub(crate) fn into_set(self) -> Result<ProfileConditionSet, String> {
         self.check()?;
-        Ok(LayoutConditionSet {
+        Ok(ProfileConditionSet {
             game_mode: self.game_mode,
-            layouts: self.keyboard_layouts,
+            keyboard_layouts: self.keyboard_layouts,
             window_patterns: self.windows,
             excluded_window_patterns: self.exclude_windows,
         })
     }
 
-    pub(crate) fn from_set(set: &LayoutConditionSet) -> Self {
+    pub(crate) fn from_set(set: &ProfileConditionSet) -> Self {
         let list = |items: &[String]| -> Vec<String> {
             items
                 .iter()
@@ -248,7 +248,7 @@ impl WhenDoc {
         };
         Self {
             game_mode: set.game_mode,
-            keyboard_layouts: list(&set.layouts),
+            keyboard_layouts: list(&set.keyboard_layouts),
             windows: list(&set.window_patterns),
             exclude_windows: list(&set.excluded_window_patterns),
         }
@@ -473,14 +473,6 @@ fn check_cells<'a>(mut keys: impl Iterator<Item = &'a String>, menu: &str) -> Re
     })
 }
 
-/// A rule trigger in its canonical spelling: sided key codes, so `Ctrl`
-/// is stored as `ControlLeft`. An invalid trigger is kept for diagnostics.
-fn canonical_trigger(key: &str) -> String {
-    super::key_catalog::trigger_keys(key)
-        .map(|keys| keys.join("+"))
-        .unwrap_or_else(|| key.to_owned())
-}
-
 fn non_empty_items(items: &[String], what: &str) -> Result<(), String> {
     items.iter().try_for_each(|item| non_empty(item, what))
 }
@@ -498,7 +490,7 @@ fn three_state(value: Option<Option<String>>, what: &str) -> Result<Option<Strin
     }
 }
 
-fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
+fn from_doc(mut doc: ProfileDoc) -> Result<ProfilePreset, String> {
     super::ids::unique(doc.layers.iter().map(|item| item.id.as_str()), "layers")?;
     super::ids::unique(doc.macros.iter().map(|item| item.id.as_str()), "macros")?;
     super::ids::unique(doc.commands.iter().map(|item| item.id.as_str()), "commands")?;
@@ -587,12 +579,13 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
             id: rule.id.unwrap_or_default(),
             enabled: (!rule.enabled).then_some(false),
             condition_game_mode: when.game_mode.map(|mode| mode.as_str().to_owned()),
-            condition_keyboard_layouts: (!when.layouts.is_empty()).then_some(when.layouts),
+            condition_keyboard_layouts: (!when.keyboard_layouts.is_empty())
+                .then_some(when.keyboard_layouts),
             condition_window_patterns: (!when.window_patterns.is_empty())
                 .then_some(when.window_patterns),
             condition_excluded_window_patterns: (!when.excluded_window_patterns.is_empty())
                 .then_some(when.excluded_window_patterns),
-            key: canonical_trigger(&rule.key),
+            key: rule.key.clone(),
             layer_id: hold.layer.unwrap_or_default(),
             tap_action,
             hold_behavior: None,
@@ -685,14 +678,14 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
 
     let meta = doc.meta.unwrap_or_default();
     let description = meta.description.filter(|d| !d.trim().is_empty());
-    let meta = super::model::LayoutMetadata {
+    let meta = super::model::ProfileMetadata {
         name: meta.name,
         author: meta.author,
-        version: meta.layout_version,
+        version: meta.profile_version,
     };
-    Ok(LayoutPreset {
+    Ok(ProfilePreset {
         schema: doc.schema,
-        meta: (meta != super::model::LayoutMetadata::default()).then_some(meta),
+        meta: (meta != super::model::ProfileMetadata::default()).then_some(meta),
         description,
         layers,
         rules,
@@ -707,7 +700,7 @@ fn from_doc(mut doc: LayoutDoc) -> Result<LayoutPreset, String> {
 /// Build the file form. Entries the parser would reject but the editor can
 /// hold transiently (a rule without a key, an empty macro step) are left
 /// out, so every saved file loads again.
-fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
+fn to_doc(preset: &ProfilePreset) -> ProfileDoc {
     let text = |value: &str| (!value.is_empty()).then(|| value.to_owned());
     let list = |items: &Option<Vec<String>>| -> Vec<String> {
         items
@@ -892,15 +885,15 @@ fn to_doc(preset: &LayoutPreset) -> LayoutDoc {
     fn only_default<T>(pages: &[PageDoc<T>]) -> bool {
         matches!(pages, [page] if page.name.is_none() && page.cells.0.is_empty())
     }
-    LayoutDoc {
-        version: LAYOUT_SCHEMA_VERSION,
+    ProfileDoc {
+        version: PROFILE_SCHEMA_VERSION,
         schema: preset.schema.clone(),
         meta: {
             let meta = preset.meta.clone().unwrap_or_default();
             let meta = MetaDoc {
                 name: meta.name,
                 author: meta.author,
-                layout_version: meta.version,
+                profile_version: meta.version,
                 description: preset.description.clone().filter(|d| !d.trim().is_empty()),
             };
             (!meta.is_empty()).then_some(meta)
@@ -927,17 +920,17 @@ mod tests {
     use super::*;
     use serde_json::{Value, json};
 
-    fn layout(body: Value) -> String {
+    fn profile(body: Value) -> String {
         let mut body = body;
         body["version"] = json!(1);
         body.to_string()
     }
 
-    fn parsed(body: Value) -> LayoutPreset {
-        parse(&layout(body)).unwrap().unwrap()
+    fn parsed(body: Value) -> ProfilePreset {
+        parse(&profile(body)).unwrap().unwrap()
     }
 
-    fn round_trip(preset: &LayoutPreset) -> LayoutPreset {
+    fn round_trip(preset: &ProfilePreset) -> ProfilePreset {
         parse(&serialize(preset)).unwrap().unwrap()
     }
 
@@ -945,12 +938,12 @@ mod tests {
     fn timing_inherits_only_when_absent() {
         for kind in ["hold", "longHold", "doubleTap"] {
             let mut rule = json!({"key": "KeyA", kind: {"action": "KeyB"}});
-            assert!(parse(&layout(json!({"rules": [rule.clone()]}))).is_ok());
+            assert!(parse(&profile(json!({"rules": [rule.clone()]}))).is_ok());
             rule[kind]["timeoutMs"] = Value::Null;
-            assert!(parse(&layout(json!({"rules": [rule]}))).is_err());
+            assert!(parse(&profile(json!({"rules": [rule]}))).is_err());
         }
         for field in ["stepPauseMs", "modifierDelayMs"] {
-            assert!(parse(&layout(json!({"macros": [{"id": "m", field: null}]}))).is_err());
+            assert!(parse(&profile(json!({"macros": [{"id": "m", field: null}]}))).is_err());
         }
         let preset = parsed(json!({"rules": [{"key": "KeyA", "tap": null}]}));
         assert_eq!(round_trip(&preset), preset);
@@ -958,8 +951,8 @@ mod tests {
 
     #[test]
     fn portable_metadata_and_schema_survive_round_trip() {
-        let body = json!({"$schema": "https://example.com/layout.schema.json",
-            "meta": {"name": "Original", "author": "Ivan K", "layoutVersion": "1.0",
+        let body = json!({"$schema": "https://example.com/profile.schema.json",
+            "meta": {"name": "Original", "author": "Ivan K", "profileVersion": "1.0",
                      "description": "Portable"}});
         let preset = parsed(body.clone());
         assert_eq!(round_trip(&preset), preset);
@@ -972,13 +965,13 @@ mod tests {
             json!({"meta": null}),
             json!({"meta": {"author": null}}),
             json!({"meta": {"future": true}}),
-            json!({"meta": {"layoutVersion": 1}}),
+            json!({"meta": {"profileVersion": 1}}),
             json!({"meta": {"version": "1.0"}}),
             json!({"meta": {"description": null}}),
             json!({"description": "moved into meta"}),
             json!({"quickMenuPages": [{"cells": {"KeyQ": {"action": "KeyA", "icon": "x"}}}]}),
         ] {
-            assert!(parse(&layout(invalid)).is_err());
+            assert!(parse(&profile(invalid)).is_err());
         }
     }
 
@@ -1007,13 +1000,13 @@ mod tests {
     fn generated_ids_reserve_explicit_ids_including_later_entries() {
         let text = r#"{"version":1,"rules":[{"key":"KeyA"},{"id":"rule-1","key":"KeyB"}],
             "quickMenuPages":[{}, {"id":"quick-1"}],"emojiMenuPages":[{}, {"id":"emoji-1"}]}"#;
-        let layout = parse(text).unwrap().unwrap();
-        super::super::ids::validate_layout(&layout).unwrap();
-        assert_eq!(layout.rules[0].id, "rule-2");
-        assert_eq!(layout.quick_action_pages[0].id, "quick-2");
-        assert_eq!(layout.emoji_pages[0].id, "emoji-2");
-        assert_eq!(parse(&serialize(&layout)).unwrap().unwrap(), layout);
-        assert_eq!(parse(text).unwrap().unwrap(), layout);
+        let profile = parse(text).unwrap().unwrap();
+        super::super::ids::validate_profile(&profile).unwrap();
+        assert_eq!(profile.rules[0].id, "rule-2");
+        assert_eq!(profile.quick_action_pages[0].id, "quick-2");
+        assert_eq!(profile.emoji_pages[0].id, "emoji-2");
+        assert_eq!(parse(&serialize(&profile)).unwrap().unwrap(), profile);
+        assert_eq!(parse(text).unwrap().unwrap(), profile);
     }
 
     #[test]
@@ -1075,7 +1068,7 @@ mod tests {
         assert!(parse(r#"{"version": "1"}"#).is_err());
         assert!(parse(r#"{"version": 1}"#).unwrap().is_some());
         assert_eq!(
-            serde_json::from_str::<Value>(&serialize(&LayoutPreset::default())).unwrap()["version"],
+            serde_json::from_str::<Value>(&serialize(&ProfilePreset::default())).unwrap()["version"],
             1
         );
     }
@@ -1086,7 +1079,7 @@ mod tests {
             json!({"extra": true}),
             json!({"rules": [{"key": "KeyA", "holdMs": 100}]}),
             json!({"rules": [{"key": "KeyA", "hold": {"layer": "x", "isolate": []}}]}),
-            json!({"rules": [{"key": "KeyA", "when": {"layouts": ["us"]}}]}),
+            json!({"rules": [{"key": "KeyA", "when": {"profiles": ["us"]}}]}),
             json!({"rules": [{"key": "KeyA", "when": {"gameMode": "maybe"}}]}),
             json!({"rules": [{"key": "KeyA", "tapDecision": "sometimes"}]}),
             json!({"rules": [{"key": "KeyA", "tap": 5}]}),
@@ -1110,22 +1103,19 @@ mod tests {
             json!({"quickMenuPages": [{"cells": {"KeyQ": {"name": "No action"}}}]}),
             json!({"emojiMenuPages": [{"cells": {"KeyQ": 5}}]}),
         ] {
-            assert!(parse(&layout(body.clone())).is_err(), "accepted {body}");
+            assert!(parse(&profile(body.clone())).is_err(), "accepted {body}");
         }
-        let error = parse(&layout(json!({"extra": true}))).unwrap_err();
+        let error = parse(&profile(json!({"extra": true}))).unwrap_err();
         assert!(error.contains("newer version"), "{error}");
     }
 
     #[test]
-    fn rule_triggers_are_stored_canonically() {
+    fn rule_triggers_are_kept_as_written() {
         let preset = parsed(json!({"rules": [
-            {"key": "Ctrl + KeyA"}, {"key": "Shift+ControlRight"}, {"key": "NoSuchKey"},
+            {"key": "Ctrl+KeyA"}, {"key": "ShiftLeft+ControlRight"}, {"key": "NoSuchKey"},
         ]}));
         let keys: Vec<_> = preset.rules.iter().map(|rule| rule.key.as_str()).collect();
-        assert_eq!(
-            keys,
-            ["ControlLeft+KeyA", "ShiftLeft+ControlRight", "NoSuchKey"]
-        );
+        assert_eq!(keys, ["Ctrl+KeyA", "ShiftLeft+ControlRight", "NoSuchKey"]);
     }
 
     #[test]
@@ -1201,9 +1191,9 @@ mod tests {
         rule.layer_id = "nav".into();
         rule.long_hold_action = "KeyB".into();
         rule.hold_behavior = Some(HoldBehavior::Layer);
-        let preset = LayoutPreset {
+        let preset = ProfilePreset {
             rules: vec![rule],
-            ..LayoutPreset::default()
+            ..ProfilePreset::default()
         };
         let saved: Value = serde_json::from_str(&serialize(&preset)).unwrap();
         assert_eq!(saved["rules"][0]["hold"]["layer"], "nav");
@@ -1269,7 +1259,7 @@ mod tests {
     fn transient_editor_entries_are_not_saved() {
         let mut rule = KeyRule::new("r1".into(), "");
         rule.tap_action = Some("KeyA".into());
-        let mut preset = LayoutPreset::initial();
+        let mut preset = ProfilePreset::initial();
         preset.rules.push(rule);
         preset.macros.push(Macro {
             id: "m".into(),
@@ -1311,7 +1301,7 @@ mod tests {
 
     #[test]
     fn parsing_is_deterministic_without_ids() {
-        let text = layout(
+        let text = profile(
             json!({"rules": [{"key": "CapsLock"}], "quickMenuPages": [{"cells": {"KeyQ": "KeyA"}}]}),
         );
         assert_eq!(parse(&text), parse(&text));

@@ -741,7 +741,7 @@ mod tests {
                 },
                 EngineOutput::Literal("must not type".into()),
                 EngineOutput::RunSystem(SystemAction::AppEvent(
-                    crate::profile::app_action::AppAction::parse("showSettings").unwrap(),
+                    crate::config::app_action::AppAction::parse("showSettings").unwrap(),
                 )),
                 EngineOutput::RunCommand(ProcessInvocation {
                     program: "unused".into(),
@@ -832,7 +832,7 @@ mod tests {
             },
             EngineOutput::Literal("tail".into()),
             EngineOutput::RunSystem(SystemAction::AppEvent(
-                crate::profile::app_action::AppAction::parse("showSettings").unwrap(),
+                crate::config::app_action::AppAction::parse("showSettings").unwrap(),
             )),
             EngineOutput::RunCommand(ProcessInvocation {
                 program: "sh".into(),
@@ -1047,7 +1047,7 @@ mod tests {
         }
 
         let popup = EngineOutput::RunSystem(SystemAction::AppEvent(
-            crate::profile::app_action::AppAction::parse("showQuickMenu1").unwrap(),
+            crate::config::app_action::AppAction::parse("showQuickMenu1").unwrap(),
         ));
         iterate!(&mut hold, start, vec![popup, key_a(true)]);
         let wait = iterate!(&mut hold, start, vec![key_a(false)]);
@@ -1066,7 +1066,7 @@ mod tests {
         );
 
         let popup = EngineOutput::RunSystem(SystemAction::AppEvent(
-            crate::profile::app_action::AppAction::parse("showEmojiMenuLast").unwrap(),
+            crate::config::app_action::AppAction::parse("showEmojiMenuLast").unwrap(),
         ));
         iterate!(&mut hold, start, vec![popup, key_a(true)]);
         assert_eq!(sink.batches.len(), 2);
@@ -1076,7 +1076,7 @@ mod tests {
         // Other app actions and releases with nothing held change nothing.
         hold.release();
         let settings = EngineOutput::RunSystem(SystemAction::AppEvent(
-            crate::profile::app_action::AppAction::parse("showSettings").unwrap(),
+            crate::config::app_action::AppAction::parse("showSettings").unwrap(),
         ));
         iterate!(&mut hold, start, vec![settings, key_a(false)]);
         assert_eq!(sink.batches.len(), 4);
@@ -1088,7 +1088,7 @@ mod tests {
         let start = Instant::now();
         let mut hold = OutputHold::default();
         let popup = EngineOutput::RunSystem(SystemAction::AppEvent(
-            crate::profile::app_action::AppAction::parse("showQuickMenu1").unwrap(),
+            crate::config::app_action::AppAction::parse("showQuickMenu1").unwrap(),
         ));
         let mut buf = vec![
             popup,
@@ -1437,7 +1437,7 @@ mod tests {
         let mut hold = OutputHold::default();
         let mut out = vec![
             EngineOutput::RunSystem(SystemAction::AppEvent(
-                crate::profile::app_action::AppAction::parse("showQuickMenu1").unwrap(),
+                crate::config::app_action::AppAction::parse("showQuickMenu1").unwrap(),
             )),
             EngineOutput::KeyRaw {
                 key: KeyCode::KEY_B,
@@ -1451,7 +1451,7 @@ mod tests {
             EngineOutput::RunMacroText("stale macro".into(), crate::text_input::MacroText::default()),
             command(),
             EngineOutput::RunSystem(SystemAction::AppEvent(
-                crate::profile::app_action::AppAction::parse("toggleGameMode").unwrap(),
+                crate::config::app_action::AppAction::parse("toggleGameMode").unwrap(),
             )),
         ];
         let now = Instant::now();
@@ -1486,7 +1486,7 @@ mod tests {
         let mut hold = OutputHold::default();
         let mut out = vec![
             EngineOutput::RunSystem(SystemAction::AppEvent(
-                crate::profile::app_action::AppAction::parse("showQuickMenu1").unwrap(),
+                crate::config::app_action::AppAction::parse("showQuickMenu1").unwrap(),
             )),
             EngineOutput::Literal("must not be typed on shutdown".into()),
         ];

@@ -26,14 +26,14 @@ pub(super) struct PopupController {
     generations: RefCell<HashMap<Window, u64>>,
     /// Requested page and the chosen action waiting for the focus to leave.
     session: RefCell<PopupSession>,
-    /// Menus of the active layout for the winit popups.
+    /// Menus of the active profile for the winit popups.
     configured: RefCell<Option<Rc<ConfiguredMenus>>>,
     /// Menus the winit popups show now; their page ids locate the last
     /// used page in newer menus.
     applied: RefCell<Option<Rc<ConfiguredMenus>>>,
     /// Bumped whenever the menus may have changed.
     generation: Cell<u64>,
-    /// Layout and generation last sent to the Spell worker.
+    /// Profile and generation last sent to the Spell worker.
     sent: RefCell<Option<(Option<String>, u64)>>,
 }
 
@@ -57,16 +57,16 @@ impl PopupController {
         if let Some(menus) = self.configured.borrow().as_ref() {
             return menus.clone();
         }
-        let layout = document
+        let profile = document
             .and_then(|document| {
                 document
                     .popup_layout(lhc_core::mapper::runtime::status().running)
-                    .map(|(_, layout)| layout)
+                    .map(|(_, profile)| profile)
                     .map_err(|error| log::warn!("popup menus: {error}"))
                     .ok()
             })
             .unwrap_or_default();
-        let menus = Rc::new(ConfiguredMenus { layout });
+        let menus = Rc::new(ConfiguredMenus { profile });
         *self.configured.borrow_mut() = Some(menus.clone());
         menus
     }
@@ -117,7 +117,7 @@ impl App {
         });
     }
 
-    /// Menus of the active layout, loaded once per change.
+    /// Menus of the active profile, loaded once per change.
     pub(super) fn menus(&self) -> Rc<ConfiguredMenus> {
         self.popups.menus(self.document().as_deref())
     }
@@ -127,7 +127,7 @@ impl App {
         self.popups.invalidate();
     }
 
-    /// Tell the worker which layout's menus to show, when that changed.
+    /// Tell the worker which profile's menus to show, when that changed.
     pub(super) fn sync_worker_menus(
         &self,
         source: Source,
@@ -143,7 +143,7 @@ impl App {
         if !self.popups.needs_worker_update(&id) {
             return Ok(());
         }
-        let contents = lhc_core::profile::layout_file::serialize(&self.menus().layout);
+        let contents = lhc_core::config::profile_file::serialize(&self.menus().profile);
         self.send_worker(&WorkerCommand::PopupContents(contents), source, start, None)?;
         self.popups.worker_updated(id);
         Ok(())

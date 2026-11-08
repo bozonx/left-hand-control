@@ -10,14 +10,14 @@ use crate::{
         SettingsField, SettingsWindow,
     },
 };
-use lhc_core::mapper::devices;
-use lhc_core::platform::InputAccessIssue;
-use lhc_core::profile::menus::PlaceKind;
-use lhc_core::profile::model::{
+use lhc_core::config::menus::PlaceKind;
+use lhc_core::config::model::{
     AppSettings, Appearance, GameModeProcessMatcher, LocalePreference, PasteShortcut, TapDecision,
     TextMode,
 };
-use lhc_core::profile::timing;
+use lhc_core::config::timing;
+use lhc_core::mapper::devices;
+use lhc_core::platform::InputAccessIssue;
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{
     cell::RefCell,
@@ -152,7 +152,7 @@ macro_rules! form {
 }
 
 /// Milliseconds typed in the form, within `range`.
-fn ms(text: &str, range: lhc_core::profile::timing::MillisecondsRange) -> Result<u64, Msg> {
+fn ms(text: &str, range: lhc_core::config::timing::MillisecondsRange) -> Result<u64, Msg> {
     parse_ms(text).and_then(|value| {
         range
             .contains(value)
@@ -174,8 +174,8 @@ form! {
         load |s| s.high_contrast, store |t, v| t.high_contrast = *v;
     reduce_motion: bool = get_reduce_motion / set_reduce_motion,
         load |s| s.reduce_motion, store |t, v| t.reduce_motion = *v;
-    layout_osd: bool = get_layout_osd / set_layout_osd,
-        load |s| s.layout_osd, store |t, v| t.layout_osd = *v;
+    profile_osd: bool = get_profile_osd / set_profile_osd,
+        load |s| s.profile_osd, store |t, v| t.profile_osd = *v;
     layer_hint: bool = get_layer_hint / set_layer_hint,
         load |s| s.layer_hint, store |t, v| t.layer_hint = *v;
     locale: i32 = get_locale_index / set_locale_index,
@@ -300,7 +300,7 @@ fn save_matcher(
     }
     let Some(index) = index else {
         items.push(GameModeProcessMatcher {
-            id: lhc_core::profile::ids::generate("process-"),
+            id: lhc_core::config::ids::generate("process-"),
             name: name.to_owned(),
             only_active_window: window_only,
             is_blacklist: blacklist,
@@ -344,11 +344,11 @@ impl super::autosave::Draft for State {
     }
 }
 
-/// Rules and automatic layout rules that depend on game mode.
+/// Rules and automatic profile rules that depend on game mode.
 fn game_usage(ui: &SettingsWindow, document: &Document) {
     let config = document.read();
     let rules = config
-        .layout()
+        .profile()
         .rules
         .iter()
         .filter(|rule| rule.is_enabled() && rule.condition_game_mode.is_some())
@@ -381,7 +381,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State, force: b
 fn show_command_assignments(
     ui: &SettingsWindow,
     assignments: Result<
-        Vec<lhc_core::profile::menus::CommandAssignment>,
+        Vec<lhc_core::config::menus::CommandAssignment>,
         lhc_core::config_document::ConfigError,
     >,
 ) {
@@ -391,13 +391,13 @@ fn show_command_assignments(
             let rows: Vec<_> = rows
                 .into_iter()
                 .map(|row| {
-                    let first = previous.as_ref() != Some(&row.layout_id);
-                    previous = Some(row.layout_id.clone());
+                    let first = previous.as_ref() != Some(&row.profile_id);
+                    previous = Some(row.profile_id.clone());
                     CommandAssignmentRow {
-                        layout_name: row
-                            .layout_id
+                        profile_name: row
+                            .profile_id
                             .as_deref()
-                            .and_then(lhc_core::profile::model::user_layout_name)
+                            .and_then(lhc_core::config::model::user_profile_name)
                             .unwrap_or_default()
                             .into(),
                         first,
@@ -804,7 +804,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     {
         let config = document.read();
         e.set_settings_dir(config.paths().settings_dir().display().to_string().into());
-        e.set_layouts_dir(config.paths().layouts_dir().display().to_string().into());
+        e.set_profiles_dir(config.paths().profiles_dir().display().to_string().into());
     }
     refresh(ui, document, &mut state.borrow_mut(), true);
     refresh_devices(ui);

@@ -1,8 +1,8 @@
 //! Editable application model used by the shell and mapper.
 //!
-//! [`ResolvedAppConfig`] combines settings with a layout for diagnostics and
+//! [`ResolvedAppConfig`] combines settings with a profile for diagnostics and
 //! typed mapper projection; the persisted formats (`config.json` settings and
-//! JSON layouts) are handled by [`super::settings`] and [`super::layout_file`].
+//! JSON profiles) are handled by [`super::settings`] and [`super::profile_file`].
 
 use super::timing;
 use serde::{Deserialize, Serialize};
@@ -28,17 +28,17 @@ pub const LEFT_HAND_HOTKEYS: [&str; 15] = [
     "KeyC", "KeyV", "KeyB",
 ];
 
-/// Prefix of ids of layouts stored in the user library.
-pub const USER_LAYOUT_PREFIX: &str = "user:";
+/// Prefix of ids of profiles stored in the user library.
+pub const USER_PROFILE_PREFIX: &str = "user:";
 
-/// Id of the library layout `name`.
-pub fn user_layout_id(name: &str) -> String {
-    format!("{USER_LAYOUT_PREFIX}{name}")
+/// Id of the library profile `name`.
+pub fn user_profile_id(name: &str) -> String {
+    format!("{USER_PROFILE_PREFIX}{name}")
 }
 
-/// Library name of a layout id, or `None` for ids outside the library.
-pub fn user_layout_name(id: &str) -> Option<&str> {
-    id.strip_prefix(USER_LAYOUT_PREFIX)
+/// Library name of a profile id, or `None` for ids outside the library.
+pub fn user_profile_name(id: &str) -> Option<&str> {
+    id.strip_prefix(USER_PROFILE_PREFIX)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -274,7 +274,7 @@ impl EmojiPage {
 /// Portable author information, independent of the local library filename.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct LayoutMetadata {
+pub struct ProfileMetadata {
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
@@ -295,14 +295,14 @@ pub struct LayoutMetadata {
     pub version: Option<String>,
 }
 
-/// The portable keyboard configuration stored in layout JSON files.
+/// The portable keyboard configuration stored in profile JSON files.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct LayoutPreset {
+pub struct ProfilePreset {
     #[serde(rename = "$schema", skip_serializing_if = "Option::is_none")]
     pub schema: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub meta: Option<LayoutMetadata>,
+    pub meta: Option<ProfileMetadata>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     pub layers: Vec<Layer>,
@@ -314,7 +314,7 @@ pub struct LayoutPreset {
     pub emoji_pages: Vec<EmojiPage>,
 }
 
-impl LayoutPreset {
+impl ProfilePreset {
     pub fn base_tap_action(&self, key: &str) -> Option<&str> {
         self.rules
             .iter()
@@ -366,10 +366,10 @@ impl LayoutPreset {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct LayoutConditionSet {
+pub struct ProfileConditionSet {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub game_mode: Option<GameModeCondition>,
-    pub layouts: Vec<String>,
+    pub keyboard_layouts: Vec<String>,
     /// Window patterns, see [`super::app_match`].
     #[serde(rename = "windows", skip_serializing_if = "Vec::is_empty")]
     pub window_patterns: Vec<String>,
@@ -410,7 +410,7 @@ impl GameModeCondition {
     }
 }
 
-impl LayoutConditionSet {
+impl ProfileConditionSet {
     /// The same conditions with list items trimmed, blank and duplicate
     /// items dropped and keyboard layout codes lowercased, so the set
     /// behaves the same before and after a save/load round trip.
@@ -430,7 +430,7 @@ impl LayoutConditionSet {
             }
             *items = out;
         }
-        clean(&mut self.layouts, true);
+        clean(&mut self.keyboard_layouts, true);
         clean(&mut self.window_patterns, false);
         clean(&mut self.excluded_window_patterns, false);
         self
@@ -438,7 +438,7 @@ impl LayoutConditionSet {
 
     pub fn is_empty(&self) -> bool {
         self.game_mode.is_none()
-            && self.layouts.is_empty()
+            && self.keyboard_layouts.is_empty()
             && self.window_patterns.is_empty()
             && self.excluded_window_patterns.is_empty()
     }
@@ -448,20 +448,20 @@ fn is_true(value: &bool) -> bool {
     *value
 }
 
-/// One automatic-mode rule: when `conditions` match, `layout_id` is used.
+/// One automatic-mode rule: when `conditions` match, `profile_id` is used.
 /// Rules are checked in order and the first match wins.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AutoRule {
     pub id: String,
     /// `None` turns the mapper off (native passthrough).
-    pub layout_id: Option<String>,
+    pub profile_id: Option<String>,
     /// A disabled rule is kept but never matches.
     #[serde(skip_serializing_if = "is_true")]
     pub enabled: bool,
     /// Empty conditions always match.
     #[serde(flatten)]
-    pub conditions: LayoutConditionSet,
+    pub conditions: ProfileConditionSet,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -640,7 +640,7 @@ impl LocalePreference {
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum TextMode {
-    /// libei; pastes through the clipboard when the layout lacks a character.
+    /// libei; pastes through the clipboard when the profile lacks a character.
     #[default]
     Libei,
     /// libei only.
@@ -712,7 +712,7 @@ impl PasteShortcut {
     /// (`Shift+Ctrl+KeyV`, `ControlLeft+ShiftLeft+KeyV`).
     pub fn parse(value: &str) -> Option<Self> {
         let keys = |chord: &str| {
-            super::key_catalog::trigger_keys(chord).map(|mut keys| {
+            super::key_catalog::chord_keys(chord).map(|mut keys| {
                 keys.sort_unstable();
                 keys.into_iter().map(str::to_owned).collect::<Vec<_>>()
             })
@@ -758,7 +758,7 @@ impl<'de> Deserialize<'de> for PasteShortcut {
 #[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum LayoutMode {
+pub enum ProfileMode {
     #[default]
     Manual,
     Auto,
@@ -779,8 +779,8 @@ pub struct AppSettings {
     pub appearance: Appearance,
     pub high_contrast: bool,
     pub reduce_motion: bool,
-    /// Show an on-screen display when the active layout changes.
-    pub layout_osd: bool,
+    /// Show an on-screen display when the active profile changes.
+    pub profile_osd: bool,
     /// While a layer is held, show its keys in an overlay above all windows.
     pub layer_hint: bool,
     pub locale: LocalePreference,
@@ -800,16 +800,16 @@ pub struct AppSettings {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub input_mouse_device_path: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "currentLayoutId")]
-    pub editing_layout_id: Option<String>,
-    pub layout_mode: LayoutMode,
+    #[serde(rename = "currentProfileId")]
+    pub editing_profile_id: Option<String>,
+    pub profile_mode: ProfileMode,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "manualActiveLayoutId")]
-    pub manual_layout_id: Option<String>,
-    pub layout_order: Vec<String>,
+    #[serde(rename = "manualActiveProfileId")]
+    pub manual_profile_id: Option<String>,
+    pub profile_order: Vec<String>,
     pub auto_rules: Vec<AutoRule>,
-    /// Layout used in automatic mode when no rule matches; `None` is off.
-    pub auto_default_layout_id: Option<String>,
+    /// Profile used in automatic mode when no rule matches; `None` is off.
+    pub auto_default_profile_id: Option<String>,
     pub commands_enabled: bool,
     pub game_mode: GameModeSettings,
     pub linux_wayland_text_mode: TextMode,
@@ -831,7 +831,7 @@ impl Default for AppSettings {
             appearance: Appearance::System,
             high_contrast: false,
             reduce_motion: false,
-            layout_osd: false,
+            profile_osd: false,
             layer_hint: false,
             locale: LocalePreference::Auto,
             default_long_hold_timeout_ms: timing::DEFAULT_LONG_HOLD_MS,
@@ -844,12 +844,12 @@ impl Default for AppSettings {
             macro_timeout_ms: timing::DEFAULT_MACRO_TIMEOUT_MS,
             input_device_path: Some(String::new()),
             input_mouse_device_path: None,
-            editing_layout_id: None,
-            layout_mode: LayoutMode::Manual,
-            manual_layout_id: None,
-            layout_order: Vec::new(),
+            editing_profile_id: None,
+            profile_mode: ProfileMode::Manual,
+            manual_profile_id: None,
+            profile_order: Vec::new(),
             auto_rules: Vec::new(),
-            auto_default_layout_id: None,
+            auto_default_profile_id: None,
             commands_enabled: false,
             game_mode: GameModeSettings {
                 use_gamemoded: cfg!(target_os = "linux"),
@@ -874,7 +874,7 @@ impl Default for AppSettings {
     }
 }
 
-/// Settings plus a layout, used for editor diagnostics and mapper projection.
+/// Settings plus a profile, used for editor diagnostics and mapper projection.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResolvedAppConfig {
@@ -889,12 +889,12 @@ pub struct ResolvedAppConfig {
 }
 
 impl ResolvedAppConfig {
-    /// Combine settings with a layout, assigning its active identity and
+    /// Combine settings with a profile, assigning its active identity and
     /// ensuring every layer has a keymap.
     pub fn from_parts(
         settings: AppSettings,
-        preset: LayoutPreset,
-        layout_id: Option<&str>,
+        preset: ProfilePreset,
+        profile_id: Option<&str>,
     ) -> Self {
         let mut layer_keymaps = preset.layer_keymaps;
         for layer in &preset.layers {
@@ -909,7 +909,7 @@ impl ResolvedAppConfig {
             quick_action_pages: preset.quick_action_pages,
             emoji_pages: preset.emoji_pages,
             settings: AppSettings {
-                editing_layout_id: layout_id.map(str::to_owned),
+                editing_profile_id: profile_id.map(str::to_owned),
                 ..settings
             },
         }
@@ -926,7 +926,7 @@ mod tests {
         rule.condition_keyboard_layouts = Some(vec!["us".into()]);
         rule.condition_window_patterns = Some(vec!["konsole".into()]);
         rule.condition_excluded_window_patterns = Some(vec!["title:private".into()]);
-        let layout = LayoutPreset {
+        let profile = ProfilePreset {
             rules: vec![rule],
             commands: vec![Command {
                 id: "c1".into(),
@@ -935,17 +935,17 @@ mod tests {
                 powershell_script: "Write-Output test".into(),
                 working_directory: None,
             }],
-            ..LayoutPreset::default()
+            ..ProfilePreset::default()
         };
         let settings = AppSettings {
-            manual_layout_id: Some("user:Manual".into()),
+            manual_profile_id: Some("user:Manual".into()),
             trigger_chord_timeout_ms: 80,
             ..AppSettings::default()
         };
-        let config = ResolvedAppConfig::from_parts(settings, layout, Some("user:Editing"));
+        let config = ResolvedAppConfig::from_parts(settings, profile, Some("user:Editing"));
         let value = serde_json::to_value(&config).unwrap();
-        assert_eq!(value["settings"]["currentLayoutId"], "user:Editing");
-        assert_eq!(value["settings"]["manualActiveLayoutId"], "user:Manual");
+        assert_eq!(value["settings"]["currentProfileId"], "user:Editing");
+        assert_eq!(value["settings"]["manualActiveProfileId"], "user:Manual");
         assert_eq!(value["settings"]["comboTimeoutMs"], 80);
         assert_eq!(value["rules"][0]["conditionKeyboardLayouts"][0], "us");
         assert_eq!(value["rules"][0]["conditionWindowPatterns"][0], "konsole");
@@ -984,10 +984,10 @@ mod tests {
         };
         let mut rule = KeyRule::new("r1".into(), "KeyA");
         rule.tap_action = Some("cmd:used".into());
-        let preset = LayoutPreset {
+        let preset = ProfilePreset {
             rules: vec![rule],
             commands: vec![command("used"), command("orphan")],
-            ..LayoutPreset::default()
+            ..ProfilePreset::default()
         };
         assert_eq!(preset.used_command_count(), 1);
         let mut preset = preset;
@@ -996,10 +996,10 @@ mod tests {
     }
     #[test]
     fn typed_mapper_projection_matches_the_existing_serialized_model() {
-        for layout in super::super::bundled::BUNDLED {
+        for profile in super::super::bundled::BUNDLED {
             let config = ResolvedAppConfig::from_parts(
                 AppSettings::default(),
-                layout.layout().unwrap(),
+                profile.profile().unwrap(),
                 Some("user:Example"),
             );
             let serialized: crate::mapper::config::MapperConfig =

@@ -1,6 +1,6 @@
 //! Shared timing contracts for persisted settings, rules and macros.
 
-use super::model::{AppSettings, LayoutPreset};
+use super::model::{AppSettings, ProfilePreset};
 
 #[derive(Clone, Copy)]
 pub struct MillisecondsRange {
@@ -89,8 +89,8 @@ pub fn validate_settings(settings: &AppSettings) -> Result<(), String> {
     Ok(())
 }
 
-pub fn validate_layout(layout: &LayoutPreset) -> Result<(), String> {
-    for (index, rule) in layout.rules.iter().enumerate() {
+pub fn validate_profile(profile: &ProfilePreset) -> Result<(), String> {
+    for (index, rule) in profile.rules.iter().enumerate() {
         for (field, value, range) in [
             ("hold.timeoutMs", rule.hold_timeout_ms, TAP_HOLD),
             ("doubleTap.timeoutMs", rule.double_tap_timeout_ms, TAP_HOLD),
@@ -101,7 +101,7 @@ pub fn validate_layout(layout: &LayoutPreset) -> Result<(), String> {
             }
         }
     }
-    for (index, item) in layout.macros.iter().enumerate() {
+    for (index, item) in profile.macros.iter().enumerate() {
         for (field, value) in [
             ("stepPauseMs", item.step_pause_ms),
             ("modifierDelayMs", item.modifier_delay_ms),

@@ -1,4 +1,4 @@
-//! Schema versions of `config.json` and layout files.
+//! Schema versions of `config.json` and profile files.
 //!
 //! The two formats are versioned independently. Within a version only new
 //! optional fields and new enum values may appear; any other change bumps
@@ -23,8 +23,8 @@
 /// Version of `config.json` this build reads and writes.
 pub const CONFIG_SCHEMA_VERSION: u64 = 1;
 
-/// Version of layout files this build reads and writes.
-pub const LAYOUT_SCHEMA_VERSION: u64 = 1;
+/// Version of profile files this build reads and writes.
+pub const PROFILE_SCHEMA_VERSION: u64 = 1;
 
 /// Stable address of the `config.json` JSON Schema for editors (`$schema`).
 /// The file lives in the repository's `schemas/` directory; within a format
@@ -32,9 +32,8 @@ pub const LAYOUT_SCHEMA_VERSION: u64 = 1;
 pub const CONFIG_SCHEMA_URL: &str =
     "https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/config.v1.schema.json";
 
-/// Stable address of the layout file JSON Schema, see [`CONFIG_SCHEMA_URL`].
-pub const LAYOUT_SCHEMA_URL: &str =
-    "https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/layout.v1.schema.json";
+/// Stable address of the profile file JSON Schema, see [`CONFIG_SCHEMA_URL`].
+pub const PROFILE_SCHEMA_URL: &str = "https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/profile.v1.schema.json";
 
 /// Grammar of collection IDs (layers, rules, macros, commands, pages,
 /// auto rules, game-mode processes), see [`super::ids`].
@@ -155,10 +154,10 @@ mod tests {
                 super::super::settings::json_schema(),
             ),
             (
-                "layout.v1.schema.json",
-                LAYOUT_SCHEMA_URL,
-                "Left Hand Control layout",
-                super::super::layout_file::json_schema(),
+                "profile.v1.schema.json",
+                PROFILE_SCHEMA_URL,
+                "Left Hand Control profile",
+                super::super::profile_file::json_schema(),
             ),
         ] {
             assert!(url.ends_with(file));
@@ -183,8 +182,8 @@ mod tests {
     #[test]
     fn backup_sits_next_to_the_file() {
         assert_eq!(
-            backup_path(Path::new("/c/layouts/Main.json"), 1),
-            Path::new("/c/layouts/Main.json.v1.bak")
+            backup_path(Path::new("/c/profiles/Main.json"), 1),
+            Path::new("/c/profiles/Main.json.v1.bak")
         );
     }
 }

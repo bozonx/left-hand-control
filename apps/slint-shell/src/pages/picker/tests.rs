@@ -236,20 +236,20 @@ fn categories_follow_the_key_catalog() {
 
 #[test]
 fn applying_actions_validates_references_against_the_document() {
-    use lhc_core::profile::model::{Command, Macro};
+    use lhc_core::config::model::{Command, Macro};
 
     let (_dir, document) = super::super::test_document();
     document
         .edit(crate::document::View::Macros, |config| {
-            config.update_layout(|layout| {
-                layout.macros.push(Macro {
+            config.update_profile(|profile| {
+                profile.macros.push(Macro {
                     id: "pickerMacro".into(),
                     name: "Picker macro".into(),
                     steps: vec![],
                     step_pause_ms: None,
                     modifier_delay_ms: None,
                 });
-                layout.commands.push(Command {
+                profile.commands.push(Command {
                     id: "pickerCommand".into(),
                     name: "Picker command".into(),
                     posix_script: "true".into(),
@@ -426,7 +426,7 @@ fn selection_steps_stay_inside_the_list() {
 
 #[test]
 fn labels_prefer_the_command_then_the_catalog() {
-    use lhc_core::profile::model::Command;
+    use lhc_core::config::model::Command;
     use session::label_for;
     let command = Command {
         id: "c1".into(),

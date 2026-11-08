@@ -34,14 +34,15 @@ pub(super) fn assign(
     document: &Document,
     index: i32,
     value: &str,
-    command: Option<lhc_core::profile::model::Command>,
+    command: Option<lhc_core::config::model::Command>,
 ) -> Result<(), Msg> {
     let key = keyboard::base_key(index)
         .ok_or_else(|| Msg::from(&lhc_core::config_document::ConfigError::EditConflict))?;
     let saved = document
         .edit(View::Keys, |config| {
-            config
-                .edit_layout_with_commands(command, |config| config.set_base_tap_action(key, value))
+            config.edit_profile_with_commands(command, |config| {
+                config.set_base_tap_action(key, value)
+            })
         })
         .map_err(|error| Msg::from(&error))?;
     refresh(ui, document);

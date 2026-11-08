@@ -16,7 +16,7 @@ export component CheckBox {
 
     private property <color> text-color: FluentPalette.foreground;
 
-    min-height: max(18px, layout.min-height);
+    min-height: max(18px, profile.min-height);
     accessible-checkable: true;
     accessible-enabled: root.enabled;
     accessible-label: root.text;
@@ -52,7 +52,7 @@ export component CheckBox {
 
     animate text-color { duration: 200ms; }
 
-    layout := HorizontalLayout {
+    profile := HorizontalLayout {
         spacing: 12px;
 
         background := Rectangle {
