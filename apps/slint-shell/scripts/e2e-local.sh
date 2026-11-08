@@ -71,6 +71,8 @@ for example in 'editor --smoke' interactions rules library macros menus popup-gr
     shift
     run "example-$name" cargo run --locked -q -p slint-shell --features spell --example "$name" -- "$@"
 done
+run example-small-window-pseudo env LHC_SMALL_LANGUAGE=qps-ploc LHC_SMALL_TEXT_SCALE=1.3 \
+    cargo run --locked -q -p slint-shell --features spell --example small-window
 run check-recovery python3 apps/slint-shell/scripts/check/check-recovery.py --binary "$binary" --popups spell
 run check-preferences env LHC_BIN="$binary" python3 apps/slint-shell/scripts/check/check-preferences.py
 run check-worker-crash python3 apps/slint-shell/scripts/check/check-worker-crash.py "$binary"

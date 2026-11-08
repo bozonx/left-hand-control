@@ -16,6 +16,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 ### Changed
 
 - Keyboard navigation in settings: the emoji palette on the menus page is one Tab stop with arrows crossing category borders; arrow keys also reach the buttons in the hold menu on the triggers page; scrollbars are no longer Tab stops (PageUp/PageDown scroll while focus is inside a scrolled area); layer tabs show the same 2px focus ring as other controls; Left/Right in key grids keep working when keys in a row have different heights; the layer key grid always keeps a Tab stop after the keys change.
+- Layout with large text and long translations: button groups (theme, modes, device tabs) stack into a column when one row does not fit, checkbox labels and card titles wrap instead of running past the edge, and dialog content scrolls when it cannot fit the window. At the regular size nothing changes.
 - Accessibility: text that is cut off with an ellipsis in lists, badges, menus and pickers now shows its full text in a tooltip (only when it is actually cut off).
 
 - Renamed "layout" to "profile" across configuration, library files, actions and UI:

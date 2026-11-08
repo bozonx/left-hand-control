@@ -126,6 +126,7 @@ export component DialogFrame inherits Rectangle {
             TouchArea {}
             card-profile := VerticalLayout {
                 padding: Theme.space-2xl;
+                padding-bottom: 0px;
                 spacing: Theme.space-l;
                 HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
                     VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: Theme.space-xs;
@@ -134,7 +135,25 @@ export component DialogFrame inherits Rectangle {
                     }
                     IconButton { icon: @image-url("icons/x.svg"); tooltip: @tr("Close"); clicked => { root.close(); } }
                 }
-                @children
+                // Scrolls only when the content cannot shrink to the card (large text,
+                // long translations, small window); otherwise the layout is unchanged.
+                // The bottom padding is given up first, as before scrolling existed.
+                body := Flickable {
+                    min-width: 0px;
+                    max-width: Theme.unbounded;
+                    min-height: 0px;
+                    preferred-height: body-layout.preferred-height;
+                    vertical-stretch: 1;
+                    content-width: self.width;
+                    content-height: max(self.height, body-layout.min-height - Theme.space-2xl);
+                    body-layout := VerticalLayout {
+                        width: parent.width;
+                        height: parent.content-height;
+                        padding-bottom: Theme.space-2xl;
+                        spacing: Theme.space-l;
+                        @children
+                    }
+                }
             }
         }
     }

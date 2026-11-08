@@ -87,6 +87,8 @@ export component CheckBox {
             color: root.text-color;
             font-size: root.font-size;
             font-weight: root.font-weight;
+            // Long labels wrap instead of running past the container edge.
+            wrap: word-wrap;
             vertical-alignment: center;
             horizontal-alignment: left;
             accessible-role: none;

@@ -35,16 +35,18 @@ export global Theme {
     out property <length> badge-height: 22px;
     /// Gap between a dropdown menu and the control that opened it.
     out property <length> menu-offset: 4px;
+    /// Text-only zoom; layouts must adapt to it. 1.0 is the regular size.
+    in-out property <float> text-scale: 1.0;
     /// Type roles from captions to page titles.
-    out property <length> font-caption: 11px;
-    out property <length> font-body: 12px;
-    out property <length> font-medium: 13px;
+    out property <length> font-caption: 11px * text-scale;
+    out property <length> font-body: 12px * text-scale;
+    out property <length> font-medium: 13px * text-scale;
     /// Window default text and subsection titles.
-    out property <length> font-default: 14px;
-    out property <length> font-subtitle: 16px;
-    out property <length> font-heading: 18px;
-    out property <length> font-title: 22px;
-    out property <length> font-page-title: 26px;
+    out property <length> font-default: 14px * text-scale;
+    out property <length> font-subtitle: 16px * text-scale;
+    out property <length> font-heading: 18px * text-scale;
+    out property <length> font-title: 22px * text-scale;
+    out property <length> font-page-title: 26px * text-scale;
     /// Item being dragged in a list, and the floating preview of a dragged cell.
     out property <float> dragged-opacity: 0.6;
     /// Dimmed content of a disabled rule; it stays editable.

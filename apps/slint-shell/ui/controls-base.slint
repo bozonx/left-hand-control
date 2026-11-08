@@ -72,6 +72,20 @@ export component ElidedText inherits Text {
     if root.preferred-width > root.width + 0.5px: Tooltip { TooltipText { text: root.text; } }
 }
 
+/// Label of one `ButtonGroup` button, sized like the drawn one.
+component ButtonLabelMeasure inherits HorizontalLayout {
+    in property <string> text;
+    in property <bool> pill;
+    in property <bool> current;
+    padding-left: root.pill ? Theme.space-m-plus : Theme.space-l;
+    padding-right: root.pill ? Theme.space-m-plus : Theme.space-l;
+    Text {
+        text: root.text;
+        font-size: root.pill ? Theme.font-medium : Theme.font-default;
+        font-weight: root.pill || root.current ? Theme.weight-semibold : 400;
+    }
+}
+
 /// One choice out of several buttons, with arrow-key navigation.
 /// `pill` draws the compact segmented style used in toolbars.
 export component ButtonGroup inherits Rectangle {
@@ -83,18 +97,33 @@ export component ButtonGroup inherits Rectangle {
     in property <bool> pill;
     in property <bool> vertical;
     callback selected(int);
+    // Buttons stack into a column only when one row does not fit (large text,
+    // long translations); `changed` avoids a width ↔ layout binding loop.
+    private property <bool> stacked;
+    private property <length> inset: root.pill ? Theme.space-2xs : 0px;
+    private property <length> row-width: row-measure.preferred-width + 2 * root.inset;
+    function restack() { root.stacked = !root.vertical && root.width < root.row-width - 0.5px; }
+    init => { root.restack(); }
+    changed width => { root.restack(); }
+    changed row-width => { root.restack(); }
+    min-width: column-measure.preferred-width + 2 * root.inset;
+    preferred-width: root.vertical ? column-measure.preferred-width + 2 * root.inset : root.row-width;
+    // Height follows the drawn buttons only, not the hidden measurements.
+    min-height: grid.min-height;
+    preferred-height: grid.preferred-height;
+    max-height: grid.max-height;
     vertical-stretch: 0;
     background: root.pill ? Theme.surface : transparent;
     border-radius: root.pill ? Theme.radius : 0px;
     accessible-role: radio-group;
     group-focus := FocusScope {
         focus-on-tab-navigation: false;
-        GridLayout {
+        grid := GridLayout {
             padding: root.pill ? Theme.space-2xs : 0px;
             spacing: root.pill ? Theme.space-2xs : 0px;
             for label[index] in root.labels: button := Rectangle {
-                row: root.vertical ? index : 0;
-                col: root.vertical ? 0 : index;
+                row: root.vertical || root.stacked ? index : 0;
+                col: root.vertical || root.stacked ? 0 : index;
                 property <bool> current: root.selected-index == index;
                 private property <bool> first: index == 0;
                 private property <bool> last: index == root.labels.length - 1;
@@ -140,6 +169,17 @@ export component ButtonGroup inherits Rectangle {
                 touch := TouchArea { enabled: root.enabled; mouse-cursor: pointer; clicked => { button-focus.focus(); root.selected(index); } }
                 if index < root.tooltips.length && root.tooltips[index] != "": Tooltip { TooltipText { text: root.tooltips[index]; } }
             }
+        }
+    }
+    // Natural widths of one row and of the widest button; never drawn.
+    Rectangle {
+        width: 0px; height: 0px; visible: false;
+        row-measure := HorizontalLayout {
+            spacing: root.inset;
+            for label[index] in root.labels: ButtonLabelMeasure { text: label; pill: root.pill; current: index == root.selected-index; }
+        }
+        column-measure := VerticalLayout {
+            for label[index] in root.labels: ButtonLabelMeasure { text: label; pill: root.pill; current: index == root.selected-index; }
         }
     }
 }

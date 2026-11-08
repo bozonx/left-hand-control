@@ -100,6 +100,8 @@ jobs:
           for example in interactions rules library macros menus popup-grid undo-redo inline-edit drag-scroll notifications accessibility keyboard-navigation contrast-scaling layer-keys small-window; do
             timeout --kill-after=5s 90s "target/debug/examples/$example"
           done
+          # Pseudo-translation (~40% longer) with enlarged text at the minimum window size.
+          LHC_SMALL_LANGUAGE=qps-ploc LHC_SMALL_TEXT_SCALE=1.3 timeout --kill-after=5s 90s target/debug/examples/small-window
 
       - name: Clippy Linux shell (Spell)
         if: matrix.os == 'ubuntu-latest'

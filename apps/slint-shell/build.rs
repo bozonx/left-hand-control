@@ -1,5 +1,7 @@
 #[path = "build-support/i18n.rs"]
 mod i18n_checks;
+#[path = "build-support/pseudo.rs"]
+mod pseudo;
 #[path = "build-support/rust_messages.rs"]
 mod rust_messages;
 
@@ -17,6 +19,7 @@ fn main() {
 fn build() {
     println!("cargo:rerun-if-changed=translations");
     println!("cargo:rerun-if-changed=src/i18n.rs");
+    println!("cargo:rerun-if-changed=build-support");
     println!("cargo:rerun-if-changed=ui");
     println!("cargo:rerun-if-changed=../../crates/lhc-core/src/mapper/builtin_macros.rs");
     let output = std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
@@ -106,12 +109,36 @@ fn build() {
     }
     generated.push_str("} }\n");
     std::fs::write(output.join("rust_translations.rs"), generated).unwrap();
+    let debug = std::env::var("PROFILE").is_ok_and(|profile| profile == "debug");
+    // Debug builds also bundle a pseudo-translation for layout scenarios.
+    let bundled = if debug {
+        let dir = output.join("translations");
+        for &(_, code) in &languages {
+            let target = dir.join(code).join("LC_MESSAGES");
+            std::fs::create_dir_all(&target).unwrap();
+            std::fs::copy(
+                format!("translations/{code}/LC_MESSAGES/slint-shell.po"),
+                target.join("slint-shell.po"),
+            )
+            .unwrap();
+        }
+        let target = dir.join(pseudo::CODE).join("LC_MESSAGES");
+        std::fs::create_dir_all(&target).unwrap();
+        std::fs::write(
+            target.join("slint-shell.po"),
+            pseudo::catalog(&catalogs[0].1),
+        )
+        .unwrap();
+        dir
+    } else {
+        "translations".into()
+    };
     let config = slint_build::CompilerConfiguration::new()
         // Desktop geometry scenarios identify controls independently of translations.
-        .with_debug_info(std::env::var("PROFILE").is_ok_and(|profile| profile == "debug"))
+        .with_debug_info(debug)
         .with_include_paths(vec!["ui/widgets".into(), "ui/widgets/lhc".into()])
         .with_style("lhc".into())
-        .with_bundled_translations("translations")
+        .with_bundled_translations(bundled)
         .with_default_translation_context(slint_build::DefaultTranslationContext::None);
     slint_build::compile_with_config("ui/app.slint", config).unwrap();
     // Live Preview generates an interpreter wrapper without the bundled

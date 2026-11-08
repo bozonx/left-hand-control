@@ -3,6 +3,8 @@
 //! `LHC_WINDOW_SIZE=WxH` overrides the size (default: the window minimum),
 //! `LHC_SMALL_LANGUAGE=<code>` the UI language, `LHC_SMALL_RELEASE=1` hides development-only UI;
 //! `LHC_EDITOR_SNAPSHOTS=<dir>` saves a snapshot of every state.
+//! `LHC_SMALL_LANGUAGE=qps-ploc` uses the debug-only pseudo-translation, about 40% longer
+//! than English (`[Ŝéţţîñĝš ~~~]`); `LHC_SMALL_TEXT_SCALE=<factor>` enlarges text only.
 //! Every language checks toolbar bounds, overlaps and non-scrolling dialog actions.
 mod support;
 use lhc_core::config_document::KeyAssignment;
@@ -10,6 +12,15 @@ use slint::ComponentHandle;
 use slint_shell::ui::*;
 use std::{cell::Cell, rc::Rc, time::Duration};
 use support::{Fixture, snapshot};
+
+/// The pseudo-translation is bundled in debug builds only and is not an app language.
+fn select_language(code: &str) {
+    if code == "qps-ploc" {
+        slint::select_bundled_translation(code).unwrap();
+    } else {
+        slint_shell::select_ui_language(code).unwrap();
+    }
+}
 
 type Step = (&'static str, fn(&SettingsWindow));
 
@@ -180,7 +191,8 @@ fn controls_fit(ui: &SettingsWindow, state: &str) {
     );
 }
 
-/// Check input widths even below the fold; vertical scrolling cannot repair clipping on the right.
+/// Check input and button widths even below the fold; vertical scrolling cannot repair
+/// clipping on the right.
 fn settings_inputs_fit(ui: &SettingsWindow, state: &str) {
     use i_slint_core::{
         accessibility::AccessibleStringProperty, item_tree::ItemRc, items::AccessibleRole,
@@ -202,7 +214,11 @@ fn settings_inputs_fit(ui: &SettingsWindow, state: &str) {
         if item.is_visible()
             && matches!(
                 item.accessible_role(),
-                AccessibleRole::Combobox | AccessibleRole::Spinbox
+                AccessibleRole::Combobox
+                    | AccessibleRole::Spinbox
+                    | AccessibleRole::Button
+                    | AccessibleRole::RadioButton
+                    | AccessibleRole::Checkbox
             )
         {
             let origin = item.map_to_window(item.geometry().origin);
@@ -391,7 +407,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         })?;
     ui.global::<MacroEditor>().invoke_add("Small macro".into());
     let language = std::env::var("LHC_SMALL_LANGUAGE").unwrap_or_else(|_| "en".into());
-    slint_shell::select_ui_language(&language)?;
+    select_language(&language);
+    if let Some(scale) = std::env::var("LHC_SMALL_TEXT_SCALE")
+        .ok()
+        .and_then(|s| s.parse::<f32>().ok())
+    {
+        ui.global::<Theme>().set_text_scale(scale);
+    }
     let size = std::env::var("LHC_WINDOW_SIZE")
         .ok()
         .and_then(|s| {
@@ -426,6 +448,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ui.window()
                     .set_size(slint::LogicalSize::new(size.0, size.1));
                 (STEPS[n / 2].1)(&ui);
+                // Applying settings selects the configured language again.
+                if language == "qps-ploc" {
+                    select_language(&language);
+                }
             } else {
                 let logical = ui.window().size().to_logical(ui.window().scale_factor());
                 assert!(
