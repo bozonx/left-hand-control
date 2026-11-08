@@ -3875,6 +3875,9 @@ msgstr "Μετακίνηση παραθύρου στην προηγούμενη 
 msgid "Move window to next screen"
 msgstr "Μετακίνηση παραθύρου στην επόμενη οθόνη"
 
+msgid "Move window to previous screen"
+msgstr "Μετακίνηση παραθύρου στην προηγούμενη οθόνη"
+
 msgid "Switch to next desktop"
 msgstr "Μετάβαση στην επόμενη επιφάνεια εργασίας"
 

@@ -4,7 +4,8 @@ Reference for the built-in system actions removed in October 2026. They were
 all KDE-only wrappers around KDE D-Bus calls; keeping a hand-written list per
 desktop environment did not scale. What remains in `sys:` is the small set
 that cannot be expressed with a key: `switchDesktopN`, `switchProfileN` and
-`windowToDesktopN`.
+`windowToDesktopN` (today `switchToDesktopN`, `lhc:activateProfileN` and
+`moveWindowToDesktopN`).
 
 Later, a few common window and shell actions came back as cross-platform
 abstractions (see "Kept or added"): each has a documented counterpart on
@@ -90,7 +91,7 @@ platforms.
 
 | Id | KDE | GNOME (extension) | Windows |
 | --- | --- | --- | --- |
-| `switchDesktopN` (1–10) | `kde:kwin/Switch to Desktop N` | `workspace.activate` | — |
+| `switchToDesktopN` (1–10) | `kde:kwin/Switch to Desktop N` | `workspace.activate` | — |
 | `switchKeyboardLayoutN` (1–10) | `org.kde.keyboard /Profiles setProfile(u32 N-1)` | input source `activate` | `WM_INPUTLANGCHANGEREQUEST` |
 | `moveWindowToDesktopN` (1–10) | `kde:kwin/Window to Desktop N` | `change_workspace` | — |
 | `closeWindow` | `kde:kwin/Window Close` | `delete` | `SC_CLOSE` |
@@ -101,6 +102,7 @@ platforms.
 | `moveWindowToNextDesktop` | `kde:kwin/Window to Next Desktop` | `change_workspace` | — |
 | `moveWindowToPreviousDesktop` | `kde:kwin/Window to Previous Desktop` | `change_workspace` | — |
 | `moveWindowToNextScreen` | `kde:kwin/Window to Next Screen` | `move_to_monitor` | Win+Shift+Right |
+| `moveWindowToPreviousScreen` | `kde:kwin/Window to Previous Screen` | `move_to_monitor` | Win+Shift+Left |
 | `switchToNextDesktop` | `kde:kwin/Switch to Next Desktop` | `workspace.activate` | Ctrl+Win+Right |
 | `switchToPreviousDesktop` | `kde:kwin/Switch to Previous Desktop` | `workspace.activate` | Ctrl+Win+Left |
 | `showDesktop` | `kde:kwin/Show Desktop` | — | `IShellDispatch4::ToggleDesktop` |
@@ -113,8 +115,8 @@ The `kde:` list in the action picker hides the KDE shortcuts these ids
 already run, and the KWin `Switch to Desktop N` / `Window to Desktop N`
 shortcuts above 10.
 
-On macOS, `switchDesktopN`, `windowToDesktopN`, the next/previous desktop and
-next screen actions, `maximizeWindowVertically`, `toggleWindowKeepAbove`,
+On macOS, `switchToDesktopN`, `moveWindowToDesktopN`, the next/previous desktop and
+next/previous screen actions, `maximizeWindowVertically`, `toggleWindowKeepAbove`,
 `showDesktop`, `showAppLauncher` and `lockSession` have no implementation; running
 them there is ignored with a notification.
 

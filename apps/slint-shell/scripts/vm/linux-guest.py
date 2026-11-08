@@ -98,7 +98,7 @@ E2E_LAYOUT = f'''{{
     }},
     {{
       "key": "Digit1",
-      "tap": "sys:switchDesktop2"
+      "tap": "sys:switchToDesktop2"
     }},
     {{
       "key": "Digit2",
@@ -314,7 +314,7 @@ def cmd_write_config(args):
     (DATA_DIR / "layouts").mkdir(parents=True, exist_ok=True)
     layout = E2E_LAYOUT
     if "GNOME" in user_environment().get("XDG_CURRENT_DESKTOP", "").upper():
-        layout = layout.replace("kde:kwin/Switch to Desktop 1", "sys:switchDesktop1")
+        layout = layout.replace("kde:kwin/Switch to Desktop 1", "sys:switchToDesktop1")
     parsed = json.loads(layout)
     parsed["rules"].append({"key": "KeyU", "tap": "text:" + TEXT_CORPUS})
     (DATA_DIR / "layouts/E2E.json").write_text(json.dumps(parsed, ensure_ascii=False), encoding="utf-8")

@@ -3815,6 +3815,9 @@ msgstr "Mutați fereastra pe desktopul anterior"
 msgid "Move window to next screen"
 msgstr "Mutați fereastra pe ecranul următor"
 
+msgid "Move window to previous screen"
+msgstr "Mută fereastra pe ecranul anterior"
+
 msgid "Switch to next desktop"
 msgstr "Comutați la desktopul următor"
 

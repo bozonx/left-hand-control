@@ -3774,6 +3774,9 @@ msgstr "Pencereyi önceki masaüstüne taşı"
 msgid "Move window to next screen"
 msgstr "Pencereyi sonraki ekrana taşı"
 
+msgid "Move window to previous screen"
+msgstr "Pencereyi önceki ekrana taşı"
+
 msgid "Switch to next desktop"
 msgstr "Sonraki masaüstüne geç"
 

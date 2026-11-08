@@ -341,7 +341,7 @@ class WindowsMapper:
     def lock_and_unavailable(self):
         self.mapper("lock-probe")
         self.reset()
-        result = self.mapper("execute", action="sys:switchDesktop1")
+        result = self.mapper("execute", action="sys:switchToDesktop1")
         if not any("ActionUnavailable" in event for event in result["events"]):
             raise StepFailed(f"No unsupported-action notice: {result}")
         self.text("")

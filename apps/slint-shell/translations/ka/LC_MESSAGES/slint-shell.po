@@ -3764,6 +3764,9 @@ msgstr "ფანჯრის გადატანა წინა სამუ
 msgid "Move window to next screen"
 msgstr "ფანჯრის გადატანა შემდეგ ეკრანზე"
 
+msgid "Move window to previous screen"
+msgstr "ფანჯრის გადატანა წინა ეკრანზე"
+
 msgid "Switch to next desktop"
 msgstr "შემდეგ სამუშაო მაგიდაზე გადასვლა"
 

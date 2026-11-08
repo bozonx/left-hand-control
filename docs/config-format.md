@@ -119,7 +119,7 @@ ID профилей библиотеки устроены иначе: `user:<и�
 | пользовательский макрос | `macro:myMacro` |
 | встроенный макрос | `builtin:copyLineText` |
 | команда | `cmd:<id>` |
-| системное действие | `sys:switchDesktop2`, `sys:showDesktop` |
+| системное действие | `sys:switchToDesktop2`, `sys:showDesktop` |
 | действие Left Hand Control | `lhc:showQuickMenu1`, `lhc:toggleGameMode` |
 | глобальное сочетание KDE | `kde:kwin/Window Maximize` |
 | действие установленного приложения (Linux, freedesktop `Actions=`) | `xdg:firefox/new-private-window` |
@@ -136,7 +136,7 @@ ID профилей библиотеки устроены иначе: `user:<и�
 
 ID встроенных макросов начинаются с глагола: `goTo…`/`go…` (перемещение курсора), `select…`, `copy…`, `cut…`, `paste…`, `replace…WithClipboard`, `insert…`, `duplicate…`. Объект называется одинаково во всех макросах: `Line` — строка целиком вместе с переводом строки, `LineText` — текст строки без перевода, `Word` — слово под курсором, `ToLineStart`/`ToLineEnd` — от курсора до начала или конца строки. Например: `builtin:goToNextLineEnd`, `builtin:go5LinesUp`, `builtin:copyLineText`, `builtin:cutLine`, `builtin:selectWord`, `builtin:insertEmptyLineAbove`.
 
-Системные действия (`sys:`): `closeWindow`, `minimizeWindow`, `maximizeWindow`, `maximizeWindowVertically`, `toggleWindowKeepAbove`, `moveWindowToNextDesktop`, `moveWindowToPreviousDesktop`, `moveWindowToNextScreen`, `switchToNextDesktop`, `switchToPreviousDesktop`, `showDesktop`, `showOverview`, `showAppLauncher`, `turnOffScreen`, `lockSession` и нумерованные `switchDesktopN`, `moveWindowToDesktopN`, `switchKeyboardLayoutN` (N от 1 до 10). Поддержка по платформам — в [platforms.md](development/platforms.md).
+Системные действия (`sys:`): `closeWindow`, `minimizeWindow`, `maximizeWindow`, `maximizeWindowVertically`, `toggleWindowKeepAbove`, `moveWindowToNextDesktop`, `moveWindowToPreviousDesktop`, `moveWindowToNextScreen`, `moveWindowToPreviousScreen`, `switchToNextDesktop`, `switchToPreviousDesktop`, `showDesktop`, `showOverview`, `showAppLauncher`, `turnOffScreen`, `lockSession` и нумерованные `switchToDesktopN`, `moveWindowToDesktopN`, `switchKeyboardLayoutN` (N от 1 до 10). Поддержка по платформам — в [platforms.md](development/platforms.md).
 
 Действия установленных приложений (`xdg:<desktop-id>/<action>`): `desktop-id` — имя файла `.desktop` без расширения (для файла из подкаталога `kde4/foo.desktop` — `kde4-foo`), `action` — идентификатор из его ключа `Actions=`. Приложения с `DBusActivatable=true` получают вызов `org.freedesktop.Application.ActivateAction`, остальные запускаются по `Exec` действия. Если приложение не установлено, действие пропускается с предупреждением. Только Linux.
 
@@ -335,7 +335,7 @@ Id раскладок библиотеки имеют вид `user:<имя фа�
     { "id": "copyLine", "name": "Copy line", "stepPauseMs": 10, "steps": ["Home", "Shift+End", "Ctrl+KeyC"] }
   ],
   "commands": [
-    { "id": "music", "name": "Play/pause", "sh": "playerctl play-pause", "powershell": "", "workingDirectory": "/tmp" }
+    { "id": "music", "name": "Play/pause", "sh": "playerctl play-pause", "workingDirectory": "/tmp" }
   ],
   "quickMenuPages": [
     {
@@ -389,7 +389,7 @@ Id раскладок библиотеки имеют вид `user:<имя фа�
 
 У макроса обязателен `id` (см. [идентификаторы](#идентификаторы)); он может совпадать с ID встроенного макроса: пространства `macro:` и `builtin:` независимы. `steps` — список действий, включая `pause:<мс>`. `stepPauseMs` и `modifierDelayMs` переопределяют значения из `settings.timing` и сохраняются при вложенном вызове. Отсутствующее переопределение наследует глобальную настройку, а не настройку вызывающего макроса. Циклы запрещены; развёртывание ограничено 1000 элементами (включая ссылки) и глубиной вложенности 10. Явная последняя пауза также выполняется. Команды внутри макроса ожидаются до успешного завершения, а ошибки прерывают последовательность. Общий `settings.timing.macroTimeoutMs` включает все шаги и ожидания. См. [поведение макросов](features.md#макросы).
 
-У команды обязателен `id`. `sh` — сценарий POSIX `sh` для Linux и macOS, `powershell` — сценарий PowerShell. `workingDirectory` — каталог запуска: по умолчанию домашний, `~/…` и относительный путь отсчитываются от домашнего каталога, поэтому такие пути переносятся между компьютерами. Команды из профиля выполняются только при `settings.commandsEnabled`.
+У команды обязателен `id`. `sh` — сценарий POSIX `sh` для Linux и macOS, `powershell` — сценарий PowerShell для Windows. Пустой сценарий не записывается; команда без сценария для текущей ОС при срабатывании пропускается с предупреждением. `workingDirectory` — каталог запуска: по умолчанию домашний, `~/…` и относительный путь отсчитываются от домашнего каталога, поэтому такие пути переносятся между компьютерами. Команды из профиля выполняются только при `settings.commandsEnabled`.
 
 ### Страницы меню
 

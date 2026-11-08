@@ -3524,6 +3524,9 @@ msgstr "창을 이전 데스크톱으로 이동"
 msgid "Move window to next screen"
 msgstr "창을 다음 화면으로 이동"
 
+msgid "Move window to previous screen"
+msgstr "창을 이전 화면으로 이동"
+
 msgid "Switch to next desktop"
 msgstr "다음 데스크톱으로 전환"
 

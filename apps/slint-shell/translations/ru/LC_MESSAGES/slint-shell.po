@@ -3143,6 +3143,9 @@ msgstr "Переместить окно на предыдущий рабочий
 msgid "Move window to next screen"
 msgstr "Переместить окно на следующий экран"
 
+msgid "Move window to previous screen"
+msgstr "Переместить окно на предыдущий экран"
+
 msgid "Switch to next desktop"
 msgstr "Перейти на следующий рабочий стол"
 

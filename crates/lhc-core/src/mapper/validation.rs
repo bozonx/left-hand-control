@@ -416,11 +416,11 @@ mod tests {
         };
         assert!(check("  text:hi", "pause:1").is_ok());
         assert!(
-            check("sys:switchDesktop10", "macro:m2").is_err(),
+            check("sys:switchToDesktop10", "macro:m2").is_err(),
             "unknown macro"
         );
         for (tap, step) in [
-            ("sys:switchDesktop11", "KeyA"),
+            ("sys:switchToDesktop11", "KeyA"),
             ("sys:moveWindowToDesktop20", "KeyA"),
             ("KeyA", "pause:0"),
             ("KeyA", "pause:+5"),

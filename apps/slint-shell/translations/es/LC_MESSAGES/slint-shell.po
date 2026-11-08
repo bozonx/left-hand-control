@@ -3778,6 +3778,9 @@ msgstr "Mover ventana al escritorio anterior"
 msgid "Move window to next screen"
 msgstr "Mover ventana a la siguiente pantalla"
 
+msgid "Move window to previous screen"
+msgstr "Mover la ventana a la pantalla anterior"
+
 msgid "Switch to next desktop"
 msgstr "Cambiar al siguiente escritorio"
 

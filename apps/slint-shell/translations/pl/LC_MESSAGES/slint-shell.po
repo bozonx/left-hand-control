@@ -3814,6 +3814,9 @@ msgstr "Przenieś okno na poprzedni pulpit"
 msgid "Move window to next screen"
 msgstr "Przenieś okno na następny ekran"
 
+msgid "Move window to previous screen"
+msgstr "Przenieś okno na poprzedni ekran"
+
 msgid "Switch to next desktop"
 msgstr "Przełącz na następny pulpit"
 

@@ -3782,6 +3782,9 @@ msgstr "Терезені алдыңғы жұмыс үстеліне жылжыт
 msgid "Move window to next screen"
 msgstr "Терезені келесі экранға жылжыту"
 
+msgid "Move window to previous screen"
+msgstr "Терезені алдыңғы экранға жылжыту"
+
 msgid "Switch to next desktop"
 msgstr "Келесі жұмыс үстеліне ауысу"
 

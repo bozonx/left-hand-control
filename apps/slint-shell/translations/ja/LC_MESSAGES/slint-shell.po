@@ -3534,6 +3534,9 @@ msgstr "ウィンドウを前のデスクトップに移動する"
 msgid "Move window to next screen"
 msgstr "ウィンドウを次の画面に移動する"
 
+msgid "Move window to previous screen"
+msgstr "ウィンドウを前の画面へ移動"
+
 msgid "Switch to next desktop"
 msgstr "次のデスクトップに切り替える"
 

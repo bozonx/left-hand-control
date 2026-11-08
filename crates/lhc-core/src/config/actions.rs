@@ -121,17 +121,17 @@ pub struct CatalogEntry {
 }
 
 const NUMBERED_SYSTEM_ACTIONS: [&str; 3] = [
-    "switchDesktop",
+    "switchToDesktop",
     "switchKeyboardLayout",
     "moveWindowToDesktop",
 ];
 
 /// System actions without a number. Each runs on at least two platforms;
 /// on Windows `moveWindowToNextDesktop` and `moveWindowToPreviousDesktop`
-/// do not, since like `windowToDesktopN` there is no public API to move
+/// do not, since like `moveWindowToDesktopN` there is no public API to move
 /// another app's window between virtual desktops, and on GNOME
 /// `showDesktop` has no counterpart. See [`unsupported_on_macos`] for macOS.
-pub const PLAIN_SYSTEM_ACTIONS: [&str; 15] = [
+pub const PLAIN_SYSTEM_ACTIONS: [&str; 16] = [
     "closeWindow",
     "minimizeWindow",
     "maximizeWindow",
@@ -140,6 +140,7 @@ pub const PLAIN_SYSTEM_ACTIONS: [&str; 15] = [
     "moveWindowToNextDesktop",
     "moveWindowToPreviousDesktop",
     "moveWindowToNextScreen",
+    "moveWindowToPreviousScreen",
     "switchToNextDesktop",
     "switchToPreviousDesktop",
     "showDesktop",
@@ -151,12 +152,13 @@ pub const PLAIN_SYSTEM_ACTIONS: [&str; 15] = [
 
 /// `sys:` ids (numbered ones without their number) that macOS has no
 /// public API for. Running one there is ignored with a notice.
-const MACOS_UNSUPPORTED_SYSTEM_ACTIONS: [&str; 12] = [
-    "switchDesktop",
+const MACOS_UNSUPPORTED_SYSTEM_ACTIONS: [&str; 13] = [
+    "switchToDesktop",
     "moveWindowToDesktop",
     "moveWindowToNextDesktop",
     "moveWindowToPreviousDesktop",
     "moveWindowToNextScreen",
+    "moveWindowToPreviousScreen",
     "switchToNextDesktop",
     "switchToPreviousDesktop",
     "lockSession",
@@ -183,7 +185,7 @@ pub const MAX_MACRO_DEPTH: usize = 10;
 pub const MAX_MACRO_STEPS: usize = 1000;
 pub const PROFILE_SLOT_COUNT: u32 = 5;
 
-/// Split `switchDesktop3` into its catalog name and number.
+/// Split `switchToDesktop3` into its catalog name and number.
 fn numbered(id: &str, names: &[&'static str], max: u32) -> Option<(&'static str, u32)> {
     names.iter().find_map(|name| {
         let n: u32 = id.strip_prefix(name)?.parse().ok()?;
@@ -497,7 +499,7 @@ mod tests {
             "macro:custom",
             "builtin:copyLineText",
             "cmd:music",
-            "sys:switchDesktop2",
+            "sys:switchToDesktop2",
             "lhc:showQuickMenu1",
             "kde:kwin/Window Quick Tile Top",
             "xdg:org.mozilla.firefox/new-private-window",
@@ -551,16 +553,16 @@ mod tests {
 
     #[test]
     fn catalogs_preserve_builtin_action_ids() {
-        assert_eq!(system_actions().len(), 45);
+        assert_eq!(system_actions().len(), 46);
         assert_eq!(app_actions().len(), 32);
         assert_eq!(
-            system_action_name("switchDesktop10"),
+            system_action_name("switchToDesktop10"),
             Some(ActionName::System {
-                id: "switchDesktop",
+                id: "switchToDesktop",
                 n: 10
             })
         );
-        assert_eq!(system_action_name("switchDesktop11"), None);
+        assert_eq!(system_action_name("switchToDesktop11"), None);
         assert_eq!(system_action_name("lockScreen"), None);
         assert_eq!(
             system_action_name("turnOffScreen"),
@@ -569,7 +571,7 @@ mod tests {
                 n: 0
             })
         );
-        assert!(unsupported_on_macos("switchDesktop3"));
+        assert!(unsupported_on_macos("switchToDesktop3"));
         assert!(unsupported_on_macos("toggleWindowKeepAbove"));
         assert!(unsupported_on_macos("maximizeWindowVertically"));
         assert!(unsupported_on_macos("moveWindowToNextDesktop"));
@@ -681,7 +683,7 @@ mod tests {
             );
         }
         assert_eq!(
-            issue(&config, "sys:switchDesktop11"),
+            issue(&config, "sys:switchToDesktop11"),
             Some(ExecutionIssue::Unavailable)
         );
     }

@@ -54,7 +54,7 @@ Emoji selection, многократный возврат фокуса, друг�
 lock/unlock, suspend, replug, физическое железо и полное обновление deb/rpm между
 версиями не закрыты этим smoke. Точечная проверка обновления архива не заменяет
 полный package upgrade. Не заявлена матрица других версий GNOME/дистрибутивов.
-`showDesktop` на GNOME недоступен; это граница backend, а не PASS теста. `turnOffScreen`, `lockSession`, `switchToNextDesktop`/`switchToPreviousDesktop`, `moveWindowToPreviousDesktop` и `moveWindowToNextScreen` в этом smoke ещё не проверялись.
+`showDesktop` на GNOME недоступен; это граница backend, а не PASS теста. `turnOffScreen`, `lockSession`, `switchToNextDesktop`/`switchToPreviousDesktop`, `moveWindowToPreviousDesktop`, `moveWindowToNextScreen` и `moveWindowToPreviousScreen` в этом smoke ещё не проверялись.
 
 ### Результаты
 
@@ -116,10 +116,10 @@ session or a missing bridge cannot authorize delivery to an unknown target.
 Titles are absent unless requested; source changes update the existing core cache
 and `CoreEvent` bus. The active-window watcher also has its normal safety reread.
 
-The bridge implements `switchDesktop1..20`, `moveWindowToDesktop1..20`,
+The bridge implements `switchToDesktop1..20`, `moveWindowToDesktop1..20`,
 `switchKeyboardLayout1..10`, `closeWindow`, `minimizeWindow`, `maximizeWindow`,
 `maximizeWindowVertically`, `toggleWindowKeepAbove`, `moveWindowToNextDesktop`,
-`moveWindowToPreviousDesktop`, `moveWindowToNextScreen`, `switchToNextDesktop`,
+`moveWindowToPreviousDesktop`, `moveWindowToNextScreen`, `moveWindowToPreviousScreen`, `switchToNextDesktop`,
 `switchToPreviousDesktop`, `showOverview`, `showAppLauncher`, `lockSession`
 (`Main.screenShield.lock`) and `turnOffScreen` (Mutter `DisplayConfig.PowerSaveMode = 3`). A numbered
 workspace/source must already exist. `maximizeWindowVertically` needs Mutter's public

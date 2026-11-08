@@ -30,6 +30,7 @@ pub enum WindowsAction {
     WindowMaximizeVertical,
     WindowKeepAbove,
     WindowToNextScreen,
+    WindowToPreviousScreen,
     NextDesktop,
     PreviousDesktop,
     ShowDesktop,
@@ -54,6 +55,7 @@ pub fn resolve(name: &str) -> Option<WindowsAction> {
         "maximizeWindowVertically" => WindowsAction::WindowMaximizeVertical,
         "toggleWindowKeepAbove" => WindowsAction::WindowKeepAbove,
         "moveWindowToNextScreen" => WindowsAction::WindowToNextScreen,
+        "moveWindowToPreviousScreen" => WindowsAction::WindowToPreviousScreen,
         "switchToNextDesktop" => WindowsAction::NextDesktop,
         "switchToPreviousDesktop" => WindowsAction::PreviousDesktop,
         "showDesktop" => WindowsAction::ShowDesktop,
@@ -221,6 +223,13 @@ pub(super) fn run(action: WindowsAction) -> Result<(), String> {
                 KeyCode::KEY_RIGHT,
             )
         }
+        WindowsAction::WindowToPreviousScreen => {
+            app_window()?;
+            super::input::shortcut(
+                &[KeyCode::KEY_LEFTMETA, KeyCode::KEY_LEFTSHIFT],
+                KeyCode::KEY_LEFT,
+            )
+        }
         WindowsAction::NextDesktop => super::input::shortcut(
             &[KeyCode::KEY_LEFTCTRL, KeyCode::KEY_LEFTMETA],
             KeyCode::KEY_RIGHT,
@@ -265,7 +274,7 @@ mod tests {
         for id in [
             "switchKeyboardLayout0",
             "switchKeyboardLayout11",
-            "switchDesktop1",
+            "switchToDesktop1",
             "moveWindowToDesktop2",
         ] {
             assert!(resolve(id).is_none(), "{id}");

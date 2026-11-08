@@ -1,5 +1,5 @@
 //! System functions: OS-level actions that each desktop environment
-//! implements its own way. Function names (`switchDesktop1`, …) stay
+//! implements its own way. Function names (`switchToDesktop1`, …) stay
 //! cross-platform; the concrete action is picked per OS, and on Linux per
 //! DE by dispatching through `crate::platform::linux::detect()`.
 //!
@@ -92,7 +92,7 @@ impl SystemAction {
     }
 }
 
-/// Resolve a system-function id (e.g. "switchDesktop3") into a concrete
+/// Resolve a system-function id (e.g. "switchToDesktop3") into a concrete
 /// action to run on this machine, or `None` if the function is not
 /// available under the current OS or desktop environment.
 pub fn resolve(name: &str) -> Option<SystemAction> {
@@ -233,7 +233,7 @@ mod kde {
 
     /// Plain `sys:` actions KWin, Plasma and PowerDevil register as
     /// kglobalaccel shortcuts: (id, component, shortcut name).
-    pub(super) const SHORTCUT_ACTIONS: [(&str, &str, &str); 14] = [
+    pub(super) const SHORTCUT_ACTIONS: [(&str, &str, &str); 15] = [
         ("closeWindow", "kwin", "Window Close"),
         ("minimizeWindow", "kwin", "Window Minimize"),
         ("maximizeWindow", "kwin", "Window Maximize"),
@@ -242,6 +242,7 @@ mod kde {
         ("moveWindowToNextDesktop", "kwin", "Window to Next Desktop"),
         ("moveWindowToPreviousDesktop", "kwin", "Window to Previous Desktop"),
         ("moveWindowToNextScreen", "kwin", "Window to Next Screen"),
+        ("moveWindowToPreviousScreen", "kwin", "Window to Previous Screen"),
         ("switchToNextDesktop", "kwin", "Switch to Next Desktop"),
         ("switchToPreviousDesktop", "kwin", "Switch to Previous Desktop"),
         ("showDesktop", "kwin", "Show Desktop"),
@@ -269,7 +270,7 @@ mod kde {
         // KWin registers both families as global shortcuts; the same path
         // as every other window action, instead of the legacy
         // org.kde.KWin.setCurrentDesktop.
-        if let Some(n) = numbered("switchDesktop") {
+        if let Some(n) = numbered("switchToDesktop") {
             return Some(invoke_shortcut("kwin", &format!("Switch to Desktop {n}")));
         }
         if let Some(n) = numbered("moveWindowToDesktop") {
@@ -369,9 +370,9 @@ mod tests {
         ] {
             assert!(!is_known(id), "{id}");
         }
-        assert!(is_known("switchDesktop10") && is_known("turnOffScreen"));
+        assert!(is_known("switchToDesktop10") && is_known("turnOffScreen"));
         // The same numbered range as the action picker.
-        assert!(!is_known("switchDesktop11") && !is_known("moveWindowToDesktop11"));
+        assert!(!is_known("switchToDesktop11") && !is_known("moveWindowToDesktop11"));
         for entry in crate::config::actions::system_actions() {
             let crate::config::actions::Action::System(id) = entry.action else {
                 panic!("system catalog holds only sys: actions");
@@ -393,7 +394,7 @@ mod linux_tests {
     #[test]
     fn known_ids_match_the_kde_catalog() {
         for prefix in [
-            "switchDesktop",
+            "switchToDesktop",
             "moveWindowToDesktop",
             "switchKeyboardLayout",
             "closeWindow",
@@ -416,13 +417,14 @@ mod linux_tests {
     fn gnome_actions_use_only_the_fixed_bridge_api() {
         for name in [
             "switchKeyboardLayout1",
-            "switchDesktop2",
+            "switchToDesktop2",
             "moveWindowToDesktop3",
             "closeWindow",
             "maximizeWindowVertically",
             "moveWindowToNextDesktop",
             "moveWindowToPreviousDesktop",
             "moveWindowToNextScreen",
+            "moveWindowToPreviousScreen",
             "switchToNextDesktop",
             "showOverview",
             "turnOffScreen",
@@ -440,7 +442,7 @@ mod linux_tests {
             "showDesktop",
             "switchKeyboardLayout0",
             "switchKeyboardLayout11",
-            "switchDesktop21",
+            "switchToDesktop21",
             "Eval",
             "global.display.focus_window.delete(0)",
         ] {
@@ -487,9 +489,9 @@ mod linux_tests {
         assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Turn Off Screen"));
         assert!(kde_shortcut("Turn Off Screen").is_none());
 
-        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("switchDesktop2", &Desktop::Kde)
+        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("switchToDesktop2", &Desktop::Kde)
         else {
-            panic!("switchDesktop2 did not resolve to a DBus action");
+            panic!("switchToDesktop2 did not resolve to a DBus action");
         };
         assert_eq!(call.path, "/component/kwin");
         assert!(matches!(call.args.as_slice(), [DbusArg::Str(s)] if s == "Switch to Desktop 2"));

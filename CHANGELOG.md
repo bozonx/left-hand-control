@@ -8,13 +8,14 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Added
 
-- System actions: lock screen (`sys:lockSession`), switch to the next or previous desktop (`sys:switchToNextDesktop`, `sys:switchToPreviousDesktop`), move the window to the previous desktop (`sys:moveWindowToPreviousDesktop`) and to the next screen (`sys:moveWindowToNextScreen`). They run on KDE, GNOME (with the bundled extension, updated for them) and Windows, except moving a window between desktops on Windows.
+- System actions: lock screen (`sys:lockSession`), switch to the next or previous desktop (`sys:switchToNextDesktop`, `sys:switchToPreviousDesktop`), move the window to the previous desktop (`sys:moveWindowToPreviousDesktop`) and to the next or previous screen (`sys:moveWindowToNextScreen`, `sys:moveWindowToPreviousScreen`). They run on KDE, GNOME (with the bundled extension, updated for them) and Windows, except moving a window between desktops on Windows.
 - GNOME: "Turn off screen" now works through the extension.
 - JSON Schemas of `config.json` and layout files in `schemas/` (`config.v1.schema.json`, `layout.v1.schema.json`), published at a stable address for the `$schema` field: editors complete field names and enum values and flag typos and out-of-range timings.
 - Action picker (development mode, Linux): an "Application actions" category with the extra actions installed applications declare in their desktop entries (freedesktop `Actions=`, e.g. Firefox "New Private Window"), stored as `xdg:<desktop-id>/<action>`. D-Bus activatable applications get `ActivateAction`, others run the action's command line.
 
 ### Changed
 
+- `sys:switchDesktopN` is renamed to `sys:switchToDesktopN`, matching `sys:switchToNextDesktop` and `sys:moveWindowToDesktopN`. Profiles that use the old name report an unknown system action; rebind those keys.
 - Keyboard navigation in settings: the emoji palette on the menus page is one Tab stop with arrows crossing category borders; arrow keys also reach the buttons in the hold menu on the triggers page; scrollbars are no longer Tab stops (PageUp/PageDown scroll while focus is inside a scrolled area); layer tabs show the same 2px focus ring as other controls; Left/Right in key grids keep working when keys in a row have different heights; the layer key grid always keeps a Tab stop after the keys change.
 - Layout with large text and long translations: button groups (theme, modes, device tabs) stack into a column when one row does not fit, checkbox labels and card titles wrap instead of running past the edge, and dialog content scrolls when it cannot fit the window. At the regular size nothing changes.
 - Accessibility: text that is cut off with an ellipsis in lists, badges, menus and pickers now shows its full text in a tooltip (only when it is actually cut off).

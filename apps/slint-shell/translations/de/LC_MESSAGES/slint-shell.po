@@ -3853,6 +3853,9 @@ msgstr "Fenster auf vorherige Arbeitsfläche verschieben"
 msgid "Move window to next screen"
 msgstr "Fenster auf nächsten Bildschirm verschieben"
 
+msgid "Move window to previous screen"
+msgstr "Fenster auf vorherigen Bildschirm verschieben"
+
 msgid "Switch to next desktop"
 msgstr "Zur nächsten Arbeitsfläche wechseln"
 

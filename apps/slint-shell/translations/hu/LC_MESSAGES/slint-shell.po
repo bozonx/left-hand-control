@@ -3814,6 +3814,9 @@ msgstr "Ablak áthelyezése az előző asztalra"
 msgid "Move window to next screen"
 msgstr "Ablak áthelyezése a következő képernyőre"
 
+msgid "Move window to previous screen"
+msgstr "Ablak áthelyezése az előző képernyőre"
+
 msgid "Switch to next desktop"
 msgstr "Váltás a következő asztalra"
 

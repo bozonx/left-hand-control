@@ -312,7 +312,7 @@ def main():
                 time.sleep(0.3)
         if kde_state() != {"desktop": "1", "layout": "0"}:
             raise StepFailed(f"unexpected start state {kde_state()}")
-        check("1", "desktop", "2")   # sys:switchDesktop2
+        check("1", "desktop", "2")   # sys:switchToDesktop2
         check("2", "desktop", "1")   # kde:kwin/Switch to Desktop 1
         check("3", "layout", "1")    # sys:switchKeyboardLayout2
         check("4", "layout", "0")    # sys:switchKeyboardLayout1

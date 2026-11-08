@@ -3787,6 +3787,9 @@ msgstr "Mover janela para a área de trabalho anterior"
 msgid "Move window to next screen"
 msgstr "Mover janela para o próximo ecrã"
 
+msgid "Move window to previous screen"
+msgstr "Mover janela para o ecrã anterior"
+
 msgid "Switch to next desktop"
 msgstr "Mudar para a próxima área de trabalho"
 

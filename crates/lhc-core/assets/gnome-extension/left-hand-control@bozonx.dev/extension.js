@@ -161,7 +161,7 @@ export default class Bridge extends Extension {
     }
 
     _action(action) {
-        const match = /^(switchDesktop|moveWindowToDesktop|switchKeyboardLayout)([1-9][0-9]*)$/.exec(action);
+        const match = /^(switchToDesktop|moveWindowToDesktop|switchKeyboardLayout)([1-9][0-9]*)$/.exec(action);
         const window = global.display.focus_window;
         if (match) {
             const index = Number(match[2]) - 1;
@@ -175,7 +175,7 @@ export default class Bridge extends Extension {
             const workspace = global.workspace_manager.get_workspace_by_index(index);
             if (!workspace || index >= 20)
                 throw new Error('Workspace is unavailable');
-            if (match[1] === 'switchDesktop')
+            if (match[1] === 'switchToDesktop')
                 workspace.activate(global.get_current_time());
             else if (window)
                 window.change_workspace(workspace);
@@ -254,6 +254,13 @@ export default class Bridge extends Extension {
             if (count < 2)
                 throw new Error('There is only one screen');
             window.move_to_monitor((window.get_monitor() + 1) % count);
+            return;
+        }
+        case 'moveWindowToPreviousScreen': {
+            const count = global.display.get_n_monitors();
+            if (count < 2)
+                throw new Error('There is only one screen');
+            window.move_to_monitor((window.get_monitor() + count - 1) % count);
             return;
         }
         case 'toggleWindowKeepAbove':

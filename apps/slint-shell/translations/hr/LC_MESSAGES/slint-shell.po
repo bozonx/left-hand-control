@@ -3765,6 +3765,9 @@ msgstr "Premjesti prozor na prethodnu radnu površinu"
 msgid "Move window to next screen"
 msgstr "Premjesti prozor na sljedeći zaslon"
 
+msgid "Move window to previous screen"
+msgstr "Premjesti prozor na prethodni zaslon"
+
 msgid "Switch to next desktop"
 msgstr "Prijeđi na sljedeću radnu površinu"
 

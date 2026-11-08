@@ -3456,6 +3456,9 @@ msgstr "將視窗移到上一個桌面"
 msgid "Move window to next screen"
 msgstr "將視窗移到下一個螢幕"
 
+msgid "Move window to previous screen"
+msgstr "將視窗移到上一個螢幕"
+
 msgid "Switch to next desktop"
 msgstr "切換到下一個桌面"
 

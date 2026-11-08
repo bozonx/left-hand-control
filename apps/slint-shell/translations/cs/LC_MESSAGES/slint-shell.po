@@ -3753,6 +3753,9 @@ msgstr "Přesunout okno na předchozí plochu"
 msgid "Move window to next screen"
 msgstr "Přesunout okno na další obrazovku"
 
+msgid "Move window to previous screen"
+msgstr "Přesunout okno na předchozí obrazovku"
+
 msgid "Switch to next desktop"
 msgstr "Přepnout na další plochu"
 
