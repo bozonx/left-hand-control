@@ -1983,22 +1983,10 @@ msgstr "Tryb gry jest wyłączony (ustawiony ręcznie)"
 msgid "Game mode is on (set manually)"
 msgstr "Tryb gry jest włączony (ustawiany ręcznie)"
 
-msgid ""
-"Game mode turns on rules and automatic profile rules that have a game-mode "
-"condition. Automatic profile rules apply only when the profile is chosen "
-"automatically (Profiles page). Auto uses the detection sources and custom "
-"rules below; On and Off set the state manually. “Never a game” takes "
-"priority over automatic detection and “Always a game”. You can also change "
-"the mode in the top bar, in the tray menu or with a key bound to a game mode"
-" action."
-msgstr ""
-"Tryb gry włącza reguły i reguły automatycznego układu, które mają warunek "
-"trybu gry. Reguły układu automatycznego mają zastosowanie tylko wtedy, gdy "
-"układ jest wybierany automatycznie (strona Układy). Auto korzysta z "
-"poniższych źródeł wykrywania i niestandardowych reguł; Włącz i Wyłącz "
-"ustawiaj stan ręcznie. „Nigdy gra” ma pierwszeństwo przed automatycznym "
-"wykrywaniem i „Zawsze gra”. Możesz także zmienić tryb na górnym pasku, w "
-"menu na pasku zadań lub za pomocą klawisza powiązanego z akcją trybu gry."
+msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgstr "Tryb gry włącza reguły i reguły automatycznego układu, które mają warunek trybu gry. Reguły układu automatycznego mają zastosowanie tylko wtedy, gdy układ jest wybierany automatycznie (strona Układy). Auto korzysta z poniższych źródeł wykrywania i niestandardowych reguł; Włącz i Wyłącz ustawiaj stan ręcznie. „Nie traktowane jako gra” ma pierwszeństwo przed automatycznym wykrywaniem i „Traktowane jako gra”. Możesz także zmienić tryb na górnym pasku, w menu na pasku zadań lub za pomocą klawisza powiązanego z akcją trybu gry."
+
+
 
 msgid "Game mode: always off"
 msgstr "Tryb gry: zawsze wyłączony"
@@ -3163,24 +3151,24 @@ msgstr "Domysły – mogą się mylić"
 msgid "Your rules"
 msgstr "Twoje zasady"
 
-msgid ""
-"“Never a game” wins over everything else, automatic detection included."
-msgstr ""
-"„Nigdy gra” nie wygrywa ze wszystkim innym, łącznie z automatycznym "
-"wykrywaniem."
+msgid "“Doesn't count as a game” wins over everything else, automatic detection included."
+msgstr "„Nie traktowane jako gra” ma pierwszeństwo przed wszystkim innym, łącznie z automatycznym wykrywaniem."
 
-msgid "Always a game"
-msgstr "Zawsze gra"
 
-msgid "Never a game"
-msgstr "Nigdy gra"
 
-msgid ""
-"Built-in list. To count one of these anyway, add it to Always a game under "
-"Your rules."
-msgstr ""
-"Wbudowana lista. Aby mimo to policzyć jedną z nich, dodaj ją do Zawsze graj "
-"na Twoich zasadach."
+
+msgid "Counts as a game"
+msgstr "Traktowane jako gra"
+
+
+msgid "Doesn't count as a game"
+msgstr "Nie traktowane jako gra"
+
+
+msgid "Built-in list. To count one of these anyway, add it to Counts as a game under Your rules."
+msgstr "Wbudowana lista. Aby mimo to uwzględnić jedną z nich, dodaj ją do „Traktowane jako gra” w sekcji „Twoje zasady”."
+
+
 
 msgid "Hold"
 msgstr "Przytrzymanie"

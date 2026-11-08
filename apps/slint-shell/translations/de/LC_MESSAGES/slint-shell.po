@@ -1995,23 +1995,10 @@ msgstr "Der Spielmodus ist ausgeschaltet (manuell eingestellt)"
 msgid "Game mode is on (set manually)"
 msgstr "Der Spielmodus ist aktiviert (manuell eingestellt)"
 
-msgid ""
-"Game mode turns on rules and automatic profile rules that have a game-mode "
-"condition. Automatic profile rules apply only when the profile is chosen "
-"automatically (Profiles page). Auto uses the detection sources and custom "
-"rules below; On and Off set the state manually. “Never a game” takes "
-"priority over automatic detection and “Always a game”. You can also change "
-"the mode in the top bar, in the tray menu or with a key bound to a game mode"
-" action."
-msgstr ""
-"Der Spielmodus aktiviert Regeln und automatische Layoutregeln, die eine "
-"Spielmodusbedingung haben. Automatische Layoutregeln gelten nur, wenn das "
-"Layout automatisch ausgewählt wird (Seite „Layouts“). Auto verwendet die "
-"unten aufgeführten Erkennungsquellen und benutzerdefinierten Regeln. Mit "
-"„Ein“ und „Aus“ wird der Status manuell festgelegt. „Nie ein Spiel“ hat "
-"Vorrang vor der automatischen Erkennung und „Immer ein Spiel“. Sie können "
-"den Modus auch in der oberen Leiste, im Taskleistenmenü oder mit einer an "
-"eine Spielmodusaktion gebundenen Taste ändern."
+msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgstr "Der Spielmodus aktiviert Regeln und automatische Layoutregeln, die eine Spielmodusbedingung haben. Automatische Layoutregeln gelten nur, wenn das Layout automatisch ausgewählt wird (Seite „Layouts“). Auto verwendet die unten aufgeführten Erkennungsquellen und benutzerdefinierten Regeln. Mit „Ein“ und „Aus“ wird der Status manuell festgelegt. „Gilt nicht als Spiel“ hat Vorrang vor der automatischen Erkennung und „Gilt als Spiel“. Sie können den Modus auch in der oberen Leiste, im Taskleistenmenü oder mit einer an eine Spielmodusaktion gebundenen Taste ändern."
+
+
 
 msgid "Game mode: always off"
 msgstr "Spielmodus: immer aus"
@@ -3196,23 +3183,23 @@ msgstr "Vermutungen – können falsch sein"
 msgid "Your rules"
 msgstr "Deine Regeln"
 
-msgid ""
-"“Never a game” wins over everything else, automatic detection included."
-msgstr ""
-"„Never a Game“ übertrifft alles andere, automatische Erkennung inklusive."
+msgid "“Doesn't count as a game” wins over everything else, automatic detection included."
+msgstr "„Gilt nicht als Spiel“ übertrifft alles andere, automatische Erkennung inklusive."
 
-msgid "Always a game"
-msgstr "Immer ein Spiel"
 
-msgid "Never a game"
-msgstr "Niemals ein Spiel"
 
-msgid ""
-"Built-in list. To count one of these anyway, add it to Always a game under "
-"Your rules."
-msgstr ""
-"Integrierte Liste. Um eines davon trotzdem zu zählen, fügen Sie es zu „Immer"
-" ein Spiel unter Ihren Regeln“ hinzu."
+msgid "Counts as a game"
+msgstr "Gilt als Spiel"
+
+
+msgid "Doesn't count as a game"
+msgstr "Gilt nicht als Spiel"
+
+
+msgid "Built-in list. To count one of these anyway, add it to Counts as a game under Your rules."
+msgstr "Integrierte Liste. Um eines davon trotzdem zu zählen, fügen Sie es unter „Deine Regeln“ zu „Gilt als Spiel“ hinzu."
+
+
 
 msgid "Hold"
 msgstr "Halten"

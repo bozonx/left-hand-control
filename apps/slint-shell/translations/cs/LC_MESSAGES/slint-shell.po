@@ -1960,22 +1960,10 @@ msgstr "Herní režim je vypnutý (nastaveno ručně)"
 msgid "Game mode is on (set manually)"
 msgstr "Herní režim je zapnutý (nastavuje se ručně)"
 
-msgid ""
-"Game mode turns on rules and automatic profile rules that have a game-mode "
-"condition. Automatic profile rules apply only when the profile is chosen "
-"automatically (Profiles page). Auto uses the detection sources and custom "
-"rules below; On and Off set the state manually. “Never a game” takes "
-"priority over automatic detection and “Always a game”. You can also change "
-"the mode in the top bar, in the tray menu or with a key bound to a game mode"
-" action."
-msgstr ""
-"Herní režim zapíná pravidla a automatická pravidla rozvržení, která mají "
-"podmínku herního režimu. Automatická pravidla rozvržení platí pouze v "
-"případě, že je rozvržení vybráno automaticky (stránka Rozvržení). Auto "
-"používá níže uvedené zdroje detekce a vlastní pravidla; On a Off nastavují "
-"stav ručně. „Nikdy hra“ má přednost před automatickou detekcí a „Vždy hra“. "
-"Režim můžete také změnit v horní liště, v nabídce zásobníku nebo pomocí "
-"tlačítka vázaného na akci herního režimu."
+msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgstr "Herní režim zapíná pravidla a automatická pravidla rozvržení, která mají podmínku herního režimu. Automatická pravidla rozvržení platí pouze v případě, že je rozvržení vybráno automaticky (stránka Rozvržení). Auto používá níže uvedené zdroje detekce a vlastní pravidla; On a Off nastavují stav ručně. „Nepovažuje se za hru“ má přednost před automatickou detekcí a „Považuje se za hru“. Režim můžete také změnit v horní liště, v nabídce zásobníku nebo pomocí tlačítka vázaného na akci herního režimu."
+
+
 
 msgid "Game mode: always off"
 msgstr "Herní režim: vždy vypnutý"
@@ -3111,22 +3099,23 @@ msgstr "Odhady - mohou se mýlit"
 msgid "Your rules"
 msgstr "Vaše pravidla"
 
-msgid ""
-"“Never a game” wins over everything else, automatic detection included."
-msgstr "„Nikdy hra“ vítězí nad vším ostatním, včetně automatické detekce."
+msgid "“Doesn't count as a game” wins over everything else, automatic detection included."
+msgstr "„Nepovažuje se za hru“ vítězí nad vším ostatním, včetně automatické detekce."
 
-msgid "Always a game"
-msgstr "Vždy hra"
 
-msgid "Never a game"
-msgstr "Nikdy žádná hra"
 
-msgid ""
-"Built-in list. To count one of these anyway, add it to Always a game under "
-"Your rules."
-msgstr ""
-"Vestavěný seznam. Chcete-li jednu z nich přesto započítat, přidejte ji do "
-"Vždy hry podle vašich pravidel."
+msgid "Counts as a game"
+msgstr "Považuje se za hru"
+
+
+msgid "Doesn't count as a game"
+msgstr "Nepovažuje se za hru"
+
+
+msgid "Built-in list. To count one of these anyway, add it to Counts as a game under Your rules."
+msgstr "Vestavěný seznam. Chcete-li jednu z nich přesto započítat, přidejte ji do „Považuje se za hru“ v části „Vaše pravidla“."
+
+
 
 msgid "Hold"
 msgstr "Podržení"

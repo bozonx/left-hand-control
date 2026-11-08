@@ -1857,17 +1857,10 @@ msgstr "遊戲模式關閉（手動設定）"
 msgid "Game mode is on (set manually)"
 msgstr "遊戲模式已開啟（手動設定）"
 
-msgid ""
-"Game mode turns on rules and automatic profile rules that have a game-mode "
-"condition. Automatic profile rules apply only when the profile is chosen "
-"automatically (Profiles page). Auto uses the detection sources and custom "
-"rules below; On and Off set the state manually. “Never a game” takes "
-"priority over automatic detection and “Always a game”. You can also change "
-"the mode in the top bar, in the tray menu or with a key bound to a game mode"
-" action."
-msgstr ""
-"遊戲模式開啟具有遊戲模式條件的規則和自動佈局規則。只有當自動選擇佈局（佈局頁面）時，自動佈局規則才適用。自動使用以下偵測來源和自訂規則； On 和Off"
-" 手動設定狀態。 「從不玩遊戲」優先於自動偵測和「永遠是遊戲」。您也可以在頂部欄中、托盤選單中或使用綁定到遊戲模式操作的按鍵來變更模式。"
+msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgstr "遊戲模式開啟具有遊戲模式條件的規則和自動佈局規則。只有當自動選擇佈局（佈局頁面）時，自動佈局規則才適用。自動使用以下偵測來源和自訂規則； On 和Off 手動設定狀態。 「不視為遊戲」優先於自動偵測和「視為遊戲」。您也可以在頂部欄中、托盤選單中或使用綁定到遊戲模式操作的按鍵來變更模式。"
+
+
 
 msgid "Game mode: always off"
 msgstr "遊戲模式：始終關閉"
@@ -2846,20 +2839,23 @@ msgstr "猜測——可能是錯誤的"
 msgid "Your rules"
 msgstr "你的規則"
 
-msgid ""
-"“Never a game” wins over everything else, automatic detection included."
-msgstr "「從來沒有一場比賽」勝過一切，包括自動檢測。"
+msgid "“Doesn't count as a game” wins over everything else, automatic detection included."
+msgstr "「不視為遊戲」勝過一切，包括自動檢測。"
 
-msgid "Always a game"
-msgstr "永遠是一場遊戲"
 
-msgid "Never a game"
-msgstr "從來都不是遊戲"
 
-msgid ""
-"Built-in list. To count one of these anyway, add it to Always a game under "
-"Your rules."
-msgstr "內建列表。無論如何，要計算其中一個，請將其添加到“您的規則”下的“始終是遊戲”中。"
+msgid "Counts as a game"
+msgstr "視為遊戲"
+
+
+msgid "Doesn't count as a game"
+msgstr "不視為遊戲"
+
+
+msgid "Built-in list. To count one of these anyway, add it to Counts as a game under Your rules."
+msgstr "內建列表。若仍要將其中某一項視為遊戲，請將其加入「你的規則」下的「視為遊戲」中。"
+
+
 
 msgid "Hold"
 msgstr "按住"

@@ -1963,22 +1963,10 @@ msgstr "თამაშის რეჟიმი გამორთულია 
 msgid "Game mode is on (set manually)"
 msgstr "თამაშის რეჟიმი ჩართულია (ხელით დაყენებულია)"
 
-msgid ""
-"Game mode turns on rules and automatic profile rules that have a game-mode "
-"condition. Automatic profile rules apply only when the profile is chosen "
-"automatically (Profiles page). Auto uses the detection sources and custom "
-"rules below; On and Off set the state manually. “Never a game” takes "
-"priority over automatic detection and “Always a game”. You can also change "
-"the mode in the top bar, in the tray menu or with a key bound to a game mode"
-" action."
-msgstr ""
-"თამაშის რეჟიმი რთავს წესებს და ავტომატური განლაგების წესებს, რომლებსაც აქვთ "
-"თამაშის რეჟიმი. განლაგების ავტომატური წესები მოქმედებს მხოლოდ მაშინ, როდესაც"
-" განლაგება ავტომატურად არჩეულია (განლაგებების გვერდი). ავტომატური იყენებს "
-"ქვემოთ მოცემულ გამოვლენის წყაროებს და მორგებულ წესებს; ჩართვა და გამორთვა "
-"დააყენეთ მდგომარეობა ხელით. „არასოდეს თამაში“ პრიორიტეტს ანიჭებს ავტომატურ "
-"ამოცნობას და „ყოველთვის თამაშს“. თქვენ ასევე შეგიძლიათ შეცვალოთ რეჟიმი ზედა "
-"ზოლში, უჯრის მენიუში ან თამაშის რეჟიმის მოქმედებაზე მიბმული კლავიშით."
+msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgstr "თამაშის რეჟიმი რთავს წესებს და ავტომატური განლაგების წესებს, რომლებსაც აქვთ თამაშის რეჟიმი. განლაგების ავტომატური წესები მოქმედებს მხოლოდ მაშინ, როდესაც განლაგება ავტომატურად არჩეულია (განლაგებების გვერდი). ავტომატური იყენებს ქვემოთ მოცემულ გამოვლენის წყაროებს და მორგებულ წესებს; ჩართვა და გამორთვა დააყენეთ მდგომარეობა ხელით. „არ ითვლება თამაშად“ პრიორიტეტს ანიჭებს ავტომატურ ამოცნობას და „ითვლება თამაშად“. თქვენ ასევე შეგიძლიათ შეცვალოთ რეჟიმი ზედა ზოლში, უჯრის მენიუში ან თამაშის რეჟიმის მოქმედებაზე მიბმული კლავიშით."
+
+
 
 msgid "Game mode: always off"
 msgstr "თამაშის რეჟიმი: ყოველთვის გამორთულია"
@@ -3119,22 +3107,23 @@ msgstr "ვარაუდები - შეიძლება არასწ�
 msgid "Your rules"
 msgstr "შენი წესები"
 
-msgid ""
-"“Never a game” wins over everything else, automatic detection included."
-msgstr "\"არასოდეს თამაში\" იმარჯვებს ყველაფერზე, ავტომატური გამოვლენის ჩათვლით."
+msgid "“Doesn't count as a game” wins over everything else, automatic detection included."
+msgstr "\"არ ითვლება თამაშად\" იმარჯვებს ყველაფერზე, ავტომატური გამოვლენის ჩათვლით."
 
-msgid "Always a game"
-msgstr "ყოველთვის თამაში"
 
-msgid "Never a game"
-msgstr "არასდროს თამაში"
 
-msgid ""
-"Built-in list. To count one of these anyway, add it to Always a game under "
-"Your rules."
-msgstr ""
-"ჩამონტაჟებული სია. ერთ-ერთი მათგანის დასათვლელად, დაამატეთ ის ყოველთვის "
-"თამაშში თქვენი წესებით."
+msgid "Counts as a game"
+msgstr "ითვლება თამაშად"
+
+
+msgid "Doesn't count as a game"
+msgstr "არ ითვლება თამაშად"
+
+
+msgid "Built-in list. To count one of these anyway, add it to Counts as a game under Your rules."
+msgstr "ჩამონტაჟებული სია. ერთ-ერთის მაინც დასათვლელად დაამატეთ ის „შენი წესები“ განყოფილებაში „ითვლება თამაშად“-ში."
+
+
 
 msgid "Hold"
 msgstr "დაჭერა"

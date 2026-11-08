@@ -1982,22 +1982,10 @@ msgstr "Modul joc este dezactivat (setat manual)"
 msgid "Game mode is on (set manually)"
 msgstr "Modul joc este activat (setat manual)"
 
-msgid ""
-"Game mode turns on rules and automatic profile rules that have a game-mode "
-"condition. Automatic profile rules apply only when the profile is chosen "
-"automatically (Profiles page). Auto uses the detection sources and custom "
-"rules below; On and Off set the state manually. “Never a game” takes "
-"priority over automatic detection and “Always a game”. You can also change "
-"the mode in the top bar, in the tray menu or with a key bound to a game mode"
-" action."
-msgstr ""
-"Modul joc activează regulile și regulile automate de aspect care au o "
-"condiție de modul de joc. Regulile automate de aspect se aplică numai atunci"
-" când aspectul este ales automat (pagina Aspecte). Auto folosește sursele de"
-" detectare și regulile personalizate de mai jos; Pornit și Oprit setați "
-"starea manual. „Niciodată un joc” are prioritate față de detectarea automată"
-" și „Întotdeauna un joc”. De asemenea, puteți schimba modul în bara de sus, "
-"în meniul tavă sau cu o tastă legată de o acțiune în modul de joc."
+msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgstr "Modul joc activează regulile și regulile automate de aspect care au o condiție de modul de joc. Regulile automate de aspect se aplică numai atunci când aspectul este ales automat (pagina Aspecte). Auto folosește sursele de detectare și regulile personalizate de mai jos; Pornit și Oprit setați starea manual. „Nu se consideră joc” are prioritate față de detectarea automată și „Se consideră joc”. De asemenea, puteți schimba modul în bara de sus, în meniul tavă sau cu o tastă legată de o acțiune în modul de joc."
+
+
 
 msgid "Game mode: always off"
 msgstr "Mod joc: întotdeauna dezactivat"
@@ -3161,24 +3149,23 @@ msgstr "Presupuneri - poate fi greșit"
 msgid "Your rules"
 msgstr "Regulile tale"
 
-msgid ""
-"“Never a game” wins over everything else, automatic detection included."
-msgstr ""
-"„Niciodată un joc” câștigă peste orice altceva, inclusiv detectarea "
-"automată."
+msgid "“Doesn't count as a game” wins over everything else, automatic detection included."
+msgstr "„Nu se consideră joc” câștigă peste orice altceva, inclusiv detectarea automată."
 
-msgid "Always a game"
-msgstr "Întotdeauna un joc"
 
-msgid "Never a game"
-msgstr "Niciodată un joc"
 
-msgid ""
-"Built-in list. To count one of these anyway, add it to Always a game under "
-"Your rules."
-msgstr ""
-"Lista încorporată. Pentru a număra oricum unul dintre acestea, adaugă-l la "
-"Always a game sub regulile tale."
+msgid "Counts as a game"
+msgstr "Se consideră joc"
+
+
+msgid "Doesn't count as a game"
+msgstr "Nu se consideră joc"
+
+
+msgid "Built-in list. To count one of these anyway, add it to Counts as a game under Your rules."
+msgstr "Listă încorporată. Pentru a număra totuși unul dintre acestea, adaugă-l la «Se consideră joc» în «Regulile tale»."
+
+
 
 msgid "Hold"
 msgstr "Menținere apăsată"

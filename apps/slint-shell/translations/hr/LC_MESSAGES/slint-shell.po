@@ -1961,22 +1961,10 @@ msgstr "Način igre je isključen (ručno postavljen)"
 msgid "Game mode is on (set manually)"
 msgstr "Način igre je uključen (ručno postavljen)"
 
-msgid ""
-"Game mode turns on rules and automatic profile rules that have a game-mode "
-"condition. Automatic profile rules apply only when the profile is chosen "
-"automatically (Profiles page). Auto uses the detection sources and custom "
-"rules below; On and Off set the state manually. “Never a game” takes "
-"priority over automatic detection and “Always a game”. You can also change "
-"the mode in the top bar, in the tray menu or with a key bound to a game mode"
-" action."
-msgstr ""
-"Način igre uključuje pravila i pravila automatskog izgleda koji imaju uvjet "
-"načina igre. Pravila automatskog izgleda primjenjuju se samo kada je izgled "
-"odabran automatski (stranica Izgledi). Auto koristi izvore otkrivanja i "
-"prilagođena pravila u nastavku; On i Off ručno postavljaju stanje. \"Nikada "
-"igra\" ima prioritet nad automatskim otkrivanjem i \"Uvijek igra\". Također "
-"možete promijeniti način rada na gornjoj traci, u izborniku trake ili tipkom"
-" vezanom za radnju načina igre."
+msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgstr "Način igre uključuje pravila i pravila automatskog izgleda koji imaju uvjet načina igre. Pravila automatskog izgleda primjenjuju se samo kada je izgled odabran automatski (stranica Izgledi). Auto koristi izvore otkrivanja i prilagođena pravila u nastavku; On i Off ručno postavljaju stanje. \"Ne smatra se igrom\" ima prioritet nad automatskim otkrivanjem i \"Smatra se igrom\". Također možete promijeniti način rada na gornjoj traci, u izborniku trake ili tipkom vezanom za radnju načina igre."
+
+
 
 msgid "Game mode: always off"
 msgstr "Način igre: uvijek isključen"
@@ -3124,22 +3112,23 @@ msgstr "Nagađanja - mogu biti pogrešna"
 msgid "Your rules"
 msgstr "Vaša pravila"
 
-msgid ""
-"“Never a game” wins over everything else, automatic detection included."
-msgstr "\"Nikada igra\" pobjeđuje sve ostalo, uključujući automatsko otkrivanje."
+msgid "“Doesn't count as a game” wins over everything else, automatic detection included."
+msgstr "\"Ne smatra se igrom\" pobjeđuje sve ostalo, uključujući automatsko otkrivanje."
 
-msgid "Always a game"
-msgstr "Uvijek igra"
 
-msgid "Never a game"
-msgstr "Nikad igra"
 
-msgid ""
-"Built-in list. To count one of these anyway, add it to Always a game under "
-"Your rules."
-msgstr ""
-"Ugrađeni popis. Da biste ipak računali jednu od ovih, dodajte je u Uvijek "
-"igru ​​prema Vašim pravilima."
+msgid "Counts as a game"
+msgstr "Smatra se igrom"
+
+
+msgid "Doesn't count as a game"
+msgstr "Ne smatra se igrom"
+
+
+msgid "Built-in list. To count one of these anyway, add it to Counts as a game under Your rules."
+msgstr "Ugrađeni popis. Da biste ipak uračunali jednu od ovih, dodajte je u „Smatra se igrom” u odjeljku „Vaša pravila”."
+
+
 
 msgid "Hold"
 msgstr "Držanje"

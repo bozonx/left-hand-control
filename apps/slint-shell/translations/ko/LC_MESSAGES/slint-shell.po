@@ -1873,19 +1873,10 @@ msgstr "게임 모드가 꺼져 있습니다(수동으로 설정)."
 msgid "Game mode is on (set manually)"
 msgstr "게임 모드가 켜져 있습니다(수동으로 설정)."
 
-msgid ""
-"Game mode turns on rules and automatic profile rules that have a game-mode "
-"condition. Automatic profile rules apply only when the profile is chosen "
-"automatically (Profiles page). Auto uses the detection sources and custom "
-"rules below; On and Off set the state manually. “Never a game” takes "
-"priority over automatic detection and “Always a game”. You can also change "
-"the mode in the top bar, in the tray menu or with a key bound to a game mode"
-" action."
-msgstr ""
-"게임 모드는 게임 모드 조건이 있는 규칙 및 자동 레이아웃 규칙을 켭니다. 자동 레이아웃 규칙은 레이아웃이 자동으로 선택된 경우에만 "
-"적용됩니다(레이아웃 페이지). 자동은 아래의 탐지 소스와 사용자 지정 규칙을 사용합니다. On 및 Off는 상태를 수동으로 설정합니다. "
-"\"게임 없음\"은 자동 감지 및 \"항상 게임\"보다 우선합니다. 상단 표시줄, 트레이 메뉴 또는 게임 모드 작업에 연결된 키를 "
-"사용하여 모드를 변경할 수도 있습니다."
+msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgstr "게임 모드는 게임 모드 조건이 있는 규칙 및 자동 레이아웃 규칙을 켭니다. 자동 레이아웃 규칙은 레이아웃이 자동으로 선택된 경우에만 적용됩니다(레이아웃 페이지). 자동은 아래의 탐지 소스와 사용자 지정 규칙을 사용합니다. On 및 Off는 상태를 수동으로 설정합니다. \"게임으로 간주 안 함\"은 자동 감지 및 \"게임으로 간주\"보다 우선합니다. 상단 표시줄, 트레이 메뉴 또는 게임 모드 작업에 연결된 키를 사용하여 모드를 변경할 수도 있습니다."
+
+
 
 msgid "Game mode: always off"
 msgstr "게임 모드: 항상 꺼짐"
@@ -2908,20 +2899,24 @@ msgstr "추측 - 틀릴 수도 있음"
 msgid "Your rules"
 msgstr "당신의 규칙"
 
-msgid ""
-"“Never a game” wins over everything else, automatic detection included."
-msgstr "\"게임은 하지 않는다\"는 자동 감지를 포함하여 다른 모든 것보다 우선합니다."
+msgid "“Doesn't count as a game” wins over everything else, automatic detection included."
+msgstr "“게임으로 간주 안 함”은 자동 감지를 포함하여 다른 모든 것보다 우선합니다."
 
-msgid "Always a game"
-msgstr "항상 게임"
 
-msgid "Never a game"
-msgstr "결코 게임이 아니다"
 
-msgid ""
-"Built-in list. To count one of these anyway, add it to Always a game under "
-"Your rules."
-msgstr "내장 목록. 어쨌든 이들 중 하나를 계산하려면 규칙에 따라 항상 게임에 추가하세요."
+
+msgid "Counts as a game"
+msgstr "게임으로 간주"
+
+
+msgid "Doesn't count as a game"
+msgstr "게임으로 간주 안 함"
+
+
+msgid "Built-in list. To count one of these anyway, add it to Counts as a game under Your rules."
+msgstr "내장 목록입니다. 이 중 하나를 그래도 게임으로 간주하려면 “당신의 규칙”의 “게임으로 간주”에 추가하세요."
+
+
 
 msgid "Hold"
 msgstr "길게 누르기"

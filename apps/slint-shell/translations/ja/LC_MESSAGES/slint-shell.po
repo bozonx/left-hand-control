@@ -1875,18 +1875,10 @@ msgstr "ゲームモードがオフになっています（手動で設定）"
 msgid "Game mode is on (set manually)"
 msgstr "ゲームモードがオンになっています（手動で設定）"
 
-msgid ""
-"Game mode turns on rules and automatic profile rules that have a game-mode "
-"condition. Automatic profile rules apply only when the profile is chosen "
-"automatically (Profiles page). Auto uses the detection sources and custom "
-"rules below; On and Off set the state manually. “Never a game” takes "
-"priority over automatic detection and “Always a game”. You can also change "
-"the mode in the top bar, in the tray menu or with a key bound to a game mode"
-" action."
-msgstr ""
-"ゲーム モードでは、ゲーム モード条件のあるルールと自動レイアウト ルールがオンになります。自動レイアウト ルールは、レイアウトが自動的に選択された場合"
-" ([レイアウト] ページ) にのみ適用されます。自動では、以下の検出ソースとカスタム ルールが使用されます。オンとオフは状態を手動で設定します。 "
-"「決してゲームしない」は、自動検出や「常にゲーム」よりも優先されます。トップバー、トレイメニュー、またはゲームモードアクションにバインドされたキーを使用してモードを変更することもできます。"
+msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgstr "ゲーム モードでは、ゲーム モード条件のあるルールと自動レイアウト ルールがオンになります。自動レイアウト ルールは、レイアウトが自動的に選択された場合 ([レイアウト] ページ) にのみ適用されます。自動では、以下の検出ソースとカスタム ルールが使用されます。オンとオフは状態を手動で設定します。 「ゲームとして扱わない」は、自動検出や「ゲームとして扱う」よりも優先されます。トップバー、トレイメニュー、またはゲームモードアクションにバインドされたキーを使用してモードを変更することもできます。"
+
+
 
 msgid "Game mode: always off"
 msgstr "ゲームモード: 常にオフ"
@@ -2917,20 +2909,23 @@ msgstr "推測 — 間違っている可能性があります"
 msgid "Your rules"
 msgstr "あなたのルール"
 
-msgid ""
-"“Never a game” wins over everything else, automatic detection included."
-msgstr "「決してゲームではない」は、自動検出を含め、他のすべてに勝ります。"
+msgid "“Doesn't count as a game” wins over everything else, automatic detection included."
+msgstr "「ゲームとして扱わない」は、自動検出を含め、他のすべてに勝ります。"
 
-msgid "Always a game"
-msgstr "いつもゲーム"
 
-msgid "Never a game"
-msgstr "決してゲームではない"
 
-msgid ""
-"Built-in list. To count one of these anyway, add it to Always a game under "
-"Your rules."
-msgstr "組み込みリスト。いずれにせよ、これらの 1 つをカウントするには、それを [ルール] の [常にゲーム] に追加します。"
+msgid "Counts as a game"
+msgstr "ゲームとして扱う"
+
+
+msgid "Doesn't count as a game"
+msgstr "ゲームとして扱わない"
+
+
+msgid "Built-in list. To count one of these anyway, add it to Counts as a game under Your rules."
+msgstr "組み込みリスト。これらのいずれかを強制的にカウントするには、[あなたのルール] の [ゲームとして扱う] に追加します。"
+
+
 
 msgid "Hold"
 msgstr "長押し"

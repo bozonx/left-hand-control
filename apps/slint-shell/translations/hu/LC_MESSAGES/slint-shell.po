@@ -1980,23 +1980,10 @@ msgstr "A játék mód ki van kapcsolva (kézi beállítás)"
 msgid "Game mode is on (set manually)"
 msgstr "A játék mód be van kapcsolva (kézi beállítás)"
 
-msgid ""
-"Game mode turns on rules and automatic profile rules that have a game-mode "
-"condition. Automatic profile rules apply only when the profile is chosen "
-"automatically (Profiles page). Auto uses the detection sources and custom "
-"rules below; On and Off set the state manually. “Never a game” takes "
-"priority over automatic detection and “Always a game”. You can also change "
-"the mode in the top bar, in the tray menu or with a key bound to a game mode"
-" action."
-msgstr ""
-"A Játék mód olyan szabályokat és automatikus elrendezési szabályokat kapcsol"
-" be, amelyeknek játékmód feltétele van. Az automatikus elrendezési szabályok"
-" csak akkor érvényesek, ha az elrendezés automatikusan kiválasztásra kerül "
-"(Elrendezések oldal). Az Auto az alábbi észlelési forrásokat és egyéni "
-"szabályokat használja; On és Off állítsa be az állapotot manuálisan. A „Soha"
-" játék” elsőbbséget élvez az automatikus felismeréssel és a „Mindig "
-"játékkal” szemben. A módot a felső sávban, a tálcamenüben vagy egy játékmód-"
-"művelethez kötött billentyűvel is módosíthatja."
+msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgstr "A Játék mód olyan szabályokat és automatikus elrendezési szabályokat kapcsol be, amelyeknek játékmód feltétele van. Az automatikus elrendezési szabályok csak akkor érvényesek, ha az elrendezés automatikusan kiválasztásra kerül (Elrendezések oldal). Az Auto az alábbi észlelési forrásokat és egyéni szabályokat használja; On és Off állítsa be az állapotot manuálisan. A „Nem számít játéknak” elsőbbséget élvez az automatikus felismeréssel és a „Játéknak számít” szemben. A módot a felső sávban, a tálcamenüben vagy egy játékmód-művelethez kötött billentyűvel is módosíthatja."
+
+
 
 msgid "Game mode: always off"
 msgstr "Játék mód: mindig kikapcsolva"
@@ -3162,24 +3149,24 @@ msgstr "Találgatások - tévedhetnek"
 msgid "Your rules"
 msgstr "A te szabályaid"
 
-msgid ""
-"“Never a game” wins over everything else, automatic detection included."
-msgstr ""
-"A „Soha egy játék” minden más felett győz, beleértve az automatikus "
-"észlelést is."
+msgid "“Doesn't count as a game” wins over everything else, automatic detection included."
+msgstr "A „Nem számít játéknak” minden más felett győz, beleértve az automatikus észlelést is."
 
-msgid "Always a game"
-msgstr "Mindig játék"
 
-msgid "Never a game"
-msgstr "Soha nem játék"
 
-msgid ""
-"Built-in list. To count one of these anyway, add it to Always a game under "
-"Your rules."
-msgstr ""
-"Beépített lista. Ha mégis meg szeretné számolni az egyiket, adja hozzá a "
-"Mindig játékhoz a saját szabályaihoz."
+
+msgid "Counts as a game"
+msgstr "Játéknak számít"
+
+
+msgid "Doesn't count as a game"
+msgstr "Nem számít játéknak"
+
+
+msgid "Built-in list. To count one of these anyway, add it to Counts as a game under Your rules."
+msgstr "Beépített lista. Ha mégis számolni szeretné valamelyiket, adja hozzá a(z) „Játéknak számít” listához a(z) „A te szabályaid” részben."
+
+
 
 msgid "Hold"
 msgstr "Nyomva tartás"

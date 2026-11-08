@@ -2003,24 +2003,10 @@ msgstr ""
 msgid "Game mode is on (set manually)"
 msgstr "Η λειτουργία παιχνιδιού είναι ενεργοποιημένη (ρυθμίζεται χειροκίνητα)"
 
-msgid ""
-"Game mode turns on rules and automatic profile rules that have a game-mode "
-"condition. Automatic profile rules apply only when the profile is chosen "
-"automatically (Profiles page). Auto uses the detection sources and custom "
-"rules below; On and Off set the state manually. “Never a game” takes "
-"priority over automatic detection and “Always a game”. You can also change "
-"the mode in the top bar, in the tray menu or with a key bound to a game mode"
-" action."
-msgstr ""
-"Η λειτουργία παιχνιδιού ενεργοποιεί κανόνες και κανόνες αυτόματης διάταξης "
-"που έχουν συνθήκη λειτουργίας παιχνιδιού. Οι κανόνες αυτόματης διάταξης "
-"ισχύουν μόνο όταν η διάταξη επιλέγεται αυτόματα (σελίδα Layouts). Το Auto "
-"χρησιμοποιεί τις πηγές ανίχνευσης και τους προσαρμοσμένους κανόνες παρακάτω."
-" Ενεργοποίηση και Απενεργοποίηση ρυθμίστε την κατάσταση χειροκίνητα. Το "
-"\"Never a game\" έχει προτεραιότητα έναντι του αυτόματου εντοπισμού και το "
-"\"Always a game\". Μπορείτε επίσης να αλλάξετε τη λειτουργία στην επάνω "
-"γραμμή, στο μενού του δίσκου ή με ένα πλήκτρο συνδεδεμένο σε μια ενέργεια "
-"λειτουργίας παιχνιδιού."
+msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgstr "Η λειτουργία παιχνιδιού ενεργοποιεί κανόνες και κανόνες αυτόματης διάταξης που έχουν συνθήκη λειτουργίας παιχνιδιού. Οι κανόνες αυτόματης διάταξης ισχύουν μόνο όταν η διάταξη επιλέγεται αυτόματα (σελίδα Layouts). Το Auto χρησιμοποιεί τις πηγές ανίχνευσης και τους προσαρμοσμένους κανόνες παρακάτω. Ενεργοποίηση και Απενεργοποίηση ρυθμίστε την κατάσταση χειροκίνητα. Το \"Δεν θεωρείται παιχνίδι\" έχει προτεραιότητα έναντι του αυτόματου εντοπισμού και το \"Θεωρείται παιχνίδι\". Μπορείτε επίσης να αλλάξετε τη λειτουργία στην επάνω γραμμή, στο μενού του δίσκου ή με ένα πλήκτρο συνδεδεμένο σε μια ενέργεια λειτουργίας παιχνιδιού."
+
+
 
 msgid "Game mode: always off"
 msgstr "Λειτουργία παιχνιδιού: πάντα απενεργοποιημένο"
@@ -3204,24 +3190,24 @@ msgstr "Εικασίες — μπορεί να είναι λάθος"
 msgid "Your rules"
 msgstr "Οι κανόνες σου"
 
-msgid ""
-"“Never a game” wins over everything else, automatic detection included."
-msgstr ""
-"Το \"Ποτέ ένα παιχνίδι\" κερδίζει πάνω από οτιδήποτε άλλο, "
-"συμπεριλαμβανομένης της αυτόματης ανίχνευσης."
+msgid "“Doesn't count as a game” wins over everything else, automatic detection included."
+msgstr "Το \"Δεν θεωρείται παιχνίδι\" κερδίζει πάνω από οτιδήποτε άλλο, συμπεριλαμβανομένης της αυτόματης ανίχνευσης."
 
-msgid "Always a game"
-msgstr "Πάντα ένα παιχνίδι"
 
-msgid "Never a game"
-msgstr "Ποτέ παιχνίδι"
 
-msgid ""
-"Built-in list. To count one of these anyway, add it to Always a game under "
-"Your rules."
-msgstr ""
-"Ενσωματωμένη λίστα. Για να μετρήσετε ένα από αυτά ούτως ή άλλως, προσθέστε "
-"το στο Πάντα ένα παιχνίδι σύμφωνα με τους κανόνες σας."
+
+msgid "Counts as a game"
+msgstr "Θεωρείται παιχνίδι"
+
+
+msgid "Doesn't count as a game"
+msgstr "Δεν θεωρείται παιχνίδι"
+
+
+msgid "Built-in list. To count one of these anyway, add it to Counts as a game under Your rules."
+msgstr "Ενσωματωμένη λίστα. Για να μετρήσετε ένα από αυτά ούτως ή άλλως, προσθέστε το στο «Θεωρείται παιχνίδι» στην ενότητα «Οι κανόνες σου»."
+
+
 
 msgid "Hold"
 msgstr "Παρατεταμένο πάτημα"

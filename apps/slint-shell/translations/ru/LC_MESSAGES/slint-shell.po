@@ -1788,8 +1788,10 @@ msgstr "Игровой режим выключен (вручную)"
 msgid "Game mode is on (set manually)"
 msgstr "Игровой режим включён (вручную)"
 
-msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Never a game” takes priority over automatic detection and “Always a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
 msgstr "Игровой режим включает правила и авто-правила раскладок с условием игрового режима. Авто-правила раскладок работают, только когда раскладка выбирается автоматически (страница «Раскладки»). Авто использует источники автоопределения и свои правила ниже; Вкл и Выкл задают состояние вручную. «Не считается игрой» важнее автоопределения и «Считается игрой». Режим также можно переключать в верхней панели, меню трея или клавишей с действием игрового режима."
+
+
 
 msgid "Game mode: always off"
 msgstr "Игровой режим: всегда выключен"
@@ -2571,17 +2573,23 @@ msgstr "Догадки — могут ошибаться"
 msgid "Your rules"
 msgstr "Свои правила"
 
-msgid "“Never a game” wins over everything else, automatic detection included."
+msgid "“Doesn't count as a game” wins over everything else, automatic detection included."
 msgstr "«Не считается игрой» важнее всего остального, в том числе автоопределения."
 
-msgid "Always a game"
+
+
+msgid "Counts as a game"
 msgstr "Считается игрой"
 
-msgid "Never a game"
+
+msgid "Doesn't count as a game"
 msgstr "Не считается игрой"
 
-msgid "Built-in list. To count one of these anyway, add it to Always a game under Your rules."
+
+msgid "Built-in list. To count one of these anyway, add it to Counts as a game under Your rules."
 msgstr "Встроенный список. Чтобы всё же считать что-то из него игрой, добавьте это в «Считается игрой» в блоке «Свои правила»."
+
+
 
 msgid "Hold"
 msgstr "Удержание"

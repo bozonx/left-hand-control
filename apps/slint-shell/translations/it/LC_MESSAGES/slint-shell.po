@@ -1993,24 +1993,10 @@ msgstr "La modalità di gioco è disattivata (impostata manualmente)"
 msgid "Game mode is on (set manually)"
 msgstr "La modalità di gioco è attiva (impostata manualmente)"
 
-msgid ""
-"Game mode turns on rules and automatic profile rules that have a game-mode "
-"condition. Automatic profile rules apply only when the profile is chosen "
-"automatically (Profiles page). Auto uses the detection sources and custom "
-"rules below; On and Off set the state manually. “Never a game” takes "
-"priority over automatic detection and “Always a game”. You can also change "
-"the mode in the top bar, in the tray menu or with a key bound to a game mode"
-" action."
-msgstr ""
-"La modalità di gioco attiva le regole e le regole di layout automatico che "
-"hanno una condizione della modalità di gioco. Le regole di layout automatico"
-" si applicano solo quando il layout viene scelto automaticamente (pagina "
-"Layout). Auto utilizza le origini di rilevamento e le regole personalizzate "
-"riportate di seguito; On e Off impostano lo stato manualmente. \"Mai un "
-"gioco\" ha la priorità sul rilevamento automatico e \"Sempre un gioco\". "
-"Puoi anche cambiare la modalità nella barra in alto, nel menu della barra "
-"delle applicazioni o con un tasto associato a un'azione della modalità di "
-"gioco."
+msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgstr "La modalità di gioco attiva le regole e le regole di layout automatico che hanno una condizione della modalità di gioco. Le regole di layout automatico si applicano solo quando il layout viene scelto automaticamente (pagina Layout). Auto utilizza le origini di rilevamento e le regole personalizzate riportate di seguito; On e Off impostano lo stato manualmente. \"Non conta come gioco\" ha la priorità sul rilevamento automatico e \"Conta come gioco\". Puoi anche cambiare la modalità nella barra in alto, nel menu della barra delle applicazioni o con un tasto associato a un'azione della modalità di gioco."
+
+
 
 msgid "Game mode: always off"
 msgstr "Modalità di gioco: sempre disattivata"
@@ -3185,23 +3171,23 @@ msgstr "Ipotesi: possono essere sbagliate"
 msgid "Your rules"
 msgstr "Le tue regole"
 
-msgid ""
-"“Never a game” wins over everything else, automatic detection included."
-msgstr ""
-"“Never a game” vince su tutto il resto, rilevamento automatico compreso."
+msgid "“Doesn't count as a game” wins over everything else, automatic detection included."
+msgstr "“Non conta come gioco” vince su tutto il resto, rilevamento automatico compreso."
 
-msgid "Always a game"
-msgstr "Sempre un gioco"
 
-msgid "Never a game"
-msgstr "Mai un gioco"
 
-msgid ""
-"Built-in list. To count one of these anyway, add it to Always a game under "
-"Your rules."
-msgstr ""
-"Elenco integrato. Per contarne comunque uno, aggiungilo a Sempre un gioco "
-"secondo le tue regole."
+msgid "Counts as a game"
+msgstr "Conta come gioco"
+
+
+msgid "Doesn't count as a game"
+msgstr "Non conta come gioco"
+
+
+msgid "Built-in list. To count one of these anyway, add it to Counts as a game under Your rules."
+msgstr "Elenco integrato. Per contarne comunque uno, aggiungilo a «Conta come gioco» in «Le tue regole»."
+
+
 
 msgid "Hold"
 msgstr "Pressione prolungata"

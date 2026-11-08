@@ -137,7 +137,7 @@ component BuiltinList inherits VerticalLayout {
         }
     }
     if root.expanded: Text { text: root.items; color: Theme.muted; wrap: word-wrap; }
-    if root.expanded: Text { text: @tr("Built-in list. To count one of these anyway, add it to Always a game under Your rules."); color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap; }
+    if root.expanded: Text { text: @tr("Built-in list. To count one of these anyway, add it to Counts as a game under Your rules."); color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap; }
 }
 
 /// One game-detection source: a check box, its explanation and, when the
@@ -755,7 +755,7 @@ export component SettingsPage inherits PageLayout {
                             selected(index) => { AppState.set-game-control(index == 0 ? GameModeControl.auto : index == 1 ? GameModeControl.on : GameModeControl.off); }
                         }
                         Rectangle { horizontal-stretch: 1; }
-                        VerticalLayout { alignment: center; InfoTip { text: @tr("Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Never a game” takes priority over automatic detection and “Always a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."); } }
+                        VerticalLayout { alignment: center; InfoTip { text: @tr("Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."); } }
                     }
                     Text {
                         vertical-stretch: 0; wrap: word-wrap; color: Theme.muted;
@@ -873,7 +873,7 @@ export component SettingsPage inherits PageLayout {
                             vertical-stretch: 0; spacing: Theme.space-3xl;
                             GameAppsField {
                                 horizontal-stretch: 1; preferred-width: 0px; min-width: 0px;
-                                label: @tr("Always a game");
+                                label: @tr("Counts as a game");
                                 info: @tr("Game mode turns on while any of these matches. An application is matched by its ID or process name: the whole name, ignoring case, with * and ? as wildcards. Steam games have the app ID steam_app_<number>; Proton games are also found by their .exe name. A window title item matches the active window whose title contains the text.");
                                 empty-text: @tr("No games added.");
                                 value: SettingsEditor.process-value;
@@ -884,7 +884,7 @@ export component SettingsPage inherits PageLayout {
                             GameAppsField {
                                 horizontal-stretch: 1; preferred-width: 0px; min-width: 0px;
                                 exclusion: true;
-                                label: @tr("Never a game");
+                                label: @tr("Doesn't count as a game");
                                 info: @tr("Game mode stays off while any of these matches, even if a game or another detector would turn it on.");
                                 empty-text: @tr("Nothing is excluded.");
                                 value: SettingsEditor.process-value;

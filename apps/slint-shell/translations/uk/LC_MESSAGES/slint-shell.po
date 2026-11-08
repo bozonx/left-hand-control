@@ -1970,23 +1970,10 @@ msgstr "Режим гри вимкнено (встановлюється вру�
 msgid "Game mode is on (set manually)"
 msgstr "Ігровий режим увімкнено (встановлюється вручну)"
 
-msgid ""
-"Game mode turns on rules and automatic profile rules that have a game-mode "
-"condition. Automatic profile rules apply only when the profile is chosen "
-"automatically (Profiles page). Auto uses the detection sources and custom "
-"rules below; On and Off set the state manually. “Never a game” takes "
-"priority over automatic detection and “Always a game”. You can also change "
-"the mode in the top bar, in the tray menu or with a key bound to a game mode"
-" action."
-msgstr ""
-"Ігровий режим вмикає правила та автоматичні правила компонування, які мають "
-"умову ігрового режиму. Правила автоматичного макета застосовуються лише "
-"тоді, коли макет вибрано автоматично (сторінка Макети). Авто використовує "
-"наведені нижче джерела виявлення та спеціальні правила; Увімкнення та "
-"вимкнення встановлюють стан вручну. «Ніколи не гра» має пріоритет над "
-"автоматичним виявленням і «Завжди гра». Ви також можете змінити режим у "
-"верхній панелі, у меню трея або за допомогою клавіші, прив’язаної до дії "
-"режиму гри."
+msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgstr "Ігровий режим вмикає правила та автоматичні правила компонування, які мають умову ігрового режиму. Правила автоматичного макета застосовуються лише тоді, коли макет вибрано автоматично (сторінка Макети). Авто використовує наведені нижче джерела виявлення та спеціальні правила; Увімкнення та вимкнення встановлюють стан вручну. «Не вважається грою» має пріоритет над автоматичним виявленням і «Вважається грою». Ви також можете змінити режим у верхній панелі, у меню трея або за допомогою клавіші, прив’язаної до дії режиму гри."
+
+
 
 msgid "Game mode: always off"
 msgstr "Режим гри: завжди вимкнено"
@@ -3140,23 +3127,23 @@ msgstr "Здогадки — можуть помилятися"
 msgid "Your rules"
 msgstr "Ваші правила"
 
-msgid ""
-"“Never a game” wins over everything else, automatic detection included."
-msgstr ""
-"«Ніколи не гра» перемагає над усім іншим, включаючи автоматичне виявлення."
+msgid "“Doesn't count as a game” wins over everything else, automatic detection included."
+msgstr "«Не вважається грою» перемагає над усім іншим, включаючи автоматичне виявлення."
 
-msgid "Always a game"
-msgstr "Завжди гра"
 
-msgid "Never a game"
-msgstr "Ніколи гра"
 
-msgid ""
-"Built-in list. To count one of these anyway, add it to Always a game under "
-"Your rules."
-msgstr ""
-"Вбудований список. Щоб все одно зарахувати одну з них, додайте її до «Завжди"
-" гра за вашими правилами»."
+msgid "Counts as a game"
+msgstr "Вважається грою"
+
+
+msgid "Doesn't count as a game"
+msgstr "Не вважається грою"
+
+
+msgid "Built-in list. To count one of these anyway, add it to Counts as a game under Your rules."
+msgstr "Вбудований список. Щоб усе одно зарахувати одну з них, додайте її до «Вважається грою» у розділі «Ваші правила»."
+
+
 
 msgid "Hold"
 msgstr "Утримання"

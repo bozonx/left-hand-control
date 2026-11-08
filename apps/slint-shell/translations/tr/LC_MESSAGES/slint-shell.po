@@ -1956,22 +1956,10 @@ msgstr "Oyun modu kapalı (manuel olarak ayarlanır)"
 msgid "Game mode is on (set manually)"
 msgstr "Oyun modu açık (manuel olarak ayarlanır)"
 
-msgid ""
-"Game mode turns on rules and automatic profile rules that have a game-mode "
-"condition. Automatic profile rules apply only when the profile is chosen "
-"automatically (Profiles page). Auto uses the detection sources and custom "
-"rules below; On and Off set the state manually. “Never a game” takes "
-"priority over automatic detection and “Always a game”. You can also change "
-"the mode in the top bar, in the tray menu or with a key bound to a game mode"
-" action."
-msgstr ""
-"Oyun modu, oyun modu koşuluna sahip kuralları ve otomatik düzen kurallarını "
-"açar. Otomatik düzen kuralları yalnızca düzen otomatik olarak seçildiğinde "
-"uygulanır (Yerleşimler sayfası). Otomatik, aşağıdaki algılama kaynaklarını "
-"ve özel kuralları kullanır; Açık ve Kapalı durumu manuel olarak ayarlar. "
-"\"Asla bir oyun\", otomatik algılamaya ve \"Her zaman bir oyun\"a göre "
-"önceliklidir. Modu üst çubuktan, tepsi menüsünden veya oyun modu eylemine "
-"bağlı bir tuşla da değiştirebilirsiniz."
+msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgstr "Oyun modu, oyun modu koşuluna sahip kuralları ve otomatik düzen kurallarını açar. Otomatik düzen kuralları yalnızca düzen otomatik olarak seçildiğinde uygulanır (Yerleşimler sayfası). Otomatik, aşağıdaki algılama kaynaklarını ve özel kuralları kullanır; Açık ve Kapalı durumu manuel olarak ayarlar. \"Oyun sayılmaz\", otomatik algılamaya ve \"Oyun sayılır\"a göre önceliklidir. Modu üst çubuktan, tepsi menüsünden veya oyun modu eylemine bağlı bir tuşla da değiştirebilirsiniz."
+
+
 
 msgid "Game mode: always off"
 msgstr "Oyun modu: her zaman kapalı"
@@ -3127,24 +3115,24 @@ msgstr "Tahminler – yanlış olabilir"
 msgid "Your rules"
 msgstr "Kurallarınız"
 
-msgid ""
-"“Never a game” wins over everything else, automatic detection included."
-msgstr ""
-"Otomatik algılama da dahil olmak üzere \"Asla bir oyun\" her şeyden üstün "
-"gelir."
+msgid "“Doesn't count as a game” wins over everything else, automatic detection included."
+msgstr "Otomatik algılama da dahil olmak üzere \"Oyun sayılmaz\" her şeyden üstün gelir."
 
-msgid "Always a game"
-msgstr "Her zaman bir oyun"
 
-msgid "Never a game"
-msgstr "Asla bir oyun"
 
-msgid ""
-"Built-in list. To count one of these anyway, add it to Always a game under "
-"Your rules."
-msgstr ""
-"Yerleşik liste. Bunlardan birini yine de saymak için, bunu Kurallarınız "
-"altında Her zaman bir oyun'a ekleyin."
+
+msgid "Counts as a game"
+msgstr "Oyun sayılır"
+
+
+msgid "Doesn't count as a game"
+msgstr "Oyun sayılmaz"
+
+
+msgid "Built-in list. To count one of these anyway, add it to Counts as a game under Your rules."
+msgstr "Yerleşik liste. Bunlardan birini yine de saymak için, “Kurallarınız” altında “Oyun sayılır” bölümüne ekleyin."
+
+
 
 msgid "Hold"
 msgstr "Basılı tutma"

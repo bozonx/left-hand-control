@@ -2006,24 +2006,10 @@ msgstr "Le mode jeu est désactivé (réglé manuellement)"
 msgid "Game mode is on (set manually)"
 msgstr "Le mode jeu est activé (réglé manuellement)"
 
-msgid ""
-"Game mode turns on rules and automatic profile rules that have a game-mode "
-"condition. Automatic profile rules apply only when the profile is chosen "
-"automatically (Profiles page). Auto uses the detection sources and custom "
-"rules below; On and Off set the state manually. “Never a game” takes "
-"priority over automatic detection and “Always a game”. You can also change "
-"the mode in the top bar, in the tray menu or with a key bound to a game mode"
-" action."
-msgstr ""
-"Le mode Jeu active les règles et les règles de mise en page automatiques qui"
-" ont une condition de mode jeu. Les règles de mise en page automatiques "
-"s'appliquent uniquement lorsque la mise en page est choisie automatiquement "
-"(page Mises en page). Auto utilise les sources de détection et les règles "
-"personnalisées ci-dessous ; On et Off définissent l'état manuellement. « "
-"Jamais un jeu » est prioritaire sur la détection automatique et « Toujours "
-"un jeu ». Vous pouvez également changer de mode dans la barre supérieure, "
-"dans le menu de la barre d'état ou avec une touche liée à une action du mode"
-" de jeu."
+msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgstr "Le mode Jeu active les règles et les règles de mise en page automatiques qui ont une condition de mode jeu. Les règles de mise en page automatiques s'appliquent uniquement lorsque la mise en page est choisie automatiquement (page Mises en page). Auto utilise les sources de détection et les règles personnalisées ci-dessous ; On et Off définissent l'état manuellement. «Ne compte pas comme un jeu» est prioritaire sur la détection automatique et «Compte comme un jeu». Vous pouvez également changer de mode dans la barre supérieure, dans le menu de la barre d'état ou avec une touche liée à une action du mode de jeu."
+
+
 
 msgid "Game mode: always off"
 msgstr "Mode jeu : toujours désactivé"
@@ -3208,24 +3194,23 @@ msgstr "Suppositions – peuvent être fausses"
 msgid "Your rules"
 msgstr "Vos règles"
 
-msgid ""
-"“Never a game” wins over everything else, automatic detection included."
-msgstr ""
-"« Jamais un jeu » l’emporte sur tout le reste, détection automatique "
-"incluse."
+msgid "“Doesn't count as a game” wins over everything else, automatic detection included."
+msgstr "«Ne compte pas comme un jeu» l’emporte sur tout le reste, détection automatique incluse."
 
-msgid "Always a game"
-msgstr "Toujours un jeu"
 
-msgid "Never a game"
-msgstr "Jamais un jeu"
 
-msgid ""
-"Built-in list. To count one of these anyway, add it to Always a game under "
-"Your rules."
-msgstr ""
-"Liste intégrée. Pour en compter un quand même, ajoutez-le à Toujours un jeu "
-"selon vos règles."
+msgid "Counts as a game"
+msgstr "Compte comme un jeu"
+
+
+msgid "Doesn't count as a game"
+msgstr "Ne compte pas comme un jeu"
+
+
+msgid "Built-in list. To count one of these anyway, add it to Counts as a game under Your rules."
+msgstr "Liste intégrée. Pour en compter un quand même, ajoutez-le à « Compte comme un jeu » dans « Vos règles »."
+
+
 
 msgid "Hold"
 msgstr "Maintien"

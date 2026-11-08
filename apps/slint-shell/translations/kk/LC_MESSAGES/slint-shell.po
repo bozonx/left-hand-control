@@ -1969,23 +1969,10 @@ msgstr "Ойын режимі өшірулі (қолмен орнату)"
 msgid "Game mode is on (set manually)"
 msgstr "Ойын режимі қосулы (қолмен орнату)"
 
-msgid ""
-"Game mode turns on rules and automatic profile rules that have a game-mode "
-"condition. Automatic profile rules apply only when the profile is chosen "
-"automatically (Profiles page). Auto uses the detection sources and custom "
-"rules below; On and Off set the state manually. “Never a game” takes "
-"priority over automatic detection and “Always a game”. You can also change "
-"the mode in the top bar, in the tray menu or with a key bound to a game mode"
-" action."
-msgstr ""
-"Ойын режимі ойын режимі шарты бар ережелер мен автоматты орналасу ережелерін"
-" қосады. Автоматты орналасу ережелері орналасу автоматты түрде таңдалғанда "
-"ғана қолданылады (Орналасулар беті). Auto төменде анықтау көздерін және "
-"пайдаланушы ережелерін пайдаланады; Қосулы және Өшіру күйін қолмен "
-"орнатыңыз. «Ешқашан ойын» автоматты анықтауға және «Әрқашан ойынға» "
-"қарағанда басымдылыққа ие. Сондай-ақ режимді жоғарғы жолақта, науа мәзірінде"
-" немесе ойын режимінің әрекетіне байланыстырылған перне арқылы өзгертуге "
-"болады."
+msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgstr "Ойын режимі ойын режимі шарты бар ережелер мен автоматты орналасу ережелерін қосады. Автоматты орналасу ережелері орналасу автоматты түрде таңдалғанда ғана қолданылады (Орналасулар беті). Auto төменде анықтау көздерін және пайдаланушы ережелерін пайдаланады; Қосулы және Өшіру күйін қолмен орнатыңыз. «Ойын болып саналмайды» автоматты анықтауға және «Ойын болып саналады» қарағанда басымдылыққа ие. Сондай-ақ режимді жоғарғы жолақта, науа мәзірінде немесе ойын режимінің әрекетіне байланыстырылған перне арқылы өзгертуге болады."
+
+
 
 msgid "Game mode: always off"
 msgstr "Ойын режимі: әрқашан өшірулі"
@@ -3138,22 +3125,23 @@ msgstr "Болжамдар - қате болуы мүмкін"
 msgid "Your rules"
 msgstr "Сіздің ережелеріңіз"
 
-msgid ""
-"“Never a game” wins over everything else, automatic detection included."
-msgstr "«Ешқашан ойын» басқалардың бәрін жеңеді, автоматты анықтау кіреді."
+msgid "“Doesn't count as a game” wins over everything else, automatic detection included."
+msgstr "«Ойын болып саналмайды» басқалардың бәрін жеңеді, автоматты анықтау кіреді."
 
-msgid "Always a game"
-msgstr "Әрқашан ойын"
 
-msgid "Never a game"
-msgstr "Ешқашан ойын емес"
 
-msgid ""
-"Built-in list. To count one of these anyway, add it to Always a game under "
-"Your rules."
-msgstr ""
-"Кірістірілген тізім. Осылардың бірін санау үшін оны ережелеріңіздің "
-"астындағы Әрқашан ойынға қосыңыз."
+msgid "Counts as a game"
+msgstr "Ойын болып саналады"
+
+
+msgid "Doesn't count as a game"
+msgstr "Ойын болып саналмайды"
+
+
+msgid "Built-in list. To count one of these anyway, add it to Counts as a game under Your rules."
+msgstr "Кірістірілген тізім. Осылардың бірін бәрібір санау үшін оны «Сіздің ережелеріңіз» ішіндегі «Ойын болып саналады» тармағына қосыңыз."
+
+
 
 msgid "Hold"
 msgstr "Басып тұру"
