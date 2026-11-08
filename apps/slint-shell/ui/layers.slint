@@ -304,7 +304,7 @@ export component LayersPage inherits PageLayout {
         ScrollView { accessible-role: tab-list; accessible-label: @tr("Layers"); height: 52px; viewport-height: self.visible-height; vertical-scrollbar-policy: always-off; horizontal-scrollbar-policy: as-needed; drag-scroll: true;
             HorizontalLayout { spacing: Theme.space-s; alignment: start;
                 for name[index] in LayersEditor.names: Rectangle {
-                    height: Theme.control-height-l; border-radius: Theme.radius; border-width: 1px;
+                    height: Theme.control-height-l; border-radius: Theme.radius; border-width: Theme.focus-ring(layer-focus.has-focus) ? 2px : 1px;
                     border-color: Theme.focus-ring(layer-focus.has-focus) ? Theme.focus : Theme.border;
                     background: index == LayersEditor.selected ? Theme.selected : layer-drag.has-hover ? Theme.hover : Theme.card;
                     opacity: layer-drag.dragged ? Theme.dragged-opacity : 1;

@@ -1,7 +1,7 @@
 import { ActionFocus } from "focus.slint";
 import { ElidedText } from "controls.slint";
 import { NotificationCenter, StatusText } from "notifications.slint";
-import { KeyboardFocus } from "focus.slint";
+import { KeyboardFocus, NavigationKind, NavigationMove } from "focus.slint";
 import { ActionField } from "action-controls.slint";
 import { Timing } from "timing.slint";
 import { AppState } from "app-state.slint";
@@ -257,6 +257,13 @@ component HoldField inherits VerticalLayout {
             menu-focus := FocusScope {
                 capture-key-pressed(event) => {
                     if event.text == Key.Escape { root.close-menu(); return accept; }
+                    return reject;
+                }
+                // Plain buttons in the menu ignore arrows; keep them in the menu's arrow navigation.
+                key-pressed(event) => {
+                    if event.modifiers.control || event.modifiers.alt || event.modifiers.meta { return reject; }
+                    if event.text == Key.UpArrow { KeyboardFocus.navigate(NavigationKind.menu, NavigationMove.up); return accept; }
+                    if event.text == Key.DownArrow { KeyboardFocus.navigate(NavigationKind.menu, NavigationMove.down); return accept; }
                     return reject;
                 }
                 popup-content := MenuSurface { inset: Theme.space-m; gap: Theme.space-s;

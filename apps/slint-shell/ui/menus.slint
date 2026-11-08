@@ -500,9 +500,13 @@ export component EmojiPage inherits Rectangle {
                         VerticalLayout {
                             padding-right: Theme.space-m-plus;
                             spacing: Theme.space-s;
-                            for category in MenuEditor.catalog: palette-category := VerticalLayout {
-                                accessible-role: list; accessible-label: @tr("Examples");
-                                property <int> keyboard-item: 0;
+                            // One list for all emoji categories: a single Tab stop, and arrows cross category borders.
+                            emoji-palette := VerticalLayout {
+                            accessible-role: list; accessible-label: @tr("Examples");
+                            property <int> keyboard-category: 0;
+                            property <int> keyboard-item: 0;
+                            spacing: Theme.space-s;
+                            for category[category-index] in MenuEditor.catalog: VerticalLayout {
                                 spacing: Theme.space-s;
                                 padding-bottom: Theme.space-m;
                                 Text {
@@ -522,12 +526,13 @@ export component EmojiPage inherits Rectangle {
                                 for row in ceil(category.items.length / 6): HorizontalLayout {
                                     spacing: Theme.space-s;
                                     for col in 6: EmojiButton {
-                                        tab-stop: row * 6 + col == palette-category.keyboard-item;
-                                        focused => { palette-category.keyboard-item = row * 6 + col; }
+                                        tab-stop: category-index == emoji-palette.keyboard-category && row * 6 + col == emoji-palette.keyboard-item;
+                                        focused => { emoji-palette.keyboard-category = category-index; emoji-palette.keyboard-item = row * 6 + col; }
                                         item: category.items[row * 6 + col];
                                         visible: row * 6 + col < category.items.length;
                                     }
                                 }
+                            }
                             }
                             kaomoji-palette := VerticalLayout {
                                 accessible-role: list; accessible-label: @tr("Kaomoji");

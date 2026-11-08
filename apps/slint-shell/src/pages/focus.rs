@@ -251,18 +251,40 @@ fn group_targets(boundary: &ItemRc, kind: NavigationKind) -> Vec<ItemRc> {
 }
 
 fn center(item: &ItemRc) -> (f32, f32) {
+    let (x, y, _) = center_and_half_height(item);
+    (x, y)
+}
+
+fn center_and_half_height(item: &ItemRc) -> (f32, f32, f32) {
     let item = nearest_accessible_item(item.clone());
     let geometry = item.geometry();
     let position = item.map_to_window(geometry.origin);
     let size = geometry.size;
-    (position.x + size.width / 2., position.y + size.height / 2.)
+    (
+        position.x + size.width / 2.,
+        position.y + size.height / 2.,
+        size.height / 2.,
+    )
 }
 
-fn grid_distance(along: f32, across: f32, movement: NavigationMove) -> Option<(f32, f32)> {
+/// `row_tolerance`: how far apart vertical centres of cells in one row may be
+/// (half the height of the smaller cell), so cells of different heights still share a row.
+fn grid_distance(
+    along: f32,
+    across: f32,
+    movement: NavigationMove,
+    row_tolerance: f32,
+) -> Option<(f32, f32)> {
     let horizontal = matches!(movement, NavigationMove::Previous | NavigationMove::Next);
     // Left/Right stay in the same row. Up/Down choose the next row and then
     // its closest column, including incomplete rows and the gap between hands.
-    (along > 1. && (!horizontal || across < 1.)).then_some((along, across))
+    let along_min = if horizontal {
+        1.
+    } else {
+        row_tolerance.max(1.)
+    };
+    (along > along_min && (!horizontal || across < row_tolerance.max(1.)))
+        .then_some((along, across))
 }
 
 /// Move within a composite control in a standalone window, using the same
@@ -291,11 +313,11 @@ pub fn navigate_focus_group(
         NavigationMove::First => targets.first(),
         NavigationMove::Last => targets.last(),
         _ if kind == NavigationKind::Grid => {
-            let (x, y) = center(&current);
+            let (x, y, half) = center_and_half_height(&current);
             targets
                 .iter()
                 .filter_map(|item| {
-                    let (tx, ty) = center(item);
+                    let (tx, ty, target_half) = center_and_half_height(item);
                     let (along, across) = match movement {
                         NavigationMove::Previous => (x - tx, (y - ty).abs()),
                         NavigationMove::Next => (tx - x, (y - ty).abs()),
@@ -303,7 +325,8 @@ pub fn navigate_focus_group(
                         NavigationMove::Down => (ty - y, (x - tx).abs()),
                         _ => return None,
                     };
-                    grid_distance(along, across, movement).map(|distance| (item, distance))
+                    grid_distance(along, across, movement, half.min(target_half))
+                        .map(|distance| (item, distance))
                 })
                 .min_by(|a, b| {
                     a.1.0
@@ -660,15 +683,22 @@ mod tests {
 
     #[test]
     fn grid_navigation_does_not_wrap_or_move_diagonally_to_another_row() {
-        assert_eq!(grid_distance(-10., 0., NavigationMove::Next), None);
-        assert_eq!(grid_distance(50., 46., NavigationMove::Next), None);
+        assert_eq!(grid_distance(-10., 0., NavigationMove::Next, 20.), None);
+        assert_eq!(grid_distance(50., 46., NavigationMove::Next, 20.), None);
         assert_eq!(
-            grid_distance(300., 0., NavigationMove::Next),
+            grid_distance(300., 0., NavigationMove::Next, 20.),
             Some((300., 0.))
         );
         assert_eq!(
-            grid_distance(50., 20., NavigationMove::Down),
+            grid_distance(50., 20., NavigationMove::Down, 20.),
             Some((50., 20.))
         );
+        // A taller cell in the same row: centres differ, but it is still the same row.
+        assert_eq!(
+            grid_distance(60., 10., NavigationMove::Next, 20.),
+            Some((60., 10.))
+        );
+        // Up/Down skip cells of the current row.
+        assert_eq!(grid_distance(10., 60., NavigationMove::Down, 20.), None);
     }
 }

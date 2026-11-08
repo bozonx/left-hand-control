@@ -156,6 +156,17 @@ fn refresh(ui: &SettingsWindow, document: &Document) {
     let (left, right) = hands(keymap, &names);
     editor.set_left_cells(update_model(editor.get_left_cells(), left));
     editor.set_right_cells(update_model(editor.get_right_cells(), right));
+    // The keyboard grid keeps one Tab stop; move it to the first key when its key is gone.
+    let key = editor.get_keyboard_key();
+    let (left, right) = (editor.get_left_cells(), editor.get_right_cells());
+    let keys: Vec<i32> = left
+        .iter()
+        .chain(right.iter())
+        .map(|cell| cell.index)
+        .collect();
+    if !keys.contains(&key) {
+        editor.set_keyboard_key(keys.first().copied().unwrap_or(-1));
+    }
     let extras = keymap.map_or_else(Vec::new, |map| {
         map.extra_entries()
             .into_iter()
