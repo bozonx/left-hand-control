@@ -15,6 +15,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Settings: every tab now has the same layout. Settings are grouped in cards, fields use the same labels, and the language field no longer has its own icon.
 - Settings → Accessibility: "High contrast" and "Reduce animations" are now selects with "Follow system" (the default), "On" and "Off". On Linux "Follow system" reads the desktop preference from the XDG Settings portal (`contrast`, `reduced-motion`; on KDE also the animation speed slider set to instant) and follows its changes; Windows and macOS do not report it yet. `config.json` moves to version 2 (`highContrast`/`reduceMotion` are `"system"`, `"on"` or `"off"`); a version 1 file is converted (`true` → `"on"`, `false` → `"system"`) and kept as `config.json.v1.bak`.
 - Profile format: a rule chord is written as an array of keys (`"key": ["ShiftLeft", "ControlRight"]`); a single key stays a string. `+` inside a rule key is now a load error, since in actions it joins modifiers to a key.
 - `config.json`: `settings.profiles.manual` is renamed to `settings.profiles.manualProfile`.

@@ -5,7 +5,7 @@ import { ResettableField, TextField } from "controls.slint";
 import { NotificationCenter } from "notifications.slint";
 import { PageContent, ScrollView } from "scroll.slint";
 import { AppState } from "app-state.slint";
-import { Alert, Badge, Card, CardHeader, Divider, FieldLabel, IconButton, InfoTip, ButtonGroup } from "controls.slint";
+import { Alert, Badge, Divider, FieldLabel, IconButton, InfoTip, ButtonGroup } from "controls.slint";
 import { ProfileLibrary } from "library.slint";
 import { DeviceChoice, DeviceDialog, DevicePicker } from "device-picker.slint";
 import { Theme } from "theme.slint";
@@ -387,58 +387,42 @@ export component SettingsPage inherits PageLayout {
                 spacing: 0px;
                 if SettingsEditor.tab == SettingsTab.general: Section {
                     accessible-label: @tr("Main");
-                    Card {
-                        vertical-stretch: 0;
-                        VerticalLayout {
-                            padding: Theme.space-xl;
-                            spacing: Theme.space-2xl;
-                            VerticalLayout { vertical-stretch: 0; spacing: Theme.space-m;
-                                HorizontalLayout { vertical-stretch: 0; alignment: start; spacing: Theme.space-s;
-                                    VerticalLayout { alignment: center; Image { width: 16px; height: 16px; colorize: Theme.text; source: @image-url("icons/globe.svg"); } }
-                                    Text { text: @tr("Language"); color: Theme.text; vertical-alignment: center; }
-                                }
-                                SelectField { accessible-label: @tr("Language"); width: 280px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("Automatic"), "English", "Русский", "Deutsch", "Français", "Español", "Italiano", "Português", "Polski", "Türkçe", "Українська", "Čeština", "Magyar", "Română", "Ελληνικά", "Hrvatski", "ქართული", "Қазақша", "简体中文", "繁體中文", "日本語", "한국어"]; current-index: SettingsEditor.locale-index; selected(value) => { SettingsEditor.locale-index = self.current-index; SettingsEditor.save(); } }
-                            }
-                            VerticalLayout { vertical-stretch: 0; spacing: Theme.space-m;
-                                Text { vertical-stretch: 0; text: @tr("Theme"); color: Theme.text; }
-                                HorizontalLayout { alignment: start;
-                                    ButtonGroup {
-                                        labels: AppState.in-development ? [@tr("System"), @tr("Light"), @tr("Dark"), @tr("E-ink")] : [@tr("System"), @tr("Light"), @tr("Dark")];
-                                        selected-index: SettingsEditor.appearance == AppearanceChoice.system ? 0 : SettingsEditor.appearance == AppearanceChoice.light ? 1 : SettingsEditor.appearance == AppearanceChoice.dark ? 2 : 3;
-                                        selected(index) => { SettingsEditor.appearance = index == 0 ? AppearanceChoice.system : index == 1 ? AppearanceChoice.light : index == 2 ? AppearanceChoice.dark : AppearanceChoice.e-ink; SettingsEditor.save(); }
-                                    }
+                    TitledCard {
+                        accessible-name: @tr("Main");
+                        VerticalLayout { vertical-stretch: 0; spacing: Theme.space-m;
+                            FormLabel { text: @tr("Language"); }
+                            SelectField { accessible-label: @tr("Language"); width: 280px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("Automatic"), "English", "Русский", "Deutsch", "Français", "Español", "Italiano", "Português", "Polski", "Türkçe", "Українська", "Čeština", "Magyar", "Română", "Ελληνικά", "Hrvatski", "ქართული", "Қазақша", "简体中文", "繁體中文", "日本語", "한국어"]; current-index: SettingsEditor.locale-index; selected(value) => { SettingsEditor.locale-index = self.current-index; SettingsEditor.save(); } }
+                        }
+                        VerticalLayout { vertical-stretch: 0; spacing: Theme.space-m;
+                            FormLabel { text: @tr("Theme"); }
+                            HorizontalLayout { alignment: start;
+                                ButtonGroup {
+                                    labels: AppState.in-development ? [@tr("System"), @tr("Light"), @tr("Dark"), @tr("E-ink")] : [@tr("System"), @tr("Light"), @tr("Dark")];
+                                    selected-index: SettingsEditor.appearance == AppearanceChoice.system ? 0 : SettingsEditor.appearance == AppearanceChoice.light ? 1 : SettingsEditor.appearance == AppearanceChoice.dark ? 2 : 3;
+                                    selected(index) => { SettingsEditor.appearance = index == 0 ? AppearanceChoice.system : index == 1 ? AppearanceChoice.light : index == 2 ? AppearanceChoice.dark : AppearanceChoice.e-ink; SettingsEditor.save(); }
                                 }
                             }
                         }
                     }
-                    if (AppState.in-development && AppState.is-linux) || AppState.autostart-supported: Card {
-                        vertical-stretch: 0;
-                        VerticalLayout {
-                            padding: Theme.space-xl;
-                            spacing: Theme.space-2xl;
-                            if AppState.autostart-supported: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; toggled => { SettingsEditor.save(); } }
-                            if AppState.in-development && AppState.is-linux: CheckBox { text: @tr("Show the Left Hand Control profile name when it changes"); checked <=> SettingsEditor.profile-osd; toggled => { SettingsEditor.save(); } }
-                            if AppState.in-development && AppState.is-linux: HorizontalLayout { vertical-stretch: 0; alignment: start; spacing: Theme.space-s;
-                                CheckBox { horizontal-stretch: 0; text: @tr("Show the keys of a layer while it is held"); checked <=> SettingsEditor.layer-hint; toggled => { SettingsEditor.save(); } }
-                                VerticalLayout { visible: !SettingsEditor.layer-hint-available || AppState.in-development; alignment: center; InfoTip { text: SettingsEditor.layer-hint-available ? @tr("The hint appears 2 seconds after the layer activates. Pressing a layer key hides or cancels it until the trigger is released, including in game mode.") : @tr("Unavailable: build with the spell feature and use a Wayland compositor with layer-shell (KDE Plasma, Sway, Hyprland)."); } }
-                            }
+                    if (AppState.in-development && AppState.is-linux) || AppState.autostart-supported: TitledCard {
+                        accessible-name: @tr("Main");
+                        if AppState.autostart-supported: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; toggled => { SettingsEditor.save(); } }
+                        if AppState.in-development && AppState.is-linux: CheckBox { text: @tr("Show the Left Hand Control profile name when it changes"); checked <=> SettingsEditor.profile-osd; toggled => { SettingsEditor.save(); } }
+                        if AppState.in-development && AppState.is-linux: HorizontalLayout { vertical-stretch: 0; alignment: start; spacing: Theme.space-s;
+                            CheckBox { horizontal-stretch: 0; text: @tr("Show the keys of a layer while it is held"); checked <=> SettingsEditor.layer-hint; toggled => { SettingsEditor.save(); } }
+                            VerticalLayout { visible: !SettingsEditor.layer-hint-available || AppState.in-development; alignment: center; InfoTip { text: SettingsEditor.layer-hint-available ? @tr("The hint appears 2 seconds after the layer activates. Pressing a layer key hides or cancels it until the trigger is released, including in game mode.") : @tr("Unavailable: build with the spell feature and use a Wayland compositor with layer-shell (KDE Plasma, Sway, Hyprland)."); } }
                         }
                     }
-                    Card {
-                        vertical-stretch: 0;
-                        VerticalLayout {
-                            padding: Theme.space-xl;
-                            spacing: Theme.space-2xl;
-                            CardHeader { vertical-stretch: 0; title: @tr("Paths"); }
-                            HorizontalLayout { spacing: Theme.space-m; padding: 0px; vertical-stretch: 0;
-                                Text { vertical-stretch: 0; text: @tr("Settings directory: {}", SettingsEditor.settings-dir); color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
-                                Button { text: @tr("Copy path"); accessible-description: SettingsEditor.settings-dir; clicked => { root.copy-path(SettingsEditor.settings-dir); } }
-                            }
-                            Divider {}
-                            HorizontalLayout { spacing: Theme.space-m; padding: 0px; vertical-stretch: 0;
-                                Text { vertical-stretch: 0; text: @tr("Profiles directory: {}", SettingsEditor.profiles-dir); color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
-                                Button { text: @tr("Copy path"); accessible-description: SettingsEditor.profiles-dir; clicked => { root.copy-path(SettingsEditor.profiles-dir); } }
-                            }
+                    TitledCard {
+                        title: @tr("Paths");
+                        HorizontalLayout { spacing: Theme.space-m; padding: 0px; vertical-stretch: 0;
+                            Text { vertical-stretch: 0; text: @tr("Settings directory: {}", SettingsEditor.settings-dir); color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
+                            Button { text: @tr("Copy path"); accessible-description: SettingsEditor.settings-dir; clicked => { root.copy-path(SettingsEditor.settings-dir); } }
+                        }
+                        Divider {}
+                        HorizontalLayout { spacing: Theme.space-m; padding: 0px; vertical-stretch: 0;
+                            Text { vertical-stretch: 0; text: @tr("Profiles directory: {}", SettingsEditor.profiles-dir); color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
+                            Button { text: @tr("Copy path"); accessible-description: SettingsEditor.profiles-dir; clicked => { root.copy-path(SettingsEditor.profiles-dir); } }
                         }
                     }
                     HorizontalLayout {
@@ -457,91 +441,96 @@ export component SettingsPage inherits PageLayout {
                 }
                 if SettingsEditor.tab == SettingsTab.accessibility: Section {
                     accessible-label: @tr("Accessibility");
-                    VerticalLayout { vertical-stretch: 0; spacing: Theme.space-m;
-                        Text { text: @tr("High contrast"); color: Theme.text; }
-                        SelectField { accessible-label: @tr("High contrast"); enabled: SettingsEditor.appearance != AppearanceChoice.e-ink; width: 280px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("Follow system"), @tr("Accessibility option" => "On"), @tr("Accessibility option" => "Off")]; current-index: SettingsEditor.high-contrast-index; selected(value) => { SettingsEditor.high-contrast-index = self.current-index; SettingsEditor.save(); } }
-                    }
-                    VerticalLayout { vertical-stretch: 0; spacing: Theme.space-m;
-                        Text { text: @tr("Reduce animations"); color: Theme.text; }
-                        SelectField { accessible-label: @tr("Reduce animations"); width: 280px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("Follow system"), @tr("Accessibility option" => "On"), @tr("Accessibility option" => "Off")]; current-index: SettingsEditor.reduce-motion-index; selected(value) => { SettingsEditor.reduce-motion-index = self.current-index; SettingsEditor.save(); } }
+                    TitledCard {
+                        accessible-name: @tr("Accessibility");
+                        VerticalLayout { vertical-stretch: 0; spacing: Theme.space-m;
+                            FormLabel { text: @tr("High contrast"); }
+                            SelectField { accessible-label: @tr("High contrast"); enabled: SettingsEditor.appearance != AppearanceChoice.e-ink; width: 280px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("Follow system"), @tr("Accessibility option" => "On"), @tr("Accessibility option" => "Off")]; current-index: SettingsEditor.high-contrast-index; selected(value) => { SettingsEditor.high-contrast-index = self.current-index; SettingsEditor.save(); } }
+                        }
+                        VerticalLayout { vertical-stretch: 0; spacing: Theme.space-m;
+                            FormLabel { text: @tr("Reduce animations"); }
+                            SelectField { accessible-label: @tr("Reduce animations"); width: 280px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("Follow system"), @tr("Accessibility option" => "On"), @tr("Accessibility option" => "Off")]; current-index: SettingsEditor.reduce-motion-index; selected(value) => { SettingsEditor.reduce-motion-index = self.current-index; SettingsEditor.save(); } }
+                        }
                     }
                 }
                 if AppState.in-development && SettingsEditor.tab == SettingsTab.commands: Section {
                     accessible-label: @tr("Commands");
-                    title: "";
-                    HorizontalLayout { alignment: start; spacing: Theme.space-s;
-                        CheckBox { horizontal-stretch: 0; text: @tr("Allow command execution"); checked <=> SettingsEditor.commands-enabled; toggled => { SettingsEditor.save(); } }
-                        VerticalLayout { alignment: center; InfoTip { text: (AppState.is-windows ? @tr("Commands run with PowerShell in the background and are not awaited.") : @tr("Commands run with sh -lc in the background and are not awaited.")) + "\n" + @tr("Commands stay off until you allow execution. Review below what your profiles would run."); } }
-                    }
-                    VerticalLayout { padding: 0px; spacing: Theme.space-xl;
-                        if SettingsEditor.commands-loading: Text { accessible-live-region: polite; text: @tr("Please wait…"); color: Theme.muted; }
-                        if SettingsEditor.commands-error.id != "": HorizontalLayout {
-                            Text { text: Locale.text(SettingsEditor.commands-error); color: Theme.error; wrap: word-wrap; horizontal-stretch: 1; }
-                            Button { text: @tr("Refresh"); enabled: !SettingsEditor.commands-loading; clicked => { SettingsEditor.refresh-commands(); } }
+                    TitledCard {
+                        accessible-name: @tr("Commands");
+                        HorizontalLayout { alignment: start; spacing: Theme.space-s;
+                            CheckBox { horizontal-stretch: 0; text: @tr("Allow command execution"); checked <=> SettingsEditor.commands-enabled; toggled => { SettingsEditor.save(); } }
+                            VerticalLayout { alignment: center; InfoTip { text: (AppState.is-windows ? @tr("Commands run with PowerShell in the background and are not awaited.") : @tr("Commands run with sh -lc in the background and are not awaited.")) + "\n" + @tr("Commands stay off until you allow execution. Review below what your profiles would run."); } }
                         }
-                        if SettingsEditor.commands-loaded && SettingsEditor.command-assignments.length == 0: Text { vertical-stretch: 0; text: @tr("No commands are assigned."); color: Theme.muted; }
-                        for item in SettingsEditor.command-assignments: VerticalLayout {
-                            spacing: Theme.space-m;
-                            if item.first: Text {
-                                text: item.profile-name != "" ? item.profile-name : @tr("Custom profile");
-                                color: Theme.text; font-weight: Theme.weight-semibold; wrap: word-wrap;
+                        VerticalLayout { padding: 0px; spacing: Theme.space-xl;
+                            if SettingsEditor.commands-loading: Text { accessible-live-region: polite; text: @tr("Please wait…"); color: Theme.muted; }
+                            if SettingsEditor.commands-error.id != "": HorizontalLayout {
+                                Text { text: Locale.text(SettingsEditor.commands-error); color: Theme.error; wrap: word-wrap; horizontal-stretch: 1; }
+                                Button { text: @tr("Refresh"); enabled: !SettingsEditor.commands-loading; clicked => { SettingsEditor.refresh-commands(); } }
                             }
-                            if item.first: HorizontalLayout {
-                                spacing: Theme.space-xl;
-                                Text { width: 30%; text: @tr("Assigned to"); color: Theme.muted; font-size: Theme.font-body; }
-                                Text { width: 20%; text: @tr("Name"); color: Theme.muted; font-size: Theme.font-body; }
-                                Text { horizontal-stretch: 1; text: @tr("Command"); color: Theme.muted; font-size: Theme.font-body; }
-                            }
-                            Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }
-                            HorizontalLayout {
-                                spacing: Theme.space-xl;
-                                VerticalLayout {
-                                    width: 30%;
-                                    alignment: start;
-                                    spacing: Theme.space-xs;
-                                    for place in item.places: Text {
-                                        text: (place.kind == CommandPlace.rule-tap ? @tr("Rule {} · tap", place.name)
-                                            : place.kind == CommandPlace.rule-hold ? @tr("Rule {} · hold", place.name)
-                                            : place.kind == CommandPlace.rule-long-hold ? @tr("Rule {} · long hold", place.name)
-                                            : place.kind == CommandPlace.rule-double-tap ? @tr("Rule {} · double tap", place.name)
-                                            : place.kind == CommandPlace.layer-key ? @tr("Layer {}", place.layer) + " · " + place.name
-                                            : place.kind == CommandPlace.macro ? @tr("Macro") + " · " + place.name
-                                            : @tr("Quick action") + " · " + place.name)
+                            if SettingsEditor.commands-loaded && SettingsEditor.command-assignments.length == 0: Text { vertical-stretch: 0; text: @tr("No commands are assigned."); color: Theme.muted; }
+                            for item in SettingsEditor.command-assignments: VerticalLayout {
+                                spacing: Theme.space-m;
+                                if item.first: Text {
+                                    text: item.profile-name != "" ? item.profile-name : @tr("Custom profile");
+                                    color: Theme.text; font-weight: Theme.weight-semibold; wrap: word-wrap;
+                                }
+                                if item.first: HorizontalLayout {
+                                    spacing: Theme.space-xl;
+                                    Text { width: 30%; text: @tr("Assigned to"); color: Theme.muted; font-size: Theme.font-body; }
+                                    Text { width: 20%; text: @tr("Name"); color: Theme.muted; font-size: Theme.font-body; }
+                                    Text { horizontal-stretch: 1; text: @tr("Command"); color: Theme.muted; font-size: Theme.font-body; }
+                                }
+                                Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }
+                                HorizontalLayout {
+                                    spacing: Theme.space-xl;
+                                    VerticalLayout {
+                                        width: 30%;
+                                        alignment: start;
+                                        spacing: Theme.space-xs;
+                                        for place in item.places: Text {
+                                            text: (place.kind == CommandPlace.rule-tap ? @tr("Rule {} · tap", place.name)
+                                                : place.kind == CommandPlace.rule-hold ? @tr("Rule {} · hold", place.name)
+                                                : place.kind == CommandPlace.rule-long-hold ? @tr("Rule {} · long hold", place.name)
+                                                : place.kind == CommandPlace.rule-double-tap ? @tr("Rule {} · double tap", place.name)
+                                                : place.kind == CommandPlace.layer-key ? @tr("Layer {}", place.layer) + " · " + place.name
+                                                : place.kind == CommandPlace.macro ? @tr("Macro") + " · " + place.name
+                                                : @tr("Quick action") + " · " + place.name)
                                             + (place.enabled ? "" : " · " + @tr("disabled"));
-                                        color: place.enabled ? Theme.text : Theme.muted; wrap: word-wrap;
+                                            color: place.enabled ? Theme.text : Theme.muted; wrap: word-wrap;
+                                        }
                                     }
-                                }
-                                Text {
-                                    width: 20%;
-                                    vertical-alignment: top;
-                                    // An empty name shows the command itself as the label.
-                                    text: item.name != "" && item.name != item.script ? item.name : "—";
-                                    color: item.name != "" && item.name != item.script ? Theme.text : Theme.muted;
-                                    font-weight: Theme.weight-semibold; wrap: word-wrap;
-                                }
-                                VerticalLayout {
-                                    horizontal-stretch: 1;
-                                    alignment: start;
-                                    spacing: Theme.space-xs;
-                                    // At most five lines; the rest opens in a dialog.
-                                    private property <length> limit: 5 * line.preferred-height;
-                                    Rectangle {
-                                        clip: true;
-                                        height: min(script.preferred-height, parent.limit);
-                                        line := Text { visible: false; text: "X"; font-family: "monospace"; font-size: Theme.font-body; }
-                                        script := Text { x: 0px; y: 0px; width: parent.width; text: item.script; color: Theme.text; font-family: "monospace"; font-size: Theme.font-body; wrap: word-wrap; vertical-alignment: top; }
+                                    Text {
+                                        width: 20%;
+                                        vertical-alignment: top;
+                                        // An empty name shows the command itself as the label.
+                                        text: item.name != "" && item.name != item.script ? item.name : "—";
+                                        color: item.name != "" && item.name != item.script ? Theme.text : Theme.muted;
+                                        font-weight: Theme.weight-semibold; wrap: word-wrap;
                                     }
-                                    // Collapsed rather than conditional: a conditional child would make
-                                    // the column width depend on the text height.
-                                    Rectangle {
-                                        property <bool> overflow: script.preferred-height > parent.limit + 1px;
-                                        height: self.overflow ? show-all.preferred-height : 0px;
-                                        visible: self.overflow;
-                                        clip: true;
-                                        show-all := Button {
-                                            x: 0px; y: 0px;
-                                            text: @tr("Show all");
-                                            clicked => { SettingsEditor.full-command-name = item.name != item.script ? item.name : ""; SettingsEditor.full-command = item.script; }
+                                    VerticalLayout {
+                                        horizontal-stretch: 1;
+                                        alignment: start;
+                                        spacing: Theme.space-xs;
+                                        // At most five lines; the rest opens in a dialog.
+                                        private property <length> limit: 5 * line.preferred-height;
+                                        Rectangle {
+                                            clip: true;
+                                            height: min(script.preferred-height, parent.limit);
+                                            line := Text { visible: false; text: "X"; font-family: "monospace"; font-size: Theme.font-body; }
+                                            script := Text { x: 0px; y: 0px; width: parent.width; text: item.script; color: Theme.text; font-family: "monospace"; font-size: Theme.font-body; wrap: word-wrap; vertical-alignment: top; }
+                                        }
+                                        // Collapsed rather than conditional: a conditional child would make
+                                        // the column width depend on the text height.
+                                        Rectangle {
+                                            property <bool> overflow: script.preferred-height > parent.limit + 1px;
+                                            height: self.overflow ? show-all.preferred-height : 0px;
+                                            visible: self.overflow;
+                                            clip: true;
+                                            show-all := Button {
+                                                x: 0px; y: 0px;
+                                                text: @tr("Show all");
+                                                clicked => { SettingsEditor.full-command-name = item.name != item.script ? item.name : ""; SettingsEditor.full-command = item.script; }
+                                            }
                                         }
                                     }
                                 }
@@ -551,23 +540,21 @@ export component SettingsPage inherits PageLayout {
                 }
                 if SettingsEditor.tab == SettingsTab.mapper: Section {
                     accessible-label: @tr("Mapper");
-                    title: "";
-                    VerticalLayout { padding: 0px; spacing: Theme.space-xl;
-                        HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
-                            MapperStatusCard { horizontal-stretch: 1; }
-                            // Takes only what is left once the card reaches its max width.
-                            Rectangle { horizontal-stretch: 0.0001; min-width: 0px; }
-                            VerticalLayout { alignment: center; InfoTip { text: @tr("The mapper intercepts keyboard input, applies layers, rules and macros, and emits output through a virtual device.") + "\n\n" + @tr("Select the mouse so the mapper can see extra buttons and clicks. Pointer movement is not affected.") + "\n\n" + @tr("The mouse is not fully intercepted yet: a remapped extra button can emit the new action, but its native system or app action may still run. If that gets in the way, disable the native action for that button in your system, browser, or driver settings."); } }
-                        }
+                    HorizontalLayout { vertical-stretch: 0; spacing: Theme.space-m;
+                        MapperStatusCard { horizontal-stretch: 1; }
+                        // Takes only what is left once the card reaches its max width.
+                        Rectangle { horizontal-stretch: 0.0001; min-width: 0px; }
+                        VerticalLayout { alignment: center; InfoTip { text: @tr("The mapper intercepts keyboard input, applies layers, rules and macros, and emits output through a virtual device.") + "\n\n" + @tr("Select the mouse so the mapper can see extra buttons and clicks. Pointer movement is not affected.") + "\n\n" + @tr("The mouse is not fully intercepted yet: a remapped extra button can emit the new action, but its native system or app action may still run. If that gets in the way, disable the native action for that button in your system, browser, or driver settings."); } }
+                    }
+                    if AppState.mapper-supported: TitledCard {
+                        accessible-name: @tr("Mapper");
+                        CheckBox { text: @tr("Start the mapper on launch"); checked <=> SettingsEditor.start-mapper-on-launch; toggled => { SettingsEditor.save(); } }
+                    }
+                    TitledCard {
+                        title: @tr("Devices");
                         if AppState.mapper-supported && SettingsEditor.device-discovery-error.id != "": Text {
                             text: Locale.text(SettingsEditor.device-discovery-error);
                             color: Theme.warning; wrap: word-wrap;
-                        }
-                        if AppState.mapper-supported: CheckBox { text: @tr("Start the mapper on launch"); checked <=> SettingsEditor.start-mapper-on-launch; toggled => { SettingsEditor.save(); } }
-                        VerticalLayout { vertical-stretch: 0; max-width: Theme.text-column; spacing: Theme.space-xs; padding-top: Theme.space-m;
-                            HorizontalLayout { spacing: Theme.space-s; height: 28px;
-                                SubsectionTitle { horizontal-stretch: 1; text: @tr("Devices"); vertical-alignment: center; }
-                            }
                         }
                         DeviceField {
                             icon: @image-url("icons/keyboard.svg");
@@ -594,47 +581,49 @@ export component SettingsPage inherits PageLayout {
                         }
                     }
                 }
-                if SettingsEditor.tab == SettingsTab.mapper && AppState.is-linux: Rectangle { height: 1px; vertical-stretch: 0; background: Theme.divider; }
                 if SettingsEditor.tab == SettingsTab.mapper && AppState.is-linux: Section {
                     title: @tr("Text input");
-                    VerticalLayout {
-                        padding: 0px; spacing: Theme.space-m;
-                        FormLabel { text: @tr("Typing method"); }
-                        // Same order as TextMode::ALL in lhc-core.
-                        SelectField { accessible-label: @tr("Typing method"); width: 320px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("libei + clipboard fallback (recommended)"), "libei", "NotifyKeyboardKeycode", @tr("Paste from clipboard"), @tr("ydotool"), @tr("xdotool")]; current-index: SettingsEditor.text-mode-index; selected(value) => { SettingsEditor.text-mode-index = self.current-index; SettingsEditor.save(); } }
-                        Text {
-                            vertical-stretch: 0; max-width: Theme.text-column; color: Theme.muted; wrap: word-wrap;
-                            text: [
-                                @tr("Types with the current profile, or pastes the whole text when a character is unavailable. Paste requires clipboard access and support for the paste shortcut. Preserves clipboard formats and cancels if the destination changes. Requires portal permission and active-window detection."),
-                                @tr("Types only through libei using the current keyboard layout and Caps Lock state. Skips text with unavailable characters. Requires portal permission and active-window detection. Cancels if the destination changes."),
-                                @tr("Types only through NotifyKeyboardKeycode using the KDE profile and readable keyboard state. Skips text with unavailable characters. Requires portal permission and active-window detection. Cancels if the destination changes."),
-                                @tr("Pastes with the paste shortcut through the portal. Requires clipboard access, active-window detection and an app supporting that shortcut. Preserves all clipboard formats; a new user copy takes precedence. Reports an error if no text transfer is observed."),
-                                @tr("Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. Reliable for Latin text only. On an error, stops without switching methods."),
-                                @tr("Runs \"xdotool type\" only. Works only in X11 sessions and XWayland windows. On an error, stops without switching methods."),
-                            ][SettingsEditor.text-mode-index];
+                    TitledCard {
+                        accessible-name: @tr("Text input");
+                        VerticalLayout {
+                            padding: 0px; spacing: Theme.space-m;
+                            FormLabel { text: @tr("Typing method"); }
+                            // Same order as TextMode::ALL in lhc-core.
+                            SelectField { accessible-label: @tr("Typing method"); width: 320px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("libei + clipboard fallback (recommended)"), "libei", "NotifyKeyboardKeycode", @tr("Paste from clipboard"), @tr("ydotool"), @tr("xdotool")]; current-index: SettingsEditor.text-mode-index; selected(value) => { SettingsEditor.text-mode-index = self.current-index; SettingsEditor.save(); } }
+                            Text {
+                                vertical-stretch: 0; max-width: Theme.text-column; color: Theme.muted; wrap: word-wrap;
+                                text: [
+                                    @tr("Types with the current profile, or pastes the whole text when a character is unavailable. Paste requires clipboard access and support for the paste shortcut. Preserves clipboard formats and cancels if the destination changes. Requires portal permission and active-window detection."),
+                                    @tr("Types only through libei using the current keyboard layout and Caps Lock state. Skips text with unavailable characters. Requires portal permission and active-window detection. Cancels if the destination changes."),
+                                    @tr("Types only through NotifyKeyboardKeycode using the KDE profile and readable keyboard state. Skips text with unavailable characters. Requires portal permission and active-window detection. Cancels if the destination changes."),
+                                    @tr("Pastes with the paste shortcut through the portal. Requires clipboard access, active-window detection and an app supporting that shortcut. Preserves all clipboard formats; a new user copy takes precedence. Reports an error if no text transfer is observed."),
+                                    @tr("Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. Reliable for Latin text only. On an error, stops without switching methods."),
+                                    @tr("Runs \"xdotool type\" only. Works only in X11 sessions and XWayland windows. On an error, stops without switching methods."),
+                                ][SettingsEditor.text-mode-index];
+                            }
                         }
-                    }
-                    if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "libei" || SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "clipboard": VerticalLayout {
-                        padding: 0px; spacing: Theme.space-m;
-                        FormLabel { text: @tr("Paste shortcut"); info: @tr("Sent to the focused app to paste the text."); }
-                        // Same order as PasteShortcut::ALL in lhc-core.
-                        SelectField { accessible-label: @tr("Paste shortcut"); width: 320px; height: Theme.control-height; vertical-stretch: 0; model: ["Shift+Insert", "Ctrl+V", "Ctrl+Shift+V"]; current-index: SettingsEditor.paste-shortcut-index; selected(value) => { SettingsEditor.paste-shortcut-index = self.current-index; SettingsEditor.save(); } }
-                    }
-                    if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "libei" || SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "clipboard": VerticalLayout {
-                        padding: 0px; spacing: Theme.space-m;
-                        FormLabel { text: @tr("Paste shortcut in terminals"); info: @tr("Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."); }
-                        // The main shortcut, then the order of PasteShortcut::ALL in lhc-core.
-                        SelectField { accessible-label: @tr("Paste shortcut in terminals"); width: 320px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("Same as in other apps"), "Shift+Insert", "Ctrl+V", "Ctrl+Shift+V"]; current-index: SettingsEditor.terminal-paste-shortcut-index; selected(value) => { SettingsEditor.terminal-paste-shortcut-index = self.current-index; SettingsEditor.save(); } }
-                    }
-                    if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "ydotool": VerticalLayout {
-                        padding: 0px; spacing: Theme.space-m;
-                        FormLabel { text: @tr("ydotool path"); }
-                        TextField { text <=> SettingsEditor.ydotool-path; placeholder-text: @tr("ydotool from PATH"); accessible-label: @tr("ydotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
-                    }
-                    if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "xdotool": VerticalLayout {
-                        padding: 0px; spacing: Theme.space-m;
-                        FormLabel { text: @tr("xdotool path"); }
-                        TextField { text <=> SettingsEditor.xdotool-path; placeholder-text: @tr("xdotool from PATH"); accessible-label: @tr("xdotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
+                        if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "libei" || SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "clipboard": VerticalLayout {
+                            padding: 0px; spacing: Theme.space-m;
+                            FormLabel { text: @tr("Paste shortcut"); info: @tr("Sent to the focused app to paste the text."); }
+                            // Same order as PasteShortcut::ALL in lhc-core.
+                            SelectField { accessible-label: @tr("Paste shortcut"); width: 320px; height: Theme.control-height; vertical-stretch: 0; model: ["Shift+Insert", "Ctrl+V", "Ctrl+Shift+V"]; current-index: SettingsEditor.paste-shortcut-index; selected(value) => { SettingsEditor.paste-shortcut-index = self.current-index; SettingsEditor.save(); } }
+                        }
+                        if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "libei" || SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "clipboard": VerticalLayout {
+                            padding: 0px; spacing: Theme.space-m;
+                            FormLabel { text: @tr("Paste shortcut in terminals"); info: @tr("Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."); }
+                            // The main shortcut, then the order of PasteShortcut::ALL in lhc-core.
+                            SelectField { accessible-label: @tr("Paste shortcut in terminals"); width: 320px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("Same as in other apps"), "Shift+Insert", "Ctrl+V", "Ctrl+Shift+V"]; current-index: SettingsEditor.terminal-paste-shortcut-index; selected(value) => { SettingsEditor.terminal-paste-shortcut-index = self.current-index; SettingsEditor.save(); } }
+                        }
+                        if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "ydotool": VerticalLayout {
+                            padding: 0px; spacing: Theme.space-m;
+                            FormLabel { text: @tr("ydotool path"); }
+                            TextField { text <=> SettingsEditor.ydotool-path; placeholder-text: @tr("ydotool from PATH"); accessible-label: @tr("ydotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
+                        }
+                        if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "xdotool": VerticalLayout {
+                            padding: 0px; spacing: Theme.space-m;
+                            FormLabel { text: @tr("xdotool path"); }
+                            TextField { text <=> SettingsEditor.xdotool-path; placeholder-text: @tr("xdotool from PATH"); accessible-label: @tr("xdotool path"); edited => { SettingsEditor.schedule-save(); } accepted => { SettingsEditor.save(); } }
+                        }
                     }
                 }
                 if SettingsEditor.tab == SettingsTab.key-behavior: Section {
@@ -645,8 +634,8 @@ export component SettingsPage inherits PageLayout {
                             TimingField {
                                 label: @tr("Simultaneous presses");
                                 info: @tr("For rules triggered by several keys pressed together, such as KeyJ+KeyK. All keys must go down within this time, in any order. Until then the first key is held back; if the combination does not complete, it is typed as usual. Modifiers are never held back.")
-                                    + "\n\n" + @tr("Higher: the combination is easier to hit, but typing with these keys lags slightly. Applies to all rules; a rule cannot override it.")
-                                    + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-trigger-chord-timeout);
+                                + "\n\n" + @tr("Higher: the combination is easier to hit, but typing with these keys lags slightly. Applies to all rules; a rule cannot override it.")
+                                + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-trigger-chord-timeout);
                                 minimum: Timing.trigger-chord.minimum; maximum: Timing.trigger-chord.maximum;
                                 value <=> SettingsEditor.trigger-chord-timeout;
                                 standard: SettingsEditor.default-trigger-chord-timeout;
@@ -656,7 +645,7 @@ export component SettingsPage inherits PageLayout {
                             TimingField {
                                 label: @tr("Macro time limit");
                                 info: @tr("A macro still running after this time is stopped and counts as finished. A macro started while another one runs waits for it; up to 3 runs can wait, further presses are ignored.")
-                                    + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-macro-timeout);
+                                + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-macro-timeout);
                                 minimum: Timing.macro-timeout.minimum; maximum: Timing.macro-timeout.maximum; step: 1000;
                                 value <=> SettingsEditor.macro-timeout;
                                 standard: SettingsEditor.default-macro-timeout;
@@ -674,8 +663,8 @@ export component SettingsPage inherits PageLayout {
                         TimingField {
                             label: @tr("Double-tap window");
                             info: @tr("A second tap within this time after the first release counts as a double tap.")
-                                + "\n\n" + @tr("A single tap on a key with a double-tap action runs only after this window ends, so a large value makes such keys feel slow. Keys without a double-tap action are not delayed.")
-                                + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-double-tap-timeout);
+                            + "\n\n" + @tr("A single tap on a key with a double-tap action runs only after this window ends, so a large value makes such keys feel slow. Keys without a double-tap action are not delayed.")
+                            + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-double-tap-timeout);
                             minimum: Timing.tap-hold.minimum; maximum: Timing.tap-hold.maximum;
                             value <=> SettingsEditor.double-tap-timeout;
                             standard: SettingsEditor.default-double-tap-timeout;
@@ -688,8 +677,8 @@ export component SettingsPage inherits PageLayout {
                             FormLabel {
                                 text: @tr("Hold detection");
                                 info: @tr("Decides when a dual-role key counts as a hold if another key is pressed. Rules can override this default in advanced options. Chord detection is configured separately.")
-                                    + "\n\n" + @tr("After another key is released: the key becomes a hold once another key is pressed and released while it is down, or when the hold threshold passes. Fast rolls while typing stay taps.")
-                                    + "\n\n" + @tr("As soon as another key is pressed: useful for dedicated layer or modifier keys. Reacts faster, but overlapping letters while typing can trigger the hold by mistake.");
+                                + "\n\n" + @tr("After another key is released: the key becomes a hold once another key is pressed and released while it is down, or when the hold threshold passes. Fast rolls while typing stay taps.")
+                                + "\n\n" + @tr("As soon as another key is pressed: useful for dedicated layer or modifier keys. Reacts faster, but overlapping letters while typing can trigger the hold by mistake.");
                             }
                             HorizontalLayout { alignment: start;
                                 SelectField { accessible-label: @tr("Hold detection"); min-width: 0px; max-width: 500px; horizontal-stretch: 1; height: Theme.control-height; vertical-stretch: 0; model: [@tr("After another key is released (better for typing)"), @tr("As soon as another key is pressed")]; current-index: SettingsEditor.tap-decision-index; selected(value) => { SettingsEditor.tap-decision-index = self.current-index; SettingsEditor.save(); } }
@@ -699,8 +688,8 @@ export component SettingsPage inherits PageLayout {
                             TimingField {
                                 label: @tr("Hold threshold");
                                 info: @tr("How long to hold a rule key before it counts as a hold: its layer or hold action. Released earlier, the key runs its tap action.")
-                                    + "\n\n" + @tr("Lower: layers turn on faster, but fast typing may trigger them by mistake. Higher: fewer false holds, but a longer wait. Usually 150–250 ms.")
-                                    + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-hold-timeout);
+                                + "\n\n" + @tr("Lower: layers turn on faster, but fast typing may trigger them by mistake. Higher: fewer false holds, but a longer wait. Usually 150–250 ms.")
+                                + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-hold-timeout);
                                 minimum: Timing.tap-hold.minimum; maximum: Timing.tap-hold.maximum;
                                 value <=> SettingsEditor.hold-timeout;
                                 standard: SettingsEditor.default-hold-timeout;
@@ -710,7 +699,7 @@ export component SettingsPage inherits PageLayout {
                             if AppState.in-development || SettingsEditor.problem-field == SettingsField.long-hold: TimingField {
                                 label: @tr("Long hold");
                                 info: @tr("How long to keep holding a rule key before its long-hold action runs once. Applies to rules whose hold runs an action instead of a layer.")
-                                    + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-long-hold-timeout);
+                                + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-long-hold-timeout);
                                 minimum: Timing.long-hold.minimum; maximum: Timing.long-hold.maximum; step: 100;
                                 value <=> SettingsEditor.long-hold-timeout;
                                 standard: SettingsEditor.default-long-hold-timeout;
@@ -724,7 +713,7 @@ export component SettingsPage inherits PageLayout {
                             TimingField {
                                 label: @tr("Pause between steps");
                                 info: @tr("Pause between consecutive steps of a macro. Increase it if an application misses keystrokes.")
-                                    + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-macro-pause);
+                                + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-macro-pause);
                                 minimum: Timing.macro-delay.minimum; maximum: Timing.macro-delay.maximum;
                                 value <=> SettingsEditor.macro-pause;
                                 standard: SettingsEditor.default-macro-pause;
@@ -734,7 +723,7 @@ export component SettingsPage inherits PageLayout {
                             TimingField {
                                 label: @tr("Modifier delay");
                                 info: @tr("Wait between pressing modifiers (Shift, Ctrl, …) and the main key of a macro step. Increase it if an application receives the shortcut without its modifier. Default for macros that leave the field empty.")
-                                    + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-modifier-delay);
+                                + "\n\n" + @tr("Standard value: {} ms.", SettingsEditor.default-modifier-delay);
                                 minimum: Timing.macro-delay.minimum; maximum: Timing.macro-delay.maximum; step: 1;
                                 value <=> SettingsEditor.modifier-delay;
                                 standard: SettingsEditor.default-modifier-delay;
@@ -746,22 +735,25 @@ export component SettingsPage inherits PageLayout {
                 }
                 if AppState.in-development && SettingsEditor.tab == SettingsTab.game-mode: Section {
                     accessible-label: @tr("Game mode");
-                    HorizontalLayout {
-                        vertical-stretch: 0; spacing: Theme.space-m;
-                        ButtonGroup {
-                            horizontal-stretch: 0;
-                            labels: [@tr("Game mode control" => "Auto"), @tr("Game mode control" => "On"), @tr("Game mode control" => "Off")];
-                            selected-index: AppState.game-control == GameModeControl.auto ? 0 : AppState.game-control == GameModeControl.on ? 1 : 2;
-                            selected(index) => { AppState.set-game-control(index == 0 ? GameModeControl.auto : index == 1 ? GameModeControl.on : GameModeControl.off); }
+                    TitledCard {
+                        accessible-name: @tr("Game mode");
+                        HorizontalLayout {
+                            vertical-stretch: 0; spacing: Theme.space-m;
+                            ButtonGroup {
+                                horizontal-stretch: 0;
+                                labels: [@tr("Game mode control" => "Auto"), @tr("Game mode control" => "On"), @tr("Game mode control" => "Off")];
+                                selected-index: AppState.game-control == GameModeControl.auto ? 0 : AppState.game-control == GameModeControl.on ? 1 : 2;
+                                selected(index) => { AppState.set-game-control(index == 0 ? GameModeControl.auto : index == 1 ? GameModeControl.on : GameModeControl.off); }
+                            }
+                            Rectangle { horizontal-stretch: 1; }
+                            VerticalLayout { alignment: center; InfoTip { text: @tr("Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."); } }
                         }
-                        Rectangle { horizontal-stretch: 1; }
-                        VerticalLayout { alignment: center; InfoTip { text: @tr("Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."); } }
-                    }
-                    Text {
-                        vertical-stretch: 0; wrap: word-wrap; color: Theme.muted;
-                        text: AppState.game-control == GameModeControl.auto ? @tr("Game mode turns on automatically according to the rules below.")
+                        Text {
+                            vertical-stretch: 0; wrap: word-wrap; color: Theme.muted;
+                            text: AppState.game-control == GameModeControl.auto ? @tr("Game mode turns on automatically according to the rules below.")
                             : AppState.game-control == GameModeControl.on ? @tr("Game mode is on manually. The rules below are not applied now.")
                             : @tr("Game mode is off. The rules below are not applied now.");
+                        }
                     }
 
                     // The rules stay editable outside Auto; the badge and the
@@ -799,8 +791,8 @@ export component SettingsPage inherits PageLayout {
                         if AppState.game-steam-availability.id != "capability-unsupported": GameSourceOption {
                             text: @tr("Steam games");
                             info: AppState.is-linux
-                                ? @tr("Turns on while Steam runs a game: Steam starts every game through reaper SteamLaunch, and game windows have the ID steam_app_<number>.")
-                                : @tr("Turns on while Steam reports a running game.");
+                            ? @tr("Turns on while Steam runs a game: Steam starts every game through reaper SteamLaunch, and game windows have the ID steam_app_<number>.")
+                            : @tr("Turns on while Steam reports a running game.");
                             availability: AppState.game-steam-availability;
                             checked <=> SettingsEditor.use-steam;
                             toggled => { SettingsEditor.save(); }
@@ -845,8 +837,8 @@ export component SettingsPage inherits PageLayout {
                         if AppState.game-category-availability.id != "capability-unsupported": GameSourceOption {
                             text: @tr("Applications of the Game category");
                             info: AppState.is-linux
-                                ? @tr("Turns on while the active window belongs to an application whose .desktop file lists the Game category. Launchers are tagged as games too, so they are skipped.")
-                                : @tr("Turns on while the active application declares the Games category in its Info.plist. Launchers are skipped.");
+                            ? @tr("Turns on while the active window belongs to an application whose .desktop file lists the Game category. Launchers are tagged as games too, so they are skipped.")
+                            : @tr("Turns on while the active application declares the Games category in its Info.plist. Launchers are skipped.");
                             availability: AppState.game-category-availability;
                             checked <=> SettingsEditor.use-app-category;
                             toggled => { SettingsEditor.save(); }
