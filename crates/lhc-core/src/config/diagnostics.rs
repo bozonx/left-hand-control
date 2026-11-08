@@ -477,7 +477,7 @@ mod tests {
         let profile = super::super::profile_file::parse(
             r#"{"version":1,"rules":[
             {"id":"bad-condition","key":"KeyA","when":{"windows":["title:"]}},
-            {"id":"bad-double","key":"KeyC+KeyD","doubleTap":{"action":"KeyE"}}
+            {"id":"bad-double","key":["KeyC","KeyD"],"doubleTap":{"action":"KeyE"}}
         ]}"#,
         )
         .unwrap()

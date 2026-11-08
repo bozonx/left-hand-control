@@ -480,8 +480,8 @@ impl PopupHotkeys {
             return None;
         }
         let action = match key {
-            KeyCode::KEY_F11 => crate::config::actions::SHOW_EMOJI_MENU_LAST,
-            KeyCode::KEY_F12 => crate::config::actions::SHOW_QUICK_MENU_LAST,
+            KeyCode::KEY_F11 => crate::config::actions::SHOW_EMOJI_MENU_RECENT,
+            KeyCode::KEY_F12 => crate::config::actions::SHOW_QUICK_MENU_RECENT,
             _ => return None,
         };
         self.consumed.insert(key);
@@ -1116,8 +1116,8 @@ mod popup_hotkey_tests {
     #[test]
     fn popup_chord_never_emits_function_key_even_if_disabled_before_release() {
         for (key, action) in [
-            (KeyCode::KEY_F11, "lhc:showEmojiMenuLast"),
-            (KeyCode::KEY_F12, "lhc:showQuickMenuLast"),
+            (KeyCode::KEY_F11, "lhc:showEmojiMenuRecent"),
+            (KeyCode::KEY_F12, "lhc:showQuickMenuRecent"),
         ] {
             let mut hotkeys = PopupHotkeys::default();
             assert_eq!(hotkeys.event(KeyCode::KEY_LEFTCTRL, true, true), None);

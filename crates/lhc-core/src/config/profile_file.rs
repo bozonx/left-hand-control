@@ -174,7 +174,7 @@ struct RuleDoc {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[cfg_attr(test, schemars(regex(pattern = super::schema::ID_PATTERN)))]
     id: Option<String>,
-    key: String,
+    key: RuleKeyDoc,
     #[serde(default = "yes", skip_serializing_if = "is_true")]
     enabled: bool,
     #[serde(default, skip_serializing_if = "WhenDoc::is_empty")]
@@ -194,6 +194,60 @@ struct RuleDoc {
     long_hold: Option<TimedActionDoc>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     tap_decision: Option<TapDecision>,
+}
+
+/// Trigger of a rule: one physical key code, or a chord of two or more
+/// keys as an array. `+` is not accepted inside a key: in action strings it
+/// joins modifiers to a key, which is a different meaning.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
+#[derive(Serialize, Deserialize)]
+#[serde(untagged)]
+enum RuleKeyDoc {
+    Key(#[cfg_attr(test, schemars(regex(pattern = r"^[^+]+$")))] String),
+    Chord(
+        #[cfg_attr(test, schemars(length(min = 2), inner(regex(pattern = r"^[^+]+$"))))]
+        Vec<String>,
+    ),
+}
+
+impl RuleKeyDoc {
+    /// The model's `+`-joined key.
+    fn into_key(self) -> Result<String, String> {
+        match self {
+            Self::Key(key) => {
+                non_empty(&key, "rule key")?;
+                if key.contains('+') {
+                    let parts: Vec<_> = key.split('+').collect();
+                    return Err(format!(
+                        "rule key {key:?}: write a chord as an array of keys, e.g. {parts:?}"
+                    ));
+                }
+                Ok(key)
+            }
+            Self::Chord(keys) => {
+                if keys.len() < 2 {
+                    return Err(format!(
+                        "rule key {keys:?}: a chord needs at least two keys; write a single key as a string"
+                    ));
+                }
+                for key in &keys {
+                    non_empty(key, "rule chord key")?;
+                    if key.contains('+') {
+                        return Err(format!("rule chord key {key:?} must be one key code"));
+                    }
+                }
+                Ok(keys.join("+"))
+            }
+        }
+    }
+
+    fn from_key(key: &str) -> Self {
+        if key.contains('+') {
+            Self::Chord(key.split('+').map(str::to_owned).collect())
+        } else {
+            Self::Key(key.to_owned())
+        }
+    }
 }
 
 /// Conditions of a profile rule or an auto-mode rule; every present
@@ -547,12 +601,11 @@ fn from_doc(mut doc: ProfileDoc) -> Result<ProfilePreset, String> {
 
     let mut rules = Vec::new();
     for rule in doc.rules {
-        non_empty(&rule.key, "rule key")?;
-        let what = |field: &str| format!("{field} of rule {}", rule.key);
+        let key = rule.key.into_key()?;
+        let what = |field: &str| format!("{field} of rule {key}");
         if rule.hold.is_some() && rule.long_hold.is_some() {
             return Err(format!(
-                "rule {}: \"hold\" and \"longHold\" cannot be combined",
-                rule.key
+                "rule {key}: \"hold\" and \"longHold\" cannot be combined"
             ));
         }
         let when = rule.when.into_set()?;
@@ -585,7 +638,7 @@ fn from_doc(mut doc: ProfileDoc) -> Result<ProfilePreset, String> {
                 .then_some(when.window_patterns),
             condition_excluded_window_patterns: (!when.excluded_window_patterns.is_empty())
                 .then_some(when.excluded_window_patterns),
-            key: rule.key.clone(),
+            key: key.clone(),
             layer_id: hold.layer.unwrap_or_default(),
             tap_action,
             hold_behavior: None,
@@ -786,7 +839,7 @@ fn to_doc(preset: &ProfilePreset) -> ProfileDoc {
             };
             RuleDoc {
                 id: text(&rule.id),
-                key: rule.key.clone(),
+                key: RuleKeyDoc::from_key(&rule.key),
                 enabled: rule.is_enabled(),
                 when: WhenDoc {
                     game_mode: OnOff::parse(rule.condition_game_mode.as_deref()),
@@ -1112,10 +1165,30 @@ mod tests {
     #[test]
     fn rule_triggers_are_kept_as_written() {
         let preset = parsed(json!({"rules": [
-            {"key": "Ctrl+KeyA"}, {"key": "ShiftLeft+ControlRight"}, {"key": "NoSuchKey"},
+            {"key": ["Ctrl", "KeyA"]}, {"key": ["ShiftLeft", "ControlRight"]}, {"key": "NoSuchKey"},
         ]}));
         let keys: Vec<_> = preset.rules.iter().map(|rule| rule.key.as_str()).collect();
         assert_eq!(keys, ["Ctrl+KeyA", "ShiftLeft+ControlRight", "NoSuchKey"]);
+        let written = serde_json::to_value(to_doc(&preset)).unwrap();
+        assert_eq!(
+            written["rules"][1]["key"],
+            json!(["ShiftLeft", "ControlRight"])
+        );
+        assert_eq!(written["rules"][2]["key"], json!("NoSuchKey"));
+    }
+
+    #[test]
+    fn rule_chords_are_arrays() {
+        for key in [
+            json!("ShiftLeft+ControlRight"),
+            json!(["KeyA"]),
+            json!([]),
+            json!(["KeyA", ""]),
+            json!(["KeyA", "KeyB+KeyC"]),
+        ] {
+            let body = json!({"rules": [{"key": key}]});
+            assert!(parse(&profile(body.clone())).is_err(), "accepted {body}");
+        }
     }
 
     #[test]
@@ -1127,7 +1200,7 @@ mod tests {
              "tapDecision": "holdOnOtherKeyPress"},
             {"id": "r2", "key": "Space", "enabled": false, "tap": null, "hold": {"action": null},
              "when": {"gameMode": "on", "keyboardLayouts": ["us"], "windows": ["code"], "excludeWindows": ["title:x"]}},
-            {"id": "r3", "key": "ShiftLeft+ControlRight", "longHold": {"action": "text:hello", "timeoutMs": 1500}},
+            {"id": "r3", "key": ["ShiftLeft", "ControlRight"], "longHold": {"action": "text:hello", "timeoutMs": 1500}},
         ]}));
         let caps = &preset.rules[0];
         assert_eq!(caps.hold_behavior(), HoldBehavior::Layer);

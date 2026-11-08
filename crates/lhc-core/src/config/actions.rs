@@ -247,11 +247,11 @@ pub const GAME_MODE_APP_ACTIONS: [&str; 4] = [
 /// App actions without a number: the menus on their last used page and
 /// the settings window.
 pub const WINDOW_APP_ACTIONS: [&str; 3] =
-    ["showQuickMenuLast", "showEmojiMenuLast", "showSettings"];
+    ["showQuickMenuRecent", "showEmojiMenuRecent", "showSettings"];
 
 /// Actions of the built-in popup hotkeys Ctrl+Alt+F11 and Ctrl+Alt+F12.
-pub const SHOW_EMOJI_MENU_LAST: &str = "lhc:showEmojiMenuLast";
-pub const SHOW_QUICK_MENU_LAST: &str = "lhc:showQuickMenuLast";
+pub const SHOW_EMOJI_MENU_RECENT: &str = "lhc:showEmojiMenuRecent";
+pub const SHOW_QUICK_MENU_RECENT: &str = "lhc:showQuickMenuRecent";
 
 pub fn app_action_name(id: &str) -> Option<ActionName> {
     numbered(id, &["showQuickMenu", "showEmojiMenu"], u32::MAX)
@@ -590,7 +590,7 @@ mod tests {
         assert_eq!(menu_page("showQuickMenu0"), None);
         assert_eq!(menu_page("toggleGameMode"), None);
         assert_eq!(menu_page("activateProfile2"), None);
-        assert_eq!(menu_page("showEmojiMenuLast"), None);
+        assert_eq!(menu_page("showEmojiMenuRecent"), None);
         assert_eq!(
             app_action_name("setGameModeOff"),
             Some(ActionName::App {
@@ -606,7 +606,7 @@ mod tests {
             })
         );
         assert_eq!(app_action_name("activateProfile6"), None);
-        assert!(app_action_name("showQuickMenuLast").is_some());
+        assert!(app_action_name("showQuickMenuRecent").is_some());
         assert!(app_action_name("showSettings").is_some());
     }
 

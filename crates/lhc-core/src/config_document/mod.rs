@@ -587,8 +587,9 @@ mod tests {
         if settings["state"]["editedProfile"].is_null() {
             settings["state"]["editedProfile"] = json!("user:Test");
         }
-        if settings["settings"]["profiles"]["manual"].is_null() {
-            settings["settings"]["profiles"]["manual"] = settings["state"]["editedProfile"].clone();
+        if settings["settings"]["profiles"]["manualProfile"].is_null() {
+            settings["settings"]["profiles"]["manualProfile"] =
+                settings["state"]["editedProfile"].clone();
         }
         let name = settings["state"]["editedProfile"]
             .as_str()
@@ -664,7 +665,7 @@ mod tests {
                     &serde_json::to_string(&json!({
                         "version": 1,
                         "state": {"editedProfile": "user:Test"},
-                        "settings": {"profiles": {"manual": "user:Test"}, "appearance": "dark"}
+                        "settings": {"profiles": {"manualProfile": "user:Test"}, "appearance": "dark"}
                     }))
                     .unwrap(),
                 )
@@ -744,7 +745,7 @@ mod tests {
             r#"{"version":1,"quickMenuPages":[{"cells":{"KeyQ":"cmd:missing"}}]}"#,
         ] {
             let (_dir, document) = document(
-                json!({"settings":{"profiles":{"manual":"user:Test"}}}),
+                json!({"settings":{"profiles":{"manualProfile":"user:Test"}}}),
                 content,
             );
             let before = document.paths().load_user_profile("Test").unwrap();
@@ -1229,7 +1230,7 @@ mod tests {
     #[test]
     fn runtime_config_reports_whether_titles_are_needed() {
         let (_dir, mut document) = document(
-            json!({"settings": {"profiles": {"manual": "user:Other"}}, "state": {"editedProfile": "user:Main"}}),
+            json!({"settings": {"profiles": {"manualProfile": "user:Other"}}, "state": {"editedProfile": "user:Main"}}),
             PROFILE,
         );
         let save = |document: &ConfigDocument, rules: &str| {
@@ -1292,7 +1293,7 @@ mod tests {
     #[test]
     fn runtime_config_uses_the_active_library_profile() {
         let (_dir, mut document) = document(
-            json!({"settings": {"profiles": {"manual": "user:Other"}}, "state": {"editedProfile": "user:Main"}}),
+            json!({"settings": {"profiles": {"manualProfile": "user:Other"}}, "state": {"editedProfile": "user:Main"}}),
             PROFILE,
         );
         document

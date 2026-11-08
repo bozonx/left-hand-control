@@ -310,8 +310,8 @@ mod tests {
     #[test]
     fn resolve_window_and_profile_actions() {
         for (name, event) in [
-            ("showQuickMenuLast", AppAction::ShowMenu { menu: Menu::Quick, page: None }),
-            ("showEmojiMenuLast", AppAction::ShowMenu { menu: Menu::Emoji, page: None }),
+            ("showQuickMenuRecent", AppAction::ShowMenu { menu: Menu::Quick, page: None }),
+            ("showEmojiMenuRecent", AppAction::ShowMenu { menu: Menu::Emoji, page: None }),
             ("showSettings", AppAction::ShowSettings),
             ("activateProfile1", AppAction::ActivateProfile(NonZeroU32::new(1).unwrap())),
             ("activateProfile5", AppAction::ActivateProfile(NonZeroU32::new(5).unwrap())),

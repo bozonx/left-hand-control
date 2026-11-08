@@ -280,7 +280,7 @@
             "rules": []
           }
         },
-        "manual": {
+        "manualProfile": {
           "description": "Profile used in manual mode.",
           "type": [
             "string",

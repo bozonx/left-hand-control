@@ -38,7 +38,7 @@ fn document(config: &str) -> (tempfile::TempDir, ConfigDocument) {
     (directory, document)
 }
 
-const MANUAL: &str = r#"{"version":1,"settings":{"profiles":{"manual":"user:Main"}}}"#;
+const MANUAL: &str = r#"{"version":1,"settings":{"profiles":{"manualProfile":"user:Main"}}}"#;
 
 fn manual_engine() -> (tempfile::TempDir, Engine) {
     engine_for(MANUAL)
@@ -133,7 +133,7 @@ fn layer_key_runs_the_macro_steps_in_order() {
     assert_eq!(pressed(&run(&mut engine, &press_j_in_layer)), []);
 
     let (_dir, mut engine) = engine_for(
-        r#"{"version":1,"settings":{"experimental":true,"profiles":{"manual":"user:Main"}}}"#,
+        r#"{"version":1,"settings":{"experimental":true,"profiles":{"manualProfile":"user:Main"}}}"#,
     );
     let out = run(&mut engine, &press_j_in_layer);
     assert_eq!(

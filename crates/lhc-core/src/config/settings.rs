@@ -177,7 +177,7 @@ struct ProfilesDoc {
     mode: ProfileMode,
     /// Profile used in manual mode.
     #[serde(skip_serializing_if = "Option::is_none")]
-    manual: Option<String>,
+    manual_profile: Option<String>,
     /// Library order: the slots of `activateProfileN` and the order of the
     /// list. Behaviour, not remembered state, so it lives in settings.
     order: Vec<String>,
@@ -516,7 +516,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
         input_mouse_device_path: mouse_device,
         editing_profile_id: non_empty(state.edited_profile),
         profile_mode: profiles.mode,
-        manual_profile_id: non_empty(profiles.manual),
+        manual_profile_id: non_empty(profiles.manual_profile),
         profile_order: profiles.order,
         auto_rules,
         auto_default_profile_id: profile_ref(
@@ -590,7 +590,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
             },
             profiles: ProfilesDoc {
                 mode: settings.profile_mode,
-                manual: filled(&settings.manual_profile_id),
+                manual_profile: filled(&settings.manual_profile_id),
                 order: settings.profile_order.clone(),
                 auto: AutoDoc {
                     rules: settings
@@ -912,7 +912,7 @@ mod tests {
             raw["settings"]["devices"],
             json!({"keyboards": ["/dev/input/by-id/kbd"], "mice": ["/dev/input/by-id/mouse"]})
         );
-        assert_eq!(profiles["manual"], "user:Other");
+        assert_eq!(profiles["manualProfile"], "user:Other");
     }
 
     #[test]

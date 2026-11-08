@@ -43,11 +43,11 @@ impl AppAction {
                 menu: Menu::Emoji,
                 page: Some(NonZeroU32::new(n)?),
             },
-            "showQuickMenuLast" => Self::ShowMenu {
+            "showQuickMenuRecent" => Self::ShowMenu {
                 menu: Menu::Quick,
                 page: None,
             },
-            "showEmojiMenuLast" => Self::ShowMenu {
+            "showEmojiMenuRecent" => Self::ShowMenu {
                 menu: Menu::Emoji,
                 page: None,
             },

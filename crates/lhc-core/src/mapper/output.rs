@@ -1066,7 +1066,7 @@ mod tests {
         );
 
         let popup = EngineOutput::RunSystem(SystemAction::AppEvent(
-            crate::config::app_action::AppAction::parse("showEmojiMenuLast").unwrap(),
+            crate::config::app_action::AppAction::parse("showEmojiMenuRecent").unwrap(),
         ));
         iterate!(&mut hold, start, vec![popup, key_a(true)]);
         assert_eq!(sink.batches.len(), 2);
