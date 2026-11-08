@@ -352,7 +352,7 @@ export component PickerOverlay inherits DialogFrame {
                         private property <string> shown-query: ActionPicker.query;
                         changed shown-category => { self.viewport-y = 0px; ActionPicker.keyboard-item = 0; }
                         changed shown-query => { self.viewport-y = 0px; ActionPicker.keyboard-item = 0; }
-                        VerticalLayout { spacing: 0px;
+                        VerticalLayout { spacing: 0px; alignment: start;
                             for row in ceil(ActionPicker.items.length * 1.0 / catalog.columns): HorizontalLayout { padding: 0px; padding-bottom: Theme.space-s; spacing: Theme.space-s;
                                 for col in catalog.columns: PickerCell {
                                     index: row * catalog.columns + col;
