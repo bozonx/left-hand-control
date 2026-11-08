@@ -2213,8 +2213,8 @@ msgstr ""
 msgid "Triggers"
 msgstr "Gatilhos"
 
-msgid "Disable animations"
-msgstr "Desativar animações"
+msgid "Reduce animations"
+msgstr "Reduzir animações"
 
 msgid "Add profile: "
 msgstr "Adicionar perfil:"
@@ -3810,3 +3810,14 @@ msgstr "A lista é lida das entradas de ambiente de trabalho das aplicações in
 
 msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
 msgstr "No editor, selecione uma célula e pressione Ctrl+X para recortá-la ou Ctrl+C para copiá-la; depois pressione Ctrl+V em outra célula para colar. Escape cancela."
+
+msgid "Follow system"
+msgstr "Seguir o sistema"
+
+msgctxt "Accessibility option"
+msgid "On"
+msgstr "Ativado"
+
+msgctxt "Accessibility option"
+msgid "Off"
+msgstr "Desativado"

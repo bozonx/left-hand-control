@@ -2256,8 +2256,8 @@ msgstr ""
 msgid "Triggers"
 msgstr "Ενεργοποιητές"
 
-msgid "Disable animations"
-msgstr "Απενεργοποίηση κινούμενων εικόνων"
+msgid "Reduce animations"
+msgstr "Μείωση κινήσεων"
 
 msgid "Add profile: "
 msgstr "Προσθήκη προφίλ:"
@@ -3898,3 +3898,14 @@ msgstr "Η λίστα διαβάζεται από τα αρχεία desktop τω
 
 msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
 msgstr "Στον επεξεργαστή, επιλέξτε ένα κελί και πατήστε Ctrl+X για αποκοπή ή Ctrl+C για αντιγραφή και, στη συνέχεια, Ctrl+V σε άλλο κελί για επικόλληση. Το Escape ακυρώνει."
+
+msgid "Follow system"
+msgstr "Όπως το σύστημα"
+
+msgctxt "Accessibility option"
+msgid "On"
+msgstr "Ενεργό"
+
+msgctxt "Accessibility option"
+msgid "Off"
+msgstr "Ανενεργό"

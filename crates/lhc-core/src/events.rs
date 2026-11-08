@@ -46,6 +46,8 @@ pub enum CoreEvent {
     ActionUnavailable(String),
     /// A macro run was rejected or stopped before completing.
     MacroRunFailed(MacroRunFailure),
+    /// The desktop's high-contrast or reduced-motion preference changed.
+    SystemAccessibilityChanged(crate::platform::accessibility::SystemAccessibility),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

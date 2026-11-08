@@ -12,8 +12,8 @@ use crate::{
 };
 use lhc_core::config::menus::PlaceKind;
 use lhc_core::config::model::{
-    AppSettings, Appearance, GameModeProcessMatcher, LocalePreference, PasteShortcut, TapDecision,
-    TextMode,
+    AccessibilityChoice, AppSettings, Appearance, GameModeProcessMatcher, LocalePreference,
+    PasteShortcut, TapDecision, TextMode,
 };
 use lhc_core::config::timing;
 use lhc_core::mapper::devices;
@@ -170,10 +170,12 @@ form! {
         load |s| s.start_mapper_on_launch, store |t, v| t.start_mapper_on_launch = *v;
     appearance: AppearanceChoice = get_appearance / set_appearance,
         load |s| appearance_choice(s.appearance), store |t, v| t.appearance = appearance(*v);
-    high_contrast: bool = get_high_contrast / set_high_contrast,
-        load |s| s.high_contrast, store |t, v| t.high_contrast = *v;
-    reduce_motion: bool = get_reduce_motion / set_reduce_motion,
-        load |s| s.reduce_motion, store |t, v| t.reduce_motion = *v;
+    high_contrast: i32 = get_high_contrast_index / set_high_contrast_index,
+        load |s| choice_index(&AccessibilityChoice::ALL, &s.high_contrast),
+        store |t, v| t.high_contrast = choice(&AccessibilityChoice::ALL, *v);
+    reduce_motion: i32 = get_reduce_motion_index / set_reduce_motion_index,
+        load |s| choice_index(&AccessibilityChoice::ALL, &s.reduce_motion),
+        store |t, v| t.reduce_motion = choice(&AccessibilityChoice::ALL, *v);
     profile_osd: bool = get_profile_osd / set_profile_osd,
         load |s| s.profile_osd, store |t, v| t.profile_osd = *v;
     layer_hint: bool = get_layer_hint / set_layer_hint,

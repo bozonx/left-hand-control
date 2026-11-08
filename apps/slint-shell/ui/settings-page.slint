@@ -25,8 +25,10 @@ export global SettingsEditor {
     in-out property <bool> launch-on-startup;
     in-out property <bool> start-mapper-on-launch;
     in-out property <AppearanceChoice> appearance;
-    in-out property <bool> high-contrast;
-    in-out property <bool> reduce-motion;
+    /// Index into `AccessibilityChoice::ALL`: follow the system, on, off.
+    in-out property <int> high-contrast-index;
+    /// Index into `AccessibilityChoice::ALL`: follow the system, on, off.
+    in-out property <int> reduce-motion-index;
     in-out property <bool> profile-osd;
     in-out property <bool> layer-hint;
     /// The layer hint can be shown: layer-shell is available.
@@ -456,10 +458,12 @@ export component SettingsPage inherits PageLayout {
                 if SettingsEditor.tab == SettingsTab.accessibility: Section {
                     accessible-label: @tr("Accessibility");
                     VerticalLayout { vertical-stretch: 0; spacing: Theme.space-m;
-                        CheckBox { text: @tr("High contrast"); enabled: SettingsEditor.appearance != AppearanceChoice.e-ink; checked <=> SettingsEditor.high-contrast; toggled => { SettingsEditor.save(); } }
+                        Text { text: @tr("High contrast"); color: Theme.text; }
+                        SelectField { accessible-label: @tr("High contrast"); enabled: SettingsEditor.appearance != AppearanceChoice.e-ink; width: 280px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("Follow system"), @tr("Accessibility option" => "On"), @tr("Accessibility option" => "Off")]; current-index: SettingsEditor.high-contrast-index; selected(value) => { SettingsEditor.high-contrast-index = self.current-index; SettingsEditor.save(); } }
                     }
                     VerticalLayout { vertical-stretch: 0; spacing: Theme.space-m;
-                        CheckBox { text: @tr("Disable animations"); checked <=> SettingsEditor.reduce-motion; toggled => { SettingsEditor.save(); } }
+                        Text { text: @tr("Reduce animations"); color: Theme.text; }
+                        SelectField { accessible-label: @tr("Reduce animations"); width: 280px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("Follow system"), @tr("Accessibility option" => "On"), @tr("Accessibility option" => "Off")]; current-index: SettingsEditor.reduce-motion-index; selected(value) => { SettingsEditor.reduce-motion-index = self.current-index; SettingsEditor.save(); } }
                     }
                 }
                 if AppState.in-development && SettingsEditor.tab == SettingsTab.commands: Section {

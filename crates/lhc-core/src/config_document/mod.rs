@@ -814,7 +814,10 @@ mod tests {
         let saved: Value =
             serde_json::from_str(&fs::read_to_string(document.paths.config_path()).unwrap())
                 .unwrap();
-        assert_eq!(saved["version"], 1);
+        assert_eq!(
+            saved["version"],
+            crate::config::schema::CONFIG_SCHEMA_VERSION
+        );
         assert_eq!(
             saved["settings"]["devices"]["keyboards"],
             json!(["/dev/input/by-id/other"])
@@ -832,7 +835,7 @@ mod tests {
         for text in [
             json!({"version": 1, "settings": {"futureOption": 7}}).to_string(),
             json!({"version": 1, "settings": {"appearance": "blue"}}).to_string(),
-            json!({"version": 2, "settings": {}}).to_string(),
+            json!({"version": 3, "settings": {}}).to_string(),
             json!({"settings": {}}).to_string(),
         ] {
             let dir = tempfile::tempdir().unwrap();
@@ -1446,7 +1449,7 @@ mod tests {
         let before_profile = document.profile().clone();
         let disk = std::fs::read(document.paths().config_path()).ok();
         let result: Result<(), ConfigError> = document.transaction(|draft| {
-            draft.update_settings(|settings| settings.high_contrast = !settings.high_contrast)?;
+            draft.update_settings(|settings| settings.layer_hint = !settings.layer_hint)?;
             draft.create_layer("Staged", "")?;
             Err(ConfigError::EditConflict)
         });
@@ -1456,8 +1459,7 @@ mod tests {
         assert_eq!(std::fs::read(document.paths().config_path()).ok(), disk);
         document
             .transaction(|draft| {
-                draft
-                    .update_settings(|settings| settings.high_contrast = !settings.high_contrast)?;
+                draft.update_settings(|settings| settings.layer_hint = !settings.layer_hint)?;
                 draft.create_layer("Committed", "")
             })
             .unwrap();
@@ -1486,7 +1488,7 @@ mod tests {
         assert!(
             document
                 .edit_profile_with_commands([], |draft| draft
-                    .update_settings(|settings| settings.high_contrast = true))
+                    .update_settings(|settings| settings.layer_hint = true))
                 .is_err()
         );
         assert_eq!(document.settings(), &before);

@@ -21,6 +21,7 @@
 //! Missing macOS bindings return a clear, actionable error instead of
 //! panicking.
 
+pub mod accessibility;
 #[cfg(target_os = "linux")]
 pub mod dbus;
 #[cfg(target_os = "linux")]

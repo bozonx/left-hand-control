@@ -2214,8 +2214,8 @@ msgstr ""
 msgid "Triggers"
 msgstr "Тригери"
 
-msgid "Disable animations"
-msgstr "Вимкнути анімацію"
+msgid "Reduce animations"
+msgstr "Без анімацій"
 
 msgid "Add profile: "
 msgstr "Додати профіль:"
@@ -3804,3 +3804,14 @@ msgstr "Список береться з файлів .desktop встановл�
 
 msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
 msgstr "У редакторі виберіть комірку й натисніть Ctrl+X, щоб вирізати її, або Ctrl+C, щоб скопіювати, потім натисніть Ctrl+V на іншій комірці, щоб вставити. Escape скасовує."
+
+msgid "Follow system"
+msgstr "Як у системі"
+
+msgctxt "Accessibility option"
+msgid "On"
+msgstr "Увімкнено"
+
+msgctxt "Accessibility option"
+msgid "Off"
+msgstr "Вимкнено"

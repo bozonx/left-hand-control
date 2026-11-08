@@ -2190,8 +2190,8 @@ msgstr "El nombre es opcional: un nombre vacío utiliza el comando en sí como e
 msgid "Triggers"
 msgstr "Desencadenantes"
 
-msgid "Disable animations"
-msgstr "Deshabilitar animaciones"
+msgid "Reduce animations"
+msgstr "Reducir animaciones"
 
 msgid "Add profile: "
 msgstr "Agregar perfil:"
@@ -3801,3 +3801,14 @@ msgstr "La lista se lee de las entradas de escritorio de las aplicaciones instal
 
 msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
 msgstr "En el editor, enfoca una celda y pulsa Ctrl+X para cortarla o Ctrl+C para copiarla; luego pulsa Ctrl+V en otra celda para pegar. Escape cancela."
+
+msgid "Follow system"
+msgstr "Según el sistema"
+
+msgctxt "Accessibility option"
+msgid "On"
+msgstr "Activado"
+
+msgctxt "Accessibility option"
+msgid "Off"
+msgstr "Desactivado"

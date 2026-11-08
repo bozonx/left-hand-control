@@ -9,8 +9,9 @@
 //! everyone who never chose otherwise.
 
 use super::model::{
-    AppSettings, Appearance, AutoRule, GameModeControl, GameModeProcessMatcher, GameModeSettings,
-    LocalePreference, PasteShortcut, ProfileMode, TapDecision, TextMode,
+    AccessibilityChoice, AppSettings, Appearance, AutoRule, GameModeControl,
+    GameModeProcessMatcher, GameModeSettings, LocalePreference, PasteShortcut, ProfileMode,
+    TapDecision, TextMode,
 };
 use super::profile_file::WhenDoc;
 use super::schema::{self, CONFIG_SCHEMA_VERSION};
@@ -26,6 +27,10 @@ pub fn parse(text: &str) -> Result<AppSettings, String> {
         serde_json::from_str(text).map_err(|error| format!("{CONFIG_FILE}: {error}"))?;
     let settings = match schema::read_version(&value, CONFIG_FILE, CONFIG_SCHEMA_VERSION)? {
         1 => from_doc(
+            serde_json::from_value::<ConfigDoc>(v1::upgrade(value)?)
+                .map_err(|error| schema::read_error(CONFIG_FILE, &error))?,
+        )?,
+        2 => from_doc(
             serde_json::from_str::<ConfigDoc>(text)
                 .map_err(|error| schema::read_error(CONFIG_FILE, &error))?,
         )?,
@@ -37,6 +42,40 @@ pub fn parse(text: &str) -> Result<AppSettings, String> {
     };
     validate(&settings)?;
     Ok(settings)
+}
+
+/// Version 1: the same layout, but `highContrast` and `reduceMotion` were
+/// booleans with `false` as the default.
+mod v1 {
+    use serde_json::Value;
+
+    /// The version 1 document as version 2: `true` becomes `"on"`, `false`
+    /// (the old default) follows the system.
+    pub(super) fn upgrade(mut value: Value) -> Result<Value, String> {
+        if let Some(settings) = value.get_mut("settings").and_then(Value::as_object_mut) {
+            for key in ["highContrast", "reduceMotion"] {
+                match settings.get(key) {
+                    None => {}
+                    Some(Value::Bool(true)) => {
+                        settings.insert(key.into(), "on".into());
+                    }
+                    Some(Value::Bool(false)) => {
+                        settings.remove(key);
+                    }
+                    Some(_) => {
+                        return Err(format!(
+                            "{}: settings.{key}: expected a boolean",
+                            crate::storage::CONFIG_FILE
+                        ));
+                    }
+                }
+            }
+        }
+        if let Some(object) = value.as_object_mut() {
+            object.insert("version".into(), 2.into());
+        }
+        Ok(value)
+    }
 }
 
 /// JSON Schema of `config.json`, published under `schemas/`.
@@ -115,8 +154,8 @@ struct SettingsDoc {
     /// Start the mapper when the app launches.
     start_mapper_on_launch: bool,
     appearance: Appearance,
-    high_contrast: bool,
-    reduce_motion: bool,
+    high_contrast: AccessibilityChoice,
+    reduce_motion: AccessibilityChoice,
     profile_osd: bool,
     layer_hint: bool,
     locale: LocalePreference,
@@ -667,7 +706,7 @@ mod tests {
             assert_eq!(settings.locale.as_str(), code);
             let saved = serialize(&settings);
             let raw: Value = serde_json::from_str(&saved).unwrap();
-            assert_eq!(raw["version"], 1);
+            assert_eq!(raw["version"], CONFIG_SCHEMA_VERSION);
             // The default is not written.
             let expected = if code == "auto" {
                 Value::Null
@@ -683,7 +722,7 @@ mod tests {
     fn editor_schema_is_preserved_and_strictly_typed() {
         let text = r#"{"version":1,"$schema":"https://example.com/config.schema.json"}"#;
         let mut settings = parse(text).unwrap();
-        settings.high_contrast = true;
+        settings.high_contrast = AccessibilityChoice::On;
         let saved = serialize(&settings);
         assert_eq!(parse(&saved).unwrap(), settings);
         let raw: serde_json::Value = serde_json::from_str(&saved).unwrap();
@@ -710,7 +749,7 @@ mod tests {
     #[test]
     fn only_values_differing_from_defaults_are_written() {
         let raw: Value = serde_json::from_str(&serialize(&AppSettings::default())).unwrap();
-        assert_eq!(raw, json!({"version": 1}));
+        assert_eq!(raw, json!({"version": CONFIG_SCHEMA_VERSION}));
         let settings = AppSettings {
             default_hold_timeout_ms: 300,
             linux_terminal_paste_shortcut: None,
@@ -720,7 +759,7 @@ mod tests {
         let raw: Value = serde_json::from_str(&text).unwrap();
         assert_eq!(
             raw,
-            json!({"version": 1, "settings": {
+            json!({"version": CONFIG_SCHEMA_VERSION, "settings": {
                 "timing": {"holdMs": 300},
                 "linux": {"terminalPasteShortcut": "sameAsPaste"},
             }})
@@ -788,13 +827,35 @@ mod tests {
     }
 
     #[test]
+    fn version_1_accessibility_flags_are_upgraded() {
+        let settings = parse(&config(
+            json!({"highContrast": true, "reduceMotion": false}),
+        ))
+        .unwrap();
+        assert_eq!(settings.high_contrast, AccessibilityChoice::On);
+        assert_eq!(settings.reduce_motion, AccessibilityChoice::System);
+        assert!(parse(&config(json!({"highContrast": "on"}))).is_err());
+        let raw: Value = serde_json::from_str(&serialize(&settings)).unwrap();
+        assert_eq!(
+            raw,
+            json!({"version": 2, "settings": {"highContrast": "on"}})
+        );
+        let current = json!({"version": 2, "settings": {"reduceMotion": "off"}}).to_string();
+        assert_eq!(
+            parse(&current).unwrap().reduce_motion,
+            AccessibilityChoice::Off
+        );
+        assert!(parse(r#"{"version":2,"settings":{"highContrast":true}}"#).is_err());
+    }
+
+    #[test]
     fn version_is_required_and_checked() {
         assert!(
             parse(r#"{"settings": {}}"#)
                 .unwrap_err()
                 .contains("version")
         );
-        assert!(parse(r#"{"version": 2}"#).unwrap_err().contains("newer"));
+        assert!(parse(r#"{"version": 3}"#).unwrap_err().contains("newer"));
         assert!(parse(r#"[]"#).is_err());
     }
 
@@ -885,7 +946,7 @@ mod tests {
         let text = serialize(&settings);
         assert_eq!(parse(&text).unwrap(), settings);
         let raw: Value = serde_json::from_str(&text).unwrap();
-        assert_eq!(raw["version"], 1);
+        assert_eq!(raw["version"], CONFIG_SCHEMA_VERSION);
         assert_eq!(raw["settings"]["timing"]["holdMs"], 180);
         assert_eq!(raw["settings"]["linux"]["pasteShortcut"], "Ctrl+Shift+KeyV");
         assert_eq!(raw["settings"]["appearance"], "eInk");

@@ -2229,8 +2229,8 @@ msgstr ""
 msgid "Triggers"
 msgstr "Declanșatoare"
 
-msgid "Disable animations"
-msgstr "Dezactivați animațiile"
+msgid "Reduce animations"
+msgstr "Reducere animații"
 
 msgid "Add profile: "
 msgstr "Adăugați profilul:"
@@ -3838,3 +3838,14 @@ msgstr "Lista este citită din fișierele desktop ale aplicațiilor instalate, s
 
 msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
 msgstr "În editor, selectați o celulă și apăsați Ctrl+X pentru a o tăia sau Ctrl+C pentru a o copia, apoi apăsați Ctrl+V pe altă celulă pentru a lipi. Escape anulează."
+
+msgid "Follow system"
+msgstr "Ca în sistem"
+
+msgctxt "Accessibility option"
+msgid "On"
+msgstr "Activat"
+
+msgctxt "Accessibility option"
+msgid "Off"
+msgstr "Dezactivat"

@@ -102,6 +102,7 @@ pub(super) fn forward_core_events() -> Result<lhc_core::events::Subscription, St
         }
         CoreEvent::LayoutChanged(_) => post(|app| app.context_changed()),
         CoreEvent::ActiveWindowChanged(_) => post(|app| app.window_changed()),
+        CoreEvent::SystemAccessibilityChanged(_) => post(|app| app.apply_preferences()),
     })
 }
 

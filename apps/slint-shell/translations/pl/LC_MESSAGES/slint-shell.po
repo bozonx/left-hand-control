@@ -2230,8 +2230,8 @@ msgstr ""
 msgid "Triggers"
 msgstr "Wyzwalacze"
 
-msgid "Disable animations"
-msgstr "Wyłącz animacje"
+msgid "Reduce animations"
+msgstr "Ogranicz animacje"
 
 msgid "Add profile: "
 msgstr "Dodaj profil:"
@@ -3837,3 +3837,14 @@ msgstr "Lista jest odczytywana z plików .desktop zainstalowanych aplikacji, wsp
 
 msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
 msgstr "W edytorze zaznacz komórkę i naciśnij Ctrl+X, aby ją wyciąć, lub Ctrl+C, aby ją skopiować, a następnie naciśnij Ctrl+V na innej komórce, aby wkleić. Escape anuluje."
+
+msgid "Follow system"
+msgstr "Jak w systemie"
+
+msgctxt "Accessibility option"
+msgid "On"
+msgstr "Włączone"
+
+msgctxt "Accessibility option"
+msgid "Off"
+msgstr "Wyłączone"

@@ -2248,8 +2248,8 @@ msgstr ""
 msgid "Triggers"
 msgstr "Trigger"
 
-msgid "Disable animations"
-msgstr "Disattiva le animazioni"
+msgid "Reduce animations"
+msgstr "Riduci animazioni"
 
 msgid "Add profile: "
 msgstr "Aggiungi profilo:"
@@ -3871,3 +3871,14 @@ msgstr "L’elenco viene letto dai file desktop delle applicazioni installate, l
 
 msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
 msgstr "Nell’editor, seleziona una cella e premi Ctrl+X per tagliarla o Ctrl+C per copiarla, poi premi Ctrl+V su un’altra cella per incollare. Esc annulla."
+
+msgid "Follow system"
+msgstr "Come il sistema"
+
+msgctxt "Accessibility option"
+msgid "On"
+msgstr "Attivo"
+
+msgctxt "Accessibility option"
+msgid "Off"
+msgstr "Disattivo"

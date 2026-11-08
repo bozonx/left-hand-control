@@ -2203,8 +2203,8 @@ msgstr ""
 msgid "Triggers"
 msgstr "ტრიგერები"
 
-msgid "Disable animations"
-msgstr "გამორთეთ ანიმაციები"
+msgid "Reduce animations"
+msgstr "ანიმაციების შემცირება"
 
 msgid "Add profile: "
 msgstr "პროფილის დამატება:"
@@ -3787,3 +3787,14 @@ msgstr "სია იკითხება დაყენებული აპ
 
 msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
 msgstr "რედაქტორში აირჩიეთ უჯრა და დააჭირეთ Ctrl+X ამოსაჭრელად ან Ctrl+C დასაკოპირებლად, შემდეგ სხვა უჯრაზე დააჭირეთ Ctrl+V ჩასასმელად. Escape აუქმებს."
+
+msgid "Follow system"
+msgstr "სისტემის მიხედვით"
+
+msgctxt "Accessibility option"
+msgid "On"
+msgstr "ჩართული"
+
+msgctxt "Accessibility option"
+msgid "Off"
+msgstr "გამორთული"

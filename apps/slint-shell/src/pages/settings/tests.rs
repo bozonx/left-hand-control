@@ -250,16 +250,16 @@ fn saving_a_form_without_a_window_preserves_other_edits_and_rejects_invalid_inpu
     document
         .edit(View::Settings, |config| {
             config.update_settings(|settings| {
-                settings.reduce_motion = !settings.reduce_motion;
+                settings.layer_hint = !settings.layer_hint;
             })
         })
         .unwrap();
-    let reduce_motion = document.read().settings().reduce_motion;
+    let layer_hint = document.read().settings().layer_hint;
     form.hold = "350".into();
     assert_eq!(persist(&document, &mut state, &form), (true, Msg::None));
     assert!(state.base.is_none());
     assert_eq!(document.read().settings().default_hold_timeout_ms, 350);
-    assert_eq!(document.read().settings().reduce_motion, reduce_motion);
+    assert_eq!(document.read().settings().layer_hint, layer_hint);
 }
 
 #[test]
@@ -293,7 +293,7 @@ fn invalid_timing_does_not_block_independent_settings_and_can_be_retried() {
     };
     let mut form = base.clone();
     form.hold = String::new();
-    form.high_contrast = !base.high_contrast;
+    form.high_contrast = (base.high_contrast + 1) % 3;
     form.keyboard = "/dev/input/new".into();
     assert_eq!(
         persist(&document, &mut state, &form),
@@ -318,7 +318,7 @@ fn document_updates_merge_into_untouched_fields_while_typing() {
     draft.hold = String::new();
     let mut loaded = base.clone();
     loaded.double_tap = "999".into();
-    loaded.reduce_motion = !base.reduce_motion;
+    loaded.reduce_motion = (base.reduce_motion + 1) % 3;
     let merged = draft.rebase(&base, &loaded);
     assert!(merged.hold.is_empty());
     assert_eq!(merged.double_tap, "999");
@@ -391,7 +391,7 @@ fn device_selection_retries_write_errors_and_applies_only_saved_changes() {
     e.invoke_save();
     assert_eq!(changes.get(), 1);
     e.set_devices_loading(false);
-    e.set_reduce_motion(!e.get_reduce_motion());
+    e.set_reduce_motion_index((e.get_reduce_motion_index() + 1) % 3);
     e.invoke_save();
     assert!(
         !e.get_devices_loading(),

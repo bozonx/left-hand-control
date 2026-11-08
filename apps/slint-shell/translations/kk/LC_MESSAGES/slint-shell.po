@@ -2214,8 +2214,8 @@ msgstr ""
 msgid "Triggers"
 msgstr "Триггерлер"
 
-msgid "Disable animations"
-msgstr "Анимацияларды өшіріңіз"
+msgid "Reduce animations"
+msgstr "Анимацияны азайту"
 
 msgid "Add profile: "
 msgstr "Макет қосу:"
@@ -3805,3 +3805,14 @@ msgstr "Тізім орнатылған қолданбалардың .desktop ф
 
 msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
 msgstr "Редакторда ұяшықты таңдап, қиып алу үшін Ctrl+X немесе көшіру үшін Ctrl+C басыңыз, содан кейін қою үшін басқа ұяшықта Ctrl+V басыңыз. Escape бас тартады."
+
+msgid "Follow system"
+msgstr "Жүйе бойынша"
+
+msgctxt "Accessibility option"
+msgid "On"
+msgstr "Қосулы"
+
+msgctxt "Accessibility option"
+msgid "Off"
+msgstr "Өшірулі"

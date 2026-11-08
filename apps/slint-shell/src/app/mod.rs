@@ -211,6 +211,7 @@ impl App {
         };
         let config = document.read();
         let settings = config.settings();
+        let system = lhc_core::platform::accessibility::current();
         let dark = match settings.appearance {
             Appearance::Light | Appearance::EInk => false,
             Appearance::Dark => true,
@@ -225,8 +226,8 @@ impl App {
                 ThemeMode::Light
             },
             language: Language::resolve(settings.locale),
-            high_contrast: settings.high_contrast,
-            reduce_motion: settings.reduce_motion,
+            high_contrast: settings.high_contrast.resolve(system.high_contrast),
+            reduce_motion: settings.reduce_motion.resolve(system.reduce_motion),
         }
     }
 
@@ -429,6 +430,7 @@ fn start_core() -> Result<CoreGuard, String> {
     }
     let events = mapper::forward_core_events()?;
     let watchers = lhc_core::watchers::Watchers::start(paths.ok(), true);
+    lhc_core::platform::accessibility::start_watcher();
     Ok(CoreGuard {
         watchers: Some(watchers),
         events: Some(events),

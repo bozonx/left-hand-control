@@ -2205,8 +2205,8 @@ msgstr ""
 msgid "Triggers"
 msgstr "Tetikleyiciler"
 
-msgid "Disable animations"
-msgstr "Animasyonları devre dışı bırak"
+msgid "Reduce animations"
+msgstr "Animasyonları azalt"
 
 msgid "Add profile: "
 msgstr "Profil ekle:"
@@ -3797,3 +3797,14 @@ msgstr "Liste, yüklü uygulamaların masaüstü girdilerinden, yani Linux masa�
 
 msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
 msgstr "Düzenleyicide bir hücreye odaklanın ve kesmek için Ctrl+X veya kopyalamak için Ctrl+C tuşuna basın, ardından yapıştırmak için başka bir hücrede Ctrl+V tuşuna basın. Escape iptal eder."
+
+msgid "Follow system"
+msgstr "Sistemi izle"
+
+msgctxt "Accessibility option"
+msgid "On"
+msgstr "Açık"
+
+msgctxt "Accessibility option"
+msgid "Off"
+msgstr "Kapalı"

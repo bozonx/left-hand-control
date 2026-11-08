@@ -21,7 +21,7 @@
 //! next to the original (see [`backup_path`]).
 
 /// Version of `config.json` this build reads and writes.
-pub const CONFIG_SCHEMA_VERSION: u64 = 1;
+pub const CONFIG_SCHEMA_VERSION: u64 = 2;
 
 /// Version of profile files this build reads and writes.
 pub const PROFILE_SCHEMA_VERSION: u64 = 1;
@@ -30,7 +30,7 @@ pub const PROFILE_SCHEMA_VERSION: u64 = 1;
 /// The file lives in the repository's `schemas/` directory; within a format
 /// version it only gains optional fields and enum values.
 pub const CONFIG_SCHEMA_URL: &str =
-    "https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/config.v1.schema.json";
+    "https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/config.v2.schema.json";
 
 /// Stable address of the profile file JSON Schema, see [`CONFIG_SCHEMA_URL`].
 pub const PROFILE_SCHEMA_URL: &str = "https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/profile.v1.schema.json";
@@ -148,7 +148,7 @@ mod tests {
         let update = std::env::var_os("LHC_UPDATE_SCHEMAS").is_some();
         for (file, url, title, schema) in [
             (
-                "config.v1.schema.json",
+                "config.v2.schema.json",
                 CONFIG_SCHEMA_URL,
                 "Left Hand Control config.json",
                 super::super::settings::json_schema(),

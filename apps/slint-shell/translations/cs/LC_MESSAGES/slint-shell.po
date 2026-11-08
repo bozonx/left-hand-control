@@ -2201,8 +2201,8 @@ msgstr ""
 msgid "Triggers"
 msgstr "Spouštěče"
 
-msgid "Disable animations"
-msgstr "Zakázat animace"
+msgid "Reduce animations"
+msgstr "Omezit animace"
 
 msgid "Add profile: "
 msgstr "Přidat profil:"
@@ -3776,3 +3776,14 @@ msgstr "Seznam se načítá ze souborů .desktop nainstalovaných aplikací, spo
 
 msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
 msgstr "V editoru vyberte buňku a stiskněte Ctrl+X pro vyjmutí nebo Ctrl+C pro kopírování, poté na jiné buňce stiskněte Ctrl+V pro vložení. Escape ruší."
+
+msgid "Follow system"
+msgstr "Podle systému"
+
+msgctxt "Accessibility option"
+msgid "On"
+msgstr "Zapnuto"
+
+msgctxt "Accessibility option"
+msgid "Off"
+msgstr "Vypnuto"

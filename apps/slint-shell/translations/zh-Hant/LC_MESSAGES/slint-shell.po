@@ -2063,8 +2063,8 @@ msgstr "該名稱是可選的：空名稱使用命令本身作為其標籤。 ma
 msgid "Triggers"
 msgstr "觸發器"
 
-msgid "Disable animations"
-msgstr "停用動畫"
+msgid "Reduce animations"
+msgstr "減少動畫"
 
 msgid "Add profile: "
 msgstr "新增設定檔："
@@ -3479,3 +3479,14 @@ msgstr "此清單讀取自已安裝應用程式的桌面項目，即 Linux 桌�
 
 msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
 msgstr "在編輯器中，選取一個儲存格，按 Ctrl+X 剪下或按 Ctrl+C 複製，然後在另一個儲存格上按 Ctrl+V 貼上。按 Escape 取消。"
+
+msgid "Follow system"
+msgstr "跟隨系統"
+
+msgctxt "Accessibility option"
+msgid "On"
+msgstr "開"
+
+msgctxt "Accessibility option"
+msgid "Off"
+msgstr "關"

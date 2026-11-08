@@ -1944,8 +1944,8 @@ msgstr "Название необязательно: если оно пусто�
 msgid "Triggers"
 msgstr "Триггеры"
 
-msgid "Disable animations"
-msgstr "Выключить анимацию"
+msgid "Reduce animations"
+msgstr "Без анимаций"
 
 msgid "Add profile: "
 msgstr "Добавить профиль: "
@@ -3166,3 +3166,14 @@ msgstr "Список берётся из файлов .desktop установл�
 
 msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
 msgstr "В редакторе выберите ячейку и нажмите Ctrl+X, чтобы вырезать её, или Ctrl+C, чтобы скопировать, затем нажмите Ctrl+V на другой ячейке, чтобы вставить. Escape отменяет."
+
+msgid "Follow system"
+msgstr "Как в системе"
+
+msgctxt "Accessibility option"
+msgid "On"
+msgstr "Включено"
+
+msgctxt "Accessibility option"
+msgid "Off"
+msgstr "Выключено"

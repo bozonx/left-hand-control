@@ -2086,8 +2086,8 @@ msgstr ""
 msgid "Triggers"
 msgstr "트리거"
 
-msgid "Disable animations"
-msgstr "애니메이션 비활성화"
+msgid "Reduce animations"
+msgstr "애니메이션 줄이기"
 
 msgid "Add profile: "
 msgstr "프로필 추가:"
@@ -3547,3 +3547,14 @@ msgstr "이 목록은 Linux 데스크톱 공통의 freedesktop 표준인 설치�
 
 msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
 msgstr "편집기에서 셀을 선택하고 Ctrl+X를 눌러 잘라내거나 Ctrl+C를 눌러 복사한 다음, 다른 셀에서 Ctrl+V를 눌러 붙여넣습니다. Escape를 누르면 취소됩니다."
+
+msgid "Follow system"
+msgstr "시스템 설정 따르기"
+
+msgctxt "Accessibility option"
+msgid "On"
+msgstr "켜기"
+
+msgctxt "Accessibility option"
+msgid "Off"
+msgstr "끄기"

@@ -853,7 +853,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             31 => {
                 snapshot(&ui, "rules-advanced-dark-ru");
                 paths.save_user_profile("Broken overview", "invalid json", true).unwrap();
-                document.edit(slint_shell::document::View::Settings, |config| config.update_settings(|s| s.reduce_motion = !s.reduce_motion)).unwrap();
+                document.edit(slint_shell::document::View::Settings, |config| config.update_settings(|s| s.layer_hint = !s.layer_hint)).unwrap();
                 assert!(!ui.global::<SettingsEditor>().get_commands_loading(), "a hidden command panel must not read the library");
                 ui.global::<RulesEditor>().set_dialog(RuleDialog::None);
                 ui.invoke_navigate(Page::Settings, MenuKind::Emoji);

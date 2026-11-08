@@ -2230,8 +2230,8 @@ msgstr ""
 msgid "Triggers"
 msgstr "Kiváltók"
 
-msgid "Disable animations"
-msgstr "Animációk letiltása"
+msgid "Reduce animations"
+msgstr "Animációk csökkentése"
 
 msgid "Add profile: "
 msgstr "Profil hozzáadása:"
@@ -3837,3 +3837,14 @@ msgstr "A lista a telepített alkalmazások .desktop fájljaiból származik, am
 
 msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
 msgstr "A szerkesztőben jelöljön ki egy cellát, és nyomja meg a Ctrl+X-et a kivágáshoz vagy a Ctrl+C-t a másoláshoz, majd egy másik cellán a Ctrl+V-t a beillesztéshez. Az Escape megszakít."
+
+msgid "Follow system"
+msgstr "Rendszer szerint"
+
+msgctxt "Accessibility option"
+msgid "On"
+msgstr "Be"
+
+msgctxt "Accessibility option"
+msgid "Off"
+msgstr "Ki"

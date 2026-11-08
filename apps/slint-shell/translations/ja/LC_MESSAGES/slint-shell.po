@@ -2090,8 +2090,8 @@ msgstr ""
 msgid "Triggers"
 msgstr "トリガー"
 
-msgid "Disable animations"
-msgstr "アニメーションを無効にする"
+msgid "Reduce animations"
+msgstr "アニメーションを減らす"
 
 msgid "Add profile: "
 msgstr "プロファイルを追加します。"
@@ -3557,3 +3557,14 @@ msgstr "この一覧は、Linux デスクトップ共通の freedesktop 標準�
 
 msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
 msgstr "エディターでセルを選択し、Ctrl+X で切り取り、Ctrl+C でコピーしてから、別のセルで Ctrl+V を押して貼り付けます。Escape でキャンセルします。"
+
+msgid "Follow system"
+msgstr "システムに従う"
+
+msgctxt "Accessibility option"
+msgid "On"
+msgstr "オン"
+
+msgctxt "Accessibility option"
+msgid "Off"
+msgstr "オフ"

@@ -529,6 +529,31 @@ impl Appearance {
     }
 }
 
+/// An accessibility preference (high contrast, reduced motion); `System`
+/// follows the desktop setting.
+#[cfg_attr(test, derive(schemars::JsonSchema))]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AccessibilityChoice {
+    #[default]
+    System,
+    On,
+    Off,
+}
+
+impl AccessibilityChoice {
+    pub const ALL: [Self; 3] = [Self::System, Self::On, Self::Off];
+
+    /// Whether the option is in effect when the desktop reports `system`.
+    pub fn resolve(self, system: bool) -> bool {
+        match self {
+            Self::System => system,
+            Self::On => true,
+            Self::Off => false,
+        }
+    }
+}
+
 /// UI language preference; `Auto` follows the OS language.
 #[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -777,8 +802,8 @@ pub struct AppSettings {
     /// manually.
     pub start_mapper_on_launch: bool,
     pub appearance: Appearance,
-    pub high_contrast: bool,
-    pub reduce_motion: bool,
+    pub high_contrast: AccessibilityChoice,
+    pub reduce_motion: AccessibilityChoice,
     /// Show an on-screen display when the active profile changes.
     pub profile_osd: bool,
     /// While a layer is held, show its keys in an overlay above all windows.
@@ -829,8 +854,8 @@ impl Default for AppSettings {
             launch_on_startup: false,
             start_mapper_on_launch: false,
             appearance: Appearance::System,
-            high_contrast: false,
-            reduce_motion: false,
+            high_contrast: AccessibilityChoice::System,
+            reduce_motion: AccessibilityChoice::System,
             profile_osd: false,
             layer_hint: false,
             locale: LocalePreference::Auto,

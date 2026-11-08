@@ -2202,8 +2202,8 @@ msgstr ""
 msgid "Triggers"
 msgstr "Okidači"
 
-msgid "Disable animations"
-msgstr "Onemogući animacije"
+msgid "Reduce animations"
+msgstr "Smanji animacije"
 
 msgid "Add profile: "
 msgstr "Dodaj izgled:"
@@ -3788,3 +3788,14 @@ msgstr "Popis se čita iz .desktop datoteka instaliranih aplikacija, zajedničko
 
 msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
 msgstr "U uređivaču odaberite ćeliju i pritisnite Ctrl+X za izrezivanje ili Ctrl+C za kopiranje, zatim pritisnite Ctrl+V na drugoj ćeliji za lijepljenje. Escape poništava."
+
+msgid "Follow system"
+msgstr "Prema sustavu"
+
+msgctxt "Accessibility option"
+msgid "On"
+msgstr "Uključeno"
+
+msgctxt "Accessibility option"
+msgid "Off"
+msgstr "Isključeno"

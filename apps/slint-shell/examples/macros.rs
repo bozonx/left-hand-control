@@ -70,7 +70,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     assert_eq!(first(&document).steps.len(), 5);
     document.edit(slint_shell::document::View::Settings, |config| {
-        config.update_settings(|s| s.reduce_motion = !s.reduce_motion)
+        config.update_settings(|s| s.layer_hint = !s.layer_hint)
     })?;
     assert_eq!(
         editor.get_macros().row_data(0).unwrap().steps.row_count(),
