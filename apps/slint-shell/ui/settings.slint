@@ -106,7 +106,7 @@ export component SettingsWindow inherits Window {
     }
 
     public function navigate(page: Page, kind: MenuKind) {
-        if !AppState.in-development && (page == Page.menus || page == Page.macros) { return; }
+        if !AppState.in-development && page == Page.macros { return; }
         if !InlineEditors.flush() { return; }
         DragDrop.cancel();
         if page == Page.profiles { ProfileLibrary.refresh(); }
@@ -156,7 +156,7 @@ export component SettingsWindow inherits Window {
                     padding-left: Theme.space-xl; padding-right: Theme.space-xl; padding-top: Theme.space-m; padding-bottom: Theme.space-m; spacing: Theme.space-m;
                     HorizontalLayout {
                         accessible-role: tab-list; accessible-label: @tr("Settings"); spacing: Theme.space-m;
-                    VerticalLayout { alignment: center; profiles-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/library-big.svg"); text: @tr("Profiles"); selected: root.page != Page.settings; clicked => { root.navigate(Page.profiles, MenuKind.emoji); } } }
+                    VerticalLayout { alignment: center; profiles-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/library-big.svg"); text: @tr("Profiles"); selected: root.page == Page.profiles; clicked => { root.navigate(Page.profiles, MenuKind.emoji); } } }
                     VerticalLayout { alignment: center; settings-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/settings.svg"); text: @tr("Settings"); selected: root.page == Page.settings; clicked => { root.navigate(Page.settings, MenuKind.emoji); } } }
                     }
                     Rectangle {
@@ -235,8 +235,8 @@ export component SettingsWindow inherits Window {
                             spacing: Theme.space-2xs; alignment: start;
                             NavTab { icon: @image-url("icons/keyboard.svg"); text: @tr("Triggers") + (ProfileLibrary.rules-dirty ? " •" : ""); selected: root.page == Page.rules; tab-stop: root.page == Page.rules || root.page == Page.profiles || root.page == Page.settings; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
                             NavTab { icon: @image-url("icons/layers.svg"); text: @tr("Layers") + (ProfileLibrary.layers-dirty ? " •" : ""); selected: root.page == Page.keyboard || root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
-                            if AppState.in-development: NavTab { icon: @image-url("icons/smile.svg"); text: @tr("Emoji") + (ProfileLibrary.emoji-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
-                            if AppState.in-development: NavTab { icon: @image-url("icons/zap.svg"); text: @tr("Quick actions") + (ProfileLibrary.quick-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }
+                            NavTab { icon: @image-url("icons/smile.svg"); text: @tr("Emoji") + (ProfileLibrary.emoji-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
+                            NavTab { icon: @image-url("icons/zap.svg"); text: @tr("Quick actions") + (ProfileLibrary.quick-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }
                             if AppState.in-development: NavTab { icon: @image-url("icons/list-ordered.svg"); text: @tr("Macros") + ((ProfileLibrary.macros-dirty || MacroEditor.has-errors) ? " •" : ""); selected: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
                         }
                     }
@@ -270,9 +270,9 @@ export component SettingsWindow inherits Window {
                 if root.page == Page.profiles: LibraryPage { compact: root.compact-header; }
                 if root.page == Page.settings: SettingsPage {}
                 if root.page == Page.rules: RulesPage {}
-                if root.page == Page.layers || root.page == Page.keyboard: LayersPage { configure-triggers => { root.navigate(Page.rules, MenuKind.emoji); } }
+                if root.page == Page.layers || root.page == Page.keyboard: LayersPage { }
                 if AppState.in-development && root.page == Page.macros: MacrosPage {}
-                if AppState.in-development && root.page == Page.menus: MenusPage {}
+                if root.page == Page.menus: MenusPage {}
             }
         }
     }

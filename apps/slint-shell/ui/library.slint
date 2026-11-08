@@ -689,7 +689,7 @@ export component LibraryPage inherits PageLayout {
                                             MenuSurface {
                                                 MenuItem { text: @tr("Duplicate…"); has-icon: true; icon: @image-url("icons/copy.svg"); clicked => { more-menu.close(); ProfileLibrary.open-create(Profilesource.copy, index); } }
                                                 Divider {}
-                                                MenuItem { text: @tr("Delete…"); has-icon: true; icon: @image-url("icons/trash-2.svg"); danger: true; clicked => { more-menu.close(); ProfileLibrary.open-delete(index); } }
+                                                MenuItem { text: @tr("Delete…"); has-icon: true; icon: @image-url("icons/trash-2.svg"); clicked => { more-menu.close(); ProfileLibrary.open-delete(index); } }
                                             }
                                         }
                                     }
@@ -698,11 +698,11 @@ export component LibraryPage inherits PageLayout {
                             if !root.compact: VerticalLayout { width: 220px; spacing: Theme.space-m; alignment: start;
                                 visible: row.loaded && row.error.id == "";
                                 property <Profilesummary> summary: row.summary;
-                                if summary.rules + summary.layers + (AppState.in-development ? summary.emoji-pages + summary.action-pages + summary.macros + summary.commands : 0) == 0: Text { text: @tr("Empty profile"); color: Theme.muted; font-size: Theme.font-medium; }
+                                if summary.rules + summary.layers + summary.emoji-pages + summary.action-pages + (AppState.in-development ? summary.macros + summary.commands : 0) == 0: Text { text: @tr("Empty profile"); color: Theme.muted; font-size: Theme.font-medium; }
                                 if summary.rules > 0: Text { text: @tr("{n} rule" | "{n} rules" % summary.rules); color: Theme.muted; font-size: Theme.font-medium; }
                                 if summary.layers > 0: Text { text: @tr("{n} layer" | "{n} layers" % summary.layers); color: Theme.muted; font-size: Theme.font-medium; }
-                                if AppState.in-development && summary.emoji-pages > 0: Text { text: @tr("{n} emoji page" | "{n} emoji pages" % summary.emoji-pages); color: Theme.muted; font-size: Theme.font-medium; }
-                                if AppState.in-development && summary.action-pages > 0: Text { text: @tr("{n} action page" | "{n} action pages" % summary.action-pages); color: Theme.muted; font-size: Theme.font-medium; }
+                                if summary.emoji-pages > 0: Text { text: @tr("{n} emoji page" | "{n} emoji pages" % summary.emoji-pages); color: Theme.muted; font-size: Theme.font-medium; }
+                                if summary.action-pages > 0: Text { text: @tr("{n} action page" | "{n} action pages" % summary.action-pages); color: Theme.muted; font-size: Theme.font-medium; }
                                 if AppState.in-development && summary.macros > 0: Text { text: @tr("{n} macro" | "{n} macros" % summary.macros); color: Theme.muted; font-size: Theme.font-medium; }
                                 // Commands run shell scripts, so they stand out when reviewing a profile.
                                 if AppState.in-development && summary.commands > 0: HorizontalLayout { spacing: Theme.space-s; alignment: start;

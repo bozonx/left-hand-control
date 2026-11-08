@@ -96,6 +96,7 @@ pub(super) fn sidebar(
             let allowed = match category {
                 PickerCategory::Macros
                 | PickerCategory::Mouse
+                | PickerCategory::SystemActions
                 | PickerCategory::DesktopShortcuts
                 | PickerCategory::AppActions => options.development,
                 PickerCategory::Commands => options.development && options.commands_enabled,

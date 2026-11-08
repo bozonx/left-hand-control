@@ -148,6 +148,7 @@ schemas/                      # published JSON Schemas of config.json and profil
 - Keep diffs minimal and focused; no drive-by refactors.
 
 **Slint UI**
+- Follow [`docs/design/ui-principles.md`](docs/design/ui-principles.md) (e.g. delete buttons are never red).
 - Each settings page is one Slint global bound by one module in `src/pages/`. Shared widgets come from `controls.slint` (base in `controls-base.slint`, inline editors in `controls-inline.slint`); colours and metrics from `theme.slint`. System, light, dark and E-ink themes, plus high-contrast and reduce-motion, must all work.
 - All user-visible text goes through `@tr(...)`. Rust never formats UI text: it sends an `i18n::Msg` (`Message { id, arg, count }`) and `Locale.text()` in `ui/i18n.slint` translates it. Technical error details stay in logs.
 - Adding a message means updating `src/i18n.rs`, `ui/i18n.slint` and **every** PO catalog together (Russian by hand; other catalogs may start machine-translated). The build checks completeness, contexts, plural forms, placeholders and Rust message handlers. Text outside Slint is registered in `build-support/rust_messages.rs`.

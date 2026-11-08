@@ -3794,3 +3794,6 @@ msgstr "Yüklü uygulamaların eylemleri:"
 
 msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
 msgstr "Liste, yüklü uygulamaların masaüstü girdilerinden, yani Linux masaüstlerinin ortak freedesktop standardından okunur: uygulamalar burada yeni bir gizli pencere açmak gibi ek eylemler bildirir. Seçilen eylem, uygulama menüsünden çalıştırıldığı gibi çalıştırılır. Hangi eylemlerin bulunduğu yüklü uygulamalara bağlıdır."
+
+msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
+msgstr "Düzenleyicide bir hücreye odaklanın ve kesmek için Ctrl+X veya kopyalamak için Ctrl+C tuşuna basın, ardından yapıştırmak için başka bir hücrede Ctrl+V tuşuna basın. Escape iptal eder."

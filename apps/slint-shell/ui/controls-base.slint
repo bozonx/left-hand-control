@@ -248,7 +248,6 @@ export component IconButton inherits Rectangle {
     in property <string> tooltip: root.text == "" ? root.label : "";
     in property <bool> enabled: true;
     in property <bool> primary: false;
-    in property <bool> danger: false;
     in property <length> size: Theme.icon-button-size;
     callback clicked();
     min-width: root.size;
@@ -276,7 +275,7 @@ export component IconButton inherits Rectangle {
             Image {
                 width: root.text == "" ? root.size * 0.55 : 16px; height: self.width;
                 source: root.icon;
-                colorize: !root.enabled ? Theme.muted : root.primary ? Theme.on-accent : root.danger ? Theme.error : Theme.text;
+                colorize: !root.enabled ? Theme.muted : root.primary ? Theme.on-accent : Theme.text;
                 opacity: root.enabled ? 1.0 : 0.4;
             }
         }
@@ -407,7 +406,10 @@ export component TextField inherits Rectangle {
     if root.clearable && root.text != "" && root.enabled && !root.read-only: IconButton {
         label: root.clear-label;
         icon: @image-url("icons/x.svg");
-        x: parent.width - self.width - 3px;
+        // Absolute children default to the parent's width: keep the button square.
+        size: 24px;
+        width: self.size;
+        x: parent.width - self.width - 4px;
         y: (parent.height - self.height) / 2;
         clicked => { root.clear(); }
     }

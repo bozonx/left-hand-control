@@ -3163,3 +3163,6 @@ msgstr "Действия установленных приложений:"
 
 msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
 msgstr "Список берётся из файлов .desktop установленных приложений — общего для рабочих сред Linux стандарта freedesktop: приложения объявляют в них дополнительные действия, например открытие нового приватного окна. Выбранное действие запускается так же, как из меню приложения. Какие действия доступны, зависит от установленных приложений."
+
+msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
+msgstr "В редакторе выберите ячейку и нажмите Ctrl+X, чтобы вырезать её, или Ctrl+C, чтобы скопировать, затем нажмите Ctrl+V на другой ячейке, чтобы вставить. Escape отменяет."

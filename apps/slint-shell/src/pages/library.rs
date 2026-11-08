@@ -485,6 +485,8 @@ fn delete(
         .is_some_and(|(opened, _)| opened == &name)
     {
         state.borrow_mut().baseline = None;
+        // The editor of a deleted profile has nothing left to save.
+        ui.global::<ProfileLibrary>().set_editor_open(false);
     }
     ui.global::<ProfileLibrary>()
         .set_dialog(LibraryDialog::None);

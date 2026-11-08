@@ -3785,3 +3785,6 @@ msgstr "Radnje instaliranih aplikacija:"
 
 msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
 msgstr "Popis se čita iz .desktop datoteka instaliranih aplikacija, zajedničkog freedesktop standarda Linux okruženja: aplikacije u njima navode dodatne radnje, poput otvaranja novog privatnog prozora. Odabrana radnja pokreće se kao iz izbornika aplikacija. Dostupne radnje ovise o instaliranim aplikacijama."
+
+msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
+msgstr "U uređivaču odaberite ćeliju i pritisnite Ctrl+X za izrezivanje ili Ctrl+C za kopiranje, zatim pritisnite Ctrl+V na drugoj ćeliji za lijepljenje. Escape poništava."

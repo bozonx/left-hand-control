@@ -77,11 +77,8 @@ pub(super) fn development_only(value: &str) -> bool {
         | Action::Command(_)
         | Action::KdeShortcut(_)
         | Action::DesktopEntry(_) => true,
-        Action::App(id) => {
-            id.starts_with("gameMode")
-                || id.starts_with("showQuickMenu")
-                || id.starts_with("showEmojiMenu")
-        }
+        Action::System(_) => true,
+        Action::App(id) => id.starts_with("gameMode"),
         Action::Keys(_) | Action::Unknown(_) => category_for_value(value) == PickerCategory::Mouse,
         _ => false,
     }
@@ -295,7 +292,7 @@ pub(super) fn catalog(ui: &SettingsWindow, config: &ResolvedAppConfig) -> Vec<Pi
             Action::Command(_) if enabled && in_development => PickerCategory::Commands,
             Action::Command(_) => return None,
             Action::App(_) => PickerCategory::App,
-            Action::System(_) => PickerCategory::SystemActions,
+            Action::System(_) if in_development => PickerCategory::SystemActions,
             _ => return None,
         };
         let value = entry.action.format()?;

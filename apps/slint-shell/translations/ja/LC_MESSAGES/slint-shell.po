@@ -3554,3 +3554,6 @@ msgstr "インストール済みアプリケーションのアクション:"
 
 msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
 msgstr "この一覧は、Linux デスクトップ共通の freedesktop 標準であるインストール済みアプリケーションのデスクトップエントリから読み込まれます。アプリケーションはそこに新しいプライベートウィンドウを開くなどの追加アクションを宣言します。選択したアクションはアプリケーションメニューと同じ方法で実行されます。利用できるアクションはインストールされているアプリケーションによって異なります。"
+
+msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
+msgstr "エディターでセルを選択し、Ctrl+X で切り取り、Ctrl+C でコピーしてから、別のセルで Ctrl+V を押して貼り付けます。Escape でキャンセルします。"

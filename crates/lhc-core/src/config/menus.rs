@@ -356,6 +356,38 @@ pub fn move_cell(
     on_pages!(profile, kind, swap(from, to))
 }
 
+/// Copy a cell (page, cell) onto another, replacing the target. Copying an
+/// empty cell clears the target.
+pub fn copy_cell(
+    profile: &mut ProfilePreset,
+    kind: MenuKind,
+    from: (usize, usize),
+    to: (usize, usize),
+) {
+    fn copy<P: MenuPage>(pages: &mut [P], from: (usize, usize), to: (usize, usize))
+    where
+        P::Cell: Clone,
+    {
+        let (Some(source), Some(target)) =
+            (LEFT_HAND_HOTKEYS.get(from.1), LEFT_HAND_HOTKEYS.get(to.1))
+        else {
+            return;
+        };
+        if from == to || from.0 >= pages.len() || to.0 >= pages.len() {
+            return;
+        }
+        match pages[from.0].cells_mut().get(*source).cloned() {
+            Some(value) => {
+                pages[to.0].cells_mut().insert((*target).into(), value);
+            }
+            None => {
+                pages[to.0].cells_mut().remove(*target);
+            }
+        }
+    }
+    on_pages!(profile, kind, copy(from, to))
+}
+
 /// Whether emoji cell text counts as empty. Only ordinary whitespace does:
 /// a no-break space or other spacing characters are valid insertions.
 pub fn emoji_text_is_blank(text: &str) -> bool {
@@ -393,6 +425,23 @@ pub fn set_quick_action_name(profile: &mut ProfilePreset, page: usize, cell: usi
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn copy_cell_keeps_source() {
+        let mut profile = ProfilePreset::default();
+        profile.emoji_pages.push(EmojiPage::empty());
+        set_emoji(&mut profile, 0, 0, "😀");
+        copy_cell(&mut profile, MenuKind::Emoji, (0, 0), (0, 1));
+        let cells = &profile.emoji_pages[0].cells;
+        assert_eq!(
+            cells.get(LEFT_HAND_HOTKEYS[0]).map(String::as_str),
+            Some("😀")
+        );
+        assert_eq!(
+            cells.get(LEFT_HAND_HOTKEYS[1]).map(String::as_str),
+            Some("😀")
+        );
+    }
+
     use super::*;
     use crate::storage::StoragePaths;
 

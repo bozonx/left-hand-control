@@ -21,16 +21,23 @@ export global MenuEditor {
     changed kind => { self.keyboard-source-page = -1; self.keyboard-source-cell = -1; }
     in-out property <int> keyboard-source-page: -1;
     in-out property <int> keyboard-source-cell: -1;
-    /// Cut: remember a cell to move; Paste (`drop-cell`) moves it, Escape forgets it.
-    public function mark-cell(cell: int) {
+    /// The remembered cell is copied (Ctrl+C), not cut (Ctrl+X).
+    in-out property <bool> keyboard-copy;
+    /// Cut or copy: remember a cell; Paste (`drop-cell`) moves or copies it, Escape forgets it.
+    public function mark-cell(cell: int, copy: bool) {
         if cell < 0 { return; }
-        self.keyboard-source-page = self.selected-page; self.keyboard-source-cell = cell;
+        self.keyboard-source-page = self.selected-page; self.keyboard-source-cell = cell; self.keyboard-copy = copy;
     }
     public function cancel-mark() { self.keyboard-source-page = -1; self.keyboard-source-cell = -1; }
     public function drop-cell(cell: int) {
         if self.keyboard-source-cell < 0 || cell < 0 { return; }
-        self.move-cell(self.keyboard-source-page, self.keyboard-source-cell, cell);
-        self.cancel-mark();
+        if self.keyboard-copy {
+            // A copy can be pasted again into other cells.
+            self.copy-cell(self.keyboard-source-page, self.keyboard-source-cell, cell);
+        } else {
+            self.move-cell(self.keyboard-source-page, self.keyboard-source-cell, cell);
+            self.cancel-mark();
+        }
     }
     /// Whether the cell at `index` of the shown page is cut and waits for Paste.
     public pure function is-marked(index: int) -> bool {
@@ -66,6 +73,8 @@ export global MenuEditor {
     callback clear-cell();
     /// Move a cell (source page, source cell) onto a cell of the shown page.
     callback move-cell(int, int, int);
+    /// Copy a cell (source page, source cell) onto a cell of the shown page.
+    callback copy-cell(int, int, int);
     callback reorder-page(int, int);
 }
 
@@ -150,7 +159,8 @@ component HotkeyGrid inherits Rectangle {
             focus-changed-event => { if self.has-focus { root.keyboard-cell = index; } }
         key-pressed(event) => {
             if MenuEditor.cells.length == 0 { return reject; }
-            if event.modifiers.control && event.text.to-lowercase() == "x" { MenuEditor.mark-cell(index); return accept; }
+            if event.modifiers.control && event.text.to-lowercase() == "x" { MenuEditor.mark-cell(index, false); return accept; }
+            if event.modifiers.control && event.text.to-lowercase() == "c" { MenuEditor.mark-cell(index, true); return accept; }
             if event.modifiers.control && event.text.to-lowercase() == "v" { MenuEditor.drop-cell(index); return accept; }
             if event.text == Key.Escape && MenuEditor.keyboard-source-cell >= 0 { MenuEditor.cancel-mark(); return accept; }
             if event.text == Key.Delete || event.text == Key.Backspace { MenuEditor.select-cell(index); MenuEditor.clear-cell(); return accept; }
@@ -343,14 +353,6 @@ component PageEditor inherits HorizontalLayout {
     } }
 }
 
-/// Cut and Paste buttons above the grid; the grid has the same keys.
-component CutPasteBar inherits HorizontalLayout {
-    alignment: start;
-    spacing: Theme.space-s;
-    Button { text: @tr("Cut") + " (Ctrl+X)"; enabled: MenuEditor.selected-cell >= 0; clicked => { MenuEditor.mark-cell(MenuEditor.selected-cell); } }
-    Button { text: @tr("Paste") + " (Ctrl+V)"; enabled: MenuEditor.keyboard-source-cell >= 0 && MenuEditor.selected-cell >= 0; clicked => { MenuEditor.drop-cell(MenuEditor.selected-cell); } }
-}
-
 /// Save status of the menus; an edit conflict offers to drop the draft.
 component MenuStatus inherits VerticalLayout {
     spacing: Theme.space-xs;
@@ -456,7 +458,7 @@ export component EmojiPage inherits Rectangle {
         accessible-label: @tr("Emoji");
         PageHeader {
             title: @tr("Emoji & Symbols");
-            info: @tr("Opened by the lhc:showEmojiMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. \"// TODO: \").") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number.");
+            info: @tr("Opened by the lhc:showEmojiMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. \"// TODO: \").") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number.") + "\n\n" + @tr("In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels.");
         }
         HorizontalLayout {
             padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
@@ -470,7 +472,6 @@ export component EmojiPage inherits Rectangle {
                 horizontal-stretch: 1;
                 spacing: Theme.space-xl;
                 alignment: start;
-                CutPasteBar {}
                 HotkeyGrid { emoji: true; activate(index) => { MenuEditor.select-cell(index); } }
             }
             Card {
@@ -589,7 +590,7 @@ export component QuickActionsPage inherits Rectangle {
         accessible-label: @tr("Quick actions");
         PageHeader {
             title: @tr("Quick Actions");
-            info: @tr("Opened by the lhc:showQuickMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold any action: a shortcut, macro, shell command or system action.") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number.");
+            info: @tr("Opened by the lhc:showQuickMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold any action: a shortcut, macro, shell command or system action.") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number.") + "\n\n" + @tr("In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels.");
         }
         HorizontalLayout {
             padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
@@ -610,7 +611,6 @@ export component QuickActionsPage inherits Rectangle {
                                 horizontal-stretch: 1;
                                 spacing: Theme.space-xl;
                                 alignment: start;
-                                CutPasteBar {}
                                 HotkeyGrid {
                                     emoji: false;
                                     activate(index) => {

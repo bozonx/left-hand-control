@@ -3784,3 +3784,6 @@ msgstr "დაყენებული აპლიკაციების მ�
 
 msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
 msgstr "სია იკითხება დაყენებული აპლიკაციების .desktop ფაილებიდან — Linux-ის გარემოებისთვის საერთო freedesktop სტანდარტიდან: აპლიკაციები იქ აცხადებენ დამატებით მოქმედებებს, მაგალითად ახალი პირადი ფანჯრის გახსნას. არჩეული მოქმედება ეშვება ისე, როგორც აპლიკაციების მენიუდან. ხელმისაწვდომი მოქმედებები დამოკიდებულია დაყენებულ აპლიკაციებზე."
+
+msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
+msgstr "რედაქტორში აირჩიეთ უჯრა და დააჭირეთ Ctrl+X ამოსაჭრელად ან Ctrl+C დასაკოპირებლად, შემდეგ სხვა უჯრაზე დააჭირეთ Ctrl+V ჩასასმელად. Escape აუქმებს."

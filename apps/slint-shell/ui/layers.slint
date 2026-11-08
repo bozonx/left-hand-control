@@ -296,7 +296,6 @@ component HandGrid inherits VerticalLayout {
 }
 
 export component LayersPage inherits PageLayout {
-    callback configure-triggers();
     accessible-label: @tr("Layers");
     in-out property <LabelMode> label-mode <=> LayersEditor.label-mode;
     HorizontalLayout {
@@ -383,7 +382,7 @@ export component LayersPage inherits PageLayout {
                                 width: 200px;
                                 MenuSurface {
                                     MenuItem { has-icon: true; icon: @image-url("icons/copy.svg"); text: @tr("Duplicate"); clicked => { layer-menu.close(); LayersEditor.open-dialog(LayerDialog.duplicate); } }
-                                    MenuItem { has-icon: true; icon: @image-url("icons/trash-2.svg"); text: @tr("Delete layer"); danger: true; clicked => { layer-menu.close(); LayersEditor.open-dialog(LayerDialog.delete); } }
+                                    MenuItem { has-icon: true; icon: @image-url("icons/trash-2.svg"); text: @tr("Delete layer"); clicked => { layer-menu.close(); LayersEditor.open-dialog(LayerDialog.delete); } }
                                 }
                             }
                         }
@@ -392,22 +391,6 @@ export component LayersPage inherits PageLayout {
                         text: LayersEditor.description; placeholder: @tr("Add description"); label: @tr("Layer description");
                         text-color: Theme.muted;
                         saved(value) => { return LayersEditor.update-description(value); }
-                    }
-                    HorizontalLayout {
-                        spacing: Theme.space-m;
-                        if LayersEditor.triggers.length == 0: Text { horizontal-stretch: 1; min-width: 0px; text: @tr("Not activated by any trigger."); color: Theme.muted; wrap: word-wrap; vertical-alignment: center; }
-                        if LayersEditor.triggers.length > 0: HorizontalLayout {
-                            horizontal-stretch: 1; min-width: 0px; spacing: Theme.space-s; alignment: start;
-                            Text { text: @tr("Activated by:"); color: Theme.muted; vertical-alignment: center; }
-                            for trigger in LayersEditor.triggers: Rectangle {
-                                border-radius: Theme.radius-small; border-width: 1px; border-color: Theme.border; background: Theme.surface;
-                                accessible-role: text; accessible-label: trigger.code;
-                                HorizontalLayout { padding-left: Theme.space-s; padding-right: Theme.space-s;
-                                    ElidedText { text: root.label-mode == LabelMode.label ? trigger.label : trigger.code; color: Theme.text; font-size: Theme.font-caption; vertical-alignment: center; }
-                                }
-                            }
-                        }
-                        Button { text: @tr("Configure triggers"); horizontal-stretch: 0; clicked => { root.configure-triggers(); } }
                     }
 
                 }

@@ -18,6 +18,12 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - `sys:switchDesktopN` is renamed to `sys:switchToDesktopN`, matching `sys:switchToNextDesktop` and `sys:moveWindowToDesktopN`. Profiles that use the old name report an unknown system action; rebind those keys.
 - Keyboard navigation in settings: the emoji palette on the menus page is one Tab stop with arrows crossing category borders; arrow keys also reach the buttons in the hold menu on the triggers page; scrollbars are no longer Tab stops (PageUp/PageDown scroll while focus is inside a scrolled area); layer tabs show the same 2px focus ring as other controls; Left/Right in key grids keep working when keys in a row have different heights; the layer key grid always keeps a Tab stop after the keys change.
 - Layout with large text and long translations: button groups (theme, modes, device tabs) stack into a column when one row does not fit, checkbox labels and card titles wrap instead of running past the edge, and dialog content scrolls when it cannot fit the window. At the regular size nothing changes.
+- Emoji and Quick actions pages and rule conditions are available without development mode; system actions in the action picker now need development mode.
+- Emoji and Quick actions pages: the Cut and Paste buttons are removed; use Ctrl+X, Ctrl+C (new: copy a cell) and Ctrl+V on the grid.
+- Layers page: the "Activated by" line and the "Configure triggers" button are removed.
+- Delete buttons and menu items are no longer red. KDE shortcuts and application actions share a new icon in the action picker.
+- The Profiles button in the top bar is highlighted only on the profiles page. Deleting the open profile closes its editor.
+- The clear button of the typing test field is a small button inside the field instead of filling it; info icons next to the action field in the action picker are vertically centred.
 - Accessibility: text that is cut off with an ellipsis in lists, badges, menus and pickers now shows its full text in a tooltip (only when it is actually cut off).
 
 - Renamed "layout" to "profile" across configuration, library files, actions and UI:

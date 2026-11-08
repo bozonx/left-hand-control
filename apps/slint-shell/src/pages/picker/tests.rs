@@ -333,10 +333,11 @@ fn hidden_features_cannot_be_typed_outside_development_mode() {
         "cmd:x",
         "kde:kwin/Close",
         "Mouse6",
-        "lhc:showQuickMenu",
+        "sys:lockScreen",
     ] {
         assert!(!filter.admits(value), "{value}");
     }
+    assert!(filter.admits("lhc:showQuickMenu"));
     assert!(filter.admits("macro:kept"));
     assert!(filter.admits("builtin:copyLineText"));
     let development = Filter {

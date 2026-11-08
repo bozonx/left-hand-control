@@ -521,6 +521,29 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
         });
     });
     let c = change.clone();
+    e.on_copy_cell(move |source_page, source, target| {
+        c(false, &|e, profile| {
+            let (Ok(source_page), Ok(source), Ok(target), Ok(target_page)) = (
+                usize::try_from(source_page),
+                usize::try_from(source),
+                usize::try_from(target),
+                usize::try_from(e.get_selected_page()),
+            ) else {
+                return;
+            };
+            if target >= PAGE {
+                return;
+            }
+            menus::copy_cell(
+                profile,
+                core_kind(e.get_kind()),
+                (source_page, source),
+                (target_page, target),
+            );
+            e.set_selected_cell(target as i32);
+        });
+    });
+    let c = change.clone();
     e.on_rename_page(move || {
         c(true, &|e, profile| {
             if let Ok(page) = usize::try_from(e.get_selected_page()) {

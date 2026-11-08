@@ -249,7 +249,7 @@ export component PickerOverlay inherits DialogFrame {
             if ActionPicker.behavior == PickerBehavior.action && ActionPicker.value-category != PickerCategory.commands: HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m; vertical-stretch: 0;
                 HorizontalLayout { padding: 0px; spacing: Theme.space-xs; horizontal-stretch: 0;
                     Text { text: ActionPicker.key-only ? @tr("Trigger key:") : @tr("Action:"); color: Theme.muted; vertical-alignment: center; }
-                    InfoTip { text: ActionPicker.key-only && !ActionPicker.trigger-chords ? @tr("Choose one key. Some keys depend on keyboard hardware and may be ignored by the system.") : ActionPicker.key-only ? @tr("You can enter a key combination using + between keys. Some keys depend on keyboard hardware and may be ignored by the system.") : @tr("You can assign a key combination using + between keys. Availability of special keys depends on the keyboard and desktop environment."); }
+                    VerticalLayout { alignment: center; InfoTip { text: ActionPicker.key-only && !ActionPicker.trigger-chords ? @tr("Choose one key. Some keys depend on keyboard hardware and may be ignored by the system.") : ActionPicker.key-only ? @tr("You can enter a key combination using + between keys. Some keys depend on keyboard hardware and may be ignored by the system.") : @tr("You can assign a key combination using + between keys. Availability of special keys depends on the keyboard and desktop environment."); } }
                 }
                 if ActionPicker.value != "": CategoryIcon { category: ActionPicker.value-category; }
                 if ActionPicker.text-lines > 0: TextField { accessible-label: @tr("Action:"); read-only: true; text: "text:" + ActionPicker.text-preview; }
@@ -257,11 +257,11 @@ export component PickerOverlay inherits DialogFrame {
                 if ActionPicker.text-lines == 0: TextField { accessible-label: ActionPicker.key-only ? @tr("Trigger key:") : @tr("Action:"); accessible-description: Locale.text(ActionPicker.error); invalid: ActionPicker.error.id != ""; text <=> ActionPicker.value; enabled: !ActionPicker.capturing; edited => { ActionPicker.touched = true; ActionPicker.capture-status = CaptureStatus.none; ActionPicker.refresh(); } }
                 Button { text: ActionPicker.capturing ? @tr("Stop") : @tr("Capture"); clicked => { ActionPicker.begin-capture(); focus.focus(); } }
                 // Separate the layer option from the action input and capture.
-                if ActionPicker.layer-action && !ActionPicker.key-only: HorizontalLayout { padding: 0px; padding-left: Theme.space-m; spacing: Theme.space-m; horizontal-stretch: 0;
+                if ActionPicker.layer-action && !ActionPicker.key-only: HorizontalLayout { padding: 0px; padding-left: Theme.space-m; spacing: Theme.space-l; horizontal-stretch: 0;
                     Rectangle { width: 1px; background: Theme.border; }
                     HorizontalLayout { padding: 0px; spacing: Theme.space-xs;
                         CheckBox { text: @tr("Hold modifiers"); checked <=> ActionPicker.hold-modifiers; }
-                        InfoTip { text: @tr("Keep modifiers held until the layer is released") + ". " + @tr("For a combination such as Alt+Tab: Alt stays pressed while you press the key again and is released together with the layer key, so the window switcher stays open."); }
+                        VerticalLayout { alignment: center; InfoTip { text: @tr("Keep modifiers held until the layer is released") + ". " + @tr("For a combination such as Alt+Tab: Alt stays pressed while you press the key again and is released together with the layer key, so the window switcher stays open."); } }
                     }
                 }
             }

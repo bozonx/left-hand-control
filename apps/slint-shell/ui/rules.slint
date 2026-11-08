@@ -350,7 +350,7 @@ export component RulesPage inherits PageLayout {
                 rule-content := VerticalLayout { min-width: 0px; padding: Theme.space-l-plus; spacing: Theme.space-m-plus;
                     rule-header := HorizontalLayout { spacing: Theme.space-s;
                         rule-drag := DragHandle { group: DragGroups.rules; index: index; count: RulesEditor.rows.length; dropped(from, to) => { RulesEditor.move(from, to); } }
-                        if AppState.in-development || rule.has-conditions: ConditionsCell {
+                        ConditionsCell {
                             // Reserve conditions before allocating space to the optional summary.
                             min-width: min(self.preferred-width, max(0px, rule-header.width - rule-drag.preferred-width - rule-options.preferred-width - 4 * Theme.space-s - 12px));
                             opacity: rule.enabled ? 1 : Theme.disabled-rule-opacity;

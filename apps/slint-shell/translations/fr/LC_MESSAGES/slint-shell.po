@@ -3897,3 +3897,6 @@ msgstr "Actions des applications installées :"
 
 msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
 msgstr "La liste provient des fichiers desktop des applications installées, le standard freedesktop commun aux bureaux Linux : les applications y déclarent des actions supplémentaires, comme l’ouverture d’une nouvelle fenêtre privée. L’action choisie est lancée comme depuis le menu des applications. Les actions disponibles dépendent des applications installées."
+
+msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
+msgstr "Dans l’éditeur, sélectionnez une cellule et appuyez sur Ctrl+X pour la couper ou Ctrl+C pour la copier, puis appuyez sur Ctrl+V sur une autre cellule pour coller. Échap annule."

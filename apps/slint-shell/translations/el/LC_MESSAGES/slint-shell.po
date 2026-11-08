@@ -3895,3 +3895,6 @@ msgstr "Ενέργειες εγκατεστημένων εφαρμογών:"
 
 msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
 msgstr "Η λίστα διαβάζεται από τα αρχεία desktop των εγκατεστημένων εφαρμογών, το κοινό πρότυπο freedesktop των περιβαλλόντων Linux: οι εφαρμογές δηλώνουν εκεί επιπλέον ενέργειες, όπως το άνοιγμα νέου ιδιωτικού παραθύρου. Η επιλεγμένη ενέργεια εκτελείται όπως από το μενού εφαρμογών. Οι διαθέσιμες ενέργειες εξαρτώνται από τις εγκατεστημένες εφαρμογές."
+
+msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
+msgstr "Στον επεξεργαστή, επιλέξτε ένα κελί και πατήστε Ctrl+X για αποκοπή ή Ctrl+C για αντιγραφή και, στη συνέχεια, Ctrl+V σε άλλο κελί για επικόλληση. Το Escape ακυρώνει."

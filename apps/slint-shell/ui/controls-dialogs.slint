@@ -34,7 +34,6 @@ export component MenuItem inherits Rectangle {
     in property <bool> checked: false;
     in property <bool> highlighted: false;
     in property <bool> enabled: true;
-    in property <bool> danger: false;
     callback clicked();
     height: Theme.control-height-l;
     border-radius: Theme.radius-small;
@@ -52,9 +51,9 @@ export component MenuItem inherits Rectangle {
         opacity: root.enabled ? 1 : 0.45;
         if root.has-icon: VerticalLayout {
             alignment: center;
-            Image { width: 16px; height: 16px; source: root.icon; colorize: root.danger ? Theme.error : Theme.muted; }
+            Image { width: 16px; height: 16px; source: root.icon; colorize: Theme.muted; }
         }
-        ElidedText { min-width: 0px; horizontal-stretch: 1; text: root.text; color: root.danger ? Theme.error : Theme.text; vertical-alignment: center; }
+        ElidedText { min-width: 0px; horizontal-stretch: 1; text: root.text; color: Theme.text; vertical-alignment: center; }
         if root.checked: Text { text: "✓"; color: Theme.accent; vertical-alignment: center; }
     }
     forward-focus: focus;

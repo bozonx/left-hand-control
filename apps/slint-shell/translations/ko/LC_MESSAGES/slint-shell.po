@@ -3544,3 +3544,6 @@ msgstr "설치된 애플리케이션의 동작:"
 
 msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
 msgstr "이 목록은 Linux 데스크톱 공통의 freedesktop 표준인 설치된 애플리케이션의 데스크톱 항목에서 읽습니다. 애플리케이션은 새 비공개 창 열기와 같은 추가 동작을 여기에 선언합니다. 선택한 동작은 애플리케이션 메뉴에서와 같은 방식으로 실행됩니다. 사용 가능한 동작은 설치된 애플리케이션에 따라 다릅니다."
+
+msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
+msgstr "편집기에서 셀을 선택하고 Ctrl+X를 눌러 잘라내거나 Ctrl+C를 눌러 복사한 다음, 다른 셀에서 Ctrl+V를 눌러 붙여넣습니다. Escape를 누르면 취소됩니다."

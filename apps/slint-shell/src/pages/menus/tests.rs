@@ -164,7 +164,7 @@ fn cut_is_cancelled_after_reordering_removing_or_reloading_pages() {
         } else {
             e.invoke_set_action(0, "text:source".into(), "Source".into());
         }
-        e.invoke_mark_cell(0);
+        e.invoke_mark_cell(0, false);
         e.invoke_reorder_page(1, 0);
         assert_eq!(e.get_keyboard_source_cell(), -1);
         let saved = document.read().profile().clone();
@@ -172,13 +172,13 @@ fn cut_is_cancelled_after_reordering_removing_or_reloading_pages() {
         e.invoke_drop_cell(1);
         assert_eq!(document.read().profile(), &saved);
 
-        e.invoke_mark_cell(0);
+        e.invoke_mark_cell(0, false);
         e.invoke_remove_page();
         assert_eq!(e.get_keyboard_source_cell(), -1);
-        e.invoke_mark_cell(0);
+        e.invoke_mark_cell(0, false);
         e.invoke_refresh();
         assert_eq!(e.get_keyboard_source_cell(), -1);
-        e.invoke_mark_cell(0);
+        e.invoke_mark_cell(0, false);
         document
             .edit(View::Library, |config| {
                 config.update_profile(|profile| {

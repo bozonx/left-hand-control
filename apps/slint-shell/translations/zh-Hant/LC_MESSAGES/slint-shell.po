@@ -3476,3 +3476,6 @@ msgstr "已安裝應用程式的動作："
 
 msgid "The list is read from the desktop entries of installed applications, the freedesktop standard shared by Linux desktops: applications declare extra actions there, such as opening a new private window. The chosen action is run the way the application menu runs it. Which actions exist depends on the installed applications."
 msgstr "此清單讀取自已安裝應用程式的桌面項目，即 Linux 桌面通用的 freedesktop 標準：應用程式在其中宣告額外的動作，例如開啟新的私密視窗。所選動作的執行方式與從應用程式選單執行相同。可用的動作取決於已安裝的應用程式。"
+
+msgid "In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels."
+msgstr "在編輯器中，選取一個儲存格，按 Ctrl+X 剪下或按 Ctrl+C 複製，然後在另一個儲存格上按 Ctrl+V 貼上。按 Escape 取消。"
