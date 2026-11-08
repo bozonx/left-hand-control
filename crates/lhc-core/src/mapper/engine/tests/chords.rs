@@ -330,33 +330,195 @@ fn trigger_chord_flush_keeps_physical_order() {
 }
 
 #[test]
-fn chords_are_inactive_inside_a_layer() {
-    let cfg: MapperConfig = serde_json::from_value(serde_json::json!({"rules": [
-        {"key": "Space", "layerId": "nav", "tapAction": null},
-        {"key": "KeyJ+KeyK", "tapAction": "text:esc"},
-    ]}))
-    .unwrap();
-    let mut engine = Engine::new(&cfg);
-    let now = Instant::now();
-    let mut out = Vec::new();
-    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
-    assert_eq!(engine.layers.active, vec!["nav"]);
-    engine.handle_key_event(
-        KeyCode::KEY_J,
-        true,
-        now + Duration::from_millis(10),
-        &mut out,
-    );
-    // No combo delay inside the layer: J flows through at once.
-    assert_eq!(raw_keys(&out), vec![(KeyCode::KEY_J, true)]);
-    engine.handle_key_event(
-        KeyCode::KEY_K,
-        true,
-        now + Duration::from_millis(20),
-        &mut out,
-    );
+fn chords_are_transparent_through_a_layer_unless_it_maps_a_member() {
+    let cfg = |nav: serde_json::Value| -> MapperConfig {
+        serde_json::from_value(serde_json::json!({
+            "rules": [
+                {"key": "Space", "layerId": "nav", "tapAction": null},
+                {"key": "KeyJ+KeyK", "tapAction": "text:esc"},
+            ],
+            "layerKeymaps": {"nav": {"keys": nav}}
+        }))
+        .unwrap()
+    };
+    let press = |cfg: &MapperConfig| {
+        let mut engine = Engine::new(cfg);
+        let now = Instant::now();
+        let mut out = Vec::new();
+        engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
+        assert_eq!(engine.layers.active, vec!["nav"]);
+        for (ms, key, down) in [
+            (10, KeyCode::KEY_J, true),
+            (20, KeyCode::KEY_K, true),
+            (30, KeyCode::KEY_K, false),
+            (40, KeyCode::KEY_J, false),
+        ] {
+            engine.handle_key_event(key, down, now + Duration::from_millis(ms), &mut out);
+        }
+        out
+    };
+    // The layer leaves both members alone: the base chord works in it.
+    let out = press(&cfg(serde_json::json!({"KeyL": "ArrowRight"})));
+    assert!(fired_text(&out));
+    assert!(raw_keys(&out).is_empty());
+    // The layer maps J: no combo delay, J is the layer's key.
+    let out = press(&cfg(serde_json::json!({"KeyJ": "ArrowLeft"})));
     assert!(!fired_text(&out));
-    assert!(engine.chords.buffer.is_empty());
+    assert_eq!(transitions(&out)[0], (KeyCode::KEY_LEFT, true));
+}
+
+#[test]
+fn longer_chord_wins_whatever_the_press_order() {
+    let cfg = serde_json::json!({"rules": [
+        {"key": "KeyA+KeyS", "tapAction": "KeyX"},
+        {"key": "KeyA+KeyS+KeyD", "tapAction": "KeyY"},
+    ]});
+    for order in [
+        [KeyCode::KEY_A, KeyCode::KEY_S, KeyCode::KEY_D],
+        [KeyCode::KEY_A, KeyCode::KEY_D, KeyCode::KEY_S],
+        [KeyCode::KEY_D, KeyCode::KEY_S, KeyCode::KEY_A],
+    ] {
+        let trace = timeline(
+            cfg.clone(),
+            &[
+                (order[0], true, 0),
+                (order[1], true, 5),
+                (order[2], true, 10),
+                (order[0], false, 60),
+                (order[1], false, 61),
+                (order[2], false, 62),
+            ],
+            &[0, 5, 10, 60, 61, 62],
+        );
+        assert_eq!(trace, [TraceEvent::Tap(KeyCode::KEY_Y, vec![])], "{order:?}");
+    }
+}
+
+#[test]
+fn shorter_chord_fires_when_the_longer_one_does_not_complete() {
+    let cfg = serde_json::json!({"rules": [
+        {"key": "KeyA+KeyS", "tapAction": "KeyX"},
+        {"key": "KeyA+KeyS+KeyD", "tapAction": "KeyY"},
+    ]});
+    // Window expires while both are held.
+    let held = timeline(
+        cfg.clone(),
+        &[
+            (KeyCode::KEY_A, true, 0),
+            (KeyCode::KEY_S, true, 5),
+            (KeyCode::KEY_S, false, 100),
+            (KeyCode::KEY_A, false, 110),
+        ],
+        &[0, 5, 30, 60, 100, 110],
+    );
+    assert_eq!(held, [TraceEvent::Tap(KeyCode::KEY_X, vec![])]);
+    // A member released inside the window.
+    let released = timeline(
+        cfg.clone(),
+        &[
+            (KeyCode::KEY_A, true, 0),
+            (KeyCode::KEY_S, true, 5),
+            (KeyCode::KEY_S, false, 20),
+            (KeyCode::KEY_A, false, 25),
+        ],
+        &[0, 5, 20, 25],
+    );
+    assert_eq!(released, [TraceEvent::Tap(KeyCode::KEY_X, vec![])]);
+    // Another key rules the longer chord out; the shorter fires first.
+    let other = timeline(
+        cfg,
+        &[
+            (KeyCode::KEY_A, true, 0),
+            (KeyCode::KEY_S, true, 5),
+            (KeyCode::KEY_L, true, 15),
+            (KeyCode::KEY_S, false, 20),
+            (KeyCode::KEY_A, false, 21),
+            (KeyCode::KEY_L, false, 30),
+        ],
+        &[0, 5, 15, 20, 21, 30],
+    );
+    assert_eq!(
+        other,
+        [
+            TraceEvent::Tap(KeyCode::KEY_X, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_L, true),
+            TraceEvent::Raw(KeyCode::KEY_L, false),
+        ]
+    );
+}
+
+#[test]
+fn modifier_held_for_typing_does_not_start_a_modifier_chord() {
+    let cfg = serde_json::json!({"rules": [
+        {"key": "ShiftLeft+ControlRight", "longHoldAction": "Escape", "longHoldTimeoutMs": 1500}
+    ]});
+    let trace = timeline(
+        cfg,
+        &[
+            (KeyCode::KEY_LEFTSHIFT, true, 0),
+            (KeyCode::KEY_RIGHTCTRL, true, 100),
+            (KeyCode::KEY_X, true, 150),
+            (KeyCode::KEY_X, false, 180),
+            (KeyCode::KEY_RIGHTCTRL, false, 250),
+            (KeyCode::KEY_LEFTSHIFT, false, 300),
+        ],
+        &[0, 100, 150, 180, 250, 300],
+    );
+    assert_eq!(
+        trace,
+        [
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, true),
+            TraceEvent::Raw(KeyCode::KEY_RIGHTCTRL, true),
+            TraceEvent::Raw(KeyCode::KEY_X, true),
+            TraceEvent::Raw(KeyCode::KEY_X, false),
+            TraceEvent::Raw(KeyCode::KEY_RIGHTCTRL, false),
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, false),
+        ]
+    );
+}
+
+#[test]
+fn modifier_chord_interrupted_by_a_key_becomes_the_shortcut() {
+    let cfg = serde_json::json!({"rules": [
+        {"key": "ShiftLeft+ControlRight", "longHoldAction": "Escape", "longHoldTimeoutMs": 1500}
+    ]});
+    // Pressed together, then X: Ctrl+Shift+X, not a chord tap and a bare x.
+    let trace = timeline(
+        cfg,
+        &[
+            (KeyCode::KEY_LEFTSHIFT, true, 0),
+            (KeyCode::KEY_RIGHTCTRL, true, 10),
+            (KeyCode::KEY_X, true, 150),
+            (KeyCode::KEY_X, false, 180),
+            (KeyCode::KEY_RIGHTCTRL, false, 250),
+            (KeyCode::KEY_LEFTSHIFT, false, 300),
+        ],
+        &[0, 10, 150, 180, 250, 300],
+    );
+    let keys: Vec<(KeyCode, bool)> = trace
+        .iter()
+        .filter_map(|event| match event {
+            TraceEvent::Raw(key, down) => Some((*key, *down)),
+            TraceEvent::Press(key, mods) if mods.is_empty() => Some((*key, true)),
+            _ => None,
+        })
+        .collect();
+    let x = keys
+        .iter()
+        .position(|event| *event == (KeyCode::KEY_X, true))
+        .unwrap();
+    let held = |key: KeyCode| {
+        keys[..x]
+            .iter()
+            .rfind(|(k, _)| *k == key)
+            .is_some_and(|(_, down)| *down)
+    };
+    assert!(held(KeyCode::KEY_LEFTSHIFT) && held(KeyCode::KEY_RIGHTCTRL), "{trace:?}");
+    assert!(!trace.iter().any(|event| matches!(event, TraceEvent::Tap(..))), "{trace:?}");
+    // Everything pressed is released.
+    for key in [KeyCode::KEY_LEFTSHIFT, KeyCode::KEY_RIGHTCTRL, KeyCode::KEY_X] {
+        assert_eq!(keys.iter().rev().find(|(k, _)| *k == key), Some(&(key, false)));
+    }
 }
 
 #[test]

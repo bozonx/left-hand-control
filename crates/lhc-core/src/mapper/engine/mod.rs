@@ -346,13 +346,19 @@ impl Engine {
                 // (b) Layer triggers activate so that layer keymaps are
                 //     consulted when should_handle_mouse_button runs below.
                 //
-                // A mouse click never buffers (permissive hold applies to keys
-                // only), so any deferred presses are flushed here too, before
+                // Only decisions the click needs are committed: a held
+                // modifier or keystroke, or a layer that maps this button. A
+                // layer key the click does not use keeps deciding, so a letter
+                // with a layer still types when released. A mouse click never
+                // buffers (permissive hold applies to keys only), so presses
+                // deferred behind committed keys are flushed here too, before
                 // the click, preserving press order.
                 self.flush_waiting_second(now, out);
                 self.resolve_long_hold_decisions(key, now, out);
-                self.commit_waiting_decisions(out);
-                self.drain_decision_buffer(out);
+                self.commit_decisions_for_click(key, out);
+                if self.deciding_key().is_none() {
+                    self.drain_decision_buffer(out);
+                }
             }
             if !self.should_handle_mouse_button(key, down) {
                 out.push(EngineOutput::KeyRaw { key, down });
@@ -450,25 +456,18 @@ impl Engine {
             self.layers.presses += 1;
             self.layers.used = true;
         }
-        if self.layers.active.is_empty() {
-            if let Some(rule) = self.active_rule_for_key(key) {
-                self.start_rule(key, rule, now, out);
-                return;
-            }
-            if self.layout.rules.contains_key(&key) {
-                out.push(EngineOutput::KeyRaw { key, down: true });
-                self.virt
-                    .emitted
-                    .insert(key, Keystroke { mods: vec![], key });
-                return;
-            }
+        // An active layer's own entry wins; a key the held layers leave out
+        // is transparent and keeps its base-level rule (including another
+        // layer's trigger, which then stacks on top).
+        let mapped = self.lookup_mapping(key);
+        if mapped.is_none()
+            && let Some(rule) = self.active_rule_for_key(key)
+        {
+            self.start_rule(key, rule, now, out);
+            return;
         }
 
-        // When at least one layer is active, rule keys must behave like
-        // normal keys inside that layer. Only the active-layer keymaps
-        // participate in resolution.
         {
-            let mapped = self.lookup_mapping(key);
             match mapped {
                 Some((layer_id, def)) => match def {
                     CompiledAction::Stroke(ks)
@@ -752,13 +751,27 @@ impl Engine {
     }
 
     fn active_rule_for_key(&self, key: KeyCode) -> Option<RuleEntry> {
+        let mut ctx = None;
         self.layout.rules.get(&key).and_then(|rules| {
-            let ctx = (self.context)();
             rules
                 .iter()
-                .find(|rule| rule_passes_apps(rule, &ctx) && rule_passes_conditions(rule, &ctx))
+                .find(|rule| {
+                    !rule_has_conditions(rule) || {
+                        let ctx = ctx.get_or_insert_with(|| (self.context)());
+                        rule_passes_apps(rule, ctx) && rule_passes_conditions(rule, ctx)
+                    }
+                })
                 .cloned()
         })
+    }
+
+    /// Whether the rule's conditions hold now. The system state is read only
+    /// for a rule that has conditions: chords check this on every press.
+    fn rule_allowed(&self, rule: &RuleEntry) -> bool {
+        !rule_has_conditions(rule) || {
+            let ctx = (self.context)();
+            rule_passes_apps(rule, &ctx) && rule_passes_conditions(rule, &ctx)
+        }
     }
 
     fn should_handle_mouse_button(&self, key: KeyCode, down: bool) -> bool {
@@ -788,9 +801,17 @@ impl Engine {
             Some(CompiledAction::Stroke(ks)) => {
                 if self.virt.is_held(ks.key) {
                     // A held modifier stays held: releasing it would break
-                    // the hold. A held ordinary key is lifted and tapped
-                    // again, so the tap is not lost.
+                    // the hold; only the stroke's other modifiers are tapped.
+                    // A held ordinary key is lifted and tapped again, so the
+                    // tap is not lost.
                     if is_modifier_key(ks.key) {
+                        let mods = self.virt.mods_not_held(&ks.mods);
+                        out.extend(mods.iter().map(|&key| EngineOutput::KeyRaw { key, down: true }));
+                        out.extend(
+                            mods.iter()
+                                .rev()
+                                .map(|&key| EngineOutput::KeyRaw { key, down: false }),
+                        );
                         return;
                     }
                     out.push(EngineOutput::KeyRaw {
@@ -983,6 +1004,17 @@ fn rule_passes_apps(rule: &RuleEntry, ctx: &AutoSwitchContext) -> bool {
     true
 }
 
+/// True when the rule has a window, game-mode or keyboard-layout condition.
+fn rule_has_conditions(rule: &RuleEntry) -> bool {
+    let non_empty = |list: &Option<Vec<String>>| list.as_ref().is_some_and(|l| !l.is_empty());
+    rule.condition_game_mode
+        .as_ref()
+        .is_some_and(|m| *m != GameModeCondition::Ignore)
+        || non_empty(&rule.condition_keyboard_layouts)
+        || non_empty(&rule.condition_window_patterns)
+        || non_empty(&rule.condition_excluded_window_patterns)
+}
+
 fn rule_passes_conditions(rule: &RuleEntry, ctx: &AutoSwitchContext) -> bool {
     let has_gm_cond = rule
         .condition_game_mode
@@ -1011,10 +1043,15 @@ fn rule_passes_conditions(rule: &RuleEntry, ctx: &AutoSwitchContext) -> bool {
         let Some(current) = &ctx.system_layout else {
             return false;
         };
+        // Same comparison as layout auto-switch conditions.
         if !rule
             .condition_keyboard_layouts
             .as_ref()
-            .is_some_and(|layouts| layouts.contains(current))
+            .is_some_and(|layouts| {
+                layouts
+                    .iter()
+                    .any(|layout| layout.trim().eq_ignore_ascii_case(current.trim()))
+            })
         {
             return false;
         }

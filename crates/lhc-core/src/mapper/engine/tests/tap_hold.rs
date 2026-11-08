@@ -1979,3 +1979,57 @@ fn hold_on_other_key_press_defers_a_modifier_press_instead_of_committing() {
         ]
     );
 }
+
+#[test]
+fn typing_cancels_a_long_hold_without_a_tap_action() {
+    let cfg = serde_json::json!({"rules": [
+        {"key": "KeyQ", "tapAction": null, "longHoldAction": "Escape", "longHoldTimeoutMs": 500}
+    ]});
+    let typed = timeline(
+        cfg.clone(),
+        &[
+            (KeyCode::KEY_Q, true, 0),
+            (KeyCode::KEY_A, true, 50),
+            (KeyCode::KEY_A, false, 80),
+            (KeyCode::KEY_Q, false, 900),
+        ],
+        &[0, 50, 80, 500, 900],
+    );
+    assert_eq!(
+        typed,
+        [
+            TraceEvent::Raw(KeyCode::KEY_A, true),
+            TraceEvent::Raw(KeyCode::KEY_A, false)
+        ]
+    );
+    let held = timeline(
+        cfg,
+        &[(KeyCode::KEY_Q, true, 0), (KeyCode::KEY_Q, false, 900)],
+        &[0, 500, 900],
+    );
+    assert_eq!(held, [TraceEvent::Tap(KeyCode::KEY_ESC, vec![])]);
+}
+
+#[test]
+fn keyboard_layout_condition_ignores_case_and_spaces() {
+    let mut rule = rule_with_apps(None, None);
+    rule.condition_keyboard_layouts = Some(vec![" US ".into()]);
+    let ctx = AutoSwitchContext {
+        system_layout: Some("us".into()),
+        ..Default::default()
+    };
+    assert!(rule_passes_conditions(&rule, &ctx));
+}
+
+#[test]
+fn tap_of_a_held_modifier_still_taps_its_other_modifiers() {
+    let mut engine = Engine::new(&empty_cfg());
+    let mut out = Vec::new();
+    engine.handle_key_event(KeyCode::KEY_LEFTSHIFT, true, Instant::now(), &mut out);
+    out.clear();
+    engine.execute_remote("Ctrl+ShiftLeft", &mut out);
+    assert_eq!(
+        raw_keys(&out),
+        [(KeyCode::KEY_LEFTCTRL, true), (KeyCode::KEY_LEFTCTRL, false)]
+    );
+}

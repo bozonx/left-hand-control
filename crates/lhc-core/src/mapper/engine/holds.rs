@@ -20,6 +20,30 @@ impl Engine {
         }
     }
 
+    /// Commit the undecided rules a mouse click needs: a held modifier or
+    /// keystroke (Shift+click), or a layer that maps `button`.
+    pub(super) fn commit_decisions_for_click(&mut self, button: KeyCode, out: &mut Vec<EngineOutput>) {
+        let keys: Vec<KeyCode> = self
+            .pending
+            .iter()
+            .filter(|(_, p)| {
+                p.rule.long_hold.is_none()
+                    && matches!(p.phase, RulePhase::WaitingDecision { .. })
+                    && (!matches!(p.rule.hold, HoldOutputMode::Swallow)
+                        || p.rule.layer_id.as_ref().is_some_and(|layer| {
+                            self.layout
+                                .layer_maps
+                                .get(layer)
+                                .is_some_and(|keys| keys.contains_key(&button))
+                        }))
+            })
+            .map(|(k, _)| *k)
+            .collect();
+        for k in keys {
+            self.commit_hold(k, out);
+        }
+    }
+
     /// Resolve every undecided long-hold rule when another key is pressed.
     /// Such rules do not buffer other keys, so waiting for the release
     /// would let the new key overtake the rule key's tap ("b " instead of
@@ -53,10 +77,40 @@ impl Engine {
                 continue;
             }
             self.long_holds.remove(&key);
+            if self.chords.active.contains_key(&key)
+                && self
+                    .pending
+                    .get(&key)
+                    .is_some_and(|p| matches!(p.rule.tap, TapMode::NativeChord(_)))
+            {
+                self.dissolve_chord(key, out);
+                continue;
+            }
             if let Some(pending) = self.pending.remove(&key) {
                 self.fire_tap(key, &pending.rule.tap, now, out);
                 // The tap is done; the physical release must emit nothing.
                 self.virt.oneshot.insert(key);
+            }
+        }
+        // A long hold whose key went straight to its (swallowed) hold — no
+        // tap to decide — is cancelled by typing the same way, unless due.
+        let armed: Vec<KeyCode> = self
+            .long_holds
+            .keys()
+            .copied()
+            .filter(|k| {
+                *k != pressed
+                    && self
+                        .pending
+                        .get(k)
+                        .is_some_and(|p| matches!(p.phase, RulePhase::HoldActive))
+            })
+            .collect();
+        for key in armed {
+            if let Some((deadline, action)) = self.long_holds.remove(&key)
+                && now >= deadline
+            {
+                self.fire_action(Some(&action), self.layout.default_mod_delay, now, out);
             }
         }
         // Modifier releases deferred behind the resolved taps.

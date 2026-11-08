@@ -350,3 +350,29 @@ fn explicit_null_mouse_key_in_layer_keymap_swallows_key() {
 
     assert!(out.is_empty());
 }
+
+#[test]
+fn click_the_layer_does_not_map_leaves_a_layer_key_typing() {
+    let trace = timeline(
+        serde_json::json!({
+            "rules": [{"key": "KeyF", "layerId": "nav", "holdTimeoutMs": 200}],
+            "layerKeymaps": {"nav": {"keys": {"KeyJ": "ArrowLeft"}}}
+        }),
+        &[
+            (KeyCode::KEY_F, true, 0),
+            (KeyCode::BTN_LEFT, true, 50),
+            (KeyCode::BTN_LEFT, false, 60),
+            (KeyCode::KEY_F, false, 100),
+        ],
+        &[0, 50, 60, 100],
+    );
+    // The ungrabbed click passes through untouched; F is still a tap.
+    assert_eq!(
+        trace,
+        [
+            TraceEvent::Raw(KeyCode::BTN_LEFT, true),
+            TraceEvent::Raw(KeyCode::BTN_LEFT, false),
+            TraceEvent::Tap(KeyCode::KEY_F, vec![])
+        ]
+    );
+}

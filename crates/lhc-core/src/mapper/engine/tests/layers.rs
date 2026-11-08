@@ -706,3 +706,65 @@ fn reconfigure_preserves_held_keys_layers_and_original_release_mapping() {
         })
     ));
 }
+
+#[test]
+fn key_left_out_of_a_layer_keeps_its_base_rule() {
+    let trace = timeline(
+        serde_json::json!({
+            "rules": [
+                {"key": "Space", "layerId": "nav", "holdTimeoutMs": 200},
+                {"key": "CapsLock", "tapAction": "Escape", "holdAction": "ControlLeft"}
+            ],
+            "layerKeymaps": {"nav": {"keys": {"KeyJ": "ArrowLeft"}}}
+        }),
+        &[
+            (KeyCode::KEY_SPACE, true, 0),
+            (KeyCode::KEY_CAPSLOCK, true, 300),
+            (KeyCode::KEY_CAPSLOCK, false, 330),
+            (KeyCode::KEY_SPACE, false, 400),
+        ],
+        &[250, 300, 330, 400],
+    );
+    assert_eq!(trace, [TraceEvent::Tap(KeyCode::KEY_ESC, vec![])]);
+}
+
+#[test]
+fn layer_trigger_left_out_of_a_held_layer_stacks_its_layer() {
+    let trace = timeline(
+        serde_json::json!({
+            "rules": [
+                {"key": "Space", "layerId": "nav", "holdTimeoutMs": 200},
+                {"key": "Tab", "layerId": "sym", "holdTimeoutMs": 200}
+            ],
+            "layerKeymaps": {
+                "nav": {"keys": {"KeyJ": "ArrowLeft", "KeyK": "ArrowDown"}},
+                "sym": {"keys": {"KeyJ": "KeyX"}}
+            }
+        }),
+        &[
+            (KeyCode::KEY_SPACE, true, 0),
+            (KeyCode::KEY_TAB, true, 300),
+            (KeyCode::KEY_J, true, 600),
+            (KeyCode::KEY_J, false, 620),
+            // `sym` leaves K to the layer below it.
+            (KeyCode::KEY_K, true, 640),
+            (KeyCode::KEY_K, false, 660),
+            (KeyCode::KEY_TAB, false, 700),
+            (KeyCode::KEY_J, true, 720),
+            (KeyCode::KEY_J, false, 740),
+            (KeyCode::KEY_SPACE, false, 800),
+        ],
+        &[250, 300, 550, 600, 620, 640, 660, 700, 720, 740, 800],
+    );
+    assert_eq!(
+        trace,
+        [
+            TraceEvent::Press(KeyCode::KEY_X, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_X, false),
+            TraceEvent::Press(KeyCode::KEY_DOWN, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_DOWN, false),
+            TraceEvent::Press(KeyCode::KEY_LEFT, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_LEFT, false),
+        ]
+    );
+}

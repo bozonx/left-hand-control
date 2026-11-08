@@ -68,6 +68,14 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Mapper: a key that a held layer leaves out keeps its base-layer rule, as documented (CapsLock with tap Escape inside a layer no longer toggles Caps Lock). A layer trigger pressed inside another layer now activates its layer on top; keys it leaves out fall through to the layer below.
+- Mapper: chords also work inside a layer that maps none of their keys.
+- Mapper: a longer chord fires whatever the press order; a shorter chord it contains waits for the rest within the combo window (A+S no longer pre-empts A+S+D pressed in that order).
+- Mapper: all keys of a chord, modifiers included, must be pressed within the combo window. A modifier held for typing no longer starts a modifier chord, and a modifier chord interrupted by another key gives the plain shortcut (Shift, ControlRight, X is Ctrl+Shift+X with a `ShiftLeft+ControlRight` chord defined).
+- Mapper: typing another key cancels a long hold on a key without a tap action, as it does for keys with one.
+- Mapper: a mouse click commits only the tap-hold decisions it needs (a held modifier or keystroke, a layer that maps the button); a layer key the click does not use still types when released.
+- Mapper: rule conditions on the keyboard layout match regardless of case and surrounding spaces, as in automatic layouts.
+- Mapper: a tap action of an already held modifier with extra modifiers (`Ctrl+ShiftLeft` while Shift is held) still taps the extra ones.
 - Mapper: a key with a long-hold action keeps the modifier that was held when it was pressed (Shift, Q, release Shift, release Q types "Q", not "q"); a mouse click resolves such a key before the click.
 - Mapper: a tap action whose key is already held (tap `KeyA` while A is down) is no longer dropped.
 - Mapper: with "Hold on other key press", pressing a modifier no longer activates the hold: Space, Shift, release Space, A types a space and "A".

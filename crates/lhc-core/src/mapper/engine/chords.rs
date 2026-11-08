@@ -38,37 +38,113 @@ impl Engine {
         if self.chords.consumed.contains(&key) {
             return true;
         }
-        let matching = self
-            .layout
+        let buffered = self.buffered_chord_presses();
+        let Some((keys, rule)) = self.complete_chord(Some(key), now, &buffered) else {
+            return false;
+        };
+        // A longer chord that contains this one may still complete: wait for
+        // it inside the combo window instead of firing the shorter one now
+        // (A+S must not pre-empt A+S+D pressed in that order).
+        if self.longer_chord_possible(&keys, now) {
+            self.chords
+                .buffer
+                .push(BufferedEvent { key, down, at: now });
+            return true;
+        }
+        self.fire_chord(keys, rule, now, out);
+        true
+    }
+
+    /// Keys whose presses wait in the combo buffer.
+    fn buffered_chord_presses(&self) -> HashSet<KeyCode> {
+        self.chords
+            .buffer
+            .iter()
+            .filter(|ev| ev.down)
+            .map(|ev| ev.key)
+            .collect()
+    }
+
+    /// The chord whose members are all down and pressed together at `at`:
+    /// `key` (the press being handled), buffered presses, or held keys that
+    /// produced no output and were pressed within the combo window.
+    fn complete_chord(
+        &self,
+        key: Option<KeyCode>,
+        at: Instant,
+        buffered: &HashSet<KeyCode>,
+    ) -> Option<(Vec<KeyCode>, RuleEntry)> {
+        self.layout
             .chord_rules
             .iter()
             .rev()
             .filter(|(keys, rule)| {
-                keys.contains(&key)
+                key.is_none_or(|key| keys.contains(&key))
                     && self.chord_eligible(keys, rule)
                     && keys.iter().all(|member| {
-                        self.physical_down.contains(member)
-                            && (*member == key
-                                || (!self.chord_member_leaked(*member)
-                                    && !self.chord_member_late(*member, now)))
+                        Some(*member) == key
+                            || buffered.contains(member)
+                            || self.chord_member_ready(*member, at)
                     })
             })
             .max_by_key(|(keys, _)| keys.len())
-            .cloned();
-        let Some((keys, rule)) = matching else {
+            .cloned()
+    }
+
+    /// A held key that may still join a chord completed at `at`: pressed by
+    /// then, within the combo window, and it printed nothing the chord cannot
+    /// take back.
+    fn chord_member_ready(&self, member: KeyCode, at: Instant) -> bool {
+        self.physical_down.contains(&member)
+            && self.press_at.get(&member).is_some_and(|pressed| *pressed <= at)
+            && !self.chord_member_leaked(member)
+            && !self.chord_member_late(member, at)
+    }
+
+    /// True when an eligible chord longer than `keys` contains all of them
+    /// and its missing members can still arrive inside the combo window.
+    fn longer_chord_possible(&self, keys: &[KeyCode], now: Instant) -> bool {
+        if self
+            .trigger_chord_deadline()
+            .is_some_and(|deadline| now >= deadline)
+        {
             return false;
-        };
-        // Buffered member presses never reached the app — drop them. Anything
-        // else in the buffer (releases of unrelated keys) happened before
-        // this press, so it replays first.
-        for ev in std::mem::take(&mut self.chords.buffer) {
-            if !keys.contains(&ev.key) {
-                self.handle_event(ev.key, ev.down, ev.at, out);
-            }
+        }
+        let buffered = self.buffered_chord_presses();
+        self.layout.chord_rules.iter().any(|(longer, rule)| {
+            longer.len() > keys.len()
+                && keys.iter().all(|key| longer.contains(key))
+                && self.chord_eligible(longer, rule)
+                && longer.iter().all(|member| {
+                    keys.contains(member)
+                        || buffered.contains(member)
+                        || !self.physical_down.contains(member)
+                        || self.chord_member_ready(*member, now)
+                })
+        })
+    }
+
+    /// Claim the members of a completed chord and start its rule. `at` is
+    /// when the chord completed.
+    fn fire_chord(
+        &mut self,
+        keys: Vec<KeyCode>,
+        rule: RuleEntry,
+        at: Instant,
+        out: &mut Vec<EngineOutput>,
+    ) {
+        // Buffered member presses never reached the app — drop them. Other
+        // events replay around the chord in their physical order.
+        let (before, after): (Vec<_>, Vec<_>) = std::mem::take(&mut self.chords.buffer)
+            .into_iter()
+            .filter(|ev| !keys.contains(&ev.key))
+            .partition(|ev| ev.at <= at);
+        for ev in before {
+            self.handle_event(ev.key, ev.down, ev.at, out);
         }
         // A completed chord is a different trigger from any member's
         // pending single tap, even inside that member's double-tap window.
-        self.flush_waiting_second(now, out);
+        self.flush_waiting_second(at, out);
         let owner = keys[0];
         let mut suppressed = Vec::new();
         self.decision_buffer
@@ -90,16 +166,42 @@ impl Engine {
         }
         self.chords.active.insert(owner, keys);
         self.chords.suppressed.insert(owner, suppressed);
-        self.start_rule(owner, rule, now, out);
+        self.start_rule(owner, rule, at, out);
         self.drain_decision_buffer(out);
-        true
+        for ev in after {
+            self.handle_event(ev.key, ev.down, ev.at, out);
+        }
     }
 
-    /// Chords, like single-key rules, act only on the base level (no layer
-    /// active), never reuse a key owned by an active chord and obey the
-    /// rule's conditions.
+    /// End a native-tap chord interrupted by another key before it did
+    /// anything: its members were simply held together (Shift+ControlRight
+    /// for Ctrl+Shift+X), so they are pressed again as themselves, in press
+    /// order, and later released through the consumed-member path.
+    pub(super) fn dissolve_chord(&mut self, owner: KeyCode, out: &mut Vec<EngineOutput>) {
+        self.pending.remove(&owner);
+        self.long_holds.remove(&owner);
+        let mut members = self.chords.active.remove(&owner).unwrap_or_default();
+        let suppressed = self.chords.suppressed.remove(&owner).unwrap_or_default();
+        members.retain(|member| self.physical_down.contains(member));
+        members.sort_by_key(|member| self.press_at.get(member).copied());
+        for member in members {
+            let stroke = suppressed
+                .iter()
+                .find(|(key, _)| *key == member)
+                .map(|(_, stroke)| stroke.clone())
+                .unwrap_or(Keystroke {
+                    mods: Vec::new(),
+                    key: member,
+                });
+            self.emit_stroke_press(member, stroke, out);
+        }
+    }
+
+    /// Chords, like single-key rules, are transparent through held layers:
+    /// they act unless an active layer maps one of their members. They never
+    /// reuse a key owned by an active chord and obey the rule's conditions.
     pub(super) fn chord_eligible(&self, keys: &[KeyCode], rule: &RuleEntry) -> bool {
-        self.layers.active.is_empty()
+        keys.iter().all(|member| self.lookup_mapping(*member).is_none())
             && !keys
                 .iter()
                 .any(|member| self.chords.consumed.contains(member))
@@ -114,10 +216,7 @@ impl Engine {
             // decision owns the following presses (a nested chord makes it a
             // hold), and firing the chord now would overtake its tap.
             && self.deciding_key().is_none_or(|key| keys.contains(&key))
-            && {
-                let ctx = (self.context)();
-                rule_passes_apps(rule, &ctx) && rule_passes_conditions(rule, &ctx)
-            }
+            && self.rule_allowed(rule)
     }
 
     /// True when a held chord member already produced visible output (a
@@ -134,17 +233,16 @@ impl Engine {
                     .is_some_and(|ks| !is_modifier_key(ks.key)))
     }
 
-    /// True when a held member is an undecided tap-hold key pressed longer
-    /// than the trigger chord window ago. Such a key prints nothing yet, but the
-    /// chord was not pressed together: the later key belongs to the member's
-    /// own tap or hold (e.g. a layer), as for keys that already leaked.
-    pub(super) fn chord_member_late(&self, member: KeyCode, now: Instant) -> bool {
-        self.pending
-            .get(&member)
-            .is_some_and(|p| matches!(p.phase, RulePhase::WaitingDecision { .. }))
-            && self.press_at.get(&member).is_some_and(|at| {
-                now.saturating_duration_since(*at) > self.layout.trigger_chord_timeout
-            })
+    /// True when a held member was pressed at least the trigger chord window
+    /// before `at`. The keys were not pressed together: a modifier held for
+    /// typing is part of a shortcut (Shift held, then ControlRight for
+    /// Ctrl+Shift+X), and an undecided tap-hold key owns the later key as its
+    /// own tap or hold (e.g. a layer), as for keys that already leaked. The
+    /// boundary matches the combo buffer, which expires at the same instant.
+    pub(super) fn chord_member_late(&self, member: KeyCode, at: Instant) -> bool {
+        self.press_at.get(&member).is_some_and(|pressed| {
+            at.saturating_duration_since(*pressed) >= self.layout.trigger_chord_timeout
+        })
     }
 
     pub(super) fn trigger_chord_deadline(&self) -> Option<Instant> {
@@ -200,8 +298,11 @@ impl Engine {
             }
             if down || self.chords.buffer.iter().any(|ev| ev.key == key) {
                 // A key outside the chord, or a buffered member released
-                // before the chord completed: no chord here.
-                self.flush_trigger_chord_buffer(out);
+                // before a longer chord completed: the buffer resolves now.
+                // A chord it completed owns this member's release.
+                if self.flush_trigger_chord_buffer(out) && !down {
+                    return self.handle_chord(key, down, now, out);
+                }
             } else {
                 // Release of a key held before the combo started: keep it
                 // ordered behind the buffered presses.
@@ -220,11 +321,28 @@ impl Engine {
         false
     }
 
-    /// Replay the trigger chord buffer as ordinary key events with their original
-    /// timestamps, so tap/hold deadlines stay anchored to the physical press.
-    pub(super) fn flush_trigger_chord_buffer(&mut self, out: &mut Vec<EngineOutput>) {
+    /// Resolve the trigger chord buffer: fire the chord its presses complete
+    /// (one that waited for a longer chord), or replay it as ordinary key
+    /// events with their original timestamps, so tap/hold deadlines stay
+    /// anchored to the physical press. Returns true when a chord fired.
+    pub(super) fn flush_trigger_chord_buffer(&mut self, out: &mut Vec<EngineOutput>) -> bool {
+        let buffered = self.buffered_chord_presses();
+        if let Some(completed) = self
+            .chords
+            .buffer
+            .iter()
+            .filter(|ev| ev.down)
+            .map(|ev| ev.at)
+            .max()
+            && let Some((keys, rule)) = self.complete_chord(None, completed, &buffered)
+            && keys.iter().any(|key| buffered.contains(key))
+        {
+            self.fire_chord(keys, rule, completed, out);
+            return true;
+        }
         for ev in std::mem::take(&mut self.chords.buffer) {
             self.handle_event(ev.key, ev.down, ev.at, out);
         }
+        false
     }
 }
