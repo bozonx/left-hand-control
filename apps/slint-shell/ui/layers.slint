@@ -86,7 +86,8 @@ component ActionText inherits HorizontalLayout {
         font-weight: root.kind == Assignment.transparent ? 400 : 500;
         horizontal-alignment: root.text-alignment;
         vertical-alignment: center;
-        overflow: elide;
+        // Intentionally clipped, not elided: in narrow cells an ellipsis hides 1–2 more characters.
+        overflow: clip;
     }
 }
 
@@ -197,7 +198,8 @@ component KeyCap inherits Rectangle {
             font-size: Theme.font-medium;
             font-weight: Theme.weight-semibold;
             horizontal-alignment: center;
-            overflow: elide;
+            // Intentionally clipped, not elided: in narrow cells an ellipsis hides 1–2 more characters.
+            overflow: clip;
         }
         HorizontalLayout {
             alignment: center;

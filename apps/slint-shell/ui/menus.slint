@@ -195,11 +195,13 @@ component HotkeyGrid inherits Rectangle {
                     text: cell.name;
                     color: Theme.text;
                     font-weight: Theme.weight-semibold;
-                    overflow: elide;
+                    // Intentionally clipped, not elided: in narrow cells an ellipsis hides 1–2 more characters.
+                    overflow: clip;
                     vertical-alignment: center;
                 }
             }
-            if !root.emoji && cell.value != "": ElidedText { text: cell.value; color: Theme.muted; font-family: "monospace"; font-size: Theme.font-caption; }
+            // Intentionally clipped, not elided: in narrow cells an ellipsis hides 1–2 more characters.
+            if !root.emoji && cell.value != "": ElidedText { overflow: clip; text: cell.value; color: Theme.muted; font-family: "monospace"; font-size: Theme.font-caption; }
             if !root.emoji && cell.value != "": Rectangle { vertical-stretch: 1; }
         }
     }
