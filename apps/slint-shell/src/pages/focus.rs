@@ -480,31 +480,6 @@ pub(crate) fn bind_navigation(focus: &KeyboardFocus<'_>, window: &slint::Window)
         }
     });
     let weak = Rc::downgrade(&window);
-    focus.on_focus_grid(move || {
-        let Some(adapter) = weak.upgrade().map(focus_window) else {
-            return;
-        };
-        let window = WindowInner::from_pub(adapter.window());
-        window.ensure_tree_instantiated();
-        let root = ItemRc::new_root(window.component());
-        let boundary = descendants(&root)
-            .into_iter()
-            .find(|item| item.accessible_role() == AccessibleRole::List);
-        if let Some(boundary) = boundary {
-            let targets = group_targets(&boundary, NavigationKind::Grid);
-            let target = targets
-                .iter()
-                .find(|item| {
-                    item.downcast::<FocusScope>()
-                        .is_some_and(|scope| scope.as_pin_ref().focus_on_tab_navigation())
-                })
-                .or_else(|| targets.first());
-            if let Some(target) = target {
-                window.set_focus_item(target, true, FocusReason::Programmatic);
-            }
-        }
-    });
-    let weak = Rc::downgrade(&window);
     focus.on_focus_index(move |index| {
         let Some(adapter) = weak.upgrade().map(focus_window) else {
             return;

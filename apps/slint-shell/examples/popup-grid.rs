@@ -94,14 +94,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cells = Rc::new(RefCell::new(Vec::new()));
     let observed = keys.clone();
     emoji.on_key(move |key| {
-        if [
-            slint::platform::Key::Shift,
-            slint::platform::Key::Tab,
-            slint::platform::Key::Backtab,
-        ]
-        .into_iter()
-        .any(|navigation| key == slint::SharedString::from(navigation))
-        {
+        if key == slint::SharedString::from(slint::platform::Key::Shift) {
             return false;
         }
         observed.borrow_mut().push(("emoji", key.to_string()));
@@ -109,14 +102,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     let observed = keys.clone();
     quick.on_key(move |key| {
-        if [
-            slint::platform::Key::Shift,
-            slint::platform::Key::Tab,
-            slint::platform::Key::Backtab,
-        ]
-        .into_iter()
-        .any(|navigation| key == slint::SharedString::from(navigation))
-        {
+        if key == slint::SharedString::from(slint::platform::Key::Shift) {
             return false;
         }
         observed.borrow_mut().push(("quick", key.to_string()));
@@ -155,44 +141,49 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .window()
                 .dispatch_event(WindowEvent::KeyReleased { text: text.into() });
         };
-        let label = || {
-            use i_slint_core::{
-                accessibility::{AccessibleStringProperty, nearest_accessible_item},
-                window::WindowInner,
-            };
-            let item = WindowInner::from_pub(emoji.window())
-                .focus_item
-                .borrow()
-                .upgrade()
-                .unwrap();
-            nearest_accessible_item(item)
-                .accessible_string_property(AccessibleStringProperty::Label)
-                .unwrap()
-                .to_string()
-        };
+        // Opening shows no focus ring and arrows, Home/End and Return do not
+        // move or activate anything: the hotkeys and Tab turn the popup.
         emoji.invoke_prepare();
-        key(Key::Home);
-        assert_eq!(label(), "Q: 🙂");
-        key(Key::UpArrow);
-        key(Key::LeftArrow);
-        assert_eq!(label(), "Q: 🙂");
-        key(Key::RightArrow);
-        assert_eq!(label(), "W: 🙂");
-        key(Key::Return);
-        assert_eq!(cells.borrow().last(), Some(&("emoji", 1)));
+        let before = (keys.borrow().len(), cells.borrow().len());
+        for text in [
+            Key::Home,
+            Key::End,
+            Key::UpArrow,
+            Key::DownArrow,
+            Key::LeftArrow,
+            Key::RightArrow,
+            Key::Return,
+        ] {
+            key(text);
+        }
+        assert_eq!(
+            (keys.borrow().len(), cells.borrow().len()),
+            before,
+            "arrows must not act in popups"
+        );
+        let focused = i_slint_core::window::WindowInner::from_pub(emoji.window())
+            .focus_item
+            .borrow()
+            .upgrade();
+        assert!(
+            focused.is_none_or(
+                |item| item.accessible_role() != i_slint_core::items::AccessibleRole::Button
+            ),
+            "no cell or button takes focus"
+        );
+        // Tab and Shift+Tab reach the page handler instead of moving focus.
         key(Key::Tab);
-        assert_eq!(label(), "Close");
-        emoji.window().dispatch_event(WindowEvent::KeyPressed {
-            text: Key::Shift.into(),
-        });
-        key(Key::Tab);
-        emoji.window().dispatch_event(WindowEvent::KeyReleased {
-            text: Key::Shift.into(),
-        });
-        assert_eq!(label(), "W: 🙂");
-        key(Key::End);
-        key(Key::RightArrow);
-        assert_eq!(label(), "B: 🙂");
+        key(Key::Backtab);
+        assert_eq!(
+            keys.borrow()[before.0..],
+            [
+                ("emoji", String::from(slint::SharedString::from(Key::Tab))),
+                (
+                    "emoji",
+                    String::from(slint::SharedString::from(Key::Backtab))
+                ),
+            ]
+        );
         cells.borrow_mut().clear();
         click(&emoji, 65.0, 110.0);
         click(&quick, 100.0, 110.0);

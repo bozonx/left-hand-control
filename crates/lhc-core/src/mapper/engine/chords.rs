@@ -84,8 +84,9 @@ impl Engine {
                     && keys.iter().all(|member| {
                         Some(*member) == key
                             || buffered.contains(member)
-                            || self.chord_member_ready(*member, at)
+                            || self.chord_member_ready(keys, *member, at)
                     })
+                    && (!is_shortcut_chord(keys) || self.only_chord_modifiers_held(keys))
             })
             .max_by_key(|(keys, _)| keys.len())
             .cloned()
@@ -94,11 +95,22 @@ impl Engine {
     /// A held key that may still join a chord completed at `at`: pressed by
     /// then, within the combo window, and it printed nothing the chord cannot
     /// take back.
-    fn chord_member_ready(&self, member: KeyCode, at: Instant) -> bool {
+    /// A modifier of a shortcut chord counts whenever it was pressed, as in
+    /// an ordinary shortcut.
+    fn chord_member_ready(&self, keys: &[KeyCode], member: KeyCode, at: Instant) -> bool {
         self.physical_down.contains(&member)
             && self.press_at.get(&member).is_some_and(|pressed| *pressed <= at)
             && !self.chord_member_leaked(member)
-            && !self.chord_member_late(member, at)
+            && ((is_modifier_key(member) && is_shortcut_chord(keys))
+                || !self.chord_member_late(member, at))
+    }
+
+    /// A shortcut chord fires only with exactly its modifiers held, so
+    /// `ControlLeft+KeyC` leaves Ctrl+Shift+C to the app.
+    fn only_chord_modifiers_held(&self, keys: &[KeyCode]) -> bool {
+        self.physical_down
+            .iter()
+            .all(|key| !is_modifier_key(*key) || keys.contains(key))
     }
 
     /// True when an eligible chord longer than `keys` contains all of them
@@ -111,15 +123,18 @@ impl Engine {
             return false;
         }
         let buffered = self.buffered_chord_presses();
+        let has_main_key = keys.iter().any(|key| !is_modifier_key(*key));
         self.profile.chord_rules.iter().any(|(longer, rule)| {
-            longer.len() > keys.len()
+            // A shortcut's modifiers come before its main key, never after.
+            !(has_main_key && is_shortcut_chord(longer))
+                && longer.len() > keys.len()
                 && keys.iter().all(|key| longer.contains(key))
                 && self.chord_eligible(longer, rule)
                 && longer.iter().all(|member| {
                     keys.contains(member)
                         || buffered.contains(member)
                         || !self.physical_down.contains(member)
-                        || self.chord_member_ready(*member, now)
+                        || self.chord_member_ready(longer, *member, now)
                 })
         })
     }
@@ -251,14 +266,13 @@ impl Engine {
 
     /// A non-modifier key that belongs to an eligible chord starts a combo
     /// window. Modifiers pass through as before: a held modifier prints
-    /// nothing and the chord suppresses it if it completes.
+    /// nothing and the chord suppresses it if it completes. Shortcut chords
+    /// never wait: their main key either completes them at once or types.
     pub(super) fn starts_trigger_chord(&self, key: KeyCode) -> bool {
         !is_modifier_key(key)
-            && self
-                .profile
-                .chord_rules
-                .iter()
-                .any(|(keys, rule)| keys.contains(&key) && self.chord_eligible(keys, rule))
+            && self.profile.chord_rules.iter().any(|(keys, rule)| {
+                keys.contains(&key) && !is_shortcut_chord(keys) && self.chord_eligible(keys, rule)
+            })
     }
 
     /// True when `key` together with every buffered press is still part of
@@ -345,4 +359,11 @@ impl Engine {
         }
         false
     }
+}
+
+/// Modifiers plus exactly one other key (`ControlLeft+KeyC`): pressed like an
+/// ordinary shortcut, modifiers first, with no combo window.
+fn is_shortcut_chord(keys: &[KeyCode]) -> bool {
+    let main_keys = keys.iter().filter(|key| !is_modifier_key(**key)).count();
+    main_keys == 1 && keys.len() > 1
 }

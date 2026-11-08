@@ -77,6 +77,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Mapper: a trigger of modifiers plus one key (`ControlLeft+KeyC`) works like an ordinary shortcut. It fires when the modifiers were held down beforehand, not only when all keys are pressed within the combo window, and only with exactly its modifiers held (Ctrl+Shift+C stays with the app). Its main key is no longer delayed by the combo window when typed alone.
 - Linux text input: the Ctrl+V and Ctrl+Shift+V paste shortcuts press the key that types `v` in the current layout (taken from the Latin layout when the current one has none), so pasting works on Dvorak and similar layouts instead of sending Ctrl+K. Shift+Insert is unchanged.
 - Mapper: a key that a held layer leaves out keeps its base-layer rule, as documented (CapsLock with tap Escape inside a layer no longer toggles Caps Lock). A layer trigger pressed inside another layer now activates its layer on top; keys it leaves out fall through to the layer below.
 - Mapper: chords also work inside a layer that maps none of their keys.

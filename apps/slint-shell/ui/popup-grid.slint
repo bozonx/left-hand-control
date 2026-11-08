@@ -1,13 +1,11 @@
-import { KeyboardFocus, NavigationFocus } from "focus.slint";
 import { Theme } from "theme.slint";
 
 /// Shared pieces of the Emoji and Quick action popups.
 
-/// One cell of the 3 × 5 grid, labelled with its left-hand hotkey.
+/// One cell of the 3 × 5 grid, labelled with its left-hand hotkey. Popups are
+/// driven by the hotkeys, Tab and PageUp/PageDown, so cells take no focus.
 export component PopupCell inherits Rectangle {
     in property <string> hotkey;
-    in property <bool> tab-stop;
-    callback focused();
     in property <string> content;
     in property <bool> emoji;
     in property <bool> interactive: true;
@@ -16,8 +14,8 @@ export component PopupCell inherits Rectangle {
     property <int> length: root.content.character-count;
     background: area.has-hover && !root.empty ? Theme.hover : Theme.card;
     border-radius: Theme.radius-panel;
-    border-color: Theme.focus-ring(focus.has-focus) ? Theme.focus : Theme.divider;
-    border-width: Theme.focus-ring(focus.has-focus) ? 2px : 1px;
+    border-color: Theme.divider;
+    border-width: 1px;
     // Screen readers get one button per cell, named by its hotkey and content.
     accessible-role: button;
     accessible-label: root.hotkey + ": " + (root.empty ? @tr("Empty cell") : root.content);
@@ -49,20 +47,10 @@ export component PopupCell inherits Rectangle {
         horizontal-alignment: center;
         vertical-alignment: center;
     }
-    focus := NavigationFocus {
-        enabled: root.interactive;
-        tab-stop: root.tab-stop;
-        focus-changed-event => { if self.has-focus { root.focused(); } }
-        key-pressed(event) => {
-            Theme.keyboard-navigation = true;
-            if event.text == Key.Return || event.text == " " { if !root.empty { root.clicked(); } return accept; }
-            return self.navigate(event);
-        }
-    }
     area := TouchArea {
         enabled: root.interactive && !root.empty;
         mouse-cursor: root.empty ? default : pointer;
-        clicked => { Theme.keyboard-navigation = false; focus.focus(); root.clicked(); }
+        clicked => { root.clicked(); }
     }
 }
 
@@ -86,14 +74,6 @@ export component PopupHeader inherits HorizontalLayout {
         color: Theme.muted; font-size: Theme.font-body; vertical-alignment: center;
     }
     Rectangle {
-        border-width: Theme.focus-ring(close-focus.has-focus) ? 2px : 0px;
-        border-color: Theme.focus;
-        close-focus := FocusScope {
-            key-pressed(event) => {
-                if event.text == Key.Return || event.text == " " { root.dismiss(); return accept; }
-                return reject;
-            }
-        }
         width: 28px;
         border-radius: Theme.radius;
         background: close.has-hover ? Theme.hover : transparent;
@@ -101,7 +81,7 @@ export component PopupHeader inherits HorizontalLayout {
         accessible-label: @tr("Close");
         accessible-action-default => { root.dismiss(); }
         Text { accessible-role: none; text: "×"; color: Theme.muted; font-size: Theme.font-heading; }
-        close := TouchArea { clicked => { Theme.keyboard-navigation = false; close-focus.focus(); root.dismiss(); } }
+        close := TouchArea { clicked => { root.dismiss(); } }
     }
 }
 
@@ -109,10 +89,11 @@ export global PopupKeys {
     out property <[string]> labels: ["Q", "W", "E", "R", "T", "A", "S", "D", "F", "G", "Z", "X", "C", "V", "B"];
 }
 
-/// Shared focus, surface and cell profile of both popup windows.
+/// Shared focus, surface and cell profile of both popup windows. The body keeps
+/// keyboard focus without drawing a ring; Tab/Shift+Tab turn pages like
+/// PageDown/PageUp.
 export component PopupGridBody inherits FocusScope {
     focus-on-tab-navigation: false;
-    private property <int> keyboard-cell: 0;
     in property <bool> presented: true;
     in property <string> title;
     in property <[string]> page-names;
@@ -123,11 +104,7 @@ export component PopupGridBody inherits FocusScope {
     callback key(string) -> bool;
     callback choose(int);
     callback dismiss();
-    public function prepare() { Theme.keyboard-navigation = true; self.focus(); KeyboardFocus.focus-grid(); }
-    capture-key-pressed(event) => {
-        if event.text == Key.Tab || event.text == Key.Backtab { Theme.keyboard-navigation = true; }
-        return reject;
-    }
+    public function prepare() { self.focus(); }
     key-pressed(event) => {
         if event.modifiers.control || event.modifiers.alt || event.modifiers.meta { return reject; }
         if root.key(event.text) { return accept; }
@@ -155,8 +132,6 @@ export component PopupGridBody inherits FocusScope {
                 spacing: Theme.space-m;
                 for col in 5: PopupCell {
                     height: 80px;
-                    tab-stop: row * 5 + col == root.keyboard-cell;
-                    focused => { root.keyboard-cell = row * 5 + col; }
                     hotkey: PopupKeys.labels[row * 5 + col];
                     content: root.items[root.item-offset + row * 5 + col];
                     emoji: root.emoji;

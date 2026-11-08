@@ -1110,3 +1110,73 @@ fn chord_rolled_under_undecided_tap_hold_key_types_its_keys_in_order() {
         ]
     );
 }
+
+#[test]
+fn shortcut_chord_fires_with_a_modifier_held_beforehand() {
+    let cfg = serde_json::json!({"rules": [{"key": "ControlLeft+KeyC", "tapAction": "KeyX"}]});
+    let trace = timeline(
+        cfg,
+        &[
+            (KeyCode::KEY_LEFTCTRL, true, 0),
+            (KeyCode::KEY_C, true, 200),
+            (KeyCode::KEY_C, false, 230),
+            (KeyCode::KEY_LEFTCTRL, false, 260),
+        ],
+        &[0, 200, 230, 260, 400],
+    );
+    assert!(trace.contains(&TraceEvent::Tap(KeyCode::KEY_X, vec![])), "{trace:?}");
+    assert!(!trace.contains(&TraceEvent::Raw(KeyCode::KEY_C, true)), "{trace:?}");
+}
+
+#[test]
+fn shortcut_chord_main_key_types_without_delay() {
+    let cfg = serde_json::json!({"rules": [{"key": "ControlLeft+KeyC", "tapAction": "KeyX"}]});
+    let mut engine = Engine::new(&serde_json::from_value::<MapperConfig>(cfg).unwrap());
+    let mut out = Vec::new();
+    engine.handle_key_event(KeyCode::KEY_C, true, Instant::now(), &mut out);
+    assert!(
+        out.iter().any(|event| matches!(event, EngineOutput::KeyRaw { key: KeyCode::KEY_C, down: true }))
+    );
+}
+
+#[test]
+fn shortcut_chord_needs_exactly_its_modifiers() {
+    let cfg = serde_json::json!({"rules": [{"key": "ControlLeft+KeyC", "tapAction": "KeyX"}]});
+    let trace = timeline(
+        cfg,
+        &[
+            (KeyCode::KEY_LEFTCTRL, true, 0),
+            (KeyCode::KEY_LEFTSHIFT, true, 100),
+            (KeyCode::KEY_C, true, 200),
+            (KeyCode::KEY_C, false, 230),
+            (KeyCode::KEY_LEFTSHIFT, false, 250),
+            (KeyCode::KEY_LEFTCTRL, false, 260),
+        ],
+        &[0, 100, 200, 230, 250, 260, 400],
+    );
+    assert!(trace.contains(&TraceEvent::Raw(KeyCode::KEY_C, true)), "{trace:?}");
+    assert!(!trace.iter().any(|event| matches!(event, TraceEvent::Tap(..))), "{trace:?}");
+}
+
+#[test]
+fn shorter_shortcut_chord_does_not_wait_for_a_longer_one() {
+    let cfg = serde_json::json!({"rules": [
+        {"key": "ControlLeft+KeyC", "tapAction": "KeyX"},
+        {"key": "ControlLeft+ShiftLeft+KeyC", "tapAction": "KeyZ"}
+    ]});
+    // Shift after the main key does not turn Ctrl+C into Ctrl+Shift+C.
+    let trace = timeline(
+        cfg,
+        &[
+            (KeyCode::KEY_LEFTCTRL, true, 0),
+            (KeyCode::KEY_C, true, 200),
+            (KeyCode::KEY_LEFTSHIFT, true, 210),
+            (KeyCode::KEY_C, false, 230),
+            (KeyCode::KEY_LEFTSHIFT, false, 250),
+            (KeyCode::KEY_LEFTCTRL, false, 260),
+        ],
+        &[0, 200, 210, 230, 250, 260, 400],
+    );
+    assert!(trace.contains(&TraceEvent::Tap(KeyCode::KEY_X, vec![])), "{trace:?}");
+    assert!(!trace.contains(&TraceEvent::Tap(KeyCode::KEY_Z, vec![])), "{trace:?}");
+}

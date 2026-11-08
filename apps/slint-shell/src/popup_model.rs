@@ -57,9 +57,11 @@ pub(crate) fn typed_text(action: &str) -> Option<String> {
     }
 }
 
-/// PageUp/PageDown cycle pages, digits open one; the left-hand hotkeys pick a cell.
+/// PageUp/PageDown and Tab/Shift+Tab cycle pages, digits open one; the left-hand hotkeys pick a cell.
 pub(crate) fn shortcut(code: &str, shift: bool) -> Option<Shortcut> {
-    let _ = shift;
+    if code == "Tab" {
+        return Some(Shortcut::ChangePage(if shift { -1 } else { 1 }));
+    }
     if code == "PageUp" {
         return Some(Shortcut::ChangePage(-1));
     }
@@ -82,7 +84,7 @@ pub(crate) fn evdev_shortcut(code: u32, shift: bool) -> Option<Shortcut> {
         "Digit1", "Digit2", "Digit3", "Digit4", "Digit5", "Digit6", "Digit7", "Digit8", "Digit9",
         "Digit0",
     ];
-    let name = ["PageUp", "PageDown"]
+    let name = ["PageUp", "PageDown", "Tab"]
         .iter()
         .chain(&DIGITS)
         .chain(&LEFT_HAND_HOTKEYS)
@@ -148,16 +150,20 @@ fn hotkey_index(key: &str) -> Option<usize> {
 }
 
 /// Fallback for typed text when the physical shortcut was not seen:
-/// Escape closes, PageUp/PageDown and digits switch pages, hotkey letters pick a cell.
+/// Escape closes, PageUp/PageDown, Tab/Shift+Tab and digits switch pages, hotkey letters pick a cell.
 fn popup_key(page: i32, pages: usize, key: &str) -> (Option<i32>, KeyOutcome) {
     use slint::platform::Key;
     if key == SharedString::from(Key::Escape).as_str() {
         return (None, KeyOutcome::Dismiss);
     }
-    if key == SharedString::from(Key::PageDown).as_str() {
+    if key == SharedString::from(Key::PageDown).as_str()
+        || key == SharedString::from(Key::Tab).as_str()
+    {
         return (Some(advance(page, 1, pages)), KeyOutcome::PageChanged);
     }
-    if key == SharedString::from(Key::PageUp).as_str() {
+    if key == SharedString::from(Key::PageUp).as_str()
+        || key == SharedString::from(Key::Backtab).as_str()
+    {
         return (Some(advance(page, -1, pages)), KeyOutcome::PageChanged);
     }
     if let Some(page) = digit_page(key) {
@@ -574,7 +580,8 @@ mod tests {
                 Some(Shortcut::ChooseCell(index as i32))
             );
         }
-        assert_eq!(shortcut("Tab", false), None);
+        assert_eq!(shortcut("Tab", false), Some(Shortcut::ChangePage(1)));
+        assert_eq!(shortcut("Tab", true), Some(Shortcut::ChangePage(-1)));
         assert_eq!(shortcut("PageDown", false), Some(Shortcut::ChangePage(1)));
         assert_eq!(shortcut("PageUp", true), Some(Shortcut::ChangePage(-1)));
         assert_eq!(shortcut("Digit1", false), Some(Shortcut::OpenPage(0)));
@@ -595,7 +602,8 @@ mod tests {
                 Some(Shortcut::ChooseCell(index as i32))
             );
         }
-        assert_eq!(evdev_shortcut(15, true), None);
+        assert_eq!(evdev_shortcut(15, false), Some(Shortcut::ChangePage(1)));
+        assert_eq!(evdev_shortcut(15, true), Some(Shortcut::ChangePage(-1)));
         assert_eq!(evdev_shortcut(104, true), Some(Shortcut::ChangePage(-1)));
         assert_eq!(evdev_shortcut(109, false), Some(Shortcut::ChangePage(1)));
         assert_eq!(evdev_shortcut(2, false), Some(Shortcut::OpenPage(0)));
