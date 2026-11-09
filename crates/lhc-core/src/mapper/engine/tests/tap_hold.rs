@@ -1745,9 +1745,9 @@ fn double_tap_deadline_uses_event_time_before_or_after_timer_delivery() {
                 &mut out,
             );
             engine.tick(start + Duration::from_secs(2), &mut out);
-            // A timer delivered at the exact deadline expires the first tap;
-            // an event delivered first at that instant is still in the window.
-            let double = second_press < 260 || (second_press == 260 && !tick_before_press);
+            // The window is half-open: a press at the exact deadline is late
+            // whether the timer or the event is handled first.
+            let double = second_press < 260;
             let expected = if double {
                 vec![KeyCode::KEY_TAB]
             } else {
@@ -1922,6 +1922,7 @@ fn tap_of_a_key_that_is_already_held_is_not_lost() {
             TraceEvent::Raw(KeyCode::KEY_A, true),
             TraceEvent::Raw(KeyCode::KEY_A, false),
             TraceEvent::Tap(KeyCode::KEY_A, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_A, true),
             TraceEvent::Raw(KeyCode::KEY_A, false),
         ]
     );
@@ -2032,4 +2033,24 @@ fn tap_of_a_held_modifier_still_taps_its_other_modifiers() {
         raw_keys(&out),
         [(KeyCode::KEY_LEFTCTRL, true), (KeyCode::KEY_LEFTCTRL, false)]
     );
+}
+
+#[test]
+fn tap_of_a_key_held_by_another_press_keeps_it_held() {
+    let cfg: MapperConfig = serde_json::from_value(serde_json::json!({
+        "rules": [{"key": "KeyQ", "tapAction": "KeyA", "holdAction": null}]
+    }))
+    .unwrap();
+    let mut engine = Engine::new(&cfg);
+    let out = run(
+        &mut engine,
+        &[(KeyCode::KEY_A, true), (KeyCode::KEY_Q, true), (KeyCode::KEY_Q, false)],
+    );
+    let last = out.last().expect("output");
+    assert!(
+        matches!(last, EngineOutput::KeyRaw { key: KeyCode::KEY_A, down: true }),
+        "physically held A must be pressed again after the tap"
+    );
+    let out = run(&mut engine, &[(KeyCode::KEY_A, false)]);
+    assert_eq!(transitions(&out), [(KeyCode::KEY_A, false)]);
 }

@@ -106,7 +106,8 @@ impl Engine {
     }
 
     /// Apply new bindings without releasing keys already held by the user.
-    /// Pending decisions retain their original rule until physical release.
+    /// Pending decisions retain their original rule until physical release;
+    /// events still deferred behind a decision replay with the new bindings.
     pub fn reconfigure(&mut self, cfg: &super::config::MapperConfig, out: &mut Vec<EngineOutput>) {
         self.flush_trigger_chord_buffer(out);
         self.runner.cancel(&mut self.virt, out);
@@ -336,6 +337,14 @@ impl Engine {
         out: &mut Vec<EngineOutput>,
     ) {
         if is_mouse_button(key) {
+            // A button with its own rule is an ordinary key for a pending
+            // permissive decision: buffered, not an eager hold commit.
+            if self.profile.rules.contains_key(&key)
+                && self.lookup_mapping(key).is_none()
+                && self.permissive_intercept(key, down, now, out)
+            {
+                return;
+            }
             if down {
                 // Commit all pending tap/hold decisions before processing the
                 // mouse event. Two goals:
@@ -356,6 +365,13 @@ impl Engine {
                 self.flush_waiting_second(now, out);
                 self.resolve_long_hold_decisions(key, now, out);
                 self.commit_decisions_for_click(key, out);
+                // Keys pressed after the deciding key wait in the buffer; a
+                // click that passed them would arrive without them (Shift
+                // pressed after a layer key, then a click). A key and a click
+                // both inside the press make it a hold.
+                if self.deciding_key().is_some() && !self.decision_buffer.is_empty() {
+                    self.resolve_deciding_as_hold(out);
+                }
                 if self.deciding_key().is_none() {
                     self.drain_decision_buffer(out);
                 }
@@ -403,7 +419,10 @@ impl Engine {
             _ => None,
         };
         if let Some(deadline) = waiting_second_deadline {
-            if now <= deadline {
+            // Half-open window, as the timer sees it (`deadline <= now`
+            // expires it): the outcome does not depend on whether the tick
+            // or the press is handled first.
+            if now < deadline {
                 let pending = self.pending.remove(&key);
                 // Other keys' deferred taps happened physically before this
                 // second press — flush them first so output stays in order.
@@ -412,7 +431,9 @@ impl Engine {
                 self.commit_waiting_decisions(out);
                 // A rule with a hold (layer, held keystroke or native key) lets the second
                 // press decide too: released early it is the double-tap,
-                // held it is the hold (tap, then press and hold).
+                // held it is the hold. The first short press is absorbed
+                // either way (a quick Shift tap before Shift+H types "H", not
+                // the tap action and "H").
                 if let Some(pending) = pending.as_ref().filter(|p| p.rule.has_hold())
                 {
                     let rule = pending.rule.clone();
@@ -818,6 +839,16 @@ impl Engine {
                         key: ks.key,
                         down: false,
                     });
+                    let ks = Keystroke {
+                        mods: self.virt.mods_not_held(&ks.mods),
+                        key: ks.key,
+                    };
+                    let key = ks.key;
+                    out.push(EngineOutput::Stroke { ks, mod_delay });
+                    // Still physically held by its owner: press it again so
+                    // the app keeps seeing it down (and repeating).
+                    out.push(EngineOutput::KeyRaw { key, down: true });
+                    return;
                 }
                 // Don't press — and above all don't release — modifiers that
                 // are already virtually held (hold rules, active chords):

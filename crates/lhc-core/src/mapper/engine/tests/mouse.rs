@@ -376,3 +376,69 @@ fn click_the_layer_does_not_map_leaves_a_layer_key_typing() {
         ]
     );
 }
+
+#[test]
+fn click_after_buffered_shift_keeps_shift_and_press_order() {
+    for mode in ["permissiveHold", "holdOnOtherKeyPress"] {
+        let cfg: MapperConfig = serde_json::from_value(serde_json::json!({
+            "settings": {"tapDecision": mode},
+            "rules": [{"key": "Space", "layerId": "nav"}],
+            "layerKeymaps": {"nav": {"keys": {"KeyJ": "ArrowLeft"}}}
+        }))
+        .unwrap();
+        let mut engine = Engine::new(&cfg);
+        let out = run(
+            &mut engine,
+            &[
+                (KeyCode::KEY_SPACE, true),
+                (KeyCode::KEY_LEFTSHIFT, true),
+                (KeyCode::BTN_LEFT, true),
+                (KeyCode::BTN_LEFT, false),
+                (KeyCode::KEY_LEFTSHIFT, false),
+                (KeyCode::KEY_SPACE, false),
+            ],
+        );
+        assert_eq!(
+            transitions(&out),
+            [
+                (KeyCode::KEY_LEFTSHIFT, true),
+                (KeyCode::BTN_LEFT, true),
+                (KeyCode::BTN_LEFT, false),
+                (KeyCode::KEY_LEFTSHIFT, false),
+            ],
+            "{mode}"
+        );
+    }
+}
+
+#[test]
+fn rule_mouse_button_is_buffered_by_permissive_decision() {
+    let cfg: MapperConfig = serde_json::from_value(serde_json::json!({
+        "rules": [
+            {"key": "Space", "layerId": "nav"},
+            {"key": "MouseBack", "tapAction": "Escape", "holdAction": null}
+        ],
+        "layerKeymaps": {"nav": {"keys": {"KeyJ": "ArrowLeft"}}}
+    }))
+    .unwrap();
+    let mut engine = Engine::new(&cfg);
+    // Space released first: a tap, then the button's own tap.
+    let out = run(
+        &mut engine,
+        &[
+            (KeyCode::KEY_SPACE, true),
+            (KeyCode::BTN_SIDE, true),
+            (KeyCode::KEY_SPACE, false),
+            (KeyCode::BTN_SIDE, false),
+        ],
+    );
+    let taps: Vec<_> = out
+        .iter()
+        .filter_map(|o| match o {
+            EngineOutput::Stroke { ks, .. } => Some(ks.key),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(taps, [KeyCode::KEY_SPACE, KeyCode::KEY_ESC]);
+    assert!(engine.layers.active.is_empty());
+}

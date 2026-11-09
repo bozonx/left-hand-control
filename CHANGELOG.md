@@ -94,6 +94,10 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Mapper: a mouse click while a tap/hold key is still deciding no longer overtakes keys pressed before it, so Shift pressed after a layer key and then a click is a Shift+click.
+- Mapper: a second press exactly at the end of the double-tap window is now always late (a single tap), whether or not the timer ran first.
+- Mapper: a tap action that types a key another physical key is holding presses that key again afterwards, so it stays down and keeps repeating.
+- Mapper: an extra mouse button with its own rule (e.g. MouseBack) pressed while a permissive-hold key decides is buffered like a key instead of forcing the hold.
 - Mapper: a trigger of modifiers plus one key (`ControlLeft+KeyC`) works like an ordinary shortcut. It fires when the modifiers were held down beforehand, not only when all keys are pressed within the combo window, and only with exactly its modifiers held (Ctrl+Shift+C stays with the app). Its main key is no longer delayed by the combo window when typed alone.
 - Linux text input: the Ctrl+V and Ctrl+Shift+V paste shortcuts press the key that types `v` in the current layout (taken from the Latin layout when the current one has none), so pasting works on Dvorak and similar layouts instead of sending Ctrl+K. Shift+Insert is unchanged.
 - Mapper: a key that a held layer leaves out keeps its base-layer rule, as documented (CapsLock with tap Escape inside a layer no longer toggles Caps Lock). A layer trigger pressed inside another layer now activates its layer on top; keys it leaves out fall through to the layer below.
