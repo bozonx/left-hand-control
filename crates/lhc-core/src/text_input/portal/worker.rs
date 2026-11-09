@@ -229,7 +229,7 @@ pub(super) fn portal_worker(backend: PortalBackend, rx: Receiver<TextInjectionJo
 pub(super) fn libei_worker(mut backend: LibeiBackend, rx: Receiver<TextInjectionJob>) {
     log::debug!("[libei] backend online");
     for cmd in rx {
-        let fallback = (cmd.mode == TextMode::Libei).then_some(cmd.paste);
+        let fallback = (cmd.mode == TextMode::LibeiWithClipboardFallback).then_some(cmd.paste);
         let result = backend.type_text(&cmd.text, fallback, &cmd.request);
         let fatal = matches!(result, Err(TextInputFailure::BackendUnavailable(_)));
         let _ = cmd.done.send(result);

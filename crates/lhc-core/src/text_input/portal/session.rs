@@ -52,7 +52,7 @@ pub(super) fn init_portal(text_request: &TextRequest) -> Result<PortalSession, S
 
     let wants_clipboard = matches!(
         TEXT_BACKEND.lock().unwrap_or_else(|e| e.into_inner()).mode,
-        TextMode::Libei | TextMode::Clipboard
+        TextMode::LibeiWithClipboardFallback | TextMode::Clipboard
     );
     let clipboard_requested = wants_clipboard
         && matches!(

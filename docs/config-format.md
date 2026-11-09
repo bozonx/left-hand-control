@@ -12,7 +12,7 @@
 - Каждый файл содержит `"version": 1` — версию формата файла (а не содержимого: авторская версия раскладки хранится в `meta.profileVersion`). Версии `config.json` и раскладок независимы; сейчас `config.json` — версия 2, раскладки — версия 1. Файл без версии не загружается. Если версия больше поддерживаемой, приложение сообщает, что файл создан более новой версией, и не загружает его.
 - Чтение строгое: неизвестное поле, значение не того типа или неизвестное значение перечисления — ошибка с номером строки и столбца. Файл при этом не перезаписывается. Так приложение никогда не сохраняет файл, молча выбросив непонятые части.
 - Необязательные поля можно не писать: берётся значение по умолчанию. Приложение не записывает пустые списки и значения по умолчанию. В `config.json` записываются только настройки, отличающиеся от значений по умолчанию, поэтому новая версия может изменить значение по умолчанию для всех, кто его не менял. Значения по умолчанию, от которых зависит поведение ввода (`settings.timing`), — часть контракта формата: они меняются только как заметное изменение поведения с записью в CHANGELOG.
-- Стиль имён: поля — camelCase; значения перечислений — camelCase (`permissiveHold`, `libeiPure`, `eInk`); сочетания клавиш — синтаксис действий (`Ctrl+Shift+KeyV`); языки — коды BCP 47 (`ru`, `zh-Hans`).
+- Стиль имён: поля — camelCase; значения перечислений — camelCase (`permissiveHold`, `libeiOnly`, `eInk`); сочетания клавиш — синтаксис действий (`Ctrl+Shift+KeyV`); языки — коды BCP 47 (`ru`, `zh-Hans`).
 - Смысловые проблемы (ссылка на несуществующий макрос, неизвестная клавиша в действии) не мешают загрузке. Их показывает диагностика правил, а mapper не запускается с блокирующими ошибками.
 - Политика совместимости. В версии 1 могут появляться только новые необязательные поля, новые значения перечислений и объектная форма у значения, которое сейчас записывается строкой (так уже устроены клавиши слоя и ячейки быстрых действий: строка или объект `{ "action", … }`); строковая форма при этом остаётся действительной, а смысл существующих полей не меняется. Любое другое изменение повышает `version`. Старая сборка не читает файл с полем или значением, которого она не знает: в ошибке она указывает, что файл, вероятно, создан более новой версией приложения, и не перезаписывает его. Профиль, сохранённый новой версией, может не открыться в старой, если в ней используются новые возможности.
 - Строковые значения без объектной формы. Ячейка эмодзи и шаг макроса — только строки, клавиша правила (`rules[].key`) — строка или массив клавиш аккорда. Подпись у ячейки эмодзи, параметры у шага макроса и параметры у клавиши правила пока не планируются; когда они понадобятся, для этих значений появится объектная форма, как у клавиш слоя.
@@ -134,7 +134,7 @@ ID профилей библиотеки устроены иначе: `user:<и�
 
 Встроенные макросы используют ссылки `builtin:<id>`, пользовательские — `macro:<id>`. Их ID могут совпадать: ссылки разрешаются независимо.
 
-ID встроенных макросов начинаются с глагола: `goTo…`/`go…` (перемещение курсора), `select…`, `copy…`, `cut…`, `paste…`, `replace…WithClipboard`, `insert…`, `duplicate…`. Объект называется одинаково во всех макросах: `Line` — строка целиком вместе с переводом строки, `LineText` — текст строки без перевода, `Word` — слово под курсором, `ToLineStart`/`ToLineEnd` — от курсора до начала или конца строки. Например: `builtin:goToNextLineEnd`, `builtin:go5LinesUp`, `builtin:copyLineText`, `builtin:cutLine`, `builtin:selectWord`, `builtin:insertEmptyLineAbove`.
+ID встроенных макросов начинаются с глагола: `goTo…` (перемещение курсора), `select…`, `copy…`, `cut…`, `paste…`, `replace…WithClipboard`, `insert…`, `duplicate…`. Объект называется одинаково во всех макросах: `Line` — строка целиком вместе с переводом строки, `LineText` — текст строки без перевода, `Word` — слово под курсором, `ToLineStart`/`ToLineEnd` — от курсора до начала или конца строки. Например: `builtin:goToNextLineEnd`, `builtin:goTo5LinesUp`, `builtin:copyLineText`, `builtin:cutLine`, `builtin:selectWord`, `builtin:insertEmptyLineAbove`.
 
 Системные действия (`sys:`): `closeWindow`, `minimizeWindow`, `maximizeWindow`, `maximizeWindowVertically`, `toggleWindowKeepAbove`, `moveWindowToNextDesktop`, `moveWindowToPreviousDesktop`, `moveWindowToNextScreen`, `moveWindowToPreviousScreen`, `switchToNextDesktop`, `switchToPreviousDesktop`, `showDesktop`, `showOverview`, `showAppLauncher`, `turnOffScreen`, `lockSession` и нумерованные `switchToDesktopN`, `moveWindowToDesktopN`, `switchKeyboardLayoutN` (N от 1 до 10). Поддержка по платформам — в [platforms.md](development/platforms.md).
 
@@ -210,7 +210,7 @@ ID встроенных макросов начинаются с глагола:
       ]
     },
     "linux": {
-      "textMode": "libei",
+      "textMode": "libeiWithClipboardFallback",
       "pasteShortcut": "Shift+Insert",
       "terminalPasteShortcut": "Ctrl+Shift+KeyV",
       "ydotoolPath": "/usr/local/bin/ydotool",
@@ -246,7 +246,7 @@ ID встроенных макросов начинаются с глагола:
 | `gameMode.detectors` | источники автоопределения игр; каждая платформа использует только свои | зависит от ОС |
 | `gameMode.foregroundOnly` | игры из `detectors` (лаунчеры, Game Bar) учитываются, только пока их окно активно; Steam в Windows не называет процесс игры и учитывается всегда | `true` |
 | `gameMode.processes[]` | процесс-признак игры: `name` — шаблон процесса, `foregroundOnly` (по умолчанию `true`) — учитывать процесс, только пока его окно активно; с `"exclude": true` — процесс, который игровой режим не включает | — |
-| `linux.textMode` | `libei`, `libeiPure`, `keycode`, `clipboard`, `ydotool`, `xdotool` | `libei` |
+| `linux.textMode` | `libeiWithClipboardFallback` — набор через libei, а текст с символами, которых нет в раскладке, вставляется через буфер обмена; `libeiOnly` — только libei, такой текст пропускается; `keycode`, `clipboard`, `ydotool`, `xdotool`. В версии 1 `libeiWithClipboardFallback` назывался `libei`, а `libeiOnly` — `libeiPure` | `libeiWithClipboardFallback` |
 | `linux.pasteShortcut` | сочетание вставки в синтаксисе действий. Порядок и написание модификаторов не важны (`Shift+Ctrl+KeyV` = `Ctrl+Shift+KeyV`). Текущая версия поддерживает `Shift+Insert`, `Ctrl+KeyV`, `Ctrl+Shift+KeyV`; другое сочетание — ошибка загрузки | `Shift+Insert` |
 | `linux.terminalPasteShortcut` | сочетание вставки, когда получатель — терминал (Konsole, kitty, Alacritty, GNOME Terminal и др., определяется по классу окна); те же значения или `sameAsPaste` — как `pasteShortcut` | `Ctrl+Shift+KeyV` |
 | `linux.ydotoolPath`, `linux.xdotoolPath` | путь к программе; без поля — поиск в `PATH`. Пустая строка — ошибка | нет |

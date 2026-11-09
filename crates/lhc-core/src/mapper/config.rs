@@ -321,7 +321,7 @@ impl Default for Settings {
             default_double_tap_timeout_ms: default_double_tap(),
             trigger_chord_timeout_ms: default_trigger_chord_timeout(),
             commands_enabled: false,
-            linux_wayland_text_mode: TextMode::Libei,
+            linux_wayland_text_mode: TextMode::LibeiWithClipboardFallback,
             linux_paste_shortcut: PasteShortcut::ShiftInsert,
             linux_terminal_paste_shortcut: default_terminal_paste(),
             linux_ydotool_path: None,
@@ -424,7 +424,10 @@ mod tests {
         assert_eq!(s.default_double_tap_timeout_ms, 200);
         assert_eq!(s.trigger_chord_timeout_ms, 50);
         assert_eq!(s.tap_decision, TapDecision::PermissiveHold);
-        assert_eq!(s.linux_wayland_text_mode, TextMode::Libei);
+        assert_eq!(
+            s.linux_wayland_text_mode,
+            TextMode::LibeiWithClipboardFallback
+        );
         assert_eq!(s.linux_paste_shortcut, PasteShortcut::ShiftInsert);
         assert_eq!(
             s.linux_terminal_paste_shortcut,

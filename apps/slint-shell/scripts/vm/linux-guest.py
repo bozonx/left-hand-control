@@ -324,7 +324,7 @@ def cmd_write_config(args):
     (environment / '90-lhc-e2e.conf').write_text(f'LHC_POPUPS={args.popup_mode}\nLHC_METRICS={METRICS}\nRUST_LOG=info\n')
     settings = {
         "experimental": True,
-        "linux": {"textMode": args.text_backend},
+        "linux": {"textMode": {"libei": "libeiWithClipboardFallback"}.get(args.text_backend, args.text_backend)},
         "devices": {"keyboards": [args.device]},
         "profiles": {"mode": "manual", "manualProfile": "user:E2E"},
         "startMapperOnLaunch": True,

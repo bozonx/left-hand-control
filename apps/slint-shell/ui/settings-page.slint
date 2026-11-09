@@ -602,13 +602,13 @@ export component SettingsPage inherits PageLayout {
                                 ][SettingsEditor.text-mode-index];
                             }
                         }
-                        if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "libei" || SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "clipboard": VerticalLayout {
+                        if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "libeiWithClipboardFallback" || SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "clipboard": VerticalLayout {
                             padding: 0px; spacing: Theme.space-m;
                             FormLabel { text: @tr("Paste shortcut"); info: @tr("Sent to the focused app to paste the text."); }
                             // Same order as PasteShortcut::ALL in lhc-core.
                             SelectField { accessible-label: @tr("Paste shortcut"); width: 320px; height: Theme.control-height; vertical-stretch: 0; model: ["Shift+Insert", "Ctrl+V", "Ctrl+Shift+V"]; current-index: SettingsEditor.paste-shortcut-index; selected(value) => { SettingsEditor.paste-shortcut-index = self.current-index; SettingsEditor.save(); } }
                         }
-                        if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "libei" || SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "clipboard": VerticalLayout {
+                        if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "libeiWithClipboardFallback" || SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "clipboard": VerticalLayout {
                             padding: 0px; spacing: Theme.space-m;
                             FormLabel { text: @tr("Paste shortcut in terminals"); info: @tr("Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."); }
                             // The main shortcut, then the order of PasteShortcut::ALL in lhc-core.

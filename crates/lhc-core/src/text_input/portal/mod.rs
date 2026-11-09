@@ -141,7 +141,7 @@ struct TextBackendConfig {
 }
 
 static TEXT_BACKEND: Mutex<TextBackendConfig> = Mutex::new(TextBackendConfig {
-    mode: TextMode::Libei,
+    mode: TextMode::LibeiWithClipboardFallback,
     paste: PasteShortcut::ShiftInsert,
     terminal_paste: Some(PasteShortcut::CtrlShiftV),
     ydotool_path: None,
@@ -197,7 +197,10 @@ pub fn retry_text_backend() {
 /// if the selected mode may paste through it.
 pub fn prepare_text_input() {
     let mode = TEXT_BACKEND.lock().unwrap_or_else(|e| e.into_inner()).mode;
-    if matches!(mode, TextMode::Libei | TextMode::Clipboard) {
+    if matches!(
+        mode,
+        TextMode::LibeiWithClipboardFallback | TextMode::Clipboard
+    ) {
         super::clipboard::warm();
     }
 }
@@ -265,7 +268,9 @@ pub(crate) fn type_text(text: &str, request: TextRequest) -> Result<(), TextInpu
             text,
             &request,
         ),
-        TextMode::Libei | TextMode::LibeiPure => LIBEI.type_text(text, cfg.mode, paste, request),
+        TextMode::LibeiWithClipboardFallback | TextMode::LibeiOnly => {
+            LIBEI.type_text(text, cfg.mode, paste, request)
+        }
         TextMode::Keycode | TextMode::Clipboard => PORTAL.type_text(text, cfg.mode, paste, request),
     }
 }
@@ -551,7 +556,7 @@ mod tests {
         let data = tempfile::tempdir().unwrap();
         set_token_dir(data.path().to_owned());
         set_text_backend(
-            TextMode::Libei,
+            TextMode::LibeiWithClipboardFallback,
             PasteShortcut::ShiftInsert,
             None,
             None,

@@ -28,7 +28,7 @@ pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
         steps: &["ArrowUp", "End"],
     },
     BuiltinMacro {
-        id: "go5LinesUp",
+        id: "goTo5LinesUp",
         name: "Move 5 lines up",
         steps: &["ArrowUp", "ArrowUp", "ArrowUp", "ArrowUp", "ArrowUp"],
     },
@@ -90,7 +90,7 @@ pub const BUILTIN_MACROS: &[BuiltinMacro] = &[
         steps: &["ArrowUp", "Home"],
     },
     BuiltinMacro {
-        id: "go5LinesDown",
+        id: "goTo5LinesDown",
         name: "Move 5 lines down",
         steps: &[
             "ArrowDown",

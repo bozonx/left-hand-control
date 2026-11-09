@@ -194,7 +194,7 @@
         },
         "textMode": {
           "$ref": "#/$defs/TextMode",
-          "default": "libei",
+          "default": "libeiWithClipboardFallback",
           "description": "How `text:` actions reach the focused application."
         },
         "xdotoolPath": {
@@ -365,7 +365,7 @@
           "default": {
             "pasteShortcut": "Shift+Insert",
             "terminalPasteShortcut": "Ctrl+Shift+KeyV",
-            "textMode": "libei"
+            "textMode": "libeiWithClipboardFallback"
           }
         },
         "locale": {
@@ -465,12 +465,12 @@
           "type": "string"
         },
         {
-          "const": "libei",
+          "const": "libeiWithClipboardFallback",
           "description": "libei; pastes through the clipboard when the profile lacks a character.",
           "type": "string"
         },
         {
-          "const": "libeiPure",
+          "const": "libeiOnly",
           "description": "libei only.",
           "type": "string"
         },
@@ -620,7 +620,7 @@
         "linux": {
           "pasteShortcut": "Shift+Insert",
           "terminalPasteShortcut": "Ctrl+Shift+KeyV",
-          "textMode": "libei"
+          "textMode": "libeiWithClipboardFallback"
         },
         "locale": "auto",
         "profileOsd": false,

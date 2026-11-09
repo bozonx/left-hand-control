@@ -667,9 +667,9 @@ impl LocalePreference {
 pub enum TextMode {
     /// libei; pastes through the clipboard when the profile lacks a character.
     #[default]
-    Libei,
+    LibeiWithClipboardFallback,
     /// libei only.
-    LibeiPure,
+    LibeiOnly,
     /// RemoteDesktop portal `NotifyKeyboardKeycode`.
     Keycode,
     /// MIME-preserving clipboard ownership and Shift+Insert through the portal.
@@ -681,8 +681,8 @@ pub enum TextMode {
 impl TextMode {
     /// Every mode, in the order the settings page lists them.
     pub const ALL: [Self; 6] = [
-        Self::Libei,
-        Self::LibeiPure,
+        Self::LibeiWithClipboardFallback,
+        Self::LibeiOnly,
         Self::Keycode,
         Self::Clipboard,
         Self::Ydotool,
@@ -691,8 +691,8 @@ impl TextMode {
 
     pub fn as_str(self) -> &'static str {
         match self {
-            Self::Libei => "libei",
-            Self::LibeiPure => "libeiPure",
+            Self::LibeiWithClipboardFallback => "libeiWithClipboardFallback",
+            Self::LibeiOnly => "libeiOnly",
             Self::Keycode => "keycode",
             Self::Clipboard => "clipboard",
             Self::Ydotool => "ydotool",
@@ -890,7 +890,7 @@ impl Default for AppSettings {
                 process_matchers: Vec::new(),
                 control: GameModeControl::Auto,
             },
-            linux_wayland_text_mode: TextMode::Libei,
+            linux_wayland_text_mode: TextMode::LibeiWithClipboardFallback,
             linux_paste_shortcut: PasteShortcut::ShiftInsert,
             linux_terminal_paste_shortcut: Some(PasteShortcut::CtrlShiftV),
             linux_ydotool_path: String::new(),

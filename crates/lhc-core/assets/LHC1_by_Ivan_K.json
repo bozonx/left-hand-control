@@ -20,7 +20,7 @@
         "KeyU": "builtin:goToNextLineEnd",
         "KeyI": "builtin:goToPreviousLineEnd",
         "KeyO": "End",
-        "KeyP": "builtin:go5LinesUp",
+        "KeyP": "builtin:goTo5LinesUp",
         "BracketLeft": null,
         "KeyA": "lhc:showEmojiMenu1",
         "KeyS": "builtin:duplicateLine",
@@ -42,7 +42,7 @@
         "KeyM": "builtin:goToNextLineStart",
         "Comma": "builtin:goToPreviousLineStart",
         "Period": "Ctrl+ArrowRight",
-        "Slash": "builtin:go5LinesDown"
+        "Slash": "builtin:goTo5LinesDown"
       }
     },
     {

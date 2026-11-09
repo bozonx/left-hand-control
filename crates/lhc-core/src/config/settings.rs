@@ -45,7 +45,8 @@ pub fn parse(text: &str) -> Result<AppSettings, String> {
 }
 
 /// Version 1: the same layout, but `highContrast` and `reduceMotion` were
-/// booleans with `false` as the default.
+/// booleans with `false` as the default, and `linux.textMode` used `libei`
+/// (with clipboard fallback) and `libeiPure`.
 mod v1 {
     use serde_json::Value;
 
@@ -68,6 +69,19 @@ mod v1 {
                             crate::storage::CONFIG_FILE
                         ));
                     }
+                }
+            }
+            if let Some(mode) = settings
+                .get_mut("linux")
+                .and_then(|linux| linux.get_mut("textMode"))
+            {
+                let renamed = match mode.as_str() {
+                    Some("libei") => Some("libeiWithClipboardFallback"),
+                    Some("libeiPure") => Some("libeiOnly"),
+                    _ => None,
+                };
+                if let Some(renamed) = renamed {
+                    *mode = renamed.into();
                 }
             }
         }
@@ -846,6 +860,27 @@ mod tests {
             AccessibilityChoice::Off
         );
         assert!(parse(r#"{"version":2,"settings":{"highContrast":true}}"#).is_err());
+    }
+
+    #[test]
+    fn version_1_text_modes_are_renamed() {
+        let mode = |value: &str| {
+            parse(&config(json!({"linux": {"textMode": value}})))
+                .unwrap()
+                .linux_wayland_text_mode
+        };
+        assert_eq!(mode("libei"), TextMode::LibeiWithClipboardFallback);
+        assert_eq!(mode("libeiPure"), TextMode::LibeiOnly);
+        assert_eq!(mode("clipboard"), TextMode::Clipboard);
+        let current = |value: &str| {
+            parse(&json!({"version": 2, "settings": {"linux": {"textMode": value}}}).to_string())
+        };
+        assert_eq!(
+            current("libeiOnly").unwrap().linux_wayland_text_mode,
+            TextMode::LibeiOnly
+        );
+        assert!(current("libei").is_err());
+        assert!(current("libeiPure").is_err());
     }
 
     #[test]
