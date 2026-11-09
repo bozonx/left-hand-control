@@ -182,13 +182,13 @@ fn unmapped_key_in_active_layer_passthroughs() {
     engine.handle_key_event(
         KeyCode::KEY_A,
         true,
-        now + Duration::from_millis(10),
+        now + Duration::from_millis(300),
         &mut out,
     );
     engine.handle_key_event(
         KeyCode::KEY_A,
         false,
-        now + Duration::from_millis(11),
+        now + Duration::from_millis(301),
         &mut out,
     );
 
@@ -457,7 +457,7 @@ fn layer_only_rule_is_not_treated_as_passthrough() {
 fn layer_presses_count_only_keys_pressed_inside_a_layer() {
     let cfg: MapperConfig = serde_json::from_value(serde_json::json!({"rules": [
         {"key": "Space", "layerId": "nav", "tapAction": "Space"},
-    ]}))
+    ], "layerKeymaps": {"nav": {"keys": {"KeyJ": "ArrowLeft"}}}}))
     .unwrap();
     let mut engine = Engine::new(&cfg);
     let now = Instant::now();

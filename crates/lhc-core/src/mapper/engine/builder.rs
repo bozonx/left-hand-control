@@ -324,7 +324,20 @@ impl Engine {
                 .unwrap_or(default_double_tap);
 
             let entry = RuleEntry {
-                tap_decision: r.tap_decision.unwrap_or(cfg.settings.tap_decision),
+                // A modifier that stays itself when held types capitals in
+                // rolls (Shift released just before the letter) only when
+                // any other key commits the hold; permissive hold would fire
+                // its tap action and an unshifted letter instead.
+                tap_decision: r.tap_decision.unwrap_or(
+                    if keys.len() == 1
+                        && super::is_modifier_key(key)
+                        && matches!(hold, HoldOutputMode::Native)
+                    {
+                        crate::mapper::config::TapDecision::HoldOnOtherKeyPress
+                    } else {
+                        cfg.settings.tap_decision
+                    },
+                ),
                 long_hold,
                 long_hold_timeout,
                 tap,

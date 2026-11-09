@@ -259,6 +259,10 @@ impl Engine {
             }
         }
         for k in expired_hold {
+            if self.timeout_taps(k) {
+                self.resolve_deciding_as_tap(k, now, out);
+                continue;
+            }
             self.commit_hold(k, out);
             // A hold that timed out while presses were buffered behind it
             // (permissive-hold mode) must now replay them in the held context.
@@ -552,7 +556,8 @@ impl Engine {
         }
         if self.pending.get(&key).is_some_and(
             |p| matches!(p.phase, RulePhase::WaitingDecision { deadline } if now >= deadline),
-        ) {
+        ) && !self.timeout_taps(key)
+        {
             self.commit_hold(key, out);
             self.drain_decision_buffer(out);
         }

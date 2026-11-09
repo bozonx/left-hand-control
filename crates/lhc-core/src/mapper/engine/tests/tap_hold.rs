@@ -975,15 +975,17 @@ fn permissive_chain_of_two_rule_keys_both_tap() {
 
 #[test]
 fn permissive_native_hold_shift_roll_still_taps() {
-    // Mirrors the user's real rule: ShiftLeft tap=Ctrl+KeyC with an
-    // implicit native hold. A rolling overlap with a letter must fire
-    // the Ctrl+C tap, not commit the native Shift hold.
+    // ShiftLeft tap=Ctrl+KeyC with a native hold and permissive hold chosen
+    // explicitly: a rolling overlap with a letter fires the Ctrl+C tap, not
+    // the native Shift hold.
     let mut cfg = empty_cfg();
-    cfg.rules.push(tap_hold_rule(
+    let mut rule = tap_hold_rule(
         "ShiftLeft",
         ActionSpec::Action("Ctrl+KeyC".into()),
         ActionSpec::Native,
-    ));
+    );
+    rule.tap_decision = Some(TapDecision::PermissiveHold);
+    cfg.rules.push(rule);
     let mut engine = Engine::new(&cfg);
     let mut out = Vec::new();
     let now = Instant::now();
@@ -1641,9 +1643,11 @@ fn tap_then_hold_activates_the_layer_and_quick_second_tap_is_double_tap() {
         ],
         &[0, 30, 100, 400, 600, 650, 700],
     );
+    // The first tap was typing: it is kept ahead of the layer.
     assert_eq!(
         held,
         [
+            TraceEvent::Tap(KeyCode::KEY_SPACE, vec![]),
             TraceEvent::Press(KeyCode::KEY_LEFT, vec![]),
             TraceEvent::Raw(KeyCode::KEY_LEFT, false)
         ]
@@ -2053,4 +2057,112 @@ fn tap_of_a_key_held_by_another_press_keeps_it_held() {
     );
     let out = run(&mut engine, &[(KeyCode::KEY_A, false)]);
     assert_eq!(transitions(&out), [(KeyCode::KEY_A, false)]);
+}
+
+#[test]
+fn modifier_with_a_tap_action_types_a_capital_in_a_roll_by_default() {
+    let cfg = serde_json::json!({"rules": [{"key": "ShiftLeft", "tapAction": "Escape"}]});
+    let typed = timeline(
+        cfg,
+        &[
+            (KeyCode::KEY_LEFTSHIFT, true, 0),
+            (KeyCode::KEY_A, true, 50),
+            (KeyCode::KEY_LEFTSHIFT, false, 80),
+            (KeyCode::KEY_A, false, 100),
+        ],
+        &[0, 50, 80, 100],
+    );
+    assert_eq!(
+        typed,
+        [
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, true),
+            TraceEvent::Raw(KeyCode::KEY_A, true),
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, false),
+            TraceEvent::Raw(KeyCode::KEY_A, false),
+        ]
+    );
+}
+
+#[test]
+fn keys_a_layer_ignores_do_not_turn_its_key_into_a_hold() {
+    let cfg = serde_json::json!({
+        "rules": [{"key": "Space", "layerId": "nav"}],
+        "layerKeymaps": {"nav": {"keys": {"KeyA": "ArrowLeft"}}}
+    });
+    let space_then = |events: &[(KeyCode, bool, u64)]| {
+        let ticks: Vec<u64> = events.iter().map(|e| e.2).collect();
+        timeline(cfg.clone(), events, &ticks)
+    };
+    // A nested letter the layer does not map: the space was typed.
+    assert_eq!(
+        space_then(&[
+            (KeyCode::KEY_SPACE, true, 0),
+            (KeyCode::KEY_B, true, 40),
+            (KeyCode::KEY_B, false, 70),
+            (KeyCode::KEY_SPACE, false, 90),
+        ]),
+        [
+            TraceEvent::Tap(KeyCode::KEY_SPACE, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_B, true),
+            TraceEvent::Raw(KeyCode::KEY_B, false),
+        ]
+    );
+    // A touched modifier decides nothing.
+    assert_eq!(
+        space_then(&[
+            (KeyCode::KEY_SPACE, true, 0),
+            (KeyCode::KEY_LEFTSHIFT, true, 30),
+            (KeyCode::KEY_LEFTSHIFT, false, 60),
+            (KeyCode::KEY_SPACE, false, 90),
+        ]),
+        [
+            TraceEvent::Tap(KeyCode::KEY_SPACE, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, true),
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, false),
+        ]
+    );
+    // Typing that crosses the hold timeout.
+    assert_eq!(
+        space_then(&[
+            (KeyCode::KEY_SPACE, true, 0),
+            (KeyCode::KEY_B, true, 180),
+            (KeyCode::KEY_SPACE, false, 220),
+            (KeyCode::KEY_B, false, 240),
+        ]),
+        [
+            TraceEvent::Tap(KeyCode::KEY_SPACE, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_B, true),
+            TraceEvent::Raw(KeyCode::KEY_B, false),
+        ]
+    );
+    // Shift, then a key the layer maps: still Shift+ArrowLeft.
+    assert_eq!(
+        space_then(&[
+            (KeyCode::KEY_SPACE, true, 0),
+            (KeyCode::KEY_LEFTSHIFT, true, 20),
+            (KeyCode::KEY_A, true, 40),
+            (KeyCode::KEY_A, false, 50),
+            (KeyCode::KEY_LEFTSHIFT, false, 60),
+            (KeyCode::KEY_SPACE, false, 70),
+        ]),
+        [
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, true),
+            TraceEvent::Press(KeyCode::KEY_LEFT, vec![]),
+            TraceEvent::Raw(KeyCode::KEY_LEFT, false),
+            TraceEvent::Raw(KeyCode::KEY_LEFTSHIFT, false),
+        ]
+    );
+    // An unmapped key pressed after the timeout is used inside the layer.
+    assert_eq!(
+        space_then(&[
+            (KeyCode::KEY_SPACE, true, 0),
+            (KeyCode::KEY_B, true, 250),
+            (KeyCode::KEY_B, false, 260),
+            (KeyCode::KEY_SPACE, false, 270),
+        ]),
+        [
+            TraceEvent::Raw(KeyCode::KEY_B, true),
+            TraceEvent::Raw(KeyCode::KEY_B, false),
+        ]
+    );
 }

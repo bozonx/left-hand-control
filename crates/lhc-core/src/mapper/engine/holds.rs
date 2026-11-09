@@ -193,6 +193,20 @@ impl Engine {
         // Release of a key pressed *after* the deciding key → nested
         // press+release → the deciding key is a hold.
         if self.decision_buffer.iter().any(|e| e.key == key && e.down) {
+            // A key the layer leaves out behaves the same with or without the
+            // layer: it does not make the press a hold. A modifier only
+            // prepares the next key; anything else means the user was typing.
+            if self.layer_ignores(deciding, key)
+                && self.decision_buffer.iter().any(|e| {
+                    e.key == key && e.down && self.before_deadline(deciding, e.at)
+                })
+            {
+                if is_modifier_key(key) {
+                    return self.defer_release(key, now);
+                }
+                self.resolve_deciding_as_tap(deciding, now, out);
+                return self.permissive_intercept(key, down, now, out);
+            }
             self.resolve_deciding_as_hold(out);
             // Replay may start another decision and buffer this key's press
             // again. Resolve that decision before allowing its release through.
@@ -221,6 +235,79 @@ impl Engine {
             at: now,
         });
         true
+    }
+
+    /// True when `key` does nothing different inside the layer held by the
+    /// undecided layer-only rule `deciding`: the layer does not map it and it
+    /// is no rule or chord key of its own (which could stack another layer).
+    pub(super) fn layer_ignores(&self, deciding: KeyCode, key: KeyCode) -> bool {
+        let Some(pending) = self.pending.get(&deciding) else {
+            return false;
+        };
+        let Some(layer) = &pending.rule.layer_id else {
+            return false;
+        };
+        matches!(pending.rule.hold, HoldOutputMode::Swallow)
+            && !self
+                .profile
+                .layer_maps
+                .get(layer)
+                .is_some_and(|keys| keys.contains_key(&key))
+            && !self.profile.rules.contains_key(&key)
+            && !self
+                .profile
+                .chord_rules
+                .iter()
+                .any(|(keys, _)| keys.contains(&key))
+    }
+
+    /// True when the hold timeout of the deciding layer key should resolve as
+    /// a tap: the first ordinary key buffered behind it is one the layer
+    /// ignores, so the press was typing that crossed the timeout.
+    pub(super) fn timeout_taps(&self, key: KeyCode) -> bool {
+        self.deciding_key() == Some(key)
+            && self
+                .decision_buffer
+                .iter()
+                .find(|event| event.down && !is_modifier_key(event.key))
+                .is_some_and(|event| {
+                    self.before_deadline(key, event.at) && self.layer_ignores(key, event.key)
+                })
+    }
+
+    /// True when `at` falls before the hold deadline of the undecided `key`:
+    /// a press after it arrived when the key was already a hold.
+    fn before_deadline(&self, key: KeyCode, at: Instant) -> bool {
+        self.pending.get(&key).is_some_and(
+            |p| matches!(p.phase, RulePhase::WaitingDecision { deadline } if at < deadline),
+        )
+    }
+
+    /// Resolve the still-held deciding key as a tap (or the double-tap of a
+    /// second press), then replay the buffered events. Its later release
+    /// emits nothing.
+    pub(super) fn resolve_deciding_as_tap(
+        &mut self,
+        key: KeyCode,
+        now: Instant,
+        out: &mut Vec<EngineOutput>,
+    ) {
+        let Some(pending) = self.pending.remove(&key) else {
+            return;
+        };
+        self.long_holds.remove(&key);
+        if pending.second_press {
+            self.fire_action(
+                pending.rule.double_tap.as_ref(),
+                self.profile.default_mod_delay,
+                now,
+                out,
+            );
+        } else {
+            self.fire_tap(key, &pending.rule.tap, now, out);
+        }
+        self.virt.oneshot.insert(key);
+        self.drain_decision_buffer(out);
     }
 
     /// Commit the current deciding key as a hold, then replay any buffered
@@ -252,12 +339,19 @@ impl Engine {
         let Some(p) = self.pending.get_mut(&key) else {
             return;
         };
-        if !matches!(p.phase, RulePhase::WaitingDecision { .. }) {
+        let RulePhase::WaitingDecision { deadline } = p.phase else {
             return;
-        }
+        };
         let rule = p.rule.clone();
-        {
-            p.phase = RulePhase::HoldActive;
+        // A layer key tapped and then held within the double-tap window:
+        // the first tap was typing (a space before navigating), not part of
+        // the hold, so it is emitted before the layer starts. It happened at
+        // the second press, `hold_timeout` before the deadline.
+        let first_tap = (p.second_press && rule.layer_id.is_some())
+            .then(|| deadline.checked_sub(rule.hold_timeout).unwrap_or(deadline));
+        p.phase = RulePhase::HoldActive;
+        if let Some(at) = first_tap {
+            self.fire_tap(key, &rule.tap, at, out);
         }
         self.commit_hold_with(&rule, key, out);
     }

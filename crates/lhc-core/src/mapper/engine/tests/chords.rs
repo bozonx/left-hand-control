@@ -721,7 +721,7 @@ fn space_audit_plain_and_layer_roll_preserve_order() {
 }
 
 #[test]
-fn space_audit_nested_letter_selects_layer_without_space() {
+fn space_audit_nested_letter_the_layer_ignores_keeps_the_space() {
     assert_eq!(
         space_audit_presses(
             Some(serde_json::json!({"key": "Space", "layerId": "nav"})),
@@ -732,7 +732,20 @@ fn space_audit_nested_letter_selects_layer_without_space() {
                 (KeyCode::KEY_SPACE, false, 30),
             ]
         ),
-        vec![KeyCode::KEY_B]
+        vec![KeyCode::KEY_SPACE, KeyCode::KEY_B]
+    );
+    // Typing that crosses the hold timeout, delivered live and as a batch.
+    assert_eq!(
+        space_audit_presses(
+            Some(serde_json::json!({"key": "Space", "layerId": "nav"})),
+            &[
+                (KeyCode::KEY_SPACE, true, 0),
+                (KeyCode::KEY_B, true, 180),
+                (KeyCode::KEY_SPACE, false, 220),
+                (KeyCode::KEY_B, false, 240),
+            ]
+        ),
+        vec![KeyCode::KEY_SPACE, KeyCode::KEY_B]
     );
 }
 

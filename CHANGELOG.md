@@ -94,6 +94,9 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Mapper: a layer key no longer loses its tap when a key the layer does not map is pressed and released inside the press, or pressed before the hold timeout (fast typing of Space then a letter typed only the letter); a modifier touched meanwhile decides nothing.
+- Mapper: a layer key with a double-tap action that is tapped and then held keeps the first tap ahead of the layer.
+- Mapper: a modifier rule with a tap action and its own key on hold (e.g. Shift with tap Escape) now defaults to "hold on other key press", so a quick roll types a capital letter instead of the tap action and a lowercase letter. An explicit `tapDecision` on the rule still wins.
 - Mapper: a mouse click while a tap/hold key is still deciding no longer overtakes keys pressed before it, so Shift pressed after a layer key and then a click is a Shift+click.
 - Mapper: a second press exactly at the end of the double-tap window is now always late (a single tap), whether or not the timer ran first.
 - Mapper: a tap action that types a key another physical key is holding presses that key again afterwards, so it stays down and keeps repeating.
