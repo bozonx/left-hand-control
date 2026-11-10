@@ -5,7 +5,7 @@ use std::sync::Mutex;
 use super::ActiveWindow;
 use crate::platform::gnome;
 
-static EXTERNAL: Mutex<Option<String>> = Mutex::new(None);
+static EXTERNAL: Mutex<Option<(String, ActiveWindow)>> = Mutex::new(None);
 
 pub(super) fn current(titles: bool) -> Option<ActiveWindow> {
     let snapshot = gnome::snapshot(titles).ok()?;
@@ -24,7 +24,7 @@ fn remember(value: &serde_json::Value, window: &ActiveWindow) {
     if !super::is_text_popup(window)
         && let Ok(mut external) = EXTERNAL.lock()
     {
-        *external = identity(value);
+        *external = identity(value).map(|id| (id, window.clone()));
     }
 }
 
@@ -36,7 +36,7 @@ fn identity(value: &serde_json::Value) -> Option<String> {
         .map(str::to_owned)
 }
 
-pub(super) fn text_target() -> Option<String> {
+pub(super) fn text_target() -> Option<(String, ActiveWindow)> {
     // Enqueue runs on the grabbed-keyboard thread; only the text worker may
     // wait for Shell. A stale cached identity fails the live delivery check.
     EXTERNAL.lock().ok()?.clone()
@@ -67,10 +67,16 @@ mod tests {
             ..ActiveWindow::default()
         };
         remember(&serde_json::json!({"windowId": "epoch:settings"}), &window);
-        assert_eq!(text_target().as_deref(), Some("epoch:settings"));
+        assert_eq!(
+            text_target().as_ref().map(|(id, _)| id.as_str()),
+            Some("epoch:settings")
+        );
         window.app_id = crate::storage::POPUP_APP_ID.into();
         remember(&serde_json::json!({"windowId": "epoch:quick"}), &window);
-        assert_eq!(text_target().as_deref(), Some("epoch:settings"));
+        assert_eq!(
+            text_target().as_ref().map(|(id, _)| id.as_str()),
+            Some("epoch:settings")
+        );
         *EXTERNAL.lock().unwrap() = None;
     }
 

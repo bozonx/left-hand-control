@@ -70,8 +70,42 @@ pub enum TextInputFailure {
     DestinationChanged,
     /// Safe clipboard access or the paste transfer failed.
     Clipboard(String),
+    /// Native popup input failed (permissions, modifiers or rejected injection).
+    NativeInput(String),
     /// The external typing tool failed.
     Tool(String),
+}
+
+/// Recovery category of a clipboard transport error. Details remain diagnostic.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ClipboardFailureKind {
+    PreservationLimit,
+    Permission,
+    NotConsumed,
+    Sensitive,
+    Other,
+}
+
+impl ClipboardFailureKind {
+    pub fn from_detail(detail: &str) -> Self {
+        if detail.contains("sensitive clipboard") {
+            Self::Sensitive
+        } else if detail.contains("too large")
+            || detail.contains("too many")
+            || detail.contains("owner timed out")
+            || detail.contains("saving clipboard timed out")
+        {
+            Self::PreservationLimit
+        } else if detail.contains("permission") || detail.contains("RequestClipboard") {
+            Self::Permission
+        } else if detail.contains("not consumed")
+            || detail.contains("text transfer did not complete")
+        {
+            Self::NotConsumed
+        } else {
+            Self::Other
+        }
+    }
 }
 
 /// States and diagnostics are coalesced. Requests retain order within a bounded

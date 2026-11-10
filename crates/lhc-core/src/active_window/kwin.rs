@@ -90,6 +90,7 @@ callDBus(SERVICE, PATH, IFACE, "Windows", JSON.stringify(out));
 struct Focus {
     current: Option<String>,
     external: Option<String>,
+    external_window: Option<super::ActiveWindow>,
 }
 
 impl Focus {
@@ -101,6 +102,7 @@ impl Focus {
             .map(str::to_owned);
         if value.get("appId").and_then(|id| id.as_str()) != Some(crate::storage::POPUP_APP_ID) {
             self.external = self.current.clone();
+            self.external_window = super::linux::window_from_json(value, "title", "appId");
         }
     }
 }
@@ -108,10 +110,12 @@ impl Focus {
 static FOCUS: Mutex<Focus> = Mutex::new(Focus {
     current: None,
     external: None,
+    external_window: None,
 });
 
-pub(super) fn text_target() -> Option<String> {
-    FOCUS.lock().ok()?.external.clone()
+pub(super) fn text_target() -> Option<(String, super::ActiveWindow)> {
+    let focus = FOCUS.lock().ok()?;
+    Some((focus.external.clone()?, focus.external_window.clone()?))
 }
 
 pub(super) fn target_is_current(target: &str) -> bool {

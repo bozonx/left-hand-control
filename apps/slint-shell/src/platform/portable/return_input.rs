@@ -41,6 +41,10 @@ impl ReturnInput {
 
     pub fn selected(&mut self, text: String) {
         let Some(target) = self.target.take() else {
+            report(
+                lhc_core::events::TextInputFailure::DestinationChanged,
+                "no native target was captured",
+            );
             return;
         };
         let selection_context = capture_selection_context();
@@ -54,29 +58,55 @@ impl ReturnInput {
                     return;
                 }
                 if let Err(error) = restore_target(&target, selection_context) {
-                    log::error!("native focus restore failed: {error}");
+                    report(
+                        lhc_core::events::TextInputFailure::DestinationChanged,
+                        &error.to_string(),
+                    );
                     return;
                 }
                 let deadline = std::time::Instant::now() + MODIFIER_RELEASE_TIMEOUT;
                 while valid() && target_is_foreground(&target) && !modifiers_released() {
                     if std::time::Instant::now() >= deadline {
-                        log::warn!("native text input cancelled: modifiers remain held");
+                        report(
+                            lhc_core::events::TextInputFailure::NativeInput(
+                                "keyboard modifiers remain held".into(),
+                            ),
+                            "keyboard modifiers remain held",
+                        );
                         return;
                     }
                     std::thread::sleep(POLL_INTERVAL);
                 }
                 let check = || valid() && target_is_foreground(&target) && modifiers_released();
+                if !valid() {
+                    return;
+                }
                 if !check() {
+                    report(
+                        lhc_core::events::TextInputFailure::DestinationChanged,
+                        "native destination changed before input",
+                    );
                     return;
                 }
                 if let Err(error) = type_text(&text, check) {
-                    log::error!("native return input unavailable: {error}");
+                    report(
+                        lhc_core::events::TextInputFailure::NativeInput(error.to_string()),
+                        &error.to_string(),
+                    );
                 }
             });
         if let Err(error) = result {
-            log::error!("start native text input: {error}");
+            report(
+                lhc_core::events::TextInputFailure::NativeInput(error.to_string()),
+                &error.to_string(),
+            );
         }
     }
+}
+
+fn report(failure: lhc_core::events::TextInputFailure, detail: &str) {
+    log::warn!("[native text] {detail}");
+    lhc_core::events::emit(lhc_core::events::CoreEvent::TextInputFailed(failure));
 }
 
 #[cfg(target_os = "windows")]

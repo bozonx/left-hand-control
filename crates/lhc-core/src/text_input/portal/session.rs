@@ -96,10 +96,15 @@ pub(super) fn init_portal(text_request: &TextRequest) -> Result<PortalSession, S
     }
 
     let clipboard = if clipboard_requested {
-        Some(crate::text_input::portal_clipboard::Clipboard::request(
-            &conn,
-            &session_handle,
-        )?)
+        match crate::text_input::portal_clipboard::Clipboard::request(&conn, &session_handle) {
+            Ok(clipboard) => Some(clipboard),
+            Err(error) => {
+                log::warn!(
+                    "[portal] clipboard unavailable; keyboard input remains available: {error}"
+                );
+                None
+            }
+        }
     } else {
         None
     };
@@ -129,7 +134,14 @@ pub(super) fn init_portal(text_request: &TextRequest) -> Result<PortalSession, S
             .unwrap_or(false);
         clipboard.enabled(enabled);
     }
-    if let Some(token) = extract_restore_token(&start_results) {
+    let clipboard_denied = clipboard_requested
+        && !start_results
+            .get("clipboard_enabled")
+            .and_then(|value| bool::try_from(value).ok())
+            .unwrap_or(false);
+    if clipboard_denied {
+        clear_restore_token(TokenScope::Clipboard);
+    } else if let Some(token) = extract_restore_token(&start_results) {
         if saved_token.as_deref() != Some(token.as_str()) {
             persist_restore_token(token_scope, &token);
         }

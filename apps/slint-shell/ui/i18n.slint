@@ -183,6 +183,11 @@ export global Locale {
         if m.id == "text-destination-changed" { return @tr("The text was not typed: the destination window changed or could not be identified."); }
         if m.id == "text-backend-unavailable" { return @tr("The text was not typed: the typing method is unavailable. Restart the mapper to try again."); }
         if m.id == "text-clipboard-failed" { return @tr("The text was not typed: safe clipboard access failed. See the application log."); }
+        if m.id == "text-clipboard-limit" { return @tr("The clipboard is too large or too slow to preserve. Copy a small item and try again. The clipboard was left unchanged."); }
+        if m.id == "text-clipboard-permission" { return @tr("Clipboard access is unavailable. Reset text input permissions in Settings and allow clipboard access in the consent dialog."); }
+        if m.id == "text-clipboard-not-consumed" { return @tr("No clipboard text transfer was observed. Check the paste shortcut for the destination app, including embedded terminals."); }
+        if m.id == "text-clipboard-sensitive" { return @tr("The clipboard is marked sensitive. Copy another item before pasting text so password-manager ownership is preserved."); }
+        if m.id == "text-native-failed" { return @tr("The text was not typed: native input failed. Check accessibility permissions and the destination app's privileges."); }
         if m.id == "text-tool-failed" { return @tr("The text was not typed: the input tool failed. See the application log."); }
         if m.id == "mapper-required" { return @tr("Start the mapper to run actions from the menus"); }
         if m.id == "layer-name-required" { return @tr("Enter a layer name"); }

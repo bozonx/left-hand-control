@@ -66,10 +66,7 @@ pub(crate) struct TextRequest {
     completed: Arc<AtomicBool>,
     generation: u64,
     deadline: Instant,
-    target: crate::active_window::TextTarget,
-    /// The destination is a terminal, which may need another paste shortcut.
-    #[cfg(target_os = "linux")]
-    terminal: bool,
+    target: Arc<crate::active_window::TextTarget>,
 }
 
 impl Progress {
@@ -121,9 +118,7 @@ impl TextRequest {
             completed: Arc::new(AtomicBool::new(false)),
             generation,
             deadline: Instant::now() + MAX_AGE,
-            target: crate::active_window::TextTarget::capture(),
-            #[cfg(target_os = "linux")]
-            terminal: crate::active_window::text_window_is_terminal(),
+            target: Arc::new(crate::active_window::TextTarget::capture()),
         };
         Ok(request)
     }
@@ -147,7 +142,7 @@ impl TextRequest {
 
     #[cfg(target_os = "linux")]
     pub(crate) fn is_terminal(&self) -> bool {
-        self.terminal
+        self.target.is_terminal()
     }
 
     pub(crate) fn wait_for_target(&self) -> Result<(), TextInputFailure> {

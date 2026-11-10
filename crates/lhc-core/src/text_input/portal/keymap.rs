@@ -76,8 +76,6 @@ pub(super) fn paste_keys(shortcut: PasteShortcut, v_key: Option<u32>) -> (&'stat
     }
 }
 
-const XKB_KEY_V_LOWER: u32 = 0x76;
-
 /// evdev key that types `v` without modifiers, the way Qt and GTK match a
 /// Ctrl+V shortcut: in the active `group` first, then in the other groups
 /// in order (a Cyrillic layout borrows the shortcut from the Latin one).
@@ -86,6 +84,15 @@ const XKB_KEY_V_LOWER: u32 = 0x76;
 /// # Safety
 /// `keymap` must be a valid keymap.
 pub(super) unsafe fn paste_v_key(keymap: *mut XkbKeymap, group: u32) -> Option<u32> {
+    // SAFETY: the caller guarantees a live keymap.
+    unsafe { shortcut_key(keymap, group, 'v') }
+}
+
+/// Find an unmodified Latin shortcut key in the active or another layout group.
+///
+/// # Safety
+/// `keymap` must be a valid keymap.
+unsafe fn shortcut_key(keymap: *mut XkbKeymap, group: u32, character: char) -> Option<u32> {
     // SAFETY: the caller owns a live keymap. The state is released before return.
     unsafe {
         let groups = xkb_keymap_num_layouts(keymap);
@@ -101,7 +108,7 @@ pub(super) unsafe fn paste_v_key(keymap: *mut XkbKeymap, group: u32) -> Option<u
                 xkb_state_update_mask(state, 0, 0, 0, 0, 0, g);
                 keys.clone().find(|key| {
                     key_class(keymap, *key) == Some(KeyClass::Main)
-                        && xkb_state_key_get_one_sym(state, *key) == XKB_KEY_V_LOWER
+                        && xkb_state_key_get_one_sym(state, *key) == character as u32
                 })
             });
         xkb_state_unref(state);
@@ -143,6 +150,15 @@ pub(super) fn paste_v_key_from_names(
     group: u32,
     options: &str,
 ) -> Option<u32> {
+    shortcut_key_from_names(layouts, group, options, 'v')
+}
+
+pub(super) fn shortcut_key_from_names(
+    layouts: &[(&str, &str)],
+    group: u32,
+    options: &str,
+    character: char,
+) -> Option<u32> {
     if layouts.is_empty() {
         return None;
     }
@@ -170,7 +186,7 @@ pub(super) fn paste_v_key_from_names(
         if keymap.is_null() {
             return None;
         }
-        let key = paste_v_key(keymap, group);
+        let key = shortcut_key(keymap, group, character);
         xkb_keymap_unref(keymap);
         key
     }

@@ -2242,17 +2242,17 @@ msgstr "ydotool"
 msgid "xdotool"
 msgstr "xdotool"
 
-msgid "Types with the current profile, or pastes the whole text when a character is unavailable. Paste requires clipboard access and support for the paste shortcut. Preserves clipboard formats and cancels if the destination changes. Requires portal permission and active-window detection."
-msgstr "Вводит текст с текущей раскладкой или вставляет весь текст, если символ недоступен. Для вставки нужны доступ к буферу обмена и поддержка сочетания вставки. Сохраняет форматы буфера и отменяет ввод при смене окна назначения. Требуются разрешение портала и определение активного окна."
+msgid "Types with the current keyboard layout, or pastes the whole text when a character is unavailable. Paste requires Wayland, clipboard access and a supported paste shortcut. A large or slow clipboard can prevent paste. Cancels when a detected destination changes."
+msgstr "Вводит текст в текущей раскладке или вставляет его целиком, если символ недоступен. Для вставки нужны Wayland, доступ к буферу и поддерживаемое сочетание. Большой или медленный буфер может помешать вставке. При обнаруженной смене целевого окна ввод отменяется."
 
-msgid "Types only through libei using the current keyboard layout and Caps Lock state. Skips text with unavailable characters. Requires portal permission and active-window detection. Cancels if the destination changes."
-msgstr "Вводит текст только через libei с учётом текущей раскладки и Caps Lock. Пропускает текст с недоступными символами. Требуются разрешение портала и определение активного окна. Отменяет ввод при смене окна назначения."
+msgid "Types only through libei using the current keyboard layout and Caps Lock state. Skips text with unavailable characters. Requires portal permission. Cancels when a detected destination changes."
+msgstr "Вводит только через libei с учётом текущей раскладки и Caps Lock. Пропускает текст с недоступными символами. Требует разрешения портала. При обнаруженной смене целевого окна ввод отменяется."
 
-msgid "Types only through NotifyKeyboardKeycode using the KDE profile and readable keyboard state. Skips text with unavailable characters. Requires portal permission and active-window detection. Cancels if the destination changes."
-msgstr "Вводит текст только через NotifyKeyboardKeycode с раскладкой KDE и доступным состоянием клавиатуры. Пропускает текст с недоступными символами. Требуются разрешение портала и определение активного окна. Отменяет ввод при смене окна назначения."
+msgid "Types only through NotifyKeyboardKeycode using the KDE keyboard layout and readable keyboard state. Skips text with unavailable characters. Requires portal permission. Cancels when a detected destination changes."
+msgstr "Вводит только через NotifyKeyboardKeycode с раскладкой KDE и доступным состоянием клавиатуры. Пропускает текст с недоступными символами. Требует разрешения портала. При обнаруженной смене целевого окна ввод отменяется."
 
-msgid "Pastes with the paste shortcut through the portal. Requires clipboard access, active-window detection and an app supporting that shortcut. Preserves all clipboard formats; a new user copy takes precedence. Reports an error if no text transfer is observed."
-msgstr "Вставляет текст через портал сочетанием вставки. Нужны доступ к буферу обмена, определение активного окна и поддержка этого сочетания в приложении. Сохраняет все форматы буфера; новое копирование пользователя имеет приоритет. Сообщает об ошибке, если передача текста не обнаружена."
+msgid "Pastes with the configured shortcut on Wayland: data-control on KDE, Clipboard portal on GNOME. Preserves all formats within size and time limits. LHC then owns the restored clipboard until another app copies; quitting can clear it. A new user copy takes precedence."
+msgstr "Вставляет настроенным сочетанием в Wayland: через data-control в KDE и портал Clipboard в GNOME. Сохраняет все форматы в пределах размера и времени. Затем LHC владеет восстановленным буфером до следующего копирования; выход может очистить буфер. Новое копирование имеет приоритет."
 
 msgid "Paste shortcut"
 msgstr "Сочетание вставки"
@@ -2266,8 +2266,8 @@ msgstr "Сочетание вставки в терминалах"
 msgid "Same as in other apps"
 msgstr "Как в остальных приложениях"
 
-msgid "Used instead when the focused window is a terminal, such as Konsole, kitty or Alacritty. Ctrl+V does not paste in terminals, and some of them paste the mouse selection on Shift+Insert."
-msgstr "Используется вместо основного, когда активное окно — терминал, например Konsole, kitty или Alacritty. Ctrl+V в терминалах не вставляет, а некоторые из них по Shift+Insert вставляют выделение мышью."
+msgid "Used for terminal windows, such as Konsole, kitty or Alacritty. Embedded terminals cannot be detected by window class. Shift+Insert may paste the mouse selection; use Ctrl+V for other apps to avoid that risk. Older terminals may need custom shortcut bindings."
+msgstr "Используется для окон терминалов, таких как Konsole, kitty и Alacritty. Встроенный терминал нельзя определить по классу окна. Shift+Insert может вставить выделение мышью; для других приложений используйте Ctrl+V, чтобы избежать этого риска. Старым терминалам могут понадобиться собственные привязки сочетаний."
 
 msgid "Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. Reliable for Latin text only. On an error, stops without switching methods."
 msgstr "Использует только «ydotool type». Требуются ydotool и запущенная служба ydotoold. Надёжно работает только с латиницей. При ошибке ввод прекращается без смены способа."
@@ -3198,3 +3198,22 @@ msgstr "Правила авторежима"
 msgctxt "Game mode rules"
 msgid "Inactive"
 msgstr "Не активны"
+
+
+msgid "The clipboard is too large or too slow to preserve. Copy a small item and try again. The clipboard was left unchanged."
+msgstr "Буфер обмена слишком большой или отвечает слишком медленно. Скопируйте небольшой фрагмент и повторите попытку. Буфер не изменён."
+
+msgid "Clipboard access is unavailable. Reset text input permissions in Settings and allow clipboard access in the consent dialog."
+msgstr "Доступ к буферу обмена недоступен. Сбросьте разрешения ввода текста в настройках и разрешите доступ к буферу в диалоге."
+
+msgid "No clipboard text transfer was observed. Check the paste shortcut for the destination app, including embedded terminals."
+msgstr "Передача текста из буфера не обнаружена. Проверьте сочетание вставки для целевого приложения, в том числе для встроенного терминала."
+
+msgid "The clipboard is marked sensitive. Copy another item before pasting text so password-manager ownership is preserved."
+msgstr "Буфер обмена помечен как конфиденциальный. Скопируйте другой фрагмент перед вставкой текста, чтобы сохранить владение буфером у менеджера паролей."
+
+msgid "Reset text input permissions"
+msgstr "Сбросить разрешения ввода текста"
+
+msgid "The text was not typed: native input failed. Check accessibility permissions and the destination app's privileges."
+msgstr "Текст не введён: ошибка нативного ввода. Проверьте разрешения универсального доступа и права целевого приложения."

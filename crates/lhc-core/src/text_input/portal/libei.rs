@@ -194,7 +194,22 @@ impl LibeiBackend {
             .and_then(|keymap| paste_v_key_from_keymap_text(keymap, group));
         let clipboard = prepare_clipboard(self.clipboard.as_ref(), text, request)?;
         request.check()?;
-        modifiers_released()?;
+        wait_for_modifiers(request)?;
+        let deadline = Instant::now() + MODIFIER_RELEASE_TIMEOUT;
+        loop {
+            self.pump_events()
+                .map_err(TextInputFailure::BackendUnavailable)?;
+            request.check()?;
+            if self.depressed == 0 && self.latched == 0 {
+                break;
+            }
+            if Instant::now() >= deadline {
+                return Err(TextInputFailure::BackendUnavailable(
+                    "release or unlatch keyboard modifiers before paste".into(),
+                ));
+            }
+            thread::sleep(POLL_INTERVAL);
+        }
         clipboard.arm().map_err(TextInputFailure::Clipboard)?;
         let (mods, key) = paste_keys(shortcut, v_key);
         let result = self

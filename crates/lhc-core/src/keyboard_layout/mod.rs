@@ -60,6 +60,23 @@ pub struct KeyboardLayoutInfo {
     pub backend: &'static str,
 }
 
+// The input thread must not make D-Bus calls to resolve built-in C/V/X keys.
+#[cfg(target_os = "linux")]
+static SHORTCUT_LAYOUTS: Mutex<Vec<(String, String)>> = Mutex::new(Vec::new());
+
+#[cfg(target_os = "linux")]
+pub(crate) fn remember_shortcut_layouts(layouts: Vec<(String, String)>) {
+    *SHORTCUT_LAYOUTS.lock().unwrap_or_else(|e| e.into_inner()) = layouts;
+}
+
+#[cfg(target_os = "linux")]
+pub(crate) fn shortcut_layouts() -> Vec<(String, String)> {
+    SHORTCUT_LAYOUTS
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .clone()
+}
+
 static WATCHER_STOP: AtomicBool = AtomicBool::new(false);
 static WATCHERS: Mutex<Vec<std::thread::JoinHandle<()>>> = Mutex::new(Vec::new());
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]

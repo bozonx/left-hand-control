@@ -132,12 +132,20 @@ Unicode paste. Pure libei/keycode modes do not request clipboard access.
 Keyboard-only and clipboard-capable sessions keep separate opaque restore tokens,
 so an older keyboard grant cannot silently restore a session without clipboard
 access. Upgrading to clipboard support requests the additional permission once;
-a denied clipboard grant is respected.
+a denied clipboard grant is respected. Settings → Text input → Reset text input
+permissions clears both tokens and retires the keyboard backends so the next
+request can reopen consent. A declined clipboard grant is not persisted again;
+keyboard-only libei input remains available.
 The worker snapshots the offered MIME data (up to 128 formats / 64 MiB), checks
 the live destination during transfer, and restores only while it still owns the
 selection. A newer clipboard owner wins. After an input session retires, restored
 formats remain served until another owner replaces them; this keeps restoration
-from disappearing with the input backend. The earlier
+from disappearing with the input backend. This necessarily retains its
+RemoteDesktop session and can retain GNOME's remote-control indicator until the
+next copy. The idle owner sleeps until a command or portal signal wakes it.
+Both clipboard transports use the same 200 ms post-shortcut grace interval;
+portal transfer acknowledgement does not identify the reader. Sensitive-marked
+selections are left with their source. The earlier
 [Ubuntu 26.04 verification](results/linux/2026-10-18-gnome-tray-recovery.txt)
 stopped on Unicode with the data-control backend; the Clipboard portal addresses
 that capability gap without requiring a data-control protocol. The final

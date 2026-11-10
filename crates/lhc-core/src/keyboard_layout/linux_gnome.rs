@@ -24,6 +24,13 @@ pub fn current() -> Result<Option<KeyboardLayoutInfo>, String> {
             return Err(error);
         }
     };
+    super::remember_shortcut_layouts(
+        snapshot
+            .layouts
+            .iter()
+            .map(|source| (source.short.clone(), source.variant.clone()))
+            .collect(),
+    );
     let current = snapshot.current;
     let layout = snapshot
         .layouts

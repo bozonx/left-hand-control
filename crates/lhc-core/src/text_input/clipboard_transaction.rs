@@ -2,7 +2,7 @@
 
 use std::time::{Duration, Instant};
 
-// Data-control cannot identify the reader; keep serving briefly after a
+// Neither clipboard transport can identify the reader; keep serving briefly after a
 // transfer so a background reader cannot restore ahead of the paste target.
 pub(super) const DATA_CONTROL_GRACE: Duration = Duration::from_millis(200);
 
@@ -42,8 +42,7 @@ impl PasteProgress {
         self.finished.is_some()
     }
 
-    /// Data-control also waits out a grace interval and outstanding writes;
-    /// the portal can acknowledge consumption immediately after a transfer.
+    /// Wait out a grace interval and outstanding writes on both transports.
     pub(super) fn outcome(
         &self,
         now: Instant,

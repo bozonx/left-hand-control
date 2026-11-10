@@ -101,6 +101,13 @@ impl MacroRunner {
                             am.mod_delay = step.mod_delay;
                             match &step.item {
                                 MacroStepItem::Stroke(ks) => {
+                                    #[cfg(target_os = "linux")]
+                                    let contextual;
+                                    #[cfg(target_os = "linux")]
+                                    let ks = if step.source.starts_with("builtin:") {
+                                        contextual = crate::text_input::portal::builtin_clipboard_stroke(ks);
+                                        &contextual
+                                    } else { ks };
                                     // Skip modifiers something else already
                                     // holds down (a `hold:` rule, a chord, a
                                     // passthrough key): pressing them again is

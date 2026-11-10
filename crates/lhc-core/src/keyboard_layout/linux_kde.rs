@@ -229,10 +229,19 @@ fn read_current(proxy: &Proxy<'_>) -> Result<Option<KeyboardLayoutInfo>, String>
         .get(position)
         .cloned()
         .ok_or_else(|| "No keyboard layouts configured".to_string())?;
-    let variant = configured_variants(&list)
-        .get(position)
-        .cloned()
-        .unwrap_or_default();
+    let variants = configured_variants(&list);
+    super::remember_shortcut_layouts(
+        list.iter()
+            .enumerate()
+            .map(|(index, entry)| {
+                (
+                    entry.0.clone(),
+                    variants.get(index).cloned().unwrap_or_default(),
+                )
+            })
+            .collect(),
+    );
+    let variant = variants.get(position).cloned().unwrap_or_default();
     let info = KeyboardLayoutInfo {
         code: entry.0,
         display_label: entry.1,

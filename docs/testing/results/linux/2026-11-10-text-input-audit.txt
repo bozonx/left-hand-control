@@ -1,0 +1,126 @@
+Text input audit implementation verification — 2026-11-10
+
+Environment
+- Host: Manjaro, KDE Plasma 6.7.5, Wayland, Linux 7.2.9-1-MANJARO.
+- rustc 1.99.0 (b940084d7 2026-09-28), cargo 1.99.0.
+- GNOME smoke: disposable Ubuntu 26.04 overlay, GNOME Shell 50.1,
+  xdg-desktop-portal 1.21.1+ds-1ubuntu3.1,
+  xdg-desktop-portal-gnome 50.0-0ubuntu1.
+- The working tree was not committed. No dependency, config/profile format,
+  CLI command, application IPC wire format or GNOME extension API was changed.
+
+Final checks (all exit 0)
+
+1. cargo fmt -p lhc-core -p slint-shell --check
+   PASS. Log: /tmp/lhc-text-fmt.log
+
+2. cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+   PASS, no warnings. Log: /tmp/lhc-text-clippy.log
+
+3. cargo test --locked --workspace --features slint-shell/spell
+   PASS: 964 passed, 0 failed, 13 ignored across 15 test/doc-test results.
+   Core library: 691 passed, 3 ignored. Shell library: 251 passed.
+   Includes the private-bus GNOME owner wake/retirement regression,
+   layout-aware built-in clipboard strokes, title-change/unknown-target behavior,
+   clipboard error recovery messages and translation checks for all 20 catalogs.
+   Log: /tmp/lhc-text-workspace-tests.log
+
+4. cargo check --locked -p slint-shell --all-targets
+   PASS, non-Spell build. Log: /tmp/lhc-text-no-spell.log
+
+5. cargo deny check
+   PASS: advisories, bans, licenses, sources.
+   Existing duplicate dependency-version warnings remain.
+   Log: /tmp/lhc-text-deny.log
+
+6. cargo run --locked -p slint-shell --features spell --example editor -- --smoke
+   PASS: keyboard page renders in a real KDE Wayland window.
+   Log: /tmp/lhc-text-editor.log
+
+7. cargo run --locked -p slint-shell --features spell --example interactions
+   PASS: settings, rules, persistence, navigation, background command overview,
+   caching and error recovery.
+   Log: /tmp/lhc-text-interactions.log
+
+8. LHC_EDITOR_SNAPSHOTS=/tmp/lhc-text-small-window cargo run --locked -p slint-shell --features spell --example small-window
+   PASS: 29 states at 640x400, including settings controls below the fold.
+   Log: /tmp/lhc-text-small-window.log
+   Snapshots: /tmp/lhc-text-small-window/ (settings-mapper.ppm inspected).
+
+9. python3 apps/slint-shell/scripts/check/test-clipboard.py
+   PASS: isolated KWin/data-control test, including binary/custom formats,
+   delayed target/background reader, cancellation, newer user copies, no reader,
+   empty selection, and rejection of a sensitive source without taking ownership.
+   The compositor uses its own private runtime directory and D-Bus session;
+   the host user's clipboard is not used.
+   Log: /tmp/lhc-text-clipboard.log
+
+10. cargo test --locked -p lhc-core --test mapper_e2e -- --ignored
+    PASS: 10 scenarios, including chords, macro delay, held-key release,
+    extended/native passthrough, popup hotkey consumption, replug/unplug and mouse.
+    Both synthetic devices are grabbed; test keystrokes do not reach the desktop.
+    Log: /tmp/lhc-text-mapper-e2e.log
+
+11. GNOME native portal smoke, executed inside the disposable VM:
+    systemd-run --user --wait --pipe --collect --unit=lhc-clipboard-probe --setenv=LHC_GNOME_PORTAL_TEST=1 /tmp/lhc-core-test gnome_clipboard_portal_native --ignored --nocapture
+    /tmp/lhc-core-test was copied from the current host core test executable
+    target/debug/deps/lhc_core-462c21dea5937cea, built by the clipboard check.
+    The repository's unchanged GNOME bridge was installed only in the overlay.
+    A GTK4 receiver seeded text/plain;charset=utf-8 = lhc-before-unicode and
+    application/x-lhc-e2e = binary\0\xffpayload. Remote interaction and clipboard
+    access were enabled in the real consent dialog.
+    PASS: 1 test; the receiver contains exactly "Привет, ёж 😀" and both original
+    MIME payloads were restored byte-for-byte before the probe exited.
+    Output: "Native portal Unicode and MIME restoration passed".
+    The test uses a temporary token directory, not the real app configuration.
+    VM stopped and disposable overlay deleted; base image unchanged.
+    Evidence directory:
+    /mnt/disk2/vm/lhc-ubuntu2604-gnome/runs/20261110-135108/logs/
+    Evidence: portal-probe.txt, consent.png, result.png.
+
+12. git diff --check
+    PASS.
+
+Additional targeted checks during implementation
+- cargo test --locked -p lhc-core --lib text_input:
+  29 passed, 2 ignored before the new regression tests were added.
+- cargo test --locked -p lhc-core --lib:
+  688 passed, 3 ignored before the new regression tests were added.
+- target/debug/deps/lhc_core-c822543db6c3fa22 text_input::portal_clipboard::tests::retired_owner_wakes_on_portal_signals_and_closes_after_replacement --exact --nocapture:
+  1 passed; also included in the final workspace run.
+- Initial Clippy/i18n errors were corrected; the final commands above pass.
+  A workspace compilation was interrupted during iteration before its final run.
+
+GNOME design experiment (rejected, not part of the implementation)
+- A GJS Meta.SelectionSource prototype was run in a separate disposable GNOME
+  50.1 overlay with:
+  GI_TYPELIB_PATH=/usr/lib/x86_64-linux-gnu/mutter-18 LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/mutter-18 gjs -m /tmp/lhc-source-prototype.js
+- GJS rejected vfunc_read_async: "accepts another callback as a parameter.
+  This is not supported".
+- No native module, binary library, typelib or new build requirement was added
+  to the repository. Temporary native experiment files were removed.
+- The supported Clipboard portal remains the GNOME backend. See
+  docs/design/gnome-clipboard.md for the decision and primary API references.
+
+Scope / remaining limits
+- Preserve every offered format or reject before takeover: the existing
+  64 MiB / 128 format / 2 second snapshot bounds are intentional. No lossy fallback.
+- A GNOME RemoteDesktop session must remain while it serves restored MIME data;
+  its indicator can remain until another copy. This cannot be hidden by closing
+  the session without risking clipboard loss. Two sessions can overlap after a
+  mode change; reusing EIS sessions across mechanisms would violate the API.
+- Original clipboard ownership cannot be returned by these protocols. History
+  duplicates and loss on LHC exit without clipboard-manager persistence remain.
+  Sensitive-marked sources are rejected; unmarked secrets cannot be identified.
+- Embedded terminal focus is not observable from window class. Shift+Insert can
+  use PRIMARY there; choose main Ctrl+V. Legacy terminals need suitable CLIPBOARD
+  bindings. Explicit user KeyC/V/X chords remain physical.
+- Metadata-only focus detection cannot distinguish two windows of one app.
+  Unknown Linux targets have no identity guarantee.
+- Real compositor ACK fault injection, 4K Qt/LibreOffice offers, GNOME consent
+  denial/reset/grant, receiver races, idle wakeup profiling and the full GNOME
+  matrix remain manual acceptance work. The native GNOME check above is a smoke.
+- Windows/macOS native changes were not cross-compiled or run on those systems.
+  UIPI/secure desktop limitations are not bypassed. X11 support was not extended.
+- One unrelated ignored core synthetic timing/order test was not run separately;
+  all ten mapper_e2e integration tests were run.

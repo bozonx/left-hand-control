@@ -5,6 +5,10 @@ use std::fs::File;
 use std::io::Read;
 use std::os::fd::{AsFd, AsRawFd};
 use std::sync::mpsc::{self, Receiver, Sender};
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -15,22 +19,22 @@ use zbus::export::futures_core::Stream;
 use zbus::proxy::SignalStream;
 use zbus::zvariant::{OwnedFd, OwnedObjectPath, OwnedValue, Value};
 
-use super::clipboard_transaction::{PasteFailure, PasteProgress, SavedSelection};
+use super::clipboard_transaction::{
+    DATA_CONTROL_GRACE, PasteFailure, PasteProgress, SavedSelection,
+};
 use super::job::TextRequest;
 
 const IFACE: &str = "org.freedesktop.portal.Clipboard";
 const TIMEOUT: Duration = Duration::from_secs(2);
 use super::clipboard::{
-    ARM_TIMEOUT, MAX_CLIPBOARD_BYTES as MAX_BYTES, MAX_MIME_TYPES as MAX_TYPES, PLAIN_TEXT_MIME,
-    PREPARE_TIMEOUT, TEXT_MIME,
+    ARM_TIMEOUT, MAX_CLIPBOARD_BYTES as MAX_BYTES, MAX_MIME_TYPES as MAX_TYPES, PASTE_TIMEOUT,
+    PLAIN_TEXT_MIME, PREPARE_TIMEOUT, SENSITIVE_MIME, TEXT_MIME,
 };
 /// How long the portal may take to confirm the clipboard subscription.
 const SUBSCRIBE_TIMEOUT: Duration = Duration::from_secs(3);
-/// How long a paste may take until the clipboard is restored.
-const PASTE_TIMEOUT: Duration = Duration::from_secs(5);
 /// Poll interval of the clipboard loops.
 const POLL_INTERVAL: Duration = Duration::from_millis(5);
-type Contents = HashMap<String, Vec<u8>>;
+type Contents = HashMap<String, Arc<[u8]>>;
 
 enum Command {
     Enabled(bool),
@@ -47,7 +51,27 @@ enum Control {
     Finish(bool),
 }
 
-pub(crate) struct Clipboard(Sender<Command>);
+pub(crate) struct Clipboard {
+    sender: Option<Sender<Command>>,
+    thread: thread::Thread,
+}
+
+impl Drop for Clipboard {
+    fn drop(&mut self) {
+        self.sender.take();
+        self.thread.unpark();
+    }
+}
+
+struct SignalWake(thread::Thread);
+impl std::task::Wake for SignalWake {
+    fn wake(self: Arc<Self>) {
+        self.0.unpark();
+    }
+    fn wake_by_ref(self: &Arc<Self>) {
+        self.0.unpark();
+    }
+}
 
 pub(crate) struct Paste {
     control: Option<Sender<Control>>,
@@ -64,7 +88,9 @@ impl Clipboard {
         let (ready, initialized) = mpsc::channel();
         let connection = conn.clone();
         let handle = session.clone();
-        thread::Builder::new()
+        let acquired = Arc::new(AtomicBool::new(false));
+        let close = acquired.clone();
+        let worker = thread::Builder::new()
             .name("portal-clipboard".into())
             .spawn(move || {
                 let result = run(&connection, &handle, rx, ready);
@@ -73,9 +99,15 @@ impl Clipboard {
                 }
                 // Restored MIME data must remain available after the input backend
                 // retires. run exits only once another owner replaces that data.
-                super::portal::close_session(&connection, &handle);
+                if close.load(Ordering::Acquire) {
+                    super::portal::close_session(&connection, &handle);
+                }
             })
             .map_err(|e| e.to_string())?;
+        let clipboard = Self {
+            sender: Some(tx),
+            thread: worker.thread().clone(),
+        };
         initialized
             .recv_timeout(SUBSCRIBE_TIMEOUT)
             .map_err(|_| "clipboard portal subscription timed out")??;
@@ -90,18 +122,24 @@ impl Clipboard {
         portal
             .call::<_, _, ()>("RequestClipboard", &(session, empty))
             .map_err(|e| format!("RequestClipboard: {e}"))?;
-        Ok(Self(tx))
+        acquired.store(true, Ordering::Release);
+        Ok(clipboard)
     }
 
     pub(crate) fn enabled(&self, enabled: bool) {
-        let _ = self.0.send(Command::Enabled(enabled));
+        if let Some(sender) = &self.sender {
+            let _ = sender.send(Command::Enabled(enabled));
+            self.thread.unpark();
+        }
     }
 
     pub(crate) fn prepare(&self, text: &str, request: &TextRequest) -> Result<Paste, String> {
         let (ready, prepared) = mpsc::channel();
         let (control, trigger) = mpsc::channel();
         let (done, completed) = mpsc::channel();
-        self.0
+        self.sender
+            .as_ref()
+            .ok_or("clipboard portal stopped")?
             .send(Command::Paste(
                 text.into(),
                 request.clone(),
@@ -110,6 +148,7 @@ impl Clipboard {
                 done,
             ))
             .map_err(|_| "clipboard portal stopped")?;
+        self.thread.unpark();
         prepared
             .recv_timeout(PREPARE_TIMEOUT)
             .map_err(|_| "clipboard portal preparation timed out")??;
@@ -219,9 +258,8 @@ fn run(
                 let _ = done.send(result);
             }
             Err(mpsc::TryRecvError::Disconnected) if !state.own => break,
-            Err(_) => {}
+            Err(_) => thread::park(),
         }
-        thread::sleep(POLL_INTERVAL);
     }
     Ok(())
 }
@@ -235,7 +273,8 @@ fn drain(
     loop {
         let stream = signals.0.as_mut().ok_or("clipboard signal stream ended")?;
         let polled = zbus::block_on(async {
-            let mut cx = std::task::Context::from_waker(std::task::Waker::noop());
+            let waker = std::task::Waker::from(Arc::new(SignalWake(thread::current())));
+            let mut cx = std::task::Context::from_waker(&waker);
             std::pin::Pin::new(stream).poll_next(&mut cx)
         });
         match polled {
@@ -346,6 +385,9 @@ fn transaction(
     if !state.known {
         return Err("clipboard portal has not reported the initial owner".into());
     }
+    if state.types.iter().any(|mime| mime == SENSITIVE_MIME) {
+        return Err("sensitive clipboard cannot safely change ownership".into());
+    }
     if state.types.len() > MAX_TYPES {
         return Err("too many clipboard formats to preserve".into());
     }
@@ -364,7 +406,7 @@ fn transaction(
                 .map_err(|e| e.to_string())?;
             let bytes = read_fd(fd, MAX_BYTES - total, deadline)?;
             total += bytes.len();
-            saved.insert(mime.clone(), bytes);
+            saved.insert(mime.clone(), bytes.into());
         }
         saved
     };
@@ -374,8 +416,9 @@ fn transaction(
     }
     request.check().map_err(|e| format!("{e:?}"))?;
     let temporary = HashMap::from([
-        (TEXT_MIME.into(), text.as_bytes().to_vec()),
-        (PLAIN_TEXT_MIME.into(), text.as_bytes().to_vec()),
+        (TEXT_MIME.into(), Arc::from(text.as_bytes())),
+        (PLAIN_TEXT_MIME.into(), Arc::from(text.as_bytes())),
+        (SENSITIVE_MIME.into(), Arc::from(b"secret".as_slice())),
     ]);
     set_selection(portal, session, &temporary)?;
     state.contents = temporary;
@@ -383,7 +426,7 @@ fn transaction(
     state.own = true;
     state.progress = PasteProgress::default();
     let result = (|| {
-        let deadline = Instant::now() + TIMEOUT;
+        let deadline = Instant::now() + PASTE_TIMEOUT;
         drain(portal, session, signals, state)?;
         ready
             .send(Ok(()))
@@ -408,7 +451,7 @@ fn transaction(
             if let Some(outcome) =
                 state
                     .progress
-                    .outcome(Instant::now(), deadline, Duration::ZERO, 0)
+                    .outcome(Instant::now(), deadline, DATA_CONTROL_GRACE, 0)
             {
                 return outcome.map_err(|failure| match failure {
                     PasteFailure::Cancelled => "clipboard shortcut failed".into(),
@@ -419,15 +462,15 @@ fn transaction(
         }
     })();
     // A newer owner wins, including during cancellation and failed injection.
-    drain(portal, session, signals, state)?;
+    let drained = drain(portal, session, signals, state);
     state.progress.disarm();
     state.request = None;
     SavedSelection::new(saved).restore(state.own, |saved| {
-        set_selection(portal, session, &saved)?;
+        // Stop serving the temporary text even if SetSelection fails.
         state.contents = saved;
-        Ok(())
+        set_selection(portal, session, &state.contents)
     })?;
-    result
+    result.and(drained)
 }
 
 fn read_fd(fd: OwnedFd, limit: usize, deadline: Instant) -> Result<Vec<u8>, String> {
@@ -466,6 +509,113 @@ mod tests {
     use super::*;
     use std::io::Write;
     use std::os::unix::net::UnixStream;
+
+    #[test]
+    fn retired_owner_wakes_on_portal_signals_and_closes_after_replacement() {
+        use std::io::{BufRead, BufReader};
+        use std::process::{Command, Stdio};
+        use std::sync::atomic::AtomicUsize;
+
+        struct Bus(std::process::Child);
+        impl Drop for Bus {
+            fn drop(&mut self) {
+                let _ = self.0.kill();
+                let _ = self.0.wait();
+            }
+        }
+        struct MockClipboard(Arc<AtomicUsize>);
+        #[zbus::interface(name = "org.freedesktop.portal.Clipboard")]
+        impl MockClipboard {
+            fn request_clipboard(
+                &self,
+                _session: OwnedObjectPath,
+                _options: HashMap<String, OwnedValue>,
+            ) {
+            }
+            fn selection_write_done(
+                &self,
+                _session: OwnedObjectPath,
+                _serial: u32,
+                _success: bool,
+            ) {
+                self.0.fetch_add(1, Ordering::Release);
+            }
+        }
+        struct MockSession(Arc<AtomicBool>);
+        #[zbus::interface(name = "org.freedesktop.portal.Session")]
+        impl MockSession {
+            fn close(&self) {
+                self.0.store(true, Ordering::Release);
+            }
+        }
+        let wait = |predicate: &dyn Fn() -> bool| {
+            let deadline = Instant::now() + Duration::from_secs(2);
+            while !predicate() {
+                assert!(Instant::now() < deadline, "clipboard worker did not wake");
+                thread::sleep(Duration::from_millis(5));
+            }
+        };
+        let mut daemon = Bus(Command::new("dbus-daemon")
+            .args(["--session", "--nofork", "--print-address=1"])
+            .stdout(Stdio::piped())
+            .spawn()
+            .expect("private test bus"));
+        let mut address = String::new();
+        BufReader::new(daemon.0.stdout.take().unwrap())
+            .read_line(&mut address)
+            .unwrap();
+        let handle =
+            OwnedObjectPath::try_from("/org/freedesktop/portal/desktop/session/lhc_test").unwrap();
+        let writes = Arc::new(AtomicUsize::new(0));
+        let closed = Arc::new(AtomicBool::new(false));
+        let server = zbus::blocking::connection::Builder::address(address.trim())
+            .unwrap()
+            .name(super::super::portal::PORTAL_DEST)
+            .unwrap()
+            .serve_at(
+                super::super::portal::PORTAL_PATH,
+                MockClipboard(writes.clone()),
+            )
+            .unwrap()
+            .serve_at(handle.clone(), MockSession(closed.clone()))
+            .unwrap()
+            .build()
+            .unwrap();
+        let client = zbus::blocking::connection::Builder::address(address.trim())
+            .unwrap()
+            .build()
+            .unwrap();
+        let clipboard = Clipboard::request(&client, &handle).unwrap();
+        clipboard.enabled(true);
+        let owner = |own| {
+            let options = HashMap::from([("session_is_owner", Value::from(own))]);
+            server
+                .emit_signal(
+                    None::<&str>,
+                    super::super::portal::PORTAL_PATH,
+                    IFACE,
+                    "SelectionOwnerChanged",
+                    &(&handle, options),
+                )
+                .unwrap();
+        };
+        owner(true);
+        // WriteDone acknowledges that the preceding ownership signal was drained.
+        server
+            .emit_signal(
+                None::<&str>,
+                super::super::portal::PORTAL_PATH,
+                IFACE,
+                "SelectionTransfer",
+                &(&handle, "text/plain", 1u32),
+            )
+            .unwrap();
+        wait(&|| writes.load(Ordering::Acquire) == 1);
+        drop(clipboard);
+        assert!(!closed.load(Ordering::Acquire));
+        owner(false);
+        wait(&|| closed.load(Ordering::Acquire));
+    }
 
     #[test]
     fn snapshot_preserves_binary_data_and_enforces_aggregate_limit() {

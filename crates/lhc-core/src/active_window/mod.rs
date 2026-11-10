@@ -64,15 +64,6 @@ fn update_text_window(target: &mut Option<ActiveWindow>, current: &Option<Active
     }
 }
 
-/// Whether the window text input goes to is a terminal emulator.
-#[cfg(target_os = "linux")]
-pub(crate) fn text_window_is_terminal() -> bool {
-    TEXT_WINDOW
-        .lock()
-        .ok()
-        .is_some_and(|target| target.as_ref().is_some_and(terminal::is_terminal))
-}
-
 /// An application with an open window, for picking a condition.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct OpenWindow {
@@ -399,8 +390,8 @@ pub fn open_windows() -> Vec<OpenWindow> {
 #[cfg(target_os = "linux")]
 #[derive(Clone)]
 pub(crate) enum TextTarget {
-    Kwin(String),
-    Gnome(String),
+    Kwin(String, ActiveWindow),
+    Gnome(String, ActiveWindow),
     Cached(ActiveWindow),
     Unknown,
 }
@@ -409,7 +400,8 @@ pub(crate) enum TextTarget {
 impl TextTarget {
     pub(crate) fn capture() -> Self {
         if kwin::active() {
-            return kwin::text_target().map_or(Self::Unknown, Self::Kwin);
+            return kwin::text_target()
+                .map_or(Self::Unknown, |(id, window)| Self::Kwin(id, window));
         }
         if matches!(
             crate::platform::linux::detect(),
@@ -419,7 +411,8 @@ impl TextTarget {
                 ..
             }
         ) {
-            return gnome::text_target().map_or(Self::Unknown, Self::Gnome);
+            return gnome::text_target()
+                .map_or(Self::Unknown, |(id, window)| Self::Gnome(id, window));
         }
         TEXT_WINDOW
             .lock()
@@ -428,22 +421,34 @@ impl TextTarget {
             .map_or(Self::Unknown, Self::Cached)
     }
 
+    pub(crate) fn is_terminal(&self) -> bool {
+        match self {
+            Self::Kwin(_, window) | Self::Gnome(_, window) | Self::Cached(window) => {
+                terminal::is_terminal(window)
+            }
+            Self::Unknown => false,
+        }
+    }
+
     pub(crate) fn is_current(&self) -> bool {
         match self {
-            Self::Kwin(id) => kwin::target_is_current(id),
-            Self::Gnome(id) => gnome::target_is_current(id),
+            Self::Kwin(id, _) => kwin::target_is_current(id),
+            Self::Gnome(id, _) => gnome::target_is_current(id),
             Self::Cached(target) => ACTUAL_WINDOW
                 .lock()
                 .ok()
                 .and_then(|current| current.clone())
-                .is_some_and(|current| {
-                    current.app_id == target.app_id
-                        && current.process_name == target.process_name
-                        && current.title == target.title
-                }),
-            Self::Unknown => false,
+                .is_some_and(|current| same_text_application(&current, target)),
+            // Without a detector there is no identity to enforce. Lifetime and
+            // modifier checks still apply; use the main paste shortcut.
+            Self::Unknown => true,
         }
     }
+}
+
+#[cfg(target_os = "linux")]
+fn same_text_application(current: &ActiveWindow, target: &ActiveWindow) -> bool {
+    current.app_id == target.app_id && current.process_name == target.process_name
 }
 
 /// A text destination: the foreground window and its process.
@@ -465,6 +470,31 @@ impl TextTarget {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn text_detection_allows_unknown_windows_and_title_changes() {
+        assert!(TextTarget::Unknown.is_current());
+        assert!(!TextTarget::Unknown.is_terminal());
+        let original = ActiveWindow {
+            app_id: "editor".into(),
+            title: "document".into(),
+            ..Default::default()
+        };
+        let mut current = original.clone();
+        current.title = "*document".into();
+        assert!(same_text_application(&current, &original));
+        current.app_id = "other".into();
+        assert!(!same_text_application(&current, &original));
+        let target = TextTarget::Kwin(
+            "window-id".into(),
+            ActiveWindow {
+                app_id: "org.kde.konsole".into(),
+                ..Default::default()
+            },
+        );
+        assert!(target.is_terminal());
+    }
 
     #[cfg(target_os = "linux")]
     #[test]

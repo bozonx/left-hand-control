@@ -193,16 +193,14 @@ pub fn retry_text_backend() {
     PORTAL.clear_failure();
 }
 
-/// Read the clipboard ahead of a likely text input, e.g. when a popup opens,
-/// if the selected mode may paste through it.
-pub fn prepare_text_input() {
-    let mode = TEXT_BACKEND.lock().unwrap_or_else(|e| e.into_inner()).mode;
-    if matches!(
-        mode,
-        TextMode::LibeiWithClipboardFallback | TextMode::Clipboard
-    ) {
-        super::clipboard::warm();
-    }
+/// Forget portal grants and reopen consent on the next text request.
+/// The clipboard owner may outlive the keyboard backend to serve restored data.
+pub fn reset_permissions() {
+    LIBEI.stop();
+    PORTAL.stop();
+    clear_restore_token(TokenScope::Keyboard);
+    clear_restore_token(TokenScope::Clipboard);
+    retry_text_backend();
 }
 
 /// Key and modifiers (evdev codes) that type `ch` in the active layout, for
@@ -223,6 +221,67 @@ pub(crate) fn key_for_char(ch: char) -> Option<(u16, Vec<u16>)> {
     ))
 }
 
+/// Resolve built-in clipboard strokes at playback time. User `KeyC/V/X`
+/// bindings remain physical keys; only built-in editing commands are semantic.
+pub(crate) fn builtin_clipboard_stroke(
+    stroke: &crate::mapper::action::Keystroke,
+) -> crate::mapper::action::Keystroke {
+    use crate::mapper::key_code::KeyCode as K;
+    if stroke.mods != [K::KEY_LEFTCTRL] {
+        return stroke.clone();
+    }
+    let character = match stroke.key {
+        K::KEY_C => 'c',
+        K::KEY_V => 'v',
+        K::KEY_X => 'x',
+        _ => return stroke.clone(),
+    };
+    let terminal = crate::active_window::TextTarget::capture().is_terminal();
+    let key = crate::runtime_state::keyboard_layout()
+        .and_then(|layout| {
+            let layouts = crate::keyboard_layout::shortcut_layouts();
+            let group = layout.index as usize;
+            if layouts
+                .get(group)
+                .is_some_and(|(code, variant)| *code == layout.code && *variant == layout.variant)
+            {
+                let names: Vec<_> = layouts
+                    .iter()
+                    .map(|(code, variant)| (code.as_str(), variant.as_str()))
+                    .collect();
+                shortcut_key_from_names(&names, layout.index, "", character)
+            } else {
+                shortcut_key_from_names(&[(&layout.code, &layout.variant)], 0, "", character)
+            }
+        })
+        .and_then(|key| u16::try_from(key).ok())
+        .map(K::new);
+    let cfg = TEXT_BACKEND.lock().unwrap_or_else(|e| e.into_inner());
+    let shortcut = cfg.terminal_paste.filter(|_| terminal).unwrap_or(cfg.paste);
+    contextual_clipboard_stroke(stroke, terminal, shortcut, key)
+}
+
+fn contextual_clipboard_stroke(
+    stroke: &crate::mapper::action::Keystroke,
+    terminal: bool,
+    paste: PasteShortcut,
+    key: Option<crate::mapper::key_code::KeyCode>,
+) -> crate::mapper::action::Keystroke {
+    use crate::mapper::key_code::KeyCode as K;
+    let mut result = stroke.clone();
+    if let Some(key) = key {
+        result.key = key;
+    }
+    if stroke.key == K::KEY_V {
+        let (mods, key) = paste_keys(paste, Some(u32::from(result.key.code())));
+        result.mods = mods.iter().map(|key| K::new(*key as u16)).collect();
+        result.key = K::new(key as u16);
+    } else if terminal {
+        result.mods.push(K::KEY_LEFTSHIFT);
+    }
+    result
+}
+
 /// Path of the directory where we persist the restore token.
 static TOKEN_DIR: OnceLock<PathBuf> = OnceLock::new();
 
@@ -237,7 +296,7 @@ pub fn set_token_dir(dir: PathBuf) {
 /// The first call may block on the portal consent dialog, so run it off the
 /// mapper thread. Failures are reported as `CoreEvent::TextInputFailed`.
 pub(crate) fn type_text(text: &str, request: TextRequest) -> Result<(), TextInputFailure> {
-    request.check()?;
+    request.wait_for_target()?;
     let released = Instant::now() + MODIFIER_RELEASE_TIMEOUT;
     let hardware = HardwareState::capture();
     while let Err(error) = hardware.modifiers_released() {
@@ -303,6 +362,48 @@ fn run_text_tool(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn builtin_clipboard_keys_follow_layout_and_terminal_paste_settings() {
+        use crate::mapper::action::parse_action;
+        use crate::mapper::key_code::KeyCode as K;
+        let shortcut = |character| shortcut_key_from_names(&[("us", "dvorak")], 0, "", character);
+        assert_eq!(shortcut('c'), Some(u32::from(K::KEY_I.code())));
+        assert_eq!(shortcut('x'), Some(u32::from(K::KEY_B.code())));
+        assert_eq!(shortcut('v'), Some(u32::from(K::KEY_DOT.code())));
+        assert_eq!(
+            shortcut_key_from_names(&[("ru", ""), ("us", "dvorak")], 0, "", 'c'),
+            Some(u32::from(K::KEY_I.code()))
+        );
+        assert_eq!(
+            shortcut_key_from_names(&[("ru", ""), ("us", "dvorak")], 0, "", 'x'),
+            Some(u32::from(K::KEY_B.code()))
+        );
+        let copy = contextual_clipboard_stroke(
+            &parse_action("Ctrl+KeyC").unwrap(),
+            true,
+            PasteShortcut::CtrlShiftV,
+            Some(K::KEY_I),
+        );
+        assert_eq!(copy.mods, [K::KEY_LEFTCTRL, K::KEY_LEFTSHIFT]);
+        assert_eq!(copy.key, K::KEY_I);
+        let paste = contextual_clipboard_stroke(
+            &parse_action("Ctrl+KeyV").unwrap(),
+            true,
+            PasteShortcut::CtrlShiftV,
+            Some(K::KEY_DOT),
+        );
+        assert_eq!(paste.mods, [K::KEY_LEFTCTRL, K::KEY_LEFTSHIFT]);
+        assert_eq!(paste.key, K::KEY_DOT);
+        let paste = contextual_clipboard_stroke(
+            &parse_action("Ctrl+KeyV").unwrap(),
+            false,
+            PasteShortcut::ShiftInsert,
+            Some(K::KEY_DOT),
+        );
+        assert_eq!(paste.mods, [K::KEY_LEFTSHIFT]);
+        assert_eq!(paste.key, K::KEY_INSERT);
+    }
+
     #[test]
     fn text_control_characters_use_keyboard_keysyms() {
         assert_eq!(super::text_keysym('\n'), 0xff0d);

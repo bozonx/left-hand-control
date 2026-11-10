@@ -15,6 +15,10 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Text input: wait for popup focus on Linux; capture terminal classification with the destination; tolerate document-title changes and unavailable window detection. Built-in Linux clipboard macros follow paste settings and the active layout, and terminal copy uses Ctrl+Shift+C.
+- Clipboard paste: stop reading MIME formats on popup opening, check cancellation during data-control delivery, attempt restoration after failed acknowledgements, reject sensitive-marked source selections, release restored bytes when ownership changes, and use the same grace interval on GNOME and data-control. GNOME's idle clipboard owner now waits for events instead of polling.
+- Text input settings: reset portal permissions, keep ordinary libei typing available without Clipboard access, and explain clipboard limits, ownership and embedded terminal shortcuts. Clipboard failures now give specific recovery instructions; native Windows/macOS popup failures produce notifications.
+
 - Mapper: permissive layer keys following a letter within 135 ms resolve immediately as taps (except double-tap and long-hold bindings), reducing accidental layer activation during typing. Synchronous modifier delays are capped at 15 ms.
 - Linux: the selected mouse is grabbed and relayed through a virtual pointer, so the first mod-tap modifier click receives its modifier and remapped or swallowed buttons no longer also send the original click.
 

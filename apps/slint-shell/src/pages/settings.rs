@@ -780,6 +780,10 @@ pub(crate) fn prepare_mapper_start(ui: &SettingsWindow) -> bool {
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let state = Rc::new(RefCell::new(State::default()));
     let e = ui.global::<SettingsEditor>();
+    e.on_reset_text_permissions(|| {
+        #[cfg(target_os = "linux")]
+        lhc_core::text_input::portal::reset_permissions();
+    });
     let choices = ui.global::<DeviceChoices>();
     choices.on_filter(|choices, query, all| filtered_devices(choices, &query, all));
     let row = choices.get_row_height() as i32;

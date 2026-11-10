@@ -46,9 +46,24 @@ pub(super) fn prepare_clipboard(
     text: &str,
     request: &TextRequest,
 ) -> Result<ClipboardPaste, TextInputFailure> {
+    if portal.is_none()
+        && matches!(
+            crate::platform::linux::detect(),
+            crate::platform::linux::Session {
+                desktop: crate::platform::linux::Desktop::Gnome,
+                session_type: crate::platform::linux::SessionType::Wayland,
+                ..
+            }
+        )
+    {
+        return Err(TextInputFailure::Clipboard(
+            "clipboard portal permission or interface is unavailable".into(),
+        ));
+    }
     match portal {
         Some(portal) => portal.prepare(text, request).map(ClipboardPaste::Portal),
-        None => crate::text_input::clipboard::Paste::prepare(text).map(ClipboardPaste::Wayland),
+        None => crate::text_input::clipboard::Paste::prepare_checked(text, request)
+            .map(ClipboardPaste::Wayland),
     }
     .map_err(TextInputFailure::Clipboard)
 }
@@ -82,7 +97,7 @@ pub(super) fn paste_text(
     };
     let clipboard = prepare_clipboard(portal_clipboard, text, request)?;
     request.check()?;
-    modifiers_released()?;
+    wait_for_modifiers(request)?;
     clipboard.arm().map_err(TextInputFailure::Clipboard)?;
     let (mods, key) = paste_keys(shortcut, v_key);
     let result = inject_keycode_combo(portal, session, mods, key)

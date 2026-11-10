@@ -3,7 +3,7 @@
 | Concern | KDE | GNOME | Sway | X11 generic | Windows | macOS |
 | --- | --- | --- | --- | --- | --- | --- |
 | Key interception | ✅ evdev+uinput | ✅ | ✅ | ✅ | ✅ session-wide `WH_KEYBOARD_LL` + `SendInput` (untested on hardware) | ❌ stub |
-| Literal text (xdg-desktop-portal) | ✅ | ⚠ requires bundled Shell extension; acceptance pending | ⚠ backend/protocol dependent | ⚠ portal and focus detection required | ✅ Unicode `SendInput` (mapper and popups) | ❌ mapper; popup Unicode only |
+| Literal text (xdg-desktop-portal) | ✅ | ⚠ requires bundled Shell extension; acceptance pending | ⚠ backend/protocol dependent | ⚠ keyboard backend dependent; no clipboard paste | ✅ Unicode `SendInput` (mapper and popups) | ❌ mapper; popup Unicode only |
 | Profile detection | ✅ DBus `org.kde.keyboard` | ⚠ Shell extension | 🚧 | 🚧 | ✅ input language of the foreground window | 🚧 |
 | System actions (`switchToDesktopN`, `moveWindowToDesktopN`, `switchKeyboardLayoutN`, window/shell actions) | ✅ kglobalaccel, `org.kde.keyboard`, `org.freedesktop.ScreenSaver` | ⚠ Shell extension; all but `showDesktop` | 🚧 | 🚧 | ✅ Win32 messages and fixed shortcuts; no public API for `switchToDesktopN` / `moveWindowToDesktopN` / `moveWindowToNextDesktop` / `moveWindowToPreviousDesktop` | ❌; ids without a macOS API are ignored with a notification |
 | KDE global shortcuts (`kde:`) | ✅ kglobalaccel | — | — | — | — | — |
@@ -34,7 +34,48 @@ A command stores one script per OS: `linux` runs with `sh -lc`, `windows` with P
 **Linux runtime requirements:** read access to `/dev/input/event*` and rw to `/dev/uinput` (group `input` + udev rule), `xdg-desktop-portal` with the DE backend for literal text, `xprop` (+ `xdotool` for title conditions) on X11, `hyprctl` / `swaymsg` on Hyprland / Sway (other wlroots compositors need `zwlr_foreign_toplevel_manager_v1`, nothing to install); KDE Wayland needs nothing extra (a KWin script reports focus over D-Bus, `kdotool` is only a fallback). Setup commands are in the [developer guide](guide.md#1-окружение).
 
 
-Text input cancels stale jobs and checks the destination before emitting input. KDE uses KWin window ids; other backends can only compare their available active-window metadata, so identical windows may not be distinguishable. Clipboard paste requires `ext_data_control_manager_v1` or `zwlr_data_control_manager_v1` and support for the configured paste shortcut in the destination (Shift+Insert by default; terminals, recognised by window class, use their own shortcut, Ctrl+Shift+V by default). All offered MIME formats are preserved within bounded size/time limits; failure to snapshot leaves the clipboard unchanged. Transfer completion confirms that bytes were requested, not which client requested them. Windows popup text uses Unicode `SendInput` without the clipboard; macOS uses Enigo after foreground/window checks. The macOS path does not implement keyboard interception or mapper macros. Windows/macOS adapters still require native acceptance testing.
+Text input cancels stale jobs and checks detected destinations before emitting input.
+Linux waits up to 500 ms for popup focus to return. KDE uses KWin window ids;
+GNOME uses Shell extension ids. The metadata fallback compares app/process without
+mutable titles and cannot distinguish windows of the same application. If no
+window was captured, input uses the main shortcut without an identity guarantee.
+
+Clipboard paste requires Wayland data-control (`ext_data_control_manager_v1` or
+`zwlr_data_control_manager_v1`) or, on GNOME, `org.freedesktop.portal.Clipboard`
+permission on the RemoteDesktop session. Clipboard interface/grant failure does
+not disable ordinary libei typing. Settings can reset saved portal grants.
+Clipboard paste is unavailable on X11; select xdotool explicitly where appropriate.
+
+The configured paste shortcut must match the destination. Shift+Insert is the
+existing main default; Ctrl+Shift+V is the terminal default. Embedded terminals
+cannot be identified by the host window class. Prefer Ctrl+V for normal apps to
+avoid accidentally pasting PRIMARY there; older terminals may need custom
+CLIPBOARD bindings. Built-in Linux clipboard macros use the selected paste shortcut
+and C/V/X positions from the current layout; terminal copy adds Shift. User
+`KeyC/V/X` chords retain their physical-key meaning.
+
+All offered MIME formats must fit the 64 MiB / 128 format / 2 second snapshot
+limits. Failure leaves the clipboard unchanged; opening a popup never snapshots
+it. Sensitive-marked selections are rejected before taking ownership. Both
+transports check the text request during delivery, mark temporary text sensitive,
+and retain it for a 200 ms grace interval after shortcut completion. A transfer
+confirms bytes were requested, not which client requested them. ACK failure still
+attempts restoration, but a disconnected compositor cannot guarantee recovery.
+
+Restoration makes LHC the owner; protocols cannot transfer ownership back to the
+original app. Restored bytes remain until another owner replaces them and are
+then released. Clipboard managers may record a duplicate; quitting may clear the
+selection. On GNOME the RemoteDesktop session must remain alive to serve restored
+formats until the next copy, even after a keyboard backend retires. The owner
+waits for events without periodic idle polling. See the
+[text input audit follow-up](../testing/text-input-audit.md) for acceptance gaps.
+
+Windows popup text uses Unicode `SendInput` without the clipboard and reports
+failures through core events, including rejected/partial injection. UIPI and secure
+desktop restrictions remain. macOS uses Enigo after foreground/window checks and
+reports failures through core events. Native popup insertion remains independent
+of the mapper session; macOS has no keyboard interception or mapper macros.
+Windows/macOS adapters still require native acceptance testing.
 
 ## Mapper runtime guarantees
 

@@ -129,8 +129,8 @@ pub(crate) const PLAIN_TEXT_MIME: &str = "text/plain";
 pub(crate) const PREPARE_TIMEOUT: Duration = Duration::from_secs(5);
 pub(crate) const ARM_TIMEOUT: Duration = Duration::from_secs(1);
 /// How long a paste may take until the clipboard is restored.
-const PASTE_TIMEOUT: Duration = Duration::from_secs(3);
-const SENSITIVE_MIME: &str = "x-kde-passwordManagerHint";
+pub(crate) const PASTE_TIMEOUT: Duration = Duration::from_secs(5);
+pub(crate) const SENSITIVE_MIME: &str = "x-kde-passwordManagerHint";
 /// Longest single wait for Wayland events while a deadline is pending.
 const PUMP_SLICE_MS: u128 = 10;
 /// Most clipboard transfers served at the same time.
@@ -144,10 +144,11 @@ enum Command {
 }
 
 enum Request {
-    /// Snapshot the current selection so a later paste need not read it.
+    /// Connect and synchronize without reading source MIME data.
     Warm,
     Paste {
         text: String,
+        request: Option<super::job::TextRequest>,
         ready: Sender<Result<(), String>>,
         trigger: Receiver<Command>,
         done: Sender<Result<(), String>>,
@@ -179,8 +180,8 @@ impl Waker {
     }
 }
 
-/// The clipboard thread: one Wayland connection kept for the whole process,
-/// so a paste skips connecting and, while the selection is unchanged, reading it.
+/// The clipboard thread keeps a Wayland connection and serves restored data.
+/// Repeated pastes reuse our restored copy while we still own the selection.
 struct Service {
     requests: Sender<Request>,
     waker: Arc<Waker>,
@@ -219,8 +220,7 @@ fn submit(request: Request) -> Result<Arc<Waker>, String> {
     Ok(waker)
 }
 
-/// Snapshot the clipboard ahead of a likely paste, e.g. when a popup with
-/// text entries opens. Does not block; failures only cost the head start.
+/// Connect ahead of a likely paste without reading or encoding clipboard data.
 pub fn warm() {
     if let Err(error) = submit(Request::Warm) {
         log::debug!("[clipboard] warm: {error}");
@@ -237,11 +237,23 @@ pub struct Paste {
 impl Paste {
     /// Snapshot all offered formats before taking temporary clipboard ownership.
     pub fn prepare(text: &str) -> Result<Self, String> {
+        Self::prepare_inner(text, None)
+    }
+
+    pub(crate) fn prepare_checked(
+        text: &str,
+        request: &super::job::TextRequest,
+    ) -> Result<Self, String> {
+        Self::prepare_inner(text, Some(request.clone()))
+    }
+
+    fn prepare_inner(text: &str, request: Option<super::job::TextRequest>) -> Result<Self, String> {
         let (ready, prepared) = mpsc::channel();
         let (finish, trigger) = mpsc::channel();
         let (done, completed) = mpsc::channel();
         let waker = submit(Request::Paste {
             text: text.to_owned(),
+            request,
             ready,
             trigger,
             done,
@@ -298,12 +310,11 @@ struct State {
     offer_proxies: HashMap<wayland_client::backend::ObjectId, Offer>,
     selection: Option<Offer>,
     selected: bool,
-    /// Formats of `selection` read ahead of a paste; cleared when it changes.
-    snapshot: Option<Contents>,
     source: Option<Source>,
     contents: Contents,
     /// `contents` is the restored selection, not a paste in progress.
     restored: bool,
+    request: Option<super::job::TextRequest>,
     cancelled: bool,
     progress: PasteProgress,
     transfers: Vec<Receiver<(bool, Result<(), String>)>>,
@@ -358,11 +369,12 @@ fn run(requests: Receiver<Request>, waker: Arc<Waker>) {
                 }
                 Ok(Request::Paste {
                     text,
+                    request,
                     ready,
                     trigger,
                     done,
                 }) => {
-                    let result = session.paste(text, &ready, trigger, &done);
+                    let result = session.paste(text, request, &ready, trigger, &done);
                     let _ = ready.send(Err(result
                         .as_ref()
                         .err()
@@ -449,42 +461,41 @@ impl Session {
     }
 
     fn warm(&mut self) -> Result<(), String> {
-        self.barrier()?;
-        if !self.state.owns() && self.state.snapshot.is_none() {
-            self.read_selection(Instant::now() + TRANSFER_TIMEOUT)?;
-        }
-        Ok(())
+        self.barrier()
     }
 
-    /// Formats to restore after a paste: our own restored copy, the snapshot
-    /// read ahead, or a fresh read of the selection.
+    /// Formats to restore after a paste: our own restored copy or a fresh read.
     fn saved(&mut self, deadline: Instant) -> Result<(Contents, &'static str), String> {
         // Apply a newer selection before trusting what we hold.
         self.barrier()?;
         if self.state.owns() && self.state.restored {
             return Ok((self.state.contents.clone(), "restored copy"));
         }
-        if let Some(snapshot) = &self.state.snapshot {
-            return Ok((snapshot.clone(), "read ahead"));
-        }
         Ok((self.read_selection(deadline)?, "read now"))
     }
 
     fn read_selection(&mut self, deadline: Instant) -> Result<Contents, String> {
         let selection = self.state.selection.clone();
+        if selection
+            .as_ref()
+            .and_then(|offer| self.state.offers.get(&offer.id()))
+            .is_some_and(|types| types.iter().any(|mime| mime == SENSITIVE_MIME))
+        {
+            return Err("sensitive clipboard cannot safely change ownership".into());
+        }
         let saved = snapshot(&self.connection, &mut self.queue, &mut self.state, deadline)?;
         // Receiving each MIME can run external clients; never replace a newer selection.
         self.barrier()?;
         if self.state.selection != selection {
             return Err("clipboard changed while saving it".into());
         }
-        self.state.snapshot = Some(saved.clone());
         Ok(saved)
     }
 
     fn paste(
         &mut self,
         text: String,
+        request: Option<super::job::TextRequest>,
         ready: &Sender<Result<(), String>>,
         trigger: Receiver<Command>,
         completed: &Sender<Result<(), String>>,
@@ -495,75 +506,91 @@ impl Session {
         if matches!(trigger.try_recv(), Err(mpsc::TryRecvError::Disconnected)) {
             return Err("clipboard preparation cancelled".into());
         }
+        if let Some(request) = &request {
+            request.check().map_err(|error| format!("{error:?}"))?;
+        }
         self.state.restored = false;
+        self.state.request = request;
         self.own(HashMap::from([
             (TEXT_MIME.into(), Arc::from(text.as_bytes())),
             (PLAIN_TEXT_MIME.into(), Arc::from(text.into_bytes())),
             (SENSITIVE_MIME.into(), Arc::from(b"secret".as_slice())),
         ]));
-        self.barrier()?;
-        if self.state.cancelled {
-            return Err("clipboard ownership changed before paste".into());
-        }
-        log::info!(
-            "[clipboard] paste ready in {} ms, saved clipboard: {origin}",
-            start.elapsed().as_millis()
-        );
-        let _ = ready.send(Ok(()));
-        let deadline = Instant::now() + PASTE_TIMEOUT;
-        let injected = loop {
-            match trigger.try_recv() {
-                Ok(Command::Finish(injected)) => break injected,
-                Ok(Command::Arm(armed)) => {
-                    self.state.progress.arm();
-                    self.state.transfers.clear();
-                    let _ = armed.send(());
-                    continue;
+        let result = (|| {
+            self.barrier()?;
+            if self.state.cancelled {
+                return Err("clipboard ownership changed before paste".into());
+            }
+            log::info!(
+                "[clipboard] paste ready in {} ms, saved clipboard: {origin}",
+                start.elapsed().as_millis()
+            );
+            let _ = ready.send(Ok(()));
+            let deadline = Instant::now() + PASTE_TIMEOUT;
+            let injected = loop {
+                if let Some(request) = &self.state.request {
+                    request.check().map_err(|error| format!("{error:?}"))?;
                 }
-                Err(mpsc::TryRecvError::Disconnected) => break false,
-                Err(mpsc::TryRecvError::Empty) => {}
-            }
-            if Instant::now() >= deadline {
-                break false;
-            }
-            if pump(&self.connection, &mut self.queue, &mut self.state, deadline).is_err() {
-                break false;
-            }
-        };
-        self.state.progress.finish(injected, Instant::now());
-        let mut result = if injected {
-            Ok(())
-        } else {
-            Err("paste cancelled before injection".into())
-        };
-        if injected {
-            let injected_at = Instant::now();
-            let deadline = injected_at + TRANSFER_TIMEOUT;
-            while !self.state.cancelled {
-                if let Some(outcome) = self.state.progress.outcome(
-                    Instant::now(),
-                    deadline,
-                    PASTE_GRACE,
-                    self.state.transfers.len(),
-                ) {
-                    result = outcome.map_err(|failure| match failure {
-                        PasteFailure::Cancelled => "paste cancelled before injection".into(),
-                        PasteFailure::Timeout => {
-                            "clipboard text transfer did not complete in time".into()
-                        }
-                    });
-                    break;
+                match trigger.try_recv() {
+                    Ok(Command::Finish(injected)) => break injected,
+                    Ok(Command::Arm(armed)) => {
+                        self.state.progress.arm();
+                        self.state.transfers.clear();
+                        let _ = armed.send(());
+                        continue;
+                    }
+                    Err(mpsc::TryRecvError::Disconnected) => break false,
+                    Err(mpsc::TryRecvError::Empty) => {}
                 }
-                if let Err(error) =
-                    pump(&self.connection, &mut self.queue, &mut self.state, deadline)
-                {
-                    result = Err(error);
-                    break;
+                if Instant::now() >= deadline {
+                    break false;
+                }
+                if pump(&self.connection, &mut self.queue, &mut self.state, deadline).is_err() {
+                    break false;
+                }
+            };
+            self.state.progress.finish(injected, Instant::now());
+            let mut result = if injected {
+                Ok(())
+            } else {
+                Err("paste cancelled before injection".into())
+            };
+            if injected {
+                let injected_at = Instant::now();
+                let deadline = injected_at + TRANSFER_TIMEOUT;
+                while !self.state.cancelled {
+                    if let Some(request) = &self.state.request {
+                        request.check().map_err(|error| format!("{error:?}"))?;
+                    }
+                    if let Some(outcome) = self.state.progress.outcome(
+                        Instant::now(),
+                        deadline,
+                        PASTE_GRACE,
+                        self.state.transfers.len(),
+                    ) {
+                        result = outcome.map_err(|failure| match failure {
+                            PasteFailure::Cancelled => "paste cancelled before injection".into(),
+                            PasteFailure::Timeout => {
+                                "clipboard text transfer did not complete in time".into()
+                            }
+                        });
+                        break;
+                    }
+                    if let Err(error) =
+                        pump(&self.connection, &mut self.queue, &mut self.state, deadline)
+                    {
+                        result = Err(error);
+                        break;
+                    }
                 }
             }
-        }
+            result
+        })();
         // Apply queued cancellation before restoring; a user copy always takes precedence.
-        self.barrier()?;
+        // Even a failed acknowledgement must attempt restoration. Dispatch
+        // queued ownership changes first, without making cleanup depend on ACK.
+        let barrier = self.barrier();
+        self.state.request = None;
         saved.restore(!self.state.cancelled, |saved| {
             if saved.is_empty() {
                 self.device.set_selection(None);
@@ -579,7 +606,7 @@ impl Session {
             }
             Ok(())
         })?;
-        let _ = completed.send(result);
+        let _ = completed.send(result.and(barrier));
         Ok(())
     }
 }
@@ -799,7 +826,6 @@ impl State {
     }
     fn select(&mut self, offer: Option<Offer>) {
         self.selection = offer;
-        self.snapshot = None;
         self.selected = true;
         let current = self.selection.as_ref().map(Offer::id);
         self.offer_proxies.retain(|id, offer| {
@@ -829,8 +855,14 @@ impl State {
         let text = mime == TEXT_MIME || mime == PLAIN_TEXT_MIME;
         let (tx, rx) = mpsc::channel();
         let wake = self.wake();
+        let request = self.request.clone();
         std::thread::spawn(move || {
-            let _ = tx.send((text, write_transfer(fd, &bytes)));
+            let result = write_transfer_checked(fd, &bytes, || {
+                request.as_ref().map_or(Ok(()), |request| {
+                    request.check().map_err(|error| format!("{error:?}"))
+                })
+            });
+            let _ = tx.send((text, result));
             wake();
         });
         self.transfers.push(rx);
@@ -859,7 +891,10 @@ macro_rules! dispatch_clipboard {
         impl Dispatch<$source, ()> for State {
             fn event(state: &mut Self, source: &$source, event: $source_mod::Event, _: &(), _: &Connection, _: &QueueHandle<Self>) {
                 match event {
-                    $source_mod::Event::Cancelled if state.source.as_ref() == Some(&Source::$variant(source.clone())) => state.cancelled = true,
+                    $source_mod::Event::Cancelled if state.source.as_ref() == Some(&Source::$variant(source.clone())) => {
+                        state.cancelled = true;
+                        state.contents.clear();
+                    },
                     $source_mod::Event::Send { mime_type, fd } => state.send(Source::$variant(source.clone()), mime_type, fd),
                     _ => {}
                 }
@@ -915,6 +950,7 @@ fn read_transfer(
     }
 }
 
+#[cfg(test)]
 fn write_transfer(fd: OwnedFd, bytes: &[u8]) -> Result<(), String> {
     write_transfer_checked(fd, bytes, || Ok(()))
 }
@@ -1119,6 +1155,15 @@ mod tests {
         paste.arm().unwrap();
         assert!(paste.finish(true).is_err());
         assert_eq!(read_all(), newer);
+
+        // Password managers must retain ownership, including auto-clear behavior.
+        let sensitive = HashMap::from([
+            (TEXT_MIME.into(), Arc::from(b"private".as_slice())),
+            (SENSITIVE_MIME.into(), Arc::from(b"secret".as_slice())),
+        ]);
+        let _sensitive_owner = Owner::new(sensitive.clone());
+        assert!(Paste::prepare("must not take a password").is_err());
+        assert_eq!(read_all(), sensitive);
 
         // An initially empty selection must be restored as empty too.
         let _empty_owner = Owner::new(Contents::new());

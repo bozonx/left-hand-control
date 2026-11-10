@@ -394,6 +394,7 @@ impl Msg {
             Self::TextInputFailed(
                 lhc_core::events::TextInputFailure::BackendUnavailable(detail)
                 | lhc_core::events::TextInputFailure::Clipboard(detail)
+                | lhc_core::events::TextInputFailure::NativeInput(detail)
                 | lhc_core::events::TextInputFailure::Tool(detail),
             ) => detail,
             _ => return String::new(),
@@ -623,7 +624,18 @@ impl Msg {
                     F::DestinationChanged => ("text-destination-changed", empty(), 0),
                     F::LayoutUnknown => ("text-layout-unknown", empty(), 0),
                     F::BackendUnavailable(detail) => diagnostic("text-backend-unavailable", detail),
-                    F::Clipboard(detail) => diagnostic("text-clipboard-failed", detail),
+                    F::Clipboard(detail) => {
+                        use lhc_core::events::ClipboardFailureKind as C;
+                        let id = match C::from_detail(detail) {
+                            C::PreservationLimit => "text-clipboard-limit",
+                            C::Permission => "text-clipboard-permission",
+                            C::NotConsumed => "text-clipboard-not-consumed",
+                            C::Sensitive => "text-clipboard-sensitive",
+                            C::Other => "text-clipboard-failed",
+                        };
+                        diagnostic(id, detail)
+                    }
+                    F::NativeInput(detail) => diagnostic("text-native-failed", detail),
                     F::Tool(detail) => diagnostic("text-tool-failed", detail),
                 }
             }
@@ -1006,6 +1018,40 @@ mod tests {
     }
 
     #[test]
+    fn clipboard_failures_offer_specific_recovery_without_exposing_details() {
+        for (detail, id) in [
+            ("clipboard is too large to preserve", "text-clipboard-limit"),
+            (
+                "saving clipboard timed out; clipboard left unchanged",
+                "text-clipboard-limit",
+            ),
+            (
+                "clipboard portal permission was not granted",
+                "text-clipboard-permission",
+            ),
+            (
+                "clipboard paste was not consumed",
+                "text-clipboard-not-consumed",
+            ),
+            (
+                "clipboard text transfer did not complete in time",
+                "text-clipboard-not-consumed",
+            ),
+            (
+                "sensitive clipboard cannot safely change ownership",
+                "text-clipboard-sensitive",
+            ),
+            ("unknown protocol failure", "text-clipboard-failed"),
+        ] {
+            let message =
+                Msg::TextInputFailed(lhc_core::events::TextInputFailure::Clipboard(detail.into()))
+                    .to_ui();
+            assert_eq!(message.id, id);
+            assert!(message.arg.is_empty());
+        }
+    }
+
+    #[test]
     fn technical_errors_are_never_exposed_as_ui_arguments() {
         for message in [
             Msg::Error("untranslated error".into()),
@@ -1013,6 +1059,9 @@ mod tests {
             Msg::MapperFailed("untranslated error".into()),
             Msg::MapperStopped(Some("untranslated error".into())),
             Msg::TextInputFailed(lhc_core::events::TextInputFailure::Tool(
+                "untranslated error".into(),
+            )),
+            Msg::TextInputFailed(lhc_core::events::TextInputFailure::NativeInput(
                 "untranslated error".into(),
             )),
         ] {
