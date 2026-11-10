@@ -125,12 +125,20 @@ struct Mapper {
 
 impl Mapper {
     fn start(keyboard: &Keyboard, config: serde_json::Value) -> Self {
+        Self::start_with_mouse(keyboard, None, config)
+    }
+
+    fn start_with_mouse(
+        keyboard: &Keyboard,
+        mouse: Option<&str>,
+        config: serde_json::Value,
+    ) -> Self {
         // A running desktop instance has a virtual keyboard with the same
         // name; only the node that appears now belongs to this mapper.
         let existing: Vec<_> = mapper_devices().map(|(path, _)| path).collect();
         runtime::start(
             &keyboard.path,
-            None,
+            mouse,
             serde_json::from_value(config).unwrap(),
         )
         .expect("start mapper");
@@ -496,6 +504,171 @@ fn mapper_e2e_popup_hotkey_is_consumed_before_compositor() {
             down(KeyCode::KEY_LEFTALT),
             up(KeyCode::KEY_LEFTALT),
             up(KeyCode::KEY_LEFTCTRL),
+        ]
+    );
+}
+
+#[test]
+#[ignore = "requires /dev/uinput and /dev/input access"]
+fn captured_mouse_orders_modifier_click_and_relays_movement_without_original_side_click() {
+    let _serial = serial();
+    let mut keyboard = Keyboard::new();
+    let mut keys = AttributeSet::<KeyCode>::new();
+    keys.insert(KeyCode::BTN_LEFT);
+    keys.insert(KeyCode::BTN_TOUCH);
+    keys.insert(KeyCode::BTN_SIDE);
+    keys.insert(KeyCode::BTN_EXTRA);
+    let mut axes = AttributeSet::<evdev::RelativeAxisCode>::new();
+    axes.insert(evdev::RelativeAxisCode::REL_X);
+    axes.insert(evdev::RelativeAxisCode::REL_Y);
+    axes.insert(evdev::RelativeAxisCode::REL_WHEEL);
+    let mut physical = VirtualDevice::builder()
+        .unwrap()
+        .name("LHC e2e physical mouse")
+        .with_keys(&keys)
+        .unwrap()
+        .with_relative_axes(&axes)
+        .unwrap()
+        .with_absolute_axis(&evdev::UinputAbsSetup::new(
+            evdev::AbsoluteAxisCode::ABS_X,
+            evdev::AbsInfo::new(0, 0, 1000, 0, 0, 10),
+        ))
+        .unwrap()
+        .build()
+        .unwrap();
+    let path = wait_until("physical mouse node", Duration::from_secs(2), || {
+        physical
+            .enumerate_dev_nodes_blocking()
+            .ok()?
+            .filter_map(Result::ok)
+            .next()
+    });
+    let existing: Vec<_> = evdev::enumerate().map(|(path, _)| path).collect();
+    let mut mapper = Mapper::start_with_mouse(
+        &keyboard,
+        path.to_str(),
+        json!({
+            "rules":[{"key":"Space","tapAction":"Space","holdAction":"ShiftLeft"},
+                     {"key":"CapsLock","layerId":"nav","tapAction":null}],
+            "layerKeymaps":{"nav":{"keys":{"MouseBack":"KeyA", "MouseForward":null}}}
+        }),
+    );
+    let mut pointer = wait_until("virtual pointer", Duration::from_secs(5), || {
+        evdev::enumerate()
+            .find(|(path, device)| {
+                !existing.contains(path) && device.name() == Some("Left Hand Control Pointer")
+            })
+            .map(|(_, device)| device)
+    });
+    pointer.grab().unwrap();
+    pointer.set_nonblocking(true).unwrap();
+    keyboard.send(KeyCode::KEY_SPACE, true);
+    physical
+        .emit(&[*KeyEvent::new(KeyCode::BTN_LEFT, 1)])
+        .unwrap();
+    thread::sleep(Duration::from_millis(10));
+    physical
+        .emit(&[*KeyEvent::new(KeyCode::BTN_LEFT, 0)])
+        .unwrap();
+    keyboard.send(KeyCode::KEY_SPACE, false);
+    physical
+        .emit(&[*KeyEvent::new(KeyCode::BTN_TOUCH, 1)])
+        .unwrap();
+    physical
+        .emit(&[*KeyEvent::new(KeyCode::BTN_TOUCH, 0)])
+        .unwrap();
+    let keyboard_events = mapper.read(Duration::from_millis(30), Duration::from_secs(2));
+    let pointer_events: Vec<_> = pointer.fetch_events().unwrap().collect();
+    let shift = keyboard_events
+        .iter()
+        .find(|key| key.code == KeyCode::KEY_LEFTSHIFT && key.down)
+        .unwrap();
+    let click = pointer_events
+        .iter()
+        .find(|event| event.event_type() == EventType::KEY && event.value() == 1)
+        .unwrap();
+    assert!(
+        shift.time <= click.timestamp(),
+        "first click preceded its modifier"
+    );
+    assert_eq!(
+        pointer_events
+            .iter()
+            .filter(|event| event.event_type() == EventType::KEY)
+            .count(),
+        4
+    );
+
+    keyboard.send(KeyCode::KEY_CAPSLOCK, true);
+    physical
+        .emit(&[*KeyEvent::new(KeyCode::BTN_SIDE, 1)])
+        .unwrap();
+    thread::sleep(Duration::from_millis(10));
+    physical
+        .emit(&[*KeyEvent::new(KeyCode::BTN_SIDE, 0)])
+        .unwrap();
+    physical
+        .emit(&[*KeyEvent::new(KeyCode::BTN_EXTRA, 1)])
+        .unwrap();
+    physical
+        .emit(&[*KeyEvent::new(KeyCode::BTN_EXTRA, 0)])
+        .unwrap();
+    physical
+        .emit(&[InputEvent::new(
+            EventType::ABSOLUTE.0,
+            evdev::AbsoluteAxisCode::ABS_X.0,
+            42,
+        )])
+        .unwrap();
+    physical
+        .emit(&[
+            InputEvent::new(EventType::RELATIVE.0, evdev::RelativeAxisCode::REL_X.0, 7),
+            InputEvent::new(EventType::RELATIVE.0, evdev::RelativeAxisCode::REL_Y.0, -3),
+            InputEvent::new(
+                EventType::RELATIVE.0,
+                evdev::RelativeAxisCode::REL_WHEEL.0,
+                1,
+            ),
+        ])
+        .unwrap();
+    keyboard.send(KeyCode::KEY_CAPSLOCK, false);
+    let keyboard_events = mapper.read(Duration::from_millis(30), Duration::from_secs(2));
+    assert!(
+        keyboard_events
+            .iter()
+            .any(|key| key.code == KeyCode::KEY_A && key.down)
+    );
+    let pointer_events: Vec<_> = pointer.fetch_events().unwrap().collect();
+    assert!(
+        !pointer_events
+            .iter()
+            .any(|event| event.event_type() == EventType::KEY)
+    );
+    assert!(
+        pointer_events
+            .iter()
+            .any(|event| event.event_type() == EventType::ABSOLUTE && event.value() == 42)
+    );
+    assert_eq!(
+        pointer
+            .get_absinfo()
+            .unwrap()
+            .find(|(axis, _)| *axis == evdev::AbsoluteAxisCode::ABS_X)
+            .unwrap()
+            .1
+            .maximum(),
+        1000
+    );
+    assert_eq!(
+        pointer_events
+            .iter()
+            .filter(|event| event.event_type() == EventType::RELATIVE)
+            .map(|event| (event.code(), event.value()))
+            .collect::<Vec<_>>(),
+        vec![
+            (evdev::RelativeAxisCode::REL_X.0, 7),
+            (evdev::RelativeAxisCode::REL_Y.0, -3),
+            (evdev::RelativeAxisCode::REL_WHEEL.0, 1)
         ]
     );
 }

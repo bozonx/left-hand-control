@@ -1405,7 +1405,7 @@ fn repeats_reemit_only_keys_that_hold_a_virtual_key() {
     engine.handle_key_event(KeyCode::KEY_A, false, now, &mut out);
     out.clear();
     engine.repeat(KeyCode::KEY_A, &mut out);
-    engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
+    engine.handle_key_event(KeyCode::KEY_SPACE, true, now + Duration::from_millis(150), &mut out);
     engine.repeat(KeyCode::KEY_SPACE, &mut out);
     assert!(out.is_empty());
 }

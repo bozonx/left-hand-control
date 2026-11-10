@@ -460,10 +460,11 @@ fn layer_presses_count_only_keys_pressed_inside_a_layer() {
     ], "layerKeymaps": {"nav": {"keys": {"KeyJ": "ArrowLeft"}}}}))
     .unwrap();
     let mut engine = Engine::new(&cfg);
-    let now = Instant::now();
+    let mut now = Instant::now();
     let mut out = Vec::new();
     engine.handle_key_event(KeyCode::KEY_A, true, now, &mut out);
     engine.handle_key_event(KeyCode::KEY_A, false, now, &mut out);
+    now += Duration::from_millis(150);
     engine.handle_key_event(KeyCode::KEY_SPACE, true, now, &mut out);
     assert_eq!(engine.layer_presses(), 0);
     // The press that resolves the layer key as a hold is used inside it.

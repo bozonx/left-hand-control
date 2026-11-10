@@ -366,7 +366,7 @@ fn click_the_layer_does_not_map_leaves_a_layer_key_typing() {
         ],
         &[0, 50, 60, 100],
     );
-    // The ungrabbed click passes through untouched; F is still a tap.
+    // The unrelated click passes through untouched; F is still a tap.
     assert_eq!(
         trace,
         [

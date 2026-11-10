@@ -1,0 +1,78 @@
+Mapper audit implementation — 2026-11-10
+
+Environment: Linux, KDE Plasma, Wayland; /dev/uinput and /dev/input available.
+Tests use synthetic devices and private runtime/config directories. No physical
+user keyboard or mouse was grabbed for acceptance tests.
+
+Audit decisions
+1. Re-intercept the current press after hold-on-other replays its decision
+   buffer. Keep a regression for an old release preceding a repeated press.
+2. Nested releases and timeout use the first ordinary buffered key, including
+   the inverse case (mapped first key, later unmapped key released).
+3. Flow tap: 135 ms after an unmodified native letter, only permissive layer
+   rules with a tap and without double-tap or long-hold. Modifier shortcuts,
+   mouse clicks and other intervening presses interrupt that typing context.
+4. Fetch nonblocking input after every wait, including poll timeout, before tick.
+5. A second double-tap press resolves long-hold decisions and counts as layer use.
+6. Layer significance considers active conditional rules and chords.
+7. Keep intentional behavior: once typing resolves a held trigger as tap, its
+   release is consumed; re-press it to activate the layer. Documented explicitly.
+8. Capture the selected Linux mouse and relay via a separate virtual pointer.
+   Preserve relative/absolute axes and properties. Route button codes, including
+   BTN_TOUCH, to the pointer; emit modifier output before clicks. Preserve pointer
+   frames, forward movement during macros, and exclude our pointer from discovery.
+   Failed pointer setup leaves the physical mouse available and retries later;
+   do not grab while a button is already held.
+
+Timing: synchronous modifier-delay cap reduced from 50 to 15 ms. Macro timing
+remains asynchronous. Default hold and double-tap windows remain 200 ms; the
+suggested 150 ms double-tap default was optional in the audit. Double-tap delay
+and flow-tap exclusions are documented in docs/features.md.
+
+Verification commands and results
+
+cargo fmt -p lhc-core -p slint-shell --check
+  PASS (final check).
+
+git diff --check
+  PASS.
+
+cargo test --locked -p lhc-core --lib -- --quiet
+  PASS: 687 passed, 3 ignored. Includes 40,000 seeded randomized input sequences.
+  The random test checks engine cleanup, virtual output cleanup and that every
+  release has a preceding press, with intermittent ticks and batched input.
+
+cargo test --locked --workspace --features slint-shell/spell
+  PASS: core, shell, integration and doc tests. Core: 684 passed, 3 ignored;
+  shell: 250 passed. This full run preceded the final small flow/pointer
+  refinements, which were covered by the final targeted runs below.
+
+cargo test --locked -p lhc-core --lib mapper:: -- --quiet
+  PASS after final refinements: 324 passed, 1 ignored.
+
+cargo test --locked -p lhc-core --test mapper_e2e -- --ignored
+  PASS: 10 passed. The new pointer scenario checks first modifier-click ordering,
+  remapping without an original click, swallowing, REL_X/REL_Y/wheel forwarding,
+  ABS_X forwarding and its axis range.
+
+cargo test --locked -p lhc-core --test mapper_e2e captured_mouse -- --ignored
+  PASS after extending pointer routing: 1 passed, 9 filtered out. Also checks
+  BTN_TOUCH passthrough through the virtual pointer.
+
+cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+  PASS after final refinements; no warnings.
+
+cargo check --locked -p slint-shell --all-targets
+  PASS: build without Spell.
+
+cargo deny check
+  PASS: advisories, bans, licenses, sources. Warnings about existing duplicate
+  dependency versions and the yanked async-executor 1.14.0 lockfile entry.
+
+Limits
+No UI source or translation changes; graphical page scenarios were not run.
+Synthetic evdev/uinput tests verify output events and timestamps, not delivery
+inside a real application or physical mouse hardware behavior. Natural typing,
+physical mouse hotplug and device-specific behavior still need manual KDE
+acceptance. Windows and macOS were not built or exercised. No dependencies,
+persisted formats, IPC or CLI contracts changed.

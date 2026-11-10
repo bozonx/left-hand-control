@@ -8,6 +8,7 @@ use crate::mapper::key_code::KeyCode;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
+mod audit;
 mod builder;
 mod chords;
 mod conditions;

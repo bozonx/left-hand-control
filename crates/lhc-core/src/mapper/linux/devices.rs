@@ -1,7 +1,7 @@
 //! Enumeration of Linux input devices (keyboards, mice) with stable
 //! `/dev/input/by-id` paths.
 
-use super::VIRTUAL_DEVICE_NAME;
+use super::{VIRTUAL_DEVICE_NAME, VIRTUAL_POINTER_NAME};
 use crate::mapper::devices::{DeviceDiscovery, UnavailableDevice};
 use crate::mapper::{InputDevice, KeyboardDevice};
 use crate::platform::INPUT_DIR;
@@ -121,7 +121,7 @@ fn discover_in(
             dev.is_keyboard,
             dev.is_mouse
         );
-        if dev.name == VIRTUAL_DEVICE_NAME {
+        if dev.name == VIRTUAL_DEVICE_NAME || dev.name == VIRTUAL_POINTER_NAME {
             continue;
         }
         let path_to_store = stable_path(&path, stable);
@@ -220,6 +220,17 @@ mod tests {
             is_mouse: !is_keyboard,
             bus_virtual: false,
             has_physical_path: true,
+        }
+    }
+
+    #[test]
+    fn mapper_outputs_cannot_be_selected_as_physical_inputs() {
+        for name in [super::VIRTUAL_DEVICE_NAME, super::VIRTUAL_POINTER_NAME] {
+            let discovery = discover_in(vec![PathBuf::from("/x/event0")], &HashMap::new(), |_| {
+                Ok(device(name, false))
+            })
+            .unwrap();
+            assert!(discovery.devices.is_empty());
         }
     }
 

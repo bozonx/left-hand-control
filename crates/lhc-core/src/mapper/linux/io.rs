@@ -8,8 +8,8 @@ const DBUS_CALL_TIMEOUT: Duration = Duration::from_secs(5);
 /// Jobs queued for a worker thread before senders drop new ones.
 const WORKER_QUEUE: usize = 32;
 pub(super) use super::super::output::{
-    EventSink, LoopDriver, OutputHold, SideEffects, flush_out_with, process_iteration_with,
-    resolve_literals,
+    DriverInput, EventSink, LoopDriver, OutputHold, SideEffects, flush_out_with,
+    process_iteration_with, resolve_literals,
 };
 use super::super::system::{DbusArg, DbusCall, ProcessInvocation, SystemAction};
 use crate::text_input::portal;
@@ -17,13 +17,13 @@ use evdev::uinput::VirtualDevice;
 use evdev::{Device, EventType, InputEvent, KeyCode, KeyEvent};
 use std::collections::{HashMap, HashSet};
 use std::os::unix::io::{AsRawFd, BorrowedFd};
-use std::sync::OnceLock;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc;
+use std::sync::{Arc, Mutex, OnceLock};
 use std::thread;
 use std::time::{Duration, Instant, SystemTime};
 
-/// Pause before trying to open the shared mouse again.
+/// Pause before trying to open the selected mouse again.
 const MOUSE_RETRY: Duration = Duration::from_secs(1);
 
 nix::ioctl_write_ptr!(set_event_clock, b'E', 0xa0, libc::c_int);
@@ -43,20 +43,103 @@ fn event_clock_now() -> Result<SystemTime, String> {
     Ok(SystemTime::UNIX_EPOCH + Duration::new(time.tv_sec as u64, time.tv_nsec as u32))
 }
 
+pub(super) type MouseOutput = Arc<Mutex<Option<VirtualDevice>>>;
+
+pub(super) struct OutputDevices {
+    pub(super) keyboard: VirtualDevice,
+    pub(super) mouse: MouseOutput,
+}
+
 pub(super) struct VirtualEventSink<'a> {
-    virt: &'a mut VirtualDevice,
+    virt: &'a mut OutputDevices,
 }
 
 impl EventSink for VirtualEventSink<'_> {
     fn emit(&mut self, events: &[(KeyCode, bool)]) -> Result<(), String> {
-        let events: Vec<InputEvent> = events
-            .iter()
-            .map(|&(key, down)| *KeyEvent::new(key, i32::from(down)))
-            .collect();
-        self.virt
-            .emit(&events)
-            .map_err(|e| format!("uinput emit: {e}"))
+        // Split only at device boundaries to retain the order of modifier
+        // presses and mouse buttons even when both occur in one engine batch.
+        for group in events.chunk_by(|a, b| {
+            super::NON_KEYBOARD_BUTTON_CODES.contains(&a.0.code())
+                == super::NON_KEYBOARD_BUTTON_CODES.contains(&b.0.code())
+        }) {
+            let batch: Vec<_> = group
+                .iter()
+                .map(|&(key, down)| *KeyEvent::new(key, i32::from(down)))
+                .collect();
+            if super::NON_KEYBOARD_BUTTON_CODES.contains(&group[0].0.code()) {
+                let mut mouse = self.virt.mouse.lock().unwrap_or_else(|e| e.into_inner());
+                if let Some(mouse) = mouse.as_mut() {
+                    mouse.emit(&batch).map_err(|e| format!("mouse emit: {e}"))?;
+                    continue;
+                }
+            }
+            self.virt
+                .keyboard
+                .emit(&batch)
+                .map_err(|e| format!("uinput emit: {e}"))?;
+        }
+        Ok(())
     }
+
+    fn pointer(&mut self, event: &[InputEvent]) -> Result<(), String> {
+        if let Some(mouse) = self
+            .virt
+            .mouse
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .as_mut()
+        {
+            mouse
+                .emit(event)
+                .map_err(|e| format!("pointer emit: {e}"))?;
+        }
+        Ok(())
+    }
+}
+
+/// Build the replacement before grabbing: any setup failure leaves the
+/// physical pointer usable. A fresh device also handles reconnect capability changes.
+fn grab_mouse(mouse: &mut Device) -> Result<VirtualDevice, String> {
+    if mouse
+        .get_key_state()
+        .map_err(|e| format!("mouse key state: {e}"))?
+        .iter()
+        .next()
+        .is_some()
+    {
+        // Its existing press belongs to the physical device in the compositor.
+        // Wait for release before moving subsequent clicks to a new device.
+        return Err("mouse buttons are still held".into());
+    }
+    let build = || -> std::io::Result<VirtualDevice> {
+        let mut builder = VirtualDevice::builder()?
+            .name(super::VIRTUAL_POINTER_NAME)
+            .with_properties(mouse.properties())?;
+        let mut keys = mouse
+            .supported_keys()
+            .map(|keys| keys.iter().collect::<evdev::AttributeSet<KeyCode>>())
+            .unwrap_or_default();
+        for code in 0x110..=0x117 {
+            keys.insert(KeyCode::new(code));
+        }
+        builder = builder.with_keys(&keys)?;
+        if let Some(axes) = mouse.supported_relative_axes() {
+            builder = builder.with_relative_axes(axes)?;
+        }
+        if let Some(axes) = mouse.supported_absolute_axes() {
+            let state = mouse.get_abs_state()?;
+            for axis in axes.iter() {
+                builder = builder.with_absolute_axis(&evdev::UinputAbsSetup::new(
+                    axis,
+                    evdev::AbsInfo::from(state[axis.0 as usize]),
+                ))?;
+            }
+        }
+        builder.build()
+    };
+    let virt = build().map_err(|e| format!("create virtual pointer: {e}"))?;
+    mouse.grab().map_err(|e| format!("grab mouse: {e}"))?;
+    Ok(virt)
 }
 
 pub(super) struct RuntimeSideEffects;
@@ -171,6 +254,7 @@ fn run_side_effect_worker(rx: mpsc::Receiver<SideEffectJob>) {
 
 pub(super) struct MultiDeviceLoopDriver {
     devices: Vec<Option<Device>>,
+    pub(super) mouse_output: MouseOutput,
     mouse_path: Option<String>,
     mouse_identity: Option<super::DeviceIdentity>,
     next_mouse_retry: Instant,
@@ -204,13 +288,20 @@ impl MultiDeviceLoopDriver {
     ) -> Result<Self, String> {
         let mut devices = devices;
         Self::prepare_device(&devices[0])?;
-        if let Some(mouse) = devices.get(1)
-            && let Err(error) = Self::prepare_device(mouse)
-        {
-            log::warn!("[mapper] prepare mouse: {error}");
-            devices.truncate(1);
-        }
+        let mouse_output = if let Some(mouse) = devices.get_mut(1) {
+            match Self::prepare_device(mouse).and_then(|()| grab_mouse(mouse)) {
+                Ok(output) => Some(output),
+                Err(error) => {
+                    log::warn!("[mapper] prepare mouse: {error}");
+                    devices.truncate(1);
+                    None
+                }
+            }
+        } else {
+            None
+        };
         Ok(Self {
+            mouse_output: Arc::new(Mutex::new(mouse_output)),
             mouse_identity: devices.get(1).map(super::DeviceIdentity::of),
             devices: {
                 let mut slots: Vec<_> = devices.into_iter().map(Some).collect();
@@ -276,7 +367,7 @@ impl MultiDeviceLoopDriver {
         let Some(path) = self.mouse_path.as_deref() else {
             return;
         };
-        let mouse = match Device::open(path) {
+        let mut mouse = match Device::open(path) {
             Ok(mouse) => mouse,
             Err(error) => {
                 self.set_mouse_status(MouseStatus::from_error(&error));
@@ -305,6 +396,15 @@ impl MultiDeviceLoopDriver {
             self.set_mouse_status(MouseStatus::Unavailable);
             return;
         };
+        let output = match grab_mouse(&mut mouse) {
+            Ok(output) => output,
+            Err(error) => {
+                log::warn!("[mapper] reconnect mouse: {error}");
+                self.set_mouse_status(MouseStatus::Unavailable);
+                return;
+            }
+        };
+        *self.mouse_output.lock().unwrap_or_else(|e| e.into_inner()) = Some(output);
         self.set_mouse_status(MouseStatus::Connected);
         self.devices[1] = Some(mouse);
         self.mouse_identity = Some(identity);
@@ -400,7 +500,19 @@ impl LoopDriver for MultiDeviceLoopDriver {
     }
 
     fn fetch_timed_key_events(&mut self) -> Result<Vec<(KeyCode, bool, Instant)>, String> {
+        Ok(self
+            .fetch_inputs()?
+            .into_iter()
+            .filter_map(|input| match input {
+                DriverInput::Key { key, down, at } => Some((key, down, at)),
+                _ => None,
+            })
+            .collect())
+    }
+
+    fn fetch_inputs(&mut self) -> Result<Vec<DriverInput>, String> {
         let mut events = Vec::new();
+        let mut pointer = Vec::new();
         for (source, slot) in self.devices.iter_mut().enumerate() {
             let Some(device) = slot.as_mut() else {
                 continue;
@@ -408,15 +520,33 @@ impl LoopDriver for MultiDeviceLoopDriver {
             let mut disconnected = None;
             match device.fetch_events() {
                 Ok(iter) => {
+                    let mut frame = Vec::new();
                     for ev in iter {
                         if ev.event_type() != EventType::KEY {
+                            if source == 1
+                                && matches!(
+                                    ev.event_type(),
+                                    EventType::RELATIVE | EventType::ABSOLUTE
+                                )
+                            {
+                                frame.push(ev);
+                            }
+                            if ev.event_type() == EventType::SYNCHRONIZATION && !frame.is_empty() {
+                                pointer.push(std::mem::take(&mut frame));
+                            }
                             continue;
+                        }
+                        if !frame.is_empty() {
+                            pointer.push(std::mem::take(&mut frame));
                         }
                         let value = ev.value();
                         if value == 2 {
                             continue;
                         }
                         events.push((ev.timestamp(), source, KeyCode::new(ev.code()), value == 1));
+                    }
+                    if !frame.is_empty() {
+                        pointer.push(frame);
                     }
                 }
                 Err(e) if e.raw_os_error() == Some(libc::EAGAIN) => {}
@@ -445,12 +575,31 @@ impl LoopDriver for MultiDeviceLoopDriver {
                 }
             }
         }
-        Ok(self.keys.merge(
-            &mut events,
-            event_clock_now()?,
-            Instant::now(),
-            &mut self.last_event,
-        ))
+        let wall = event_clock_now()?;
+        let now = Instant::now();
+        let previous = self.last_event;
+        let mut inputs: Vec<_> = self
+            .keys
+            .merge(&mut events, wall, now, &mut self.last_event)
+            .into_iter()
+            .map(|(key, down, at)| DriverInput::Key { key, down, at })
+            .collect();
+        for event in pointer {
+            let at = now
+                .checked_sub(
+                    wall.duration_since(event[0].timestamp())
+                        .unwrap_or_default(),
+                )
+                .unwrap_or(previous)
+                .max(previous);
+            self.last_event = self.last_event.max(at);
+            inputs.push(DriverInput::Pointer { event, at });
+        }
+        inputs.sort_by_key(|input| match input {
+            DriverInput::Key { at, .. } | DriverInput::Pointer { at, .. } => *at,
+            DriverInput::Repeat(_) => now,
+        });
+        Ok(inputs)
     }
 }
 
@@ -559,7 +708,7 @@ pub(super) fn process_iteration<D: LoopDriver>(
     driver: &mut D,
     engine: &mut Engine,
     hold: &mut OutputHold,
-    virt: &mut VirtualDevice,
+    virt: &mut OutputDevices,
     out_buf: &mut Vec<EngineOutput>,
 ) -> Result<(), String> {
     let mut sink = VirtualEventSink { virt };
@@ -568,7 +717,7 @@ pub(super) fn process_iteration<D: LoopDriver>(
 }
 
 pub(super) fn flush_out(
-    virt: &mut VirtualDevice,
+    virt: &mut OutputDevices,
     buf: &mut Vec<EngineOutput>,
 ) -> Result<(), String> {
     let mut sink = VirtualEventSink { virt };

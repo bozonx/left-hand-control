@@ -15,6 +15,9 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Mapper: permissive layer keys following a letter within 135 ms resolve immediately as taps (except double-tap and long-hold bindings), reducing accidental layer activation during typing. Synchronous modifier delays are capped at 15 ms.
+- Linux: the selected mouse is grabbed and relayed through a virtual pointer, so the first mod-tap modifier click receives its modifier and remapped or swallowed buttons no longer also send the original click.
+
 - Settings: every tab now has the same layout. Settings are grouped in cards, fields use the same labels, and the language field no longer has its own icon.
 - Settings → Accessibility: "High contrast" and "Reduce animations" are now selects with "Follow system" (the default), "On" and "Off". On Linux "Follow system" reads the desktop preference from the XDG Settings portal (`contrast`, `reduced-motion`; on KDE also the animation speed slider set to instant) and follows its changes; Windows and macOS do not report it yet. `config.json` moves to version 2 (`highContrast`/`reduceMotion` are `"system"`, `"on"` or `"off"`); a version 1 file is converted (`true` → `"on"`, `false` → `"system"`) and kept as `config.json.v1.bak`.
 - Profile format: a rule chord is written as an array of keys (`"key": ["ShiftLeft", "ControlRight"]`); a single key stays a string. `+` inside a rule key is now a load error, since in actions it joins modifiers to a key.
@@ -93,6 +96,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Game mode (in development): toggling returns to Auto when the opposite state is what detection reports, so a toggle key no longer leaves automatic detection for good; a toggle from a key binding or the CLI shows the new state on screen. The top-bar button always reads Auto/On/Off in English to keep its fixed width, and its tooltip says that popup hotkeys are off in game mode. Terminals, code editors, image viewers and music players no longer count as fullscreen games; the running-process list is read every 2 seconds instead of every second while no game runs.
 
 ### Fixed
+
+- Mapper: preserve press/release order when replaying buffered tap/hold decisions, preventing stuck modifiers after delayed input batches. Nested releases and timeouts agree on the first ordinary key; inactive conditional rules no longer activate layers. Input is drained before timer decisions even after a poll timeout, and second double-tap presses count as layer use.
 
 - Mapper: a layer key no longer loses its tap when a key the layer does not map is pressed and released inside the press, or pressed before the hold timeout (fast typing of Space then a letter typed only the letter); a modifier touched meanwhile decides nothing.
 - Mapper: a layer key with a double-tap action that is tapped and then held keeps the first tap ahead of the layer.

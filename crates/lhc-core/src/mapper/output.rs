@@ -17,7 +17,7 @@ const KEY_TAP_GAP: Duration = Duration::from_millis(1);
 /// Longest modifier delay a keystroke outside a macro may wait for. Such
 /// keystrokes are emitted synchronously, so the delay blocks all input;
 /// macros pace their own steps without blocking and use the full setting.
-const MAX_BLOCKING_MOD_DELAY: Duration = Duration::from_millis(50);
+const MAX_BLOCKING_MOD_DELAY: Duration = Duration::from_millis(15);
 
 /// Longest time output stays held after an action opened a popup when the
 /// shell never reports that the popup took the keyboard focus.
@@ -243,6 +243,10 @@ fn releases_held_press(held: &[EngineOutput], release: &EngineOutput) -> bool {
 /// together, in order.
 pub(super) trait EventSink {
     fn emit(&mut self, events: &[(KeyCode, bool)]) -> Result<(), String>;
+    #[cfg(target_os = "linux")]
+    fn pointer(&mut self, _event: &[evdev::InputEvent]) -> Result<(), String> {
+        Ok(())
+    }
 }
 
 pub(super) trait SideEffects {
@@ -280,11 +284,17 @@ pub(super) enum DriverInput {
     /// keys itself.
     #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
     Repeat(KeyCode),
+    #[cfg(target_os = "linux")]
+    Pointer {
+        event: Vec<evdev::InputEvent>,
+        at: Instant,
+    },
 }
 
 pub(super) trait LoopDriver {
     fn now(&mut self) -> Instant;
     fn wait(&mut self, timeout: Duration) -> Result<bool, String>;
+    /// Nonblocking: called after every wait, including timeout and control wakes.
     fn fetch_key_events(&mut self) -> Result<Vec<(KeyCode, bool)>, String>;
     fn fetch_timed_key_events(&mut self) -> Result<Vec<(KeyCode, bool, Instant)>, String> {
         let events = self.fetch_key_events()?;
@@ -330,13 +340,17 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
         wait = wait.min(until.saturating_duration_since(now));
     }
 
-    if driver.wait(wait)? {
+    driver.wait(wait)?;
+    // Nonblocking fetch also covers events arriving just as poll times out.
+    {
         for input in driver.fetch_inputs()? {
             // The hold behind a macro is measured from when the input
             // arrived, not from before the wait.
             let arrived = match &input {
                 DriverInput::Key { at, .. } => (*at).max(now),
                 DriverInput::Repeat(_) => now,
+                #[cfg(target_os = "linux")]
+                DriverInput::Pointer { at, .. } => (*at).max(now),
             };
             let during_macro = engine.macro_running();
             let start = out_buf.len();
@@ -350,6 +364,15 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
                     effects.held_layer_changed(engine.held_layer_state());
                 }
                 DriverInput::Repeat(key) => engine.repeat(key, out_buf),
+                #[cfg(target_os = "linux")]
+                DriverInput::Pointer { event, .. } => {
+                    // Deliver earlier modifiers/buttons before pointer movement.
+                    resolve_literals(effects, out_buf);
+                    hold.gate(out_buf, arrived, effects.text_pending());
+                    flush_out_with(sink, effects, out_buf)?;
+                    sink.pointer(&event)?;
+                    continue;
+                }
             }
             if during_macro {
                 hold.hold_typed(out_buf, start, arrived);
@@ -508,9 +531,10 @@ pub(super) fn flush_out_with<S: EventSink, E: SideEffects>(
     for out in buf.drain(..) {
         match out {
             EngineOutput::KeyRaw { key, down } => {
-                // Mouse buttons are not grabbed, so they already reach the OS.
-                // Re-emitting them would create duplicates.
+                // Backends that observe ungrabbed buttons must not duplicate them.
+                // Linux captures the selected pointer and must emit its buttons.
                 let code = key.code();
+                #[cfg(not(target_os = "linux"))]
                 if (272..=281).contains(&code) {
                     continue;
                 }
@@ -707,7 +731,7 @@ mod tests {
         }
 
         fn fetch_key_events(&mut self) -> Result<Vec<(KeyCode, bool)>, String> {
-            self.fetches.pop_front().expect("fetch result")
+            self.fetches.pop_front().unwrap_or_else(|| Ok(Vec::new()))
         }
     }
 
@@ -1278,7 +1302,7 @@ mod tests {
     }
 
     #[test]
-    fn flush_out_filters_mouse_buttons() {
+    fn flush_out_handles_mouse_buttons_for_backend() {
         let mut sink = FakeSink::default();
         let mut effects = FakeEffects::default();
         let mut buf = vec![
@@ -1298,12 +1322,15 @@ mod tests {
 
         flush_out_with(&mut sink, &mut effects, &mut buf).expect("flush");
 
-        // Mouse buttons in range 272..=281 are filtered out
+        // Linux relays grabbed buttons; other backends observe them.
         assert_eq!(sink.batches.len(), 1);
-        assert_eq!(
-            key_events(&sink.batches[0]),
-            vec![(KeyCode::KEY_A.code(), 1)]
-        );
+        #[cfg(target_os = "linux")]
+        assert_eq!(key_events(&sink.batches[0]), vec![
+            (KeyCode::BTN_LEFT.code(), 1), (KeyCode::BTN_RIGHT.code(), 1),
+            (KeyCode::KEY_A.code(), 1),
+        ]);
+        #[cfg(not(target_os = "linux"))]
+        assert_eq!(key_events(&sink.batches[0]), vec![(KeyCode::KEY_A.code(), 1)]);
     }
 
     #[test]
@@ -1332,6 +1359,103 @@ mod tests {
             key_events(&sink.batches[1]),
             vec![(KeyCode::KEY_A.code(), 0)]
         );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn pointer_movement_during_a_macro_does_not_reclassify_flushed_output() {
+        struct PointerDriver(Instant);
+        impl LoopDriver for PointerDriver {
+            fn now(&mut self) -> Instant {
+                self.0
+            }
+            fn wait(&mut self, _: Duration) -> Result<bool, String> {
+                Ok(true)
+            }
+            fn fetch_key_events(&mut self) -> Result<Vec<(KeyCode, bool)>, String> {
+                unreachable!()
+            }
+            fn fetch_inputs(&mut self) -> Result<Vec<DriverInput>, String> {
+                Ok(vec![DriverInput::Pointer {
+                    at: self.0,
+                    event: vec![evdev::InputEvent::new(
+                        evdev::EventType::RELATIVE.0,
+                        evdev::RelativeAxisCode::REL_X.0,
+                        1,
+                    )],
+                }])
+            }
+        }
+        let cfg = serde_json::from_value(serde_json::json!({
+            "macros":[{"id":"waiting", "steps":[{"action":"pause:200"}, {"action":"KeyB"}]}]
+        }))
+        .unwrap();
+        let mut engine = Engine::new(&cfg);
+        let mut buf = vec![];
+        engine.execute_remote("macro:waiting", &mut buf);
+        assert!(engine.macro_running());
+        buf.push(EngineOutput::KeyRaw {
+            key: KeyCode::KEY_A,
+            down: true,
+        });
+        process_iteration_with(
+            &mut PointerDriver(Instant::now()),
+            &mut engine,
+            &mut OutputHold::default(),
+            &mut FakeSink::default(),
+            &mut FakeEffects::default(),
+            &mut buf,
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn timeout_fetches_input_before_committing_the_hold() {
+        struct DeadlineDriver {
+            start: Instant,
+            calls: usize,
+        }
+        impl LoopDriver for DeadlineDriver {
+            fn now(&mut self) -> Instant {
+                self.calls += 1;
+                self.start + Duration::from_millis(if self.calls == 1 { 0 } else { 210 })
+            }
+            fn wait(&mut self, _: Duration) -> Result<bool, String> {
+                Ok(false)
+            }
+            fn fetch_key_events(&mut self) -> Result<Vec<(KeyCode, bool)>, String> {
+                unreachable!()
+            }
+            fn fetch_timed_key_events(&mut self) -> Result<Vec<(KeyCode, bool, Instant)>, String> {
+                Ok(vec![(
+                    KeyCode::KEY_A,
+                    true,
+                    self.start + Duration::from_millis(180),
+                )])
+            }
+        }
+        let cfg = serde_json::from_value(serde_json::json!({
+            "rules":[{"key":"Space","layerId":"nav"}],
+            "layerKeymaps":{"nav":{"keys":{"KeyJ":"ArrowDown"}}}
+        }))
+        .unwrap();
+        let mut engine = Engine::new(&cfg);
+        let start = Instant::now();
+        let mut buf = vec![];
+        engine.handle_key_event(KeyCode::KEY_SPACE, true, start, &mut buf);
+        let mut driver = DeadlineDriver { start, calls: 0 };
+        let mut sink = FakeSink::default();
+        process_iteration_with(
+            &mut driver,
+            &mut engine,
+            &mut OutputHold::default(),
+            &mut sink,
+            &mut FakeEffects::default(),
+            &mut buf,
+        )
+        .unwrap();
+        assert_eq!(engine.top_layer(), None);
+        assert_eq!(sink.batches[0], vec![(KeyCode::KEY_SPACE.code(), 1)]);
     }
 
     #[test]

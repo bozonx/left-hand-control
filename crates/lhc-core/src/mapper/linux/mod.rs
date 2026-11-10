@@ -20,6 +20,7 @@ use std::thread;
 use std::time::Duration;
 
 const VIRTUAL_DEVICE_NAME: &str = "LeftHandControl Virtual Keyboard";
+const VIRTUAL_POINTER_NAME: &str = "Left Hand Control Pointer";
 /// USB id of the virtual keyboard: the Linux Foundation vendor id with its
 /// "multifunction composite gadget" product, used by software devices.
 const VIRTUAL_VENDOR_ID: u16 = 0x1d6b;
@@ -602,15 +603,6 @@ fn run_device(
     // Declared before the loop driver, so it is cleared after the grab ends.
     let _grabbed = GrabbedKeyboard::register(keyboard.rdev());
 
-    // Mouse is opened without grab: only KEY events are read to interact
-    // with modifier tap-hold decisions. REL/ABS (movement) stays
-    // untouched so the cursor continues to work.
-    //
-    // Known limitation: because the mouse is not grabbed, the physical
-    // button event always reaches the OS. Layer remaps of mouse buttons
-    // emit the mapped action *in addition to* the physical click, and
-    // `Swallow` cannot suppress the physical click. Fixing this would
-    // require grabbing the mouse and re-emitting REL/ABS ourselves.
     let all_keys = virtual_keyboard_keys(device.supported_keys());
     let mut devices = vec![device];
     if let Some(mp) = mouse_path {
@@ -664,7 +656,11 @@ fn run_device(
     set_waiting(waiting, false);
     ready.store(true, Ordering::SeqCst);
     let _ = ready_tx.send(Ok(()));
-    run_loop(driver, virt, cfg, stop, control_rx, &mut text_session)
+    let output = io::OutputDevices {
+        keyboard: virt,
+        mouse: driver.mouse_output.clone(),
+    };
+    run_loop(driver, output, cfg, stop, control_rx, &mut text_session)
 }
 
 /// Wait (bounded) until no key of `device` is down. A key held while the
@@ -741,7 +737,7 @@ fn validate_keyboard_capabilities(
 
 fn run_loop<D: LoopDriver>(
     mut driver: D,
-    mut virt: VirtualDevice,
+    mut virt: io::OutputDevices,
     cfg: &mut MapperConfig,
     stop: Arc<AtomicBool>,
     control_rx: &Arc<Mutex<ControlQueue>>,

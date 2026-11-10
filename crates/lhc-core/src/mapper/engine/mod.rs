@@ -80,6 +80,7 @@ pub struct Engine {
     physical_down: HashSet<KeyCode>,
     /// When each physical key in `physical_down` was pressed.
     press_at: HashMap<KeyCode, Instant>,
+    last_typing_press: Option<Instant>,
     long_holds: HashMap<KeyCode, (Instant, CompiledAction)>,
     /// Events deferred while a rule key is in `WaitingDecision`
     /// (permissive-hold mode only). Replayed in order once the decision
@@ -350,22 +351,9 @@ impl Engine {
                 return;
             }
             if down {
-                // Commit all pending tap/hold decisions before processing the
-                // mouse event. Two goals:
-                // (a) Modifier holds (ShiftLeft, CtrlLeft, …) are down for
-                //     the release and later clicks. The ungrabbed click
-                //     itself reaches the compositor first (KDE VM: 0.3–0.8 ms
-                //     ahead), so it arrives without the modifier.
-                // (b) Layer triggers activate so that layer keymaps are
-                //     consulted when should_handle_mouse_button runs below.
-                //
-                // Only decisions the click needs are committed: a held
-                // modifier or keystroke, or a layer that maps this button. A
-                // layer key the click does not use keeps deciding, so a letter
-                // with a layer still types when released. A mouse click never
-                // buffers (permissive hold applies to keys only), so presses
-                // deferred behind committed keys are flushed here too, before
-                // the click, preserving press order.
+                self.last_typing_press = None;
+                // Commit modifiers and mapped layers before the captured
+                // click is emitted through the virtual pointer.
                 self.flush_waiting_second(now, out);
                 self.resolve_long_hold_decisions(key, now, out);
                 self.commit_decisions_for_click(key, out);
@@ -412,6 +400,7 @@ impl Engine {
     }
 
     fn on_press(&mut self, key: KeyCode, now: Instant, out: &mut Vec<EngineOutput>) {
+        let last_typing_press = self.last_typing_press.take();
         // Second press of a rule key that is currently waiting for a
         // double-tap. Compare the *event* time against the window deadline
         // rather than trusting the phase alone: a live press can arrive
@@ -431,8 +420,13 @@ impl Engine {
                 // Other keys' deferred taps happened physically before this
                 // second press — flush them first so output stays in order.
                 self.flush_waiting_second(now, out);
+                self.resolve_long_hold_decisions(key, now, out);
                 // Permissive rules already intercepted this event above.
                 self.commit_waiting_decisions(out);
+                if !self.layers.active.is_empty() {
+                    self.layers.presses += 1;
+                    self.layers.used = true;
+                }
                 // A rule with a hold (layer, held keystroke or native key) lets the second
                 // press decide too: released early it is the double-tap,
                 // held it is the hold. The first short press is absorbed
@@ -488,7 +482,25 @@ impl Engine {
         if mapped.is_none()
             && let Some(rule) = self.active_rule_for_key(key)
         {
-            self.start_rule(key, rule, now, out);
+            // A layer key following ordinary typing is part of the same
+            // word/space roll, even if the following key is released first.
+            const FLOW_TAP: Duration = Duration::from_millis(135);
+            if rule.tap_decision == super::config::TapDecision::PermissiveHold
+                && rule.layer_id.is_some()
+                && matches!(rule.hold, HoldOutputMode::Swallow)
+                && !matches!(rule.tap, TapMode::Swallow)
+                && rule.long_hold.is_none()
+                && rule.double_tap.is_none()
+                && last_typing_press.is_some_and(|at| {
+                    now.checked_duration_since(at).is_some_and(|gap| gap < FLOW_TAP)
+                })
+                && !self.modifiers_held()
+            {
+                self.fire_tap(key, &rule.tap, now, out);
+                self.virt.oneshot.insert(key);
+            } else {
+                self.start_rule(key, rule, now, out);
+            }
             return;
         }
 
@@ -533,6 +545,19 @@ impl Engine {
                     }
                 },
                 None => {
+                    if matches!(key, KeyCode::KEY_A | KeyCode::KEY_B | KeyCode::KEY_C
+                        | KeyCode::KEY_D | KeyCode::KEY_E | KeyCode::KEY_F | KeyCode::KEY_G
+                        | KeyCode::KEY_H | KeyCode::KEY_I | KeyCode::KEY_J | KeyCode::KEY_K
+                        | KeyCode::KEY_L | KeyCode::KEY_M | KeyCode::KEY_N | KeyCode::KEY_O
+                        | KeyCode::KEY_P | KeyCode::KEY_Q | KeyCode::KEY_R | KeyCode::KEY_S
+                        | KeyCode::KEY_T | KeyCode::KEY_U | KeyCode::KEY_V | KeyCode::KEY_W
+                        | KeyCode::KEY_X | KeyCode::KEY_Y | KeyCode::KEY_Z)
+                        && !self.modifiers_held()
+                    {
+                        self.last_typing_press = Some(now);
+                    } else {
+                        self.last_typing_press = None;
+                    }
                     out.push(EngineOutput::KeyRaw { key, down: true });
                     self.virt
                         .emitted
@@ -736,6 +761,11 @@ impl Engine {
                 .emitted
                 .get(&key)
                 .is_some_and(|ks| is_modifier_key(ks.key))
+    }
+
+    fn modifiers_held(&self) -> bool {
+        self.virt.mod_refs.values().any(|count| *count > 0)
+            || self.virt.emitted.values().any(|ks| is_modifier_key(ks.key) || !ks.mods.is_empty())
     }
 
     fn lookup_mapping(&self, key: KeyCode) -> Option<(String, CompiledAction)> {

@@ -180,6 +180,7 @@ impl Engine {
             if down {
                 if !self.decision_buffer.is_empty() {
                     self.resolve_deciding_as_hold(out);
+                    return self.permissive_intercept(key, down, now, out);
                 }
                 return false;
             }
@@ -196,14 +197,15 @@ impl Engine {
             // A key the layer leaves out behaves the same with or without the
             // layer: it does not make the press a hold. A modifier only
             // prepares the next key; anything else means the user was typing.
-            if self.layer_ignores(deciding, key)
+            if is_modifier_key(key)
+                && self.layer_ignores(deciding, key)
                 && self.decision_buffer.iter().any(|e| {
                     e.key == key && e.down && self.before_deadline(deciding, e.at)
                 })
             {
-                if is_modifier_key(key) {
-                    return self.defer_release(key, now);
-                }
+                return self.defer_release(key, now);
+            }
+            if self.timeout_taps(deciding) {
                 self.resolve_deciding_as_tap(deciding, now, out);
                 return self.permissive_intercept(key, down, now, out);
             }
@@ -253,12 +255,12 @@ impl Engine {
                 .layer_maps
                 .get(layer)
                 .is_some_and(|keys| keys.contains_key(&key))
-            && !self.profile.rules.contains_key(&key)
+            && self.active_rule_for_key(key).is_none()
             && !self
                 .profile
                 .chord_rules
                 .iter()
-                .any(|(keys, _)| keys.contains(&key))
+                .any(|(keys, rule)| keys.contains(&key) && self.rule_allowed(rule))
     }
 
     /// True when the hold timeout of the deciding layer key should resolve as

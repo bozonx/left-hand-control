@@ -407,6 +407,7 @@ impl Engine {
                 trigger_chord_timeout: Duration::from_millis(cfg.settings.trigger_chord_timeout_ms),
             },
             physical_down: HashSet::new(),
+            last_typing_press: None,
             press_at: HashMap::new(),
             long_holds: HashMap::new(),
             decision_buffer: Vec::new(),
