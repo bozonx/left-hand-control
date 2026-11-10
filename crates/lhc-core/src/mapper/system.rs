@@ -276,7 +276,7 @@ mod kde {
         if let Some(n) = numbered("moveWindowToDesktop") {
             return Some(invoke_shortcut("kwin", &format!("Window to Desktop {n}")));
         }
-        if let Some(n) = numbered("switchKeyboardLayout") {
+        if let Some(n) = numbered("switchToKeyboardLayout") {
             return Some(SystemAction::Dbus(DbusCall {
                 destination: dbus::KEYBOARD_SERVICE.into(),
                 path: dbus::KEYBOARD_LAYOUTS_PATH.into(),
@@ -396,7 +396,7 @@ mod linux_tests {
         for prefix in [
             "switchToDesktop",
             "moveWindowToDesktop",
-            "switchKeyboardLayout",
+            "switchToKeyboardLayout",
             "closeWindow",
         ] {
             for n in 0..=25 {
@@ -416,7 +416,7 @@ mod linux_tests {
     #[test]
     fn gnome_actions_use_only_the_fixed_bridge_api() {
         for name in [
-            "switchKeyboardLayout1",
+            "switchToKeyboardLayout1",
             "switchToDesktop2",
             "moveWindowToDesktop3",
             "closeWindow",
@@ -440,8 +440,8 @@ mod linux_tests {
         }
         for name in [
             "showDesktop",
-            "switchKeyboardLayout0",
-            "switchKeyboardLayout11",
+            "switchToKeyboardLayout0",
+            "switchToKeyboardLayout11",
             "switchToDesktop21",
             "Eval",
             "global.display.focus_window.delete(0)",
@@ -452,16 +452,16 @@ mod linux_tests {
 
     #[test]
     fn switch_layout_uses_zero_based_kde_index() {
-        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("switchKeyboardLayout1", &Desktop::Kde)
+        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("switchToKeyboardLayout1", &Desktop::Kde)
         else {
-            panic!("switchKeyboardLayout1 did not resolve to a DBus action");
+            panic!("switchToKeyboardLayout1 did not resolve to a DBus action");
         };
         assert_eq!(call.method, "setLayout");
         assert!(matches!(call.args.as_slice(), [DbusArg::U32(0)]));
 
-        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("switchKeyboardLayout3", &Desktop::Kde)
+        let Some(SystemAction::Dbus(call)) = resolve_for_desktop("switchToKeyboardLayout3", &Desktop::Kde)
         else {
-            panic!("switchKeyboardLayout3 did not resolve to a DBus action");
+            panic!("switchToKeyboardLayout3 did not resolve to a DBus action");
         };
         assert!(matches!(call.args.as_slice(), [DbusArg::U32(2)]));
     }

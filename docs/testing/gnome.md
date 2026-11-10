@@ -117,7 +117,7 @@ Titles are absent unless requested; source changes update the existing core cach
 and `CoreEvent` bus. The active-window watcher also has its normal safety reread.
 
 The bridge implements `switchToDesktop1..20`, `moveWindowToDesktop1..20`,
-`switchKeyboardLayout1..10`, `closeWindow`, `minimizeWindow`, `maximizeWindow`,
+`switchToKeyboardLayout1..10`, `closeWindow`, `minimizeWindow`, `maximizeWindow`,
 `maximizeWindowVertically`, `toggleWindowKeepAbove`, `moveWindowToNextDesktop`,
 `moveWindowToPreviousDesktop`, `moveWindowToNextScreen`, `moveWindowToPreviousScreen`, `switchToNextDesktop`,
 `switchToPreviousDesktop`, `showOverview`, `showAppLauncher`, `lockSession`

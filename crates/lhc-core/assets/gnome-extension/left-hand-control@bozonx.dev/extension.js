@@ -161,11 +161,11 @@ export default class Bridge extends Extension {
     }
 
     _action(action) {
-        const match = /^(switchToDesktop|moveWindowToDesktop|switchKeyboardLayout)([1-9][0-9]*)$/.exec(action);
+        const match = /^(switchToDesktop|moveWindowToDesktop|switchToKeyboardLayout)([1-9][0-9]*)$/.exec(action);
         const window = global.display.focus_window;
         if (match) {
             const index = Number(match[2]) - 1;
-            if (match[1] === 'switchKeyboardLayout') {
+            if (match[1] === 'switchToKeyboardLayout') {
                 const source = this._sources.inputSources[index];
                 if (!source || index >= 10)
                     throw new Error('Input source is unavailable');

@@ -42,7 +42,7 @@ pub enum WindowsAction {
 
 pub fn resolve(name: &str) -> Option<WindowsAction> {
     if let Some(n) = name
-        .strip_prefix("switchKeyboardLayout")
+        .strip_prefix("switchToKeyboardLayout")
         .and_then(|rest| rest.parse::<u32>().ok())
         .filter(|n| (1..=crate::config::actions::SYSTEM_NUMBERED_COUNT).contains(n))
     {
@@ -268,12 +268,12 @@ mod tests {
             );
         }
         assert_eq!(
-            resolve("switchKeyboardLayout3"),
+            resolve("switchToKeyboardLayout3"),
             Some(WindowsAction::SwitchLayout(3))
         );
         for id in [
-            "switchKeyboardLayout0",
-            "switchKeyboardLayout11",
+            "switchToKeyboardLayout0",
+            "switchToKeyboardLayout11",
             "switchToDesktop1",
             "moveWindowToDesktop2",
         ] {

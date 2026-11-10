@@ -92,7 +92,7 @@ platforms.
 | Id | KDE | GNOME (extension) | Windows |
 | --- | --- | --- | --- |
 | `switchToDesktopN` (1–10) | `kde:kwin/Switch to Desktop N` | `workspace.activate` | — |
-| `switchKeyboardLayoutN` (1–10) | `org.kde.keyboard /Profiles setProfile(u32 N-1)` | input source `activate` | `WM_INPUTLANGCHANGEREQUEST` |
+| `switchToKeyboardLayoutN` (1–10) | `org.kde.keyboard /Profiles setProfile(u32 N-1)` | input source `activate` | `WM_INPUTLANGCHANGEREQUEST` |
 | `moveWindowToDesktopN` (1–10) | `kde:kwin/Window to Desktop N` | `change_workspace` | — |
 | `closeWindow` | `kde:kwin/Window Close` | `delete` | `SC_CLOSE` |
 | `minimizeWindow` | `kde:kwin/Window Minimize` | `minimize` | `SC_MINIMIZE` |

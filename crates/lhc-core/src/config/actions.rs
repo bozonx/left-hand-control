@@ -122,7 +122,7 @@ pub struct CatalogEntry {
 
 const NUMBERED_SYSTEM_ACTIONS: [&str; 3] = [
     "switchToDesktop",
-    "switchKeyboardLayout",
+    "switchToKeyboardLayout",
     "moveWindowToDesktop",
 ];
 
@@ -175,7 +175,7 @@ const MACOS_UNSUPPORTED_SYSTEM_ACTIONS: [&str; 13] = [
 /// the user binds keys to slots once and changes what a key opens by
 /// reordering pages or library profiles, which the UI shows. Reordering
 /// therefore does not rewrite these actions. Do not switch them to ids.
-/// Highest N of numbered system actions (`switchKeyboardLayoutN`, …) the config accepts.
+/// Highest N of numbered system actions (`switchToKeyboardLayoutN`, …) the config accepts.
 pub const SYSTEM_NUMBERED_COUNT: u32 = 10;
 /// Menu pages offered in the action picker; any page number is valid.
 pub const MENU_PAGE_PICKER_COUNT: u32 = 10;
@@ -575,7 +575,7 @@ mod tests {
         assert!(unsupported_on_macos("toggleWindowKeepAbove"));
         assert!(unsupported_on_macos("maximizeWindowVertically"));
         assert!(unsupported_on_macos("moveWindowToNextDesktop"));
-        assert!(!unsupported_on_macos("switchKeyboardLayout2"));
+        assert!(!unsupported_on_macos("switchToKeyboardLayout2"));
         assert!(!unsupported_on_macos("closeWindow"));
         assert!(unsupported_on_macos("lockSession"));
         assert_eq!(

@@ -27,10 +27,6 @@ pub fn parse(text: &str) -> Result<AppSettings, String> {
         serde_json::from_str(text).map_err(|error| format!("{CONFIG_FILE}: {error}"))?;
     let settings = match schema::read_version(&value, CONFIG_FILE, CONFIG_SCHEMA_VERSION)? {
         1 => from_doc(
-            serde_json::from_value::<ConfigDoc>(v1::upgrade(value)?)
-                .map_err(|error| schema::read_error(CONFIG_FILE, &error))?,
-        )?,
-        2 => from_doc(
             serde_json::from_str::<ConfigDoc>(text)
                 .map_err(|error| schema::read_error(CONFIG_FILE, &error))?,
         )?,
@@ -42,54 +38,6 @@ pub fn parse(text: &str) -> Result<AppSettings, String> {
     };
     validate(&settings)?;
     Ok(settings)
-}
-
-/// Version 1: the same layout, but `highContrast` and `reduceMotion` were
-/// booleans with `false` as the default, and `linux.textMode` used `libei`
-/// (with clipboard fallback) and `libeiPure`.
-mod v1 {
-    use serde_json::Value;
-
-    /// The version 1 document as version 2: `true` becomes `"on"`, `false`
-    /// (the old default) follows the system.
-    pub(super) fn upgrade(mut value: Value) -> Result<Value, String> {
-        if let Some(settings) = value.get_mut("settings").and_then(Value::as_object_mut) {
-            for key in ["highContrast", "reduceMotion"] {
-                match settings.get(key) {
-                    None => {}
-                    Some(Value::Bool(true)) => {
-                        settings.insert(key.into(), "on".into());
-                    }
-                    Some(Value::Bool(false)) => {
-                        settings.remove(key);
-                    }
-                    Some(_) => {
-                        return Err(format!(
-                            "{}: settings.{key}: expected a boolean",
-                            crate::storage::CONFIG_FILE
-                        ));
-                    }
-                }
-            }
-            if let Some(mode) = settings
-                .get_mut("linux")
-                .and_then(|linux| linux.get_mut("textMode"))
-            {
-                let renamed = match mode.as_str() {
-                    Some("libei") => Some("libeiWithClipboardFallback"),
-                    Some("libeiPure") => Some("libeiOnly"),
-                    _ => None,
-                };
-                if let Some(renamed) = renamed {
-                    *mode = renamed.into();
-                }
-            }
-        }
-        if let Some(object) = value.as_object_mut() {
-            object.insert("version".into(), 2.into());
-        }
-        Ok(value)
-    }
 }
 
 /// JSON Schema of `config.json`, published under `schemas/`.
@@ -164,7 +112,7 @@ struct ConfigDoc {
 struct SettingsDoc {
     /// Shows interface features that are still in development.
     experimental: bool,
-    launch_on_startup: bool,
+    launch_at_login: bool,
     /// Start the mapper when the app launches.
     start_mapper_on_launch: bool,
     appearance: Appearance,
@@ -272,7 +220,7 @@ struct TimingDoc {
     double_tap_ms: u64,
     /// Window in which all keys of a multi-key rule must be pressed.
     #[cfg_attr(test, schemars(range(min = super::timing::TRIGGER_CHORD.min, max = super::timing::TRIGGER_CHORD.max)))]
-    combo_ms: u64,
+    chord_ms: u64,
     tap_decision: TapDecision,
     #[cfg_attr(test, schemars(range(min = super::timing::MACRO_DELAY.min, max = super::timing::MACRO_DELAY.max)))]
     macro_step_pause_ms: u64,
@@ -549,7 +497,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
     Ok(AppSettings {
         schema: doc.schema,
         in_development: settings.experimental,
-        launch_on_startup: settings.launch_on_startup,
+        launch_on_startup: settings.launch_at_login,
         start_mapper_on_launch: settings.start_mapper_on_launch,
         appearance: settings.appearance,
         high_contrast: settings.high_contrast,
@@ -561,7 +509,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
         default_long_hold_timeout_ms: timing.long_hold_ms,
         tap_decision: timing.tap_decision,
         default_double_tap_timeout_ms: timing.double_tap_ms,
-        trigger_chord_timeout_ms: timing.combo_ms,
+        trigger_chord_timeout_ms: timing.chord_ms,
         default_macro_step_pause_ms: timing.macro_step_pause_ms,
         default_macro_modifier_delay_ms: timing.macro_modifier_delay_ms,
         macro_timeout_ms: timing.macro_timeout_ms,
@@ -617,7 +565,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
         schema: settings.schema.clone(),
         settings: SettingsDoc {
             experimental: settings.in_development,
-            launch_on_startup: settings.launch_on_startup,
+            launch_at_login: settings.launch_on_startup,
             start_mapper_on_launch: settings.start_mapper_on_launch,
             appearance: settings.appearance,
             high_contrast: settings.high_contrast,
@@ -635,7 +583,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
                 hold_ms: settings.default_hold_timeout_ms,
                 long_hold_ms: settings.default_long_hold_timeout_ms,
                 double_tap_ms: settings.default_double_tap_timeout_ms,
-                combo_ms: settings.trigger_chord_timeout_ms,
+                chord_ms: settings.trigger_chord_timeout_ms,
                 tap_decision: settings.tap_decision,
                 macro_step_pause_ms: settings.default_macro_step_pause_ms,
                 macro_modifier_delay_ms: settings.default_macro_modifier_delay_ms,
@@ -817,7 +765,7 @@ mod tests {
             ("holdMs", TAP_HOLD),
             ("doubleTapMs", TAP_HOLD),
             ("longHoldMs", LONG_HOLD),
-            ("comboMs", TRIGGER_CHORD),
+            ("chordMs", TRIGGER_CHORD),
             ("macroStepPauseMs", MACRO_DELAY),
             ("macroModifierDelayMs", MACRO_DELAY),
             ("macroTimeoutMs", MACRO_TIMEOUT),
@@ -841,46 +789,58 @@ mod tests {
     }
 
     #[test]
-    fn version_1_accessibility_flags_are_upgraded() {
-        let settings = parse(&config(
-            json!({"highContrast": true, "reduceMotion": false}),
-        ))
-        .unwrap();
-        assert_eq!(settings.high_contrast, AccessibilityChoice::On);
-        assert_eq!(settings.reduce_motion, AccessibilityChoice::System);
-        assert!(parse(&config(json!({"highContrast": "on"}))).is_err());
-        let raw: Value = serde_json::from_str(&serialize(&settings)).unwrap();
-        assert_eq!(
-            raw,
-            json!({"version": 2, "settings": {"highContrast": "on"}})
-        );
-        let current = json!({"version": 2, "settings": {"reduceMotion": "off"}}).to_string();
-        assert_eq!(
-            parse(&current).unwrap().reduce_motion,
-            AccessibilityChoice::Off
-        );
-        assert!(parse(r#"{"version":2,"settings":{"highContrast":true}}"#).is_err());
+    fn accessibility_choices_are_strict_and_round_trip() {
+        for (value, choice) in [
+            ("system", AccessibilityChoice::System),
+            ("on", AccessibilityChoice::On),
+            ("off", AccessibilityChoice::Off),
+        ] {
+            let settings = parse(&config(
+                json!({"highContrast": value, "reduceMotion": value}),
+            ))
+            .unwrap();
+            assert_eq!(settings.high_contrast, choice);
+            assert_eq!(settings.reduce_motion, choice);
+            assert_eq!(parse(&serialize(&settings)).unwrap(), settings);
+        }
+        for value in [json!(true), json!(false)] {
+            assert!(parse(&config(json!({"highContrast": value}))).is_err());
+            assert!(parse(&config(json!({"reduceMotion": value}))).is_err());
+        }
     }
 
     #[test]
-    fn version_1_text_modes_are_renamed() {
-        let mode = |value: &str| {
-            parse(&config(json!({"linux": {"textMode": value}})))
-                .unwrap()
-                .linux_wayland_text_mode
-        };
-        assert_eq!(mode("libei"), TextMode::LibeiWithClipboardFallback);
-        assert_eq!(mode("libeiPure"), TextMode::LibeiOnly);
-        assert_eq!(mode("clipboard"), TextMode::Clipboard);
-        let current = |value: &str| {
-            parse(&json!({"version": 2, "settings": {"linux": {"textMode": value}}}).to_string())
-        };
-        assert_eq!(
-            current("libeiOnly").unwrap().linux_wayland_text_mode,
-            TextMode::LibeiOnly
-        );
-        assert!(current("libei").is_err());
-        assert!(current("libeiPure").is_err());
+    fn text_modes_use_current_names_only() {
+        for (value, mode) in [
+            (
+                "libeiWithClipboardFallback",
+                TextMode::LibeiWithClipboardFallback,
+            ),
+            ("libeiOnly", TextMode::LibeiOnly),
+            ("clipboard", TextMode::Clipboard),
+        ] {
+            let settings = parse(&config(json!({"linux": {"textMode": value}}))).unwrap();
+            assert_eq!(settings.linux_wayland_text_mode, mode);
+            assert_eq!(parse(&serialize(&settings)).unwrap(), settings);
+        }
+        for value in ["libei", "libeiPure"] {
+            assert!(parse(&config(json!({"linux": {"textMode": value}}))).is_err());
+        }
+    }
+
+    #[test]
+    fn renamed_settings_reject_old_names() {
+        assert!(parse(&config(json!({"launchOnStartup": true}))).is_err());
+        assert!(parse(&config(json!({"timing": {"comboMs": 50}}))).is_err());
+        let settings = parse(&config(
+            json!({"launchAtLogin": true, "timing": {"chordMs": 75}}),
+        ))
+        .unwrap();
+        assert!(settings.launch_on_startup);
+        assert_eq!(settings.trigger_chord_timeout_ms, 75);
+        let raw: Value = serde_json::from_str(&serialize(&settings)).unwrap();
+        assert_eq!(raw["settings"]["launchAtLogin"], true);
+        assert_eq!(raw["settings"]["timing"]["chordMs"], 75);
     }
 
     #[test]
@@ -890,7 +850,7 @@ mod tests {
                 .unwrap_err()
                 .contains("version")
         );
-        assert!(parse(r#"{"version": 3}"#).unwrap_err().contains("newer"));
+        assert!(parse(r#"{"version": 2}"#).unwrap_err().contains("newer"));
         assert!(parse(r#"[]"#).is_err());
     }
 

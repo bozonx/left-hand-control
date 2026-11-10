@@ -314,8 +314,8 @@ def main():
             raise StepFailed(f"unexpected start state {kde_state()}")
         check("1", "desktop", "2")   # sys:switchToDesktop2
         check("2", "desktop", "1")   # kde:kwin/Switch to Desktop 1
-        check("3", "layout", "1")    # sys:switchKeyboardLayout2
-        check("4", "layout", "0")    # sys:switchKeyboardLayout1
+        check("3", "layout", "1")    # sys:switchToKeyboardLayout2
+        check("4", "layout", "0")    # sys:switchToKeyboardLayout1
         return "desktop 1→2→1, layout us→ru→us"
 
     def russian_layout():

@@ -5,7 +5,7 @@
 | Key interception | ✅ evdev+uinput | ✅ | ✅ | ✅ | ✅ session-wide `WH_KEYBOARD_LL` + `SendInput` (untested on hardware) | ❌ stub |
 | Literal text (xdg-desktop-portal) | ✅ | ⚠ requires bundled Shell extension; acceptance pending | ⚠ backend/protocol dependent | ⚠ keyboard backend dependent; no clipboard paste | ✅ Unicode `SendInput` (mapper and popups) | ❌ mapper; popup Unicode only |
 | Profile detection | ✅ DBus `org.kde.keyboard` | ⚠ Shell extension | 🚧 | 🚧 | ✅ input language of the foreground window | 🚧 |
-| System actions (`switchToDesktopN`, `moveWindowToDesktopN`, `switchKeyboardLayoutN`, window/shell actions) | ✅ kglobalaccel, `org.kde.keyboard`, `org.freedesktop.ScreenSaver` | ⚠ Shell extension; all but `showDesktop` | 🚧 | 🚧 | ✅ Win32 messages and fixed shortcuts; no public API for `switchToDesktopN` / `moveWindowToDesktopN` / `moveWindowToNextDesktop` / `moveWindowToPreviousDesktop` | ❌; ids without a macOS API are ignored with a notification |
+| System actions (`switchToDesktopN`, `moveWindowToDesktopN`, `switchToKeyboardLayoutN`, window/shell actions) | ✅ kglobalaccel, `org.kde.keyboard`, `org.freedesktop.ScreenSaver` | ⚠ Shell extension; all but `showDesktop` | 🚧 | 🚧 | ✅ Win32 messages and fixed shortcuts; no public API for `switchToDesktopN` / `moveWindowToDesktopN` / `moveWindowToNextDesktop` / `moveWindowToPreviousDesktop` | ❌; ids without a macOS API are ignored with a notification |
 | KDE global shortcuts (`kde:`) | ✅ kglobalaccel | — | — | — | — | — |
 | Application actions (`xdg:`, freedesktop desktop entries) | ✅ | ✅ | ✅ | ✅ | — | — |
 | Layer-shell popups (Spell) | ✅ | ❌ winit fallback | ✅ not accepted | ❌ winit | — | — |

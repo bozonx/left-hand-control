@@ -1,5 +1,14 @@
 {
   "$defs": {
+    "AccessibilityChoice": {
+      "description": "An accessibility preference (high contrast, reduced motion); `System`\nfollows the desktop setting.",
+      "enum": [
+        "system",
+        "on",
+        "off"
+      ],
+      "type": "string"
+    },
     "Appearance": {
       "description": "Theme preference; `System` follows the desktop.",
       "enum": [
@@ -185,7 +194,7 @@
         },
         "textMode": {
           "$ref": "#/$defs/TextMode",
-          "default": "libei",
+          "default": "libeiWithClipboardFallback",
           "description": "How `text:` actions reach the focused application."
         },
         "xdotoolPath": {
@@ -340,10 +349,10 @@
           }
         },
         "highContrast": {
-          "default": false,
-          "type": "boolean"
+          "$ref": "#/$defs/AccessibilityChoice",
+          "default": "system"
         },
-        "launchOnStartup": {
+        "launchAtLogin": {
           "default": false,
           "type": "boolean"
         },
@@ -356,7 +365,7 @@
           "default": {
             "pasteShortcut": "Shift+Insert",
             "terminalPasteShortcut": "Ctrl+Shift+KeyV",
-            "textMode": "libei"
+            "textMode": "libeiWithClipboardFallback"
           }
         },
         "locale": {
@@ -379,8 +388,8 @@
           }
         },
         "reduceMotion": {
-          "default": false,
-          "type": "boolean"
+          "$ref": "#/$defs/AccessibilityChoice",
+          "default": "system"
         },
         "startMapperOnLaunch": {
           "default": false,
@@ -390,7 +399,7 @@
         "timing": {
           "$ref": "#/$defs/TimingDoc",
           "default": {
-            "comboMs": 50,
+            "chordMs": 50,
             "doubleTapMs": 200,
             "holdMs": 200,
             "longHoldMs": 1000,
@@ -456,12 +465,12 @@
           "type": "string"
         },
         {
-          "const": "libei",
+          "const": "libeiWithClipboardFallback",
           "description": "libei; pastes through the clipboard when the profile lacks a character.",
           "type": "string"
         },
         {
-          "const": "libeiPure",
+          "const": "libeiOnly",
           "description": "libei only.",
           "type": "string"
         },
@@ -481,7 +490,7 @@
       "additionalProperties": false,
       "description": "Defaults for rules and macros; a rule or macro may override each.",
       "properties": {
-        "comboMs": {
+        "chordMs": {
           "default": 50,
           "description": "Window in which all keys of a multi-key rule must be pressed.",
           "format": "uint64",
@@ -605,13 +614,13 @@
           "foregroundOnly": true,
           "processes": []
         },
-        "highContrast": false,
-        "launchOnStartup": false,
+        "highContrast": "system",
+        "launchAtLogin": false,
         "layerHint": false,
         "linux": {
           "pasteShortcut": "Shift+Insert",
           "terminalPasteShortcut": "Ctrl+Shift+KeyV",
-          "textMode": "libei"
+          "textMode": "libeiWithClipboardFallback"
         },
         "locale": "auto",
         "profileOsd": false,
@@ -623,10 +632,10 @@
           "mode": "manual",
           "order": []
         },
-        "reduceMotion": false,
+        "reduceMotion": "system",
         "startMapperOnLaunch": false,
         "timing": {
-          "comboMs": 50,
+          "chordMs": 50,
           "doubleTapMs": 200,
           "holdMs": 200,
           "longHoldMs": 1000,

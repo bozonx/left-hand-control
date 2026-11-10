@@ -106,11 +106,11 @@ E2E_LAYOUT = f'''{{
     }},
     {{
       "key": "Digit3",
-      "tap": "sys:switchKeyboardLayout2"
+      "tap": "sys:switchToKeyboardLayout2"
     }},
     {{
       "key": "Digit4",
-      "tap": "sys:switchKeyboardLayout1"
+      "tap": "sys:switchToKeyboardLayout1"
     }}
   ],
   "macros": [
@@ -328,7 +328,7 @@ def cmd_write_config(args):
         "devices": {"keyboards": [args.device]},
         "profiles": {"mode": "manual", "manualProfile": "user:E2E"},
         "startMapperOnLaunch": True,
-        "launchOnStartup": True,
+        "launchAtLogin": True,
         "locale": "en",
         "commandsEnabled": True,
         "gameMode": {

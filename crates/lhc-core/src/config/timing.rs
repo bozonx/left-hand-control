@@ -71,7 +71,7 @@ pub fn validate_settings(settings: &AppSettings) -> Result<(), String> {
             settings.default_long_hold_timeout_ms,
             LONG_HOLD,
         ),
-        ("comboMs", settings.trigger_chord_timeout_ms, TRIGGER_CHORD),
+        ("chordMs", settings.trigger_chord_timeout_ms, TRIGGER_CHORD),
         (
             "macroStepPauseMs",
             settings.default_macro_step_pause_ms,

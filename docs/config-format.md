@@ -9,7 +9,7 @@
 
 ## Общие правила
 
-- Каждый файл содержит `"version": 1` — версию формата файла (а не содержимого: авторская версия раскладки хранится в `meta.profileVersion`). Версии `config.json` и раскладок независимы; сейчас `config.json` — версия 2, раскладки — версия 1. Файл без версии не загружается. Если версия больше поддерживаемой, приложение сообщает, что файл создан более новой версией, и не загружает его.
+- Каждый файл содержит `"version": 1` — версию формата файла (а не содержимого: авторская версия раскладки хранится в `meta.profileVersion`). Версии `config.json` и раскладок независимы; сейчас оба формата имеют версию 1. Файл без версии не загружается. Если версия больше поддерживаемой, приложение сообщает, что файл создан более новой версией, и не загружает его.
 - Чтение строгое: неизвестное поле, значение не того типа или неизвестное значение перечисления — ошибка с номером строки и столбца. Файл при этом не перезаписывается. Так приложение никогда не сохраняет файл, молча выбросив непонятые части.
 - Необязательные поля можно не писать: берётся значение по умолчанию. Приложение не записывает пустые списки и значения по умолчанию. В `config.json` записываются только настройки, отличающиеся от значений по умолчанию, поэтому новая версия может изменить значение по умолчанию для всех, кто его не менял. Значения по умолчанию, от которых зависит поведение ввода (`settings.timing`), — часть контракта формата: они меняются только как заметное изменение поведения с записью в CHANGELOG.
 - Стиль имён: поля — camelCase; значения перечислений — camelCase (`permissiveHold`, `libeiOnly`, `eInk`); сочетания клавиш — синтаксис действий (`Ctrl+Shift+KeyV`); языки — коды BCP 47 (`ru`, `zh-Hans`).
@@ -28,7 +28,7 @@ JSON Schema для редактора. Приложение сохраняет �
 
 Схемы лежат в каталоге [`schemas/`](../schemas/) репозитория и доступны по постоянным адресам:
 
-- `config.json`: `https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/config.v2.schema.json` (прежняя версия — `config.v1.schema.json`);
+- `config.json`: `https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/config.v1.schema.json`;
 - профили: `https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/profile.v1.schema.json`.
 
 Номер в имени файла — `version` формата: схема версии 1 меняется только по политике совместимости,
@@ -84,7 +84,7 @@ ID профилей библиотеки устроены иначе: `user:<и�
 | --- | --- |
 | `settings.timing.holdMs`, `doubleTapMs`; `rules[].hold.timeoutMs`, `doubleTap.timeoutMs` | 50–1000 |
 | `settings.timing.longHoldMs`; `rules[].longHold.timeoutMs` | 100–60000 |
-| `settings.timing.comboMs` | 10–500 |
+| `settings.timing.chordMs` | 10–500 |
 | `settings.timing.macroStepPauseMs`, `macroModifierDelayMs`; `macros[].stepPauseMs`, `modifierDelayMs` | 0–2000 |
 | `pause:<мс>` в шагах макроса | 1–10000 |
 | `settings.timing.macroTimeoutMs` | 1000–600000 |
@@ -115,7 +115,7 @@ ID профилей библиотеки устроены иначе: `user:<и�
 
 | Вид | Пример |
 | --- | --- |
-| клавиша или сочетание (коды W3C `KeyboardEvent.code`) | `KeyA`, `Ctrl+KeyC`, `Ctrl+Shift+ArrowLeft` |
+| клавиша или сочетание (коды клавиш, основанные на W3C `KeyboardEvent.code`) | `KeyA`, `Ctrl+KeyC`, `Ctrl+Shift+ArrowLeft` |
 | пользовательский макрос | `macro:myMacro` |
 | встроенный макрос | `builtin:copyLineText` |
 | команда | `cmd:<id>` |
@@ -130,13 +130,15 @@ ID профилей библиотеки устроены иначе: `user:<и�
 
 Там, где действие необязательно, отсутствие поля значит «как у физической клавиши», а `null` — «ничего не делать». Пустая строка — ошибка.
 
-Сочетание в действии записывается как модификаторы и основная клавиша через `+`: `Ctrl`, `Shift`, `Alt`, `Meta` обозначают левую клавишу модификатора, а коды с указанием стороны (`ControlRight`, `AltRight`) — конкретную. Каноническая форма — `Ctrl+Shift+KeyA`: сначала модификаторы, без пробелов. Клавиша правила (`rules[].key`) записывается иначе: одна клавиша — строка (`"CapsLock"`), аккорд из нескольких одновременно нажатых клавиш — массив (`["ControlLeft", "KeyA"]`, не меньше двух элементов). Знак `+` внутри клавиши правила запрещён и вызывает ошибку загрузки: в строках действий он соединяет модификаторы с клавишей, а у аккорда другой смысл. Допустимы только физические коды клавиш; псевдонимы модификаторов `Ctrl`, `Shift`, `Alt`, `Meta` вызывают ошибку валидации.
+Сочетание в действии записывается как модификаторы и основная клавиша через `+`: `Ctrl`, `Shift`, `Alt`, `Meta` обозначают левую клавишу модификатора, а коды с указанием стороны (`ControlRight`, `AltRight`) — конкретную. Каноническая форма — `Ctrl+Shift+KeyA`: сначала модификаторы в порядке `Ctrl`, `Alt`, `Shift`, `Meta`, затем основная клавиша, без пробелов. Читатель также принимает другой порядок модификаторов и полные имена (`ControlLeft` вместо `Ctrl`); строки действий при загрузке не нормализуются. Клавиша правила (`rules[].key`) записывается иначе: одна клавиша — строка (`"CapsLock"`), аккорд из нескольких одновременно нажатых клавиш — массив (`["ControlLeft", "KeyA"]`, не меньше двух элементов). Знак `+` внутри клавиши правила запрещён и вызывает ошибку загрузки: в строках действий он соединяет модификаторы с клавишей, а у аккорда другой смысл. Допустимы только физические коды клавиш; псевдонимы модификаторов `Ctrl`, `Shift`, `Alt`, `Meta` вызывают ошибку валидации.
+
+Имена физических клавиш следуют W3C `KeyboardEvent.code`; для клавиш вне стандарта используются имена Chromium, а затем имена на основе Linux `KEY_*`. Поэтому каталог содержит расширения `WLAN`, `WWAN`, `UWB`, `VideoPrev`. Аббревиатуры сохраняют верхний регистр; `VideoPrev` и `MediaTrackPrevious` обозначают разные Linux-коды и не являются псевдонимами.
 
 Встроенные макросы используют ссылки `builtin:<id>`, пользовательские — `macro:<id>`. Их ID могут совпадать: ссылки разрешаются независимо.
 
 ID встроенных макросов начинаются с глагола: `goTo…` (перемещение курсора), `select…`, `copy…`, `cut…`, `paste…`, `replace…WithClipboard`, `insert…`, `duplicate…`. Объект называется одинаково во всех макросах: `Line` — строка целиком вместе с переводом строки, `LineText` — текст строки без перевода, `Word` — слово под курсором, `ToLineStart`/`ToLineEnd` — от курсора до начала или конца строки. Например: `builtin:goToNextLineEnd`, `builtin:goTo5LinesUp`, `builtin:copyLineText`, `builtin:cutLine`, `builtin:selectWord`, `builtin:insertEmptyLineAbove`.
 
-Системные действия (`sys:`): `closeWindow`, `minimizeWindow`, `maximizeWindow`, `maximizeWindowVertically`, `toggleWindowKeepAbove`, `moveWindowToNextDesktop`, `moveWindowToPreviousDesktop`, `moveWindowToNextScreen`, `moveWindowToPreviousScreen`, `switchToNextDesktop`, `switchToPreviousDesktop`, `showDesktop`, `showOverview`, `showAppLauncher`, `turnOffScreen`, `lockSession` и нумерованные `switchToDesktopN`, `moveWindowToDesktopN`, `switchKeyboardLayoutN` (N от 1 до 10). Поддержка по платформам — в [platforms.md](development/platforms.md).
+Системные действия (`sys:`): `closeWindow`, `minimizeWindow`, `maximizeWindow`, `maximizeWindowVertically`, `toggleWindowKeepAbove`, `moveWindowToNextDesktop`, `moveWindowToPreviousDesktop`, `moveWindowToNextScreen`, `moveWindowToPreviousScreen`, `switchToNextDesktop`, `switchToPreviousDesktop`, `showDesktop`, `showOverview`, `showAppLauncher`, `turnOffScreen`, `lockSession` и нумерованные `switchToDesktopN`, `moveWindowToDesktopN`, `switchToKeyboardLayoutN` (N от 1 до 10). Поддержка по платформам — в [platforms.md](development/platforms.md). Имена следуют привычным названиям системных команд и не гарантируют одностороннюю установку состояния: на KDE `maximizeWindow`, `maximizeWindowVertically`, `showDesktop`, `showOverview` и `showAppLauncher` вызывают соответствующие системные переключатели. Повторный вызов может вернуть прежнее состояние; точное поведение определяет система.
 
 Действия установленных приложений (`xdg:<desktop-id>/<action>`): `desktop-id` — имя файла `.desktop` без расширения (для файла из подкаталога `kde4/foo.desktop` — `kde4-foo`), `action` — идентификатор из его ключа `Actions=`. Приложения с `DBusActivatable=true` получают вызов `org.freedesktop.Application.ActivateAction`, остальные запускаются по `Exec` действия. Если приложение не установлено, действие пропускается с предупреждением. Только Linux.
 
@@ -152,10 +154,10 @@ ID встроенных макросов начинаются с глагола:
 
 ```json
 {
-  "version": 2,
+  "version": 1,
   "settings": {
     "experimental": false,
-    "launchOnStartup": false,
+    "launchAtLogin": false,
     "startMapperOnLaunch": true,
     "appearance": "system",
     "highContrast": "system",
@@ -171,7 +173,7 @@ ID встроенных макросов начинаются с глагола:
       "holdMs": 200,
       "longHoldMs": 1000,
       "doubleTapMs": 200,
-      "comboMs": 50,
+      "chordMs": 50,
       "tapDecision": "permissiveHold",
       "macroStepPauseMs": 20,
       "macroModifierDelayMs": 5,
@@ -376,7 +378,7 @@ Id раскладок библиотеки имеют вид `user:<имя фа�
 
 Правил с одной и той же клавишей может быть несколько: они проверяются по порядку в `rules`, и срабатывает первое, у которого выполнены условия `when`. Отключённые правила пропускаются.
 
-Сочетание срабатывает, только если все его клавиши, включая модификаторы, нажаты в пределах `settings.timing.comboMs`; модификатор, зажатый раньше, остаётся обычным модификатором. Если сочетание входит в более длинное, оно ждёт остальные клавиши до конца этого окна, поэтому длинное сочетание срабатывает при любом порядке нажатия. Сочетание из модификаторов без действия на нажатие, прерванное другой клавишей до долгого удержания, возвращает модификаторы как есть (аккорд `["ShiftLeft", "ControlRight"]`, затем X — это Ctrl+Shift+X). В слое сочетание работает, если слой не назначает ни одну из его клавиш.
+Сочетание срабатывает, только если все его клавиши, включая модификаторы, нажаты в пределах `settings.timing.chordMs`; модификатор, зажатый раньше, остаётся обычным модификатором. Если сочетание входит в более длинное, оно ждёт остальные клавиши до конца этого окна, поэтому длинное сочетание срабатывает при любом порядке нажатия. Сочетание из модификаторов без действия на нажатие, прерванное другой клавишей до долгого удержания, возвращает модификаторы как есть (аккорд `["ShiftLeft", "ControlRight"]`, затем X — это Ctrl+Shift+X). В слое сочетание работает, если слой не назначает ни одну из его клавиш.
 
 Поля `hold`:
 

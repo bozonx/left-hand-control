@@ -793,7 +793,7 @@ mod tests {
         assert!(entry.exists(), "a disabled entry stays for the desktop");
         let saved = fs::read_to_string(document.paths.config_path()).unwrap();
         assert!(
-            !saved.contains("launchOnStartup"),
+            !saved.contains("launchAtLogin"),
             "the default is not written"
         );
 
