@@ -3835,3 +3835,9 @@ msgstr "Szövegbeviteli engedélyek visszaállítása"
 
 msgid "The text was not typed: native input failed. Check accessibility permissions and the destination app's privileges."
 msgstr "A szöveg nem lett begépelve: a natív bevitel nem sikerült. Ellenőrizze a kisegítő lehetőségek engedélyeit és a célalkalmazás jogosultságait."
+
+msgid "Show a hint when Tecloid sends a copy command"
+msgstr "Jelzés megjelenítése, amikor a Tecloid másolási parancsot küld"
+
+msgid "Copy command sent"
+msgstr "Másolási parancs elküldve"

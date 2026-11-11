@@ -3803,3 +3803,9 @@ msgstr "Скинути дозволи на введення тексту"
 
 msgid "The text was not typed: native input failed. Check accessibility permissions and the destination app's privileges."
 msgstr "Текст не було набрано: помилка власного введення. Перевірте дозволи на доступність і привілеї цільової програми."
+
+msgid "Show a hint when Tecloid sends a copy command"
+msgstr "Показувати підказку, коли Tecloid надсилає команду копіювання"
+
+msgid "Copy command sent"
+msgstr "Команду копіювання надіслано"

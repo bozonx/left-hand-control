@@ -61,6 +61,9 @@ pub(crate) fn category_for_value(value: &str) -> PickerCategory {
     }
     // The last key of a chord is the main one; modifiers come first.
     for key in value.split('+').rev() {
+        if tecloid_core::config::key_catalog::TRIGGER_MODIFIERS.contains(&key) {
+            return PickerCategory::Modifiers;
+        }
         if let Some(index) = CATEGORIES.iter().position(|keys| keys.contains(&key)) {
             return KEY_CATEGORIES[index];
         }
@@ -283,6 +286,18 @@ pub(super) fn catalog(ui: &SettingsWindow, config: &ResolvedAppConfig) -> Vec<Pi
             })
         })
         .collect();
+    if ui.global::<crate::ui::ActionPicker>().get_trigger_chords() {
+        items.extend(
+            tecloid_core::config::key_catalog::TRIGGER_MODIFIERS
+                .iter()
+                .map(|key| PickerItem {
+                    value: (*key).into(),
+                    label: (*key).into(),
+                    category: PickerCategory::Modifiers,
+                    notice: Msg::None.to_ui(),
+                }),
+        );
+    }
     let enabled = config.settings.commands_enabled;
     items.extend(actions::catalog(config).into_iter().filter_map(|entry| {
         let category = match &entry.action {

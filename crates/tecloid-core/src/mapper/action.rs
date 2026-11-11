@@ -181,3 +181,34 @@ mod tests {
         }
     }
 }
+
+/// Whether a synthetic stroke requests copying (including terminal Ctrl+Shift+C).
+pub(super) fn is_copy_stroke(stroke: &Keystroke) -> bool {
+    use super::key_code::KeyCode;
+    let control = |key: &KeyCode| matches!(*key, KeyCode::KEY_LEFTCTRL | KeyCode::KEY_RIGHTCTRL);
+    if stroke.key == KeyCode::KEY_COPY {
+        return stroke.mods.is_empty();
+    }
+    stroke.mods.iter().any(control)
+        && match stroke.key {
+            KeyCode::KEY_INSERT => stroke.mods.iter().all(control),
+            KeyCode::KEY_C => stroke.mods.iter().all(|key| {
+                control(key) || matches!(*key, KeyCode::KEY_LEFTSHIFT | KeyCode::KEY_RIGHTSHIFT)
+            }),
+            _ => false,
+        }
+}
+
+#[cfg(test)]
+mod copy_tests {
+    use super::*;
+    #[test]
+    fn copy_shortcuts_exclude_paste_and_extra_modifiers() {
+        for action in ["Ctrl+KeyC", "Ctrl+Shift+KeyC", "Ctrl+Insert", "Copy"] {
+            assert!(is_copy_stroke(&parse_action(action).unwrap()));
+        }
+        for action in ["Ctrl+KeyV", "Alt+Ctrl+KeyC", "KeyC", "Meta+KeyC", "Ctrl+Shift+Insert"] {
+            assert!(!is_copy_stroke(&parse_action(action).unwrap()));
+        }
+    }
+}

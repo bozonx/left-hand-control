@@ -391,6 +391,7 @@ impl ConfigDocument {
             .delete_user_profile(name)
             .map_err(ConfigError::Io)?;
         let id = user_profile_id(name);
+        let was_editing = self.settings().editing_profile_id.as_ref() == Some(&id);
         // Deleting the single-mode profile hands activation to the first
         // remaining one; auto mode re-chooses when the mapper is updated.
         // The confirmation names the automatic rules deleted with it.
@@ -415,6 +416,10 @@ impl ConfigDocument {
             self.paths()
                 .save_user_profile_bytes(name, expected, false)
                 .map_err(ConfigError::Io)?;
+        }
+        if result.is_ok() && was_editing {
+            // Closing a deleted profile must not leave its contents as an unnamed draft.
+            self.update_profile(|profile| *profile = ProfilePreset::initial())?;
         }
         result
     }
@@ -1019,6 +1024,21 @@ mod tests {
         assert_eq!(reloaded.settings().profile_order, ["user:A"]);
         assert!(reloaded.settings().auto_rules.is_empty());
         assert!(reloaded.settings().auto_default_profile_id.is_none());
+    }
+
+    #[test]
+    fn deleting_open_profile_clears_the_working_copy() {
+        let dir = tempfile::tempdir().unwrap();
+        let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let mut document = ConfigDocument::load(paths.clone()).unwrap();
+        document.save_current_profile_as("A").unwrap();
+        document.load_library_for_editing("A").unwrap();
+        document.create_layer("Unsaved", "").unwrap();
+        document
+            .remove_library_profile("A", paths.load_user_profile("A").unwrap())
+            .unwrap();
+        assert!(document.settings().editing_profile_id.is_none());
+        assert_eq!(document.profile(), &ProfilePreset::initial());
     }
 
     #[test]

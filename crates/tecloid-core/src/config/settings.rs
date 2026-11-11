@@ -109,6 +109,7 @@ struct SettingsDoc {
     high_contrast: AccessibilityChoice,
     reduce_motion: AccessibilityChoice,
     profile_osd: bool,
+    copy_osd: bool,
     layer_hint: bool,
     locale: LocalePreference,
     #[serde(skip_serializing_if = "DevicesDoc::is_empty")]
@@ -481,6 +482,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
         high_contrast: settings.high_contrast,
         reduce_motion: settings.reduce_motion,
         profile_osd: settings.profile_osd,
+        copy_osd: settings.copy_osd,
         layer_hint: settings.layer_hint,
         locale: settings.locale,
         default_hold_timeout_ms: timing.hold_ms,
@@ -549,6 +551,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
             high_contrast: settings.high_contrast,
             reduce_motion: settings.reduce_motion,
             profile_osd: settings.profile_osd,
+            copy_osd: settings.copy_osd,
             layer_hint: settings.layer_hint,
             locale: settings.locale,
             devices: DevicesDoc {
@@ -871,6 +874,7 @@ mod tests {
     #[test]
     fn every_setting_round_trips() {
         let settings = AppSettings {
+            copy_osd: true,
             launch_on_startup: true,
             start_mapper_on_launch: true,
             appearance: Appearance::EInk,

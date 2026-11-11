@@ -786,6 +786,11 @@ pub fn tray_game_index(control: tecloid_core::gamemode::GameModeControl) -> usiz
     }
 }
 
+/// On-screen acknowledgement of a Tecloid copy command.
+pub fn copy_osd(language: Language) -> String {
+    RustText::CopyCommandSent.text(language).to_owned()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

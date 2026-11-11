@@ -3217,3 +3217,9 @@ msgstr "Сбросить разрешения ввода текста"
 
 msgid "The text was not typed: native input failed. Check accessibility permissions and the destination app's privileges."
 msgstr "Текст не введён: ошибка нативного ввода. Проверьте разрешения универсального доступа и права целевого приложения."
+
+msgid "Show a hint when Tecloid sends a copy command"
+msgstr "Показывать подсказку, когда Tecloid отправляет команду копирования"
+
+msgid "Copy command sent"
+msgstr "Команда копирования отправлена"

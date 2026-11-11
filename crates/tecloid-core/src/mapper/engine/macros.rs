@@ -197,6 +197,13 @@ impl MacroRunner {
                             break;
                         }
                         MacroPhase::StrokeModDelayRelease(ref ks) => {
+                            if matches!(
+                                &am.steps[am.current_step].item,
+                                crate::mapper::action::MacroStepItem::Stroke(original)
+                                    if crate::mapper::action::is_copy_stroke(original)
+                            ) {
+                                crate::events::emit(crate::events::CoreEvent::CopyCommandSent);
+                            }
                             for m in virt.take_releasable_mods(&ks.mods).iter().rev() {
                                 out.push(EngineOutput::KeyRaw {
                                     key: *m,

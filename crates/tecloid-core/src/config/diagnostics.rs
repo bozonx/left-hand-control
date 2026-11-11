@@ -613,7 +613,7 @@ mod tests {
     }
 
     #[test]
-    fn modifier_names_in_a_trigger_get_their_own_issue() {
+    fn generic_modifiers_are_valid_triggers() {
         let issues = analyze_rules(&config(vec![
             rule("a", "Ctrl+KeyA"),
             rule("b", "ControlLeft+KeyA"),
@@ -623,13 +623,7 @@ mod tests {
             .iter()
             .map(|i| (i.rule_id.as_str(), i.code))
             .collect();
-        assert_eq!(
-            codes,
-            [
-                ("a", RuleIssueCode::ModifierNameTrigger),
-                ("c", RuleIssueCode::InvalidTrigger)
-            ]
-        );
+        assert_eq!(codes, [("c", RuleIssueCode::InvalidTrigger)]);
     }
 
     #[test]

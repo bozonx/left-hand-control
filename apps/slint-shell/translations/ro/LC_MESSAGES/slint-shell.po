@@ -3836,3 +3836,9 @@ msgstr "Resetați permisiunile de introducere a textului"
 
 msgid "The text was not typed: native input failed. Check accessibility permissions and the destination app's privileges."
 msgstr "Textul nu a fost introdus: introducerea nativă a eșuat. Verificați permisiunile de accesibilitate și privilegiile aplicației de destinație."
+
+msgid "Show a hint when Tecloid sends a copy command"
+msgstr "Afișează un indiciu când Tecloid trimite o comandă de copiere"
+
+msgid "Copy command sent"
+msgstr "Comandă de copiere trimisă"

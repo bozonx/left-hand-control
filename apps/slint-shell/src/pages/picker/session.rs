@@ -191,11 +191,13 @@ pub(super) fn open(
         rules.set_adding(false);
     }
     load_desktop_shortcuts(ui.as_weak());
+    let request = request(ui, doc, target, index, key_only);
+    ui.global::<ActionPicker>()
+        .set_trigger_chords(request.mode == PickerMode::Trigger);
     let catalog = catalog(ui, &drafts.config(doc, Some(target)));
     // The catalog generation is read after building, so shortcuts arriving
     // later still trigger a rebuild.
     let category = initial_category(&value, &catalog, target);
-    let request = request(ui, doc, target, index, key_only);
     let behavior = request.behavior(value.is_empty());
     let command = match Action::parse(Some(value.as_str())) {
         Action::Command(id) => drafts.command(&id),

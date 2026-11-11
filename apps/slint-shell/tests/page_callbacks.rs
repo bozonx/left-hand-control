@@ -364,7 +364,10 @@ fn action_picker() -> Result<(), Box<dyn std::error::Error>> {
     );
     picker.set_category(PickerCategory::Modifiers);
     picker.invoke_refresh();
-    assert_eq!(picker.get_items().row_count(), 9);
+    assert_eq!(picker.get_items().row_count(), 13);
+    for modifier in ["Ctrl", "Shift", "Alt", "Meta"] {
+        assert!(picker.get_items().iter().any(|item| item.value == modifier));
+    }
     assert!(
         picker
             .get_items()

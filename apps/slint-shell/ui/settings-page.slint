@@ -31,6 +31,7 @@ export global SettingsEditor {
     /// Index into `AccessibilityChoice::ALL`: follow the system, on, off.
     in-out property <int> reduce-motion-index;
     in-out property <bool> profile-osd;
+    in-out property <bool> copy-osd;
     in-out property <bool> layer-hint;
     /// The layer hint can be shown: layer-shell is available.
     in property <bool> layer-hint-available;
@@ -409,6 +410,7 @@ export component SettingsPage inherits PageLayout {
                         accessible-name: @tr("Main");
                         if AppState.autostart-supported: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; toggled => { SettingsEditor.save(); } }
                         if AppState.in-development && AppState.is-linux: CheckBox { text: @tr("Show the Tecloid profile name when it changes"); checked <=> SettingsEditor.profile-osd; toggled => { SettingsEditor.save(); } }
+                        if AppState.is-linux: CheckBox { text: @tr("Show a hint when Tecloid sends a copy command"); checked <=> SettingsEditor.copy-osd; toggled => { SettingsEditor.save(); } }
                         if AppState.in-development && AppState.is-linux: HorizontalLayout { vertical-stretch: 0; alignment: start; spacing: Theme.space-s;
                             CheckBox { horizontal-stretch: 0; text: @tr("Show the keys of a layer while it is held"); checked <=> SettingsEditor.layer-hint; toggled => { SettingsEditor.save(); } }
                             VerticalLayout { visible: !SettingsEditor.layer-hint-available || AppState.in-development; alignment: center; InfoTip { text: SettingsEditor.layer-hint-available ? @tr("The hint appears 2 seconds after the layer activates. Pressing a layer key hides or cancels it until the trigger is released, including in game mode.") : @tr("Unavailable: build with the spell feature and use a Wayland compositor with layer-shell (KDE Plasma, Sway, Hyprland)."); } }

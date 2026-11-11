@@ -13,4 +13,5 @@ pub const MESSAGES: &[(&str, &str)] = &[
     ("GameNever", "Off — never"),
     ("Profile", "Profile: {}"),
     ("NoProfile", "No profile"),
+    ("CopyCommandSent", "Copy command sent"),
 ];

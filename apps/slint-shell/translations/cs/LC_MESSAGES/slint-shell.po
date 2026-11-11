@@ -3780,3 +3780,9 @@ msgstr "Resetovat oprávnění pro zadávání textu"
 
 msgid "The text was not typed: native input failed. Check accessibility permissions and the destination app's privileges."
 msgstr "Text nebyl zadán: nativní vstup se nezdařil. Zkontrolujte oprávnění k usnadnění a oprávnění cílové aplikace."
+
+msgid "Show a hint when Tecloid sends a copy command"
+msgstr "Zobrazit nápovědu, když Tecloid odešle příkaz ke kopírování"
+
+msgid "Copy command sent"
+msgstr "Příkaz ke kopírování odeslán"

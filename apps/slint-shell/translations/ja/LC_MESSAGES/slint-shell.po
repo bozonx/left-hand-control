@@ -3571,3 +3571,9 @@ msgstr "テキスト入力権限をリセットする"
 
 msgid "The text was not typed: native input failed. Check accessibility permissions and the destination app's privileges."
 msgstr "テキストが入力されませんでした。ネイティブ入力に失敗しました。アクセシビリティ権限と宛先アプリの権限を確認してください。"
+
+msgid "Show a hint when Tecloid sends a copy command"
+msgstr "Tecloid がコピーコマンドを送信したときにヒントを表示"
+
+msgid "Copy command sent"
+msgstr "コピーコマンドを送信しました"

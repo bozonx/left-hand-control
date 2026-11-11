@@ -3563,3 +3563,9 @@ msgstr "텍스트 입력 권한 재설정"
 
 msgid "The text was not typed: native input failed. Check accessibility permissions and the destination app's privileges."
 msgstr "텍스트가 입력되지 않았습니다. 기본 입력이 실패했습니다. 접근성 권한과 대상 앱의 권한을 확인하세요."
+
+msgid "Show a hint when Tecloid sends a copy command"
+msgstr "Tecloid가 복사 명령을 보낼 때 알림 표시"
+
+msgid "Copy command sent"
+msgstr "복사 명령을 보냈습니다"

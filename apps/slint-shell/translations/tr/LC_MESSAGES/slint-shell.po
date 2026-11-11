@@ -3798,3 +3798,9 @@ msgstr "Metin girişi izinlerini sıfırla"
 
 msgid "The text was not typed: native input failed. Check accessibility permissions and the destination app's privileges."
 msgstr "Metin yazılmadı: yerel giriş başarısız oldu. Erişilebilirlik izinlerini ve hedef uygulamanın ayrıcalıklarını kontrol edin."
+
+msgid "Show a hint when Tecloid sends a copy command"
+msgstr "Tecloid bir kopyalama komutu gönderdiğinde ipucu göster"
+
+msgid "Copy command sent"
+msgstr "Kopyalama komutu gönderildi"

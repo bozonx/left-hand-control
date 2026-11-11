@@ -806,6 +806,8 @@ pub struct AppSettings {
     pub reduce_motion: AccessibilityChoice,
     /// Show an on-screen display when the active profile changes.
     pub profile_osd: bool,
+    /// Announce copy commands emitted by Tecloid.
+    pub copy_osd: bool,
     /// While a layer is held, show its keys in an overlay above all windows.
     pub layer_hint: bool,
     pub locale: LocalePreference,
@@ -858,6 +860,7 @@ impl Default for AppSettings {
             high_contrast: AccessibilityChoice::System,
             reduce_motion: AccessibilityChoice::System,
             profile_osd: false,
+            copy_osd: false,
             layer_hint: false,
             locale: LocalePreference::Auto,
             default_long_hold_timeout_ms: timing::DEFAULT_LONG_HOLD_MS,

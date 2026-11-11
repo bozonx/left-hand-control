@@ -134,7 +134,14 @@ fn picker_restrictions_accept_valid_values_and_reject_invalid_ones() {
         trigger: true,
         ..Filter::default()
     };
-    for (value, expected) in [("ShiftLeft+KeyA", true), ("NotAKey", false), ("", false)] {
+    for (value, expected) in [
+        ("ShiftLeft+KeyA", true),
+        ("Ctrl+KeyA", true),
+        ("Meta", true),
+        ("Ctrl+ControlLeft", false),
+        ("NotAKey", false),
+        ("", false),
+    ] {
         assert_eq!(trigger.admits(value), expected, "listed trigger: {value}");
         assert_eq!(
             trigger.accepts(value, None),

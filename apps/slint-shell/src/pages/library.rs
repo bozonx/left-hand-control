@@ -949,6 +949,24 @@ mod tests {
     }
 
     #[test]
+    fn deleting_last_profile_does_not_prompt_to_save_before_creating() {
+        let (_dir, document, ui) = bound_document();
+        let library = ui.global::<ProfileLibrary>();
+        library.invoke_delete(1);
+        document
+            .edit(View::Rules, |config| config.create_layer("Unsaved", ""))
+            .unwrap();
+        assert!(library.get_dirty());
+        library.invoke_delete(0);
+        assert!(!library.get_editor_open());
+        assert!(!library.get_dirty());
+        working::refresh_context(&ui, &document);
+        assert!(!library.get_dirty());
+        library.invoke_open_create(Profilesource::Empty, 0);
+        assert_eq!(library.get_dialog(), LibraryDialog::Create);
+    }
+
+    #[test]
     fn unrelated_metadata_edits_do_not_accept_external_changes_to_the_working_copy() {
         let (_dir, document, ui) = bound_document();
         let library = ui.global::<ProfileLibrary>();

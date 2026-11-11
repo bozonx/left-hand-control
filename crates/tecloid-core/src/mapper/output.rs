@@ -575,10 +575,16 @@ pub(super) fn flush_out_with<S: EventSink, E: SideEffects>(
             EngineOutput::Stroke { ks, mod_delay } => {
                 flush_events(sink, &mut events)?;
                 emit_stroke_tap(sink, effects, &ks, mod_delay)?;
+                if super::action::is_copy_stroke(&ks) {
+                    crate::events::emit(crate::events::CoreEvent::CopyCommandSent);
+                }
             }
             EngineOutput::ChordPress { ks, mod_delay } => {
                 flush_events(sink, &mut events)?;
                 emit_chord_press(sink, effects, &ks, mod_delay)?;
+                if super::action::is_copy_stroke(&ks) {
+                    crate::events::emit(crate::events::CoreEvent::CopyCommandSent);
+                }
             }
             EngineOutput::ChordRelease {
                 key,

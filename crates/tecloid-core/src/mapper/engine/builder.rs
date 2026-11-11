@@ -196,7 +196,36 @@ impl Engine {
 
         let mut rules = HashMap::new();
         let mut chord_rules = Vec::new();
-        for r in &cfg.rules {
+        // Specific physical triggers take priority over side-neutral alternatives.
+        let mut source_rules: Vec<_> = cfg.rules.iter().collect();
+        source_rules.sort_by_key(|rule| {
+            rule.key.split('+').filter(|key| {
+                crate::config::key_catalog::TRIGGER_MODIFIERS.contains(key)
+            }).count()
+        });
+        let mut expanded_rules = Vec::new();
+        for rule in source_rules {
+            let Some(parts) = crate::config::key_catalog::trigger_keys(&rule.key) else {
+                continue;
+            };
+            let mut variants = vec![Vec::new()];
+            for part in parts {
+                variants = variants.into_iter().flat_map(|prefix| {
+                    crate::config::key_catalog::trigger_alternatives(part)
+                        .into_iter().map(move |key| {
+                            let mut keys = prefix.clone();
+                            keys.push(key);
+                            keys
+                        })
+                }).collect();
+            }
+            for keys in variants {
+                let mut expanded = rule.clone();
+                expanded.key = keys.join("+");
+                expanded_rules.push(expanded);
+            }
+        }
+        for r in &expanded_rules {
             if !r.enabled {
                 continue;
             }

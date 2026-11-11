@@ -393,3 +393,5 @@ Id раскладок библиотеки имеют вид `user:<имя фа�
 ### Страницы меню
 
 `quickMenuPages` и `emojiMenuPages` — страницы меню быстрых действий и эмодзи. Ключи `cells` — клавиши сетки `KeyQ KeyW KeyE KeyR KeyT / KeyA KeyS KeyD KeyF KeyG / KeyZ KeyX KeyC KeyV KeyB`. Ячейка быстрого действия — строка с действием или объект `{ "name"?, "action" }`, ячейка эмодзи — вставляемый текст (без подписи). Если списка страниц нет, приложение показывает одну пустую страницу.
+
+Rule triggers also accept `Shift`, `Ctrl`, `Alt` and `Meta`, each matching either physical side. A trigger cannot contain overlapping generic and physical modifiers (for example `Ctrl+ControlLeft`). Physical triggers take priority over overlapping generic triggers; existing physical triggers keep their meaning. The optional `settings.copyOsd` boolean defaults to false and announces synthetic copy commands from Tecloid, without verifying clipboard contents.

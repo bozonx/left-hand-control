@@ -351,15 +351,31 @@ pub fn valid_trigger(value: &str) -> bool {
     trigger_keys(value).is_some()
 }
 
-/// Key codes of a rule trigger. Only physical key codes are accepted, so a
-/// stored trigger is never reinterpreted: `Ctrl` is not a key code, and `+`
-/// joins the keys of a chord rather than prefixing modifiers.
+/// Side-neutral modifier names accepted in rule triggers.
+pub const TRIGGER_MODIFIERS: &[&str] = &["Shift", "Ctrl", "Alt", "Meta"];
+
+/// Physical alternatives for a side-neutral trigger modifier.
+pub fn trigger_alternatives(key: &str) -> Vec<&str> {
+    match key {
+        "Shift" => vec!["ShiftLeft", "ShiftRight"],
+        "Ctrl" => vec!["ControlLeft", "ControlRight"],
+        "Alt" => vec!["AltLeft", "AltRight"],
+        "Meta" => vec!["MetaLeft", "MetaRight"],
+        _ => vec![key],
+    }
+}
+
+/// Trigger components, preserving side-neutral modifier names.
 pub fn trigger_keys(value: &str) -> Option<Vec<&str>> {
     let mut keys = Vec::new();
     for key in value.split('+') {
-        if !valid_key(key)
+        if (!valid_key(key) && !TRIGGER_MODIFIERS.contains(&key))
             || matches!(key, "MouseLeft" | "MouseRight" | "MouseMiddle")
-            || keys.contains(&key)
+            || keys.iter().any(|previous: &&str| {
+                trigger_alternatives(previous)
+                    .iter()
+                    .any(|physical| trigger_alternatives(key).contains(physical))
+            })
         {
             return None;
         }
@@ -401,7 +417,7 @@ mod tests {
         assert!(valid_trigger("F13"));
         assert!(valid_trigger("ControlLeft+KeyA"));
         assert!(valid_trigger("ShiftLeft+ControlRight"));
-        assert!(!valid_trigger("Ctrl+KeyA"));
+        assert!(valid_trigger("Ctrl+KeyA"));
         assert!(!valid_trigger("Ctrl+ControlLeft"));
         assert!(!valid_trigger("ControlLeft + KeyA"));
         assert!(!valid_trigger("KeyA+"));
@@ -421,10 +437,10 @@ mod tests {
     }
 
     #[test]
-    fn modifier_names_are_diagnosed_not_rewritten() {
+    fn modifier_names_are_preserved_in_triggers() {
         for value in ["Ctrl+KeyA", "Shift", "Alt+Meta", "ControlLeft+Alt"] {
-            assert!(!valid_trigger(value), "{value}");
-            assert!(uses_modifier_name(value), "{value}");
+            assert!(valid_trigger(value), "{value}");
+            assert!(!uses_modifier_name(value), "{value}");
         }
         for value in [
             "ControlLeft+KeyA",

@@ -8,6 +8,9 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Added
 
+- Rule triggers accept side-neutral Shift, Ctrl, Alt and Meta; physical triggers take priority.
+- Optional Linux on-screen acknowledgement when Tecloid sends a copy shortcut.
+
 - System actions: lock screen (`sys:lockSession`), switch to the next or previous desktop (`sys:switchToNextDesktop`, `sys:switchToPreviousDesktop`), move the window to the previous desktop (`sys:moveWindowToPreviousDesktop`) and to the next or previous screen (`sys:moveWindowToNextScreen`, `sys:moveWindowToPreviousScreen`). They run on KDE, GNOME (with the bundled extension, updated for them) and Windows, except moving a window between desktops on Windows.
 - GNOME: "Turn off screen" now works through the extension.
 - JSON Schemas of `config.json` and layout files in `schemas/` (`config.v1.schema.json`, `profile.v1.schema.json`), published at a stable address for the `$schema` field: editors complete field names and enum values and flag typos and out-of-range timings.
@@ -115,6 +118,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Game mode (in development): toggling returns to Auto when the opposite state is what detection reports, so a toggle key no longer leaves automatic detection for good; a toggle from a key binding or the CLI shows the new state on screen. The top-bar button always reads Auto/On/Off in English to keep its fixed width, and its tooltip says that popup hotkeys are off in game mode. Terminals, code editors, image viewers and music players no longer count as fullscreen games; the running-process list is read every 2 seconds instead of every second while no game runs.
 
 ### Fixed
+
+- Do not ask to save changes when creating a layout after deleting the last open layout.
 
 - Do not report unsaved layout changes when no layout is open after deletion.
 

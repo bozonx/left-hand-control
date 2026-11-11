@@ -3895,3 +3895,9 @@ msgstr "Επαναφορά των δικαιωμάτων εισαγωγής κε
 
 msgid "The text was not typed: native input failed. Check accessibility permissions and the destination app's privileges."
 msgstr "Το κείμενο δεν πληκτρολογήθηκε: η εγγενής εισαγωγή απέτυχε. Ελέγξτε τα δικαιώματα προσβασιμότητας και τα προνόμια της εφαρμογής προορισμού."
+
+msgid "Show a hint when Tecloid sends a copy command"
+msgstr "Εμφάνιση υπόδειξης όταν το Tecloid στέλνει εντολή αντιγραφής"
+
+msgid "Copy command sent"
+msgstr "Η εντολή αντιγραφής στάλθηκε"

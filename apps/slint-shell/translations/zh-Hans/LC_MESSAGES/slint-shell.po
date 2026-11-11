@@ -3499,3 +3499,9 @@ msgstr "重置文本输入权限"
 
 msgid "The text was not typed: native input failed. Check accessibility permissions and the destination app's privileges."
 msgstr "未输入文本：本机输入失败。检查辅助功能权限和目标应用程序的权限。"
+
+msgid "Show a hint when Tecloid sends a copy command"
+msgstr "Tecloid 发送复制命令时显示提示"
+
+msgid "Copy command sent"
+msgstr "已发送复制命令"

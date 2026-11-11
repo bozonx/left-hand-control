@@ -3788,3 +3788,9 @@ msgstr "ტექსტის შეყვანის ნებართვე�
 
 msgid "The text was not typed: native input failed. Check accessibility permissions and the destination app's privileges."
 msgstr "ტექსტი არ იყო აკრეფილი: მშობლიური შეყვანა ვერ მოხერხდა. შეამოწმეთ ხელმისაწვდომობის ნებართვები და დანიშნულების აპის პრივილეგიები."
+
+msgid "Show a hint when Tecloid sends a copy command"
+msgstr "მინიშნების ჩვენება, როცა Tecloid აგზავნის კოპირების ბრძანებას"
+
+msgid "Copy command sent"
+msgstr "კოპირების ბრძანება გაიგზავნა"

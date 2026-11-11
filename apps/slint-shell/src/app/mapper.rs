@@ -43,6 +43,17 @@ pub(super) fn forward_core_events() -> Result<tecloid_core::events::Subscription
         }
     }
     tecloid_core::events::bus().subscribe_with_context(|event, context| match event {
+        CoreEvent::CopyCommandSent => post(|app| {
+            let Some(document) = app.document() else {
+                return;
+            };
+            if document.read().settings().copy_osd {
+                let text = crate::i18n::copy_osd(app.preferences.get().language);
+                if let Err(error) = tecloid_core::platform::osd::enqueue(text) {
+                    log::warn!("[osd] {error}");
+                }
+            }
+        }),
         CoreEvent::MapperDeviceChanged => post(|app| app.refresh_mapper_status()),
         CoreEvent::MapperStopped(error) => {
             let error = error.clone();

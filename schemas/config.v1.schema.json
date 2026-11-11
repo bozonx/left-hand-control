@@ -326,6 +326,10 @@
           "default": false,
           "type": "boolean"
         },
+        "copyOsd": {
+          "default": false,
+          "type": "boolean"
+        },
         "devices": {
           "$ref": "#/$defs/DevicesDoc"
         },
@@ -585,6 +589,7 @@
       "default": {
         "appearance": "system",
         "commandsEnabled": false,
+        "copyOsd": false,
         "experimental": false,
         "gameMode": {
           "control": "auto",

@@ -176,6 +176,8 @@ form! {
     reduce_motion: i32 = get_reduce_motion_index / set_reduce_motion_index,
         load |s| choice_index(&AccessibilityChoice::ALL, &s.reduce_motion),
         store |t, v| t.reduce_motion = choice(&AccessibilityChoice::ALL, *v);
+    copy_osd: bool = get_copy_osd / set_copy_osd,
+        load |s| s.copy_osd, store |t, v| t.copy_osd = *v;
     profile_osd: bool = get_profile_osd / set_profile_osd,
         load |s| s.profile_osd, store |t, v| t.profile_osd = *v;
     layer_hint: bool = get_layer_hint / set_layer_hint,

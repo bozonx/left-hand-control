@@ -3806,3 +3806,9 @@ msgstr "Мәтін енгізу рұқсаттарын қалпына келті
 
 msgid "The text was not typed: native input failed. Check accessibility permissions and the destination app's privileges."
 msgstr "Мәтін терілмеді: түпнұсқа енгізу орындалмады. Арнайы мүмкіндіктер рұқсаттарын және тағайындалған қолданбаның артықшылықтарын тексеріңіз."
+
+msgid "Show a hint when Tecloid sends a copy command"
+msgstr "Tecloid көшіру пәрменін жібергенде кеңес көрсету"
+
+msgid "Copy command sent"
+msgstr "Көшіру пәрмені жіберілді"

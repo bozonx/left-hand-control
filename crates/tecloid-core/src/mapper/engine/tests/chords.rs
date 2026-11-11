@@ -1193,3 +1193,40 @@ fn shorter_shortcut_chord_does_not_wait_for_a_longer_one() {
     assert!(trace.contains(&TraceEvent::Tap(KeyCode::KEY_X, vec![])), "{trace:?}");
     assert!(!trace.contains(&TraceEvent::Tap(KeyCode::KEY_Z, vec![])), "{trace:?}");
 }
+
+#[test]
+fn generic_modifiers_expand_to_both_sides_and_preserve_releases() {
+    for shift in [KeyCode::KEY_LEFTSHIFT, KeyCode::KEY_RIGHTSHIFT] {
+        for ctrl in [KeyCode::KEY_LEFTCTRL, KeyCode::KEY_RIGHTCTRL] {
+            let cfg = config_with_rule(serde_json::json!({"key": "Shift+Ctrl", "layerId": "nav", "tapAction": null}));
+            let mut engine = Engine::new(&cfg);
+            let now = Instant::now();
+            let mut out = Vec::new();
+            engine.handle_key_event(shift, true, now, &mut out);
+            engine.handle_key_event(ctrl, true, now + Duration::from_millis(10), &mut out);
+            assert_eq!(engine.layers.active, vec!["nav"]);
+            engine.handle_key_event(ctrl, false, now + Duration::from_millis(20), &mut out);
+            engine.handle_key_event(shift, false, now + Duration::from_millis(30), &mut out);
+            assert!(engine.layers.active.is_empty());
+            assert!(engine.virt.emitted.is_empty());
+        }
+    }
+}
+
+#[test]
+fn physical_trigger_takes_priority_over_generic_in_either_rule_order() {
+    for reverse in [false, true] {
+        let mut cfg = config_with_rule(serde_json::json!({"key": "Ctrl+KeyC", "layerId": "nav", "tapAction": null}));
+        let mut specific = cfg.rules[0].clone();
+        specific.key = "ControlRight+KeyC".into();
+        specific.layer_id = "specific".into();
+        cfg.rules.push(specific);
+        if reverse { cfg.rules.reverse(); }
+        let mut engine = Engine::new(&cfg);
+        let now = Instant::now();
+        let mut out = Vec::new();
+        engine.handle_key_event(KeyCode::KEY_RIGHTCTRL, true, now, &mut out);
+        engine.handle_key_event(KeyCode::KEY_C, true, now + Duration::from_millis(10), &mut out);
+        assert_eq!(engine.layers.active, vec!["specific"]);
+    }
+}

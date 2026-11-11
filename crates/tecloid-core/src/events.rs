@@ -17,6 +17,8 @@ use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CoreEvent {
+    /// Tecloid emitted a copy shortcut; clipboard contents are not verified.
+    CopyCommandSent,
     /// The OS keyboard layout changed; `None` means detection became unavailable.
     LayoutChanged(Option<KeyboardLayoutInfo>),
     /// Game-mode detection produced a new status.
@@ -151,6 +153,7 @@ impl CoreEvent {
             Self::MapperDeviceChanged => 3,
             Self::ActiveLayerChanged(_) => 4,
             Self::LayerKeyPressed => 5,
+            Self::CopyCommandSent => 12,
             Self::CommandLaunchResult { result: Ok(()), .. } => 6,
             Self::CommandLaunchResult { result: Err(_), .. } => 11,
             Self::TextInputFailed(_) => 7,

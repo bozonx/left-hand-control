@@ -196,7 +196,7 @@ struct RuleDoc {
     tap_decision: Option<TapDecision>,
 }
 
-/// Trigger of a rule: one physical key code, or a chord of two or more
+/// Trigger of a rule: a physical key or side-neutral modifier, or a chord of
 /// keys as an array. `+` is not accepted inside a key: in action strings it
 /// joins modifiers to a key, which is a different meaning.
 #[cfg_attr(test, derive(schemars::JsonSchema))]

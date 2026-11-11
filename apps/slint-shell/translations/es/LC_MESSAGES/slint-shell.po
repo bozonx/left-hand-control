@@ -3799,3 +3799,9 @@ msgstr "Restablecer permisos de entrada de texto"
 
 msgid "The text was not typed: native input failed. Check accessibility permissions and the destination app's privileges."
 msgstr "El texto no fue escrito: la entrada nativa falló. Verifique los permisos de accesibilidad y los privilegios de la aplicación de destino."
+
+msgid "Show a hint when Tecloid sends a copy command"
+msgstr "Mostrar un aviso cuando Tecloid envíe una orden de copia"
+
+msgid "Copy command sent"
+msgstr "Orden de copia enviada"

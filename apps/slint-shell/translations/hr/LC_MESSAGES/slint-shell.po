@@ -3790,3 +3790,9 @@ msgstr "Ponovno postavite dopuštenja za unos teksta"
 
 msgid "The text was not typed: native input failed. Check accessibility permissions and the destination app's privileges."
 msgstr "Tekst nije upisan: izvorni unos nije uspio. Provjerite dopuštenja pristupačnosti i privilegije odredišne ​​aplikacije."
+
+msgid "Show a hint when Tecloid sends a copy command"
+msgstr "Prikaži obavijest kada Tecloid pošalje naredbu kopiranja"
+
+msgid "Copy command sent"
+msgstr "Naredba kopiranja poslana"
