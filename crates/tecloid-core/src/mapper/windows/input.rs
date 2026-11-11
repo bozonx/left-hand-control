@@ -130,7 +130,7 @@ pub(super) fn shortcut(mods: &[KeyCode], main: KeyCode) -> Result<(), String> {
 }
 
 /// Type `text` as Unicode characters, independent of the keyboard layout.
-/// `valid` is checked before each UTF-16 unit so a focus change stops input.
+/// `valid` is checked before each Unicode scalar so a focus change stops input.
 pub fn type_unicode(text: &str, valid: impl FnMut() -> bool) -> Result<(), String> {
     type_unicode_with_progress(text, valid, || {})
 }
@@ -166,10 +166,11 @@ pub fn type_unicode_with_progress(
                 })
                 .collect(),
         };
+        if !valid() {
+            return Err("text input cancelled: the focused window changed".into());
+        }
+        // Keep a surrogate pair together when cancellation arrives mid-character.
         for pair in inputs.as_chunks::<2>().0 {
-            if !valid() {
-                return Err("text input cancelled: the focused window changed".into());
-            }
             if let Err(error) = send(pair) {
                 // Release any accepted key-down before reporting partial injection.
                 let _ = send(&pair[1..]);

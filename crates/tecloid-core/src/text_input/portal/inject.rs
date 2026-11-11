@@ -10,9 +10,12 @@ pub(super) fn type_text_keycode(
 ) -> Result<(), TextInputFailure> {
     let hardware = HardwareState::capture();
     hardware.modifiers_released()?;
-    let table = layout_key_table()?;
     let layout = crate::runtime_state::keyboard_layout();
     let caps = hardware.caps_lock_state()?;
+    let table = layout_key_table()?;
+    if layout != crate::runtime_state::keyboard_layout() || caps != hardware.caps_lock_state()? {
+        return Err(TextInputFailure::LayoutUnknown);
+    }
     let text = text.replace("\r\n", "\n");
     if missing_characters(&table, &text) {
         return Err(TextInputFailure::MissingCharacters);

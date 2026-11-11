@@ -231,7 +231,9 @@ pub(super) static KEYMAP_CACHE: Mutex<KeymapCache> = Mutex::new(None);
 /// XKB cannot compile it: guessing a layout would type wrong characters.
 pub(super) fn layout_key_table() -> Result<Arc<KeyTable>, TextInputFailure> {
     let layout = crate::runtime_state::keyboard_layout().ok_or(TextInputFailure::LayoutUnknown)?;
-    let variant = layout.variant.trim();
+    let variant = crate::keyboard_layout::verified_text_variant(&layout)
+        .ok_or(TextInputFailure::LayoutUnknown)?;
+    let variant = variant.trim();
     let caps_lock = caps_lock_state()?;
     let options = crate::keyboard_layout::xkb_options();
     let cache_key = format!("{}\0{variant}\0{caps_lock}\0{options}", layout.code);
@@ -323,7 +325,7 @@ pub(super) fn table_from_names_with_options(
         }
         let table = table_from_keymap(keymap, 0, locked);
         xkb_keymap_unref(keymap);
-        Some(table)
+        (!table.is_empty()).then_some(table)
     }
 }
 
@@ -350,7 +352,7 @@ pub(super) fn table_from_keymap_text(text: &[u8], group: u32, locked: u32) -> Op
         }
         let table = table_from_keymap(keymap, group, locked);
         xkb_keymap_unref(keymap);
-        Some(table)
+        (!table.is_empty()).then_some(table)
     }
 }
 

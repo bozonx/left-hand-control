@@ -265,6 +265,16 @@ fn checked_position(list: &LayoutList, index: u32) -> Result<usize, String> {
 /// XKB variants of the configured layouts, by index. The DBus API only
 /// gives layout codes and user labels, so they come from `kxkbrc`, and only
 /// when its layout list matches `list`; otherwise none are known.
+pub(super) fn verified_variant(index: u32, code: &str) -> Option<String> {
+    let proxy = keyboard_proxy(session_bus().ok()?).ok()?;
+    let list = call_list(&proxy).ok()??;
+    let position = usize::try_from(index).ok()?;
+    if list.get(position)?.0 != code {
+        return None;
+    }
+    configured_variants(&list).get(position).cloned()
+}
+
 fn configured_variants(list: &LayoutList) -> Vec<String> {
     let Some(path) = dirs::config_dir().map(|dir| dir.join("kxkbrc")) else {
         return Vec::new();

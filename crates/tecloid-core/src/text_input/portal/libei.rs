@@ -121,6 +121,7 @@ impl LibeiBackend {
             .modifiers_released()
             .map_err(temporary_input_failure)?;
         let table = self.key_table()?;
+        let table_identity = self.table.as_ref().map(|(identity, _)| *identity);
         request.check()?;
         let text = text.replace("\r\n", "\n");
         if missing_characters(&table, &text) {
@@ -134,11 +135,18 @@ impl LibeiBackend {
             self.pump_events()
                 .map_err(TextInputFailure::BackendUnavailable)?;
             request.check()?;
-            if self.group.is_some_and(|group| {
-                self.table
+            if !self.keyboard_emulating
+                || self
+                    .table
                     .as_ref()
-                    .is_some_and(|(cached, _)| cached.0 != group || cached.1 != self.locked)
-            }) || self.depressed != 0
+                    .is_none_or(|(_, current)| !Arc::ptr_eq(current, &table))
+                || self.table.as_ref().map(|(identity, _)| *identity) != table_identity
+                || self.group.is_some_and(|group| {
+                    self.table
+                        .as_ref()
+                        .is_some_and(|(cached, _)| cached.0 != group || cached.1 != self.locked)
+                })
+                || self.depressed != 0
                 || self.latched != 0
             {
                 return Err(TextInputFailure::NativeInput(

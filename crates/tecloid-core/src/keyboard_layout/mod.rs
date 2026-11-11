@@ -295,6 +295,20 @@ pub fn start_watcher() {
 }
 
 #[cfg(target_os = "linux")]
+pub(crate) fn verified_text_variant(
+    layout: &crate::runtime_state::KeyboardLayoutSelection,
+) -> Option<String> {
+    if matches!(
+        crate::platform::linux::detect().desktop,
+        crate::platform::linux::Desktop::Kde
+    ) {
+        linux_kde::verified_variant(layout.index, &layout.code)
+    } else {
+        None
+    }
+}
+
+#[cfg(target_os = "linux")]
 pub(crate) fn xkb_options() -> String {
     if matches!(
         crate::platform::linux::detect().desktop,
