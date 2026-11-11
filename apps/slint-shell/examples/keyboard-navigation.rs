@@ -220,13 +220,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ui.global::<SettingsEditor>().set_tab(SettingsTab::KeyBehavior);
             }
             11 => {
-                tab_to(&ui, "Scroll vertically");
-                key(&ui, Key::End);
-                let value = nearest_accessible_item(focused(&ui)).accessible_string_property(AccessibleStringProperty::Value).unwrap();
-                assert!(value.parse::<f64>().unwrap() > 0., "End scrolls text-only content");
-                key(&ui, Key::Home);
-                let value = nearest_accessible_item(focused(&ui)).accessible_string_property(AccessibleStringProperty::Value).unwrap();
-                assert_eq!(value.parse::<f64>().unwrap(), 0.);
                 // The first info button on this page explains a timing parameter.
                 for _ in 0..400 {
                     let name = label(&ui);

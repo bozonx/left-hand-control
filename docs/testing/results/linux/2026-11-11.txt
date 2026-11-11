@@ -1,0 +1,32 @@
+Date: 2026-11-11 18:56:28 -0300
+Commit: c5104554 (with uncommitted changes)
+Version: tecloid 0.4.0
+Session: wayland, KDE; plasmashell 6.7.5
+Kernel: Linux 7.2.9-1-MANJARO
+
+- example-editor: passed
+- example-interactions: FAILED (exit 101; log: /tmp/tecloid-e2e-local.9Fu37cN2/example-interactions.log)
+- example-rules: passed
+- example-library: passed
+- example-macros: passed
+- example-menus: passed
+- example-popup-grid: passed
+- example-undo-redo: passed
+- example-inline-edit: passed
+- example-drag-scroll: passed
+- example-notifications: passed
+- example-accessibility: passed
+- example-keyboard-navigation: FAILED (exit 101; log: /tmp/tecloid-e2e-local.9Fu37cN2/example-keyboard-navigation.log)
+- example-contrast-scaling: passed
+- example-layer-keys: passed
+- example-small-window: FAILED (exit 101; log: /tmp/tecloid-e2e-local.9Fu37cN2/example-small-window.log)
+- example-small-window-pseudo: FAILED (exit 101; log: /tmp/tecloid-e2e-local.9Fu37cN2/example-small-window-pseudo.log)
+- check-recovery: passed
+- check-preferences: FAILED (exit 1; log: /tmp/tecloid-e2e-local.9Fu37cN2/check-preferences.log)
+- check-worker-crash: passed
+- check-linux-install: passed
+- mapper-e2e: passed
+Passed: 17, failed: 5
+
+Manual smoke on the installed package (section 3 of
+docs/testing/manual-acceptance.md): not recorded yet.
