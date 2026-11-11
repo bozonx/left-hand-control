@@ -17,6 +17,7 @@ pub(super) fn type_text_keycode(
     if missing_characters(&table, &text) {
         return Err(TextInputFailure::MissingCharacters);
     }
+    request.start_typing()?;
     for ch in text.chars() {
         request.check()?;
         hardware.modifiers_released()?;
@@ -31,6 +32,7 @@ pub(super) fn type_text_keycode(
             inject_keycode_combo(portal, session, &entry.mods, entry.evdev).map_err(|e| {
                 TextInputFailure::BackendUnavailable(format!("NotifyKeyboardKeycode: {e}"))
             })?;
+            request.mark_progress();
         }
     }
     Ok(())

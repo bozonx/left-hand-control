@@ -994,6 +994,26 @@ mod tests {
     }
 
     #[test]
+    fn paste_defaults_do_not_override_explicit_shortcuts() {
+        let defaults = parse(&config(json!({}))).unwrap();
+        assert_eq!(defaults.linux_paste_shortcut, PasteShortcut::CtrlV);
+        assert_eq!(
+            defaults.linux_terminal_paste_shortcut,
+            Some(PasteShortcut::ShiftInsert)
+        );
+        let explicit = parse(&config(json!({"linux": {
+            "pasteShortcut": "Shift+Insert",
+            "terminalPasteShortcut": "Ctrl+Shift+KeyV"
+        }})))
+        .unwrap();
+        assert_eq!(explicit.linux_paste_shortcut, PasteShortcut::ShiftInsert);
+        assert_eq!(
+            explicit.linux_terminal_paste_shortcut,
+            Some(PasteShortcut::CtrlShiftV)
+        );
+    }
+
+    #[test]
     fn terminal_paste_shortcut_defaults_and_can_follow_the_main_one() {
         let shortcut = |linux: Value| {
             parse(&config(json!({ "linux": linux })))
@@ -1002,7 +1022,7 @@ mod tests {
         };
         assert_eq!(
             shortcut(json!({"pasteShortcut": "Ctrl+KeyV"})),
-            Some(PasteShortcut::CtrlShiftV)
+            Some(PasteShortcut::ShiftInsert)
         );
         assert_eq!(
             shortcut(json!({"terminalPasteShortcut": "sameAsPaste"})),

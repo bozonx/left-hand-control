@@ -3,7 +3,9 @@
 #[cfg(target_os = "macos")]
 use enigo::{Enigo, Keyboard, Settings};
 
+use std::cell::RefCell;
 use std::sync::atomic::{AtomicU64, Ordering};
+use tecloid_core::text_input::TextTiming;
 
 /// Pause that lets the closing popup give up the focus.
 const POPUP_CLOSE_DELAY: std::time::Duration = std::time::Duration::from_millis(300);
@@ -47,12 +49,32 @@ impl ReturnInput {
             );
             return;
         };
+        let timing = match TextTiming::new(&text) {
+            Ok(timing) => RefCell::new(timing),
+            Err(error) => {
+                report(
+                    tecloid_core::events::TextInputFailure::NativeInput(error.clone()),
+                    &error,
+                );
+                return;
+            }
+        };
         let selection_context = capture_selection_context();
         let generation = GENERATION.load(Ordering::SeqCst);
         let result = std::thread::Builder::new()
             .name("tecloid-native-text".into())
             .spawn(move || {
-                let valid = || GENERATION.load(Ordering::SeqCst) == generation;
+                if let Err(error) = timing.borrow_mut().prepare() {
+                    report(
+                        tecloid_core::events::TextInputFailure::NativeInput(error.clone()),
+                        &error,
+                    );
+                    return;
+                }
+                let valid = || {
+                    GENERATION.load(Ordering::SeqCst) == generation
+                        && timing.borrow().check().is_ok()
+                };
                 std::thread::sleep(POPUP_CLOSE_DELAY);
                 if !valid() {
                     return;
@@ -88,7 +110,15 @@ impl ReturnInput {
                     );
                     return;
                 }
-                if let Err(error) = type_text(&text, check) {
+                if let Err(error) = timing.borrow_mut().start_typing() {
+                    report(
+                        tecloid_core::events::TextInputFailure::NativeInput(error.clone()),
+                        &error,
+                    );
+                    return;
+                }
+                if let Err(error) = type_text(&text, check, || timing.borrow_mut().mark_progress())
+                {
                     report(
                         tecloid_core::events::TextInputFailure::NativeInput(error.to_string()),
                         &error.to_string(),
@@ -213,8 +243,12 @@ fn modifiers_released() -> bool {
 }
 
 #[cfg(target_os = "windows")]
-fn type_text(text: &str, valid: impl Fn() -> bool) -> Result<(), Box<dyn std::error::Error>> {
-    tecloid_core::platform::type_unicode(text, valid).map_err(Into::into)
+fn type_text(
+    text: &str,
+    valid: impl Fn() -> bool,
+    progress: impl FnMut(),
+) -> Result<(), Box<dyn std::error::Error>> {
+    tecloid_core::platform::type_unicode_with_progress(text, valid, progress).map_err(Into::into)
 }
 
 #[cfg(target_os = "macos")]
@@ -252,7 +286,11 @@ fn modifiers_released() -> bool {
 }
 
 #[cfg(target_os = "macos")]
-fn type_text(text: &str, valid: impl Fn() -> bool) -> Result<(), Box<dyn std::error::Error>> {
+fn type_text(
+    text: &str,
+    valid: impl Fn() -> bool,
+    mut progress: impl FnMut(),
+) -> Result<(), Box<dyn std::error::Error>> {
     if text.contains('\0') {
         return Err("NUL cannot be typed into native text fields".into());
     }
@@ -262,6 +300,7 @@ fn type_text(text: &str, valid: impl Fn() -> bool) -> Result<(), Box<dyn std::er
             return Err("native text input cancelled: focus or modifiers changed".into());
         }
         enigo.text(&ch.to_string())?;
+        progress();
     }
     Ok(())
 }

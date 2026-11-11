@@ -142,8 +142,8 @@ struct TextBackendConfig {
 
 static TEXT_BACKEND: Mutex<TextBackendConfig> = Mutex::new(TextBackendConfig {
     mode: TextMode::LibeiWithClipboardFallback,
-    paste: PasteShortcut::ShiftInsert,
-    terminal_paste: Some(PasteShortcut::CtrlShiftV),
+    paste: PasteShortcut::CtrlV,
+    terminal_paste: Some(PasteShortcut::ShiftInsert),
     ydotool_path: None,
     xdotool_path: None,
 });
@@ -296,6 +296,7 @@ pub fn set_token_dir(dir: PathBuf) {
 /// The first call may block on the portal consent dialog, so run it off the
 /// mapper thread. Failures are reported as `CoreEvent::TextInputFailed`.
 pub(crate) fn type_text(text: &str, request: TextRequest) -> Result<(), TextInputFailure> {
+    request.prepare()?;
     request.wait_for_target()?;
     let released = Instant::now() + MODIFIER_RELEASE_TIMEOUT;
     let hardware = HardwareState::capture();
@@ -345,6 +346,7 @@ fn run_text_tool(
     request.check()?;
     let timeout_ms =
         TEXT_TOOL_BASE_TIMEOUT_MS + TEXT_TOOL_PER_CHAR_MS * text.chars().count() as u64;
+    request.start_tool(Duration::from_millis(timeout_ms))?;
     let mut cmd = std::process::Command::new(program);
     cmd.args(args);
     match crate::exec::run_cmd_with_cancel(&mut cmd, timeout_ms, || request.check().is_err()) {

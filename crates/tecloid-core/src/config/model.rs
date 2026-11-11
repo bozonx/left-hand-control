@@ -713,8 +713,8 @@ impl TextMode {
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum PasteShortcut {
     /// Common in GUI apps and terminals; some terminals paste the primary selection.
-    #[default]
     ShiftInsert,
+    #[default]
     CtrlV,
     /// Terminal paste.
     CtrlShiftV,
@@ -891,8 +891,8 @@ impl Default for AppSettings {
                 control: GameModeControl::Auto,
             },
             linux_wayland_text_mode: TextMode::LibeiWithClipboardFallback,
-            linux_paste_shortcut: PasteShortcut::ShiftInsert,
-            linux_terminal_paste_shortcut: Some(PasteShortcut::CtrlShiftV),
+            linux_paste_shortcut: PasteShortcut::CtrlV,
+            linux_terminal_paste_shortcut: Some(PasteShortcut::ShiftInsert),
             linux_ydotool_path: String::new(),
             linux_xdotool_path: String::new(),
         }

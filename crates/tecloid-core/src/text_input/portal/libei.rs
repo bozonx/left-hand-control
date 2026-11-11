@@ -129,6 +129,7 @@ impl LibeiBackend {
             }
             return Err(TextInputFailure::MissingCharacters);
         }
+        request.start_typing()?;
         for ch in text.chars() {
             self.pump_events()
                 .map_err(TextInputFailure::BackendUnavailable)?;
@@ -150,6 +151,7 @@ impl LibeiBackend {
             if let Some(entry) = table.get(&text_keysym(ch)) {
                 self.inject_keycode_combo(&entry.mods, entry.evdev, request)
                     .map_err(TextInputFailure::BackendUnavailable)?;
+                request.mark_progress();
             }
         }
         Ok(())

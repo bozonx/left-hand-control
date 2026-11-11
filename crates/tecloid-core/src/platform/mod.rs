@@ -69,7 +69,7 @@ pub const INPUT_DIR: &str = "/dev/input";
 pub const UINPUT_PATH: &str = "/dev/uinput";
 /// Type text as Unicode characters into the focused window.
 #[cfg(target_os = "windows")]
-pub use crate::mapper::windows::type_unicode;
+pub use crate::mapper::windows::{type_unicode, type_unicode_with_progress};
 
 #[cfg(target_os = "linux")]
 use std::fs::{self, OpenOptions};

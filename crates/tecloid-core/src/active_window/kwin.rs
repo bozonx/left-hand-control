@@ -94,6 +94,10 @@ struct Focus {
 }
 
 impl Focus {
+    fn text_target(&self) -> Option<(String, super::ActiveWindow)> {
+        Some((self.external.clone()?, self.external_window.clone()?))
+    }
+
     fn update(&mut self, value: &serde_json::Value) {
         self.current = value
             .get("windowId")
@@ -114,8 +118,7 @@ static FOCUS: Mutex<Focus> = Mutex::new(Focus {
 });
 
 pub(super) fn text_target() -> Option<(String, super::ActiveWindow)> {
-    let focus = FOCUS.lock().ok()?;
-    Some((focus.external.clone()?, focus.external_window.clone()?))
+    FOCUS.lock().ok()?.text_target()
 }
 
 pub(super) fn target_is_current(target: &str) -> bool {
@@ -485,6 +488,28 @@ mod tests {
         focus.update(&serde_json::json!({}));
         assert!(focus.current.is_none());
         assert!(focus.external.is_none());
+    }
+
+    #[test]
+    fn missing_initial_empty_and_incomplete_reports_have_no_text_target() {
+        let mut focus = super::Focus::default();
+        assert!(focus.text_target().is_none());
+        for report in [
+            serde_json::json!({}),
+            serde_json::json!({"appId": "kate"}),
+            serde_json::json!({"windowId": "editor"}),
+        ] {
+            focus.update(&report);
+            assert!(focus.text_target().is_none());
+        }
+        focus.update(&serde_json::json!({"appId": "kate", "windowId": "editor"}));
+        assert!(focus.text_target().is_some());
+        focus.update(
+            &serde_json::json!({"appId": crate::storage::POPUP_APP_ID, "windowId": "popup"}),
+        );
+        assert_eq!(focus.text_target().unwrap().0, "editor");
+        focus.update(&serde_json::json!({}));
+        assert!(focus.text_target().is_none());
     }
 
     struct Bus(std::process::Child);

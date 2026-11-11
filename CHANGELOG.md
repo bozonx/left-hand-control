@@ -15,6 +15,9 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Text input: distinguish unsupported window detection from a missing destination on supported desktops; KDE/GNOME no longer send text to an unverified window after missing focus reports. New paste settings default to Ctrl+V in applications and Shift+Insert in terminals; explicitly saved shortcuts are preserved.
+- Text input: share size and deadline policy across mapper backends and native Windows/macOS popup insertion. Queue waiting and preparation each have a 15-second budget; active character input can continue while successful output renews its 15-second inactivity deadline. External typing tools retain a bounded budget based on text length.
+
 - Mapper: preserve modifier context for typing queued behind macros, text insertion and popups; keep typing behind unfinished text rather than releasing it after two seconds.
 
 - Linux text input: keep libei sessions after modifier/layout interruptions and retry temporary backend setup failures on the next text request.

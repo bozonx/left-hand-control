@@ -15,7 +15,7 @@ mod input;
 pub mod system;
 
 pub use guard::{dispatch as dispatch_input_guard, pid as input_guard_pid};
-pub use input::type_unicode;
+pub use input::{type_unicode, type_unicode_with_progress};
 
 use super::config::MapperConfig;
 use super::engine::{Engine, EngineOutput};
@@ -607,11 +607,19 @@ fn text_tx() -> &'static mpsc::SyncSender<(String, TextRequest)> {
         if let Err(error) = thread::Builder::new()
             .name("tecloid-text".into())
             .spawn(move || {
-                for (text, mut request) in rx {
-                    let result = request.wait_for_target().and_then(|()| {
-                        input::type_unicode(&text, || request.check_progress().is_ok())
+                for (text, request) in rx {
+                    let result = request
+                        .prepare()
+                        .and_then(|()| request.wait_for_target())
+                        .and_then(|()| {
+                            request.start_typing()?;
+                            input::type_unicode_with_progress(
+                                &text,
+                                || request.check().is_ok(),
+                                || request.mark_progress(),
+                            )
                             .map_err(TextInputFailure::BackendUnavailable)
-                    });
+                        });
                     request.complete(result.is_err());
                     if let Err(failure) = result {
                         report_text(failure);

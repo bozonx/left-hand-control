@@ -131,7 +131,16 @@ pub(super) fn shortcut(mods: &[KeyCode], main: KeyCode) -> Result<(), String> {
 
 /// Type `text` as Unicode characters, independent of the keyboard layout.
 /// `valid` is checked before each UTF-16 unit so a focus change stops input.
-pub fn type_unicode(text: &str, mut valid: impl FnMut() -> bool) -> Result<(), String> {
+pub fn type_unicode(text: &str, valid: impl FnMut() -> bool) -> Result<(), String> {
+    type_unicode_with_progress(text, valid, || {})
+}
+
+/// Native Unicode input with progress reported after each successfully sent unit.
+pub fn type_unicode_with_progress(
+    text: &str,
+    mut valid: impl FnMut() -> bool,
+    mut progress: impl FnMut(),
+) -> Result<(), String> {
     if text.contains('\0') {
         return Err("NUL cannot be typed into native text fields".into());
     }
@@ -166,6 +175,7 @@ pub fn type_unicode(text: &str, mut valid: impl FnMut() -> bool) -> Result<(), S
                 let _ = send(&pair[1..]);
                 return Err(error);
             }
+            progress();
             // WinUI translates VK_PACKET asynchronously from keyboard state.
             // Each UTF-16 unit must be consumed before the next replaces it.
             std::thread::sleep(VK_PACKET_DELAY);

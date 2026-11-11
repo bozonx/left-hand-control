@@ -6,6 +6,7 @@ use std::sync::{
 };
 use std::time::{Duration, Instant};
 
+use super::timing::{MAX_TEXT_BYTES, TextTiming};
 use crate::events::TextInputFailure;
 
 /// How long text input waits for the target window to take the focus.
@@ -13,8 +14,6 @@ const TARGET_TIMEOUT: Duration = Duration::from_millis(500);
 const TARGET_POLL: Duration = Duration::from_millis(5);
 
 const MAX_QUEUED_TEXTS: usize = 16;
-const MAX_TEXT_BYTES: usize = 1024 * 1024;
-const MAX_AGE: Duration = Duration::from_secs(15);
 
 #[derive(Default)]
 struct Progress {
@@ -65,7 +64,7 @@ pub(crate) struct TextRequest {
     macro_job: Option<MacroText>,
     completed: Arc<AtomicBool>,
     generation: u64,
-    deadline: Instant,
+    timing: Arc<Mutex<TextTiming>>,
     target: Arc<crate::active_window::TextTarget>,
 }
 
@@ -111,13 +110,14 @@ impl TextRequest {
     }
 
     fn enqueue_inner(text: &str, macro_job: Option<MacroText>) -> Result<Self, TextInputFailure> {
+        let timing = TextTiming::new(text).map_err(|e| unavailable(&e))?;
         let mut progress = PROGRESS.lock().unwrap_or_else(|e| e.into_inner());
         let generation = progress.reserve(text.len())?;
         let request = Self {
             macro_job,
             completed: Arc::new(AtomicBool::new(false)),
             generation,
-            deadline: Instant::now() + MAX_AGE,
+            timing: Arc::new(Mutex::new(timing)),
             target: Arc::new(crate::active_window::TextTarget::capture()),
         };
         Ok(request)
@@ -131,13 +131,39 @@ impl TextRequest {
         Ok(())
     }
 
-    #[cfg(target_os = "windows")]
-    pub(crate) fn check_progress(&mut self) -> Result<(), TextInputFailure> {
+    pub(crate) fn prepare(&self) -> Result<(), TextInputFailure> {
+        self.check_lifetime()?;
+        self.timing
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .prepare()
+            .map_err(|e| unavailable(&e))
+    }
+
+    pub(crate) fn start_typing(&self) -> Result<(), TextInputFailure> {
         self.check()?;
-        // Native Unicode delivery is paced for WinUI. Bound inactivity and queue
-        // age, while allowing a long text that keeps reaching the same target.
-        self.deadline = Instant::now() + MAX_AGE;
-        Ok(())
+        self.timing
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .start_typing()
+            .map_err(|e| unavailable(&e))
+    }
+
+    pub(crate) fn mark_progress(&self) {
+        self.timing
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .mark_progress();
+    }
+
+    #[cfg(target_os = "linux")]
+    pub(crate) fn start_tool(&self, timeout: Duration) -> Result<(), TextInputFailure> {
+        self.check()?;
+        self.timing
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .start_tool(timeout)
+            .map_err(|e| unavailable(&e))
     }
 
     #[cfg(target_os = "linux")]
@@ -164,12 +190,14 @@ impl TextRequest {
             return Err(unavailable("macro text input cancelled"));
         }
         let progress = PROGRESS.lock().unwrap_or_else(|e| e.into_inner());
-        validate(
-            self.generation,
-            progress.generation,
-            self.deadline,
-            Instant::now(),
-        )
+        if self.generation != progress.generation {
+            return Err(unavailable("text input cancelled"));
+        }
+        self.timing
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .check()
+            .map_err(|e| unavailable(&e))
     }
 
     pub(crate) fn complete(&self, failed: bool) {
@@ -225,19 +253,6 @@ pub(crate) fn pending() -> bool {
 
 fn unavailable(message: &str) -> TextInputFailure {
     TextInputFailure::BackendUnavailable(message.into())
-}
-
-fn validate(
-    generation: u64,
-    current: u64,
-    deadline: Instant,
-    now: Instant,
-) -> Result<(), TextInputFailure> {
-    if generation != current || now >= deadline {
-        Err(unavailable("text input cancelled or expired"))
-    } else {
-        Ok(())
-    }
 }
 
 #[cfg(test)]
@@ -305,13 +320,5 @@ mod tests {
         }
         assert!(progress.reserve(1).is_err());
         assert_eq!(progress.pending, MAX_QUEUED_TEXTS);
-    }
-
-    #[test]
-    fn stopped_restarted_and_expired_jobs_are_rejected() {
-        let now = Instant::now();
-        assert!(validate(1, 1, now + Duration::from_secs(1), now).is_ok());
-        assert!(validate(1, 2, now + Duration::from_secs(1), now).is_err());
-        assert!(validate(1, 1, now, now).is_err());
     }
 }

@@ -184,12 +184,12 @@
       "properties": {
         "pasteShortcut": {
           "$ref": "#/$defs/PasteShortcut",
-          "default": "Shift+Insert",
+          "default": "Ctrl+KeyV",
           "description": "Shortcut the clipboard text modes send to paste, as a key chord."
         },
         "terminalPasteShortcut": {
           "$ref": "#/$defs/TerminalPasteShortcut",
-          "default": "Ctrl+Shift+KeyV",
+          "default": "Shift+Insert",
           "description": "Paste shortcut for terminal windows, or `sameAsPaste`."
         },
         "textMode": {
@@ -363,8 +363,8 @@
         "linux": {
           "$ref": "#/$defs/LinuxDoc",
           "default": {
-            "pasteShortcut": "Shift+Insert",
-            "terminalPasteShortcut": "Ctrl+Shift+KeyV",
+            "pasteShortcut": "Ctrl+KeyV",
+            "terminalPasteShortcut": "Shift+Insert",
             "textMode": "libeiWithClipboardFallback"
           }
         },
@@ -618,8 +618,8 @@
         "launchAtLogin": false,
         "layerHint": false,
         "linux": {
-          "pasteShortcut": "Shift+Insert",
-          "terminalPasteShortcut": "Ctrl+Shift+KeyV",
+          "pasteShortcut": "Ctrl+KeyV",
+          "terminalPasteShortcut": "Shift+Insert",
           "textMode": "libeiWithClipboardFallback"
         },
         "locale": "auto",

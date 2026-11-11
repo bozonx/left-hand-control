@@ -393,18 +393,34 @@ pub(crate) enum TextTarget {
     Kwin(String, ActiveWindow),
     Gnome(String, ActiveWindow),
     Cached(ActiveWindow),
-    Unknown,
+    /// No detector exists for this environment; allow best-effort input.
+    Unsupported,
+    /// A supported detector has no usable destination; never guess a window.
+    Unavailable,
 }
 
 #[cfg(target_os = "linux")]
 impl TextTarget {
     pub(crate) fn capture() -> Self {
-        if kwin::active() {
+        let session = crate::platform::linux::detect();
+        let kwin_active = kwin::active();
+        if kwin_active
+            || matches!(
+                (&session.desktop, session.session_type),
+                (
+                    crate::platform::linux::Desktop::Kde,
+                    crate::platform::linux::SessionType::Wayland
+                )
+            )
+        {
+            if !kwin_active {
+                return Self::Unavailable;
+            }
             return kwin::text_target()
-                .map_or(Self::Unknown, |(id, window)| Self::Kwin(id, window));
+                .map_or(Self::Unavailable, |(id, window)| Self::Kwin(id, window));
         }
         if matches!(
-            crate::platform::linux::detect(),
+            session,
             crate::platform::linux::Session {
                 desktop: crate::platform::linux::Desktop::Gnome,
                 session_type: crate::platform::linux::SessionType::Wayland,
@@ -412,13 +428,20 @@ impl TextTarget {
             }
         ) {
             return gnome::text_target()
-                .map_or(Self::Unknown, |(id, window)| Self::Gnome(id, window));
+                .map_or(Self::Unavailable, |(id, window)| Self::Gnome(id, window));
         }
-        TEXT_WINDOW
-            .lock()
-            .ok()
-            .and_then(|target| target.clone())
-            .map_or(Self::Unknown, Self::Cached)
+        let target = TEXT_WINDOW.lock().ok().and_then(|target| target.clone());
+        match target {
+            Some(target) => Self::Cached(target),
+            None if matches!(
+                linux::availability(),
+                crate::gamemode::DetectorAvailability::Unsupported
+            ) =>
+            {
+                Self::Unsupported
+            }
+            None => Self::Unavailable,
+        }
     }
 
     pub(crate) fn is_terminal(&self) -> bool {
@@ -426,7 +449,7 @@ impl TextTarget {
             Self::Kwin(_, window) | Self::Gnome(_, window) | Self::Cached(window) => {
                 terminal::is_terminal(window)
             }
-            Self::Unknown => false,
+            Self::Unsupported | Self::Unavailable => false,
         }
     }
 
@@ -441,7 +464,8 @@ impl TextTarget {
                 .is_some_and(|current| same_text_application(&current, target)),
             // Without a detector there is no identity to enforce. Lifetime and
             // modifier checks still apply; use the main paste shortcut.
-            Self::Unknown => true,
+            Self::Unsupported => true,
+            Self::Unavailable => false,
         }
     }
 }
@@ -473,9 +497,11 @@ mod tests {
 
     #[cfg(target_os = "linux")]
     #[test]
-    fn text_detection_allows_unknown_windows_and_title_changes() {
-        assert!(TextTarget::Unknown.is_current());
-        assert!(!TextTarget::Unknown.is_terminal());
+    fn text_detection_distinguishes_unsupported_and_unavailable_windows() {
+        assert!(TextTarget::Unsupported.is_current());
+        assert!(!TextTarget::Unsupported.is_terminal());
+        assert!(!TextTarget::Unavailable.is_current());
+        assert!(!TextTarget::Unavailable.is_terminal());
         let original = ActiveWindow {
             app_id: "editor".into(),
             title: "document".into(),
