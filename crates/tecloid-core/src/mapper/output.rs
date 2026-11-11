@@ -104,7 +104,7 @@ impl OutputHold {
 
     fn deadline(&self, now: Instant) -> Option<Instant> {
         // Text completion does not wake the loop, so poll for it.
-        let text = self.text_until.map(|until| until.min(now + TEXT_HOLD_POLL));
+        let text = self.text_until.map(|_| now + TEXT_HOLD_POLL);
         let typed = self.typed_until.filter(|_| !self.typed.is_empty());
         [self.until, text, typed].into_iter().flatten().min()
     }
@@ -115,6 +115,9 @@ impl OutputHold {
     pub(super) fn hold_typed(&mut self, buf: &mut Vec<EngineOutput>, start: usize, now: Instant) {
         let until = *self.typed_until.get_or_insert(now + MACRO_TYPING_HOLD_MAX);
         if now >= until {
+            let mut later = buf.split_off(start);
+            buf.append(&mut self.typed);
+            buf.append(&mut later);
             return;
         }
         for out in buf.split_off(start) {
@@ -183,7 +186,7 @@ impl OutputHold {
     fn gate_text(&mut self, buf: &mut Vec<EngineOutput>, now: Instant, text_pending: bool) {
         if self
             .text_until
-            .is_some_and(|until| !text_pending || now >= until)
+            .is_some_and(|_| !text_pending)
         {
             self.text_until = None;
             let mut held = std::mem::take(&mut self.after_text);
@@ -1697,6 +1700,21 @@ mod tests {
                 (code(KeyCode::KEY_A), 0),
             ]
         );
+    }
+
+    #[test]
+    fn typing_at_macro_deadline_cannot_overtake_earlier_typing() {
+        let mut hold = OutputHold::default();
+        let now = Instant::now();
+        let key = |key| EngineOutput::KeyRaw { key, down: true };
+        let mut buf = vec![key(KeyCode::KEY_A)];
+        hold.hold_typed(&mut buf, 0, now);
+        buf.push(key(KeyCode::KEY_SPACE));
+        hold.hold_typed(&mut buf, 0, now + MACRO_TYPING_HOLD_MAX);
+        assert!(matches!(buf.as_slice(), [
+            EngineOutput::KeyRaw { key: KeyCode::KEY_A, .. },
+            EngineOutput::KeyRaw { key: KeyCode::KEY_SPACE, .. }
+        ]));
     }
 
     #[test]
