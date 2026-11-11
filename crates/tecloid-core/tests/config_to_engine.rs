@@ -1,5 +1,5 @@
-//! Integration: saved config and profile files → `ConfigDocument` → runtime
-//! config → `Engine` → emitted outputs. Real parsing, validation and profile
+//! Integration: saved config and keymap files → `ConfigDocument` → runtime
+//! config → `Engine` → emitted outputs. Real parsing, validation and keymap
 //! activation; key events and time are synthetic and no evdev/uinput is used,
 //! so the end of the chain is `EngineOutput`, not device events (see `mapper_e2e`).
 #![cfg(any(target_os = "linux", target_os = "windows"))]
@@ -15,7 +15,7 @@ use tecloid_core::{
     },
 };
 
-const PROFILE: &str = r#"{
+const KEYMAP: &str = r#"{
   "version": 1,
   "layers": [{ "id": "nav", "keys": { "KeyH": "ArrowLeft", "KeyJ": "macro:copyLine" } }],
   "rules": [
@@ -32,13 +32,13 @@ fn document(config: &str) -> (tempfile::TempDir, ConfigDocument) {
         directory.path().join("settings"),
         directory.path().join("data"),
     );
-    paths.save_user_profile("Main", PROFILE, true).unwrap();
+    paths.save_user_keymap("Main", KEYMAP, true).unwrap();
     paths.save_config(config).unwrap();
     let document = ConfigDocument::load(paths).unwrap();
     (directory, document)
 }
 
-const MANUAL: &str = r#"{"version":1,"settings":{"profiles":{"manualProfile":"user:Main"}}}"#;
+const MANUAL: &str = r#"{"version":1,"settings":{"keymaps":{"manualKeymap":"user:Main"}}}"#;
 
 fn manual_engine() -> (tempfile::TempDir, Engine) {
     engine_for(MANUAL)
@@ -49,7 +49,7 @@ fn engine_for(config: &str) -> (tempfile::TempDir, Engine) {
     let runtime = document
         .runtime_config(&AutoSwitchContext::default())
         .unwrap();
-    assert_eq!(runtime.profile_id.as_deref(), Some("user:Main"));
+    assert_eq!(runtime.keymap_id.as_deref(), Some("user:Main"));
     (directory, Engine::new(&runtime.mapper))
 }
 
@@ -133,7 +133,7 @@ fn layer_key_runs_the_macro_steps_in_order() {
     assert_eq!(pressed(&run(&mut engine, &press_j_in_layer)), []);
 
     let (_dir, mut engine) = engine_for(
-        r#"{"version":1,"settings":{"experimental":true,"profiles":{"manualProfile":"user:Main"}}}"#,
+        r#"{"version":1,"settings":{"experimental":true,"keymaps":{"manualKeymap":"user:Main"}}}"#,
     );
     let out = run(&mut engine, &press_j_in_layer);
     assert_eq!(
@@ -176,11 +176,11 @@ fn rule_conditions_follow_the_system_context() {
 
 #[test]
 fn auto_mode_without_a_match_passes_keys_through() {
-    let (_dir, document) = document(r#"{"version":1,"settings":{"profiles":{"mode":"auto"}}}"#);
+    let (_dir, document) = document(r#"{"version":1,"settings":{"keymaps":{"mode":"auto"}}}"#);
     let runtime = document
         .runtime_config(&AutoSwitchContext::default())
         .unwrap();
-    assert_eq!(runtime.profile_id, None);
+    assert_eq!(runtime.keymap_id, None);
     let mut engine = Engine::new(&runtime.mapper);
     let out = run(
         &mut engine,

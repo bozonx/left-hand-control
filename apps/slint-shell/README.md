@@ -44,7 +44,7 @@ Software-рендерер Slint (`winit-software`) не собирается: о
 На Windows IPC слушает только `127.0.0.1:43176`; порт можно изменить через
 `TECLOID_PORT`; каждый запрос подписан токеном. Без `TECLOID_DEV_DIR` он хранится в
 `%LOCALAPPDATA%\tecloid-slint-shell\ipc-token`; при override — в каталоге настроек
-этого профиля. Linux и macOS используют Unix socket в приватном
+этого Keymap. Linux и macOS используют Unix socket в приватном
 каталоге `0700`: `$XDG_RUNTIME_DIR/tecloid-slint-shell/` или, без `XDG_RUNTIME_DIR`,
 `<temp>/tecloid-slint-shell-<uid>/`. Ctrl+Alt+F11 открывает Emoji, Ctrl+Alt+F12 — Quick. После выбора на
 Windows/macOS окно скрывается, ранее активное окно восстанавливается через Win32

@@ -461,14 +461,14 @@ fn returning_an_invalid_field_to_the_saved_value_clears_its_problem() {
 
 #[test]
 fn quitting_can_retry_a_write_failure_or_discard_only_unsaved_settings() {
-    use crate::ui::{LibraryDialog, PendingProfileAction, ProfileLibrary};
+    use crate::ui::{KeymapLibrary, LibraryDialog, PendingKeymapAction};
     use std::cell::Cell;
     let (dir, document, ui) = bound_settings();
     let e = ui.global::<SettingsEditor>();
     let original = e.get_hold_timeout();
     let quit = Rc::new(Cell::new(false));
     let requested = quit.clone();
-    ui.global::<ProfileLibrary>()
+    ui.global::<KeymapLibrary>()
         .on_quit(move || requested.set(true));
     std::fs::remove_dir_all(dir.path().join("settings")).unwrap();
     std::fs::write(dir.path().join("settings"), "blocks saving").unwrap();
@@ -484,7 +484,7 @@ fn quitting_can_retry_a_write_failure_or_discard_only_unsaved_settings() {
     assert_eq!(document.read().settings().default_hold_timeout_ms, 350);
     quit.set(false);
 
-    // Discarding settings must still ask about independent profile changes.
+    // Discarding settings must still ask about independent keymap changes.
     document
         .edit(View::Rules, |config| config.create_layer("Keep me", ""))
         .unwrap();
@@ -494,13 +494,13 @@ fn quitting_can_retry_a_write_failure_or_discard_only_unsaved_settings() {
     assert!(!quit.get());
     assert_eq!(e.get_hold_timeout(), "350");
     assert_ne!(e.get_hold_timeout(), original);
-    let library = ui.global::<ProfileLibrary>();
+    let library = ui.global::<KeymapLibrary>();
     assert_eq!(library.get_dialog(), LibraryDialog::Unsaved);
-    assert_eq!(library.get_pending_action(), PendingProfileAction::Quit);
+    assert_eq!(library.get_pending_action(), PendingKeymapAction::Quit);
     assert!(
         document
             .read()
-            .profile()
+            .keymap()
             .layers
             .iter()
             .any(|layer| layer.name == "Keep me")
@@ -558,7 +558,7 @@ fn mapper_start_saves_valid_drafts_and_routes_invalid_drafts_to_settings() {
     assert!(super::super::prepare_mapper_start(&ui));
     assert_eq!(document.read().settings().default_hold_timeout_ms, 350);
     e.set_hold_timeout("".into());
-    ui.set_page(crate::ui::Page::Profiles);
+    ui.set_page(crate::ui::Page::Keymaps);
     assert!(!super::super::prepare_mapper_start(&ui));
     assert_eq!(ui.get_page(), crate::ui::Page::Settings);
     assert_eq!(e.get_tab(), crate::ui::SettingsTab::KeyBehavior);

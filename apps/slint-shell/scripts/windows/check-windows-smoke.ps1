@@ -79,7 +79,7 @@ try {
         return $LASTEXITCODE -eq 0
     }
     Assert-WindowsTestOwner $server
-    # Independent profiles must not overwrite each other's authentication token.
+    # Independent keymaps must not overwrite each other's authentication token.
     $peerSaved = Initialize-WindowsTest (Join-Path $output 'peer')
     try {
         $peer = Start-Process $exe -WorkingDirectory $root -PassThru `

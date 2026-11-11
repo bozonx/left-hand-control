@@ -711,7 +711,7 @@ fn unchecked_exponential_macro_expansion_is_bounded() {
             .contains("expansion exceeds")
     );
     let engine = Engine::new(&cfg);
-    assert!(engine.profile.macros.values().all(|m| m.steps.len() <= 1000));
+    assert!(engine.keymap.macros.values().all(|m| m.steps.len() <= 1000));
 }
 
 #[test]
@@ -781,7 +781,7 @@ fn layer_key_bound_to_an_empty_macro_swallows_the_key() {
     engine.handle_key_event(KeyCode::KEY_Q, false, t, &mut out);
     // Like a tap bound to the same macro: the key does nothing.
     assert!(raw_keys(&out).is_empty());
-    // An empty entry still leaves the key to the base profile.
+    // An empty entry still leaves the key to the base keymap.
     engine.handle_key_event(KeyCode::KEY_W, true, t, &mut out);
     assert_eq!(raw_keys(&out), [(KeyCode::KEY_W, true)]);
 }

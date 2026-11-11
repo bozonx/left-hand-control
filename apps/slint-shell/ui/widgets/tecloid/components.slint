@@ -42,8 +42,8 @@ export component ListItem {
     in property <length> pressed-x;
     in property <length> pressed-y;
 
-    min-width: i-profile.min-width;
-    min-height: max(FluentSizeSettings.item-height, i-profile.min-height);
+    min-width: i-keymap.min-width;
+    min-height: max(FluentSizeSettings.item-height, i-keymap.min-height);
     vertical-stretch: 0;
     horizontal-stretch: 1;
     accessible-role: list-item;
@@ -77,7 +77,7 @@ export component ListItem {
         background: transparent;
         border-radius: 4px;
 
-        i-profile := HorizontalLayout {
+        i-keymap := HorizontalLayout {
             padding-left: 16px;
             padding-right: 16px;
             spacing: 4px;

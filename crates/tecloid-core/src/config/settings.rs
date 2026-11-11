@@ -1,11 +1,11 @@
 //! Versioned application settings. Editor working copies stay in memory.
 
+use super::keymap_file::WhenDoc;
 use super::model::{
     AccessibilityChoice, AppSettings, Appearance, AutoRule, GameModeControl,
-    GameModeProcessMatcher, GameModeSettings, LocalePreference, PasteShortcut, ProfileMode,
+    GameModeProcessMatcher, GameModeSettings, KeymapMode, LocalePreference, PasteShortcut,
     TapDecision, TextMode,
 };
-use super::profile_file::WhenDoc;
 use super::schema::{self, CONFIG_SCHEMA_VERSION};
 use crate::storage::CONFIG_FILE;
 use serde::{Deserialize, Serialize};
@@ -108,14 +108,14 @@ struct SettingsDoc {
     appearance: Appearance,
     high_contrast: AccessibilityChoice,
     reduce_motion: AccessibilityChoice,
-    profile_osd: bool,
+    keymap_osd: bool,
     copy_osd: bool,
     layer_hint: bool,
     locale: LocalePreference,
     #[serde(skip_serializing_if = "DevicesDoc::is_empty")]
     devices: DevicesDoc,
     timing: TimingDoc,
-    profiles: ProfilesDoc,
+    keymaps: KeymapsDoc,
     commands_enabled: bool,
     game_mode: GameModeDoc,
     linux: LinuxDoc,
@@ -161,24 +161,24 @@ impl DevicesDoc {
     }
 }
 
-/// Which library profile the mapper uses.
+/// Which library keymap the mapper uses.
 #[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields, default)]
-struct ProfilesDoc {
-    mode: ProfileMode,
-    /// Profile used in manual mode.
+struct KeymapsDoc {
+    mode: KeymapMode,
+    /// Keymap used in manual mode.
     #[serde(skip_serializing_if = "Option::is_none")]
-    manual_profile: Option<String>,
-    /// Library order: the slots of `activateProfileN` and the order of the
+    manual_keymap: Option<String>,
+    /// Library order: the slots of `activateKeymapN` and the order of the
     /// list. Behaviour, not remembered state, so it lives in settings.
     order: Vec<String>,
     auto: AutoDoc,
 }
 
-impl Default for ProfilesDoc {
+impl Default for KeymapsDoc {
     fn default() -> Self {
-        to_doc(&AppSettings::default()).settings.profiles
+        to_doc(&AppSettings::default()).settings.keymaps
     }
 }
 
@@ -188,13 +188,13 @@ impl Default for ProfilesDoc {
 #[serde(rename_all = "camelCase", deny_unknown_fields, default)]
 struct AutoDoc {
     rules: Vec<AutoRuleDoc>,
-    /// Profile used when no rule matches; `null` turns the mapper off.
+    /// Keymap used when no rule matches; `null` turns the mapper off.
     fallback: Option<String>,
 }
 
 impl Default for AutoDoc {
     fn default() -> Self {
-        to_doc(&AppSettings::default()).settings.profiles.auto
+        to_doc(&AppSettings::default()).settings.keymaps.auto
     }
 }
 
@@ -238,7 +238,7 @@ struct AutoRuleDoc {
     /// Required; an explicit `null` turns the mapper off, so a forgotten
     /// field is an error rather than a silent "off".
     #[serde(deserialize_with = "nullable")]
-    profile: Option<String>,
+    keymap: Option<String>,
     #[serde(default = "yes", skip_serializing_if = "is_true")]
     enabled: bool,
     /// Empty conditions always match.
@@ -407,10 +407,10 @@ fn non_empty(value: Option<String>) -> Option<String> {
     value.filter(|value| !value.trim().is_empty())
 }
 
-/// A profile reference: a profile id or `null`, never an empty string.
-fn profile_ref(value: Option<String>, what: &str) -> Result<Option<String>, String> {
+/// A keymap reference: a keymap id or `null`, never an empty string.
+fn keymap_ref(value: Option<String>, what: &str) -> Result<Option<String>, String> {
     match value {
-        Some(id) if id.trim().is_empty() => Err(format!("{what}: profile id must not be empty")),
+        Some(id) if id.trim().is_empty() => Err(format!("{what}: keymap id must not be empty")),
         value => Ok(value),
     }
 }
@@ -418,7 +418,7 @@ fn profile_ref(value: Option<String>, what: &str) -> Result<Option<String>, Stri
 pub fn validate(settings: &AppSettings) -> Result<(), String> {
     super::ids::unique(
         settings.auto_rules.iter().map(|item| item.id.as_str()),
-        "settings.profiles.auto.rules",
+        "settings.keymaps.auto.rules",
     )?;
     super::ids::unique(
         settings
@@ -434,14 +434,14 @@ pub fn validate(settings: &AppSettings) -> Result<(), String> {
 fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
     let mut ids: Vec<_> = doc
         .settings
-        .profiles
+        .keymaps
         .auto
         .rules
         .iter_mut()
         .map(|item| item.id.take())
         .collect();
-    super::ids::complete(&mut ids, "rule-", "settings.profiles.auto.rules")?;
-    for (item, id) in doc.settings.profiles.auto.rules.iter_mut().zip(ids) {
+    super::ids::complete(&mut ids, "rule-", "settings.keymaps.auto.rules")?;
+    for (item, id) in doc.settings.keymaps.auto.rules.iter_mut().zip(ids) {
         item.id = id;
     }
     let mut ids: Vec<_> = doc
@@ -460,14 +460,14 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
     let detectors = settings.game_mode.detectors;
     let keyboard_device = DevicesDoc::single(settings.devices.keyboards, "keyboards")?;
     let mouse_device = DevicesDoc::single(settings.devices.mice, "mice")?;
-    let profiles = settings.profiles;
+    let keymaps = settings.keymaps;
     let mut auto_rules = Vec::new();
-    for (index, rule) in profiles.auto.rules.into_iter().enumerate() {
+    for (index, rule) in keymaps.auto.rules.into_iter().enumerate() {
         auto_rules.push(AutoRule {
             id: rule.id.unwrap_or_default(),
-            profile_id: profile_ref(
-                rule.profile,
-                &format!("settings.profiles.auto.rules[{index}]"),
+            keymap_id: keymap_ref(
+                rule.keymap,
+                &format!("settings.keymaps.auto.rules[{index}]"),
             )?,
             enabled: rule.enabled,
             conditions: rule.when.into_set()?.normalized(),
@@ -481,7 +481,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
         appearance: settings.appearance,
         high_contrast: settings.high_contrast,
         reduce_motion: settings.reduce_motion,
-        profile_osd: settings.profile_osd,
+        keymap_osd: settings.keymap_osd,
         copy_osd: settings.copy_osd,
         layer_hint: settings.layer_hint,
         locale: settings.locale,
@@ -495,14 +495,14 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
         macro_timeout_ms: timing.macro_timeout_ms,
         input_device_path: Some(keyboard_device.unwrap_or_default()),
         input_mouse_device_path: mouse_device,
-        editing_profile_id: None,
-        profile_mode: profiles.mode,
-        manual_profile_id: non_empty(profiles.manual_profile),
-        profile_order: profiles.order,
+        editing_keymap_id: None,
+        keymap_mode: keymaps.mode,
+        manual_keymap_id: non_empty(keymaps.manual_keymap),
+        keymap_order: keymaps.order,
         auto_rules,
-        auto_default_profile_id: profile_ref(
-            profiles.auto.fallback,
-            "settings.profiles.auto.fallback",
+        auto_default_keymap_id: keymap_ref(
+            keymaps.auto.fallback,
+            "settings.keymaps.auto.fallback",
         )?,
         commands_enabled: settings.commands_enabled,
         game_mode: GameModeSettings {
@@ -550,7 +550,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
             appearance: settings.appearance,
             high_contrast: settings.high_contrast,
             reduce_motion: settings.reduce_motion,
-            profile_osd: settings.profile_osd,
+            keymap_osd: settings.keymap_osd,
             copy_osd: settings.copy_osd,
             layer_hint: settings.layer_hint,
             locale: settings.locale,
@@ -570,22 +570,22 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
                 macro_modifier_delay_ms: settings.default_macro_modifier_delay_ms,
                 macro_timeout_ms: settings.macro_timeout_ms,
             },
-            profiles: ProfilesDoc {
-                mode: settings.profile_mode,
-                manual_profile: filled(&settings.manual_profile_id),
-                order: settings.profile_order.clone(),
+            keymaps: KeymapsDoc {
+                mode: settings.keymap_mode,
+                manual_keymap: filled(&settings.manual_keymap_id),
+                order: settings.keymap_order.clone(),
                 auto: AutoDoc {
                     rules: settings
                         .auto_rules
                         .iter()
                         .map(|rule| AutoRuleDoc {
                             id: Some(rule.id.clone()).filter(|id| !id.is_empty()),
-                            profile: filled(&rule.profile_id),
+                            keymap: filled(&rule.keymap_id),
                             enabled: rule.enabled,
                             when: WhenDoc::from_set(&rule.conditions),
                         })
                         .collect(),
-                    fallback: filled(&settings.auto_default_profile_id),
+                    fallback: filled(&settings.auto_default_keymap_id),
                 },
             },
             commands_enabled: settings.commands_enabled,
@@ -711,12 +711,12 @@ mod tests {
     fn ids_are_unique_and_generated_without_collisions() {
         for field in ["autoRules", "processes"] {
             let items = if field == "autoRules" {
-                serde_json::json!([{"id":"x","profile":null},{"id":"x","profile":null}])
+                serde_json::json!([{"id":"x","keymap":null},{"id":"x","keymap":null}])
             } else {
                 serde_json::json!([{"id":"x","name":"a"},{"id":"x","name":"b"}])
             };
             let settings = if field == "autoRules" {
-                serde_json::json!({"profiles":{"auto":{"rules":items}}})
+                serde_json::json!({"keymaps":{"auto":{"rules":items}}})
             } else {
                 serde_json::json!({"gameMode":{field:items}})
             };
@@ -727,7 +727,7 @@ mod tests {
             );
         }
         let settings = parse(&config(serde_json::json!({
-            "profiles":{"auto":{"rules":[{"profile":null}, {"id":"rule-1","profile":null}]}},
+            "keymaps":{"auto":{"rules":[{"keymap":null}, {"id":"rule-1","keymap":null}]}},
             "gameMode":{"processes":[{"name":"a"},{"id":"process-1","name":"b"}]}
         })))
         .unwrap();
@@ -843,19 +843,19 @@ mod tests {
             json!({"linux": {"pasteShortcut": "shift-insert"}}),
             json!({"linux": {"pasteShortcut": "Alt+KeyV"}}),
             json!({"inDevelopment": true}),
-            json!({"activeProfileId": "user:A"}),
+            json!({"activeKeymapId": "user:A"}),
             json!({"futureOption": 7}),
             json!({"timing": {"holdMs": "fast"}}),
             json!({"timing": {"tapDecision": "sometimes"}}),
             json!({"linux": {"textMode": "magic"}}),
             json!({"gameMode": {"detectors": {"origin": true}}}),
             json!({"gameMode": {"processes": [{"name": "steam", "isBlacklist": true}]}}),
-            json!({"profiles": {"auto": {"rules": [{"profile": "user:A", "window_patterns": ["kate"]}]}}}),
-            json!({"profiles": {"auto": {"rules": [{"when": {"gameMode": "on"}}]}}}),
-            json!({"profiles": {"auto": {"rules": [{"profile": ""}]}}}),
-            json!({"profiles": {"auto": {"fallback": " "}}}),
-            json!({"profiles": {"auto": {"rules": [{"id": "a b", "profile": null}]}}}),
-            json!({"profiles": {"active": "user:A"}}),
+            json!({"keymaps": {"auto": {"rules": [{"keymap": "user:A", "window_patterns": ["kate"]}]}}}),
+            json!({"keymaps": {"auto": {"rules": [{"when": {"gameMode": "on"}}]}}}),
+            json!({"keymaps": {"auto": {"rules": [{"keymap": ""}]}}}),
+            json!({"keymaps": {"auto": {"fallback": " "}}}),
+            json!({"keymaps": {"auto": {"rules": [{"id": "a b", "keymap": null}]}}}),
+            json!({"keymaps": {"active": "user:A"}}),
             json!({"keyboardDevice": "/dev/input/event1"}),
             json!({"devices": {"keyboards": ["/dev/a", "/dev/b"]}}),
             json!({"devices": {"mice": [""]}}),
@@ -883,21 +883,21 @@ mod tests {
             tap_decision: TapDecision::HoldOnOtherKeyPress,
             input_device_path: Some("/dev/input/by-id/kbd".into()),
             input_mouse_device_path: Some("/dev/input/by-id/mouse".into()),
-            profile_mode: ProfileMode::Auto,
-            manual_profile_id: Some("user:Other".into()),
-            profile_order: vec!["user:Other".into(), "user:Main".into()],
+            keymap_mode: KeymapMode::Auto,
+            manual_keymap_id: Some("user:Other".into()),
+            keymap_order: vec!["user:Other".into(), "user:Main".into()],
             auto_rules: vec![AutoRule {
                 id: "a".into(),
-                profile_id: None,
+                keymap_id: None,
                 enabled: false,
-                conditions: super::super::model::ProfileConditionSet {
+                conditions: super::super::model::KeymapConditionSet {
                     game_mode: Some(crate::config::model::GameModeCondition::On),
                     keyboard_layouts: vec!["us".into()],
                     window_patterns: vec!["blender".into()],
                     excluded_window_patterns: vec!["title:Preferences".into()],
                 },
             }],
-            auto_default_profile_id: Some("user:Main".into()),
+            auto_default_keymap_id: Some("user:Main".into()),
             commands_enabled: true,
             game_mode: GameModeSettings {
                 use_fullscreen: true,
@@ -932,21 +932,21 @@ mod tests {
         assert_eq!(raw["settings"]["gameMode"]["processes"][0]["exclude"], true);
         assert!(raw.get("state").is_none());
         assert_eq!(raw["settings"]["gameMode"]["control"], "on");
-        let profiles = &raw["settings"]["profiles"];
-        assert_eq!(profiles["mode"], "auto");
-        assert_eq!(profiles["order"], json!(["user:Other", "user:Main"]));
-        assert!(raw["state"].get("profileOrder").is_none());
+        let keymaps = &raw["settings"]["keymaps"];
+        assert_eq!(keymaps["mode"], "auto");
+        assert_eq!(keymaps["order"], json!(["user:Other", "user:Main"]));
+        assert!(raw["state"].get("keymapOrder").is_none());
         assert_eq!(
-            profiles["auto"]["rules"][0]["when"]["excludeWindows"],
+            keymaps["auto"]["rules"][0]["when"]["excludeWindows"],
             json!(["title:Preferences"])
         );
-        assert_eq!(profiles["auto"]["rules"][0]["profile"], Value::Null);
-        assert_eq!(profiles["auto"]["fallback"], "user:Main");
+        assert_eq!(keymaps["auto"]["rules"][0]["keymap"], Value::Null);
+        assert_eq!(keymaps["auto"]["fallback"], "user:Main");
         assert_eq!(
             raw["settings"]["devices"],
             json!({"keyboards": ["/dev/input/by-id/kbd"], "mice": ["/dev/input/by-id/mouse"]})
         );
-        assert_eq!(profiles["manualProfile"], "user:Other");
+        assert_eq!(keymaps["manualKeymap"], "user:Other");
     }
 
     #[test]
@@ -1040,12 +1040,12 @@ mod tests {
 
     #[test]
     fn editor_identity_is_not_persisted() {
-        let settings = parse(r#"{"version":1,"settings":{"profiles":{"manualProfile":"user:Active"},"gameMode":{"control":"on"}}}"#).unwrap();
-        assert!(settings.editing_profile_id.is_none());
-        assert_eq!(settings.manual_profile_id.as_deref(), Some("user:Active"));
+        let settings = parse(r#"{"version":1,"settings":{"keymaps":{"manualKeymap":"user:Active"},"gameMode":{"control":"on"}}}"#).unwrap();
+        assert!(settings.editing_keymap_id.is_none());
+        assert_eq!(settings.manual_keymap_id.as_deref(), Some("user:Active"));
         assert_eq!(settings.game_mode.control, GameModeControl::On);
         let mut editing = settings.clone();
-        editing.editing_profile_id = Some("user:Editor".into());
+        editing.editing_keymap_id = Some("user:Editor".into());
         let saved = serialize(&editing);
         assert_eq!(parse(&saved).unwrap(), settings);
         let raw: Value = serde_json::from_str(&saved).unwrap();
@@ -1058,10 +1058,10 @@ mod tests {
 
     #[test]
     fn auto_rules_without_ids_get_deterministic_ids() {
-        let settings = parse(&config(json!({"profiles": {"auto": {
+        let settings = parse(&config(json!({"keymaps": {"auto": {
             "rules": [
-                {"id": "a", "profile": "user:A", "when": {"windows": ["blender"]}},
-                {"profile": null, "enabled": false},
+                {"id": "a", "keymap": "user:A", "when": {"windows": ["blender"]}},
+                {"keymap": null, "enabled": false},
             ],
             "fallback": "user:B",
         }}})))
@@ -1072,9 +1072,9 @@ mod tests {
             ["blender"]
         );
         assert_eq!(settings.auto_rules[1].id, "rule-1");
-        assert_eq!(settings.auto_rules[1].profile_id, None);
+        assert_eq!(settings.auto_rules[1].keymap_id, None);
         assert!(!settings.auto_rules[1].enabled);
         assert!(settings.auto_rules[1].conditions.is_empty());
-        assert_eq!(settings.auto_default_profile_id.as_deref(), Some("user:B"));
+        assert_eq!(settings.auto_default_keymap_id.as_deref(), Some("user:B"));
     }
 }

@@ -4,7 +4,7 @@ use super::Engine;
 use super::model::{
     CompiledAction, CompiledMacro, CompiledMacroStep, HoldOutputMode, RuleEntry, TapMode,
 };
-use super::state::{ChordState, CompiledProfile, LayerStack, MacroRunner, VirtualKeys};
+use super::state::{ChordState, CompiledKeymap, LayerStack, MacroRunner, VirtualKeys};
 use crate::mapper::action::{MacroStepItem, parse_action, pause_duration};
 use crate::mapper::builtin_macros::BUILTIN_MACROS;
 use crate::mapper::config::{ActionSpec, MapperConfig};
@@ -45,7 +45,7 @@ impl Engine {
                 commands.insert(id.to_string(), command);
             }
         } else {
-            log::debug!("[mapper] shell commands are disabled for this profile");
+            log::debug!("[mapper] shell commands are disabled for this keymap");
         }
 
         let mut raw_user_macros: HashMap<String, &crate::mapper::config::Macro> = HashMap::new();
@@ -410,7 +410,7 @@ impl Engine {
                 };
                 let def = match action.as_deref() {
                     None => CompiledAction::Swallow,
-                    // An empty entry leaves the key to the base profile.
+                    // An empty entry leaves the key to the base keymap.
                     Some(s) if s.trim().is_empty() => continue,
                     // An entry that does nothing here (an empty macro, a key
                     // this OS lacks) still covers the key, as a tap action
@@ -425,7 +425,7 @@ impl Engine {
         }
 
         Self {
-            profile: CompiledProfile {
+            keymap: CompiledKeymap {
                 rules,
                 chord_rules,
                 macros,

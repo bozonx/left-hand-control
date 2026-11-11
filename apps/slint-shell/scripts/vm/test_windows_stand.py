@@ -145,7 +145,7 @@ class WindowsStandTests(unittest.TestCase):
         probe = Mock()
         probe.ps.return_value = 'True'
         probe.reset.side_effect = StepFailed('original popup mismatch')
-        probe.read.side_effect = [json.dumps({'profile': 'test', 'port': 1234, 'exe': 'tecloid', 'pid': 1}), StepFailed('SSH unavailable during cleanup')]
+        probe.read.side_effect = [json.dumps({'keymap': 'test', 'port': 1234, 'exe': 'tecloid', 'pid': 1}), StepFailed('SSH unavailable during cleanup')]
         with patch.object(windows_popups, 'WindowsMapper', return_value=probe), \
              contextlib.redirect_stdout(io.StringIO()), \
              self.assertRaisesRegex(StepFailed, 'original popup mismatch'):

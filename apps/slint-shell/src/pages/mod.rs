@@ -106,7 +106,7 @@ pub fn bind_document_with_input(
     let menus = menus::bind(ui, document);
     picker::bind(ui, document, input, picker::Drafts { macros, menus });
     settings::bind(ui, document);
-    let library = ui.global::<crate::ui::ProfileLibrary>();
+    let library = ui.global::<crate::ui::KeymapLibrary>();
     on!(ui, library.on_discard_drafts => |ui| {
         ui.global::<crate::ui::MacroEditor>().invoke_refresh();
         ui.global::<crate::ui::MenuEditor>().invoke_refresh();

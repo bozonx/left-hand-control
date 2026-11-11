@@ -64,7 +64,7 @@ xkb_symbols "extra" {
 Опцию добавляем к уже настроенным в `~/.config/kxkbrc`:
 
 ```
-[Profile]
+[Keymap]
 Options=terminate:ctrl_alt_bksp,tecloid:extra
 ```
 
@@ -118,11 +118,11 @@ Wayland-приложениях: X11 (XWayland) их не поддерживае�
    текст уйдёт в буфер.
 4. Найти свободные коды и распределить по ним символы: коды до 255 — частым символам.
 5. Записать `symbols/tecloid` и `rules/evdev` во временный каталог и проверить сборку:
-   `xkbcli compile-keymap --include <tmp> --include-defaults --profile … --options …,tecloid:extra`.
+   `xkbcli compile-keymap --include <tmp> --include-defaults --keymap … --options …,tecloid:extra`.
    Если сборка не удалась, ничего не менять.
 6. Атомарно заменить файлы в `~/.config/xkb/`, добавить `tecloid:extra` в `Options` в
    `kxkbrc`, если его там нет.
-7. Попросить KWin перечитать раскладку (`dbus-send --session --type=signal /Profiles
+7. Попросить KWin перечитать раскладку (`dbus-send --session --type=signal /Keymaps
    org.kde.keyboard.reloadConfig`; не проверено) или попросить пользователя перезайти.
 8. Перезапускать при изменении символов в конфиге.
 

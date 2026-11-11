@@ -372,7 +372,7 @@ mod tests {
             ["macro:missing", "KeyA"],
             ["builtin:copyLineText", "text:macro:a"],
         ] {
-            let profile = model::ProfilePreset {
+            let keymap = model::KeymapPreset {
                 macros: ["a", "b"]
                     .into_iter()
                     .zip(steps)
@@ -390,9 +390,9 @@ mod tests {
                 ..Default::default()
             };
             let mapper: MapperConfig =
-                serde_json::from_value(serde_json::to_value(&profile).unwrap()).unwrap();
+                serde_json::from_value(serde_json::to_value(&keymap).unwrap()).unwrap();
             let editor =
-                model::ResolvedAppConfig::from_parts(model::AppSettings::default(), profile, None);
+                model::ResolvedAppConfig::from_parts(model::AppSettings::default(), keymap, None);
             assert_eq!(
                 editor
                     .macros

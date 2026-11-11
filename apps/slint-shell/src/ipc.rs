@@ -805,7 +805,7 @@ mod tests {
         );
         let (dispatch, seen) = self::dispatch();
         for (command, endpoint) in [
-            ("popup-profile null", Endpoint::Settings),
+            ("popup-keymap null", Endpoint::Settings),
             ("execute KeyA", Endpoint::PopupWorker),
             ("show settings", Endpoint::PopupWorker),
         ] {

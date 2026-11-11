@@ -23,11 +23,11 @@ function Initialize-WindowsTest([string]$Output) {
     return $saved
 }
 
-# Popup scenarios explicitly opt in; ordinary profiles keep the product default.
+# Popup scenarios explicitly opt in; ordinary keymaps keep the product default.
 function Enable-WindowsTestDevelopment {
-    $profileRoot = Join-Path $env:TECLOID_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.tecloid'
-    New-Item -ItemType Directory -Force -Path $profileRoot | Out-Null
-    [IO.File]::WriteAllText((Join-Path $profileRoot 'config.json'), '{"version":1,"settings":{"experimental":true,"startMapperOnLaunch":false},"state":{"gameModeSwitch":"off"}}', [Text.UTF8Encoding]::new($false))
+    $keymapRoot = Join-Path $env:TECLOID_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.tecloid'
+    New-Item -ItemType Directory -Force -Path $keymapRoot | Out-Null
+    [IO.File]::WriteAllText((Join-Path $keymapRoot 'config.json'), '{"version":1,"settings":{"experimental":true,"startMapperOnLaunch":false},"state":{"gameModeSwitch":"off"}}', [Text.UTF8Encoding]::new($false))
 }
 
 function Restore-WindowsTest($Saved) {

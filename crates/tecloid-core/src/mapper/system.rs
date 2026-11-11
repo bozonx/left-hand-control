@@ -308,13 +308,13 @@ mod tests {
     use crate::config::app_action::{AppAction, GameModeRequest, Menu};
     use std::num::NonZeroU32;
     #[test]
-    fn resolve_window_and_profile_actions() {
+    fn resolve_window_and_keymap_actions() {
         for (name, event) in [
             ("showQuickMenuRecent", AppAction::ShowMenu { menu: Menu::Quick, page: None }),
             ("showEmojiMenuRecent", AppAction::ShowMenu { menu: Menu::Emoji, page: None }),
             ("showSettings", AppAction::ShowSettings),
-            ("activateProfile1", AppAction::ActivateProfile(NonZeroU32::new(1).unwrap())),
-            ("activateProfile5", AppAction::ActivateProfile(NonZeroU32::new(5).unwrap())),
+            ("activateKeymap1", AppAction::ActivateKeymap(NonZeroU32::new(1).unwrap())),
+            ("activateKeymap5", AppAction::ActivateKeymap(NonZeroU32::new(5).unwrap())),
         ] {
             let Some(SystemAction::AppEvent(resolved)) = resolve_app(name) else {
                 panic!("{name} did not resolve to an AppEvent");
@@ -322,7 +322,7 @@ mod tests {
             assert_eq!(resolved, event);
             assert!(crate::config::actions::app_action_name(name).is_some());
         }
-        assert!(resolve_app("activateProfile6").is_none());
+        assert!(resolve_app("activateKeymap6").is_none());
     }
 
     #[test]

@@ -23,7 +23,7 @@ export component MenuBarItemBase {
         background: root.default-background;
 
         touch-area := TouchArea {
-            profile := HorizontalLayout {
+            keymap := HorizontalLayout {
                 padding-top: root.top-padding;
                 padding-bottom: root.bottom-padding;
                 padding-left: root.horizontal-padding;
@@ -62,14 +62,14 @@ export component MenuBarItemBase {
 }
 
 export component MenuBarBase inherits Rectangle {
-    in property <length> spacing <=> profile.spacing;
-    in property <LayoutAlignment> alignment <=> profile.alignment;
-    in property <length> min-profile-height;
+    in property <length> spacing <=> keymap.spacing;
+    in property <LayoutAlignment> alignment <=> keymap.alignment;
+    in property <length> min-keymap-height;
     in property <length> horizontal-padding;
 
-    min-height: max(root.min-profile-height, profile.min-height);
+    min-height: max(root.min-keymap-height, keymap.min-height);
 
-    profile := HorizontalLayout {
+    keymap := HorizontalLayout {
         alignment: start;
         padding-left: root.horizontal-padding;
         padding-right: root.horizontal-padding;
@@ -79,14 +79,14 @@ export component MenuBarBase inherits Rectangle {
 }
 
 export component MenuFrameBase inherits Rectangle {
-    in property <length> spacing <=> profile.spacing;
-    in property <length> profile-min-width;
+    in property <length> spacing <=> keymap.spacing;
+    in property <length> keymap-min-width;
     in property <length> margin;
 
     clip: true;
-    min-width: max(root.profile-min-width, profile.min-width);
+    min-width: max(root.keymap-min-width, keymap.min-width);
 
-    profile := VerticalLayout {
+    keymap := VerticalLayout {
         padding: root.margin;
         @children
     }
@@ -110,7 +110,7 @@ export component MenuItemBase {
     init => { open-time = animation-tick(); }
     in property <MenuEntry> entry;
     in property <image> sub-menu-icon;
-    in property <length> spacing <=> profile.spacing;
+    in property <length> spacing <=> keymap.spacing;
     in property <length> icon-size;
     in property <length> horizontal-padding;
     in property <length> vertical-padding;
@@ -126,7 +126,7 @@ export component MenuItemBase {
             visible: !entry.is-separator;
             enabled: entry.enabled;
 
-            profile := HorizontalLayout {
+            keymap := HorizontalLayout {
                 padding-top: root.vertical-padding;
                 padding-bottom: root.vertical-padding;
                 padding-left: root.horizontal-padding;

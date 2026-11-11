@@ -73,26 +73,26 @@ pub(crate) fn complete(ids: &mut [Option<String>], prefix: &str, path: &str) -> 
     Ok(())
 }
 
-pub(crate) fn validate_profile(profile: &super::model::ProfilePreset) -> Result<(), String> {
-    unique(profile.layers.iter().map(|item| item.id.as_str()), "layers")?;
-    unique(profile.rules.iter().map(|item| item.id.as_str()), "rules")?;
-    unique(profile.macros.iter().map(|item| item.id.as_str()), "macros")?;
+pub(crate) fn validate_keymap(keymap: &super::model::KeymapPreset) -> Result<(), String> {
+    unique(keymap.layers.iter().map(|item| item.id.as_str()), "layers")?;
+    unique(keymap.rules.iter().map(|item| item.id.as_str()), "rules")?;
+    unique(keymap.macros.iter().map(|item| item.id.as_str()), "macros")?;
     unique(
-        profile.commands.iter().map(|item| item.id.as_str()),
+        keymap.commands.iter().map(|item| item.id.as_str()),
         "commands",
     )?;
     unique(
-        profile
+        keymap
             .quick_action_pages
             .iter()
             .map(|item| item.id.as_str()),
         "quickMenuPages",
     )?;
     unique(
-        profile.emoji_pages.iter().map(|item| item.id.as_str()),
+        keymap.emoji_pages.iter().map(|item| item.id.as_str()),
         "emojiMenuPages",
     )?;
-    for item in &profile.macros {
+    for item in &keymap.macros {
         unique(
             item.steps.iter().map(|step| step.id.as_str()),
             &format!("macros[{}].steps", item.id),

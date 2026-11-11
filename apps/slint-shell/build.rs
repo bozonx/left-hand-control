@@ -109,7 +109,7 @@ fn build() {
     }
     generated.push_str("} }\n");
     std::fs::write(output.join("rust_translations.rs"), generated).unwrap();
-    let debug = std::env::var("PROFILE").is_ok_and(|profile| profile == "debug");
+    let debug = std::env::var("KEYMAP").is_ok_and(|keymap| keymap == "debug");
     // Debug builds also bundle a pseudo-translation for layout scenarios.
     let bundled = if debug {
         let dir = output.join("translations");

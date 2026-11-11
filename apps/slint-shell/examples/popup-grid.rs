@@ -115,7 +115,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     emoji.show()?;
     quick.show()?;
     slint::Timer::single_shot(Duration::from_millis(150), move || {
-        // Resolve profile before injecting pointer events.
+        // Resolve keymap before injecting pointer events.
         let _ = emoji.window().take_snapshot().unwrap();
         let _ = quick.window().take_snapshot().unwrap();
         emoji.invoke_prepare();

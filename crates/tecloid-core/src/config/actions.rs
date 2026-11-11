@@ -106,7 +106,7 @@ fn unknown_prefix(value: &str) -> bool {
 pub enum ActionName {
     /// Built-in system action; the id is the `sys:` id without its number.
     System { id: &'static str, n: u32 },
-    /// Built-in app action (`showQuickMenu`, `activateProfile`, …).
+    /// Built-in app action (`showQuickMenu`, `activateKeymap`, …).
     App { id: &'static str, n: u32 },
     /// Built-in macro; its id is translated by the shell.
     BuiltinMacro { id: &'static str },
@@ -169,11 +169,11 @@ const MACOS_UNSUPPORTED_SYSTEM_ACTIONS: [&str; 13] = [
 ];
 
 /// Numbered actions have ids 1…10 (system), 1… without an upper bound
-/// (menu pages) and 1…5 (profiles in library order).
+/// (menu pages) and 1…5 (keymaps in library order).
 ///
-/// Menu pages and profiles are addressed by position on purpose, not by id:
+/// Menu pages and keymaps are addressed by position on purpose, not by id:
 /// the user binds keys to slots once and changes what a key opens by
-/// reordering pages or library profiles, which the UI shows. Reordering
+/// reordering pages or library keymaps, which the UI shows. Reordering
 /// therefore does not rewrite these actions. Do not switch them to ids.
 /// Highest N of numbered system actions (`switchToKeyboardLayoutN`, …) the config accepts.
 pub const SYSTEM_NUMBERED_COUNT: u32 = 10;
@@ -183,7 +183,7 @@ pub const MENU_PAGE_PICKER_COUNT: u32 = 10;
 pub const MAX_MACRO_DEPTH: usize = 10;
 /// Most steps a macro may expand to, nested macros included.
 pub const MAX_MACRO_STEPS: usize = 1000;
-pub const PROFILE_SLOT_COUNT: u32 = 5;
+pub const KEYMAP_SLOT_COUNT: u32 = 5;
 
 /// Split `switchToDesktop3` into its catalog name and number.
 fn numbered(id: &str, names: &[&'static str], max: u32) -> Option<(&'static str, u32)> {
@@ -255,7 +255,7 @@ pub const SHOW_QUICK_MENU_RECENT: &str = "tecloid:showQuickMenuRecent";
 
 pub fn app_action_name(id: &str) -> Option<ActionName> {
     numbered(id, &["showQuickMenu", "showEmojiMenu"], u32::MAX)
-        .or_else(|| numbered(id, &["activateProfile"], PROFILE_SLOT_COUNT))
+        .or_else(|| numbered(id, &["activateKeymap"], KEYMAP_SLOT_COUNT))
         .map(|(id, n)| ActionName::App { id, n })
         .or_else(|| {
             WINDOW_APP_ACTIONS
@@ -309,7 +309,7 @@ pub fn app_actions() -> Vec<CatalogEntry> {
             (1..=MENU_PAGE_PICKER_COUNT)
                 .flat_map(|n| ["showQuickMenu", "showEmojiMenu"].map(|id| numbered(id, n))),
         )
-        .chain((1..=PROFILE_SLOT_COUNT).map(|n| numbered("activateProfile", n)))
+        .chain((1..=KEYMAP_SLOT_COUNT).map(|n| numbered("activateKeymap", n)))
         .chain(GAME_MODE_APP_ACTIONS.map(plain))
         .collect()
 }
@@ -489,7 +489,7 @@ pub fn valid_held_key(value: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::model::{AppSettings, ProfilePreset};
+    use crate::config::model::{AppSettings, KeymapPreset};
 
     #[test]
     fn parse_and_format_round_trip() {
@@ -536,7 +536,7 @@ mod tests {
     #[test]
     fn unknown_action_types_are_kept_and_reported() {
         let config =
-            ResolvedAppConfig::from_parts(AppSettings::default(), ProfilePreset::default(), None);
+            ResolvedAppConfig::from_parts(AppSettings::default(), KeymapPreset::default(), None);
         assert_eq!(
             Action::parse(Some(" newKind:some value ")),
             Action::Unknown("newKind:some value".into())
@@ -589,7 +589,7 @@ mod tests {
         assert_eq!(menu_page("showQuickMenu42"), Some((false, 42)));
         assert_eq!(menu_page("showQuickMenu0"), None);
         assert_eq!(menu_page("toggleGameMode"), None);
-        assert_eq!(menu_page("activateProfile2"), None);
+        assert_eq!(menu_page("activateKeymap2"), None);
         assert_eq!(menu_page("showEmojiMenuRecent"), None);
         assert_eq!(
             app_action_name("setGameModeOff"),
@@ -599,13 +599,13 @@ mod tests {
             })
         );
         assert_eq!(
-            app_action_name("activateProfile5"),
+            app_action_name("activateKeymap5"),
             Some(ActionName::App {
-                id: "activateProfile",
+                id: "activateKeymap",
                 n: 5
             })
         );
-        assert_eq!(app_action_name("activateProfile6"), None);
+        assert_eq!(app_action_name("activateKeymap6"), None);
         assert!(app_action_name("showQuickMenuRecent").is_some());
         assert!(app_action_name("showSettings").is_some());
     }
@@ -613,7 +613,7 @@ mod tests {
     #[test]
     fn builtin_macro_labels_are_typed_and_user_names_stay_verbatim() {
         let mut config =
-            ResolvedAppConfig::from_parts(AppSettings::default(), ProfilePreset::initial(), None);
+            ResolvedAppConfig::from_parts(AppSettings::default(), KeymapPreset::initial(), None);
         config.macros.push(super::super::model::Macro {
             id: "copyLine".into(),
             name: "Copy line".into(),
@@ -638,7 +638,7 @@ mod tests {
     #[test]
     fn execution_issues_follow_what_this_os_runs() {
         let mut config =
-            ResolvedAppConfig::from_parts(AppSettings::default(), ProfilePreset::default(), None);
+            ResolvedAppConfig::from_parts(AppSettings::default(), KeymapPreset::default(), None);
         let other_os_only = if cfg!(target_os = "windows") {
             ("true", "")
         } else {
@@ -691,7 +691,7 @@ mod tests {
     #[test]
     fn validation_checks_references() {
         let config =
-            ResolvedAppConfig::from_parts(AppSettings::default(), ProfilePreset::initial(), None);
+            ResolvedAppConfig::from_parts(AppSettings::default(), KeymapPreset::initial(), None);
         let check = |raw: &str| validate(&Action::parse(Some(raw)), &config);
         assert_eq!(check("Ctrl+KeyC"), None);
         assert_eq!(check("Ctrl+"), Some(ActionIssue::InvalidSyntax));

@@ -320,7 +320,7 @@ pub fn analyze(config: &ResolvedAppConfig) -> Vec<RuleIssue> {
         if rule.conditions.window_patterns.iter().any(invalid_pattern) {
             add(
                 RuleIssueCode::InvalidCondition,
-                format!("settings.profiles.auto.rules[{index}].when.windows"),
+                format!("settings.keymaps.auto.rules[{index}].when.windows"),
             );
         }
         if rule
@@ -331,7 +331,7 @@ pub fn analyze(config: &ResolvedAppConfig) -> Vec<RuleIssue> {
         {
             add(
                 RuleIssueCode::InvalidCondition,
-                format!("settings.profiles.auto.rules[{index}].when.excludeWindows"),
+                format!("settings.keymaps.auto.rules[{index}].when.excludeWindows"),
             );
         }
     }
@@ -363,15 +363,13 @@ fn conditions_overlap(a: &KeyRule, b: &KeyRule) -> bool {
     if game(a).is_some() && game(b).is_some() && game(a) != game(b) {
         return false;
     }
-    let (a_profiles, b_profiles) = (
+    let (a_keymaps, b_keymaps) = (
         list(&a.condition_keyboard_layouts),
         list(&b.condition_keyboard_layouts),
     );
-    if !a_profiles.is_empty()
-        && !b_profiles.is_empty()
-        && !a_profiles
-            .iter()
-            .any(|profile| b_profiles.contains(profile))
+    if !a_keymaps.is_empty()
+        && !b_keymaps.is_empty()
+        && !a_keymaps.iter().any(|keymap| b_keymaps.contains(keymap))
     {
         return false;
     }
@@ -385,19 +383,17 @@ fn conditions_overlap(a: &KeyRule, b: &KeyRule) -> bool {
 }
 
 fn conditions_cover(earlier: &KeyRule, later: &KeyRule) -> bool {
-    let profiles = list(&earlier.condition_keyboard_layouts);
-    let later_profiles = list(&later.condition_keyboard_layouts);
+    let keymaps = list(&earlier.condition_keyboard_layouts);
+    let later_keymaps = list(&later.condition_keyboard_layouts);
     let window_patterns = list(&earlier.condition_window_patterns);
     let later_apps = list(&later.condition_window_patterns);
     let excluded = list(&earlier.condition_excluded_window_patterns);
     let later_excluded = list(&later.condition_excluded_window_patterns);
     conditions_overlap(earlier, later)
         && (game(earlier).is_none() || game(earlier) == game(later))
-        && (profiles.is_empty()
-            || (!later_profiles.is_empty()
-                && later_profiles
-                    .iter()
-                    .all(|profile| profiles.contains(profile))))
+        && (keymaps.is_empty()
+            || (!later_keymaps.is_empty()
+                && later_keymaps.iter().all(|keymap| keymaps.contains(keymap))))
         && (window_patterns.is_empty()
             || (!later_apps.is_empty()
                 && later_apps.iter().all(|pattern| {
@@ -422,17 +418,17 @@ pub fn retain_runtime_rules(config: &mut ResolvedAppConfig) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::model::{AppSettings, Layer, ProfilePreset};
+    use crate::config::model::{AppSettings, KeymapPreset, Layer};
 
     fn config(rules: Vec<KeyRule>) -> ResolvedAppConfig {
-        let preset = ProfilePreset {
+        let preset = KeymapPreset {
             layers: vec![Layer {
                 id: "nav".into(),
                 name: "Nav".into(),
                 description: None,
             }],
             rules,
-            ..ProfilePreset::initial()
+            ..KeymapPreset::initial()
         };
         ResolvedAppConfig::from_parts(AppSettings::default(), preset, None)
     }
@@ -474,7 +470,7 @@ mod tests {
 
     #[test]
     fn invalid_conditions_and_ignored_rule_combinations_are_visible() {
-        let profile = super::super::profile_file::parse(
+        let keymap = super::super::keymap_file::parse(
             r#"{"version":1,"rules":[
             {"id":"bad-condition","key":"KeyA","when":{"windows":["title:"]}},
             {"id":"bad-double","key":["KeyC","KeyD"],"doubleTap":{"action":"KeyE"}}
@@ -484,7 +480,7 @@ mod tests {
         .unwrap();
         let issues = analyze(&ResolvedAppConfig::from_parts(
             AppSettings::default(),
-            profile,
+            keymap,
             None,
         ));
         assert_eq!(
@@ -505,7 +501,7 @@ mod tests {
 
     #[test]
     fn complete_diagnostics_cover_non_rule_actions_and_cycles() {
-        let profile = super::super::profile_file::parse(
+        let keymap = super::super::keymap_file::parse(
             r#"{"version":1,
             "layers":[{"id":"nav","keys":{"NoSuchKey":"KeyA","KeyA":"macro:missing"}}],
             "macros":[{"id":"a","steps":["macro:b"]},{"id":"b","steps":["macro:a"]}],
@@ -513,7 +509,7 @@ mod tests {
         )
         .unwrap()
         .unwrap();
-        let config = ResolvedAppConfig::from_parts(AppSettings::default(), profile, None);
+        let config = ResolvedAppConfig::from_parts(AppSettings::default(), keymap, None);
         let issues = analyze(&config);
         for code in [
             RuleIssueCode::InvalidLayerKey,
@@ -542,8 +538,8 @@ mod tests {
         ] {
             let text =
                 serde_json::json!({"version":1,"macros":[{"id":"m","steps":[step]}]}).to_string();
-            let profile = super::super::profile_file::parse(&text).unwrap().unwrap();
-            let config = ResolvedAppConfig::from_parts(AppSettings::default(), profile, None);
+            let keymap = super::super::keymap_file::parse(&text).unwrap().unwrap();
+            let config = ResolvedAppConfig::from_parts(AppSettings::default(), keymap, None);
             assert!(
                 analyze(&config)
                     .iter()
@@ -554,11 +550,11 @@ mod tests {
         for step in ["pause:1", "pause:10000"] {
             let text =
                 serde_json::json!({"version":1,"macros":[{"id":"m","steps":[step]}]}).to_string();
-            let profile = super::super::profile_file::parse(&text).unwrap().unwrap();
+            let keymap = super::super::keymap_file::parse(&text).unwrap().unwrap();
             assert!(
                 analyze(&ResolvedAppConfig::from_parts(
                     AppSettings::default(),
-                    profile,
+                    keymap,
                     None
                 ))
                 .is_empty()
@@ -627,7 +623,7 @@ mod tests {
     }
 
     #[test]
-    fn disjoint_game_profile_and_app_exclusions_allow_repeated_triggers() {
+    fn disjoint_game_keymap_and_app_exclusions_allow_repeated_triggers() {
         let mut a = rule("a", "KeyQ");
         let mut b = rule("b", "KeyQ");
         a.condition_game_mode = Some("on".into());
@@ -660,7 +656,7 @@ mod tests {
     }
 
     #[test]
-    fn partial_profile_overlap_and_title_patterns_are_not_declared_disjoint() {
+    fn partial_keymap_overlap_and_title_patterns_are_not_declared_disjoint() {
         let mut a = rule("a", "KeyQ");
         let mut b = rule("b", "KeyQ");
         a.condition_keyboard_layouts = Some(vec!["en".into(), "ru".into()]);

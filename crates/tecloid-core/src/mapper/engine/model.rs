@@ -153,7 +153,7 @@ pub enum EngineOutput {
     ReleaseMods(Vec<KeyCode>),
     /// Execute a system function (DBus call or fire-and-forget spawn).
     RunSystem(SystemAction),
-    /// Execute a shell command defined by the current profile.
+    /// Execute a shell command defined by the current keymap.
     RunCommand(ProcessInvocation),
     /// A macro command whose completion gates subsequent steps.
     RunMacroCommand(ProcessInvocation, crate::mapper::commands::MacroCommand),

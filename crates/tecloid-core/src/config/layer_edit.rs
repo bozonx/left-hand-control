@@ -1,9 +1,9 @@
-//! Edits of layers and their keymaps on a profile.
+//! Edits of layers and their keymaps on a keymap.
 //!
-//! These operations change the profile only; validation of action strings
+//! These operations change the keymap only; validation of action strings
 //! and saving belong to [`crate::config_document::ConfigDocument`].
 
-use super::model::{HoldBehavior, KeyRule, Layer, LayerKeymap, ProfilePreset};
+use super::model::{HoldBehavior, KeyRule, KeymapPreset, Layer, LayerKeymap};
 use std::{collections::HashMap, sync::LazyLock};
 
 /// Position of every key in the key catalog, for ordering extra keys.
@@ -49,14 +49,14 @@ impl LayerKeymap {
 /// What a key does inside a layer keymap.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum KeyAssignment {
-    /// No entry: the base profile decides.
+    /// No entry: the base keymap decides.
     Transparent,
     /// `null`: the key does nothing.
     Swallow,
     Action(String),
 }
 
-impl ProfilePreset {
+impl KeymapPreset {
     pub fn has_layer(&self, id: &str) -> bool {
         self.layers.iter().any(|layer| layer.id == id)
     }
@@ -287,7 +287,7 @@ mod tests {
 
     #[test]
     fn activating_triggers_exclude_disabled_and_other_hold_modes_and_deduplicate() {
-        let mut profile = ProfilePreset::default();
+        let mut keymap = KeymapPreset::default();
         for (key, layer, enabled, mode) in [
             ("CapsLock", "nav", true, HoldBehavior::Layer),
             ("CapsLock", "nav", true, HoldBehavior::Layer),
@@ -296,17 +296,14 @@ mod tests {
             ("KeyE", "nav", true, HoldBehavior::None),
             ("ShiftLeft+KeyA", "nav", true, HoldBehavior::Layer),
         ] {
-            let mut rule = KeyRule::new(format!("rule-{}", profile.rules.len()), key);
+            let mut rule = KeyRule::new(format!("rule-{}", keymap.rules.len()), key);
             rule.layer_id = layer.into();
             rule.enabled = Some(enabled);
             rule.hold_behavior = Some(mode);
-            profile.rules.push(rule);
+            keymap.rules.push(rule);
         }
-        assert_eq!(
-            profile.layer_triggers("nav"),
-            ["CapsLock", "ShiftLeft+KeyA"]
-        );
-        assert!(profile.layer_triggers("missing").is_empty());
+        assert_eq!(keymap.layer_triggers("nav"), ["CapsLock", "ShiftLeft+KeyA"]);
+        assert!(keymap.layer_triggers("missing").is_empty());
     }
 
     fn keymap(keys: &[(&str, Option<&str>)]) -> LayerKeymap {
@@ -339,10 +336,10 @@ mod tests {
 
     #[test]
     fn extra_key_suppression_is_preserved() {
-        let profile = crate::config::profile_file::parse(
+        let keymap = crate::config::keymap_file::parse(
             r#"{"version": 1, "layers": [{"id": "extra", "keys": {"BracketRight": null, "Backslash": null, "F4": "F4"}}]}"#
         ).unwrap().unwrap();
-        let entries = profile.layer_keymaps["extra"].extra_entries();
+        let entries = keymap.layer_keymaps["extra"].extra_entries();
         assert_eq!(entries.len(), 3);
         assert!(entries.contains(&("BracketRight".into(), None)));
         assert!(entries.contains(&("F4".into(), Some("F4".into()))));
@@ -357,20 +354,20 @@ mod tests {
 
     #[test]
     fn extra_order_is_stable_after_renaming_and_removal() {
-        let mut profile = ProfilePreset::default();
-        profile.add_layer("extra", "Extra".into(), None);
+        let mut keymap = KeymapPreset::default();
+        keymap.add_layer("extra", "Extra".into(), None);
         for key in ["F13", "F14", "F15"] {
-            profile.set_extra_key("extra", None, key, KeyAssignment::Swallow);
+            keymap.set_extra_key("extra", None, key, KeyAssignment::Swallow);
         }
-        profile
+        keymap
             .layer_keymaps
             .get_mut("extra")
             .unwrap()
             .extra_key_order = vec!["F15".into(), "F13".into(), "F14".into()];
-        profile.set_extra_key("extra", Some("F15"), "F16", KeyAssignment::Swallow);
-        profile.set_layer_key("extra", "F13", KeyAssignment::Transparent);
+        keymap.set_extra_key("extra", Some("F15"), "F16", KeyAssignment::Swallow);
+        keymap.set_layer_key("extra", "F13", KeyAssignment::Transparent);
         assert_eq!(
-            keys(profile.layer_keymaps["extra"].extra_entries()),
+            keys(keymap.layer_keymaps["extra"].extra_entries()),
             ["F16", "F14"]
         );
     }

@@ -3,7 +3,7 @@
 use super::macro_graph::{MacroGraph, MacroRef};
 use super::{
     actions::{self, Action},
-    model::{Macro, ProfilePreset, ResolvedAppConfig},
+    model::{KeymapPreset, Macro, ResolvedAppConfig},
 };
 use crate::config_document::{ConfigDocument, ConfigError};
 use std::collections::{HashMap, HashSet};
@@ -200,8 +200,8 @@ pub fn action_usage(config: &ResolvedAppConfig, action: &str) -> Vec<String> {
 
 /// Point `macro:<old>` actions at the new ids. All renames apply at once, so
 /// swapping two ids works.
-fn rename_references(profile: &mut ProfilePreset, renames: &[(String, String)]) {
-    profile.for_each_action_mut(|raw| rename_action(raw, renames));
+fn rename_references(keymap: &mut KeymapPreset, renames: &[(String, String)]) {
+    keymap.for_each_action_mut(|raw| rename_action(raw, renames));
 }
 
 fn rename_action(raw: &mut String, renames: &[(String, String)]) {
@@ -213,7 +213,7 @@ fn rename_action(raw: &mut String, renames: &[(String, String)]) {
     }
 }
 
-/// Preview a macro transaction, including incoming references everywhere in the profile.
+/// Preview a macro transaction, including incoming references everywhere in the keymap.
 pub fn preview(
     config: &ResolvedAppConfig,
     items: Vec<Macro>,
@@ -227,7 +227,7 @@ pub fn preview(
 
 impl ConfigDocument {
     pub fn save_macro(&mut self, index: Option<usize>, item: Macro) -> Result<(), ConfigError> {
-        let mut items = self.profile().macros.clone();
+        let mut items = self.keymap().macros.clone();
         let renames = if let Some(index) = index {
             let old = items
                 .get_mut(index)
@@ -244,7 +244,7 @@ impl ConfigDocument {
 
     /// Replace all user macros at once; every macro must be valid.
     /// `renames` maps old macro ids to new ones; references `macro:<old>`
-    /// elsewhere in the profile follow the new id.
+    /// elsewhere in the keymap follow the new id.
     pub fn save_macros(
         &mut self,
         items: Vec<Macro>,
@@ -254,31 +254,31 @@ impl ConfigDocument {
         if let Some(error) = analyze(&candidate).errors.into_iter().flatten().next() {
             return Err(error);
         }
-        self.update_profile(|profile| {
-            profile.macros = items;
-            rename_references(profile, renames);
+        self.update_keymap(|keymap| {
+            keymap.macros = items;
+            rename_references(keymap, renames);
         })
     }
 
     pub fn remove_macro(&mut self, index: usize) -> Result<(), ConfigError> {
-        if index >= self.profile().macros.len() {
+        if index >= self.keymap().macros.len() {
             return Err(ConfigError::Invalid("Unknown macro".into()));
         }
-        if !deletion_usage(&self.config(), &self.profile().macros[index].id).is_empty() {
+        if !deletion_usage(&self.config(), &self.keymap().macros[index].id).is_empty() {
             return Err(ConfigError::Macro(MacroIssue::InUse));
         }
-        self.update_profile(|profile| {
-            profile.macros.remove(index);
+        self.update_keymap(|keymap| {
+            keymap.macros.remove(index);
         })
     }
 
     pub fn move_macro(&mut self, index: usize, next: usize) -> Result<(), ConfigError> {
-        if index >= self.profile().macros.len() || next >= self.profile().macros.len() {
+        if index >= self.keymap().macros.len() || next >= self.keymap().macros.len() {
             return Err(ConfigError::Invalid("Unknown macro".into()));
         }
-        self.update_profile(|profile| {
-            let item = profile.macros.remove(index);
-            profile.macros.insert(next, item);
+        self.update_keymap(|keymap| {
+            let item = keymap.macros.remove(index);
+            keymap.macros.insert(next, item);
         })
     }
 }
@@ -307,20 +307,20 @@ mod tests {
 
     #[test]
     fn usage_and_renaming_share_typed_actions_and_preserve_separate_rules() {
-        let mut profile = ProfilePreset::default();
+        let mut keymap = KeymapPreset::default();
         for index in 0..2 {
             let mut rule = crate::config::model::KeyRule::new(format!("r{index}"), "KeyA");
             rule.tap_action = Some(" macro: a ".into());
             rule.long_hold_action = "macro:a".into();
-            profile.rules.push(rule);
+            keymap.rules.push(rule);
         }
-        profile.macros = vec![item("outer", &[" macro: a ", "macro:a", "text:macro:a"])];
-        let config = ResolvedAppConfig::from_parts(Default::default(), profile.clone(), None);
+        keymap.macros = vec![item("outer", &[" macro: a ", "macro:a", "text:macro:a"])];
+        let config = ResolvedAppConfig::from_parts(Default::default(), keymap.clone(), None);
         assert_eq!(usage(&config, "a"), ["KeyA", "KeyA", "macro:outer"]);
-        rename_references(&mut profile, &[("a".into(), "b".into())]);
-        assert_eq!(profile.rules[0].tap_action.as_deref(), Some("macro:b"));
-        assert_eq!(profile.macros[0].steps[0].action, "macro:b");
-        assert_eq!(profile.macros[0].steps[2].action, "text:macro:a");
+        rename_references(&mut keymap, &[("a".into(), "b".into())]);
+        assert_eq!(keymap.rules[0].tap_action.as_deref(), Some("macro:b"));
+        assert_eq!(keymap.macros[0].steps[0].action, "macro:b");
+        assert_eq!(keymap.macros[0].steps[2].action, "text:macro:a");
     }
 
     #[test]
@@ -328,7 +328,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         paths
-            .save_user_profile(
+            .save_user_keymap(
                 "Test",
                 r#"{"version": 1, "rules": [{"key": "KeyA", "tap": "macro:outer"}]}"#,
                 true,
@@ -337,7 +337,7 @@ mod tests {
         paths.save_config(r#"{"version":1}"#).unwrap();
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         document.load_library_for_editing("Test").unwrap();
-        let rules = document.profile().rules.clone();
+        let rules = document.keymap().rules.clone();
         document
             .save_macro(
                 None,
@@ -354,12 +354,12 @@ mod tests {
         assert_eq!(usage(&document.config(), "inner"), ["macro:outer"]);
         document.move_macro(0, 1).unwrap();
         let loaded = &document;
-        assert_eq!(loaded.profile().macros[0].id, "inner");
-        assert_eq!(loaded.profile().macros[0].steps[2].action, "text: hello ");
-        assert_eq!(loaded.profile().macros[0].modifier_delay_ms, Some(0));
-        assert_eq!(document.profile().rules, rules);
+        assert_eq!(loaded.keymap().macros[0].id, "inner");
+        assert_eq!(loaded.keymap().macros[0].steps[2].action, "text: hello ");
+        assert_eq!(loaded.keymap().macros[0].modifier_delay_ms, Some(0));
+        assert_eq!(document.keymap().rules, rules);
         assert_eq!(
-            loaded.profile().rules[0].tap_action.as_deref(),
+            loaded.keymap().rules[0].tap_action.as_deref(),
             Some("macro:outer")
         );
         assert_eq!(
@@ -367,10 +367,10 @@ mod tests {
             Err(ConfigError::Macro(MacroIssue::InUse))
         );
         document
-            .update_profile(|profile| profile.rules.clear())
+            .update_keymap(|keymap| keymap.rules.clear())
             .unwrap();
         document.remove_macro(1).unwrap();
-        assert_eq!(document.profile().macros.len(), 1);
+        assert_eq!(document.keymap().macros.len(), 1);
     }
 
     #[test]
@@ -388,10 +388,10 @@ mod tests {
             )
             .unwrap();
         assert_eq!(usage(&document.config(), "copyLine"), ["macro:outer"]);
-        let mut profile = document.profile().clone();
-        rename_references(&mut profile, &[("copyLine".into(), "custom".into())]);
-        let user = profile.macros.iter().find(|m| m.id == "copyLine").unwrap();
-        let outer = profile.macros.iter().find(|m| m.id == "outer").unwrap();
+        let mut keymap = document.keymap().clone();
+        rename_references(&mut keymap, &[("copyLine".into(), "custom".into())]);
+        let user = keymap.macros.iter().find(|m| m.id == "copyLine").unwrap();
+        let outer = keymap.macros.iter().find(|m| m.id == "outer").unwrap();
         assert_eq!(user.steps[0].action, "builtin:copyLineText");
         assert_eq!(outer.steps[0].action, "macro:custom");
         assert_eq!(outer.steps[1].action, "builtin:copyLineText");
@@ -406,7 +406,7 @@ mod tests {
         document
             .save_macro(None, item("outer", &["macro:inner"]))
             .unwrap();
-        let before = document.profile().clone();
+        let before = document.keymap().clone();
         for invalid in [
             item("", &[]),
             item("bad id", &[]),
@@ -417,7 +417,7 @@ mod tests {
             item("new", &["macro:new"]),
         ] {
             assert!(document.save_macro(None, invalid).is_err());
-            assert_eq!(document.profile(), &before);
+            assert_eq!(document.keymap(), &before);
         }
         assert!(
             document
@@ -428,8 +428,8 @@ mod tests {
         delay.step_pause_ms = Some(2001);
         assert!(document.save_macro(None, delay).is_err());
         assert_eq!(
-            super::super::profile_file::serialize(document.profile()),
-            super::super::profile_file::serialize(&before)
+            super::super::keymap_file::serialize(document.keymap()),
+            super::super::keymap_file::serialize(&before)
         );
         paths.save_config(r#"{"version":1}"#).unwrap();
         document.save_macro(None, item("new", &[])).unwrap();
@@ -437,17 +437,17 @@ mod tests {
 
     #[test]
     fn renamed_ids_carry_their_references() {
-        let mut profile = ProfilePreset::initial();
+        let mut keymap = KeymapPreset::initial();
         let mut rule = crate::config::model::KeyRule::new("r1".into(), "KeyA");
         rule.tap_action = Some("macro:a".into());
         rule.hold_action = Some("macro:b".into());
-        profile.rules.push(rule);
-        profile.macros = vec![item("x", &["macro:a", "macro:other"])];
+        keymap.rules.push(rule);
+        keymap.macros = vec![item("x", &["macro:a", "macro:other"])];
         let renames = [("a".into(), "b".into()), ("b".into(), "a".into())];
-        rename_references(&mut profile, &renames);
-        assert_eq!(profile.rules[0].tap_action.as_deref(), Some("macro:b"));
-        assert_eq!(profile.rules[0].hold_action.as_deref(), Some("macro:a"));
-        let steps: Vec<_> = profile.macros[0]
+        rename_references(&mut keymap, &renames);
+        assert_eq!(keymap.rules[0].tap_action.as_deref(), Some("macro:b"));
+        assert_eq!(keymap.rules[0].hold_action.as_deref(), Some("macro:a"));
+        let steps: Vec<_> = keymap.macros[0]
             .steps
             .iter()
             .map(|s| &s.action[..])
@@ -468,14 +468,14 @@ mod tests {
                 &[("a".into(), "c".into())],
             )
             .unwrap();
-        assert_eq!(document.profile().macros[1].steps[0].action, "macro:c");
+        assert_eq!(document.keymap().macros[1].steps[0].action, "macro:c");
         document
             .save_macros(
                 vec![item("b", &["KeyA"]), item("c", &["macro:c"])],
                 &[("c".into(), "b".into()), ("b".into(), "c".into())],
             )
             .unwrap();
-        assert_eq!(document.profile().macros[1].steps[0].action, "macro:b");
+        assert_eq!(document.keymap().macros[1].steps[0].action, "macro:b");
         assert!(
             analyze(&document.config())
                 .errors
@@ -487,10 +487,10 @@ mod tests {
     #[test]
     #[cfg(any(target_os = "linux", target_os = "windows"))]
     fn editor_mapper_and_diagnostics_agree_on_expansion_limits() {
-        let mut profile = ProfilePreset::default();
+        let mut keymap = KeymapPreset::default();
         for count in [1000, 1001] {
-            profile.macros = vec![item("large", &vec!["KeyA"; count])];
-            let config = ResolvedAppConfig::from_parts(Default::default(), profile.clone(), None);
+            keymap.macros = vec![item("large", &vec!["KeyA"; count])];
+            let config = ResolvedAppConfig::from_parts(Default::default(), keymap.clone(), None);
             let accepted = validate(&config, &config.macros[0]).is_ok();
             let mapper = crate::mapper::config::MapperConfig::try_from(&config).unwrap();
             assert_eq!(accepted, count == 1000);
@@ -505,7 +505,7 @@ mod tests {
                 accepted
             );
         }
-        profile.macros = (0..12)
+        keymap.macros = (0..12)
             .map(|i| {
                 item(
                     &format!("m{i}"),
@@ -520,7 +520,7 @@ mod tests {
                 )
             })
             .collect();
-        let config = ResolvedAppConfig::from_parts(Default::default(), profile, None);
+        let config = ResolvedAppConfig::from_parts(Default::default(), keymap, None);
         assert_eq!(
             analyze(&config).errors[0],
             Some(ConfigError::Macro(MacroIssue::ExpansionLimit))
@@ -532,34 +532,34 @@ mod tests {
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths).unwrap();
         document
-            .update_profile(|profile| profile.macros = vec![item("self", &["macro:self"])])
+            .update_keymap(|keymap| keymap.macros = vec![item("self", &["macro:self"])])
             .unwrap();
         assert!(deletion_usage(&document.config(), "self").is_empty());
         assert!(!analyze(&document.config()).usage.contains_key("self"));
         document.remove_macro(0).unwrap();
-        assert!(document.profile().macros.is_empty());
+        assert!(document.keymap().macros.is_empty());
     }
     #[test]
     fn preview_renames_incoming_references_in_every_section_without_mutating_source() {
-        let mut profile = ProfilePreset::initial();
+        let mut keymap = KeymapPreset::initial();
         let mut rule = crate::config::model::KeyRule::new("rule".into(), "KeyA");
         rule.tap_action = Some("macro:a".into());
-        profile.rules.push(rule);
-        profile
+        keymap.rules.push(rule);
+        keymap
             .layer_keymaps
             .entry("nav".into())
             .or_default()
             .keys
             .insert("KeyB".into(), Some("macro:a".into()));
-        profile.quick_action_pages[0].cells.insert(
+        keymap.quick_action_pages[0].cells.insert(
             "KeyC".into(),
             crate::config::model::QuickAction {
                 name: "quick".into(),
                 action: "macro:a".into(),
             },
         );
-        profile.macros = vec![item("a", &["KeyA"]), item("outer", &["macro:a"])];
-        let config = ResolvedAppConfig::from_parts(Default::default(), profile, None);
+        keymap.macros = vec![item("a", &["KeyA"]), item("outer", &["macro:a"])];
+        let config = ResolvedAppConfig::from_parts(Default::default(), keymap, None);
         let renamed = preview(
             &config,
             vec![item("new", &["KeyA"]), item("outer", &["macro:a"])],

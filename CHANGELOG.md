@@ -13,12 +13,14 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 - System actions: lock screen (`sys:lockSession`), switch to the next or previous desktop (`sys:switchToNextDesktop`, `sys:switchToPreviousDesktop`), move the window to the previous desktop (`sys:moveWindowToPreviousDesktop`) and to the next or previous screen (`sys:moveWindowToNextScreen`, `sys:moveWindowToPreviousScreen`). They run on KDE, GNOME (with the bundled extension, updated for them) and Windows, except moving a window between desktops on Windows.
 - GNOME: "Turn off screen" now works through the extension.
-- JSON Schemas of `config.json` and layout files in `schemas/` (`config.v1.schema.json`, `profile.v1.schema.json`), published at a stable address for the `$schema` field: editors complete field names and enum values and flag typos and out-of-range timings.
+- JSON Schemas of `config.json` and layout files in `schemas/` (`config.v1.schema.json`, `keymap.v1.schema.json`), published at a stable address for the `$schema` field: editors complete field names and enum values and flag typos and out-of-range timings.
 - Action picker (development mode, Linux): an "Application actions" category with the extra actions installed applications declare in their desktop entries (freedesktop `Actions=`, e.g. Firefox "New Private Window"), stored as `xdg:<desktop-id>/<action>`. D-Bus activatable applications get `ActivateAction`, others run the action's command line.
 
 ### Changed
 
-- Startup opens the main page without restoring an editor profile. Manual profile selection remains saved; game-mode Auto/On/Off is a permanent setting. Config format remains v1 and no longer contains a state section.
+- Rename user profiles to Keymaps throughout the UI, code, JSON fields, schema and library directory (`keymaps/`). Format version remains 1; previous names are not supported or migrated.
+
+- Startup opens the main page without restoring an editor keymap. Manual keymap selection remains saved; game-mode Auto/On/Off is a permanent setting. Config format remains v1 and no longer contains a state section.
 
 - Text input: reject unverified KDE layout variants, stop libei typing after keyboard resets, and keep Windows Unicode surrogate pairs together during cancellation.
 
@@ -30,7 +32,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Linux text input: keep libei sessions after modifier/layout interruptions and retry temporary backend setup failures on the next text request.
 
 - Standardized the application name and technical identifiers as Tecloid; the bundled layout remains "LHC1 by Ivan K".
-- Before the first public release, reset `config.json` to format version 1 and remove the unreleased version 1 → 2 migration and version 2 schema; profiles remain at version 1. Accessibility choices and explicit libei mode names are part of the initial format.
+- Before the first public release, reset `config.json` to format version 1 and remove the unreleased version 1 → 2 migration and version 2 schema; keymaps remain at version 1. Accessibility choices and explicit libei mode names are part of the initial format.
 - Rename `sys:switchKeyboardLayoutN` to `sys:switchToKeyboardLayoutN`, `settings.timing.comboMs` to `chordMs`, and `settings.launchOnStartup` to `launchAtLogin`. The old names are rejected; no migration is provided.
 
 - Text input: wait for popup focus on Linux; capture terminal classification with the destination; tolerate document-title changes and unavailable window detection. Built-in Linux clipboard macros follow paste settings and the active layout, and terminal copy uses Ctrl+Shift+C.
@@ -42,26 +44,26 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 - Settings: every tab now has the same layout. Settings are grouped in cards, fields use the same labels, and the language field no longer has its own icon.
 - Settings → Accessibility: "High contrast" and "Reduce animations" are now selects with "Follow system" (the default), "On" and "Off". On Linux "Follow system" reads the desktop preference from the XDG Settings portal (`contrast`, `reduced-motion`; on KDE also the animation speed slider set to instant) and follows its changes; Windows and macOS do not report it yet.
-- Profile format: a rule chord is written as an array of keys (`"key": ["ShiftLeft", "ControlRight"]`); a single key stays a string. `+` inside a rule key is now a load error, since in actions it joins modifiers to a key.
-- `config.json`: `settings.profiles.manual` is renamed to `settings.profiles.manualProfile`.
+- Keymap format: a rule chord is written as an array of keys (`"key": ["ShiftLeft", "ControlRight"]`); a single key stays a string. `+` inside a rule key is now a load error, since in actions it joins modifiers to a key.
+- `config.json`: `settings.keymaps.manual` is renamed to `settings.keymaps.manualKeymap`.
 - `tecloid:showQuickMenuLast` and `tecloid:showEmojiMenuLast` are renamed to `tecloid:showQuickMenuRecent` and `tecloid:showEmojiMenuRecent`: they open the page used last, not the last page.
-- `sys:switchDesktopN` is renamed to `sys:switchToDesktopN`, matching `sys:switchToNextDesktop` and `sys:moveWindowToDesktopN`. Profiles that use the old name report an unknown system action; rebind those keys.
+- `sys:switchDesktopN` is renamed to `sys:switchToDesktopN`, matching `sys:switchToNextDesktop` and `sys:moveWindowToDesktopN`. Keymaps that use the old name report an unknown system action; rebind those keys.
 - Keyboard navigation in settings: the emoji palette on the menus page is one Tab stop with arrows crossing category borders; arrow keys also reach the buttons in the hold menu on the triggers page; scrollbars are no longer Tab stops (PageUp/PageDown scroll while focus is inside a scrolled area); layer tabs show the same 2px focus ring as other controls; Left/Right in key grids keep working when keys in a row have different heights; the layer key grid always keeps a Tab stop after the keys change.
 - Layout with large text and long translations: button groups (theme, modes, device tabs) stack into a column when one row does not fit, checkbox labels and card titles wrap instead of running past the edge, and dialog content scrolls when it cannot fit the window. At the regular size nothing changes.
 - Emoji and Quick actions pages and rule conditions are available without development mode; system actions in the action picker now need development mode.
 - Emoji and Quick actions pages: the Cut and Paste buttons are removed; use Ctrl+X, Ctrl+C (new: copy a cell) and Ctrl+V on the grid.
 - Layers page: the "Activated by" line and the "Configure triggers" button are removed.
 - Delete buttons and menu items are no longer red. KDE shortcuts and application actions share a new icon in the action picker.
-- The Profiles button in the top bar is highlighted only on the profiles page. Deleting the open profile closes its editor.
+- The Keymaps button in the top bar is highlighted only on the keymaps page. Deleting the open keymap closes its editor.
 - The clear button of the typing test field is a small button inside the field instead of filling it; info icons next to the action field in the action picker are vertically centred.
 - Accessibility: text that is cut off with an ellipsis in lists, badges, menus and pickers now shows its full text in a tooltip (only when it is actually cut off).
 
-- Renamed "layout" to "profile" across configuration, library files, actions and UI:
-  - Library files live in `profiles/` instead of `layouts/`.
-  - App actions: `tecloid:activateProfile1`…`5` (previously `tecloid:activateLayout1`…`5`).
-  - Setting `settings.profileOsd` (previously `settings.layoutOsd`).
-  - Interface terminology: "Layout" / "Раскладка" is now "Profile" / "Профиль", reserving "layout" exclusively for system keyboard layouts (XKB / OS input languages).
-  - Renamed internal core module `profile` to `config` to reflect that it holds configuration and settings models.
+- Renamed "layout" to "keymap" across configuration, library files, actions and UI:
+  - Library files live in `keymaps/` instead of `layouts/`.
+  - App actions: `tecloid:activateKeymap1`…`5` (previously `tecloid:activateLayout1`…`5`).
+  - Setting `settings.keymapOsd` (previously `settings.layoutOsd`).
+  - Interface terminology: "Layout" / "Раскладка" is now "Keymap" / "Keymap", reserving "layout" exclusively for system keyboard layouts (XKB / OS input languages).
+  - Renamed internal core module `keymap` to `config` to reflect that it holds configuration and settings models.
 - Rule trigger key validation (`rules[].key`):
   - Requires exact physical key codes (e.g. `ControlLeft+KeyA`).
   - Generic modifier names (`Ctrl`, `Shift`, `Alt`, `Meta`) are rejected with a helpful validation error explaining that `+` joins the keys of a chord rather than adding a modifier, instead of silently rewriting them on load.

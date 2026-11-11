@@ -8,7 +8,7 @@ use crate::{
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use tecloid_core::config::{
     actions::Action,
-    model::{LEFT_HAND_HOTKEYS, ProfilePreset, QuickAction},
+    model::{KeymapPreset, LEFT_HAND_HOTKEYS, QuickAction},
 };
 
 /// Bind composite keyboard navigation for both popup windows.
@@ -200,14 +200,14 @@ pub fn quick_key(ui: &QuickPopup, key: &str) -> KeyOutcome {
     outcome
 }
 
-/// Emoji and quick action menus of one profile.
+/// Emoji and quick action menus of one keymap.
 #[derive(Clone, Default)]
 pub struct ConfiguredMenus {
-    pub profile: ProfilePreset,
+    pub keymap: KeymapPreset,
 }
 
 impl ConfiguredMenus {
-    /// Menus of profile `id`, read from the configuration on disk.
+    /// Menus of keymap `id`, read from the configuration on disk.
     ///
     /// Read-only and outside `Document`: the Spell worker is a separate
     /// process without a `Document`, and `Document::edit` saves each edit
@@ -218,14 +218,14 @@ impl ConfiguredMenus {
         )
         .map_err(|error| error.to_string())?;
         Ok(Self {
-            profile: document
-                .profile_for_activation(id)
+            keymap: document
+                .keymap_for_activation(id)
                 .map_err(|error| error.to_string())?,
         })
     }
 
     pub fn apply_emoji(&self, ui: &EmojiPopup) {
-        let pages = &self.profile.emoji_pages;
+        let pages = &self.keymap.emoji_pages;
         ui.set_page_names(ModelRc::new(VecModel::from(
             pages
                 .iter()
@@ -246,9 +246,9 @@ impl ConfiguredMenus {
     }
 
     pub fn apply_quick(&self, ui: &QuickPopup) {
-        let count = self.profile.quick_action_pages.len();
+        let count = self.keymap.quick_action_pages.len();
         ui.set_page_names(ModelRc::new(VecModel::from(
-            self.profile
+            self.keymap
                 .quick_action_pages
                 .iter()
                 .map(|p| p.name.as_str().into())
@@ -259,7 +259,7 @@ impl ConfiguredMenus {
 
     /// Apply the menus to both popups. Each popup stays on the page it
     /// showed under `previous` while a page with that id exists, so the
-    /// last used page survives edits, reordering and profile switches.
+    /// last used page survives edits, reordering and keymap switches.
     pub fn apply(
         &self,
         previous: Option<&ConfiguredMenus>,
@@ -268,7 +268,7 @@ impl ConfiguredMenus {
     ) {
         let emoji_ids = |menus: &ConfiguredMenus| -> Vec<String> {
             menus
-                .profile
+                .keymap
                 .emoji_pages
                 .iter()
                 .map(|p| p.id.clone())
@@ -276,7 +276,7 @@ impl ConfiguredMenus {
         };
         let quick_ids = |menus: &ConfiguredMenus| -> Vec<String> {
             menus
-                .profile
+                .keymap
                 .quick_action_pages
                 .iter()
                 .map(|p| p.id.clone())
@@ -299,7 +299,7 @@ impl ConfiguredMenus {
     /// Emoji in cell `index` of the current page, if it is not empty.
     pub fn emoji(&self, ui: &EmojiPopup, index: i32) -> Option<String> {
         let page = self
-            .profile
+            .keymap
             .emoji_pages
             .get(usize::try_from(ui.get_page()).ok()?)?;
         let key = LEFT_HAND_HOTKEYS.get(usize::try_from(index).ok()?)?;
@@ -332,7 +332,7 @@ impl ConfiguredMenus {
 
     fn quick_item(&self, page: i32, index: i32) -> Option<&QuickAction> {
         let page = self
-            .profile
+            .keymap
             .quick_action_pages
             .get(usize::try_from(page).ok()?)?;
         let key = LEFT_HAND_HOTKEYS.get(usize::try_from(index).ok()?)?;
@@ -659,25 +659,25 @@ mod tests {
 
     #[test]
     fn quick_cells_follow_hotkey_positions() {
-        let mut profile = ProfilePreset::initial();
-        profile
+        let mut keymap = KeymapPreset::initial();
+        keymap
             .quick_action_pages
             .push(QuickActionPage::new("second".into(), "Вторая".into()));
-        profile.quick_action_pages[0].cells.insert(
+        keymap.quick_action_pages[0].cells.insert(
             "KeyE".into(),
             QuickAction {
                 name: "Имя".into(),
                 action: "text:first".into(),
             },
         );
-        profile.quick_action_pages[1].cells.insert(
+        keymap.quick_action_pages[1].cells.insert(
             "KeyT".into(),
             QuickAction {
                 action: "text:second".into(),
                 ..QuickAction::default()
             },
         );
-        let menus = ConfiguredMenus { profile };
+        let menus = ConfiguredMenus { keymap };
         let first = menus.quick_labels(0);
         assert_eq!(first.len(), PAGE_CELLS);
         assert_eq!(first[2], "Имя");

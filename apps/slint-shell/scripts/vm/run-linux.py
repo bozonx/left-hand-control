@@ -95,7 +95,7 @@ def main():
         parser.error(str(error))
     report = Report()
     required = set("""boot upload plasma-session install installed-files keyboard-probe test-config
-        start-without-input profile-loaded tray-item no-mapper-without-input autostart-entry reboot-with-input
+        start-without-input keymap-loaded tray-item no-mapper-without-input autostart-entry reboot-with-input
         autostart-launch tray-after-login mapper-running portal-deny portal-consent
         mapper-keys-and-text text-unicode text-unicode-corpus layer-tap-hold macro command
         system-actions russian-layout popups emoji-ipc quick-menu-rule emoji-hotkey game-mode
@@ -600,7 +600,7 @@ def main():
             report.step("previous-release", previous_release, fatal=True)
             report.step("upgrade-from-previous", upgrade_from_previous, fatal=True)
         report.step("start-without-input", start_without_permissions)
-        report.step("profile-loaded", guest, f"check-profile --device {shlex.quote(state['device'])}", fatal=True, requires=("start-without-input",))
+        report.step("keymap-loaded", guest, f"check-keymap --device {shlex.quote(state['device'])}", fatal=True, requires=("start-without-input",))
         report.step("tray-item", guest, "tray")
         report.step("no-mapper-without-input", guest, "mapper --absent --timeout 8")
         report.step("autostart-entry", guest, "autostart")

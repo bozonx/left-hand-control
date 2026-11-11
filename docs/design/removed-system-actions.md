@@ -3,8 +3,8 @@
 Reference for the built-in system actions removed in October 2026. They were
 all KDE-only wrappers around KDE D-Bus calls; keeping a hand-written list per
 desktop environment did not scale. What remains in `sys:` is the small set
-that cannot be expressed with a key: `switchDesktopN`, `switchProfileN` and
-`windowToDesktopN` (today `switchToDesktopN`, `tecloid:activateProfileN` and
+that cannot be expressed with a key: `switchDesktopN`, `switchKeymapN` and
+`windowToDesktopN` (today `switchToDesktopN`, `tecloid:activateKeymapN` and
 `moveWindowToDesktopN`).
 
 Later, a few common window and shell actions came back as cross-platform
@@ -92,7 +92,7 @@ platforms.
 | Id | KDE | GNOME (extension) | Windows |
 | --- | --- | --- | --- |
 | `switchToDesktopN` (1–10) | `kde:kwin/Switch to Desktop N` | `workspace.activate` | — |
-| `switchToKeyboardLayoutN` (1–10) | `org.kde.keyboard /Profiles setProfile(u32 N-1)` | input source `activate` | `WM_INPUTLANGCHANGEREQUEST` |
+| `switchToKeyboardLayoutN` (1–10) | `org.kde.keyboard /Keymaps setKeymap(u32 N-1)` | input source `activate` | `WM_INPUTLANGCHANGEREQUEST` |
 | `moveWindowToDesktopN` (1–10) | `kde:kwin/Window to Desktop N` | `change_workspace` | — |
 | `closeWindow` | `kde:kwin/Window Close` | `delete` | `SC_CLOSE` |
 | `minimizeWindow` | `kde:kwin/Window Minimize` | `minimize` | `SC_MINIMIZE` |

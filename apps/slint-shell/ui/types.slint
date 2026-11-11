@@ -8,7 +8,7 @@ export enum MapperPhase { stopped, starting, running, stopping, retrying }
 export enum AppearanceChoice { system, light, dark, e-ink }
 
 /// Top-level page of the settings window.
-export enum Page { keyboard, profiles, settings, rules, layers, macros, menus }
+export enum Page { keyboard, keymaps, settings, rules, layers, macros, menus }
 
 /// Tab of the settings page.
 export enum SettingsTab { general, mapper, key-behavior, game-mode, commands, accessibility }
@@ -37,18 +37,18 @@ export enum LabelMode { label, code }
 /// Dialog of the layers page.
 export enum LayerDialog { none, create, duplicate, delete }
 
-/// Dialog of the profile library.
+/// Dialog of the keymap library.
 /// `conflict`: the working copy's library file changed since it was opened.
 export enum LibraryDialog { none, create, rule, delete-rule, delete, unsaved, conflict }
 
-/// Action on the selected library profile.
+/// Action on the selected library keymap.
 export enum LibraryAction { activate, move-up, move-down }
 
-/// Starting point of a new profile.
-export enum Profilesource { empty, bundled, copy }
+/// Starting point of a new keymap.
+export enum Keymapsource { empty, bundled, copy }
 
 /// What runs once the unsaved-changes question is answered.
-export enum PendingProfileAction { none, edit, create, quit }
+export enum PendingKeymapAction { none, edit, create, quit }
 
 /// Game-mode part of a condition.
 export enum GameCondition { any, on, off }

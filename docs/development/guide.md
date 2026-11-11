@@ -120,7 +120,7 @@ Release-сборки используют `~/.config/dev.bozonx.tecloid/` и
 файл с правами `0600`.
 
 JSON Schema обоих форматов лежат в `schemas/` и генерируются из `*Doc`-структур
-читателей (`config/settings.rs`, `config/profile_file.rs`). После изменения формата
+читателей (`config/settings.rs`, `config/keymap_file.rs`). После изменения формата
 обновите их и закоммитьте вместе с кодом:
 
 ```sh
@@ -319,7 +319,7 @@ cargo test --locked -p tecloid-core --test mapper_e2e -- --ignored
 ```
 
 `crates/tecloid-core/tests/mapper_e2e.rs` создаёт через uinput виртуальную «физическую»
-клавиатуру, запускает mapper с тестовым профилем на ней и читает выход его
+клавиатуру, запускает mapper с тестовым Keymap на ней и читает выход его
 виртуального устройства. Сценарии: passthrough, remap, chord, tap/hold, слой,
 double tap, макрос с паузой, остановка без залипших клавиш, отключение устройства.
 Оба устройства захватываются (grab), нажатия не попадают в сессию; межпроцессный
@@ -522,7 +522,7 @@ USB-клавиатура) и сравнивает полученный текс�
 | `boot`, `upload`, `plasma-session`, `install` | Загрузка, автологин в Plasma Wayland, установка штатным менеджером или `install-linux.sh` |
 | `installed-files` | `.desktop` (и `desktop-file-validate`), metainfo, иконки hicolor; для пакетов — udev-правило и запись в `/dev/uinput` для сессии через `uaccess` |
 | `keyboard-probe` | Какой узел `/dev/input` получает клавиши QEMU `usb-kbd`; он становится `settings.devices.keyboards` |
-| `test-config` | Тестовый профиль (`E2E_PROFILE` в `linux-guest.py`), команды разрешены, раскладки `us,ru`, два рабочих стола, автозапуск |
+| `test-config` | Тестовый Keymap (`E2E_KEYMAP` в `linux-guest.py`), команды разрешены, раскладки `us,ru`, два рабочих стола, автозапуск |
 | `previous-release`, `upgrade-from-previous` | Только с `--previous`: обновление с сохранением конфига |
 | `start-without-input`, `tray-item`, `no-mapper-without-input` | Без группы `input` приложение стартует, регистрирует элемент трея (`StatusNotifierWatcher`, Id `tecloid-slint-shell`), а mapper не создаёт виртуальную клавиатуру |
 | `autostart-entry` | XDG Autostart указывает на установленный бинарник |
@@ -534,7 +534,7 @@ USB-клавиатура) и сравнивает полученный текс�
 | `layer-tap-hold` | Слой на `F`: tap → `g`, hold + `j` → `k`, быстрый вложенный набор → `k`, «перекат» (F отпущена раньше J) → `gj`, `j` вне слоя → `j` (permissive hold, 200 мс) |
 | `macro`, `command` | Макрос `KeyN, pause:300, text:mac, Shift+KeyO` → `nmacO`; `cmd:` создаёт файл-маркер |
 | `system-actions` | `sys:switchToDesktop2`, `kde:kwin/Switch to Desktop 1`, `sys:switchToKeyboardLayout2/1` — по состоянию KWin и `org.kde.keyboard` |
-| `russian-profile` | В раскладке ru физические клавиши дают кириллицу (`a`→KeyB→`и`, `c`→`с`), `text:` вводится без искажений |
+| `russian-keymap` | В раскладке ru физические клавиши дают кириллицу (`a`→KeyB→`и`, `c`→`с`), `text:` вводится без искажений |
 | `popups`, `emoji-ipc`, `quick-menu-rule` | IPC show/hide; эмодзи из `show emoji` + `Q` и быстрое действие из `tecloid:showQuickMenu1` + `Q` вставляются в окно, бывшее активным до попапа |
 | `emoji-hotkey` | Ctrl+Alt+F11 открывает Emoji, `Q` вставляет эмодзи, консоль не переключается на VT11 |
 | `game-mode` | Правило с `when.gameMode`: Off, On (`game on`), Auto без игры и с процессом из `gameMode.processes` |
@@ -759,7 +759,7 @@ powershell -NoProfile -File apps/slint-shell/scripts/windows/check-windows-packa
 
 Артефакты: `tecloid-<версия>-windows-x86_64.zip` и
 `WINDOWS-SHA256SUMS`. ZIP содержит release executable, лицензию и инструкции;
-профили и тестовые данные не входят. Это portable-поставка без установщика,
+Keymap и тестовые данные не входят. Это portable-поставка без установщика,
 автоматической установки автозапуска и Authenticode-подписи. Установка, обновление
 и удаление описаны в [инструкции Windows](../install-windows.md).
 

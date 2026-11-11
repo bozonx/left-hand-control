@@ -1,6 +1,6 @@
 //! Macros page. The page edits a draft; the draft is saved whenever every
 //! macro in it is valid. Structural changes save at once, typing is saved
-//! after a short pause so a keystroke does not rewrite the profile file.
+//! after a short pause so a keystroke does not rewrite the keymap file.
 
 use crate::{
     document::{Document, View},
@@ -66,7 +66,7 @@ fn parse_delay(value: &str) -> Result<Option<u64>, ()> {
 fn load(document: &Document) -> Vec<Entry> {
     document
         .read()
-        .profile()
+        .keymap()
         .macros
         .iter()
         .cloned()
@@ -285,16 +285,16 @@ fn persist(document: &Document, state: &mut State) -> Result<SaveResult, ConfigE
         .iter()
         .flat_map(|entry| entry.commands.clone())
         .collect();
-    if commands.is_empty() && document.read().profile().macros == items {
+    if commands.is_empty() && document.read().keymap().macros == items {
         state.baseline = state.draft.clone();
         return Ok(SaveResult::Unchanged);
     }
     let renames = renames(&state.draft);
     let edit = document.edit(View::Macros, |config| {
-        config.edit_profile_with_commands(commands, |config| config.save_macros(items, &renames))
+        config.edit_keymap_with_commands(commands, |config| config.save_macros(items, &renames))
     });
     if edit.is_ok() {
-        let saved = document.read().profile().macros.clone();
+        let saved = document.read().keymap().macros.clone();
         for (entry, item) in state.draft.iter_mut().zip(saved) {
             entry.item = item;
             entry.saved_id = Some(entry.item.id.clone());

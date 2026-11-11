@@ -1,5 +1,5 @@
 //! Built-in macros — globally available macros that resolve
-//! `builtin:<id>` at runtime regardless of the active profile preset.
+//! `builtin:<id>` at runtime regardless of the active keymap preset.
 //!
 //! Built-in and user macros have independent action namespaces.
 

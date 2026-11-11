@@ -14,7 +14,7 @@ use std::{
 use tecloid_core::{
     config::{
         auto_switch::AutoSwitchContext,
-        model::{AppSettings, ProfilePreset},
+        model::{AppSettings, KeymapPreset},
     },
     config_document::{ConfigDocument, ConfigError, RuntimeConfig},
     storage::StoragePaths,
@@ -48,21 +48,21 @@ struct Changes {
 
 impl Changes {
     fn between(
-        profile: &ProfilePreset,
+        keymap: &KeymapPreset,
         settings: &AppSettings,
         next: &ConfigDocument,
         origin: View,
     ) -> Self {
-        let current = next.profile();
+        let current = next.keymap();
         Self {
             settings: settings != next.settings(),
-            rules: profile.rules != current.rules,
-            layers: profile.layers != current.layers
-                || profile.layer_keymaps != current.layer_keymaps,
-            macros: profile.macros != current.macros,
-            commands: profile.commands != current.commands,
+            rules: keymap.rules != current.rules,
+            layers: keymap.layers != current.layers
+                || keymap.layer_keymaps != current.layer_keymaps,
+            macros: keymap.macros != current.macros,
+            commands: keymap.commands != current.commands,
             library: origin == View::Library,
-            quick: profile.quick_action_pages != current.quick_action_pages,
+            quick: keymap.quick_action_pages != current.quick_action_pages,
         }
     }
 
@@ -84,13 +84,13 @@ impl Changes {
 
 struct LibrarySnapshot {
     name: String,
-    profile: Option<SavedProfile>,
+    keymap: Option<SavedKeymap>,
 }
 
-/// A library profile as saved, with its normalized serialization cached so
+/// A library keymap as saved, with its normalized serialization cached so
 /// dirty checks do not re-serialize it on every edit.
-pub(crate) struct SavedProfile {
-    pub(crate) profile: ProfilePreset,
+pub(crate) struct SavedKeymap {
+    pub(crate) keymap: KeymapPreset,
     pub(crate) text: String,
 }
 
@@ -102,8 +102,8 @@ pub struct Document {
     command_revision: Cell<u64>,
     library_snapshot: RefCell<Option<LibrarySnapshot>>,
     listeners: RefCell<Vec<(View, Listener)>>,
-    /// Document revision and profile last given to the running mapper.
-    pushed_profile: RefCell<Option<(u64, RuntimeConfig)>>,
+    /// Document revision and keymap last given to the running mapper.
+    pushed_keymap: RefCell<Option<(u64, RuntimeConfig)>>,
     runtime_error: RefCell<Option<String>>,
 }
 
@@ -139,7 +139,7 @@ impl Document {
             command_revision: Cell::new(0),
             library_snapshot: RefCell::default(),
             listeners: RefCell::default(),
-            pushed_profile: RefCell::default(),
+            pushed_keymap: RefCell::default(),
             runtime_error: RefCell::default(),
         })
     }
@@ -189,19 +189,16 @@ impl Document {
     ) -> Result<Saved<T>, ConfigError> {
         let (value, changes) = {
             let mut config = self.config.borrow_mut();
-            let profile = config.profile().clone();
+            let keymap = config.keymap().clone();
             let settings = config.settings().clone();
             let value = edit(&mut config);
             if let Err(error) = &value
-                && profile == *config.profile()
+                && keymap == *config.keymap()
                 && settings == *config.settings()
             {
                 return Err(error.clone());
             }
-            (
-                value,
-                Changes::between(&profile, &settings, &config, origin),
-            )
+            (value, Changes::between(&keymap, &settings, &config, origin))
         };
         self.revision.set(self.revision.get().wrapping_add(1));
         if changes.affects(View::Settings) {
@@ -223,38 +220,38 @@ impl Document {
         self.library_snapshot.borrow_mut().take();
     }
 
-    /// Saved library profile used by dirty indicators; disk reads happen once per refresh.
-    pub(crate) fn with_saved_profile<R>(
+    /// Saved library keymap used by dirty indicators; disk reads happen once per refresh.
+    pub(crate) fn with_saved_keymap<R>(
         &self,
         name: &str,
-        f: impl FnOnce(Option<&SavedProfile>) -> R,
+        f: impl FnOnce(Option<&SavedKeymap>) -> R,
     ) -> R {
         let mut snapshot = self.library_snapshot.borrow_mut();
         if snapshot
             .as_ref()
             .is_none_or(|snapshot| snapshot.name != name)
         {
-            let profile = self
+            let keymap = self
                 .read()
-                .load_profile(&tecloid_core::config::model::user_profile_id(name))
+                .load_keymap(&tecloid_core::config::model::user_keymap_id(name))
                 .ok()
-                .map(|profile| SavedProfile {
-                    text: tecloid_core::config::profile_file::serialize(&profile),
-                    profile,
+                .map(|keymap| SavedKeymap {
+                    text: tecloid_core::config::keymap_file::serialize(&keymap),
+                    keymap,
                 });
             *snapshot = Some(LibrarySnapshot {
                 name: name.to_owned(),
-                profile,
+                keymap,
             });
         }
         f(snapshot
             .as_ref()
-            .and_then(|snapshot| snapshot.profile.as_ref()))
+            .and_then(|snapshot| snapshot.keymap.as_ref()))
     }
 
     #[cfg(test)]
-    fn saved_profile(&self, name: &str) -> Option<ProfilePreset> {
-        self.with_saved_profile(name, |saved| saved.map(|saved| saved.profile.clone()))
+    fn saved_keymap(&self, name: &str) -> Option<KeymapPreset> {
+        self.with_saved_keymap(name, |saved| saved.map(|saved| saved.keymap.clone()))
     }
 
     pub(crate) fn command_revision(&self) -> u64 {
@@ -272,10 +269,10 @@ impl Document {
     }
 
     /// Bring a running mapper up to date. With `force` the configuration is
-    /// always sent; otherwise only when the document or active profile changed (system
+    /// always sent; otherwise only when the document or active keymap changed (system
     /// context changes). A stopped mapper is left alone. A failed edit
     /// stops the mapper, which would run outdated rules; a failed context
-    /// switch (e.g. a game started) keeps the current profile running and
+    /// switch (e.g. a game started) keeps the current keymap running and
     /// is retried on the next change.
     pub fn sync_runtime(&self, force: bool) -> Result<(), String> {
         let result = self.sync_runtime_with(
@@ -298,34 +295,34 @@ impl Document {
         stop: impl FnOnce() -> Result<(), String>,
     ) -> Result<(), String> {
         if !running {
-            self.pushed_profile.borrow_mut().take();
+            self.pushed_keymap.borrow_mut().take();
             self.runtime_error.borrow_mut().take();
             return Ok(());
         }
         let document_changed = self
-            .pushed_profile
+            .pushed_keymap
             .borrow()
             .as_ref()
             .is_some_and(|(revision, _)| *revision != self.revision.get());
         let result = (|| {
             let config = self.read();
             let id = config
-                .active_profile_id(context)
+                .active_keymap_id(context)
                 .map_err(|error| error.to_string())?;
-            // Most context events keep the same profile. Avoid reading and validating
-            // that profile again on the UI thread.
+            // Most context events keep the same keymap. Avoid reading and validating
+            // that keymap again on the UI thread.
             if !force && self.runtime_is_current(&id) {
                 return Ok(());
             }
             let runtime = config
-                .runtime_config_for_profile(id)
+                .runtime_config_for_keymap(id)
                 .map_err(|error| error.to_string())?;
             drop(config);
             self.push_runtime(runtime, force, update)
         })();
         *self.runtime_error.borrow_mut() = result.as_ref().err().cloned();
         if result.is_err() && (force || document_changed) {
-            self.pushed_profile.borrow_mut().take();
+            self.pushed_keymap.borrow_mut().take();
             if let Err(error) = stop() {
                 log::warn!("stop outdated mapper: {error}");
             }
@@ -333,15 +330,15 @@ impl Document {
         result
     }
 
-    /// Applied profile while running; stopped previews validate the selected file.
+    /// Applied keymap while running; stopped previews validate the selected file.
     pub(crate) fn activation_status(
         &self,
         context: &AutoSwitchContext,
         running: bool,
     ) -> (Option<String>, Option<usize>, Option<String>) {
-        let choice = self.read().profile_choice(context);
+        let choice = self.read().keymap_choice(context);
         if running {
-            let applied = self.applied_profile_id().flatten();
+            let applied = self.applied_keymap_id().flatten();
             let error = self
                 .runtime_error
                 .borrow()
@@ -349,16 +346,16 @@ impl Document {
                 .or_else(|| choice.as_ref().err().map(ToString::to_string));
             let matched = choice
                 .ok()
-                .filter(|choice| error.is_none() && choice.profile_id == applied)
+                .filter(|choice| error.is_none() && choice.keymap_id == applied)
                 .and_then(|choice| choice.matched_rule_index);
             return (applied, matched, error);
         }
         match choice.and_then(|choice| {
             self.read()
-                .profile_for_activation(choice.profile_id.as_deref())?;
+                .keymap_for_activation(choice.keymap_id.as_deref())?;
             Ok(choice)
         }) {
-            Ok(choice) => (choice.profile_id, choice.matched_rule_index, None),
+            Ok(choice) => (choice.keymap_id, choice.matched_rule_index, None),
             Err(error) => (None, None, Some(error.to_string())),
         }
     }
@@ -369,48 +366,48 @@ impl Document {
         force: bool,
         update: impl FnOnce(tecloid_core::mapper::config::MapperConfig) -> Result<(), String>,
     ) -> Result<(), String> {
-        if !force && self.runtime_is_current(&runtime.profile_id) {
+        if !force && self.runtime_is_current(&runtime.keymap_id) {
             return Ok(());
         }
         update(runtime.mapper.clone())?;
-        *self.pushed_profile.borrow_mut() = Some((self.revision.get(), runtime));
+        *self.pushed_keymap.borrow_mut() = Some((self.revision.get(), runtime));
         Ok(())
     }
 
-    fn runtime_is_current(&self, profile_id: &Option<String>) -> bool {
-        self.pushed_profile
+    fn runtime_is_current(&self, keymap_id: &Option<String>) -> bool {
+        self.pushed_keymap
             .borrow()
             .as_ref()
             .is_some_and(|(revision, runtime)| {
-                *revision == self.revision.get() && &runtime.profile_id == profile_id
+                *revision == self.revision.get() && &runtime.keymap_id == keymap_id
             })
     }
 
-    /// Last profile successfully submitted to the mapper, including native passthrough.
-    /// Unlike the selected profile, this stays unchanged after a failed context switch.
-    pub(crate) fn applied_profile_id(&self) -> Option<Option<String>> {
-        self.pushed_profile
+    /// Last keymap successfully submitted to the mapper, including native passthrough.
+    /// Unlike the selected keymap, this stays unchanged after a failed context switch.
+    pub(crate) fn applied_keymap_id(&self) -> Option<Option<String>> {
+        self.pushed_keymap
             .borrow()
             .as_ref()
-            .map(|(_, runtime)| runtime.profile_id.clone())
+            .map(|(_, runtime)| runtime.keymap_id.clone())
     }
 
-    /// Menus and their profile id from the same snapshot submitted to the mapper.
+    /// Menus and their keymap id from the same snapshot submitted to the mapper.
     /// Without a running mapper, menus follow the current document context.
-    pub(crate) fn popup_layout(
+    pub(crate) fn popup_keymap(
         &self,
         running: bool,
-    ) -> Result<(Option<String>, ProfilePreset), ConfigError> {
+    ) -> Result<(Option<String>, KeymapPreset), ConfigError> {
         if running {
-            return Ok(self.pushed_profile.borrow().as_ref().map_or_else(
-                || (None, ProfilePreset::default()),
-                |(_, runtime)| (runtime.profile_id.clone(), runtime.profile.clone()),
+            return Ok(self.pushed_keymap.borrow().as_ref().map_or_else(
+                || (None, KeymapPreset::default()),
+                |(_, runtime)| (runtime.keymap_id.clone(), runtime.keymap.clone()),
             ));
         }
         let config = self.read();
-        let id = config.active_profile_id(&AutoSwitchContext::current())?;
-        let profile = config.profile_for_activation(id.as_deref())?;
-        Ok((id, profile))
+        let id = config.active_keymap_id(&AutoSwitchContext::current())?;
+        let keymap = config.keymap_for_activation(id.as_deref())?;
+        Ok((id, keymap))
     }
 
     /// Keep title collection independent of mapper start/stop success.
@@ -420,7 +417,7 @@ impl Document {
 
     fn titles_needed(&self, running: bool) -> bool {
         if running {
-            self.pushed_profile
+            self.pushed_keymap
                 .borrow()
                 .as_ref()
                 .is_some_and(|(_, runtime)| runtime.uses_titles)
@@ -433,9 +430,9 @@ impl Document {
         }
     }
 
-    /// Record the profile a freshly started mapper runs.
+    /// Record the keymap a freshly started mapper runs.
     pub fn mapper_started(&self, revision: u64, runtime: RuntimeConfig) {
-        *self.pushed_profile.borrow_mut() = Some((revision, runtime));
+        *self.pushed_keymap.borrow_mut() = Some((revision, runtime));
         self.runtime_error.borrow_mut().take();
     }
 
@@ -476,14 +473,14 @@ mod tests {
     }
 
     fn auto_document() -> (tempfile::TempDir, Rc<Document>, AutoSwitchContext) {
-        use tecloid_core::config::model::{AutoRule, ProfileConditionSet, ProfileMode};
+        use tecloid_core::config::model::{AutoRule, KeymapConditionSet, KeymapMode};
         let (dir, document) = document();
         let paths = document.read().paths().clone();
         for name in ["A", "B"] {
             paths
-                .save_user_profile(
+                .save_user_keymap(
                     name,
-                    &tecloid_core::config::profile_file::serialize(&ProfilePreset::default()),
+                    &tecloid_core::config::keymap_file::serialize(&KeymapPreset::default()),
                     false,
                 )
                 .unwrap();
@@ -491,13 +488,13 @@ mod tests {
         document
             .edit(View::Library, |config| {
                 config.update_settings(|settings| {
-                    settings.profile_mode = ProfileMode::Auto;
-                    settings.auto_default_profile_id = Some("user:A".into());
+                    settings.keymap_mode = KeymapMode::Auto;
+                    settings.auto_default_keymap_id = Some("user:A".into());
                     settings.auto_rules = vec![AutoRule {
                         id: "b".into(),
                         enabled: true,
-                        profile_id: Some("user:B".into()),
-                        conditions: ProfileConditionSet {
+                        keymap_id: Some("user:B".into()),
+                        conditions: KeymapConditionSet {
                             window_patterns: vec!["b".into()],
                             ..Default::default()
                         },
@@ -558,9 +555,9 @@ mod tests {
     }
 
     #[test]
-    fn broken_target_keeps_actual_profile_and_reports_load_error() {
+    fn broken_target_keeps_actual_keymap_and_reports_load_error() {
         let (_dir, document, context) = auto_document();
-        let path = document.read().paths().profile_path("B").unwrap();
+        let path = document.read().paths().keymap_path("B").unwrap();
         std::fs::write(&path, "broken").unwrap();
         assert!(
             document
@@ -568,7 +565,7 @@ mod tests {
                     true,
                     &context,
                     false,
-                    |_| panic!("invalid profile sent"),
+                    |_| panic!("invalid keymap sent"),
                     || panic!("context switch stopped mapper")
                 )
                 .is_err()
@@ -578,7 +575,7 @@ mod tests {
         assert!(matched.is_none() && error.is_some());
         std::fs::write(
             &path,
-            tecloid_core::config::profile_file::serialize(&ProfilePreset::default()),
+            tecloid_core::config::keymap_file::serialize(&KeymapPreset::default()),
         )
         .unwrap();
         document
@@ -593,7 +590,7 @@ mod tests {
     #[test]
     fn unchanged_choice_skips_loading_and_forced_updates_still_validate() {
         let (_dir, document, _) = auto_document();
-        std::fs::write(document.read().paths().profile_path("A").unwrap(), "broken").unwrap();
+        std::fs::write(document.read().paths().keymap_path("A").unwrap(), "broken").unwrap();
         let context = AutoSwitchContext::default();
         document
             .sync_runtime_with(
@@ -620,43 +617,43 @@ mod tests {
                 .is_err()
         );
         assert!(stopped.get());
-        assert!(document.applied_profile_id().is_none());
+        assert!(document.applied_keymap_id().is_none());
     }
 
     #[test]
     fn failed_switch_keeps_popup_snapshot_even_after_library_changes() {
         let (_dir, document) = document();
         let mut runtime = document.runtime_config().unwrap();
-        runtime.profile_id = Some("user:A".into());
-        runtime.profile.description = Some("snapshot A".into());
+        runtime.keymap_id = Some("user:A".into());
+        runtime.keymap.description = Some("snapshot A".into());
         runtime.uses_titles = true;
         document.mapper_started(document.revision(), runtime.clone());
         let mut rejected = runtime.clone();
-        rejected.profile_id = Some("user:B".into());
-        rejected.profile.description = Some("snapshot B".into());
+        rejected.keymap_id = Some("user:B".into());
+        rejected.keymap.description = Some("snapshot B".into());
         assert!(
             document
                 .push_runtime(rejected, false, |_| Err("rejected".into()))
                 .is_err()
         );
-        let mut changed_on_disk = runtime.profile.clone();
+        let mut changed_on_disk = runtime.keymap.clone();
         changed_on_disk.description = Some("changed on disk".into());
         document
             .read()
             .paths()
-            .save_user_profile(
+            .save_user_keymap(
                 "A",
-                &tecloid_core::config::profile_file::serialize(&changed_on_disk),
+                &tecloid_core::config::keymap_file::serialize(&changed_on_disk),
                 true,
             )
             .unwrap();
         assert_eq!(
-            document.popup_layout(true).unwrap(),
-            (runtime.profile_id, runtime.profile)
+            document.popup_keymap(true).unwrap(),
+            (runtime.keymap_id, runtime.keymap)
         );
         assert_ne!(
             document
-                .popup_layout(false)
+                .popup_keymap(false)
                 .unwrap()
                 .1
                 .description
@@ -673,12 +670,12 @@ mod tests {
         document
             .edit(View::Library, |config| {
                 config.update_settings(|settings| {
-                    settings.profile_mode = tecloid_core::config::model::ProfileMode::Auto;
+                    settings.keymap_mode = tecloid_core::config::model::KeymapMode::Auto;
                     settings.auto_rules = vec![tecloid_core::config::model::AutoRule {
                         id: "t".into(),
                         enabled: true,
-                        profile_id: None,
-                        conditions: tecloid_core::config::model::ProfileConditionSet {
+                        keymap_id: None,
+                        conditions: tecloid_core::config::model::KeymapConditionSet {
                             window_patterns: vec!["title:b".into()],
                             ..Default::default()
                         },
@@ -690,22 +687,22 @@ mod tests {
     }
 
     #[test]
-    fn startup_snapshot_does_not_hide_edits_with_the_same_profile_id() {
+    fn startup_snapshot_does_not_hide_edits_with_the_same_keymap_id() {
         let (_dir, document) = document();
         let started_revision = document.revision();
-        let profile_id = document.runtime_config().unwrap().profile_id;
+        let keymap_id = document.runtime_config().unwrap().keymap_id;
         document.mapper_started(started_revision, document.runtime_config().unwrap());
-        assert!(document.runtime_is_current(&profile_id));
+        assert!(document.runtime_is_current(&keymap_id));
         document
             .edit(View::Keys, |config| {
                 config.set_base_tap_action("KeyA", "KeyB")
             })
             .unwrap();
         document.mapper_started(started_revision, document.runtime_config().unwrap());
-        assert!(!document.runtime_is_current(&profile_id));
-        assert_eq!(document.runtime_config().unwrap().profile_id, profile_id);
+        assert!(!document.runtime_is_current(&keymap_id));
+        assert_eq!(document.runtime_config().unwrap().keymap_id, keymap_id);
         document.mapper_started(document.revision(), document.runtime_config().unwrap());
-        assert!(document.runtime_is_current(&profile_id));
+        assert!(document.runtime_is_current(&keymap_id));
         assert!(!document.runtime_is_current(&Some("user:other".into())));
         let revision = document.revision();
         assert!(
@@ -716,40 +713,37 @@ mod tests {
                 .is_err()
         );
         assert_eq!(document.revision(), revision);
-        assert!(document.runtime_is_current(&profile_id));
+        assert!(document.runtime_is_current(&keymap_id));
     }
 
     #[test]
-    fn failed_context_push_keeps_the_applied_profile_and_retries_the_new_one() {
+    fn failed_context_push_keeps_the_applied_keymap_and_retries_the_new_one() {
         let (_dir, document) = document();
         let previous = Some("user:Previous".to_owned());
         let mut started = document.runtime_config().unwrap();
-        started.profile_id = previous.clone();
+        started.keymap_id = previous.clone();
         document.mapper_started(document.revision(), started);
         let mut runtime = document.runtime_config().unwrap();
-        runtime.profile_id = Some("user:Next".to_owned());
+        runtime.keymap_id = Some("user:Next".to_owned());
         assert!(
             document
                 .push_runtime(runtime, false, |_| Err("queue full".into()))
                 .is_err()
         );
-        assert_eq!(document.applied_profile_id(), Some(previous));
+        assert_eq!(document.applied_keymap_id(), Some(previous));
         let mut runtime = document.runtime_config().unwrap();
-        runtime.profile_id = Some("user:Next".to_owned());
+        runtime.keymap_id = Some("user:Next".to_owned());
         document.push_runtime(runtime, false, |_| Ok(())).unwrap();
-        assert_eq!(
-            document.applied_profile_id(),
-            Some(Some("user:Next".into()))
-        );
+        assert_eq!(document.applied_keymap_id(), Some(Some("user:Next".into())));
         let mut runtime = document.runtime_config().unwrap();
-        runtime.profile_id = Some("user:Next".to_owned());
+        runtime.keymap_id = Some("user:Next".to_owned());
         document
             .push_runtime(runtime, false, |_| panic!("already applied"))
             .unwrap();
         let mut runtime = document.runtime_config().unwrap();
-        runtime.profile_id = None;
+        runtime.keymap_id = None;
         document.push_runtime(runtime, false, |_| Ok(())).unwrap();
-        assert_eq!(document.applied_profile_id(), Some(None));
+        assert_eq!(document.applied_keymap_id(), Some(None));
     }
 
     #[test]
@@ -771,13 +765,13 @@ mod tests {
         let initial = document.command_revision();
         document
             .edit(View::Menus, |config| {
-                config.update_profile(|profile| profile.emoji_pages[0].name = "Emoji".into())
+                config.update_keymap(|keymap| keymap.emoji_pages[0].name = "Emoji".into())
             })
             .unwrap();
         assert_eq!(document.command_revision(), initial);
         document
             .edit(View::Menus, |config| {
-                config.update_profile(|profile| profile.quick_action_pages[0].name = "Quick".into())
+                config.update_keymap(|keymap| keymap.quick_action_pages[0].name = "Quick".into())
             })
             .unwrap();
         assert_ne!(document.command_revision(), initial);
@@ -806,8 +800,8 @@ mod tests {
         .collect();
         document
             .edit(View::Menus, |config| {
-                config.update_profile(|profile| {
-                    profile.emoji_pages[0].name = "Edited".into();
+                config.update_keymap(|keymap| {
+                    keymap.emoji_pages[0].name = "Edited".into();
                 })
             })
             .unwrap();
@@ -826,34 +820,34 @@ mod tests {
     fn library_snapshot_refreshes_after_library_edits_and_explicit_refresh() {
         let (_dir, document) = document();
         document
-            .edit_library(|config| config.save_current_profile_as("Saved"))
+            .edit_library(|config| config.save_current_keymap_as("Saved"))
             .unwrap();
-        let before = document.saved_profile("Saved").unwrap();
+        let before = document.saved_keymap("Saved").unwrap();
         document
             .edit(View::Layers, |config| {
-                config.update_profile(|profile| profile.description = Some("working".into()))
+                config.update_keymap(|keymap| keymap.description = Some("working".into()))
             })
             .unwrap();
-        assert_eq!(document.saved_profile("Saved"), Some(before.clone()));
+        assert_eq!(document.saved_keymap("Saved"), Some(before.clone()));
         document
-            .edit_library(|config| config.overwrite_library_profile("Saved"))
+            .edit_library(|config| config.overwrite_library_keymap("Saved"))
             .unwrap();
         assert_eq!(
             document
-                .saved_profile("Saved")
+                .saved_keymap("Saved")
                 .unwrap()
                 .description
                 .as_deref(),
             Some("working")
         );
-        let text = tecloid_core::config::profile_file::serialize(&before);
+        let text = tecloid_core::config::keymap_file::serialize(&before);
         document
             .read()
             .paths()
-            .save_user_profile("Saved", &text, true)
+            .save_user_keymap("Saved", &text, true)
             .unwrap();
         document.refresh_all();
-        assert_eq!(document.saved_profile("Saved"), Some(before));
+        assert_eq!(document.saved_keymap("Saved"), Some(before));
     }
 
     #[test]
@@ -870,7 +864,7 @@ mod tests {
             .unwrap();
         assert!(saved.runtime.is_ok());
         assert_eq!((rules.get(), layers.get()), (0, 1));
-        assert_eq!(document.read().profile().layers.len(), 1);
+        assert_eq!(document.read().keymap().layers.len(), 1);
     }
 
     #[test]
@@ -888,13 +882,13 @@ mod tests {
         document
             .edit(View::Rules, |config| config.create_layer("First", ""))
             .unwrap();
-        assert_eq!(document.read().profile().layers.len(), 2);
+        assert_eq!(document.read().keymap().layers.len(), 2);
     }
     #[test]
     fn failed_compound_edit_does_not_advance_revision_or_notify_views() {
         let (_dir, document) = document();
         let revision = document.revision();
-        let before = document.read().profile().clone();
+        let before = document.read().keymap().clone();
         let notified = Rc::new(Cell::new(false));
         let flag = notified.clone();
         document.subscribe(View::Shell, move |_| flag.set(true));
@@ -904,7 +898,7 @@ mod tests {
         });
         assert!(matches!(result, Err(ConfigError::EditConflict)));
         assert_eq!(document.revision(), revision);
-        assert_eq!(document.read().profile(), &before);
+        assert_eq!(document.read().keymap(), &before);
         assert!(!notified.get());
     }
 }

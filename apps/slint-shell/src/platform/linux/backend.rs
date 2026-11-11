@@ -333,7 +333,7 @@ mod tests {
         let first = completion.clone();
         worker
             .send(
-                &WorkerCommand::PopupLayout(None),
+                &WorkerCommand::PopupKeymap(None),
                 Source::Ipc,
                 Instant::now(),
                 None,
@@ -358,7 +358,7 @@ mod tests {
             .unwrap();
         assert!(completions.try_recv().is_err());
         release.send(()).unwrap();
-        assert_eq!(server.join().unwrap(), ["popup-profile null", "hide"]);
+        assert_eq!(server.join().unwrap(), ["popup-keymap null", "hide"]);
         assert_eq!(
             completions.recv_timeout(Duration::from_secs(2)).unwrap(),
             Ok(())
@@ -389,7 +389,7 @@ mod tests {
         let (failure, failures) = mpsc::channel();
         worker
             .send(
-                &WorkerCommand::PopupLayout(None),
+                &WorkerCommand::PopupKeymap(None),
                 Source::Ipc,
                 Instant::now(),
                 None,

@@ -244,33 +244,33 @@ fn settings_inputs_fit(ui: &SettingsWindow, state: &str) {
 }
 
 const STEPS: &[Step] = &[
-    ("long-profile-names", |ui| {
-        let library = ui.global::<ProfileLibrary>();
+    ("long-keymap-names", |ui| {
+        let library = ui.global::<KeymapLibrary>();
         library.set_active_label(
-            "A very long active profile name with an identical prefix — active".into(),
+            "A very long active keymap name with an identical prefix — active".into(),
         );
         library.set_current_label(
-            "A very long active profile name with an identical prefix — editing".into(),
+            "A very long active keymap name with an identical prefix — editing".into(),
         );
         library.set_automatic(true);
         ui.invoke_navigate(Page::Layers, MenuKind::Emoji);
     }),
     ("library", |ui| {
-        ui.invoke_navigate(Page::Profiles, MenuKind::Emoji)
+        ui.invoke_navigate(Page::Keymaps, MenuKind::Emoji)
     }),
     ("auto-rule-dialog", |ui| {
-        ui.global::<ProfileLibrary>().invoke_set_automatic(true);
-        ui.global::<ProfileLibrary>().invoke_open_rule(-1, 0);
+        ui.global::<KeymapLibrary>().invoke_set_automatic(true);
+        ui.global::<KeymapLibrary>().invoke_open_rule(-1, 0);
     }),
     ("auto-without-development", |ui| {
-        ui.global::<ProfileLibrary>().invoke_cancel_dialog();
+        ui.global::<KeymapLibrary>().invoke_cancel_dialog();
         ui.global::<AppState>().set_in_development(false);
-        ui.invoke_navigate(Page::Profiles, MenuKind::Emoji);
+        ui.invoke_navigate(Page::Keymaps, MenuKind::Emoji);
     }),
     ("auto-default-scroll", scroll_auto_default),
     ("settings-general", |ui| {
         ui.global::<AppState>().set_in_development(true);
-        ui.global::<ProfileLibrary>().invoke_cancel_dialog();
+        ui.global::<KeymapLibrary>().invoke_cancel_dialog();
         ui.invoke_navigate(Page::Settings, MenuKind::Emoji);
         ui.global::<SettingsEditor>().set_tab(SettingsTab::General);
     }),
@@ -392,10 +392,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.global::<AppState>().set_in_development(development);
     ui.global::<SettingsEditor>()
         .set_in_development(development);
-    ui.global::<ProfileLibrary>().invoke_create(
+    ui.global::<KeymapLibrary>().invoke_create(
         "Small window".into(),
         "".into(),
-        Profilesource::Bundled,
+        Keymapsource::Bundled,
         0,
     );
     fixture
@@ -428,7 +428,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let progress = step.clone();
     let weak = ui.as_weak();
     let timer = slint::Timer::default();
-    // Two ticks per state: apply, then snapshot after profile and animations settle.
+    // Two ticks per state: apply, then snapshot after keymap and animations settle.
     timer.start(
         slint::TimerMode::Repeated,
         Duration::from_millis(300),

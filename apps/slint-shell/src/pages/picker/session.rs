@@ -348,7 +348,7 @@ pub(super) fn refresh(
     let value = picker.get_value();
     let command = doc
         .read()
-        .profile()
+        .keymap()
         .commands
         .iter()
         .find(|command| assigns_command(&value, &command.id))
@@ -525,7 +525,7 @@ pub(super) fn apply(
             &value,
             &state.catalog,
             command.as_ref(),
-            &doc.read().profile().commands,
+            &doc.read().keymap().commands,
         );
         (state.target, command, label)
     };

@@ -1247,12 +1247,12 @@ mod tests {
     fn app_actions_bypass_the_text_worker() {
         let (sent, received) = std::sync::mpsc::channel();
         let _events = crate::events::bus().subscribe(move |event| {
-            if matches!(event, crate::events::CoreEvent::AppAction(name) if *name == crate::config::app_action::AppAction::parse("activateProfile5").unwrap()) {
+            if matches!(event, crate::events::CoreEvent::AppAction(name) if *name == crate::config::app_action::AppAction::parse("activateKeymap5").unwrap()) {
                 sent.send(()).unwrap();
             }
         }).unwrap();
         RuntimeSideEffects.run_system(&SystemAction::AppEvent(
-            crate::config::app_action::AppAction::parse("activateProfile5").unwrap(),
+            crate::config::app_action::AppAction::parse("activateKeymap5").unwrap(),
         ));
         received.recv_timeout(Duration::from_secs(1)).unwrap();
     }

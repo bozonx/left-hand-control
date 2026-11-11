@@ -145,11 +145,11 @@ msgstr "Неизвестный тип действия"
 msgid "Tecloid"
 msgstr "Tecloid"
 
-msgid "Profiles"
-msgstr "Профили"
+msgid "Keymaps"
+msgstr "Keymap"
 
-msgid "New profile name"
-msgstr "Имя нового профиля"
+msgid "New keymap name"
+msgstr "Имя нового Keymap"
 
 msgid "Mapper"
 msgstr "Маппер"
@@ -201,8 +201,8 @@ msgstr "Путь к xdotool"
 msgid "Settings directory: {}"
 msgstr "Каталог настроек: {}"
 
-msgid "Profiles directory: {}"
-msgstr "Каталог профилей: {}"
+msgid "Keymaps directory: {}"
+msgstr "Каталог Keymap: {}"
 
 msgid "Save settings"
 msgstr "Сохранить настройки"
@@ -321,8 +321,8 @@ msgstr "Применить"
 msgid "Delete rule?"
 msgstr "Удалить правило?"
 
-msgid "This rule will be removed from the current profile."
-msgstr "Правило будет удалено из текущего профиля."
+msgid "This rule will be removed from the current keymap."
+msgstr "Правило будет удалено из текущего Keymap."
 
 msgid "Layers"
 msgstr "Слои"
@@ -375,8 +375,8 @@ msgstr "Введите имя слоя"
 msgid "A layer with this name already exists."
 msgstr "Слой с таким именем уже есть."
 
-msgid "Enter a profile name"
-msgstr "Введите имя профиля"
+msgid "Enter a keymap name"
+msgstr "Введите имя Keymap"
 
 msgid "Enter a key code"
 msgstr "Введите код клавиши"
@@ -453,8 +453,8 @@ msgstr "Введите команду оболочки."
 msgid "Save as…"
 msgstr "Сохранить как…"
 
-msgid "Save profile as…"
-msgstr "Сохранить профиль как…"
+msgid "Save keymap as…"
+msgstr "Сохранить Keymap как…"
 
 msgid "Please wait…"
 msgstr "Подождите…"
@@ -465,8 +465,8 @@ msgstr "Остановить"
 msgid "Start"
 msgstr "Запустить"
 
-msgid "Custom profile"
-msgstr "Свой профиль"
+msgid "Custom keymap"
+msgstr "Свой Keymap"
 
 msgid "Base keyboard"
 msgstr "Базовая клавиатура"
@@ -486,14 +486,14 @@ msgstr "Работает"
 msgid "Stopped"
 msgstr "Остановлен"
 
-msgid "Profile library updated"
-msgstr "Библиотека профилей обновлена"
+msgid "Keymap library updated"
+msgstr "Библиотека Keymap обновлена"
 
-msgid "Select a profile"
-msgstr "Выберите профиль"
+msgid "Select a keymap"
+msgstr "Выберите Keymap"
 
-msgid "Profile changed on disk; select it again"
-msgstr "Профиль изменён на диске; выберите его заново"
+msgid "Keymap changed on disk; select it again"
+msgstr "Keymap изменён на диске; выберите его заново"
 
 msgid "Any game mode"
 msgstr "Любой игровой режим"
@@ -504,7 +504,7 @@ msgstr "Игровой режим включён"
 msgid "Game mode off"
 msgstr "Игровой режим выключен"
 
-msgid "System profiles (comma separated)"
+msgid "System keymaps (comma separated)"
 msgstr "Языки клавиатуры через запятую"
 
 msgid "Applications (comma separated)"
@@ -522,29 +522,29 @@ msgstr "В редакторе"
 msgid "Activate"
 msgstr "Активировать"
 
-msgid "Delete profile?"
-msgstr "Удалить профиль?"
+msgid "Delete keymap?"
+msgstr "Удалить Keymap?"
 
-msgid "Profile details"
-msgstr "Свойства профиля"
+msgid "Keymap details"
+msgstr "Свойства Keymap"
 
 msgid "Do not use when"
 msgstr "Не использовать, когда"
 
-msgid "The profile file will be deleted. This cannot be undone."
-msgstr "Файл профиля будет удалён. Это действие нельзя отменить."
+msgid "The keymap file will be deleted. This cannot be undone."
+msgstr "Файл Keymap будет удалён. Это действие нельзя отменить."
 
 msgid "Duplicate…"
 msgstr "Создать копию…"
 
-msgid "Edit profile"
+msgid "Edit keymap"
 msgstr "Редактировать"
 
-msgid "New profile"
-msgstr "Новый профиль"
+msgid "New keymap"
+msgstr "Новый Keymap"
 
-msgid "A profile with this name already exists."
-msgstr "Профиль с таким именем уже есть."
+msgid "A keymap with this name already exists."
+msgstr "Keymap с таким именем уже есть."
 
 msgid "Add a description…"
 msgstr "Добавить описание…"
@@ -564,8 +564,8 @@ msgstr "Не сохранять"
 msgid "Make active"
 msgstr "Сделать активной"
 
-msgid "Single: the profile you make active works everywhere."
-msgstr "Одиночный: везде работает профиль, который вы сделали активным."
+msgid "Single: the keymap you make active works everywhere."
+msgstr "Одиночный: везде работает Keymap, который вы сделали активным."
 
 msgid "Not used in automatic mode"
 msgstr "Не участвует в автоматическом режиме"
@@ -579,8 +579,8 @@ msgstr "Сохранить и продолжить"
 msgid "Save…"
 msgstr "Сохранить…"
 
-msgid "The profile you are editing has not been saved to the library. Its changes will be lost."
-msgstr "Редактируемый профиль не сохранён в библиотеку. Изменения будут потеряны."
+msgid "The keymap you are editing has not been saved to the library. Its changes will be lost."
+msgstr "Редактируемый Keymap не сохранён в библиотеку. Изменения будут потеряны."
 
 msgid "The name contains characters that cannot be used in a file name."
 msgstr "Имя содержит символы, недопустимые в имени файла."
@@ -591,8 +591,8 @@ msgstr "Несохранённые изменения"
 msgid "You are editing “{}”, but “{}” is active."
 msgstr "Вы редактируете «{}», а активна «{}»."
 
-msgid "You are editing “{}”; no profile is active."
-msgstr "Вы редактируете «{}»; активного профиля нет."
+msgid "You are editing “{}”; no keymap is active."
+msgstr "Вы редактируете «{}»; активного Keymap нет."
 
 msgid "game mode off"
 msgstr "игровой режим выключен"
@@ -606,17 +606,17 @@ msgstr "{} (копия)"
 msgid "“{}” has unsaved changes. Save them before switching?"
 msgstr "В «{}» есть несохранённые изменения. Сохранить их перед переключением?"
 
-msgid "Profile mode"
-msgstr "Режим профилей"
+msgid "Keymap mode"
+msgstr "Режим Keymap"
 
-msgid "Create profile"
-msgstr "Создать профиль"
+msgid "Create keymap"
+msgstr "Создать Keymap"
 
 msgid "Empty"
 msgstr "Пустая"
 
-msgid "Empty profile"
-msgstr "Пустой профиль"
+msgid "Empty keymap"
+msgstr "Пустой Keymap"
 
 msgid "Previously selected: {}"
 msgstr "Было выбрано: {}"
@@ -765,8 +765,8 @@ msgstr "Открыть меню запуска приложений"
 msgid "Turn off screen"
 msgstr "Выключить экран"
 
-msgid "Switch to profile {}"
-msgstr "Переключить профиль на {}"
+msgid "Switch to keymap {}"
+msgstr "Переключить Keymap на {}"
 
 msgid "Layer"
 msgstr "Слой"
@@ -945,11 +945,11 @@ msgstr "Выберите действие"
 msgid "Quick Actions"
 msgstr "Быстрые действия"
 
-msgid "Reusable shell commands for the current profile. On Linux they run through sh -lc after you explicitly allow them. Shell commands run one at a time, with a 30-second limit, in your home directory."
-msgstr "Переиспользуемые shell-команды текущего профиля. На Linux они запускаются через sh -lc после явного разрешения. Shell-команды выполняются по одной, с лимитом 30 секунд, в домашнем каталоге."
+msgid "Reusable shell commands for the current keymap. On Linux they run through sh -lc after you explicitly allow them. Shell commands run one at a time, with a 30-second limit, in your home directory."
+msgstr "Переиспользуемые shell-команды текущего Keymap. На Linux они запускаются через sh -lc после явного разрешения. Shell-команды выполняются по одной, с лимитом 30 секунд, в домашнем каталоге."
 
-msgid "Shell commands are allowed for this version of the current profile."
-msgstr "Shell-команды разрешены для текущей версии этого профиля."
+msgid "Shell commands are allowed for this version of the current keymap."
+msgstr "Shell-команды разрешены для текущей версии этого Keymap."
 
 msgid "Smileys & Emotion"
 msgstr "Смайлы и эмоции"
@@ -963,8 +963,8 @@ msgstr "Макрос будет удалён. Ссылки macro:{} перест
 msgid "The page and all assigned cells on it will be deleted."
 msgstr "Страница будет удалена вместе со всеми назначенными ячейками."
 
-msgid "This profile contains shell scripts. Read every script before allowing them, especially in profiles from other people. Approval applies to the reviewed command definitions and resets when the command set, IDs, or Linux scripts change."
-msgstr "Этот профиль содержит shell-скрипты. Прочитайте каждый скрипт перед разрешением, особенно если профиль получен от другого человека. Разрешение применяется к проверенным определениям команд и сбрасывается при изменении набора команд, ID или Linux-скриптов."
+msgid "This keymap contains shell scripts. Read every script before allowing them, especially in keymaps from other people. Approval applies to the reviewed command definitions and resets when the command set, IDs, or Linux scripts change."
+msgstr "Этот Keymap содержит shell-скрипты. Прочитайте каждый скрипт перед разрешением, особенно если Keymap получен от другого человека. Разрешение применяется к проверенным определениям команд и сбрасывается при изменении набора команд, ID или Linux-скриптов."
 
 msgid "This step will be removed from the macro."
 msgstr "Этот шаг будет удалён из макроса."
@@ -1050,8 +1050,8 @@ msgstr "Текст не введён: ошибка безопасного дос
 msgid "The text was not typed: {}"
 msgstr "Текст не введён: {}"
 
-msgid "The profile file is empty"
-msgstr "Файл профиля пуст"
+msgid "The keymap file is empty"
+msgstr "Файл Keymap пуст"
 
 msgid "↑"
 msgstr "↑"
@@ -1068,8 +1068,8 @@ msgstr "Открыта на редактирование (не сохранен�
 msgid "Open for editing"
 msgstr "Открыта на редактирование"
 
-msgid "Profile name"
-msgstr "Название профиля"
+msgid "Keymap name"
+msgstr "Название Keymap"
 
 msgid "System languages"
 msgstr "Языки системы"
@@ -1134,20 +1134,20 @@ msgstr "Выберите клавиатуру для переназначени�
 msgid "Change"
 msgstr "Изменить"
 
-msgid "Add a profile"
-msgstr "Добавьте профиль"
+msgid "Add a keymap"
+msgstr "Добавьте Keymap"
 
 msgid "Press Start at the top to apply it"
 msgstr "Нажмите «Запустить» вверху, чтобы применить её"
 
-msgid "No active profile"
-msgstr "Нет активного профиля"
+msgid "No active keymap"
+msgstr "Нет активного Keymap"
 
-msgid "Current active profile (automatic)"
-msgstr "Текущий активный профиль (автоматический режим)"
+msgid "Current active keymap (automatic)"
+msgstr "Текущий активный Keymap (автоматический режим)"
 
-msgid "Current active profile — click to switch"
-msgstr "Текущий активный профиль — нажмите для переключения"
+msgid "Current active keymap — click to switch"
+msgstr "Текущий активный Keymap — нажмите для переключения"
 
 msgid "Current keyboard layout in the system"
 msgstr "Текущая раскладка клавиатуры в системе"
@@ -1376,8 +1376,8 @@ msgstr "Выполнить действие"
 msgid "The key will not reach the application."
 msgstr "Нажатие не будет передано приложению."
 
-msgid "Use the assignment from the lower layer or base profile."
-msgstr "Использовать назначение из нижележащего слоя или базового профиля."
+msgid "Use the assignment from the lower layer or base keymap."
+msgstr "Использовать назначение из нижележащего слоя или базового Keymap."
 
 msgid "Do not assign a separate action to this gesture."
 msgstr "Не назначать отдельное действие для этого жеста."
@@ -1440,8 +1440,8 @@ msgstr "Команды отключены в настройках."
 msgid "Working directory (optional)"
 msgstr "Рабочая папка (необязательно)"
 
-msgid "Save profile changes before opening another profile."
-msgstr "Сохраните изменения профиля перед переходом к другому профилю."
+msgid "Save keymap changes before opening another keymap."
+msgstr "Сохраните изменения Keymap перед переходом к другому Keymap."
 
 msgid "No layer"
 msgstr "Без слоя"
@@ -1503,17 +1503,17 @@ msgstr "Предпросмотр страницы"
 msgid "Page:"
 msgstr "Страница:"
 
-msgid "Profile “{}” created"
-msgstr "Профиль «{}» создан"
+msgid "Keymap “{}” created"
+msgstr "Keymap «{}» создан"
 
-msgid "Profile “{}” saved"
-msgstr "Профиль «{}» сохранён"
+msgid "Keymap “{}” saved"
+msgstr "Keymap «{}» сохранён"
 
-msgid "Profile “{}” deleted"
-msgstr "Профиль «{}» удален"
+msgid "Keymap “{}” deleted"
+msgstr "Keymap «{}» удален"
 
-msgid "Profile “{}” activated"
-msgstr "Профиль «{}» активирован"
+msgid "Keymap “{}” activated"
+msgstr "Keymap «{}» активирован"
 
 msgid "Could not complete the action"
 msgstr "Не удалось выполнить действие"
@@ -1521,8 +1521,8 @@ msgstr "Не удалось выполнить действие"
 msgid "Dismiss notification"
 msgstr "Закрыть уведомление"
 
-msgid "Changes to profile “{}” discarded"
-msgstr "Изменения профиля «{}» отменены"
+msgid "Changes to keymap “{}” discarded"
+msgstr "Изменения Keymap «{}» отменены"
 
 msgid "Popup menus are unavailable: {}"
 msgstr "Всплывающие меню недоступны: {}"
@@ -1617,7 +1617,7 @@ msgstr "Команды запускаются через sh -lc в фоне и �
 msgid "Commands run with PowerShell in the background and are not awaited."
 msgstr "Команды запускаются через PowerShell в фоне и не ожидаются."
 
-msgid "Commands stay off until you allow execution. Review below what your profiles would run."
+msgid "Commands stay off until you allow execution. Review below what your keymaps would run."
 msgstr "Команды не запускаются, пока выполнение не разрешено. Ниже видно, что запускали бы ваши лэйауты."
 
 msgid "Command"
@@ -1668,14 +1668,14 @@ msgstr "Должны выполняться все заполненные усл
 msgid "Automatic switching rules"
 msgstr "Правила автопереключения"
 
-msgid "Automatic: the profile is chosen by switching rules for the application, system language or game mode."
-msgstr "Авто: профиль выбирается правилами переключения по приложению, языку системы или игровому режиму."
+msgid "Automatic: the keymap is chosen by switching rules for the application, system language or game mode."
+msgstr "Авто: Keymap выбирается правилами переключения по приложению, языку системы или игровому режиму."
 
-msgid "Profile"
-msgstr "Профиль"
+msgid "Keymap"
+msgstr "Keymap"
 
-msgid "Profile not found"
-msgstr "Профиль не найден"
+msgid "Keymap not found"
+msgstr "Keymap не найден"
 
 msgid "New rule"
 msgstr "Новое правило"
@@ -1689,7 +1689,7 @@ msgstr "Иначе (по умолчанию)"
 msgid "Rule {}"
 msgstr "Правило {}"
 
-msgid "Use profile"
+msgid "Use keymap"
 msgstr "Использовать раскладку"
 
 msgid "When"
@@ -1704,22 +1704,22 @@ msgstr "Если:"
 msgid "Trigger conditions"
 msgstr "Условия срабатывания триггера"
 
-msgid "No profile"
-msgstr "Без профиля"
+msgid "No keymap"
+msgstr "Без Keymap"
 
-msgid "No profile (keys as is)"
-msgstr "Без профиля (клавиши как есть)"
+msgid "No keymap (keys as is)"
+msgstr "Без Keymap (клавиши как есть)"
 
 msgid "Now: {} (rule {}: {})"
 msgstr "Сейчас: {} (правило {}: {})"
 
-msgid "Rules are checked from top to bottom; the first enabled one whose conditions match chooses the profile. If none matches, the default is used. “No profile” leaves the keyboard unprocessed, for example in an application where the profile gets in the way."
+msgid "Rules are checked from top to bottom; the first enabled one whose conditions match chooses the keymap. If none matches, the default is used. “No keymap” leaves the keyboard unprocessed, for example in an application where the keymap gets in the way."
 msgstr "Правила проверяются сверху вниз; первое включённое правило, условия которого выполнены, выбирает раскладку. Если ни одно не подошло, используется раскладка по умолчанию. «Без раскладки» оставляет клавиатуру без обработки — например, в приложении, где раскладка мешает."
 
 msgid "No rules"
 msgstr "Нет правил"
 
-msgid "The default profile is always used."
+msgid "The default keymap is always used."
 msgstr "Всегда используется раскладка по умолчанию."
 
 msgid "For games"
@@ -1746,8 +1746,8 @@ msgstr "Нет среди языков системы: {}"
 msgid "Rule enabled"
 msgstr "Правило включено"
 
-msgid "Automatic mode will use no profile by default."
-msgstr "В автоматическом режиме по умолчанию не будет профиля."
+msgid "Automatic mode will use no keymap by default."
+msgstr "В автоматическом режиме по умолчанию не будет Keymap."
 
 msgid "Delete rule {}?"
 msgstr "Удалить правило {}?"
@@ -1776,8 +1776,8 @@ msgstr "Вкл — всегда"
 msgid "Off — never"
 msgstr "Выкл — никогда"
 
-msgid "Automatic profile rules apply only when the profile is chosen automatically (Profiles page)."
-msgstr "Авто-правила профилей работают, только когда профиль выбирается автоматически (страница «Профили»)."
+msgid "Automatic keymap rules apply only when the keymap is chosen automatically (Keymaps page)."
+msgstr "Авто-правила Keymap работают, только когда Keymap выбирается автоматически (страница «Keymap»)."
 
 msgid "Borderless windows covering the screen count too. Browsers, video players and presentations are ignored."
 msgstr "Окна без рамки на весь экран тоже считаются. Браузеры, видеоплееры и презентации не учитываются."
@@ -1788,7 +1788,7 @@ msgstr "Игровой режим выключен (вручную)"
 msgid "Game mode is on (set manually)"
 msgstr "Игровой режим включён (вручную)"
 
-msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgid "Game mode turns on rules and automatic keymap rules that have a game-mode condition. Automatic keymap rules apply only when the keymap is chosen automatically (Keymaps page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
 msgstr "Игровой режим включает правила и авто-правила раскладок с условием игрового режима. Авто-правила раскладок работают, только когда раскладка выбирается автоматически (страница «Раскладки»). Авто использует источники автоопределения и свои правила ниже; Вкл и Выкл задают состояние вручную. «Не считается игрой» важнее автоопределения и «Считается игрой». Режим также можно переключать в верхней панели, меню трея или клавишей с действием игрового режима."
 
 
@@ -1811,13 +1811,13 @@ msgstr "Служба GameMode недоступна: проверьте паке�
 msgid "Install {} to detect the active window and fullscreen windows. It is also needed for application conditions in rules."
 msgstr "Установите {}, чтобы определять активное и полноэкранное окно. Он же нужен для условий по приложениям в правилах."
 
-msgid "Nothing uses game mode yet: no rule or automatic profile rule has a game-mode condition, so turning it on changes nothing."
+msgid "Nothing uses game mode yet: no rule or automatic keymap rule has a game-mode condition, so turning it on changes nothing."
 msgstr "Игровой режим пока ни на что не влияет: ни у одного правила или авто-правила раскладки нет условия «игровой режим»."
 
 msgid "On and Off are remembered after restart. Auto keeps detecting in the background."
 msgstr "Вкл и Выкл сохраняются после перезапуска. В режиме Авто определение работает в фоне."
 
-msgid "Rules of the current profile with a game-mode condition: {}. Automatic profile rules with a game-mode condition: {}."
+msgid "Rules of the current keymap with a game-mode condition: {}. Automatic keymap rules with a game-mode condition: {}."
 msgstr "Правил текущей раскладки с условием игрового режима: {}. Авто-правил раскладок с условием игрового режима: {}."
 
 msgid "Turns on while a game runs through gamemoderun or requests GameMode itself. In Steam set the launch options to “gamemoderun %command%”."
@@ -1949,20 +1949,20 @@ msgstr "Триггеры"
 msgid "Reduce animations"
 msgstr "Без анимаций"
 
-msgid "Add profile: "
-msgstr "Добавить профиль: "
+msgid "Add keymap: "
+msgstr "Добавить Keymap: "
 
 msgid "Save (Ctrl+S)"
 msgstr "Сохранить (Ctrl+S)"
 
-msgid "Close profile"
-msgstr "Закрыть профиль"
+msgid "Close keymap"
+msgstr "Закрыть Keymap"
 
-msgid "Discard profile changes?"
-msgstr "Сбросить изменения профиля?"
+msgid "Discard keymap changes?"
+msgstr "Сбросить изменения Keymap?"
 
-msgid "Unsaved changes to this profile will be lost."
-msgstr "Несохранённые изменения этого профиля будут потеряны."
+msgid "Unsaved changes to this keymap will be lost."
+msgstr "Несохранённые изменения этого Keymap будут потеряны."
 
 msgid "Unique identifier used in references like macro:<id>. To bind this macro to a key, choose that action on the Layers or Triggers tab. Change the ID only when nothing uses this macro."
 msgstr "Уникальный идентификатор для ссылок macro:<id>. Для привязки макроса к клавише выберите это действие на вкладке «Слои» или «Триггеры». Меняйте ID только тогда, когда макрос нигде не используется."
@@ -1976,8 +1976,8 @@ msgstr "Создавайте последовательности сочетан
 msgid "Global defaults: step pause {} ms; modifier delay {} ms."
 msgstr "По умолчанию: пауза между шагами {} мс; задержка модификатора {} мс."
 
-msgid "Profile changed on disk"
-msgstr "Профиль изменён на диске"
+msgid "Keymap changed on disk"
+msgstr "Keymap изменён на диске"
 
 msgid "The file of “{}” was changed by another program after you opened it. Your edits are kept until you choose what to do."
 msgstr "Файл раскладки «{}» изменён другой программой после того, как вы её открыли. Ваши правки сохранятся, пока вы не выберете, что делать."
@@ -2048,14 +2048,14 @@ msgstr "Показать меню emoji и символов на последн�
 msgid "Show the settings window"
 msgstr "Показать окно настроек"
 
-msgid "Activate profile {} (switches to Single mode)"
-msgstr "Активировать профиль {} (переключает в одиночный режим)"
+msgid "Activate keymap {} (switches to Single mode)"
+msgstr "Активировать Keymap {} (переключает в одиночный режим)"
 
-msgid "There is no profile number {}"
-msgstr "Нет профиля с номером {}"
+msgid "There is no keymap number {}"
+msgstr "Нет Keymap с номером {}"
 
-msgid "Show the Tecloid profile name when it changes"
-msgstr "Показывать название профиля Tecloid при его смене"
+msgid "Show the Tecloid keymap name when it changes"
+msgstr "Показывать название Keymap Tecloid при его смене"
 
 msgid "Show the keys of a layer while it is held"
 msgstr "Показывать клавиши слоя, пока он удерживается"
@@ -2066,8 +2066,8 @@ msgstr "Подсказка появляется через 2 секунды по
 msgid "Unavailable: build with the spell feature and use a Wayland compositor with layer-shell (KDE Plasma, Sway, Hyprland)."
 msgstr "Недоступно: нужна сборка с функцией spell и Wayland-композитор с layer-shell (KDE Plasma, Sway, Hyprland)."
 
-msgid "The tecloid:activateProfile1…5 actions activate the profile at that position in this list: reordering the list changes which profile a key activates. In Auto mode they switch to Single mode."
-msgstr "Действия tecloid:activateProfile1…5 активируют профиль с этой позицией в списке: перестановка списка меняет, какой профиль включает клавиша. В автоматическом режиме они переключают в одиночный режим."
+msgid "The tecloid:activateKeymap1…5 actions activate the keymap at that position in this list: reordering the list changes which keymap a key activates. In Auto mode they switch to Single mode."
+msgstr "Действия tecloid:activateKeymap1…5 активируют Keymap с этой позицией в списке: перестановка списка меняет, какой Keymap включает клавиша. В автоматическом режиме они переключают в одиночный режим."
 
 msgid "Cut"
 msgstr "Вырезать"
@@ -2110,8 +2110,8 @@ msgstr "Не удалось запустить"
 
 
 
-msgid "Keys work as usual. Start the mapper to apply your profiles."
-msgstr "Клавиши работают как обычно. Запустите маппер, чтобы применить профили."
+msgid "Keys work as usual. Start the mapper to apply your keymaps."
+msgstr "Клавиши работают как обычно. Запустите маппер, чтобы применить Keymap."
 
 msgid "Select a keyboard below to start the mapper."
 msgstr "Выберите клавиатуру ниже, чтобы запустить маппер."
@@ -2377,11 +2377,11 @@ msgstr "Остановить маппер (вернуть стандартное
 msgid "Select a keyboard device in the settings to start the mapper"
 msgstr "Выберите клавиатуру в настройках, чтобы запустить маппер"
 
-msgid "Start mapper to intercept keys and apply profiles"
-msgstr "Запустить маппер для перехвата клавиш и применения профилей"
+msgid "Start mapper to intercept keys and apply keymaps"
+msgstr "Запустить маппер для перехвата клавиш и применения Keymap"
 
-msgid "Current active profile (selected automatically by switching rules)"
-msgstr "Текущий активный профиль (выбирается автоматически по правилам)"
+msgid "Current active keymap (selected automatically by switching rules)"
+msgstr "Текущий активный Keymap (выбирается автоматически по правилам)"
 
 msgid "Click to change mode (Auto / On / Off)"
 msgstr "Нажмите для выбора режима (Авто / Вкл / Выкл)"
@@ -2401,8 +2401,8 @@ msgstr "Действие при быстром двойном нажатии т�
 msgid "Show standard QWERTY letter labels for visual reference."
 msgstr "Показывать стандартные обозначения клавиш QWERTY для наглядности."
 
-msgid "Show internal key codes used in Tecloid profiles (e.g. KeyA, ArrowLeft)."
-msgstr "Показывать внутренние коды клавиш профилей Tecloid (например, KeyA, ArrowLeft)."
+msgid "Show internal key codes used in Tecloid keymaps (e.g. KeyA, ArrowLeft)."
+msgstr "Показывать внутренние коды клавиш Keymap Tecloid (например, KeyA, ArrowLeft)."
 
 
 msgid "Hold detection"
@@ -2673,8 +2673,8 @@ msgstr "Удалить триггер"
 msgid "Delete trigger?"
 msgstr "Удалить триггер?"
 
-msgid "The trigger and all its assigned actions will be removed from the current profile."
-msgstr "Триггер и все назначенные ему действия будут удалены из текущего профиля."
+msgid "The trigger and all its assigned actions will be removed from the current keymap."
+msgstr "Триггер и все назначенные ему действия будут удалены из текущего Keymap."
 
 msgid "Reset {} to default"
 msgstr "Сбросить «{}» к значению по умолчанию"
@@ -2796,8 +2796,8 @@ msgstr "Неизвестное действие приложения."
 msgid "Unknown action type. It may come from a newer version of the application."
 msgstr "Неизвестный тип действия. Возможно, он из более новой версии приложения."
 
-msgid "Profile: {}"
-msgstr "Профиль: {}"
+msgid "Keymap: {}"
+msgstr "Keymap: {}"
 
 msgid "Select All"
 msgstr "Выделить всё"
@@ -2992,8 +2992,8 @@ msgstr "Только когда игра на переднем плане"
 msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
 msgstr "Игры, о которых сообщают лаунчеры или система, учитываются только пока их окно активно, поэтому переход в браузер выключает игровой режим. Steam в Windows не сообщает, какая программа является игрой, поэтому его игры учитываются всегда."
 
-msgid "Cannot load this profile. See the application log."
-msgstr "Не удалось загрузить этот профиль. Подробности — в журнале приложения."
+msgid "Cannot load this keymap. See the application log."
+msgstr "Не удалось загрузить этот Keymap. Подробности — в журнале приложения."
 
 msgid "Scroll horizontally"
 msgstr "Прокрутка по горизонтали"
@@ -3019,8 +3019,8 @@ msgstr "Не активируется ни одним триггером."
 msgid "Configure triggers"
 msgstr "Настроить триггеры"
 
-msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base profile."
-msgstr "Кнопки мыши, мультимедийные клавиши и другие триггеры вне основной сетки клавиатуры. Добавьте триггер и назначьте действие или подавление. Чтобы наследовать назначение из нижнего слоя или базового профиля, удалите строку."
+msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base keymap."
+msgstr "Кнопки мыши, мультимедийные клавиши и другие триггеры вне основной сетки клавиатуры. Добавьте триггер и назначьте действие или подавление. Чтобы наследовать назначение из нижнего слоя или базового Keymap, удалите строку."
 
 msgid "Choose one key. Some keys depend on keyboard hardware and may be ignored by the system."
 msgstr "Выберите одну клавишу. Некоторые клавиши зависят от оборудования клавиатуры и могут игнорироваться системой."
@@ -3061,11 +3061,11 @@ msgstr "Отбросить неприменённые изменения мак�
 msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
 msgstr "При изменении ID ссылки обновляются автоматически. Вложенные макросы сохраняют свои задержки. Следующий шаг начинается после успешного завершения команды. Паузы, ввод текста и команды учитываются в таймауте макроса."
 
-msgid "Save profile changes before quitting?"
-msgstr "Сохранить изменения профиля перед выходом?"
+msgid "Save keymap changes before quitting?"
+msgstr "Сохранить изменения Keymap перед выходом?"
 
-msgid "Cannot switch profile. The mapper is still using the previous profile."
-msgstr "Не удалось переключить профиль. Маппер продолжает использовать предыдущий профиль."
+msgid "Cannot switch keymap. The mapper is still using the previous keymap."
+msgstr "Не удалось переключить Keymap. Маппер продолжает использовать предыдущий Keymap."
 
 msgid "This key is on the layer keyboard. Assign it there."
 msgstr "Эта клавиша есть на клавиатуре слоя. Назначьте её там."

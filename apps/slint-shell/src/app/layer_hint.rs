@@ -88,18 +88,17 @@ impl App {
             }
             let document = self.document()?;
             // A failed context switch keeps the old mapper running. Never describe
-            // the newly selected profile as though it had been applied.
+            // the newly selected keymap as though it had been applied.
             let config = document.read();
             let selected = config
-                .active_profile_id(&tecloid_core::config::auto_switch::AutoSwitchContext::current())
-                .map_err(|error| log::warn!("layer hint profile: {error}"))
+                .active_keymap_id(&tecloid_core::config::auto_switch::AutoSwitchContext::current())
+                .map_err(|error| log::warn!("layer hint keymap: {error}"))
                 .ok()?;
-            if document.applied_profile_id()? != selected {
+            if document.applied_keymap_id()? != selected {
                 return None;
             }
-            let profile = self.menus();
-            let hint =
-                crate::layer_key_model::hint(&self.settings, &config, &profile.profile, &id)?;
+            let keymap = self.menus();
+            let hint = crate::layer_key_model::hint(&self.settings, &config, &keymap.keymap, &id)?;
             // Caption construction can race with release, usage or re-press.
             layer_state::current()
                 .allows_hint(&id, hold_id)

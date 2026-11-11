@@ -23,7 +23,7 @@ Debian clipboard/auto: **45 PASS, 0 FAIL**. Новый Windows ZIP с испра
 | --- | --- | --- |
 | Движок: remap, swallow, chord, tap/hold/double tap, стеки слоёв, timeout, конфликты модификаторов | `cargo test --locked -p tecloid-core`; `mapper_e2e -- --ignored` | Unit проверяет семантику; evdev→uinput и VM проверяют реальную доставку. Один слой в VM не означает всю матрицу backend. |
 | Макросы, pause, отмена, обновление конфигурации, команды и запрет команд | Workspace tests, UI examples, именованные Linux/Windows VM шаги | Полный каталог действий требует отдельных fixtures для каждого заявленного backend. Недоступный backend — не PASS. |
-| Системные раскладки, условия, auto-profile и game mode | Core tests + VM `system-actions`, `russian-profile`, `game-mode`, Windows mapper scenarios | Steam/реестр/D-Bus, whitelist/blacklist, смена источников требуют воспроизводимых fixtures; реальные игры дополнительно оцениваются в ручной пользовательской сессии. |
+| Системные раскладки, условия, auto-keymap и game mode | Core tests + VM `system-actions`, `russian-keymap`, `game-mode`, Windows mapper scenarios | Steam/реестр/D-Bus, whitelist/blacklist, смена источников требуют воспроизводимых fixtures; реальные игры дополнительно оцениваются в ручной пользовательской сессии. |
 | Точный Unicode, раскладка US/RU, отмена при смене фокуса | Linux `text-unicode`; Windows `mapper-unicode-us-ru`, `mapper-focus-cancel`; popup BMP/surrogate/ZWJ | Корпус и набор получателей должны быть указаны в отчёте. Общее название теста не означает все приложения и IME. |
 | Clipboard backend | Linux `--text-backend clipboard`: `clipboard-preservation` | Нужны уже имеющиеся в KDE-стенде `wl-copy`/`wl-paste`. Проверяются отказ/согласие portal для paste shortcut, выдача Unicode и восстановление прежнего текста clipboard. Отдельные тесты MIME/смены владельца описаны в GNOME-стенде; это не физическая ручная проверка. |
 | Popup, фокус, theme/locale, редактор и сохранение | UI examples `editor -- --smoke`, `interactions`, page examples; Windows popup/lifecycle | Метрики, попадание кликов, повторное открытие, точность вставки автоматизируются. Человеку остаётся оценка читаемости и визуального качества. |
@@ -33,7 +33,7 @@ Debian clipboard/auto: **45 PASS, 0 FAIL**. Новый Windows ZIP с испра
 | Повторная нагрузка и ресурсы | Linux/Windows `--stress-seconds 180` или длительнее; ZIP `-StressCycles`/`-StressSeconds` | Сохраняются точные выходные данные, память, FD/handles, threads. Три минуты — короткая нагрузка, а не многосуточный soak. |
 | Чистая Windows без toolchain | `run-windows-package.py --vm … --package … --runtime-installer …` | VM до установки Rust/VS, без cache-диска; ISO/QMP bootstrap; подписанный Microsoft VC runtime при необходимости; ZIP/lifecycle/ресурсы/удаление распаковки. |
 | Обновление Linux между версиями | `run-linux.py --previous OLD --package NEW` | Нужны настоящие разные выпущенные версии текущего формата. Без OLD проверка не выполняется; для первого публичного релиза previous-release отсутствует по определению. |
-| Обновление Windows portable | `check-windows-upgrade.ps1 -PreviousArchive OLD -Archive NEW` | Проверяет суммы, разные версии, запуск, сохранность профиля и удаление portable-файлов. Две копии той же версии отклоняются. |
+| Обновление Windows portable | `check-windows-upgrade.ps1 -PreviousArchive OLD -Archive NEW` | Проверяет суммы, разные версии, запуск, сохранность Keymap и удаление portable-файлов. Две копии той же версии отклоняются. |
 | Комплект распространения | `check-release-artifacts.py --directory … --version … --require-vendor` | Суммы, обязательные артефакты, LICENSE/README/installer, ELF/PE x64, offline vendor. Локально `--compare-linux` сверяет бинарники tar/DEB/RPM через имеющийся bsdtar. |
 | CI/release pipeline | `.github/workflows/ci.yml`, `.github/workflows/release.yml` | Desktop e2e остаются локальными. `verify-artifacts` выполняется и при workflow_dispatch; перед draft обязателен. Локальный actionlint не заменяет выполненный hosted workflow. |
 
@@ -93,7 +93,7 @@ VirtIO GPU DOD при 4 GiB прошёл 3 S3/wakeup с работающим map
 при 4 GiB; целевой debug PASS не расширяет его объём до 6 GiB.
 `powercfg /a`, QMP events, boot time и ограничения сохраняются; hibernation не считается S3.
 
-## Строгий профиль VM-приёмки
+## Строгий Keymap VM-приёмки
 
 Обычный запуск остаётся диагностическим: нулевой exit code подтверждает только
 выполненные шаги. `--acceptance` дополнительно требует PASS всех обязательных
@@ -108,7 +108,7 @@ VirtIO GPU DOD при 4 GiB прошёл 3 S3/wakeup с работающим map
 python3 apps/slint-shell/scripts/vm/run-linux.py --vm /path/to/kde-vm --package /path/to/current.deb --previous /path/to/previous.deb --popup-mode spell --text-backend clipboard --stress-seconds 180 --acceptance
 ```
 
-Профиль требует suspend без исключения в `vm.json`, нагрузку минимум 180 секунд,
+Keymap требует suspend без исключения в `vm.json`, нагрузку минимум 180 секунд,
 переустановку поверх работающего приложения и обновление с предыдущей версии.
 Только для первого публичного выпуска вместо `--previous` явно передать
 `--first-release`: обновление будет записано как N/A, а не PASS.
@@ -137,15 +137,15 @@ python3 apps/slint-shell/scripts/vm/run-windows.py --vm /path/to/windows-s3-vm -
 интерактивной сессии против нового ZIP, собранного полным набором; одинаковые
 версии отклоняются. Для первого выпуска явно указать `--first-release`.
 Диагностические фильтры и smoke/release без полного набора не могут получить
-строгий PASS. Проверка через настоящий executable охватывает профиль → mapper →
+строгий PASS. Проверка через настоящий executable охватывает Keymap → mapper →
 WinForms receiver, сохранение game mode через штатную команду/Document и
-повторный ввод после перезапуска того же профиля. Специальный core stand остаётся
+повторный ввод после перезапуска того же Keymap. Специальный core stand остаётся
 для расширенной матрицы backend. Это не проверка редактирования правил мышью.
 
 Чистый Windows ZIP по-прежнему проверяется отдельно командой
 `run-windows-package.py`: developer VM не заменяет чистую ОС. Аналогично зелёная
 Linux-матрица не подтверждает Windows, GNOME, физические клавиатуры или hosted
-release workflow. Отчёты новых профилей до их фактического запуска не считаются
+release workflow. Отчёты новых Keymap до их фактического запуска не считаются
 свидетельством приёмки.
 
 Linux receiver передаёт атомарный JSON-результат с exit status диалога и точным

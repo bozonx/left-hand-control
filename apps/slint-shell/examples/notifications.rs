@@ -75,7 +75,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(center.get_items().row_count(), 0);
     for (id, arg) in [
         ("copied", ""),
-        ("profile-saved", "Тест"),
+        ("keymap-saved", "Тест"),
         ("config-edit-conflict", ""),
         ("error", "Проверьте доступ к устройству ввода."),
     ] {
@@ -117,7 +117,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .collect::<Vec<_>>();
         assert_eq!(
             ids,
-            ["error", "config-edit-conflict", "copied", "profile-saved"]
+            ["error", "config-edit-conflict", "copied", "keymap-saved"]
         );
         let position = first_dismiss_position(&ui);
         for event in [
@@ -168,7 +168,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .borrow()
             .upgrade()
             .expect("notification focus");
-        center.invoke_send(message("profile-created", "Queued while reading"));
+        center.invoke_send(message("keymap-created", "Queued while reading"));
         let _ = ui.window().take_snapshot().unwrap();
         assert_eq!(
             i_slint_core::window::WindowInner::from_pub(ui.window())
@@ -225,7 +225,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         for slot in 1..=4 {
             center.invoke_send(Message {
-                id: "profile-slot-empty".into(),
+                id: "keymap-slot-empty".into(),
                 count: slot,
                 ..Default::default()
             });
@@ -254,7 +254,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .any(|item| item.message.id.starts_with("worker-"))
         );
         ui.hide().unwrap();
-        center.invoke_send(message("profile-created", "Hidden success"));
+        center.invoke_send(message("keymap-created", "Hidden success"));
         assert!(
             !center
                 .get_items()
@@ -267,8 +267,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         document
             .edit(slint_shell::document::View::Library, |config| {
-                config.update_profile(|profile| {
-                    profile.rules = vec![
+                config.update_keymap(|keymap| {
+                    keymap.rules = vec![
                         tecloid_core::config::model::KeyRule::new("draft".into(), ""),
                         tecloid_core::config::model::KeyRule::new("other".into(), "F13"),
                     ];

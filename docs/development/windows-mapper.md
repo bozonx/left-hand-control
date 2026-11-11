@@ -1,7 +1,7 @@
 # Windows mapper: состояние реализации и приёмка
 
 Состояние: этапы 1–4 реализованы в коде (`mapper/windows/`, общий
-`mapper/output.rs`, `mapper/key_code.rs`, `mapper/scancode.rs`, `profile/windows.rs`)
+`mapper/output.rs`, `mapper/key_code.rs`, `mapper/scancode.rs`, `keymap/windows.rs`)
 и проверены сборкой, clippy и модульными тестами; приёмка в VM и на физическом
 компьютере по полной матрице ниже ещё не пройдена. `--suite smoke` проверяет оболочку,
 нативный ввод и именованные mapper-сценарии в VM; результат каждого сценария
@@ -85,7 +85,7 @@ secure desktop. [Контракт SendInput](https://learn.microsoft.com/en-us/w
 отпускание удержанных клавиш, отмена макросов, отсутствие stale side effects,
 межпроцессная блокировка. Неподдерживаемые действия отклонять явно.
 
-### 4. Profile, text и системные действия
+### 4. Keymap, text и системные действия
 
 Проверять по отдельным возможностям: US/RU, Unicode, смена фокуса,
 отмена text job, доступные `sys:` действия. Код popup-ввода не является готовым
@@ -126,7 +126,7 @@ mailbox, вызывает публичный `mapper::runtime` и снимает
 Перед mapper оба набора также выполняют `scripts/vm/windows_popups.py`.
 `scripts/windows/windows-popup-stand.ps1` запускает отдельный shell (release в full,
 debug в smoke) с тестовой
-активной раскладкой, профилем и портом. Ctrl+Alt+F11/F12 и клавиши ячеек приходят
+активной раскладкой, Keymap и портом. Ctrl+Alt+F11/F12 и клавиши ячеек приходят
 через USB-ввод QEMU; приложение не получает синтетических вызовов выбора.
 Снимки попапа, метрики и точные code points сохраняются в логах прогона.
 `shell-mapper-crash-held` включает mapper этого приложения и принудительно

@@ -479,14 +479,14 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     return Ok(());
                 }
                 Event::Command(WorkerCommand::PopupContents(contents), _, _) => {
-                    match tecloid_core::config::profile_file::parse(&contents) {
-                        Ok(profile) => layers.set_menus(ConfiguredMenus {
-                            profile: profile.unwrap_or_default(),
+                    match tecloid_core::config::keymap_file::parse(&contents) {
+                        Ok(keymap) => layers.set_menus(ConfiguredMenus {
+                            keymap: keymap.unwrap_or_default(),
                         }),
                         Err(error) => log::error!("popup configuration: {error}"),
                     }
                 }
-                Event::Command(WorkerCommand::PopupLayout(id), _, _) => {
+                Event::Command(WorkerCommand::PopupKeymap(id), _, _) => {
                     let menus = ConfiguredMenus::load_for(id.as_deref()).unwrap_or_else(|error| {
                         log::error!("load popup configuration: {error}");
                         ConfiguredMenus::default()

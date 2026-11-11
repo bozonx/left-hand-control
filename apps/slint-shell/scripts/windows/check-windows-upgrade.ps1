@@ -50,15 +50,15 @@ try {
         }
         & $exe quit | Out-Null
         if ($LASTEXITCODE -or -not $process.WaitForExit(10000) -or $process.ExitCode) { throw 'Upgrade shutdown failed' }
-        $profile = Join-Path $env:TECLOID_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.tecloid'
+        $keymap = Join-Path $env:TECLOID_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.tecloid'
         if ($index -eq 0) {
             $before = @{}
             # IPC credentials rotate on each start; only durable user data is retained.
-            foreach ($file in Get-ChildItem $profile -Recurse -File | Where-Object Name -ne 'ipc-token') {
+            foreach ($file in Get-ChildItem $keymap -Recurse -File | Where-Object Name -ne 'ipc-token') {
                 $before[$file.FullName] = (Get-FileHash $file.FullName).Hash
             }
-            if (-not $before.ContainsKey((Join-Path $profile 'config.json'))) { throw 'Previous version saved no configuration file' }
-            Copy-Item (Join-Path $profile 'config.json') (Join-Path $output 'before-config.json')
+            if (-not $before.ContainsKey((Join-Path $keymap 'config.json'))) { throw 'Previous version saved no configuration file' }
+            Copy-Item (Join-Path $keymap 'config.json') (Join-Path $output 'before-config.json')
             if (-not $before.Count) { throw 'Previous version saved no isolated configuration' }
         } else {
             foreach ($path in $before.Keys) {

@@ -1,7 +1,7 @@
-//! Profile library page and the working copy toolbar.
+//! Keymap library page and the working copy toolbar.
 //!
 //! The working copy in memory is edited by the other pages;
-//! the library holds named profiles. Library files are compared with the
+//! the library holds named keymaps. Library files are compared with the
 //! contents last read so a change made elsewhere is never overwritten.
 
 mod auto_rules;
@@ -18,8 +18,8 @@ use crate::{
     document::{Document, View},
     i18n::Msg,
     ui::{
-        AutoRuleView, GameCondition, LibraryAction, LibraryDialog, MenuKind, Page, ProfileLibrary,
-        ProfileRow, Profilesource, SettingsWindow,
+        AutoRuleView, GameCondition, KeymapLibrary, KeymapRow, Keymapsource, LibraryAction,
+        LibraryDialog, MenuKind, Page, SettingsWindow,
     },
 };
 use slint::{ComponentHandle, ModelRc, VecModel};
@@ -28,22 +28,21 @@ use tecloid_core::{
     config::{
         auto_switch::{self, AutoSwitchContext},
         bundled::BUNDLED,
-        ids,
+        ids, keymap_file,
         library::{LibrarySaveTarget, LibrarySource},
         model::{
-            AppSettings, AutoRule, GameModeCondition, ProfileConditionSet, ProfileMode,
-            ProfilePreset, user_profile_id, user_profile_name,
+            AppSettings, AutoRule, GameModeCondition, KeymapConditionSet, KeymapMode, KeymapPreset,
+            user_keymap_id, user_keymap_name,
         },
-        profile_file,
     },
     config_document::{ConfigDocument, ConfigError},
 };
 
 #[derive(Default)]
 struct State {
-    /// Library profile whose menu or dialog is open.
+    /// Library keymap whose menu or dialog is open.
     selected: Option<String>,
-    /// Library profile the working copy came from and its saved contents.
+    /// Library keymap the working copy came from and its saved contents.
     baseline: Option<(String, String)>,
     warning: Option<Msg>,
     /// System languages for rule warnings; re-read when the page is opened.
@@ -69,13 +68,13 @@ fn config_error(error: ConfigError) -> Msg {
 fn current_name(config: &ConfigDocument) -> Option<String> {
     config
         .settings()
-        .editing_profile_id
+        .editing_keymap_id
         .as_deref()
-        .and_then(user_profile_name)
+        .and_then(user_keymap_name)
         .map(str::to_owned)
 }
 
-fn summary(set: &ProfileConditionSet) -> (GameCondition, String) {
+fn summary(set: &KeymapConditionSet) -> (GameCondition, String) {
     let list = [
         set.keyboard_layouts.join(", "),
         set.window_patterns.join(", "),
@@ -95,8 +94,8 @@ fn condition(
     keyboard_layouts: &str,
     apps: &str,
     excluded: &str,
-) -> ProfileConditionSet {
-    ProfileConditionSet {
+) -> KeymapConditionSet {
+    KeymapConditionSet {
         game_mode: GameModeCondition::parse(game_condition_value(game).as_deref()),
         keyboard_layouts: parse_list(keyboard_layouts),
         window_patterns: parse_list(apps),
@@ -109,12 +108,12 @@ fn condition(
 fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State) -> Result<(), Msg> {
     document.invalidate_library();
     let config = document.read();
-    let library = ui.global::<ProfileLibrary>();
+    let library = ui.global::<KeymapLibrary>();
     let names: Vec<String> = config
-        .ordered_profile_ids()
+        .ordered_keymap_ids()
         .map_err(config_error)?
         .iter()
-        .filter_map(|id| user_profile_name(id).map(str::to_owned))
+        .filter_map(|id| user_keymap_name(id).map(str::to_owned))
         .collect();
     let previous = library.get_rows();
     let same_names = slint::Model::iter(&previous)
@@ -127,8 +126,8 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State) -> Resul
                 .map(|name| {
                     slint::Model::iter(&previous)
                         .find(|row| row.name == name.as_str())
-                        .unwrap_or_else(|| ProfileRow {
-                            id: user_profile_id(name).into(),
+                        .unwrap_or_else(|| KeymapRow {
+                            id: user_keymap_id(name).into(),
                             name: name.clone().into(),
                             ..Default::default()
                         })
@@ -152,15 +151,15 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State) -> Resul
     Ok(())
 }
 
-/// Automatic mode: the rules, the default and rules per profile. Targets
+/// Automatic mode: the rules, the default and rules per keymap. Targets
 /// index the `names` already shown.
 fn refresh_auto(ui: &SettingsWindow, document: &Document, state: &mut State) {
     let config = document.read();
-    let library = ui.global::<ProfileLibrary>();
+    let library = ui.global::<KeymapLibrary>();
     let settings = config.settings();
-    library.set_automatic(settings.profile_mode == ProfileMode::Auto);
+    library.set_automatic(settings.keymap_mode == KeymapMode::Auto);
     let ids: Vec<String> = slint::Model::iter(&library.get_names())
-        .map(|name| user_profile_id(&name))
+        .map(|name| user_keymap_id(&name))
         .collect();
     let target = |id: &Option<String>| -> (i32, bool) {
         match id {
@@ -192,7 +191,7 @@ fn refresh_auto(ui: &SettingsWindow, document: &Document, state: &mut State) {
             .enumerate()
             .map(|(index, rule)| {
                 let (game, list) = summary(&rule.conditions);
-                let (target, missing) = target(&rule.profile_id);
+                let (target, missing) = target(&rule.keymap_id);
                 let unknown: Vec<&str> = rule
                     .conditions
                     .keyboard_layouts
@@ -216,7 +215,7 @@ fn refresh_auto(ui: &SettingsWindow, document: &Document, state: &mut State) {
             })
             .collect::<Vec<_>>(),
     )));
-    let (default, default_missing) = target(&settings.auto_default_profile_id);
+    let (default, default_missing) = target(&settings.auto_default_keymap_id);
     library.set_auto_default(default);
     library.set_auto_default_missing(default_missing);
     let rows = library.get_rows();
@@ -224,7 +223,7 @@ fn refresh_auto(ui: &SettingsWindow, document: &Document, state: &mut State) {
         if let Some(mut row) = slint::Model::row_data(&rows, index) {
             let count = rules
                 .iter()
-                .filter(|rule| rule.profile_id.as_ref() == Some(id))
+                .filter(|rule| rule.keymap_id.as_ref() == Some(id))
                 .count() as i32;
             if row.rule_count != count {
                 row.rule_count = count;
@@ -255,17 +254,17 @@ fn report(ui: &SettingsWindow, state: &Shared, result: Result<Msg, Msg>) {
     }
     if matches!(
         message,
-        Msg::ProfileCreated(_)
-            | Msg::ProfileSaved(_)
-            | Msg::ProfileDeleted(_)
+        Msg::KeymapCreated(_)
+            | Msg::KeymapSaved(_)
+            | Msg::KeymapDeleted(_)
             | Msg::AutoRuleDeleted
-            | Msg::ProfileActivated(_)
-            | Msg::ProfileDiscarded(_)
+            | Msg::KeymapActivated(_)
+            | Msg::KeymapDiscarded(_)
     ) {
-        ui.global::<ProfileLibrary>().set_status(Msg::None.to_ui());
+        ui.global::<KeymapLibrary>().set_status(Msg::None.to_ui());
         crate::notifications::send(ui, message);
     } else {
-        ui.global::<ProfileLibrary>()
+        ui.global::<KeymapLibrary>()
             .set_status(crate::notifications::report(ui, &message));
     }
 }
@@ -274,7 +273,7 @@ fn report(ui: &SettingsWindow, state: &Shared, result: Result<Msg, Msg>) {
 fn name_at(ui: &SettingsWindow, index: i32) -> Result<String, Msg> {
     usize::try_from(index)
         .ok()
-        .and_then(|index| slint::Model::row_data(&ui.global::<ProfileLibrary>().get_names(), index))
+        .and_then(|index| slint::Model::row_data(&ui.global::<KeymapLibrary>().get_names(), index))
         .map(|name| name.to_string())
         .ok_or(Msg::LibrarySelect)
 }
@@ -287,22 +286,22 @@ fn expected_bytes(document: &Document, state: &Shared, name: &str) -> Result<Vec
         None => document
             .read()
             .paths()
-            .load_user_profile_bytes(name)
+            .load_user_keymap_bytes(name)
             .map_err(io),
     }
 }
 
 fn expected_text(document: &Document, state: &Shared, name: &str) -> Result<String, Msg> {
     String::from_utf8(expected_bytes(document, state, name)?)
-        .map_err(|error| io(format!("profile UTF-8: {error}")))
+        .map_err(|error| io(format!("keymap UTF-8: {error}")))
 }
 
 /// Re-read a file this page has just written and remember it.
 fn remember_saved(document: &Document, state: &Shared, name: &str) {
-    match document.read().paths().load_user_profile_bytes(name) {
+    match document.read().paths().load_user_keymap_bytes(name) {
         Ok(bytes) => state.borrow().metadata.remember(name, Some(bytes)),
         Err(error) => {
-            log::warn!("re-reading profile {name}: {error}");
+            log::warn!("re-reading keymap {name}: {error}");
             state.borrow().metadata.remember(name, None);
         }
     }
@@ -310,7 +309,7 @@ fn remember_saved(document: &Document, state: &Shared, name: &str) {
 
 fn refresh_logged(ui: &SettingsWindow, document: &Document, state: &Shared) {
     if let Err(error) = refresh(ui, document, &mut state.borrow_mut()) {
-        log::warn!("refreshing the profile library: {error:?}");
+        log::warn!("refreshing the keymap library: {error:?}");
     }
 }
 
@@ -356,17 +355,17 @@ fn edit_auto(
     Ok(saved.message(Msg::None))
 }
 
-/// Remember which profile a menu or dialog acts on. Reads no file, so a
-/// broken profile can be selected (and deleted) like any other.
+/// Remember which keymap a menu or dialog acts on. Reads no file, so a
+/// broken keymap can be selected (and deleted) like any other.
 fn select(ui: &SettingsWindow, state: &Shared, index: i32) -> Result<(), Msg> {
     let name = name_at(ui, index)?;
     state.borrow_mut().selected = Some(name);
-    ui.global::<ProfileLibrary>().set_selected(index);
+    ui.global::<KeymapLibrary>().set_selected(index);
     Ok(())
 }
 
 /// Dialog fields: game condition, languages, applications, exclusions.
-fn condition_fields(set: Option<ProfileConditionSet>) -> (GameCondition, String, String, String) {
+fn condition_fields(set: Option<KeymapConditionSet>) -> (GameCondition, String, String, String) {
     set.map(|set| {
         (
             game_condition(set.game_mode.map(GameModeCondition::as_str)),
@@ -386,13 +385,13 @@ fn library_action(
     action: LibraryAction,
 ) -> Result<Msg, Msg> {
     let name = name_at(ui, index)?;
-    let id = user_profile_id(&name);
+    let id = user_keymap_id(&name);
     match action {
         LibraryAction::Activate => {
             edit(ui, document, state, |config| {
-                config.update_settings(|settings| settings.manual_profile_id = Some(id))
+                config.update_settings(|settings| settings.manual_keymap_id = Some(id))
             })?;
-            Ok(Msg::ProfileActivated(name))
+            Ok(Msg::KeymapActivated(name))
         }
         LibraryAction::MoveUp | LibraryAction::MoveDown => {
             let delta = if action == LibraryAction::MoveUp {
@@ -401,14 +400,14 @@ fn library_action(
                 1
             };
             edit(ui, document, state, |config| {
-                config.move_library_profile(&id, delta)
+                config.move_library_keymap(&id, delta)
             })?;
             Ok(Msg::None)
         }
     }
 }
 
-/// Replace the working copy with profile `name` and open its rules. The
+/// Replace the working copy with keymap `name` and open its rules. The
 /// caller has already asked about unsaved changes.
 fn load(ui: &SettingsWindow, document: &Document, state: &Shared, name: &str) -> Result<Msg, Msg> {
     let is_current = current_name(&document.read()).as_deref() == Some(name);
@@ -418,7 +417,7 @@ fn load(ui: &SettingsWindow, document: &Document, state: &Shared, name: &str) ->
         })?;
         reset_context(ui, document, &mut state.borrow_mut());
     }
-    ui.global::<ProfileLibrary>().invoke_discard_drafts();
+    ui.global::<KeymapLibrary>().invoke_discard_drafts();
     ui.invoke_navigate(Page::Rules, MenuKind::Emoji);
     Ok(Msg::None)
 }
@@ -429,30 +428,30 @@ fn create(
     state: &Shared,
     name: &str,
     description: &str,
-    source: Profilesource,
+    source: Keymapsource,
     copy_index: i32,
 ) -> Result<Msg, Msg> {
-    let library = ui.global::<ProfileLibrary>();
+    let library = ui.global::<KeymapLibrary>();
     let copy_from = name_at(ui, copy_index).ok();
     let source = match source {
-        Profilesource::Bundled => LibrarySource::Bundled(
+        Keymapsource::Bundled => LibrarySource::Bundled(
             usize::try_from(copy_index)
                 .ok()
                 .and_then(|index| BUNDLED.get(index))
                 .ok_or(Msg::LibrarySelect)?,
         ),
-        Profilesource::Copy => LibrarySource::Copy(copy_from.as_deref().ok_or(Msg::LibrarySelect)?),
-        Profilesource::Empty => LibrarySource::Empty,
+        Keymapsource::Copy => LibrarySource::Copy(copy_from.as_deref().ok_or(Msg::LibrarySelect)?),
+        Keymapsource::Empty => LibrarySource::Empty,
     };
     let created = edit(ui, document, state, |config| {
-        // The very first profile becomes active in single mode.
-        let first = config.ordered_profile_ids()?.is_empty()
-            && config.settings().profile_mode == ProfileMode::Manual;
-        config.create_and_select_library_profile(name, description, source, first)
+        // The very first keymap becomes active in single mode.
+        let first = config.ordered_keymap_ids()?.is_empty()
+            && config.settings().keymap_mode == KeymapMode::Manual;
+        config.create_and_select_library_keymap(name, description, source, first)
     })?;
     remember_saved(document, state, &created);
     library.set_dialog(LibraryDialog::None);
-    // The profile exists now: a failure to open it is a warning, not a
+    // The keymap exists now: a failure to open it is a warning, not a
     // failed creation. Unsaved changes were confirmed before the dialog.
     let opened = slint::Model::iter(&library.get_names())
         .position(|item| item == created)
@@ -463,7 +462,7 @@ fn create(
         let mut state = state.borrow_mut();
         state.warning = state.warning.take().or(Some(error));
     }
-    Ok(Msg::ProfileCreated(created))
+    Ok(Msg::KeymapCreated(created))
 }
 
 fn delete(
@@ -475,7 +474,7 @@ fn delete(
     let name = name_at(ui, index)?;
     let expected = expected_bytes(document, state, &name)?;
     edit(ui, document, state, |config| {
-        config.remove_library_profile(&name, &expected)
+        config.remove_library_keymap(&name, &expected)
     })?;
     state.borrow().metadata.remember(&name, None);
     if state
@@ -485,15 +484,14 @@ fn delete(
         .is_some_and(|(opened, _)| opened == &name)
     {
         state.borrow_mut().baseline = None;
-        // The editor of a deleted profile has nothing left to save.
-        ui.global::<ProfileLibrary>().set_editor_open(false);
+        // The editor of a deleted keymap has nothing left to save.
+        ui.global::<KeymapLibrary>().set_editor_open(false);
     }
-    ui.global::<ProfileLibrary>()
-        .set_dialog(LibraryDialog::None);
-    Ok(Msg::ProfileDeleted(name))
+    ui.global::<KeymapLibrary>().set_dialog(LibraryDialog::None);
+    Ok(Msg::KeymapDeleted(name))
 }
 
-/// Rename a profile; its file is kept byte-for-byte, so broken files too.
+/// Rename a keymap; its file is kept byte-for-byte, so broken files too.
 fn rename(
     ui: &SettingsWindow,
     document: &Document,
@@ -513,7 +511,7 @@ fn rename(
         .metadata
         .remember(&saved, Some(expected.into_bytes()));
     if was_selected
-        && let Some(index) = slint::Model::iter(&ui.global::<ProfileLibrary>().get_names())
+        && let Some(index) = slint::Model::iter(&ui.global::<KeymapLibrary>().get_names())
             .position(|item| item == saved)
     {
         select(ui, state, index as i32)?;
@@ -532,11 +530,11 @@ fn update_baseline(state: &mut State, name: &str, new_name: &str, description: O
     }
     *opened = new_name.to_owned();
     if let Some(description) = description
-        && let Ok(Some(mut profile)) = profile_file::parse(text)
+        && let Ok(Some(mut keymap)) = keymap_file::parse(text)
     {
-        profile.description =
+        keymap.description =
             (!description.trim().is_empty()).then(|| description.trim().to_owned());
-        *text = profile_file::serialize(&profile);
+        *text = keymap_file::serialize(&keymap);
     }
 }
 
@@ -560,7 +558,7 @@ fn set_description(
 pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let state: Shared = Rc::default();
     reset_context(ui, document, &mut state.borrow_mut());
-    let library = ui.global::<ProfileLibrary>();
+    let library = ui.global::<KeymapLibrary>();
     library.on_row_names(|rows| super::strings(slint::Model::iter(&rows).map(|row| row.name)));
     library.on_copy_index_value(|name, names| {
         slint::Model::iter(&names)
@@ -598,12 +596,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
     on!(ui, library.on_set_automatic, doc = document, state = state => |ui, automatic| {
         let mode = if automatic {
-            ProfileMode::Auto
+            KeymapMode::Auto
         } else {
-            ProfileMode::Manual
+            KeymapMode::Manual
         };
         let result = edit_auto(&ui, &doc, &state, |settings| {
-            settings.profile_mode = mode
+            settings.keymap_mode = mode
         });
         report(&ui, &state, result);
     });
@@ -615,7 +613,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let names: Vec<String> = slint::Model::iter(&names)
             .map(|name| name.to_string())
             .collect();
-        tecloid_core::config::names::unique_profile_name(&base, &names)
+        tecloid_core::config::names::unique_keymap_name(&base, &names)
             .unwrap_or_else(|_| base.to_string())
             .into()
     });
@@ -624,12 +622,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             .map(|name| name.to_string())
             .collect();
         let except = (!except.is_empty()).then_some(except.as_str());
-        let result = tecloid_core::config::names::profile_name(
+        let result = tecloid_core::config::names::keymap_name(
             &name,
             except,
             names.iter().map(String::as_str),
         )
-        .map_err(|issue| ConfigError::Name(tecloid_core::config::names::NameKind::Profile, issue));
+        .map_err(|issue| ConfigError::Name(tecloid_core::config::names::NameKind::Keymap, issue));
         super::name_error(result)
     });
     on!(ui, library.on_create, doc = document, state = state => |ui, name, description, source, copy_index| {
@@ -650,13 +648,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
     on!(ui, library.on_reorder, doc = document, state = state => |ui, from, to| {
         // Moving a card must not select or load it: take the name from the list.
-        let names = ui.global::<ProfileLibrary>().get_names();
+        let names = ui.global::<KeymapLibrary>().get_names();
         let result = match super::move_indices(from, to, slint::Model::row_count(&names))
             .and_then(|(from, _)| slint::Model::row_data(&names, from))
         {
             Some(name) => {
-                let id = user_profile_id(&name);
-                edit(&ui, &doc, &state, |config| config.move_library_profile(&id, to - from))
+                let id = user_keymap_id(&name);
+                edit(&ui, &doc, &state, |config| config.move_library_keymap(&id, to - from))
                     .map(|()| Msg::None)
             }
             None => Ok(Msg::None),
@@ -666,22 +664,22 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     on!(ui, library.on_discard_current, doc = document, state = state => |ui| {
         // Bind the name first: a `read()` borrow must not outlive this line.
         let name = current_name(&doc.read());
-        let result = edit(&ui, &doc, &state, ConfigDocument::discard_working_profile).map(|()| {
+        let result = edit(&ui, &doc, &state, ConfigDocument::discard_working_keymap).map(|()| {
             reset_context(&ui, &doc, &mut state.borrow_mut());
-            ui.global::<ProfileLibrary>().invoke_discard_drafts();
-            name.map_or(Msg::None, Msg::ProfileDiscarded)
+            ui.global::<KeymapLibrary>().invoke_discard_drafts();
+            name.map_or(Msg::None, Msg::KeymapDiscarded)
         });
         report(&ui, &state, result);
     });
     on!(ui, library.on_activate_current, doc = document, state = state => |ui| {
-        let id = doc.read().settings().editing_profile_id.clone();
+        let id = doc.read().settings().editing_keymap_id.clone();
         let result = id.ok_or(Msg::LibrarySelect).and_then(|id| {
             edit(&ui, &doc, &state, |config| {
-                config.update_settings(|settings| settings.manual_profile_id = Some(id))
+                config.update_settings(|settings| settings.manual_keymap_id = Some(id))
             })
         });
         let name = current_name(&doc.read()).unwrap_or_default();
-        report(&ui, &state, result.map(|()| Msg::ProfileActivated(name)));
+        report(&ui, &state, result.map(|()| Msg::KeymapActivated(name)));
     });
     on!(ui, library.on_load, doc = document, state = state => |ui, index| {
         let result = name_at(&ui, index).and_then(|name| load(&ui, &doc, &state, &name));
@@ -725,21 +723,21 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         refresh_context(&ui, &doc);
     });
     on!(ui, library.on_save_current, doc = document, state = state => |ui| {
-        if !ui.global::<ProfileLibrary>().invoke_flush_drafts() {
+        if !ui.global::<KeymapLibrary>().invoke_flush_drafts() {
             return;
         }
         let result = save_current(&ui, &doc, &state);
         report(&ui, &state, result);
     });
     on!(ui, library.on_overwrite_current, doc = document, state = state => |ui| {
-        if !ui.global::<ProfileLibrary>().invoke_flush_drafts() {
+        if !ui.global::<KeymapLibrary>().invoke_flush_drafts() {
             return;
         }
         let result = overwrite_current(&ui, &doc, &state);
         report(&ui, &state, result);
     });
     on!(ui, library.on_save_as, doc = document, state = state => |ui, name| {
-        if !ui.global::<ProfileLibrary>().invoke_flush_drafts() {
+        if !ui.global::<KeymapLibrary>().invoke_flush_drafts() {
             return;
         }
         let result = save_as(&ui, &doc, &state, &name);
@@ -765,10 +763,10 @@ mod tests {
         slint::platform::set_platform(Box::new(Platform)).unwrap();
         let (dir, document) = super::super::test_document();
         document
-            .edit_library(|config| config.save_current_profile_as("A"))
+            .edit_library(|config| config.save_current_keymap_as("A"))
             .unwrap();
         document
-            .edit_library(|config| config.save_current_profile_as("B"))
+            .edit_library(|config| config.save_current_keymap_as("B"))
             .unwrap();
         document
             .edit_library(|config| config.load_library_for_editing("A"))
@@ -783,18 +781,18 @@ mod tests {
     #[test]
     fn duplicate_keeps_its_source_after_save_as_reorders_the_library() {
         let (_dir, document, ui) = bound_document();
-        let library = ui.global::<ProfileLibrary>();
+        let library = ui.global::<KeymapLibrary>();
         let paths = document.read().paths().clone();
         assert!(library.invoke_set_description(1, "source B".into()));
         document
             .edit(View::Rules, |config| {
-                config.update_profile(|profile| profile.description = Some("mine A".into()))
+                config.update_keymap(|keymap| keymap.description = Some("mine A".into()))
             })
             .unwrap();
-        library.invoke_open_create(Profilesource::Copy, 1);
+        library.invoke_open_create(Keymapsource::Copy, 1);
         assert_eq!(library.get_dialog(), LibraryDialog::Unsaved);
         paths
-            .save_user_profile(
+            .save_user_keymap(
                 "A",
                 r#"{"version":1,"meta":{"description":"external A"}}"#,
                 true,
@@ -810,7 +808,7 @@ mod tests {
         assert_eq!(library.get_create_name(), "B (copy)");
         library.invoke_submit_create();
         assert_eq!(
-            document.read().profile().description.as_deref(),
+            document.read().keymap().description.as_deref(),
             Some("source B")
         );
         assert_eq!(library.get_current_label(), "B (copy)");
@@ -819,10 +817,10 @@ mod tests {
     #[test]
     fn duplicate_reports_a_missing_source_instead_of_copying_its_old_neighbour() {
         let (_dir, document, ui) = bound_document();
-        let library = ui.global::<ProfileLibrary>();
-        library.invoke_open_create(Profilesource::Copy, 1);
+        let library = ui.global::<KeymapLibrary>();
+        library.invoke_open_create(Keymapsource::Copy, 1);
         assert_eq!(library.get_dialog(), LibraryDialog::Create);
-        document.read().paths().delete_user_profile("B").unwrap();
+        document.read().paths().delete_user_keymap("B").unwrap();
         library.invoke_refresh();
         library.invoke_submit_create();
         assert_eq!(library.get_dialog(), LibraryDialog::Create);
@@ -831,7 +829,7 @@ mod tests {
             !document
                 .read()
                 .paths()
-                .profile_path("B (copy)")
+                .keymap_path("B (copy)")
                 .unwrap()
                 .exists()
         );
@@ -841,8 +839,8 @@ mod tests {
     fn delete_invalid_utf8_works_from_the_library_dialog() {
         let (_dir, document, ui) = bound_document();
         let paths = document.read().paths().clone();
-        std::fs::write(paths.profile_path("Broken").unwrap(), [0xff, 0xfe]).unwrap();
-        let library = ui.global::<ProfileLibrary>();
+        std::fs::write(paths.keymap_path("Broken").unwrap(), [0xff, 0xfe]).unwrap();
+        let library = ui.global::<KeymapLibrary>();
         library.invoke_refresh();
         let index = slint::Model::iter(&library.get_names())
             .position(|name| name == "Broken")
@@ -850,20 +848,20 @@ mod tests {
         library.invoke_open_delete(index);
         library.invoke_delete(library.get_selected());
         assert_eq!(library.get_dialog(), LibraryDialog::None);
-        assert!(!paths.profile_path("Broken").unwrap().exists());
+        assert!(!paths.keymap_path("Broken").unwrap().exists());
     }
 
     #[test]
     fn stale_metadata_does_not_replace_rows_or_conflict_baselines() {
         let (_dir, document, ui) = bound_document();
-        let library = ui.global::<ProfileLibrary>();
+        let library = ui.global::<KeymapLibrary>();
         let loader = metadata::Loader::default();
         let paths = document.read().paths().clone();
         let names = vec!["A".into(), "B".into()];
         library.set_metadata_revision(20);
         let old = tecloid_core::config::library::load_library_entries(&paths, &names);
         paths
-            .save_user_profile("A", r#"{"version":1,"meta":{"description":"new"}}"#, true)
+            .save_user_keymap("A", r#"{"version":1,"meta":{"description":"new"}}"#, true)
             .unwrap();
         loader.publish(
             &ui,
@@ -886,13 +884,13 @@ mod tests {
                     settings.auto_rules = vec![AutoRule {
                         id: "missing".into(),
                         enabled: true,
-                        profile_id: Some("user:gone".into()),
+                        keymap_id: Some("user:gone".into()),
                         conditions: Default::default(),
                     }];
                 })
             })
             .unwrap();
-        let library = ui.global::<ProfileLibrary>();
+        let library = ui.global::<KeymapLibrary>();
         library.invoke_refresh();
         library.invoke_open_rule(0, -1);
         assert!(library.get_rule_target_missing());
@@ -900,7 +898,7 @@ mod tests {
         library.invoke_save_rule();
         assert_eq!(
             document.read().settings().auto_rules[0]
-                .profile_id
+                .keymap_id
                 .as_deref(),
             Some("user:gone")
         );
@@ -909,7 +907,7 @@ mod tests {
                 .unwrap()
                 .settings()
                 .auto_rules[0]
-                .profile_id
+                .keymap_id
                 .as_deref(),
             Some("user:gone")
         );
@@ -917,17 +915,13 @@ mod tests {
         library.set_rule_target(-1);
         library.set_rule_target_missing(false);
         library.invoke_save_rule();
-        assert!(
-            document.read().settings().auto_rules[0]
-                .profile_id
-                .is_none()
-        );
+        assert!(document.read().settings().auto_rules[0].keymap_id.is_none());
     }
 
     #[test]
     fn open_rule_tracks_identity_and_picker_names_across_refreshes() {
         let (_dir, document, ui) = bound_document();
-        let library = ui.global::<ProfileLibrary>();
+        let library = ui.global::<KeymapLibrary>();
         library.invoke_open_rule(-1, 0);
         library.invoke_save_rule();
         library.invoke_open_rule(0, 0);
@@ -939,7 +933,7 @@ mod tests {
         let config = document.read();
         assert_eq!(config.settings().auto_rules.len(), 2);
         assert_eq!(
-            config.settings().auto_rules[1].profile_id.as_deref(),
+            config.settings().auto_rules[1].keymap_id.as_deref(),
             Some("user:A")
         );
         assert_eq!(
@@ -949,9 +943,9 @@ mod tests {
     }
 
     #[test]
-    fn deleting_last_profile_does_not_prompt_to_save_before_creating() {
+    fn deleting_last_keymap_does_not_prompt_to_save_before_creating() {
         let (_dir, document, ui) = bound_document();
-        let library = ui.global::<ProfileLibrary>();
+        let library = ui.global::<KeymapLibrary>();
         library.invoke_delete(1);
         document
             .edit(View::Rules, |config| config.create_layer("Unsaved", ""))
@@ -962,44 +956,44 @@ mod tests {
         assert!(!library.get_dirty());
         working::refresh_context(&ui, &document);
         assert!(!library.get_dirty());
-        library.invoke_open_create(Profilesource::Empty, 0);
+        library.invoke_open_create(Keymapsource::Empty, 0);
         assert_eq!(library.get_dialog(), LibraryDialog::Create);
     }
 
     #[test]
     fn unrelated_metadata_edits_do_not_accept_external_changes_to_the_working_copy() {
         let (_dir, document, ui) = bound_document();
-        let library = ui.global::<ProfileLibrary>();
+        let library = ui.global::<KeymapLibrary>();
         let paths = document.read().paths().clone();
-        let mut theirs = document.read().profile().clone();
+        let mut theirs = document.read().keymap().clone();
         theirs.description = Some("external".into());
-        let theirs = profile_file::serialize(&theirs);
+        let theirs = keymap_file::serialize(&theirs);
         document
             .edit(View::Rules, |config| {
-                config.update_profile(|profile| profile.description = Some("mine".into()))
+                config.update_keymap(|keymap| keymap.description = Some("mine".into()))
             })
             .unwrap();
-        paths.save_user_profile("A", &theirs, true).unwrap();
+        paths.save_user_keymap("A", &theirs, true).unwrap();
         library.invoke_rename(1, "Renamed B".into());
         library.invoke_set_description(1, "B description".into());
         library.invoke_delete(1);
         library.invoke_save_current();
         assert_eq!(library.get_dialog(), LibraryDialog::Conflict);
-        assert_eq!(paths.load_user_profile("A").unwrap(), theirs);
+        assert_eq!(paths.load_user_keymap("A").unwrap(), theirs);
     }
 
     #[test]
     fn quitting_requires_a_decision_and_continues_after_a_successful_save() {
-        use crate::ui::PendingProfileAction;
+        use crate::ui::PendingKeymapAction;
         use std::cell::Cell;
         let (_dir, document, ui) = bound_document();
-        let library = ui.global::<ProfileLibrary>();
+        let library = ui.global::<KeymapLibrary>();
         assert!(ui.invoke_prepare_quit());
         document
             .edit(View::Rules, |config| config.create_layer("Unsaved", ""))
             .unwrap();
         assert!(!ui.invoke_prepare_quit());
-        assert_eq!(library.get_pending_action(), PendingProfileAction::Quit);
+        assert_eq!(library.get_pending_action(), PendingKeymapAction::Quit);
         assert_eq!(library.get_dialog(), LibraryDialog::Unsaved);
         let quit = Rc::new(Cell::new(false));
         let requested = quit.clone();
@@ -1011,7 +1005,7 @@ mod tests {
         assert!(quit.get());
         assert!(!library.get_dirty());
         assert_eq!(
-            document.read().load_profile("user:A").unwrap().layers.len(),
+            document.read().load_keymap("user:A").unwrap().layers.len(),
             1
         );
     }
@@ -1020,7 +1014,7 @@ mod tests {
     fn failed_save_does_not_quit_and_can_be_retried() {
         use std::cell::Cell;
         let (_dir, document, ui) = bound_document();
-        let library = ui.global::<ProfileLibrary>();
+        let library = ui.global::<KeymapLibrary>();
         let paths = document.read().paths().clone();
         document
             .edit(View::Rules, |config| config.create_layer("Unsaved", ""))
@@ -1029,15 +1023,15 @@ mod tests {
         let requested = quit.clone();
         library.on_quit(move || requested.set(true));
         assert!(!ui.invoke_prepare_quit());
-        std::fs::remove_file(paths.profile_path("A").unwrap()).unwrap();
-        std::fs::create_dir(paths.profile_path("A").unwrap()).unwrap();
+        std::fs::remove_file(paths.keymap_path("A").unwrap()).unwrap();
+        std::fs::create_dir(paths.keymap_path("A").unwrap()).unwrap();
         library.invoke_save_and_continue();
         assert_eq!(library.get_dialog(), LibraryDialog::Conflict);
         library.invoke_overwrite_current();
         library.invoke_finish_save();
         assert!(!quit.get());
         assert!(library.get_dirty());
-        std::fs::remove_dir(paths.profile_path("A").unwrap()).unwrap();
+        std::fs::remove_dir(paths.keymap_path("A").unwrap()).unwrap();
         assert!(!ui.invoke_prepare_quit());
         library.invoke_save_and_continue();
         library.invoke_overwrite_current();
@@ -1051,9 +1045,9 @@ mod tests {
         use crate::ui::MacroEditor;
         use std::cell::Cell;
         let (_dir, document, ui) = bound_document();
-        let library = ui.global::<ProfileLibrary>();
+        let library = ui.global::<KeymapLibrary>();
         let macros = ui.global::<MacroEditor>();
-        let original = document.read().paths().load_user_profile("A").unwrap();
+        let original = document.read().paths().load_user_keymap("A").unwrap();
         macros.invoke_add("Draft".into());
         macros.invoke_add_step(0, "macro:missing".into());
         let quit = Rc::new(Cell::new(false));
@@ -1066,7 +1060,7 @@ mod tests {
         assert!(quit.get());
         assert!(!macros.get_has_unsaved_changes());
         assert_eq!(
-            document.read().paths().load_user_profile("A").unwrap(),
+            document.read().paths().load_user_keymap("A").unwrap(),
             original
         );
     }
@@ -1075,15 +1069,15 @@ mod tests {
     fn opening_or_failing_creation_keeps_the_current_page_drafts() {
         use crate::ui::MacroEditor;
         let (_dir, _document, ui) = bound_document();
-        let library = ui.global::<ProfileLibrary>();
+        let library = ui.global::<KeymapLibrary>();
         let macros = ui.global::<MacroEditor>();
         macros.invoke_add("Draft".into());
         macros.invoke_add_step(0, "macro:missing".into());
-        library.invoke_open_create(Profilesource::Empty, 0);
+        library.invoke_open_create(Keymapsource::Empty, 0);
         library.invoke_continue_pending();
         assert_eq!(library.get_dialog(), LibraryDialog::Create);
         assert!(macros.get_has_unsaved_changes());
-        library.invoke_create("A".into(), "".into(), Profilesource::Empty, 0);
+        library.invoke_create("A".into(), "".into(), Keymapsource::Empty, 0);
         assert_eq!(library.get_dialog(), LibraryDialog::Create);
         assert!(macros.get_has_unsaved_changes());
         library.invoke_cancel_dialog();
@@ -1094,7 +1088,7 @@ mod tests {
     fn failed_switch_keeps_invalid_macro_drafts_until_a_successful_load() {
         use crate::ui::MacroEditor;
         let (_dir, document, ui) = bound_document();
-        let library = ui.global::<ProfileLibrary>();
+        let library = ui.global::<KeymapLibrary>();
         let macros = ui.global::<MacroEditor>();
         macros.invoke_add("Draft".into());
         macros.invoke_add_step(0, "macro:missing".into());
@@ -1102,8 +1096,8 @@ mod tests {
         library.invoke_edit(1);
         assert_eq!(library.get_dialog(), LibraryDialog::Unsaved);
         let paths = document.read().paths().clone();
-        let target = paths.load_user_profile("B").unwrap();
-        std::fs::remove_file(paths.profile_path("B").unwrap()).unwrap();
+        let target = paths.load_user_keymap("B").unwrap();
+        std::fs::remove_file(paths.keymap_path("B").unwrap()).unwrap();
         library.invoke_continue_pending();
         assert!(macros.get_has_unsaved_changes());
         assert!(macros.get_has_errors());
@@ -1118,7 +1112,7 @@ mod tests {
                 .action,
             "macro:missing"
         );
-        paths.save_user_profile("B", &target, false).unwrap();
+        paths.save_user_keymap("B", &target, false).unwrap();
         library.invoke_refresh();
         library.invoke_edit(1);
         library.invoke_continue_pending();
@@ -1131,12 +1125,12 @@ mod tests {
     fn discard_without_a_readable_saved_file_clears_working_copy_and_page_drafts() {
         use crate::ui::MacroEditor;
         let (_dir, document, ui) = bound_document();
-        let library = ui.global::<ProfileLibrary>();
+        let library = ui.global::<KeymapLibrary>();
         let macros = ui.global::<MacroEditor>();
         macros.invoke_add("Draft".into());
         macros.invoke_add_step(0, "macro:missing".into());
         let paths = document.read().paths().clone();
-        std::fs::remove_file(paths.profile_path("A").unwrap()).unwrap();
+        std::fs::remove_file(paths.keymap_path("A").unwrap()).unwrap();
         library.invoke_discard_current();
         assert_eq!(library.get_current_label(), "");
         assert!(!library.get_dirty());
@@ -1148,7 +1142,7 @@ mod tests {
         assert!(library.get_dirty());
         library.invoke_discard_current();
         assert!(!library.get_dirty());
-        assert_eq!(document.read().profile(), &ProfilePreset::initial());
+        assert_eq!(document.read().keymap(), &KeymapPreset::initial());
     }
 
     #[test]
@@ -1171,7 +1165,7 @@ mod tests {
 
     #[test]
     fn warnings_never_hide_the_result() {
-        let saved = || Msg::ProfileSaved("A".into());
+        let saved = || Msg::KeymapSaved("A".into());
         assert_eq!(merge_warning(Ok(saved()), None), (None, saved()));
         assert_eq!(
             merge_warning(Ok(saved()), Some(Msg::LibraryChanged)),

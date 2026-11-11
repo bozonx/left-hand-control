@@ -31,12 +31,12 @@ const POLICY: &[(&[&str], ToastKind, Duration)] = &[
     (&["copied"], ToastKind::Success, SHORT),
     (
         &[
-            "profile-created",
-            "profile-saved",
-            "profile-deleted",
+            "keymap-created",
+            "keymap-saved",
+            "keymap-deleted",
             "auto-rule-deleted",
-            "profile-activated",
-            "profile-discarded",
+            "keymap-activated",
+            "keymap-discarded",
             "mapper-running",
             "mapper-stopped",
         ],
@@ -56,8 +56,8 @@ const POLICY: &[(&[&str], ToastKind, Duration)] = &[
             "macro-in-use",
             "action-unavailable",
             "action-unavailable-named",
-            "save-profile-first",
-            "profile-slot-empty",
+            "save-keymap-first",
+            "keymap-slot-empty",
             "select-input-device",
             "game-mode-in-development",
         ],
@@ -513,7 +513,7 @@ mod tests {
     fn waiting_notifications_get_their_full_duration_when_visible() {
         let mut queue = Queue::default();
         for index in 0..=VISIBLE {
-            queue.add(Msg::ProfileSaved(index.to_string()).to_ui(), false);
+            queue.add(Msg::KeymapSaved(index.to_string()).to_ui(), false);
         }
         assert!(queue.advance(Duration::from_secs(3)));
         assert_eq!(queue.entries.len(), 1);
@@ -524,7 +524,7 @@ mod tests {
     fn new_errors_preempt_warnings_and_the_queue_is_bounded() {
         let mut queue = Queue::default();
         for slot in 0..(CAPACITY + 10) {
-            queue.add(Msg::ProfileSlotEmpty(slot as u32).to_ui(), false);
+            queue.add(Msg::KeymapSlotEmpty(slot as u32).to_ui(), false);
         }
         assert_eq!(queue.entries.len(), CAPACITY);
         queue.add(Msg::Error("first failure".into()).to_ui(), false);

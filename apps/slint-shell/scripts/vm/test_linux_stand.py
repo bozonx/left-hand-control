@@ -23,7 +23,7 @@ def module(name, filename):
 
 guest = module("linux_guest", "linux-guest.py")
 linux = module("linux_runner", "run-linux.py")
-windows = module("windows_runner_profile", "run-windows.py")
+windows = module("windows_runner_keymap", "run-windows.py")
 matrix_runner = module("linux_matrix", "run-linux-matrix.py")
 receiver_probe = module("receiver_probe", "check-linux-receiver.py")
 
@@ -110,11 +110,11 @@ class LinuxStandTests(unittest.TestCase):
             config = Path(self.tmp.name) / "config.json"
             config.write_text('{"settings":{}}')
             with self.assertRaises(SystemExit):
-                guest.cmd_check_profile(SimpleNamespace(device="/dev/test"))
+                guest.cmd_check_keymap(SimpleNamespace(device="/dev/test"))
             config.write_text(json.dumps({"settings": {"devices": {"keyboards": ["/dev/test"]},
-                                                       "profiles": {"manualProfile": "user:E2E"}}}))
+                                                       "keymaps": {"manualKeymap": "user:E2E"}}}))
             with contextlib.redirect_stdout(io.StringIO()):
-                guest.cmd_check_profile(SimpleNamespace(device="/dev/test"))
+                guest.cmd_check_keymap(SimpleNamespace(device="/dev/test"))
 
     def test_host_rejects_transport_noise_missing_and_malformed_results(self):
         for raw in ('', 'ssh failed', '{}', 'null', '[]', '{"status":"failed","text":""}',
@@ -161,7 +161,7 @@ class LinuxStandTests(unittest.TestCase):
             if status is None:
                 self.assertIn("suspend: NOT RUN", path.read_text())
 
-    def test_complete_profile_allows_only_explicit_nonrequired_skip(self):
+    def test_complete_keymap_allows_only_explicit_nonrequired_skip(self):
         report = Report()
         report.require(("suspend",))
         with contextlib.redirect_stdout(io.StringIO()):

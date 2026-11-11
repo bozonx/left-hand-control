@@ -66,7 +66,7 @@ pub(super) fn bind(
         // Keep the script of the other operating systems.
         let mut command = drafts.command(&id).or_else(|| doc
             .read()
-            .profile()
+            .keymap()
             .commands
             .iter()
             .find(|command| command.id == id)

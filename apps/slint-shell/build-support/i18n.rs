@@ -216,6 +216,8 @@ pub fn validate_catalog(
                     entry.source.as_str(),
                     "PgUp/PgDn · {}/{}"
                         | "Tecloid"
+                        | "Keymap"
+                        | "Keymap: {}"
                         | "F1–F24"
                         | "ID"
                         | "E-ink"

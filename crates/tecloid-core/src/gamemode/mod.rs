@@ -1,10 +1,10 @@
-//! Game mode: a global on/off state that rule and profile conditions use.
+//! Game mode: a global on/off state that rule and keymap conditions use.
 //!
 //! The user picks Auto, On or Off. In Auto a watcher thread combines the
 //! enabled sources (GameMode daemon, games known to a launcher or to the
 //! system, process rules, fullscreen window) and
 //! keeps game mode on for [`OFF_DELAY`] after the last match, so Alt+Tab
-//! or a loading screen does not flip profiles back and forth. A state that
+//! or a loading screen does not flip keymaps back and forth. A state that
 //! cannot be detected counts as off.
 //!
 //! Game mode is an in-development feature: while the setting is off it is
@@ -632,7 +632,7 @@ impl DetectionHistory {
         }
         // New settings keep the grace period only while the source that
         // found the game is still on: editing an unrelated option during
-        // Alt+Tab must not flip profiles, removing the rule must.
+        // Alt+Tab must not flip keymaps, removing the rule must.
         let settings_changed = self.revision.replace(revision) != Some(revision);
         let kept = previous
             .method
@@ -969,7 +969,7 @@ fn parse_game_mode_settings(raw: &str) -> Option<(GameModeSettings, bool)> {
 mod tests {
     use super::*;
     use crate::config::auto_switch::{AutoSwitchContext, matches_condition_set};
-    use crate::config::model::{GameModeProcessMatcher, ProfileConditionSet};
+    use crate::config::model::{GameModeProcessMatcher, KeymapConditionSet};
 
     fn observation(running: &[&str], daemon: bool) -> Observation {
         Observation {
@@ -1461,14 +1461,14 @@ mod tests {
             assert!(!status.detection_enabled);
             assert_eq!(status.method, Some(GameModeMethod::Manual));
             assert!(matches_condition_set(
-                &ProfileConditionSet {
+                &KeymapConditionSet {
                     game_mode: Some(if active {
                         crate::config::model::GameModeCondition::On
                     } else {
                         crate::config::model::GameModeCondition::Off
                     }),
                     keyboard_layouts: vec![],
-                    ..ProfileConditionSet::default()
+                    ..KeymapConditionSet::default()
                 },
                 &AutoSwitchContext {
                     game_mode_active: status.active,

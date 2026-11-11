@@ -141,7 +141,7 @@ pub struct Preferences {
 pub enum Command {
     Show(Window),
     ShowPage(Popup, u32),
-    PopupLayout(Option<String>),
+    PopupKeymap(Option<String>),
     PopupContents(String),
     /// Show the keys of the held layer in the Spell worker; `None` hides them.
     LayerHint(Option<crate::layer_hint_model::LayerHint>),
@@ -196,7 +196,7 @@ impl TryFrom<Command> for ShellCommand {
 pub enum WorkerCommand {
     Show(Popup),
     ShowPage(Popup, u32),
-    PopupLayout(Option<String>),
+    PopupKeymap(Option<String>),
     PopupContents(String),
     LayerHint(Option<crate::layer_hint_model::LayerHint>),
     Hide,
@@ -211,7 +211,7 @@ impl TryFrom<Command> for WorkerCommand {
         Ok(match command {
             Command::Show(Window::Popup(popup)) => Self::Show(popup),
             Command::ShowPage(popup, page) => Self::ShowPage(popup, page),
-            Command::PopupLayout(profile) => Self::PopupLayout(profile),
+            Command::PopupKeymap(keymap) => Self::PopupKeymap(keymap),
             Command::PopupContents(contents) => Self::PopupContents(contents),
             Command::LayerHint(hint) => Self::LayerHint(hint),
             Command::Hide => Self::Hide,
@@ -228,7 +228,7 @@ impl From<WorkerCommand> for Command {
         match command {
             WorkerCommand::Show(popup) => Self::Show(Window::Popup(popup)),
             WorkerCommand::ShowPage(popup, page) => Self::ShowPage(popup, page),
-            WorkerCommand::PopupLayout(profile) => Self::PopupLayout(profile),
+            WorkerCommand::PopupKeymap(keymap) => Self::PopupKeymap(keymap),
             WorkerCommand::PopupContents(contents) => Self::PopupContents(contents),
             WorkerCommand::LayerHint(hint) => Self::LayerHint(hint),
             WorkerCommand::Hide => Self::Hide,
@@ -251,7 +251,7 @@ impl Endpoint {
     pub fn validate(self, command: &Command) -> Result<(), String> {
         let supported = match self {
             Self::Settings => match command {
-                Command::PopupLayout(_) | Command::PopupContents(_) | Command::LayerHint(_) => {
+                Command::PopupKeymap(_) | Command::PopupContents(_) | Command::LayerHint(_) => {
                     false
                 }
                 Command::Show(_)
@@ -269,7 +269,7 @@ impl Endpoint {
                 command,
                 Command::Show(Window::Popup(_))
                     | Command::ShowPage(_, _)
-                    | Command::PopupLayout(_)
+                    | Command::PopupKeymap(_)
                     | Command::PopupContents(_)
                     | Command::LayerHint(_)
                     | Command::Hide
@@ -307,7 +307,7 @@ impl Command {
             }
             AppAction::ShowSettings => ShellCommand::Show(Window::Settings),
             AppAction::GameMode(mode) => ShellCommand::GameMode(mode),
-            AppAction::ActivateProfile(_) => return None,
+            AppAction::ActivateKeymap(_) => return None,
         })
     }
 
@@ -328,9 +328,9 @@ impl Command {
                 .map(Self::PopupContents)
                 .map_err(|_| USAGE.into());
         }
-        if let Some(profile) = value.strip_prefix("popup-profile ") {
-            return serde_json::from_str(profile)
-                .map(Self::PopupLayout)
+        if let Some(keymap) = value.strip_prefix("popup-keymap ") {
+            return serde_json::from_str(keymap)
+                .map(Self::PopupKeymap)
                 .map_err(|_| USAGE.into());
         }
         if let Some(hint) = value.strip_prefix("layer-hint ") {
@@ -404,10 +404,10 @@ impl fmt::Display for Command {
         match self {
             Self::Show(window) => write!(f, "show {}", window.name()),
             Self::ShowPage(popup, page) => write!(f, "show {} {page}", popup.name()),
-            Self::PopupLayout(profile) => write!(
+            Self::PopupKeymap(keymap) => write!(
                 f,
-                "popup-profile {}",
-                serde_json::to_string(profile).map_err(|_| fmt::Error)?
+                "popup-keymap {}",
+                serde_json::to_string(keymap).map_err(|_| fmt::Error)?
             ),
             Self::PopupContents(contents) => write!(
                 f,
@@ -466,8 +466,8 @@ mod tests {
             Command::Show(Window::EMOJI),
             Command::Show(Window::QUICK),
             Command::Show(Window::Settings),
-            Command::PopupLayout(Some("user:Привет".into())),
-            Command::PopupLayout(None),
+            Command::PopupKeymap(Some("user:Привет".into())),
+            Command::PopupKeymap(None),
             Command::PopupContents(r#"{"rules": [], "description": "Привет"}"#.into()),
             Command::LayerHint(None),
             Command::LayerHint(Some(crate::layer_hint_model::LayerHint {

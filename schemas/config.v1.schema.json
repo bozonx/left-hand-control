@@ -25,7 +25,7 @@
       "properties": {
         "fallback": {
           "default": null,
-          "description": "Profile used when no rule matches; `null` turns the mapper off.",
+          "description": "Keymap used when no rule matches; `null` turns the mapper off.",
           "type": [
             "string",
             "null"
@@ -54,7 +54,7 @@
             "null"
           ]
         },
-        "profile": {
+        "keymap": {
           "description": "Required; an explicit `null` turns the mapper off, so a forgotten\nfield is an error rather than a silent \"off\".",
           "type": [
             "string",
@@ -183,6 +183,46 @@
       },
       "type": "object"
     },
+    "KeymapMode": {
+      "enum": [
+        "manual",
+        "auto"
+      ],
+      "type": "string"
+    },
+    "KeymapsDoc": {
+      "additionalProperties": false,
+      "description": "Which library keymap the mapper uses.",
+      "properties": {
+        "auto": {
+          "$ref": "#/$defs/AutoDoc",
+          "default": {
+            "fallback": null,
+            "rules": []
+          }
+        },
+        "manualKeymap": {
+          "description": "Keymap used in manual mode.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mode": {
+          "$ref": "#/$defs/KeymapMode",
+          "default": "manual"
+        },
+        "order": {
+          "default": [],
+          "description": "Library order: the slots of `activateKeymapN` and the order of the\nlist. Behaviour, not remembered state, so it lives in settings.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
     "LinuxDoc": {
       "additionalProperties": false,
       "properties": {
@@ -275,46 +315,6 @@
       ],
       "type": "object"
     },
-    "ProfileMode": {
-      "enum": [
-        "manual",
-        "auto"
-      ],
-      "type": "string"
-    },
-    "ProfilesDoc": {
-      "additionalProperties": false,
-      "description": "Which library profile the mapper uses.",
-      "properties": {
-        "auto": {
-          "$ref": "#/$defs/AutoDoc",
-          "default": {
-            "fallback": null,
-            "rules": []
-          }
-        },
-        "manualProfile": {
-          "description": "Profile used in manual mode.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "mode": {
-          "$ref": "#/$defs/ProfileMode",
-          "default": "manual"
-        },
-        "order": {
-          "default": [],
-          "description": "Library order: the slots of `activateProfileN` and the order of the\nlist. Behaviour, not remembered state, so it lives in settings.",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        }
-      },
-      "type": "object"
-    },
     "SettingsDoc": {
       "additionalProperties": false,
       "properties": {
@@ -361,6 +361,21 @@
           "$ref": "#/$defs/AccessibilityChoice",
           "default": "system"
         },
+        "keymapOsd": {
+          "default": false,
+          "type": "boolean"
+        },
+        "keymaps": {
+          "$ref": "#/$defs/KeymapsDoc",
+          "default": {
+            "auto": {
+              "fallback": null,
+              "rules": []
+            },
+            "mode": "manual",
+            "order": []
+          }
+        },
         "launchAtLogin": {
           "default": false,
           "type": "boolean"
@@ -380,21 +395,6 @@
         "locale": {
           "$ref": "#/$defs/LocalePreference",
           "default": "auto"
-        },
-        "profileOsd": {
-          "default": false,
-          "type": "boolean"
-        },
-        "profiles": {
-          "$ref": "#/$defs/ProfilesDoc",
-          "default": {
-            "auto": {
-              "fallback": null,
-              "rules": []
-            },
-            "mode": "manual",
-            "order": []
-          }
         },
         "reduceMotion": {
           "$ref": "#/$defs/AccessibilityChoice",
@@ -457,7 +457,7 @@
         },
         {
           "const": "libeiWithClipboardFallback",
-          "description": "libei; pastes through the clipboard when the profile lacks a character.",
+          "description": "libei; pastes through the clipboard when the keymap lacks a character.",
           "type": "string"
         },
         {
@@ -541,7 +541,7 @@
     },
     "WhenDoc": {
       "additionalProperties": false,
-      "description": "Conditions of a profile rule or an auto-mode rule; every present\ncondition must hold. Both places share this one object.",
+      "description": "Conditions of a keymap rule or an auto-mode rule; every present\ncondition must hold. Both places share this one object.",
       "properties": {
         "excludeWindows": {
           "items": {
@@ -608,6 +608,15 @@
           "processes": []
         },
         "highContrast": "system",
+        "keymapOsd": false,
+        "keymaps": {
+          "auto": {
+            "fallback": null,
+            "rules": []
+          },
+          "mode": "manual",
+          "order": []
+        },
         "launchAtLogin": false,
         "layerHint": false,
         "linux": {
@@ -616,15 +625,6 @@
           "textMode": "libeiWithClipboardFallback"
         },
         "locale": "auto",
-        "profileOsd": false,
-        "profiles": {
-          "auto": {
-            "fallback": null,
-            "rules": []
-          },
-          "mode": "manual",
-          "order": []
-        },
         "reduceMotion": "system",
         "startMapperOnLaunch": false,
         "timing": {

@@ -1,6 +1,6 @@
 import { ActionFocus } from "focus.slint";
 import { ElidedText } from "controls.slint";
-import { PendingProfileAction } from "types.slint";
+import { PendingKeymapAction } from "types.slint";
 import { KeyboardFocus } from "focus.slint";
 import { FocusRing, TextField } from "controls.slint";
 import { NotificationCenter, ToastStack } from "notifications.slint";
@@ -9,7 +9,7 @@ import { ActionPicker, PickerOverlay } from "action-picker.slint";
 import { AppState } from "app-state.slint";
 import { GameModeButton } from "game-mode.slint";
 import { LayerDialogOverlay, LayersEditor, LayersPage } from "layers.slint";
-import { ProfileLibrary, LibraryDialogOverlay, LibraryPage, SaveSplitButton, ProfileMenu } from "library.slint";
+import { KeymapLibrary, LibraryDialogOverlay, LibraryPage, SaveSplitButton, KeymapMenu } from "library.slint";
 import { MacroEditor, MacrosPage } from "macros.slint";
 import { MenuEditor, MenusPage, MenuPreview } from "menus.slint";
 import { RuleDialogOverlay, RulesEditor, RulesPage } from "rules.slint";
@@ -36,22 +36,22 @@ export component SettingsWindow inherits Window {
     max-width: Theme.unbounded;
     min-height: root.min-window-height;
     /// Header buttons show icons only in a narrow window; development builds have extra header controls.
-    /// Set on resize rather than bound: the header's size feeds back into the window's profile.
+    /// Set on resize rather than bound: the header's size feeds back into the window's keymap.
     property <length> compact-below: AppState.in-development ? 1000px : 860px;
     property <bool> compact-header;
     init => { root.compact-header = root.width < root.compact-below; }
     changed width => { root.compact-header = root.width < root.compact-below; }
     changed compact-below => { root.compact-header = root.width < root.compact-below; }
-    private property <bool> editor-open: ProfileLibrary.editor-open;
+    private property <bool> editor-open: KeymapLibrary.editor-open;
     changed editor-open => { KeyboardFocus.ensure-focus(); }
-    in-out property <Page> page: Page.profiles;
+    in-out property <Page> page: Page.keymaps;
     forward-focus: shortcut-focus;
     private property <string> test-text;
     private property <string> focus-help;
     private property <bool> confirm-discard: false;
     private property <bool> confirm-close: false;
     in-out property <bool> settings-quit-dialog;
-    property <bool> library-problem: (root.page == Page.profiles || ProfileLibrary.editor-open) && NotificationCenter.is-problem(ProfileLibrary.status.id);
+    property <bool> library-problem: (root.page == Page.keymaps || KeymapLibrary.editor-open) && NotificationCenter.is-problem(KeymapLibrary.status.id);
     property <bool> layers-problem: (root.page == Page.layers || root.page == Page.keyboard) && NotificationCenter.is-problem(LayersEditor.status.id);
     property <bool> rules-problem: root.page == Page.rules && NotificationCenter.is-problem(RulesEditor.status.id);
     property <bool> macros-problem: root.page == Page.macros && NotificationCenter.is-problem(MacroEditor.status.id);
@@ -59,7 +59,7 @@ export component SettingsWindow inherits Window {
     property <bool> settings-problem: root.page == Page.settings && NotificationCenter.is-problem(SettingsEditor.message.id);
     /// Lasting problems only: one-off errors are toasts, mapper state is on its card.
     property <Message> problem: AppState.config-status.id == "config-unavailable" ? AppState.config-status
-        : root.library-problem ? ProfileLibrary.status
+        : root.library-problem ? KeymapLibrary.status
         : root.layers-problem ? LayersEditor.status
         : root.rules-problem ? RulesEditor.status
         : root.macros-problem ? MacroEditor.status
@@ -69,11 +69,11 @@ export component SettingsWindow inherits Window {
     /// Ask before losing the working copy, including invalid page drafts.
     public function prepare-quit() -> bool {
         if !SettingsEditor.flush-pending() { root.navigate(Page.settings, MenuKind.emoji); root.settings-quit-dialog = true; return false; }
-        let drafts-saved = ProfileLibrary.flush-drafts();
-        if ProfileLibrary.dirty || !drafts-saved {
-            ProfileLibrary.pending-action = PendingProfileAction.quit;
-            ProfileLibrary.clear-status();
-            ProfileLibrary.dialog = LibraryDialog.unsaved;
+        let drafts-saved = KeymapLibrary.flush-drafts();
+        if KeymapLibrary.dirty || !drafts-saved {
+            KeymapLibrary.pending-action = PendingKeymapAction.quit;
+            KeymapLibrary.clear-status();
+            KeymapLibrary.dialog = LibraryDialog.unsaved;
             return false;
         }
         return true;
@@ -82,26 +82,26 @@ export component SettingsWindow inherits Window {
     public function continue-settings-quit(discard: bool) {
         root.settings-quit-dialog = false;
         if discard { SettingsEditor.discard-pending(); }
-        if root.prepare-quit() { ProfileLibrary.quit(); }
+        if root.prepare-quit() { KeymapLibrary.quit(); }
     }
 
-    /// Apply all page drafts without writing the profile to the library.
+    /// Apply all page drafts without writing the keymap to the library.
     public function flush-drafts() -> bool {
-        let profile = ProfileLibrary.flush-drafts();
+        let keymap = KeymapLibrary.flush-drafts();
         let settings = SettingsEditor.flush-pending();
         if !settings { root.navigate(Page.settings, MenuKind.emoji); }
         else if MacroEditor.has-unsaved-changes || MacroEditor.has-errors { root.navigate(Page.macros, MenuKind.emoji); }
         else if MenuEditor.has-unsaved-changes { root.navigate(Page.menus, MenuEditor.kind); }
-        return profile && settings;
+        return keymap && settings;
     }
 
-    public function close-profile() {
-        let drafts-saved = ProfileLibrary.flush-drafts();
-        if ProfileLibrary.dirty || !drafts-saved {
+    public function close-keymap() {
+        let drafts-saved = KeymapLibrary.flush-drafts();
+        if KeymapLibrary.dirty || !drafts-saved {
             root.confirm-close = true;
         } else {
-            ProfileLibrary.editor-open = false;
-            if root.page != Page.settings && root.page != Page.profiles { root.navigate(Page.profiles, MenuKind.emoji); }
+            KeymapLibrary.editor-open = false;
+            if root.page != Page.settings && root.page != Page.keymaps { root.navigate(Page.keymaps, MenuKind.emoji); }
         }
     }
 
@@ -109,25 +109,25 @@ export component SettingsWindow inherits Window {
         if !AppState.in-development && page == Page.macros { return; }
         if !InlineEditors.flush() { return; }
         DragDrop.cancel();
-        if page == Page.profiles { ProfileLibrary.refresh(); }
+        if page == Page.keymaps { KeymapLibrary.refresh(); }
         if page == Page.rules { RulesEditor.refresh(); }
         if page == Page.layers || page == Page.keyboard { LayersEditor.refresh(); }
         if page == Page.menus { MenuEditor.open(kind); }
-        if page != Page.profiles && page != Page.settings { ProfileLibrary.editor-open = true; }
+        if page != Page.keymaps && page != Page.settings { KeymapLibrary.editor-open = true; }
         root.page = page;
         KeyboardFocus.ensure-focus();
         if !KeyboardFocus.has-focus() {
             if page == Page.settings { settings-navigation.focus(); }
-            else { profiles-navigation.focus(); }
+            else { keymaps-navigation.focus(); }
         }
     }
 
     property <bool> modal-open: root.settings-quit-dialog || KeyboardFocus.active || root.confirm-discard || root.confirm-close || ActionPicker.opened || RulesEditor.dialog != RuleDialog.none || LayersEditor.dialog != LayerDialog.none || LayersEditor.delete-extra >= 0
-        || ProfileLibrary.save-as-open || ProfileLibrary.dialog != LibraryDialog.none
+        || KeymapLibrary.save-as-open || KeymapLibrary.dialog != LibraryDialog.none
         || AppEntryDialog.editing || AppEntryDialog.removing || DeviceDialog.open || SettingsEditor.full-command != "";
-    property <bool> show-active-banner: root.page != Page.profiles && root.page != Page.settings
-        && ProfileLibrary.active-error.id == ""
-        && ProfileLibrary.current-label != "" && ProfileLibrary.current-label != ProfileLibrary.active-label;
+    property <bool> show-active-banner: root.page != Page.keymaps && root.page != Page.settings
+        && KeymapLibrary.active-error.id == ""
+        && KeymapLibrary.current-label != "" && KeymapLibrary.current-label != KeymapLibrary.active-label;
 
 
     shortcut-focus := FocusScope {
@@ -137,8 +137,8 @@ export component SettingsWindow inherits Window {
             if event.text == Key.F1 { root.focus-help = KeyboardFocus.describe(); if root.focus-help != "" { focus-help-popup.show(); } return accept; }
             if focus-help-popup.is-open && event.text == Key.Escape { focus-help-popup.close(); return accept; }
             if event.text == Key.Escape && (DragDrop.dragging || PaletteDrag.active) { DragDrop.cancel(); return accept; }
-            if InlineEditors.window-active && !root.modal-open && event.modifiers.control && event.text.to-lowercase() == "s" && ProfileLibrary.editor-open {
-                if ProfileLibrary.flush-drafts() && ProfileLibrary.dirty { ProfileLibrary.save-current(); }
+            if InlineEditors.window-active && !root.modal-open && event.modifiers.control && event.text.to-lowercase() == "s" && KeymapLibrary.editor-open {
+                if KeymapLibrary.flush-drafts() && KeymapLibrary.dirty { KeymapLibrary.save-current(); }
                 return accept;
             }
             return reject;
@@ -156,7 +156,7 @@ export component SettingsWindow inherits Window {
                     padding-left: Theme.space-xl; padding-right: Theme.space-xl; padding-top: Theme.space-m; padding-bottom: Theme.space-m; spacing: Theme.space-m;
                     HorizontalLayout {
                         accessible-role: tab-list; accessible-label: @tr("Settings"); spacing: Theme.space-m;
-                    VerticalLayout { alignment: center; profiles-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/library-big.svg"); text: @tr("Profiles"); selected: root.page == Page.profiles; clicked => { root.navigate(Page.profiles, MenuKind.emoji); } } }
+                    VerticalLayout { alignment: center; keymaps-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/library-big.svg"); text: @tr("Keymaps"); selected: root.page == Page.keymaps; clicked => { root.navigate(Page.keymaps, MenuKind.emoji); } } }
                     VerticalLayout { alignment: center; settings-navigation := NavButton { compact: root.compact-header; icon: @image-url("icons/settings.svg"); text: @tr("Settings"); selected: root.page == Page.settings; clicked => { root.navigate(Page.settings, MenuKind.emoji); } } }
                     }
                     Rectangle {
@@ -175,22 +175,22 @@ export component SettingsWindow inherits Window {
                     }
                     }
                     if AppState.in-development: GameModeButton {}
-                    active-profile := Rectangle {
+                    active-keymap := Rectangle {
                         accessible-role: button;
-                        accessible-label: ProfileLibrary.active-text();
-                        accessible-expandable: !ProfileLibrary.automatic;
+                        accessible-label: KeymapLibrary.active-text();
+                        accessible-expandable: !KeymapLibrary.automatic;
                         accessible-expanded: active-menu.is-open;
-                        accessible-action-default => { if !ProfileLibrary.automatic { ProfileLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); } }
-                        active-focus := ActionFocus { enabled: !ProfileLibrary.automatic; opens-menu: true; activated => { ProfileLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); } }
+                        accessible-action-default => { if !KeymapLibrary.automatic { KeymapLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); } }
+                        active-focus := ActionFocus { enabled: !KeymapLibrary.automatic; opens-menu: true; activated => { KeymapLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); } }
                         FocusRing { focused: active-focus.has-focus; border-radius: Theme.radius; }
                         width: root.compact-header ? 150px : 180px; height: Theme.control-height-l; border-radius: Theme.radius; background: Theme.surface; border-width: 1px; border-color: Theme.border;
                         HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-s;
                             Image { width: 14px; source: @image-url("icons/library-big.svg"); colorize: Theme.muted; }
-                            ElidedText { accessible-live-region: polite; text: ProfileLibrary.active-text(); color: ProfileLibrary.active-error.id != "" ? Theme.error : Theme.text; vertical-alignment: center; }
-                            if !ProfileLibrary.automatic: Image { width: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; }
+                            ElidedText { accessible-live-region: polite; text: KeymapLibrary.active-text(); color: KeymapLibrary.active-error.id != "" ? Theme.error : Theme.text; vertical-alignment: center; }
+                            if !KeymapLibrary.automatic: Image { width: 12px; source: @image-url("icons/chevron-down.svg"); colorize: Theme.muted; }
                         }
-                        TouchArea { enabled: !ProfileLibrary.automatic; mouse-cursor: pointer; clicked => { active-focus.focus(); ProfileLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); } }
-                        Tooltip { TooltipText { text: ProfileLibrary.active-text() + "\n" + (ProfileLibrary.automatic ? @tr("Current active profile (selected automatically by switching rules)") : @tr("Current active profile — click to switch")); } }
+                        TouchArea { enabled: !KeymapLibrary.automatic; mouse-cursor: pointer; clicked => { active-focus.focus(); KeymapLibrary.refresh(); active-menu.show(); KeyboardFocus.focus-checked(); } }
+                        Tooltip { TooltipText { text: KeymapLibrary.active-text() + "\n" + (KeymapLibrary.automatic ? @tr("Current active keymap (selected automatically by switching rules)") : @tr("Current active keymap — click to switch")); } }
                     }
                     Rectangle { width: 1px; background: Theme.divider; }
                     VerticalLayout { alignment: center; MapperToggle {
@@ -203,28 +203,28 @@ export component SettingsWindow inherits Window {
                             ? @tr("Stop mapper (restore native keyboard behavior)")
                             : !AppState.keyboard-selected
                             ? @tr("Select a keyboard device in the settings to start the mapper")
-                            : @tr("Start mapper to intercept keys and apply profiles");
+                            : @tr("Start mapper to intercept keys and apply keymaps");
                         toggled => { AppState.toggle-mapper(); }
                     } }
                 }
             }
             Divider {}
-            if ProfileLibrary.editor-open: editor-toolbar := Rectangle {
+            if KeymapLibrary.editor-open: editor-toolbar := Rectangle {
                 height: 50px + (editor-tabs.viewport-width > editor-tabs.visible-width ? Theme.scrollbar-size + Theme.scrollbar-gap : 0px);
                 background: Theme.card;
                 HorizontalLayout {
                     padding-left: Theme.space-xl; padding-right: Theme.space-xl; spacing: Theme.space-m;
-                    Text { text: ProfileLibrary.current-label == "" ? @tr("Custom profile") : ProfileLibrary.current-label; color: Theme.text; max-width: 200px; overflow: elide; vertical-alignment: center; Tooltip { TooltipText { text: ProfileLibrary.current-label == "" ? @tr("Custom profile") : ProfileLibrary.current-label; } } }
+                    Text { text: KeymapLibrary.current-label == "" ? @tr("Custom keymap") : KeymapLibrary.current-label; color: Theme.text; max-width: 200px; overflow: elide; vertical-alignment: center; Tooltip { TooltipText { text: KeymapLibrary.current-label == "" ? @tr("Custom keymap") : KeymapLibrary.current-label; } } }
                     VerticalLayout { alignment: center; SaveSplitButton {
-                        enabled: ProfileLibrary.dirty || MacroEditor.has-unsaved-changes || MenuEditor.has-unsaved-changes;
-                        save => { ProfileLibrary.save-current(); }
+                        enabled: KeymapLibrary.dirty || MacroEditor.has-unsaved-changes || MenuEditor.has-unsaved-changes;
+                        save => { KeymapLibrary.save-current(); }
                         discard => { root.confirm-discard = true; }
-                        save-as => { ProfileLibrary.open-save-as(""); }
+                        save-as => { KeymapLibrary.open-save-as(""); }
                     } }
                     Rectangle { width: 16px; }
                     editor-tabs := ScrollView {
                         accessible-role: tab-list;
-                        accessible-label: @tr("Profile");
+                        accessible-label: @tr("Keymap");
                         vertical-scrollbar-policy: always-off;
                         horizontal-scrollbar-policy: as-needed;
                         horizontal-stretch: 1;
@@ -233,41 +233,41 @@ export component SettingsWindow inherits Window {
                         viewport-height: self.visible-height;
                         HorizontalLayout {
                             spacing: Theme.space-2xs; alignment: start;
-                            NavTab { icon: @image-url("icons/keyboard.svg"); text: @tr("Triggers") + (ProfileLibrary.rules-dirty ? " •" : ""); selected: root.page == Page.rules; tab-stop: root.page == Page.rules || root.page == Page.profiles || root.page == Page.settings; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
-                            NavTab { icon: @image-url("icons/layers.svg"); text: @tr("Layers") + (ProfileLibrary.layers-dirty ? " •" : ""); selected: root.page == Page.keyboard || root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
-                            NavTab { icon: @image-url("icons/smile.svg"); text: @tr("Emoji") + (ProfileLibrary.emoji-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
-                            NavTab { icon: @image-url("icons/zap.svg"); text: @tr("Quick actions") + (ProfileLibrary.quick-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }
-                            if AppState.in-development: NavTab { icon: @image-url("icons/list-ordered.svg"); text: @tr("Macros") + ((ProfileLibrary.macros-dirty || MacroEditor.has-errors) ? " •" : ""); selected: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
+                            NavTab { icon: @image-url("icons/keyboard.svg"); text: @tr("Triggers") + (KeymapLibrary.rules-dirty ? " •" : ""); selected: root.page == Page.rules; tab-stop: root.page == Page.rules || root.page == Page.keymaps || root.page == Page.settings; clicked => { root.navigate(Page.rules, MenuKind.emoji); } }
+                            NavTab { icon: @image-url("icons/layers.svg"); text: @tr("Layers") + (KeymapLibrary.layers-dirty ? " •" : ""); selected: root.page == Page.keyboard || root.page == Page.layers; clicked => { root.navigate(Page.layers, MenuKind.emoji); } }
+                            NavTab { icon: @image-url("icons/smile.svg"); text: @tr("Emoji") + (KeymapLibrary.emoji-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.emoji; clicked => { root.navigate(Page.menus, MenuKind.emoji); } }
+                            NavTab { icon: @image-url("icons/zap.svg"); text: @tr("Quick actions") + (KeymapLibrary.quick-dirty ? " •" : ""); selected: root.page == Page.menus && MenuEditor.kind == MenuKind.quick; clicked => { root.navigate(Page.menus, MenuKind.quick); } }
+                            if AppState.in-development: NavTab { icon: @image-url("icons/list-ordered.svg"); text: @tr("Macros") + ((KeymapLibrary.macros-dirty || MacroEditor.has-errors) ? " •" : ""); selected: root.page == Page.macros; clicked => { root.navigate(Page.macros, MenuKind.emoji); } }
                         }
                     }
-                    VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/x.svg"); label: @tr("Close profile"); clicked => { root.close-profile(); } } }
+                    VerticalLayout { alignment: center; IconButton { icon: @image-url("icons/x.svg"); label: @tr("Close keymap"); clicked => { root.close-keymap(); } } }
                 }
             }
-            if ProfileLibrary.editor-open: Divider {}
+            if KeymapLibrary.editor-open: Divider {}
             if root.show-active-banner: Rectangle {
                 background: Theme.card;
                 HorizontalLayout {
                     padding-left: Theme.space-xl; padding-right: Theme.space-xl; padding-top: Theme.space-s; padding-bottom: Theme.space-s; spacing: Theme.space-m;
                     Text {
-                        text: ProfileLibrary.active-label == ""
-                            ? @tr("You are editing “{}”; no profile is active.", ProfileLibrary.current-label)
-                            : @tr("You are editing “{}”, but “{}” is active.", ProfileLibrary.current-label, ProfileLibrary.active-label);
+                        text: KeymapLibrary.active-label == ""
+                            ? @tr("You are editing “{}”; no keymap is active.", KeymapLibrary.current-label)
+                            : @tr("You are editing “{}”, but “{}” is active.", KeymapLibrary.current-label, KeymapLibrary.active-label);
                         color: Theme.muted; vertical-alignment: center; overflow: elide; horizontal-stretch: 1;
                     }
-                    if !ProfileLibrary.automatic: Button { text: @tr("Make active"); clicked => { ProfileLibrary.activate-current(); } }
+                    if !KeymapLibrary.automatic: Button { text: @tr("Make active"); clicked => { KeymapLibrary.activate-current(); } }
                 }
             }
             if root.show-active-banner: Divider {}
             VerticalLayout {
                 accessible-role: tab-panel;
-                accessible-label: root.page == Page.profiles ? @tr("Profiles") : root.page == Page.settings ? @tr("Settings") : root.page == Page.rules ? @tr("Triggers") : root.page == Page.macros ? @tr("Macros") : root.page == Page.menus ? (MenuEditor.kind == MenuKind.emoji ? @tr("Emoji") : @tr("Quick actions")) : @tr("Layers");
+                accessible-label: root.page == Page.keymaps ? @tr("Keymaps") : root.page == Page.settings ? @tr("Settings") : root.page == Page.rules ? @tr("Triggers") : root.page == Page.macros ? @tr("Macros") : root.page == Page.menus ? (MenuEditor.kind == MenuKind.emoji ? @tr("Emoji") : @tr("Quick actions")) : @tr("Layers");
                 vertical-stretch: 1;
                 padding: Theme.page-padding;
                 // Pages scroll to the window edge; their content keeps the bottom gap (PageContent).
                 padding-bottom: 0px;
                 spacing: Theme.space-l;
                 if root.problem.id != "": Text { accessible-live-region: assertive; text: Locale.text(root.problem); color: NotificationCenter.is-warning(root.problem.id) ? Theme.warning : Theme.error; wrap: word-wrap; max-height: 96px; overflow: elide; }
-                if root.page == Page.profiles: LibraryPage { compact: root.compact-header; }
+                if root.page == Page.keymaps: LibraryPage { compact: root.compact-header; }
                 if root.page == Page.settings: SettingsPage {}
                 if root.page == Page.rules: RulesPage {}
                 if root.page == Page.layers || root.page == Page.keyboard: LayersPage { }
@@ -293,55 +293,55 @@ export component SettingsWindow inherits Window {
         }
     }
     active-menu := PopupWindow {
-        x: active-profile.absolute-position.x; y: active-profile.absolute-position.y + active-profile.height + Theme.menu-offset; width: 240px;
-        ProfileMenu {
-            height-limit: max(50px, min(320px, root.height - active-profile.height - active-profile.absolute-position.y - 24px));
-            for name[index] in ProfileLibrary.names: MenuItem {
-                text: name; checked: name == ProfileLibrary.active-label;
-                clicked => { active-menu.close(); ProfileLibrary.action(index, LibraryAction.activate); }
+        x: active-keymap.absolute-position.x; y: active-keymap.absolute-position.y + active-keymap.height + Theme.menu-offset; width: 240px;
+        KeymapMenu {
+            height-limit: max(50px, min(320px, root.height - active-keymap.height - active-keymap.absolute-position.y - 24px));
+            for name[index] in KeymapLibrary.names: MenuItem {
+                text: name; checked: name == KeymapLibrary.active-label;
+                clicked => { active-menu.close(); KeymapLibrary.action(index, LibraryAction.activate); }
             }
         }
     }
     if root.confirm-discard || root.confirm-close: ConfirmDialog {
         width: 100%; height: 100%;
-        title: @tr("Discard profile changes?");
-        body: @tr("Unsaved changes to this profile will be lost.");
+        title: @tr("Discard keymap changes?");
+        body: @tr("Unsaved changes to this keymap will be lost.");
         confirm-text: @tr("Discard");
         cancel => { root.confirm-discard = false; root.confirm-close = false; }
         confirm => {
-            InlineEditors.revision += 1; ProfileLibrary.discard-current();
-            if root.confirm-close && !ProfileLibrary.dirty { ProfileLibrary.editor-open = false; if root.page != Page.settings && root.page != Page.profiles { root.navigate(Page.profiles, MenuKind.emoji); } }
+            InlineEditors.revision += 1; KeymapLibrary.discard-current();
+            if root.confirm-close && !KeymapLibrary.dirty { KeymapLibrary.editor-open = false; if root.page != Page.settings && root.page != Page.keymaps { root.navigate(Page.keymaps, MenuKind.emoji); } }
             root.confirm-discard = false; root.confirm-close = false;
         }
     }
-    if ProfileLibrary.dialog == LibraryDialog.conflict: DialogFrame {
-        title: @tr("Profile changed on disk");
-        close => { ProfileLibrary.cancel-dialog(); }
+    if KeymapLibrary.dialog == LibraryDialog.conflict: DialogFrame {
+        title: @tr("Keymap changed on disk");
+        close => { KeymapLibrary.cancel-dialog(); }
         Text {
-            text: @tr("The file of “{}” was changed by another program after you opened it. Your edits are kept until you choose what to do.", ProfileLibrary.current-label);
+            text: @tr("The file of “{}” was changed by another program after you opened it. Your edits are kept until you choose what to do.", KeymapLibrary.current-label);
             color: Theme.text; wrap: word-wrap;
         }
         HorizontalLayout {
             spacing: Theme.space-m;
             alignment: end;
-            Button { text: @tr("Cancel"); clicked => { ProfileLibrary.cancel-dialog(); } }
+            Button { text: @tr("Cancel"); clicked => { KeymapLibrary.cancel-dialog(); } }
             Button {
                 text: @tr("Load from disk");
                 clicked => {
                     // Reloading drops the edits, so a pending switch may proceed.
-                    ProfileLibrary.dialog = LibraryDialog.none;
-                    InlineEditors.revision += 1; ProfileLibrary.discard-current();
-                    ProfileLibrary.finish-save();
+                    KeymapLibrary.dialog = LibraryDialog.none;
+                    InlineEditors.revision += 1; KeymapLibrary.discard-current();
+                    KeymapLibrary.finish-save();
                 }
             }
             // Overwriting discards the changes made on disk, so the safe choice is the primary one.
-            Button { text: @tr("Overwrite"); clicked => { ProfileLibrary.overwrite-current(); ProfileLibrary.finish-save(); } }
+            Button { text: @tr("Overwrite"); clicked => { KeymapLibrary.overwrite-current(); KeymapLibrary.finish-save(); } }
             Button {
                 text: @tr("Save as new…"); primary: true;
                 clicked => {
                     // Keep a pending switch: it continues once the copy is saved.
-                    ProfileLibrary.dialog = LibraryDialog.none;
-                    ProfileLibrary.open-save-as(ProfileLibrary.suggest-name(ProfileLibrary.current-label));
+                    KeymapLibrary.dialog = LibraryDialog.none;
+                    KeymapLibrary.open-save-as(KeymapLibrary.suggest-name(KeymapLibrary.current-label));
                 }
             }
         }

@@ -176,7 +176,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             35 => {
                 assert!(!ui.get_editing_description());
                 assert_eq!(ui.get_description(), "Description of B");
-                println!("Focus loss and refresh passed: blur saves, press outside saves, cancel button, window switch, focused wheel steps, failed description save retains its draft after an external refresh, drafts never follow another profile");
+                println!("Focus loss and refresh passed: blur saves, press outside saves, cancel button, window switch, focused wheel steps, failed description save retains its draft after an external refresh, drafts never follow another keymap");
                 slint::quit_event_loop().unwrap();
             }
             _ => unreachable!(),

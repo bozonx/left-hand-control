@@ -37,7 +37,7 @@ try {
     & (Join-Path $root 'apps\slint-shell\scripts\windows\check-windows-syntax.ps1')
     & (Join-Path $root 'apps\slint-shell\scripts\windows\check-windows-package.ps1') -Archive $archive.FullName -Desktop -StressCycles $settings.cycles -StressSeconds $settings.seconds
     $configs = @(Get-ChildItem (Join-Path $root 'windows-runtime') -Recurse -File -Filter config.json)
-    if (-not $configs.Count) { throw 'Portable removal lost the isolated test profiles' }
+    if (-not $configs.Count) { throw 'Portable removal lost the isolated test keymaps' }
     Write-Host 'Package extraction removed, isolated configuration retained'
     $code = '0'
 } catch { Write-Host "FAILED: $_" } finally {

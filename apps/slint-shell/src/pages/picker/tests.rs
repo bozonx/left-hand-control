@@ -248,15 +248,15 @@ fn applying_actions_validates_references_against_the_document() {
     let (_dir, document) = super::super::test_document();
     document
         .edit(crate::document::View::Macros, |config| {
-            config.update_profile(|profile| {
-                profile.macros.push(Macro {
+            config.update_keymap(|keymap| {
+                keymap.macros.push(Macro {
                     id: "pickerMacro".into(),
                     name: "Picker macro".into(),
                     steps: vec![],
                     step_pause_ms: None,
                     modifier_delay_ms: None,
                 });
-                profile.commands.push(Command {
+                keymap.commands.push(Command {
                     id: "pickerCommand".into(),
                     name: "Picker command".into(),
                     posix_script: "true".into(),

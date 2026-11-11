@@ -24,7 +24,7 @@ SSH-выгрузка логов в этом прогоне не сработал
 Полная пошаговая установка описана ниже и в
 [руководстве автоматического стенда](../development/guide.md#windows-vm).
 Нативные desktop-скрипты выполнять без elevation в интерактивной сессии,
-с изолированными профилями, которые создаёт стенд.
+с изолированными Keymap, которые создаёт стенд.
 
 ### Запуск из Linux-хоста
 
@@ -252,7 +252,7 @@ For a source snapshot, archive the exact commit plus intentional uncommitted pat
 For repeatable E2E runs, use a new user-writable directory for each source revision,
 for example `C:\Users\user\tecloid-current`. Do not extract test inputs or write logs directly
 under `C:\`; the unprivileged test user cannot reliably create files there. Keep the
-downloaded bootstrap under the user profile or `%TEMP%` as well.
+downloaded bootstrap under the user keymap or `%TEMP%` as well.
 
 The host-side archive must include intentional uncommitted test harness changes. A plain
 `git archive HEAD` omits them. Either commit the harness first or add the exact files to the
@@ -407,7 +407,7 @@ three show/hide cycles for each popup, theme/language commands and shutdown.
 Popup checks wait for `t2_shown` and `hidden` metrics rather than only IPC replies.
 Debug configuration lives in a fresh `TECLOID_DEV_DIR`; the IPC port is selected per run.
 The IPC token is also isolated by `TECLOID_DEV_DIR`; the smoke suite checks two independent
-profiles and verifies which process owns each test port.
+keymaps and verifies which process owns each test port.
 The VM smoke also opens the native receiver after application checks: QMP sends
 `abc`, Shift+X, Ctrl+Home, Shift+End and `ok`; the host compares text and key-down/up records.
 The receiver selects English (US) and must be focused. Both VM suites then exercise
@@ -594,7 +594,7 @@ If clipboard paste is used as the Windows fallback, verify all of the following:
 - a user focus change during the operation cannot paste into a different application;
 - Ctrl, Alt, Shift, and Win are not left logically pressed.
 
-Human visual/physical checks are in the [manual acceptance checklist](manual-acceptance.md); automated mapper, profiles, macros and `text:` scenarios are described in [the Windows mapper matrix](../development/windows-mapper.md). Owner crash and guard failure have separate named scenarios; physical hardware remains manual; secure desktop and whole-process-tree termination are explicit automatic scenarios, accepted only by their own PASS reports.
+Human visual/physical checks are in the [manual acceptance checklist](manual-acceptance.md); automated mapper, keymaps, macros and `text:` scenarios are described in [the Windows mapper matrix](../development/windows-mapper.md). Owner crash and guard failure have separate named scenarios; physical hardware remains manual; secure desktop and whole-process-tree termination are explicit automatic scenarios, accepted only by their own PASS reports.
 
 ## Snapshots and result recording
 

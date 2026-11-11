@@ -26,14 +26,14 @@ pub(super) struct PopupController {
     generations: RefCell<HashMap<Window, u64>>,
     /// Requested page and the chosen action waiting for the focus to leave.
     session: RefCell<PopupSession>,
-    /// Menus of the active profile for the winit popups.
+    /// Menus of the active keymap for the winit popups.
     configured: RefCell<Option<Rc<ConfiguredMenus>>>,
     /// Menus the winit popups show now; their page ids locate the last
     /// used page in newer menus.
     applied: RefCell<Option<Rc<ConfiguredMenus>>>,
     /// Bumped whenever the menus may have changed.
     generation: Cell<u64>,
-    /// Profile and generation last sent to the Spell worker.
+    /// Keymap and generation last sent to the Spell worker.
     sent: RefCell<Option<(Option<String>, u64)>>,
 }
 
@@ -57,16 +57,16 @@ impl PopupController {
         if let Some(menus) = self.configured.borrow().as_ref() {
             return menus.clone();
         }
-        let profile = document
+        let keymap = document
             .and_then(|document| {
                 document
-                    .popup_layout(tecloid_core::mapper::runtime::status().running)
-                    .map(|(_, profile)| profile)
+                    .popup_keymap(tecloid_core::mapper::runtime::status().running)
+                    .map(|(_, keymap)| keymap)
                     .map_err(|error| log::warn!("popup menus: {error}"))
                     .ok()
             })
             .unwrap_or_default();
-        let menus = Rc::new(ConfiguredMenus { profile });
+        let menus = Rc::new(ConfiguredMenus { keymap });
         *self.configured.borrow_mut() = Some(menus.clone());
         menus
     }
@@ -117,7 +117,7 @@ impl App {
         });
     }
 
-    /// Menus of the active profile, loaded once per change.
+    /// Menus of the active keymap, loaded once per change.
     pub(super) fn menus(&self) -> Rc<ConfiguredMenus> {
         self.popups.menus(self.document().as_deref())
     }
@@ -127,7 +127,7 @@ impl App {
         self.popups.invalidate();
     }
 
-    /// Tell the worker which profile's menus to show, when that changed.
+    /// Tell the worker which keymap's menus to show, when that changed.
     pub(super) fn sync_worker_menus(
         &self,
         source: Source,
@@ -135,7 +135,7 @@ impl App {
     ) -> Result<(), crate::i18n::Msg> {
         let id = self.document().as_ref().and_then(|document| {
             document
-                .popup_layout(tecloid_core::mapper::runtime::status().running)
+                .popup_keymap(tecloid_core::mapper::runtime::status().running)
                 .map(|(id, _)| id)
                 .ok()
                 .flatten()
@@ -143,7 +143,7 @@ impl App {
         if !self.popups.needs_worker_update(&id) {
             return Ok(());
         }
-        let contents = tecloid_core::config::profile_file::serialize(&self.menus().profile);
+        let contents = tecloid_core::config::keymap_file::serialize(&self.menus().keymap);
         self.send_worker(&WorkerCommand::PopupContents(contents), source, start, None)?;
         self.popups.worker_updated(id);
         Ok(())

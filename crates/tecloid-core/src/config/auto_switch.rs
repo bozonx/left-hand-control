@@ -1,12 +1,12 @@
-//! Choosing the active profile in auto mode: an ordered list of rules
-//! (conditions → profile or off), first match wins, otherwise the default.
+//! Choosing the active keymap in auto mode: an ordered list of rules
+//! (conditions → keymap or off), first match wins, otherwise the default.
 
 use super::app_match;
-use super::model::{AppSettings, AutoRule, ProfileConditionSet, ProfileMode};
+use super::model::{AppSettings, AutoRule, KeymapConditionSet, KeymapMode};
 use crate::runtime_state::ActiveWindow;
 use app_match::AppMatcher;
 
-/// Observed system state the profile conditions are evaluated against.
+/// Observed system state the keymap conditions are evaluated against.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct AutoSwitchContext {
     /// Short id of the system keyboard layout; `None` when undetectable.
@@ -33,7 +33,7 @@ impl AutoSwitchContext {
     }
 }
 
-pub fn matches_condition_set(set: &ProfileConditionSet, ctx: &AutoSwitchContext) -> bool {
+pub fn matches_condition_set(set: &KeymapConditionSet, ctx: &AutoSwitchContext) -> bool {
     if set
         .game_mode
         .is_some_and(|mode| !mode.matches(ctx.game_mode_active))
@@ -66,7 +66,7 @@ pub fn matches_condition_set(set: &ProfileConditionSet, ctx: &AutoSwitchContext)
 
 /// `available` sorted by `order`; ids missing from `order` keep their
 /// relative position at the end.
-pub fn order_profile_ids(available: &[String], order: &[String]) -> Vec<String> {
+pub fn order_keymap_ids(available: &[String], order: &[String]) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for id in order.iter().chain(available) {
         if available.contains(id) && !out.contains(id) {
@@ -81,12 +81,12 @@ pub fn order_profile_ids(available: &[String], order: &[String]) -> Vec<String> 
 pub struct AutoChoice {
     /// Index of the matching rule; `None` means the default applied.
     pub matched_rule_index: Option<usize>,
-    /// Profile to use; `None` means off (native passthrough).
-    pub profile_id: Option<String>,
+    /// Keymap to use; `None` means off (native passthrough).
+    pub keymap_id: Option<String>,
 }
 
 /// First rule whose conditions match `ctx`, or the default. Rules and the
-/// default pointing at a profile missing from `available` are skipped.
+/// default pointing at a keymap missing from `available` are skipped.
 pub fn choose(available: &[String], settings: &AppSettings, ctx: &AutoSwitchContext) -> AutoChoice {
     settings
         .auto_rules
@@ -97,12 +97,12 @@ pub fn choose(available: &[String], settings: &AppSettings, ctx: &AutoSwitchCont
         })
         .map(|(index, rule)| AutoChoice {
             matched_rule_index: Some(index),
-            profile_id: rule.profile_id.clone(),
+            keymap_id: rule.keymap_id.clone(),
         })
         .unwrap_or_else(|| AutoChoice {
             matched_rule_index: None,
-            profile_id: settings
-                .auto_default_profile_id
+            keymap_id: settings
+                .auto_default_keymap_id
                 .clone()
                 .filter(|id| available.contains(id)),
         })
@@ -111,7 +111,7 @@ pub fn choose(available: &[String], settings: &AppSettings, ctx: &AutoSwitchCont
 /// Whether `outer` matches whenever `inner` does, so a rule with `inner`
 /// placed after `outer` can never apply. Lists are compared the way
 /// [`matches_condition_set`] reads them: an unusable pattern never matches.
-pub fn covers(outer: &ProfileConditionSet, inner: &ProfileConditionSet) -> bool {
+pub fn covers(outer: &KeymapConditionSet, inner: &KeymapConditionSet) -> bool {
     let game = outer.game_mode.is_none() || outer.game_mode == inner.game_mode;
     let same_keyboard_layout = |a: &String, b: &String| a.trim().eq_ignore_ascii_case(b.trim());
     let keyboard_layouts = outer.keyboard_layouts.is_empty()
@@ -173,15 +173,15 @@ pub fn shadowed_by(rules: &[AutoRule], index: usize, available: &[String]) -> Op
 fn usable_rule(rule: &AutoRule, available: &[String]) -> bool {
     rule.enabled
         && rule
-            .profile_id
+            .keymap_id
             .as_ref()
             .is_none_or(|id| available.contains(id))
 }
 
 /// Whether the automatic choice can depend on the focused window, so a
-/// window change may switch the profile.
+/// window change may switch the keymap.
 pub fn depends_on_window(settings: &AppSettings) -> bool {
-    settings.profile_mode == ProfileMode::Auto
+    settings.keymap_mode == KeymapMode::Auto
         && settings.auto_rules.iter().any(|rule| {
             rule.enabled
                 && !(rule.conditions.window_patterns.is_empty()
@@ -194,7 +194,7 @@ pub fn window_patterns(settings: &AppSettings) -> impl Iterator<Item = &String> 
     settings
         .auto_rules
         .iter()
-        .filter(move |rule| settings.profile_mode == ProfileMode::Auto && rule.enabled)
+        .filter(move |rule| settings.keymap_mode == KeymapMode::Auto && rule.enabled)
         .flat_map(|rule| {
             rule.conditions
                 .window_patterns
@@ -212,8 +212,8 @@ mod tests {
         game_mode: Option<&str>,
         keyboard_layouts: &[&str],
         window_patterns: &[&str],
-    ) -> ProfileConditionSet {
-        ProfileConditionSet {
+    ) -> KeymapConditionSet {
+        KeymapConditionSet {
             game_mode: GameModeCondition::parse(game_mode),
             keyboard_layouts: keyboard_layouts.iter().map(|s| s.to_string()).collect(),
             window_patterns: window_patterns.iter().map(|s| s.to_string()).collect(),
@@ -221,7 +221,7 @@ mod tests {
         }
     }
 
-    fn except(mut set: ProfileConditionSet, excluded: &[&str]) -> ProfileConditionSet {
+    fn except(mut set: KeymapConditionSet, excluded: &[&str]) -> KeymapConditionSet {
         set.excluded_window_patterns = excluded.iter().map(|s| s.to_string()).collect();
         set
     }
@@ -283,7 +283,7 @@ mod tests {
         let ids: Vec<String> = ["user:A", "user:B", "user:C"].map(String::from).to_vec();
         let order = ["user:C".to_string(), "user:B".to_string()];
         assert_eq!(
-            order_profile_ids(&ids, &order),
+            order_keymap_ids(&ids, &order),
             ["user:C", "user:B", "user:A"]
         );
     }
@@ -291,10 +291,10 @@ mod tests {
     #[test]
     fn first_matching_rule_wins_then_default() {
         let ids: Vec<String> = ["user:A", "user:B"].map(String::from).to_vec();
-        let rule = |id: &str, profile: Option<&str>, conditions| AutoRule {
+        let rule = |id: &str, keymap: Option<&str>, conditions| AutoRule {
             id: id.into(),
             enabled: true,
-            profile_id: profile.map(str::to_owned),
+            keymap_id: keymap.map(str::to_owned),
             conditions,
         };
         let mut settings = AppSettings {
@@ -303,34 +303,34 @@ mod tests {
                 rule("ru", Some("user:B"), set(None, &["ru"], &[])),
                 rule("gone", Some("user:X"), set(None, &[], &[])),
             ],
-            auto_default_profile_id: Some("user:A".into()),
+            auto_default_keymap_id: Some("user:A".into()),
             ..AppSettings::default()
         };
-        let pick = |settings: &AppSettings, profile, title| {
-            choose(&ids, settings, &ctx(Some(profile), false, title))
+        let pick = |settings: &AppSettings, keymap, title| {
+            choose(&ids, settings, &ctx(Some(keymap), false, title))
         };
         assert_eq!(
             pick(&settings, "ru", "Blender"),
             AutoChoice {
                 matched_rule_index: Some(0),
-                profile_id: None
+                keymap_id: None
             }
         );
         assert_eq!(
             pick(&settings, "ru", "Kate"),
             AutoChoice {
                 matched_rule_index: Some(1),
-                profile_id: Some("user:B".into())
+                keymap_id: Some("user:B".into())
             }
         );
         assert_eq!(
             pick(&settings, "us", "Kate"),
             AutoChoice {
                 matched_rule_index: None,
-                profile_id: Some("user:A".into())
+                keymap_id: Some("user:A".into())
             }
         );
-        settings.auto_default_profile_id = Some("user:X".into());
+        settings.auto_default_keymap_id = Some("user:X".into());
         assert_eq!(pick(&settings, "us", "Kate"), AutoChoice::default());
     }
 
@@ -341,15 +341,15 @@ mod tests {
             auto_rules: vec![AutoRule {
                 id: "a".into(),
                 enabled: false,
-                profile_id: None,
-                conditions: ProfileConditionSet::default(),
+                keymap_id: None,
+                conditions: KeymapConditionSet::default(),
             }],
-            auto_default_profile_id: Some("user:A".into()),
+            auto_default_keymap_id: Some("user:A".into()),
             ..AppSettings::default()
         };
         assert_eq!(
             choose(&ids, &settings, &ctx(None, false, ""))
-                .profile_id
+                .keymap_id
                 .as_deref(),
             Some("user:A")
         );
@@ -360,7 +360,7 @@ mod tests {
         let rule = |enabled, conditions| AutoRule {
             id: String::new(),
             enabled,
-            profile_id: None,
+            keymap_id: None,
             conditions,
         };
         let rules = [
@@ -395,8 +395,8 @@ mod tests {
             settings.auto_rules.push(AutoRule {
                 id: id.into(),
                 enabled: true,
-                profile_id: target.map(str::to_owned),
-                conditions: ProfileConditionSet::default(),
+                keymap_id: target.map(str::to_owned),
+                conditions: KeymapConditionSet::default(),
             });
         }
         assert_eq!(
@@ -404,7 +404,7 @@ mod tests {
             Some(1)
         );
         assert_eq!(shadowed_by(&settings.auto_rules, 1, &available), None);
-        settings.auto_rules[0].profile_id = None;
+        settings.auto_rules[0].keymap_id = None;
         assert_eq!(shadowed_by(&settings.auto_rules, 1, &available), Some(0));
     }
 
@@ -422,7 +422,7 @@ mod tests {
 
     #[test]
     fn normalization_matches_the_saved_form() {
-        let raw = ProfileConditionSet {
+        let raw = KeymapConditionSet {
             game_mode: None,
             keyboard_layouts: vec![" US ".into(), "".into(), "us".into()],
             window_patterns: vec!["  ".into(), " kate ".into()],
@@ -458,8 +458,8 @@ mod tests {
         let rule = |enabled| AutoRule {
             id: String::new(),
             enabled,
-            profile_id: None,
-            conditions: ProfileConditionSet::default(),
+            keymap_id: None,
+            conditions: KeymapConditionSet::default(),
         };
         let rules = [rule(true), rule(false), rule(true)];
         assert_eq!(shadowed_by(&rules, 1, &[]), None);
@@ -469,11 +469,11 @@ mod tests {
     #[test]
     fn window_dependency_follows_mode_and_enabled_rules() {
         let mut settings = AppSettings {
-            profile_mode: ProfileMode::Auto,
+            keymap_mode: KeymapMode::Auto,
             auto_rules: vec![AutoRule {
                 id: "a".into(),
                 enabled: true,
-                profile_id: None,
+                keymap_id: None,
                 conditions: set(Some("on"), &["us"], &[]),
             }],
             ..AppSettings::default()
@@ -485,7 +485,7 @@ mod tests {
         settings.auto_rules[0].enabled = false;
         assert!(!depends_on_window(&settings));
         settings.auto_rules[0].enabled = true;
-        settings.profile_mode = ProfileMode::Manual;
+        settings.keymap_mode = KeymapMode::Manual;
         assert!(!depends_on_window(&settings));
         assert_eq!(window_patterns(&settings).count(), 0);
     }

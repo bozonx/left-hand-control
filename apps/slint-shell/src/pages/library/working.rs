@@ -4,23 +4,20 @@ use super::*;
 
 pub(super) fn refresh_context(ui: &SettingsWindow, document: &Document) {
     let config = document.read();
-    let library = ui.global::<ProfileLibrary>();
+    let library = ui.global::<KeymapLibrary>();
     let name = current_name(&config);
     library.set_current_label(name.clone().unwrap_or_default().into());
-    let current = config.profile();
+    let current = config.keymap();
     let flags = match &name {
-        Some(name) => document.with_saved_profile(name, |saved| {
+        Some(name) => document.with_saved_keymap(name, |saved| {
             DirtyFlags::compare(
-                saved.map(|saved| (&saved.profile, saved.text.as_str())),
+                saved.map(|saved| (&saved.keymap, saved.text.as_str())),
                 current,
             )
         }),
         None => {
-            let initial = ProfilePreset::initial();
-            DirtyFlags::compare(
-                Some((&initial, &profile_file::serialize(&initial))),
-                current,
-            )
+            let initial = KeymapPreset::initial();
+            DirtyFlags::compare(Some((&initial, &keymap_file::serialize(&initial))), current)
         }
     };
     drop(config);
@@ -46,10 +43,10 @@ pub(super) struct DirtyFlags {
 }
 
 impl DirtyFlags {
-    /// Compare the working copy with the saved profile and its serialized
+    /// Compare the working copy with the saved keymap and its serialized
     /// text. Both sides go through the same parser, so formatting
     /// differences in the file do not count as changes.
-    pub(super) fn compare(saved: Option<(&ProfilePreset, &str)>, current: &ProfilePreset) -> Self {
+    pub(super) fn compare(saved: Option<(&KeymapPreset, &str)>, current: &KeymapPreset) -> Self {
         let Some((saved, saved_text)) = saved else {
             // No saved file: everything counts as unsaved.
             return Self {
@@ -66,11 +63,11 @@ impl DirtyFlags {
         if saved == current {
             return Self::default();
         }
-        let text = profile_file::serialize(current);
-        let normalized = profile_file::parse(&text).ok().flatten();
+        let text = keymap_file::serialize(current);
+        let normalized = keymap_file::parse(&text).ok().flatten();
         let current = normalized.as_ref().unwrap_or(current);
         let any = match &normalized {
-            Some(normalized) => profile_file::serialize(normalized) != saved_text,
+            Some(normalized) => keymap_file::serialize(normalized) != saved_text,
             None => text != saved_text,
         };
         let base = crate::keyboard::BASE
@@ -90,7 +87,7 @@ impl DirtyFlags {
     }
 }
 
-/// Name of the profile the mapper uses now and the automatic rule that
+/// Name of the keymap the mapper uses now and the automatic rule that
 /// chose it.
 pub fn refresh_active(ui: &SettingsWindow, document: &Document) {
     let (label, matched, message) = active_context(
@@ -98,7 +95,7 @@ pub fn refresh_active(ui: &SettingsWindow, document: &Document) {
         &AutoSwitchContext::current(),
         tecloid_core::mapper::runtime::status().running,
     );
-    let library = ui.global::<ProfileLibrary>();
+    let library = ui.global::<KeymapLibrary>();
     library.set_active_error(message.to_ui());
     library.set_active_label(label.into());
     library.set_auto_matched(matched);
@@ -116,16 +113,16 @@ fn active_context(
 ) -> (String, i32, Msg) {
     let (id, matched, error) = document.activation_status(context, running);
     let message = error.map_or(Msg::None, |error| {
-        log::warn!("determining the active profile: {error}");
+        log::warn!("determining the active keymap: {error}");
         if running {
-            Msg::ProfileSwitchFailed(error)
+            Msg::KeymapSwitchFailed(error)
         } else {
-            Msg::ProfileLoadFailed(error)
+            Msg::KeymapLoadFailed(error)
         }
     });
     let label = id
         .as_deref()
-        .and_then(user_profile_name)
+        .and_then(user_keymap_name)
         .unwrap_or_default()
         .to_owned();
     (label, matched.map_or(-1, |index| index as i32), message)
@@ -135,7 +132,7 @@ fn active_context(
 pub(super) fn reset_context(ui: &SettingsWindow, document: &Document, state: &mut State) {
     let config = document.read();
     state.baseline = current_name(&config).and_then(|name| {
-        let text = config.paths().load_user_profile(&name).ok()?;
+        let text = config.paths().load_user_keymap(&name).ok()?;
         Some((name, text))
     });
     drop(config);
@@ -149,7 +146,7 @@ pub(super) fn save_current(
     document: &Document,
     state: &Shared,
 ) -> Result<Msg, Msg> {
-    let library = ui.global::<ProfileLibrary>();
+    let library = ui.global::<KeymapLibrary>();
     let target = document.read().library_save_target(
         state
             .borrow()
@@ -185,8 +182,7 @@ pub(super) fn overwrite_current(
     state: &Shared,
 ) -> Result<Msg, Msg> {
     let name = current_name(&document.read()).ok_or(Msg::LibrarySelect)?;
-    ui.global::<ProfileLibrary>()
-        .set_dialog(LibraryDialog::None);
+    ui.global::<KeymapLibrary>().set_dialog(LibraryDialog::None);
     write_current(ui, document, state, name, true)
 }
 
@@ -200,9 +196,9 @@ fn write_current(
     let baseline = state.borrow().baseline.clone();
     let text = edit(ui, document, state, |config| {
         if overwrite {
-            config.overwrite_library_profile(&name)
+            config.overwrite_library_keymap(&name)
         } else {
-            config.save_library_profile(
+            config.save_library_keymap(
                 &name,
                 baseline
                     .as_ref()
@@ -216,10 +212,10 @@ fn write_current(
         .remember(&name, Some(text.as_bytes().to_vec()));
     state.borrow_mut().baseline = Some((name.clone(), text));
     refresh_context(ui, document);
-    Ok(Msg::ProfileSaved(name))
+    Ok(Msg::KeymapSaved(name))
 }
 
-/// Save the working copy as a new library profile and continue editing it.
+/// Save the working copy as a new library keymap and continue editing it.
 pub(super) fn save_as(
     ui: &SettingsWindow,
     document: &Document,
@@ -227,16 +223,16 @@ pub(super) fn save_as(
     name: &str,
 ) -> Result<Msg, Msg> {
     let (saved, text) = edit(ui, document, state, |config| {
-        config.save_working_profile_as(name)
+        config.save_working_keymap_as(name)
     })?;
     state
         .borrow()
         .metadata
         .remember(&saved, Some(text.as_bytes().to_vec()));
     state.borrow_mut().baseline = Some((saved.clone(), text));
-    ui.global::<ProfileLibrary>().set_save_as_open(false);
+    ui.global::<KeymapLibrary>().set_save_as_open(false);
     refresh(ui, document, &mut state.borrow_mut())?;
-    Ok(Msg::ProfileSaved(saved))
+    Ok(Msg::KeymapSaved(saved))
 }
 
 #[cfg(test)]
@@ -252,32 +248,32 @@ mod tests {
         );
         let mut config = ConfigDocument::load(paths.clone()).unwrap();
         config
-            .update_settings(|settings| settings.profile_mode = ProfileMode::Auto)
+            .update_settings(|settings| settings.keymap_mode = KeymapMode::Auto)
             .unwrap();
         let document = Document::new(config);
         let context = AutoSwitchContext::default();
         let (label, matched, message) = active_context(&document, &context, false);
         assert!(label.is_empty() && matched == -1 && message.is_none());
-        let profiles = paths.profiles_dir();
-        let backup = dir.path().join("profiles-backup");
-        std::fs::create_dir_all(&profiles).unwrap();
-        std::fs::rename(&profiles, &backup).unwrap();
-        std::fs::write(&profiles, "not a directory").unwrap();
+        let keymaps = paths.keymaps_dir();
+        let backup = dir.path().join("keymaps-backup");
+        std::fs::create_dir_all(&keymaps).unwrap();
+        std::fs::rename(&keymaps, &backup).unwrap();
+        std::fs::write(&keymaps, "not a directory").unwrap();
         let (label, matched, message) = active_context(&document, &context, false);
         assert!(label.is_empty() && matched == -1);
-        assert!(matches!(message, Msg::ProfileLoadFailed(_)));
-        std::fs::remove_file(&profiles).unwrap();
-        std::fs::rename(&backup, &profiles).unwrap();
+        assert!(matches!(message, Msg::KeymapLoadFailed(_)));
+        std::fs::remove_file(&keymaps).unwrap();
+        std::fs::rename(&backup, &keymaps).unwrap();
         assert!(active_context(&document, &context, false).2.is_none());
     }
 
-    fn flags(saved: &ProfilePreset, current: &ProfilePreset) -> DirtyFlags {
-        DirtyFlags::compare(Some((saved, &profile_file::serialize(saved))), current)
+    fn flags(saved: &KeymapPreset, current: &KeymapPreset) -> DirtyFlags {
+        DirtyFlags::compare(Some((saved, &keymap_file::serialize(saved))), current)
     }
 
     #[test]
     fn dirty_flags_follow_changed_sections() {
-        let saved = ProfilePreset::initial();
+        let saved = KeymapPreset::initial();
         assert_eq!(flags(&saved, &saved), DirtyFlags::default());
 
         let mut described = saved.clone();

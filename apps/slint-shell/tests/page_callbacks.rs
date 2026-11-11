@@ -231,8 +231,8 @@ fn conditions_dialog() -> Result<(), Box<dyn std::error::Error>> {
         ui,
     } = Fixture::new()?;
     document.edit(slint_shell::document::View::Library, |config| {
-        config.update_profile(|profile| {
-            profile.rules = vec![tecloid_core::config::model::KeyRule::new("r".into(), "F13")];
+        config.update_keymap(|keymap| {
+            keymap.rules = vec![tecloid_core::config::model::KeyRule::new("r".into(), "F13")];
         })
     })?;
     ui.set_page(Page::Rules);
@@ -294,7 +294,7 @@ fn conditions_dialog() -> Result<(), Box<dyn std::error::Error>> {
     );
     rules.invoke_apply_conditions();
     assert_eq!(
-        document.read().profile().rules[0]
+        document.read().keymap().rules[0]
             .condition_window_patterns
             .as_deref(),
         Some(
@@ -320,7 +320,7 @@ fn action_picker() -> Result<(), Box<dyn std::error::Error>> {
     bind_document(&ui, &document);
     // Macros and action categories stay unavailable outside development mode.
     ui.invoke_navigate(Page::Macros, MenuKind::Emoji);
-    assert_eq!(ui.get_page(), Page::Profiles);
+    assert_eq!(ui.get_page(), Page::Keymaps);
     // The menu pages no longer need development mode.
     ui.invoke_navigate(Page::Menus, MenuKind::Emoji);
     assert_eq!(ui.get_page(), Page::Menus);
@@ -343,7 +343,7 @@ fn action_picker() -> Result<(), Box<dyn std::error::Error>> {
     ui.global::<AppState>().set_in_development(true);
 
     let rules = ui.global::<RulesEditor>();
-    let count = document.read().profile().rules.len();
+    let count = document.read().keymap().rules.len();
     rules.invoke_add();
     let picker = ui.global::<ActionPicker>();
     assert!(picker.get_opened());
@@ -377,7 +377,7 @@ fn action_picker() -> Result<(), Box<dyn std::error::Error>> {
     picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("Tab".into());
     picker.invoke_dismiss_picker();
-    assert_eq!(document.read().profile().rules.len(), count);
+    assert_eq!(document.read().keymap().rules.len(), count);
     rules.invoke_add();
     picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("builtin:copyLineText".into());
@@ -389,7 +389,7 @@ fn action_picker() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!picker.get_opened());
     let index = rules.get_selected();
     assert!(index >= 0);
-    assert_eq!(document.read().profile().rules[index as usize].key, "Tab");
+    assert_eq!(document.read().keymap().rules[index as usize].key, "Tab");
     rules.invoke_open_dialog(index, RuleDialog::Tap);
     picker.set_category(PickerCategory::Text);
     picker.set_query("ck".into());
@@ -419,7 +419,7 @@ fn action_picker() -> Result<(), Box<dyn std::error::Error>> {
     picker.set_value("builtin:copyLineText".into());
     picker.invoke_apply();
     assert_eq!(
-        document.read().profile().rules[index as usize]
+        document.read().keymap().rules[index as usize]
             .tap_action
             .as_deref(),
         Some("builtin:copyLineText")
@@ -437,7 +437,7 @@ fn action_picker() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!picker.get_valid());
     picker.invoke_dismiss_picker();
     assert_eq!(
-        document.read().profile().rules[index as usize]
+        document.read().keymap().rules[index as usize]
             .tap_action
             .as_deref(),
         Some("builtin:copyLineText")
@@ -496,7 +496,7 @@ fn action_picker() -> Result<(), Box<dyn std::error::Error>> {
         "pause:250"
     );
     assert_eq!(
-        document.read().profile().macros[0].steps[0].action,
+        document.read().keymap().macros[0].steps[0].action,
         "pause:250"
     );
     ui.invoke_navigate(Page::Menus, MenuKind::Quick);
@@ -508,7 +508,7 @@ fn action_picker() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(menus.get_value(), "text:Привет\nмир");
     assert_eq!(menus.get_selected_cell(), 1);
     assert_eq!(
-        quick_action(document.read().profile(), 0, "KeyW"),
+        quick_action(document.read().keymap(), 0, "KeyW"),
         "text:Привет\nмир"
     );
     document.edit(slint_shell::document::View::Layers, |config| {
@@ -559,13 +559,13 @@ fn check_atomic_commands() -> Result<(), Box<dyn std::error::Error>> {
         picker.set_command_script(script.into());
         picker.invoke_edit_command();
     };
-    let before = document.read().profile().clone();
+    let before = document.read().keymap().clone();
     picker.invoke_open(PickerTarget::BaseKey, i32::MAX, "".into(), false);
     edit_command("echo invalid-target");
     picker.invoke_apply();
     assert!(picker.get_opened());
     assert_eq!(picker.get_error().id, "config-edit-conflict");
-    assert_eq!(document.read().profile(), &before);
+    assert_eq!(document.read().keymap(), &before);
     picker.invoke_dismiss_picker();
     ui.global::<KeyEditor>().invoke_edit(33);
     edit_command("echo assigned");
@@ -576,13 +576,13 @@ fn check_atomic_commands() -> Result<(), Box<dyn std::error::Error>> {
         document.read().base_tap_action("KeyQ"),
         Some(action.as_str())
     );
-    assert_eq!(document.read().profile().commands.len(), 1);
-    let before = document.read().profile().clone();
+    assert_eq!(document.read().keymap().commands.len(), 1);
+    let before = document.read().keymap().clone();
     picker.invoke_open(PickerTarget::BaseKey, i32::MAX, action.into(), false);
     edit_command("echo must-not-overwrite");
     picker.invoke_apply();
     assert!(picker.get_opened());
-    assert_eq!(document.read().profile(), &before);
+    assert_eq!(document.read().keymap(), &before);
     picker.invoke_dismiss_picker();
 
     let macros = ui.global::<MacroEditor>();
@@ -593,8 +593,8 @@ fn check_atomic_commands() -> Result<(), Box<dyn std::error::Error>> {
     let action = picker.get_value();
     picker.invoke_apply();
     assert!(!picker.get_opened());
-    assert_eq!(document.read().profile().commands.len(), 1);
-    assert!(document.read().profile().macros[0].steps.is_empty());
+    assert_eq!(document.read().keymap().commands.len(), 1);
+    assert!(document.read().keymap().macros[0].steps.is_empty());
     assert!(
         !ui.invoke_flush_drafts(),
         "quit must keep an invalid macro draft"
@@ -607,8 +607,8 @@ fn check_atomic_commands() -> Result<(), Box<dyn std::error::Error>> {
     picker.invoke_dismiss_picker();
     macros.invoke_set_field(0, MacroField::ModifierDelay, "10".into());
     assert!(ui.invoke_flush_drafts());
-    assert_eq!(document.read().profile().commands.len(), 2);
-    assert_eq!(document.read().profile().macros[0].steps.len(), 1);
+    assert_eq!(document.read().keymap().commands.len(), 2);
+    assert_eq!(document.read().keymap().macros[0].steps.len(), 1);
 
     // A quick-menu conflict keeps both the pending command and the local menu.
     let menus = ui.global::<MenuEditor>();
@@ -616,15 +616,15 @@ fn check_atomic_commands() -> Result<(), Box<dyn std::error::Error>> {
     menus.set_page_name("Local".into());
     menus.invoke_rename_page();
     document.edit(slint_shell::document::View::Shell, |config| {
-        config.update_profile(|profile| {
-            profile.quick_action_pages[0].name = "Concurrent".into();
+        config.update_keymap(|keymap| {
+            keymap.quick_action_pages[0].name = "Concurrent".into();
         })
     })?;
     picker.invoke_open(PickerTarget::QuickAction, 0, "".into(), false);
     edit_command("echo menu-draft");
     let action = picker.get_value();
     picker.invoke_apply();
-    assert_eq!(document.read().profile().commands.len(), 2);
+    assert_eq!(document.read().keymap().commands.len(), 2);
     assert!(
         !ui.invoke_flush_drafts(),
         "quit must keep a conflicting menu draft"
@@ -637,7 +637,7 @@ fn check_atomic_commands() -> Result<(), Box<dyn std::error::Error>> {
     menus.invoke_refresh();
     assert!(ui.invoke_flush_drafts());
     assert_eq!(
-        document.read().profile().commands.len(),
+        document.read().keymap().commands.len(),
         2,
         "discarding the menu discards its command"
     );
@@ -657,7 +657,7 @@ fn check_atomic_commands() -> Result<(), Box<dyn std::error::Error>> {
     layers.invoke_edit_key(0);
     edit_command("echo cancelled-layer-command");
     picker.invoke_dismiss_picker();
-    assert_eq!(document.read().profile().commands.len(), 2);
+    assert_eq!(document.read().keymap().commands.len(), 2);
     assert_eq!(
         document
             .read()
@@ -670,7 +670,7 @@ fn check_atomic_commands() -> Result<(), Box<dyn std::error::Error>> {
     picker.invoke_apply();
     assert!(!picker.get_opened());
     assert_eq!(layers.get_dialog(), LayerDialog::None);
-    assert_eq!(document.read().profile().commands.len(), 3);
+    assert_eq!(document.read().keymap().commands.len(), 3);
     assert_eq!(
         document
             .read()
@@ -681,7 +681,7 @@ fn check_atomic_commands() -> Result<(), Box<dyn std::error::Error>> {
     picker.invoke_edit_command();
     assert_eq!(picker.get_command_script(), "echo layer-command");
     picker.invoke_dismiss_picker();
-    // A stale target must not leave an orphan command in the profile.
+    // A stale target must not leave an orphan command in the keymap.
     layers.invoke_edit_key(1);
     edit_command("echo stale-command");
     document.edit(slint_shell::document::View::Layers, |config| {
@@ -690,7 +690,7 @@ fn check_atomic_commands() -> Result<(), Box<dyn std::error::Error>> {
     picker.invoke_apply();
     assert!(picker.get_opened());
     assert_eq!(picker.get_error().id, "config-edit-conflict");
-    assert_eq!(document.read().profile().commands.len(), 3);
+    assert_eq!(document.read().keymap().commands.len(), 3);
     picker.invoke_dismiss_picker();
     Ok(())
 }
@@ -714,11 +714,11 @@ fn layer_editor_regressions() -> Result<(), Box<dyn std::error::Error>> {
     layers.invoke_choose(0);
     assert_eq!(layers.get_triggers().row_count(), 0);
     document.edit(View::Rules, |config| {
-        config.update_profile(|profile| {
+        config.update_keymap(|keymap| {
             let mut rule = tecloid_core::config::model::KeyRule::new("activate".into(), "CapsLock");
             rule.layer_id = first.clone();
             rule.hold_behavior = Some(tecloid_core::config::model::HoldBehavior::Layer);
-            profile.rules.push(rule);
+            keymap.rules.push(rule);
         })
     })?;
     assert_eq!(layers.get_triggers().row_count(), 1);
@@ -758,16 +758,13 @@ fn layer_editor_regressions() -> Result<(), Box<dyn std::error::Error>> {
     layers.invoke_reorder_extra(0, 1);
     layers.invoke_remove_extra();
     assert_eq!(layers.get_delete_extra(), -1);
-    assert_eq!(
-        document.read().profile().layer_keymaps[&first].keys.len(),
-        2
-    );
+    assert_eq!(document.read().keymap().layer_keymaps[&first].keys.len(), 2);
     layers.invoke_open_dialog(LayerDialog::Delete);
     layers.invoke_choose(1);
     layers.invoke_apply_dialog();
     assert_eq!(layers.get_dialog(), LayerDialog::None);
     assert_eq!(layers.get_status().id, "config-edit-conflict");
-    assert_eq!(document.read().profile().layers.len(), 2);
+    assert_eq!(document.read().keymap().layers.len(), 2);
     layers.invoke_choose(0);
     assert_eq!(layers.get_status().id, "");
 
@@ -780,7 +777,7 @@ fn layer_editor_regressions() -> Result<(), Box<dyn std::error::Error>> {
     layers.set_dialog_name("Copy".into());
     layers.invoke_apply_dialog();
     assert_eq!(layers.get_dialog(), LayerDialog::None);
-    assert_eq!(document.read().profile().layers.len(), 3);
+    assert_eq!(document.read().keymap().layers.len(), 3);
     layers.invoke_choose(0);
 
     // A failed settings write must not invalidate a pending layer edit.
@@ -820,10 +817,10 @@ fn layer_editor_regressions() -> Result<(), Box<dyn std::error::Error>> {
     layers.invoke_open_dialog(LayerDialog::Delete);
     layers.invoke_apply_dialog();
     assert_eq!(
-        document.read().profile().rules[0].hold_behavior(),
+        document.read().keymap().rules[0].hold_behavior(),
         tecloid_core::config::model::HoldBehavior::None
     );
-    assert!(document.read().profile().rules[0].layer_id.is_empty());
+    assert!(document.read().keymap().rules[0].layer_id.is_empty());
     println!(
         "Layer regressions passed: activation, stale pickers and confirmations, invalid names, failed write and retry"
     );

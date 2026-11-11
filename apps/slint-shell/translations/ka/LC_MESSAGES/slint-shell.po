@@ -147,11 +147,11 @@ msgstr "უცნობი მოქმედების ტიპი"
 msgid "Tecloid"
 msgstr "Tecloid"
 
-msgid "Profiles"
-msgstr "პროფილი"
+msgid "Keymaps"
+msgstr "Keymap"
 
-msgid "New profile name"
-msgstr "პროფილის ახალი სახელი"
+msgid "New keymap name"
+msgstr "Keymap ახალი სახელი"
 
 msgid "Mapper"
 msgstr "კლავიშების გადანაწილება"
@@ -201,8 +201,8 @@ msgstr "xdotool გზა"
 msgid "Settings directory: {}"
 msgstr "პარამეტრების დირექტორია: {}"
 
-msgid "Profiles directory: {}"
-msgstr "პროფილის დირექტორია: {}"
+msgid "Keymaps directory: {}"
+msgstr "Keymap დირექტორია: {}"
 
 msgid "Save settings"
 msgstr "პარამეტრების შენახვა"
@@ -323,8 +323,8 @@ msgstr "გამოყენება"
 msgid "Delete rule?"
 msgstr "წაშალოთ წესი?"
 
-msgid "This rule will be removed from the current profile."
-msgstr "ეს წესი წაიშლება მიმდინარე განლაგებიდან."
+msgid "This rule will be removed from the current keymap."
+msgstr "ეს წესი წაიშლება მიმდინარე Keymap."
 
 msgid "Layers"
 msgstr "ფენები"
@@ -377,8 +377,8 @@ msgstr "შეიყვანეთ ფენის სახელი"
 msgid "A layer with this name already exists."
 msgstr "ამ სახელის მქონე ფენა უკვე არსებობს."
 
-msgid "Enter a profile name"
-msgstr "შეიყვანეთ პროფილის სახელი"
+msgid "Enter a keymap name"
+msgstr "შეიყვანეთ Keymap სახელი"
 
 msgid "Enter a key code"
 msgstr "შეიყვანეთ გასაღების კოდი"
@@ -455,8 +455,8 @@ msgstr "შეიყვანეთ shell ბრძანება."
 msgid "Save as…"
 msgstr "შენახვა როგორც…"
 
-msgid "Save profile as…"
-msgstr "პროფილის შენახვა როგორც…"
+msgid "Save keymap as…"
+msgstr "Keymap შენახვა როგორც…"
 
 msgid "Please wait…"
 msgstr "გთხოვთ დაელოდოთ…"
@@ -467,8 +467,8 @@ msgstr "გაჩერდი"
 msgid "Start"
 msgstr "დაწყება"
 
-msgid "Custom profile"
-msgstr "მორგებული პროფილი"
+msgid "Custom keymap"
+msgstr "მორგებული Keymap"
 
 msgid "Base keyboard"
 msgstr "საბაზისო კლავიატურა"
@@ -490,14 +490,14 @@ msgstr "სირბილი"
 msgid "Stopped"
 msgstr "გაჩერდა"
 
-msgid "Profile library updated"
-msgstr "პროფილის ბიბლიოთეკა განახლებულია"
+msgid "Keymap library updated"
+msgstr "Keymap ბიბლიოთეკა განახლებულია"
 
-msgid "Select a profile"
-msgstr "აირჩიეთ პროფილი"
+msgid "Select a keymap"
+msgstr "აირჩიეთ Keymap"
 
-msgid "Profile changed on disk; select it again"
-msgstr "პროფილი შეიცვალა დისკზე; ისევ აირჩიეთ"
+msgid "Keymap changed on disk; select it again"
+msgstr "Keymap შეიცვალა დისკზე; ისევ აირჩიეთ"
 
 msgid "Any game mode"
 msgstr "ნებისმიერი თამაშის რეჟიმი"
@@ -508,8 +508,8 @@ msgstr "თამაშის რეჟიმი ჩართულია"
 msgid "Game mode off"
 msgstr "თამაშის რეჟიმი გამორთულია"
 
-msgid "System profiles (comma separated)"
-msgstr "სისტემის პროფილი (მძიმით გამოყოფილი)"
+msgid "System keymaps (comma separated)"
+msgstr "სისტემის Keymap (მძიმით გამოყოფილი)"
 
 msgid "Applications (comma separated)"
 msgstr "აპლიკაციები (მძიმით გამოყოფილი)"
@@ -526,29 +526,29 @@ msgstr "რედაქტირება"
 msgid "Activate"
 msgstr "გააქტიურება"
 
-msgid "Delete profile?"
-msgstr "წაშალოთ პროფილი?"
+msgid "Delete keymap?"
+msgstr "წაშალოთ Keymap?"
 
-msgid "Profile details"
-msgstr "პროფილის დეტალები"
+msgid "Keymap details"
+msgstr "Keymap დეტალები"
 
 msgid "Do not use when"
 msgstr "არ გამოიყენოთ როდის"
 
-msgid "The profile file will be deleted. This cannot be undone."
-msgstr "პროფილის ფაილი წაიშლება. ამის გაუქმება შეუძლებელია."
+msgid "The keymap file will be deleted. This cannot be undone."
+msgstr "Keymap ფაილი წაიშლება. ამის გაუქმება შეუძლებელია."
 
 msgid "Duplicate…"
 msgstr "დუბლიკატი…"
 
-msgid "Edit profile"
-msgstr "პროფილის რედაქტირება"
+msgid "Edit keymap"
+msgstr "Keymap რედაქტირება"
 
-msgid "New profile"
-msgstr "ახალი პროფილი"
+msgid "New keymap"
+msgstr "ახალი Keymap"
 
-msgid "A profile with this name already exists."
-msgstr "პროფილი ამ სახელით უკვე არსებობს."
+msgid "A keymap with this name already exists."
+msgstr "Keymap ამ სახელით უკვე არსებობს."
 
 msgid "Add a description…"
 msgstr "დაამატეთ აღწერა…"
@@ -568,8 +568,8 @@ msgstr "ცვლილებების გაუქმება"
 msgid "Make active"
 msgstr "გააქტიურდით"
 
-msgid "Single: the profile you make active works everywhere."
-msgstr "Single: პროფილი, რომელსაც თქვენ აკეთებთ, მუშაობს ყველგან."
+msgid "Single: the keymap you make active works everywhere."
+msgstr "Single: Keymap, რომელსაც თქვენ აკეთებთ, მუშაობს ყველგან."
 
 msgid "Not used in automatic mode"
 msgstr "არ გამოიყენება ავტომატურ რეჟიმში"
@@ -584,7 +584,7 @@ msgid "Save…"
 msgstr "შენახვა…"
 
 msgid ""
-"The profile you are editing has not been saved to the library. Its changes "
+"The keymap you are editing has not been saved to the library. Its changes "
 "will be lost."
 msgstr ""
 "განლაგება, რომელსაც თქვენ არედაქტირებთ, არ არის შენახული ბიბლიოთეკაში. მისი "
@@ -601,8 +601,8 @@ msgstr "შენახული ცვლილებები"
 msgid "You are editing “{}”, but “{}” is active."
 msgstr "თქვენ არედაქტირებთ „{}“, მაგრამ „{}“ აქტიურია."
 
-msgid "You are editing “{}”; no profile is active."
-msgstr "თქვენ არედაქტირებთ „{}“-ს; პროფილი არ არის აქტიური."
+msgid "You are editing “{}”; no keymap is active."
+msgstr "თქვენ არედაქტირებთ „{}“-ს; Keymap არ არის აქტიური."
 
 msgid "game mode off"
 msgstr "თამაშის რეჟიმი გამორთულია"
@@ -616,17 +616,17 @@ msgstr "{} (ასლი)"
 msgid "“{}” has unsaved changes. Save them before switching?"
 msgstr "„{}“-ს აქვს შენახული ცვლილებები. შეინახოთ ისინი გადართვამდე?"
 
-msgid "Profile mode"
-msgstr "პროფილის რეჟიმი"
+msgid "Keymap mode"
+msgstr "Keymap რეჟიმი"
 
-msgid "Create profile"
-msgstr "პროფილის შექმნა"
+msgid "Create keymap"
+msgstr "Keymap შექმნა"
 
 msgid "Empty"
 msgstr "ცარიელი"
 
-msgid "Empty profile"
-msgstr "ცარიელი პროფილი"
+msgid "Empty keymap"
+msgstr "ცარიელი Keymap"
 
 msgid "Previously selected: {}"
 msgstr "ადრე არჩეული: {}"
@@ -784,8 +784,8 @@ msgstr "გახსენით აპლიკაციის გამშვ�
 msgid "Turn off screen"
 msgstr "ეკრანის გამორთვა"
 
-msgid "Switch to profile {}"
-msgstr "გადართეთ პროფილიზე {}"
+msgid "Switch to keymap {}"
+msgstr "გადართეთ Keymap {}"
 
 msgid "Layer"
 msgstr "ფენა"
@@ -994,7 +994,7 @@ msgid "Quick Actions"
 msgstr "სწრაფი მოქმედებები"
 
 msgid ""
-"Reusable shell commands for the current profile. On Linux they run through sh"
+"Reusable shell commands for the current keymap. On Linux they run through sh"
 " -lc after you explicitly allow them. Shell commands run one at a time, with"
 " a 30-second limit, in your home directory."
 msgstr ""
@@ -1003,8 +1003,8 @@ msgstr ""
 "ბრძანებები გაშვებულია ერთ დროს, 30 წამის ლიმიტით, თქვენს მთავარ "
 "დირექტორიაში."
 
-msgid "Shell commands are allowed for this version of the current profile."
-msgstr "Shell ბრძანებები დაშვებულია მიმდინარე პროფილის ამ ვერსიისთვის."
+msgid "Shell commands are allowed for this version of the current keymap."
+msgstr "Shell ბრძანებები დაშვებულია მიმდინარე Keymap ამ ვერსიისთვის."
 
 msgid "Smileys & Emotion"
 msgstr "სმაილი და ემოცია"
@@ -1023,8 +1023,8 @@ msgid "The page and all assigned cells on it will be deleted."
 msgstr "გვერდი და მასზე მინიჭებული ყველა უჯრედი წაიშლება."
 
 msgid ""
-"This profile contains shell scripts. Read every script before allowing them, "
-"especially in profiles from other people. Approval applies to the reviewed "
+"This keymap contains shell scripts. Read every script before allowing them, "
+"especially in keymaps from other people. Approval applies to the reviewed "
 "command definitions and resets when the command set, IDs, or Linux scripts "
 "change."
 msgstr ""
@@ -1136,8 +1136,8 @@ msgstr "ტექსტი არ იყო აკრეფილი: ბუფ�
 msgid "The text was not typed: {}"
 msgstr "ტექსტი არ იყო აკრეფილი: {}"
 
-msgid "The profile file is empty"
-msgstr "პროფილის ფაილი ცარიელია"
+msgid "The keymap file is empty"
+msgstr "Keymap ფაილი ცარიელია"
 
 msgid "↑"
 msgstr "↑"
@@ -1154,8 +1154,8 @@ msgstr "გახსნა რედაქტირებისთვის (შ
 msgid "Open for editing"
 msgstr "გახსენით რედაქტირებისთვის"
 
-msgid "Profile name"
-msgstr "პროფილის სახელი"
+msgid "Keymap name"
+msgstr "Keymap სახელი"
 
 msgid "System languages"
 msgstr "სისტემის ენები"
@@ -1220,20 +1220,20 @@ msgstr "აირჩიეთ კლავიატურა ხელახლ�
 msgid "Change"
 msgstr "შეცვლა"
 
-msgid "Add a profile"
-msgstr "დაამატეთ პროფილი"
+msgid "Add a keymap"
+msgstr "დაამატეთ Keymap"
 
 msgid "Press Start at the top to apply it"
 msgstr "დააჭირეთ დაწყებას ზედა ნაწილში მის გამოსაყენებლად"
 
-msgid "No active profile"
-msgstr "აქტიური პროფილი არ არის"
+msgid "No active keymap"
+msgstr "აქტიური Keymap არ არის"
 
-msgid "Current active profile (automatic)"
-msgstr "მიმდინარე აქტიური პროფილი (ავტომატური)"
+msgid "Current active keymap (automatic)"
+msgstr "მიმდინარე აქტიური Keymap (ავტომატური)"
 
-msgid "Current active profile — click to switch"
-msgstr "მიმდინარე აქტიური პროფილი — დააწკაპუნეთ გადასართავად"
+msgid "Current active keymap — click to switch"
+msgstr "მიმდინარე აქტიური Keymap — დააწკაპუნეთ გადასართავად"
 
 msgid "Current keyboard layout in the system"
 msgstr "კლავიატურის მიმდინარე განლაგება სისტემაში"
@@ -1483,8 +1483,8 @@ msgstr "შეასრულეთ მოქმედება"
 msgid "The key will not reach the application."
 msgstr "ღილაკი არ მიაღწევს აპლიკაციას."
 
-msgid "Use the assignment from the lower layer or base profile."
-msgstr "გამოიყენეთ დავალება ქვედა ფენიდან ან ბაზის განლაგებიდან."
+msgid "Use the assignment from the lower layer or base keymap."
+msgstr "გამოიყენეთ დავალება ქვედა ფენიდან ან ბაზის Keymap."
 
 msgid "Do not assign a separate action to this gesture."
 msgstr "არ მივანიჭოთ ცალკე მოქმედება ამ ჟესტს."
@@ -1552,8 +1552,8 @@ msgstr "ბრძანებები გამორთულია პარ�
 msgid "Working directory (optional)"
 msgstr "სამუშაო დირექტორია (არასავალდებულო)"
 
-msgid "Save profile changes before opening another profile."
-msgstr "შეინახეთ პროფილის ცვლილებები სხვა პროფილის გახსნამდე."
+msgid "Save keymap changes before opening another keymap."
+msgstr "შეინახეთ Keymap ცვლილებები სხვა Keymap გახსნამდე."
 
 msgid "No layer"
 msgstr "ფენა არ არის"
@@ -1625,17 +1625,17 @@ msgstr "გვერდის წინასწარი ნახვა"
 msgid "Page:"
 msgstr "გვერდი:"
 
-msgid "Profile “{}” created"
-msgstr "პროფილი \"{}\" შეიქმნა"
+msgid "Keymap “{}” created"
+msgstr "Keymap \"{}\" შეიქმნა"
 
-msgid "Profile “{}” saved"
-msgstr "პროფილი \"{}\" შენახულია"
+msgid "Keymap “{}” saved"
+msgstr "Keymap \"{}\" შენახულია"
 
-msgid "Profile “{}” deleted"
-msgstr "პროფილი „{}“ წაშლილია"
+msgid "Keymap “{}” deleted"
+msgstr "Keymap „{}“ წაშლილია"
 
-msgid "Profile “{}” activated"
-msgstr "პროფილი „{}“ გააქტიურებულია"
+msgid "Keymap “{}” activated"
+msgstr "Keymap „{}“ გააქტიურებულია"
 
 msgid "Could not complete the action"
 msgstr "მოქმედების დასრულება ვერ მოხერხდა"
@@ -1643,8 +1643,8 @@ msgstr "მოქმედების დასრულება ვერ მ
 msgid "Dismiss notification"
 msgstr "შეტყობინების გაუქმება"
 
-msgid "Changes to profile “{}” discarded"
-msgstr "პროფილის „{}“ ცვლილებები გაუქმებულია"
+msgid "Changes to keymap “{}” discarded"
+msgstr "Keymap „{}“ ცვლილებები გაუქმებულია"
 
 msgid "Popup menus are unavailable: {}"
 msgstr "ამომხტარი მენიუები მიუწვდომელია: {}"
@@ -1766,7 +1766,7 @@ msgid "Commands run with PowerShell in the background and are not awaited."
 msgstr "ბრძანებები მუშაობს PowerShell-ით ფონზე და არ ელოდება."
 
 msgid ""
-"Commands stay off until you allow execution. Review below what your profiles "
+"Commands stay off until you allow execution. Review below what your keymaps "
 "would run."
 msgstr ""
 "ბრძანებები გამორთულია მანამ, სანამ არ დაუშვებთ შესრულებას. გადახედეთ ქვემოთ,"
@@ -1824,17 +1824,17 @@ msgid "Automatic switching rules"
 msgstr "ავტომატური გადართვის წესები"
 
 msgid ""
-"Automatic: the profile is chosen by switching rules for the application, "
+"Automatic: the keymap is chosen by switching rules for the application, "
 "system language or game mode."
 msgstr ""
 "ავტომატური: განლაგება შეირჩევა აპლიკაციის, სისტემის ენის ან თამაშის რეჟიმის "
 "წესების გადართვის გზით."
 
-msgid "Profile"
-msgstr "პროფილი"
+msgid "Keymap"
+msgstr "Keymap"
 
-msgid "Profile not found"
-msgstr "პროფილი ვერ მოიძებნა"
+msgid "Keymap not found"
+msgstr "Keymap ვერ მოიძებნა"
 
 msgid "New rule"
 msgstr "ახალი წესი"
@@ -1848,8 +1848,8 @@ msgstr "წინააღმდეგ შემთხვევაში (ნა
 msgid "Rule {}"
 msgstr "წესი {}"
 
-msgid "Use profile"
-msgstr "გამოიყენეთ პროფილი"
+msgid "Use keymap"
+msgstr "გამოიყენეთ Keymap"
 
 msgid "When"
 msgstr "როცა"
@@ -1863,20 +1863,20 @@ msgstr "თუ:"
 msgid "Trigger conditions"
 msgstr "გამომწვევი პირობები"
 
-msgid "No profile"
-msgstr "პროფილი არ არის"
+msgid "No keymap"
+msgstr "Keymap არ არის"
 
-msgid "No profile (keys as is)"
-msgstr "პროფილი არ არის (ღილაკები როგორც არის)"
+msgid "No keymap (keys as is)"
+msgstr "Keymap არ არის (ღილაკები როგორც არის)"
 
 msgid "Now: {} (rule {}: {})"
 msgstr "ახლა: {} (წესი {}: {})"
 
 msgid ""
 "Rules are checked from top to bottom; the first enabled one whose conditions"
-" match chooses the profile. If none matches, the default is used. “No profile”"
+" match chooses the keymap. If none matches, the default is used. “No keymap”"
 " leaves the keyboard unprocessed, for example in an application where the "
-"profile gets in the way."
+"keymap gets in the way."
 msgstr ""
 "წესები მოწმდება ზემოდან ქვემოდან; პირველი ჩართული, რომლის პირობები ემთხვევა,"
 " ირჩევს განლაგებას. თუ არცერთი არ ემთხვევა, გამოიყენება ნაგულისხმევი. "
@@ -1886,8 +1886,8 @@ msgstr ""
 msgid "No rules"
 msgstr "არანაირი წესები"
 
-msgid "The default profile is always used."
-msgstr "ნაგულისხმევი პროფილი ყოველთვის გამოიყენება."
+msgid "The default keymap is always used."
+msgstr "ნაგულისხმევი Keymap ყოველთვის გამოიყენება."
 
 msgid "For games"
 msgstr "თამაშებისთვის"
@@ -1915,8 +1915,8 @@ msgstr "არ არის სისტემის ენებს შორ�
 msgid "Rule enabled"
 msgstr "წესი ჩართულია"
 
-msgid "Automatic mode will use no profile by default."
-msgstr "ავტომატური რეჟიმი ნაგულისხმევად არ გამოიყენებს პროფილს."
+msgid "Automatic mode will use no keymap by default."
+msgstr "ავტომატური რეჟიმი ნაგულისხმევად არ გამოიყენებს Keymap."
 
 msgid "Delete rule {}?"
 msgstr "წაშალოთ წესი {}?"
@@ -1944,8 +1944,8 @@ msgid "Off — never"
 msgstr "გამორთული - არასდროს"
 
 msgid ""
-"Automatic profile rules apply only when the profile is chosen automatically "
-"(Profiles page)."
+"Automatic keymap rules apply only when the keymap is chosen automatically "
+"(Keymaps page)."
 msgstr ""
 "განლაგების ავტომატური წესები მოქმედებს მხოლოდ მაშინ, როდესაც განლაგება "
 "ავტომატურად არჩეულია (განლაგებების გვერდი)."
@@ -1963,8 +1963,8 @@ msgstr "თამაშის რეჟიმი გამორთულია 
 msgid "Game mode is on (set manually)"
 msgstr "თამაშის რეჟიმი ჩართულია (ხელით დაყენებულია)"
 
-msgid "Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
-msgstr "თამაშის რეჟიმი რთავს წესებს და ავტომატური განლაგების წესებს, რომლებსაც აქვთ თამაშის რეჟიმი. განლაგების ავტომატური წესები მოქმედებს მხოლოდ მაშინ, როდესაც განლაგება ავტომატურად არჩეულია (განლაგებების გვერდი). ავტომატური იყენებს ქვემოთ მოცემულ გამოვლენის წყაროებს და მორგებულ წესებს; ჩართვა და გამორთვა დააყენეთ მდგომარეობა ხელით. „არ ითვლება თამაშად“ პრიორიტეტს ანიჭებს ავტომატურ ამოცნობას და „ითვლება თამაშად“. თქვენ ასევე შეგიძლიათ შეცვალოთ რეჟიმი ზედა ზოლში, უჯრის მენიუში ან თამაშის რეჟიმის მოქმედებაზე მიბმული კლავიშით."
+msgid "Game mode turns on rules and automatic keymap rules that have a game-mode condition. Automatic keymap rules apply only when the keymap is chosen automatically (Keymaps page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
+msgstr "თამაშის რეჟიმი რთავს წესებს და ავტომატური Keymap წესებს, რომლებსაც აქვთ თამაშის რეჟიმი. Keymap ავტომატური წესები მოქმედებს მხოლოდ მაშინ, როდესაც Keymap ავტომატურად არჩეულია (Keymap გვერდი). ავტომატური იყენებს ქვემოთ მოცემულ გამოვლენის წყაროებს და მორგებულ წესებს; ჩართვა და გამორთვა დააყენეთ მდგომარეობა ხელით. „არ ითვლება თამაშად“ პრიორიტეტს ანიჭებს ავტომატურ ამოცნობას და „ითვლება თამაშად“. თქვენ ასევე შეგიძლიათ შეცვალოთ რეჟიმი ზედა ზოლში, უჯრის მენიუში ან თამაშის რეჟიმის მოქმედებაზე მიბმული კლავიშით."
 
 
 
@@ -1994,7 +1994,7 @@ msgstr ""
 " ასევე საჭიროა წესების გამოყენების პირობებისთვის."
 
 msgid ""
-"Nothing uses game mode yet: no rule or automatic profile rule has a game-mode"
+"Nothing uses game mode yet: no rule or automatic keymap rule has a game-mode"
 " condition, so turning it on changes nothing."
 msgstr ""
 "თამაშის რეჟიმს ჯერ არაფერი იყენებს: არცერთ წესს ან ავტომატური განლაგების "
@@ -2008,7 +2008,7 @@ msgstr ""
 "აღმოჩენას ფონზე."
 
 msgid ""
-"Rules of the current profile with a game-mode condition: {}. Automatic profile"
+"Rules of the current keymap with a game-mode condition: {}. Automatic keymap"
 " rules with a game-mode condition: {}."
 msgstr ""
 "მიმდინარე განლაგების წესები თამაშის რეჟიმით: {}. ავტომატური განლაგების "
@@ -2194,20 +2194,20 @@ msgstr "ტრიგერები"
 msgid "Reduce animations"
 msgstr "ანიმაციების შემცირება"
 
-msgid "Add profile: "
-msgstr "პროფილის დამატება:"
+msgid "Add keymap: "
+msgstr "Keymap დამატება:"
 
 msgid "Save (Ctrl+S)"
 msgstr "შენახვა (Ctrl+S)"
 
-msgid "Close profile"
-msgstr "დახურეთ პროფილი"
+msgid "Close keymap"
+msgstr "დახურეთ Keymap"
 
-msgid "Discard profile changes?"
-msgstr "გსურთ პროფილის ცვლილებების გაუქმება?"
+msgid "Discard keymap changes?"
+msgstr "გსურთ Keymap ცვლილებების გაუქმება?"
 
-msgid "Unsaved changes to this profile will be lost."
-msgstr "ამ პროფილის შენახული ცვლილებები დაიკარგება."
+msgid "Unsaved changes to this keymap will be lost."
+msgstr "ამ Keymap შენახული ცვლილებები დაიკარგება."
 
 msgid ""
 "Unique identifier used in references like macro:<id>. To bind this macro to "
@@ -2236,8 +2236,8 @@ msgstr ""
 "გლობალური ნაგულისხმევი პარამეტრები: ნაბიჯის პაუზა {} ms; მოდიფიკატორის "
 "დაყოვნება {} ms."
 
-msgid "Profile changed on disk"
-msgstr "პროფილი შეიცვალა დისკზე"
+msgid "Keymap changed on disk"
+msgstr "Keymap შეიცვალა დისკზე"
 
 msgid ""
 "The file of “{}” was changed by another program after you opened it. Your "
@@ -2312,15 +2312,15 @@ msgstr "აჩვენეთ Emoji & Symbols მენიუ ბოლო გ�
 msgid "Show the settings window"
 msgstr "პარამეტრების ფანჯრის ჩვენება"
 
-msgid "Activate profile {} (switches to Single mode)"
-msgstr "გაააქტიურეთ პროფილი {} (გადართულია ერთ რეჟიმში)"
+msgid "Activate keymap {} (switches to Single mode)"
+msgstr "გაააქტიურეთ Keymap {} (გადართულია ერთ რეჟიმში)"
 
-msgid "There is no profile number {}"
-msgstr "არ არსებობს პროფილის ნომერი {}"
+msgid "There is no keymap number {}"
+msgstr "არ არსებობს Keymap ნომერი {}"
 
-msgid "Show the Tecloid profile name when it changes"
+msgid "Show the Tecloid keymap name when it changes"
 msgstr ""
-"აჩვენეთ მარცხენა ხელის მართვის განლაგების სახელი, როდესაც ის შეიცვლება"
+"აჩვენეთ მარცხენა ხელის მართვის Keymap სახელი, როდესაც ის შეიცვლება"
 
 msgid "Show the keys of a layer while it is held"
 msgstr "აჩვენეთ ფენის კლავიშები, სანამ ის ინახება"
@@ -2340,8 +2340,8 @@ msgstr ""
 " ფენის გარსით (KDE Plasma, Sway, Hyprland)."
 
 msgid ""
-"The tecloid:activateProfile1…5 actions activate the profile at that position in "
-"this list: reordering the list changes which profile a key activates. In Auto"
+"The tecloid:activateKeymap1…5 actions activate the keymap at that position in "
+"this list: reordering the list changes which keymap a key activates. In Auto"
 " mode they switch to Single mode."
 msgstr ""
 "აპი:activateLayout1…5 ქმედება ააქტიურებს განლაგებას ამ სიაში ამ პოზიციაზე: "
@@ -2387,8 +2387,8 @@ msgstr "სურვილისამებრ"
 msgid "Failed to start"
 msgstr "დაწყება ვერ მოხერხდა"
 
-msgid "Keys work as usual. Start the mapper to apply your profiles."
-msgstr "ღილაკები ჩვეულებრივად მუშაობს. დაიწყეთ მაპერი თქვენი პროფილის გამოსაყენებლად."
+msgid "Keys work as usual. Start the mapper to apply your keymaps."
+msgstr "ღილაკები ჩვეულებრივად მუშაობს. დაიწყეთ მაპერი თქვენი Keymap გამოსაყენებლად."
 
 msgid "Select a keyboard below to start the mapper."
 msgstr "აირჩიეთ კლავიატურა ქვემოთ რუკების დასაწყებად."
@@ -2746,11 +2746,11 @@ msgstr "რუკების შეჩერება (კლავიატუ
 msgid "Select a keyboard device in the settings to start the mapper"
 msgstr "აირჩიეთ კლავიატურის მოწყობილობა პარამეტრებში რუქის დასაწყებად"
 
-msgid "Start mapper to intercept keys and apply profiles"
-msgstr "დაიწყეთ mapper კლავიშების გადასაჭრელად და პროფილის გამოსაყენებლად"
+msgid "Start mapper to intercept keys and apply keymaps"
+msgstr "დაიწყეთ mapper კლავიშების გადასაჭრელად და Keymap გამოსაყენებლად"
 
-msgid "Current active profile (selected automatically by switching rules)"
-msgstr "მიმდინარე აქტიური პროფილი (შერჩეულია ავტომატურად გადართვის წესებით)"
+msgid "Current active keymap (selected automatically by switching rules)"
+msgstr "მიმდინარე აქტიური Keymap (შერჩეულია ავტომატურად გადართვის წესებით)"
 
 msgid "Click to change mode (Auto / On / Off)"
 msgstr "დააწკაპუნეთ რეჟიმის შესაცვლელად (ავტომატური / ჩართვა / გამორთვა)"
@@ -2786,7 +2786,7 @@ msgid "Show standard QWERTY letter labels for visual reference."
 msgstr "აჩვენეთ სტანდარტული QWERTY ასოების ეტიკეტები ვიზუალური მითითებისთვის."
 
 msgid ""
-"Show internal key codes used in Tecloid profiles (e.g. KeyA, "
+"Show internal key codes used in Tecloid keymaps (e.g. KeyA, "
 "ArrowLeft)."
 msgstr ""
 "მარცხენა ხელის მართვის პროფილებში გამოყენებული შიდა გასაღების კოდების "
@@ -3204,7 +3204,7 @@ msgstr "წაშალოთ ტრიგერი?"
 
 msgid ""
 "The trigger and all its assigned actions will be removed from the current "
-"profile."
+"keymap."
 msgstr ""
 "ტრიგერი და მისი ყველა მინიჭებული მოქმედება წაიშლება მიმდინარე განლაგებიდან."
 
@@ -3360,8 +3360,8 @@ msgid ""
 msgstr ""
 "უცნობი მოქმედების ტიპი. ის შეიძლება მოდიოდეს აპლიკაციის უახლესი ვერსიიდან."
 
-msgid "Profile: {}"
-msgstr "პროფილი: {}"
+msgid "Keymap: {}"
+msgstr "Keymap: {}"
 
 msgid "Select All"
 msgstr "ყველას მონიშვნა"
@@ -3563,8 +3563,8 @@ msgstr "მხოლოდ როცა თამაში წინა პლ�
 msgid "Games that launchers or the system report count only while their window is active, so switching to a browser turns game mode off. Steam on Windows does not tell which program is the game, so its games always count."
 msgstr "გამშვებების ან სისტემის მიერ მოწოდებული თამაშები ითვლება მხოლოდ მაშინ, როცა მათი ფანჯარა აქტიურია, ამიტომ ბრაუზერზე გადასვლა თამაშის რეჟიმს გამორთავს. Windows-ზე Steam არ ამბობს, რომელი პროგრამაა თამაში, ამიტომ მისი თამაშები ყოველთვის ითვლება."
 
-msgid "Cannot load this profile. See the application log."
-msgstr "ამ პროფილის ჩატვირთვა ვერ მოხერხდა. იხილეთ აპლიკაციის ჟურნალი."
+msgid "Cannot load this keymap. See the application log."
+msgstr "ამ Keymap ჩატვირთვა ვერ მოხერხდა. იხილეთ აპლიკაციის ჟურნალი."
 
 msgid "Scroll horizontally"
 msgstr "ჰორიზონტალური გადახვევა"
@@ -3590,8 +3590,8 @@ msgstr "არცერთი ტრიგერი არ ააქტიურ
 msgid "Configure triggers"
 msgstr "ტრიგერების გამართვა"
 
-msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base profile."
-msgstr "მაუსის ღილაკები, მედიის კლავიშები და სხვა ტრიგერები ძირითადი ბადის გარეთ. დაამატეთ ტრიგერი და აირჩიეთ მოქმედება ან ჩახშობა. წაშალეთ მისი მწკრივი ქვედა ფენის ან საბაზო პროფილის მინიჭების მისაღებად."
+msgid "Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base keymap."
+msgstr "მაუსის ღილაკები, მედიის კლავიშები და სხვა ტრიგერები ძირითადი ბადის გარეთ. დაამატეთ ტრიგერი და აირჩიეთ მოქმედება ან ჩახშობა. წაშალეთ მისი მწკრივი ქვედა ფენის ან საბაზო Keymap მინიჭების მისაღებად."
 
 msgid "Choose one key. Some keys depend on keyboard hardware and may be ignored by the system."
 msgstr "აირჩიეთ ერთი კლავიში. ზოგიერთი კლავიში დამოკიდებულია კლავიატურის აპარატურაზე და სისტემამ შეიძლება უგულებელყოს."
@@ -3632,11 +3632,11 @@ msgstr "გაუქმდეს მაკროების გამოუყ�
 msgid "ID changes update references automatically. Nested macros keep their delays. Commands must finish successfully before the next step. Pauses, text and commands count towards the macro timeout."
 msgstr "ID-ის ცვლილება ავტომატურად აახლებს მითითებებს. ჩადგმული მაკროები ინარჩუნებენ საკუთარ დაყოვნებებს. შემდეგ ნაბიჯამდე ბრძანებები წარმატებით უნდა დასრულდეს. პაუზები, ტექსტი და ბრძანებები ითვლება მაკროს დროის ლიმიტში."
 
-msgid "Save profile changes before quitting?"
-msgstr "შეინახოს პროფილის ცვლილებები გასვლამდე?"
+msgid "Save keymap changes before quitting?"
+msgstr "შეინახოს Keymap ცვლილებები გასვლამდე?"
 
-msgid "Cannot switch profile. The mapper is still using the previous profile."
-msgstr "პროფილის გადართვა ვერ მოხერხდა. კლავიშების გადამნაწილებელი კვლავ წინა პროფილს იყენებს."
+msgid "Cannot switch keymap. The mapper is still using the previous keymap."
+msgstr "Keymap გადართვა ვერ მოხერხდა. კლავიშების გადამნაწილებელი კვლავ წინა Keymap იყენებს."
 
 msgid "This key is on the layer keyboard. Assign it there."
 msgstr "ეს კლავიში ფენის კლავიატურაზეა. მიანიჭეთ იქ."

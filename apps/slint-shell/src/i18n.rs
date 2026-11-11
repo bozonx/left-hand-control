@@ -266,14 +266,14 @@ pub enum Msg {
     Copied,
     ScrollHorizontal,
     ScrollVertical,
-    ProfileCreated(String),
-    ProfileSaved(String),
-    ProfileDeleted(String),
+    KeymapCreated(String),
+    KeymapSaved(String),
+    KeymapDeleted(String),
     AutoRuleDeleted,
-    ProfileActivated(String),
-    /// `activateProfileN` found no N-th profile in the library.
-    ProfileSlotEmpty(u32),
-    ProfileDiscarded(String),
+    KeymapActivated(String),
+    /// `activateKeymapN` found no N-th keymap in the library.
+    KeymapSlotEmpty(u32),
+    KeymapDiscarded(String),
     MapperWaiting,
     MapperRunning(Option<String>),
     MapperStopped(Option<String>),
@@ -322,9 +322,9 @@ pub enum Msg {
     LibraryChanged,
     LayerSaved,
     RuleSaved,
-    ProfileEmpty,
-    ProfileLoadFailed(String),
-    ProfileSwitchFailed(String),
+    KeymapEmpty,
+    KeymapLoadFailed(String),
+    KeymapSwitchFailed(String),
     /// Default name of a copy of the named item.
     CopyName(String),
     /// Menu actions run through the mapper, which is stopped.
@@ -343,7 +343,7 @@ pub enum Msg {
     /// A `sys:` action macOS has no API for was ignored.
     ActionUnsupportedMacos,
     CommandsDisabled,
-    SaveProfileFirst,
+    SaveKeymapFirst,
     MenuIssue(tecloid_core::config::menus::MenuIssue),
     MacroIssue(tecloid_core::config::macros::MacroIssue),
     MacroRunFailure(tecloid_core::events::MacroRunFailure),
@@ -387,8 +387,8 @@ impl Msg {
             | Self::WorkerUnavailable(detail)
             | Self::WorkerError(detail)
             | Self::SavedMapperNotUpdated(detail)
-            | Self::ProfileLoadFailed(detail)
-            | Self::ProfileSwitchFailed(detail)
+            | Self::KeymapLoadFailed(detail)
+            | Self::KeymapSwitchFailed(detail)
             | Self::MapperRunning(Some(detail))
             | Self::MapperStopped(Some(detail)) => detail,
             Self::TextInputFailed(
@@ -412,13 +412,13 @@ impl Msg {
             Self::Copied => ("copied", empty(), 0),
             Self::ScrollHorizontal => ("scroll-horizontal", empty(), 0),
             Self::ScrollVertical => ("scroll-vertical", empty(), 0),
-            Self::ProfileCreated(name) => ("profile-created", name.clone(), 0),
-            Self::ProfileSaved(name) => ("profile-saved", name.clone(), 0),
+            Self::KeymapCreated(name) => ("keymap-created", name.clone(), 0),
+            Self::KeymapSaved(name) => ("keymap-saved", name.clone(), 0),
             Self::AutoRuleDeleted => ("auto-rule-deleted", String::new(), 0),
-            Self::ProfileDeleted(name) => ("profile-deleted", name.clone(), 0),
-            Self::ProfileActivated(name) => ("profile-activated", name.clone(), 0),
-            Self::ProfileSlotEmpty(n) => ("profile-slot-empty", empty(), *n as usize),
-            Self::ProfileDiscarded(name) => ("profile-discarded", name.clone(), 0),
+            Self::KeymapDeleted(name) => ("keymap-deleted", name.clone(), 0),
+            Self::KeymapActivated(name) => ("keymap-activated", name.clone(), 0),
+            Self::KeymapSlotEmpty(n) => ("keymap-slot-empty", empty(), *n as usize),
+            Self::KeymapDiscarded(name) => ("keymap-discarded", name.clone(), 0),
             Self::MapperWaiting => ("mapper-waiting", empty(), 0),
             Self::MapperRunning(error) => {
                 if let Some(error) = error {
@@ -550,21 +550,21 @@ impl Msg {
             Self::ActionUnavailableNamed(action) => ("action-unavailable-named", action.clone(), 0),
             Self::ActionUnavailable => ("action-unavailable", empty(), 0),
             Self::ActionUnsupportedMacos => ("action-unsupported-macos", empty(), 0),
-            Self::SaveProfileFirst => ("save-profile-first", empty(), 0),
+            Self::SaveKeymapFirst => ("save-keymap-first", empty(), 0),
             Self::CommandsDisabled => ("commands-disabled", empty(), 0),
             Self::LayerSaved => ("layer-saved", empty(), 0),
             Self::RuleSaved => ("rule-saved", empty(), 0),
-            Self::ProfileEmpty => ("profile-empty", empty(), 0),
-            Self::ProfileLoadFailed(error) => diagnostic("profile-load-failed", error),
-            Self::ProfileSwitchFailed(error) => diagnostic("profile-switch-failed", error),
+            Self::KeymapEmpty => ("keymap-empty", empty(), 0),
+            Self::KeymapLoadFailed(error) => diagnostic("keymap-load-failed", error),
+            Self::KeymapSwitchFailed(error) => diagnostic("keymap-switch-failed", error),
             Self::CopyName(name) => ("copy-name", name.clone(), 0),
             Self::MapperRequired => ("mapper-required", empty(), 0),
             Self::Name(kind, issue) => (
                 match (kind, issue) {
                     (NameKind::Layer, NameIssue::Empty) => "layer-name-required",
                     (NameKind::Layer, NameIssue::Taken) => "layer-name-taken",
-                    (NameKind::Profile, NameIssue::Empty) => "profile-name-required",
-                    (NameKind::Profile, NameIssue::Taken) => "profile-name-taken",
+                    (NameKind::Keymap, NameIssue::Empty) => "keymap-name-required",
+                    (NameKind::Keymap, NameIssue::Taken) => "keymap-name-taken",
                     (_, NameIssue::Invalid) => "name-invalid",
                 },
                 empty(),
@@ -765,14 +765,14 @@ pub fn tray_game_choice(language: Language, mode: crate::command::GameMode) -> S
     .to_owned()
 }
 
-/// On-screen text announcing the active profile; `None` is no profile.
-pub fn profile_osd(language: Language, name: Option<&str>) -> String {
+/// On-screen text announcing the active keymap; `None` is no keymap.
+pub fn keymap_osd(language: Language, name: Option<&str>) -> String {
     match name {
         Some(name) => {
-            let template = RustText::Profile.text(language);
+            let template = RustText::Keymap.text(language);
             template.replace(if template.contains("{}") { "{}" } else { "{0}" }, name)
         }
-        None => RustText::NoProfile.text(language).to_owned(),
+        None => RustText::NoKeymap.text(language).to_owned(),
     }
 }
 
@@ -1015,15 +1015,9 @@ mod tests {
     fn rust_text_uses_the_catalog_in_both_languages() {
         assert_eq!(TrayItem::Quit.label(Language::Russian), "Выход");
         assert_eq!(TrayItem::Quit.label(Language::English), "Quit");
-        assert_eq!(
-            profile_osd(Language::Russian, Some("Main")),
-            "Профиль: Main"
-        );
-        assert_eq!(
-            profile_osd(Language::English, Some("Main")),
-            "Profile: Main"
-        );
-        assert_eq!(profile_osd(Language::Russian, None), "Без профиля");
+        assert_eq!(keymap_osd(Language::Russian, Some("Main")), "Keymap: Main");
+        assert_eq!(keymap_osd(Language::English, Some("Main")), "Keymap: Main");
+        assert_eq!(keymap_osd(Language::Russian, None), "Без Keymap");
     }
 
     #[test]

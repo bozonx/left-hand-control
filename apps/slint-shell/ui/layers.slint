@@ -19,7 +19,7 @@ export struct LayerKeyCell { index: int, label: string, code: string, kind: Assi
 export struct LayerTrigger { code: string, label: string }
 export struct LayerExtraRow { key: string, kind: Assignment, action: string, icon: ActionKind, category: PickerCategory, holds: bool }
 
-/// Layers of the profile being edited and their keymaps.
+/// Layers of the keymap being edited and their keymaps.
 export global LayersEditor {
     in-out property <int> keyboard-key: -1;
     in-out property <int> keyboard-source: -1;
@@ -425,7 +425,7 @@ export component LayersPage inherits PageLayout {
                         ButtonGroup {
                             pill: true;
                             labels: [@tr("US layout"), @tr("Tecloid codes")];
-                            tooltips: [@tr("Show standard QWERTY letter labels for visual reference."), @tr("Show internal key codes used in Tecloid profiles (e.g. KeyA, ArrowLeft).")];
+                            tooltips: [@tr("Show standard QWERTY letter labels for visual reference."), @tr("Show internal key codes used in Tecloid keymaps (e.g. KeyA, ArrowLeft).")];
                             selected-index: root.label-mode == LabelMode.code ? 1 : 0;
                             selected(index) => { root.label-mode = index == 1 ? LabelMode.code : LabelMode.label; }
                         }
@@ -438,7 +438,7 @@ export component LayersPage inherits PageLayout {
                             : max(left-hand.key-at(DragDrop.pointer-x, DragDrop.pointer-y), right-hand.key-at(DragDrop.pointer-x, DragDrop.pointer-y));
                         padding: Theme.space-2xl;
                         spacing: Theme.space-3xl;
-                        // From the page width rather than this profile's, which would depend on the grids.
+                        // From the page width rather than this keymap's, which would depend on the grids.
                         property <length> hand-width: (root.width - Theme.scrollbar-size - Theme.scrollbar-gap - 2 * Theme.space-2xl - Theme.space-3xl) / 2;
                         left-hand := HandGrid {
                             width: hands.hand-width;
@@ -477,7 +477,7 @@ export component LayersPage inherits PageLayout {
                             spacing: Theme.space-2xs;
                             HorizontalLayout { spacing: Theme.space-m; alignment: start;
                                 CardTitle { text: @tr("Extra keys"); }
-                                InfoTip { text: @tr("Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base profile."); }
+                                InfoTip { text: @tr("Mouse buttons, media keys, and other triggers outside the main keyboard grid. Add a trigger and choose its action or suppress it. Delete its row to inherit the assignment from the lower layer or base keymap."); }
                             }
                         }
                         VerticalLayout {

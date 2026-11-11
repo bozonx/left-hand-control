@@ -8,7 +8,7 @@ use std::time::Duration;
 use support::quick_action;
 use support::{Fixture, wait_until};
 
-/// Locate the actual control after profile, independent of toolbars and translations.
+/// Locate the actual control after keymap, independent of toolbars and translations.
 fn control_center(
     ui: &slint_shell::ui::SettingsWindow,
     property: i_slint_core::accessibility::AccessibleStringProperty,
@@ -70,40 +70,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     e.set_page_name("Мои эмоджи".into());
     e.invoke_rename_page();
     wait_until("menu autosave", || !e.get_has_unsaved_changes());
-    assert_eq!(loaded().profile().emoji_pages[0].cells["KeyQ"], "Привет 👋");
-    assert_eq!(loaded().profile().emoji_pages[0].name, "Мои эмоджи");
+    assert_eq!(loaded().keymap().emoji_pages[0].cells["KeyQ"], "Привет 👋");
+    assert_eq!(loaded().keymap().emoji_pages[0].name, "Мои эмоджи");
     e.invoke_add_page("Страница 2".into());
     assert_eq!(e.get_selected_page(), 1);
     e.set_value("✨".into());
     e.invoke_set_cell();
     e.invoke_move_cell(1, 0, 2);
-    assert_eq!(loaded().profile().emoji_pages[1].cells["KeyE"], "✨");
+    assert_eq!(loaded().keymap().emoji_pages[1].cells["KeyE"], "✨");
     e.invoke_select_page(0);
     e.invoke_move_cell(1, 2, 0);
-    assert_eq!(loaded().profile().emoji_pages[0].cells["KeyQ"], "✨");
-    assert_eq!(loaded().profile().emoji_pages[1].cells["KeyE"], "Привет 👋");
+    assert_eq!(loaded().keymap().emoji_pages[0].cells["KeyQ"], "✨");
+    assert_eq!(loaded().keymap().emoji_pages[1].cells["KeyE"], "Привет 👋");
     e.invoke_move_cell(1, 2, 0);
     e.invoke_reorder_page(1, 0);
     assert_eq!(e.get_selected_page(), 1);
     e.invoke_reorder_page(0, 1);
     e.invoke_select_page(1);
     e.invoke_reorder_page(1, 0);
-    assert_eq!(loaded().profile().emoji_pages[0].cells["KeyE"], "✨");
+    assert_eq!(loaded().keymap().emoji_pages[0].cells["KeyE"], "✨");
     e.invoke_select_cell(2);
     e.invoke_clear_cell();
-    assert!(!loaded().profile().emoji_pages[0].cells.contains_key("KeyE"));
+    assert!(!loaded().keymap().emoji_pages[0].cells.contains_key("KeyE"));
     e.invoke_remove_page();
-    assert_eq!(loaded().profile().emoji_pages.len(), 1);
+    assert_eq!(loaded().keymap().emoji_pages.len(), 1);
     // The only page is cleared instead of removed, and keeps its id.
-    let id = loaded().profile().emoji_pages[0].id.clone();
+    let id = loaded().keymap().emoji_pages[0].id.clone();
     e.set_value("\u{a0}".into());
     e.invoke_set_cell();
     wait_until("menu autosave", || !e.get_has_unsaved_changes());
-    assert_eq!(loaded().profile().emoji_pages[0].cells["KeyQ"], "\u{a0}");
+    assert_eq!(loaded().keymap().emoji_pages[0].cells["KeyQ"], "\u{a0}");
     assert!(!e.get_only_page_empty());
     e.invoke_remove_page();
-    assert_eq!(loaded().profile().emoji_pages[0].id, id);
-    assert!(loaded().profile().emoji_pages[0].cells.is_empty());
+    assert_eq!(loaded().keymap().emoji_pages[0].id, id);
+    assert!(loaded().keymap().emoji_pages[0].cells.is_empty());
     assert!(e.get_only_page_empty());
 
     let settings = ui.global::<SettingsEditor>();
@@ -118,7 +118,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.set_command_script("printf hello".into());
     picker.invoke_edit_command();
     picker.invoke_dismiss_picker();
-    assert!(loaded().profile().commands.is_empty());
+    assert!(loaded().keymap().commands.is_empty());
     picker.invoke_open(PickerTarget::QuickAction, 0, "".into(), false);
     picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_category(PickerCategory::Commands);
@@ -127,8 +127,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.invoke_edit_command();
     let reference = picker.get_value().to_string();
     picker.invoke_apply();
-    assert_eq!(loaded().profile().commands.len(), 1);
-    assert_eq!(quick_action(loaded().profile(), 0, "KeyQ"), reference);
+    assert_eq!(loaded().keymap().commands.len(), 1);
+    assert_eq!(quick_action(loaded().keymap(), 0, "KeyQ"), reference);
     settings.set_commands_enabled(false);
     settings.invoke_save();
     picker.invoke_open(
@@ -139,7 +139,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     assert!(!picker.get_commands_enabled());
     assert_eq!(picker.get_notice().id.as_str(), "commands-disabled");
-    assert_eq!(loaded().profile().commands.len(), 1);
+    assert_eq!(loaded().keymap().commands.len(), 1);
     picker.invoke_dismiss_picker();
     settings.set_commands_enabled(true);
     settings.invoke_save();
@@ -160,28 +160,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     e.invoke_add_page("Second".into());
     e.invoke_move_cell(0, 2, 4);
     assert_eq!(
-        quick_action(loaded().profile(), 1, "KeyT"),
+        quick_action(loaded().keymap(), 1, "KeyT"),
         "text:Здравствуйте"
     );
-    assert!(quick_action(loaded().profile(), 0, "KeyE").is_empty());
+    assert!(quick_action(loaded().keymap(), 0, "KeyE").is_empty());
     e.invoke_reorder_page(1, 0);
     assert_eq!(e.get_selected_page(), 0);
     e.invoke_select_page(1);
     e.invoke_move_cell(0, 4, 2);
     e.invoke_reorder_page(1, 0);
-    let profile = loaded().profile().clone();
-    assert_eq!(quick_action(&profile, 0, "KeyE"), "text:Здравствуйте");
+    let keymap = loaded().keymap().clone();
+    assert_eq!(quick_action(&keymap, 0, "KeyE"), "text:Здравствуйте");
     assert_eq!(
-        profile.quick_action_pages[0].cells["KeyE"].name,
+        keymap.quick_action_pages[0].cells["KeyE"].name,
         "text:Здравствуйте"
     );
-    let menus = slint_shell::popup_model::ConfiguredMenus { profile };
+    let menus = slint_shell::popup_model::ConfiguredMenus { keymap };
     assert_eq!(menus.quick_labels(0)[0], "Запуск");
     assert_eq!(menus.quick_cell(0, 0).as_deref(), Some(reference.as_str()));
     e.invoke_set_action(0, "macro:missing".into(), "".into());
     assert_ne!(e.get_status().id.as_str(), "");
     assert_eq!(
-        quick_action(loaded().profile(), 0, "KeyQ"),
+        quick_action(loaded().keymap(), 0, "KeyQ"),
         reference.as_str()
     );
     e.invoke_open(MenuKind::Quick);
@@ -213,7 +213,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     e.invoke_set_action(0, reference.clone().into(), "Плеер".into());
     e.invoke_set_action(6, "Ctrl+KeyC".into(), "Ctrl+KeyC".into());
     assert_eq!(
-        quick_action(document.read().profile(), 0, "KeyS"),
+        quick_action(document.read().keymap(), 0, "KeyS"),
         "Ctrl+KeyC"
     );
     // A pending menu draft merges edits from another page before saving.
@@ -225,29 +225,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     })?;
     assert!(e.invoke_flush_pending());
     assert_eq!(
-        document.read().profile().emoji_pages[0].name,
+        document.read().keymap().emoji_pages[0].name,
         "Pending emoji"
     );
     assert!(
         document
             .read()
-            .profile()
+            .keymap()
             .layers
             .iter()
             .any(|layer| layer.name == "Pending layer")
     );
-    let library = ui.global::<slint_shell::ui::ProfileLibrary>();
+    let library = ui.global::<slint_shell::ui::KeymapLibrary>();
     library.invoke_save_as("Menu draft regression".into());
     e.set_value("Saved immediately".into());
     e.invoke_set_cell();
     library.invoke_save_current();
-    let saved = document.read().load_profile("user:Menu draft regression")?;
+    let saved = document.read().load_keymap("user:Menu draft regression")?;
     assert_eq!(saved.emoji_pages[0].cells["KeyQ"], "Saved immediately");
     // Conflicts keep the draft and prevent a misleading successful library save.
     e.set_page_name("Conflicting draft".into());
     e.invoke_rename_page();
     document.edit(slint_shell::document::View::Shell, |config| {
-        config.update_profile(|profile| profile.emoji_pages[0].name = "Other writer".into())
+        config.update_keymap(|keymap| keymap.emoji_pages[0].name = "Other writer".into())
     })?;
     assert!(!e.invoke_flush_pending());
     assert_eq!(e.get_page_name(), "Conflicting draft");
@@ -255,7 +255,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(
         document
             .read()
-            .load_profile("user:Menu draft regression")?
+            .load_keymap("user:Menu draft regression")?
             .emoji_pages[0]
             .name,
         saved.emoji_pages[0].name
@@ -266,16 +266,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok("1") => MenuKind::Quick,
         _ => MenuKind::Emoji,
     });
-    // Preview flushes the edited profile immediately; validation blocks opening.
+    // Preview flushes the edited keymap immediately; validation blocks opening.
     if e.get_kind() == MenuKind::Emoji {
         e.set_value("Preview 🙂".into());
         e.invoke_set_cell();
         assert!(e.invoke_show_page());
         assert!(!e.get_has_unsaved_changes());
-        assert_eq!(
-            loaded().profile().emoji_pages[0].cells["KeyQ"],
-            "Preview 🙂"
-        );
+        assert_eq!(loaded().keymap().emoji_pages[0].cells["KeyQ"], "Preview 🙂");
         e.set_value("🙂".repeat(101).into());
         e.invoke_set_cell();
         assert!(!e.invoke_show_page());
@@ -318,7 +315,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     release(x, y);
                 }
                 1 => {
-                    assert_eq!(document.read().profile().emoji_pages[0].name, "Target");
+                    assert_eq!(document.read().keymap().emoji_pages[0].name, "Target");
                     e.invoke_reorder_page(1, 0);
                     e.invoke_select_page(0);
                 }
@@ -331,8 +328,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     release(x, y);
                 }
                 4 => {
-                    assert_eq!(document.read().profile().emoji_pages[1].cells["KeyW"], "сделай всё, что ты рекомендовал");
-                    assert!(!document.read().profile().emoji_pages[0].cells.contains_key("KeyQ"));
+                    assert_eq!(document.read().keymap().emoji_pages[1].cells["KeyW"], "сделай всё, что ты рекомендовал");
+                    assert!(!document.read().keymap().emoji_pages[0].cells.contains_key("KeyQ"));
                     e.invoke_select_page(0);
                     e.invoke_select_cell(4);
                 }
@@ -342,7 +339,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     e.invoke_flush_pending();
                 }
                 6 => {
-                    assert_eq!(document.read().profile().emoji_pages[0].cells["KeyR"], "😀");
+                    assert_eq!(document.read().keymap().emoji_pages[0].cells["KeyR"], "😀");
                     e.invoke_open(MenuKind::Quick);
                     e.invoke_set_action(0, "text:drag".into(), "Drag".into());
                     e.invoke_add_page("Target".into());
@@ -352,8 +349,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 7 => { let (x, y) = cell(0); press(x, y); let (x, y) = tab(1); move_to(x, y); }
                 8 => { assert_eq!(e.get_selected_page(), 1); let (x, y) = cell(1); move_to(x, y); release(x, y); }
                 9 => {
-                    assert_eq!(quick_action(document.read().profile(), 1, "KeyW"), "text:drag");
-                    assert!(quick_action(document.read().profile(), 0, "KeyQ").is_empty());
+                    assert_eq!(quick_action(document.read().keymap(), 1, "KeyW"), "text:drag");
+                    assert!(quick_action(document.read().keymap(), 0, "KeyQ").is_empty());
                     println!("Menus pointer DnD passed: page reorder, hover switching, emoji palette and cross-page emoji/quick moves");
                     slint::quit_event_loop().unwrap();
                 }

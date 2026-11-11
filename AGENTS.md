@@ -75,11 +75,11 @@ Releases: `cargo release <minor|patch>` previews; `--execute` bumps the version,
 
 ```
 crates/tecloid-core/
-├── assets/                   # bundled profile(s) (templates for new library profiles), GNOME Shell extension
+├── assets/                   # bundled keymap(s) (templates for new library keymaps), GNOME Shell extension
 ├── tests/                    # integration tests incl. mapper_e2e
 └── src/                      # UI-independent domain + platform code (no UI framework)
-    ├── config/               # config model: settings, profiles, actions, macros, menus, auto-switch; schema.rs
-    ├── config_document/      # editable config.json: validation, saving, active profile
+    ├── config/               # config model: settings, keymaps, actions, macros, menus, auto-switch; schema.rs
+    ├── config_document/      # editable config.json: validation, saving, active keymap
     ├── storage.rs            # StoragePaths::resolve(): dev vs release directories
     ├── events.rs             # CoreEvent bus — the only core → shell channel
     ├── mapper/               # engine/, output.rs (shared loop), linux/ (evdev+uinput), windows/ (hooks+SendInput), system.rs, runtime.rs
@@ -108,15 +108,15 @@ apps/slint-shell/
 └── vendor/                   # patched i-slint-core and spell-framework (see PATCHES.md in each)
 
 docs/                         # development/, design/, testing/, config-format.md, features.md
-schemas/                      # published JSON Schemas of config.json and profiles, generated from the readers
+schemas/                      # published JSON Schemas of config.json and keymaps, generated from the readers
 ```
 
 ## Architecture
 
 - **Core vs shell.** `tecloid-core` owns everything except presentation: config types and `ConfigDocument`, storage paths, platform detection, watchers, mapper lifecycle and engine, device I/O, text injection, validation. The shell displays state and calls core operations. If logic could be reused by another shell or tested without a UI, it belongs in `tecloid-core`.
 - **Events.** The core never calls a UI framework. It publishes `CoreEvent`s on `tecloid_core::events::bus()`; the shell subscribes once in `apps/slint-shell/src/app/mapper.rs` and posts them to the Slint event loop. Do not add shell-specific callbacks to the core.
-- **Config writes.** Pages change configuration only through `Document` (`src/document.rs`): `edit` stages settings/profile transactions, `edit_library` applies one core library operation with its own file rollback, and `sync_autostart` refreshes system registration. They share the runtime synchronization and view notification path. See [`docs/development/api.md`](docs/development/api.md). Never hold a `Document::read()` borrow across UI calls that may edit (`RefCell` conflicts).
-- **Persistence.** Settings auto-save to `config.json`; profiles go to the library only on explicit save. Both are versioned independently (`CONFIG_SCHEMA_VERSION`, `PROFILE_SCHEMA_VERSION` in `config/schema.rs`) and parsed strictly (unknown fields/values are errors); see [`docs/config-format.md`](docs/config-format.md). Within a version only optional fields and enum values may be added; anything else bumps the version and adds a reader arm for the old one (procedure in the `schema.rs` header). Storage backs up an older-version file as `<file>.v<N>.bak` before overwriting. The JSON Schemas in `schemas/` are generated from the `*Doc` structs; after a format change regenerate them with `TECLOID_UPDATE_SCHEMAS=1 cargo test --locked -p tecloid-core --lib published_schemas` (the test fails while they are stale). Manual config editing is unsupported.
+- **Config writes.** Pages change configuration only through `Document` (`src/document.rs`): `edit` stages settings/keymap transactions, `edit_library` applies one core library operation with its own file rollback, and `sync_autostart` refreshes system registration. They share the runtime synchronization and view notification path. See [`docs/development/api.md`](docs/development/api.md). Never hold a `Document::read()` borrow across UI calls that may edit (`RefCell` conflicts).
+- **Persistence.** Settings auto-save to `config.json`; keymaps go to the library only on explicit save. Both are versioned independently (`CONFIG_SCHEMA_VERSION`, `KEYMAP_SCHEMA_VERSION` in `config/schema.rs`) and parsed strictly (unknown fields/values are errors); see [`docs/config-format.md`](docs/config-format.md). Within a version only optional fields and enum values may be added; anything else bumps the version and adds a reader arm for the old one (procedure in the `schema.rs` header). Storage backs up an older-version file as `<file>.v<N>.bak` before overwriting. The JSON Schemas in `schemas/` are generated from the `*Doc` structs; after a format change regenerate them with `TECLOID_UPDATE_SCHEMAS=1 cargo test --locked -p tecloid-core --lib published_schemas` (the test fails while they are stale). Manual config editing is unsupported.
 - **Paths.** From `StoragePaths::resolve()`: `TECLOID_DEV_DIR` overrides in any build; otherwise debug builds use `<repo>/dev-files/<os>/`, release builds use `~/.config/dev.bozonx.tecloid/` and `~/.local/share/dev.bozonx.tecloid/`.
 - **Processes.** One binary, three roles: settings process, Spell popup worker (`--spell-worker`), CLI client sending a command over IPC (Unix socket in a private `0700` dir on Linux/macOS, token-authenticated loopback TCP on Windows). The mapper holds a cross-process lock, so only one process grabs keyboards.
 - **Popups.** `TECLOID_POPUPS=winit` (default) shows borderless in-process winit windows; `auto` uses Spell layer-shell when the compositor has `zwlr_layer_shell_v1`, else winit; `spell` requires layer-shell. Data and key handling live in `popup_model.rs` so both paths behave identically.
@@ -126,7 +126,7 @@ schemas/                      # published JSON Schemas of config.json and profil
 
 | Change | Location |
 | --- | --- |
-| Config field, validation, profile file format | `crates/tecloid-core/src/config/`, `config_document/` |
+| Config field, validation, keymap file format | `crates/tecloid-core/src/config/`, `config_document/` |
 | Mapper behaviour, key handling, system actions | `crates/tecloid-core/src/mapper/` |
 | Text injection (`text:`, popup insertion) | `crates/tecloid-core/src/text_input/` |
 | OS/DE detection or watcher | `crates/tecloid-core/src/platform/`, `keyboard_layout/`, `gamemode/`, `active_window/` |
@@ -174,11 +174,11 @@ Report the exact commands you ran and their results. If something could not be r
 **Always**
 - Put domain and platform logic in `tecloid-core`; keep the shell thin.
 - Edit config through `Document` (`edit` for transactions, `edit_library` for one core library operation); resolve paths through `StoragePaths::resolve()`.
-- Support the current `config.json` and profile formats plus older format `version`s via the readers in `config/`; no fallbacks for files without `version`.
+- Support the current `config.json` and keymap formats plus older format `version`s via the readers in `config/`; no fallbacks for files without `version`.
 
 **Ask first**
 - Adding a dependency or bumping Slint / `spell-framework` / `i-slint-core`.
-- Changing the on-disk config or profile format, the IPC wire format or CLI commands.
+- Changing the on-disk config or keymap format, the IPC wire format or CLI commands.
 - Running `cargo release --execute` or pushing `v*` tags (public release).
 - Extending X11 support (best effort only, see platforms.md) or touching `_old/`.
 

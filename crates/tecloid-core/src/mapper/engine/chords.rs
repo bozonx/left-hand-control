@@ -74,7 +74,7 @@ impl Engine {
         at: Instant,
         buffered: &HashSet<KeyCode>,
     ) -> Option<(Vec<KeyCode>, RuleEntry)> {
-        self.profile
+        self.keymap
             .chord_rules
             .iter()
             .rev()
@@ -124,7 +124,7 @@ impl Engine {
         }
         let buffered = self.buffered_chord_presses();
         let has_main_key = keys.iter().any(|key| !is_modifier_key(*key));
-        self.profile.chord_rules.iter().any(|(longer, rule)| {
+        self.keymap.chord_rules.iter().any(|(longer, rule)| {
             // A shortcut's modifiers come before its main key, never after.
             !(has_main_key && is_shortcut_chord(longer))
                 && longer.len() > keys.len()
@@ -256,12 +256,12 @@ impl Engine {
     /// boundary matches the combo buffer, which expires at the same instant.
     pub(super) fn chord_member_late(&self, member: KeyCode, at: Instant) -> bool {
         self.press_at.get(&member).is_some_and(|pressed| {
-            at.saturating_duration_since(*pressed) >= self.profile.trigger_chord_timeout
+            at.saturating_duration_since(*pressed) >= self.keymap.trigger_chord_timeout
         })
     }
 
     pub(super) fn trigger_chord_deadline(&self) -> Option<Instant> {
-        self.chords.deadline(self.profile.trigger_chord_timeout)
+        self.chords.deadline(self.keymap.trigger_chord_timeout)
     }
 
     /// A non-modifier key that belongs to an eligible chord starts a combo
@@ -270,7 +270,7 @@ impl Engine {
     /// never wait: their main key either completes them at once or types.
     pub(super) fn starts_trigger_chord(&self, key: KeyCode) -> bool {
         !is_modifier_key(key)
-            && self.profile.chord_rules.iter().any(|(keys, rule)| {
+            && self.keymap.chord_rules.iter().any(|(keys, rule)| {
                 keys.contains(&key) && !is_shortcut_chord(keys) && self.chord_eligible(keys, rule)
             })
     }
@@ -278,7 +278,7 @@ impl Engine {
     /// True when `key` together with every buffered press is still part of
     /// some eligible chord.
     pub(super) fn extends_trigger_chord(&self, key: KeyCode) -> bool {
-        self.profile.chord_rules.iter().any(|(keys, rule)| {
+        self.keymap.chord_rules.iter().any(|(keys, rule)| {
             keys.contains(&key)
                 && self
                     .chords

@@ -311,13 +311,13 @@ def cmd_probe_keyboard(args):
 
 
 def cmd_write_config(args):
-    (DATA_DIR / "profiles").mkdir(parents=True, exist_ok=True)
+    (DATA_DIR / "keymaps").mkdir(parents=True, exist_ok=True)
     layout = E2E_LAYOUT
     if "GNOME" in user_environment().get("XDG_CURRENT_DESKTOP", "").upper():
         layout = layout.replace("kde:kwin/Switch to Desktop 1", "sys:switchToDesktop1")
     parsed = json.loads(layout)
     parsed["rules"].append({"key": "KeyU", "tap": "text:" + TEXT_CORPUS})
-    (DATA_DIR / "profiles/E2E.json").write_text(json.dumps(parsed, ensure_ascii=False), encoding="utf-8")
+    (DATA_DIR / "keymaps/E2E.json").write_text(json.dumps(parsed, ensure_ascii=False), encoding="utf-8")
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     environment = HOME / '.config/environment.d'
     environment.mkdir(parents=True, exist_ok=True)
@@ -326,7 +326,7 @@ def cmd_write_config(args):
         "experimental": True,
         "linux": {"textMode": {"libei": "libeiWithClipboardFallback"}.get(args.text_backend, args.text_backend)},
         "devices": {"keyboards": [args.device]},
-        "profiles": {"mode": "manual", "manualProfile": "user:E2E"},
+        "keymaps": {"mode": "manual", "manualKeymap": "user:E2E"},
         "startMapperOnLaunch": True,
         "launchAtLogin": True,
         "locale": "en",
@@ -335,7 +335,7 @@ def cmd_write_config(args):
             "processes": [{"name": FAKE_GAME, "foregroundOnly": False}],
         },
     }
-    state = {"editedProfile": "user:E2E", "gameModeSwitch": "off"}
+    state = {"editedKeymap": "user:E2E", "gameModeSwitch": "off"}
     (CONFIG_DIR / "config.json").write_text(
         json.dumps({"version": 1, "settings": settings, "state": state}, indent=2),
         encoding="utf-8")
@@ -360,14 +360,14 @@ def cmd_write_config(args):
                     "--key", "Rows", "1"], check=True)
 
 
-def cmd_check_profile(args):
+def cmd_check_keymap(args):
     settings = json.loads((CONFIG_DIR / "config.json").read_text(encoding="utf-8")).get("settings", {})
     if (settings.get("devices", {}).get("keyboards") != [args.device]
-            or settings.get("profiles", {}).get("manualProfile") != "user:E2E"
+            or settings.get("keymaps", {}).get("manualKeymap") != "user:E2E"
             # Defaults are not written: a missing mode is manual.
-            or settings.get("profiles", {}).get("mode", "manual") != "manual"):
-        fail("application did not retain the test device/profile; package and fixture may use different config formats")
-    print("test keyboard and active profile retained by the application")
+            or settings.get("keymaps", {}).get("mode", "manual") != "manual"):
+        fail("application did not retain the test device/keymap; package and fixture may use different config formats")
+    print("test keyboard and active keymap retained by the application")
 
 
 def cmd_start_app(args):
@@ -838,7 +838,7 @@ def main():
     p.add_argument("--device", required=True)
     p.add_argument("--text-backend", choices=("libei", "clipboard"), default="libei")
     p.add_argument("--popup-mode", choices=("winit", "auto", "spell"), default="winit")
-    p = sub.add_parser("check-profile")
+    p = sub.add_parser("check-keymap")
     p.add_argument("--device", required=True)
     p = sub.add_parser("start-app")
     p.add_argument("--popups", default="auto")

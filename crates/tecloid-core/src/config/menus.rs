@@ -20,7 +20,7 @@ use std::collections::BTreeMap;
 /// Set or clear a quick action, preserving a custom name.
 /// `previous_label` is the old action's catalog label in the current UI language.
 pub fn set_quick_action(
-    profile: &mut ProfilePreset,
+    keymap: &mut KeymapPreset,
     page: i32,
     cell: i32,
     action: &str,
@@ -33,7 +33,7 @@ pub fn set_quick_action(
         return Err(out_of_range());
     };
     let (Some(page), Some(key)) = (
-        profile.quick_action_pages.get_mut(page_index),
+        keymap.quick_action_pages.get_mut(page_index),
         LEFT_HAND_HOTKEYS.get(cell_index),
     ) else {
         return Err(out_of_range());
@@ -63,10 +63,10 @@ pub fn set_quick_action(
 impl ConfigDocument {
     pub fn save_menu_pages(
         &mut self,
-        baseline: &ProfilePreset,
-        candidate: &ProfilePreset,
+        baseline: &KeymapPreset,
+        candidate: &KeymapPreset,
     ) -> Result<(), ConfigError> {
-        let current = self.profile();
+        let current = self.keymap();
         let emoji_changed = baseline.emoji_pages != candidate.emoji_pages;
         let quick_changed = baseline.quick_action_pages != candidate.quick_action_pages;
         if (emoji_changed && current.emoji_pages != baseline.emoji_pages)
@@ -93,7 +93,7 @@ impl ConfigDocument {
         let config = ResolvedAppConfig::from_parts(
             self.settings().clone(),
             candidate.clone(),
-            self.settings().editing_profile_id.as_deref(),
+            self.settings().editing_keymap_id.as_deref(),
         );
         for page in &candidate.quick_action_pages {
             if page
@@ -137,9 +137,9 @@ impl ConfigDocument {
                 return Err(ConfigError::Menu(MenuIssue::UnknownKey));
             }
         }
-        self.update_profile(|profile| {
-            profile.emoji_pages = candidate.emoji_pages.clone();
-            profile.quick_action_pages = candidate.quick_action_pages.clone();
+        self.update_keymap(|keymap| {
+            keymap.emoji_pages = candidate.emoji_pages.clone();
+            keymap.quick_action_pages = candidate.quick_action_pages.clone();
         })?;
         Ok(())
     }
@@ -151,7 +151,7 @@ impl ConfigDocument {
         if command.name.trim().is_empty() {
             command.name = command.script().trim().to_owned();
         }
-        let mut commands = self.profile().commands.clone();
+        let mut commands = self.keymap().commands.clone();
         let index = commands
             .iter()
             .position(|item| item.id == command.id)
@@ -164,7 +164,7 @@ impl ConfigDocument {
         if let Some(issue) = command_issue(&commands, index) {
             return Err(ConfigError::Menu(issue));
         }
-        self.update_profile(|profile| profile.commands = commands)
+        self.update_keymap(|keymap| keymap.commands = commands)
     }
 }
 
@@ -183,7 +183,7 @@ pub fn command_issue(commands: &[Command], index: usize) -> Option<MenuIssue> {
     None
 }
 
-/// Which of the two profile menus an operation applies to.
+/// Which of the two keymap menus an operation applies to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MenuKind {
     Emoji,
@@ -230,29 +230,29 @@ impl MenuPage for QuickActionPage {
 
 /// Run a generic page operation on the pages of `kind`.
 macro_rules! on_pages {
-    ($profile:expr, $kind:expr, $op:ident($($arg:expr),*)) => {
+    ($keymap:expr, $kind:expr, $op:ident($($arg:expr),*)) => {
         match $kind {
-            MenuKind::Emoji => $op(&mut $profile.emoji_pages $(, $arg)*),
-            MenuKind::Quick => $op(&mut $profile.quick_action_pages $(, $arg)*),
+            MenuKind::Emoji => $op(&mut $keymap.emoji_pages $(, $arg)*),
+            MenuKind::Quick => $op(&mut $keymap.quick_action_pages $(, $arg)*),
         }
     };
 }
 
 /// Each menu has at least one page: the editor and `tecloid:show*Menu1` need it.
-pub fn ensure_pages(profile: &mut ProfilePreset) {
+pub fn ensure_pages(keymap: &mut KeymapPreset) {
     fn ensure<P: MenuPage>(pages: &mut Vec<P>) {
         if pages.is_empty() {
             pages.push(P::empty());
         }
     }
-    ensure(&mut profile.emoji_pages);
-    ensure(&mut profile.quick_action_pages);
+    ensure(&mut keymap.emoji_pages);
+    ensure(&mut keymap.quick_action_pages);
 }
 
-pub fn page_count(profile: &ProfilePreset, kind: MenuKind) -> usize {
+pub fn page_count(keymap: &KeymapPreset, kind: MenuKind) -> usize {
     match kind {
-        MenuKind::Emoji => profile.emoji_pages.len(),
-        MenuKind::Quick => profile.quick_action_pages.len(),
+        MenuKind::Emoji => keymap.emoji_pages.len(),
+        MenuKind::Quick => keymap.quick_action_pages.len(),
     }
 }
 
@@ -262,7 +262,7 @@ pub fn page_count(profile: &ProfilePreset, kind: MenuKind) -> usize {
 /// `tecloid:showQuickMenuN` / `tecloid:showEmojiMenuN` open a page by position and
 /// are deliberately left as they are: moving a page changes what those keys
 /// open. See [`actions::MENU_PAGE_PICKER_COUNT`].
-pub fn reorder_page(profile: &mut ProfilePreset, kind: MenuKind, from: usize, to: usize) -> bool {
+pub fn reorder_page(keymap: &mut KeymapPreset, kind: MenuKind, from: usize, to: usize) -> bool {
     fn reorder<P>(pages: &mut Vec<P>, from: usize, to: usize) -> bool {
         if from == to || from >= pages.len() || to >= pages.len() {
             return false;
@@ -271,7 +271,7 @@ pub fn reorder_page(profile: &mut ProfilePreset, kind: MenuKind, from: usize, to
         pages.insert(to, page);
         true
     }
-    on_pages!(profile, kind, reorder(from, to))
+    on_pages!(keymap, kind, reorder(from, to))
 }
 
 /// Where the page at `selected` ends up after moving `from` to `to`.
@@ -290,7 +290,7 @@ pub fn selection_after_reorder(selected: usize, from: usize, to: usize) -> usize
 /// Remove a page; numbered `tecloid:` menu actions keep their numbers, so the
 /// following pages move into the freed positions. The only page is cleared
 /// instead (name and cells), keeping its id. Returns the page to select.
-pub fn remove_page(profile: &mut ProfilePreset, kind: MenuKind, index: usize) -> usize {
+pub fn remove_page(keymap: &mut KeymapPreset, kind: MenuKind, index: usize) -> usize {
     fn remove<P: MenuPage>(pages: &mut Vec<P>, index: usize) -> usize {
         if pages.len() <= 1 {
             if let Some(page) = pages.first_mut() {
@@ -304,33 +304,33 @@ pub fn remove_page(profile: &mut ProfilePreset, kind: MenuKind, index: usize) ->
         }
         index.saturating_sub(1).min(pages.len() - 1)
     }
-    on_pages!(profile, kind, remove(index))
+    on_pages!(keymap, kind, remove(index))
 }
 
 /// Set a page caption; surrounding whitespace is dropped.
-pub fn rename_page(profile: &mut ProfilePreset, kind: MenuKind, page: usize, name: &str) {
+pub fn rename_page(keymap: &mut KeymapPreset, kind: MenuKind, page: usize, name: &str) {
     fn rename<P: MenuPage>(pages: &mut [P], page: usize, name: &str) {
         if let Some(page) = pages.get_mut(page) {
             *page.name_mut() = name.trim().to_owned();
         }
     }
-    on_pages!(profile, kind, rename(page, name))
+    on_pages!(keymap, kind, rename(page, name))
 }
 
-pub fn clear_cell(profile: &mut ProfilePreset, kind: MenuKind, page: usize, cell: usize) {
+pub fn clear_cell(keymap: &mut KeymapPreset, kind: MenuKind, page: usize, cell: usize) {
     fn clear<P: MenuPage>(pages: &mut [P], page: usize, cell: usize) {
         if let (Some(page), Some(key)) = (pages.get_mut(page), LEFT_HAND_HOTKEYS.get(cell)) {
             page.cells_mut().remove(*key);
         }
     }
-    on_pages!(profile, kind, clear(page, cell))
+    on_pages!(keymap, kind, clear(page, cell))
 }
 
 /// Move the cell at `(page, cell)` `from` onto `to`, on the same or another
 /// page; the target's previous contents move to the source. Other cells keep
 /// their places.
 pub fn move_cell(
-    profile: &mut ProfilePreset,
+    keymap: &mut KeymapPreset,
     kind: MenuKind,
     from: (usize, usize),
     to: (usize, usize),
@@ -353,13 +353,13 @@ pub fn move_cell(
             pages[to.0].cells_mut().insert((*target).into(), value);
         }
     }
-    on_pages!(profile, kind, swap(from, to))
+    on_pages!(keymap, kind, swap(from, to))
 }
 
 /// Copy a cell (page, cell) onto another, replacing the target. Copying an
 /// empty cell clears the target.
 pub fn copy_cell(
-    profile: &mut ProfilePreset,
+    keymap: &mut KeymapPreset,
     kind: MenuKind,
     from: (usize, usize),
     to: (usize, usize),
@@ -385,7 +385,7 @@ pub fn copy_cell(
             }
         }
     }
-    on_pages!(profile, kind, copy(from, to))
+    on_pages!(keymap, kind, copy(from, to))
 }
 
 /// Whether emoji cell text counts as empty. Only ordinary whitespace does:
@@ -396,9 +396,9 @@ pub fn emoji_text_is_blank(text: &str) -> bool {
 
 /// Set an emoji cell to `text` as typed, or clear it when the text is blank.
 /// Leading and trailing spaces are kept: snippets like `"TODO: "` need them.
-pub fn set_emoji(profile: &mut ProfilePreset, page: usize, cell: usize, text: &str) {
+pub fn set_emoji(keymap: &mut KeymapPreset, page: usize, cell: usize, text: &str) {
     let (Some(page), Some(key)) = (
-        profile.emoji_pages.get_mut(page),
+        keymap.emoji_pages.get_mut(page),
         LEFT_HAND_HOTKEYS.get(cell),
     ) else {
         return;
@@ -412,8 +412,8 @@ pub fn set_emoji(profile: &mut ProfilePreset, page: usize, cell: usize, text: &s
 
 /// Set the caption of an assigned quick action; surrounding whitespace is
 /// dropped, and an empty caption shows the action.
-pub fn set_quick_action_name(profile: &mut ProfilePreset, page: usize, cell: usize, name: &str) {
-    if let Some(item) = profile
+pub fn set_quick_action_name(keymap: &mut KeymapPreset, page: usize, cell: usize, name: &str) {
+    if let Some(item) = keymap
         .quick_action_pages
         .get_mut(page)
         .zip(LEFT_HAND_HOTKEYS.get(cell))
@@ -427,11 +427,11 @@ pub fn set_quick_action_name(profile: &mut ProfilePreset, page: usize, cell: usi
 mod tests {
     #[test]
     fn copy_cell_keeps_source() {
-        let mut profile = ProfilePreset::default();
-        profile.emoji_pages.push(EmojiPage::empty());
-        set_emoji(&mut profile, 0, 0, "😀");
-        copy_cell(&mut profile, MenuKind::Emoji, (0, 0), (0, 1));
-        let cells = &profile.emoji_pages[0].cells;
+        let mut keymap = KeymapPreset::default();
+        keymap.emoji_pages.push(EmojiPage::empty());
+        set_emoji(&mut keymap, 0, 0, "😀");
+        copy_cell(&mut keymap, MenuKind::Emoji, (0, 0), (0, 1));
+        let cells = &keymap.emoji_pages[0].cells;
         assert_eq!(
             cells.get(LEFT_HAND_HOTKEYS[0]).map(String::as_str),
             Some("😀")
@@ -447,43 +447,43 @@ mod tests {
 
     #[test]
     fn quick_action_edits_preserve_custom_names_and_clear_cells() {
-        let mut profile = ProfilePreset {
+        let mut keymap = KeymapPreset {
             quick_action_pages: vec![QuickActionPage::new("page".into(), "".into())],
-            ..ProfilePreset::default()
+            ..KeymapPreset::default()
         };
-        set_quick_action(&mut profile, 0, 0, "KeyA", "First", "").unwrap();
-        assert_eq!(profile.quick_action_pages[0].cells["KeyQ"].name, "First");
-        let item = profile.quick_action_pages[0].cells.get_mut("KeyQ").unwrap();
+        set_quick_action(&mut keymap, 0, 0, "KeyA", "First", "").unwrap();
+        assert_eq!(keymap.quick_action_pages[0].cells["KeyQ"].name, "First");
+        let item = keymap.quick_action_pages[0].cells.get_mut("KeyQ").unwrap();
         item.name = "Custom".into();
-        set_quick_action(&mut profile, 0, 0, "KeyB", "Second", "").unwrap();
-        let item = &profile.quick_action_pages[0].cells["KeyQ"];
+        set_quick_action(&mut keymap, 0, 0, "KeyB", "Second", "").unwrap();
+        let item = &keymap.quick_action_pages[0].cells["KeyQ"];
         assert_eq!(item.name, "Custom");
-        set_quick_action(&mut profile, 0, 0, "", "", "").unwrap();
-        assert!(profile.quick_action_pages[0].cells.is_empty());
-        set_quick_action(&mut profile, 0, 0, "KeyA", "", "").unwrap();
-        set_quick_action(&mut profile, 0, 0, "KeyB", "Second", "").unwrap();
-        assert_eq!(profile.quick_action_pages[0].cells["KeyQ"].name, "Second");
-        let saved = profile.clone();
+        set_quick_action(&mut keymap, 0, 0, "", "", "").unwrap();
+        assert!(keymap.quick_action_pages[0].cells.is_empty());
+        set_quick_action(&mut keymap, 0, 0, "KeyA", "", "").unwrap();
+        set_quick_action(&mut keymap, 0, 0, "KeyB", "Second", "").unwrap();
+        assert_eq!(keymap.quick_action_pages[0].cells["KeyQ"].name, "Second");
+        let saved = keymap.clone();
         for (page, cell) in [(-1, 0), (1, 0), (0, -1), (0, 15)] {
             assert!(matches!(
-                set_quick_action(&mut profile, page, cell, "KeyC", "", ""),
+                set_quick_action(&mut keymap, page, cell, "KeyC", "", ""),
                 Err(ConfigError::Invalid(_))
             ));
-            assert_eq!(profile, saved);
+            assert_eq!(keymap, saved);
         }
     }
 
     #[test]
     fn replacement_updates_catalog_labels_but_preserves_custom_labels() {
-        let mut profile = ProfilePreset::default();
-        ensure_pages(&mut profile);
-        set_quick_action(&mut profile, 0, 0, "macro:first", "First", "").unwrap();
-        set_quick_action(&mut profile, 0, 0, "macro:second", "Second", "First").unwrap();
-        assert_eq!(profile.quick_action_pages[0].cells["KeyQ"].name, "Second");
-        set_quick_action_name(&mut profile, 0, 0, "My shortcut");
-        set_quick_action(&mut profile, 0, 0, "macro:first", "First", "Second").unwrap();
+        let mut keymap = KeymapPreset::default();
+        ensure_pages(&mut keymap);
+        set_quick_action(&mut keymap, 0, 0, "macro:first", "First", "").unwrap();
+        set_quick_action(&mut keymap, 0, 0, "macro:second", "Second", "First").unwrap();
+        assert_eq!(keymap.quick_action_pages[0].cells["KeyQ"].name, "Second");
+        set_quick_action_name(&mut keymap, 0, 0, "My shortcut");
+        set_quick_action(&mut keymap, 0, 0, "macro:first", "First", "Second").unwrap();
         assert_eq!(
-            profile.quick_action_pages[0].cells["KeyQ"].name,
+            keymap.quick_action_pages[0].cells["KeyQ"].name,
             "My shortcut"
         );
     }
@@ -501,25 +501,25 @@ mod tests {
             "e\u{301}".repeat(50),
             "👩\u{200d}💻".repeat(33) + "!",
         ] {
-            let baseline = doc.profile().clone();
+            let baseline = doc.keymap().clone();
             let mut candidate = baseline.clone();
             ensure_pages(&mut candidate);
             set_emoji(&mut candidate, 0, 0, &text);
             doc.save_menu_pages(&baseline, &candidate).unwrap();
-            assert_eq!(doc.profile().emoji_pages[0].cells["KeyQ"], text);
-            let baseline = doc.profile().clone();
+            assert_eq!(doc.keymap().emoji_pages[0].cells["KeyQ"], text);
+            let baseline = doc.keymap().clone();
             set_emoji(&mut candidate, 0, 0, &(text + "!"));
             assert!(matches!(
                 doc.save_menu_pages(&baseline, &candidate),
                 Err(ConfigError::Menu(MenuIssue::EmojiCell))
             ));
-            assert_eq!(doc.profile(), &baseline);
+            assert_eq!(doc.keymap(), &baseline);
         }
     }
 
     #[test]
     fn transfers_and_page_reorders_preserve_cells_and_action_metadata() {
-        let mut profile = ProfilePreset {
+        let mut keymap = KeymapPreset {
             emoji_pages: vec![
                 EmojiPage {
                     id: "a".into(),
@@ -536,17 +536,17 @@ mod tests {
                 QuickActionPage::new("a".into(), "A".into()),
                 QuickActionPage::new("b".into(), "B".into()),
             ],
-            ..ProfilePreset::default()
+            ..KeymapPreset::default()
         };
-        move_cell(&mut profile, MenuKind::Emoji, (0, 0), (1, 1));
-        assert_eq!(profile.emoji_pages[0].cells["KeyQ"], "✨");
-        assert_eq!(profile.emoji_pages[1].cells["KeyW"], "😀");
-        move_cell(&mut profile, MenuKind::Emoji, (1, 1), (0, 2));
-        assert!(!profile.emoji_pages[1].cells.contains_key("KeyW"));
-        assert_eq!(profile.emoji_pages[0].cells["KeyE"], "😀");
-        reorder_page(&mut profile, MenuKind::Emoji, 0, 1);
-        assert_eq!(profile.emoji_pages[1].id, "a");
-        assert_eq!(profile.emoji_pages[1].cells["KeyE"], "😀");
+        move_cell(&mut keymap, MenuKind::Emoji, (0, 0), (1, 1));
+        assert_eq!(keymap.emoji_pages[0].cells["KeyQ"], "✨");
+        assert_eq!(keymap.emoji_pages[1].cells["KeyW"], "😀");
+        move_cell(&mut keymap, MenuKind::Emoji, (1, 1), (0, 2));
+        assert!(!keymap.emoji_pages[1].cells.contains_key("KeyW"));
+        assert_eq!(keymap.emoji_pages[0].cells["KeyE"], "😀");
+        reorder_page(&mut keymap, MenuKind::Emoji, 0, 1);
+        assert_eq!(keymap.emoji_pages[1].id, "a");
+        assert_eq!(keymap.emoji_pages[1].cells["KeyE"], "😀");
 
         let source = QuickAction {
             name: "Label".into(),
@@ -556,29 +556,29 @@ mod tests {
             action: "text:previous".into(),
             ..QuickAction::default()
         };
-        profile.quick_action_pages[0]
+        keymap.quick_action_pages[0]
             .cells
             .insert("KeyQ".into(), source.clone());
-        profile.quick_action_pages[1]
+        keymap.quick_action_pages[1]
             .cells
             .insert("KeyW".into(), previous.clone());
-        move_cell(&mut profile, MenuKind::Quick, (0, 0), (1, 1));
-        assert_eq!(profile.quick_action_pages[1].cells["KeyW"], source);
-        assert_eq!(profile.quick_action_pages[0].cells["KeyQ"], previous);
-        reorder_page(&mut profile, MenuKind::Quick, 1, 0);
-        assert_eq!(profile.quick_action_pages[0].id, "b");
-        assert_eq!(profile.quick_action_pages[0].cells["KeyW"], source);
-        assert_eq!(profile.quick_action_pages[1].cells["KeyQ"], previous);
-        let unchanged = profile.clone();
-        move_cell(&mut profile, MenuKind::Quick, (99, 0), (0, 1));
-        move_cell(&mut profile, MenuKind::Emoji, (0, 15), (1, 0));
-        reorder_page(&mut profile, MenuKind::Quick, 0, 99);
-        assert_eq!(profile, unchanged);
+        move_cell(&mut keymap, MenuKind::Quick, (0, 0), (1, 1));
+        assert_eq!(keymap.quick_action_pages[1].cells["KeyW"], source);
+        assert_eq!(keymap.quick_action_pages[0].cells["KeyQ"], previous);
+        reorder_page(&mut keymap, MenuKind::Quick, 1, 0);
+        assert_eq!(keymap.quick_action_pages[0].id, "b");
+        assert_eq!(keymap.quick_action_pages[0].cells["KeyW"], source);
+        assert_eq!(keymap.quick_action_pages[1].cells["KeyQ"], previous);
+        let unchanged = keymap.clone();
+        move_cell(&mut keymap, MenuKind::Quick, (99, 0), (0, 1));
+        move_cell(&mut keymap, MenuKind::Emoji, (0, 15), (1, 0));
+        reorder_page(&mut keymap, MenuKind::Quick, 0, 99);
+        assert_eq!(keymap, unchanged);
     }
 
     #[test]
     fn moving_within_a_page_swaps_without_shifting() {
-        let mut profile = ProfilePreset {
+        let mut keymap = KeymapPreset {
             emoji_pages: vec![EmojiPage {
                 id: "a".into(),
                 name: String::new(),
@@ -586,37 +586,37 @@ mod tests {
                     .map(|(k, v)| (k.to_owned(), v.to_owned()))
                     .into(),
             }],
-            ..ProfilePreset::default()
+            ..KeymapPreset::default()
         };
-        move_cell(&mut profile, MenuKind::Emoji, (0, 0), (0, 2));
-        let cells = &profile.emoji_pages[0].cells;
+        move_cell(&mut keymap, MenuKind::Emoji, (0, 0), (0, 2));
+        let cells = &keymap.emoji_pages[0].cells;
         assert_eq!(cells["KeyQ"], "e");
         assert_eq!(cells["KeyW"], "w", "cells between stay in place");
         assert_eq!(cells["KeyE"], "q");
-        move_cell(&mut profile, MenuKind::Emoji, (0, 1), (0, 4));
-        let cells = &profile.emoji_pages[0].cells;
+        move_cell(&mut keymap, MenuKind::Emoji, (0, 1), (0, 4));
+        let cells = &keymap.emoji_pages[0].cells;
         assert!(!cells.contains_key("KeyW"), "an empty target moves back");
         assert_eq!(cells["KeyT"], "w");
     }
 
     #[test]
     fn removing_the_only_page_clears_it_and_keeps_its_id() {
-        let mut profile = ProfilePreset::default();
-        ensure_pages(&mut profile);
-        let id = profile.emoji_pages[0].id.clone();
-        profile.emoji_pages[0].name = "Mine".into();
-        set_emoji(&mut profile, 0, 0, "🙂");
-        assert_eq!(remove_page(&mut profile, MenuKind::Emoji, 0), 0);
-        assert_eq!(profile.emoji_pages.len(), 1);
-        assert_eq!(profile.emoji_pages[0].id, id);
-        assert!(profile.emoji_pages[0].name.is_empty());
-        assert!(profile.emoji_pages[0].cells.is_empty());
+        let mut keymap = KeymapPreset::default();
+        ensure_pages(&mut keymap);
+        let id = keymap.emoji_pages[0].id.clone();
+        keymap.emoji_pages[0].name = "Mine".into();
+        set_emoji(&mut keymap, 0, 0, "🙂");
+        assert_eq!(remove_page(&mut keymap, MenuKind::Emoji, 0), 0);
+        assert_eq!(keymap.emoji_pages.len(), 1);
+        assert_eq!(keymap.emoji_pages[0].id, id);
+        assert!(keymap.emoji_pages[0].name.is_empty());
+        assert!(keymap.emoji_pages[0].cells.is_empty());
 
-        profile.emoji_pages.push(EmojiPage::empty());
-        profile.emoji_pages.push(EmojiPage::empty());
-        assert_eq!(remove_page(&mut profile, MenuKind::Emoji, 2), 1);
-        assert_eq!(remove_page(&mut profile, MenuKind::Emoji, 0), 0);
-        assert_eq!(profile.emoji_pages.len(), 1);
+        keymap.emoji_pages.push(EmojiPage::empty());
+        keymap.emoji_pages.push(EmojiPage::empty());
+        assert_eq!(remove_page(&mut keymap, MenuKind::Emoji, 2), 1);
+        assert_eq!(remove_page(&mut keymap, MenuKind::Emoji, 0), 0);
+        assert_eq!(keymap.emoji_pages.len(), 1);
     }
 
     #[test]
@@ -641,56 +641,56 @@ mod tests {
 
     #[test]
     fn emoji_text_keeps_spaces_and_no_break_space() {
-        let mut profile = ProfilePreset::default();
-        ensure_pages(&mut profile);
-        set_emoji(&mut profile, 0, 0, "TODO: ");
-        set_emoji(&mut profile, 0, 1, "\u{a0}");
-        set_emoji(&mut profile, 0, 2, "x");
-        set_emoji(&mut profile, 0, 2, "  \t");
-        let cells = &profile.emoji_pages[0].cells;
+        let mut keymap = KeymapPreset::default();
+        ensure_pages(&mut keymap);
+        set_emoji(&mut keymap, 0, 0, "TODO: ");
+        set_emoji(&mut keymap, 0, 1, "\u{a0}");
+        set_emoji(&mut keymap, 0, 2, "x");
+        set_emoji(&mut keymap, 0, 2, "  \t");
+        let cells = &keymap.emoji_pages[0].cells;
         assert_eq!(cells["KeyQ"], "TODO: ");
         assert_eq!(cells["KeyW"], "\u{a0}");
         assert!(
             !cells.contains_key("KeyE"),
             "ordinary whitespace clears the cell"
         );
-        set_emoji(&mut profile, 5, 0, "out of range");
-        set_emoji(&mut profile, 0, 15, "out of range");
-        assert_eq!(profile.emoji_pages[0].cells.len(), 2);
+        set_emoji(&mut keymap, 5, 0, "out of range");
+        set_emoji(&mut keymap, 0, 15, "out of range");
+        assert_eq!(keymap.emoji_pages[0].cells.len(), 2);
     }
 
     #[test]
     fn names_are_trimmed_and_only_set_on_assigned_cells() {
-        let mut profile = ProfilePreset::default();
-        ensure_pages(&mut profile);
-        rename_page(&mut profile, MenuKind::Quick, 0, "  Media  ");
-        assert_eq!(profile.quick_action_pages[0].name, "Media");
-        set_quick_action_name(&mut profile, 0, 0, "Nothing here");
-        assert!(profile.quick_action_pages[0].cells.is_empty());
-        set_quick_action(&mut profile, 0, 0, "KeyA", "", "").unwrap();
-        set_quick_action_name(&mut profile, 0, 0, "   ");
-        assert_eq!(profile.quick_action_pages[0].cells["KeyQ"].name, "");
-        clear_cell(&mut profile, MenuKind::Quick, 0, 0);
-        assert!(profile.quick_action_pages[0].cells.is_empty());
+        let mut keymap = KeymapPreset::default();
+        ensure_pages(&mut keymap);
+        rename_page(&mut keymap, MenuKind::Quick, 0, "  Media  ");
+        assert_eq!(keymap.quick_action_pages[0].name, "Media");
+        set_quick_action_name(&mut keymap, 0, 0, "Nothing here");
+        assert!(keymap.quick_action_pages[0].cells.is_empty());
+        set_quick_action(&mut keymap, 0, 0, "KeyA", "", "").unwrap();
+        set_quick_action_name(&mut keymap, 0, 0, "   ");
+        assert_eq!(keymap.quick_action_pages[0].cells["KeyQ"].name, "");
+        clear_cell(&mut keymap, MenuKind::Quick, 0, 0);
+        assert!(keymap.quick_action_pages[0].cells.is_empty());
     }
 
     #[test]
     fn page_actions_keep_positions_when_pages_move() {
-        let mut profile = ProfilePreset {
+        let mut keymap = KeymapPreset {
             quick_action_pages: ["a", "b", "c"]
                 .map(|id| QuickActionPage::new(id.into(), String::new()))
                 .into(),
-            ..ProfilePreset::default()
+            ..KeymapPreset::default()
         };
         let mut rule = KeyRule::new("r".into(), "KeyA");
         rule.tap_action = Some("tecloid:showQuickMenu1".into());
-        profile.rules.push(rule);
-        reorder_page(&mut profile, MenuKind::Quick, 0, 2);
-        assert_eq!(profile.quick_action_pages[0].id, "b");
-        assert_eq!(remove_page(&mut profile, MenuKind::Quick, 0), 0);
-        assert_eq!(profile.quick_action_pages[0].id, "c");
+        keymap.rules.push(rule);
+        reorder_page(&mut keymap, MenuKind::Quick, 0, 2);
+        assert_eq!(keymap.quick_action_pages[0].id, "b");
+        assert_eq!(remove_page(&mut keymap, MenuKind::Quick, 0), 0);
+        assert_eq!(keymap.quick_action_pages[0].id, "c");
         assert_eq!(
-            profile.rules[0].tap_action.as_deref(),
+            keymap.rules[0].tap_action.as_deref(),
             Some("tecloid:showQuickMenu1")
         );
     }
@@ -713,18 +713,18 @@ mod tests {
             .unwrap();
         doc.save_command(command).unwrap();
         doc.set_base_tap_action("KeyQ", "cmd:hello").unwrap();
-        let profile = doc.profile().clone();
+        let keymap = doc.keymap().clone();
         doc.update_settings(|settings| settings.commands_enabled = false)
             .unwrap();
-        doc.save_current_profile_as("Saved").unwrap();
+        doc.save_current_keymap_as("Saved").unwrap();
         let mut loaded = ConfigDocument::load(paths.clone()).unwrap();
         loaded.load_library_for_editing("Saved").unwrap();
         assert!(!loaded.settings().commands_enabled);
         assert_eq!(
-            super::super::profile_file::serialize(loaded.profile()),
-            super::super::profile_file::serialize(&profile)
+            super::super::keymap_file::serialize(loaded.keymap()),
+            super::super::keymap_file::serialize(&keymap)
         );
-        assert_eq!(loaded.profile().commands[0].name, "printf hello");
+        assert_eq!(loaded.keymap().commands[0].name, "printf hello");
     }
 
     #[test]
@@ -740,7 +740,7 @@ mod tests {
         double.double_tap_action = "cmd:ls".into();
         let config = ResolvedAppConfig::from_parts(
             AppSettings::default(),
-            ProfilePreset {
+            KeymapPreset {
                 layers: vec![Layer {
                     id: "sel".into(),
                     name: "Select".into(),
@@ -781,28 +781,25 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut doc = ConfigDocument::load(paths).unwrap();
-        let baseline = doc.profile().clone();
+        let baseline = doc.keymap().clone();
         let mut draft = baseline.clone();
         draft.emoji_pages[0].name = "Draft emoji".into();
-        doc.update_profile(|profile| {
-            profile.description = Some("New description".into());
-            profile.quick_action_pages[0].name = "New quick menu".into();
+        doc.update_keymap(|keymap| {
+            keymap.description = Some("New description".into());
+            keymap.quick_action_pages[0].name = "New quick menu".into();
         })
         .unwrap();
         doc.save_menu_pages(&baseline, &draft).unwrap();
-        assert_eq!(doc.profile().emoji_pages[0].name, "Draft emoji");
-        assert_eq!(doc.profile().quick_action_pages[0].name, "New quick menu");
-        assert_eq!(
-            doc.profile().description.as_deref(),
-            Some("New description")
-        );
-        let unchanged = doc.profile().clone();
+        assert_eq!(doc.keymap().emoji_pages[0].name, "Draft emoji");
+        assert_eq!(doc.keymap().quick_action_pages[0].name, "New quick menu");
+        assert_eq!(doc.keymap().description.as_deref(), Some("New description"));
+        let unchanged = doc.keymap().clone();
         draft.emoji_pages[0].name = "Conflicting emoji".into();
         assert!(matches!(
             doc.save_menu_pages(&baseline, &draft),
             Err(ConfigError::EditConflict)
         ));
-        assert_eq!(doc.profile(), &unchanged);
+        assert_eq!(doc.keymap(), &unchanged);
     }
 
     #[test]
@@ -810,7 +807,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut doc = ConfigDocument::load(paths).unwrap();
-        let baseline = doc.profile().clone();
+        let baseline = doc.keymap().clone();
         let mut draft = baseline.clone();
         doc.save_macros(
             vec![Macro {
@@ -831,9 +828,9 @@ mod tests {
             },
         );
         doc.save_menu_pages(&baseline, &draft).unwrap();
-        assert_eq!(doc.profile().macros[0].id, "newMacro");
+        assert_eq!(doc.keymap().macros[0].id, "newMacro");
         assert_eq!(
-            doc.profile().quick_action_pages[0].cells["KeyQ"].action,
+            doc.keymap().quick_action_pages[0].cells["KeyQ"].action,
             "macro:newMacro"
         );
     }
@@ -844,8 +841,8 @@ mod tests {
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut doc = ConfigDocument::load(paths).unwrap();
         // A saved cell whose macro no longer exists.
-        doc.update_profile(|profile| {
-            profile.quick_action_pages[0].cells.insert(
+        doc.update_keymap(|keymap| {
+            keymap.quick_action_pages[0].cells.insert(
                 "KeyQ".into(),
                 QuickAction {
                     action: "macro:gone".into(),
@@ -854,13 +851,13 @@ mod tests {
             );
         })
         .unwrap();
-        let baseline = doc.profile().clone();
+        let baseline = doc.keymap().clone();
 
         let mut renamed = baseline.clone();
         renamed.quick_action_pages[0].name = "Renamed".into();
         doc.save_menu_pages(&baseline, &renamed).unwrap();
 
-        let baseline = doc.profile().clone();
+        let baseline = doc.keymap().clone();
         let mut moved = baseline.clone();
         let cell = moved.quick_action_pages[0].cells.remove("KeyQ").unwrap();
         moved.quick_action_pages[0]
@@ -888,7 +885,7 @@ mod tests {
         .unwrap();
         doc.set_base_tap_action("KeyQ", "cmd:test").unwrap();
         let snapshot = doc.command_assignment_snapshot();
-        doc.update_profile(|profile| profile.commands[0].name = "After".into())
+        doc.update_keymap(|keymap| keymap.commands[0].name = "After".into())
             .unwrap();
         let rows = std::thread::spawn(move || snapshot.load())
             .join()
@@ -899,23 +896,23 @@ mod tests {
     }
 
     #[test]
-    fn command_overview_lists_only_assignments_across_saved_profiles() {
+    fn command_overview_lists_only_assignments_across_saved_keymaps() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
-        paths.save_user_profile("Test", r#"{"version": 1, "commands": [{"id": "hello", "sh": "printf hello"}, {"id": "unused", "sh": "true"}], "rules": [{"key": "KeyQ", "tap": "cmd:hello"}]}"#, true).unwrap();
+        paths.save_user_keymap("Test", r#"{"version": 1, "commands": [{"id": "hello", "sh": "printf hello"}, {"id": "unused", "sh": "true"}], "rules": [{"key": "KeyQ", "tap": "cmd:hello"}]}"#, true).unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
-        doc.update_profile(|profile| {
-            *profile = super::super::profile_file::parse(&paths.load_user_profile("Test").unwrap())
+        doc.update_keymap(|keymap| {
+            *keymap = super::super::keymap_file::parse(&paths.load_user_keymap("Test").unwrap())
                 .unwrap()
                 .unwrap()
         })
         .unwrap();
         doc.update_settings(|settings| settings.commands_enabled = true)
             .unwrap();
-        paths.delete_user_profile("Test").unwrap();
+        paths.delete_user_keymap("Test").unwrap();
         assert!(doc.settings().commands_enabled);
-        doc.save_current_profile_as("First").unwrap();
-        doc.save_current_profile_as("Second").unwrap();
+        doc.save_current_keymap_as("First").unwrap();
+        doc.save_current_keymap_as("Second").unwrap();
         let rows = doc.command_assignments().unwrap();
         assert_eq!(rows.len(), 2);
         assert!(
@@ -933,11 +930,11 @@ mod tests {
         );
         assert!(
             rows.iter()
-                .any(|row| row.profile_id.as_deref() == Some("user:First"))
+                .any(|row| row.keymap_id.as_deref() == Some("user:First"))
         );
         assert!(
             rows.iter()
-                .any(|row| row.profile_id.as_deref() == Some("user:Second"))
+                .any(|row| row.keymap_id.as_deref() == Some("user:Second"))
         );
     }
 }
@@ -945,7 +942,7 @@ mod tests {
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CommandAssignment {
-    pub profile_id: Option<String>,
+    pub keymap_id: Option<String>,
     pub command: Command,
     pub usage: Vec<String>,
     /// Where the command is bound, with names instead of ids.
@@ -1063,7 +1060,7 @@ pub fn command_places(config: &ResolvedAppConfig, action: &str) -> Vec<CommandPl
 pub struct CommandAssignmentSnapshot {
     paths: crate::storage::StoragePaths,
     settings: AppSettings,
-    profile: ProfilePreset,
+    keymap: KeymapPreset,
 }
 
 impl ConfigDocument {
@@ -1071,7 +1068,7 @@ impl ConfigDocument {
         CommandAssignmentSnapshot {
             paths: self.paths().clone(),
             settings: self.settings().clone(),
-            profile: self.profile().clone(),
+            keymap: self.keymap().clone(),
         }
     }
 
@@ -1082,33 +1079,30 @@ impl ConfigDocument {
 
 impl CommandAssignmentSnapshot {
     pub fn load(self) -> Result<Vec<CommandAssignment>, ConfigError> {
-        let mut profiles = vec![(self.settings.editing_profile_id.clone(), self.profile)];
-        for name in self.paths.list_user_profiles().map_err(ConfigError::Io)? {
-            let id = super::model::user_profile_id(&name);
-            if self.settings.editing_profile_id.as_ref() == Some(&id) {
+        let mut keymaps = vec![(self.settings.editing_keymap_id.clone(), self.keymap)];
+        for name in self.paths.list_user_keymaps().map_err(ConfigError::Io)? {
+            let id = super::model::user_keymap_id(&name);
+            if self.settings.editing_keymap_id.as_ref() == Some(&id) {
                 continue;
             }
             let text = self
                 .paths
-                .load_user_profile(&name)
+                .load_user_keymap(&name)
                 .map_err(ConfigError::Io)?;
-            if let Some(profile) = super::profile_file::parse(&text).map_err(ConfigError::Parse)? {
-                profiles.push((Some(id), profile));
+            if let Some(keymap) = super::keymap_file::parse(&text).map_err(ConfigError::Parse)? {
+                keymaps.push((Some(id), keymap));
             }
         }
         let mut rows = Vec::new();
-        for (profile_id, profile) in profiles {
-            let config = ResolvedAppConfig::from_parts(
-                self.settings.clone(),
-                profile,
-                profile_id.as_deref(),
-            );
+        for (keymap_id, keymap) in keymaps {
+            let config =
+                ResolvedAppConfig::from_parts(self.settings.clone(), keymap, keymap_id.as_deref());
             for command in &config.commands {
                 let action = format!("cmd:{}", command.id);
                 let usage = super::macros::action_usage(&config, &action);
                 if !usage.is_empty() {
                     rows.push(CommandAssignment {
-                        profile_id: profile_id.clone(),
+                        keymap_id: keymap_id.clone(),
                         command: command.clone(),
                         usage,
                         places: command_places(&config, &action),

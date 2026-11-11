@@ -91,7 +91,7 @@ try {
         $stand = Join-Path $root "target\$driverProfile\examples\windows-mapper-stand.exe"
         $previousDevDir = [Environment]::GetEnvironmentVariable('TECLOID_DEV_DIR', 'Process')
         try {
-            $env:TECLOID_DEV_DIR = Join-Path $out 'mapper-profile'
+            $env:TECLOID_DEV_DIR = Join-Path $out 'mapper-keymap'
             $mapper = Start-Process $stand -PassThru -WindowStyle Hidden -ArgumentList "$out\mapper" `
                 -RedirectStandardOutput "$out\mapper-stdout.log" -RedirectStandardError "$out\mapper-stderr.log"
         } finally { [Environment]::SetEnvironmentVariable('TECLOID_DEV_DIR', $previousDevDir, 'Process') }

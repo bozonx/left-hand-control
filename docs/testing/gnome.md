@@ -101,11 +101,11 @@ shell command execution or arbitrary method dispatch.
 - `Activate(s title)`: focus a mapped window belonging to the authenticated
   caller PID only. The shell requests this off the UI thread for Wayland windows
   without an activation token.
-- `Action(s)`: a fixed allowlist of profile/workspace and window actions. Missing
+- `Action(s)`: a fixed allowlist of keymap/workspace and window actions. Missing
   windows, invalid indices, unsupported actions and locked sessions return a
   D-Bus error, which the mapper reports through its existing action-failure path.
 - `Changed`: focus, title/fullscreen/geometry, current source and source-list
-  changes. The profile watcher refreshes and wakes the active-window watcher.
+  changes. The keymap watcher refreshes and wakes the active-window watcher.
 
 Capturing a text target uses the watcher cache without waiting on D-Bus in the
 grabbed-keyboard thread. Live destination checks run in the text worker.
@@ -183,7 +183,7 @@ The runner uses a disposable overlay and stops at the first failed step. It
 checks installation, missing input permissions, explicit permissions and relogin,
 bridge availability, autostart, tray recovery after host disappearance and
 startup without a host (with settings fallback), passthrough, remap, chord, tap/hold layer,
-mapper stop/start, system profile/workspace actions, commands, manual game mode,
+mapper stop/start, system keymap/workspace actions, commands, manual game mode,
 portal ASCII, Quick popup
 focus and delivery, Unicode with text and binary MIME restoration, a mixed macro,
 popup IPC, replacement by a newer clipboard owner and cancellation on mapper stop. Portal

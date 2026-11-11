@@ -13,7 +13,7 @@ use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::rc::Rc;
 use tecloid_core::config::{
     diagnostics, ids,
-    model::{HoldBehavior, KeyRule, Layer, ProfilePreset, TapDecision},
+    model::{HoldBehavior, KeyRule, KeymapPreset, Layer, TapDecision},
     rule_edit::{RuleOptions, RuleOptionsError},
 };
 
@@ -144,8 +144,8 @@ fn hold_detection(rule: &KeyRule) -> HoldDetection {
     }
 }
 
-fn layer_name(profile: &ProfilePreset, id: &str) -> String {
-    profile
+fn layer_name(keymap: &KeymapPreset, id: &str) -> String {
+    keymap
         .layers
         .iter()
         .find(|layer| layer.id == id)
@@ -163,7 +163,7 @@ fn has_conditions(rule: &KeyRule) -> bool {
 fn selected(ui: &SettingsWindow, document: &Document) -> Option<usize> {
     super::index(
         ui.global::<RulesEditor>().get_selected(),
-        document.read().profile().rules.len(),
+        document.read().keymap().rules.len(),
     )
 }
 
@@ -206,7 +206,7 @@ fn editable(ui: &SettingsWindow, document: &Document) -> Option<usize> {
 /// editable fields (never while the user types into them).
 fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
     let config = document.read();
-    let profile = config.profile();
+    let keymap = config.keymap();
     let editor = ui.global::<RulesEditor>();
     editor.set_default_long_hold_timeout(
         config
@@ -231,7 +231,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
             .into(),
     );
     let issues = diagnostics::analyze_rules(&config.config());
-    let rows = profile
+    let rows = keymap
         .rules
         .iter()
         .map(|rule| RuleRow {
@@ -249,7 +249,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
             hold_mode: hold_mode(rule),
             is_chord: rule.key.contains('+'),
             double_tap: super::one_line(&rule.double_tap_action).into(),
-            layer: layer_name(profile, &rule.layer_id).into(),
+            layer: layer_name(keymap, &rule.layer_id).into(),
             has_conditions: has_conditions(rule),
             game: game_condition(rule.condition_game_mode.as_deref()),
             languages: join(&rule.condition_keyboard_layouts).into(),
@@ -293,12 +293,12 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
     } else {
         editor.set_rows(ModelRc::new(VecModel::from(rows)));
     }
-    let index = super::index(editor.get_selected(), profile.rules.len());
+    let index = super::index(editor.get_selected(), keymap.rules.len());
     editor.set_selected(index.map_or(-1, |index| index as i32));
     if fields {
         remember_edit(ui, document);
     }
-    let (true, Some(rule)) = (fields, index.and_then(|index| profile.rules.get(index))) else {
+    let (true, Some(rule)) = (fields, index.and_then(|index| keymap.rules.get(index))) else {
         return;
     };
     editor.set_enabled(rule.is_enabled());
@@ -317,7 +317,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
     editor.set_is_chord(rule.key.contains('+'));
     editor.set_double_tap(rule.double_tap_action.clone().into());
     editor.set_game_mode(game_condition(rule.condition_game_mode.as_deref()));
-    editor.set_profiles(join(&rule.condition_keyboard_layouts).into());
+    editor.set_keymaps(join(&rule.condition_keyboard_layouts).into());
     editor.set_apps_include(join(&rule.condition_window_patterns).into());
     editor.set_apps_exclude(join(&rule.condition_excluded_window_patterns).into());
     editor.set_original_hold(rule.hold_action.clone().unwrap_or_default().into());
@@ -356,15 +356,15 @@ fn report<T>(
     message
 }
 
-/// Save `edit` of the profile's rules and refresh the page.
+/// Save `edit` of the keymap's rules and refresh the page.
 fn change(
     ui: &SettingsWindow,
     document: &Document,
     fields: bool,
-    edit: impl FnOnce(&mut ProfilePreset),
+    edit: impl FnOnce(&mut KeymapPreset),
 ) -> Result<(), Msg> {
     let previous = diagnostics::analyze(&document.read().config());
-    match document.edit(View::Rules, |config| config.update_profile(edit)) {
+    match document.edit(View::Rules, |config| config.update_keymap(edit)) {
         Ok(saved) => {
             refresh(ui, document, fields);
             report(ui, document, &saved, Msg::None, &previous);
@@ -388,8 +388,8 @@ fn change_rule(
     fields: bool,
     edit: impl FnOnce(&mut KeyRule),
 ) -> Result<(), Msg> {
-    change(ui, document, fields, |profile| {
-        if let Some(rule) = profile.rules.get_mut(index) {
+    change(ui, document, fields, |keymap| {
+        if let Some(rule) = keymap.rules.get_mut(index) {
             edit(rule);
         }
     })
@@ -450,9 +450,9 @@ pub(super) fn choose(
         return Err(Msg::KeyCodeRequired);
     }
     if property == RuleDialog::Key && editor.get_adding() && editor.get_selected() == -1 {
-        change(ui, document, true, |profile| {
-            let id = unique_rule_id(&profile.rules);
-            profile.rules.insert(0, KeyRule::new(id, value));
+        change(ui, document, true, |keymap| {
+            let id = unique_rule_id(&keymap.rules);
+            keymap.rules.insert(0, KeyRule::new(id, value));
         })?;
         editor.set_selected(0);
         editor.set_created(0);
@@ -485,14 +485,14 @@ pub(super) fn choose(
     let index = selected(ui, document)
         .ok_or_else(|| Msg::from(&tecloid_core::config_document::ConfigError::EditConflict))?;
     // Validate before saving so a bad value leaves the rule untouched.
-    let mut candidate = document.read().profile().rules[index].clone();
+    let mut candidate = document.read().keymap().rules[index].clone();
     set_property(&mut candidate, property, value)?;
     let previous = diagnostics::analyze(&document.read().config());
     let saved = document
         .edit(View::Rules, |config| {
-            config.edit_profile_with_commands(command, |config| {
-                config.update_profile(|profile| {
-                    let rule = &mut profile.rules[index];
+            config.edit_keymap_with_commands(command, |config| {
+                config.update_keymap(|keymap| {
+                    let rule = &mut keymap.rules[index];
                     *rule = candidate;
                     if ui.global::<ActionPicker>().get_behavior()
                         == crate::ui::PickerBehavior::Swallow
@@ -623,14 +623,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let Some(index) = editable(&ui, &doc) else {
             return;
         };
-        let result = change(&ui, &doc, true, |profile| {
-            if index < profile.rules.len() {
-                profile.rules.remove(index);
+        let result = change(&ui, &doc, true, |keymap| {
+            if index < keymap.rules.len() {
+                keymap.rules.remove(index);
             }
         });
         if result.is_ok() {
             let editor = ui.global::<RulesEditor>();
-            let remaining = doc.read().profile().rules.len();
+            let remaining = doc.read().keymap().rules.len();
             let next = if remaining == 0 {
                 -1
             } else {
@@ -643,13 +643,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
 
     on!(ui, editor.on_move, doc = document => |ui, from, to| {
-        let len = doc.read().profile().rules.len();
+        let len = doc.read().keymap().rules.len();
         let Some((from, to)) = super::move_indices(from, to, len) else {
             return;
         };
-        if change(&ui, &doc, true, |profile| {
-            let item = profile.rules.remove(from);
-            profile.rules.insert(to, item);
+        if change(&ui, &doc, true, |keymap| {
+            let item = keymap.rules.remove(from);
+            keymap.rules.insert(to, item);
         })
         .is_ok()
         {
@@ -673,13 +673,13 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         };
         let Some(index) = editable(&ui, &doc) else { return; };
         let id = ids::generate("layer-");
-        let result = change(&ui, &doc, true, |profile| {
-            profile.layers.push(Layer {
+        let result = change(&ui, &doc, true, |keymap| {
+            keymap.layers.push(Layer {
                 id: id.clone(),
                 name,
                 description: None,
             });
-            if let Some(rule) = profile.rules.get_mut(index) {
+            if let Some(rule) = keymap.rules.get_mut(index) {
                 set_hold_behavior(rule, HoldBehavior::Layer);
                 rule.layer_id = id.clone();
             }
@@ -736,17 +736,17 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         }
         if dialog == RuleDialog::Layer {
             let config = doc.read();
-            let layer_id = &config.profile().rules[index as usize].layer_id;
+            let layer_id = &config.keymap().rules[index as usize].layer_id;
             editor.set_layer_id(layer_id.into());
             editor.set_layer_highlight(
                 config
-                    .profile()
+                    .keymap()
                     .layers
                     .iter()
                     .position(|layer| &layer.id == layer_id)
                     .map_or(0, |index| index as i32 + 1),
             );
-            editor.set_layer_items(layer_choices(config.profile().layers.iter()));
+            editor.set_layer_items(layer_choices(config.keymap().layers.iter()));
             editor.set_new_layer_name("".into());
             editor.set_dialog_value("".into());
         } else {
@@ -759,7 +759,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let query = query.to_lowercase();
         let config = doc.read();
         ui.global::<RulesEditor>().set_layer_items(layer_choices(
-            config.profile().layers.iter().filter(|layer| {
+            config.keymap().layers.iter().filter(|layer| {
                 layer.name.to_lowercase().contains(&query)
                     || layer.id.to_lowercase().contains(&query)
             }),
@@ -778,12 +778,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         };
         let editor = ui.global::<RulesEditor>();
         let game_mode = game_condition_value(editor.get_game_mode());
-        let profiles = optional_list(&editor.get_profiles());
+        let keymaps = optional_list(&editor.get_keymaps());
         let include = optional_list(&editor.get_apps_include());
         let exclude = optional_list(&editor.get_apps_exclude());
         let result = change_rule(&ui, &doc, index, true, |rule| {
             rule.condition_game_mode = game_mode;
-            rule.condition_keyboard_layouts = profiles;
+            rule.condition_keyboard_layouts = keymaps;
             rule.condition_window_patterns = include;
             rule.condition_excluded_window_patterns = exclude;
         });
@@ -804,7 +804,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             hold: (!editor.get_swallow_hold()).then(|| editor.get_hold().to_string()),
             detection: editor.get_hold_detection(),
         };
-        let mut candidate = doc.read().profile().rules[index].clone();
+        let mut candidate = doc.read().keymap().rules[index].clone();
         if let Err(error) = draft.apply(&mut candidate) {
             editor.set_status(crate::notifications::report(&ui, &error));
             return;

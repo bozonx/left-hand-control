@@ -37,9 +37,9 @@ def check_popups(vm, ps, report):
         probe.text(expected + "a")
         return "physical hotkey and cell key; exact Unicode once; focus restored; modifiers released"
 
-    def profile_remap_restart():
+    def keymap_remap_restart():
         metadata = json.loads(probe.read(ready))
-        environment = (f"$env:TECLOID_DEV_DIR = '{metadata['profile']}'; "
+        environment = (f"$env:TECLOID_DEV_DIR = '{metadata['keymap']}'; "
                        f"$env:TECLOID_PORT = '{metadata['port']}'; ")
 
         def command(*arguments):
@@ -62,7 +62,7 @@ def check_popups(vm, ps, report):
             current = json.loads(probe.read(ready))
             return current if current["pid"] != old_pid else None
 
-        metadata = wait_for("same-profile shell restart", 45, restarted)
+        metadata = wait_for("same-keymap shell restart", 45, restarted)
         command("toggle-mapper")
         probe.reset()
         vm.qmp.tap("a")
@@ -75,14 +75,14 @@ def check_popups(vm, ps, report):
         probe.reset()
         vm.qmp.tap("a")
         probe.text("a")
-        return "application profile -> mapper -> receiver: b; persisted game setting -> c across restart; off -> b; stopped -> a"
+        return "application keymap -> mapper -> receiver: b; persisted game setting -> c across restart; off -> b; stopped -> a"
 
     app_crashed = False
 
     def crash_owner():
         nonlocal app_crashed
         metadata = json.loads(probe.read(ready))
-        environment = (f"$env:TECLOID_DEV_DIR = '{metadata['profile']}'; "
+        environment = (f"$env:TECLOID_DEV_DIR = '{metadata['keymap']}'; "
                        f"$env:TECLOID_PORT = '{metadata['port']}'; ")
         ps(environment + f"& '{metadata['exe']}' toggle-mapper; "
            "if ($LASTEXITCODE -ne 0) { throw 'Mapper toggle failed' }", timeout=30)
@@ -112,7 +112,7 @@ def check_popups(vm, ps, report):
 
     completed = False
     try:
-        report.step("shell-profile-remap-restart", profile_remap_restart, fatal=True)
+        report.step("shell-keymap-remap-restart", keymap_remap_restart, fatal=True)
         for name, popup, key, text in (
             ("popup-bmp-focus", "emoji", "q", "☕"),
             ("popup-surrogate-focus", "emoji", "w", "😀"),
@@ -131,11 +131,11 @@ def check_popups(vm, ps, report):
             report.skip("popup-failure-screenshot", "screenshot failed; original scenario failure preserved")
         raise
     finally:
-        # Only this isolated instance owns the advertised profile and port.
+        # Only this isolated instance owns the advertised keymap and port.
         try:
             if not app_crashed:
                 metadata = json.loads(probe.read(ready))
-                command = (f"$env:TECLOID_DEV_DIR = '{metadata['profile']}'; "
+                command = (f"$env:TECLOID_DEV_DIR = '{metadata['keymap']}'; "
                            f"$env:TECLOID_PORT = '{metadata['port']}'; & '{metadata['exe']}' quit; "
                            "if ($LASTEXITCODE -ne 0) { throw 'Popup shell quit failed' }")
                 probe.ps(command, timeout=30)

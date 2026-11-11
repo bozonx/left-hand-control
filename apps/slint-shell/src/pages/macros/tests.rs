@@ -43,7 +43,7 @@ fn valid_draft_saves_immediately_and_repeated_save_is_a_noop() {
         Ok(SaveResult::Saved(_))
     ));
     assert_eq!(
-        document.read().profile().macros[0].name,
+        document.read().keymap().macros[0].name,
         "Saved without a timer"
     );
 }
@@ -54,14 +54,14 @@ fn invalid_draft_is_kept_until_corrected_without_overwriting_saved_macros() {
     let mut state = state(&document);
     state.draft.insert(0, entry());
     persist(&document, &mut state).unwrap();
-    let saved = document.read().profile().macros.clone();
+    let saved = document.read().keymap().macros.clone();
     for bad_delay in ["abc", "2001"] {
         state.draft[0].modifier_delay = bad_delay.into();
         assert!(matches!(
             persist(&document, &mut state),
             Ok(SaveResult::Invalid)
         ));
-        assert_eq!(document.read().profile().macros, saved);
+        assert_eq!(document.read().keymap().macros, saved);
         assert!(state.draft != state.baseline);
     }
     state.draft[0].modifier_delay.clear();
@@ -86,7 +86,7 @@ fn failed_commit_keeps_the_baseline_and_draft_for_retry() {
     // Step IDs are checked by the document when the draft is committed.
     item.item.steps.push(item.item.steps[0].clone());
     state.draft.insert(0, item);
-    let saved = document.read().profile().macros.clone();
+    let saved = document.read().keymap().macros.clone();
     let baseline = state.baseline.clone();
     let draft = state.draft.clone();
     let revision = document.revision();
@@ -99,7 +99,7 @@ fn failed_commit_keeps_the_baseline_and_draft_for_retry() {
     assert_eq!(document.revision(), revision);
     assert!(state.draft != state.baseline);
     assert_eq!(state.draft[0].saved_id, None);
-    assert_eq!(document.read().profile().macros, saved);
+    assert_eq!(document.read().keymap().macros, saved);
     state.draft[0].item.steps.pop();
     assert!(matches!(
         persist(&document, &mut state),
@@ -170,7 +170,7 @@ fn rename_commits_nested_references_and_keeps_the_draft_in_sync() {
         Ok(SaveResult::Saved(_))
     ));
     assert_eq!(
-        document.read().profile().macros[1].steps[0].action,
+        document.read().keymap().macros[1].steps[0].action,
         "macro:renamed"
     );
     assert_eq!(state.draft[1].item.steps[0].action, "macro:renamed");
@@ -181,7 +181,7 @@ fn rename_commits_nested_references_and_keeps_the_draft_in_sync() {
         Ok(SaveResult::Saved(_))
     ));
     assert_eq!(
-        document.read().profile().macros[1].steps[0].action,
+        document.read().keymap().macros[1].steps[0].action,
         "macro:renamed"
     );
 }
@@ -196,12 +196,12 @@ fn expansion_limit_is_an_inline_error_and_does_not_commit() {
         analysis(&document, &state.draft).errors[0],
         Some(ConfigError::Macro(macros::MacroIssue::ExpansionLimit))
     );
-    let before = document.read().profile().macros.clone();
+    let before = document.read().keymap().macros.clone();
     assert!(matches!(
         persist(&document, &mut state),
         Ok(SaveResult::Invalid)
     ));
-    assert_eq!(document.read().profile().macros, before);
+    assert_eq!(document.read().keymap().macros, before);
 }
 
 #[test]
@@ -244,11 +244,11 @@ fn renamed_invalid_draft_keeps_incoming_references_and_cannot_be_deleted() {
     persist(&document, &mut initial).unwrap();
     document
         .edit(View::Rules, |config| {
-            config.update_profile(|profile| {
+            config.update_keymap(|keymap| {
                 let mut rule =
                     tecloid_core::config::model::KeyRule::new("macroUsage".into(), "KeyA");
                 rule.tap_action = Some("macro:testMacro".into());
-                profile.rules.push(rule);
+                keymap.rules.push(rule);
             })
         })
         .unwrap();
@@ -262,7 +262,7 @@ fn renamed_invalid_draft_keeps_incoming_references_and_cannot_be_deleted() {
     assert!(row.usage.iter().any(|place| place == "KeyA"));
     editor.invoke_remove(0);
     assert_eq!(editor.get_macros().row_count(), 1);
-    assert_eq!(document.read().profile().macros[0].id, "testMacro");
+    assert_eq!(document.read().keymap().macros[0].id, "testMacro");
     assert_eq!(editor.get_status().id, "macro-in-use");
 }
 
@@ -356,7 +356,7 @@ fn picker_uses_new_and_renamed_macro_ids_from_the_invalid_draft() {
     assert!(
         document
             .read()
-            .profile()
+            .keymap()
             .macros
             .iter()
             .all(|item| item.id != "renamed")

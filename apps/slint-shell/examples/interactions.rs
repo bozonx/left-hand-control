@@ -78,7 +78,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     settings.invoke_save();
     ui.global::<AppState>().set_in_development(true);
     ui.invoke_navigate(Page::Settings, MenuKind::Emoji);
-    assert!(!ui.global::<ProfileLibrary>().get_editor_open());
+    assert!(!ui.global::<KeymapLibrary>().get_editor_open());
     settings.set_hold_timeout("not a number".into());
     settings.invoke_save();
     assert_eq!(settings.get_message().id, "settings-timing-invalid");
@@ -189,7 +189,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let reloaded = Document::load(paths.clone())?;
     let second_ui = SettingsWindow::new()?;
     bind_document(&second_ui, &reloaded);
-    assert!(reloaded.read().profile().layers.is_empty());
+    assert!(reloaded.read().keymap().layers.is_empty());
     assert_eq!(second_ui.global::<LayersEditor>().get_selected(), -1);
     assert_eq!(
         second_ui.global::<LayersEditor>().get_label_mode(),
@@ -197,7 +197,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     ui.global::<LayersEditor>().invoke_reorder(0, 1);
     assert_eq!(ui.global::<LayersEditor>().get_selected(), 0);
-    assert_eq!(document.read().profile().layers[0].id, second);
+    assert_eq!(document.read().keymap().layers[0].id, second);
     document.edit(slint_shell::document::View::Library, |config| {
         config.delete_layer(&first)
     })?;
@@ -206,24 +206,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     quick_popup.invoke_prepare();
 
     let picker = ui.global::<ActionPicker>();
-    let library = ui.global::<ProfileLibrary>();
+    let library = ui.global::<KeymapLibrary>();
     ui.invoke_navigate(Page::Keyboard, MenuKind::Emoji);
     ui.global::<KeyEditor>().invoke_edit(33);
     picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("text:Привет 👋".into());
     picker.invoke_apply();
-    library.invoke_save_as("Test profile".into());
+    library.invoke_save_as("Test keymap".into());
     assert!(!library.get_save_as_open());
     assert!(!library.get_dirty());
-    assert_eq!(library.get_current_label(), "Test profile");
+    assert_eq!(library.get_current_label(), "Test keymap");
     assert!(library.get_editor_open());
-    ui.invoke_close_profile();
+    ui.invoke_close_keymap();
     assert!(!library.get_editor_open());
-    assert_eq!(ui.get_page(), Page::Profiles);
-    assert_eq!(library.get_current_label(), "Test profile");
+    assert_eq!(ui.get_page(), Page::Keymaps);
+    assert_eq!(library.get_current_label(), "Test keymap");
     ui.invoke_navigate(Page::Keyboard, MenuKind::Emoji);
     ui.invoke_navigate(Page::Settings, MenuKind::Emoji);
-    ui.invoke_close_profile();
+    ui.invoke_close_keymap();
     assert!(!library.get_editor_open());
     assert_eq!(ui.get_page(), Page::Settings);
     ui.invoke_navigate(Page::Keyboard, MenuKind::Emoji);
@@ -241,15 +241,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         !ui.global::<NotificationCenter>()
             .get_items()
             .iter()
-            .any(|item| item.message.id == "profile-saved" && item.message.arg == "Test profile")
+            .any(|item| item.message.id == "keymap-saved" && item.message.arg == "Test keymap")
     );
     assert!(!library.get_dirty());
     assert!(!library.get_rules_dirty());
     assert_eq!(
-        tecloid_core::config::profile_file::serialize(
-            &document.read().load_profile("user:Test profile")?
+        tecloid_core::config::keymap_file::serialize(
+            &document.read().load_keymap("user:Test keymap")?
         ),
-        tecloid_core::config::profile_file::serialize(document.read().profile())
+        tecloid_core::config::keymap_file::serialize(document.read().keymap())
     );
     ui.global::<KeyEditor>().invoke_edit(33);
     assert!(picker.get_opened());
@@ -266,9 +266,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(ui.global::<MenuEditor>().get_kind(), kind);
     }
     document.edit(slint_shell::document::View::Library, |config| {
-        config.update_profile(|profile| {
+        config.update_keymap(|keymap| {
             use tecloid_core::config::model::{Command, KeyRule, Macro, MacroStep};
-            profile.rules = ["F13", "F14", "F15"]
+            keymap.rules = ["F13", "F14", "F15"]
                 .into_iter()
                 .enumerate()
                 .map(|(index, key)| {
@@ -277,7 +277,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     rule
                 })
                 .collect();
-            profile.macros = (0..3)
+            keymap.macros = (0..3)
                 .map(|index| Macro {
                     id: format!("dragMacro{index}"),
                     name: format!("Macro {index}"),
@@ -293,7 +293,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     modifier_delay_ms: None,
                 })
                 .collect();
-            profile.commands = (0..3)
+            keymap.commands = (0..3)
                 .map(|index| Command {
                     id: format!("dragCommand{index}"),
                     name: format!("Command {index}"),
@@ -308,7 +308,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(
         document
             .read()
-            .profile()
+            .keymap()
             .rules
             .iter()
             .map(|row| row.key.as_str())
@@ -320,7 +320,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(
         document
             .read()
-            .profile()
+            .keymap()
             .macros
             .iter()
             .map(|row| row.id.as_str())
@@ -329,7 +329,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     ui.global::<MacroEditor>().invoke_move_step(0, 0, 2);
     assert_eq!(
-        document.read().profile().macros[0]
+        document.read().keymap().macros[0]
             .steps
             .iter()
             .map(|row| row.action.as_str())
@@ -342,30 +342,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         })?;
     }
     let rules = ui.global::<RulesEditor>();
-    let count = document.read().profile().rules.len();
+    let count = document.read().keymap().rules.len();
     rules.invoke_add();
-    assert_eq!(document.read().profile().rules.len(), count);
+    assert_eq!(document.read().keymap().rules.len(), count);
     ui.global::<ActionPicker>().invoke_dismiss_picker();
-    assert_eq!(document.read().profile().rules.len(), count);
+    assert_eq!(document.read().keymap().rules.len(), count);
     rules.invoke_add();
     let picker = ui.global::<ActionPicker>();
     picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("CapsLock".into());
     picker.invoke_apply();
     assert_eq!(rules.get_selected(), 0);
-    assert_eq!(document.read().profile().rules[0].key, "CapsLock");
-    assert_eq!(document.read().profile().rules[1].key, "F14");
+    assert_eq!(document.read().keymap().rules[0].key, "CapsLock");
+    assert_eq!(document.read().keymap().rules[1].key, "F14");
     rules.invoke_open_dialog(0, RuleDialog::Tap);
     picker.invoke_select_behavior(PickerBehavior::Swallow);
     picker.set_value("".into());
     picker.invoke_apply();
-    assert_eq!(document.read().profile().rules[0].tap_action, None);
+    assert_eq!(document.read().keymap().rules[0].tap_action, None);
     rules.invoke_open_dialog(0, RuleDialog::Tap);
     picker.invoke_select_behavior(PickerBehavior::Native);
     picker.set_value("".into());
     picker.invoke_apply();
     assert_eq!(
-        document.read().profile().rules[0].tap_action.as_deref(),
+        document.read().keymap().rules[0].tap_action.as_deref(),
         Some("")
     );
     rules.invoke_open_dialog(0, RuleDialog::Advanced);
@@ -373,17 +373,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     rules.set_double_timeout("300".into());
     rules.invoke_apply_advanced();
     assert_eq!(
-        document.read().profile().rules[0].double_tap_timeout_ms,
+        document.read().keymap().rules[0].double_tap_timeout_ms,
         None
     );
     rules.set_hold_timeout("250".into());
     rules.invoke_apply_advanced();
+    assert_eq!(document.read().keymap().rules[0].hold_timeout_ms, Some(250));
     assert_eq!(
-        document.read().profile().rules[0].hold_timeout_ms,
-        Some(250)
-    );
-    assert_eq!(
-        document.read().profile().rules[0].double_tap_timeout_ms,
+        document.read().keymap().rules[0].double_tap_timeout_ms,
         Some(300)
     );
     for (selection, expected) in [
@@ -401,7 +398,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         rules.set_hold_detection(selection);
         assert!(rules.get_advanced_dirty());
         rules.invoke_apply_advanced();
-        assert_eq!(document.read().profile().rules[0].tap_decision, expected);
+        assert_eq!(document.read().keymap().rules[0].tap_decision, expected);
         rules.invoke_open_dialog(0, RuleDialog::Advanced);
         assert_eq!(rules.get_hold_detection(), selection);
         assert!(!rules.get_advanced_dirty());
@@ -411,14 +408,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("KeyC".into());
     picker.invoke_apply();
-    let before = document.read().profile().rules[0].clone();
+    let before = document.read().keymap().rules[0].clone();
     rules.invoke_open_dialog(0, RuleDialog::Key);
     picker.invoke_select_behavior(PickerBehavior::Action);
     picker.set_value("ShiftLeft+ControlRight".into());
     picker.invoke_apply();
     assert!(picker.get_opened());
     assert_ne!(picker.get_error().id, "");
-    assert_eq!(document.read().profile().rules[0], before);
+    assert_eq!(document.read().keymap().rules[0], before);
     picker.invoke_dismiss_picker();
     rules.invoke_open_dialog(0, RuleDialog::DoubleTap);
     picker.invoke_select_behavior(PickerBehavior::Native);
@@ -429,7 +426,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.set_value("ShiftLeft+ControlRight".into());
     picker.invoke_apply();
     assert_eq!(
-        document.read().profile().rules[0].key,
+        document.read().keymap().rules[0].key,
         "ShiftLeft+ControlRight"
     );
     rules.invoke_set_hold_mode(HoldBehavior::Action);
@@ -440,10 +437,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.set_value("builtin:copyLineText".into());
     picker.invoke_apply();
     assert_eq!(
-        document.read().profile().rules[0].long_hold_action,
+        document.read().keymap().rules[0].long_hold_action,
         "builtin:copyLineText"
     );
-    assert!(document.read().profile().rules[0].layer_id.is_empty());
+    assert!(document.read().keymap().rules[0].layer_id.is_empty());
     rules.invoke_open_dialog(0, RuleDialog::Advanced);
     rules.set_long_hold_timeout("0".into());
     rules.invoke_apply_advanced();
@@ -451,7 +448,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     rules.set_long_hold_timeout("1500".into());
     rules.invoke_apply_advanced();
     assert_eq!(
-        document.read().profile().rules[0].long_hold_timeout_ms,
+        document.read().keymap().rules[0].long_hold_timeout_ms,
         Some(1500)
     );
     settings.set_long_hold_timeout("2500".into());
@@ -461,12 +458,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         2500
     );
     assert_eq!(
-        document.read().profile().rules[0].long_hold_action,
+        document.read().keymap().rules[0].long_hold_action,
         "builtin:copyLineText"
     );
     rules.invoke_set_hold_mode(HoldBehavior::Layer);
     assert!(
-        document.read().profile().rules[0]
+        document.read().keymap().rules[0]
             .long_hold_action
             .is_empty()
     );
@@ -482,25 +479,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(rules.get_dialog(), RuleDialog::None);
     assert_eq!(rules.get_double_timeout(), "350");
     assert_eq!(
-        document.read().profile().rules[0].hold_action.as_deref(),
+        document.read().keymap().rules[0].hold_action.as_deref(),
         Some("AltLeft")
     );
     assert_eq!(
-        document.read().profile().rules[0].double_tap_timeout_ms,
+        document.read().keymap().rules[0].double_tap_timeout_ms,
         Some(350)
     );
     rules.invoke_remove();
     let layers = ui.global::<LayersEditor>();
     layers.invoke_add_extra();
     assert_eq!(
-        document.read().profile().layer_keymaps[&second].keys.len(),
+        document.read().keymap().layer_keymaps[&second].keys.len(),
         3
     );
     let picker = ui.global::<ActionPicker>();
     assert!(picker.get_opened());
     picker.invoke_dismiss_picker();
     assert_eq!(
-        document.read().profile().layer_keymaps[&second].keys.len(),
+        document.read().keymap().layer_keymaps[&second].keys.len(),
         3
     );
     // Choosing the key only moves on to its action; cancelling there adds nothing.
@@ -513,12 +510,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!picker.get_allow_default());
     assert_eq!(picker.get_subject(), "F16");
     assert_eq!(
-        document.read().profile().layer_keymaps[&second].keys.len(),
+        document.read().keymap().layer_keymaps[&second].keys.len(),
         3
     );
     picker.invoke_dismiss_picker();
     assert_eq!(
-        document.read().profile().layer_keymaps[&second].keys.len(),
+        document.read().keymap().layer_keymaps[&second].keys.len(),
         3
     );
     layers.invoke_add_extra();
@@ -530,11 +527,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.invoke_apply();
     assert!(!picker.get_opened());
     assert_eq!(
-        document.read().profile().layer_keymaps[&second].keys.len(),
+        document.read().keymap().layer_keymaps[&second].keys.len(),
         4
     );
     assert_eq!(
-        document.read().profile().layer_keymaps[&second].keys["F16"].as_deref(),
+        document.read().keymap().layer_keymaps[&second].keys["F16"].as_deref(),
         Some("F1")
     );
     layers.invoke_reorder_extra(3, 0);
@@ -545,7 +542,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.set_value("".into());
     picker.invoke_apply();
     assert_eq!(
-        document.read().profile().layer_keymaps[&second].keys["F16"],
+        document.read().keymap().layer_keymaps[&second].keys["F16"],
         None
     );
     layers.invoke_pick_extra(0, true);
@@ -553,12 +550,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.set_value("F17".into());
     picker.invoke_apply();
     assert!(
-        document.read().profile().layer_keymaps[&second]
+        document.read().keymap().layer_keymaps[&second]
             .keys
             .contains_key("F17")
     );
     assert_eq!(
-        document.read().profile().layer_keymaps[&second].keys["F17"],
+        document.read().keymap().layer_keymaps[&second].keys["F17"],
         None
     );
     assert_eq!(layers.get_extras().row_data(0).unwrap().key, "F17");
@@ -596,10 +593,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         !library.get_dirty(),
         "status {}; saved:\n{}current:\n{}",
         library.get_status().id,
-        tecloid_core::config::profile_file::serialize(
-            &document.read().load_profile("user:Test profile")?
+        tecloid_core::config::keymap_file::serialize(
+            &document.read().load_keymap("user:Test keymap")?
         ),
-        tecloid_core::config::profile_file::serialize(document.read().profile())
+        tecloid_core::config::keymap_file::serialize(document.read().keymap())
     );
     assert!(!library.get_rules_dirty());
     assert!(!library.get_layers_dirty());
@@ -613,7 +610,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         document.read().settings().appearance,
         tecloid_core::config::model::Appearance::Dark
     );
-    library.set_active_label("Test profile".into());
+    library.set_active_label("Test keymap".into());
     ui.global::<AppState>().set_keyboard_language("EN".into());
     slint_shell::select_ui_language("ru")?;
     ui.show()?;
@@ -623,7 +620,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ui.global::<NotificationCenter>()
             .get_items()
             .iter()
-            .any(|item| item.message.id == "profile-saved" && item.message.arg == saved_label)
+            .any(|item| item.message.id == "keymap-saved" && item.message.arg == saved_label)
     );
     ui.window().set_size(slint::LogicalSize::new(1120.0, 760.0));
     let timer = slint::Timer::default();
@@ -680,12 +677,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             0 => { snapshot(&ui, "settings-dark-ru"); ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: slint::LogicalPosition::new(500.0, 450.0), delta_x: 0.0, delta_y: -1200.0 }); }
             1 => { snapshot(&ui, "settings-bottom-ru"); ui.invoke_navigate(Page::Keyboard, MenuKind::Emoji); }
-            2 => { snapshot(&ui, "keyboard-ru"); ui.invoke_navigate(Page::Profiles, MenuKind::Emoji); }
-            3 => { snapshot(&ui, "profiles-ru"); ui.invoke_navigate(Page::Rules, MenuKind::Emoji); }
+            2 => { snapshot(&ui, "keyboard-ru"); ui.invoke_navigate(Page::Keymaps, MenuKind::Emoji); }
+            3 => { snapshot(&ui, "keymaps-ru"); ui.invoke_navigate(Page::Rules, MenuKind::Emoji); }
             4 => { snapshot(&ui, "rules-ru"); ui.invoke_navigate(Page::Layers, MenuKind::Emoji); }
             5 => {
                 ui.global::<MacroEditor>().invoke_add("Shortcut save".into());
-                assert!(ui.global::<ProfileLibrary>().get_dirty());
+                assert!(ui.global::<KeymapLibrary>().get_dirty());
                 for active in [false, true] {
                     ui.global::<InlineEditors>().set_window_active(active);
                     for event in [
@@ -694,17 +691,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         slint::platform::WindowEvent::KeyReleased { text: "s".into() },
                         slint::platform::WindowEvent::KeyReleased { text: slint::platform::Key::Control.into() },
                     ] { ui.window().dispatch_event(event); }
-                    assert_eq!(ui.global::<ProfileLibrary>().get_dirty(), !active,
+                    assert_eq!(ui.global::<KeymapLibrary>().get_dirty(), !active,
                         "Ctrl+S saves only when the settings window is active: picker={}, rules={:?}, layers={:?}, library={:?}, save-as={}, status={}",
                         ui.global::<ActionPicker>().get_opened(), ui.global::<RulesEditor>().get_dialog(),
-                        ui.global::<LayersEditor>().get_dialog(), ui.global::<ProfileLibrary>().get_dialog(),
-                        ui.global::<ProfileLibrary>().get_save_as_open(), ui.global::<ProfileLibrary>().get_status().id);
+                        ui.global::<LayersEditor>().get_dialog(), ui.global::<KeymapLibrary>().get_dialog(),
+                        ui.global::<KeymapLibrary>().get_save_as_open(), ui.global::<KeymapLibrary>().get_status().id);
 
                 }
-                ui.global::<ProfileLibrary>().set_save_as_open(true);
+                ui.global::<KeymapLibrary>().set_save_as_open(true);
                 ui.window().dispatch_event(slint::platform::WindowEvent::KeyPressed { text: slint::platform::Key::Escape.into() });
                 ui.window().dispatch_event(slint::platform::WindowEvent::KeyReleased { text: slint::platform::Key::Escape.into() });
-                assert!(!ui.global::<ProfileLibrary>().get_save_as_open());
+                assert!(!ui.global::<KeymapLibrary>().get_save_as_open());
                 ui.global::<LayersEditor>().invoke_open_dialog(slint_shell::ui::LayerDialog::Create);
                 ui.window().dispatch_event(slint::platform::WindowEvent::KeyPressed { text: slint::platform::Key::Escape.into() });
                 ui.window().dispatch_event(slint::platform::WindowEvent::KeyReleased { text: slint::platform::Key::Escape.into() });
@@ -716,7 +713,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             9 => { snapshot(&ui, "settings-commands-ru"); ui.invoke_navigate(Page::Settings, MenuKind::Emoji); ui.global::<SettingsEditor>().set_appearance(AppearanceChoice::Light); ui.global::<SettingsEditor>().set_locale_index(1); ui.global::<SettingsEditor>().invoke_save(); slint_shell::select_ui_language("en").unwrap(); ui.global::<Theme>().set_dark(false); ui.global::<Theme>().invoke_apply(); ui.window().set_size(slint::LogicalSize::new(940.0, 700.0)); }
             10 => { snapshot(&ui, "settings-light-en-small");
                 // The narrow header shows icons only, so locate the buttons by name.
-                for (label, expected) in [("Profiles", Page::Profiles), ("Settings", Page::Settings)] {
+                for (label, expected) in [("Keymaps", Page::Keymaps), ("Settings", Page::Settings)] {
                     let position = accessible_position(&ui, i_slint_core::items::AccessibleRole::Tab, label, false);
                     for event in [slint::platform::WindowEvent::PointerPressed { position, button: slint::platform::PointerEventButton::Left }, slint::platform::WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left }] { ui.window().dispatch_event(event); }
                     assert_eq!(ui.get_page(), expected);
@@ -783,7 +780,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 rules.set_dialog(RuleDialog::None);
                 rules.invoke_set_hold_mode(HoldBehavior::Layer);
                 rules.invoke_open_dialog(0, RuleDialog::Layer);
-                let id = document.read().profile().layers[0].id.clone();
+                let id = document.read().keymap().layers[0].id.clone();
                 rules.invoke_choose(id.into());
             }
             24 => { snapshot(&ui, "rules-layer"); ui.global::<RulesEditor>().invoke_open_dialog(1, RuleDialog::Advanced); ui.global::<RulesEditor>().set_hold_detection(HoldDetection::Release); }
@@ -844,8 +841,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 assert_eq!(rules.get_double_timeout(), "444");
                 assert_eq!(rules.get_hold(), "Ctrl+KeyC");
                 rules.invoke_apply_advanced();
-                assert_eq!(document.read().profile().rules[1].hold_timeout_ms, None);
-                assert_eq!(document.read().profile().rules[1].double_tap_timeout_ms, Some(444));
+                assert_eq!(document.read().keymap().rules[1].hold_timeout_ms, None);
+                assert_eq!(document.read().keymap().rules[1].double_tap_timeout_ms, Some(444));
                 rules.invoke_open_dialog(1, RuleDialog::Advanced);
                 slint_shell::select_ui_language("ru").unwrap();
                 ui.global::<Theme>().set_eink(false);
@@ -854,7 +851,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             31 => {
                 snapshot(&ui, "rules-advanced-dark-ru");
-                paths.save_user_profile("Broken overview", "invalid json", true).unwrap();
+                paths.save_user_keymap("Broken overview", "invalid json", true).unwrap();
                 document.edit(slint_shell::document::View::Settings, |config| config.update_settings(|s| s.layer_hint = !s.layer_hint)).unwrap();
                 assert!(!ui.global::<SettingsEditor>().get_commands_loading(), "a hidden command panel must not read the library");
                 ui.global::<RulesEditor>().set_dialog(RuleDialog::None);
@@ -872,20 +869,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if n == 32 || n == 35 {
                     assert_eq!(settings.get_commands_error().id, "config-parse");
                     assert!(!settings.get_commands_loaded());
-                    paths.delete_user_profile("Broken overview").unwrap();
+                    paths.delete_user_keymap("Broken overview").unwrap();
                     settings.invoke_refresh_commands();
                 } else {
                     assert!(settings.get_commands_loaded());
                     assert_eq!(settings.get_commands_error().id, "");
-                    paths.save_user_profile("Broken overview", "invalid json", true).unwrap();
-                    document.edit(slint_shell::document::View::Menus, |config| config.update_profile(|profile| profile.emoji_pages[0].name = "Cached overview".into())).unwrap();
+                    paths.save_user_keymap("Broken overview", "invalid json", true).unwrap();
+                    document.edit(slint_shell::document::View::Menus, |config| config.update_keymap(|keymap| keymap.emoji_pages[0].name = "Cached overview".into())).unwrap();
                     settings.invoke_refresh_commands();
                     assert!(!settings.get_commands_loading(), "emoji-only changes must reuse the overview");
                 }
             }
             34 => {
                 assert_eq!(ui.global::<SettingsEditor>().get_commands_error().id, "");
-                ui.global::<ProfileLibrary>().invoke_refresh();
+                ui.global::<KeymapLibrary>().invoke_refresh();
                 ui.global::<SettingsEditor>().invoke_refresh_commands();
             }
             36 => {

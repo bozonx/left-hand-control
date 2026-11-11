@@ -11,7 +11,7 @@ hidden in the system tray. Open Settings from the tray or run
 `tecloid.exe show settings`. A second launch opens the existing instance.
 
 The ZIP is portable in the sense that it needs no installer or service. Settings
-are stored in your Windows user profile, not beside the executable. Moving the
+are stored in your Windows user keymap, not beside the executable. Moving the
 folder does not move or erase your settings. Configure the keyboard mapper in
 Settings; Windows interception applies to the interactive session.
 

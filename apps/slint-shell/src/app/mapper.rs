@@ -16,7 +16,7 @@ use std::{
 };
 use tecloid_core::{
     CoreEvent,
-    config::{auto_switch, model::ProfileMode},
+    config::{auto_switch, model::KeymapMode},
 };
 
 /// Attempts after the first one to start the mapper on launch. At login the
@@ -76,8 +76,8 @@ pub(super) fn forward_core_events() -> Result<tecloid_core::events::Subscription
                 {
                     return;
                 }
-                if let tecloid_core::config::app_action::AppAction::ActivateProfile(slot) = action {
-                    app.activate_profile(slot.get());
+                if let tecloid_core::config::app_action::AppAction::ActivateKeymap(slot) = action {
+                    app.activate_keymap(slot.get());
                 } else if let Some(command) = crate::command::Command::from_app_action(action) {
                     app.command(command, Source::Mapper, Instant::now(), None);
                 }
@@ -150,8 +150,8 @@ fn mapper_phase(
 pub(super) struct MapperController {
     operation: Cell<MapperOperation>,
     game_active: Cell<Option<bool>>,
-    announced_profile: RefCell<Option<Option<String>>>,
-    /// Last profile switch error reported, so retries on every context
+    announced_keymap: RefCell<Option<Option<String>>>,
+    /// Last keymap switch error reported, so retries on every context
     /// event do not repeat the same notification.
     switch_error: RefCell<Option<String>>,
     /// Lifecycle, device wait and error last shown.
@@ -173,8 +173,8 @@ impl MapperController {
         self.game_active.replace(Some(active)) != Some(active)
     }
 
-    fn profile_changed(&self, id: &Option<String>) -> bool {
-        self.announced_profile
+    fn keymap_changed(&self, id: &Option<String>) -> bool {
+        self.announced_keymap
             .replace(Some(id.clone()))
             .is_some_and(|previous| previous != *id)
     }
@@ -224,7 +224,7 @@ impl MapperController {
 }
 
 impl App {
-    /// Show the game-mode status; the active profile only depends on
+    /// Show the game-mode status; the active keymap only depends on
     /// whether game mode is on, not on which detector reported it.
     pub(super) fn game_mode_changed(&self, status: &tecloid_core::gamemode::GameModeStatus) {
         // Events from different watcher threads can reach the UI out of order.
@@ -247,14 +247,14 @@ impl App {
         }
     }
 
-    /// `activateProfileN`: make profile `slot` (1-based, library order) the
+    /// `activateKeymapN`: make keymap `slot` (1-based, library order) the
     /// single active one, leaving automatic mode.
-    pub(super) fn activate_profile(&self, slot: u32) {
+    pub(super) fn activate_keymap(&self, slot: u32) {
         let Some(document) = self.document() else {
             self.set_error(Msg::LoadConfigFirst);
             return;
         };
-        let id = document.read().ordered_profile_ids().map(|ids| {
+        let id = document.read().ordered_keymap_ids().map(|ids| {
             usize::try_from(slot)
                 .ok()
                 .and_then(|slot| ids.get(slot.checked_sub(1)?).cloned())
@@ -262,7 +262,7 @@ impl App {
         let id = match id {
             Ok(Some(id)) => id,
             Ok(None) => {
-                crate::notifications::send(&self.settings, Msg::ProfileSlotEmpty(slot));
+                crate::notifications::send(&self.settings, Msg::KeymapSlotEmpty(slot));
                 return;
             }
             Err(error) => {
@@ -272,8 +272,8 @@ impl App {
         };
         let result = document.edit(View::Shell, |config| {
             config.update_settings(|settings| {
-                settings.profile_mode = ProfileMode::Manual;
-                settings.manual_profile_id = Some(id);
+                settings.keymap_mode = KeymapMode::Manual;
+                settings.manual_keymap_id = Some(id);
             })
         });
         match result {
@@ -287,26 +287,26 @@ impl App {
         self.document_changed();
     }
 
-    /// Show the profile OSD when the active profile differs from the one
+    /// Show the keymap OSD when the active keymap differs from the one
     /// last seen. The first observation and a stopped mapper stay silent.
-    pub(super) fn announce_profile(&self) {
+    pub(super) fn announce_keymap(&self) {
         let Some(document) = self.document() else {
             return;
         };
         if !tecloid_core::mapper::runtime::status().running {
             return;
         }
-        let Some(id) = document.applied_profile_id() else {
+        let Some(id) = document.applied_keymap_id() else {
             return;
         };
-        let changed = self.mapper.profile_changed(&id);
-        if !document.read().settings().profile_osd || !changed {
+        let changed = self.mapper.keymap_changed(&id);
+        if !document.read().settings().keymap_osd || !changed {
             return;
         }
         let name = id
             .as_deref()
-            .and_then(tecloid_core::config::model::user_profile_name);
-        let text = crate::i18n::profile_osd(self.preferences.get().language, name);
+            .and_then(tecloid_core::config::model::user_keymap_name);
+        let text = crate::i18n::keymap_osd(self.preferences.get().language, name);
         if let Err(error) = tecloid_core::platform::osd::enqueue(text) {
             log::warn!("[osd] {error}");
         }
@@ -321,7 +321,7 @@ impl App {
     }
 
     /// The focused window changed. Only automatic rules with window
-    /// conditions can switch the profile, so other configurations skip the
+    /// conditions can switch the keymap, so other configurations skip the
     /// library scan and page refresh on every focus change.
     pub(super) fn window_changed(&self) {
         let depends = self
@@ -337,8 +337,8 @@ impl App {
         }
     }
 
-    /// The system context (profile, game mode, window) changed: the active
-    /// profile may differ now.
+    /// The system context (keymap, game mode, window) changed: the active
+    /// keymap may differ now.
     pub(super) fn context_changed(&self) {
         pages::conditions::show_active_window(
             &self.settings,
@@ -348,8 +348,8 @@ impl App {
         crate::game_mode::refresh(&self.settings, &tecloid_core::gamemode::status());
         state.set_keyboard_language(
             tecloid_core::runtime_state::keyboard_layout()
-                .map(|profile| {
-                    let code = profile.code.to_uppercase();
+                .map(|keymap| {
+                    let code = keymap.code.to_uppercase();
                     if code.chars().count() > 8 {
                         let mut label: String = code.chars().take(7).collect();
                         label.push('…');
@@ -368,13 +368,13 @@ impl App {
         if self.mapper.switch_error_changed(result.as_ref().err())
             && let Err(error) = result
         {
-            self.set_error(Msg::ProfileSwitchFailed(error));
+            self.set_error(Msg::KeymapSwitchFailed(error));
         }
         self.refresh_mapper_status();
         pages::refresh_active(&self.settings, &document);
         self.invalidate_menus();
         self.sync_held_layer();
-        self.announce_profile();
+        self.announce_keymap();
     }
 
     pub(super) fn refresh_mapper_status(&self) {
@@ -558,12 +558,12 @@ impl App {
                     Ok(()) => {
                         crate::notifications::send(&app.settings, Msg::MapperRunning(None));
                         if let Some(document) = app.document() {
-                            app.announce_profile();
+                            app.announce_keymap();
                             // Both the document and context may have changed while starting.
                             if let Err(error) = document.sync_runtime(false) {
                                 app.set_error(Msg::SavedMapperNotUpdated(error));
                             }
-                            app.announce_profile();
+                            app.announce_keymap();
                         }
                     }
                     Err(error) if retries > 0 => {
@@ -626,11 +626,11 @@ mod tests {
         assert!(!controller.game_changed(true));
         assert!(controller.game_changed(false));
 
-        // The first profile is the starting point, not a change to announce.
+        // The first keymap is the starting point, not a change to announce.
         let main = Some("user:Main".to_string());
-        assert!(!controller.profile_changed(&main));
-        assert!(!controller.profile_changed(&main));
-        assert!(controller.profile_changed(&None));
+        assert!(!controller.keymap_changed(&main));
+        assert!(!controller.keymap_changed(&main));
+        assert!(controller.keymap_changed(&None));
     }
 
     #[test]

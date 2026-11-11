@@ -3,9 +3,9 @@
 use super::*;
 
 fn state(document: &Document) -> State {
-    let baseline = document.read().profile().clone();
+    let baseline = document.read().keymap().clone();
     State {
-        profile: draft(&baseline),
+        keymap: draft(&baseline),
         baseline,
         autosave: Autosave::default(),
         commands: Vec::new(),
@@ -16,11 +16,11 @@ fn state(document: &Document) -> State {
 fn menu_draft_saves_without_a_window_and_repeated_save_is_a_noop() {
     let (_dir, document) = super::super::test_document();
     let mut state = state(&document);
-    state.profile.emoji_pages[0].name = "Saved without waiting".into();
+    state.keymap.emoji_pages[0].name = "Saved without waiting".into();
     assert!(persist(&document, &mut state).unwrap().is_some());
     assert!(!menu_changed(&state));
     assert_eq!(
-        document.read().profile().emoji_pages[0].name,
+        document.read().keymap().emoji_pages[0].name,
         "Saved without waiting"
     );
     let revision = document.revision();
@@ -32,11 +32,11 @@ fn menu_draft_saves_without_a_window_and_repeated_save_is_a_noop() {
 fn conflicting_save_preserves_draft_and_baseline() {
     let (_dir, document) = super::super::test_document();
     let mut state = state(&document);
-    state.profile.emoji_pages[0].name = "My draft".into();
+    state.keymap.emoji_pages[0].name = "My draft".into();
     document
         .edit(View::Menus, |config| {
-            config.update_profile(|profile| {
-                profile.emoji_pages[0].name = "External change".into();
+            config.update_keymap(|keymap| {
+                keymap.emoji_pages[0].name = "External change".into();
             })
         })
         .unwrap();
@@ -46,9 +46,9 @@ fn conflicting_save_preserves_draft_and_baseline() {
         Err(tecloid_core::config_document::ConfigError::EditConflict)
     ));
     assert_eq!(state.baseline, baseline);
-    assert_eq!(state.profile.emoji_pages[0].name, "My draft");
+    assert_eq!(state.keymap.emoji_pages[0].name, "My draft");
     assert_eq!(
-        document.read().profile().emoji_pages[0].name,
+        document.read().keymap().emoji_pages[0].name,
         "External change"
     );
     assert!(menu_changed(&state));
@@ -58,14 +58,14 @@ fn conflicting_save_preserves_draft_and_baseline() {
 fn invalid_menu_does_not_overwrite_saved_pages_and_can_be_corrected() {
     let (_dir, document) = super::super::test_document();
     let mut state = state(&document);
-    state.profile.emoji_pages[0]
+    state.keymap.emoji_pages[0]
         .cells
         .insert("KeyQ".into(), "x".repeat(101));
-    let saved = document.read().profile().emoji_pages.clone();
+    let saved = document.read().keymap().emoji_pages.clone();
     assert!(persist(&document, &mut state).is_err());
-    assert_eq!(document.read().profile().emoji_pages, saved);
+    assert_eq!(document.read().keymap().emoji_pages, saved);
     assert!(menu_changed(&state));
-    state.profile.emoji_pages[0]
+    state.keymap.emoji_pages[0]
         .cells
         .insert("KeyQ".into(), "🙂".into());
     assert!(persist(&document, &mut state).unwrap().is_some());
@@ -74,23 +74,23 @@ fn invalid_menu_does_not_overwrite_saved_pages_and_can_be_corrected() {
 
 #[test]
 fn draft_has_pages_and_quick_pages_start_without_a_selection() {
-    let profile = draft(&ProfilePreset::default());
-    assert_eq!(profile.emoji_pages.len(), 1);
-    assert_eq!(profile.quick_action_pages.len(), 1);
-    assert_eq!(initial_cell(MenuKind::Emoji, &profile, 0), 0);
-    assert_eq!(initial_cell(MenuKind::Quick, &profile, 0), -1);
+    let keymap = draft(&KeymapPreset::default());
+    assert_eq!(keymap.emoji_pages.len(), 1);
+    assert_eq!(keymap.quick_action_pages.len(), 1);
+    assert_eq!(initial_cell(MenuKind::Emoji, &keymap, 0), 0);
+    assert_eq!(initial_cell(MenuKind::Quick, &keymap, 0), -1);
     assert_eq!(
-        initial_cell(MenuKind::Quick, &profile, 5),
+        initial_cell(MenuKind::Quick, &keymap, 5),
         -1,
         "missing pages are empty"
     );
-    assert_eq!(initial_cell(MenuKind::Quick, &profile, -1), -1);
+    assert_eq!(initial_cell(MenuKind::Quick, &keymap, -1), -1);
 }
 
 #[test]
 fn first_filled_skips_blank_actions() {
-    let mut profile = draft(&ProfilePreset::default());
-    let cells = &mut profile.quick_action_pages[0].cells;
+    let mut keymap = draft(&KeymapPreset::default());
+    let cells = &mut keymap.quick_action_pages[0].cells;
     cells.insert(
         "KeyQ".into(),
         QuickAction {
@@ -105,17 +105,17 @@ fn first_filled_skips_blank_actions() {
             ..Default::default()
         },
     );
-    assert_eq!(first_filled(&profile, 0), 2);
+    assert_eq!(first_filled(&keymap, 0), 2);
 }
 
 #[test]
 fn no_break_space_survives_saving() {
     let (_dir, document) = super::super::test_document();
     let mut state = state(&document);
-    menus::set_emoji(&mut state.profile, 0, 0, "\u{a0}");
-    menus::set_emoji(&mut state.profile, 0, 1, "TODO: ");
+    menus::set_emoji(&mut state.keymap, 0, 0, "\u{a0}");
+    menus::set_emoji(&mut state.keymap, 0, 1, "TODO: ");
     assert!(persist(&document, &mut state).unwrap().is_some());
-    let cells = document.read().profile().emoji_pages[0].cells.clone();
+    let cells = document.read().keymap().emoji_pages[0].cells.clone();
     assert_eq!(cells["KeyQ"], "\u{a0}");
     assert_eq!(cells["KeyW"], "TODO: ");
 }
@@ -167,10 +167,10 @@ fn cut_is_cancelled_after_reordering_removing_or_reloading_pages() {
         e.invoke_mark_cell(0, false);
         e.invoke_reorder_page(1, 0);
         assert_eq!(e.get_keyboard_source_cell(), -1);
-        let saved = document.read().profile().clone();
+        let saved = document.read().keymap().clone();
         e.invoke_select_cell(1);
         e.invoke_drop_cell(1);
-        assert_eq!(document.read().profile(), &saved);
+        assert_eq!(document.read().keymap(), &saved);
 
         e.invoke_mark_cell(0, false);
         e.invoke_remove_page();
@@ -181,8 +181,8 @@ fn cut_is_cancelled_after_reordering_removing_or_reloading_pages() {
         e.invoke_mark_cell(0, false);
         document
             .edit(View::Library, |config| {
-                config.update_profile(|profile| {
-                    menus::rename_page(profile, core_kind(kind), 0, "Reloaded elsewhere");
+                config.update_keymap(|keymap| {
+                    menus::rename_page(keymap, core_kind(kind), 0, "Reloaded elsewhere");
                 })
             })
             .unwrap();
@@ -195,15 +195,15 @@ fn preview_saves_pending_edits_and_rejects_invalid_or_conflicting_drafts() {
     let ui = headless_window();
     let (_dir, document) = super::super::test_document();
     document
-        .edit_library(|config| config.save_current_profile_as("Active"))
+        .edit_library(|config| config.save_current_keymap_as("Active"))
         .unwrap();
     document
-        .edit_library(|config| config.save_current_profile_as("Edited"))
+        .edit_library(|config| config.save_current_keymap_as("Edited"))
         .unwrap();
     document
         .edit(View::Settings, |config| {
             config.update_settings(|settings| {
-                settings.manual_profile_id = Some("user:Active".into());
+                settings.manual_keymap_id = Some("user:Active".into());
             })
         })
         .unwrap();
@@ -216,12 +216,12 @@ fn preview_saves_pending_edits_and_rejects_invalid_or_conflicting_drafts() {
     assert!(e.invoke_show_page());
     assert!(!e.get_has_unsaved_changes());
     assert_eq!(
-        document.read().profile().emoji_pages[0].cells["KeyQ"],
+        document.read().keymap().emoji_pages[0].cells["KeyQ"],
         "Just typed 🙂"
     );
     assert_eq!(e.get_cells().row_data(0).unwrap().value, "Just typed 🙂");
 
-    let (active_id, active) = document.popup_layout(false).unwrap();
+    let (active_id, active) = document.popup_keymap(false).unwrap();
     assert_eq!(active_id.as_deref(), Some("user:Active"));
     assert_ne!(
         active.emoji_pages[0].cells.get("KeyQ").map(String::as_str),
@@ -240,8 +240,8 @@ fn preview_saves_pending_edits_and_rejects_invalid_or_conflicting_drafts() {
     e.invoke_rename_page();
     document
         .edit(View::Shell, |config| {
-            config.update_profile(|profile| {
-                profile.emoji_pages[0].name = "Other writer".into();
+            config.update_keymap(|keymap| {
+                keymap.emoji_pages[0].name = "Other writer".into();
             })
         })
         .unwrap();
@@ -280,8 +280,8 @@ fn picker_stays_open_on_menu_save_failure_and_can_retry() {
     assert!(picker.get_valid());
     document
         .edit(View::Shell, |config| {
-            config.update_profile(|profile| {
-                profile.quick_action_pages[0].name = "Other writer".into();
+            config.update_keymap(|keymap| {
+                keymap.quick_action_pages[0].name = "Other writer".into();
             })
         })
         .unwrap();
@@ -290,7 +290,7 @@ fn picker_stays_open_on_menu_save_failure_and_can_retry() {
     assert_ne!(picker.get_error().id, "");
     assert!(e.get_has_unsaved_changes());
     assert!(
-        !document.read().profile().quick_action_pages[0]
+        !document.read().keymap().quick_action_pages[0]
             .cells
             .contains_key("KeyQ")
     );
@@ -302,7 +302,7 @@ fn picker_stays_open_on_menu_save_failure_and_can_retry() {
     assert!(!picker.get_opened());
     assert!(!e.get_has_unsaved_changes());
     assert_eq!(
-        document.read().profile().quick_action_pages[0].cells["KeyQ"].action,
+        document.read().keymap().quick_action_pages[0].cells["KeyQ"].action,
         "text:chosen"
     );
 }
@@ -314,9 +314,9 @@ fn replacement_resolves_the_previous_catalog_label_in_the_editor() {
     document
         .edit(View::Shell, |config| {
             config.update_settings(|settings| settings.in_development = true)?;
-            config.update_profile(|profile| {
+            config.update_keymap(|keymap| {
                 for (id, name) in [("first", "First"), ("second", "Second")] {
-                    profile.macros.push(Macro {
+                    keymap.macros.push(Macro {
                         id: id.into(),
                         name: name.into(),
                         steps: vec![],
@@ -338,7 +338,7 @@ fn replacement_resolves_the_previous_catalog_label_in_the_editor() {
     e.invoke_set_action(0, "macro:first".into(), "First".into());
     assert_eq!(e.get_name(), "My macro");
     assert_eq!(
-        document.read().profile().quick_action_pages[0].cells["KeyQ"].name,
+        document.read().keymap().quick_action_pages[0].cells["KeyQ"].name,
         "My macro"
     );
 }

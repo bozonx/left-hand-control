@@ -16,15 +16,15 @@ export global Locale {
         if m.id == "command-help-windows" { return @tr("Commands run with PowerShell in the background, without a console window. The mapper does not wait for completion or collect output. An empty name uses the command itself as its label. The working directory defaults to your home folder. Command execution must be enabled in settings."); }
         if m.id == "command-help-macos" { return @tr("The name is optional: an empty name uses the command itself as its label. Command execution by the mapper is not implemented on macOS."); }
 
-        if m.id == "profile-discarded" { return @tr("Changes to profile “{}” discarded", m.arg); }
+        if m.id == "keymap-discarded" { return @tr("Changes to keymap “{}” discarded", m.arg); }
         if m.id == "scroll-horizontal" { return @tr("Scroll horizontally"); }
         if m.id == "scroll-vertical" { return @tr("Scroll vertically"); }
         if m.id == "copied" { return @tr("Copied to clipboard"); }
-        if m.id == "profile-created" { return @tr("Profile “{}” created", m.arg); }
-        if m.id == "profile-saved" { return @tr("Profile “{}” saved", m.arg); }
+        if m.id == "keymap-created" { return @tr("Keymap “{}” created", m.arg); }
+        if m.id == "keymap-saved" { return @tr("Keymap “{}” saved", m.arg); }
         if m.id == "auto-rule-deleted" { return @tr("Automatic switching rule deleted"); }
-        if m.id == "profile-deleted" { return @tr("Profile “{}” deleted", m.arg); }
-        if m.id == "profile-activated" { return @tr("Profile “{}” activated", m.arg); }
+        if m.id == "keymap-deleted" { return @tr("Keymap “{}” deleted", m.arg); }
+        if m.id == "keymap-activated" { return @tr("Keymap “{}” activated", m.arg); }
         if m.id == "capability-available" { return @tr("Available"); }
         if m.id == "capability-unavailable" { return @tr("Unavailable"); }
         if m.id == "capability-unsupported" { return @tr("Not implemented"); }
@@ -81,7 +81,7 @@ export global Locale {
         if m.id == "picker-action" && m.arg == "showQuickMenuRecent" { return @tr("Show Quick Action Menu on the last used page"); }
         if m.id == "picker-action" && m.arg == "showEmojiMenuRecent" { return @tr("Show Emoji & Symbols menu on the last used page"); }
         if m.id == "picker-action" && m.arg == "showSettings" { return @tr("Show the settings window"); }
-        if m.id == "picker-action" && m.arg == "activateProfile" { return @tr("Activate profile {} (switches to Single mode)", m.count); }
+        if m.id == "picker-action" && m.arg == "activateKeymap" { return @tr("Activate keymap {} (switches to Single mode)", m.count); }
         if m.id == "picker-action" && m.arg == "toggleGameMode" { return @tr("Toggle game mode"); }
         if m.id == "picker-action" && m.arg == "setGameModeAuto" { return @tr("Game mode: detect automatically"); }
         if m.id == "picker-action" && m.arg == "setGameModeOn" { return @tr("Game mode: always on"); }
@@ -103,12 +103,12 @@ export global Locale {
         if m.id == "picker-action" && m.arg == "turnOffScreen" { return @tr("Turn off screen"); }
         if m.id == "picker-action" && m.arg == "lockSession" { return @tr("Lock screen"); }
         if m.id == "picker-action" && m.arg == "switchToDesktop" { return @tr("Switch to desktop {}", m.count); }
-        if m.id == "picker-action" && m.arg == "switchToKeyboardLayout" { return @tr("Switch to profile {}", m.count); }
+        if m.id == "picker-action" && m.arg == "switchToKeyboardLayout" { return @tr("Switch to keymap {}", m.count); }
         if m.id == "picker-action" && m.arg == "moveWindowToDesktop" { return @tr("Move window to desktop {}", m.count); }
-        if m.id == "profile-slot-empty" { return @tr("There is no profile number {}", m.count); }
-        if m.id == "library-saved" { return @tr("Profile library updated"); }
-        if m.id == "library-select" { return @tr("Select a profile"); }
-        if m.id == "library-changed" { return @tr("Profile changed on disk; select it again"); }
+        if m.id == "keymap-slot-empty" { return @tr("There is no keymap number {}", m.count); }
+        if m.id == "library-saved" { return @tr("Keymap library updated"); }
+        if m.id == "library-select" { return @tr("Select a keymap"); }
+        if m.id == "library-changed" { return @tr("Keymap changed on disk; select it again"); }
         if m.id == "" { return ""; }
         if m.id == "mapper-waiting" { return @tr("Waiting for keyboard"); }
         if m.id == "mapper-running" { return @tr("Mapper is running"); }
@@ -152,7 +152,7 @@ export global Locale {
         if m.id == "action-unavailable-named" { return @tr("Action “{}” is unavailable on this platform or desktop.", m.arg); }
         if m.id == "action-unavailable" { return @tr("Unavailable on this platform or desktop"); }
         if m.id == "action-unsupported-macos" { return @tr("This action is not supported on macOS"); }
-        if m.id == "save-profile-first" { return @tr("Save profile changes before opening another profile."); }
+        if m.id == "save-keymap-first" { return @tr("Save keymap changes before opening another keymap."); }
         if m.id == "commands-disabled" { return @tr("Commands are disabled in Settings."); }
         if m.id == "layer-saved" { return @tr("Layer saved"); }
         if m.id == "config-invalid-layer-key" { return @tr("Unknown layer key at \"{}\".", m.arg); }
@@ -174,9 +174,9 @@ export global Locale {
         if m.id == "rule-invalid-hold" { return @tr("Rule \"{}\" has an invalid hold action.", m.arg); }
         if m.id == "rule-invalid-double-tap" { return @tr("Rule \"{}\" has an invalid double-tap action.", m.arg); }
         if m.id == "rule-saved" { return @tr("Rule saved"); }
-        if m.id == "profile-switch-failed" { return @tr("Cannot switch profile. The mapper is still using the previous profile."); }
-        if m.id == "profile-load-failed" { return @tr("Cannot load this profile. See the application log."); }
-        if m.id == "profile-empty" { return @tr("The profile file is empty"); }
+        if m.id == "keymap-switch-failed" { return @tr("Cannot switch keymap. The mapper is still using the previous keymap."); }
+        if m.id == "keymap-load-failed" { return @tr("Cannot load this keymap. See the application log."); }
+        if m.id == "keymap-empty" { return @tr("The keymap file is empty"); }
         if m.id == "copy-name" { return @tr("{} (copy)", m.arg); }
         if m.id == "text-missing-characters" { return @tr("The text was not typed: the keyboard layout lacks some of its characters, such as emoji. Choose a typing method with the clipboard."); }
         if m.id == "text-layout-unknown" { return @tr("The text was not typed: the active keyboard layout is unknown."); }
@@ -192,8 +192,8 @@ export global Locale {
         if m.id == "mapper-required" { return @tr("Start the mapper to run actions from the menus"); }
         if m.id == "layer-name-required" { return @tr("Enter a layer name"); }
         if m.id == "layer-name-taken" { return @tr("A layer with this name already exists."); }
-        if m.id == "profile-name-required" { return @tr("Enter a profile name"); }
-        if m.id == "profile-name-taken" { return @tr("A profile with this name already exists."); }
+        if m.id == "keymap-name-required" { return @tr("Enter a keymap name"); }
+        if m.id == "keymap-name-taken" { return @tr("A keymap with this name already exists."); }
         if m.id == "name-invalid" { return @tr("The name contains characters that cannot be used in a file name."); }
         if m.id == "action-required" { return @tr("Choose a valid action."); }
         if m.id == "key-code-required" { return @tr("Enter a key code"); }

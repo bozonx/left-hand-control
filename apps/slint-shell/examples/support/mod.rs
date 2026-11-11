@@ -67,11 +67,11 @@ pub fn snapshot(ui: &impl ComponentHandle, name: &str) {
 }
 
 pub fn quick_action(
-    profile: &tecloid_core::config::model::ProfilePreset,
+    keymap: &tecloid_core::config::model::KeymapPreset,
     page: usize,
     key: &str,
 ) -> String {
-    profile.quick_action_pages[page]
+    keymap.quick_action_pages[page]
         .cells
         .get(key)
         .map(|item| item.action.clone())

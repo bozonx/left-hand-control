@@ -289,7 +289,7 @@ impl App {
         }
         self.invalidate_menus();
         self.apply_preferences();
-        self.announce_profile();
+        self.announce_keymap();
         self.sync_layer_hint_setting();
     }
 
@@ -300,13 +300,8 @@ impl App {
             let config = document.read();
             let settings = config.settings();
             let device = config.input_device().is_some();
-            let profiles = config
-                .ordered_profile_ids()
-                .is_ok_and(|ids| !ids.is_empty());
-            (
-                device && settings.start_mapper_on_launch,
-                device && profiles,
-            )
+            let keymaps = config.ordered_keymap_ids().is_ok_and(|ids| !ids.is_empty());
+            (device && settings.start_mapper_on_launch, device && keymaps)
         });
         if start_mapper {
             self.start_mapper_on_launch();
@@ -340,7 +335,7 @@ impl App {
 fn bind_shell(app: &Rc<App>) {
     crate::game_mode::bind(&app.settings);
     app.settings
-        .global::<crate::ui::ProfileLibrary>()
+        .global::<crate::ui::KeymapLibrary>()
         .on_quit(|| {
             with_app(|app| {
                 app.finish_shutdown();
@@ -404,7 +399,7 @@ fn load_document(settings: &SettingsWindow) -> Option<Rc<Document>> {
         .and_then(Document::load)
     {
         Ok(document) => {
-            let rules = document.read().profile().rules.len();
+            let rules = document.read().keymap().rules.len();
             state.set_config_status(Msg::ConfigLoaded(rules).to_ui());
             Some(document)
         }

@@ -178,8 +178,8 @@ form! {
         store |t, v| t.reduce_motion = choice(&AccessibilityChoice::ALL, *v);
     copy_osd: bool = get_copy_osd / set_copy_osd,
         load |s| s.copy_osd, store |t, v| t.copy_osd = *v;
-    profile_osd: bool = get_profile_osd / set_profile_osd,
-        load |s| s.profile_osd, store |t, v| t.profile_osd = *v;
+    keymap_osd: bool = get_keymap_osd / set_keymap_osd,
+        load |s| s.keymap_osd, store |t, v| t.keymap_osd = *v;
     layer_hint: bool = get_layer_hint / set_layer_hint,
         load |s| s.layer_hint, store |t, v| t.layer_hint = *v;
     locale: i32 = get_locale_index / set_locale_index,
@@ -348,11 +348,11 @@ impl super::autosave::Draft for State {
     }
 }
 
-/// Rules and automatic profile rules that depend on game mode.
+/// Rules and automatic keymap rules that depend on game mode.
 fn game_usage(ui: &SettingsWindow, document: &Document) {
     let config = document.read();
     let rules = config
-        .profile()
+        .keymap()
         .rules
         .iter()
         .filter(|rule| rule.is_enabled() && rule.condition_game_mode.is_some())
@@ -395,13 +395,13 @@ fn show_command_assignments(
             let rows: Vec<_> = rows
                 .into_iter()
                 .map(|row| {
-                    let first = previous.as_ref() != Some(&row.profile_id);
-                    previous = Some(row.profile_id.clone());
+                    let first = previous.as_ref() != Some(&row.keymap_id);
+                    previous = Some(row.keymap_id.clone());
                     CommandAssignmentRow {
-                        profile_name: row
-                            .profile_id
+                        keymap_name: row
+                            .keymap_id
                             .as_deref()
-                            .and_then(tecloid_core::config::model::user_profile_name)
+                            .and_then(tecloid_core::config::model::user_keymap_name)
                             .unwrap_or_default()
                             .into(),
                         first,
@@ -816,7 +816,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     {
         let config = document.read();
         e.set_settings_dir(config.paths().settings_dir().display().to_string().into());
-        e.set_profiles_dir(config.paths().profiles_dir().display().to_string().into());
+        e.set_keymaps_dir(config.paths().keymaps_dir().display().to_string().into());
     }
     refresh(ui, document, &mut state.borrow_mut(), true);
     refresh_devices(ui);

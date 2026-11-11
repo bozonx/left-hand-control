@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use tecloid_core::{
     config::{
         actions,
-        model::{LayerKeymap, ProfilePreset, ResolvedAppConfig},
+        model::{KeymapPreset, LayerKeymap, ResolvedAppConfig},
     },
     config_document::ConfigDocument,
 };
@@ -167,20 +167,20 @@ pub(crate) fn hands(
     )
 }
 
-/// The keys of layer `id` of the running `profile` for the layer hint, or
-/// `None` when the profile has no such layer.
+/// The keys of layer `id` of the running `keymap` for the layer hint, or
+/// `None` when the keymap has no such layer.
 pub(crate) fn hint(
     ui: &SettingsWindow,
     config: &ConfigDocument,
-    profile: &ProfilePreset,
+    keymap: &KeymapPreset,
     id: &str,
 ) -> Option<crate::layer_hint_model::LayerHint> {
-    let layer = profile.layers.iter().find(|layer| layer.id == id)?;
+    let layer = keymap.layers.iter().find(|layer| layer.id == id)?;
     let names = action_names(
         ui,
-        &ResolvedAppConfig::from_parts(config.settings().clone(), profile.clone(), None),
+        &ResolvedAppConfig::from_parts(config.settings().clone(), keymap.clone(), None),
     );
-    let (left, right) = hands(profile.layer_keymaps.get(id), &names);
+    let (left, right) = hands(keymap.layer_keymaps.get(id), &names);
     Some(crate::layer_hint_model::LayerHint::from_cells(
         layer.name.clone(),
         &left,

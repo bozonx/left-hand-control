@@ -385,7 +385,7 @@ mod tests {
         assert_eq!(events.len(), 2);
         assert!(matches!(events[1], crate::CoreEvent::LayoutChanged(None)));
         assert!(!crate::config::auto_switch::matches_condition_set(
-            &crate::config::model::ProfileConditionSet {
+            &crate::config::model::KeymapConditionSet {
                 keyboard_layouts: vec!["us".into()],
                 ..Default::default()
             },

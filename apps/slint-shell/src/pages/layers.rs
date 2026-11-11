@@ -27,9 +27,9 @@ fn conflict() -> Msg {
 type LayerState = Option<(Layer, Option<LayerKeymap>)>;
 
 fn layer_state(config: &ConfigDocument, id: &str) -> LayerState {
-    let profile = config.profile();
-    let layer = profile.layers.iter().find(|layer| layer.id == id)?;
-    Some((layer.clone(), profile.layer_keymaps.get(id).cloned()))
+    let keymap = config.keymap();
+    let layer = keymap.layers.iter().find(|layer| layer.id == id)?;
+    Some((layer.clone(), keymap.layer_keymaps.get(id).cloned()))
 }
 
 /// Identity of a modal edit. A change of the edited layer (or of the
@@ -95,7 +95,7 @@ fn selected_id(ui: &SettingsWindow, document: &Document) -> Option<String> {
     let id = ui.global::<LayersEditor>().get_selected_id().to_string();
     document
         .read()
-        .profile()
+        .keymap()
         .layers
         .iter()
         .any(|layer| layer.id == id)
@@ -110,7 +110,7 @@ fn select_layer(ui: &SettingsWindow, document: &Document, index: i32) {
     let id = usize::try_from(index).ok().and_then(|index| {
         document
             .read()
-            .profile()
+            .keymap()
             .layers
             .get(index)
             .map(|layer| layer.id.clone())
@@ -123,23 +123,23 @@ fn select_layer(ui: &SettingsWindow, document: &Document, index: i32) {
 
 fn refresh(ui: &SettingsWindow, document: &Document) {
     let config = document.read();
-    let profile = config.profile();
+    let keymap = config.keymap();
     let editor = ui.global::<LayersEditor>();
     editor.set_names(update_model(
         editor.get_names(),
-        profile
+        keymap
             .layers
             .iter()
             .map(|layer| layer.name.clone().into())
             .collect(),
     ));
     let index = selection(
-        &profile.layers,
+        &keymap.layers,
         &editor.get_selected_id(),
         editor.get_selected(),
     );
     editor.set_selected(index.map_or(-1, |index| index as i32));
-    let layer = index.map(|index| &profile.layers[index]);
+    let layer = index.map(|index| &keymap.layers[index]);
     editor.set_selected_id(
         layer
             .map_or_else(String::new, |layer| layer.id.clone())
@@ -151,9 +151,9 @@ fn refresh(ui: &SettingsWindow, document: &Document) {
             .unwrap_or_default()
             .into(),
     );
-    let keymap = layer.and_then(|layer| profile.layer_keymaps.get(&layer.id));
+    let layer_keymap = layer.and_then(|layer| keymap.layer_keymaps.get(&layer.id));
     let names = action_names(ui, &config.config());
-    let (left, right) = hands(keymap, &names);
+    let (left, right) = hands(layer_keymap, &names);
     editor.set_left_cells(update_model(editor.get_left_cells(), left));
     editor.set_right_cells(update_model(editor.get_right_cells(), right));
     // The keyboard grid keeps one Tab stop; move it to the first key when its key is gone.
@@ -167,7 +167,7 @@ fn refresh(ui: &SettingsWindow, document: &Document) {
     if !keys.contains(&key) {
         editor.set_keyboard_key(keys.first().copied().unwrap_or(-1));
     }
-    let extras = keymap.map_or_else(Vec::new, |map| {
+    let extras = layer_keymap.map_or_else(Vec::new, |map| {
         map.extra_entries()
             .into_iter()
             .map(|(key, value)| {
@@ -185,7 +185,7 @@ fn refresh(ui: &SettingsWindow, document: &Document) {
     });
     editor.set_extras(update_model(editor.get_extras(), extras));
     let triggers = layer
-        .map(|layer| profile.layer_triggers(&layer.id))
+        .map(|layer| keymap.layer_triggers(&layer.id))
         .unwrap_or_default();
     editor.set_triggers(update_model(
         editor.get_triggers(),
@@ -235,7 +235,7 @@ fn open_dialog(ui: &SettingsWindow, document: &Document, dialog: LayerDialog) ->
     let layer = selected_id(ui, document).and_then(|id| {
         let config = document.read();
         config
-            .profile()
+            .keymap()
             .layers
             .iter()
             .find(|layer| layer.id == id)
@@ -321,7 +321,7 @@ fn extra_at(document: &Document, id: &str, index: i32) -> Option<(String, Option
     let index = usize::try_from(index).ok()?;
     document
         .read()
-        .profile()
+        .keymap()
         .layer_keymaps
         .get(id)
         .and_then(|map| map.extra_entries().into_iter().nth(index))
@@ -354,14 +354,14 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let modals = Rc::new(RefCell::new(Modals::default()));
     let editor = ui.global::<LayersEditor>();
     on!(ui, editor.on_reorder, doc = document => |ui, from, to| {
-        let len = doc.read().profile().layers.len();
+        let len = doc.read().keymap().layers.len();
         let Some((from, to)) = super::move_indices(from, to, len) else {
             return false;
         };
         change(&ui, &doc, |config| {
-            config.update_profile(|profile| {
-                let item = profile.layers.remove(from);
-                profile.layers.insert(to, item);
+            config.update_keymap(|keymap| {
+                let item = keymap.layers.remove(from);
+                keymap.layers.insert(to, item);
             })
         })
         .is_ok()
@@ -376,7 +376,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         // The stored order, not the page model, which may lag behind it.
         let keys = doc
             .read()
-            .profile()
+            .keymap()
             .layer_keymaps
             .get(&id)
             .map(|map| map.extra_entries().into_iter().map(|(key, _)| key).collect())
@@ -553,7 +553,7 @@ pub(super) fn taken_extra_keys(ui: &SettingsWindow, document: &Document) -> Vec<
         .map(str::to_owned)
         .chain(
             config
-                .profile()
+                .keymap()
                 .layer_keymaps
                 .get(selected.as_str())
                 .into_iter()
@@ -617,7 +617,7 @@ fn set_key(
     choice: Choice,
 ) -> Result<(), ConfigError> {
     let holds = matches!(assignment, KeyAssignment::Action(_)) && choice.hold_modifiers;
-    config.edit_profile_with_commands(choice.command, |config| {
+    config.edit_keymap_with_commands(choice.command, |config| {
         if tecloid_core::config::layer_grid::contains(key) {
             config.set_layer_key(id, key, assignment.clone())?;
         } else {
@@ -822,7 +822,7 @@ mod tests {
             .unwrap()
             .value;
         let target = EditTarget::new(&document, layer.clone());
-        let before = document.read().profile().clone();
+        let before = document.read().keymap().clone();
         assert!(
             document
                 .edit(View::Layers, |config| {
@@ -831,7 +831,7 @@ mod tests {
                 })
                 .is_err()
         );
-        assert_eq!(*document.read().profile(), before);
+        assert_eq!(*document.read().keymap(), before);
         assert!(target.check(&document, &layer).is_ok());
     }
 
@@ -885,7 +885,7 @@ mod tests {
     fn adding_an_extra_row_saves_only_after_its_action_and_validates_the_key() {
         let (_dir, document, ui, _, second) = page();
         let editor = ui.global::<LayersEditor>();
-        let rows = || document.read().profile().layer_keymaps[&second].keys.len();
+        let rows = || document.read().keymap().layer_keymaps[&second].keys.len();
         assert_eq!(
             assign_extra(&ui, &document, -1, "KeyQ", true, choice(false, false)),
             Err(Msg::ExtraKeyOnGrid)
@@ -961,7 +961,7 @@ mod tests {
         assert!(document.read().layer_name(&copy_name, None).is_ok());
         editor.invoke_apply_dialog();
         assert_eq!(editor.get_dialog(), LayerDialog::None);
-        let layers = document.read().profile().layers.clone();
+        let layers = document.read().keymap().layers.clone();
         assert_eq!(layers.len(), 3);
         assert_eq!(editor.get_selected_id(), layers[2].id.as_str());
         assert_eq!(editor.get_selected(), 2);
@@ -970,7 +970,7 @@ mod tests {
         editor.invoke_open_dialog(LayerDialog::Delete);
         editor.invoke_apply_dialog();
         assert_eq!(editor.get_dialog(), LayerDialog::None);
-        assert_eq!(document.read().profile().layers.len(), 2);
+        assert_eq!(document.read().keymap().layers.len(), 2);
         assert_eq!(editor.get_selected_id(), second.as_str());
 
         // An edit of the layer behind an open dialog closes it unapplied:
@@ -984,14 +984,14 @@ mod tests {
         editor.invoke_apply_dialog();
         assert_eq!(editor.get_dialog(), LayerDialog::None);
         assert_eq!(editor.get_status().id, "config-edit-conflict");
-        assert_eq!(document.read().profile().layers.len(), 2);
+        assert_eq!(document.read().keymap().layers.len(), 2);
 
         // Closing forgets the source: a stray apply cannot delete anything.
         editor.invoke_open_dialog(LayerDialog::Delete);
         editor.invoke_close_dialog();
         editor.set_dialog(LayerDialog::Delete);
         editor.invoke_apply_dialog();
-        assert_eq!(document.read().profile().layers.len(), 2);
+        assert_eq!(document.read().keymap().layers.len(), 2);
 
         editor.invoke_open_dialog(LayerDialog::Create);
         assert_eq!(editor.get_dialog_name(), "");
@@ -1001,12 +1001,12 @@ mod tests {
         editor.set_dialog_name("Third".into());
         editor.invoke_apply_dialog();
         assert_eq!(editor.get_dialog(), LayerDialog::None);
-        assert_eq!(document.read().profile().layers.len(), 3);
+        assert_eq!(document.read().keymap().layers.len(), 3);
         assert_eq!(editor.get_selected(), 2);
         assert!(
             document
                 .read()
-                .profile()
+                .keymap()
                 .layers
                 .iter()
                 .any(|layer| layer.id == first)
@@ -1018,7 +1018,7 @@ mod tests {
         let (_dir, document, ui, _, second) = page();
         let editor = ui.global::<LayersEditor>();
         assert!(editor.invoke_reorder(1, 0));
-        assert_eq!(document.read().profile().layers[0].id, second);
+        assert_eq!(document.read().keymap().layers[0].id, second);
         assert_eq!(editor.get_selected(), 0);
         assert_eq!(editor.get_selected_id(), second.as_str());
         assert!(!editor.invoke_reorder(0, 0));
@@ -1065,7 +1065,7 @@ mod tests {
         let (_dir, document, ui, _, second) = page();
         document
             .edit(View::Layers, |config| {
-                config.update_profile(|profile| profile.layers[1].name = String::new())
+                config.update_keymap(|keymap| keymap.layers[1].name = String::new())
             })
             .unwrap();
         assert!(
@@ -1073,10 +1073,10 @@ mod tests {
                 .invoke_update_description(" New ".into())
         );
         assert_eq!(
-            document.read().profile().layers[1].description.as_deref(),
+            document.read().keymap().layers[1].description.as_deref(),
             Some("New")
         );
-        assert_eq!(document.read().profile().layers[1].id, second);
+        assert_eq!(document.read().keymap().layers[1].id, second);
     }
 
     fn key_index(code: &str) -> i32 {
@@ -1098,10 +1098,10 @@ mod tests {
             document.read().layer_key(&second, "KeyW"),
             KeyAssignment::Action("F1".into())
         );
-        let before = document.read().profile().clone();
+        let before = document.read().keymap().clone();
         editor.invoke_swap_keys(-1, q);
         editor.invoke_swap_keys(q, 10_000);
-        assert_eq!(*document.read().profile(), before);
+        assert_eq!(*document.read().keymap(), before);
     }
 
     #[test]
@@ -1120,7 +1120,7 @@ mod tests {
         let editor = ui.global::<LayersEditor>();
         editor.invoke_reorder_extra(2, 0);
         assert_eq!(
-            document.read().profile().layer_keymaps[&second].extra_key_order,
+            document.read().keymap().layer_keymaps[&second].extra_key_order,
             ["F15", "F13", "F14"]
         );
         let rows: Vec<_> = editor
@@ -1132,7 +1132,7 @@ mod tests {
         editor.invoke_reorder_extra(-1, 0);
         editor.invoke_reorder_extra(0, 9);
         assert_eq!(
-            document.read().profile().layer_keymaps[&second].extra_key_order,
+            document.read().keymap().layer_keymaps[&second].extra_key_order,
             ["F15", "F13", "F14"]
         );
     }
@@ -1144,13 +1144,13 @@ mod tests {
         // A description the page has not shown yet must survive a rename.
         editor.set_description("stale".into());
         assert!(editor.invoke_update_name("  Renamed ".into()));
-        let layer = document.read().profile().layers[1].clone();
+        let layer = document.read().keymap().layers[1].clone();
         assert_eq!(layer.name, "Renamed");
         assert_eq!(layer.description.as_deref(), Some("About"));
         assert!(!editor.invoke_update_name("First".into()), "taken");
         assert!(!editor.invoke_update_name("  ".into()), "empty");
-        assert_eq!(document.read().profile().layers[1].name, "Renamed");
-        assert_eq!(document.read().profile().layers[0].id, first);
+        assert_eq!(document.read().keymap().layers[1].name, "Renamed");
+        assert_eq!(document.read().keymap().layers[0].id, first);
         assert_eq!(layer.id, second);
     }
 
@@ -1205,15 +1205,15 @@ mod tests {
         assert_eq!(editor.get_triggers().row_count(), 0);
         document
             .edit(View::Rules, |config| {
-                config.update_profile(|profile| {
+                config.update_keymap(|keymap| {
                     for key in ["CapsLock", "ShiftLeft+KeyA", "CapsLock"] {
                         let mut rule = tecloid_core::config::model::KeyRule::new(
-                            format!("rule-{}", profile.rules.len()),
+                            format!("rule-{}", keymap.rules.len()),
                             key,
                         );
                         rule.layer_id = second.clone();
                         rule.hold_behavior = Some(tecloid_core::config::model::HoldBehavior::Layer);
-                        profile.rules.push(rule);
+                        keymap.rules.push(rule);
                     }
                 })
             })

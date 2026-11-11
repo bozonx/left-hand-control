@@ -241,7 +241,7 @@ def main():
     report = Report()
     if args.acceptance:
         report.require(("boot", "preflight", "upload-source", "windows-full", "hardware-keyboard",
-                        "shell-profile-remap-restart", "shell-mapper-crash-held",
+                        "shell-keymap-remap-restart", "shell-mapper-crash-held",
                         "popup-bmp-focus", "popup-surrogate-focus", "popup-zwj-focus",
                         "popup-mixed-text-focus", "popup-reopen-focus"))
     summary = io.StringIO()

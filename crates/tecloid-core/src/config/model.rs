@@ -1,8 +1,8 @@
 //! Editable application model used by the shell and mapper.
 //!
-//! [`ResolvedAppConfig`] combines settings with a profile for diagnostics and
+//! [`ResolvedAppConfig`] combines settings with a keymap for diagnostics and
 //! typed mapper projection; the persisted formats (`config.json` settings and
-//! JSON profiles) are handled by [`super::settings`] and [`super::profile_file`].
+//! JSON keymaps) are handled by [`super::settings`] and [`super::keymap_file`].
 
 use super::timing;
 use serde::{Deserialize, Serialize};
@@ -28,17 +28,17 @@ pub const LEFT_HAND_HOTKEYS: [&str; 15] = [
     "KeyC", "KeyV", "KeyB",
 ];
 
-/// Prefix of ids of profiles stored in the user library.
-pub const USER_PROFILE_PREFIX: &str = "user:";
+/// Prefix of ids of keymaps stored in the user library.
+pub const USER_KEYMAP_PREFIX: &str = "user:";
 
-/// Id of the library profile `name`.
-pub fn user_profile_id(name: &str) -> String {
-    format!("{USER_PROFILE_PREFIX}{name}")
+/// Id of the library keymap `name`.
+pub fn user_keymap_id(name: &str) -> String {
+    format!("{USER_KEYMAP_PREFIX}{name}")
 }
 
-/// Library name of a profile id, or `None` for ids outside the library.
-pub fn user_profile_name(id: &str) -> Option<&str> {
-    id.strip_prefix(USER_PROFILE_PREFIX)
+/// Library name of a keymap id, or `None` for ids outside the library.
+pub fn user_keymap_name(id: &str) -> Option<&str> {
+    id.strip_prefix(USER_KEYMAP_PREFIX)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -274,7 +274,7 @@ impl EmojiPage {
 /// Portable author information, independent of the local library filename.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct ProfileMetadata {
+pub struct KeymapMetadata {
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
@@ -295,14 +295,14 @@ pub struct ProfileMetadata {
     pub version: Option<String>,
 }
 
-/// The portable keyboard configuration stored in profile JSON files.
+/// The portable keyboard configuration stored in keymap JSON files.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ProfilePreset {
+pub struct KeymapPreset {
     #[serde(rename = "$schema", skip_serializing_if = "Option::is_none")]
     pub schema: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub meta: Option<ProfileMetadata>,
+    pub meta: Option<KeymapMetadata>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     pub layers: Vec<Layer>,
@@ -314,7 +314,7 @@ pub struct ProfilePreset {
     pub emoji_pages: Vec<EmojiPage>,
 }
 
-impl ProfilePreset {
+impl KeymapPreset {
     pub fn base_tap_action(&self, key: &str) -> Option<&str> {
         self.rules
             .iter()
@@ -366,7 +366,7 @@ impl ProfilePreset {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ProfileConditionSet {
+pub struct KeymapConditionSet {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub game_mode: Option<GameModeCondition>,
     pub keyboard_layouts: Vec<String>,
@@ -410,7 +410,7 @@ impl GameModeCondition {
     }
 }
 
-impl ProfileConditionSet {
+impl KeymapConditionSet {
     /// The same conditions with list items trimmed, blank and duplicate
     /// items dropped and keyboard layout codes lowercased, so the set
     /// behaves the same before and after a save/load round trip.
@@ -448,20 +448,20 @@ fn is_true(value: &bool) -> bool {
     *value
 }
 
-/// One automatic-mode rule: when `conditions` match, `profile_id` is used.
+/// One automatic-mode rule: when `conditions` match, `keymap_id` is used.
 /// Rules are checked in order and the first match wins.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AutoRule {
     pub id: String,
     /// `None` turns the mapper off (native passthrough).
-    pub profile_id: Option<String>,
+    pub keymap_id: Option<String>,
     /// A disabled rule is kept but never matches.
     #[serde(skip_serializing_if = "is_true")]
     pub enabled: bool,
     /// Empty conditions always match.
     #[serde(flatten)]
-    pub conditions: ProfileConditionSet,
+    pub conditions: KeymapConditionSet,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -665,7 +665,7 @@ impl LocalePreference {
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum TextMode {
-    /// libei; pastes through the clipboard when the profile lacks a character.
+    /// libei; pastes through the clipboard when the keymap lacks a character.
     #[default]
     LibeiWithClipboardFallback,
     /// libei only.
@@ -783,7 +783,7 @@ impl<'de> Deserialize<'de> for PasteShortcut {
 #[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum ProfileMode {
+pub enum KeymapMode {
     #[default]
     Manual,
     Auto,
@@ -804,8 +804,8 @@ pub struct AppSettings {
     pub appearance: Appearance,
     pub high_contrast: AccessibilityChoice,
     pub reduce_motion: AccessibilityChoice,
-    /// Show an on-screen display when the active profile changes.
-    pub profile_osd: bool,
+    /// Show an on-screen display when the active keymap changes.
+    pub keymap_osd: bool,
     /// Announce copy commands emitted by Tecloid.
     pub copy_osd: bool,
     /// While a layer is held, show its keys in an overlay above all windows.
@@ -826,18 +826,18 @@ pub struct AppSettings {
     pub input_device_path: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub input_mouse_device_path: Option<String>,
-    /// Profile open for editing in this process; never persisted to config.json.
+    /// Keymap open for editing in this process; never persisted to config.json.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "currentProfileId")]
-    pub editing_profile_id: Option<String>,
-    pub profile_mode: ProfileMode,
+    #[serde(rename = "currentKeymapId")]
+    pub editing_keymap_id: Option<String>,
+    pub keymap_mode: KeymapMode,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "manualActiveProfileId")]
-    pub manual_profile_id: Option<String>,
-    pub profile_order: Vec<String>,
+    #[serde(rename = "manualActiveKeymapId")]
+    pub manual_keymap_id: Option<String>,
+    pub keymap_order: Vec<String>,
     pub auto_rules: Vec<AutoRule>,
-    /// Profile used in automatic mode when no rule matches; `None` is off.
-    pub auto_default_profile_id: Option<String>,
+    /// Keymap used in automatic mode when no rule matches; `None` is off.
+    pub auto_default_keymap_id: Option<String>,
     pub commands_enabled: bool,
     pub game_mode: GameModeSettings,
     pub linux_wayland_text_mode: TextMode,
@@ -859,7 +859,7 @@ impl Default for AppSettings {
             appearance: Appearance::System,
             high_contrast: AccessibilityChoice::System,
             reduce_motion: AccessibilityChoice::System,
-            profile_osd: false,
+            keymap_osd: false,
             copy_osd: false,
             layer_hint: false,
             locale: LocalePreference::Auto,
@@ -873,12 +873,12 @@ impl Default for AppSettings {
             macro_timeout_ms: timing::DEFAULT_MACRO_TIMEOUT_MS,
             input_device_path: Some(String::new()),
             input_mouse_device_path: None,
-            editing_profile_id: None,
-            profile_mode: ProfileMode::Manual,
-            manual_profile_id: None,
-            profile_order: Vec::new(),
+            editing_keymap_id: None,
+            keymap_mode: KeymapMode::Manual,
+            manual_keymap_id: None,
+            keymap_order: Vec::new(),
             auto_rules: Vec::new(),
-            auto_default_profile_id: None,
+            auto_default_keymap_id: None,
             commands_enabled: false,
             game_mode: GameModeSettings {
                 use_gamemoded: cfg!(target_os = "linux"),
@@ -903,7 +903,7 @@ impl Default for AppSettings {
     }
 }
 
-/// Settings plus a profile, used for editor diagnostics and mapper projection.
+/// Settings plus a keymap, used for editor diagnostics and mapper projection.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResolvedAppConfig {
@@ -918,12 +918,12 @@ pub struct ResolvedAppConfig {
 }
 
 impl ResolvedAppConfig {
-    /// Combine settings with a profile, assigning its active identity and
+    /// Combine settings with a keymap, assigning its active identity and
     /// ensuring every layer has a keymap.
     pub fn from_parts(
         settings: AppSettings,
-        preset: ProfilePreset,
-        profile_id: Option<&str>,
+        preset: KeymapPreset,
+        keymap_id: Option<&str>,
     ) -> Self {
         let mut layer_keymaps = preset.layer_keymaps;
         for layer in &preset.layers {
@@ -938,7 +938,7 @@ impl ResolvedAppConfig {
             quick_action_pages: preset.quick_action_pages,
             emoji_pages: preset.emoji_pages,
             settings: AppSettings {
-                editing_profile_id: profile_id.map(str::to_owned),
+                editing_keymap_id: keymap_id.map(str::to_owned),
                 ..settings
             },
         }
@@ -955,7 +955,7 @@ mod tests {
         rule.condition_keyboard_layouts = Some(vec!["us".into()]);
         rule.condition_window_patterns = Some(vec!["konsole".into()]);
         rule.condition_excluded_window_patterns = Some(vec!["title:private".into()]);
-        let profile = ProfilePreset {
+        let keymap = KeymapPreset {
             rules: vec![rule],
             commands: vec![Command {
                 id: "c1".into(),
@@ -964,17 +964,17 @@ mod tests {
                 powershell_script: "Write-Output test".into(),
                 working_directory: None,
             }],
-            ..ProfilePreset::default()
+            ..KeymapPreset::default()
         };
         let settings = AppSettings {
-            manual_profile_id: Some("user:Manual".into()),
+            manual_keymap_id: Some("user:Manual".into()),
             trigger_chord_timeout_ms: 80,
             ..AppSettings::default()
         };
-        let config = ResolvedAppConfig::from_parts(settings, profile, Some("user:Editing"));
+        let config = ResolvedAppConfig::from_parts(settings, keymap, Some("user:Editing"));
         let value = serde_json::to_value(&config).unwrap();
-        assert_eq!(value["settings"]["currentProfileId"], "user:Editing");
-        assert_eq!(value["settings"]["manualActiveProfileId"], "user:Manual");
+        assert_eq!(value["settings"]["currentKeymapId"], "user:Editing");
+        assert_eq!(value["settings"]["manualActiveKeymapId"], "user:Manual");
         assert_eq!(value["settings"]["comboTimeoutMs"], 80);
         assert_eq!(value["rules"][0]["conditionKeyboardLayouts"][0], "us");
         assert_eq!(value["rules"][0]["conditionWindowPatterns"][0], "konsole");
@@ -1013,10 +1013,10 @@ mod tests {
         };
         let mut rule = KeyRule::new("r1".into(), "KeyA");
         rule.tap_action = Some("cmd:used".into());
-        let preset = ProfilePreset {
+        let preset = KeymapPreset {
             rules: vec![rule],
             commands: vec![command("used"), command("orphan")],
-            ..ProfilePreset::default()
+            ..KeymapPreset::default()
         };
         assert_eq!(preset.used_command_count(), 1);
         let mut preset = preset;
@@ -1025,10 +1025,10 @@ mod tests {
     }
     #[test]
     fn typed_mapper_projection_matches_the_existing_serialized_model() {
-        for profile in super::super::bundled::BUNDLED {
+        for keymap in super::super::bundled::BUNDLED {
             let config = ResolvedAppConfig::from_parts(
                 AppSettings::default(),
-                profile.profile().unwrap(),
+                keymap.keymap().unwrap(),
                 Some("user:Example"),
             );
             let serialized: crate::mapper::config::MapperConfig =

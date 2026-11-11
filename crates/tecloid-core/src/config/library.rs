@@ -1,26 +1,26 @@
-//! Profile library: creating, copying, renaming and deleting user profiles.
+//! Keymap library: creating, copying, renaming and deleting user keymaps.
 
 use crate::{
     config::{
         auto_switch,
-        bundled::BundledProfile,
-        model::{ProfilePreset, user_profile_id},
+        bundled::BundledKeymap,
+        keymap_file,
+        model::{KeymapPreset, user_keymap_id},
         names::NameKind,
-        profile_file,
     },
     config_document::{ConfigDocument, ConfigError},
 };
 
 /// One library file as last read: its raw bytes (kept even when it does
 /// not parse, so a broken file can still be deleted safely)
-/// and the parsed profile.
+/// and the parsed keymap.
 #[derive(Debug)]
 pub struct LibraryEntry {
     pub bytes: Option<Vec<u8>>,
-    pub profile: Result<ProfilePreset, ConfigError>,
+    pub keymap: Result<KeymapPreset, ConfigError>,
 }
 
-/// Read one metadata snapshot per listed profile, preserving failures per file.
+/// Read one metadata snapshot per listed keymap, preserving failures per file.
 /// Callers may load this snapshot on a worker without sharing a document.
 pub fn load_library_entries(
     paths: &crate::storage::StoragePaths,
@@ -28,31 +28,31 @@ pub fn load_library_entries(
 ) -> Vec<LibraryEntry> {
     names
         .iter()
-        .map(|name| match paths.load_user_profile_bytes(name) {
+        .map(|name| match paths.load_user_keymap_bytes(name) {
             Err(error) => LibraryEntry {
                 bytes: None,
-                profile: Err(ConfigError::Io(error)),
+                keymap: Err(ConfigError::Io(error)),
             },
             Ok(bytes) => {
-                let profile = std::str::from_utf8(&bytes)
-                    .map_err(|error| ConfigError::Parse(format!("profile UTF-8: {error}")))
-                    .and_then(crate::config_document::parse_profile);
+                let keymap = std::str::from_utf8(&bytes)
+                    .map_err(|error| ConfigError::Parse(format!("keymap UTF-8: {error}")))
+                    .and_then(crate::config_document::parse_keymap);
                 LibraryEntry {
                     bytes: Some(bytes),
-                    profile,
+                    keymap,
                 }
             }
         })
         .collect()
 }
 
-/// What a new library profile starts from.
+/// What a new library keymap starts from.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LibrarySource<'a> {
     Empty,
-    /// A bundled profile.
-    Bundled(&'static BundledProfile),
-    /// An existing library profile, by name.
+    /// A bundled keymap.
+    Bundled(&'static BundledKeymap),
+    /// An existing library keymap, by name.
     Copy(&'a str),
 }
 
@@ -65,10 +65,10 @@ pub enum LibrarySaveTarget {
 }
 
 fn normalized(text: &str) -> Option<String> {
-    profile_file::parse(text)
+    keymap_file::parse(text)
         .ok()
         .flatten()
-        .map(|profile| profile_file::serialize(&profile))
+        .map(|keymap| keymap_file::serialize(&keymap))
 }
 
 impl ConfigDocument {
@@ -76,13 +76,13 @@ impl ConfigDocument {
     pub fn library_save_target(&self, baseline: Option<(&str, &str)>) -> LibrarySaveTarget {
         let Some(name) = self
             .settings()
-            .editing_profile_id
+            .editing_keymap_id
             .as_deref()
-            .and_then(super::model::user_profile_name)
+            .and_then(super::model::user_keymap_name)
         else {
             return LibrarySaveTarget::NeedsName;
         };
-        if self.can_save_library_profile(name, baseline) {
+        if self.can_save_library_keymap(name, baseline) {
             LibrarySaveTarget::Existing(name.to_owned())
         } else {
             LibrarySaveTarget::Conflict
@@ -91,8 +91,8 @@ impl ConfigDocument {
 
     /// Whether saving the working copy as `name` loses nothing on disk: the
     /// file is what the working copy was opened from, or already holds it.
-    fn can_save_library_profile(&self, name: &str, baseline: Option<(&str, &str)>) -> bool {
-        let Ok(disk) = self.paths().load_user_profile(name) else {
+    fn can_save_library_keymap(&self, name: &str, baseline: Option<(&str, &str)>) -> bool {
+        let Ok(disk) = self.paths().load_user_keymap(name) else {
             return false;
         };
         self.library_snapshot_matches(name, baseline, &disk)
@@ -104,25 +104,25 @@ impl ConfigDocument {
         baseline: Option<(&str, &str)>,
         disk: &str,
     ) -> bool {
-        let Some(disk_profile) = normalized(disk) else {
+        let Some(disk_keymap) = normalized(disk) else {
             return false;
         };
         let opened = baseline
             .filter(|(baseline, _)| *baseline == name)
             .map(|(_, text)| text);
         if opened
-            .is_some_and(|text| text == disk || normalized(text).as_ref() == Some(&disk_profile))
+            .is_some_and(|text| text == disk || normalized(text).as_ref() == Some(&disk_keymap))
         {
             return true;
         }
-        let mut current = self.profile().clone();
+        let mut current = self.keymap().clone();
         current.remove_unused_commands();
-        normalized(&profile_file::serialize(&current)).as_ref() == Some(&disk_profile)
+        normalized(&keymap_file::serialize(&current)).as_ref() == Some(&disk_keymap)
     }
 
     /// Normal save rechecks the opened snapshot inside the operation and
     /// checks its bytes again after staging the new file for publication.
-    pub fn save_library_profile(
+    pub fn save_library_keymap(
         &mut self,
         name: &str,
         baseline: Option<(&str, &str)>,
@@ -130,17 +130,17 @@ impl ConfigDocument {
         self.require_external_operation()?;
         let disk = self
             .paths()
-            .load_user_profile(name)
+            .load_user_keymap(name)
             .map_err(ConfigError::Io)?;
         if !self.library_snapshot_matches(name, baseline, &disk) {
             return Err(ConfigError::EditConflict);
         }
         let mut draft = self.clone();
-        draft.update_profile(ProfilePreset::remove_unused_commands)?;
-        let text = profile_file::serialize(draft.profile());
+        draft.update_keymap(KeymapPreset::remove_unused_commands)?;
+        let text = keymap_file::serialize(draft.keymap());
         if !draft
             .paths()
-            .replace_user_profile(name, &text, disk.as_bytes())
+            .replace_user_keymap(name, &text, disk.as_bytes())
             .map_err(ConfigError::Io)?
         {
             return Err(ConfigError::EditConflict);
@@ -150,14 +150,14 @@ impl ConfigDocument {
     }
 
     /// Save the working copy over an existing library file, returning its contents.
-    pub fn overwrite_library_profile(&mut self, name: &str) -> Result<String, ConfigError> {
+    pub fn overwrite_library_keymap(&mut self, name: &str) -> Result<String, ConfigError> {
         self.require_external_operation()?;
         let mut draft = self.clone();
-        draft.update_profile(ProfilePreset::remove_unused_commands)?;
-        let text = profile_file::serialize(draft.profile());
+        draft.update_keymap(KeymapPreset::remove_unused_commands)?;
+        let text = keymap_file::serialize(draft.keymap());
         draft
             .paths()
-            .save_user_profile(name, &text, true)
+            .save_user_keymap(name, &text, true)
             .map_err(ConfigError::Io)?;
         *self = draft;
         Ok(text)
@@ -165,37 +165,37 @@ impl ConfigDocument {
 
     /// `base`, or `base (2)`, `base (3)`, … — the first name not taken in the library.
     pub fn unique_library_name(&self, base: &str) -> Result<String, ConfigError> {
-        let names = self.paths().list_user_profiles().map_err(ConfigError::Io)?;
-        super::names::unique_profile_name(base, &names)
-            .map_err(|issue| ConfigError::Name(NameKind::Profile, issue))
+        let names = self.paths().list_user_keymaps().map_err(ConfigError::Io)?;
+        super::names::unique_keymap_name(base, &names)
+            .map_err(|issue| ConfigError::Name(NameKind::Keymap, issue))
     }
 
     /// Creates `name` in the library; fails if it is already taken.
-    pub fn create_library_profile(
+    pub fn create_library_keymap(
         &self,
         name: &str,
         description: &str,
         source: LibrarySource,
     ) -> Result<String, ConfigError> {
         self.require_external_operation()?;
-        let name = &self.checked_profile_name(name, None)?;
+        let name = &self.checked_keymap_name(name, None)?;
         let description = description.trim();
         let mut preset = match source {
-            LibrarySource::Empty => ProfilePreset::default(),
-            LibrarySource::Bundled(bundled) => bundled.profile().map_err(ConfigError::Parse)?,
+            LibrarySource::Empty => KeymapPreset::default(),
+            LibrarySource::Bundled(bundled) => bundled.keymap().map_err(ConfigError::Parse)?,
             LibrarySource::Copy(from) => {
                 let text = self
                     .paths()
-                    .load_user_profile(from)
+                    .load_user_keymap(from)
                     .map_err(ConfigError::Io)?;
                 if description.is_empty() {
                     // Byte-for-byte copy keeps whatever the source file holds.
                     return self
                         .paths()
-                        .save_user_profile(name, &text, false)
+                        .save_user_keymap(name, &text, false)
                         .map_err(ConfigError::Io);
                 }
-                profile_file::parse(&text)
+                keymap_file::parse(&text)
                     .map_err(ConfigError::Parse)?
                     .unwrap_or_default()
             }
@@ -204,13 +204,13 @@ impl ConfigDocument {
             preset.description = Some(description.to_owned());
         }
         self.paths()
-            .save_user_profile(name, &profile_file::serialize(&preset), false)
+            .save_user_keymap(name, &keymap_file::serialize(&preset), false)
             .map_err(ConfigError::Io)
     }
 
     /// Create a library entry and optionally select it; failed activation
     /// removes the new entry before returning the settings error.
-    pub fn create_and_select_library_profile(
+    pub fn create_and_select_library_keymap(
         &mut self,
         name: &str,
         description: &str,
@@ -218,83 +218,83 @@ impl ConfigDocument {
         select: bool,
     ) -> Result<String, ConfigError> {
         self.require_external_operation()?;
-        let created = self.create_library_profile(name, description, source)?;
+        let created = self.create_library_keymap(name, description, source)?;
         if select
             && let Err(error) = self.update_settings(|settings| {
-                settings.manual_profile_id = Some(user_profile_id(&created));
+                settings.manual_keymap_id = Some(user_keymap_id(&created));
             })
         {
             self.paths()
-                .delete_user_profile(&created)
+                .delete_user_keymap(&created)
                 .map_err(ConfigError::Io)?;
             return Err(error);
         }
         Ok(created)
     }
 
-    /// Validate a profile name against the current directory before writing.
-    pub fn checked_profile_name(
+    /// Validate a keymap name against the current directory before writing.
+    pub fn checked_keymap_name(
         &self,
         name: &str,
         except: Option<&str>,
     ) -> Result<String, ConfigError> {
-        let names = self.paths().list_user_profiles().map_err(ConfigError::Io)?;
-        super::names::profile_name(name, except, names.iter().map(String::as_str))
-            .map_err(|issue| ConfigError::Name(NameKind::Profile, issue))
+        let names = self.paths().list_user_keymaps().map_err(ConfigError::Io)?;
+        super::names::keymap_name(name, except, names.iter().map(String::as_str))
+            .map_err(|issue| ConfigError::Name(NameKind::Keymap, issue))
     }
 
     /// Save an edited working copy under a new name, dropping unreferenced commands.
-    pub fn save_working_profile_as(&mut self, name: &str) -> Result<(String, String), ConfigError> {
+    pub fn save_working_keymap_as(&mut self, name: &str) -> Result<(String, String), ConfigError> {
         self.require_external_operation()?;
         let mut draft = self.clone();
-        draft.update_profile(ProfilePreset::remove_unused_commands)?;
-        let text = profile_file::serialize(draft.profile());
-        let saved = draft.save_current_profile_as(name)?;
+        draft.update_keymap(KeymapPreset::remove_unused_commands)?;
+        let text = keymap_file::serialize(draft.keymap());
+        let saved = draft.save_current_keymap_as(name)?;
         *self = draft;
         Ok((saved, text))
     }
 
-    pub fn save_current_profile_as(&mut self, name: &str) -> Result<String, ConfigError> {
+    pub fn save_current_keymap_as(&mut self, name: &str) -> Result<String, ConfigError> {
         self.require_external_operation()?;
-        let name = &self.checked_profile_name(name, None)?;
+        let name = &self.checked_keymap_name(name, None)?;
         let saved = self
             .paths()
-            .save_user_profile(name, &profile_file::serialize(self.profile()), false)
+            .save_user_keymap(name, &keymap_file::serialize(self.keymap()), false)
             .map_err(ConfigError::Io)?;
         let result = self.update_settings(|settings| {
-            let old = settings.editing_profile_id.clone();
-            let new = user_profile_id(&saved);
-            settings.editing_profile_id = Some(new);
-            if settings.manual_profile_id == old {
-                settings.manual_profile_id = settings.editing_profile_id.clone();
+            let old = settings.editing_keymap_id.clone();
+            let new = user_keymap_id(&saved);
+            settings.editing_keymap_id = Some(new);
+            if settings.manual_keymap_id == old {
+                settings.manual_keymap_id = settings.editing_keymap_id.clone();
             }
         });
         if let Err(error) = result {
             self.paths()
-                .delete_user_profile(&saved)
+                .delete_user_keymap(&saved)
                 .map_err(ConfigError::Io)?;
             return Err(error);
         }
         Ok(saved)
     }
 
-    pub fn ordered_profile_ids(&self) -> Result<Vec<String>, ConfigError> {
-        Ok(auto_switch::order_profile_ids(
-            &self.profile_ids()?,
-            &self.settings().profile_order,
+    pub fn ordered_keymap_ids(&self) -> Result<Vec<String>, ConfigError> {
+        Ok(auto_switch::order_keymap_ids(
+            &self.keymap_ids()?,
+            &self.settings().keymap_order,
         ))
     }
 
-    pub fn move_library_profile(&mut self, id: &str, delta: i32) -> Result<(), ConfigError> {
-        let mut ids = self.ordered_profile_ids()?;
+    pub fn move_library_keymap(&mut self, id: &str, delta: i32) -> Result<(), ConfigError> {
+        let mut ids = self.ordered_keymap_ids()?;
         let index = ids
             .iter()
             .position(|item| item == id)
-            .ok_or_else(|| ConfigError::Invalid("Unknown profile".into()))?;
+            .ok_or_else(|| ConfigError::Invalid("Unknown keymap".into()))?;
         let next = (index as i64 + i64::from(delta)).clamp(0, ids.len() as i64 - 1) as usize;
         let moved = ids.remove(index);
         ids.insert(next, moved);
-        self.update_settings(|settings| settings.profile_order = ids)
+        self.update_settings(|settings| settings.keymap_order = ids)
     }
 
     /// Rename `name` and set its description. `None` keeps the file
@@ -309,10 +309,10 @@ impl ConfigDocument {
         expected: &str,
     ) -> Result<String, ConfigError> {
         self.require_external_operation()?;
-        let new_name = &self.checked_profile_name(new_name, Some(name))?;
+        let new_name = &self.checked_keymap_name(new_name, Some(name))?;
         if self
             .paths()
-            .load_user_profile(name)
+            .load_user_keymap(name)
             .map_err(ConfigError::Io)?
             != expected
         {
@@ -321,28 +321,28 @@ impl ConfigDocument {
         let (text, new_description) = match description {
             None => (expected.to_owned(), None),
             Some(description) => {
-                let mut preset = profile_file::parse(expected)
+                let mut preset = keymap_file::parse(expected)
                     .map_err(ConfigError::Parse)?
                     .unwrap_or_default();
                 preset.description =
                     (!description.trim().is_empty()).then(|| description.trim().to_owned());
-                (profile_file::serialize(&preset), Some(preset.description))
+                (keymap_file::serialize(&preset), Some(preset.description))
             }
         };
         let saved = self
             .paths()
-            .rename_user_profile(name, new_name, &text, false)
+            .rename_user_keymap(name, new_name, &text, false)
             .map_err(ConfigError::Io)?;
-        let old = user_profile_id(name);
-        let new = user_profile_id(&saved);
+        let old = user_keymap_id(name);
+        let new = user_keymap_id(&saved);
         let result = self.update_settings(|settings| {
-            if settings.editing_profile_id.as_ref() == Some(&old) {
-                settings.editing_profile_id = Some(new.clone());
+            if settings.editing_keymap_id.as_ref() == Some(&old) {
+                settings.editing_keymap_id = Some(new.clone());
             }
-            if settings.manual_profile_id.as_ref() == Some(&old) {
-                settings.manual_profile_id = Some(new.clone());
+            if settings.manual_keymap_id.as_ref() == Some(&old) {
+                settings.manual_keymap_id = Some(new.clone());
             }
-            for id in &mut settings.profile_order {
+            for id in &mut settings.keymap_order {
                 if id == &old {
                     *id = new.clone();
                 }
@@ -350,8 +350,8 @@ impl ConfigDocument {
             for target in settings
                 .auto_rules
                 .iter_mut()
-                .map(|rule| &mut rule.profile_id)
-                .chain([&mut settings.auto_default_profile_id])
+                .map(|rule| &mut rule.keymap_id)
+                .chain([&mut settings.auto_default_keymap_id])
             {
                 if target.as_ref() == Some(&old) {
                     *target = Some(new.clone());
@@ -360,19 +360,19 @@ impl ConfigDocument {
         });
         if let Err(error) = result {
             self.paths()
-                .rename_user_profile(&saved, name, expected, false)
+                .rename_user_keymap(&saved, name, expected, false)
                 .map_err(ConfigError::Io)?;
             return Err(error);
         }
         if let Some(description) = new_description
-            && self.settings().editing_profile_id.as_ref() == Some(&new)
+            && self.settings().editing_keymap_id.as_ref() == Some(&new)
         {
-            self.update_profile(|profile| profile.description = description)?;
+            self.update_keymap(|keymap| keymap.description = description)?;
         }
         Ok(saved)
     }
 
-    pub fn remove_library_profile(
+    pub fn remove_library_keymap(
         &mut self,
         name: &str,
         expected: impl AsRef<[u8]>,
@@ -381,86 +381,86 @@ impl ConfigDocument {
         self.require_external_operation()?;
         if self
             .paths()
-            .load_user_profile_bytes(name)
+            .load_user_keymap_bytes(name)
             .map_err(ConfigError::Io)?
             != expected
         {
             return Err(ConfigError::EditConflict);
         }
         self.paths()
-            .delete_user_profile(name)
+            .delete_user_keymap(name)
             .map_err(ConfigError::Io)?;
-        let id = user_profile_id(name);
-        let was_editing = self.settings().editing_profile_id.as_ref() == Some(&id);
-        // Deleting the single-mode profile hands activation to the first
+        let id = user_keymap_id(name);
+        let was_editing = self.settings().editing_keymap_id.as_ref() == Some(&id);
+        // Deleting the single-mode keymap hands activation to the first
         // remaining one; auto mode re-chooses when the mapper is updated.
         // The confirmation names the automatic rules deleted with it.
-        let result = self.ordered_profile_ids().and_then(|remaining| {
+        let result = self.ordered_keymap_ids().and_then(|remaining| {
             self.update_settings(|settings| {
-                settings.profile_order.retain(|item| item != &id);
+                settings.keymap_order.retain(|item| item != &id);
                 settings
                     .auto_rules
-                    .retain(|rule| rule.profile_id.as_ref() != Some(&id));
-                if settings.auto_default_profile_id.as_ref() == Some(&id) {
-                    settings.auto_default_profile_id = None;
+                    .retain(|rule| rule.keymap_id.as_ref() != Some(&id));
+                if settings.auto_default_keymap_id.as_ref() == Some(&id) {
+                    settings.auto_default_keymap_id = None;
                 }
-                if settings.editing_profile_id.as_ref() == Some(&id) {
-                    settings.editing_profile_id = None;
+                if settings.editing_keymap_id.as_ref() == Some(&id) {
+                    settings.editing_keymap_id = None;
                 }
-                if settings.manual_profile_id.as_ref() == Some(&id) {
-                    settings.manual_profile_id = remaining.first().cloned();
+                if settings.manual_keymap_id.as_ref() == Some(&id) {
+                    settings.manual_keymap_id = remaining.first().cloned();
                 }
             })
         });
         if result.is_err() {
             self.paths()
-                .save_user_profile_bytes(name, expected, false)
+                .save_user_keymap_bytes(name, expected, false)
                 .map_err(ConfigError::Io)?;
         }
         if result.is_ok() && was_editing {
-            // Closing a deleted profile must not leave its contents as an unnamed draft.
-            self.update_profile(|profile| *profile = ProfilePreset::initial())?;
+            // Closing a deleted keymap must not leave its contents as an unnamed draft.
+            self.update_keymap(|keymap| *keymap = KeymapPreset::initial())?;
         }
         result
     }
 
     /// Discard the working copy. If its library file is no longer usable,
-    /// start a clean, unnamed profile rather than keeping an unusable identity.
-    pub fn discard_working_profile(&mut self) -> Result<(), ConfigError> {
+    /// start a clean, unnamed keymap rather than keeping an unusable identity.
+    pub fn discard_working_keymap(&mut self) -> Result<(), ConfigError> {
         self.transaction(|draft| {
             let saved = draft
                 .settings()
-                .editing_profile_id
+                .editing_keymap_id
                 .as_deref()
-                .map(|id| draft.load_profile(id))
+                .map(|id| draft.load_keymap(id))
                 .transpose()
-                .and_then(|profile| {
-                    if let Some(profile) = &profile {
-                        super::ids::validate_profile(profile).map_err(ConfigError::Invalid)?;
-                        super::timing::validate_profile(profile).map_err(ConfigError::Invalid)?;
+                .and_then(|keymap| {
+                    if let Some(keymap) = &keymap {
+                        super::ids::validate_keymap(keymap).map_err(ConfigError::Invalid)?;
+                        super::timing::validate_keymap(keymap).map_err(ConfigError::Invalid)?;
                     }
-                    Ok(profile)
+                    Ok(keymap)
                 });
-            let profile = match saved {
-                Ok(Some(profile)) => profile,
-                Ok(None) => ProfilePreset::initial(),
+            let keymap = match saved {
+                Ok(Some(keymap)) => keymap,
+                Ok(None) => KeymapPreset::initial(),
                 Err(error) => {
                     log::warn!("discarding working copy without a usable library file: {error}");
-                    draft.update_settings(|settings| settings.editing_profile_id = None)?;
-                    ProfilePreset::initial()
+                    draft.update_settings(|settings| settings.editing_keymap_id = None)?;
+                    KeymapPreset::initial()
                 }
             };
-            draft.update_profile(|current| *current = profile)
+            draft.update_keymap(|current| *current = keymap)
         })
     }
 
     pub fn load_library_for_editing(&mut self, name: &str) -> Result<(), ConfigError> {
-        let preset: ProfilePreset = self.load_profile(&user_profile_id(name))?;
+        let preset: KeymapPreset = self.load_keymap(&user_keymap_id(name))?;
         // Validate before saving the identity, so a failed open changes neither part.
-        super::ids::validate_profile(&preset).map_err(ConfigError::Invalid)?;
-        super::timing::validate_profile(&preset).map_err(ConfigError::Invalid)?;
-        self.update_settings(|settings| settings.editing_profile_id = Some(user_profile_id(name)))?;
-        self.update_profile(|profile| *profile = preset)
+        super::ids::validate_keymap(&preset).map_err(ConfigError::Invalid)?;
+        super::timing::validate_keymap(&preset).map_err(ConfigError::Invalid)?;
+        self.update_settings(|settings| settings.editing_keymap_id = Some(user_keymap_id(name)))?;
+        self.update_keymap(|keymap| *keymap = preset)
     }
 }
 
@@ -474,19 +474,19 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
-        doc.save_current_profile_as("Working").unwrap();
-        let before = doc.profile().clone();
+        doc.save_current_keymap_as("Working").unwrap();
+        let before = doc.keymap().clone();
         let settings = doc.settings().clone();
         for text in ["", " \n\t"] {
-            paths.save_user_profile("Empty", text, true).unwrap();
+            paths.save_user_keymap("Empty", text, true).unwrap();
             let entries = load_library_entries(&paths, &["Empty".into()]);
-            assert!(matches!(&entries[0].profile, Err(ConfigError::Parse(_))));
+            assert!(matches!(&entries[0].keymap, Err(ConfigError::Parse(_))));
             assert!(matches!(
-                doc.load_profile("user:Empty"),
+                doc.load_keymap("user:Empty"),
                 Err(ConfigError::Parse(_))
             ));
             assert!(doc.load_library_for_editing("Empty").is_err());
-            assert_eq!(doc.profile(), &before);
+            assert_eq!(doc.keymap(), &before);
             assert_eq!(doc.settings(), &settings);
         }
     }
@@ -496,26 +496,26 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
-        doc.save_current_profile_as("Working").unwrap();
+        doc.save_current_keymap_as("Working").unwrap();
         let bytes = [0xff, 0xfe, 0x00];
         paths
-            .save_user_profile_bytes("Broken", &bytes, false)
+            .save_user_keymap_bytes("Broken", &bytes, false)
             .unwrap();
         let entries = load_library_entries(&paths, &["Broken".into()]);
         assert_eq!(entries[0].bytes.as_deref(), Some(bytes.as_slice()));
-        assert!(matches!(&entries[0].profile, Err(ConfigError::Parse(_))));
+        assert!(matches!(&entries[0].keymap, Err(ConfigError::Parse(_))));
         assert_eq!(
-            doc.remove_library_profile("Broken", b"stale"),
+            doc.remove_library_keymap("Broken", b"stale"),
             Err(ConfigError::EditConflict)
         );
 
         std::fs::remove_file(paths.config_path()).unwrap();
         std::fs::create_dir(paths.config_path()).unwrap();
-        assert!(doc.remove_library_profile("Broken", bytes).is_err());
-        assert_eq!(paths.load_user_profile_bytes("Broken").unwrap(), bytes);
+        assert!(doc.remove_library_keymap("Broken", bytes).is_err());
+        assert_eq!(paths.load_user_keymap_bytes("Broken").unwrap(), bytes);
         std::fs::remove_dir(paths.config_path()).unwrap();
-        doc.remove_library_profile("Broken", bytes).unwrap();
-        assert!(!paths.profile_path("Broken").unwrap().exists());
+        doc.remove_library_keymap("Broken", bytes).unwrap();
+        assert!(!paths.keymap_path("Broken").unwrap().exists());
     }
 
     #[test]
@@ -523,31 +523,31 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
-        doc.save_current_profile_as("Saved").unwrap();
-        let baseline = paths.load_user_profile("Saved").unwrap();
-        doc.update_profile(|profile| profile.description = Some("mine".into()))
+        doc.save_current_keymap_as("Saved").unwrap();
+        let baseline = paths.load_user_keymap("Saved").unwrap();
+        doc.update_keymap(|keymap| keymap.description = Some("mine".into()))
             .unwrap();
-        let before = doc.profile().clone();
+        let before = doc.keymap().clone();
         assert_eq!(
             doc.library_save_target(Some(("Saved", &baseline))),
             LibrarySaveTarget::Existing("Saved".into())
         );
         let theirs = r#"{"version":1,"meta":{"description":"external"}}"#;
-        paths.save_user_profile("Saved", theirs, true).unwrap();
+        paths.save_user_keymap("Saved", theirs, true).unwrap();
         assert_eq!(
-            doc.save_library_profile("Saved", Some(("Saved", &baseline))),
+            doc.save_library_keymap("Saved", Some(("Saved", &baseline))),
             Err(ConfigError::EditConflict)
         );
-        assert_eq!(paths.load_user_profile("Saved").unwrap(), theirs);
-        assert_eq!(doc.profile(), &before);
+        assert_eq!(paths.load_user_keymap("Saved").unwrap(), theirs);
+        assert_eq!(doc.keymap(), &before);
 
         paths
-            .save_user_profile("Saved", &format!("\n{baseline}\n"), true)
+            .save_user_keymap("Saved", &format!("\n{baseline}\n"), true)
             .unwrap();
-        doc.save_library_profile("Saved", Some(("Saved", &baseline)))
+        doc.save_library_keymap("Saved", Some(("Saved", &baseline)))
             .unwrap();
         assert_eq!(
-            doc.load_profile("user:Saved")
+            doc.load_keymap("user:Saved")
                 .unwrap()
                 .description
                 .as_deref(),
@@ -556,30 +556,30 @@ mod tests {
     }
 
     #[test]
-    fn discard_handles_unnamed_missing_and_broken_library_profiles() {
+    fn discard_handles_unnamed_missing_and_broken_library_keymaps() {
         for contents in [None, Some("broken")] {
             let dir = tempfile::tempdir().unwrap();
             let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
             let mut doc = ConfigDocument::load(paths.clone()).unwrap();
-            doc.update_profile(|profile| profile.description = Some("unsaved".into()))
+            doc.update_keymap(|keymap| keymap.description = Some("unsaved".into()))
                 .unwrap();
-            doc.discard_working_profile().unwrap();
-            assert_eq!(doc.profile(), &ProfilePreset::initial());
-            doc.save_current_profile_as("Saved").unwrap();
-            doc.update_profile(|profile| profile.description = Some("unsaved".into()))
+            doc.discard_working_keymap().unwrap();
+            assert_eq!(doc.keymap(), &KeymapPreset::initial());
+            doc.save_current_keymap_as("Saved").unwrap();
+            doc.update_keymap(|keymap| keymap.description = Some("unsaved".into()))
                 .unwrap();
             match contents {
-                None => std::fs::remove_file(paths.profile_path("Saved").unwrap()).unwrap(),
-                Some(text) => std::fs::write(paths.profile_path("Saved").unwrap(), text).unwrap(),
+                None => std::fs::remove_file(paths.keymap_path("Saved").unwrap()).unwrap(),
+                Some(text) => std::fs::write(paths.keymap_path("Saved").unwrap(), text).unwrap(),
             }
-            doc.discard_working_profile().unwrap();
-            assert_eq!(doc.profile(), &ProfilePreset::initial());
-            assert!(doc.settings().editing_profile_id.is_none());
+            doc.discard_working_keymap().unwrap();
+            assert_eq!(doc.keymap(), &KeymapPreset::initial());
+            assert!(doc.settings().editing_keymap_id.is_none());
             assert!(
                 ConfigDocument::load(paths)
                     .unwrap()
                     .settings()
-                    .editing_profile_id
+                    .editing_keymap_id
                     .is_none()
             );
         }
@@ -590,16 +590,16 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
-        doc.save_current_profile_as("Saved").unwrap();
-        doc.update_profile(|profile| profile.description = Some("unsaved".into()))
+        doc.save_current_keymap_as("Saved").unwrap();
+        doc.update_keymap(|keymap| keymap.description = Some("unsaved".into()))
             .unwrap();
-        std::fs::remove_file(paths.profile_path("Saved").unwrap()).unwrap();
+        std::fs::remove_file(paths.keymap_path("Saved").unwrap()).unwrap();
         std::fs::remove_file(paths.config_path()).unwrap();
         std::fs::create_dir(paths.config_path()).unwrap();
-        let before = doc.profile().clone();
+        let before = doc.keymap().clone();
         let settings = doc.settings().clone();
-        assert!(doc.discard_working_profile().is_err());
-        assert_eq!(doc.profile(), &before);
+        assert!(doc.discard_working_keymap().is_err());
+        assert_eq!(doc.keymap(), &before);
         assert_eq!(doc.settings(), &settings);
     }
 
@@ -609,28 +609,28 @@ mod tests {
         let paths =
             crate::storage::StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         paths
-            .save_user_profile(
+            .save_user_keymap(
                 "Valid",
-                &profile_file::serialize(&ProfilePreset::initial()),
+                &keymap_file::serialize(&KeymapPreset::initial()),
                 false,
             )
             .unwrap();
-        std::fs::write(paths.profile_path("Broken").unwrap(), "not json").unwrap();
+        std::fs::write(paths.keymap_path("Broken").unwrap(), "not json").unwrap();
         let names = vec!["Valid".into(), "Broken".into(), "Missing".into()];
         let loaded = load_library_entries(&paths, &names);
-        assert!(loaded[0].profile.is_ok());
-        assert!(matches!(&loaded[1].profile, Err(ConfigError::Parse(_))));
+        assert!(loaded[0].keymap.is_ok());
+        assert!(matches!(&loaded[1].keymap, Err(ConfigError::Parse(_))));
         assert_eq!(loaded[1].bytes.as_deref(), Some(b"not json".as_slice()));
-        assert!(matches!(&loaded[2].profile, Err(ConfigError::Io(_))));
+        assert!(matches!(&loaded[2].keymap, Err(ConfigError::Io(_))));
         assert!(loaded[2].bytes.is_none());
     }
 
     #[test]
-    fn broken_profile_can_be_renamed_and_removed() {
+    fn broken_keymap_can_be_renamed_and_removed() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
-        std::fs::create_dir_all(paths.profiles_dir()).unwrap();
-        std::fs::write(paths.profile_path("Broken").unwrap(), "not json").unwrap();
+        std::fs::create_dir_all(paths.keymaps_dir()).unwrap();
+        std::fs::write(paths.keymap_path("Broken").unwrap(), "not json").unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
 
         assert!(matches!(
@@ -646,11 +646,11 @@ mod tests {
                 .unwrap(),
             "Fixed"
         );
-        assert_eq!(paths.load_user_profile("Fixed").unwrap(), "not json");
-        assert!(paths.load_user_profile("Broken").is_err());
+        assert_eq!(paths.load_user_keymap("Fixed").unwrap(), "not json");
+        assert!(paths.load_user_keymap("Broken").is_err());
 
-        doc.remove_library_profile("Fixed", "not json").unwrap();
-        assert!(paths.load_user_profile("Fixed").is_err());
+        doc.remove_library_keymap("Fixed", "not json").unwrap();
+        assert!(paths.load_user_keymap("Fixed").is_err());
     }
 
     #[test]
@@ -658,7 +658,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         paths
-            .save_user_profile(
+            .save_user_keymap(
                 "Original",
                 r#"{"version":1,"commands":[{"id":"unused","sh":"true"}]}"#,
                 false,
@@ -667,32 +667,32 @@ mod tests {
         paths.save_config(r#"{"version":1}"#).unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
         doc.load_library_for_editing("Original").unwrap();
-        let before = doc.profile().clone();
+        let before = doc.keymap().clone();
         let settings = doc.settings().clone();
-        let original = paths.load_user_profile("Original").unwrap();
+        let original = paths.load_user_keymap("Original").unwrap();
 
-        assert!(doc.save_working_profile_as("Original").is_err());
-        assert_eq!(doc.profile(), &before);
-        assert!(doc.save_working_profile_as("invalid/name").is_err());
-        assert_eq!(doc.profile(), &before);
+        assert!(doc.save_working_keymap_as("Original").is_err());
+        assert_eq!(doc.keymap(), &before);
+        assert!(doc.save_working_keymap_as("invalid/name").is_err());
+        assert_eq!(doc.keymap(), &before);
 
-        let blocked = paths.profile_path("Blocked").unwrap();
+        let blocked = paths.keymap_path("Blocked").unwrap();
         std::fs::create_dir(&blocked).unwrap();
-        assert!(doc.overwrite_library_profile("Blocked").is_err());
-        assert_eq!(doc.profile(), &before);
+        assert!(doc.overwrite_library_keymap("Blocked").is_err());
+        assert_eq!(doc.keymap(), &before);
 
         std::fs::remove_file(paths.config_path()).unwrap();
         std::fs::create_dir(paths.config_path()).unwrap();
-        assert!(doc.save_working_profile_as("New").is_err());
-        assert_eq!(doc.profile(), &before);
+        assert!(doc.save_working_keymap_as("New").is_err());
+        assert_eq!(doc.keymap(), &before);
         assert_eq!(doc.settings(), &settings);
-        assert!(!paths.profile_path("New").unwrap().exists());
-        assert_eq!(paths.load_user_profile("Original").unwrap(), original);
+        assert!(!paths.keymap_path("New").unwrap().exists());
+        assert_eq!(paths.load_user_keymap("Original").unwrap(), original);
 
         std::fs::remove_dir(paths.config_path()).unwrap();
-        doc.save_working_profile_as("New").unwrap();
-        assert!(doc.profile().commands.is_empty());
-        assert!(doc.load_profile("user:New").unwrap().commands.is_empty());
+        doc.save_working_keymap_as("New").unwrap();
+        assert!(doc.keymap().commands.is_empty());
+        assert!(doc.load_keymap("user:New").unwrap().commands.is_empty());
     }
 
     #[test]
@@ -702,24 +702,24 @@ mod tests {
         let doc = ConfigDocument::load(paths.clone()).unwrap();
         for base in ["a".repeat(128), "я".repeat(125), "界".repeat(83)] {
             paths
-                .save_user_profile(&base, r#"{"version":1}"#, false)
+                .save_user_keymap(&base, r#"{"version":1}"#, false)
                 .unwrap();
             for suffix in 2..=12 {
                 let name = doc.unique_library_name(&base).unwrap();
                 assert!(name.ends_with(&format!(" ({suffix})")));
-                assert!(crate::storage::validate_profile_name(&name).is_ok());
+                assert!(crate::storage::validate_keymap_name(&name).is_ok());
                 paths
-                    .save_user_profile(&name, r#"{"version":1}"#, false)
+                    .save_user_keymap(&name, r#"{"version":1}"#, false)
                     .unwrap();
             }
         }
         assert_eq!(
             doc.unique_library_name(" "),
-            Err(ConfigError::Name(NameKind::Profile, NameIssue::Empty))
+            Err(ConfigError::Name(NameKind::Keymap, NameIssue::Empty))
         );
         assert_eq!(
             doc.unique_library_name("bad/name"),
-            Err(ConfigError::Name(NameKind::Profile, NameIssue::Invalid))
+            Err(ConfigError::Name(NameKind::Keymap, NameIssue::Invalid))
         );
     }
 
@@ -728,24 +728,24 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
-        doc.update_profile(|profile| profile.description = Some("working A".into()))
+        doc.update_keymap(|keymap| keymap.description = Some("working A".into()))
             .unwrap();
-        doc.save_current_profile_as("A").unwrap();
+        doc.save_current_keymap_as("A").unwrap();
         paths
-            .save_user_profile("B", r#"{"version":1,"meta":{"description":"B"}}"#, false)
+            .save_user_keymap("B", r#"{"version":1,"meta":{"description":"B"}}"#, false)
             .unwrap();
-        let before = doc.profile().clone();
+        let before = doc.keymap().clone();
         std::fs::remove_file(paths.config_path()).unwrap();
         std::fs::create_dir(paths.config_path()).unwrap();
 
         assert!(doc.load_library_for_editing("B").is_err());
-        assert_eq!(doc.profile(), &before);
-        assert_eq!(doc.settings().editing_profile_id.as_deref(), Some("user:A"));
+        assert_eq!(doc.keymap(), &before);
+        assert_eq!(doc.settings().editing_keymap_id.as_deref(), Some("user:A"));
 
         std::fs::remove_dir(paths.config_path()).unwrap();
         doc.load_library_for_editing("B").unwrap();
-        assert_eq!(doc.profile().description.as_deref(), Some("B"));
-        assert_eq!(doc.settings().editing_profile_id.as_deref(), Some("user:B"));
+        assert_eq!(doc.keymap().description.as_deref(), Some("B"));
+        assert_eq!(doc.settings().editing_keymap_id.as_deref(), Some("user:B"));
     }
 
     fn window(app_id: &str) -> crate::runtime_state::ActiveWindow {
@@ -758,7 +758,7 @@ mod tests {
         config::{
             auto_switch::AutoSwitchContext,
             bundled::BUNDLED,
-            model::{AutoRule, ProfileConditionSet, ProfileMode},
+            model::{AutoRule, KeymapConditionSet, KeymapMode},
         },
         storage::StoragePaths,
     };
@@ -769,27 +769,27 @@ mod tests {
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut doc = ConfigDocument::load(paths).unwrap();
         assert_eq!(doc.library_save_target(None), LibrarySaveTarget::NeedsName);
-        doc.save_current_profile_as("Saved").unwrap();
-        let original = doc.paths().load_user_profile("Saved").unwrap();
-        doc.update_profile(|profile| profile.description = Some("working edit".into()))
+        doc.save_current_keymap_as("Saved").unwrap();
+        let original = doc.paths().load_user_keymap("Saved").unwrap();
+        doc.update_keymap(|keymap| keymap.description = Some("working edit".into()))
             .unwrap();
         assert_eq!(
             doc.library_save_target(Some(("Saved", &original))),
             LibrarySaveTarget::Existing("Saved".into())
         );
-        let mut external = doc.profile().clone();
+        let mut external = doc.keymap().clone();
         external.description = Some("external edit".into());
-        let external = profile_file::serialize(&external);
+        let external = keymap_file::serialize(&external);
         doc.paths()
-            .save_user_profile("Saved", &external, true)
+            .save_user_keymap("Saved", &external, true)
             .unwrap();
         assert_eq!(
             doc.library_save_target(Some(("Saved", &original))),
             LibrarySaveTarget::Conflict
         );
-        assert_eq!(doc.paths().load_user_profile("Saved").unwrap(), external);
-        let saved = doc.overwrite_library_profile("Saved").unwrap();
-        assert_eq!(doc.paths().load_user_profile("Saved").unwrap(), saved);
+        assert_eq!(doc.paths().load_user_keymap("Saved").unwrap(), external);
+        let saved = doc.overwrite_library_keymap("Saved").unwrap();
+        assert_eq!(doc.paths().load_user_keymap("Saved").unwrap(), saved);
         assert_eq!(
             doc.library_save_target(None),
             LibrarySaveTarget::Existing("Saved".into())
@@ -800,25 +800,25 @@ mod tests {
     fn portable_metadata_survives_library_operations() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
-        let text = r#"{"version":1,"$schema":"https://example.com/profile.json",
-            "meta":{"name":"Original","author":"Ivan K","profileVersion":"1.0"}}"#;
+        let text = r#"{"version":1,"$schema":"https://example.com/keymap.json",
+            "meta":{"name":"Original","author":"Ivan K","keymapVersion":"1.0"}}"#;
         paths
-            .save_user_profile("Downloaded (2)", text, false)
+            .save_user_keymap("Downloaded (2)", text, false)
             .unwrap();
         paths
             .save_config(r#"{"version":1,"$schema":"https://example.com/config.json"}"#)
             .unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
         doc.load_library_for_editing("Downloaded (2)").unwrap();
-        doc.save_current_profile_as("Saved").unwrap();
-        doc.create_library_profile("Copy", "New description", LibrarySource::Copy("Saved"))
+        doc.save_current_keymap_as("Saved").unwrap();
+        doc.create_library_keymap("Copy", "New description", LibrarySource::Copy("Saved"))
             .unwrap();
-        let expected = paths.load_user_profile("Copy").unwrap();
+        let expected = paths.load_user_keymap("Copy").unwrap();
         doc.edit_library_metadata("Copy", "Renamed", Some("Edited description"), &expected)
             .unwrap();
-        let original = profile_file::parse(text).unwrap().unwrap();
+        let original = keymap_file::parse(text).unwrap().unwrap();
         for name in ["Saved", "Renamed"] {
-            let saved = doc.load_profile(&user_profile_id(name)).unwrap();
+            let saved = doc.load_keymap(&user_keymap_id(name)).unwrap();
             assert_eq!(saved.meta, original.meta);
             assert_eq!(saved.schema, original.schema);
         }
@@ -834,7 +834,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         paths
-            .save_user_profile(
+            .save_user_keymap(
                 "Test",
                 r#"{"version": 1, "commands": [{"id": "hello", "sh": "printf hello"}]}"#,
                 true,
@@ -845,12 +845,12 @@ mod tests {
             .unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
         doc.load_library_for_editing("Test").unwrap();
-        doc.save_current_profile_as("Hello").unwrap();
-        let text = paths.load_user_profile("Hello").unwrap();
+        doc.save_current_keymap_as("Hello").unwrap();
+        let text = paths.load_user_keymap("Hello").unwrap();
         doc.edit_library_metadata("Hello", "Renamed", Some(""), &text)
             .unwrap();
-        let text = paths.load_user_profile("Renamed").unwrap();
-        doc.remove_library_profile("Renamed", &text).unwrap();
+        let text = paths.load_user_keymap("Renamed").unwrap();
+        doc.remove_library_keymap("Renamed", &text).unwrap();
         assert!(doc.settings().commands_enabled);
     }
 
@@ -861,37 +861,37 @@ mod tests {
         let document = ConfigDocument::load(paths.clone()).unwrap();
         assert_eq!(document.unique_library_name(" New ").unwrap(), "New");
         let ivan = document
-            .create_library_profile("Ivan", "", LibrarySource::Bundled(&BUNDLED[0]))
+            .create_library_keymap("Ivan", "", LibrarySource::Bundled(&BUNDLED[0]))
             .unwrap();
-        assert!(!document.load_profile("user:Ivan").unwrap().rules.is_empty());
+        assert!(!document.load_keymap("user:Ivan").unwrap().rules.is_empty());
         assert_eq!(document.unique_library_name("Ivan").unwrap(), "Ivan (2)");
         assert_eq!(document.unique_library_name("ivan").unwrap(), "ivan (2)");
         assert_eq!(
-            document.create_library_profile("IVAN", "", LibrarySource::Empty),
-            Err(ConfigError::Name(NameKind::Profile, NameIssue::Taken))
+            document.create_library_keymap("IVAN", "", LibrarySource::Empty),
+            Err(ConfigError::Name(NameKind::Keymap, NameIssue::Taken))
         );
         assert_eq!(
-            document.checked_profile_name("IVAN", Some("Ivan")),
+            document.checked_keymap_name("IVAN", Some("Ivan")),
             Ok("IVAN".into())
         );
         assert!(
             document
-                .create_library_profile(&ivan, "", LibrarySource::Empty)
+                .create_library_keymap(&ivan, "", LibrarySource::Empty)
                 .is_err()
         );
         document
-            .create_library_profile("Copy", " mine ", LibrarySource::Copy("Ivan"))
+            .create_library_keymap("Copy", " mine ", LibrarySource::Copy("Ivan"))
             .unwrap();
-        let copy = document.load_profile("user:Copy").unwrap();
+        let copy = document.load_keymap("user:Copy").unwrap();
         assert_eq!(copy.description.as_deref(), Some("mine"));
         assert_eq!(
             copy.rules.len(),
-            document.load_profile("user:Ivan").unwrap().rules.len()
+            document.load_keymap("user:Ivan").unwrap().rules.len()
         );
         document
-            .create_library_profile("Empty", "", LibrarySource::Empty)
+            .create_library_keymap("Empty", "", LibrarySource::Empty)
             .unwrap();
-        let empty = document.load_profile("user:Empty").unwrap();
+        let empty = document.load_keymap("user:Empty").unwrap();
         assert!(empty.rules.is_empty());
         assert!(empty.emoji_pages.iter().all(|page| page.cells.is_empty()));
         assert!(
@@ -903,43 +903,43 @@ mod tests {
     }
 
     #[test]
-    fn moving_profile_preserves_other_priorities_in_both_modes() {
+    fn moving_keymap_preserves_other_priorities_in_both_modes() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         for name in ["A", "B", "C", "D"] {
             paths
-                .save_user_profile(name, r#"{"version": 1}"#, false)
+                .save_user_keymap(name, r#"{"version": 1}"#, false)
                 .unwrap();
         }
-        document.move_library_profile("user:A", 3).unwrap();
+        document.move_library_keymap("user:A", 3).unwrap();
         assert_eq!(
-            document.ordered_profile_ids().unwrap(),
+            document.ordered_keymap_ids().unwrap(),
             ["user:B", "user:C", "user:D", "user:A"]
         );
         document
-            .update_settings(|settings| settings.profile_mode = ProfileMode::Auto)
+            .update_settings(|settings| settings.keymap_mode = KeymapMode::Auto)
             .unwrap();
         assert_eq!(
-            document.ordered_profile_ids().unwrap(),
+            document.ordered_keymap_ids().unwrap(),
             ["user:B", "user:C", "user:D", "user:A"]
         );
-        document.move_library_profile("user:A", -2).unwrap();
+        document.move_library_keymap("user:A", -2).unwrap();
         assert_eq!(
-            document.ordered_profile_ids().unwrap(),
+            document.ordered_keymap_ids().unwrap(),
             ["user:B", "user:A", "user:C", "user:D"]
         );
         document
-            .update_settings(|settings| settings.profile_mode = ProfileMode::Manual)
+            .update_settings(|settings| settings.keymap_mode = KeymapMode::Manual)
             .unwrap();
         assert_eq!(
-            document.ordered_profile_ids().unwrap(),
+            document.ordered_keymap_ids().unwrap(),
             ["user:B", "user:A", "user:C", "user:D"]
         );
         let reloaded = ConfigDocument::load(paths).unwrap();
         assert_eq!(
-            reloaded.ordered_profile_ids().unwrap(),
-            document.ordered_profile_ids().unwrap()
+            reloaded.ordered_keymap_ids().unwrap(),
+            document.ordered_keymap_ids().unwrap()
         );
     }
 
@@ -950,7 +950,7 @@ mod tests {
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         for name in ["A", "B"] {
             paths
-                .save_user_profile(
+                .save_user_keymap(
                     name,
                     r#"{"version": 1, "meta": {"description": "original"}}"#,
                     false,
@@ -959,122 +959,119 @@ mod tests {
         }
         document
             .update_settings(|settings| {
-                settings.manual_profile_id = Some("user:A".into());
-                settings.profile_order = vec!["user:A".into(), "user:B".into()];
+                settings.manual_keymap_id = Some("user:A".into());
+                settings.keymap_order = vec!["user:A".into(), "user:B".into()];
                 settings.auto_rules = vec![AutoRule {
                     id: "r".into(),
                     enabled: true,
-                    profile_id: Some("user:B".into()),
-                    conditions: ProfileConditionSet::default(),
+                    keymap_id: Some("user:B".into()),
+                    conditions: KeymapConditionSet::default(),
                 }];
-                settings.auto_default_profile_id = Some("user:B".into());
+                settings.auto_default_keymap_id = Some("user:B".into());
             })
             .unwrap();
         document.load_library_for_editing("B").unwrap();
         assert_eq!(
             document
-                .active_profile_id(&AutoSwitchContext::default())
+                .active_keymap_id(&AutoSwitchContext::default())
                 .unwrap()
                 .as_deref(),
             Some("user:A")
         );
-        let original = paths.load_user_profile("B").unwrap();
+        let original = paths.load_user_keymap("B").unwrap();
         document
             .edit_library_metadata("B", "C", Some("Описание"), &original)
             .unwrap();
         assert_eq!(
             document
-                .active_profile(&AutoSwitchContext::default())
+                .active_keymap(&AutoSwitchContext::default())
                 .unwrap()
                 .description
                 .as_deref(),
             Some("original")
         );
         assert_eq!(
-            document.settings().editing_profile_id.as_deref(),
+            document.settings().editing_keymap_id.as_deref(),
             Some("user:C")
         );
         assert_eq!(
-            document.settings().auto_rules[0].profile_id.as_deref(),
+            document.settings().auto_rules[0].keymap_id.as_deref(),
             Some("user:C")
         );
         assert_eq!(
-            document.settings().auto_default_profile_id.as_deref(),
+            document.settings().auto_default_keymap_id.as_deref(),
             Some("user:C")
         );
-        assert_eq!(document.profile().description.as_deref(), Some("Описание"));
-        document.move_library_profile("user:C", -1).unwrap();
+        assert_eq!(document.keymap().description.as_deref(), Some("Описание"));
+        document.move_library_keymap("user:C", -1).unwrap();
+        assert_eq!(document.ordered_keymap_ids().unwrap(), ["user:C", "user:A"]);
         assert_eq!(
-            document.ordered_profile_ids().unwrap(),
-            ["user:C", "user:A"]
-        );
-        assert_eq!(
-            document.remove_library_profile("C", &original),
+            document.remove_library_keymap("C", &original),
             Err(ConfigError::EditConflict)
         );
         document
-            .remove_library_profile("C", paths.load_user_profile("C").unwrap())
+            .remove_library_keymap("C", paths.load_user_keymap("C").unwrap())
             .unwrap();
         let reloaded = ConfigDocument::load(paths).unwrap();
-        assert!(reloaded.settings().editing_profile_id.is_none());
+        assert!(reloaded.settings().editing_keymap_id.is_none());
         assert_eq!(
-            reloaded.settings().manual_profile_id.as_deref(),
+            reloaded.settings().manual_keymap_id.as_deref(),
             Some("user:A")
         );
-        assert_eq!(reloaded.settings().profile_order, ["user:A"]);
+        assert_eq!(reloaded.settings().keymap_order, ["user:A"]);
         assert!(reloaded.settings().auto_rules.is_empty());
-        assert!(reloaded.settings().auto_default_profile_id.is_none());
+        assert!(reloaded.settings().auto_default_keymap_id.is_none());
     }
 
     #[test]
-    fn deleting_open_profile_clears_the_working_copy() {
+    fn deleting_open_keymap_clears_the_working_copy() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
-        document.save_current_profile_as("A").unwrap();
+        document.save_current_keymap_as("A").unwrap();
         document.load_library_for_editing("A").unwrap();
         document.create_layer("Unsaved", "").unwrap();
         document
-            .remove_library_profile("A", paths.load_user_profile("A").unwrap())
+            .remove_library_keymap("A", paths.load_user_keymap("A").unwrap())
             .unwrap();
-        assert!(document.settings().editing_profile_id.is_none());
-        assert_eq!(document.profile(), &ProfilePreset::initial());
+        assert!(document.settings().editing_keymap_id.is_none());
+        assert_eq!(document.keymap(), &KeymapPreset::initial());
     }
 
     #[test]
-    fn deleting_single_mode_profile_activates_first_remaining() {
+    fn deleting_single_mode_keymap_activates_first_remaining() {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         for name in ["A", "B", "C"] {
             paths
-                .save_user_profile(name, r#"{"version": 1}"#, false)
+                .save_user_keymap(name, r#"{"version": 1}"#, false)
                 .unwrap();
         }
         document
             .update_settings(|settings| {
-                settings.manual_profile_id = Some("user:B".into());
-                settings.profile_order = vec!["user:C".into(), "user:B".into(), "user:A".into()];
+                settings.manual_keymap_id = Some("user:B".into());
+                settings.keymap_order = vec!["user:C".into(), "user:B".into(), "user:A".into()];
             })
             .unwrap();
         document
-            .remove_library_profile("A", paths.load_user_profile("A").unwrap())
+            .remove_library_keymap("A", paths.load_user_keymap("A").unwrap())
             .unwrap();
         assert_eq!(
-            document.settings().manual_profile_id.as_deref(),
+            document.settings().manual_keymap_id.as_deref(),
             Some("user:B")
         );
         document
-            .remove_library_profile("B", paths.load_user_profile("B").unwrap())
+            .remove_library_keymap("B", paths.load_user_keymap("B").unwrap())
             .unwrap();
         assert_eq!(
-            document.settings().manual_profile_id.as_deref(),
+            document.settings().manual_keymap_id.as_deref(),
             Some("user:C")
         );
         document
-            .remove_library_profile("C", paths.load_user_profile("C").unwrap())
+            .remove_library_keymap("C", paths.load_user_keymap("C").unwrap())
             .unwrap();
-        assert!(document.settings().manual_profile_id.is_none());
+        assert!(document.settings().manual_keymap_id.is_none());
     }
 
     #[test]
@@ -1083,7 +1080,7 @@ mod tests {
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         paths
-            .save_user_profile(
+            .save_user_keymap(
                 "Editor",
                 r#"{"version": 1, "rules": [{"key": "KeyA", "tap": "KeyB"}]}"#,
                 false,
@@ -1091,13 +1088,13 @@ mod tests {
             .unwrap();
         document
             .update_settings(|settings| {
-                settings.profile_mode = ProfileMode::Auto;
+                settings.keymap_mode = KeymapMode::Auto;
                 settings.auto_rules = vec![
                     AutoRule {
                         id: "games".into(),
                         enabled: true,
-                        profile_id: None,
-                        conditions: ProfileConditionSet {
+                        keymap_id: None,
+                        conditions: KeymapConditionSet {
                             game_mode: Some(crate::config::model::GameModeCondition::On),
                             ..Default::default()
                         },
@@ -1105,8 +1102,8 @@ mod tests {
                     AutoRule {
                         id: "editor".into(),
                         enabled: true,
-                        profile_id: Some("user:Editor".into()),
-                        conditions: ProfileConditionSet {
+                        keymap_id: Some("user:Editor".into()),
+                        conditions: KeymapConditionSet {
                             game_mode: None,
                             keyboard_layouts: vec!["us".into()],
                             window_patterns: vec!["*kate".into()],
@@ -1122,7 +1119,7 @@ mod tests {
             ..Default::default()
         };
         let active = document.runtime_config(&context).unwrap();
-        assert_eq!(active.profile_id.as_deref(), Some("user:Editor"));
+        assert_eq!(active.keymap_id.as_deref(), Some("user:Editor"));
         for change in 0..3 {
             match change {
                 0 => context.window = Some(window("browser")),
@@ -1136,7 +1133,7 @@ mod tests {
                 }
             }
             let runtime = document.runtime_config(&context).unwrap();
-            assert!(runtime.profile_id.is_none());
+            assert!(runtime.keymap_id.is_none());
             let raw: serde_json::Value = serde_json::to_value(&runtime.mapper).unwrap();
             assert!(raw["rules"].as_array().unwrap().is_empty());
         }
@@ -1148,15 +1145,15 @@ mod tests {
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
         let original = r#"{"version": 1, "meta": {"description": "original"}}"#;
-        paths.save_user_profile("A", original, false).unwrap();
+        paths.save_user_keymap("A", original, false).unwrap();
         paths
             .save_config(r#"{"version":1,"settings":{"appearance":"light"}}"#)
             .unwrap();
         document
             .edit_library_metadata("A", "B", Some("changed"), original)
             .unwrap();
-        assert!(paths.load_user_profile("A").is_err());
-        assert!(paths.load_user_profile("B").unwrap().contains("changed"));
+        assert!(paths.load_user_keymap("A").is_err());
+        assert!(paths.load_user_keymap("B").unwrap().contains("changed"));
         let restarted = ConfigDocument::load(paths).unwrap();
         assert_eq!(
             restarted.settings().appearance,

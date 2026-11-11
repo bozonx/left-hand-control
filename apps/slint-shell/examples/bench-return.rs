@@ -192,9 +192,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("quick: Alt held before opening selects Alt+1, subsequent plain typing filters");
             if test_keyboard::isolated() {
                 let connection = zbus::blocking::Connection::session()?;
-                let profile = zbus::blocking::Proxy::new(&connection, "org.kde.keyboard", "/Profiles", "org.kde.KeyboardLayouts")?;
-                let changed: bool = profile.call("setProfile", &(1_u32,))?;
-                if !changed { return Err("Russian profile unavailable in isolated compositor".into()); }
+                let keymap = zbus::blocking::Proxy::new(&connection, "org.kde.keyboard", "/Keymaps", "org.kde.KeyboardLayouts")?;
+                let changed: bool = keymap.call("setKeymap", &(1_u32,))?;
+                if !changed { return Err("Russian keymap unavailable in isolated compositor".into()); }
                 let before = std::fs::read_to_string(&worker_csv)?;
                 press_hotkey(&mut device, KeyCode::KEY_F12)?;
                 wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",t4_focused,")), "Cyrillic focus")?;
@@ -207,7 +207,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 wait(|| std::fs::read_to_string(&worker_csv).is_ok_and(|s| s[before.len()..].contains(",filter_cyrillic,")), "Cyrillic text reached search")?;
                 press(&mut device, KeyCode::KEY_ESC)?;
                 wait(|| focused.load(Ordering::SeqCst), "Cyrillic cancel")?;
-                let _: bool = profile.call("setProfile", &(0_u32,))?;
+                let _: bool = keymap.call("setKeymap", &(0_u32,))?;
                 println!("quick: real Cyrillic keyboard input reached filter");
             }
             let before = std::fs::read_to_string(&worker_csv)?;

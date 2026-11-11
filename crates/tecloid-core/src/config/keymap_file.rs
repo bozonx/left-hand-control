@@ -1,4 +1,4 @@
-//! Saved profile JSON files in the user library.
+//! Saved keymap JSON files in the user library.
 //!
 //! The format is versioned (`"version": 1`) and read strictly: unknown
 //! fields, wrong types and unknown enum values are errors, so a file is
@@ -8,46 +8,46 @@
 
 use super::model::GameModeCondition as OnOff;
 use super::model::{
-    Command, EmojiPage, HoldBehavior, KeyRule, LEFT_HAND_HOTKEYS, Layer, LayerKeymap, Macro,
-    MacroStep, ProfileConditionSet, ProfilePreset, QuickAction, QuickActionPage, TapDecision,
+    Command, EmojiPage, HoldBehavior, KeyRule, KeymapConditionSet, KeymapPreset, LEFT_HAND_HOTKEYS,
+    Layer, LayerKeymap, Macro, MacroStep, QuickAction, QuickActionPage, TapDecision,
 };
-use super::schema::{self, PROFILE_SCHEMA_VERSION};
+use super::schema::{self, KEYMAP_SCHEMA_VERSION};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::{BTreeMap, BTreeSet};
 
-/// JSON Schema of the profile file, published under `schemas/`.
+/// JSON Schema of the keymap file, published under `schemas/`.
 #[cfg(test)]
 pub(crate) fn json_schema() -> schemars::Schema {
-    schemars::schema_for!(ProfileDoc)
+    schemars::schema_for!(KeymapDoc)
 }
 
-/// Parse a profile file. Returns `Ok(None)` for an empty document.
-pub fn parse(text: &str) -> Result<Option<ProfilePreset>, String> {
+/// Parse a keymap file. Returns `Ok(None)` for an empty document.
+pub fn parse(text: &str) -> Result<Option<KeymapPreset>, String> {
     if text.trim().is_empty() {
         return Ok(None);
     }
     let value: serde_json::Value =
-        serde_json::from_str(text).map_err(|error| format!("parse profile: {error}"))?;
-    let profile = match schema::read_version(&value, "profile", PROFILE_SCHEMA_VERSION)? {
+        serde_json::from_str(text).map_err(|error| format!("parse keymap: {error}"))?;
+    let keymap = match schema::read_version(&value, "keymap", KEYMAP_SCHEMA_VERSION)? {
         1 => from_doc(
-            serde_json::from_str::<ProfileDoc>(text)
-                .map_err(|error| schema::read_error("parse profile", &error))?,
+            serde_json::from_str::<KeymapDoc>(text)
+                .map_err(|error| schema::read_error("parse keymap", &error))?,
         )?,
-        version => return Err(format!("profile: no reader for schema version {version}")),
+        version => return Err(format!("keymap: no reader for schema version {version}")),
     };
-    super::timing::validate_profile(&profile)?;
-    Ok(Some(profile))
+    super::timing::validate_keymap(&keymap)?;
+    Ok(Some(keymap))
 }
 
-pub fn serialize(preset: &ProfilePreset) -> String {
+pub fn serialize(preset: &KeymapPreset) -> String {
     serde_json::to_string_pretty(&to_doc(preset)).unwrap_or_default()
 }
 
 #[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-struct ProfileDoc {
-    #[cfg_attr(test, schemars(extend("const" = PROFILE_SCHEMA_VERSION)))]
+struct KeymapDoc {
+    #[cfg_attr(test, schemars(extend("const" = KEYMAP_SCHEMA_VERSION)))]
     version: u64,
     #[serde(
         rename = "$schema",
@@ -78,7 +78,7 @@ struct ProfileDoc {
     emoji_menu_pages: Vec<PageDoc<String>>,
 }
 
-/// Portable information about the profile from its author. Every field is
+/// Portable information about the keymap from its author. Every field is
 /// optional; `null` is not allowed.
 #[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Default, Serialize, Deserialize)]
@@ -98,14 +98,14 @@ struct MetaDoc {
     )]
     #[cfg_attr(test, schemars(with = "String"))]
     author: Option<String>,
-    /// The author's version of the profile, unrelated to the format `version`.
+    /// The author's version of the keymap, unrelated to the format `version`.
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
         deserialize_with = "schema::non_null"
     )]
     #[cfg_attr(test, schemars(with = "String"))]
-    profile_version: Option<String>,
+    keymap_version: Option<String>,
     #[serde(
         default,
         skip_serializing_if = "Option::is_none",
@@ -119,7 +119,7 @@ impl MetaDoc {
     fn is_empty(&self) -> bool {
         self.name.is_none()
             && self.author.is_none()
-            && self.profile_version.is_none()
+            && self.keymap_version.is_none()
             && self.description.is_none()
     }
 }
@@ -250,7 +250,7 @@ impl RuleKeyDoc {
     }
 }
 
-/// Conditions of a profile rule or an auto-mode rule; every present
+/// Conditions of a keymap rule or an auto-mode rule; every present
 /// condition must hold. Both places share this one object.
 #[cfg_attr(test, derive(schemars::JsonSchema))]
 #[derive(Default, Serialize, Deserialize)]
@@ -282,9 +282,9 @@ impl WhenDoc {
         non_empty_items(&self.exclude_windows, "window pattern")
     }
 
-    pub(crate) fn into_set(self) -> Result<ProfileConditionSet, String> {
+    pub(crate) fn into_set(self) -> Result<KeymapConditionSet, String> {
         self.check()?;
-        Ok(ProfileConditionSet {
+        Ok(KeymapConditionSet {
             game_mode: self.game_mode,
             keyboard_layouts: self.keyboard_layouts,
             window_patterns: self.windows,
@@ -292,7 +292,7 @@ impl WhenDoc {
         })
     }
 
-    pub(crate) fn from_set(set: &ProfileConditionSet) -> Self {
+    pub(crate) fn from_set(set: &KeymapConditionSet) -> Self {
         let list = |items: &[String]| -> Vec<String> {
             items
                 .iter()
@@ -544,7 +544,7 @@ fn three_state(value: Option<Option<String>>, what: &str) -> Result<Option<Strin
     }
 }
 
-fn from_doc(mut doc: ProfileDoc) -> Result<ProfilePreset, String> {
+fn from_doc(mut doc: KeymapDoc) -> Result<KeymapPreset, String> {
     super::ids::unique(doc.layers.iter().map(|item| item.id.as_str()), "layers")?;
     super::ids::unique(doc.macros.iter().map(|item| item.id.as_str()), "macros")?;
     super::ids::unique(doc.commands.iter().map(|item| item.id.as_str()), "commands")?;
@@ -731,14 +731,14 @@ fn from_doc(mut doc: ProfileDoc) -> Result<ProfilePreset, String> {
 
     let meta = doc.meta.unwrap_or_default();
     let description = meta.description.filter(|d| !d.trim().is_empty());
-    let meta = super::model::ProfileMetadata {
+    let meta = super::model::KeymapMetadata {
         name: meta.name,
         author: meta.author,
-        version: meta.profile_version,
+        version: meta.keymap_version,
     };
-    Ok(ProfilePreset {
+    Ok(KeymapPreset {
         schema: doc.schema,
-        meta: (meta != super::model::ProfileMetadata::default()).then_some(meta),
+        meta: (meta != super::model::KeymapMetadata::default()).then_some(meta),
         description,
         layers,
         rules,
@@ -753,7 +753,7 @@ fn from_doc(mut doc: ProfileDoc) -> Result<ProfilePreset, String> {
 /// Build the file form. Entries the parser would reject but the editor can
 /// hold transiently (a rule without a key, an empty macro step) are left
 /// out, so every saved file loads again.
-fn to_doc(preset: &ProfilePreset) -> ProfileDoc {
+fn to_doc(preset: &KeymapPreset) -> KeymapDoc {
     let text = |value: &str| (!value.is_empty()).then(|| value.to_owned());
     let list = |items: &Option<Vec<String>>| -> Vec<String> {
         items
@@ -938,15 +938,15 @@ fn to_doc(preset: &ProfilePreset) -> ProfileDoc {
     fn only_default<T>(pages: &[PageDoc<T>]) -> bool {
         matches!(pages, [page] if page.name.is_none() && page.cells.0.is_empty())
     }
-    ProfileDoc {
-        version: PROFILE_SCHEMA_VERSION,
+    KeymapDoc {
+        version: KEYMAP_SCHEMA_VERSION,
         schema: preset.schema.clone(),
         meta: {
             let meta = preset.meta.clone().unwrap_or_default();
             let meta = MetaDoc {
                 name: meta.name,
                 author: meta.author,
-                profile_version: meta.version,
+                keymap_version: meta.version,
                 description: preset.description.clone().filter(|d| !d.trim().is_empty()),
             };
             (!meta.is_empty()).then_some(meta)
@@ -973,17 +973,17 @@ mod tests {
     use super::*;
     use serde_json::{Value, json};
 
-    fn profile(body: Value) -> String {
+    fn keymap(body: Value) -> String {
         let mut body = body;
         body["version"] = json!(1);
         body.to_string()
     }
 
-    fn parsed(body: Value) -> ProfilePreset {
-        parse(&profile(body)).unwrap().unwrap()
+    fn parsed(body: Value) -> KeymapPreset {
+        parse(&keymap(body)).unwrap().unwrap()
     }
 
-    fn round_trip(preset: &ProfilePreset) -> ProfilePreset {
+    fn round_trip(preset: &KeymapPreset) -> KeymapPreset {
         parse(&serialize(preset)).unwrap().unwrap()
     }
 
@@ -991,12 +991,12 @@ mod tests {
     fn timing_inherits_only_when_absent() {
         for kind in ["hold", "longHold", "doubleTap"] {
             let mut rule = json!({"key": "KeyA", kind: {"action": "KeyB"}});
-            assert!(parse(&profile(json!({"rules": [rule.clone()]}))).is_ok());
+            assert!(parse(&keymap(json!({"rules": [rule.clone()]}))).is_ok());
             rule[kind]["timeoutMs"] = Value::Null;
-            assert!(parse(&profile(json!({"rules": [rule]}))).is_err());
+            assert!(parse(&keymap(json!({"rules": [rule]}))).is_err());
         }
         for field in ["stepPauseMs", "modifierDelayMs"] {
-            assert!(parse(&profile(json!({"macros": [{"id": "m", field: null}]}))).is_err());
+            assert!(parse(&keymap(json!({"macros": [{"id": "m", field: null}]}))).is_err());
         }
         let preset = parsed(json!({"rules": [{"key": "KeyA", "tap": null}]}));
         assert_eq!(round_trip(&preset), preset);
@@ -1004,8 +1004,8 @@ mod tests {
 
     #[test]
     fn portable_metadata_and_schema_survive_round_trip() {
-        let body = json!({"$schema": "https://example.com/profile.schema.json",
-            "meta": {"name": "Original", "author": "Ivan K", "profileVersion": "1.0",
+        let body = json!({"$schema": "https://example.com/keymap.schema.json",
+            "meta": {"name": "Original", "author": "Ivan K", "keymapVersion": "1.0",
                      "description": "Portable"}});
         let preset = parsed(body.clone());
         assert_eq!(round_trip(&preset), preset);
@@ -1018,13 +1018,13 @@ mod tests {
             json!({"meta": null}),
             json!({"meta": {"author": null}}),
             json!({"meta": {"future": true}}),
-            json!({"meta": {"profileVersion": 1}}),
+            json!({"meta": {"keymapVersion": 1}}),
             json!({"meta": {"version": "1.0"}}),
             json!({"meta": {"description": null}}),
             json!({"description": "moved into meta"}),
             json!({"quickMenuPages": [{"cells": {"KeyQ": {"action": "KeyA", "icon": "x"}}}]}),
         ] {
-            assert!(parse(&profile(invalid)).is_err());
+            assert!(parse(&keymap(invalid)).is_err());
         }
     }
 
@@ -1053,13 +1053,13 @@ mod tests {
     fn generated_ids_reserve_explicit_ids_including_later_entries() {
         let text = r#"{"version":1,"rules":[{"key":"KeyA"},{"id":"rule-1","key":"KeyB"}],
             "quickMenuPages":[{}, {"id":"quick-1"}],"emojiMenuPages":[{}, {"id":"emoji-1"}]}"#;
-        let profile = parse(text).unwrap().unwrap();
-        super::super::ids::validate_profile(&profile).unwrap();
-        assert_eq!(profile.rules[0].id, "rule-2");
-        assert_eq!(profile.quick_action_pages[0].id, "quick-2");
-        assert_eq!(profile.emoji_pages[0].id, "emoji-2");
-        assert_eq!(parse(&serialize(&profile)).unwrap().unwrap(), profile);
-        assert_eq!(parse(text).unwrap().unwrap(), profile);
+        let keymap = parse(text).unwrap().unwrap();
+        super::super::ids::validate_keymap(&keymap).unwrap();
+        assert_eq!(keymap.rules[0].id, "rule-2");
+        assert_eq!(keymap.quick_action_pages[0].id, "quick-2");
+        assert_eq!(keymap.emoji_pages[0].id, "emoji-2");
+        assert_eq!(parse(&serialize(&keymap)).unwrap().unwrap(), keymap);
+        assert_eq!(parse(text).unwrap().unwrap(), keymap);
     }
 
     #[test]
@@ -1121,7 +1121,7 @@ mod tests {
         assert!(parse(r#"{"version": "1"}"#).is_err());
         assert!(parse(r#"{"version": 1}"#).unwrap().is_some());
         assert_eq!(
-            serde_json::from_str::<Value>(&serialize(&ProfilePreset::default())).unwrap()["version"],
+            serde_json::from_str::<Value>(&serialize(&KeymapPreset::default())).unwrap()["version"],
             1
         );
     }
@@ -1132,7 +1132,7 @@ mod tests {
             json!({"extra": true}),
             json!({"rules": [{"key": "KeyA", "holdMs": 100}]}),
             json!({"rules": [{"key": "KeyA", "hold": {"layer": "x", "isolate": []}}]}),
-            json!({"rules": [{"key": "KeyA", "when": {"profiles": ["us"]}}]}),
+            json!({"rules": [{"key": "KeyA", "when": {"keymaps": ["us"]}}]}),
             json!({"rules": [{"key": "KeyA", "when": {"gameMode": "maybe"}}]}),
             json!({"rules": [{"key": "KeyA", "tapDecision": "sometimes"}]}),
             json!({"rules": [{"key": "KeyA", "tap": 5}]}),
@@ -1156,9 +1156,9 @@ mod tests {
             json!({"quickMenuPages": [{"cells": {"KeyQ": {"name": "No action"}}}]}),
             json!({"emojiMenuPages": [{"cells": {"KeyQ": 5}}]}),
         ] {
-            assert!(parse(&profile(body.clone())).is_err(), "accepted {body}");
+            assert!(parse(&keymap(body.clone())).is_err(), "accepted {body}");
         }
-        let error = parse(&profile(json!({"extra": true}))).unwrap_err();
+        let error = parse(&keymap(json!({"extra": true}))).unwrap_err();
         assert!(error.contains("newer version"), "{error}");
     }
 
@@ -1187,7 +1187,7 @@ mod tests {
             json!(["KeyA", "KeyB+KeyC"]),
         ] {
             let body = json!({"rules": [{"key": key}]});
-            assert!(parse(&profile(body.clone())).is_err(), "accepted {body}");
+            assert!(parse(&keymap(body.clone())).is_err(), "accepted {body}");
         }
     }
 
@@ -1264,9 +1264,9 @@ mod tests {
         rule.layer_id = "nav".into();
         rule.long_hold_action = "KeyB".into();
         rule.hold_behavior = Some(HoldBehavior::Layer);
-        let preset = ProfilePreset {
+        let preset = KeymapPreset {
             rules: vec![rule],
-            ..ProfilePreset::default()
+            ..KeymapPreset::default()
         };
         let saved: Value = serde_json::from_str(&serialize(&preset)).unwrap();
         assert_eq!(saved["rules"][0]["hold"]["layer"], "nav");
@@ -1332,7 +1332,7 @@ mod tests {
     fn transient_editor_entries_are_not_saved() {
         let mut rule = KeyRule::new("r1".into(), "");
         rule.tap_action = Some("KeyA".into());
-        let mut preset = ProfilePreset::initial();
+        let mut preset = KeymapPreset::initial();
         preset.rules.push(rule);
         preset.macros.push(Macro {
             id: "m".into(),
@@ -1374,7 +1374,7 @@ mod tests {
 
     #[test]
     fn parsing_is_deterministic_without_ids() {
-        let text = profile(
+        let text = keymap(
             json!({"rules": [{"key": "CapsLock"}], "quickMenuPages": [{"cells": {"KeyQ": "KeyA"}}]}),
         );
         assert_eq!(parse(&text), parse(&text));

@@ -115,7 +115,7 @@ export component DialogFrame inherits Rectangle {
         }
         card := Rectangle {
             width: root.fill ? root.width - 48px : min(root.width - 32px, root.card-width);
-            height: root.fill ? root.height - 48px : min(root.height - 64px, root.card-height > 0 ? root.card-height : card-profile.preferred-height);
+            height: root.fill ? root.height - 48px : min(root.height - 64px, root.card-height > 0 ? root.card-height : card-keymap.preferred-height);
             x: (root.width - self.width) / 2;
             y: (root.height - self.height) / 2;
             background: Theme.surface;
@@ -123,7 +123,7 @@ export component DialogFrame inherits Rectangle {
             border-width: 1px;
             border-radius: Theme.radius-dialog;
             TouchArea {}
-            card-profile := VerticalLayout {
+            card-keymap := VerticalLayout {
                 padding: Theme.space-2xl;
                 padding-bottom: 0px;
                 spacing: Theme.space-l;

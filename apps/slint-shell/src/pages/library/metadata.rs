@@ -6,7 +6,7 @@
 
 use crate::{
     i18n::Msg,
-    ui::{ProfileLibrary, Profilesummary, SettingsWindow},
+    ui::{KeymapLibrary, Keymapsummary, SettingsWindow},
 };
 use slint::{ComponentHandle, Model};
 use std::{
@@ -16,7 +16,7 @@ use std::{
 use tecloid_core::{
     config::{
         library::{LibraryEntry, load_library_entries},
-        model::ProfilePreset,
+        model::KeymapPreset,
     },
     storage::StoragePaths,
 };
@@ -77,8 +77,8 @@ impl Loader {
     }
 }
 
-fn profile_summary(preset: &ProfilePreset) -> Profilesummary {
-    Profilesummary {
+fn keymap_summary(preset: &KeymapPreset) -> Keymapsummary {
+    Keymapsummary {
         rules: preset.rules.len() as i32,
         layers: preset.layers.len() as i32,
         emoji_pages: if preset
@@ -109,7 +109,7 @@ fn profile_summary(preset: &ProfilePreset) -> Profilesummary {
 /// one read runs at a time; requests arriving meanwhile collapse into one.
 impl Loader {
     pub(super) fn load(&self, ui: &SettingsWindow, paths: StoragePaths, names: Vec<String>) {
-        let library = ui.global::<ProfileLibrary>();
+        let library = ui.global::<KeymapLibrary>();
         let revision = library.get_metadata_revision().wrapping_add(1);
         library.set_metadata_revision(revision);
         let request = (ui.as_weak(), revision, paths, names);
@@ -146,7 +146,7 @@ impl Loader {
         names: &[String],
         loaded: Vec<LibraryEntry>,
     ) {
-        let library = ui.global::<ProfileLibrary>();
+        let library = ui.global::<KeymapLibrary>();
         if library.get_metadata_revision() != request {
             return;
         }
@@ -165,14 +165,14 @@ impl Loader {
                 continue;
             };
             row.loaded = true;
-            match entry.profile {
+            match entry.keymap {
                 Ok(preset) => {
-                    row.summary = profile_summary(&preset);
+                    row.summary = keymap_summary(&preset);
                     row.description = preset.description.unwrap_or_default().into();
                     row.error = Msg::None.to_ui();
                 }
                 Err(error) => {
-                    row.error = Msg::ProfileLoadFailed(format!("{}: {error}", row.name)).to_ui();
+                    row.error = Msg::KeymapLoadFailed(format!("{}: {error}", row.name)).to_ui();
                 }
             }
             if rows.row_data(index).as_ref() != Some(&row) {

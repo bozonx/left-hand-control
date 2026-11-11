@@ -6,7 +6,7 @@ import { NotificationCenter } from "notifications.slint";
 import { PageContent, ScrollView } from "scroll.slint";
 import { AppState } from "app-state.slint";
 import { Alert, Badge, Divider, FieldLabel, IconButton, InfoTip, ButtonGroup } from "controls.slint";
-import { ProfileLibrary } from "library.slint";
+import { KeymapLibrary } from "library.slint";
 import { DeviceChoice, DeviceDialog, DevicePicker } from "device-picker.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
@@ -17,8 +17,8 @@ import { AppearanceChoice, CommandPlace, GameModeControl, SettingsTab, SettingsF
 
 /// `enabled` is false for a disabled rule.
 export struct CommandPlaceRow { kind: CommandPlace, layer: string, name: string, enabled: bool }
-/// `first` marks the first row of a profile, which shows its header.
-export struct CommandAssignmentRow { profile-name: string, first: bool, name: string, script: string, places: [CommandPlaceRow] }
+/// `first` marks the first row of a keymap, which shows its header.
+export struct CommandAssignmentRow { keymap-name: string, first: bool, name: string, script: string, places: [CommandPlaceRow] }
 
 export global SettingsEditor {
     callback reset-text-permissions();
@@ -30,7 +30,7 @@ export global SettingsEditor {
     in-out property <int> high-contrast-index;
     /// Index into `AccessibilityChoice::ALL`: follow the system, on, off.
     in-out property <int> reduce-motion-index;
-    in-out property <bool> profile-osd;
+    in-out property <bool> keymap-osd;
     in-out property <bool> copy-osd;
     in-out property <bool> layer-hint;
     /// The layer hint can be shown: layer-shell is available.
@@ -79,9 +79,9 @@ export global SettingsEditor {
     in property <[GameAppEntry]> game-processes;
     in property <[GameAppEntry]> excluded-processes;
     in property <string> process-value;
-    /// Enabled rules of the current profile with a game-mode condition.
+    /// Enabled rules of the current keymap with a game-mode condition.
     in property <int> game-rule-count;
-    /// Enabled automatic profile rules with a game-mode condition.
+    /// Enabled automatic keymap rules with a game-mode condition.
     in property <int> game-auto-rule-count;
     in property <[string]> text-modes;
     in-out property <int> text-mode-index;
@@ -96,7 +96,7 @@ export global SettingsEditor {
     in-out property <string> mouse-device-path;
     in property <[DeviceChoice]> mouse-devices;
     in property <string> settings-dir;
-    in property <string> profiles-dir;
+    in property <string> keymaps-dir;
     /// Why the mapper cannot use the input devices; empty when it can.
     in property <[Message]> input-issues;
     in property <Message> device-discovery-error;
@@ -252,7 +252,7 @@ component MapperStatusCard inherits Rectangle {
                     : root.running ? @tr("Running for {}", root.duration(Math.max(AppState.mapper-uptime, 0)))
                     : root.crashed ? Locale.text({ id: "mapper-stopped-error" })
                     : root.failed ? Locale.text(AppState.mapper-error)
-                    : root.ready ? @tr("Keys work as usual. Start the mapper to apply your profiles.")
+                    : root.ready ? @tr("Keys work as usual. Start the mapper to apply your keymaps.")
                     : @tr("Select a keyboard below to start the mapper.");
                 color: root.failed ? Theme.text : Theme.muted; font-size: Theme.font-body; wrap: word-wrap;
             }
@@ -260,7 +260,7 @@ component MapperStatusCard inherits Rectangle {
                 text: @tr("Stopped {} ago after running for {}.", root.duration(AppState.mapper-stopped-ago), root.duration(AppState.mapper-ran));
                 color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap;
             }
-            // Directly in this profile: a nested one would size wrapped lines for the unwrapped width.
+            // Directly in this keymap: a nested one would size wrapped lines for the unwrapped width.
             for issue in (root.has-issues ? SettingsEditor.input-issues : []): Text {
                 accessible-live-region: assertive;
                 text: "⚠ " + Locale.text(issue);
@@ -409,7 +409,7 @@ export component SettingsPage inherits PageLayout {
                     if (AppState.in-development && AppState.is-linux) || AppState.autostart-supported: TitledCard {
                         accessible-name: @tr("Main");
                         if AppState.autostart-supported: CheckBox { text: @tr("Launch on startup"); checked <=> SettingsEditor.launch-on-startup; toggled => { SettingsEditor.save(); } }
-                        if AppState.in-development && AppState.is-linux: CheckBox { text: @tr("Show the Tecloid profile name when it changes"); checked <=> SettingsEditor.profile-osd; toggled => { SettingsEditor.save(); } }
+                        if AppState.in-development && AppState.is-linux: CheckBox { text: @tr("Show the Tecloid keymap name when it changes"); checked <=> SettingsEditor.keymap-osd; toggled => { SettingsEditor.save(); } }
                         if AppState.is-linux: CheckBox { text: @tr("Show a hint when Tecloid sends a copy command"); checked <=> SettingsEditor.copy-osd; toggled => { SettingsEditor.save(); } }
                         if AppState.in-development && AppState.is-linux: HorizontalLayout { vertical-stretch: 0; alignment: start; spacing: Theme.space-s;
                             CheckBox { horizontal-stretch: 0; text: @tr("Show the keys of a layer while it is held"); checked <=> SettingsEditor.layer-hint; toggled => { SettingsEditor.save(); } }
@@ -424,8 +424,8 @@ export component SettingsPage inherits PageLayout {
                         }
                         Divider {}
                         HorizontalLayout { spacing: Theme.space-m; padding: 0px; vertical-stretch: 0;
-                            Text { vertical-stretch: 0; text: @tr("Profiles directory: {}", SettingsEditor.profiles-dir); color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
-                            Button { text: @tr("Copy path"); accessible-description: SettingsEditor.profiles-dir; clicked => { root.copy-path(SettingsEditor.profiles-dir); } }
+                            Text { vertical-stretch: 0; text: @tr("Keymaps directory: {}", SettingsEditor.keymaps-dir); color: Theme.muted; wrap: word-wrap; horizontal-stretch: 1; }
+                            Button { text: @tr("Copy path"); accessible-description: SettingsEditor.keymaps-dir; clicked => { root.copy-path(SettingsEditor.keymaps-dir); } }
                         }
                     }
                     HorizontalLayout {
@@ -462,7 +462,7 @@ export component SettingsPage inherits PageLayout {
                         accessible-name: @tr("Commands");
                         HorizontalLayout { alignment: start; spacing: Theme.space-s;
                             CheckBox { horizontal-stretch: 0; text: @tr("Allow command execution"); checked <=> SettingsEditor.commands-enabled; toggled => { SettingsEditor.save(); } }
-                            VerticalLayout { alignment: center; InfoTip { text: (AppState.is-windows ? @tr("Commands run with PowerShell in the background and are not awaited.") : @tr("Commands run with sh -lc in the background and are not awaited.")) + "\n" + @tr("Commands stay off until you allow execution. Review below what your profiles would run."); } }
+                            VerticalLayout { alignment: center; InfoTip { text: (AppState.is-windows ? @tr("Commands run with PowerShell in the background and are not awaited.") : @tr("Commands run with sh -lc in the background and are not awaited.")) + "\n" + @tr("Commands stay off until you allow execution. Review below what your keymaps would run."); } }
                         }
                         VerticalLayout { padding: 0px; spacing: Theme.space-xl;
                             if SettingsEditor.commands-loading: Text { accessible-live-region: polite; text: @tr("Please wait…"); color: Theme.muted; }
@@ -474,7 +474,7 @@ export component SettingsPage inherits PageLayout {
                             for item in SettingsEditor.command-assignments: VerticalLayout {
                                 spacing: Theme.space-m;
                                 if item.first: Text {
-                                    text: item.profile-name != "" ? item.profile-name : @tr("Custom profile");
+                                    text: item.keymap-name != "" ? item.keymap-name : @tr("Custom keymap");
                                     color: Theme.text; font-weight: Theme.weight-semibold; wrap: word-wrap;
                                 }
                                 if item.first: HorizontalLayout {
@@ -753,7 +753,7 @@ export component SettingsPage inherits PageLayout {
                                 selected(index) => { AppState.set-game-control(index == 0 ? GameModeControl.auto : index == 1 ? GameModeControl.on : GameModeControl.off); }
                             }
                             Rectangle { horizontal-stretch: 1; }
-                            VerticalLayout { alignment: center; InfoTip { text: @tr("Game mode turns on rules and automatic profile rules that have a game-mode condition. Automatic profile rules apply only when the profile is chosen automatically (Profiles page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."); } }
+                            VerticalLayout { alignment: center; InfoTip { text: @tr("Game mode turns on rules and automatic keymap rules that have a game-mode condition. Automatic keymap rules apply only when the keymap is chosen automatically (Keymaps page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."); } }
                         }
                         Text {
                             vertical-stretch: 0; wrap: word-wrap; color: Theme.muted;
@@ -909,8 +909,8 @@ export component CommandDialogOverlay inherits FocusScope {
         card-width: 720px;
         close => { SettingsEditor.full-command = ""; }
         ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
-            preferred-height: full-profile.preferred-height;
-            full-profile := VerticalLayout {
+            preferred-height: full-keymap.preferred-height;
+            full-keymap := VerticalLayout {
                 full-text := TextInput {
                     accessible-label: @tr("Command");
                     text: SettingsEditor.full-command;
