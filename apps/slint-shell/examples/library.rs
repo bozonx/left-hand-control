@@ -279,9 +279,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let reloaded = ConfigDocument::load(paths.clone())?;
     assert!(reloaded.settings().auto_rules.is_empty());
+    assert!(reloaded.settings().editing_profile_id.is_none());
     assert_eq!(
-        reloaded.settings().editing_profile_id.as_deref(),
-        Some("user:Copy")
+        reloaded.profile(),
+        &tecloid_core::config::model::ProfilePreset::initial()
+    );
+    assert_eq!(
+        reloaded.settings().manual_profile_id,
+        document.read().settings().manual_profile_id
     );
     document.edit(slint_shell::document::View::Shell, |config| {
         config.update_settings(|settings| {
