@@ -1,7 +1,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Left Hand Control\n"
+"Project-Id-Version: Tecloid\n"
 "PO-Revision-Date: 2026-10-23 00:00+0000\n"
 "Last-Translator: Machine translation; review welcome\n"
 "Language-Team: Korean\n"
@@ -139,8 +139,8 @@ msgstr "편집이 시작된 이후 구성이 변경되었습니다. 변화를 �
 msgid "Unknown action type"
 msgstr "알 수 없는 작업 유형"
 
-msgid "Left Hand Control"
-msgstr "Left Hand Control"
+msgid "Tecloid"
+msgstr "Tecloid"
 
 msgid "Profiles"
 msgstr "프로필"
@@ -2194,7 +2194,7 @@ msgstr "프로필 {} 활성화(단일 모드로 전환)"
 msgid "There is no profile number {}"
 msgstr "프로필 번호 {}가 없습니다."
 
-msgid "Show the Left Hand Control profile name when it changes"
+msgid "Show the Tecloid profile name when it changes"
 msgstr "변경 시 왼손 컨트롤 프로필 이름 표시"
 
 msgid "Show the keys of a layer while it is held"
@@ -2339,7 +2339,7 @@ msgid "Action after {} ms of holding"
 msgstr "{} ms 동안 유지한 후의 동작"
 
 msgid ""
-"These codes are specific to Left Hand Control, not universal keyboard codes "
+"These codes are specific to Tecloid, not universal keyboard codes "
 "(e.g. KeyA, ArrowLeft)."
 msgstr "이러한 코드는 범용 키보드 코드(예: KeyA, ArrowLeft)가 아닌 왼손 컨트롤에만 적용됩니다."
 
@@ -2625,7 +2625,7 @@ msgid "Show standard QWERTY letter labels for visual reference."
 msgstr "시각적 참조를 위해 표준 QWERTY 문자 레이블을 표시합니다."
 
 msgid ""
-"Show internal key codes used in Left Hand Control profiles (e.g. KeyA, "
+"Show internal key codes used in Tecloid profiles (e.g. KeyA, "
 "ArrowLeft)."
 msgstr "왼손 컨트롤 프로필(예: KeyA, ArrowLeft)에 사용되는 내부 키 코드를 표시합니다."
 
@@ -2945,13 +2945,13 @@ msgid ""
 "Plasma and applications register their actions there. The chosen action is "
 "invoked as is, as if its shortcut were pressed, even when no keys are "
 "assigned to it. Which actions exist and how they behave depends on the "
-"Plasma version and installed applications, so Left Hand Control does not "
+"Plasma version and installed applications, so Tecloid does not "
 "guarantee them. Common window and desktop actions that also work on other "
 "platforms are in System actions."
 msgstr ""
 "목록은 KDE 전역 바로가기 서비스(kglobalaccel)에서 읽습니다. KWin, Plasma 및 응용 프로그램은 해당 작업을 여기에"
 " 등록합니다. 선택한 작업은 할당된 키가 없더라도 바로가기를 누른 것처럼 있는 그대로 호출됩니다. 존재하는 동작과 동작 방식은 플라즈마 "
-"버전과 설치된 애플리케이션에 따라 다르므로 Left Hand Control은 이를 보장하지 않습니다. 다른 플랫폼에서도 작동하는 일반적인"
+"버전과 설치된 애플리케이션에 따라 다르므로 Tecloid은 이를 보장하지 않습니다. 다른 플랫폼에서도 작동하는 일반적인"
 " 창 및 데스크톱 작업은 시스템 작업에 있습니다."
 
 msgid "Hold key or combination"

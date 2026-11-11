@@ -1,10 +1,10 @@
 backend:
   name: github
-  repo: bozonx/left-hand-control
+  repo: bozonx/tecloid
   branch: main
   use_graphql: true
 
-site_url: https://bozonx.github.io/left-hand-control
+site_url: https://bozonx.github.io/tecloid
 media_folder: site/src/public/media
 public_folder: /media
 slug:

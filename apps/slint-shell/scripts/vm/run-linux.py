@@ -27,7 +27,7 @@ from vmlib import Report, StepFailed, Vm, commit, environment_ok, receiver_text,
 # scp paths are relative to the guest home; shell commands use ~.
 GUEST = "~/lhc-e2e"
 GUEST_PY = f"python3 {GUEST}/linux-guest.py"
-CONFIG = "~/.config/dev.bozonx.left-hand-control/config.json"
+CONFIG = "~/.config/dev.bozonx.tecloid/config.json"
 
 
 def decline_portal_dialogs(points, click, cancelled, visible):
@@ -131,8 +131,8 @@ def main():
             vm.copy_to(previous, "lhc-e2e/")
 
     archive = package.name.endswith(".tar.gz")
-    installer = "~/.local/lib/dev.bozonx.left-hand-control/install-linux.sh"
-    binary = "~/.local/bin/left-hand-control" if archive else "left-hand-control"
+    installer = "~/.local/lib/dev.bozonx.tecloid/install-linux.sh"
+    binary = "~/.local/bin/tecloid" if archive else "tecloid"
 
     def install(key="install", path=None):
         if archive:

@@ -434,7 +434,7 @@ mod linux_tests {
                 panic!("{name} did not resolve");
             };
             assert_eq!(call.destination, "org.gnome.Shell");
-            assert_eq!(call.path, "/dev/bozonx/LeftHandControl/Gnome");
+            assert_eq!(call.path, "/dev/bozonx/Tecloid/Gnome");
             assert_eq!(call.method, "Action");
             assert!(matches!(call.args.as_slice(), [DbusArg::Str(value)] if value == name));
         }

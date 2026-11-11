@@ -16,10 +16,10 @@ from vmlib import Report, StepFailed, Vm, commit, environment_ok, receiver_text,
 
 GUEST = "~/lhc-e2e"
 PY = f"python3 {GUEST}/linux-guest.py"
-APP_ID = "dev.bozonx.left-hand-control"
+APP_ID = "dev.bozonx.tecloid"
 INSTALL = f"~/.local/lib/{APP_ID}"
-UUID = "left-hand-control@bozonx.dev"
-BRIDGE = "gdbus call --session --dest org.gnome.Shell --object-path /dev/bozonx/LeftHandControl/Gnome --method dev.bozonx.LeftHandControl.Gnome."
+UUID = "tecloid@bozonx.dev"
+BRIDGE = "gdbus call --session --dest org.gnome.Shell --object-path /dev/bozonx/Tecloid/Gnome --method dev.bozonx.Tecloid.Gnome."
 
 
 def main():
@@ -140,7 +140,7 @@ def main():
         def settings_focused():
             output = vm.ssh(f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus {BRIDGE}Snapshot true")
             window = json.loads(ast.literal_eval(output.strip())[0])["window"]
-            return window and window["appId"] == "dev.bozonx.left-hand-control"
+            return window and window["appId"] == "dev.bozonx.tecloid"
 
         def restore_host():
             pid = vm.ssh("pgrep -u $(id -u) -x left-hand-contr").strip()
@@ -149,7 +149,7 @@ def main():
             if vm.ssh("pgrep -u $(id -u) -x left-hand-contr").strip() != pid:
                 raise StepFailed("tray recovery restarted the application")
 
-        vm.ssh("~/.local/bin/left-hand-control hide")
+        vm.ssh("~/.local/bin/tecloid hide")
         disable_host()
         wait_for("settings fallback after tray host loss", settings_focused)
         vm.qmp.screendump(vm.logs / "tray-host-absent.png")

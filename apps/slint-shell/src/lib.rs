@@ -1,4 +1,4 @@
-//! Slint shell of Left Hand Control.
+//! Slint shell of Tecloid.
 //!
 //! One binary runs the settings process (`app`), the Spell
 //! popup worker (`--spell-worker`, Linux + feature `spell`) and a CLI client
@@ -46,7 +46,7 @@ pub use pages::bind_document;
 use std::time::Instant;
 
 const HELP: &str = concat!(
-    "Left Hand Control ",
+    "Tecloid ",
     env!("CARGO_PKG_VERSION"),
     "\n\nWithout arguments starts the application, or shows the settings window of the\n\
      instance that is already running. With a command, sends it to the running instance.\n\n"
@@ -61,7 +61,7 @@ pub fn run(args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
     match args.as_slice() {
         [flag] if flag == "--version" || flag == "-V" => {
-            println!("left-hand-control {}", env!("CARGO_PKG_VERSION"));
+            println!("tecloid {}", env!("CARGO_PKG_VERSION"));
             return Ok(());
         }
         [flag] if flag == "--help" || flag == "-h" => {

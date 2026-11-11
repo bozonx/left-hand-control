@@ -27,7 +27,7 @@ try {
     Invoke-Checked 'cargo' @(
         'build', '--release', '--locked', '--manifest-path', $manifest,
         '-p', 'lhc-core', '-p', 'slint-shell',
-        '--bin', 'left-hand-control', '--example', 'windows-mapper-stand'
+        '--bin', 'tecloid', '--example', 'windows-mapper-stand'
     )
 
 
@@ -36,7 +36,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'cargo metadata failed' }
     $metadata = $metadataJson | ConvertFrom-Json
     $version = ($metadata.packages | Where-Object name -eq 'slint-shell').version
-    $archive = Join-Path $metadata.target_directory "release-artifacts-windows\left-hand-control-$version-windows-x86_64.zip"
+    $archive = Join-Path $metadata.target_directory "release-artifacts-windows\tecloid-$version-windows-x86_64.zip"
     & (Join-Path $PSScriptRoot 'check-windows-package.ps1') -Archive $archive -Desktop
 } finally {
     Pop-Location

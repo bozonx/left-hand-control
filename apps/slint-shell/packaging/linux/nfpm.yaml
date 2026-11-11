@@ -1,7 +1,7 @@
 # deb and rpm packages built by nfpm from the release binary; built by
 # scripts/release/release-linux.sh, which substitutes @BINARY@ and @CHANGELOG@
 # (nfpm does not expand variables in paths) and passes VERSION in the environment.
-name: left-hand-control
+name: tecloid
 arch: amd64
 platform: linux
 version: ${VERSION}
@@ -10,79 +10,79 @@ section: utils
 priority: optional
 maintainer: bozonx <ipkozyrin@gmail.com>
 vendor: bozonx
-homepage: https://github.com/bozonx/left-hand-control
+homepage: https://github.com/bozonx/tecloid
 license: GPL-3.0-or-later
 # Package changelog required by Debian and Fedora policy; the user-facing
 # history stays in CHANGELOG.md.
 changelog: "@CHANGELOG@"
 description: |-
   Keyboard mapper with layers, macros and commands
-  Left Hand Control intercepts a physical keyboard, applies layers, rules,
+  Tecloid intercepts a physical keyboard, applies layers, rules,
   macros and commands, and emits the result through a virtual input device.
   It lives in the system tray and opens quick popups for emoji and actions.
   The primary environment is KDE Plasma 6 on Wayland.
 
 contents:
-  - src: crates/lhc-core/assets/gnome-extension/left-hand-control@bozonx.dev/
-    dst: /usr/share/left-hand-control/gnome-extension/left-hand-control@bozonx.dev/
+  - src: crates/lhc-core/assets/gnome-extension/tecloid@bozonx.dev/
+    dst: /usr/share/tecloid/gnome-extension/tecloid@bozonx.dev/
   - src: apps/slint-shell/scripts/install-gnome-extension.sh
-    dst: /usr/share/left-hand-control/install-gnome-extension.sh
+    dst: /usr/share/tecloid/install-gnome-extension.sh
     file_info: { mode: 0755 }
   - src: "@BINARY@"
-    dst: /usr/bin/left-hand-control
+    dst: /usr/bin/tecloid
     file_info: { mode: 0755 }
-  - src: apps/slint-shell/packaging/linux/dev.bozonx.left-hand-control.desktop
-    dst: /usr/share/applications/dev.bozonx.left-hand-control.desktop
+  - src: apps/slint-shell/packaging/linux/dev.bozonx.tecloid.desktop
+    dst: /usr/share/applications/dev.bozonx.tecloid.desktop
     file_info: { mode: 0644 }
-  - src: apps/slint-shell/packaging/linux/dev.bozonx.left-hand-control.metainfo.xml
-    dst: /usr/share/metainfo/dev.bozonx.left-hand-control.metainfo.xml
+  - src: apps/slint-shell/packaging/linux/dev.bozonx.tecloid.metainfo.xml
+    dst: /usr/share/metainfo/dev.bozonx.tecloid.metainfo.xml
     file_info: { mode: 0644 }
-  - src: apps/slint-shell/packaging/linux/60-left-hand-control.rules
-    dst: /usr/lib/udev/rules.d/60-left-hand-control.rules
+  - src: apps/slint-shell/packaging/linux/60-tecloid.rules
+    dst: /usr/lib/udev/rules.d/60-tecloid.rules
     file_info: { mode: 0644 }
   - src: apps/slint-shell/packaging/linux/modules-load.conf
-    dst: /usr/lib/modules-load.d/left-hand-control.conf
+    dst: /usr/lib/modules-load.d/tecloid.conf
     file_info: { mode: 0644 }
   - src: apps/slint-shell/assets/icon.svg
-    dst: /usr/share/icons/hicolor/scalable/apps/dev.bozonx.left-hand-control.svg
+    dst: /usr/share/icons/hicolor/scalable/apps/dev.bozonx.tecloid.svg
     file_info: { mode: 0644 }
   - src: apps/slint-shell/packaging/linux/icons/16.png
-    dst: /usr/share/icons/hicolor/16x16/apps/dev.bozonx.left-hand-control.png
+    dst: /usr/share/icons/hicolor/16x16/apps/dev.bozonx.tecloid.png
     file_info: { mode: 0644 }
   - src: apps/slint-shell/packaging/linux/icons/22.png
-    dst: /usr/share/icons/hicolor/22x22/apps/dev.bozonx.left-hand-control.png
+    dst: /usr/share/icons/hicolor/22x22/apps/dev.bozonx.tecloid.png
     file_info: { mode: 0644 }
   - src: apps/slint-shell/packaging/linux/icons/24.png
-    dst: /usr/share/icons/hicolor/24x24/apps/dev.bozonx.left-hand-control.png
+    dst: /usr/share/icons/hicolor/24x24/apps/dev.bozonx.tecloid.png
     file_info: { mode: 0644 }
   - src: apps/slint-shell/packaging/linux/icons/32.png
-    dst: /usr/share/icons/hicolor/32x32/apps/dev.bozonx.left-hand-control.png
+    dst: /usr/share/icons/hicolor/32x32/apps/dev.bozonx.tecloid.png
     file_info: { mode: 0644 }
   - src: apps/slint-shell/packaging/linux/icons/48.png
-    dst: /usr/share/icons/hicolor/48x48/apps/dev.bozonx.left-hand-control.png
+    dst: /usr/share/icons/hicolor/48x48/apps/dev.bozonx.tecloid.png
     file_info: { mode: 0644 }
   - src: apps/slint-shell/packaging/linux/icons/64.png
-    dst: /usr/share/icons/hicolor/64x64/apps/dev.bozonx.left-hand-control.png
+    dst: /usr/share/icons/hicolor/64x64/apps/dev.bozonx.tecloid.png
     file_info: { mode: 0644 }
   - src: apps/slint-shell/packaging/linux/icons/128.png
-    dst: /usr/share/icons/hicolor/128x128/apps/dev.bozonx.left-hand-control.png
+    dst: /usr/share/icons/hicolor/128x128/apps/dev.bozonx.tecloid.png
     file_info: { mode: 0644 }
   - src: apps/slint-shell/packaging/linux/icons/256.png
-    dst: /usr/share/icons/hicolor/256x256/apps/dev.bozonx.left-hand-control.png
+    dst: /usr/share/icons/hicolor/256x256/apps/dev.bozonx.tecloid.png
     file_info: { mode: 0644 }
   - src: apps/slint-shell/packaging/linux/icons/512.png
-    dst: /usr/share/icons/hicolor/512x512/apps/dev.bozonx.left-hand-control.png
+    dst: /usr/share/icons/hicolor/512x512/apps/dev.bozonx.tecloid.png
     file_info: { mode: 0644 }
   - src: apps/slint-shell/packaging/linux/debian-copyright
-    dst: /usr/share/doc/left-hand-control/copyright
+    dst: /usr/share/doc/tecloid/copyright
     file_info: { mode: 0644 }
     packager: deb
   - src: apps/slint-shell/packaging/linux/lintian-overrides
-    dst: /usr/share/lintian/overrides/left-hand-control
+    dst: /usr/share/lintian/overrides/tecloid
     file_info: { mode: 0644 }
     packager: deb
   - src: LICENSE
-    dst: /usr/share/licenses/left-hand-control/LICENSE
+    dst: /usr/share/licenses/tecloid/LICENSE
     type: license
     file_info: { mode: 0644 }
     packager: rpm

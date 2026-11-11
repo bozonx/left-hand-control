@@ -3,8 +3,8 @@
 # explicit `permissions` commands use sudo.
 set -eu
 
-app_id=dev.bozonx.left-hand-control
-binary=left-hand-control
+app_id=dev.bozonx.tecloid
+binary=tecloid
 bundle_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 prefix=${LHC_INSTALL_PREFIX:-"$HOME/.local"}
 case "$prefix" in
@@ -26,12 +26,12 @@ metainfo="$prefix/share/metainfo/$app_id.metainfo.xml"
 icons="$prefix/share/icons/hicolor"
 icon_sizes='16 22 24 32 48 64 128 256 512'
 bundle_files="$binary LICENSE README.md features.md $app_id.desktop $app_id.metainfo.xml
-60-left-hand-control.rules modules-load.conf icons/scalable.svg install-gnome-extension.sh
-gnome-extension/left-hand-control@bozonx.dev/metadata.json
-gnome-extension/left-hand-control@bozonx.dev/extension.js"
+60-tecloid.rules modules-load.conf icons/scalable.svg install-gnome-extension.sh
+gnome-extension/tecloid@bozonx.dev/metadata.json
+gnome-extension/tecloid@bozonx.dev/extension.js"
 for size in $icon_sizes; do bundle_files="$bundle_files icons/$size.png"; done
-udev_rule=/etc/udev/rules.d/60-left-hand-control.rules
-modules_load=/etc/modules-load.d/left-hand-control.conf
+udev_rule=/etc/udev/rules.d/60-tecloid.rules
+modules_load=/etc/modules-load.d/tecloid.conf
 
 check_launcher() {
     if [ -e "$launcher" ] || [ -L "$launcher" ]; then
@@ -56,10 +56,10 @@ case "${1:-install}" in
         for name in $bundle_files install-linux.sh; do
             rm -f -- "$app_dir/$name"
         done
-        rmdir -- "$app_dir/gnome-extension/left-hand-control@bozonx.dev" "$app_dir/gnome-extension"
+        rmdir -- "$app_dir/gnome-extension/tecloid@bozonx.dev" "$app_dir/gnome-extension"
         if [ -d "$app_dir/icons" ]; then rmdir -- "$app_dir/icons"; fi
         if [ -d "$app_dir" ]; then rmdir -- "$app_dir"; fi
-        echo "Removed Left Hand Control from $prefix; configuration was retained."
+        echo "Removed Tecloid from $prefix; configuration was retained."
         if [ -e "$udev_rule" ]; then
             echo "Device permissions remain; remove them with: sudo rm -f $udev_rule $modules_load"
         fi
@@ -71,7 +71,7 @@ case "${1:-install}" in
             echo 'Run this command as the desktop user, not as root.' >&2
             exit 1
         fi
-        as_root install -D -m 644 -- "$bundle_dir/60-left-hand-control.rules" "$udev_rule"
+        as_root install -D -m 644 -- "$bundle_dir/60-tecloid.rules" "$udev_rule"
         as_root install -D -m 644 -- "$bundle_dir/modules-load.conf" "$modules_load"
         as_root modprobe uinput || echo 'Could not load the uinput module now; it loads on the next boot.' >&2
         as_root udevadm control --reload-rules
@@ -103,7 +103,7 @@ for name in $bundle_files; do
         exit 1
     fi
 done
-mkdir -p -- "$app_dir/gnome-extension/left-hand-control@bozonx.dev" "$app_dir/icons" "$prefix/bin" "$(dirname -- "$desktop")" "$(dirname -- "$metainfo")"
+mkdir -p -- "$app_dir/gnome-extension/tecloid@bozonx.dev" "$app_dir/icons" "$prefix/bin" "$(dirname -- "$desktop")" "$(dirname -- "$metainfo")"
 # Keep the installed executable path stable; replace its inode so a running
 # executable does not prevent an update.
 temporary_binary=$(mktemp "$app_dir/.$binary.XXXXXXXX")
@@ -133,7 +133,7 @@ chmod 644 -- "$desktop"
 if command -v update-desktop-database >/dev/null 2>&1; then
     update-desktop-database -q "$(dirname -- "$desktop")" || true
 fi
-echo "Installed Left Hand Control in $app_dir."
+echo "Installed Tecloid in $app_dir."
 echo "Start with: $launcher"
 if [ ! -e "$udev_rule" ]; then
     echo "Grant keyboard and /dev/uinput access once with: $app_dir/install-linux.sh permissions"

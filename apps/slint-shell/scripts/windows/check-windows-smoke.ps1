@@ -10,7 +10,7 @@ if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))
 }
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
 $output = Join-Path $root 'windows-runtime\smoke'
-$exe = Join-Path $root 'target\debug\left-hand-control.exe'
+$exe = Join-Path $root 'target\debug\tecloid.exe'
 . (Join-Path $PSScriptRoot 'windows-test-lib.ps1')
 $server = $null
 $second = $null
@@ -60,7 +60,7 @@ try {
     if (-not $SkipBuild) {
         # Resolve the Windows feature union once: separate core/shell builds
         # otherwise invalidate each other's core dependency and Slint output.
-        Invoke-Checked 'cargo' @('build', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--bin', 'left-hand-control', '--example', 'windows-mapper-stand', '--example', 'editor', '--example', 'interactions')
+        Invoke-Checked 'cargo' @('build', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--bin', 'tecloid', '--example', 'windows-mapper-stand', '--example', 'editor', '--example', 'interactions')
         Invoke-Checked 'cargo' @('test', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--lib', '--test', 'ipc')
     }
     Invoke-Checked (Join-Path $root 'target\debug\examples\editor.exe') @('--smoke')

@@ -197,7 +197,7 @@ fn desktop_entry(executable: &str) -> Result<String, String> {
     }
     let try_exec = executable.replace('\\', "\\\\");
     Ok(format!(
-        "[Desktop Entry]\nType=Application\nName=Left Hand Control\n\
+        "[Desktop Entry]\nType=Application\nName=Tecloid\n\
          Icon={APP_ID}\nExec=\"{exec}\"\nTryExec={try_exec}\nTerminal=false\n\
          X-GNOME-Autostart-enabled=true\n"
     ))
@@ -324,9 +324,9 @@ mod tests {
 
     #[test]
     fn desktop_entry_escapes_the_executable() {
-        let text = desktop_entry("/opt/a b/$test%/back\\slash/left-hand-control").unwrap();
-        assert!(text.contains("Exec=\"/opt/a b/\\\\$test%%/back\\\\\\\\slash/left-hand-control\""));
-        assert!(text.contains("TryExec=/opt/a b/$test%/back\\\\slash/left-hand-control\n"));
+        let text = desktop_entry("/opt/a b/$test%/back\\slash/tecloid").unwrap();
+        assert!(text.contains("Exec=\"/opt/a b/\\\\$test%%/back\\\\\\\\slash/tecloid\""));
+        assert!(text.contains("TryExec=/opt/a b/$test%/back\\\\slash/tecloid\n"));
         assert!(entry_active(&text));
         assert!(desktop_entry("/opt/a\nb").is_err());
     }

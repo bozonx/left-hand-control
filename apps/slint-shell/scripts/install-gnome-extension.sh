@@ -1,7 +1,7 @@
 #!/bin/sh
 # Explicit, user-local installation; enabling takes effect after a GNOME login.
 set -eu
-uuid=left-hand-control@bozonx.dev
+uuid=tecloid@bozonx.dev
 bundle_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 data_dir=${XDG_DATA_HOME:-"$HOME/.local/share"}
 source_dir="$bundle_dir/gnome-extension/$uuid"

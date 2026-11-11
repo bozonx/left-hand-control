@@ -55,10 +55,10 @@ sudo apt install build-essential clang cmake ninja-build python3 pkg-config \
 Права на устройства ввода для разработки (один раз, затем перезайти в сессию):
 
 ```sh
-sudo install -D -m 644 apps/slint-shell/packaging/linux/60-left-hand-control.rules \
-  /etc/udev/rules.d/60-left-hand-control.rules
+sudo install -D -m 644 apps/slint-shell/packaging/linux/60-tecloid.rules \
+  /etc/udev/rules.d/60-tecloid.rules
 sudo install -D -m 644 apps/slint-shell/packaging/linux/modules-load.conf \
-  /etc/modules-load.d/left-hand-control.conf
+  /etc/modules-load.d/tecloid.conf
 sudo modprobe uinput
 sudo udevadm control --reload-rules
 sudo udevadm trigger --subsystem-match=misc --sysname-match=uinput
@@ -79,7 +79,7 @@ cargo build -p slint-shell --release --features spell       # release-сборк
 ```
 
 Окна при старте скрыты, приложение живёт в трее. Настройки открываются кликом по
-иконке трея или командой `target/debug/left-hand-control show settings`.
+иконке трея или командой `target/debug/tecloid show settings`.
 
 | `LHC_POPUPS` | Поведение |
 | --- | --- |
@@ -108,12 +108,12 @@ SLINT_LIVE_PREVIEW=1 cargo run -p slint-shell --features slint/live-preview --fe
 
 Debug-сборки никогда не трогают реальный конфиг пользователя:
 
-- по умолчанию — `<repo>/dev-files/linux/.config/dev.bozonx.left-hand-control/config.json`,
-  данные и библиотека раскладок — в `dev-files/linux/.local/share/dev.bozonx.left-hand-control/`;
+- по умолчанию — `<repo>/dev-files/linux/.config/dev.bozonx.tecloid/config.json`,
+  данные и библиотека раскладок — в `dev-files/linux/.local/share/dev.bozonx.tecloid/`;
 - `LHC_DEV_DIR=/путь` задаёт другой каталог с той же структурой, в том числе в release-сборке для изолированной приёмки.
 
-Release-сборки используют `~/.config/dev.bozonx.left-hand-control/` и
-`~/.local/share/dev.bozonx.left-hand-control/`. Пути разрешает только
+Release-сборки используют `~/.config/dev.bozonx.tecloid/` и
+`~/.local/share/dev.bozonx.tecloid/`. Пути разрешает только
 `lhc_core::storage::StoragePaths::resolve()`. Конфиг читается при запуске и меняется через приложение. После ручного
 редактирования файла перезапустите приложение; сохранение из работающего приложения
 может перезаписать ручные изменения. Файлы пишутся атомарно через временный
@@ -136,14 +136,14 @@ LHC_UPDATE_SCHEMAS=1 cargo test --locked -p lhc-core --lib published_schemas
 открывает настройки работающего экземпляра.
 
 ```sh
-target/debug/left-hand-control show settings      # show emoji|quick [страница]
-target/debug/left-hand-control hide
-target/debug/left-hand-control toggle-mapper
-target/debug/left-hand-control game toggle        # auto|on|off|toggle
-target/debug/left-hand-control preferences dark ru
-target/debug/left-hand-control ping
-target/debug/left-hand-control quit
-target/debug/left-hand-control --version          # --version и --help не требуют экземпляра
+target/debug/tecloid show settings      # show emoji|quick [страница]
+target/debug/tecloid hide
+target/debug/tecloid toggle-mapper
+target/debug/tecloid game toggle        # auto|on|off|toggle
+target/debug/tecloid preferences dark ru
+target/debug/tecloid ping
+target/debug/tecloid quit
+target/debug/tecloid --version          # --version и --help не требуют экземпляра
 ```
 
 Ответ `queued` означает, что команда поставлена в очередь UI, а не что окно уже
@@ -172,7 +172,7 @@ target/debug/left-hand-control --version          # --version и --help не т�
 
 ```sh
 LHC_DEV_DIR=/tmp/lhc-dev LHC_SOCKET=lhc-dev.sock LHC_HOTKEYS=off cargo run -p slint-shell
-LHC_SOCKET=lhc-dev.sock target/debug/left-hand-control quit
+LHC_SOCKET=lhc-dev.sock target/debug/tecloid quit
 ```
 
 ### Окружения
@@ -261,7 +261,7 @@ flush черновиков и debounce без графической сесси�
 | --- | --- |
 | `python3 apps/slint-shell/scripts/check/check-recovery.py --popups spell` | Восстановление исправленного конфига после перезапуска приложения и доставку попапа после перезапуска Spell (`--popups winit`; `--live-preview` — перезагрузку `.slint`) |
 | `python3 apps/slint-shell/scripts/check/check-preferences.py` | Смену темы и языка по IPC при открытых попапах, штатный `quit` |
-| `python3 apps/slint-shell/scripts/check/check-worker-crash.py target/debug/left-hand-control` | Перезапуск упавшего Spell worker |
+| `python3 apps/slint-shell/scripts/check/check-worker-crash.py target/debug/tecloid` | Перезапуск упавшего Spell worker |
 | `python3 apps/slint-shell/scripts/release/check-linux-install.py` | Инсталлятор архива во временном префиксе (нужен `desktop-file-validate`) |
 | `python3 apps/slint-shell/scripts/check/test-clipboard.py` | Вставку через буфер в отдельном виртуальном KWin (нужны `kwin_wayland`, `dbus-run-session`); рабочий буфер не затрагивается |
 
@@ -383,7 +383,7 @@ GNU `timeout` из coreutils. IPC-проверки используют отде
   "cpus": 4,
   "install": "sudo dnf install -y {package}",
   "reinstall": "sudo dnf reinstall -y {package}",
-  "remove": "sudo dnf remove -y left-hand-control",
+  "remove": "sudo dnf remove -y tecloid",
   "portal_keys": ["ret"]
 }
 ```
@@ -403,7 +403,7 @@ GNU `timeout` из coreutils. IPC-проверки используют отде
 
 Для Debian/Kubuntu: `"install": "sudo apt-get install -y {package}"`,
 `"reinstall": "sudo apt-get install -y --reinstall {package}"`,
-`"remove": "sudo apt-get remove -y left-hand-control"`; для openSUSE — `zypper
+`"remove": "sudo apt-get remove -y tecloid"`; для openSUSE — `zypper
 --non-interactive install --allow-unsigned-rpm {package}` и
 `zypper --non-interactive install --force --allow-unsigned-rpm {package}`.
 
@@ -506,7 +506,7 @@ $ssh 'sudo cloud-init status --wait; sudo apt-get update && sudo DEBIAN_FRONTEND
 
 ```sh
 apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-fedora-kde \
-  --package target/release-artifacts/left-hand-control-<версия>-1.x86_64.rpm
+  --package target/release-artifacts/tecloid-<версия>-1.x86_64.rpm
 ```
 
 Опция `--previous <старый .rpm/.deb>` сначала ставит предыдущий релиз, запускает
@@ -635,7 +635,7 @@ Elevated/secure desktop, lock/unlock, suspend/resume, гибель всего д
 установленными MSVC Build Tools и Rust:
 
 1. Создайте диск кэша сборки — он переживает прогоны, поэтому пересборка инкрементальная:
-   `qemu-img create -f qcow2 /mnt/disk2/vm/left-hand-control-windows/cache.qcow2 64G`.
+   `qemu-img create -f qcow2 /mnt/disk2/vm/tecloid-windows/cache.qcow2 64G`.
 2. Создайте `vm.json`:
    ```json
    {
@@ -676,7 +676,7 @@ Elevated/secure desktop, lock/unlock, suspend/resume, гибель всего д
 Прогон:
 
 ```sh
-apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows
+apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/tecloid-windows
 ```
 
 Раннер упаковывает рабочее дерево (`git ls-files` вместе с неотслеживаемыми, но не
@@ -719,7 +719,7 @@ classic требует ручного одобрения).
 | GitHub Releases (tar.gz, deb, rpm, vendor, `SHA256SUMS`, attestation) | Workflow готов, первый тег ещё не ставили |
 | Fedora COPR | Следующий шаг: SRPM из vendor-архива |
 | Свой APT/RPM-репозиторий (GitHub Pages или Cloudsmith) или openSUSE Build Service | Когда появятся пользователи Debian/Ubuntu/openSUSE |
-| AUR (`left-hand-control`, `left-hand-control-bin`) | Когда откроют регистрацию |
+| AUR (`tecloid`, `tecloid-bin`) | Когда откроют регистрацию |
 | nixpkgs | Когда стабилизируется формат |
 | AppImage | Отложен: автозапуск должен брать `$APPIMAGE` вместо `current_exe()`, а права на устройства нужно выдавать отдельно |
 | Ubuntu PPA | Не планируется (сборка без сети, старый rustc) |
@@ -730,10 +730,10 @@ Windows runner; desktop-приёмка выполняется отдельно �
 ### Артефакты (Linux x86_64)
 
 ```
-left-hand-control-<ver>-linux-x86_64.tar.gz   # ставится в ~/.local через install-linux.sh
-left-hand-control_<ver>_amd64.deb             # Debian 12+, Ubuntu 22.04+
-left-hand-control-<ver>-1.x86_64.rpm          # Fedora, openSUSE
-left-hand-control-<ver>-vendor.tar.xz         # cargo vendor: офлайн-сборка и исходники для GPL
+tecloid-<ver>-linux-x86_64.tar.gz   # ставится в ~/.local через install-linux.sh
+tecloid_<ver>_amd64.deb             # Debian 12+, Ubuntu 22.04+
+tecloid-<ver>-1.x86_64.rpm          # Fedora, openSUSE
+tecloid-<ver>-vendor.tar.xz         # cargo vendor: офлайн-сборка и исходники для GPL
 SHA256SUMS
 ```
 
@@ -754,10 +754,10 @@ SHA256SUMS
 
 ```powershell
 powershell -NoProfile -File apps/slint-shell/scripts/release/package-windows.ps1
-powershell -NoProfile -File apps/slint-shell/scripts/windows/check-windows-package.ps1 -Archive target/release-artifacts-windows/left-hand-control-<версия>-windows-x86_64.zip -Desktop
+powershell -NoProfile -File apps/slint-shell/scripts/windows/check-windows-package.ps1 -Archive target/release-artifacts-windows/tecloid-<версия>-windows-x86_64.zip -Desktop
 ```
 
-Артефакты: `left-hand-control-<версия>-windows-x86_64.zip` и
+Артефакты: `tecloid-<версия>-windows-x86_64.zip` и
 `WINDOWS-SHA256SUMS`. ZIP содержит release executable, лицензию и инструкции;
 профили и тестовые данные не входят. Это portable-поставка без установщика,
 автоматической установки автозапуска и Authenticode-подписи. Установка, обновление
@@ -873,7 +873,7 @@ GitHub) и поставить заново на исправленный ком�
 ## 6. Частые проблемы
 
 - **Второй запуск открывает настройки, а не новый экземпляр** — сокет занят:
-  `target/debug/left-hand-control quit` или другой `LHC_SOCKET`. Устаревший сокет
+  `target/debug/tecloid quit` или другой `LHC_SOCKET`. Устаревший сокет
   после аварии удаляется при следующем запуске.
 - **Первая сборка очень долгая или падает на Skia** — проверьте clang, cmake, ninja, Python.
 - **`No readable Ctrl+Alt+F11/F12 evdev devices`** — нет доступа к `/dev/input`:

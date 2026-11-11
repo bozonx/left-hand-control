@@ -11,8 +11,8 @@ use zbus::blocking::{Connection, Proxy};
 const METHOD_TIMEOUT: Duration = Duration::from_millis(750);
 
 pub(crate) const SERVICE: &str = "org.gnome.Shell";
-pub(crate) const PATH: &str = "/dev/bozonx/LeftHandControl/Gnome";
-pub(crate) const INTERFACE: &str = "dev.bozonx.LeftHandControl.Gnome";
+pub(crate) const PATH: &str = "/dev/bozonx/Tecloid/Gnome";
+pub(crate) const INTERFACE: &str = "dev.bozonx.Tecloid.Gnome";
 /// Activation tries while the window is not mapped yet, and their pause.
 const ACTIVATION_ATTEMPTS: u32 = 5;
 const ACTIVATION_RETRY: Duration = Duration::from_millis(100);

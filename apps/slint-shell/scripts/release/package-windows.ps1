@@ -22,15 +22,15 @@ try {
     $hostInfo = & rustc -vV
     if ($LASTEXITCODE -ne 0 -or $hostInfo -notcontains 'host: x86_64-pc-windows-msvc') { throw 'Windows x64 MSVC host required' }
     # Match the e2e build's dev-dependency feature union to reuse its tested binary.
-    Invoke-Cargo -Arguments @('build', '--release', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--bin', 'left-hand-control', '--example', 'windows-mapper-stand')
-    $binary = Join-Path $metadata.target_directory 'release\left-hand-control.exe'
+    Invoke-Cargo -Arguments @('build', '--release', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--bin', 'tecloid', '--example', 'windows-mapper-stand')
+    $binary = Join-Path $metadata.target_directory 'release\tecloid.exe'
     $out = Join-Path $metadata.target_directory 'release-artifacts-windows'
     New-Item -ItemType Directory -Force $out | Out-Null
-    $name = "left-hand-control-$version-windows-x86_64"
+    $name = "tecloid-$version-windows-x86_64"
     $staging = Join-Path $out ([guid]::NewGuid().ToString())
     $bundle = Join-Path $staging $name
     New-Item -ItemType Directory -Force $bundle | Out-Null
-    Copy-Item $binary (Join-Path $bundle 'left-hand-control.exe')
+    Copy-Item $binary (Join-Path $bundle 'tecloid.exe')
     Copy-Item (Join-Path $root 'LICENSE') $bundle
     Copy-Item (Join-Path $root 'docs\install-windows.md') (Join-Path $bundle 'README.md')
     Copy-Item (Join-Path $root 'docs\features.md') $bundle

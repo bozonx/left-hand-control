@@ -9,12 +9,12 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 /// Stable application identifier used for config and data directories.
-pub const APP_ID: &str = "dev.bozonx.left-hand-control";
+pub const APP_ID: &str = "dev.bozonx.tecloid";
 /// Window identity reserved for transient input popups.
-pub const POPUP_APP_ID: &str = "dev.bozonx.left-hand-control.popup";
+pub const POPUP_APP_ID: &str = "dev.bozonx.tecloid.popup";
 /// Application name for technical identifiers (notifications, input
 /// sessions); the UI shows a translated title instead.
-pub const APP_NAME: &str = "Left Hand Control";
+pub const APP_NAME: &str = "Tecloid";
 /// Settings file inside the config directory.
 pub const CONFIG_FILE: &str = "config.json";
 
@@ -630,20 +630,18 @@ mod tests {
         let linux = StoragePaths::dev(base, "linux");
         assert_eq!(
             linux.config_path(),
-            PathBuf::from("/repo/dev-files/linux/.config/dev.bozonx.left-hand-control/config.json")
+            PathBuf::from("/repo/dev-files/linux/.config/dev.bozonx.tecloid/config.json")
         );
         assert_eq!(
             linux.profiles_dir().join("Test.json"),
             PathBuf::from(
-                "/repo/dev-files/linux/.local/share/dev.bozonx.left-hand-control/profiles/Test.json"
+                "/repo/dev-files/linux/.local/share/dev.bozonx.tecloid/profiles/Test.json"
             )
         );
         let windows = StoragePaths::dev(base, "windows");
         assert_eq!(
             windows.profiles_dir(),
-            PathBuf::from(
-                "/repo/dev-files/windows/AppData/Roaming/dev.bozonx.left-hand-control/profiles"
-            )
+            PathBuf::from("/repo/dev-files/windows/AppData/Roaming/dev.bozonx.tecloid/profiles")
         );
         let macos = StoragePaths::dev(base, "macos");
         assert!(

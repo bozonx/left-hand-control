@@ -19,8 +19,8 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-const VIRTUAL_DEVICE_NAME: &str = "LeftHandControl Virtual Keyboard";
-const VIRTUAL_POINTER_NAME: &str = "Left Hand Control Pointer";
+const VIRTUAL_DEVICE_NAME: &str = "Tecloid Virtual Keyboard";
+const VIRTUAL_POINTER_NAME: &str = "Tecloid Pointer";
 /// USB id of the virtual keyboard: the Linux Foundation vendor id with its
 /// "multifunction composite gadget" product, used by software devices.
 const VIRTUAL_VENDOR_ID: u16 = 0x1d6b;
@@ -393,7 +393,7 @@ fn acquire_mapper_lock() -> Result<std::fs::File, String> {
     let base = std::env::var_os("XDG_RUNTIME_DIR")
         .map(std::path::PathBuf::from)
         .unwrap_or_else(std::env::temp_dir);
-    let path = base.join(format!("left-hand-control-mapper-{}.lock", unsafe {
+    let path = base.join(format!("tecloid-mapper-{}.lock", unsafe {
         libc::geteuid()
     }));
     lock_mapper_file(&path)

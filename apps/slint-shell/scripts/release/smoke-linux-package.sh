@@ -5,7 +5,7 @@
 set -eu
 
 package=$(realpath -- "$1")
-app_id=dev.bozonx.left-hand-control
+app_id=dev.bozonx.tecloid
 if [ "$(id -u)" -ne 0 ]; then
     echo 'Run this check as root inside a disposable container.' >&2
     exit 1
@@ -48,39 +48,39 @@ case "$package" in
         work=$(mktemp -d)
         tar -xzf "$package" -C "$work"
         prefix="$work/prefix"
-        LHC_INSTALL_PREFIX=$prefix sh "$work"/left-hand-control-*/install-linux.sh
-        check_binary "$prefix/bin/left-hand-control"
+        LHC_INSTALL_PREFIX=$prefix sh "$work"/tecloid-*/install-linux.sh
+        check_binary "$prefix/bin/tecloid"
         desktop-file-validate "$prefix/share/applications/$app_id.desktop"
         validate_metainfo "$prefix/share/metainfo/$app_id.metainfo.xml"
         LHC_INSTALL_PREFIX=$prefix sh "$prefix/lib/$app_id/install-linux.sh" uninstall
-        test ! -e "$prefix/bin/left-hand-control"
+        test ! -e "$prefix/bin/tecloid"
         echo "Smoke check passed: $package"
         exit 0
         ;;
     *) echo "Unknown package type: $package" >&2; exit 1 ;;
 esac
 
-check_binary /usr/bin/left-hand-control
+check_binary /usr/bin/tecloid
 for path in \
     /usr/share/applications/$app_id.desktop \
     /usr/share/metainfo/$app_id.metainfo.xml \
     /usr/share/icons/hicolor/scalable/apps/$app_id.svg \
     /usr/share/icons/hicolor/512x512/apps/$app_id.png \
-    /usr/lib/udev/rules.d/60-left-hand-control.rules \
-    /usr/lib/modules-load.d/left-hand-control.conf; do
+    /usr/lib/udev/rules.d/60-tecloid.rules \
+    /usr/lib/modules-load.d/tecloid.conf; do
     test -f "$path" || { echo "Missing $path" >&2; exit 1; }
 done
 desktop-file-validate /usr/share/applications/$app_id.desktop
 validate_metainfo /usr/share/metainfo/$app_id.metainfo.xml
 
 case "$package" in
-    *.deb) apt-get remove -y -qq left-hand-control >/dev/null ;;
+    *.deb) apt-get remove -y -qq tecloid >/dev/null ;;
     *.rpm)
-        if command -v dnf >/dev/null 2>&1; then dnf remove -y -q left-hand-control
-        else zypper --non-interactive remove left-hand-control; fi
+        if command -v dnf >/dev/null 2>&1; then dnf remove -y -q tecloid
+        else zypper --non-interactive remove tecloid; fi
         ;;
 esac
-for path in /usr/bin/left-hand-control /usr/lib/udev/rules.d/60-left-hand-control.rules; do
+for path in /usr/bin/tecloid /usr/lib/udev/rules.d/60-tecloid.rules; do
     test ! -e "$path" || { echo "Not removed: $path" >&2; exit 1; }
 done
 echo "Smoke check passed: $package"

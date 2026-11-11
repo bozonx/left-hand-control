@@ -15,7 +15,7 @@ Fedora KDE проверяет RPM-путь установки. SELinux и пак
 После [общих проверок](common.md) и сборки пакета:
 
 ```sh
-python3 apps/slint-shell/scripts/vm/run-linux.py --vm /path/to/fedora44-kde --package /path/to/left-hand-control-VERSION.x86_64.rpm
+python3 apps/slint-shell/scripts/vm/run-linux.py --vm /path/to/fedora44-kde --package /path/to/tecloid-VERSION.x86_64.rpm
 ```
 
 Для теста перехода между версиями добавить `--previous /path/to/previous-package`.

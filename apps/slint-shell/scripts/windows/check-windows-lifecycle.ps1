@@ -6,7 +6,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
-$exe = if ($Executable) { (Resolve-Path $Executable).Path } else { Join-Path $root 'target\release\left-hand-control.exe' }
+$exe = if ($Executable) { (Resolve-Path $Executable).Path } else { Join-Path $root 'target\release\tecloid.exe' }
 $workingDirectory = if ($Executable) { Split-Path $exe } else { $root }
 $output = Join-Path $root 'windows-runtime\lifecycle'
 
@@ -72,7 +72,7 @@ function Test-Quit {
     Wait-ForServer $process
     Invoke-Client 'preferences dark ru'
     Invoke-Client 'game on'
-    $isolatedConfig = Join-Path $env:LHC_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.left-hand-control\config.json'
+    $isolatedConfig = Join-Path $env:LHC_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.tecloid\config.json'
     $deadline = (Get-Date).AddSeconds(10)
     while (-not (Test-Path $isolatedConfig)) {
         if ((Get-Date) -gt $deadline) { throw 'Release did not save to isolated storage' }

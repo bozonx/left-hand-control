@@ -48,7 +48,7 @@ if ! cargo build --locked -p slint-shell --features spell --examples --bins; the
     echo 'Build failed.' >&2
     exit 1
 fi
-binary=target/debug/left-hand-control
+binary=target/debug/tecloid
 version=$("$binary" --version)
 commit=$(git rev-parse --short HEAD)
 git diff --quiet HEAD || commit="$commit (with uncommitted changes)"

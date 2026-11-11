@@ -35,7 +35,7 @@ def main() -> int:
     notes = changelog_section(version)
     if notes is None:
         errors.append(f"CHANGELOG.md has no '## [{version}] - YYYY-MM-DD' section")
-    metainfo = root / "apps/slint-shell/packaging/linux/dev.bozonx.left-hand-control.metainfo.xml"
+    metainfo = root / "apps/slint-shell/packaging/linux/dev.bozonx.tecloid.metainfo.xml"
     releases = ET.parse(metainfo).getroot().find("releases")
     newest = releases[0] if releases is not None and len(releases) else None
     if newest is None or newest.get("version") != version or not newest.get("date"):

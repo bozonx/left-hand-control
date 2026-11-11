@@ -15,7 +15,7 @@ VM, SSH-ключ, кэш и пакеты хранить вне Git. Install/remo
 После [общих проверок](common.md) и сборки пакета:
 
 ```sh
-python3 apps/slint-shell/scripts/vm/run-linux.py --vm /path/to/kubuntu2604 --package /path/to/left-hand-control-VERSION-linux-x86_64.tar.gz
+python3 apps/slint-shell/scripts/vm/run-linux.py --vm /path/to/kubuntu2604 --package /path/to/tecloid-VERSION-linux-x86_64.tar.gz
 ```
 
 Для теста перехода между версиями добавить `--previous /path/to/previous-package`.

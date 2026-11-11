@@ -14,7 +14,7 @@ export default async () => {
     base,
     siteUrl:
       process.env.SITE_URL ||
-      'https://bozonx.github.io/left-hand-control',
+      'https://bozonx.github.io/tecloid',
 
     head: [
       ['meta', { name: 'format-detection', content: 'telephone=no' }],
@@ -27,7 +27,7 @@ export default async () => {
     ],
 
     themeConfig: {
-      repo: 'https://github.com/bozonx/left-hand-control',
+      repo: 'https://github.com/bozonx/tecloid',
       search: { provider: 'local' },
     },
   }

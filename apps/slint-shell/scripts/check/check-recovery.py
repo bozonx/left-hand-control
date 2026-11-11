@@ -9,7 +9,7 @@ import tempfile
 import time
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--binary", default="target/debug/left-hand-control")
+parser.add_argument("--binary", default="target/debug/tecloid")
 parser.add_argument("--popups", choices=["winit", "spell"], default="spell")
 parser.add_argument("--live-preview", action="store_true")
 args = parser.parse_args()
@@ -20,7 +20,7 @@ preview_modified = None
 
 with tempfile.TemporaryDirectory(prefix="lhc-slint-recovery-") as directory:
     root = Path(directory)
-    config = root / "linux/.config/dev.bozonx.left-hand-control/config.json"
+    config = root / "linux/.config/dev.bozonx.tecloid/config.json"
     config.parent.mkdir(parents=True)
     config.write_text("{broken", encoding="utf-8")
     log_path = root / "shell.log"

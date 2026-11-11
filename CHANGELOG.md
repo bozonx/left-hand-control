@@ -15,6 +15,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- The application is renamed from Left Hand Control to Tecloid: binary `tecloid`, app id `dev.bozonx.tecloid` (configuration and data directories, desktop entry, autostart), packages, udev rule, D-Bus names, virtual device names and the GNOME extension `tecloid@bozonx.dev`. Settings from the old directories are not migrated; reinstall the GNOME extension. The bundled layout keeps its name "LHC1 by Ivan K".
 - Before the first public release, reset `config.json` to format version 1 and remove the unreleased version 1 → 2 migration and version 2 schema; profiles remain at version 1. Accessibility choices and explicit libei mode names are part of the initial format.
 - Rename `sys:switchKeyboardLayoutN` to `sys:switchToKeyboardLayoutN`, `settings.timing.comboMs` to `chordMs`, and `settings.launchOnStartup` to `launchAtLogin`. The old names are rejected; no migration is provided.
 

@@ -6,16 +6,16 @@ The executable requires MSVCP140.dll and VCRUNTIME140.dll. Rust, Visual Studio
 and the Windows SDK are not required to run the application.
 
 Extract the complete ZIP into a directory writable by your user, then run
-`left-hand-control.exe` without administrator privileges. The application starts
+`tecloid.exe` without administrator privileges. The application starts
 hidden in the system tray. Open Settings from the tray or run
-`left-hand-control.exe show settings`. A second launch opens the existing instance.
+`tecloid.exe show settings`. A second launch opens the existing instance.
 
 The ZIP is portable in the sense that it needs no installer or service. Settings
 are stored in your Windows user profile, not beside the executable. Moving the
 folder does not move or erase your settings. Configure the keyboard mapper in
 Settings; Windows interception applies to the interactive session.
 
-To update, quit from the tray (or run `left-hand-control.exe quit`), extract the
+To update, quit from the tray (or run `tecloid.exe quit`), extract the
 new ZIP into a new folder and start its executable. Keep the old folder until
 you verify the update. To uninstall, quit and delete the extracted folder.
 User configuration is retained. Settings → "Launch on startup" registers the

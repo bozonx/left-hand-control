@@ -21,8 +21,8 @@ import time
 
 from text_corpus import TEXT_CORPUS, TEXT_UNICODE
 
-APP_ID = "dev.bozonx.left-hand-control"
-MAPPER_DEVICE = "LeftHandControl Virtual Keyboard"
+APP_ID = "dev.bozonx.tecloid"
+MAPPER_DEVICE = "Tecloid Virtual Keyboard"
 TRAY_ID = "lhc-slint-shell"
 HOME = Path.home()
 WORK = HOME / "lhc-e2e"
@@ -168,10 +168,10 @@ def wait(what, timeout, probe, interval=0.5):
 
 
 def binary():
-    path = shutil.which("left-hand-control") or shutil.which(
-        "left-hand-control", path=str(HOME / ".local/bin"))
+    path = shutil.which("tecloid") or shutil.which(
+        "tecloid", path=str(HOME / ".local/bin"))
     if not path:
-        fail("left-hand-control is not installed")
+        fail("tecloid is not installed")
     return path
 
 
@@ -264,7 +264,7 @@ def cmd_check_install(args):
                 if result.returncode:
                     problems.append(f"desktop-file-validate: {result.stdout}{result.stderr}")
     if args.packaged:
-        if not Path("/usr/lib/udev/rules.d/60-left-hand-control.rules").exists():
+        if not Path("/usr/lib/udev/rules.d/60-tecloid.rules").exists():
             problems.append("udev rule is not installed")
         # The uaccess rule gives the active session's user write access.
         if not os.access("/dev/uinput", os.W_OK):
@@ -480,8 +480,8 @@ def receiver_focused():
     if "GNOME" in user_environment().get("XDG_CURRENT_DESKTOP", "").upper():
         result = subprocess.run([
             "gdbus", "call", "--session", "--dest", "org.gnome.Shell",
-            "--object-path", "/dev/bozonx/LeftHandControl/Gnome", "--method",
-            "dev.bozonx.LeftHandControl.Gnome.Snapshot", "true"],
+            "--object-path", "/dev/bozonx/Tecloid/Gnome", "--method",
+            "dev.bozonx.Tecloid.Gnome.Snapshot", "true"],
             capture_output=True, text=True, check=True, env={**os.environ, **user_environment()})
         window = json.loads(ast.literal_eval(result.stdout.strip())[0])["window"]
         return bool(window and window["title"] == "LHC e2e receiver")
@@ -818,7 +818,7 @@ def cmd_second_instance(args):
 
 
 def cmd_check_removed(args):
-    if shutil.which("left-hand-control") or (HOME / ".local/bin/left-hand-control").exists():
+    if shutil.which("tecloid") or (HOME / ".local/bin/tecloid").exists():
         fail("the binary is still installed")
     if not (CONFIG_DIR / "config.json").exists():
         fail("the user configuration was removed with the package")

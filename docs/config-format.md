@@ -28,8 +28,8 @@ JSON Schema для редактора. Приложение сохраняет �
 
 Схемы лежат в каталоге [`schemas/`](../schemas/) репозитория и доступны по постоянным адресам:
 
-- `config.json`: `https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/config.v1.schema.json`;
-- профили: `https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/profile.v1.schema.json`.
+- `config.json`: `https://raw.githubusercontent.com/bozonx/tecloid/main/schemas/config.v1.schema.json`;
+- профили: `https://raw.githubusercontent.com/bozonx/tecloid/main/schemas/profile.v1.schema.json`.
 
 Номер в имени файла — `version` формата: схема версии 1 меняется только по политике совместимости,
 а новая версия формата получает новый файл. Схема — подсказка для редактора (поля, значения
@@ -120,7 +120,7 @@ ID профилей библиотеки устроены иначе: `user:<и�
 | встроенный макрос | `builtin:copyLineText` |
 | команда | `cmd:<id>` |
 | системное действие | `sys:switchToDesktop2`, `sys:showDesktop` |
-| действие Left Hand Control | `lhc:showQuickMenu1`, `lhc:toggleGameMode` |
+| действие Tecloid | `lhc:showQuickMenu1`, `lhc:toggleGameMode` |
 | глобальное сочетание KDE | `kde:kwin/Window Maximize` |
 | действие установленного приложения (Linux, freedesktop `Actions=`) | `xdg:firefox/new-private-window` |
 | ввод текста | `text:Привет` |
@@ -142,7 +142,7 @@ ID встроенных макросов начинаются с глагола:
 
 Действия установленных приложений (`xdg:<desktop-id>/<action>`): `desktop-id` — имя файла `.desktop` без расширения (для файла из подкаталога `kde4/foo.desktop` — `kde4-foo`), `action` — идентификатор из его ключа `Actions=`. Приложения с `DBusActivatable=true` получают вызов `org.freedesktop.Application.ActivateAction`, остальные запускаются по `Exec` действия. Если приложение не установлено, действие пропускается с предупреждением. Только Linux.
 
-Действия самого Left Hand Control (`lhc:`): `showQuickMenuN`, `showEmojiMenuN`, `showQuickMenuRecent`, `showEmojiMenuRecent`, `showSettings`, `activateProfileN`, `toggleGameMode`, `setGameModeAuto`, `setGameModeOn`, `setGameModeOff`. Имена действий начинаются с глагола.
+Действия самого Tecloid (`lhc:`): `showQuickMenuN`, `showEmojiMenuN`, `showQuickMenuRecent`, `showEmojiMenuRecent`, `showSettings`, `activateProfileN`, `toggleGameMode`, `setGameModeAuto`, `setGameModeOn`, `setGameModeOff`. Имена действий начинаются с глагола.
 
 `lhc:showQuickMenuRecent` и `lhc:showEmojiMenuRecent` открывают меню на странице, которая была открыта в нём последней; повторное нажатие листает страницы (их же вызывают встроенные сочетания Ctrl+Alt+F12 и Ctrl+Alt+F11).
 

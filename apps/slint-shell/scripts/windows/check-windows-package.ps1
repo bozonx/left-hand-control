@@ -12,7 +12,7 @@ if ($expected -ne "$actual  $(Split-Path $archivePath -Leaf)") { throw 'ZIP chec
 $extracted = Join-Path ([IO.Path]::GetTempPath()) ("lhc-package-" + [guid]::NewGuid().ToString())
 try {
     Expand-Archive -LiteralPath $archivePath -DestinationPath $extracted
-    $executables = @(Get-ChildItem $extracted -Recurse -File -Filter left-hand-control.exe)
+    $executables = @(Get-ChildItem $extracted -Recurse -File -Filter tecloid.exe)
     if ($executables.Count -ne 1) { throw 'Package must contain exactly one executable' }
     $exe = $executables[0].FullName
     foreach ($file in @('LICENSE', 'README.md', 'features.md')) {

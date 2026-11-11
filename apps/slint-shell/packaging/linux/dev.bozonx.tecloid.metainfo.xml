@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>dev.bozonx.left-hand-control</id>
+  <id>dev.bozonx.tecloid</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
-  <name>Left Hand Control</name>
+  <name>Tecloid</name>
   <summary>Keyboard mapper with layers, macros and commands</summary>
   <summary xml:lang="ru">Переназначение клавиатуры со слоями, макросами и командами</summary>
   <developer id="dev.bozonx">
@@ -11,12 +11,12 @@
   </developer>
   <description>
     <p>
-      Left Hand Control intercepts a physical keyboard, applies layers, rules,
+      Tecloid intercepts a physical keyboard, applies layers, rules,
       macros and commands, and emits the result through a virtual input device.
       It lives in the system tray and opens quick popups for emoji and actions.
     </p>
     <p xml:lang="ru">
-      Left Hand Control перехватывает физическую клавиатуру, применяет слои,
+      Tecloid перехватывает физическую клавиатуру, применяет слои,
       правила, макросы и команды и выдаёт результат через виртуальное устройство
       ввода. Приложение работает из системного трея и открывает быстрые попапы
       с emoji и действиями.
@@ -30,16 +30,16 @@
       чтение /dev/input и запись в /dev/uinput.
     </p>
   </description>
-  <launchable type="desktop-id">dev.bozonx.left-hand-control.desktop</launchable>
+  <launchable type="desktop-id">dev.bozonx.tecloid.desktop</launchable>
   <provides>
-    <binary>left-hand-control</binary>
+    <binary>tecloid</binary>
   </provides>
   <supports>
     <control>keyboard</control>
   </supports>
-  <url type="homepage">https://github.com/bozonx/left-hand-control</url>
-  <url type="bugtracker">https://github.com/bozonx/left-hand-control/issues</url>
-  <url type="vcs-browser">https://github.com/bozonx/left-hand-control</url>
+  <url type="homepage">https://github.com/bozonx/tecloid</url>
+  <url type="bugtracker">https://github.com/bozonx/tecloid/issues</url>
+  <url type="vcs-browser">https://github.com/bozonx/tecloid</url>
   <categories>
     <category>Utility</category>
     <category>Accessibility</category>
@@ -53,10 +53,10 @@
   <content_rating type="oars-1.1"/>
   <releases>
     <release version="0.4.0" date="2026-10-24">
-      <url type="details">https://github.com/bozonx/left-hand-control/releases/tag/v0.4.0</url>
+      <url type="details">https://github.com/bozonx/tecloid/releases/tag/v0.4.0</url>
     </release>
     <release version="0.3.0" date="2026-10-17">
-      <url type="details">https://github.com/bozonx/left-hand-control/releases/tag/v0.3.0</url>
+      <url type="details">https://github.com/bozonx/tecloid/releases/tag/v0.3.0</url>
     </release>
   </releases>
 </component>

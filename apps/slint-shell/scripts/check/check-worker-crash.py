@@ -25,7 +25,7 @@ def workers(pid):
 
 socket = f"lhc-worker-crash-{os.getpid()}.sock"
 with tempfile.TemporaryDirectory() as directory:
-    config = Path(directory) / "linux/.config/dev.bozonx.left-hand-control/config.json"
+    config = Path(directory) / "linux/.config/dev.bozonx.tecloid/config.json"
     config.parent.mkdir(parents=True)
     config.write_text('{"version":1,"settings":{"experimental":true}}', encoding="utf-8")
     log_path = Path(directory) / "server.log"

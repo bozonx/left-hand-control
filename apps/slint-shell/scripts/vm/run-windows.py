@@ -8,7 +8,7 @@ The default smoke suite covers debug UI scenarios, IPC, popups and shutdown.
 --suite release builds release binaries and checks input/popups without native tests.
 These suites exercise the mapper through QEMU hardware keys and a native receiver.
 
-Usage: run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows [--show] [--keep]
+Usage: run-windows.py --vm /mnt/disk2/vm/tecloid-windows [--show] [--keep]
 See docs/development/guide.md, "E2E в виртуальных машинах".
 """
 

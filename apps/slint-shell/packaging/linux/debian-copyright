@@ -1,6 +1,6 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: left-hand-control
-Source: https://github.com/bozonx/left-hand-control
+Upstream-Name: tecloid
+Source: https://github.com/bozonx/tecloid
 
 Files: *
 Copyright: 2026 bozonx

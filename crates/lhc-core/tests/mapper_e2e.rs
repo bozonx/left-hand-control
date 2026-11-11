@@ -17,7 +17,7 @@ use std::{
     time::{Duration, Instant, SystemTime},
 };
 
-const MAPPER_DEVICE_NAME: &str = "LeftHandControl Virtual Keyboard";
+const MAPPER_DEVICE_NAME: &str = "Tecloid Virtual Keyboard";
 
 /// The mapper runtime is process-global: scenarios run one at a time.
 static SERIAL: Mutex<()> = Mutex::new(());
@@ -556,7 +556,7 @@ fn captured_mouse_orders_modifier_click_and_relays_movement_without_original_sid
     let mut pointer = wait_until("virtual pointer", Duration::from_secs(5), || {
         evdev::enumerate()
             .find(|(path, device)| {
-                !existing.contains(path) && device.name() == Some("Left Hand Control Pointer")
+                !existing.contains(path) && device.name() == Some("Tecloid Pointer")
             })
             .map(|(_, device)| device)
     });

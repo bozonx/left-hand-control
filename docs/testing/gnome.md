@@ -1,13 +1,13 @@
 # GNOME Wayland bridge and acceptance
 
-The GNOME backend requires the bundled `left-hand-control@bozonx.dev` Shell
+The GNOME backend requires the bundled `tecloid@bozonx.dev` Shell
 extension. Its metadata targets GNOME Shell 50 (Ubuntu 26.04); other Shell
 versions are not claimed. KDE remains the primary accepted environment.
 
 ## Объём проверки и запуск
 
 Проверяемая desktop-среда — **Ubuntu 26.04, GNOME Shell 50, Wayland**,
-с расширением `left-hand-control@bozonx.dev`, AppIndicators и portal.
+с расширением `tecloid@bozonx.dev`, AppIndicators и portal.
 Это отдельная smoke-матрица, а не полная KDE L4-приёмка.
 [Прогон 2026-10-19](results/linux/2026-10-19-vm-ubuntu2604-gnome-2.txt)
 прошёл 29 шагов без ошибок; [проверка clipboard/portal](results/linux/2026-10-19-gnome-clipboard-portal.txt)
@@ -29,7 +29,7 @@ GNOME не поддерживает layer-shell: использовать `LHC_P
 Сначала [общие Linux-проверки](common.md), затем:
 
 ```sh
-python3 apps/slint-shell/scripts/vm/run-gnome.py --vm /path/to/ubuntu2604-gnome --package /path/to/left-hand-control-VERSION-linux-x86_64.tar.gz
+python3 apps/slint-shell/scripts/vm/run-gnome.py --vm /path/to/ubuntu2604-gnome --package /path/to/tecloid-VERSION-linux-x86_64.tar.gz
 ```
 
 Для текущих UI-примеров добавить `--examples /path/to/current-binaries` с бинарниками
@@ -70,12 +70,12 @@ popup backend и `--examples` записывать явно. Правила хр
 Install the application and grant input permissions as described in
 [the Linux installation guide](../install-linux.md). From an extracted Linux
 bundle, run `./install-gnome-extension.sh`. For an installed archive, use
-`~/.local/lib/dev.bozonx.left-hand-control/install-gnome-extension.sh`;
-for deb/rpm, use `/usr/share/left-hand-control/install-gnome-extension.sh`.
+`~/.local/lib/dev.bozonx.tecloid/install-gnome-extension.sh`;
+for deb/rpm, use `/usr/share/tecloid/install-gnome-extension.sh`.
 Log out of GNOME and back in, then run:
 
 ```sh
-gnome-extensions enable left-hand-control@bozonx.dev
+gnome-extensions enable tecloid@bozonx.dev
 ```
 
 Enable Ubuntu AppIndicators (or another StatusNotifier host) for the tray.
@@ -89,8 +89,8 @@ preferences. Extension updates require another GNOME login.
 
 ## Bridge contract
 
-The extension exports `/dev/bozonx/LeftHandControl/Gnome`, interface
-`dev.bozonx.LeftHandControl.Gnome`, on the existing `org.gnome.Shell` session-bus
+The extension exports `/dev/bozonx/Tecloid/Gnome`, interface
+`dev.bozonx.Tecloid.Gnome`, on the existing `org.gnome.Shell` session-bus
 owner. The bus authenticates peers; each method asynchronously verifies the
 caller's Unix uid against the Shell's uid. There is no JavaScript evaluation,
 shell command execution or arbitrary method dispatch.
@@ -174,7 +174,7 @@ whose glibc may exceed the guest version. Then run:
 ```sh
 python3 apps/slint-shell/scripts/vm/run-gnome.py \
   --vm /path/to/ubuntu2604-gnome \
-  --package target/ubuntu-22.04/packages/left-hand-control-0.3.0-linux-x86_64.tar.gz --keep
+  --package target/ubuntu-22.04/packages/tecloid-0.3.0-linux-x86_64.tar.gz --keep
 ```
 
 Pass `--examples /path/to/binaries` to also run current `editor --smoke` and

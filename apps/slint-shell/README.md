@@ -1,6 +1,6 @@
 # Slint Shell
 
-Основная desktop-оболочка Left Hand Control на Slint и `lhc-core`.
+Основная desktop-оболочка Tecloid на Slint и `lhc-core`.
 Оболочка входит в Cargo workspace вместе с `lhc-core` и явно включённым
 vendored-пакетом `spell-framework`. Патч `i-slint-core` остаётся внешней для
 workspace зависимостью. Slint 1.18.1 /
@@ -28,7 +28,7 @@ target dependencies и `cfg`; переносимый слой используе
 
 ```sh
 cargo build --locked -p slint-shell
-SLINT_BACKEND=winit-skia-software LHC_METRICS=/tmp/slint-skia-software.csv target/debug/left-hand-control
+SLINT_BACKEND=winit-skia-software LHC_METRICS=/tmp/slint-skia-software.csv target/debug/tecloid
 ```
 
 CSV метрик пишется только при заданном `LHC_METRICS`; Spell worker
@@ -60,13 +60,13 @@ ninja, Python). Возможность сборки не означает нал
 ## Управление
 
 ```sh
-target/debug/left-hand-control show settings
-target/debug/left-hand-control show emoji
-target/debug/left-hand-control show quick
-target/debug/left-hand-control toggle-mapper
-target/debug/left-hand-control game toggle   # auto|on|off|toggle
-target/debug/left-hand-control hide
-target/debug/left-hand-control quit
+target/debug/tecloid show settings
+target/debug/tecloid show emoji
+target/debug/tecloid show quick
+target/debug/tecloid toggle-mapper
+target/debug/tecloid game toggle   # auto|on|off|toggle
+target/debug/tecloid hide
+target/debug/tecloid quit
 ```
 
 - Трей: клик переключает настройки; меню открывает окна, меняет цвет иконки
@@ -148,7 +148,7 @@ CSV перезаписывается при старте; используйте
 
 ```sh
 python3 apps/slint-shell/scripts/check/check-worker-crash.py \
-  target/debug/left-hand-control
+  target/debug/tecloid
 ```
 
 Стенд завершает только дочерний процесс, ждёт новый worker, вызывает попап и
@@ -164,7 +164,7 @@ python3 apps/slint-shell/scripts/check/check-worker-crash.py \
 ```sh
 cargo build --locked -p slint-shell --features probes --examples
 SLINT_BACKEND=winit-skia-software target/debug/examples/bench-evdev \
-  target/debug/left-hand-control /tmp/slint-evdev.csv
+  target/debug/tecloid /tmp/slint-evdev.csv
 python3 apps/slint-shell/scripts/bench/summarize.py /tmp/slint-evdev.csv
 ```
 
@@ -181,10 +181,10 @@ python3 apps/slint-shell/scripts/bench/summarize.py /tmp/slint-evdev.csv
 `b37604eb46edfec5861720915db87e646b645bd1` (первая ревизия с поддержкой Slint 1.18).
 
 ```sh
-cargo build --locked -p slint-shell --features probes --examples --bin left-hand-control
+cargo build --locked -p slint-shell --features probes --examples --bin tecloid
 LHC_POPUPS=auto SLINT_BACKEND=winit-skia-software \
   LHC_METRICS=/tmp/slint-stage3a.csv \
-  target/debug/left-hand-control
+  target/debug/tecloid
 ```
 
 `LHC_POPUPS`:
@@ -240,7 +240,7 @@ Evdev-стенд ждёт событие навигации до 500 мс; t5 в
 Из корня репозитория:
 
 ```sh
-cargo build --locked -p slint-shell --features probes --examples --bin left-hand-control
+cargo build --locked -p slint-shell --features probes --examples --bin tecloid
 cargo test --locked -p slint-shell --features spell
 cargo check --locked -p slint-shell --no-default-features
 cargo clippy --locked -p slint-shell --features probes --all-targets --no-deps -- -D warnings
@@ -254,10 +254,10 @@ python3 apps/slint-shell/scripts/bench/summarize.py /tmp/slint-lifecycle/parent.
 # Реальная KDE Wayland-сессия: на время теста не пользоваться клавиатурой.
 LHC_POPUPS=spell SLINT_BACKEND=winit-skia-software \
   target/debug/examples/bench-evdev \
-  target/debug/left-hand-control /tmp/slint-evdev.csv
+  target/debug/tecloid /tmp/slint-evdev.csv
 SLINT_BACKEND=winit-skia-software \
   target/debug/examples/bench-return \
-  target/debug/left-hand-control /tmp/slint-return.csv
+  target/debug/tecloid /tmp/slint-return.csv
 ```
 
 Виртуальные проверки требуют `kwin_wayland`, `kscreen-doctor`, `dbus-run-session`

@@ -216,4 +216,4 @@ jobs:
         run: |
           python3 apps/slint-shell/scripts/release/release-metadata.py "$GITHUB_REF_NAME" --notes > notes.md
           gh release create "$GITHUB_REF_NAME" --draft --verify-tag \
-            --title "Left Hand Control ${GITHUB_REF_NAME#v}" --notes-file notes.md artifacts/*
+            --title "Tecloid ${GITHUB_REF_NAME#v}" --notes-file notes.md artifacts/*

@@ -1,6 +1,6 @@
-# Left Hand Control — Documentation & Landing Site
+# Tecloid — Documentation & Landing Site
 
-Starter documentation and landing website for Left Hand Control, built with [VitePress](https://vitepress.dev/) and [`vitepress-theme-neptu-landing`](https://github.com/bozonx/vitepress-theme-neptu).
+Starter documentation and landing website for Tecloid, built with [VitePress](https://vitepress.dev/) and [`vitepress-theme-neptu-landing`](https://github.com/bozonx/vitepress-theme-neptu).
 
 ## Requirements
 

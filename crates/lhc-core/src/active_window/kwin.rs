@@ -20,10 +20,10 @@ use super::ActiveWindow;
 const SESSION_CHECK_INTERVAL: Duration = Duration::from_secs(1);
 const SESSION_RETRY: Duration = Duration::from_secs(3);
 
-const OBJECT_PATH: &str = "/dev/bozonx/LeftHandControl/KWin";
-const INTERFACE: &str = "dev.bozonx.LeftHandControl.KWin";
-const ACTIVE_SCRIPT: &str = "left-hand-control-active-window";
-const LIST_SCRIPT: &str = "left-hand-control-window-list";
+const OBJECT_PATH: &str = "/dev/bozonx/Tecloid/KWin";
+const INTERFACE: &str = "dev.bozonx.Tecloid.KWin";
+const ACTIVE_SCRIPT: &str = "tecloid-active-window";
+const LIST_SCRIPT: &str = "tecloid-window-list";
 const LIST_TIMEOUT: Duration = Duration::from_millis(1500);
 
 /// Reports the active window as JSON on activation and, while it stays
@@ -147,7 +147,7 @@ struct Service {
 
 // Calls must apply in arrival order: a focus change sends `{}` and the new
 // window back to back, and a task per call could leave `{}` as the last state.
-#[zbus::interface(name = "dev.bozonx.LeftHandControl.KWin", spawn = false)]
+#[zbus::interface(name = "dev.bozonx.Tecloid.KWin", spawn = false)]
 impl Service {
     fn active(&self, json: String, #[zbus(header)] header: Header<'_>) {
         if !self.sent_by_kwin(&header) {

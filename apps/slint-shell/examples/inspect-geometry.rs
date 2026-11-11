@@ -5,7 +5,7 @@ use std::{
 };
 
 struct Report(Arc<Mutex<Option<String>>>);
-#[zbus::interface(name = "org.leftHandControl.GeometryProbe")]
+#[zbus::interface(name = "org.tecloid.GeometryProbe")]
 impl Report {
     fn report(&self, json: String) {
         *self.0.lock().unwrap() = Some(json);
@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let pids = serde_json::to_string(&pids)?;
     let value = Arc::new(Mutex::new(None));
-    let name = format!("org.leftHandControl.GeometryProbe.p{}", std::process::id());
+    let name = format!("org.tecloid.GeometryProbe.p{}", std::process::id());
     let connection = zbus::blocking::connection::Builder::session()?
         .name(name.clone())?
         .serve_at("/Probe", Report(value.clone()))?
@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut script = tempfile::NamedTempFile::new()?;
     write!(
         script,
-        "const rows = []; for (let w of workspace.windowList()) {{ const app = String(w.resourceClass); if (!{pids}.includes(w.pid)) continue; const r = w.frameGeometry; const a = workspace.clientArea(KWin.PlacementArea, w); rows.push({{app: app, pid:w.pid, stack:workspace.stackingOrder.indexOf(w), skipTaskbar:w.skipTaskbar, noBorder:w.noBorder, clientWidth:w.clientGeometry.width, clientHeight:w.clientGeometry.height, fullscreen:w.fullScreen, x:r.x, y:r.y, width:r.width, height:r.height, output:w.output.name, area:{{x:a.x,y:a.y,width:a.width,height:a.height}}}}); }} callDBus('{name}', '/Probe', 'org.leftHandControl.GeometryProbe', 'Report', JSON.stringify(rows));"
+        "const rows = []; for (let w of workspace.windowList()) {{ const app = String(w.resourceClass); if (!{pids}.includes(w.pid)) continue; const r = w.frameGeometry; const a = workspace.clientArea(KWin.PlacementArea, w); rows.push({{app: app, pid:w.pid, stack:workspace.stackingOrder.indexOf(w), skipTaskbar:w.skipTaskbar, noBorder:w.noBorder, clientWidth:w.clientGeometry.width, clientHeight:w.clientGeometry.height, fullscreen:w.fullScreen, x:r.x, y:r.y, width:r.width, height:r.height, output:w.output.name, area:{{x:a.x,y:a.y,width:a.width,height:a.height}}}}); }} callDBus('{name}', '/Probe', 'org.tecloid.GeometryProbe', 'Report', JSON.stringify(rows));"
     )?;
     let proxy = zbus::blocking::Proxy::new(
         &connection,

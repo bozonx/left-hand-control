@@ -1,4 +1,4 @@
-//! UI-independent core of Left Hand Control: configuration model and storage,
+//! UI-independent core of Tecloid: configuration model and storage,
 //! platform detection, system watchers, the mapper and the event bus that
 //! carries core state to a shell.
 

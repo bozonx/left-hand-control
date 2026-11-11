@@ -30,10 +30,11 @@ pub const PROFILE_SCHEMA_VERSION: u64 = 1;
 /// The file lives in the repository's `schemas/` directory; within a format
 /// version it only gains optional fields and enum values.
 pub const CONFIG_SCHEMA_URL: &str =
-    "https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/config.v1.schema.json";
+    "https://raw.githubusercontent.com/bozonx/tecloid/main/schemas/config.v1.schema.json";
 
 /// Stable address of the profile file JSON Schema, see [`CONFIG_SCHEMA_URL`].
-pub const PROFILE_SCHEMA_URL: &str = "https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/profile.v1.schema.json";
+pub const PROFILE_SCHEMA_URL: &str =
+    "https://raw.githubusercontent.com/bozonx/tecloid/main/schemas/profile.v1.schema.json";
 
 /// Grammar of collection IDs (layers, rules, macros, commands, pages,
 /// auto rules, game-mode processes), see [`super::ids`].
@@ -150,13 +151,13 @@ mod tests {
             (
                 "config.v1.schema.json",
                 CONFIG_SCHEMA_URL,
-                "Left Hand Control config.json",
+                "Tecloid config.json",
                 super::super::settings::json_schema(),
             ),
             (
                 "profile.v1.schema.json",
                 PROFILE_SCHEMA_URL,
-                "Left Hand Control profile",
+                "Tecloid profile",
                 super::super::profile_file::json_schema(),
             ),
         ] {

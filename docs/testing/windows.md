@@ -1,6 +1,6 @@
 # Windows testing in KVM/QEMU
 
-This document describes the reproducible Windows 11 test environment for the Slint shell of Left Hand Control. Use a full VM with an interactive desktop. Docker and Windows containers cannot validate native windows, tray behavior, foreground activation, global hotkeys, `SendInput`, DPI, or keyboard-layout integration.
+This document describes the reproducible Windows 11 test environment for the Slint shell of Tecloid. Use a full VM with an interactive desktop. Docker and Windows containers cannot validate native windows, tray behavior, foreground activation, global hotkeys, `SendInput`, DPI, or keyboard-layout integration.
 
 This document covers installing the VM and working in it interactively. Automated runs from the host (`apps/slint-shell/scripts/vm/run-windows.py`) need a one-time preparation of this VM with `prepare-windows-guest.ps1`; see [the developer guide](../development/guide.md#windows-vm).
 
@@ -147,7 +147,7 @@ The checksum identifies that test image; it is not a permanent checksum for futu
 Keep VM artifacts outside the repository:
 
 ```bash
-vm_dir=/mnt/disk2/vm/left-hand-control-windows
+vm_dir=/mnt/disk2/vm/tecloid-windows
 mkdir -p "$vm_dir/tpm"
 qemu-img create -f qcow2 "$vm_dir/windows11-lhc.qcow2" 64G
 cp /usr/share/edk2/x64/OVMF_VARS.secboot.4m.fd "$vm_dir/OVMF_VARS.secboot.4m.fd"
@@ -158,7 +158,7 @@ Paths to OVMF files differ between distributions. Use the Secure Boot code image
 Start the software TPM in a separate terminal:
 
 ```bash
-vm_dir=/mnt/disk2/vm/left-hand-control-windows
+vm_dir=/mnt/disk2/vm/tecloid-windows
 rm -f "$vm_dir/tpm/swtpm.sock"
 swtpm socket \
   --tpm2 \
@@ -174,7 +174,7 @@ Do not delete the TPM directory after Windows has been installed. Windows may bi
 Use 4 vCPU, 6 GiB RAM, an emulated tablet, and QEMU user networking. The e1000e adapter works with the Windows installer without a separate virtio driver ISO. Keep a monitor socket for VM diagnostics and hardware-level input when needed.
 
 ```bash
-vm_dir=/mnt/disk2/vm/left-hand-control-windows
+vm_dir=/mnt/disk2/vm/tecloid-windows
 qemu-system-x86_64 \
   -name 'LHC Windows 11' \
   -enable-kvm \
@@ -221,7 +221,7 @@ Once the desktop works:
 3. Create a clean snapshot while no process has the qcow2 file open.
 
 ```bash
-vm_dir=/mnt/disk2/vm/left-hand-control-windows
+vm_dir=/mnt/disk2/vm/tecloid-windows
 qemu-img snapshot -c windows-clean "$vm_dir/windows11-lhc.qcow2"
 qemu-img snapshot -l "$vm_dir/windows11-lhc.qcow2"
 ```
@@ -235,7 +235,7 @@ With QEMU user networking, Windows reaches the host as `10.0.2.2`. Serve a prepa
 ```bash
 python3 -m http.server 18080 \
   --bind 0.0.0.0 \
-  --directory /mnt/disk2/vm/left-hand-control-windows
+  --directory /mnt/disk2/vm/tecloid-windows
 ```
 
 Download it in Windows PowerShell:
@@ -259,10 +259,10 @@ The host-side archive must include intentional uncommitted test harness changes.
 archive explicitly, then confirm the archive contents before serving it:
 
 ```bash
-git archive --format=zip --output="$vm_dir/left-hand-control-current.zip" HEAD
-zip -u "$vm_dir/left-hand-control-current.zip" \
+git archive --format=zip --output="$vm_dir/tecloid-current.zip" HEAD
+zip -u "$vm_dir/tecloid-current.zip" \
   apps/slint-shell/scripts/windows/check-windows-lifecycle.ps1
-unzip -l "$vm_dir/left-hand-control-current.zip" | \
+unzip -l "$vm_dir/tecloid-current.zip" | \
   grep check-windows-lifecycle.ps1
 ```
 
@@ -300,19 +300,19 @@ Use debug builds while iterating on Windows-only code:
 
 ```powershell
 Set-Location C:\lhc
-cargo test --locked --manifest-path apps/slint-shell/Cargo.toml --bin left-hand-control
-cargo build --locked --manifest-path apps/slint-shell/Cargo.toml --bin left-hand-control
+cargo test --locked --manifest-path apps/slint-shell/Cargo.toml --bin tecloid
+cargo build --locked --manifest-path apps/slint-shell/Cargo.toml --bin tecloid
 ```
 
 Run the release build only for the final validation:
 
 ```powershell
-cargo build --release --locked --manifest-path apps/slint-shell/Cargo.toml --bin left-hand-control
+cargo build --release --locked --manifest-path apps/slint-shell/Cargo.toml --bin tecloid
 ```
 
 Stop the persistent shell before rebuilding it. Windows does not allow Cargo to replace a
 running executable; compilation can finish and then fail at the final file replacement with
-`Access is denied (os error 5)`. Send `left-hand-control.exe quit`, wait for the process to disappear,
+`Access is denied (os error 5)`. Send `tecloid.exe quit`, wait for the process to disappear,
 and only then start `cargo build`.
 
 The initial Slint release build took about eleven minutes in the 4-vCPU/6-GiB VM because release LTO and host swapping dominated the link. A quiet linker is not necessarily hung. Check Task Manager or the QEMU process before interrupting it. Do not compare build time or runtime performance from a swapping VM with a physical Linux result.
@@ -320,7 +320,7 @@ The initial Slint release build took about eleven minutes in the 4-vCPU/6-GiB VM
 PowerShell displays output written to stderr in red and may wrap a successful native command as `NativeCommandError`. Cargo writes progress and warnings to stderr, so red `Compiling`, warnings, or Rustup informational lines are not proof of failure. The authoritative signal is `$LASTEXITCODE` and Cargo’s final line:
 
 ```powershell
-cargo build --locked --manifest-path apps/slint-shell/Cargo.toml --bin left-hand-control
+cargo build --locked --manifest-path apps/slint-shell/Cargo.toml --bin tecloid
 if ($LASTEXITCODE -ne 0) { throw "cargo failed with exit code $LASTEXITCODE" }
 ```
 
@@ -331,7 +331,7 @@ command, inspect `$LASTEXITCODE` immediately, and restore `Stop` for PowerShell 
 
 ```powershell
 $ErrorActionPreference = 'Continue'
-cargo test --locked --manifest-path apps/slint-shell/Cargo.toml --bin left-hand-control `
+cargo test --locked --manifest-path apps/slint-shell/Cargo.toml --bin tecloid `
   2>&1 | Tee-Object -FilePath $log -Append
 $cargoExit = $LASTEXITCODE
 $ErrorActionPreference = 'Stop'
@@ -339,7 +339,7 @@ if ($cargoExit -ne 0) { throw "cargo test failed with exit code $cargoExit" }
 ```
 
 Apply the same rule to an expected failing probe. For example, an initial best-effort
-`left-hand-control.exe quit` returns connection refused when no server exists; suppress or capture
+`tecloid.exe quit` returns connection refused when no server exists; suppress or capture
 that native failure under `Continue` before restoring strict PowerShell error handling.
 
 Use PowerShell 7 where possible for UTF-8 logs. In Windows PowerShell 5.1, Cyrillic and emoji can appear as mojibake even when the application sent the correct UTF-16 text. Verify the resulting text in Notepad and save logs explicitly as UTF-8; do not diagnose Unicode behavior from a mojibake console line alone.
@@ -351,7 +351,7 @@ Use Skia for the Windows visual pass:
 ```powershell
 $env:SLINT_BACKEND = 'winit-skia'
 $env:RUST_LOG = 'debug'
-& C:\lhc\target\release\left-hand-control.exe
+& C:\lhc\target\release\tecloid.exe
 ```
 
 `winit-software` (the Slint software renderer, no longer built) rendered the UI, but Windows showed monochrome outline emoji; use `winit-skia-software` in guests without a GPU. `winit-skia` rendered the normal color Windows emoji and is the Windows candidate renderer. Some squares on the stress page were caused by the prototype generating contiguous Unicode code-point ranges that include unassigned or non-emoji symbols; they are test-data defects unless the same known-valid emoji also fails.
@@ -365,7 +365,7 @@ sequence. A contiguous code-point range cannot cover the last case.
 The server starts hidden and remains accessible from the tray. A second invocation is an IPC client:
 
 ```powershell
-$exe = 'C:\lhc\target\release\left-hand-control.exe'
+$exe = 'C:\lhc\target\release\tecloid.exe'
 & $exe ping
 & $exe show settings
 & $exe show emoji

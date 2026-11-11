@@ -2,7 +2,7 @@
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 workspace="$(cd "$root/../.." && pwd)"
-bin="${LHC_BIN:-$workspace/target/debug/left-hand-control}"
+bin="${LHC_BIN:-$workspace/target/debug/tecloid}"
 popup="${1:-emoji}"
 count="${2:-20}"
 [[ "$popup" == emoji || "$popup" == quick ]] || exit 2

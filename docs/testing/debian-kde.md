@@ -15,7 +15,7 @@ Debian 13 проверяет DEB-путь и совместимость с бо�
 После [общих проверок](common.md) и сборки пакета:
 
 ```sh
-python3 apps/slint-shell/scripts/vm/run-linux.py --vm /path/to/debian13-kde --package /path/to/left-hand-control_VERSION_amd64.deb
+python3 apps/slint-shell/scripts/vm/run-linux.py --vm /path/to/debian13-kde --package /path/to/tecloid_VERSION_amd64.deb
 ```
 
 Для теста перехода между версиями добавить `--previous /path/to/previous-package`.

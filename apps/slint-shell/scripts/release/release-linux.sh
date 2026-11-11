@@ -13,13 +13,13 @@ rm -rf -- "$out"
 mkdir -p -- "$out"
 
 apps/slint-shell/scripts/release/package-linux.sh
-binary="$target_dir/release/left-hand-control"
+binary="$target_dir/release/tecloid"
 if ldd "$binary" | grep 'not found'; then
     echo 'The release binary has unresolved libraries.' >&2
     exit 1
 fi
 "$binary" --version
-cp -- "$target_dir/packages/left-hand-control-$version-linux-$(uname -m).tar.gz" "$out/"
+cp -- "$target_dir/packages/tecloid-$version-linux-$(uname -m).tar.gz" "$out/"
 
 staging=$(mktemp -d "$target_dir/.release.XXXXXXXX")
 trap 'rm -rf -- "$staging"' 0
@@ -32,18 +32,18 @@ cat > "$staging/changelog.yml" <<CHANGELOG
     urgency: medium
     distributions: [unstable]
   changes:
-    - note: "See https://github.com/bozonx/left-hand-control/blob/v$version/CHANGELOG.md"
+    - note: "See https://github.com/bozonx/tecloid/blob/v$version/CHANGELOG.md"
 CHANGELOG
 escape() { printf '%s' "$1" | sed 's/[\\&|]/\\&/g'; }
 sed -e "s|@BINARY@|$(escape "$binary")|" -e "s|@CHANGELOG@|$(escape "$staging/changelog.yml")|" \
     apps/slint-shell/packaging/linux/nfpm.yaml > "$staging/nfpm.yaml"
 VERSION=$version nfpm package -f "$staging/nfpm.yaml" -p deb \
-    -t "$out/left-hand-control_${version}_amd64.deb"
+    -t "$out/tecloid_${version}_amd64.deb"
 VERSION=$version nfpm package -f "$staging/nfpm.yaml" -p rpm \
-    -t "$out/left-hand-control-$version-1.x86_64.rpm"
+    -t "$out/tecloid-$version-1.x86_64.rpm"
 
 # Offline distribution builds and the GPL source offer need every dependency.
-vendor_name="left-hand-control-$version-vendor"
+vendor_name="tecloid-$version-vendor"
 mkdir -p -- "$staging/$vendor_name/.cargo"
 # Extracted over the source tree, `.cargo/config.toml` points at `vendor/`.
 cargo vendor --locked --versioned-dirs "$staging/$vendor_name/vendor" \

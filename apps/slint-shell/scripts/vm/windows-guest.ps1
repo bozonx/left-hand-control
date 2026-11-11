@@ -66,7 +66,7 @@ try {
         if ($suite -in @('full', 'release')) {
             $ErrorActionPreference = 'Continue'
             & cargo build --release --locked --manifest-path (Join-Path $root 'Cargo.toml') `
-                -p lhc-core -p slint-shell --bin left-hand-control --example windows-mapper-stand *>&1 |
+                -p lhc-core -p slint-shell --bin tecloid --example windows-mapper-stand *>&1 |
                 Out-File -FilePath (Join-Path $out 'mapper-build.log') -Encoding utf8
             $driverCode = $LASTEXITCODE
             $ErrorActionPreference = 'Stop'
@@ -138,7 +138,7 @@ try {
             if ($LASTEXITCODE -ne 0) { throw 'Could not resolve the current package version' }
             $metadata = $metadataJson | ConvertFrom-Json
             $version = ($metadata.packages | Where-Object name -eq 'slint-shell').version
-            $currentPackage = Join-Path $metadata.target_directory "release-artifacts-windows\left-hand-control-$version-windows-x86_64.zip"
+            $currentPackage = Join-Path $metadata.target_directory "release-artifacts-windows\tecloid-$version-windows-x86_64.zip"
             if (-not (Test-Path -LiteralPath $currentPackage -PathType Leaf)) { throw "Current ZIP is missing: $currentPackage" }
             & powershell -NoProfile -ExecutionPolicy Bypass -File `
                 (Join-Path $root 'apps\slint-shell\scripts\windows\check-windows-upgrade.ps1') `

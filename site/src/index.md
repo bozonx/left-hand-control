@@ -7,7 +7,7 @@ footer: false
 outline: false
 localeSelector:
   title: Choose your language / Выберите язык
-  description: Select a language to open Left Hand Control documentation. / Выберите язык для документации Left Hand Control.
+  description: Select a language to open Tecloid documentation. / Выберите язык для документации Tecloid.
   recommendedLabel: Recommended / Рекомендуется
 head:
   - - meta

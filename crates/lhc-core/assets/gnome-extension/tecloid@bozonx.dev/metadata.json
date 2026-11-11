@@ -1,0 +1,9 @@
+{
+  "uuid": "tecloid@bozonx.dev",
+  "name": "Tecloid bridge",
+  "description": "Window identity and keyboard input sources for Tecloid",
+  "shell-version": ["50"],
+  "version": 1,
+  "url": "https://github.com/bozonx/tecloid",
+  "session-modes": ["user"]
+}

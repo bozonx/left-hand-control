@@ -1,7 +1,7 @@
 //! Text displayed outside Slint. Translations are generated from the PO catalog.
 
 pub const MESSAGES: &[(&str, &str)] = &[
-    ("ApplicationName", "Left Hand Control"),
+    ("ApplicationName", "Tecloid"),
     ("Settings", "Settings"),
     ("Quick", "Quick actions"),
     ("ToggleMapper", "Mapper on / off"),

@@ -236,7 +236,7 @@ pub fn spawn(
 struct MapperLock(HANDLE);
 
 /// Session-local name of the mapper lock mutex.
-const MAPPER_LOCK_NAME: windows::core::PCWSTR = w!("Local\\LeftHandControlMapper");
+const MAPPER_LOCK_NAME: windows::core::PCWSTR = w!("Local\\TecloidMapper");
 
 impl MapperLock {
     fn join_existing() -> Result<Self, String> {

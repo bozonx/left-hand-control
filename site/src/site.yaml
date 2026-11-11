@@ -4,7 +4,7 @@ themeConfig:
   defaultColorTheme: 'blue'
   defaultStylePreset: 'soft'
   publisher:
-    name: 'Left Hand Control'
+    name: 'Tecloid'
     url: '${config.siteUrl}'
     logo: '${config.siteUrl}/img/home-logo.svg'
   colorPicker: true

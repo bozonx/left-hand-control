@@ -26,7 +26,7 @@ sudo test -f "${XML_FILE}.lhc-backup"   || sudo cp "${XML_FILE}"   "${XML_FILE}.
 
 echo "==> Writing ${SYMBOLS_FILE}"
 sudo tee "${SYMBOLS_FILE}" > /dev/null <<'EOF'
-// Left Hand Control — empirical test. Maps F20 to '@'.
+// Tecloid — empirical test. Maps F20 to '@'.
 partial alphanumeric_keys
 xkb_symbols "extras" {
     key <FK24> { [ U0040 ] };   // @ — evdev 194 = KEY_F24 (safer than F20, which
@@ -50,9 +50,9 @@ echo "==> Patching ${LST_FILE}"
 if ! sudo grep -q "^  lhc:extras" "${LST_FILE}"; then
     sudo awk '
         /^! option/ { in_table = 1; print; next }
-        in_table && /^![[:space:]]*[a-z]/ { in_table = 0; print "  lhc:extras           Left Hand Control (test) — F20 prints @"; print ""; print; next }
+        in_table && /^![[:space:]]*[a-z]/ { in_table = 0; print "  lhc:extras           Tecloid (test) — F20 prints @"; print ""; print; next }
         { print }
-        END { if (in_table) print "  lhc:extras           Left Hand Control (test) — F20 prints @" }
+        END { if (in_table) print "  lhc:extras           Tecloid (test) — F20 prints @" }
     ' "${LST_FILE}" | sudo tee "${LST_FILE}.new" > /dev/null
     sudo mv "${LST_FILE}.new" "${LST_FILE}"
 fi
@@ -68,12 +68,12 @@ with open(p, "r", encoding="utf-8") as f:
 block = """    <group allowMultipleSelection="true">
       <configItem>
         <name>lhc</name>
-        <_description>Left Hand Control (test)</_description>
+        <_description>Tecloid (test)</_description>
       </configItem>
       <option>
         <configItem>
           <name>lhc:extras</name>
-          <_description>Left Hand Control — F20 prints @</_description>
+          <_description>Tecloid — F20 prints @</_description>
         </configItem>
       </option>
     </group>

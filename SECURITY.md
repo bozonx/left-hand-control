@@ -15,7 +15,7 @@ will be released and the reporter credited unless anonymity is requested.
 
 ## Security Architecture
 
-Left Hand Control is a local desktop application. Its core handles configuration,
+Tecloid is a local desktop application. Its core handles configuration,
 keyboard interception and system integration; the Slint shell handles presentation.
 
 **Attack surface:**

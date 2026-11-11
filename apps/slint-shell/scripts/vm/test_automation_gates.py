@@ -137,16 +137,16 @@ class AutomationGates(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             version = '1.0.0'
-            prefix = 'left-hand-control-1.0.0'
+            prefix = 'tecloid-1.0.0'
             elf = bytearray(64)
             elf[:6] = b'\x7fELF\x02\x01'
             struct.pack_into('<H', elf, 18, 62)
             with tarfile.open(root / f'{prefix}-linux-x86_64.tar.gz', 'w:gz') as tf:
-                for name, value in [('left-hand-control', elf), ('LICENSE', b'license'), ('install-linux.sh', b'installer')]:
+                for name, value in [('tecloid', elf), ('LICENSE', b'license'), ('install-linux.sh', b'installer')]:
                     member = tarfile.TarInfo('bundle/' + name)
                     member.size = len(value)
                     tf.addfile(member, io.BytesIO(value))
-            (root / 'left-hand-control_1.0.0_amd64.deb').write_bytes(b'!<arch>\n')
+            (root / 'tecloid_1.0.0_amd64.deb').write_bytes(b'!<arch>\n')
             (root / f'{prefix}-1.x86_64.rpm').write_bytes(b'\xed\xab\xee\xdb')
             pe = bytearray(256)
             pe[:2] = b'MZ'
@@ -154,7 +154,7 @@ class AutomationGates(unittest.TestCase):
             pe[128:132] = b'PE\0\0'
             struct.pack_into('<H', pe, 132, 0x8664)
             with zipfile.ZipFile(root / f'{prefix}-windows-x86_64.zip', 'w') as zf:
-                for name, value in [('left-hand-control.exe', pe), ('LICENSE', b'L'), ('README.md', b'R'), ('features.md', b'F')]:
+                for name, value in [('tecloid.exe', pe), ('LICENSE', b'L'), ('README.md', b'R'), ('features.md', b'F')]:
                     zf.writestr('bundle/' + name, value)
             vendor = root / f'{prefix}-vendor.tar.xz'
             with tarfile.open(vendor, 'w:xz') as tf:

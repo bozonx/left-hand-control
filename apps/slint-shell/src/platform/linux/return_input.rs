@@ -27,9 +27,9 @@ impl Active {
 
 /// D-Bus interface of the probe; the `zbus::interface` attribute below
 /// needs the same name as a literal.
-const PROBE_INTERFACE: &str = "dev.bozonx.LeftHandControl.SlintProbe";
+const PROBE_INTERFACE: &str = "dev.bozonx.Tecloid.SlintProbe";
 
-#[zbus::interface(name = "dev.bozonx.LeftHandControl.SlintProbe")]
+#[zbus::interface(name = "dev.bozonx.Tecloid.SlintProbe")]
 impl Active {
     fn update(&self, id: String) {
         log::info!("probe active window: {id}");

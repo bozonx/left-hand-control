@@ -220,10 +220,9 @@ impl Server {
             .write(true)
             .open(lock_path)?;
         lock.try_lock().map_err(|error| match error {
-            std::fs::TryLockError::WouldBlock => std::io::Error::new(
-                std::io::ErrorKind::AddrInUse,
-                "left-hand-control is already running",
-            ),
+            std::fs::TryLockError::WouldBlock => {
+                std::io::Error::new(std::io::ErrorKind::AddrInUse, "tecloid is already running")
+            }
             std::fs::TryLockError::Error(error) => error,
         })?;
         if path.exists() {
@@ -231,7 +230,7 @@ impl Server {
                 Ok(_) => {
                     return Err(std::io::Error::new(
                         std::io::ErrorKind::AddrInUse,
-                        "left-hand-control is already running",
+                        "tecloid is already running",
                     ));
                 }
                 Err(e) if e.kind() == std::io::ErrorKind::ConnectionRefused => {

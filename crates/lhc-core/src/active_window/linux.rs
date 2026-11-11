@@ -8,7 +8,7 @@
 //!   * other Wayland   -> wlr foreign-toplevel events (`wlr`) where the
 //!                        compositor offers them (niri, Wayfire, labwc, …)
 //!   * X11 (any DE)    -> xprop (+ xdotool for titles), events from `xprop -spy`
-//!   * GNOME Wayland   -> optional Left Hand Control Shell extension
+//!   * GNOME Wayland   -> optional Tecloid Shell extension
 //!   * everything else -> None (condition will not match)
 //! ```
 

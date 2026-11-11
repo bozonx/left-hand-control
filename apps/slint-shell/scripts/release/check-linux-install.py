@@ -19,15 +19,15 @@ with tempfile.TemporaryDirectory(prefix="lhc-linux-install-") as directory:
         (bundle / name).write_text("fixture", encoding="utf-8")
     packaging = scripts.parents[1] / "packaging/linux"
     for name in (
-        "dev.bozonx.left-hand-control.desktop",
-        "dev.bozonx.left-hand-control.metainfo.xml",
-        "60-left-hand-control.rules",
+        "dev.bozonx.tecloid.desktop",
+        "dev.bozonx.tecloid.metainfo.xml",
+        "60-tecloid.rules",
         "modules-load.conf",
     ):
         shutil.copy2(packaging / name, bundle / name)
     shutil.copytree(packaging / "icons", bundle / "icons")
     shutil.copy2(scripts.parents[1] / "assets/icon.svg", bundle / "icons/scalable.svg")
-    (bundle / "left-hand-control").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    (bundle / "tecloid").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     prefix = root / 'prefix with $cash%quote"back`slash\\ space'
     env = dict(os.environ, LHC_INSTALL_PREFIX=str(prefix))
 
@@ -38,22 +38,22 @@ with tempfile.TemporaryDirectory(prefix="lhc-linux-install-") as directory:
         )
 
     install()
-    app = prefix / "lib/dev.bozonx.left-hand-control"
-    launcher = prefix / "bin/left-hand-control"
-    assert launcher.resolve() == app / "left-hand-control"
+    app = prefix / "lib/dev.bozonx.tecloid"
+    launcher = prefix / "bin/tecloid"
+    assert launcher.resolve() == app / "tecloid"
     subprocess.run([str(launcher)], check=True, timeout=10)
-    desktop = prefix / "share/applications/dev.bozonx.left-hand-control.desktop"
+    desktop = prefix / "share/applications/dev.bozonx.tecloid.desktop"
     subprocess.run(["desktop-file-validate", str(desktop)], check=True, timeout=10)
     exec_line = next(
         line for line in desktop.read_text(encoding="utf-8").splitlines()
         if line.startswith("Exec=")
     )
     assert exec_line.startswith('Exec="') and "\\\\$cash%%quote" in exec_line, exec_line
-    metainfo = prefix / "share/metainfo/dev.bozonx.left-hand-control.metainfo.xml"
+    metainfo = prefix / "share/metainfo/dev.bozonx.tecloid.metainfo.xml"
     icons = prefix / "share/icons/hicolor"
-    installed = [metainfo, icons / "scalable/apps/dev.bozonx.left-hand-control.svg"]
+    installed = [metainfo, icons / "scalable/apps/dev.bozonx.tecloid.svg"]
     installed += [
-        icons / f"{size}x{size}/apps/dev.bozonx.left-hand-control.png"
+        icons / f"{size}x{size}/apps/dev.bozonx.tecloid.png"
         for size in (16, 22, 24, 32, 48, 64, 128, 256, 512)
     ]
     assert all(path.is_file() for path in installed)
@@ -61,10 +61,10 @@ with tempfile.TemporaryDirectory(prefix="lhc-linux-install-") as directory:
     extension_env = dict(env, XDG_DATA_HOME=str(extension_data),
                          DBUS_SESSION_BUS_ADDRESS=f"unix:path={root}/absent-bus")
     extension_script = app / "install-gnome-extension.sh"
-    extension_dir = extension_data / "gnome-shell/extensions/left-hand-control@bozonx.dev"
+    extension_dir = extension_data / "gnome-shell/extensions/tecloid@bozonx.dev"
     subprocess.run([str(extension_script)], env=extension_env, check=True,
                    capture_output=True, timeout=10)
-    assert (extension_dir / "extension.js").read_bytes() == (bundle / "gnome-extension/left-hand-control@bozonx.dev/extension.js").read_bytes()
+    assert (extension_dir / "extension.js").read_bytes() == (bundle / "gnome-extension/tecloid@bozonx.dev/extension.js").read_bytes()
     unrelated = extension_dir.parent / "unrelated"
     unrelated.write_text("keep", encoding="utf-8")
     subprocess.run([str(extension_script), "uninstall"], env=extension_env,

@@ -7,8 +7,8 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Keyboard from 'resource:///org/gnome/shell/ui/status/keyboard.js';
 
-const IFACE = 'dev.bozonx.LeftHandControl.Gnome';
-const PATH = '/dev/bozonx/LeftHandControl/Gnome';
+const IFACE = 'dev.bozonx.Tecloid.Gnome';
+const PATH = '/dev/bozonx/Tecloid/Gnome';
 const XML = `<node><interface name="${IFACE}">
 <method name="Snapshot"><arg type="b" direction="in"/><arg type="s" direction="out"/></method>
 <method name="Windows"><arg type="s" direction="out"/></method>
@@ -52,7 +52,7 @@ export default class Bridge extends Extension {
         this._disconnectWindow();
         const window = global.display.focus_window;
         if (window) {
-            if (window.get_wm_class() !== 'dev.bozonx.left-hand-control.popup')
+            if (window.get_wm_class() !== 'dev.bozonx.tecloid.popup')
                 this._externalId = window.get_stable_sequence();
             for (const signal of ['notify::title', 'notify::fullscreen', 'position-changed', 'size-changed'])
                 this._windowSignals.push([window, window.connect(signal, () => this._changed())]);

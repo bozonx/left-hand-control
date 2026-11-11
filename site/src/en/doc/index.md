@@ -1,11 +1,11 @@
 ---
 title: Overview
-description: 'Documentation for Left Hand Control'
+description: 'Documentation for Tecloid'
 ---
 
-# Left Hand Control Documentation
+# Tecloid Documentation
 
-Left Hand Control is a desktop keyboard mapper: it intercepts a physical keyboard, applies layers, rules, macros and commands, and emits the result through a virtual device. It also shows quick popups (Emoji, Quick actions) and lives in the system tray.
+Tecloid is a desktop keyboard mapper: it intercepts a physical keyboard, applies layers, rules, macros and commands, and emits the result through a virtual device. It also shows quick popups (Emoji, Quick actions) and lives in the system tray.
 
 ## Getting Started
 

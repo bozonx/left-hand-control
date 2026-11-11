@@ -1,4 +1,4 @@
-# Left Hand Control
+# Tecloid
 
 Desktop keyboard mapper на Rust и Slint. Перехватывает физическую клавиатуру,
 применяет слои, правила, макросы и команды и выдаёт результат через виртуальное
@@ -26,7 +26,7 @@ LHC_POPUPS=auto cargo run --locked -p slint-shell --features spell
 Приложение запускается со скрытыми окнами и остаётся в трее. Открыть настройки:
 
 ```sh
-target/debug/left-hand-control show settings
+target/debug/tecloid show settings
 ```
 
 В одном runtime-каталоге работает один экземпляр; повторный запуск без аргументов
@@ -46,12 +46,12 @@ target/debug/left-hand-control show settings
 
 Debug-сборки используют `dev-files/<os>/` внутри репозитория. `LHC_DEV_DIR`
 задаёт другой базовый каталог с той же структурой по ОС. На Linux конфиг находится
-в `dev-files/linux/.config/dev.bozonx.left-hand-control/config.json`, данные —
-в `dev-files/linux/.local/share/dev.bozonx.left-hand-control/`.
+в `dev-files/linux/.config/dev.bozonx.tecloid/config.json`, данные —
+в `dev-files/linux/.local/share/dev.bozonx.tecloid/`.
 
 Release-сборки используют системные config/data-каталоги. На Linux это
-`~/.config/dev.bozonx.left-hand-control/` и
-`~/.local/share/dev.bozonx.left-hand-control/`. Настройки сохраняются автоматически;
+`~/.config/dev.bozonx.tecloid/` и
+`~/.local/share/dev.bozonx.tecloid/`. Настройки сохраняются автоматически;
 раскладки записываются в библиотеку только при явном сохранении. Внешние изменения
 конфига обнаруживаются автоматически; сохранение проверяет уже произошедшие
 изменения, но не блокирует параллельную запись внешним редактором. Поддерживается текущий формат конфигурации

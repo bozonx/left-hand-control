@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Left Hand Control\n"
+"Project-Id-Version: Tecloid\n"
 "PO-Revision-Date: 2026-10-23 00:00+0000\n"
-"Last-Translator: Left Hand Control contributors\n"
+"Last-Translator: Tecloid contributors\n"
 "Language-Team: Russian\n"
 "MIME-Version: 1.0\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -142,8 +142,8 @@ msgstr "Конфигурация изменилась с начала редак
 msgid "Unknown action type"
 msgstr "Неизвестный тип действия"
 
-msgid "Left Hand Control"
-msgstr "Left Hand Control"
+msgid "Tecloid"
+msgstr "Tecloid"
 
 msgid "Profiles"
 msgstr "Профили"
@@ -2054,8 +2054,8 @@ msgstr "Активировать профиль {} (переключает в о
 msgid "There is no profile number {}"
 msgstr "Нет профиля с номером {}"
 
-msgid "Show the Left Hand Control profile name when it changes"
-msgstr "Показывать название профиля Left Hand Control при его смене"
+msgid "Show the Tecloid profile name when it changes"
+msgstr "Показывать название профиля Tecloid при его смене"
 
 msgid "Show the keys of a layer while it is held"
 msgstr "Показывать клавиши слоя, пока он удерживается"
@@ -2173,8 +2173,8 @@ msgstr "Назначить действие"
 msgid "Action after {} ms of holding"
 msgstr "Действие через {} мс удержания"
 
-msgid "These codes are specific to Left Hand Control, not universal keyboard codes (e.g. KeyA, ArrowLeft)."
-msgstr "Это коды приложения Left Hand Control, а не общепринятые коды клавиш (например, KeyA, ArrowLeft)."
+msgid "These codes are specific to Tecloid, not universal keyboard codes (e.g. KeyA, ArrowLeft)."
+msgstr "Это коды приложения Tecloid, а не общепринятые коды клавиш (например, KeyA, ArrowLeft)."
 
 msgid "While its window is active"
 msgstr "Пока активно его окно"
@@ -2401,8 +2401,8 @@ msgstr "Действие при быстром двойном нажатии т�
 msgid "Show standard QWERTY letter labels for visual reference."
 msgstr "Показывать стандартные обозначения клавиш QWERTY для наглядности."
 
-msgid "Show internal key codes used in Left Hand Control profiles (e.g. KeyA, ArrowLeft)."
-msgstr "Показывать внутренние коды клавиш профилей Left Hand Control (например, KeyA, ArrowLeft)."
+msgid "Show internal key codes used in Tecloid profiles (e.g. KeyA, ArrowLeft)."
+msgstr "Показывать внутренние коды клавиш профилей Tecloid (например, KeyA, ArrowLeft)."
 
 
 msgid "Hold detection"
@@ -2630,8 +2630,8 @@ msgstr "Макрос, который выполняется дольше это�
 msgid "Global shortcuts registered in this KDE session:"
 msgstr "Глобальные комбинации клавиш, зарегистрированные в этом сеансе KDE:"
 
-msgid "The list is read from the KDE global shortcut service (kglobalaccel): KWin, Plasma and applications register their actions there. The chosen action is invoked as is, as if its shortcut were pressed, even when no keys are assigned to it. Which actions exist and how they behave depends on the Plasma version and installed applications, so Left Hand Control does not guarantee them. Common window and desktop actions that also work on other platforms are in System actions."
-msgstr "Список читается из службы глобальных комбинаций клавиш KDE (kglobalaccel): там свои действия регистрируют KWin, Plasma и приложения. Выбранное действие вызывается как есть, будто нажата его комбинация, даже если клавиши ему не назначены. Набор действий и их поведение зависят от версии Plasma и установленных приложений, поэтому Left Hand Control не гарантирует их работу. Распространённые действия с окнами и рабочим столом, которые работают и на других платформах, находятся в разделе «Системные действия»."
+msgid "The list is read from the KDE global shortcut service (kglobalaccel): KWin, Plasma and applications register their actions there. The chosen action is invoked as is, as if its shortcut were pressed, even when no keys are assigned to it. Which actions exist and how they behave depends on the Plasma version and installed applications, so Tecloid does not guarantee them. Common window and desktop actions that also work on other platforms are in System actions."
+msgstr "Список читается из службы глобальных комбинаций клавиш KDE (kglobalaccel): там свои действия регистрируют KWin, Plasma и приложения. Выбранное действие вызывается как есть, будто нажата его комбинация, даже если клавиши ему не назначены. Набор действий и их поведение зависят от версии Plasma и установленных приложений, поэтому Tecloid не гарантирует их работу. Распространённые действия с окнами и рабочим столом, которые работают и на других платформах, находятся в разделе «Системные действия»."
 
 
 msgid "Hold key or combination"

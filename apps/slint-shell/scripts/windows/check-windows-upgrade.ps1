@@ -20,7 +20,7 @@ try {
         if ($expected -notin @(Get-Content $checksum)) { throw 'Upgrade archive checksum mismatch' }
         $destination = Join-Path $temp $pair[0]
         Expand-Archive $path -DestinationPath $destination
-        $files = @(Get-ChildItem $destination -Recurse -File -Filter left-hand-control.exe)
+        $files = @(Get-ChildItem $destination -Recurse -File -Filter tecloid.exe)
         if ($files.Count -ne 1) { throw 'Each ZIP must contain exactly one application executable' }
         $executables += $files[0].FullName
         $version = & $files[0].FullName --version
@@ -50,7 +50,7 @@ try {
         }
         & $exe quit | Out-Null
         if ($LASTEXITCODE -or -not $process.WaitForExit(10000) -or $process.ExitCode) { throw 'Upgrade shutdown failed' }
-        $profile = Join-Path $env:LHC_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.left-hand-control'
+        $profile = Join-Path $env:LHC_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.tecloid'
         if ($index -eq 0) {
             $before = @{}
             # IPC credentials rotate on each start; only durable user data is retained.

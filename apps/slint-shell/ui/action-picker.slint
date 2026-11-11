@@ -125,7 +125,7 @@ export global ActionPicker {
             : category == PickerCategory.macros ? @tr("Macros")
             : category == PickerCategory.builtin-macros ? @tr("Built-in macros")
             : category == PickerCategory.commands ? @tr("Commands")
-            : category == PickerCategory.app ? @tr("Left Hand Control")
+            : category == PickerCategory.app ? @tr("Tecloid")
             : category == PickerCategory.system-actions ? @tr("System actions")
             : category == PickerCategory.desktop-shortcuts ? (self.shortcut-desktop == ShortcutDesktop.kde ? @tr("KDE shortcuts") : "")
             : category == PickerCategory.app-actions ? @tr("Application actions")
@@ -314,7 +314,7 @@ export component PickerOverlay inherits DialogFrame {
                     if ActionPicker.query == "" && ActionPicker.category == PickerCategory.desktop-shortcuts && ActionPicker.shortcuts-failed: Text { text: @tr("Cannot read KDE global shortcuts. See the log for details."); color: Theme.warning; wrap: word-wrap; }
                     if ActionPicker.query == "" && ActionPicker.category == PickerCategory.desktop-shortcuts: HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m; vertical-stretch: 0;
                         Text { text: @tr("Global shortcuts registered in this KDE session:"); color: Theme.muted; wrap: word-wrap; vertical-alignment: center; }
-                        InfoTip { text: @tr("The list is read from the KDE global shortcut service (kglobalaccel): KWin, Plasma and applications register their actions there. The chosen action is invoked as is, as if its shortcut were pressed, even when no keys are assigned to it. Which actions exist and how they behave depends on the Plasma version and installed applications, so Left Hand Control does not guarantee them. Common window and desktop actions that also work on other platforms are in System actions."); }
+                        InfoTip { text: @tr("The list is read from the KDE global shortcut service (kglobalaccel): KWin, Plasma and applications register their actions there. The chosen action is invoked as is, as if its shortcut were pressed, even when no keys are assigned to it. Which actions exist and how they behave depends on the Plasma version and installed applications, so Tecloid does not guarantee them. Common window and desktop actions that also work on other platforms are in System actions."); }
                     }
                     if ActionPicker.query == "" && ActionPicker.category == PickerCategory.app-actions: HorizontalLayout { padding: Theme.space-m; spacing: Theme.space-m; vertical-stretch: 0;
                         Text { text: @tr("Actions of installed applications:"); color: Theme.muted; wrap: word-wrap; vertical-alignment: center; }

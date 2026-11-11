@@ -586,7 +586,7 @@
       "type": "object"
     }
   },
-  "$id": "https://raw.githubusercontent.com/bozonx/left-hand-control/main/schemas/config.v1.schema.json",
+  "$id": "https://raw.githubusercontent.com/bozonx/tecloid/main/schemas/config.v1.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
@@ -662,6 +662,6 @@
   "required": [
     "version"
   ],
-  "title": "Left Hand Control config.json",
+  "title": "Tecloid config.json",
   "type": "object"
 }

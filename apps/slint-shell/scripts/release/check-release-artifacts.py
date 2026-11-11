@@ -45,16 +45,16 @@ def verify_binary(data, windows=False):
 def check(directory, version, require_vendor=False, compare_linux=False, lockfile=None):
     linux = verify_manifest(directory, 'SHA256SUMS')
     windows = verify_manifest(directory, 'WINDOWS-SHA256SUMS')
-    archive = f'left-hand-control-{version}-linux-x86_64.tar.gz'
-    deb = f'left-hand-control_{version}_amd64.deb'
-    rpm = f'left-hand-control-{version}-1.x86_64.rpm'
-    portable = f'left-hand-control-{version}-windows-x86_64.zip'
+    archive = f'tecloid-{version}-linux-x86_64.tar.gz'
+    deb = f'tecloid_{version}_amd64.deb'
+    rpm = f'tecloid-{version}-1.x86_64.rpm'
+    portable = f'tecloid-{version}-windows-x86_64.zip'
     if not {archive, deb, rpm} <= linux or windows != {portable}:
         raise ValueError('Distribution files/version missing from checksum manifests')
-    if require_vendor and f'left-hand-control-{version}-vendor.tar.xz' not in linux:
+    if require_vendor and f'tecloid-{version}-vendor.tar.xz' not in linux:
         raise ValueError('Offline vendor source archive is missing')
     if require_vendor:
-        root = f'left-hand-control-{version}-vendor'
+        root = f'tecloid-{version}-vendor'
         with tarfile.open(directory / f'{root}.tar.xz') as tf:
             names = {m.name for m in tf.getmembers() if m.isfile()}
             config = tomllib.loads(tf.extractfile(f'{root}/.cargo/config.toml').read().decode())
@@ -69,7 +69,7 @@ def check(directory, version, require_vendor=False, compare_linux=False, lockfil
                     raise ValueError(f"Vendored dependency missing: {package['name']} {package['version']}")
     with tarfile.open(directory / archive) as tf:
         files = [m for m in tf.getmembers() if m.isfile()]
-        executables = [m for m in files if PurePosixPath(m.name).name == 'left-hand-control']
+        executables = [m for m in files if PurePosixPath(m.name).name == 'tecloid']
         if len(executables) != 1:
             raise ValueError('Linux archive must contain one executable')
         binary = tf.extractfile(executables[0]).read()
@@ -84,7 +84,7 @@ def check(directory, version, require_vendor=False, compare_linux=False, lockfil
         entries = {n.replace('\\', '/'): n for n in files}
         if len(entries) != len(files):
             raise ValueError('Duplicate normalized ZIP paths')
-        exe = [n for n in entries if PurePosixPath(n).name == 'left-hand-control.exe']
+        exe = [n for n in entries if PurePosixPath(n).name == 'tecloid.exe']
         if len(exe) != 1:
             raise ValueError('ZIP must contain one executable')
         verify_binary(zf.read(entries[exe[0]]), windows=True)
@@ -105,10 +105,10 @@ def check(directory, version, require_vendor=False, compare_linux=False, lockfil
                 member = next(n for n in listing.splitlines() if n.startswith('data.tar'))
                 data = subprocess.check_output(['bsdtar', '-xOf', str(directory / package), member])
                 listing = subprocess.check_output(['bsdtar', '-tf', '-'], input=data).decode()
-                member = next(n for n in listing.splitlines() if n.lstrip('./').rstrip('/') == 'usr/bin/left-hand-control')
+                member = next(n for n in listing.splitlines() if n.lstrip('./').rstrip('/') == 'usr/bin/tecloid')
                 extracted = subprocess.check_output(['bsdtar', '-xOf', '-', member], input=data)
             else:
-                member = next(n for n in listing.splitlines() if n.lstrip('./').rstrip('/') == 'usr/bin/left-hand-control')
+                member = next(n for n in listing.splitlines() if n.lstrip('./').rstrip('/') == 'usr/bin/tecloid')
                 extracted = subprocess.check_output(['bsdtar', '-xOf', str(directory / package), member])
             if extracted != binary:
                 raise ValueError(f'{package} binary differs from the accepted tar executable')

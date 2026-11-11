@@ -63,9 +63,9 @@ cargo run --locked -p slint-shell --example interactions
 Команды для подготовленных стендов (заменить пути и версию пакета):
 
 ```sh
-python3 apps/slint-shell/scripts/vm/run-linux.py --vm /path/to/fedora44-kde --package /path/to/left-hand-control-VERSION.x86_64.rpm
-python3 apps/slint-shell/scripts/vm/run-linux.py --vm /path/to/debian13-kde --package /path/to/left-hand-control_VERSION_amd64.deb
-python3 apps/slint-shell/scripts/vm/run-linux.py --vm /path/to/kubuntu2604 --package /path/to/left-hand-control-VERSION-linux-x86_64.tar.gz
+python3 apps/slint-shell/scripts/vm/run-linux.py --vm /path/to/fedora44-kde --package /path/to/tecloid-VERSION.x86_64.rpm
+python3 apps/slint-shell/scripts/vm/run-linux.py --vm /path/to/debian13-kde --package /path/to/tecloid_VERSION_amd64.deb
+python3 apps/slint-shell/scripts/vm/run-linux.py --vm /path/to/kubuntu2604 --package /path/to/tecloid-VERSION-linux-x86_64.tar.gz
 ```
 
 Runner использует команды install/remove/reinstall из `vm.json`, а не угадывает

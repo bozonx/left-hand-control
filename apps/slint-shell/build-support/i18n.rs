@@ -215,7 +215,7 @@ pub fn validate_catalog(
                 && !matches!(
                     entry.source.as_str(),
                     "PgUp/PgDn · {}/{}"
-                        | "Left Hand Control"
+                        | "Tecloid"
                         | "F1–F24"
                         | "ID"
                         | "E-ink"

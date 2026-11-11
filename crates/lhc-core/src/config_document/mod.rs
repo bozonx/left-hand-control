@@ -777,9 +777,7 @@ mod tests {
     #[test]
     fn launch_on_startup_follows_the_system_registration() {
         let (dir, mut document) = document(json!({}), PROFILE);
-        let entry = dir
-            .path()
-            .join("autostart/dev.bozonx.left-hand-control.desktop");
+        let entry = dir.path().join("autostart/dev.bozonx.tecloid.desktop");
         document
             .update_settings(|settings| settings.launch_on_startup = true)
             .unwrap();

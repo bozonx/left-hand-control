@@ -1,7 +1,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Left Hand Control\n"
+"Project-Id-Version: Tecloid\n"
 "PO-Revision-Date: 2026-10-23 00:00+0000\n"
 "Last-Translator: Machine translation; review welcome\n"
 "Language-Team: Japanese\n"
@@ -139,8 +139,8 @@ msgstr "編集を開始してから構成が変更されました。変化を繰
 msgid "Unknown action type"
 msgstr "不明なアクション タイプ"
 
-msgid "Left Hand Control"
-msgstr "Left Hand Control"
+msgid "Tecloid"
+msgstr "Tecloid"
 
 msgid "Profiles"
 msgstr "プロファイル"
@@ -2199,7 +2199,7 @@ msgstr "プロファイル {} をアクティブ化 (シングル モードに�
 msgid "There is no profile number {}"
 msgstr "プロファイル番号{}はありません"
 
-msgid "Show the Left Hand Control profile name when it changes"
+msgid "Show the Tecloid profile name when it changes"
 msgstr "左手コントロールのプロファイル名が変更されたときに表示する"
 
 msgid "Show the keys of a layer while it is held"
@@ -2345,7 +2345,7 @@ msgid "Action after {} ms of holding"
 msgstr "{} ミリ秒の保持後のアクション"
 
 msgid ""
-"These codes are specific to Left Hand Control, not universal keyboard codes "
+"These codes are specific to Tecloid, not universal keyboard codes "
 "(e.g. KeyA, ArrowLeft)."
 msgstr "これらのコードは左手コントロールに固有であり、ユニバーサル キーボード コード (KeyA、ArrowLeft など) ではありません。"
 
@@ -2631,7 +2631,7 @@ msgid "Show standard QWERTY letter labels for visual reference."
 msgstr "視覚的な参照のために標準の QWERTY 文字ラベルを表示します。"
 
 msgid ""
-"Show internal key codes used in Left Hand Control profiles (e.g. KeyA, "
+"Show internal key codes used in Tecloid profiles (e.g. KeyA, "
 "ArrowLeft)."
 msgstr "左手コントロール プロファイルで使用される内部キー コードを表示します (KeyA、ArrowLeft など)。"
 
@@ -2952,13 +2952,13 @@ msgid ""
 "Plasma and applications register their actions there. The chosen action is "
 "invoked as is, as if its shortcut were pressed, even when no keys are "
 "assigned to it. Which actions exist and how they behave depends on the "
-"Plasma version and installed applications, so Left Hand Control does not "
+"Plasma version and installed applications, so Tecloid does not "
 "guarantee them. Common window and desktop actions that also work on other "
 "platforms are in System actions."
 msgstr ""
 "リストは KDE グローバル ショートカット サービス (kglobaccel) "
 "から読み取られます。KWin、Plasma、およびアプリケーションはそこにアクションを登録します。選択したアクションは、キーが割り当てられていない場合でも、ショートカットが押されたかのようにそのまま呼び出されます。どのアクションが存在し、どのように動作するかは、Plasma"
-" のバージョンとインストールされているアプリケーションによって異なるため、Left Hand Control "
+" のバージョンとインストールされているアプリケーションによって異なるため、Tecloid "
 "はそれらを保証しません。他のプラットフォームでも動作する一般的なウィンドウおよびデスクトップのアクションは、システム アクションにあります。"
 
 msgid "Hold key or combination"

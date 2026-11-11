@@ -1,8 +1,8 @@
 {
-  "name": "left-hand-control-site",
+  "name": "tecloid-site",
   "version": "0.1.0",
   "private": true,
-  "description": "Documentation and landing site for Left Hand Control",
+  "description": "Documentation and landing site for Tecloid",
   "type": "module",
   "scripts": {
     "dev": "vitepress dev src",

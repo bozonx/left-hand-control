@@ -1,6 +1,6 @@
 # Установка на Linux
 
-Left Hand Control рассчитан на KDE Plasma 6 в сессии Wayland. Релизы публикуются
+Tecloid рассчитан на KDE Plasma 6 в сессии Wayland. Релизы публикуются
 на странице GitHub Releases: архив `.tar.gz` для установки в домашний каталог,
 пакеты `.deb` и `.rpm` и файл `SHA256SUMS`. Как работают функции приложения,
 описано в `features.md` (в репозитории — [docs/features.md](features.md)).
@@ -15,15 +15,15 @@ Left Hand Control рассчитан на KDE Plasma 6 в сессии Wayland. 
 ```
 
 Установка выполняется без `sudo` в `~/.local`: бинарник получает стабильный путь
-`~/.local/lib/dev.bozonx.left-hand-control/left-hand-control`, команда
-`~/.local/bin/left-hand-control` указывает на него. Также устанавливаются иконки
+`~/.local/lib/dev.bozonx.tecloid/tecloid`, команда
+`~/.local/bin/tecloid` указывает на него. Также устанавливаются иконки
 в `share/icons/hicolor`, запись меню приложений и AppStream metainfo. Добавьте `~/.local/bin` в `PATH`, если его там нет.
 Другой абсолютный префикс задаётся через `LHC_INSTALL_PREFIX`.
 
 Запуск с поддержкой layer-shell и переходом на winit при его отсутствии:
 
 ```sh
-LHC_POPUPS=auto ~/.local/bin/left-hand-control
+LHC_POPUPS=auto ~/.local/bin/tecloid
 ```
 
 При запуске из меню используется стандартный режим winit. Для цветных emoji
@@ -33,11 +33,11 @@ LHC_POPUPS=auto ~/.local/bin/left-hand-control
 Для определения окна назначения текста, условий по приложению и системных раскладок
 нужно комплектное расширение GNOME Shell. В распакованном архиве выполните
 `./install-gnome-extension.sh`; после установки архива скрипт находится в
-`~/.local/lib/dev.bozonx.left-hand-control/`, для deb/rpm — в
-`/usr/share/left-hand-control/`. Перезайдите в GNOME и включите расширение:
+`~/.local/lib/dev.bozonx.tecloid/`, для deb/rpm — в
+`/usr/share/tecloid/`. Перезайдите в GNOME и включите расширение:
 
 ```sh
-gnome-extensions enable left-hand-control@bozonx.dev
+gnome-extensions enable tecloid@bozonx.dev
 ```
 
 Для трея нужно AppIndicator-расширение (в Ubuntu — Ubuntu AppIndicators).
@@ -52,12 +52,12 @@ gnome-extensions enable left-hand-control@bozonx.dev
 (она запросит пароль `sudo`):
 
 ```sh
-~/.local/lib/dev.bozonx.left-hand-control/install-linux.sh permissions
+~/.local/lib/dev.bozonx.tecloid/install-linux.sh permissions
 ```
 
-Команда устанавливает `/etc/udev/rules.d/60-left-hand-control.rules` (запись в
+Команда устанавливает `/etc/udev/rules.d/60-tecloid.rules` (запись в
 `/dev/uinput` для активной локальной сессии через `uaccess` и для группы `input`),
-`/etc/modules-load.d/left-hand-control.conf` (загрузка `uinput` при старте),
+`/etc/modules-load.d/tecloid.conf` (загрузка `uinput` при старте),
 загружает модуль и добавляет пользователя в группу `input`. После добавления
 в группу перезайдите в сессию. Группа `input` даёт процессам пользователя чтение
 всех клавиатур и мышей; выдавайте её осознанно. Отменить правило и автозагрузку
@@ -75,7 +75,7 @@ gnome-extensions enable left-hand-control@bozonx.dev
 безвредна: из-за `TryExec` окружение пропустит её, когда бинарника не станет). Затем:
 
 ```sh
-~/.local/lib/dev.bozonx.left-hand-control/install-linux.sh uninstall
+~/.local/lib/dev.bozonx.tecloid/install-linux.sh uninstall
 ```
 
 При нестандартном префиксе передайте то же значение `LHC_INSTALL_PREFIX`.
@@ -88,14 +88,14 @@ gnome-extensions enable left-hand-control@bozonx.dev
 Ставятся штатным менеджером пакетов, `sudo` нужен только ему:
 
 ```sh
-sudo apt install ./left-hand-control_<версия>_amd64.deb          # Debian 12+, Ubuntu 22.04+
-sudo dnf install ./left-hand-control-<версия>-1.x86_64.rpm      # Fedora
-sudo zypper install ./left-hand-control-<версия>-1.x86_64.rpm   # openSUSE
+sudo apt install ./tecloid_<версия>_amd64.deb          # Debian 12+, Ubuntu 22.04+
+sudo dnf install ./tecloid-<версия>-1.x86_64.rpm      # Fedora
+sudo zypper install ./tecloid-<версия>-1.x86_64.rpm   # openSUSE
 ```
 
 Пакет ставит бинарник в `/usr/bin`, запись меню, metainfo, иконки, udev-правило
 в `/usr/lib/udev/rules.d/` и автозагрузку `uinput` в `/usr/lib/modules-load.d/`,
 затем перезагружает правила udev. В группу `input` пакет пользователя **не**
 добавляет: выполните `sudo usermod -aG input "$USER"` и перезайдите в сессию.
-Удаление — `sudo apt remove left-hand-control` / `sudo dnf remove left-hand-control`;
+Удаление — `sudo apt remove tecloid` / `sudo dnf remove tecloid`;
 конфигурация пользователя остаётся.

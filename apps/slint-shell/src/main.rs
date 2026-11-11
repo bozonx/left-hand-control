@@ -1,4 +1,4 @@
-//! Entry point of the `left-hand-control` binary; the roles live in the
+//! Entry point of the `tecloid` binary; the roles live in the
 //! library.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

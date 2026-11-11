@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=../../../../vitepress-theme-neptu/packages/blog/schema/site.schema.json
 
 lang: 'en-US'
-title: 'Left Hand Control'
+title: 'Tecloid'
 description: 'Desktop keyboard mapper and automation for Linux (KDE Wayland) and Windows'
 
 themeConfig:
@@ -16,8 +16,8 @@ themeConfig:
     - text: '📖 Docs'
       link: '/${localeIndex}/doc'
     - text: 'GitHub'
-      link: 'https://github.com/bozonx/left-hand-control'
+      link: 'https://github.com/bozonx/tecloid'
 
   footer:
     message: 'Released under the MIT License.'
-    copyright: 'Copyright © 2026-present Left Hand Control'
+    copyright: 'Copyright © 2026-present Tecloid'

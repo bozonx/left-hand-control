@@ -11,7 +11,7 @@ const L = `/${localeIndex.value}`
 
 const heroActions = [
   { text: 'Documentation', link: `${L}/doc`, variant: 'brand' },
-  { text: 'GitHub', link: 'https://github.com/bozonx/left-hand-control', variant: 'ghost', icon: 'fa6-brands:github' },
+  { text: 'GitHub', link: 'https://github.com/bozonx/tecloid', variant: 'ghost', icon: 'fa6-brands:github' },
 ]
 
 const features = [
