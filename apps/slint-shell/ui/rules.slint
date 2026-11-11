@@ -45,7 +45,7 @@ export global RulesEditor {
     in-out property <HoldBehavior> hold-mode;
     in-out property <string> double-tap;
     in-out property <GameCondition> game-mode;
-    in-out property <string> keymaps;
+    in-out property <string> keyboard-layouts;
     in-out property <string> apps-include;
     in-out property <string> apps-exclude;
     /// When the held key is pressed, and the layer keys this applies to
@@ -410,7 +410,7 @@ export component RuleDialogOverlay inherits FocusScope {
             conditions-form := ConditionsForm {
                 heading: @tr("If");
                 show-exclusions: true;
-                game <=> RulesEditor.game-mode; languages <=> RulesEditor.keymaps;
+                game <=> RulesEditor.game-mode; languages <=> RulesEditor.keyboard-layouts;
                 applications <=> RulesEditor.apps-include; excluded <=> RulesEditor.apps-exclude;
             }
         }

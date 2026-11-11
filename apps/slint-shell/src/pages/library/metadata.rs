@@ -6,7 +6,7 @@
 
 use crate::{
     i18n::Msg,
-    ui::{KeymapLibrary, Keymapsummary, SettingsWindow},
+    ui::{KeymapLibrary, KeymapSummary, SettingsWindow},
 };
 use slint::{ComponentHandle, Model};
 use std::{
@@ -77,8 +77,8 @@ impl Loader {
     }
 }
 
-fn keymap_summary(preset: &KeymapPreset) -> Keymapsummary {
-    Keymapsummary {
+fn keymap_summary(preset: &KeymapPreset) -> KeymapSummary {
+    KeymapSummary {
         rules: preset.rules.len() as i32,
         layers: preset.layers.len() as i32,
         emoji_pages: if preset

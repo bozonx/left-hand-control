@@ -62,10 +62,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.global::<slint_shell::ui::AppState>()
         .set_in_development(true);
     let library = ui.global::<KeymapLibrary>();
-    library.invoke_open_create(Keymapsource::Empty, 0);
+    library.invoke_open_create(KeymapSource::Empty, 0);
     assert_eq!(library.get_dialog(), LibraryDialog::Create);
     assert!(!library.get_create_name().is_empty());
-    library.invoke_create("A".into(), "".into(), Keymapsource::Empty, 0);
+    library.invoke_create("A".into(), "".into(), KeymapSource::Empty, 0);
     assert_eq!(library.get_dialog(), LibraryDialog::None);
     let summary = library.get_rows().row_data(0).unwrap().summary;
     assert_eq!(summary.emoji_pages, 0);
@@ -84,7 +84,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(error("a", "A"), "");
     assert_eq!(error("a/b", ""), "name-invalid");
     assert_eq!(error(" ", ""), "keymap-name-required");
-    library.invoke_create("B".into(), "".into(), Keymapsource::Empty, 0);
+    library.invoke_create("B".into(), "".into(), KeymapSource::Empty, 0);
     assert_eq!(library.get_names().row_count(), 2);
     // A stale selection must not redirect an action on another card.
     library.invoke_select(1);
@@ -116,7 +116,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // "Keymap" is the second row: a rule for it, then an "off" rule above it.
     library.invoke_open_rule(-1, 1);
     assert_eq!(library.get_dialog(), LibraryDialog::Rule);
-    library.set_rule_keymaps("us, ru".into());
+    library.set_rule_keyboard_layouts("us, ru".into());
     library.set_rule_apps("kate, terminal".into());
     library.invoke_save_rule();
     assert_eq!(library.get_dialog(), LibraryDialog::None);
@@ -194,7 +194,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(library.get_names().row_count(), 1);
     // Creating opens the new keymap without asking again: unsaved changes
     // are confirmed before the create dialog opens.
-    library.invoke_create("Copy".into(), "".into(), Keymapsource::Copy, 0);
+    library.invoke_create("Copy".into(), "".into(), KeymapSource::Copy, 0);
     assert_eq!(library.get_dialog(), LibraryDialog::None);
     assert_eq!(library.get_current_label(), "Copy");
     assert_eq!(
@@ -295,9 +295,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         library.get_bundled_names().row_data(0).unwrap().as_str(),
         bundled_name.as_str()
     );
-    library.invoke_open_create(Keymapsource::Bundled, 0);
+    library.invoke_open_create(KeymapSource::Bundled, 0);
     assert_eq!(library.get_create_name().as_str(), bundled_name.as_str());
-    library.invoke_create("Ivan K".into(), "".into(), Keymapsource::Bundled, 0);
+    library.invoke_create("Ivan K".into(), "".into(), KeymapSource::Bundled, 0);
     assert_eq!(ui.get_page(), Page::Rules);
     assert_eq!(
         ui.global::<RulesEditor>().get_rows().row_count(),
@@ -314,7 +314,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         config.update_keymap(|keymap| keymap.rules.clear())
     })?;
     assert!(library.get_dirty());
-    library.invoke_open_create(Keymapsource::Empty, 0);
+    library.invoke_open_create(KeymapSource::Empty, 0);
     assert_eq!(library.get_dialog(), LibraryDialog::Unsaved);
     library.invoke_save_and_continue();
     assert!(!library.get_dirty());

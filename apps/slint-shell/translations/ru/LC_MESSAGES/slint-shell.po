@@ -504,7 +504,7 @@ msgstr "Игровой режим включён"
 msgid "Game mode off"
 msgstr "Игровой режим выключен"
 
-msgid "System keymaps (comma separated)"
+msgid "System keyboard layouts (comma separated)"
 msgstr "Языки клавиатуры через запятую"
 
 msgid "Applications (comma separated)"
@@ -538,7 +538,7 @@ msgid "Duplicate…"
 msgstr "Создать копию…"
 
 msgid "Edit keymap"
-msgstr "Редактировать"
+msgstr "Редактировать Keymap"
 
 msgid "New keymap"
 msgstr "Новый Keymap"
@@ -765,8 +765,8 @@ msgstr "Открыть меню запуска приложений"
 msgid "Turn off screen"
 msgstr "Выключить экран"
 
-msgid "Switch to keymap {}"
-msgstr "Переключить Keymap на {}"
+msgid "Switch to keyboard layout {}"
+msgstr "Переключить раскладку клавиатуры на {}"
 
 msgid "Layer"
 msgstr "Слой"
@@ -1618,7 +1618,7 @@ msgid "Commands run with PowerShell in the background and are not awaited."
 msgstr "Команды запускаются через PowerShell в фоне и не ожидаются."
 
 msgid "Commands stay off until you allow execution. Review below what your keymaps would run."
-msgstr "Команды не запускаются, пока выполнение не разрешено. Ниже видно, что запускали бы ваши лэйауты."
+msgstr "Команды не запускаются, пока выполнение не разрешено. Ниже видно, что запускали бы ваши Keymap."
 
 msgid "Command"
 msgstr "Команда"
@@ -1690,7 +1690,7 @@ msgid "Rule {}"
 msgstr "Правило {}"
 
 msgid "Use keymap"
-msgstr "Использовать раскладку"
+msgstr "Использовать Keymap"
 
 msgid "When"
 msgstr "Когда"
@@ -1714,13 +1714,13 @@ msgid "Now: {} (rule {}: {})"
 msgstr "Сейчас: {} (правило {}: {})"
 
 msgid "Rules are checked from top to bottom; the first enabled one whose conditions match chooses the keymap. If none matches, the default is used. “No keymap” leaves the keyboard unprocessed, for example in an application where the keymap gets in the way."
-msgstr "Правила проверяются сверху вниз; первое включённое правило, условия которого выполнены, выбирает раскладку. Если ни одно не подошло, используется раскладка по умолчанию. «Без раскладки» оставляет клавиатуру без обработки — например, в приложении, где раскладка мешает."
+msgstr "Правила проверяются сверху вниз; первое включённое правило, условия которого выполнены, выбирает Keymap. Если ни одно не подошло, используется Keymap по умолчанию. «Без Keymap» оставляет клавиатуру без обработки — например, в приложении, где Keymap мешает."
 
 msgid "No rules"
 msgstr "Нет правил"
 
 msgid "The default keymap is always used."
-msgstr "Всегда используется раскладка по умолчанию."
+msgstr "Всегда используется Keymap по умолчанию."
 
 msgid "For games"
 msgstr "Для игр"
@@ -1789,7 +1789,7 @@ msgid "Game mode is on (set manually)"
 msgstr "Игровой режим включён (вручную)"
 
 msgid "Game mode turns on rules and automatic keymap rules that have a game-mode condition. Automatic keymap rules apply only when the keymap is chosen automatically (Keymaps page). Auto uses the detection sources and custom rules below; On and Off set the state manually. “Doesn't count as a game” takes priority over automatic detection and “Counts as a game”. You can also change the mode in the top bar, in the tray menu or with a key bound to a game mode action."
-msgstr "Игровой режим включает правила и авто-правила раскладок с условием игрового режима. Авто-правила раскладок работают, только когда раскладка выбирается автоматически (страница «Раскладки»). Авто использует источники автоопределения и свои правила ниже; Вкл и Выкл задают состояние вручную. «Не считается игрой» важнее автоопределения и «Считается игрой». Режим также можно переключать в верхней панели, меню трея или клавишей с действием игрового режима."
+msgstr "Игровой режим включает правила и авто-правила Keymap с условием игрового режима. Авто-правила Keymap работают, только когда Keymap выбирается автоматически (страница «Keymap»). Авто использует источники автоопределения и свои правила ниже; Вкл и Выкл задают состояние вручную. «Не считается игрой» важнее автоопределения и «Считается игрой». Режим также можно переключать в верхней панели, меню трея или клавишей с действием игрового режима."
 
 
 
@@ -1812,13 +1812,13 @@ msgid "Install {} to detect the active window and fullscreen windows. It is also
 msgstr "Установите {}, чтобы определять активное и полноэкранное окно. Он же нужен для условий по приложениям в правилах."
 
 msgid "Nothing uses game mode yet: no rule or automatic keymap rule has a game-mode condition, so turning it on changes nothing."
-msgstr "Игровой режим пока ни на что не влияет: ни у одного правила или авто-правила раскладки нет условия «игровой режим»."
+msgstr "Игровой режим пока ни на что не влияет: ни у одного правила или авто-правила Keymap нет условия «игровой режим»."
 
 msgid "On and Off are remembered after restart. Auto keeps detecting in the background."
 msgstr "Вкл и Выкл сохраняются после перезапуска. В режиме Авто определение работает в фоне."
 
 msgid "Rules of the current keymap with a game-mode condition: {}. Automatic keymap rules with a game-mode condition: {}."
-msgstr "Правил текущей раскладки с условием игрового режима: {}. Авто-правил раскладок с условием игрового режима: {}."
+msgstr "Правил текущего Keymap с условием игрового режима: {}. Авто-правил Keymap с условием игрового режима: {}."
 
 msgid "Turns on while a game runs through gamemoderun or requests GameMode itself. In Steam set the launch options to “gamemoderun %command%”."
 msgstr "Срабатывает, пока игра запущена через gamemoderun или сама запросила GameMode. В Steam укажите параметры запуска «gamemoderun %command%»."

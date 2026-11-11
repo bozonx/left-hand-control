@@ -71,12 +71,12 @@ fn check_first_keymap_activation() -> Result<(), Box<dyn std::error::Error>> {
         bind_document(&ui, &document);
         let library = ui.global::<KeymapLibrary>();
         library.invoke_set_automatic(automatic);
-        library.invoke_create("First".into(), "".into(), Keymapsource::Empty, 0);
+        library.invoke_create("First".into(), "".into(), KeymapSource::Empty, 0);
         assert_eq!(
             document.read().settings().manual_keymap_id.as_deref(),
             if automatic { None } else { Some("user:First") }
         );
-        library.invoke_create("Second".into(), "".into(), Keymapsource::Empty, 0);
+        library.invoke_create("Second".into(), "".into(), KeymapSource::Empty, 0);
         assert_eq!(
             document.read().settings().manual_keymap_id.as_deref(),
             if automatic { None } else { Some("user:First") }

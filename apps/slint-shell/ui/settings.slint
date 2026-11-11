@@ -36,7 +36,7 @@ export component SettingsWindow inherits Window {
     max-width: Theme.unbounded;
     min-height: root.min-window-height;
     /// Header buttons show icons only in a narrow window; development builds have extra header controls.
-    /// Set on resize rather than bound: the header's size feeds back into the window's keymap.
+    /// Set on resize rather than bound: the header's size feeds back into the window's layout.
     property <length> compact-below: AppState.in-development ? 1000px : 860px;
     property <bool> compact-header;
     init => { root.compact-header = root.width < root.compact-below; }

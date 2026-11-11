@@ -395,7 +395,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.global::<KeymapLibrary>().invoke_create(
         "Small window".into(),
         "".into(),
-        Keymapsource::Bundled,
+        KeymapSource::Bundled,
         0,
     );
     fixture

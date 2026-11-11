@@ -50,7 +50,8 @@ pub(super) fn load_rule(
         state.rule_id = rule.as_ref().map(|rule| rule.id.clone());
         state.rule_missing_target = rule.as_ref().and_then(|rule| rule.keymap_id.clone());
     }
-    let (game, keymaps, apps, excluded) = condition_fields(rule.map(|rule| rule.conditions));
+    let (game, keyboard_layouts, apps, excluded) =
+        condition_fields(rule.map(|rule| rule.conditions));
     library.set_rule_index(if rule_exists(document, index) {
         index
     } else {
@@ -59,7 +60,7 @@ pub(super) fn load_rule(
     library.set_rule_target(target);
     library.set_rule_target_missing(missing);
     library.set_rule_game(game);
-    library.set_rule_keymaps(keymaps.into());
+    library.set_rule_keyboard_layouts(keyboard_layouts.into());
     library.set_rule_apps(apps.into());
     library.set_rule_excluded(excluded.into());
     library.set_status(Msg::None.to_ui());
@@ -91,7 +92,7 @@ pub(super) fn save_rule(
     };
     let conditions = condition(
         library.get_rule_game(),
-        &library.get_rule_keymaps(),
+        &library.get_rule_keyboard_layouts(),
         &library.get_rule_apps(),
         &library.get_rule_excluded(),
     );

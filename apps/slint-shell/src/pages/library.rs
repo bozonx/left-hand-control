@@ -18,7 +18,7 @@ use crate::{
     document::{Document, View},
     i18n::Msg,
     ui::{
-        AutoRuleView, GameCondition, KeymapLibrary, KeymapRow, Keymapsource, LibraryAction,
+        AutoRuleView, GameCondition, KeymapLibrary, KeymapRow, KeymapSource, LibraryAction,
         LibraryDialog, MenuKind, Page, SettingsWindow,
     },
 };
@@ -428,20 +428,20 @@ fn create(
     state: &Shared,
     name: &str,
     description: &str,
-    source: Keymapsource,
+    source: KeymapSource,
     copy_index: i32,
 ) -> Result<Msg, Msg> {
     let library = ui.global::<KeymapLibrary>();
     let copy_from = name_at(ui, copy_index).ok();
     let source = match source {
-        Keymapsource::Bundled => LibrarySource::Bundled(
+        KeymapSource::Bundled => LibrarySource::Bundled(
             usize::try_from(copy_index)
                 .ok()
                 .and_then(|index| BUNDLED.get(index))
                 .ok_or(Msg::LibrarySelect)?,
         ),
-        Keymapsource::Copy => LibrarySource::Copy(copy_from.as_deref().ok_or(Msg::LibrarySelect)?),
-        Keymapsource::Empty => LibrarySource::Empty,
+        KeymapSource::Copy => LibrarySource::Copy(copy_from.as_deref().ok_or(Msg::LibrarySelect)?),
+        KeymapSource::Empty => LibrarySource::Empty,
     };
     let created = edit(ui, document, state, |config| {
         // The very first keymap becomes active in single mode.
@@ -789,7 +789,7 @@ mod tests {
                 config.update_keymap(|keymap| keymap.description = Some("mine A".into()))
             })
             .unwrap();
-        library.invoke_open_create(Keymapsource::Copy, 1);
+        library.invoke_open_create(KeymapSource::Copy, 1);
         assert_eq!(library.get_dialog(), LibraryDialog::Unsaved);
         paths
             .save_user_keymap(
@@ -818,7 +818,7 @@ mod tests {
     fn duplicate_reports_a_missing_source_instead_of_copying_its_old_neighbour() {
         let (_dir, document, ui) = bound_document();
         let library = ui.global::<KeymapLibrary>();
-        library.invoke_open_create(Keymapsource::Copy, 1);
+        library.invoke_open_create(KeymapSource::Copy, 1);
         assert_eq!(library.get_dialog(), LibraryDialog::Create);
         document.read().paths().delete_user_keymap("B").unwrap();
         library.invoke_refresh();
@@ -956,7 +956,7 @@ mod tests {
         assert!(!library.get_dirty());
         working::refresh_context(&ui, &document);
         assert!(!library.get_dirty());
-        library.invoke_open_create(Keymapsource::Empty, 0);
+        library.invoke_open_create(KeymapSource::Empty, 0);
         assert_eq!(library.get_dialog(), LibraryDialog::Create);
     }
 
@@ -1073,11 +1073,11 @@ mod tests {
         let macros = ui.global::<MacroEditor>();
         macros.invoke_add("Draft".into());
         macros.invoke_add_step(0, "macro:missing".into());
-        library.invoke_open_create(Keymapsource::Empty, 0);
+        library.invoke_open_create(KeymapSource::Empty, 0);
         library.invoke_continue_pending();
         assert_eq!(library.get_dialog(), LibraryDialog::Create);
         assert!(macros.get_has_unsaved_changes());
-        library.invoke_create("A".into(), "".into(), Keymapsource::Empty, 0);
+        library.invoke_create("A".into(), "".into(), KeymapSource::Empty, 0);
         assert_eq!(library.get_dialog(), LibraryDialog::Create);
         assert!(macros.get_has_unsaved_changes());
         library.invoke_cancel_dialog();

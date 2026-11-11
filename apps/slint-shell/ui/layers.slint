@@ -438,7 +438,7 @@ export component LayersPage inherits PageLayout {
                             : max(left-hand.key-at(DragDrop.pointer-x, DragDrop.pointer-y), right-hand.key-at(DragDrop.pointer-x, DragDrop.pointer-y));
                         padding: Theme.space-2xl;
                         spacing: Theme.space-3xl;
-                        // From the page width rather than this keymap's, which would depend on the grids.
+                        // From the page width rather than this layout's, which would depend on the grids.
                         property <length> hand-width: (root.width - Theme.scrollbar-size - Theme.scrollbar-gap - 2 * Theme.space-2xl - Theme.space-3xl) / 2;
                         left-hand := HandGrid {
                             width: hands.hand-width;

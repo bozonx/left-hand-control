@@ -13,10 +13,12 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 - System actions: lock screen (`sys:lockSession`), switch to the next or previous desktop (`sys:switchToNextDesktop`, `sys:switchToPreviousDesktop`), move the window to the previous desktop (`sys:moveWindowToPreviousDesktop`) and to the next or previous screen (`sys:moveWindowToNextScreen`, `sys:moveWindowToPreviousScreen`). They run on KDE, GNOME (with the bundled extension, updated for them) and Windows, except moving a window between desktops on Windows.
 - GNOME: "Turn off screen" now works through the extension.
-- JSON Schemas of `config.json` and layout files in `schemas/` (`config.v1.schema.json`, `keymap.v1.schema.json`), published at a stable address for the `$schema` field: editors complete field names and enum values and flag typos and out-of-range timings.
+- JSON Schemas of `config.json` and keymap files in `schemas/` (`config.v1.schema.json`, `keymap.v1.schema.json`), published at a stable address for the `$schema` field: editors complete field names and enum values and flag typos and out-of-range timings.
 - Action picker (development mode, Linux): an "Application actions" category with the extra actions installed applications declare in their desktop entries (freedesktop `Actions=`, e.g. Firefox "New Private Window"), stored as `xdg:<desktop-id>/<action>`. D-Bus activatable applications get `ActivateAction`, others run the action's command line.
 
 ### Changed
+
+- Clarify Keymap terminology in translations and documentation; reserve keyboard layout for system language switching and layout for UI geometry.
 
 - Rename user profiles to Keymaps throughout the UI, code, JSON fields, schema and library directory (`keymaps/`). Format version remains 1; previous names are not supported or migrated.
 
@@ -31,7 +33,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 - Linux text input: keep libei sessions after modifier/layout interruptions and retry temporary backend setup failures on the next text request.
 
-- Standardized the application name and technical identifiers as Tecloid; the bundled layout remains "LHC1 by Ivan K".
+- Standardized the application name and technical identifiers as Tecloid; the bundled keymap remains "LHC1 by Ivan K".
 - Before the first public release, reset `config.json` to format version 1 and remove the unreleased version 1 → 2 migration and version 2 schema; keymaps remain at version 1. Accessibility choices and explicit libei mode names are part of the initial format.
 - Rename `sys:switchKeyboardLayoutN` to `sys:switchToKeyboardLayoutN`, `settings.timing.comboMs` to `chordMs`, and `settings.launchOnStartup` to `launchAtLogin`. The old names are rejected; no migration is provided.
 

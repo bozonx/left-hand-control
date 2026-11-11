@@ -121,7 +121,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.global::<KeymapLibrary>().invoke_create(
         "Keyboard regression".into(),
         "".into(),
-        Keymapsource::Bundled,
+        KeymapSource::Bundled,
         0,
     );
     // Enough entries to exceed the menu viewport even on a large screen.

@@ -260,7 +260,7 @@ component MapperStatusCard inherits Rectangle {
                 text: @tr("Stopped {} ago after running for {}.", root.duration(AppState.mapper-stopped-ago), root.duration(AppState.mapper-ran));
                 color: Theme.muted; font-size: Theme.font-body; wrap: word-wrap;
             }
-            // Directly in this keymap: a nested one would size wrapped lines for the unwrapped width.
+            // Directly in this layout: a nested one would size wrapped lines for the unwrapped width.
             for issue in (root.has-issues ? SettingsEditor.input-issues : []): Text {
                 accessible-live-region: assertive;
                 text: "⚠ " + Locale.text(issue);
@@ -909,8 +909,8 @@ export component CommandDialogOverlay inherits FocusScope {
         card-width: 720px;
         close => { SettingsEditor.full-command = ""; }
         ScrollView { viewport-width: self.visible-width; vertical-stretch: 1;
-            preferred-height: full-keymap.preferred-height;
-            full-keymap := VerticalLayout {
+            preferred-height: full-layout.preferred-height;
+            full-layout := VerticalLayout {
                 full-text := TextInput {
                     accessible-label: @tr("Command");
                     text: SettingsEditor.full-command;

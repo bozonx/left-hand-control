@@ -20,8 +20,8 @@ export component ComboBox {
     property <length> popup-scroll-y: -max(0, base.highlighted-index - root.visible-items + 1) * FluentSizeSettings.item-height;
     property <int> visible-items: min(6, model.length);
 
-    min-width: max(160px, keymap.min-width);
-    min-height: max(32px, keymap.min-height);
+    min-width: max(160px, layout.min-width);
+    min-height: max(32px, layout.min-height);
     horizontal-stretch: 1;
     vertical-stretch: 0;
     forward-focus: base;
@@ -73,7 +73,7 @@ export component ComboBox {
 
         animate border-color { duration: 200ms; }
 
-        keymap := HorizontalLayout {
+        layout := HorizontalLayout {
             padding-left: 11px;
             padding-right: 11px;
             spacing: 8px;

@@ -1,7 +1,7 @@
 # Windows mapper: состояние реализации и приёмка
 
 Состояние: этапы 1–4 реализованы в коде (`mapper/windows/`, общий
-`mapper/output.rs`, `mapper/key_code.rs`, `mapper/scancode.rs`, `keymap/windows.rs`)
+`mapper/output.rs`, `mapper/key_code.rs`, `mapper/scancode.rs`, `keyboard_layout/windows.rs`)
 и проверены сборкой, clippy и модульными тестами; приёмка в VM и на физическом
 компьютере по полной матрице ниже ещё не пройдена. `--suite smoke` проверяет оболочку,
 нативный ввод и именованные mapper-сценарии в VM; результат каждого сценария
@@ -85,7 +85,7 @@ secure desktop. [Контракт SendInput](https://learn.microsoft.com/en-us/w
 отпускание удержанных клавиш, отмена макросов, отсутствие stale side effects,
 межпроцессная блокировка. Неподдерживаемые действия отклонять явно.
 
-### 4. Keymap, text и системные действия
+### 4. Системная раскладка, text и системные действия
 
 Проверять по отдельным возможностям: US/RU, Unicode, смена фокуса,
 отмена text job, доступные `sys:` действия. Код popup-ввода не является готовым

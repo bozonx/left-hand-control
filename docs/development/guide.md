@@ -109,7 +109,7 @@ SLINT_LIVE_PREVIEW=1 cargo run -p slint-shell --features slint/live-preview --fe
 Debug-сборки никогда не трогают реальный конфиг пользователя:
 
 - по умолчанию — `<repo>/dev-files/linux/.config/dev.bozonx.tecloid/config.json`,
-  данные и библиотека раскладок — в `dev-files/linux/.local/share/dev.bozonx.tecloid/`;
+  данные и библиотека Keymap — в `dev-files/linux/.local/share/dev.bozonx.tecloid/`;
 - `TECLOID_DEV_DIR=/путь` задаёт другой каталог с той же структурой, в том числе в release-сборке для изолированной приёмки.
 
 Release-сборки используют `~/.config/dev.bozonx.tecloid/` и
@@ -530,11 +530,11 @@ USB-клавиатура) и сравнивает полученный текс�
 | `portal-deny` | Первый `text:` открывает диалог RemoteDesktop; стенд нажимает Deny мышью (`portal_deny_relative` или `portal_deny_click`). Текст не вводится, следующий `text:` сразу завершается ошибкой «user cancelled» без нового диалога, приложение отвечает |
 | `portal-consent` | После перезапуска mapper диалог появляется снова; подтверждение (`portal_keys`) — и текст вводится |
 | `mapper-keys-and-text` | `a d c t` → `bXctecloid-ok`: remap, chord, passthrough, `text:` |
-| `text-unicode` | `text:Привет, ёж 😀` в раскладке us (символов нет в keymap) |
+| `text-unicode` | `text:Привет, ёж 😀` в раскладке us (символов нет в системной раскладке) |
 | `layer-tap-hold` | Слой на `F`: tap → `g`, hold + `j` → `k`, быстрый вложенный набор → `k`, «перекат» (F отпущена раньше J) → `gj`, `j` вне слоя → `j` (permissive hold, 200 мс) |
 | `macro`, `command` | Макрос `KeyN, pause:300, text:mac, Shift+KeyO` → `nmacO`; `cmd:` создаёт файл-маркер |
 | `system-actions` | `sys:switchToDesktop2`, `kde:kwin/Switch to Desktop 1`, `sys:switchToKeyboardLayout2/1` — по состоянию KWin и `org.kde.keyboard` |
-| `russian-keymap` | В раскладке ru физические клавиши дают кириллицу (`a`→KeyB→`и`, `c`→`с`), `text:` вводится без искажений |
+| `russian-layout` | В раскладке ru физические клавиши дают кириллицу (`a`→KeyB→`и`, `c`→`с`), `text:` вводится без искажений |
 | `popups`, `emoji-ipc`, `quick-menu-rule` | IPC show/hide; эмодзи из `show emoji` + `Q` и быстрое действие из `tecloid:showQuickMenu1` + `Q` вставляются в окно, бывшее активным до попапа |
 | `emoji-hotkey` | Ctrl+Alt+F11 открывает Emoji, `Q` вставляет эмодзи, консоль не переключается на VT11 |
 | `game-mode` | Правило с `when.gameMode`: Off, On (`game on`), Auto без игры и с процессом из `gameMode.processes` |

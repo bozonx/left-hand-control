@@ -7,13 +7,13 @@ import { ConditionChoices, ConditionsForm } from "conditions.slint";
 import { AppState } from "app-state.slint";
 import { Theme } from "theme.slint";
 import { Locale, Message } from "i18n.slint";
-import { GameCondition, Keymapsource, LibraryAction, LibraryDialog, PendingKeymapAction } from "types.slint";
+import { GameCondition, KeymapSource, LibraryAction, LibraryDialog, PendingKeymapAction } from "types.slint";
 import { Button, CheckBox, ComboBox, Palette, TextEdit } from "std-widgets.slint";
 
 
-export struct Keymapsummary { rules: int, layers: int, emoji-pages: int, action-pages: int, macros: int, commands: int }
+export struct KeymapSummary { rules: int, layers: int, emoji-pages: int, action-pages: int, macros: int, commands: int }
 
-export struct KeymapRow { id: string, name: string, description: string, summary: Keymapsummary, rule-count: int, loaded: bool, error: Message }
+export struct KeymapRow { id: string, name: string, description: string, summary: KeymapSummary, rule-count: int, loaded: bool, error: Message }
 
 /// One automatic-mode rule. `target` indexes `names`; -1 means no keymap.
 /// `shadowed-by` is the earlier rule that always matches first, or -1;
@@ -46,7 +46,7 @@ export global KeymapLibrary {
     in property <[string]> rule-names;
     in-out property <bool> rule-target-missing;
     in-out property <GameCondition> rule-game;
-    in-out property <string> rule-keymaps;
+    in-out property <string> rule-keyboard-layouts;
     in-out property <string> rule-apps;
     in-out property <string> rule-excluded;
     in-out property <LibraryDialog> dialog: LibraryDialog.none;
@@ -54,10 +54,10 @@ export global KeymapLibrary {
     in-out property <string> create-description;
     /// Keymaps shipped with the application, offered as templates.
     in property <[string]> bundled-names;
-    in-out property <Keymapsource> create-source: Keymapsource.empty;
+    in-out property <KeymapSource> create-source: KeymapSource.empty;
     /// Index of the source in `names` (copy) or `bundled-names` (bundled).
     in-out property <int> create-copy-index: 0;
-    in-out property <Keymapsource> pending-create-source: Keymapsource.empty;
+    in-out property <KeymapSource> pending-create-source: KeymapSource.empty;
     in-out property <int> pending-create-copy-index: 0;
     in-out property <string> create-copy-name;
     in-out property <PendingKeymapAction> pending-action: PendingKeymapAction.none;
@@ -93,7 +93,7 @@ export global KeymapLibrary {
     /// Why `name` cannot be used for a keymap; `except` is the keymap being renamed, or "".
     pure callback name-error-value(name: string, except: string, names: [string]) -> Message;
     public pure function name-error(name: string, except: string) -> Message { return self.name-error-value(name, except, self.names); }
-    callback create(string, string, Keymapsource, int);
+    callback create(string, string, KeymapSource, int);
     pure callback copy-index-value(string, [string]) -> int;
     callback set-description(int, string) -> bool;
     callback rename(int, string) -> bool;
@@ -124,11 +124,11 @@ export global KeymapLibrary {
     /// Add the ready-made rule "no keymap while game mode is on".
     callback add-game-rule();
 
-    pure function create-base(source: Keymapsource) -> string {
-        if source == Keymapsource.bundled && self.create-copy-index < self.bundled-names.length {
+    pure function create-base(source: KeymapSource) -> string {
+        if source == KeymapSource.bundled && self.create-copy-index < self.bundled-names.length {
             return self.bundled-names[self.create-copy-index];
         }
-        if source == Keymapsource.copy && self.create-copy-name != "" {
+        if source == KeymapSource.copy && self.create-copy-name != "" {
             return @tr("{} (copy)", self.create-copy-name);
         }
         return @tr("New keymap");
@@ -136,7 +136,7 @@ export global KeymapLibrary {
     public function clear-status() {
         self.status = { id: "", arg: "", count: 0, diagnostic-key: "" };
     }
-    function proceed-open-create(source: Keymapsource, copy-index: int) {
+    function proceed-open-create(source: KeymapSource, copy-index: int) {
         self.clear-status();
         self.create-source = source;
         self.create-copy-index = max(0, copy-index);
@@ -144,16 +144,16 @@ export global KeymapLibrary {
         self.create-name = self.suggest-name(self.create-base(source));
         self.dialog = LibraryDialog.create;
     }
-    public function open-create(source: Keymapsource, copy-index: int) {
+    public function open-create(source: KeymapSource, copy-index: int) {
         self.pending-create-source = source;
         self.pending-create-copy-index = copy-index;
-        self.create-copy-name = source == Keymapsource.copy && copy-index >= 0 && copy-index < self.names.length ? self.names[copy-index] : "";
+        self.create-copy-name = source == KeymapSource.copy && copy-index >= 0 && copy-index < self.names.length ? self.names[copy-index] : "";
         self.guard-switch(PendingKeymapAction.create);
     }
     public function submit-create() {
         if self.name-error(self.create-name, "").id != "" { return; }
         self.create(self.create-name, self.create-description, self.create-source,
-            self.create-source == Keymapsource.copy ? self.copy-index-value(self.create-copy-name, self.names) : self.create-copy-index);
+            self.create-source == KeymapSource.copy ? self.copy-index-value(self.create-copy-name, self.names) : self.create-copy-index);
     }
     public function continue-pending() {
         let action = self.pending-action;
@@ -584,8 +584,8 @@ export component LibraryPage inherits PageLayout {
                 alignment: start;
                 spacing: Theme.space-m;
                 Text { text: @tr("Add keymap: "); color: Theme.text; vertical-alignment: center; }
-                Button { text: @tr("Blank"); primary: false; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { KeymapLibrary.open-create(Keymapsource.empty, 0); } }
-                for name[index] in KeymapLibrary.bundled-names: Button { text: name; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { KeymapLibrary.open-create(Keymapsource.bundled, index); } }
+                Button { text: @tr("Blank"); primary: false; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { KeymapLibrary.open-create(KeymapSource.empty, 0); } }
+                for name[index] in KeymapLibrary.bundled-names: Button { text: name; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { KeymapLibrary.open-create(KeymapSource.bundled, index); } }
             }
         }
     }
@@ -613,8 +613,8 @@ export component LibraryPage inherits PageLayout {
                                 SetupStep {
                                     number: 2; title: @tr("Add a keymap");
                                     HorizontalLayout { spacing: Theme.space-m; alignment: end;
-                                        for name[index] in KeymapLibrary.bundled-names: VerticalLayout { alignment: center; Button { text: name; primary: AppState.keyboard-selected; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { KeymapLibrary.open-create(Keymapsource.bundled, index); } } }
-                                        VerticalLayout { alignment: center; Button { text: @tr("Blank"); icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { KeymapLibrary.open-create(Keymapsource.empty, 0); } } }
+                                        for name[index] in KeymapLibrary.bundled-names: VerticalLayout { alignment: center; Button { text: name; primary: AppState.keyboard-selected; icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { KeymapLibrary.open-create(KeymapSource.bundled, index); } } }
+                                        VerticalLayout { alignment: center; Button { text: @tr("Blank"); icon: @image-url("icons/plus.svg"); colorize-icon: true; clicked => { KeymapLibrary.open-create(KeymapSource.empty, 0); } } }
                                     }
                                 }
                                 SetupStep { number: 3; title: @tr("Press Start at the top to apply it"); }
@@ -687,7 +687,7 @@ export component LibraryPage inherits PageLayout {
                                             x: parent.width - self.width; y: parent.height + Theme.menu-offset;
                                             width: 240px;
                                             MenuSurface {
-                                                MenuItem { text: @tr("Duplicate…"); has-icon: true; icon: @image-url("icons/copy.svg"); clicked => { more-menu.close(); KeymapLibrary.open-create(Keymapsource.copy, index); } }
+                                                MenuItem { text: @tr("Duplicate…"); has-icon: true; icon: @image-url("icons/copy.svg"); clicked => { more-menu.close(); KeymapLibrary.open-create(KeymapSource.copy, index); } }
                                                 Divider {}
                                                 MenuItem { text: @tr("Delete…"); has-icon: true; icon: @image-url("icons/trash-2.svg"); clicked => { more-menu.close(); KeymapLibrary.open-delete(index); } }
                                             }
@@ -697,7 +697,7 @@ export component LibraryPage inherits PageLayout {
                             }
                             if !root.compact: VerticalLayout { width: 220px; spacing: Theme.space-m; alignment: start;
                                 visible: row.loaded && row.error.id == "";
-                                property <Keymapsummary> summary: row.summary;
+                                property <KeymapSummary> summary: row.summary;
                                 if summary.rules + summary.layers + summary.emoji-pages + summary.action-pages + (AppState.in-development ? summary.macros + summary.commands : 0) == 0: Text { text: @tr("Empty keymap"); color: Theme.muted; font-size: Theme.font-medium; }
                                 if summary.rules > 0: Text { text: @tr("{n} rule" | "{n} rules" % summary.rules); color: Theme.muted; font-size: Theme.font-medium; }
                                 if summary.layers > 0: Text { text: @tr("{n} layer" | "{n} layers" % summary.layers); color: Theme.muted; font-size: Theme.font-medium; }
@@ -753,7 +753,7 @@ export component LibraryDialogOverlay inherits Rectangle {
                     Text { text: @tr("When"); color: Theme.text; font-weight: Theme.weight-semibold; }
                     Text { text: @tr("All filled conditions must match. A rule without conditions always matches."); color: Theme.muted; wrap: word-wrap; }
                 }
-                ConditionsForm { game <=> KeymapLibrary.rule-game; languages <=> KeymapLibrary.rule-keymaps; applications <=> KeymapLibrary.rule-apps; show-exclusions: true; excluded <=> KeymapLibrary.rule-excluded; }
+                ConditionsForm { game <=> KeymapLibrary.rule-game; languages <=> KeymapLibrary.rule-keyboard-layouts; applications <=> KeymapLibrary.rule-apps; show-exclusions: true; excluded <=> KeymapLibrary.rule-excluded; }
             }
         }
         if KeymapLibrary.dialog == LibraryDialog.unsaved: Text {

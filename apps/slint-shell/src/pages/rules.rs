@@ -317,7 +317,7 @@ fn refresh(ui: &SettingsWindow, document: &Document, fields: bool) {
     editor.set_is_chord(rule.key.contains('+'));
     editor.set_double_tap(rule.double_tap_action.clone().into());
     editor.set_game_mode(game_condition(rule.condition_game_mode.as_deref()));
-    editor.set_keymaps(join(&rule.condition_keyboard_layouts).into());
+    editor.set_keyboard_layouts(join(&rule.condition_keyboard_layouts).into());
     editor.set_apps_include(join(&rule.condition_window_patterns).into());
     editor.set_apps_exclude(join(&rule.condition_excluded_window_patterns).into());
     editor.set_original_hold(rule.hold_action.clone().unwrap_or_default().into());
@@ -778,12 +778,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         };
         let editor = ui.global::<RulesEditor>();
         let game_mode = game_condition_value(editor.get_game_mode());
-        let keymaps = optional_list(&editor.get_keymaps());
+        let keyboard_layouts = optional_list(&editor.get_keyboard_layouts());
         let include = optional_list(&editor.get_apps_include());
         let exclude = optional_list(&editor.get_apps_exclude());
         let result = change_rule(&ui, &doc, index, true, |rule| {
             rule.condition_game_mode = game_mode;
-            rule.condition_keyboard_layouts = keymaps;
+            rule.condition_keyboard_layouts = keyboard_layouts;
             rule.condition_window_patterns = include;
             rule.condition_excluded_window_patterns = exclude;
         });

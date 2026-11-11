@@ -53,6 +53,6 @@ Terminology used in the reviewed Russian and Spanish interface labels:
 | Release a key | Отпустить клавишу | Soltar una tecla |
 
 Review new translations in context, especially capture instructions, tap/hold
-behavior and the distinction between a mapper layout and the system keyboard
+behavior and the distinction between a user Keymap and the system keyboard
 layout. Automated checks cover structure, not linguistic correctness; the
 machine-translated catalogs still require native-speaker review.

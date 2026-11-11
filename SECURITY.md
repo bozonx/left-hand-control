@@ -34,7 +34,7 @@ keyboard interception and system integration; the Slint shell handles presentati
 - Configuration writes validate changes and check for unread external edits before
   replacement. This optimistic check does not serialize writes by external editors.
 - Files are synced before replacement; Unix writes also sync the parent directory.
-  Unix config and layout files are created with private `0600` permissions.
+  Unix config and keymap files are created with private `0600` permissions.
 - The mapper loads user-defined commands only when commands are enabled in configuration.
 - Debug builds use isolated development storage; tests and UI scenarios use temporary directories.
 
@@ -42,7 +42,7 @@ keyboard interception and system integration; the Slint shell handles presentati
 
 Keyboard interception requires access to physical input devices. Granting that
 access lets the application read keyboard input. Configured commands execute
-with the application's user permissions. Review imported layouts and commands
+with the application's user permissions. Review imported keymaps and commands
 before enabling them.
 
 ## Dependency Auditing
