@@ -15,6 +15,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Mapper: preserve modifier context for typing queued behind macros, text insertion and popups; keep typing behind unfinished text rather than releasing it after two seconds.
+
 - Linux text input: keep libei sessions after modifier/layout interruptions and retry temporary backend setup failures on the next text request.
 
 - Standardized the application name and technical identifiers as Tecloid; the bundled layout remains "LHC1 by Ivan K".

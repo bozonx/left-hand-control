@@ -122,6 +122,7 @@ impl OutputHold {
         }
         for out in buf.split_off(start) {
             if is_release(&out) && !releases_held_press(&self.typed, &out) {
+                preserve_released_modifiers(&mut self.typed, &out);
                 buf.push(out);
             } else {
                 self.typed.push(out);
@@ -176,6 +177,7 @@ impl OutputHold {
             // As for text: releases of keys pressed before the popup pass,
             // so the popup does not open with a modifier still down.
             if is_release(&out) && !releases_held_press(&self.held, &out) {
+                preserve_released_modifiers(&mut self.held, &out);
                 buf.push(out);
             } else {
                 self.held.push(out);
@@ -208,11 +210,29 @@ impl OutputHold {
             // Releases of keys pressed before the text pass: a modifier
             // still down in the compositor would make the text fail.
             if is_release(&out) && !releases_held_press(&self.after_text, &out) {
+                preserve_released_modifiers(&mut self.after_text, &out);
                 buf.push(out);
             } else {
                 self.after_text.push(out);
             }
         }
+    }
+}
+
+/// Release modifiers immediately for the side effect, but restore their
+/// original lifetime around typing that was already queued under them.
+fn preserve_released_modifiers(held: &mut Vec<EngineOutput>, release: &EngineOutput) {
+    if held.is_empty() {
+        return;
+    }
+    let mods: Vec<_> = match release {
+        EngineOutput::KeyRaw { key, down: false } if is_modifier(*key) => vec![*key],
+        EngineOutput::ReleaseMods(mods) | EngineOutput::ChordRelease { mods, .. } => mods.clone(),
+        _ => return,
+    };
+    for key in mods {
+        held.insert(0, EngineOutput::KeyRaw { key, down: true });
+        held.push(EngineOutput::KeyRaw { key, down: false });
     }
 }
 
@@ -1153,7 +1173,7 @@ mod tests {
         hold.gate(&mut buf, start, false);
         assert_eq!(
             transitions_of(&buf),
-            [(KeyCode::KEY_B, true), (KeyCode::KEY_B, false)]
+            [(KeyCode::KEY_LEFTSHIFT, true), (KeyCode::KEY_LEFTALT, true), (KeyCode::KEY_LEFTCTRL, true), (KeyCode::KEY_B, true), (KeyCode::KEY_LEFTCTRL, false), (KeyCode::KEY_LEFTALT, false), (KeyCode::KEY_B, false), (KeyCode::KEY_LEFTSHIFT, false)]
         );
     }
 
@@ -1245,8 +1265,8 @@ mod tests {
         assert_eq!(
             sink.batches[1..],
             [
-                vec![(KeyCode::KEY_A.code(), 1)],
-                vec![(KeyCode::KEY_A.code(), 0)]
+                vec![(KeyCode::KEY_LEFTSHIFT.code(), 1), (KeyCode::KEY_A.code(), 1)],
+                vec![(KeyCode::KEY_LEFTSHIFT.code(), 0), (KeyCode::KEY_A.code(), 0)]
             ]
         );
 
@@ -1258,7 +1278,10 @@ mod tests {
         iterate!(start, Vec::new());
         assert_eq!(sink.batches.len(), 3);
         iterate!(start + Duration::from_secs(2), Vec::new(),);
-        assert_eq!(sink.batches.len(), 4, "released after the timeout");
+        assert_eq!(sink.batches.len(), 3, "still waits for text completion");
+        effects.text_pending = false;
+        iterate!(start + Duration::from_secs(2), Vec::new());
+        assert_eq!(sink.batches.len(), 4);
     }
 
     #[test]
@@ -1601,10 +1624,10 @@ mod tests {
         hold.gate(&mut out, now, false);
         assert!(matches!(
             out.as_slice(),
-            [EngineOutput::KeyRaw {
+            [EngineOutput::KeyRaw { key: KeyCode::KEY_LEFTCTRL, down: true }, EngineOutput::KeyRaw {
                 key: KeyCode::KEY_B,
                 down: true
-            }]
+            }, EngineOutput::KeyRaw { key: KeyCode::KEY_LEFTCTRL, down: false }]
         ));
     }
 
@@ -1696,8 +1719,10 @@ mod tests {
                 (code(KeyCode::KEY_LEFTSHIFT), 0),
                 (code(KeyCode::KEY_Y), 1),
                 (code(KeyCode::KEY_Y), 0),
+                (code(KeyCode::KEY_LEFTSHIFT), 1),
                 (code(KeyCode::KEY_A), 1),
                 (code(KeyCode::KEY_A), 0),
+                (code(KeyCode::KEY_LEFTSHIFT), 0),
             ]
         );
     }
