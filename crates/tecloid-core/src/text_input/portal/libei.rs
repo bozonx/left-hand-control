@@ -198,14 +198,6 @@ impl LibeiBackend {
         shortcut: PasteShortcut,
         request: &TextRequest,
     ) -> Result<(), TextInputFailure> {
-        let group = self
-            .group
-            .or_else(|| crate::runtime_state::keyboard_layout().map(|layout| layout.index))
-            .unwrap_or(0);
-        let v_key = self
-            .keymap
-            .as_deref()
-            .and_then(|keymap| paste_v_key_from_keymap_text(keymap, group));
         let clipboard = prepare_clipboard(self.clipboard.as_ref(), text, request)?;
         request.check()?;
         wait_for_modifiers(request).map_err(temporary_input_failure)?;
@@ -224,8 +216,16 @@ impl LibeiBackend {
             }
             thread::sleep(POLL_INTERVAL);
         }
+        let group = self
+            .group
+            .or_else(|| crate::runtime_state::keyboard_layout().map(|layout| layout.index))
+            .unwrap_or(0);
+        let v_key = self
+            .keymap
+            .as_deref()
+            .and_then(|keymap| paste_v_key_from_keymap_text(keymap, group));
+        let (mods, key) = checked_paste_keys(shortcut, v_key)?;
         clipboard.arm().map_err(TextInputFailure::Clipboard)?;
-        let (mods, key) = paste_keys(shortcut, v_key);
         let result = self
             .inject_keycode_combo(mods, key, request)
             .map_err(TextInputFailure::BackendUnavailable);

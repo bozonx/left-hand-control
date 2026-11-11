@@ -512,6 +512,30 @@ mod tests {
     }
 
     #[test]
+    fn automatic_paste_requires_a_verified_latin_key() {
+        assert!(checked_paste_keys(PasteShortcut::CtrlV, None).is_err());
+        assert!(checked_paste_keys(PasteShortcut::CtrlShiftV, None).is_err());
+        assert_eq!(
+            checked_paste_keys(PasteShortcut::ShiftInsert, None)
+                .unwrap()
+                .1,
+            KEY_INSERT_EVDEV
+        );
+        assert_eq!(
+            checked_paste_keys(PasteShortcut::CtrlV, Some(52))
+                .unwrap()
+                .1,
+            52
+        );
+    }
+
+    #[test]
+    fn malformed_compositor_keymap_is_not_missing_characters() {
+        assert!(table_from_keymap_text(b"not an XKB keymap", 0, 0).is_none());
+        assert!(table_from_keymap_text(b"", 0, 0).is_none());
+    }
+
+    #[test]
     fn caps_lock_uses_shift_to_type_lowercase() {
         let table = table_from_names_with_caps("us", None, true).expect("us layout");
         assert_eq!(table[&text_keysym('a')].mods, vec![KEY_LEFTSHIFT_EVDEV]);

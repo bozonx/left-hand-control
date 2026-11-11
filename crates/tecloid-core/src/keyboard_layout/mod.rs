@@ -295,6 +295,18 @@ pub fn start_watcher() {
 }
 
 #[cfg(target_os = "linux")]
+pub(crate) fn verified_shortcut_layouts() -> Option<Vec<(String, String)>> {
+    if matches!(
+        crate::platform::linux::detect().desktop,
+        crate::platform::linux::Desktop::Kde
+    ) {
+        linux_kde::verified_shortcut_layouts()
+    } else {
+        None
+    }
+}
+
+#[cfg(target_os = "linux")]
 pub(crate) fn verified_text_variant(
     layout: &crate::runtime_state::KeyboardLayoutSelection,
 ) -> Option<String> {

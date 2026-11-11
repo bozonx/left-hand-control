@@ -265,6 +265,21 @@ fn checked_position(list: &LayoutList, index: u32) -> Result<usize, String> {
 /// XKB variants of the configured layouts, by index. The DBus API only
 /// gives layout codes and user labels, so they come from `kxkbrc`, and only
 /// when its layout list matches `list`; otherwise none are known.
+pub(super) fn verified_shortcut_layouts() -> Option<Vec<(String, String)>> {
+    let proxy = keyboard_proxy(session_bus().ok()?).ok()?;
+    let list = call_list(&proxy).ok()??;
+    let variants = configured_variants(&list);
+    if variants.len() != list.len() || list.is_empty() {
+        return None;
+    }
+    Some(
+        list.into_iter()
+            .zip(variants)
+            .map(|(entry, variant)| (entry.0, variant))
+            .collect(),
+    )
+}
+
 pub(super) fn verified_variant(index: u32, code: &str) -> Option<String> {
     let proxy = keyboard_proxy(session_bus().ok()?).ok()?;
     let list = call_list(&proxy).ok()??;

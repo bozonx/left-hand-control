@@ -114,6 +114,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Automatic text paste: refuse Ctrl+V/Ctrl+Shift+V when the Latin shortcut key cannot be verified instead of sending a guessed physical key. Resolve paste keys after waiting for held modifiers. Shift+Insert remains independent of the layout.
+
 - Mapper: preserve press/release order when replaying buffered tap/hold decisions, preventing stuck modifiers after delayed input batches. Nested releases and timeouts agree on the first ordinary key; inactive conditional rules no longer activate layers. Input is drained before timer decisions even after a poll timeout, and second double-tap presses count as layer use.
 
 - Mapper: a layer key no longer loses its tap when a key the layer does not map is pressed and released inside the press, or pressed before the hold timeout (fast typing of Space then a letter typed only the letter); a modifier touched meanwhile decides nothing.

@@ -76,6 +76,17 @@ pub(super) fn paste_keys(shortcut: PasteShortcut, v_key: Option<u32>) -> (&'stat
     }
 }
 
+/// Resolve automatic paste without guessing a physical Latin key.
+pub(super) fn checked_paste_keys(
+    shortcut: PasteShortcut,
+    v_key: Option<u32>,
+) -> Result<(&'static [u32], u32), TextInputFailure> {
+    if !matches!(shortcut, PasteShortcut::ShiftInsert) && v_key.is_none() {
+        return Err(TextInputFailure::LayoutUnknown);
+    }
+    Ok(paste_keys(shortcut, v_key))
+}
+
 /// evdev key that types `v` without modifiers, the way Qt and GTK match a
 /// Ctrl+V shortcut: in the active `group` first, then in the other groups
 /// in order (a Cyrillic layout borrows the shortcut from the Latin one).
@@ -194,23 +205,19 @@ pub(super) fn shortcut_key_from_names(
 
 /// [`paste_v_key`] for the layouts the desktop reports (keycode and
 /// clipboard modes, which have no compositor keymap). `None` when the
-/// layouts are unknown; the caller then sends `KEY_V`.
+/// layouts or their variants cannot be verified.
 pub(super) fn desktop_paste_v_key() -> Option<u32> {
     let active = crate::runtime_state::keyboard_layout();
-    let listed = crate::keyboard_layout::available_layouts().unwrap_or_default();
-    let mut names: Vec<(&str, &str)> = listed
-        .iter()
-        .map(|l| (l.code.as_str(), l.variant.trim()))
-        .collect();
-    let mut group = active
-        .as_ref()
-        .and_then(|active| listed.iter().position(|l| l.index == active.index))
-        .unwrap_or(0);
-    if names.is_empty() {
-        let active = active.as_ref()?;
-        names.push((active.code.as_str(), active.variant.trim()));
-        group = 0;
+    let listed = crate::keyboard_layout::verified_shortcut_layouts()?;
+    let active = active.as_ref()?;
+    let group = usize::try_from(active.index).ok()?;
+    if listed.get(group)?.0 != active.code {
+        return None;
     }
+    let names: Vec<_> = listed
+        .iter()
+        .map(|(code, variant)| (code.as_str(), variant.as_str()))
+        .collect();
     paste_v_key_from_names(&names, group as u32, &crate::keyboard_layout::xkb_options())
 }
 
