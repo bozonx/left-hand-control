@@ -15,6 +15,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Linux text input: keep libei sessions after modifier/layout interruptions and retry temporary backend setup failures on the next text request.
+
 - Standardized the application name and technical identifiers as Tecloid; the bundled layout remains "LHC1 by Ivan K".
 - Before the first public release, reset `config.json` to format version 1 and remove the unreleased version 1 → 2 migration and version 2 schema; profiles remain at version 1. Accessibility choices and explicit libei mode names are part of the initial format.
 - Rename `sys:switchKeyboardLayoutN` to `sys:switchToKeyboardLayoutN`, `settings.timing.comboMs` to `chordMs`, and `settings.launchOnStartup` to `launchAtLogin`. The old names are rejected; no migration is provided.

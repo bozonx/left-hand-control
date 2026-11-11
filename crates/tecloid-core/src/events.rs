@@ -70,7 +70,7 @@ pub enum TextInputFailure {
     DestinationChanged,
     /// Safe clipboard access or the paste transfer failed.
     Clipboard(String),
-    /// Native popup input failed (permissions, modifiers or rejected injection).
+    /// Native input failed or was interrupted (permissions, modifiers or injection).
     NativeInput(String),
     /// The external typing tool failed.
     Tool(String),

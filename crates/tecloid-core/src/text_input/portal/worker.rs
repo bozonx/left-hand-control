@@ -14,8 +14,8 @@ pub(super) struct TextInjectionJob {
 /// A portal session on its own thread, started on first use.
 pub(super) struct Worker {
     pub(super) tx: Mutex<Option<Sender<TextInjectionJob>>>,
-    /// Why the last start failed. Later texts are reported as failed instead
-    /// of starting again, which could block and show the dialog every time.
+    /// An explicit portal cancellation. Keep it until a user retries so later
+    /// texts do not repeatedly reopen the consent dialog.
     pub(super) failure: Mutex<Option<String>>,
     /// Set by `stop` while a text holds `tx`, e.g. during the consent dialog.
     pub(super) stop_pending: AtomicBool,
@@ -59,7 +59,12 @@ impl Worker {
                 Ok(tx) => *slot = Some(tx),
                 Err(error) => {
                     request.check()?;
-                    *self.failure.lock().unwrap_or_else(|e| e.into_inner()) = Some(error.clone());
+                    // Only an explicit portal refusal requires user intervention.
+                    // Transport/setup failures may recover on the next request.
+                    if remember_start_failure(&error) {
+                        *self.failure.lock().unwrap_or_else(|e| e.into_inner()) =
+                            Some(error.clone());
+                    }
                     return Err(TextInputFailure::BackendUnavailable(error));
                 }
             }
@@ -239,4 +244,28 @@ pub(super) fn libei_worker(mut backend: LibeiBackend, rx: Receiver<TextInjection
         }
     }
     backend.close();
+}
+
+fn remember_start_failure(error: &str) -> bool {
+    error.contains(": portal returned status 1 (user cancelled)")
+}
+
+#[cfg(test)]
+mod recovery_tests {
+    use super::*;
+
+    #[test]
+    fn only_explicit_portal_cancellation_blocks_future_starts() {
+        assert!(remember_start_failure(
+            "Start: portal returned status 1 (user cancelled)"
+        ));
+        for error in [
+            "Start: portal returned status 2 (other error)",
+            "ConnectToEIS: disconnected",
+            "portal operation timed out",
+            "EI handshake timed out",
+        ] {
+            assert!(!remember_start_failure(error), "{error}");
+        }
+    }
 }

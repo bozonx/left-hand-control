@@ -110,14 +110,16 @@ impl LibeiBackend {
             ));
         }
         if self.depressed != 0 || self.latched != 0 {
-            return Err(TextInputFailure::BackendUnavailable(
+            return Err(TextInputFailure::NativeInput(
                 "release or unlatch keyboard modifiers before text input".into(),
             ));
         }
         self.synchronize(request)
             .map_err(TextInputFailure::BackendUnavailable)?;
         let hardware = HardwareState::capture();
-        hardware.modifiers_released()?;
+        hardware
+            .modifiers_released()
+            .map_err(temporary_input_failure)?;
         let table = self.key_table()?;
         request.check()?;
         let text = text.replace("\r\n", "\n");
@@ -138,11 +140,13 @@ impl LibeiBackend {
             }) || self.depressed != 0
                 || self.latched != 0
             {
-                return Err(TextInputFailure::BackendUnavailable(
+                return Err(TextInputFailure::NativeInput(
                     "keyboard state changed during text input".into(),
                 ));
             }
-            hardware.modifiers_released()?;
+            hardware
+                .modifiers_released()
+                .map_err(temporary_input_failure)?;
             if let Some(entry) = table.get(&text_keysym(ch)) {
                 self.inject_keycode_combo(&entry.mods, entry.evdev, request)
                     .map_err(TextInputFailure::BackendUnavailable)?;
@@ -194,7 +198,7 @@ impl LibeiBackend {
             .and_then(|keymap| paste_v_key_from_keymap_text(keymap, group));
         let clipboard = prepare_clipboard(self.clipboard.as_ref(), text, request)?;
         request.check()?;
-        wait_for_modifiers(request)?;
+        wait_for_modifiers(request).map_err(temporary_input_failure)?;
         let deadline = Instant::now() + MODIFIER_RELEASE_TIMEOUT;
         loop {
             self.pump_events()
@@ -204,7 +208,7 @@ impl LibeiBackend {
                 break;
             }
             if Instant::now() >= deadline {
-                return Err(TextInputFailure::BackendUnavailable(
+                return Err(TextInputFailure::NativeInput(
                     "release or unlatch keyboard modifiers before paste".into(),
                 ));
             }
@@ -470,4 +474,29 @@ pub(super) fn ei_handshake_with_timeout(
         thread::sleep(POLL_INTERVAL);
     }
     Err("EI handshake timed out".into())
+}
+
+// Physical input can interrupt a job without invalidating the EI connection.
+fn temporary_input_failure(error: TextInputFailure) -> TextInputFailure {
+    match error {
+        TextInputFailure::BackendUnavailable(detail) => TextInputFailure::NativeInput(detail),
+        other => other,
+    }
+}
+
+#[cfg(test)]
+mod recovery_tests {
+    use super::*;
+
+    #[test]
+    fn interrupted_input_preserves_the_session_and_destination_errors() {
+        assert_eq!(
+            temporary_input_failure(TextInputFailure::BackendUnavailable("held modifier".into())),
+            TextInputFailure::NativeInput("held modifier".into())
+        );
+        assert_eq!(
+            temporary_input_failure(TextInputFailure::DestinationChanged),
+            TextInputFailure::DestinationChanged
+        );
+    }
 }
