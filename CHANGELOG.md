@@ -15,6 +15,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Startup opens the main page without restoring an editor profile. Manual profile selection remains saved; game-mode Auto/On/Off is a permanent setting. Config format v2 removes persisted editor state and reads v1 files automatically.
+
 - Text input: reject unverified KDE layout variants, stop libei typing after keyboard resets, and keep Windows Unicode surrogate pairs together during cancellation.
 
 - Text input: distinguish unsupported window detection from a missing destination on supported desktops; KDE/GNOME no longer send text to an unverified window after missing focus reports. New paste settings default to Ctrl+V in applications and Shift+Insert in terminals; explicitly saved shortcuts are preserved.
@@ -113,6 +115,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Game mode (in development): toggling returns to Auto when the opposite state is what detection reports, so a toggle key no longer leaves automatic detection for good; a toggle from a key binding or the CLI shows the new state on screen. The top-bar button always reads Auto/On/Off in English to keep its fixed width, and its tooltip says that popup hotkeys are off in game mode. Terminals, code editors, image viewers and music players no longer count as fullscreen games; the running-process list is read every 2 seconds instead of every second while no game runs.
 
 ### Fixed
+
+- Do not report unsaved layout changes when no layout is open after deletion.
 
 - Automatic text paste: refuse Ctrl+V/Ctrl+Shift+V when the Latin shortcut key cannot be verified instead of sending a guessed physical key. Resolve paste keys after waiting for held modifiers. Shift+Insert remains independent of the layout.
 

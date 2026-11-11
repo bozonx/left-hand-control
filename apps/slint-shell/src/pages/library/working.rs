@@ -15,11 +15,7 @@ pub(super) fn refresh_context(ui: &SettingsWindow, document: &Document) {
                 current,
             )
         }),
-        None => {
-            let initial = ProfilePreset::initial();
-            let text = profile_file::serialize(&initial);
-            DirtyFlags::compare(Some((&initial, &text)), current)
-        }
+        None => DirtyFlags::default(),
     };
     drop(config);
     library.set_dirty(flags.any);
