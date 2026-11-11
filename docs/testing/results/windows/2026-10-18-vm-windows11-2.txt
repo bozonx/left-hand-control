@@ -1,8 +1,8 @@
 Date: 2026-10-18 11:17:28 -0300
 Commit: 002a002 (with uncommitted changes)
-VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+VM: windows11 (/mnt/disk2/vm/tecloid-windows/windows11-e2e-base.qcow2)
 Suite: smoke
-Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261018-110658/logs
+Logs: /mnt/disk2/vm/tecloid-windows/runs/20261018-110658/logs
 
 Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
 Session: 1

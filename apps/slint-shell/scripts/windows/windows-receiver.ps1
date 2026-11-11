@@ -19,7 +19,7 @@ function Set-ReceiverLanguage([string]$Locale) {
             'ru-RU' { '00000419' }
             default { throw "Unsupported test input language: $Locale" }
         }
-        $layout = [LhcKeyTrace]::LoadKeyboardLayoutW($identifier, 1)
+        $layout = [tecloidKeyTrace]::LoadKeyboardLayoutW($identifier, 1)
         if ($layout -eq [IntPtr]::Zero) { throw "Could not load input language: $Locale" }
         $language = [System.Windows.Forms.InputLanguage]::InstalledInputLanguages |
             Where-Object { $_.Handle -eq $layout } | Select-Object -First 1
@@ -39,7 +39,7 @@ Remove-Item $eventsPath -ErrorAction SilentlyContinue
 Remove-Item $snapshotPath -ErrorAction SilentlyContinue
 
 $form = New-Object System.Windows.Forms.Form
-$form.Text = 'LHC Unicode Receiver'
+$form.Text = 'Tecloid Unicode Receiver'
 $form.StartPosition = 'CenterScreen'
 $form.ClientSize = New-Object System.Drawing.Size(760, 420)
 $form.Font = New-Object System.Drawing.Font('Segoe UI', 12)
@@ -90,9 +90,9 @@ function Write-ReceiverState {
         event = $Event
         elevated = $script:receiverElevated
         input_locale = [System.Windows.Forms.InputLanguage]::CurrentInputLanguage.Culture.Name
-        form_active = ([LhcKeyTrace]::GetForegroundWindow() -eq $form.Handle)
+        form_active = ([tecloidKeyTrace]::GetForegroundWindow() -eq $form.Handle)
         editor_focused = $script:editorFocused
-        modifiers_down = @(160, 161, 162, 163, 164, 165, 91, 92 | Where-Object { [LhcKeyTrace]::IsKeyDown($_) })
+        modifiers_down = @(160, 161, 162, 163, 164, 165, 91, 92 | Where-Object { [tecloidKeyTrace]::IsKeyDown($_) })
         key_code = if ($KeyEvent) { [int]$KeyEvent.KeyCode } else { $null }
         modifiers = if ($KeyEvent) { [int]$KeyEvent.Modifiers } else { $null }
         text = $text
@@ -157,7 +157,7 @@ function Write-NotepadState {
         $control = $element.FindFirst([Windows.Automation.TreeScope]::Descendants, $condition)
         if (-not $control) { throw 'No Notepad text control' }
         $pattern = $control.GetCurrentPattern([Windows.Automation.TextPattern]::Pattern)
-        $value = @{ pid=$script:notepad.Id; text=$pattern.DocumentRange.GetText(-1); active=([LhcKeyTrace]::GetForegroundWindow() -eq $handle) }
+        $value = @{ pid=$script:notepad.Id; text=$pattern.DocumentRange.GetText(-1); active=([tecloidKeyTrace]::GetForegroundWindow() -eq $handle) }
     } catch { $value = @{ error="$_"; active=$false } }
     $path = Join-Path $Output 'notepad.json'
     [IO.File]::WriteAllText("$path.tmp", ($value | ConvertTo-Json -Compress), [Text.UTF8Encoding]::new($false))
@@ -175,7 +175,7 @@ $timer.Add_Tick({
             [IO.File]::WriteAllText((Join-Path $Output 'suspend-error.txt'), 'SetSuspendState failed')
         }
     }
-    $raw = [LhcKeyTrace]::Drain()
+    $raw = [tecloidKeyTrace]::Drain()
     if ($raw.Count) {
         [IO.File]::AppendAllText((Join-Path $Output 'raw-keys.jsonl'), (($raw -join "`n") + "`n"), [Text.UTF8Encoding]::new($false))
     }
@@ -202,7 +202,7 @@ $timer.Add_Tick({
                 } while ($children.Count)
                 if (-not $command.guard_pid -or [int]$command.guard_pid -in $tree) { throw 'Input guard must survive outside the live owner tree' }
                 foreach ($pidToFreeze in $tree) {
-                    if ([LhcKeyTrace]::SuspendProcess($pidToFreeze) -ne 0) { throw "Cannot suspend owner tree PID $pidToFreeze" }
+                    if ([tecloidKeyTrace]::SuspendProcess($pidToFreeze) -ne 0) { throw "Cannot suspend owner tree PID $pidToFreeze" }
                 }
             }
             'notepad' {
@@ -227,10 +227,10 @@ $timer.Add_Tick({
             'close' { $script:closePending = $true }
             'session-state' { }
             'lock' {
-                if (-not [LhcKeyTrace]::LockWorkStation()) { throw 'LockWorkStation failed' }
+                if (-not [tecloidKeyTrace]::LockWorkStation()) { throw 'LockWorkStation failed' }
             }
             'suspend' { $script:suspendAt = (Get-Date).AddSeconds(2); $script:suspendPending = $true }
-            'trace' { [LhcKeyTrace]::Stop(); [LhcKeyTrace]::Start() }
+            'trace' { [tecloidKeyTrace]::Stop(); [tecloidKeyTrace]::Start() }
             'reset' { $script:hideOnInput = $false; $editor.Clear() }
             'hide-on-input' { $script:hideOnInput = $true }
             'focus' { $form.Activate(); $editor.Focus() | Out-Null }
@@ -249,7 +249,7 @@ $timer.Add_Tick({
         }
         Write-ReceiverState 'command'
         $response = @{ id = $command.id; ok = $true }
-        if ($command.op -eq 'session-state') { $response.locked = [LhcKeyTrace]::IsSessionLocked() }
+        if ($command.op -eq 'session-state') { $response.locked = [tecloidKeyTrace]::IsSessionLocked() }
     } catch { $response = @{ id = $command.id; ok = $false; error = "$_" } }
     $json = $response | ConvertTo-Json -Compress
     [IO.File]::WriteAllText((Join-Path $Output 'response.json'), $json, [Text.UTF8Encoding]::new($false))
@@ -257,4 +257,4 @@ $timer.Add_Tick({
 
 })
 $timer.Start()
-try { [System.Windows.Forms.Application]::Run($form) } finally { $timer.Stop(); [LhcKeyTrace]::Stop(); $timer.Dispose() }
+try { [System.Windows.Forms.Application]::Run($form) } finally { $timer.Stop(); [tecloidKeyTrace]::Stop(); $timer.Dispose() }

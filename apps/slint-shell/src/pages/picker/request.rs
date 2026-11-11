@@ -9,7 +9,7 @@ use crate::{
         SettingsWindow,
     },
 };
-use lhc_core::config::{
+use tecloid_core::config::{
     actions::{self, Action},
     key_catalog::CATEGORIES,
     model::ResolvedAppConfig,
@@ -136,7 +136,7 @@ impl Filter {
             return false;
         }
         if self.trigger {
-            return lhc_core::config::key_catalog::valid_trigger(value);
+            return tecloid_core::config::key_catalog::valid_trigger(value);
         }
         if self.key_only {
             return CATEGORIES.iter().any(|keys| keys.contains(&value));

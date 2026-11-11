@@ -7,8 +7,10 @@ use crate::{
     i18n::Msg,
     ui::{AppState, GameModeControl, SettingsWindow},
 };
-use lhc_core::gamemode::{self, DetectorAvailability, GameModeMethod, GameModeStatus, GameSource};
 use slint::ComponentHandle;
+use tecloid_core::gamemode::{
+    self, DetectorAvailability, GameModeMethod, GameModeStatus, GameSource,
+};
 
 /// Show the current state and apply the top-bar choice. The settings
 /// process replaces the callback to also remember the choice and update
@@ -157,7 +159,7 @@ mod tests {
     fn persisted_control_follows_every_change() {
         // ConfigDocument/game mode are process globals; isolate the regression
         // from other document tests rather than depending on test ordering.
-        const CHILD: &str = "LHC_GAME_MODE_ATOMIC_TEST";
+        const CHILD: &str = "TECLOID_GAME_MODE_ATOMIC_TEST";
         if std::env::var_os(CHILD).is_none() {
             let output = std::process::Command::new(std::env::current_exe().unwrap())
                 .args([
@@ -178,7 +180,7 @@ mod tests {
         }
         let dir = tempfile::tempdir().unwrap();
         let paths =
-            lhc_core::StoragePaths::new(dir.path().join("settings"), dir.path().join("data"));
+            tecloid_core::StoragePaths::new(dir.path().join("settings"), dir.path().join("data"));
         // Without the in-development setting nothing changes or is saved.
         let document = Document::load(paths.clone()).unwrap();
         assert!(matches!(

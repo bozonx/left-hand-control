@@ -31,13 +31,13 @@ and flow-tap exclusions are documented in docs/features.md.
 
 Verification commands and results
 
-cargo fmt -p lhc-core -p slint-shell --check
+cargo fmt -p tecloid-core -p slint-shell --check
   PASS (final check).
 
 git diff --check
   PASS.
 
-cargo test --locked -p lhc-core --lib -- --quiet
+cargo test --locked -p tecloid-core --lib -- --quiet
   PASS: 687 passed, 3 ignored. Includes 40,000 seeded randomized input sequences.
   The random test checks engine cleanup, virtual output cleanup and that every
   release has a preceding press, with intermittent ticks and batched input.
@@ -47,19 +47,19 @@ cargo test --locked --workspace --features slint-shell/spell
   shell: 250 passed. This full run preceded the final small flow/pointer
   refinements, which were covered by the final targeted runs below.
 
-cargo test --locked -p lhc-core --lib mapper:: -- --quiet
+cargo test --locked -p tecloid-core --lib mapper:: -- --quiet
   PASS after final refinements: 324 passed, 1 ignored.
 
-cargo test --locked -p lhc-core --test mapper_e2e -- --ignored
+cargo test --locked -p tecloid-core --test mapper_e2e -- --ignored
   PASS: 10 passed. The new pointer scenario checks first modifier-click ordering,
   remapping without an original click, swallowing, REL_X/REL_Y/wheel forwarding,
   ABS_X forwarding and its axis range.
 
-cargo test --locked -p lhc-core --test mapper_e2e captured_mouse -- --ignored
+cargo test --locked -p tecloid-core --test mapper_e2e captured_mouse -- --ignored
   PASS after extending pointer routing: 1 passed, 9 filtered out. Also checks
   BTN_TOUCH passthrough through the virtual pointer.
 
-cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+cargo clippy --locked -p tecloid-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
   PASS after final refinements; no warnings.
 
 cargo check --locked -p slint-shell --all-targets

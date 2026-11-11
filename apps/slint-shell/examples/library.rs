@@ -1,15 +1,15 @@
 mod support;
-use lhc_core::{
-    config::{bundled::BUNDLED, model::ProfileMode, profile_file},
-    config_document::ConfigDocument,
-    storage::StoragePaths,
-};
 use slint::{ComponentHandle, Model};
 use slint_shell::{
     Document, bind_document,
     command::{Command, Popup},
     popup_model,
     ui::*,
+};
+use tecloid_core::{
+    config::{bundled::BUNDLED, model::ProfileMode, profile_file},
+    config_document::ConfigDocument,
+    storage::StoragePaths,
 };
 
 /// Grip point and row center in window coordinates.
@@ -19,7 +19,7 @@ fn reorder_handle(ui: &SettingsWindow, group: i32, index: i32) -> (slint::Logica
     };
     let window = WindowInner::from_pub(ui.window());
     window.ensure_tree_instantiated();
-    let id = format!("lhc-reorder-{group}-{index}");
+    let id = format!("tecloid-reorder-{group}-{index}");
     let mut pending = vec![(ItemRc::new_root(window.component()), None)];
     while let Some((item, mut center)) = pending.pop() {
         let origin = item.map_to_window(item.geometry().origin);
@@ -149,7 +149,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         assert_eq!(settings.auto_rules[0].profile_id, None);
         assert_eq!(
             settings.auto_rules[0].conditions.game_mode,
-            Some(lhc_core::config::model::GameModeCondition::On)
+            Some(tecloid_core::config::model::GameModeCondition::On)
         );
         assert_eq!(
             settings.auto_rules[1].profile_id.as_deref(),
@@ -404,10 +404,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let quick = QuickPopup::new()?;
     let mut menus = popup_model::ConfiguredMenus::default();
     menus.profile.emoji_pages = (0..5)
-        .map(|_| lhc_core::config::model::EmojiPage::default_page())
+        .map(|_| tecloid_core::config::model::EmojiPage::default_page())
         .collect();
     menus.profile.quick_action_pages = (0..5)
-        .map(|i| lhc_core::config::model::QuickActionPage::new(i.to_string(), format!("Page {i}")))
+        .map(|i| {
+            tecloid_core::config::model::QuickActionPage::new(i.to_string(), format!("Page {i}"))
+        })
         .collect();
     menus.apply_emoji(&emoji);
     menus.apply_quick(&quick);
@@ -425,17 +427,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::ShowPage(Popup::Quick, 6)
     );
     ui.invoke_navigate(Page::Profiles, MenuKind::Emoji);
-    if std::env::var_os("LHC_LIBRARY_AUTO").is_some() {
+    if std::env::var_os("TECLOID_LIBRARY_AUTO").is_some() {
         library.invoke_set_automatic(true);
     }
-    if std::env::var_os("LHC_LIBRARY_RULE_DRAG").is_some() {
+    if std::env::var_os("TECLOID_LIBRARY_RULE_DRAG").is_some() {
         library.invoke_set_automatic(true);
         for target in 0..3 {
             library.invoke_open_rule(-1, target);
             library.invoke_save_rule();
         }
     }
-    if let Ok(dialog) = std::env::var("LHC_LIBRARY_DIALOG") {
+    if let Ok(dialog) = std::env::var("TECLOID_LIBRARY_DIALOG") {
         ui.global::<ConditionChoices>().invoke_refresh();
         library.invoke_select(0);
         library.set_dialog(match dialog.as_str() {
@@ -446,7 +448,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             _ => LibraryDialog::None,
         });
     }
-    if let Ok(locale) = std::env::var("LHC_LIBRARY_LOCALE") {
+    if let Ok(locale) = std::env::var("TECLOID_LIBRARY_LOCALE") {
         slint::select_bundled_translation(&locale)?;
     }
     ui.show()?;
@@ -462,7 +464,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ),
             library.get_names().row_count() as i32 - 1
         );
-        if std::env::var_os("LHC_LIBRARY_DRAG").is_some() {
+        if std::env::var_os("TECLOID_LIBRARY_DRAG").is_some() {
             let first = library.get_names().row_data(0).unwrap();
             let start = slint::LogicalPosition::new(50.0, 218.0 + row_height / 2.0);
             let end = slint::LogicalPosition::new(50.0, start.y + row_height * 2.0);
@@ -481,7 +483,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             assert_eq!(library.get_names().row_data(2).unwrap(), first);
             println!("Library drag-and-drop passed");
         }
-        if std::env::var_os("LHC_LIBRARY_RULE_DRAG").is_some() {
+        if std::env::var_os("TECLOID_LIBRARY_RULE_DRAG").is_some() {
             let first = document.read().settings().auto_rules[0].id.clone();
             let group = ui.global::<DragGroups>().get_library_rules();
             let (start, source_center) = reorder_handle(&ui, group, 0);
@@ -513,7 +515,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
             println!("Automatic rule drag-and-drop passed");
         }
-        if let Some(path) = std::env::var_os("LHC_LIBRARY_SNAPSHOT") {
+        if let Some(path) = std::env::var_os("TECLOID_LIBRARY_SNAPSHOT") {
             support::write_snapshot(&ui, std::path::Path::new(&path));
         }
         slint::quit_event_loop().unwrap();

@@ -1,5 +1,5 @@
 //! Built-in popup hotkeys read from evdev: Ctrl+Alt+F11 (emoji) and
-//! Ctrl+Alt+F12 (quick actions). `LHC_HOTKEYS=off` disables them.
+//! Ctrl+Alt+F12 (quick actions). `TECLOID_HOTKEYS=off` disables them.
 //!
 //! Devices are rescanned periodically, so keyboards plugged in later and
 //! the mapper's virtual keyboard (which carries the input while the mapper
@@ -109,7 +109,7 @@ fn listen(
 pub fn set_game_active(_active: bool) {}
 
 pub fn start(dispatch: Dispatch) {
-    if !lhc_core::env::popup_hotkeys_enabled() {
+    if !tecloid_core::env::popup_hotkeys_enabled() {
         return;
     }
     let watched: Arc<Mutex<HashSet<PathBuf>>> = Arc::default();
@@ -133,7 +133,7 @@ pub fn start(dispatch: Dispatch) {
             }
             scan += 1;
             let mut found = !watched.lock().unwrap_or_else(|p| p.into_inner()).is_empty();
-            let paths = std::fs::read_dir(lhc_core::platform::INPUT_DIR)
+            let paths = std::fs::read_dir(tecloid_core::platform::INPUT_DIR)
                 .into_iter()
                 .flatten()
                 .flatten()
@@ -165,7 +165,7 @@ pub fn start(dispatch: Dispatch) {
             }
             if !found && !warned {
                 log::warn!(
-                    "No readable Ctrl+Alt+F11/F12 evdev devices; check input permissions or LHC_INPUT"
+                    "No readable Ctrl+Alt+F11/F12 evdev devices; check input permissions or TECLOID_INPUT"
                 );
                 warned = true;
             }

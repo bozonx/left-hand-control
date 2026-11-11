@@ -34,10 +34,10 @@ pub(super) fn assign(
     document: &Document,
     index: i32,
     value: &str,
-    command: Option<lhc_core::config::model::Command>,
+    command: Option<tecloid_core::config::model::Command>,
 ) -> Result<(), Msg> {
     let key = keyboard::base_key(index)
-        .ok_or_else(|| Msg::from(&lhc_core::config_document::ConfigError::EditConflict))?;
+        .ok_or_else(|| Msg::from(&tecloid_core::config_document::ConfigError::EditConflict))?;
     let saved = document
         .edit(View::Keys, |config| {
             config.edit_profile_with_commands(command, |config| {

@@ -12,9 +12,9 @@ scrollbars and text context menus as well as application controls.
 
 Local adaptations:
 
-- `lhc/styling.slint`: explicit application accent, high contrast and E-ink
+- `tecloid/styling.slint`: explicit application accent, high contrast and E-ink
   palettes. State changes keep opaque, contrasting text and outlines.
-- `lhc/color-scheme.slint`: the shell supplies the resolved system/light/dark
+- `tecloid/color-scheme.slint`: the shell supplies the resolved system/light/dark
   choice through `Theme.apply`; no compiler-private `SlintInternal` references.
 - `std-widgets*.slint`: only the widgets and compiler helpers used by the app.
   Radio choices use the application's `ButtonGroup`, including a vertical mode.
@@ -23,9 +23,9 @@ Local adaptations:
 - `common/menus.slint`: flat text-editing context menus only; the application
   does not use a menubar or nested standard context menus. `MenuBarImpl` is
   present because the compiler requires that symbol for context-menu lowering.
-- `lhc/button.slint` and `lhc/checkbox.slint`: pointer activation focuses the
+- `tecloid/button.slint` and `tecloid/checkbox.slint`: pointer activation focuses the
   control, matching the application's custom controls.
-- `common/combobox-base.slint` and `lhc/combobox.slint`: opening consumes its
+- `common/combobox-base.slint` and `tecloid/combobox.slint`: opening consumes its
   key event; popup options have real roving focus, provisional selection,
   Escape cancellation, Home/End and prefix search. Tab closes the popup.
 - Removed compiler-private `@shadowable` and `@deprecated` annotations.

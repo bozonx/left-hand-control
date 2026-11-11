@@ -4,7 +4,7 @@ Reference for the built-in system actions removed in October 2026. They were
 all KDE-only wrappers around KDE D-Bus calls; keeping a hand-written list per
 desktop environment did not scale. What remains in `sys:` is the small set
 that cannot be expressed with a key: `switchDesktopN`, `switchProfileN` and
-`windowToDesktopN` (today `switchToDesktopN`, `lhc:activateProfileN` and
+`windowToDesktopN` (today `switchToDesktopN`, `tecloid:activateProfileN` and
 `moveWindowToDesktopN`).
 
 Later, a few common window and shell actions came back as cross-platform

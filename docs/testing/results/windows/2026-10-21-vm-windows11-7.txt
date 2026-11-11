@@ -1,12 +1,12 @@
 Date: 2026-10-21 10:57:05 -0300
 Commit: 5d021a6 (with uncommitted changes)
-VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+VM: windows11 (/mnt/disk2/vm/tecloid-windows/windows11-e2e-base.qcow2)
 Suite: full
 Mapper build: release
 Popup shell build: release
 Mapper from: beginning
 Memory: 12288 MiB
-Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261021-102114/logs
+Logs: /mnt/disk2/vm/tecloid-windows/runs/20261021-102114/logs
 
 Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
 Session: 1
@@ -22,7 +22,7 @@ Suite: full
 
 - boot: passed
 - preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
-- upload-source: passed — 844 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261021-102114/src.tar.gz; SHA256 2bca1856f0264524720e75558a61321927101a5d35e3540fd5c83d10445f4371; Source sync: 7 updated, 53 removed
+- upload-source: passed — 844 files; source archive /mnt/disk2/vm/tecloid-windows/runs/20261021-102114/src.tar.gz; SHA256 2bca1856f0264524720e75558a61321927101a5d35e3540fd5c83d10445f4371; Source sync: 7 updated, 53 removed
 - hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
 - popup-bmp-focus: passed — physical hotkey and cell key; exact Unicode once; focus restored; modifiers released
 - popup-surrogate-focus: passed — physical hotkey and cell key; exact Unicode once; focus restored; modifiers released

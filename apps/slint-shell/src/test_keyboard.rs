@@ -54,8 +54,10 @@ impl Keyboard {
                     .build()?,
             ));
         }
-        if !std::env::var("WAYLAND_DISPLAY").is_ok_and(|v| v.starts_with("lhc-stage3a-")) {
-            return Err("isolated test input requires dedicated lhc-stage3a-* compositor".into());
+        if !std::env::var("WAYLAND_DISPLAY").is_ok_and(|v| v.starts_with("tecloid-stage3a-")) {
+            return Err(
+                "isolated test input requires dedicated tecloid-stage3a-* compositor".into(),
+            );
         }
         let connection = Connection::connect_to_env()?;
         let (globals, mut queue) = registry_queue_init::<State>(&connection)?;

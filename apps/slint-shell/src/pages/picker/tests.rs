@@ -236,7 +236,7 @@ fn categories_follow_the_key_catalog() {
 
 #[test]
 fn applying_actions_validates_references_against_the_document() {
-    use lhc_core::config::model::{Command, Macro};
+    use tecloid_core::config::model::{Command, Macro};
 
     let (_dir, document) = super::super::test_document();
     document
@@ -337,7 +337,7 @@ fn hidden_features_cannot_be_typed_outside_development_mode() {
     ] {
         assert!(!filter.admits(value), "{value}");
     }
-    assert!(filter.admits("lhc:showQuickMenu"));
+    assert!(filter.admits("tecloid:showQuickMenu"));
     assert!(filter.admits("macro:kept"));
     assert!(filter.admits("builtin:copyLineText"));
     let development = Filter {
@@ -427,8 +427,8 @@ fn selection_steps_stay_inside_the_list() {
 
 #[test]
 fn labels_prefer_the_command_then_the_catalog() {
-    use lhc_core::config::model::Command;
     use session::label_for;
+    use tecloid_core::config::model::Command;
     let command = Command {
         id: "c1".into(),
         name: "Play".into(),

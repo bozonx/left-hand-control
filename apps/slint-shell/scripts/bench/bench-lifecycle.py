@@ -8,18 +8,18 @@ import sys
 import time
 
 root = Path(__file__).resolve().parents[2]
-binary = Path(os.environ.get('LHC_BIN', root.parents[1] / 'target/debug/tecloid')).resolve()
+binary = Path(os.environ.get('TECLOID_BIN', root.parents[1] / 'target/debug/tecloid')).resolve()
 output = Path(sys.argv[1]).resolve()
 count = int(sys.argv[2]) if len(sys.argv) > 2 else 500
 if count < 1:
     raise SystemExit('count must be positive')
 output.mkdir(parents=True, exist_ok=True)
-env = dict(os.environ, LHC_SOCKET=f'lhc-lifecycle-{os.getpid()}.sock',
-           LHC_METRICS=str(output / 'parent.csv'))
-env.setdefault('LHC_POPUPS', 'spell')
+env = dict(os.environ, TECLOID_SOCKET=f'tecloid-lifecycle-{os.getpid()}.sock',
+           TECLOID_METRICS=str(output / 'parent.csv'))
+env.setdefault('TECLOID_POPUPS', 'spell')
 env.setdefault('SLINT_BACKEND', 'winit-skia-software')
 env.pop('XDG_ACTIVATION_TOKEN', None)
-socket = Path(env['XDG_RUNTIME_DIR']) / 'lhc-slint-shell' / env['LHC_SOCKET']
+socket = Path(env['XDG_RUNTIME_DIR']) / 'tecloid-slint-shell' / env['TECLOID_SOCKET']
 samples = []
 
 def command(*args):

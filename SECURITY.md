@@ -30,7 +30,7 @@ keyboard interception and system integration; the Slint shell handles presentati
 
 - Unix IPC uses a private `0700` runtime directory; Windows uses token-authenticated
   loopback TCP. There is no remote service.
-- Layout names and Linux device paths are validated in `lhc-core`.
+- Layout names and Linux device paths are validated in `tecloid-core`.
 - Configuration writes validate changes and check for unread external edits before
   replacement. This optimistic check does not serialize writes by external editors.
 - Files are synced before replacement; Unix writes also sync the parent directory.

@@ -8,10 +8,10 @@ use ksni::{
     blocking::TrayMethods,
     menu::{RadioGroup, RadioItem, StandardItem, SubMenu},
 };
-use lhc_core::gamemode::GameModeStatus;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
+use tecloid_core::gamemode::GameModeStatus;
 
 /// How long a missing tray host may take to appear before settings open
 /// instead. At login the application can start before the host (GNOME

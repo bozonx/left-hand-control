@@ -39,8 +39,8 @@ def check_popups(vm, ps, report):
 
     def profile_remap_restart():
         metadata = json.loads(probe.read(ready))
-        environment = (f"$env:LHC_DEV_DIR = '{metadata['profile']}'; "
-                       f"$env:LHC_PORT = '{metadata['port']}'; ")
+        environment = (f"$env:TECLOID_DEV_DIR = '{metadata['profile']}'; "
+                       f"$env:TECLOID_PORT = '{metadata['port']}'; ")
 
         def command(*arguments):
             probe.ps(environment + f"& '{metadata['exe']}' " + " ".join(arguments) +
@@ -82,8 +82,8 @@ def check_popups(vm, ps, report):
     def crash_owner():
         nonlocal app_crashed
         metadata = json.loads(probe.read(ready))
-        environment = (f"$env:LHC_DEV_DIR = '{metadata['profile']}'; "
-                       f"$env:LHC_PORT = '{metadata['port']}'; ")
+        environment = (f"$env:TECLOID_DEV_DIR = '{metadata['profile']}'; "
+                       f"$env:TECLOID_PORT = '{metadata['port']}'; ")
         ps(environment + f"& '{metadata['exe']}' toggle-mapper; "
            "if ($LASTEXITCODE -ne 0) { throw 'Mapper toggle failed' }", timeout=30)
         since = probe.reset()
@@ -135,8 +135,8 @@ def check_popups(vm, ps, report):
         try:
             if not app_crashed:
                 metadata = json.loads(probe.read(ready))
-                command = (f"$env:LHC_DEV_DIR = '{metadata['profile']}'; "
-                           f"$env:LHC_PORT = '{metadata['port']}'; & '{metadata['exe']}' quit; "
+                command = (f"$env:TECLOID_DEV_DIR = '{metadata['profile']}'; "
+                           f"$env:TECLOID_PORT = '{metadata['port']}'; & '{metadata['exe']}' quit; "
                            "if ($LASTEXITCODE -ne 0) { throw 'Popup shell quit failed' }")
                 probe.ps(command, timeout=30)
         except (StepFailed, subprocess.TimeoutExpired, ValueError, OSError):

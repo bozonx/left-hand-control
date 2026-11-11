@@ -9,13 +9,13 @@ use crate::{
         RuleDialog, RuleLayerChoice, RuleRow, RulesEditor, SettingsWindow,
     },
 };
-use lhc_core::config::{
+use slint::{ComponentHandle, Model, ModelRc, VecModel};
+use std::rc::Rc;
+use tecloid_core::config::{
     diagnostics, ids,
     model::{HoldBehavior, KeyRule, Layer, ProfilePreset, TapDecision},
     rule_edit::{RuleOptions, RuleOptionsError},
 };
-use slint::{ComponentHandle, Model, ModelRc, VecModel};
-use std::rc::Rc;
 
 /// How long a newly created rule stays highlighted.
 const CREATED_HIGHLIGHT: std::time::Duration = std::time::Duration::from_millis(1400);
@@ -62,7 +62,7 @@ fn parse_timeout(value: &str) -> Result<Option<u64>, Msg> {
     value
         .parse::<u64>()
         .ok()
-        .filter(|value| lhc_core::config::timing::TAP_HOLD.contains(*value))
+        .filter(|value| tecloid_core::config::timing::TAP_HOLD.contains(*value))
         .map(Some)
         .ok_or(Msg::TimeoutInvalid)
 }
@@ -73,7 +73,7 @@ pub(super) fn parse_long_hold(value: &str) -> Result<u64, Msg> {
         .trim()
         .parse()
         .ok()
-        .filter(|ms| lhc_core::config::timing::LONG_HOLD.contains(*ms))
+        .filter(|ms| tecloid_core::config::timing::LONG_HOLD.contains(*ms))
         .ok_or(Msg::LongHoldInvalid)
 }
 
@@ -181,7 +181,7 @@ fn check_edit(ui: &SettingsWindow, document: &Document) -> Result<(), Msg> {
         || editor.get_edit_selected() != editor.get_selected()
     {
         return Err(Msg::from(
-            &lhc_core::config_document::ConfigError::EditConflict,
+            &tecloid_core::config_document::ConfigError::EditConflict,
         ));
     }
     Ok(())
@@ -190,7 +190,7 @@ fn check_edit(ui: &SettingsWindow, document: &Document) -> Result<(), Msg> {
 fn editable(ui: &SettingsWindow, document: &Document) -> Option<usize> {
     let result = check_edit(ui, document).and_then(|()| {
         selected(ui, document)
-            .ok_or_else(|| Msg::from(&lhc_core::config_document::ConfigError::EditConflict))
+            .ok_or_else(|| Msg::from(&tecloid_core::config_document::ConfigError::EditConflict))
     });
     match result {
         Ok(index) => Some(index),
@@ -441,12 +441,12 @@ pub(super) fn choose(
     ui: &SettingsWindow,
     document: &Document,
     value: &str,
-    command: Option<lhc_core::config::model::Command>,
+    command: Option<tecloid_core::config::model::Command>,
 ) -> Result<(), Msg> {
     let editor = ui.global::<RulesEditor>();
     let property = editor.get_field();
     check_edit(ui, document)?;
-    if property == RuleDialog::Key && !lhc_core::config::key_catalog::valid_trigger(value) {
+    if property == RuleDialog::Key && !tecloid_core::config::key_catalog::valid_trigger(value) {
         return Err(Msg::KeyCodeRequired);
     }
     if property == RuleDialog::Key && editor.get_adding() && editor.get_selected() == -1 {
@@ -468,7 +468,7 @@ pub(super) fn choose(
     }
     if property == RuleDialog::Hold
         && !value.is_empty()
-        && !lhc_core::config::actions::valid_held_key(value)
+        && !tecloid_core::config::actions::valid_held_key(value)
     {
         return Err(Msg::ActionRequired);
     }
@@ -483,7 +483,7 @@ pub(super) fn choose(
         return Ok(());
     }
     let index = selected(ui, document)
-        .ok_or_else(|| Msg::from(&lhc_core::config_document::ConfigError::EditConflict))?;
+        .ok_or_else(|| Msg::from(&tecloid_core::config_document::ConfigError::EditConflict))?;
     // Validate before saving so a bad value leaves the rule untouched.
     let mut candidate = document.read().profile().rules[index].clone();
     set_property(&mut candidate, property, value)?;
@@ -588,7 +588,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             } else if editor.get_dialog() != RuleDialog::None && check_edit(&ui, document).is_err()
             {
                 editor.set_status(
-                    Msg::from(&lhc_core::config_document::ConfigError::EditConflict).to_ui(),
+                    Msg::from(&tecloid_core::config_document::ConfigError::EditConflict).to_ui(),
                 );
             }
         }
@@ -696,7 +696,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         // A key picked for the advanced dialog must not reload its draft.
         let draft = editor.get_dialog() == RuleDialog::Advanced && dialog == RuleDialog::Hold;
         if draft && (editor.get_selected() != index || check_edit(&ui, &doc).is_err()) {
-            editor.set_status(crate::notifications::report(&ui, &Msg::from(&lhc_core::config_document::ConfigError::EditConflict)));
+            editor.set_status(crate::notifications::report(&ui, &Msg::from(&tecloid_core::config_document::ConfigError::EditConflict)));
             return;
         }
         editor.set_selected(index);

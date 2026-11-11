@@ -8,12 +8,12 @@
 //! from the same PO catalogs. Missing translations fail the build.
 
 use crate::ui::Message;
-use lhc_core::config::actions::ActionIssue;
-use lhc_core::config::diagnostics::{RuleIssue, RuleIssueCode};
-use lhc_core::config::model::LocalePreference;
-use lhc_core::config::names::{NameIssue, NameKind};
-use lhc_core::config_document::{ConfigError, ExtraKeyIssue};
-use lhc_core::platform::InputAccessIssue;
+use tecloid_core::config::actions::ActionIssue;
+use tecloid_core::config::diagnostics::{RuleIssue, RuleIssueCode};
+use tecloid_core::config::model::LocalePreference;
+use tecloid_core::config::names::{NameIssue, NameKind};
+use tecloid_core::config_document::{ConfigError, ExtraKeyIssue};
+use tecloid_core::platform::InputAccessIssue;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum Language {
@@ -129,7 +129,7 @@ impl Language {
         }
         match preference {
             LocalePreference::Auto => {
-                Self::from_languages(&lhc_core::platform::locale::message_languages())
+                Self::from_languages(&tecloid_core::platform::locale::message_languages())
             }
             _ => Self::English,
         }
@@ -304,7 +304,7 @@ pub enum Msg {
     CapabilityUnsupported,
     /// Why the mapper cannot use the input devices.
     InputAccess(InputAccessIssue),
-    MouseStatus(lhc_core::mapper::mouse::MouseStatus),
+    MouseStatus(tecloid_core::mapper::mouse::MouseStatus),
     GameModeAutoDisabled,
     GameModeAutoUnavailable,
     GameModeAutoInactive,
@@ -344,9 +344,9 @@ pub enum Msg {
     ActionUnsupportedMacos,
     CommandsDisabled,
     SaveProfileFirst,
-    MenuIssue(lhc_core::config::menus::MenuIssue),
-    MacroIssue(lhc_core::config::macros::MacroIssue),
-    MacroRunFailure(lhc_core::events::MacroRunFailure),
+    MenuIssue(tecloid_core::config::menus::MenuIssue),
+    MacroIssue(tecloid_core::config::macros::MacroIssue),
+    MacroRunFailure(tecloid_core::events::MacroRunFailure),
     Name(NameKind, NameIssue),
     KeyCodeRequired,
     /// A layer keyboard key was chosen for an extra key row.
@@ -367,7 +367,7 @@ pub enum Msg {
     Rule(RuleIssue),
     ActionFailed(String),
     /// A `text:` action was not typed.
-    TextInputFailed(lhc_core::events::TextInputFailure),
+    TextInputFailed(tecloid_core::events::TextInputFailure),
     /// An operation failed; technical details are logged, never displayed.
     Error(String),
 }
@@ -392,10 +392,10 @@ impl Msg {
             | Self::MapperRunning(Some(detail))
             | Self::MapperStopped(Some(detail)) => detail,
             Self::TextInputFailed(
-                lhc_core::events::TextInputFailure::BackendUnavailable(detail)
-                | lhc_core::events::TextInputFailure::Clipboard(detail)
-                | lhc_core::events::TextInputFailure::NativeInput(detail)
-                | lhc_core::events::TextInputFailure::Tool(detail),
+                tecloid_core::events::TextInputFailure::BackendUnavailable(detail)
+                | tecloid_core::events::TextInputFailure::Clipboard(detail)
+                | tecloid_core::events::TextInputFailure::NativeInput(detail)
+                | tecloid_core::events::TextInputFailure::Tool(detail),
             ) => detail,
             _ => return String::new(),
         };
@@ -463,14 +463,16 @@ impl Msg {
             Self::CapabilityUnsupported => ("capability-unsupported", empty(), 0),
             Self::MouseStatus(status) => (
                 match status {
-                    lhc_core::mapper::mouse::MouseStatus::NotSelected => "",
-                    lhc_core::mapper::mouse::MouseStatus::Ready => "mouse-ready",
-                    lhc_core::mapper::mouse::MouseStatus::Connected => "mouse-connected",
-                    lhc_core::mapper::mouse::MouseStatus::Missing => "mouse-missing",
-                    lhc_core::mapper::mouse::MouseStatus::AccessDenied => "mouse-access-denied",
-                    lhc_core::mapper::mouse::MouseStatus::DeviceChanged => "mouse-device-changed",
-                    lhc_core::mapper::mouse::MouseStatus::InUse => "mouse-in-use",
-                    lhc_core::mapper::mouse::MouseStatus::Unavailable => "mouse-unavailable",
+                    tecloid_core::mapper::mouse::MouseStatus::NotSelected => "",
+                    tecloid_core::mapper::mouse::MouseStatus::Ready => "mouse-ready",
+                    tecloid_core::mapper::mouse::MouseStatus::Connected => "mouse-connected",
+                    tecloid_core::mapper::mouse::MouseStatus::Missing => "mouse-missing",
+                    tecloid_core::mapper::mouse::MouseStatus::AccessDenied => "mouse-access-denied",
+                    tecloid_core::mapper::mouse::MouseStatus::DeviceChanged => {
+                        "mouse-device-changed"
+                    }
+                    tecloid_core::mapper::mouse::MouseStatus::InUse => "mouse-in-use",
+                    tecloid_core::mapper::mouse::MouseStatus::Unavailable => "mouse-unavailable",
                 },
                 empty(),
                 0,
@@ -501,36 +503,38 @@ impl Msg {
             Self::SettingsSaved => ("settings-saved", empty(), 0),
             Self::MacroRunFailure(reason) => (
                 match reason {
-                    lhc_core::events::MacroRunFailure::QueueFull => "macro-queue-full",
-                    lhc_core::events::MacroRunFailure::Timeout => "macro-timeout",
-                    lhc_core::events::MacroRunFailure::Command => "macro-command-failed",
+                    tecloid_core::events::MacroRunFailure::QueueFull => "macro-queue-full",
+                    tecloid_core::events::MacroRunFailure::Timeout => "macro-timeout",
+                    tecloid_core::events::MacroRunFailure::Command => "macro-command-failed",
                 },
                 empty(),
                 0,
             ),
             Self::MacroIssue(issue) => (
                 match issue {
-                    lhc_core::config::macros::MacroIssue::InvalidId => "macro-invalid-id",
-                    lhc_core::config::macros::MacroIssue::DuplicateId => "macro-duplicate-id",
-                    lhc_core::config::macros::MacroIssue::DelayRange => "macro-delay-range",
-                    lhc_core::config::macros::MacroIssue::PauseRange => "macro-pause-range",
-                    lhc_core::config::macros::MacroIssue::UnknownKey => "macro-unknown-key",
-                    lhc_core::config::macros::MacroIssue::Cycle => "macro-cycle",
-                    lhc_core::config::macros::MacroIssue::ExpansionLimit => "macro-expansion-limit",
-                    lhc_core::config::macros::MacroIssue::InUse => "macro-in-use",
+                    tecloid_core::config::macros::MacroIssue::InvalidId => "macro-invalid-id",
+                    tecloid_core::config::macros::MacroIssue::DuplicateId => "macro-duplicate-id",
+                    tecloid_core::config::macros::MacroIssue::DelayRange => "macro-delay-range",
+                    tecloid_core::config::macros::MacroIssue::PauseRange => "macro-pause-range",
+                    tecloid_core::config::macros::MacroIssue::UnknownKey => "macro-unknown-key",
+                    tecloid_core::config::macros::MacroIssue::Cycle => "macro-cycle",
+                    tecloid_core::config::macros::MacroIssue::ExpansionLimit => {
+                        "macro-expansion-limit"
+                    }
+                    tecloid_core::config::macros::MacroIssue::InUse => "macro-in-use",
                 },
                 empty(),
                 0,
             ),
             Self::MenuIssue(issue) => (
                 match issue {
-                    lhc_core::config::menus::MenuIssue::EmojiCell => "menu-emoji-cell",
-                    lhc_core::config::menus::MenuIssue::UnknownKey => "macro-unknown-key",
-                    lhc_core::config::menus::MenuIssue::CommandId => "menu-command-id",
-                    lhc_core::config::menus::MenuIssue::DuplicateCommand => {
+                    tecloid_core::config::menus::MenuIssue::EmojiCell => "menu-emoji-cell",
+                    tecloid_core::config::menus::MenuIssue::UnknownKey => "macro-unknown-key",
+                    tecloid_core::config::menus::MenuIssue::CommandId => "menu-command-id",
+                    tecloid_core::config::menus::MenuIssue::DuplicateCommand => {
                         "menu-duplicate-command"
                     }
-                    lhc_core::config::menus::MenuIssue::EmptyCommand => "menu-empty-command",
+                    tecloid_core::config::menus::MenuIssue::EmptyCommand => "menu-empty-command",
                 },
                 empty(),
                 0,
@@ -618,14 +622,14 @@ impl Msg {
             ),
             Self::ActionFailed(error) => diagnostic("action-failed", error),
             Self::TextInputFailed(failure) => {
-                use lhc_core::events::TextInputFailure as F;
+                use tecloid_core::events::TextInputFailure as F;
                 match failure {
                     F::MissingCharacters => ("text-missing-characters", empty(), 0),
                     F::DestinationChanged => ("text-destination-changed", empty(), 0),
                     F::LayoutUnknown => ("text-layout-unknown", empty(), 0),
                     F::BackendUnavailable(detail) => diagnostic("text-backend-unavailable", detail),
                     F::Clipboard(detail) => {
-                        use lhc_core::events::ClipboardFailureKind as C;
+                        use tecloid_core::events::ClipboardFailureKind as C;
                         let id = match C::from_detail(detail) {
                             C::PreservationLimit => "text-clipboard-limit",
                             C::Permission => "text-clipboard-permission",
@@ -773,8 +777,8 @@ pub fn profile_osd(language: Language, name: Option<&str>) -> String {
 }
 
 /// Index of `control` in [`TRAY_GAME_MODES`].
-pub fn tray_game_index(control: lhc_core::gamemode::GameModeControl) -> usize {
-    use lhc_core::gamemode::GameModeControl;
+pub fn tray_game_index(control: tecloid_core::gamemode::GameModeControl) -> usize {
+    use tecloid_core::gamemode::GameModeControl;
     match control {
         GameModeControl::Auto => 0,
         GameModeControl::On => 1,
@@ -1043,9 +1047,10 @@ mod tests {
             ),
             ("unknown protocol failure", "text-clipboard-failed"),
         ] {
-            let message =
-                Msg::TextInputFailed(lhc_core::events::TextInputFailure::Clipboard(detail.into()))
-                    .to_ui();
+            let message = Msg::TextInputFailed(tecloid_core::events::TextInputFailure::Clipboard(
+                detail.into(),
+            ))
+            .to_ui();
             assert_eq!(message.id, id);
             assert!(message.arg.is_empty());
         }
@@ -1058,10 +1063,10 @@ mod tests {
             Msg::ActionFailed("untranslated error".into()),
             Msg::MapperFailed("untranslated error".into()),
             Msg::MapperStopped(Some("untranslated error".into())),
-            Msg::TextInputFailed(lhc_core::events::TextInputFailure::Tool(
+            Msg::TextInputFailed(tecloid_core::events::TextInputFailure::Tool(
                 "untranslated error".into(),
             )),
-            Msg::TextInputFailed(lhc_core::events::TextInputFailure::NativeInput(
+            Msg::TextInputFailed(tecloid_core::events::TextInputFailure::NativeInput(
                 "untranslated error".into(),
             )),
         ] {

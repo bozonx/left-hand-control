@@ -20,7 +20,7 @@ Desktop keyboard mapper на Rust и Slint. Перехватывает физи�
 ```sh
 cargo run --locked -p slint-shell
 # Layer-shell попапы с автоматическим переходом на winit:
-LHC_POPUPS=auto cargo run --locked -p slint-shell --features spell
+TECLOID_POPUPS=auto cargo run --locked -p slint-shell --features spell
 ```
 
 Приложение запускается со скрытыми окнами и остаётся в трее. Открыть настройки:
@@ -44,7 +44,7 @@ target/debug/tecloid show settings
 
 ## Конфигурация
 
-Debug-сборки используют `dev-files/<os>/` внутри репозитория. `LHC_DEV_DIR`
+Debug-сборки используют `dev-files/<os>/` внутри репозитория. `TECLOID_DEV_DIR`
 задаёт другой базовый каталог с той же структурой по ОС. На Linux конфиг находится
 в `dev-files/linux/.config/dev.bozonx.tecloid/config.json`, данные —
 в `dev-files/linux/.local/share/dev.bozonx.tecloid/`.
@@ -60,8 +60,8 @@ Release-сборки используют системные config/data-кат�
 ## Проверки
 
 ```sh
-cargo fmt -p lhc-core -p slint-shell --check
-cargo clippy --locked -p lhc-core -p slint-shell \
+cargo fmt -p tecloid-core -p slint-shell --check
+cargo clippy --locked -p tecloid-core -p slint-shell \
   --features slint-shell/spell --all-targets --no-deps -- -D warnings
 cargo test --locked --workspace --features slint-shell/spell
 cargo check --locked -p slint-shell --all-targets
@@ -81,7 +81,7 @@ CI проверяет core и оболочку на Linux, Windows и macOS. Des
 
 ## Структура
 
-- `crates/lhc-core/` — конфигурация, хранение, mapper и системные интеграции;
+- `crates/tecloid-core/` — конфигурация, хранение, mapper и системные интеграции;
   `assets/` содержит встроенную раскладку, `tests/fixtures/` — образцы для тестирования парсера.
 - `apps/slint-shell/` — UI, IPC, трей, платформенные адаптеры и Spell worker;
   `assets/` содержит иконку приложения и каталог emoji.

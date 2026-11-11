@@ -6,11 +6,11 @@ use i_slint_core::{
     item_tree::{ItemRc, ParentItemTraversalMode},
     window::WindowInner,
 };
-use lhc_core::storage::StoragePaths;
 use slint::{ComponentHandle, Model, platform::Key};
 use slint_shell::{Document, bind_document, ui::*};
 use std::{cell::Cell, rc::Rc, time::Duration};
 use support::snapshot;
+use tecloid_core::storage::StoragePaths;
 
 fn key(ui: &SettingsWindow, key: impl Into<slint::SharedString>) {
     let text = key.into();
@@ -125,8 +125,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         0,
     );
     // Enough entries to exceed the menu viewport even on a large screen.
-    let profile_text = lhc_core::config::profile_file::serialize(
-        &lhc_core::config::model::ProfilePreset::initial(),
+    let profile_text = tecloid_core::config::profile_file::serialize(
+        &tecloid_core::config::model::ProfilePreset::initial(),
     );
     for index in 0..40 {
         document.read().paths().save_user_profile(

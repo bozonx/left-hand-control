@@ -5,11 +5,11 @@ use crate::{
     command::Popup,
     ui::{EmojiPopup, QuickPopup},
 };
-use lhc_core::config::{
+use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
+use tecloid_core::config::{
     actions::Action,
     model::{LEFT_HAND_HOTKEYS, ProfilePreset, QuickAction},
 };
-use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 
 /// Bind composite keyboard navigation for both popup windows.
 /// Standalone UI fixtures use the same bindings as the application and Spell.
@@ -89,7 +89,7 @@ pub(crate) fn evdev_shortcut(code: u32, shift: bool) -> Option<Shortcut> {
         .chain(&DIGITS)
         .chain(&LEFT_HAND_HOTKEYS)
         .find(|name| {
-            lhc_core::mapper::keys::code_to_key(name)
+            tecloid_core::mapper::keys::code_to_key(name)
                 .is_some_and(|key| u32::from(key.code()) == code)
         })?;
     shortcut(name, shift)
@@ -213,8 +213,8 @@ impl ConfiguredMenus {
     /// process without a `Document`, and `Document::edit` saves each edit
     /// to disk immediately.
     pub fn load_for(id: Option<&str>) -> Result<Self, String> {
-        let document = lhc_core::config_document::ConfigDocument::load(
-            lhc_core::storage::StoragePaths::resolve()?,
+        let document = tecloid_core::config_document::ConfigDocument::load(
+            tecloid_core::storage::StoragePaths::resolve()?,
         )
         .map_err(|error| error.to_string())?;
         Ok(Self {
@@ -570,7 +570,7 @@ pub enum FocusChange {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lhc_core::config::model::*;
+    use tecloid_core::config::model::*;
 
     #[test]
     fn physical_shortcuts_pick_cells_and_cycle_pages() {

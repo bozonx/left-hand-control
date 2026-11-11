@@ -62,7 +62,7 @@ and retain it for a 200 ms grace interval after shortcut completion. A transfer
 confirms bytes were requested, not which client requested them. ACK failure still
 attempts restoration, but a disconnected compositor cannot guarantee recovery.
 
-Restoration makes LHC the owner; protocols cannot transfer ownership back to the
+Restoration makes Tecloid the owner; protocols cannot transfer ownership back to the
 original app. Restored bytes remain until another owner replaces them and are
 then released. Clipboard managers may record a duplicate; quitting may clear the
 selection. On GNOME the RemoteDesktop session must remain alive to serve restored

@@ -10,7 +10,7 @@ it is not a claim of native acceptance on every desktop.
 | Popup source re-encodes images before a selection | Popup opening no longer reads clipboard contents. `warm()` only connects/synchronizes. |
 | Linux focus restoration race | Wait before the first destination check, including tool modes. The portal worker's existing later wait cannot fix a failure at the initial check. |
 | GNOME idle wakes every 5 ms | Register a signal waker and park the owner until a portal signal, command or sender shutdown. Private-bus regression test covers a retired owner waking after replacement. Active transactions still poll within their bounded deadline. |
-| GNOME retains RemoteDesktop session | Required by its clipboard portal while LHC serves restored formats. Remains until another owner replaces the selection. Closing immediately can erase the clipboard; no silent policy change. A replacement backend can temporarily overlap the retired owner. The [GNOME integration decision](../design/gnome-clipboard.md) records why a Shell/native shim was rejected. |
+| GNOME retains RemoteDesktop session | Required by its clipboard portal while Tecloid serves restored formats. Remains until another owner replaces the selection. Closing immediately can erase the clipboard; no silent policy change. A replacement backend can temporarily overlap the retired owner. The [GNOME integration decision](../design/gnome-clipboard.md) records why a Shell/native shim was rejected. |
 | Failed data-control ACK skips restoration | Cleanup now runs after errors in preparation/injection and attempts restoration even when the final ACK fails. A broken compositor connection still cannot guarantee preservation. |
 | Unknown destination rejects every text | Unknown Linux targets use lifetime/modifier checks and the main shortcut; identity enforcement is unavailable. Known KDE/GNOME ids remain checked. |
 | Embedded terminals use the host class | Documented in settings and features; recommend main Ctrl+V to avoid PRIMARY. There is no reliable inner-widget detector. Existing explicitly selected shortcuts are retained. |
@@ -27,7 +27,7 @@ it is not a claim of native acceptance on every desktop.
 | Modifiers change during preparation | Wait again before the paste shortcut. libei also refreshes and checks compositor depressed/latched modifiers after preparation. |
 | Virtual modifiers in keycode mode | Physical-state scan includes ungrabbed devices, including the mapper's uinput keyboard. Do not inject while its modifiers are held. Native portal acceptance with a held layer remains in the checklist below. |
 | Password manager loses auto-clear ownership | Reject source selections advertising the sensitive MIME hint before snapshot/ownership. Unmarked secrets cannot be identified. |
-| Saved data retained unnecessarily | Remove speculative snapshot cache; clear restored data on ownership cancellation; portal snapshot copies share MIME bytes rather than duplicating them. Restored bytes must remain while LHC serves them. |
+| Saved data retained unnecessarily | Remove speculative snapshot cache; clear restored data on ownership cancellation; portal snapshot copies share MIME bytes rather than duplicating them. Restored bytes must remain while Tecloid serves them. |
 | Quit can erase clipboard / restored history duplicates | Documented protocol/lifetime limits. Original ownership cannot be transferred back by either transport. |
 | Built-in macros use physical C/V/X and Ctrl+C in terminals | Resolve built-in Linux clipboard strokes at playback, follow paste settings and current/other configured layout groups, add Shift for terminal copy/cut. Cache layout groups on the watcher rather than query D-Bus from the input thread. Terminal cut/navigation/selection still depend on the application. |
 | User Ctrl+KeyC/V/X on Dvorak/Colemak | These are explicit physical-key bindings and remain so. Use built-in editing macros for contextual clipboard operations. No action-string format change. |
@@ -69,7 +69,7 @@ user's clipboard for an automated test.
 - Dvorak/Colemak and a non-Latin active group with a Dvorak Latin group: built-in
   copy/paste/cut versus explicitly physical user chords. Terminal cut/selection
   needs application support.
-- Sensitive-marked source auto-clear, new copies during cleanup, LHC quit, history
+- Sensitive-marked source auto-clear, new copies during cleanup, Tecloid quit, history
   manager behavior and unmarked secret limits.
 - Windows: regular/elevated receiver, rejected SendInput, popup focus change and
   visible failure notification. macOS: permission denial, native Unicode with

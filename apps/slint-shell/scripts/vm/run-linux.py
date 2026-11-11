@@ -5,7 +5,7 @@ real keyboard events from QEMU (layers, macros, commands, system actions, game
 mode, lock screen, suspend, replugging, stuck keys), `text:` through the portal,
 popups, upgrades and removal.
 
-Usage: run-linux.py --vm /mnt/disk2/vm/lhc-fedora-kde --package <file>
+Usage: run-linux.py --vm /mnt/disk2/vm/tecloid-fedora-kde --package <file>
        [--previous <older release>] [--show] [--keep]
 See docs/development/guide.md, "E2E в виртуальных машинах".
 """
@@ -25,7 +25,7 @@ from text_corpus import TEXT_CORPUS, TEXT_UNICODE
 from vmlib import Report, StepFailed, Vm, commit, environment_ok, receiver_text, result_path, wait_for
 
 # scp paths are relative to the guest home; shell commands use ~.
-GUEST = "~/lhc-e2e"
+GUEST = "~/tecloid-e2e"
 GUEST_PY = f"python3 {GUEST}/linux-guest.py"
 CONFIG = "~/.config/dev.bozonx.tecloid/config.json"
 
@@ -124,11 +124,11 @@ def main():
 
     def upload():
         vm.ssh(f"mkdir -p {GUEST}")
-        vm.copy_to(Path(__file__).with_name("linux-guest.py"), "lhc-e2e/")
-        vm.copy_to(Path(__file__).with_name("text_corpus.py"), "lhc-e2e/")
-        vm.copy_to(package, "lhc-e2e/")
+        vm.copy_to(Path(__file__).with_name("linux-guest.py"), "tecloid-e2e/")
+        vm.copy_to(Path(__file__).with_name("text_corpus.py"), "tecloid-e2e/")
+        vm.copy_to(package, "tecloid-e2e/")
         if previous:
-            vm.copy_to(previous, "lhc-e2e/")
+            vm.copy_to(previous, "tecloid-e2e/")
 
     archive = package.name.endswith(".tar.gz")
     installer = "~/.local/lib/dev.bozonx.tecloid/install-linux.sh"
@@ -174,7 +174,7 @@ def main():
         # A cold session avoids SSH/PAM restarting user@ while logout is
         # still tearing it down. It also checks autostart after a real reboot.
         before = vm.ssh("cat /proc/sys/kernel/random/boot_id").strip()
-        vm.ssh("sudo systemd-run --quiet --on-active=2 --timer-property=AccuracySec=100ms --unit=lhc-e2e-permissions-reboot systemctl reboot")
+        vm.ssh("sudo systemd-run --quiet --on-active=2 --timer-property=AccuracySec=100ms --unit=tecloid-e2e-permissions-reboot systemctl reboot")
         time.sleep(10)
         def rebooted():
             try:
@@ -279,7 +279,7 @@ def main():
             vm.qmp.screendump(vm.logs / "portal-consent.png")
             vm.qmp.tap(*vm.get("portal_keys", ["ret"]))
             wait_for("portal consent dismissed", 15, lambda: guest("portal-visible") == "no")
-        return expect("portal-consent", "lhc-ok", action=approve)
+        return expect("portal-consent", "tecloid-ok", action=approve)
 
     def layer():
         down = lambda key: (key, True)
@@ -323,7 +323,7 @@ def main():
         time.sleep(1)
         try:
             # Physical keys under ru: KeyB is и, KeyC is с; text: is layout-independent.
-            return expect("layout-ru", "исlhc-ok" + TEXT_UNICODE, ["a", "c", "t", "y"], settle=5)
+            return expect("layout-ru", "исtecloid-ok" + TEXT_UNICODE, ["a", "c", "t", "y"], settle=5)
         finally:
             vm.qmp.tap("4")
 
@@ -370,7 +370,7 @@ def main():
     def quick_rule():
         def show():
             before = int(guest("popup-count quick t4_focused"))
-            vm.qmp.tap("e")   # lhc:showQuickMenu1
+            vm.qmp.tap("e")   # tecloid:showQuickMenu1
             guest(f"popup-wait quick t4_focused --after {before}")
             vm.qmp.tap("q")
             time.sleep(3)
@@ -415,7 +415,7 @@ def main():
     def suspend():
         boot_id = vm.ssh("cat /proc/sys/kernel/random/boot_id").strip()
         before = int(guest("suspend-count"))
-        vm.ssh("sudo systemd-run --quiet --on-active=1 --timer-property=AccuracySec=100ms --unit=lhc-e2e-suspend systemctl suspend")
+        vm.ssh("sudo systemd-run --quiet --on-active=1 --timer-property=AccuracySec=100ms --unit=tecloid-e2e-suspend systemctl suspend")
         # The guest may wake on its own right away; otherwise QMP wakes it.
         deadline = time.monotonic() + 60
         while time.monotonic() < deadline:
@@ -431,7 +431,7 @@ def main():
             raise StepFailed("the guest did not complete a suspend cycle")
         time.sleep(3)
         guest("mapper --timeout 20")
-        return expect("after-resume", "bXclhc-ok", ["a", "d", "c", "t"])
+        return expect("after-resume", "bXctecloid-ok", ["a", "d", "c", "t"])
 
     def keyboard_replug():
         vm.qmp.replug_keyboard()
@@ -505,7 +505,7 @@ def main():
         return f"{before} → {after}, configuration kept"
 
     def mapper_text():
-        return expect("mapper-keys-and-text", "bXclhc-ok", ["a", "d", "c", "t"])
+        return expect("mapper-keys-and-text", "bXctecloid-ok", ["a", "d", "c", "t"])
 
     def upgrade():
         install("reinstall")
@@ -521,7 +521,7 @@ def main():
         guest("check-removed")
 
     def clipboard_preservation():
-        seed = "lhc-clipboard-before-Привет"
+        seed = "tecloid-clipboard-before-Привет"
         guest(f"clipboard --value {shlex.quote(seed)}")
         expect("clipboard-unicode", TEXT_UNICODE, ["y"], None, 5)
         if guest("clipboard") != seed:
@@ -540,7 +540,7 @@ def main():
                     grants += 1
                     vm.qmp.tap(*vm.get("portal_keys", ["ret"]))
                     time.sleep(3)
-            expect(f"stress-{cycles}", "bXclhc-ok", action=input_cycle)
+            expect(f"stress-{cycles}", "bXctecloid-ok", action=input_cycle)
             set_mapper(False)
             set_mapper(True)
             if cycles and cycles % 5 == 0:
@@ -577,7 +577,7 @@ def main():
 
     def collect():
         for name in ("app.log", "receiver.log", "metrics.csv", "metrics.csv.spell.csv"):
-            if not vm.copy_from("lhc-e2e/" + name, vm.logs / name):
+            if not vm.copy_from("tecloid-e2e/" + name, vm.logs / name):
                 report.skip("collect-" + name, "file unavailable")
         (vm.logs / "journal.txt").write_text(
             vm.ssh("journalctl --user -b --no-pager -n 2000", check=False, timeout=30), encoding="utf-8")

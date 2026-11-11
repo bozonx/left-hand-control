@@ -322,7 +322,7 @@ component MenuTabs inherits ScrollView {
                     if event.modifiers.alt && event.text == Key.RightArrow && index + 1 < root.labels.length { KeyboardFocus.remember-reorder(index, index + 1); MenuEditor.reorder-page(index, index + 1); KeyboardFocus.restore-reorder(); return accept; }
                     return reject;
                 }
-            tab := NavTab { accessible-id: "lhc-menu-tab-" + index; text: label == "" ? index + 1 : (index + 1) + " · " + label; selected: index == root.selected; clicked => { root.select(index); } opacity: tab-drag.dragged ? Theme.dragged-opacity : 1; }
+            tab := NavTab { accessible-id: "tecloid-menu-tab-" + index; text: label == "" ? index + 1 : (index + 1) + " · " + label; selected: index == root.selected; clicked => { root.select(index); } opacity: tab-drag.dragged ? Theme.dragged-opacity : 1; }
             }
             tab-drag := DragArea {
                 width: 100%; height: 100%;
@@ -460,7 +460,7 @@ export component EmojiPage inherits Rectangle {
         accessible-label: @tr("Emoji");
         PageHeader {
             title: @tr("Emoji & Symbols");
-            info: @tr("Opened by the lhc:showEmojiMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. \"// TODO: \").") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number.") + "\n\n" + @tr("In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels.");
+            info: @tr("Opened by the tecloid:showEmojiMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold an emoji, a UTF symbol (e.g. ≠), any other character (e.g. №), or a short phrase (e.g. \"// TODO: \").") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number.") + "\n\n" + @tr("In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels.");
         }
         HorizontalLayout {
             padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;
@@ -592,7 +592,7 @@ export component QuickActionsPage inherits Rectangle {
         accessible-label: @tr("Quick actions");
         PageHeader {
             title: @tr("Quick Actions");
-            info: @tr("Opened by the lhc:showQuickMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold any action: a shortcut, macro, shell command or system action.") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number.") + "\n\n" + @tr("In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels.");
+            info: @tr("Opened by the tecloid:showQuickMenuN actions, where N is the page position: reordering pages changes which page a key opens. Each cell can hold any action: a shortcut, macro, shell command or system action.") + "\n\n" + @tr("In the popup, click a cell or press its key: the cells follow the keyboard rows Q–T, A–G and Z–B. PgUp/PgDn switch pages; digits open a page by its number.") + "\n\n" + @tr("In the editor, focus a cell and press Ctrl+X to cut it or Ctrl+C to copy it, then press Ctrl+V on another cell to paste. Escape cancels.");
         }
         HorizontalLayout {
             padding-right: Theme.scrollbar-size + Theme.scrollbar-gap;

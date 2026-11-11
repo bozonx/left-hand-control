@@ -2,7 +2,7 @@
 resolver = "3"
 exclude = ["_old", "apps/slint-shell/vendor/i-slint-core"]
 members = [
-    "crates/lhc-core",
+    "crates/tecloid-core",
     "apps/slint-shell",
     "apps/slint-shell/vendor/spell-framework",
 ]

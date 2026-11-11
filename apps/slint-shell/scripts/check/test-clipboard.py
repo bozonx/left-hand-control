@@ -16,7 +16,7 @@ def main():
             ["dbus-run-session", "--", sys.executable, __file__, "--isolated"],
         )
     repo = Path(__file__).resolve().parents[4]
-    with tempfile.TemporaryDirectory(prefix="lhc-clipboard-") as directory:
+    with tempfile.TemporaryDirectory(prefix="tecloid-clipboard-") as directory:
         root = Path(directory)
         for name in ("runtime", "config", "data", "cache"):
             (root / name).mkdir(mode=0o700)
@@ -26,7 +26,7 @@ def main():
             XDG_CONFIG_HOME=str(root / "config"),
             XDG_DATA_HOME=str(root / "data"),
             XDG_CACHE_HOME=str(root / "cache"),
-            WAYLAND_DISPLAY="lhc-test-clipboard",
+            WAYLAND_DISPLAY="tecloid-test-clipboard",
             KWIN_WAYLAND_NO_LIBINPUT="1",
             KWIN_COMPOSE="Q",
             QT_QPA_PLATFORM="offscreen",
@@ -36,13 +36,13 @@ def main():
                 [
                     "kwin_wayland", "--virtual", "--no-lockscreen",
                     "--no-global-shortcuts", "--no-kactivities",
-                    "--socket", "lhc-test-clipboard",
+                    "--socket", "tecloid-test-clipboard",
                 ],
                 env=env, stdout=log, stderr=log,
             )
             try:
                 deadline = time.monotonic() + 15
-                while not (root / "runtime" / "lhc-test-clipboard").exists():
+                while not (root / "runtime" / "tecloid-test-clipboard").exists():
                     if compositor.poll() is not None or time.monotonic() >= deadline:
                         log.seek(0)
                         print(log.read(), file=sys.stderr)
@@ -50,7 +50,7 @@ def main():
                     time.sleep(0.05)
                 result = subprocess.run(
                     [
-                        "cargo", "test", "--locked", "-p", "lhc-core",
+                        "cargo", "test", "--locked", "-p", "tecloid-core",
                         "isolated_clipboard", "--", "--ignored", "--nocapture",
                     ],
                     cwd=repo, env=env, timeout=600,

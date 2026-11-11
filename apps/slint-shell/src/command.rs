@@ -126,7 +126,7 @@ impl ThemeMode {
 }
 
 /// Game-mode control from the tray, the CLI or a key binding.
-pub use lhc_core::config::app_action::GameModeRequest as GameMode;
+pub use tecloid_core::config::app_action::GameModeRequest as GameMode;
 
 /// Resolved appearance shared with the Spell worker.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -291,9 +291,9 @@ game auto|on|off|toggle | preferences system|light|dark en|ru|de|fr|es|it|pt|pl|
 
 impl Command {
     pub fn from_app_action(
-        action: lhc_core::config::app_action::AppAction,
+        action: tecloid_core::config::app_action::AppAction,
     ) -> Option<ShellCommand> {
-        use lhc_core::config::app_action::{AppAction, Menu};
+        use tecloid_core::config::app_action::{AppAction, Menu};
         Some(match action {
             AppAction::ShowMenu { menu, page } => {
                 let popup = match menu {
@@ -537,7 +537,7 @@ mod tests {
 
     #[test]
     fn mapper_actions_preserve_pages() {
-        use lhc_core::config::app_action::AppAction;
+        use tecloid_core::config::app_action::AppAction;
         for page in [1, 5, 10, 42] {
             let action = AppAction::parse(&format!("showQuickMenu{page}")).unwrap();
             assert_eq!(

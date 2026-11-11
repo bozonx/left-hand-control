@@ -1,6 +1,6 @@
 Date: 2026-11-02 14:19:33 -0300
 Commit: a12d7cb8 (with uncommitted changes)
-Version: left-hand-control 0.4.0
+Version: tecloid 0.4.0
 Session: wayland, KDE; not detected
 Kernel: Linux 7.2.9-1-MANJARO
 
@@ -14,7 +14,7 @@ Kernel: Linux 7.2.9-1-MANJARO
 - example-inline-edit: passed
 - example-drag-scroll: passed
 - example-notifications: passed
-- example-accessibility: FAILED (exit 101; log: /tmp/lhc-e2e-local.jI4I9cKO/example-accessibility.log)
+- example-accessibility: FAILED (exit 101; log: /tmp/tecloid-e2e-local.jI4I9cKO/example-accessibility.log)
 - example-keyboard-navigation: passed
 - example-contrast-scaling: passed
 - example-layer-keys: passed

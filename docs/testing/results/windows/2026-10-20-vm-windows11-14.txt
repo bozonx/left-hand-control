@@ -1,11 +1,11 @@
 Date: 2026-10-20 21:36:18 -0300
 Commit: 5d021a6 (with uncommitted changes)
-VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+VM: windows11 (/mnt/disk2/vm/tecloid-windows/windows11-e2e-base.qcow2)
 Suite: mapper
 Mapper build: debug
 Mapper from: mapper-crash-held
 Memory: 12288 MiB
-Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261020-213146/logs
+Logs: /mnt/disk2/vm/tecloid-windows/runs/20261020-213146/logs
 
 Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
 Session: 1
@@ -18,7 +18,7 @@ Suite: mapper
 
 - boot: passed
 - preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
-- upload-source: passed — 834 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261020-213146/src.tar.gz; SHA256 c0225ad955c9492d9afb2ebb1a16d4f19c9b8915c3d468bc0b4f580cb612ce6c; Source sync: 4 updated, 0 removed
+- upload-source: passed — 834 files; source archive /mnt/disk2/vm/tecloid-windows/runs/20261020-213146/src.tar.gz; SHA256 c0225ad955c9492d9afb2ebb1a16d4f19c9b8915c3d468bc0b4f580cb612ce6c; Source sync: 4 updated, 0 removed
 - hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
 - mapper-passthrough: skipped — diagnostic run starts at mapper-crash-held
 - mapper-remap-swallow-recursion: skipped — diagnostic run starts at mapper-crash-held

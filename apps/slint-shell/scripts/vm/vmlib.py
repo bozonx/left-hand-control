@@ -52,7 +52,7 @@ class Vm:
         self.ssh_multiplex = False
         # UNIX socket paths are limited to 108 bytes: keep them short.
         self.sockets = Path(tempfile.mkdtemp(
-            prefix="lhc-vm-", dir=os.environ.get("XDG_RUNTIME_DIR") or "/tmp"))
+            prefix="tecloid-vm-", dir=os.environ.get("XDG_RUNTIME_DIR") or "/tmp"))
 
     def get(self, key, default=None):
         return self.config.get(key, default)
@@ -71,7 +71,7 @@ class Vm:
         )
         bus = self.get("disk_bus", "virtio")
         command = [
-            "qemu-system-x86_64", "-name", f"lhc-e2e-{self.name}",
+            "qemu-system-x86_64", "-name", f"tecloid-e2e-{self.name}",
             "-enable-kvm", "-cpu", self.get("cpu", "host"),
             "-smp", str(self.get("cpus", 4)), "-m", str(self.get("memory", 6144)),
             # Fixed ports: a replugged keyboard keeps its /dev/input/by-id name.

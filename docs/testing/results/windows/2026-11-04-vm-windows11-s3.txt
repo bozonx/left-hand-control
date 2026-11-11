@@ -1,7 +1,7 @@
 Date: 2026-11-04 07:47:38 -0300
 Commit: 644436bd (with uncommitted changes)
-Command: /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/lhc-windows-s3 --suite release --extended --stress-seconds 180 --timeout 60
-VM: windows11-s3 (/mnt/disk2/vm/lhc-windows-s3/runs/20261104-072746/expanded-base.qcow2)
+Command: /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/tecloid-windows-s3 --suite release --extended --stress-seconds 180 --timeout 60
+VM: windows11-s3 (/mnt/disk2/vm/tecloid-windows-s3/runs/20261104-072746/expanded-base.qcow2)
 Suite: release; acceptance requested: False
 Previous-version upgrade: NOT RUN
 Scope: Windows developer VM; clean-package and previous-version upgrade require separate acceptance
@@ -12,7 +12,7 @@ Mapper from: beginning
 Mapper only: all
 Extended: True; stress seconds: 180
 Memory: 4096 MiB
-Logs: /mnt/disk2/vm/lhc-windows-s3/runs/20261104-072746/logs
+Logs: /mnt/disk2/vm/tecloid-windows-s3/runs/20261104-072746/logs
 
 Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
 Session: 1
@@ -27,7 +27,7 @@ Suite: release
 
 - boot: passed
 - preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
-- upload-source: passed — 1755 files; source archive /mnt/disk2/vm/lhc-windows-s3/runs/20261104-072746/src.tar.gz; SHA256 8d9c85020fb6e712d2884246d2fe82f16d81455136a1ba1817e414cdb3b6bb3a; Source sync: 1 updated, 0 removed
+- upload-source: passed — 1755 files; source archive /mnt/disk2/vm/tecloid-windows-s3/runs/20261104-072746/src.tar.gz; SHA256 8d9c85020fb6e712d2884246d2fe82f16d81455136a1ba1817e414cdb3b6bb3a; Source sync: 1 updated, 0 removed
 - hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
 - popup scenarios: skipped — already verified in windows-s3-extended-1.log; isolated shell closed
 - mapper-passthrough: skipped — diagnostic run starts at mapper-suspend-resume
@@ -52,15 +52,15 @@ Suite: release
 - mapper-unicode-corpus: passed — US/RU: punctuation, accents, skin tone, ZWJ, NFC/NFD and multiline (WinForms CRLF)
 - mapper-notepad-unicode: passed — QMP mapped input into real Notepad; exact Cyrillic/emoji/ZWJ/combining text and >15s paced text without expiry
 - mapper-elevated-uipi: passed — real UAC/elevated target; synthetic marker blocked; ordinary mapper input recovers
-- mapper-process-tree-crash: FAILED — `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); $s = [IO.File]::Open('D:\lhc-e2e\out\receiver\snapshot.json', 'Open', 'Read', ([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete)); $r = [IO.StreamReader]::new($s, [Text.Encoding]::UTF8); try { $r.ReadToEnd() } finally { $r.Dispose() }` exited with 1:
-Exception calling "Open" with "4" argument(s): "Could not find file 
-'D:\lhc-e2e\out\receiver\snapshot.json'."
+- mapper-process-tree-crash: FAILED — `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); $s = [IO.File]::Open('D:\tecloid-e2e\out\receiver\snapshot.json', 'Open', 'Read', ([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete)); $r = [IO.StreamReader]::new($s, [Text.Encoding]::UTF8); try { $r.ReadToEnd() } finally { $r.Dispose() }` exited with 1:
+Exception calling "Open" with "4" argument(s): "Could not find file
+'D:\tecloid-e2e\out\receiver\snapshot.json'."
 At line:1 char:70
-+ ... ew($false); $s = [IO.File]::Open('D:\lhc-e2e\out\receiver\snapshot.js ...
++ ... ew($false); $s = [IO.File]::Open('D:\tecloid-e2e\out\receiver\snapshot.js ...
 +                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
     + FullyQualifiedErrorId : FileNotFoundException
- 
+
 Exception calling ".ctor" with "2" argument(s): "Value cannot be null.
 Parameter name: stream"
 At line:1 char:206
@@ -68,14 +68,14 @@ At line:1 char:206
 +                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
     + FullyQualifiedErrorId : ArgumentNullException
- 
+
 You cannot call a method on a null-valued expression.
 At line:1 char:295
 + ... ext.Encoding]::UTF8); try { $r.ReadToEnd() } finally { $r.Dispose() }
 +                                                            ~~~~~~~~~~~~
     + CategoryInfo          : InvalidOperation: (:) [], RuntimeException
     + FullyQualifiedErrorId : InvokeMethodOnNull
- 
+
 You cannot call a method on a null-valued expression.
 At line:1 char:268
 + ... Reader]::new($s, [Text.Encoding]::UTF8); try { $r.ReadToEnd() } final ...

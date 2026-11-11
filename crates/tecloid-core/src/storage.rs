@@ -1,0 +1,944 @@
+//! Config and data paths (`StoragePaths`), file names and profile name
+//! validation.
+
+use crate::config::schema::{self, CONFIG_SCHEMA_VERSION, PROFILE_SCHEMA_VERSION};
+#[cfg(not(target_os = "windows"))]
+use std::fs::rename as rename_file;
+use std::fs::{self, File, OpenOptions};
+use std::io::Write;
+use std::path::{Path, PathBuf};
+
+/// Stable application identifier used for config and data directories.
+pub const APP_ID: &str = "dev.bozonx.tecloid";
+/// Window identity reserved for transient input popups.
+pub const POPUP_APP_ID: &str = "dev.bozonx.tecloid.popup";
+/// Application name for technical identifiers (notifications, input
+/// sessions); the UI shows a translated title instead.
+pub const APP_NAME: &str = "Tecloid";
+/// Settings file inside the config directory.
+pub const CONFIG_FILE: &str = "config.json";
+
+#[derive(Debug, Clone)]
+pub struct StoragePaths {
+    config_dir: PathBuf,
+    data_dir: PathBuf,
+}
+
+impl StoragePaths {
+    /// Resolve the application storage location.
+    ///
+    /// An explicit `$TECLOID_DEV_DIR` overrides storage in every build (relative
+    /// paths resolve against the current directory). Debug builds otherwise
+    /// use `<repo>/dev-files`, so development never
+    /// touches the user's real configuration. Inside it `<os>/` mirrors the
+    /// user's home directory, e.g. `dev-files/linux/.config/<APP_ID>/`.
+    /// Without an override, release builds use the platform config/data directories under
+    /// [`APP_ID`].
+    pub fn resolve() -> Result<Self, String> {
+        let override_dir = std::env::var_os(crate::env::DEV_DIR).map(PathBuf::from);
+        if isolated() {
+            let base = dev_base_dir(override_dir)?;
+            return Ok(Self::dev(&base, std::env::consts::OS));
+        }
+        let config_dir = dirs::config_dir()
+            .ok_or_else(|| "resolve configuration directory".to_string())?
+            .join(APP_ID);
+        let data_dir = dirs::data_dir()
+            .ok_or_else(|| "resolve data directory".to_string())?
+            .join(APP_ID);
+        Ok(Self::new(config_dir, data_dir))
+    }
+
+    /// Development directory layout for `os` under `base`: the per-OS home mirror.
+    pub fn dev(base: &Path, os: &str) -> Self {
+        let (folder, config, data) = dev_home_layout(os);
+        let home = base.join(folder);
+        Self::new(home.join(config).join(APP_ID), home.join(data).join(APP_ID))
+    }
+
+    pub fn new(config_dir: PathBuf, data_dir: PathBuf) -> Self {
+        Self {
+            config_dir,
+            data_dir,
+        }
+    }
+
+    pub fn config_path(&self) -> PathBuf {
+        self.config_dir.join(CONFIG_FILE)
+    }
+
+    pub fn settings_dir(&self) -> PathBuf {
+        self.config_dir.clone()
+    }
+
+    pub fn data_dir(&self) -> &PathBuf {
+        &self.data_dir
+    }
+
+    pub fn profiles_dir(&self) -> PathBuf {
+        self.data_dir.join("profiles")
+    }
+
+    pub fn ensure(&self) -> Result<(), String> {
+        fs::create_dir_all(&self.config_dir).map_err(|e| format!("create_dir_all: {e}"))?;
+        fs::create_dir_all(&self.data_dir).map_err(|e| format!("create_dir_all: {e}"))?;
+
+        Ok(())
+    }
+
+    pub fn load_config(&self) -> Result<String, String> {
+        self.ensure()?;
+        let path = self.config_path();
+        if !path.exists() {
+            return Ok(String::new());
+        }
+        fs::read_to_string(&path).map_err(|e| format!("read_to_string: {e}"))
+    }
+
+    /// Publish new settings atomically. Once published, durability failures
+    /// are logged rather than reported as an uncommitted edit.
+    pub fn save_config(&self, contents: &str) -> Result<(), String> {
+        self.ensure()?;
+        let path = self.config_path();
+        backup_older_schema(&path, CONFIG_SCHEMA_VERSION)?;
+        write_atomic(&path, contents.as_bytes())
+    }
+
+    pub fn list_user_profiles(&self) -> Result<Vec<String>, String> {
+        self.ensure()?;
+        let dir = self.profiles_dir();
+        if !dir.exists() {
+            return Ok(Vec::new());
+        }
+        let mut out = Vec::new();
+        for entry in fs::read_dir(&dir).map_err(|e| format!("read_dir: {e}"))? {
+            let entry = entry.map_err(|e| format!("dir entry: {e}"))?;
+            let p = entry.path();
+            if !p.is_file() {
+                continue;
+            }
+            if p.extension().and_then(|s| s.to_str()) != Some("json") {
+                continue;
+            }
+            if let Some(stem) = p.file_stem().and_then(|s| s.to_str()) {
+                out.push(stem.to_string());
+            }
+        }
+        out.sort_unstable();
+        Ok(out)
+    }
+
+    pub fn load_user_profile(&self, name: &str) -> Result<String, String> {
+        String::from_utf8(self.load_user_profile_bytes(name)?)
+            .map_err(|e| format!("read profile UTF-8: {e}"))
+    }
+
+    /// Read a snapshot even when a damaged profile is not UTF-8.
+    pub fn load_user_profile_bytes(&self, name: &str) -> Result<Vec<u8>, String> {
+        self.ensure()?;
+        let path = self.profile_path(name)?;
+        if !path.exists() {
+            return Err(format!("Profile \"{name}\" not found"));
+        }
+        fs::read(&path).map_err(|e| format!("read profile: {e}"))
+    }
+
+    pub fn save_user_profile(
+        &self,
+        name: &str,
+        contents: &str,
+        overwrite: bool,
+    ) -> Result<String, String> {
+        self.save_user_profile_bytes(name, contents.as_bytes(), overwrite)
+    }
+
+    pub(crate) fn save_user_profile_bytes(
+        &self,
+        name: &str,
+        contents: &[u8],
+        overwrite: bool,
+    ) -> Result<String, String> {
+        self.ensure()?;
+        let dir = self.profiles_dir();
+        fs::create_dir_all(&dir).map_err(|e| format!("create_dir_all: {e}"))?;
+        let safe = validate_profile_name(name)?;
+        let path = dir.join(format!("{safe}.json"));
+        if path.exists() && !overwrite {
+            return Err(format!("Profile \"{safe}\" already exists"));
+        }
+        backup_older_schema(&path, PROFILE_SCHEMA_VERSION)?;
+        write_file(&path, contents, overwrite)?;
+        Ok(safe)
+    }
+
+    /// Stage the write before checking the snapshot, so changes made while
+    /// serializing or syncing the temporary file are reported as conflicts.
+    /// Returns false when the destination no longer contains `expected`.
+    pub(crate) fn replace_user_profile(
+        &self,
+        name: &str,
+        contents: &str,
+        expected: &[u8],
+    ) -> Result<bool, String> {
+        let path = self.profile_path(name)?;
+        backup_older_schema(&path, PROFILE_SCHEMA_VERSION)?;
+        replace_file_checked(&path, contents.as_bytes(), || match fs::read(&path) {
+            Ok(bytes) => Ok(bytes == expected),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
+            Err(error) => Err(format!("read before profile replacement: {error}")),
+        })
+    }
+
+    pub fn rename_user_profile(
+        &self,
+        old_name: &str,
+        new_name: &str,
+        contents: &str,
+        overwrite: bool,
+    ) -> Result<String, String> {
+        self.ensure()?;
+        let old_path = self.profile_path(old_name)?;
+        if !old_path.exists() {
+            return Err(format!("Profile \"{old_name}\" not found"));
+        }
+        backup_older_schema(&old_path, PROFILE_SCHEMA_VERSION)?;
+        let new_safe = validate_profile_name(new_name)?;
+        let dir = self.profiles_dir();
+        fs::create_dir_all(&dir).map_err(|e| format!("create_dir_all: {e}"))?;
+        let new_path = dir.join(format!("{new_safe}.json"));
+        if old_path != new_path && same_file(&old_path, &new_path) {
+            // Only the case changes on a case-insensitive file system
+            // (Windows, macOS): the "existing" target is this very file.
+            write_file(&old_path, contents.as_bytes(), true)?;
+            rename_file(&old_path, &new_path).map_err(|e| format!("rename: {e}"))?;
+            publication_sync(&new_path, sync_parent_dir);
+            return Ok(new_safe);
+        }
+        if new_path.exists() && old_path != new_path && !overwrite {
+            return Err(format!("Profile \"{new_safe}\" already exists"));
+        }
+        backup_older_schema(&new_path, PROFILE_SCHEMA_VERSION)?;
+        let previous_destination = if overwrite && old_path != new_path && new_path.exists() {
+            Some(fs::read(&new_path).map_err(|error| format!("read rename destination: {error}"))?)
+        } else {
+            None
+        };
+        write_file(
+            &new_path,
+            contents.as_bytes(),
+            overwrite || old_path == new_path,
+        )?;
+        if old_path != new_path && old_path.exists() {
+            remove_rename_source(
+                &old_path,
+                &new_path,
+                previous_destination.as_deref(),
+                |path| fs::remove_file(path),
+            )?;
+        }
+        Ok(new_safe)
+    }
+
+    pub fn delete_user_profile(&self, name: &str) -> Result<(), String> {
+        self.ensure()?;
+        let path = self.profile_path(name)?;
+        if path.exists() {
+            fs::remove_file(&path).map_err(|e| format!("remove_file: {e}"))?;
+        }
+        Ok(())
+    }
+
+    pub fn profile_path(&self, name: &str) -> Result<PathBuf, String> {
+        let safe = validate_profile_name(name)?;
+        Ok(self.profiles_dir().join(format!("{safe}.json")))
+    }
+}
+
+/// Longest profile name, in characters.
+pub const MAX_PROFILE_NAME_CHARS: usize = 128;
+// Common file systems limit a component to 255 bytes; reserve the extension.
+const MAX_PROFILE_NAME_BYTES: usize = 255 - ".json".len();
+
+pub fn validate_profile_name(name: &str) -> Result<String, String> {
+    let trimmed = name.trim();
+    if trimmed.is_empty() {
+        return Err("Profile name cannot be empty".into());
+    }
+    if trimmed.chars().count() > MAX_PROFILE_NAME_CHARS {
+        return Err(format!(
+            "Profile name is too long (max {MAX_PROFILE_NAME_CHARS} characters)"
+        ));
+    }
+    if trimmed.len() > MAX_PROFILE_NAME_BYTES {
+        return Err(format!(
+            "Profile name is too long (max {MAX_PROFILE_NAME_BYTES} UTF-8 bytes)"
+        ));
+    }
+    for ch in trimmed.chars() {
+        if ch.is_control() || matches!(ch, '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|') {
+            return Err("profile name contains invalid filename characters".into());
+        }
+    }
+    if trimmed == "." || trimmed == ".." {
+        return Err("Profile name is reserved".into());
+    }
+    if trimmed.starts_with('.') {
+        return Err("Profile name cannot start with a dot".into());
+    }
+    // Windows rejects file names ending in a dot; keep names portable.
+    if trimmed.ends_with('.') {
+        return Err("Profile name cannot end with a dot".into());
+    }
+    Ok(trimmed.to_string())
+}
+
+/// Undo publication if removing the old name fails, keeping rename failures
+/// from leaving an unexpected second library entry behind.
+fn remove_rename_source(
+    old_path: &Path,
+    new_path: &Path,
+    previous_destination: Option<&[u8]>,
+    remove: impl FnOnce(&Path) -> std::io::Result<()>,
+) -> Result<(), String> {
+    if let Err(error) = remove(old_path)
+        && error.kind() != std::io::ErrorKind::NotFound
+    {
+        let rollback = match previous_destination {
+            Some(contents) => write_atomic(new_path, contents),
+            None => fs::remove_file(new_path).map_err(|error| error.to_string()),
+        };
+        if let Err(rollback) = rollback {
+            return Err(format!(
+                "remove rename source: {error}; restore rename destination: {rollback}"
+            ));
+        }
+        publication_sync(new_path, sync_parent_dir);
+        return Err(format!("remove rename source: {error}"));
+    }
+    publication_sync(old_path, sync_parent_dir);
+    Ok(())
+}
+
+/// Whether two existing paths name one file, e.g. names that differ only in
+/// case on a case-insensitive file system.
+fn same_file(a: &Path, b: &Path) -> bool {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        match (fs::metadata(a), fs::metadata(b)) {
+            (Ok(a), Ok(b)) => a.dev() == b.dev() && a.ino() == b.ino(),
+            _ => false,
+        }
+    }
+    #[cfg(not(unix))]
+    {
+        // Windows file systems are case-insensitive by default; std has no
+        // stable file identity there.
+        b.exists()
+            && a.file_name().map(|n| n.to_string_lossy().to_lowercase())
+                == b.file_name().map(|n| n.to_string_lossy().to_lowercase())
+    }
+}
+
+/// Per-call unique sibling path for atomic writes. A fixed `.tmp` name
+/// would let two concurrent saves of the same file interleave their
+/// writes and rename a corrupted mix into place.
+fn unique_tmp_path(path: &Path) -> PathBuf {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+    let n = COUNTER.fetch_add(1, Ordering::Relaxed);
+    // Keep temporary names short even when the destination fills NAME_MAX.
+    path.with_file_name(format!(".tecloid-{}.{n}.tmp", std::process::id()))
+}
+
+/// Whether storage and OS registrations stay in the development directory
+/// instead of the user's real session (see [`StoragePaths::resolve`]).
+pub fn isolated() -> bool {
+    cfg!(debug_assertions) || std::env::var_os(crate::env::DEV_DIR).is_some()
+}
+
+/// Home-relative config and data directories per OS, matching `dirs`.
+fn dev_home_layout(os: &str) -> (&str, &str, &str) {
+    match os {
+        "windows" => ("windows", "AppData/Roaming", "AppData/Roaming"),
+        "macos" => (
+            "macos",
+            "Library/Application Support",
+            "Library/Application Support",
+        ),
+        "linux" => ("linux", ".config", ".local/share"),
+        other => (other, ".config", ".local/share"),
+    }
+}
+
+fn dev_base_dir(override_dir: Option<PathBuf>) -> Result<PathBuf, String> {
+    match override_dir {
+        Some(path) if path.is_absolute() => Ok(path),
+        Some(path) => Ok(std::env::current_dir()
+            .map_err(|e| format!("resolve current_dir: {e}"))?
+            .join(path)),
+        None => Ok(Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .ok_or_else(|| "resolve repository root".to_string())?
+            .join("dev-files")),
+    }
+}
+
+/// Keep a copy of `path` before it is first overwritten when it holds an
+/// older schema version than `current`, so an upgrade never loses the
+/// original file. An existing copy is left as it is.
+fn backup_older_schema(path: &Path, current: u64) -> Result<(), String> {
+    let text = match fs::read_to_string(path) {
+        Ok(text) => text,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(format!("read before backup: {error}")),
+    };
+    let Some(version) = schema::version_of(&text).filter(|version| *version < current) else {
+        return Ok(());
+    };
+    let backup = schema::backup_path(path, version);
+    if backup.exists() {
+        return Ok(());
+    }
+    write_file(&backup, text.as_bytes(), false)
+}
+
+pub(crate) fn write_atomic(path: &Path, contents: &[u8]) -> Result<(), String> {
+    write_file(path, contents, true)
+}
+
+/// Keep replacement atomic while allowing transient Windows scanner handles to close.
+#[cfg(target_os = "windows")]
+fn rename_file(from: &Path, to: &Path) -> std::io::Result<()> {
+    use windows::Win32::Foundation::{ERROR_ACCESS_DENIED, ERROR_SHARING_VIOLATION};
+
+    let mut retries = 0;
+    loop {
+        let result = fs::rename(from, to);
+        if let Err(error) = &result
+            && retries < 10
+            && matches!(error.raw_os_error(), Some(code)
+                if code == ERROR_ACCESS_DENIED.0 as i32
+                    || code == ERROR_SHARING_VIOLATION.0 as i32)
+        {
+            retries += 1;
+            std::thread::sleep(std::time::Duration::from_millis(50));
+            continue;
+        }
+        return result;
+    }
+}
+
+fn write_file(path: &Path, contents: &[u8], overwrite: bool) -> Result<(), String> {
+    write_file_with_sync(path, contents, overwrite, sync_parent_dir)
+}
+
+fn replace_file_checked(
+    path: &Path,
+    contents: &[u8],
+    unchanged: impl FnOnce() -> Result<bool, String>,
+) -> Result<bool, String> {
+    let mut tmp = TemporaryWrite::create(path)?;
+    tmp.write(contents)?;
+    if !unchanged()? {
+        return Ok(false);
+    }
+    // This is an optimistic check: an unrelated program which does not share
+    // our protocol can still write between this check and the atomic rename.
+    rename_file(&tmp.path, path).map_err(|e| format!("rename: {e}"))?;
+    publication_sync(path, sync_parent_dir);
+    Ok(true)
+}
+
+fn write_file_with_sync(
+    path: &Path,
+    contents: &[u8],
+    overwrite: bool,
+    sync: impl FnOnce(&Path) -> Result<(), String>,
+) -> Result<(), String> {
+    let mut tmp = TemporaryWrite::create(path)?;
+    tmp.write(contents)?;
+    if overwrite {
+        rename_file(&tmp.path, path).map_err(|e| format!("rename: {e}"))?;
+    } else {
+        // A hard link publishes the completed file without replacing a destination
+        // created after the caller's existence check.
+        fs::hard_link(&tmp.path, path).map_err(|e| format!("publish new file: {e}"))?;
+        if let Err(error) = fs::remove_file(&tmp.path) {
+            log::warn!(
+                "published {}, temporary file cleanup failed: {error}",
+                path.display()
+            );
+        }
+    }
+    publication_sync(path, sync);
+    Ok(())
+}
+
+fn publication_sync(path: &Path, sync: impl FnOnce(&Path) -> Result<(), String>) {
+    // Publication is the commit point. Returning Err here would make callers
+    // roll back their in-memory state while the new file is already visible.
+    if let Err(error) = sync(path) {
+        log::warn!(
+            "published {}, durability is not confirmed: {error}",
+            path.display()
+        );
+    }
+}
+
+struct TemporaryWrite {
+    path: PathBuf,
+    file: Option<File>,
+}
+
+impl TemporaryWrite {
+    fn create(destination: &Path) -> Result<Self, String> {
+        for _ in 0..128 {
+            let path = unique_tmp_path(destination);
+            let mut options = OpenOptions::new();
+            options.write(true).create_new(true);
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::OpenOptionsExt;
+                options.mode(0o600);
+            }
+            match options.open(&path) {
+                Ok(file) => {
+                    return Ok(Self {
+                        path,
+                        file: Some(file),
+                    });
+                }
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+                Err(error) => return Err(format!("create tmp: {error}")),
+            }
+        }
+        Err("could not create a unique temporary file".into())
+    }
+
+    fn write(&mut self, contents: &[u8]) -> Result<(), String> {
+        let mut file = self
+            .file
+            .take()
+            .ok_or_else(|| "temporary file already written".to_owned())?;
+        file.write_all(contents)
+            .map_err(|e| format!("write tmp: {e}"))?;
+        file.sync_all().map_err(|e| format!("sync tmp: {e}"))
+    }
+}
+
+impl Drop for TemporaryWrite {
+    fn drop(&mut self) {
+        self.file.take();
+        let _ = fs::remove_file(&self.path);
+    }
+}
+
+#[cfg(unix)]
+fn sync_parent_dir(path: &Path) -> Result<(), String> {
+    let Some(parent) = path.parent() else {
+        return Ok(());
+    };
+    File::open(parent)
+        .and_then(|dir| dir.sync_all())
+        .map_err(|e| format!("sync dir: {e}"))
+}
+
+#[cfg(not(unix))]
+fn sync_parent_dir(_path: &Path) -> Result<(), String> {
+    // File::open cannot portably open directories for syncing on Windows.
+    // The file itself is synced before publication on every platform.
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn checked_replacement_preserves_a_change_made_while_staging_and_cleans_up() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("profile.json");
+        std::fs::write(&path, b"baseline").unwrap();
+        let applied = super::replace_file_checked(&path, b"mine", || {
+            // This callback runs only after the new file has been synced.
+            std::fs::write(&path, b"external").unwrap();
+            Ok(std::fs::read(&path).unwrap() == b"baseline")
+        })
+        .unwrap();
+        assert!(!applied);
+        assert_eq!(std::fs::read(&path).unwrap(), b"external");
+        assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 1);
+
+        assert!(super::replace_file_checked(&path, b"mine", || Ok(true)).unwrap());
+        assert_eq!(std::fs::read(&path).unwrap(), b"mine");
+        assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 1);
+    }
+    #[test]
+    fn failed_rename_source_removal_rolls_back_the_published_destination() {
+        for previous in [None, Some(b"previous destination".as_slice())] {
+            let dir = tempfile::tempdir().unwrap();
+            let old = dir.path().join("old.json");
+            let new = dir.path().join("new.json");
+            fs::write(&old, b"original").unwrap();
+            super::write_file(&new, b"updated", false).unwrap();
+            let error = super::remove_rename_source(&old, &new, previous, |_| {
+                Err(std::io::Error::from(std::io::ErrorKind::PermissionDenied))
+            })
+            .unwrap_err();
+            assert!(error.contains("remove rename source"));
+            assert_eq!(fs::read(&old).unwrap(), b"original");
+            match previous {
+                Some(contents) => assert_eq!(fs::read(&new).unwrap(), contents),
+                None => assert!(!new.exists()),
+            }
+        }
+    }
+
+    #[test]
+    fn rename_keeps_the_destination_when_the_source_was_already_removed() {
+        let dir = tempfile::tempdir().unwrap();
+        let old = dir.path().join("missing.json");
+        let new = dir.path().join("published.json");
+        super::write_file(&new, b"complete profile", false).unwrap();
+        super::remove_rename_source(&old, &new, None, |path| fs::remove_file(path)).unwrap();
+        assert_eq!(fs::read(&new).unwrap(), b"complete profile");
+    }
+
+    #[test]
+    fn publication_is_committed_even_if_directory_sync_fails() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("settings.json");
+        for overwrite in [false, true] {
+            super::write_file_with_sync(&path, b"new settings", overwrite, |_| {
+                Err("sync failed".into())
+            })
+            .unwrap();
+            assert_eq!(std::fs::read(&path).unwrap(), b"new settings");
+        }
+    }
+
+    #[test]
+    fn dev_base_dir_defaults_to_repo_dev_files() {
+        let base = super::dev_base_dir(None).unwrap();
+        assert!(base.ends_with("dev-files"));
+        assert!(base.parent().unwrap().join("Cargo.toml").exists());
+    }
+
+    #[test]
+    fn dev_paths_mirror_home_per_os() {
+        let base = std::path::Path::new("/repo/dev-files");
+        let linux = StoragePaths::dev(base, "linux");
+        assert_eq!(
+            linux.config_path(),
+            PathBuf::from("/repo/dev-files/linux/.config/dev.bozonx.tecloid/config.json")
+        );
+        assert_eq!(
+            linux.profiles_dir().join("Test.json"),
+            PathBuf::from(
+                "/repo/dev-files/linux/.local/share/dev.bozonx.tecloid/profiles/Test.json"
+            )
+        );
+        let windows = StoragePaths::dev(base, "windows");
+        assert_eq!(
+            windows.profiles_dir(),
+            PathBuf::from("/repo/dev-files/windows/AppData/Roaming/dev.bozonx.tecloid/profiles")
+        );
+        let macos = StoragePaths::dev(base, "macos");
+        assert!(
+            macos
+                .config_path()
+                .starts_with("/repo/dev-files/macos/Library/Application Support")
+        );
+    }
+
+    #[test]
+    fn dev_base_dir_keeps_absolute_override() {
+        let absolute = std::env::temp_dir().join("tecloid-dev");
+        let base = super::dev_base_dir(Some(absolute.clone())).unwrap();
+        assert_eq!(base, absolute);
+    }
+
+    use super::{StoragePaths, validate_profile_name};
+    use std::fs;
+    use std::path::PathBuf;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    struct TempDir {
+        path: PathBuf,
+    }
+
+    impl TempDir {
+        fn new(prefix: &str) -> Self {
+            let nanos = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos();
+            let path = std::env::temp_dir()
+                .join(format!("tecloid-{prefix}-{}-{nanos}", std::process::id()));
+            fs::create_dir_all(&path).expect("create temp dir");
+            Self { path }
+        }
+
+        fn path(&self) -> &PathBuf {
+            &self.path
+        }
+    }
+
+    impl Drop for TempDir {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.path);
+        }
+    }
+
+    #[test]
+    fn validate_profile_name_rejects_invalid_names() {
+        assert_eq!(validate_profile_name(" Left hand "), Ok("Left hand".into()));
+        assert!(validate_profile_name("   ").is_err());
+        assert!(validate_profile_name("...").is_err());
+        assert!(validate_profile_name("left/hand").is_err());
+    }
+
+    #[test]
+    fn unicode_profile_names_fit_both_destination_and_temporary_files() {
+        let dir = tempfile::tempdir().unwrap();
+        let storage = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let name = "я".repeat(125);
+        assert!(validate_profile_name(&name).is_ok());
+        storage.save_user_profile(&name, "first", false).unwrap();
+        storage.save_user_profile(&name, "second", true).unwrap();
+        assert_eq!(storage.load_user_profile(&name).unwrap(), "second");
+        assert!(validate_profile_name(&"я".repeat(126)).is_err());
+        assert!(validate_profile_name(&"a".repeat(128)).is_ok());
+    }
+
+    #[test]
+    fn save_and_list_profiles_use_sanitized_names() {
+        let temp = TempDir::new("storage-profiles");
+        let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
+
+        let saved = storage
+            .save_user_profile("My profile", r#"{"description":"test"}"#, false)
+            .expect("save profile");
+        assert_eq!(saved, "My profile");
+        assert_eq!(
+            storage.list_user_profiles().expect("list profiles"),
+            vec!["My profile".to_string()]
+        );
+        assert_eq!(
+            storage
+                .load_user_profile("My profile")
+                .expect("load profile"),
+            r#"{"description":"test"}"#
+        );
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn atomic_replace_retries_a_temporary_windows_reader_lock() {
+        use std::os::windows::fs::OpenOptionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("profile.json");
+        fs::write(&path, "old").unwrap();
+        let reader = fs::OpenOptions::new()
+            .read(true)
+            .share_mode(1) // FILE_SHARE_READ permits readers, but blocks replacement.
+            .open(&path)
+            .unwrap();
+        assert!(fs::rename(&path, dir.path().join("blocked.json")).is_err());
+        let release = std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            drop(reader);
+        });
+        let result = super::write_atomic(&path, b"new");
+        release.join().unwrap();
+        result.unwrap();
+        assert_eq!(fs::read_to_string(&path).unwrap(), "new");
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn atomic_replace_keeps_the_original_when_a_windows_reader_stays_open() {
+        use std::os::windows::fs::OpenOptionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("profile.json");
+        fs::write(&path, "old").unwrap();
+        let reader = fs::OpenOptions::new()
+            .read(true)
+            .share_mode(1)
+            .open(&path)
+            .unwrap();
+        assert!(super::write_atomic(&path, b"new").is_err());
+        assert_eq!(fs::read_to_string(&path).unwrap(), "old");
+        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+        drop(reader);
+    }
+
+    #[test]
+    fn rename_profile_overwrites_when_requested() {
+        let temp = TempDir::new("storage-profiles-rename");
+        let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
+
+        storage
+            .save_user_profile("Old", r#"{"description":"one"}"#, false)
+            .expect("save old");
+        storage
+            .save_user_profile("New", r#"{"description":"two"}"#, false)
+            .expect("save new");
+
+        assert!(
+            storage
+                .rename_user_profile("Old", "New", r#"{"description":"updated"}"#, false)
+                .is_err()
+        );
+
+        let renamed = storage
+            .rename_user_profile("Old", "New", r#"{"description":"updated"}"#, true)
+            .expect("rename");
+        assert_eq!(renamed, "New");
+        assert_eq!(
+            storage.load_user_profile("New").expect("load new"),
+            r#"{"description":"updated"}"#
+        );
+        assert!(storage.load_user_profile("Old").is_err());
+    }
+
+    #[test]
+    fn rename_that_changes_only_case_keeps_the_profile() {
+        let temp = TempDir::new("storage-profiles-case");
+        let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
+        storage
+            .save_user_profile("Work", r#"{"description":"one"}"#, false)
+            .expect("save");
+
+        let renamed = storage
+            .rename_user_profile("Work", "work", r#"{"description":"two"}"#, false)
+            .expect("rename by case");
+        assert_eq!(renamed, "work");
+        assert_eq!(storage.list_user_profiles().unwrap(), ["work"]);
+        assert_eq!(
+            storage.load_user_profile("work").unwrap(),
+            r#"{"description":"two"}"#
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn distinct_files_differing_in_case_are_never_merged() {
+        let temp = TempDir::new("storage-profiles-case-distinct");
+        let storage = StoragePaths::new(temp.path().join("config"), temp.path().join("data"));
+        storage.save_user_profile("A", "{}", false).expect("save A");
+        // Only a case-sensitive file system can hold both names.
+        let probe = temp.path().join("case-probe");
+        fs::write(&probe, "probe").unwrap();
+        if temp.path().join("CASE-PROBE").exists() {
+            return;
+        }
+        storage
+            .save_user_profile("a", "{\"x\":1}", false)
+            .expect("save a");
+        assert!(storage.rename_user_profile("A", "a", "{}", false).is_err());
+        assert_eq!(storage.load_user_profile("a").unwrap(), "{\"x\":1}");
+    }
+
+    #[test]
+    fn failed_replacement_preserves_destination_and_cleans_temporary_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let destination = dir.path().join("config.json");
+        fs::create_dir(&destination).unwrap();
+        fs::write(destination.join("keep"), "original").unwrap();
+        assert!(super::write_atomic(&destination, b"replacement").is_err());
+        assert_eq!(
+            fs::read_to_string(destination.join("keep")).unwrap(),
+            "original"
+        );
+        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn new_file_publication_never_overwrites_an_existing_destination() {
+        let dir = tempfile::tempdir().unwrap();
+        let destination = dir.path().join("profile.json");
+        fs::write(&destination, "external").unwrap();
+        assert!(super::write_file(&destination, b"replacement", false).is_err());
+        assert_eq!(fs::read_to_string(destination).unwrap(), "external");
+        assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+    }
+
+    #[test]
+    fn older_schema_is_backed_up_once_before_an_upgrade() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.json");
+        let backup = dir.path().join("config.json.v1.bak");
+        let original = r#"{"version": 1, "settings": {}}"#;
+        fs::write(&path, original).unwrap();
+
+        // The current version is not backed up.
+        super::backup_older_schema(&path, 1).unwrap();
+        assert!(!backup.exists());
+
+        super::backup_older_schema(&path, 2).unwrap();
+        assert_eq!(fs::read_to_string(&backup).unwrap(), original);
+
+        fs::write(&path, r#"{"version": 1, "changed": true}"#).unwrap();
+        super::backup_older_schema(&path, 2).unwrap();
+        assert_eq!(fs::read_to_string(&backup).unwrap(), original);
+
+        super::backup_older_schema(&dir.path().join("missing.json"), 2).unwrap();
+    }
+
+    #[test]
+    fn temporary_write_is_removed_when_abandoned() {
+        let dir = tempfile::tempdir().unwrap();
+        let temporary = super::TemporaryWrite::create(&dir.path().join("config.json")).unwrap();
+        let path = temporary.path.clone();
+        assert!(path.exists());
+        drop(temporary);
+        assert!(!path.exists());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn saved_files_are_private_even_when_replacing_a_public_file() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.json");
+        fs::write(&path, "old").unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o644)).unwrap();
+        super::write_atomic(&path, b"private").unwrap();
+        assert_eq!(
+            fs::metadata(path).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+    }
+
+    #[test]
+    fn concurrent_profile_creations_publish_exactly_one_complete_file() {
+        use std::sync::{Arc, Barrier};
+        let dir = tempfile::tempdir().unwrap();
+        let storage = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
+        let barrier = Arc::new(Barrier::new(8));
+        let handles: Vec<_> = (0..8)
+            .map(|index| {
+                let storage = storage.clone();
+                let barrier = barrier.clone();
+                std::thread::spawn(move || {
+                    let contents = format!("writer-{index}").repeat(1024);
+                    barrier.wait();
+                    storage
+                        .save_user_profile("Shared", &contents, false)
+                        .ok()
+                        .map(|_| contents)
+                })
+            })
+            .collect();
+        let winners: Vec<_> = handles
+            .into_iter()
+            .filter_map(|handle| handle.join().unwrap())
+            .collect();
+        assert_eq!(winners.len(), 1);
+        assert_eq!(storage.load_user_profile("Shared").unwrap(), winners[0]);
+        assert_eq!(fs::read_dir(storage.profiles_dir()).unwrap().count(), 1);
+    }
+}

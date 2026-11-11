@@ -1,9 +1,9 @@
 Date: 2026-11-03 20:31:44 -0300
 Commit: 644436bd (with uncommitted changes)
-Command: /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows --memory 8192 --suite full --stress-seconds 180 --previous-package /mnt/disk2/vm/lhc-release-20261022-windows-fixes/packages/left-hand-control-0.3.0-windows-x86_64.zip --timeout 180
-VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/runs/20261103-202514/expanded-base.qcow2)
+Command: /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/tecloid-windows --memory 8192 --suite full --stress-seconds 180 --previous-package /mnt/disk2/vm/tecloid-release-20261022-windows-fixes/packages/tecloid-0.3.0-windows-x86_64.zip --timeout 180
+VM: windows11 (/mnt/disk2/vm/tecloid-windows/runs/20261103-202514/expanded-base.qcow2)
 Suite: full; acceptance requested: False
-Previous-version upgrade: /mnt/disk2/vm/lhc-release-20261022-windows-fixes/packages/left-hand-control-0.3.0-windows-x86_64.zip
+Previous-version upgrade: /mnt/disk2/vm/tecloid-release-20261022-windows-fixes/packages/tecloid-0.3.0-windows-x86_64.zip
 Scope: Windows developer VM; clean-package and previous-version upgrade require separate acceptance
 Mapper build: release
 Popup shell build: release
@@ -12,10 +12,10 @@ Mapper from: beginning
 Mapper only: all
 Extended: False; stress seconds: 180
 Memory: 8192 MiB
-Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261103-202514/logs
+Logs: /mnt/disk2/vm/tecloid-windows/runs/20261103-202514/logs
 
 
 
-- boot: FAILED — Command '['ssh', '-i', '/home/ivan/.ssh/lhc-vm', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null', '-o', 'LogLevel=ERROR', '-o', 'ConnectTimeout=5', '-p', '2241', 'user@127.0.0.1', '\n$ErrorActionPreference = \'Stop\'\n$system = Get-Partition -DriveLetter C\n$cache = Get-Partition -DriveLetter D\nif ($system.DiskNumber -ne 0 -or $system.DiskNumber -eq $cache.DiskNumber) { throw \'Unexpected disposable system disk\' }\n$maximum = (Get-PartitionSupportedSize -DriveLetter C).SizeMax\nif ($maximum -lt $system.Size + 1GB) {\n    $recovery = @(Get-Partition -DiskNumber $system.DiskNumber | Where-Object {\n        $_.Offset -gt $system.Offset -and $_.GptType -eq \'{de94bba4-06d1-4d40-a16a-bfd50179d6ac}\'\n    })\n    foreach ($partition in $recovery) { Remove-Partition -InputObject $partition -Confirm:$false }\n    $maximum = (Get-PartitionSupportedSize -DriveLetter C).SizeMax\n}\nif ($maximum -gt $system.Size) { Resize-Partition -DriveLetter C -Size $maximum }\n$free = (Get-Volume -DriveLetter C).SizeRemaining\nif ($free -lt 12GB) { throw "Disposable C: still has insufficient free space: $free" }\n"Disposable C: expanded; free bytes=$free; frozen base and D: unchanged"\n']' timed out after 180 seconds
+- boot: FAILED — Command '['ssh', '-i', '/home/ivan/.ssh/tecloid-vm', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null', '-o', 'LogLevel=ERROR', '-o', 'ConnectTimeout=5', '-p', '2241', 'user@127.0.0.1', '\n$ErrorActionPreference = \'Stop\'\n$system = Get-Partition -DriveLetter C\n$cache = Get-Partition -DriveLetter D\nif ($system.DiskNumber -ne 0 -or $system.DiskNumber -eq $cache.DiskNumber) { throw \'Unexpected disposable system disk\' }\n$maximum = (Get-PartitionSupportedSize -DriveLetter C).SizeMax\nif ($maximum -lt $system.Size + 1GB) {\n    $recovery = @(Get-Partition -DiskNumber $system.DiskNumber | Where-Object {\n        $_.Offset -gt $system.Offset -and $_.GptType -eq \'{de94bba4-06d1-4d40-a16a-bfd50179d6ac}\'\n    })\n    foreach ($partition in $recovery) { Remove-Partition -InputObject $partition -Confirm:$false }\n    $maximum = (Get-PartitionSupportedSize -DriveLetter C).SizeMax\n}\nif ($maximum -gt $system.Size) { Resize-Partition -DriveLetter C -Size $maximum }\n$free = (Get-Volume -DriveLetter C).SizeRemaining\nif ($free -lt 12GB) { throw "Disposable C: still has insufficient free space: $free" }\n"Disposable C: expanded; free bytes=$free; frozen base and D: unchanged"\n']' timed out after 180 seconds
 
 Passed: 0, failed: 1, skipped: 0, blocked/not run: 0

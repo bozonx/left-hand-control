@@ -6,10 +6,10 @@ set -eu
 app_id=dev.bozonx.tecloid
 binary=tecloid
 bundle_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-prefix=${LHC_INSTALL_PREFIX:-"$HOME/.local"}
+prefix=${TECLOID_INSTALL_PREFIX:-"$HOME/.local"}
 case "$prefix" in
     /*) ;;
-    *) echo 'LHC_INSTALL_PREFIX must be absolute' >&2; exit 1 ;;
+    *) echo 'TECLOID_INSTALL_PREFIX must be absolute' >&2; exit 1 ;;
 esac
 case "$prefix" in
     *'

@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 
-public static class LhcKeyTrace
+public static class tecloidKeyTrace
 {
     [DllImport("user32.dll")]
     public static extern IntPtr GetForegroundWindow();

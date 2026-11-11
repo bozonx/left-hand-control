@@ -4,7 +4,7 @@
 
 ## Проблема
 
-На KDE Plasma 6 Wayland текст вводится через libei (`crates/lhc-core/src/text_input/portal/`).
+На KDE Plasma 6 Wayland текст вводится через libei (`crates/tecloid-core/src/text_input/portal/`).
 libei, как и uinput, ydotool и портал RemoteDesktop, отправляет **коды клавиш**, а не символы.
 Символ из кода получает KWin по текущей XKB-раскладке. Если символа (`→`, `é`, `😀`) в
 раскладке нет, его не набрать клавишами, и режим `libeiWithClipboardFallback` вставляет весь текст через буфер
@@ -25,7 +25,7 @@ libei, как и uinput, ydotool и портал RemoteDesktop, отправля
 
 ## Идея
 
-Скрипт генерирует **XKB-опцию** `lhc:extra` в `~/.config/xkb/` и подключает её к
+Скрипт генерирует **XKB-опцию** `tecloid:extra` в `~/.config/xkb/` и подключает её к
 существующим раскладкам. Опция кладёт нужные символы на коды клавиш, которых нет на
 обычных клавиатурах. Системные файлы и сами раскладки пользователя не меняются.
 
@@ -45,13 +45,13 @@ libei, как и uinput, ydotool и портал RemoteDesktop, отправля
 ! include %S/evdev
 
 ! option = symbols
-  lhc:extra = +lhc(extra)
+  tecloid:extra = +tecloid(extra)
 ```
 
 `%S` — системный каталог XKB. Без `! include` пользовательский файл полностью заменит
 системные правила, и раскладки перестанут собираться.
 
-`~/.config/xkb/symbols/lhc`: сами символы, по два на клавишу (без модификатора и с Shift).
+`~/.config/xkb/symbols/tecloid`: сами символы, по два на клавишу (без модификатора и с Shift).
 
 ```
 default partial alphanumeric_keys
@@ -65,7 +65,7 @@ xkb_symbols "extra" {
 
 ```
 [Profile]
-Options=terminate:ctrl_alt_bksp,lhc:extra
+Options=terminate:ctrl_alt_bksp,tecloid:extra
 ```
 
 ## Важно: имена keysym
@@ -113,20 +113,20 @@ Wayland-приложениях: X11 (XWayland) их не поддерживае�
 1. Прочитать раскладки, варианты и опции из `~/.config/kxkbrc`.
 2. Собрать из конфига все символы: действия `text:…`, шаги макросов, ячейки эмодзи и
    быстрых действий.
-3. Собрать текущую раскладку (без `lhc:extra`) и отобрать символы, которых нет **хотя бы в
+3. Собрать текущую раскладку (без `tecloid:extra`) и отобрать символы, которых нет **хотя бы в
    одной** раскладке. Символ из `ru`, которого нет в `us`, тоже нужно добавить, иначе в `us`
    текст уйдёт в буфер.
 4. Найти свободные коды и распределить по ним символы: коды до 255 — частым символам.
-5. Записать `symbols/lhc` и `rules/evdev` во временный каталог и проверить сборку:
-   `xkbcli compile-keymap --include <tmp> --include-defaults --profile … --options …,lhc:extra`.
+5. Записать `symbols/tecloid` и `rules/evdev` во временный каталог и проверить сборку:
+   `xkbcli compile-keymap --include <tmp> --include-defaults --profile … --options …,tecloid:extra`.
    Если сборка не удалась, ничего не менять.
-6. Атомарно заменить файлы в `~/.config/xkb/`, добавить `lhc:extra` в `Options` в
+6. Атомарно заменить файлы в `~/.config/xkb/`, добавить `tecloid:extra` в `Options` в
    `kxkbrc`, если его там нет.
 7. Попросить KWin перечитать раскладку (`dbus-send --session --type=signal /Profiles
    org.kde.keyboard.reloadConfig`; не проверено) или попросить пользователя перезайти.
 8. Перезапускать при изменении символов в конфиге.
 
-Откат: удалить `lhc:extra` из `Options`, удалить `~/.config/xkb/symbols/lhc` и наш
+Откат: удалить `tecloid:extra` из `Options`, удалить `~/.config/xkb/symbols/tecloid` и наш
 `~/.config/xkb/rules/evdev`, перечитать раскладку.
 
 ## Что поменять в коде
@@ -148,7 +148,7 @@ Wayland-приложениях: X11 (XWayland) их не поддерживае�
 Проверено на Manjaro, libxkbcommon 1.13.2, xkeyboard-config 2.48, во временном каталоге
 через `XDG_CONFIG_HOME` (настоящие раскладки не трогали):
 
-- `rules/evdev` с `! include %S/evdev` и опция `lhc:extra` собираются без ошибок
+- `rules/evdev` с `! include %S/evdev` и опция `tecloid:extra` собираются без ошибок
   (`xkbcli compile-keymap`, `xkbcli how-to-type`).
 - Клавиша `<I168>` с `[ U1F600, eacute ]`, добавленная опцией только в первую группу,
   выдаёт `😀` / `é` (без модификатора / с Shift) во всех трёх группах `ru,us,latam`
@@ -163,7 +163,7 @@ Wayland-приложениях: X11 (XWayland) их не поддерживае�
 - Ввод через libei на живой сессии: нажатие свободного кода печатает символ в приложениях
   Qt, GTK, Firefox, Chromium/Electron и XWayland.
 - Сигнал `reloadConfig` для перечитывания раскладки без перезахода.
-- Не удалит ли модуль настроек клавиатуры KDE незнакомую опцию `lhc:extra` при сохранении.
+- Не удалит ли модуль настроек клавиатуры KDE незнакомую опцию `tecloid:extra` при сохранении.
   Если удалит, нужно проверять опцию при запуске и сообщать пользователю.
 - Можно ли показать опцию в настройках KDE через `~/.config/xkb/rules/evdev.xml`.
 

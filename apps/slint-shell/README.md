@@ -1,7 +1,7 @@
 # Slint Shell
 
-Основная desktop-оболочка Tecloid на Slint и `lhc-core`.
-Оболочка входит в Cargo workspace вместе с `lhc-core` и явно включённым
+Основная desktop-оболочка Tecloid на Slint и `tecloid-core`.
+Оболочка входит в Cargo workspace вместе с `tecloid-core` и явно включённым
 vendored-пакетом `spell-framework`. Патч `i-slint-core` остаётся внешней для
 workspace зависимостью. Slint 1.18.1 /
 winit 0.30, ksni (D-Bus StatusNotifierItem без GTK), evdev. Редактор настроек
@@ -28,10 +28,10 @@ target dependencies и `cfg`; переносимый слой используе
 
 ```sh
 cargo build --locked -p slint-shell
-SLINT_BACKEND=winit-skia-software LHC_METRICS=/tmp/slint-skia-software.csv target/debug/tecloid
+SLINT_BACKEND=winit-skia-software TECLOID_METRICS=/tmp/slint-skia-software.csv target/debug/tecloid
 ```
 
-CSV метрик пишется только при заданном `LHC_METRICS`; Spell worker
+CSV метрик пишется только при заданном `TECLOID_METRICS`; Spell worker
 пишет рядом файл с суффиксом `.spell.csv`.
 
 Для сравнения замените backend на `winit-skia` (рендерер по умолчанию, GPU).
@@ -42,11 +42,11 @@ Software-рендерер Slint (`winit-software`) не собирается: о
 Для release используйте `cargo build --release --locked -p slint-shell`.
 
 На Windows IPC слушает только `127.0.0.1:43176`; порт можно изменить через
-`LHC_PORT`; каждый запрос подписан токеном. Без `LHC_DEV_DIR` он хранится в
-`%LOCALAPPDATA%\lhc-slint-shell\ipc-token`; при override — в каталоге настроек
+`TECLOID_PORT`; каждый запрос подписан токеном. Без `TECLOID_DEV_DIR` он хранится в
+`%LOCALAPPDATA%\tecloid-slint-shell\ipc-token`; при override — в каталоге настроек
 этого профиля. Linux и macOS используют Unix socket в приватном
-каталоге `0700`: `$XDG_RUNTIME_DIR/lhc-slint-shell/` или, без `XDG_RUNTIME_DIR`,
-`<temp>/lhc-slint-shell-<uid>/`. Ctrl+Alt+F11 открывает Emoji, Ctrl+Alt+F12 — Quick. После выбора на
+каталоге `0700`: `$XDG_RUNTIME_DIR/tecloid-slint-shell/` или, без `XDG_RUNTIME_DIR`,
+`<temp>/tecloid-slint-shell-<uid>/`. Ctrl+Alt+F11 открывает Emoji, Ctrl+Alt+F12 — Quick. После выбора на
 Windows/macOS окно скрывается, ранее активное окно восстанавливается через Win32
 или macOS System Events, затем текст отправляется через системный native input.
 На macOS для этого требуется Accessibility permission. Фактический tray, возврат
@@ -80,7 +80,7 @@ target/debug/tecloid quit
 - Потеря фокуса скрывает попап.
 - Ctrl+Alt+F11 открывает Emoji, Ctrl+Alt+F12 — Quick. Слушаются доступные
   evdev-устройства, поддерживающие эти клавиши. Можно задать
-  `LHC_INPUT=/dev/input/eventN`. Устройство не захватывается.
+  `TECLOID_INPUT=/dev/input/eventN`. Устройство не захватывается.
   Права на input должны быть настроены заранее. Новые устройства, в том числе
   виртуальная клавиатура mapper, подхватываются автоматически в течение 2 с.
 
@@ -138,11 +138,11 @@ python3 apps/slint-shell/scripts/bench/summarize.py /tmp/slint-skia-software.csv
 CSV перезаписывается при старте; используйте отдельные пути для разных запусков.
 
 Для диагностической вставки выбранного emoji или текста в KDE Wayland соберите
-с `--features probes` и запустите Spell с `LHC_INSERT=1`. Прототип запоминает исходное окно через KWin, после выбора
+с `--features probes` и запустите Spell с `TECLOID_INSERT=1`. Прототип запоминает исходное окно через KWin, после выбора
 скрывает слой, ждёт отпускания клавиатуры, возвращает фокус и вставляет значение
 через Wayland data-control + uinput Shift+Insert с сохранением MIME-форматов. Нужны data-control, доступ к `/dev/uinput` и KWin.
 Исходный clipboard восстанавливается после вставки. Без переменной выбор только
-пишется в лог. `LHC_TEST_INJECT=1` сохраняет диагностическую вставку `A`.
+пишется в лог. `TECLOID_TEST_INJECT=1` сохраняет диагностическую вставку `A`.
 
 Проверка поведения при аварийном завершении Spell worker:
 
@@ -182,12 +182,12 @@ python3 apps/slint-shell/scripts/bench/summarize.py /tmp/slint-evdev.csv
 
 ```sh
 cargo build --locked -p slint-shell --features probes --examples --bin tecloid
-LHC_POPUPS=auto SLINT_BACKEND=winit-skia-software \
-  LHC_METRICS=/tmp/slint-stage3a.csv \
+TECLOID_POPUPS=auto SLINT_BACKEND=winit-skia-software \
+  TECLOID_METRICS=/tmp/slint-stage3a.csv \
   target/debug/tecloid
 ```
 
-`LHC_POPUPS`:
+`TECLOID_POPUPS`:
 
 - `winit` — режим по умолчанию; сборка без feature `spell` сохраняется.
 - `auto` — проверяет registry Wayland: при наличии `zwlr_layer_shell_v1` запускает
@@ -208,7 +208,7 @@ Spell использует **Skia software surface + Wayland SHM**, а не wini
 зафиксированного Spell backend нет. Суммарную память измеряйте вместе с потомками.
 
 Параметры слоёв: Emoji 520×460, Quick 520×500, overlay, anchor bottom, margin bottom
-24, exclusive zone 0. `LHC_OUTPUT=<имя>` передаёт выбранный монитор в Spell.
+24, exclusive zone 0. `TECLOID_OUTPUT=<имя>` передаёт выбранный монитор в Spell.
 В приватном KWin проверены второй монитор, масштабы 1/1,25/1,5, отключение
 выбранного выхода, панель и fullscreen. Для других композиторов проверка остаётся открытой.
 
@@ -220,7 +220,7 @@ Fallback GNOME использует те же окна без рамки и ра
 
 Используется локальная копия Spell из `vendor/spell-framework`; исходная ревизия,
 лицензия и изменения перечислены в `vendor/spell-framework/PATCHES.md`.
-По умолчанию `LHC_SPELL_LIFECYCLE=unmap`: скрытие немедленно коммитит пустой
+По умолчанию `TECLOID_SPELL_LIFECYCLE=unmap`: скрытие немедленно коммитит пустой
 буфер, повторный показ запускает кадр независимо от остановленного frame callback.
 Число ожидающих frame callbacks ограничено одним; скрытое окно не делает поздних
 коммитов. Закрытый композитором слой пересоздаётся, например при отключении монитора.
@@ -232,7 +232,7 @@ Fallback GNOME использует те же окна без рамки и ра
 
 ### Метрики и воспроизведение
 
-Родитель пишет CSV по `LHC_METRICS`, worker — тот же путь с `.spell.csv`.
+Родитель пишет CSV по `TECLOID_METRICS`, worker — тот же путь с `.spell.csv`.
 `t3_first_frame` означает отрисовку и commit буфера, **не presentation композитора**.
 `t4_focused` — доставленный keyboard enter, `t5_first_key` — обработанная клавиша.
 Evdev-стенд ждёт событие навигации до 500 мс; t5 включает опрос и эмуляцию.
@@ -252,7 +252,7 @@ apps/slint-shell/scripts/bench/bench-virtual.sh /tmp/slint-lifecycle lifecycle
 python3 apps/slint-shell/scripts/bench/summarize.py /tmp/slint-lifecycle/parent.csv.spell.csv
 
 # Реальная KDE Wayland-сессия: на время теста не пользоваться клавиатурой.
-LHC_POPUPS=spell SLINT_BACKEND=winit-skia-software \
+TECLOID_POPUPS=spell SLINT_BACKEND=winit-skia-software \
   target/debug/examples/bench-evdev \
   target/debug/tecloid /tmp/slint-evdev.csv
 SLINT_BACKEND=winit-skia-software \
@@ -268,7 +268,7 @@ SLINT_BACKEND=winit-skia-software \
 это не заменяет проверку evdev на реальном рабочем столе.
 
 `bench-return` создаёт собственное окно-получатель и включает только для тестового
-процесса `LHC_TEST_INJECT=1`. KDE-проба запоминает исходное окно, после выбора
+процесса `TECLOID_TEST_INJECT=1`. KDE-проба запоминает исходное окно, после выбора
 ждёт освобождения клавиатуры, восстанавливает и подтверждает фокус, затем отправляет
 одну клавишу A (а не выбранный эмодзи). В реальной сессии ждёт также отпускания
 физических модификаторов. Esc ничего не вводит. Это проверка возврата ввода, а не
@@ -278,7 +278,7 @@ SLINT_BACKEND=winit-skia-software \
 геометрии и расширенная серия ввода прошли в приватном KWin. Тяжёлая страница
 задерживает ввод примерно на 2,6 с в debug. Полная матрица приложений/способов
 вызова, GNOME fallback и Hyprland ещё требуют приёмки. CSV для новых запусков
-сохраняйте вне исходников, например в `/tmp/lhc-bench/`.
+сохраняйте вне исходников, например в `/tmp/tecloid-bench/`.
 
 ## Каталог сценариев и инструментов
 
@@ -295,7 +295,7 @@ SLINT_BACKEND=winit-skia-software \
 
 Проверки callbacks без реального ввода (редактор клавиш, переводы, диалог условий,
 выбор действий) — headless-тест `cargo test --locked -p slint-shell --test page_callbacks`.
-Снимок диалога условий даёт `LHC_EDITOR_SNAPSHOTS=<каталог>` с примером `small-window`.
+Снимок диалога условий даёт `TECLOID_EDITOR_SNAPSHOTS=<каталог>` с примером `small-window`.
 
 `bench-*` остаются исполняемыми примерами: они работают с реальными окнами и
 устройствами и не используют стандартный Cargo benchmark harness.

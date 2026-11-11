@@ -7,17 +7,17 @@
 //! `RefCell` conflict.
 
 use crate::i18n::Msg;
-use lhc_core::{
+use std::{
+    cell::{Cell, Ref, RefCell},
+    rc::Rc,
+};
+use tecloid_core::{
     config::{
         auto_switch::AutoSwitchContext,
         model::{AppSettings, ProfilePreset},
     },
     config_document::{ConfigDocument, ConfigError, RuntimeConfig},
     storage::StoragePaths,
-};
-use std::{
-    cell::{Cell, Ref, RefCell},
-    rc::Rc,
 };
 
 /// A part of the UI that shows the document and refreshes on changes.
@@ -236,10 +236,10 @@ impl Document {
         {
             let profile = self
                 .read()
-                .load_profile(&lhc_core::config::model::user_profile_id(name))
+                .load_profile(&tecloid_core::config::model::user_profile_id(name))
                 .ok()
                 .map(|profile| SavedProfile {
-                    text: lhc_core::config::profile_file::serialize(&profile),
+                    text: tecloid_core::config::profile_file::serialize(&profile),
                     profile,
                 });
             *snapshot = Some(LibrarySnapshot {
@@ -279,13 +279,13 @@ impl Document {
     /// is retried on the next change.
     pub fn sync_runtime(&self, force: bool) -> Result<(), String> {
         let result = self.sync_runtime_with(
-            lhc_core::mapper::runtime::status().running,
+            tecloid_core::mapper::runtime::status().running,
             &AutoSwitchContext::current(),
             force,
-            lhc_core::mapper::runtime::update_config_if_running,
-            lhc_core::mapper::runtime::stop,
+            tecloid_core::mapper::runtime::update_config_if_running,
+            tecloid_core::mapper::runtime::stop,
         );
-        self.sync_title_tracking(lhc_core::mapper::runtime::status().running);
+        self.sync_title_tracking(tecloid_core::mapper::runtime::status().running);
         result
     }
 
@@ -294,7 +294,7 @@ impl Document {
         running: bool,
         context: &AutoSwitchContext,
         force: bool,
-        update: impl FnOnce(lhc_core::mapper::config::MapperConfig) -> Result<(), String>,
+        update: impl FnOnce(tecloid_core::mapper::config::MapperConfig) -> Result<(), String>,
         stop: impl FnOnce() -> Result<(), String>,
     ) -> Result<(), String> {
         if !running {
@@ -367,7 +367,7 @@ impl Document {
         &self,
         runtime: RuntimeConfig,
         force: bool,
-        update: impl FnOnce(lhc_core::mapper::config::MapperConfig) -> Result<(), String>,
+        update: impl FnOnce(tecloid_core::mapper::config::MapperConfig) -> Result<(), String>,
     ) -> Result<(), String> {
         if !force && self.runtime_is_current(&runtime.profile_id) {
             return Ok(());
@@ -415,7 +415,7 @@ impl Document {
 
     /// Keep title collection independent of mapper start/stop success.
     pub(crate) fn sync_title_tracking(&self, running: bool) {
-        lhc_core::active_window::set_titles_needed(self.titles_needed(running));
+        tecloid_core::active_window::set_titles_needed(self.titles_needed(running));
     }
 
     fn titles_needed(&self, running: bool) -> bool {
@@ -427,9 +427,9 @@ impl Document {
         } else {
             // The library preview still shows which automatic rule would
             // apply, and `title:` conditions cannot match without titles.
-            lhc_core::config::app_match::uses_title(lhc_core::config::auto_switch::window_patterns(
-                self.read().settings(),
-            ))
+            tecloid_core::config::app_match::uses_title(
+                tecloid_core::config::auto_switch::window_patterns(self.read().settings()),
+            )
         }
     }
 
@@ -476,14 +476,14 @@ mod tests {
     }
 
     fn auto_document() -> (tempfile::TempDir, Rc<Document>, AutoSwitchContext) {
-        use lhc_core::config::model::{AutoRule, ProfileConditionSet, ProfileMode};
+        use tecloid_core::config::model::{AutoRule, ProfileConditionSet, ProfileMode};
         let (dir, document) = document();
         let paths = document.read().paths().clone();
         for name in ["A", "B"] {
             paths
                 .save_user_profile(
                     name,
-                    &lhc_core::config::profile_file::serialize(&ProfilePreset::default()),
+                    &tecloid_core::config::profile_file::serialize(&ProfilePreset::default()),
                     false,
                 )
                 .unwrap();
@@ -511,7 +511,7 @@ mod tests {
             .unwrap();
         document.mapper_started(document.revision(), runtime);
         let context = AutoSwitchContext {
-            window: Some(lhc_core::runtime_state::ActiveWindow {
+            window: Some(tecloid_core::runtime_state::ActiveWindow {
                 app_id: "b".into(),
                 ..Default::default()
             }),
@@ -578,7 +578,7 @@ mod tests {
         assert!(matched.is_none() && error.is_some());
         std::fs::write(
             &path,
-            lhc_core::config::profile_file::serialize(&ProfilePreset::default()),
+            tecloid_core::config::profile_file::serialize(&ProfilePreset::default()),
         )
         .unwrap();
         document
@@ -646,7 +646,7 @@ mod tests {
             .paths()
             .save_user_profile(
                 "A",
-                &lhc_core::config::profile_file::serialize(&changed_on_disk),
+                &tecloid_core::config::profile_file::serialize(&changed_on_disk),
                 true,
             )
             .unwrap();
@@ -673,12 +673,12 @@ mod tests {
         document
             .edit(View::Library, |config| {
                 config.update_settings(|settings| {
-                    settings.profile_mode = lhc_core::config::model::ProfileMode::Auto;
-                    settings.auto_rules = vec![lhc_core::config::model::AutoRule {
+                    settings.profile_mode = tecloid_core::config::model::ProfileMode::Auto;
+                    settings.auto_rules = vec![tecloid_core::config::model::AutoRule {
                         id: "t".into(),
                         enabled: true,
                         profile_id: None,
-                        conditions: lhc_core::config::model::ProfileConditionSet {
+                        conditions: tecloid_core::config::model::ProfileConditionSet {
                             window_patterns: vec!["title:b".into()],
                             ..Default::default()
                         },
@@ -846,7 +846,7 @@ mod tests {
                 .as_deref(),
             Some("working")
         );
-        let text = lhc_core::config::profile_file::serialize(&before);
+        let text = tecloid_core::config::profile_file::serialize(&before);
         document
             .read()
             .paths()

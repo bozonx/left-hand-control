@@ -18,12 +18,12 @@ Tecloid рассчитан на KDE Plasma 6 в сессии Wayland. Релиз
 `~/.local/lib/dev.bozonx.tecloid/tecloid`, команда
 `~/.local/bin/tecloid` указывает на него. Также устанавливаются иконки
 в `share/icons/hicolor`, запись меню приложений и AppStream metainfo. Добавьте `~/.local/bin` в `PATH`, если его там нет.
-Другой абсолютный префикс задаётся через `LHC_INSTALL_PREFIX`.
+Другой абсолютный префикс задаётся через `TECLOID_INSTALL_PREFIX`.
 
 Запуск с поддержкой layer-shell и переходом на winit при его отсутствии:
 
 ```sh
-LHC_POPUPS=auto ~/.local/bin/tecloid
+TECLOID_POPUPS=auto ~/.local/bin/tecloid
 ```
 
 При запуске из меню используется стандартный режим winit. Для цветных emoji
@@ -78,7 +78,7 @@ gnome-extensions enable tecloid@bozonx.dev
 ~/.local/lib/dev.bozonx.tecloid/install-linux.sh uninstall
 ```
 
-При нестандартном префиксе передайте то же значение `LHC_INSTALL_PREFIX`.
+При нестандартном префиксе передайте то же значение `TECLOID_INSTALL_PREFIX`.
 Инсталлятор удаляет установленные файлы приложения; config и раскладки остаются.
 Права на устройства не трогаются: если они больше не нужны, выполните
 `install-linux.sh remove-permissions` до удаления.

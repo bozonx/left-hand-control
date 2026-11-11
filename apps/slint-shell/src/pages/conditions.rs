@@ -3,11 +3,11 @@
 
 use super::{condition_list, parse_list, strings};
 use crate::ui::{ConditionChoices, LanguageChoice, SettingsWindow, WindowChoice};
-use lhc_core::active_window::{ActiveWindow, OpenWindow};
-use lhc_core::config::app_match;
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
+use tecloid_core::active_window::{ActiveWindow, OpenWindow};
+use tecloid_core::config::app_match;
 
 /// How long the running-process list stays fresh.
 const PROCESS_CACHE_TTL: Duration = Duration::from_secs(2);
@@ -38,7 +38,7 @@ impl ProcessCache {
             let spawned = std::thread::Builder::new()
                 .name("process-list".into())
                 .spawn(move || {
-                    let names = lhc_core::gamemode::running_processes();
+                    let names = tecloid_core::gamemode::running_processes();
                     let mut list = cache.lock().unwrap_or_else(PoisonError::into_inner);
                     *list = ProcessList {
                         at: Some(Instant::now()),
@@ -305,12 +305,12 @@ pub(super) fn bind(ui: &SettingsWindow) {
         let weak = weak.clone();
         // The compositor may take a moment; keep the UI responsive.
         std::thread::spawn(move || {
-            let windows = lhc_core::active_window::open_windows();
+            let windows = tecloid_core::active_window::open_windows();
             if let Err(error) = weak.upgrade_in_event_loop(move |ui| {
                 let choices = ui.global::<ConditionChoices>();
                 let rows = arrange(
                     group(windows),
-                    lhc_core::active_window::cached_active_window().as_ref(),
+                    tecloid_core::active_window::cached_active_window().as_ref(),
                 );
                 choices.set_open_windows(ModelRc::new(VecModel::from(rows)));
                 choices.set_open_windows_loading(false);
@@ -322,7 +322,7 @@ pub(super) fn bind(ui: &SettingsWindow) {
     });
 
     on!(ui, choices.on_refresh => |ui| {
-        match lhc_core::keyboard_layout::available_layouts() {
+        match tecloid_core::keyboard_layout::available_layouts() {
             Ok(layouts) => {
                 ui.global::<ConditionChoices>()
                     .set_languages(ModelRc::new(VecModel::from(

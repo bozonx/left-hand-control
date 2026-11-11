@@ -1,9 +1,9 @@
 Date: 2026-10-18 21:41:09 -0300
 Commit: 6449cfc (with uncommitted changes)
 VM: ubuntu2604-gnome
-Package: /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/packages/left-hand-control-0.3.0-linux-x86_64.tar.gz
+Package: /mnt/disk2/codeWorkspace/tecloid/target/ubuntu-22.04/packages/tecloid-0.3.0-linux-x86_64.tar.gz
 Keyboard: /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
-Logs and screenshots: /mnt/disk2/vm/lhc-ubuntu2604-gnome/runs/20261018-213804/logs
+Logs and screenshots: /mnt/disk2/vm/tecloid-ubuntu2604-gnome/runs/20261018-213804/logs
 Scope: GNOME smoke only; lock/suspend/replug, other receivers and upgrade not covered.
 
 - boot-session: passed — PRETTY_NAME="Ubuntu 26.04.1 LTS"
@@ -24,7 +24,7 @@ XDG_CURRENT_DESKTOP=ubuntu:GNOME
 XDG_SESSION_TYPE=wayland
 xdg-desktop-portal	1.21.1+ds-1ubuntu3.1
 xdg-desktop-portal-gnome	50.0-0ubuntu1
-- install: passed — /home/tester/.local/bin/left-hand-control: left-hand-control 0.3.0
+- install: passed — /home/tester/.local/bin/tecloid: tecloid 0.3.0
 - keyboard-and-config: passed — /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
 - no-permissions-start: passed
 - no-permissions-no-grab: passed
@@ -44,7 +44,7 @@ xdg-desktop-portal-gnome	50.0-0ubuntu1
 - system-layout-workspace: passed — us→ru→us; workspace 1→2→1 via mapper sys: actions
 - command: passed
 - game-mode-on-off: passed — 'j'
-- text-portal-ascii: passed — 'lhc-ok'
+- text-portal-ascii: passed — 'tecloid-ok'
 - quick-popup-focus-delivery: passed — 'quick-ok'
 - text-unicode: FAILED — expected 'Привет, ёж 😀', received ''; see text-unicode.png and app.log
 

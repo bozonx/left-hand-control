@@ -22,7 +22,9 @@ use crate::{
         ProfileRow, Profilesource, SettingsWindow,
     },
 };
-use lhc_core::{
+use slint::{ComponentHandle, ModelRc, VecModel};
+use std::{cell::RefCell, rc::Rc};
+use tecloid_core::{
     config::{
         auto_switch::{self, AutoSwitchContext},
         bundled::BUNDLED,
@@ -36,8 +38,6 @@ use lhc_core::{
     },
     config_document::{ConfigDocument, ConfigError},
 };
-use slint::{ComponentHandle, ModelRc, VecModel};
-use std::{cell::RefCell, rc::Rc};
 
 #[derive(Default)]
 struct State {
@@ -179,7 +179,7 @@ fn refresh_auto(ui: &SettingsWindow, document: &Document, state: &mut State) {
         .any(|rule| !rule.conditions.keyboard_layouts.is_empty())
     {
         state.languages.get_or_insert_with(|| {
-            lhc_core::keyboard_layout::available_layouts()
+            tecloid_core::keyboard_layout::available_layouts()
                 .map(|layouts| layouts.into_iter().map(|layout| layout.code).collect())
                 .unwrap_or_default()
         })
@@ -615,7 +615,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
         let names: Vec<String> = slint::Model::iter(&names)
             .map(|name| name.to_string())
             .collect();
-        lhc_core::config::names::unique_profile_name(&base, &names)
+        tecloid_core::config::names::unique_profile_name(&base, &names)
             .unwrap_or_else(|_| base.to_string())
             .into()
     });
@@ -624,11 +624,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
             .map(|name| name.to_string())
             .collect();
         let except = (!except.is_empty()).then_some(except.as_str());
-        let result =
-            lhc_core::config::names::profile_name(&name, except, names.iter().map(String::as_str))
-                .map_err(|issue| {
-                    ConfigError::Name(lhc_core::config::names::NameKind::Profile, issue)
-                });
+        let result = tecloid_core::config::names::profile_name(
+            &name,
+            except,
+            names.iter().map(String::as_str),
+        )
+        .map_err(|issue| ConfigError::Name(tecloid_core::config::names::NameKind::Profile, issue));
         super::name_error(result)
     });
     on!(ui, library.on_create, doc = document, state = state => |ui, name, description, source, copy_index| {
@@ -860,7 +861,7 @@ mod tests {
         let paths = document.read().paths().clone();
         let names = vec!["A".into(), "B".into()];
         library.set_metadata_revision(20);
-        let old = lhc_core::config::library::load_library_entries(&paths, &names);
+        let old = tecloid_core::config::library::load_library_entries(&paths, &names);
         paths
             .save_user_profile("A", r#"{"version":1,"meta":{"description":"new"}}"#, true)
             .unwrap();
@@ -868,7 +869,7 @@ mod tests {
             &ui,
             20,
             &names,
-            lhc_core::config::library::load_library_entries(&paths, &names),
+            tecloid_core::config::library::load_library_entries(&paths, &names),
         );
         let expected = loader.known("A").unwrap();
         loader.publish(&ui, 19, &names, old);

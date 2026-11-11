@@ -23,7 +23,7 @@ name = "tecloid"
 path = "src/main.rs"
 
 [dependencies]
-lhc-core = { path = "../../crates/lhc-core" }
+tecloid-core = { path = "../../crates/tecloid-core" }
 slint = { version = "=1.18.1", default-features = false, features = ["std", "accessibility", "compat-1-2", "backend-winit", "renderer-skia", "unstable-winit-030"] }
 i-slint-core = { version = "=1.18.1", default-features = false, features = ["tr"] }
 tr = { version = "0.1.11", default-features = false, features = ["mo-translator"] }

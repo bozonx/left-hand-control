@@ -43,7 +43,7 @@ fn conflicting_save_preserves_draft_and_baseline() {
     let baseline = state.baseline.clone();
     assert!(matches!(
         persist(&document, &mut state),
-        Err(lhc_core::config_document::ConfigError::EditConflict)
+        Err(tecloid_core::config_document::ConfigError::EditConflict)
     ));
     assert_eq!(state.baseline, baseline);
     assert_eq!(state.profile.emoji_pages[0].name, "My draft");

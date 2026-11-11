@@ -47,7 +47,7 @@ jobs:
           sudo apt-get install -y clang cmake ninja-build libfontconfig1-dev libwayland-dev libxkbcommon-dev weston
 
       - name: Check formatting
-        run: cargo fmt -p lhc-core -p slint-shell --check
+        run: cargo fmt -p tecloid-core -p slint-shell --check
 
       - name: Check Windows script syntax (no desktop)
         if: matrix.os == 'windows-latest'
@@ -77,7 +77,7 @@ jobs:
         run: |
           export XDG_RUNTIME_DIR="$(mktemp -d)"
           export WAYLAND_DISPLAY=wayland-ci
-          export LHC_DEV_DIR="$XDG_RUNTIME_DIR/lhc"
+          export TECLOID_DEV_DIR="$XDG_RUNTIME_DIR/tecloid"
           weston --backend=headless --renderer=pixman --socket="$WAYLAND_DISPLAY" \
             --width=1600 --height=1000 --idle-time=0 --no-config \
             --log="$XDG_RUNTIME_DIR/weston.log" &
@@ -101,11 +101,11 @@ jobs:
             timeout --kill-after=5s 90s "target/debug/examples/$example"
           done
           # Pseudo-translation (~40% longer) with enlarged text at the minimum window size.
-          LHC_SMALL_LANGUAGE=qps-ploc LHC_SMALL_TEXT_SCALE=1.3 timeout --kill-after=5s 90s target/debug/examples/small-window
+          TECLOID_SMALL_LANGUAGE=qps-ploc TECLOID_SMALL_TEXT_SCALE=1.3 timeout --kill-after=5s 90s target/debug/examples/small-window
 
       - name: Clippy Linux shell (Spell)
         if: matrix.os == 'ubuntu-latest'
-        run: cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+        run: cargo clippy --locked -p tecloid-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
 
       - name: Check Linux shell without Spell
         if: matrix.os == 'ubuntu-latest'
@@ -113,11 +113,11 @@ jobs:
 
       - name: Test portable shell
         if: matrix.os != 'ubuntu-latest'
-        run: cargo test --locked -p lhc-core -p slint-shell --all-targets
+        run: cargo test --locked -p tecloid-core -p slint-shell --all-targets
 
       - name: Clippy portable shell
         if: matrix.os != 'ubuntu-latest'
-        run: cargo clippy --locked -p lhc-core -p slint-shell --all-targets --no-deps -- -D warnings
+        run: cargo clippy --locked -p tecloid-core -p slint-shell --all-targets --no-deps -- -D warnings
 
       - name: Check portable release
         if: matrix.os != 'ubuntu-latest'
@@ -149,7 +149,7 @@ jobs:
           sudo apt-get install -y clang cmake ninja-build libfontconfig1-dev libwayland-dev libxkbcommon-dev
 
       - name: Check
-        run: cargo check --locked -p lhc-core -p slint-shell --features slint-shell/spell
+        run: cargo check --locked -p tecloid-core -p slint-shell --features slint-shell/spell
 
   mapper-e2e:
     name: Mapper e2e (uinput)
@@ -188,7 +188,7 @@ jobs:
       - name: Mapper e2e
         if: steps.uinput.outputs.available == 'true'
         # sg picks up the input group without a new login, for reading /dev/input.
-        run: sg input -c "cargo test --locked -p lhc-core --test mapper_e2e -- --ignored"
+        run: sg input -c "cargo test --locked -p tecloid-core --test mapper_e2e -- --ignored"
 
   deny:
     name: Rust dependency check (cargo-deny)

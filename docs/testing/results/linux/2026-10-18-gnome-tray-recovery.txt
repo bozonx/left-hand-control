@@ -21,53 +21,53 @@ Changes:
   and Share, rather than toggling Remember This Selection with Enter.
 
 Final portable archive (application unchanged since tray fix build):
-  target/ubuntu-22.04/packages/left-hand-control-0.3.0-linux-x86_64.tar.gz
+  target/ubuntu-22.04/packages/tecloid-0.3.0-linux-x86_64.tar.gz
   SHA256: 76b387fbc72782b06af39c26b0ba7829be8068aa425d21a49144cb5be9a90c2b
 Build environment: Ubuntu22.04/glibc2.35, Rust1.99.1, existing Docker image
-lhc-ubuntu2204-gnome-build:local and target/ubuntu-22.04 cache.
+tecloid-ubuntu2204-gnome-build:local and target/ubuntu-22.04 cache.
 
 Commands/results:
-  cargo fmt -p lhc-core -p slint-shell — PASS.
-  cargo fmt -p lhc-core -p slint-shell --check — PASS.
-  cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -j 1 -- -D warnings — PASS.
+  cargo fmt -p tecloid-core -p slint-shell — PASS.
+  cargo fmt -p tecloid-core -p slint-shell --check — PASS.
+  cargo clippy --locked -p tecloid-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -j 1 -- -D warnings — PASS.
   cargo test --locked --workspace --features slint-shell/spell -j 1 — PASS:
     483 passed, 0 failed, 11 ignored. Hardware ignored cargo tests were not run
     on the host; actual keyboard interception/remapping was exercised in the VM.
   cargo check --locked -p slint-shell --all-targets -j 1 — PASS (without Spell).
 Final logs after example correction:
-  /tmp/lhc-gnome-tray-clippy-final.log
-  /tmp/lhc-gnome-tray-tests-final.log
-  /tmp/lhc-gnome-tray-check-final.log
+  /tmp/tecloid-gnome-tray-clippy-final.log
+  /tmp/tecloid-gnome-tray-tests-final.log
+  /tmp/tecloid-gnome-tray-check-final.log
   python3 apps/slint-shell/scripts/check-linux-install.py — PASS.
   python3 -m py_compile apps/slint-shell/scripts/vm/linux-guest.py apps/slint-shell/scripts/vm/run-gnome.py — PASS.
   git diff --check — PASS.
 
 Portable build command:
-  docker run --rm --name lhc-gnome-portable-build -v "$PWD:/src" \
-    -v lhc-cargo-registry:/root/.cargo/registry lhc-ubuntu2204-gnome-build:local \
+  docker run --rm --name tecloid-gnome-portable-build -v "$PWD:/src" \
+    -v tecloid-cargo-registry:/root/.cargo/registry tecloid-ubuntu2204-gnome-build:local \
     sh -c 'apps/slint-shell/scripts/package-linux.sh; result=$?; chown -R 1000:1000 /src/target/ubuntu-22.04; exit "$result"'
-  PASS, release build 9m42s; /tmp/lhc-gnome-tray-portable-build.log.
-  docker run --rm -v "$PWD:/src:ro" lhc-ubuntu2204-gnome-build:local /src/target/ubuntu-22.04/release/left-hand-control --version
-  PASS: left-hand-control 0.3.0, tested with Ubuntu22.04 loader.
-  (cd target/ubuntu-22.04/packages && sha256sum -c left-hand-control-0.3.0-linux-x86_64.tar.gz.sha256)
+  PASS, release build 9m42s; /tmp/tecloid-gnome-tray-portable-build.log.
+  docker run --rm -v "$PWD:/src:ro" tecloid-ubuntu2204-gnome-build:local /src/target/ubuntu-22.04/release/tecloid --version
+  PASS: tecloid 0.3.0, tested with Ubuntu22.04 loader.
+  (cd target/ubuntu-22.04/packages && sha256sum -c tecloid-0.3.0-linux-x86_64.tar.gz.sha256)
   PASS.
 Examples built with the same container/mounts/cache:
   cargo rustc --release --locked -p slint-shell --features spell --example editor -- -C opt-level=0
   cargo rustc --release --locked -p slint-shell --features spell --example interactions -- -C opt-level=0
   PASS. The corrected interactions was rebuilt with the second command in
-  container lhc-gnome-interactions-fix, 1m23s; /tmp/lhc-gnome-interactions-build.log.
-  strip --strip-debug -o /tmp/lhc-gnome-portable-examples/editor target/ubuntu-22.04/release/examples/editor
-  strip --strip-debug -o /tmp/lhc-gnome-portable-examples/interactions target/ubuntu-22.04/release/examples/interactions
+  container tecloid-gnome-interactions-fix, 1m23s; /tmp/tecloid-gnome-interactions-build.log.
+  strip --strip-debug -o /tmp/tecloid-gnome-portable-examples/editor target/ubuntu-22.04/release/examples/editor
+  strip --strip-debug -o /tmp/tecloid-gnome-portable-examples/interactions target/ubuntu-22.04/release/examples/interactions
   PASS; those executables were transferred to the guest.
 
 Final VM command:
   python3 -u apps/slint-shell/scripts/vm/run-gnome.py \
-    --vm /mnt/disk2/vm/lhc-ubuntu2604-gnome \
-    --package target/ubuntu-22.04/packages/left-hand-control-0.3.0-linux-x86_64.tar.gz \
-    --examples /tmp/lhc-gnome-portable-examples --keep
+    --vm /mnt/disk2/vm/tecloid-ubuntu2604-gnome \
+    --package target/ubuntu-22.04/packages/tecloid-0.3.0-linux-x86_64.tar.gz \
+    --examples /tmp/tecloid-gnome-portable-examples --keep
 Result: 23 passed, 1 FAILED; stopped at Unicode, no subsequent acceptance run.
 Detailed report: 2026-10-18-vm-ubuntu2604-gnome-8.txt.
-Artifacts: /mnt/disk2/vm/lhc-ubuntu2604-gnome/runs/20261018-213804/logs
+Artifacts: /mnt/disk2/vm/tecloid-ubuntu2604-gnome/runs/20261018-213804/logs
 VM powered off; overlay kept. No real host user configuration used by app tests.
 
 Passed:
@@ -79,7 +79,7 @@ Passed:
 - physical evdev→engine→uinput: passthrough c, a→b, chord X, tap/hold gk,
   stop/native fallback/restart, layout us→ru→us, workspace1→2→1, command marker,
   game-mode on/off behavior;
-- portal ASCII lhc-ok after real consent; Quick popup focus/selection/delivery
+- portal ASCII tecloid-ok after real consent; Quick popup focus/selection/delivery
   quick-ok back into Zenity.
 
 Critical failure:

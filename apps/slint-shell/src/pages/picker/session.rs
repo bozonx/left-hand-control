@@ -18,9 +18,9 @@ use crate::{
         SettingsWindow,
     },
 };
-use lhc_core::config::{actions::Action, model::Command};
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::cell::RefCell;
+use tecloid_core::config::{actions::Action, model::Command};
 
 /// Category shown when the picker opens with `value`.
 pub(super) fn initial_category(
@@ -454,8 +454,8 @@ pub(super) fn select_category(ui: &SettingsWindow, doc: &Document, category: Pic
     {
         let default = doc.read().settings().default_macro_step_pause_ms;
         let pause = macros::picker_macro_pause(ui).unwrap_or(default).clamp(
-            lhc_core::config::timing::PAUSE.min,
-            lhc_core::config::timing::PAUSE.max,
+            tecloid_core::config::timing::PAUSE.min,
+            tecloid_core::config::timing::PAUSE.max,
         );
         picker.set_value(
             Action::Pause(pause.to_string())

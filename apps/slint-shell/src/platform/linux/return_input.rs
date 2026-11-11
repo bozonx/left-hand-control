@@ -3,12 +3,12 @@
 //! and paste the chosen text into it.
 
 use evdev::{AttributeSet, KeyCode, KeyEvent};
-use lhc_core::platform::dbus;
 use std::{
     io::Write,
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
+use tecloid_core::platform::dbus;
 
 /// How long pending text waits for the target window to take the focus.
 const PENDING_TEXT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
@@ -61,7 +61,7 @@ impl ReturnInput {
             .name(bus_name.clone())?
             .serve_at("/Probe", active.clone())?
             .build()?;
-        let script_name = format!("lhc-slint-probe-{}", std::process::id());
+        let script_name = format!("tecloid-slint-probe-{}", std::process::id());
         let mut script = tempfile::NamedTempFile::new()?;
         write!(
             script,
@@ -173,7 +173,7 @@ impl ReturnInput {
 
 fn paste(device: &mut crate::test_keyboard::Keyboard, text: &str) -> std::io::Result<()> {
     let clipboard =
-        lhc_core::text_input::clipboard::Paste::prepare(text).map_err(std::io::Error::other)?;
+        tecloid_core::text_input::clipboard::Paste::prepare(text).map_err(std::io::Error::other)?;
     clipboard.arm().map_err(std::io::Error::other)?;
     let result = (|| {
         device.emit(&[*KeyEvent::new(KeyCode::KEY_LEFTSHIFT, 1)])?;
@@ -220,7 +220,7 @@ fn run_script(
     connection: &zbus::blocking::Connection,
     script: &tempfile::NamedTempFile,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let name = format!("lhc-slint-activate-{}", std::process::id());
+    let name = format!("tecloid-slint-activate-{}", std::process::id());
     let proxy = zbus::blocking::Proxy::new(
         connection,
         dbus::KWIN_SERVICE,

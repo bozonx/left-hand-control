@@ -1,6 +1,6 @@
 Date: 2026-10-25 20:08:04 -0300
 Commit: 54a611f (with uncommitted changes)
-VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+VM: windows11 (/mnt/disk2/vm/tecloid-windows/windows11-e2e-base.qcow2)
 Suite: mapper
 Mapper build: debug
 Popup shell build: none
@@ -9,13 +9,13 @@ Mapper from: beginning
 Mapper only: all
 Extended: False; stress seconds: 180
 Memory: 6144 MiB
-Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261025-194133/logs
+Logs: /mnt/disk2/vm/tecloid-windows/runs/20261025-194133/logs
 
 
 
 - boot: passed
 - preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
-- upload-source: passed — 926 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261025-194133/src.tar.gz; SHA256 69793cf65e80740b949054daf1ef962ab77d770a2830345bc7839f3ad185c8d4; Source sync: 11 updated, 0 removed
+- upload-source: passed — 926 files; source archive /mnt/disk2/vm/tecloid-windows/runs/20261025-194133/src.tar.gz; SHA256 69793cf65e80740b949054daf1ef962ab77d770a2830345bc7839f3ad185c8d4; Source sync: 11 updated, 0 removed
 - hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
 - mapper-passthrough: passed
 - mapper-remap-swallow-recursion: passed — A->B, B->C: injected B is not remapped; S swallowed; D passes through
@@ -31,15 +31,15 @@ Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261025-194133/logs
 - mapper-replug: passed
 - mapper-lock-unavailable: passed — second process rejected by session mutex; unsupported system action reports notice
 - mapper-secure-desktop-held: passed — layer and modifiers released on the secure desktop do not stay held
-- mapper-crash-held: FAILED — `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); $s = [IO.File]::Open('D:\lhc-e2e\out\receiver\snapshot.json', 'Open', 'Read', ([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete)); $r = [IO.StreamReader]::new($s, [Text.Encoding]::UTF8); try { $r.ReadToEnd() } finally { $r.Dispose() }` exited with 1:
-Exception calling "Open" with "4" argument(s): "Could not find file 
-'D:\lhc-e2e\out\receiver\snapshot.json'."
+- mapper-crash-held: FAILED — `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); $s = [IO.File]::Open('D:\tecloid-e2e\out\receiver\snapshot.json', 'Open', 'Read', ([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete)); $r = [IO.StreamReader]::new($s, [Text.Encoding]::UTF8); try { $r.ReadToEnd() } finally { $r.Dispose() }` exited with 1:
+Exception calling "Open" with "4" argument(s): "Could not find file
+'D:\tecloid-e2e\out\receiver\snapshot.json'."
 At line:1 char:70
-+ ... ew($false); $s = [IO.File]::Open('D:\lhc-e2e\out\receiver\snapshot.js ...
++ ... ew($false); $s = [IO.File]::Open('D:\tecloid-e2e\out\receiver\snapshot.js ...
 +                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
     + FullyQualifiedErrorId : FileNotFoundException
- 
+
 Exception calling ".ctor" with "2" argument(s): "Value cannot be null.
 Parameter name: stream"
 At line:1 char:206
@@ -47,29 +47,29 @@ At line:1 char:206
 +                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
     + FullyQualifiedErrorId : ArgumentNullException
- 
+
 You cannot call a method on a null-valued expression.
 At line:1 char:295
 + ... ext.Encoding]::UTF8); try { $r.ReadToEnd() } finally { $r.Dispose() }
 +                                                            ~~~~~~~~~~~~
     + CategoryInfo          : InvalidOperation: (:) [], RuntimeException
     + FullyQualifiedErrorId : InvokeMethodOnNull
- 
+
 You cannot call a method on a null-valued expression.
 At line:1 char:268
 + ... Reader]::new($s, [Text.Encoding]::UTF8); try { $r.ReadToEnd() } final ...
 +                                                    ~~~~~~~~~~~~~~
     + CategoryInfo          : InvalidOperation: (:) [], RuntimeException
     + FullyQualifiedErrorId : InvokeMethodOnNull
-- windows-mapper: FAILED — `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); $s = [IO.File]::Open('D:\lhc-e2e\out\receiver\snapshot.json', 'Open', 'Read', ([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete)); $r = [IO.StreamReader]::new($s, [Text.Encoding]::UTF8); try { $r.ReadToEnd() } finally { $r.Dispose() }` exited with 1:
-Exception calling "Open" with "4" argument(s): "Could not find file 
-'D:\lhc-e2e\out\receiver\snapshot.json'."
+- windows-mapper: FAILED — `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); $s = [IO.File]::Open('D:\tecloid-e2e\out\receiver\snapshot.json', 'Open', 'Read', ([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete)); $r = [IO.StreamReader]::new($s, [Text.Encoding]::UTF8); try { $r.ReadToEnd() } finally { $r.Dispose() }` exited with 1:
+Exception calling "Open" with "4" argument(s): "Could not find file
+'D:\tecloid-e2e\out\receiver\snapshot.json'."
 At line:1 char:70
-+ ... ew($false); $s = [IO.File]::Open('D:\lhc-e2e\out\receiver\snapshot.js ...
++ ... ew($false); $s = [IO.File]::Open('D:\tecloid-e2e\out\receiver\snapshot.js ...
 +                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
     + FullyQualifiedErrorId : FileNotFoundException
- 
+
 Exception calling ".ctor" with "2" argument(s): "Value cannot be null.
 Parameter name: stream"
 At line:1 char:206
@@ -77,14 +77,14 @@ At line:1 char:206
 +                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
     + FullyQualifiedErrorId : ArgumentNullException
- 
+
 You cannot call a method on a null-valued expression.
 At line:1 char:295
 + ... ext.Encoding]::UTF8); try { $r.ReadToEnd() } finally { $r.Dispose() }
 +                                                            ~~~~~~~~~~~~
     + CategoryInfo          : InvalidOperation: (:) [], RuntimeException
     + FullyQualifiedErrorId : InvokeMethodOnNull
- 
+
 You cannot call a method on a null-valued expression.
 At line:1 char:268
 + ... Reader]::new($s, [Text.Encoding]::UTF8); try { $r.ReadToEnd() } final ...

@@ -1,11 +1,11 @@
 Date: 2026-10-20 10:28:36 -0300
 Commit: d39e9e7 (with uncommitted changes)
-VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+VM: windows11 (/mnt/disk2/vm/tecloid-windows/windows11-e2e-base.qcow2)
 Suite: full
 Mapper build: release
 Mapper from: beginning
 Memory: 12288 MiB
-Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261020-101225/logs
+Logs: /mnt/disk2/vm/tecloid-windows/runs/20261020-101225/logs
 
 Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
 Session: 1
@@ -20,7 +20,7 @@ Suite: full
 
 - boot: passed
 - preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
-- upload-source: passed — 823 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261020-101225/src.tar.gz; SHA256 cd3165a9fd53f5b228b18dcb37d7684e5af97f0eb0a1d81f849bc72def8cf072; Source sync: 9 updated, 43 removed
+- upload-source: passed — 823 files; source archive /mnt/disk2/vm/tecloid-windows/runs/20261020-101225/src.tar.gz; SHA256 cd3165a9fd53f5b228b18dcb37d7684e5af97f0eb0a1d81f849bc72def8cf072; Source sync: 9 updated, 43 removed
 - hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
 - mapper-passthrough: passed
 - mapper-remap-swallow-recursion: passed — A->B, B->C: injected B is not remapped; S swallowed; D passes through

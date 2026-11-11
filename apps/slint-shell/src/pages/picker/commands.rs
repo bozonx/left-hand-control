@@ -6,9 +6,9 @@ use crate::{
     i18n::Msg,
     ui::{ActionPicker, Locale, SettingsWindow},
 };
-use lhc_core::config::actions::Action;
 use slint::ComponentHandle;
 use std::{cell::RefCell, rc::Rc};
+use tecloid_core::config::actions::Action;
 
 /// The picker session a file chooser belongs to and the action it edits.
 struct ChoiceRequest {
@@ -28,7 +28,7 @@ impl ChoiceRequest {
 /// Warning for the command being edited: a missing working directory or
 /// a script file that cannot be executed.
 pub(super) fn command_notice(picker: &ActionPicker) -> Msg {
-    use lhc_core::mapper::commands::{DraftIssue, draft_issue};
+    use tecloid_core::mapper::commands::{DraftIssue, draft_issue};
     if !matches!(
         Action::parse(Some(picker.get_value().as_str())),
         Action::Command(_)
@@ -61,7 +61,7 @@ pub(super) fn bind(
         let value = picker.get_value().to_string();
         let id = match Action::parse(Some(value.as_str())) {
             Action::Command(id) => id,
-            _ => lhc_core::config::ids::generate("cmd-"),
+            _ => tecloid_core::config::ids::generate("cmd-"),
         };
         // Keep the script of the other operating systems.
         let mut command = drafts.command(&id).or_else(|| doc
@@ -71,7 +71,7 @@ pub(super) fn bind(
             .iter()
             .find(|command| command.id == id)
             .cloned())
-            .unwrap_or_else(|| lhc_core::config::model::Command {
+            .unwrap_or_else(|| tecloid_core::config::model::Command {
                 id: id.clone(),
                 name: String::new(),
                 posix_script: String::new(),
@@ -118,7 +118,7 @@ pub(super) fn bind(
             let weak = ui.as_weak();
             let generation = session.borrow().generation.clone();
             std::thread::spawn(move || {
-                let picked = lhc_core::platform::file_chooser::pick(&title, directory);
+                let picked = tecloid_core::platform::file_chooser::pick(&title, directory);
                 if let Err(error) = slint::invoke_from_event_loop(move || {
                     let Some(ui) = weak.upgrade() else { return };
                     let picker = ui.global::<ActionPicker>();
@@ -136,7 +136,7 @@ pub(super) fn bind(
                             if directory {
                                 picker.set_command_directory(path.as_ref().into());
                             } else {
-                                let quoted = lhc_core::mapper::commands::invoke_path(&path);
+                                let quoted = tecloid_core::mapper::commands::invoke_path(&path);
                                 let script = picker.get_command_script();
                                 picker.set_command_script(if script.trim().is_empty() {
                                     quoted.into()

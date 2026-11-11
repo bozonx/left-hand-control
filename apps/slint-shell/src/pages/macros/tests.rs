@@ -245,7 +245,8 @@ fn renamed_invalid_draft_keeps_incoming_references_and_cannot_be_deleted() {
     document
         .edit(View::Rules, |config| {
             config.update_profile(|profile| {
-                let mut rule = lhc_core::config::model::KeyRule::new("macroUsage".into(), "KeyA");
+                let mut rule =
+                    tecloid_core::config::model::KeyRule::new("macroUsage".into(), "KeyA");
                 rule.tap_action = Some("macro:testMacro".into());
                 profile.rules.push(rule);
             })

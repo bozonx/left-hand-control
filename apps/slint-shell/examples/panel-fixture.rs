@@ -10,7 +10,7 @@ slint::slint! {
     }
 }
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    if !std::env::var("WAYLAND_DISPLAY").is_ok_and(|v| v.starts_with("lhc-stage3a-")) {
+    if !std::env::var("WAYLAND_DISPLAY").is_ok_and(|v| v.starts_with("tecloid-stage3a-")) {
         return Err("panel fixture requires isolated virtual compositor".into());
     }
     let mut config = WindowConf::builder();
@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .layer_type(LayerType::Top)
         .exclusive_zone(48)
         .board_interactivity(BoardType::None);
-    let mut way = SpellWin::invoke_spell("lhc-panel-fixture", config.build()?);
+    let mut way = SpellWin::invoke_spell("tecloid-panel-fixture", config.build()?);
     let _ui = Panel::new()?;
     loop {
         way.on_call()?;

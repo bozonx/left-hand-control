@@ -17,9 +17,9 @@ clippy с `-D warnings` и release check оболочки.
 затем выполнить из корня репозитория:
 
 ```sh
-cargo fmt -p lhc-core -p slint-shell --check
-cargo test --locked -p lhc-core -p slint-shell --all-targets
-cargo clippy --locked -p lhc-core -p slint-shell --all-targets --no-deps -- -D warnings
+cargo fmt -p tecloid-core -p slint-shell --check
+cargo test --locked -p tecloid-core -p slint-shell --all-targets
+cargo clippy --locked -p tecloid-core -p slint-shell --all-targets --no-deps -- -D warnings
 cargo check --release --locked -p slint-shell
 ```
 

@@ -21,7 +21,6 @@ use crate::{
     platform::{backend, focus, hotkey, tray},
     ui::{AppState, EmojiPopup, QuickPopup, SettingsWindow, Theme},
 };
-use lhc_core::{config::model::Appearance, storage::StoragePaths};
 use slint::ComponentHandle;
 use std::{
     cell::{Cell, RefCell},
@@ -29,6 +28,7 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
+use tecloid_core::{config::model::Appearance, storage::StoragePaths};
 
 /// How often a running Spell worker is checked for crashes.
 const WORKER_POLL: Duration = Duration::from_secs(1);
@@ -83,7 +83,7 @@ fn system_dark(settings: &SettingsWindow) -> bool {
 
 /// Whether `action` is a `sys:` action macOS cannot run.
 fn unsupported_on_macos(action: &str) -> bool {
-    use lhc_core::config::actions::{self, Action};
+    use tecloid_core::config::actions::{self, Action};
     matches!(Action::parse(Some(action)), Action::System(id) if actions::unsupported_on_macos(&id))
 }
 
@@ -172,7 +172,7 @@ impl App {
                     }
                     Err(error) => {
                         // The tray marks a choice before it is applied.
-                        self.game_mode_changed(&lhc_core::gamemode::status());
+                        self.game_mode_changed(&tecloid_core::gamemode::status());
                         self.set_error(error);
                     }
                 }
@@ -182,10 +182,10 @@ impl App {
             ShellCommand::Execute(action) => {
                 if cfg!(target_os = "macos") && unsupported_on_macos(&action) {
                     self.set_error(Msg::ActionUnsupportedMacos);
-                } else if !lhc_core::mapper::runtime::status().running {
+                } else if !tecloid_core::mapper::runtime::status().running {
                     self.set_error(Msg::MapperRequired);
                 } else {
-                    if let Err(error) = lhc_core::mapper::runtime::execute_action(action) {
+                    if let Err(error) = tecloid_core::mapper::runtime::execute_action(action) {
                         self.set_error(Msg::ActionFailed(error));
                     }
                 }
@@ -211,7 +211,7 @@ impl App {
         };
         let config = document.read();
         let settings = config.settings();
-        let system = lhc_core::platform::accessibility::current();
+        let system = tecloid_core::platform::accessibility::current();
         let dark = match settings.appearance {
             Appearance::Light | Appearance::EInk => false,
             Appearance::Dark => true,
@@ -378,7 +378,7 @@ impl App {
         match tray::start(dispatch) {
             Ok(tray) => {
                 tray.set_language(self.preferences.get().language);
-                tray.set_game(&lhc_core::gamemode::status());
+                tray.set_game(&tecloid_core::gamemode::status());
                 tray.set_in_development(
                     self.document()
                         .is_some_and(|doc| doc.read().settings().in_development),
@@ -400,7 +400,7 @@ impl App {
 fn load_document(settings: &SettingsWindow) -> Option<Rc<Document>> {
     let state = settings.global::<AppState>();
     match StoragePaths::resolve()
-        .map_err(lhc_core::config_document::ConfigError::Io)
+        .map_err(tecloid_core::config_document::ConfigError::Io)
         .and_then(Document::load)
     {
         Ok(document) => {
@@ -426,11 +426,11 @@ fn start_core() -> Result<CoreGuard, String> {
         if let Err(error) = paths.ensure() {
             log::warn!("storage: {error}");
         }
-        lhc_core::mapper::runtime::set_portal_token_dir(paths.data_dir().clone());
+        tecloid_core::mapper::runtime::set_portal_token_dir(paths.data_dir().clone());
     }
     let events = mapper::forward_core_events()?;
-    let watchers = lhc_core::watchers::Watchers::start(paths.ok(), true);
-    lhc_core::platform::accessibility::start_watcher();
+    let watchers = tecloid_core::watchers::Watchers::start(paths.ok(), true);
+    tecloid_core::platform::accessibility::start_watcher();
     Ok(CoreGuard {
         watchers: Some(watchers),
         events: Some(events),
@@ -438,8 +438,8 @@ fn start_core() -> Result<CoreGuard, String> {
 }
 
 fn stop_core() {
-    let running = lhc_core::mapper::runtime::status().running;
-    let result = lhc_core::mapper::runtime::stop();
+    let running = tecloid_core::mapper::runtime::status().running;
+    let result = tecloid_core::mapper::runtime::stop();
     if running && let Err(error) = result {
         log::error!("stop mapper during shutdown: {error}");
     }
@@ -447,8 +447,8 @@ fn stop_core() {
 
 /// Stops the mapper first, then the watchers it reads from.
 struct CoreGuard {
-    watchers: Option<lhc_core::watchers::Watchers>,
-    events: Option<lhc_core::events::Subscription>,
+    watchers: Option<tecloid_core::watchers::Watchers>,
+    events: Option<tecloid_core::events::Subscription>,
 }
 
 impl Drop for CoreGuard {
@@ -488,22 +488,22 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
         .set_is_windows(cfg!(target_os = "windows"));
     settings
         .global::<AppState>()
-        .set_mapper_supported(lhc_core::mapper::runtime::SUPPORTED);
+        .set_mapper_supported(tecloid_core::mapper::runtime::SUPPORTED);
     settings
         .global::<AppState>()
-        .set_autostart_supported(lhc_core::autostart::SUPPORTED);
+        .set_autostart_supported(tecloid_core::autostart::SUPPORTED);
     let document = load_document(&settings);
     metrics.ready("settings");
     popup_attributes.set(true);
     let emoji = EmojiPopup::new()?;
     #[cfg(target_os = "linux")]
     i_slint_core::window::WindowInner::from_pub(emoji.window())
-        .set_xdg_app_id(lhc_core::storage::POPUP_APP_ID.into());
+        .set_xdg_app_id(tecloid_core::storage::POPUP_APP_ID.into());
     metrics.ready("emoji");
     let quick = QuickPopup::new()?;
     #[cfg(target_os = "linux")]
     i_slint_core::window::WindowInner::from_pub(quick.window())
-        .set_xdg_app_id(lhc_core::storage::POPUP_APP_ID.into());
+        .set_xdg_app_id(tecloid_core::storage::POPUP_APP_ID.into());
     metrics.ready("quick");
     let app = Rc::new(App {
         settings,
@@ -582,7 +582,7 @@ fn select_backend(popup_attributes: Rc<Cell<bool>>) -> Result<(), slint::Platfor
         })
         .select()?;
     // Lets the compositor match windows to the installed desktop entry and icon.
-    slint::set_xdg_app_id(lhc_core::storage::APP_ID)
+    slint::set_xdg_app_id(tecloid_core::storage::APP_ID)
 }
 
 #[cfg(not(target_os = "linux"))]

@@ -1,5 +1,5 @@
 //! Popup backend on Linux: winit windows, or the Spell worker process with
-//! layer-shell surfaces (`LHC_POPUPS=auto|spell`).
+//! layer-shell surfaces (`TECLOID_POPUPS=auto|spell`).
 
 use crate::{
     command::{Command, Source, WorkerCommand},
@@ -109,7 +109,7 @@ impl Worker {
         let socket = self.socket.clone();
         let stopped = self.stopped.clone();
         std::thread::Builder::new()
-            .name("lhc-popup-ipc".into())
+            .name("tecloid-popup-ipc".into())
             .spawn(move || {
                 while let Ok(request) = rx.recv() {
                     if stopped.load(Ordering::Acquire) {
@@ -173,7 +173,7 @@ impl Drop for Worker {
 }
 
 fn wayland_session() -> bool {
-    lhc_core::platform::linux::detect()
+    tecloid_core::platform::linux::detect()
         .wayland_display
         .is_some()
 }
@@ -217,7 +217,7 @@ pub fn layer_shell_supported() -> bool {
 pub fn spawn() -> Result<Worker, Box<dyn std::error::Error>> {
     static NEXT: AtomicU64 = AtomicU64::new(0);
     let socket = format!(
-        "lhc-slint-spell-{}-{}.sock",
+        "tecloid-slint-spell-{}-{}.sock",
         std::process::id(),
         NEXT.fetch_add(1, Ordering::Relaxed)
     );

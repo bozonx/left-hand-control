@@ -84,7 +84,7 @@ export global SettingsEditor {
     in property <int> game-auto-rule-count;
     in property <[string]> text-modes;
     in-out property <int> text-mode-index;
-    /// Same order as PasteShortcut::ALL in lhc-core.
+    /// Same order as PasteShortcut::ALL in tecloid-core.
     in-out property <int> paste-shortcut-index;
     /// 0 follows paste-shortcut-index, then PasteShortcut::ALL.
     in-out property <int> terminal-paste-shortcut-index;
@@ -589,7 +589,7 @@ export component SettingsPage inherits PageLayout {
                         VerticalLayout {
                             padding: 0px; spacing: Theme.space-m;
                             FormLabel { text: @tr("Typing method"); }
-                            // Same order as TextMode::ALL in lhc-core.
+                            // Same order as TextMode::ALL in tecloid-core.
                             SelectField { accessible-label: @tr("Typing method"); width: 320px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("libei + clipboard fallback (recommended)"), "libei", "NotifyKeyboardKeycode", @tr("Paste from clipboard"), @tr("ydotool"), @tr("xdotool")]; current-index: SettingsEditor.text-mode-index; selected(value) => { SettingsEditor.text-mode-index = self.current-index; SettingsEditor.save(); } }
                             Text {
                                 vertical-stretch: 0; max-width: Theme.text-column; color: Theme.muted; wrap: word-wrap;
@@ -597,7 +597,7 @@ export component SettingsPage inherits PageLayout {
                                     @tr("Types with the current keyboard layout, or pastes the whole text when a character is unavailable. Paste requires Wayland, clipboard access and a supported paste shortcut. A large or slow clipboard can prevent paste. Cancels when a detected destination changes."),
                                     @tr("Types only through libei using the current keyboard layout and Caps Lock state. Skips text with unavailable characters. Requires portal permission. Cancels when a detected destination changes."),
                                     @tr("Types only through NotifyKeyboardKeycode using the KDE keyboard layout and readable keyboard state. Skips text with unavailable characters. Requires portal permission. Cancels when a detected destination changes."),
-                                    @tr("Pastes with the configured shortcut on Wayland: data-control on KDE, Clipboard portal on GNOME. Preserves all formats within size and time limits. LHC then owns the restored clipboard until another app copies; quitting can clear it. A new user copy takes precedence."),
+                                    @tr("Pastes with the configured shortcut on Wayland: data-control on KDE, Clipboard portal on GNOME. Preserves all formats within size and time limits. Tecloid then owns the restored clipboard until another app copies; quitting can clear it. A new user copy takes precedence."),
                                     @tr("Runs \"ydotool type\" only. Needs ydotool and its ydotoold service running. Reliable for Latin text only. On an error, stops without switching methods."),
                                     @tr("Runs \"xdotool type\" only. Works only in X11 sessions and XWayland windows. On an error, stops without switching methods."),
                                 ][SettingsEditor.text-mode-index];
@@ -610,13 +610,13 @@ export component SettingsPage inherits PageLayout {
                         if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "libeiWithClipboardFallback" || SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "clipboard": VerticalLayout {
                             padding: 0px; spacing: Theme.space-m;
                             FormLabel { text: @tr("Paste shortcut"); info: @tr("Sent to the focused app to paste the text."); }
-                            // Same order as PasteShortcut::ALL in lhc-core.
+                            // Same order as PasteShortcut::ALL in tecloid-core.
                             SelectField { accessible-label: @tr("Paste shortcut"); width: 320px; height: Theme.control-height; vertical-stretch: 0; model: ["Shift+Insert", "Ctrl+V", "Ctrl+Shift+V"]; current-index: SettingsEditor.paste-shortcut-index; selected(value) => { SettingsEditor.paste-shortcut-index = self.current-index; SettingsEditor.save(); } }
                         }
                         if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "libeiWithClipboardFallback" || SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "clipboard": VerticalLayout {
                             padding: 0px; spacing: Theme.space-m;
                             FormLabel { text: @tr("Paste shortcut in terminals"); info: @tr("Used for terminal windows, such as Konsole, kitty or Alacritty. Embedded terminals cannot be detected by window class. Shift+Insert may paste the mouse selection; use Ctrl+V for other apps to avoid that risk. Older terminals may need custom shortcut bindings."); }
-                            // The main shortcut, then the order of PasteShortcut::ALL in lhc-core.
+                            // The main shortcut, then the order of PasteShortcut::ALL in tecloid-core.
                             SelectField { accessible-label: @tr("Paste shortcut in terminals"); width: 320px; height: Theme.control-height; vertical-stretch: 0; model: [@tr("Same as in other apps"), "Shift+Insert", "Ctrl+V", "Ctrl+Shift+V"]; current-index: SettingsEditor.terminal-paste-shortcut-index; selected(value) => { SettingsEditor.terminal-paste-shortcut-index = self.current-index; SettingsEditor.save(); } }
                         }
                         if SettingsEditor.text-modes[SettingsEditor.text-mode-index] == "ydotool": VerticalLayout {

@@ -8,13 +8,13 @@ import subprocess
 import tempfile
 
 scripts = Path(__file__).resolve().parent
-with tempfile.TemporaryDirectory(prefix="lhc-linux-install-") as directory:
+with tempfile.TemporaryDirectory(prefix="tecloid-linux-install-") as directory:
     root = Path(directory)
     bundle = root / "bundle"
     bundle.mkdir()
     shutil.copy2(scripts.parent / "install-linux.sh", bundle / "install-linux.sh")
     shutil.copy2(scripts.parent / "install-gnome-extension.sh", bundle / "install-gnome-extension.sh")
-    shutil.copytree(scripts.parents[3] / "crates/lhc-core/assets/gnome-extension", bundle / "gnome-extension")
+    shutil.copytree(scripts.parents[3] / "crates/tecloid-core/assets/gnome-extension", bundle / "gnome-extension")
     for name in ("LICENSE", "README.md", "features.md"):
         (bundle / name).write_text("fixture", encoding="utf-8")
     packaging = scripts.parents[1] / "packaging/linux"
@@ -29,7 +29,7 @@ with tempfile.TemporaryDirectory(prefix="lhc-linux-install-") as directory:
     shutil.copy2(scripts.parents[1] / "assets/icon.svg", bundle / "icons/scalable.svg")
     (bundle / "tecloid").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     prefix = root / 'prefix with $cash%quote"back`slash\\ space'
-    env = dict(os.environ, LHC_INSTALL_PREFIX=str(prefix))
+    env = dict(os.environ, TECLOID_INSTALL_PREFIX=str(prefix))
 
     def install():
         subprocess.run(

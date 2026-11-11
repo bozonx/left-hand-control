@@ -6,8 +6,8 @@ import subprocess
 import sys
 import time
 
-if not os.environ.get('WAYLAND_DISPLAY', '').startswith('lhc-stage3a-'):
-    raise SystemExit('Run only inside the dedicated lhc-stage3a-* virtual compositor')
+if not os.environ.get('WAYLAND_DISPLAY', '').startswith('tecloid-stage3a-'):
+    raise SystemExit('Run only inside the dedicated tecloid-stage3a-* virtual compositor')
 root = Path(__file__).resolve().parents[2]
 binary = root.parents[1] / 'target/debug/tecloid'
 probe = root.parents[1] / 'target/debug/examples/inspect-geometry'
@@ -19,9 +19,9 @@ if len(names) < 2:
     raise RuntimeError('two virtual outputs required')
 rows = []
 fixtures = []
-env = dict(os.environ, LHC_POPUPS='spell', SLINT_BACKEND='winit-skia-software',
-           LHC_OUTPUT=names[-1], LHC_HOTKEYS='off', LHC_SOCKET=f'lhc-geometry-{os.getpid()}.sock',
-           LHC_METRICS=str(output / 'parent.csv'))
+env = dict(os.environ, TECLOID_POPUPS='spell', SLINT_BACKEND='winit-skia-software',
+           TECLOID_OUTPUT=names[-1], TECLOID_HOTKEYS='off', TECLOID_SOCKET=f'tecloid-geometry-{os.getpid()}.sock',
+           TECLOID_METRICS=str(output / 'parent.csv'))
 with (output / 'server.log').open('w') as log:
     server = subprocess.Popen([binary], env=env, stdout=log, stderr=log)
     def command(*args):

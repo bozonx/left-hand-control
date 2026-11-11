@@ -21,7 +21,7 @@ class ReceiverProbe:
         self.vm = vm
 
     def guest(self, command):
-        return self.vm.ssh("python3 ~/lhc-e2e/linux-guest.py " + command)
+        return self.vm.ssh("python3 ~/tecloid-e2e/linux-guest.py " + command)
 
     def expect_text(self, name, expected, *keys):
         self.guest("start-receiver --name " + name)
@@ -64,9 +64,9 @@ def main():
     def boot():
         vm.start()
         vm.wait_ssh()
-        vm.ssh("mkdir -p ~/lhc-e2e")
+        vm.ssh("mkdir -p ~/tecloid-e2e")
         for name in ("linux-guest.py", "text_corpus.py"):
-            vm.copy_to(Path(__file__).with_name(name), "lhc-e2e/")
+            vm.copy_to(Path(__file__).with_name(name), "tecloid-e2e/")
         ReceiverProbe(vm).guest("wait-session")
 
     try:
@@ -79,7 +79,7 @@ def main():
         try:
             if vm.qemu and vm.qemu.poll() is None:
                 vm.qmp.screendump(vm.logs / "final.png")
-                if not vm.copy_from("lhc-e2e/receiver.log", vm.logs / "receiver.log"):
+                if not vm.copy_from("tecloid-e2e/receiver.log", vm.logs / "receiver.log"):
                     report.skip("receiver-log", "file unavailable")
         except (StepFailed, subprocess.SubprocessError, OSError) as error:
             report.skip("diagnostics", str(error))

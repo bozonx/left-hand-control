@@ -23,7 +23,7 @@ description: |-
   The primary environment is KDE Plasma 6 on Wayland.
 
 contents:
-  - src: crates/lhc-core/assets/gnome-extension/tecloid@bozonx.dev/
+  - src: crates/tecloid-core/assets/gnome-extension/tecloid@bozonx.dev/
     dst: /usr/share/tecloid/gnome-extension/tecloid@bozonx.dev/
   - src: apps/slint-shell/scripts/install-gnome-extension.sh
     dst: /usr/share/tecloid/install-gnome-extension.sh

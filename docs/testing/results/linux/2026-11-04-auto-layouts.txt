@@ -6,22 +6,22 @@ UI example binaries were built by the workspace run with slint-shell/spell.
 
 Final checks (all exited 0):
 
-cargo fmt -p lhc-core -p slint-shell --check
+cargo fmt -p tecloid-core -p slint-shell --check
   PASS
-cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+cargo clippy --locked -p tecloid-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
   PASS, no warnings
 cargo test --locked --workspace --features slint-shell/spell
   PASS: 812 passed, 11 ignored, 0 failed
-  Includes 589 lhc-core unit tests and 201 slint-shell unit tests.
+  Includes 589 tecloid-core unit tests and 201 slint-shell unit tests.
 cargo check --locked -p slint-shell --all-targets
   PASS, build without Spell
 cargo deny check
   PASS: advisories, bans, licenses and sources; duplicate-version warnings remain.
-cargo test --locked -p lhc-core --test mapper_e2e -- --ignored
+cargo test --locked -p tecloid-core --test mapper_e2e -- --ignored
   PASS: 8 passed, 0 failed, 0 ignored (grabbed synthetic input/output devices).
-cargo test --locked -p lhc-core --lib keyboard_layout::linux_kde::detection_tests -- --nocapture
+cargo test --locked -p tecloid-core --lib keyboard_layout::linux_kde::detection_tests -- --nocapture
   PASS: 2 passed using zbus's normal executor.
-cargo test --locked -p lhc-core --features zbus/tokio --lib keyboard_layout::linux_kde::detection_tests -- --nocapture
+cargo test --locked -p tecloid-core --features zbus/tokio --lib keyboard_layout::linux_kde::detection_tests -- --nocapture
   PASS: 2 passed with Tokio explicitly enabled.
 
 target/debug/examples/editor --smoke
@@ -32,11 +32,11 @@ target/debug/examples/library
   PASS: library operations and automatic-rule editing.
 target/debug/examples/small-window
   PASS: 23 states at 640x400 (English).
-LHC_SMALL_LANGUAGE=ru LHC_EDITOR_SNAPSHOTS=/tmp/lhc-auto-ui-ru target/debug/examples/small-window
+TECLOID_SMALL_LANGUAGE=ru TECLOID_EDITOR_SNAPSHOTS=/tmp/tecloid-auto-ui-ru target/debug/examples/small-window
   PASS: 23 states at 640x400 (Russian).
   Asserts automatic-mode controls remain visible with development features hidden,
   library toolbar controls fit, and the default picker is reachable after scrolling.
-LHC_LIBRARY_RULE_DRAG=1 target/debug/examples/library
+TECLOID_LIBRARY_RULE_DRAG=1 target/debug/examples/library
   PASS: automatic-rule drag-and-drop, persisted order verified.
 
 Additional build commands used for focused UI iteration:

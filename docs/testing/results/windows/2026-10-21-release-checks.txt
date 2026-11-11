@@ -33,13 +33,13 @@ Source and environment:
 - Windows rustc/cargo 1.98.1. Full suite 12288 MiB; final ZIP replay 4096 MiB.
 - Linux acceptance VMs 6144 MiB, CPU host. Overlays and test profiles isolated.
 - No real host keyboard was grabbed or used as the source of synthetic e2e keys.
-- Final Rust/UI/manifests match /mnt/disk2/vm/lhc-release-20261021/src-kwin.tar.gz
+- Final Rust/UI/manifests match /mnt/disk2/vm/tecloid-release-20261021/src-kwin.tar.gz
   SHA256 f1bb5d0451675044e69f8e96a99467dda2a801ef09c0b1eae05b00bdffb81363.
   Later changes are test harness, packaging checks and documentation only.
 - The only Rust file changed after the accepted Windows build is Linux-only
-  crates/lhc-core/src/active_window/kwin.rs, excluded from Windows compilation.
+  crates/tecloid-core/src/active_window/kwin.rs, excluded from Windows compilation.
 - Earlier testing sources (before the Debian stand repair) are supplied as
-  final-packages/left-hand-control-0.3.0-testing-sources.tar.gz; SHA256SUMS beside it.
+  final-packages/tecloid-0.3.0-testing-sources.tar.gz; SHA256SUMS beside it.
 
 Changes accepted:
 - Grabbed-keyboard popup hotkeys consume F11/F12 before uinput, avoiding VT switch.
@@ -56,53 +56,53 @@ Changes accepted:
   remain failures. Held test keys are released in finally.
 
 Exact final source checks (all PASS):
-cargo fmt -p lhc-core -p slint-shell --check
-CARGO_BUILD_JOBS=1 cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
-  lhc-release-clippy-kwin.log
+cargo fmt -p tecloid-core -p slint-shell --check
+CARGO_BUILD_JOBS=1 cargo clippy --locked -p tecloid-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+  tecloid-release-clippy-kwin.log
 CARGO_BUILD_JOBS=1 cargo test --locked --workspace --features slint-shell/spell
   407 core / 83 shell / 1 lifecycle / 2 storage / 3 IPC passed; no failures.
   Default-ignored 11 uinput scenarios executed separately below; 3 other core
-  tests remain ignored. lhc-release-workspace-kwin.log
+  tests remain ignored. tecloid-release-workspace-kwin.log
 CARGO_BUILD_JOBS=1 cargo check --locked -p slint-shell --all-targets
-  Non-Spell build passed. lhc-release-nospell-kwin.log
-cargo test --locked -p lhc-core --test mapper_e2e -- --ignored
+  Non-Spell build passed. tecloid-release-nospell-kwin.log
+cargo test --locked -p tecloid-core --test mapper_e2e -- --ignored
   11 passed: isolated real evdev -> engine -> uinput, hotkey suppression, held-key
   release, identity rejection, recovery/config retention, stop while disconnected.
-  lhc-release-mapper-kwin.log
-CARGO_BUILD_JOBS=1 cargo test --locked -p lhc-core active_window::kwin::tests::compositor_owner_restart_recovers_and_discards_old_reports
+  tecloid-release-mapper-kwin.log
+CARGO_BUILD_JOBS=1 cargo test --locked -p tecloid-core active_window::kwin::tests::compositor_owner_restart_recovers_and_discards_old_reports
   Private-bus regression: independent active/list scripts, independent close,
   compositor restart, stale-target rejection and caller authentication passed.
-  lhc-release-kwin-regression.log
+  tecloid-release-kwin-regression.log
 python3 -m unittest discover -s apps/slint-shell/scripts/vm -p test_windows_stand.py
-  15 passed. lhc-release-stand-final.log
+  15 passed. tecloid-release-stand-final.log
 python3 -m py_compile apps/slint-shell/scripts/vm/linux-guest.py apps/slint-shell/scripts/vm/run-linux.py apps/slint-shell/scripts/vm/run-windows.py
-docker run --rm -v /mnt/disk2/codeWorkspace/left-hand-control:/repo -w /repo rhysd/actionlint:1.7.7 .github/workflows/release.yml
-  lhc-release-actionlint-final.log
+docker run --rm -v /mnt/disk2/codeWorkspace/tecloid:/repo -w /repo rhysd/actionlint:1.7.7 .github/workflows/release.yml
+  tecloid-release-actionlint-final.log
 git diff --check
 
 Exact package commands (PASS):
-docker run --rm -v /mnt/disk2/codeWorkspace/left-hand-control:/src lhc-ubuntu2204-gnome-build:local sh -c 'apps/slint-shell/scripts/package-linux.sh'
+docker run --rm -v /mnt/disk2/codeWorkspace/tecloid:/src tecloid-ubuntu2204-gnome-build:local sh -c 'apps/slint-shell/scripts/package-linux.sh'
   Compatible Ubuntu 22.04 build, spell enabled; final rebuild 12m29s.
-  lhc-release-package-kwin.log
-VERSION=0.3.0 /tmp/lhc-release-tools/nfpm package -f /mnt/disk2/codeWorkspace/left-hand-control/target/release-candidate/nfpm.yaml -p deb -t /mnt/disk2/codeWorkspace/left-hand-control/target/release-candidate/left-hand-control_0.3.0_amd64.deb
-VERSION=0.3.0 /tmp/lhc-release-tools/nfpm package -f /mnt/disk2/codeWorkspace/left-hand-control/target/release-candidate/nfpm.yaml -p rpm -t /mnt/disk2/codeWorkspace/left-hand-control/target/release-candidate/left-hand-control-0.3.0-1.x86_64.rpm
+  tecloid-release-package-kwin.log
+VERSION=0.3.0 /tmp/tecloid-release-tools/nfpm package -f /mnt/disk2/codeWorkspace/tecloid/target/release-candidate/nfpm.yaml -p deb -t /mnt/disk2/codeWorkspace/tecloid/target/release-candidate/tecloid_0.3.0_amd64.deb
+VERSION=0.3.0 /tmp/tecloid-release-tools/nfpm package -f /mnt/disk2/codeWorkspace/tecloid/target/release-candidate/nfpm.yaml -p rpm -t /mnt/disk2/codeWorkspace/tecloid/target/release-candidate/tecloid-0.3.0-1.x86_64.rpm
   nfpm 2.47.0 binary checksum verified against the pinned release workflow.
   Generated nfpm.yaml/changelog paths use the repository templates.
-ldd target/ubuntu-22.04/release/left-hand-control
+ldd target/ubuntu-22.04/release/tecloid
   No missing libraries.
-target/ubuntu-22.04/release/left-hand-control --version
-  left-hand-control 0.3.0
+target/ubuntu-22.04/release/tecloid --version
+  tecloid 0.3.0
 
 Exact VM commands:
-PASS python3 -u apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-fedora-kde --package target/release-candidate/left-hand-control-0.3.0-1.x86_64.rpm
-  42/0; lhc-release-fedora-final-package.log
-PASS python3 -u apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-kubuntu2604 --package target/ubuntu-22.04/packages/left-hand-control-0.3.0-linux-x86_64.tar.gz
-  42/0; lhc-release-kubuntu-final-package.log
-PASS WITH EXCLUSION python3 -u apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-debian13-kde --package target/release-candidate/left-hand-control_0.3.0_amd64.deb
-  41/0 + 1 SKIP; lhc-release-debian-s3-excluded.log
+PASS python3 -u apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-fedora-kde --package target/release-candidate/tecloid-0.3.0-1.x86_64.rpm
+  42/0; tecloid-release-fedora-final-package.log
+PASS python3 -u apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-kubuntu2604 --package target/ubuntu-22.04/packages/tecloid-0.3.0-linux-x86_64.tar.gz
+  42/0; tecloid-release-kubuntu-final-package.log
+PASS WITH EXCLUSION python3 -u apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-debian13-kde --package target/release-candidate/tecloid_0.3.0_amd64.deb
+  41/0 + 1 SKIP; tecloid-release-debian-s3-excluded.log
   Explicit suspend_skip_reason in vm.json; original config preserved.
-PASS python3 -u apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows --suite full --memory 12288
-  26/0; lhc-release-windows-verified.log; run 20261021-160744.
+PASS python3 -u apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/tecloid-windows --suite full --memory 12288
+  26/0; tecloid-release-windows-verified.log; run 20261021-160744.
   Native core 317 / lifecycle 1 / storage 2 / shell 77 / IPC 2 passed.
   Native clippy passed; release storage_override 2 passed; script syntax 11 passed.
   Completion accepted via guest callback; SSH log export skipped, then recovered
@@ -124,42 +124,42 @@ Windows source/packaging trace:
 - Final ZIP repacked only to update README with the existing VC++ runtime
   prerequisite and normalize ZIP path separators. Executable byte-identical.
 - Final native PowerShell command, fresh interactive non-elevated task:
-  powershell -NoProfile -ExecutionPolicy Bypass -File D:\lhc-e2e\src\apps\slint-shell\scripts\check-windows-package.ps1 -Archive D:\lhc-final-package-cwd\left-hand-control-0.3.0-windows-x86_64.zip -Desktop
+  powershell -NoProfile -ExecutionPolicy Bypass -File D:\tecloid-e2e\src\apps\slint-shell\scripts\check-windows-package.ps1 -Archive D:\tecloid-final-package-cwd\tecloid-0.3.0-windows-x86_64.zip -Desktop
   PASS exit 0, final SHA256 b451005dbacf1c1f4f696d00e7c57facb5391df500da101d58ed96a91e97afdd.
   Child EXE working directory is the extracted package directory.
   Updated check-windows-lifecycle.ps1 SHA256:
   0c3b8cb864823ecf2b3f7ef15ce71a5203b3fe9e5fa4719af00adcbac4a83b26
   Native syntax check: 11 passed.
-  Host driver: python3 -u /tmp/lhc-verify-final-windows-cwd.py
-  Logs/driver copied to /mnt/disk2/vm/lhc-release-20261021/logs/.
+  Host driver: python3 -u /tmp/tecloid-verify-final-windows-cwd.py
+  Logs/driver copied to /mnt/disk2/vm/tecloid-release-20261021/logs/.
   Detailed lifecycle logs/metrics:
-  /mnt/disk2/vm/lhc-release-20261021/final-windows-package-check-cwd/
+  /mnt/disk2/vm/tecloid-release-20261021/final-windows-package-check-cwd/
 - Actual PE imports MSVCP140.dll/VCRUNTIME140.dll; install-windows.md documents
   the official Microsoft Visual C++ v14 x64 runtime prerequisite.
   Clean Windows without developer tools remains a manual acceptance gate.
 
 Additional Windows ZIP acceptance without the source/cache disk:
-PASS python3 -u /tmp/lhc-verify-windows-without-source.py
+PASS python3 -u /tmp/tecloid-verify-windows-without-source.py
   Fresh Windows overlay, 4096 MiB, cache_disk omitted entirely.
-  Original D:\lhc-e2e\src confirmed absent. Only ZIP/checksum and three test
+  Original D:\tecloid-e2e\src confirmed absent. Only ZIP/checksum and three test
   PowerShell scripts copied into a separate harness; child cwd is extracted ZIP.
   Native command:
-  powershell -NoProfile -ExecutionPolicy Bypass -File C:\Users\user\lhc-package-harness\apps\slint-shell\scripts\check-windows-package.ps1 -Archive C:\Users\user\lhc-package-final\left-hand-control-0.3.0-windows-x86_64.zip -Desktop
+  powershell -NoProfile -ExecutionPolicy Bypass -File C:\Users\user\tecloid-package-harness\apps\slint-shell\scripts\check-windows-package.ps1 -Archive C:\Users\user\tecloid-package-final\tecloid-0.3.0-windows-x86_64.zip -Desktop
   Exit 0: checksum/content/CLI, hidden/visible quit, 100 rendered popup cycles,
   resource bounds, disabled hotkeys and unsupported Spell passed.
   Stderr reviewed: no missing-resource/load errors; only the expected diagnostic
   for explicitly requested unsupported Spell. This is not a clean no-toolchain OS.
-  Full logs/metrics: /mnt/disk2/vm/lhc-release-20261021/windows-without-source/
-  Driver and lhc-verify-windows-without-source.log preserved under logs/.
+  Full logs/metrics: /mnt/disk2/vm/tecloid-release-20261021/windows-without-source/
+  Driver and tecloid-verify-windows-without-source.log preserved under logs/.
 
-Final artifacts under /mnt/disk2/vm/lhc-release-20261021/final-packages/:
-left-hand-control-0.3.0-linux-x86_64.tar.gz
+Final artifacts under /mnt/disk2/vm/tecloid-release-20261021/final-packages/:
+tecloid-0.3.0-linux-x86_64.tar.gz
   64f6c5d715cdc7afb65ca0e5953c273ded41165714c31eac44bd70fe0ed933cc
-left-hand-control_0.3.0_amd64.deb
+tecloid_0.3.0_amd64.deb
   4a8131fa4c8f0ddfb081afdc157fd0be8feb10c1f760eef14a295d450b21371a
-left-hand-control-0.3.0-1.x86_64.rpm
+tecloid-0.3.0-1.x86_64.rpm
   c53177cdd7750910d1aa01763393a5ddf3ad69264a4a9e6904794d425f21ff3e
-left-hand-control-0.3.0-windows-x86_64.zip
+tecloid-0.3.0-windows-x86_64.zip
   b451005dbacf1c1f4f696d00e7c57facb5391df500da101d58ed96a91e97afdd
 SHA256SUMS and WINDOWS-SHA256SUMS supplied beside the archives.
 tarfile/bsdtar extraction verified all three Linux packages contain exactly the
@@ -184,11 +184,11 @@ Failures retained:
 - Windows windows/2026-10-21-vm-windows11-10.txt: release compiled; SSH failed
   before hardware commands. Neither failed attempt counts as acceptance.
 - Intermediate diagnostics preserved under
-  /mnt/disk2/vm/lhc-release-20261021/diagnostic-summaries/ and
+  /mnt/disk2/vm/tecloid-release-20261021/diagnostic-summaries/ and
   test-results/release-readiness-20261021/diagnostic-summaries/.
   No failed result was relabelled as passed.
 - Debian baseline driver, recovered journals, control logs and VM configs:
-  /mnt/disk2/vm/lhc-release-20261021/debian-diagnostics/.
+  /mnt/disk2/vm/tecloid-release-20261021/debian-diagnostics/.
 
 Limits / not run:
 - Debian q35 is not repaired upstream; accepted Debian S3 uses pc-i440fx-11.1.
@@ -206,14 +206,14 @@ Limits / not run:
   is a separate passed scenario.
 - No claim of complete stable-release readiness follows from these automatic tests.
 
-All /tmp/lhc-release-*.log files referenced above are also preserved under
-/mnt/disk2/vm/lhc-release-20261021/logs/; VM screenshots/traces remain in run logs.
+All /tmp/tecloid-release-*.log files referenced above are also preserved under
+/mnt/disk2/vm/tecloid-release-20261021/logs/; VM screenshots/traces remain in run logs.
 
 Debian suspend supplement (same application binary):
-PASS python3 -u apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-debian13-kde --package /mnt/disk2/vm/lhc-release-20261021/final-packages/left-hand-control_0.3.0_amd64.deb
+PASS python3 -u apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-debian13-kde --package /mnt/disk2/vm/tecloid-release-20261021/final-packages/tecloid_0.3.0_amd64.deb
   42 PASS, 0 FAIL, no SKIP; machine pc-i440fx-11.1, CPU host, 4 vCPUs, 6144 MiB.
   Run 20261021-222434; source 8e68ea4 plus VM harness/documentation changes.
   Rust/UI/manifests unchanged (304 files match src-kwin.tar.gz).
   Earlier sources archive remains unchanged; stand changes are in the repository
-  and /mnt/disk2/vm/lhc-release-20261021/debian-diagnostics/suspend-fix/.
+  and /mnt/disk2/vm/tecloid-release-20261021/debian-diagnostics/suspend-fix/.
   Detailed diagnosis and all checks: linux/2026-10-21-debian-suspend-fix.txt.

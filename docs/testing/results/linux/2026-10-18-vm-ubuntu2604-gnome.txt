@@ -1,9 +1,9 @@
 Date: 2026-10-18 17:20:10 -0300
 Commit: ed7343a (with uncommitted changes)
 VM: ubuntu2604-gnome
-Package: /mnt/disk2/codeWorkspace/left-hand-control/target/packages/left-hand-control-0.3.0-linux-x86_64.tar.gz
+Package: /mnt/disk2/codeWorkspace/tecloid/target/packages/tecloid-0.3.0-linux-x86_64.tar.gz
 Keyboard: /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
-Logs and screenshots: /mnt/disk2/vm/lhc-ubuntu2604-gnome/runs/20261018-171915/logs
+Logs and screenshots: /mnt/disk2/vm/tecloid-ubuntu2604-gnome/runs/20261018-171915/logs
 Scope: GNOME smoke only; lock/suspend/replug, other receivers and upgrade not covered.
 
 - boot-session: passed — PRETTY_NAME="Ubuntu 26.04.1 LTS"
@@ -24,9 +24,9 @@ XDG_CURRENT_DESKTOP=ubuntu:GNOME
 XDG_SESSION_TYPE=wayland
 xdg-desktop-portal	1.21.1+ds-1ubuntu3.1
 xdg-desktop-portal-gnome	50.0-0ubuntu1
-- install: passed — /home/tester/.local/bin/left-hand-control:
+- install: passed — /home/tester/.local/bin/tecloid:
 - keyboard-and-config: passed — /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:01.0-2-event-kbd
-- no-permissions-start: FAILED — `python3 ~/lhc-e2e/linux-guest.py start-app --popups auto` exited with 1:
+- no-permissions-start: FAILED — `python3 ~/tecloid-e2e/linux-guest.py start-app --popups auto` exited with 1:
 timed out after 30s waiting for an answer to `ping`
 
 Passed: 3, failed: 1

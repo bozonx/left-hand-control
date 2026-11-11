@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Left Hand Control are documented here.
+All notable changes to tecloid are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 New entries go under `[Unreleased]`; `cargo release` turns it into a dated version section.
 
@@ -15,7 +15,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
-- The application is renamed from Left Hand Control to Tecloid: binary `tecloid`, app id `dev.bozonx.tecloid` (configuration and data directories, desktop entry, autostart), packages, udev rule, D-Bus names, virtual device names and the GNOME extension `tecloid@bozonx.dev`. Settings from the old directories are not migrated; reinstall the GNOME extension. The bundled layout keeps its name "LHC1 by Ivan K".
+- Standardized the application name and technical identifiers as Tecloid; the bundled layout remains "LHC1 by Ivan K".
 - Before the first public release, reset `config.json` to format version 1 and remove the unreleased version 1 → 2 migration and version 2 schema; profiles remain at version 1. Accessibility choices and explicit libei mode names are part of the initial format.
 - Rename `sys:switchKeyboardLayoutN` to `sys:switchToKeyboardLayoutN`, `settings.timing.comboMs` to `chordMs`, and `settings.launchOnStartup` to `launchAtLogin`. The old names are rejected; no migration is provided.
 
@@ -30,7 +30,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Settings → Accessibility: "High contrast" and "Reduce animations" are now selects with "Follow system" (the default), "On" and "Off". On Linux "Follow system" reads the desktop preference from the XDG Settings portal (`contrast`, `reduced-motion`; on KDE also the animation speed slider set to instant) and follows its changes; Windows and macOS do not report it yet.
 - Profile format: a rule chord is written as an array of keys (`"key": ["ShiftLeft", "ControlRight"]`); a single key stays a string. `+` inside a rule key is now a load error, since in actions it joins modifiers to a key.
 - `config.json`: `settings.profiles.manual` is renamed to `settings.profiles.manualProfile`.
-- `lhc:showQuickMenuLast` and `lhc:showEmojiMenuLast` are renamed to `lhc:showQuickMenuRecent` and `lhc:showEmojiMenuRecent`: they open the page used last, not the last page.
+- `tecloid:showQuickMenuLast` and `tecloid:showEmojiMenuLast` are renamed to `tecloid:showQuickMenuRecent` and `tecloid:showEmojiMenuRecent`: they open the page used last, not the last page.
 - `sys:switchDesktopN` is renamed to `sys:switchToDesktopN`, matching `sys:switchToNextDesktop` and `sys:moveWindowToDesktopN`. Profiles that use the old name report an unknown system action; rebind those keys.
 - Keyboard navigation in settings: the emoji palette on the menus page is one Tab stop with arrows crossing category borders; arrow keys also reach the buttons in the hold menu on the triggers page; scrollbars are no longer Tab stops (PageUp/PageDown scroll while focus is inside a scrolled area); layer tabs show the same 2px focus ring as other controls; Left/Right in key grids keep working when keys in a row have different heights; the layer key grid always keeps a Tab stop after the keys change.
 - Layout with large text and long translations: button groups (theme, modes, device tabs) stack into a column when one row does not fit, checkbox labels and card titles wrap instead of running past the edge, and dialog content scrolls when it cannot fit the window. At the regular size nothing changes.
@@ -44,7 +44,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 - Renamed "layout" to "profile" across configuration, library files, actions and UI:
   - Library files live in `profiles/` instead of `layouts/`.
-  - App actions: `lhc:activateProfile1`…`5` (previously `lhc:activateLayout1`…`5`).
+  - App actions: `tecloid:activateProfile1`…`5` (previously `tecloid:activateLayout1`…`5`).
   - Setting `settings.profileOsd` (previously `settings.layoutOsd`).
   - Interface terminology: "Layout" / "Раскладка" is now "Profile" / "Профиль", reserving "layout" exclusively for system keyboard layouts (XKB / OS input languages).
   - Renamed internal core module `profile` to `config` to reflect that it holds configuration and settings models.
@@ -83,7 +83,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Rules: the "Enabled" checkbox moved from the rule card into "Advanced rule options". A disabled rule is shown dimmed but stays fully editable; the options button keeps full contrast.
 - Layouts page: the unsaved-changes question always offers to save; a working copy not yet in the library asks for a name first and then continues. In the "Layout changed on disk" dialog the safe "Save as new…" is now the primary button instead of "Overwrite".
 - Quick actions no longer have icons.
-- Layers page: delete confirmations name the layer or extra key and show save errors; if the layer changed while a confirmation was open, it closes instead of failing on every retry. The activating triggers are shown as key chips that follow the US layout / LHC codes switch. Key tooltips explain swapping with Ctrl+X / Ctrl+V; long layer names are cut in the tab strip. Renaming a layer no longer rewrites its description.
+- Layers page: delete confirmations name the layer or extra key and show save errors; if the layer changed while a confirmation was open, it closes instead of failing on every retry. The activating triggers are shown as key chips that follow the US layout / Tecloid codes switch. Key tooltips explain swapping with Ctrl+X / Ctrl+V; long layer names are cut in the tab strip. Renaming a layer no longer rewrites its description.
 - The Slint software renderer is no longer built: `SLINT_BACKEND` accepts `winit-skia` (the default) and `winit-skia-software` for machines without a GPU. `winit-software` drew emoji as empty cells or monochrome outlines.
 - Config and layout formats were finalized before the first release (`version` stays 1; files written by earlier development builds must be recreated or edited by hand). See `docs/config-format.md`:
   - `config.json`: layout selection is grouped under `settings.layouts` (`mode`, `manual`, `order`, `auto.rules`, `auto.fallback`) instead of `layoutMode`, `activeLayoutId`, `layoutOrder`, `autoRules` and `autoDefaultLayoutId`; `inDevelopment` is renamed to `experimental`.
@@ -92,8 +92,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
   - `config.json` stores only settings that differ from the defaults, so later releases can improve defaults.
   - Layout files: `description` moved into `meta`; the obsolete quick-action `icon` field is rejected; layer, macro and command names equal to their id are not written.
   - Both files: `schemaVersion` is renamed to `version`; the author's version of a layout is `meta.layoutVersion` instead of `meta.version`, so it is not confused with the format `version`.
-  - Action ids name the verb first: `sys:closeWindow`, `minimizeWindow`, `maximizeWindow`, `maximizeWindowVertically`, `toggleWindowKeepAbove`, `moveWindowToNextDesktop`, `moveWindowToDesktopN`, `showOverview`, `showAppLauncher`, `turnOffScreen`; `lhc:toggleGameMode`, `setGameModeAuto`, `setGameModeOn`, `setGameModeOff`. `sys:switchLayoutN` is `sys:switchToKeyboardLayoutN`, so it is not confused with the application's layouts.
-  - Actions of Left Hand Control itself use the `lhc:` prefix instead of `app:` (`lhc:showQuickMenu1`, `lhc:activateLayout2`, `lhc:toggleGameMode`), so they are not confused with actions of installed applications (`xdg:`). `app:` actions are not migrated.
+  - Action ids name the verb first: `sys:closeWindow`, `minimizeWindow`, `maximizeWindow`, `maximizeWindowVertically`, `toggleWindowKeepAbove`, `moveWindowToNextDesktop`, `moveWindowToDesktopN`, `showOverview`, `showAppLauncher`, `turnOffScreen`; `tecloid:toggleGameMode`, `setGameModeAuto`, `setGameModeOn`, `setGameModeOff`. `sys:switchLayoutN` is `sys:switchToKeyboardLayoutN`, so it is not confused with the application's layouts.
+  - Actions of tecloid itself use the `tecloid:` prefix instead of `app:` (`tecloid:showQuickMenu1`, `tecloid:activateLayout2`, `tecloid:toggleGameMode`), so they are not confused with actions of installed applications (`xdg:`). `app:` actions are not migrated.
   - Built-in macro ids name the verb first and use one word per object: `Line` is the whole line with its line break, `LineText` its text, `Word` the word under the cursor. Renamed: `emptyLineAbove`/`Below` → `insertEmptyLineAbove`/`Below`, `nextLineEnd`, `previousLineEnd`, `nextLineStart`, `previousLineStart` → `goToNextLineEnd`, `goToPreviousLineEnd`, `goToNextLineStart`, `goToPreviousLineStart`, `move5LinesUp`/`Down` → `goTo5LinesUp`/`Down`, `spaceAfterNextChar` → `insertSpaceAfterNextChar`, `cutWordUnderCursor`, `copyWordUnderCursor`, `selectWordUnderCursor` → `cutWord`, `copyWord`, `selectWord`, `cutWholeLine` → `cutLine`. Old ids are not migrated: such bindings show as unknown macros.
   - `config.json`: `linux.ydotoolPath` and `linux.xdotoolPath` are omitted to search `PATH`; an empty string is an error.
   - Layout files: `quickActionPages` and `emojiPages` are `quickMenuPages` and `emojiMenuPages` (generated page ids `quick-N` and `emoji-N`); command scripts are `sh` and `powershell` instead of `unix` and `windows`; `hold.keys` is `hold.action`; the layer list `holdModifiers` is replaced by the key form `{ "action": "Alt+Tab", "holdModifiers": true }`. Layer keys are written in keyboard order.
@@ -187,7 +187,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 - Settings save valid fields independently of invalid timing drafts, merge updates to untouched fields, and select the key behavior tab when invalid timings prevent exit. Device choices stay open on write errors and restart the mapper only after a saved device change. Ordinary settings saves no longer scan input devices; hold detection fits narrow windows.
 
-- `text:` actions with `$` or `€` type in Electron apps (Obsidian, VS Code) and X11 apps again: LHC no longer sends them through the special Dollar and Euro keys of the keymap, which these apps ignore. It now uses a regular key of the active layout (Shift+4 for `$` in English) or, when the layout lacks the character, the clipboard fallback.
+- `text:` actions with `$` or `€` type in Electron apps (Obsidian, VS Code) and X11 apps again: Tecloid no longer sends them through the special Dollar and Euro keys of the keymap, which these apps ignore. It now uses a regular key of the active layout (Shift+4 for `$` in English) or, when the layout lacks the character, the clipboard fallback.
 - `text:` types `*`, `+`, `(`, `)` and `/` with the main keyboard keys (for example Shift+8) instead of keypad keys, which terminals and some apps treat as commands. The keypad is used only for characters missing from the main keys.
 - A click on a button or tab while an inline editor was open no longer gets lost: the editor now commits after the click instead of on the press, so the page no longer shifts under the pointer.
 - A rule whose tap is set to "Suppress" with nothing on hold now swallows the key completely; before, the original key (for example Enter) still went through.
@@ -296,7 +296,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Game mode controls are available only after enabling the hidden “In development features” checkbox below the general settings paths.
 
 - Keystrokes outside macros wait at most 50 ms between modifiers and key, so a long macro modifier delay no longer freezes the keyboard; macros still use the full setting.
-- `lhc:showQuickMenuN` and `lhc:showEmojiMenuN` open a page by its position with no upper limit (the action picker offers pages 1–10). Moving or deleting a page no longer rewrites these actions, so reordering pages changes what a key opens, like reordering the library does for `lhc:activateLayoutN`.
+- `tecloid:showQuickMenuN` and `tecloid:showEmojiMenuN` open a page by its position with no upper limit (the action picker offers pages 1–10). Moving or deleting a page no longer rewrites these actions, so reordering pages changes what a key opens, like reordering the library does for `tecloid:activateLayoutN`.
 - The library order moved from `state.layoutOrder` to `settings.layoutOrder` in `config.json`. A config that still has `state.layoutOrder` is rejected: move the field into `settings` by hand.
 - The mapper accepts the same numbered system actions as the action picker (1–10), and `pause:` steps follow the macro editor's 1–10000 ms range.
 - The FemtoVG renderer is no longer built: `SLINT_BACKEND` accepts `winit-skia` (the default, unchanged) and `winit-software`.
@@ -340,7 +340,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Restored `text:` input into the settings typing test by tracking text destinations separately from rule conditions and identifying popup windows explicitly. Focus cancellation now reports a destination error instead of suggesting a mapper restart.
 - Repeated presses of a layer key that keeps its modifiers held (Tab for Alt+Tab) no longer press the held modifier again or wait for the modifier delay, so fast window switching keeps up.
 - The “Command started” notification is shown again when a command action runs.
-- Pressing a page-bound popup hotkey (`lhc:showQuickMenuN`, `lhc:showEmojiMenuN`) again while the popup is open turns through all pages like Tab instead of switching only between the first two.
+- Pressing a page-bound popup hotkey (`tecloid:showQuickMenuN`, `tecloid:showEmojiMenuN`) again while the popup is open turns through all pages like Tab instead of switching only between the first two.
 - Unplugging the optional mouse no longer stops keyboard mapping; the mouse reconnects independently with balanced button releases.
 - A tap that waits for a decision or for a possible double tap keeps the modifier that was held when the key was pressed: Ctrl+A on a key with a double-tap action, or Shift+A on a tap-hold key, released after the modifier, no longer types a plain “a”.
 - Tap, hold, long-hold and double-tap timers no longer expire while the key's own release or second press is still held back behind another undecided key or a possible chord: a layer key released in time stays a tap, a long-hold key released in time does not run its long action, and a quick second press stays a double tap.
@@ -349,7 +349,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 - Keyboards selected through `/dev/input/by-id` reconnect after changing USB ports, and the shell shows when the mapper is waiting for its keyboard.
 
 - A layer key bound to an empty macro or to an action that does nothing on this system no longer types the physical key.
-- Keys bound to a command that cannot run (commands disabled, no script for this OS) now show the "action unavailable" notice instead of silently doing nothing; an `lhc:` step that cannot run makes its macro unavailable like a `sys:` step.
+- Keys bound to a command that cannot run (commands disabled, no script for this OS) now show the "action unavailable" notice instead of silently doing nothing; an `tecloid:` step that cannot run makes its macro unavailable like a `sys:` step.
 - While a popup is opening, releases of keys pressed before it pass through, so the popup no longer opens with a modifier still held.
 - The action picker on Windows no longer marks commands and system actions as unavailable, and marks commands without a script for the current OS.
 - A deleted or damaged layout file that was open for editing no longer makes the whole configuration unavailable; the editor starts from a fresh layout and the file is left untouched.

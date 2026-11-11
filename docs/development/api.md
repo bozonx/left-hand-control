@@ -1,6 +1,6 @@
 # Контракты shell, core и IPC
 
-Slint shell вызывает Rust API `lhc-core` в своём процессе. Ядро не зависит от
+Slint shell вызывает Rust API `tecloid-core` в своём процессе. Ядро не зависит от
 Slint. IPC используется CLI-клиентом и отдельным Spell popup worker.
 
 ## Команды

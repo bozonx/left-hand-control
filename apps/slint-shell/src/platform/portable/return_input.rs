@@ -42,7 +42,7 @@ impl ReturnInput {
     pub fn selected(&mut self, text: String) {
         let Some(target) = self.target.take() else {
             report(
-                lhc_core::events::TextInputFailure::DestinationChanged,
+                tecloid_core::events::TextInputFailure::DestinationChanged,
                 "no native target was captured",
             );
             return;
@@ -50,7 +50,7 @@ impl ReturnInput {
         let selection_context = capture_selection_context();
         let generation = GENERATION.load(Ordering::SeqCst);
         let result = std::thread::Builder::new()
-            .name("lhc-native-text".into())
+            .name("tecloid-native-text".into())
             .spawn(move || {
                 let valid = || GENERATION.load(Ordering::SeqCst) == generation;
                 std::thread::sleep(POPUP_CLOSE_DELAY);
@@ -59,7 +59,7 @@ impl ReturnInput {
                 }
                 if let Err(error) = restore_target(&target, selection_context) {
                     report(
-                        lhc_core::events::TextInputFailure::DestinationChanged,
+                        tecloid_core::events::TextInputFailure::DestinationChanged,
                         &error.to_string(),
                     );
                     return;
@@ -68,7 +68,7 @@ impl ReturnInput {
                 while valid() && target_is_foreground(&target) && !modifiers_released() {
                     if std::time::Instant::now() >= deadline {
                         report(
-                            lhc_core::events::TextInputFailure::NativeInput(
+                            tecloid_core::events::TextInputFailure::NativeInput(
                                 "keyboard modifiers remain held".into(),
                             ),
                             "keyboard modifiers remain held",
@@ -83,30 +83,30 @@ impl ReturnInput {
                 }
                 if !check() {
                     report(
-                        lhc_core::events::TextInputFailure::DestinationChanged,
+                        tecloid_core::events::TextInputFailure::DestinationChanged,
                         "native destination changed before input",
                     );
                     return;
                 }
                 if let Err(error) = type_text(&text, check) {
                     report(
-                        lhc_core::events::TextInputFailure::NativeInput(error.to_string()),
+                        tecloid_core::events::TextInputFailure::NativeInput(error.to_string()),
                         &error.to_string(),
                     );
                 }
             });
         if let Err(error) = result {
             report(
-                lhc_core::events::TextInputFailure::NativeInput(error.to_string()),
+                tecloid_core::events::TextInputFailure::NativeInput(error.to_string()),
                 &error.to_string(),
             );
         }
     }
 }
 
-fn report(failure: lhc_core::events::TextInputFailure, detail: &str) {
+fn report(failure: tecloid_core::events::TextInputFailure, detail: &str) {
     log::warn!("[native text] {detail}");
-    lhc_core::events::emit(lhc_core::events::CoreEvent::TextInputFailed(failure));
+    tecloid_core::events::emit(tecloid_core::events::CoreEvent::TextInputFailed(failure));
 }
 
 #[cfg(target_os = "windows")]
@@ -214,18 +214,18 @@ fn modifiers_released() -> bool {
 
 #[cfg(target_os = "windows")]
 fn type_text(text: &str, valid: impl Fn() -> bool) -> Result<(), Box<dyn std::error::Error>> {
-    lhc_core::platform::type_unicode(text, valid).map_err(Into::into)
+    tecloid_core::platform::type_unicode(text, valid).map_err(Into::into)
 }
 
 #[cfg(target_os = "macos")]
-type Target = lhc_core::platform::NativeTextTarget;
+type Target = tecloid_core::platform::NativeTextTarget;
 
 #[cfg(target_os = "macos")]
 type SelectionContext = u32;
 
 #[cfg(target_os = "macos")]
 fn capture_target() -> Option<Target> {
-    lhc_core::platform::capture_text_target()
+    tecloid_core::platform::capture_text_target()
 }
 
 #[cfg(target_os = "macos")]
@@ -238,7 +238,7 @@ fn restore_target(
     target: &Target,
     selection_context: SelectionContext,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    lhc_core::platform::restore_text_target(*target, selection_context).map_err(Into::into)
+    tecloid_core::platform::restore_text_target(*target, selection_context).map_err(Into::into)
 }
 
 #[cfg(target_os = "macos")]
@@ -248,7 +248,7 @@ fn target_is_foreground(target: &Target) -> bool {
 
 #[cfg(target_os = "macos")]
 fn modifiers_released() -> bool {
-    lhc_core::platform::text_modifiers_released()
+    tecloid_core::platform::text_modifiers_released()
 }
 
 #[cfg(target_os = "macos")]

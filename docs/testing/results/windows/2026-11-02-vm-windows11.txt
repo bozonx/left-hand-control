@@ -1,9 +1,9 @@
 Date: 2026-11-02 16:23:20 -0300
 Commit: a12d7cb8 (with uncommitted changes)
-Command: /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows --memory 8192 --suite full --stress-seconds 180 --previous-package /mnt/disk2/vm/lhc-release-20261022-windows-fixes/packages/left-hand-control-0.3.0-windows-x86_64.zip --timeout 180
-VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Command: /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/tecloid-windows --memory 8192 --suite full --stress-seconds 180 --previous-package /mnt/disk2/vm/tecloid-release-20261022-windows-fixes/packages/tecloid-0.3.0-windows-x86_64.zip --timeout 180
+VM: windows11 (/mnt/disk2/vm/tecloid-windows/windows11-e2e-base.qcow2)
 Suite: full; acceptance requested: False
-Previous-version upgrade: /mnt/disk2/vm/lhc-release-20261022-windows-fixes/packages/left-hand-control-0.3.0-windows-x86_64.zip
+Previous-version upgrade: /mnt/disk2/vm/tecloid-release-20261022-windows-fixes/packages/tecloid-0.3.0-windows-x86_64.zip
 Scope: Windows developer VM; clean-package and previous-version upgrade require separate acceptance
 Mapper build: release
 Popup shell build: release
@@ -12,7 +12,7 @@ Mapper from: beginning
 Mapper only: all
 Extended: False; stress seconds: 180
 Memory: 8192 MiB
-Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261102-151306/logs
+Logs: /mnt/disk2/vm/tecloid-windows/runs/20261102-151306/logs
 
 Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
 Session: 1
@@ -24,7 +24,7 @@ Suite: full
 
 - boot: passed
 - preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
-- upload-source: passed — 1742 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261102-151306/src.tar.gz; SHA256 1fb79b99950b5e4ae4735c1cd5c0d80f845c1c7eb050a0f908f8e126a878df6e; Source sync: 175 updated, 2 removed
+- upload-source: passed — 1742 files; source archive /mnt/disk2/vm/tecloid-windows/runs/20261102-151306/src.tar.gz; SHA256 1fb79b99950b5e4ae4735c1cd5c0d80f845c1c7eb050a0f908f8e126a878df6e; Source sync: 175 updated, 2 removed
 - windows-full: FAILED — Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
 Session: 1
 Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)

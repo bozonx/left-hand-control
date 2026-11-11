@@ -22,15 +22,15 @@ fn matchers_are_added_changed_and_kept_unique() {
 }
 
 fn found(
-    devices: Vec<lhc_core::mapper::devices::InputDevice>,
-) -> lhc_core::mapper::devices::DeviceDiscovery {
-    lhc_core::mapper::devices::DeviceDiscovery {
+    devices: Vec<tecloid_core::mapper::devices::InputDevice>,
+) -> tecloid_core::mapper::devices::DeviceDiscovery {
+    tecloid_core::mapper::devices::DeviceDiscovery {
         devices,
         unavailable: Vec::new(),
     }
 }
 
-fn input_devices() -> Vec<lhc_core::mapper::devices::InputDevice> {
+fn input_devices() -> Vec<tecloid_core::mapper::devices::InputDevice> {
     [
         ("Power button", "/dev/input/event0", false, false),
         ("Mouse", "/dev/input/event1", false, true),
@@ -38,7 +38,7 @@ fn input_devices() -> Vec<lhc_core::mapper::devices::InputDevice> {
     ]
     .into_iter()
     .map(
-        |(name, path, is_keyboard, is_mouse)| lhc_core::mapper::devices::InputDevice {
+        |(name, path, is_keyboard, is_mouse)| tecloid_core::mapper::devices::InputDevice {
             name: name.into(),
             path: path.into(),
             is_keyboard,
@@ -537,7 +537,7 @@ fn partially_denied_discovery_lists_open_devices_and_reports_access() {
     let mut discovery = found(input_devices());
     discovery
         .unavailable
-        .push(lhc_core::mapper::devices::UnavailableDevice {
+        .push(tecloid_core::mapper::devices::UnavailableDevice {
             path: "/dev/input/event3".into(),
             error: "open /dev/input/event3: Permission denied".into(),
             denied: true,

@@ -1,12 +1,12 @@
 mod support;
-use lhc_core::{
-    config_document::{ConfigDocument, KeyAssignment},
-    storage::StoragePaths,
-};
 use slint::{ComponentHandle, Model};
 use slint_shell::{Document, bind_document, ui::*};
 use std::{rc::Rc, time::Duration};
 use support::{accessible_position, snapshot};
+use tecloid_core::{
+    config_document::{ConfigDocument, KeyAssignment},
+    storage::StoragePaths,
+};
 
 fn numeric_field_position(ui: &SettingsWindow, label: &str) -> slint::LogicalPosition {
     accessible_position(
@@ -55,7 +55,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ui = SettingsWindow::new()?;
     bind_document(&ui, &document);
     slint_shell::bind_game_mode(&ui);
-    lhc_core::gamemode::set_settings(&document.read().settings().game_mode, true);
+    tecloid_core::gamemode::set_settings(&document.read().settings().game_mode, true);
     let settings = ui.global::<SettingsEditor>();
     assert!(!settings.get_in_development());
     settings.set_in_development(true);
@@ -121,11 +121,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     assert_eq!(
         loaded.settings().linux_wayland_text_mode,
-        lhc_core::config::model::TextMode::Ydotool
+        tecloid_core::config::model::TextMode::Ydotool
     );
     assert_eq!(
         loaded.settings().linux_paste_shortcut,
-        lhc_core::config::model::PasteShortcut::CtrlShiftV
+        tecloid_core::config::model::PasteShortcut::CtrlShiftV
     );
     assert_eq!(loaded.settings().linux_terminal_paste_shortcut, None);
     // Windows has no device paths: the mapper takes the whole session.
@@ -244,10 +244,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!library.get_dirty());
     assert!(!library.get_rules_dirty());
     assert_eq!(
-        lhc_core::config::profile_file::serialize(
+        tecloid_core::config::profile_file::serialize(
             &document.read().load_profile("user:Test profile")?
         ),
-        lhc_core::config::profile_file::serialize(document.read().profile())
+        tecloid_core::config::profile_file::serialize(document.read().profile())
     );
     ui.global::<KeyEditor>().invoke_edit(33);
     assert!(picker.get_opened());
@@ -265,7 +265,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     document.edit(slint_shell::document::View::Library, |config| {
         config.update_profile(|profile| {
-            use lhc_core::config::model::{Command, KeyRule, Macro, MacroStep};
+            use tecloid_core::config::model::{Command, KeyRule, Macro, MacroStep};
             profile.rules = ["F13", "F14", "F15"]
                 .into_iter()
                 .enumerate()
@@ -387,11 +387,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     for (selection, expected) in [
         (
             HoldDetection::Release,
-            Some(lhc_core::config::model::TapDecision::PermissiveHold),
+            Some(tecloid_core::config::model::TapDecision::PermissiveHold),
         ),
         (
             HoldDetection::Press,
-            Some(lhc_core::config::model::TapDecision::HoldOnOtherKeyPress),
+            Some(tecloid_core::config::model::TapDecision::HoldOnOtherKeyPress),
         ),
         (HoldDetection::Inherit, None),
     ] {
@@ -575,7 +575,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!picker.get_opened());
     assert_eq!(
         document.read().layer_key(&second, "Backquote"),
-        lhc_core::config_document::KeyAssignment::Swallow
+        tecloid_core::config_document::KeyAssignment::Swallow
     );
     layers.invoke_edit_key(0);
     assert_eq!(picker.get_behavior(), PickerBehavior::Swallow);
@@ -583,7 +583,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     picker.invoke_apply();
     assert_eq!(
         document.read().layer_key(&second, "Backquote"),
-        lhc_core::config_document::KeyAssignment::Transparent
+        tecloid_core::config_document::KeyAssignment::Transparent
     );
     assert!(library.get_rules_dirty());
     assert!(library.get_layers_dirty());
@@ -594,10 +594,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         !library.get_dirty(),
         "status {}; saved:\n{}current:\n{}",
         library.get_status().id,
-        lhc_core::config::profile_file::serialize(
+        tecloid_core::config::profile_file::serialize(
             &document.read().load_profile("user:Test profile")?
         ),
-        lhc_core::config::profile_file::serialize(document.read().profile())
+        tecloid_core::config::profile_file::serialize(document.read().profile())
     );
     assert!(!library.get_rules_dirty());
     assert!(!library.get_layers_dirty());
@@ -609,7 +609,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     settings.invoke_save();
     assert_eq!(
         document.read().settings().appearance,
-        lhc_core::config::model::Appearance::Dark
+        tecloid_core::config::model::Appearance::Dark
     );
     library.set_active_label("Test profile".into());
     ui.global::<AppState>().set_keyboard_language("EN".into());
@@ -742,7 +742,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y: -900.0 });
                 snapshot(&ui, "settings-game-mode-bottom");
                 ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position, delta_x: 0.0, delta_y: 900.0 });
-                ui.global::<SettingsEditor>().set_tab(SettingsTab::General); assert_eq!(document.read().settings().default_hold_timeout_ms, 321); ui.global::<SettingsEditor>().set_appearance(AppearanceChoice::EInk); ui.global::<SettingsEditor>().invoke_save(); assert_eq!(ConfigDocument::load(paths.clone()).unwrap().settings().appearance, lhc_core::config::model::Appearance::EInk); ui.global::<Theme>().set_eink(true); ui.global::<Theme>().set_dark(false); slint_shell::ui::apply_theme(&ui.global::<Theme>()); }
+                ui.global::<SettingsEditor>().set_tab(SettingsTab::General); assert_eq!(document.read().settings().default_hold_timeout_ms, 321); ui.global::<SettingsEditor>().set_appearance(AppearanceChoice::EInk); ui.global::<SettingsEditor>().invoke_save(); assert_eq!(ConfigDocument::load(paths.clone()).unwrap().settings().appearance, tecloid_core::config::model::Appearance::EInk); ui.global::<Theme>().set_eink(true); ui.global::<Theme>().set_dark(false); slint_shell::ui::apply_theme(&ui.global::<Theme>()); }
             19 => { snapshot(&ui, "settings-eink"); ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled { position: slint::LogicalPosition::new(500.0, 450.0), delta_x: 0.0, delta_y: -450.0 }); }
             20 => { snapshot(&ui, "settings-behavior-eink"); ui.global::<SettingsEditor>().set_message(Message { id: "settings-timing-invalid".into(), arg: "".into(), count: 0, ..Default::default() }); }
             21 => {

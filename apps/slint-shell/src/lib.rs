@@ -55,7 +55,7 @@ const HELP: &str = concat!(
 /// Entry point shared by all roles; `args` excludes the program name.
 pub fn run(args: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(target_os = "windows")]
-    if lhc_core::mapper::windows::dispatch_input_guard()? {
+    if tecloid_core::mapper::windows::dispatch_input_guard()? {
         return Ok(());
     }
     let start = Instant::now();

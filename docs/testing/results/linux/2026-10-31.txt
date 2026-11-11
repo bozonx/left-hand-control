@@ -1,6 +1,6 @@
 Date: 2026-10-31 07:45:16 -0300
 Commit: 84a30548 (with uncommitted changes)
-Version: left-hand-control 0.4.0
+Version: tecloid 0.4.0
 Session: wayland, KDE; plasmashell 6.7.5
 Kernel: Linux 7.2.9-1-MANJARO
 
@@ -15,7 +15,7 @@ Kernel: Linux 7.2.9-1-MANJARO
 - example-undo-redo: passed
 - example-inline-edit: passed
 - example-drag-scroll: passed
-- example-notifications: FAILED (exit 101; log: /tmp/lhc-e2e-local.aMwyraPL/example-notifications.log)
+- example-notifications: FAILED (exit 101; log: /tmp/tecloid-e2e-local.aMwyraPL/example-notifications.log)
 - example-accessibility: passed
 - example-keyboard-navigation: passed
 - example-contrast-scaling: passed

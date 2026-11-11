@@ -38,8 +38,8 @@ printf '%s\n' "$key" > "$home/.ssh/authorized_keys"
 chown "$user:$(id -gn "$user")" "$home/.ssh/authorized_keys"
 chmod 600 "$home/.ssh/authorized_keys"
 
-printf '%s ALL=(ALL) NOPASSWD: ALL\n' "$user" > /etc/sudoers.d/lhc-e2e
-chmod 440 /etc/sudoers.d/lhc-e2e
+printf '%s ALL=(ALL) NOPASSWD: ALL\n' "$user" > /etc/sudoers.d/tecloid-e2e
+chmod 440 /etc/sudoers.d/tecloid-e2e
 
 session=plasma
 [ -e /usr/share/wayland-sessions/plasma.desktop ] || session=plasmawayland
@@ -48,7 +48,7 @@ dm_conf=/etc/sddm.conf.d
 [ -e /usr/lib/systemd/system/plasmalogin.service ] && dm_conf=/etc/plasmalogin.conf.d
 install -d "$dm_conf"
 printf '[Autologin]\nUser=%s\nSession=%s\n' "$user" "$session" \
-    > "$dm_conf/zz-lhc-e2e.conf"
+    > "$dm_conf/zz-tecloid-e2e.conf"
 
 # A locked screen or a suspended guest would swallow the injected keys.
 config="$home/.config"

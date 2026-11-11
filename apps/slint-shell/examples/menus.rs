@@ -201,7 +201,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     settings.invoke_save();
 
     document.edit(slint_shell::document::View::Shell, |config| {
-        config.save_command(lhc_core::config::model::Command {
+        config.save_command(tecloid_core::config::model::Command {
             id: reference.trim_start_matches("cmd:").into(),
             name: "Плеер".into(),
             posix_script: "playerctl play-pause".into(),
@@ -262,7 +262,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     e.invoke_refresh();
     assert!(!e.get_has_unsaved_changes());
-    e.invoke_open(match std::env::var("LHC_MENUS_PAGE").as_deref() {
+    e.invoke_open(match std::env::var("TECLOID_MENUS_PAGE").as_deref() {
         Ok("1") => MenuKind::Quick,
         _ => MenuKind::Emoji,
     });
@@ -281,14 +281,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         assert!(!e.invoke_show_page());
         e.invoke_refresh();
     }
-    if std::env::var_os("LHC_MENUS_PREVIEW").is_some() {
+    if std::env::var_os("TECLOID_MENUS_PREVIEW").is_some() {
         assert!(e.invoke_show_page());
         e.set_preview_visible(true);
     }
     slint::select_bundled_translation("ru")?;
     ui.window().set_size(slint::LogicalSize::new(1120.0, 760.0));
     ui.show()?;
-    if std::env::var_os("LHC_MENUS_DND").is_some() {
+    if std::env::var_os("TECLOID_MENUS_DND").is_some() {
         use slint::platform::{PointerEventButton, WindowEvent};
         e.invoke_open(MenuKind::Emoji);
         e.set_value("сделай всё, что ты рекомендовал".into());
@@ -308,7 +308,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let move_to = |x, y| ui.window().dispatch_event(WindowEvent::PointerMoved { position: at(x, y) });
             let release = |x, y| ui.window().dispatch_event(WindowEvent::PointerReleased { position: at(x, y), button: PointerEventButton::Left });
             use i_slint_core::accessibility::AccessibleStringProperty::{Id, ItemIndex, Label};
-            let tab = |index| control_center(&ui, Id, &format!("lhc-menu-tab-{index}"));
+            let tab = |index| control_center(&ui, Id, &format!("tecloid-menu-tab-{index}"));
             let cell = |index| control_center(&ui, ItemIndex, &format!("{index}"));
             match stage.get() {
                 0 => {
@@ -325,7 +325,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 2 => { let (x, y) = cell(0); press(x, y); let (x, y) = tab(1); move_to(x, y); }
                 3 => {
                     assert_eq!(e.get_selected_page(), 1); let (x, y) = cell(1); move_to(x, y);
-                    if let Ok(path) = std::env::var("LHC_MENUS_DND_SNAPSHOT") {
+                    if let Ok(path) = std::env::var("TECLOID_MENUS_DND_SNAPSHOT") {
                         support::write_snapshot(&ui, std::path::Path::new(&path));
                     }
                     release(x, y);
@@ -368,19 +368,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let weak = ui.as_weak();
     timer.start(slint::TimerMode::SingleShot,Duration::from_millis(700),move || {
         let ui = weak.upgrade().unwrap();
-        if std::env::var_os("LHC_MENUS_NAV").is_some() {
+        if std::env::var_os("TECLOID_MENUS_NAV").is_some() {
             for expected in [MenuKind::Quick, MenuKind::Emoji] {
                 ui.invoke_navigate(Page::Menus, expected);
                 assert_eq!(ui.global::<MenuEditor>().get_kind(), expected);
                 assert_eq!(ui.get_page(), Page::Menus);
             }
         }
-        if std::env::var_os("LHC_MENUS_SCROLL").is_some() {
+        if std::env::var_os("TECLOID_MENUS_SCROLL").is_some() {
             ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled {
                 position: slint::LogicalPosition::new(30.0, 400.0), delta_x: 0.0, delta_y: -600.0,
             });
         }
-        if let Ok(path) = std::env::var("LHC_MENUS_SNAPSHOT") {
+        if let Ok(path) = std::env::var("TECLOID_MENUS_SNAPSHOT") {
             support::write_snapshot(&ui, std::path::Path::new(&path));
         }
         println!("Menus smoke passed: pages, cells, drag moves, command picker, auto-save, validation and conflicts");

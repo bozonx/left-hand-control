@@ -22,7 +22,7 @@ mkdir -p -- "$staging/$name/icons"
 install -m 755 -- "$target_dir/release/tecloid" "$staging/$name/tecloid"
 install -m 755 -- apps/slint-shell/scripts/install-linux.sh "$staging/$name/install-linux.sh"
 install -m 755 -- apps/slint-shell/scripts/install-gnome-extension.sh "$staging/$name/install-gnome-extension.sh"
-cp -R -- crates/lhc-core/assets/gnome-extension "$staging/$name/gnome-extension"
+cp -R -- crates/tecloid-core/assets/gnome-extension "$staging/$name/gnome-extension"
 packaging=apps/slint-shell/packaging/linux
 install -m 644 -- LICENSE "$packaging/dev.bozonx.tecloid.desktop" \
     "$packaging/dev.bozonx.tecloid.metainfo.xml" "$packaging/60-tecloid.rules" \

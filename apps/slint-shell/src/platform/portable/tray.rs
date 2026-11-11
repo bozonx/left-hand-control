@@ -4,8 +4,8 @@ use crate::{
     command::{Command, Dispatch, Source},
     i18n::{self, Language, TrayItem},
 };
-use lhc_core::gamemode::GameModeStatus;
 use std::{cell::Cell, collections::HashMap, time::Instant};
+use tecloid_core::gamemode::GameModeStatus;
 use tray_icon::{
     Icon, TrayIcon, TrayIconBuilder,
     menu::{CheckMenuItem, Menu, MenuEvent, MenuItem, Submenu},

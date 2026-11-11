@@ -18,7 +18,7 @@ fi
 run_mapper=true
 [ "${1:-}" = --no-mapper ] && run_mapper=false
 
-logs=$(mktemp -d "${TMPDIR:-/tmp}/lhc-e2e-local.XXXXXXXX")
+logs=$(mktemp -d "${TMPDIR:-/tmp}/tecloid-e2e-local.XXXXXXXX")
 summary="$logs/summary.txt"
 passed=0
 failed=0
@@ -71,14 +71,14 @@ for example in 'editor --smoke' interactions rules library macros menus popup-gr
     shift
     run "example-$name" cargo run --locked -q -p slint-shell --features spell --example "$name" -- "$@"
 done
-run example-small-window-pseudo env LHC_SMALL_LANGUAGE=qps-ploc LHC_SMALL_TEXT_SCALE=1.3 \
+run example-small-window-pseudo env TECLOID_SMALL_LANGUAGE=qps-ploc TECLOID_SMALL_TEXT_SCALE=1.3 \
     cargo run --locked -q -p slint-shell --features spell --example small-window
 run check-recovery python3 apps/slint-shell/scripts/check/check-recovery.py --binary "$binary" --popups spell
-run check-preferences env LHC_BIN="$binary" python3 apps/slint-shell/scripts/check/check-preferences.py
+run check-preferences env TECLOID_BIN="$binary" python3 apps/slint-shell/scripts/check/check-preferences.py
 run check-worker-crash python3 apps/slint-shell/scripts/check/check-worker-crash.py "$binary"
 run check-linux-install python3 apps/slint-shell/scripts/release/check-linux-install.py
 if $run_mapper; then
-    run mapper-e2e cargo test --locked -q -p lhc-core --test mapper_e2e -- --ignored
+    run mapper-e2e cargo test --locked -q -p tecloid-core --test mapper_e2e -- --ignored
 fi
 
 echo

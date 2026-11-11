@@ -7,7 +7,7 @@
 ## Автоматические регрессии
 
 ```sh
-cargo test --locked -p lhc-core --lib macro
+cargo test --locked -p tecloid-core --lib macro
 cargo test --locked -p slint-shell --lib pages::macros::tests
 cargo run --locked -p slint-shell --example macros
 cargo run --locked -p slint-shell --example small-window

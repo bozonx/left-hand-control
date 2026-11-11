@@ -5,11 +5,11 @@ use crate::{
     command::{Source, WorkerCommand},
     layer_hint_model::LayerHint as Hint,
 };
-use lhc_core::mapper::{layer_hint::LayerHintState, layer_state};
 use std::{
     cell::RefCell,
     time::{Duration, Instant},
 };
+use tecloid_core::mapper::{layer_hint::LayerHintState, layer_state};
 
 const RETRY_DELAY: Duration = Duration::from_millis(100);
 
@@ -91,7 +91,7 @@ impl App {
             // the newly selected profile as though it had been applied.
             let config = document.read();
             let selected = config
-                .active_profile_id(&lhc_core::config::auto_switch::AutoSwitchContext::current())
+                .active_profile_id(&tecloid_core::config::auto_switch::AutoSwitchContext::current())
                 .map_err(|error| log::warn!("layer hint profile: {error}"))
                 .ok()?;
             if document.applied_profile_id()? != selected {

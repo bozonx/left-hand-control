@@ -62,7 +62,7 @@ pub(in crate::pages) fn capture(
     }
     // Slint tracks modifiers from key events, not ModifiersChanged. Swallowing
     // a release here can leave Ctrl/Shift stuck when capture ends and block typing.
-    lhc_core::config::key_catalog::modifier_key(&key).is_none()
+    tecloid_core::config::key_catalog::modifier_key(&key).is_none()
 }
 
 /// How long Escape must be held alone to cancel capture. Escape itself is
@@ -118,7 +118,7 @@ pub(super) fn physical_key_name(
         PhysicalKey::Unidentified(slint::winit_030::winit::keyboard::NativeKeyCode::Xkb(code)) => {
             u16::try_from(code)
                 .ok()
-                .and_then(lhc_core::mapper::keys::evdev_to_code)
+                .and_then(tecloid_core::mapper::keys::evdev_to_code)
                 .map(str::to_owned)
         }
         PhysicalKey::Unidentified(_) => None,
@@ -173,9 +173,9 @@ impl CaptureState {
     /// Whether capture accepts `key`.
     pub(super) fn known(&self, key: &str, trigger: bool) -> bool {
         if trigger {
-            lhc_core::config::key_catalog::valid_trigger(key)
+            tecloid_core::config::key_catalog::valid_trigger(key)
         } else {
-            lhc_core::config::key_catalog::valid_key(key)
+            tecloid_core::config::key_catalog::valid_key(key)
         }
     }
 
@@ -225,7 +225,7 @@ impl CaptureState {
         let mut modifiers = Vec::new();
         let mut ordinary = Vec::new();
         for key in &keys {
-            let modifier = lhc_core::config::key_catalog::modifier_name(key);
+            let modifier = tecloid_core::config::key_catalog::modifier_name(key);
             if let Some(modifier) = modifier {
                 if !modifiers.contains(&modifier) {
                     modifiers.push(modifier);
@@ -239,7 +239,7 @@ impl CaptureState {
             return Some(keys.join("+"));
         }
         Some(
-            lhc_core::config::key_catalog::MODIFIER_ORDER
+            tecloid_core::config::key_catalog::MODIFIER_ORDER
                 .into_iter()
                 .filter(|m| modifiers.contains(m))
                 .chain(ordinary)

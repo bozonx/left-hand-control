@@ -173,12 +173,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let weak = ui.as_weak();
     timer.start(slint::TimerMode::SingleShot, Duration::from_millis(700), move || {
         let ui = weak.upgrade().unwrap();
-        if std::env::var_os("LHC_MACROS_SCROLL").is_some() {
+        if std::env::var_os("TECLOID_MACROS_SCROLL").is_some() {
             ui.window().dispatch_event(slint::platform::WindowEvent::PointerScrolled {
                 position: slint::LogicalPosition::new(500.0, 400.0), delta_x: 0.0, delta_y: -600.0,
             });
         }
-        if let Ok(path) = std::env::var("LHC_MACROS_SNAPSHOT") {
+        if let Ok(path) = std::env::var("TECLOID_MACROS_SNAPSHOT") {
             support::write_snapshot(&ui, std::path::Path::new(&path));
         }
         println!("Macros smoke: passed (built-in copy, steps, pauses, order, cycle validation, delayed save and reload)");

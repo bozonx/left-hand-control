@@ -1,7 +1,6 @@
 //! Dragging a key of the layer keyboard onto another key swaps their assignments;
 //! keys that keep their modifiers held are marked.
 mod support;
-use lhc_core::{config_document::KeyAssignment, storage::StoragePaths};
 use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, LogicalPosition, Model};
 use slint_shell::{
@@ -15,6 +14,7 @@ use std::{
     time::Duration,
 };
 use support::snapshot;
+use tecloid_core::{config_document::KeyAssignment, storage::StoragePaths};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     support::log_navigation();

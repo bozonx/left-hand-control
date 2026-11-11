@@ -5,15 +5,15 @@ use crate::{
     i18n::Msg,
     ui::{ActionPicker, Locale, PickerCategory, PickerItem, SettingsWindow, ShortcutDesktop},
 };
-use lhc_core::config::{
-    actions::{self, Action, ActionName},
-    key_catalog::CATEGORIES,
-    model::ResolvedAppConfig,
-};
 use slint::ComponentHandle;
 use std::{
     cell::{Cell, RefCell},
     sync::atomic::{AtomicBool, Ordering},
+};
+use tecloid_core::config::{
+    actions::{self, Action, ActionName},
+    key_catalog::CATEGORIES,
+    model::ResolvedAppConfig,
 };
 
 /// Picker category of each group of [`CATEGORIES`], in the same order.
@@ -86,7 +86,7 @@ pub(super) fn development_only(value: &str) -> bool {
 
 /// Whether `ms` is a valid macro pause.
 pub fn valid_pause(ms: &str) -> bool {
-    lhc_core::config::timing::PAUSE.parse(ms).is_some()
+    tecloid_core::config::timing::PAUSE.parse(ms).is_some()
 }
 
 /// Display name of a catalog action in the current UI language.
@@ -151,7 +151,7 @@ static SHORTCUTS_LOADING: AtomicBool = AtomicBool::new(false);
 pub(super) fn shortcut_desktop() -> ShortcutDesktop {
     #[cfg(target_os = "linux")]
     {
-        use lhc_core::platform::linux;
+        use tecloid_core::platform::linux;
         if matches!(linux::detect().desktop, linux::Desktop::Kde) {
             return ShortcutDesktop::Kde;
         }
@@ -231,7 +231,7 @@ fn read_desktop_items(desktop: ShortcutDesktop) -> (Vec<DesktopShortcutItem>, Re
         let mut items = Vec::new();
         let mut result = Ok(());
         if desktop == ShortcutDesktop::Kde {
-            match lhc_core::platform::kde_shortcuts::list() {
+            match tecloid_core::platform::kde_shortcuts::list() {
                 Ok(shortcuts) => items.extend(shortcuts.into_iter().map(|shortcut| {
                     DesktopShortcutItem {
                         value: Action::KdeShortcut(shortcut.id())
@@ -246,7 +246,7 @@ fn read_desktop_items(desktop: ShortcutDesktop) -> (Vec<DesktopShortcutItem>, Re
             }
         }
         items.extend(
-            lhc_core::platform::desktop_entries::list()
+            tecloid_core::platform::desktop_entries::list()
                 .into_iter()
                 .map(|action| DesktopShortcutItem {
                     value: Action::DesktopEntry(action.id())
@@ -324,7 +324,7 @@ pub(super) fn catalog(ui: &SettingsWindow, config: &ResolvedAppConfig) -> Vec<Pi
 /// Why a valid action may still not run, shown as a notice.
 pub(super) fn execution_notice(
     action: &Action,
-    config: &lhc_core::config::model::ResolvedAppConfig,
+    config: &tecloid_core::config::model::ResolvedAppConfig,
 ) -> Msg {
     match actions::execution_issue(action, config) {
         Some(actions::ExecutionIssue::CommandsDisabled) => Msg::CommandsDisabled,

@@ -6,24 +6,24 @@ import tempfile
 import time
 
 root = Path(__file__).resolve().parents[2]
-binary = Path(os.environ.get('LHC_BIN', root.parents[1] / 'target/debug/tecloid')).resolve()
-output = Path(sys.argv[1] if len(sys.argv) > 1 else tempfile.mkdtemp(prefix='lhc-3b-ipc-'))
+binary = Path(os.environ.get('TECLOID_BIN', root.parents[1] / 'target/debug/tecloid')).resolve()
+output = Path(sys.argv[1] if len(sys.argv) > 1 else tempfile.mkdtemp(prefix='tecloid-3b-ipc-'))
 output.mkdir(parents=True, exist_ok=True)
-config = tempfile.TemporaryDirectory(prefix="lhc-preferences-config-")
+config = tempfile.TemporaryDirectory(prefix="tecloid-preferences-config-")
 config_path = Path(config.name) / "linux/.config/dev.bozonx.tecloid/config.json"
 config_path.parent.mkdir(parents=True)
 config_path.write_text('{"version":1,"settings":{"experimental":true}}', encoding="utf-8")
 env = dict(
     os.environ,
-    LHC_DEV_DIR=config.name,
-    LHC_SOCKET=f'lhc-3b-{os.getpid()}.sock',
-    LHC_METRICS=str(output / 'parent.csv'),
-    LHC_POPUPS='spell',
-    LHC_HOTKEYS='off',
+    TECLOID_DEV_DIR=config.name,
+    TECLOID_SOCKET=f'tecloid-3b-{os.getpid()}.sock',
+    TECLOID_METRICS=str(output / 'parent.csv'),
+    TECLOID_POPUPS='spell',
+    TECLOID_HOTKEYS='off',
     SLINT_BACKEND='winit-skia-software',
     RUST_LOG='info',
 )
-socket = Path(env['XDG_RUNTIME_DIR']) / 'lhc-slint-shell' / env['LHC_SOCKET']
+socket = Path(env['XDG_RUNTIME_DIR']) / 'tecloid-slint-shell' / env['TECLOID_SOCKET']
 
 
 def send(command):

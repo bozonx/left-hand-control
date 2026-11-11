@@ -14,10 +14,10 @@ use crate::{
         SettingsWindow,
     },
 };
-use lhc_core::config::model::{Command, Layer, LayerKeymap};
-use lhc_core::config_document::{ConfigDocument, ConfigError, KeyAssignment};
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{cell::RefCell, rc::Rc};
+use tecloid_core::config::model::{Command, Layer, LayerKeymap};
+use tecloid_core::config_document::{ConfigDocument, ConfigError, KeyAssignment};
 
 fn conflict() -> Msg {
     Msg::from(&ConfigError::EditConflict)
@@ -618,7 +618,7 @@ fn set_key(
 ) -> Result<(), ConfigError> {
     let holds = matches!(assignment, KeyAssignment::Action(_)) && choice.hold_modifiers;
     config.edit_profile_with_commands(choice.command, |config| {
-        if lhc_core::config::layer_grid::contains(key) {
+        if tecloid_core::config::layer_grid::contains(key) {
             config.set_layer_key(id, key, assignment.clone())?;
         } else {
             config.set_extra_key(id, previous, key, assignment.clone())?;
@@ -1207,12 +1207,12 @@ mod tests {
             .edit(View::Rules, |config| {
                 config.update_profile(|profile| {
                     for key in ["CapsLock", "ShiftLeft+KeyA", "CapsLock"] {
-                        let mut rule = lhc_core::config::model::KeyRule::new(
+                        let mut rule = tecloid_core::config::model::KeyRule::new(
                             format!("rule-{}", profile.rules.len()),
                             key,
                         );
                         rule.layer_id = second.clone();
-                        rule.hold_behavior = Some(lhc_core::config::model::HoldBehavior::Layer);
+                        rule.hold_behavior = Some(tecloid_core::config::model::HoldBehavior::Layer);
                         profile.rules.push(rule);
                     }
                 })

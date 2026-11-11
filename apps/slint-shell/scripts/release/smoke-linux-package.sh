@@ -48,11 +48,11 @@ case "$package" in
         work=$(mktemp -d)
         tar -xzf "$package" -C "$work"
         prefix="$work/prefix"
-        LHC_INSTALL_PREFIX=$prefix sh "$work"/tecloid-*/install-linux.sh
+        TECLOID_INSTALL_PREFIX=$prefix sh "$work"/tecloid-*/install-linux.sh
         check_binary "$prefix/bin/tecloid"
         desktop-file-validate "$prefix/share/applications/$app_id.desktop"
         validate_metainfo "$prefix/share/metainfo/$app_id.metainfo.xml"
-        LHC_INSTALL_PREFIX=$prefix sh "$prefix/lib/$app_id/install-linux.sh" uninstall
+        TECLOID_INSTALL_PREFIX=$prefix sh "$prefix/lib/$app_id/install-linux.sh" uninstall
         test ! -e "$prefix/bin/tecloid"
         echo "Smoke check passed: $package"
         exit 0

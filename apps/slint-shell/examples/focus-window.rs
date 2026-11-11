@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "/Scripting",
         "org.kde.kwin.Scripting",
     )?;
-    let name = format!("lhc-focus-window-{}", std::process::id());
+    let name = format!("tecloid-focus-window-{}", std::process::id());
     let id: i32 = scripting.call(
         "loadScript",
         &(script.path().to_string_lossy().as_ref(), &name),

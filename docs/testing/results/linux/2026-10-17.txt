@@ -1,6 +1,6 @@
 Date: 2026-10-17 13:52:32 -0300
 Commit: 5f2198e (with uncommitted changes)
-Version: left-hand-control 0.3.0
+Version: tecloid 0.3.0
 Session: wayland, KDE; plasmashell 6.7.4
 Kernel: Linux 7.2.3-2-MANJARO
 

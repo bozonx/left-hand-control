@@ -14,7 +14,7 @@ import time
 
 from vmlib import Report, StepFailed, Vm, commit, environment_ok, receiver_text, result_path
 
-GUEST = "~/lhc-e2e"
+GUEST = "~/tecloid-e2e"
 PY = f"python3 {GUEST}/linux-guest.py"
 APP_ID = "dev.bozonx.tecloid"
 INSTALL = f"~/.local/lib/{APP_ID}"
@@ -49,8 +49,8 @@ def main():
         vm.start()
         vm.wait_ssh()
         vm.ssh(f"mkdir -p {GUEST}")
-        vm.copy_to(Path(__file__).with_name("linux-guest.py"), "lhc-e2e/")
-        vm.copy_to(Path(__file__).with_name("text_corpus.py"), "lhc-e2e/")
+        vm.copy_to(Path(__file__).with_name("linux-guest.py"), "tecloid-e2e/")
+        vm.copy_to(Path(__file__).with_name("text_corpus.py"), "tecloid-e2e/")
         guest("wait-session --timeout 180")
         info = vm.ssh("cat /etc/os-release; gnome-shell --version; "
                       "systemctl --user show-environment | grep -E 'XDG_CURRENT_DESKTOP|XDG_SESSION_TYPE'; "
@@ -59,17 +59,17 @@ def main():
         return info.strip()
 
     def ui_example(name):
-        vm.copy_to(args.examples / name, "lhc-e2e/")
+        vm.copy_to(args.examples / name, "tecloid-e2e/")
         arguments = " --smoke" if name == "editor" else ""
         home = vm.ssh('printf %s "$HOME"').strip()
-        snapshots = f"{home}/lhc-e2e/ui-snapshots/{name}"
+        snapshots = f"{home}/tecloid-e2e/ui-snapshots/{name}"
         vm.ssh(f"mkdir -p {shlex.quote(snapshots)}")
-        return vm.ssh(f"systemd-run --user --wait --pipe --collect --unit=lhc-e2e-ui-{name} "
-                      f"--setenv=LHC_EDITOR_SNAPSHOTS={shlex.quote(snapshots)} "
+        return vm.ssh(f"systemd-run --user --wait --pipe --collect --unit=tecloid-e2e-ui-{name} "
+                      f"--setenv=TECLOID_EDITOR_SNAPSHOTS={shlex.quote(snapshots)} "
                       f"{GUEST}/{name}{arguments}", timeout=180).strip()
 
     def install():
-        vm.copy_to(package, "lhc-e2e/")
+        vm.copy_to(package, "tecloid-e2e/")
         vm.ssh(f"cd {GUEST} && mkdir bundle && tar -xzf {shlex.quote(package.name)} -C bundle && "
                "cd bundle/* && ./install-linux.sh && ./install-gnome-extension.sh")
         return guest("check-install")
@@ -99,7 +99,7 @@ def main():
                   f"s.set_strv('disabled-extensions',[x for x in s.get_strv('disabled-extensions') if x!='{UUID}']); "
                   "Gio.Settings.sync()")
         vm.ssh(f"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus python3 -c {shlex.quote(script)}")
-        vm.ssh("sudo systemd-run --quiet --on-active=2 --unit=lhc-e2e-relogin "
+        vm.ssh("sudo systemd-run --quiet --on-active=2 --unit=tecloid-e2e-relogin "
                f"sh -c 'systemctl stop display-manager; loginctl terminate-user {shlex.quote(vm.user)}; sleep 3; systemctl start display-manager'")
         time.sleep(8)
         vm.wait_ssh()
@@ -186,8 +186,8 @@ def main():
         return expect("layer", "gk", action=keys)
 
     def clipboard_seed():
-        vm.copy_to(Path(__file__).with_name("clipboard-owner.py"), "lhc-e2e/")
-        vm.ssh(f"rm -f {GUEST}/clipboard-ready; systemd-run --user --collect --unit=lhc-e2e-clipboard-owner python3 {GUEST}/clipboard-owner.py")
+        vm.copy_to(Path(__file__).with_name("clipboard-owner.py"), "tecloid-e2e/")
+        vm.ssh(f"rm -f {GUEST}/clipboard-ready; systemd-run --user --collect --unit=tecloid-e2e-clipboard-owner python3 {GUEST}/clipboard-owner.py")
         deadline = time.monotonic() + 30
         while "ready" not in vm.ssh(f"test ! -f {GUEST}/clipboard-ready || echo ready"):
             if time.monotonic() >= deadline:
@@ -196,8 +196,8 @@ def main():
         return clipboard_preserved()
 
     def clipboard_preserved():
-        expected = {"text/plain;charset=utf-8": b"lhc-before-unicode",
-                    "application/x-lhc-e2e": b"binary\x00\xffpayload"}
+        expected = {"text/plain;charset=utf-8": b"tecloid-before-unicode",
+                    "application/x-tecloid-e2e": b"binary\x00\xffpayload"}
         import base64
         for mime, data in expected.items():
             output = vm.ssh("bash -o pipefail -c " + shlex.quote(
@@ -208,7 +208,7 @@ def main():
 
     def clipboard_interruption(mode):
         vm.ssh(f"rm -f {GUEST}/clipboard-ready {GUEST}/clipboard-paste-received; "
-               f"systemd-run --user --collect --unit=lhc-e2e-clipboard-{mode} "
+               f"systemd-run --user --collect --unit=tecloid-e2e-clipboard-{mode} "
                f"python3 {GUEST}/clipboard-owner.py --paste {mode}")
         def marker(name):
             deadline = time.monotonic() + 15
@@ -222,7 +222,7 @@ def main():
         marker("clipboard-paste-received")
         if mode == "hold":
             guest("toggle-mapper")
-        expected = "lhc-new-owner"
+        expected = "tecloid-new-owner"
         deadline = time.monotonic() + 6
         while True:
             actual = vm.ssh("wl-paste --no-newline --type 'text/plain;charset=utf-8'", check=False).strip()
@@ -247,7 +247,7 @@ def main():
             else:
                 vm.qmp.tap(*vm.get("portal_keys", ["ret"]))
             time.sleep(4)
-        return expect("text-ascii", "lhc-ok", action=keys)
+        return expect("text-ascii", "tecloid-ok", action=keys)
 
     def quick_popup():
         def choose():
@@ -332,9 +332,9 @@ def main():
         try:
             if vm.qemu and vm.qemu.poll() is None:
                 vm.qmp.screendump(vm.logs / "final.png")
-                vm.copy_from("lhc-e2e/app.log", vm.logs)
+                vm.copy_from("tecloid-e2e/app.log", vm.logs)
                 if args.examples:
-                    vm.copy_from("lhc-e2e/ui-snapshots", vm.logs)
+                    vm.copy_from("tecloid-e2e/ui-snapshots", vm.logs)
                 (vm.logs / "journal.txt").write_text(vm.ssh("journalctl --user -b --no-pager", check=False))
                 (vm.logs / "extensions.txt").write_text(vm.ssh("gnome-extensions list --enabled; journalctl -b --no-pager _COMM=gnome-shell", check=False))
         finally:

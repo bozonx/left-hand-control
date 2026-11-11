@@ -14,15 +14,15 @@
 set -euo pipefail
 
 XKB_DIR="/usr/share/X11/xkb"
-SYMBOLS_FILE="${XKB_DIR}/symbols/lhc"
+SYMBOLS_FILE="${XKB_DIR}/symbols/tecloid"
 RULES_FILE="${XKB_DIR}/rules/evdev"
 LST_FILE="${XKB_DIR}/rules/evdev.lst"
 XML_FILE="${XKB_DIR}/rules/evdev.xml"
 
 echo "==> Backing up /usr/share/X11/xkb/rules/evdev* (if not already)"
-sudo test -f "${RULES_FILE}.lhc-backup" || sudo cp "${RULES_FILE}" "${RULES_FILE}.lhc-backup"
-sudo test -f "${LST_FILE}.lhc-backup"   || sudo cp "${LST_FILE}"   "${LST_FILE}.lhc-backup"
-sudo test -f "${XML_FILE}.lhc-backup"   || sudo cp "${XML_FILE}"   "${XML_FILE}.lhc-backup"
+sudo test -f "${RULES_FILE}.tecloid-backup" || sudo cp "${RULES_FILE}" "${RULES_FILE}.tecloid-backup"
+sudo test -f "${LST_FILE}.tecloid-backup"   || sudo cp "${LST_FILE}"   "${LST_FILE}.tecloid-backup"
+sudo test -f "${XML_FILE}.tecloid-backup"   || sudo cp "${XML_FILE}"   "${XML_FILE}.tecloid-backup"
 
 echo "==> Writing ${SYMBOLS_FILE}"
 sudo tee "${SYMBOLS_FILE}" > /dev/null <<'EOF'
@@ -35,30 +35,30 @@ xkb_symbols "extras" {
 EOF
 
 echo "==> Patching ${RULES_FILE} (adding symbols mapping)"
-if ! sudo grep -q "^  lhc:extras" "${RULES_FILE}"; then
+if ! sudo grep -q "^  tecloid:extras" "${RULES_FILE}"; then
     # Insert our option = symbols rule at the end of the '! option = symbols' table.
     sudo awk '
         /^! option[[:space:]]*=[[:space:]]*symbols/ { in_table = 1; print; next }
-        in_table && /^![[:space:]]*[a-z]/        { in_table = 0; print "  lhc:extras           = +lhc(extras)"; print ""; print; next }
+        in_table && /^![[:space:]]*[a-z]/        { in_table = 0; print "  tecloid:extras           = +tecloid(extras)"; print ""; print; next }
         { print }
-        END { if (in_table) print "  lhc:extras           = +lhc(extras)" }
+        END { if (in_table) print "  tecloid:extras           = +tecloid(extras)" }
     ' "${RULES_FILE}" | sudo tee "${RULES_FILE}.new" > /dev/null
     sudo mv "${RULES_FILE}.new" "${RULES_FILE}"
 fi
 
 echo "==> Patching ${LST_FILE}"
-if ! sudo grep -q "^  lhc:extras" "${LST_FILE}"; then
+if ! sudo grep -q "^  tecloid:extras" "${LST_FILE}"; then
     sudo awk '
         /^! option/ { in_table = 1; print; next }
-        in_table && /^![[:space:]]*[a-z]/ { in_table = 0; print "  lhc:extras           Tecloid (test) — F20 prints @"; print ""; print; next }
+        in_table && /^![[:space:]]*[a-z]/ { in_table = 0; print "  tecloid:extras           Tecloid (test) — F20 prints @"; print ""; print; next }
         { print }
-        END { if (in_table) print "  lhc:extras           Tecloid (test) — F20 prints @" }
+        END { if (in_table) print "  tecloid:extras           Tecloid (test) — F20 prints @" }
     ' "${LST_FILE}" | sudo tee "${LST_FILE}.new" > /dev/null
     sudo mv "${LST_FILE}.new" "${LST_FILE}"
 fi
 
 echo "==> Patching ${XML_FILE}"
-if ! sudo grep -q "<name>lhc:extras</name>" "${XML_FILE}"; then
+if ! sudo grep -q "<name>tecloid:extras</name>" "${XML_FILE}"; then
     # Append a new <group> inside <optionList>. Simple string replace.
     sudo python3 - "$XML_FILE" <<'PY'
 import sys, re
@@ -67,12 +67,12 @@ with open(p, "r", encoding="utf-8") as f:
     xml = f.read()
 block = """    <group allowMultipleSelection="true">
       <configItem>
-        <name>lhc</name>
+        <name>tecloid</name>
         <_description>Tecloid (test)</_description>
       </configItem>
       <option>
         <configItem>
-          <name>lhc:extras</name>
+          <name>tecloid:extras</name>
           <_description>Tecloid — F20 prints @</_description>
         </configItem>
       </option>
@@ -84,22 +84,22 @@ with open(p, "w", encoding="utf-8") as f:
 PY
 fi
 
-echo "==> Appending lhc:extras to ~/.config/kxkbrc Options="
+echo "==> Appending tecloid:extras to ~/.config/kxkbrc Options="
 KXKBRC="$HOME/.config/kxkbrc"
 if [ -f "$KXKBRC" ]; then
     if grep -q "^Options=" "$KXKBRC"; then
-        if ! grep -E "^Options=.*lhc:extras" "$KXKBRC" >/dev/null; then
-            sed -i.lhc-bak 's/^Options=\(.*\)$/Options=\1,lhc:extras/' "$KXKBRC"
+        if ! grep -E "^Options=.*tecloid:extras" "$KXKBRC" >/dev/null; then
+            sed -i.tecloid-bak 's/^Options=\(.*\)$/Options=\1,tecloid:extras/' "$KXKBRC"
         fi
     else
         # Add an Options line under [Layout].
-        sed -i.lhc-bak '/^\[Layout\]$/a Options=lhc:extras' "$KXKBRC"
+        sed -i.tecloid-bak '/^\[Layout\]$/a Options=tecloid:extras' "$KXKBRC"
     fi
 else
     mkdir -p "$(dirname "$KXKBRC")"
     cat > "$KXKBRC" <<EOF
 [Layout]
-Options=lhc:extras
+Options=tecloid:extras
 EOF
 fi
 

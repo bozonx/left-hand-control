@@ -1,7 +1,7 @@
 Date: 2026-11-03 21:59:30 -0300
 Commit: 644436bd (with uncommitted changes)
-Command: /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/lhc-windows-s3 --suite release --extended --stress-seconds 180 --timeout 60
-VM: windows11-s3 (/mnt/disk2/vm/lhc-windows-s3/runs/20261103-212249/expanded-base.qcow2)
+Command: /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/tecloid-windows-s3 --suite release --extended --stress-seconds 180 --timeout 60
+VM: windows11-s3 (/mnt/disk2/vm/tecloid-windows-s3/runs/20261103-212249/expanded-base.qcow2)
 Suite: release; acceptance requested: False
 Previous-version upgrade: NOT RUN
 Scope: Windows developer VM; clean-package and previous-version upgrade require separate acceptance
@@ -12,7 +12,7 @@ Mapper from: beginning
 Mapper only: all
 Extended: True; stress seconds: 180
 Memory: 4096 MiB
-Logs: /mnt/disk2/vm/lhc-windows-s3/runs/20261103-212249/logs
+Logs: /mnt/disk2/vm/tecloid-windows-s3/runs/20261103-212249/logs
 
 Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
 Session: 1
@@ -27,7 +27,7 @@ Suite: release
 
 - boot: passed
 - preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
-- upload-source: passed — 1754 files; source archive /mnt/disk2/vm/lhc-windows-s3/runs/20261103-212249/src.tar.gz; SHA256 aa51be6e7ed5937c0fdfb4072f6b424798fe5487378e24b56cc10657c0bc5588; Source sync: 3 updated, 61 removed
+- upload-source: passed — 1754 files; source archive /mnt/disk2/vm/tecloid-windows-s3/runs/20261103-212249/src.tar.gz; SHA256 aa51be6e7ed5937c0fdfb4072f6b424798fe5487378e24b56cc10657c0bc5588; Source sync: 3 updated, 61 removed
 - hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
 - shell-profile-remap-restart: passed — application profile -> mapper -> receiver: b; persisted game setting -> c across restart; off -> b; stopped -> a
 - popup-bmp-focus: passed — physical hotkey and cell key; exact Unicode once; focus restored; modifiers released
@@ -55,7 +55,7 @@ Suite: release
 - mapper-lock-unlock: passed — real LockWorkStation, QMP credential input, mapper still remaps after unlock
 - mapper-suspend-resume: FAILED — `
 $ErrorActionPreference = 'Stop'
-$script = Join-Path $env:TEMP 'lhc-disposable-disk.txt'
+$script = Join-Path $env:TEMP 'tecloid-disposable-disk.txt'
 [IO.File]::WriteAllText($script, "select disk 0`r`nlist partition`r`n", [Text.Encoding]::ASCII)
 $list = & diskpart /s $script
 if ($LASTEXITCODE) { throw 'Could not inspect disposable disk' }
@@ -86,7 +86,7 @@ Could not expand disposable C:
 At line:13 char:22
 + if ($LASTEXITCODE) { throw 'Could not expand disposable C:' }
 +                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : OperationStopped: (Could not expand disposable C::String) [], Runti 
+    + CategoryInfo          : OperationStopped: (Could not expand disposable C::String) [], Runti
    meException
     + FullyQualifiedErrorId : Could not expand disposable C:
 - mapper-stress: FAILED — timed out waiting for receiver focus

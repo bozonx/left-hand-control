@@ -21,7 +21,7 @@ fn build() {
     println!("cargo:rerun-if-changed=src/i18n.rs");
     println!("cargo:rerun-if-changed=build-support");
     println!("cargo:rerun-if-changed=ui");
-    println!("cargo:rerun-if-changed=../../crates/lhc-core/src/mapper/builtin_macros.rs");
+    println!("cargo:rerun-if-changed=../../crates/tecloid-core/src/mapper/builtin_macros.rs");
     let output = std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
     let languages = [
         ("Russian", "ru"),
@@ -136,8 +136,8 @@ fn build() {
     let config = slint_build::CompilerConfiguration::new()
         // Desktop geometry scenarios identify controls independently of translations.
         .with_debug_info(debug)
-        .with_include_paths(vec!["ui/widgets".into(), "ui/widgets/lhc".into()])
-        .with_style("lhc".into())
+        .with_include_paths(vec!["ui/widgets".into(), "ui/widgets/tecloid".into()])
+        .with_style("tecloid".into())
         .with_bundled_translations(bundled)
         .with_default_translation_context(slint_build::DefaultTranslationContext::None);
     slint_build::compile_with_config("ui/app.slint", config).unwrap();
@@ -208,7 +208,7 @@ fn validate_translations(catalog: &rspolib::POFile, code: &str) {
     )
     .unwrap_or_else(|error| panic!("i18n parity: {error}"));
     let builtins =
-        std::fs::read_to_string("../../crates/lhc-core/src/mapper/builtin_macros.rs").unwrap();
+        std::fs::read_to_string("../../crates/tecloid-core/src/mapper/builtin_macros.rs").unwrap();
     i18n_checks::validate_builtin_macros(&builtins, &locale, &entries)
         .unwrap_or_else(|error| panic!("i18n built-in parity: {error}"));
 }

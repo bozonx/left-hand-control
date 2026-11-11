@@ -2,8 +2,8 @@
 //! surfaces.
 //!
 //! Runs as `slint-shell --spell-worker`, started and supervised by the
-//! settings process. It owns its own IPC socket (`LHC_SOCKET`),
-//! sends chosen actions back to the parent (`LHC_PARENT_SOCKET`)
+//! settings process. It owns its own IPC socket (`TECLOID_SOCKET`),
+//! sends chosen actions back to the parent (`TECLOID_PARENT_SOCKET`)
 //! and exits when the parent closes its stdin.
 
 use crate::{
@@ -344,7 +344,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     let mut metrics = metrics::Metrics::from_env(start)?;
     let popup_configuration = |popup| configuration(width(popup), height(popup), false);
     let mut emoji_way =
-        SpellWin::invoke_spell("lhc-slint-emoji", popup_configuration(Popup::Emoji)?);
+        SpellWin::invoke_spell("tecloid-slint-emoji", popup_configuration(Popup::Emoji)?);
     let emoji = EmojiPopup::new()?;
     emoji.set_presented(initial == Some(Popup::Emoji));
     if initial != Some(Popup::Emoji) {
@@ -353,7 +353,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     }
     metrics.ready("emoji");
     let mut quick_way =
-        SpellWin::invoke_spell("lhc-slint-quick", popup_configuration(Popup::Quick)?);
+        SpellWin::invoke_spell("tecloid-slint-quick", popup_configuration(Popup::Quick)?);
     let quick = QuickPopup::new()?;
     quick.set_presented(initial == Some(Popup::Quick));
     if initial != Some(Popup::Quick) {
@@ -363,7 +363,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
     // The hint is never interactive: it keeps an empty input region and
     // never asks for the keyboard focus.
     let mut hint_way = SpellWin::invoke_spell(
-        "lhc-slint-layer-hint",
+        "tecloid-slint-layer-hint",
         configuration(HINT_WIDTH, HINT_HEIGHT, true)?,
     );
     let hint = LayerHintPopup::new()?;
@@ -479,7 +479,7 @@ pub fn run(start: Instant) -> Result<(), Box<dyn std::error::Error>> {
                     return Ok(());
                 }
                 Event::Command(WorkerCommand::PopupContents(contents), _, _) => {
-                    match lhc_core::config::profile_file::parse(&contents) {
+                    match tecloid_core::config::profile_file::parse(&contents) {
                         Ok(profile) => layers.set_menus(ConfiguredMenus {
                             profile: profile.unwrap_or_default(),
                         }),

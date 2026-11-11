@@ -1,6 +1,6 @@
 //! Latency trace for the benchmark scripts (see README "Метрики").
 //!
-//! Disabled unless `LHC_METRICS` names the CSV file; when disabled
+//! Disabled unless `TECLOID_METRICS` names the CSV file; when disabled
 //! every call is a cheap no-op, so production code can mark events freely.
 
 use std::{fs::File, io::Write, time::Instant};

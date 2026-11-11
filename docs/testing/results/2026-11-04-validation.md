@@ -26,9 +26,9 @@
 | локальные UI + mapper e2e | 20 passed, 0 failed |
 
 ```sh
-cargo fmt -p lhc-core -p slint-shell --check
+cargo fmt -p tecloid-core -p slint-shell --check
 python3 -m unittest discover -s apps/slint-shell/scripts/vm -p 'test_*.py'
-cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+cargo clippy --locked -p tecloid-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
 cargo test --locked --workspace --features slint-shell/spell
 cargo check --locked -p slint-shell --all-targets
 /home/ivan/.cargo/bin/cargo-deny check
@@ -67,96 +67,96 @@ Linux-артефакты пересобраны после изменения bu
 
 ## Точные команды VM / packaging
 
-Ниже фактически использованные команды последнего успешного этапа или целевого продолжения. Старые неуспешные отчёты оставлены как история; составное Windows-покрытие описано выше. Локальные обвязки и сырые журналы сохранены в `/mnt/disk2/vm/lhc-validation-20261103`.
+Ниже фактически использованные команды последнего успешного этапа или целевого продолжения. Старые неуспешные отчёты оставлены как история; составное Windows-покрытие описано выше. Локальные обвязки и сырые журналы сохранены в `/mnt/disk2/vm/tecloid-validation-20261103`.
 
 ```sh
 # msrv-toolchain
-docker exec lhc-validation-build /root/.cargo/bin/rustup toolchain install 1.92.0 --profile minimal
+docker exec tecloid-validation-build /root/.cargo/bin/rustup toolchain install 1.92.0 --profile minimal
 # msrv
-docker exec -e PATH=/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin -e RUSTUP_TOOLCHAIN=1.92.0 -e CARGO_TARGET_DIR=/src/target/msrv-1.92 lhc-validation-build cargo check --locked -p lhc-core -p slint-shell --features slint-shell/spell
+docker exec -e PATH=/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin -e RUSTUP_TOOLCHAIN=1.92.0 -e CARGO_TARGET_DIR=/src/target/msrv-1.92 tecloid-validation-build cargo check --locked -p tecloid-core -p slint-shell --features slint-shell/spell
 # local-e2e-final
-/usr/bin/python3 /mnt/disk2/vm/lhc-validation-20261031/isolated-desktop.py /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/e2e-local.sh
+/usr/bin/python3 /mnt/disk2/vm/tecloid-validation-20261031/isolated-desktop.py /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/e2e-local.sh
 # isolated-clipboard
-/usr/bin/python3 /mnt/disk2/vm/lhc-validation-20261031/isolated-desktop.py cargo test --locked -p lhc-core --lib text_input::clipboard::tests::isolated_clipboard_preserves_formats_cancellation_and_new_copies -- --ignored
+/usr/bin/python3 /mnt/disk2/vm/tecloid-validation-20261031/isolated-desktop.py cargo test --locked -p tecloid-core --lib text_input::clipboard::tests::isolated_clipboard_preserves_formats_cancellation_and_new_copies -- --ignored
 # synthetic-input
-cargo test --locked -p lhc-core --lib mapper::linux::io::tests::synthetic_devices_use_monotonic_timestamps_and_preserve_cross_device_order -- --ignored
+cargo test --locked -p tecloid-core --lib mapper::linux::io::tests::synthetic_devices_use_monotonic_timestamps_and_preserve_cross_device_order -- --ignored
 # native-core-build
-docker exec -e PATH=/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin lhc-validation-build cargo test --release --locked -p lhc-core --lib --no-run --message-format=json
+docker exec -e PATH=/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin tecloid-validation-build cargo test --release --locked -p tecloid-core --lib --no-run --message-format=json
 # kde-deb-auto-libei
-/usr/bin/python3 /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-debian13-kde --package /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/release-artifacts/left-hand-control_0.4.0_amd64.deb --previous /mnt/disk2/vm/lhc-release-20261021/prior-linux-packages/left-hand-control_0.3.0_amd64.deb --popup-mode auto --text-backend libei --stress-seconds 180 --acceptance
+/usr/bin/python3 /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-debian13-kde --package /mnt/disk2/codeWorkspace/tecloid/target/ubuntu-22.04/release-artifacts/tecloid_0.4.0_amd64.deb --previous /mnt/disk2/vm/tecloid-release-20261021/prior-linux-packages/tecloid_0.3.0_amd64.deb --popup-mode auto --text-backend libei --stress-seconds 180 --acceptance
 # windows-upgrade-recovery
-python3 /mnt/disk2/vm/lhc-validation-20261103/windows-disk.py /mnt/disk2/vm/lhc-validation-20261103/windows-upgrade-recovery.py
+python3 /mnt/disk2/vm/tecloid-validation-20261103/windows-disk.py /mnt/disk2/vm/tecloid-validation-20261103/windows-upgrade-recovery.py
 # windows-s3-extended
-/usr/bin/python3 /mnt/disk2/vm/lhc-validation-20261103/windows-disk.py /mnt/disk2/vm/lhc-validation-20261103/windows-resume.py --vm /mnt/disk2/vm/lhc-windows-s3 --suite release --extended --stress-seconds 180 --timeout 60
+/usr/bin/python3 /mnt/disk2/vm/tecloid-validation-20261103/windows-disk.py /mnt/disk2/vm/tecloid-validation-20261103/windows-resume.py --vm /mnt/disk2/vm/tecloid-windows-s3 --suite release --extended --stress-seconds 180 --timeout 60
 # windows-clean-package
-/usr/bin/python3 /mnt/disk2/vm/lhc-validation-20261103/windows-disk.py /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-windows-package.py --vm /mnt/disk2/vm/lhc-windows-clean-package --package /mnt/disk2/vm/left-hand-control-windows/runs/20261103-212003/logs/guest/packages/left-hand-control-0.4.0-windows-x86_64.zip --runtime-installer /mnt/disk2/vm/left-hand-control-windows/vc_redist.x64.exe --cycles 500 --stress-seconds 180 --timeout 1800
+/usr/bin/python3 /mnt/disk2/vm/tecloid-validation-20261103/windows-disk.py /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-windows-package.py --vm /mnt/disk2/vm/tecloid-windows-clean-package --package /mnt/disk2/vm/tecloid-windows/runs/20261103-212003/logs/guest/packages/tecloid-0.4.0-windows-x86_64.zip --runtime-installer /mnt/disk2/vm/tecloid-windows/vc_redist.x64.exe --cycles 500 --stress-seconds 180 --timeout 1800
 # gnome-native
-/usr/bin/python3 /mnt/disk2/vm/lhc-validation-20261103/run-gnome-native.py /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/release/deps/lhc_core-ba8da88e3645a2b8 --vm /mnt/disk2/vm/lhc-ubuntu2604-gnome --package /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/release-artifacts/left-hand-control-0.4.0-linux-x86_64.tar.gz
+/usr/bin/python3 /mnt/disk2/vm/tecloid-validation-20261103/run-gnome-native.py /mnt/disk2/codeWorkspace/tecloid/target/ubuntu-22.04/release/deps/tecloid_core-ba8da88e3645a2b8 --vm /mnt/disk2/vm/tecloid-ubuntu2604-gnome --package /mnt/disk2/codeWorkspace/tecloid/target/ubuntu-22.04/release-artifacts/tecloid-0.4.0-linux-x86_64.tar.gz
 # kubuntu-auto-libei
-/usr/bin/python3 /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-kubuntu2604 --package /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/release-artifacts/left-hand-control_0.4.0_amd64.deb --previous /mnt/disk2/vm/lhc-release-20261021/prior-linux-packages/left-hand-control_0.3.0_amd64.deb --popup-mode auto --text-backend libei --stress-seconds 180 --acceptance
+/usr/bin/python3 /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-kubuntu2604 --package /mnt/disk2/codeWorkspace/tecloid/target/ubuntu-22.04/release-artifacts/tecloid_0.4.0_amd64.deb --previous /mnt/disk2/vm/tecloid-release-20261021/prior-linux-packages/tecloid_0.3.0_amd64.deb --popup-mode auto --text-backend libei --stress-seconds 180 --acceptance
 # kubuntu-auto-clipboard
-/usr/bin/python3 /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-kubuntu2604 --package /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/release-artifacts/left-hand-control_0.4.0_amd64.deb --previous /mnt/disk2/vm/lhc-release-20261021/prior-linux-packages/left-hand-control_0.3.0_amd64.deb --popup-mode auto --text-backend clipboard --stress-seconds 180 --acceptance
+/usr/bin/python3 /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-kubuntu2604 --package /mnt/disk2/codeWorkspace/tecloid/target/ubuntu-22.04/release-artifacts/tecloid_0.4.0_amd64.deb --previous /mnt/disk2/vm/tecloid-release-20261021/prior-linux-packages/tecloid_0.3.0_amd64.deb --popup-mode auto --text-backend clipboard --stress-seconds 180 --acceptance
 # kde-deb-winit-libei
-/usr/bin/python3 /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-debian13-kde --package /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/release-artifacts/left-hand-control_0.4.0_amd64.deb --previous /mnt/disk2/vm/lhc-release-20261021/prior-linux-packages/left-hand-control_0.3.0_amd64.deb --popup-mode winit --text-backend libei --stress-seconds 180 --acceptance
+/usr/bin/python3 /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-debian13-kde --package /mnt/disk2/codeWorkspace/tecloid/target/ubuntu-22.04/release-artifacts/tecloid_0.4.0_amd64.deb --previous /mnt/disk2/vm/tecloid-release-20261021/prior-linux-packages/tecloid_0.3.0_amd64.deb --popup-mode winit --text-backend libei --stress-seconds 180 --acceptance
 # kde-deb-winit-clipboard
-/usr/bin/python3 /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-debian13-kde --package /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/release-artifacts/left-hand-control_0.4.0_amd64.deb --previous /mnt/disk2/vm/lhc-release-20261021/prior-linux-packages/left-hand-control_0.3.0_amd64.deb --popup-mode winit --text-backend clipboard --stress-seconds 180 --acceptance
+/usr/bin/python3 /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-debian13-kde --package /mnt/disk2/codeWorkspace/tecloid/target/ubuntu-22.04/release-artifacts/tecloid_0.4.0_amd64.deb --previous /mnt/disk2/vm/tecloid-release-20261021/prior-linux-packages/tecloid_0.3.0_amd64.deb --popup-mode winit --text-backend clipboard --stress-seconds 180 --acceptance
 # kde-deb-auto-clipboard
-/usr/bin/python3 /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-debian13-kde --package /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/release-artifacts/left-hand-control_0.4.0_amd64.deb --previous /mnt/disk2/vm/lhc-release-20261021/prior-linux-packages/left-hand-control_0.3.0_amd64.deb --popup-mode auto --text-backend clipboard --stress-seconds 180 --acceptance
+/usr/bin/python3 /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-debian13-kde --package /mnt/disk2/codeWorkspace/tecloid/target/ubuntu-22.04/release-artifacts/tecloid_0.4.0_amd64.deb --previous /mnt/disk2/vm/tecloid-release-20261021/prior-linux-packages/tecloid_0.3.0_amd64.deb --popup-mode auto --text-backend clipboard --stress-seconds 180 --acceptance
 # kde-deb-spell-libei
-/usr/bin/python3 /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-debian13-kde --package /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/release-artifacts/left-hand-control_0.4.0_amd64.deb --previous /mnt/disk2/vm/lhc-release-20261021/prior-linux-packages/left-hand-control_0.3.0_amd64.deb --popup-mode spell --text-backend libei --stress-seconds 180 --acceptance
+/usr/bin/python3 /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-debian13-kde --package /mnt/disk2/codeWorkspace/tecloid/target/ubuntu-22.04/release-artifacts/tecloid_0.4.0_amd64.deb --previous /mnt/disk2/vm/tecloid-release-20261021/prior-linux-packages/tecloid_0.3.0_amd64.deb --popup-mode spell --text-backend libei --stress-seconds 180 --acceptance
 # kde-deb-spell-clipboard
-/usr/bin/python3 /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-debian13-kde --package /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/release-artifacts/left-hand-control_0.4.0_amd64.deb --previous /mnt/disk2/vm/lhc-release-20261021/prior-linux-packages/left-hand-control_0.3.0_amd64.deb --popup-mode spell --text-backend clipboard --stress-seconds 180 --acceptance
+/usr/bin/python3 /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-debian13-kde --package /mnt/disk2/codeWorkspace/tecloid/target/ubuntu-22.04/release-artifacts/tecloid_0.4.0_amd64.deb --previous /mnt/disk2/vm/tecloid-release-20261021/prior-linux-packages/tecloid_0.3.0_amd64.deb --popup-mode spell --text-backend clipboard --stress-seconds 180 --acceptance
 # kde-rpm-winit-libei
-/usr/bin/python3 /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-fedora-kde --package /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/release-artifacts/left-hand-control-0.4.0-1.x86_64.rpm --previous /mnt/disk2/vm/lhc-release-20261021/prior-linux-packages/left-hand-control-0.3.0-1.x86_64.rpm --popup-mode winit --text-backend libei --stress-seconds 180 --acceptance
+/usr/bin/python3 /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-fedora-kde --package /mnt/disk2/codeWorkspace/tecloid/target/ubuntu-22.04/release-artifacts/tecloid-0.4.0-1.x86_64.rpm --previous /mnt/disk2/vm/tecloid-release-20261021/prior-linux-packages/tecloid-0.3.0-1.x86_64.rpm --popup-mode winit --text-backend libei --stress-seconds 180 --acceptance
 # kde-rpm-winit-clipboard
-/usr/bin/python3 /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-fedora-kde --package /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/release-artifacts/left-hand-control-0.4.0-1.x86_64.rpm --previous /mnt/disk2/vm/lhc-release-20261021/prior-linux-packages/left-hand-control-0.3.0-1.x86_64.rpm --popup-mode winit --text-backend clipboard --stress-seconds 180 --acceptance
+/usr/bin/python3 /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-fedora-kde --package /mnt/disk2/codeWorkspace/tecloid/target/ubuntu-22.04/release-artifacts/tecloid-0.4.0-1.x86_64.rpm --previous /mnt/disk2/vm/tecloid-release-20261021/prior-linux-packages/tecloid-0.3.0-1.x86_64.rpm --popup-mode winit --text-backend clipboard --stress-seconds 180 --acceptance
 # kde-rpm-auto-libei
-/usr/bin/python3 /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-fedora-kde --package /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/release-artifacts/left-hand-control-0.4.0-1.x86_64.rpm --previous /mnt/disk2/vm/lhc-release-20261021/prior-linux-packages/left-hand-control-0.3.0-1.x86_64.rpm --popup-mode auto --text-backend libei --stress-seconds 180 --acceptance
+/usr/bin/python3 /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-fedora-kde --package /mnt/disk2/codeWorkspace/tecloid/target/ubuntu-22.04/release-artifacts/tecloid-0.4.0-1.x86_64.rpm --previous /mnt/disk2/vm/tecloid-release-20261021/prior-linux-packages/tecloid-0.3.0-1.x86_64.rpm --popup-mode auto --text-backend libei --stress-seconds 180 --acceptance
 # kde-rpm-auto-clipboard
-/usr/bin/python3 /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-fedora-kde --package /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/release-artifacts/left-hand-control-0.4.0-1.x86_64.rpm --previous /mnt/disk2/vm/lhc-release-20261021/prior-linux-packages/left-hand-control-0.3.0-1.x86_64.rpm --popup-mode auto --text-backend clipboard --stress-seconds 180 --acceptance
+/usr/bin/python3 /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-fedora-kde --package /mnt/disk2/codeWorkspace/tecloid/target/ubuntu-22.04/release-artifacts/tecloid-0.4.0-1.x86_64.rpm --previous /mnt/disk2/vm/tecloid-release-20261021/prior-linux-packages/tecloid-0.3.0-1.x86_64.rpm --popup-mode auto --text-backend clipboard --stress-seconds 180 --acceptance
 # kde-rpm-spell-libei
-/usr/bin/python3 /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-fedora-kde --package /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/release-artifacts/left-hand-control-0.4.0-1.x86_64.rpm --previous /mnt/disk2/vm/lhc-release-20261021/prior-linux-packages/left-hand-control-0.3.0-1.x86_64.rpm --popup-mode spell --text-backend libei --stress-seconds 180 --acceptance
+/usr/bin/python3 /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-fedora-kde --package /mnt/disk2/codeWorkspace/tecloid/target/ubuntu-22.04/release-artifacts/tecloid-0.4.0-1.x86_64.rpm --previous /mnt/disk2/vm/tecloid-release-20261021/prior-linux-packages/tecloid-0.3.0-1.x86_64.rpm --popup-mode spell --text-backend libei --stress-seconds 180 --acceptance
 # kde-rpm-spell-clipboard
-/usr/bin/python3 /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-fedora-kde --package /mnt/disk2/codeWorkspace/left-hand-control/target/ubuntu-22.04/release-artifacts/left-hand-control-0.4.0-1.x86_64.rpm --previous /mnt/disk2/vm/lhc-release-20261021/prior-linux-packages/left-hand-control-0.3.0-1.x86_64.rpm --popup-mode spell --text-backend clipboard --stress-seconds 180 --acceptance
+/usr/bin/python3 /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-fedora-kde --package /mnt/disk2/codeWorkspace/tecloid/target/ubuntu-22.04/release-artifacts/tecloid-0.4.0-1.x86_64.rpm --previous /mnt/disk2/vm/tecloid-release-20261021/prior-linux-packages/tecloid-0.3.0-1.x86_64.rpm --popup-mode spell --text-backend clipboard --stress-seconds 180 --acceptance
 # package-debian-12
-docker run --rm -v /mnt/disk2/codeWorkspace/left-hand-control:/src:ro -w /src debian:12 sh apps/slint-shell/scripts/release/smoke-linux-package.sh /src/target/ubuntu-22.04/release-artifacts/left-hand-control_0.4.0_amd64.deb
+docker run --rm -v /mnt/disk2/codeWorkspace/tecloid:/src:ro -w /src debian:12 sh apps/slint-shell/scripts/release/smoke-linux-package.sh /src/target/ubuntu-22.04/release-artifacts/tecloid_0.4.0_amd64.deb
 # package-debian-13
-docker run --rm -v /mnt/disk2/codeWorkspace/left-hand-control:/src:ro -w /src debian:13 sh apps/slint-shell/scripts/release/smoke-linux-package.sh /src/target/ubuntu-22.04/release-artifacts/left-hand-control_0.4.0_amd64.deb
+docker run --rm -v /mnt/disk2/codeWorkspace/tecloid:/src:ro -w /src debian:13 sh apps/slint-shell/scripts/release/smoke-linux-package.sh /src/target/ubuntu-22.04/release-artifacts/tecloid_0.4.0_amd64.deb
 # package-ubuntu-22.04
-docker run --rm -v /mnt/disk2/codeWorkspace/left-hand-control:/src:ro -w /src ubuntu:22.04 sh apps/slint-shell/scripts/release/smoke-linux-package.sh /src/target/ubuntu-22.04/release-artifacts/left-hand-control_0.4.0_amd64.deb
+docker run --rm -v /mnt/disk2/codeWorkspace/tecloid:/src:ro -w /src ubuntu:22.04 sh apps/slint-shell/scripts/release/smoke-linux-package.sh /src/target/ubuntu-22.04/release-artifacts/tecloid_0.4.0_amd64.deb
 # package-ubuntu-24.04
-docker run --rm -v /mnt/disk2/codeWorkspace/left-hand-control:/src:ro -w /src ubuntu:24.04 sh apps/slint-shell/scripts/release/smoke-linux-package.sh /src/target/ubuntu-22.04/release-artifacts/left-hand-control_0.4.0_amd64.deb
+docker run --rm -v /mnt/disk2/codeWorkspace/tecloid:/src:ro -w /src ubuntu:24.04 sh apps/slint-shell/scripts/release/smoke-linux-package.sh /src/target/ubuntu-22.04/release-artifacts/tecloid_0.4.0_amd64.deb
 # package-fedora-latest
-docker run --rm -v /mnt/disk2/codeWorkspace/left-hand-control:/src:ro -w /src fedora:latest sh apps/slint-shell/scripts/release/smoke-linux-package.sh /src/target/ubuntu-22.04/release-artifacts/left-hand-control-0.4.0-1.x86_64.rpm
+docker run --rm -v /mnt/disk2/codeWorkspace/tecloid:/src:ro -w /src fedora:latest sh apps/slint-shell/scripts/release/smoke-linux-package.sh /src/target/ubuntu-22.04/release-artifacts/tecloid-0.4.0-1.x86_64.rpm
 # package-opensuse-tumbleweed-latest
-docker run --rm -v /mnt/disk2/codeWorkspace/left-hand-control:/src:ro -w /src opensuse/tumbleweed:latest sh apps/slint-shell/scripts/release/smoke-linux-package.sh /src/target/ubuntu-22.04/release-artifacts/left-hand-control-0.4.0-1.x86_64.rpm
+docker run --rm -v /mnt/disk2/codeWorkspace/tecloid:/src:ro -w /src opensuse/tumbleweed:latest sh apps/slint-shell/scripts/release/smoke-linux-package.sh /src/target/ubuntu-22.04/release-artifacts/tecloid-0.4.0-1.x86_64.rpm
 # package-archlinux-latest
-docker run --rm -v /mnt/disk2/codeWorkspace/left-hand-control:/src:ro -w /src archlinux:latest sh apps/slint-shell/scripts/release/smoke-linux-package.sh /src/target/ubuntu-22.04/release-artifacts/left-hand-control-0.4.0-linux-x86_64.tar.gz
+docker run --rm -v /mnt/disk2/codeWorkspace/tecloid:/src:ro -w /src archlinux:latest sh apps/slint-shell/scripts/release/smoke-linux-package.sh /src/target/ubuntu-22.04/release-artifacts/tecloid-0.4.0-linux-x86_64.tar.gz
 # artifact-integrity
-/usr/bin/python3 /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/release/check-release-artifacts.py --directory /mnt/disk2/vm/lhc-validation-20261103/assembled-artifacts --version 0.4.0 --require-vendor --compare-linux
+/usr/bin/python3 /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/release/check-release-artifacts.py --directory /mnt/disk2/vm/tecloid-validation-20261103/assembled-artifacts --version 0.4.0 --require-vendor --compare-linux
 ```
 
 Linux release build:
 
 ```sh
-docker exec -e PATH=/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin lhc-validation-build sh apps/slint-shell/scripts/release/release-linux.sh
+docker exec -e PATH=/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin tecloid-validation-build sh apps/slint-shell/scripts/release/release-linux.sh
 ```
 
 Native Windows-команды внутри guest:
 
 ```powershell
-cargo build --locked -p lhc-core -p slint-shell --bin left-hand-control --example windows-mapper-stand --example editor --example interactions
-cargo test --locked -p lhc-core -p slint-shell --lib --test ipc
-cargo build --release --locked -p lhc-core -p slint-shell --bin left-hand-control --example windows-mapper-stand
-cargo test --locked -p lhc-core -p slint-shell --all-targets
-cargo clippy --locked -p lhc-core -p slint-shell --all-targets --no-deps -- -D warnings
-cargo test --release --locked -p lhc-core -p slint-shell --test storage_override
+cargo build --locked -p tecloid-core -p slint-shell --bin tecloid --example windows-mapper-stand --example editor --example interactions
+cargo test --locked -p tecloid-core -p slint-shell --lib --test ipc
+cargo build --release --locked -p tecloid-core -p slint-shell --bin tecloid --example windows-mapper-stand
+cargo test --locked -p tecloid-core -p slint-shell --all-targets
+cargo clippy --locked -p tecloid-core -p slint-shell --all-targets --no-deps -- -D warnings
+cargo test --release --locked -p tecloid-core -p slint-shell --test storage_override
 apps/slint-shell/scripts/release/package-windows.ps1
 ```
 
 ## Проверяемость и оставшиеся пределы
 
-- Источник команд, exit codes и журналов: `/mnt/disk2/vm/lhc-validation-20261103/vm-suite-state.json` и `/mnt/disk2/vm/lhc-validation-20261103/final-host-state.json`.
+- Источник команд, exit codes и журналов: `/mnt/disk2/vm/tecloid-validation-20261103/vm-suite-state.json` и `/mnt/disk2/vm/tecloid-validation-20261103/final-host-state.json`.
 - SHA256 манифеста проверенных файлов: `74e01f3373f9b78cbed141c96550e61c15517633419fd12f916697e4f5ef954e`.
 - Ошибки доступа Windows проверены с настоящими файловыми блокировками. Основание для учёта share-доступа: [Microsoft — Moving and Replacing Files](https://learn.microsoft.com/en-us/windows/win32/fileio/moving-and-replacing-files).
 - Физическое Windows-оборудование, ручная приёмка и macOS не проверялись: соответствующего оборудования/сессии в этом наборе нет. Основной принимаемый desktop — KDE Wayland — проверен в VM.

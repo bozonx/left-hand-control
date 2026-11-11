@@ -1,6 +1,6 @@
 # Prepare the Windows 11 test VM once, before its base image is frozen: OpenSSH
 # key login with PowerShell as the shell, autologon of the test user, no sleep,
-# the cache disk as D: and the interactive scheduled task LHC-E2E that
+# the cache disk as D: and the interactive scheduled task Tecloid-E2E that
 # run-windows.py starts. Run in an elevated PowerShell inside the guest:
 #   .\prepare-windows-guest.ps1 -User user -Password '<password>' -PublicKey '<ssh public key>'
 param(
@@ -88,23 +88,23 @@ if ($CacheDiskNumber -ge 0) {
     }
     $disk | Initialize-Disk -PartitionStyle GPT -PassThru |
         New-Partition -DriveLetter D -UseMaximumSize |
-        Format-Volume -FileSystem NTFS -NewFileSystemLabel 'LHC-CACHE' -Confirm:$false | Out-Null
+        Format-Volume -FileSystem NTFS -NewFileSystemLabel 'Tecloid-CACHE' -Confirm:$false | Out-Null
 }
 $volume = Get-Volume -DriveLetter D -ErrorAction SilentlyContinue
-if (-not $volume -or $volume.FileSystemLabel -ne 'LHC-CACHE' -or $volume.FileSystem -ne 'NTFS') {
+if (-not $volume -or $volume.FileSystemLabel -ne 'Tecloid-CACHE' -or $volume.FileSystem -ne 'NTFS') {
     Get-Disk | Format-Table Number, FriendlyName, Size, PartitionStyle
-    throw 'Attach the cache disk and pass its explicit -CacheDiskNumber; D: must be NTFS labelled LHC-CACHE.'
+    throw 'Attach the cache disk and pass its explicit -CacheDiskNumber; D: must be NTFS labelled Tecloid-CACHE.'
 }
-New-Item -ItemType Directory -Force -Path 'D:\lhc-e2e\src', 'D:\lhc-e2e\out' | Out-Null
-icacls 'D:\lhc-e2e' /grant "${User}:(OI)(CI)F" | Out-Null
+New-Item -ItemType Directory -Force -Path 'D:\tecloid-e2e\src', 'D:\tecloid-e2e\out' | Out-Null
+icacls 'D:\tecloid-e2e' /grant "${User}:(OI)(CI)F" | Out-Null
 
-Write-Host 'Scheduled task LHC-E2E...'
+Write-Host 'Scheduled task Tecloid-E2E...'
 $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument `
-    '-NoProfile -ExecutionPolicy Bypass -File D:\lhc-e2e\src\apps\slint-shell\scripts\vm\windows-guest.ps1'
+    '-NoProfile -ExecutionPolicy Bypass -File D:\tecloid-e2e\src\apps\slint-shell\scripts\vm\windows-guest.ps1'
 $principal = New-ScheduledTaskPrincipal -UserId $User -LogonType Interactive -RunLevel Limited
 $settings = New-ScheduledTaskSettingsSet -Priority 4 -ExecutionTimeLimit (New-TimeSpan -Hours 3) `
     -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
-Register-ScheduledTask -TaskName 'LHC-E2E' -Action $action -Principal $principal `
+Register-ScheduledTask -TaskName 'Tecloid-E2E' -Action $action -Principal $principal `
     -Settings $settings -Force | Out-Null
 
 $cargo = "C:\Users\$User\.cargo\bin\cargo.exe"

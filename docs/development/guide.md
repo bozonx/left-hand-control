@@ -50,7 +50,7 @@ sudo apt install build-essential clang cmake ninja-build python3 pkg-config \
 | Глобальные хоткеи Ctrl+Alt+F11 / F12 | Чтение `/dev/input/event*`; устройство не захватывается |
 | Ввод литерального текста (`text:`) | `xdg-desktop-portal` и бэкенд окружения (`xdg-desktop-portal-kde`) |
 | Условия по активному окну | KDE Wayland — ничего (KWin-скрипт через D-Bus); Hyprland — `hyprctl`; Sway — `swaymsg`; другие wlroots-композиторы — ничего (`wlr-foreign-toplevel`); X11 — `xprop`, для условий по заголовку и окон без рамки ещё `xdotool` (+ `xrandr`) |
-| Диагностический стенд возврата ввода (`--features probes`, `LHC_INSERT=1`) | KDE Wayland, data-control, запись в `/dev/uinput` |
+| Диагностический стенд возврата ввода (`--features probes`, `TECLOID_INSERT=1`) | KDE Wayland, data-control, запись в `/dev/uinput` |
 
 Права на устройства ввода для разработки (один раз, затем перезайти в сессию):
 
@@ -74,14 +74,14 @@ sudo usermod -aG input "$USER"
 
 ```sh
 cargo run -p slint-shell                                   # попапы — окна winit
-LHC_POPUPS=auto cargo run -p slint-shell --features spell   # попапы — layer-shell, где он есть
+TECLOID_POPUPS=auto cargo run -p slint-shell --features spell   # попапы — layer-shell, где он есть
 cargo build -p slint-shell --release --features spell       # release-сборка
 ```
 
 Окна при старте скрыты, приложение живёт в трее. Настройки открываются кликом по
 иконке трея или командой `target/debug/tecloid show settings`.
 
-| `LHC_POPUPS` | Поведение |
+| `TECLOID_POPUPS` | Поведение |
 | --- | --- |
 | `winit` (по умолчанию) | Попапы — окна без рамки в том же процессе |
 | `auto` | Если композитор поддерживает `zwlr_layer_shell_v1` (KDE, Hyprland, Sway) — отдельный процесс Spell; иначе (GNOME) — winit |
@@ -110,11 +110,11 @@ Debug-сборки никогда не трогают реальный конф�
 
 - по умолчанию — `<repo>/dev-files/linux/.config/dev.bozonx.tecloid/config.json`,
   данные и библиотека раскладок — в `dev-files/linux/.local/share/dev.bozonx.tecloid/`;
-- `LHC_DEV_DIR=/путь` задаёт другой каталог с той же структурой, в том числе в release-сборке для изолированной приёмки.
+- `TECLOID_DEV_DIR=/путь` задаёт другой каталог с той же структурой, в том числе в release-сборке для изолированной приёмки.
 
 Release-сборки используют `~/.config/dev.bozonx.tecloid/` и
 `~/.local/share/dev.bozonx.tecloid/`. Пути разрешает только
-`lhc_core::storage::StoragePaths::resolve()`. Конфиг читается при запуске и меняется через приложение. После ручного
+`tecloid_core::storage::StoragePaths::resolve()`. Конфиг читается при запуске и меняется через приложение. После ручного
 редактирования файла перезапустите приложение; сохранение из работающего приложения
 может перезаписать ручные изменения. Файлы пишутся атомарно через временный
 файл с правами `0600`.
@@ -124,7 +124,7 @@ JSON Schema обоих форматов лежат в `schemas/` и генери
 обновите их и закоммитьте вместе с кодом:
 
 ```sh
-LHC_UPDATE_SCHEMAS=1 cargo test --locked -p lhc-core --lib published_schemas
+TECLOID_UPDATE_SCHEMAS=1 cargo test --locked -p tecloid-core --lib published_schemas
 ```
 
 Без переменной тест сравнивает файлы с кодом и падает, если они устарели.
@@ -154,25 +154,25 @@ target/debug/tecloid --version          # --version и --help не требую�
 | Переменная | Назначение |
 | --- | --- |
 | `RUST_LOG` | Фильтр логов; по умолчанию `info,zbus=warn,tracing=warn` |
-| `LHC_DEV_DIR` | Явный каталог конфигурации и данных для debug/release; без него release использует пользовательские пути |
+| `TECLOID_DEV_DIR` | Явный каталог конфигурации и данных для debug/release; без него release использует пользовательские пути |
 | `SLINT_BACKEND` | Рендерер окна настроек |
-| `LHC_POPUPS` | `winit` / `auto` / `spell` |
-| `LHC_HOTKEYS=off` | Не слушать хоткеи Ctrl+Alt+F11 / F12 |
-| `LHC_INPUT=/dev/input/eventN` | Хоткеи только с одного устройства |
-| `LHC_OUTPUT=<имя>` | Монитор для Spell-попапов |
-| `LHC_METRICS=/путь.csv` | CSV задержек для измерительных скриптов |
-| `LHC_SOCKET` | Имя IPC-сокета; нужно для параллельного тестового экземпляра |
-| `LHC_INSERT=1` | Только с `--features probes`: диагностический Spell worker с возвратом фокуса |
+| `TECLOID_POPUPS` | `winit` / `auto` / `spell` |
+| `TECLOID_HOTKEYS=off` | Не слушать хоткеи Ctrl+Alt+F11 / F12 |
+| `TECLOID_INPUT=/dev/input/eventN` | Хоткеи только с одного устройства |
+| `TECLOID_OUTPUT=<имя>` | Монитор для Spell-попапов |
+| `TECLOID_METRICS=/путь.csv` | CSV задержек для измерительных скриптов |
+| `TECLOID_SOCKET` | Имя IPC-сокета; нужно для параллельного тестового экземпляра |
+| `TECLOID_INSERT=1` | Только с `--features probes`: диагностический Spell worker с возвратом фокуса |
 
-Диагностические переменные стендов (`LHC_TEST_INJECT`, `LHC_ISOLATED_INPUT`,
-`LHC_SPELL_LIFECYCLE`, `LHC_SPELL_INITIAL`) описаны в `apps/slint-shell/README.md`.
+Диагностические переменные стендов (`TECLOID_TEST_INJECT`, `TECLOID_ISOLATED_INPUT`,
+`TECLOID_SPELL_LIFECYCLE`, `TECLOID_SPELL_INITIAL`) описаны в `apps/slint-shell/README.md`.
 
 Второй экземпляр рядом с основным (трей у него тоже появится, mapper запустится
 только в одном процессе):
 
 ```sh
-LHC_DEV_DIR=/tmp/lhc-dev LHC_SOCKET=lhc-dev.sock LHC_HOTKEYS=off cargo run -p slint-shell
-LHC_SOCKET=lhc-dev.sock target/debug/tecloid quit
+TECLOID_DEV_DIR=/tmp/tecloid-dev TECLOID_SOCKET=tecloid-dev.sock TECLOID_HOTKEYS=off cargo run -p slint-shell
+TECLOID_SOCKET=tecloid-dev.sock target/debug/tecloid quit
 ```
 
 ### Окружения
@@ -193,8 +193,8 @@ LHC_SOCKET=lhc-dev.sock target/debug/tecloid quit
 ### Перед коммитом (то же, что CI)
 
 ```sh
-cargo fmt -p lhc-core -p slint-shell --check
-cargo clippy --locked -p lhc-core -p slint-shell \
+cargo fmt -p tecloid-core -p slint-shell --check
+cargo clippy --locked -p tecloid-core -p slint-shell \
   --features slint-shell/spell --all-targets --no-deps -- -D warnings
 cargo test --locked --workspace --features slint-shell/spell
 cargo check --locked -p slint-shell --all-targets              # сборка без Spell
@@ -205,7 +205,7 @@ cargo deny check                                               # advisories, л�
 дистрибутива; при добавлении зависимости с новой лицензией дополните `deny.toml`.
 
 Один тест: `cargo test --locked -p slint-shell --lib <имя>` или
-`cargo test --locked -p lhc-core <имя>`. Во время работы удобнее
+`cargo test --locked -p tecloid-core <имя>`. Во время работы удобнее
 `cargo test --locked -p <crate> --lib --tests`: без сборки примеров он заметно
 легче по памяти; полный прогон — перед коммитом. Сборка проверяет наличие переводов для всех `@tr` (включая контексты и plural),
 дубли, пустые и fuzzy-записи, плейсхолдеры и обработчики сообщений Rust в `Locale.text()`.
@@ -244,14 +244,14 @@ flush черновиков и debounce без графической сесси�
 | `editor -- --smoke` | Страница клавиатуры отрисовывается в настоящем окне (обязателен при изменениях UI); логика редактора и переводов — в headless `tests/page_callbacks.rs` |
 | `interactions` | Настройки, сохранение, навигация, тема, язык, скрытые попапы (обязателен при изменениях UI) |
 | `library` | Библиотека, активация, условия |
-| `macros`, `menus` | Редакторы макросов, Эмоджи и Быстрых действий (`LHC_MENUS_NAV=1` — навигация) |
+| `macros`, `menus` | Редакторы макросов, Эмоджи и Быстрых действий (`TECLOID_MENUS_NAV=1` — навигация) |
 | `popup-grid` | Общая сетка Эмоджи и Быстрых действий, фокус, клавиши и клики |
 | `undo-redo`, `inline-edit` | История текстовых полей и inline-редакторы |
 | `drag-scroll`, `notifications` | Перетаскивание с автопрокруткой, тосты |
 | `layer-keys` | Дополнительные клавиши слоёв |
-| `small-window` | Все страницы и диалоги при минимальном размере окна: кнопки шапки и диалогов внутри окна, поля и кнопки настроек не обрезаны справа (`LHC_WINDOW_SIZE=WxH`, `LHC_SMALL_LANGUAGE`, `LHC_SMALL_RELEASE=1`). `LHC_SMALL_LANGUAGE=qps-ploc` включает псевдо-перевод (строки ~на 40% длиннее, `[Ŝéţţîñĝš ~~~]`; есть только в debug-сборках, в списке языков приложения его нет), `LHC_SMALL_TEXT_SCALE=1.3` увеличивает только текст. CI запускает и этот режим |
+| `small-window` | Все страницы и диалоги при минимальном размере окна: кнопки шапки и диалогов внутри окна, поля и кнопки настроек не обрезаны справа (`TECLOID_WINDOW_SIZE=WxH`, `TECLOID_SMALL_LANGUAGE`, `TECLOID_SMALL_RELEASE=1`). `TECLOID_SMALL_LANGUAGE=qps-ploc` включает псевдо-перевод (строки ~на 40% длиннее, `[Ŝéţţîñĝš ~~~]`; есть только в debug-сборках, в списке языков приложения его нет), `TECLOID_SMALL_TEXT_SCALE=1.3` увеличивает только текст. CI запускает и этот режим |
 
-С `LHC_EDITOR_SNAPSHOTS=<каталог>` пример `interactions` сохраняет снимки экранов.
+С `TECLOID_EDITOR_SNAPSHOTS=<каталог>` пример `interactions` сохраняет снимки экранов.
 Те же сценарии работают в Live Preview: добавьте `SLINT_LIVE_PREVIEW=1` и
 `--features slint/live-preview`.
 
@@ -268,9 +268,9 @@ flush черновиков и debounce без графической сесси�
 ### Игровой режим
 
 ```sh
-cargo test --locked -p lhc-core gamemode
-cargo test --locked -p lhc-core compositor_owner_restart
-cargo test --locked -p lhc-core --test game_mode_lifecycle
+cargo test --locked -p tecloid-core gamemode
+cargo test --locked -p tecloid-core compositor_owner_restart
+cargo test --locked -p tecloid-core --test game_mode_lifecycle
 cargo test --locked -p slint-shell --lib game_mode
 ```
 
@@ -315,10 +315,10 @@ Plasma-сессии, трея и portal; VM без KVM слишком медле
 ### L1: e2e маппера
 
 ```sh
-cargo test --locked -p lhc-core --test mapper_e2e -- --ignored
+cargo test --locked -p tecloid-core --test mapper_e2e -- --ignored
 ```
 
-`crates/lhc-core/tests/mapper_e2e.rs` создаёт через uinput виртуальную «физическую»
+`crates/tecloid-core/tests/mapper_e2e.rs` создаёт через uinput виртуальную «физическую»
 клавиатуру, запускает mapper с тестовым профилем на ней и читает выход его
 виртуального устройства. Сценарии: passthrough, remap, chord, tap/hold, слой,
 double tap, макрос с паузой, остановка без залипших клавиш, отключение устройства.
@@ -353,7 +353,7 @@ GNU `timeout` из coreutils. IPC-проверки используют отде
 | `linux-guest.py` | Гость Linux (копируется сам) | Шаги внутри сессии Plasma |
 | `prepare-linux-guest.sh` | Гость Linux, один раз | Подготовка базового образа |
 | `run-windows.py` | Хост | Сценарий Windows VM |
-| `windows-guest.ps1` | Гость Windows (задача LHC-E2E) | Запуск `check-windows-automated.ps1` в интерактивной сессии |
+| `windows-guest.ps1` | Гость Windows (задача Tecloid-E2E) | Запуск `check-windows-automated.ps1` в интерактивной сессии |
 | `prepare-windows-guest.ps1` | Гость Windows, один раз | Подготовка базового образа |
 
 Каждый прогон создаёт `runs/<время>/run.qcow2` поверх замороженного базового образа
@@ -366,8 +366,8 @@ GNU `timeout` из coreutils. IPC-проверки используют отде
 стандартного `VGA` (Plasma работает на llvmpipe). `virtio-vga` на Arch/Manjaro
 требует двух пакетов, `qemu-hw-display-virtio-vga` и `qemu-hw-display-virtio-gpu`:
 без второго QEMU 11 падает с SIGSEGV при создании устройства. Ключ
-доступа к гостям создаётся один раз: `ssh-keygen -t ed25519 -N '' -f ~/.ssh/lhc-vm`.
-Образы лежат вне репозитория, по каталогу на VM, например `/mnt/disk2/vm/lhc-fedora-kde/`.
+доступа к гостям создаётся один раз: `ssh-keygen -t ed25519 -N '' -f ~/.ssh/tecloid-vm`.
+Образы лежат вне репозитория, по каталогу на VM, например `/mnt/disk2/vm/tecloid-fedora-kde/`.
 
 **`vm.json`** в каталоге VM:
 
@@ -376,7 +376,7 @@ GNU `timeout` из coreutils. IPC-проверки используют отде
   "name": "fedora44-kde",
   "base": "base.qcow2",
   "user": "tester",
-  "ssh_key": "~/.ssh/lhc-vm",
+  "ssh_key": "~/.ssh/tecloid-vm",
   "ssh_port": 2231,
   "vga": "VGA",
   "memory": 6144,
@@ -420,17 +420,17 @@ GNU `timeout` из coreutils. IPC-проверки используют отде
 Начинать с Fedora KDE и Debian 13 KDE.
 
 **Fedora KDE из облачного образа** — без интерактивного установщика, около 15 минут
-(так собран `/mnt/disk2/vm/lhc-fedora-kde`, Fedora 44, Plasma 6.7):
+(так собран `/mnt/disk2/vm/tecloid-fedora-kde`, Fedora 44, Plasma 6.7):
 
 ```sh
-repo=$PWD; vm=/mnt/disk2/vm/lhc-fedora-kde; mkdir -p "$vm/install" && cd "$vm/install"
+repo=$PWD; vm=/mnt/disk2/vm/tecloid-fedora-kde; mkdir -p "$vm/install" && cd "$vm/install"
 u=https://dl.fedoraproject.org/pub/fedora/linux/releases/44/Cloud/x86_64/images
 curl -fLO "$u/Fedora-Cloud-44-1.7-x86_64-CHECKSUM" -fLO "$u/Fedora-Cloud-Base-Generic-44-1.7.x86_64.qcow2"
 sha256sum -c --ignore-missing Fedora-Cloud-44-1.7-x86_64-CHECKSUM
 qemu-img convert -O qcow2 Fedora-Cloud-Base-Generic-44-1.7.x86_64.qcow2 ../base.qcow2
 qemu-img resize ../base.qcow2 40G
 mkdir -p seed
-printf 'instance-id: lhc-fedora-kde\nlocal-hostname: lhc-fedora-kde\n' > seed/meta-data
+printf 'instance-id: tecloid-fedora-kde\nlocal-hostname: tecloid-fedora-kde\n' > seed/meta-data
 cat > seed/user-data <<EOF
 #cloud-config
 users:
@@ -438,17 +438,17 @@ users:
     groups: [wheel]
     sudo: "ALL=(ALL) NOPASSWD:ALL"
     shell: /bin/bash
-    ssh_authorized_keys: ["$(cat ~/.ssh/lhc-vm.pub)"]
+    ssh_authorized_keys: ["$(cat ~/.ssh/tecloid-vm.pub)"]
 EOF
 xorriso -as mkisofs -o seed.iso -V cidata -J -r seed
 qemu-system-x86_64 -enable-kvm -machine q35 -cpu host -smp 4 -m 6144 \
   -drive file=../base.qcow2,if=virtio -drive file=seed.iso,media=cdrom \
   -vga none -device VGA -display none -device qemu-xhci -device usb-tablet \
   -nic user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:2231-:22 -daemonize -pidfile qemu.pid
-ssh='ssh -i ~/.ssh/lhc-vm -p 2231 -o StrictHostKeyChecking=no tester@127.0.0.1'
+ssh='ssh -i ~/.ssh/tecloid-vm -p 2231 -o StrictHostKeyChecking=no tester@127.0.0.1'
 $ssh 'sudo dnf -y install @kde-desktop-environment && sudo systemctl set-default graphical.target'
 $ssh 'cat > /tmp/prep.sh' < "$repo/apps/slint-shell/scripts/vm/prepare-linux-guest.sh"
-$ssh "sudo sh /tmp/prep.sh tester '$(cat ~/.ssh/lhc-vm.pub)' && sudo systemctl reboot"
+$ssh "sudo sh /tmp/prep.sh tester '$(cat ~/.ssh/tecloid-vm.pub)' && sudo systemctl reboot"
 ```
 
 Затем шаги 3–4 ниже. Fedora 44 KDE использует Plasma Login Manager вместо SDDM;
@@ -456,7 +456,7 @@ $ssh "sudo sh /tmp/prep.sh tester '$(cat ~/.ssh/lhc-vm.pub)' && sudo systemctl r
 cloud-init, чтобы одноразовые загрузки не искали источник данных.
 
 **Debian 13 KDE из облачного образа** — так же, около 20 минут (так собран
-`/mnt/disk2/vm/lhc-debian13-kde`, Debian 13.7, Plasma 6.3.6, `ssh_port` 2232). Отличия от
+`/mnt/disk2/vm/tecloid-debian13-kde`, Debian 13.7, Plasma 6.3.6, `ssh_port` 2232). Отличия от
 Fedora: образ `generic` с обычным ядром, а не облачным, как у `genericcloud`; группа `sudo` вместо `wheel`, KDE ставится `task-kde-desktop`:
 
 ```sh
@@ -478,7 +478,7 @@ $ssh 'sudo cloud-init status --wait; sudo apt-get update && sudo DEBIAN_FRONTEND
 
 1. Создайте диск и установите дистрибутив с KDE Plasma 6 и обычным пользователем:
    ```sh
-   vm=/mnt/disk2/vm/lhc-debian13-kde; mkdir -p "$vm"
+   vm=/mnt/disk2/vm/tecloid-debian13-kde; mkdir -p "$vm"
    qemu-img create -f qcow2 "$vm/base.qcow2" 40G
    qemu-system-x86_64 -enable-kvm -machine q35 -cpu host -smp 4 -m 6144 \
      -drive file="$vm/base.qcow2",if=virtio -cdrom <iso> -boot d \
@@ -488,7 +488,7 @@ $ssh 'sudo cloud-init status --wait; sudo apt-get update && sudo DEBIAN_FRONTEND
 2. В госте от root выполните подготовку (скрипт можно передать через
    `python3 -m http.server` на хосте, гость видит хост как `10.0.2.2`):
    ```sh
-   sh prepare-linux-guest.sh tester "$(cat ~/.ssh/lhc-vm.pub)"   # ключ — содержимое lhc-vm.pub с хоста
+   sh prepare-linux-guest.sh tester "$(cat ~/.ssh/tecloid-vm.pub)"   # ключ — содержимое tecloid-vm.pub с хоста
    ```
    Скрипт ставит `openssh-server`, `python3`, `kdialog`, `desktop-file-utils`,
    даёт пользователю `sudo` без пароля, включает автологин SDDM или Plasma Login в Plasma Wayland,
@@ -505,7 +505,7 @@ $ssh 'sudo cloud-init status --wait; sudo apt-get update && sudo DEBIAN_FRONTEND
 `package-linux.sh` (только tar.gz):
 
 ```sh
-apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-fedora-kde \
+apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-fedora-kde \
   --package target/release-artifacts/tecloid-<версия>-1.x86_64.rpm
 ```
 
@@ -524,23 +524,23 @@ USB-клавиатура) и сравнивает полученный текс�
 | `keyboard-probe` | Какой узел `/dev/input` получает клавиши QEMU `usb-kbd`; он становится `settings.devices.keyboards` |
 | `test-config` | Тестовый профиль (`E2E_PROFILE` в `linux-guest.py`), команды разрешены, раскладки `us,ru`, два рабочих стола, автозапуск |
 | `previous-release`, `upgrade-from-previous` | Только с `--previous`: обновление с сохранением конфига |
-| `start-without-input`, `tray-item`, `no-mapper-without-input` | Без группы `input` приложение стартует, регистрирует элемент трея (`StatusNotifierWatcher`, Id `lhc-slint-shell`), а mapper не создаёт виртуальную клавиатуру |
+| `start-without-input`, `tray-item`, `no-mapper-without-input` | Без группы `input` приложение стартует, регистрирует элемент трея (`StatusNotifierWatcher`, Id `tecloid-slint-shell`), а mapper не создаёт виртуальную клавиатуру |
 | `autostart-entry` | XDG Autostart указывает на установленный бинарник |
 | `relogin-with-input`, `autostart-launch`, `tray-after-login`, `mapper-running` | После добавления в `input` и перелогина приложение запускается автозапуском, трей на месте, mapper работает |
 | `portal-deny` | Первый `text:` открывает диалог RemoteDesktop; стенд нажимает Deny мышью (`portal_deny_relative` или `portal_deny_click`). Текст не вводится, следующий `text:` сразу завершается ошибкой «user cancelled» без нового диалога, приложение отвечает |
 | `portal-consent` | После перезапуска mapper диалог появляется снова; подтверждение (`portal_keys`) — и текст вводится |
-| `mapper-keys-and-text` | `a d c t` → `bXclhc-ok`: remap, chord, passthrough, `text:` |
+| `mapper-keys-and-text` | `a d c t` → `bXctecloid-ok`: remap, chord, passthrough, `text:` |
 | `text-unicode` | `text:Привет, ёж 😀` в раскладке us (символов нет в keymap) |
 | `layer-tap-hold` | Слой на `F`: tap → `g`, hold + `j` → `k`, быстрый вложенный набор → `k`, «перекат» (F отпущена раньше J) → `gj`, `j` вне слоя → `j` (permissive hold, 200 мс) |
 | `macro`, `command` | Макрос `KeyN, pause:300, text:mac, Shift+KeyO` → `nmacO`; `cmd:` создаёт файл-маркер |
 | `system-actions` | `sys:switchToDesktop2`, `kde:kwin/Switch to Desktop 1`, `sys:switchToKeyboardLayout2/1` — по состоянию KWin и `org.kde.keyboard` |
 | `russian-profile` | В раскладке ru физические клавиши дают кириллицу (`a`→KeyB→`и`, `c`→`с`), `text:` вводится без искажений |
-| `popups`, `emoji-ipc`, `quick-menu-rule` | IPC show/hide; эмодзи из `show emoji` + `Q` и быстрое действие из `lhc:showQuickMenu1` + `Q` вставляются в окно, бывшее активным до попапа |
+| `popups`, `emoji-ipc`, `quick-menu-rule` | IPC show/hide; эмодзи из `show emoji` + `Q` и быстрое действие из `tecloid:showQuickMenu1` + `Q` вставляются в окно, бывшее активным до попапа |
 | `emoji-hotkey` | Ctrl+Alt+F11 открывает Emoji, `Q` вставляет эмодзи, консоль не переключается на VT11 |
 | `game-mode` | Правило с `when.gameMode`: Off, On (`game on`), Auto без игры и с процессом из `gameMode.processes` |
 | `screen-lock` | Пароль `qbXc` набирается только через mapper (`q a d c`) и разблокирует экран; набранное на экране блокировки не попадает в окно за ним |
 | `suspend-resume` | S3 и пробуждение через QMP, после этого mapper и `text:` работают |
-| `cli`, `second-instance` | Повторный запуск передаёт управление работающему экземпляру; `hide`, `ping`, `--version`, `--help`; второй экземпляр со своим `LHC_SOCKET` не захватывает клавиатуру (блокировка mapper) |
+| `cli`, `second-instance` | Повторный запуск передаёт управление работающему экземпляру; `hide`, `ping`, `--version`, `--help`; второй экземпляр со своим `TECLOID_SOCKET` не захватывает клавиатуру (блокировка mapper) |
 | `text-after-second-instance` | После закрытия второго процесса Unicode по `text:` по-прежнему вставляется в приёмник; KWin watcher первого экземпляра не потерян |
 | `keyboard-replug` | USB-клавиатура отключается и подключается в тот же порт; mapper должен продолжить работу. Если нет — проверяется нативный ввод, mapper перезапускается |
 | `mapper-stop`, `mapper-start` | `toggle-mapper` останавливает и запускает mapper |
@@ -565,17 +565,17 @@ KDE запоминает и без токена приложения, поэто
 оболочки и release; перед приёмкой нужен `--suite full`.
 Диагностический `--mapper-from mapper-unicode-us-ru` начинает с указанного
 сценария; предыдущие шаги отмечаются как skipped и не считаются пройденными.
-`--suite smoke` выполняет нативные тесты `lhc-core --lib`, debug-сборку,
+`--suite smoke` выполняет нативные тесты `tecloid-core --lib`, debug-сборку,
 `editor --smoke`, `interactions`, IPC integration tests, CLI, второй экземпляр,
 по три цикла каждого попапа с ожиданием метрик, смену темы/языка и штатный выход.
 `--suite full` сначала выполняет smoke и hardware mapper-сценарии, затем дополнительные нативные тесты shell,
 проверку storage override в release, release-сборку и lifecycle: hidden/visible
 quit, 100 реально показанных/скрытых попапов, память/handles, отключённые хоткеи
 и диагностику неподдерживаемого Spell. Оба запуска используют уникальный
-`LHC_DEV_DIR`, изолированный IPC-токен и свободный loopback-порт. Lifecycle
+`TECLOID_DEV_DIR`, изолированный IPC-токен и свободный loopback-порт. Lifecycle
 проверяет PID владельца порта и завершает только созданные им процессы.
 В full аппаратные сценарии выполняются release-сборкой core driver; smoke и
-диагностический mapper используют debug. Для driver также задаётся отдельный `LHC_DEV_DIR`.
+диагностический mapper используют debug. Для driver также задаётся отдельный `TECLOID_DEV_DIR`.
 
 Перед mapper smoke/full проверяют пять сценариев выбора попапов через
 Ctrl+Alt+F11/F12 и физическую клавишу ячейки: BMP, surrogate pair, ZWJ,
@@ -590,7 +590,7 @@ debug в smoke) с
 
 После оболочки оба набора проверяют QMP → эмулируемую USB-клавиатуру → Windows
 hook → общий движок → `SendInput` → WinForms receiver. `windows_mapper.py`
-управляет `lhc-core --example windows-mapper-stand` через тестовый файловый
+управляет `tecloid-core --example windows-mapper-stand` через тестовый файловый
 mailbox (это не IPC приложения и не новый формат конфигурации). Проверяются
 passthrough, remap/swallow, отсутствие рекурсии, modifiers/extended keys,
 repeat, tap/hold и слой, макрос с паузой и отменой при live config, Unicode,
@@ -640,9 +640,9 @@ Elevated/secure desktop, lock/unlock, suspend/resume, гибель всего д
    ```json
    {
      "name": "windows11",
-     "base": "windows11-lhc.qcow2",
+     "base": "windows11-tecloid.qcow2",
      "user": "user",
-     "ssh_key": "~/.ssh/lhc-vm",
+     "ssh_key": "~/.ssh/tecloid-vm",
      "ssh_port": 2241,
      "disk_bus": "ahci",
      "nic": "e1000e",
@@ -662,7 +662,7 @@ Elevated/secure desktop, lock/unlock, suspend/resume, гибель всего д
    -device ide-hd,drive=cache,bus=ahci.1` вместо ISO). В PowerShell от
    администратора выполните:
    ```powershell
-   .\prepare-windows-guest.ps1 -User user -Password '<пароль user>' -PublicKey '<содержимое ~/.ssh/lhc-vm.pub>' -CacheDiskNumber 1
+   .\prepare-windows-guest.ps1 -User user -Password '<пароль user>' -PublicKey '<содержимое ~/.ssh/tecloid-vm.pub>' -CacheDiskNumber 1
    ```
    Номер пустого диска проверьте через `Get-Disk`: скрипт форматирует только явно
    указанный RAW-диск, который не является системным. Если Windows Update
@@ -671,7 +671,7 @@ Elevated/secure desktop, lock/unlock, suspend/resume, гибель всего д
    автологоне `-Password` можно опустить.
    Скрипт включает OpenSSH Server с PowerShell по умолчанию, ключ, автологон,
    отключает сон, размечает диск кэша как `D:` и регистрирует интерактивную задачу
-   планировщика `LHC-E2E`. Перезагрузите, проверьте автологон, выключите VM.
+   планировщика `Tecloid-E2E`. Перезагрузите, проверьте автологон, выключите VM.
 
 Прогон:
 
@@ -681,8 +681,8 @@ apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/tecloid-windows
 
 Раннер упаковывает рабочее дерево (`git ls-files` вместе с неотслеживаемыми, но не
 игнорируемыми файлами — незакоммиченные правки попадают в прогон), копирует его
-в `D:\lhc-e2e\src` (каталог `target\` и Cargo cache на D: сохраняются), запускает задачу `LHC-E2E` в
-сессии пользователя и ждёт `D:\lhc-e2e\out\done.txt` с кодом завершения (0 — успех). Первая сборка в VM занимает
+в `D:\tecloid-e2e\src` (каталог `target\` и Cargo cache на D: сохраняются), запускает задачу `Tecloid-E2E` в
+сессии пользователя и ждёт `D:\tecloid-e2e\out\done.txt` с кодом завершения (0 — успех). Первая сборка в VM занимает
 десятки минут (`--timeout` в минутах, по умолчанию 150). Логи гостя копируются в
 `runs/<время>/logs/guest/`. Вставка после хоткея проверяется автоматически; визуальная оценка трея, DPI
 и цветных emoji остаётся в ручной приёмке. Расширенные проверки lock/S3,
@@ -873,14 +873,14 @@ GitHub) и поставить заново на исправленный ком�
 ## 6. Частые проблемы
 
 - **Второй запуск открывает настройки, а не новый экземпляр** — сокет занят:
-  `target/debug/tecloid quit` или другой `LHC_SOCKET`. Устаревший сокет
+  `target/debug/tecloid quit` или другой `TECLOID_SOCKET`. Устаревший сокет
   после аварии удаляется при следующем запуске.
 - **Первая сборка очень долгая или падает на Skia** — проверьте clang, cmake, ninja, Python.
 - **`No readable Ctrl+Alt+F11/F12 evdev devices`** — нет доступа к `/dev/input`:
-  права из раздела 1 или `LHC_HOTKEYS=off`.
+  права из раздела 1 или `TECLOID_HOTKEYS=off`.
 - **Emoji монохромные или квадратами** — Noto Color Emoji и `SLINT_BACKEND=winit-skia`.
 - **`compositor does not advertise zwlr_layer_shell_v1`** — нет layer-shell (GNOME):
-  `LHC_POPUPS=auto` или `winit`.
+  `TECLOID_POPUPS=auto` или `winit`.
 - **Паника `RefCell already borrowed` на странице** — жив `Document::read()`, пока
   callback редактирует; отпустите borrow до вызова UI.
 - **VM-стенд: `virtio-vga is not a valid device model name`** — установите модуль

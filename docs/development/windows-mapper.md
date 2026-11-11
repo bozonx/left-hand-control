@@ -28,8 +28,8 @@ release-хранилища и lifecycle со 100 циклами попапов: 
 ## Стенд перед началом
 
 1. Подготовить Windows VM по [windows.md](../testing/windows.md): MSVC, Rust,
-   OpenSSH, автологон, отдельный NTFS-диск `LHC-CACHE`, интерактивная задача
-   `LHC-E2E`. Сохранить базовый диск, UEFI variables и TPM после выключения.
+   OpenSSH, автологон, отдельный NTFS-диск `Tecloid-CACHE`, интерактивная задача
+   `Tecloid-E2E`. Сохранить базовый диск, UEFI variables и TPM после выключения.
 2. Запустить `python3 apps/slint-shell/scripts/vm/run-windows.py --vm <dir>`.
    Раннер использует overlay; `target/` остаётся на диске кэша между прогонами.
 3. Получить успешные `windows-smoke` и `hardware-keyboard`: QEMU USB-клавиатура
@@ -89,7 +89,7 @@ secure desktop. [Контракт SendInput](https://learn.microsoft.com/en-us/w
 
 Проверять по отдельным возможностям: US/RU, Unicode, смена фокуса,
 отмена text job, доступные `sys:` действия. Код popup-ввода не является готовым
-backend маппера; общую логику размещать в `lhc-core`.
+backend маппера; общую логику размещать в `tecloid-core`.
 
 ## Windows mapper e2e матрица для приёмки
 
@@ -116,7 +116,7 @@ backend маппера; общую логику размещать в `lhc-core`
 `run-windows.py --suite smoke` и `--suite full` запускают реальные mapper
 сценарии через QMP; full включает shell smoke и release lifecycle.
 Сценарии находятся в `scripts/vm/windows_mapper.py`, Rust driver —
-`crates/lhc-core/examples/windows-mapper-stand.rs`, native receiver —
+`crates/tecloid-core/examples/windows-mapper-stand.rs`, native receiver —
 `scripts/windows/windows-receiver.ps1` (пути scripts относительно `apps/slint-shell/`).
 Driver не читает пользовательский config: принимает runtime JSON через отдельный
 mailbox, вызывает публичный `mapper::runtime` и снимает hooks при штатном выходе.

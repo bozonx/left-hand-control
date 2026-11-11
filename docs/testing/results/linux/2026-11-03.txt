@@ -1,6 +1,6 @@
 Date: 2026-11-03 07:28:15 -0300
 Commit: 644436bd (with uncommitted changes)
-Version: left-hand-control 0.4.0
+Version: tecloid 0.4.0
 Session: wayland, KDE; not detected
 Kernel: Linux 7.2.9-1-MANJARO
 

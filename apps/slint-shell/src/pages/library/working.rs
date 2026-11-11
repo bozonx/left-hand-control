@@ -94,15 +94,15 @@ pub fn refresh_active(ui: &SettingsWindow, document: &Document) {
     let (label, matched, message) = active_context(
         document,
         &AutoSwitchContext::current(),
-        lhc_core::mapper::runtime::status().running,
+        tecloid_core::mapper::runtime::status().running,
     );
     let library = ui.global::<ProfileLibrary>();
     library.set_active_error(message.to_ui());
     library.set_active_label(label.into());
     library.set_auto_matched(matched);
-    let game = lhc_core::gamemode::status();
+    let game = tecloid_core::gamemode::status();
     library.set_game_detection(
-        game.detection_enabled || game.control != lhc_core::gamemode::GameModeControl::Auto,
+        game.detection_enabled || game.control != tecloid_core::gamemode::GameModeControl::Auto,
     );
 }
 
@@ -244,7 +244,7 @@ mod tests {
     #[test]
     fn active_context_reports_library_failure_and_recovers() {
         let dir = tempfile::tempdir().unwrap();
-        let paths = lhc_core::storage::StoragePaths::new(
+        let paths = tecloid_core::storage::StoragePaths::new(
             dir.path().join("config"),
             dir.path().join("data"),
         );

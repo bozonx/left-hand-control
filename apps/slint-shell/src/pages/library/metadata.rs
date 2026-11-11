@@ -8,17 +8,17 @@ use crate::{
     i18n::Msg,
     ui::{ProfileLibrary, Profilesummary, SettingsWindow},
 };
-use lhc_core::{
+use slint::{ComponentHandle, Model};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
+use tecloid_core::{
     config::{
         library::{LibraryEntry, load_library_entries},
         model::ProfilePreset,
     },
     storage::StoragePaths,
-};
-use slint::{ComponentHandle, Model};
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
 };
 
 type Request = (slint::Weak<SettingsWindow>, i32, StoragePaths, Vec<String>);

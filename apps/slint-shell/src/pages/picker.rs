@@ -7,10 +7,10 @@ use crate::{
     i18n::Msg,
     ui::{ActionPicker, CaptureStatus, PickerBehavior, PickerItem, PickerTarget, SettingsWindow},
 };
-use lhc_core::config::actions::Action;
 use slint::ComponentHandle;
 use slint::SharedString;
 use std::{cell::RefCell, rc::Rc};
+use tecloid_core::config::actions::Action;
 
 mod capture;
 mod catalog;
@@ -30,7 +30,7 @@ pub(super) use request::{PickerMode, PickerRequest};
 /// Catalog label of an existing menu action, including staged commands.
 pub(super) fn menu_label(
     ui: &SettingsWindow,
-    config: &lhc_core::config::model::ResolvedAppConfig,
+    config: &tecloid_core::config::model::ResolvedAppConfig,
     value: &str,
 ) -> SharedString {
     session::label_for(value, &catalog::catalog(ui, config), None, &config.commands)
@@ -55,7 +55,7 @@ struct Session {
     catalog_shortcuts: u64,
     /// Value an apply error refers to; editing the value clears the error.
     error_value: Option<SharedString>,
-    command: Option<lhc_core::config::model::Command>,
+    command: Option<tecloid_core::config::model::Command>,
     layer_target: Option<super::layers::EditTarget>,
 }
 
@@ -82,7 +82,7 @@ impl Drafts {
         &self,
         document: &Document,
         target: Option<PickerTarget>,
-    ) -> lhc_core::config::model::ResolvedAppConfig {
+    ) -> tecloid_core::config::model::ResolvedAppConfig {
         if target == Some(PickerTarget::MacroStep) {
             super::macros::picker_config(document, &self.macros)
         } else {
@@ -90,7 +90,7 @@ impl Drafts {
         }
     }
 
-    fn command(&self, id: &str) -> Option<lhc_core::config::model::Command> {
+    fn command(&self, id: &str) -> Option<tecloid_core::config::model::Command> {
         super::macros::command(&self.macros, id).or_else(|| super::menus::command(&self.menus, id))
     }
 }

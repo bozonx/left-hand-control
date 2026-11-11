@@ -5,10 +5,10 @@ use i_slint_core::{
     accessibility::AccessibleStringProperty, item_tree::ItemRc, items::AccessibleRole,
     window::WindowInner,
 };
-use lhc_core::config::model::{KeyRule, Layer};
 use slint::{ComponentHandle, LogicalPosition, platform::WindowEvent};
 use slint_shell::{document::View, ui::*};
 use support::{Fixture, accessible_position};
+use tecloid_core::config::model::{KeyRule, Layer};
 
 fn click(ui: &SettingsWindow, position: LogicalPosition) {
     for event in [

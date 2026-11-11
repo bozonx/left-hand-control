@@ -2,10 +2,10 @@
 //! real window and exits; its callbacks are covered by `tests/page_callbacks.rs`.
 
 mod support;
-use lhc_core::storage::StoragePaths;
 use slint::ComponentHandle;
 use slint_shell::{Document, bind_document, ui::*};
 use support::snapshot;
+use tecloid_core::storage::StoragePaths;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir()?;

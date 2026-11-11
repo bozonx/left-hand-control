@@ -12,7 +12,7 @@ from datetime import datetime
 from vmlib import KEYBOARD_PORT, StepFailed, wait_for
 from text_corpus import TEXT_CORPUS
 
-WORK = r"D:\lhc-e2e\out"
+WORK = r"D:\tecloid-e2e\out"
 
 
 def retry_guest_io(operation):
@@ -622,7 +622,7 @@ class WindowsMapper:
         return "QMP mapped input into real Notepad; exact Cyrillic/emoji/ZWJ/combining text and >15s paced text without expiry"
 
     def elevated_uipi(self):
-        marker = "LHC-UIPI-MUST-NOT-ARRIVE"
+        marker = "Tecloid-UIPI-MUST-NOT-ARRIVE"
         self.config({"rules": [{"key": "KeyA", "tapAction": "text:" + marker}]})
         self.reset()
         self.command("receiver", "elevate", wait_response=False)

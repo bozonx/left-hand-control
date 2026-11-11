@@ -138,10 +138,10 @@ fn check_patterns(conditions: &ProfileConditionSet) -> Result<(), Msg> {
         .window_patterns
         .iter()
         .chain(&conditions.excluded_window_patterns)
-        .find(|pattern| lhc_core::config::app_match::AppMatcher::parse(pattern).is_none());
+        .find(|pattern| tecloid_core::config::app_match::AppMatcher::parse(pattern).is_none());
     match invalid {
-        Some(pattern) => Err(Msg::Rule(lhc_core::config::diagnostics::RuleIssue {
-            code: lhc_core::config::diagnostics::RuleIssueCode::InvalidCondition,
+        Some(pattern) => Err(Msg::Rule(tecloid_core::config::diagnostics::RuleIssue {
+            code: tecloid_core::config::diagnostics::RuleIssueCode::InvalidCondition,
             rule_id: String::new(),
             trigger: Some(pattern.clone()),
         })),

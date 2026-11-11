@@ -20,7 +20,7 @@ SSH-выгрузка логов в этом прогоне не сработал
 
 На Linux-хосте нужны KVM/QEMU, OVMF Secure Boot, swtpm, SSH/SCP и доступ к `/dev/kvm`.
 На госте — MSVC Build Tools, Rust, OpenSSH, автологин тестового пользователя,
-отдельный D:-диск кэша и задача `LHC-E2E` из `prepare-windows-guest.ps1`.
+отдельный D:-диск кэша и задача `Tecloid-E2E` из `prepare-windows-guest.ps1`.
 Полная пошаговая установка описана ниже и в
 [руководстве автоматического стенда](../development/guide.md#windows-vm).
 Нативные desktop-скрипты выполнять без elevation в интерактивной сессии,
@@ -149,7 +149,7 @@ Keep VM artifacts outside the repository:
 ```bash
 vm_dir=/mnt/disk2/vm/tecloid-windows
 mkdir -p "$vm_dir/tpm"
-qemu-img create -f qcow2 "$vm_dir/windows11-lhc.qcow2" 64G
+qemu-img create -f qcow2 "$vm_dir/windows11-tecloid.qcow2" 64G
 cp /usr/share/edk2/x64/OVMF_VARS.secboot.4m.fd "$vm_dir/OVMF_VARS.secboot.4m.fd"
 ```
 
@@ -176,7 +176,7 @@ Use 4 vCPU, 6 GiB RAM, an emulated tablet, and QEMU user networking. The e1000e 
 ```bash
 vm_dir=/mnt/disk2/vm/tecloid-windows
 qemu-system-x86_64 \
-  -name 'LHC Windows 11' \
+  -name 'Tecloid Windows 11' \
   -enable-kvm \
   -machine q35,accel=kvm,smm=on \
   -global driver=cfi.pflash01,property=secure,value=on \
@@ -189,7 +189,7 @@ qemu-system-x86_64 \
   -tpmdev emulator,id=tpm0,chardev=chrtpm \
   -device tpm-tis,tpmdev=tpm0 \
   -device ich9-ahci,id=ahci \
-  -drive file="$vm_dir/windows11-lhc.qcow2",if=none,id=osdisk,format=qcow2,discard=unmap \
+  -drive file="$vm_dir/windows11-tecloid.qcow2",if=none,id=osdisk,format=qcow2,discard=unmap \
   -device ide-hd,drive=osdisk,bus=ahci.0,bootindex=1 \
   -drive file="$vm_dir/windows-11-enterprise-eval-25h2-en-us.iso",if=none,id=install,format=raw,readonly=on \
   -device ide-cd,drive=install,bus=ahci.1,bootindex=2 \
@@ -222,8 +222,8 @@ Once the desktop works:
 
 ```bash
 vm_dir=/mnt/disk2/vm/tecloid-windows
-qemu-img snapshot -c windows-clean "$vm_dir/windows11-lhc.qcow2"
-qemu-img snapshot -l "$vm_dir/windows11-lhc.qcow2"
+qemu-img snapshot -c windows-clean "$vm_dir/windows11-tecloid.qcow2"
+qemu-img snapshot -l "$vm_dir/windows11-tecloid.qcow2"
 ```
 
 `qemu-img snapshot` fails with a write-lock error while QEMU is running. Never force it against an active disk. With the monitor socket, an online snapshot can instead be requested deliberately with QEMU monitor commands, but offline snapshots are simpler for the baseline.
@@ -247,10 +247,10 @@ Invoke-WebRequest http://10.0.2.2:18080/bootstrap.ps1 -OutFile $env:TEMP\bootstr
 
 Short `irm ... | iex` endpoints are useful during an interactive debugging session when clipboard sharing is unavailable, but committed documentation and repeatable automation should use a downloaded, inspectable `.ps1` file. Bind the host server only for the duration of the test and do not serve secrets or the entire home directory.
 
-For a source snapshot, archive the exact commit plus intentional uncommitted patches, record both, and extract it to `C:\lhc`. A stale archive was one source of confusing Windows results during the Slint pilot; updating only a helper script does not update the source already extracted in the guest.
+For a source snapshot, archive the exact commit plus intentional uncommitted patches, record both, and extract it to `C:\tecloid`. A stale archive was one source of confusing Windows results during the Slint pilot; updating only a helper script does not update the source already extracted in the guest.
 
 For repeatable E2E runs, use a new user-writable directory for each source revision,
-for example `C:\Users\user\lhc-current`. Do not extract test inputs or write logs directly
+for example `C:\Users\user\tecloid-current`. Do not extract test inputs or write logs directly
 under `C:\`; the unprivileged test user cannot reliably create files there. Keep the
 downloaded bootstrap under the user profile or `%TEMP%` as well.
 
@@ -299,7 +299,7 @@ cargo --version
 Use debug builds while iterating on Windows-only code:
 
 ```powershell
-Set-Location C:\lhc
+Set-Location C:\tecloid
 cargo test --locked --manifest-path apps/slint-shell/Cargo.toml --bin tecloid
 cargo build --locked --manifest-path apps/slint-shell/Cargo.toml --bin tecloid
 ```
@@ -351,7 +351,7 @@ Use Skia for the Windows visual pass:
 ```powershell
 $env:SLINT_BACKEND = 'winit-skia'
 $env:RUST_LOG = 'debug'
-& C:\lhc\target\release\tecloid.exe
+& C:\tecloid\target\release\tecloid.exe
 ```
 
 `winit-software` (the Slint software renderer, no longer built) rendered the UI, but Windows showed monochrome outline emoji; use `winit-skia-software` in guests without a GPU. `winit-skia` rendered the normal color Windows emoji and is the Windows candidate renderer. Some squares on the stress page were caused by the prototype generating contiguous Unicode code-point ranges that include unassigned or non-emoji symbols; they are test-data defects unless the same known-valid emoji also fails.
@@ -365,7 +365,7 @@ sequence. A contiguous code-point range cannot cover the last case.
 The server starts hidden and remains accessible from the tray. A second invocation is an IPC client:
 
 ```powershell
-$exe = 'C:\lhc\target\release\tecloid.exe'
+$exe = 'C:\tecloid\target\release\tecloid.exe'
 & $exe ping
 & $exe show settings
 & $exe show emoji
@@ -388,7 +388,7 @@ See the [official installation instructions](https://github.com/PowerShell/Win32
 
 The cache disk is formatted only when its explicit `-CacheDiskNumber` refers to a
 RAW non-system disk. On subsequent runs omit that argument and reuse the NTFS
-volume labelled `LHC-CACHE` on D:. Omit `-Password` to retain existing autologon
+volume labelled `Tecloid-CACHE` on D:. Omit `-Password` to retain existing autologon
 for the named test user.
 
 ## Automated smoke tests
@@ -399,14 +399,14 @@ The VM runner defaults to the isolated debug smoke suite:
 python3 apps/slint-shell/scripts/vm/run-windows.py --vm /path/to/windows-vm --suite smoke
 ```
 
-After the one-time VM preparation, it runs native `lhc-core` library tests, builds
+After the one-time VM preparation, it runs native `tecloid-core` library tests, builds
 the current working tree, runs the IPC regression tests (including a delayed,
 fragmented socket request) and runs
 `editor --smoke`, `interactions`, CLI help/version, single-instance delegation,
 three show/hide cycles for each popup, theme/language commands and shutdown.
 Popup checks wait for `t2_shown` and `hidden` metrics rather than only IPC replies.
-Debug configuration lives in a fresh `LHC_DEV_DIR`; the IPC port is selected per run.
-The IPC token is also isolated by `LHC_DEV_DIR`; the smoke suite checks two independent
+Debug configuration lives in a fresh `TECLOID_DEV_DIR`; the IPC port is selected per run.
+The IPC token is also isolated by `TECLOID_DEV_DIR`; the smoke suite checks two independent
 profiles and verifies which process owns each test port.
 The VM smoke also opens the native receiver after application checks: QMP sends
 `abc`, Shift+X, Ctrl+Home, Shift+End and `ok`; the host compares text and key-down/up records.
@@ -481,7 +481,7 @@ powershell -ExecutionPolicy Bypass -File `
 It verifies shutdown from both hidden and visible states, 100 alternating popup cycles,
 bounded working-set and handle growth after warm-up, disabled global hotkeys, process
 disappearance, release of the isolated loopback listener on the selected test port, and the non-zero exit
-plus diagnostic for the unsupported Windows setting `LHC_POPUPS=spell`. Logs,
+plus diagnostic for the unsupported Windows setting `TECLOID_POPUPS=spell`. Logs,
 metrics and resource samples are written below `windows-runtime\lifecycle` in the source
 checkout.
 

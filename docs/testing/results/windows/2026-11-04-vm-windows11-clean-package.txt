@@ -1,10 +1,10 @@
 Date: 2026-11-04 08:02:48 -0300
 Commit: 644436bd (with uncommitted changes)
-VM: windows11-clean-package (/mnt/disk2/vm/lhc-windows-clean-package/runs/20261104-075618/expanded-base.qcow2); no cache disk
-Package: left-hand-control-0.4.0-windows-x86_64.zip; SHA256 2bfd072c4e76bb5b9b63949cbff028edb3dc21f1784d57966ad91461aa7f06be
+VM: windows11-clean-package (/mnt/disk2/vm/tecloid-windows-clean-package/runs/20261104-075618/expanded-base.qcow2); no cache disk
+Package: tecloid-0.4.0-windows-x86_64.zip; SHA256 2bfd072c4e76bb5b9b63949cbff028edb3dc21f1784d57966ad91461aa7f06be
 VC runtime installer SHA256: 843068991daaa1f73ad9f6239bce4d0f6a07a51f18c37ea2a867e9beca71295c
 Cycles >= 500; duration >= 180s
-Logs: /mnt/disk2/vm/lhc-windows-clean-package/runs/20261104-075618/logs
+Logs: /mnt/disk2/vm/tecloid-windows-clean-package/runs/20261104-075618/logs
 
 - boot-clean-windows: passed
 - clean-zip-lifecycle-stress: passed — clean baseline without toolchain; packaged CLI/lifecycle/stress passed; see guest.log

@@ -23,15 +23,15 @@ from text_corpus import TEXT_CORPUS, TEXT_UNICODE
 
 APP_ID = "dev.bozonx.tecloid"
 MAPPER_DEVICE = "Tecloid Virtual Keyboard"
-TRAY_ID = "lhc-slint-shell"
+TRAY_ID = "tecloid-slint-shell"
 HOME = Path.home()
-WORK = HOME / "lhc-e2e"
+WORK = HOME / "tecloid-e2e"
 APP_LOG = WORK / "app.log"
 METRICS = WORK / "metrics.csv"
 CONFIG_DIR = HOME / ".config" / APP_ID
 DATA_DIR = HOME / ".local/share" / APP_ID
 
-FAKE_GAME = "lhc-fake-game"
+FAKE_GAME = "tecloid-fake-game"
 
 # Every rule maps a physical key to a result the host can read back from the
 # receiver window. Keys not listed here (c, h, j, k, o, q, s...) pass through.
@@ -57,7 +57,7 @@ E2E_LAYOUT = f'''{{
     }},
     {{
       "key": "KeyT",
-      "tap": "text:lhc-ok"
+      "tap": "text:tecloid-ok"
     }},
     {{
       "key": "KeyF",
@@ -80,7 +80,7 @@ E2E_LAYOUT = f'''{{
     }},
     {{
       "key": "KeyE",
-      "tap": "lhc:showQuickMenu1"
+      "tap": "tecloid:showQuickMenu1"
     }},
     {{
       "key": "KeyG",
@@ -127,7 +127,7 @@ E2E_LAYOUT = f'''{{
   "commands": [
     {{
       "id": "touch",
-      "sh": "touch lhc-e2e/cmd-ran"
+      "sh": "touch tecloid-e2e/cmd-ran"
     }}
   ],
   "emojiMenuPages": [
@@ -321,7 +321,7 @@ def cmd_write_config(args):
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     environment = HOME / '.config/environment.d'
     environment.mkdir(parents=True, exist_ok=True)
-    (environment / '90-lhc-e2e.conf').write_text(f'LHC_POPUPS={args.popup_mode}\nLHC_METRICS={METRICS}\nRUST_LOG=info\n')
+    (environment / '90-tecloid-e2e.conf').write_text(f'TECLOID_POPUPS={args.popup_mode}\nTECLOID_METRICS={METRICS}\nRUST_LOG=info\n')
     settings = {
         "experimental": True,
         "linux": {"textMode": {"libei": "libeiWithClipboardFallback"}.get(args.text_backend, args.text_backend)},
@@ -372,8 +372,8 @@ def cmd_check_profile(args):
 
 def cmd_start_app(args):
     WORK.mkdir(exist_ok=True)
-    env = ["RUST_LOG=info", f"LHC_POPUPS={args.popups}", f"LHC_METRICS={METRICS}"]
-    systemd_run("lhc-e2e-app", [binary()], APP_LOG, env)
+    env = ["RUST_LOG=info", f"TECLOID_POPUPS={args.popups}", f"TECLOID_METRICS={METRICS}"]
+    systemd_run("tecloid-e2e-app", [binary()], APP_LOG, env)
     cmd_wait_app(args)
 
 
@@ -462,9 +462,9 @@ def receiver_path(name):
 
 def cmd_receive(args):
     """Capture the dialog's exit status and text atomically, including empty input."""
-    command = (["zenity", "--entry", "--title=LHC e2e receiver", "--text=Mapper output"]
+    command = (["zenity", "--entry", "--title=Tecloid e2e receiver", "--text=Mapper output"]
                if "GNOME" in user_environment().get("XDG_CURRENT_DESKTOP", "").upper()
-               else ["kdialog", "--title", "LHC e2e receiver", "--inputbox", "Mapper output"])
+               else ["kdialog", "--title", "Tecloid e2e receiver", "--inputbox", "Mapper output"])
     result = subprocess.run(command, capture_output=True)
     # kdialog/zenity append one framing newline; preserve all user data before it.
     text = result.stdout.decode("utf-8").removesuffix("\n")
@@ -484,20 +484,20 @@ def receiver_focused():
             "dev.bozonx.Tecloid.Gnome.Snapshot", "true"],
             capture_output=True, text=True, check=True, env={**os.environ, **user_environment()})
         window = json.loads(ast.literal_eval(result.stdout.strip())[0])["window"]
-        return bool(window and window["title"] == "LHC e2e receiver")
+        return bool(window and window["title"] == "Tecloid e2e receiver")
     return kwin_value("receiver-focus", """
 var w = workspace.activeWindow;
-console.warn(MARKER + JSON.stringify(Boolean(w && String(w.caption) === 'LHC e2e receiver')));
+console.warn(MARKER + JSON.stringify(Boolean(w && String(w.caption) === 'Tecloid e2e receiver')));
 """)
 
 
 def cmd_start_receiver(args):
-    subprocess.run(["systemctl", "--user", "kill", "--signal=KILL", "lhc-e2e-receiver-*.service"],
+    subprocess.run(["systemctl", "--user", "kill", "--signal=KILL", "tecloid-e2e-receiver-*.service"],
                    capture_output=True, timeout=5)
-    subprocess.run(["systemctl", "--user", "stop", "lhc-e2e-receiver-*.service"],
+    subprocess.run(["systemctl", "--user", "stop", "tecloid-e2e-receiver-*.service"],
                    capture_output=True, check=True, timeout=10)
     receiver_path(args.name).unlink(missing_ok=True)
-    systemd_run(f"lhc-e2e-receiver-{args.name}",
+    systemd_run(f"tecloid-e2e-receiver-{args.name}",
                 [sys.executable, str(Path(__file__).resolve()), "receive", "--name", args.name],
                 WORK / "receiver.log")
     wait("receiver window focus", 15, receiver_focused)
@@ -508,10 +508,10 @@ def cmd_receiver_result(args):
     deadline = time.monotonic() + args.timeout
     while not path.exists():
         if time.monotonic() >= deadline:
-            subprocess.run(["systemctl", "--user", "stop", "--no-block", f"lhc-e2e-receiver-{args.name}"],
+            subprocess.run(["systemctl", "--user", "stop", "--no-block", f"tecloid-e2e-receiver-{args.name}"],
                            capture_output=True, timeout=5)
             fail("receiver timed out without an accepted result")
-        if not unit_active(f"lhc-e2e-receiver-{args.name}"):
+        if not unit_active(f"tecloid-e2e-receiver-{args.name}"):
             # A completed wrapper has already renamed its result before exiting.
             if not path.exists():
                 fail("receiver exited without a result")
@@ -588,8 +588,8 @@ def run_kwin_test_script(name, body):
 
 
 def kwin_value(name, body):
-    marker = f"LHC_E2E_{time.time_ns()}="
-    run_kwin_test_script("lhc-e2e-" + name, body.replace("MARKER", json.dumps(marker)))
+    marker = f"TECLOID_E2E_{time.time_ns()}="
+    run_kwin_test_script("tecloid-e2e-" + name, body.replace("MARKER", json.dumps(marker)))
     log = subprocess.run(["journalctl", "--user", "-b", "--no-pager", "-o", "cat", "-n", "300"],
                          capture_output=True, text=True, check=True).stdout
     values = [line.split(marker, 1)[1] for line in log.splitlines() if marker in line]
@@ -601,7 +601,7 @@ def kwin_value(name, body):
 def test_window_point(class_hint, title, x, y, activate=False):
     # Read the real frame instead of moving a Wayland client under the pointer.
     # KWin debug/print output can be disabled; warnings reach the user journal.
-    marker = f"LHC_E2E_POINT_{time.time_ns()}="
+    marker = f"TECLOID_E2E_POINT_{time.time_ns()}="
     body = """
 var list = workspace.windowList ? workspace.windowList() : workspace.clientList();
 for (var i = 0; i < list.length; i++) {
@@ -622,7 +622,7 @@ for (var i = 0; i < list.length; i++) {
         "ACTIVATE": "workspace.activeWindow = w;" if activate else "",
     }.items():
         body = body.replace(key, value)
-    run_kwin_test_script("lhc-e2e-window-point", body)
+    run_kwin_test_script("tecloid-e2e-window-point", body)
     log = subprocess.run(["journalctl", "--user", "-b", "--no-pager", "-o", "cat",
                           "-n", "300"], capture_output=True, text=True, check=True).stdout
     matches = [line.split(marker, 1)[1] for line in log.splitlines() if marker in line]
@@ -635,7 +635,7 @@ for (var i = 0; i < list.length; i++) {
 
 
 def cmd_portal_visible(args):
-    marker = f"LHC_E2E_PORTAL_{time.time_ns()}="
+    marker = f"TECLOID_E2E_PORTAL_{time.time_ns()}="
     body = """
 var list = workspace.windowList ? workspace.windowList() : workspace.clientList();
 var count = 0;
@@ -645,7 +645,7 @@ for (var i = 0; i < list.length; i++) {
 }
 console.warn(MARKER + count);
 """.replace('MARKER', json.dumps(marker))
-    run_kwin_test_script('lhc-e2e-portal-visible', body)
+    run_kwin_test_script('tecloid-e2e-portal-visible', body)
     log = subprocess.run(['journalctl', '--user', '-b', '--no-pager', '-o', 'cat', '-n', '300'],
                          capture_output=True, text=True, check=True).stdout
     values = [line.split(marker, 1)[1] for line in log.splitlines() if marker in line]
@@ -661,7 +661,7 @@ def cmd_portal_deny_point(args):
 
 
 def cmd_focus_receiver(args):
-    test_window_point("kdialog", "LHC e2e receiver", 0.5, 0.535, activate=True)
+    test_window_point("kdialog", "Tecloid e2e receiver", 0.5, 0.535, activate=True)
 
 
 def cmd_kde_state(args):
@@ -690,7 +690,7 @@ def cmd_game(args):
 
 def cmd_fake_game(args):
     """A process named like a configured game, for game mode Auto."""
-    unit = "lhc-e2e-fake-game"
+    unit = "tecloid-e2e-fake-game"
     if args.action == "stop":
         subprocess.run(["systemctl", "--user", "stop", unit], capture_output=True)
         return
@@ -740,7 +740,7 @@ def cmd_resources(args):
                        "threads": int(status['Threads'])})
     environment = dict(item.split('=', 1) for item in (Path('/proc') / roots[0] / 'environ').read_text().split('\0') if '=' in item)
     print(json.dumps({"pid": int(roots[0]), "pids": [int(pid) for pid in owners],
-                      "popup_mode": environment.get('LHC_POPUPS', 'winit'),
+                      "popup_mode": environment.get('TECLOID_POPUPS', 'winit'),
                       **{field: sum(value[field] for value in values) for field in ('rss_kib', 'fds', 'threads')}}))
 
 
@@ -796,12 +796,12 @@ def cmd_cli(args):
 def cmd_second_instance(args):
     """Another instance (own IPC socket) must not take the keyboard while
     this one's mapper holds the cross-process lock."""
-    unit = "lhc-e2e-second"
+    unit = "tecloid-e2e-second"
     log = WORK / "second.log"
     log.unlink(missing_ok=True)
-    systemd_run(unit, [binary()], log, ["LHC_SOCKET=lhc-e2e-second", "RUST_LOG=info"])
+    systemd_run(unit, [binary()], log, ["TECLOID_SOCKET=tecloid-e2e-second", "RUST_LOG=info"])
     try:
-        os.environ["LHC_SOCKET"] = "lhc-e2e-second"
+        os.environ["TECLOID_SOCKET"] = "tecloid-e2e-second"
         wait("the second instance to answer", 30, lambda: app("ping").returncode == 0)
         time.sleep(5)
         if virtual_keyboards() != 1:
@@ -810,7 +810,7 @@ def cmd_second_instance(args):
             fail("the second instance did not report the mapper lock; see second.log")
     finally:
         app("quit")
-        del os.environ["LHC_SOCKET"]
+        del os.environ["TECLOID_SOCKET"]
         time.sleep(2)
         subprocess.run(["systemctl", "--user", "stop", unit], capture_output=True)
     if app("ping").returncode or not mapper_running():

@@ -12,11 +12,11 @@ from gi.repository import Gdk, GLib, Gtk
 parser = argparse.ArgumentParser()
 parser.add_argument("--paste", choices=["replace", "hold"])
 args = parser.parse_args()
-app = Gtk.Application(application_id="dev.bozonx.lhc-e2e-clipboard" + ("." + args.paste if args.paste else ""))
+app = Gtk.Application(application_id="dev.bozonx.tecloid-e2e-clipboard" + ("." + args.paste if args.paste else ""))
 
 
 def activate(application):
-    window = Gtk.ApplicationWindow(application=application, title="LHC clipboard fixture")
+    window = Gtk.ApplicationWindow(application=application, title="Tecloid clipboard fixture")
     entry = Gtk.Entry()
     entry.set_placeholder_text("Clipboard preservation fixture")
     window.set_child(entry)
@@ -24,10 +24,10 @@ def activate(application):
     application.fixture_window = window
     providers = [
         Gdk.ContentProvider.new_for_bytes(
-            "text/plain;charset=utf-8", GLib.Bytes.new(b"lhc-before-unicode")
+            "text/plain;charset=utf-8", GLib.Bytes.new(b"tecloid-before-unicode")
         ),
         Gdk.ContentProvider.new_for_bytes(
-            "application/x-lhc-e2e", GLib.Bytes.new(b"binary\x00\xffpayload")
+            "application/x-tecloid-e2e", GLib.Bytes.new(b"binary\x00\xffpayload")
         ),
     ]
     provider = Gdk.ContentProvider.new_union(providers)
@@ -40,7 +40,7 @@ def activate(application):
             if not args.paste:
                 window.get_clipboard().set_content(provider)
             seeded = True
-            (Path.home() / "lhc-e2e/clipboard-ready").touch()
+            (Path.home() / "tecloid-e2e/clipboard-ready").touch()
 
     def key_pressed(_controller, keyval, _keycode, modifiers):
         paste = (keyval in (Gdk.KEY_v, Gdk.KEY_V) and modifiers & Gdk.ModifierType.CONTROL_MASK) or (
@@ -49,11 +49,11 @@ def activate(application):
         if args.paste and paste:
             if args.paste == "replace":
                 replacement = Gdk.ContentProvider.new_for_bytes(
-                    "text/plain;charset=utf-8", GLib.Bytes.new(b"lhc-new-owner")
+                    "text/plain;charset=utf-8", GLib.Bytes.new(b"tecloid-new-owner")
                 )
                 application.fixture_provider = replacement
                 window.get_clipboard().set_content(replacement)
-            (Path.home() / "lhc-e2e/clipboard-paste-received").touch()
+            (Path.home() / "tecloid-e2e/clipboard-paste-received").touch()
             return True
         return False
 

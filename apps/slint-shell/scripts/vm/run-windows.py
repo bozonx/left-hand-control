@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Windows VM e2e: copy the working tree into a disposable overlay of the
 prepared Windows 11 VM, run the selected suite in the interactive
-session through the scheduled task LHC-E2E and collect the result.
+session through the scheduled task Tecloid-E2E and collect the result.
 
 The default smoke suite covers debug UI scenarios, IPC, popups and shutdown.
 --suite full runs native tests, a release build and lifecycle/resource checks.
@@ -30,7 +30,7 @@ from windows_mapper import WindowsMapper, retry_guest_io
 from windows_popups import check_popups
 from vmlib import REPO, Report, StepFailed, Vm, commit, environment_ok, result_path, wait_for
 
-WORK = r"D:\lhc-e2e"
+WORK = r"D:\tecloid-e2e"
 
 
 def synchronize_clock(ps):
@@ -134,7 +134,7 @@ class GuestWatch:
                 "while ($true) { "
                 f"$done = Test-Path {WORK}\\out\\done.txt; "
                 f"$receiver = Test-Path {WORK}\\out\\receiver\\snapshot.json; "
-                "$task = [string](Get-ScheduledTask -TaskName LHC-E2E).State; "
+                "$task = [string](Get-ScheduledTask -TaskName Tecloid-E2E).State; "
                 "if ($done -or (-not $afterInput -and $receiver) -or ((Get-Date) - $began).TotalSeconds -ge 30 -or "
                 "($task -in @('Ready', 'Disabled') -and ((Get-Date) - $began).TotalSeconds -gt 30)) { "
                 "[pscustomobject]@{done=$done; receiver=$receiver; task=$task} | ConvertTo-Json -Compress; break }; "
@@ -256,7 +256,7 @@ def main():
         vm.wait_ssh(timeout=900)
         print(synchronize_clock(ps), flush=True)
         # The cache disk survives even when a failed run could not export logs.
-        if vm.copy_from("D:/lhc-e2e/out", vm.logs / "previous-guest"):
+        if vm.copy_from("D:/tecloid-e2e/out", vm.logs / "previous-guest"):
             print("Recovered previous guest logs from the cache disk.", flush=True)
 
     def preflight():
@@ -265,9 +265,9 @@ def main():
         return ps(
             "$ErrorActionPreference = 'Stop'; "
             "$volume = Get-Volume -DriveLetter D; "
-            "if ($volume.FileSystemLabel -ne 'LHC-CACHE') { throw 'D: is not LHC-CACHE' }; "
-            "$task = Get-ScheduledTask -TaskName LHC-E2E; "
-            "if ($task.State -in @('Running', 'Disabled')) { throw 'LHC-E2E is running or disabled' }; "
+            "if ($volume.FileSystemLabel -ne 'Tecloid-CACHE') { throw 'D: is not Tecloid-CACHE' }; "
+            "$task = Get-ScheduledTask -TaskName Tecloid-E2E; "
+            "if ($task.State -in @('Running', 'Disabled')) { throw 'Tecloid-E2E is running or disabled' }; "
             "if (-not (Get-Process explorer -ErrorAction SilentlyContinue)) { throw 'No desktop session' }; "
             "$env:Path = \"$env:USERPROFILE\\.cargo\\bin;$env:Path\"; "
             "& cargo --version; if ($LASTEXITCODE) { throw 'Cargo unavailable' }"
@@ -277,15 +277,15 @@ def main():
         if args.previous_package:
             ps(f"New-Item -ItemType Directory -Force -Path {WORK}\\previous | Out-Null")
             # Keep the release manifest filename and ZIP name unchanged.
-            vm.copy_to(args.previous_package, "D:/lhc-e2e/previous/" + args.previous_package.name)
-            vm.copy_to(args.previous_package.with_name("WINDOWS-SHA256SUMS"), "D:/lhc-e2e/previous/")
+            vm.copy_to(args.previous_package, "D:/tecloid-e2e/previous/" + args.previous_package.name)
+            vm.copy_to(args.previous_package.with_name("WINDOWS-SHA256SUMS"), "D:/tecloid-e2e/previous/")
             ps(f"Set-Content {WORK}\\previous-package.txt -Value '{WORK}\\previous\\{args.previous_package.name}'")
         else:
             ps(f"Remove-Item {WORK}\\previous-package.txt -ErrorAction SilentlyContinue; 'No previous package'")
         archive = vm.run_dir / "src.tar.gz"
         count, digest = source_archive(archive)
         ps(f"$ErrorActionPreference = 'Stop'; New-Item -ItemType Directory -Force -Path {WORK}\\src, {WORK}\\out | Out-Null")
-        vm.copy_to(archive, "D:/lhc-e2e/src.tar.gz")
+        vm.copy_to(archive, "D:/tecloid-e2e/src.tar.gz")
         # Preserve sane timestamps only when content is identical. Restamping the
         # whole tree rebuilds vendored Slint; keeping host timestamps can make
         # Cargo miss edits that predate the guest's cached build.
@@ -381,7 +381,7 @@ Remove-Item $stage -Recurse -Force
         ps(f"$ErrorActionPreference = 'Stop'; Remove-Item {WORK}\\out\\* -Recurse -Force -ErrorAction SilentlyContinue; "
            f"Set-Content {WORK}\\suite.txt -Value {args.suite}; "
            f"Set-Content {WORK}\\stress-seconds.txt -Value {args.stress_seconds}; "
-           "Start-ScheduledTask -TaskName LHC-E2E")
+           "Start-ScheduledTask -TaskName Tecloid-E2E")
         input_checked = False
         started = time.monotonic()
 
@@ -408,7 +408,7 @@ Remove-Item $stage -Recurse -Force
                 finally:
                     signal_input_result(ps, report, passed)
             if time.monotonic() - started > 30 and state["task"] in ("Ready", "Disabled"):
-                raise StepFailed(f"LHC-E2E stopped without a completion marker ({state['task']})")
+                raise StepFailed(f"Tecloid-E2E stopped without a completion marker ({state['task']})")
             return False
 
         wait_for("the guest run", args.timeout * 60, progress, interval=10)
@@ -446,7 +446,7 @@ Remove-Item $stage -Recurse -Force
             completion.close()
         try:
             if vm.qemu and vm.qemu.poll() is None:
-                if not vm.copy_from("D:/lhc-e2e/out", vm.logs / "guest"):
+                if not vm.copy_from("D:/tecloid-e2e/out", vm.logs / "guest"):
                     report.skip("collect-guest-logs", "SSH export failed; logs remain on the persistent cache disk")
                 vm.qmp.screendump(vm.logs / "final.png")
         except (StepFailed, subprocess.SubprocessError, OSError, ValueError) as error:

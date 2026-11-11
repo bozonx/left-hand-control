@@ -5,14 +5,14 @@ use crate::{
     pages::{action_kind, picker::action_label},
     ui::{ActionKind, Assignment, LayerKeyCell, PickerCategory, SettingsWindow},
 };
-use lhc_core::{
+use std::collections::HashMap;
+use tecloid_core::{
     config::{
         actions,
         model::{LayerKeymap, ProfilePreset, ResolvedAppConfig},
     },
     config_document::ConfigDocument,
 };
-use std::collections::HashMap;
 
 /// Display names of catalog actions (macros, commands, built-ins).
 pub(crate) fn action_names(

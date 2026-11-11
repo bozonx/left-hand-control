@@ -45,7 +45,7 @@ pub fn set_game_active(active: bool) {
 }
 
 pub fn start(dispatch: Dispatch) {
-    if !lhc_core::env::popup_hotkeys_enabled() {
+    if !tecloid_core::env::popup_hotkeys_enabled() {
         return;
     }
     let modifiers = Modifiers::CONTROL | Modifiers::ALT;
@@ -63,7 +63,7 @@ pub fn start(dispatch: Dispatch) {
     // Retry temporary OS registration failures, on the UI thread.
     let retry = slint::Timer::default();
     retry.start(slint::TimerMode::Repeated, REGISTRATION_RETRY, || {
-        set_game_active(lhc_core::runtime_state::game_mode_active());
+        set_game_active(tecloid_core::runtime_state::game_mode_active());
     });
     HOTKEYS.with_borrow_mut(|state| {
         *state = Some(Hotkeys {
@@ -73,7 +73,7 @@ pub fn start(dispatch: Dispatch) {
             _retry: retry,
         })
     });
-    set_game_active(lhc_core::runtime_state::game_mode_active());
+    set_game_active(tecloid_core::runtime_state::game_mode_active());
     GlobalHotKeyEvent::set_event_handler(Some(move |event: GlobalHotKeyEvent| {
         if event.state != HotKeyState::Pressed {
             return;

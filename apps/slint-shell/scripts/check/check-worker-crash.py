@@ -23,7 +23,7 @@ def workers(pid):
                 found.append(int(child))
     return found
 
-socket = f"lhc-worker-crash-{os.getpid()}.sock"
+socket = f"tecloid-worker-crash-{os.getpid()}.sock"
 with tempfile.TemporaryDirectory() as directory:
     config = Path(directory) / "linux/.config/dev.bozonx.tecloid/config.json"
     config.parent.mkdir(parents=True)
@@ -31,12 +31,12 @@ with tempfile.TemporaryDirectory() as directory:
     log_path = Path(directory) / "server.log"
     with log_path.open("w+") as log:
         env = os.environ | {
-            "LHC_DEV_DIR": directory,
-            "LHC_HOTKEYS": "off",
-            "LHC_POPUPS": "spell",
-            "LHC_SOCKET": socket,
+            "TECLOID_DEV_DIR": directory,
+            "TECLOID_HOTKEYS": "off",
+            "TECLOID_POPUPS": "spell",
+            "TECLOID_SOCKET": socket,
             "SLINT_BACKEND": "winit-skia-software",
-            "LHC_METRICS": str(Path(directory) / "crash.csv"),
+            "TECLOID_METRICS": str(Path(directory) / "crash.csv"),
         }
         server = subprocess.Popen([binary], env=env, stdout=log, stderr=log)
         try:

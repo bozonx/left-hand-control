@@ -19,7 +19,7 @@
 
 ## 2. Ограничения текущего движка
 
-Распознавание находится в `crates/lhc-core/src/mapper/engine/mod.rs`, метод `handle_chord()`. Триггеры разбираются через `config::key_catalog::trigger_keys()`; правила собираются в `engine/builder.rs`.
+Распознавание находится в `crates/tecloid-core/src/mapper/engine/mod.rs`, метод `handle_chord()`. Триггеры разбираются через `config::key_catalog::trigger_keys()`; правила собираются в `engine/builder.rs`.
 
 Текущая логика распознаёт сочетание, когда все его клавиши физически нажаты, но не буферизует начало возможного аккорда. Короткое сочетание захватывает свои клавиши сразу; расширить его после этого нельзя. Отпускание любой клавиши завершает сочетание, а оставшиеся участники не могут повторно участвовать до своего отпускания. Правила сочетаний общие; таблицы назначений слоёв разрешают одиночные клавиши.
 
@@ -148,7 +148,7 @@
 
 ## 9. Архитектура и совместимость
 
-Всё распознавание и конфигурация принадлежат `lhc-core`. Slint только редактирует поля, показывают диагностику и подписываются на события core. Не реализовывать таймеры распознавания в UI.
+Всё распознавание и конфигурация принадлежат `tecloid-core`. Slint только редактирует поля, показывают диагностику и подписываются на события core. Не реализовывать таймеры распознавания в UI.
 
 Выделить распознаватель сессий из старого `handle_chord()` в отдельный модуль движка. Он получает физические события и выдаёт решения: ожидание, выбранный аккорд, возврат накопленного ввода. Исполнение действий остаётся в общей машине tap/hold/layer.
 
@@ -223,7 +223,7 @@
 
 ```sh
 cargo test --locked --workspace --features slint-shell/spell
-cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+cargo clippy --locked -p tecloid-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
 cargo run -p slint-shell --example editor -- --smoke
 cargo run -p slint-shell --example interactions
 ```

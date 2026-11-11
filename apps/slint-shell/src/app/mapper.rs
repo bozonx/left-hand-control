@@ -9,14 +9,14 @@ use crate::{
     pages,
     ui::{AppState, MapperPhase, MapperState},
 };
-use lhc_core::{
-    CoreEvent,
-    config::{auto_switch, model::ProfileMode},
-};
 use slint::ComponentHandle;
 use std::{
     cell::{Cell, RefCell},
     time::{Duration, Instant},
+};
+use tecloid_core::{
+    CoreEvent,
+    config::{auto_switch, model::ProfileMode},
 };
 
 /// Attempts after the first one to start the mapper on launch. At login the
@@ -28,7 +28,7 @@ const LAUNCH_RETRY_DELAY: Duration = Duration::from_secs(2);
 const UPTIME_TICK: Duration = Duration::from_secs(20);
 
 /// Forward core events to the UI thread. Subscribed once at startup.
-pub(super) fn forward_core_events() -> Result<lhc_core::events::Subscription, String> {
+pub(super) fn forward_core_events() -> Result<tecloid_core::events::Subscription, String> {
     // Keep at most one core callback in the UI queue. Waiting here blocks
     // only this subscription, so the core can coalesce state notifications.
     fn post(f: impl FnOnce(&std::rc::Rc<App>) + Send + 'static) {
@@ -42,7 +42,7 @@ pub(super) fn forward_core_events() -> Result<lhc_core::events::Subscription, St
             let _ = rx.recv();
         }
     }
-    lhc_core::events::bus().subscribe_with_context(|event, context| match event {
+    tecloid_core::events::bus().subscribe_with_context(|event, context| match event {
         CoreEvent::MapperDeviceChanged => post(|app| app.refresh_mapper_status()),
         CoreEvent::MapperStopped(error) => {
             let error = error.clone();
@@ -60,12 +60,12 @@ pub(super) fn forward_core_events() -> Result<lhc_core::events::Subscription, St
         CoreEvent::AppAction(action) => {
             let action = *action;
             post(move |app| {
-                if !context.action_is_current(lhc_core::events::bus())
-                    || !lhc_core::mapper::runtime::status().running
+                if !context.action_is_current(tecloid_core::events::bus())
+                    || !tecloid_core::mapper::runtime::status().running
                 {
                     return;
                 }
-                if let lhc_core::config::app_action::AppAction::ActivateProfile(slot) = action {
+                if let tecloid_core::config::app_action::AppAction::ActivateProfile(slot) = action {
                     app.activate_profile(slot.get());
                 } else if let Some(command) = crate::command::Command::from_app_action(action) {
                     app.command(command, Source::Mapper, Instant::now(), None);
@@ -118,9 +118,9 @@ enum MapperOperation {
 
 fn mapper_phase(
     operation: MapperOperation,
-    phase: lhc_core::mapper::runtime::MapperPhase,
+    phase: tecloid_core::mapper::runtime::MapperPhase,
 ) -> MapperPhase {
-    use lhc_core::mapper::runtime::MapperPhase as Core;
+    use tecloid_core::mapper::runtime::MapperPhase as Core;
     match operation {
         MapperOperation::Starting => MapperPhase::Starting,
         MapperOperation::Retrying => MapperPhase::Retrying,
@@ -215,9 +215,9 @@ impl MapperController {
 impl App {
     /// Show the game-mode status; the active profile only depends on
     /// whether game mode is on, not on which detector reported it.
-    pub(super) fn game_mode_changed(&self, status: &lhc_core::gamemode::GameModeStatus) {
+    pub(super) fn game_mode_changed(&self, status: &tecloid_core::gamemode::GameModeStatus) {
         // Events from different watcher threads can reach the UI out of order.
-        let current = lhc_core::gamemode::status();
+        let current = tecloid_core::gamemode::status();
         let status = if status.revision < current.revision {
             &current
         } else {
@@ -282,7 +282,7 @@ impl App {
         let Some(document) = self.document() else {
             return;
         };
-        if !lhc_core::mapper::runtime::status().running {
+        if !tecloid_core::mapper::runtime::status().running {
             return;
         }
         let Some(id) = document.applied_profile_id() else {
@@ -294,9 +294,9 @@ impl App {
         }
         let name = id
             .as_deref()
-            .and_then(lhc_core::config::model::user_profile_name);
+            .and_then(tecloid_core::config::model::user_profile_name);
         let text = crate::i18n::profile_osd(self.preferences.get().language, name);
-        if let Err(error) = lhc_core::platform::osd::enqueue(text) {
+        if let Err(error) = tecloid_core::platform::osd::enqueue(text) {
             log::warn!("[osd] {error}");
         }
     }
@@ -304,7 +304,7 @@ impl App {
     /// Show the effective game-mode state on screen.
     pub(super) fn announce_game_mode(&self, active: bool) {
         let text = crate::i18n::tray_game_title(self.preferences.get().language, active);
-        if let Err(error) = lhc_core::platform::osd::enqueue(text) {
+        if let Err(error) = tecloid_core::platform::osd::enqueue(text) {
             log::warn!("[osd] {error}");
         }
     }
@@ -321,7 +321,7 @@ impl App {
         } else {
             pages::conditions::show_active_window(
                 &self.settings,
-                lhc_core::active_window::cached_active_window().as_ref(),
+                tecloid_core::active_window::cached_active_window().as_ref(),
             );
         }
     }
@@ -331,12 +331,12 @@ impl App {
     pub(super) fn context_changed(&self) {
         pages::conditions::show_active_window(
             &self.settings,
-            lhc_core::active_window::cached_active_window().as_ref(),
+            tecloid_core::active_window::cached_active_window().as_ref(),
         );
         let state = self.settings.global::<AppState>();
-        crate::game_mode::refresh(&self.settings, &lhc_core::gamemode::status());
+        crate::game_mode::refresh(&self.settings, &tecloid_core::gamemode::status());
         state.set_keyboard_language(
-            lhc_core::runtime_state::keyboard_layout()
+            tecloid_core::runtime_state::keyboard_layout()
                 .map(|profile| {
                     let code = profile.code.to_uppercase();
                     if code.chars().count() > 8 {
@@ -367,7 +367,7 @@ impl App {
     }
 
     pub(super) fn refresh_mapper_status(&self) {
-        let status = lhc_core::mapper::runtime::status();
+        let status = tecloid_core::mapper::runtime::status();
         if let Some(tray) = self.tray.borrow().as_ref() {
             tray.set_enabled(status.running);
         }
@@ -394,7 +394,7 @@ impl App {
                 .settings
                 .global::<crate::ui::SettingsEditor>()
                 .get_mouse_device_path();
-            lhc_core::mapper::mouse::probe(Some(path.as_str()))
+            tecloid_core::mapper::mouse::probe(Some(path.as_str()))
         };
         self.settings
             .global::<crate::ui::SettingsEditor>()
@@ -451,7 +451,7 @@ impl App {
         if self.settings.global::<AppState>().get_mapper_busy() {
             return;
         }
-        if lhc_core::mapper::runtime::status().running {
+        if tecloid_core::mapper::runtime::status().running {
             self.stop_mapper(false);
         } else if pages::prepare_mapper_start(&self.settings) {
             self.start_mapper(0);
@@ -469,10 +469,10 @@ impl App {
         if self.settings.global::<AppState>().get_mapper_busy() {
             return;
         }
-        if lhc_core::mapper::runtime::status().running {
+        if tecloid_core::mapper::runtime::status().running {
             self.stop_mapper(true);
         } else {
-            lhc_core::mapper::runtime::clear_stopped_error();
+            tecloid_core::mapper::runtime::clear_stopped_error();
             self.refresh_mapper_status();
         }
     }
@@ -480,7 +480,7 @@ impl App {
     fn stop_mapper(&self, restart: bool) {
         self.set_mapper_operation(MapperOperation::Stopping);
         std::thread::spawn(move || {
-            let result = lhc_core::mapper::runtime::stop();
+            let result = tecloid_core::mapper::runtime::stop();
             post(move |app| {
                 app.set_mapper_operation(MapperOperation::Idle);
                 match result {
@@ -500,7 +500,7 @@ impl App {
 
     /// Start the mapper; a failed start is tried again `retries` times.
     fn start_mapper(&self, retries: u32) {
-        if !lhc_core::mapper::runtime::SUPPORTED {
+        if !tecloid_core::mapper::runtime::SUPPORTED {
             self.set_error(Msg::MapperUnsupported);
             return;
         }
@@ -527,12 +527,15 @@ impl App {
                 return;
             }
         };
-        lhc_core::active_window::set_titles_needed(runtime.uses_titles);
+        tecloid_core::active_window::set_titles_needed(runtime.uses_titles);
         self.mapper.crash.set(None);
         self.set_mapper_operation(MapperOperation::Starting);
         std::thread::spawn(move || {
-            let result =
-                lhc_core::mapper::runtime::start(&device, mouse.as_deref(), runtime.mapper.clone());
+            let result = tecloid_core::mapper::runtime::start(
+                &device,
+                mouse.as_deref(),
+                runtime.mapper.clone(),
+            );
             post(move |app| {
                 if result.is_ok()
                     && let Some(document) = app.document()
@@ -581,7 +584,7 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lhc_core::mapper::runtime::MapperPhase as Core;
+    use tecloid_core::mapper::runtime::MapperPhase as Core;
 
     #[test]
     fn shell_operations_override_the_core_phase() {

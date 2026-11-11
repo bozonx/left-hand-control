@@ -15,7 +15,7 @@ $exe = Join-Path $root 'target\debug\tecloid.exe'
 $server = $null
 $second = $null
 $peer = $null
-$variables = @('LHC_DEV_DIR', 'LHC_PORT', 'LHC_HOTKEYS', 'LHC_POPUPS', 'LHC_METRICS', 'SLINT_BACKEND', 'LHC_EDITOR_SNAPSHOTS')
+$variables = @('TECLOID_DEV_DIR', 'TECLOID_PORT', 'TECLOID_HOTKEYS', 'TECLOID_POPUPS', 'TECLOID_METRICS', 'SLINT_BACKEND', 'TECLOID_EDITOR_SNAPSHOTS')
 $saved = @{}
 foreach ($name in $variables) { $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process') }
 
@@ -40,19 +40,19 @@ function Wait-Until([string]$Description, [scriptblock]$Condition) {
 }
 
 New-Item -ItemType Directory -Force -Path $output | Out-Null
-$env:LHC_DEV_DIR = Join-Path $output ([guid]::NewGuid().ToString())
-$env:LHC_HOTKEYS = 'off'
-$env:LHC_POPUPS = 'winit'
+$env:TECLOID_DEV_DIR = Join-Path $output ([guid]::NewGuid().ToString())
+$env:TECLOID_HOTKEYS = 'off'
+$env:TECLOID_POPUPS = 'winit'
 $env:SLINT_BACKEND = 'winit-skia-software'
 # Select an unused loopback port so another running instance cannot satisfy ping.
 $listener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Loopback, 0)
 $listener.Start()
-$env:LHC_PORT = [string]$listener.LocalEndpoint.Port
+$env:TECLOID_PORT = [string]$listener.LocalEndpoint.Port
 $listener.Stop()
-$env:LHC_EDITOR_SNAPSHOTS = Join-Path $output 'snapshots'
-New-Item -ItemType Directory -Force -Path $env:LHC_EDITOR_SNAPSHOTS | Out-Null
-$env:LHC_METRICS = Join-Path $output 'metrics.csv'
-Remove-Item $env:LHC_METRICS -ErrorAction SilentlyContinue
+$env:TECLOID_EDITOR_SNAPSHOTS = Join-Path $output 'snapshots'
+New-Item -ItemType Directory -Force -Path $env:TECLOID_EDITOR_SNAPSHOTS | Out-Null
+$env:TECLOID_METRICS = Join-Path $output 'metrics.csv'
+Remove-Item $env:TECLOID_METRICS -ErrorAction SilentlyContinue
 Push-Location $root
 try {
     Enable-WindowsTestDevelopment
@@ -60,8 +60,8 @@ try {
     if (-not $SkipBuild) {
         # Resolve the Windows feature union once: separate core/shell builds
         # otherwise invalidate each other's core dependency and Slint output.
-        Invoke-Checked 'cargo' @('build', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--bin', 'tecloid', '--example', 'windows-mapper-stand', '--example', 'editor', '--example', 'interactions')
-        Invoke-Checked 'cargo' @('test', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--lib', '--test', 'ipc')
+        Invoke-Checked 'cargo' @('build', '--locked', '-p', 'tecloid-core', '-p', 'slint-shell', '--bin', 'tecloid', '--example', 'windows-mapper-stand', '--example', 'editor', '--example', 'interactions')
+        Invoke-Checked 'cargo' @('test', '--locked', '-p', 'tecloid-core', '-p', 'slint-shell', '--lib', '--test', 'ipc')
     }
     Invoke-Checked (Join-Path $root 'target\debug\examples\editor.exe') @('--smoke')
     Invoke-Checked (Join-Path $root 'target\debug\examples\interactions.exe') @()
@@ -112,18 +112,18 @@ try {
     foreach ($popup in @('emoji', 'quick')) {
         for ($cycle = 1; $cycle -le 3; $cycle++) {
             $before = 0
-            if (Test-Path $env:LHC_METRICS) {
-                $before = @(Import-Csv $env:LHC_METRICS | Where-Object { $_.event -eq 'hidden' -and $_.window -eq $popup }).Count
+            if (Test-Path $env:TECLOID_METRICS) {
+                $before = @(Import-Csv $env:TECLOID_METRICS | Where-Object { $_.event -eq 'hidden' -and $_.window -eq $popup }).Count
             }
             Invoke-Checked $exe @('show', $popup)
             # queued alone is insufficient: wait until the UI processed the trigger.
             Wait-Until "$popup shown" {
-                $rows = @(Import-Csv $env:LHC_METRICS)
+                $rows = @(Import-Csv $env:TECLOID_METRICS)
                 @($rows | Where-Object { $_.event -eq 't2_shown' -and $_.window -eq $popup }).Count -ge $cycle
             }
             Invoke-Checked $exe @('hide')
             Wait-Until "$popup hide" {
-                @(Import-Csv $env:LHC_METRICS | Where-Object { $_.event -eq 'hidden' -and $_.window -eq $popup }).Count -gt $before
+                @(Import-Csv $env:TECLOID_METRICS | Where-Object { $_.event -eq 'hidden' -and $_.window -eq $popup }).Count -gt $before
             }
         }
     }
@@ -133,7 +133,7 @@ try {
     Invoke-Checked $exe @('quit')
     if (-not $server.WaitForExit(20000)) { throw 'Server did not exit after quit' }
     if ($server.ExitCode -ne 0) { throw "Server exited with $($server.ExitCode)" }
-    if (Get-NetTCPConnection -LocalPort ([int]$env:LHC_PORT) -State Listen -ErrorAction SilentlyContinue) {
+    if (Get-NetTCPConnection -LocalPort ([int]$env:TECLOID_PORT) -State Listen -ErrorAction SilentlyContinue) {
         throw 'IPC listener leaked after quit'
     }
     if ((Get-Content (Join-Path $output 'stderr.log') -Raw) -match 'panicked at') {

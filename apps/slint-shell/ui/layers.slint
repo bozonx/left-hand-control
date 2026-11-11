@@ -310,7 +310,7 @@ export component LayersPage inherits PageLayout {
                     background: index == LayersEditor.selected ? Theme.selected : layer-drag.has-hover ? Theme.hover : Theme.card;
                     opacity: layer-drag.dragged ? Theme.dragged-opacity : 1;
                     accessible-role: tab;
-                    accessible-id: "lhc-layer-tab-" + index;
+                    accessible-id: "tecloid-layer-tab-" + index;
                     accessible-label: name;
                     accessible-description: "Alt+← / Alt+→";
                     accessible-item-selectable: true;
@@ -419,12 +419,12 @@ export component LayersPage inherits PageLayout {
                         CardTitle { text: @tr("Keyboard"); vertical-alignment: center; }
                         VerticalLayout {
                             alignment: center;
-                            InfoTip { text: @tr("Display modes affect labels only — the key code stays the same. “US layout” shows standard letter labels for visual reference. “LHC codes” shows app-specific codes (e.g. KeyA, ArrowLeft)."); }
+                            InfoTip { text: @tr("Display modes affect labels only — the key code stays the same. “US layout” shows standard letter labels for visual reference. “Tecloid codes” shows app-specific codes (e.g. KeyA, ArrowLeft)."); }
                         }
                         Rectangle { horizontal-stretch: 1; }
                         ButtonGroup {
                             pill: true;
-                            labels: [@tr("US layout"), @tr("LHC codes")];
+                            labels: [@tr("US layout"), @tr("Tecloid codes")];
                             tooltips: [@tr("Show standard QWERTY letter labels for visual reference."), @tr("Show internal key codes used in Tecloid profiles (e.g. KeyA, ArrowLeft).")];
                             selected-index: root.label-mode == LabelMode.code ? 1 : 0;
                             selected(index) => { root.label-mode = index == 1 ? LabelMode.code : LabelMode.label; }

@@ -53,10 +53,10 @@ impl Activation {
         };
         let Some(token) = token else {
             if matches!(
-                lhc_core::platform::linux::detect().desktop,
-                lhc_core::platform::linux::Desktop::Gnome
+                tecloid_core::platform::linux::detect().desktop,
+                tecloid_core::platform::linux::Desktop::Gnome
             ) {
-                lhc_core::platform::gnome::request_window_activation(window.title())?;
+                tecloid_core::platform::gnome::request_window_activation(window.title())?;
             }
             return Ok(());
         };

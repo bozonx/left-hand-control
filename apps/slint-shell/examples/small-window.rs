@@ -1,17 +1,17 @@
 //! Pages and dialogs at the minimum window size, using disposable configuration.
 //!
-//! `LHC_WINDOW_SIZE=WxH` overrides the size (default: the window minimum),
-//! `LHC_SMALL_LANGUAGE=<code>` the UI language, `LHC_SMALL_RELEASE=1` hides development-only UI;
-//! `LHC_EDITOR_SNAPSHOTS=<dir>` saves a snapshot of every state.
-//! `LHC_SMALL_LANGUAGE=qps-ploc` uses the debug-only pseudo-translation, about 40% longer
-//! than English (`[Ŝéţţîñĝš ~~~]`); `LHC_SMALL_TEXT_SCALE=<factor>` enlarges text only.
+//! `TECLOID_WINDOW_SIZE=WxH` overrides the size (default: the window minimum),
+//! `TECLOID_SMALL_LANGUAGE=<code>` the UI language, `TECLOID_SMALL_RELEASE=1` hides development-only UI;
+//! `TECLOID_EDITOR_SNAPSHOTS=<dir>` saves a snapshot of every state.
+//! `TECLOID_SMALL_LANGUAGE=qps-ploc` uses the debug-only pseudo-translation, about 40% longer
+//! than English (`[Ŝéţţîñĝš ~~~]`); `TECLOID_SMALL_TEXT_SCALE=<factor>` enlarges text only.
 //! Every language checks toolbar bounds, overlaps and non-scrolling dialog actions.
 mod support;
-use lhc_core::config_document::KeyAssignment;
 use slint::ComponentHandle;
 use slint_shell::ui::*;
 use std::{cell::Cell, rc::Rc, time::Duration};
 use support::{Fixture, snapshot};
+use tecloid_core::config_document::KeyAssignment;
 
 /// The pseudo-translation is bundled in debug builds only and is not an app language.
 fn select_language(code: &str) {
@@ -388,7 +388,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ui.global::<AppState>().set_is_linux(true);
     ui.global::<AppState>().set_mapper_supported(true);
     ui.global::<AppState>().set_autostart_supported(true);
-    let development = std::env::var_os("LHC_SMALL_RELEASE").is_none();
+    let development = std::env::var_os("TECLOID_SMALL_RELEASE").is_none();
     ui.global::<AppState>().set_in_development(development);
     ui.global::<SettingsEditor>()
         .set_in_development(development);
@@ -406,15 +406,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         })?;
     ui.global::<MacroEditor>().invoke_add("Small macro".into());
-    let language = std::env::var("LHC_SMALL_LANGUAGE").unwrap_or_else(|_| "en".into());
+    let language = std::env::var("TECLOID_SMALL_LANGUAGE").unwrap_or_else(|_| "en".into());
     select_language(&language);
-    if let Some(scale) = std::env::var("LHC_SMALL_TEXT_SCALE")
+    if let Some(scale) = std::env::var("TECLOID_SMALL_TEXT_SCALE")
         .ok()
         .and_then(|s| s.parse::<f32>().ok())
     {
         ui.global::<Theme>().set_text_scale(scale);
     }
-    let size = std::env::var("LHC_WINDOW_SIZE")
+    let size = std::env::var("TECLOID_WINDOW_SIZE")
         .ok()
         .and_then(|s| {
             s.split_once('x')

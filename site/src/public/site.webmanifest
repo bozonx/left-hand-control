@@ -1,6 +1,6 @@
 {
   "name": "Tecloid",
-  "short_name": "LHC",
+  "short_name": "Tecloid",
   "description": "Desktop keyboard mapper and automation for Linux (KDE Wayland) and Windows",
   "icons": [
     {

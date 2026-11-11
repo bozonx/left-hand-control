@@ -14,7 +14,7 @@ slint::slint! {
     import { NumericInput, InlineTextField, ButtonGroup, NavTab, Section, LinkButton } from "../ui/controls.slint";
     export { KeyboardFocus, NavigationKind, NavigationMove } from "../ui/focus.slint";
     export component Probe inherits Window {
-        title: "LHC accessibility fixture";
+        title: "Tecloid accessibility fixture";
         width: 640px; height: 400px;
         in-out property <string> number: "20";
         in-out property <string> numeric-placeholder;
@@ -105,7 +105,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             slint_shell::pages::navigate_focus_group(ui.window(), kind, movement);
         });
     ui.show()?;
-    if std::env::var_os("LHC_A11Y_INSPECT").is_some() {
+    if std::env::var_os("TECLOID_A11Y_INSPECT").is_some() {
         slint::Timer::single_shot(std::time::Duration::from_secs(20), || {
             slint::quit_event_loop().unwrap();
         });

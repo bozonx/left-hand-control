@@ -23,17 +23,17 @@ regression — её назначение, headless — окружение; эт�
 
 | Исходники | Тип и фактическая граница |
 | --- | --- |
-| Парсеры действий, валидация, engine с управляемыми событиями в `crates/lhc-core/src/` | Unit: правила преобразования входов в результаты без реальных evdev/uinput |
-| `crates/lhc-core/src/config_document/`, `apps/slint-shell/src/document.rs`, тесты сохранения в `src/pages/*/tests.rs` | Среди тестов есть интеграционные: документ → валидация/транзакция → временные файлы или уведомления; расположение в `src` не делает их unit |
-| `crates/lhc-core/tests/storage_override.rs` | Интеграционный: переменная окружения в дочернем процессе → разрешение путей → запись/чтение временного файла |
-| `crates/lhc-core/tests/config_to_engine.rs` | Интеграционный: файлы конфига и раскладки → `ConfigDocument` → runtime config → `Engine` → `EngineOutput`; события и время синтетические, без evdev/uinput. Закрывает разрыв между unit-тестами движка и L1 |
-| `crates/lhc-core/tests/game_mode_lifecycle.rs` | Интеграционный: сохранённая конфигурация → документ → watcher и его перезапуск; Linux также проверяет обнаружение тестового процесса и grace period |
+| Парсеры действий, валидация, engine с управляемыми событиями в `crates/tecloid-core/src/` | Unit: правила преобразования входов в результаты без реальных evdev/uinput |
+| `crates/tecloid-core/src/config_document/`, `apps/slint-shell/src/document.rs`, тесты сохранения в `src/pages/*/tests.rs` | Среди тестов есть интеграционные: документ → валидация/транзакция → временные файлы или уведомления; расположение в `src` не делает их unit |
+| `crates/tecloid-core/tests/storage_override.rs` | Интеграционный: переменная окружения в дочернем процессе → разрешение путей → запись/чтение временного файла |
+| `crates/tecloid-core/tests/config_to_engine.rs` | Интеграционный: файлы конфига и раскладки → `ConfigDocument` → runtime config → `Engine` → `EngineOutput`; события и время синтетические, без evdev/uinput. Закрывает разрыв между unit-тестами движка и L1 |
+| `crates/tecloid-core/tests/game_mode_lifecycle.rs` | Интеграционный: сохранённая конфигурация → документ → watcher и его перезапуск; Linux также проверяет обнаружение тестового процесса и grace period |
 | `apps/slint-shell/tests/frontend.rs` | Интеграционный: Slint callbacks/таймеры → bindings → Document; тестовая software platform, без compositor и реального ввода |
 | `apps/slint-shell/tests/page_callbacks.rs` | Интеграционный: Slint callbacks страниц → page-модули → Document → временные файлы; редактор клавиш, переводы всех языков, диалог условий, выбор действий и команды. Тестовая software platform, без реального ввода |
 | `apps/slint-shell/src/app/mapper.rs` (тесты модуля) | Unit: фаза маппера, подавление повторных уведомлений и аптайм `MapperController`; доставка `CoreEvent` в полный `App` не проверяется |
 | `apps/slint-shell/tests/inline_editors.rs` | Компонентный: настоящие Slint-редакторы и flush, подставленный callback сохранения; Document и файловое хранение не проверяются |
 | `apps/slint-shell/src/ipc.rs`, подключённый также в `tests/ipc.rs` | Смешанный набор: разбор/проверка запросов и интеграция реальных локальных соединений, блокировок и очистки endpoint; без полного запуска приложения |
-| `crates/lhc-core/tests/mapper_e2e.rs` | E2E подсистемы (L1): синтетическая клавиатура → evdev → mapper → uinput → чтение выходного устройства; без рабочего стола |
+| `crates/tecloid-core/tests/mapper_e2e.rs` | E2E подсистемы (L1): синтетическая клавиатура → evdev → mapper → uinput → чтение выходного устройства; без рабочего стола |
 | `apps/slint-shell/examples/` | UI-сценарии: реальные pointer/key-события, геометрия, навигация, темы. В CI идут под headless Weston, это не подтверждает KDE. Сценарий только из вызовов callbacks сюда не добавляем — его место в headless-тестах |
 | VM-сценарии и ручная приёмка | Системные проверки и desktop e2e в объёме явно перечисленных шагов (L4/L5) |
 
@@ -74,7 +74,7 @@ Cargo называет отдельный target из `tests/` integration test.
 Отдельные интеграционные targets без desktop:
 
 ```sh
-cargo test --locked -p lhc-core --test storage_override --test game_mode_lifecycle --test config_to_engine
+cargo test --locked -p tecloid-core --test storage_override --test game_mode_lifecycle --test config_to_engine
 cargo test --locked -p slint-shell --test frontend --test ipc --test page_callbacks
 ```
 

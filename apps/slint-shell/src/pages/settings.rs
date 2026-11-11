@@ -10,20 +10,20 @@ use crate::{
         SettingsField, SettingsWindow,
     },
 };
-use lhc_core::config::menus::PlaceKind;
-use lhc_core::config::model::{
-    AccessibilityChoice, AppSettings, Appearance, GameModeProcessMatcher, LocalePreference,
-    PasteShortcut, TapDecision, TextMode,
-};
-use lhc_core::config::timing;
-use lhc_core::mapper::devices;
-use lhc_core::platform::InputAccessIssue;
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::{
     cell::RefCell,
     rc::Rc,
     sync::{Arc, Mutex},
 };
+use tecloid_core::config::menus::PlaceKind;
+use tecloid_core::config::model::{
+    AccessibilityChoice, AppSettings, Appearance, GameModeProcessMatcher, LocalePreference,
+    PasteShortcut, TapDecision, TextMode,
+};
+use tecloid_core::config::timing;
+use tecloid_core::mapper::devices;
+use tecloid_core::platform::InputAccessIssue;
 
 mod loading;
 
@@ -152,7 +152,7 @@ macro_rules! form {
 }
 
 /// Milliseconds typed in the form, within `range`.
-fn ms(text: &str, range: lhc_core::config::timing::MillisecondsRange) -> Result<u64, Msg> {
+fn ms(text: &str, range: tecloid_core::config::timing::MillisecondsRange) -> Result<u64, Msg> {
     parse_ms(text).and_then(|value| {
         range
             .contains(value)
@@ -302,7 +302,7 @@ fn save_matcher(
     }
     let Some(index) = index else {
         items.push(GameModeProcessMatcher {
-            id: lhc_core::config::ids::generate("process-"),
+            id: tecloid_core::config::ids::generate("process-"),
             name: name.to_owned(),
             only_active_window: window_only,
             is_blacklist: blacklist,
@@ -383,8 +383,8 @@ fn refresh(ui: &SettingsWindow, document: &Document, state: &mut State, force: b
 fn show_command_assignments(
     ui: &SettingsWindow,
     assignments: Result<
-        Vec<lhc_core::config::menus::CommandAssignment>,
-        lhc_core::config_document::ConfigError,
+        Vec<tecloid_core::config::menus::CommandAssignment>,
+        tecloid_core::config_document::ConfigError,
     >,
 ) {
     match assignments {
@@ -399,7 +399,7 @@ fn show_command_assignments(
                         profile_name: row
                             .profile_id
                             .as_deref()
-                            .and_then(lhc_core::config::model::user_profile_name)
+                            .and_then(tecloid_core::config::model::user_profile_name)
                             .unwrap_or_default()
                             .into(),
                         first,
@@ -489,7 +489,7 @@ fn refresh_commands(ui: &SettingsWindow, document: &Document, state: &mut State)
 /// Picker rows for `devices`; a `saved` path that is not connected is kept
 /// as its own row so the choice is not lost.
 fn device_choices(
-    devices: &[lhc_core::mapper::devices::InputDevice],
+    devices: &[tecloid_core::mapper::devices::InputDevice],
     mouse: bool,
     saved: &str,
 ) -> Vec<DeviceChoice> {
@@ -506,7 +506,7 @@ fn device_choices(
     }
     // Virtual devices (ydotoold, other remappers) also pass the keyboard
     // heuristic, but are never the keyboard the user types on.
-    let group_of = |device: &lhc_core::mapper::devices::InputDevice| {
+    let group_of = |device: &tecloid_core::mapper::devices::InputDevice| {
         if device.is_virtual {
             DeviceGroup::VirtualDevice
         } else if if mouse {
@@ -592,7 +592,7 @@ fn find_device(choices: ModelRc<DeviceChoice>, path: &str) -> DeviceMatch {
     if let Some(index) = position(&|choice| choice == path) {
         return DeviceMatch { index, exact: true };
     }
-    let index = position(&|choice| lhc_core::mapper::devices::same_device(choice, path));
+    let index = position(&|choice| tecloid_core::mapper::devices::same_device(choice, path));
     DeviceMatch {
         index: index.unwrap_or(-1),
         exact: false,
@@ -619,7 +619,7 @@ fn device_offset(choices: ModelRc<DeviceChoice>, index: i32, row: i32, heading: 
 }
 
 fn refresh_devices(ui: &SettingsWindow) {
-    discover_devices(ui, lhc_core::mapper::runtime::discover_input_devices);
+    discover_devices(ui, tecloid_core::mapper::runtime::discover_input_devices);
 }
 
 fn discover_devices(
@@ -750,7 +750,7 @@ pub(crate) fn check_input_access(ui: &SettingsWindow) -> Vec<InputAccessIssue> {
     let e = ui.global::<SettingsEditor>();
     if !ui.global::<AppState>().get_mapper_running() {
         e.set_mouse_status(
-            Msg::MouseStatus(lhc_core::mapper::mouse::probe(
+            Msg::MouseStatus(tecloid_core::mapper::mouse::probe(
                 path(&e.get_mouse_device_path()).as_deref(),
             ))
             .to_ui(),
@@ -759,7 +759,7 @@ pub(crate) fn check_input_access(ui: &SettingsWindow) -> Vec<InputAccessIssue> {
     let keyboard = e.get_keyboard_device_path();
     let keyboard = keyboard.trim();
     let issues =
-        lhc_core::platform::input_access_issues((!keyboard.is_empty()).then_some(keyboard));
+        tecloid_core::platform::input_access_issues((!keyboard.is_empty()).then_some(keyboard));
     let messages: Vec<_> = issues
         .iter()
         .map(|issue| Msg::InputAccess(*issue).to_ui())
@@ -782,7 +782,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     let e = ui.global::<SettingsEditor>();
     e.on_reset_text_permissions(|| {
         #[cfg(target_os = "linux")]
-        lhc_core::text_input::portal::reset_permissions();
+        tecloid_core::text_input::portal::reset_permissions();
     });
     let choices = ui.global::<DeviceChoices>();
     choices.on_filter(|choices, query, all| filtered_devices(choices, &query, all));
@@ -797,8 +797,12 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) {
     });
     choices.on_find_device(|items, path| find_device(items, &path));
     e.set_text_modes(strings(TextMode::ALL.map(TextMode::as_str)));
-    e.set_fullscreen_non_games(lhc_core::gamemode::FULLSCREEN_NON_GAMES.join(", ").into());
-    e.set_game_launchers(lhc_core::gamemode::GAME_LAUNCHERS.join(", ").into());
+    e.set_fullscreen_non_games(
+        tecloid_core::gamemode::FULLSCREEN_NON_GAMES
+            .join(", ")
+            .into(),
+    );
+    e.set_game_launchers(tecloid_core::gamemode::GAME_LAUNCHERS.join(", ").into());
     let defaults = Form::from_settings(&AppSettings::default());
     e.set_default_hold_timeout(defaults.hold.clone().into());
     e.set_default_long_hold_timeout(defaults.long_hold.clone().into());

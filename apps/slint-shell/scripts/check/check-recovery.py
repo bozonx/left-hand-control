@@ -18,17 +18,17 @@ preview_source = Path("apps/slint-shell/ui/settings-page.slint")
 preview_original = None
 preview_modified = None
 
-with tempfile.TemporaryDirectory(prefix="lhc-slint-recovery-") as directory:
+with tempfile.TemporaryDirectory(prefix="tecloid-slint-recovery-") as directory:
     root = Path(directory)
     config = root / "linux/.config/dev.bozonx.tecloid/config.json"
     config.parent.mkdir(parents=True)
     config.write_text("{broken", encoding="utf-8")
     log_path = root / "shell.log"
     metrics = root / "metrics.csv"
-    env = dict(os.environ, LHC_DEV_DIR=directory,
-               LHC_SOCKET=f"lhc-recovery-{os.getpid()}.sock",
-               LHC_HOTKEYS="off", LHC_POPUPS=args.popups,
-               LHC_METRICS=str(metrics), SLINT_BACKEND="winit-skia-software")
+    env = dict(os.environ, TECLOID_DEV_DIR=directory,
+               TECLOID_SOCKET=f"tecloid-recovery-{os.getpid()}.sock",
+               TECLOID_HOTKEYS="off", TECLOID_POPUPS=args.popups,
+               TECLOID_METRICS=str(metrics), SLINT_BACKEND="winit-skia-software")
 
     def log_text():
         return log_path.read_text(encoding="utf-8", errors="replace")

@@ -21,7 +21,7 @@ Linux-хост с KVM/QEMU, Python, SSH/SCP; отдельная Ubuntu VM с GNO
 и нового входа в GNOME; для трея нужен AppIndicators. Подготовка VM и установка
 расширения описаны ниже в [Installation](#installation) и
 [Disposable Ubuntu VM](#disposable-ubuntu-vm).
-GNOME не поддерживает layer-shell: использовать `LHC_POPUPS=auto` либо `winit`.
+GNOME не поддерживает layer-shell: использовать `TECLOID_POPUPS=auto` либо `winit`.
 Пакет собирать по инструкции совместимой Linux-сборки в руководстве разработчика.
 
 ### Как запустить
@@ -79,7 +79,7 @@ gnome-extensions enable tecloid@bozonx.dev
 ```
 
 Enable Ubuntu AppIndicators (or another StatusNotifier host) for the tray.
-Use `LHC_POPUPS=auto` or `winit`; GNOME has no layer-shell protocol.
+Use `TECLOID_POPUPS=auto` or `winit`; GNOME has no layer-shell protocol.
 The application keeps its tray service alive if AppIndicators starts late or
 restarts. While the tray host is unavailable it opens settings; recovery
 registers the icon again without restarting the mapper or hiding settings.

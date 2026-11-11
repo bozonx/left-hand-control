@@ -89,10 +89,10 @@ pub const BASE: [&str; 80] = [
 ];
 
 /// Layer grids, split by hand; the last row of each hand is the thumb row.
-pub use lhc_core::config::layer_grid::{LEFT_COLUMNS, LEFT_HAND, RIGHT_COLUMNS, RIGHT_HAND};
+pub use tecloid_core::config::layer_grid::{LEFT_COLUMNS, LEFT_HAND, RIGHT_COLUMNS, RIGHT_HAND};
 
 /// Every layer key in index order: left hand rows, then right hand rows.
-pub use lhc_core::config::layer_grid::keys as layer_keys;
+pub use tecloid_core::config::layer_grid::keys as layer_keys;
 
 pub fn layer_key(index: i32) -> Option<&'static str> {
     usize::try_from(index)
@@ -151,7 +151,7 @@ pub fn label(code: &str) -> &str {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lhc_core::config::key_catalog::CATEGORIES;
+    use tecloid_core::config::key_catalog::CATEGORIES;
 
     #[test]
     fn grids_use_catalog_keys_once() {

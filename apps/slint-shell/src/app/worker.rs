@@ -143,7 +143,7 @@ impl App {
     pub(super) fn flush_worker_show(&self) {
         let pending = {
             let mut supervisor = self.supervisor.borrow_mut();
-            supervisor.cancel_blocked_show(lhc_core::runtime_state::game_mode_active());
+            supervisor.cancel_blocked_show(tecloid_core::runtime_state::game_mode_active());
             if supervisor.worker.is_none() {
                 return;
             }

@@ -27,9 +27,9 @@ CI выполняется на push/PR в main/master, вручную и чер�
 Linux с системными зависимостями из [руководства](../development/guide.md):
 
 ```sh
-cargo fmt -p lhc-core -p slint-shell --check
+cargo fmt -p tecloid-core -p slint-shell --check
 cargo test --locked --workspace --features slint-shell/spell --all-targets
-cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+cargo clippy --locked -p tecloid-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
 cargo check --locked -p slint-shell --all-targets
 python3 -m unittest discover -s apps/slint-shell/scripts/vm -p test_windows_stand.py
 ```
@@ -37,9 +37,9 @@ python3 -m unittest discover -s apps/slint-shell/scripts/vm -p test_windows_stan
 На Windows/macOS, нативно на соответствующей ОС:
 
 ```sh
-cargo fmt -p lhc-core -p slint-shell --check
-cargo test --locked -p lhc-core -p slint-shell --all-targets
-cargo clippy --locked -p lhc-core -p slint-shell --all-targets --no-deps -- -D warnings
+cargo fmt -p tecloid-core -p slint-shell --check
+cargo test --locked -p tecloid-core -p slint-shell --all-targets
+cargo clippy --locked -p tecloid-core -p slint-shell --all-targets --no-deps -- -D warnings
 cargo check --release --locked -p slint-shell
 ```
 
@@ -55,7 +55,7 @@ powershell -NoProfile -File apps/slint-shell/scripts/windows/check-windows-synta
 ## Headless Linux mapper e2e
 
 ```sh
-cargo test --locked -p lhc-core --test mapper_e2e -- --ignored
+cargo test --locked -p tecloid-core --test mapper_e2e -- --ignored
 ```
 
 Нужны `/dev/uinput` и доступ к тестовым `/dev/input`: сценарии создают виртуальное

@@ -21,7 +21,7 @@ SystemAccount=false
 CONFIG
 # Use only the shared key for SSH; unlock the local account for GDM autologin.
 passwd -d "$user"
-printf 'PasswordAuthentication no\n' > /etc/ssh/sshd_config.d/90-lhc-e2e.conf
+printf 'PasswordAuthentication no\n' > /etc/ssh/sshd_config.d/90-tecloid-e2e.conf
 mkdir -p /etc/cloud
 : > /etc/cloud/cloud-init.disabled
 systemctl set-default graphical.target

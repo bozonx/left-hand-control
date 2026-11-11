@@ -6,7 +6,7 @@ bundle_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 data_dir=${XDG_DATA_HOME:-"$HOME/.local/share"}
 source_dir="$bundle_dir/gnome-extension/$uuid"
 # Also usable directly from a source checkout.
-if [ ! -d "$source_dir" ]; then source_dir="$bundle_dir/../../../crates/lhc-core/assets/gnome-extension/$uuid"; fi
+if [ ! -d "$source_dir" ]; then source_dir="$bundle_dir/../../../crates/tecloid-core/assets/gnome-extension/$uuid"; fi
 destination="$data_dir/gnome-shell/extensions/$uuid"
 if [ -L "$destination" ]; then
     echo "Refusing a symlink extension directory: $destination" >&2

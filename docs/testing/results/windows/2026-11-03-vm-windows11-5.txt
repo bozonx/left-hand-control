@@ -1,9 +1,9 @@
 Date: 2026-11-03 21:13:13 -0300
 Commit: 644436bd (with uncommitted changes)
-Command: /mnt/disk2/codeWorkspace/left-hand-control/apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows --memory 8192 --suite full --stress-seconds 180 --previous-package /mnt/disk2/vm/lhc-release-20261022-windows-fixes/packages/left-hand-control-0.3.0-windows-x86_64.zip --timeout 180
-VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/runs/20261103-203222/expanded-base.qcow2)
+Command: /mnt/disk2/codeWorkspace/tecloid/apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/tecloid-windows --memory 8192 --suite full --stress-seconds 180 --previous-package /mnt/disk2/vm/tecloid-release-20261022-windows-fixes/packages/tecloid-0.3.0-windows-x86_64.zip --timeout 180
+VM: windows11 (/mnt/disk2/vm/tecloid-windows/runs/20261103-203222/expanded-base.qcow2)
 Suite: full; acceptance requested: False
-Previous-version upgrade: /mnt/disk2/vm/lhc-release-20261022-windows-fixes/packages/left-hand-control-0.3.0-windows-x86_64.zip
+Previous-version upgrade: /mnt/disk2/vm/tecloid-release-20261022-windows-fixes/packages/tecloid-0.3.0-windows-x86_64.zip
 Scope: Windows developer VM; clean-package and previous-version upgrade require separate acceptance
 Mapper build: release
 Popup shell build: release
@@ -12,7 +12,7 @@ Mapper from: beginning
 Mapper only: all
 Extended: False; stress seconds: 180
 Memory: 8192 MiB
-Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261103-203222/logs
+Logs: /mnt/disk2/vm/tecloid-windows/runs/20261103-203222/logs
 
 Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
 Session: 1
@@ -25,11 +25,11 @@ Suite: full
 - release-shell-build: passed
 - hardware-keyboard and mapper scenarios: passed (see named host steps)
 - full-native-release: passed
-- harness: FAILED (Upgrade changed configuration: D:\lhc-e2e\src\windows-runtime\upgrade\aa484f20-5e13-437d-8a3b-407930982e70\windows\AppD)
+- harness: FAILED (Upgrade changed configuration: D:\tecloid-e2e\src\windows-runtime\upgrade\aa484f20-5e13-437d-8a3b-407930982e70\windows\AppD)
 
 - boot: passed
 - preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
-- upload-source: passed — 1753 files; source archive /mnt/disk2/vm/left-hand-control-windows/runs/20261103-203222/src.tar.gz; SHA256 e9fc80bfa9e8f4af8a39016285753b92d9794b5f5778810dd8d39f28057b1894; Source sync: 2 updated, 42 removed
+- upload-source: passed — 1753 files; source archive /mnt/disk2/vm/tecloid-windows/runs/20261103-203222/src.tar.gz; SHA256 e9fc80bfa9e8f4af8a39016285753b92d9794b5f5778810dd8d39f28057b1894; Source sync: 2 updated, 42 removed
 - hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
 - shell-profile-remap-restart: passed — application profile -> mapper -> receiver: b; persisted game setting -> c across restart; off -> b; stopped -> a
 - popup-bmp-focus: passed — physical hotkey and cell key; exact Unicode once; focus restored; modifiers released
@@ -73,7 +73,7 @@ Suite: full
 - release-shell-build: passed
 - hardware-keyboard and mapper scenarios: passed (see named host steps)
 - full-native-release: passed
-- harness: FAILED (Upgrade changed configuration: D:\lhc-e2e\src\windows-runtime\upgrade\aa484f20-5e13-437d-8a3b-407930982e70\windows\AppD)
+- harness: FAILED (Upgrade changed configuration: D:\tecloid-e2e\src\windows-runtime\upgrade\aa484f20-5e13-437d-8a3b-407930982e70\windows\AppD)
 - collect-guest-logs: skipped — SSH export failed; logs remain on the persistent cache disk
 
 Passed: 27, failed: 1, skipped: 9, blocked/not run: 0

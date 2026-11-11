@@ -1,21 +1,21 @@
 Date: 2026-10-31 07:34:07 -0300
 Commit: 11fc40df
-Command: apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-fedora-kde --package target/ubuntu-22.04/release-artifacts/left-hand-control-0.4.0-1.x86_64.rpm --previous /mnt/disk2/vm/lhc-release-20261021/prior-linux-packages/left-hand-control-0.3.0-1.x86_64.rpm --popup-mode spell --text-backend clipboard --stress-seconds 180 --acceptance
-VM: fedora44-kde (/mnt/disk2/vm/lhc-fedora-kde/base.qcow2)
+Command: apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/tecloid-fedora-kde --package target/ubuntu-22.04/release-artifacts/tecloid-0.4.0-1.x86_64.rpm --previous /mnt/disk2/vm/tecloid-release-20261021/prior-linux-packages/tecloid-0.3.0-1.x86_64.rpm --popup-mode spell --text-backend clipboard --stress-seconds 180 --acceptance
+VM: fedora44-kde (/mnt/disk2/vm/tecloid-fedora-kde/base.qcow2)
 Memory: 6144 MiB
 CPU: host
 Machine: q35
 Acceptance requested: True; scope: this VM/backend combination only
 Text backend: clipboard; stress seconds: 180
 Suspend exclusion: none
-Package: left-hand-control-0.4.0-1.x86_64.rpm (upgraded from left-hand-control-0.3.0-1.x86_64.rpm)
+Package: tecloid-0.4.0-1.x86_64.rpm (upgraded from tecloid-0.3.0-1.x86_64.rpm)
 Package SHA256: 77696947b7db5614716e3e29884cacc425974677af30c481f0d4d7a9a4dc31c2
 Popup mode: spell (startup environment and worker processes recorded in resources)
 Portal deny clicks: [0.738, 0.659]; relative: [0.87, 0.86]
-Previous-version upgrade: left-hand-control-0.3.0-1.x86_64.rpm
+Previous-version upgrade: tecloid-0.3.0-1.x86_64.rpm
 Keyboard: not detected
 Host: ivan, 7.2.9-1-MANJARO
-Logs and screenshots: /mnt/disk2/vm/lhc-fedora-kde/runs/20261031-073339/logs
+Logs and screenshots: /mnt/disk2/vm/tecloid-fedora-kde/runs/20261031-073339/logs
 
 - boot: passed
 - upload: passed

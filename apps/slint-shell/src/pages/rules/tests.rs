@@ -252,7 +252,7 @@ fn background_updates_preserve_drafts_and_reject_all_stale_operations() {
     assert_eq!(
         choose(&ui, &document, "KeyC", None),
         Err(Msg::from(
-            &lhc_core::config_document::ConfigError::EditConflict
+            &tecloid_core::config_document::ConfigError::EditConflict
         ))
     );
     // Reopening starts a new edit of the current rule.
@@ -321,7 +321,7 @@ fn failed_edit_keeps_draft_and_allows_retry() {
 
 #[test]
 fn diagnostics_refresh_when_macro_and_command_dependencies_change() {
-    use lhc_core::config::model::{Command, Macro, MacroStep};
+    use tecloid_core::config::model::{Command, Macro, MacroStep};
     let (_dir, document, ui) = editor_fixture();
     document
         .edit(View::Library, |config| {
@@ -437,7 +437,7 @@ fn refresh_and_external_edits_clear_stale_conflict_status() {
     assert_eq!(
         choose(&ui, &document, "KeyC", None),
         Err(Msg::from(
-            &lhc_core::config_document::ConfigError::EditConflict
+            &tecloid_core::config_document::ConfigError::EditConflict
         ))
     );
     picker.set_opened(false);

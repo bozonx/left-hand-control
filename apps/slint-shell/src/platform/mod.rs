@@ -16,7 +16,7 @@ mod portable;
 #[cfg(not(target_os = "linux"))]
 pub use portable::*;
 
-/// Popup backend requested with `LHC_POPUPS`; unset means winit.
+/// Popup backend requested with `TECLOID_POPUPS`; unset means winit.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PopupMode {
     Winit,

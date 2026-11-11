@@ -1,8 +1,8 @@
 //! Timing bounds shared by every numeric editor.
 
 use crate::ui::{SettingsWindow, Timing, TimingRange};
-use lhc_core::config::timing::{self, MillisecondsRange};
 use slint::ComponentHandle;
+use tecloid_core::config::timing::{self, MillisecondsRange};
 
 fn range(value: MillisecondsRange) -> TimingRange {
     TimingRange {

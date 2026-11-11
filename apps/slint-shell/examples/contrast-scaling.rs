@@ -136,7 +136,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .document
         .edit(slint_shell::document::View::Library, |config| {
             config.update_profile(|profile| {
-                let mut rule = lhc_core::config::model::KeyRule::new("contrast".into(), "F13");
+                let mut rule = tecloid_core::config::model::KeyRule::new("contrast".into(), "F13");
                 rule.enabled = Some(false);
                 profile.rules = vec![rule];
             })

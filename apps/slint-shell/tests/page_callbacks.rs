@@ -6,7 +6,6 @@
 #[path = "../examples/support/mod.rs"]
 mod support;
 
-use lhc_core::{config_document::KeyAssignment, storage::StoragePaths};
 use slint::{
     ComponentHandle, Model, ModelRc, VecModel,
     platform::{Platform, WindowAdapter, software_renderer::MinimalSoftwareWindow},
@@ -14,6 +13,7 @@ use slint::{
 use slint_shell::{Document, bind_document, ui::*};
 use std::{rc::Rc, time::Instant};
 use support::{Fixture, quick_action, wait_until};
+use tecloid_core::{config_document::KeyAssignment, storage::StoragePaths};
 
 struct TestPlatform(Instant);
 impl Platform for TestPlatform {
@@ -123,10 +123,10 @@ fn key_editor() -> Result<(), Box<dyn std::error::Error>> {
         assert_ne!(russian, english, "untranslated message: {id}");
         slint_shell::select_ui_language("ru")?;
     }
-    let action_messages: Vec<_> = lhc_core::config::actions::catalog(&document.read().config())
+    let action_messages: Vec<_> = tecloid_core::config::actions::catalog(&document.read().config())
         .into_iter()
         .filter_map(|entry| {
-            use lhc_core::config::actions::ActionName;
+            use tecloid_core::config::actions::ActionName;
             let (id, arg, count) = match entry.name {
                 ActionName::BuiltinMacro { id } => ("builtin-macro", id, 0),
                 ActionName::System { id, n } | ActionName::App { id, n } => {
@@ -232,7 +232,7 @@ fn conditions_dialog() -> Result<(), Box<dyn std::error::Error>> {
     } = Fixture::new()?;
     document.edit(slint_shell::document::View::Library, |config| {
         config.update_profile(|profile| {
-            profile.rules = vec![lhc_core::config::model::KeyRule::new("r".into(), "F13")];
+            profile.rules = vec![tecloid_core::config::model::KeyRule::new("r".into(), "F13")];
         })
     })?;
     ui.set_page(Page::Rules);
@@ -712,9 +712,9 @@ fn layer_editor_regressions() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(layers.get_triggers().row_count(), 0);
     document.edit(View::Rules, |config| {
         config.update_profile(|profile| {
-            let mut rule = lhc_core::config::model::KeyRule::new("activate".into(), "CapsLock");
+            let mut rule = tecloid_core::config::model::KeyRule::new("activate".into(), "CapsLock");
             rule.layer_id = first.clone();
-            rule.hold_behavior = Some(lhc_core::config::model::HoldBehavior::Layer);
+            rule.hold_behavior = Some(tecloid_core::config::model::HoldBehavior::Layer);
             profile.rules.push(rule);
         })
     })?;
@@ -818,7 +818,7 @@ fn layer_editor_regressions() -> Result<(), Box<dyn std::error::Error>> {
     layers.invoke_apply_dialog();
     assert_eq!(
         document.read().profile().rules[0].hold_behavior(),
-        lhc_core::config::model::HoldBehavior::None
+        tecloid_core::config::model::HoldBehavior::None
     );
     assert!(document.read().profile().rules[0].layer_id.is_empty());
     println!(

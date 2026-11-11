@@ -9,9 +9,9 @@ use crate::{
     i18n::Msg,
     ui::{EmojiCategory, MenuCell, MenuEditor, MenuKind, SettingsWindow},
 };
-use lhc_core::config::{menus, model::*};
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::{cell::RefCell, rc::Rc};
+use tecloid_core::config::{menus, model::*};
 
 const PAGE: usize = LEFT_HAND_HOTKEYS.len();
 
@@ -201,7 +201,7 @@ fn menu_changed(state: &State) -> bool {
 fn persist(
     document: &Document,
     state: &mut State,
-) -> Result<Option<crate::document::Saved<()>>, lhc_core::config_document::ConfigError> {
+) -> Result<Option<crate::document::Saved<()>>, tecloid_core::config_document::ConfigError> {
     state.commands.retain(|command| {
         state
             .profile
@@ -209,8 +209,8 @@ fn persist(
             .iter()
             .flat_map(|page| page.cells.values())
             .any(|cell| {
-                matches!(lhc_core::config::actions::Action::parse(Some(&cell.action)),
-                lhc_core::config::actions::Action::Command(id) if id == command.id)
+                matches!(tecloid_core::config::actions::Action::parse(Some(&cell.action)),
+                tecloid_core::config::actions::Action::Command(id) if id == command.id)
             })
     });
     let baseline = state.baseline.clone();
@@ -304,7 +304,7 @@ pub(super) fn choose(
             super::picker::menu_label(ui, &config, &item.action)
         })
         .unwrap_or_default();
-    lhc_core::config::menus::set_quick_action(
+    tecloid_core::config::menus::set_quick_action(
         &mut state.profile,
         e.get_selected_page(),
         cell,
@@ -453,7 +453,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
             let index = match kind {
                 MenuKind::Emoji => {
                     profile.emoji_pages.push(EmojiPage {
-                        id: lhc_core::config::ids::generate("emoji-"),
+                        id: tecloid_core::config::ids::generate("emoji-"),
                         name: name.trim().to_owned(),
                         cells: Default::default(),
                     });
@@ -461,7 +461,7 @@ pub(super) fn bind(ui: &SettingsWindow, document: &Rc<Document>) -> Shared {
                 }
                 MenuKind::Quick => {
                     profile.quick_action_pages.push(QuickActionPage::new(
-                        lhc_core::config::ids::generate("page-"),
+                        tecloid_core::config::ids::generate("page-"),
                         name.trim().to_owned(),
                     ));
                     profile.quick_action_pages.len() - 1

@@ -1,7 +1,7 @@
 # ISO bootstrap: run in the clean VM's ordinary interactive desktop.
 $ErrorActionPreference = 'Stop'
 $settings = Get-Content (Join-Path $PSScriptRoot 'package-test.json') -Raw | ConvertFrom-Json
-$root = Join-Path $env:USERPROFILE 'lhc-package-check'
+$root = Join-Path $env:USERPROFILE 'tecloid-package-check'
 New-Item -ItemType Directory -Force $root | Out-Null
 $transcript = Join-Path $root 'bootstrap.log'
 Start-Transcript -Path $transcript | Out-Null

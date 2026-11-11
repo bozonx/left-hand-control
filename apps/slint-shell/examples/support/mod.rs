@@ -1,7 +1,6 @@
 //! Helpers shared by standalone desktop scenarios.
 #![allow(dead_code)] // Each example uses a different subset of the helpers.
 
-use lhc_core::storage::StoragePaths;
 use slint::ComponentHandle;
 use slint_shell::{Document, bind_document, ui::SettingsWindow};
 use std::{
@@ -9,6 +8,7 @@ use std::{
     rc::Rc,
     time::{Duration, Instant},
 };
+use tecloid_core::storage::StoragePaths;
 
 pub struct Fixture {
     pub dir: tempfile::TempDir,
@@ -58,7 +58,7 @@ pub fn write_snapshot(ui: &impl ComponentHandle, path: &Path) {
 }
 
 pub fn snapshot(ui: &impl ComponentHandle, name: &str) {
-    if let Some(dir) = std::env::var_os("LHC_EDITOR_SNAPSHOTS") {
+    if let Some(dir) = std::env::var_os("TECLOID_EDITOR_SNAPSHOTS") {
         write_snapshot(
             ui,
             &std::path::PathBuf::from(dir).join(format!("{name}.ppm")),
@@ -67,7 +67,7 @@ pub fn snapshot(ui: &impl ComponentHandle, name: &str) {
 }
 
 pub fn quick_action(
-    profile: &lhc_core::config::model::ProfilePreset,
+    profile: &tecloid_core::config::model::ProfilePreset,
     page: usize,
     key: &str,
 ) -> String {

@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
-export LHC_PROTOTYPE_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-export LHC_WORKSPACE_ROOT="$(cd "$LHC_PROTOTYPE_ROOT/../.." && pwd)"
-export LHC_PROTOTYPE_RESULTS="$(realpath -m "${1:?output directory required}")"
-export LHC_VIRTUAL_TASK="${2:-geometry}"
-export LHC_SLINT_SHELL_BIN="${LHC_BIN:-$LHC_WORKSPACE_ROOT/target/debug/tecloid}"
-export LHC_BENCH_RETURN_BIN="${LHC_BENCH_RETURN_BIN:-$LHC_WORKSPACE_ROOT/target/debug/examples/bench-return}"
-case "$LHC_VIRTUAL_TASK" in geometry|lifecycle|input) ;; *) exit 2 ;; esac
-lhc_test_root="$(mktemp -d)"
+export TECLOID_PROTOTYPE_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+export TECLOID_WORKSPACE_ROOT="$(cd "$TECLOID_PROTOTYPE_ROOT/../.." && pwd)"
+export TECLOID_PROTOTYPE_RESULTS="$(realpath -m "${1:?output directory required}")"
+export TECLOID_VIRTUAL_TASK="${2:-geometry}"
+export TECLOID_SLINT_SHELL_BIN="${TECLOID_BIN:-$TECLOID_WORKSPACE_ROOT/target/debug/tecloid}"
+export TECLOID_BENCH_RETURN_BIN="${TECLOID_BENCH_RETURN_BIN:-$TECLOID_WORKSPACE_ROOT/target/debug/examples/bench-return}"
+case "$TECLOID_VIRTUAL_TASK" in geometry|lifecycle|input) ;; *) exit 2 ;; esac
+tecloid_test_root="$(mktemp -d)"
 cleanup() {
     for attempt in 1 2 3; do
-        rm -rf -- "$lhc_test_root" 2>/dev/null && return
+        rm -rf -- "$tecloid_test_root" 2>/dev/null && return
         sleep 0.2
     done
 }
 trap cleanup EXIT
-export XDG_RUNTIME_DIR="$lhc_test_root/runtime"
-export XDG_CONFIG_HOME="$lhc_test_root/config"
-export XDG_CACHE_HOME="$lhc_test_root/cache"
-export XDG_DATA_HOME="$lhc_test_root/data"
+export XDG_RUNTIME_DIR="$tecloid_test_root/runtime"
+export XDG_CONFIG_HOME="$tecloid_test_root/config"
+export XDG_CACHE_HOME="$tecloid_test_root/cache"
+export XDG_DATA_HOME="$tecloid_test_root/data"
 mkdir -m 700 "$XDG_RUNTIME_DIR"
-if [[ "$LHC_VIRTUAL_TASK" == input ]]; then
+if [[ "$TECLOID_VIRTUAL_TASK" == input ]]; then
     export KWIN_WAYLAND_NO_PERMISSION_CHECKS=1
 fi
 mkdir -p "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME" "$XDG_DATA_HOME"
@@ -30,23 +30,23 @@ Use=true
 LayoutList=us,ru
 Model=pc104
 LAYOUT
-cat > "$lhc_test_root/session" <<'SESSION'
+cat > "$tecloid_test_root/session" <<'SESSION'
 #!/usr/bin/env bash
 set -euo pipefail
-export LHC_HOTKEYS=off
+export TECLOID_HOTKEYS=off
 export RUST_LOG=warn
-if [[ "$LHC_VIRTUAL_TASK" == geometry ]]; then
-    exec python3 "$LHC_PROTOTYPE_ROOT/scripts/bench/bench-geometry.py" "$LHC_PROTOTYPE_RESULTS"
-elif [[ "$LHC_VIRTUAL_TASK" == input ]]; then
-    mkdir -p "$LHC_PROTOTYPE_RESULTS"
-    export LHC_ISOLATED_INPUT=1
+if [[ "$TECLOID_VIRTUAL_TASK" == geometry ]]; then
+    exec python3 "$TECLOID_PROTOTYPE_ROOT/scripts/bench/bench-geometry.py" "$TECLOID_PROTOTYPE_RESULTS"
+elif [[ "$TECLOID_VIRTUAL_TASK" == input ]]; then
+    mkdir -p "$TECLOID_PROTOTYPE_RESULTS"
+    export TECLOID_ISOLATED_INPUT=1
     export SLINT_BACKEND=winit-skia-software
-    exec "$LHC_BENCH_RETURN_BIN" "$LHC_SLINT_SHELL_BIN" "$LHC_PROTOTYPE_RESULTS/parent.csv"
+    exec "$TECLOID_BENCH_RETURN_BIN" "$TECLOID_SLINT_SHELL_BIN" "$TECLOID_PROTOTYPE_RESULTS/parent.csv"
 else
-    exec python3 "$LHC_PROTOTYPE_ROOT/scripts/bench/bench-lifecycle.py" "$LHC_PROTOTYPE_RESULTS" 500
+    exec python3 "$TECLOID_PROTOTYPE_ROOT/scripts/bench/bench-lifecycle.py" "$TECLOID_PROTOTYPE_RESULTS" 500
 fi
 SESSION
-chmod +x "$lhc_test_root/session"
+chmod +x "$tecloid_test_root/session"
 dbus-run-session -- kwin_wayland --virtual --no-lockscreen --no-global-shortcuts \
-    --no-kactivities --socket "lhc-stage3a-$$" --width 1920 --height 1080 \
-    --output-count 2 --exit-with-session "$lhc_test_root/session"
+    --no-kactivities --socket "tecloid-stage3a-$$" --width 1920 --height 1080 \
+    --output-count 2 --exit-with-session "$tecloid_test_root/session"

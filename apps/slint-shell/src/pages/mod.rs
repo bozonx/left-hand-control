@@ -40,10 +40,10 @@ use crate::{
     i18n::Msg,
     ui::{ActionKind, GameCondition, Message, SettingsWindow},
 };
-use lhc_core::config::actions::Action;
-use lhc_core::config_document::{ConfigDocument, ConfigError};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use std::rc::Rc;
+use tecloid_core::config::actions::Action;
+use tecloid_core::config_document::{ConfigDocument, ConfigError};
 
 /// Input state of the settings window that pages keep between window events:
 /// the pointer position for inline editors and the action picker's key capture.
@@ -122,8 +122,8 @@ pub fn bind_document_with_input(
 
 /// Replace a command draft by identity, preserving the other commands.
 fn stage_command(
-    commands: &mut Vec<lhc_core::config::model::Command>,
-    command: lhc_core::config::model::Command,
+    commands: &mut Vec<tecloid_core::config::model::Command>,
+    command: tecloid_core::config::model::Command,
 ) {
     if let Some(current) = commands.iter_mut().find(|current| current.id == command.id) {
         *current = command;
@@ -279,8 +279,10 @@ pub(crate) fn choice<T: Copy>(choices: &[T], index: i32) -> T {
 #[cfg(test)]
 fn test_document() -> (tempfile::TempDir, Rc<Document>) {
     let dir = tempfile::tempdir().unwrap();
-    let paths =
-        lhc_core::storage::StoragePaths::new(dir.path().join("settings"), dir.path().join("data"));
+    let paths = tecloid_core::storage::StoragePaths::new(
+        dir.path().join("settings"),
+        dir.path().join("data"),
+    );
     let document = Document::load(paths).unwrap();
     (dir, document)
 }
@@ -288,7 +290,7 @@ fn test_document() -> (tempfile::TempDir, Rc<Document>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lhc_core::config::model::LocalePreference;
+    use tecloid_core::config::model::LocalePreference;
 
     #[test]
     fn move_item_checks_bounds() {

@@ -9,7 +9,7 @@ $checksumPath = Join-Path (Split-Path $archivePath) 'WINDOWS-SHA256SUMS'
 $expected = (Get-Content $checksumPath -Raw).Trim()
 $actual = (Get-FileHash -Algorithm SHA256 $archivePath).Hash.ToLowerInvariant()
 if ($expected -ne "$actual  $(Split-Path $archivePath -Leaf)") { throw 'ZIP checksum mismatch' }
-$extracted = Join-Path ([IO.Path]::GetTempPath()) ("lhc-package-" + [guid]::NewGuid().ToString())
+$extracted = Join-Path ([IO.Path]::GetTempPath()) ("tecloid-package-" + [guid]::NewGuid().ToString())
 try {
     Expand-Archive -LiteralPath $archivePath -DestinationPath $extracted
     $executables = @(Get-ChildItem $extracted -Recurse -File -Filter tecloid.exe)

@@ -51,7 +51,7 @@ function Assert-Stopped {
     if (Get-Process -Id $Process.Id -ErrorAction SilentlyContinue) {
         throw "$Scenario process $($Process.Id) is still present"
     }
-    if (Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort ([int]$env:LHC_PORT) -State Listen -ErrorAction SilentlyContinue) {
+    if (Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort ([int]$env:TECLOID_PORT) -State Listen -ErrorAction SilentlyContinue) {
         throw "$Scenario test IPC listener is still present"
     }
 }
@@ -61,10 +61,10 @@ function Test-Quit {
 
     $stdout = Join-Path $output "$Scenario-stdout.log"
     $stderr = Join-Path $output "$Scenario-stderr.log"
-    $env:LHC_HOTKEYS = 'off'
-    $env:LHC_POPUPS = 'winit'
-    $env:LHC_METRICS = Join-Path $output "$Scenario-metrics.csv"
-    Remove-Item $env:LHC_METRICS -ErrorAction SilentlyContinue
+    $env:TECLOID_HOTKEYS = 'off'
+    $env:TECLOID_POPUPS = 'winit'
+    $env:TECLOID_METRICS = Join-Path $output "$Scenario-metrics.csv"
+    Remove-Item $env:TECLOID_METRICS -ErrorAction SilentlyContinue
     $process = Start-Process -FilePath $exe -WorkingDirectory $workingDirectory `
         -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
     $null = $process.Handle
@@ -72,7 +72,7 @@ function Test-Quit {
     Wait-ForServer $process
     Invoke-Client 'preferences dark ru'
     Invoke-Client 'game on'
-    $isolatedConfig = Join-Path $env:LHC_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.tecloid\config.json'
+    $isolatedConfig = Join-Path $env:TECLOID_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.tecloid\config.json'
     $deadline = (Get-Date).AddSeconds(10)
     while (-not (Test-Path $isolatedConfig)) {
         if ((Get-Date) -gt $deadline) { throw 'Release did not save to isolated storage' }
@@ -109,9 +109,9 @@ function Test-Stress {
     $stderr = Join-Path $output "$scenario-stderr.log"
     $metrics = Join-Path $output "$scenario-metrics.csv"
     Remove-Item $metrics -ErrorAction SilentlyContinue
-    $env:LHC_HOTKEYS = 'off'
-    $env:LHC_POPUPS = 'winit'
-    $env:LHC_METRICS = $metrics
+    $env:TECLOID_HOTKEYS = 'off'
+    $env:TECLOID_POPUPS = 'winit'
+    $env:TECLOID_METRICS = $metrics
     $process = Start-Process -FilePath $exe -WorkingDirectory $workingDirectory `
         -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
     $null = $process.Handle
@@ -153,7 +153,7 @@ function Test-Stress {
 
     $rows = Import-Csv $metrics
     if (@($rows | Where-Object source -eq 'hotkey').Count -ne 0) {
-        throw 'LHC_HOTKEYS=off still produced a hotkey popup trigger'
+        throw 'TECLOID_HOTKEYS=off still produced a hotkey popup trigger'
     }
     $triggers = @($rows | Where-Object event -eq 't0_trigger')
     $hidden = @($rows | Where-Object event -eq 'hidden')
@@ -180,14 +180,14 @@ function Test-Stress {
 
     Invoke-Client 'quit'
     Assert-Stopped $process $scenario
-    Remove-Item Env:LHC_METRICS -ErrorAction SilentlyContinue
+    Remove-Item Env:TECLOID_METRICS -ErrorAction SilentlyContinue
 }
 
 function Wait-Metric([string]$Event, [int]$Count) {
     $deadline = (Get-Date).AddSeconds(10)
     do {
-        if (Test-Path $env:LHC_METRICS) {
-            $actual = @(Import-Csv $env:LHC_METRICS | Where-Object event -eq $Event).Count
+        if (Test-Path $env:TECLOID_METRICS) {
+            $actual = @(Import-Csv $env:TECLOID_METRICS | Where-Object event -eq $Event).Count
             if ($actual -eq $Count) { return }
             if ($actual -gt $Count) { throw "Duplicate $Event metrics: $actual > $Count" }
         }
@@ -203,18 +203,18 @@ try {
 
     $spellStdout = Join-Path $output 'spell-stdout.log'
     $spellStderr = Join-Path $output 'spell-stderr.log'
-    $env:LHC_POPUPS = 'spell'
+    $env:TECLOID_POPUPS = 'spell'
     $spell = Start-Process -FilePath $exe -WorkingDirectory $workingDirectory `
         -RedirectStandardOutput $spellStdout -RedirectStandardError $spellStderr -PassThru
     $null = $spell.Handle
     $script:processes.Add($spell)
     if (-not $spell.WaitForExit(20000)) { throw 'Unsupported Spell startup hung' }
-    if ($spell.ExitCode -eq 0) { throw 'LHC_POPUPS=spell unexpectedly succeeded' }
+    if ($spell.ExitCode -eq 0) { throw 'TECLOID_POPUPS=spell unexpectedly succeeded' }
     $spellMessage = Get-Content $spellStderr -Raw
     if ($spellMessage -notmatch 'Spell popups are available only on Linux Wayland') {
         throw "Unexpected spell diagnostic: $spellMessage"
     }
-    if (Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort ([int]$env:LHC_PORT) -State Listen -ErrorAction SilentlyContinue) {
+    if (Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort ([int]$env:TECLOID_PORT) -State Listen -ErrorAction SilentlyContinue) {
         throw 'Spell failure left the test IPC listener present'
     }
 

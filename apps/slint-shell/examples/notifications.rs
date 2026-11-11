@@ -1,8 +1,8 @@
 mod support;
-use lhc_core::storage::StoragePaths;
 use slint::{ComponentHandle, Model};
 use slint_shell::{Document, bind_document, ui::*};
 use std::time::Duration;
+use tecloid_core::storage::StoragePaths;
 
 fn message(id: &str, arg: &str) -> Message {
     Message {
@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         dir.path().join("data"),
     ))?;
     let ui = SettingsWindow::new()?;
-    let appearance = std::env::var("LHC_TOAST_APPEARANCE").unwrap_or_default();
+    let appearance = std::env::var("TECLOID_TOAST_APPEARANCE").unwrap_or_default();
     if appearance == "light" || appearance == "eink" {
         let theme = ui.global::<Theme>();
         theme.set_dark(false);
@@ -269,8 +269,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .edit(slint_shell::document::View::Library, |config| {
                 config.update_profile(|profile| {
                     profile.rules = vec![
-                        lhc_core::config::model::KeyRule::new("draft".into(), ""),
-                        lhc_core::config::model::KeyRule::new("other".into(), "F13"),
+                        tecloid_core::config::model::KeyRule::new("draft".into(), ""),
+                        tecloid_core::config::model::KeyRule::new("other".into(), "F13"),
                     ];
                 })
             })

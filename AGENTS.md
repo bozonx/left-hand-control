@@ -6,7 +6,7 @@ Guide for AI coding agents in this repository. Read it before making changes. Th
 
 **Tecloid** is a desktop keyboard mapper: it intercepts a physical keyboard, applies layers, rules, macros and commands, and emits the result through a virtual device. It also shows quick popups (Emoji, Quick actions) and lives in the system tray.
 
-- **The product is the Slint shell** (`apps/slint-shell/`) on top of the shared crate `crates/lhc-core/`. All work goes here; `_old/` is an inactive archive (see [Boundaries](#boundaries)).
+- **The product is the Slint shell** (`apps/slint-shell/`) on top of the shared crate `crates/tecloid-core/`. All work goes here; `_old/` is an inactive archive (see [Boundaries](#boundaries)).
 - Primary target: **Linux, KDE Plasma 6 on Wayland**. GNOME Wayland works through a bundled Shell extension; Windows has a mapper backend; macOS has only the shell. Only KDE is accepted. Capability matrix: [`docs/development/platforms.md`](docs/development/platforms.md).
 
 Stack: Rust edition 2024 (MSRV 1.92 in `Cargo.toml`, CI toolchain pinned in `rust-toolchain.toml`), Cargo workspace, Slint **=1.18.1** with winit 0.30, `ksni` tray, `evdev`/`uinput`, `zbus`, vendored `spell-framework` for layer-shell popups.
@@ -17,25 +17,25 @@ Run from the repo root; artefacts go to the shared `target/`.
 
 ```sh
 cargo run -p slint-shell                                          # popups as winit windows
-LHC_POPUPS=auto cargo run -p slint-shell --features spell        # layer-shell popups (KDE/Sway/Hyprland)
+TECLOID_POPUPS=auto cargo run -p slint-shell --features spell        # layer-shell popups (KDE/Sway/Hyprland)
 SLINT_LIVE_PREVIEW=1 cargo run -p slint-shell --features slint/live-preview  # hot reload of .slint
 target/debug/tecloid --help                             # CLI client; full syntax in command.rs (USAGE)
 ```
 
-Windows start hidden (the app lives in the tray). One instance per `XDG_RUNTIME_DIR` (override with `LHC_SOCKET`); a second launch without arguments opens the running instance's settings. CLI commands (`show`, `hide`, `toggle-mapper`, `game`, `preferences`, `execute <action>`, `ping`, `quit`) go to the running instance; `--version`/`--help` need none.
+Windows start hidden (the app lives in the tray). One instance per `XDG_RUNTIME_DIR` (override with `TECLOID_SOCKET`); a second launch without arguments opens the running instance's settings. CLI commands (`show`, `hide`, `toggle-mapper`, `game`, `preferences`, `execute <action>`, `ping`, `quit`) go to the running instance; `--version`/`--help` need none.
 
 ### Checks (CI + workspace)
 
 ```sh
-cargo fmt -p lhc-core -p slint-shell --check
-cargo clippy --locked -p lhc-core -p slint-shell \
+cargo fmt -p tecloid-core -p slint-shell --check
+cargo clippy --locked -p tecloid-core -p slint-shell \
   --features slint-shell/spell --all-targets --no-deps -- -D warnings
 cargo test --locked --workspace --features slint-shell/spell
 cargo check --locked -p slint-shell --all-targets              # build without Spell
 cargo deny check                                               # advisories, licences, sources
 ```
 
-Single test: `cargo test --locked -p slint-shell --lib <name>` or `cargo test --locked -p lhc-core <name>`.
+Single test: `cargo test --locked -p slint-shell --lib <name>` or `cargo test --locked -p tecloid-core <name>`.
 
 ### Resource limits
 
@@ -61,7 +61,7 @@ Page examples: `library`, `macros`, `menus`, `undo-redo`, `inline-edit`, `drag-s
 Desktop e2e and VM runs are local only; CI requires the mapper e2e and fails if `/dev/uinput` cannot be enabled.
 
 ```sh
-cargo test --locked -p lhc-core --test mapper_e2e -- --ignored  # real evdev → engine → uinput; needs /dev/uinput, /dev/input
+cargo test --locked -p tecloid-core --test mapper_e2e -- --ignored  # real evdev → engine → uinput; needs /dev/uinput, /dev/input
 apps/slint-shell/scripts/e2e-local.sh                           # all UI scenarios + mapper e2e → docs/testing/results/linux/<date>.txt
 apps/slint-shell/scripts/release/release-linux.sh               # tar.gz, deb, rpm, vendor archive, SHA256SUMS (needs nfpm)
 apps/slint-shell/scripts/vm/run-linux.py --vm <dir> --package <file>  # L4: package in a disposable KDE VM
@@ -74,7 +74,7 @@ Releases: `cargo release <minor|patch>` previews; `--execute` bumps the version,
 ## Repository map
 
 ```
-crates/lhc-core/
+crates/tecloid-core/
 ├── assets/                   # bundled profile(s) (templates for new library profiles), GNOME Shell extension
 ├── tests/                    # integration tests incl. mapper_e2e
 └── src/                      # UI-independent domain + platform code (no UI framework)
@@ -96,7 +96,7 @@ apps/slint-shell/
 ├── src/popup_model.rs        # popup data and keys, shared by winit and Spell
 ├── src/spell.rs              # layer-shell popup worker (feature `spell`, Linux only)
 ├── src/i18n.rs               # Msg ids for Locale.text(), plural rules
-├── src/env.rs                # names of LHC_* environment variables
+├── src/env.rs                # names of TECLOID_* environment variables
 ├── src/platform/linux/       # evdev hotkeys, ksni tray, Wayland activation, input return
 ├── src/platform/portable/    # Windows/macOS: global-hotkey, tray-icon, native input
 ├── build-support/            # build-time i18n checks; rust_messages.rs registers text outside Slint
@@ -113,24 +113,24 @@ schemas/                      # published JSON Schemas of config.json and profil
 
 ## Architecture
 
-- **Core vs shell.** `lhc-core` owns everything except presentation: config types and `ConfigDocument`, storage paths, platform detection, watchers, mapper lifecycle and engine, device I/O, text injection, validation. The shell displays state and calls core operations. If logic could be reused by another shell or tested without a UI, it belongs in `lhc-core`.
-- **Events.** The core never calls a UI framework. It publishes `CoreEvent`s on `lhc_core::events::bus()`; the shell subscribes once in `apps/slint-shell/src/app/mapper.rs` and posts them to the Slint event loop. Do not add shell-specific callbacks to the core.
+- **Core vs shell.** `tecloid-core` owns everything except presentation: config types and `ConfigDocument`, storage paths, platform detection, watchers, mapper lifecycle and engine, device I/O, text injection, validation. The shell displays state and calls core operations. If logic could be reused by another shell or tested without a UI, it belongs in `tecloid-core`.
+- **Events.** The core never calls a UI framework. It publishes `CoreEvent`s on `tecloid_core::events::bus()`; the shell subscribes once in `apps/slint-shell/src/app/mapper.rs` and posts them to the Slint event loop. Do not add shell-specific callbacks to the core.
 - **Config writes.** Pages change configuration only through `Document` (`src/document.rs`): `edit` stages settings/profile transactions, `edit_library` applies one core library operation with its own file rollback, and `sync_autostart` refreshes system registration. They share the runtime synchronization and view notification path. See [`docs/development/api.md`](docs/development/api.md). Never hold a `Document::read()` borrow across UI calls that may edit (`RefCell` conflicts).
-- **Persistence.** Settings auto-save to `config.json`; profiles go to the library only on explicit save. Both are versioned independently (`CONFIG_SCHEMA_VERSION`, `PROFILE_SCHEMA_VERSION` in `config/schema.rs`) and parsed strictly (unknown fields/values are errors); see [`docs/config-format.md`](docs/config-format.md). Within a version only optional fields and enum values may be added; anything else bumps the version and adds a reader arm for the old one (procedure in the `schema.rs` header). Storage backs up an older-version file as `<file>.v<N>.bak` before overwriting. The JSON Schemas in `schemas/` are generated from the `*Doc` structs; after a format change regenerate them with `LHC_UPDATE_SCHEMAS=1 cargo test --locked -p lhc-core --lib published_schemas` (the test fails while they are stale). Manual config editing is unsupported.
-- **Paths.** From `StoragePaths::resolve()`: `LHC_DEV_DIR` overrides in any build; otherwise debug builds use `<repo>/dev-files/<os>/`, release builds use `~/.config/dev.bozonx.tecloid/` and `~/.local/share/dev.bozonx.tecloid/`.
+- **Persistence.** Settings auto-save to `config.json`; profiles go to the library only on explicit save. Both are versioned independently (`CONFIG_SCHEMA_VERSION`, `PROFILE_SCHEMA_VERSION` in `config/schema.rs`) and parsed strictly (unknown fields/values are errors); see [`docs/config-format.md`](docs/config-format.md). Within a version only optional fields and enum values may be added; anything else bumps the version and adds a reader arm for the old one (procedure in the `schema.rs` header). Storage backs up an older-version file as `<file>.v<N>.bak` before overwriting. The JSON Schemas in `schemas/` are generated from the `*Doc` structs; after a format change regenerate them with `TECLOID_UPDATE_SCHEMAS=1 cargo test --locked -p tecloid-core --lib published_schemas` (the test fails while they are stale). Manual config editing is unsupported.
+- **Paths.** From `StoragePaths::resolve()`: `TECLOID_DEV_DIR` overrides in any build; otherwise debug builds use `<repo>/dev-files/<os>/`, release builds use `~/.config/dev.bozonx.tecloid/` and `~/.local/share/dev.bozonx.tecloid/`.
 - **Processes.** One binary, three roles: settings process, Spell popup worker (`--spell-worker`), CLI client sending a command over IPC (Unix socket in a private `0700` dir on Linux/macOS, token-authenticated loopback TCP on Windows). The mapper holds a cross-process lock, so only one process grabs keyboards.
-- **Popups.** `LHC_POPUPS=winit` (default) shows borderless in-process winit windows; `auto` uses Spell layer-shell when the compositor has `zwlr_layer_shell_v1`, else winit; `spell` requires layer-shell. Data and key handling live in `popup_model.rs` so both paths behave identically.
-- **Action strings.** Bindable actions are plain strings: a key chord (`Ctrl+KeyC`), `macro:<id>`, `builtin:<id>` (built-in macros, see `mapper/builtin_macros.rs`), `cmd:<id>`, `sys:<id>` (see `PLAIN_SYSTEM_ACTIONS` and the `switchToDesktopN`/`moveWindowToDesktopN`/`switchToKeyboardLayoutN` families; `lhc:` ids in `config/app_action.rs`), `lhc:<id>`, `kde:<component>/<shortcut>`, `xdg:<desktop-id>/<action>` (freedesktop application actions, Linux), `text:<literal>`, `pause:<ms>` (macro steps only); `null` swallows the key, empty means native passthrough. Parse and build them only through `Action` in `lhc_core::config::actions`.
+- **Popups.** `TECLOID_POPUPS=winit` (default) shows borderless in-process winit windows; `auto` uses Spell layer-shell when the compositor has `zwlr_layer_shell_v1`, else winit; `spell` requires layer-shell. Data and key handling live in `popup_model.rs` so both paths behave identically.
+- **Action strings.** Bindable actions are plain strings: a key chord (`Ctrl+KeyC`), `macro:<id>`, `builtin:<id>` (built-in macros, see `mapper/builtin_macros.rs`), `cmd:<id>`, `sys:<id>` (see `PLAIN_SYSTEM_ACTIONS` and the `switchToDesktopN`/`moveWindowToDesktopN`/`switchToKeyboardLayoutN` families; `tecloid:` ids in `config/app_action.rs`), `tecloid:<id>`, `kde:<component>/<shortcut>`, `xdg:<desktop-id>/<action>` (freedesktop application actions, Linux), `text:<literal>`, `pause:<ms>` (macro steps only); `null` swallows the key, empty means native passthrough. Parse and build them only through `Action` in `tecloid_core::config::actions`.
 
 ### Where does a change go?
 
 | Change | Location |
 | --- | --- |
-| Config field, validation, profile file format | `crates/lhc-core/src/config/`, `config_document/` |
-| Mapper behaviour, key handling, system actions | `crates/lhc-core/src/mapper/` |
-| Text injection (`text:`, popup insertion) | `crates/lhc-core/src/text_input/` |
-| OS/DE detection or watcher | `crates/lhc-core/src/platform/`, `keyboard_layout/`, `gamemode/`, `active_window/` |
-| GNOME Shell side | `crates/lhc-core/assets/gnome-extension/` |
+| Config field, validation, profile file format | `crates/tecloid-core/src/config/`, `config_document/` |
+| Mapper behaviour, key handling, system actions | `crates/tecloid-core/src/mapper/` |
+| Text injection (`text:`, popup insertion) | `crates/tecloid-core/src/text_input/` |
+| OS/DE detection or watcher | `crates/tecloid-core/src/platform/`, `keyboard_layout/`, `gamemode/`, `active_window/` |
+| GNOME Shell side | `crates/tecloid-core/assets/gnome-extension/` |
 | Settings page | `apps/slint-shell/src/pages/<page>.rs` + `ui/<page>.slint` |
 | Popup content or keys | `apps/slint-shell/src/popup_model.rs`, `ui/popup-*.slint` |
 | Tray, global hotkeys, focus return | `apps/slint-shell/src/platform/{linux,portable}/` |
@@ -172,7 +172,7 @@ Report the exact commands you ran and their results. If something could not be r
 ## Boundaries
 
 **Always**
-- Put domain and platform logic in `lhc-core`; keep the shell thin.
+- Put domain and platform logic in `tecloid-core`; keep the shell thin.
 - Edit config through `Document` (`edit` for transactions, `edit_library` for one core library operation); resolve paths through `StoragePaths::resolve()`.
 - Support the current `config.json` and profile formats plus older format `version`s via the readers in `config/`; no fallbacks for files without `version`.
 
@@ -183,8 +183,8 @@ Report the exact commands you ran and their results. If something could not be r
 - Extending X11 support (best effort only, see platforms.md) or touching `_old/`.
 
 **Never**
-- Read or write the real user config from debug builds or tests (use `dev-files/`, `LHC_DEV_DIR` or a temp dir).
-- Hardcode absolute paths, call Slint from `lhc-core`, or add UI text outside `@tr`.
+- Read or write the real user config from debug builds or tests (use `dev-files/`, `TECLOID_DEV_DIR` or a temp dir).
+- Hardcode absolute paths, call Slint from `tecloid-core`, or add UI text outside `@tr`.
 - Use `_old/` code or docs as the specification or depend on it.
 - Commit build artefacts, dev config/data or dependency caches.
 - Enable `slint/live-preview` in regular or release builds.

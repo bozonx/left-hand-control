@@ -97,14 +97,14 @@ def main():
                 destination = scripts / path.relative_to(REPO / 'apps/slint-shell/scripts')
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(path, destination)
-        shutil.copy2(Path(__file__).with_name('windows-package-guest.ps1'), payload / 'lhc-bootstrap.ps1')
+        shutil.copy2(Path(__file__).with_name('windows-package-guest.ps1'), payload / 'tecloid-bootstrap.ps1')
         for path in (package, package.with_name('WINDOWS-SHA256SUMS'), runtime):
             shutil.copy2(path, payload / path.name)
         (payload / 'package-test.json').write_text(json.dumps({
             'callback': callback.url, 'cycles': args.cycles, 'seconds': args.stress_seconds,
         }))
         iso = vm.run_dir / 'acceptance.iso'
-        subprocess.run(['xorriso', '-as', 'mkisofs', '-quiet', '-J', '-r', '-V', 'LHC-E2E',
+        subprocess.run(['xorriso', '-as', 'mkisofs', '-quiet', '-J', '-r', '-V', 'Tecloid-E2E',
                         '-o', str(iso), str(payload)], check=True, capture_output=True)
         vm.config['cdrom'] = str(iso)
         report.step('boot-clean-windows', vm.start, fatal=True)
@@ -112,7 +112,7 @@ def main():
         vm.qmp.screendump(vm.logs / 'before-bootstrap.png')
         vm.qmp.tap('meta_l-r')
         time.sleep(1)
-        vm.qmp.type_ascii(r'powershell -NoProfile -ExecutionPolicy Bypass -File D:\lhc-bootstrap.ps1')
+        vm.qmp.type_ascii(r'powershell -NoProfile -ExecutionPolicy Bypass -File D:\tecloid-bootstrap.ps1')
         vm.qmp.tap('ret')
         handled = 0
 

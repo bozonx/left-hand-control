@@ -21,7 +21,7 @@ Debian clipboard/auto: **45 PASS, 0 FAIL**. Новый Windows ZIP с испра
 
 | Область | Автоматическая проверка | Свидетельство / ограничение |
 | --- | --- | --- |
-| Движок: remap, swallow, chord, tap/hold/double tap, стеки слоёв, timeout, конфликты модификаторов | `cargo test --locked -p lhc-core`; `mapper_e2e -- --ignored` | Unit проверяет семантику; evdev→uinput и VM проверяют реальную доставку. Один слой в VM не означает всю матрицу backend. |
+| Движок: remap, swallow, chord, tap/hold/double tap, стеки слоёв, timeout, конфликты модификаторов | `cargo test --locked -p tecloid-core`; `mapper_e2e -- --ignored` | Unit проверяет семантику; evdev→uinput и VM проверяют реальную доставку. Один слой в VM не означает всю матрицу backend. |
 | Макросы, pause, отмена, обновление конфигурации, команды и запрет команд | Workspace tests, UI examples, именованные Linux/Windows VM шаги | Полный каталог действий требует отдельных fixtures для каждого заявленного backend. Недоступный backend — не PASS. |
 | Системные раскладки, условия, auto-profile и game mode | Core tests + VM `system-actions`, `russian-profile`, `game-mode`, Windows mapper scenarios | Steam/реестр/D-Bus, whitelist/blacklist, смена источников требуют воспроизводимых fixtures; реальные игры дополнительно оцениваются в ручной пользовательской сессии. |
 | Точный Unicode, раскладка US/RU, отмена при смене фокуса | Linux `text-unicode`; Windows `mapper-unicode-us-ru`, `mapper-focus-cancel`; popup BMP/surrogate/ZWJ | Корпус и набор получателей должны быть указаны в отчёте. Общее название теста не означает все приложения и IME. |

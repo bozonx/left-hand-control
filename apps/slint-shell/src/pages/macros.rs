@@ -7,7 +7,9 @@ use crate::{
     i18n::Msg,
     ui::{BuiltinMacroRow, MacroEditor, MacroField, MacroRow, MacroStepRow, SettingsWindow},
 };
-use lhc_core::{
+use slint::{ComponentHandle, Model, ModelRc, VecModel};
+use std::{cell::RefCell, rc::Rc};
+use tecloid_core::{
     config::{
         actions::Action,
         ids, macros,
@@ -16,8 +18,6 @@ use lhc_core::{
     config_document::ConfigError,
     mapper::builtin_macros::BUILTIN_MACROS,
 };
-use slint::{ComponentHandle, Model, ModelRc, VecModel};
-use std::{cell::RefCell, rc::Rc};
 
 /// A macro being edited plus the raw delay fields, which may not parse yet.
 #[derive(Clone, PartialEq)]
@@ -57,7 +57,7 @@ fn parse_delay(value: &str) -> Result<Option<u64>, ()> {
     if value.is_empty() {
         return Ok(None);
     }
-    lhc_core::config::timing::MACRO_DELAY
+    tecloid_core::config::timing::MACRO_DELAY
         .parse(value)
         .map(Some)
         .ok_or(())

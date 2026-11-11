@@ -1,11 +1,11 @@
-# Guest side of the Windows VM e2e stand. The scheduled task LHC-E2E runs it in
+# Guest side of the Windows VM e2e stand. The scheduled task Tecloid-E2E runs it in
 # the interactive session of the autologon user; run-windows.py waits for
-# D:\lhc-e2e\out\done.txt and reads summary.txt.
+# D:\tecloid-e2e\out\done.txt and reads summary.txt.
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
-$out = 'D:\lhc-e2e\out'
+$out = 'D:\tecloid-e2e\out'
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 Remove-Item "$out\*" -Recurse -Force -ErrorAction SilentlyContinue
 $summary = Join-Path $out 'summary.txt'
@@ -23,7 +23,7 @@ try {
     # Scheduled tasks otherwise default to BelowNormal and slow native builds.
     [System.Diagnostics.Process]::GetCurrentProcess().PriorityClass = 'Normal'
     $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
-    $env:CARGO_HOME = 'D:\lhc-e2e\cargo'
+    $env:CARGO_HOME = 'D:\tecloid-e2e\cargo'
     # Keep native Slint builds within the VM memory budget.
     $env:CARGO_BUILD_JOBS = '1'
     New-Item -ItemType Directory -Force -Path $env:CARGO_HOME | Out-Null
@@ -35,7 +35,7 @@ try {
     Add-Line "Rust: $(& rustc --version 2>&1)"
     Add-Line ''
 
-    $suite = (Get-Content 'D:\lhc-e2e\suite.txt' -Raw).Trim()
+    $suite = (Get-Content 'D:\tecloid-e2e\suite.txt' -Raw).Trim()
     if ($suite -notin @('smoke', 'full', 'release', 'mapper')) { throw "Unknown suite: $suite" }
     $script = 'windows\check-windows-smoke.ps1'
     Add-Line "Suite: $suite"
@@ -44,7 +44,7 @@ try {
     $ErrorActionPreference = 'Continue'
     if ($suite -eq 'mapper') {
         $step = 'core-driver-build'
-        & cargo build --locked --manifest-path (Join-Path $root 'crates\lhc-core\Cargo.toml') `
+        & cargo build --locked --manifest-path (Join-Path $root 'crates\tecloid-core\Cargo.toml') `
             --example windows-mapper-stand *>&1 | Out-File -FilePath $log -Encoding utf8
     } elseif ($suite -ne 'release') {
         $step = 'shell-smoke'
@@ -66,7 +66,7 @@ try {
         if ($suite -in @('full', 'release')) {
             $ErrorActionPreference = 'Continue'
             & cargo build --release --locked --manifest-path (Join-Path $root 'Cargo.toml') `
-                -p lhc-core -p slint-shell --bin tecloid --example windows-mapper-stand *>&1 |
+                -p tecloid-core -p slint-shell --bin tecloid --example windows-mapper-stand *>&1 |
                 Out-File -FilePath (Join-Path $out 'mapper-build.log') -Encoding utf8
             $driverCode = $LASTEXITCODE
             $ErrorActionPreference = 'Stop'
@@ -89,14 +89,14 @@ try {
             $null = $popupStand.Handle
         }
         $stand = Join-Path $root "target\$driverProfile\examples\windows-mapper-stand.exe"
-        $previousDevDir = [Environment]::GetEnvironmentVariable('LHC_DEV_DIR', 'Process')
+        $previousDevDir = [Environment]::GetEnvironmentVariable('TECLOID_DEV_DIR', 'Process')
         try {
-            $env:LHC_DEV_DIR = Join-Path $out 'mapper-profile'
+            $env:TECLOID_DEV_DIR = Join-Path $out 'mapper-profile'
             $mapper = Start-Process $stand -PassThru -WindowStyle Hidden -ArgumentList "$out\mapper" `
                 -RedirectStandardOutput "$out\mapper-stdout.log" -RedirectStandardError "$out\mapper-stderr.log"
-        } finally { [Environment]::SetEnvironmentVariable('LHC_DEV_DIR', $previousDevDir, 'Process') }
+        } finally { [Environment]::SetEnvironmentVariable('TECLOID_DEV_DIR', $previousDevDir, 'Process') }
         $null = $mapper.Handle
-        $stressSeconds = if (Test-Path 'D:\lhc-e2e\stress-seconds.txt') { [int](Get-Content 'D:\lhc-e2e\stress-seconds.txt' -Raw) } else { 180 }
+        $stressSeconds = if (Test-Path 'D:\tecloid-e2e\stress-seconds.txt') { [int](Get-Content 'D:\tecloid-e2e\stress-seconds.txt' -Raw) } else { 180 }
         if ($stressSeconds -lt 1 -or $stressSeconds -gt 604800) { throw 'Invalid stress duration' }
         $deadline = (Get-Date).AddSeconds(3600 + $stressSeconds)
         while (-not (Test-Path "$out\input-result.txt")) {
@@ -132,8 +132,8 @@ try {
         $ErrorActionPreference = 'Stop'
         if ($code -ne 0) { throw "Full native/release checks failed (exit $code, see full.log)" }
         Add-Line '- full-native-release: passed'
-        if (Test-Path 'D:\lhc-e2e\previous-package.txt') {
-            $previousPackage = (Get-Content 'D:\lhc-e2e\previous-package.txt' -Raw).Trim()
+        if (Test-Path 'D:\tecloid-e2e\previous-package.txt') {
+            $previousPackage = (Get-Content 'D:\tecloid-e2e\previous-package.txt' -Raw).Trim()
             $metadataJson = & cargo metadata --locked --format-version 1 --no-deps --manifest-path (Join-Path $root 'Cargo.toml')
             if ($LASTEXITCODE -ne 0) { throw 'Could not resolve the current package version' }
             $metadata = $metadataJson | ConvertFrom-Json
@@ -165,7 +165,7 @@ try {
         if (-not $receiver.WaitForExit(5000)) { Stop-Process -Id $receiver.Id -Force }
     }
     Set-Content -Path (Join-Path $out 'done.txt') -Value $code
-    $callback = 'D:\lhc-e2e\completion-url.txt'
+    $callback = 'D:\tecloid-e2e\completion-url.txt'
     if (Test-Path $callback) {
         try {
             $fullLog = if (Test-Path "$out\full.log") { Get-Content "$out\full.log" -Raw -Encoding utf8 } else { '' }

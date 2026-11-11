@@ -8,24 +8,24 @@ function Initialize-WindowsTest([string]$Output) {
         throw 'Run acceptance without elevation.'
     }
     $saved = @{}
-    foreach ($name in @('LHC_DEV_DIR', 'LHC_PORT', 'LHC_HOTKEYS', 'LHC_POPUPS', 'LHC_METRICS', 'SLINT_BACKEND')) {
+    foreach ($name in @('TECLOID_DEV_DIR', 'TECLOID_PORT', 'TECLOID_HOTKEYS', 'TECLOID_POPUPS', 'TECLOID_METRICS', 'SLINT_BACKEND')) {
         $saved[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
     }
     New-Item -ItemType Directory -Force -Path $Output | Out-Null
-    $env:LHC_DEV_DIR = Join-Path $Output ([guid]::NewGuid().ToString())
-    $env:LHC_HOTKEYS = 'off'
-    $env:LHC_POPUPS = 'winit'
+    $env:TECLOID_DEV_DIR = Join-Path $Output ([guid]::NewGuid().ToString())
+    $env:TECLOID_HOTKEYS = 'off'
+    $env:TECLOID_POPUPS = 'winit'
     $env:SLINT_BACKEND = 'winit-skia-software'
-    Remove-Item Env:LHC_METRICS -ErrorAction SilentlyContinue
+    Remove-Item Env:TECLOID_METRICS -ErrorAction SilentlyContinue
     $listener = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Loopback, 0)
     $listener.Start()
-    try { $env:LHC_PORT = [string]$listener.LocalEndpoint.Port } finally { $listener.Stop() }
+    try { $env:TECLOID_PORT = [string]$listener.LocalEndpoint.Port } finally { $listener.Stop() }
     return $saved
 }
 
 # Popup scenarios explicitly opt in; ordinary profiles keep the product default.
 function Enable-WindowsTestDevelopment {
-    $profileRoot = Join-Path $env:LHC_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.tecloid'
+    $profileRoot = Join-Path $env:TECLOID_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.tecloid'
     New-Item -ItemType Directory -Force -Path $profileRoot | Out-Null
     [IO.File]::WriteAllText((Join-Path $profileRoot 'config.json'), '{"version":1,"settings":{"experimental":true,"startMapperOnLaunch":false},"state":{"gameModeSwitch":"off"}}', [Text.UTF8Encoding]::new($false))
 }
@@ -38,7 +38,7 @@ function Restore-WindowsTest($Saved) {
 
 function Assert-WindowsTestOwner([System.Diagnostics.Process]$Process) {
     if ($Process.HasExited) { throw "Test process exited with code $($Process.ExitCode)" }
-    $listeners = @(Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort ([int]$env:LHC_PORT) -State Listen -ErrorAction SilentlyContinue)
+    $listeners = @(Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort ([int]$env:TECLOID_PORT) -State Listen -ErrorAction SilentlyContinue)
     if ($listeners.Count -ne 1 -or $listeners[0].OwningProcess -ne $Process.Id) {
         throw 'IPC listener does not belong to the test process'
     }

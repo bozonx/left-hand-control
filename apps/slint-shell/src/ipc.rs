@@ -3,7 +3,7 @@
 //! Unix: sockets in a private directory (`0700`, owned by the user) under
 //! `XDG_RUNTIME_DIR`, or under the temp dir when that is unset, so other
 //! users can neither connect nor squat the name. Windows: a loopback TCP
-//! port (`LHC_PORT`, default 43176); every request carries a random
+//! port (`TECLOID_PORT`, default 43176); every request carries a random
 //! token the server writes to the user's local app data, which other users
 //! cannot read. Each request is one JSON line; the reply is `queued` or
 //! `error: …`. `queued` means the command reached the UI queue, not that a
@@ -28,11 +28,11 @@ use std::{
 
 /// Name of the per-user runtime directories and of the tray item. Kept
 /// from the shell's former name so running instances still find each other.
-pub const RUNTIME_NAME: &str = "lhc-slint-shell";
+pub const RUNTIME_NAME: &str = "tecloid-slint-shell";
 
 /// Socket file name of the settings process.
 #[cfg(unix)]
-pub const DEFAULT_SOCKET: &str = "lhc-slint-shell.sock";
+pub const DEFAULT_SOCKET: &str = "tecloid-slint-shell.sock";
 
 /// Upper bound of one request line; a request is a short JSON object.
 const MAX_REQUEST_BYTES: u64 = 4 * 1024 * 1024;
@@ -86,7 +86,7 @@ impl Read for RequestReader<'_> {
     }
 }
 
-/// Loopback port of the IPC server on Windows unless `LHC_PORT` sets one.
+/// Loopback port of the IPC server on Windows unless `TECLOID_PORT` sets one.
 #[cfg(windows)]
 const DEFAULT_PORT: u16 = 43176;
 
@@ -156,8 +156,8 @@ fn tcp_address() -> SocketAddrV4 {
 
 #[cfg(windows)]
 fn token_path() -> std::io::Result<PathBuf> {
-    let dir = if lhc_core::storage::isolated() {
-        lhc_core::storage::StoragePaths::resolve()
+    let dir = if tecloid_core::storage::isolated() {
+        tecloid_core::storage::StoragePaths::resolve()
             .map_err(std::io::Error::other)?
             .settings_dir()
     } else {

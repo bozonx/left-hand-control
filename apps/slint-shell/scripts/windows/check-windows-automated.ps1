@@ -21,12 +21,12 @@ Push-Location $root
 try {
     & (Join-Path $PSScriptRoot 'check-windows-syntax.ps1')
     if (-not $SkipSmoke) { & (Join-Path $PSScriptRoot 'check-windows-smoke.ps1') }
-    Invoke-Checked 'cargo' @('test', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--all-targets')
-    Invoke-Checked 'cargo' @('clippy', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--all-targets', '--no-deps', '--', '-D', 'warnings')
-    Invoke-Checked 'cargo' @('test', '--release', '--locked', '-p', 'lhc-core', '-p', 'slint-shell', '--test', 'storage_override')
+    Invoke-Checked 'cargo' @('test', '--locked', '-p', 'tecloid-core', '-p', 'slint-shell', '--all-targets')
+    Invoke-Checked 'cargo' @('clippy', '--locked', '-p', 'tecloid-core', '-p', 'slint-shell', '--all-targets', '--no-deps', '--', '-D', 'warnings')
+    Invoke-Checked 'cargo' @('test', '--release', '--locked', '-p', 'tecloid-core', '-p', 'slint-shell', '--test', 'storage_override')
     Invoke-Checked 'cargo' @(
         'build', '--release', '--locked', '--manifest-path', $manifest,
-        '-p', 'lhc-core', '-p', 'slint-shell',
+        '-p', 'tecloid-core', '-p', 'slint-shell',
         '--bin', 'tecloid', '--example', 'windows-mapper-stand'
     )
 

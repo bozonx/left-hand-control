@@ -50,7 +50,7 @@ try {
         }
         & $exe quit | Out-Null
         if ($LASTEXITCODE -or -not $process.WaitForExit(10000) -or $process.ExitCode) { throw 'Upgrade shutdown failed' }
-        $profile = Join-Path $env:LHC_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.tecloid'
+        $profile = Join-Path $env:TECLOID_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.tecloid'
         if ($index -eq 0) {
             $before = @{}
             # IPC credentials rotate on each start; only durable user data is retained.

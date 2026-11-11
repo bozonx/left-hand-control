@@ -7,9 +7,9 @@ and its private runtime directory.
 
 Final acceptance commands (all exit 0):
 
-PASS cargo fmt -p lhc-core -p slint-shell --check
+PASS cargo fmt -p tecloid-core -p slint-shell --check
 PASS git diff --check
-PASS cargo clippy --locked -p lhc-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
+PASS cargo clippy --locked -p tecloid-core -p slint-shell --features slint-shell/spell --all-targets --no-deps -- -D warnings
 PASS cargo test --locked --workspace --features slint-shell/spell
      777 passed, 0 failed, 11 ignored across test targets.
      Includes 9 macro draft tests and all new core regressions.
@@ -20,17 +20,17 @@ PASS cargo deny check
      versions of transitive crates. Dependencies were not changed.
 PASS cargo run --locked -p slint-shell --features spell --example editor -- --smoke
 PASS cargo run --locked -p slint-shell --features spell --example interactions
-PASS LHC_MACROS_SNAPSHOT=/tmp/lhc-macros.ppm cargo run --locked -p slint-shell --features spell --example macros
-PASS LHC_EDITOR_SNAPSHOTS=/tmp/lhc-macros-small cargo run --locked -p slint-shell --features spell --example small-window
+PASS TECLOID_MACROS_SNAPSHOT=/tmp/tecloid-macros.ppm cargo run --locked -p slint-shell --features spell --example macros
+PASS TECLOID_EDITOR_SNAPSHOTS=/tmp/tecloid-macros-small cargo run --locked -p slint-shell --features spell --example small-window
      20 states at 640x400. The macro state scrolls to the step controls and
      checks New macro, Add pause and Add step against the window bounds.
-PASS cargo test --locked -p lhc-core --test mapper_e2e -- --ignored
+PASS cargo test --locked -p tecloid-core --test mapper_e2e -- --ignored
      8 passed, including real evdev -> engine -> uinput macro pauses.
      These are the 8 mapper tests ignored in the workspace command above;
      the other 3 environment-dependent unit tests remain ignored.
 
 Intermediate targeted commands also run:
-PASS cargo test --locked -p lhc-core --lib macro
+PASS cargo test --locked -p tecloid-core --lib macro
      65 passed before the final self-reference deletion regression was added;
      that additional regression passed in the final workspace run.
 PASS cargo test --locked -p slint-shell --lib pages::macros::tests

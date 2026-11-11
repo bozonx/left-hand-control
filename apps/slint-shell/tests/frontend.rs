@@ -1,6 +1,5 @@
 //! Callback and debounce regressions run in CI without a desktop or real config.
 
-use lhc_core::{config::timing, storage::StoragePaths};
 use slint::{
     ComponentHandle, Model,
     platform::{EventLoopProxy, Platform, WindowAdapter, software_renderer::MinimalSoftwareWindow},
@@ -13,6 +12,7 @@ use std::{
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
+use tecloid_core::{config::timing, storage::StoragePaths};
 
 type Tasks = Arc<Mutex<VecDeque<Box<dyn FnOnce() + Send>>>>;
 struct TestPlatform(Rc<Cell<Duration>>, Tasks);
@@ -97,14 +97,14 @@ fn game_and_drag_callbacks() -> Result<(), Box<dyn std::error::Error>> {
     // Game mode is an in-development feature: without the setting On does nothing.
     game_state.invoke_set_game_control(GameModeControl::On);
     assert!(!game_state.get_game_active());
-    assert!(!lhc_core::runtime_state::game_mode_active());
-    lhc_core::gamemode::set_settings(&document.read().settings().game_mode, true);
+    assert!(!tecloid_core::runtime_state::game_mode_active());
+    tecloid_core::gamemode::set_settings(&document.read().settings().game_mode, true);
     for (control, active) in [(GameModeControl::On, true), (GameModeControl::Off, false)] {
         game_state.invoke_set_game_control(control);
         assert_eq!(game_state.get_game_control(), control);
         assert_eq!(game_state.get_game_active(), active);
         assert!(game_state.get_game_state_available());
-        assert_eq!(lhc_core::runtime_state::game_mode_active(), active);
+        assert_eq!(tecloid_core::runtime_state::game_mode_active(), active);
     }
     game_state.invoke_set_game_control(GameModeControl::Auto);
     assert_eq!(game_state.get_game_control(), GameModeControl::Auto);

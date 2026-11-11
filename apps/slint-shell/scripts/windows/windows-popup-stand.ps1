@@ -9,10 +9,10 @@ $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
 $saved = Initialize-WindowsTest $Output
 $process = $null
 try {
-    $env:LHC_HOTKEYS = 'on'
+    $env:TECLOID_HOTKEYS = 'on'
     $env:SLINT_BACKEND = 'winit-skia'
-    $env:LHC_METRICS = Join-Path $Output 'metrics.csv'
-    $profileRoot = Join-Path $env:LHC_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.tecloid'
+    $env:TECLOID_METRICS = Join-Path $Output 'metrics.csv'
+    $profileRoot = Join-Path $env:TECLOID_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.tecloid'
     New-Item -ItemType Directory -Force -Path (Join-Path $profileRoot 'profiles') | Out-Null
     $encoding = [Text.UTF8Encoding]::new($false)
     [IO.File]::WriteAllText((Join-Path $profileRoot 'config.json'), '{"version":1,"settings":{"experimental":true,"profiles":{"manualProfile":"user:Popup acceptance"},"locale":"en","devices":{"keyboards":["windows:keyboard"]},"startMapperOnLaunch":false},"state":{"editedProfile":"user:Popup acceptance","gameModeSwitch":"off"}}', $encoding)
@@ -35,7 +35,7 @@ try {
             if (-not $ready) { Start-Sleep -Milliseconds 100 }
         } while (-not $ready)
         Assert-WindowsTestOwner $process
-        $metadata = @{ pid = $process.Id; port = $env:LHC_PORT; profile = $env:LHC_DEV_DIR; exe = $exe } |
+        $metadata = @{ pid = $process.Id; port = $env:TECLOID_PORT; profile = $env:TECLOID_DEV_DIR; exe = $exe } |
             ConvertTo-Json -Compress
         $readyPath = Join-Path $Output 'ready.json'
         [IO.File]::WriteAllText("$readyPath.tmp", $metadata, $encoding)

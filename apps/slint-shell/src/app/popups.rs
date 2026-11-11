@@ -60,7 +60,7 @@ impl PopupController {
         let profile = document
             .and_then(|document| {
                 document
-                    .popup_layout(lhc_core::mapper::runtime::status().running)
+                    .popup_layout(tecloid_core::mapper::runtime::status().running)
                     .map(|(_, profile)| profile)
                     .map_err(|error| log::warn!("popup menus: {error}"))
                     .ok()
@@ -135,7 +135,7 @@ impl App {
     ) -> Result<(), crate::i18n::Msg> {
         let id = self.document().as_ref().and_then(|document| {
             document
-                .popup_layout(lhc_core::mapper::runtime::status().running)
+                .popup_layout(tecloid_core::mapper::runtime::status().running)
                 .map(|(id, _)| id)
                 .ok()
                 .flatten()
@@ -143,7 +143,7 @@ impl App {
         if !self.popups.needs_worker_update(&id) {
             return Ok(());
         }
-        let contents = lhc_core::config::profile_file::serialize(&self.menus().profile);
+        let contents = tecloid_core::config::profile_file::serialize(&self.menus().profile);
         self.send_worker(&WorkerCommand::PopupContents(contents), source, start, None)?;
         self.popups.worker_updated(id);
         Ok(())
@@ -159,7 +159,7 @@ impl App {
     ) {
         // A popup would steal focus from the game, so hotkeys are ignored.
         if window.popup().is_some()
-            && source.popup_blocked(lhc_core::runtime_state::game_mode_active())
+            && source.popup_blocked(tecloid_core::runtime_state::game_mode_active())
         {
             return;
         }
@@ -343,7 +343,7 @@ impl App {
 /// Let the mapper emit the keys typed after a popup hotkey; it holds them
 /// until the popup can receive them.
 fn release_mapper_input() {
-    if let Err(error) = lhc_core::mapper::runtime::popup_focused() {
+    if let Err(error) = tecloid_core::mapper::runtime::popup_focused() {
         log::warn!("release held input: {error}");
     }
 }

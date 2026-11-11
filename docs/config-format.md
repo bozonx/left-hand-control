@@ -120,7 +120,7 @@ ID профилей библиотеки устроены иначе: `user:<и�
 | встроенный макрос | `builtin:copyLineText` |
 | команда | `cmd:<id>` |
 | системное действие | `sys:switchToDesktop2`, `sys:showDesktop` |
-| действие Tecloid | `lhc:showQuickMenu1`, `lhc:toggleGameMode` |
+| действие Tecloid | `tecloid:showQuickMenu1`, `tecloid:toggleGameMode` |
 | глобальное сочетание KDE | `kde:kwin/Window Maximize` |
 | действие установленного приложения (Linux, freedesktop `Actions=`) | `xdg:firefox/new-private-window` |
 | ввод текста | `text:Привет` |
@@ -142,11 +142,11 @@ ID встроенных макросов начинаются с глагола:
 
 Действия установленных приложений (`xdg:<desktop-id>/<action>`): `desktop-id` — имя файла `.desktop` без расширения (для файла из подкаталога `kde4/foo.desktop` — `kde4-foo`), `action` — идентификатор из его ключа `Actions=`. Приложения с `DBusActivatable=true` получают вызов `org.freedesktop.Application.ActivateAction`, остальные запускаются по `Exec` действия. Если приложение не установлено, действие пропускается с предупреждением. Только Linux.
 
-Действия самого Tecloid (`lhc:`): `showQuickMenuN`, `showEmojiMenuN`, `showQuickMenuRecent`, `showEmojiMenuRecent`, `showSettings`, `activateProfileN`, `toggleGameMode`, `setGameModeAuto`, `setGameModeOn`, `setGameModeOff`. Имена действий начинаются с глагола.
+Действия самого Tecloid (`tecloid:`): `showQuickMenuN`, `showEmojiMenuN`, `showQuickMenuRecent`, `showEmojiMenuRecent`, `showSettings`, `activateProfileN`, `toggleGameMode`, `setGameModeAuto`, `setGameModeOn`, `setGameModeOff`. Имена действий начинаются с глагола.
 
-`lhc:showQuickMenuRecent` и `lhc:showEmojiMenuRecent` открывают меню на странице, которая была открыта в нём последней; повторное нажатие листает страницы (их же вызывают встроенные сочетания Ctrl+Alt+F12 и Ctrl+Alt+F11).
+`tecloid:showQuickMenuRecent` и `tecloid:showEmojiMenuRecent` открывают меню на странице, которая была открыта в нём последней; повторное нажатие листает страницы (их же вызывают встроенные сочетания Ctrl+Alt+F12 и Ctrl+Alt+F11).
 
-Действия `lhc:showQuickMenuN` и `lhc:showEmojiMenuN` открывают страницу меню по её позиции (N от 1, без верхней границы; если страницы с таким номером нет, открывается последняя). `lhc:activateProfileN` (N от 1 до 5) включает раскладку по позиции в порядке библиотеки (`settings.profiles.order`). Ссылка по позиции, а не по id, выбрана намеренно: клавиши назначаются на номера один раз, а что они открывают, меняется перестановкой страниц или раскладок, которую видно в интерфейсе. Перестановка и удаление страниц в редакторе эти действия не переписывают.
+Действия `tecloid:showQuickMenuN` и `tecloid:showEmojiMenuN` открывают страницу меню по её позиции (N от 1, без верхней границы; если страницы с таким номером нет, открывается последняя). `tecloid:activateProfileN` (N от 1 до 5) включает раскладку по позиции в порядке библиотеки (`settings.profiles.order`). Ссылка по позиции, а не по id, выбрана намеренно: клавиши назначаются на номера один раз, а что они открывают, меняется перестановкой страниц или раскладок, которую видно в интерфейсе. Перестановка и удаление страниц в редакторе эти действия не переписывают.
 
 ## config.json
 
@@ -239,7 +239,7 @@ ID встроенных макросов начинаются с глагола:
 | `timing.tapDecision` | `permissiveHold` (нажатие другой клавиши фиксирует удержание только при вложенном отпускании или по таймауту; для клавиши, у которой удержание — только слой, клавиши вне этого слоя удержание не фиксируют), `holdOnOtherKeyPress` (сразу). Правило модификатора, который при удержании остаётся собой, без своего `tapDecision` работает как `holdOnOtherKeyPress` | `permissiveHold` |
 | `profiles.mode` | `manual` — работает `profiles.manualProfile`; `auto` — первое подходящее правило `profiles.auto.rules`, иначе `profiles.auto.fallback` | `manual` |
 | `profiles.manualProfile` | id раскладки ручного режима | нет |
-| `profiles.order` | порядок раскладок библиотеки (id); задаёт номера для `lhc:activateProfileN` и порядок списка. Раскладки, которых нет в списке, идут после перечисленных | пусто |
+| `profiles.order` | порядок раскладок библиотеки (id); задаёт номера для `tecloid:activateProfileN` и порядок списка. Раскладки, которых нет в списке, идут после перечисленных | пусто |
 | `profiles.auto.rules[].profile` | обязательно: id раскладки или явный `null` (нативный ввод без переназначений). Пустая строка — ошибка | — |
 | `profiles.auto.rules[].enabled` | `false` сохраняет правило, но не применяет его | `true` |
 | `profiles.auto.rules[].when` | [условия](#условия-when); правила проверяются по порядку, применяется первое подходящее | — |
