@@ -18,6 +18,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Accept case-insensitive key names in triggers and actions, saving canonical spellings from the picker. Shorten the copy acknowledgement to “Copied”.
+
 - Clarify Keymap terminology in translations and documentation; reserve keyboard layout for system language switching and layout for UI geometry.
 
 - Rename user profiles to Keymaps throughout the UI, code, JSON fields, schema and library directory (`keymaps/`). Format version remains 1; previous names are not supported or migrated.

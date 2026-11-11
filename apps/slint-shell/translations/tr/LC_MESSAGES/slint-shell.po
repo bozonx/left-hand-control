@@ -3776,5 +3776,5 @@ msgstr "Metin yazılmadı: yerel giriş başarısız oldu. Erişilebilirlik izin
 msgid "Show a hint when Tecloid sends a copy command"
 msgstr "Tecloid bir kopyalama komutu gönderdiğinde ipucu göster"
 
-msgid "Copy command sent"
-msgstr "Kopyalama komutu gönderildi"
+msgid "Copied"
+msgstr "Kopyalandı"

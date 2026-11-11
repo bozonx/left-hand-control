@@ -3499,5 +3499,5 @@ msgstr "未输入文本：本机输入失败。检查辅助功能权限和目标
 msgid "Show a hint when Tecloid sends a copy command"
 msgstr "Tecloid 发送复制命令时显示提示"
 
-msgid "Copy command sent"
-msgstr "已发送复制命令"
+msgid "Copied"
+msgstr "已复制"

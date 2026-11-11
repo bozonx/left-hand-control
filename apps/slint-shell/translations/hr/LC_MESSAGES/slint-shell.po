@@ -3766,5 +3766,5 @@ msgstr "Tekst nije upisan: izvorni unos nije uspio. Provjerite dopuštenja prist
 msgid "Show a hint when Tecloid sends a copy command"
 msgstr "Prikaži obavijest kada Tecloid pošalje naredbu kopiranja"
 
-msgid "Copy command sent"
-msgstr "Naredba kopiranja poslana"
+msgid "Copied"
+msgstr "Kopirano"

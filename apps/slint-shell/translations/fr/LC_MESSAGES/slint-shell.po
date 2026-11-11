@@ -3855,5 +3855,5 @@ msgstr "Le texte n'a pas été saisi : la saisie native a échoué. Vérifiez l
 msgid "Show a hint when Tecloid sends a copy command"
 msgstr "Afficher une indication lorsque Tecloid envoie une commande de copie"
 
-msgid "Copy command sent"
-msgstr "Commande de copie envoyée"
+msgid "Copied"
+msgstr "Copié"

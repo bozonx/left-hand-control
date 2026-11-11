@@ -67,7 +67,7 @@ impl Action {
         } else if unknown_prefix(value) {
             Self::Unknown(value.into())
         } else {
-            Self::Keys(value.into())
+            Self::Keys(super::key_catalog::normalize_chord(value).unwrap_or_else(|| value.into()))
         }
     }
 
@@ -469,6 +469,8 @@ pub fn execution_issue(action: &Action, config: &ResolvedAppConfig) -> Option<Ex
 }
 
 pub fn valid_held_key(value: &str) -> bool {
+    let normalized = super::key_catalog::normalize_chord(value);
+    let value = normalized.as_deref().unwrap_or(value);
     #[cfg(target_os = "linux")]
     {
         crate::mapper::action::parse_action(value).is_some()
@@ -490,6 +492,18 @@ pub fn valid_held_key(value: &str) -> bool {
 mod tests {
     use super::*;
     use crate::config::model::{AppSettings, KeymapPreset};
+
+    #[test]
+    fn key_names_normalize_without_changing_payloads() {
+        assert_eq!(
+            Action::parse(Some("shift+slash")).format().as_deref(),
+            Some("Shift+Slash")
+        );
+        for raw in ["text:MiXeD ", "macro:MiXeD", "cmd:MiXeD"] {
+            assert_eq!(Action::parse(Some(raw)).format().as_deref(), Some(raw));
+        }
+        assert!(valid_held_key("shiftright+slash"));
+    }
 
     #[test]
     fn parse_and_format_round_trip() {

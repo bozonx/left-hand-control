@@ -3780,5 +3780,5 @@ msgstr "Мәтін терілмеді: түпнұсқа енгізу орынд�
 msgid "Show a hint when Tecloid sends a copy command"
 msgstr "Tecloid көшіру пәрменін жібергенде кеңес көрсету"
 
-msgid "Copy command sent"
-msgstr "Көшіру пәрмені жіберілді"
+msgid "Copied"
+msgstr "Көшірілді"

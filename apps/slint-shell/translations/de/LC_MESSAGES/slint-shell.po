@@ -3846,5 +3846,5 @@ msgstr "Der Text wurde nicht eingegeben: Die native Eingabe ist fehlgeschlagen. 
 msgid "Show a hint when Tecloid sends a copy command"
 msgstr "Hinweis anzeigen, wenn Tecloid einen Kopierbefehl sendet"
 
-msgid "Copy command sent"
-msgstr "Kopierbefehl gesendet"
+msgid "Copied"
+msgstr "Kopiert"

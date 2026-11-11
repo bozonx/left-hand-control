@@ -311,6 +311,25 @@ pub const CATEGORIES: &[&[&str]] = &[
     ],
 ];
 
+/// Canonical spelling of a physical key or side-neutral modifier.
+pub fn canonical_key(value: &str) -> Option<&'static str> {
+    CATEGORIES
+        .iter()
+        .flat_map(|keys| keys.iter())
+        .copied()
+        .chain(TRIGGER_MODIFIERS.iter().copied())
+        .find(|key| key.eq_ignore_ascii_case(value))
+}
+
+/// Normalize only a complete key chord; callers retain other action payloads.
+pub fn normalize_chord(value: &str) -> Option<String> {
+    value
+        .split('+')
+        .map(|part| canonical_key(part.trim()))
+        .collect::<Option<Vec<_>>>()
+        .map(|keys| keys.join("+"))
+}
+
 pub fn valid_key(value: &str) -> bool {
     CATEGORIES.iter().any(|keys| keys.contains(&value))
 }
@@ -318,7 +337,7 @@ pub fn valid_key(value: &str) -> bool {
 /// Key code a chord modifier stands for: a side-neutral `Ctrl`, `Shift`,
 /// `Alt` or `Meta` means the left key, a sided code means itself.
 pub fn modifier_key(token: &str) -> Option<&'static str> {
-    Some(match token {
+    Some(match canonical_key(token)? {
         "Ctrl" | "ControlLeft" => "ControlLeft",
         "ControlRight" => "ControlRight",
         "Shift" | "ShiftLeft" => "ShiftLeft",
@@ -368,7 +387,8 @@ pub fn trigger_alternatives(key: &str) -> Vec<&str> {
 /// Trigger components, preserving side-neutral modifier names.
 pub fn trigger_keys(value: &str) -> Option<Vec<&str>> {
     let mut keys = Vec::new();
-    for key in value.split('+') {
+    for key in value.split('+').map(str::trim) {
+        let key = canonical_key(key)?;
         if (!valid_key(key) && !TRIGGER_MODIFIERS.contains(&key))
             || matches!(key, "MouseLeft" | "MouseRight" | "MouseMiddle")
             || keys.iter().any(|previous: &&str| {
@@ -396,6 +416,7 @@ pub fn uses_modifier_name(value: &str) -> bool {
 pub fn chord_keys(value: &str) -> Option<Vec<&str>> {
     let mut keys = Vec::new();
     for part in value.split('+').map(str::trim) {
+        let part = canonical_key(part)?;
         let key = modifier_key(part).unwrap_or(part);
         if !valid_key(key)
             || matches!(key, "MouseLeft" | "MouseRight" | "MouseMiddle")
@@ -412,6 +433,21 @@ pub fn chord_keys(value: &str) -> Option<Vec<&str>> {
 mod tests {
     use super::*;
     #[test]
+    fn lowercase_chords_preserve_key_identity() {
+        assert_eq!(
+            normalize_chord(" shift + slash ").as_deref(),
+            Some("Shift+Slash")
+        );
+        assert_eq!(trigger_keys("shift+slash"), Some(vec!["Shift", "Slash"]));
+        assert_eq!(
+            chord_keys("shiftright+keya"),
+            Some(vec!["ShiftRight", "KeyA"])
+        );
+        assert!(!valid_trigger("ctrl+controlleft"));
+        assert!(normalize_chord("text:Hello").is_none());
+    }
+
+    #[test]
     fn required_keys_and_rule_triggers() {
         assert!(valid_key("MouseLeft"));
         assert!(valid_trigger("F13"));
@@ -419,7 +455,7 @@ mod tests {
         assert!(valid_trigger("ShiftLeft+ControlRight"));
         assert!(valid_trigger("Ctrl+KeyA"));
         assert!(!valid_trigger("Ctrl+ControlLeft"));
-        assert!(!valid_trigger("ControlLeft + KeyA"));
+        assert!(valid_trigger("ControlLeft + KeyA"));
         assert!(!valid_trigger("KeyA+"));
         for value in [
             "",

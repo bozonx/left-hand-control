@@ -3755,5 +3755,5 @@ msgstr "Text nebyl zadán: nativní vstup se nezdařil. Zkontrolujte oprávněn�
 msgid "Show a hint when Tecloid sends a copy command"
 msgstr "Zobrazit nápovědu, když Tecloid odešle příkaz ke kopírování"
 
-msgid "Copy command sent"
-msgstr "Příkaz ke kopírování odeslán"
+msgid "Copied"
+msgstr "Zkopírováno"

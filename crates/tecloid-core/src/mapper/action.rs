@@ -60,7 +60,8 @@ pub fn pause_duration(ms: &str) -> Option<Duration> {
 ///
 /// Returns None if the action is unknown / not supported yet.
 pub fn parse_action(action: &str) -> Option<Keystroke> {
-    let trimmed = action.trim();
+    let normalized = crate::config::key_catalog::normalize_chord(action);
+    let trimmed = normalized.as_deref().unwrap_or(action).trim();
     if trimmed.is_empty() {
         return None;
     }
@@ -96,6 +97,14 @@ fn parse_single(token: &str) -> Option<KeyCode> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn lowercase_chord_matches_canonical_stroke() {
+        let lower = parse_action("shiftright+slash").unwrap();
+        let canonical = parse_action("ShiftRight+Slash").unwrap();
+        assert_eq!(lower.mods, canonical.mods);
+        assert_eq!(lower.key, canonical.key);
+    }
 
     #[test]
     fn explicit_text_extracts_after_prefix() {

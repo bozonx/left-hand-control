@@ -3221,5 +3221,5 @@ msgstr "Текст не введён: ошибка нативного ввода
 msgid "Show a hint when Tecloid sends a copy command"
 msgstr "Показывать подсказку, когда Tecloid отправляет команду копирования"
 
-msgid "Copy command sent"
-msgstr "Команда копирования отправлена"
+msgid "Copied"
+msgstr "Скопировано"

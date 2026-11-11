@@ -3811,5 +3811,5 @@ msgstr "Tekst nie został wpisany: natywne wprowadzanie danych nie powiodło si�
 msgid "Show a hint when Tecloid sends a copy command"
 msgstr "Pokaż wskazówkę, gdy Tecloid wysyła polecenie kopiowania"
 
-msgid "Copy command sent"
-msgstr "Wysłano polecenie kopiowania"
+msgid "Copied"
+msgstr "Skopiowano"

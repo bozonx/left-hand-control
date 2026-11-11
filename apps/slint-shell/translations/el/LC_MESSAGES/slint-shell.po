@@ -3863,5 +3863,5 @@ msgstr "Το κείμενο δεν πληκτρολογήθηκε: η εγγεν
 msgid "Show a hint when Tecloid sends a copy command"
 msgstr "Εμφάνιση υπόδειξης όταν το Tecloid στέλνει εντολή αντιγραφής"
 
-msgid "Copy command sent"
-msgstr "Η εντολή αντιγραφής στάλθηκε"
+msgid "Copied"
+msgstr "Αντιγράφηκε"

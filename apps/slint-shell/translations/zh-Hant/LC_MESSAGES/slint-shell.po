@@ -3500,5 +3500,5 @@ msgstr "未輸入文字：本機輸入失敗。檢查輔助功能權限和目標
 msgid "Show a hint when Tecloid sends a copy command"
 msgstr "Tecloid 傳送複製命令時顯示提示"
 
-msgid "Copy command sent"
-msgstr "已傳送複製命令"
+msgid "Copied"
+msgstr "已複製"

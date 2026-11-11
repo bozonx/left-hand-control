@@ -129,6 +129,8 @@ pub(super) struct Filter {
 impl Filter {
     /// Restrictions of the open picker; list items are checked with it.
     pub(super) fn admits(&self, value: &str) -> bool {
+        let normalized = tecloid_core::config::key_catalog::normalize_chord(value);
+        let value = normalized.as_deref().unwrap_or(value);
         if self.unavailable_keys.iter().any(|key| key == value) {
             return false;
         }

@@ -3768,5 +3768,5 @@ msgstr "El texto no fue escrito: la entrada nativa falló. Verifique los permiso
 msgid "Show a hint when Tecloid sends a copy command"
 msgstr "Mostrar un aviso cuando Tecloid envíe una orden de copia"
 
-msgid "Copy command sent"
-msgstr "Orden de copia enviada"
+msgid "Copied"
+msgstr "Copiado"

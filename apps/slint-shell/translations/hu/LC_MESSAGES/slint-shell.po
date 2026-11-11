@@ -3808,5 +3808,5 @@ msgstr "A szöveg nem lett begépelve: a natív bevitel nem sikerült. Ellenőri
 msgid "Show a hint when Tecloid sends a copy command"
 msgstr "Jelzés megjelenítése, amikor a Tecloid másolási parancsot küld"
 
-msgid "Copy command sent"
-msgstr "Másolási parancs elküldve"
+msgid "Copied"
+msgstr "Másolva"

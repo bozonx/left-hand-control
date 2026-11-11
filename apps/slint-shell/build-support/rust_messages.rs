@@ -13,5 +13,5 @@ pub const MESSAGES: &[(&str, &str)] = &[
     ("GameNever", "Off — never"),
     ("Keymap", "Keymap: {}"),
     ("NoKeymap", "No keymap"),
-    ("CopyCommandSent", "Copy command sent"),
+    ("CopyCommandSent", "Copied"),
 ];

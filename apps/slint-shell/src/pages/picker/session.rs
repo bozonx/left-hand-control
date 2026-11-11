@@ -511,7 +511,10 @@ pub(super) fn apply(
     picker.set_error(Msg::None.to_ui());
     let swallow = picker.get_behavior() == PickerBehavior::Swallow;
     let value = if picker.get_behavior() == PickerBehavior::Action {
-        picker.get_value()
+        let value = picker.get_value();
+        tecloid_core::config::key_catalog::normalize_chord(&value)
+            .map(Into::into)
+            .unwrap_or(value)
     } else {
         "".into()
     };

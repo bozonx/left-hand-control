@@ -3810,5 +3810,5 @@ msgstr "Textul nu a fost introdus: introducerea nativă a eșuat. Verificați pe
 msgid "Show a hint when Tecloid sends a copy command"
 msgstr "Afișează un indiciu când Tecloid trimite o comandă de copiere"
 
-msgid "Copy command sent"
-msgstr "Comandă de copiere trimisă"
+msgid "Copied"
+msgstr "Copiat"

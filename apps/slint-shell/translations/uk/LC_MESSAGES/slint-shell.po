@@ -3779,5 +3779,5 @@ msgstr "Текст не було набрано: помилка власного
 msgid "Show a hint when Tecloid sends a copy command"
 msgstr "Показувати підказку, коли Tecloid надсилає команду копіювання"
 
-msgid "Copy command sent"
-msgstr "Команду копіювання надіслано"
+msgid "Copied"
+msgstr "Скопійовано"

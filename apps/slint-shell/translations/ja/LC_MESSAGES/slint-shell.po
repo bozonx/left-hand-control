@@ -3565,5 +3565,5 @@ msgstr "テキストが入力されませんでした。ネイティブ入力に
 msgid "Show a hint when Tecloid sends a copy command"
 msgstr "Tecloid がコピーコマンドを送信したときにヒントを表示"
 
-msgid "Copy command sent"
-msgstr "コピーコマンドを送信しました"
+msgid "Copied"
+msgstr "コピーしました"

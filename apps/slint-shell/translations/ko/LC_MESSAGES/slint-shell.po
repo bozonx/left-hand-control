@@ -3558,5 +3558,5 @@ msgstr "텍스트가 입력되지 않았습니다. 기본 입력이 실패했습
 msgid "Show a hint when Tecloid sends a copy command"
 msgstr "Tecloid가 복사 명령을 보낼 때 알림 표시"
 
-msgid "Copy command sent"
-msgstr "복사 명령을 보냈습니다"
+msgid "Copied"
+msgstr "복사됨"

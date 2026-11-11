@@ -3833,5 +3833,5 @@ msgstr "Il testo non è stato digitato: input nativo non riuscito. Controlla le 
 msgid "Show a hint when Tecloid sends a copy command"
 msgstr "Mostra un avviso quando Tecloid invia un comando di copia"
 
-msgid "Copy command sent"
-msgstr "Comando di copia inviato"
+msgid "Copied"
+msgstr "Copiato"
