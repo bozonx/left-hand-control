@@ -15,7 +15,7 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
-- Startup opens the main page without restoring an editor profile. Manual profile selection remains saved; game-mode Auto/On/Off is a permanent setting. Config format v2 removes persisted editor state and reads v1 files automatically.
+- Startup opens the main page without restoring an editor profile. Manual profile selection remains saved; game-mode Auto/On/Off is a permanent setting. Config format remains v1 and no longer contains a state section.
 
 - Text input: reject unverified KDE layout variants, stop libei typing after keyboard resets, and keep Windows Unicode surrogate pairs together during cancellation.
 

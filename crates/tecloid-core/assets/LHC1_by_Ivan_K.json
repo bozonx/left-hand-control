@@ -1,8 +1,9 @@
 {
   "version": 1,
   "meta": {
-    "name": "LHC1 by Ivan K",
-    "author": "Ivan K"
+    "name": "Left Hand Control",
+    "author": "Ivan K",
+    "version": 1
   },
   "layers": [
     {

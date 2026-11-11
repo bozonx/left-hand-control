@@ -150,6 +150,10 @@
     "GameModeDoc": {
       "additionalProperties": false,
       "properties": {
+        "control": {
+          "$ref": "#/$defs/GameModeControl",
+          "default": "auto"
+        },
         "detectors": {
           "$ref": "#/$defs/DetectorsDoc",
           "default": {
@@ -333,6 +337,7 @@
         "gameMode": {
           "$ref": "#/$defs/GameModeDoc",
           "default": {
+            "control": "auto",
             "detectors": {
               "appCategory": false,
               "fullscreen": false,
@@ -408,24 +413,6 @@
             "macroTimeoutMs": 10000,
             "tapDecision": "permissiveHold"
           }
-        }
-      },
-      "type": "object"
-    },
-    "StateDoc": {
-      "additionalProperties": false,
-      "properties": {
-        "editedProfile": {
-          "description": "Library profile open in the editor.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "gameModeSwitch": {
-          "$ref": "#/$defs/GameModeControl",
-          "default": "auto",
-          "description": "Auto / On / Off choice of the game-mode switch."
         }
       },
       "type": "object"
@@ -600,6 +587,7 @@
         "commandsEnabled": false,
         "experimental": false,
         "gameMode": {
+          "control": "auto",
           "detectors": {
             "appCategory": false,
             "fullscreen": false,
@@ -644,12 +632,6 @@
           "macroTimeoutMs": 10000,
           "tapDecision": "permissiveHold"
         }
-      }
-    },
-    "state": {
-      "$ref": "#/$defs/StateDoc",
-      "default": {
-        "gameModeSwitch": "auto"
       }
     },
     "version": {

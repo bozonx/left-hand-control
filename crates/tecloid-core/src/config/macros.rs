@@ -334,10 +334,9 @@ mod tests {
                 true,
             )
             .unwrap();
-        paths
-            .save_config(r#"{"version":1,"state":{"editedProfile":"user:Test"}}"#)
-            .unwrap();
+        paths.save_config(r#"{"version":1}"#).unwrap();
         let mut document = ConfigDocument::load(paths.clone()).unwrap();
+        document.load_library_for_editing("Test").unwrap();
         let rules = document.profile().rules.clone();
         document
             .save_macro(

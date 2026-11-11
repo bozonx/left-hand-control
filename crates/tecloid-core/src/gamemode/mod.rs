@@ -1536,7 +1536,7 @@ mod tests {
     #[test]
     fn parses_settings_like_the_settings_page() {
         let (settings, enabled) = parse_game_mode_settings(
-            r#"{"version":1,"settings":{"experimental":true,"gameMode":{"detectors":{"fullscreen":true},"processes":[{"name":"steam"}]}},"state":{"gameModeSwitch":"on"}}"#,
+            r#"{"version":1,"settings":{"experimental":true,"gameMode":{"control":"on","detectors":{"fullscreen":true},"processes":[{"name":"steam"}]}}}"#,
         )
         .unwrap();
         assert!(enabled);

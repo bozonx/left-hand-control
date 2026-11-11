@@ -84,32 +84,14 @@ pub struct ConfigDocument {
     profile_only: bool,
     settings: AppSettings,
     profile: ProfilePreset,
-    /// Why the profile last opened for editing could not be read at load.
-    profile_load_error: Option<ConfigError>,
 }
 
 impl ConfigDocument {
     pub fn load(paths: StoragePaths) -> Result<Self, ConfigError> {
         paths.ensure().map_err(ConfigError::Io)?;
         let settings_text = paths.load_config().map_err(ConfigError::Io)?;
-        let mut settings = settings::parse(&settings_text).map_err(ConfigError::Parse)?;
-        let mut profile_load_error = None;
-        let profile = match settings.editing_profile_id.as_deref() {
-            Some(id) => match load_current_profile(&paths, id) {
-                Ok(profile) => profile,
-                Err(error) => {
-                    // A deleted or damaged library file must not take the
-                    // global settings down with it. The editor starts from
-                    // a fresh profile that is not linked to the broken file,
-                    // so saving it never overwrites that file.
-                    log::warn!("profile {id} cannot be opened for editing: {error}");
-                    settings.editing_profile_id = None;
-                    profile_load_error = Some(error);
-                    ProfilePreset::initial()
-                }
-            },
-            None => ProfilePreset::initial(),
-        };
+        let settings = settings::parse(&settings_text).map_err(ConfigError::Parse)?;
+        let profile = ProfilePreset::initial();
         crate::gamemode::set_settings(&settings.game_mode, settings.in_development);
         Ok(Self {
             staged: false,
@@ -117,14 +99,7 @@ impl ConfigDocument {
             settings,
             profile,
             paths,
-            profile_load_error,
         })
-    }
-
-    /// Why the profile that was open for editing could not be read when the
-    /// configuration loaded; the editor then started from a fresh profile.
-    pub fn profile_load_error(&self) -> Option<&ConfigError> {
-        self.profile_load_error.as_ref()
     }
 
     pub fn paths(&self) -> &StoragePaths {
@@ -505,7 +480,6 @@ impl ConfigDocument {
             profile_only: true,
             settings: self.settings.clone(),
             profile: self.profile.clone(),
-            profile_load_error: self.profile_load_error.clone(),
         };
         for command in commands {
             draft.save_command(command)?;
@@ -551,12 +525,6 @@ impl ConfigDocument {
     }
 }
 
-fn load_current_profile(paths: &StoragePaths, id: &str) -> Result<ProfilePreset, ConfigError> {
-    let name = crate::config::model::user_profile_name(id)
-        .ok_or_else(|| ConfigError::Invalid(format!("unknown profile id \"{id}\"")))?;
-    parse_profile(&paths.load_user_profile(name).map_err(ConfigError::Io)?)
-}
-
 fn optional_text(value: &str) -> Option<String> {
     (!value.trim().is_empty()).then(|| value.trim().to_owned())
 }
@@ -578,29 +546,70 @@ mod tests {
 
     const PROFILE: &str = r#"{"version": 1, "layers": [{"id": "nav", "name": "Navigation", "keys": {"KeyH": "ArrowLeft"}}], "rules": [{"key": "CapsLock", "hold": {"layer": "nav"}, "tap": "Escape"}]}"#;
 
-    /// A document whose edited and active profile is `profile`, saved as
-    /// `Test` unless `state.editedProfile` names another one.
-    fn document(mut settings: Value, profile: &str) -> (tempfile::TempDir, ConfigDocument) {
+    /// A document with an explicitly opened library profile.
+    fn document(settings: Value, profile: &str) -> (tempfile::TempDir, ConfigDocument) {
+        document_named(settings, profile, "Test")
+    }
+
+    fn document_named(
+        mut settings: Value,
+        profile: &str,
+        name: &str,
+    ) -> (tempfile::TempDir, ConfigDocument) {
         let dir = tempfile::tempdir().unwrap();
         let paths = StoragePaths::new(dir.path().join("config"), dir.path().join("data"));
         settings["version"] = json!(1);
-        if settings["state"]["editedProfile"].is_null() {
-            settings["state"]["editedProfile"] = json!("user:Test");
-        }
         if settings["settings"]["profiles"]["manualProfile"].is_null() {
-            settings["settings"]["profiles"]["manualProfile"] =
-                settings["state"]["editedProfile"].clone();
+            settings["settings"]["profiles"]["manualProfile"] = json!(format!("user:{name}"));
         }
-        let name = settings["state"]["editedProfile"]
-            .as_str()
-            .unwrap()
-            .strip_prefix("user:")
-            .unwrap();
         paths
             .save_config(&serde_json::to_string_pretty(&settings).unwrap())
             .unwrap();
         paths.save_user_profile(name, profile, true).unwrap();
-        (dir, ConfigDocument::load(paths).unwrap())
+        let mut document = ConfigDocument::load(paths).unwrap();
+        document.load_library_for_editing(name).unwrap();
+        (dir, document)
+    }
+
+    #[test]
+    fn restart_keeps_manual_activation_without_opening_an_editor() {
+        let (_dir, mut document) = document(json!({}), PROFILE);
+        document.set_base_tap_action("KeyA", "Enter").unwrap();
+        let loaded = ConfigDocument::load(document.paths().clone()).unwrap();
+        assert_eq!(loaded.profile(), &ProfilePreset::initial());
+        assert!(loaded.settings().editing_profile_id.is_none());
+        let context = AutoSwitchContext::default();
+        assert_eq!(
+            loaded.active_profile_id(&context).unwrap().as_deref(),
+            Some("user:Test")
+        );
+        assert_eq!(
+            loaded.active_profile(&context).unwrap().rules[0]
+                .tap_action
+                .as_deref(),
+            Some("Escape")
+        );
+        assert!(
+            loaded
+                .active_profile(&context)
+                .unwrap()
+                .rules
+                .iter()
+                .all(|rule| rule.key != "KeyA")
+        );
+        let mut automatic = loaded;
+        automatic
+            .update_settings(|settings| {
+                settings.profile_mode = ProfileMode::Auto;
+                settings.auto_default_profile_id = None;
+            })
+            .unwrap();
+        let automatic = ConfigDocument::load(automatic.paths().clone()).unwrap();
+        assert_eq!(automatic.active_profile_id(&context).unwrap(), None);
+        assert_eq!(
+            automatic.settings().manual_profile_id.as_deref(),
+            Some("user:Test")
+        );
     }
 
     #[test]
@@ -664,7 +673,6 @@ mod tests {
                 .save_config(
                     &serde_json::to_string(&json!({
                         "version": 1,
-                        "state": {"editedProfile": "user:Test"},
                         "settings": {"profiles": {"manualProfile": "user:Test"}, "appearance": "dark"}
                     }))
                     .unwrap(),
@@ -677,7 +685,7 @@ mod tests {
             }
 
             let mut document = ConfigDocument::load(paths.clone()).unwrap();
-            assert!(document.profile_load_error().is_some(), "{damage}");
+            assert_eq!(document.profile(), &ProfilePreset::initial(), "{damage}");
             assert_eq!(document.settings().appearance, Appearance::Dark);
             assert_eq!(document.settings().editing_profile_id, None);
             // Saving settings and the fresh profile never touches the broken file.
@@ -691,7 +699,7 @@ mod tests {
                 );
             }
             let reloaded = ConfigDocument::load(paths).unwrap();
-            assert!(reloaded.profile_load_error().is_none());
+            assert_eq!(reloaded.profile(), &ProfilePreset::initial());
             assert_eq!(reloaded.settings().default_hold_timeout_ms, 300);
         }
     }
@@ -856,11 +864,7 @@ mod tests {
         assert!(!document.settings().commands_enabled);
         document
             .paths
-            .save_config(
-                &json!({"version": 1, "settings": {"appearance": "dark"},
-                    "state": {"editedProfile": "user:Test"}})
-                .to_string(),
-            )
+            .save_config(&json!({"version": 1, "settings": {"appearance": "dark"}}).to_string())
             .unwrap();
         document = ConfigDocument::load(document.paths().clone()).unwrap();
         assert!(!document.settings().commands_enabled);
@@ -923,7 +927,8 @@ mod tests {
             .reorder_extra_keys("nav", vec!["F13".into(), "F14".into(), "F15".into()], 0, 2)
             .unwrap();
         document.save_current_profile_as("Ordered").unwrap();
-        let restarted = ConfigDocument::load(document.paths.clone()).unwrap();
+        let mut restarted = ConfigDocument::load(document.paths.clone()).unwrap();
+        restarted.load_library_for_editing("Ordered").unwrap();
         assert_eq!(
             restarted.profile().layer_keymaps["nav"].extra_key_order,
             ["F14", "F15", "F13"]
@@ -1150,7 +1155,8 @@ mod tests {
                 .set_layer_key("missing", "KeyK", KeyAssignment::Swallow)
                 .is_err()
         );
-        let restarted = ConfigDocument::load(document.paths.clone()).unwrap();
+        let mut restarted = ConfigDocument::load(document.paths.clone()).unwrap();
+        restarted.load_library_for_editing("Test").unwrap();
         assert_eq!(
             restarted.layer_key("nav", "KeyJ"),
             KeyAssignment::Transparent
@@ -1186,9 +1192,7 @@ mod tests {
         let (_dir, mut document) = document(json!({"settings": {"appearance": "dark"}}), PROFILE);
         document
             .paths
-            .save_config(
-                r#"{"version":1,"settings":{"appearance":"light"},"state":{"editedProfile":"user:Test"}}"#,
-            )
+            .save_config(r#"{"version":1,"settings":{"appearance":"light"}}"#)
             .unwrap();
         document
             .set_layer_key("nav", "KeyJ", KeyAssignment::Swallow)
@@ -1215,7 +1219,9 @@ mod tests {
         assert_eq!(restarted.settings().locale, LocalePreference::English);
         document.save_current_profile_as("Saved").unwrap();
         document.set_base_tap_action("KeyA", "Tab").unwrap();
-        let restarted = ConfigDocument::load(paths).unwrap();
+        let mut restarted = ConfigDocument::load(paths).unwrap();
+        assert!(restarted.settings().editing_profile_id.is_none());
+        restarted.load_library_for_editing("Saved").unwrap();
         assert_eq!(restarted.base_tap_action("KeyA"), Some("Enter"));
     }
 
@@ -1230,9 +1236,10 @@ mod tests {
 
     #[test]
     fn runtime_config_reports_whether_titles_are_needed() {
-        let (_dir, mut document) = document(
-            json!({"settings": {"profiles": {"manualProfile": "user:Other"}}, "state": {"editedProfile": "user:Main"}}),
+        let (_dir, mut document) = document_named(
+            json!({"settings": {"profiles": {"manualProfile": "user:Other"}}}),
             PROFILE,
+            "Main",
         );
         let save = |document: &ConfigDocument, rules: &str| {
             document
@@ -1293,9 +1300,10 @@ mod tests {
 
     #[test]
     fn runtime_config_uses_the_active_library_profile() {
-        let (_dir, mut document) = document(
-            json!({"settings": {"profiles": {"manualProfile": "user:Other"}}, "state": {"editedProfile": "user:Main"}}),
+        let (_dir, mut document) = document_named(
+            json!({"settings": {"profiles": {"manualProfile": "user:Other"}}}),
             PROFILE,
+            "Main",
         );
         document
             .paths
@@ -1433,10 +1441,12 @@ mod tests {
         );
         assert!(document.profile().rules[0].layer_id.is_empty());
         assert!(!document.profile().layer_keymaps.contains_key("nav"));
-        let loaded = ConfigDocument::load(document.paths().clone()).unwrap();
+        let mut loaded = ConfigDocument::load(document.paths().clone()).unwrap();
+        loaded.load_library_for_editing("Test").unwrap();
         assert_eq!(loaded.profile().layers[0].name, "Navigation");
         document.save_current_profile_as("Saved").unwrap();
-        let saved = ConfigDocument::load(document.paths().clone()).unwrap();
+        let mut saved = ConfigDocument::load(document.paths().clone()).unwrap();
+        saved.load_library_for_editing("Saved").unwrap();
         assert_eq!(saved.profile().layers[0].name, "Navigation copy");
         assert!(saved.profile().rules[0].layer_id.is_empty());
     }

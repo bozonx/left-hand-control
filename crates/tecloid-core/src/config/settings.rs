@@ -1,12 +1,4 @@
-//! `config.json`: `{ "version": 1, "settings": { … }, "state": { … } }`.
-//!
-//! `settings` holds the user's choices, `state` what the application
-//! remembers between runs (the profile open in the editor, the game-mode
-//! switch). Both sections are optional and default field by field; unknown
-//! fields, wrong types and unknown values are errors, the same as in profile
-//! files (see [`super::profile_file`]). Only values that differ from the
-//! defaults are written, so a later release can change a default for
-//! everyone who never chose otherwise.
+//! Versioned application settings. Editor working copies stay in memory.
 
 use super::model::{
     AccessibilityChoice, AppSettings, Appearance, AutoRule, GameModeControl,
@@ -50,20 +42,20 @@ pub fn serialize(settings: &AppSettings) -> String {
     let defaults = serde_json::to_value(to_doc(&AppSettings::default())).unwrap_or_default();
     let mut value = serde_json::to_value(to_doc(settings)).unwrap_or_default();
     if let Some(object) = value.as_object_mut() {
-        for section in ["settings", "state"] {
-            if let (Some(current), Some(default)) = (object.get_mut(section), defaults.get(section))
-            {
-                prune_defaults(current, default);
-            }
-            if object
-                .get(section)
-                .and_then(serde_json::Value::as_object)
-                .is_some_and(serde_json::Map::is_empty)
-            {
-                object.remove(section);
-            }
+        if let (Some(current), Some(default)) =
+            (object.get_mut("settings"), defaults.get("settings"))
+        {
+            prune_defaults(current, default);
+        }
+        if object
+            .get("settings")
+            .and_then(serde_json::Value::as_object)
+            .is_some_and(serde_json::Map::is_empty)
+        {
+            object.remove("settings");
         }
     }
+
     serde_json::to_string_pretty(&value).unwrap_or_default()
 }
 
@@ -102,8 +94,6 @@ struct ConfigDoc {
     schema: Option<String>,
     #[serde(default)]
     settings: SettingsDoc,
-    #[serde(default)]
-    state: StateDoc,
 }
 
 #[cfg_attr(test, derive(schemars::JsonSchema))]
@@ -304,6 +294,7 @@ fn nullable<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields, default)]
 struct GameModeDoc {
+    control: GameModeControl,
     detectors: DetectorsDoc,
     /// Games a launcher or the system reports count only while their
     /// window is active.
@@ -399,17 +390,6 @@ impl Default for LinuxDoc {
     }
 }
 
-#[cfg_attr(test, derive(schemars::JsonSchema))]
-#[derive(Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields, default)]
-struct StateDoc {
-    /// Library profile open in the editor.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    edited_profile: Option<String>,
-    /// Auto / On / Off choice of the game-mode switch.
-    game_mode_switch: GameModeControl,
-}
-
 fn yes() -> bool {
     true
 }
@@ -474,9 +454,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
     for (item, id) in doc.settings.game_mode.processes.iter_mut().zip(ids) {
         item.id = id;
     }
-    let ConfigDoc {
-        settings, state, ..
-    } = doc;
+    let ConfigDoc { settings, .. } = doc;
     let timing = settings.timing;
     let detectors = settings.game_mode.detectors;
     let keyboard_device = DevicesDoc::single(settings.devices.keyboards, "keyboards")?;
@@ -515,7 +493,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
         macro_timeout_ms: timing.macro_timeout_ms,
         input_device_path: Some(keyboard_device.unwrap_or_default()),
         input_mouse_device_path: mouse_device,
-        editing_profile_id: non_empty(state.edited_profile),
+        editing_profile_id: None,
         profile_mode: profiles.mode,
         manual_profile_id: non_empty(profiles.manual_profile),
         profile_order: profiles.order,
@@ -547,7 +525,7 @@ fn from_doc(mut doc: ConfigDoc) -> Result<AppSettings, String> {
                     is_blacklist: process.exclude,
                 })
                 .collect(),
-            control: state.game_mode_switch,
+            control: settings.game_mode.control,
         },
         linux_wayland_text_mode: settings.linux.text_mode,
         linux_paste_shortcut: settings.linux.paste_shortcut,
@@ -609,6 +587,7 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
             },
             commands_enabled: settings.commands_enabled,
             game_mode: GameModeDoc {
+                control: game_mode.control,
                 detectors: DetectorsDoc {
                     gamemoded: game_mode.use_gamemoded,
                     fullscreen: game_mode.use_fullscreen,
@@ -641,10 +620,6 @@ fn to_doc(settings: &AppSettings) -> ConfigDoc {
                 xdotool_path: Some(settings.linux_xdotool_path.clone())
                     .filter(|path| !path.trim().is_empty()),
             },
-        },
-        state: StateDoc {
-            edited_profile: filled(&settings.editing_profile_id),
-            game_mode_switch: game_mode.control,
         },
     }
 }
@@ -904,7 +879,6 @@ mod tests {
             tap_decision: TapDecision::HoldOnOtherKeyPress,
             input_device_path: Some("/dev/input/by-id/kbd".into()),
             input_mouse_device_path: Some("/dev/input/by-id/mouse".into()),
-            editing_profile_id: Some("user:Main".into()),
             profile_mode: ProfileMode::Auto,
             manual_profile_id: Some("user:Other".into()),
             profile_order: vec!["user:Other".into(), "user:Main".into()],
@@ -952,8 +926,8 @@ mod tests {
             "sameAsPaste"
         );
         assert_eq!(raw["settings"]["gameMode"]["processes"][0]["exclude"], true);
-        assert_eq!(raw["state"]["editedProfile"], "user:Main");
-        assert_eq!(raw["state"]["gameModeSwitch"], "on");
+        assert!(raw.get("state").is_none());
+        assert_eq!(raw["settings"]["gameMode"]["control"], "on");
         let profiles = &raw["settings"]["profiles"];
         assert_eq!(profiles["mode"], "auto");
         assert_eq!(profiles["order"], json!(["user:Other", "user:Main"]));
@@ -1061,10 +1035,21 @@ mod tests {
     }
 
     #[test]
-    fn manual_activation_is_independent_of_the_edited_profile() {
-        let settings = parse(r#"{"version": 1, "state": {"editedProfile": "user:Main"}}"#).unwrap();
-        assert_eq!(settings.editing_profile_id.as_deref(), Some("user:Main"));
-        assert_eq!(settings.manual_profile_id, None);
+    fn editor_identity_is_not_persisted() {
+        let settings = parse(r#"{"version":1,"settings":{"profiles":{"manualProfile":"user:Active"},"gameMode":{"control":"on"}}}"#).unwrap();
+        assert!(settings.editing_profile_id.is_none());
+        assert_eq!(settings.manual_profile_id.as_deref(), Some("user:Active"));
+        assert_eq!(settings.game_mode.control, GameModeControl::On);
+        let mut editing = settings.clone();
+        editing.editing_profile_id = Some("user:Editor".into());
+        let saved = serialize(&editing);
+        assert_eq!(parse(&saved).unwrap(), settings);
+        let raw: Value = serde_json::from_str(&saved).unwrap();
+        assert_eq!(raw["version"], 1);
+        assert!(raw.get("state").is_none());
+        assert_eq!(raw["settings"]["gameMode"]["control"], "on");
+        assert!(parse(r#"{"version":1,"state":{}}"#).is_err());
+        assert!(parse(r#"{"version":1,"settings":{"gameMode":{"control":"maybe"}}}"#).is_err());
     }
 
     #[test]

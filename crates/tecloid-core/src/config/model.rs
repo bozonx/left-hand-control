@@ -824,6 +824,7 @@ pub struct AppSettings {
     pub input_device_path: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub input_mouse_device_path: Option<String>,
+    /// Profile open for editing in this process; never persisted to config.json.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "currentProfileId")]
     pub editing_profile_id: Option<String>,

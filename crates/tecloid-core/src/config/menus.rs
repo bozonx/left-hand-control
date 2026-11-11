@@ -717,7 +717,8 @@ mod tests {
         doc.update_settings(|settings| settings.commands_enabled = false)
             .unwrap();
         doc.save_current_profile_as("Saved").unwrap();
-        let loaded = ConfigDocument::load(paths.clone()).unwrap();
+        let mut loaded = ConfigDocument::load(paths.clone()).unwrap();
+        loaded.load_library_for_editing("Saved").unwrap();
         assert!(!loaded.settings().commands_enabled);
         assert_eq!(
             super::super::profile_file::serialize(loaded.profile()),

@@ -659,10 +659,9 @@ mod tests {
                 false,
             )
             .unwrap();
-        paths
-            .save_config(r#"{"version":1,"state":{"editedProfile":"user:Original"}}"#)
-            .unwrap();
+        paths.save_config(r#"{"version":1}"#).unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
+        doc.load_library_for_editing("Original").unwrap();
         let before = doc.profile().clone();
         let settings = doc.settings().clone();
         let original = paths.load_user_profile("Original").unwrap();
@@ -802,12 +801,10 @@ mod tests {
             .save_user_profile("Downloaded (2)", text, false)
             .unwrap();
         paths
-            .save_config(
-                r#"{"version":1,"$schema":"https://example.com/config.json",
-            "state":{"editedProfile":"user:Downloaded (2)"}}"#,
-            )
+            .save_config(r#"{"version":1,"$schema":"https://example.com/config.json"}"#)
             .unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
+        doc.load_library_for_editing("Downloaded (2)").unwrap();
         doc.save_current_profile_as("Saved").unwrap();
         doc.create_library_profile("Copy", "New description", LibrarySource::Copy("Saved"))
             .unwrap();
@@ -839,11 +836,10 @@ mod tests {
             )
             .unwrap();
         paths
-            .save_config(
-                r#"{"version":1,"settings":{"commandsEnabled":true},"state":{"editedProfile":"user:Test"}}"#,
-            )
+            .save_config(r#"{"version":1,"settings":{"commandsEnabled":true}}"#)
             .unwrap();
         let mut doc = ConfigDocument::load(paths.clone()).unwrap();
+        doc.load_library_for_editing("Test").unwrap();
         doc.save_current_profile_as("Hello").unwrap();
         let text = paths.load_user_profile("Hello").unwrap();
         doc.edit_library_metadata("Hello", "Renamed", Some(""), &text)
