@@ -1,0 +1,30 @@
+Date: 2026-11-11 22:57:19 -0300
+Commit: 09f34102 (with uncommitted changes)
+Command: apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/left-hand-control-windows --suite full
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/windows11-e2e-base.qcow2)
+Suite: full; acceptance requested: False
+Previous-version upgrade: NOT RUN
+Scope: Windows developer VM; clean-package and previous-version upgrade require separate acceptance
+Mapper build: release
+Popup shell build: release
+Native tests/clippy/package lifecycle: included
+Mapper from: beginning
+Mapper only: all
+Extended: False; stress seconds: 180
+Memory: 8192 MiB
+Logs: /mnt/disk2/vm/left-hand-control-windows/runs/20261111-225615/logs
+
+
+
+- boot: passed
+- preflight: FAILED — `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); $ErrorActionPreference = 'Stop'; $volume = Get-Volume -DriveLetter D; if ($volume.FileSystemLabel -ne 'Tecloid-CACHE') { throw 'D: is not Tecloid-CACHE' }; $task = Get-ScheduledTask -TaskName Tecloid-E2E; if ($task.State -in @('Running', 'Disabled')) { throw 'Tecloid-E2E is running or disabled' }; if (-not (Get-Process explorer -ErrorAction SilentlyContinue)) { throw 'No desktop session' }; $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"; & cargo --version; if ($LASTEXITCODE) { throw 'Cargo unavailable' }` exited with 1:
+D: is not Tecloid-CACHE
+At line:1 char:191
++ ... mLabel -ne 'Tecloid-CACHE') { throw 'D: is not Tecloid-CACHE' }; $tas ...
++                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (D: is not Tecloid-CACHE:String) [], RuntimeExcep 
+   tion
+    + FullyQualifiedErrorId : D: is not Tecloid-CACHE
+- collect-guest-logs: skipped — SSH export failed; logs remain on the persistent cache disk
+
+Passed: 1, failed: 1, skipped: 1, blocked/not run: 0

@@ -383,7 +383,7 @@ def cmd_wait_app(args):
 def cmd_quit_app(args):
     app("quit")
     wait("the process to exit", 15,
-         lambda: subprocess.run(["pgrep", "-u", str(os.getuid()), "-x", "left-hand-contr"],
+         lambda: subprocess.run(["pgrep", "-u", str(os.getuid()), "-x", "tecloid"],
                                 capture_output=True).returncode != 0)
 
 
@@ -589,7 +589,7 @@ def run_kwin_test_script(name, body):
 def kwin_value(name, body):
     marker = f"TECLOID_E2E_{time.time_ns()}="
     run_kwin_test_script("tecloid-e2e-" + name, body.replace("MARKER", json.dumps(marker)))
-    log = subprocess.run(["journalctl", "--user", "-b", "--no-pager", "-o", "cat", "-n", "300"],
+    log = subprocess.run(["journalctl", "--user", "-b", "--no-pager", "-o", "cat", "--grep", marker, "-n", "300"],
                          capture_output=True, text=True, check=True).stdout
     values = [line.split(marker, 1)[1] for line in log.splitlines() if marker in line]
     if len(values) != 1:
@@ -606,7 +606,7 @@ var list = workspace.windowList ? workspace.windowList() : workspace.clientList(
 for (var i = 0; i < list.length; i++) {
     var w = list[i];
     if (String(w.resourceClass).indexOf(CLASS_HINT) < 0 ||
-        String(w.caption).indexOf(TITLE) < 0 || !w.output) continue;
+        String(w.caption).toLowerCase().indexOf(TITLE.toLowerCase()) < 0 || !w.output) continue;
     var g = w.frameGeometry, o = w.output.geometry;
     ACTIVATE
     console.warn(MARKER + JSON.stringify({
@@ -623,7 +623,7 @@ for (var i = 0; i < list.length; i++) {
         body = body.replace(key, value)
     run_kwin_test_script("tecloid-e2e-window-point", body)
     log = subprocess.run(["journalctl", "--user", "-b", "--no-pager", "-o", "cat",
-                          "-n", "300"], capture_output=True, text=True, check=True).stdout
+                          "--grep", marker, "-n", "300"], capture_output=True, text=True, check=True).stdout
     matches = [line.split(marker, 1)[1] for line in log.splitlines() if marker in line]
     if len(matches) != 1:
         fail(f"expected one {title} window geometry, received {len(matches)}")
@@ -645,7 +645,7 @@ for (var i = 0; i < list.length; i++) {
 console.warn(MARKER + count);
 """.replace('MARKER', json.dumps(marker))
     run_kwin_test_script('tecloid-e2e-portal-visible', body)
-    log = subprocess.run(['journalctl', '--user', '-b', '--no-pager', '-o', 'cat', '-n', '300'],
+    log = subprocess.run(['journalctl', '--user', '-b', '--no-pager', '-o', 'cat', '--grep', marker, '-n', '300'],
                          capture_output=True, text=True, check=True).stdout
     values = [line.split(marker, 1)[1] for line in log.splitlines() if marker in line]
     if len(values) != 1:
@@ -719,9 +719,9 @@ def cmd_text_failures(args):
 
 
 def cmd_kill_app(args):
-    subprocess.run(["pkill", "-KILL", "-u", str(os.getuid()), "-x", "left-hand-contr"])
+    subprocess.run(["pkill", "-KILL", "-u", str(os.getuid()), "-x", "tecloid"])
     wait("the killed process to exit", 10,
-         lambda: subprocess.run(["pgrep", "-u", str(os.getuid()), "-x", "left-hand-contr"],
+         lambda: subprocess.run(["pgrep", "-u", str(os.getuid()), "-x", "tecloid"],
                                 capture_output=True).returncode != 0)
 
 
@@ -764,7 +764,7 @@ def cmd_suspend_count(args):
 
 
 def processes():
-    return subprocess.run(["pgrep", "-u", str(os.getuid()), "-x", "left-hand-contr"],
+    return subprocess.run(["pgrep", "-u", str(os.getuid()), "-x", "tecloid"],
                           capture_output=True, text=True).stdout.split()
 
 

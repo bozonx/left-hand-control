@@ -1,0 +1,73 @@
+Date: 2026-11-11 22:42:01 -0300
+Commit: 09f34102 (with uncommitted changes)
+Command: apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-debian13-kde --package target/ubuntu-22.04/packages/tecloid-0.4.0-linux-x86_64.tar.gz
+VM: debian13-kde (/mnt/disk2/vm/lhc-debian13-kde/base.qcow2)
+Memory: 6144 MiB
+CPU: host
+Machine: pc-i440fx-11.1
+Acceptance requested: False; scope: this VM/backend combination only
+Text backend: libei; stress seconds: 0
+Suspend exclusion: none
+Package: tecloid-0.4.0-linux-x86_64.tar.gz
+Package SHA256: 4bb820707c7a3df512ca7e7e5024c597a18391176f9d6107c9efbc133a47ce68
+Popup mode: winit (startup environment and worker processes recorded in resources)
+Portal deny clicks: [[0.678, 0.655], [0.61, 0.655]]; relative: None
+Previous-version upgrade: NOT RUN (no --previous)
+Keyboard: /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:02.0-2-event-kbd
+Host: ivan, 7.2.9-1-MANJARO
+Logs and screenshots: /mnt/disk2/vm/lhc-debian13-kde/runs/20261111-223335/logs
+
+- boot: passed
+- upload: passed
+- plasma-session: passed — wayland
+- install: passed
+- installed-files: passed — /home/tester/.local/bin/tecloid: tecloid 0.4.0
+- keyboard-probe: passed — /dev/input/by-id/usb-QEMU_QEMU_USB_Keyboard_68284-0000:00:02.0-2-event-kbd
+- test-config: passed
+- upgrade-from-previous: skipped — NOT RUN: no --previous
+- start-without-input: passed
+- keymap-loaded: passed — test keyboard and active keymap retained by the application
+- tray-item: passed — org.kde.StatusNotifierItem-1931-1/StatusNotifierItem
+- no-mapper-without-input: passed
+- autostart-entry: passed — Exec="/home/tester/.local/lib/dev.bozonx.tecloid/tecloid"
+- reboot-with-input: passed
+- autostart-launch: passed
+- tray-after-login: passed — org.kde.StatusNotifierItem-1529-1/StatusNotifierItem
+- mapper-running: passed
+- portal-deny: passed — declined; the next text: failed without a new dialog
+- portal-consent: passed — tecloid-ok
+- mapper-keys-and-text: passed — bXctecloid-ok
+- text-unicode: passed — Привет, ёж 😀
+- text-unicode-corpus: passed — Hello, мир! ёЁ № á é ñ ö | []{}();:'"\,./<>? 🙂 👍🏽 👨‍💻 é é
+- layer-tap-hold: passed — gkkgjj
+- macro: passed — nmacO
+- command: passed
+- system-actions: passed — desktop 1→2→1, layout us→ru→us
+- russian-layout: passed — исtecloid-okПривет, ёж 😀
+- popups: passed — c
+- emoji-ipc: passed — 🙂
+- quick-menu-rule: passed — quick-ok
+- emoji-hotkey: passed — 🙂
+- game-mode: passed — off, on, auto without and with a game process
+- prepare-screen-lock: passed
+- screen-lock: passed — c
+- prepare-suspend-resume: passed
+- suspend-resume: passed — bXctecloid-ok
+- cli: passed — tecloid 0.4.0
+- second-instance: passed
+- text-after-second-instance: passed — Привет, ёж 😀
+- prepare-keyboard-replug: passed
+- keyboard-replug: passed — bXcПривет, ёж 😀
+- mapper-stop: passed — off
+- mapper-start: passed — on
+- prepare-stuck-keys-on-stop: passed
+- stuck-keys-on-stop: passed — abc
+- prepare-stuck-keys-on-kill: passed
+- stuck-keys-on-kill: passed — abc
+- sustained-input-lifecycle: skipped — not requested; use --stress-seconds >= 180
+- upgrade-over-running: passed — reinstalled over the running instance
+- quit: passed
+- remove: passed
+- collect-metrics.csv.spell.csv: skipped — file unavailable
+
+Passed: 49, failed: 0, skipped: 3, blocked/not run: 0

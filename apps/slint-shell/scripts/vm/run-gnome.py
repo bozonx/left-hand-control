@@ -143,10 +143,10 @@ def main():
             return window and window["appId"] == "dev.bozonx.tecloid"
 
         def restore_host():
-            pid = vm.ssh("pgrep -u $(id -u) -x left-hand-contr").strip()
+            pid = vm.ssh("pgrep -u $(id -u) -x tecloid").strip()
             vm.ssh("gnome-extensions enable ubuntu-appindicators@ubuntu.com")
             guest("tray")
-            if vm.ssh("pgrep -u $(id -u) -x left-hand-contr").strip() != pid:
+            if vm.ssh("pgrep -u $(id -u) -x tecloid").strip() != pid:
                 raise StepFailed("tray recovery restarted the application")
 
         vm.ssh("~/.local/bin/tecloid hide")

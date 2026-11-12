@@ -280,8 +280,9 @@ def main():
         def approve():
             vm.qmp.tap("t")
             wait_for("portal consent dialog", 20, lambda: guest("portal-visible") == "yes")
+            point = json.loads(guest("portal-deny-point --x 0.58 --y 0.86"))
             vm.qmp.screendump(vm.logs / "portal-consent.png")
-            vm.qmp.tap(*vm.get("portal_keys", ["ret"]))
+            click_point(point["x"], point["y"])
             wait_for("portal consent dismissed", 15, lambda: guest("portal-visible") == "no")
         return expect("portal-consent", "tecloid-ok", action=approve)
 
@@ -542,7 +543,8 @@ def main():
                 time.sleep(3)
                 if guest("portal-visible") == "yes":
                     grants += 1
-                    vm.qmp.tap(*vm.get("portal_keys", ["ret"]))
+                    point = json.loads(guest("portal-deny-point --x 0.58 --y 0.86"))
+                    click_point(point["x"], point["y"])
                     time.sleep(3)
             expect(f"stress-{cycles}", "bXctecloid-ok", action=input_cycle)
             set_mapper(False)
