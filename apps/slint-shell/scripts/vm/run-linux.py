@@ -160,6 +160,10 @@ def main():
 
     def write_config():
         guest(f"write-config --device {shlex.quote(state['device'])} --text-backend {args.text_backend} --popup-mode {args.popup_mode}")
+        # Startup registration is authoritative, as in the GNOME fixture.
+        desktop = "dev.bozonx.tecloid.desktop"
+        source = f"~/.local/share/applications/{desktop}" if archive else f"/usr/share/applications/{desktop}"
+        vm.ssh(f"mkdir -p ~/.config/autostart && cp {source} ~/.config/autostart/{desktop}")
 
     def start_without_permissions():
         guest(f"start-app --popups {args.popup_mode}")

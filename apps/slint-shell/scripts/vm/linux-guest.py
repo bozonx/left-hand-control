@@ -335,9 +335,8 @@ def cmd_write_config(args):
             "processes": [{"name": FAKE_GAME, "foregroundOnly": False}],
         },
     }
-    state = {"editedKeymap": "user:E2E", "gameModeSwitch": "off"}
     (CONFIG_DIR / "config.json").write_text(
-        json.dumps({"version": 1, "settings": settings, "state": state}, indent=2),
+        json.dumps({"version": 1, "settings": settings}, indent=2),
         encoding="utf-8")
     if "GNOME" in user_environment().get("XDG_CURRENT_DESKTOP", "").upper():
         env = dict(os.environ, **user_environment())

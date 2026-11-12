@@ -1,0 +1,31 @@
+Date: 2026-11-11 21:49:05 -0300
+Commit: dcc93f14
+Command: apps/slint-shell/scripts/vm/run-linux.py --vm /mnt/disk2/vm/lhc-kubuntu2604 --package target/packages/tecloid-0.4.0-linux-x86_64.tar.gz
+VM: kubuntu2604 (/mnt/disk2/vm/lhc-kubuntu2604/base.qcow2)
+Memory: 6144 MiB
+CPU: host
+Machine: q35
+Acceptance requested: False; scope: this VM/backend combination only
+Text backend: libei; stress seconds: 0
+Suspend exclusion: none
+Package: tecloid-0.4.0-linux-x86_64.tar.gz
+Package SHA256: bc524646e12e2236e409e72164b80d61413eb18455692d5d21f47bdad3bdf029
+Popup mode: winit (startup environment and worker processes recorded in resources)
+Portal deny clicks: [0.738, 0.659]; relative: [[0.865, 0.86]]
+Previous-version upgrade: NOT RUN (no --previous)
+Keyboard: not detected
+Host: ivan, 7.2.9-1-MANJARO
+Logs and screenshots: /mnt/disk2/vm/lhc-kubuntu2604/runs/20261111-214719/logs
+
+- boot: passed
+- upload: passed
+- plasma-session: passed — wayland
+- install: passed
+- installed-files: FAILED — `python3 ~/tecloid-e2e/linux-guest.py check-install` exited with 1:
+installed executable cannot run (1): /home/tester/.local/bin/tecloid: /usr/lib/x86_64-linux-gnu/libm.so.6: version `GLIBC_2.44' not found (required by /home/tester/.local/bin/tecloid)
+- collect-app.log: skipped — file unavailable
+- collect-receiver.log: skipped — file unavailable
+- collect-metrics.csv: skipped — file unavailable
+- collect-metrics.csv.spell.csv: skipped — file unavailable
+
+Passed: 4, failed: 1, skipped: 4, blocked/not run: 0
