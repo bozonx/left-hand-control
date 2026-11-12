@@ -1,0 +1,61 @@
+Date: 2026-11-12 07:49:30 -0300
+Commit: b32f34fe
+Command: apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/tecloid-windows-adapted --suite full
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/runs/20261112-065002/run.qcow2)
+Suite: full; acceptance requested: False
+Previous-version upgrade: NOT RUN
+Scope: Windows developer VM; clean-package and previous-version upgrade require separate acceptance
+Mapper build: release
+Popup shell build: release
+Native tests/clippy/package lifecycle: included
+Mapper from: beginning
+Mapper only: all
+Extended: False; stress seconds: 180
+Memory: 8192 MiB
+Logs: /mnt/disk2/vm/tecloid-windows-adapted/runs/20261112-074727/logs
+
+
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: FAILED — `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); 
+$ErrorActionPreference = 'Stop'
+$stage = 'D:\tecloid-e2e\incoming'
+$source = 'D:\tecloid-e2e\src'
+Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Path $stage | Out-Null
+tar -xmzf D:\tecloid-e2e\src.tar.gz -C $stage
+if ($LASTEXITCODE) { exit $LASTEXITCODE }
+$updated = 0
+foreach ($file in Get-ChildItem $stage -Recurse -File) {
+    $relative = $file.FullName.Substring($stage.Length + 1)
+    $destination = Join-Path $source $relative
+    if ((Test-Path -LiteralPath $destination -PathType Leaf) -and
+        (Get-Item -LiteralPath $destination).LastWriteTimeUtc -le [DateTime]::UtcNow.AddSeconds(30) -and
+        (Get-FileHash -LiteralPath $file.FullName).Hash -eq (Get-FileHash -LiteralPath $destination).Hash) { continue }
+    New-Item -ItemType Directory -Force -Path (Split-Path $destination) | Out-Null
+    Copy-Item -LiteralPath $file.FullName -Destination $destination -Force
+    $updated++
+}
+$removed = 0
+foreach ($entry in Get-ChildItem $source -Force | Where-Object Name -ne 'target') {
+    $oldFiles = if ($entry.PSIsContainer) { Get-ChildItem $entry.FullName -Recurse -File -Force } else { @($entry) }
+    foreach ($file in $oldFiles) {
+        $relative = $file.FullName.Substring($source.Length + 1)
+        if (-not (Test-Path -LiteralPath (Join-Path $stage $relative) -PathType Leaf)) {
+            Remove-Item -LiteralPath $file.FullName -Force
+            $removed++
+        }
+    }
+}
+Remove-Item $stage -Recurse -Force
+"Source sync: $updated updated, $removed removed"
+` exited with 1:
+Copy-Item : The disk structure is corrupted and unreadable.
+At line:17 char:5
++     Copy-Item -LiteralPath $file.FullName -Destination $destination - ...
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Copy-Item], IOException
+    + FullyQualifiedErrorId : System.IO.IOException,Microsoft.PowerShell.Commands.CopyItemCommand
+
+Passed: 2, failed: 1, skipped: 0, blocked/not run: 0

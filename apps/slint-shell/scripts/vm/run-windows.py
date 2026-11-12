@@ -266,6 +266,7 @@ def main():
             "$ErrorActionPreference = 'Stop'; "
             "$volume = Get-Volume -DriveLetter D; "
             "if ($volume.FileSystemLabel -ne 'Tecloid-CACHE') { throw 'D: is not Tecloid-CACHE' }; "
+            "if ($volume.SizeRemaining -lt 24GB) { throw 'D: needs at least 24 GiB free for native builds; remove stale build artifacts' }; "
             "$task = Get-ScheduledTask -TaskName Tecloid-E2E; "
             "if ($task.State -in @('Running', 'Disabled')) { throw 'Tecloid-E2E is running or disabled' }; "
             "if (-not (Get-Process explorer -ErrorAction SilentlyContinue)) { throw 'No desktop session' }; "
