@@ -16,7 +16,7 @@ serde_json.workspace = true
 evdev.workspace = true
 libc.workspace = true
 nix = { workspace = true, features = ["poll", "event", "ioctl"] }
-reis = "0.6.1"
+reis = "0.7.1"
 wayland-client.workspace = true
 wayland-protocols = { workspace = true, features = ["client", "staging"] }
 wayland-protocols-wlr = { version = "0.3", features = ["client"] }
