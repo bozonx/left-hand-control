@@ -1,0 +1,23 @@
+Date: 2026-11-13 14:57:01 -0300
+Commit: 7b818619 (with uncommitted changes)
+Command: apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/tecloid-windows-adapted --suite full --memory 10240 --keep
+VM: windows11 (/mnt/disk2/vm/tecloid-windows-adapted/runs/20261113-130609/run.qcow2)
+Suite: full; acceptance requested: False
+Previous-version upgrade: NOT RUN
+Scope: Windows developer VM; clean-package and previous-version upgrade require separate acceptance
+Mapper build: release
+Popup shell build: release
+Native tests/clippy/package lifecycle: included
+Mapper from: beginning
+Mapper only: all
+Extended: False; stress seconds: 180
+Memory: 10240 MiB
+Logs: /mnt/disk2/vm/tecloid-windows-adapted/runs/20261113-145614/logs
+
+
+
+- boot: passed
+- preflight: FAILED — `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); [bool](Get-Process explorer -ErrorAction SilentlyContinue)` exited with 255:
+- collect-guest-logs: skipped — SSH export failed; logs remain on the persistent cache disk
+
+Passed: 1, failed: 1, skipped: 1, blocked/not run: 0

@@ -2108,7 +2108,13 @@ fn modifier_held_as_another_modifier_makes_a_shortcut_in_a_roll_by_default() {
     );
     let ctrl = typed
         .iter()
-        .position(|e| format!("{e:?}").contains("KEY_LEFTCTRL"))
+        .position(|e| {
+            matches!(
+                e,
+                TraceEvent::Raw(KeyCode::KEY_LEFTCTRL, true)
+                    | TraceEvent::Press(KeyCode::KEY_LEFTCTRL, _)
+            )
+        })
         .expect("Ctrl pressed");
     let c = typed
         .iter()

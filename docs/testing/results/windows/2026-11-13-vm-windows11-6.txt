@@ -1,0 +1,36 @@
+Date: 2026-11-13 13:20:01 -0300
+Commit: 7b818619 (with uncommitted changes)
+Command: apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/tecloid-windows-adapted --suite full --keep
+VM: windows11 (/mnt/disk2/vm/tecloid-windows-adapted/runs/20261113-074930/run.qcow2)
+Suite: full; acceptance requested: False
+Previous-version upgrade: NOT RUN
+Scope: Windows developer VM; clean-package and previous-version upgrade require separate acceptance
+Mapper build: release
+Popup shell build: release
+Native tests/clippy/package lifecycle: included
+Mapper from: beginning
+Mapper only: all
+Extended: False; stress seconds: 180
+Memory: 8192 MiB
+Logs: /mnt/disk2/vm/tecloid-windows-adapted/runs/20261113-130609/logs
+
+Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: full
+- shell-smoke: FAILED (exit 1, see automated.log)
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 1163 files; source archive /mnt/disk2/vm/tecloid-windows-adapted/runs/20261113-130609/src.tar.gz; SHA256 d94946610ee07542a6242727651a2133d886ca4cc9b589affb5adc4be826d14e; Source sync: 7 updated, 42 removed
+- windows-full: FAILED — Windows: Microsoft Windows 11 Enterprise Evaluation build 26200
+Session: 1
+Cargo: cargo 1.98.1 (797e8a9bc 2026-08-05)
+Rust: rustc 1.98.1 (48a229cea 2026-09-01)
+
+Suite: full
+- shell-smoke: FAILED (exit 1, see automated.log)
+
+Passed: 3, failed: 1, skipped: 0, blocked/not run: 0

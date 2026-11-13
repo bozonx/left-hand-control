@@ -29,6 +29,7 @@ const EXIT_TIMEOUT: Duration = Duration::from_secs(2);
 const EXIT_POLL: Duration = Duration::from_millis(10);
 
 const ROLE: &str = "TECLOID_INTERNAL_WINDOWS_INPUT_GUARD";
+const READY_MAGIC: &[u8] = b"Tecloid!";
 static ENABLED: AtomicBool = AtomicBool::new(false);
 static GUARD: Mutex<Option<Guard>> = Mutex::new(None);
 
@@ -53,7 +54,7 @@ pub fn dispatch() -> Result<bool, String> {
         return Ok(false);
     }
     let _lock = MapperLock::join_existing()?;
-    let mut ready = b"Tecloid!".to_vec();
+    let mut ready = READY_MAGIC.to_vec();
     ready.extend(std::process::id().to_le_bytes());
     std::io::stdout()
         .write_all(&ready)
@@ -146,13 +147,15 @@ impl Guard {
         std::thread::Builder::new()
             .name("tecloid-guard-ready".into())
             .spawn(move || {
-                let mut ready = [0; 8];
+                let mut ready = [0; READY_MAGIC.len() + std::mem::size_of::<u32>()];
                 let result = stdout
                     .read_exact(&mut ready)
                     .map_err(|e| e.to_string())
                     .and_then(|()| {
-                        if ready[..4] == *b"Tecloid!" {
-                            Ok(u32::from_le_bytes([ready[4], ready[5], ready[6], ready[7]]))
+                        if ready[..READY_MAGIC.len()] == *READY_MAGIC {
+                            let mut pid = [0; std::mem::size_of::<u32>()];
+                            pid.copy_from_slice(&ready[READY_MAGIC.len()..]);
+                            Ok(u32::from_le_bytes(pid))
                         } else {
                             Err("invalid input guard handshake".into())
                         }

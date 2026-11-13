@@ -27,7 +27,7 @@ function Initialize-WindowsTest([string]$Output) {
 function Enable-WindowsTestDevelopment {
     $keymapRoot = Join-Path $env:TECLOID_DEV_DIR 'windows\AppData\Roaming\dev.bozonx.tecloid'
     New-Item -ItemType Directory -Force -Path $keymapRoot | Out-Null
-    [IO.File]::WriteAllText((Join-Path $keymapRoot 'config.json'), '{"version":1,"settings":{"experimental":true,"startMapperOnLaunch":false},"state":{"gameModeSwitch":"off"}}', [Text.UTF8Encoding]::new($false))
+    [IO.File]::WriteAllText((Join-Path $keymapRoot 'config.json'), '{"version":1,"settings":{"experimental":true,"startMapperOnLaunch":false}}', [Text.UTF8Encoding]::new($false))
 }
 
 function Restore-WindowsTest($Saved) {

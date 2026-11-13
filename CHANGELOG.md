@@ -127,6 +127,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Fixed
 
+- Windows: restore mapper startup by reading the complete input-guard readiness message.
+
 - Do not ask to save changes when creating a layout after deleting the last open layout.
 
 - Do not report unsaved layout changes when no layout is open after deletion.

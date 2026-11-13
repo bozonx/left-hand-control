@@ -1,0 +1,31 @@
+Date: 2026-11-13 14:31:15 -0300
+Commit: 7b818619 (with uncommitted changes)
+Command: apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/tecloid-windows-adapted --suite release --keep
+VM: windows11 (/mnt/disk2/vm/tecloid-windows-adapted/runs/20261113-130609/run.qcow2)
+Suite: release; acceptance requested: False
+Previous-version upgrade: NOT RUN
+Scope: Windows developer VM; clean-package and previous-version upgrade require separate acceptance
+Mapper build: release
+Popup shell build: release
+Native tests/clippy/package lifecycle: not included in this suite
+Mapper from: beginning
+Mapper only: all
+Extended: False; stress seconds: 180
+Memory: 8192 MiB
+Logs: /mnt/disk2/vm/tecloid-windows-adapted/runs/20261113-140217/logs
+
+
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 1165 files; source archive /mnt/disk2/vm/tecloid-windows-adapted/runs/20261113-140217/src.tar.gz; SHA256 6983987cd2524dd7b71fc7379ffb4b472d5613b06d314bf648aadaa75d93839c; Source sync: 3 updated, 42 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- shell-keymap-remap-restart: FAILED — `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); $s = [IO.File]::Open('D:\tecloid-e2e\out\receiver\snapshot.json', 'Open', 'Read', ([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete)); $r = [IO.StreamReader]::new($s, [Text.Encoding]::UTF8); try { $r.ReadToEnd() } finally { $r.Dispose() }` exited with 255:
+Connection timed out during banner exchange
+- popup-cleanup: skipped — cleanup failed; original scenario failure preserved
+- signal-guest-input-failure: skipped — SSH unavailable; original input failure preserved
+- windows-release: FAILED — `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); $s = [IO.File]::Open('D:\tecloid-e2e\out\receiver\snapshot.json', 'Open', 'Read', ([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete)); $r = [IO.StreamReader]::new($s, [Text.Encoding]::UTF8); try { $r.ReadToEnd() } finally { $r.Dispose() }` exited with 255:
+Connection timed out during banner exchange
+- collect-guest-logs: skipped — SSH export failed; logs remain on the persistent cache disk
+
+Passed: 4, failed: 2, skipped: 3, blocked/not run: 0
