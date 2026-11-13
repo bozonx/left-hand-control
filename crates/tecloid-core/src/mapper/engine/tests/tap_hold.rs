@@ -749,11 +749,13 @@ fn permissive_roll_fires_tap_not_hold() {
     // Shift↓, A↓, Shift↑ (A still held): rolling overlap while the
     // deciding key is released first → Shift is a tap, then A replays.
     let mut cfg = empty_cfg();
-    cfg.rules.push(tap_hold_rule(
+    let mut shift = tap_hold_rule(
         "ShiftLeft",
         ActionSpec::Action("Escape".into()),
         ActionSpec::Action("ControlLeft".into()),
-    ));
+    );
+    shift.tap_decision = Some(TapDecision::PermissiveHold);
+    cfg.rules.push(shift);
     let mut engine = Engine::new(&cfg);
     let mut out = Vec::new();
     let now = Instant::now();
@@ -921,11 +923,13 @@ fn permissive_chain_of_two_rule_keys_both_tap() {
     // Shift↓, Caps↓ (buffered behind Shift), Shift↑ → Shift taps and Caps
     // replays into its own decision; Caps↑ → Caps taps.
     let mut cfg = empty_cfg();
-    cfg.rules.push(tap_hold_rule(
+    let mut shift = tap_hold_rule(
         "ShiftLeft",
         ActionSpec::Action("Escape".into()),
         ActionSpec::Action("ControlLeft".into()),
-    ));
+    );
+    shift.tap_decision = Some(TapDecision::PermissiveHold);
+    cfg.rules.push(shift);
     cfg.rules.push(tap_hold_rule(
         "CapsLock",
         ActionSpec::Action("Tab".into()),
@@ -2081,6 +2085,36 @@ fn modifier_with_a_tap_action_types_a_capital_in_a_roll_by_default() {
             TraceEvent::Raw(KeyCode::KEY_A, false),
         ]
     );
+}
+
+#[test]
+fn modifier_held_as_another_modifier_makes_a_shortcut_in_a_roll_by_default() {
+    let cfg = serde_json::json!({"rules": [
+        {"key": "MetaLeft", "tapAction": "Escape", "holdAction": "ControlLeft"}
+    ]});
+    let typed = timeline(
+        cfg,
+        &[
+            (KeyCode::KEY_LEFTMETA, true, 0),
+            (KeyCode::KEY_C, true, 50),
+            (KeyCode::KEY_LEFTMETA, false, 80),
+            (KeyCode::KEY_C, false, 100),
+        ],
+        &[0, 50, 80, 100],
+    );
+    assert!(
+        !typed.contains(&TraceEvent::Tap(KeyCode::KEY_ESC, vec![])),
+        "{typed:?}"
+    );
+    let ctrl = typed
+        .iter()
+        .position(|e| format!("{e:?}").contains("KEY_LEFTCTRL"))
+        .expect("Ctrl pressed");
+    let c = typed
+        .iter()
+        .position(|e| *e == TraceEvent::Raw(KeyCode::KEY_C, true))
+        .expect("C pressed");
+    assert!(ctrl < c, "{typed:?}");
 }
 
 #[test]

@@ -1,0 +1,26 @@
+Date: 2026-11-13 10:02:44 -0300
+Commit: 146fff5e (with uncommitted changes)
+Command: apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/tecloid-windows-adapted --suite full
+VM: windows11 (/mnt/disk2/vm/tecloid-windows-adapted/runs/20261113-074930/run.qcow2)
+Suite: full; acceptance requested: False
+Previous-version upgrade: NOT RUN
+Scope: Windows developer VM; clean-package and previous-version upgrade require separate acceptance
+Mapper build: release
+Popup shell build: release
+Native tests/clippy/package lifecycle: included
+Mapper from: beginning
+Mapper only: all
+Extended: False; stress seconds: 180
+Memory: 8192 MiB
+Logs: /mnt/disk2/vm/tecloid-windows-adapted/runs/20261113-084234/logs
+
+
+
+- boot: passed
+- preflight: passed — cargo 1.98.1 (797e8a9bc 2026-08-05)
+- upload-source: passed — 1162 files; source archive /mnt/disk2/vm/tecloid-windows-adapted/runs/20261113-084234/src.tar.gz; SHA256 24db2de89a6bc0ba26b070ea3d6cb8c76e738e684dc759a2ce406fe080386b48; Source sync: 6 updated, 1 removed
+- hardware-keyboard: passed — QEMU USB keyboard -> WinForms: abc, abcX, Ctrl+Home, Shift+End -> ok; key-down/up recorded
+- shell-keymap-remap-restart: FAILED — timed out waiting for text 'b'
+- windows-full: FAILED — timed out waiting for text 'b'
+
+Passed: 4, failed: 2, skipped: 0, blocked/not run: 0

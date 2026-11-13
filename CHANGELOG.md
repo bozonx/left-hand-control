@@ -18,6 +18,8 @@ New entries go under `[Unreleased]`; `cargo release` turns it into a dated versi
 
 ### Changed
 
+- Mapper: a modifier rule whose hold is another modifier (e.g. Meta held as Ctrl) now defaults to "hold on other key press", so a quick roll like Meta+C gives Ctrl+C instead of the tap action and a plain letter. An explicit `tapDecision` on the rule still wins.
+
 - Accept case-insensitive key names in triggers and actions, saving canonical spellings from the picker. Shorten the copy acknowledgement to “Copied”.
 
 - Clarify Keymap terminology in translations and documentation; reserve keyboard layout for system language switching and layout for UI geometry.

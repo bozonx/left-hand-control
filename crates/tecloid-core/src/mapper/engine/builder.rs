@@ -356,11 +356,19 @@ impl Engine {
                 // A modifier that stays itself when held types capitals in
                 // rolls (Shift released just before the letter) only when
                 // any other key commits the hold; permissive hold would fire
-                // its tap action and an unshifted letter instead.
+                // its tap action and an unshifted letter instead. The same
+                // holds for a modifier held as another plain modifier
+                // (Meta held as Ctrl: a Meta+C roll is Ctrl+C).
                 tap_decision: r.tap_decision.unwrap_or(
                     if keys.len() == 1
                         && super::is_modifier_key(key)
-                        && matches!(hold, HoldOutputMode::Native)
+                        && match &hold {
+                            HoldOutputMode::Native => true,
+                            HoldOutputMode::Keystroke(ks) => {
+                                ks.mods.is_empty() && super::is_modifier_key(ks.key)
+                            }
+                            HoldOutputMode::Swallow => false,
+                        }
                     {
                         crate::mapper::config::TapDecision::HoldOnOtherKeyPress
                     } else {
