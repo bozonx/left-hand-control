@@ -1,0 +1,30 @@
+Date: 2026-11-13 07:42:02 -0300
+Commit: da5e92ee
+Command: apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/tecloid-windows-adapted --suite full
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/runs/20261112-065002/run.qcow2)
+Suite: full; acceptance requested: False
+Previous-version upgrade: NOT RUN
+Scope: Windows developer VM; clean-package and previous-version upgrade require separate acceptance
+Mapper build: release
+Popup shell build: release
+Native tests/clippy/package lifecycle: included
+Mapper from: beginning
+Mapper only: all
+Extended: False; stress seconds: 180
+Memory: 8192 MiB
+Logs: /mnt/disk2/vm/tecloid-windows-adapted/runs/20261113-074113/logs
+
+
+
+- boot: passed
+- preflight: FAILED — `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); $ErrorActionPreference = 'Stop'; $volume = Get-Volume -DriveLetter D; if ($volume.FileSystemLabel -ne 'Tecloid-CACHE') { throw 'D: is not Tecloid-CACHE' }; if ($volume.SizeRemaining -lt 24GB) { throw 'D: needs at least 24 GiB free for native builds; remove stale build artifacts' }; $task = Get-ScheduledTask -TaskName Tecloid-E2E; if ($task.State -in @('Running', 'Disabled')) { throw 'Tecloid-E2E is running or disabled' }; if (-not (Get-Process explorer -ErrorAction SilentlyContinue)) { throw 'No desktop session' }; $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"; & cargo --version; if ($LASTEXITCODE) { throw 'Cargo unavailable' }` exited with 1:
+D: needs at least 24 GiB free for native builds; remove stale build artifacts
+At line:1 char:264
++ ... -lt 24GB) { throw 'D: needs at least 24 GiB free for native builds; r ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (D: needs at lea...build artifacts:String) [], Ru 
+   ntimeException
+    + FullyQualifiedErrorId : D: needs at least 24 GiB free for native builds; remove stale build 
+    artifacts
+
+Passed: 1, failed: 1, skipped: 0, blocked/not run: 0

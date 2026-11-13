@@ -1,0 +1,23 @@
+Date: 2026-11-13 07:47:18 -0300
+Commit: da5e92ee (with uncommitted changes)
+Command: apps/slint-shell/scripts/vm/run-windows.py --vm /mnt/disk2/vm/tecloid-windows-adapted --suite full
+VM: windows11 (/mnt/disk2/vm/left-hand-control-windows/runs/20261112-065002/run.qcow2)
+Suite: full; acceptance requested: False
+Previous-version upgrade: NOT RUN
+Scope: Windows developer VM; clean-package and previous-version upgrade require separate acceptance
+Mapper build: release
+Popup shell build: release
+Native tests/clippy/package lifecycle: included
+Mapper from: beginning
+Mapper only: all
+Extended: False; stress seconds: 180
+Memory: 8192 MiB
+Logs: /mnt/disk2/vm/tecloid-windows-adapted/runs/20261113-074436/logs
+
+
+
+- boot: passed
+- preflight: FAILED — `[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); $v = Get-Volume -DriveLetter D -ErrorAction SilentlyContinue; [bool]($v -and $v.FileSystemLabel -eq 'Tecloid-CACHE' -and $v.Size -gt 0)` exited with 255:
+ssh: connect to host 127.0.0.1 port 2241: Connection refused
+
+Passed: 1, failed: 1, skipped: 0, blocked/not run: 0

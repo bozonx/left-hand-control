@@ -262,6 +262,9 @@ def main():
     def preflight():
         wait_for("interactive desktop", 180, lambda: "True" in retry_guest_io(lambda: ps(
             "[bool](Get-Process explorer -ErrorAction SilentlyContinue)", timeout=90)))
+        wait_for("mounted Tecloid cache volume", 180, lambda: "True" in retry_guest_io(lambda: ps(
+            "$v = Get-Volume -DriveLetter D -ErrorAction SilentlyContinue; "
+            "[bool]($v -and $v.FileSystemLabel -eq 'Tecloid-CACHE' -and $v.Size -gt 0)", timeout=90)))
         return ps(
             "$ErrorActionPreference = 'Stop'; "
             "$volume = Get-Volume -DriveLetter D; "

@@ -93,6 +93,7 @@ struct ConfigDoc {
     #[cfg_attr(test, schemars(with = "String"))]
     schema: Option<String>,
     #[serde(default)]
+    #[cfg_attr(test, schemars(default = "schema_settings_default"))]
     settings: SettingsDoc,
 }
 
@@ -117,6 +118,7 @@ struct SettingsDoc {
     timing: TimingDoc,
     keymaps: KeymapsDoc,
     commands_enabled: bool,
+    #[cfg_attr(test, schemars(default = "schema_game_mode_default"))]
     game_mode: GameModeDoc,
     linux: LinuxDoc,
 }
@@ -296,6 +298,7 @@ fn nullable<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<Option<
 #[serde(rename_all = "camelCase", deny_unknown_fields, default)]
 struct GameModeDoc {
     control: GameModeControl,
+    #[cfg_attr(test, schemars(default = "schema_detectors_default"))]
     detectors: DetectorsDoc,
     /// Games a launcher or the system reports count only while their
     /// window is active.
@@ -314,12 +317,17 @@ impl Default for GameModeDoc {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields, default)]
 struct DetectorsDoc {
+    #[cfg_attr(test, schemars(default = "yes"))]
     gamemoded: bool,
     fullscreen: bool,
     steam: bool,
+    #[cfg_attr(test, schemars(default = "yes"))]
     lutris: bool,
+    #[cfg_attr(test, schemars(default = "yes"))]
     heroic: bool,
+    #[cfg_attr(test, schemars(default = "yes"))]
     umu: bool,
+    #[cfg_attr(test, schemars(default = "yes"))]
     gamescope: bool,
     app_category: bool,
     game_bar: bool,
@@ -328,6 +336,36 @@ struct DetectorsDoc {
 impl Default for DetectorsDoc {
     fn default() -> Self {
         to_doc(&AppSettings::default()).settings.game_mode.detectors
+    }
+}
+
+// Published schema annotations use Linux defaults on every build host.
+// Runtime defaults still follow the target platform.
+#[cfg(test)]
+fn schema_detectors_default() -> DetectorsDoc {
+    DetectorsDoc {
+        gamemoded: true,
+        lutris: true,
+        heroic: true,
+        umu: true,
+        gamescope: true,
+        ..DetectorsDoc::default()
+    }
+}
+
+#[cfg(test)]
+fn schema_game_mode_default() -> GameModeDoc {
+    GameModeDoc {
+        detectors: schema_detectors_default(),
+        ..GameModeDoc::default()
+    }
+}
+
+#[cfg(test)]
+fn schema_settings_default() -> SettingsDoc {
+    SettingsDoc {
+        game_mode: schema_game_mode_default(),
+        ..SettingsDoc::default()
     }
 }
 

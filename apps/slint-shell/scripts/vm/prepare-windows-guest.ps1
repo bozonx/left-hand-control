@@ -13,6 +13,10 @@ param(
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 
+# A disposable OS overlay must not resume stale NTFS state for the persistent cache.
+& powercfg /hibernate off
+if ($LASTEXITCODE) { throw 'Could not disable hibernation and Fast Startup' }
+
 Write-Host 'OpenSSH server...'
 if (-not (Get-Service sshd -ErrorAction SilentlyContinue)) {
     if ($OpenSshArchive) {

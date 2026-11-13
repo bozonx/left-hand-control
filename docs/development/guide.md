@@ -635,7 +635,11 @@ Elevated/secure desktop, lock/unlock, suspend/resume, гибель всего д
 установленными MSVC Build Tools и Rust:
 
 1. Создайте диск кэша сборки — он переживает прогоны, поэтому пересборка инкрементальная:
-   `qemu-img create -f qcow2 /mnt/disk2/vm/tecloid-windows/cache.qcow2 64G`.
+   `qemu-img create -f qcow2 /mnt/disk2/vm/tecloid-windows/cache.qcow2 160G`.
+   Полный набор сохраняет debug/release-сборки и примеры; перед запуском требуется
+   хотя бы 24 ГиБ свободного места внутри гостевого тома. Базовый образ сохраняйте
+   после полного выключения с отключённой гибернацией (`powercfg /hibernate off`),
+   чтобы Fast Startup не восстанавливал устаревшее состояние постоянного NTFS-кэша.
 2. Создайте `vm.json`:
    ```json
    {
