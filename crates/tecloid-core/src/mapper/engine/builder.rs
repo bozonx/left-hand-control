@@ -295,6 +295,11 @@ impl Engine {
                 // A swallowed tap with "nothing" on hold must swallow the whole
                 // press; a native hold would leak the key through the fast path.
                 ActionSpec::Native if matches!(tap, TapMode::Swallow) => HoldOutputMode::Swallow,
+                // A chord with its own tap action has no hold unless one is
+                // configured: holding it fires the tap, not the native keys.
+                ActionSpec::Native if keys.len() > 1 && matches!(tap, TapMode::Action(_)) => {
+                    HoldOutputMode::Swallow
+                }
                 ActionSpec::Native if keys.len() > 1 => {
                     HoldOutputMode::Keystroke(crate::mapper::action::Keystroke {
                         mods: keys[..keys.len() - 1].to_vec(),

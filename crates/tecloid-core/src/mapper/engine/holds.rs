@@ -268,6 +268,7 @@ impl Engine {
     /// ignores, so the press was typing that crossed the timeout.
     pub(super) fn timeout_taps(&self, key: KeyCode) -> bool {
         self.deciding_key() == Some(key)
+            && self.pending.get(&key).is_some_and(|p| p.rule.tap_types())
             && self
                 .decision_buffer
                 .iter()
@@ -331,7 +332,11 @@ impl Engine {
         }
         let buffered = std::mem::take(&mut self.decision_buffer);
         for ev in buffered {
-            self.handle_event(ev.key, ev.down, ev.at, out);
+            // Replayed keys complete chords as live ones do (Shift+Slash
+            // rolled under an undecided key is still that chord).
+            if !self.handle_chord(ev.key, ev.down, ev.at, out) {
+                self.handle_event(ev.key, ev.down, ev.at, out);
+            }
         }
     }
 

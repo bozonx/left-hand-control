@@ -293,3 +293,96 @@ fn seeded_batches_leave_no_pending_keys_modifiers_or_layers() {
         }
     }
 }
+
+/// CapsLock holding a navigation layer whose tap pastes.
+fn paste_layer_cfg() -> serde_json::Value {
+    serde_json::json!({
+        "rules": [
+            {"key": "CapsLock", "tapAction": "Ctrl+KeyV", "layerId": "nav", "holdTimeoutMs": 180},
+            {"key": "Slash", "tapAction": "text:ё"},
+            {"key": "ShiftLeft+Slash", "tapAction": "text:Ё"},
+            {"key": "AltLeft", "tapAction": "Enter", "layerId": "desk"},
+            {"key": "ShiftLeft", "tapAction": "Ctrl+KeyC", "doubleTapAction": "Ctrl+KeyX", "tapDecision": "holdOnOtherKeyPress"}
+        ],
+        "layerKeymaps": {
+            "nav": {"keys": {"KeyH": "ArrowLeft"}},
+            "desk": {"keys": {"KeyF": "Meta+Digit1"}}
+        }
+    })
+}
+
+#[test]
+fn shortcut_tap_layer_key_after_typing_still_holds_its_layer() {
+    use TraceEvent::*;
+    let trace = timeline(
+        paste_layer_cfg(),
+        &[
+            (KeyCode::KEY_A, true, 0),
+            (KeyCode::KEY_A, false, 60),
+            (KeyCode::KEY_CAPSLOCK, true, 100),
+            (KeyCode::KEY_H, true, 400),
+            (KeyCode::KEY_H, false, 450),
+            (KeyCode::KEY_CAPSLOCK, false, 600),
+        ],
+        &[300, 500],
+    );
+    assert_eq!(
+        trace,
+        [
+            Raw(KeyCode::KEY_A, true),
+            Raw(KeyCode::KEY_A, false),
+            Press(KeyCode::KEY_LEFT, vec![]),
+            Raw(KeyCode::KEY_LEFT, false),
+        ]
+    );
+}
+
+#[test]
+fn shortcut_tap_layer_key_held_past_timeout_over_an_unmapped_key_is_a_hold() {
+    use TraceEvent::*;
+    let trace = timeline(
+        paste_layer_cfg(),
+        &[
+            (KeyCode::KEY_CAPSLOCK, true, 0),
+            (KeyCode::KEY_1, true, 80),
+            (KeyCode::KEY_1, false, 300),
+            (KeyCode::KEY_CAPSLOCK, false, 400),
+        ],
+        &[100, 200],
+    );
+    assert_eq!(trace, [Raw(KeyCode::KEY_1, true), Raw(KeyCode::KEY_1, false)]);
+}
+
+#[test]
+fn held_text_chord_types_its_text_instead_of_the_native_keys() {
+    use TraceEvent::*;
+    let trace = timeline(
+        paste_layer_cfg(),
+        &[
+            (KeyCode::KEY_LEFTSHIFT, true, 0),
+            (KeyCode::KEY_SLASH, true, 80),
+            (KeyCode::KEY_SLASH, false, 330),
+            (KeyCode::KEY_LEFTSHIFT, false, 400),
+        ],
+        &[150, 280, 300],
+    );
+    assert_eq!(trace, [Text("Ё".into())]);
+}
+
+#[test]
+fn text_chord_rolled_under_an_undecided_layer_key_is_still_the_chord() {
+    use TraceEvent::*;
+    let trace = timeline(
+        paste_layer_cfg(),
+        &[
+            (KeyCode::KEY_LEFTALT, true, 0),
+            (KeyCode::KEY_LEFTSHIFT, true, 40),
+            (KeyCode::KEY_SLASH, true, 70),
+            (KeyCode::KEY_LEFTALT, false, 90),
+            (KeyCode::KEY_SLASH, false, 150),
+            (KeyCode::KEY_LEFTSHIFT, false, 200),
+        ],
+        &[],
+    );
+    assert_eq!(trace, [Tap(KeyCode::KEY_ENTER, vec![]), Text("Ё".into())]);
+}

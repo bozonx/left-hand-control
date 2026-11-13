@@ -123,6 +123,30 @@ impl RuleEntry {
     pub(super) fn has_hold(&self) -> bool {
         self.layer_id.is_some() || !matches!(self.hold, HoldOutputMode::Swallow)
     }
+
+    /// True when the tap only types: the key itself, a text or a key with at
+    /// most Shift. Typing heuristics may resolve such a press as a tap; a tap
+    /// that runs a shortcut or a macro (Ctrl+V) must not replace a layer hold.
+    pub(super) fn tap_types(&self) -> bool {
+        match &self.tap {
+            TapMode::Native | TapMode::NativeChord(_) => true,
+            TapMode::Action(CompiledAction::Literal(_)) => true,
+            TapMode::Action(CompiledAction::Stroke(ks)) => ks
+                .mods
+                .iter()
+                .all(|m| matches!(*m, KeyCode::KEY_LEFTSHIFT | KeyCode::KEY_RIGHTSHIFT)),
+            _ => false,
+        }
+    }
+
+    /// True for a chord rule with nothing to do on hold: its tap fires as
+    /// soon as the chord completes.
+    pub(super) fn taps_on_press(&self) -> bool {
+        !self.has_hold()
+            && self.long_hold.is_none()
+            && self.double_tap.is_none()
+            && !matches!(self.tap, TapMode::Swallow)
+    }
 }
 
 /// A key event deferred while a rule key is in `WaitingDecision`

@@ -181,7 +181,14 @@ impl Engine {
         }
         self.chords.active.insert(owner, keys);
         self.chords.suppressed.insert(owner, suppressed);
-        self.start_rule(owner, rule, at, out);
+        if rule.taps_on_press() {
+            // Nothing to hold: holding the chord must not turn its tap into
+            // the native keys (Shift+Slash typing "," instead of "Ё").
+            self.fire_tap(owner, &rule.tap, at, out);
+            self.virt.oneshot.insert(owner);
+        } else {
+            self.start_rule(owner, rule, at, out);
+        }
         self.drain_decision_buffer(out);
         for ev in after {
             self.handle_event(ev.key, ev.down, ev.at, out);

@@ -488,7 +488,7 @@ impl Engine {
             if rule.tap_decision == super::config::TapDecision::PermissiveHold
                 && rule.layer_id.is_some()
                 && matches!(rule.hold, HoldOutputMode::Swallow)
-                && !matches!(rule.tap, TapMode::Swallow)
+                && rule.tap_types()
                 && rule.long_hold.is_none()
                 && rule.double_tap.is_none()
                 && last_typing_press.is_some_and(|at| {
