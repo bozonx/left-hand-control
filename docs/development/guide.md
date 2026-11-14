@@ -154,6 +154,7 @@ target/debug/tecloid --version          # --version и --help не требую�
 | Переменная | Назначение |
 | --- | --- |
 | `RUST_LOG` | Фильтр логов; по умолчанию `info,zbus=warn,tracing=warn` |
+| | Трасса маппера (каждое нажатие и вывод движка, мс): `RUST_LOG=info,tecloid_core::mapper::trace=debug`. Текст пишется только длиной. |
 | `TECLOID_DEV_DIR` | Явный каталог конфигурации и данных для debug/release; без него release использует пользовательские пути |
 | `SLINT_BACKEND` | Рендерер окна настроек |
 | `TECLOID_POPUPS` | `winit` / `auto` / `spell` |

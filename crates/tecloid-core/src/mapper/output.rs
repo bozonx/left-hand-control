@@ -342,6 +342,40 @@ pub(super) trait LoopDriver {
     }
 }
 
+/// Log target of the key trace: every physical key event and everything the
+/// engine emits, with millisecond times. Enable it with
+/// `RUST_LOG=info,tecloid_core::mapper::trace=debug`.
+const TRACE: &str = "tecloid_core::mapper::trace";
+
+fn trace_enabled() -> bool {
+    log::log_enabled!(target: TRACE, log::Level::Debug)
+}
+
+/// Milliseconds since the first traced event, so gaps read directly.
+fn trace_ms(at: Instant) -> u128 {
+    static START: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
+    let start = *START.get_or_init(|| at);
+    at.saturating_duration_since(start).as_millis()
+}
+
+fn trace_output(out: &EngineOutput) -> String {
+    match out {
+        EngineOutput::KeyRaw { key, down } => {
+            format!("key {key:?} {}", if *down { "down" } else { "up" })
+        }
+        EngineOutput::Stroke { ks, .. } => format!("tap {:?}+{:?}", ks.mods, ks.key),
+        EngineOutput::ChordPress { ks, .. } => format!("press {:?}+{:?}", ks.mods, ks.key),
+        EngineOutput::ChordRelease { key, mods, .. } => format!("release {key:?} mods {mods:?}"),
+        EngineOutput::ReleaseMods(mods) => format!("release mods {mods:?}"),
+        EngineOutput::RunSystem(_) => "system action".into(),
+        EngineOutput::RunCommand(_) | EngineOutput::RunMacroCommand(_, _) => "command".into(),
+        // Only the length: typed text may be private.
+        EngineOutput::Literal(text) | EngineOutput::RunMacroText(text, _) => {
+            format!("text ({} chars)", text.chars().count())
+        }
+    }
+}
+
 pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects>(
     driver: &mut D,
     engine: &mut Engine,
@@ -379,6 +413,15 @@ pub(super) fn process_iteration_with<D: LoopDriver, S: EventSink, E: SideEffects
             let start = out_buf.len();
             match input {
                 DriverInput::Key { key, down, at } => {
+                    if trace_enabled() {
+                        log::debug!(
+                            target: TRACE,
+                            "{:>8} ms  in  {key:?} {}{}",
+                            trace_ms(at),
+                            if down { "down" } else { "up" },
+                            engine.top_layer().map(|l| format!("  [layer {l}]")).unwrap_or_default()
+                        );
+                    }
                     match driver.app_hotkey(key, down) {
                         Some(Some(action)) => engine.execute_remote(action, out_buf),
                         Some(None) => {}
@@ -551,6 +594,12 @@ pub(super) fn flush_out_with<S: EventSink, E: SideEffects>(
         Ok(())
     }
 
+    if trace_enabled() {
+        let ms = trace_ms(Instant::now());
+        for out in buf.iter() {
+            log::debug!(target: TRACE, "{ms:>8} ms  out {}", trace_output(out));
+        }
+    }
     for out in buf.drain(..) {
         match out {
             EngineOutput::KeyRaw { key, down } => {
