@@ -236,7 +236,7 @@
       "tap": "Ctrl+KeyV",
       "hold": {
         "layer": "navigation",
-        "timeoutMs": 180
+        "timeoutMs": 250
       }
     },
     {
